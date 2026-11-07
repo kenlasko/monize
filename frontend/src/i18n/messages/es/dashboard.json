@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "Bienvenido",
-    "welcomeWithName": "¡Bienvenido, {name}!",
-    "subtitle": "Aquí está tu resumen financiero"
+    "greeting": {
+      "morning": "Buenos días",
+      "morningWithName": "Buenos días, {name}",
+      "afternoon": "Buenas tardes",
+      "afternoonWithName": "Buenas tardes, {name}",
+      "evening": "Buenas noches",
+      "eveningWithName": "Buenas noches, {name}"
+    }
+  },
+  "hero": {
+    "label": "Resumen del patrimonio neto",
+    "netWorth": "Patrimonio neto",
+    "changeThisMonth": "<dir>{direction, select, up {Sube} other {Baja}}</dir> {amount} este mes",
+    "changeThisMonthWithPercent": "<dir>{direction, select, up {Sube} other {Baja}}</dir> {amount} · {percent} este mes",
+    "assets": "<strong><value></value></strong> en activos",
+    "liabilities": "<strong><value></value></strong> en pasivos",
+    "invested": "<strong><value></value></strong> invertido",
+    "investedUnpriced": "No hay precio actual para {symbols}, así que esas posiciones no se incluyen. Actualiza los precios en la página Inversiones o añade uno en el historial de precios del valor.",
+    "portfolioLabel": "Resumen de la cartera",
+    "portfolioValueFor": "Valor de la cartera <names>({accounts})</names>",
+    "portfolioEmpty": "Aún no hay cuentas de inversión. Añade una para ver tu cartera aquí.",
+    "portfolioLoadFailed": "No se pudo cargar tu cartera. Recarga el panel para volver a intentarlo.",
+    "portfolioChangeFailed": "No se pudo cargar el cambio de este periodo. Recarga el panel para volver a intentarlo.",
+    "changeOverWindow": "<dir>{direction, select, up {Sube} other {Baja}}</dir> {amount} · {window}",
+    "holdings": "<strong><value></value></strong> en posiciones",
+    "cash": "<strong><value></value></strong> en efectivo",
+    "metricLine": "<strong><value></value></strong> {metric}",
+    "metricNames": {
+      "simpleReturn": "Rendimiento Simple",
+      "twr": "TWR",
+      "mwr": "MWR",
+      "cagr": "CAGR"
+    },
+    "cagrUnavailable": "La CAGR necesita al menos un año de historial de inversión en estas cuentas, con más aportado que retirado.",
+    "intradayUnavailable": "Algunas de estas posiciones no tienen precios intradía, así que no se puede dibujar un gráfico de un día. Elige un periodo más largo en Personalizar."
   },
   "favouriteAccounts": {
     "title": "Cuentas favoritas",
@@ -181,6 +213,24 @@
     "reset": "Restablecer valores predeterminados",
     "toasts": {
       "saveFailed": "No se pudo guardar el diseño del panel"
+    },
+    "hero": {
+      "title": "Cabecera del panel",
+      "description": "Las cifras y el gráfico bajo el saludo: tu patrimonio neto o tu cartera.",
+      "show": "Mostrar la cabecera del panel",
+      "range": "Gráfico",
+      "set": "Mostrar",
+      "sets": {
+        "netWorth": "Patrimonio neto",
+        "portfolio": "Valor de la cartera"
+      },
+      "metric": "Cifra",
+      "metrics": {
+        "simpleReturn": "Rendimiento Simple",
+        "twr": "TWR",
+        "mwr": "MWR",
+        "cagr": "CAGR"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "Descripción",
     "descriptionPlaceholder": "Añade una descripción opcional",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

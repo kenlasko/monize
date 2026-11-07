@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "Добро пожаловать",
-    "welcomeWithName": "Добро пожаловать, {name}!",
-    "subtitle": "Обзор ваших финансов"
+    "greeting": {
+      "morning": "Доброе утро",
+      "morningWithName": "Доброе утро, {name}",
+      "afternoon": "Добрый день",
+      "afternoonWithName": "Добрый день, {name}",
+      "evening": "Добрый вечер",
+      "eveningWithName": "Добрый вечер, {name}"
+    }
+  },
+  "hero": {
+    "label": "Сводка чистых активов",
+    "netWorth": "Чистые активы",
+    "changeThisMonth": "<dir>{direction, select, up {Рост на} other {Снижение на}}</dir> {amount} за этот месяц",
+    "changeThisMonthWithPercent": "<dir>{direction, select, up {Рост на} other {Снижение на}}</dir> {amount} · {percent} за этот месяц",
+    "assets": "<strong><value></value></strong> активов",
+    "liabilities": "<strong><value></value></strong> обязательств",
+    "invested": "<strong><value></value></strong> инвестировано",
+    "investedUnpriced": "Нет текущей цены для {symbols}, поэтому эти позиции не учтены. Обновите цены на странице «Инвестиции» или добавьте цену в истории цен бумаги.",
+    "portfolioLabel": "Сводка портфеля",
+    "portfolioValueFor": "Стоимость портфеля <names>({accounts})</names>",
+    "portfolioEmpty": "Пока нет инвестиционных счетов. Добавьте счёт, чтобы видеть здесь портфель.",
+    "portfolioLoadFailed": "Не удалось загрузить портфель. Перезагрузите панель и попробуйте снова.",
+    "portfolioChangeFailed": "Не удалось загрузить изменение за этот период. Перезагрузите панель и попробуйте снова.",
+    "changeOverWindow": "<dir>{direction, select, up {Рост на} other {Снижение на}}</dir> {amount} · {window}",
+    "holdings": "<strong><value></value></strong> в позициях",
+    "cash": "<strong><value></value></strong> денежных средств",
+    "metricLine": "<strong><value></value></strong> {metric}",
+    "metricNames": {
+      "simpleReturn": "Простая доходность",
+      "twr": "TWR",
+      "mwr": "MWR",
+      "cagr": "CAGR"
+    },
+    "cagrUnavailable": "Для CAGR нужна как минимум годовая история инвестиций на этих счетах и пополнения больше снятий.",
+    "intradayUnavailable": "Для некоторых позиций нет внутридневных цен, поэтому дневной график построить нельзя. Выберите более длинный период в настройках."
   },
   "favouriteAccounts": {
     "title": "Избранные счета",
@@ -181,6 +213,24 @@
     "reset": "Сбросить по умолчанию",
     "toasts": {
       "saveFailed": "Не удалось сохранить макет панели управления"
+    },
+    "hero": {
+      "title": "Шапка панели",
+      "description": "Показатели и график под приветствием: ваши чистые активы или портфель.",
+      "show": "Показывать шапку панели",
+      "range": "График",
+      "set": "Показывать",
+      "sets": {
+        "netWorth": "Чистые активы",
+        "portfolio": "Стоимость портфеля"
+      },
+      "metric": "Показатель",
+      "metrics": {
+        "simpleReturn": "Простая доходность",
+        "twr": "TWR",
+        "mwr": "MWR",
+        "cagr": "CAGR"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "Описание",
     "descriptionPlaceholder": "Добавьте необязательное описание",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

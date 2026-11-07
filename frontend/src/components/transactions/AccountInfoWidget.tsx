@@ -428,7 +428,7 @@ export function AccountInfoWidget({
                 aria-label={tc('loading')}
                 className="min-w-0 flex items-center justify-end"
               >
-                <span className="h-4 w-16 rounded bg-gray-200 dark:bg-gray-700 animate-pulse motion-reduce:animate-none" />
+                <span className="h-4 w-16 rounded bg-gray-200 dark:bg-gray-700 animate-pulse skeleton-shimmer motion-reduce:animate-none" />
               </dd>
             ) : detail.maskable ? (
               <dd className="text-gray-900 dark:text-gray-100 min-w-0 flex items-center justify-end gap-1.5">

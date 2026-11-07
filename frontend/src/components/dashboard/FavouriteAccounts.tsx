@@ -152,7 +152,7 @@ export function FavouriteAccounts({ accounts, brokerageMarketValues, unpricedHol
         <WidgetHeading id="favourite-accounts" href="/accounts" className="mb-4">
           {t('favouriteAccounts.title')}
         </WidgetHeading>
-        <div className="animate-pulse space-y-3">
+        <div className="animate-pulse skeleton-shimmer space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-12 bg-gray-200 dark:bg-gray-700 rounded" />
           ))}

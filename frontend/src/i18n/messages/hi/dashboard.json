@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "स्वागत है",
-    "welcomeWithName": "स्वागत है, {name}!",
-    "subtitle": "यहाँ आपका वित्तीय सारांश है"
+    "greeting": {
+      "morning": "सुप्रभात",
+      "morningWithName": "सुप्रभात, {name}",
+      "afternoon": "नमस्कार",
+      "afternoonWithName": "नमस्कार, {name}",
+      "evening": "शुभ संध्या",
+      "eveningWithName": "शुभ संध्या, {name}"
+    }
+  },
+  "hero": {
+    "label": "कुल संपत्ति का सारांश",
+    "netWorth": "कुल संपत्ति",
+    "changeThisMonth": "इस महीने {amount} <dir>{direction, select, up {बढ़ी} other {घटी}}</dir>",
+    "changeThisMonthWithPercent": "इस महीने {amount} · {percent} <dir>{direction, select, up {बढ़ी} other {घटी}}</dir>",
+    "assets": "<strong><value></value></strong> परिसंपत्तियाँ",
+    "liabilities": "<strong><value></value></strong> देनदारियाँ",
+    "invested": "<strong><value></value></strong> निवेशित",
+    "investedUnpriced": "{symbols} का कोई मौजूदा मूल्य नहीं है, इसलिए वे होल्डिंग शामिल नहीं हैं। निवेश पेज पर मूल्य रीफ़्रेश करें, या सिक्योरिटी के मूल्य इतिहास में एक जोड़ें।",
+    "portfolioLabel": "पोर्टफ़ोलियो सारांश",
+    "portfolioValueFor": "पोर्टफ़ोलियो मूल्य <names>({accounts})</names>",
+    "portfolioEmpty": "अभी कोई निवेश खाता नहीं है। अपना पोर्टफ़ोलियो यहाँ देखने के लिए एक जोड़ें।",
+    "portfolioLoadFailed": "आपका पोर्टफ़ोलियो लोड नहीं हो सका। फिर से कोशिश करने के लिए डैशबोर्ड रीलोड करें।",
+    "portfolioChangeFailed": "इस अवधि का बदलाव लोड नहीं हो सका। फिर से कोशिश करने के लिए डैशबोर्ड रीलोड करें।",
+    "changeOverWindow": "{amount} · {window} <dir>{direction, select, up {बढ़ा} other {घटा}}</dir>",
+    "holdings": "<strong><value></value></strong> होल्डिंग",
+    "cash": "<strong><value></value></strong> नकद",
+    "metricLine": "<strong><value></value></strong> {metric}",
+    "metricNames": {
+      "simpleReturn": "सरल प्रतिफल",
+      "twr": "TWR",
+      "mwr": "MWR",
+      "cagr": "CAGR"
+    },
+    "cagrUnavailable": "CAGR के लिए इन खातों में कम से कम एक साल का निवेश इतिहास चाहिए, जिसमें निकाले गए से ज़्यादा जमा किया गया हो।",
+    "intradayUnavailable": "इनमें से कुछ होल्डिंग के इंट्राडे मूल्य नहीं हैं, इसलिए एक दिन का चार्ट नहीं बन सकता। कस्टमाइज़ में लंबी अवधि चुनें।"
   },
   "favouriteAccounts": {
     "title": "पसंदीदा खाते",
@@ -181,6 +213,24 @@
     "reset": "डिफ़ॉल्ट पर रीसेट करें",
     "toasts": {
       "saveFailed": "डैशबोर्ड लेआउट सहेजने में विफल"
+    },
+    "hero": {
+      "title": "डैशबोर्ड हीरो",
+      "description": "अभिवादन के नीचे के आँकड़े और चार्ट: आपकी कुल संपत्ति या आपका पोर्टफ़ोलियो।",
+      "show": "डैशबोर्ड हीरो दिखाएँ",
+      "range": "चार्ट",
+      "set": "दिखाएँ",
+      "sets": {
+        "netWorth": "कुल संपत्ति",
+        "portfolio": "पोर्टफ़ोलियो मूल्य"
+      },
+      "metric": "आँकड़ा",
+      "metrics": {
+        "simpleReturn": "सरल प्रतिफल",
+        "twr": "TWR",
+        "mwr": "MWR",
+        "cagr": "CAGR"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "विवरण",
     "descriptionPlaceholder": "एक वैकल्पिक विवरण जोड़ें",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

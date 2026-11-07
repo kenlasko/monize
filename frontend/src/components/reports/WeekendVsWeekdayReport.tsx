@@ -17,7 +17,7 @@ import {
   Cell,
 } from 'recharts';
 import { builtInReportsApi } from '@/lib/built-in-reports';
-import { chartColors, CHART_SERIES } from '@/lib/chart-colors';
+import { CHART_SERIES } from '@/lib/chart-colors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
@@ -31,6 +31,7 @@ import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { isComplete, reportTotal, type ConvertedTotal } from '@/lib/currency-total';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
+import { CHART_BAR_RADIUS, CHART_BAR_RADIUS_HORIZONTAL, CHART_GRID_PROPS, CHART_GRID_PROPS_HORIZONTAL_BARS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 // Weekend purple vs weekday blue, drawn from the categorical theme palette.
 const WEEKEND_COLOR = CHART_SERIES[4];
@@ -55,7 +56,7 @@ interface WeekendVsWeekdayTooltipProps {
 function WeekendVsWeekdayTooltip({ active, payload, label, formatCurrency }: WeekendVsWeekdayTooltipProps) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{label}</p>
         {payload.map((entry, index) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>
@@ -372,11 +373,11 @@ export function WeekendVsWeekdayReport() {
           <div className="h-96">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={dayData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis dataKey="day" />
                 <YAxis tickFormatter={formatCurrencyAxis} />
                 <Tooltip content={<WeekendVsWeekdayTooltip formatCurrency={formatCurrency} />} />
-                <Bar dataKey="total" name={t('weekendVsWeekday.barTotalSpent')}>
+                <Bar radius={CHART_BAR_RADIUS} dataKey="total" name={t('weekendVsWeekday.barTotalSpent')}>
                   {dayData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
@@ -414,13 +415,13 @@ export function WeekendVsWeekdayReport() {
           <div className="h-[480px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={categoryComparison} layout="vertical" margin={{ left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />
                 <XAxis type="number" tickFormatter={formatCurrencyAxis} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={80} />
                 <Tooltip content={<WeekendVsWeekdayTooltip formatCurrency={formatCurrency} />} />
                 <Legend />
-                <Bar dataKey="weekendTotal" fill={WEEKEND_COLOR} name={t('weekendVsWeekday.barWeekend')} />
-                <Bar dataKey="weekdayTotal" fill={WEEKDAY_COLOR} name={t('weekendVsWeekday.barWeekday')} />
+                <Bar radius={CHART_BAR_RADIUS_HORIZONTAL} dataKey="weekendTotal" fill={WEEKEND_COLOR} name={t('weekendVsWeekday.barWeekend')} />
+                <Bar radius={CHART_BAR_RADIUS_HORIZONTAL} dataKey="weekdayTotal" fill={WEEKDAY_COLOR} name={t('weekendVsWeekday.barWeekday')} />
               </BarChart>
             </ResponsiveContainer>
           </div>

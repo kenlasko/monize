@@ -36,6 +36,7 @@ import {
   SPENDING_RANGES,
   RangeAccountsConfig,
 } from './widget-config';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 const WIDGET_ID = 'income-expenses';
 
@@ -60,7 +61,7 @@ function IncomeExpensesTooltip({
 }) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
           {periodLabel(label ?? '')}
         </p>
@@ -232,7 +233,7 @@ export function IncomeExpensesBarChart({
       }
     >
       {loading ? (
-        <div className="flex-1 min-h-[16rem] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
+        <div className="flex-1 min-h-[16rem] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : (
         <>
           <div className="flex-1 min-h-[16rem]">
@@ -244,7 +245,7 @@ export function IncomeExpensesBarChart({
                 onClick={handleChartClick}
                 style={{ cursor: 'pointer' }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis
                   dataKey="name"
                   tick={{ fill: chartColors.axis, fontSize: 12 }}

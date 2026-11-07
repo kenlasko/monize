@@ -30,6 +30,7 @@ import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { createLogger } from '@/lib/logger';
 import { chartColors } from '@/lib/chart-colors';
 import { useTranslations } from 'next-intl';
+import { CHART_GRID_PROPS_HORIZONTAL_BARS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 const logger = createLogger('FlexGroupAnalysisReport');
 
@@ -428,7 +429,7 @@ export function FlexGroupAnalysisReport() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={chartData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />
                   <XAxis
                     type="number"
                     tickFormatter={(v) => formatCurrency(v)}
@@ -444,7 +445,7 @@ export function FlexGroupAnalysisReport() {
                     content={({ active, payload, label }) => {
                       if (!active || !payload || payload.length === 0) return null;
                       return (
-                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+                        <div className={CHART_TOOLTIP_CLASS}>
                           <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{label}</p>
                           {payload.map((entry) => (
                             <p key={entry.dataKey as string} className="text-sm" style={{ color: entry.color }}>

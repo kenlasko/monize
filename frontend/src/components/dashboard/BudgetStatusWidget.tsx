@@ -51,7 +51,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
         <WidgetHeading id="budget-status" href="/budgets" className="mb-4">
           {sectionTitle}
         </WidgetHeading>
-        <div className="animate-pulse space-y-3">
+        <div className="animate-pulse skeleton-shimmer space-y-3">
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded" />
           <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded" />

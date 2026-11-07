@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "Selamat datang",
-    "welcomeWithName": "Selamat datang, {name}!",
-    "subtitle": "Berikut ikhtisar keuangan Anda"
+    "greeting": {
+      "morning": "Selamat pagi",
+      "morningWithName": "Selamat pagi, {name}",
+      "afternoon": "Selamat siang",
+      "afternoonWithName": "Selamat siang, {name}",
+      "evening": "Selamat malam",
+      "eveningWithName": "Selamat malam, {name}"
+    }
+  },
+  "hero": {
+    "label": "Ringkasan kekayaan bersih",
+    "netWorth": "Kekayaan bersih",
+    "changeThisMonth": "<dir>{direction, select, up {Naik} other {Turun}}</dir> {amount} bulan ini",
+    "changeThisMonthWithPercent": "<dir>{direction, select, up {Naik} other {Turun}}</dir> {amount} · {percent} bulan ini",
+    "assets": "<strong><value></value></strong> aset",
+    "liabilities": "<strong><value></value></strong> liabilitas",
+    "invested": "<strong><value></value></strong> diinvestasikan",
+    "investedUnpriced": "Tidak ada harga terkini untuk {symbols}, jadi kepemilikan tersebut tidak disertakan. Segarkan harga di halaman Investasi, atau tambahkan satu di riwayat harga sekuritas.",
+    "portfolioLabel": "Ringkasan portofolio",
+    "portfolioValueFor": "Nilai portofolio <names>({accounts})</names>",
+    "portfolioEmpty": "Belum ada akun investasi. Tambahkan satu untuk melihat portofolio Anda di sini.",
+    "portfolioLoadFailed": "Tidak dapat memuat portofolio Anda. Muat ulang dasbor untuk mencoba lagi.",
+    "portfolioChangeFailed": "Tidak dapat memuat perubahan periode ini. Muat ulang dasbor untuk mencoba lagi.",
+    "changeOverWindow": "<dir>{direction, select, up {Naik} other {Turun}}</dir> {amount} · {window}",
+    "holdings": "<strong><value></value></strong> kepemilikan",
+    "cash": "<strong><value></value></strong> kas",
+    "metricLine": "<strong><value></value></strong> {metric}",
+    "metricNames": {
+      "simpleReturn": "Imbal Hasil Sederhana",
+      "twr": "TWR",
+      "mwr": "MWR",
+      "cagr": "CAGR"
+    },
+    "cagrUnavailable": "CAGR memerlukan setidaknya satu tahun riwayat investasi di akun-akun ini, dengan setoran lebih besar dari penarikan.",
+    "intradayUnavailable": "Beberapa kepemilikan ini tidak memiliki harga intrahari, jadi grafik satu hari tidak dapat dibuat. Pilih jangka waktu lebih panjang di Sesuaikan."
   },
   "favouriteAccounts": {
     "title": "Akun Favorit",
@@ -181,6 +213,24 @@
     "reset": "Atur ulang ke bawaan",
     "toasts": {
       "saveFailed": "Gagal menyimpan tata letak dasbor"
+    },
+    "hero": {
+      "title": "Hero dasbor",
+      "description": "Angka dan grafik di bawah sapaan: kekayaan bersih atau portofolio Anda.",
+      "show": "Tampilkan hero dasbor",
+      "range": "Grafik",
+      "set": "Tampilkan",
+      "sets": {
+        "netWorth": "Kekayaan bersih",
+        "portfolio": "Nilai portofolio"
+      },
+      "metric": "Angka",
+      "metrics": {
+        "simpleReturn": "Imbal Hasil Sederhana",
+        "twr": "TWR",
+        "mwr": "MWR",
+        "cagr": "CAGR"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "Deskripsi",
     "descriptionPlaceholder": "Tambahkan deskripsi opsional",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

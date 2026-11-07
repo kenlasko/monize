@@ -10,6 +10,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { createLogger } from '@/lib/logger';
 import { aggregateGroupedTotals, DisplayCurrencyStrategy } from './widget-shared';
+import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 const logger = createLogger('TagKeyBreakdownChart');
 
@@ -46,7 +47,7 @@ function ChartTooltip({
   if (active && payload && payload.length) {
     const d = payload[0].payload;
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100">{d.name}</p>
         <p className="text-gray-600 dark:text-gray-400">
           {fmt(d.value)} ({formatPercent(d.percentage, 1)})
@@ -160,7 +161,7 @@ export function TagKeyBreakdownChart({ tagKey, params }: TagKeyBreakdownChartPro
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         {heading}
         <div className="h-64 flex items-center justify-center">
-          <div className="animate-pulse w-48 h-48 rounded-full bg-gray-200 dark:bg-gray-700" />
+          <div className="animate-pulse skeleton-shimmer w-48 h-48 rounded-full bg-gray-200 dark:bg-gray-700" />
         </div>
       </div>
     );

@@ -109,7 +109,7 @@ export function CashFlowForecastWidget({
       {loading ? (
         <div
           data-testid="cash-flow-forecast-widget-loading"
-          className="flex-1 min-h-[288px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50"
+          className="flex-1 min-h-[288px] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50"
         />
       ) : futureError ? (
         // Never a forecast without the future-dated rows: it would project

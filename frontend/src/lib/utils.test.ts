@@ -260,6 +260,11 @@ describe('formatChartDate', () => {
     expect(formatChartDate('2026-06-15', 'yyyy', 'en-US')).toBe('2026');
   });
 
+  it('formats a long weekday date in the locale\'s own order', () => {
+    expect(formatChartDate('2026-11-06', 'EEEE MMMM d', 'en-US')).toBe('Friday, November 6');
+    expect(formatChartDate('2026-11-06', 'EEEE MMMM d', 'en-GB')).toBe('Friday 6 November');
+  });
+
   it('falls back to the runtime default locale when none is given', () => {
     const result = formatChartDate('2026-01-15', 'MMM');
     expect(typeof result).toBe('string');

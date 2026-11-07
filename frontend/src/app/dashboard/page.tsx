@@ -26,7 +26,7 @@ import { TopMover, PortfolioSummary, FavouriteSecurityQuote } from '@/types/inve
 import { MonthlyNetWorth } from '@/types/net-worth';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Button } from '@/components/ui/Button';
+import { HOVER_TOOLBAR_BUTTON } from '@/components/ui/Card';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { usePriceRefresh } from '@/hooks/usePriceRefresh';
@@ -34,6 +34,10 @@ import { createLogger } from '@/lib/logger';
 import { incompleteHoldingAccountIds as incompleteHoldingAccountIdsOf } from '@/lib/logical-accounts';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { TourBanner } from '@/components/dashboard/TourBanner';
+import { DashboardHero } from '@/components/dashboard/DashboardHero';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
+import { greetingPeriod } from '@/lib/greeting';
 
 const logger = createLogger('Dashboard');
 
@@ -58,6 +62,12 @@ function DashboardContent() {
   // path), so wait until the store has hydrated before firing.
   const authHydrated = useAuthStore((s) => s._hasHydrated);
   const dashboardWidgets = usePreferencesStore((s) => s.preferences?.dashboardWidgets);
+  const timezonePref = usePreferencesStore((s) => s.preferences?.timezone);
+  const today = useFinancialToday();
+  const formatChartDate = useChartDateFormat();
+  // The moment the page opened, read once: the greeting does not change under
+  // the reader while the page stays open.
+  const [openedAt] = useState(() => new Date());
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
@@ -230,6 +240,13 @@ function DashboardContent() {
     }
   }, [hasInvestments, isLoading, triggerAutoRefresh]);
 
+  // The accounts the hero's portfolio set offers, as the Portfolio Value
+  // widget offers them.
+  const portfolioAccounts = useMemo(
+    () => accounts.filter((a) => a.accountType === 'INVESTMENT'),
+    [accounts],
+  );
+
   const widgetContext: DashboardWidgetContext = {
     accounts,
     scheduledTransactions,
@@ -259,33 +276,57 @@ function DashboardContent() {
     [isDelegateView, delegateSections, dashboardWidgets],
   );
 
+  // The greeting for the part of the day, and today's date. They are the
+  // page header whether or not the hero below them is on.
+  const period = greetingPeriod(openedAt, timezonePref);
+  const pageTitle = user?.firstName
+    ? t(`page.greeting.${period}WithName`, { name: user.firstName })
+    : t(`page.greeting.${period}`);
+  const pageSubtitle = formatChartDate(today, 'EEEE MMMM d');
+
+  const header = (
+    <PageHeader
+      title={pageTitle}
+      subtitle={pageSubtitle}
+      help='dashboard'
+      titleAdornment={
+        !isDelegateView ? (
+          <button
+            type="button"
+            {...tourAnchor(TOUR_ANCHORS.dashboardCustomize)}
+            onClick={() => setShowCustomize(true)}
+            aria-label={t('customize.button')}
+            title={t('customize.button')}
+            className={`p-1.5 rounded-md text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${HOVER_TOOLBAR_BUTTON}`}
+          >
+            <Cog6ToothIcon className="h-5 w-5" aria-hidden="true" />
+          </button>
+        ) : undefined
+      }
+    />
+  );
+
   return (
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <div className="sm:px-0">
           <TourBanner />
-          {/* Welcome section */}
-          <PageHeader
-            title={user?.firstName ? t('page.welcomeWithName', { name: user.firstName }) : `${t('page.welcomePrefix')}!`}
-            subtitle={t('page.subtitle')}
-            help='dashboard'
-            compactMobileActions
-            actions={
-              !isDelegateView ? (
-                <Button
-                  {...tourAnchor(TOUR_ANCHORS.dashboardCustomize)}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowCustomize(true)}
-                  aria-label={t('customize.button')}
-                  className="gap-2"
-                >
-                  <Cog6ToothIcon className="h-4 w-4" aria-hidden="true" />
-                  <span className="hidden sm:inline">{t('customize.button')}</span>
-                </Button>
-              ) : undefined
-            }
-          />
+          {/* The greeting, with Customize as a gear beside it. The hero holds
+              it in its figures column so the net worth chart can sit beside
+              the greeting. A delegate sees only the sections they were
+              granted; the net worth figures are not one of them, so for a
+              delegate the header stands alone. */}
+          {isDelegateView ? (
+            header
+          ) : (
+            <DashboardHero
+              portfolioSummary={portfolioSummary}
+              hasInvestments={hasInvestments}
+              isLoading={isLoading}
+              investmentAccounts={portfolioAccounts}
+              header={header}
+            />
+          )}
 
           {!isDelegateView && <GettingStarted />}
 
@@ -305,6 +346,7 @@ function DashboardContent() {
             <CustomizeDashboardModal
               isOpen={showCustomize}
               onClose={() => setShowCustomize(false)}
+              investmentAccounts={portfolioAccounts}
             />
           )}
         </div>

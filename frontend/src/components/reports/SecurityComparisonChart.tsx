@@ -20,7 +20,7 @@ import {
   PerformanceExclusionReason,
   PerformanceSeriesRef,
 } from '@/types/investment';
-import { CHART_SERIES, chartColors, chartSeriesColor } from '@/lib/chart-colors';
+import { CHART_SERIES, chartSeriesColor } from '@/lib/chart-colors';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { parseLocalDate, type ChartDatePattern } from '@/lib/utils';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
@@ -28,6 +28,8 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { buildTimeAxisTicks } from '@/lib/chart-time-axis';
 import { resolvePdfColor } from '@/components/reports/resolve-pdf-color';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 /** A security plotted as one line, with its assigned palette colour. */
 export interface PerformanceSeries {
@@ -295,7 +297,7 @@ export function SecurityComparisonChart({
         <div className="h-96">
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <LineChart data={rows}>
-              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+              <CartesianGrid {...CHART_GRID_PROPS} />
               <XAxis
                 dataKey="ts"
                 type="number"
@@ -326,7 +328,7 @@ export function SecurityComparisonChart({
                     }))
                     .sort((a, b) => b.value - a.value);
                   return (
-                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 max-h-64 overflow-y-auto">
+                    <div className={`${CHART_TOOLTIP_CLASS} max-h-64 overflow-y-auto`}>
                       <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
                         {formatChartDate(new Date(ts), 'MMM d, yyyy')}
                       </p>
@@ -345,6 +347,7 @@ export function SecurityComparisonChart({
               <Legend />
               {series.map((s) => (
                 <Line
+                  activeDot={ChartActiveDot}
                   key={s.key}
                   type="monotone"
                   dataKey={s.key}

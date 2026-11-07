@@ -47,6 +47,9 @@ import {
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { createLogger } from '@/lib/logger';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { ChartAreaGradient } from '@/components/ui/ChartAreaGradient';
 
 const logger = createLogger('NetWorthReport');
 
@@ -62,7 +65,7 @@ function NetWorthTooltip({ active, payload, formatCurrency }: NetWorthTooltipPro
   if (active && payload && payload.length) {
     const data = payload[0]?.payload;
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{data?.name}</p>
         {payload.map((entry, index) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>
@@ -89,7 +92,7 @@ function CompositionTooltip({ active, payload, formatCurrency, formatPercent, t 
     // A withheld month has no split to print: a subtotal would read as a total.
     if (data?.Assets == null || data?.Liabilities == null) {
       return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+        <div className={CHART_TOOLTIP_CLASS}>
           <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{data?.name}</p>
           <p className="text-sm text-gray-600 dark:text-gray-400 max-w-56">{t('netWorth.partialMonth')}</p>
         </div>
@@ -100,7 +103,7 @@ function CompositionTooltip({ active, payload, formatCurrency, formatPercent, t 
     const total = assets + liabilities;
     const pct = (value: number) => (total > 0 ? formatPercent(((value / total) * 100), 1) : '0%');
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{data?.name}</p>
         <p className="text-sm" style={{ color: chartColors.income }}>
           {t('netWorth.colAssets')}: {formatCurrency(assets)} ({pct(assets)})
@@ -613,12 +616,9 @@ export function NetWorthReport() {
               {chartType === 'line' ? (
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorNetWorth" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={chartColors.primary} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={chartColors.primary} stopOpacity={0} />
-                  </linearGradient>
+                  <ChartAreaGradient id="colorNetWorth" color={chartColors.primary} />
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis
                   dataKey="sortKey"
                   tick={{ fontSize: 12 }}
@@ -634,6 +634,7 @@ export function NetWorthReport() {
                 <Legend />
                 <ReferenceLine y={0} stroke={chartColors.axis} strokeDasharray="3 3" />
                 <Area
+                  activeDot={ChartActiveDot}
                   type="monotone"
                   // A withheld month is a gap, never a segment drawn through it.
                   connectNulls={false}
@@ -669,7 +670,7 @@ export function NetWorthReport() {
               </AreaChart>
               ) : (
               <BarChart data={chartData} stackOffset="expand" margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis
                   dataKey="sortKey"
                   tick={{ fontSize: 12 }}

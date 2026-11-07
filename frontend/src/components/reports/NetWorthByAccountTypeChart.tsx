@@ -24,6 +24,8 @@ import {
   netWorthStackTop,
 } from '@/lib/net-worth-account-types';
 import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 /**
  * How the bars are drawn: one solid bar of net worth a month, or stacked by
@@ -162,7 +164,7 @@ export function NetWorthByAccountTypeChart({
   return (
     <ResponsiveContainer width="100%" height="100%" minWidth={0}>
       <ComposedChart data={data as NetWorthByAccountTypePoint[]} stackOffset="sign" margin={margin}>
-        <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+        <CartesianGrid {...CHART_GRID_PROPS} />
         <XAxis
           dataKey="key"
           tick={{ fill: chartColors.axis, fontSize: fontSize ?? 12 }}
@@ -207,6 +209,7 @@ export function NetWorthByAccountTypeChart({
         )}
         {types.length > 0 && (
           <Line
+            activeDot={ChartActiveDot}
             dataKey="netWorth"
             name={netWorthLabel}
             stroke={NET_WORTH_LINE_COLOR}

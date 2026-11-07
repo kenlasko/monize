@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "Witaj",
-    "welcomeWithName": "Witaj, {name}!",
-    "subtitle": "Oto przegląd Twoich finansów"
+    "greeting": {
+      "morning": "Dzień dobry",
+      "morningWithName": "Dzień dobry, {name}",
+      "afternoon": "Dzień dobry",
+      "afternoonWithName": "Dzień dobry, {name}",
+      "evening": "Dobry wieczór",
+      "eveningWithName": "Dobry wieczór, {name}"
+    }
+  },
+  "hero": {
+    "label": "Podsumowanie wartości netto",
+    "netWorth": "Wartość netto",
+    "changeThisMonth": "<dir>{direction, select, up {Wzrost o} other {Spadek o}}</dir> {amount} w tym miesiącu",
+    "changeThisMonthWithPercent": "<dir>{direction, select, up {Wzrost o} other {Spadek o}}</dir> {amount} · {percent} w tym miesiącu",
+    "assets": "<strong><value></value></strong> aktywów",
+    "liabilities": "<strong><value></value></strong> zobowiązań",
+    "invested": "<strong><value></value></strong> zainwestowane",
+    "investedUnpriced": "Brak bieżącej ceny dla {symbols}, więc te pozycje nie są uwzględnione. Odśwież ceny na stronie Inwestycje lub dodaj cenę w historii cen papieru.",
+    "portfolioLabel": "Podsumowanie portfela",
+    "portfolioValueFor": "Wartość portfela <names>({accounts})</names>",
+    "portfolioEmpty": "Brak kont inwestycyjnych. Dodaj konto, aby zobaczyć tutaj portfel.",
+    "portfolioLoadFailed": "Nie udało się wczytać portfela. Odśwież pulpit, aby spróbować ponownie.",
+    "portfolioChangeFailed": "Nie udało się wczytać zmiany w tym okresie. Odśwież pulpit, aby spróbować ponownie.",
+    "changeOverWindow": "<dir>{direction, select, up {Wzrost o} other {Spadek o}}</dir> {amount} · {window}",
+    "holdings": "<strong><value></value></strong> w pozycjach",
+    "cash": "<strong><value></value></strong> w gotówce",
+    "metricLine": "<strong><value></value></strong> {metric}",
+    "metricNames": {
+      "simpleReturn": "Prosta stopa zwrotu",
+      "twr": "TWR",
+      "mwr": "MWR",
+      "cagr": "CAGR"
+    },
+    "cagrUnavailable": "CAGR wymaga co najmniej roku historii inwestycji na tych kontach, z wpłatami większymi niż wypłaty.",
+    "intradayUnavailable": "Część pozycji nie ma cen śróddziennych, więc nie można narysować wykresu jednodniowego. Wybierz dłuższy okres w Dostosuj."
   },
   "favouriteAccounts": {
     "title": "Ulubione konta",
@@ -181,6 +213,24 @@
     "reset": "Przywróć domyślne",
     "toasts": {
       "saveFailed": "Nie udało się zapisać układu pulpitu"
+    },
+    "hero": {
+      "title": "Nagłówek pulpitu",
+      "description": "Liczby i wykres pod powitaniem: Twoja wartość netto lub portfel.",
+      "show": "Pokaż nagłówek pulpitu",
+      "range": "Wykres",
+      "set": "Pokaż",
+      "sets": {
+        "netWorth": "Wartość netto",
+        "portfolio": "Wartość portfela"
+      },
+      "metric": "Wskaźnik",
+      "metrics": {
+        "simpleReturn": "Prosta stopa zwrotu",
+        "twr": "TWR",
+        "mwr": "MWR",
+        "cagr": "CAGR"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "Opis",
     "descriptionPlaceholder": "Dodaj opcjonalny opis",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

@@ -48,6 +48,7 @@ import { useMainAccountName } from '@/hooks/useMainAccountName';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 type SeriesKey = 'dividends' | 'interest' | 'capitalGains';
 type MonthlyIncomeSortField = 'month' | 'startValue' | 'endValue' | 'dividends' | 'interest' | 'capitalGains' | 'total';
@@ -109,7 +110,7 @@ function DividendIncomeTooltip({ active, payload, label, fmtValue }: DividendInc
     // Recharts can pass a Cell-coloured payload entry; surface signed values
     // and use the original series colour rather than the per-bar Cell colour.
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{label}</p>
         {payload.map((entry, index) => {
           const seriesKey = entry.dataKey as SeriesKey | undefined;
@@ -1294,7 +1295,7 @@ export function DividendIncomeReport() {
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                 <YAxis tickFormatter={formatCurrencyAxis} />
                 <Tooltip content={<DividendIncomeTooltip fmtValue={fmtValue} />} />
@@ -1502,7 +1503,7 @@ export function DividendIncomeReport() {
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={displayedDailyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <CartesianGrid {...CHART_GRID_PROPS} />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={formatCurrencyAxis} />
                   <Tooltip content={<DividendIncomeTooltip fmtValue={fmtValue} />} />

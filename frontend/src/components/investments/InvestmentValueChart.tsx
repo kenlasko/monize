@@ -22,6 +22,7 @@ import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useDateRange } from '@/hooks/useDateRange';
 import { usePortfolioRangeWindow } from '@/hooks/usePortfolioRangeWindow';
 import { PORTFOLIO_CHART_RANGES } from '@/components/investments/portfolio-range-window';
+import { PORTFOLIO_DAILY_RANGES, isInvestedPointComplete } from '@/components/investments/portfolio-value-series';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { usePortfolioPeriodResult } from '@/hooks/usePortfolioPeriodResult';
@@ -60,6 +61,9 @@ import {
   hasIncompleteData,
   type IncompleteDataCauses,
 } from '@/lib/incomplete-data-ranges';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { ChartAreaGradient } from '@/components/ui/ChartAreaGradient';
 
 const NO_INCOMPLETE_DATA: IncompleteDataCauses = { prices: [], rates: [], cash: [] };
 
@@ -72,22 +76,8 @@ function investedCauses(points: Parameters<typeof foldIncompleteData>[0]): Incom
   return { ...foldIncompleteData(points), cash: [] };
 }
 
-/**
- * Whether a point's INVESTED value is one the server could work out. The chart
- * plots the securities alone, so a cash account with no balance for the day
- * (`cashComplete`) cannot make it wrong and is not read. Absent flags are no
- * information, which is why both reads are `=== false`.
- */
-function isInvestedPointComplete(point: {
-  pricesComplete?: boolean;
-  fxComplete?: boolean;
-}): boolean {
-  return point.pricesComplete !== false && point.fxComplete !== false;
-}
-
 const logger = createLogger('InvestmentChart');
 
-const DAILY_RANGES = new Set(['1w', 'mtd', '1m', '3m', 'ytd', '1y', '2y']);
 
 /**
  * The page-level Refresh button broadcasts this event so the chart can clear
@@ -109,7 +99,7 @@ function InvestmentValueTooltip({ active, payload, portfolioLabel, formatValue, 
   if (active && payload && payload.length) {
     const data = payload[0]?.payload;
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{data?.name}</p>
         <p className="text-sm text-emerald-600 dark:text-emerald-400">
           {portfolioLabel}{' '}
@@ -203,7 +193,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
 
   const intradayRange = isIntradayRange(dateRange) ? dateRange : null;
   const isIntraday = intradayRange !== null;
-  const useDaily = !isIntraday && DAILY_RANGES.has(dateRange);
+  const useDaily = !isIntraday && PORTFOLIO_DAILY_RANGES.has(dateRange);
 
   // A price series opens on the close it is measured from, which is not the
   // period the range names -- see `portfolio-range-window.ts`.
@@ -676,7 +666,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
   if (isLoading && chartPoints.length === 0 && !intradayUnavailable) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
-        <div className="animate-pulse space-y-4">
+        <div className="animate-pulse skeleton-shimmer space-y-4">
           <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
           <div className="h-80 bg-gray-200 dark:bg-gray-700 rounded" />
         </div>
@@ -936,13 +926,10 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
               }
             >
               <defs>
-                <linearGradient id="colorInvestments" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={chartColors.income} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={chartColors.income} stopOpacity={0} />
-                </linearGradient>
+                <ChartAreaGradient id="colorInvestments" color={chartColors.income} />
               </defs>
               <ChartFlagShadowFilter />
-              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+              <CartesianGrid {...CHART_GRID_PROPS} />
               <XAxis
                 dataKey="name"
                 tick={{ fontSize: 12 }}
@@ -990,7 +977,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
                 fill="url(#colorInvestments)"
                 name="Portfolio Value"
                 isAnimationActive={false}
-                activeDot={{ r: 4, fill: chartColors.income }}
+                activeDot={ChartActiveDot}
                 dot={(props: { cx?: number; cy?: number; index?: number }) => {
                   const { cx, cy, index } = props;
                   if (cx == null || cy == null || index == null) {

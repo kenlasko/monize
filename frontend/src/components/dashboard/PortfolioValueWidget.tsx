@@ -48,6 +48,9 @@ import {
   PORTFOLIO_RANGES,
   PortfolioValueConfig,
 } from './widget-config';
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { ChartAreaGradient } from '@/components/ui/ChartAreaGradient';
 
 const WIDGET_ID = 'portfolio-value';
 
@@ -357,7 +360,7 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
         </div>
       </div>
       {loading ? (
-        <div className="flex-1 min-h-[260px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
+        <div className="flex-1 min-h-[260px] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : chartData.length === 0 ? (
         <WidgetMessage>{t('portfolioValue.empty')}</WidgetMessage>
       ) : (
@@ -365,12 +368,9 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <AreaChart data={chartData} margin={{ left: 4, right: 8, top: 4 }}>
               <defs>
-                <linearGradient id="portfolioValueGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={chartColors.primary} stopOpacity={0.35} />
-                  <stop offset="95%" stopColor={chartColors.primary} stopOpacity={0} />
-                </linearGradient>
+                <ChartAreaGradient id="portfolioValueGradient" color={chartColors.primary} />
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+              <CartesianGrid {...CHART_GRID_PROPS} />
               <XAxis
                 dataKey="date"
                 tickFormatter={(value) => chartData.find((d) => d.date === value)?.label ?? String(value)}
@@ -397,6 +397,7 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
                 }}
               />
               <Area
+                activeDot={ChartActiveDot}
                 type="monotone"
                 dataKey="value"
                 stroke={chartColors.primary}

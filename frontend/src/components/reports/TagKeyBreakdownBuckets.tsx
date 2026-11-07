@@ -22,6 +22,7 @@ import { chartColors } from '@/lib/chart-colors';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { IncomeExpenseTagBucket } from '@/types/built-in-reports';
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
 
 interface TagKeyBreakdownBucketsProps {
   /** The KEY the caller broke the report down by (e.g. "scope"), for the heading. */
@@ -132,7 +133,7 @@ export function TagKeyBreakdownBuckets({
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <CartesianGrid {...CHART_GRID_PROPS} />
                   <XAxis
                     dataKey="name"
                     tick={{ fontSize: 12 }}

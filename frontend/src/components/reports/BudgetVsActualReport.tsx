@@ -42,6 +42,8 @@ import { budgetFundsSeries, trendWindow } from '@/lib/budget-available-funds';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { gainLossColor } from '@/lib/format';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 const INCLUDE_TRANSFERS_STORAGE_KEY = 'monize-reports-budget-vs-actual-include-transfers';
 // The budget's own actual is not account-scoped, so the funding fetch is not
@@ -387,7 +389,7 @@ export function BudgetVsActualReport() {
   const defaultTooltip = ({ active, payload, label }: { active?: boolean; payload?: readonly any[]; label?: unknown }) => {
     if (!active || !payload || payload.length === 0) return null;
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{formatChartMonth(String(label))}</p>
         {payload.map((entry, idx) => (
           <p key={(entry.dataKey as string) ?? entry.name ?? idx} className="text-sm" style={{ color: entry.color }}>
@@ -480,7 +482,7 @@ export function BudgetVsActualReport() {
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <CartesianGrid {...CHART_GRID_PROPS} />
                     <XAxis dataKey="monthKey" tick={{ fontSize: 12 }} tickFormatter={(value: string) => formatChartMonth(value)} />
                     <YAxis tickFormatter={(v) => formatCurrency(v)} tick={{ fontSize: 12 }} />
                     <Tooltip content={tooltipContent} />
@@ -505,7 +507,7 @@ export function BudgetVsActualReport() {
                 <div className="h-48">
                   <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <LineChart data={trendData}>
-                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <CartesianGrid {...CHART_GRID_PROPS} />
                       <XAxis dataKey="monthKey" tick={{ fontSize: 12 }} tickFormatter={(value: string) => formatChartMonth(value)} />
                       <YAxis tickFormatter={(v) => formatCurrency(v)} tick={{ fontSize: 12 }} />
                       <Tooltip
@@ -513,7 +515,7 @@ export function BudgetVsActualReport() {
                           if (!active || !payload) return null;
                           const variance = payload[0]?.value as number;
                           return (
-                            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+                            <div className={CHART_TOOLTIP_CLASS}>
                               <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatChartMonth(String(label))}</p>
                               <p className={`text-sm font-medium ${gainLossColor(-variance)}`}>
                                 {t('budgetVsActual.tooltipVariance')} {variance > 0 ? '+' : ''}{formatCurrency(variance)}
@@ -523,6 +525,7 @@ export function BudgetVsActualReport() {
                         }}
                       />
                       <Line
+                        activeDot={ChartActiveDot}
                         type="monotone"
                         dataKey="variance"
                         stroke={chartColors.warning}

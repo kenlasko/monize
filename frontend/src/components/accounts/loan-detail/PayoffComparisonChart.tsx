@@ -24,6 +24,8 @@ import { ExportIconButton } from '@/components/ui/ExportIconButton';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { CHART_MAX_POINTS, sampleStockSeries } from '@/lib/chart-sampling';
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 export interface PayoffChartPoint {
   /** Month key (yyyy-MM), formatted for display by the chart */
@@ -276,7 +278,7 @@ export function PayoffComparisonChart({
       <div className="h-80" ref={chartRef}>
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <AreaChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+            <CartesianGrid {...CHART_GRID_PROPS} />
             <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
             <YAxis
               tickFormatter={formatCurrencyAxis}
@@ -307,6 +309,7 @@ export function PayoffComparisonChart({
             <Legend />
             {original && (
               <Area
+                activeDot={ChartActiveDot}
                 type="monotone"
                 dataKey="originalBalance"
                 stroke={chartColors.axis}
@@ -319,6 +322,7 @@ export function PayoffComparisonChart({
               />
             )}
             <Area
+              activeDot={ChartActiveDot}
               type="monotone"
               dataKey="historicalBalance"
               stroke={chartColors.expense}
@@ -337,6 +341,7 @@ export function PayoffComparisonChart({
             />
             {baseline && (
               <Area
+                activeDot={ChartActiveDot}
                 type="monotone"
                 dataKey="baselineBalance"
                 stroke={chartColors.primary}
@@ -350,6 +355,7 @@ export function PayoffComparisonChart({
             )}
             {scenario && (
               <Area
+                activeDot={ChartActiveDot}
                 type="monotone"
                 dataKey="scenarioBalance"
                 stroke={chartColors.income}

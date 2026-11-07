@@ -74,6 +74,14 @@ describe('Button', () => {
     expect(button.className).toContain('my-custom-class');
   });
 
+  it('sinks slightly when pressed, unless disabled or under reduced motion', () => {
+    render(<Button>Press</Button>);
+    const classes = screen.getByRole('button').className.split(/\s+/);
+    expect(classes).toContain('not-disabled:active:scale-[0.98]');
+    expect(classes).toContain('motion-reduce:not-disabled:active:scale-100');
+    expect(classes).toContain('motion-reduce:transition-none');
+  });
+
   it('forwards ref', () => {
     const ref = vi.fn();
     render(<Button ref={ref}>Ref</Button>);

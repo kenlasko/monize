@@ -42,7 +42,7 @@ export function CashFlowMiniReport({ monthly, currencyCode, isLoading }: CashFlo
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('cashFlow.subtitle')}</p>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         {isLoading ? (
-          <div className="h-40 rounded bg-gray-100 dark:bg-gray-700 animate-pulse" />
+          <div className="h-40 rounded bg-gray-100 dark:bg-gray-700 animate-pulse skeleton-shimmer" />
         ) : rows.length === 0 || max === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
             {t('cashFlow.empty')}
