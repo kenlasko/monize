@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Не удалось открыть этот файл Microsoft Money",
     "docsNotice": {
       "title": "Перед импортом",
-      "body": "Прежде чем что-либо импортировать, прочитайте раздел документации <money>Importing from Microsoft Money</money> или <quicken>Importing from Quicken</quicken>."
+      "body": "Прежде чем что-либо импортировать, прочитайте раздел документации <money>Importing from Microsoft Money</money> или <quicken>Importing from Quicken</quicken>. У файлов OFX/QFX и QIF есть свои особенности -- см. <ofx>Importing OFX/QFX Files</ofx> и <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "например, ДД.ММ.ГГГГ",
     "dataPreview": "Предпросмотр данных",
     "columnMappingTitle": "Сопоставление столбцов",
+    "columnMappingHelp": "Сопоставьте каждый столбец CSV с полем транзакции. Дата, Тип суммы и либо Сумма, либо Дебет/Кредит обязательны; остальное необязательно.",
     "dateField": "Дата",
     "amountTypeField": "Тип суммы",
     "singleAmountOption": "Один столбец суммы",
     "splitAmountOption": "Раздельные дебет/кредит",
     "amountField": "Сумма",
     "signField": "Знак",
+    "signFieldHelp": "Как читается знак суммы: «Как есть» считает положительное число депозитом, «Обратный» считает его списанием (используйте для выписок по кредитной карте, где списания указаны как положительные), а столбец типа транзакции определяет направление по собственным значениям, а не по знаку.",
     "signNormal": "Как есть (положительное = пополнение)",
     "signReverse": "Инвертировать (положительное = списание)",
     "signTypeColumn": "Использовать столбец типа проводки",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "Импорт не завершён",
     "retry": "Повторить",
-    "startOver": "Начать заново"
+    "startOver": "Начать заново",
+    "learnMore": "Подробнее"
   },
   "mnyComplete": {
     "heading": "Импорт завершён",

@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Berkas Microsoft Money itu tidak dapat dibuka",
     "docsNotice": {
       "title": "Sebelum Anda mengimpor",
-      "body": "Baca bagian <money>Importing from Microsoft Money</money> atau <quicken>Importing from Quicken</quicken> di dokumentasi sebelum mengimpor apa pun."
+      "body": "Baca bagian <money>Importing from Microsoft Money</money> atau <quicken>Importing from Quicken</quicken> di dokumentasi sebelum mengimpor apa pun. File OFX/QFX dan QIF masing-masing memiliki keunikan tersendiri -- lihat <ofx>Importing OFX/QFX Files</ofx> dan <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "mis. DD.MM.YYYY",
     "dataPreview": "Pratinjau Data",
     "columnMappingTitle": "Pemetaan Kolom",
+    "columnMappingHelp": "Petakan setiap kolom CSV ke bidang transaksi. Tanggal, Jenis jumlah, dan salah satu dari Jumlah atau Debit/Kredit wajib diisi; sisanya opsional.",
     "dateField": "Tanggal",
     "amountTypeField": "Jenis jumlah",
     "singleAmountOption": "Satu kolom jumlah",
     "splitAmountOption": "Debit/kredit terpisah",
     "amountField": "Jumlah",
     "signField": "Tanda",
+    "signFieldHelp": "Cara tanda jumlah dibaca: 'Apa adanya' memperlakukan angka positif sebagai setoran, 'Balik' memperlakukannya sebagai penarikan (gunakan untuk laporan kartu kredit di mana tagihan muncul sebagai positif), dan kolom jenis transaksi menentukan arah dari nilainya sendiri, bukan dari tandanya.",
     "signNormal": "Apa adanya (positif = setoran)",
     "signReverse": "Dibalik (positif = penarikan)",
     "signTypeColumn": "Gunakan kolom jenis transaksi",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "Impor tidak selesai",
     "retry": "Coba lagi",
-    "startOver": "Mulai dari awal"
+    "startOver": "Mulai dari awal",
+    "learnMore": "Pelajari lebih lanjut"
   },
   "mnyComplete": {
     "heading": "Impor selesai",

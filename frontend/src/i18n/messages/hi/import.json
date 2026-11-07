@@ -49,7 +49,7 @@
     "mnyFailedHeading": "यह Microsoft Money फ़ाइल खोली नहीं जा सकी",
     "docsNotice": {
       "title": "आयात करने से पहले",
-      "body": "कुछ भी आयात करने से पहले दस्तावेज़ का <money>Importing from Microsoft Money</money> या <quicken>Importing from Quicken</quicken> अनुभाग पढ़ें।"
+      "body": "कुछ भी आयात करने से पहले दस्तावेज़ का <money>Importing from Microsoft Money</money> या <quicken>Importing from Quicken</quicken> अनुभाग पढ़ें। OFX/QFX और QIF फ़ाइलों की अपनी-अपनी खासियतें हैं -- देखें <ofx>Importing OFX/QFX Files</ofx> और <qif>Importing Quicken QIF Files</qif>।"
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "जैसे DD.MM.YYYY",
     "dataPreview": "डेटा पूर्वावलोकन",
     "columnMappingTitle": "कॉलम मैपिंग",
+    "columnMappingHelp": "हर CSV कॉलम को किसी ट्रांज़ैक्शन फ़ील्ड से मैप करें। तारीख़, राशि का प्रकार, और Amount या Debit/Credit में से कोई एक आवश्यक है; बाकी वैकल्पिक हैं।",
     "dateField": "दिनांक",
     "amountTypeField": "राशि प्रकार",
     "singleAmountOption": "एकल राशि कॉलम",
     "splitAmountOption": "अलग डेबिट/क्रेडिट",
     "amountField": "राशि",
     "signField": "चिह्न",
+    "signFieldHelp": "राशि के चिह्न को कैसे पढ़ा जाता है: 'जैसा है' एक सकारात्मक संख्या को जमा मानता है, 'उलटें' उसे निकासी मानता है (क्रेडिट कार्ड स्टेटमेंट के लिए उपयोगी, जहाँ शुल्क सकारात्मक दिखते हैं), और एक ट्रांज़ैक्शन-टाइप कॉलम चिह्न के बजाय अपने ही मानों से दिशा तय करता है।",
     "signNormal": "यथावत (सकारात्मक = जमा)",
     "signReverse": "उल्टा (सकारात्मक = निकासी)",
     "signTypeColumn": "लेनदेन प्रकार कॉलम उपयोग करें",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "आयात पूरा नहीं हुआ",
     "retry": "फिर से प्रयास करें",
-    "startOver": "नए सिरे से शुरू करें"
+    "startOver": "नए सिरे से शुरू करें",
+    "learnMore": "अधिक जानें"
   },
   "mnyComplete": {
     "heading": "आयात पूरा हुआ",

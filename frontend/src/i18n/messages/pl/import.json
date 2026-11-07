@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Nie udało się otworzyć tego pliku Microsoft Money",
     "docsNotice": {
       "title": "Zanim zaimportujesz",
-      "body": "Zanim cokolwiek zaimportujesz, przeczytaj w dokumentacji sekcję <money>Importing from Microsoft Money</money> lub <quicken>Importing from Quicken</quicken>."
+      "body": "Zanim cokolwiek zaimportujesz, przeczytaj w dokumentacji sekcję <money>Importing from Microsoft Money</money> lub <quicken>Importing from Quicken</quicken>. Pliki OFX/QFX i QIF mają swoje własne osobliwości -- zobacz <ofx>Importing OFX/QFX Files</ofx> i <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "np. DD.MM.YYYY",
     "dataPreview": "Podgląd danych",
     "columnMappingTitle": "Mapowanie kolumn",
+    "columnMappingHelp": "Przypisz każdą kolumnę CSV do pola transakcji. Data, typ kwoty oraz Kwota albo Winien/Ma są wymagane; resztę można pominąć.",
     "dateField": "Data",
     "amountTypeField": "Typ kwoty",
     "singleAmountOption": "Pojedyncza kolumna kwoty",
     "splitAmountOption": "Osobne obciążenie/uznanie",
     "amountField": "Kwota",
     "signField": "Znak",
+    "signFieldHelp": "Jak jest odczytywany znak kwoty: „Bez zmian” traktuje liczbę dodatnią jako wpłatę, „Odwróć” traktuje ją jako wypłatę (przydatne w przypadku wyciągów z karty kredytowej, gdzie obciążenia są dodatnie), a kolumna typu transakcji decyduje o kierunku na podstawie własnych wartości, a nie znaku.",
     "signNormal": "Bez zmian (dodatnia = wpłata)",
     "signReverse": "Odwróć (dodatnia = wypłata)",
     "signTypeColumn": "Użyj kolumny typu transakcji",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "Import nie został ukończony",
     "retry": "Spróbuj ponownie",
-    "startOver": "Zacznij od nowa"
+    "startOver": "Zacznij od nowa",
+    "learnMore": "Dowiedz się więcej"
   },
   "mnyComplete": {
     "heading": "Import zakończony",

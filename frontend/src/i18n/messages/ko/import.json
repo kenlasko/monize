@@ -49,7 +49,7 @@
     "mnyFailedHeading": "이 Microsoft Money 파일을 열 수 없습니다",
     "docsNotice": {
       "title": "가져오기 전에",
-      "body": "무엇이든 가져오기 전에 문서의 <money>Importing from Microsoft Money</money> 또는 <quicken>Importing from Quicken</quicken> 섹션을 먼저 읽어 보세요."
+      "body": "무엇이든 가져오기 전에 문서의 <money>Importing from Microsoft Money</money> 또는 <quicken>Importing from Quicken</quicken> 섹션을 먼저 읽어 보세요. OFX/QFX 파일과 QIF 파일은 각각 고유한 특이점이 있습니다 -- <ofx>Importing OFX/QFX Files</ofx> 및 <qif>Importing Quicken QIF Files</qif>를 참고하세요."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "예: DD.MM.YYYY",
     "dataPreview": "데이터 미리보기",
     "columnMappingTitle": "열 매핑",
+    "columnMappingHelp": "각 CSV 열을 거래 필드에 매핑합니다. 날짜, 금액 유형, 그리고 금액 또는 차변/대변 중 하나는 필수이며 나머지는 선택 사항입니다.",
     "dateField": "날짜",
     "amountTypeField": "금액 유형",
     "singleAmountOption": "단일 금액 열",
     "splitAmountOption": "차변/대변 분리",
     "amountField": "금액",
     "signField": "부호",
+    "signFieldHelp": "금액의 부호를 읽는 방법: '그대로'는 양수를 입금으로 처리하고, '반전'은 양수를 출금으로 처리합니다(청구액이 양수로 표시되는 신용카드 내역서에 유용합니다). 거래 유형 열을 사용하면 부호 대신 해당 열 자체의 값으로 방향이 결정됩니다.",
     "signNormal": "있는 그대로 (양수 = 입금)",
     "signReverse": "반전 (양수 = 출금)",
     "signTypeColumn": "거래 유형 열 사용",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "가져오기가 완료되지 않았습니다",
     "retry": "다시 시도",
-    "startOver": "처음부터 다시"
+    "startOver": "처음부터 다시",
+    "learnMore": "자세히 알아보기"
   },
   "mnyComplete": {
     "heading": "가져오기 완료",

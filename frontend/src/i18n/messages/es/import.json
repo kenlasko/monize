@@ -49,7 +49,7 @@
     "mnyFailedHeading": "No se pudo abrir ese archivo de Microsoft Money",
     "docsNotice": {
       "title": "Antes de importar",
-      "body": "Lee la sección <money>Importing from Microsoft Money</money> o <quicken>Importing from Quicken</quicken> de la documentación antes de importar nada."
+      "body": "Lee la sección <money>Importing from Microsoft Money</money> o <quicken>Importing from Quicken</quicken> de la documentación antes de importar nada. Los archivos OFX/QFX y QIF tienen cada uno sus propias particularidades -- consulta <ofx>Importing OFX/QFX Files</ofx> y <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "p. ej. DD.MM.YYYY",
     "dataPreview": "Vista Previa de Datos",
     "columnMappingTitle": "Mapeo de Columnas",
+    "columnMappingHelp": "Asigna cada columna del CSV a un campo de la transacción. Fecha, Tipo de importe y, o bien Importe, o bien Débito/Crédito, son obligatorios; el resto son opcionales.",
     "dateField": "Fecha",
     "amountTypeField": "Tipo de cantidad",
     "singleAmountOption": "Columna de cantidad única",
     "splitAmountOption": "Débito/crédito separado",
     "amountField": "Cantidad",
     "signField": "Signo",
+    "signFieldHelp": "Cómo se interpreta el signo del importe: «Tal cual» trata un número positivo como un depósito, «Invertir» lo trata como un retiro (útil para extractos de tarjeta de crédito donde los cargos aparecen como positivos), y una columna de tipo de transacción decide la dirección a partir de sus propios valores en lugar del signo.",
     "signNormal": "Tal cual (positivo = depósito)",
     "signReverse": "Invertir (positivo = retiro)",
     "signTypeColumn": "Usar columna de tipo de transacción",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "La importación no terminó",
     "retry": "Reintentar",
-    "startOver": "Empezar de nuevo"
+    "startOver": "Empezar de nuevo",
+    "learnMore": "Más información"
   },
   "mnyComplete": {
     "heading": "Importación finalizada",

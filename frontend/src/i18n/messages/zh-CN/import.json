@@ -49,7 +49,7 @@
     "mnyFailedHeading": "无法打开该 Microsoft Money 文件",
     "docsNotice": {
       "title": "导入之前",
-      "body": "在导入任何内容之前，请先阅读文档中的 <money>Importing from Microsoft Money</money> 或 <quicken>Importing from Quicken</quicken> 一节。"
+      "body": "在导入任何内容之前，请先阅读文档中的 <money>Importing from Microsoft Money</money> 或 <quicken>Importing from Quicken</quicken> 一节。OFX/QFX 和 QIF 文件各有各自的注意事项——请参阅 <ofx>Importing OFX/QFX Files</ofx> 和 <qif>Importing Quicken QIF Files</qif>。"
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "例如：DD.MM.YYYY",
     "dataPreview": "数据预览",
     "columnMappingTitle": "列映射",
+    "columnMappingHelp": "将每个 CSV 列映射到一个交易字段。日期、金额类型，以及金额或借方/贷方二者之一都是必填项；其余为可选项。",
     "dateField": "日期",
     "amountTypeField": "金额类型",
     "singleAmountOption": "单个金额列",
     "splitAmountOption": "分开的借方/贷方",
     "amountField": "金额",
     "signField": "符号",
+    "signFieldHelp": "金额符号的读取方式：“原样”将正数视为存入，“反转”将正数视为支出（适用于信用卡账单中扣费显示为正数的情况），而交易类型列则根据其自身的值而不是符号来决定方向。",
     "signNormal": "原样（正值 = 存款）",
     "signReverse": "反转（正值 = 提款）",
     "signTypeColumn": "使用交易类型列",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "导入未完成",
     "retry": "重试",
-    "startOver": "重新开始"
+    "startOver": "重新开始",
+    "learnMore": "了解详情"
   },
   "mnyComplete": {
     "heading": "导入完成",

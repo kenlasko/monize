@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Non è stato possibile aprire questo file Microsoft Money",
     "docsNotice": {
       "title": "Prima di importare",
-      "body": "Leggi la sezione <money>Importing from Microsoft Money</money> o <quicken>Importing from Quicken</quicken> della documentazione prima di importare qualsiasi cosa."
+      "body": "Leggi la sezione <money>Importing from Microsoft Money</money> o <quicken>Importing from Quicken</quicken> della documentazione prima di importare qualsiasi cosa. I file OFX/QFX e QIF hanno ciascuno le proprie particolarità -- vedi <ofx>Importing OFX/QFX Files</ofx> e <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "es. DD.MM.YYYY",
     "dataPreview": "Anteprima dati",
     "columnMappingTitle": "Mappatura colonne",
+    "columnMappingHelp": "Associa ogni colonna del CSV a un campo della transazione. Data, Tipo di importo e, in alternativa, Importo oppure Dare/Avere sono obbligatori; il resto è opzionale.",
     "dateField": "Data",
     "amountTypeField": "Tipo importo",
     "singleAmountOption": "Colonna importo unica",
     "splitAmountOption": "Debito/credito separati",
     "amountField": "Importo",
     "signField": "Segno",
+    "signFieldHelp": "Come viene letto il segno dell'importo: \"Come indicato\" considera un numero positivo come un deposito, \"Inverti\" lo considera come un prelievo (utile per gli estratti conto della carta di credito dove gli addebiti sono positivi), e una colonna di tipo di transazione decide la direzione dai propri valori invece che dal segno.",
     "signNormal": "Invariato (positivo = versamento)",
     "signReverse": "Inverso (positivo = prelievo)",
     "signTypeColumn": "Usa colonna tipo transazione",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "L'importazione non è stata completata",
     "retry": "Riprova",
-    "startOver": "Ricomincia"
+    "startOver": "Ricomincia",
+    "learnMore": "Scopri di più"
   },
   "mnyComplete": {
     "heading": "Importazione completata",
