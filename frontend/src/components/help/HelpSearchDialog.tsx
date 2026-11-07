@@ -166,25 +166,24 @@ export function HelpSearchDialog() {
         </div>
 
         {query === '' ? (
-          <>
-            {contextPage && items.length > 0 && (
-              <p className="px-1 text-xs font-medium text-gray-500 dark:text-gray-400">
-                {t('contextHeading')}
-              </p>
-            )}
-            <HelpSearchResultList id={listId} items={items} active={active} terms={terms} onChoose={choose} />
-          </>
+          contextPage &&
+          items.length > 0 && (
+            <p className="px-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+              {t('contextHeading')}
+            </p>
+          )
         ) : current === null ? (
           <LoadingSpinner />
         ) : failed ? (
           <p role="alert" className="px-1 text-sm text-red-600 dark:text-red-400">
             {t('error')}
           </p>
-        ) : items.length === 0 ? (
-          <p className="px-1 text-sm text-gray-500 dark:text-gray-400">{t('noResults', { query })}</p>
         ) : (
-          <HelpSearchResultList id={listId} items={items} active={active} terms={terms} onChoose={choose} />
+          items.length === 0 && (
+            <p className="px-1 text-sm text-gray-500 dark:text-gray-400">{t('noResults', { query })}</p>
+          )
         )}
+        <HelpSearchResultList id={listId} items={items} active={active} terms={terms} onChoose={choose} />
 
         <p className="px-1 text-xs text-gray-400 dark:text-gray-500">
           <kbd>&uarr;</kbd> <kbd>&darr;</kbd> {t('hint.navigate')} &middot; <kbd>Enter</kbd>{' '}

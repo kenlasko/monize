@@ -240,6 +240,26 @@ describe("searchHelp", () => {
     expect(results[0].excerpt).toContain("budgets");
   });
 
+  it("stays aligned even against a case-fold that changes length (Turkish İ), not only NFKD", () => {
+    // "İ".toLowerCase() is two UTF-16 units ("i" + a combining dot above),
+    // one longer than "İ" itself -- the same misalignment risk as the NFKD
+    // case above, from a plain case fold instead.
+    const lead = "x".repeat(50);
+    const dotted = "İ".repeat(80);
+    const tail = "y".repeat(50);
+    const sections = [
+      section({
+        page: "a",
+        section: "a",
+        text: `${lead}${dotted} budgets ${tail}`,
+      }),
+    ];
+
+    const { results } = searchHelp(sections, "budgets");
+
+    expect(results[0].excerpt).toContain("budgets");
+  });
+
   it("introduces no markup of its own: the excerpt is exactly a slice of the plain text given", () => {
     const sections = [
       section({

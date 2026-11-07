@@ -171,13 +171,23 @@ export class HelpService {
         fs.readFileSync(path.join(directory, "search-index.json"), "utf-8"),
       ) as IndexEntry[];
 
+      // Each index entry's slug and anchor, parsed once here and reused
+      // below for both the pages' tables of contents and the search
+      // sections, so a future change to `u`'s format has one place to fix.
+      const parsedIndex = index.map((entry) => {
+        const [pagePath, anchor] = entry.u.replace(/^\/docs\//, "").split("#");
+        return {
+          slug: pagePath === "" ? HELP_INDEX_SLUG : pagePath,
+          anchor,
+          entry,
+        };
+      });
+
       // Built locally and copied in only once the whole bundle parsed, so a
       // failure part-way leaves the cache empty rather than half-filled.
       const titles = new Map<string, string>();
       const sections = new Map<string, { id: string; heading: string }[]>();
-      for (const entry of index) {
-        const [pagePath, anchor] = entry.u.replace(/^\/docs\//, "").split("#");
-        const slug = pagePath === "" ? HELP_INDEX_SLUG : pagePath;
+      for (const { slug, anchor, entry } of parsedIndex) {
         titles.set(slug, entry.p);
         if (anchor) {
           const list = sections.get(slug) ?? [];
@@ -237,9 +247,7 @@ export class HelpService {
       // A page whose file went missing above is excluded here too, so search
       // never answers a section the panel cannot open.
       const searchSections: HelpSearchSection[] = [];
-      for (const entry of index) {
-        const [pagePath, anchor] = entry.u.replace(/^\/docs\//, "").split("#");
-        const slug = pagePath === "" ? HELP_INDEX_SLUG : pagePath;
+      for (const { slug, anchor, entry } of parsedIndex) {
         if (!loaded.has(slug)) continue;
         searchSections.push({
           page: slug,

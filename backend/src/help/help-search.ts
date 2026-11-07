@@ -4,6 +4,7 @@
  * the search endpoint, and later the assistant tool and the help menu's
  * search entry -- answers from the same ranking.
  */
+import { escapeRegExp } from "../common/escape-regexp.util";
 
 /** One section of the guide, as the search index lists it. */
 export interface HelpSearchSection {
@@ -177,15 +178,17 @@ interface Tokenized {
 /** Builds an excerpt of plain text around the first matched token, bounded to about `EXCERPT_LENGTH` characters. */
 function buildExcerpt(text: string, tokens: readonly string[]): string {
   if (text.length <= EXCERPT_LENGTH) return text;
-  // Plain lower-casing, not `foldCase`: NFKD can decompose a character into
-  // more than one (a ligature, a fraction), which would shift this index out
-  // from under the untouched `text` it is about to slice. Losing an
-  // accent-insensitive match here only widens the excerpt window to the
+  // Searched case-insensitively directly against `text`, never a folded
+  // copy of it: any transform that can change a string's length (NFKD's
+  // ligatures and fractions, but also plain `toLowerCase()`'s few
+  // expansions, like Turkish "İ") would misalign an index found in that
+  // copy against the untouched `text` being sliced here. Losing an
+  // accent-insensitive match this way only widens the excerpt window to the
   // start of the text; it never misaligns it.
-  const folded = text.toLowerCase();
   let matchIndex = -1;
   for (const token of tokens) {
-    const index = folded.indexOf(token);
+    if (token.length === 0) continue;
+    const index = text.search(new RegExp(escapeRegExp(token), "i"));
     if (index !== -1 && (matchIndex === -1 || index < matchIndex)) {
       matchIndex = index;
     }
