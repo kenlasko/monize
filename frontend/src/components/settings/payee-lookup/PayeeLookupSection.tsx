@@ -20,17 +20,7 @@ import type { AiProviderConfig } from '@/types/ai';
 import { GooglePlacesConfigModal } from './GooglePlacesConfigModal';
 import { LookupSourceOrder } from './LookupSourceOrder';
 import { PayeeContactLookupToggle } from './PayeeContactLookupToggle';
-import { docsUrl } from '@/lib/docs-links';
-
-/**
- * Where the documentation explains getting a Google Places key.
- *
- * Worth a link rather than more copy on the card: the setup is a Google Cloud
- * errand (create a project, enable Places API (New), restrict the key BY IP
- * because Monize calls Google from the server, not by HTTP referrer) and none
- * of it fits beside a switch.
- */
-const GOOGLE_PLACES_SETUP_URL = docsUrl('googlePlacesSetup');
+import { HelpLink } from '@/components/help/HelpLink';
 
 /**
  * How a provider is named in the picker.
@@ -352,14 +342,12 @@ export function PayeeLookupSection({
                         (restrict by IP, not by HTTP referrer -- this is a
                         server-side call). Once it works the link is clutter. */}
                     {!settings.configured && (
-                      <a
-                        href={GOOGLE_PLACES_SETUP_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <HelpLink
+                        link="googlePlacesSetup"
                         className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
                       >
                         {t('googlePlaces.setupInstructions')}
-                      </a>
+                      </HelpLink>
                     )}
                   </div>
                 )}

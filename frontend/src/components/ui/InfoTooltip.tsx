@@ -13,6 +13,9 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { useTranslations } from 'next-intl';
+import { HelpLink } from '@/components/help/HelpLink';
+import type { DocsLink } from '@/lib/docs-links';
 
 interface InfoTooltipProps {
   /** Tooltip body text. Shown in the popover and exposed via aria-label. */
@@ -35,6 +38,14 @@ interface InfoTooltipProps {
    * position is clamped to the viewport so it never gets cut off.
    */
   usePortal?: boolean;
+  /**
+   * Where the guide explains this further, a key of `DOCS_LINKS`. Adds a
+   * "Learn more" link under the text that opens the help panel there and
+   * closes the popover. The link renders beside the text's `<button>`
+   * trigger, never inside it -- an `<a>` nested in a `<button>` is invalid
+   * and the parser would truncate the trigger's own content model.
+   */
+  learnMore?: DocsLink;
 }
 
 const POPOVER_WIDTH = 256; // matches w-64
@@ -114,11 +125,17 @@ export function InfoTooltip({
   align,
   iconClassName = 'h-4 w-4',
   usePortal = false,
+  learnMore,
 }: InfoTooltipProps) {
+  const t = useTranslations('help');
   const iconRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLSpanElement>(null);
+  /** The CSS-driven (non-portal) popover, so a press on its Learn More link is not mistaken for an outside press. */
+  const inlinePopoverRef = useRef<HTMLSpanElement>(null);
   /** The pointer that pressed the trigger, read by the click that follows. */
   const pressedWith = useRef<string | null>(null);
+  /** Closes the transient (hover) portal popover, delayed so a mouse crossing the gap to its Learn More link doesn't lose it first. */
+  const transientCloseTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pinned, setPinned] = useState<Pinned>(null);
   /** Hover or keyboard focus, for the portal variant (the inline one uses CSS). */
   const [transient, setTransient] = useState(false);
@@ -129,10 +146,41 @@ export function InfoTooltip({
   const showing = usePortal ? portalShown : pinned !== null || !dismissed;
 
   const close = useCallback(() => {
+    if (transientCloseTimeout.current) {
+      clearTimeout(transientCloseTimeout.current);
+      transientCloseTimeout.current = null;
+    }
     setPinned(null);
     setTransient(false);
     setDismissed(true);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (transientCloseTimeout.current) clearTimeout(transientCloseTimeout.current);
+    };
+  }, []);
+
+  const cancelTransientClose = useCallback(() => {
+    if (transientCloseTimeout.current) {
+      clearTimeout(transientCloseTimeout.current);
+      transientCloseTimeout.current = null;
+    }
+  }, []);
+
+  // A mouse crossing the gap from the trigger to the popover's Learn More
+  // link briefly leaves both elements. Closing immediately on that gap would
+  // make the link unreachable by hover, so the close is delayed just long
+  // enough for the pointer to land back inside (the trigger, by re-entering
+  // it, or the popover itself via its own pointerenter) and cancel it.
+  const scheduleTransientClose = useCallback(() => {
+    if (!learnMore) {
+      setTransient(false);
+      return;
+    }
+    cancelTransientClose();
+    transientCloseTimeout.current = setTimeout(() => setTransient(false), 150);
+  }, [learnMore, cancelTransientClose]);
 
   // Measured before paint, and again whenever the page under it moves: a pinned
   // popover outlives the scroll or the phone keyboard that shifts its anchor.
@@ -168,6 +216,7 @@ export function InfoTooltip({
       const target = event.target as Node | null;
       if (target && iconRef.current?.contains(target)) return;
       if (target && popoverRef.current?.contains(target)) return;
+      if (target && inlinePopoverRef.current?.contains(target)) return;
       setPinned(null);
       setTransient(false);
     };
@@ -197,7 +246,11 @@ export function InfoTooltip({
     pressedWith.current = event.pointerType || 'mouse';
   };
 
-  const onClick = (event: MouseEvent<HTMLButtonElement>) => {
+  // Attached to the wrapper, not the button, so a click reaches it whether it
+  // started on the trigger or (via React's tree-based bubbling, portal and
+  // all) on the popover -- a tap on an open popover closes it the same way a
+  // tap on the trigger itself does.
+  const onClick = (event: MouseEvent<HTMLElement>) => {
     // A help icon acts on itself. Inside a clickable row or card the click
     // would otherwise bubble and navigate away from the thing being explained
     // -- the same rule the row's other inner controls follow.
@@ -216,13 +269,14 @@ export function InfoTooltip({
   // would open the popover a moment before the tap's own click toggled it.
   const onPointerEnter = (event: PointerEvent<HTMLButtonElement>) => {
     if (event.pointerType && event.pointerType !== 'mouse') return;
+    cancelTransientClose();
     setDismissed(false);
     if (usePortal) setTransient(true);
   };
 
   const onPointerLeave = (event: PointerEvent<HTMLButtonElement>) => {
     if (event.pointerType && event.pointerType !== 'mouse') return;
-    setTransient(false);
+    scheduleTransientClose();
   };
 
   // Focus that a press produced is the press's business: the click decides.
@@ -240,13 +294,30 @@ export function InfoTooltip({
     pressedWith.current = null;
     setTransient(false);
     const next = event.relatedTarget;
-    if (next && !popoverRef.current?.contains(next)) setPinned(null);
+    const movedIntoPopover =
+      next !== null &&
+      (popoverRef.current?.contains(next) || inlinePopoverRef.current?.contains(next));
+    if (next && !movedIntoPopover) setPinned(null);
   };
 
   const stop = (event: { stopPropagation: () => void }) => event.stopPropagation();
 
   const popoverBody =
     'whitespace-normal rounded-md bg-gray-900 dark:bg-gray-700 px-2.5 py-2 text-xs font-normal leading-snug text-white shadow-lg';
+
+  const learnMoreLink = learnMore && (
+    <HelpLink
+      link={learnMore}
+      onClick={close}
+      className="mt-1 block font-medium text-blue-300 hover:text-blue-100 underline"
+    >
+      {t('learnMore')}
+    </HelpLink>
+  );
+
+  // Mouse-only: a tap keeps the popover open through `pinned`, not `transient`.
+  const onPortalPopoverPointerEnter = () => cancelTransientClose();
+  const onPortalPopoverPointerLeave = () => scheduleTransientClose();
 
   const portal =
     portalShown &&
@@ -259,12 +330,16 @@ export function InfoTooltip({
           width: POPOVER_WIDTH,
           maxWidth: `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`,
         }}
-        // A pinned popover takes the tap that lands on it (which closes it, the
-        // event reaching the trigger through the React tree) instead of letting
-        // it fall through to whatever row lies underneath.
-        className={`${pinned === null ? 'pointer-events-none' : 'cursor-pointer'} z-50 ${popoverBody}`}
+        onPointerEnter={onPortalPopoverPointerEnter}
+        onPointerLeave={onPortalPopoverPointerLeave}
+        // A pinned popover (or one carrying a Learn More link, reachable only
+        // with pointer events enabled) takes the tap or click that lands on
+        // it instead of letting it fall through to whatever row lies
+        // underneath.
+        className={`${pinned === null && !learnMore ? 'pointer-events-none' : 'cursor-pointer'} z-50 ${popoverBody}`}
       >
         {text}
+        {learnMoreLink}
       </span>,
       document.body,
     );
@@ -274,7 +349,7 @@ export function InfoTooltip({
       ? 'hidden'
       : pinned === 'inline'
         ? 'block'
-        : 'hidden group-hover/tip:block group-focus-visible/tip:block';
+        : 'hidden group-hover/tip:block group-focus-within/tip:block';
 
   const vertical = placement === 'top' ? 'bottom-full mb-2' : 'top-full mt-1';
   const horizontal =
@@ -287,35 +362,44 @@ export function InfoTooltip({
           : 'left-0';
 
   return (
-    <button
-      type="button"
-      ref={iconRef}
-      aria-label={text}
-      aria-expanded={pinned !== null}
-      onPointerDown={onPointerDown}
-      onPointerEnter={onPointerEnter}
-      onPointerLeave={onPointerLeave}
-      onFocus={onFocus}
-      onBlur={onBlur}
-      onClick={onClick}
-      onKeyDown={onKeyDown}
-      // A press on the icon is not the start of a press on the row around it
-      // (`useLongPress` arms its long-press timer on these).
-      onMouseDown={stop}
-      onTouchStart={stop}
-      onContextMenu={stop}
-      className="group/tip relative inline-flex items-center align-middle ml-1 text-gray-400 hover:text-blue-500 focus-visible:text-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded transition-colors motion-reduce:transition-none cursor-help before:absolute before:-inset-2.5"
-    >
-      <QuestionMarkCircleIcon className={iconClassName} aria-hidden="true" />
+    // The hover/focus group lives on this wrapper, not the button: the
+    // popover is a sibling of the button (never its child), because an `<a>`
+    // -- the Learn More link -- is invalid content inside a `<button>`.
+    // `group-hover`/`group-focus-within` bubble from whichever of the two is
+    // actually under the pointer or holds focus, so hovering or tabbing into
+    // the popover itself keeps it open.
+    <span className="group/tip relative inline-flex items-center align-middle ml-1" onClick={onClick}>
+      <button
+        type="button"
+        ref={iconRef}
+        aria-label={text}
+        aria-expanded={pinned !== null}
+        onPointerDown={onPointerDown}
+        onPointerEnter={onPointerEnter}
+        onPointerLeave={onPointerLeave}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        onKeyDown={onKeyDown}
+        // A press on the icon is not the start of a press on the row around it
+        // (`useLongPress` arms its long-press timer on these).
+        onMouseDown={stop}
+        onTouchStart={stop}
+        onContextMenu={stop}
+        className="relative inline-flex items-center text-gray-400 hover:text-blue-500 focus-visible:text-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded transition-colors motion-reduce:transition-none cursor-help before:absolute before:-inset-2.5"
+      >
+        <QuestionMarkCircleIcon className={iconClassName} aria-hidden="true" />
+      </button>
       {!usePortal && (
         <span
+          ref={inlinePopoverRef}
           role="tooltip"
-          className={`pointer-events-none ${inlineVisibility} absolute z-20 w-64 ${popoverBody} ${horizontal} ${vertical}`}
+          className={`${learnMore ? '' : 'pointer-events-none'} ${inlineVisibility} absolute z-20 w-64 ${popoverBody} ${horizontal} ${vertical}`}
         >
           {text}
+          {learnMoreLink}
         </span>
       )}
       {portal}
-    </button>
+    </span>
   );
 }

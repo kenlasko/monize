@@ -5,7 +5,8 @@ import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { Account } from '@/types/account';
 import { formatAccountType } from '@/lib/account-utils';
-import { docsUrl } from '@/lib/docs-links';
+import { HelpLink } from '@/components/help/HelpLink';
+import type { DocsLink } from '@/lib/docs-links';
 
 interface UploadStepProps {
   preselectedAccount: Account | undefined;
@@ -22,17 +23,15 @@ interface UploadStepProps {
   mnyError?: { code?: string; message: string } | null;
 }
 
-function docsLink(href: string) {
-  return function DocsLink(chunks: React.ReactNode) {
+function docsLink(link: DocsLink) {
+  return function RichDocsLink(chunks: React.ReactNode) {
     return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
+      <HelpLink
+        link={link}
         className="font-medium underline hover:text-amber-900 dark:hover:text-amber-100"
       >
         {chunks}
-      </a>
+      </HelpLink>
     );
   };
 }
@@ -133,8 +132,8 @@ export function UploadStep({
             <p className="font-semibold">{t('upload.docsNotice.title')}</p>
             <p className="mt-1">
               {t.rich('upload.docsNotice.body', {
-                money: docsLink(docsUrl('importMicrosoftMoney')),
-                quicken: docsLink(docsUrl('importQuicken')),
+                money: docsLink('importMicrosoftMoney'),
+                quicken: docsLink('importQuicken'),
               })}
             </p>
           </div>

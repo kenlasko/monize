@@ -1,6 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@/test/render';
 import { EmptyState } from './EmptyState';
+import { useHelpStore } from '@/store/helpStore';
+
+beforeEach(() => {
+  useHelpStore.setState(useHelpStore.getInitialState(), true);
+});
 
 describe('EmptyState', () => {
   it('renders title, description and action', () => {
@@ -28,5 +33,23 @@ describe('EmptyState', () => {
   it('renders no glyph holder without an icon', () => {
     const { container } = render(<EmptyState title="Empty" />);
     expect(container.querySelector('[aria-hidden]')).toBeNull();
+  });
+
+  it('renders no "How this works" link without help', () => {
+    render(<EmptyState title="Empty" />);
+    expect(screen.queryByRole('link', { name: 'How this works' })).not.toBeInTheDocument();
+  });
+
+  it('renders a "How this works" link beside the action when help is given', () => {
+    render(
+      <EmptyState
+        title="No budgets"
+        help="budgets"
+        action={<button>New Budget</button>}
+      />,
+    );
+    const link = screen.getByRole('link', { name: 'How this works' });
+    expect(link).toHaveAttribute('href', 'https://www.monize.net/docs/budgets');
+    expect(screen.getByRole('button', { name: 'New Budget' })).toBeInTheDocument();
   });
 });

@@ -1,7 +1,17 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
 import { InfoTooltip, placePopover } from './InfoTooltip';
 import { useLongPress } from '@/hooks/useLongPress';
+import { useHelpStore } from '@/store/helpStore';
+
+const getManifest = vi.fn();
+vi.mock('@/lib/help', () => ({ helpApi: { getManifest: () => getManifest() } }));
+
+beforeEach(() => {
+  getManifest.mockReset();
+  getManifest.mockResolvedValue({ version: '1', available: true, pages: [] });
+  useHelpStore.setState(useHelpStore.getInitialState(), true);
+});
 
 /**
  * Contextual help a desktop reader can see, a touch reader can open.
@@ -120,6 +130,24 @@ describe('InfoTooltip on a touch device', () => {
     // The click reaches the trigger through the React tree, portal and all.
     fireEvent.click(popover);
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('opens a Learn More link that a tap can reach and activate', () => {
+    useHelpStore.getState().setGuideAvailable(true);
+    render(<InfoTooltip text={HELP} learnMore="budgets" />);
+    const trigger = screen.getByRole('button', { name: HELP });
+    tap(trigger);
+
+    // A tap always shows the viewport-clamped portal (even on a call site
+    // that did not ask for `usePortal`); the hidden inline popover keeps its
+    // own copy of the link for the hover/keyboard path, so there are two.
+    const links = screen.getAllByRole('link', { name: 'Learn more' });
+    const portalLink = links.find((el) => el.closest('[role="tooltip"]')?.parentElement === document.body);
+    expect(portalLink).toBeDefined();
+
+    fireEvent.click(portalLink!);
+    expect(useHelpStore.getState().open).toBe(true);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 

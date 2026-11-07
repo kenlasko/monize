@@ -1,7 +1,17 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { act, render, screen, fireEvent } from '@/test/render';
 import { InfoTooltip } from './InfoTooltip';
 import { Modal, __resetModalStateForTesting } from './Modal';
+import { useHelpStore } from '@/store/helpStore';
+
+const getManifest = vi.fn();
+vi.mock('@/lib/help', () => ({ helpApi: { getManifest: () => getManifest() } }));
+
+beforeEach(() => {
+  getManifest.mockReset();
+  getManifest.mockResolvedValue({ version: '1', available: true, pages: [] });
+  useHelpStore.setState(useHelpStore.getInitialState(), true);
+});
 
 describe('InfoTooltip', () => {
   it('renders tooltip text', () => {
@@ -53,9 +63,10 @@ describe('InfoTooltip', () => {
     expect(trigger.tagName).toBe('BUTTON');
     const popover = screen.getByRole('tooltip');
     expect(popover.className).toContain('group-hover/tip:block');
-    // focus-visible, not focus: a tap focuses the button on Android, and the
-    // tap's own click already opens the popover.
-    expect(popover.className).toContain('group-focus-visible/tip:block');
+    // focus-within, not a focus-visible restricted to the button itself: the
+    // popover is a sibling of the trigger, not its child, so it needs the
+    // ancestor the two share to notice focus landing on either one.
+    expect(popover.className).toContain('group-focus-within/tip:block');
   });
 
   it('is a button, not a focusable span', () => {
@@ -74,12 +85,12 @@ describe('InfoTooltip', () => {
 
     fireEvent.keyDown(trigger, { key: 'Escape' });
     expect(screen.getByRole('tooltip').className).not.toContain(
-      'group-focus-visible/tip:block',
+      'group-focus-within/tip:block',
     );
 
     fireEvent.focus(trigger);
     expect(screen.getByRole('tooltip').className).toContain(
-      'group-focus-visible/tip:block',
+      'group-focus-within/tip:block',
     );
   });
 
@@ -181,6 +192,75 @@ describe('InfoTooltip', () => {
 
       fireEvent.keyDown(trigger, { key: 'Escape' });
       expect(onClose).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('learnMore', () => {
+    it('renders no link without learnMore', () => {
+      render(<InfoTooltip text="Plain help" />);
+      fireEvent.focus(screen.getByRole('button', { name: 'Plain help' }));
+      expect(screen.queryByRole('link', { name: 'Learn more' })).not.toBeInTheDocument();
+    });
+
+    it('opens the panel at the target and closes the popover on click', () => {
+      useHelpStore.getState().setGuideAvailable(true);
+      render(<InfoTooltip text="What the rate means" learnMore="currencyHomeRate" />);
+      const trigger = screen.getByRole('button', { name: 'What the rate means' });
+      fireEvent.focus(trigger);
+
+      const link = screen.getByRole('link', { name: 'Learn more' });
+      expect(link).toHaveAttribute(
+        'href',
+        'https://www.monize.net/docs/currency-management#home-currency',
+      );
+
+      fireEvent.click(link);
+
+      expect(useHelpStore.getState().open).toBe(true);
+      expect(useHelpStore.getState().history).toEqual([
+        { page: 'currency-management', section: 'home-currency' },
+      ]);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      // The inline (CSS-driven) popover stays in the DOM, just hidden.
+      expect(screen.getByRole('tooltip').className.split(/\s+/)).toContain('hidden');
+    });
+
+    it('is reachable from the keyboard: Tab from the trigger, then Enter', () => {
+      useHelpStore.getState().setGuideAvailable(true);
+      render(<InfoTooltip text="Keyboard reachable" learnMore="budgets" />);
+      const trigger = screen.getByRole('button', { name: 'Keyboard reachable' });
+
+      fireEvent.focus(trigger);
+      const link = screen.getByRole('link', { name: 'Learn more' });
+      link.focus();
+      expect(link).toHaveFocus();
+
+      fireEvent.click(link);
+      expect(useHelpStore.getState().open).toBe(true);
+    });
+
+    it('keeps the popover reachable while hovering across the gap to the link', () => {
+      vi.useFakeTimers();
+      try {
+        render(<InfoTooltip text="Hover reachable" learnMore="budgets" usePortal />);
+        const trigger = screen.getByRole('button', { name: 'Hover reachable' });
+
+        fireEvent.pointerEnter(trigger, { pointerType: 'mouse' });
+        const link = screen.getByRole('link', { name: 'Learn more' });
+
+        // Leaving the trigger for the link crosses a gap outside the
+        // button's box; the close is delayed so the link stays reachable.
+        fireEvent.pointerLeave(trigger, { pointerType: 'mouse' });
+        fireEvent.pointerEnter(link, { pointerType: 'mouse' });
+        act(() => vi.advanceTimersByTime(150));
+        expect(screen.getByRole('tooltip')).toBeInTheDocument();
+
+        fireEvent.pointerLeave(link, { pointerType: 'mouse' });
+        act(() => vi.advanceTimersByTime(150));
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });
