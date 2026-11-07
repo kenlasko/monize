@@ -1,9 +1,12 @@
 import { NotFoundException } from "@nestjs/common";
 import { GUARDS_METADATA } from "@nestjs/common/constants";
 import { Test, TestingModule } from "@nestjs/testing";
+import { validate } from "class-validator";
+import { plainToInstance } from "class-transformer";
 import { HelpController } from "./help.controller";
 import { HelpService } from "./help.service";
 import { HelpManifest, HelpPage } from "./dto/help-response.dto";
+import { HelpSearchQueryDto } from "./dto/help-search-query.dto";
 
 describe("HelpController", () => {
   let controller: HelpController;
@@ -11,6 +14,7 @@ describe("HelpController", () => {
     getManifest: jest.Mock;
     getPage: jest.Mock;
     getImage: jest.Mock;
+    search: jest.Mock;
   };
 
   const manifest: HelpManifest = {
@@ -54,6 +58,19 @@ describe("HelpController", () => {
         .mockImplementation((name: string) =>
           Promise.resolve(name === "budgets-page.light" ? picture : null),
         ),
+      search: jest.fn().mockReturnValue({
+        results: [
+          {
+            page: "budgets",
+            section: "overview",
+            pageTitle: "Budgets",
+            heading: "Overview",
+            excerpt: "Plan spending.",
+            score: 9,
+          },
+        ],
+        total: 1,
+      }),
     };
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HelpController],
@@ -93,12 +110,82 @@ describe("HelpController", () => {
     expect(
       Reflect.getMetadata(GUARDS_METADATA, HelpController),
     ).toBeUndefined();
-    for (const method of ["getManifest", "getPage", "getImage"] as const) {
+    for (const method of [
+      "getManifest",
+      "getPage",
+      "getImage",
+      "search",
+    ] as const) {
       expect(
         Reflect.getMetadata(GUARDS_METADATA, HelpController.prototype[method]),
       ).toBeUndefined();
     }
   });
+  describe("search", () => {
+    it("searches with the query, context and limit", () => {
+      const result = controller.search({
+        q: "budgets",
+        context: "dashboard",
+        limit: 5,
+      });
+
+      expect(mockService.search).toHaveBeenCalledWith("budgets", {
+        contextPage: "dashboard",
+        limit: 5,
+      });
+      expect(result.results[0].page).toBe("budgets");
+    });
+
+    async function validationErrors(
+      query: Record<string, unknown>,
+    ): Promise<string[]> {
+      const dto = plainToInstance(HelpSearchQueryDto, query);
+      const errors = await validate(dto, {
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      });
+      return errors.map((e) => e.property);
+    }
+
+    it("accepts a bare query with no context or limit", async () => {
+      expect(await validationErrors({ q: "budgets" })).toEqual([]);
+    });
+
+    it("requires a non-empty query", async () => {
+      expect(await validationErrors({ q: "" })).toEqual(["q"]);
+    });
+
+    it("rejects a query over 200 characters", async () => {
+      expect(await validationErrors({ q: "a".repeat(201) })).toEqual(["q"]);
+    });
+
+    it("accepts a query of exactly 200 characters", async () => {
+      expect(await validationErrors({ q: "a".repeat(200) })).toEqual([]);
+    });
+
+    it("rejects a context that is not a bare page slug", async () => {
+      for (const context of ["../etc", "Budgets", "a/b", "a b"]) {
+        expect(await validationErrors({ q: "x", context })).toEqual([
+          "context",
+        ]);
+      }
+    });
+
+    it.each([0, 21, -1, 1.5])("rejects limit %j", async (limit) => {
+      expect(await validationErrors({ q: "x", limit })).toEqual(["limit"]);
+    });
+
+    it.each([1, 10, 20])("accepts limit %j", async (limit) => {
+      expect(await validationErrors({ q: "x", limit })).toEqual([]);
+    });
+
+    it("rejects an unknown field (forbidNonWhitelisted)", async () => {
+      expect(
+        await validationErrors({ q: "x", extra: "nope" } as never),
+      ).toEqual(["extra"]);
+    });
+  });
+
   describe("images", () => {
     function response() {
       const headers: Record<string, string> = {};

@@ -22,6 +22,7 @@ import {
   readBundledImage,
   readImageBundle,
 } from "./help-images";
+import { HelpSearchAnswer, HelpSearchSection, searchHelp } from "./help-search";
 
 // The running version comes from the backend package.json at build/run time,
 // matching ReleaseNotesService.
@@ -37,6 +38,7 @@ interface IndexEntry {
   u: string;
   p: string;
   h: string;
+  x: string;
 }
 
 /**
@@ -62,6 +64,8 @@ export class HelpService {
   private readonly loaded = new Map<string, HelpPage>();
   /** The bundle's pictures by name, listed with the pages; see `#pages`. */
   private readonly images = new Map<string, HelpImageEntry>();
+  /** Every page's sections, in document order, for `search`; see `#pages`. */
+  private readonly sections: HelpSearchSection[] = [];
   private state: "unloaded" | "ready" | "unavailable" = "unloaded";
 
   getManifest(): HelpManifest {
@@ -117,6 +121,29 @@ export class HelpService {
       this.logger.warn(`Failed to read help image ${name}: ${message}`);
       return null;
     }
+  }
+
+  /**
+   * Ranks the guide's sections against `query`. `contextPage` is a slug the
+   * bundle actually has; anything else (unknown, or the manifest is
+   * unavailable) searches with no context boost rather than refusing the
+   * request, matching `getPage`'s treatment of a slug it does not have.
+   */
+  search(
+    query: string,
+    options: { contextPage?: string | null; limit?: number } = {},
+  ): HelpSearchAnswer {
+    if (!this.load()) {
+      return { results: [], total: 0 };
+    }
+    const contextPage =
+      options.contextPage && this.loaded.has(options.contextPage)
+        ? options.contextPage
+        : null;
+    return searchHelp(this.sections, query, {
+      contextPage,
+      limit: options.limit,
+    });
   }
 
   /** Reads the bundle on first use; true when there is a usable one. */
@@ -205,6 +232,24 @@ export class HelpService {
         });
       }
 
+      // Mirrors the index's own order, which is document order within each
+      // page in `nav.json`'s order, so a tie in the scorer reads as stable.
+      // A page whose file went missing above is excluded here too, so search
+      // never answers a section the panel cannot open.
+      const searchSections: HelpSearchSection[] = [];
+      for (const entry of index) {
+        const [pagePath, anchor] = entry.u.replace(/^\/docs\//, "").split("#");
+        const slug = pagePath === "" ? HELP_INDEX_SLUG : pagePath;
+        if (!loaded.has(slug)) continue;
+        searchSections.push({
+          page: slug,
+          section: anchor ?? null,
+          pageTitle: entry.p,
+          heading: entry.h,
+          text: entry.x,
+        });
+      }
+
       for (const [slug, summary] of pages) {
         this.pages.set(slug, summary);
       }
@@ -214,6 +259,7 @@ export class HelpService {
       for (const [name, entry] of images) {
         this.images.set(name, entry);
       }
+      this.sections.push(...searchSections);
       return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

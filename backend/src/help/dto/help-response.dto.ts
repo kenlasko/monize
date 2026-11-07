@@ -74,3 +74,22 @@ export interface HelpImageFile {
   /** The same cache key the page's `HelpImageVariant` carries. */
   revision: string;
 }
+
+/** One ranked section of `GET /help/search`. */
+export interface HelpSearchResultDto {
+  page: string;
+  /** The section's heading anchor, or `null` for a page's lead paragraph. */
+  section: string | null;
+  pageTitle: string;
+  /** `''` for a page's lead paragraph. */
+  heading: string;
+  /** Plain text, about 160 characters, around the first matched word. */
+  excerpt: string;
+  score: number;
+}
+
+/** Response of `GET /help/search`. `total` may exceed `results.length`. */
+export interface HelpSearchResponse {
+  results: HelpSearchResultDto[];
+  total: number;
+}

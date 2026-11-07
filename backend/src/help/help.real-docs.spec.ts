@@ -146,4 +146,25 @@ describe("HelpService against the repository's website/docs", () => {
       fs.readFileSync(path.join(DOCS, "images", "budgets-page.png")),
     );
   });
+
+  /**
+   * Real questions a reader might type, each with the section it must land
+   * in the top three results -- the search scorer's quality bar. This fixture
+   * doubles as the assistant tool's own quality check (plan 6).
+   */
+  describe("search", () => {
+    it.each([
+      ["how do I split a transaction", "transactions", "split-transactions"],
+      ["change my default currency", "currency-management", "home-currency"],
+      ["restore a backup", "backup-and-restore", "restoring-from-a-backup"],
+      ["add a mortgage", "accounts", "mortgage-setup"],
+      ["two-factor", "settings-and-security", "two-factor-authentication-2fa"],
+    ])("%j lands %s#%s in the top three", (query, page, section) => {
+      const { results } = service.search(query, { limit: 3 });
+
+      expect(results.slice(0, 3)).toEqual(
+        expect.arrayContaining([expect.objectContaining({ page, section })]),
+      );
+    });
+  });
 });
