@@ -34,6 +34,7 @@ import { EmailReceiptParserToolsService } from "../../email-receipts/parsers/ema
 import { SeriesFetchError } from "../../bonds/bond-adapter";
 import { BondSeriesService } from "../../bonds/bond-series.service";
 import { WarrantiesService } from "../../warranties/warranties.service";
+import { HelpService } from "../../help/help.service";
 import { LlmWarrantyList } from "../../warranties/warranty-llm-shape";
 import { TransactionRuleToolPrepService } from "../../transaction-rules/rule-tool-prep.service";
 
@@ -768,6 +769,7 @@ describe("ToolExecutorService", () => {
         { provide: EmailReceiptParserToolsService, useValue: {} },
         { provide: BondSeriesService, useValue: bondSeries },
         { provide: WarrantiesService, useValue: warranties },
+        { provide: HelpService, useValue: {} },
         { provide: TransactionRuleToolPrepService, useValue: {} },
         // Real prep + builder wrapping the mocked services, so the executor's
         // name resolution, preview building, and pending-action construction

@@ -21,6 +21,12 @@ describe("prompt-templates", () => {
       expect(QUERY_SYSTEM_PROMPT).toMatch(/never guess|never make up/i);
     });
 
+    it("answers product questions from search_help, citing the guide", () => {
+      expect(QUERY_SYSTEM_PROMPT).toMatch(
+        /using Monize itself.*answered from search_help, citing each guide section/,
+      );
+    });
+
     it("instructs the AI to calculate date ranges", () => {
       expect(QUERY_SYSTEM_PROMPT).toMatch(/YYYY-MM-DD/);
       expect(QUERY_SYSTEM_PROMPT).toMatch(/date range/i);

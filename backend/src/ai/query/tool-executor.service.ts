@@ -89,6 +89,8 @@ import {
 } from "../../built-in-reports/anomaly-reports.service";
 import { WarrantiesService } from "../../warranties/warranties.service";
 import { LlmWarrantyQuery } from "../../warranties/warranty-llm-shape";
+import { HelpService } from "../../help/help.service";
+import { LlmHelpQuery } from "../../help/help-llm-shape";
 import { validateToolInput } from "./tool-input-schemas";
 import { AttachmentDto } from "./dto/ai-query.dto";
 import {
@@ -238,6 +240,8 @@ export class ToolExecutorService {
     // `list_warranties` (design decision 11).
     private readonly warrantiesService: WarrantiesService,
     private readonly sharedReview: SharedReviewService,
+    // `search_help` (in-app help plan 6): the bundled guide, no user data.
+    private readonly helpService: HelpService,
   ) {}
 
   async execute(
@@ -350,6 +354,9 @@ export class ToolExecutorService {
           break;
         case "list_warranties":
           result = await this.listWarranties(userId, validatedInput);
+          break;
+        case "search_help":
+          result = this.searchHelp(validatedInput);
           break;
         default:
           this.logger.warn(`execute unknown tool=${toolName} user=${userId}`);
@@ -3005,6 +3012,43 @@ export class ToolExecutorService {
         {
           type: "warranties",
           description: filter ? `Warranties ${filter}` : "Current warranties",
+        },
+      ],
+    };
+  }
+
+  /**
+   * `search_help` over `HelpService.getLlmHelp`, the MCP tool's own method. It
+   * reads only the bundled guide, so it takes no user id and answers an
+   * acting delegate as it answers the owner. The summary says when nothing
+   * matched, and why, so the model says the guide does not cover the question
+   * rather than answering from its own idea of the product.
+   */
+  private searchHelp(input: Record<string, unknown>): ToolResult {
+    const { query, limit } = input as unknown as LlmHelpQuery;
+    const result = this.helpService.getLlmHelp(query, { limit });
+    const count = result.sections.length;
+
+    let summary: string;
+    if (!result.available) {
+      summary =
+        "The user guide is not available on this server; answer that you cannot look this up, without guessing.";
+    } else if (count === 0) {
+      summary = `No section of the guide covers "${query}".`;
+    } else {
+      const titles = result.sections
+        .map((s) => (s.heading ? `${s.pageTitle}: ${s.heading}` : s.pageTitle))
+        .join("; ");
+      summary = `${count} guide section${count === 1 ? "" : "s"}: ${titles}.`;
+    }
+
+    return {
+      data: result,
+      summary,
+      sources: [
+        {
+          type: "help",
+          description: `User guide: "${query}"`,
         },
       ],
     };

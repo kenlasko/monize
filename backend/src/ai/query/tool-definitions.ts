@@ -26,7 +26,15 @@ import {
   LLM_WARRANTY_DEFAULT_LIMIT,
   LLM_WARRANTY_MAX_LIMIT,
 } from "../../warranties/warranty-llm-shape";
-import { LIST_WARRANTIES_DESCRIPTION } from "./tool-input-schemas";
+import {
+  LLM_HELP_DEFAULT_LIMIT,
+  LLM_HELP_MAX_LIMIT,
+  LLM_HELP_QUERY_MAX_CHARS,
+} from "../../help/help-llm-shape";
+import {
+  LIST_WARRANTIES_DESCRIPTION,
+  SEARCH_HELP_DESCRIPTION,
+} from "./tool-input-schemas";
 
 export { RULE_LANGUAGE_GUIDE };
 
@@ -1354,6 +1362,24 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
           description: `Default ${LLM_WARRANTY_DEFAULT_LIMIT}, at most ${LLM_WARRANTY_MAX_LIMIT}.`,
         },
       },
+    },
+  },
+  {
+    name: "search_help",
+    description: SEARCH_HELP_DESCRIPTION,
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: `The question, in English words; at most ${LLM_HELP_QUERY_MAX_CHARS} characters.`,
+        },
+        limit: {
+          type: "number",
+          description: `Sections to return. Default ${LLM_HELP_DEFAULT_LIMIT}, at most ${LLM_HELP_MAX_LIMIT}.`,
+        },
+      },
+      required: ["query"],
     },
   },
 ];

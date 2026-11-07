@@ -43,6 +43,7 @@ import { AiReviewApprovalService } from "../ai-review/ai-review-approval.service
 import { EmailReceiptParsersModule } from "../email-receipts/parsers/email-receipt-parsers.module";
 import { BondsModule } from "../bonds/bonds.module";
 import { WarrantiesModule } from "../warranties/warranties.module";
+import { HelpModule } from "../help/help.module";
 
 @Module({
   imports: [
@@ -88,6 +89,8 @@ import { WarrantiesModule } from "../warranties/warranties.module";
     forwardRef(() => BondsModule),
     // The `list_warranties` tool's logic (WarrantiesModule exports it).
     WarrantiesModule,
+    // The `search_help` tool's logic (HelpModule exports HelpService).
+    HelpModule,
   ],
   providers: [
     AiService,

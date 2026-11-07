@@ -62,6 +62,7 @@ export interface QueryRunOptions {
  * A tool is never listed when it writes, shows a confirm card, reads data
  * behind an `@OwnerOnly` or non-`@AllowDelegate` route, or is not yet reviewed:
  * a new tool is withheld from delegates until it is added here on purpose.
+ * `search_help` reads only the public user guide, never a user's data.
  */
 export const DELEGATE_ALLOWED_AI_TOOLS: readonly string[] = [
   "list_transactions",
@@ -78,6 +79,7 @@ export const DELEGATE_ALLOWED_AI_TOOLS: readonly string[] = [
   "list_payees",
   "generate_report",
   "list_warranties",
+  "search_help",
 ];
 
 /**
