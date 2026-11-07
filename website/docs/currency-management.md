@@ -125,7 +125,7 @@ A rate is always a number of one currency per **one unit** of another, and which
 - The Currencies page's **Rate** column and the **Rate history** dialog both show your home currency per 1 unit of the row's currency.
 - A transaction's own rate (a foreign-currency purchase, a cross-currency transfer, a foreign-currency investment trade) shows the *account's* currency per 1 unit of whatever you entered it in -- which is only the same number as the Currencies page when the account happens to be in your home currency.
 
-Monize stores each currency pair's history in a single fixed orientation, decided the first time the pair is observed, and shows you the reciprocal whenever that is not the direction you asked for. A rate marked **(inverted)** in the Rate History dialog is the reciprocal of what is actually stored for that pair, not a different observation.
+Monize stores each currency pair's history in a single fixed orientation -- a cryptocurrency paired with a fiat currency is always stored coin-to-fiat, and any other pair in plain alphabetical code order -- and shows you the reciprocal whenever that is not the direction you asked for. A rate marked **(inverted)** in the Rate History dialog is the reciprocal of what is actually stored for that pair, not a different observation.
 
 ### Historical Rates
 
