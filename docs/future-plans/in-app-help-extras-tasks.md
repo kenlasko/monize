@@ -6,10 +6,10 @@ is quoted in the commit or PR.
 
 ## A. Help menu
 
-- [ ] Header `?` menu on the existing dropdown pattern; the same entries in
+- [x] Header `?` menu on the existing dropdown pattern; the same entries in
       `MobileNavDrawer`.
-- [ ] Keyboard shortcuts dialog.
-- [ ] Tests for entries and the hidden "Help for this page" case.
+- [x] Keyboard shortcuts dialog.
+- [x] Tests for entries and the hidden "Help for this page" case.
 
 ## B. Tours and the guide
 

@@ -1,6 +1,26 @@
 {
   "learnMore": "[XX-Learn more-XX]",
   "howThisWorks": "[XX-How this works-XX]",
+  "menu": {
+    "helpForPage": "[XX-Help for this page-XX]",
+    "search": "[XX-Search help-XX]",
+    "shortcuts": "[XX-Keyboard shortcuts-XX]",
+    "takeTour": "[XX-Take the tour-XX]",
+    "whatsNew": "[XX-What's new-XX]",
+    "reportIssue": "[XX-Report an issue-XX]",
+    "discussions": "[XX-Discussions-XX]"
+  },
+  "shortcuts": {
+    "title": "[XX-Keyboard shortcuts-XX]",
+    "search": "[XX-Search help-XX]",
+    "searchKeys": "[XX-Ctrl/Cmd+K or ?-XX]",
+    "undo": "[XX-Undo the last change-XX]",
+    "undoKeys": "[XX-Ctrl/Cmd+Z-XX]",
+    "redo": "[XX-Redo-XX]",
+    "redoKeys": "[XX-Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y-XX]",
+    "closeDialog": "[XX-Close the open dialog or panel-XX]",
+    "closeDialogKeys": "[XX-Esc-XX]"
+  },
   "panel": {
     "title": "[XX-Help-XX]",
     "back": "[XX-Back-XX]",
