@@ -29,8 +29,14 @@ is quoted in the commit or PR.
 
 ## E. Every page offers help
 
-- [ ] `page-help.guard.test.ts` with reasoned exemptions and a self-test.
-- [ ] Pages the guide does not cover reported as documentation gaps.
+- [x] `page-help.guard.test.ts` with reasoned exemptions and a self-test.
+- [x] Pages the guide does not cover reported as documentation gaps: the
+      guard's own run found every `PageHeader` missing `help` across the
+      tree; all but one already had a matching guide page and got it
+      (six new `DOCS_LINKS` destinations). The one gap is `/src/app/share/page.tsx`
+      (Web Share Target intake) -- no guide page describes it yet,
+      recorded in the guard's `EXEMPTIONS` and here as a gap to write up,
+      not a permanent exemption.
 
 ## Docs and copy
 
