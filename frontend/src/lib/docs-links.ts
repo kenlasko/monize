@@ -30,6 +30,7 @@ export const DOCS_LINKS = {
   payees: { page: 'categories-and-payees', section: 'payees' },
   googlePlacesSetup: { page: 'categories-and-payees', section: 'setting-up-google-places' },
   currencies: { page: 'currency-management' },
+  currencyHomeRate: { page: 'currency-management', section: 'home-currency' },
   dashboard: { page: 'dashboard' },
   emailReceipts: { page: 'email-receipts' },
   importTransactions: { page: 'importing-transactions' },

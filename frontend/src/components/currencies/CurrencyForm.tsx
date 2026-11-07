@@ -21,7 +21,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
 import { FormActions } from '@/components/ui/FormActions';
-import { docsUrl } from '@/lib/docs-links';
+import { HelpLink } from '@/components/help/HelpLink';
 import { isKnownIsoCurrency } from '@/lib/iso-currency';
 import { RateHistoryCoverage } from './RateHistoryCoverage';
 import {
@@ -455,14 +455,12 @@ export function CurrencyForm({ currency, onSubmit, onCancel, onDirtyChange, subm
             {t.rich('form.nonIsoNotice', {
               code: typedCode,
               guide: (chunks) => (
-                <a
-                  href={docsUrl('cryptoCurrencies')}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <HelpLink
+                  link="cryptoCurrencies"
                   className="font-medium underline hover:text-blue-900 dark:hover:text-blue-100"
                 >
                   {chunks}
-                </a>
+                </HelpLink>
               ),
             })}
           </p>
@@ -482,14 +480,12 @@ export function CurrencyForm({ currency, onSubmit, onCancel, onDirtyChange, subm
               // The smallest amount a coin at the most places can hold.
               smallest: formatNumber(10 ** -MAX_CURRENCY_DECIMAL_PLACES, MAX_CURRENCY_DECIMAL_PLACES),
               guide: (chunks) => (
-                <a
-                  href={docsUrl('cryptoWallets')}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <HelpLink
+                  link="cryptoWallets"
                   className="font-medium underline hover:text-blue-900 dark:hover:text-blue-100"
                 >
                   {chunks}
-                </a>
+                </HelpLink>
               ),
             })}
           </p>

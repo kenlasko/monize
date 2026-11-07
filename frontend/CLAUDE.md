@@ -39,14 +39,14 @@ npm run docs:build         # Regenerate the user docs (website/docs/) from their
 | Panel card | `Card` / `CARD_CLASS` (`components/ui/Card.tsx`) | an inline `bg-white dark:bg-gray-800 rounded-lg shadow` trio |
 | Dialog | `Modal` with `title` (`components/ui/Modal.tsx`) | a hand-rolled heading or overlay |
 | Status pill / table chrome | `Badge`; `Th`/`Td` and the constants in `components/ui/Table.tsx` | a hand-rolled pill or `<th>` class string |
-| Empty list | `EmptyState` | a `text-center py-12` block |
+| Empty list | `EmptyState`; `help` for a "How this works" link to the guide | a `text-center py-12` block |
 | Date entry | `DateInput` | a raw `<input type="date">` |
 | Money entry / other numbers | `CurrencyInput` / `NumericInput` | any `type="number"` input; `parseFloat` on typed text |
 | Number a person reads | `useNumberFormat()` (`formatCurrency`, `formatNumber`, `formatPercent`, `formatShareQuantity`, `formatBytes`) | `toFixed`, `toLocaleString()`, the raw `@/lib/format` helpers, a literal `%` |
 | Rounding, a bound, an id check, a foreign ISO code | `roundToCents` / `roundMoney` / `sumMoney` / `withCurrencyCode` (`lib/format.ts`), `clamp` (`lib/clamp.ts`), `isUuid` (`lib/uuid.ts`) | a local `round2`, `clamp` or UUID regex, or a component's own `formatCurrency` |
 | Decimal places, symbol and rounding of a non-ISO currency (a coin) | `decimalPlacesForCurrency` / `currencySymbolFor` (`lib/currency-decimals.ts`, filled by `CurrencyRegistryLoader`), `getDecimalPlacesForCurrency` / `entryDecimalPlaces` / `roundToEntryPlaces` / `moneyDecimalsForCurrency` (`lib/format.ts`) and `averageDailyBalance` (`lib/balance-history.ts`): an amount in an account's currency rounds at that currency's places, and `roundToCents` is for fiat-only surfaces | `Intl`'s default of two, a hard-coded 4, a one-argument `roundMoney`/`sumMoney` on a coin, or `roundToCents` on an amount a coin account can hold |
 | Today, for a financial decision | `useFinancialToday()` / `financialTodayYmd` | `new Date().toISOString().slice(0, 10)` |
-| Help that explains a figure or setting | `InfoTooltip` (opens on hover, focus and tap) | a hand-rolled `role="tooltip"`, or a help icon hidden below a breakpoint |
+| Help that explains a figure or setting | `InfoTooltip` (opens on hover, focus and tap; `learnMore` for a "Learn more" link into the guide) | a hand-rolled `role="tooltip"`, or a help icon hidden below a breakpoint |
 | Clickable table row | `useLongPress({ onClick })` spread on the `<tr>` | a button around the name |
 | Category colour and icon | `CategoryGlyph`, `CategoryPill`, `buildCategoryIconMap` / `buildCategoryColorMap` | reading `category.icon` or interpolating it into text |
 | Brand favicon | `InstitutionLogo` / `PayeeLogo` over `BrandLogo` | a third-party favicon URL |
@@ -58,7 +58,7 @@ npm run docs:build         # Regenerate the user docs (website/docs/) from their
 | A portfolio chart's window and opening point | `usePortfolioRangeWindow` (`start` for the series, `periodStart` for the period) and `openingSessionDate` for the first label | `resolveRangePreset`, a lookback of your own, a first point dated by a day the market was shut |
 | An investment row's money | the row's own `amountCurrencyCode` / `priceCurrencyCode` / `commissionCurrencyCode`, converted with `convertRowAmount`; a VOID row dropped with `investmentRowHasEffect` | the account's currency, the reader's, or a client-side sum across rows |
 | CSV | `exportToCsv` / `exportCsvSections` (`lib/csv-export.ts`) | a second `text/csv` Blob |
-| Link to the user documentation (`PageHeader` `help`, which opens the help panel; an inline guide link) | a `DOCS_LINKS` key: `help="key"`, `docsUrl(key)` (`lib/docs-links.ts`) | a `helpUrl` prop, a docs or wiki URL literal |
+| Link to the user documentation (`PageHeader` `help`; `InfoTooltip` `learnMore`; `EmptyState` `help`; an inline guide link) | a `DOCS_LINKS` key (`lib/docs-links.ts`): `help="key"`/`learnMore="key"`, or `HelpLink` (`components/help/HelpLink.tsx`) for an inline link | a `helpUrl` prop, a docs or wiki URL literal, a hand-rolled `<a href={docsUrl(...)}>` |
 | Random id | `crypto.randomUUID()` | `Math.random()` |
 | Chart colour | `chartColors` tokens (`lib/chart-colors.ts`) | a hex literal in a `fill`, `stroke` or `stopColor` |
 | Widget title that opens the fuller view | `titleHref` on `WidgetCard`, `href` on `WidgetHeading` | a button or link hand-rolled around the heading |

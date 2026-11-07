@@ -46,7 +46,7 @@ import { categoriesApi } from '@/lib/categories';
 import { createCategoryFromInput } from '@/lib/category-create';
 import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
 import { entryDecimalPlaces, getCurrencySymbol, loadedEntryAmount } from '@/lib/format';
-import { docsUrl } from '@/lib/docs-links';
+import { HelpLink } from '@/components/help/HelpLink';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
@@ -1197,14 +1197,12 @@ export function AccountForm({
                 </Link>
               ),
               guide: (chunks) => (
-                <a
-                  href={docsUrl('cryptoCurrencies')}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <HelpLink
+                  link="cryptoCurrencies"
                   className="font-medium underline hover:text-blue-900 dark:hover:text-blue-100"
                 >
                   {chunks}
-                </a>
+                </HelpLink>
               ),
             })}
           </p>
