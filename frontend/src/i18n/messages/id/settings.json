@@ -138,6 +138,7 @@
     },
     "themeLabel": "Tema",
     "defaultCurrencyLabel": "Mata Uang Bawaan",
+    "defaultCurrencyHelp": "Digunakan untuk menjumlahkan akun, kekayaan bersih, dan laporan Anda, dan merupakan mata uang yang menjadi tujuan konversi kolom Kurs di halaman Mata Uang.",
     "defaultCurrencyNoCrypto": "Mata uang kripto tidak ditawarkan di sini: total dan laporan selalu ditampilkan dalam mata uang fiat.",
     "preferredExchangesLabel": "Bursa Pilihan (untuk pencarian keamanan dokumen)",
     "preferredExchangesHelp": "Pilih hingga 3 bursa dalam urutan prioritas. Ini akan diprioritaskan saat mencari keamanan dokumen.",

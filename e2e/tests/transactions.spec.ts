@@ -251,7 +251,7 @@ test.describe('Hideable columns', () => {
 
     await page.goto(`/transactions?accountIds=${account.id}`);
 
-    const statusHeader = page.getByRole('columnheader', { name: /^status$/i });
+    const statusHeader = page.getByRole('columnheader', { name: /^status/i });
     await expect(statusHeader).toBeVisible();
 
     await page.getByRole('button', { name: /^columns\b/i }).click();

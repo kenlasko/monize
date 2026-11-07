@@ -124,6 +124,7 @@
       "balance": "Saldo",
       "attachments": "Anhänge",
       "status": "Status",
+      "statusHelp": "Nicht abgeglichen, Bestätigt oder Abgeglichen sind Schritte zum Abgleich mit einem Kontoauszug. Ungültig storniert eine Buchung, behält aber ihren Datensatz; sie bewegt den Kontostand nicht mehr.",
       "actions": "Aktionen"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "Details der Buchungsteile",
+    "headerTooltip": "Jede Zeile kann eine Kategorie, eine Überweisung auf ein anderes Konto oder eine Investition sein. Die Zeilen müssen sich zum Gesamtbetrag der Buchung summieren; Gleichmäßig verteilen und Proportional verteilen verteilen den Rest für Sie.",
     "distributeProportionally": "Proportional verteilen",
     "distributeProportionallyTitle": "Den verbleibenden Betrag proportional auf die Buchungsteile verteilen",
     "distributeEvenly": "Gleichmäßig verteilen",

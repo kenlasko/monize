@@ -138,6 +138,7 @@
     },
     "themeLabel": "Tema",
     "defaultCurrencyLabel": "Moeda Padrão",
+    "defaultCurrencyHelp": "Usada para totalizar suas contas, patrimônio líquido e relatórios, e é a moeda para a qual a coluna Taxa da página Moedas converte.",
     "defaultCurrencyNoCrypto": "Criptomoedas não são oferecidas aqui: totais e relatórios são sempre exibidos em uma moeda fiduciária.",
     "preferredExchangesLabel": "Bolsas Preferidas (para consultas de títulos)",
     "preferredExchangesHelp": "Selecione até 3 bolsas por ordem de prioridade. Estas serão preferidas ao consultar títulos.",

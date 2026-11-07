@@ -15,8 +15,14 @@ merged. Check a box only when its gate passes and is quoted in the commit or PR.
 
 ## Batches (one PR each; add keys, add missing guide sections)
 
-- [ ] 1. Transactions
-- [ ] 2. Currencies
+- [x] 1. Transactions (issue #2053): `learnMore`/`HelpLink` on the transfer
+  form's category note, the Split Details heading, the foreign-currency
+  rate caption (known rate and no-rate-found), and the register's Status
+  column; `help` on the Reconcile page.
+- [x] 2. Currencies (issue #2053): a new "Rate Direction" guide section and
+  its tooltip on the Rate History dialog's Stored rates heading, a named
+  pair plus Fill-gaps link on an unresolved Rate column value, a link from
+  the no-price-symbol notice, and a Default Currency help link.
 - [x] 3. Investments (issue #2054): `learnMore` on Cost Basis/TWR/MWR and the
   Value Change/Investment Result chart tooltips, a new tooltip on Total
   Amount, and two new guide sections ("Total Amount or Price: Which One
@@ -41,3 +47,11 @@ merged. Check a box only when its gate passes and is quoted in the commit or PR.
   src/components/help/HelpMarkdown.test.tsx` -- `135 passed`;
   `src/i18n/messages.parity.test.ts` -- `1867 passed`; `npm run test:changed`
   -- `Test Files 877 passed (877)`, `Tests 16382 passed (16382)`.
+- [x] Frontend gates green, quoted (batches 1-2, issue #2053): `eslint`
+  on the changed files clean; `tsc --noEmit` clean; `npm run i18n:check` --
+  pseudo-locale up to date; `npm run docs:build` -- `2 written, 0 removed,
+  27 total` after the Rate Direction section; `npx vitest run
+  src/lib/docs-links.test.ts src/components/help/HelpMarkdown.test.tsx` --
+  `134 passed`; `src/i18n/messages.parity.test.ts` -- `1862 passed`;
+  `npm run test:changed` -- `Test Files 880 passed (880)`, `Tests 16521
+  passed (16521)`.

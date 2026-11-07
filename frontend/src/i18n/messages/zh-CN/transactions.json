@@ -124,6 +124,7 @@
       "balance": "余额",
       "attachments": "附件",
       "status": "状态",
+      "statusHelp": "未对账、已结算或已对账是与银行对账单匹配的几个阶段。作废会取消一笔交易，但保留其记录；它不再影响账户余额。",
       "actions": "操作"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "拆分详情",
+    "headerTooltip": "每一行可以是一个分类、转到另一个账户的转账，或一笔投资。各行金额之和必须等于交易总额；均匀分配和按比例分配会为您分配剩余金额。",
     "distributeProportionally": "按比例分配",
     "distributeProportionallyTitle": "根据每个拆分项的金额按比例分配剩余金额",
     "distributeEvenly": "均匀分配",

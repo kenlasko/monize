@@ -138,6 +138,7 @@
     },
     "themeLabel": "Tema",
     "defaultCurrencyLabel": "Valuta predefinita",
+    "defaultCurrencyHelp": "Usato per totalizzare i tuoi conti, il patrimonio netto e i report, ed è la valuta in cui converte la colonna Tasso della pagina Valute.",
     "defaultCurrencyNoCrypto": "Le criptovalute non sono disponibili qui: totali e report sono sempre mostrati in una valuta fiat.",
     "preferredExchangesLabel": "Borse preferite (per ricerche sui titoli)",
     "preferredExchangesHelp": "Seleziona fino a 3 borse in ordine di priorità. Saranno preferite nella ricerca dei titoli.",

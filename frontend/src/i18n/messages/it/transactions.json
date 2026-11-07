@@ -124,6 +124,7 @@
       "balance": "Saldo",
       "attachments": "Allegati",
       "status": "Stato",
+      "statusHelp": "Non riconciliata, Compensata o Riconciliata sono passaggi verso la corrispondenza con un estratto conto. Annullata annulla una transazione ma ne conserva il record; non sposta più il saldo del conto.",
       "actions": "Azioni"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "Dettagli suddivisione",
+    "headerTooltip": "Ogni riga può essere una categoria, un trasferimento verso un altro conto o un investimento. Le righe devono totalizzare l'importo della transazione; Distribuisci uniformemente e Distribuisci proporzionalmente distribuiscono il resto per te.",
     "distributeProportionally": "Distribuisci proporzionalmente",
     "distributeProportionallyTitle": "Distribuisce l'importo rimanente in modo proporzionale in base all'importo di ogni suddivisione",
     "distributeEvenly": "Distribuisci uniformemente",

@@ -17,6 +17,7 @@ import { receivedAmountToSend } from './split-transfer-currency';
 import { NormalTransactionFields } from './NormalTransactionFields';
 import { SplitTransactionFields } from './SplitTransactionFields';
 import { CurrencyPickerButton } from './CurrencyPickerButton';
+import { HelpLink } from '@/components/help/HelpLink';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { useDisableTransactionSplit } from '@/store/tourStore';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
@@ -269,6 +270,7 @@ type TransactionMode = 'normal' | 'split' | 'transfer';
 
 function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, defaultCategoryId, defaultDate, onSuccess, onCancel, onDirtyChange, submitRef, onCreateAnother, initialStagedFiles, onAddWarranty, onAddWarrantyAfterCreate, onShareAfterCreate, onOpenWarranty }: TransactionFormFieldsProps) {
   const t = useTranslations('transactions');
+  const th = useTranslations('help');
   const sharedT = useTranslations('sharedExpenses');
   const userId = useAuthStore((s) => s.user?.id);
   const [shareAfterCreate, setShareAfterCreate] = useState(false);
@@ -1784,7 +1786,13 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
             rate: formatNumber(fxRate, FX_RATE_DISPLAY_DECIMALS),
             to: accountCurrency,
             date: watchedDate ? formatDate(watchedDate) : watchedDate,
-          })}
+          })}{' '}
+          <HelpLink
+            link="currencyRatesOnTransactions"
+            className="underline hover:text-gray-700 dark:hover:text-gray-200"
+          >
+            {th('learnMore')}
+          </HelpLink>
         </span>
       ) : !fxRateLoading && !fxRateLookupFailed ? (
         // Only when the server answered "none". A failed request says nothing
@@ -1795,7 +1803,10 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
             from: entryCurrency,
             to: accountCurrency,
             date: watchedDate ? formatDate(watchedDate) : watchedDate,
-          })}
+          })}{' '}
+          <HelpLink link="currencyRateHistory" className="underline hover:text-amber-800 dark:hover:text-amber-200">
+            {th('learnMore')}
+          </HelpLink>
         </span>
       ) : null}
       {fxFeeApplies && fxTotal !== undefined && (

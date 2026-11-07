@@ -138,6 +138,7 @@
     },
     "themeLabel": "主題",
     "defaultCurrencyLabel": "預設貨幣",
+    "defaultCurrencyHelp": "用於彙總您的帳戶、淨資產與報表，是貨幣頁面中「匯率」欄換算的目標貨幣。",
     "defaultCurrencyNoCrypto": "此處不提供加密貨幣：合計與報表一律以法定貨幣顯示。",
     "preferredExchangesLabel": "偏好的交易所（用於證券查找）",
     "preferredExchangesHelp": "按優先順序選擇最多 3 個交易所。查找證券時將優先使用這些交易所。",

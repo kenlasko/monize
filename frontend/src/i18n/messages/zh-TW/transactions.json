@@ -124,6 +124,7 @@
       "balance": "結餘",
       "attachments": "附件",
       "status": "狀態",
+      "statusHelp": "未對帳、已結清或已對帳是與銀行對帳單核對的幾個階段。作廢會取消一筆交易，但保留其記錄；它不再影響帳戶餘額。",
       "actions": "動作"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "分割詳情",
+    "headerTooltip": "每一列可以是一個類別、轉到另一個帳戶的轉帳，或一筆投資。各列金額加總必須等於交易總額；平均分配和按比例分配會為您分配剩餘金額。",
     "distributeProportionally": "按比例分配",
     "distributeProportionallyTitle": "根據每筆分割的金額按比例分配剩餘金額",
     "distributeEvenly": "平均分配",

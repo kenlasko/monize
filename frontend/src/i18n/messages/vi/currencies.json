@@ -77,6 +77,7 @@
     "usageAccounts": "{count, plural, other {# tài khoản}}",
     "usageSecurities": "{count, plural, other {# chứng khoán}}",
     "rateHelp": "Giá trị của một đơn vị mỗi loại tiền tính bằng {currency}.",
+    "rateMissing": "Không có tỷ giá hối đoái được lưu cho {from} sang {to}.",
     "empty": {
       "title": "Không có tiền tệ",
       "subtitle": "Hãy bắt đầu bằng cách thêm một tiền tệ."
@@ -159,6 +160,7 @@
     "hint": "Báo cáo có ngày trước tỷ giá đã lưu đầu tiên không thể quy đổi {pair}.",
     "list": {
       "heading": "Tỷ giá đã lưu",
+      "invertedHelp": "Tỷ giá được đánh dấu (nghịch đảo) là giá trị nghịch đảo của những gì Monize thực sự đã lưu cho cặp này, không phải một quan sát khác.",
       "direction": "Hiển thị theo {to} cho 1 {from}.",
       "loading": "Đang tải các tỷ giá đã lưu...",
       "loadFailed": "Không đọc được các tỷ giá đã lưu",

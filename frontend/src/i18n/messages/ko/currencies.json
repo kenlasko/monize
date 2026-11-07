@@ -77,6 +77,7 @@
     "usageAccounts": "{count, plural, other {# 계정}}",
     "usageSecurities": "{count, plural, other {# 종목}}",
     "rateHelp": "각 통화 1단위가 {currency}로 얼마인지 나타냅니다.",
+    "rateMissing": "{from}에서 {to}로의 저장된 환율이 없습니다.",
     "empty": {
       "title": "통화 없음",
       "subtitle": "통화를 추가하여 시작하세요."
@@ -159,6 +160,7 @@
     "hint": "최초 저장된 환율보다 이전 날짜의 리포트에서는 {pair}을(를) 환산할 수 없습니다.",
     "list": {
       "heading": "저장된 환율",
+      "invertedHelp": "(역산)으로 표시된 환율은 Monize가 이 페어에 대해 실제로 저장한 값의 역수이며, 별도의 관측값이 아닙니다.",
       "direction": "1 {from}당 {to}로 표시합니다.",
       "loading": "저장된 환율을 불러오는 중...",
       "loadFailed": "저장된 환율을 읽지 못했습니다",

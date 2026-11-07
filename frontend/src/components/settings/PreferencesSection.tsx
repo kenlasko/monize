@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Select } from '@/components/ui/Select';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
+import { HelpLink } from '@/components/help/HelpLink';
 import { useSavedPreference } from '@/hooks/useSavedPreference';
 import { userSettingsApi } from '@/lib/user-settings';
 import type { MapProvider } from '@/lib/contact-links';
@@ -122,6 +123,7 @@ interface PreferencesSectionProps {
 export function PreferencesSection({ preferences, onPreferencesUpdated }: PreferencesSectionProps) {
   const t = useTranslations('settings.preferences');
   const tc = useTranslations('common');
+  const th = useTranslations('help');
   const updatePreferencesStore = usePreferencesStore((state) => state.updatePreferences);
 
   /**
@@ -271,6 +273,12 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
                 value={defaultCurrency.value}
                 onChange={(e) => defaultCurrency.set(e.target.value)}
               />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {t('defaultCurrencyHelp')}{' '}
+                <HelpLink link="currencyHomeRate" className="underline hover:text-gray-700 dark:hover:text-gray-200">
+                  {th('learnMore')}
+                </HelpLink>
+              </p>
               {holdsCryptoCurrency && (
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   {t('defaultCurrencyNoCrypto')}
