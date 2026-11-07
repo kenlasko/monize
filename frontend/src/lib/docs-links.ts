@@ -107,3 +107,33 @@ export function helpTarget(link: DocsLink): HelpTarget {
     ? { page: target.page || 'index' }
     : { page: target.page || 'index', section: target.section };
 }
+
+const DOCS_BASE = new URL(DOCS_BASE_URL);
+
+/**
+ * Recognise a link into the user documentation at monize.net -- the shape
+ * release notes and the assistant's answers already write (`docsUrl(...)`,
+ * or a link the model composed in the same shape) -- and resolve it to a
+ * target the help panel can open. `ReleaseNotesMarkdown` and
+ * `AssistantMarkdown` use this to open such a link in the panel on a plain
+ * click. Anything else -- a different site, a lookalike host
+ * (`www.monize.net.evil.com`), or a URL that fails to parse -- is `null` and
+ * the link is left to the browser.
+ */
+export function isGuideUrl(href: string | undefined | null): HelpTarget | null {
+  if (!href) return null;
+  let url: URL;
+  try {
+    url = new URL(href, DOCS_BASE_URL);
+  } catch {
+    return null;
+  }
+  if (url.origin !== DOCS_BASE.origin) return null;
+  const base = DOCS_BASE.pathname;
+  if (url.pathname !== base && !url.pathname.startsWith(`${base}/`)) return null;
+  const page = url.pathname === base ? '' : url.pathname.slice(base.length + 1);
+  const section = url.hash ? decodeURIComponent(url.hash.slice(1)) : undefined;
+  return section === undefined
+    ? { page: page || 'index' }
+    : { page: page || 'index', section };
+}

@@ -9,6 +9,7 @@ import {
   isMonizeHref,
   resolveEntityHref,
 } from '@/lib/ai-entity-links';
+import { onGuideLinkClick, useHelpPrefetch } from '@/lib/help-open';
 
 interface AssistantMarkdownProps {
   content: string;
@@ -39,6 +40,9 @@ function normalizeBulletGlyphs(content: string): string {
 }
 
 export function AssistantMarkdown({ content }: AssistantMarkdownProps) {
+  // So a guide link the assistant cites can open the help panel on the first
+  // click (`onGuideLinkClick`), the same as a release note's.
+  useHelpPrefetch();
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -127,6 +131,7 @@ export function AssistantMarkdown({ content }: AssistantMarkdownProps) {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => onGuideLinkClick(e, href)}
               className="text-blue-600 dark:text-blue-400 underline hover:no-underline"
             >
               {children}

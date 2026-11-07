@@ -1,8 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent } from '@testing-library/react';
 import { render, screen } from '@/test/render';
 import { AssistantMarkdown } from './AssistantMarkdown';
 import { AI_ENTITY_LINK_EVENT } from '@/lib/ai-entity-links';
+import { useHelpStore } from '@/store/helpStore';
+
+beforeEach(() => {
+  useHelpStore.setState(useHelpStore.getInitialState(), true);
+});
 
 describe('AssistantMarkdown', () => {
   it('renders plain text as a paragraph', () => {
@@ -117,6 +122,25 @@ describe('AssistantMarkdown', () => {
     expect(link?.getAttribute('target')).toBe('_blank');
     expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
     expect(link?.textContent).toBe('Docs');
+  });
+
+  it('opens a cited guide link in the help panel on a plain click', () => {
+    useHelpStore.getState().setGuideAvailable(true);
+    render(
+      <AssistantMarkdown content="See [Budgets](https://www.monize.net/docs/budgets)." />,
+    );
+    fireEvent.click(screen.getByRole('link', { name: 'Budgets' }));
+    expect(useHelpStore.getState().open).toBe(true);
+    expect(useHelpStore.getState().history).toEqual([{ page: 'budgets' }]);
+  });
+
+  it('leaves a modified click on a cited guide link to the browser', () => {
+    useHelpStore.getState().setGuideAvailable(true);
+    render(
+      <AssistantMarkdown content="See [Budgets](https://www.monize.net/docs/budgets)." />,
+    );
+    fireEvent.click(screen.getByRole('link', { name: 'Budgets' }), { ctrlKey: true });
+    expect(useHelpStore.getState().open).toBe(false);
   });
 
   describe('entity deep-links (monize:// hrefs)', () => {

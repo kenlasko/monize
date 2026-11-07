@@ -19,9 +19,9 @@ is quoted in the commit or PR.
 
 ## C. Guide links open in the panel
 
-- [ ] `isGuideUrl` against the manifest.
-- [ ] Link overrides in `ReleaseNotesMarkdown` and `AssistantMarkdown`.
-- [ ] Tests: recognised, unknown and lookalike URLs; modified clicks.
+- [x] `isGuideUrl` against the manifest.
+- [x] Link overrides in `ReleaseNotesMarkdown` and `AssistantMarkdown`.
+- [x] Tests: recognised, unknown and lookalike URLs; modified clicks.
 
 ## D. Version stamp
 

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { DOCS_LINKS, docsUrl, helpTarget, type DocsLink } from './docs-links';
+import { DOCS_LINKS, docsUrl, helpTarget, isGuideUrl, type DocsLink } from './docs-links';
 
 /**
  * A help link is only as good as the section it lands on. The documentation is
@@ -71,6 +71,48 @@ describe('every documentation link resolves to a page the help manifest lists', 
 
   it('carries a section when the link names one', () => {
     expect(helpTarget('institutions')).toEqual({ page: 'accounts', section: 'financial-institutions' });
+  });
+});
+
+describe('isGuideUrl', () => {
+  it('resolves a page with a section', () => {
+    expect(isGuideUrl('https://www.monize.net/docs/budgets#rollover-rules')).toEqual({
+      page: 'budgets',
+      section: 'rollover-rules',
+    });
+  });
+
+  it('resolves a page with no section', () => {
+    expect(isGuideUrl('https://www.monize.net/docs/budgets')).toEqual({ page: 'budgets' });
+  });
+
+  it('resolves the landing page', () => {
+    expect(isGuideUrl('https://www.monize.net/docs')).toEqual({ page: 'index' });
+    expect(isGuideUrl('https://www.monize.net/docs/')).toEqual({ page: 'index' });
+  });
+
+  it('falls through on an unrelated URL', () => {
+    expect(isGuideUrl('https://github.com/kenlasko/monize')).toBeNull();
+  });
+
+  it('falls through on a lookalike host', () => {
+    expect(isGuideUrl('https://www.monize.net.evil.com/docs/budgets')).toBeNull();
+  });
+
+  it('falls through on a path that merely starts with the same letters', () => {
+    expect(isGuideUrl('https://www.monize.net/docsish/budgets')).toBeNull();
+  });
+
+  it('falls through on a relative string that is not a guide path', () => {
+    expect(isGuideUrl('not a url')).toBeNull();
+  });
+
+  it('falls through on an unparsable URL', () => {
+    expect(isGuideUrl('https://[::1')).toBeNull();
+  });
+
+  it('falls through on no href', () => {
+    expect(isGuideUrl(undefined)).toBeNull();
   });
 });
 
