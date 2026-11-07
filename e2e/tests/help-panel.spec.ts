@@ -17,7 +17,8 @@ async function gotoWithGuideKnown(page: Page, path: string) {
 
 // The page header's "?" opens the user guide in a panel beside the page instead
 // of in a new browser tab. The guide ships in the backend (the e2e stack builds
-// the development image, which copies website/docs), so this runs offline.
+// the development image, which copies website/docs and its screenshots), so this
+// runs offline.
 test.describe('Help panel', () => {
   test('the Budgets "?" opens the Budgets guide in place, with no new tab', async ({
     authedPage: page,
@@ -41,6 +42,31 @@ test.describe('Help panel', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Budgets' })).toBeVisible();
     expect(opened).toEqual([]);
     expect(page.url()).toMatch(/\/budgets$/);
+  });
+
+  test('a screenshot loads in the panel from the backend, as WebP', async ({
+    authedPage: page,
+  }) => {
+    await gotoWithGuideKnown(page, '/budgets');
+    // The development image the e2e stack runs bundles the screenshots as WebP,
+    // the format production ships; the request stays on the app's own origin.
+    const picture = page.waitForResponse(
+      (r) => new URL(r.url()).pathname.startsWith('/api/v1/help/images/budgets-page') && r.ok(),
+    );
+    await page.getByRole('link', { name: 'Help for this page' }).click();
+
+    const panel = page.getByRole('complementary', { name: 'Help' });
+    const img = panel.getByRole('img', { name: /^The Budgets page, listing each budget/ });
+    await img.scrollIntoViewIfNeeded();
+
+    const response = await picture;
+    expect(new URL(response.url()).origin).toBe(new URL(page.url()).origin);
+    expect(response.headers()['content-type']).toBe('image/webp');
+    await expect
+      .poll(() => img.evaluate((el: HTMLImageElement) => (el.complete ? el.naturalWidth : 0)))
+      .toBeGreaterThan(0);
+    // The way to the same picture on monize.net stays with it.
+    await expect(panel.getByRole('link', { name: 'View screenshot on monize.net' }).first()).toBeVisible();
   });
 
   test('an internal link navigates inside the panel, and Back returns', async ({

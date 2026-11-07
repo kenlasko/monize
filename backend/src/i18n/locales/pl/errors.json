@@ -1013,6 +1013,7 @@
     "paymentMatchingUnsupported": "Dopasowywanie płatności nie może jeszcze rozliczyć płatności kredytu hipotecznego zawierającej opłaty. Wyłącz dopasowywanie płatności lub usuń opłaty."
   },
   "help": {
-    "pageNotFound": "Nie znaleziono strony pomocy"
+    "pageNotFound": "Nie znaleziono strony pomocy",
+    "imageNotFound": "Nie znaleziono obrazu pomocy"
   }
 }

@@ -1013,6 +1013,7 @@
     "paymentMatchingUnsupported": "L'abbinamento dei pagamenti non può ancora saldare un pagamento del mutuo che include spese. Disattiva l'abbinamento dei pagamenti o rimuovi le spese."
   },
   "help": {
-    "pageNotFound": "Pagina della guida non trovata"
+    "pageNotFound": "Pagina della guida non trovata",
+    "imageNotFound": "Immagine della guida non trovata"
   }
 }

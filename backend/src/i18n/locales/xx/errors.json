@@ -1013,6 +1013,7 @@
     "paymentMatchingUnsupported": "[XX-Payment matching cannot settle a mortgage payment that includes fees yet. Turn off payment matching or remove the fees.-XX]"
   },
   "help": {
-    "pageNotFound": "[XX-Help page not found-XX]"
+    "pageNotFound": "[XX-Help page not found-XX]",
+    "imageNotFound": "[XX-Help image not found-XX]"
   }
 }

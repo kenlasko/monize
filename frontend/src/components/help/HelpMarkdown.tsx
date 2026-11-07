@@ -1,14 +1,20 @@
 'use client';
 
-import type { MouseEvent, ReactNode } from 'react';
+import { useState, type MouseEvent, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslations } from 'next-intl';
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { TABLE_BODY_CLASS, TABLE_CLASS, Td, Th } from '@/components/ui/Table';
+import { useTheme } from '@/contexts/ThemeContext';
 import { DOCS_BASE_URL, type HelpTarget } from '@/lib/docs-links';
-import type { HelpTocEntry } from '@/lib/help';
+import {
+  helpImageUrl,
+  type HelpImage,
+  type HelpImageVariant,
+  type HelpTocEntry,
+} from '@/lib/help';
 import { remarkHelp } from '@/lib/markdown/remark-help';
 
 interface HelpMarkdownProps {
@@ -20,11 +26,20 @@ interface HelpMarkdownProps {
   slug: string;
   /** The page on monize.net, which a screenshot's "view online" link points into. */
   onlineUrl: string;
+  /**
+   * The page's pictures the bundle holds, by the `<name>` of `images/<name>.png`.
+   * Absent from a backend older than the frontend, when every picture shows
+   * as its caption.
+   */
+  images?: Readonly<Record<string, HelpImage>>;
   /** A link to another page of the guide, followed inside the panel. */
   onNavigate: (target: HelpTarget) => void;
 }
 
 const INTERNAL_LINK = /^([a-z0-9-]+)\.md(?:#([^\s]*))?$/;
+
+/** A screenshot as the guide names it, the dark picture's file. */
+const IMAGE_SRC = /^images\/([a-z0-9-]+)\.png$/;
 
 const CALLOUT_VARIANTS: Record<string, BadgeVariant> = {
   note: 'blue',
@@ -64,6 +79,45 @@ const H2_CLASS =
 const H3_CLASS = 'mt-4 mb-1 text-base font-semibold text-gray-900 dark:text-gray-100';
 const H4_CLASS = 'mt-3 mb-1 text-sm font-semibold text-gray-900 dark:text-gray-100';
 
+/** One of the guide's pictures, its caption and its online link. */
+function HelpScreenshot({
+  variant,
+  alt,
+  caption,
+  online,
+  onError,
+}: {
+  variant: HelpImageVariant;
+  alt: string;
+  /** The Markdown's alt text, shown under the picture; none when it has none. */
+  caption?: string;
+  online: ReactNode;
+  onError: () => void;
+}) {
+  return (
+    <span className="my-3 block">
+      {/* eslint-disable-next-line @next/next/no-img-element -- a same-origin API picture with its own size; next/image would re-encode it */}
+      <img
+        src={helpImageUrl(variant)}
+        alt={alt}
+        width={variant.width}
+        height={variant.height}
+        loading="lazy"
+        decoding="async"
+        onError={onError}
+        className="block h-auto max-w-full rounded-md border border-gray-200 dark:border-gray-700"
+      />
+      {/* The alt text already names the picture to a screen reader. */}
+      {caption && (
+        <span aria-hidden="true" className="mt-1 block text-xs text-gray-600 dark:text-gray-400">
+          {caption}
+        </span>
+      )}
+      {online}
+    </span>
+  );
+}
+
 /** A click the browser should handle itself: a new tab, a window, a download. */
 function isModifiedClick(e: MouseEvent): boolean {
   return e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
@@ -79,18 +133,27 @@ export function onlineHref(target: HelpTarget): string {
  * Renders a page of the user guide inside the help panel: the third Markdown
  * renderer in the app, after the assistant's and the release notes'. What the
  * Markdown means comes from the website's renderer (`remark-help.ts` lists the
- * rules); this file maps it onto the app's own components. No `<img>` is ever
- * emitted (the app's CSP allows images only from its own origin, and the guide's
- * screenshots are not bundled), and no raw HTML is rendered.
+ * rules); this file maps it onto the app's own components. A screenshot is the
+ * picture the backend bundles, in the app's theme (the light twin when there is
+ * one, as on the website), with its caption and a link to it on monize.net; one
+ * the bundle lacks is the caption and the link alone. No raw HTML is rendered.
  */
 export function HelpMarkdown({
   markdown,
   toc,
   slug,
   onlineUrl,
+  images = {},
   onNavigate,
 }: HelpMarkdownProps) {
   const t = useTranslations('help.markdown');
+  const { resolvedTheme } = useTheme();
+  // Pictures whose request failed (a throttled or refused request, a replica
+  // without it) show as their caption, never a broken image. Held here rather
+  // than in each picture: ReactMarkdown's `components` are new on every render,
+  // which remounts a picture and would forget it. A theme change asks for the
+  // other picture, which has not failed.
+  const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set());
 
   return (
     <div className="text-sm text-gray-700 dark:text-gray-300">
@@ -173,21 +236,39 @@ export function HelpMarkdown({
           img: (props) => {
             const section = (props as Record<string, unknown>)['data-section'];
             const href = onlineUrl + (typeof section === 'string' && section ? `#${section}` : '');
-            return (
+            const name = typeof props.src === 'string' ? IMAGE_SRC.exec(props.src)?.[1] : undefined;
+            const image =
+              name !== undefined && Object.hasOwn(images, name) ? images[name] : undefined;
+            const variant =
+              image && (resolvedTheme === 'light' && image.light ? image.light : image.dark);
+            const online = (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`mt-1 inline-flex items-center gap-1 ${LINK_CLASS}`}
+              >
+                {t('viewScreenshot')}
+                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              </a>
+            );
+            const fallback = (
               <span className="my-2 block rounded-md border border-dashed border-gray-300 p-3 dark:border-gray-600">
                 <span className="block text-gray-600 dark:text-gray-400">
                   {props.alt || t('screenshot')}
                 </span>
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`mt-1 inline-flex items-center gap-1 ${LINK_CLASS}`}
-                >
-                  {t('viewScreenshot')}
-                  <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                </a>
+                {online}
               </span>
+            );
+            if (!variant || failed.has(variant.name)) return fallback;
+            return (
+              <HelpScreenshot
+                variant={variant}
+                alt={props.alt || t('screenshot')}
+                caption={props.alt || undefined}
+                online={online}
+                onError={() => setFailed((prev) => new Set([...prev, variant.name]))}
+              />
             );
           },
           a: ({ href, children }) => {

@@ -1013,6 +1013,7 @@
     "paymentMatchingUnsupported": "付款匹配目前还无法结算包含费用的抵押贷款付款。请关闭付款匹配或移除这些费用。"
   },
   "help": {
-    "pageNotFound": "未找到帮助页面"
+    "pageNotFound": "未找到帮助页面",
+    "imageNotFound": "未找到帮助图片"
   }
 }

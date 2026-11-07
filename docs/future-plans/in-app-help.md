@@ -3,7 +3,7 @@
 The user guide is published only at www.monize.net/docs. The app links to it,
 but every link opens a new browser tab, and an instance that is offline or a
 version behind gets help that does not match it. This overview ties together
-six plans that bring the guide into the app. Each plan stands on its own and is
+seven plans that bring the guide into the app. Each plan stands on its own and is
 executed from its own file. Read this file first for the decisions they share.
 
 ## Assumptions (verified against the tree, 2026-11)
@@ -39,16 +39,21 @@ executed from its own file. Read this file first for the decisions they share.
 
 1. **The guide ships inside each release and is served by the backend.** The
    backend image copies `website/docs` (Markdown, `nav.json`,
-   `search-index.json`; no images) exactly as it copies the release notes, and a
+   `search-index.json`, and since plan 7 the screenshots as WebP) exactly as it
+   copies the release notes, and a
    new public, read-only help API serves it. Help therefore matches the running
    version, works on an internet-isolated instance and needs no CSP change.
    Rejected: committing a second generated copy into `frontend/` (duplicates
    ~0.7 MB that must be kept in step, and the backend would still need its own
    copy for the assistant); fetching from monize.net (CSP change, version drift,
    fails offline).
-2. **Text only.** Screenshots (31 MB) are not bundled. Where a page shows a
-   picture, the app shows its caption and a link to the same section on
-   monize.net. Revisit once the panel exists.
+2. **Screenshots in both themes, as WebP.** Superseded "Text only" (issue
+   #2057). The backend image converts `website/docs/images` to WebP at build
+   time (31 MB of PNG becomes about 13 MB) and the help API serves it; the panel
+   shows the picture matching the app's theme, the dark one where a picture has
+   no `.light` twin, as the website does. A picture the bundle lacks still shows
+   its caption and a link to the same section on monize.net. Plan 7 has the
+   details.
 3. **One search, on the server.** The help panel's search, the command search
    and the assistant tool all call the same backend scorer, so they cannot rank
    differently and no client-side search dependency is added.
@@ -72,18 +77,19 @@ executed from its own file. Read this file first for the decisions they share.
 | 4 | `docs/future-plans/in-app-help-extras.md` | header Help menu, tour and What's New links, version stamp, every-page guard | 2 (3 for the menu's search entry) |
 | 5 | `docs/future-plans/in-app-help-contextual-links.md` | "Learn more" on tooltips, empty states and error messages | 2 |
 | 6 | `docs/future-plans/in-app-help-assistant-tool.md` | the assistant and MCP answer usage questions from the guide | 1 (2 for clickable citations) |
+| 7 | `docs/future-plans/in-app-help-screenshots.md` | the guide's screenshots in the panel, in both themes | 1, 2 |
 
 Plan 2 alone delivers most of the "seamless" effect; plan 5 is ongoing
 editorial work that can run alongside anything after it.
 
 ## Open decisions (owner)
 
-- Screenshots: stay text only, ship one theme as compressed WebP (estimated
-  5-8 MB in the backend image), or ship all.
 - Whether help search later grows into a full command palette (pages and
   actions as well as help). Plan 3 leaves room for it and does not build it.
-- Whether the help API is public (usable on the login and 2FA screens, like the
-  release notes) or behind `AuthGuard('jwt')`. Plan 1 recommends public.
+
+Settled: the help API is public, usable on the login and 2FA screens like the
+release notes (plan 1); screenshots ship in both themes as compressed WebP
+(issue #2057, plan 7).
 
 ## What every plan runs before pushing
 

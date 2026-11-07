@@ -282,7 +282,7 @@ Under the header, **On this page** lists the sections of the guide page you are 
 
 A few things to know:
 
-- **The guide comes with your Monize.** The panel shows the guide for the version you are running, so it works without an internet connection. It is text only: where this website shows a screenshot, the panel shows its caption and a **View screenshot on monize.net** link.
+- **The guide comes with your Monize.** The panel shows the guide for the version you are running, screenshots included, so it works without an internet connection. Each screenshot matches the light or dark theme Monize is in, and switches when you change the theme. Under each one, **View screenshot on monize.net** opens the same picture on this website.
 - **Ctrl-click, Cmd-click or middle-click the ? icon** to open the page on monize.net in a new tab instead of in the panel. If the guide cannot be loaded, the icon does that for a plain click too.
 - **The guide is in English**, whatever language Monize is set to. In another language the panel says so at the top; the buttons and labels around it are translated.
 - **Settings > Help & Support** has a **Documentation** entry that opens the panel at the start of the guide.

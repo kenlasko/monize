@@ -1013,6 +1013,7 @@
     "paymentMatchingUnsupported": "La conciliación de pagos todavía no puede liquidar un pago de hipoteca que incluye gastos. Desactiva la conciliación de pagos o elimina los gastos."
   },
   "help": {
-    "pageNotFound": "Página de ayuda no encontrada"
+    "pageNotFound": "Página de ayuda no encontrada",
+    "imageNotFound": "Imagen de ayuda no encontrada"
   }
 }

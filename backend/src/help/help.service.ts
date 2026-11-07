@@ -2,16 +2,26 @@ import { Injectable, Logger } from "@nestjs/common";
 import * as fs from "fs";
 import * as path from "path";
 import {
+  HELP_IMAGE_NAME_RE,
+  HELP_IMAGE_REF_RE,
   HELP_INDEX_SLUG,
   HELP_ONLINE_BASE_URL,
   HELP_SLUG_RE,
 } from "./help.constants";
 import {
+  HelpImage,
+  HelpImageFile,
+  HelpImageVariant,
   HelpManifest,
   HelpPage,
   HelpPageSummary,
   HelpTocEntry,
 } from "./dto/help-response.dto";
+import {
+  HelpImageEntry,
+  readBundledImage,
+  readImageBundle,
+} from "./help-images";
 
 // The running version comes from the backend package.json at build/run time,
 // matching ReleaseNotesService.
@@ -36,7 +46,8 @@ interface IndexEntry {
  * small pages) is read once, on first use, and served from memory. The files
  * read are the ones `nav.json` names (plus the landing page); a request only
  * looks its slug up in that cache, so nothing it supplies reaches the
- * filesystem.
+ * filesystem. The screenshots are listed with the pages and read per request,
+ * by the path the listing found for the name looked up.
  */
 @Injectable()
 export class HelpService {
@@ -49,6 +60,8 @@ export class HelpService {
   private readonly pages = new Map<string, HelpPageSummary>();
   /** Every page, read with the bundle; it is immutable, so none goes stale. */
   private readonly loaded = new Map<string, HelpPage>();
+  /** The bundle's pictures by name, listed with the pages; see `#pages`. */
+  private readonly images = new Map<string, HelpImageEntry>();
   private state: "unloaded" | "ready" | "unavailable" = "unloaded";
 
   getManifest(): HelpManifest {
@@ -71,6 +84,39 @@ export class HelpService {
     // Every page was read when the bundle loaded, so a request is answered from
     // memory and nothing it supplies ever reaches a filesystem call.
     return this.loaded.get(slug) ?? null;
+  }
+
+  /**
+   * A bundled picture (`<name>` or `<name>.light`), or `null` for anything the
+   * bundle does not hold. The name is looked up in the list read when the
+   * bundle loaded and never joined into a path, so nothing a request supplies
+   * reaches the filesystem; the file read is the one the listing found. Its
+   * `revision` is the file's as read now, so a file changed since the listing
+   * no longer matches the key its page still advertises.
+   */
+  async getImage(name: string): Promise<HelpImageFile | null> {
+    if (typeof name !== "string" || !HELP_IMAGE_NAME_RE.test(name)) {
+      return null;
+    }
+    if (!this.load()) {
+      return null;
+    }
+    const entry = this.images.get(name);
+    if (!entry) {
+      return null;
+    }
+    try {
+      const { data, revision } = await readBundledImage(entry);
+      return {
+        data,
+        contentType: entry.contentType,
+        revision: cacheKey(this.currentVersion, revision),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to read help image ${name}: ${message}`);
+      return null;
+    }
   }
 
   /** Reads the bundle on first use; true when there is a usable one. */
@@ -133,6 +179,10 @@ export class HelpService {
           });
         }
       }
+      const images = readImageBundle(directory, (message) =>
+        this.logger.warn(message),
+      );
+
       // Read every page now, by the slugs nav.json defines. A page whose file
       // is missing is logged and left out, so it answers 404 like an unknown one.
       const loaded = new Map<string, HelpPage>();
@@ -151,6 +201,7 @@ export class HelpService {
             slug === HELP_INDEX_SLUG
               ? `${HELP_ONLINE_BASE_URL}/`
               : `${HELP_ONLINE_BASE_URL}/${slug}`,
+          images: pageImages(markdown, images, this.currentVersion),
         });
       }
 
@@ -159,6 +210,9 @@ export class HelpService {
       }
       for (const [slug, page] of loaded) {
         this.loaded.set(slug, page);
+      }
+      for (const [name, entry] of images) {
+        this.images.set(name, entry);
       }
       return true;
     } catch (error) {
@@ -226,6 +280,44 @@ export class HelpService {
     }
     return null;
   }
+}
+
+/**
+ * The pictures a page's Markdown names that the bundle holds, each with its
+ * light twin when there is one, in the order the page shows them.
+ */
+function pageImages(
+  markdown: string,
+  images: ReadonlyMap<string, HelpImageEntry>,
+  version: string,
+): Record<string, HelpImage> {
+  const variant = (name: string, entry: HelpImageEntry): HelpImageVariant => ({
+    name,
+    width: entry.width,
+    height: entry.height,
+    revision: cacheKey(version, entry.revision),
+  });
+  const found = new Map<string, HelpImage>();
+  for (const [, name] of markdown.matchAll(HELP_IMAGE_REF_RE)) {
+    const dark = images.get(name);
+    if (!dark || found.has(name)) {
+      continue;
+    }
+    const light = images.get(`${name}.light`);
+    found.set(name, {
+      dark: variant(name, dark),
+      light: light ? variant(`${name}.light`, light) : null,
+    });
+  }
+  return Object.fromEntries(found);
+}
+
+/**
+ * A picture's cache key: the running version and the file's own revision, so
+ * a browser keeps a picture only until a release or a changed file replaces it.
+ */
+function cacheKey(version: string, revision: string): string {
+  return `${version}-${revision}`;
 }
 
 /** Levels (2 or 3) of the `##`/`###` headings outside code fences, in order. */

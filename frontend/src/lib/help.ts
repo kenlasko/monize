@@ -27,6 +27,23 @@ export interface HelpTocEntry {
   heading: string;
 }
 
+/** One theme's picture: what `GET /help/images/:name` serves, and its size. */
+export interface HelpImageVariant {
+  /** `<name>` for the dark picture, `<name>.light` for the light one. */
+  name: string;
+  width: number;
+  height: number;
+  /** The picture's cache key: changes with each release and whenever its file does. */
+  revision: string;
+}
+
+/** A picture a page shows, in both themes. */
+export interface HelpImage {
+  dark: HelpImageVariant;
+  /** The light twin; `null` when there is none and the dark one shows in both themes. */
+  light: HelpImageVariant | null;
+}
+
 /** Response of the public `GET /help/pages/:slug`. */
 export interface HelpPage {
   slug: string;
@@ -37,6 +54,21 @@ export interface HelpPage {
   toc: HelpTocEntry[];
   /** The same page on the public documentation site. */
   onlineUrl: string;
+  /**
+   * The pictures the Markdown names (`images/<name>.png`) that the bundle
+   * holds, keyed by `<name>`. One that is absent shows as its caption.
+   */
+  images: Record<string, HelpImage>;
+}
+
+/**
+ * Same-origin URL of one of the guide's pictures, rendered directly in an
+ * `<img>` (the CSP allows images only from the app's own origin). The revision
+ * makes the URL change whenever the picture can, so the backend lets the
+ * browser keep it until then.
+ */
+export function helpImageUrl({ name, revision }: HelpImageVariant): string {
+  return `/api/v1/help/images/${encodeURIComponent(name)}?v=${encodeURIComponent(revision)}`;
 }
 
 // The guide ships inside the backend image, so it cannot change under a running

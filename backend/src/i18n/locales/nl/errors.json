@@ -1013,6 +1013,7 @@
     "paymentMatchingUnsupported": "Betalingskoppeling kan een hypotheekbetaling met kosten nog niet verrekenen. Zet betalingskoppeling uit of verwijder de kosten."
   },
   "help": {
-    "pageNotFound": "Helppagina niet gevonden"
+    "pageNotFound": "Helppagina niet gevonden",
+    "imageNotFound": "Helpafbeelding niet gevonden"
   }
 }
