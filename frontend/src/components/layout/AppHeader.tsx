@@ -567,7 +567,7 @@ export function AppHeader() {
               </nav>
             )}
           </div>
-          <div className="flex items-center space-x-1 sm:space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-4 xl:space-x-1 2xl:space-x-4">
             <div className="relative" ref={searchRef}>
               <div className="flex items-center">
                 <input
