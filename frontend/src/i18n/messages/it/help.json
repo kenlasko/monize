@@ -10,6 +10,8 @@
     "unpin": "Sblocca il pannello della guida",
     "expand": "Espandi il pannello della guida",
     "collapse": "Riduci il pannello della guida",
+    "resize": "Ridimensiona il pannello della guida",
+    "resizeValue": "{width} pixel",
     "close": "Chiudi la guida",
     "englishOnly": "Questa guida è in inglese.",
     "loading": "Caricamento della guida",

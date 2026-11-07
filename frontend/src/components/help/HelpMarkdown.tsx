@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type MouseEvent, type ReactNode } from 'react';
+import { memo, useState, type MouseEvent, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslations } from 'next-intl';
@@ -138,7 +138,7 @@ export function onlineHref(target: HelpTarget): string {
  * one, as on the website), with its caption and a link to it on monize.net; one
  * the bundle lacks is the caption and the link alone. No raw HTML is rendered.
  */
-export function HelpMarkdown({
+export const HelpMarkdown = memo(function HelpMarkdown({
   markdown,
   toc,
   slug,
@@ -316,4 +316,4 @@ export function HelpMarkdown({
       </ReactMarkdown>
     </div>
   );
-}
+});

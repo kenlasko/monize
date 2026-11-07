@@ -278,7 +278,7 @@ The panel's header has these controls:
 | **Expand** | Fills the window for easier reading; the same button shrinks it back |
 | **Close** | Closes the panel. **Esc** does the same, or shrinks an expanded panel first |
 
-Under the header, **On this page** lists the sections of the guide page you are reading, and links to other pages in the guide open inside the panel. The panel shares its edge of the window with the AI assistant, so opening one closes the other.
+Under the header, **On this page** lists the sections of the guide page you are reading, and links to other pages in the guide open inside the panel. The panel shares its edge of the window with the AI assistant, so opening one closes the other. On a desktop, drag the panel's left edge to make it wider or narrower (or focus the edge and use the **Left** and **Right** arrow keys, **Home** and **End**); Monize remembers the width in this browser.
 
 A few things to know:
 

@@ -10,6 +10,8 @@
     "unpin": "[XX-Unpin the help panel-XX]",
     "expand": "[XX-Expand the help panel-XX]",
     "collapse": "[XX-Shrink the help panel-XX]",
+    "resize": "[XX-Resize the help panel-XX]",
+    "resizeValue": "[XX-{width} pixels-XX]",
     "close": "[XX-Close help-XX]",
     "englishOnly": "[XX-This guide is in English.-XX]",
     "loading": "[XX-Loading help-XX]",

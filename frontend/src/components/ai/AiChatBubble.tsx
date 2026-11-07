@@ -10,7 +10,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { DragHandle } from '@/components/ui/DragHandle';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { AI_ENTITY_LINK_EVENT } from '@/lib/ai-entity-links';
-import { HELP_PANEL_WIDTH } from '@/components/help/help-layout';
+import { HELP_PANEL_DEFAULT_WIDTH, HELP_PANEL_WIDTH_VAR } from '@/components/help/help-layout';
 import { useHelpStore } from '@/store/helpStore';
 
 // The chat pulls in markdown/chart dependencies, so load it only when the
@@ -234,7 +234,13 @@ export function AiChatBubble() {
           setView('sheet');
         }}
         aria-label={t('launcherAriaLabel')}
-        style={helpDocked && !isMobile ? { right: HELP_PANEL_WIDTH + 16 } : undefined}
+        style={
+          helpDocked && !isMobile
+            ? // The panel publishes its width as a variable; until it has mounted
+              // the default stands in, so the launcher never loses its offset.
+              { right: `calc(var(${HELP_PANEL_WIDTH_VAR}, ${HELP_PANEL_DEFAULT_WIDTH}px) + 16px)` }
+            : undefined
+        }
         className="fixed bottom-4 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
       >
         <ChatIcon className="h-6 w-6" />

@@ -48,8 +48,12 @@ export function SwipeShell({ children, httpsHeadersActive = false }: SwipeShellP
   }, [isAuthRoute]);
 
   // Docked on a wide screen the help panel sits beside the page rather than
-  // over it, so the page makes room (420px: HELP_PANEL_WIDTH). Narrower
-  // screens leave it over the page, as the assistant sheet is.
+  // over it, so the page makes room for the panel's width, which the reader
+  // can change. A dynamic width cannot be a Tailwind class, so the panel
+  // publishes it as `--help-panel-width` on the root (`useHelpWidthVar`) and the
+  // literal `xl:pr-(--help-panel-width)` reads it; this component measures
+  // nothing and does not re-render while the panel is dragged. Narrower screens
+  // leave the panel over the page, as the assistant sheet is.
   const helpDocked = useHelpStore((s) => s.open && !s.expanded);
 
   if (isAuthRoute) {
@@ -66,7 +70,7 @@ export function SwipeShell({ children, httpsHeadersActive = false }: SwipeShellP
     <div
       className={cn(
         'min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-clip',
-        helpDocked && 'xl:pr-[420px]',
+        helpDocked && 'xl:pr-(--help-panel-width)',
       )}
     >
       <AppHeader />

@@ -10,6 +10,8 @@
     "unpin": "Desafixar o painel de ajuda",
     "expand": "Expandir o painel de ajuda",
     "collapse": "Reduzir o painel de ajuda",
+    "resize": "Redimensionar o painel de ajuda",
+    "resizeValue": "{width} pixels",
     "close": "Fechar a ajuda",
     "englishOnly": "Este guia está em inglês.",
     "loading": "Carregando a ajuda",

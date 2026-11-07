@@ -10,6 +10,8 @@
     "unpin": "Maak het helppaneel los",
     "expand": "Helppaneel vergroten",
     "collapse": "Helppaneel verkleinen",
+    "resize": "Breedte van het helppaneel aanpassen",
+    "resizeValue": "{width} pixels",
     "close": "Help sluiten",
     "englishOnly": "Deze handleiding is in het Engels.",
     "loading": "Help laden",

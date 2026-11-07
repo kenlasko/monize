@@ -48,11 +48,32 @@ describe('helpStore', () => {
     expect(state().cursor).toBe(1);
   });
 
-  it('replaces the entry when only the section changes', () => {
+  it('pushes an entry when only the section changes, so Back returns to the previous section', () => {
     state().openAt({ page: 'budgets' });
     state().navigate({ page: 'budgets', section: 'alerts' });
     state().navigate({ page: 'budgets', section: 'rollover-rules' });
-    expect(state().history).toEqual([{ page: 'budgets', section: 'rollover-rules' }]);
+    expect(state().history).toEqual([
+      { page: 'budgets' },
+      { page: 'budgets', section: 'alerts' },
+      { page: 'budgets', section: 'rollover-rules' },
+    ]);
+    expect(state().cursor).toBe(2);
+
+    state().back();
+    expect(current()).toEqual({ page: 'budgets', section: 'alerts' });
+    state().back();
+    expect(current()).toEqual({ page: 'budgets' });
+    state().forward();
+    expect(current()).toEqual({ page: 'budgets', section: 'alerts' });
+  });
+
+  it('pushes when another help icon opens a different section of the page on screen', () => {
+    state().openAt({ page: 'accounts', section: 'financial-institutions' });
+    state().openAt({ page: 'accounts' });
+    expect(state().history).toEqual([
+      { page: 'accounts', section: 'financial-institutions' },
+      { page: 'accounts' },
+    ]);
   });
 
   it('does not add an entry for the target already on screen, but counts the visit', () => {
