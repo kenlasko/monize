@@ -31,4 +31,4 @@ gate passes and is quoted in the commit or PR.
 
 ## Verification
 
-- [ ] Backend gates green, quoted; frontend gates if touched; `docs:check` green.
+- [x] Backend gates green, quoted; frontend gates if touched; `docs:check` green.
