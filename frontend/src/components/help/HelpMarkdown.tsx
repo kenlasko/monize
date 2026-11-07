@@ -24,7 +24,7 @@ interface HelpMarkdownProps {
   toc: readonly HelpTocEntry[];
   /** The page being shown: what a link to `#section` on its own page means. */
   slug: string;
-  /** The page on monize.net, which a screenshot's "view online" link points into. */
+  /** The page on monize.net, which a missing screenshot's "view online" link points into. */
   onlineUrl: string;
   /**
    * The page's pictures the bundle holds, by the `<name>` of `images/<name>.png`.
@@ -79,19 +79,17 @@ const H2_CLASS =
 const H3_CLASS = 'mt-4 mb-1 text-base font-semibold text-gray-900 dark:text-gray-100';
 const H4_CLASS = 'mt-3 mb-1 text-sm font-semibold text-gray-900 dark:text-gray-100';
 
-/** One of the guide's pictures, its caption and its online link. */
+/** One of the guide's pictures and its caption. */
 function HelpScreenshot({
   variant,
   alt,
   caption,
-  online,
   onError,
 }: {
   variant: HelpImageVariant;
   alt: string;
   /** The Markdown's alt text, shown under the picture; none when it has none. */
   caption?: string;
-  online: ReactNode;
   onError: () => void;
 }) {
   return (
@@ -113,7 +111,6 @@ function HelpScreenshot({
           {caption}
         </span>
       )}
-      {online}
     </span>
   );
 }
@@ -241,6 +238,8 @@ export const HelpMarkdown = memo(function HelpMarkdown({
               name !== undefined && Object.hasOwn(images, name) ? images[name] : undefined;
             const variant =
               image && (resolvedTheme === 'light' && image.light ? image.light : image.dark);
+            // Only the fallback links out: once the picture shows in the panel,
+            // a link to the same picture online adds nothing.
             const online = (
               <a
                 href={href}
@@ -266,7 +265,6 @@ export const HelpMarkdown = memo(function HelpMarkdown({
                 variant={variant}
                 alt={props.alt || t('screenshot')}
                 caption={props.alt || undefined}
-                online={online}
                 onError={() => setFailed((prev) => new Set([...prev, variant.name]))}
               />
             );

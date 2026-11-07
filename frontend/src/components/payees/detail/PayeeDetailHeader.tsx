@@ -5,8 +5,7 @@ import {
   ArrowTopRightOnSquareIcon,
   ChevronLeftIcon,
 } from '@heroicons/react/24/outline';
-import { Button, ButtonLink } from '@/components/ui/Button';
-import { useAuthStore } from '@/store/authStore';
+import { Button } from '@/components/ui/Button';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { parseLocalDate } from '@/lib/utils';
 import { toSafeExternalUrl } from '@/lib/external-url';
@@ -52,8 +51,6 @@ export function PayeeDetailHeader({
   onSelectPayee,
 }: PayeeDetailHeaderProps) {
   const t = useTranslations('payeeDetail');
-  const ts = useTranslations('sharedExpenses');
-  const actingAs = useAuthStore((state) => state.actingAsUserId);
   const { formatDate } = useDateFormat();
 
   // Null unless the stored address is really http(s); a link built from an
@@ -120,7 +117,6 @@ export function PayeeDetailHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {!actingAs && <ButtonLink variant="outline" size="sm" href={`/shared-expenses/people/${payee.id}`}>{ts('linkedPeople')}</ButtonLink>}
           <Button variant="outline" size="sm" onClick={onViewTransactions}>
             {t('header.viewTransactions')}
           </Button>

@@ -56,14 +56,9 @@ describe('PayeeDetailHeader', () => {
     expect(screen.getByRole('heading', { name: 'Starbucks' })).toBeInTheDocument();
   });
 
-  it('opens shared people linked to this payee', () => {
+  it('has no link to the shared people page', () => {
     renderHeader();
-    expect(
-      screen.getByRole('link', { name: 'People linked to this payee' }),
-    ).toHaveAttribute(
-      'href',
-      '/shared-expenses/people/payee-1',
-    );
+    expect(screen.queryByRole('link', { name: 'People linked to this payee' })).toBeNull();
   });
 
   it('fires the action callbacks', () => {
@@ -126,9 +121,7 @@ describe('PayeeDetailHeader', () => {
       expect(
         screen.queryByRole('link', { name: "Open Starbucks's website in a new tab" }),
       ).toBeNull();
-      expect(
-        screen.getAllByRole('link').map((link) => link.getAttribute('href')),
-      ).toEqual(['/shared-expenses/people/payee-1']);
+      expect(screen.queryAllByRole('link')).toHaveLength(0);
     });
 
     it('keeps an explicit http address rather than showing nothing', () => {
