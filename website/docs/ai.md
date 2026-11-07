@@ -111,6 +111,9 @@ The conversation is saved in your browser, so it is still there when you come ba
 - "What's my net worth trend over the past 6 months?"
 - "How much can I still spend this month within my budget?"
 - "What's my income breakdown by category?"
+- "How do I undo a split?"
+
+Questions about using Monize itself (how to do something, where a setting is, what a figure means) are answered from this guide. The assistant searches it, answers from the sections it finds, and links each one it used, so you can read the steps for yourself. If no section of the guide covers the question, it says so rather than guessing.
 
 The assistant has access to the following financial tools:
 
@@ -127,6 +130,7 @@ The assistant has access to the following financial tools:
 | **Warranties** | Your [warranties](warranties.md) and when they expire |
 | **Calculate** | Arithmetic over supplied values, including converting an amount between currencies at the rate on a date |
 | **Render Chart** | Draws a chart in the chat |
+| **Search Help** | Searches this guide for how Monize works, and links the sections it found |
 
 ### Suggested Queries
 
@@ -333,6 +337,7 @@ External AI clients can use the following tools through MCP. Read tools require 
 | `calculate` | Arithmetic over supplied values (percentage, difference, ratio, sum, average, currency conversion) | read |
 | `generate_report` | Run a built-in report (spending by category/payee, income vs. expenses, trends, anomalies, month comparison, net-worth history) | read |
 | `lookup_securities` | Look up securities by name or symbol | read |
+| `search_help` | Search this guide; returns the matching sections with their links | read |
 | `manage_transactions` | Create, update, or delete transactions | **write** |
 | `manage_payees` | Create, update, or delete payees | **write** |
 | `manage_securities` | Create, update, or delete securities | **write** |

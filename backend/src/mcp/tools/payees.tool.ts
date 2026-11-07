@@ -109,13 +109,11 @@ export class McpPayeesTools {
         annotations: READ_ONLY,
         description:
           "The user's payees with their default category, contact details and " +
-          "usage. `search` is a case-insensitive substring of the name. The " +
-          "has* filters are three-valued: true keeps only the payees carrying " +
-          "that detail, false only those missing it, omitted asks nothing -- so " +
-          "hasEmail:false is how to find the payees still needing one. " +
-          "`totalCount` is how many matched and `truncated` says whether " +
-          "`payees` is only the first `limit` of them; never describe a " +
-          "truncated list as all of the user's payees.",
+          "usage. `search` is a case-insensitive substring of the name. A has* " +
+          "filter true keeps payees with that detail, false those without it " +
+          "(hasEmail:false finds payees still needing one). `totalCount` counts " +
+          "matches; when `truncated`, `payees` is only the first `limit`, so " +
+          "never call it all of the user's payees.",
         inputSchema: z.object({
           search: z
             .string()
@@ -174,12 +172,11 @@ export class McpPayeesTools {
         description:
           "Create, rename, edit or delete payees. An update identifies the " +
           "payee by `name` and needs at least one change; an empty string " +
-          "clears a contact field. Setting a website also resolves that site's " +
-          "icon. Deleting a payee leaves its transactions with their stored " +
-          "payee name. Where the user has enabled automatic contact lookup, a " +
-          "single new payee created with no contact details is looked up " +
-          "before the confirmation card is shown, so the card may carry " +
-          "suggestions; a batch is looked up in the background after approval.",
+          "clears a contact field. A website also resolves its icon. Deleting " +
+          "a payee leaves its transactions their stored payee name. With " +
+          "automatic contact lookup on, a single new payee with no contact " +
+          "details is looked up before its card, which may carry suggestions; " +
+          "a batch is looked up after approval.",
         inputSchema: z.object({
           operation: manageOperation(),
           items: itemsArray(

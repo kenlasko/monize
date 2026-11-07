@@ -44,8 +44,8 @@ export class McpRelayTools {
         description:
           "Long-poll for the next prompt typed in the Monize web chat. " +
           "{ hasPrompt: false }: call again immediately to keep listening. " +
-          "{ hasPrompt: false, stop: true }: the user has gone inactive -- stop " +
-          "the polling loop and exit cleanly; they will reconnect you. " +
+          "{ hasPrompt: false, stop: true }: the user went inactive; stop " +
+          "polling and exit, they will reconnect you. " +
           "{ hasPrompt: true }: the result carries the prompt, `history` " +
           "(oldest first), any `attachments` (read each `uri` to view an image " +
           "or PDF; text files are already inlined into the prompt) and " +
@@ -137,11 +137,10 @@ export class McpRelayTools {
         description:
           "Stream one short sentence of live narration to the web chat while " +
           'you work on a claimed prompt ("Looking up the groceries ' +
-          'category..."). Send one before each lookup or decision, and at ' +
-          "least every minute or two while reading or composing. It does not " +
-          "answer the prompt: finish with post_response. delivered:false means " +
-          "only that live narration is not attached right now -- keep working; " +
-          "cards and your final answer are still buffered and shown.",
+          'category..."): before each lookup or decision, and at least every ' +
+          "minute or two. It does not answer the prompt: finish with " +
+          "post_response. delivered:false means only that narration is not " +
+          "attached now; keep working, cards and your answer are still shown.",
         inputSchema: z.object({
           promptId: uuidString().describe("The promptId from get_next_prompt."),
           text: z.string().max(2000).describe("One short status sentence."),

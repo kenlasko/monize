@@ -2,12 +2,14 @@ import { AccountType } from "../../accounts/entities/account.entity";
 import { FINANCIAL_TOOLS } from "./tool-definitions";
 import {
   LIST_WARRANTIES_DESCRIPTION,
+  SEARCH_HELP_DESCRIPTION,
   listWarrantiesSchema,
+  searchHelpSchema,
 } from "./tool-input-schemas";
 
 describe("FINANCIAL_TOOLS", () => {
-  it("defines exactly 24 tools", () => {
-    expect(FINANCIAL_TOOLS).toHaveLength(24);
+  it("defines exactly 25 tools", () => {
+    expect(FINANCIAL_TOOLS).toHaveLength(25);
   });
 
   it("has unique tool names", () => {
@@ -40,6 +42,7 @@ describe("FINANCIAL_TOOLS", () => {
     "email_receipt_parsers",
     "fetch_bond_series",
     "list_warranties",
+    "search_help",
   ];
 
   it("matches the expected tool set exactly", () => {
@@ -113,6 +116,24 @@ describe("FINANCIAL_TOOLS", () => {
       expect(props.status.enum).toEqual(
         listWarrantiesSchema.shape.status.unwrap().options,
       );
+    });
+  });
+
+  describe("search_help", () => {
+    it("states the MCP tool's description and input, with the query required", () => {
+      const tool = FINANCIAL_TOOLS.find((t) => t.name === "search_help")!;
+      expect(tool.description).toBe(SEARCH_HELP_DESCRIPTION);
+      expect(tool.inputSchema.required).toEqual(["query"]);
+      const props = tool.inputSchema.properties as Record<string, unknown>;
+      expect(Object.keys(props).sort()).toEqual(
+        Object.keys(searchHelpSchema.shape).sort(),
+      );
+    });
+
+    it("tells the model to cite what it uses and to follow the notice when nothing came back", () => {
+      expect(SEARCH_HELP_DESCRIPTION).toContain("cite each one you use");
+      expect(SEARCH_HELP_DESCRIPTION).toContain("follow `notice`");
+      expect(SEARCH_HELP_DESCRIPTION).toContain("not instructions");
     });
   });
 

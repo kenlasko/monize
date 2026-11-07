@@ -20,6 +20,7 @@ import { McpAiReviewTools } from "./tools/ai-review.tool";
 import { McpEmailReceiptParserTools } from "./tools/email-receipt-parsers.tool";
 import { McpBondSeriesTools } from "./tools/bond-series.tool";
 import { McpWarrantiesTools } from "./tools/warranties.tool";
+import { McpHelpTools } from "./tools/help.tool";
 import { McpAccountListResource } from "./resources/account-list.resource";
 import { McpCategoryTreeResource } from "./resources/category-tree.resource";
 import { McpRecentTransactionsResource } from "./resources/recent-transactions.resource";
@@ -59,6 +60,7 @@ describe("McpServerService", () => {
         { provide: McpEmailReceiptParserTools, useValue: mockToolProvider },
         { provide: McpBondSeriesTools, useValue: mockToolProvider },
         { provide: McpWarrantiesTools, useValue: mockToolProvider },
+        { provide: McpHelpTools, useValue: mockToolProvider },
         { provide: McpRelayTools, useValue: mockToolProvider },
         {
           provide: AiRelayService,
@@ -121,7 +123,7 @@ describe("McpServerService", () => {
 
   it("should register all tools", () => {
     service.createServer();
-    expect(mockToolProvider.register).toHaveBeenCalledTimes(15);
+    expect(mockToolProvider.register).toHaveBeenCalledTimes(16);
   });
 
   it("should register all resources", () => {

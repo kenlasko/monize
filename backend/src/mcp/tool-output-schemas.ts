@@ -564,6 +564,20 @@ export const listWarrantiesOutput = toolOutput({
 });
 
 // ---------------------------------------------------------------------------
+// help.tool.ts
+// ---------------------------------------------------------------------------
+
+/**
+ * `search_help`: whether this server has the guide, and the sections found,
+ * best first, each with the `url` a model cites. An empty list with
+ * `available` true means no section matched.
+ */
+export const searchHelpOutput = toolOutput({
+  available: bool,
+  sections: rows(),
+});
+
+// ---------------------------------------------------------------------------
 // relay.tool.ts
 // ---------------------------------------------------------------------------
 

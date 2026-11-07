@@ -152,19 +152,65 @@ describe("HelpService against the repository's website/docs", () => {
    * in the top three results -- the search scorer's quality bar. This fixture
    * doubles as the assistant tool's own quality check (plan 6).
    */
-  describe("search", () => {
-    it.each([
-      ["how do I split a transaction", "transactions", "split-transactions"],
-      ["change my default currency", "currency-management", "home-currency"],
-      ["restore a backup", "backup-and-restore", "restoring-from-a-backup"],
-      ["add a mortgage", "accounts", "mortgage-setup"],
-      ["two-factor", "settings-and-security", "two-factor-authentication-2fa"],
-    ])("%j lands %s#%s in the top three", (query, page, section) => {
-      const { results } = service.search(query, { limit: 3 });
+  const REAL_QUESTIONS: [string, string, string][] = [
+    ["how do I split a transaction", "transactions", "split-transactions"],
+    ["change my default currency", "currency-management", "home-currency"],
+    ["restore a backup", "backup-and-restore", "restoring-from-a-backup"],
+    ["add a mortgage", "accounts", "mortgage-setup"],
+    ["two-factor", "settings-and-security", "two-factor-authentication-2fa"],
+  ];
 
-      expect(results.slice(0, 3)).toEqual(
-        expect.arrayContaining([expect.objectContaining({ page, section })]),
-      );
+  describe("search", () => {
+    it.each(REAL_QUESTIONS)(
+      "%j lands %s#%s in the top three",
+      (query, page, section) => {
+        const { results } = service.search(query, { limit: 3 });
+
+        expect(results.slice(0, 3)).toEqual(
+          expect.arrayContaining([expect.objectContaining({ page, section })]),
+        );
+      },
+    );
+  });
+
+  /**
+   * The same questions through what the assistant and the MCP tool call, with
+   * the issue's own ("how do I undo a split?": the steps are under Creating a
+   * Split). This tests retrieval, the part the code controls; how a model uses
+   * the sections is checked by hand.
+   */
+  describe("getLlmHelp", () => {
+    it.each([
+      ...REAL_QUESTIONS,
+      ["how do I undo a split?", "transactions", "creating-a-split"],
+    ])("%j answers %s#%s with its text and link", (query, page, section) => {
+      const answer = service.getLlmHelp(query);
+      const url = `https://www.monize.net/docs/${page}#${section}`;
+      const hit = answer.sections.find((s) => s.url === url);
+
+      expect(answer.available).toBe(true);
+      expect(answer.language).toBe("en");
+      expect(hit).toBeDefined();
+      expect(hit?.text.length).toBeGreaterThan(0);
+      expect(
+        fs.readFileSync(path.join(DOCS, `${page}.html`), "utf-8"),
+      ).toContain(`id="${section}"`);
+    });
+
+    it("finds each hit's own text unambiguously: no two index entries share a url", () => {
+      const index = JSON.parse(
+        fs.readFileSync(path.join(DOCS, "search-index.json"), "utf-8"),
+      ) as { u: string }[];
+      const urls = index.map((entry) => entry.u);
+
+      expect(new Set(urls).size).toBe(urls.length);
+    });
+
+    it("keeps the whole answer to a bounded size at the largest limit", () => {
+      const answer = service.getLlmHelp("account transaction", { limit: 99 });
+
+      expect(answer.sections).toHaveLength(8);
+      expect(JSON.stringify(answer).length).toBeLessThan(16_000);
     });
   });
 });

@@ -131,11 +131,10 @@ export class McpInvestmentsTools {
         annotations: READ_ONLY,
         description:
           "Portfolio overview: holdings, cost basis, gains and allocation, " +
-          "plus a per-account breakdown in holdingsByAccount -- so use it for " +
-          "single-account holdings questions too. Check valuationComplete " +
-          "before quoting any total: false means a price or an exchange rate " +
-          "was unavailable, and the figure is a subtotal, not a total. " +
-          "includeLookThrough adds country and asset-class exposure.",
+          "with a per-account breakdown in holdingsByAccount (use it for one " +
+          "account's holdings too). Check valuationComplete before quoting a " +
+          "total: false means a price or rate was missing and the figure is a " +
+          "subtotal. includeLookThrough adds country and asset-class exposure.",
         inputSchema: z.object({
           accountNames: z
             .array(z.string().max(100))
@@ -368,13 +367,12 @@ export class McpInvestmentsTools {
         annotations: WRITE,
         description:
           "List, create, edit or delete securities. list takes accountName " +
-          "(name or id) and returns what it holds, with no items. A create " +
-          "is validated against the price provider, which supplies the " +
-          "official symbol, name, exchange, type and currency -- do not " +
-          "invent them; pass `exchange` only to disambiguate a symbol listed " +
-          "in more than one place. An update identifies the security by " +
-          "symbol or name. A delete fails while it has holdings or " +
-          "transactions.",
+          "(name or id), no items, and returns its holdings. A create is " +
+          "validated against the price provider, which supplies the official " +
+          "symbol, name, exchange, type and currency (never invent them); " +
+          "pass `exchange` only for a symbol listed in more than one place. " +
+          "An update identifies the security by symbol or name. A delete " +
+          "fails while it has holdings or transactions.",
         inputSchema: z.object({
           operation: z
             .enum(["list", "create", "update", "delete"])

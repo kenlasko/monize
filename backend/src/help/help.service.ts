@@ -5,7 +5,6 @@ import {
   HELP_IMAGE_NAME_RE,
   HELP_IMAGE_REF_RE,
   HELP_INDEX_SLUG,
-  HELP_ONLINE_BASE_URL,
   HELP_SLUG_RE,
 } from "./help.constants";
 import {
@@ -23,6 +22,15 @@ import {
   readImageBundle,
 } from "./help-images";
 import { HelpSearchAnswer, HelpSearchSection, searchHelp } from "./help-search";
+import {
+  LLM_HELP_LANGUAGE,
+  LLM_HELP_NO_MATCH_NOTICE,
+  LLM_HELP_UNAVAILABLE_NOTICE,
+  LlmHelpAnswer,
+  capHelpText,
+  clampHelpLimit,
+  helpSectionUrl,
+} from "./help-llm-shape";
 
 // The running version comes from the backend package.json at build/run time,
 // matching ReleaseNotesService.
@@ -146,6 +154,49 @@ export class HelpService {
     });
   }
 
+  /**
+   * `search_help`, for the assistant and the MCP tool alike: the scorer
+   * `search` runs (no screen to boost), each hit with its section's own text
+   * capped to `LLM_HELP_TEXT_MAX_CHARS` and the monize.net link a model cites.
+   * It reads only the bundled guide, never a user's data, so it needs no
+   * database scope and answers a delegate exactly as it answers the owner.
+   */
+  getLlmHelp(query: string, options: { limit?: number } = {}): LlmHelpAnswer {
+    const available = this.load();
+    // A heading with no text of its own (the parent of `###` subsections) has
+    // nothing to answer from, and its heading match would outrank the
+    // subsections that do, so it never takes one of the model's slots.
+    const { results } = available
+      ? searchHelp(
+          this.sections.filter((s) => s.text.trim().length > 0),
+          query,
+          { limit: clampHelpLimit(options.limit) },
+        )
+      : { results: [] };
+    const notice = !available
+      ? LLM_HELP_UNAVAILABLE_NOTICE
+      : results.length === 0
+        ? LLM_HELP_NO_MATCH_NOTICE
+        : null;
+    return {
+      available,
+      ...(notice ? { notice } : {}),
+      guideVersion: this.currentVersion,
+      language: LLM_HELP_LANGUAGE,
+      sections: results.map((result) => {
+        const source = this.sections.find(
+          (s) => s.page === result.page && s.section === result.section,
+        );
+        return {
+          pageTitle: result.pageTitle,
+          heading: result.heading,
+          url: helpSectionUrl(result.page, result.section),
+          text: capHelpText(source?.text ?? result.excerpt),
+        };
+      }),
+    };
+  }
+
   /** Reads the bundle on first use; true when there is a usable one. */
   private load(): boolean {
     if (this.state === "unloaded") {
@@ -234,10 +285,7 @@ export class HelpService {
           group: summary.group,
           markdown,
           toc: this.buildToc(slug, markdown, sections.get(slug) ?? []),
-          onlineUrl:
-            slug === HELP_INDEX_SLUG
-              ? `${HELP_ONLINE_BASE_URL}/`
-              : `${HELP_ONLINE_BASE_URL}/${slug}`,
+          onlineUrl: helpSectionUrl(slug, null),
           images: pageImages(markdown, images, this.currentVersion),
         });
       }

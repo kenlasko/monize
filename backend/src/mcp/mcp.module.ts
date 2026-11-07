@@ -22,6 +22,7 @@ import { AiReviewQueueModule } from "../ai-review/ai-review-queue.module";
 import { EmailReceiptParsersModule } from "../email-receipts/parsers/email-receipt-parsers.module";
 import { BondsModule } from "../bonds/bonds.module";
 import { WarrantiesModule } from "../warranties/warranties.module";
+import { HelpModule } from "../help/help.module";
 
 import { McpServerService } from "./mcp-server.service";
 import { McpHttpController } from "./mcp-http.controller";
@@ -43,6 +44,7 @@ import { McpAiReviewTools } from "./tools/ai-review.tool";
 import { McpEmailReceiptParserTools } from "./tools/email-receipt-parsers.tool";
 import { McpBondSeriesTools } from "./tools/bond-series.tool";
 import { McpWarrantiesTools } from "./tools/warranties.tool";
+import { McpHelpTools } from "./tools/help.tool";
 
 import { McpAccountListResource } from "./resources/account-list.resource";
 import { McpCategoryTreeResource } from "./resources/category-tree.resource";
@@ -93,6 +95,8 @@ import { McpSpendingAnalysisPrompt } from "./prompts/spending-analysis.prompt";
     forwardRef(() => BondsModule),
     // list_warranties: WarrantiesService.getLlmWarranties.
     WarrantiesModule,
+    // search_help: HelpService.getLlmHelp.
+    HelpModule,
   ],
   providers: [
     McpServerService,
@@ -113,6 +117,7 @@ import { McpSpendingAnalysisPrompt } from "./prompts/spending-analysis.prompt";
     McpEmailReceiptParserTools,
     McpBondSeriesTools,
     McpWarrantiesTools,
+    McpHelpTools,
     McpAccountListResource,
     McpCategoryTreeResource,
     McpRecentTransactionsResource,

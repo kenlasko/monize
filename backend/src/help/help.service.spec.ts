@@ -3,6 +3,13 @@ import * as os from "os";
 import * as path from "path";
 import { Logger } from "@nestjs/common";
 import { HelpService } from "./help.service";
+import {
+  LLM_HELP_DEFAULT_LIMIT,
+  LLM_HELP_MAX_LIMIT,
+  LLM_HELP_NO_MATCH_NOTICE,
+  LLM_HELP_TEXT_MAX_CHARS,
+  LLM_HELP_UNAVAILABLE_NOTICE,
+} from "./help-llm-shape";
 
 /** The first bytes of a lossless WebP of the given size. */
 function webp(width: number, height: number): Buffer {
@@ -492,6 +499,165 @@ describe("HelpService", () => {
       const { results } = service.search("lead");
 
       expect(results.some((r) => r.page === "second-page")).toBe(false);
+    });
+  });
+
+  describe("getLlmHelp", () => {
+    /** The bundle with its index replaced, so a test can shape the matches. */
+    function writeBundleWithIndex(index: typeof INDEX): void {
+      writeBundle();
+      fs.writeFileSync(
+        path.join(helpDir, "search-index.json"),
+        JSON.stringify(index),
+      );
+    }
+
+    /** `count` sections of the first page, each matching "ledger". */
+    function ledgerSections(count: number): typeof INDEX {
+      return Array.from({ length: count }, (_, i) => ({
+        u: `/docs/first-page#ledger-${i}`,
+        p: "First Page",
+        h: `Ledger ${i}`,
+        x: `Section ${i} of the ledger.`,
+      }));
+    }
+
+    it("answers each matched section's own text with its monize.net link", () => {
+      writeBundle();
+
+      expect(service.getLlmHelp("alpha")).toEqual({
+        available: true,
+        guideVersion: service.currentVersion,
+        language: "en",
+        sections: [
+          {
+            pageTitle: "First Page",
+            heading: "Alpha",
+            url: "https://www.monize.net/docs/first-page#alpha",
+            text: "A.",
+          },
+        ],
+      });
+    });
+
+    it("links a lead paragraph to its page and the landing page to the site root", () => {
+      writeBundle();
+
+      const urls = service
+        .getLlmHelp("welcome lead", { limit: 8 })
+        .sections.map((s) => s.url);
+
+      expect(urls).toEqual(
+        expect.arrayContaining([
+          "https://www.monize.net/docs/",
+          "https://www.monize.net/docs/first-page",
+          "https://www.monize.net/docs/second-page",
+        ]),
+      );
+    });
+
+    it("answers the full text of a section, not the search excerpt", () => {
+      const text = `${"word ".repeat(60)}alpha ${"word ".repeat(60)}`.trim();
+      writeBundleWithIndex([
+        { u: "/docs/first-page#alpha", p: "First Page", h: "Alpha", x: text },
+      ]);
+
+      expect(service.getLlmHelp("alpha").sections[0].text).toBe(text);
+    });
+
+    it("caps a long section's text at a word boundary, with an ellipsis", () => {
+      // The leading "x " shifts the 12-character "lorem ipsum " so the cap
+      // falls mid-word: a hard cut would end on "ipsu", not on a whole word.
+      const text = `x ${"lorem ipsum ".repeat(500)}`.trim();
+      expect(text[LLM_HELP_TEXT_MAX_CHARS]).not.toBe(" ");
+      expect(text[LLM_HELP_TEXT_MAX_CHARS - 1]).not.toBe(" ");
+      writeBundleWithIndex([
+        { u: "/docs/first-page#alpha", p: "First Page", h: "Alpha", x: text },
+      ]);
+
+      const capped = service.getLlmHelp("alpha").sections[0].text;
+
+      expect(capped.length).toBeLessThanOrEqual(LLM_HELP_TEXT_MAX_CHARS + 1);
+      expect(capped.endsWith("…")).toBe(true);
+      expect(text.startsWith(capped.slice(0, -1))).toBe(true);
+      expect(capped.slice(0, -1)).toMatch(/ (lorem|ipsum)$/);
+    });
+
+    it("cuts at the cap itself when no space is near it", () => {
+      const text = `alpha ${"x".repeat(2000)}`;
+      writeBundleWithIndex([
+        { u: "/docs/first-page#alpha", p: "First Page", h: "Alpha", x: text },
+      ]);
+
+      const capped = service.getLlmHelp("alpha").sections[0].text;
+
+      expect(capped).toBe(`${text.slice(0, LLM_HELP_TEXT_MAX_CHARS)}…`);
+    });
+
+    it("never spends a slot on a heading with no text of its own", () => {
+      writeBundleWithIndex([
+        { u: "/docs/first-page#ledger", p: "First Page", h: "Ledger", x: "" },
+        {
+          u: "/docs/first-page#ledger-steps",
+          p: "First Page",
+          h: "Steps",
+          x: "Open the ledger.",
+        },
+      ]);
+
+      expect(
+        service.getLlmHelp("ledger", { limit: 1 }).sections.map((s) => s.url),
+      ).toEqual(["https://www.monize.net/docs/first-page#ledger-steps"]);
+    });
+
+    it("sends a question in another script back for an English search", () => {
+      writeBundle();
+
+      const answer = service.getLlmHelp("как разделить транзакцию");
+
+      expect(answer.sections).toEqual([]);
+      expect(answer.notice).toBe(LLM_HELP_NO_MATCH_NOTICE);
+      expect(answer.notice).toContain("search again in English");
+    });
+
+    it.each([
+      [undefined, LLM_HELP_DEFAULT_LIMIT],
+      [1, 1],
+      [LLM_HELP_MAX_LIMIT, LLM_HELP_MAX_LIMIT],
+      [50, LLM_HELP_MAX_LIMIT],
+      [0, 1],
+      [-3, 1],
+      [Number.NaN, LLM_HELP_DEFAULT_LIMIT],
+    ])("holds limit %p to %p sections", (limit, expected) => {
+      writeBundleWithIndex(ledgerSections(12));
+
+      expect(service.getLlmHelp("ledger", { limit }).sections).toHaveLength(
+        expected,
+      );
+    });
+
+    it("answers no sections, not an error, when nothing matches", () => {
+      writeBundle();
+
+      expect(service.getLlmHelp("zzzzqqq")).toEqual({
+        available: true,
+        notice: LLM_HELP_NO_MATCH_NOTICE,
+        guideVersion: service.currentVersion,
+        language: "en",
+        sections: [],
+      });
+    });
+
+    it("says the guide is unavailable when the bundle is missing", () => {
+      jest.spyOn(fs, "existsSync").mockReturnValue(false);
+
+      expect(service.getLlmHelp("alpha")).toEqual({
+        available: false,
+        notice: LLM_HELP_UNAVAILABLE_NOTICE,
+        guideVersion: service.currentVersion,
+        language: "en",
+        sections: [],
+      });
     });
   });
 });
