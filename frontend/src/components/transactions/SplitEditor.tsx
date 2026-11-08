@@ -42,6 +42,7 @@ import { SplitAmountFields } from './SplitAmountFields';
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
 import { buildTagOptions } from '@/lib/tag-options';
 import { Th } from '@/components/ui/Table';
+import { newClientId } from '@/lib/client-id';
 
 export type { SplitType, SplitRow } from './split-rows';
 export { createEmptySplits, toSplitRows, toCreateSplitData } from './split-rows';
@@ -449,7 +450,7 @@ export function SplitEditor({
 
   const addSplit = () => {
     const newSplit: SplitRow = {
-      id: `temp-${crypto.randomUUID()}`,
+      id: `temp-${newClientId()}`,
       splitType: 'category',
       categoryId: undefined,
       transferAccountId: undefined,

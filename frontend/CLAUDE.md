@@ -59,7 +59,7 @@ npm run docs:build         # Regenerate the user docs (website/docs/) from their
 | An investment row's money | the row's own `amountCurrencyCode` / `priceCurrencyCode` / `commissionCurrencyCode`, converted with `convertRowAmount`; a VOID row dropped with `investmentRowHasEffect` | the account's currency, the reader's, or a client-side sum across rows |
 | CSV | `exportToCsv` / `exportCsvSections` (`lib/csv-export.ts`) | a second `text/csv` Blob |
 | Link to the user documentation (`PageHeader` `help`; `InfoTooltip` `learnMore`; `EmptyState` `help`; an inline guide link) | a `DOCS_LINKS` key (`lib/docs-links.ts`): `help="key"`/`learnMore="key"`, or `HelpLink` (`components/help/HelpLink.tsx`) for an inline link | a `helpUrl` prop, a docs or wiki URL literal, a hand-rolled `<a href={docsUrl(...)}>` |
-| Random id | `crypto.randomUUID()` | `Math.random()` |
+| Random id | `newClientId()` (`lib/client-id.ts`) | `Math.random()`, or a bare `crypto.randomUUID()` (undefined over plain HTTP) |
 | Chart colour | `chartColors` tokens (`lib/chart-colors.ts`) | a hex literal in a `fill`, `stroke` or `stopColor` |
 | Chart grid, tooltip shell, hover dot | `CHART_GRID_PROPS`, `CHART_TOOLTIP_CLASS` (`lib/chart-style.ts`), `ChartActiveDot` | a written dash or stroke, the inline shell, `activeDot={{...}}` |
 | Loading placeholder | `Skeleton`, or `animate-pulse skeleton-shimmer` | a bare `animate-pulse` |

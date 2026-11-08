@@ -3,6 +3,7 @@ import type {
   SharedEntryInput,
   SharedGroupDetail,
 } from "@/types/shared-expense";
+import { newClientId } from "@/lib/client-id";
 
 type Share = SharedEntryInput["shares"][number];
 /** Inputs are machine decimal strings from the shared localized numeric controls. */
@@ -134,7 +135,7 @@ export function initialSharedEntry(
   const template = usableSharedTemplate(group);
   return entry
     ? {
-        operationId: crypto.randomUUID(),
+        operationId: newClientId(),
         expectedRevision: entry.revision,
         type: entry.type,
         title: entry.title,
@@ -169,7 +170,7 @@ export function initialSharedEntry(
         expectedGroupRevision: group.financialRevision,
       }
     : {
-        operationId: crypto.randomUUID(),
+        operationId: newClientId(),
         expectedRevision: 0,
         type: "EXPENSE",
         title: "",

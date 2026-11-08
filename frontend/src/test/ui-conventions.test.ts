@@ -2855,6 +2855,30 @@ describe("a payee contact lookup surface asks whether a lookup can run", () => {
   });
 });
 
+describe("a random id comes from newClientId, never a bare crypto.randomUUID", () => {
+  /**
+   * `crypto.randomUUID()` exists only in a secure context, and Monize is
+   * routinely served over plain HTTP on a LAN address, where a bare call
+   * throws: the split editor's "Add Split" did nothing there (issue #2077).
+   * `newClientId()` (`lib/client-id.ts`) calls it when it exists and builds the
+   * same v4 UUID from `getRandomValues` when it does not. `proxy.ts` runs on
+   * the server, where it is always present.
+   */
+  it("never calls crypto.randomUUID outside lib/client-id.ts and proxy.ts", () => {
+    const offenders = productionSources()
+      .filter(([path]) => !/(^|\/)(lib\/client-id\.ts|proxy\.ts)$/.test(path))
+      .filter(([, source]) => /\brandomUUID\s*\(/.test(withoutComments(source)))
+      .map(([path]) => path);
+
+    expect(offenders).toEqual([]);
+  });
+
+  it("catches the pattern it bans", () => {
+    expect(/\brandomUUID\s*\(/.test(withoutComments("id: `temp-${crypto.randomUUID()}`"))).toBe(true);
+    expect(/\brandomUUID\s*\(/.test(withoutComments("// not crypto.randomUUID()"))).toBe(false);
+  });
+});
+
 describe("a random value comes from the Web Crypto API", () => {
   /**
    * `Math.random()` is not a security primitive, and every use of it in the
@@ -2877,7 +2901,7 @@ describe("a random value comes from the Web Crypto API", () => {
 
   it("still finds the sanctioned helper, so the rule cannot pass by accident", () => {
     const users = productionSources().filter(([, source]) =>
-      /crypto\.randomUUID\(\)/.test(withoutComments(source)),
+      /newClientId\(\)/.test(withoutComments(source)),
     );
     expect(users.length).toBeGreaterThan(0);
   });
