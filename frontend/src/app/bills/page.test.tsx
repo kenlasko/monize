@@ -1691,6 +1691,17 @@ describe('BillsPage', () => {
       expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
     });
 
+    it('shows the bill a link names even when the saved filters would hide it', async () => {
+      localStorage.setItem('monize-bills-filter-type', '"deposits"');
+      nav.searchParams = new URLSearchParams('highlight=st-1');
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      expect(screen.getByText('Rent')).toBeInTheDocument();
+      // The reader's filter is left as they saved it.
+      expect(localStorage.getItem('monize-bills-filter-type')).toBe('"deposits"');
+    });
+
     it('removes the type filter from its chip', async () => {
       localStorage.setItem('monize-bills-filter-type', '"bills"');
       localStorage.setItem('monize-bills-filters-expanded', 'false');

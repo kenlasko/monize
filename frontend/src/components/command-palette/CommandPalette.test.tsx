@@ -281,6 +281,24 @@ describe('CommandPalette', () => {
     expect(useCommandPaletteStore.getState().newTransactionRequest).not.toBeNull();
   });
 
+  it('opens Bills & Deposits at the bill it found, for the page to highlight', async () => {
+    getBills.mockResolvedValue([
+      {
+        id: 'b1',
+        name: 'Water Bill',
+        isActive: true,
+        amount: -40,
+        currencyCode: 'CAD',
+        nextDueDate: '2099-01-01',
+        accountId: 'a1',
+      },
+    ]);
+    const box = await openPalette();
+    await type(box, 'water');
+    fireEvent.click(screen.getByRole('option', { name: /Water Bill/ }));
+    expect(push).toHaveBeenCalledWith('/bills?highlight=b1');
+  });
+
   it('offers an inactive payee its history but no new entry', async () => {
     getPayees.mockResolvedValue([{ ...hydro, isActive: false }]);
     const box = await openPalette();
