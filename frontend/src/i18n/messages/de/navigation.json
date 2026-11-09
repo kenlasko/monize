@@ -72,6 +72,7 @@
     "overdue": "{days, plural, one {# Tag überfällig} other {# Tage überfällig}}",
     "noPayee": "Kein Zahlungsempfänger",
     "newTransaction": "Neue Buchung",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
     "newTransactionFor": "Neue Buchung für {name}",
     "transactionsFor": "Alle Buchungen für {name}",
     "searchTransactions": "Buchungen nach „{query}“ suchen",

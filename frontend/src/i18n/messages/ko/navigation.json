@@ -72,6 +72,7 @@
     "overdue": "{days, plural, other {#일 연체}}",
     "noPayee": "수취인 없음",
     "newTransaction": "새 거래",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
     "newTransactionFor": "{name}의 새 거래",
     "transactionsFor": "{name}의 모든 거래",
     "searchTransactions": "\"{query}\" 거래 검색",

@@ -72,6 +72,7 @@
     "overdue": "{days, plural, one {# dag te laat} other {# dagen te laat}}",
     "noPayee": "Geen begunstigde",
     "newTransaction": "Nieuwe transactie",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
     "newTransactionFor": "Nieuwe transactie voor {name}",
     "transactionsFor": "Alle transacties voor {name}",
     "searchTransactions": "Transacties zoeken voor \"{query}\"",

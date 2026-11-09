@@ -72,6 +72,7 @@
     "overdue": "{days, plural, one {# day overdue} other {# days overdue}}",
     "noPayee": "No payee",
     "newTransaction": "New transaction",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
     "newTransactionFor": "New transaction for {name}",
     "transactionsFor": "All transactions for {name}",
     "searchTransactions": "Search transactions for “{query}”",

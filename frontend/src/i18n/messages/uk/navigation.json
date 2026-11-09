@@ -72,6 +72,7 @@
     "overdue": "{days, plural, one {Прострочено на # день} few {Прострочено на # дні} many {Прострочено на # днів} other {Прострочено на # дня}}",
     "noPayee": "Немає одержувача",
     "newTransaction": "Нова транзакція",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
     "newTransactionFor": "Нова транзакція для {name}",
     "transactionsFor": "Усі транзакції для {name}",
     "searchTransactions": "Шукати транзакції за запитом «{query}»",

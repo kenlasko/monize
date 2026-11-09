@@ -72,6 +72,7 @@
     "overdue": "{days, plural, one {# दिन अतिदेय} other {# दिन अतिदेय}}",
     "noPayee": "कोई प्राप्तकर्ता नहीं",
     "newTransaction": "नया लेनदेन",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
     "newTransactionFor": "{name} के लिए नया लेनदेन",
     "transactionsFor": "{name} के सभी लेनदेन",
     "searchTransactions": "\"{query}\" के लिए लेनदेन खोजें",

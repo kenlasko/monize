@@ -72,6 +72,7 @@
     "overdue": "{days, plural, one {Po terminie o # dzień} few {Po terminie o # dni} many {Po terminie o # dni} other {Po terminie o # dnia}}",
     "noPayee": "Brak odbiorcy",
     "newTransaction": "Nowa transakcja",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
     "newTransactionFor": "Nowa transakcja dla {name}",
     "transactionsFor": "Wszystkie transakcje dla {name}",
     "searchTransactions": "Szukaj transakcji dla „{query}”",

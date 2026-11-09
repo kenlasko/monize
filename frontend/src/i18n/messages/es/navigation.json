@@ -72,6 +72,7 @@
     "overdue": "{days, plural, one {# día de retraso} other {# días de retraso}}",
     "noPayee": "Sin beneficiario",
     "newTransaction": "Nueva transacción",
+    "newTransactionShortcut": "Ctrl/Cmd+Intro",
     "newTransactionFor": "Nueva transacción para {name}",
     "transactionsFor": "Todas las transacciones de {name}",
     "searchTransactions": "Buscar transacciones de \"{query}\"",

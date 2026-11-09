@@ -72,6 +72,7 @@
     "overdue": "{days, plural, other {# hari terlambat}}",
     "noPayee": "Tanpa penerima",
     "newTransaction": "Transaksi baru",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
     "newTransactionFor": "Transaksi baru untuk {name}",
     "transactionsFor": "Semua transaksi untuk {name}",
     "searchTransactions": "Cari transaksi untuk \"{query}\"",

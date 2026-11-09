@@ -72,6 +72,7 @@
     "overdue": "{days, plural, other {期限を#日超過}}",
     "noPayee": "支払先なし",
     "newTransaction": "新規取引",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
     "newTransactionFor": "{name}の新規取引",
     "transactionsFor": "{name}のすべての取引",
     "searchTransactions": "「{query}」の取引を検索",

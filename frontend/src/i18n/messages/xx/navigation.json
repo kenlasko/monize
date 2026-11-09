@@ -72,6 +72,7 @@
     "overdue": "[XX-{days, plural, one {# day overdue} other {# days overdue}}-XX]",
     "noPayee": "[XX-No payee-XX]",
     "newTransaction": "[XX-New transaction-XX]",
+    "newTransactionShortcut": "[XX-Ctrl/Cmd+Enter-XX]",
     "newTransactionFor": "[XX-New transaction for {name}-XX]",
     "transactionsFor": "[XX-All transactions for {name}-XX]",
     "searchTransactions": "[XX-Search transactions for “{query}”-XX]",

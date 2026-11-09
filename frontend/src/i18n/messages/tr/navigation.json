@@ -72,6 +72,7 @@
     "overdue": "{days, plural, one {# gün gecikmiş} other {# gün gecikmiş}}",
     "noPayee": "Alacaklı yok",
     "newTransaction": "Yeni işlem",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
     "newTransactionFor": "{name} için yeni işlem",
     "transactionsFor": "{name} için tüm işlemler",
     "searchTransactions": "\"{query}\" için işlemleri ara",

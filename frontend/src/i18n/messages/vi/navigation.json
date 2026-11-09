@@ -72,6 +72,7 @@
     "overdue": "{days, plural, other {Quá hạn # ngày}}",
     "noPayee": "Không có người nhận thanh toán",
     "newTransaction": "Giao dịch mới",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
     "newTransactionFor": "Giao dịch mới cho {name}",
     "transactionsFor": "Tất cả giao dịch của {name}",
     "searchTransactions": "Tìm giao dịch cho \"{query}\"",

@@ -72,6 +72,7 @@
     "overdue": "{days, plural, other {已逾期 # 天}}",
     "noPayee": "無收款人",
     "newTransaction": "新增交易",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
     "newTransactionFor": "為 {name} 新增交易",
     "transactionsFor": "{name} 的所有交易",
     "searchTransactions": "搜尋 「{query}」 的交易",
