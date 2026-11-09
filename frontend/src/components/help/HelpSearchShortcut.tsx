@@ -13,20 +13,16 @@ const HelpSearchDialog = dynamic(
 );
 
 /**
- * Mounted once in the authenticated shell. `Ctrl/Cmd+K` opens help search
- * from anywhere; `?` does too, but only outside a field that consumes
- * ordinary typing, so a payee named with a question mark still gets one.
+ * Mounted once in the authenticated shell. `?` opens help search, but only
+ * outside a field that consumes ordinary typing, so a payee named with a
+ * question mark still gets one. `Ctrl/Cmd+K` is the command palette's
+ * (`CommandPaletteShortcut`).
  */
 export function HelpSearchShortcut() {
   const open = useHelpSearchStore((s) => s.open);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault();
-        useHelpSearchStore.getState().openSearch();
-        return;
-      }
       if (
         event.key === '?' &&
         !event.metaKey &&

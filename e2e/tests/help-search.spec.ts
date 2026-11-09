@@ -36,7 +36,7 @@ test.describe('Help search', () => {
     await page.goto('/transactions');
     await expect(page.getByRole('heading', { level: 1, name: 'Transactions' })).toBeVisible();
 
-    await page.keyboard.press('Control+k');
+    await page.keyboard.press('?');
     const dialog = page.getByRole('dialog', { name: 'Search the guide' });
     const box = dialog.getByRole('combobox', { name: 'Search the guide' });
     await box.fill('restore from backup');

@@ -40,5 +40,42 @@
     "open": "Open search",
     "submit": "Search"
   },
-  "sharedExpenses": "Shared Expenses"
+  "sharedExpenses": "Shared Expenses",
+  "commandPalette": {
+    "title": "Command palette",
+    "placeholder": "Search or jump to...",
+    "close": "Close",
+    "groups": {
+      "accounts": "Accounts",
+      "payees": "Payees",
+      "categories": "Categories",
+      "bills": "Bills",
+      "securities": "Securities",
+      "reports": "Reports",
+      "pages": "Go to",
+      "transactions": "Transactions",
+      "help": "Help",
+      "actions": "Actions"
+    },
+    "hint": {
+      "navigate": "navigate",
+      "open": "open",
+      "actions": "actions"
+    },
+    "scope": "Searches accounts, payees, categories, bills, securities, reports and settings",
+    "searching": "Searching...",
+    "noResults": "No results for “{query}”",
+    "loadFailed": "Some results could not be loaded.",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, one {# transaction} other {# transactions}}",
+    "dueIn": "{days, plural, =0 {Due today} =1 {Due tomorrow} other {Due in # days}}",
+    "overdue": "{days, plural, one {# day overdue} other {# days overdue}}",
+    "noPayee": "No payee",
+    "newTransaction": "New transaction",
+    "newTransactionFor": "New transaction for {name}",
+    "transactionsFor": "All transactions for {name}",
+    "searchTransactions": "Search transactions for “{query}”",
+    "searchHelp": "Search help",
+    "keyboardShortcuts": "Keyboard shortcuts"
+  }
 }

@@ -16,6 +16,7 @@ import { WeakJwtSecretBanner } from './WeakJwtSecretBanner';
 import { AiChatBubble } from '@/components/ai/AiChatBubble';
 import { HelpPanelLoader } from '@/components/help/HelpPanelLoader';
 import { HelpSearchShortcut } from '@/components/help/HelpSearchShortcut';
+import { CommandPaletteShortcut } from '@/components/command-palette/CommandPaletteShortcut';
 import { KeyboardShortcutsHost } from '@/components/help/KeyboardShortcutsHost';
 import { useHelpStore } from '@/store/helpStore';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
@@ -93,6 +94,7 @@ export function SwipeShell({ children, httpsHeadersActive = false }: SwipeShellP
       <AiChatBubble />
       <HelpPanelLoader />
       <HelpSearchShortcut />
+      <CommandPaletteShortcut />
       <KeyboardShortcutsHost />
     </div>
   );

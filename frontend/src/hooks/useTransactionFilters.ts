@@ -88,6 +88,22 @@ export function clearTransactionFilterStorage(): void {
   }
 }
 
+/**
+ * Run a transaction search from outside the page: the header search and the
+ * command palette. Persisted filters are wiped so the hook initializes clean
+ * (including `accountStatus`, which is not represented in the URL), and a
+ * mounted Transactions page is told to reset and apply the term.
+ */
+export function navigateToTransactionSearch(
+  term: string,
+  push: (href: string) => void,
+): void {
+  clearTransactionFilterStorage();
+  const detail: HeaderSearchEventDetail = { term };
+  window.dispatchEvent(new CustomEvent(HEADER_SEARCH_EVENT, { detail }));
+  push(`/transactions?search=${encodeURIComponent(term)}`);
+}
+
 // Helper to get filter values as array
 // If ANY URL params are present (navigation from reports), ignore localStorage entirely
 function getFilterValues(key: string, urlParam: string | null, hasAnyUrlParams: boolean): string[] {

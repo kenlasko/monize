@@ -12,6 +12,7 @@ interface ShortcutRow {
 
 /** The global shortcuts, in the order a reader is most likely to reach for them. */
 const ROWS: ShortcutRow[] = [
+  { labelKey: 'palette', keysKey: 'paletteKeys' },
   { labelKey: 'search', keysKey: 'searchKeys' },
   { labelKey: 'undo', keysKey: 'undoKeys' },
   { labelKey: 'redo', keysKey: 'redoKeys' },
@@ -20,8 +21,8 @@ const ROWS: ShortcutRow[] = [
 
 /**
  * The header Help menu's "Keyboard shortcuts" entry: a short reference for the
- * shortcuts that work from anywhere in the app (`HelpSearchShortcut`'s
- * `Ctrl/Cmd+K` and `?`, `useUndoRedo`'s undo/redo, and `Escape`). Opened only
+ * shortcuts that work from anywhere in the app (`CommandPaletteShortcut`'s
+ * `Ctrl/Cmd+K`, `HelpSearchShortcut`'s `?`, `useUndoRedo`'s undo/redo, and `Escape`). Opened only
  * from the menu, so it has no shortcut of its own.
  */
 export function KeyboardShortcutsDialog() {

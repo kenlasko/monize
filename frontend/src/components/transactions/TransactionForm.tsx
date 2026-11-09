@@ -209,6 +209,8 @@ interface TransactionFormProps {
    * and a form opened anywhere else keeps the remembered one.
    */
   defaultDate?: string;
+  /** A new transaction starts with this payee selected (the command palette's action). */
+  defaultPayee?: { id: string; name: string };
   onSuccess?: () => void;
   onCancel?: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
@@ -268,7 +270,7 @@ type AfterCreate = 'addWarranty';
 // Transaction mode type
 type TransactionMode = 'normal' | 'split' | 'transfer';
 
-function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, defaultCategoryId, defaultDate, onSuccess, onCancel, onDirtyChange, submitRef, onCreateAnother, initialStagedFiles, onAddWarranty, onAddWarrantyAfterCreate, onShareAfterCreate, onOpenWarranty }: TransactionFormFieldsProps) {
+function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, defaultCategoryId, defaultDate, defaultPayee, onSuccess, onCancel, onDirtyChange, submitRef, onCreateAnother, initialStagedFiles, onAddWarranty, onAddWarrantyAfterCreate, onShareAfterCreate, onOpenWarranty }: TransactionFormFieldsProps) {
   const t = useTranslations('transactions');
   const th = useTranslations('help');
   const sharedT = useTranslations('sharedExpenses');
@@ -309,7 +311,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
     initSource?.tags?.map(t => t.id) || []
   );
-  const [selectedPayeeId, setSelectedPayeeId] = useState<string>(initSource?.payeeId || '');
+  const [selectedPayeeId, setSelectedPayeeId] = useState<string>(initSource?.payeeId || defaultPayee?.id || '');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
     initSource?.categoryId || (initSource ? '' : defaultCategoryId || '')
   );
@@ -481,6 +483,8 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         }
       : {
           accountId: defaultAccountId || '',
+          payeeId: defaultPayee?.id || '',
+          payeeName: defaultPayee?.name || '',
           categoryId: defaultCategoryId || '',
           transactionDate: defaultDate || getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY),
           currencyCode: defaultCurrency,

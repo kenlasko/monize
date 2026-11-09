@@ -3,6 +3,7 @@ import {
   PUBLIC_CLIENT_NAMESPACES,
   messageScopeFor,
   messagesForScope,
+  withReportNames,
 } from './client-messages';
 
 describe('messageScopeFor', () => {
@@ -39,9 +40,16 @@ describe('messagesForScope', () => {
     expect(messagesForScope(messages, 'full')).toBe(messages);
   });
 
+  it('adds only the report titles to a catalog that has them', () => {
+    const names = { 'net-worth': 'Net Worth' };
+    const out = withReportNames({ reports: { page: { names, other: 'x' } } });
+    expect(out).toHaveProperty('reportNames', names);
+  });
+
   it('names only namespaces the loader registers', async () => {
     const { loadMessages } = await import('./messages');
-    const loaded = await loadMessages('en');
+    // `reportNames` is derived at the layout boundary from what the loader returns.
+    const loaded = withReportNames(await loadMessages('en'));
     for (const namespace of PUBLIC_CLIENT_NAMESPACES) {
       expect(loaded, namespace).toHaveProperty([namespace]);
     }

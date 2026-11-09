@@ -11,7 +11,8 @@ describe('KeyboardShortcutsDialog', () => {
   it('lists the global shortcuts', () => {
     render(<KeyboardShortcutsDialog />);
     expect(screen.getByText('Search help')).toBeInTheDocument();
-    expect(screen.getByText('Ctrl/Cmd+K or ?')).toBeInTheDocument();
+    expect(screen.getByText('Ctrl/Cmd+K')).toBeInTheDocument();
+    expect(screen.getByText('?')).toBeInTheDocument();
     expect(screen.getByText('Undo the last change')).toBeInTheDocument();
     expect(screen.getByText('Ctrl/Cmd+Z')).toBeInTheDocument();
     expect(screen.getByText('Redo')).toBeInTheDocument();

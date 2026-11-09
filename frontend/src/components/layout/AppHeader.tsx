@@ -23,15 +23,10 @@ import { MobileNavDrawer } from '@/components/layout/MobileNavDrawer';
 import { useHelpMenuEntries } from '@/hooks/useHelpMenuEntries';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { useTourOpensToolsMenu } from '@/store/tourStore';
+import { navigateToTransactionSearch } from '@/hooks/useTransactionFilters';
+import { useVisibleNavLinks } from '@/hooks/useVisibleNavLinks';
 import {
-  HEADER_SEARCH_EVENT,
-  clearTransactionFilterStorage,
-  type HeaderSearchEventDetail,
-} from '@/hooks/useTransactionFilters';
-import {
-  NAV_LINKS,
   TOOLS_LINKS,
-  AI_LINKS,
   ADMIN_LINKS,
   NAV_ICONS,
 } from '@/lib/nav-links';
@@ -43,9 +38,7 @@ import { MENU_ENTER_CLASS, MENU_ORIGIN_LEFT } from '@/components/ui/menu-motion'
 // Labels are translation keys in the `navigation` namespace, resolved at
 // render time. The href doubles as the route, the active-state match, and
 // the icon lookup; the arrays and NAV_ICONS live together in lib/nav-links.
-const navLinks = NAV_LINKS;
 const toolsLinks = TOOLS_LINKS;
-const aiLinks = AI_LINKS;
 const adminLinks = ADMIN_LINKS;
 
 /** Leading icon on a dropdown/menu row; the top-bar pills stay text-only. */
@@ -89,66 +82,13 @@ export function AppHeader() {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const actingAsUserId = useAuthStore((s) => s.actingAsUserId);
-  const delegateCapabilities = useAuthStore((s) => s.delegateCapabilities);
-  const delegateSections = useAuthStore((s) => s.delegateSections);
-  const isDelegateView = !!actingAsUserId;
-  // A delegate sees a top-nav entry only if it is reachable: granted
-  // sections (bills/investments/budgets/reports) plus Transactions when
-  // they can read any non-investment account (delegateSections.transactions,
-  // derived server-side). Accounts stays per-account scoped and hidden from
-  // the section nav; the dashboard remains the delegate's landing page.
-  const navSectionByHref: Record<
-    string,
-    | 'bills'
-    | 'investments'
-    | 'budgets'
-    | 'reports'
-    | 'transactions'
-    | 'accounts'
-  > = {
-    '/accounts': 'accounts',
-    '/transactions': 'transactions',
-    '/bills': 'bills',
-    '/investments': 'investments',
-    '/budgets': 'budgets',
-    '/reports': 'reports',
-  };
-  const visibleNavLinks = isDelegateView
-    ? navLinks.filter((l) => {
-        const sec = navSectionByHref[l.href];
-        return !!sec && !!delegateSections?.[sec];
-      })
-    : navLinks;
-  const showAiMenu = !isDelegateView || !!delegateSections?.ai;
-  // The review inbox is owner-only: the API refuses a delegate session.
-  const visibleAiLinks = isDelegateView
-    ? aiLinks.filter((l) => !l.ownerOnly)
-    : aiLinks;
-  // A delegate sees a Tools entry when either its manage capability
-  // (payees/categories/tags) or its READ section (warranties) was granted.
-  // Everyone else sees all.
-  const toolsCapabilityByHref: Record<
-    string,
-    'payees' | 'categories' | 'tags'
-  > = {
-    '/categories': 'categories',
-    '/payees': 'payees',
-    '/tags': 'tags',
-  };
-  const toolsSectionByHref: Record<string, 'warranties'> = {
-    '/warranties': 'warranties',
-  };
-  const visibleToolsLinks = isDelegateView
-    ? toolsLinks.filter((l) => {
-        const sec = toolsSectionByHref[l.href];
-        if (sec && delegateSections?.[sec]) return true;
-        const cap = toolsCapabilityByHref[l.href];
-        if (!cap) return false;
-        const r = delegateCapabilities?.[cap];
-        return !!r && (r.create || r.edit || r.delete);
-      })
-    : toolsLinks;
+  const {
+    isDelegateView,
+    visibleNavLinks,
+    visibleToolsLinks,
+    visibleAiLinks,
+    showAiMenu,
+  } = useVisibleNavLinks();
   const helpEntries = useHelpMenuEntries();
   const [toolsOpen, setToolsOpen] = useState(false);
   // A tour step can ask for the menu to be open so it can describe what is
@@ -186,13 +126,7 @@ export function AppHeader() {
   const submitSearch = () => {
     const term = searchTerm.trim();
     if (!term) return;
-    // Wipe persisted filters so the hook initializes clean (including
-    // `accountStatus`, which is not represented in the URL).
-    clearTransactionFilterStorage();
-    // Notify a mounted Transactions page to reset and apply the term.
-    const detail: HeaderSearchEventDetail = { term };
-    window.dispatchEvent(new CustomEvent(HEADER_SEARCH_EVENT, { detail }));
-    router.push(`/transactions?search=${encodeURIComponent(term)}`);
+    navigateToTransactionSearch(term, router.push);
     setSearchOpen(false);
     setSearchTerm('');
   };

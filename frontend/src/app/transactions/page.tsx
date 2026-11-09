@@ -69,6 +69,7 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { useAuthStore } from '@/store/authStore';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useFormModal } from '@/hooks/useFormModal';
+import { useCommandPaletteStore, type NewTransactionPayee } from '@/store/commandPaletteStore';
 import { useSwipeToPaginate } from '@/hooks/useSwipeToPaginate';
 import { SWIPE_PAGINATE_ATTR } from '@/hooks/swipe-gesture';
 import { AccountFormModal } from '@/components/accounts/AccountFormModal';
@@ -170,6 +171,7 @@ function TransactionsContent() {
   // this day" started it. Undefined everywhere else, so the register's New
   // button keeps the remembered date it has always opened on.
   const [createOnDate, setCreateOnDate] = useState<string | undefined>(undefined);
+  const [createForPayee, setCreateForPayee] = useState<NewTransactionPayee | null>(null);
   // Separate modal instances for editing the account/category behind a
   // single-entity filter, reusing the same forms as their own pages.
   const accountModal = useFormModal<Account>();
@@ -671,11 +673,25 @@ function TransactionsContent() {
 
   const handleCreateNew = () => {
     setCreateOnDate(undefined);
+    setCreateForPayee(null);
     openCreate();
   };
 
+  // The command palette's "New transaction", on arrival or while already here.
+  const newTransactionRequest = useCommandPaletteStore((s) => s.newTransactionRequest);
+  useEffect(() => {
+    if (!newTransactionRequest) return;
+    useCommandPaletteStore.getState().clearNewTransactionRequest();
+    /* eslint-disable react-hooks/set-state-in-effect -- consuming a one-shot request from another surface */
+    setCreateOnDate(undefined);
+    setCreateForPayee(newTransactionRequest.payee);
+    /* eslint-enable react-hooks/set-state-in-effect */
+    openCreate();
+  }, [newTransactionRequest, openCreate]);
+
   const handleCreateOnDay = (date: string) => {
     setCreateOnDate(date);
+    setCreateForPayee(null);
     openCreate();
   };
 
@@ -1528,12 +1544,14 @@ function TransactionsContent() {
         {/* Form Modal */}
         <Modal isOpen={showForm} onClose={handleClose} {...modalProps} {...transactionModalProps} title={editingTransaction ? t('page.editModal.editTitle') : duplicatingFrom ? t('page.editModal.duplicateTitle') : t('page.editModal.newTitle')}>
           <TransactionForm
-            key={`${editingTransaction?.id || 'new'}-${duplicatingFrom?.id || ''}-${filters.filterAccountIds.join(',')}-${createOnDate || ''}-${formKey}`}
+            key={`${editingTransaction?.id || 'new'}-${duplicatingFrom?.id || ''}-${filters.filterAccountIds.join(',')}-${createOnDate || ''}-${createForPayee?.id || ''}-${formKey}`}
             transaction={editingTransaction}
             duplicateFrom={duplicatingFrom}
             defaultDate={createOnDate}
+            defaultPayee={createForPayee ?? undefined}
             defaultAccountId={filters.filterAccountIds.length === 1 ? filters.filterAccountIds[0] : undefined}
             defaultCategoryId={(() => {
+              if (createForPayee?.defaultCategoryId) return createForPayee.defaultCategoryId;
               if (filters.filterAccountIds.length !== 1) return undefined;
               const account = accounts.find(a => a.id === filters.filterAccountIds[0]);
               return account?.accountType === 'ASSET' ? (account.assetCategoryId || undefined) : undefined;
