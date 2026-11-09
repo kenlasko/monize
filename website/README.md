@@ -76,7 +76,8 @@ scripts/fetch-screenshots.ps1  downloads them (Windows)
 
 ## Screenshots
 
-Every screenshot is loaded from `assets/img/screenshots/<name>.png` **first**, and falls back to
+`dashboard-overview.png` is checked in here so the hero image follows the app; copy it from
+`docs/images/` after retaking the dashboard. Every screenshot is loaded from `assets/img/screenshots/<name>.png` **first**, and falls back to
 `https://raw.githubusercontent.com/wiki/kenlasko/monize/images/<name>.png` if that file is not there.
 So the site looks complete out of the box, and gets faster the moment you run the fetch script.
 

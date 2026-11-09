@@ -30,7 +30,8 @@ const scrollTo = (locator: Locator, gap = 16) => scrollUnderHeader(page, locator
 test('dashboard', async () => {
   await open(page, '/dashboard');
   await expect(page.getByRole('heading', { name: /Good (morning|afternoon|evening)|Welcome/ })).toBeVisible();
-  await expect(page.getByText('Car Insurance').first()).toBeVisible();
+  // A label the widget always draws: the seed's dates move which bills are on it.
+  await expect(page.getByText('All upcoming').first()).toBeVisible();
   await chartDrawn(page);
   await shoot(page, 'dashboard');
 });
