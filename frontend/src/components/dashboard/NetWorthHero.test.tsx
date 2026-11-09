@@ -15,11 +15,20 @@ vi.mock('@/lib/net-worth', () => ({
 
 // The chart's data and dot renderer, captured so a test can draw the flagged
 // points the way Recharts would.
-const chartState: { data: Array<{ key: string; value: number | null }> } = { data: [] };
+const chartState: {
+  data: Array<{ key: string; value: number | null }>;
+  margin?: { top: number };
+} = { data: [] };
+const viewport = { belowDesktop: false };
+vi.mock('@/hooks/useIsMobile', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/hooks/useIsMobile')>()),
+  useIsBelowDesktop: () => viewport.belowDesktop,
+}));
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
-  AreaChart: ({ children, data }: any) => {
+  AreaChart: ({ children, data, margin }: any) => {
     chartState.data = data;
+    chartState.margin = margin;
     return <div data-testid="area-chart">{children}</div>;
   },
   Area: ({ dot }: any) => (
@@ -81,6 +90,7 @@ describe('NetWorthHero', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     configState.current = DASHBOARD_HERO_DEFAULT;
+    viewport.belowDesktop = false;
     getMonthly.mockResolvedValue(SERIES);
   });
 
@@ -121,6 +131,18 @@ describe('NetWorthHero', () => {
     expect(within(hero).getByTestId('dashboard-hero-chart')).toBeInTheDocument();
     // The window is chosen in Customize Dashboard, not over the chart.
     expect(within(hero).queryByRole('group')).not.toBeInTheDocument();
+  });
+
+  it('trims the space reserved over the chart only where it stacks under the figures', async () => {
+    await renderHero();
+    expect(chartState.margin?.top).toBe(36);
+  });
+
+  it('keeps room for the flag bubble when the chart is stacked under the figures', async () => {
+    viewport.belowDesktop = true;
+    await renderHero();
+    // A 22px bubble centred on a point at the top of the plot rises 11px.
+    expect(chartState.margin?.top).toBe(12);
   });
 
   it('loads the window chosen in Customize Dashboard', async () => {
