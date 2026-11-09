@@ -2691,6 +2691,66 @@ describe("TransactionTransferService", () => {
         );
       });
 
+      it("does not take the parent's total as this line's source amount when the parent has several lines (form payload)", async () => {
+        // The form loads "Transfer Amount" from the split parent, so an unedited
+        // save of one line of a two-line parent sends the TOTAL (80 + 20 = 100).
+        const eurParent = {
+          id: "parent-tx",
+          accountId: "eur-account",
+          amount: -100,
+          currencyCode: "EUR",
+          account: { id: "eur-account", currencyCode: "EUR" },
+          isSplit: true,
+          transactionDate: "2021-06-15",
+        } as unknown as Transaction;
+        const btcLeg = {
+          id: "leg-tx",
+          accountId: "btc-account",
+          amount: 0.02125,
+          currencyCode: "BTC",
+          account: { id: "btc-account", currencyCode: "BTC" },
+          exchangeRate: 0.000265625,
+          isTransfer: true,
+          linkedTransactionId: "parent-tx",
+          transactionDate: "2021-06-15",
+        } as unknown as Transaction;
+        const eurSplit = {
+          id: "split-1",
+          transactionId: "parent-tx",
+          transferAccountId: "btc-account",
+          amount: -80,
+          linkedTransactionId: "leg-tx",
+        } as unknown as TransactionSplit;
+        splitsRepository.findOne.mockResolvedValue(eurSplit);
+        mockFindOne
+          .mockResolvedValueOnce(btcLeg)
+          .mockResolvedValueOnce(eurParent)
+          .mockResolvedValueOnce(btcLeg);
+
+        await service.updateTransfer(
+          "user-1",
+          "leg-tx",
+          {
+            amount: 100,
+            toAmount: 0.02125,
+            fromAccountId: "eur-account",
+            toAccountId: "btc-account",
+          } as any,
+          mockFindOne,
+        );
+
+        // Nothing changed: no split or parent rewrite, no balance moved.
+        expect(transactionsRepository.update).not.toHaveBeenCalledWith(
+          "split-1",
+          expect.anything(),
+        );
+        expect(transactionsRepository.update).not.toHaveBeenCalledWith(
+          "parent-tx",
+          expect.anything(),
+        );
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+
       it("resolves the rate for the date when the leg carries none, and records it", async () => {
         splitsRepository.findOne.mockResolvedValue(crossSplit);
         splitsRepository.find.mockResolvedValue([

@@ -3026,8 +3026,16 @@ export class TransactionTransferService {
       crossCurrency && updateDto.toAmount !== undefined
         ? updateDto.toAmount
         : updateDto.amount;
+    // The form loads "Transfer Amount" from the split PARENT, whose amount is the
+    // total of every line. That figure is this line's only when the parent has
+    // one line; on a multi-line parent it is an echo of the total and must not
+    // overwrite the line (the source then follows the stored rate).
+    const parentHasOneLine =
+      roundMoney(Math.abs(Number(parentTransaction.amount)), parentDecimals) ===
+      roundMoney(Math.abs(Number(parentSplit.amount)), parentDecimals);
     const explicitSourceAmount =
       crossCurrency &&
+      parentHasOneLine &&
       updateDto.toAmount !== undefined &&
       updateDto.amount !== undefined
         ? updateDto.amount
