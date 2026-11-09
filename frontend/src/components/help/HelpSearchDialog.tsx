@@ -168,7 +168,9 @@ export function HelpSearchDialog() {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKeyDown}
-            className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm text-gray-900 focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            // `pl-10!`: the unlayered `[type='search']` rule in globals.css sets the
+            // padding and outranks a plain utility, which leaves the text under the icon.
+            className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10! pr-3 text-sm text-gray-900 focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
         </div>
 

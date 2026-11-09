@@ -64,6 +64,10 @@ A dropdown or popover panel arrives through `MENU_ENTER_CLASS` (`components/ui/m
 
 **A pressed `Button` sinks by 2%** (`not-disabled:active:scale-[0.98]`, still under reduced motion). `not-disabled` rather than `enabled`, so a `ButtonLink` presses too.
 
+## An input's padding needs the important modifier
+
+The form-element rules in `src/app/globals.css` are unlayered, so they outrank every Tailwind utility. An icon inside a text or search input clears it with `pl-10!`, not `pl-10`: the plain class is on the element and has no effect.
+
 ## A focus ring is `focus-visible:`, and a hover animates
 
 `focus:ring-*` paints on a mouse click as well as a Tab; use `focus-visible:` on anything clickable. Text inputs are the one exception (`inputBaseClasses` and the element selectors in `globals.css`). Row hover comes from `HOVER_ROW_ON_CARD` / `HOVER_ROW_ON_PAGE` in `Card.tsx` (a text button in the bar above a table from `HOVER_TOOLBAR_BUTTON`, through `LIST_TOOLBAR_BUTTON_CLASS` on `ListTopToolbar.tsx`), not a hand-picked grey, and includes the transition (a hover that snaps reads as a redraw). Pair any new transition with `motion-reduce:transition-none`. Both rules carry shrink-only baselines in `ui-conventions.test.ts`.
