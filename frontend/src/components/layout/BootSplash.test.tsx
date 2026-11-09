@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BootSplash, BOOT_SPLASH_ID, type BootSplashStrings } from './BootSplash';
@@ -50,9 +52,29 @@ describe('BootSplash', () => {
     expect(css).toContain('var(--color-gray-100');
   });
 
-  it('uses the transparent brand logo, not the boxed one', () => {
+  it('animates the logo only for a reader who has not asked for less motion', () => {
     const { container } = render(<BootSplash bootTheme={null} strings={strings} />);
-    const img = container.querySelector('img');
-    expect(img).toHaveAttribute('src', '/icons/monize-logo-transparent.svg');
+    const css = container.querySelector('style')?.textContent ?? '';
+    const motion = css.slice(css.indexOf('(prefers-reduced-motion: no-preference)'));
+    expect(motion).toContain('monize-boot-logo-in');
+    expect(motion).toContain('monize-boot-halo');
+    // Outside that block the logo is plainly visible, with no animation to wait on.
+    expect(css.slice(0, css.indexOf('(prefers-reduced-motion: no-preference)'))).not.toMatch(
+      /animation:\s*monize-boot-(logo|halo)/,
+    );
+    expect(css).toContain('var(--color-blue-500');
+  });
+
+  it('draws the transparent brand logo inline, so it needs no download of its own', () => {
+    const { container } = render(<BootSplash bootTheme={null} strings={strings} />);
+    // A file would leave the halo glowing around nothing on a slow connection.
+    expect(container.querySelector('img')).toBeNull();
+    const source = readFileSync(
+      resolve(process.cwd(), 'public/icons/monize-logo-transparent.svg'),
+      'utf8',
+    );
+    const drawn = container.querySelector('svg.boot-splash-logo path');
+    expect(source).toContain(`d="${drawn?.getAttribute('d')}"`);
+    expect(source).toContain(`fill="${drawn?.getAttribute('fill')}"`);
   });
 });
