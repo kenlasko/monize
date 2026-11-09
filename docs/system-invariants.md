@@ -1088,6 +1088,11 @@ Enforcement         TransactionSplitService.resolveSplitTransferAmount, called
                     by createSplits and addSplit; assertTargetAmountOnTransfer in
                     validateSplits and addSplit. The rules follow the plain
                     transfer's toAmount (TransactionTransferService.resolveTransferFx).
+                    Editing the counterpart leg from its own account
+                    (TransactionTransferService.updateSplitTransferLeg) follows
+                    the same reading in a cross-currency pair: `toAmount` is the
+                    leg's amount, `amount` is the line's, and the leg stores the
+                    implied rate.
 Concurrency scope   The parent row (lockTransactionRow) on every replacement.
 Retry semantics     A replacement is one transaction; a retry rewrites the same
                     lines.
@@ -1096,6 +1101,7 @@ Failure response    400 (transferRateUnavailable, transferSameCurrencyMustConser
                     transferAmountsMustAgreeOnZero, transferImpliedRateInvalid,
                     splitTransferTargetAmountRequiresTransfer), before any write.
 Required tests      transaction-split.service.spec.ts "transferTargetAmount";
+                    transaction-transfer.service.spec.ts "form payload";
                     split-transfer-received-amount.integration.spec.ts.
 Status              enforced
 ```
