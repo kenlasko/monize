@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@/test/render';
-import { WIDGET_ICONS, WidgetIconPuck, WidgetHeading } from './widget-meta';
+import { WIDGET_DOMAINS, WIDGET_ICONS, WidgetIconPuck, WidgetHeading, widgetTintClass } from './widget-meta';
 import { DASHBOARD_WIDGETS } from './widget-registry';
 
 describe('widget-meta', () => {
@@ -9,6 +9,22 @@ describe('widget-meta', () => {
     // bare header beside decorated ones.
     const missing = DASHBOARD_WIDGETS.map((w) => w.id).filter((id) => !WIDGET_ICONS[id]);
     expect(missing).toEqual([]);
+  });
+
+  it('gives every registered widget a domain', () => {
+    const missing = DASHBOARD_WIDGETS.map((w) => w.id).filter((id) => !WIDGET_DOMAINS[id]);
+    expect(missing).toEqual([]);
+  });
+
+  it.each([
+    ['favourite-accounts', '--chart-primary'],
+    ['portfolio-value', '--chart-5'],
+    ['upcoming-bills', '--chart-3'],
+    ['insights', '--chart-7'],
+  ] as const)('tints %s from the %s chart token', (id, token) => {
+    const { container } = render(<WidgetIconPuck id={id} />);
+    expect((container.firstElementChild as HTMLElement).className).toContain(`var(${token})`);
+    expect(widgetTintClass(id)).toContain(`var(${token})`);
   });
 
   it('renders the puck as decoration', () => {

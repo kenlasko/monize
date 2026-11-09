@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, screen, fireEvent, createEvent, within } from '@testing-library/react';
 import { render } from '@/test/render';
+import { widgetTintClass } from './widget-meta';
 import { CustomizeDashboardModal } from './CustomizeDashboardModal';
 import { DASHBOARD_WIDGETS, DEFAULT_DASHBOARD_WIDGET_IDS } from './widget-registry';
 import { DASHBOARD_HERO_DEFAULT } from './widget-config';
@@ -322,6 +323,17 @@ describe('CustomizeDashboardModal', () => {
     // Hidden chips carry their type icon too.
     const chip = screen.getByTestId('widget-hidden-monthly-spending-trend');
     expect(within(chip).getByTestId('widget-type-icon-line')).toBeInTheDocument();
+  });
+
+  it('colours each visible tile and hidden chip as the widget is coloured on the dashboard', async () => {
+    await renderModal();
+    expect(within(tile('expenses-pie')).getByTestId('widget-tint-expenses-pie').className).toContain(
+      widgetTintClass('expenses-pie'),
+    );
+    const chip = screen.getByTestId('widget-hidden-monthly-spending-trend');
+    expect(within(chip).getByTestId('widget-tint-monthly-spending-trend').className).toContain(
+      widgetTintClass('monthly-spending-trend'),
+    );
   });
 
   it('every registered widget appears exactly once (tile or hidden chip)', async () => {

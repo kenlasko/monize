@@ -70,17 +70,71 @@ export const WIDGET_ICONS: Record<DashboardWidgetId, WidgetIconComponent> = {
   'warranties-expiring': ShieldCheckIcon,
 };
 
+export type WidgetDomain = 'accounts' | 'investments' | 'bills' | 'insights';
+
 /**
- * The tinted icon puck before a widget title. Blue ramp only, so every
- * colour theme re-tints it through its own accent.
+ * The part of the app each widget belongs to, which sets its tint so a long
+ * dashboard can be scanned by colour. `bills` is anything about what is coming
+ * due, `insights` anything that analyses past spending and income.
  */
+export const WIDGET_DOMAINS: Record<DashboardWidgetId, WidgetDomain> = {
+  'favourite-accounts': 'accounts',
+  'net-worth': 'accounts',
+  'assets-liabilities': 'accounts',
+  'credit-utilization-accounts': 'accounts',
+  'credit-utilization-total': 'accounts',
+  'top-movers': 'investments',
+  'favourite-securities': 'investments',
+  'portfolio-value': 'investments',
+  'sector-weightings': 'investments',
+  'security-type-allocation': 'investments',
+  'geographic-allocation': 'investments',
+  'upcoming-bills': 'bills',
+  'cash-flow-forecast': 'bills',
+  'recurring-expenses': 'bills',
+  'warranties-expiring': 'bills',
+  insights: 'insights',
+  'favourite-reports': 'insights',
+  'expenses-pie': 'insights',
+  'income-expenses': 'insights',
+  'budget-status': 'insights',
+  'spending-by-payee': 'insights',
+  'monthly-spending-trend': 'insights',
+  'income-by-source': 'insights',
+  'weekend-weekday': 'insights',
+  'cash-flow-sankey': 'insights',
+};
+
+/**
+ * Chart tokens, so a palette recolours the domains with everything else. The
+ * categorical slots rather than the semantic ones (`--chart-warning`): a bill
+ * is not a warning, and the slots are the set each palette keeps apart.
+ */
+const DOMAIN_TOKEN: Record<WidgetDomain, string> = {
+  accounts: '[--widget-tint:var(--chart-primary)]',
+  investments: '[--widget-tint:var(--chart-5)]',
+  bills: '[--widget-tint:var(--chart-3)]',
+  insights: '[--widget-tint:var(--chart-7)]',
+};
+
+// The tokens are pitched for a line on a card, so on a light tile the glyph is
+// darkened: amber at full strength would be barely visible on its own wash.
+const TINT_CLASS =
+  'bg-[color-mix(in_srgb,var(--widget-tint)_14%,transparent)] text-[color-mix(in_srgb,var(--widget-tint)_75%,black)] dark:bg-[color-mix(in_srgb,var(--widget-tint)_20%,transparent)] dark:text-[var(--widget-tint)]';
+
+/** The wash and glyph colour of a widget's domain, for anything standing in for it. */
+export function widgetTintClass(id: DashboardWidgetId): string {
+  return `${DOMAIN_TOKEN[WIDGET_DOMAINS[id]]} ${TINT_CLASS}`;
+}
+
+/** The tinted icon puck before a widget title, coloured by the widget's domain. */
 export function WidgetIconPuck({ id }: { id: DashboardWidgetId }) {
   const Icon = WIDGET_ICONS[id];
   if (!Icon) return null;
   return (
     <span
       aria-hidden
-      className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300"
+      className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md ${widgetTintClass(id)}`}
     >
       <Icon className="h-4 w-4" />
     </span>

@@ -32,12 +32,25 @@ import {
   WidgetIconType,
   resolveDashboardWidgets,
 } from './widget-registry';
+import { widgetTintClass } from './widget-meta';
 
 interface CustomizeDashboardModalProps {
   isOpen: boolean;
   onClose: () => void;
   /** The accounts the hero's portfolio set can cover. */
   investmentAccounts?: Account[];
+}
+
+/** A widget's glyph on its domain's colour, the one its puck wears on the dashboard. */
+function WidgetTint({ id, children }: { id: DashboardWidgetId; children: ReactNode }) {
+  return (
+    <span
+      data-testid={`widget-tint-${id}`}
+      className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded ${widgetTintClass(id)}`}
+    >
+      {children}
+    </span>
+  );
 }
 
 /**
@@ -47,7 +60,7 @@ interface CustomizeDashboardModalProps {
  */
 function WidgetTypeIcon({ type }: { type: WidgetIconType }) {
   const common = {
-    className: 'h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0',
+    className: 'h-3.5 w-3.5 flex-shrink-0',
     fill: 'none',
     viewBox: '0 0 24 24',
     stroke: 'currentColor',
@@ -335,7 +348,9 @@ export function CustomizeDashboardModal({
               <span aria-hidden="true" className="select-none text-gray-400 flex-shrink-0">
                 ⠿
               </span>
-              <WidgetTypeIcon type={widgetIcon(id)} />
+              <WidgetTint id={id}>
+                <WidgetTypeIcon type={widgetIcon(id)} />
+              </WidgetTint>
               <span className="flex-1 min-w-0 truncate text-sm text-gray-900 dark:text-gray-100">
                 {widgetName(id)}
               </span>
@@ -398,7 +413,9 @@ export function CustomizeDashboardModal({
                 className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-gray-300 dark:border-gray-600 px-3 py-1 text-sm text-gray-600 dark:text-gray-300 hover:border-blue-500 hover:text-blue-600 dark:hover:border-blue-400 dark:hover:text-blue-400 transition-colors"
               >
                 <PlusIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                <WidgetTypeIcon type={widgetIcon(id)} />
+                <WidgetTint id={id}>
+                  <WidgetTypeIcon type={widgetIcon(id)} />
+                </WidgetTint>
                 {widgetName(id)}
               </button>
             ))}

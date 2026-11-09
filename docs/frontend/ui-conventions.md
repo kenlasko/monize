@@ -116,7 +116,7 @@ An `unobtrusive` anchorless step parks its card in the bottom-**right** corner, 
 
 ## A dashboard widget header carries its icon from `widget-meta.tsx`
 
-`WIDGET_ICONS` gives every registered widget a distinct Heroicon (`widget-meta.test.tsx` enforces coverage), rendered as the tinted `WidgetIconPuck` -- blue ramp only, so themes re-tint it. Widgets on `WidgetCard` get it from their `widgetId`; a widget drawing its own header uses `WidgetHeading`.
+`WIDGET_ICONS` gives every registered widget a distinct Heroicon (`widget-meta.test.tsx` enforces coverage), rendered as the tinted `WidgetIconPuck`. `WIDGET_DOMAINS` files each widget under accounts, investments, bills or insights, and the puck takes that domain's colour from a chart token (`--chart-primary`, `--chart-5`, `--chart-3`, `--chart-7`) so every palette re-tints it; `widgetTintClass` gives Customize Dashboard's tiles and chips the same colour. The categorical slots, not `--chart-warning`: a bill is not a warning. Widgets on `WidgetCard` get it from their `widgetId`; a widget drawing its own header uses `WidgetHeading`.
 
 A widget's title is a link to the fuller view of the same figures, named as a route: `titleHref` on `WidgetCard`, `href` on `WidgetHeading`. Both render it through `WidgetTitle`, the one place that decides what a title looks like and how it behaves; a widget with no fuller view passes neither and gets a plain heading.
 
