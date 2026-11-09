@@ -82,6 +82,8 @@ What the header looks like is `screens-and-dialogs.md`: the reference is the New
 
 `components/auth/AuthShell.tsx` is the single shell for login, register, forgot/reset/change-password, verify-email, confirm-email-change and setup-2fa: transparent brand mark, title/subtitle, notices slot, shared `Card` around the body (`plain` for a bare status line). Language picker and version line are opt-in props. Use `/icons/monize-logo-transparent.svg` everywhere in the UI -- the boxed `monize-logo.svg` bakes in a white background and renders as a white square in dark mode. Guarded in `ui-conventions.test.ts`.
 
+The shell splits the screen from `lg` up with `AuthBrandPanel`: a gradient from the accent ramp, one feature's line and its picture. A cookie, not localStorage (whose pre-login footprint is pinned), remembers the last slide so each visit steps to the next. The pictures in `public/brand/` come from the documentation screenshots through `frontend/scripts/build-brand-screenshots.mjs`; rerun it after retaking a screen a slide shows. A new slide needs its strings in every locale and both pictures, which `AuthBrandPanel.test.tsx` checks on disk.
+
 ## Navigation links and their icons live in `lib/nav-links.ts`
 
 The header's link arrays and the per-route Heroicon map are declared side by side so `nav-links.test.ts` can hold "every nav route has an icon". The mobile drawer and header dropdowns render `NAV_ICONS[href]`; the desktop top-bar pills stay text-only on purpose (six leading icons overflow 1280-1440px laptops). A new route means one entry in the array and one in the map, in the same file.

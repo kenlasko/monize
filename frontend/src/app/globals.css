@@ -129,6 +129,19 @@ html[data-theme='highcontrast'] {
   --ambient-glow: transparent;
 }
 
+/* The picture on the sign-in screen's brand panel settles into place. */
+@media (prefers-reduced-motion: no-preference) {
+  .auth-brand-rise {
+    animation: auth-brand-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+@keyframes auth-brand-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+}
+
 .page-ambient-glow {
   background-image: radial-gradient(56rem 13rem at 15% -4rem, var(--ambient-glow), transparent);
   background-repeat: no-repeat;

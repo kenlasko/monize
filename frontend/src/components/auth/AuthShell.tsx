@@ -3,6 +3,7 @@
 import { ReactNode } from 'react';
 import Image from 'next/image';
 import { Card } from '@/components/ui/Card';
+import { AuthBrandPanel } from '@/components/auth/AuthBrandPanel';
 import { AuthLanguagePicker } from '@/components/auth/AuthLanguagePicker';
 import { AppVersion } from '@/components/ui/AppVersion';
 import { cn } from '@/lib/utils';
@@ -31,7 +32,8 @@ interface AuthShellProps {
 
 /**
  * The one shell for the authentication screens (sign-in, register, forgot/
- * reset/change password, verify email, 2FA setup): centered column, the
+ * reset/change password, verify email, 2FA setup): the form on one half and,
+ * from `lg` up, `AuthBrandPanel` on the other. A centered column, the
  * transparent brand mark -- the boxed logo bakes in a white background and
  * rendered as a white square in dark mode -- and the shared Card around the
  * form so the auth pages read like the rest of the app instead of a bare
@@ -48,40 +50,47 @@ export function AuthShell({
   languagePicker = false,
   showVersion = false,
 }: AuthShellProps) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className={cn('w-full space-y-6', wide ? 'max-w-lg' : 'max-w-md')}>
-        <div className="text-center">
-          <Image
-            src="/icons/monize-logo-transparent.svg"
-            alt="Monize"
-            width={88}
-            height={88}
-            className="mx-auto"
-            priority
-          />
-          {title && (
-            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
-              {title}
-            </h2>
-          )}
-          {subtitle && (
-            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">{subtitle}</div>
-          )}
-        </div>
-        {notices}
-        {plain ? (
-          children
-        ) : (
-          <Card padding="md" className="sm:p-8">
-            {children}
-          </Card>
+  const column = (
+    <div className={cn('w-full space-y-6', wide ? 'max-w-lg' : 'max-w-md')}>
+      <div className="text-center">
+        <Image
+          src="/icons/monize-logo-transparent.svg"
+          alt="Monize"
+          width={88}
+          height={88}
+          className="mx-auto"
+          priority
+        />
+        {title && (
+          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
+            {title}
+          </h2>
         )}
-        {languagePicker && <AuthLanguagePicker />}
-        {showVersion && (
-          <AppVersion className="text-center text-xs text-gray-400 dark:text-gray-500" />
+        {subtitle && (
+          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">{subtitle}</div>
         )}
       </div>
+      {notices}
+      {plain ? (
+        children
+      ) : (
+        <Card padding="md" className="sm:p-8">
+          {children}
+        </Card>
+      )}
+      {languagePicker && <AuthLanguagePicker />}
+      {showVersion && (
+        <AppVersion className="text-center text-xs text-gray-400 dark:text-gray-500" />
+      )}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 lg:grid lg:grid-cols-2">
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        {column}
+      </div>
+      <AuthBrandPanel />
     </div>
   );
 }
