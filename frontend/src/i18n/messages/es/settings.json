@@ -1134,6 +1134,14 @@
       "disabled": "Burbuja de chat flotante desactivada",
       "saveFailed": "No se pudo actualizar la configuración de la burbuja de chat"
     },
+    "trivia": {
+      "title": "Datos curiosos de AI",
+      "subtitle": "Muestra una línea de datos curiosos sobre su patrimonio neto y sus inversiones junto al saludo del panel. Se genera de nuevo cada día y la redacta la AI si tiene un proveedor configurado.",
+      "toggleLabel": "Mostrar datos curiosos de AI en el panel",
+      "enabled": "Datos curiosos de AI activados",
+      "disabled": "Datos curiosos de AI desactivados",
+      "saveFailed": "No se pudo actualizar la configuración de datos curiosos de AI"
+    },
     "demoRestricted": {
       "heading": "Restringido en modo demo",
       "body": "La configuración de proveedores de IA está deshabilitada en el modo demo."

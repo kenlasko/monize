@@ -1134,6 +1134,14 @@
       "disabled": "Schwebende Chat-Blase deaktiviert",
       "saveFailed": "Die Chat-Blasen-Einstellung konnte nicht aktualisiert werden"
     },
+    "trivia": {
+      "title": "KI-Wissenswertes",
+      "subtitle": "Zeigt neben der Begrüßung im Dashboard eine Zeile mit Wissenswertem zu deinem Nettovermögen und deinen Anlagen an. Sie wird täglich neu erstellt und von der KI formuliert, wenn ein Anbieter eingerichtet ist.",
+      "toggleLabel": "KI-Wissenswertes im Dashboard anzeigen",
+      "enabled": "KI-Wissenswertes aktiviert",
+      "disabled": "KI-Wissenswertes deaktiviert",
+      "saveFailed": "Die Einstellung für KI-Wissenswertes konnte nicht aktualisiert werden"
+    },
     "demoRestricted": {
       "heading": "Im Demo-Modus eingeschränkt",
       "body": "Die KI-Anbieterkonfiguration ist im Demo-Modus deaktiviert."

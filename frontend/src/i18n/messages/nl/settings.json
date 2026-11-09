@@ -1134,6 +1134,14 @@
       "disabled": "Zwevende chatbubbel uitgeschakeld",
       "saveFailed": "Kan de instelling voor de chatbubbel niet bijwerken"
     },
+    "trivia": {
+      "title": "AI-weetjes",
+      "subtitle": "Toont naast de begroeting op het dashboard een regel met weetjes over je nettovermogen en beleggingen. Wordt dagelijks opnieuw opgebouwd en door AI geformuleerd als je een provider hebt ingesteld.",
+      "toggleLabel": "AI-weetjes op het dashboard tonen",
+      "enabled": "AI-weetjes ingeschakeld",
+      "disabled": "AI-weetjes uitgeschakeld",
+      "saveFailed": "Kan de instelling voor AI-weetjes niet bijwerken"
+    },
     "demoRestricted": {
       "heading": "Beperkt in demomodus",
       "body": "AI-providerconfiguratie is uitgeschakeld in demomodus."

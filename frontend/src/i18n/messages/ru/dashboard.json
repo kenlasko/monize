@@ -33,8 +33,34 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "Показать: {name}",
+    "cycleControls": "Выберите, что показывает главный блок",
     "cagrUnavailable": "Для CAGR нужна как минимум годовая история инвестиций на этих счетах и пополнения больше снятий.",
     "intradayUnavailable": "Для некоторых позиций нет внутридневных цен, поэтому дневной график построить нельзя. Выберите более длинный период в настройках."
+  },
+  "trivia": {
+    "topics": {
+      "netWorth": "Чистые активы",
+      "investments": "Инвестиции"
+    },
+    "aiGenerated": "Текст составлен ИИ по вашим данным",
+    "facts": {
+      "netWorthSinceStart": "В {startMonth} ваши чистые активы составляли {startAmount}. С тех пор они выросли на {startGain}, то есть примерно в {startMultiple} раза.",
+      "netWorthBiggestJump": "{jumpMonth} стал вашим самым резким скачком за один месяц. Чистые активы выросли на {jumpAmount}: с {jumpFrom} в {jumpPreviousMonth} до {jumpTo}.",
+      "netWorthHighPoint": "Ваш пик составил {peakAmount} в {peakMonth}. Сейчас вы на {peakBelow} ниже.",
+      "netWorthAtHighPoint": "Вы на пике: чистые активы никогда не были выше {currentHigh}.",
+      "netWorthBiggestDip": "Ваше самое сильное падение снизило чистые активы с {dipFromAmount} в {dipFromMonth} до {dipToAmount} в {dipToMonth}, то есть на {dipPercent}.",
+      "netWorthBiggestDipRecovered": "Ваше самое сильное падение снизило чистые активы с {dipFromAmount} в {dipFromMonth} до {dipToAmount} в {dipToMonth}. К {dipRecoveredMonth} вы восстановились.",
+      "netWorthLargestAsset": "{assetName} стоит {assetValue}, это {assetPercent} ваших активов.",
+      "investmentsShareOfAssets": "Ваши инвестиции стоят {investmentsValue}, это {investmentsPercent} ваших активов.",
+      "investmentsGain": "Ваши инвестиции выросли на {gainAmount} ({gainPercent}) относительно базовой стоимости {gainCostBasis}.",
+      "investmentsLoss": "Ваши инвестиции упали на {gainAmount} ({gainPercent}) относительно базовой стоимости {gainCostBasis}.",
+      "investmentsCagr": "Годовая доходность ваших инвестиций составляет около {cagrPercent} (CAGR).",
+      "investmentsBiggestHolding": "Ваша крупнейшая позиция: {holdingSymbol}, примерно {holdingPercent} портфеля ({holdingValue} в {holdingAccounts}).",
+      "investmentsBestPerformer": "Лучший результат у {bestSymbol}: рост на {bestPercent}. Покупка обошлась в {bestCost}, сейчас это {bestValue}.",
+      "investmentsForeignAccount": "Ваш счёт {foreignName} ведётся в валюте {foreignCurrency}. Активы на {foreignBalance} при курсе около {foreignRate} равны {foreignConverted}.",
+      "investmentsLargestAccount": "Ваш крупнейший инвестиционный счёт: {largestName}, {largestValue}."
+    }
   },
   "favouriteAccounts": {
     "title": "Избранные счета",
@@ -216,11 +242,12 @@
     },
     "hero": {
       "title": "Шапка панели",
-      "description": "Показатели и график под приветствием: ваши чистые активы или портфель.",
+      "description": "Первые цифры и график под приветствием: ваши чистые активы, ваш портфель или «Авто», которое каждую минуту переключает их.",
       "show": "Показывать шапку панели",
       "range": "График",
       "set": "Показывать",
       "sets": {
+        "auto": "Авто",
         "netWorth": "Чистые активы",
         "portfolio": "Стоимость портфеля"
       },

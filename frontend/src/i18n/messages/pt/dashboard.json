@@ -33,8 +33,34 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "Mostrar {name}",
+    "cycleControls": "Escolher o que o destaque mostra",
     "cagrUnavailable": "A CAGR precisa de pelo menos um ano de histórico de investimento nestas contas, com mais entradas do que saídas.",
     "intradayUnavailable": "Algumas destas posições não têm preços intradiários, por isso não é possível desenhar um gráfico de um dia. Escolha um período mais longo em Personalizar."
+  },
+  "trivia": {
+    "topics": {
+      "netWorth": "Património líquido",
+      "investments": "Investimentos"
+    },
+    "aiGenerated": "Escrito por IA a partir dos seus números",
+    "facts": {
+      "netWorthSinceStart": "O seu património líquido era de {startAmount} em {startMonth}. Desde então ganhou {startGain}, pelo que é cerca de {startMultiple} vezes maior.",
+      "netWorthBiggestJump": "{jumpMonth} foi o seu maior salto num único mês. O património líquido subiu {jumpAmount}, de {jumpFrom} em {jumpPreviousMonth} para {jumpTo}.",
+      "netWorthHighPoint": "O seu ponto mais alto foi {peakAmount} em {peakMonth}. Agora está {peakBelow} abaixo.",
+      "netWorthAtHighPoint": "Está no seu ponto mais alto: o património líquido nunca esteve acima de {currentHigh}.",
+      "netWorthBiggestDip": "A sua maior queda levou o património líquido de {dipFromAmount} em {dipFromMonth} para {dipToAmount} em {dipToMonth}, uma descida de {dipPercent}.",
+      "netWorthBiggestDipRecovered": "A sua maior queda levou o património líquido de {dipFromAmount} em {dipFromMonth} para {dipToAmount} em {dipToMonth}. Já tinha recuperado em {dipRecoveredMonth}.",
+      "netWorthLargestAsset": "{assetName} vale {assetValue}, ou {assetPercent} dos seus ativos.",
+      "investmentsShareOfAssets": "Os seus investimentos valem {investmentsValue}, o que corresponde a {investmentsPercent} dos seus ativos.",
+      "investmentsGain": "Os seus investimentos ganharam {gainAmount} ({gainPercent}) face ao custo base de {gainCostBasis}.",
+      "investmentsLoss": "Os seus investimentos estão {gainAmount} ({gainPercent}) abaixo do custo base de {gainCostBasis}.",
+      "investmentsCagr": "A rentabilidade anualizada dos seus investimentos é de cerca de {cagrPercent} (CAGR).",
+      "investmentsBiggestHolding": "A sua maior posição é {holdingSymbol}, com cerca de {holdingPercent} da carteira ({holdingValue} em {holdingAccounts}).",
+      "investmentsBestPerformer": "O seu melhor desempenho é {bestSymbol}, com uma subida de {bestPercent}. Custou {bestCost} e agora vale {bestValue}.",
+      "investmentsForeignAccount": "A sua conta {foreignName} é detida em {foreignCurrency}. As posições de {foreignBalance} equivalem a {foreignConverted} a uma taxa de cerca de {foreignRate}.",
+      "investmentsLargestAccount": "A sua maior conta de investimento é {largestName}, com {largestValue}."
+    }
   },
   "favouriteAccounts": {
     "title": "Contas Favoritas",
@@ -216,11 +242,12 @@
     },
     "hero": {
       "title": "Destaque do painel",
-      "description": "Os números e o gráfico por baixo da saudação: o seu património líquido ou a sua carteira.",
+      "description": "Os números iniciais e o gráfico por baixo da saudação: o seu património líquido, a sua carteira ou Auto para alternar entre ambos a cada minuto.",
       "show": "Mostrar o destaque do painel",
       "range": "Gráfico",
       "set": "Mostrar",
       "sets": {
+        "auto": "Auto",
         "netWorth": "Património líquido",
         "portfolio": "Valor da carteira"
       },

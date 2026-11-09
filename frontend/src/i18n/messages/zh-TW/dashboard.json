@@ -33,8 +33,34 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "顯示{name}",
+    "cycleControls": "選擇主視覺顯示的內容",
     "cagrUnavailable": "CAGR 需要這些帳戶至少一年的投資歷史，且投入多於取出。",
     "intradayUnavailable": "部分持股沒有盤中價格，因此無法繪製一天的圖表。請在「自訂」中選擇較長的時間範圍。"
+  },
+  "trivia": {
+    "topics": {
+      "netWorth": "淨資產",
+      "investments": "投資"
+    },
+    "aiGenerated": "由 AI 根據您的數據撰寫",
+    "facts": {
+      "netWorthSinceStart": "{startMonth}時您的淨資產為{startAmount}。此後增加了{startGain},已是當時的約{startMultiple}倍。",
+      "netWorthBiggestJump": "{jumpMonth}是您單月漲幅最大的一個月。淨資產增加{jumpAmount},從{jumpPreviousMonth}的{jumpFrom}升至{jumpTo}。",
+      "netWorthHighPoint": "您的最高點是{peakMonth}的{peakAmount}。目前比該水準低{peakBelow}。",
+      "netWorthAtHighPoint": "您正處於最高點:淨資產從未超過{currentHigh}。",
+      "netWorthBiggestDip": "您最大的一次下跌使淨資產從{dipFromMonth}的{dipFromAmount}降至{dipToMonth}的{dipToAmount},跌幅為{dipPercent}。",
+      "netWorthBiggestDipRecovered": "您最大的一次下跌使淨資產從{dipFromMonth}的{dipFromAmount}降至{dipToMonth}的{dipToAmount}。到{dipRecoveredMonth}已經恢復。",
+      "netWorthLargestAsset": "{assetName}價值{assetValue},占您資產的{assetPercent}。",
+      "investmentsShareOfAssets": "您的投資價值{investmentsValue},占您資產的{investmentsPercent}。",
+      "investmentsGain": "您的投資相對{gainCostBasis}的成本基礎增長了{gainAmount}({gainPercent})。",
+      "investmentsLoss": "您的投資相對{gainCostBasis}的成本基礎下降了{gainAmount}({gainPercent})。",
+      "investmentsCagr": "您的投資年化報酬率約為{cagrPercent}(CAGR)。",
+      "investmentsBiggestHolding": "您最大的持股是{holdingSymbol},約占投資組合的{holdingPercent}({holdingAccounts}中的{holdingValue})。",
+      "investmentsBestPerformer": "表現最好的是{bestSymbol},上漲{bestPercent}。成本為{bestCost},現在價值{bestValue}。",
+      "investmentsForeignAccount": "您的{foreignName}帳戶以{foreignCurrency}持有。其{foreignBalance}的持股按約{foreignRate}的匯率相當於{foreignConverted}。",
+      "investmentsLargestAccount": "您最大的投資帳戶是{largestName},金額為{largestValue}。"
+    }
   },
   "favouriteAccounts": {
     "title": "我的最愛科目",
@@ -216,11 +242,12 @@
     },
     "hero": {
       "title": "儀表板概覽區",
-      "description": "問候語下方的數字和圖表：您的淨資產或投資組合。",
+      "description": "問候語下方的開場數據和圖表:顯示您的淨資產、您的投資組合,或選擇「自動」每分鐘在兩者之間切換。",
       "show": "顯示儀表板概覽區",
       "range": "圖表",
       "set": "顯示",
       "sets": {
+        "auto": "自動",
         "netWorth": "淨資產",
         "portfolio": "投資組合價值"
       },

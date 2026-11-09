@@ -1134,6 +1134,14 @@
       "disabled": "Bolla di chat fluttuante disabilitata",
       "saveFailed": "Impossibile aggiornare l'impostazione della bolla di chat"
     },
+    "trivia": {
+      "title": "Curiosità AI",
+      "subtitle": "Mostra una riga di curiosità sul tuo patrimonio netto e sui tuoi investimenti accanto al saluto della dashboard. Viene rigenerata ogni giorno e formulata dall'AI se hai configurato un provider.",
+      "toggleLabel": "Mostra le curiosità AI nella dashboard",
+      "enabled": "Curiosità AI abilitate",
+      "disabled": "Curiosità AI disabilitate",
+      "saveFailed": "Impossibile aggiornare l'impostazione delle curiosità AI"
+    },
     "demoRestricted": {
       "heading": "Limitato in modalità demo",
       "body": "La configurazione dei provider AI è disabilitata in modalità demo."

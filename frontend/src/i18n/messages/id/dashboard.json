@@ -33,8 +33,34 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "Tampilkan {name}",
+    "cycleControls": "Pilih apa yang ditampilkan di bagian utama",
     "cagrUnavailable": "CAGR memerlukan setidaknya satu tahun riwayat investasi di akun-akun ini, dengan setoran lebih besar dari penarikan.",
     "intradayUnavailable": "Beberapa kepemilikan ini tidak memiliki harga intrahari, jadi grafik satu hari tidak dapat dibuat. Pilih jangka waktu lebih panjang di Sesuaikan."
+  },
+  "trivia": {
+    "topics": {
+      "netWorth": "Kekayaan bersih",
+      "investments": "Investasi"
+    },
+    "aiGenerated": "Ditulis oleh AI dari angka Anda",
+    "facts": {
+      "netWorthSinceStart": "Kekayaan bersih Anda adalah {startAmount} pada {startMonth}. Sejak itu bertambah {startGain}, sehingga kini sekitar {startMultiple} kali lebih besar.",
+      "netWorthBiggestJump": "{jumpMonth} adalah lonjakan satu bulan terbesar Anda. Kekayaan bersih naik {jumpAmount}, dari {jumpFrom} pada {jumpPreviousMonth} menjadi {jumpTo}.",
+      "netWorthHighPoint": "Titik tertinggi Anda adalah {peakAmount} pada {peakMonth}. Saat ini Anda {peakBelow} di bawahnya.",
+      "netWorthAtHighPoint": "Anda berada di titik tertinggi: kekayaan bersih belum pernah melampaui {currentHigh}.",
+      "netWorthBiggestDip": "Penurunan terbesar Anda membuat kekayaan bersih turun dari {dipFromAmount} pada {dipFromMonth} menjadi {dipToAmount} pada {dipToMonth}, penurunan sebesar {dipPercent}.",
+      "netWorthBiggestDipRecovered": "Penurunan terbesar Anda membuat kekayaan bersih turun dari {dipFromAmount} pada {dipFromMonth} menjadi {dipToAmount} pada {dipToMonth}. Anda sudah pulih pada {dipRecoveredMonth}.",
+      "netWorthLargestAsset": "{assetName} bernilai {assetValue}, atau {assetPercent} dari aset Anda.",
+      "investmentsShareOfAssets": "Investasi Anda bernilai {investmentsValue}, yaitu {investmentsPercent} dari aset Anda.",
+      "investmentsGain": "Investasi Anda telah naik {gainAmount} ({gainPercent}) dari biaya dasarnya sebesar {gainCostBasis}.",
+      "investmentsLoss": "Investasi Anda turun {gainAmount} ({gainPercent}) dari biaya dasarnya sebesar {gainCostBasis}.",
+      "investmentsCagr": "Imbal hasil tahunan investasi Anda sekitar {cagrPercent} (CAGR).",
+      "investmentsBiggestHolding": "Kepemilikan terbesar Anda adalah {holdingSymbol}, sekitar {holdingPercent} dari portofolio ({holdingValue} di {holdingAccounts}).",
+      "investmentsBestPerformer": "Performa terbaik Anda adalah {bestSymbol}, naik {bestPercent}. Biayanya {bestCost} dan kini bernilai {bestValue}.",
+      "investmentsForeignAccount": "Akun {foreignName} Anda disimpan dalam {foreignCurrency}. Kepemilikan senilai {foreignBalance} setara dengan {foreignConverted} pada kurs sekitar {foreignRate}.",
+      "investmentsLargestAccount": "Akun investasi terbesar Anda adalah {largestName} sebesar {largestValue}."
+    }
   },
   "favouriteAccounts": {
     "title": "Akun Favorit",
@@ -216,11 +242,12 @@
     },
     "hero": {
       "title": "Hero dasbor",
-      "description": "Angka dan grafik di bawah sapaan: kekayaan bersih atau portofolio Anda.",
+      "description": "Angka pembuka dan grafik di bawah sapaan: kekayaan bersih Anda, portofolio Anda, atau Otomatis untuk bergantian di antara keduanya setiap menit.",
       "show": "Tampilkan hero dasbor",
       "range": "Grafik",
       "set": "Tampilkan",
       "sets": {
+        "auto": "Otomatis",
         "netWorth": "Kekayaan bersih",
         "portfolio": "Nilai portofolio"
       },

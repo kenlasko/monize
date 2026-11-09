@@ -1134,6 +1134,14 @@
       "disabled": "已停用懸浮聊天氣泡",
       "saveFailed": "無法更新聊天氣泡設定"
     },
+    "trivia": {
+      "title": "AI 趣聞",
+      "subtitle": "在儀表板問候語旁顯示一則關於你的淨資產和投資的趣聞。每天重新產生，如果你已設定供應商，則由 AI 撰寫。",
+      "toggleLabel": "在儀表板上顯示 AI 趣聞",
+      "enabled": "已啟用 AI 趣聞",
+      "disabled": "已停用 AI 趣聞",
+      "saveFailed": "無法更新 AI 趣聞設定"
+    },
     "demoRestricted": {
       "heading": "示範模式中受限",
       "body": "示範模式中停用了 AI 提供者設定。"

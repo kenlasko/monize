@@ -1134,6 +1134,14 @@
       "disabled": "Yüzen sohbet balonu devre dışı bırakıldı",
       "saveFailed": "Sohbet balonu ayarı güncellenemedi"
     },
+    "trivia": {
+      "title": "Yapay zeka bilgi notları",
+      "subtitle": "Pano karşılamasının yanında net değeriniz ve yatırımlarınız hakkında tek satırlık bir bilgi notu gösterir. Her gün yeniden oluşturulur ve bir sağlayıcı ayarladıysanız yapay zeka tarafından yazılır.",
+      "toggleLabel": "Panoda yapay zeka bilgi notlarını göster",
+      "enabled": "Yapay zeka bilgi notları etkinleştirildi",
+      "disabled": "Yapay zeka bilgi notları devre dışı bırakıldı",
+      "saveFailed": "Yapay zeka bilgi notları ayarı güncellenemedi"
+    },
     "demoRestricted": {
       "heading": "Demo Modunda Kısıtlandı",
       "body": "AI sağlayıcı yapılandırması demo modunda devre dışıdır."

@@ -33,8 +33,34 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "Mostrar {name}",
+    "cycleControls": "Elegir qué muestra el panel principal",
     "cagrUnavailable": "La CAGR necesita al menos un año de historial de inversión en estas cuentas, con más aportado que retirado.",
     "intradayUnavailable": "Algunas de estas posiciones no tienen precios intradía, así que no se puede dibujar un gráfico de un día. Elige un periodo más largo en Personalizar."
+  },
+  "trivia": {
+    "topics": {
+      "netWorth": "Patrimonio neto",
+      "investments": "Inversiones"
+    },
+    "aiGenerated": "Escrito por IA a partir de tus cifras",
+    "facts": {
+      "netWorthSinceStart": "Tu patrimonio neto era de {startAmount} en {startMonth}. Desde entonces ha ganado {startGain}, así que es unas {startMultiple} veces mayor.",
+      "netWorthBiggestJump": "{jumpMonth} fue tu mayor salto en un solo mes. El patrimonio neto subió {jumpAmount}, de {jumpFrom} en {jumpPreviousMonth} a {jumpTo}.",
+      "netWorthHighPoint": "Tu punto más alto fue {peakAmount} en {peakMonth}. Ahora estás {peakBelow} por debajo.",
+      "netWorthAtHighPoint": "Estás en tu punto más alto: el patrimonio neto nunca ha superado {currentHigh}.",
+      "netWorthBiggestDip": "Tu mayor caída llevó el patrimonio neto de {dipFromAmount} en {dipFromMonth} a {dipToAmount} en {dipToMonth}, un descenso del {dipPercent}.",
+      "netWorthBiggestDipRecovered": "Tu mayor caída llevó el patrimonio neto de {dipFromAmount} en {dipFromMonth} a {dipToAmount} en {dipToMonth}. Te habías recuperado en {dipRecoveredMonth}.",
+      "netWorthLargestAsset": "{assetName} vale {assetValue}, o el {assetPercent} de tus activos.",
+      "investmentsShareOfAssets": "Tus inversiones valen {investmentsValue}, que es el {investmentsPercent} de tus activos.",
+      "investmentsGain": "Tus inversiones han ganado {gainAmount} ({gainPercent}) sobre su costo base de {gainCostBasis}.",
+      "investmentsLoss": "Tus inversiones han perdido {gainAmount} ({gainPercent}) respecto a su costo base de {gainCostBasis}.",
+      "investmentsCagr": "La rentabilidad anualizada de tus inversiones es de aproximadamente {cagrPercent} (CAGR).",
+      "investmentsBiggestHolding": "Tu mayor posición es {holdingSymbol}, con cerca del {holdingPercent} de la cartera ({holdingValue} en {holdingAccounts}).",
+      "investmentsBestPerformer": "Tu mejor valor es {bestSymbol}, con una subida del {bestPercent}. Costó {bestCost} y ahora vale {bestValue}.",
+      "investmentsForeignAccount": "Tu cuenta {foreignName} está en {foreignCurrency}. Sus {foreignBalance} en posiciones equivalen a {foreignConverted} a un tipo de cambio de aproximadamente {foreignRate}.",
+      "investmentsLargestAccount": "Tu cuenta de inversión más grande es {largestName}, con {largestValue}."
+    }
   },
   "favouriteAccounts": {
     "title": "Cuentas favoritas",
@@ -216,11 +242,12 @@
     },
     "hero": {
       "title": "Cabecera del panel",
-      "description": "Las cifras y el gráfico bajo el saludo: tu patrimonio neto o tu cartera.",
+      "description": "Las cifras iniciales y el gráfico bajo el saludo: tu patrimonio neto, tu cartera o Auto para alternar entre ambos cada minuto.",
       "show": "Mostrar la cabecera del panel",
       "range": "Gráfico",
       "set": "Mostrar",
       "sets": {
+        "auto": "Auto",
         "netWorth": "Patrimonio neto",
         "portfolio": "Valor de la cartera"
       },

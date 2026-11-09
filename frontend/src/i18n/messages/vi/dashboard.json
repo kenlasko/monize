@@ -33,8 +33,34 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "Hiển thị {name}",
+    "cycleControls": "Chọn nội dung hiển thị ở phần chính",
     "cagrUnavailable": "CAGR cần ít nhất một năm lịch sử đầu tư trong các tài khoản này, với số tiền nạp nhiều hơn số rút.",
     "intradayUnavailable": "Một số khoản nắm giữ không có giá trong ngày nên không thể vẽ biểu đồ một ngày. Hãy chọn khoảng thời gian dài hơn trong Tùy chỉnh."
+  },
+  "trivia": {
+    "topics": {
+      "netWorth": "Giá trị ròng",
+      "investments": "Đầu tư"
+    },
+    "aiGenerated": "Do AI viết từ số liệu của bạn",
+    "facts": {
+      "netWorthSinceStart": "Giá trị ròng của bạn là {startAmount} vào {startMonth}. Kể từ đó đã tăng {startGain}, tức lớn hơn khoảng {startMultiple} lần.",
+      "netWorthBiggestJump": "{jumpMonth} là bước nhảy lớn nhất trong một tháng của bạn. Giá trị ròng tăng {jumpAmount}, từ {jumpFrom} vào {jumpPreviousMonth} lên {jumpTo}.",
+      "netWorthHighPoint": "Đỉnh cao của bạn là {peakAmount} vào {peakMonth}. Hiện bạn đang thấp hơn {peakBelow}.",
+      "netWorthAtHighPoint": "Bạn đang ở đỉnh cao: giá trị ròng chưa bao giờ vượt quá {currentHigh}.",
+      "netWorthBiggestDip": "Đợt sụt giảm lớn nhất khiến giá trị ròng giảm từ {dipFromAmount} vào {dipFromMonth} xuống {dipToAmount} vào {dipToMonth}, tức giảm {dipPercent}.",
+      "netWorthBiggestDipRecovered": "Đợt sụt giảm lớn nhất khiến giá trị ròng giảm từ {dipFromAmount} vào {dipFromMonth} xuống {dipToAmount} vào {dipToMonth}. Bạn đã phục hồi vào {dipRecoveredMonth}.",
+      "netWorthLargestAsset": "{assetName} có giá trị {assetValue}, chiếm {assetPercent} tài sản của bạn.",
+      "investmentsShareOfAssets": "Các khoản đầu tư của bạn trị giá {investmentsValue}, chiếm {investmentsPercent} tài sản của bạn.",
+      "investmentsGain": "Các khoản đầu tư của bạn đã tăng {gainAmount} ({gainPercent}) so với giá vốn {gainCostBasis}.",
+      "investmentsLoss": "Các khoản đầu tư của bạn giảm {gainAmount} ({gainPercent}) so với giá vốn {gainCostBasis}.",
+      "investmentsCagr": "Lợi suất hằng năm của các khoản đầu tư là khoảng {cagrPercent} (CAGR).",
+      "investmentsBiggestHolding": "Khoản nắm giữ lớn nhất của bạn là {holdingSymbol}, chiếm khoảng {holdingPercent} danh mục ({holdingValue} trong {holdingAccounts}).",
+      "investmentsBestPerformer": "Khoản hiệu quả nhất của bạn là {bestSymbol}, tăng {bestPercent}. Giá vốn là {bestCost} và hiện trị giá {bestValue}.",
+      "investmentsForeignAccount": "Tài khoản {foreignName} của bạn được giữ bằng {foreignCurrency}. Các khoản nắm giữ {foreignBalance} tương đương {foreignConverted} với tỷ giá khoảng {foreignRate}.",
+      "investmentsLargestAccount": "Tài khoản đầu tư lớn nhất của bạn là {largestName} với {largestValue}."
+    }
   },
   "favouriteAccounts": {
     "title": "Tài khoản yêu thích",
@@ -216,11 +242,12 @@
     },
     "hero": {
       "title": "Phần đầu bảng điều khiển",
-      "description": "Các con số và biểu đồ bên dưới lời chào: giá trị ròng hoặc danh mục của bạn.",
+      "description": "Các con số mở đầu và biểu đồ bên dưới lời chào: giá trị ròng, danh mục của bạn hoặc Tự động để luân phiên giữa hai mục mỗi phút.",
       "show": "Hiển thị phần đầu bảng điều khiển",
       "range": "Biểu đồ",
       "set": "Hiển thị",
       "sets": {
+        "auto": "Tự động",
         "netWorth": "Giá trị ròng",
         "portfolio": "Giá trị danh mục"
       },

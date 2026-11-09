@@ -1134,6 +1134,14 @@
       "disabled": "Pływający dymek czatu wyłączony",
       "saveFailed": "Nie udało się zaktualizować ustawienia dymka czatu"
     },
+    "trivia": {
+      "title": "Ciekawostki AI",
+      "subtitle": "Wyświetla obok powitania na pulpicie linijkę z ciekawostką o Twojej wartości netto i inwestycjach. Jest odbudowywana codziennie i formułowana przez AI, jeśli skonfigurowano dostawcę.",
+      "toggleLabel": "Pokaż ciekawostki AI na pulpicie",
+      "enabled": "Ciekawostki AI włączone",
+      "disabled": "Ciekawostki AI wyłączone",
+      "saveFailed": "Nie udało się zaktualizować ustawienia ciekawostek AI"
+    },
     "demoRestricted": {
       "heading": "Ograniczone w trybie demo",
       "body": "Konfiguracja dostawcy AI jest wyłączona w trybie demo."

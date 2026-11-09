@@ -1134,6 +1134,14 @@
       "disabled": "已禁用悬浮聊天气泡",
       "saveFailed": "无法更新聊天气泡设置"
     },
+    "trivia": {
+      "title": "AI 趣闻",
+      "subtitle": "在仪表板问候语旁显示一条关于你的净资产和投资的趣闻。每天重新生成，如果你已设置提供商，则由 AI 撰写。",
+      "toggleLabel": "在仪表板上显示 AI 趣闻",
+      "enabled": "已启用 AI 趣闻",
+      "disabled": "已禁用 AI 趣闻",
+      "saveFailed": "无法更新 AI 趣闻设置"
+    },
     "demoRestricted": {
       "heading": "演示模式受限",
       "body": "演示模式下，AI 提供商配置已禁用。"

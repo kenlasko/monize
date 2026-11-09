@@ -1134,6 +1134,14 @@
       "disabled": "Bulle de discussion flottante désactivée",
       "saveFailed": "Impossible de mettre à jour le paramètre de la bulle de discussion"
     },
+    "trivia": {
+      "title": "Anecdotes IA",
+      "subtitle": "Affiche une ligne d'anecdotes sur votre valeur nette et vos investissements à côté du message d'accueil du tableau de bord. Elle est régénérée chaque jour et rédigée par l'IA si un fournisseur est configuré.",
+      "toggleLabel": "Afficher les anecdotes IA sur le tableau de bord",
+      "enabled": "Anecdotes IA activées",
+      "disabled": "Anecdotes IA désactivées",
+      "saveFailed": "Impossible de mettre à jour le paramètre des anecdotes IA"
+    },
     "demoRestricted": {
       "heading": "Restreint en mode démo",
       "body": "La configuration des fournisseurs d'IA est désactivée en mode démo."

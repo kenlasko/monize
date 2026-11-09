@@ -1134,6 +1134,14 @@
       "disabled": "Gelembung obrolan mengambang dinonaktifkan",
       "saveFailed": "Tidak dapat memperbarui pengaturan gelembung obrolan"
     },
+    "trivia": {
+      "title": "Trivia AI",
+      "subtitle": "Menampilkan satu baris trivia tentang kekayaan bersih dan investasi Anda di samping sapaan dasbor. Diperbarui setiap hari, dan dirangkai oleh AI jika Anda telah menyiapkan penyedia.",
+      "toggleLabel": "Tampilkan trivia AI di dasbor",
+      "enabled": "Trivia AI diaktifkan",
+      "disabled": "Trivia AI dinonaktifkan",
+      "saveFailed": "Tidak dapat memperbarui pengaturan trivia AI"
+    },
     "demoRestricted": {
       "heading": "Dibatasi dalam Mode Demo",
       "body": "Konfigurasi penyedia AI dinonaktifkan dalam mode demo."
