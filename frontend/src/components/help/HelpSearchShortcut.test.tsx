@@ -60,6 +60,18 @@ describe('HelpSearchShortcut', () => {
     expect(useHelpSearchStore.getState().open).toBe(false);
   });
 
+  it('opens on a bare "?" outside an editable element', async () => {
+    await act(async () => {
+      render(<HelpSearchShortcut />);
+    });
+    let prevented = false;
+    await act(async () => {
+      prevented = keydown({ key: '?' });
+    });
+    expect(prevented).toBe(true);
+    expect(useHelpSearchStore.getState().open).toBe(true);
+  });
+
   it('leaves a "?" typed into an input alone', async () => {
     await act(async () => {
       render(<HelpSearchShortcut />);

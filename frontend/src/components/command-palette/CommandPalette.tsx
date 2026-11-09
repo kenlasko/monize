@@ -73,6 +73,8 @@ export function CommandPalette() {
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    // These keys belong to the input method while it is composing text.
+    if (event.nativeEvent.isComposing) return;
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       moveBy(1);
@@ -85,7 +87,9 @@ export function CommandPalette() {
     } else if (event.key === 'Tab') {
       // Always claimed: the box is the palette's only stop, and Tab's job here
       // is the jump the footer advertises. Tab from the actions goes back up.
+      // Stopped too, or Modal's document-level focus trap moves focus to `esc`.
       event.preventDefault();
+      event.stopPropagation();
       const inActions = active?.group === 'actions';
       const target = event.shiftKey || inActions ? items[0] : items.find((item) => item.group === 'actions');
       if (target) setActiveId(target.id);
@@ -159,10 +163,8 @@ export function CommandPalette() {
                       if (!isActive) setActiveId(item.id);
                     }}
                     // Focus stays in the box; a press must not blur it.
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      choose(item);
-                    }}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => choose(item)}
                     className={`flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 ${
                       isActive
                         ? 'bg-blue-50 ring-1 ring-inset ring-blue-200 dark:bg-blue-900/30 dark:ring-blue-700/60'

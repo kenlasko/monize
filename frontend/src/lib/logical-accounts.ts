@@ -103,7 +103,7 @@ export function holdingsValuationIncomplete(
  * today's balance plus everything dated ahead of it, which is what every other
  * surface shows.
  */
-function ownBalance(
+export function ownBalance(
   account: Account,
   ledgerBalances?: ReadonlyMap<string, number>,
 ): number {

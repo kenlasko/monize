@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, type ComponentType, type ReactNode, type SVGProps } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   ArrowsRightLeftIcon,
@@ -28,6 +28,7 @@ import {
   topMatches,
   type CommandGroup,
 } from '@/lib/command-palette';
+import { ownBalance } from '@/lib/logical-accounts';
 import { ADMIN_LINKS, NAV_ICONS } from '@/lib/nav-links';
 import { nextOccurrenceDueDate, nextOccurrenceEffectiveAmount } from '@/lib/scheduled-effective-amount';
 import { SETTINGS_SECTION_IDS } from '@/lib/settings-sections';
@@ -79,6 +80,7 @@ export function useCommandItems(query: string) {
   const tSettings = useTranslations('settings.nav');
   const tReportNames = useTranslations('reportNames');
   const router = useRouter();
+  const pathname = usePathname();
   const { formatCurrency } = useNumberFormat();
   const { formatDate } = useDateFormat();
   const today = useFinancialToday();
@@ -110,7 +112,12 @@ export function useCommandItems(query: string) {
         group: 'accounts',
         label: account.name,
         detail: account.institution ?? undefined,
-        trailing: formatCurrency(account.currentBalance, account.currencyCode),
+        // A brokerage's stored balance is always zero and its worth needs the
+        // portfolio, which the palette does not load: no figure beats a wrong one.
+        trailing:
+          account.accountSubType === 'INVESTMENT_BROKERAGE'
+            ? undefined
+            : formatCurrency(ownBalance(account), account.currencyCode),
         visual: <Tile icon={NAV_ICONS['/accounts']} tone="blue" />,
         run: go(`/accounts/${account.id}`),
       });
@@ -122,10 +129,10 @@ export function useCommandItems(query: string) {
         id: `payee:${payee.id}`,
         group: 'payees',
         label: payee.name,
-        detail: pair(
-          t('transactionCount', { count: payee.transactionCount ?? 0 }),
-          payee.defaultCategory?.name,
-        ),
+        detail:
+          payee.transactionCount == null
+            ? payee.defaultCategory?.name
+            : pair(t('transactionCount', { count: payee.transactionCount }), payee.defaultCategory?.name),
         visual: <PayeeLogo payee={payee} size={32} />,
         run: go(`/payees/${payee.id}`),
       });
@@ -208,7 +215,9 @@ export function useCommandItems(query: string) {
               label: tSettings(s.navKey),
             }))),
       ];
-      for (const page of topMatches(pages, (p) => p.label, terms, PAGE_LIMIT)) {
+      // A route can be both a menu entry and a Settings link; a row id is its href.
+      const uniquePages = [...new Map(pages.map((p) => [p.href, p])).values()];
+      for (const page of topMatches(uniquePages, (p) => p.label, terms, PAGE_LIMIT)) {
         results.push(pageItem(page, go(page.href)));
       }
     } else {
@@ -244,6 +253,11 @@ export function useCommandItems(query: string) {
     // "New transaction" gives up Alt+N to it rather than sharing the key.
     const payee = canSearchTransactions ? payees[0] : undefined;
     const requestNew = useCommandPaletteStore.getState().requestNewTransaction;
+    // Already there, the page answers the request itself; a push would stack
+    // on the form's own history entry and drop the filters from the URL.
+    const goToRegister = () => {
+      if (pathname !== '/transactions') router.push('/transactions');
+    };
     if (payee) {
       results.push(
         {
@@ -254,7 +268,7 @@ export function useCommandItems(query: string) {
           shortcut: 'Alt+N',
           run: () => {
             requestNew({ id: payee.id, name: payee.name, defaultCategoryId: payee.defaultCategoryId });
-            router.push('/transactions');
+            goToRegister();
           },
         },
         {
@@ -288,7 +302,7 @@ export function useCommandItems(query: string) {
               shortcut: payee ? undefined : ('Alt+N' as const),
               run: () => {
                 requestNew();
-                router.push('/transactions');
+                goToRegister();
               },
             },
           ]
@@ -313,7 +327,7 @@ export function useCommandItems(query: string) {
     return COMMAND_GROUPS.flatMap((group) => results.filter((item) => item.group === group));
   }, [
     query, data, remote.transactions, remote.help, reachable, canSearchTransactions, visibleNavLinks,
-    visibleToolsLinks, visibleAiLinks, showAiMenu, isAdmin, isDelegateView, isDemoMode, today, router,
+    visibleToolsLinks, visibleAiLinks, showAiMenu, isAdmin, isDelegateView, isDemoMode, today, router, pathname,
     formatCurrency, formatDate, t, tNav, tSettings, tReportNames,
   ]);
 

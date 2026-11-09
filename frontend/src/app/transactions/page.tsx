@@ -1551,7 +1551,6 @@ function TransactionsContent() {
             defaultPayee={createForPayee ?? undefined}
             defaultAccountId={filters.filterAccountIds.length === 1 ? filters.filterAccountIds[0] : undefined}
             defaultCategoryId={(() => {
-              if (createForPayee?.defaultCategoryId) return createForPayee.defaultCategoryId;
               if (filters.filterAccountIds.length !== 1) return undefined;
               const account = accounts.find(a => a.id === filters.filterAccountIds[0]);
               return account?.accountType === 'ASSET' ? (account.assetCategoryId || undefined) : undefined;

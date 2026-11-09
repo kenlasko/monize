@@ -3,9 +3,10 @@ import { act, fireEvent, render, screen, waitFor } from '@/test/render';
 import { __resetModalStateForTesting } from '@/components/ui/Modal';
 
 const push = vi.fn();
+const mockPathname = vi.hoisted(() => ({ value: '/dashboard' }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push }),
-  usePathname: () => '/dashboard',
+  usePathname: () => mockPathname.value,
 }));
 
 const getAccounts = vi.fn();
@@ -66,6 +67,7 @@ const activeLabel = () =>
 beforeEach(() => {
   __resetModalStateForTesting();
   push.mockReset();
+  mockPathname.value = '/dashboard';
   useCommandPaletteStore.setState(useCommandPaletteStore.getInitialState(), true);
   useCommandPaletteStore.getState().openPalette();
   useAuthStore.setState({ actingAsUserId: null, delegateSections: null, delegateCapabilities: null });
@@ -136,7 +138,7 @@ describe('CommandPalette', () => {
     await waitFor(() => expect(screen.getByRole('option', { name: /Hydro bills/ })).toBeInTheDocument());
 
     const row = screen.getAllByRole('option').find((o) => /Chequing/.test(o.textContent ?? ''));
-    fireEvent.mouseDown(row!);
+    fireEvent.click(row!);
     expect(push).toHaveBeenCalledWith('/transactions?targetTransactionId=t1');
   });
 
@@ -145,7 +147,7 @@ describe('CommandPalette', () => {
     const openAt = vi.spyOn(useHelpStore.getState(), 'openAt');
     const box = await openPalette();
     await type(box, 'hydro');
-    fireEvent.mouseDown(await screen.findByRole('option', { name: /Hydro bills/ }));
+    fireEvent.click(await screen.findByRole('option', { name: /Hydro bills/ }));
     expect(openAt).toHaveBeenCalledWith({ page: 'bills', section: 'x' });
   });
 
@@ -190,6 +192,76 @@ describe('CommandPalette', () => {
     await type(box, 'spending by payee');
     fireEvent.keyDown(box, { key: 'Enter' });
     expect(push).toHaveBeenCalledWith('/reports/spending-by-payee');
+  });
+
+  it('keeps focus in the box on Shift+Tab', async () => {
+    const box = await openPalette();
+    await type(box, 'hydro');
+    box.focus();
+    fireEvent.keyDown(box, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(box);
+    expect(activeLabel()).toBe(screen.getAllByRole('option')[0].textContent);
+  });
+
+  it('still closes on Escape', async () => {
+    const box = await openPalette();
+    box.focus();
+    fireEvent.keyDown(box, { key: 'Escape' });
+    expect(useCommandPaletteStore.getState().open).toBe(false);
+  });
+
+  it('draws a route that is both a menu entry and a Settings link once', async () => {
+    const box = await openPalette();
+    await type(box, 'email receipts');
+    expect(screen.getAllByRole('option', { name: /Email Receipts/ })).toHaveLength(1);
+  });
+
+  it('leaves Enter to an input method that is composing', async () => {
+    const box = await openPalette();
+    await type(box, 'hydro');
+    fireEvent.keyDown(box, { key: 'Enter', isComposing: true });
+    expect(push).not.toHaveBeenCalled();
+    expect(useCommandPaletteStore.getState().open).toBe(true);
+  });
+
+  it('runs a row on a click, and not on a right-button press', async () => {
+    const box = await openPalette();
+    await type(box, 'hydro');
+    const row = screen.getByRole('option', { name: /38 transactions/ });
+    fireEvent.mouseDown(row, { button: 2 });
+    fireEvent.contextMenu(row);
+    expect(push).not.toHaveBeenCalled();
+    fireEvent.click(row);
+    expect(push).toHaveBeenCalledWith('/payees/p1');
+  });
+
+  it('does not push over the form when already on Transactions', async () => {
+    mockPathname.value = '/transactions';
+    const box = await openPalette();
+    await type(box, 'hydro');
+    fireEvent.keyDown(box, { key: 'n', code: 'KeyN', altKey: true });
+    expect(useCommandPaletteStore.getState().newTransactionRequest).not.toBeNull();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('shows the balance the Accounts page shows, and none for a brokerage', async () => {
+    getAccounts.mockResolvedValue([
+      { id: 'a1', name: 'Hydro Savings', institution: null, currentBalance: 100, futureTransactionsSum: -40, currencyCode: 'CAD', accountSubType: null },
+      { id: 'a2', name: 'Hydro Brokerage', institution: null, currentBalance: 0, currencyCode: 'CAD', accountSubType: 'INVESTMENT_BROKERAGE' },
+    ]);
+    const box = await openPalette();
+    await type(box, 'hydro');
+    expect(screen.getByRole('option', { name: /Hydro Savings/ })).toHaveTextContent('$60.00');
+    expect(screen.getByRole('option', { name: /Hydro Brokerage/ }).textContent).not.toMatch(/\$/);
+  });
+
+  it('shows no count for a payee whose count is unknown', async () => {
+    getPayees.mockResolvedValue([{ ...hydro, transactionCount: undefined }]);
+    const box = await openPalette();
+    await type(box, 'hydro');
+    const row = screen.getAllByRole('option')[0];
+    expect(row).toHaveTextContent('Utilities');
+    expect(row.textContent).not.toMatch(/transactions/);
   });
 
   it('is named for assistive technology without drawing a heading', async () => {
