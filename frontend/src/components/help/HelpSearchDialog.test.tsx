@@ -79,6 +79,13 @@ afterEach(() => {
 });
 
 describe('HelpSearchDialog', () => {
+  it('forces the left padding that clears the icon past the global search-input rule', async () => {
+    await act(async () => {
+      render(<HelpSearchDialog />);
+    });
+    expect(screen.getByRole('combobox').className.split(' ')).toContain('pl-10!');
+  });
+
   it('shows the current screen\'s table of contents for an empty query', async () => {
     useHelpStore.getState().setContextPage('budgets');
     await act(async () => {

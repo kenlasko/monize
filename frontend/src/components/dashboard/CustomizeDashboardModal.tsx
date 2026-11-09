@@ -10,7 +10,12 @@ import { userSettingsApi } from '@/lib/user-settings';
 import { getErrorMessage } from '@/lib/errors';
 import { useDragReorder, DropIndicatorLine } from '@/hooks/useDragReorder';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
+import {
+  SEGMENTED_GROUP_CLASS,
+  SEGMENTED_TOOLBAR_GROUP_CLASS,
+  segmentClass,
+  toolbarSegmentClass,
+} from '@/components/ui/segmented-control';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
 import { PORTFOLIO_CHART_RANGES } from '@/components/investments/portfolio-range-window';
@@ -254,14 +259,14 @@ export function CustomizeDashboardModal({
         {hero.enabled && (
           <div className="mt-3 flex flex-col gap-3">
             <HeroRow label={t('customize.hero.set')} id="customize-hero-set">
-              <div className={SEGMENTED_GROUP_CLASS} role="group" aria-labelledby="customize-hero-set">
+              <div className={SEGMENTED_TOOLBAR_GROUP_CLASS} role="group" aria-labelledby="customize-hero-set">
                 {DASHBOARD_HERO_SETS.map((set) => (
                   <button
                     key={set}
                     type="button"
                     aria-pressed={hero.set === set}
                     onClick={() => setHero((prev) => ({ ...prev, set }))}
-                    className={segmentClass(hero.set === set)}
+                    className={toolbarSegmentClass(hero.set === set)}
                   >
                     {t(`customize.hero.sets.${set}`)}
                   </button>
