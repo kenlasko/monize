@@ -3014,10 +3014,37 @@ export class TransactionTransferService {
     ]);
     const legDecimals = moneyDecimalsForCode(places, legCurrencyCode);
     const parentDecimals = moneyDecimalsForCode(places, parentCurrencyCode);
-    if (updateDto.amount !== undefined) {
+    // Cross-currency pair: the transfer form sends `amount` in the SOURCE (the
+    // split parent's) currency and `toAmount` in this leg's. Reading `amount` as
+    // the leg's own figure turned 50 EUR into 50 BTC and re-totalled the parent
+    // at 50 / rate. Same-currency pairs keep the original reading of `amount`.
+    const crossCurrency =
+      !!legCurrencyCode &&
+      !!parentCurrencyCode &&
+      legCurrencyCode !== parentCurrencyCode;
+    const legAmountInput =
+      crossCurrency && updateDto.toAmount !== undefined
+        ? updateDto.toAmount
+        : updateDto.amount;
+    const explicitSourceAmount =
+      crossCurrency &&
+      updateDto.toAmount !== undefined &&
+      updateDto.amount !== undefined
+        ? updateDto.amount
+        : undefined;
+    if (legAmountInput !== undefined) {
       assertAmountPrecision(
-        updateDto.amount,
+        legAmountInput,
         precisionCurrencyFor(places, legCurrencyCode),
+        updateDto.toAmount !== undefined && crossCurrency
+          ? "toAmount"
+          : "amount",
+      );
+    }
+    if (explicitSourceAmount !== undefined) {
+      assertAmountPrecision(
+        explicitSourceAmount,
+        precisionCurrencyFor(places, parentCurrencyCode),
         "amount",
       );
     }
@@ -3025,10 +3052,21 @@ export class TransactionTransferService {
     const oldCounterpartAmount = Number(counterpart.amount);
     const sign = oldCounterpartAmount < 0 ? -1 : 1;
     const newCounterpartAmount =
-      updateDto.amount !== undefined
-        ? roundMoney(sign * Math.abs(updateDto.amount), legDecimals)
+      legAmountInput !== undefined
+        ? roundMoney(sign * Math.abs(legAmountInput), legDecimals)
         : oldCounterpartAmount;
-    const amountChanged = newCounterpartAmount !== oldCounterpartAmount;
+    const legChanged = newCounterpartAmount !== oldCounterpartAmount;
+    // The split row (parent currency) can also change on its own when the
+    // source amount is stated explicitly.
+    const newExplicitSplitAmount =
+      explicitSourceAmount !== undefined && explicitSourceAmount > 0
+        ? roundMoney(-Math.abs(explicitSourceAmount), parentDecimals)
+        : undefined;
+    const sourceChanged =
+      newExplicitSplitAmount !== undefined &&
+      newExplicitSplitAmount !==
+        roundMoney(Number(parentSplit.amount), parentDecimals);
+    const amountChanged = legChanged || sourceChanged;
 
     const oldDate = counterpart.transactionDate;
     const newDate = updateDto.transactionDate ?? oldDate;
@@ -3051,23 +3089,40 @@ export class TransactionTransferService {
       legData.payeeId = updateDto.payeeId || null;
     if (updateDto.payeeName !== undefined)
       legData.payeeName = updateDto.payeeName || null;
-    if (amountChanged) legData.amount = newCounterpartAmount;
+    if (legChanged) legData.amount = newCounterpartAmount;
 
     // The split row on the source transaction is kept in step with the leg: its
     // memo mirrors the leg's description (they are seeded from each other on
     // create), and its amount is the leg's amount converted back into the
     // parent's currency -- which is the leg's negated amount only when the two
-    // accounts share a currency.
+    // accounts share a currency. An explicit source amount (cross-currency
+    // form) wins over the stored rate, and the pair's implied rate is stored.
     const resolvedSource = amountChanged
-      ? await this.resolveSplitLegSourceAmount(
-          counterpart,
-          parentTransaction,
-          newCounterpartAmount,
-          newDate,
-          parentDecimals,
-        )
+      ? newExplicitSplitAmount !== undefined
+        ? {
+            amount: newExplicitSplitAmount,
+            exchangeRate: roundFxRate(
+              Math.abs(newCounterpartAmount) / Math.abs(newExplicitSplitAmount),
+            ),
+          }
+        : await this.resolveSplitLegSourceAmount(
+            counterpart,
+            parentTransaction,
+            newCounterpartAmount,
+            newDate,
+            parentDecimals,
+          )
       : undefined;
     const newSplitAmount = resolvedSource?.amount;
+    if (
+      newExplicitSplitAmount !== undefined &&
+      resolvedSource !== undefined &&
+      Number.isFinite(resolvedSource.exchangeRate) &&
+      resolvedSource.exchangeRate > 0 &&
+      Number(counterpart.exchangeRate) !== resolvedSource.exchangeRate
+    ) {
+      legData.exchangeRate = resolvedSource.exchangeRate;
+    }
 
     // A leg whose stored rate was missing forced the fallback lookup above, so
     // record what the pair was actually converted at rather than leaving the row

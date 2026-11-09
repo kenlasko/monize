@@ -2615,6 +2615,82 @@ describe("TransactionTransferService", () => {
         );
       });
 
+      it("takes toAmount as the leg amount and amount as the source amount for a cross-currency pair (form payload)", async () => {
+        // 80 EUR bought 0.02125 BTC. An earlier edit read `amount` as the BTC
+        // figure: the leg held 80 BTC and the EUR parent 301,886.79.
+        const eurParent = {
+          id: "parent-tx",
+          accountId: "eur-account",
+          amount: -301886.79,
+          currencyCode: "EUR",
+          account: { id: "eur-account", currencyCode: "EUR" },
+          isSplit: true,
+          transactionDate: "2021-06-15",
+        } as unknown as Transaction;
+        const btcLeg = {
+          id: "leg-tx",
+          accountId: "btc-account",
+          amount: 80,
+          currencyCode: "BTC",
+          account: { id: "btc-account", currencyCode: "BTC" },
+          exchangeRate: 0.000265,
+          isTransfer: true,
+          linkedTransactionId: "parent-tx",
+          transactionDate: "2021-06-15",
+        } as unknown as Transaction;
+        const eurSplit = {
+          id: "split-1",
+          transactionId: "parent-tx",
+          transferAccountId: "btc-account",
+          amount: -301886.79,
+          linkedTransactionId: "leg-tx",
+        } as unknown as TransactionSplit;
+        splitsRepository.findOne.mockResolvedValue(eurSplit);
+        splitsRepository.find.mockResolvedValue([
+          { id: "split-1", amount: -301886.79 },
+        ]);
+        mockFindOne
+          .mockResolvedValueOnce(btcLeg)
+          .mockResolvedValueOnce(eurParent)
+          .mockResolvedValueOnce({ ...btcLeg, amount: 0.02125 });
+
+        await service.updateTransfer(
+          "user-1",
+          "leg-tx",
+          {
+            amount: 80,
+            toAmount: 0.02125,
+            fromAccountId: "eur-account",
+            toAccountId: "btc-account",
+            fromCurrencyCode: "EUR",
+            toCurrencyCode: "BTC",
+          } as any,
+          mockFindOne,
+        );
+
+        // The leg holds what was received, in BTC, at the pair's implied rate.
+        expect(transactionsRepository.update).toHaveBeenCalledWith(
+          "leg-tx",
+          expect.objectContaining({
+            amount: 0.02125,
+            exchangeRate: 0.000265625,
+          }),
+        );
+        // The split row and parent hold what was sent, in EUR.
+        expect(transactionsRepository.update).toHaveBeenCalledWith(
+          "split-1",
+          expect.objectContaining({ amount: -80 }),
+        );
+        expect(transactionsRepository.update).toHaveBeenCalledWith(
+          "parent-tx",
+          expect.objectContaining({ amount: -80 }),
+        );
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          "btc-account",
+          -79.97875,
+        );
+      });
+
       it("resolves the rate for the date when the leg carries none, and records it", async () => {
         splitsRepository.findOne.mockResolvedValue(crossSplit);
         splitsRepository.find.mockResolvedValue([
