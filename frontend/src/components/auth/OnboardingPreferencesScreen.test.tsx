@@ -21,7 +21,7 @@ vi.mock('@/store/preferencesStore', () => ({
     selector({ updatePreferences: vi.fn() }),
 }));
 
-vi.mock('js-cookie', () => ({ default: { set: vi.fn() } }));
+vi.mock('js-cookie', () => ({ default: { set: vi.fn(), get: vi.fn() } }));
 
 async function renderScreen(onComplete = vi.fn()) {
   await act(async () => {

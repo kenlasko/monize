@@ -20,7 +20,7 @@ interface PageLayoutProps {
  */
 export function PageLayout({ children }: PageLayoutProps) {
   return (
-    <div className="min-h-[calc(100dvh-4rem)] bg-gray-50 dark:bg-gray-900">
+    <div className="page-ambient-glow min-h-[calc(100dvh-4rem)] bg-gray-50 dark:bg-gray-900">
       {children}
     </div>
   );

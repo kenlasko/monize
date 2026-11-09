@@ -90,6 +90,10 @@ vi.mock('@/lib/auth', () => ({
 
 // Mock all API libs
 const mockGetAccounts = vi.fn().mockResolvedValue([]);
+const mockGetInstitutions = vi.fn().mockResolvedValue([]);
+vi.mock('@/lib/institutions', () => ({
+  institutionsApi: { getAll: (...args: any[]) => mockGetInstitutions(...args) },
+}));
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
     getAll: (...args: any[]) => mockGetAccounts(...args),
@@ -153,7 +157,11 @@ vi.mock('@/components/dashboard/DashboardHero', () => ({
 }));
 
 vi.mock('@/components/dashboard/FavouriteAccounts', () => ({
-  FavouriteAccounts: ({ isLoading }: any) => <div data-testid="favourite-accounts">{isLoading ? 'loading' : 'loaded'}</div>,
+  FavouriteAccounts: ({ isLoading, institutions }: any) => (
+    <div data-testid="favourite-accounts" data-institutions={institutions?.length}>
+      {isLoading ? 'loading' : 'loaded'}
+    </div>
+  ),
 }));
 
 vi.mock('@/components/dashboard/UpcomingBills', () => ({
@@ -280,6 +288,23 @@ describe('DashboardPage', () => {
     const heading = await screen.findByRole('heading', { level: 1 });
     const gear = within(heading.parentElement as HTMLElement).getByRole('button', { name: 'Customize' });
     expect(gear).toHaveTextContent('');
+  });
+
+  it('hands Favourite Accounts the institutions its logos come from', async () => {
+    mockGetInstitutions.mockResolvedValueOnce([{ id: 'inst-1', name: 'TD', hasLogo: true }]);
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('favourite-accounts')).toHaveAttribute('data-institutions', '1');
+    });
+  });
+
+  it('still loads the dashboard when the institutions cannot be read', async () => {
+    mockGetInstitutions.mockRejectedValueOnce(new Error('nope'));
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('favourite-accounts')).toHaveTextContent('loaded');
+    });
+    expect(screen.getByTestId('favourite-accounts')).toHaveAttribute('data-institutions', '0');
   });
 
   it('renders dashboard child components', async () => {
@@ -411,6 +436,8 @@ describe('DashboardPage', () => {
     expect(screen.queryByTestId('upcoming-bills')).not.toBeInTheDocument();
     expect(screen.queryByTestId('getting-started')).not.toBeInTheDocument();
     expect(mockGetScheduled).not.toHaveBeenCalled();
+    // Not a delegate-accessible endpoint: a delegate's cards keep the star.
+    expect(mockGetInstitutions).not.toHaveBeenCalled();
   });
 
   it('delegate with the Bills grant also sees Upcoming Bills', async () => {

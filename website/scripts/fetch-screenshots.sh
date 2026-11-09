@@ -21,7 +21,6 @@ for n in \
   dashboard-expenses-pie \
   dashboard-income-expenses-bar \
   dashboard-net-worth \
-  dashboard-overview \
   dashboard-top-movers \
   dashboard-upcoming-bills \
   import-complete-step \

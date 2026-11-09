@@ -21,6 +21,13 @@ describe('AuthShell', () => {
     // square in dark mode; the shell must use the transparent mark.
     const logo = getByAltText('Monize') as HTMLImageElement;
     expect(logo.src).toContain('monize-logo-transparent');
+    // Over the heading at every width, not only where the brand panel is hidden.
+    expect(logo.className).not.toContain('hidden');
+  });
+
+  it('sets the brand panel beside the form on every screen', () => {
+    const { getByTestId } = renderShell(<AuthShell title="t">x</AuthShell>);
+    expect(getByTestId('auth-brand-panel')).toBeInTheDocument();
   });
 
   it('wraps the body in the shared Card surface', () => {

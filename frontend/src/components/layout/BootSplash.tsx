@@ -6,6 +6,12 @@ export const BOOT_SPLASH_ID = 'monize-boot-splash';
 // enough that a slow-but-working boot never shows it, short enough that a
 // user staring at a hung PWA gets a way out without force-closing the app.
 const SLOW_REVEAL_SECONDS = 12;
+// The logo springs in, then breathes with a halo in the palette's accent.
+const LOGO_IN_SECONDS = 0.7;
+const BOOT_GLOW_FALLBACK = '#3b82f6';
+// The path of public/icons/monize-logo-transparent.svg; BootSplash.test.tsx holds them equal.
+const BOOT_LOGO_PATH =
+  'M180,746.03C180,745.5,241.08,587.75,240.54,587.21C239.76,586.42,160.35,605,156.97,605C154.45,605,250.9108,306.5358,251.3208,308.1458C257.7723,308.0924,329.0739,495.3686,330.7139,498.1686C331.3839,499.3086,291.0173,536.7598,291.0173,537.5398C291.0173,539.1498,378.91,633,380.5,633C382.09,633,470.9533,539.4752,470.9533,537.8652C470.9533,537.0852,430.6059,498.0059,430.6059,498.0059L510.6498,307.8204C510.6498,307.8204,604.8835,600.3288,605.9135,604.8788C606.5535,607.7288,520.13,586.54,519.42,587.24C519.18,587.49,579.95,747,579.95,747L751.16,747C751.16,747,521.39,11,520.97,11C520.6086,11,381.9709,379.8984,381.8161,380.3213C379.7961,385.8813,239.62,9.64,239.62,9.64L9.79,747C9.79,747,180,746.65,180,746.03z';
 
 export interface BootSplashStrings {
   loading: string;
@@ -62,7 +68,18 @@ html.dark #${BOOT_SPLASH_ID} { ${darkRules} }
 @media (prefers-color-scheme: dark) {
   #${BOOT_SPLASH_ID}[data-boot-theme='system'] { ${darkRules} }
 }
-#${BOOT_SPLASH_ID} .boot-splash-logo { width: 72px; height: 72px; }
+#${BOOT_SPLASH_ID} .boot-splash-mark { position: relative; display: flex; width: 72px; height: 72px; }
+#${BOOT_SPLASH_ID} .boot-splash-logo { position: relative; width: 72px; height: 72px; }
+#${BOOT_SPLASH_ID} .boot-splash-mark::before {
+  content: '';
+  position: absolute;
+  inset: -36px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-blue-500, ${BOOT_GLOW_FALLBACK}) 30%, transparent), transparent 68%);
+  opacity: 0;
+}
+html[data-theme='midnight'] #${BOOT_SPLASH_ID} .boot-splash-mark::before,
+html[data-theme='highcontrast'] #${BOOT_SPLASH_ID} .boot-splash-mark::before { display: none; }
 #${BOOT_SPLASH_ID} .boot-splash-spinner {
   width: 28px;
   height: 28px;
@@ -90,6 +107,19 @@ html.dark #${BOOT_SPLASH_ID} { ${darkRules} }
 }
 @keyframes monize-boot-spin { to { transform: rotate(360deg); } }
 @keyframes monize-boot-reveal { to { opacity: 1; visibility: visible; } }
+@keyframes monize-boot-logo-in { from { opacity: 0; transform: scale(0.72); } }
+@keyframes monize-boot-logo-breathe { 50% { transform: scale(1.06); } }
+@keyframes monize-boot-halo { 50% { opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) {
+  #${BOOT_SPLASH_ID} .boot-splash-logo {
+    animation:
+      monize-boot-logo-in ${LOGO_IN_SECONDS}s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+      monize-boot-logo-breathe 2.4s ease-in-out ${LOGO_IN_SECONDS}s infinite;
+  }
+  #${BOOT_SPLASH_ID} .boot-splash-mark::before {
+    animation: monize-boot-halo 2.4s ease-in-out ${LOGO_IN_SECONDS}s infinite;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   #${BOOT_SPLASH_ID} .boot-splash-spinner { display: none; }
 }
@@ -103,13 +133,20 @@ html.dark #${BOOT_SPLASH_ID} { ${darkRules} }
       aria-label={strings.loading}
     >
       <style>{css}</style>
-      {/* eslint-disable-next-line @next/next/no-img-element -- next/image needs
-          the JS runtime; this overlay must render before (or without) it */}
-      <img
-        src="/icons/monize-logo-transparent.svg"
-        alt=""
-        className="boot-splash-logo"
-      />
+      <div className="boot-splash-mark">
+        {/* Inline, not an <img>: a file would still be downloading on a slow
+            connection while the halo and spinner, which arrive with the HTML,
+            are already on screen. */}
+        <svg
+          className="boot-splash-logo"
+          viewBox="-600 -600 1000 1000"
+          aria-hidden="true"
+        >
+          <g transform="translate(-481.057, -489.3737)">
+            <path fill="#4fa091" d={BOOT_LOGO_PATH} />
+          </g>
+        </svg>
+      </div>
       <div className="boot-splash-spinner" aria-hidden="true" />
       <p className="boot-splash-slow">
         {strings.slowMessage}{' '}

@@ -7,7 +7,7 @@ import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import Image from 'next/image';
+import { AuthShell } from '@/components/auth/AuthShell';
 import toast from 'react-hot-toast';
 import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/Input';
@@ -202,31 +202,16 @@ export default function EmergencyClaimPage() {
   const t = useTranslations('emergencyAccess');
   const tc = useTranslations('common');
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <Image
-            src="/icons/monize-logo-transparent.svg"
-            alt="Monize"
-            width={96}
-            height={96}
-            className="mx-auto rounded-xl"
-            priority
-          />
-          <h2 className="mt-4 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
-            {t('title')}
-          </h2>
-        </div>
-        <Suspense
-          fallback={
-            <div className="text-center text-gray-500 dark:text-gray-400">
-              {tc('loading')}
-            </div>
-          }
-        >
-          <EmergencyClaimForm />
-        </Suspense>
-      </div>
-    </div>
+    <AuthShell plain title={t('title')}>
+      <Suspense
+        fallback={
+          <div className="text-center text-gray-500 dark:text-gray-400">
+            {tc('loading')}
+          </div>
+        }
+      >
+        <EmergencyClaimForm />
+      </Suspense>
+    </AuthShell>
   );
 }

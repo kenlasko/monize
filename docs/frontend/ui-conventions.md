@@ -60,7 +60,7 @@ A placeholder wears `animate-pulse skeleton-shimmer` (`Skeleton` does already). 
 
 A dropdown or popover panel arrives through `MENU_ENTER_CLASS` (`components/ui/menu-motion.ts`): it fades in and grows from 95% over 150ms through the `starting:` (`@starting-style`) variant, the same mechanism as `Modal`'s panel, so it needs no open or closing state. Pair it with `MENU_ORIGIN_LEFT` or `MENU_ORIGIN_RIGHT` for the edge it hangs from, or it grows out of its own centre. A panel a guided tour measures on open (the notification list) keeps no entrance, so the spotlight never measures a half-scaled panel.
 
-**The app header is glass where the browser can blur.** Behind `supports-[backdrop-filter]:` it is the card colour at 70-75% over `backdrop-blur-md`, edged by a hairline rather than a shadow; without backdrop filters it stays solid. Its inline transform already makes it the containing block for its fixed children, so the blur moves no panel. An ambient glow from the accent ramp and the income token sits in the `body` background (`--ambient-glow-*` in `globals.css`) and scrolls away with the page header; `midnight` and `highcontrast` set it to transparent.
+**The app header is glass where the browser can blur.** Behind `supports-[backdrop-filter]:` it is the card colour at 70-75% over `backdrop-blur-md`, edged by a hairline rather than a shadow; without backdrop filters it stays solid. Its inline transform already makes it the containing block for its fixed children, so the blur moves no panel. An ambient glow from the accent ramp (`--ambient-glow`, `.page-ambient-glow` in `globals.css`) sits in the `PageLayout` background, because that wrapper is opaque and would cover one on `body`, and has faded out 9rem down so it stops with the page header; a route's `loading.tsx` wrapper carries the same class; `midnight` and `highcontrast` set it to transparent.
 
 **A pressed `Button` sinks by 2%** (`not-disabled:active:scale-[0.98]`, still under reduced motion). `not-disabled` rather than `enabled`, so a `ButtonLink` presses too.
 
@@ -81,6 +81,8 @@ What the header looks like is `screens-and-dialogs.md`: the reference is the New
 ## An auth screen renders inside `AuthShell`
 
 `components/auth/AuthShell.tsx` is the single shell for login, register, forgot/reset/change-password, verify-email, confirm-email-change and setup-2fa: transparent brand mark, title/subtitle, notices slot, shared `Card` around the body (`plain` for a bare status line). Language picker and version line are opt-in props. Use `/icons/monize-logo-transparent.svg` everywhere in the UI -- the boxed `monize-logo.svg` bakes in a white background and renders as a white square in dark mode. Guarded in `ui-conventions.test.ts`.
+
+The shell splits the screen from `lg` up with `AuthBrandPanel`: a gradient from the accent ramp, one feature's line and its picture. A cookie, not localStorage (whose pre-login footprint is pinned), remembers the last slide so each visit steps to the next. The pictures in `public/brand/` come from the documentation screenshots through `frontend/scripts/build-brand-screenshots.mjs`; rerun it after retaking a screen a slide shows. A new slide needs its strings in every locale and both pictures, which `AuthBrandPanel.test.tsx` checks on disk.
 
 ## Navigation links and their icons live in `lib/nav-links.ts`
 

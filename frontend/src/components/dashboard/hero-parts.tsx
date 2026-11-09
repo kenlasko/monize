@@ -7,6 +7,7 @@ import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/20/solid';
 import { chartColors } from '@/lib/chart-colors';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useIsBelowDesktop } from '@/hooks/useIsMobile';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 import { ChartAreaGradient } from '@/components/ui/ChartAreaGradient';
 import {
@@ -23,11 +24,14 @@ import {
  * with its dismissable high/low bubbles, and the figure pill.
  */
 
-// On a phone the figures stack above the chart; `gap-y-2` keeps that seam
-// tight since the chart's own top margin (for the high/low flag bubbles,
-// `HeroAreaChart`) already reads as blank space once it is no longer beside
-// the figures, as it is from `lg` up.
-const LAYOUT_CLASS = 'mb-6 flex flex-col lg:flex-row gap-x-10 gap-y-2 lg:gap-y-4 lg:items-start';
+// Below `lg` the figures stack above the chart, so `gap-y-1` and the chart's
+// reduced top margin (`HeroAreaChart`) keep that seam tight.
+const LAYOUT_CLASS = 'mb-6 flex flex-col lg:flex-row gap-x-10 gap-y-1 lg:gap-y-4 lg:items-start';
+
+// The high/low bubbles sit beside their dot and are 22px tall, so they rise 11px
+// above a point at the top of the plot; stacked, the margin only has to clear that.
+const CHART_TOP_MARGIN_STACKED = 12;
+const CHART_TOP_MARGIN_BESIDE = 36;
 
 /** The page header, tucked close to the figures under it. */
 function HeaderBlock({ header }: { header: ReactNode }) {
@@ -202,6 +206,7 @@ export function HeroAreaChart({
 }) {
   const tc = useTranslations('common');
   const { formatCurrency, formatCurrencyAxis, formatCurrencyFlag } = useNumberFormat();
+  const isStacked = useIsBelowDesktop();
   const [dismissedHigh, setDismissedHigh] = useState<number | null>(null);
   const [dismissedLow, setDismissedLow] = useState<number | null>(null);
   const flags = useMemo(
@@ -235,7 +240,15 @@ export function HeroAreaChart({
 
   return (
     <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-      <AreaChart data={points} margin={{ top: 36, right: 8, left: 8, bottom: 0 }}>
+      <AreaChart
+        data={points}
+        margin={{
+          top: isStacked ? CHART_TOP_MARGIN_STACKED : CHART_TOP_MARGIN_BESIDE,
+          right: 8,
+          left: 8,
+          bottom: 0,
+        }}
+      >
         <defs>
           <ChartAreaGradient id={gradientId} color={chartColors.primary} />
         </defs>
