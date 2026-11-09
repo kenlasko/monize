@@ -67,7 +67,7 @@ export function MobileTabsGroup({ initial, commit, className }: MobileTabsGroupP
         {t('groups.mobileNavigation')}
       </h3>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{t('mobileTabs.intro')}</p>
-      <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-2">
         {SLOTS.map((slot) => (
           <Select
             key={slot}
