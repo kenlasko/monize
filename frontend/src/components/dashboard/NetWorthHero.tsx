@@ -11,12 +11,13 @@ import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useReportData } from '@/hooks/useReportData';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
-import type { PortfolioSummary } from '@/types/investment';
+import type { PortfolioValuation } from '@/types/investment';
 import type { DashboardHeroConfig } from './widget-config';
 import { heroMonthChange, heroSnapshot } from './dashboard-hero-figures';
 import {
   HeroAreaChart,
   HeroCaption,
+  HeroFigureSkeleton,
   HeroHeadline,
   HeroLayout,
   HeroMessage,
@@ -30,12 +31,12 @@ import {
 interface NetWorthHeroProps {
   config: DashboardHeroConfig;
   header: ReactNode;
-  /** The dashboard's portfolio summary; `null` until loaded or when it failed. */
-  portfolioSummary: PortfolioSummary | null;
+  /** The dashboard's portfolio valuation; `null` until loaded or when it failed. */
+  portfolioValuation: PortfolioValuation | null;
   hasInvestments: boolean;
   isLoading: boolean;
-  /** Whether `portfolioSummary` is still on its way, so "invested" is held
-   *  back with the rest of the hero instead of popping in once it lands. */
+  /** Whether `portfolioValuation` is still on its way: "invested" keeps a
+   *  placeholder meanwhile, and nothing else in the hero waits for it. */
   investmentSummaryLoading: boolean;
 }
 
@@ -47,7 +48,7 @@ interface NetWorthHeroProps {
 export function NetWorthHero({
   config,
   header,
-  portfolioSummary,
+  portfolioValuation,
   hasInvestments,
   isLoading,
   investmentSummaryLoading,
@@ -81,15 +82,10 @@ export function NetWorthHero({
   );
 
   const label = t('hero.label');
-  // Held back with everything else: `hasInvestments` is known as soon as
-  // accounts load, but the portfolio summary behind "invested" fetches
-  // separately and lands a beat later.
-  if (
-    isLoading ||
-    dataLoading ||
-    (data === null && !error) ||
-    (hasInvestments && investmentSummaryLoading)
-  ) {
+  // The valuation behind "invested" is deliberately not part of this: it is
+  // the slowest request here and one figure needs it, so that figure alone
+  // keeps a placeholder below.
+  if (isLoading || dataLoading || (data === null && !error)) {
     return <HeroSkeleton header={header} label={label} />;
   }
   if (error) return <HeroMessage header={header}>{t('netWorth.loadFailed')}</HeroMessage>;
@@ -97,23 +93,23 @@ export function NetWorthHero({
 
   // The securities alone: the cash beside them is not invested.
   const invested =
-    hasInvestments && portfolioSummary
+    hasInvestments && portfolioValuation
       ? {
-          value: portfolioSummary.totalHoldingsValue,
+          value: portfolioValuation.totalHoldingsValue,
           total: partialTotalFor(
-            portfolioSummary.totalHoldingsValue,
-            portfolioSummary.valuationComplete,
-            portfolioSummary.missingRatePairs,
+            portfolioValuation.totalHoldingsValue,
+            portfolioValuation.valuationComplete,
+            portfolioValuation.missingRatePairs,
           ),
           // A gap from an unpriced holding is not a missing rate, so it says so
           // and names the holdings, with where a price comes from.
           explanation:
-            portfolioSummary.pricesComplete === false
+            portfolioValuation.pricesComplete === false
               ? t('hero.investedUnpriced', {
-                  symbols: (portfolioSummary.unpricedSecurityIds ?? [])
+                  symbols: (portfolioValuation.unpricedSecurityIds ?? [])
                     .map(
                       (id) =>
-                        portfolioSummary.holdings.find((h) => h.securityId === id)?.symbol ?? id,
+                        portfolioValuation.holdings.find((h) => h.securityId === id)?.symbol ?? id,
                     )
                     .join(', '),
                 })
@@ -183,7 +179,8 @@ export function NetWorthHero({
                 strong: heroStrong,
               })}
             </span>
-            {invested && (
+            {hasInvestments && investmentSummaryLoading && <HeroFigureSkeleton />}
+            {!investmentSummaryLoading && invested && (
               <span>
                 {t.rich('hero.invested', {
                   value: () => (

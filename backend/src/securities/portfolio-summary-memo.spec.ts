@@ -1,6 +1,7 @@
 import {
   applyPortfolioSummaryInvalidation,
   buildPortfolioSummaryMemoKey,
+  buildPortfolioValuationMemoKey,
   invalidateAllPortfolioSummaries,
   invalidatePortfolioSummary,
   PORTFOLIO_SUMMARY_MEMO_MAX_ENTRIES,
@@ -38,6 +39,12 @@ describe("portfolio summary memo", () => {
       );
       expect(buildPortfolioSummaryMemoKey("u1", [], "CAD")).toBe(
         buildPortfolioSummaryMemoKey("u1", undefined, "CAD"),
+      );
+    });
+
+    it("keeps a valuation apart from the summary built on it", () => {
+      expect(buildPortfolioValuationMemoKey("u1", ["b", "a"], "CAD")).not.toBe(
+        buildPortfolioSummaryMemoKey("u1", ["b", "a"], "CAD"),
       );
     });
 

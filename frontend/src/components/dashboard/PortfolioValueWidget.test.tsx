@@ -97,10 +97,10 @@ function periodResult(overrides: Record<string, unknown> = {}) {
   return { ...base, ...mirrored };
 }
 
-const getPortfolioSummary = vi.fn();
+const getPortfolioValuation = vi.fn();
 vi.mock('@/lib/investments', () => ({
   investmentsApi: {
-    getPortfolioSummary: (...a: unknown[]) => getPortfolioSummary(...a),
+    getPortfolioValuation: (...a: unknown[]) => getPortfolioValuation(...a),
   },
 }));
 
@@ -139,8 +139,8 @@ describe('PortfolioValueWidget', () => {
     getInvestmentsDaily.mockReset();
     getInvestmentsPeriodResult.mockReset();
     getInvestmentsPeriodResult.mockResolvedValue(periodResult());
-    getPortfolioSummary.mockReset();
-    getPortfolioSummary.mockResolvedValue({ totalPortfolioValue: 12345, holdings: [] });
+    getPortfolioValuation.mockReset();
+    getPortfolioValuation.mockResolvedValue({ totalPortfolioValue: 12345, holdings: [] });
     triggerManualRefresh.mockReset();
     configState.current = { range: '1y', accountIds: [] };
   });
@@ -315,7 +315,7 @@ describe('PortfolioValueWidget', () => {
     // edge so they read as a figure and its change rather than two numbers --
     // and that edge is the card's, not the one where the settings gear starts.
     viewport(1280);
-    getPortfolioSummary.mockResolvedValue({ totalPortfolioValue: 10000, holdings: [] });
+    getPortfolioValuation.mockResolvedValue({ totalPortfolioValue: 10000, holdings: [] });
     getInvestmentsDaily.mockResolvedValue([
       { date: '2026-05-28', value: 8000 },
       { date: '2026-06-28', value: 10000 },
@@ -357,7 +357,7 @@ describe('PortfolioValueWidget', () => {
     // the refresh control rides on the figures' row instead -- one control, in
     // one place, never a second copy hidden at the other breakpoint.
     viewport(400);
-    getPortfolioSummary.mockResolvedValue({ totalPortfolioValue: 10000, holdings: [] });
+    getPortfolioValuation.mockResolvedValue({ totalPortfolioValue: 10000, holdings: [] });
     getInvestmentsDaily.mockResolvedValue([{ date: '2026-06-28', value: 10000 }]);
     await renderWidget();
 
@@ -450,7 +450,7 @@ describe('PortfolioValueWidget', () => {
   it('scopes the refresh to the shown holdings when an account filter is active', async () => {
     configState.current = { range: '1y', accountIds: ['i1'] };
     getInvestmentsDaily.mockResolvedValue([{ date: '2026-06-28', value: 10000 }]);
-    getPortfolioSummary.mockResolvedValue({
+    getPortfolioValuation.mockResolvedValue({
       totalPortfolioValue: 5000,
       holdings: [{ securityId: 's1' }, { securityId: 's2' }, { securityId: 's1' }],
     });
@@ -480,7 +480,7 @@ describe('PortfolioValueWidget', () => {
 
     it('marks the headline partial when valuationComplete is false, every other field complete', async () => {
       getInvestmentsDaily.mockResolvedValue([{ date: '2026-06-28', value: 10000 }]);
-      getPortfolioSummary.mockResolvedValue(
+      getPortfolioValuation.mockResolvedValue(
         summaryWith({ valuationComplete: false }),
       );
       await renderWidget();
@@ -491,7 +491,7 @@ describe('PortfolioValueWidget', () => {
 
     it('marks the headline partial for an unpriced holding and a missing rate', async () => {
       getInvestmentsDaily.mockResolvedValue([{ date: '2026-06-28', value: 10000 }]);
-      getPortfolioSummary.mockResolvedValue(
+      getPortfolioValuation.mockResolvedValue(
         summaryWith({
           valuationComplete: false,
           pricesComplete: false,
@@ -506,7 +506,7 @@ describe('PortfolioValueWidget', () => {
 
     it('prints a complete valuation bare', async () => {
       getInvestmentsDaily.mockResolvedValue([{ date: '2026-06-28', value: 10000 }]);
-      getPortfolioSummary.mockResolvedValue(summaryWith({}));
+      getPortfolioValuation.mockResolvedValue(summaryWith({}));
       await renderWidget();
       expect(screen.getByText('$100000')).toBeInTheDocument();
       expect(screen.queryByTestId('partial-total')).not.toBeInTheDocument();
@@ -514,7 +514,7 @@ describe('PortfolioValueWidget', () => {
 
     it('reads an absent flag as no information, not as incomplete', async () => {
       getInvestmentsDaily.mockResolvedValue([{ date: '2026-06-28', value: 10000 }]);
-      getPortfolioSummary.mockResolvedValue({
+      getPortfolioValuation.mockResolvedValue({
         totalPortfolioValue: 100000,
         holdings: [],
       });

@@ -87,6 +87,19 @@ export function buildPortfolioSummaryMemoKey(
   return `${userId}|${scope}|${reportingCurrency}|${identity}`;
 }
 
+/**
+ * The key of the valuation the summary is built on, for the same inputs. Its
+ * own entry so a surface that needs no returns can share it without the walk;
+ * entries are dropped by owner, so every invalidation covers both.
+ */
+export function buildPortfolioValuationMemoKey(
+  userId: string,
+  accountIds: string[] | undefined,
+  reportingCurrency: string,
+): string {
+  return `valuation|${buildPortfolioSummaryMemoKey(userId, accountIds, reportingCurrency)}`;
+}
+
 class PortfolioSummaryMemo {
   private readonly entries = new Map<string, MemoEntry>();
 

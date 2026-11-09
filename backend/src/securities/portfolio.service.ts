@@ -40,6 +40,7 @@ import { collectTagKeys } from "../tags/tag-key-value.util";
 import {
   buildPortfolioSummaryMemoKey,
   portfolioSummaryMemo,
+  buildPortfolioValuationMemoKey,
 } from "./portfolio-summary-memo";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { addDaysYMD, formatDateYMD, todayYMD } from "../common/date-utils";
@@ -315,6 +316,32 @@ export interface PortfolioSummary {
   holdings: HoldingWithMarketValue[];
   holdingsByAccount: AccountHoldings[];
   allocation: AllocationItem[]; // Include allocation to avoid duplicate API call
+}
+
+/**
+ * The summary without the figures only a since-inception walk can answer: what
+ * the portfolio is worth now. A separate shape rather than a summary with those
+ * fields nulled, because `null` on a return already means "withheld, and
+ * `*Reasons` says why", not "this response did not work it out".
+ */
+export type PortfolioValuation = Omit<
+  PortfolioSummary,
+  | "timeWeightedReturn"
+  | "timeWeightedReturnReasons"
+  | "timeWeightedReturnSince"
+  | "moneyWeightedReturn"
+  | "moneyWeightedReturnReasons"
+  | "returnDiagnostics"
+  | "cagr"
+>;
+
+/** A valuation and what the summary needs from its working to add the returns. */
+interface PortfolioValuationWork {
+  valuation: PortfolioValuation;
+  accounts: Account[];
+  holdingsAccountIds: string[];
+  /** Whether every input of the CAGR ratio converted and was priced. */
+  cagrInputsComplete: boolean;
 }
 
 export interface AllocationItem {
@@ -880,13 +907,7 @@ export class PortfolioService {
     userId: string,
     accountIds?: string[],
   ): Promise<PortfolioSummary> {
-    // Get user's default currency for conversion. Read before the memo because
-    // it is part of the key: a preference change must not be answered from an
-    // entry computed in the previous currency.
-    const pref = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(UserPreference).findOne({ where: { userId } }),
-    );
-    const defaultCurrency = preferredCurrency(pref);
+    const defaultCurrency = await this.summaryCurrency(userId);
     return portfolioSummaryMemo.run(
       userId,
       buildPortfolioSummaryMemoKey(userId, accountIds, defaultCurrency),
@@ -895,13 +916,149 @@ export class PortfolioService {
   }
 
   /**
-   * The valuation itself.
+   * What the portfolio is worth now, without the since-inception returns.
+   *
+   * The summary's walk over every calendar day is most of its cost and only
+   * its return figures read it, so a surface that shows values and holdings
+   * (the dashboard) asks for this and is not held up by that walk. The summary
+   * is built on this same memoized answer, so the two cannot disagree and a
+   * page that asks for both pays for one valuation.
+   */
+  async getPortfolioValuation(
+    userId: string,
+    accountIds?: string[],
+  ): Promise<PortfolioValuation> {
+    const defaultCurrency = await this.summaryCurrency(userId);
+    const { valuation } = await this.memoizedValuation(
+      userId,
+      defaultCurrency,
+      accountIds,
+    );
+    return valuation;
+  }
+
+  /**
+   * The user's reporting currency. Read before the memo because it is part of
+   * the key: a preference change must not be answered from an entry computed
+   * in the previous currency.
+   */
+  private async summaryCurrency(userId: string): Promise<string> {
+    const pref = await withScopedDb(this.dataSource, (m) =>
+      m.getRepository(UserPreference).findOne({ where: { userId } }),
+    );
+    return preferredCurrency(pref);
+  }
+
+  private memoizedValuation(
+    userId: string,
+    defaultCurrency: string,
+    accountIds?: string[],
+  ): Promise<PortfolioValuationWork> {
+    return portfolioSummaryMemo.run(
+      userId,
+      buildPortfolioValuationMemoKey(userId, accountIds, defaultCurrency),
+      () => this.computeValuation(userId, defaultCurrency, accountIds),
+    );
+  }
+
+  /**
+   * The valuation with the since-inception returns added.
    */
   private async computePortfolioSummary(
     userId: string,
     defaultCurrency: string,
     accountIds?: string[],
   ): Promise<PortfolioSummary> {
+    const { valuation, accounts, holdingsAccountIds, cagrInputsComplete } =
+      await this.memoizedValuation(userId, defaultCurrency, accountIds);
+
+    // The time-weighted return, over the same measure "Portfolio performance"
+    // reports and by the same code path: the invested part's TWR since the
+    // portfolio's first transaction (INV-PORTRESULT-002,
+    // `docs/specs/portfolio-period-result.md` section 10). It is withheld with
+    // its cause rather than approximated, so a position with no stored close on
+    // a day the chain spans makes the figure unknown instead of a gain.
+    // `fetchMissing: false`: a summary card is not a licence to drive a
+    // twenty-six-year provider backfill from inside a GET. The window opens at
+    // the scope's first transaction, so a portfolio that started in 2000 asked
+    // the rate provider for every month it had no stored rate for -- inline,
+    // on the request a person is waiting on, and again on the next request
+    // because a provider with no history for that era answers nothing there is
+    // to store (issue #1409). The summary already withholds a figure with its
+    // cause (`timeWeightedReturnReasons`, `incompleteRanges`), so it reports
+    // the gap; filling it is `ExchangeRateHistoryService` and the scheduled
+    // jobs, where a person is not waiting.
+    const investedSinceInception =
+      await this.periodResult.getInvestedResultSinceInception(userId, {
+        accountIds,
+        displayCurrency: defaultCurrency,
+        fetchMissing: false,
+      });
+    const timeWeightedReturn = investedSinceInception.investmentReturnPercent;
+    const timeWeightedReturnReasons = investedSinceInception.investedReasons;
+    // The window's baseline, so the caption can name what "since" means. A
+    // scope with no valued day has no window at all, which is not a date.
+    const timeWeightedReturnSince = timeWeightedReturnReasons.includes(
+      "noValueSeries",
+    )
+      ? null
+      : investedSinceInception.startDate;
+
+    // The second figure of that same measure, from the same slice: what the
+    // reader's own money earned, annualised, with every purchase, sale and
+    // distribution weighted by when it happened (section 11). Withheld with
+    // its cause -- including a portfolio too young to annualise -- rather than
+    // approximated or defaulted to the time-weighted one.
+    const moneyWeightedReturn =
+      investedSinceInception.investmentMoneyWeightedReturnPercent;
+    const moneyWeightedReturnReasons = investedSinceInception.investedReasons;
+
+    // What a withheld return is waiting for, named: the same window's dated
+    // gaps, resolved to symbols and account names so the card can point at the
+    // price history rather than at a generic "no price" marker (#1392).
+    const returnDiagnostics = await this.resolveReturnDiagnostics(
+      userId,
+      investedSinceInception.incompleteRanges,
+      timeWeightedReturnSince,
+      valuation.holdings,
+      accounts,
+    );
+
+    // CAGR divides the portfolio value by what was invested to get there, so an
+    // incomplete numerator or denominator produces a growth rate for a portfolio
+    // nobody owns: with one unconvertible EUR account, 100 USD of known net
+    // invested against a 210 USD true figure overstates the return by more than
+    // half, and an unpriced position understates the value it grew to. Unknown, not
+    // approximated.
+    const cagr = cagrInputsComplete
+      ? await this.calculationService.calculateCAGR(
+          userId,
+          holdingsAccountIds,
+          valuation.totalNetInvested,
+          valuation.totalPortfolioValue,
+        )
+      : null;
+
+    return {
+      ...valuation,
+      timeWeightedReturn,
+      timeWeightedReturnReasons,
+      timeWeightedReturnSince,
+      moneyWeightedReturn,
+      moneyWeightedReturnReasons,
+      returnDiagnostics,
+      cagr,
+    };
+  }
+
+  /**
+   * The valuation itself.
+   */
+  private async computeValuation(
+    userId: string,
+    defaultCurrency: string,
+    accountIds?: string[],
+  ): Promise<PortfolioValuationWork> {
     const rateCache: FxRateCache = new Map();
 
     // Get investment accounts
@@ -1019,77 +1176,6 @@ export class PortfolioService {
       rateCache,
     );
 
-    // The time-weighted return, over the same measure "Portfolio performance"
-    // reports and by the same code path: the invested part's TWR since the
-    // portfolio's first transaction (INV-PORTRESULT-002,
-    // `docs/specs/portfolio-period-result.md` section 10). It is withheld with
-    // its cause rather than approximated, so a position with no stored close on
-    // a day the chain spans makes the figure unknown instead of a gain.
-    // `fetchMissing: false`: a summary card is not a licence to drive a
-    // twenty-six-year provider backfill from inside a GET. The window opens at
-    // the scope's first transaction, so a portfolio that started in 2000 asked
-    // the rate provider for every month it had no stored rate for -- inline,
-    // on the request a person is waiting on, and again on the next request
-    // because a provider with no history for that era answers nothing there is
-    // to store (issue #1409). The summary already withholds a figure with its
-    // cause (`timeWeightedReturnReasons`, `incompleteRanges`), so it reports
-    // the gap; filling it is `ExchangeRateHistoryService` and the scheduled
-    // jobs, where a person is not waiting.
-    const investedSinceInception =
-      await this.periodResult.getInvestedResultSinceInception(userId, {
-        accountIds,
-        displayCurrency: defaultCurrency,
-        fetchMissing: false,
-      });
-    const timeWeightedReturn = investedSinceInception.investmentReturnPercent;
-    const timeWeightedReturnReasons = investedSinceInception.investedReasons;
-    // The window's baseline, so the caption can name what "since" means. A
-    // scope with no valued day has no window at all, which is not a date.
-    const timeWeightedReturnSince = timeWeightedReturnReasons.includes(
-      "noValueSeries",
-    )
-      ? null
-      : investedSinceInception.startDate;
-
-    // The second figure of that same measure, from the same slice: what the
-    // reader's own money earned, annualised, with every purchase, sale and
-    // distribution weighted by when it happened (section 11). Withheld with
-    // its cause -- including a portfolio too young to annualise -- rather than
-    // approximated or defaulted to the time-weighted one.
-    const moneyWeightedReturn =
-      investedSinceInception.investmentMoneyWeightedReturnPercent;
-    const moneyWeightedReturnReasons = investedSinceInception.investedReasons;
-
-    // What a withheld return is waiting for, named: the same window's dated
-    // gaps, resolved to symbols and account names so the card can point at the
-    // price history rather than at a generic "no price" marker (#1392).
-    const returnDiagnostics = await this.resolveReturnDiagnostics(
-      userId,
-      investedSinceInception.incompleteRanges,
-      timeWeightedReturnSince,
-      holdingsResult.holdingsWithValues,
-      accounts,
-    );
-
-    // CAGR divides the portfolio value by what was invested to get there, so an
-    // incomplete numerator or denominator produces a growth rate for a portfolio
-    // nobody owns: with one unconvertible EUR account, 100 USD of known net
-    // invested against a 210 USD true figure overstates the return by more than
-    // half, and an unpriced position understates the value it grew to. Unknown, not
-    // approximated.
-    const cagr =
-      netInvestedAgg.isComplete &&
-      holdingsResult.fxComplete &&
-      holdingsResult.pricesComplete &&
-      cashResult.fxComplete
-        ? await this.calculationService.calculateCAGR(
-            userId,
-            categorised.holdingsAccountIds,
-            totalNetInvested,
-            totalPortfolioValue,
-          )
-        : null;
-
     // Whether every component of these totals could be converted into the
     // reporting currency. A log entry is invisible to an API consumer, so the
     // completeness state travels with the numbers: without it an incomplete cash
@@ -1110,31 +1196,33 @@ export class PortfolioService {
     ].sort();
 
     return {
-      totalCashValue,
-      totalHoldingsValue: holdingsResult.totalHoldingsValue,
-      totalCostBasis: holdingsResult.totalCostBasis,
-      totalNetInvested,
-      totalPortfolioValue,
-      totalGainLoss,
-      totalGainLossPercent,
-      gainCostBasis: holdingsResult.gainCostBasis,
-      unpricedCostBasis: holdingsResult.unpricedCostBasis,
-      timeWeightedReturn,
-      timeWeightedReturnReasons,
-      timeWeightedReturnSince,
-      moneyWeightedReturn,
-      moneyWeightedReturnReasons,
-      returnDiagnostics,
-      cagr,
-      fxComplete: missingRatePairs.length === 0,
-      missingRatePairs,
-      pricesComplete: holdingsResult.pricesComplete,
-      unpricedSecurityIds: holdingsResult.unpricedSecurityIds,
-      valuationComplete:
-        missingRatePairs.length === 0 && holdingsResult.pricesComplete,
-      holdings: sortedHoldings,
-      holdingsByAccount,
-      allocation,
+      valuation: {
+        totalCashValue,
+        totalHoldingsValue: holdingsResult.totalHoldingsValue,
+        totalCostBasis: holdingsResult.totalCostBasis,
+        totalNetInvested,
+        totalPortfolioValue,
+        totalGainLoss,
+        totalGainLossPercent,
+        gainCostBasis: holdingsResult.gainCostBasis,
+        unpricedCostBasis: holdingsResult.unpricedCostBasis,
+        fxComplete: missingRatePairs.length === 0,
+        missingRatePairs,
+        pricesComplete: holdingsResult.pricesComplete,
+        unpricedSecurityIds: holdingsResult.unpricedSecurityIds,
+        valuationComplete:
+          missingRatePairs.length === 0 && holdingsResult.pricesComplete,
+        holdings: sortedHoldings,
+        holdingsByAccount,
+        allocation,
+      },
+      accounts,
+      holdingsAccountIds: categorised.holdingsAccountIds,
+      cagrInputsComplete:
+        netInvestedAgg.isComplete &&
+        holdingsResult.fxComplete &&
+        holdingsResult.pricesComplete &&
+        cashResult.fxComplete,
     };
   }
 

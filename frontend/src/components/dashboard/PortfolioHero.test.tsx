@@ -8,8 +8,13 @@ import { PortfolioHero } from './PortfolioHero';
 import { DASHBOARD_HERO_DEFAULT, type DashboardHeroConfig } from './widget-config';
 
 const getPortfolioSummary = vi.fn();
+const getPortfolioValuation = vi.fn();
+const never = () => new Promise(() => {});
 vi.mock('@/lib/investments', () => ({
-  investmentsApi: { getPortfolioSummary: (...a: unknown[]) => getPortfolioSummary(...a) },
+  investmentsApi: {
+    getPortfolioSummary: (...a: unknown[]) => getPortfolioSummary(...a),
+    getPortfolioValuation: (...a: unknown[]) => getPortfolioValuation(...a),
+  },
 }));
 
 const loadSeries = vi.fn();
@@ -103,6 +108,7 @@ describe('PortfolioHero', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getPortfolioSummary.mockResolvedValue(summary());
+    getPortfolioValuation.mockResolvedValue(summary());
     loadSeries.mockResolvedValue({
       points: [
         { at: '2026-09-30', value: 140000, intraday: false },
@@ -131,14 +137,14 @@ describe('PortfolioHero', () => {
   it('names all accounts in brackets when none is chosen', async () => {
     await renderHero();
     expect(screen.getByText(/Portfolio value/)).toHaveTextContent('Portfolio value (All Accounts)');
-    expect(getPortfolioSummary).toHaveBeenCalledWith([]);
+    expect(getPortfolioValuation).toHaveBeenCalledWith([]);
     expect(loadSeries).toHaveBeenCalledWith(expect.objectContaining({ range: '1y', accountIds: undefined }));
   });
 
   it('names the chosen accounts as the Investments page does, a brokerage by its main name', async () => {
     await renderHero(config({ portfolioAccountIds: ['tfsa'] }));
     expect(screen.getByText(/Portfolio value/)).toHaveTextContent('Portfolio value (TFSA)');
-    expect(getPortfolioSummary).toHaveBeenCalledWith(['tfsa']);
+    expect(getPortfolioValuation).toHaveBeenCalledWith(['tfsa']);
     expect(loadSeries).toHaveBeenCalledWith(expect.objectContaining({ accountIds: 'tfsa' }));
     expect(periodArgs).toHaveBeenCalledWith(expect.objectContaining({ accountIds: 'tfsa', range: '1y' }));
   });
@@ -169,8 +175,44 @@ describe('PortfolioHero', () => {
     expect(within(metric()).getByTestId('unknown-amount')).toBeInTheDocument();
   });
 
+  it('does not ask for the since-inception walk to show a simple return', async () => {
+    await renderHero(config({ portfolioMetric: 'simpleReturn' }));
+    expect(metric()).toHaveTextContent(/\+12\.35\s?%/);
+    expect(getPortfolioSummary).not.toHaveBeenCalled();
+  });
+
+  it('draws the figures while a since-inception return is on its way, holding only its place', async () => {
+    getPortfolioSummary.mockImplementation(never);
+    await renderHero(config({ portfolioMetric: 'twr' }));
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/154,523\.85/);
+    expect(within(metric()).getByTestId('dashboard-hero-figure-skeleton')).toBeInTheDocument();
+  });
+
+  it('says a since-inception return failed to load rather than leaving its place empty', async () => {
+    getPortfolioSummary.mockRejectedValue(new Error('boom'));
+    await renderHero(config({ portfolioMetric: 'mwr' }));
+    expect(within(metric()).getByTestId('unknown-amount')).toBeInTheDocument();
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/154,523\.85/);
+  });
+
+  it('draws the figures while the chart series is on its way, holding only the chart', async () => {
+    loadSeries.mockImplementation(never);
+    period.current = { periodResult: null, failed: false };
+    await renderHero();
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/154,523\.85/);
+    expect(screen.getByTestId('dashboard-hero-chart-skeleton')).toBeInTheDocument();
+  });
+
+  it('keeps the figures and says so in the chart when only the series failed', async () => {
+    loadSeries.mockRejectedValue(new Error('boom'));
+    period.current = { periodResult: null, failed: false };
+    await renderHero();
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/154,523\.85/);
+    expect(screen.getByTestId('dashboard-hero-chart')).toHaveTextContent(/Couldn't load your portfolio/);
+  });
+
   it('marks the value as partial while a holding has no price', async () => {
-    getPortfolioSummary.mockResolvedValue(
+    getPortfolioValuation.mockResolvedValue(
       summary({ valuationComplete: false, pricesComplete: false, unpricedSecurityIds: ['s1'] }),
     );
     await renderHero();
@@ -183,10 +225,11 @@ describe('PortfolioHero', () => {
     expect(screen.getByTestId('dashboard-hero-pill')).toHaveTextContent(/Couldn't load the change/);
   });
 
-  it('shows no pill while the change has not answered', async () => {
+  it('holds the pill\'s place while the change has not answered', async () => {
     period.current = { periodResult: null, failed: false };
     await renderHero();
     expect(screen.queryByTestId('dashboard-hero-pill')).not.toBeInTheDocument();
+    expect(screen.getByTestId('dashboard-hero-figure-skeleton')).toBeInTheDocument();
   });
 
   it('says a one-day chart cannot be drawn when a holding has no intraday prices', async () => {
@@ -205,12 +248,13 @@ describe('PortfolioHero', () => {
     await renderHero(config(), { hasInvestments: false });
     expect(screen.getByText(/No investment accounts yet/)).toBeInTheDocument();
     expect(getPortfolioSummary).not.toHaveBeenCalled();
+    expect(getPortfolioValuation).not.toHaveBeenCalled();
     expect(loadSeries).not.toHaveBeenCalled();
     expect(periodArgs).toHaveBeenCalledWith(expect.objectContaining({ skip: true }));
   });
 
   it('says so when the portfolio could not be loaded', async () => {
-    getPortfolioSummary.mockRejectedValue(new Error('boom'));
+    getPortfolioValuation.mockRejectedValue(new Error('boom'));
     await renderHero();
     expect(screen.getByText(/Couldn't load your portfolio/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Good evening, Ken' })).toBeInTheDocument();

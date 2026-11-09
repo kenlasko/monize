@@ -134,12 +134,13 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
       );
   }, [start, end, accountIdsCsv, defaultCurrency, isDaily]);
 
-  // Fetch the same portfolio summary the Investments page uses so the header
-  // shows live "Total Portfolio Value" (holdings + cash, from current prices),
-  // rather than the last point of the historical snapshot series. Scope it to
-  // the widget's configured accounts so it stays in sync with the chart.
+  // Fetch the same valuation the Investments page's summary is built on so the
+  // header shows live "Total Portfolio Value" (holdings + cash, from current
+  // prices), rather than the last point of the historical snapshot series.
+  // Scope it to the widget's configured accounts so it stays in sync with the
+  // chart.
   const { data: summary, reload: reloadSummary } = useReportData(
-    () => investmentsApi.getPortfolioSummary(config.accountIds),
+    () => investmentsApi.getPortfolioValuation(config.accountIds),
     [accountIdsCsv],
   );
 

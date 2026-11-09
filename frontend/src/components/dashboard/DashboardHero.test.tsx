@@ -26,7 +26,7 @@ vi.mock('./PortfolioHero', () => ({
 const renderHero = () =>
   render(
     <DashboardHero
-      portfolioSummary={null}
+      portfolioValuation={null}
       investmentAccounts={[]}
       hasInvestments
       isLoading={false}

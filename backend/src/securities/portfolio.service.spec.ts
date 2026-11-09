@@ -3101,6 +3101,57 @@ describe("PortfolioService", () => {
       investmentTransactionRepository.find.mockResolvedValue([]);
     });
 
+    it("values the portfolio without the since-inception walk or any return field", async () => {
+      const valuation = await service.getPortfolioValuation(userId);
+
+      expect(
+        periodResultService.getInvestedResultSinceInception,
+      ).not.toHaveBeenCalled();
+      expect(valuation).toEqual(
+        expect.objectContaining({
+          holdings: expect.any(Array),
+          totalPortfolioValue: expect.any(Number),
+        }),
+      );
+      for (const field of [
+        "timeWeightedReturn",
+        "timeWeightedReturnReasons",
+        "timeWeightedReturnSince",
+        "moneyWeightedReturn",
+        "moneyWeightedReturnReasons",
+        "returnDiagnostics",
+        "cagr",
+      ]) {
+        expect(valuation).not.toHaveProperty(field);
+      }
+    });
+
+    it("builds the summary on the same valuation rather than working it out again", async () => {
+      const valuation = await service.getPortfolioValuation(userId);
+      const valuationReads = accountsRepository.find.mock.calls.length;
+
+      const summary = await service.getPortfolioSummary(userId);
+
+      expect(accountsRepository.find.mock.calls.length).toBe(valuationReads);
+      expect(summary).toMatchObject(valuation);
+      expect(summary).toHaveProperty("timeWeightedReturn");
+      expect(
+        periodResultService.getInvestedResultSinceInception,
+      ).toHaveBeenCalledTimes(1);
+    });
+
+    it("works the valuation out afresh once the user's entries are invalidated", async () => {
+      await service.getPortfolioValuation(userId);
+      const valuationReads = accountsRepository.find.mock.calls.length;
+
+      invalidatePortfolioSummary(userId);
+      await service.getPortfolioValuation(userId);
+
+      expect(accountsRepository.find.mock.calls.length).toBeGreaterThan(
+        valuationReads,
+      );
+    });
+
     it("asks the invested measure for this scope and reporting currency, and does not fetch rates for it", async () => {
       // `fetchMissing: false` is the second half of the assertion, not a
       // detail of it: the window opens at the scope's first transaction, so

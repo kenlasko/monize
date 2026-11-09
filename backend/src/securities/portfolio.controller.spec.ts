@@ -21,6 +21,7 @@ describe("PortfolioController", () => {
   beforeEach(async () => {
     portfolioService = {
       getPortfolioSummary: jest.fn(),
+      getPortfolioValuation: jest.fn(),
       getAssetAllocation: jest.fn(),
       getAllocationByTag: jest.fn(),
       getTopMovers: jest.fn(),
@@ -69,6 +70,43 @@ describe("PortfolioController", () => {
 
   it("should be defined", () => {
     expect(controller).toBeDefined();
+  });
+
+  describe("getValuation", () => {
+    it("returns the valuation for the requested accounts", async () => {
+      const valuation = { totalPortfolioValue: 50000, holdings: [] };
+      portfolioService.getPortfolioValuation.mockResolvedValue(valuation);
+
+      const result = await controller.getValuation(req, `${UUID1},${UUID2}`);
+
+      expect(portfolioService.getPortfolioValuation).toHaveBeenCalledWith(
+        "user-1",
+        [UUID1, UUID2],
+      );
+      expect(result).toEqual(valuation);
+      expect(portfolioService.getPortfolioSummary).not.toHaveBeenCalled();
+    });
+
+    it("rejects invalid UUIDs in accountIds", async () => {
+      await expect(controller.getValuation(req, "not-a-uuid")).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("scopes accountIds to readable accounts for an acting delegate", async () => {
+      portfolioService.getPortfolioValuation.mockResolvedValue({});
+      delegationService.readableAccountIds.mockResolvedValue([UUID1]);
+      const actReq = {
+        user: { id: "owner-1", isActing: true, delegationId: "d-1" },
+      };
+
+      await controller.getValuation(actReq, `${UUID1},${UUID2}`);
+
+      expect(portfolioService.getPortfolioValuation).toHaveBeenCalledWith(
+        "owner-1",
+        [UUID1],
+      );
+    });
   });
 
   describe("getSummary", () => {

@@ -67,7 +67,7 @@ export function GeographicAllocationWidget({
   const accountIds = config.accountIds.length > 0 ? config.accountIds : undefined;
 
   const { data: summary, isLoading: summaryLoading } = useReportData(
-    () => investmentsApi.getPortfolioSummary(accountIds),
+    () => investmentsApi.getPortfolioValuation(accountIds),
     [config.accountIds],
   );
 

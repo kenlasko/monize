@@ -31,12 +31,12 @@ vi.mock('@/hooks/useExchangeRates', () => ({
   }),
 }));
 
-const getPortfolioSummary = vi.fn();
+const getPortfolioValuation = vi.fn();
 const getSecurities = vi.fn();
 const getCountryWeightings = vi.fn();
 vi.mock('@/lib/investments', () => ({
   investmentsApi: {
-    getPortfolioSummary: (...a: unknown[]) => getPortfolioSummary(...a),
+    getPortfolioValuation: (...a: unknown[]) => getPortfolioValuation(...a),
     getSecurities: (...a: unknown[]) => getSecurities(...a),
     getCountryWeightings: (...a: unknown[]) => getCountryWeightings(...a),
   },
@@ -62,7 +62,7 @@ async function renderWidget() {
 
 describe('GeographicAllocationWidget', () => {
   beforeEach(() => {
-    getPortfolioSummary.mockReset().mockResolvedValue({
+    getPortfolioValuation.mockReset().mockResolvedValue({
       holdings: [holding('s-nyse', 700), holding('s-lse', 300)],
       holdingsByAccount: [],
     });
@@ -105,7 +105,7 @@ describe('GeographicAllocationWidget', () => {
     // remaining bars are a share of the convertible subset, not of the whole
     // portfolio, so a note must say so rather than letting them read as 100%.
     unconvertible.current = new Set(['GBP']);
-    getPortfolioSummary.mockResolvedValue({
+    getPortfolioValuation.mockResolvedValue({
       holdings: [holding('s-nyse', 700), holding('s-lse', 300, 'GBP')],
       holdingsByAccount: [],
     });
@@ -121,7 +121,7 @@ describe('GeographicAllocationWidget', () => {
 
   it('explains the empty state as partial when every holding was dropped', async () => {
     unconvertible.current = new Set(['GBP']);
-    getPortfolioSummary.mockResolvedValue({
+    getPortfolioValuation.mockResolvedValue({
       holdings: [holding('s-lse', 300, 'GBP')],
       holdingsByAccount: [],
     });
@@ -135,7 +135,7 @@ describe('GeographicAllocationWidget', () => {
     // missing region rate must not paint a partial note over it.
     unconvertible.current = new Set(['GBP']);
     configState.current = { accountIds: [], view: 'country' };
-    getPortfolioSummary.mockResolvedValue({
+    getPortfolioValuation.mockResolvedValue({
       holdings: [holding('s-nyse', 700), holding('s-lse', 300, 'GBP')],
       holdingsByAccount: [],
     });
@@ -151,7 +151,7 @@ describe('GeographicAllocationWidget', () => {
     'Grouped by where each holding is listed. Switch to Country to see inside funds.';
 
   const oneUsHolding = () => {
-    getPortfolioSummary.mockResolvedValue({ holdings: [holding('s1', 1000)] });
+    getPortfolioValuation.mockResolvedValue({ holdings: [holding('s1', 1000)] });
     getSecurities.mockResolvedValue([security('s1', 'NYSE')]);
     getCountryWeightings.mockResolvedValue({
       items: [{ country: 'United States', totalValue: 1000, percentage: 100 }],

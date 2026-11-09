@@ -448,6 +448,22 @@ export interface PortfolioSummary {
   allocation: AllocationItem[];  // Included to avoid duplicate API call
 }
 
+/**
+ * The summary without the figures only a since-inception walk can answer: what
+ * the portfolio is worth now. A separate shape, because `null` on a return
+ * means withheld, not "this response did not work it out".
+ */
+export type PortfolioValuation = Omit<
+  PortfolioSummary,
+  | 'timeWeightedReturn'
+  | 'timeWeightedReturnReasons'
+  | 'timeWeightedReturnSince'
+  | 'moneyWeightedReturn'
+  | 'moneyWeightedReturnReasons'
+  | 'returnDiagnostics'
+  | 'cagr'
+>;
+
 export interface AllocationItem {
   name: string;
   symbol: string | null;

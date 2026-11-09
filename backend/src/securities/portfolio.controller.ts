@@ -114,6 +114,32 @@ export class PortfolioController {
     );
   }
 
+  @Get("valuation")
+  @AllowDelegate()
+  @DelegateRequiresSection("investments")
+  @ApiOperation({
+    summary:
+      "Get the portfolio's current value and holdings, without the since-inception returns",
+  })
+  @ApiQuery({
+    name: "accountIds",
+    required: false,
+    description:
+      "Comma-separated account IDs to filter by (will include linked pairs)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Portfolio valuation retrieved successfully",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  async getValuation(@Request() req, @Query("accountIds") accountIds?: string) {
+    const ids = this.parseUuidList(accountIds, "account");
+    return this.portfolioService.getPortfolioValuation(
+      req.user.id,
+      await this.scopeIds(req, ids),
+    );
+  }
+
   @Get("allocation")
   @AllowDelegate()
   @DelegateRequiresSection("investments")
