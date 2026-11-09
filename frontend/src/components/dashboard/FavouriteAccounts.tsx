@@ -12,6 +12,7 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { accountsApi } from '@/lib/accounts';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
+import { InstitutionLogo, type InstitutionLogoData } from '@/components/institutions/InstitutionLogo';
 import { getOrdinal } from '@/lib/ordinal';
 import { useDragReorder, DropIndicatorLine } from '@/hooks/useDragReorder';
 import { WidgetHeading } from './widget-meta';
@@ -28,11 +29,31 @@ interface FavouriteAccountsProps {
   unpricedHoldingCounts?: Map<string, number>;
   /** Holdings account ids whose valuation is a subtotal for any cause, a missing rate included. */
   incompleteHoldingAccountIds?: ReadonlySet<string>;
+  /** Where each card's logo comes from; a card without one shows the star. */
+  institutions?: InstitutionLogoData[];
   isLoading: boolean;
   onAccountsChanged?: () => void;
 }
 
-export function FavouriteAccounts({ accounts, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, isLoading, onAccountsChanged: _onAccountsChanged }: FavouriteAccountsProps) {
+/** The mark beside an account's name: its institution's logo, or else the star. */
+function AccountMark({ institution }: { institution?: InstitutionLogoData }) {
+  if (institution?.hasLogo) return <InstitutionLogo institution={institution} size={20} />;
+  return (
+    <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+      <svg
+        data-testid="favourite-account-star"
+        aria-hidden="true"
+        className="h-4 w-4 text-yellow-500"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+      >
+        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+      </svg>
+    </span>
+  );
+}
+
+export function FavouriteAccounts({ accounts, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, institutions, isLoading, onAccountsChanged: _onAccountsChanged }: FavouriteAccountsProps) {
   const mainAccountName = useMainAccountName();
   const t = useTranslations('dashboard');
   const tAccounts = useTranslations('accounts');
@@ -47,6 +68,11 @@ export function FavouriteAccounts({ accounts, brokerageMarketValues, unpricedHol
 
   // Invalidate local order when parent accounts reference changes
   const effectiveLocalOrder = localOrder?.accounts === accounts ? localOrder.order : null;
+
+  const institutionsById = useMemo(
+    () => new Map((institutions ?? []).map((i) => [i.id, i])),
+    [institutions],
+  );
 
   // The entity each card stands for, keyed by either of its ledger ids, so a
   // card knows the account's name and what it is worth across both halves.
@@ -279,13 +305,9 @@ export function FavouriteAccounts({ accounts, brokerageMarketValues, unpricedHol
               }`}
             >
               <div className="flex items-center gap-2 min-w-0">
-                <svg
-                  className="w-4 h-4 text-yellow-500"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
+                <AccountMark
+                  institution={account.institutionId ? institutionsById.get(account.institutionId) : undefined}
+                />
                 <div className="min-w-0">
                   <div className="font-medium text-gray-900 dark:text-gray-100 truncate">
                     {/* The account, not the ledger: a pair's stored names carry
@@ -355,7 +377,7 @@ export function FavouriteAccounts({ accounts, brokerageMarketValues, unpricedHol
                 column so the line still reads as part of the card. */}
             {account.accountType === 'CREDIT_CARD' &&
               (account.statementDueDay || account.statementSettlementDay) && (
-              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 text-xs text-gray-500 dark:text-gray-400 -mt-1 ml-8 px-2 pb-2 sm:px-3 sm:pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 text-xs text-gray-500 dark:text-gray-400 -mt-1 ml-7 px-2 pb-2 sm:px-3 sm:pb-3">
                 {account.statementDueDay && (
                   <span className="flex items-center">
                     {t('favouriteAccounts.due', { ordinal: getOrdinal(account.statementDueDay) })}

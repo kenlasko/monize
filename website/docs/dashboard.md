@@ -121,7 +121,7 @@ The widgets below are hidden by default and can be added from the **Customize** 
 
 This widget lists the accounts you starred as favourites. Each card shows:
 
-- **Account name** and its institution
+- **Account name** and its institution, beside the institution's logo when it has one (or a star when it doesn't)
 - **Current balance** in the account's currency (the currency is named when it is not your home currency)
 - For credit cards with statement dates set, the payment **Due** day and the **Settlement** day of the billing cycle
 

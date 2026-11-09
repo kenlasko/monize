@@ -831,4 +831,56 @@ describe("FavouriteAccounts", () => {
     expect(screen.queryByText("$3500.00")).not.toBeInTheDocument();
     expect(screen.queryByText("$9000.00")).not.toBeInTheDocument();
   });
+
+  describe("the mark beside the account name", () => {
+    const account = {
+      id: "1",
+      name: "Checking",
+      currentBalance: 1500,
+      currencyCode: "CAD",
+      isFavourite: true,
+      favouriteSortOrder: 0,
+      isClosed: false,
+      institution: "TD Bank",
+      institutionId: "inst-1",
+    } as any;
+
+    it("is the institution's logo when it has one, instead of the star", () => {
+      render(
+        <FavouriteAccounts
+          accounts={[account]}
+          institutions={[{ id: "inst-1", name: "TD Bank", hasLogo: true }]}
+          isLoading={false}
+        />,
+      );
+      expect(screen.getByRole("img", { name: "TD Bank" })).toHaveAttribute(
+        "src",
+        "/api/v1/institutions/inst-1/logo",
+      );
+      expect(screen.queryByTestId("favourite-account-star")).not.toBeInTheDocument();
+    });
+
+    it("stays the star when the institution has no logo", () => {
+      render(
+        <FavouriteAccounts
+          accounts={[account]}
+          institutions={[{ id: "inst-1", name: "TD Bank", hasLogo: false }]}
+          isLoading={false}
+        />,
+      );
+      expect(screen.getByTestId("favourite-account-star")).toBeInTheDocument();
+      expect(screen.queryByRole("img", { name: "TD Bank" })).not.toBeInTheDocument();
+    });
+
+    it("stays the star when the account has no institution on the list", () => {
+      render(
+        <FavouriteAccounts
+          accounts={[{ ...account, institutionId: null }]}
+          institutions={[{ id: "inst-1", name: "TD Bank", hasLogo: true }]}
+          isLoading={false}
+        />,
+      );
+      expect(screen.getByTestId("favourite-account-star")).toBeInTheDocument();
+    });
+  });
 });

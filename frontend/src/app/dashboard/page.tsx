@@ -15,11 +15,13 @@ import {
   resolveDashboardWidgets,
 } from '@/components/dashboard/widget-registry';
 import { accountsApi } from '@/lib/accounts';
+import { institutionsApi } from '@/lib/institutions';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { investmentsApi } from '@/lib/investments';
 import { netWorthApi } from '@/lib/net-worth';
 import { invalidateCache } from '@/lib/apiCache';
 import { Account } from '@/types/account';
+import type { Institution } from '@/types/institution';
 import { countLogicalAccounts } from '@/lib/account-utils';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { TopMover, PortfolioSummary, FavouriteSecurityQuote } from '@/types/investment';
@@ -70,6 +72,7 @@ function DashboardContent() {
   const [openedAt] = useState(() => new Date());
 
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
   const [topMovers, setTopMovers] = useState<TopMover[]>([]);
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
@@ -178,7 +181,7 @@ function DashboardContent() {
 
         const twelveMonthsAgo = format(subMonths(new Date(), 12), 'yyyy-MM-dd');
 
-        const [accountsData, scheduledData, netWorth, favouriteSecs, securitiesList] = await Promise.all([
+        const [accountsData, scheduledData, netWorth, favouriteSecs, securitiesList, institutionsData] = await Promise.all([
           accountsApi.getAll(),
           scheduledTransactionsApi.getAll(),
           netWorthApi.getMonthly({ startDate: twelveMonthsAgo, endDate: today }).catch((error) => {
@@ -187,9 +190,11 @@ function DashboardContent() {
           }),
           investmentsApi.getFavouriteSecurities().catch(() => [] as FavouriteSecurityQuote[]),
           investmentsApi.getSecurities().catch(() => []),
+          institutionsApi.getAll().catch(() => [] as Institution[]),
         ]);
 
         setAccounts(accountsData);
+        setInstitutions(institutionsData);
         setScheduledTransactions(scheduledData);
         setNetWorthData(netWorth ?? []);
         setNetWorthFailed(netWorth === null);
@@ -266,6 +271,7 @@ function DashboardContent() {
     brokerageMarketValues,
     unpricedHoldingCounts,
     incompleteHoldingAccountIds,
+    institutions,
     isLoading,
     hasInvestments,
     hasSecurities,

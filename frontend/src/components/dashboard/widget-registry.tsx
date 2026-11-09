@@ -3,6 +3,7 @@
 import { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { Account } from '@/types/account';
+import type { Institution } from '@/types/institution';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { TopMover, FavouriteSecurityQuote } from '@/types/investment';
 import { MonthlyNetWorth } from '@/types/net-worth';
@@ -96,6 +97,8 @@ export interface DashboardWidgetContext {
   unpricedHoldingCounts: Map<string, number>;
   /** Holdings account ids whose valuation is a subtotal for any cause, a missing rate included. */
   incompleteHoldingAccountIds: ReadonlySet<string>;
+  /** Empty for a delegate, or when the list could not be loaded. */
+  institutions: Institution[];
   isLoading: boolean;
   hasInvestments: boolean;
   hasSecurities: boolean;
@@ -139,6 +142,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
         brokerageMarketValues={ctx.brokerageMarketValues}
         unpricedHoldingCounts={ctx.unpricedHoldingCounts}
         incompleteHoldingAccountIds={ctx.incompleteHoldingAccountIds}
+        institutions={ctx.institutions}
         isLoading={ctx.isLoading}
         onAccountsChanged={ctx.onAccountsChanged}
       />
