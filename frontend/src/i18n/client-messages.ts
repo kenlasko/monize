@@ -50,7 +50,8 @@ export function messageScopeFor(pathname: string | null): MessageScope {
  * Adds `reportNames`: just the report titles (`reports.page.names`), about 2 KB
  * of a 90 KB catalog. The command palette lists them from the app shell, and
  * anything the shell can import must be in the public list, where the whole
- * `reports` namespace would ship on the login screen.
+ * `reports` namespace would ship on the login screen. Applied by `loadMessages`,
+ * so the root layout and `/intl-messages` (a sign-in's soft navigation) agree.
  */
 export function withReportNames<T extends Record<string, unknown>>(messages: T): T {
   const names = (messages as { reports?: { page?: { names?: unknown } } }).reports?.page?.names;
@@ -58,10 +59,9 @@ export function withReportNames<T extends Record<string, unknown>>(messages: T):
 }
 
 export function messagesForScope<T extends Record<string, unknown>>(
-  source: T,
+  messages: T,
   scope: MessageScope,
 ): Partial<T> {
-  const messages = withReportNames(source);
   if (scope === 'full') return messages;
   const picked: Partial<T> = {};
   for (const namespace of PUBLIC_CLIENT_NAMESPACES) {

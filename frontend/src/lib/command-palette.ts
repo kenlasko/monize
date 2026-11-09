@@ -1,3 +1,5 @@
+import { highlightMatches, type HighlightSegment } from '@/lib/helpers/highlight-matches';
+
 /** Result groups, in the order the palette draws them. */
 export const COMMAND_GROUPS = [
   'accounts',
@@ -40,6 +42,28 @@ export function matchScore(text: string, terms: readonly string[]): number {
     else score += 1;
   }
   return score;
+}
+
+/**
+ * `highlightMatches` for folded `terms`, so a match `matchScore` accepted is the
+ * one that gets marked. Folded one code unit at a time, keeping any unit whose
+ * fold is not exactly one unit, so an offset in the folded text is an offset in
+ * `text`.
+ */
+export function highlightFolded(text: string, terms: readonly string[]): HighlightSegment[] {
+  const folded = text
+    .split('')
+    .map((unit) => {
+      const f = fold(unit);
+      return f.length === 1 ? f : unit;
+    })
+    .join('');
+  let at = 0;
+  return highlightMatches(folded, terms).map((segment) => {
+    const original = text.slice(at, at + segment.text.length);
+    at += segment.text.length;
+    return { text: original, match: segment.match };
+  });
 }
 
 /** The best `limit` of `items` for `terms`, ties kept in their given order. */

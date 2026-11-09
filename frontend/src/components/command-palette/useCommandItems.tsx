@@ -53,8 +53,8 @@ export interface CommandItem {
   detail?: string;
   trailing?: string;
   visual: ReactNode;
-  /** Shown on the row and run by Alt+N from anywhere in the box. */
-  shortcut?: 'Alt+N';
+  /** Shown on the row and run by this chord from anywhere in the box. */
+  shortcut?: 'Ctrl/Cmd+Enter';
   run: () => void;
 }
 
@@ -234,7 +234,9 @@ export function useCommandItems(query: string) {
         detail: pair(formatDate(transaction.transactionDate), transaction.account?.name),
         trailing: formatCurrency(transaction.amount, transaction.currencyCode),
         visual: <Tile icon={ListBulletIcon} />,
-        run: go(buildTransactionsHref({ targetTransactionId: transaction.id })),
+        // `accountStatus`: the search is unscoped, so the stored Show Accounts
+        // toggle must not hide the row it found.
+        run: go(buildTransactionsHref({ targetTransactionId: transaction.id, accountStatus: 'all' })),
       });
     }
 
@@ -250,8 +252,9 @@ export function useCommandItems(query: string) {
     }
 
     // The best-matching payee gets the actions a reader came for; the plain
-    // "New transaction" gives up Alt+N to it rather than sharing the key.
-    const payee = canSearchTransactions ? payees[0] : undefined;
+    // "New transaction" gives up the chord to it rather than sharing the key.
+    // Only an active payee: the form cannot display an inactive one on a new entry.
+    const payee = canSearchTransactions && payees[0]?.isActive ? payees[0] : undefined;
     const requestNew = useCommandPaletteStore.getState().requestNewTransaction;
     // Already there, the page answers the request itself; a push would stack
     // on the form's own history entry and drop the filters from the URL.
@@ -265,7 +268,7 @@ export function useCommandItems(query: string) {
           group: 'actions',
           label: t('newTransactionFor', { name: payee.name }),
           visual: <Tile icon={PlusIcon} tone="blue" />,
-          shortcut: 'Alt+N',
+          shortcut: 'Ctrl/Cmd+Enter',
           run: () => {
             requestNew({ id: payee.id, name: payee.name, defaultCategoryId: payee.defaultCategoryId });
             goToRegister();
@@ -278,7 +281,7 @@ export function useCommandItems(query: string) {
           visual: <Tile icon={ArrowsRightLeftIcon} tone="purple" />,
           // Singular `payeeId`: the parameter the Transactions page also
           // honours on a soft navigation, when it is already mounted.
-          run: go(`/transactions?payeeId=${payee.id}`),
+          run: go(`/transactions?payeeId=${payee.id}&accountStatus=all`),
         },
       );
     }
@@ -299,7 +302,7 @@ export function useCommandItems(query: string) {
               group: 'actions' as const,
               label: t('newTransaction'),
               visual: <Tile icon={PlusIcon} tone="blue" />,
-              shortcut: payee ? undefined : ('Alt+N' as const),
+              shortcut: payee ? undefined : ('Ctrl/Cmd+Enter' as const),
               run: () => {
                 requestNew();
                 goToRegister();

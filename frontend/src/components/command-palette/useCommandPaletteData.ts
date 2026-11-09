@@ -6,6 +6,7 @@ import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { customReportsApi } from '@/lib/custom-reports';
 import { helpApi, type HelpSearchAnswer } from '@/lib/help';
+import { useHelpPrefetch } from '@/lib/help-open';
 import { investmentReportsApi } from '@/lib/investment-reports';
 import { investmentsApi } from '@/lib/investments';
 import { createLogger } from '@/lib/logger';
@@ -104,11 +105,11 @@ export function useCommandPaletteData(reachable: ReadonlySet<string>) {
   return state;
 }
 
-/** What one query answered; `transactions: null` is a request that failed. */
+/** What one query answered; a `null` list is a request that failed. */
 interface RemoteAnswer {
   key: string;
   transactions: Transaction[] | null;
-  help: HelpSearchAnswer['results'];
+  help: HelpSearchAnswer['results'] | null;
 }
 
 /**
@@ -116,11 +117,13 @@ interface RemoteAnswer {
  * with the query that produced it, so a slow response to an abandoned query
  * never draws under a newer one.
  *
- * A help failure is not reported: a server without the bundled guide refuses
- * every search, and that should not warn on each keystroke of a payee name.
+ * A help failure is reported only once the guide is known to be bundled: a
+ * server without it refuses every search, which is not an outage.
  */
 export function useCommandPaletteSearch(query: string, canSearchTransactions: boolean) {
   const contextPage = useHelpStore((s) => s.contextPage);
+  const guideAvailable = useHelpStore((s) => s.guideAvailable);
+  useHelpPrefetch();
   const rested = useDebouncedValue(query, COMMAND_SEARCH_DEBOUNCE_MS);
   const [answer, setAnswer] = useState<RemoteAnswer | null>(null);
 
@@ -138,7 +141,7 @@ export function useCommandPaletteSearch(query: string, canSearchTransactions: bo
       setAnswer({
         key: rested,
         transactions: transactions.status === 'fulfilled' ? transactions.value : null,
-        help: help.status === 'fulfilled' ? help.value.results : [],
+        help: help.status === 'fulfilled' ? help.value.results : null,
       });
     });
     return () => {
@@ -151,6 +154,8 @@ export function useCommandPaletteSearch(query: string, canSearchTransactions: bo
     transactions: current?.transactions ?? [],
     help: current?.help ?? [],
     pending: query.length >= MIN_REMOTE_QUERY_LENGTH && current === null,
-    failed: current !== null && current.transactions === null,
+    failed:
+      current !== null &&
+      (current.transactions === null || (current.help === null && guideAvailable === true)),
   };
 }

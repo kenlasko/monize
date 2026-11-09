@@ -544,10 +544,20 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     appliedTargetRef.current = targetId;
     // Resolve the target's page from the backend rather than resetting to 1.
     isFilterChange.current = false;
-    // Note: filterAccountStatus (the Show Accounts toggle) is intentionally left
-    // untouched -- the cross-page deep-link path keeps it too (it is seeded from
-    // localStorage and only overridden by an explicit ?accountStatus param), so
-    // clearing it here would diverge and permanently wipe the user's preference.
+    // Note: filterAccountStatus (the Show Accounts toggle) is left untouched
+    // unless the link names one -- the cross-page deep-link path behaves the same
+    // (it is seeded from localStorage and only overridden by an explicit
+    // ?accountStatus param), so clearing it here would diverge and permanently
+    // wipe the user's preference.
+    const targetAccountStatus = searchParams.get('accountStatus');
+    if (
+      targetAccountStatus === 'all' ||
+      targetAccountStatus === 'active' ||
+      targetAccountStatus === 'closed'
+    ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- apply deep link from URL
+      setFilterAccountStatus(targetAccountStatus === 'all' ? '' : targetAccountStatus);
+    }
     setFilterAccountIds([]);
     setFilterCategoryIds([]);
     setFilterPayeeIds([]);

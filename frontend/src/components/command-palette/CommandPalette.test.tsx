@@ -46,6 +46,7 @@ const hydro = {
   defaultCategory: { name: 'Utilities' },
   defaultCategoryId: 'c1',
   hasLogo: false,
+  isActive: true,
 };
 
 async function openPalette() {
@@ -70,6 +71,7 @@ beforeEach(() => {
   mockPathname.value = '/dashboard';
   useCommandPaletteStore.setState(useCommandPaletteStore.getInitialState(), true);
   useCommandPaletteStore.getState().openPalette();
+  useHelpStore.setState({ guideAvailable: null });
   useAuthStore.setState({ actingAsUserId: null, delegateSections: null, delegateCapabilities: null });
   getAccounts.mockResolvedValue([]);
   getPayees.mockResolvedValue([hydro]);
@@ -118,10 +120,10 @@ describe('CommandPalette', () => {
     expect(activeLabel()).toMatch(/New transaction for Hydro One/);
   });
 
-  it('asks for a prefilled transaction on Alt+N without typing into the box', async () => {
+  it('asks for a prefilled transaction on Ctrl+Enter', async () => {
     const box = await openPalette();
     await type(box, 'hydro');
-    fireEvent.keyDown(box, { key: 'n', code: 'KeyN', altKey: true });
+    fireEvent.keyDown(box, { key: 'Enter', ctrlKey: true });
     expect(useCommandPaletteStore.getState().newTransactionRequest).toEqual({
       payee: { id: 'p1', name: 'Hydro One', defaultCategoryId: 'c1' },
     });
@@ -139,7 +141,7 @@ describe('CommandPalette', () => {
 
     const row = screen.getAllByRole('option').find((o) => /Chequing/.test(o.textContent ?? ''));
     fireEvent.click(row!);
-    expect(push).toHaveBeenCalledWith('/transactions?targetTransactionId=t1');
+    expect(push).toHaveBeenCalledWith('/transactions?accountStatus=all&targetTransactionId=t1');
   });
 
   it('hands a guide hit to the help panel', async () => {
@@ -239,7 +241,7 @@ describe('CommandPalette', () => {
     mockPathname.value = '/transactions';
     const box = await openPalette();
     await type(box, 'hydro');
-    fireEvent.keyDown(box, { key: 'n', code: 'KeyN', altKey: true });
+    fireEvent.keyDown(box, { key: 'Enter', ctrlKey: true });
     expect(useCommandPaletteStore.getState().newTransactionRequest).not.toBeNull();
     expect(push).not.toHaveBeenCalled();
   });
@@ -262,6 +264,85 @@ describe('CommandPalette', () => {
     const row = screen.getAllByRole('option')[0];
     expect(row).toHaveTextContent('Utilities');
     expect(row.textContent).not.toMatch(/transactions/);
+  });
+
+  it('leaves AltGr+N and Option+N to the keyboard layout', async () => {
+    const box = await openPalette();
+    await type(box, 'hydro');
+    expect(fireEvent.keyDown(box, { key: 'ń', code: 'KeyN', altKey: true })).toBe(true);
+    expect(fireEvent.keyDown(box, { key: 'ń', code: 'KeyN', altKey: true, ctrlKey: true })).toBe(true);
+    expect(useCommandPaletteStore.getState().open).toBe(true);
+  });
+
+  it('runs the shortcut with Cmd+Enter too', async () => {
+    const box = await openPalette();
+    await type(box, 'hydro');
+    fireEvent.keyDown(box, { key: 'Enter', metaKey: true });
+    expect(useCommandPaletteStore.getState().newTransactionRequest).not.toBeNull();
+  });
+
+  it('offers no payee actions for an inactive payee, and still finds it', async () => {
+    getPayees.mockResolvedValue([{ ...hydro, isActive: false }]);
+    const box = await openPalette();
+    await type(box, 'hydro');
+    expect(screen.getByRole('option', { name: /38 transactions/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /New transaction for/ })).not.toBeInTheDocument();
+  });
+
+  it('shows all of a payee\'s transactions whatever Show Accounts is set to', async () => {
+    const box = await openPalette();
+    await type(box, 'hydro');
+    fireEvent.click(screen.getByRole('option', { name: /All transactions for/ }));
+    expect(push).toHaveBeenCalledWith('/transactions?payeeId=p1&accountStatus=all');
+  });
+
+  it.each(['heading', 'footer'])('keeps focus in the box when the %s is pressed', async (where) => {
+    await openPalette();
+    const target = where === 'heading' ? screen.getByText('Go to') : screen.getByText('navigate');
+    expect(fireEvent.mouseDown(target)).toBe(false);
+  });
+
+  it('leaves a press in the box itself alone, so the caret can move', async () => {
+    const box = await openPalette();
+    expect(fireEvent.mouseDown(box)).toBe(true);
+  });
+
+  it('scrolls for a key press, and not for a re-render or a hover', async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    const box = await openPalette();
+    await type(box, 'hydro');
+    expect(scroll).not.toHaveBeenCalled();
+    fireEvent.mouseMove(screen.getAllByRole('option')[1]);
+    expect(scroll).not.toHaveBeenCalled();
+    fireEvent.keyDown(box, { key: 'ArrowDown' });
+    expect(scroll).toHaveBeenCalledTimes(1);
+  });
+
+  it('marks an accent-insensitive match', async () => {
+    getPayees.mockResolvedValue([{ ...hydro, name: 'Café Rouge' }]);
+    const box = await openPalette();
+    await type(box, 'cafe');
+    expect(screen.getAllByText('Café')[0].tagName).toBe('MARK');
+  });
+
+  it('reports a failed help search once the guide is known to be bundled', async () => {
+    useHelpStore.setState({ guideAvailable: true });
+    searchHelp.mockRejectedValue(new Error('down'));
+    const box = await openPalette();
+    await type(box, 'hydro');
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+  });
+
+  it('stays quiet about help on a server without the guide', async () => {
+    useHelpStore.setState({ guideAvailable: false });
+    searchHelp.mockRejectedValue(new Error('no guide'));
+    const box = await openPalette();
+    await type(box, 'hydro');
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('is named for assistive technology without drawing a heading', async () => {

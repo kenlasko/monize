@@ -1,12 +1,11 @@
 'use client';
 
-import { Fragment, useId, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { Fragment, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { HOVER_ROW_ON_CARD } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
-import { highlightMatches } from '@/lib/helpers/highlight-matches';
-import { COMMAND_GROUPS } from '@/lib/command-palette';
+import { COMMAND_GROUPS, commandTerms, highlightFolded } from '@/lib/command-palette';
 import { useCommandPaletteStore } from '@/store/commandPaletteStore';
 import { useCommandItems, type CommandItem } from './useCommandItems';
 
@@ -18,7 +17,7 @@ const optionId = (listId: string, id: string): string => `${listId}-${id}`;
 function Highlighted({ text, terms }: { text: string; terms: readonly string[] }) {
   return (
     <>
-      {highlightMatches(text, terms).map((segment, i) =>
+      {highlightFolded(text, terms).map((segment, i) =>
         segment.match ? (
           <mark key={i} className="rounded-sm bg-yellow-200 text-gray-900 dark:bg-yellow-500/40 dark:text-gray-100">
             {segment.text}
@@ -59,7 +58,7 @@ export function CommandPalette() {
   const activeIndex = Math.max(0, items.findIndex((item) => item.id === activeId));
   const active: CommandItem | undefined = items[activeIndex];
 
-  const terms = query.split(/\s+/).filter(Boolean);
+  const terms = commandTerms(query);
   const close = () => useCommandPaletteStore.getState().closePalette();
 
   function choose(item: CommandItem) {
@@ -67,9 +66,26 @@ export function CommandPalette() {
     item.run();
   }
 
+  // Only a key press scrolls: a late server answer must not pull back a list
+  // the reader scrolled, and a hovered row must not move under the pointer.
+  const listRef = useRef<HTMLDivElement>(null);
+  const scrollPending = useRef(false);
+  const activeOptionId = active ? optionId(listId, active.id) : undefined;
+  useEffect(() => {
+    if (!scrollPending.current || !activeOptionId) return;
+    scrollPending.current = false;
+    document.getElementById(activeOptionId)?.scrollIntoView?.({ block: 'nearest' });
+  }, [activeOptionId]);
+
+  function activateByKey(id: string) {
+    if (id === active?.id) return;
+    scrollPending.current = true;
+    setActiveId(id);
+  }
+
   function moveBy(delta: number) {
     if (items.length === 0) return;
-    setActiveId(items[(activeIndex + delta + items.length) % items.length].id);
+    activateByKey(items[(activeIndex + delta + items.length) % items.length].id);
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -81,6 +97,10 @@ export function CommandPalette() {
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
       moveBy(-1);
+    } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      const item = items.find((candidate) => candidate.shortcut);
+      if (item) choose(item);
     } else if (event.key === 'Enter') {
       event.preventDefault();
       if (active) choose(active);
@@ -92,17 +112,19 @@ export function CommandPalette() {
       event.stopPropagation();
       const inActions = active?.group === 'actions';
       const target = event.shiftKey || inActions ? items[0] : items.find((item) => item.group === 'actions');
-      if (target) setActiveId(target.id);
-    } else if (event.altKey && event.code === 'KeyN') {
-      // `code`, not `key`: Option+N on a Mac types a dead key.
-      event.preventDefault();
-      const item = items.find((candidate) => candidate.shortcut === 'Alt+N');
-      if (item) choose(item);
+      if (target) activateByKey(target.id);
     }
   }
 
   return (
     <Modal isOpen onClose={close} title={t('title')} titleHidden maxWidth="2xl">
+      {/* All the keyboard handling is on the box, so a press anywhere else in
+          the palette must not take focus from it. */}
+      <div
+        onMouseDown={(event) => {
+          if (!(event.target instanceof HTMLInputElement)) event.preventDefault();
+        }}
+      >
       <div className="flex items-center gap-2 border-b border-gray-200 pr-3 dark:border-gray-700">
         <div className="relative min-w-0 flex-1">
           <MagnifyingGlassIcon
@@ -114,7 +136,7 @@ export function CommandPalette() {
             role="combobox"
             aria-expanded={items.length > 0}
             aria-controls={listId}
-            aria-activedescendant={active ? optionId(listId, active.id) : undefined}
+            aria-activedescendant={activeOptionId}
             aria-autocomplete="list"
             aria-label={t('title')}
             placeholder={t('placeholder')}
@@ -124,6 +146,7 @@ export function CommandPalette() {
             onChange={(event) => {
               setDraft(event.target.value);
               setActiveId(null);
+              listRef.current?.scrollTo?.({ top: 0 });
             }}
             onKeyDown={onKeyDown}
             // The `!`s: the unlayered form rules in globals.css outrank a plain utility.
@@ -135,7 +158,7 @@ export function CommandPalette() {
         </button>
       </div>
 
-      <div id={listId} role="listbox" aria-label={t('title')} className="h-[min(60dvh,26rem)] overflow-y-auto p-2">
+      <div ref={listRef} id={listId} role="listbox" aria-label={t('title')} className="h-[min(60dvh,26rem)] overflow-y-auto p-2">
         {COMMAND_GROUPS.map((group) => {
           const rows = items.filter((item) => item.group === group);
           if (rows.length === 0) return null;
@@ -156,14 +179,9 @@ export function CommandPalette() {
                     id={optionId(listId, item.id)}
                     role="option"
                     aria-selected={isActive}
-                    ref={(element) => {
-                      if (isActive) element?.scrollIntoView?.({ block: 'nearest' });
-                    }}
                     onMouseMove={() => {
                       if (!isActive) setActiveId(item.id);
                     }}
-                    // Focus stays in the box; a press must not blur it.
-                    onMouseDown={(event) => event.preventDefault()}
                     onClick={() => choose(item)}
                     className={`flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 ${
                       isActive
@@ -219,6 +237,7 @@ export function CommandPalette() {
         ) : (
           <span className="ml-auto hidden sm:inline">{pending ? t('searching') : t('scope')}</span>
         )}
+      </div>
       </div>
     </Modal>
   );

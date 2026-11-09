@@ -48,8 +48,7 @@ describe('messagesForScope', () => {
 
   it('names only namespaces the loader registers', async () => {
     const { loadMessages } = await import('./messages');
-    // `reportNames` is derived at the layout boundary from what the loader returns.
-    const loaded = withReportNames(await loadMessages('en'));
+    const loaded = await loadMessages('en');
     for (const namespace of PUBLIC_CLIENT_NAMESPACES) {
       expect(loaded, namespace).toHaveProperty([namespace]);
     }

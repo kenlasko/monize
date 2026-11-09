@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { commandTerms, daysUntil, matchScore, topMatches } from './command-palette';
+import { commandTerms, daysUntil, highlightFolded, matchScore, topMatches } from './command-palette';
 
 describe('commandTerms', () => {
   it('lower-cases, strips accents and splits on whitespace', () => {
@@ -28,6 +28,27 @@ describe('matchScore', () => {
 
   it('finds accented text from a plain query', () => {
     expect(matchScore('Café Rouge', commandTerms('cafe'))).toBeGreaterThan(0);
+  });
+});
+
+describe('highlightFolded', () => {
+  it('marks the original characters for a folded term', () => {
+    expect(highlightFolded('Café Rouge', commandTerms('cafe'))).toEqual([
+      { text: 'Café', match: true },
+      { text: ' Rouge', match: false },
+    ]);
+  });
+
+  it('keeps offsets when a character folds to more than one unit', () => {
+    expect(highlightFolded('İstanbul', commandTerms('stan'))).toEqual([
+      { text: 'İ', match: false },
+      { text: 'stan', match: true },
+      { text: 'bul', match: false },
+    ]);
+  });
+
+  it('leaves text alone without terms', () => {
+    expect(highlightFolded('Hydro', [])).toEqual([{ text: 'Hydro', match: false }]);
   });
 });
 

@@ -9,6 +9,7 @@ vi.mock('next/dynamic', () => ({
 }));
 
 import { CommandPaletteShortcut } from './CommandPaletteShortcut';
+import { useAuthStore } from '@/store/authStore';
 import { useCommandPaletteStore } from '@/store/commandPaletteStore';
 import { useHelpSearchStore } from '@/store/helpSearchStore';
 
@@ -23,6 +24,8 @@ function keydown(init: KeyboardEventInit, target: EventTarget = window) {
 beforeEach(() => {
   useCommandPaletteStore.setState(useCommandPaletteStore.getInitialState(), true);
   useHelpSearchStore.setState(useHelpSearchStore.getInitialState(), true);
+  useAuthStore.setState({ isAuthenticated: true });
+  window.history.replaceState(null, '', '/dashboard');
 });
 
 afterEach(() => {
@@ -62,6 +65,29 @@ describe('CommandPaletteShortcut', () => {
     keydown({ key: 'k', ctrlKey: true });
     expect(useCommandPaletteStore.getState().open).toBe(false);
     expect(useHelpSearchStore.getState().open).toBe(true);
+  });
+
+  it('opens help search for a signed-out visitor', () => {
+    useAuthStore.setState({ isAuthenticated: false });
+    render(<CommandPaletteShortcut />);
+    keydown({ key: 'k', ctrlKey: true });
+    expect(useCommandPaletteStore.getState().open).toBe(false);
+    expect(useHelpSearchStore.getState().open).toBe(true);
+  });
+
+  it('opens help search on a public page even with a stored session', () => {
+    window.history.replaceState(null, '', '/emergency-access/claim');
+    render(<CommandPaletteShortcut />);
+    keydown({ key: 'k', ctrlKey: true });
+    expect(useCommandPaletteStore.getState().open).toBe(false);
+    expect(useHelpSearchStore.getState().open).toBe(true);
+  });
+
+  it('does not toggle on key repeat', () => {
+    render(<CommandPaletteShortcut />);
+    keydown({ key: 'k', ctrlKey: true });
+    expect(keydown({ key: 'k', ctrlKey: true, repeat: true })).toBe(true);
+    expect(useCommandPaletteStore.getState().open).toBe(true);
   });
 
   it('ignores a plain k', () => {

@@ -221,6 +221,22 @@ describe('useTransactionFilters - URL/localStorage initialization', () => {
     expect(result.current.targetTransactionIdRef.current).toBeNull();
   });
 
+  it('honours an explicit accountStatus on a soft-navigation deep link', () => {
+    const id = '33333333-3333-4333-8333-333333333333';
+    localStorage.setItem('transactions.filter.accountStatus', JSON.stringify('closed'));
+    mockSearchParams = new URLSearchParams('accountIds=acc-1');
+    const { result, rerender } = renderHook(() => useTransactionFilters(defaultOptions));
+    expect(result.current.filterAccountStatus).toBe('closed');
+
+    act(() => {
+      mockSearchParams = new URLSearchParams(`targetTransactionId=${id}&accountStatus=all`);
+      rerender();
+    });
+
+    expect(result.current.highlightTransactionId).toBe(id);
+    expect(result.current.filterAccountStatus).toBe('');
+  });
+
   it('applies a targetTransactionId that arrives via soft navigation while mounted', () => {
     const id = '22222222-2222-4222-8222-222222222222';
     // A persisted Show Accounts preference must survive the deep link, the same
