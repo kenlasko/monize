@@ -134,7 +134,8 @@
       "investments": "投资",
       "transactions": "交易",
       "application": "应用",
-      "defaultViews": "默认视图"
+      "defaultViews": "默认视图",
+      "mobileNavigation": "移动端导航"
     },
     "themeLabel": "主题",
     "defaultCurrencyLabel": "默认货币",
@@ -245,6 +246,11 @@
       "applyHere": "在此浏览器中使用这些默认设置",
       "applyHereHelp": "清除此浏览器已保存的视图设置，使上述默认设置在此处也生效。",
       "appliedHere": "此浏览器现在使用您的默认视图"
+    },
+    "mobileTabs": {
+      "intro": "为手机或平板底部的标签栏选择最多三个标签。添加按钮和“更多”始终显示。",
+      "slotLabel": "标签 {number}",
+      "none": "无"
     }
   },
   "notifications": {

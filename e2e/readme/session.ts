@@ -79,6 +79,12 @@ export async function waitForReady(page: Page): Promise<void> {
   await expect(page.locator(LOADING)).toHaveCount(0);
   await expect(page.locator(TOAST)).toHaveCount(0);
   await page.evaluate(() => document.fonts.ready);
+  // The e2e stack runs `next dev`, whose corner badge would sit on the tab bar.
+  await page.evaluate(() => {
+    document.querySelectorAll<HTMLElement>('nextjs-portal').forEach((el) => {
+      el.style.display = 'none';
+    });
+  });
 }
 
 export async function open(page: Page, path: string): Promise<void> {

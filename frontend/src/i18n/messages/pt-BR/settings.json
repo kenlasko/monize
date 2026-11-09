@@ -134,7 +134,8 @@
       "investments": "Investimentos",
       "transactions": "Transações",
       "application": "Aplicativo",
-      "defaultViews": "Visualizações padrão"
+      "defaultViews": "Visualizações padrão",
+      "mobileNavigation": "Navegação móvel"
     },
     "themeLabel": "Tema",
     "defaultCurrencyLabel": "Moeda Padrão",
@@ -245,6 +246,11 @@
       "applyHere": "Usar estes padrões neste navegador",
       "applyHereHelp": "Limpa as configurações de visualização salvas por este navegador, para que os padrões acima também valham aqui.",
       "appliedHere": "Este navegador agora usa suas visualizações padrão"
+    },
+    "mobileTabs": {
+      "intro": "Escolha até três abas para a barra na parte inferior do celular ou tablet. O botão de adicionar e Mais estão sempre presentes.",
+      "slotLabel": "Aba {number}",
+      "none": "Nenhuma"
     }
   },
   "notifications": {

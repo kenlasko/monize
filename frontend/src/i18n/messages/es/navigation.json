@@ -1,5 +1,6 @@
 {
   "dashboard": "Panel de control",
+  "home": "Inicio",
   "transactions": "Transacciones",
   "bills": "Facturas y depósitos",
   "investments": "Inversiones",
@@ -28,9 +29,10 @@
   "notificationSettings": "Ajustes de notificaciones",
   "settings": "Ajustes",
   "logout": "Cerrar sesión",
-  "toggleMenu": "Mostrar/ocultar menú",
   "closeMenu": "Cerrar menú",
   "mainMenu": "Menú principal",
+  "tabBar": "Barra de pestañas",
+  "more": "Más",
   "loggedOut": "Sesión cerrada correctamente",
   "logoutNotConfirmed": "Sesión cerrada solo en este dispositivo — el servidor no lo confirmó. Consulta el aviso en la pantalla de inicio de sesión.",
   "search": {

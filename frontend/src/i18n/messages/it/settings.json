@@ -134,7 +134,8 @@
       "investments": "Investimenti",
       "transactions": "Transazioni",
       "application": "Applicazione",
-      "defaultViews": "Viste predefinite"
+      "defaultViews": "Viste predefinite",
+      "mobileNavigation": "Navigazione mobile"
     },
     "themeLabel": "Tema",
     "defaultCurrencyLabel": "Valuta predefinita",
@@ -245,6 +246,11 @@
       "applyHere": "Usa queste impostazioni in questo browser",
       "applyHereHelp": "Cancella le impostazioni di visualizzazione salvate da questo browser, così le impostazioni predefinite qui sopra valgono anche qui.",
       "appliedHere": "Questo browser ora usa le tue viste predefinite"
+    },
+    "mobileTabs": {
+      "intro": "Scegli fino a tre schede per la barra in basso su telefono o tablet. Il pulsante Aggiungi e Altro sono sempre presenti.",
+      "slotLabel": "Scheda {number}",
+      "none": "Nessuna"
     }
   },
   "notifications": {

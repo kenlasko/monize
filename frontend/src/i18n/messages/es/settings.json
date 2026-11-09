@@ -134,7 +134,8 @@
       "investments": "Inversiones",
       "transactions": "Transacciones",
       "application": "Aplicación",
-      "defaultViews": "Vistas predeterminadas"
+      "defaultViews": "Vistas predeterminadas",
+      "mobileNavigation": "Navegación móvil"
     },
     "themeLabel": "Tema",
     "defaultCurrencyLabel": "Moneda predeterminada",
@@ -245,6 +246,11 @@
       "applyHere": "Usar estos valores en este navegador",
       "applyHereHelp": "Borra la configuración de vistas que este navegador ha guardado, para que los valores anteriores también se apliquen aquí.",
       "appliedHere": "Este navegador ya usa tus vistas predeterminadas"
+    },
+    "mobileTabs": {
+      "intro": "Elige hasta tres pestañas para la barra inferior del teléfono o la tableta. El botón de añadir y Más siempre están presentes.",
+      "slotLabel": "Pestaña {number}",
+      "none": "Ninguna"
     }
   },
   "notifications": {

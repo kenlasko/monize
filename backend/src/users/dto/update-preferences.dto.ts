@@ -282,7 +282,7 @@ export class UpdatePreferencesDto {
   @ValidateIf((_o, value) => value !== undefined)
   @IsObject()
   @IsViewDefaults()
-  viewDefaults?: Record<string, string | boolean>;
+  viewDefaults?: Record<string, string | boolean | string[]>;
 
   @ApiPropertyOptional({
     description: "Show the Created At field in transaction forms",

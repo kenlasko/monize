@@ -15,7 +15,13 @@ describe("IsViewDefaultsConstraint", () => {
 
   it("accepts every declared value of every key", () => {
     for (const [key, allowed] of Object.entries(VIEW_DEFAULT_FIELDS)) {
-      const values = allowed === "boolean" ? [true, false] : [...allowed];
+      // A list field holds several of its values; the others hold one.
+      const values =
+        allowed === "boolean"
+          ? [true, false]
+          : "list" in allowed
+            ? allowed.list.map((item) => [item])
+            : [...allowed];
       for (const value of values) {
         expect({
           key,
@@ -24,6 +30,24 @@ describe("IsViewDefaultsConstraint", () => {
         }).toEqual({ key, value, ok: true });
       }
     }
+  });
+
+  it("accepts an empty tab list and up to three distinct tabs", () => {
+    expect(validator.validate({ mobileTabs: [] })).toBe(true);
+    expect(
+      validator.validate({ mobileTabs: ["dashboard", "bills", "settings"] }),
+    ).toBe(true);
+  });
+
+  it("rejects a tab list that is too long, repeats, or names an unknown tab", () => {
+    expect(
+      validator.validate({
+        mobileTabs: ["dashboard", "bills", "settings", "reports"],
+      }),
+    ).toBe(false);
+    expect(validator.validate({ mobileTabs: ["bills", "bills"] })).toBe(false);
+    expect(validator.validate({ mobileTabs: ["more"] })).toBe(false);
+    expect(validator.validate({ mobileTabs: "bills" })).toBe(false);
   });
 
   it("accepts the documented example", () => {

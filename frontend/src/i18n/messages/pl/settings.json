@@ -134,7 +134,8 @@
       "investments": "Inwestycje",
       "transactions": "Transakcje",
       "application": "Aplikacja",
-      "defaultViews": "Widoki domyślne"
+      "defaultViews": "Widoki domyślne",
+      "mobileNavigation": "Nawigacja mobilna"
     },
     "themeLabel": "Motyw",
     "defaultCurrencyLabel": "Domyślna waluta",
@@ -245,6 +246,11 @@
       "applyHere": "Użyj tych ustawień domyślnych w tej przeglądarce",
       "applyHereHelp": "Czyści ustawienia widoku zapisane przez tę przeglądarkę, aby powyższe ustawienia domyślne obowiązywały także tutaj.",
       "appliedHere": "Ta przeglądarka używa teraz Twoich widoków domyślnych"
+    },
+    "mobileTabs": {
+      "intro": "Wybierz do trzech kart na pasek u dołu telefonu lub tabletu. Przycisk dodawania i Więcej są zawsze widoczne.",
+      "slotLabel": "Karta {number}",
+      "none": "Brak"
     }
   },
   "notifications": {

@@ -147,6 +147,22 @@ html[data-theme='highcontrast'] {
   background-repeat: no-repeat;
 }
 
+:root {
+  /* The room a page leaves for the fixed tab bar, only while one is drawn. */
+  --tab-bar-space: 0px;
+}
+
+@media screen and (width < 80rem) {
+  :root:has([data-mobile-tab-bar]) {
+    --tab-bar-space: 4rem;
+  }
+}
+
+/* A section jumped to clears the status bar of an installed app. */
+html {
+  scroll-padding-top: env(safe-area-inset-top);
+}
+
 body {
   @apply bg-gray-50 text-gray-900;
   padding-top: env(safe-area-inset-top);

@@ -186,7 +186,7 @@ describe('SettingsPage', () => {
     it('is not in Settings for a non-admin', async () => {
       const { container } = render(<SettingsPage />);
       await waitFor(() => {
-        expect(screen.getByText('Settings')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument();
       });
 
       expect(container.querySelector('#auto-backup')).not.toBeInTheDocument();
@@ -197,7 +197,7 @@ describe('SettingsPage', () => {
       authRole.current = 'admin';
       const { container } = render(<SettingsPage />);
       await waitFor(() => {
-        expect(screen.getByText('Settings')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument();
       });
 
       expect(container.querySelector('#auto-backup')).not.toBeInTheDocument();
@@ -208,7 +208,7 @@ describe('SettingsPage', () => {
   it('renders the Settings heading after loading', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Settings')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument();
     });
   });
 
@@ -324,7 +324,7 @@ describe('SettingsPage', () => {
   it('wraps sections with id attributes for scroll targets', async () => {
     const { container } = render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Settings')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument();
     });
 
     const expectedIds = ['profile', 'preferences', 'notifications', 'security', 'api-access', 'backup-restore', 'about', 'danger-zone'];
@@ -347,7 +347,7 @@ describe('SettingsPage', () => {
   it('lays the sections out in the order the nav lists them', async () => {
     const { container } = render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Settings')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument();
     });
 
     // Top-level sections only: a section can hold its own scroll target (the
@@ -376,7 +376,7 @@ describe('SettingsPage', () => {
   it('sets up IntersectionObserver for scroll spy', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Settings')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument();
     });
 
     expect(IntersectionObserver).toHaveBeenCalled();
@@ -406,7 +406,7 @@ describe('SettingsPage', () => {
     });
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Settings')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument();
     });
     // Trigger a section nav click
     const navLinks = screen.getAllByLabelText('Settings sections');

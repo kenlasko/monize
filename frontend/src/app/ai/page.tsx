@@ -140,7 +140,7 @@ function AiChatPage({
       by exactly the header height (the stray page scrollbar this fixes).
       100dvh keeps it correct on mobile where the address bar collapses.
     */
-    <div className="flex flex-col h-[calc(100dvh-4rem)] bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col h-[calc(100dvh-4rem-var(--tab-bar-space))] bg-gray-50 dark:bg-gray-900">
       <main className="flex flex-1 min-h-0 flex-col px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={t('page.title')}

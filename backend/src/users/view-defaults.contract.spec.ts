@@ -27,23 +27,32 @@ describe("the view defaults", () => {
     );
     // Jest has no message argument on expect, so the shape this scan needs is
     // stated here instead: the frontend map must stay an `as const` object
-    // literal of `key: [quoted values]` or `key: 'boolean'` entries, or this
-    // guard stops covering it.
+    // literal of `key: [quoted values]`, `key: 'boolean'` or
+    // `key: { list: [quoted values], max: N }` entries, or this guard stops
+    // covering it.
     expect(declaration).not.toBeNull();
 
+    const quoted = (values: string) =>
+      [...values.matchAll(/["']([A-Za-z]+)["']/g)].map((v) => v[1]);
     const entries = [
       ...declaration![1].matchAll(
-        /([A-Za-z]+)\s*:\s*(?:\[([\s\S]*?)\]|["'](boolean)["'])/g,
+        /([A-Za-z]+)\s*:\s*(?:\{\s*list\s*:\s*\[([\s\S]*?)\]\s*,\s*max\s*:\s*(\d+)\s*,?\s*\}|\[([\s\S]*?)\]|["'](boolean)["'])/g,
       ),
-    ].map(([, key, values, flag]) => [
+    ].map(([, key, list, max, values, flag]) => [
       key,
-      flag ?? [...values.matchAll(/["']([A-Za-z]+)["']/g)].map((v) => v[1]),
+      list !== undefined
+        ? { list: quoted(list), max: Number(max) }
+        : (flag ?? quoted(values)),
     ]);
 
     expect(entries).toEqual(
       Object.entries(VIEW_DEFAULT_FIELDS).map(([key, allowed]) => [
         key,
-        allowed === "boolean" ? "boolean" : [...allowed],
+        allowed === "boolean"
+          ? "boolean"
+          : "list" in allowed
+            ? { list: [...allowed.list], max: allowed.max }
+            : [...allowed],
       ]),
     );
   });

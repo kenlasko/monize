@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { act, render, screen, fireEvent } from '@/test/render';
 import { AppHeader } from './AppHeader';
+import { useMobileChromeStore } from '@/store/mobileChromeStore';
 
 vi.mock('next/image', () => ({
   default: ({ priority, fill, ...props }: any) => <img alt="" {...props} />,
@@ -37,12 +38,13 @@ function openToolsMenu() {
 }
 
 function openMobileMenu() {
-  fireEvent.click(screen.getByLabelText('Toggle menu'));
+  act(() => useMobileChromeStore.getState().setDrawerOpen(true));
 }
 
 describe('AppHeader Warranties entry', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useMobileChromeStore.setState({ drawerOpen: false });
     mockActingAsUserId = null;
     mockDelegateCapabilities = null;
     mockDelegateSections = null;

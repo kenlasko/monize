@@ -1,5 +1,6 @@
 {
   "dashboard": "Dasbor",
+  "home": "Beranda",
   "transactions": "Transaksi",
   "bills": "Tagihan & Setoran",
   "investments": "Investasi",
@@ -28,9 +29,10 @@
   "notificationSettings": "Pengaturan notifikasi",
   "settings": "Pengaturan",
   "logout": "Keluar",
-  "toggleMenu": "Tampilkan/sembunyikan menu",
   "closeMenu": "Tutup menu",
   "mainMenu": "Menu utama",
+  "tabBar": "Bilah tab",
+  "more": "Lainnya",
   "loggedOut": "Berhasil keluar",
   "logoutNotConfirmed": "Keluar hanya di perangkat ini — server tidak mengonfirmasi. Lihat pemberitahuan di layar masuk.",
   "search": {

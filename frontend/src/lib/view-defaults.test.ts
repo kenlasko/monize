@@ -6,13 +6,43 @@ import {
   readViewDefault,
   readViewDefaults,
 } from './view-defaults';
+import { AI_LINKS, NAV_LINKS, TOOLS_LINKS } from './nav-links';
+
+describe('the mobile tabs default', () => {
+  it('reads known tabs once each, in order, within the limit', () => {
+    expect(
+      readViewDefault(
+        { mobileTabs: ['bills', 'nope', 'bills', 'reports', 'taxes', 'tags'] },
+        'mobileTabs',
+      ),
+    ).toEqual(['bills', 'reports', 'taxes']);
+  });
+
+  it('keeps an empty list, and reads anything but a list as no default', () => {
+    expect(readViewDefault({ mobileTabs: [] }, 'mobileTabs')).toEqual([]);
+    expect(readViewDefault({ mobileTabs: 'bills' }, 'mobileTabs')).toBeUndefined();
+  });
+
+  it('can name every link the bar could carry', () => {
+    const links = [...NAV_LINKS, ...AI_LINKS, ...TOOLS_LINKS].map((l) => l.labelKey);
+    expect([...VIEW_DEFAULT_FIELDS.mobileTabs.list].sort()).toEqual(
+      ['dashboard', 'settings', ...links].sort(),
+    );
+  });
+});
 
 describe('readViewDefault', () => {
   it('reads every declared value of every key', () => {
     for (const [key, allowed] of Object.entries(VIEW_DEFAULT_FIELDS)) {
-      const values = allowed === 'boolean' ? [true, false] : [...allowed];
+      // A list field holds several of its values; the others hold one.
+      const values =
+        allowed === 'boolean'
+          ? [true, false]
+          : 'list' in allowed
+            ? allowed.list.map((item) => [item])
+            : [...allowed];
       for (const value of values) {
-        expect(readViewDefault({ [key]: value }, key as keyof typeof VIEW_DEFAULT_FIELDS)).toBe(
+        expect(readViewDefault({ [key]: value }, key as keyof typeof VIEW_DEFAULT_FIELDS)).toEqual(
           value,
         );
       }
@@ -90,6 +120,7 @@ describe('BUILT_IN_VIEW_DEFAULTS', () => {
       widgetsCollapsed: false,
       chartCollapsed: false,
       accountOpenTarget: 'register',
+      mobileTabs: ['dashboard', 'transactions', 'accounts'],
     });
   });
 });

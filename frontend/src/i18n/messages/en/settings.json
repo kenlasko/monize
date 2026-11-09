@@ -134,7 +134,8 @@
       "investments": "Investments",
       "transactions": "Transactions",
       "application": "Application",
-      "defaultViews": "Default Views"
+      "defaultViews": "Default Views",
+      "mobileNavigation": "Mobile Navigation"
     },
     "themeLabel": "Theme",
     "defaultCurrencyLabel": "Default Currency",
@@ -245,6 +246,11 @@
       "applyHere": "Use these defaults in this browser",
       "applyHereHelp": "Clears the view settings this browser has saved, so the defaults above take effect here too.",
       "appliedHere": "This browser now uses your default views"
+    },
+    "mobileTabs": {
+      "intro": "Choose up to three tabs for the bar at the bottom of a phone or tablet. The add button and More are always there.",
+      "slotLabel": "Tab {number}",
+      "none": "None"
     }
   },
   "notifications": {

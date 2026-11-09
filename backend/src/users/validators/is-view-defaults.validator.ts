@@ -6,6 +6,17 @@ import {
 } from "class-validator";
 import { VIEW_DEFAULT_FIELDS, isViewDefaultKey } from "../view-defaults";
 
+function isAllowedList(
+  field: { list: readonly string[]; max: number },
+  value: unknown,
+): boolean {
+  if (!Array.isArray(value) || value.length > field.max) return false;
+  return (
+    value.every((item) => (field.list as readonly unknown[]).includes(item)) &&
+    new Set(value).size === value.length
+  );
+}
+
 // Each key must be a declared view default holding one of its declared values.
 // Anything else is refused, never dropped, so a client that sends a setting the
 // server does not know learns of it. Requiring every key to be declared also
@@ -16,6 +27,7 @@ function isAllowedValue(
   value: unknown,
 ): boolean {
   if (allowed === "boolean") return typeof value === "boolean";
+  if ("list" in allowed) return isAllowedList(allowed, value);
   return (allowed as readonly unknown[]).includes(value);
 }
 
@@ -35,7 +47,7 @@ export class IsViewDefaultsConstraint implements ValidatorConstraintInterface {
   }
 
   defaultMessage(): string {
-    return "viewDefaults must be an object whose keys are density (normal, compact or dense), hideRegisterYear, widgetsCollapsed, chartCollapsed (booleans) and accountOpenTarget (register or dashboard)";
+    return "viewDefaults must be an object whose keys are density (normal, compact or dense), hideRegisterYear, widgetsCollapsed, chartCollapsed (booleans), accountOpenTarget (register or dashboard) and mobileTabs (up to three distinct tab names)";
   }
 }
 

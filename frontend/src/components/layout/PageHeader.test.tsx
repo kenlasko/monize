@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { CollapsingTitleContext } from '@/hooks/useCollapsingHeaderTitle';
 import { fireEvent, render, screen, waitFor } from '@/test/render';
 import { PageHeader } from './PageHeader';
 import { useHelpStore } from '@/store/helpStore';
@@ -15,6 +16,18 @@ beforeEach(() => {
 });
 
 describe('PageHeader', () => {
+  it('draws the title large where it collapses, and not where something else does', () => {
+    const { rerender } = render(<PageHeader title="Budgets" />);
+    expect(screen.getByRole('heading', { name: 'Budgets' }).className).toContain('text-3xl');
+    expect(screen.getByRole('heading', { name: 'Budgets' }).className).not.toContain('text-2xl');
+    rerender(
+      <CollapsingTitleContext.Provider value={false}>
+        <PageHeader title="Budgets" />
+      </CollapsingTitleContext.Provider>,
+    );
+    expect(screen.getByRole('heading', { name: 'Budgets' }).className).toContain('text-2xl');
+  });
+
   it('renders the title', () => {
     render(<PageHeader title="My Page" />);
     expect(screen.getByRole('heading', { name: 'My Page' })).toBeInTheDocument();

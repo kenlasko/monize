@@ -138,10 +138,10 @@ test('mobile: the drawer, a page of the register, swipes between views', async (
   markReady(recording);
   await pause(page, 1200);
 
-  await page.getByRole('button', { name: 'Toggle menu' }).tap();
+  await page.getByRole('navigation', { name: 'Tab bar' }).getByRole('button', { name: 'More', exact: true }).tap();
   await expect(page.getByRole('button', { name: 'Investments', exact: true })).toBeVisible();
   await pause(page, 1000);
-  await page.getByRole('button', { name: 'Transactions', exact: true }).tap();
+  await page.getByRole('navigation', { name: 'Main menu' }).getByRole('button', { name: 'Transactions', exact: true }).tap();
   await expect(page.getByText('Coffee run').first()).toBeVisible();
   await waitForReady(page);
   await pause(page, 700);

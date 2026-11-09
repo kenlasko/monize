@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@/test/render';
+import { act, render, screen, fireEvent, waitFor } from '@/test/render';
 import { AppHeader } from './AppHeader';
+import { useMobileChromeStore } from '@/store/mobileChromeStore';
 import toast from 'react-hot-toast';
 import { endSignOut, isSigningOut } from '@/lib/logout-state';
 
@@ -8,6 +9,10 @@ import { endSignOut, isSigningOut } from '@/lib/logout-state';
 vi.mock('next/image', () => ({
   default: ({ priority, fill, ...props }: any) => <img {...props} />,
 }));
+
+function openDrawer() {
+  act(() => useMobileChromeStore.getState().setDrawerOpen(true));
+}
 
 // Track router.push calls
 const mockPush = vi.fn();
@@ -86,6 +91,7 @@ vi.mock('@/components/notifications/NotificationBell', () => ({
 
 describe('AppHeader', () => {
   beforeEach(() => {
+    useMobileChromeStore.setState({ drawerOpen: false, collapsedTitle: null });
     vi.clearAllMocks();
     window.sessionStorage.clear();
     mockPathname = '/dashboard';
@@ -360,15 +366,14 @@ describe('AppHeader', () => {
   });
 
   // Mobile menu
-  it('toggles mobile menu when hamburger button is clicked', () => {
+  it('opens the drawer when the tab bar asks for it', () => {
     render(<AppHeader />);
-    const menuToggle = screen.getByLabelText('Toggle menu');
 
     // Mobile menu should not be visible initially
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
 
     // Click to open
-    fireEvent.click(menuToggle);
+    openDrawer();
 
     // Now Dashboard should appear in the mobile menu
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
@@ -377,8 +382,7 @@ describe('AppHeader', () => {
 
   it('shows all nav links in mobile menu when open', () => {
     render(<AppHeader />);
-    const menuToggle = screen.getByLabelText('Toggle menu');
-    fireEvent.click(menuToggle);
+    openDrawer();
 
     // Check for main nav links
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
@@ -389,8 +393,7 @@ describe('AppHeader', () => {
 
   it('navigates to dashboard from mobile menu', () => {
     render(<AppHeader />);
-    const menuToggle = screen.getByLabelText('Toggle menu');
-    fireEvent.click(menuToggle);
+    openDrawer();
 
     const dashboardButton = screen.getByText('Dashboard');
     fireEvent.click(dashboardButton);
@@ -399,8 +402,7 @@ describe('AppHeader', () => {
 
   it('navigates to settings from mobile menu', () => {
     render(<AppHeader />);
-    const menuToggle = screen.getByLabelText('Toggle menu');
-    fireEvent.click(menuToggle);
+    openDrawer();
 
     const settingsButton = screen.getByText('Settings');
     fireEvent.click(settingsButton);
@@ -416,16 +418,14 @@ describe('AppHeader', () => {
       role: 'admin',
     };
     render(<AppHeader />);
-    const menuToggle = screen.getByLabelText('Toggle menu');
-    fireEvent.click(menuToggle);
+    openDrawer();
 
     expect(screen.getByText('User Management')).toBeInTheDocument();
   });
 
   it('does not show Admin section in mobile menu for regular users', () => {
     render(<AppHeader />);
-    const menuToggle = screen.getByLabelText('Toggle menu');
-    fireEvent.click(menuToggle);
+    openDrawer();
 
     expect(screen.queryByText('User Management')).not.toBeInTheDocument();
   });
@@ -439,8 +439,7 @@ describe('AppHeader', () => {
       role: 'admin',
     };
     render(<AppHeader />);
-    const menuToggle = screen.getByLabelText('Toggle menu');
-    fireEvent.click(menuToggle);
+    openDrawer();
 
     fireEvent.click(screen.getByText('User Management'));
     expect(mockPush).toHaveBeenCalledWith('/admin/users');
@@ -449,8 +448,7 @@ describe('AppHeader', () => {
   it('highlights active link in mobile menu', () => {
     mockPathname = '/transactions';
     render(<AppHeader />);
-    const menuToggle = screen.getByLabelText('Toggle menu');
-    fireEvent.click(menuToggle);
+    openDrawer();
 
     // Find the Transactions button in the mobile menu that has active style
     const transactionsButtons = screen.getAllByText('Transactions');
@@ -463,8 +461,7 @@ describe('AppHeader', () => {
   it('highlights dashboard in mobile menu when pathname is /dashboard', () => {
     mockPathname = '/dashboard';
     render(<AppHeader />);
-    const menuToggle = screen.getByLabelText('Toggle menu');
-    fireEvent.click(menuToggle);
+    openDrawer();
 
     const dashboardButton = screen.getByText('Dashboard');
     expect(dashboardButton.closest('button')?.className).toContain('bg-blue-50');
@@ -472,8 +469,7 @@ describe('AppHeader', () => {
 
   it('closes mobile menu when the backdrop is clicked', () => {
     render(<AppHeader />);
-    const menuToggle = screen.getByLabelText('Toggle menu');
-    fireEvent.click(menuToggle);
+    openDrawer();
 
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
 
@@ -487,7 +483,7 @@ describe('AppHeader', () => {
 
   it('closes mobile menu when the close button is clicked', () => {
     render(<AppHeader />);
-    fireEvent.click(screen.getByLabelText('Toggle menu'));
+    openDrawer();
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText('Close menu'));
@@ -496,7 +492,7 @@ describe('AppHeader', () => {
 
   it('closes mobile menu on Escape', () => {
     render(<AppHeader />);
-    fireEvent.click(screen.getByLabelText('Toggle menu'));
+    openDrawer();
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: 'Escape' });
@@ -508,7 +504,7 @@ describe('AppHeader', () => {
     // even when the destination equals the current route, where the
     // route-change effect never fires.
     render(<AppHeader />);
-    fireEvent.click(screen.getByLabelText('Toggle menu'));
+    openDrawer();
     expect(screen.getByText('Settings')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Settings'));
@@ -523,7 +519,7 @@ describe('AppHeader', () => {
     // router.push that closes the drawer and leave the user on the old page.
     render(<AppHeader />);
     const lengthBeforeOpen = window.history.length;
-    fireEvent.click(screen.getByLabelText('Toggle menu'));
+    openDrawer();
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(window.history.length).toBe(lengthBeforeOpen);
   });
@@ -547,8 +543,7 @@ describe('AppHeader', () => {
 
   it('shows mobile tools links and navigates', () => {
     render(<AppHeader />);
-    const menuToggle = screen.getByLabelText('Toggle menu');
-    fireEvent.click(menuToggle);
+    openDrawer();
 
     // Click a tools link in the mobile menu
     const categoriesButtons = screen.getAllByText('Categories');

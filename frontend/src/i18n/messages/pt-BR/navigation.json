@@ -1,5 +1,6 @@
 {
   "dashboard": "Painel",
+  "home": "Início",
   "transactions": "Transações",
   "bills": "Faturas e depósitos",
   "investments": "Investimentos",
@@ -28,9 +29,10 @@
   "notificationSettings": "Configurações de notificações",
   "settings": "Configurações",
   "logout": "Sair",
-  "toggleMenu": "Alternar menu",
   "closeMenu": "Fechar menu",
   "mainMenu": "Menu principal",
+  "tabBar": "Barra de abas",
+  "more": "Mais",
   "loggedOut": "Sessão encerrada com sucesso",
   "logoutNotConfirmed": "Desconectado apenas neste dispositivo — o servidor não confirmou. Veja o aviso na tela de login.",
   "search": {

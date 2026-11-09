@@ -134,7 +134,8 @@
       "investments": "投資",
       "transactions": "交易",
       "application": "應用程式",
-      "defaultViews": "預設檢視"
+      "defaultViews": "預設檢視",
+      "mobileNavigation": "行動裝置導覽"
     },
     "themeLabel": "主題",
     "defaultCurrencyLabel": "預設貨幣",
@@ -245,6 +246,11 @@
       "applyHere": "在此瀏覽器中使用這些預設值",
       "applyHereHelp": "清除此瀏覽器已儲存的檢視設定，使上述預設值在此處也生效。",
       "appliedHere": "此瀏覽器現在使用您的預設檢視"
+    },
+    "mobileTabs": {
+      "intro": "為手機或平板底部的標籤列選擇最多三個標籤。新增按鈕和「更多」一律顯示。",
+      "slotLabel": "標籤 {number}",
+      "none": "無"
     }
   },
   "notifications": {

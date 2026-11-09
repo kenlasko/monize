@@ -1,5 +1,6 @@
 {
   "dashboard": "Pannello di controllo",
+  "home": "Home",
   "transactions": "Transazioni",
   "bills": "Fatture & Versamenti",
   "investments": "Investimenti",
@@ -28,9 +29,10 @@
   "notificationSettings": "Impostazioni notifiche",
   "settings": "Impostazioni",
   "logout": "Esci",
-  "toggleMenu": "Mostra/nascondi menu",
   "closeMenu": "Chiudi menu",
   "mainMenu": "Menu principale",
+  "tabBar": "Barra delle schede",
+  "more": "Altro",
   "loggedOut": "Disconnessione effettuata con successo",
   "logoutNotConfirmed": "Disconnesso solo su questo dispositivo — il server non ha confermato. Vedi l'avviso nella schermata di accesso.",
   "search": {

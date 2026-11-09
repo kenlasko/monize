@@ -1,5 +1,12 @@
 import type { DensityLevel } from '@/hooks/useTableDensity';
 
+interface ViewDefaultListField {
+  list: readonly string[];
+  max: number;
+}
+
+type ViewDefaultField = readonly string[] | 'boolean' | ViewDefaultListField;
+
 /**
  * The account-level view defaults a user can set in Settings -> Preferences,
  * stored as the cross-device `viewDefaults` preference
@@ -9,10 +16,11 @@ import type { DensityLevel } from '@/hooks/useTableDensity';
  * keeps itself (row density, the register's year display, the Transactions
  * page's widgets and chart): the browser's own saved choice wins, the account
  * default applies where the browser has saved nothing, and the built-in
- * default applies where neither exists. `accountOpenTarget` has no browser
- * copy; it is read from here alone.
+ * default applies where neither exists. `accountOpenTarget` and `mobileTabs`
+ * have no browser copy; they are read from here alone.
  *
- * A string array lists an enum's values; `'boolean'` marks a flag. The backend
+ * A string array lists an enum's values; `'boolean'` marks a flag; `{ list, max }`
+ * holds up to `max` distinct values of `list`, in order. The backend
  * declares the same map and its contract spec parses this literal, so it stays
  * an `as const` object literal of quoted values.
  */
@@ -22,20 +30,61 @@ export const VIEW_DEFAULT_FIELDS = {
   widgetsCollapsed: 'boolean',
   chartCollapsed: 'boolean',
   accountOpenTarget: ['register', 'dashboard'],
-} as const satisfies Record<string, readonly string[] | 'boolean'> & {
+  mobileTabs: {
+    list: [
+      'dashboard',
+      'transactions',
+      'bills',
+      'investments',
+      'accounts',
+      'budgets',
+      'reports',
+      'insights',
+      'aiAssistant',
+      'aiReviews',
+      'payees',
+      'categories',
+      'securities',
+      'currencies',
+      'institutions',
+      'tags',
+      'warranties',
+      'sharedExpenses',
+      'taxes',
+      'rules',
+      'emailReceipts',
+      'import',
+      'settings',
+    ],
+    max: 3,
+  },
+} as const satisfies Record<string, ViewDefaultField> & {
   density: readonly DensityLevel[];
 };
 
 /** Where clicking an account opens it: its register, or its dashboard page. */
 export type AccountOpenTarget = (typeof VIEW_DEFAULT_FIELDS.accountOpenTarget)[number];
 
+/** A destination the mobile tab bar can carry: its link's `labelKey`. */
+export type MobileTabId = (typeof VIEW_DEFAULT_FIELDS.mobileTabs.list)[number];
+
+/**
+ * How many tabs the reader chooses. The bar has five places, and the middle one
+ * (the add button) and the last (More) are not theirs to give away.
+ */
+export const MOBILE_TAB_LIMIT = VIEW_DEFAULT_FIELDS.mobileTabs.max;
+
 export type ViewDefaultKey = keyof typeof VIEW_DEFAULT_FIELDS;
 
-type ValueOf<K extends ViewDefaultKey> = (typeof VIEW_DEFAULT_FIELDS)[K] extends 'boolean'
-  ? boolean
-  : (typeof VIEW_DEFAULT_FIELDS)[K] extends readonly (infer V)[]
-    ? V
-    : never;
+type ValueOf<K extends ViewDefaultKey> = (typeof VIEW_DEFAULT_FIELDS)[K] extends {
+  list: readonly (infer V)[];
+}
+  ? V[]
+  : (typeof VIEW_DEFAULT_FIELDS)[K] extends 'boolean'
+    ? boolean
+    : (typeof VIEW_DEFAULT_FIELDS)[K] extends readonly (infer V)[]
+      ? V
+      : never;
 
 /**
  * The wire shape of the preference. Every key is optional (absent means no
@@ -55,7 +104,19 @@ export const BUILT_IN_VIEW_DEFAULTS: { readonly [K in ViewDefaultKey]: ValueOf<K
   widgetsCollapsed: false,
   chartCollapsed: false,
   accountOpenTarget: 'register',
+  mobileTabs: ['dashboard', 'transactions', 'accounts'],
 };
+
+function isListField(field: ViewDefaultField): field is ViewDefaultListField {
+  return typeof field === 'object' && 'list' in field;
+}
+
+/** The known values of a stored list, once each, in order, within its limit. */
+function readListValue(value: unknown, field: ViewDefaultListField): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const known = value.filter((item): item is string => field.list.includes(item));
+  return [...new Set(known)].slice(0, field.max);
+}
 
 /**
  * One account default, or `undefined` when none is set. Tolerates a missing
@@ -70,7 +131,8 @@ export function readViewDefault<K extends ViewDefaultKey>(
   if (!Object.prototype.hasOwnProperty.call(map, key)) return undefined;
 
   const value: unknown = (map as Record<string, unknown>)[key];
-  const allowed: readonly string[] | 'boolean' = VIEW_DEFAULT_FIELDS[key];
+  const allowed: ViewDefaultField = VIEW_DEFAULT_FIELDS[key];
+  if (isListField(allowed)) return readListValue(value, allowed) as ValueOf<K> | undefined;
   if (allowed === 'boolean') {
     return typeof value === 'boolean' ? (value as ValueOf<K>) : undefined;
   }

@@ -1,5 +1,6 @@
 {
   "dashboard": "대시보드",
+  "home": "홈",
   "transactions": "거래",
   "bills": "청구서 및 입금",
   "investments": "투자",
@@ -28,9 +29,10 @@
   "notificationSettings": "알림 설정",
   "settings": "설정",
   "logout": "로그아웃",
-  "toggleMenu": "메뉴 전환",
   "closeMenu": "메뉴 닫기",
   "mainMenu": "기본 메뉴",
+  "tabBar": "탭 바",
+  "more": "더보기",
   "loggedOut": "성공적으로 로그아웃되었습니다",
   "logoutNotConfirmed": "이 기기에서만 로그아웃되었습니다 — 서버가 확인하지 않았습니다. 로그인 화면의 알림을 확인하세요.",
   "search": {

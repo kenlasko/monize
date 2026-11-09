@@ -134,7 +134,8 @@
       "investments": "投資",
       "transactions": "取引",
       "application": "アプリケーション",
-      "defaultViews": "既定の表示"
+      "defaultViews": "既定の表示",
+      "mobileNavigation": "モバイルナビゲーション"
     },
     "themeLabel": "テーマ",
     "defaultCurrencyLabel": "デフォルト通貨",
@@ -245,6 +246,11 @@
       "applyHere": "このブラウザでこれらの既定を使用する",
       "applyHereHelp": "このブラウザに保存されている表示設定を消去し、上記の既定がここでも適用されるようにします。",
       "appliedHere": "このブラウザで既定の表示を使用するようになりました"
+    },
+    "mobileTabs": {
+      "intro": "スマートフォンやタブレットの下部バーに表示するタブを3つまで選択します。追加ボタンと「その他」は常に表示されます。",
+      "slotLabel": "タブ {number}",
+      "none": "なし"
     }
   },
   "notifications": {

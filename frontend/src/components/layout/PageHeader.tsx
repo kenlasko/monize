@@ -1,11 +1,15 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useContext, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { docsUrl, helpTarget, type DocsLink } from '@/lib/docs-links';
 import { onHelpLinkClick, useHelpPrefetch } from '@/lib/help-open';
 import { useHelpStore } from '@/store/helpStore';
+import {
+  CollapsingTitleContext,
+  useCollapsingHeaderTitle,
+} from '@/hooks/useCollapsingHeaderTitle';
 
 interface PageHeaderProps {
   /** Page title */
@@ -43,6 +47,12 @@ interface PageHeaderProps {
  */
 export function PageHeader({ title, subtitle, actions, help, compactMobileActions, icon, titleAdornment }: PageHeaderProps) {
   const t = useTranslations('layout');
+  // Below `xl` the title is drawn large and handed to the app header once it
+  // scrolls away, unless something on the page collapses in its place.
+  const collapses = useContext(CollapsingTitleContext);
+  const titleRef = useCollapsingHeaderTitle<HTMLHeadingElement>(
+    collapses ? { title } : null,
+  );
 
   // Know whether the guide is bundled before the first click, so the click can
   // decide synchronously (see `onHelpLinkClick`).
@@ -70,7 +80,12 @@ export function PageHeader({ title, subtitle, actions, help, compactMobileAction
   const titleBlock = (
     <div>
       <div className="flex items-center gap-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+        <h1
+          ref={titleRef}
+          className={`${
+            collapses ? 'text-3xl' : 'text-2xl sm:text-3xl'
+          } font-bold tracking-tight text-gray-900 dark:text-gray-100`}
+        >
           {title}
         </h1>
         {titleAdornment}

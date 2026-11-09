@@ -258,7 +258,7 @@ function OwnerSettingsView() {
         )}
 
         {/* Mobile section dropdown */}
-        <div className="lg:hidden sticky top-[calc(4rem-var(--app-header-offset,0px))] z-20 -mx-4 px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 mb-6">
+        <div className="lg:hidden sticky top-[calc(4rem+env(safe-area-inset-top)-var(--app-header-offset,0px))] z-20 -mx-4 px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 mb-6">
           <SettingsNav
             sections={visibleSections}
             activeSection={activeSection}
@@ -270,7 +270,7 @@ function OwnerSettingsView() {
         <div className="lg:flex lg:gap-10">
           {/* Desktop sidebar */}
           <aside className="hidden lg:block lg:w-52 shrink-0">
-            <div className="sticky top-[calc(5.5rem-var(--app-header-offset,0px))]">
+            <div className="sticky top-[calc(5.5rem+env(safe-area-inset-top)-var(--app-header-offset,0px))]">
               <SettingsNav
                 sections={visibleSections}
                 activeSection={activeSection}

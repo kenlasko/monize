@@ -9,6 +9,7 @@ import { BackendDownBanner } from './BackendDownBanner';
 import { DemoModeBanner } from './DemoModeBanner';
 import { HttpWarningBanner } from './HttpWarningBanner';
 import { SwipeIndicator } from './SwipeIndicator';
+import { MobileTabBar } from './MobileTabBar';
 import { PushEnableBanner } from './PushEnableBanner';
 import { ShareStashSweeper } from '@/components/share/ShareStashSweeper';
 import { UpdateAvailableBanner } from './UpdateAvailableBanner';
@@ -88,9 +89,11 @@ export function SwipeShell({ children, httpsHeadersActive = false }: SwipeShellP
           share inbox banner that used to sit here. */}
       <ShareStashSweeper />
       <SwipeIndicator currentIndex={currentIndex} totalPages={totalPages} isSwipePage={isSwipePage} />
-      <div ref={contentRef}>
+      {/* Keeps a page's last row clear of the fixed tab bar. */}
+      <div ref={contentRef} className="pb-(--tab-bar-space)">
         {children}
       </div>
+      <MobileTabBar />
       <AiChatBubble />
       <HelpPanelLoader />
       <HelpSearchShortcut />

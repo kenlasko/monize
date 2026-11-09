@@ -92,6 +92,8 @@ The shell splits the screen from `lg` up with `AuthBrandPanel`: a gradient from 
 
 The header's link arrays and the per-route Heroicon map are declared side by side so `nav-links.test.ts` can hold "every nav route has an icon". The mobile drawer and header dropdowns render `NAV_ICONS[href]`; the desktop top-bar pills stay text-only on purpose (six leading icons overflow 1280-1440px laptops). A new route means one entry in the array and one in the map, in the same file.
 
+**Below `xl` the navigation is `MobileTabBar`.** Up to three tabs read through `useMobileTabs` (the `mobileTabs` view default), the add button, and More, which is never a choice because it is the way to everything else. A tab's id is its link's `labelKey`, and `view-defaults.test.ts` holds the list equal to the links. The bar is fixed outside `AppHeader`, whose transform would capture it; a page that sets its own height subtracts `--tab-bar-space`, which is non-zero only while the bar is drawn. The pinned header pads itself for the status bar of an installed app, so anything stuck below it adds `env(safe-area-inset-top)` to its `top`. The header stays pinned at those widths so `useCollapsingHeaderTitle` can hand it the page title (`PageHeader`) or the dashboard's headline figure (`HeroHeadline`).
+
 ## Account-type colour and icon come from `lib/account-type-meta.tsx`
 
 `ACCOUNT_TYPE_META` maps each account type to its pill classes and Heroicon; render `AccountTypePill` / `AccountTypeIcon` rather than re-deriving either. `ui-conventions.test.ts` fails on a second type-to-pill-class mapping. An account with no institution shows its type icon in the brand-badge slot (`InstitutionLogo`'s `fallbackIcon`), not a generic glyph.

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useHideOnScroll } from '@/hooks/useHideOnScroll';
+import { useHasMobileTabBar } from '@/hooks/useIsMobile';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { holdPushForSignOut } from '@/lib/push';
@@ -20,6 +21,8 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ActionHistoryPanel } from '@/components/layout/ActionHistoryPanel';
 import { HelpMenu } from '@/components/layout/HelpMenu';
 import { MobileNavDrawer } from '@/components/layout/MobileNavDrawer';
+import { CollapsedHeaderTitleView } from '@/components/layout/CollapsedHeaderTitleView';
+import { useMobileChromeStore } from '@/store/mobileChromeStore';
 import { useHelpMenuEntries } from '@/hooks/useHelpMenuEntries';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { useTourOpensToolsMenu } from '@/store/tourStore';
@@ -32,7 +35,7 @@ import {
 } from '@/lib/nav-links';
 import toast from 'react-hot-toast';
 import { SearchSyntaxHelp } from '@/components/transactions/SearchSyntaxHelp';
-import { ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import { MENU_ENTER_CLASS, MENU_ORIGIN_LEFT } from '@/components/ui/menu-motion';
 
 // Labels are translation keys in the `navigation` namespace, resolved at
@@ -97,7 +100,11 @@ export function AppHeader() {
   const toolsExpanded = toolsOpen || tourOpensTools;
   const [aiOpen, setAiOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Opened by the tab bar's More; drawn here, beside what it needs.
+  const mobileMenuOpen = useMobileChromeStore((s) => s.drawerOpen);
+  const setMobileMenuOpen = useMobileChromeStore((s) => s.setDrawerOpen);
+  const collapsedTitle = useMobileChromeStore((s) => s.collapsedTitle);
+  const hasTabBar = useHasMobileTabBar();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const toolsRef = useRef<HTMLDivElement>(null);
@@ -144,12 +151,10 @@ export function AppHeader() {
     }
   };
 
-  // Close mobile menu on route change (setState during render pattern)
-  const [prevPathname, setPrevPathname] = useState(pathname);
-  if (pathname !== prevPathname) {
-    setPrevPathname(pathname);
+  // Close the drawer on route change, the Back button's included.
+  useEffect(() => {
     setMobileMenuOpen(false);
-  }
+  }, [pathname, setMobileMenuOpen]);
 
   const isToolsActive = toolsLinks.some((link) =>
     isNavSectionActive(pathname, link.href),
@@ -161,8 +166,9 @@ export function AppHeader() {
   // Slide the header out of view when scrolling down, back in when scrolling up,
   // moving it in lockstep with the scroll position. Keep it pinned while any
   // menu or the search field is open so the open surface never scrolls away.
+  // Below `xl` it stays put: the page's title collapses into it.
   const { ref: headerRef, offset: scrollOffset } =
-    useHideOnScroll<HTMLElement>();
+    useHideOnScroll<HTMLElement>(!hasTabBar);
   const anyMenuOpen =
     mobileMenuOpen || searchOpen || toolsExpanded || aiOpen || adminOpen;
   const headerOffset = anyMenuOpen ? 0 : scrollOffset;
@@ -238,39 +244,29 @@ export function AppHeader() {
       // palette tints it. The inline transform already makes the header the
       // containing block for its fixed children, so the blur changes nothing
       // about where the history and notification panels open.
-      className={`sticky top-0 z-40 bg-white dark:bg-gray-800 supports-[backdrop-filter]:bg-white/75 supports-[backdrop-filter]:dark:bg-gray-800/70 supports-[backdrop-filter]:backdrop-blur-md supports-[backdrop-filter]:backdrop-saturate-150 border-b border-gray-200/80 dark:border-white/5 ${
+      // Reaches up through the body's safe-area padding and pads itself instead,
+      // so once pinned its controls clear the status bar of an installed app.
+      className={`sticky top-0 z-40 mt-[calc(env(safe-area-inset-top)*-1)] pt-[env(safe-area-inset-top)] bg-white dark:bg-gray-800 supports-[backdrop-filter]:bg-white/75 supports-[backdrop-filter]:dark:bg-gray-800/70 supports-[backdrop-filter]:backdrop-blur-md supports-[backdrop-filter]:backdrop-saturate-150 border-b border-gray-200/80 dark:border-white/5 ${
         anyMenuOpen ? 'transition-transform duration-200 ease-out' : ''
       }`}
     >
       <div className="px-4 sm:px-6 lg:px-12">
         <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            {/* Mobile hamburger menu button */}
-            <div className="xl:hidden">
+          <div className="flex items-center max-xl:min-w-0 max-xl:flex-1 max-xl:pr-2">
+            {collapsedTitle ? (
+              <CollapsedHeaderTitleView content={collapsedTitle} />
+            ) : (
               <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 mr-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
-                aria-label={t('toggleMenu')}
+                type="button"
+                onClick={() => router.push('/settings')}
+                aria-label={t('settings')}
+                data-testid="mobile-avatar"
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white sm:hidden"
               >
-                {mobileMenuOpen ? (
-                  <XMarkIcon className="w-6 h-6" aria-hidden="true" />
-                ) : (
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16M4 18h16"
-                    />
-                  </svg>
-                )}
+                {Array.from(user?.firstName || user?.email || '?')[0].toUpperCase()}
               </button>
-
+            )}
+            <div className="xl:hidden">
               {/* Mobile navigation drawer (slides in from the left).
                   Delegates land on a Security-only Settings view that manages
                   their OWN credentials. */}
@@ -284,6 +280,10 @@ export function AppHeader() {
                   // below never fires) still dismisses it.
                   setMobileMenuOpen(false);
                   router.push(href);
+                }}
+                onLogout={() => {
+                  setMobileMenuOpen(false);
+                  void handleLogout();
                 }}
                 navLinks={visibleNavLinks.map((l) => ({
                   href: l.href,
@@ -501,7 +501,7 @@ export function AppHeader() {
               </nav>
             )}
           </div>
-          <div className="flex items-center space-x-1 sm:space-x-4 xl:space-x-1 2xl:space-x-4">
+          <div className="flex max-xl:flex-shrink-0 items-center space-x-1 sm:space-x-4 xl:space-x-1 2xl:space-x-4">
             <div className="relative" ref={searchRef}>
               <div className="flex items-center">
                 <input
@@ -516,8 +516,8 @@ export function AppHeader() {
                   tabIndex={searchOpen ? 0 : -1}
                   className={`overflow-hidden transition-all duration-200 ease-out rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     searchOpen
-                      ? 'w-44 sm:w-64 px-3 py-1.5 mr-1 opacity-100'
-                      : 'w-0 px-0 py-1.5 border-transparent opacity-0 pointer-events-none'
+                      ? 'w-44! sm:w-64! px-3 py-1.5 mr-1 opacity-100'
+                      : 'w-0! px-0! py-1.5 border-transparent opacity-0 pointer-events-none'
                   }`}
                 />
                 {searchOpen && (
@@ -563,7 +563,10 @@ export function AppHeader() {
             </div>
             <ActionHistoryPanel />
             <NotificationBell />
-            <HelpMenu entries={helpEntries} />
+            {/* Help, Settings and Log out live under More on a phone. */}
+            <div className="max-sm:hidden">
+              <HelpMenu entries={helpEntries} />
+            </div>
             {/* The reconciliation reminder badge is deliberately not mounted
                 here for now: the reminder is kept off the header until
                 reconciliation is a more established habit. The component and
@@ -571,7 +574,7 @@ export function AppHeader() {
             <button
               {...tourAnchor(TOUR_ANCHORS.navSettings)}
               onClick={() => router.push('/settings')}
-              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              className={`flex max-sm:hidden items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 pathname === '/settings'
                   ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -612,6 +615,7 @@ export function AppHeader() {
               variant="outline"
               size="sm"
               onClick={handleLogout}
+              className="max-sm:hidden"
               title={t('logout')}
               aria-label={t('logout')}
             >
