@@ -724,6 +724,28 @@ describe("AiService", () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it("keeps the relay out of the fall-through when asked to", async () => {
+      mockConfigRepository.find.mockResolvedValue([
+        makeConfig({ id: "c1", provider: "anthropic" }),
+        makeConfig({ id: "c2", provider: "mcp_relay" }),
+      ]);
+      mockProviderFactory.createProvider!.mockReturnValue({
+        complete: jest.fn().mockRejectedValue(new Error("API error")),
+      });
+
+      await expect(
+        service.complete(
+          userId,
+          { messages: [], maxTokens: 10 } as never,
+          "dashboard_trivia",
+          {
+            skipRelay: true,
+          },
+        ),
+      ).rejects.toThrow();
+      expect(mockRelayService.enqueuePrompt).not.toHaveBeenCalled();
+    });
+
     it("throws with all errors when all providers fail", async () => {
       const config1 = makeConfig({ id: "c1", provider: "anthropic" });
       const config2 = makeConfig({ id: "c2", provider: "openai" });

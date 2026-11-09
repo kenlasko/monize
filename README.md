@@ -733,6 +733,7 @@ Main tables:
 - **ai_provider_configs**: Per-user AI provider settings (encrypted API keys)
 - **ai_usage_logs**: AI query usage tracking (tokens, duration, provider)
 - **ai_insights**: AI-generated spending insights and anomaly detection
+- **dashboard_trivia**: The daily trivia sentences beside the dashboard greeting
 
 ## Security Notes
 

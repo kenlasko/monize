@@ -33,9 +33,9 @@ Many more widgets are available but hidden by default; see [Optional Widgets](#o
 
 ### Dashboard Hero
 
-Above the widgets, beside the greeting, the dashboard hero sums up where you stand. It shows one of two sets, chosen in [Customize](#customizing-your-dashboard).
+Above the widgets, under the greeting, the dashboard hero sums up where you stand. It has two sets, chosen in [Customize](#customizing-your-dashboard). On **Auto**, the default, it slides from one to the other every minute if you have investments, and otherwise stays on net worth. Choose **Net worth** or **Portfolio value** instead to keep it on one set. Whichever you choose, the two dots beside the greeting switch to the other set at any time; on Auto, that set then stays for a full minute.
 
-**Net worth** (the default):
+**Net worth**:
 
 - **Net worth** -- your net worth as of the current month, in your default currency
 - **Change this month** -- how far net worth has moved since the end of last month, as an amount and a percentage
@@ -58,6 +58,12 @@ In either set the highest and lowest points on the chart carry a green and a red
 
 The hero is on by default. With it off, the dashboard opens with just the greeting and today's date.
 
+#### Trivia beside the greeting
+
+Beside the greeting, a line of trivia points out something about your money: your high point, your biggest single-month jump, your largest holding. A **Net worth** or **Investments** badge says which it is about, and the line follows the set the hero is showing.
+
+While the hero is on, the list is rebuilt once a day, and a sentence is only written about figures that are fully known. If you have an [AI provider](ai.md) set up, it words the sentences in your language, marked with a small sparkle; every figure in them still comes from your own data, and account and security names are not sent to the provider. Without one, or if it doesn't answer, Monize writes them itself from the same calculations. A provider reached through the MCP relay is not used for this. To turn the line off, use **AI trivia** in [AI Settings](ai.md#ai-trivia).
+
 ---
 
 ## Customizing Your Dashboard
@@ -69,8 +75,8 @@ Click the **Customize** gear beside the greeting to tailor which widgets appear 
 - **Show or hide widgets** -- click a widget's **X** to hide it, or add one back later
 - **Reorder widgets** -- drag a widget tile to a new position, or use the arrow buttons (the arrow buttons also work on a phone, where widgets stack in a single column)
 - **Add opt-in widgets** -- hidden widgets appear in a **Hidden widgets** tray beneath the layout; click one to add it to your dashboard
-- **Dashboard hero** -- the section at the top of the dialog switches the [hero](#dashboard-hero) on or off and picks its set. **Net worth** sets how far back its chart goes; **Portfolio value** sets the accounts it covers (all of them if you choose none), the timeframe, and the return shown beside the holdings and cash
-- **Reset to default** -- restore the standard layout at any time, with the hero on, showing net worth over one year
+- **Dashboard hero** -- the section at the top of the dialog switches the [hero](#dashboard-hero) on or off and picks **Auto** or one set. **Net worth** sets how far back its chart goes; **Portfolio value** sets the accounts it covers (all of them if you choose none), the timeframe, and the return shown beside the holdings and cash. **Auto** offers the settings of both
+- **Reset to default** -- restore the standard layout at any time, with the hero on Auto, over one year
 
 Click **Save** to apply your changes. At least one widget must stay on the dashboard. Your layout is saved to your account, so it **syncs across all your devices**.
 

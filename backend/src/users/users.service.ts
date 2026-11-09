@@ -280,6 +280,9 @@ export class UsersService {
     if (dto.aiBubbleEnabled !== undefined) {
       patch.aiBubbleEnabled = dto.aiBubbleEnabled;
     }
+    if (dto.aiTriviaEnabled !== undefined) {
+      patch.aiTriviaEnabled = dto.aiTriviaEnabled;
+    }
     if (dto.showWhatsNew !== undefined) {
       patch.showWhatsNew = dto.showWhatsNew;
     }
@@ -950,6 +953,10 @@ export class UsersService {
       userId,
     ]);
     deleted.aiInsights = result[1] ?? 0;
+
+    await manager.query("DELETE FROM dashboard_trivia WHERE user_id = $1", [
+      userId,
+    ]);
 
     await manager.query("DELETE FROM ai_usage_logs WHERE user_id = $1", [
       userId,

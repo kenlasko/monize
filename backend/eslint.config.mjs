@@ -21,6 +21,9 @@ const WITH_CONTEXT_ALLOWLIST = [
   "src/admin/admin.service.ts",
   "src/ai/ai-usage.service.ts",
   "src/ai/insights/ai-insights.service.ts",
+  // The daily dashboard trivia: a system-context fan-out over the active users,
+  // then a per-user body, from a cron with no request behind it.
+  "src/ai/trivia/dashboard-trivia.service.ts",
   // The relay's expiry sweep: three tables keyed by user_id whose dead rows
   // belong to every user at once, from a cron with no request to inherit an
   // identity from -- system context by construction (task R4).

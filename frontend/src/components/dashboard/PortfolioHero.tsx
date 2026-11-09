@@ -40,7 +40,6 @@ import {
 
 interface PortfolioHeroProps {
   config: DashboardHeroConfig;
-  header: ReactNode;
   /** The investment accounts, for naming the ones the set covers. */
   investmentAccounts: Account[];
   hasInvestments: boolean;
@@ -60,7 +59,7 @@ interface PortfolioHeroProps {
  * a since-inception return each cost far more, so each keeps a placeholder in
  * its own place rather than holding the rest of the hero.
  */
-export function PortfolioHero({ config, header, investmentAccounts, hasInvestments, isLoading }: PortfolioHeroProps) {
+export function PortfolioHero({ config, investmentAccounts, hasInvestments, isLoading }: PortfolioHeroProps) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const mainAccountName = useMainAccountName();
@@ -142,13 +141,13 @@ export function PortfolioHero({ config, header, investmentAccounts, hasInvestmen
 
   const label = t('hero.portfolioLabel');
   if (!hasInvestments && !isLoading) {
-    return <HeroMessage header={header}>{t('hero.portfolioEmpty')}</HeroMessage>;
+    return <HeroMessage>{t('hero.portfolioEmpty')}</HeroMessage>;
   }
   if (isLoading || summaryLoading || (summary === null && !summaryError)) {
-    return <HeroSkeleton header={header} label={label} />;
+    return <HeroSkeleton label={label} />;
   }
   if (summaryError || !summary) {
-    return <HeroMessage header={header}>{t('hero.portfolioLoadFailed')}</HeroMessage>;
+    return <HeroMessage>{t('hero.portfolioLoadFailed')}</HeroMessage>;
   }
 
   const seriesPending = seriesLoading || (series === null && !seriesError);
@@ -228,7 +227,6 @@ export function PortfolioHero({ config, header, investmentAccounts, hasInvestmen
 
   return (
     <HeroLayout
-      header={header}
       label={label}
       figures={
         <>

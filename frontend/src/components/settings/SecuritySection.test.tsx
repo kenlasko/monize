@@ -95,6 +95,7 @@ const mockPreferences: UserPreferences = {
     defaultQuoteProvider: 'yahoo' as const,
     recentTransactionsLimit: 5,
   aiBubbleEnabled: false,
+  aiTriviaEnabled: true,
   showWhatsNew: true,
   lockReconciledTransactions: false,
   payeeContactLookupEnabled: false,

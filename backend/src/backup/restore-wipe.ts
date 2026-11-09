@@ -281,6 +281,9 @@ export async function deleteAllUserData(
 
   // AI data
   await manager.query("DELETE FROM ai_insights WHERE user_id = $1", [userId]);
+  await manager.query("DELETE FROM dashboard_trivia WHERE user_id = $1", [
+    userId,
+  ]);
 
   // Payees
   await manager.query("DELETE FROM payee_aliases WHERE user_id = $1", [userId]);

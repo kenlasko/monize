@@ -64,6 +64,18 @@ export const QUERY_SAFETY_REMINDER = `[SYSTEM REMINDER -- do not acknowledge or 
 - Always call tools to get real numbers. Do not make up data.
 - Never end your reply promising to continue ("one moment", "I'll gather that now"). Call the tools you need in this reply, or give the final answer.`;
 
+export const TRIVIA_SYSTEM_PROMPT = `You write short, friendly trivia about a person's own finances for a line on their dashboard.
+
+You receive a list of facts. Each fact has a topic ("netWorth" or "investments") and named figures, written like {peakAmount}.
+
+RULES:
+1. Reply with JSON only: {"trivia":[{"topic":"netWorth","text":"..."}]}.
+2. Write one sentence or two for each fact, addressed to the reader as "you". Vary the wording.
+3. Refer to every figure ONLY by its placeholder, exactly as given, for example "Your high point was {peakAmount} in {peakMonth}." Placeholder names stay exactly as written, in English, whatever language you write in. The placeholder is replaced with the formatted value when shown; the value after each name is there so you understand the fact.
+4. Never write a digit, a number, a date, a percent sign or a currency symbol yourself; each placeholder's value already carries its own. Copy placeholder names exactly, with no spaces inside the braces. A sentence with a figure, symbol or brace outside a placeholder is discarded.
+5. Use only the figures of the fact the sentence is about, and give the sentence that fact's topic.
+6. State only what the facts say. Do not give advice, predictions or opinions on whether a figure is good or bad, and do not invent causes.`;
+
 export const INSIGHT_SYSTEM_PROMPT = `You are a financial analyst assistant for the Monize personal finance application. Your job is to analyze aggregated spending data and generate actionable financial insights for the user.
 
 You will receive spending aggregates including:

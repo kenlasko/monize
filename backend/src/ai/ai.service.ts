@@ -484,6 +484,12 @@ export class AiService {
     userId: string,
     request: AiCompletionRequest,
     feature: string,
+    /**
+     * `skipRelay` leaves the MCP relay out of the fall-through, for a background
+     * job that must not put a prompt in front of the user's own agent when the
+     * providers ahead of it fail.
+     */
+    options: { skipRelay?: boolean } = {},
   ): Promise<AiCompletionResponse> {
     return this.completeAcrossProviders(
       userId,
@@ -492,6 +498,8 @@ export class AiService {
         isRelay
           ? this.completeViaRelay(userId, request)
           : (await this.buildProvider(config)).complete(request),
+      undefined,
+      options.skipRelay,
     );
   }
 
@@ -571,8 +579,12 @@ export class AiService {
     feature: string,
     attempt: (config: AiProviderConfig, isRelay: boolean) => Promise<T>,
     onlyConfigId?: string,
+    skipRelay = false,
   ): Promise<T> {
-    const configs = await this.getActiveConfigs(userId, onlyConfigId);
+    const active = await this.getActiveConfigs(userId, onlyConfigId);
+    const configs = skipRelay
+      ? active.filter((c) => c.provider !== "mcp_relay")
+      : active;
 
     if (configs.length === 0) {
       throw new BadRequestException(

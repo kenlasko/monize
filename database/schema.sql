@@ -1649,6 +1649,7 @@ CREATE TABLE user_preferences (
     default_quote_provider VARCHAR(20) NOT NULL DEFAULT 'yahoo',
     recent_transactions_limit SMALLINT NOT NULL DEFAULT 5,
     ai_bubble_enabled BOOLEAN DEFAULT false, -- opt-in app-wide floating AI chat bubble
+    ai_trivia_enabled BOOLEAN DEFAULT true, -- the trivia line beside the dashboard greeting
     lock_reconciled_transactions BOOLEAN NOT NULL DEFAULT false, -- strict mode: refuse any alteration of a RECONCILED transaction
     payee_contact_lookup_enabled BOOLEAN NOT NULL DEFAULT false, -- opt-in: look up a new payee's website/address/email/phone through the user's AI provider
     language VARCHAR(10) NOT NULL DEFAULT 'en', -- UI language; ISO 639-1 or BCP 47 tag matched against SUPPORTED_LOCALES
@@ -2268,6 +2269,18 @@ CREATE INDEX idx_ai_insights_user ON ai_insights(user_id);
 CREATE INDEX idx_ai_insights_user_dismissed ON ai_insights(user_id, is_dismissed);
 CREATE INDEX idx_ai_insights_expires ON ai_insights(expires_at);
 CREATE INDEX idx_ai_insights_user_type ON ai_insights(user_id, type);
+
+-- The trivia line beside the dashboard greeting: one row per user, replaced
+-- whole by the daily generation, holding the sentences and the figures they quote.
+CREATE TABLE dashboard_trivia (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    items JSONB NOT NULL DEFAULT '[]',
+    figures JSONB NOT NULL DEFAULT '{}',
+    -- The language the sentences are in, or the browser's where the reader's
+    -- preference is to follow it: the daily job has no browser to ask.
+    language VARCHAR(10),
+    generated_at TIMESTAMP NOT NULL
+);
 
 -- AI relay: the queue between a browser holding an SSE stream and the user's
 -- own MCP agent long-polling for work. Rows rather than process memory because
@@ -3833,6 +3846,7 @@ DECLARE
         'action_history',
         'attachment_blob_tombstones',
         'ai_insights',
+        'dashboard_trivia',
         'ai_provider_configs',
         'ai_relay_actions',
         'ai_relay_agents',

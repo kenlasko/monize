@@ -31,7 +31,6 @@ import {
 
 interface NetWorthHeroProps {
   config: DashboardHeroConfig;
-  header: ReactNode;
   /** The dashboard's portfolio valuation; `null` until loaded or when it failed. */
   portfolioValuation: PortfolioValuation | null;
   hasInvestments: boolean;
@@ -48,7 +47,6 @@ interface NetWorthHeroProps {
  */
 export function NetWorthHero({
   config,
-  header,
   portfolioValuation,
   hasInvestments,
   isLoading,
@@ -87,10 +85,10 @@ export function NetWorthHero({
   // the slowest request here and one figure needs it, so that figure alone
   // keeps a placeholder below.
   if (isLoading || dataLoading || (data === null && !error)) {
-    return <HeroSkeleton header={header} label={label} />;
+    return <HeroSkeleton label={label} />;
   }
-  if (error) return <HeroMessage header={header}>{t('netWorth.loadFailed')}</HeroMessage>;
-  if (!snapshot) return <>{header}</>;
+  if (error) return <HeroMessage>{t('netWorth.loadFailed')}</HeroMessage>;
+  if (!snapshot) return null;
 
   // The securities alone: the cash beside them is not invested.
   const invested =
@@ -146,7 +144,6 @@ export function NetWorthHero({
 
   return (
     <HeroLayout
-      header={header}
       label={label}
       figures={
         <>

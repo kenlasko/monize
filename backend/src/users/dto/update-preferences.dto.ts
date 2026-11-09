@@ -151,6 +151,13 @@ export class UpdatePreferencesDto {
   aiBubbleEnabled?: boolean;
 
   @ApiPropertyOptional({
+    description: "Show and build the trivia beside the dashboard greeting",
+  })
+  @IsOptional()
+  @IsBoolean()
+  aiTriviaEnabled?: boolean;
+
+  @ApiPropertyOptional({
     description:
       "Strict mode: refuse any alteration of a RECONCILED transaction while on",
   })

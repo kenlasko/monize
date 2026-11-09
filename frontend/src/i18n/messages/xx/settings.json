@@ -1134,6 +1134,14 @@
       "disabled": "[XX-Floating chat bubble disabled-XX]",
       "saveFailed": "[XX-Could not update the chat bubble setting-XX]"
     },
+    "trivia": {
+      "title": "[XX-AI trivia-XX]",
+      "subtitle": "[XX-Show a line of trivia about your net worth and investments beside the dashboard greeting. It is rebuilt daily, and worded by AI if you have a provider set up.-XX]",
+      "toggleLabel": "[XX-Show AI trivia on the dashboard-XX]",
+      "enabled": "[XX-AI trivia enabled-XX]",
+      "disabled": "[XX-AI trivia disabled-XX]",
+      "saveFailed": "[XX-Could not update the AI trivia setting-XX]"
+    },
     "demoRestricted": {
       "heading": "[XX-Restricted in Demo Mode-XX]",
       "body": "[XX-AI provider configuration is disabled in demo mode.-XX]"

@@ -158,14 +158,18 @@ test("dashboard-header", async () => {
       .getByRole("main")
       .getByRole("link", { name: "Shared Expenses", exact: true }),
   ).toHaveCount(0);
-  // The greeting, its Customize gear and the net worth hero beside it.
-  const hero = page.getByTestId("dashboard-hero");
-  await expect(hero).toBeVisible();
-  await docShot(page, "dashboard-header", hero);
+  // The greeting, its Customize gear, the trivia and the net worth hero under them.
+  await expect(onScreenHero()).toBeVisible();
+  await docShot(page, "dashboard-header", page.getByTestId("dashboard-hero-root"));
 });
 
+/** The set on screen: on Auto the other can be mounted beside it, inert. */
+function onScreenHero() {
+  return page.locator('div:not([inert]) > section[data-testid="dashboard-hero"]');
+}
+
 /** Switch the dashboard hero's set through Customize, and wait for it. */
-async function chooseHeroSet(set: "Net worth" | "Portfolio value"): Promise<void> {
+async function chooseHeroSet(set: "Auto" | "Net worth" | "Portfolio value"): Promise<void> {
   await page.getByRole("button", { name: "Customize", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("heading", { name: "Customize dashboard" })).toBeVisible();
@@ -181,12 +185,11 @@ async function chooseHeroSet(set: "Net worth" | "Portfolio value"): Promise<void
 test("dashboard-hero-portfolio", async () => {
   await openDashboard();
   await chooseHeroSet("Portfolio value");
-  const hero = page.getByTestId("dashboard-hero");
-  await expect(hero.getByText(/Portfolio value/)).toBeVisible();
-  await docShot(page, "dashboard-hero-portfolio", hero);
+  await expect(onScreenHero().getByText(/Portfolio value/)).toBeVisible();
+  await docShot(page, "dashboard-hero-portfolio", page.getByTestId("dashboard-hero-root"));
   // The later pictures show the default set.
-  await chooseHeroSet("Net worth");
-  await expect(hero.getByText("Net worth", { exact: true })).toBeVisible();
+  await chooseHeroSet("Auto");
+  await expect(onScreenHero().getByText("Net worth", { exact: true })).toBeVisible();
 });
 
 test("dashboard-customize", async () => {

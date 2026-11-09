@@ -185,6 +185,7 @@ export interface UserPreferences {
   defaultMapProvider: MapProvider;
   recentTransactionsLimit: number;
   aiBubbleEnabled: boolean;
+  aiTriviaEnabled: boolean;
   showWhatsNew: boolean;
   /**
    * Strict reconciled lock. False (the default) keeps Money's behaviour: the
@@ -333,6 +334,7 @@ export interface UpdatePreferencesData {
   defaultMapProvider?: MapProvider;
   recentTransactionsLimit?: number;
   aiBubbleEnabled?: boolean;
+  aiTriviaEnabled?: boolean;
   showWhatsNew?: boolean;
   lockReconciledTransactions?: boolean;
   payeeContactLookupEnabled?: boolean;
