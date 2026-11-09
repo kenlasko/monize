@@ -25,6 +25,15 @@ afterEach(() => {
 });
 
 describe('Modal', () => {
+  it('sits near the top of the screen when anchored, and centred otherwise', () => {
+    const { rerender } = render(<Modal isOpen onClose={vi.fn()} title="T">body</Modal>);
+    const backdrop = () => screen.getByRole('dialog').parentElement as HTMLElement;
+    expect(backdrop().className).toContain('items-center');
+    rerender(<Modal isOpen onClose={vi.fn()} title="T" anchorTop>body</Modal>);
+    expect(backdrop().className).toContain('items-start');
+    expect(backdrop().className).not.toContain('items-center');
+  });
+
   it('renders nothing when not open', () => {
     const { container } = render(<Modal isOpen={false}>Content</Modal>);
     expect(container.firstChild).toBeNull();
