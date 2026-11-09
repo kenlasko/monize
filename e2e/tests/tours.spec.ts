@@ -77,8 +77,16 @@ test.describe('Guided tours', () => {
     // Bills -> Investments -> Budgets -> Reports -> finish.
     await advanceUntil("You're all set");
 
-    // Done completes the tour.
+    // Done completes the tour. The save has to finish before the reload below,
+    // which would otherwise cancel it.
+    const saved = page.waitForResponse(
+      (r) =>
+        r.request().method() === 'POST' &&
+        new URL(r.url()).pathname.endsWith('/updates/tours/progress') &&
+        r.ok(),
+    );
     await page.getByRole('button', { name: 'Done', exact: true }).click();
+    await saved;
     await expect(page.getByText("You're all set")).toBeHidden();
 
     // Persistence round-trip: the completion is stored server-side, so the CTA
