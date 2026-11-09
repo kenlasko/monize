@@ -301,6 +301,8 @@ On a phone, these same entries are in the navigation drawer instead of the heade
 
 Press **Ctrl+K** (**Cmd+K** on a Mac) anywhere to open the command palette: one search box over your accounts, payees, categories, bills, securities, reports, settings, transactions and this guide. Use the **Up** and **Down** arrow keys to move through the results, **Enter** to open one, and **Tab** to jump to the actions, such as starting a new transaction for the payee you searched for (**Ctrl+Enter**, or **Cmd+Enter** on a Mac). **Esc** closes it.
 
+![The command palette showing payees, bills and transactions for a search](images/command-palette.png)
+
 Type a bare **?** anywhere you are not already typing into a field to search only the guide, without leaving the screen you are on. Sections from the page you are viewing are ranked first, so the ? shortcut on, say, the Budgets page lists Budgets sections before anything else; type to search everywhere else too. Use the **Up** and **Down** arrow keys to move through the results and **Enter** to open one in the help panel, or **Esc** to close the search without opening anything. The same dialog opens from the help panel's own **Search** button.
 
 A few things to know:
