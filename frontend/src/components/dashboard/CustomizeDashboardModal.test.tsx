@@ -334,6 +334,18 @@ describe('CustomizeDashboardModal', () => {
   });
 
   describe('dashboard hero', () => {
+    it('spreads the net worth and portfolio buttons across a phone line, not past `sm`', async () => {
+      await renderModal();
+      const section = screen.getByTestId('customize-hero');
+      for (const name of ['Net worth', 'Portfolio value']) {
+        const button = within(section).getByRole('button', { name });
+        expect(button.className).toContain('grow');
+        expect(button.className).toContain('sm:grow-0');
+        expect(button.parentElement?.className).toContain('w-full');
+        expect(button.parentElement?.className).toContain('sm:w-auto');
+      }
+    });
+
     it('is on, over a one-year chart, for a reader who never set it', async () => {
       await renderModal();
       const section = screen.getByTestId('customize-hero');
