@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@/test/render';
+import { act } from '@testing-library/react';
 import DashboardPage from './page';
 
 // Mock next/image
@@ -125,13 +126,13 @@ vi.mock('@/lib/scheduled-transactions', () => ({
 const mockGetTopMovers = vi.fn().mockResolvedValue([]);
 const mockGetFavouriteSecurities = vi.fn().mockResolvedValue([]);
 const mockGetSecurities = vi.fn().mockResolvedValue([{ id: 'sec-1', symbol: 'AAPL' }]);
-const mockGetPortfolioSummary = vi.fn().mockResolvedValue(null);
+const mockGetPortfolioValuation = vi.fn().mockResolvedValue(null);
 vi.mock('@/lib/investments', () => ({
   investmentsApi: {
     getTopMovers: (...args: any[]) => mockGetTopMovers(...args),
     getFavouriteSecurities: (...args: any[]) => mockGetFavouriteSecurities(...args),
     getSecurities: (...args: any[]) => mockGetSecurities(...args),
-    getPortfolioSummary: (...args: any[]) => mockGetPortfolioSummary(...args),
+    getPortfolioValuation: (...args: any[]) => mockGetPortfolioValuation(...args),
   },
 }));
 
@@ -244,7 +245,7 @@ describe('DashboardPage', () => {
     mockGetTopMovers.mockResolvedValue([]);
     mockGetFavouriteSecurities.mockResolvedValue([]);
     mockGetSecurities.mockResolvedValue([{ id: 'sec-1', symbol: 'AAPL' }]);
-    mockGetPortfolioSummary.mockResolvedValue(null);
+    mockGetPortfolioValuation.mockResolvedValue(null);
     mockGetMonthly.mockResolvedValue([]);
     authState.current.actingAsUserId = null;
     authState.current.delegateSections = null;
@@ -380,6 +381,30 @@ describe('DashboardPage', () => {
       { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
     ]);
     render(<DashboardPage />);
+    await waitFor(() => {
+      expect(mockTriggerAutoRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it('holds the auto price refresh until the portfolio valuation has answered', async () => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
+    ]);
+    let answer: (value: null) => void = () => {};
+    mockGetPortfolioValuation.mockReturnValue(
+      new Promise<null>((resolve) => {
+        answer = resolve;
+      }),
+    );
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(mockGetPortfolioValuation).toHaveBeenCalled();
+    });
+    expect(mockTriggerAutoRefresh).not.toHaveBeenCalled();
+
+    await act(async () => {
+      answer(null);
+    });
     await waitFor(() => {
       expect(mockTriggerAutoRefresh).toHaveBeenCalled();
     });

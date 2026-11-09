@@ -31,11 +31,11 @@ vi.mock('@/hooks/useExchangeRates', () => ({
   }),
 }));
 
-const getPortfolioSummary = vi.fn();
+const getPortfolioValuation = vi.fn();
 const getAssetClassWeightings = vi.fn();
 vi.mock('@/lib/investments', () => ({
   investmentsApi: {
-    getPortfolioSummary: (...a: unknown[]) => getPortfolioSummary(...a),
+    getPortfolioValuation: (...a: unknown[]) => getPortfolioValuation(...a),
     getAssetClassWeightings: (...a: unknown[]) => getAssetClassWeightings(...a),
   },
 }));
@@ -64,7 +64,7 @@ async function renderWidget() {
 
 describe('SecurityTypeAllocationWidget', () => {
   beforeEach(() => {
-    getPortfolioSummary.mockReset();
+    getPortfolioValuation.mockReset();
     getAssetClassWeightings.mockReset();
     widgetCfg.config = { accountIds: [], view: 'type' };
     rateless.currencies = [];
@@ -72,7 +72,7 @@ describe('SecurityTypeAllocationWidget', () => {
 
   it('says which holdings the type view left out, as the asset class view does', async () => {
     rateless.currencies = ['EUR'];
-    getPortfolioSummary.mockResolvedValue({
+    getPortfolioValuation.mockResolvedValue({
       holdings: [
         holding('s1', 'STOCK', 700),
         { ...holding('s2', 'ETF', 300), symbol: 'NOPRICE', marketValue: null },
@@ -87,7 +87,7 @@ describe('SecurityTypeAllocationWidget', () => {
   });
 
   it('shows no partial note when every holding is placed', async () => {
-    getPortfolioSummary.mockResolvedValue({
+    getPortfolioValuation.mockResolvedValue({
       holdings: [holding('s1', 'STOCK', 700)],
       holdingsByAccount: [],
     });
@@ -96,7 +96,7 @@ describe('SecurityTypeAllocationWidget', () => {
   });
 
   it('groups holdings by security type', async () => {
-    getPortfolioSummary.mockResolvedValue({
+    getPortfolioValuation.mockResolvedValue({
       holdings: [holding('s1', 'STOCK', 700), holding('s2', 'ETF', 300)],
       holdingsByAccount: [],
     });
@@ -108,20 +108,20 @@ describe('SecurityTypeAllocationWidget', () => {
   });
 
   it('shows the empty state with no holdings', async () => {
-    getPortfolioSummary.mockResolvedValue({ holdings: [], holdingsByAccount: [] });
+    getPortfolioValuation.mockResolvedValue({ holdings: [], holdingsByAccount: [] });
     await renderWidget();
     expect(screen.getByText('No holdings to show.')).toBeInTheDocument();
   });
 
   it('leaves the look-through request unmade while the type view is showing', async () => {
-    getPortfolioSummary.mockResolvedValue({ holdings: [holding('s1', 'STOCK', 700)], holdingsByAccount: [] });
+    getPortfolioValuation.mockResolvedValue({ holdings: [holding('s1', 'STOCK', 700)], holdingsByAccount: [] });
     await renderWidget();
     expect(getAssetClassWeightings).not.toHaveBeenCalled();
   });
 
   it('shows the look-through asset classes in the asset class view', async () => {
     widgetCfg.config = { accountIds: [], view: 'assetClass' };
-    getPortfolioSummary.mockResolvedValue({ holdings: [], holdingsByAccount: [] });
+    getPortfolioValuation.mockResolvedValue({ holdings: [], holdingsByAccount: [] });
     getAssetClassWeightings.mockResolvedValue({
       items: [
         { assetClass: 'Equity', assetClassKey: 'equity', directValue: 600, etfValue: 100, totalValue: 700, percentage: 70 },
@@ -145,7 +145,7 @@ describe('SecurityTypeAllocationWidget', () => {
 
   it('says so when the look-through breakdown has nothing to place', async () => {
     widgetCfg.config = { accountIds: [], view: 'assetClass' };
-    getPortfolioSummary.mockResolvedValue({ holdings: [], holdingsByAccount: [] });
+    getPortfolioValuation.mockResolvedValue({ holdings: [], holdingsByAccount: [] });
     getAssetClassWeightings.mockResolvedValue({
       items: [],
       totalPortfolioValue: 0,

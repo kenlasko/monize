@@ -75,7 +75,7 @@ async function renderHero(props: Partial<Parameters<typeof NetWorthHero>[0]> = {
     render(
       <NetWorthHero
         config={configState.current}
-        portfolioSummary={portfolio()}
+        portfolioValuation={portfolio()}
         hasInvestments
         isLoading={false}
         investmentSummaryLoading={false}
@@ -120,7 +120,7 @@ describe('NetWorthHero', () => {
   });
 
   it('leaves out the invested figure when there are no investments', async () => {
-    await renderHero({ hasInvestments: false, portfolioSummary: null });
+    await renderHero({ hasInvestments: false, portfolioValuation: null });
     expect(screen.queryByText(/invested/)).not.toBeInTheDocument();
   });
 
@@ -190,14 +190,17 @@ describe('NetWorthHero', () => {
     expect(screen.getByRole('region', { name: 'Net worth summary' })).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('stays busy while the portfolio summary behind "invested" is still loading, so it never pops in late', async () => {
-    await renderHero({ investmentSummaryLoading: true });
-    expect(screen.getByRole('region', { name: 'Net worth summary' })).toHaveAttribute('aria-busy', 'true');
+  it('draws everything else while the valuation behind "invested" loads, holding only that figure\'s place', async () => {
+    await renderHero({ portfolioValuation: null, investmentSummaryLoading: true });
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/1,100/);
+    expect(screen.getByTestId('dashboard-hero-figure-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText(/invested/)).not.toBeInTheDocument();
   });
 
-  it('is not held up by investmentSummaryLoading when there are no investments', async () => {
-    await renderHero({ hasInvestments: false, portfolioSummary: null, investmentSummaryLoading: true });
+  it('holds no place for "invested" when there are no investments', async () => {
+    await renderHero({ hasInvestments: false, portfolioValuation: null, investmentSummaryLoading: true });
     expect(screen.getByTestId('dashboard-hero')).toBeInTheDocument();
+    expect(screen.queryByTestId('dashboard-hero-figure-skeleton')).not.toBeInTheDocument();
     expect(screen.queryByText(/invested/)).not.toBeInTheDocument();
   });
 
@@ -211,7 +214,7 @@ describe('NetWorthHero', () => {
 
   it('marks an invested figure with an unpriced holding and names the holding', async () => {
     await renderHero({
-      portfolioSummary: portfolio({
+      portfolioValuation: portfolio({
         valuationComplete: false,
         pricesComplete: false,
         unpricedSecurityIds: ['sec-1'],

@@ -74,7 +74,7 @@ export function SecurityTypeAllocationWidget({
 
   const { data: summary, isLoading: dataLoading } = useReportData(
     () =>
-      investmentsApi.getPortfolioSummary(
+      investmentsApi.getPortfolioValuation(
         config.accountIds.length > 0 ? config.accountIds : undefined,
       ),
     [config.accountIds],

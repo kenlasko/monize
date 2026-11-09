@@ -79,6 +79,31 @@ export function HeroSkeleton({ header, label }: { header: ReactNode; label: stri
   );
 }
 
+/**
+ * The place of one figure still on its way, in a hero that is otherwise drawn:
+ * it keeps the row from shifting when the figure lands.
+ */
+export function HeroFigureSkeleton({ width = 'w-28' }: { width?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      data-testid="dashboard-hero-figure-skeleton"
+      className={`inline-block h-4 ${width} rounded align-middle animate-pulse skeleton-shimmer bg-gray-200 dark:bg-gray-700`}
+    />
+  );
+}
+
+/** The chart's place while its series is on the way; fills `HeroLayout`'s slot. */
+export function HeroChartSkeleton() {
+  return (
+    <div
+      aria-hidden="true"
+      data-testid="dashboard-hero-chart-skeleton"
+      className="animate-pulse skeleton-shimmer h-full w-full rounded-lg bg-gray-200/60 dark:bg-gray-700/60"
+    />
+  );
+}
+
 /** The header alone with one line under it: a failed load, an empty scope. */
 export function HeroMessage({ header, children }: { header: ReactNode; children: ReactNode }) {
   return (

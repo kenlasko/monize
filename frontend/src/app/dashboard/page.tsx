@@ -24,7 +24,7 @@ import { Account } from '@/types/account';
 import type { Institution } from '@/types/institution';
 import { countLogicalAccounts } from '@/lib/account-utils';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
-import { TopMover, PortfolioSummary, FavouriteSecurityQuote } from '@/types/investment';
+import { TopMover, PortfolioValuation, FavouriteSecurityQuote } from '@/types/investment';
 import { MonthlyNetWorth } from '@/types/net-worth';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -75,7 +75,7 @@ function DashboardContent() {
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
   const [topMovers, setTopMovers] = useState<TopMover[]>([]);
-  const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
+  const [portfolioValuation, setPortfolioValuation] = useState<PortfolioValuation | null>(null);
   const [hasInvestments, setHasInvestments] = useState(false);
   const [netWorthData, setNetWorthData] = useState<MonthlyNetWorth[]>([]);
   // The net worth request failed: `netWorthData` is then empty, which is not
@@ -84,33 +84,33 @@ function DashboardContent() {
   const [favouriteSecurities, setFavouriteSecurities] = useState<FavouriteSecurityQuote[]>([]);
   const [hasSecurities, setHasSecurities] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  // The portfolio summary loads after `isLoading` clears (below), so the hero
-  // waits on this too -- otherwise its "invested" figure pops in a beat after
-  // net worth, assets and liabilities, which render as soon as `isLoading` does.
+  // The portfolio valuation loads after `isLoading` clears (below). The hero
+  // holds only its "invested" figure on this, and the automatic price refresh
+  // waits for it so the two do not compete for the server.
   const [investmentSummaryLoading, setInvestmentSummaryLoading] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
 
   const brokerageMarketValues = useMemo(() => {
     const map = new Map<string, number>();
-    if (!portfolioSummary) return map;
-    for (const accountHoldings of portfolioSummary.holdingsByAccount) {
+    if (!portfolioValuation) return map;
+    for (const accountHoldings of portfolioValuation.holdingsByAccount) {
       map.set(accountHoldings.accountId, accountHoldings.totalMarketValue);
     }
     return map;
-  }, [portfolioSummary]);
+  }, [portfolioValuation]);
 
   const unpricedHoldingCounts = useMemo(() => {
     const map = new Map<string, number>();
-    if (!portfolioSummary) return map;
-    for (const accountHoldings of portfolioSummary.holdingsByAccount) {
+    if (!portfolioValuation) return map;
+    for (const accountHoldings of portfolioValuation.holdingsByAccount) {
       map.set(accountHoldings.accountId, accountHoldings.unpricedHoldingsCount ?? 0);
     }
     return map;
-  }, [portfolioSummary]);
+  }, [portfolioValuation]);
 
   const incompleteHoldingAccountIds = useMemo(
-    () => incompleteHoldingAccountIdsOf(portfolioSummary?.holdingsByAccount),
-    [portfolioSummary],
+    () => incompleteHoldingAccountIdsOf(portfolioValuation?.holdingsByAccount),
+    [portfolioValuation],
   );
 
   const reloadInvestmentWidgets = useCallback(async () => {
@@ -125,10 +125,10 @@ function DashboardContent() {
       try {
         const [moversData, portfolio] = await Promise.all([
           investmentsApi.getTopMovers(),
-          investmentsApi.getPortfolioSummary().catch(() => null),
+          investmentsApi.getPortfolioValuation().catch(() => null),
         ]);
         setTopMovers(moversData);
-        setPortfolioSummary(portfolio);
+        setPortfolioValuation(portfolio);
       } catch {
         // Silently fail
       }
@@ -219,11 +219,11 @@ function DashboardContent() {
           setInvestmentSummaryLoading(true);
           Promise.all([
             investmentsApi.getTopMovers().catch(() => [] as TopMover[]),
-            investmentsApi.getPortfolioSummary().catch(() => null),
+            investmentsApi.getPortfolioValuation().catch(() => null),
           ])
             .then(([moversData, portfolio]) => {
               setTopMovers(moversData);
-              setPortfolioSummary(portfolio);
+              setPortfolioValuation(portfolio);
             })
             .finally(() => setInvestmentSummaryLoading(false));
         } else {
@@ -253,10 +253,10 @@ function DashboardContent() {
   useOnAiAction(loadDashboardData);
 
   useEffect(() => {
-    if (hasInvestments && !isLoading) {
+    if (hasInvestments && !isLoading && !investmentSummaryLoading) {
       triggerAutoRefresh();
     }
-  }, [hasInvestments, isLoading, triggerAutoRefresh]);
+  }, [hasInvestments, isLoading, investmentSummaryLoading, triggerAutoRefresh]);
 
   // The accounts the hero's portfolio set offers, as the Portfolio Value
   // widget offers them.
@@ -339,7 +339,7 @@ function DashboardContent() {
             header
           ) : (
             <DashboardHero
-              portfolioSummary={portfolioSummary}
+              portfolioValuation={portfolioValuation}
               hasInvestments={hasInvestments}
               isLoading={isLoading}
               investmentSummaryLoading={investmentSummaryLoading}

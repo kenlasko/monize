@@ -37,6 +37,23 @@ describe('investmentsApi', () => {
     });
   });
 
+  it('getPortfolioValuation fetches /portfolio/valuation with the long timeout', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { totalPortfolioValue: 1000 } });
+    await investmentsApi.getPortfolioValuation(['a1', 'a2']);
+    expect(apiClient.get).toHaveBeenCalledWith('/portfolio/valuation', {
+      params: { accountIds: 'a1,a2' },
+      timeout: PORTFOLIO_VALUATION_TIMEOUT_MS,
+    });
+  });
+
+  it('getPortfolioValuation drops its cached answer when investments are invalidated', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { totalPortfolioValue: 1000 } });
+    await investmentsApi.getPortfolioValuation();
+    expect(getCached('investments:valuation:all')).toBeDefined();
+    invalidateCache('investments:');
+    expect(getCached('investments:valuation:all')).toBeUndefined();
+  });
+
   it('getAssetAllocation fetches /portfolio/allocation', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: {} });
     await investmentsApi.getAssetAllocation();

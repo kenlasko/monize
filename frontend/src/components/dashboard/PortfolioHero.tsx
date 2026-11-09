@@ -25,6 +25,8 @@ import { useMainAccountName } from '@/hooks/useMainAccountName';
 import {
   HeroAreaChart,
   HeroCaption,
+  HeroChartSkeleton,
+  HeroFigureSkeleton,
   HeroHeadline,
   HeroLayout,
   HeroMessage,
@@ -48,10 +50,14 @@ interface PortfolioHeroProps {
  * The portfolio set: the chosen investment accounts' total value with its
  * change over the chosen window, the holdings and cash under it beside one
  * chosen figure, and the value chart. Every figure is the Investments page's
- * own: the value, holdings, cash and the four returns are the portfolio
- * summary's (the returns since inception), the change is the period result's
- * for the window, and the chart plots the
+ * own: the value, holdings, cash and simple return are the portfolio
+ * valuation's, TWR, MWR and CAGR are the portfolio summary's (since inception),
+ * the change is the period result's for the window, and the chart plots the
  * securities alone, as the page's Portfolio Value over Time chart does.
+ *
+ * The figures draw as soon as the valuation answers. The chart, the change and
+ * a since-inception return each cost far more, so each keeps a placeholder in
+ * its own place rather than holding the rest of the hero.
  */
 export function PortfolioHero({ config, header, investmentAccounts, hasInvestments, isLoading }: PortfolioHeroProps) {
   const t = useTranslations('dashboard');
@@ -78,9 +84,20 @@ export function PortfolioHero({ config, header, investmentAccounts, hasInvestmen
   const { data: summary, isLoading: summaryLoading, error: summaryError } = useReportData(
     () =>
       hasInvestments
-        ? investmentsApi.getPortfolioSummary(config.portfolioAccountIds)
+        ? investmentsApi.getPortfolioValuation(config.portfolioAccountIds)
         : Promise.resolve(null),
     [hasInvestments, accountIdsCsv],
+  );
+
+  // Only a since-inception return needs the summary's walk; the simple return
+  // is the valuation's own.
+  const needsReturns = config.portfolioMetric !== 'simpleReturn';
+  const { data: returns, isLoading: returnsLoading, error: returnsError } = useReportData(
+    () =>
+      hasInvestments && needsReturns
+        ? investmentsApi.getPortfolioSummary(config.portfolioAccountIds)
+        : Promise.resolve(null),
+    [hasInvestments, needsReturns, accountIdsCsv],
   );
 
   const { periodResult, failed: periodFailed } = usePortfolioPeriodResult({
@@ -126,12 +143,14 @@ export function PortfolioHero({ config, header, investmentAccounts, hasInvestmen
   if (!hasInvestments && !isLoading) {
     return <HeroMessage header={header}>{t('hero.portfolioEmpty')}</HeroMessage>;
   }
-  if (isLoading || seriesLoading || summaryLoading || (summary === null && !summaryError)) {
+  if (isLoading || summaryLoading || (summary === null && !summaryError)) {
     return <HeroSkeleton header={header} label={label} />;
   }
-  if (summaryError || seriesError || !summary) {
+  if (summaryError || !summary) {
     return <HeroMessage header={header}>{t('hero.portfolioLoadFailed')}</HeroMessage>;
   }
+
+  const seriesPending = seriesLoading || (series === null && !seriesError);
 
   const windowLabel = t(`widgets.rangeLabels.${range}` as Parameters<typeof t>[0]);
   const dir = (chunks: ReactNode) => <span className="sr-only">{chunks}</span>;
@@ -139,12 +158,14 @@ export function PortfolioHero({ config, header, investmentAccounts, hasInvestmen
   // The whole scope's change over the window, deposits and withdrawals
   // included: the headline is the whole scope's value, so this is what moved
   // it. A change, never a return -- the returns are the figure further down.
-  // A request that has not answered shows nothing; a withheld figure names
-  // its cause.
+  // A request that has not answered holds the pill's place, or nothing once
+  // there is no series for it to measure; a withheld figure names its cause.
   const totalChange = periodResult?.valueChange ?? null;
   const pill = !periodResult ? (
     periodFailed ? (
       <HeroPillUnknown>{t('hero.portfolioChangeFailed')}</HeroPillUnknown>
+    ) : seriesPending || points.length > 0 ? (
+      <HeroFigureSkeleton width="w-40" />
     ) : null
   ) : totalChange === null ? (
     <HeroPillUnknown>
@@ -162,36 +183,40 @@ export function PortfolioHero({ config, header, investmentAccounts, hasInvestmen
   );
 
   const metricValue = (): ReactNode => {
+    if (config.portfolioMetric === 'simpleReturn') {
+      // Over the holdings that have a value: partial while the valuation is.
+      return (
+        <PartialTotal
+          total={partialTotalFor(0, summary.valuationComplete, summary.missingRatePairs)}
+          displayCurrency={defaultCurrency}
+        >
+          {formatSignedPercent(summary.totalGainLossPercent, 2)}
+        </PartialTotal>
+      );
+    }
+    // A failed request is said to be one, not shown as a withheld return.
+    if (returnsError) return <UnknownAmount reasonText={t('hero.portfolioLoadFailed')} />;
+    if (returnsLoading || !returns) return <HeroFigureSkeleton width="w-14" />;
     switch (config.portfolioMetric) {
-      case 'simpleReturn':
-        // Over the holdings that have a value: partial while the valuation is.
-        return (
-          <PartialTotal
-            total={partialTotalFor(0, summary.valuationComplete, summary.missingRatePairs)}
-            displayCurrency={defaultCurrency}
-          >
-            {formatSignedPercent(summary.totalGainLossPercent, 2)}
-          </PartialTotal>
-        );
       case 'twr':
-        return summary.timeWeightedReturn != null ? (
-          formatSignedPercent(summary.timeWeightedReturn, 2)
+        return returns.timeWeightedReturn != null ? (
+          formatSignedPercent(returns.timeWeightedReturn, 2)
         ) : (
-          <UnknownAmount reason={periodResultUnknownReason(summary.timeWeightedReturnReasons ?? [])} />
+          <UnknownAmount reason={periodResultUnknownReason(returns.timeWeightedReturnReasons ?? [])} />
         );
       case 'mwr':
-        return summary.moneyWeightedReturn != null ? (
-          formatSignedPercent(summary.moneyWeightedReturn, 2)
+        return returns.moneyWeightedReturn != null ? (
+          formatSignedPercent(returns.moneyWeightedReturn, 2)
         ) : (
-          <UnknownAmount reason={periodResultUnknownReason(summary.moneyWeightedReturnReasons ?? [])} />
+          <UnknownAmount reason={periodResultUnknownReason(returns.moneyWeightedReturnReasons ?? [])} />
         );
       case 'cagr':
-        if (summary.cagr != null) return formatSignedPercent(summary.cagr, 2);
+        if (returns.cagr != null) return formatSignedPercent(returns.cagr, 2);
         // Withheld while a price or a rate is missing (a growth rate over a
         // partial value), and otherwise until there is a year of history and
         // more paid in than taken out.
-        if (summary.pricesComplete === false) return <UnknownAmount reason="noPrice" />;
-        if (summary.fxComplete === false) return <UnknownAmount reason="displayFx" />;
+        if (returns.pricesComplete === false) return <UnknownAmount reason="noPrice" />;
+        if (returns.fxComplete === false) return <UnknownAmount reason="displayFx" />;
         return <UnknownAmount reasonText={t('hero.cagrUnavailable')} />;
     }
   };
@@ -259,7 +284,13 @@ export function PortfolioHero({ config, header, investmentAccounts, hasInvestmen
         </>
       }
       chart={
-        series?.intradayUnavailable ? (
+        seriesError ? (
+          <p className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+            {t('hero.portfolioLoadFailed')}
+          </p>
+        ) : seriesPending ? (
+          <HeroChartSkeleton />
+        ) : series?.intradayUnavailable ? (
           <p className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
             {t('hero.intradayUnavailable')}
           </p>

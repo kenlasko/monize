@@ -2,24 +2,23 @@
 
 import type { ReactNode } from 'react';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import type { PortfolioSummary } from '@/types/investment';
+import type { PortfolioValuation } from '@/types/investment';
 import type { Account } from '@/types/account';
 import { DASHBOARD_HERO_WIDGET_ID, resolveDashboardHeroConfig } from './widget-config';
 import { NetWorthHero } from './NetWorthHero';
 import { PortfolioHero } from './PortfolioHero';
 
 interface DashboardHeroProps {
-  /** The dashboard's portfolio summary; `null` until loaded or when it failed. */
-  portfolioSummary: PortfolioSummary | null;
+  /** The dashboard's portfolio valuation; `null` until loaded or when it failed. */
+  portfolioValuation: PortfolioValuation | null;
   hasInvestments: boolean;
   /** The dashboard's own first load, before which no figure is known. */
   isLoading: boolean;
   /**
-   * Whether the portfolio summary behind the net worth set's "invested"
-   * figure is still loading, separately from `isLoading`: it fetches after
-   * the rest of the dashboard's first load so it never blocks it, but
-   * `NetWorthHero` has to hold its own skeleton for it, or "invested" pops in
-   * a beat after everything beside it.
+   * Whether the portfolio valuation behind the net worth set's "invested"
+   * figure is still loading, separately from `isLoading`: it fetches after the
+   * rest of the dashboard's first load so it never blocks it. `NetWorthHero`
+   * holds a placeholder in that one figure's place meanwhile.
    */
   investmentSummaryLoading: boolean;
   /** The investment accounts the portfolio set can cover. */
@@ -39,7 +38,7 @@ interface DashboardHeroProps {
  * the page keeps its greeting and date and asks for nothing.
  */
 export function DashboardHero({
-  portfolioSummary,
+  portfolioValuation,
   hasInvestments,
   isLoading,
   investmentSummaryLoading,
@@ -65,7 +64,7 @@ export function DashboardHero({
     <NetWorthHero
       config={config}
       header={header}
-      portfolioSummary={portfolioSummary}
+      portfolioValuation={portfolioValuation}
       hasInvestments={hasInvestments}
       isLoading={isLoading}
       investmentSummaryLoading={investmentSummaryLoading}

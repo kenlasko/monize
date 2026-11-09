@@ -9,6 +9,7 @@ import { TransactionStatus } from '@/types/transaction';
 export type BackfillRange = '1y' | '2y' | '5y' | '10y' | 'ytd' | 'max';
 import {
   PortfolioSummary,
+  PortfolioValuation,
   AssetAllocation,
   DailyMovementsResponse,
   DailyMovementDetailResponse,
@@ -122,6 +123,19 @@ export const investmentsApi = {
     const cacheKey = `investments:summary:${accountIds?.join(',') || 'all'}`;
     return dedupe(cacheKey, async () => {
       const response = await apiClient.get<PortfolioSummary>('/portfolio/summary', {
+        params: accountIds && accountIds.length > 0 ? { accountIds: accountIds.join(',') } : undefined,
+        timeout: PORTFOLIO_VALUATION_TIMEOUT_MS,
+      });
+      return response.data;
+    }, 60_000);
+  },
+
+  // The portfolio's value and holdings now, without the since-inception
+  // returns: for a surface that shows no return and should not wait for them.
+  getPortfolioValuation: async (accountIds?: string[]): Promise<PortfolioValuation> => {
+    const cacheKey = `investments:valuation:${accountIds?.join(',') || 'all'}`;
+    return dedupe(cacheKey, async () => {
+      const response = await apiClient.get<PortfolioValuation>('/portfolio/valuation', {
         params: accountIds && accountIds.length > 0 ? { accountIds: accountIds.join(',') } : undefined,
         timeout: PORTFOLIO_VALUATION_TIMEOUT_MS,
       });
