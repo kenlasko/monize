@@ -103,6 +103,10 @@ How tables and pages first look in a browser that has no view settings of its ow
 
 **Use these defaults in this browser** clears the view settings the current browser has saved, so the defaults above take effect there too.
 
+#### Mobile Navigation
+
+The tabs on the bar at the bottom of a phone or tablet. Choose up to three (**Tab 1** to **Tab 3**, Home, Transactions and Accounts by default); set one to **None** to remove it, and the tabs after it move up to fill the gap. The **+** button and **More** are always on the bar, and everything you leave off it stays under **More**. The choice follows your account to every device.
+
 #### Application
 
 | Setting | Description |

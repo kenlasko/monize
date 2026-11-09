@@ -263,7 +263,7 @@ The right-hand side of the bar holds:
 - **Settings** -- The gear icon with your first name: preferences, security, two-factor authentication, trusted devices, sharing, backups and more
 - **Logout** -- Sign out of the application
 
-On a phone, the menus move into a drawer opened with the menu button at the top left.
+On a phone or tablet, a bar at the bottom of the screen replaces the menus. It holds up to three tabs of your choice (Home, Transactions and Accounts unless you change them in [Preferences](settings-and-security.md#preferences)), a **+** button for a new transaction, and **More**, which opens a drawer with everything else, including Help, Settings and Logout. As you scroll, the page title moves into the header at the top.
 
 ### Getting Help in the App
 
