@@ -440,7 +440,10 @@ vi.mock('./SplitEditor', () => ({
 
 vi.mock('@/components/ui/Combobox', () => ({
   Combobox: ({ label, placeholder, options, value, onChange, onCreateNew, allowCustomValue }: any) => (
-    <div data-testid={`combobox-${label}`}>
+    <div
+      data-testid={`combobox-${label}`}
+      data-options={options?.map((o: any) => o.label).join('\n')}
+    >
       {label && <label>{label}</label>}
       <span data-testid={`combobox-value-${label}`}>{value ?? ''}</span>
       <input
@@ -468,6 +471,16 @@ vi.mock('@/components/ui/Combobox', () => ({
 }));
 
 // ---- Helpers ----
+
+/**
+ * Waits until the category picker lists `label`. Categories load after the
+ * picker renders, and a pick made before they arrive selects nothing.
+ */
+async function categoryOffered(label: string) {
+  await waitFor(() =>
+    expect(screen.getByTestId('combobox-Category').dataset.options?.split('\n')).toContain(label),
+  );
+}
 
 function createExistingTransaction(overrides = {}) {
   return {
@@ -1155,6 +1168,7 @@ describe('TransactionForm', () => {
 
       // The sign lookup used the caller's own list, which cannot resolve an
       // owner category id, so an income category never flipped the amount.
+      await categoryOffered('Owner Salary');
       await act(async () => {
         fireEvent.change(screen.getByTestId('combobox-input-Category'), {
           target: { value: 'Owner Salary' },
@@ -3297,6 +3311,7 @@ describe('TransactionForm', () => {
       });
 
       // Select "Groceries" category
+      await categoryOffered('Groceries');
       fireEvent.change(screen.getByTestId('combobox-input-Category'), {
         target: { value: 'Groceries' },
       });
@@ -5013,6 +5028,7 @@ describe('TransactionForm', () => {
       fireEvent.change(amountInput, { target: { value: '50' } });
 
       // Select expense category "Groceries" (cat-1, isIncome=false) via mock combobox
+      await categoryOffered('Groceries');
       fireEvent.change(screen.getByTestId('combobox-input-Category'), { target: { value: 'Groceries' } });
 
       fireEvent.click(screen.getByRole('button', { name: /Create Transaction/i }));
@@ -5030,6 +5046,7 @@ describe('TransactionForm', () => {
       fireEvent.change(amountInput, { target: { value: '-50' } });
 
       // Select income category "Salary" (cat-2, isIncome=true)
+      await categoryOffered('Salary');
       fireEvent.change(screen.getByTestId('combobox-input-Category'), { target: { value: 'Salary' } });
 
       fireEvent.click(screen.getByRole('button', { name: /Create Transaction/i }));
@@ -5052,6 +5069,7 @@ describe('TransactionForm', () => {
       const amountInput = screen.getByPlaceholderText('0.00');
       fireEvent.change(amountInput, { target: { value: '50' } });
 
+      await categoryOffered('Groceries');
       fireEvent.change(screen.getByTestId('combobox-input-Category'), { target: { value: 'Groceries' } });
 
       fireEvent.click(screen.getByRole('button', { name: /Create Transaction/i }));
@@ -5069,6 +5087,7 @@ describe('TransactionForm', () => {
       await waitFor(() => expect(screen.getByTestId('combobox-Category')).toBeInTheDocument());
       await waitFor(() => expect(mockCategoriesGetAll).toHaveBeenCalled());
 
+      await categoryOffered('Groceries');
       fireEvent.change(screen.getByTestId('combobox-input-Category'), { target: { value: 'Groceries' } });
       fireEvent.change(screen.getByPlaceholderText('0.00'), { target: { value: '75' } });
 
@@ -5082,6 +5101,7 @@ describe('TransactionForm', () => {
       await waitFor(() => expect(screen.getByTestId('combobox-Category')).toBeInTheDocument());
 
       // First select a category, then type a custom value to clear it
+      await categoryOffered('Groceries');
       fireEvent.change(screen.getByTestId('combobox-input-Category'), { target: { value: 'Groceries' } });
       fireEvent.change(screen.getByTestId('combobox-input-Category'), { target: { value: 'Totally Custom Thing' } });
 
@@ -5133,6 +5153,7 @@ describe('TransactionForm', () => {
       await waitFor(() => expect(screen.getByTestId('combobox-Category')).toBeInTheDocument());
 
       // Expense category selected => amounts normally become negative
+      await categoryOffered('Groceries');
       fireEvent.change(screen.getByTestId('combobox-input-Category'), { target: { value: 'Groceries' } });
 
       const amountInput = screen.getByPlaceholderText('0.00');
@@ -5823,6 +5844,7 @@ describe('TransactionForm', () => {
       await waitFor(() => expect(screen.getByTestId('combobox-Category')).toBeInTheDocument());
 
       // Choose the expense category "Groceries" (cat-1, isIncome=false) first.
+      await categoryOffered('Groceries');
       fireEvent.change(screen.getByTestId('combobox-input-Category'), { target: { value: 'Groceries' } });
 
       // Pick EUR and type a positive foreign amount.
@@ -5862,6 +5884,7 @@ describe('TransactionForm', () => {
         />,
       );
       await waitFor(() => expect(screen.getByTestId('combobox-Category')).toBeInTheDocument());
+      await categoryOffered('Groceries');
       fireEvent.change(screen.getByTestId('combobox-input-Category'), { target: { value: 'Groceries' } });
       await act(async () => {
         fireEvent.click(screen.getByLabelText('Change entry currency'));
@@ -5912,6 +5935,7 @@ describe('TransactionForm', () => {
       });
 
       // Now choose the expense category -> the foreign amount flips negative.
+      await categoryOffered('Groceries');
       await act(async () => {
         fireEvent.change(screen.getByTestId('combobox-input-Category'), { target: { value: 'Groceries' } });
       });
