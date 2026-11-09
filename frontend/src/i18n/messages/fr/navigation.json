@@ -40,5 +40,42 @@
     "submit": "Rechercher"
   },
   "backups": "Sauvegardes",
-  "sharedExpenses": "Dépenses partagées"
+  "sharedExpenses": "Dépenses partagées",
+  "commandPalette": {
+    "title": "Palette de commandes",
+    "placeholder": "Rechercher ou aller à...",
+    "close": "Fermer",
+    "groups": {
+      "accounts": "Comptes",
+      "payees": "Bénéficiaires",
+      "categories": "Catégories",
+      "bills": "Factures",
+      "securities": "Titres",
+      "reports": "Rapports",
+      "pages": "Aller à",
+      "transactions": "Transactions",
+      "help": "Aide",
+      "actions": "Actions"
+    },
+    "hint": {
+      "navigate": "naviguer",
+      "open": "ouvrir",
+      "actions": "actions"
+    },
+    "scope": "Recherche dans les comptes, bénéficiaires, catégories, factures, titres, rapports et paramètres",
+    "searching": "Recherche en cours...",
+    "noResults": "Aucun résultat pour « {query} »",
+    "loadFailed": "Certains résultats n'ont pas pu être chargés.",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, one {# transaction} other {# transactions}}",
+    "dueIn": "{days, plural, =0 {Échéance aujourd'hui} =1 {Échéance demain} other {Échéance dans # jours}}",
+    "overdue": "{days, plural, one {# jour de retard} other {# jours de retard}}",
+    "noPayee": "Aucun bénéficiaire",
+    "newTransaction": "Nouvelle transaction",
+    "newTransactionFor": "Nouvelle transaction pour {name}",
+    "transactionsFor": "Toutes les transactions de {name}",
+    "searchTransactions": "Rechercher des transactions pour « {query} »",
+    "searchHelp": "Rechercher dans l'aide",
+    "keyboardShortcuts": "Raccourcis clavier"
+  }
 }

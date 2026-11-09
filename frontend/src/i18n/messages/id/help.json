@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "Pintasan keyboard",
+    "palette": "Palet perintah",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "Cari bantuan",
-    "searchKeys": "Ctrl/Cmd+K atau ?",
+    "searchKeys": "?",
     "undo": "Batalkan perubahan terakhir",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "Ulangi",

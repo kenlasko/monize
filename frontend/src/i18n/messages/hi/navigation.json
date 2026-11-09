@@ -40,5 +40,42 @@
     "submit": "खोजें"
   },
   "backups": "बैकअप",
-  "sharedExpenses": "साझा खर्च"
+  "sharedExpenses": "साझा खर्च",
+  "commandPalette": {
+    "title": "कमांड पैलेट",
+    "placeholder": "खोजें या कहीं जाएँ...",
+    "close": "बंद करें",
+    "groups": {
+      "accounts": "खाते",
+      "payees": "प्राप्तकर्ता",
+      "categories": "श्रेणियाँ",
+      "bills": "बिल",
+      "securities": "प्रतिभूतियाँ",
+      "reports": "रिपोर्ट",
+      "pages": "यहाँ जाएँ",
+      "transactions": "लेनदेन",
+      "help": "मदद",
+      "actions": "कार्रवाइयाँ"
+    },
+    "hint": {
+      "navigate": "नेविगेट करें",
+      "open": "खोलें",
+      "actions": "कार्रवाइयाँ"
+    },
+    "scope": "खाते, प्राप्तकर्ता, श्रेणियाँ, बिल, प्रतिभूतियाँ, रिपोर्ट और सेटिंग्स में खोजता है",
+    "searching": "खोज रहे हैं...",
+    "noResults": "\"{query}\" के लिए कोई परिणाम नहीं",
+    "loadFailed": "कुछ परिणाम लोड नहीं हो सके।",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, one {# लेनदेन} other {# लेनदेन}}",
+    "dueIn": "{days, plural, =0 {आज देय} =1 {कल देय} other {# दिन में देय}}",
+    "overdue": "{days, plural, one {# दिन अतिदेय} other {# दिन अतिदेय}}",
+    "noPayee": "कोई प्राप्तकर्ता नहीं",
+    "newTransaction": "नया लेनदेन",
+    "newTransactionFor": "{name} के लिए नया लेनदेन",
+    "transactionsFor": "{name} के सभी लेनदेन",
+    "searchTransactions": "\"{query}\" के लिए लेनदेन खोजें",
+    "searchHelp": "मदद खोजें",
+    "keyboardShortcuts": "कीबोर्ड शॉर्टकट"
+  }
 }

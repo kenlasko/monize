@@ -40,5 +40,42 @@
     "submit": "検索"
   },
   "backups": "バックアップ",
-  "sharedExpenses": "共同支出"
+  "sharedExpenses": "共同支出",
+  "commandPalette": {
+    "title": "コマンドパレット",
+    "placeholder": "検索または移動...",
+    "close": "閉じる",
+    "groups": {
+      "accounts": "勘定科目",
+      "payees": "支払先",
+      "categories": "カテゴリ",
+      "bills": "請求書",
+      "securities": "有価証券",
+      "reports": "レポート",
+      "pages": "移動",
+      "transactions": "取引",
+      "help": "ヘルプ",
+      "actions": "アクション"
+    },
+    "hint": {
+      "navigate": "移動",
+      "open": "開く",
+      "actions": "アクション"
+    },
+    "scope": "勘定科目、支払先、カテゴリ、請求書、有価証券、レポート、設定を検索します",
+    "searching": "検索中...",
+    "noResults": "「{query}」の結果はありません",
+    "loadFailed": "一部の結果を読み込めませんでした。",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, other {#件の取引}}",
+    "dueIn": "{days, plural, =0 {本日が期限} =1 {明日が期限} other {期限まであと#日}}",
+    "overdue": "{days, plural, other {期限を#日超過}}",
+    "noPayee": "支払先なし",
+    "newTransaction": "新規取引",
+    "newTransactionFor": "{name}の新規取引",
+    "transactionsFor": "{name}のすべての取引",
+    "searchTransactions": "「{query}」の取引を検索",
+    "searchHelp": "ヘルプを検索",
+    "keyboardShortcuts": "キーボードショートカット"
+  }
 }

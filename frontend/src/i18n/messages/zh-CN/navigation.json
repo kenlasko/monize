@@ -40,5 +40,42 @@
     "submit": "搜索"
   },
   "backups": "备份",
-  "sharedExpenses": "共同支出"
+  "sharedExpenses": "共同支出",
+  "commandPalette": {
+    "title": "命令面板",
+    "placeholder": "搜索或跳转到...",
+    "close": "关闭",
+    "groups": {
+      "accounts": "账户",
+      "payees": "收款人",
+      "categories": "分类",
+      "bills": "账单",
+      "securities": "证券",
+      "reports": "报表",
+      "pages": "前往",
+      "transactions": "交易",
+      "help": "帮助",
+      "actions": "操作"
+    },
+    "hint": {
+      "navigate": "导航",
+      "open": "打开",
+      "actions": "操作"
+    },
+    "scope": "搜索账户、收款人、分类、账单、证券、报表和设置",
+    "searching": "正在搜索...",
+    "noResults": "未找到\"{query}\"的结果",
+    "loadFailed": "部分结果无法加载。",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, other {# 笔交易}}",
+    "dueIn": "{days, plural, =0 {今天到期} =1 {明天到期} other {# 天后到期}}",
+    "overdue": "{days, plural, other {已逾期 # 天}}",
+    "noPayee": "无收款人",
+    "newTransaction": "新建交易",
+    "newTransactionFor": "为 {name} 新建交易",
+    "transactionsFor": "{name} 的所有交易",
+    "searchTransactions": "搜索 \"{query}\" 的交易",
+    "searchHelp": "搜索帮助",
+    "keyboardShortcuts": "键盘快捷键"
+  }
 }

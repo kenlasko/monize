@@ -40,5 +40,42 @@
     "submit": "검색"
   },
   "backups": "백업",
-  "sharedExpenses": "공동 지출"
+  "sharedExpenses": "공동 지출",
+  "commandPalette": {
+    "title": "명령 팔레트",
+    "placeholder": "검색 또는 이동...",
+    "close": "닫기",
+    "groups": {
+      "accounts": "계정",
+      "payees": "수취인",
+      "categories": "카테고리",
+      "bills": "청구서",
+      "securities": "유가증권",
+      "reports": "보고서",
+      "pages": "이동",
+      "transactions": "거래",
+      "help": "도움말",
+      "actions": "작업"
+    },
+    "hint": {
+      "navigate": "탐색",
+      "open": "열기",
+      "actions": "작업"
+    },
+    "scope": "계정, 수취인, 카테고리, 청구서, 유가증권, 보고서 및 설정을 검색합니다",
+    "searching": "검색 중...",
+    "noResults": "\"{query}\"에 대한 결과가 없습니다",
+    "loadFailed": "일부 결과를 불러오지 못했습니다.",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, other {거래 #건}}",
+    "dueIn": "{days, plural, =0 {오늘 마감} =1 {내일 마감} other {#일 후 마감}}",
+    "overdue": "{days, plural, other {#일 연체}}",
+    "noPayee": "수취인 없음",
+    "newTransaction": "새 거래",
+    "newTransactionFor": "{name}의 새 거래",
+    "transactionsFor": "{name}의 모든 거래",
+    "searchTransactions": "\"{query}\" 거래 검색",
+    "searchHelp": "도움말 검색",
+    "keyboardShortcuts": "키보드 단축키"
+  }
 }

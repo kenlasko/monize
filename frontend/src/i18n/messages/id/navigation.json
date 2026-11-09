@@ -40,5 +40,42 @@
     "submit": "Cari"
   },
   "backups": "Cadangan",
-  "sharedExpenses": "Pengeluaran Bersama"
+  "sharedExpenses": "Pengeluaran Bersama",
+  "commandPalette": {
+    "title": "Palet perintah",
+    "placeholder": "Cari atau lompat ke...",
+    "close": "Tutup",
+    "groups": {
+      "accounts": "Akun",
+      "payees": "Penerima",
+      "categories": "Kategori",
+      "bills": "Tagihan",
+      "securities": "Sekuritas",
+      "reports": "Laporan",
+      "pages": "Pergi ke",
+      "transactions": "Transaksi",
+      "help": "Bantuan",
+      "actions": "Aksi"
+    },
+    "hint": {
+      "navigate": "navigasi",
+      "open": "buka",
+      "actions": "aksi"
+    },
+    "scope": "Mencari akun, penerima, kategori, tagihan, sekuritas, laporan, dan pengaturan",
+    "searching": "Mencari...",
+    "noResults": "Tidak ada hasil untuk \"{query}\"",
+    "loadFailed": "Beberapa hasil tidak dapat dimuat.",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, other {# transaksi}}",
+    "dueIn": "{days, plural, =0 {Jatuh tempo hari ini} =1 {Jatuh tempo besok} other {Jatuh tempo dalam # hari}}",
+    "overdue": "{days, plural, other {# hari terlambat}}",
+    "noPayee": "Tanpa penerima",
+    "newTransaction": "Transaksi baru",
+    "newTransactionFor": "Transaksi baru untuk {name}",
+    "transactionsFor": "Semua transaksi untuk {name}",
+    "searchTransactions": "Cari transaksi untuk \"{query}\"",
+    "searchHelp": "Cari bantuan",
+    "keyboardShortcuts": "Pintasan keyboard"
+  }
 }

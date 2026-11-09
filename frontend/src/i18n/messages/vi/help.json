@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "Phím tắt",
+    "palette": "Bảng lệnh",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "Tìm trong trợ giúp",
-    "searchKeys": "Ctrl/Cmd+K hoặc ?",
+    "searchKeys": "?",
     "undo": "Hoàn tác thay đổi gần nhất",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "Làm lại",

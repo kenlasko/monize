@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "Atalhos de teclado",
+    "palette": "Paleta de comandos",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "Pesquisar ajuda",
-    "searchKeys": "Ctrl/Cmd+K ou ?",
+    "searchKeys": "?",
     "undo": "Desfazer a última alteração",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "Refazer",

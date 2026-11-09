@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "कीबोर्ड शॉर्टकट",
+    "palette": "कमांड पैलेट",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "मदद खोजें",
-    "searchKeys": "Ctrl/Cmd+K या ?",
+    "searchKeys": "?",
     "undo": "आखिरी बदलाव पूर्ववत करें",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "फिर से करें",

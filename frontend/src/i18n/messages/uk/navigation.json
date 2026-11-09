@@ -40,5 +40,42 @@
     "submit": "Пошук"
   },
   "backups": "Резервні копії",
-  "sharedExpenses": "Спільні витрати"
+  "sharedExpenses": "Спільні витрати",
+  "commandPalette": {
+    "title": "Палітра команд",
+    "placeholder": "Пошук або перехід...",
+    "close": "Закрити",
+    "groups": {
+      "accounts": "Рахунки",
+      "payees": "Одержувачі платежів",
+      "categories": "Категорії",
+      "bills": "Рахунки до сплати",
+      "securities": "Цінні папери",
+      "reports": "Звіти",
+      "pages": "Перейти",
+      "transactions": "Транзакції",
+      "help": "Довідка",
+      "actions": "Дії"
+    },
+    "hint": {
+      "navigate": "навігація",
+      "open": "відкрити",
+      "actions": "дії"
+    },
+    "scope": "Шукає в рахунках, одержувачах платежів, категоріях, рахунках до сплати, цінних паперах, звітах і налаштуваннях",
+    "searching": "Пошук...",
+    "noResults": "Немає результатів для «{query}»",
+    "loadFailed": "Не вдалося завантажити деякі результати.",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, one {# транзакція} few {# транзакції} many {# транзакцій} other {# транзакції}}",
+    "dueIn": "{days, plural, =0 {Термін сьогодні} =1 {Термін завтра} one {Термін через # день} few {Термін через # дні} many {Термін через # днів} other {Термін через # дня}}",
+    "overdue": "{days, plural, one {Прострочено на # день} few {Прострочено на # дні} many {Прострочено на # днів} other {Прострочено на # дня}}",
+    "noPayee": "Немає одержувача",
+    "newTransaction": "Нова транзакція",
+    "newTransactionFor": "Нова транзакція для {name}",
+    "transactionsFor": "Усі транзакції для {name}",
+    "searchTransactions": "Шукати транзакції за запитом «{query}»",
+    "searchHelp": "Пошук у довідці",
+    "keyboardShortcuts": "Комбінації клавіш"
+  }
 }

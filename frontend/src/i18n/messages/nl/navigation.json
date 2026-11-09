@@ -40,5 +40,42 @@
     "submit": "Zoeken"
   },
   "backups": "Back-ups",
-  "sharedExpenses": "Gedeelde uitgaven"
+  "sharedExpenses": "Gedeelde uitgaven",
+  "commandPalette": {
+    "title": "Opdrachtenpalet",
+    "placeholder": "Zoeken of ga naar...",
+    "close": "Sluiten",
+    "groups": {
+      "accounts": "Rekeningen",
+      "payees": "Begunstigden",
+      "categories": "Categorieën",
+      "bills": "Facturen",
+      "securities": "Waardepapieren",
+      "reports": "Rapporten",
+      "pages": "Ga naar",
+      "transactions": "Transacties",
+      "help": "Help",
+      "actions": "Acties"
+    },
+    "hint": {
+      "navigate": "navigeren",
+      "open": "openen",
+      "actions": "acties"
+    },
+    "scope": "Doorzoekt rekeningen, begunstigden, categorieën, facturen, waardepapieren, rapporten en instellingen",
+    "searching": "Zoeken...",
+    "noResults": "Geen resultaten voor \"{query}\"",
+    "loadFailed": "Sommige resultaten konden niet worden geladen.",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, one {# transactie} other {# transacties}}",
+    "dueIn": "{days, plural, =0 {Vandaag te betalen} =1 {Morgen te betalen} other {Te betalen over # dagen}}",
+    "overdue": "{days, plural, one {# dag te laat} other {# dagen te laat}}",
+    "noPayee": "Geen begunstigde",
+    "newTransaction": "Nieuwe transactie",
+    "newTransactionFor": "Nieuwe transactie voor {name}",
+    "transactionsFor": "Alle transacties voor {name}",
+    "searchTransactions": "Transacties zoeken voor \"{query}\"",
+    "searchHelp": "Help doorzoeken",
+    "keyboardShortcuts": "Toetsencombinaties"
+  }
 }

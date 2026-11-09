@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "Toetsencombinaties",
+    "palette": "Opdrachtenpalet",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "Help doorzoeken",
-    "searchKeys": "Ctrl/Cmd+K of ?",
+    "searchKeys": "?",
     "undo": "Laatste wijziging ongedaan maken",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "Opnieuw uitvoeren",

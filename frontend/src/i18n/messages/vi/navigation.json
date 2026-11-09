@@ -40,5 +40,42 @@
     "submit": "Tìm kiếm"
   },
   "backups": "Sao lưu",
-  "sharedExpenses": "Chi phí chung"
+  "sharedExpenses": "Chi phí chung",
+  "commandPalette": {
+    "title": "Bảng lệnh",
+    "placeholder": "Tìm kiếm hoặc chuyển đến...",
+    "close": "Đóng",
+    "groups": {
+      "accounts": "Tài khoản",
+      "payees": "Người nhận thanh toán",
+      "categories": "Danh mục",
+      "bills": "Hóa đơn",
+      "securities": "Chứng khoán",
+      "reports": "Báo cáo",
+      "pages": "Đi tới",
+      "transactions": "Giao dịch",
+      "help": "Trợ giúp",
+      "actions": "Thao tác"
+    },
+    "hint": {
+      "navigate": "di chuyển",
+      "open": "mở",
+      "actions": "thao tác"
+    },
+    "scope": "Tìm trong tài khoản, người nhận thanh toán, danh mục, hóa đơn, chứng khoán, báo cáo và cài đặt",
+    "searching": "Đang tìm kiếm...",
+    "noResults": "Không có kết quả cho \"{query}\"",
+    "loadFailed": "Không thể tải một số kết quả.",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, other {# giao dịch}}",
+    "dueIn": "{days, plural, =0 {Đến hạn hôm nay} =1 {Đến hạn ngày mai} other {Đến hạn sau # ngày}}",
+    "overdue": "{days, plural, other {Quá hạn # ngày}}",
+    "noPayee": "Không có người nhận thanh toán",
+    "newTransaction": "Giao dịch mới",
+    "newTransactionFor": "Giao dịch mới cho {name}",
+    "transactionsFor": "Tất cả giao dịch của {name}",
+    "searchTransactions": "Tìm giao dịch cho \"{query}\"",
+    "searchHelp": "Tìm trong trợ giúp",
+    "keyboardShortcuts": "Phím tắt"
+  }
 }

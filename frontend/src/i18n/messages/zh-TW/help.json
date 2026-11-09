@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "鍵盤快速鍵",
+    "palette": "命令面板",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "搜尋說明",
-    "searchKeys": "Ctrl/Cmd+K 或 ?",
+    "searchKeys": "?",
     "undo": "復原上一次變更",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "重做",

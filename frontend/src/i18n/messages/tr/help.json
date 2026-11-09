@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "Klavye kısayolları",
+    "palette": "Komut paleti",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "Yardımda ara",
-    "searchKeys": "Ctrl/Cmd+K veya ?",
+    "searchKeys": "?",
     "undo": "Son değişikliği geri al",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "Yinele",
