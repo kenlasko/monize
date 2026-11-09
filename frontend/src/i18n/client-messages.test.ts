@@ -3,6 +3,7 @@ import {
   PUBLIC_CLIENT_NAMESPACES,
   messageScopeFor,
   messagesForScope,
+  withReportNames,
 } from './client-messages';
 
 describe('messageScopeFor', () => {
@@ -37,6 +38,12 @@ describe('messagesForScope', () => {
 
   it('passes every namespace through for the app', () => {
     expect(messagesForScope(messages, 'full')).toBe(messages);
+  });
+
+  it('adds only the report titles to a catalog that has them', () => {
+    const names = { 'net-worth': 'Net Worth' };
+    const out = withReportNames({ reports: { page: { names, other: 'x' } } });
+    expect(out).toHaveProperty('reportNames', names);
   });
 
   it('names only namespaces the loader registers', async () => {

@@ -77,6 +77,9 @@ interface ModalProps {
    *  Every call site used to hand-roll this, which is how eight different
    *  heading treatments ended up in the tree for the same slot. */
   title?: ReactNode;
+  /** Keep `title` as the dialog's accessible name but draw no heading, for a
+   *  surface whose first line is its own control (the command palette's box). */
+  titleHidden?: boolean;
   /** Optional explanation, drawn as an `InfoTooltip` beside the title rather
    *  than a paragraph every reader must read again on each open, and wired to
    *  `aria-describedby`. */
@@ -141,6 +144,7 @@ export function Modal({
   variant = 'center',
   elevated = false,
   title,
+  titleHidden = false,
   description,
   descriptionLearnMore,
   footer,
@@ -434,7 +438,12 @@ export function Modal({
         onClick={(e) => e.stopPropagation()}
         onSubmit={(e) => e.stopPropagation()}
       >
-        {title && (
+        {title && titleHidden && (
+          <h2 id={titleId} className="sr-only">
+            {title}
+          </h2>
+        )}
+        {title && !titleHidden && (
           <div className={titleBlockClassName} data-modal-heading>
             <h2
               id={titleId}

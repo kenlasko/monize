@@ -34,8 +34,8 @@ interface Answer {
 const optionId = (listId: string, index: number): string => `${listId}-${index}`;
 
 /**
- * `Ctrl/Cmd+K`, `?` outside a field, the help panel's own search button, and
- * (plan 4) the header Help menu all open this. With an empty query it shows
+ * `?` outside a field, the help panel's own search button, the header Help
+ * menu, the command palette, and `Ctrl/Cmd+K` over another dialog all open this. With an empty query it shows
  * the current screen's table of contents (`helpStore.contextPage`); typing
  * searches the whole guide, debounced, with the current screen's sections
  * boosted. Mounted only while open (`HelpSearchShortcut`), like the panel.

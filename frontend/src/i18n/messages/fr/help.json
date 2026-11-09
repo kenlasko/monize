@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "Raccourcis clavier",
+    "palette": "Palette de commandes",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "Rechercher dans l'aide",
-    "searchKeys": "Ctrl/Cmd+K ou ?",
+    "searchKeys": "?",
     "undo": "Annuler la dernière modification",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "Rétablir",

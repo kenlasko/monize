@@ -40,5 +40,43 @@
     "submit": "Ara"
   },
   "backups": "Yedekler",
-  "sharedExpenses": "Paylaşılan Giderler"
+  "sharedExpenses": "Paylaşılan Giderler",
+  "commandPalette": {
+    "title": "Komut paleti",
+    "placeholder": "Ara veya git...",
+    "close": "Kapat",
+    "groups": {
+      "accounts": "Hesaplar",
+      "payees": "Alacaklılar",
+      "categories": "Kategoriler",
+      "bills": "Faturalar",
+      "securities": "Menkul Kıymetler",
+      "reports": "Raporlar",
+      "pages": "Git",
+      "transactions": "İşlemler",
+      "help": "Yardım",
+      "actions": "Eylemler"
+    },
+    "hint": {
+      "navigate": "gezin",
+      "open": "aç",
+      "actions": "eylemler"
+    },
+    "scope": "Hesaplarda, alacaklılarda, kategorilerde, faturalarda, menkul kıymetlerde, raporlarda ve ayarlarda arar",
+    "searching": "Aranıyor...",
+    "noResults": "\"{query}\" için sonuç bulunamadı",
+    "loadFailed": "Bazı sonuçlar yüklenemedi.",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, one {# işlem} other {# işlem}}",
+    "dueIn": "{days, plural, =0 {Bugün vadesi doluyor} =1 {Yarın vadesi doluyor} other {# gün içinde vadesi doluyor}}",
+    "overdue": "{days, plural, one {# gün gecikmiş} other {# gün gecikmiş}}",
+    "noPayee": "Alacaklı yok",
+    "newTransaction": "Yeni işlem",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
+    "newTransactionFor": "{name} için yeni işlem",
+    "transactionsFor": "{name} için tüm işlemler",
+    "searchTransactions": "\"{query}\" için işlemleri ara",
+    "searchHelp": "Yardımda ara",
+    "keyboardShortcuts": "Klavye kısayolları"
+  }
 }

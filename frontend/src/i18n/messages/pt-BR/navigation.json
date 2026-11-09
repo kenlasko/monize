@@ -40,5 +40,43 @@
     "submit": "Pesquisar"
   },
   "backups": "Backups",
-  "sharedExpenses": "Despesas compartilhadas"
+  "sharedExpenses": "Despesas compartilhadas",
+  "commandPalette": {
+    "title": "Paleta de comandos",
+    "placeholder": "Pesquisar ou ir para...",
+    "close": "Fechar",
+    "groups": {
+      "accounts": "Contas",
+      "payees": "Beneficiários",
+      "categories": "Categorias",
+      "bills": "Faturas",
+      "securities": "Títulos",
+      "reports": "Relatórios",
+      "pages": "Ir para",
+      "transactions": "Transações",
+      "help": "Ajuda",
+      "actions": "Ações"
+    },
+    "hint": {
+      "navigate": "navegar",
+      "open": "abrir",
+      "actions": "ações"
+    },
+    "scope": "Pesquisa contas, beneficiários, categorias, faturas, títulos, relatórios e configurações",
+    "searching": "Pesquisando...",
+    "noResults": "Nenhum resultado para \"{query}\"",
+    "loadFailed": "Alguns resultados não puderam ser carregados.",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, one {# transação} other {# transações}}",
+    "dueIn": "{days, plural, =0 {Vence hoje} =1 {Vence amanhã} other {Vence em # dias}}",
+    "overdue": "{days, plural, one {# dia em atraso} other {# dias em atraso}}",
+    "noPayee": "Sem beneficiário",
+    "newTransaction": "Nova transação",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
+    "newTransactionFor": "Nova transação para {name}",
+    "transactionsFor": "Todas as transações de {name}",
+    "searchTransactions": "Pesquisar transações para \"{query}\"",
+    "searchHelp": "Pesquisar ajuda",
+    "keyboardShortcuts": "Atalhos do teclado"
+  }
 }

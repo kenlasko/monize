@@ -40,5 +40,43 @@
     "submit": "Szukaj"
   },
   "backups": "Kopie zapasowe",
-  "sharedExpenses": "Rozliczenia"
+  "sharedExpenses": "Rozliczenia",
+  "commandPalette": {
+    "title": "Paleta poleceń",
+    "placeholder": "Szukaj lub przejdź do...",
+    "close": "Zamknij",
+    "groups": {
+      "accounts": "Konta",
+      "payees": "Odbiorcy",
+      "categories": "Kategorie",
+      "bills": "Rachunki",
+      "securities": "Papiery wartościowe",
+      "reports": "Raporty",
+      "pages": "Przejdź do",
+      "transactions": "Transakcje",
+      "help": "Pomoc",
+      "actions": "Akcje"
+    },
+    "hint": {
+      "navigate": "nawiguj",
+      "open": "otwórz",
+      "actions": "akcje"
+    },
+    "scope": "Przeszukuje konta, odbiorców, kategorie, rachunki, papiery wartościowe, raporty i ustawienia",
+    "searching": "Wyszukiwanie...",
+    "noResults": "Brak wyników dla „{query}”",
+    "loadFailed": "Nie udało się wczytać niektórych wyników.",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, one {# transakcja} few {# transakcje} many {# transakcji} other {# transakcji}}",
+    "dueIn": "{days, plural, =0 {Termin dzisiaj} =1 {Termin jutro} one {Termin za # dzień} few {Termin za # dni} many {Termin za # dni} other {Termin za # dnia}}",
+    "overdue": "{days, plural, one {Po terminie o # dzień} few {Po terminie o # dni} many {Po terminie o # dni} other {Po terminie o # dnia}}",
+    "noPayee": "Brak odbiorcy",
+    "newTransaction": "Nowa transakcja",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
+    "newTransactionFor": "Nowa transakcja dla {name}",
+    "transactionsFor": "Wszystkie transakcje dla {name}",
+    "searchTransactions": "Szukaj transakcji dla „{query}”",
+    "searchHelp": "Szukaj w pomocy",
+    "keyboardShortcuts": "Skróty klawiaturowe"
+  }
 }

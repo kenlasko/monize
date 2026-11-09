@@ -40,5 +40,43 @@
     "submit": "Suchen"
   },
   "backups": "Sicherungen",
-  "sharedExpenses": "Gemeinsame Ausgaben"
+  "sharedExpenses": "Gemeinsame Ausgaben",
+  "commandPalette": {
+    "title": "Befehlspalette",
+    "placeholder": "Suchen oder springen zu...",
+    "close": "Schließen",
+    "groups": {
+      "accounts": "Konten",
+      "payees": "Zahlungsempfänger",
+      "categories": "Kategorien",
+      "bills": "Rechnungen",
+      "securities": "Wertpapiere",
+      "reports": "Berichte",
+      "pages": "Gehe zu",
+      "transactions": "Buchungen",
+      "help": "Hilfe",
+      "actions": "Aktionen"
+    },
+    "hint": {
+      "navigate": "navigieren",
+      "open": "öffnen",
+      "actions": "Aktionen"
+    },
+    "scope": "Durchsucht Konten, Zahlungsempfänger, Kategorien, Rechnungen, Wertpapiere, Berichte und Einstellungen",
+    "searching": "Suche läuft...",
+    "noResults": "Keine Ergebnisse für „{query}“",
+    "loadFailed": "Einige Ergebnisse konnten nicht geladen werden.",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, one {# Buchung} other {# Buchungen}}",
+    "dueIn": "{days, plural, =0 {Heute fällig} =1 {Morgen fällig} other {Fällig in # Tagen}}",
+    "overdue": "{days, plural, one {# Tag überfällig} other {# Tage überfällig}}",
+    "noPayee": "Kein Zahlungsempfänger",
+    "newTransaction": "Neue Buchung",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
+    "newTransactionFor": "Neue Buchung für {name}",
+    "transactionsFor": "Alle Buchungen für {name}",
+    "searchTransactions": "Buchungen nach „{query}“ suchen",
+    "searchHelp": "Hilfe durchsuchen",
+    "keyboardShortcuts": "Tastenkombinationen"
+  }
 }

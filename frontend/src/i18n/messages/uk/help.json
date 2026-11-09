@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "Комбінації клавіш",
+    "palette": "Палітра команд",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "Пошук у довідці",
-    "searchKeys": "Ctrl/Cmd+K або ?",
+    "searchKeys": "?",
     "undo": "Скасувати останню зміну",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "Повторити",

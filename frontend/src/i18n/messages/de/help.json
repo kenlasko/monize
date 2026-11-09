@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "Tastenkombinationen",
+    "palette": "Befehlspalette",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "Hilfe durchsuchen",
-    "searchKeys": "Strg/Cmd+K oder ?",
+    "searchKeys": "?",
     "undo": "Letzte Änderung zurücknehmen",
     "undoKeys": "Strg/Cmd+Z",
     "redo": "Wiederholen",

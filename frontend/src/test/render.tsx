@@ -7,6 +7,7 @@ import {
 import { ComponentType, ReactElement, ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { withReportNames } from '@/i18n/client-messages';
 import { recordIfIntlError } from './intl-guard';
 
 // Eagerly load every English namespace so component tests resolve translated
@@ -21,11 +22,13 @@ const namespaceModules = import.meta.glob<{ default: Record<string, unknown> }>(
   { eager: true },
 );
 
-const testMessages = Object.fromEntries(
-  Object.entries(namespaceModules).map(([path, mod]) => {
-    const namespace = path.split('/').pop()!.replace(/\.json$/, '');
-    return [namespace, mod.default];
-  }),
+const testMessages = withReportNames(
+  Object.fromEntries(
+    Object.entries(namespaceModules).map(([path, mod]) => {
+      const namespace = path.split('/').pop()!.replace(/\.json$/, '');
+      return [namespace, mod.default];
+    }),
+  ),
 );
 
 type Wrapper = ComponentType<{ children: ReactNode }>;

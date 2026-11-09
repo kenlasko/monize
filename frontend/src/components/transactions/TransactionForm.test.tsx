@@ -3144,6 +3144,53 @@ describe('TransactionForm', () => {
       });
     });
 
+    it('starts a new entry from defaultPayee, and keeps its category on a non-asset account', async () => {
+      render(
+        <TransactionForm
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+          defaultAccountId="acc-1"
+          defaultPayee={{ id: 'payee-1', name: 'Grocery Store', defaultCategoryId: 'cat-1' }}
+        />
+      );
+      await waitFor(() => {
+        expect(screen.getByTestId('combobox-value-Payee')).not.toHaveTextContent(/^$/);
+      });
+      // Accounts have loaded and the account effect has run by now.
+      await waitFor(() => expect(screen.getByLabelText('Account')).toHaveValue('acc-1'));
+      expect(screen.getByTestId('combobox-value-Category')).toHaveTextContent('cat-1');
+    });
+
+    it('prefers defaultPayee\'s category over the host\'s asset default', async () => {
+      render(
+        <TransactionForm
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+          defaultAccountId="acc-1"
+          defaultCategoryId="cat-2"
+          defaultPayee={{ id: 'payee-1', name: 'Grocery Store', defaultCategoryId: 'cat-1' }}
+        />
+      );
+      await waitFor(() => expect(screen.getByLabelText('Account')).toHaveValue('acc-1'));
+      expect(screen.getByTestId('combobox-value-Category')).toHaveTextContent('cat-1');
+    });
+
+    it('ignores defaultPayee when editing a transaction with no payee', async () => {
+      render(
+        <TransactionForm
+          transaction={createExistingTransaction({ payeeId: null, payeeName: null }) as any}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+          defaultPayee={{ id: 'payee-1', name: 'Grocery Store', defaultCategoryId: 'cat-1' }}
+        />
+      );
+      await waitFor(() => {
+        expect(screen.getByTestId('combobox-input-Payee')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('combobox-value-Payee')).not.toHaveTextContent('payee-1');
+      expect(screen.getByTestId('combobox-value-Payee')).not.toHaveTextContent('Grocery Store');
+    });
+
     it('does not auto-fill category when payee has no default category', async () => {
       render(
         <TransactionForm

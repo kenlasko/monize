@@ -1,4 +1,5 @@
 import { DEFAULT_LOCALE, localeBase } from "./config";
+import { withReportNames } from "./client-messages";
 import { deepMerge } from "./deep-merge";
 
 /**
@@ -104,7 +105,7 @@ export async function loadMessages(locale: string): Promise<Messages> {
   const entries = await Promise.all(
     NAMESPACES.map(async (ns) => [ns, await loadNamespace(locale, ns)] as const),
   );
-  return Object.fromEntries(entries);
+  return withReportNames(Object.fromEntries(entries));
 }
 
 /**

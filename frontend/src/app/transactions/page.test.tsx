@@ -2,6 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import TransactionsPage from './page';
+import { useCommandPaletteStore } from '@/store/commandPaletteStore';
 import { TRANSACTION_SORT_STORAGE_KEY } from '@/lib/transaction-sort';
 import { useDensityStore } from '@/store/densityStore';
 import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
@@ -671,6 +672,17 @@ describe('TransactionsPage', () => {
       await waitFor(() => {
         expect(screen.getByTestId('page-layout')).toBeInTheDocument();
       });
+    });
+
+    it('opens the new form for a command palette request, and consumes it', async () => {
+      useCommandPaletteStore.getState().requestNewTransaction({
+        id: 'p1',
+        name: 'Hydro One',
+        defaultCategoryId: null,
+      });
+      render(<TransactionsPage />);
+      await waitFor(() => expect(mockTxOpenCreate).toHaveBeenCalledTimes(1));
+      expect(useCommandPaletteStore.getState().newTransactionRequest).toBeNull();
     });
 
     it('renders the New Transaction button', async () => {

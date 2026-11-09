@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
+    "palette": "Command palette",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "Search help",
-    "searchKeys": "Ctrl/Cmd+K or ?",
+    "searchKeys": "?",
     "undo": "Undo the last change",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "Redo",

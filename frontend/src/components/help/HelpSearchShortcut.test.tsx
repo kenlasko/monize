@@ -52,20 +52,13 @@ describe('HelpSearchShortcut', () => {
     expect(dialogModuleLoaded).toHaveBeenCalledTimes(1);
   });
 
-  it.each([{ ctrlKey: true, key: 'k' }, { metaKey: true, key: 'k' }, { metaKey: true, key: 'K' }])(
-    'opens on Ctrl/Cmd+K from anywhere, and prevents the default (%j)',
-    async (init) => {
-      await act(async () => {
-        render(<HelpSearchShortcut />);
-      });
-      let prevented = false;
-      await act(async () => {
-        prevented = keydown(init);
-      });
-      expect(prevented).toBe(true);
-      expect(useHelpSearchStore.getState().open).toBe(true);
-    },
-  );
+  it('leaves Ctrl/Cmd+K to the command palette', async () => {
+    await act(async () => {
+      render(<HelpSearchShortcut />);
+    });
+    expect(keydown({ ctrlKey: true, key: 'k' })).toBe(false);
+    expect(useHelpSearchStore.getState().open).toBe(false);
+  });
 
   it('opens on a bare "?" outside an editable element', async () => {
     await act(async () => {

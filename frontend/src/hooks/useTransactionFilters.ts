@@ -20,6 +20,15 @@ import { Tag } from '@/types/tag';
 import { TransactionStatus } from '@/types/transaction';
 import { isUuid } from '@/lib/uuid';
 
+type AccountStatusFilter = 'active' | 'closed' | '';
+
+/** The Show Accounts value a link names, or `null` when it names none. */
+function accountStatusFromLink(params: Pick<URLSearchParams, 'get'>): AccountStatusFilter | null {
+  const value = params.get('accountStatus');
+  if (value === 'all') return '';
+  return value === 'active' || value === 'closed' ? value : null;
+}
+
 // LocalStorage keys for filter persistence
 const STORAGE_KEYS = {
   accountIds: 'transactions.filter.accountIds',
@@ -86,6 +95,22 @@ export function clearTransactionFilterStorage(): void {
   for (const key of Object.values(STORAGE_KEYS)) {
     localStorage.removeItem(key);
   }
+}
+
+/**
+ * Run a transaction search from outside the page: the header search and the
+ * command palette. Persisted filters are wiped so the hook initializes clean
+ * (including `accountStatus`, which is not represented in the URL), and a
+ * mounted Transactions page is told to reset and apply the term.
+ */
+export function navigateToTransactionSearch(
+  term: string,
+  push: (href: string) => void,
+): void {
+  clearTransactionFilterStorage();
+  const detail: HeaderSearchEventDetail = { term };
+  window.dispatchEvent(new CustomEvent(HEADER_SEARCH_EVENT, { detail }));
+  push(`/transactions?search=${encodeURIComponent(term)}`);
 }
 
 // Helper to get filter values as array
@@ -164,9 +189,29 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
 
   // Filters - initialize from URL params, falling back to localStorage
   const [filterAccountIds, setFilterAccountIds] = useState<string[]>([]);
-  const [filterAccountStatus, setFilterAccountStatus] = useState<'active' | 'closed' | ''>(() =>
-    getStoredValue<'active' | 'closed' | ''>(STORAGE_KEYS.accountStatus, '')
+  const [filterAccountStatus, applyAccountStatus] = useState<AccountStatusFilter>(() =>
+    getStoredValue<AccountStatusFilter>(STORAGE_KEYS.accountStatus, '')
   );
+  // The reader's own change is remembered. A link's `accountStatus` is for this
+  // visit and must not replace the Show Accounts preference the reader comes
+  // back to, so it is held apart and `updateUrl` keeps it in the URL: a reload or
+  // a Back into this page then still shows what the link did.
+  const linkedAccountStatus = useRef<AccountStatusFilter | null>(null);
+  const applyLinkedAccountStatus = useCallback((status: AccountStatusFilter) => {
+    linkedAccountStatus.current = status;
+    applyAccountStatus(status);
+  }, []);
+  const setFilterAccountStatus = useCallback((status: AccountStatusFilter) => {
+    applyAccountStatus(status);
+    localStorage.setItem(STORAGE_KEYS.accountStatus, JSON.stringify(status));
+    if (linkedAccountStatus.current === null) return;
+    // The reader has overruled the link, so a reload must not bring it back.
+    linkedAccountStatus.current = null;
+    const params = new URLSearchParams(window.location.search);
+    params.delete('accountStatus');
+    const query = params.toString();
+    router.replace(query ? `/transactions?${query}` : '/transactions', { scroll: false });
+  }, [router]);
   const [rawFilterCategoryIds, setFilterCategoryIds] = useState<string[]>([]);
   // What the user ticked, with any whole type collapsed to its pseudo-id. Every
   // reader (the requests, the URL, localStorage, the chips, the picker) sees
@@ -240,6 +285,9 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
   }, push: boolean = false) => {
     const params = new URLSearchParams();
     if (page > 1) params.set('page', page.toString());
+    if (linkedAccountStatus.current !== null) {
+      params.set('accountStatus', linkedAccountStatus.current || 'all');
+    }
     if (filters.accountIds.length) params.set('accountIds', filters.accountIds.join(','));
     if (filters.categoryIds.length) params.set('categoryIds', filters.categoryIds.join(','));
     if (filters.payeeIds.length) params.set('payeeIds', filters.payeeIds.join(','));
@@ -457,14 +505,8 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     // An explicit accountStatus param (e.g. when opening a closed account from
     // the Institutions page) overrides the stored Show Accounts filter so the
     // selected account is not pruned and its transactions are visible.
-    const accountStatusParam = searchParams.get('accountStatus');
-    if (
-      accountStatusParam === 'all' ||
-      accountStatusParam === 'active' ||
-      accountStatusParam === 'closed'
-    ) {
-      setFilterAccountStatus(accountStatusParam === 'all' ? '' : accountStatusParam);
-    }
+    const accountStatusParam = accountStatusFromLink(searchParams);
+    if (accountStatusParam !== null) applyLinkedAccountStatus(accountStatusParam);
     setFilterCategoryIds(getCategoryIds());
     setFilterPayeeIds(getPayeeIds());
     setFilterTagIds(getFilterValues(STORAGE_KEYS.tagIds, searchParams.get('tagIds'), hasAnyUrlParams));
@@ -528,10 +570,14 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     appliedTargetRef.current = targetId;
     // Resolve the target's page from the backend rather than resetting to 1.
     isFilterChange.current = false;
-    // Note: filterAccountStatus (the Show Accounts toggle) is intentionally left
-    // untouched -- the cross-page deep-link path keeps it too (it is seeded from
-    // localStorage and only overridden by an explicit ?accountStatus param), so
-    // clearing it here would diverge and permanently wipe the user's preference.
+    // Note: filterAccountStatus (the Show Accounts toggle) is left untouched
+    // unless the link names one -- the cross-page deep-link path behaves the same
+    // (it is seeded from localStorage and only overridden by an explicit
+    // ?accountStatus param), so clearing it here would diverge and permanently
+    // wipe the user's preference.
+    const targetAccountStatus = accountStatusFromLink(searchParams);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- apply deep link from URL
+    if (targetAccountStatus !== null) applyLinkedAccountStatus(targetAccountStatus);
     setFilterAccountIds([]);
     setFilterCategoryIds([]);
     setFilterPayeeIds([]);
@@ -555,7 +601,7 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     setFilterSearch('');
     targetTransactionIdRef.current = targetId;
     setHighlightTransactionId(targetId);
-  }, [searchParams, filtersInitialized]);
+  }, [searchParams, filtersInitialized, applyLinkedAccountStatus]);
 
   // Honour a single-entity deep link (`?accountId=`/`?categoryId=`/`?payeeId=`,
   // singular) that arrives while this page is already mounted -- e.g. an AI
@@ -604,14 +650,8 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     // account is not pruned by the stored Show Accounts toggle; apply it the
     // same way the mount-time init does. Absent the param, the toggle is left
     // untouched (same rationale as the targetTransactionId watcher).
-    const accountStatusParam = searchParams.get('accountStatus');
-    if (
-      accountStatusParam === 'all' ||
-      accountStatusParam === 'active' ||
-      accountStatusParam === 'closed'
-    ) {
-      setFilterAccountStatus(accountStatusParam === 'all' ? '' : accountStatusParam);
-    }
+    const accountStatusParam = accountStatusFromLink(searchParams);
+    if (accountStatusParam !== null) applyLinkedAccountStatus(accountStatusParam);
     setFilterTagIds([]);
     setFilterStartDate('');
     setFilterEndDate('');
@@ -631,14 +671,10 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     setSearchInput('');
     setFilterSearch('');
     setCurrentPage(1);
-  }, [searchParams, filtersInitialized]);
+  }, [searchParams, filtersInitialized, applyLinkedAccountStatus]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Persist filter changes to localStorage
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.accountStatus, JSON.stringify(filterAccountStatus));
-  }, [filterAccountStatus]);
-
   useEffect(() => {
     if (!filtersInitialized) return;
     localStorage.setItem(STORAGE_KEYS.accountIds, JSON.stringify(filterAccountIds));
@@ -727,7 +763,7 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     };
     window.addEventListener(HEADER_SEARCH_EVENT, handleHeaderSearch);
     return () => window.removeEventListener(HEADER_SEARCH_EVENT, handleHeaderSearch);
-  }, []);
+  }, [setFilterAccountStatus]);
 
   // Re-sync filter state when browser back/forward is pressed
   useEffect(() => {
@@ -748,6 +784,12 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
       setFilterAmountTo(params.get('amountTo') || '');
       setFilterStatuses(sanitizeStatuses(params.get('statuses')?.split(',').filter(Boolean) || []));
       setFilterOriginalCurrencyCodes(params.get('originalCurrencyCodes')?.split(',').filter(Boolean) || []);
+      // The entry's own link, or the saved preference where it has none.
+      const linkedStatus = accountStatusFromLink(params);
+      linkedAccountStatus.current = linkedStatus;
+      applyAccountStatus(
+        linkedStatus ?? getStoredValue<AccountStatusFilter>(STORAGE_KEYS.accountStatus, ''),
+      );
       setFilterTagKey(params.get('tagKey') || '');
       setFilterTagKeyOp(sanitizeTagKeyOp(params.get('tagKeyOp') || ''));
       setFilterTagKeyValue(params.get('tagKeyValue') || '');
@@ -767,7 +809,7 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     setFilterAccountIds([]);
     setFilterAccountStatus('');
     setFilterCategoryIds([categoryId]);
-  }, []);
+  }, [setFilterAccountStatus]);
 
   const handleDateFilterClick = useCallback((date: string) => {
     isFilterChange.current = true;
@@ -780,7 +822,7 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     isFilterChange.current = true;
     setFilterAccountStatus('');
     setFilterAccountIds([accountId]);
-  }, []);
+  }, [setFilterAccountStatus]);
 
   const handlePayeeFilterClick = useCallback((payeeId: string) => {
     isFilterChange.current = true;
@@ -797,7 +839,7 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     setFilterAccountStatus('');
     isFilterChange.current = true;
     setFilterAccountIds([linkedAccountId]);
-  }, []);
+  }, [setFilterAccountStatus]);
 
   const clearFilters = useCallback(() => {
     setCurrentPage(1);

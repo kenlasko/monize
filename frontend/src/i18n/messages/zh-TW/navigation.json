@@ -40,5 +40,43 @@
     "submit": "搜尋"
   },
   "backups": "備份",
-  "sharedExpenses": "共同支出"
+  "sharedExpenses": "共同支出",
+  "commandPalette": {
+    "title": "命令面板",
+    "placeholder": "搜尋或跳至...",
+    "close": "關閉",
+    "groups": {
+      "accounts": "帳戶",
+      "payees": "收款人",
+      "categories": "類別",
+      "bills": "帳單",
+      "securities": "證券",
+      "reports": "報表",
+      "pages": "前往",
+      "transactions": "交易",
+      "help": "說明",
+      "actions": "操作"
+    },
+    "hint": {
+      "navigate": "導覽",
+      "open": "開啟",
+      "actions": "操作"
+    },
+    "scope": "搜尋帳戶、收款人、類別、帳單、證券、報表和設定",
+    "searching": "搜尋中...",
+    "noResults": "找不到「{query}」的結果",
+    "loadFailed": "部分結果無法載入。",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, other {# 筆交易}}",
+    "dueIn": "{days, plural, =0 {今天到期} =1 {明天到期} other {# 天後到期}}",
+    "overdue": "{days, plural, other {已逾期 # 天}}",
+    "noPayee": "無收款人",
+    "newTransaction": "新增交易",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
+    "newTransactionFor": "為 {name} 新增交易",
+    "transactionsFor": "{name} 的所有交易",
+    "searchTransactions": "搜尋 「{query}」 的交易",
+    "searchHelp": "搜尋說明",
+    "keyboardShortcuts": "鍵盤快速鍵"
+  }
 }

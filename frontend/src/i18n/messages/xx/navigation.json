@@ -40,5 +40,43 @@
     "open": "[XX-Open search-XX]",
     "submit": "[XX-Search-XX]"
   },
-  "sharedExpenses": "[XX-Shared Expenses-XX]"
+  "sharedExpenses": "[XX-Shared Expenses-XX]",
+  "commandPalette": {
+    "title": "[XX-Command palette-XX]",
+    "placeholder": "[XX-Search or jump to...-XX]",
+    "close": "[XX-Close-XX]",
+    "groups": {
+      "accounts": "[XX-Accounts-XX]",
+      "payees": "[XX-Payees-XX]",
+      "categories": "[XX-Categories-XX]",
+      "bills": "[XX-Bills-XX]",
+      "securities": "[XX-Securities-XX]",
+      "reports": "[XX-Reports-XX]",
+      "pages": "[XX-Go to-XX]",
+      "transactions": "[XX-Transactions-XX]",
+      "help": "[XX-Help-XX]",
+      "actions": "[XX-Actions-XX]"
+    },
+    "hint": {
+      "navigate": "[XX-navigate-XX]",
+      "open": "[XX-open-XX]",
+      "actions": "[XX-actions-XX]"
+    },
+    "scope": "[XX-Searches accounts, payees, categories, bills, securities, reports and settings-XX]",
+    "searching": "[XX-Searching...-XX]",
+    "noResults": "[XX-No results for “{query}”-XX]",
+    "loadFailed": "[XX-Some results could not be loaded.-XX]",
+    "detailPair": "[XX-{first} · {second}-XX]",
+    "transactionCount": "[XX-{count, plural, one {# transaction} other {# transactions}}-XX]",
+    "dueIn": "[XX-{days, plural, =0 {Due today} =1 {Due tomorrow} other {Due in # days}}-XX]",
+    "overdue": "[XX-{days, plural, one {# day overdue} other {# days overdue}}-XX]",
+    "noPayee": "[XX-No payee-XX]",
+    "newTransaction": "[XX-New transaction-XX]",
+    "newTransactionShortcut": "[XX-Ctrl/Cmd+Enter-XX]",
+    "newTransactionFor": "[XX-New transaction for {name}-XX]",
+    "transactionsFor": "[XX-All transactions for {name}-XX]",
+    "searchTransactions": "[XX-Search transactions for “{query}”-XX]",
+    "searchHelp": "[XX-Search help-XX]",
+    "keyboardShortcuts": "[XX-Keyboard shortcuts-XX]"
+  }
 }

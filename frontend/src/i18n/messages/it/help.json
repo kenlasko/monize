@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "Scorciatoie da tastiera",
+    "palette": "Riquadro comandi",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "Cerca nell'aiuto",
-    "searchKeys": "Ctrl/Cmd+K o ?",
+    "searchKeys": "?",
     "undo": "Annulla l'ultima modifica",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "Ripeti",

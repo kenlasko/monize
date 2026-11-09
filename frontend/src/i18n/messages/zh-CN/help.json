@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "键盘快捷键",
+    "palette": "命令面板",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "搜索帮助",
-    "searchKeys": "Ctrl/Cmd+K 或 ?",
+    "searchKeys": "?",
     "undo": "撤消上一次更改",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "重做",

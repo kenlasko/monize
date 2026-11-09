@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "키보드 단축키",
+    "palette": "명령 팔레트",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "도움말 검색",
-    "searchKeys": "Ctrl/Cmd+K 또는 ?",
+    "searchKeys": "?",
     "undo": "마지막 변경 취소",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "다시 실행",

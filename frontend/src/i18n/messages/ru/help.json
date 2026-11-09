@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "Сочетания клавиш",
+    "palette": "Палитра команд",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "Поиск по справке",
-    "searchKeys": "Ctrl/Cmd+K или ?",
+    "searchKeys": "?",
     "undo": "Отменить последнее изменение",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "Повторить",

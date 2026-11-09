@@ -40,5 +40,43 @@
     "submit": "Найти"
   },
   "backups": "Резервные копии",
-  "sharedExpenses": "Общие расходы"
+  "sharedExpenses": "Общие расходы",
+  "commandPalette": {
+    "title": "Палитра команд",
+    "placeholder": "Поиск или переход...",
+    "close": "Закрыть",
+    "groups": {
+      "accounts": "Счета",
+      "payees": "Получатели",
+      "categories": "Категории",
+      "bills": "Счета к оплате",
+      "securities": "Ценные бумаги",
+      "reports": "Отчёты",
+      "pages": "Перейти",
+      "transactions": "Проводки",
+      "help": "Справка",
+      "actions": "Действия"
+    },
+    "hint": {
+      "navigate": "навигация",
+      "open": "открыть",
+      "actions": "действия"
+    },
+    "scope": "Поиск по счетам, получателям, категориям, счетам к оплате, ценным бумагам, отчётам и настройкам",
+    "searching": "Поиск...",
+    "noResults": "Нет результатов для «{query}»",
+    "loadFailed": "Не удалось загрузить некоторые результаты.",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, one {# проводка} few {# проводки} many {# проводок} other {# проводки}}",
+    "dueIn": "{days, plural, =0 {Срок сегодня} =1 {Срок завтра} one {Срок через # день} few {Срок через # дня} many {Срок через # дней} other {Срок через # дня}}",
+    "overdue": "{days, plural, one {Просрочено на # день} few {Просрочено на # дня} many {Просрочено на # дней} other {Просрочено на # дня}}",
+    "noPayee": "Нет получателя",
+    "newTransaction": "Новая проводка",
+    "newTransactionShortcut": "Ctrl/Cmd+Enter",
+    "newTransactionFor": "Новая проводка для {name}",
+    "transactionsFor": "Все проводки для {name}",
+    "searchTransactions": "Искать проводки по запросу «{query}»",
+    "searchHelp": "Поиск по справке",
+    "keyboardShortcuts": "Сочетания клавиш"
+  }
 }

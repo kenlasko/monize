@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "キーボードショートカット",
+    "palette": "コマンドパレット",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "ヘルプを検索",
-    "searchKeys": "Ctrl/Cmd+K または ?",
+    "searchKeys": "?",
     "undo": "直前の変更を元に戻す",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "やり直す",

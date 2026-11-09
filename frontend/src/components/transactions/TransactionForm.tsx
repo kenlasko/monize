@@ -209,6 +209,11 @@ interface TransactionFormProps {
    * and a form opened anywhere else keeps the remembered one.
    */
   defaultDate?: string;
+  /**
+   * A new transaction starts with this payee selected and its default category
+   * filled in (the command palette's action). Ignored when editing or duplicating.
+   */
+  defaultPayee?: { id: string; name: string; defaultCategoryId?: string | null };
   onSuccess?: () => void;
   onCancel?: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
@@ -268,7 +273,7 @@ type AfterCreate = 'addWarranty';
 // Transaction mode type
 type TransactionMode = 'normal' | 'split' | 'transfer';
 
-function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, defaultCategoryId, defaultDate, onSuccess, onCancel, onDirtyChange, submitRef, onCreateAnother, initialStagedFiles, onAddWarranty, onAddWarrantyAfterCreate, onShareAfterCreate, onOpenWarranty }: TransactionFormFieldsProps) {
+function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, defaultCategoryId, defaultDate, defaultPayee, onSuccess, onCancel, onDirtyChange, submitRef, onCreateAnother, initialStagedFiles, onAddWarranty, onAddWarrantyAfterCreate, onShareAfterCreate, onOpenWarranty }: TransactionFormFieldsProps) {
   const t = useTranslations('transactions');
   const th = useTranslations('help');
   const sharedT = useTranslations('sharedExpenses');
@@ -306,17 +311,20 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   const [tags, setTags] = useState<Tag[]>([]);
   // initSource: the transaction to pre-fill from (either editing or duplicating)
   const initSource = transaction || duplicateFrom;
+  const newEntryPayee = initSource ? undefined : defaultPayee;
+  const payeeCategoryId = newEntryPayee?.defaultCategoryId || undefined;
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
     initSource?.tags?.map(t => t.id) || []
   );
-  const [selectedPayeeId, setSelectedPayeeId] = useState<string>(initSource?.payeeId || '');
+  const [selectedPayeeId, setSelectedPayeeId] = useState<string>(initSource?.payeeId || newEntryPayee?.id || '');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
-    initSource?.categoryId || (initSource ? '' : defaultCategoryId || '')
+    initSource?.categoryId || (initSource ? '' : payeeCategoryId || defaultCategoryId || '')
   );
   const [, setCategoryName] = useState<string>('');
   // Tracks whether the current categoryId was set by the asset-account auto-fill
-  // (so we can clear it when switching away to a non-asset account).
-  const categoryWasAutoSetRef = useRef<boolean>(!initSource && !!defaultCategoryId);
+  // (so we can clear it when switching away to a non-asset account). A payee's
+  // category is the reader's choice of payee, as when one is picked in the form.
+  const categoryWasAutoSetRef = useRef<boolean>(!initSource && !!defaultCategoryId && !payeeCategoryId);
 
   // ─── new payee's contact details ──────────────────────────────────────
   //
@@ -481,7 +489,9 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         }
       : {
           accountId: defaultAccountId || '',
-          categoryId: defaultCategoryId || '',
+          payeeId: defaultPayee?.id || '',
+          payeeName: defaultPayee?.name || '',
+          categoryId: payeeCategoryId || defaultCategoryId || '',
           transactionDate: defaultDate || getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY),
           currencyCode: defaultCurrency,
           status: TransactionStatus.UNRECONCILED,
@@ -751,16 +761,16 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
     categoryDefaultFor.initSource !== initSource
   ) {
     setCategoryDefaultFor({ defaultCategoryId, initSource });
-    if (!initSource && defaultCategoryId) {
+    if (!initSource && defaultCategoryId && !payeeCategoryId) {
       setSelectedCategoryId(defaultCategoryId);
     }
   }
   useEffect(() => {
-    if (!initSource && defaultCategoryId) {
+    if (!initSource && defaultCategoryId && !payeeCategoryId) {
       setValue('categoryId', defaultCategoryId);
       categoryWasAutoSetRef.current = true;
     }
-  }, [defaultCategoryId, initSource, setValue]);
+  }, [defaultCategoryId, payeeCategoryId, initSource, setValue]);
 
   // Load accounts, categories, active payees on mount
   // When editing, also fetch the transaction's payee if it's inactive so it appears in the dropdown
@@ -2243,6 +2253,7 @@ export function TransactionForm(props: TransactionFormProps) {
       // A restarted form is a blank new entry, not another copy of whatever the
       // first one was duplicated from.
       duplicateFrom={restart ? undefined : props.duplicateFrom}
+      defaultPayee={restart ? undefined : props.defaultPayee}
       // Same for shared files: they were uploaded to the entry just created, so
       // re-staging them here would attach a second copy to the next one.
       initialStagedFiles={restart ? undefined : props.initialStagedFiles}

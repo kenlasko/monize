@@ -40,5 +40,43 @@
     "submit": "Cerca"
   },
   "backups": "Backup",
-  "sharedExpenses": "Spese condivise"
+  "sharedExpenses": "Spese condivise",
+  "commandPalette": {
+    "title": "Riquadro comandi",
+    "placeholder": "Cerca o vai a...",
+    "close": "Chiudi",
+    "groups": {
+      "accounts": "Conti",
+      "payees": "Beneficiari",
+      "categories": "Categorie",
+      "bills": "Fatture",
+      "securities": "Titoli",
+      "reports": "Report",
+      "pages": "Vai a",
+      "transactions": "Transazioni",
+      "help": "Aiuto",
+      "actions": "Azioni"
+    },
+    "hint": {
+      "navigate": "naviga",
+      "open": "apri",
+      "actions": "azioni"
+    },
+    "scope": "Cerca in conti, beneficiari, categorie, fatture, titoli, report e impostazioni",
+    "searching": "Ricerca in corso...",
+    "noResults": "Nessun risultato per \"{query}\"",
+    "loadFailed": "Impossibile caricare alcuni risultati.",
+    "detailPair": "{first} · {second}",
+    "transactionCount": "{count, plural, one {# transazione} other {# transazioni}}",
+    "dueIn": "{days, plural, =0 {Scade oggi} =1 {Scade domani} other {Scade tra # giorni}}",
+    "overdue": "{days, plural, one {# giorno di ritardo} other {# giorni di ritardo}}",
+    "noPayee": "Nessun beneficiario",
+    "newTransaction": "Nuova transazione",
+    "newTransactionShortcut": "Ctrl/Cmd+Invio",
+    "newTransactionFor": "Nuova transazione per {name}",
+    "transactionsFor": "Tutte le transazioni per {name}",
+    "searchTransactions": "Cerca transazioni per \"{query}\"",
+    "searchHelp": "Cerca nell'aiuto",
+    "keyboardShortcuts": "Scorciatoie da tastiera"
+  }
 }

@@ -12,8 +12,10 @@
   },
   "shortcuts": {
     "title": "Skróty klawiaturowe",
+    "palette": "Paleta poleceń",
+    "paletteKeys": "Ctrl/Cmd+K",
     "search": "Szukaj w pomocy",
-    "searchKeys": "Ctrl/Cmd+K lub ?",
+    "searchKeys": "?",
     "undo": "Cofnij ostatnią zmianę",
     "undoKeys": "Ctrl/Cmd+Z",
     "redo": "Ponów",

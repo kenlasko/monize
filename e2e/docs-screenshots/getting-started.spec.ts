@@ -158,3 +158,23 @@ test("tools-dropdown", async () => {
   await expect(menu).toBeVisible();
   await docShot(page, "tools-dropdown", menu);
 });
+
+test("command-palette", async () => {
+  await open(page, "/dashboard");
+  await page.keyboard.press("Control+k");
+  const palette = page.getByRole("dialog", { name: "Command palette" });
+  await palette
+    .getByRole("combobox", { name: "Command palette" })
+    .fill("hydro");
+  // Fixed labels, not demo rows: the action is always offered, and the footer
+  // returns to its scope line once the server's answers are in.
+  await expect(
+    palette.getByRole("option", { name: /Search transactions for/ }),
+  ).toBeVisible({ timeout: 60_000 });
+  await expect(palette.getByText(/^Searches accounts/)).toBeVisible({
+    timeout: 60_000,
+  });
+  await docShot(page, "command-palette", palette);
+  await page.keyboard.press("Escape");
+  await expect(palette).toBeHidden();
+});

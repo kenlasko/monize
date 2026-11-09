@@ -14,6 +14,11 @@ describe('GET /intl-messages', () => {
     expect(await response.json()).toEqual(await loadMessages('fr'));
   });
 
+  it('keeps the report titles the app shell reads after a sign-in', async () => {
+    const body = await (await get('?locale=en')).json();
+    expect(body.reportNames['spending-by-payee']).toBe('Spending by Payee');
+  });
+
   it('falls back to the default locale for an unsupported one', async () => {
     const response = await get('?locale=not-a-locale');
     expect(await response.json()).toEqual(await loadMessages('en'));
