@@ -110,34 +110,32 @@ html.dark {
   @apply bg-gray-900;
 }
 
-/* Ambient accent glow behind the top of every page. Two soft radial washes
-   painted into the body background, so they scroll away with the page header
-   and never sit behind a table further down. Both colours derive from tokens
-   (the accent ramp and the income token) through color-mix, so every palette
-   gets its own tint without a per-theme entry. Light mode spends less of it:
-   on pale paper the same share reads as a stain. */
+/* Ambient accent glow behind the page header. One soft radial wash from the
+   accent ramp through color-mix, so every palette gets its own tint without a
+   per-theme entry. It is painted on the page wrapper, not `body`, because
+   `PageLayout` and `SwipeShell` are opaque and would cover it. It has faded out
+   9rem down, so it stops with the header and never sits behind a table. Light
+   mode spends less of it: on pale paper the same share reads as a stain. */
 :root {
-  --ambient-glow-primary: color-mix(in oklab, var(--color-blue-500) 10%, transparent);
-  --ambient-glow-secondary: color-mix(in oklab, var(--chart-income) 6%, transparent);
+  --ambient-glow: color-mix(in oklab, var(--color-blue-500) 10%, transparent);
 }
 .dark {
-  --ambient-glow-primary: color-mix(in oklab, var(--color-blue-500) 16%, transparent);
-  --ambient-glow-secondary: color-mix(in oklab, var(--chart-income) 9%, transparent);
+  --ambient-glow: color-mix(in oklab, var(--color-blue-500) 16%, transparent);
 }
 /* Midnight is unlit black for OLED and highcontrast spends nothing on
    decoration, so neither paints a glow. */
 html[data-theme='midnight'],
 html[data-theme='highcontrast'] {
-  --ambient-glow-primary: transparent;
-  --ambient-glow-secondary: transparent;
+  --ambient-glow: transparent;
+}
+
+.page-ambient-glow {
+  background-image: radial-gradient(56rem 13rem at 15% -4rem, var(--ambient-glow), transparent);
+  background-repeat: no-repeat;
 }
 
 body {
   @apply bg-gray-50 text-gray-900;
-  background-image:
-    radial-gradient(56rem 26rem at 12% -6rem, var(--ambient-glow-primary), transparent 70%),
-    radial-gradient(40rem 22rem at 88% -8rem, var(--ambient-glow-secondary), transparent 70%);
-  background-repeat: no-repeat;
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
