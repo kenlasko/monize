@@ -570,7 +570,7 @@ function ReconcileContent() {
             user works down a long statement. */}
         <div
           data-testid="reconcile-summary"
-          className="sticky top-[calc(4rem-var(--app-header-offset,0px))] z-20 bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6"
+          className="sticky top-[calc(4rem+env(safe-area-inset-top)-var(--app-header-offset,0px))] z-20 bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6"
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>

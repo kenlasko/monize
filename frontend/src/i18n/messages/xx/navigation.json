@@ -1,5 +1,6 @@
 {
   "dashboard": "[XX-Dashboard-XX]",
+  "home": "[XX-Home-XX]",
   "transactions": "[XX-Transactions-XX]",
   "bills": "[XX-Bills & Deposits-XX]",
   "investments": "[XX-Investments-XX]",
@@ -29,9 +30,10 @@
   "backups": "[XX-Backups-XX]",
   "settings": "[XX-Settings-XX]",
   "logout": "[XX-Logout-XX]",
-  "toggleMenu": "[XX-Toggle menu-XX]",
   "closeMenu": "[XX-Close menu-XX]",
   "mainMenu": "[XX-Main menu-XX]",
+  "tabBar": "[XX-Tab bar-XX]",
+  "more": "[XX-More-XX]",
   "loggedOut": "[XX-Logged out successfully-XX]",
   "logoutNotConfirmed": "[XX-Signed out on this device only — the server did not confirm. See the notice on the sign-in screen.-XX]",
   "search": {

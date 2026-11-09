@@ -1,5 +1,6 @@
 {
   "dashboard": "Painel",
+  "home": "Início",
   "transactions": "Transações",
   "bills": "Faturas e depósitos",
   "investments": "Investimentos",
@@ -28,9 +29,10 @@
   "notificationSettings": "Definições de notificações",
   "settings": "Definições",
   "logout": "Terminar sessão",
-  "toggleMenu": "Alternar menu",
   "closeMenu": "Fechar menu",
   "mainMenu": "Menu principal",
+  "tabBar": "Barra de separadores",
+  "more": "Mais",
   "loggedOut": "Sessão terminada com sucesso",
   "logoutNotConfirmed": "Sessão terminada apenas neste dispositivo — o servidor não confirmou. Veja o aviso no ecrã de início de sessão.",
   "search": {

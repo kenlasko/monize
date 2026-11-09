@@ -1,5 +1,6 @@
 {
   "dashboard": "仪表盘",
+  "home": "首页",
   "transactions": "交易",
   "bills": "账单与存款",
   "investments": "投资",
@@ -28,9 +29,10 @@
   "notificationSettings": "通知设置",
   "settings": "设置",
   "logout": "退出登录",
-  "toggleMenu": "切换菜单",
   "closeMenu": "关闭菜单",
   "mainMenu": "主菜单",
+  "tabBar": "标签栏",
+  "more": "更多",
   "loggedOut": "已成功退出登录",
   "logoutNotConfirmed": "仅在此设备上退出登录——服务器未确认。请查看登录屏幕上的通知。",
   "search": {

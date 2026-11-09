@@ -134,7 +134,8 @@
       "investments": "Đầu tư",
       "transactions": "Giao dịch",
       "application": "Ứng dụng",
-      "defaultViews": "Chế độ xem mặc định"
+      "defaultViews": "Chế độ xem mặc định",
+      "mobileNavigation": "Điều hướng di động"
     },
     "themeLabel": "Giao diện",
     "defaultCurrencyLabel": "Tiền tệ mặc định",
@@ -245,6 +246,11 @@
       "applyHere": "Dùng các mặc định này trong trình duyệt này",
       "applyHereHelp": "Xóa các cài đặt hiển thị mà trình duyệt này đã lưu, để các mặc định ở trên cũng áp dụng tại đây.",
       "appliedHere": "Trình duyệt này hiện dùng chế độ xem mặc định của bạn"
+    },
+    "mobileTabs": {
+      "intro": "Chọn tối đa ba tab cho thanh ở cuối điện thoại hoặc máy tính bảng. Nút thêm và Thêm luôn hiển thị.",
+      "slotLabel": "Tab {number}",
+      "none": "Không có"
     }
   },
   "notifications": {

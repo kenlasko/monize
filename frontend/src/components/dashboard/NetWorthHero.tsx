@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { netWorthApi } from '@/lib/net-worth';
 import { resolveRangePreset } from '@/lib/date-range';
 import { partialTotalFor } from '@/lib/net-worth-completeness';
+import { isComplete } from '@/lib/currency-total';
 import { moneyDecimalsForCurrency } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
@@ -151,7 +152,24 @@ export function NetWorthHero({
         <>
           <HeroCaption>{t('hero.netWorth')}</HeroCaption>
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-            <HeroHeadline negative={snapshot.netWorth.value < 0}>
+            <HeroHeadline
+              negative={snapshot.netWorth.value < 0}
+              collapsed={{
+                title: t('hero.netWorth'),
+                figure: formatCurrency(snapshot.netWorth.value),
+                figurePartial: !isComplete(snapshot.netWorth),
+                change:
+                  change !== null && change.known
+                    ? {
+                        up: changeUp,
+                        text:
+                          change.percent === null
+                            ? formatCurrency(Math.abs(change.amount))
+                            : formatPercent(Math.abs(change.percent), 1),
+                      }
+                    : undefined,
+              }}
+            >
               <PartialTotal total={snapshot.netWorth} displayCurrency={defaultCurrency}>
                 {formatCurrency(snapshot.netWorth.value)}
               </PartialTotal>

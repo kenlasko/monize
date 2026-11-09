@@ -17,10 +17,12 @@ interface PageLayoutProps {
  * header height -- the stray page scrollbar fixed for `/ai` in #738, but
  * present on every PageLayout page. `100dvh` keeps it correct on mobile where
  * the address bar collapses. A taller page still grows and scrolls normally.
+ * `--tab-bar-space` is the room SwipeShell leaves for the mobile tab bar, taken
+ * off for the same reason.
  */
 export function PageLayout({ children }: PageLayoutProps) {
   return (
-    <div className="page-ambient-glow min-h-[calc(100dvh-4rem)] bg-gray-50 dark:bg-gray-900">
+    <div className="page-ambient-glow min-h-[calc(100dvh-4rem-var(--tab-bar-space))] bg-gray-50 dark:bg-gray-900">
       {children}
     </div>
   );

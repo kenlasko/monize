@@ -134,7 +134,8 @@
       "investments": "Investasi",
       "transactions": "Transaksi",
       "application": "Aplikasi",
-      "defaultViews": "Tampilan default"
+      "defaultViews": "Tampilan default",
+      "mobileNavigation": "Navigasi seluler"
     },
     "themeLabel": "Tema",
     "defaultCurrencyLabel": "Mata Uang Bawaan",
@@ -245,6 +246,11 @@
       "applyHere": "Gunakan default ini di browser ini",
       "applyHereHelp": "Menghapus pengaturan tampilan yang disimpan browser ini, sehingga default di atas juga berlaku di sini.",
       "appliedHere": "Browser ini sekarang menggunakan tampilan default Anda"
+    },
+    "mobileTabs": {
+      "intro": "Pilih hingga tiga tab untuk bilah di bagian bawah ponsel atau tablet. Tombol tambah dan Lainnya selalu ada.",
+      "slotLabel": "Tab {number}",
+      "none": "Tidak ada"
     }
   },
   "notifications": {

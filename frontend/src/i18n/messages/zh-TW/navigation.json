@@ -1,5 +1,6 @@
 {
   "dashboard": "儀表板",
+  "home": "首頁",
   "transactions": "交易",
   "bills": "帳單與存款",
   "investments": "投資",
@@ -28,9 +29,10 @@
   "notificationSettings": "通知設定",
   "settings": "設定",
   "logout": "登出",
-  "toggleMenu": "切換選單",
   "closeMenu": "關閉選單",
   "mainMenu": "主選單",
+  "tabBar": "標籤列",
+  "more": "更多",
   "loggedOut": "已成功登出",
   "logoutNotConfirmed": "僅在此裝置上登出——伺服器未確認。請查看登入畫面上的通知。",
   "search": {

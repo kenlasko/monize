@@ -134,7 +134,8 @@
       "investments": "Investitionen",
       "transactions": "Buchungen",
       "application": "Anwendung",
-      "defaultViews": "Standardansichten"
+      "defaultViews": "Standardansichten",
+      "mobileNavigation": "Mobile Navigation"
     },
     "themeLabel": "Design",
     "defaultCurrencyLabel": "Standardwährung",
@@ -245,6 +246,11 @@
       "applyHere": "Diese Standards in diesem Browser verwenden",
       "applyHereHelp": "Löscht die Ansichtseinstellungen, die dieser Browser gespeichert hat, damit die obigen Standards auch hier gelten.",
       "appliedHere": "Dieser Browser verwendet jetzt Ihre Standardansichten"
+    },
+    "mobileTabs": {
+      "intro": "Wählen Sie bis zu drei Tabs für die Leiste am unteren Rand von Smartphone oder Tablet. Die Schaltfläche zum Hinzufügen und „Mehr“ sind immer vorhanden.",
+      "slotLabel": "Tab {number}",
+      "none": "Keiner"
     }
   },
   "notifications": {

@@ -1,5 +1,6 @@
 {
   "dashboard": "डैशबोर्ड",
+  "home": "होम",
   "transactions": "लेनदेन",
   "bills": "बिल और जमा",
   "investments": "निवेश",
@@ -28,9 +29,10 @@
   "notificationSettings": "सूचना सेटिंग्स",
   "settings": "सेटिंग्स",
   "logout": "लॉगआउट",
-  "toggleMenu": "मेनू टॉगल करें",
   "closeMenu": "मेनू बंद करें",
   "mainMenu": "मुख्य मेनू",
+  "tabBar": "टैब बार",
+  "more": "और",
   "loggedOut": "सफलतापूर्वक लॉगआउट हुए",
   "logoutNotConfirmed": "केवल इस डिवाइस पर साइन आउट हुआ — सर्वर ने पुष्टि नहीं की। साइन-इन स्क्रीन पर सूचना देखें।",
   "search": {

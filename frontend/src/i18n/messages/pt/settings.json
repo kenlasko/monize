@@ -134,7 +134,8 @@
       "investments": "Investimentos",
       "transactions": "Transações",
       "application": "Aplicação",
-      "defaultViews": "Vistas predefinidas"
+      "defaultViews": "Vistas predefinidas",
+      "mobileNavigation": "Navegação móvel"
     },
     "themeLabel": "Tema",
     "defaultCurrencyLabel": "Moeda Predefinida",
@@ -245,6 +246,11 @@
       "applyHere": "Usar estas predefinições neste navegador",
       "applyHereHelp": "Limpa as definições de vista guardadas por este navegador, para que as predefinições acima também se apliquem aqui.",
       "appliedHere": "Este navegador usa agora as suas vistas predefinidas"
+    },
+    "mobileTabs": {
+      "intro": "Escolha até três separadores para a barra na parte inferior do telemóvel ou tablet. O botão de adicionar e Mais estão sempre presentes.",
+      "slotLabel": "Separador {number}",
+      "none": "Nenhum"
     }
   },
   "notifications": {

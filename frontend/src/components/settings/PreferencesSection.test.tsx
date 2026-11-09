@@ -839,6 +839,7 @@ describe('PreferencesSection', () => {
         'Investments',
         'Transactions',
         'Default Views',
+        'Mobile Navigation',
         'Application',
       ]);
     });
@@ -859,7 +860,7 @@ describe('PreferencesSection', () => {
       // opens the card, where a rule would read as a second heading under
       // "Preferences"; every group after it is separated by one.
       const wrappers = Array.from(container.querySelectorAll('h3')).map((h) => h.parentElement!);
-      expect(wrappers).toHaveLength(7);
+      expect(wrappers).toHaveLength(8);
       expect(wrappers[0].className).not.toMatch(/border-t/);
       for (const wrapper of wrappers.slice(1)) {
         expect(wrapper.className).toMatch(/border-t/);

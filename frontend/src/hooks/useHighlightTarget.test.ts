@@ -32,6 +32,31 @@ describe('useHighlightParam', () => {
     expect(result.current).toBeNull();
   });
 
+  it('flashes a different row when a link arrives while the page is open', () => {
+    mockSearchParams = new URLSearchParams('highlight=first');
+    const { result, rerender } = renderHook(() => useHighlightParam());
+    act(() => {
+      vi.advanceTimersByTime(6000);
+    });
+    expect(result.current).toBeNull();
+
+    mockSearchParams = new URLSearchParams('highlight=second');
+    rerender();
+    expect(result.current).toBe('second');
+  });
+
+  it('does not flash again when only the rest of the query string changes', () => {
+    mockSearchParams = new URLSearchParams('highlight=first');
+    const { result, rerender } = renderHook(() => useHighlightParam());
+    act(() => {
+      vi.advanceTimersByTime(6000);
+    });
+
+    mockSearchParams = new URLSearchParams('highlight=first&page=2');
+    rerender();
+    expect(result.current).toBeNull();
+  });
+
   it('supports a custom param name', () => {
     mockSearchParams = new URLSearchParams('focus=xyz');
     const { result } = renderHook(() => useHighlightParam('focus'));

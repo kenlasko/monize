@@ -5,7 +5,11 @@ import { isNavSectionActive } from '@/lib/nav-section';
 import { ADMIN_LINKS, NAV_ICONS } from '@/lib/nav-links';
 import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/ui/Modal';
-import { ArrowTopRightOnSquareIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowRightOnRectangleIcon,
+  ArrowTopRightOnSquareIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
 import type { HelpMenuEntries } from '@/hooks/useHelpMenuEntries';
 
 interface NavLink {
@@ -21,6 +25,8 @@ interface MobileNavDrawerProps {
   pathname: string;
   /** Navigate to a route. The caller closes the drawer on route change. */
   onNavigate: (href: string) => void;
+  /** Sign out; the header's button is hidden on the phones this drawer serves. */
+  onLogout: () => void;
   /** Main section links the current user is allowed to see. */
   navLinks: NavLink[];
   /** AI links; only rendered when `showAiMenu` is true. */
@@ -56,6 +62,7 @@ export function MobileNavDrawer({
   onClose,
   pathname,
   onNavigate,
+  onLogout,
   navLinks,
   aiLinks,
   showAiMenu,
@@ -223,6 +230,13 @@ export function MobileNavDrawer({
 
           <div className="border-t border-gray-200 dark:border-gray-700 mt-2" />
           {renderLink({ href: '/settings', label: t('settings') }, pathname === '/settings')}
+          <button type="button" onClick={onLogout} className={itemClass(false)}>
+            <ArrowRightOnRectangleIcon
+              aria-hidden
+              className="mr-4 h-5 w-5 flex-shrink-0 text-gray-400 dark:text-gray-500"
+            />
+            {t('logout')}
+          </button>
         </div>
       </nav>
     </Modal>

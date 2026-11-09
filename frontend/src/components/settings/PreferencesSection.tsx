@@ -23,6 +23,7 @@ import { ThemeSelector } from '@/components/settings/ThemeSelector';
 import { ColorThemeSelector } from '@/components/settings/ColorThemeSelector';
 import { ColorTheme } from '@/lib/color-themes';
 import { DefaultViewsGroup } from '@/components/settings/DefaultViewsGroup';
+import { MobileTabsGroup } from '@/components/settings/MobileTabsGroup';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 
 // CRYPTO is a listing label, not a Yahoo exchange: lookup ranking compares Yahoo
@@ -476,6 +477,12 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
           className={GROUP_DIVIDER_CLASS}
           initial={preferences.viewDefaults}
           initialHiddenColumns={preferences.hiddenTableColumns}
+          commit={commitPreference}
+        />
+
+        <MobileTabsGroup
+          className={GROUP_DIVIDER_CLASS}
+          initial={preferences.viewDefaults}
           commit={commitPreference}
         />
 

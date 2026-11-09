@@ -1,5 +1,6 @@
 {
   "dashboard": "Pano",
+  "home": "Ana Sayfa",
   "transactions": "İşlemler",
   "bills": "Faturalar ve Mevduatlar",
   "investments": "Yatırımlar",
@@ -28,9 +29,10 @@
   "notificationSettings": "Bildirim ayarları",
   "settings": "Ayarlar",
   "logout": "Çıkış Yap",
-  "toggleMenu": "Menüyü aç/kapat",
   "closeMenu": "Menüyü kapat",
   "mainMenu": "Ana menü",
+  "tabBar": "Sekme çubuğu",
+  "more": "Daha Fazla",
   "loggedOut": "Başarıyla çıkış yapıldı",
   "logoutNotConfirmed": "Yalnızca bu cihazda oturum kapatıldı — sunucu onaylamadı. Oturum açma ekranındaki uyarıya bakın.",
   "search": {

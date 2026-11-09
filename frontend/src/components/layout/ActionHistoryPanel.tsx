@@ -185,7 +185,7 @@ export function ActionHistoryPanel() {
 
       {isOpen && (
         <div
-          className={`fixed left-3 right-3 top-14 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 flex flex-col max-h-[28rem] ${MENU_ENTER_CLASS} ${MENU_ORIGIN_RIGHT}`}
+          className={`fixed left-3 right-3 top-[calc(3.5rem+env(safe-area-inset-top))] sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 flex flex-col max-h-[28rem] ${MENU_ENTER_CLASS} ${MENU_ORIGIN_RIGHT}`}
           data-testid="action-history-panel"
         >
           {/* Header */}

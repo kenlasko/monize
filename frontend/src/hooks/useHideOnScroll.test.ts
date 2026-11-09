@@ -34,6 +34,28 @@ function scrollTo(y: number) {
 }
 
 describe('useHideOnScroll', () => {
+  it('tracks nothing while disabled, and starts visible when enabled again', () => {
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+    const el = document.createElement('header');
+    Object.defineProperty(el, 'offsetHeight', { value: HEADER_HEIGHT, configurable: true });
+    const hook = renderHook(({ enabled }) => useHideOnScroll<HTMLElement>(enabled), {
+      initialProps: { enabled: true },
+    });
+    act(() => {
+      hook.result.current.ref.current = el;
+    });
+    scrollTo(40);
+    expect(hook.result.current.offset).toBe(40);
+
+    hook.rerender({ enabled: false });
+    expect(hook.result.current.offset).toBe(0);
+    scrollTo(60);
+    expect(hook.result.current.offset).toBe(0);
+
+    hook.rerender({ enabled: true });
+    expect(hook.result.current.offset).toBe(0);
+  });
+
   beforeEach(() => {
     vi.useFakeTimers();
     // Make requestAnimationFrame run via the fake timer queue.

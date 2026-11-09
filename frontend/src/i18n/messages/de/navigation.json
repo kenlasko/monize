@@ -1,5 +1,6 @@
 {
   "dashboard": "Dashboard",
+  "home": "Start",
   "transactions": "Buchungen",
   "bills": "Rechnungen & Einzahlungen",
   "investments": "Investitionen",
@@ -28,9 +29,10 @@
   "notificationSettings": "Benachrichtigungseinstellungen",
   "settings": "Einstellungen",
   "logout": "Abmelden",
-  "toggleMenu": "Menü umschalten",
   "closeMenu": "Menü schließen",
   "mainMenu": "Hauptmenü",
+  "tabBar": "Tableiste",
+  "more": "Mehr",
   "loggedOut": "Erfolgreich abgemeldet",
   "logoutNotConfirmed": "Nur auf diesem Gerät abgemeldet — der Server hat es nicht bestätigt. Beachten Sie den Hinweis auf dem Anmeldebildschirm.",
   "search": {

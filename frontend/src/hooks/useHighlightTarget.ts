@@ -36,15 +36,17 @@ const HIGHLIGHT_DURATION_MS = 5000;
 /**
  * Read a one-shot highlight id from the URL (`?highlight=<id>` by default).
  * Returns the id, then clears it after a short delay so the flash does not
- * stick on later interactions. The value is captured once on mount, so
- * navigating within the page (which rewrites the query string) does not
- * re-trigger it.
+ * stick on later interactions. A link to another row while the page is open
+ * flashes that row; a query string that is only rewritten does not re-trigger.
  */
 export function useHighlightParam(param = 'highlight'): string | null {
-  const searchParams = useSearchParams();
-  const [highlightId, setHighlightId] = useState<string | null>(
-    () => searchParams.get(param),
-  );
+  const value = useSearchParams().get(param);
+  const [highlightId, setHighlightId] = useState<string | null>(value);
+  const [seenValue, setSeenValue] = useState(value);
+  if (value !== seenValue) {
+    setSeenValue(value);
+    if (value) setHighlightId(value);
+  }
 
   useEffect(() => {
     if (!highlightId) return;

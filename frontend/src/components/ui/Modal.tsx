@@ -118,6 +118,11 @@ interface ModalProps {
    *  gave a floor to. Off by default; combined with `fullScreenOnPhone` the
    *  phone gets the whole viewport. Centre variant only. */
   fixedHeight?: boolean;
+  /** Sit near the top of the screen instead of centred, so a panel whose height
+   *  follows its content does not move its top edge as the content changes. The
+   *  panel starts 4dvh down; a caller that scrolls its own content caps it at
+   *  `96dvh - 1rem`. Centre variant only. */
+  anchorTop?: boolean;
 }
 
 const maxWidthClasses = {
@@ -151,6 +156,7 @@ export function Modal({
   padding = 'none',
   fullScreenOnPhone = false,
   fixedHeight = false,
+  anchorTop = false,
 }: ModalProps) {
   const generatedId = useId();
   const titleId = `${generatedId}-title`;
@@ -382,7 +388,9 @@ export function Modal({
   } flex ${
     isDrawer
       ? 'justify-start'
-      : 'items-center justify-center p-4'
+      : anchorTop
+        ? 'items-start justify-center p-4 pt-[4dvh]'
+        : 'items-center justify-center p-4'
   }${fillPhone ? ' max-sm:p-0' : ''}`;
 
   // Panel shape. The drawer is a full-height left sheet that slides in from

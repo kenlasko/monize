@@ -134,7 +134,8 @@
       "investments": "Yatırımlar",
       "transactions": "İşlemler",
       "application": "Uygulama",
-      "defaultViews": "Varsayılan görünümler"
+      "defaultViews": "Varsayılan görünümler",
+      "mobileNavigation": "Mobil Gezinme"
     },
     "themeLabel": "Tema",
     "defaultCurrencyLabel": "Varsayılan Para Birimi",
@@ -245,6 +246,11 @@
       "applyHere": "Bu varsayılanları bu tarayıcıda kullan",
       "applyHereHelp": "Bu tarayıcının kaydettiği görünüm ayarlarını temizler, böylece yukarıdaki varsayılanlar burada da geçerli olur.",
       "appliedHere": "Bu tarayıcı artık varsayılan görünümlerinizi kullanıyor"
+    },
+    "mobileTabs": {
+      "intro": "Telefon veya tabletin altındaki çubuk için en fazla üç sekme seçin. Ekle düğmesi ve Daha Fazla her zaman görünür.",
+      "slotLabel": "Sekme {number}",
+      "none": "Yok"
     }
   },
   "notifications": {

@@ -1,5 +1,6 @@
 {
   "dashboard": "Pulpit",
+  "home": "Start",
   "transactions": "Transakcje",
   "bills": "Rachunki i wpłaty",
   "investments": "Inwestycje",
@@ -28,9 +29,10 @@
   "notificationSettings": "Ustawienia powiadomień",
   "settings": "Ustawienia",
   "logout": "Wyloguj",
-  "toggleMenu": "Przełącz menu",
   "closeMenu": "Zamknij menu",
   "mainMenu": "Menu główne",
+  "tabBar": "Pasek kart",
+  "more": "Więcej",
   "loggedOut": "Wylogowano pomyślnie",
   "logoutNotConfirmed": "Wylogowano tylko na tym urządzeniu — serwer tego nie potwierdził. Zobacz komunikat na ekranie logowania.",
   "search": {

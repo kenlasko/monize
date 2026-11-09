@@ -1,5 +1,6 @@
 {
   "dashboard": "ダッシュボード",
+  "home": "ホーム",
   "transactions": "取引",
   "bills": "請求書・入金",
   "investments": "投資",
@@ -28,9 +29,10 @@
   "notificationSettings": "通知設定",
   "settings": "設定",
   "logout": "ログアウト",
-  "toggleMenu": "メニューを切り替え",
   "closeMenu": "メニューを閉じる",
   "mainMenu": "メインメニュー",
+  "tabBar": "タブバー",
+  "more": "その他",
   "loggedOut": "ログアウトしました",
   "logoutNotConfirmed": "このデバイスのみサインアウトしました — サーバーは確認していません。サインイン画面のお知らせをご覧ください。",
   "search": {

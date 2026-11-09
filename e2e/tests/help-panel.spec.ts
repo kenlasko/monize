@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import type { Frame, Locator, Page } from '@playwright/test';
 import { test, expect } from '../fixtures';
 
 test.use({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } });
@@ -7,12 +7,23 @@ test.use({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } });
 // before the answer arrives is left to the link (monize.net), by design: the
 // choice is made synchronously at click time. Go to the page and wait for the
 // manifest, so the click that follows is the one a reader makes a moment later.
+//
+// Only this document's read counts. The page being left asks for the manifest
+// too, and while a slow navigation is under way that answer arrives first; a
+// new document starts with the answer unknown, so waiting on the old read lets
+// the click through early and it opens monize.net.
 async function gotoWithGuideKnown(page: Page, path: string) {
+  let committed = false;
+  const onNavigated = (frame: Frame) => {
+    if (frame === page.mainFrame() && new URL(frame.url()).pathname === path) committed = true;
+  };
+  page.on('framenavigated', onNavigated);
   const manifest = page.waitForResponse(
-    (r) => new URL(r.url()).pathname.endsWith('/help') && r.ok(),
+    (r) => committed && new URL(r.url()).pathname.endsWith('/help') && r.ok(),
   );
   await page.goto(path);
   await (await manifest).finished();
+  page.off('framenavigated', onNavigated);
   // The app stores the answer a tick after the body is read; one frame covers it.
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
 }

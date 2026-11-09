@@ -134,7 +134,8 @@
       "investments": "Beleggingen",
       "transactions": "Transacties",
       "application": "Applicatie",
-      "defaultViews": "Standaardweergaven"
+      "defaultViews": "Standaardweergaven",
+      "mobileNavigation": "Mobiele navigatie"
     },
     "themeLabel": "Thema",
     "defaultCurrencyLabel": "Standaardvaluta",
@@ -245,6 +246,11 @@
       "applyHere": "Deze standaarden in deze browser gebruiken",
       "applyHereHelp": "Wist de weergave-instellingen die deze browser heeft opgeslagen, zodat de standaarden hierboven ook hier gelden.",
       "appliedHere": "Deze browser gebruikt nu je standaardweergaven"
+    },
+    "mobileTabs": {
+      "intro": "Kies maximaal drie tabbladen voor de balk onder aan je telefoon of tablet. De knop Toevoegen en Meer zijn er altijd.",
+      "slotLabel": "Tabblad {number}",
+      "none": "Geen"
     }
   },
   "notifications": {

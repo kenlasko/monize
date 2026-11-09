@@ -119,6 +119,7 @@ function BillsContent() {
   // Passive deep-link target (e.g. the AI chat "view this bill" link): flash and
   // scroll to the row without opening the post flow that ?postBillId triggers.
   const highlightId = useHighlightParam();
+  const linkedBillId = searchParams.get('highlight');
   const { formatCurrency, formatNumber } = useNumberFormat();
   const financialToday = useFinancialToday();
   // The reader's reporting currency and the converter into it. The monthly net
@@ -527,12 +528,19 @@ function BillsContent() {
       return true;
     });
 
-    return filterScheduledTransactions(byType, filters.filterState).sort((a, b) => {
+    const shown = filterScheduledTransactions(byType, filters.filterState);
+    // A link names one row, so the remembered filters must not hide it. Kept
+    // while the URL names it, without touching what the reader has saved.
+    const linked = shown.some((t) => t.id === linkedBillId)
+      ? []
+      : scheduledTransactions.filter((t) => t.id === linkedBillId);
+
+    return [...shown, ...linked].sort((a, b) => {
       const dateA = a.nextOverride?.overrideDate || a.nextDueDate || '';
       const dateB = b.nextOverride?.overrideDate || b.nextDueDate || '';
       return dateA.localeCompare(dateB);
     });
-  }, [scheduledTransactions, filterType, filters.filterState]);
+  }, [scheduledTransactions, filterType, filters.filterState, linkedBillId]);
 
   // How many schedules each type segment would show, for its label. The same
   // `billKind` the filter above uses, so a count never disagrees with its list.

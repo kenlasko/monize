@@ -16,7 +16,7 @@ describe('PageLayout', () => {
     // The wrapper fills the viewport minus the 4rem sticky header rather than a
     // full min-h-screen, which would overflow by the header height (the stray
     // page scrollbar). See #738.
-    expect(wrapper.className).toContain('min-h-[calc(100dvh-4rem)]');
+    expect(wrapper.className).toContain('min-h-[calc(100dvh-4rem-var(--tab-bar-space))]');
     expect(wrapper.className).not.toContain('min-h-screen');
     expect(wrapper.className).toContain('bg-gray-50');
   });

@@ -134,7 +134,8 @@
       "investments": "투자",
       "transactions": "거래",
       "application": "애플리케이션",
-      "defaultViews": "기본 보기"
+      "defaultViews": "기본 보기",
+      "mobileNavigation": "모바일 탐색"
     },
     "themeLabel": "테마",
     "defaultCurrencyLabel": "기본 통화",
@@ -245,6 +246,11 @@
       "applyHere": "이 브라우저에서 이 기본값 사용",
       "applyHereHelp": "이 브라우저에 저장된 보기 설정을 지워 위의 기본값이 여기에서도 적용되도록 합니다.",
       "appliedHere": "이제 이 브라우저에서 기본 보기를 사용합니다"
+    },
+    "mobileTabs": {
+      "intro": "휴대폰이나 태블릿 하단 바에 표시할 탭을 최대 3개까지 선택하세요. 추가 버튼과 더보기는 항상 표시됩니다.",
+      "slotLabel": "탭 {number}",
+      "none": "없음"
     }
   },
   "notifications": {

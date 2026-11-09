@@ -46,11 +46,13 @@ const helpEntries: React.ComponentProps<typeof MobileNavDrawer>['helpEntries'] =
 function renderDrawer(overrides: Partial<React.ComponentProps<typeof MobileNavDrawer>> = {}) {
   const onClose = vi.fn();
   const onNavigate = vi.fn();
+  const onLogout = vi.fn();
   const props: React.ComponentProps<typeof MobileNavDrawer> = {
     isOpen: true,
     onClose,
     pathname: '/dashboard',
     onNavigate,
+    onLogout,
     navLinks,
     aiLinks,
     showAiMenu: true,
@@ -60,12 +62,18 @@ function renderDrawer(overrides: Partial<React.ComponentProps<typeof MobileNavDr
     ...overrides,
   };
   render(<MobileNavDrawer {...props} />);
-  return { onClose, onNavigate };
+  return { onClose, onNavigate, onLogout };
 }
 
 describe('MobileNavDrawer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('signs out from its Logout row, the only way out on a phone', () => {
+    const { onLogout } = renderDrawer();
+    fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
+    expect(onLogout).toHaveBeenCalledTimes(1);
   });
 
   it('renders nothing when closed', () => {

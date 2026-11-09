@@ -5,6 +5,8 @@ import { useCallback, useSyncExternalStore } from 'react';
 const MOBILE_QUERY = '(max-width: 639px)';
 /** Below Tailwind's `lg`: where a side panel stops fitting beside its content. */
 const BELOW_DESKTOP_QUERY = '(max-width: 1023px)';
+/** Below Tailwind's `xl`: where the header's nav links give way to the tab bar. */
+const TAB_BAR_QUERY = '(max-width: 1279px)';
 
 function getServerSnapshot(): boolean {
   return false;
@@ -43,4 +45,9 @@ export function useIsMobile(): boolean {
  */
 export function useIsBelowDesktop(): boolean {
   return useMediaQuery(BELOW_DESKTOP_QUERY);
+}
+
+/** Whether the bottom tab bar is the app's navigation at this width. */
+export function useHasMobileTabBar(): boolean {
+  return useMediaQuery(TAB_BAR_QUERY);
 }

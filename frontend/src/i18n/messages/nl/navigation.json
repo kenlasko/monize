@@ -1,5 +1,6 @@
 {
   "dashboard": "Dashboard",
+  "home": "Start",
   "transactions": "Transacties",
   "bills": "Facturen & stortingen",
   "investments": "Beleggingen",
@@ -28,9 +29,10 @@
   "notificationSettings": "Meldingsinstellingen",
   "settings": "Instellingen",
   "logout": "Uitloggen",
-  "toggleMenu": "Menu wisselen",
   "closeMenu": "Menu sluiten",
   "mainMenu": "Hoofdmenu",
+  "tabBar": "Tabbalk",
+  "more": "Meer",
   "loggedOut": "Succesvol uitgelogd",
   "logoutNotConfirmed": "Alleen op dit apparaat afgemeld — de server heeft het niet bevestigd. Zie de melding op het aanmeldscherm.",
   "search": {

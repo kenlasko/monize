@@ -8,6 +8,11 @@ import { chartColors } from '@/lib/chart-colors';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useIsBelowDesktop } from '@/hooks/useIsMobile';
+import {
+  CollapsingTitleContext,
+  useCollapsingHeaderTitle,
+} from '@/hooks/useCollapsingHeaderTitle';
+import type { CollapsedHeaderTitle } from '@/store/mobileChromeStore';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 import { ChartAreaGradient } from '@/components/ui/ChartAreaGradient';
 import {
@@ -33,9 +38,16 @@ const LAYOUT_CLASS = 'mb-6 flex flex-col lg:flex-row gap-x-10 gap-y-1 lg:gap-y-4
 const CHART_TOP_MARGIN_STACKED = 12;
 const CHART_TOP_MARGIN_BESIDE = 36;
 
-/** The page header, tucked close to the figures under it. */
+/**
+ * The page header, tucked close to the figures under it. Beside the figures the
+ * headline is what collapses into the app header, so the greeting does not.
+ */
 function HeaderBlock({ header }: { header: ReactNode }) {
-  return <div className="-mb-3">{header}</div>;
+  return (
+    <CollapsingTitleContext.Provider value={false}>
+      <div className="-mb-3">{header}</div>
+    </CollapsingTitleContext.Provider>
+  );
 }
 
 export function HeroLayout({
@@ -123,9 +135,20 @@ export function HeroCaption({ children }: { children: ReactNode }) {
   );
 }
 
-export function HeroHeadline({ negative, children }: { negative: boolean; children: ReactNode }) {
+export function HeroHeadline({
+  negative,
+  collapsed,
+  children,
+}: {
+  negative: boolean;
+  /** What the app header shows once this figure scrolls away. */
+  collapsed: CollapsedHeaderTitle;
+  children: ReactNode;
+}) {
+  const ref = useCollapsingHeaderTitle<HTMLDivElement>(collapsed);
   return (
     <div
+      ref={ref}
       data-testid="dashboard-hero-headline"
       className={`text-4xl sm:text-5xl font-extrabold tracking-tight leading-none ${
         negative ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-50'

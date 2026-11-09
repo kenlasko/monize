@@ -117,10 +117,11 @@ export function CommandPalette() {
   }
 
   return (
-    <Modal isOpen onClose={close} title={t('title')} titleHidden maxWidth="2xl">
+    <Modal isOpen onClose={close} title={t('title')} titleHidden maxWidth="2xl" anchorTop>
       {/* All the keyboard handling is on the box, so a press anywhere else in
           the palette must not take focus from it. */}
       <div
+        className="flex max-h-[calc(96dvh-1rem)] flex-col"
         onMouseDown={(event) => {
           if (!(event.target instanceof HTMLInputElement)) event.preventDefault();
         }}
@@ -158,7 +159,7 @@ export function CommandPalette() {
         </button>
       </div>
 
-      <div ref={listRef} id={listId} role="listbox" aria-label={t('title')} className="h-[min(60dvh,26rem)] overflow-y-auto p-2">
+      <div ref={listRef} id={listId} role="listbox" aria-label={t('title')} className="min-h-0 flex-1 overflow-y-auto p-2">
         {COMMAND_GROUPS.map((group) => {
           const rows = items.filter((item) => item.group === group);
           if (rows.length === 0) return null;

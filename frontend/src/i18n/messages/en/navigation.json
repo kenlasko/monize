@@ -1,5 +1,6 @@
 {
   "dashboard": "Dashboard",
+  "home": "Home",
   "transactions": "Transactions",
   "bills": "Bills & Deposits",
   "investments": "Investments",
@@ -29,9 +30,10 @@
   "backups": "Backups",
   "settings": "Settings",
   "logout": "Logout",
-  "toggleMenu": "Toggle menu",
   "closeMenu": "Close menu",
   "mainMenu": "Main menu",
+  "tabBar": "Tab bar",
+  "more": "More",
   "loggedOut": "Logged out successfully",
   "logoutNotConfirmed": "Signed out on this device only — the server did not confirm. See the notice on the sign-in screen.",
   "search": {

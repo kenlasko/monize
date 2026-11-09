@@ -6,6 +6,7 @@ import { parseISO } from 'date-fns';
 import { investmentsApi } from '@/lib/investments';
 import { resolveRangePreset } from '@/lib/date-range';
 import { partialTotalFor, portfolioPartialTotal } from '@/lib/net-worth-completeness';
+import { isComplete } from '@/lib/currency-total';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useReportData } from '@/hooks/useReportData';
@@ -239,7 +240,23 @@ export function PortfolioHero({ config, header, investmentAccounts, hasInvestmen
             })}
           </HeroCaption>
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-            <HeroHeadline negative={summary.totalPortfolioValue < 0}>
+            <HeroHeadline
+              negative={summary.totalPortfolioValue < 0}
+              collapsed={{
+                title: t('customize.hero.sets.portfolio'),
+                figure: formatCurrency(summary.totalPortfolioValue, defaultCurrency),
+                figurePartial: !isComplete(
+                  portfolioPartialTotal(summary.totalPortfolioValue, summary),
+                ),
+                change:
+                  totalChange === null
+                    ? undefined
+                    : {
+                        up: totalChange >= 0,
+                        text: formatCurrency(Math.abs(totalChange), defaultCurrency),
+                      },
+              }}
+            >
               <PartialTotal
                 total={portfolioPartialTotal(summary.totalPortfolioValue, summary)}
                 displayCurrency={defaultCurrency}

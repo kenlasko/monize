@@ -241,7 +241,7 @@ export function AiChatBubble() {
               { right: `calc(var(${HELP_PANEL_WIDTH_VAR}, ${HELP_PANEL_DEFAULT_WIDTH}px) + 16px)` }
             : undefined
         }
-        className="fixed bottom-4 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+        className="fixed bottom-[calc(var(--tab-bar-space)+env(safe-area-inset-bottom)+1rem)] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
       >
         <ChatIcon className="h-6 w-6" />
       </button>

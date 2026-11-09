@@ -1,5 +1,6 @@
 {
   "dashboard": "Tableau de bord",
+  "home": "Accueil",
   "transactions": "Transactions",
   "bills": "Factures et dépôts",
   "investments": "Investissements",
@@ -28,9 +29,10 @@
   "notificationSettings": "Paramètres de notification",
   "settings": "Paramètres",
   "logout": "Déconnexion",
-  "toggleMenu": "Afficher/masquer le menu",
   "closeMenu": "Fermer le menu",
   "mainMenu": "Menu principal",
+  "tabBar": "Barre d’onglets",
+  "more": "Plus",
   "loggedOut": "Déconnecté avec succès",
   "logoutNotConfirmed": "Déconnecté sur cet appareil uniquement — le serveur n'a pas confirmé. Voir l'avis sur l'écran de connexion.",
   "search": {

@@ -54,7 +54,7 @@ test('transactions, calendar view', async () => {
 
 test('the navigation drawer', async () => {
   await open(page, '/dashboard');
-  await page.getByRole('button', { name: 'Toggle menu' }).click();
+  await page.getByRole('navigation', { name: 'Tab bar' }).getByRole('button', { name: 'More', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Investments', exact: true })).toBeVisible();
   await shoot(page, 'mobile-menu');
 });

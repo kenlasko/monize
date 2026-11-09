@@ -163,7 +163,7 @@ export function useCommandItems(query: string) {
         detail: pair(days < 0 ? t('overdue', { days: -days }) : t('dueIn', { days }), bill.account?.name),
         trailing: amount === null ? undefined : formatCurrency(Math.abs(amount), currencyCode),
         visual: <Tile icon={NAV_ICONS['/bills']} tone="amber" />,
-        run: go('/bills'),
+        run: go(`/bills?highlight=${bill.id}`),
       });
     }
 

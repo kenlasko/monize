@@ -118,7 +118,16 @@ test.describe('Bills & Deposits', () => {
 
     const calendarButton = page.getByRole('button', { name: /calendar/i });
     await expect(calendarButton).toBeVisible({ timeout: 10000 });
-    await calendarButton.click();
+    await expect(page.getByRole('heading', { name: 'No scheduled transactions' })).toBeVisible({
+      timeout: 10000,
+    });
+    // The toolbar still moves after that, when the forecast and the banners
+    // above it settle, and a press can land where the button just was. Pressing
+    // an already pressed segment does nothing, so the click can simply repeat.
+    await expect(async () => {
+      await calendarButton.click();
+      await expect(calendarButton).toHaveAttribute('aria-pressed', 'true', { timeout: 1000 });
+    }).toPass({ timeout: 10000 });
 
     // Exact matching so short labels like "Mon" don't collide with
     // "Monize" / "Monthly Net".

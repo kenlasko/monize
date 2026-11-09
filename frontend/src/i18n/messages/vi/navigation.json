@@ -1,5 +1,6 @@
 {
   "dashboard": "Tổng quan",
+  "home": "Trang chủ",
   "transactions": "Giao dịch",
   "bills": "Hóa đơn & Tiền gửi",
   "investments": "Đầu tư",
@@ -28,9 +29,10 @@
   "notificationSettings": "Cài đặt thông báo",
   "settings": "Cài đặt",
   "logout": "Đăng xuất",
-  "toggleMenu": "Bật/tắt menu",
   "closeMenu": "Đóng menu",
   "mainMenu": "Menu chính",
+  "tabBar": "Thanh tab",
+  "more": "Thêm",
   "loggedOut": "Đã đăng xuất thành công",
   "logoutNotConfirmed": "Chỉ đăng xuất trên thiết bị này — máy chủ chưa xác nhận. Xem thông báo trên màn hình đăng nhập.",
   "search": {

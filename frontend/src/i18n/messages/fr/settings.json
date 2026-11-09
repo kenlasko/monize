@@ -134,7 +134,8 @@
       "investments": "Investissements",
       "transactions": "Transactions",
       "application": "Application",
-      "defaultViews": "Vues par défaut"
+      "defaultViews": "Vues par défaut",
+      "mobileNavigation": "Navigation mobile"
     },
     "themeLabel": "Thème",
     "defaultCurrencyLabel": "Devise par défaut",
@@ -245,6 +246,11 @@
       "applyHere": "Utiliser ces réglages dans ce navigateur",
       "applyHereHelp": "Efface les réglages d’affichage enregistrés par ce navigateur, pour que les valeurs ci-dessus s’appliquent ici aussi.",
       "appliedHere": "Ce navigateur utilise maintenant vos vues par défaut"
+    },
+    "mobileTabs": {
+      "intro": "Choisissez jusqu’à trois onglets pour la barre en bas du téléphone ou de la tablette. Le bouton d’ajout et Plus sont toujours présents.",
+      "slotLabel": "Onglet {number}",
+      "none": "Aucun"
     }
   },
   "notifications": {
