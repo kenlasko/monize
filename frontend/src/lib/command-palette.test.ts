@@ -32,6 +32,27 @@ describe('matchScore', () => {
 });
 
 describe('highlightFolded', () => {
+  it.each([
+    ['Hangul, which folds longer', '가게 이름', '가게'],
+    ['Devanagari, whose vowel signs fold away', 'किराया', 'किराया'],
+    ['a decomposed accent, which folds away', 'cre\u0300me', 'cre\u0300me'],
+  ])('marks %s', (_label, text, query) => {
+    const marked = highlightFolded(text, commandTerms(query));
+    expect(marked.filter((s) => s.match).map((s) => s.text)).toEqual([query]);
+    expect(marked.map((s) => s.text).join('')).toBe(text);
+  });
+
+  it('marks a word ending in a Greek final sigma', () => {
+    expect(highlightFolded('ΟΔΟΣ', commandTerms('οδος'))).toEqual([{ text: 'ΟΔΟΣ', match: true }]);
+  });
+
+  it('keeps a dropped mark with its letter', () => {
+    expect(highlightFolded('cre\u0300me', commandTerms('cre'))).toEqual([
+      { text: 'cre\u0300', match: true },
+      { text: 'me', match: false },
+    ]);
+  });
+
   it('marks the original characters for a folded term', () => {
     expect(highlightFolded('Café Rouge', commandTerms('cafe'))).toEqual([
       { text: 'Café', match: true },

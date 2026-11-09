@@ -235,6 +235,79 @@ describe('useTransactionFilters - URL/localStorage initialization', () => {
 
     expect(result.current.highlightTransactionId).toBe(id);
     expect(result.current.filterAccountStatus).toBe('');
+    // For this visit only: the saved preference is what the next visit reads.
+    expect(localStorage.getItem('transactions.filter.accountStatus')).toBe('"closed"');
+  });
+
+  const FILTERS = {
+    accountIds: ['acc-1'],
+    categoryIds: [],
+    payeeIds: [],
+    tagIds: [],
+    startDate: '',
+    endDate: '',
+    search: '',
+    amountFrom: '',
+    amountTo: '',
+    statuses: [],
+    originalCurrencyCodes: [],
+    tagKey: '',
+    tagKeyOp: 'hasValue',
+    tagKeyValue: '',
+    hasAttachments: '',
+  } as Parameters<ReturnType<typeof useTransactionFilters>['updateUrl']>[1];
+
+  it('keeps a link-applied Show Accounts in the rewritten URL, so a reload still honours it', () => {
+    mockReplace.mockClear();
+    localStorage.setItem('transactions.filter.accountStatus', JSON.stringify('active'));
+    mockSearchParams = new URLSearchParams('accountIds=acc-1&accountStatus=all');
+    const { result } = renderHook(() => useTransactionFilters(defaultOptions));
+    act(() => result.current.updateUrl(1, FILTERS));
+    expect(mockReplace.mock.calls.at(-1)?.[0]).toContain('accountStatus=all');
+  });
+
+  it('adds no accountStatus to the URL when no link set one', () => {
+    mockReplace.mockClear();
+    mockSearchParams = new URLSearchParams('accountIds=acc-1');
+    const { result } = renderHook(() => useTransactionFilters(defaultOptions));
+    act(() => result.current.updateUrl(1, FILTERS));
+    expect(mockReplace.mock.calls.at(-1)?.[0]).not.toContain('accountStatus');
+  });
+
+  it('takes the link out of the URL once the reader overrules it', () => {
+    mockReplace.mockClear();
+    mockSearchParams = new URLSearchParams('accountIds=acc-1&accountStatus=all');
+    window.history.replaceState(null, '', '/transactions?accountIds=acc-1&accountStatus=all');
+    const { result } = renderHook(() => useTransactionFilters(defaultOptions));
+    act(() => result.current.setFilterAccountStatus('active'));
+    expect(mockReplace).toHaveBeenLastCalledWith('/transactions?accountIds=acc-1', { scroll: false });
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('goes back to the saved preference on Back to an entry with no link', () => {
+    localStorage.setItem('transactions.filter.accountStatus', JSON.stringify('active'));
+    mockSearchParams = new URLSearchParams('accountIds=acc-1&accountStatus=all');
+    const { result } = renderHook(() => useTransactionFilters(defaultOptions));
+    expect(result.current.filterAccountStatus).toBe('');
+    window.history.replaceState(null, '', '/transactions?accountIds=acc-1');
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    expect(result.current.filterAccountStatus).toBe('active');
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('saves the Show Accounts choice the reader makes after a link applied one', () => {
+    localStorage.setItem('transactions.filter.accountStatus', JSON.stringify('closed'));
+    mockSearchParams = new URLSearchParams('accountStatus=all');
+    const { result } = renderHook(() => useTransactionFilters(defaultOptions));
+    expect(localStorage.getItem('transactions.filter.accountStatus')).toBe('"closed"');
+
+    act(() => {
+      result.current.setFilterAccountStatus('active');
+    });
+
+    expect(localStorage.getItem('transactions.filter.accountStatus')).toBe('"active"');
   });
 
   it('applies a targetTransactionId that arrives via soft navigation while mounted', () => {
@@ -382,6 +455,7 @@ describe('useTransactionFilters - entity deep-link watcher', () => {
 
     expect(result.current.filterAccountIds).toEqual([accountUuid]);
     expect(result.current.filterAccountStatus).toBe('');
+    expect(localStorage.getItem('transactions.filter.accountStatus')).toBe('"active"');
   });
 
   it('applies a categoryId deep link, including the special pseudo-categories', () => {

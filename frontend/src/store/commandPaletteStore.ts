@@ -33,3 +33,17 @@ export const useCommandPaletteStore = create<CommandPaletteState>((set) => ({
   requestNewTransaction: (payee) => set({ newTransactionRequest: { payee: payee ?? null } }),
   clearNewTransactionRequest: () => set({ newTransactionRequest: null }),
 }));
+
+/**
+ * Opens the new transaction form, from anywhere. Already on the register, the
+ * page answers the request itself; a push would stack on the form's own history
+ * entry and drop the filters from the URL.
+ */
+export function startNewTransaction(
+  pathname: string,
+  push: (href: string) => void,
+  payee?: NewTransactionPayee,
+): void {
+  useCommandPaletteStore.getState().requestNewTransaction(payee);
+  if (pathname !== '/transactions') push('/transactions');
+}

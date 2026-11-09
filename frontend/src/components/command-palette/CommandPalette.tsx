@@ -203,7 +203,7 @@ export function CommandPalette() {
                         {item.trailing}
                       </span>
                     )}
-                    {item.shortcut && <kbd className={KBD_CLASS}>{item.shortcut}</kbd>}
+                    {item.shortcut && <kbd className={KBD_CLASS}>{t('newTransactionShortcut')}</kbd>}
                     {isActive && <kbd className={KBD_CLASS}>&crarr;</kbd>}
                   </div>
                 );

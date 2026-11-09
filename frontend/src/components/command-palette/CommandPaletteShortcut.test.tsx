@@ -8,6 +8,12 @@ vi.mock('next/dynamic', () => ({
     },
 }));
 
+let mockPathname = '/dashboard';
+vi.mock('next/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next/navigation')>()),
+  usePathname: () => mockPathname,
+}));
+
 import { CommandPaletteShortcut } from './CommandPaletteShortcut';
 import { useAuthStore } from '@/store/authStore';
 import { useCommandPaletteStore } from '@/store/commandPaletteStore';
@@ -33,6 +39,27 @@ afterEach(() => {
 });
 
 describe('CommandPaletteShortcut', () => {
+  it('drops a new-transaction request overtaken by a navigation elsewhere', () => {
+    mockPathname = '/accounts';
+    const { rerender } = render(<CommandPaletteShortcut />);
+    act(() => useCommandPaletteStore.getState().requestNewTransaction());
+    mockPathname = '/dashboard';
+    rerender(<CommandPaletteShortcut />);
+    expect(useCommandPaletteStore.getState().newTransactionRequest).toBeNull();
+    mockPathname = '/dashboard';
+  });
+
+  it('keeps a new-transaction request that reaches the register', () => {
+    mockPathname = '/accounts';
+    const { rerender } = render(<CommandPaletteShortcut />);
+    act(() => useCommandPaletteStore.getState().requestNewTransaction());
+    mockPathname = '/transactions';
+    rerender(<CommandPaletteShortcut />);
+    expect(useCommandPaletteStore.getState().newTransactionRequest).toEqual({ payee: null });
+    act(() => useCommandPaletteStore.getState().clearNewTransactionRequest());
+    mockPathname = '/dashboard';
+  });
+
   it('renders nothing while closed', () => {
     render(<CommandPaletteShortcut />);
     expect(screen.queryByTestId('command-palette')).not.toBeInTheDocument();

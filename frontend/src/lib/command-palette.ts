@@ -16,9 +16,13 @@ export const COMMAND_GROUPS = [
 
 export type CommandGroup = (typeof COMMAND_GROUPS)[number];
 
-/** Lower case with combining marks removed, so "cafe" finds "Café". */
+/**
+ * Lower case with combining marks removed, so "cafe" finds "Café". Final sigma
+ * becomes plain sigma because lowercasing picks it by a letter's position, which
+ * a character folded on its own does not have.
+ */
 function fold(text: string): string {
-  return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+  return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/ς/g, 'σ');
 }
 
 /** The typed query as the terms `matchScore` compares. */
@@ -46,24 +50,38 @@ export function matchScore(text: string, terms: readonly string[]): number {
 
 /**
  * `highlightMatches` for folded `terms`, so a match `matchScore` accepted is the
- * one that gets marked. Folded one code unit at a time, keeping any unit whose
- * fold is not exactly one unit, so an offset in the folded text is an offset in
- * `text`.
+ * one that gets marked. Folding changes a string's length (Hangul decomposes,
+ * combining marks vanish), so each folded unit remembers which character of
+ * `text` it came from and the matches are mapped back through that. A mark that
+ * folded away stays with the letter before it, and a match never splits a
+ * character.
  */
 export function highlightFolded(text: string, terms: readonly string[]): HighlightSegment[] {
-  const folded = text
-    .split('')
-    .map((unit) => {
-      const f = fold(unit);
-      return f.length === 1 ? f : unit;
-    })
-    .join('');
-  let at = 0;
-  return highlightMatches(folded, terms).map((segment) => {
-    const original = text.slice(at, at + segment.text.length);
-    at += segment.text.length;
-    return { text: original, match: segment.match };
-  });
+  let folded = '';
+  const sources: number[] = [];
+  let offset = 0;
+  for (const char of text) {
+    const unit = fold(char);
+    folded += unit;
+    for (let i = 0; i < unit.length; i++) sources.push(offset);
+    offset += char.length;
+  }
+
+  const segments: HighlightSegment[] = [];
+  let foldedAt = 0;
+  let textAt = 0;
+  for (const segment of highlightMatches(folded, terms)) {
+    foldedAt += segment.text.length;
+    let next = foldedAt;
+    // Runs out at `undefined`, past the last unit.
+    if (segment.match) while (sources[next] === sources[foldedAt - 1]) next++;
+    const textEnd = Math.max(textAt, sources[next] ?? text.length);
+    if (textEnd > textAt) {
+      segments.push({ text: text.slice(textAt, textEnd), match: segment.match });
+    }
+    textAt = textEnd;
+  }
+  return segments.length > 0 ? segments : [{ text, match: false }];
 }
 
 /** The best `limit` of `items` for `terms`, ties kept in their given order. */

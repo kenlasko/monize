@@ -281,12 +281,23 @@ describe('CommandPalette', () => {
     expect(useCommandPaletteStore.getState().newTransactionRequest).not.toBeNull();
   });
 
-  it('offers no payee actions for an inactive payee, and still finds it', async () => {
+  it('offers an inactive payee its history but no new entry', async () => {
     getPayees.mockResolvedValue([{ ...hydro, isActive: false }]);
     const box = await openPalette();
     await type(box, 'hydro');
     expect(screen.getByRole('option', { name: /38 transactions/ })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /New transaction for/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /All transactions for/ })).toBeInTheDocument();
+  });
+
+  it('starts a new entry from the best active payee when the best match is inactive', async () => {
+    getPayees.mockResolvedValue([
+      { ...hydro, isActive: false },
+      { ...hydro, id: 'p2', name: 'Hydro Quebec', isActive: true },
+    ]);
+    const box = await openPalette();
+    await type(box, 'hydro');
+    expect(screen.getByRole('option', { name: /New transaction for Hydro Quebec/ })).toBeInTheDocument();
   });
 
   it('shows all of a payee\'s transactions whatever Show Accounts is set to', async () => {

@@ -34,7 +34,7 @@ import { nextOccurrenceDueDate, nextOccurrenceEffectiveAmount } from '@/lib/sche
 import { SETTINGS_SECTION_IDS } from '@/lib/settings-sections';
 import { buildTransactionsHref } from '@/lib/transactions-href';
 import { useAuthStore } from '@/store/authStore';
-import { useCommandPaletteStore } from '@/store/commandPaletteStore';
+import { startNewTransaction } from '@/store/commandPaletteStore';
 import { useDemoStore } from '@/store/demoStore';
 import { useHelpSearchStore } from '@/store/helpSearchStore';
 import { useHelpShortcutsStore } from '@/store/helpShortcutsStore';
@@ -54,7 +54,8 @@ export interface CommandItem {
   trailing?: string;
   visual: ReactNode;
   /** Shown on the row and run by this chord from anywhere in the box. */
-  shortcut?: 'Ctrl/Cmd+Enter';
+  /** Carries the new-transaction chord, drawn as its translated key names. */
+  shortcut?: boolean;
   run: () => void;
 }
 
@@ -253,14 +254,10 @@ export function useCommandItems(query: string) {
 
     // The best-matching payee gets the actions a reader came for; the plain
     // "New transaction" gives up the chord to it rather than sharing the key.
-    // Only an active payee: the form cannot display an inactive one on a new entry.
-    const payee = canSearchTransactions && payees[0]?.isActive ? payees[0] : undefined;
-    const requestNew = useCommandPaletteStore.getState().requestNewTransaction;
-    // Already there, the page answers the request itself; a push would stack
-    // on the form's own history entry and drop the filters from the URL.
-    const goToRegister = () => {
-      if (pathname !== '/transactions') router.push('/transactions');
-    };
+    // A new entry takes the best ACTIVE payee, since the form cannot display an
+    // inactive one; a payee's history needs no such thing.
+    const payee = canSearchTransactions ? payees.find((p) => p.isActive) : undefined;
+    const historyPayee = canSearchTransactions ? payees[0] : undefined;
     if (payee) {
       results.push(
         {
@@ -268,22 +265,26 @@ export function useCommandItems(query: string) {
           group: 'actions',
           label: t('newTransactionFor', { name: payee.name }),
           visual: <Tile icon={PlusIcon} tone="blue" />,
-          shortcut: 'Ctrl/Cmd+Enter',
-          run: () => {
-            requestNew({ id: payee.id, name: payee.name, defaultCategoryId: payee.defaultCategoryId });
-            goToRegister();
-          },
-        },
-        {
-          id: `action:transactions-for:${payee.id}`,
-          group: 'actions',
-          label: t('transactionsFor', { name: payee.name }),
-          visual: <Tile icon={ArrowsRightLeftIcon} tone="purple" />,
-          // Singular `payeeId`: the parameter the Transactions page also
-          // honours on a soft navigation, when it is already mounted.
-          run: go(`/transactions?payeeId=${payee.id}&accountStatus=all`),
+          shortcut: true,
+          run: () =>
+            startNewTransaction(pathname, router.push, {
+              id: payee.id,
+              name: payee.name,
+              defaultCategoryId: payee.defaultCategoryId,
+            }),
         },
       );
+    }
+    if (historyPayee) {
+      results.push({
+        id: `action:transactions-for:${historyPayee.id}`,
+        group: 'actions',
+        label: t('transactionsFor', { name: historyPayee.name }),
+        visual: <Tile icon={ArrowsRightLeftIcon} tone="purple" />,
+        // Singular `payeeId`: the parameter the Transactions page also
+        // honours on a soft navigation, when it is already mounted.
+        run: go(`/transactions?payeeId=${historyPayee.id}&accountStatus=all`),
+      });
     }
     if (searching && canSearchTransactions) {
       results.push({
@@ -302,11 +303,8 @@ export function useCommandItems(query: string) {
               group: 'actions' as const,
               label: t('newTransaction'),
               visual: <Tile icon={PlusIcon} tone="blue" />,
-              shortcut: payee ? undefined : ('Ctrl/Cmd+Enter' as const),
-              run: () => {
-                requestNew();
-                goToRegister();
-              },
+              shortcut: !payee,
+              run: () => startNewTransaction(pathname, router.push),
             },
           ]
         : []),
