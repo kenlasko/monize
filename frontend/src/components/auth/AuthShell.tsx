@@ -50,45 +50,41 @@ export function AuthShell({
   languagePicker = false,
   showVersion = false,
 }: AuthShellProps) {
-  const column = (
-    <div className={cn('w-full space-y-6', wide ? 'max-w-lg' : 'max-w-md')}>
-      <div className="text-center">
-        <Image
-          src="/icons/monize-logo-transparent.svg"
-          alt="Monize"
-          width={88}
-          height={88}
-          className="mx-auto"
-          priority
-        />
-        {title && (
-          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
-            {title}
-          </h2>
-        )}
-        {subtitle && (
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">{subtitle}</div>
-        )}
-      </div>
-      {notices}
-      {plain ? (
-        children
-      ) : (
-        <Card padding="md" className="sm:p-8">
-          {children}
-        </Card>
-      )}
-      {languagePicker && <AuthLanguagePicker />}
-      {showVersion && (
-        <AppVersion className="text-center text-xs text-gray-400 dark:text-gray-500" />
-      )}
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 lg:grid lg:grid-cols-2">
       <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        {column}
+        <div className={cn('w-full space-y-6', wide ? 'max-w-lg' : 'max-w-md')}>
+          <div className="text-center">
+            <Image
+              src="/icons/monize-logo-transparent.svg"
+              alt="Monize"
+              width={88}
+              height={88}
+              className="mx-auto"
+              priority
+            />
+            {title && (
+              <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
+                {title}
+              </h2>
+            )}
+            {subtitle && (
+              <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">{subtitle}</div>
+            )}
+          </div>
+          {notices}
+          {plain ? (
+            children
+          ) : (
+            <Card padding="md" className="sm:p-8">
+              {children}
+            </Card>
+          )}
+          {languagePicker && <AuthLanguagePicker />}
+          {showVersion && (
+            <AppVersion className="text-center text-xs text-gray-400 dark:text-gray-500" />
+          )}
+        </div>
       </div>
       <AuthBrandPanel />
     </div>

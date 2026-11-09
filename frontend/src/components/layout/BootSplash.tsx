@@ -78,6 +78,8 @@ html.dark #${BOOT_SPLASH_ID} { ${darkRules} }
   background: radial-gradient(circle, color-mix(in srgb, var(--color-blue-500, ${BOOT_GLOW_FALLBACK}) 30%, transparent), transparent 68%);
   opacity: 0;
 }
+html[data-theme='midnight'] #${BOOT_SPLASH_ID} .boot-splash-mark::before,
+html[data-theme='highcontrast'] #${BOOT_SPLASH_ID} .boot-splash-mark::before { display: none; }
 #${BOOT_SPLASH_ID} .boot-splash-spinner {
   width: 28px;
   height: 28px;

@@ -161,6 +161,7 @@ function DashboardContent() {
         if (isDelegateView) {
           const delegateAccounts = await accountsApi.getAll();
           setAccounts(delegateAccounts);
+          setInstitutions([]);
           // 3C: when the owner granted the Bills & Deposits section, the
           // scheduled endpoint is delegate-reachable (server-filtered to the
           // delegate's readable accounts) so the widget can render.
@@ -190,7 +191,10 @@ function DashboardContent() {
           }),
           investmentsApi.getFavouriteSecurities().catch(() => [] as FavouriteSecurityQuote[]),
           investmentsApi.getSecurities().catch(() => []),
-          institutionsApi.getAll().catch(() => [] as Institution[]),
+          institutionsApi.getAll().catch((error) => {
+            logger.error('Failed to load institutions for their logos:', error);
+            return [] as Institution[];
+          }),
         ]);
 
         setAccounts(accountsData);

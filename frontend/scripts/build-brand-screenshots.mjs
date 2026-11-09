@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds the pictures on the sign-in screen's brand panel (public/brand/) from
+// Builds the pictures on the auth screens' brand panel (public/brand/) from
 // the documentation screenshots, at login-page weight. Run it from frontend/
 // after retaking any of the screens named below.
 import { mkdirSync } from 'node:fs';

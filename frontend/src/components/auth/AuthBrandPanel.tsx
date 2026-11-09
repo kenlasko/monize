@@ -19,28 +19,43 @@ export const AUTH_BRAND_SLIDES = [
 /** The index of the slide shown last. A cookie: localStorage is pinned before login. */
 export const AUTH_BRAND_SLIDE_COOKIE = 'monize-auth-slide';
 
-function nextSlideIndex(): number {
+/** How soon after a panel goes away a new one still counts as the same visit. */
+const SAME_VISIT_MS = 1000;
+
+// The slide on screen, or just gone. Moving between screens of one visit swaps
+// the shell, as register does into first-run setup, and that must not change
+// the picture. Sign-out is a client navigation too, so this cannot simply last
+// as long as the page does: the next sign-in has to step on.
+let shown: { index: number; releasedAt: number | null } | null = null;
+
+function slideIndexForMount(): number {
+  if (shown && (shown.releasedAt === null || Date.now() - shown.releasedAt < SAME_VISIT_MS)) {
+    return shown.index;
+  }
   const last = Number.parseInt(Cookies.get(AUTH_BRAND_SLIDE_COOKIE) ?? '', 10);
   return Number.isInteger(last) && last >= 0 ? (last + 1) % AUTH_BRAND_SLIDES.length : 0;
 }
 
 /**
- * The gradient half of the sign-in and first-run screens: the brand, a line
- * about one feature and a picture of it, a different feature on each visit.
+ * The gradient half of every auth screen: the brand, a line about one feature
+ * and a picture of it, a different feature on each visit.
  * The gradient is the accent ramp, so each palette tints it, and the pictures
  * come from `scripts/build-brand-screenshots.mjs` and are bounded by the panel
  * both ways, so a narrow or short window scales them rather than cropping them.
- * Only the picture matching
- * the mode is fetched, and neither below `lg`, where the panel is not displayed:
- * a lazy image that is `display: none` never loads.
+ * Only the picture matching the mode is fetched, and neither below `lg`, where
+ * the panel is not displayed: a lazy image that is `display: none` never loads.
  */
 export function AuthBrandPanel() {
   const t = useTranslations('auth.brandPanel');
-  const [index] = useState(nextSlideIndex);
+  const [index] = useState(slideIndexForMount);
   const slide = AUTH_BRAND_SLIDES[index];
 
   useEffect(() => {
     Cookies.set(AUTH_BRAND_SLIDE_COOKIE, String(index), preferenceCookieAttributes());
+    shown = { index, releasedAt: null };
+    return () => {
+      shown = { index, releasedAt: Date.now() };
+    };
   }, [index]);
 
   return (

@@ -74,7 +74,7 @@ vi.mock('@/lib/user-settings', () => ({
   userSettingsApi: { updatePreferences: vi.fn().mockResolvedValue({}) },
 }));
 
-vi.mock('js-cookie', () => ({ default: { set: vi.fn() } }));
+vi.mock('js-cookie', () => ({ default: { set: vi.fn(), get: vi.fn() } }));
 
 vi.mock('@/lib/stepUpToken', () => ({
   stashOidcReauthArtifact: vi.fn(),

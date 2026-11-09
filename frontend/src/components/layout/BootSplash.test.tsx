@@ -65,6 +65,14 @@ describe('BootSplash', () => {
     expect(css).toContain('var(--color-blue-500');
   });
 
+  it('paints no halo on the two palettes that paint no glow', () => {
+    const { container } = render(<BootSplash bootTheme={null} strings={strings} />);
+    const css = container.querySelector('style')?.textContent ?? '';
+    for (const theme of ['midnight', 'highcontrast']) {
+      expect(css).toContain(`html[data-theme='${theme}'] #${BOOT_SPLASH_ID} .boot-splash-mark::before`);
+    }
+  });
+
   it('draws the transparent brand logo inline, so it needs no download of its own', () => {
     const { container } = render(<BootSplash bootTheme={null} strings={strings} />);
     // A file would leave the halo glowing around nothing on a slow connection.
