@@ -288,6 +288,10 @@
     "missingDateRow": "{line}행: 날짜 없음",
     "unreadableDatesMore": "...외 {count}개",
     "unreadableDatesGoBack": "파일의 날짜가 다른 순서로 적혀 있다면 열 매핑 단계로 돌아가 파일이 사용하는 날짜 형식을 선택하세요.",
+    "unreadableAmountsNotice": "{count, plural, other {#개 행}}의 금액을 읽을 수 없어 가져오지 않습니다:",
+    "unreadableAmountRow": "{line}행: \"{rawAmount}\"",
+    "unreadableAmountsMore": "...외 {count}개",
+    "unreadableAmountsGoBack": "금액 열이 올바르게 매핑되었는지 확인하거나, 파일에서 이 행들을 수정한 후 다시 가져오세요.",
     "importButton": "거래 가져오기"
   },
   "complete": {
@@ -320,6 +324,8 @@
     "skipReasonDuplicateTransfer": "이미 기록된 이체",
     "skipReasonUnreadableDate": "날짜를 읽을 수 없음",
     "skipReasonNoDate": "날짜 없음",
+    "skipReasonUnreadableAmount": "금액을 읽을 수 없음",
+    "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "유가증권 없음",
     "skipReasonMissingQuantity": "수량 없음",
     "skipReasonMissingAmount": "금액 없음",

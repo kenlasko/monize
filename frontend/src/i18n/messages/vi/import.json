@@ -288,6 +288,10 @@
     "missingDateRow": "Hàng {line}: không có ngày",
     "unreadableDatesMore": "...và {count} hàng khác",
     "unreadableDatesGoBack": "Nếu tệp ghi ngày theo thứ tự khác, hãy quay lại bước ánh xạ cột và chọn định dạng ngày mà tệp sử dụng.",
+    "unreadableAmountsNotice": "{count, plural, other {# hàng}} có số tiền không thể đọc và sẽ không được nhập:",
+    "unreadableAmountRow": "Hàng {line}: \"{rawAmount}\"",
+    "unreadableAmountsMore": "...và {count} hàng khác",
+    "unreadableAmountsGoBack": "Hãy kiểm tra xem các cột số tiền đã được ánh xạ đúng chưa, hoặc sửa các hàng này trong tệp rồi nhập lại.",
     "importButton": "Nhập Khẩu Giao Dịch"
   },
   "complete": {
@@ -320,6 +324,8 @@
     "skipReasonDuplicateTransfer": "giao dịch chuyển khoản đã được ghi",
     "skipReasonUnreadableDate": "không đọc được ngày",
     "skipReasonNoDate": "không có ngày",
+    "skipReasonUnreadableAmount": "không đọc được số tiền",
+    "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "thiếu chứng khoán",
     "skipReasonMissingQuantity": "thiếu số lượng",
     "skipReasonMissingAmount": "thiếu số tiền",

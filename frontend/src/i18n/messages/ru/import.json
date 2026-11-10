@@ -288,6 +288,10 @@
     "missingDateRow": "Строка {line}: нет даты",
     "unreadableDatesMore": "...и ещё {count}",
     "unreadableDatesGoBack": "Если в файле даты записаны в другом порядке, вернитесь к шагу сопоставления столбцов и выберите формат даты, который в нём используется.",
+    "unreadableAmountsNotice": "{count, plural, one {# строка содержит сумму, которую} few {# строки содержат суммы, которые} many {# строк содержат суммы, которые} other {# строки содержат суммы, которые}} невозможно прочитать; {count, plural, one {она не будет импортирована} other {они не будут импортированы}}:",
+    "unreadableAmountRow": "Строка {line}: \"{rawAmount}\"",
+    "unreadableAmountsMore": "...и ещё {count}",
+    "unreadableAmountsGoBack": "Проверьте, правильно ли сопоставлены столбцы сумм, или исправьте эти строки в файле и импортируйте его снова.",
     "importButton": "Импортировать проводки"
   },
   "complete": {
@@ -320,6 +324,8 @@
     "skipReasonDuplicateTransfer": "перевод уже записан",
     "skipReasonUnreadableDate": "дату невозможно прочитать",
     "skipReasonNoDate": "нет даты",
+    "skipReasonUnreadableAmount": "сумму невозможно прочитать",
+    "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "отсутствует ценная бумага",
     "skipReasonMissingQuantity": "отсутствует количество",
     "skipReasonMissingAmount": "отсутствует сумма",

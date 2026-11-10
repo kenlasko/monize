@@ -288,6 +288,10 @@
     "missingDateRow": "第 {line} 列：無日期",
     "unreadableDatesMore": "...以及另外 {count} 列",
     "unreadableDatesGoBack": "如果檔案中的日期採用其他順序，請返回欄位對應步驟並選擇檔案使用的日期格式。",
+    "unreadableAmountsNotice": "{count, plural, other {# 列}}的金額無法讀取，將不會匯入：",
+    "unreadableAmountRow": "第 {line} 列：「{rawAmount}」",
+    "unreadableAmountsMore": "...以及另外 {count} 列",
+    "unreadableAmountsGoBack": "請檢查金額欄是否對應正確，或在檔案中更正這些列後重新匯入。",
     "importButton": "匯入交易"
   },
   "complete": {
@@ -320,6 +324,8 @@
     "skipReasonDuplicateTransfer": "轉帳已記錄",
     "skipReasonUnreadableDate": "無法讀取日期",
     "skipReasonNoDate": "無日期",
+    "skipReasonUnreadableAmount": "無法讀取金額",
+    "skippedRowRawAmount": "「{rawAmount}」",
     "skipReasonMissingSecurity": "缺少證券",
     "skipReasonMissingQuantity": "缺少數量",
     "skipReasonMissingAmount": "缺少金額",

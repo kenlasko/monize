@@ -288,6 +288,10 @@
     "missingDateRow": "Satır {line}: tarih yok",
     "unreadableDatesMore": "...ve {count} tane daha",
     "unreadableDatesGoBack": "Dosya tarihleri başka bir sırayla yazıyorsa sütun eşleştirme adımına geri dönün ve dosyanın kullandığı tarih biçimini seçin.",
+    "unreadableAmountsNotice": "{count, plural, other {# satırın}} tutarı okunamıyor ve içe aktarılmayacak:",
+    "unreadableAmountRow": "Satır {line}: \"{rawAmount}\"",
+    "unreadableAmountsMore": "...ve {count} tane daha",
+    "unreadableAmountsGoBack": "Tutar sütunlarının doğru eşlendiğini kontrol edin ya da bu satırları dosyada düzeltip yeniden içe aktarın.",
     "importButton": "İşlemleri İçe Aktar"
   },
   "complete": {
@@ -320,6 +324,8 @@
     "skipReasonDuplicateTransfer": "transfer zaten kayıtlı",
     "skipReasonUnreadableDate": "tarih okunamadı",
     "skipReasonNoDate": "tarih yok",
+    "skipReasonUnreadableAmount": "tutar okunamadı",
+    "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "menkul kıymet eksik",
     "skipReasonMissingQuantity": "adet eksik",
     "skipReasonMissingAmount": "tutar eksik",
