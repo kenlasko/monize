@@ -11,6 +11,7 @@ import { TransactionSplitService } from "./transaction-split.service";
 import {
   assertVoidTransitionAllowedOnRow,
   applyVoidTransitionToMirrorLeg,
+  assertMirrorLegVoidTransitionMutable,
 } from "./void-status-transition.util";
 import { AccountsService } from "../accounts/accounts.service";
 import {
@@ -162,6 +163,11 @@ export class TransactionReconciliationService {
       const counterpartAccountIds: string[] = [];
       if (balanceMoved) {
         await assertVoidTransitionAllowedOnRow(m, transactionId);
+        // The mirror leg this transition writes is asked the strict lock too,
+        // before anything is written (issue #2072).
+        if (!locked.isSplit) {
+          await assertMirrorLegVoidTransitionMutable(m, userId, locked, status);
+        }
       }
 
       const fields: Partial<Transaction> = { status };

@@ -1277,6 +1277,12 @@ Enforcement         assertReconciledRowsMutable / assertReconciledIdsMutable
                     the update with splits, remove, the conversion and
                     bulkDelete) and removeSplit lock and ask every leg they
                     delete or relink before the first write (issue #2039),
+                    the mirror transfer leg or investment cash leg a VOID
+                    crossing writes, on the status route, the generic update
+                    and InvestmentTransactionsService.updateStatus
+                    (assertMirrorLegVoidTransitionMutable before the first
+                    write, and applyVoidTransitionToMirrorLeg again before it
+                    writes the leg; issue #2072),
                     ActionHistoryService.undoTransactionUpdate (undo
                     and redo of a transaction edit), ActionHistoryService.undoBulkUpdate
                     (undo and redo of a bulk update, every row of the snapshot

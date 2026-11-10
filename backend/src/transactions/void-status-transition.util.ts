@@ -5,6 +5,7 @@ import { TransactionSplit } from "./entities/transaction-split.entity";
 import { isTransactionInFuture } from "../common/date-utils";
 import { tr } from "../i18n/translate";
 import { lockTransactionRow, LockedTransactionRow } from "../common/db/locks";
+import { assertReconciledRowsMutable } from "./reconciled-lock.util";
 
 /**
  * The two obligations every path that moves a single row across the VOID
@@ -104,6 +105,36 @@ export async function assertVoidTransitionAllowedOnRow(
 }
 
 /**
+ * Refuse a VOID-boundary transition whose mirror leg is RECONCILED under the
+ * strict lock (INV-RECONCILE-001), before the caller's first write.
+ *
+ * The request names one leg, but the transition writes the counterpart's
+ * status and moves its account's balance, so the counterpart is asked the
+ * lock as well -- as the edit form's `updateTransfer`, the transfer delete and
+ * the bulk edit already ask both legs (issue #2072). Locks the counterpart the
+ * same way `applyVoidTransitionToMirrorLeg` does (re-entrant in this
+ * transaction) and skips exactly the rows that helper leaves alone. No undo
+ * window: a VOID is never an undo.
+ */
+export async function assertMirrorLegVoidTransitionMutable(
+  m: EntityManager,
+  userId: string,
+  row: Pick<LockedTransactionRow, "linkedTransactionId">,
+  newStatus: TransactionStatus,
+): Promise<void> {
+  if (!row.linkedTransactionId) return;
+  const counterpart = await lockTransactionRow(
+    m,
+    row.linkedTransactionId,
+    userId,
+  );
+  if (!counterpart || counterpart.isSplit) return;
+  const isVoid = newStatus === TransactionStatus.VOID;
+  if ((counterpart.status === TransactionStatus.VOID) === isVoid) return;
+  await assertReconciledRowsMutable(m, userId, [counterpart]);
+}
+
+/**
  * Carry a VOID-boundary transition from a locked transfer leg onto its mirror
  * leg, adjusting the mirror's balance by its own amount. Returns the accounts
  * whose balances moved, for the caller's post-commit invalidation.
@@ -118,6 +149,13 @@ export async function assertVoidTransitionAllowedOnRow(
  * chosen for the leg the user opened -- CLEARED/RECONCILED are per-ledger and
  * copying one across removed the counterpart's account from reconciliation
  * candidates it was never checked against, with no reconciled date behind it.
+ *
+ * The counterpart is asked the strict reconciled lock (INV-RECONCILE-001)
+ * under its locked status before it is written, so a RECONCILED counterpart
+ * refuses the whole transition and the caller's transaction rolls back (issue
+ * #2072). A caller that writes before reaching here asks
+ * `assertMirrorLegVoidTransitionMutable` first, so the refusal precedes its
+ * own write too.
  */
 export async function applyVoidTransitionToMirrorLeg(
   m: EntityManager,
@@ -138,6 +176,8 @@ export async function applyVoidTransitionToMirrorLeg(
   const isVoid = newStatus === TransactionStatus.VOID;
   const counterpartWasVoid = counterpart.status === TransactionStatus.VOID;
   if (counterpartWasVoid === isVoid) return [];
+
+  await assertReconciledRowsMutable(m, userId, [counterpart]);
 
   await m.update(
     Transaction,

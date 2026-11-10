@@ -3486,6 +3486,30 @@ describe("InvestmentTransactionsService", () => {
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
 
+    it("refuses a VOID whose cash leg is reconciled under the strict lock, writing nothing (#2072)", async () => {
+      // The trade's cash row crosses the VOID boundary with it, so a
+      // reconciled cash row answers the lock before the trade is reversed.
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+        lockReconciledTransactions: true,
+      });
+      stageLocks(
+        [invLockRow({ status: TransactionStatus.CLEARED })],
+        [cashLockRow({ status: TransactionStatus.RECONCILED })],
+      );
+
+      await expect(
+        service.updateStatus(userId, transactionId, TransactionStatus.VOID),
+      ).rejects.toThrow(ConflictException);
+
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      expect(investmentTransactionsRepository.update).not.toHaveBeenCalled();
+      expect(
+        holdingsService.rebuildScopesFromTransactions,
+      ).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
     it("throws NotFoundException for a missing row", async () => {
       stageLocks([]);
 
