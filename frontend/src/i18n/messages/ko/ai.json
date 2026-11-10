@@ -259,6 +259,12 @@
     "addTags": "추가할 태그",
     "removeTags": "제거할 태그",
     "splitLineTags": "태그: {tags}",
+    "splitLineTagChanges": "분할 항목 태그",
+    "splitLineName": "{category} {amount}",
+    "splitLineNameWithMemo": "{category} {amount} ({memo})",
+    "splitLineWithLeg": "{line} 및 {account}의 이체",
+    "splitLineTagChange": "{line}: {changes}",
+    "splitLineTagChangeBoth": "{added}; {removed}",
     "bulkTagsAdded": "태그 추가: {tags}",
     "bulkTagsRemoved": "태그 제거: {tags}",
     "marksPaidDue": "{name} (만기 {date})"

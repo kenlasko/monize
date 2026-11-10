@@ -1880,6 +1880,123 @@ describe("McpTransactionsTools", () => {
       expect(transactionsService.removeAny).not.toHaveBeenCalled();
     });
 
+    it("commits the split lines' tag changes the approver saw, naming each line in the prompt", async () => {
+      relayService.emitPendingAction.mockResolvedValue(false);
+      acceptingClient();
+      prepService.prepareUpdate.mockResolvedValue({
+        kind: "standard",
+        createPayee: false,
+        preview: {
+          transactionId: "t1",
+          accountId: "a1",
+          accountName: "Checking",
+          amount: -75,
+          transactionDate: "2025-02-01",
+          payeeId: null,
+          payeeName: null,
+          payeeMatched: false,
+          payeeWillBeCreated: false,
+          categoryId: null,
+          categoryName: null,
+          description: null,
+          currencyCode: "USD",
+          splitTagChanges: [
+            {
+              splitId: "s1",
+              categoryName: "Groceries",
+              amount: -50,
+              memo: null,
+              tagNames: ["Trip"],
+              removeTagIds: ["tag-o"],
+              removeTagNames: ["Old"],
+            },
+          ],
+          tagsOnly: true,
+        },
+      });
+      transactionsService.update.mockResolvedValue({ id: "t1" });
+
+      await handlers["manage_transactions"](
+        {
+          operation: "update",
+          items: [
+            {
+              transactionId: "t1",
+              splitTags: [
+                {
+                  splitId: "33333333-3333-4333-8333-333333333333",
+                  addTagNames: ["Trip"],
+                },
+              ],
+            },
+          ],
+        },
+        ctx,
+      );
+
+      expect(prepService.prepareUpdate).toHaveBeenCalledWith(
+        "u1",
+        expect.objectContaining({
+          splitTags: [
+            {
+              splitId: "33333333-3333-4333-8333-333333333333",
+              addTagNames: ["Trip"],
+            },
+          ],
+        }),
+      );
+      expect(elicitInput.mock.calls[0][0].message).toContain(
+        "Split line Groceries -50 tags: add Trip; remove Old",
+      );
+      expect(transactionsService.update).toHaveBeenCalledWith(
+        "u1",
+        "t1",
+        {},
+        {
+          createPayeeIfMissing: false,
+          splitTagChanges: [
+            { splitId: "s1", addTagNames: ["Trip"], removeTagIds: ["tag-o"] },
+          ],
+        },
+      );
+    });
+
+    it("refuses a splitTags entry that names no tag, preparing nothing", async () => {
+      const result = await handlers["manage_transactions"](
+        {
+          operation: "update",
+          items: [
+            {
+              transactionId: "t1",
+              description: "x",
+              splitTags: [{ splitId: "33333333-3333-4333-8333-333333333333" }],
+            },
+          ],
+        },
+        ctx,
+      );
+      expect(result.isError).toBe(true);
+      expect(JSON.stringify(result.content)).toContain("names no tag");
+      expect(prepService.prepareUpdate).not.toHaveBeenCalled();
+    });
+
+    it("refuses splitTags on a create or a delete", async () => {
+      const result = await handlers["manage_transactions"](
+        {
+          operation: "delete",
+          items: [
+            {
+              transactionId: "t1",
+              splitTags: [{ splitId: "33333333-3333-4333-8333-333333333333" }],
+            },
+          ],
+        },
+        ctx,
+      );
+      expect(result.isError).toBe(true);
+      expect(prepService.prepareDelete).not.toHaveBeenCalled();
+    });
+
     it("warns in the confirmation when deleting a reconciled transaction", async () => {
       acceptingClient();
       prepService.prepareDelete.mockResolvedValue({

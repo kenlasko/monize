@@ -98,6 +98,8 @@
     "undoNotSupportedForEntityType": "不支援復原實體類型：{{ entityType }}",
     "unsupportedTransactionAction": "不支援的交易操作：{{ action }}",
     "undoTransactionGone": "無法復原：交易已不存在",
+    "undoSplitLineGone": "無法復原：此變更修改過標籤的拆分行已不在該交易上",
+    "undoTagGone": "無法復原：此變更涉及的標籤之後已被刪除",
     "redoCreateWithLegs": "此交易在其他帳戶中建立了項目,因此無法重做。請改為重新建立該交易",
     "undoAccountGone": "無法復原：科目已不存在",
     "unsupportedTransferAction": "不支援的轉帳操作：{{ action }}",
@@ -758,7 +760,11 @@
     "repeatedInBatch": "此請求中的另一項已指定此標籤。",
     "nameRequired": "標籤需要一個名稱。",
     "invalidColor": "「{{ color }}」不是顏色：請使用 #RRGGBB，例如 #FF5733。",
-    "nothingToChange": "無需變更：該交易已帶有所有要新增的標籤，且不帶任何要移除的標籤。此編輯不會變更拆分行上的標籤。"
+    "nothingToChange": "無需變更：該交易已帶有所有要新增的標籤，且不帶任何要移除的標籤。拆分行上的標籤只能透過 splitTags 變更。",
+    "splitTagsNotSplit": "splitTags 用於變更拆分交易各行的標籤，而此交易未拆分。交易本身的標籤請使用 addTagNames 和 removeTagNames。",
+    "splitTagsRepeated": "splitId {{ splitId }} 在 splitTags 中出現不止一次。每行只給一個項目。",
+    "splitTagsWithSplits": "splitTags 不能與 splits 一起傳送。被取代的行在註明其 splitId 時會保留標籤；請在另一次編輯中變更各行的標籤。",
+    "splitLineGone": "拆分行 {{ splitId }} 已不在此交易上：提出此變更後，其拆分行已有變動。請重新讀取該交易，並重新提出標籤變更。"
   },
   "transactionRules": {
     "notFound": "找不到 ID 為 {{ id }} 的交易規則",

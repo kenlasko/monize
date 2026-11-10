@@ -239,6 +239,43 @@ describe('BulkConfirmationCard', () => {
       ).toBeInTheDocument();
     });
 
+    it('says which tags each update row changes on its split lines', () => {
+      render(
+        <BulkConfirmationCard
+          action={makeAction({
+            type: 'batch_actions',
+            descriptor: { type: 'batch_actions', operation: 'update' },
+            preview: {
+              rows: [
+                {
+                  status: 'ok',
+                  accountName: 'Checking',
+                  amount: -30,
+                  currencyCode: 'USD',
+                  transactionDate: '2026-01-15',
+                  payeeName: 'Costco',
+                  splitTagChanges: [
+                    {
+                      categoryName: 'Food',
+                      amount: -20,
+                      memo: 'bulk',
+                      tagNames: ['Trip'],
+                      removeTagNames: ['Old'],
+                    },
+                  ],
+                },
+              ],
+            },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(
+        screen.getByText(/Food .*20\.00 \(bulk\): adds tags: Trip; removes tags: Old/),
+      ).toBeInTheDocument();
+    });
+
     it('says which tags each update row adds and removes', () => {
       render(
         <BulkConfirmationCard

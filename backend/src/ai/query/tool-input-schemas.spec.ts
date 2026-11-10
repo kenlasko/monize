@@ -1012,6 +1012,79 @@ describe("tool-input-schemas", () => {
       ).toBe(false);
     });
 
+    it("accepts splitTags as a change on its own, on an update only", () => {
+      const splitTags = [{ splitId: TXID, addTagNames: ["Trip"] }];
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "update",
+          items: [{ transactionId: TXID, splitTags }],
+        }).success,
+      ).toBe(true);
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "update",
+          items: [
+            {
+              transactionId: TXID,
+              splitTags: [{ splitId: TXID, addTagNames: [] }],
+            },
+          ],
+        }).success,
+      ).toBe(false);
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "delete",
+          items: [{ transactionId: TXID, splitTags }],
+        }).success,
+      ).toBe(false);
+    });
+
+    it("refuses a splitTags entry that names no tag, even beside another change", () => {
+      const result = manageTransactionsSchema.safeParse({
+        operation: "update",
+        items: [
+          {
+            transactionId: TXID,
+            description: "x",
+            splitTags: [{ splitId: TXID }],
+          },
+        ],
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toMatch(/names no tag/);
+      }
+    });
+
+    it("refuses splitTags beside a splits replacement, and a splitId that is not one", () => {
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "update",
+          items: [
+            {
+              transactionId: TXID,
+              splits: [
+                { categoryName: "A", amount: -1 },
+                { categoryName: "B", amount: -1 },
+              ],
+              splitTags: [{ splitId: TXID, removeTagNames: ["Old"] }],
+            },
+          ],
+        }).success,
+      ).toBe(false);
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "update",
+          items: [
+            {
+              transactionId: TXID,
+              splitTags: [{ splitId: "line-1", addTagNames: ["Trip"] }],
+            },
+          ],
+        }).success,
+      ).toBe(false);
+    });
+
     it("bounds the names and takes a split line's splitId", () => {
       expect(
         manageTransactionsSchema.safeParse({

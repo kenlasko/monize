@@ -641,6 +641,21 @@ const tagNameListSchema = z
 /** Largest split set a single transaction row may carry through the tool. */
 const MAX_SPLIT_LINES = 50;
 
+/**
+ * update: tag changes on existing split lines, one entry per line by the
+ * `splitId` a read tool returned. The lines themselves are not touched.
+ */
+const splitTagsSchema = z
+  .array(
+    z.object({
+      splitId: z.string().uuid(),
+      addTagNames: tagNameListSchema.optional(),
+      removeTagNames: tagNameListSchema.optional(),
+    }),
+  )
+  .min(1)
+  .max(MAX_SPLIT_LINES);
+
 const manageTransactionItemSchema = z
   .object({
     // create (standard)
@@ -669,6 +684,7 @@ const manageTransactionItemSchema = z
     // update: tags added and removed; the transaction's other tags stay.
     addTagNames: tagNameListSchema.optional(),
     removeTagNames: tagNameListSchema.optional(),
+    splitTags: splitTagsSchema.optional(),
     // Chat attachments to save on the transaction: each entry names a file on
     // the CURRENT message by filename (string) or 1-based position (number).
     attachments: z
@@ -702,17 +718,51 @@ export const manageTransactionsSchema = z
       const hasAttachments = item.attachments !== undefined;
       const hasTags =
         (item.addTagNames?.length ?? 0) > 0 ||
-        (item.removeTagNames?.length ?? 0) > 0;
+        (item.removeTagNames?.length ?? 0) > 0 ||
+        (item.splitTags ?? []).some(
+          (line) =>
+            (line.addTagNames?.length ?? 0) > 0 ||
+            (line.removeTagNames?.length ?? 0) > 0,
+        );
       if (
         value.operation !== "update" &&
-        (item.addTagNames !== undefined || item.removeTagNames !== undefined)
+        (item.addTagNames !== undefined ||
+          item.removeTagNames !== undefined ||
+          item.splitTags !== undefined)
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: path(
-            item.addTagNames !== undefined ? "addTagNames" : "removeTagNames",
+            item.addTagNames !== undefined
+              ? "addTagNames"
+              : item.removeTagNames !== undefined
+                ? "removeTagNames"
+                : "splitTags",
           ),
-          message: "addTagNames and removeTagNames are used only with update.",
+          message:
+            "addTagNames, removeTagNames and splitTags are used only with update.",
+        });
+      }
+      // An entry that names no tag would be dropped without a word, and the
+      // model would believe the line changed.
+      item.splitTags?.forEach((line, lineIndex) => {
+        if (
+          (line.addTagNames?.length ?? 0) === 0 &&
+          (line.removeTagNames?.length ?? 0) === 0
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["items", index, "splitTags", lineIndex],
+            message: `splitTags entry for splitId ${line.splitId} names no tag: give addTagNames or removeTagNames.`,
+          });
+        }
+      });
+      if (item.splitTags !== undefined && hasSplits) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: path("splitTags"),
+          message:
+            "splitTags cannot be sent with splits. A replaced line keeps its tags when it names its splitId; change the lines' tags in a separate edit.",
         });
       }
       if (hasAttachments) {
@@ -838,7 +888,7 @@ export const manageTransactionsSchema = z
             code: z.ZodIssueCode.custom,
             path: path("transactionId"),
             message:
-              "Provide at least one field to change (amount, date, payeeName, categoryName, description, splits, attachments, addTagNames or removeTagNames).",
+              "Provide at least one field to change (amount, date, payeeName, categoryName, description, splits, attachments, addTagNames, removeTagNames or splitTags).",
           });
         }
       } else {

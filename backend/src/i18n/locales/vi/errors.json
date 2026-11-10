@@ -98,6 +98,8 @@
     "undoNotSupportedForEntityType": "Hoàn tác không được hỗ trợ cho loại thực thể: {{ entityType }}",
     "unsupportedTransactionAction": "Hành động giao tác không được hỗ trợ: {{ action }}",
     "undoTransactionGone": "Không thể hoàn tác: giao tác không còn tồn tại",
+    "undoSplitLineGone": "Không thể hoàn tác: dòng chia mà thay đổi này đã sửa thẻ không còn trên giao tác",
+    "undoTagGone": "Không thể hoàn tác: một thẻ trong thay đổi này đã bị xóa kể từ đó",
     "redoCreateWithLegs": "Giao dịch này đã tạo các mục ở tài khoản khác nên không thể làm lại. Hãy tạo lại giao dịch",
     "undoAccountGone": "Không thể hoàn tác: tài khoản không còn tồn tại",
     "unsupportedTransferAction": "Hành động chuyển tiền không được hỗ trợ: {{ action }}",
@@ -758,7 +760,11 @@
     "repeatedInBatch": "Một mục khác trong yêu cầu này đã nêu thẻ này.",
     "nameRequired": "Thẻ cần có tên.",
     "invalidColor": "\"{{ color }}\" không phải là màu: hãy dùng #RRGGBB, ví dụ #FF5733.",
-    "nothingToChange": "Không có gì để thay đổi: giao dịch đã có mọi thẻ cần thêm và không có thẻ nào cần gỡ. Lần sửa này không thay đổi thẻ trên các dòng chia."
+    "nothingToChange": "Không có gì để thay đổi: giao dịch đã có mọi thẻ cần thêm và không có thẻ nào cần gỡ. Thẻ trên các dòng chia chỉ thay đổi qua splitTags.",
+    "splitTagsNotSplit": "splitTags thay đổi thẻ trên các dòng của một giao dịch được chia, nhưng giao dịch này không được chia. Hãy dùng addTagNames và removeTagNames cho thẻ của chính giao dịch.",
+    "splitTagsRepeated": "splitId {{ splitId }} xuất hiện nhiều hơn một lần trong splitTags. Mỗi dòng chỉ ghi một mục.",
+    "splitTagsWithSplits": "Không thể gửi splitTags cùng với splits. Một dòng được thay thế giữ thẻ của nó khi ghi splitId của nó; hãy thay đổi thẻ của các dòng trong một lần sửa riêng.",
+    "splitLineGone": "Dòng chia {{ splitId }} không còn trên giao dịch này: các dòng chia đã thay đổi sau khi thay đổi này được đề xuất. Hãy đọc lại giao dịch và đề xuất lại thay đổi thẻ."
   },
   "transactionRules": {
     "notFound": "Không tìm thấy quy tắc giao dịch có ID {{ id }}",

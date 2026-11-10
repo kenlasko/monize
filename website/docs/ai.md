@@ -152,7 +152,7 @@ When the assistant mentions one of your accounts, categories, payees, or transac
 
 Beyond answering questions, the assistant can make changes on your behalf -- creating, updating, and deleting transactions, transfers, payees, tags, securities, investment transactions and transaction rules (**Tools > Rules**), changing a transaction's category, adding or removing tags on transactions, and running a rule on existing transactions.
 
-Adding or removing tags on a transaction keeps every other tag it carries and changes nothing else on it; on a transfer both sides change. A name you have no tag for yet is created when you approve the card, and the card marks it as new. When the assistant rewrites a split transaction's lines, each line keeps the tags of the line it replaces.
+Adding or removing tags on a transaction keeps every other tag it carries and changes nothing else on it; on a transfer both sides change. A name you have no tag for yet is created when you approve the card, and the card marks it as new. When the assistant rewrites a split transaction's lines, each line keeps the tags of the line it replaces. The assistant can also add or remove tags on a single line of a split transaction without touching its amounts or categories. When that line is a transfer to another account, the matching transaction in that account gets the same change, and the card names that account. Undo puts back exactly the tags the change touched, on the line and in the other account.
 
 Nothing is saved until you approve it. Each proposed change is presented as an on-screen confirmation card showing exactly what would be written, which you **Approve** or **Cancel**:
 

@@ -56,6 +56,28 @@ describe("updateTransactionCommitArgs", () => {
     });
   });
 
+  it("carries the tag changes on split lines, and only those of a tag-only edit", () => {
+    expect(
+      updateTransactionCommitArgs({
+        ...edit,
+        splitTagChanges: [
+          { splitId: "s1", tagNames: ["Trip"] },
+          { splitId: "s2", removeTagIds: ["tag-o"] },
+        ],
+        tagsOnly: true,
+      }),
+    ).toEqual({
+      dto: {},
+      options: {
+        createPayeeIfMissing: true,
+        splitTagChanges: [
+          { splitId: "s1", addTagNames: ["Trip"] },
+          { splitId: "s2", removeTagIds: ["tag-o"] },
+        ],
+      },
+    });
+  });
+
   it("keeps the split lines' tags, and gives the parent no category", () => {
     const { dto } = updateTransactionCommitArgs({
       ...edit,

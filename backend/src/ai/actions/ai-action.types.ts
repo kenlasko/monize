@@ -169,6 +169,18 @@ export interface SplitRowDescriptor {
 }
 
 /**
+ * The tag change an edit makes on ONE existing split line, signed with the rest
+ * of the card: the names it adds (created by the write when the user has none)
+ * and the carried tags it removes. A transfer line's counterpart leg gets the
+ * same change, as the line's tags are shown on both.
+ */
+export interface SplitTagChangeDescriptor {
+  splitId: string;
+  tagNames?: string[];
+  removeTagIds?: string[];
+}
+
+/**
  * A category-split line resolved at preview time: carries both the id (for the
  * signed descriptor) and the display name (for the confirmation card). Produced
  * by the shared prep service and consumed by the action builder.
@@ -539,6 +551,11 @@ export interface UpdateTransactionDescriptor extends BaseDescriptor {
    */
   removeTagIds?: string[];
   /**
+   * Tag changes on existing split lines, by `splitId` (the lines stay; only
+   * their tags change). Signed with the rest, like the transaction's own.
+   */
+  splitTagChanges?: SplitTagChangeDescriptor[];
+  /**
    * The edit changes the tags and nothing else: confirm writes only the tags,
    * never the snapshot above over an edit made since the card was built.
    */
@@ -675,6 +692,8 @@ export interface BatchUpdateTransactionRow {
   tagNames?: string[];
   /** Tag ids this row REMOVES, as on the singular descriptor. */
   removeTagIds?: string[];
+  /** Tag changes on existing split lines, as on the singular descriptor. */
+  splitTagChanges?: SplitTagChangeDescriptor[];
   /** The row changes the tags and nothing else, as on the singular descriptor. */
   tagsOnly?: true;
 }
@@ -953,6 +972,22 @@ export interface AiActionSplitPreview {
   tagNames?: string[];
 }
 
+/**
+ * Display-only preview of the tag change an edit makes on one existing split
+ * line: the line, as the card names it, and the tags it gains and loses.
+ */
+export interface AiActionSplitTagChangePreview {
+  categoryName: string | null;
+  amount: number;
+  memo?: string | null;
+  /** A transfer line: the account whose counterpart transaction changes too. */
+  legAccountName?: string;
+  /** Tag names the line gains; `newTagNames` are those the approval creates. */
+  tagNames?: string[];
+  newTagNames?: string[];
+  removeTagNames?: string[];
+}
+
 /** Display-only preview of one file an action will attach on approval. */
 export interface AiActionAttachmentPreview {
   filename: string;
@@ -1084,6 +1119,8 @@ export interface AiActionPreview {
   newTagNames?: string[];
   /** update_transaction / update_transfer: tag names the approval removes. */
   removeTagNames?: string[];
+  /** update_transaction: the tag changes the approval makes on split lines. */
+  splitTagChanges?: AiActionSplitTagChangePreview[];
   /** update_transaction: the reference number ("Ref #") the approval sets (display mirror of the descriptor's). */
   referenceNumber?: string;
   // create_investment_transaction display fields.
@@ -1179,6 +1216,8 @@ export interface AiActionPreviewRow {
   tagNames?: string[];
   newTagNames?: string[];
   removeTagNames?: string[];
+  /** Bulk update: the tag changes the row makes on split lines. */
+  splitTagChanges?: AiActionSplitTagChangePreview[];
   /**
    * True when this bulk update/delete row targets a reconciled transaction, so
    * the card can flag the row before the user approves the batch.

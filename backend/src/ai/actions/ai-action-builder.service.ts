@@ -6,6 +6,8 @@ import {
   tagPreviewRow,
 } from "../../tags/tag-tool-prep.service";
 import {
+  splitTagChangeDisplayFields,
+  splitTagChangeWriteFields,
   tagChangeDisplayFields,
   tagChangeWriteFields,
 } from "../../tags/tag-change.util";
@@ -664,6 +666,7 @@ export class AiActionBuilderService {
       ...(splits ? { splits: splits.map(toSplitRowDescriptor) } : {}),
       ...(attachments?.length ? { attachments } : {}),
       ...tagChangeWriteFields(preview),
+      ...splitTagChangeWriteFields(preview),
       ...(preview.tagsOnly ? { tagsOnly: true as const } : {}),
       ...(preview.referenceNumber === undefined
         ? {}
@@ -696,6 +699,7 @@ export class AiActionBuilderService {
           ? { attachments: attachments.map(toAttachmentPreview) }
           : {}),
         ...tagChangeDisplayFields(preview),
+        ...splitTagChangeDisplayFields(preview),
         ...(preview.referenceNumber === undefined
           ? {}
           : { referenceNumber: preview.referenceNumber }),

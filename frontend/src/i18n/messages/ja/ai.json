@@ -259,6 +259,12 @@
     "addTags": "追加するタグ",
     "removeTags": "削除するタグ",
     "splitLineTags": "タグ: {tags}",
+    "splitLineTagChanges": "分割行のタグ",
+    "splitLineName": "{category} {amount}",
+    "splitLineNameWithMemo": "{category} {amount}（{memo}）",
+    "splitLineWithLeg": "{line}（{account} の振替も）",
+    "splitLineTagChange": "{line}: {changes}",
+    "splitLineTagChangeBoth": "{added}; {removed}",
     "bulkTagsAdded": "タグを追加: {tags}",
     "bulkTagsRemoved": "タグを削除: {tags}",
     "marksPaidDue": "{name}（期日 {date}）"

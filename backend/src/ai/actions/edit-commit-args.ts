@@ -4,6 +4,7 @@ import {
   UpdateTransferDescriptor,
   toSplitDtoRows,
 } from "./ai-action.types";
+import type { SplitTagChangeWrite } from "../../tags/tag-change.util";
 import type { UpdateTransactionDto } from "../../transactions/dto/update-transaction.dto";
 import type { UpdateTransferDto } from "../../transactions/dto/update-transfer.dto";
 
@@ -12,7 +13,7 @@ import type { UpdateTransferDto } from "../../transactions/dto/update-transfer.d
  * the DTO and the options. Written once for every commit path (the confirm
  * endpoint's executor, its batch rows, and the MCP tool's direct commits), so
  * none of them can drop a field the card showed -- splits with the tags their
- * lines keep, the tags added and removed.
+ * lines keep, the tags added and removed, on the transaction and on its lines.
  */
 export function updateTransactionCommitArgs(
   d: UpdateTransactionDescriptor | BatchUpdateTransactionRow,
@@ -22,6 +23,7 @@ export function updateTransactionCommitArgs(
     createPayeeIfMissing: boolean;
     addTagNames?: string[];
     removeTagIds?: string[];
+    splitTagChanges?: SplitTagChangeWrite[];
   };
 } {
   const referenceNumber =
@@ -30,6 +32,19 @@ export function updateTransactionCommitArgs(
     createPayeeIfMissing: d.createPayee === true,
     ...(d.tagNames?.length ? { addTagNames: [...d.tagNames] } : {}),
     ...(d.removeTagIds?.length ? { removeTagIds: [...d.removeTagIds] } : {}),
+    ...(d.splitTagChanges?.length
+      ? {
+          splitTagChanges: d.splitTagChanges.map((line) => ({
+            splitId: line.splitId,
+            ...(line.tagNames?.length
+              ? { addTagNames: [...line.tagNames] }
+              : {}),
+            ...(line.removeTagIds?.length
+              ? { removeTagIds: [...line.removeTagIds] }
+              : {}),
+          })),
+        }
+      : {}),
   };
   // A tag-only edit writes the tags and no field: the snapshot the card was
   // built from must not overwrite an edit made since.

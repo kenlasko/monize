@@ -98,6 +98,8 @@
     "undoNotSupportedForEntityType": "Cofnięcie nie jest obsługiwane dla typu encji: {{ entityType }}",
     "unsupportedTransactionAction": "Nieobsługiwana operacja transakcji: {{ action }}",
     "undoTransactionGone": "Nie można cofnąć: transakcja już nie istnieje",
+    "undoSplitLineGone": "Nie można cofnąć: linii podziału, której tagi zmieniła ta zmiana, nie ma już w transakcji",
+    "undoTagGone": "Nie można cofnąć: tag z tej zmiany został od tego czasu usunięty",
     "redoCreateWithLegs": "Ta transakcja utworzyła wpisy na innych kontach, więc nie można jej ponowić. Utwórz ją ponownie",
     "undoAccountGone": "Nie można cofnąć: konto już nie istnieje",
     "unsupportedTransferAction": "Nieobsługiwana operacja przelewu: {{ action }}",
@@ -758,7 +760,11 @@
     "repeatedInBatch": "Inny element tego żądania już wskazuje ten tag.",
     "nameRequired": "Tag musi mieć nazwę.",
     "invalidColor": "„{{ color }}” nie jest kolorem: użyj #RRGGBB, na przykład #FF5733.",
-    "nothingToChange": "Nie ma nic do zmiany: transakcja ma już wszystkie tagi do dodania i żadnego z tagów do usunięcia. Ta edycja nie zmienia tagów linii podziału."
+    "nothingToChange": "Nie ma nic do zmiany: transakcja ma już wszystkie tagi do dodania i żadnego z tagów do usunięcia. Tagi linii podziału zmienia się tylko przez splitTags.",
+    "splitTagsNotSplit": "splitTags zmienia tagi linii transakcji podzielonej, a ta transakcja nie jest podzielona. Do jej własnych tagów użyj addTagNames i removeTagNames.",
+    "splitTagsRepeated": "splitId {{ splitId }} występuje w splitTags więcej niż raz. Podaj jeden wpis dla każdej linii.",
+    "splitTagsWithSplits": "splitTags nie można wysłać razem z splits. Zastąpiona linia zachowuje tagi, gdy podaje swój splitId; zmień tagi linii w osobnej edycji.",
+    "splitLineGone": "Linii podziału {{ splitId }} nie ma już w tej transakcji: jej linie podziału zmieniły się po zaproponowaniu tej zmiany. Odczytaj transakcję ponownie i zaproponuj zmianę tagów od nowa."
   },
   "transactionRules": {
     "notFound": "Nie znaleziono reguły transakcji o ID {{ id }}",

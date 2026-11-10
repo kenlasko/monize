@@ -259,6 +259,12 @@
     "addTags": "Ajouter des étiquettes",
     "removeTags": "Retirer des étiquettes",
     "splitLineTags": "étiquettes : {tags}",
+    "splitLineTagChanges": "Étiquettes des lignes de ventilation",
+    "splitLineName": "{category} {amount}",
+    "splitLineNameWithMemo": "{category} {amount} ({memo})",
+    "splitLineWithLeg": "{line} et son virement dans {account}",
+    "splitLineTagChange": "{line} : {changes}",
+    "splitLineTagChangeBoth": "{added} ; {removed}",
     "bulkTagsAdded": "ajoute les étiquettes : {tags}",
     "bulkTagsRemoved": "retire les étiquettes : {tags}",
     "marksPaidDue": "{name} (échéance le {date})"

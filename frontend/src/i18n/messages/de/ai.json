@@ -259,6 +259,12 @@
     "addTags": "Tags hinzufügen",
     "removeTags": "Tags entfernen",
     "splitLineTags": "Tags: {tags}",
+    "splitLineTagChanges": "Tags der Aufteilungszeilen",
+    "splitLineName": "{category} {amount}",
+    "splitLineNameWithMemo": "{category} {amount} ({memo})",
+    "splitLineWithLeg": "{line} und die zugehörige Umbuchung in {account}",
+    "splitLineTagChange": "{line}: {changes}",
+    "splitLineTagChangeBoth": "{added}; {removed}",
     "bulkTagsAdded": "fügt Tags hinzu: {tags}",
     "bulkTagsRemoved": "entfernt Tags: {tags}",
     "marksPaidDue": "{name} (fällig am {date})"

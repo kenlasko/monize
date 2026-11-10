@@ -98,6 +98,8 @@
     "undoNotSupportedForEntityType": "Pembatalan tidak didukung untuk jenis entitas: {{ entityType }}",
     "unsupportedTransactionAction": "Tindakan transaksi tidak didukung: {{ action }}",
     "undoTransactionGone": "Tidak dapat membatalkan: transaksi tidak ada lagi",
+    "undoSplitLineGone": "Tidak dapat membatalkan: baris pemisahan yang tagnya diubah oleh perubahan ini tidak lagi ada di transaksi",
+    "undoTagGone": "Tidak dapat membatalkan: tag dari perubahan ini telah dihapus sejak saat itu",
     "redoCreateWithLegs": "Transaksi ini membuat entri di akun lain, sehingga tidak dapat diulang. Buat ulang transaksi ini",
     "undoAccountGone": "Tidak dapat membatalkan: akun tidak ada lagi",
     "unsupportedTransferAction": "Tindakan transfer tidak didukung: {{ action }}",
@@ -758,7 +760,11 @@
     "repeatedInBatch": "Item lain dalam permintaan ini sudah menyebut tag ini.",
     "nameRequired": "Tag memerlukan nama.",
     "invalidColor": "\"{{ color }}\" bukan warna: gunakan #RRGGBB, misalnya #FF5733.",
-    "nothingToChange": "Tidak ada yang diubah: transaksi sudah memiliki setiap tag yang akan ditambahkan dan tidak memiliki tag yang akan dihapus. Tag pada baris pemisahan tidak diubah oleh pengeditan ini."
+    "nothingToChange": "Tidak ada yang diubah: transaksi sudah memiliki setiap tag yang akan ditambahkan dan tidak memiliki tag yang akan dihapus. Tag pada baris pemisahan hanya diubah melalui splitTags.",
+    "splitTagsNotSplit": "splitTags mengubah tag pada baris transaksi yang dipisah, dan transaksi ini tidak dipisah. Gunakan addTagNames dan removeTagNames untuk tagnya sendiri.",
+    "splitTagsRepeated": "splitId {{ splitId }} muncul lebih dari sekali dalam splitTags. Berikan satu entri untuk setiap baris.",
+    "splitTagsWithSplits": "splitTags tidak dapat dikirim bersama splits. Baris yang diganti mempertahankan tagnya bila menyebut splitId-nya; ubah tag baris dalam pengeditan terpisah.",
+    "splitLineGone": "Baris pemisahan {{ splitId }} tidak lagi ada di transaksi ini: baris pemisahannya berubah setelah perubahan ini diusulkan. Baca ulang transaksi dan usulkan perubahan tag dari awal."
   },
   "transactionRules": {
     "notFound": "Aturan transaksi dengan ID {{ id }} tidak ditemukan",

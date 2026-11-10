@@ -713,6 +713,50 @@ describe('TransactionConfirmationCard', () => {
       expect(screen.getByText('Old')).toBeInTheDocument();
     });
 
+    it('shows the tags an edit changes on each split line, by the line', () => {
+      render(
+        <TransactionConfirmationCard
+          action={makeAction({
+            type: 'update_transaction',
+            descriptor: { type: 'update_transaction' },
+            preview: {
+              accountName: 'Checking',
+              amount: -30,
+              currencyCode: 'USD',
+              transactionDate: '2026-02-01',
+              splitTagChanges: [
+                {
+                  categoryName: 'Food',
+                  amount: -20,
+                  tagNames: ['Trip', 'Family'],
+                  newTagNames: ['Family'],
+                },
+                { categoryName: 'Soap', amount: -10, memo: 'bulk', removeTagNames: ['Old'] },
+                { categoryName: null, amount: -5, tagNames: ['Trip'], removeTagNames: ['Old'] },
+                { categoryName: 'Savings', amount: -7, legAccountName: 'Savings', tagNames: ['Trip'] },
+              ],
+            },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByText('Split line tags')).toBeInTheDocument();
+      expect(
+        screen.getByText(/^Food .*20\.00: adds tags: Trip, Family \(new tag\)$/),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/^Soap .*10\.00 \(bulk\): removes tags: Old$/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/^Uncategorized .*5\.00: adds tags: Trip; removes tags: Old$/),
+      ).toBeInTheDocument();
+      // A transfer line's approval changes the other account's transaction too.
+      expect(
+        screen.getByText(/^Savings .*7\.00, and its transfer in Savings: adds tags: Trip$/),
+      ).toBeInTheDocument();
+      // The transaction's own tags are not part of this edit.
+      expect(screen.queryByText('Add tags')).not.toBeInTheDocument();
+    });
+
     it('renders a tag rename with the name it has now and only what changes', () => {
       render(
         <TransactionConfirmationCard

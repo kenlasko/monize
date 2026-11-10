@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { tr } from "../i18n/translate";
 import { ModuleRef } from "@nestjs/core";
-import { DataSource, EntityManager } from "typeorm";
+import { DataSource, EntityManager, In } from "typeorm";
 import { Cron } from "@nestjs/schedule";
 import { BondPriceService } from "../bonds/bond-price.service";
 import type { HoldingsService } from "../securities/holdings.service";
@@ -152,7 +152,17 @@ function assertAccountEditUndoable(action: ActionHistory): void {
   });
 }
 
+/** One line of a split-line tag change's exact record (`SplitTagPlace`). */
+interface SplitTagPlaceSnapshot {
+  splitId: string;
+  legId?: string | null;
+  touched?: string[];
+  line?: string[];
+  leg?: string[];
+}
+
 interface SplitSnapshot {
+  id?: string;
   kind?: string | null;
   categoryId?: string | null;
   transferAccountId?: string | null;
@@ -161,6 +171,8 @@ interface SplitSnapshot {
   /** What a transfer line's counterpart received; absent in older entries. */
   receivedAmount?: number | string | null;
   memo?: string | null;
+  /** The line's own tags; absent in older entries, which leave them alone. */
+  tagIds?: string[];
 }
 
 function splitKindOf(split: SplitSnapshot): SplitKind {
@@ -1121,6 +1133,20 @@ export class ActionHistoryService {
       }
     }
 
+    if (restoreSplits) {
+      await this.restoreRecreatedLineTags(
+        manager,
+        action.userId,
+        before.splits,
+      );
+    }
+    await this.restoreSplitTagPlaces(
+      manager,
+      action.userId,
+      action.entityId,
+      before.splitTagPlaces,
+    );
+
     // Restore tags if captured
     if (before.tagIds !== undefined) {
       await manager.query(
@@ -1144,6 +1170,129 @@ export class ActionHistoryService {
 
     for (const accountId of accountIds) {
       await this.recalculateBalance(action.userId, accountId, manager);
+    }
+  }
+
+  /**
+   * Refuse, before a link is written, an undo that would link a tag the user
+   * no longer has (deleted since the edit): a translated refusal rather than
+   * the foreign-key error the insert would raise.
+   */
+  private async assertTagsStillExist(
+    manager: EntityManager,
+    userId: string,
+    tagIds: readonly string[],
+  ): Promise<void> {
+    const wanted = [...new Set(tagIds)];
+    if (wanted.length === 0) return;
+    const found = await manager.find(Tag, {
+      where: { id: In(wanted), userId },
+      select: { id: true },
+    });
+    if (found.length < wanted.length) {
+      throw new ConflictException(
+        tr(
+          "errors.actionHistory.undoTagGone",
+          "Cannot undo: a tag this change involved has been deleted since",
+        ),
+      );
+    }
+  }
+
+  /**
+   * Give split lines just re-created from the snapshot the tags they carried
+   * (`tagIds` on a line): deleting the old rows took their links with them.
+   * Entries written before snapshots carried line tags leave them untagged,
+   * as before.
+   */
+  private async restoreRecreatedLineTags(
+    manager: EntityManager,
+    userId: string,
+    beforeSplits: unknown,
+  ): Promise<void> {
+    if (!Array.isArray(beforeSplits)) return;
+    const recorded = (beforeSplits as SplitSnapshot[]).filter(
+      (split) => !!split?.id && Array.isArray(split.tagIds),
+    );
+    if (recorded.length === 0) return;
+    await this.assertTagsStillExist(
+      manager,
+      userId,
+      recorded.flatMap((split) => split.tagIds ?? []),
+    );
+    for (const split of recorded) {
+      for (const tagId of split.tagIds ?? []) {
+        await manager.query(
+          `INSERT INTO transaction_split_tags (transaction_split_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [split.id, tagId],
+        );
+      }
+    }
+  }
+
+  /**
+   * Set back exactly what a split-line tag change touched (`splitTagPlaces`,
+   * recorded by `TransactionsService.update`): for each line, each tag the
+   * edit named is put on, or taken off, the line and its counterpart leg as
+   * the entry says, and no other tag moves. Redo passes the "after" record
+   * here. The legs are locked and held to the reconciled lock like the edited
+   * row; a line no longer on the transaction or a tag deleted since refuses
+   * the undo before anything is written.
+   */
+  private async restoreSplitTagPlaces(
+    manager: EntityManager,
+    userId: string,
+    transactionId: string,
+    placesData: unknown,
+  ): Promise<void> {
+    if (!Array.isArray(placesData) || placesData.length === 0) return;
+    const places = placesData as SplitTagPlaceSnapshot[];
+    const lineIds = [...new Set(places.map((place) => place.splitId))];
+    const present = await manager.find(TransactionSplit, {
+      where: { id: In(lineIds), transactionId },
+      select: { id: true },
+    });
+    if (present.length < lineIds.length) {
+      throw new ConflictException(
+        tr(
+          "errors.actionHistory.undoSplitLineGone",
+          "Cannot undo: a split line this change tagged is no longer on the transaction",
+        ),
+      );
+    }
+    const legIds = [
+      ...new Set(
+        places
+          .map((place) => place.legId)
+          .filter((legId): legId is string => !!legId),
+      ),
+    ];
+    const legs = await lockTransactionRows(manager, legIds, userId);
+    await assertReconciledRowsMutable(manager, userId, [...legs.values()]);
+    await this.assertTagsStillExist(
+      manager,
+      userId,
+      places.flatMap((place) => [...(place.line ?? []), ...(place.leg ?? [])]),
+    );
+    for (const place of places) {
+      const onLine = new Set(place.line ?? []);
+      const onLeg = new Set(place.leg ?? []);
+      const legId = place.legId && legs.has(place.legId) ? place.legId : null;
+      for (const tagId of place.touched ?? []) {
+        await manager.query(
+          onLine.has(tagId)
+            ? `INSERT INTO transaction_split_tags (transaction_split_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`
+            : `DELETE FROM transaction_split_tags WHERE transaction_split_id = $1 AND tag_id = $2`,
+          [place.splitId, tagId],
+        );
+        if (!legId) continue;
+        await manager.query(
+          onLeg.has(tagId)
+            ? `INSERT INTO transaction_tags (transaction_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`
+            : `DELETE FROM transaction_tags WHERE transaction_id = $1 AND tag_id = $2`,
+          [legId, tagId],
+        );
+      }
     }
   }
 
@@ -1205,6 +1354,13 @@ export class ActionHistoryService {
 
     // Re-insert splits
     if (Array.isArray(before.splits) && before.splits.length > 0) {
+      await this.assertTagsStillExist(
+        manager,
+        action.userId,
+        (before.splits as SplitSnapshot[]).flatMap(
+          (split) => split.tagIds ?? [],
+        ),
+      );
       for (const splitData of before.splits) {
         await manager.query(
           `INSERT INTO transaction_splits (id, transaction_id, category_id, transfer_account_id, linked_transaction_id, amount, memo)
@@ -1219,6 +1375,16 @@ export class ActionHistoryService {
             splitData.memo ?? null,
           ],
         );
+        // The line's tags went with the deleted row; put back those recorded
+        // (checked above to still exist).
+        if (Array.isArray(splitData.tagIds)) {
+          for (const tagId of splitData.tagIds) {
+            await manager.query(
+              `INSERT INTO transaction_split_tags (transaction_split_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+              [splitData.id, tagId],
+            );
+          }
+        }
       }
     }
 

@@ -98,6 +98,8 @@
     "undoNotSupportedForEntityType": "Ongedaan maken niet ondersteund voor entiteitstype: {{ entityType }}",
     "unsupportedTransactionAction": "Niet-ondersteunde transactieactie: {{ action }}",
     "undoTransactionGone": "Kan niet ongedaan maken: transactie bestaat niet meer",
+    "undoSplitLineGone": "Kan niet ongedaan maken: een splitsregel waarvan deze wijziging de labels veranderde, staat niet meer op de transactie",
+    "undoTagGone": "Kan niet ongedaan maken: een label van deze wijziging is sindsdien verwijderd",
     "redoCreateWithLegs": "Deze transactie heeft boekingen in andere rekeningen aangemaakt en kan niet opnieuw worden uitgevoerd. Maak de transactie in plaats daarvan opnieuw aan",
     "undoAccountGone": "Kan niet ongedaan maken: de rekening bestaat niet meer",
     "unsupportedTransferAction": "Niet-ondersteunde overboekingsactie: {{ action }}",
@@ -758,7 +760,11 @@
     "repeatedInBatch": "Een ander item in dit verzoek noemt dit label al.",
     "nameRequired": "Een label heeft een naam nodig.",
     "invalidColor": "\"{{ color }}\" is geen kleur: gebruik #RRGGBB, bijvoorbeeld #FF5733.",
-    "nothingToChange": "Niets te wijzigen: de transactie heeft al elk label dat moet worden toegevoegd en geen van de labels die moeten worden verwijderd. Labels op splitsregels worden door deze bewerking niet gewijzigd."
+    "nothingToChange": "Niets te wijzigen: de transactie heeft al elk label dat moet worden toegevoegd en geen van de labels die moeten worden verwijderd. Labels op splitsregels wijzigen alleen via splitTags.",
+    "splitTagsNotSplit": "splitTags wijzigt de labels op de regels van een gesplitste transactie, en deze transactie is niet gesplitst. Gebruik addTagNames en removeTagNames voor haar eigen labels.",
+    "splitTagsRepeated": "splitId {{ splitId }} komt meer dan eens voor in splitTags. Geef elke regel één vermelding.",
+    "splitTagsWithSplits": "splitTags kan niet samen met splits worden verzonden. Een vervangen regel behoudt zijn labels als hij zijn splitId noemt; wijzig de labels van de regels in een aparte bewerking.",
+    "splitLineGone": "Splitsregel {{ splitId }} staat niet meer op deze transactie: de splitsregels zijn gewijzigd nadat deze wijziging werd voorgesteld. Lees de transactie opnieuw en stel de labelwijziging opnieuw voor."
   },
   "transactionRules": {
     "notFound": "Transactieregel met ID {{ id }} niet gevonden",

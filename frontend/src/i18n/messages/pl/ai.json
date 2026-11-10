@@ -259,6 +259,12 @@
     "addTags": "Dodaj tagi",
     "removeTags": "Usuń tagi",
     "splitLineTags": "tagi: {tags}",
+    "splitLineTagChanges": "Tagi linii podziału",
+    "splitLineName": "{category} {amount}",
+    "splitLineNameWithMemo": "{category} {amount} ({memo})",
+    "splitLineWithLeg": "{line} i jej przelew na {account}",
+    "splitLineTagChange": "{line}: {changes}",
+    "splitLineTagChangeBoth": "{added}; {removed}",
     "bulkTagsAdded": "dodaje tagi: {tags}",
     "bulkTagsRemoved": "usuwa tagi: {tags}",
     "marksPaidDue": "{name} (termin {date})"

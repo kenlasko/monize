@@ -98,6 +98,8 @@
     "undoNotSupportedForEntityType": "{{ entityType }} varlık türü için geri alma desteklenmiyor",
     "unsupportedTransactionAction": "Desteklenmeyen işlem eylemi: {{ action }}",
     "undoTransactionGone": "Geri alınamıyor: işlem artık mevcut değil",
+    "undoSplitLineGone": "Geri alınamıyor: bu değişikliğin etiketlerini değiştirdiği bölme satırı artık işlemde değil",
+    "undoTagGone": "Geri alınamıyor: bu değişiklikteki bir etiket o zamandan beri silindi",
     "redoCreateWithLegs": "Bu işlem başka hesaplarda kayıtlar oluşturdu, bu yüzden yinelenemez. Bunun yerine işlemi yeniden oluşturun",
     "undoAccountGone": "Geri alınamıyor: hesap artık mevcut değil",
     "unsupportedTransferAction": "Desteklenmeyen transfer eylemi: {{ action }}",
@@ -758,7 +760,11 @@
     "repeatedInBatch": "Bu istekteki başka bir öğe bu etiketi zaten belirtiyor.",
     "nameRequired": "Bir etiketin adı olmalıdır.",
     "invalidColor": "\"{{ color }}\" bir renk değil: #RRGGBB kullanın, örneğin #FF5733.",
-    "nothingToChange": "Değiştirilecek bir şey yok: işlem eklenecek tüm etiketlere zaten sahip ve kaldırılacak etiketlerin hiçbirine sahip değil. Bölme satırlarındaki etiketler bu düzenlemeyle değişmez."
+    "nothingToChange": "Değiştirilecek bir şey yok: işlem eklenecek tüm etiketlere zaten sahip ve kaldırılacak etiketlerin hiçbirine sahip değil. Bölme satırlarındaki etiketler yalnızca splitTags ile değişir.",
+    "splitTagsNotSplit": "splitTags bölünmüş bir işlemin satırlarındaki etiketleri değiştirir ve bu işlem bölünmüş değil. İşlemin kendi etiketleri için addTagNames ve removeTagNames kullanın.",
+    "splitTagsRepeated": "splitId {{ splitId }} splitTags içinde birden fazla kez geçiyor. Her satır için tek bir giriş verin.",
+    "splitTagsWithSplits": "splitTags, splits ile birlikte gönderilemez. Değiştirilen bir satır splitId'sini belirttiğinde etiketlerini korur; satırların etiketlerini ayrı bir düzenlemede değiştirin.",
+    "splitLineGone": "{{ splitId }} bölme satırı artık bu işlemde değil: bu değişiklik önerildikten sonra bölme satırları değişti. İşlemi yeniden okuyun ve etiket değişikliğini yeniden önerin."
   },
   "transactionRules": {
     "notFound": "{{ id }} kimlikli işlem kuralı bulunamadı",

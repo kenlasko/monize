@@ -25,6 +25,7 @@ import {
 } from "../../ai/relay/relay-attachment.store";
 import { AiActionBuilderService } from "../../ai/actions/ai-action-builder.service";
 import {
+  AiActionSplitTagChangePreview,
   ApprovalMode,
   AttachmentRefDescriptor,
   PendingAiAction,
@@ -103,14 +104,30 @@ const RECONCILED_CONFIRM_NOTE =
 function tagConfirmNote(change: {
   tagNames?: string[];
   removeTagNames?: string[];
+  splitTagChanges?: readonly AiActionSplitTagChangePreview[];
 }): string {
+  const lineNote = (line: AiActionSplitTagChangePreview) =>
+    [
+      line.tagNames?.length ? `add ${line.tagNames.join(", ")}` : "",
+      line.removeTagNames?.length
+        ? `remove ${line.removeTagNames.join(", ")}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("; ");
   return (
     (change.tagNames?.length
       ? `\nAdd tags: ${change.tagNames.join(", ")}`
       : "") +
     (change.removeTagNames?.length
       ? `\nRemove tags: ${change.removeTagNames.join(", ")}`
-      : "")
+      : "") +
+    (change.splitTagChanges ?? [])
+      .map(
+        (line) =>
+          `\nSplit line ${line.categoryName ?? "(no category)"} ${line.amount}${line.legAccountName ? ` (and its transfer in ${line.legAccountName})` : ""} tags: ${lineNote(line)}`,
+      )
+      .join("")
   );
 }
 
@@ -152,6 +169,12 @@ interface ManageItem {
   // update: tags added and removed (the others stay)
   addTagNames?: string[];
   removeTagNames?: string[];
+  // update: tags added and removed on existing split lines
+  splitTags?: {
+    splitId: string;
+    addTagNames?: string[];
+    removeTagNames?: string[];
+  }[];
   // files to save on the transaction (create/update, single item only)
   attachments?: ManageAttachmentInput[];
 }
@@ -401,7 +424,8 @@ export class McpTransactionsTools {
           "first and resend every one with your change. Several split " +
           "transactions CAN be sent in one call, each with its own complete " +
           "array. addTagNames/removeTagNames change only those tags (both " +
-          "legs of a transfer). Deleting a row removes its transfer legs and " +
+          "legs of a transfer); a split line's own tags only via splitTags. " +
+          "Deleting a row removes its transfer legs and " +
           "split children too.",
         inputSchema: z.object({
           operation: manageOperation(),
@@ -497,6 +521,18 @@ export class McpTransactionsTools {
                 .optional()
                 .describe("update: a new name creates the tag."),
               removeTagNames: nameList(20).optional().describe("update only."),
+              splitTags: z
+                .array(
+                  z.object({
+                    splitId: uuidString(),
+                    addTagNames: nameList(20).optional(),
+                    removeTagNames: nameList(20).optional(),
+                  }),
+                )
+                .min(1)
+                .max(50)
+                .optional()
+                .describe("update: tags of existing lines. Not with splits."),
               attachments: z
                 .array(
                   z.object({
@@ -554,11 +590,26 @@ export class McpTransactionsTools {
             operation !== "update" &&
             items.some(
               (i) =>
-                i.addTagNames !== undefined || i.removeTagNames !== undefined,
+                i.addTagNames !== undefined ||
+                i.removeTagNames !== undefined ||
+                i.splitTags !== undefined,
             )
           ) {
             return toolError(
-              "addTagNames and removeTagNames are used only with operation update.",
+              "addTagNames, removeTagNames and splitTags are used only with operation update.",
+            );
+          }
+          // A splitTags entry that names no tag would be dropped silently.
+          const emptyLine = items
+            .flatMap((i) => i.splitTags ?? [])
+            .find(
+              (line) =>
+                (line.addTagNames?.length ?? 0) === 0 &&
+                (line.removeTagNames?.length ?? 0) === 0,
+            );
+          if (emptyLine) {
+            return toolError(
+              `splitTags entry for splitId ${emptyLine.splitId} names no tag: give addTagNames or removeTagNames.`,
             );
           }
           // Attachments only ride the singular create/update card, mirroring
@@ -803,6 +854,7 @@ export class McpTransactionsTools {
       splits: item.splits,
       tagNames: item.addTagNames,
       removeTagNames: item.removeTagNames,
+      splitTags: item.splitTags,
     };
   }
 

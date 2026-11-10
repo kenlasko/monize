@@ -259,6 +259,12 @@
     "addTags": "Thêm thẻ",
     "removeTags": "Gỡ thẻ",
     "splitLineTags": "thẻ: {tags}",
+    "splitLineTagChanges": "Thẻ của dòng chia",
+    "splitLineName": "{category} {amount}",
+    "splitLineNameWithMemo": "{category} {amount} ({memo})",
+    "splitLineWithLeg": "{line} và giao dịch chuyển khoản trong {account}",
+    "splitLineTagChange": "{line}: {changes}",
+    "splitLineTagChangeBoth": "{added}; {removed}",
     "bulkTagsAdded": "thêm thẻ: {tags}",
     "bulkTagsRemoved": "gỡ thẻ: {tags}",
     "marksPaidDue": "{name} (đến hạn {date})"

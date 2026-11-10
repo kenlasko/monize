@@ -34,10 +34,20 @@ import { UpdateTransactionDto } from "./dto/update-transaction.dto";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
 import { UpdateTransferDto } from "./dto/update-transfer.dto";
-import { TagsService, TagChangePreview } from "../tags/tags.service";
+import {
+  MAX_TAGS_PER_CALL,
+  TagsService,
+  TagChangePreview,
+  uniqueTagNames,
+} from "../tags/tags.service";
 import { TransactionTag } from "../tags/entities/transaction-tag.entity";
 import { TransactionSplitTag } from "../tags/entities/transaction-split-tag.entity";
-import { tagChangeFields } from "../tags/tag-change.util";
+import {
+  SplitTagChangePreview,
+  SplitTagChangeWrite,
+  SplitTagPlace,
+  tagChangeFields,
+} from "../tags/tag-change.util";
 
 /** An edit that names no tag: nothing to read. */
 const NO_TAG_CHANGE = (): TagChangePreview => ({
@@ -276,6 +286,40 @@ export interface PaginatedTransactions extends PaginatedResult<TransactionWithIn
   searchInterpretation?: SearchInterpretation;
 }
 
+/** One split line's tag change as an edit asks for it: by name, on that line only. */
+export interface SplitTagRequest {
+  splitId: string;
+  addNames?: readonly string[];
+  removeNames?: readonly string[];
+}
+
+/**
+ * Refuse a split-line tag change whose lines add more distinct names than one
+ * tag lookup resolves (`MAX_TAGS_PER_CALL`): past it `findOrCreateByNames`
+ * would leave the rest out, and the card would show tags never written.
+ */
+function assertTagCountWithinCap(names: readonly string[]): void {
+  if (uniqueTagNames(names).length > MAX_TAGS_PER_CALL) {
+    throw new BadRequestException(
+      tr(
+        "errors.tags.tooManyTags",
+        `At most ${MAX_TAGS_PER_CALL} tags can be changed in one call`,
+        { max: MAX_TAGS_PER_CALL },
+      ),
+    );
+  }
+}
+
+/** A split-line tag change checked inside the edit, ready to write. */
+interface SplitTagPlan {
+  changes: (SplitTagChangeWrite & {
+    legId: string | null;
+    /** The tags the line and its leg carry now, read under the locks. */
+    lineTags: Set<string>;
+    legTags: Set<string>;
+  })[];
+}
+
 export interface LlmTransactionRow {
   id: string;
   splitId?: string;
@@ -287,6 +331,17 @@ export interface LlmTransactionRow {
   description: string | null;
   status: string;
   isSplit?: boolean;
+  /**
+   * The tags this row carries: a split row's are its line's (changed with
+   * `splitTags`), any other row's the transaction's. Absent when none.
+   */
+  tagNames?: string[];
+  /**
+   * A split row: the tags of the transaction itself (`addTagNames` /
+   * `removeTagNames`), on every line, since an amount filter may return any
+   * one of them.
+   */
+  transactionTagNames?: string[];
   // Foreign-currency entry metadata (read-only). Present only when the
   // transaction was entered in a currency other than the account currency.
   originalAmount?: number;
@@ -390,6 +445,11 @@ export interface UpdateTransactionPreview {
    */
   removeTagIds?: string[];
   removeTagNames?: string[];
+  /**
+   * The tag changes the edit makes on existing split lines (`splitTags`), one
+   * entry per line whose tags change. Absent when none.
+   */
+  splitTagChanges?: SplitTagChangePreview[];
   /** The reference number ("Ref #") the edit sets; absent when it leaves it as it is. */
   referenceNumber?: string;
   /**
@@ -1042,6 +1102,12 @@ export class TransactionsService {
        * change; a name the user has no tag for is refused.
        */
       removeTagNames?: readonly string[];
+      /**
+       * Tag changes on existing split lines, by `splitId`: names to add and
+       * remove on that line only. A name the line already carries (or does not
+       * carry) is no change; the lines themselves are not touched.
+       */
+      splitTags?: readonly SplitTagRequest[];
       /** The reference number to set; the value the transaction holds already is not a change. */
       referenceNumber?: string;
     },
@@ -1081,6 +1147,11 @@ export class TransactionsService {
       input.tagNames ?? [],
       input.removeTagNames ?? [],
     );
+    const splitTagChanges = await this.previewSplitTagChanges(
+      userId,
+      existing,
+      input.splitTags ?? [],
+    );
     const referenceNumber =
       input.referenceNumber === undefined
         ? undefined
@@ -1089,7 +1160,9 @@ export class TransactionsService {
       referenceNumber !== undefined &&
       referenceNumber !== (existing.referenceNumber ?? null);
     const hasTagChange =
-      tagChange.tagNames.length > 0 || tagChange.removeTagIds.length > 0;
+      tagChange.tagNames.length > 0 ||
+      tagChange.removeTagIds.length > 0 ||
+      splitTagChanges.length > 0;
     const hasFieldChange =
       input.amount !== undefined ||
       input.transactionDate !== undefined ||
@@ -1103,12 +1176,13 @@ export class TransactionsService {
     if (!hasFieldChange && !hasTagChange) {
       const askedForTags =
         (input.tagNames?.length ?? 0) > 0 ||
-        (input.removeTagNames?.length ?? 0) > 0;
+        (input.removeTagNames?.length ?? 0) > 0 ||
+        (input.splitTags?.length ?? 0) > 0;
       throw new BadRequestException(
         askedForTags
           ? tr(
               "errors.tags.nothingToChange",
-              "Nothing to change: the transaction already carries every tag to add and none of the tags to remove. Tags on split lines are not changed by this edit.",
+              "Nothing to change: the transaction already carries every tag to add and none of the tags to remove. Tags on split lines change only through splitTags.",
             )
           : tr(
               "errors.transactions.noUpdateFields",
@@ -1218,8 +1292,329 @@ export class TransactionsService {
       isReconciled: existing.isReconciled,
       ...(referenceChanges ? { referenceNumber } : {}),
       ...tagChangeFields(tagChange),
+      ...(splitTagChanges.length > 0 ? { splitTagChanges } : {}),
       ...(hasTagChange && !fieldsDiffer ? { tagsOnly: true as const } : {}),
     };
+  }
+
+  /**
+   * The tag changes an edit proposes on existing split lines, against the tags
+   * each line carries now. A transfer line's tags are also shown on its
+   * counterpart leg (`applySplitTags` keeps the two in agreement), so a tag is
+   * already added only when both carry it, and is there to remove when either
+   * does. Lists only the lines whose tags change. Reads only.
+   */
+  private async previewSplitTagChanges(
+    userId: string,
+    existing: Transaction,
+    requests: readonly SplitTagRequest[],
+  ): Promise<SplitTagChangePreview[]> {
+    if (requests.length === 0) return [];
+    if (!existing.isSplit) {
+      throw new BadRequestException(
+        tr(
+          "errors.tags.splitTagsNotSplit",
+          "splitTags changes the tags on a split transaction's lines, and this transaction is not split. Use addTagNames and removeTagNames for its own tags.",
+        ),
+      );
+    }
+    const lines = new Map(
+      (existing.splits ?? []).map((line) => [line.id, line]),
+    );
+    const named = new Set<string>();
+    for (const request of requests) {
+      if (named.has(request.splitId)) {
+        throw new BadRequestException(
+          tr(
+            "errors.tags.splitTagsRepeated",
+            `splitId ${request.splitId} appears more than once in splitTags. Give each line one entry.`,
+            { splitId: request.splitId },
+          ),
+        );
+      }
+      named.add(request.splitId);
+      if (!lines.has(request.splitId)) {
+        throw new BadRequestException(
+          tr(
+            "errors.transactions.splitIdNotOnTransaction",
+            `splitId ${request.splitId} is not a split line of this transaction. Read the transaction's split lines again and use their splitId values.`,
+            { splitId: request.splitId },
+          ),
+        );
+      }
+    }
+    return withScopedDb(this.dataSource, async (m) => {
+      // Each transfer line's counterpart leg and the tags it carries, read
+      // once for every line rather than per line.
+      // One lookup resolves every line's names at confirm, so the cap holds
+      // across lines, not per line.
+      assertTagCountWithinCap(
+        requests.flatMap((request) => request.addNames ?? []),
+      );
+      const legs = await this.ownLegTags(
+        m,
+        userId,
+        requests.map((request) => lines.get(request.splitId)!),
+      );
+      const changedLegs: { status: string | null }[] = [];
+      const changes: SplitTagChangePreview[] = [];
+      for (const request of requests) {
+        const line = lines.get(request.splitId)!;
+        const places: Set<string>[] = [
+          new Set((line.tags ?? []).map((tag) => tag.id)),
+        ];
+        const leg = line.linkedTransactionId
+          ? legs.get(line.linkedTransactionId)
+          : undefined;
+        if (leg) places.push(leg.tags);
+        const anywhere = new Set(places.flatMap((place) => [...place]));
+        const everywhere = new Set(
+          [...anywhere].filter((id) => places.every((place) => place.has(id))),
+        );
+        const change = await this.tagsService.previewTagChange(
+          m,
+          userId,
+          { everywhere, anywhere },
+          request.addNames ?? [],
+          request.removeNames ?? [],
+        );
+        if (change.tagNames.length === 0 && change.removeTagIds.length === 0) {
+          continue;
+        }
+        if (leg) changedLegs.push(leg);
+        changes.push({
+          splitId: line.id,
+          categoryName:
+            line.category?.name ?? line.transferAccount?.name ?? null,
+          amount: Number(line.amount),
+          memo: line.memo ?? null,
+          // The other account's transaction changes too: the card says so.
+          ...(leg ? { legAccountName: leg.accountName } : {}),
+          ...tagChangeFields(change),
+        });
+      }
+      // A leg the reconciled lock holds would refuse the confirm: refused
+      // here instead, before a card the user cannot approve.
+      await assertReconciledRowsMutable(m, userId, changedLegs);
+      return changes;
+    });
+  }
+
+  /**
+   * The counterpart legs of these split lines that are the user's (a
+   * cross-owner leg keeps its owner's tags and is left out), keyed by leg id:
+   * the tags each carries, its status and its account's name. Two queries
+   * however many lines.
+   */
+  private async ownLegTags(
+    m: EntityManager,
+    userId: string,
+    lines: readonly { linkedTransactionId?: string | null }[],
+  ): Promise<
+    Map<
+      string,
+      { tags: Set<string>; status: string | null; accountName: string }
+    >
+  > {
+    const ids = [
+      ...new Set(
+        lines
+          .map((line) => line.linkedTransactionId)
+          .filter((id): id is string => !!id),
+      ),
+    ];
+    const legs = new Map<
+      string,
+      { tags: Set<string>; status: string | null; accountName: string }
+    >();
+    if (ids.length === 0) return legs;
+    const rows = await m.find(Transaction, {
+      where: { id: In(ids), userId },
+      relations: ["account"],
+    });
+    for (const leg of rows) {
+      legs.set(leg.id, {
+        tags: new Set(),
+        status: leg.status ?? null,
+        accountName: leg.account?.name ?? "",
+      });
+    }
+    if (legs.size === 0) return legs;
+    const links = await m.getRepository(TransactionTag).find({
+      where: { transactionId: In([...legs.keys()]) },
+    });
+    for (const link of links)
+      legs.get(link.transactionId)?.tags.add(link.tagId);
+    return legs;
+  }
+
+  /**
+   * Check a split-line tag change inside the edit's transaction, before it
+   * writes anything: every named line is still on the transaction (its split
+   * set may have been replaced since the card was built), the edit does not
+   * also replace the lines, and each transfer line's counterpart leg that is
+   * the user's is locked and held to the reconciled lock, since its tags change
+   * too. A refusal here leaves nothing written.
+   */
+  private async prepareSplitTagChanges(
+    m: EntityManager,
+    userId: string,
+    transactionId: string,
+    changes: readonly SplitTagChangeWrite[],
+    replacesSplits: boolean,
+  ): Promise<SplitTagPlan> {
+    if (replacesSplits) {
+      throw new BadRequestException(
+        tr(
+          "errors.tags.splitTagsWithSplits",
+          "splitTags cannot be sent with splits. A replaced line keeps its tags when it names its splitId; change the lines' tags in a separate edit.",
+        ),
+      );
+    }
+    const lines = await m.find(TransactionSplit, {
+      where: { id: In(changes.map((change) => change.splitId)), transactionId },
+    });
+    const byId = new Map(lines.map((line) => [line.id, line]));
+    for (const change of changes) {
+      if (!byId.has(change.splitId)) {
+        throw new BadRequestException(
+          tr(
+            "errors.tags.splitLineGone",
+            `Split line ${change.splitId} is no longer on this transaction: its split lines changed after this change was proposed. Read the transaction again and propose the tag change anew.`,
+            { splitId: change.splitId },
+          ),
+        );
+      }
+    }
+    const legIds = [
+      ...new Set(
+        lines
+          .map((line) => line.linkedTransactionId)
+          .filter((legId): legId is string => !!legId),
+      ),
+    ];
+    const legs = await lockTransactionRows(m, legIds, userId);
+    await assertReconciledRowsMutable(m, userId, [...legs.values()]);
+    // One lookup resolves every line's names, so the cap holds across lines.
+    assertTagCountWithinCap(
+      changes.flatMap((change) => change.addTagNames ?? []),
+    );
+    // The links as they are now, under the locks: what the write changes and
+    // what the history entry records it changed.
+    const lineTags = new Map<string, Set<string>>(
+      lines.map((line) => [line.id, new Set()]),
+    );
+    for (const link of await m.find(TransactionSplitTag, {
+      where: { transactionSplitId: In(lines.map((line) => line.id)) },
+    })) {
+      lineTags.get(link.transactionSplitId)?.add(link.tagId);
+    }
+    const legTags = new Map<string, Set<string>>(
+      [...legs.keys()].map((legId) => [legId, new Set()]),
+    );
+    if (legs.size > 0) {
+      for (const link of await m.getRepository(TransactionTag).find({
+        where: { transactionId: In([...legs.keys()]) },
+      })) {
+        legTags.get(link.transactionId)?.add(link.tagId);
+      }
+    }
+    return {
+      changes: changes.map((change) => {
+        const linked = byId.get(change.splitId)!.linkedTransactionId;
+        const legId = linked && legs.has(linked) ? linked : null;
+        return {
+          ...change,
+          legId,
+          lineTags: lineTags.get(change.splitId) ?? new Set(),
+          legTags: (legId && legTags.get(legId)) || new Set(),
+        };
+      }),
+    };
+  }
+
+  /**
+   * Add and remove the tags a checked plan names on its split lines and their
+   * counterpart legs, inside the edit's own transaction. Every name any line
+   * adds is found or created once. Returns, per line, which of the tags it
+   * touched the line and the leg carried before and after the write: the
+   * history entry's exact record (`SplitTagPlace`).
+   */
+  private async applySplitTagChanges(
+    m: EntityManager,
+    userId: string,
+    plan: SplitTagPlan,
+  ): Promise<{ before: SplitTagPlace[]; after: SplitTagPlace[] }> {
+    const addNames = [
+      ...new Set(plan.changes.flatMap((change) => change.addTagNames ?? [])),
+    ];
+    const tagIdByName = new Map(
+      (addNames.length > 0
+        ? await this.tagsService.findOrCreateByNames(m, userId, addNames)
+        : []
+      ).map((tag) => [tag.name.toLowerCase(), tag.id]),
+    );
+    const before: SplitTagPlace[] = [];
+    const after: SplitTagPlace[] = [];
+    for (const change of plan.changes) {
+      const addIds = (change.addTagNames ?? []).map((name) => {
+        const tagId = tagIdByName.get(name.trim().toLowerCase());
+        // Never dropped quietly: a name the card showed is written or refused.
+        if (!tagId) {
+          throw new NotFoundException(
+            tr("errors.tags.unknownName", `Unknown tag: ${name}.`, {
+              name,
+              suggestion: "",
+            }),
+          );
+        }
+        return tagId;
+      });
+      const removeIds = change.removeTagIds ?? [];
+      const legIds = change.legId ? [change.legId] : [];
+      if (addIds.length > 0) {
+        await this.tagsService.addSplitTags(
+          m,
+          userId,
+          [change.splitId],
+          addIds,
+        );
+        await this.tagsService.addTransactionTags(m, userId, legIds, addIds);
+      }
+      if (removeIds.length > 0) {
+        await this.tagsService.removeSplitTags(
+          m,
+          userId,
+          [change.splitId],
+          removeIds,
+        );
+        await this.tagsService.removeTransactionTags(
+          m,
+          userId,
+          legIds,
+          removeIds,
+        );
+      }
+      const touched = [...new Set([...addIds, ...removeIds])];
+      before.push({
+        splitId: change.splitId,
+        legId: change.legId,
+        touched,
+        line: touched.filter((tagId) => change.lineTags.has(tagId)),
+        leg: change.legId
+          ? touched.filter((tagId) => change.legTags.has(tagId))
+          : [],
+      });
+      // After the write every tag added is on both, every tag removed on none.
+      after.push({
+        splitId: change.splitId,
+        legId: change.legId,
+        touched,
+        line: [...new Set(addIds)],
+        leg: change.legId ? [...new Set(addIds)] : [],
+      });
+    }
+    return { before, after };
   }
 
   /**
@@ -2930,6 +3325,12 @@ export class TransactionsService {
        */
       removeTagIds?: readonly string[];
       /**
+       * Tag changes on existing split lines, inside the write's transaction:
+       * names to add (created when missing) and ids to remove, by `splitId`.
+       * A transfer line's counterpart leg gets the same change.
+       */
+      splitTagChanges?: readonly SplitTagChangeWrite[];
+      /**
        * `false` when the caller records the history entry itself: the
        * conversion of a transfer leg applies its body through this method
        * inside its own transaction, and one user action is one entry.
@@ -3019,6 +3420,12 @@ export class TransactionsService {
       }
     }
 
+    // What a split-line tag change wrote, for the history entry.
+    // (A holder, not a `let`: it is set inside the transaction's callback.)
+    const written: {
+      splitTags: { before: SplitTagPlace[]; after: SplitTagPlace[] } | null;
+    } = { splitTags: null };
+
     // One transaction: split rebuild, field update, tags, and balance
     // adjustments commit or roll back together. Nested service calls join it.
     await withScopedDb(this.dataSource, async (m) => {
@@ -3066,6 +3473,18 @@ export class TransactionsService {
       // Strict reconciled lock, against the LOCKED row and before any write:
       // an edit refused here must not already have happened.
       await assertReconciledRowsMutable(m, userId, [locked]);
+      // The same for the split lines a tag change names: still on this row,
+      // and their counterpart legs locked and held to the reconciled lock, all
+      // before anything is written.
+      const splitTagPlan = options?.splitTagChanges?.length
+        ? await this.prepareSplitTagChanges(
+            m,
+            userId,
+            id,
+            options.splitTagChanges,
+            splits !== undefined,
+          )
+        : null;
       // The amount, every split line and the comparisons below are in the
       // currency of the account the row will belong to; a foreign original
       // amount in its own. Each is held to its money precision before anything
@@ -3411,6 +3830,13 @@ export class TransactionsService {
           options.removeTagIds,
         );
       }
+      if (splitTagPlan) {
+        written.splitTags = await this.applySplitTagChanges(
+          m,
+          userId,
+          splitTagPlan,
+        );
+      }
 
       const savedTransaction = await m.findOne(Transaction, {
         where: { id, userId },
@@ -3561,8 +3987,17 @@ export class TransactionsService {
       entityType: "transaction",
       entityId: id,
       action: "update",
-      beforeData: beforeSnapshot,
-      afterData: this.snapshotTransaction(finalTransaction),
+      // A split-line tag change rides along as its exact record, so undo and
+      // redo set back the links it touched and no others.
+      beforeData: written.splitTags
+        ? { ...beforeSnapshot, splitTagPlaces: written.splitTags.before }
+        : beforeSnapshot,
+      afterData: written.splitTags
+        ? {
+            ...this.snapshotTransaction(finalTransaction),
+            splitTagPlaces: written.splitTags.after,
+          }
+        : this.snapshotTransaction(finalTransaction),
       description: `Updated transaction ${finalTransaction.payeeName || ""} ${formatCurrency(Number(finalTransaction.amount), finalTransaction.currencyCode)}`,
       descriptionKey: "updatedTransaction",
       descriptionParams: {
@@ -4451,6 +4886,9 @@ export class TransactionsService {
         // figure alone is a change history can see (and refuse to replay).
         receivedAmount: s.linkedTransaction ? s.linkedTransaction.amount : null,
         memo: s.memo,
+        // The line's own tags, so undo and redo can put back a change made
+        // to them; absent when the read did not load them.
+        ...(s.tags ? { tagIds: s.tags.map((t) => t.id) } : {}),
       })),
       tagIds: tx.tags?.map((t) => t.id),
     };
@@ -4611,6 +5049,11 @@ export class TransactionsService {
     ) => string | undefined,
   ): LlmTransactionRow[] {
     const splits = completeSplits ?? t.splits;
+    const tagNamesOf = (tags?: readonly { name: string }[] | null) =>
+      tags?.length ? { tagNames: tags.map((tag) => tag.name) } : {};
+    const transactionTags = t.tags?.length
+      ? { transactionTagNames: t.tags.map((tag) => tag.name) }
+      : {};
     return t.isSplit && Array.isArray(splits) && splits.length > 0
       ? splits.map((s) => ({
           id: t.id,
@@ -4623,6 +5066,10 @@ export class TransactionsService {
           description: s.memo ?? t.description,
           status: t.status,
           isSplit: true,
+          ...tagNamesOf(s.tags),
+          // On every line: a read filtered by amount may return any one of
+          // them, and each must still say what the transaction carries.
+          ...transactionTags,
         }))
       : [
           {
@@ -4644,6 +5091,7 @@ export class TransactionsService {
             accountName: t.account?.name,
             description: t.description,
             status: t.status,
+            ...tagNamesOf(t.tags),
             // Read-only foreign-currency metadata, emitted only for a
             // foreign-entered transaction.
             ...(t.originalCurrencyCode
@@ -4700,7 +5148,7 @@ export class TransactionsService {
     const splits = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(TransactionSplit).find({
         where: { transactionId: In(transactionIds) },
-        relations: ["category"],
+        relations: ["category", "tags"],
         order: { id: "ASC" },
       }),
     );

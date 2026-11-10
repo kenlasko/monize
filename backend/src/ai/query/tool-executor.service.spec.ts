@@ -2652,6 +2652,26 @@ describe("ToolExecutorService", () => {
       );
     });
 
+    it("hands the split lines' tag changes to the shared preview", async () => {
+      const splitId = "22222222-2222-4222-8222-222222222222";
+      await service.execute(userId, "manage_transactions", {
+        operation: "update",
+        items: [
+          {
+            transactionId: TXID,
+            splitTags: [{ splitId, addTagNames: ["Trip"] }],
+          },
+        ],
+      });
+      expect(transactions.previewUpdate).toHaveBeenCalledWith(
+        userId,
+        TXID,
+        expect.objectContaining({
+          splitTags: [{ splitId, addNames: ["Trip"], removeNames: undefined }],
+        }),
+      );
+    });
+
     it("auto-detects a transfer and builds an update_transfer card", async () => {
       transactions.findOne.mockResolvedValueOnce({
         id: TXID,

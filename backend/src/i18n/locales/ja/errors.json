@@ -98,6 +98,8 @@
     "undoNotSupportedForEntityType": "エンティティタイプ {{ entityType }} の元に戻す操作はサポートされていません",
     "unsupportedTransactionAction": "サポートされていない取引アクション：{{ action }}",
     "undoTransactionGone": "元に戻せません：取引がすでに存在しません",
+    "undoSplitLineGone": "元に戻せません：この変更でタグを変えた分割行がすでに取引にありません",
+    "undoTagGone": "元に戻せません：この変更に関わるタグがその後削除されました",
     "redoCreateWithLegs": "この取引は他の口座に明細を作成したため、やり直しはできません。代わりに取引をもう一度作成してください",
     "undoAccountGone": "元に戻せません：口座がすでに存在しません",
     "unsupportedTransferAction": "サポートされていない振替アクション：{{ action }}",
@@ -758,7 +760,11 @@
     "repeatedInBatch": "このリクエストの別の項目がすでにこのタグを指定しています。",
     "nameRequired": "タグには名前が必要です。",
     "invalidColor": "「{{ color }}」は色ではありません。#RRGGBB（例: #FF5733）で指定してください。",
-    "nothingToChange": "変更はありません。この取引には追加するタグがすべて付いており、削除するタグは付いていません。分割行のタグはこの編集では変更されません。"
+    "nothingToChange": "変更はありません。この取引には追加するタグがすべて付いており、削除するタグは付いていません。分割行のタグは splitTags でのみ変更されます。",
+    "splitTagsNotSplit": "splitTags は分割取引の各行のタグを変更しますが、この取引は分割されていません。取引自体のタグには addTagNames と removeTagNames を使ってください。",
+    "splitTagsRepeated": "splitId {{ splitId }} が splitTags に複数回含まれています。各行の指定は 1 つにしてください。",
+    "splitTagsWithSplits": "splitTags は splits と一緒に送信できません。置き換えた行は splitId を指定すればタグを保持します。行のタグは別の編集で変更してください。",
+    "splitLineGone": "分割行 {{ splitId }} はこの取引にもうありません。この変更が提案された後に分割行が変更されました。取引を読み直し、タグの変更を改めて提案してください。"
   },
   "transactionRules": {
     "notFound": "ID {{ id }} の取引ルールが見つかりません",
