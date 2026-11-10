@@ -5084,6 +5084,37 @@ describe("PortfolioCalculationService.computeNetInvestmentFlowsInReporting (issu
     expect(flows.get("acct-1")).toBe(945);
   });
 
+  it.each([
+    ["before", ["JPY", "USD"]],
+    ["after", ["USD", "JPY"]],
+  ])(
+    "stays unknown when the row no rate reaches comes %s one that converts",
+    async (_order, currencies) => {
+      const service = buildService(
+        [],
+        {},
+        flowsQuery(
+          currencies.map((code) => ({
+            account_id: "acct-1",
+            tx_date: "2025-03-04",
+            amount_currency: code,
+            settlement_currency: code,
+            exchange_rate: "1",
+            flow: "1000",
+          })),
+        ),
+      );
+
+      const flows = await service.computeNetInvestmentFlowsInReporting(
+        "user-1",
+        ["acct-1"],
+        "USD",
+      );
+
+      expect(flows.get("acct-1")).toBeNull();
+    },
+  );
+
   it("is unknown for an account with a row no rate reaches, and zero with no rows", async () => {
     const service = buildService(
       [],

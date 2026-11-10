@@ -826,7 +826,9 @@ export class PortfolioCalculationService {
 
       for (const row of rows) {
         const flow = Number(row.flow) || 0;
-        const held = result.get(row.account_id) ?? 0;
+        // Read before defaulting: `?? 0` would turn an account an earlier row
+        // already made unknown back into zero, whatever the row order.
+        const held = result.get(row.account_id);
         if (held === null || flow === 0) continue;
         const { rate } = await investmentRowRateInto(
           reportingCurrency,
@@ -840,7 +842,7 @@ export class PortfolioCalculationService {
         );
         result.set(
           row.account_id,
-          rate === null ? null : roundMoney(held + flow * rate),
+          rate === null ? null : roundMoney((held ?? 0) + flow * rate),
         );
       }
       return result;
