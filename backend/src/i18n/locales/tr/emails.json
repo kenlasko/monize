@@ -20,6 +20,8 @@
     "typeExpense": "Harcama",
     "typeUnknown": "Yön bilinmiyor",
     "amountUnavailable": "Tutar kullanılamıyor",
+    "estimated": "Tahmini",
+    "estimateUnknown": "Tahmin bilinmiyor: kaydederken tutarı girin",
     "button": "Faturaları ve Mevduatları Görüntüle"
   },
   "mortgageReminder": {

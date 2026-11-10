@@ -11,6 +11,7 @@ import {
   PostScheduledTransactionData,
   LoanProjectionAnchor,
   LoanOccurrencesProjection,
+  ScheduleAmountEstimate,
 } from '@/types/scheduled-transaction';
 import { dedupe, invalidateBalanceCaches, invalidateCache } from './apiCache';
 
@@ -109,6 +110,24 @@ export const scheduledTransactionsApi = {
     const response = await apiClient.get<LoanOccurrencesProjection>(
       `/scheduled-transactions/${id}/loan-occurrences`,
       { params: { count } },
+    );
+    return response.data;
+  },
+
+  /**
+   * The estimate a schedule on `accountId` paying `payeeId` in `categoryId`
+   * would carry (issue #2096): the schedule form's preview, computed by the
+   * same server code as a saved schedule's. Not cached: every payment moves it.
+   */
+  getAmountEstimate: async (
+    accountId: string,
+    payeeId: string,
+    categoryId: string,
+    nextDueDate?: string,
+  ): Promise<ScheduleAmountEstimate> => {
+    const response = await apiClient.get<ScheduleAmountEstimate>(
+      `/scheduled-transactions/amount-estimate/${accountId}`,
+      { params: { payeeId, categoryId, ...(nextDueDate ? { nextDueDate } : {}) } },
     );
     return response.data;
   },

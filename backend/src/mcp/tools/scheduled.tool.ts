@@ -36,15 +36,15 @@ export class McpScheduledTools {
         annotations: READ_ONLY,
         description:
           "Scheduled bills, deposits, transfers and investments due in a window. " +
-          "Each item is ONE occurrence, the next one due: `nextDueDate` is its " +
-          "day and `amount` what it would post today, in its own `currency`. " +
-          "An item with `kind` 'unknown', or a null `amount` with " +
-          "`amountComplete` false, is unknown: never a bill or a deposit, never " +
-          "guessed. Bucket totals cover the WHOLE window whatever the `kind` " +
-          "filter, in `totalsCurrency` (name it); never sum items yourself. A " +
+          "Each item is ONE occurrence, the next due: `nextDueDate` is its day, " +
+          "`amount` what it would post today in its `currency`, an estimate " +
+          "from payment history when `amountEstimated` (say so). `kind` " +
+          "'unknown', or a null `amount`, is unknown: never a bill or deposit, " +
+          "never guessed. Bucket totals cover the WHOLE window whatever the " +
+          "`kind` filter, in `totalsCurrency` (name it); never sum items. A " +
           "null total holds something unknown or unconvertible: quote " +
-          "`known*Subtotal` as a subtotal and say why from " +
-          "`unknownAmountItems` and `missingRatePairs`.",
+          "`known*Subtotal` as a subtotal, say why from `unknownAmountItems` " +
+          "and `missingRatePairs`.",
         inputSchema: z.object({
           days: numberArg(z.number().min(1).max(365))
             .optional()

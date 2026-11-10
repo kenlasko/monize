@@ -78,6 +78,35 @@ describe('OccurrenceDatePicker', () => {
     expect(screen.getByText('2025-07-01')).toBeInTheDocument();
   });
 
+  // Issue #2096: each occurrence of an estimated schedule shows its month's estimate.
+  it("shows each month's estimate, and an unknown month as unknown", () => {
+    const estimated = {
+      ...scheduledTransaction,
+      amountIsEstimated: true,
+      amountEstimate: {
+        status: 'estimated',
+        currencyCode: 'USD',
+        months: {
+          '2025-03': { amount: -210, basis: 'seasonal' },
+          '2025-04': { amount: -160.5, basis: 'seasonal' },
+        },
+        paymentCount: 10,
+        latestPaymentDate: '2025-02-01',
+        growthRate: null,
+        historyMonths: 24,
+        missingPair: null,
+      },
+    };
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={estimated} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText('Estimated: USD -210.00')).toBeInTheDocument();
+    expect(screen.getByText('Estimated: USD -160.50')).toBeInTheDocument();
+    // May onward is past what the estimate holds here: unknown, not -1200.
+    expect(screen.getAllByText('Estimate unknown').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/-1200/)).not.toBeInTheDocument();
+  });
+
   it('renders dates for weekly frequency', () => {
     const weeklyTransaction = {
       ...scheduledTransaction,

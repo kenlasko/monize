@@ -63,7 +63,8 @@
       "skipFailed": "Failed to skip occurrence",
       "deleteFailed": "Failed to delete"
     },
-    "foreignAmountTitle": "The amount the biller charges, in its own currency"
+    "foreignAmountTitle": "The amount the biller charges, in its own currency",
+    "estimatedLabel": "Estimated"
   },
   "filters": {
     "label": "Filters",
@@ -113,7 +114,8 @@
       "totalAmountRequired": "Total amount is required",
       "splitsMinimum": "Split transactions require at least 2 splits",
       "splitsTotal": "Split amounts must equal the transaction amount",
-      "fxRateUnavailable": "No exchange rate is available for {from} to {to} on this date."
+      "fxRateUnavailable": "No exchange rate is available for {from} to {to} on this date.",
+      "estimateUnknown": "This occurrence's estimated amount is unknown. Enter the amount to post it."
     },
     "latestPlaceholder": "Latest: {price}",
     "descriptionPlaceholder": "Description...",
@@ -126,7 +128,8 @@
       "noRateWarning": "No exchange rate found for {from} to {to} on {date}. Pick another date, or refresh rates.",
       "feeCaption": "Includes a {percent}% foreign transaction fee ({fee}).",
       "totalInCurrency": "Total in {currency}"
-    }
+    },
+    "estimatedHint": "This amount is an estimate; change it to what you actually paid. {detail}"
   },
   "occurrencePicker": {
     "title": "Select Occurrence Date",
@@ -137,7 +140,9 @@
     "amountChange": "Amount: {amount}",
     "categoryChange": "Category: {category}",
     "noteChange": "Note: {note}",
-    "splitModified": "Split modified"
+    "splitModified": "Split modified",
+    "estimatedAmount": "Estimated: {amount}",
+    "estimateUnknown": "Estimate unknown"
   },
   "loanOccurrence": {
     "loading": "Working out each occurrence's payment.",
@@ -197,7 +202,9 @@
       "quantityRequired": "Quantity must be greater than zero",
       "priceRequired": "Price must be greater than zero",
       "totalAmountRequired": "Total amount is required"
-    }
+    },
+    "estimatedHint": "This amount is the estimate for this occurrence. Leave it as it is and the occurrence keeps following the estimate as new payments arrive. {detail}",
+    "keepEstimate": "Keep this amount, even when new payments change the estimate"
   },
   "form": {
     "tabs": {
@@ -302,14 +309,20 @@
       "quantityRequired": "Quantity must be greater than zero",
       "priceRequired": "Price must be greater than zero",
       "totalAmountRequired": "Total amount is required for this action",
-      "fxRateRequired": "Enter an amount in the chosen currency before saving. No exchange rate is available yet."
+      "fxRateRequired": "Enter an amount in the chosen currency before saving. No exchange rate is available yet.",
+      "estimateNeedsPayeeAndCategory": "Choose a payee and a category to estimate the amount from."
     },
     "fx": {
       "amountInCurrency": "Amount in {currency}",
       "estimateCaption": "About {total} at 1 {from} = {rate} {to}.",
       "noRateWarning": "No exchange rate found for {from} to {to}. Pick another currency, or enter the amount in {to}.",
       "feeCaption": "Includes a {percent}% foreign transaction fee ({fee})."
-    }
+    },
+    "estimateLabel": "Estimate",
+    "estimateTooltip": "Work out each occurrence's amount from the last 24 months of payments to this payee in this category, month by month, so a bill that costs more in some months is forecast that way. You can still change any occurrence, and you confirm the amount when you post it.",
+    "estimateDelegateDisabled": "Only the owner can turn the estimate on or off: it reads the payments in all of the owner's accounts.",
+    "estimatedAmountNote": "Auto-calculated from payment history. {detail}",
+    "autoPostDisabledEstimate": "An estimated amount is confirmed when you post it, so it is not posted automatically."
   },
   "postTransaction": {
     "minSplits": "Split transactions require at least 2 splits",
@@ -333,5 +346,16 @@
   "validation": {
     "nameRequired": "Name is required",
     "dueDateRequired": "Due date is required"
+  },
+  "estimate": {
+    "thePayee": "this payee",
+    "theCategory": "this category",
+    "basis": "Estimated from {count, plural, one {# payment} other {# payments}}, the latest on {date}.",
+    "basisWithGrowth": "Estimated from {count, plural, one {# payment} other {# payments}}, the latest on {date}, with a {growth} change year over year.",
+    "basisWithheld": "Estimated from the payee and category's payment history.",
+    "noHistory": "No payments to {payee} in {category} in the last {months} months, so the amount is unknown. Enter each occurrence's amount, or record a payment.",
+    "missingRate": "No exchange rate from {from} to {to} to convert a past payment, so the amount is unknown. Add the rate on the Currencies page.",
+    "noBasis": "Choose a payee and a category to estimate the amount from their payment history.",
+    "pending": "The amount is worked out from the payee and category's payment history."
   }
 }

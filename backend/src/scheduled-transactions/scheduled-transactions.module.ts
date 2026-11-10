@@ -8,6 +8,7 @@ import { Tag } from "../tags/entities/tag.entity";
 import { ScheduledTransactionsService } from "./scheduled-transactions.service";
 import { ScheduledEffectiveAmountService } from "./scheduled-effective-amount.service";
 import { ScheduledOccurrenceService } from "./scheduled-occurrence.service";
+import { ScheduledAmountEstimateService } from "./scheduled-amount-estimate.service";
 import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
 import { ScheduledTransactionLoanService } from "./scheduled-transaction-loan.service";
 import { ScheduledTransactionsController } from "./scheduled-transactions.controller";
@@ -44,6 +45,7 @@ import { SystemAlertsModule } from "../system-alerts/system-alerts.module";
     ScheduledTransactionsService,
     ScheduledEffectiveAmountService,
     ScheduledOccurrenceService,
+    ScheduledAmountEstimateService,
     ScheduledTransactionOverrideService,
     ScheduledTransactionLoanService,
   ],
@@ -56,6 +58,7 @@ import { SystemAlertsModule } from "../system-alerts/system-alerts.module";
     ScheduledTransactionsService,
     ScheduledEffectiveAmountService,
     ScheduledOccurrenceService,
+    ScheduledAmountEstimateService,
   ],
 })
 export class ScheduledTransactionsModule {}

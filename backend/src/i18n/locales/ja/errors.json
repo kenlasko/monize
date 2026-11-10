@@ -600,7 +600,12 @@
     "overrideNotFound": "ID {{ overrideId }} の上書きが見つかりません",
     "updateSplitOverrideRequiresAmount": "分割上書きには金額が必要です",
     "dateMustBeYMD": "date は YYYY-MM-DD 形式でなければなりません",
-    "loanLedgerUnreadable": "元帳の残高を読み取れなかったため、このローン支払いを計算できませんでした。もう一度お試しください。"
+    "loanLedgerUnreadable": "元帳の残高を読み取れなかったため、このローン支払いを計算できませんでした。もう一度お試しください。",
+    "estimateRequiresPlain": "見積もり金額は、口座の通貨で単一カテゴリの取引にのみ使用できます。分割、振替、投資、外貨金額には使用できません",
+    "estimateNoAutoPost": "見積もり金額の予定取引は自動で記帳できません",
+    "estimateRequiresPayeeAndCategory": "見積もり金額には、支払い履歴を照合するための支払先とカテゴリが必要です",
+    "estimateUnknown": "この回の見積もり金額は不明です。記帳するには金額を入力してください。",
+    "estimateBasisOwnerOnly": "金額が見積もりの請求の支払先やカテゴリを変更できるのは所有者だけです"
   },
   "bonds": {
     "securityNotLinked": "証券 {{ securityId }} が見つからないか、債券プログラムにリンクされていません",

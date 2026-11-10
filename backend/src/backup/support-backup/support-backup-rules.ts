@@ -361,6 +361,7 @@ export const RULES: Record<string, TableRules> = {
     tag_ids: keep, // UUID array, covered by id remap
     created_at: keep,
     updated_at: keep,
+    amount_is_estimated: keep, // flag
   },
   scheduled_transaction_splits: {
     id: keep,

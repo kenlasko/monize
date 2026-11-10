@@ -7,9 +7,11 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useLocalizedAmount } from '@/hooks/useLocalizedAmount';
 import { getDecimalPlacesForCurrency } from '@/lib/format';
 import {
+  occurrenceFollowsEstimate,
   overrideEffectiveAmount,
   scheduleEffectiveAmount,
 } from '@/lib/scheduled-effective-amount';
+import { useAmountEstimateText } from './useAmountEstimateText';
 import { useLongPress, type LongPressRowHandlers } from '@/hooks/useLongPress';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { RowActions } from '@/components/ui/row-actions/RowActions';
@@ -287,6 +289,7 @@ function ScheduledAmountValue({
 }) {
   const t = useTranslations('scheduledTransactions');
   const formatAmountLocal = useLocalizedAmount();
+  const estimateText = useAmountEstimateText();
   const baseAmount = scheduledOccurrenceAmount(transaction, false);
   // The currency the effective amount is expressed in -- the settlement
   // account's for an investment schedule, not the brokerage's `currencyCode`
@@ -295,7 +298,13 @@ function ScheduledAmountValue({
   const overrideAmount = transaction.nextOverride
     ? scheduledOccurrenceAmount(transaction, true)
     : null;
+  // An occurrence that follows the estimate is priced at its own month's
+  // figure, which an override moving it into another month changes without
+  // anyone changing the amount (issue #2096): only a stated amount is a
+  // modification.
+  const followsEstimate = occurrenceFollowsEstimate(transaction, transaction.nextOverride);
   const isModified =
+    !followsEstimate &&
     overrideAmount != null &&
     baseAmount != null &&
     Number(overrideAmount) !== Number(baseAmount);
@@ -319,6 +328,22 @@ function ScheduledAmountValue({
         />
       </div>
     ) : null;
+  // The next occurrence's amount is the history estimate (issue #2096): say
+  // so, and where it comes from or why it is unknown.
+  const estimatedLine = followsEstimate ? (
+    <div className="flex items-center justify-end gap-1 text-xs font-normal text-gray-500 dark:text-gray-400">
+      <span>{t('list.estimatedLabel')}</span>
+      <InfoTooltip
+        text={estimateText(transaction.amountEstimate, {
+          payeeName: transaction.payee?.name ?? transaction.payeeName,
+          categoryName: transaction.category?.name ?? null,
+        })}
+        iconClassName="h-3.5 w-3.5"
+        align="right"
+        usePortal
+      />
+    </div>
+  ) : null;
   if (isModified) {
     return (
       <div className="flex flex-col items-end">
@@ -340,8 +365,9 @@ function ScheduledAmountValue({
   }
   return (
     <>
-      {formatAmount(baseAmount, amountCurrency)}
+      {formatAmount(followsEstimate && transaction.nextOverride ? overrideAmount : baseAmount, amountCurrency)}
       {foreignLine}
+      {estimatedLine}
     </>
   );
 }

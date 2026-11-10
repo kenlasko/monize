@@ -20,6 +20,8 @@
     "typeExpense": "Витрата",
     "typeUnknown": "Напрямок невідомий",
     "amountUnavailable": "Суму неможливо визначити",
+    "estimated": "Оцінка",
+    "estimateUnknown": "Оцінка невідома: введіть суму під час проведення",
     "button": "Переглянути рахунки &amp; депозити"
   },
   "mortgageReminder": {

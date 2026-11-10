@@ -44,6 +44,8 @@
     "missingRatePair": "{name}: er is geen wisselkoers beschikbaar van {from} naar {to}, dus het bedrag dat dit voorval boekt is onbekend.",
     "missingRate": "{name}: de wisselkoers waarmee dit voorval wordt afgewikkeld is niet beschikbaar, dus het bedrag is onbekend.",
     "crossCurrencyTransfer": "{name}: een overboeking die binnenkomt vanaf een rekening in {from} terwijl deze rekening in {to} staat. Het bedrag dat hier aankomt wordt bij het boeken bepaald en is dus niet vooraf te prognosticeren.",
+    "unknownEstimate": "{name}: het geschatte bedrag kan nog niet worden berekend, omdat er geen betalingen zijn om het uit te schatten. Voer het bedrag van deze keer in, of leg een betaling vast.",
+    "unknownEstimatePair": "{name}: een betaling waaruit wordt geschat is in {from}, en er is geen wisselkoers van {from} naar {to}, dus het geschatte bedrag is onbekend.",
     "howToFix": "Een ontbrekende koers verhelpen: open Valuta's en vernieuw de koersen, of controleer of het effect en de afwikkelrekening de valuta's hebben die u verwacht."
   }
 }

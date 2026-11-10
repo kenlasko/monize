@@ -55,7 +55,10 @@
     "legendAriaLabel": "Prognoselijnen",
     "tooltipTransactionForAccount": "{name} ({account})",
     "unavailableMissingRates": "Deze prognose kan niet worden getoond in {displayCurrency}: er is geen wisselkoers beschikbaar voor {currencies}, en een geprojecteerd saldo bouwt voort op elke eerdere dag. Voeg een koers toe, of kies een rekening met één valuta.",
-    "untitledTransaction": "Transactie"
+    "untitledTransaction": "Transactie",
+    "tooltipEstimated": "(geschat)",
+    "unavailableUnknownEstimates": "Deze prognose kan nog niet worden getoond: het geschatte bedrag van een rekening erin is onbekend, en een geprojecteerd saldo bouwt voort op elke dag ervoor. Voer het bedrag van die keer in, of zet Schatten uit bij de rekening.",
+    "unknownEstimateItem": "{name}: {reason}"
   },
   "calendar": {
     "days": {

@@ -44,6 +44,8 @@
     "missingRatePair": "{name}: không có tỷ giá từ {from} sang {to}, nên số tiền mà lần phát sinh này sẽ ghi nhận là chưa xác định.",
     "missingRate": "{name}: không có tỷ giá thanh toán cho lần phát sinh này, nên số tiền là chưa xác định.",
     "crossCurrencyTransfer": "{name}: một chuyển khoản đến từ tài khoản bằng {from} trong khi tài khoản này bằng {to}. Số tiền vào đây được xác định khi chuyển khoản được ghi nhận, nên không thể dự báo trước.",
+    "unknownEstimate": "{name}: chưa thể tính số tiền ước tính vì không có khoản thanh toán nào để ước tính. Hãy nhập số tiền của lần này, hoặc ghi một khoản thanh toán.",
+    "unknownEstimatePair": "{name}: một khoản thanh toán mà ước tính sử dụng bằng {from}, và không có tỷ giá từ {from} sang {to}, nên chưa biết số tiền ước tính.",
     "howToFix": "Cách xử lý khi thiếu tỷ giá: mở Tiền tệ và làm mới tỷ giá, hoặc kiểm tra chứng khoán và tài khoản thanh toán của nó có đúng loại tiền bạn mong đợi."
   }
 }

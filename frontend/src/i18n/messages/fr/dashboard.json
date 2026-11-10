@@ -110,7 +110,8 @@
     "viewCalendar": "Calendrier",
     "previousMonth": "Mois précédent",
     "nextMonth": "Mois suivant",
-    "emptyAll": "Aucune facture, aucun dépôt ni virement actif planifié."
+    "emptyAll": "Aucune facture, aucun dépôt ni virement actif planifié.",
+    "estimated": "Estimé"
   },
   "cashFlowForecast": {
     "title": "Prévision de trésorerie",

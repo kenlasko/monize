@@ -3,11 +3,17 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { ScheduledTransactionsService } from "./scheduled-transactions.service";
 import { ScheduledEffectiveAmountService } from "./scheduled-effective-amount.service";
 import { ScheduledOccurrenceService } from "./scheduled-occurrence.service";
+import {
+  ScheduleAmountEstimate,
+  ScheduledAmountEstimateService,
+} from "./scheduled-amount-estimate.service";
+import { buildEstimateProfile } from "./amount-estimate";
 import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
 import { ScheduledTransactionSplit } from "./entities/scheduled-transaction-split.entity";
 import { ScheduledTransactionOverride } from "./entities/scheduled-transaction-override.entity";
@@ -71,6 +77,7 @@ describe("ScheduledTransactionsService", () => {
   let mockActionHistoryService: Record<string, jest.Mock>;
   let mockExchangeRateService: Record<string, jest.Mock>;
   let mockSystemAlerts: Record<string, jest.Mock>;
+  let amountEstimates: { estimateMany: jest.Mock; estimateFor: jest.Mock };
 
   const userId = "11111111-1111-1111-1111-111111111111";
   const stId = "st-1";
@@ -323,6 +330,15 @@ describe("ScheduledTransactionsService", () => {
         // Likewise real: occurrence selection (which override governs the
         // occurrence that is due) is what these assertions are about.
         ScheduledOccurrenceService,
+        // No estimated schedule unless a test says so (issue #2096); the
+        // estimate's own arithmetic is `amount-estimate.spec.ts`'s.
+        {
+          provide: ScheduledAmountEstimateService,
+          useValue: {
+            estimateMany: jest.fn().mockResolvedValue(new Map()),
+            estimateFor: jest.fn(),
+          },
+        },
         { provide: AccountsService, useValue: accountsService },
         { provide: TransactionsService, useValue: transactionsService },
         {
@@ -350,6 +366,7 @@ describe("ScheduledTransactionsService", () => {
     service = module.get<ScheduledTransactionsService>(
       ScheduledTransactionsService,
     );
+    amountEstimates = module.get(ScheduledAmountEstimateService);
   });
 
   // Helper: stub findOne to return a scheduled transaction for internal calls
@@ -10461,6 +10478,312 @@ describe("ScheduledTransactionsService", () => {
       expect(
         investmentTransactionsService.resolveSettlementCurrencyPair,
       ).not.toHaveBeenCalled();
+    });
+  });
+
+  // ==================== estimated amounts (issue #2096) ====================
+  describe("estimated amounts (issue #2096)", () => {
+    /** Three payments, not seasonal: every month is their mean, -110. */
+    const knownEstimate = (): ScheduleAmountEstimate => ({
+      status: "estimated",
+      currencyCode: "USD",
+      missingPair: null,
+      profile: buildEstimateProfile(
+        [
+          { date: "2026-08-15", amount: -100 },
+          { date: "2026-09-15", amount: -110 },
+          { date: "2026-10-15", amount: -120 },
+        ],
+        "2026-11-09",
+        2,
+      ),
+    });
+    const unknownEstimate: ScheduleAmountEstimate = {
+      status: "no-history",
+      currencyCode: "USD",
+      missingPair: null,
+      profile: null,
+    };
+    const baseDto = {
+      accountId: "acc-1",
+      name: "Hydro",
+      payeeId: "payee-1",
+      categoryId: "cat-1",
+      amount: -1,
+      currencyCode: "USD",
+      frequency: "MONTHLY" as any,
+      nextDueDate: "2026-12-15",
+      amountIsEstimated: true,
+    };
+
+    describe("create", () => {
+      it.each([
+        ["a split", { splits: [{ categoryId: "c", amount: -1 }] as any }],
+        ["a transfer", { isTransfer: true, transferAccountId: "acc-2" }],
+        ["an auto-posted schedule", { autoPost: true }],
+        ["no payee", { payeeId: undefined }],
+        ["no category", { categoryId: undefined }],
+      ])("refuses %s before writing", async (_label, extra) => {
+        await expect(
+          service.create(userId, { ...baseDto, ...extra }),
+        ).rejects.toThrow(BadRequestException);
+        expect(scheduledRepo.save).not.toHaveBeenCalled();
+      });
+
+      it("stores the next occurrence's estimate as the snapshot", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(knownEstimate());
+        const saved = makeScheduled({ amountIsEstimated: true } as never);
+        scheduledRepo.save.mockResolvedValue(saved);
+        stubFindOne(saved);
+
+        await service.create(userId, baseDto);
+
+        expect(amountEstimates.estimateFor).toHaveBeenCalledWith(userId, {
+          payeeId: "payee-1",
+          categoryId: "cat-1",
+          currencyCode: "USD",
+        });
+        expect(scheduledRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({ amount: -110, amountIsEstimated: true }),
+        );
+      });
+
+      it("keeps the sent amount while the estimate is unknown", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(unknownEstimate);
+        const saved = makeScheduled();
+        scheduledRepo.save.mockResolvedValue(saved);
+        stubFindOne(saved);
+
+        await service.create(userId, baseDto);
+
+        expect(scheduledRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({ amount: -1, amountIsEstimated: true }),
+        );
+      });
+    });
+
+    describe("update", () => {
+      it("refuses turning auto-post on for an estimated schedule", async () => {
+        stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
+
+        await expect(
+          service.update(userId, stId, { autoPost: true }),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
+
+      it("stays editable when its category went away on its own", async () => {
+        // A deleted category is SET NULL: the schedule is estimated with
+        // status no-basis, and an unrelated edit must still save.
+        stubFindOne(
+          makeScheduled({ amountIsEstimated: true, categoryId: null } as never),
+        );
+        amountEstimates.estimateFor.mockResolvedValue(unknownEstimate);
+
+        await service.update(userId, stId, { name: "Gas" });
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          ScheduledTransaction,
+          stId,
+          expect.objectContaining({ name: "Gas" }),
+        );
+      });
+
+      it("refuses a delegate moving an estimated schedule to another payee", async () => {
+        stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
+
+        await expect(
+          service.update(
+            userId,
+            stId,
+            { payeeId: "22222222-2222-2222-2222-222222222222" },
+            { actorIsDelegate: true },
+          ),
+        ).rejects.toThrow(ForbiddenException);
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
+
+      it("reads no history for an edit that cannot move the snapshot", async () => {
+        stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
+
+        await service.update(userId, stId, { name: "Gas", amount: -1 });
+
+        expect(amountEstimates.estimateFor).not.toHaveBeenCalled();
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          ScheduledTransaction,
+          stId,
+          expect.not.objectContaining({ amount: -1 }),
+        );
+      });
+
+      it("refuses this request clearing the category of an estimated schedule", async () => {
+        stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
+
+        await expect(
+          service.update(userId, stId, { categoryId: "" }),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
+
+      it("drops the flag when the schedule becomes a transfer", async () => {
+        stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
+
+        await service.update(userId, stId, {
+          isTransfer: true,
+          transferAccountId: "acc-2",
+        });
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          ScheduledTransaction,
+          stId,
+          expect.objectContaining({ amountIsEstimated: false }),
+        );
+        expect(amountEstimates.estimateFor).not.toHaveBeenCalled();
+      });
+
+      it("turns the estimate on and writes the snapshot", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(knownEstimate());
+        stubFindOne(makeScheduled());
+
+        await service.update(userId, stId, {
+          amountIsEstimated: true,
+          amount: -1200,
+        });
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          ScheduledTransaction,
+          stId,
+          expect.objectContaining({ amountIsEstimated: true, amount: -110 }),
+        );
+      });
+    });
+
+    describe("post", () => {
+      const stubNoOverride = () => {
+        const overrideQb = mockQueryBuilder(null);
+        overrideQb.getOne.mockResolvedValue(null);
+        overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+        accountsRepo.findOne.mockResolvedValue(null);
+      };
+
+      it("posts the estimate for the occurrence, never the snapshot", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(knownEstimate());
+        stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
+        stubNoOverride();
+
+        await service.post(userId, stId);
+
+        expect(transactionsService.create).toHaveBeenCalledWith(
+          userId,
+          expect.objectContaining({ amount: -110 }),
+          { fromScheduledPosting: true },
+        );
+      });
+
+      it("refreshes the snapshot to the next occurrence's estimate after posting", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(knownEstimate());
+        stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
+        stubNoOverride();
+        scheduledRepo.update = jest.fn().mockResolvedValue({ affected: 1 });
+
+        await service.post(userId, stId);
+
+        expect(scheduledRepo.update).toHaveBeenCalledWith(
+          { id: stId, userId, amountIsEstimated: true },
+          { amount: -110 },
+        );
+      });
+
+      it("posts the amount the person entered", async () => {
+        stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
+        stubNoOverride();
+
+        await service.post(userId, stId, { amount: -133.5 } as never);
+
+        expect(transactionsService.create).toHaveBeenCalledWith(
+          userId,
+          expect.objectContaining({ amount: -133.5 }),
+          { fromScheduledPosting: true },
+        );
+      });
+
+      it("refuses an unknown estimate before writing", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(unknownEstimate);
+        stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
+        stubNoOverride();
+
+        await expect(service.post(userId, stId)).rejects.toThrow(
+          BadRequestException,
+        );
+        expect(transactionsService.create).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("findAll", () => {
+      it("publishes the estimate and prices the base and an amountless override", async () => {
+        amountEstimates.estimateMany.mockResolvedValue(
+          new Map([[stId, knownEstimate()]]),
+        );
+        const st = makeScheduled({
+          amountIsEstimated: true,
+          nextDueDate: "2026-12-15",
+        } as never);
+        scheduledRepo.createQueryBuilder.mockReturnValue(
+          mockQueryBuilder([st]),
+        );
+        const nextOverrideQb = mockQueryBuilder(null);
+        nextOverrideQb.getMany.mockResolvedValue([]);
+        const futureOverridesQb = mockQueryBuilder(null);
+        futureOverridesQb.getMany.mockResolvedValue([
+          {
+            id: "ovr-1",
+            scheduledTransactionId: stId,
+            originalDate: "2027-01-15",
+            overrideDate: "2027-01-20",
+            amount: null,
+          },
+        ]);
+        overridesRepo.createQueryBuilder
+          .mockReturnValueOnce(nextOverrideQb)
+          .mockReturnValueOnce(futureOverridesQb);
+
+        const [row] = await service.findAll(userId);
+
+        expect(row.effectiveAmount).toBe(-110);
+        expect(row.effectiveAmountComplete).toBe(true);
+        expect(row.amountEstimate).toMatchObject({
+          status: "estimated",
+          paymentCount: 3,
+        });
+        expect(row.futureOverrides?.[0]).toMatchObject({
+          effectiveAmount: -110,
+          effectiveAmountComplete: true,
+        });
+      });
+
+      it("reports an unknown estimate as unknown, not the snapshot", async () => {
+        amountEstimates.estimateMany.mockResolvedValue(
+          new Map([[stId, unknownEstimate]]),
+        );
+        const st = makeScheduled({ amountIsEstimated: true } as never);
+        scheduledRepo.createQueryBuilder.mockReturnValue(
+          mockQueryBuilder([st]),
+        );
+        const emptyQb = () => {
+          const qb = mockQueryBuilder(null);
+          qb.getMany.mockResolvedValue([]);
+          return qb;
+        };
+        overridesRepo.createQueryBuilder
+          .mockReturnValueOnce(emptyQb())
+          .mockReturnValueOnce(emptyQb());
+
+        const [row] = await service.findAll(userId);
+
+        expect(row.effectiveAmount).toBeNull();
+        expect(row.effectiveAmountComplete).toBe(false);
+        expect(row.amountEstimate?.status).toBe("no-history");
+      });
     });
   });
 });

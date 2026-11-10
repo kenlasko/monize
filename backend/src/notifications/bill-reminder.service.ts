@@ -321,6 +321,8 @@ export class BillReminderService {
             occurrence.directionAmount === null
               ? null
               : occurrence.directionAmount > 0,
+          // Labelled in the email as an estimate (issue #2096).
+          estimated: occurrence.estimated,
         };
       });
 

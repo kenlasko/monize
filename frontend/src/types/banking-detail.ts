@@ -8,10 +8,14 @@
  *  - `crossCurrencyTransfer` -- a scheduled transfer arriving from an account in
  *    another currency. The amount that lands here is resolved when it posts, so
  *    the projection cannot state it in advance.
+ *  - `unknownEstimate` -- an estimated bill (issue #2096) whose estimate is
+ *    unknown: no payment to estimate from, or, with a pair, a payment in a
+ *    currency with no current rate.
  */
 export type BalanceForecastGapReason =
   | 'unresolvedSettlementRate'
-  | 'crossCurrencyTransfer';
+  | 'crossCurrencyTransfer'
+  | 'unknownEstimate';
 
 /** One schedule the projection could not price, and why. */
 export interface BalanceForecastGap {

@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { ScheduledTransactionsService } from "./scheduled-transactions.service";
 import { ScheduledEffectiveAmountService } from "./scheduled-effective-amount.service";
 import { ScheduledOccurrenceService } from "./scheduled-occurrence.service";
+import { ScheduledAmountEstimateService } from "./scheduled-amount-estimate.service";
 import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
 import { ScheduledTransactionOverride } from "./entities/scheduled-transaction-override.entity";
 import { AccountsService } from "../accounts/accounts.service";
@@ -62,6 +63,15 @@ describe("scheduled-transactions module RLS context smoke (real withScopedDb)", 
         // are about those decisions, so a double would test nothing.
         ScheduledEffectiveAmountService,
         ScheduledOccurrenceService,
+        // No estimated schedule unless a test says so (issue #2096); the
+        // estimate's own arithmetic is `amount-estimate.spec.ts`'s.
+        {
+          provide: ScheduledAmountEstimateService,
+          useValue: {
+            estimateMany: jest.fn().mockResolvedValue(new Map()),
+            estimateFor: jest.fn(),
+          },
+        },
         { provide: DataSource, useValue: dataSource },
         { provide: AccountsService, useValue: {} },
         { provide: TransactionsService, useValue: transactionsService },

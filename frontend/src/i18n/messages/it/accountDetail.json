@@ -44,6 +44,8 @@
     "missingRatePair": "{name}: non è disponibile alcun tasso di cambio da {from} a {to}, quindi l'importo che questa scadenza registrerà è sconosciuto.",
     "missingRate": "{name}: il tasso di cambio con cui questa scadenza si regola non è disponibile, quindi l'importo è sconosciuto.",
     "crossCurrencyTransfer": "{name}: un giroconto in arrivo da un conto in {from} mentre questo conto è in {to}. L'importo che arriva qui viene definito alla registrazione, quindi non è proiettabile in anticipo.",
+    "unknownEstimate": "{name}: l'importo stimato non può ancora essere calcolato, perché non ci sono pagamenti da cui stimarlo. Inserisci l'importo di questa occorrenza oppure registra un pagamento.",
+    "unknownEstimatePair": "{name}: un pagamento usato dalla stima è in {from} e non è disponibile un tasso di cambio da {from} a {to}, quindi l'importo stimato è sconosciuto.",
     "howToFix": "Per correggere un tasso mancante: apri Valute e aggiorna i tassi, oppure verifica che il titolo e il suo conto di regolamento abbiano le valute previste."
   }
 }

@@ -20,6 +20,8 @@
     "typeExpense": "Wydatek",
     "typeUnknown": "Kierunek nieznany",
     "amountUnavailable": "Kwota niedostępna",
+    "estimated": "Szacowane",
+    "estimateUnknown": "Szacunek nieznany: wprowadź kwotę podczas księgowania",
     "button": "Zobacz rachunki &amp; wpłaty"
   },
   "mortgageReminder": {

@@ -63,7 +63,8 @@
       "skipFailed": "Herhaling overslaan mislukt",
       "deleteFailed": "Verwijderen mislukt"
     },
-    "foreignAmountTitle": "Het bedrag dat de begunstigde in rekening brengt, in de eigen valuta"
+    "foreignAmountTitle": "Het bedrag dat de begunstigde in rekening brengt, in de eigen valuta",
+    "estimatedLabel": "Geschat"
   },
   "filters": {
     "label": "Filters",
@@ -113,7 +114,8 @@
       "totalAmountRequired": "Totaalbedrag is verplicht",
       "splitsMinimum": "Gesplitste transacties vereisen minimaal 2 splitsingen",
       "splitsTotal": "Splitsingsbedragen moeten gelijk zijn aan het transactiebedrag",
-      "fxRateUnavailable": "Er is voor deze datum geen wisselkoers beschikbaar voor {from} naar {to}."
+      "fxRateUnavailable": "Er is voor deze datum geen wisselkoers beschikbaar voor {from} naar {to}.",
+      "estimateUnknown": "Het geschatte bedrag van deze keer is onbekend. Voer het bedrag in om het te boeken."
     },
     "latestPlaceholder": "Laatste: {price}",
     "descriptionPlaceholder": "Beschrijving...",
@@ -126,7 +128,8 @@
       "noRateWarning": "Geen wisselkoers gevonden voor {from} naar {to} op {date}. Kies een andere datum of vernieuw de koersen.",
       "feeCaption": "Inclusief {percent}% kosten voor buitenlandse transactie ({fee}).",
       "totalInCurrency": "Totaal in {currency}"
-    }
+    },
+    "estimatedHint": "Dit bedrag is een schatting; wijzig het in wat u werkelijk hebt betaald. {detail}"
   },
   "occurrencePicker": {
     "title": "Herhalingsdatum selecteren",
@@ -137,7 +140,9 @@
     "amountChange": "Bedrag: {amount}",
     "categoryChange": "Categorie: {category}",
     "noteChange": "Notitie: {note}",
-    "splitModified": "Splitsing gewijzigd"
+    "splitModified": "Splitsing gewijzigd",
+    "estimatedAmount": "Geschat: {amount}",
+    "estimateUnknown": "Schatting onbekend"
   },
   "loanOccurrence": {
     "loading": "De betaling van elke termijn wordt berekend.",
@@ -197,7 +202,9 @@
       "quantityRequired": "Hoeveelheid moet groter zijn dan nul",
       "priceRequired": "Koers moet groter zijn dan nul",
       "totalAmountRequired": "Totaalbedrag is verplicht"
-    }
+    },
+    "estimatedHint": "Dit bedrag is de schatting voor deze keer. Laat het zoals het is en deze keer blijft de schatting volgen naarmate er nieuwe betalingen binnenkomen. {detail}",
+    "keepEstimate": "Dit bedrag behouden, ook als nieuwe betalingen de schatting veranderen"
   },
   "form": {
     "tabs": {
@@ -302,14 +309,20 @@
       "quantityRequired": "Hoeveelheid moet groter zijn dan nul",
       "priceRequired": "Koers moet groter zijn dan nul",
       "totalAmountRequired": "Totaalbedrag is verplicht voor deze actie",
-      "fxRateRequired": "Voer een bedrag in de gekozen valuta in voordat je opslaat. Er is nog geen wisselkoers beschikbaar."
+      "fxRateRequired": "Voer een bedrag in de gekozen valuta in voordat je opslaat. Er is nog geen wisselkoers beschikbaar.",
+      "estimateNeedsPayeeAndCategory": "Kies een begunstigde en een categorie om het bedrag uit te schatten."
     },
     "fx": {
       "amountInCurrency": "Bedrag in {currency}",
       "estimateCaption": "Ongeveer {total} bij 1 {from} = {rate} {to}.",
       "noRateWarning": "Geen wisselkoers gevonden voor {from} naar {to}. Kies een andere valuta of voer het bedrag in {to} in.",
       "feeCaption": "Inclusief {percent}% kosten voor buitenlandse transactie ({fee})."
-    }
+    },
+    "estimateLabel": "Schatten",
+    "estimateTooltip": "Het bedrag van elke keer berekenen uit de betalingen van de afgelopen 24 maanden aan deze begunstigde in deze categorie, maand voor maand, zodat een rekening die in sommige maanden meer kost zo wordt voorspeld. U kunt elke keer nog steeds wijzigen en u bevestigt het bedrag bij het boeken.",
+    "estimateDelegateDisabled": "Alleen de eigenaar kan de schatting aan- of uitzetten: die leest de betalingen in alle rekeningen van de eigenaar.",
+    "estimatedAmountNote": "Automatisch berekend uit de betalingsgeschiedenis. {detail}",
+    "autoPostDisabledEstimate": "Een geschat bedrag bevestigt u bij het boeken, dus het wordt niet automatisch geboekt."
   },
   "postTransaction": {
     "minSplits": "Gesplitste transacties vereisen minimaal 2 splitsingen",
@@ -333,5 +346,16 @@
   "validation": {
     "nameRequired": "Naam is verplicht",
     "dueDateRequired": "Vervaldatum is verplicht"
+  },
+  "estimate": {
+    "thePayee": "deze begunstigde",
+    "theCategory": "deze categorie",
+    "basis": "Geschat uit {count, plural, one {# betaling} other {# betalingen}}, de laatste op {date}.",
+    "basisWithGrowth": "Geschat uit {count, plural, one {# betaling} other {# betalingen}}, de laatste op {date}, met een verandering van {growth} ten opzichte van vorig jaar.",
+    "basisWithheld": "Geschat uit de betalingsgeschiedenis van de begunstigde en de categorie.",
+    "noHistory": "Geen betalingen aan {payee} in {category} in de afgelopen {months} maanden, dus het bedrag is onbekend. Voer het bedrag van elke keer in, of leg een betaling vast.",
+    "missingRate": "Geen wisselkoers van {from} naar {to} om een eerdere betaling om te rekenen, dus het bedrag is onbekend. Voeg de koers toe op de pagina Valuta's.",
+    "noBasis": "Kies een begunstigde en een categorie om het bedrag uit hun betalingsgeschiedenis te schatten.",
+    "pending": "Het bedrag wordt berekend uit de betalingsgeschiedenis van de begunstigde en de categorie."
   }
 }

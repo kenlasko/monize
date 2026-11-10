@@ -44,6 +44,8 @@
     "missingRatePair": "{name}: tidak ada nilai tukar dari {from} ke {to}, jadi jumlah yang akan dicatat oleh kejadian ini tidak diketahui.",
     "missingRate": "{name}: nilai tukar penyelesaian kejadian ini tidak tersedia, jadi jumlahnya tidak diketahui.",
     "crossCurrencyTransfer": "{name}: transfer masuk dari rekening dalam {from} sementara rekening ini dalam {to}. Jumlah yang masuk di sini ditetapkan saat transfer dicatat, jadi tidak dapat diproyeksikan lebih dulu.",
+    "unknownEstimate": "{name}: jumlah perkiraan belum dapat dihitung, karena tidak ada pembayaran untuk memperkirakannya. Masukkan jumlah kejadian ini, atau catat sebuah pembayaran.",
+    "unknownEstimatePair": "{name}: pembayaran yang dibaca perkiraan ini dalam {from}, dan tidak ada kurs dari {from} ke {to}, jadi jumlah perkiraannya tidak diketahui.",
     "howToFix": "Untuk memperbaiki nilai tukar yang hilang: buka Mata Uang dan segarkan kursnya, atau periksa apakah efek dan rekening penyelesaiannya memakai mata uang yang Anda harapkan."
   }
 }

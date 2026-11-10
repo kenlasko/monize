@@ -44,6 +44,8 @@
     "missingRatePair": "{name}: brak kursu wymiany z {from} na {to}, więc kwota, jaką zaksięguje ta pozycja, jest nieznana.",
     "missingRate": "{name}: kurs wymiany, po jakim rozliczy się ta pozycja, jest niedostępny, więc kwota jest nieznana.",
     "crossCurrencyTransfer": "{name}: transfer przychodzący z konta w {from}, gdy to konto jest w {to}. Kwota, która tu wpłynie, ustalana jest przy księgowaniu, więc nie da się jej z góry prognozować.",
+    "unknownEstimate": "{name}: szacowanej kwoty nie można jeszcze obliczyć, ponieważ nie ma płatności, na podstawie których można ją oszacować. Wprowadź kwotę tego wystąpienia albo zarejestruj płatność.",
+    "unknownEstimatePair": "{name}: płatność, z której korzysta szacunek, jest w {from}, a kurs wymiany z {from} na {to} jest niedostępny, więc szacowana kwota jest nieznana.",
     "howToFix": "Jak naprawić brakujący kurs: otwórz Waluty i odśwież kursy albo sprawdź, czy papier wartościowy i jego konto rozliczeniowe mają oczekiwane waluty."
   }
 }

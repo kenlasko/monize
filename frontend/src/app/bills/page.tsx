@@ -43,7 +43,11 @@ import { exportToCsv } from '@/lib/csv-export';
 import { parseLocalDate } from '@/lib/utils';
 import { buildScheduledCalendarDays } from '@/lib/scheduled-calendar';
 import { occurrenceKind } from '@/lib/scheduled-kind';
-import { scheduleEffectiveAmount, nextOccurrenceDueDate } from '@/lib/scheduled-effective-amount';
+import {
+  estimatedTypicalAmount,
+  nextOccurrenceDueDate,
+  scheduleEffectiveAmount,
+} from '@/lib/scheduled-effective-amount';
 import { monthlyEquivalent } from '@/lib/frequency';
 import { projectPayrollOccurrence, type FutureTransaction } from '@/lib/forecast';
 import { loadFutureTransactions } from '@/lib/future-transactions';
@@ -591,7 +595,10 @@ function BillsContent() {
       // The amount this schedule would post today, not the persisted snapshot:
       // for an FX-sensitive schedule that scalar was calculated at an older rate.
       const effectiveAmount = scheduleEffectiveAmount(t);
-      const effective = effectiveAmount.amount;
+      // An estimated bill's monthly equivalent is its typical month over the
+      // year ahead, not the next month's seasonal figure (issue #2096).
+      const typical = estimatedTypicalAmount(t, financialToday);
+      const effective = typical !== undefined ? typical : effectiveAmount.amount;
       const amount = effective ?? Number(t.amount);
       // The kind comes from the SAME occurrence the magnitude does. Reading the
       // stored sign here put a re-priced inflow of 20 into `monthlyBills` and
@@ -673,7 +680,7 @@ function BillsContent() {
       monthlyHasUnpriceable: !amountsResolved,
       dueCount,
     };
-  }, [scheduledTransactions, convertToDefault]);
+  }, [scheduledTransactions, convertToDefault, financialToday]);
 
   /**
    * Why the Monthly Net is withheld, or `undefined` when it is not.

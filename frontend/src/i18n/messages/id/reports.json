@@ -1757,7 +1757,8 @@
     "pdfSubtitle": "{month} | {count} tagihan aktif",
     "pdfActiveBills": "Tagihan Aktif",
     "pdfOverdue": "Terlambat",
-    "pdfThisMonth": "Bulan Ini"
+    "pdfThisMonth": "Bulan Ini",
+    "estimated": "Perkiraan"
   },
   "weekendVsWeekday": {
     "noData": "Tidak ada transaksi pengeluaran ditemukan untuk periode ini.",

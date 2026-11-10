@@ -78,6 +78,8 @@ interface UpcomingBill {
    * falling back to the schedule's snapshot sign.
    */
   directionAmount: number | null;
+  /** The amount is the schedule's history estimate (issue #2096). */
+  estimated: boolean;
   isOverdue: boolean;
 }
 
@@ -154,6 +156,7 @@ export function UpcomingBillsReport() {
           amount: occurrence.amount,
           currencyCode: occurrence.currencyCode,
           directionAmount: occurrence.directionAmount,
+          estimated: occurrence.estimated === true,
           isOverdue: dueDate < today,
         },
       ];
@@ -557,6 +560,11 @@ export function UpcomingBillsReport() {
                       formatCurrency(Math.abs(bill.amount), bill.currencyCode)
                     )}
                   </div>
+                  {bill.estimated && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {t('upcomingBills.estimated')}
+                    </div>
+                  )}
                   <div className="text-sm text-gray-500 dark:text-gray-400">
                     {formatDate(bill.dueDate)}
                   </div>

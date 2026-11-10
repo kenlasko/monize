@@ -1757,7 +1757,8 @@
     "pdfSubtitle": "{month} | {count} fatture attive",
     "pdfActiveBills": "Fatture attive",
     "pdfOverdue": "In scadenza",
-    "pdfThisMonth": "Questo mese"
+    "pdfThisMonth": "Questo mese",
+    "estimated": "Stimato"
   },
   "weekendVsWeekday": {
     "noData": "Nessuna transazione di uscita trovata per questo periodo.",

@@ -25,6 +25,8 @@ import {
 } from '@/types/scheduled-transaction';
 import { loanOccurrenceLines } from '@/lib/loan-occurrence';
 import { useLoanOccurrenceMissingText } from './useLoanOccurrenceMissingText';
+import { estimatedOccurrenceAmount, occurrenceFollowsEstimate } from '@/lib/scheduled-effective-amount';
+import { useAmountEstimateText } from './useAmountEstimateText';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
@@ -117,6 +119,14 @@ export function OverrideEditorDialog({
     missing: LoanOccurrenceMissing | null;
   } | null>(null);
   const missingText = useLoanOccurrenceMissingText();
+  // The history estimate this occurrence opened on (issue #2096): `undefined`
+  // when it does not follow one, `null` when the estimate is unknown. Saving
+  // the amount unchanged keeps it following the estimate.
+  const [estimateSeed, setEstimateSeed] = useState<number | null | undefined>(undefined);
+  // Keep the estimate shown as this occurrence's own amount, so later
+  // payments no longer move it.
+  const [keepEstimate, setKeepEstimate] = useState(false);
+  const estimateText = useAmountEstimateText();
   const [categoryId, setCategoryId] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [isSplit, setIsSplit] = useState(false);
@@ -275,6 +285,27 @@ export function OverrideEditorDialog({
       // override's own lines stand as the user wrote them.
       setAmountUnknown(false);
       setLoanSeedGap(null);
+
+      // An estimated schedule's occurrence opens on the estimate for the month
+      // it falls in (issue #2096), never the stored snapshot; an override that
+      // states its own amount keeps it.
+      const seed =
+        prefillAmount == null &&
+        !isInvestmentKind &&
+        occurrenceFollowsEstimate(scheduledTransaction, existingOverride)
+          ? estimatedOccurrenceAmount(
+              scheduledTransaction,
+              existingOverride?.overrideDate ?? overrideDate,
+            )
+          : undefined;
+      setEstimateSeed(seed === undefined ? undefined : seed === null ? null : toLoadedPlaces(seed));
+      setKeepEstimate(false);
+      if (seed === null) {
+        setAmount(0);
+        setAmountUnknown(true);
+      } else if (seed !== undefined) {
+        setAmount(toLoadedPlaces(seed));
+      }
       const overrideHasOwnLines = !!(existingOverride?.isSplit && existingOverride.splits);
       if (loanOccurrence && !isInvestmentKind && prefillAmount == null && !overrideHasOwnLines) {
         const { occurrence, loanAccountId } = loanOccurrence;
@@ -581,7 +612,9 @@ export function OverrideEditorDialog({
       }
     }
 
-    if (!isInvestmentKind && amountUnknown) {
+    // An unknown estimate left empty is no amount stated: a date, category or
+    // note change saves and the occurrence keeps following the estimate.
+    if (!isInvestmentKind && amountUnknown && estimateSeed !== null) {
       toast.error(t('loanOccurrence.amountRequired'));
       return;
     }
@@ -589,7 +622,17 @@ export function OverrideEditorDialog({
     setIsLoading(true);
     try {
       // For transfers, negate the amount (user enters positive, stored as negative)
-      const savedAmount = scheduledTransaction.isTransfer ? -Math.abs(amount) : amount;
+      // An estimate saved unchanged is not a stated amount: the occurrence
+      // keeps following the estimate as new payments arrive (issue #2096).
+      const followsEstimate =
+        !isSplit &&
+        ((typeof estimateSeed === 'number' && amount === estimateSeed && !keepEstimate) ||
+          (estimateSeed === null && amountUnknown));
+      const savedAmount = followsEstimate
+        ? null
+        : scheduledTransaction.isTransfer
+          ? -Math.abs(amount)
+          : amount;
       const baseData = isInvestmentKind
         ? {
             description: description || null,
@@ -823,6 +866,30 @@ export function OverrideEditorDialog({
             }}
             allowSignToggle
           />
+        )}
+        {!isInvestmentKind && estimateSeed !== undefined && (
+          <p className="-mt-2 text-xs text-gray-500 dark:text-gray-400" role="note">
+            {t('overrideEditor.estimatedHint', {
+              detail: estimateText(scheduledTransaction.amountEstimate, {
+                payeeName: scheduledTransaction.payee?.name ?? scheduledTransaction.payeeName,
+                categoryName: scheduledTransaction.category?.name ?? null,
+              }),
+            })}
+          </p>
+        )}
+        {/* Saved unchanged, the occurrence keeps following the estimate; this
+            is the explicit way to pin today's figure instead. */}
+        {!isInvestmentKind && typeof estimateSeed === 'number' && amount === estimateSeed && (
+          <label className="flex items-center gap-2 cursor-pointer w-fit">
+            <ToggleSwitch
+              checked={keepEstimate}
+              onChange={setKeepEstimate}
+              label={t('overrideEditor.keepEstimate')}
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              {t('overrideEditor.keepEstimate')}
+            </span>
+          </label>
         )}
         {!isInvestmentKind && loanSeedGap && (
           <p className="-mt-2 text-xs text-amber-700 dark:text-amber-300" role="note">

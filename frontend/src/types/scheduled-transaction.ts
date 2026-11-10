@@ -58,6 +58,42 @@ export interface ScheduledTransactionSplit {
   createdAt: string;
 }
 
+/**
+ * Why an estimated schedule's amount is what it is, or unknown
+ * (docs/specs/scheduled-amount-estimate.md section 5).
+ */
+export type ScheduleAmountEstimateStatus =
+  | 'estimated'
+  | 'no-basis'
+  | 'no-history'
+  | 'missing-rate';
+
+/** One month of a schedule's history estimate. */
+export interface EstimatedMonth {
+  amount: number;
+  /** `seasonal`: the same calendar month's payments; `recent`: the newest three. */
+  basis: 'seasonal' | 'recent';
+}
+
+/**
+ * The history estimate of an estimated schedule, as the list read sends it
+ * (issue #2096). `months` holds one per-occurrence amount per `YYYY-MM`, from
+ * the month before today for two years; a month it does not hold is unknown.
+ * Read it through `estimatedOccurrenceAmount`, never directly.
+ */
+export interface ScheduleAmountEstimate {
+  status: ScheduleAmountEstimateStatus;
+  currencyCode: string;
+  months: Record<string, EstimatedMonth>;
+  /** `null` when withheld: a delegate is not told how often the owner paid. */
+  paymentCount: number | null;
+  latestPaymentDate: string | null;
+  /** The year-over-year growth applied, or null when the history shows no trend. */
+  growthRate: number | null;
+  historyMonths: number;
+  missingPair: { from: string; to: string } | null;
+}
+
 export interface ScheduledTransaction {
   id: string;
   userId: string;
@@ -88,6 +124,12 @@ export interface ScheduledTransaction {
   totalOccurrences: number | null;
   isActive: boolean;
   autoPost: boolean;
+  // Every occurrence without an amount-stating override is priced from the
+  // payee and category's payment history (issue #2096); `amount` is then only
+  // the server's snapshot and `amountEstimate` the figures. Absent on an older
+  // backend, which never estimates.
+  amountIsEstimated?: boolean;
+  amountEstimate?: ScheduleAmountEstimate | null;
   reminderDaysBefore: number;
   lastPostedDate: string | null;
   isSplit: boolean;
@@ -204,6 +246,7 @@ export interface CreateScheduledTransactionData {
   occurrencesRemaining?: number;
   isActive?: boolean;
   autoPost?: boolean;
+  amountIsEstimated?: boolean;
   reminderDaysBefore?: number;
   isTransfer?: boolean;
   transferAccountId?: string;
@@ -463,6 +506,11 @@ export interface ScheduledOccurrence {
   overrideId: string | null;
   /** True when an override moved this occurrence off its recurrence slot. */
   moved: boolean;
+  /**
+   * `amount` is the schedule's history estimate for this month (issue #2096).
+   * Absent on an older backend, which never estimates.
+   */
+  estimated?: boolean;
   accountId: string;
   transferAccountId: string | null;
   isTransfer: boolean;

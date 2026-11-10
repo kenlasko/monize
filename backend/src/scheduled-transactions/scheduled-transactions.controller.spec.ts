@@ -37,6 +37,7 @@ describe("ScheduledTransactionsController", () => {
       post: jest.fn(),
       skip: jest.fn(),
       getLoanProjectionAnchor: jest.fn(),
+      previewAmountEstimate: jest.fn(),
       projectLoanOccurrences: jest.fn(),
       findOverrides: jest.fn(),
       hasOverrides: jest.fn(),
@@ -95,6 +96,24 @@ describe("ScheduledTransactionsController", () => {
     });
   });
 
+  describe("create() by a delegate (issue #2096)", () => {
+    it("saves no estimate a delegate asked for", async () => {
+      const actingReq = {
+        user: { id: "owner-1", isActing: true, delegationId: "g1" },
+      };
+      mockService.create.mockResolvedValue({ id: "st-1" });
+
+      await controller.create(actingReq, {
+        name: "Gas",
+        amountIsEstimated: true,
+      } as any);
+
+      expect(mockService.create).toHaveBeenCalledWith("owner-1", {
+        name: "Gas",
+      });
+    });
+  });
+
   describe("findAll()", () => {
     it("delegates to service.findAll with userId", async () => {
       const expected = [{ id: "st-1" }];
@@ -120,6 +139,36 @@ describe("ScheduledTransactionsController", () => {
 
       expect(result).toEqual([{ id: "st-2", accountId: "a2" }]);
       expect(delegationMock.readableAccountIds).toHaveBeenCalledWith("g1");
+    });
+
+    it("withholds when and how often the owner paid from a delegate (issue #2096)", async () => {
+      const actingReq = {
+        user: { id: "owner-1", isActing: true, delegationId: "g1" },
+      };
+      const amountEstimate = {
+        status: "estimated",
+        months: { "2026-12": { amount: -120, basis: "recent" } },
+        paymentCount: 7,
+        latestPaymentDate: "2026-10-15",
+      };
+      mockService.findAll.mockResolvedValue([
+        { id: "st-1", accountId: "a1", amountEstimate },
+      ]);
+      delegationMock.readableAccountIds.mockResolvedValue(["a1"]);
+
+      const [row] = (await controller.findAll(actingReq)) as any[];
+
+      expect(row.amountEstimate).toEqual({
+        ...amountEstimate,
+        paymentCount: null,
+        latestPaymentDate: null,
+      });
+      // The owner's own read is untouched.
+      mockService.findAll.mockResolvedValue([
+        { id: "st-1", accountId: "a1", amountEstimate },
+      ]);
+      const [own] = (await controller.findAll(mockReq)) as any[];
+      expect(own.amountEstimate.paymentCount).toBe(7);
     });
 
     it("keeps a transfer where the delegate holds the recipient side", async () => {
@@ -285,7 +334,28 @@ describe("ScheduledTransactionsController", () => {
       const result = await controller.update(mockReq, "st-1", dto as any);
 
       expect(result).toEqual(expected);
-      expect(mockService.update).toHaveBeenCalledWith("user-1", "st-1", dto);
+      expect(mockService.update).toHaveBeenCalledWith("user-1", "st-1", dto, {
+        actorIsDelegate: false,
+      });
+    });
+
+    it("drops a delegate's estimate toggle and says the editor is a delegate (issue #2096)", async () => {
+      const actingReq = {
+        user: { id: "owner-1", isActing: true, delegationId: "g1" },
+      };
+      mockService.update.mockResolvedValue({ id: "st-1" });
+
+      await controller.update(actingReq, "st-1", {
+        name: "Gas",
+        amountIsEstimated: true,
+      } as any);
+
+      expect(mockService.update).toHaveBeenCalledWith(
+        "owner-1",
+        "st-1",
+        { name: "Gas" },
+        { actorIsDelegate: true },
+      );
     });
   });
 
@@ -348,6 +418,24 @@ describe("ScheduledTransactionsController", () => {
         actorIsNotOwner: true,
         occurrencePin: PIN,
       });
+    });
+  });
+
+  describe("previewAmountEstimate()", () => {
+    it("delegates to the service with the caller's id and the matched basis", async () => {
+      const expected = { status: "no-history", months: {} };
+      mockService.previewAmountEstimate.mockResolvedValue(expected);
+
+      const result = await controller.previewAmountEstimate(mockReq, "acc-1", {
+        payeeId: "payee-1",
+        categoryId: "cat-1",
+      });
+
+      expect(result).toBe(expected);
+      expect(mockService.previewAmountEstimate).toHaveBeenCalledWith(
+        mockReq.user.id,
+        { accountId: "acc-1", payeeId: "payee-1", categoryId: "cat-1" },
+      );
     });
   });
 

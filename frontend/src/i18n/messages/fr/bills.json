@@ -55,7 +55,10 @@
     "legendAriaLabel": "Courbes de la prévision",
     "tooltipTransactionForAccount": "{name} ({account})",
     "unavailableMissingRates": "Cette prévision ne peut pas être affichée en {displayCurrency} : aucun taux de change n'est disponible pour {currencies}, et un solde projeté s'appuie sur chaque jour précédent. Ajoutez un taux, ou choisissez un compte à devise unique.",
-    "untitledTransaction": "Transaction"
+    "untitledTransaction": "Transaction",
+    "tooltipEstimated": "(estimé)",
+    "unavailableUnknownEstimates": "Cette prévision ne peut pas encore être affichée : le montant estimé d'une facture qu'elle contient est inconnu, et un solde prévu s'appuie sur chaque jour qui précède. Saisissez le montant de cette occurrence, ou désactivez Estimer sur la facture.",
+    "unknownEstimateItem": "{name} : {reason}"
   },
   "calendar": {
     "days": {

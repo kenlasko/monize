@@ -206,8 +206,10 @@ describe("occurrence selection stays in one place", () => {
       // findAll's schedule-level read model: `effectiveAmount`,
       // `effectiveAmountComplete`, `effectiveCurrencyCode` and
       // `effectiveDirectionAmount` on a schedule row are by definition the base,
-      // and the row carries its overrides beside it.
-      ["scheduled-transactions/scheduled-transactions.service.ts", 4],
+      // and the row carries its overrides beside it. One read since issue
+      // #2096: the four fields come from one `base`, which is the estimate
+      // for an estimated schedule and the resolver's base otherwise.
+      ["scheduled-transactions/scheduled-transactions.service.ts", 1],
     ]);
 
     const counts = new Map<string, number>();

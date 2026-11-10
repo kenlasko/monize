@@ -110,7 +110,8 @@
     "viewCalendar": "カレンダー",
     "previousMonth": "前の月",
     "nextMonth": "次の月",
-    "emptyAll": "予定されている有効な請求、入金、振替はありません。"
+    "emptyAll": "予定されている有効な請求、入金、振替はありません。",
+    "estimated": "見積もり"
   },
   "cashFlowForecast": {
     "title": "キャッシュフロー予測",

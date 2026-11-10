@@ -23,6 +23,9 @@ import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitDat
 import { bookSplitRowsAtMinorUnit } from '@/lib/minor-unit-booking';
 import { CurrencyPickerButton } from '@/components/transactions/CurrencyPickerButton';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
+import { estimateAmountOn } from '@/lib/scheduled-effective-amount';
+import { useAmountEstimateText } from './useAmountEstimateText';
+import { useAuthStore } from '@/store/authStore';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 import { investmentsApi } from '@/lib/investments';
 import { getLocalDateString } from '@/lib/utils';
@@ -31,7 +34,12 @@ import { categoriesApi } from '@/lib/categories';
 import { createCategoryFromInput } from '@/lib/category-create';
 import { accountsApi } from '@/lib/accounts';
 import { tagsApi } from '@/lib/tags';
-import { ScheduledTransaction, FrequencyType, FREQUENCY_VALUES } from '@/types/scheduled-transaction';
+import {
+  ScheduledTransaction,
+  ScheduleAmountEstimate,
+  FrequencyType,
+  FREQUENCY_VALUES,
+} from '@/types/scheduled-transaction';
 import { InvestmentAction, Security } from '@/types/investment';
 import { baseInvestmentAction } from '@/lib/investment-actions';
 import { Transaction } from '@/types/transaction';
@@ -104,6 +112,9 @@ const buildScheduledTransactionSchema = (t: (key: string) => string) => z.object
   occurrencesRemaining: optionalNumber,
   isActive: z.boolean().default(true),
   autoPost: z.boolean().default(false),
+  // Price each occurrence from the payee and category's payment history
+  // (issue #2096); never together with auto-post.
+  amountIsEstimated: z.boolean().default(false),
   // Bounded like the server bounds it: the value reaches a date computation, and
   // an out-of-range one used to come back as a raw 400 from a form that had
   // happily accepted it (issue #1247 review).
@@ -294,6 +305,7 @@ export function ScheduledTransactionForm({
           occurrencesRemaining: scheduledTransaction.occurrencesRemaining ?? undefined,
           isActive: scheduledTransaction.isActive,
           autoPost: scheduledTransaction.autoPost,
+          amountIsEstimated: scheduledTransaction.amountIsEstimated === true,
           reminderDaysBefore: scheduledTransaction.reminderDaysBefore,
         }
       : templateTransaction
@@ -335,6 +347,7 @@ export function ScheduledTransactionForm({
   const watchedIsActive = useWatch({ control, name: 'isActive' });
   const watchedNextDueDate = useWatch({ control, name: 'nextDueDate' });
   const watchedAutoPost = useWatch({ control, name: 'autoPost' });
+  const watchedEstimate = useWatch({ control, name: 'amountIsEstimated' });
 
   // Auto-set currencyCode from the selected account
   useEffect(() => {
@@ -394,6 +407,58 @@ export function ScheduledTransactionForm({
     mode === 'transaction' &&
     !!entryCurrency &&
     entryCurrency.toUpperCase() !== accountCurrency.toUpperCase();
+
+  // The Estimate option (issue #2096): single-category, account-currency
+  // schedules only, as the server allows.
+  const estimating = mode === 'transaction' && !isForeign && watchedEstimate === true;
+  const estimateText = useAmountEstimateText();
+  // A delegate does not turn the estimate on or off, and is refused its
+  // preview: it reads the owner's payments in every account (issue #2096).
+  const isActingDelegate = useAuthStore((state) => !!state.actingAsUserId);
+  // The preview is the payload of the request that produced it, keyed by what
+  // it was asked for, so a stale answer for another payee is never shown
+  // (docs/frontend/api-and-cache.md). A saved schedule's own estimate stands in
+  // until the first answer arrives.
+  const estimateRequestKey =
+    estimating && watchedAccountId && selectedPayeeId && selectedCategoryId
+      ? `${watchedAccountId}|${selectedPayeeId}|${selectedCategoryId}|${watchedNextDueDate || ''}`
+      : null;
+  const [estimatePreview, setEstimatePreview] = useState<{
+    key: string;
+    estimate: ScheduleAmountEstimate | null;
+  } | null>(() =>
+    scheduledTransaction?.amountEstimate
+      ? {
+          key: `${scheduledTransaction.accountId}|${scheduledTransaction.payeeId}|${scheduledTransaction.categoryId}|${scheduledTransaction.nextDueDate.split('T')[0]}`,
+          estimate: scheduledTransaction.amountEstimate,
+        }
+      : null,
+  );
+  useEffect(() => {
+    if (!estimateRequestKey || isActingDelegate) return;
+    const [accountId, payeeId, categoryId, nextDueDate] = estimateRequestKey.split('|');
+    let cancelled = false;
+    scheduledTransactionsApi
+      .getAmountEstimate(accountId, payeeId, categoryId, nextDueDate || undefined)
+      .then((estimate) => {
+        if (!cancelled) setEstimatePreview({ key: estimateRequestKey, estimate });
+      })
+      .catch((err) => {
+        // A failed lookup is not "no history", and not a reason to drop the
+        // saved schedule's own estimate (a delegate is refused the preview):
+        // whatever was shown stays, and the save still works the estimate out
+        // on the server.
+        logger.warn?.('Failed to fetch the amount estimate', err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [estimateRequestKey, isActingDelegate]);
+  const currentEstimate =
+    estimateRequestKey && estimatePreview?.key === estimateRequestKey
+      ? estimatePreview.estimate
+      : null;
+  const nextEstimateAmount = estimateAmountOn(currentEstimate, watchedNextDueDate || '');
 
   const fxFeePercent = selectedAccount?.fxFeePercent ?? undefined;
   // An account-currency figure at the places the form enters it in: cents, or
@@ -844,6 +909,18 @@ export function ScheduledTransactionForm({
   }, [scheduledTransaction?.payeeId, t]);
 
   // Handle mode changes
+  // Turning the estimate on turns auto-post off (the server refuses the pair)
+  // and gives the schema a number while no estimate is known.
+  const handleEstimateChange = (next: boolean) => {
+    setValue('amountIsEstimated', next, { shouldDirty: true });
+    if (next) {
+      setValue('autoPost', false, { shouldDirty: true });
+      if (watchedAmount === undefined || watchedAmount === null) {
+        setValue('amount', 0, { shouldValidate: true });
+      }
+    }
+  };
+
   const handleModeChange = (newMode: ScheduledTransactionMode) => {
     setMode(newMode);
 
@@ -1049,6 +1126,12 @@ export function ScheduledTransactionForm({
       return;
     }
 
+    // An estimate is matched on the payee and the category (issue #2096).
+    if (estimating && (!selectedPayeeId || !selectedCategoryId)) {
+      toast.error(t('form.toasts.estimateNeedsPayeeAndCategory'));
+      return;
+    }
+
     // Validate transfer destination
     if (mode === 'transfer') {
       if (!transferToAccountId) {
@@ -1130,6 +1213,13 @@ export function ScheduledTransactionForm({
         endDate: useEndDate ? data.endDate : undefined,
         occurrencesRemaining: useOccurrences ? data.occurrencesRemaining : undefined,
         tagIds: selectedTagIds.length > 0 ? selectedTagIds : [],
+        // Only a single-category, account-currency schedule estimates; the
+        // server replaces the amount with the next occurrence's estimate.
+        amountIsEstimated: estimating,
+        ...(estimating && {
+          autoPost: false,
+          amount: nextEstimateAmount ?? Number(data.amount ?? 0),
+        }),
       };
 
       if (mode === 'transfer') {
@@ -1369,16 +1459,22 @@ export function ScheduledTransactionForm({
           {t('form.activeLabel')}
         </span>
       </label>
-      <label className="flex items-center gap-2 cursor-pointer">
-        <ToggleSwitch
-          checked={!!watchedAutoPost}
-          onChange={(next) => setValue('autoPost', next, { shouldDirty: true })}
-          label={t('form.autoPostLabel')}
-        />
-        <span className="block text-sm text-gray-900 dark:text-gray-100">
-          {t('form.autoPostLabel')}
-        </span>
-      </label>
+      <span className="flex items-center gap-1">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <ToggleSwitch
+            checked={!!watchedAutoPost && !estimating}
+            onChange={(next) => setValue('autoPost', next, { shouldDirty: true })}
+            label={t('form.autoPostLabel')}
+            // An estimate is a forecast a person confirms when posting, so an
+            // estimated schedule is never posted automatically (issue #2096).
+            disabled={estimating}
+          />
+          <span className="block text-sm text-gray-900 dark:text-gray-100">
+            {t('form.autoPostLabel')}
+          </span>
+        </label>
+        {estimating && <InfoTooltip text={t('form.autoPostDisabledEstimate')} />}
+      </span>
     </div>
   );
 
@@ -1552,7 +1648,9 @@ export function ScheduledTransactionForm({
                   value={entryCurrency}
                   accountCurrencyCode={accountCurrency}
                   onChange={handleEntryCurrencyChange}
-                  disabled={isLoading}
+                  // An estimate is in the account's currency: switching to a
+                  // foreign entry would silently turn it off.
+                  disabled={isLoading || estimating}
                 />
                 <div className="flex-1 min-w-0">
                   <CurrencyInput
@@ -1563,18 +1661,62 @@ export function ScheduledTransactionForm({
                     }
                     prefix={getCurrencySymbol(isForeign ? entryCurrency : accountCurrency)}
                     decimalPlaces={entryDecimalPlaces(isForeign ? entryCurrency : accountCurrency)}
-                    value={isForeign ? foreignAmount : watchedAmount}
+                    // Estimating, the field shows the next occurrence's
+                    // estimate and is not edited; an unknown estimate is an
+                    // empty field, never the stored snapshot.
+                    value={
+                      isForeign
+                        ? foreignAmount
+                        : estimating
+                          ? (nextEstimateAmount ?? undefined)
+                          : watchedAmount
+                    }
                     onChange={
                       isForeign
                         ? handleForeignAmountChange
                         : (value) => setValue('amount', value ?? 0, { shouldValidate: true })
                     }
                     allowSignToggle
+                    disabled={estimating}
                     error={errors.amount?.message}
                   />
                 </div>
+                {/* Between Amount and Reference Number, taking its width from
+                    the Amount input (issue #2096). */}
+                {!isForeign && (
+                  <div className="flex shrink-0 flex-col">
+                    <span className="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('form.estimateLabel')}
+                      <InfoTooltip
+                        text={
+                          isActingDelegate
+                            ? t('form.estimateDelegateDisabled')
+                            : t('form.estimateTooltip')
+                        }
+                      />
+                    </span>
+                    <div className="flex flex-1 items-center">
+                      <ToggleSwitch
+                        checked={estimating}
+                        onChange={handleEstimateChange}
+                        label={t('form.estimateLabel')}
+                        disabled={isLoading || isActingDelegate}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
               {isForeign && renderFxCaption()}
+              {estimating && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {t('form.estimatedAmountNote', {
+                    detail: estimateText(currentEstimate, {
+                      payeeName: payees.find((p) => p.id === selectedPayeeId)?.name ?? null,
+                      categoryName: categories.find((c) => c.id === selectedCategoryId)?.name ?? null,
+                    }),
+                  })}
+                </p>
+              )}
             </div>
             <Input
               label={t('form.referenceNumberLabel')}

@@ -1757,7 +1757,8 @@
     "pdfSubtitle": "{month} | {count} активних рахунків",
     "pdfActiveBills": "Активні рахунки",
     "pdfOverdue": "Прострочені",
-    "pdfThisMonth": "Цього місяця"
+    "pdfThisMonth": "Цього місяця",
+    "estimated": "Оцінка"
   },
   "weekendVsWeekday": {
     "noData": "Витратних операцій за цей період не знайдено.",

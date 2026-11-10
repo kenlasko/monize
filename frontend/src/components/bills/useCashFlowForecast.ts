@@ -74,6 +74,8 @@ export interface CashFlowForecast {
   accountLines: CashFlowForecastAccountLine[];
   /** Currencies with no rate into `chartCurrency`; non-empty means no forecast. */
   missingCurrencies: string[];
+  /** Ids of estimated schedules whose estimate is unknown; non-empty means no forecast. */
+  unknownEstimates: string[];
   summary: ReturnType<typeof getForecastSummary>;
   totalForecastedTransactions: number;
 }
@@ -124,6 +126,7 @@ export function useCashFlowForecast({
     points: CashFlowForecastPoint[];
     series: ForecastAccountSeries[];
     missingCurrencies: string[];
+    unknownEstimates?: string[];
   }>(() => {
     const convert = needsConversion ? convertToDefault : undefined;
     if (isMultiAccount) {
@@ -139,7 +142,12 @@ export function useCashFlowForecast({
       accounts, scheduledTransactions, period, orderedAccountIds[0] ?? 'all',
       futureTransactions, convert,
     );
-    return { points: single.points as CashFlowForecastPoint[], series: [], missingCurrencies: single.missingCurrencies };
+    return {
+      points: single.points as CashFlowForecastPoint[],
+      series: [],
+      missingCurrencies: single.missingCurrencies,
+      unknownEstimates: single.unknownEstimates,
+    };
   }, [accounts, scheduledTransactions, period, orderedAccountIds, isMultiAccount, futureTransactions, needsConversion, convertToDefault]);
 
   const accountLines: CashFlowForecastAccountLine[] = useMemo(
@@ -169,6 +177,7 @@ export function useCashFlowForecast({
     points: forecast.points,
     accountLines,
     missingCurrencies: forecast.missingCurrencies,
+    unknownEstimates: forecast.unknownEstimates ?? [],
     summary,
     totalForecastedTransactions,
   };

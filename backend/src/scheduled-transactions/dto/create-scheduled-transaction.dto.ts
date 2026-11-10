@@ -132,6 +132,18 @@ export class CreateScheduledTransactionDto {
   autoPost?: boolean;
 
   /**
+   * Estimate every occurrence's amount from the payee and category's payment
+   * history (docs/specs/scheduled-amount-estimate.md). Refused on a split,
+   * transfer, investment, foreign-currency or auto-posted schedule, and without
+   * a payee and a category to match the history on. `amount` is still sent and
+   * still validated; the server replaces it with the next occurrence's estimate
+   * when one is known.
+   */
+  @IsOptional()
+  @IsBoolean()
+  amountIsEstimated?: boolean;
+
+  /**
    * How many days before an occurrence the reminder email goes out.
    *
    * Bounded, and an integer. Unbounded, a value past `Date`'s range made

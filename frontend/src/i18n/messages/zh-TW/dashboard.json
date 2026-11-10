@@ -110,7 +110,8 @@
     "viewCalendar": "日曆",
     "previousMonth": "上個月",
     "nextMonth": "下個月",
-    "emptyAll": "沒有已排程的有效帳單、存入或轉帳。"
+    "emptyAll": "沒有已排程的有效帳單、存入或轉帳。",
+    "estimated": "估算"
   },
   "cashFlowForecast": {
     "title": "現金流量預測",

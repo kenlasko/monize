@@ -96,6 +96,20 @@ describe('UpcomingBills', () => {
     expect(screen.getByText('Manual')).toBeInTheDocument();
   });
 
+  it('labels an estimated amount as one (issue #2096)', () => {
+    const transactions = [
+      {
+        id: '1', name: 'Heating', amount: -999, currencyCode: 'CAD',
+        effectiveAmount: -180, effectiveAmountComplete: true,
+        nextDueDate: futureDateStr(1), isActive: true, autoPost: false,
+        amountIsEstimated: true, nextOverride: null,
+      },
+    ] as any[];
+
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    expect(screen.getByText('Estimated')).toBeInTheDocument();
+  });
+
   it('renders Today label for bills due today', () => {
     const transactions = [
       {

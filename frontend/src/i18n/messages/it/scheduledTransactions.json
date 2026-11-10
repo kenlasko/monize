@@ -63,7 +63,8 @@
       "skipFailed": "Impossibile saltare l'occorrenza",
       "deleteFailed": "Eliminazione non riuscita"
     },
-    "foreignAmountTitle": "L'importo addebitato dal beneficiario, nella sua valuta"
+    "foreignAmountTitle": "L'importo addebitato dal beneficiario, nella sua valuta",
+    "estimatedLabel": "Stimato"
   },
   "filters": {
     "label": "Filtri",
@@ -113,7 +114,8 @@
       "totalAmountRequired": "L'importo totale è obbligatorio",
       "splitsMinimum": "Le transazioni suddivise richiedono almeno 2 suddivisioni",
       "splitsTotal": "Gli importi delle suddivisioni devono corrispondere all'importo della transazione",
-      "fxRateUnavailable": "Non è disponibile alcun tasso di cambio da {from} a {to} per questa data."
+      "fxRateUnavailable": "Non è disponibile alcun tasso di cambio da {from} a {to} per questa data.",
+      "estimateUnknown": "L'importo stimato di questa occorrenza è sconosciuto. Inserisci l'importo per registrarla."
     },
     "latestPlaceholder": "Più recente: {price}",
     "descriptionPlaceholder": "Descrizione...",
@@ -126,7 +128,8 @@
       "noRateWarning": "Nessun tasso di cambio trovato da {from} a {to} il {date}. Scegli un'altra data oppure aggiorna i tassi.",
       "feeCaption": "Include una commissione per transazione estera del {percent}% ({fee}).",
       "totalInCurrency": "Totale in {currency}"
-    }
+    },
+    "estimatedHint": "Questo importo è una stima; modificalo con quanto hai effettivamente pagato. {detail}"
   },
   "occurrencePicker": {
     "title": "Seleziona data occorrenza",
@@ -137,7 +140,9 @@
     "amountChange": "Importo: {amount}",
     "categoryChange": "Categoria: {category}",
     "noteChange": "Nota: {note}",
-    "splitModified": "Suddivisione modificata"
+    "splitModified": "Suddivisione modificata",
+    "estimatedAmount": "Stimato: {amount}",
+    "estimateUnknown": "Stima sconosciuta"
   },
   "loanOccurrence": {
     "loading": "Calcolo del pagamento di ogni scadenza.",
@@ -197,7 +202,9 @@
       "quantityRequired": "La quantità deve essere maggiore di zero",
       "priceRequired": "Il prezzo deve essere maggiore di zero",
       "totalAmountRequired": "L'importo totale è obbligatorio"
-    }
+    },
+    "estimatedHint": "Questo importo è la stima per questa occorrenza. Lascialo invariato e l'occorrenza continuerà a seguire la stima man mano che arrivano nuovi pagamenti. {detail}",
+    "keepEstimate": "Mantieni questo importo, anche se nuovi pagamenti cambiano la stima"
   },
   "form": {
     "tabs": {
@@ -302,14 +309,20 @@
       "quantityRequired": "La quantità deve essere maggiore di zero",
       "priceRequired": "Il prezzo deve essere maggiore di zero",
       "totalAmountRequired": "L'importo totale è obbligatorio per questa azione",
-      "fxRateRequired": "Inserisci un importo nella valuta scelta prima di salvare. Non è ancora disponibile un tasso di cambio."
+      "fxRateRequired": "Inserisci un importo nella valuta scelta prima di salvare. Non è ancora disponibile un tasso di cambio.",
+      "estimateNeedsPayeeAndCategory": "Scegli un beneficiario e una categoria da cui stimare l'importo."
     },
     "fx": {
       "amountInCurrency": "Importo in {currency}",
       "estimateCaption": "Circa {total} al tasso 1 {from} = {rate} {to}.",
       "noRateWarning": "Nessun tasso di cambio trovato da {from} a {to}. Scegli un'altra valuta oppure inserisci l'importo in {to}.",
       "feeCaption": "Include una commissione per transazione estera del {percent}% ({fee})."
-    }
+    },
+    "estimateLabel": "Stima",
+    "estimateTooltip": "Calcola l'importo di ogni occorrenza dai pagamenti degli ultimi 24 mesi a questo beneficiario in questa categoria, mese per mese, così una bolletta che costa di più in alcuni mesi viene prevista in quel modo. Puoi sempre modificare qualsiasi occorrenza e confermi l'importo quando la registri.",
+    "estimateDelegateDisabled": "Solo il proprietario può attivare o disattivare la stima: legge i pagamenti di tutti i conti del proprietario.",
+    "estimatedAmountNote": "Calcolato automaticamente dallo storico dei pagamenti. {detail}",
+    "autoPostDisabledEstimate": "Un importo stimato si conferma quando lo registri, quindi non viene registrato automaticamente."
   },
   "postTransaction": {
     "minSplits": "Le transazioni suddivise richiedono almeno 2 suddivisioni",
@@ -333,5 +346,16 @@
   "validation": {
     "nameRequired": "Il nome è obbligatorio",
     "dueDateRequired": "La data di scadenza è obbligatoria"
+  },
+  "estimate": {
+    "thePayee": "questo beneficiario",
+    "theCategory": "questa categoria",
+    "basis": "Stimato da {count, plural, one {# pagamento} other {# pagamenti}}, l'ultimo il {date}.",
+    "basisWithGrowth": "Stimato da {count, plural, one {# pagamento} other {# pagamenti}}, l'ultimo il {date}, con una variazione su base annua del {growth}.",
+    "basisWithheld": "Stimato dallo storico dei pagamenti del beneficiario e della categoria.",
+    "noHistory": "Nessun pagamento a {payee} in {category} negli ultimi {months} mesi, quindi l'importo è sconosciuto. Inserisci l'importo di ogni occorrenza oppure registra un pagamento.",
+    "missingRate": "Nessun tasso di cambio da {from} a {to} per convertire un pagamento passato, quindi l'importo è sconosciuto. Aggiungi il tasso nella pagina Valute.",
+    "noBasis": "Scegli un beneficiario e una categoria per stimare l'importo dal loro storico dei pagamenti.",
+    "pending": "L'importo viene calcolato dallo storico dei pagamenti del beneficiario e della categoria."
   }
 }

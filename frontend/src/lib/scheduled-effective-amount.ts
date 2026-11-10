@@ -1,8 +1,10 @@
 import type {
+  ScheduleAmountEstimate,
   ScheduledTransaction,
   ScheduledTransactionOverride,
 } from '@/types/scheduled-transaction';
 import { sumConverted, type ConvertedTotal } from '@/lib/currency-total';
+import { moneyDecimalsForCurrency, roundMoney, sumMoney } from '@/lib/format';
 
 /**
  * The cash amount one scheduled occurrence would post today, and whether that is
@@ -121,6 +123,77 @@ export function nextOccurrenceEffectiveAmount(
   return st.nextOverride
     ? overrideEffectiveAmount(st, st.nextOverride)
     : scheduleEffectiveAmount(st);
+}
+
+/**
+ * Whether an occurrence governed by `override` (or by none) is priced from the
+ * schedule's history estimate (issue #2096, docs/specs/scheduled-amount-estimate.md
+ * section 6): an override that states an amount, or carries its own split
+ * lines, is that occurrence's amount; any other follows the estimate.
+ */
+export function occurrenceFollowsEstimate(
+  st: ScheduledTransaction,
+  override?: Pick<ScheduledTransactionOverride, 'amount' | 'isSplit'> | null,
+): boolean {
+  if (st.amountIsEstimated !== true) return false;
+  if (!override) return true;
+  return override.amount == null && override.isSplit !== true;
+}
+
+/**
+ * The history estimate for an occurrence of `st` falling on `dueDate`
+ * (`YYYY-MM-DD`): `undefined` when `st` is not estimated, so the caller prices
+ * it as it always has; `null` when the estimate is unknown for that month (no
+ * history, no rate, a month beyond what the server sent), which is rendered as
+ * unknown and never replaced by `st.amount`; the amount otherwise.
+ *
+ * The one reader of `amountEstimate`: the forecast, the Post dialog, the
+ * occurrence editor and the occurrence picker all ask here.
+ */
+export function estimatedOccurrenceAmount(
+  st: ScheduledTransaction,
+  dueDate: string,
+): number | null | undefined {
+  if (st.amountIsEstimated !== true) return undefined;
+  return estimateAmountOn(st.amountEstimate, dueDate);
+}
+
+/**
+ * The amount `estimate` gives an occurrence falling on `dueDate`, or `null`
+ * when it gives none (an unknown estimate, a month it does not hold, or no
+ * estimate read yet). For a form previewing a schedule not saved yet; a saved
+ * row is read through `estimatedOccurrenceAmount`.
+ */
+export function estimateAmountOn(
+  estimate: ScheduleAmountEstimate | null | undefined,
+  dueDate: string,
+): number | null {
+  const entry = estimate?.months[String(dueDate).slice(0, 7)];
+  return entry ? entry.amount : null;
+}
+
+/**
+ * An estimated schedule's typical occurrence: the mean of its estimate over the
+ * twelve months from `fromYmd`'s, for a figure that stands for the bill rather
+ * than for one season (the Bills page's monthly totals). `undefined` when `st`
+ * is not estimated, `null` when any of those months is unknown.
+ */
+export function estimatedTypicalAmount(
+  st: ScheduledTransaction,
+  fromYmd: string,
+): number | null | undefined {
+  if (st.amountIsEstimated !== true) return undefined;
+  const [year, month] = fromYmd.split('-').map(Number);
+  const amounts: number[] = [];
+  for (let i = 0; i < 12; i++) {
+    const index = year * 12 + (month - 1) + i;
+    const key = `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, '0')}`;
+    const entry = st.amountEstimate?.months[key];
+    if (!entry) return null;
+    amounts.push(entry.amount);
+  }
+  const decimals = moneyDecimalsForCurrency(st.currencyCode);
+  return roundMoney(sumMoney(amounts, decimals) / amounts.length, decimals);
 }
 
 /**

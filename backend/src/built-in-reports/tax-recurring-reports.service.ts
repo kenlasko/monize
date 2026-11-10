@@ -30,6 +30,7 @@ import {
 } from "../common/round.util";
 import {
   investmentExclusionSql,
+  investmentLinkedSplitExclusion,
   reportableTransactionAmountSql,
 } from "../common/investment-filter.util";
 
@@ -58,6 +59,19 @@ const INVESTMENT_EXCLUSION_NO_SPLITS = investmentExclusionSql({
  * F-RPT-001).
  */
 const REPORTABLE_TX_AMOUNT = reportableTransactionAmountSql("t");
+
+/**
+ * A split parent's ordinary lines as JSON (`[{ categoryId, amount }]`), so an
+ * estimated bill can be matched on the line in its category, as its estimate
+ * reads it (issue #2096). NULL for a plain row.
+ */
+const SPLIT_CATEGORY_LINES = `CASE WHEN t.is_split = true THEN (
+          SELECT json_agg(json_build_object('categoryId', bl.category_id, 'amount', bl.amount))
+            FROM transaction_splits bl
+           WHERE bl.transaction_id = t.id
+             AND bl.transfer_account_id IS NULL
+             AND ${investmentLinkedSplitExclusion("bl")}
+        ) END`;
 
 /**
  * The same two halves of the predicate for the history subquery's own aliases
@@ -511,6 +525,8 @@ export class TaxRecurringReportsService {
         st.id,
         st.name,
         st.amount,
+        st.amount_is_estimated,
+        st.category_id,
         COALESCE(p.name, st.payee_name) as payee_name
       FROM scheduled_transactions st
       LEFT JOIN payees p ON p.id = st.payee_id
@@ -522,6 +538,8 @@ export class TaxRecurringReportsService {
       id: string;
       name: string;
       amount: string;
+      amount_is_estimated: boolean;
+      category_id: string | null;
       payee_name: string | null;
     }
 
@@ -554,7 +572,20 @@ export class TaxRecurringReportsService {
     // the report once showed the lowercased key as the payee.
     const payeeToScheduled = new Map<
       string,
-      { id: string; name: string; payeeName: string; amount: number }
+      {
+        id: string;
+        name: string;
+        payeeName: string;
+        amount: number;
+        estimated: boolean;
+        categoryId: string | null;
+        /**
+         * The bill's direction, -1 or 1, from its snapshot; null while the
+         * snapshot is zero (an estimate saved before any history), when no
+         * direction is assumed.
+         */
+        sign: number | null;
+      }
     >();
     scheduledTx.forEach((st) => {
       if (st.payee_name) {
@@ -563,6 +594,9 @@ export class TaxRecurringReportsService {
           name: st.name,
           payeeName: st.payee_name,
           amount: Math.abs(toMoneyNumber(st.amount, MONEY_SCALE)),
+          estimated: st.amount_is_estimated === true,
+          categoryId: st.category_id,
+          sign: Math.sign(toMoneyNumber(st.amount, MONEY_SCALE)) || null,
         });
       }
     });
@@ -573,6 +607,9 @@ export class TaxRecurringReportsService {
         t.transaction_date,
         t.currency_code,
         ABS(${REPORTABLE_TX_AMOUNT}) as amount,
+        SIGN(${REPORTABLE_TX_AMOUNT}) as amount_sign,
+        t.category_id,
+        ${SPLIT_CATEGORY_LINES} as split_lines,
         LOWER(TRIM(COALESCE(p.name, t.payee_name))) as payee_name_normalized
       FROM transactions t
       LEFT JOIN payees p ON p.id = t.payee_id
@@ -598,6 +635,10 @@ export class TaxRecurringReportsService {
       transaction_date: Date;
       currency_code: string;
       amount: string;
+      amount_sign: string;
+      category_id: string | null;
+      split_lines:
+        { categoryId: string | null; amount: string | number }[] | null;
       payee_name_normalized: string | null;
     }
 
@@ -626,8 +667,32 @@ export class TaxRecurringReportsService {
       const scheduled = payeeToScheduled.get(tx.payee_name_normalized);
       if (!scheduled) return;
 
+      // An estimated bill (issue #2096) varies by month by design, so its
+      // stored snapshot is no band to match a payment against. Its payments
+      // are the ones its estimate reads: to its payee, in its category (the
+      // row's, or a split's line in it), in its direction -- not a refund from
+      // the biller, nor another purchase there.
+      let paidAmount = toMoneyNumber(tx.amount, MONEY_SCALE);
+      if (scheduled.estimated) {
+        let signed = Number(tx.amount_sign) * paidAmount;
+        if (tx.category_id !== scheduled.categoryId) {
+          const lines = (tx.split_lines ?? []).filter(
+            (line) => line.categoryId === scheduled.categoryId,
+          );
+          if (lines.length === 0) return;
+          signed = sumMoney(
+            lines.map((line) => toMoneyNumber(line.amount, MONEY_SCALE)),
+            MONEY_SCALE,
+          );
+        }
+        if (scheduled.sign !== null && Math.sign(signed) !== scheduled.sign) {
+          return;
+        }
+        paidAmount = Math.abs(signed);
+      }
+
       const txAmount = this.currencyService.tryConvertAmount(
-        toMoneyNumber(tx.amount, MONEY_SCALE),
+        paidAmount,
         tx.currency_code,
         defaultCurrency,
         rateMap,
@@ -636,10 +701,11 @@ export class TaxRecurringReportsService {
         gaps.record(tx.currency_code);
         return;
       }
-      if (
-        txAmount >= scheduled.amount * 0.8 &&
-        txAmount <= scheduled.amount * 1.2
-      ) {
+      const matches =
+        scheduled.estimated ||
+        (txAmount >= scheduled.amount * 0.8 &&
+          txAmount <= scheduled.amount * 1.2);
+      if (matches) {
         let payment = billPaymentMap.get(scheduled.id);
         if (!payment) {
           payment = {

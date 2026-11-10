@@ -63,7 +63,8 @@
       "skipFailed": "Nie udało się pominąć wystąpienia",
       "deleteFailed": "Nie udało się usunąć"
     },
-    "foreignAmountTitle": "Kwota, którą nalicza odbiorca, w jego własnej walucie"
+    "foreignAmountTitle": "Kwota, którą nalicza odbiorca, w jego własnej walucie",
+    "estimatedLabel": "Szacowane"
   },
   "filters": {
     "label": "Filtry",
@@ -113,7 +114,8 @@
       "totalAmountRequired": "Kwota łączna jest wymagana",
       "splitsMinimum": "Transakcje podzielone wymagają co najmniej 2 podziałów",
       "splitsTotal": "Suma podziałów musi być równa kwocie transakcji",
-      "fxRateUnavailable": "Dla tej daty nie ma dostępnego kursu wymiany z {from} na {to}."
+      "fxRateUnavailable": "Dla tej daty nie ma dostępnego kursu wymiany z {from} na {to}.",
+      "estimateUnknown": "Szacowana kwota tego wystąpienia jest nieznana. Wprowadź kwotę, aby je zaksięgować."
     },
     "latestPlaceholder": "Ostatnia: {price}",
     "descriptionPlaceholder": "Opis...",
@@ -126,7 +128,8 @@
       "noRateWarning": "Nie znaleziono kursu wymiany z {from} na {to} w dniu {date}. Wybierz inną datę lub odśwież kursy.",
       "feeCaption": "Zawiera opłatę za transakcję zagraniczną {percent}% ({fee}).",
       "totalInCurrency": "Razem w {currency}"
-    }
+    },
+    "estimatedHint": "Ta kwota jest szacunkiem; zmień ją na faktycznie zapłaconą. {detail}"
   },
   "occurrencePicker": {
     "title": "Wybierz datę wystąpienia",
@@ -137,7 +140,9 @@
     "amountChange": "Kwota: {amount}",
     "categoryChange": "Kategoria: {category}",
     "noteChange": "Notatka: {note}",
-    "splitModified": "Podział zmodyfikowany"
+    "splitModified": "Podział zmodyfikowany",
+    "estimatedAmount": "Szacowane: {amount}",
+    "estimateUnknown": "Szacunek nieznany"
   },
   "loanOccurrence": {
     "loading": "Obliczanie płatności każdej raty.",
@@ -197,7 +202,9 @@
       "quantityRequired": "Ilość musi być większa od zera",
       "priceRequired": "Cena musi być większa od zera",
       "totalAmountRequired": "Kwota łączna jest wymagana"
-    }
+    },
+    "estimatedHint": "Ta kwota to szacunek dla tego wystąpienia. Pozostaw ją bez zmian, a wystąpienie będzie nadal podążać za szacunkiem w miarę napływu nowych płatności. {detail}",
+    "keepEstimate": "Zachowaj tę kwotę, nawet gdy nowe płatności zmienią szacunek"
   },
   "form": {
     "tabs": {
@@ -302,14 +309,20 @@
       "quantityRequired": "Ilość musi być większa od zera",
       "priceRequired": "Cena musi być większa od zera",
       "totalAmountRequired": "Kwota łączna jest wymagana dla tej akcji",
-      "fxRateRequired": "Przed zapisaniem wprowadź kwotę w wybranej walucie. Kurs wymiany nie jest jeszcze dostępny."
+      "fxRateRequired": "Przed zapisaniem wprowadź kwotę w wybranej walucie. Kurs wymiany nie jest jeszcze dostępny.",
+      "estimateNeedsPayeeAndCategory": "Wybierz odbiorcę i kategorię, na podstawie których zostanie oszacowana kwota."
     },
     "fx": {
       "amountInCurrency": "Kwota w {currency}",
       "estimateCaption": "Około {total} przy 1 {from} = {rate} {to}.",
       "noRateWarning": "Nie znaleziono kursu wymiany z {from} na {to}. Wybierz inną walutę lub wprowadź kwotę w {to}.",
       "feeCaption": "Zawiera opłatę za transakcję zagraniczną {percent}% ({fee})."
-    }
+    },
+    "estimateLabel": "Szacuj",
+    "estimateTooltip": "Obliczaj kwotę każdego wystąpienia z płatności z ostatnich 24 miesięcy na rzecz tego odbiorcy w tej kategorii, miesiąc po miesiącu, aby rachunek droższy w niektórych miesiącach był tak prognozowany. Nadal możesz zmienić każde wystąpienie, a kwotę potwierdzasz przy księgowaniu.",
+    "estimateDelegateDisabled": "Tylko właściciel może włączyć lub wyłączyć szacowanie: korzysta ono z płatności ze wszystkich kont właściciela.",
+    "estimatedAmountNote": "Obliczane automatycznie na podstawie historii płatności. {detail}",
+    "autoPostDisabledEstimate": "Szacowaną kwotę potwierdzasz przy księgowaniu, więc nie jest księgowana automatycznie."
   },
   "postTransaction": {
     "minSplits": "Transakcje podzielone wymagają co najmniej 2 podziałów",
@@ -333,5 +346,16 @@
   "validation": {
     "nameRequired": "Nazwa jest wymagana",
     "dueDateRequired": "Termin jest wymagany"
+  },
+  "estimate": {
+    "thePayee": "tego odbiorcy",
+    "theCategory": "tej kategorii",
+    "basis": "Oszacowano na podstawie {count, plural, one {# płatności} few {# płatności} many {# płatności} other {# płatności}}, ostatniej {date}.",
+    "basisWithGrowth": "Oszacowano na podstawie {count, plural, one {# płatności} few {# płatności} many {# płatności} other {# płatności}}, ostatniej {date}, ze zmianą rok do roku o {growth}.",
+    "basisWithheld": "Oszacowano na podstawie historii płatności odbiorcy i kategorii.",
+    "noHistory": "Brak płatności na rzecz {payee} w {category} w ciągu ostatnich {months} miesięcy, więc kwota jest nieznana. Wprowadź kwotę każdego wystąpienia albo zarejestruj płatność.",
+    "missingRate": "Brak kursu wymiany z {from} na {to} do przeliczenia wcześniejszej płatności, więc kwota jest nieznana. Dodaj kurs na stronie Waluty.",
+    "noBasis": "Wybierz odbiorcę i kategorię, aby oszacować kwotę na podstawie ich historii płatności.",
+    "pending": "Kwota jest obliczana na podstawie historii płatności odbiorcy i kategorii."
   }
 }

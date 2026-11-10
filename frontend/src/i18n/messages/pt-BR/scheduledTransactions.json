@@ -63,7 +63,8 @@
       "skipFailed": "Falha ao ignorar ocorrência",
       "deleteFailed": "Falha ao excluir"
     },
-    "foreignAmountTitle": "O valor cobrado pelo beneficiário, na moeda dele"
+    "foreignAmountTitle": "O valor cobrado pelo beneficiário, na moeda dele",
+    "estimatedLabel": "Estimado"
   },
   "filters": {
     "label": "Filtros",
@@ -113,7 +114,8 @@
       "totalAmountRequired": "O valor total é obrigatório",
       "splitsMinimum": "As transações divididas requerem pelo menos 2 parcelas",
       "splitsTotal": "Os valores das parcelas devem ser iguais ao valor da transação",
-      "fxRateUnavailable": "Não há uma taxa de câmbio disponível de {from} para {to} nesta data."
+      "fxRateUnavailable": "Não há uma taxa de câmbio disponível de {from} para {to} nesta data.",
+      "estimateUnknown": "O valor estimado desta ocorrência é desconhecido. Informe o valor para lançá-la."
     },
     "latestPlaceholder": "Último: {price}",
     "descriptionPlaceholder": "Descrição...",
@@ -126,7 +128,8 @@
       "noRateWarning": "Nenhuma taxa de câmbio encontrada de {from} para {to} em {date}. Escolha outra data ou atualize as taxas.",
       "feeCaption": "Inclui uma taxa de transação no exterior de {percent}% ({fee}).",
       "totalInCurrency": "Total em {currency}"
-    }
+    },
+    "estimatedHint": "Este valor é uma estimativa; altere-o para o que você realmente pagou. {detail}"
   },
   "occurrencePicker": {
     "title": "Selecionar Data de Ocorrência",
@@ -137,7 +140,9 @@
     "amountChange": "Valor: {amount}",
     "categoryChange": "Categoria: {category}",
     "noteChange": "Nota: {note}",
-    "splitModified": "Parcela modificada"
+    "splitModified": "Parcela modificada",
+    "estimatedAmount": "Estimado: {amount}",
+    "estimateUnknown": "Estimativa desconhecida"
   },
   "loanOccurrence": {
     "loading": "Calculando o pagamento de cada vencimento.",
@@ -197,7 +202,9 @@
       "quantityRequired": "A quantidade deve ser superior a zero",
       "priceRequired": "O preço deve ser superior a zero",
       "totalAmountRequired": "O valor total é obrigatório"
-    }
+    },
+    "estimatedHint": "Este valor é a estimativa desta ocorrência. Deixe-o como está e a ocorrência continuará seguindo a estimativa conforme chegarem novos pagamentos. {detail}",
+    "keepEstimate": "Manter este valor, mesmo que novos pagamentos alterem a estimativa"
   },
   "form": {
     "tabs": {
@@ -302,14 +309,20 @@
       "quantityRequired": "A quantidade deve ser superior a zero",
       "priceRequired": "O preço deve ser superior a zero",
       "totalAmountRequired": "O valor total é obrigatório para esta ação",
-      "fxRateRequired": "Insira um valor na moeda escolhida antes de salvar. Ainda não há uma taxa de câmbio disponível."
+      "fxRateRequired": "Insira um valor na moeda escolhida antes de salvar. Ainda não há uma taxa de câmbio disponível.",
+      "estimateNeedsPayeeAndCategory": "Escolha um favorecido e uma categoria a partir dos quais estimar o valor."
     },
     "fx": {
       "amountInCurrency": "Valor em {currency}",
       "estimateCaption": "Cerca de {total} a 1 {from} = {rate} {to}.",
       "noRateWarning": "Nenhuma taxa de câmbio encontrada de {from} para {to}. Escolha outra moeda ou insira o valor em {to}.",
       "feeCaption": "Inclui uma taxa de transação no exterior de {percent}% ({fee})."
-    }
+    },
+    "estimateLabel": "Estimar",
+    "estimateTooltip": "Calcular o valor de cada ocorrência a partir dos pagamentos dos últimos 24 meses a este favorecido nesta categoria, mês a mês, para que uma conta que custa mais em alguns meses seja prevista assim. Você ainda pode alterar qualquer ocorrência e confirma o valor ao lançá-la.",
+    "estimateDelegateDisabled": "Somente o proprietário pode ativar ou desativar a estimativa: ela lê os pagamentos de todas as contas do proprietário.",
+    "estimatedAmountNote": "Calculado automaticamente a partir do histórico de pagamentos. {detail}",
+    "autoPostDisabledEstimate": "Um valor estimado é confirmado ao lançá-lo, por isso não é lançado automaticamente."
   },
   "postTransaction": {
     "minSplits": "As transações divididas requerem pelo menos 2 parcelas",
@@ -333,5 +346,16 @@
   "validation": {
     "nameRequired": "O nome é obrigatório",
     "dueDateRequired": "A data de vencimento é obrigatória"
+  },
+  "estimate": {
+    "thePayee": "este favorecido",
+    "theCategory": "esta categoria",
+    "basis": "Estimado a partir de {count, plural, one {# pagamento} other {# pagamentos}}, o último em {date}.",
+    "basisWithGrowth": "Estimado a partir de {count, plural, one {# pagamento} other {# pagamentos}}, o último em {date}, com uma variação anual de {growth}.",
+    "basisWithheld": "Estimado a partir do histórico de pagamentos do favorecido e da categoria.",
+    "noHistory": "Não há pagamentos a {payee} em {category} nos últimos {months} meses, então o valor é desconhecido. Informe o valor de cada ocorrência ou registre um pagamento.",
+    "missingRate": "Não há taxa de câmbio de {from} para {to} para converter um pagamento anterior, então o valor é desconhecido. Adicione a taxa na página Moedas.",
+    "noBasis": "Escolha um favorecido e uma categoria para estimar o valor a partir do histórico de pagamentos deles.",
+    "pending": "O valor é calculado a partir do histórico de pagamentos do favorecido e da categoria."
   }
 }

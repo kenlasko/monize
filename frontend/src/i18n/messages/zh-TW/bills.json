@@ -55,7 +55,10 @@
     "legendAriaLabel": "預測折線",
     "tooltipTransactionForAccount": "{name} ({account})",
     "unavailableMissingRates": "此預測無法以 {displayCurrency} 顯示：{currencies} 沒有可用匯率，而預測餘額依賴之前的每一天。請新增匯率，或選擇單一貨幣的帳戶。",
-    "untitledTransaction": "交易"
+    "untitledTransaction": "交易",
+    "tooltipEstimated": "（估算）",
+    "unavailableUnknownEstimates": "暫時無法顯示此預測：其中某張帳單的估算金額未知，而預計餘額建立在之前的每一天之上。請輸入該次發生的金額，或在帳單上關閉「估算」。",
+    "unknownEstimateItem": "{name}：{reason}"
   },
   "calendar": {
     "days": {

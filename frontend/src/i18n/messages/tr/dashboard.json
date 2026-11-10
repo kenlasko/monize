@@ -110,7 +110,8 @@
     "viewCalendar": "Takvim",
     "previousMonth": "Önceki ay",
     "nextMonth": "Sonraki ay",
-    "emptyAll": "Planlanmış etkin fatura, para yatırma veya transfer yok."
+    "emptyAll": "Planlanmış etkin fatura, para yatırma veya transfer yok.",
+    "estimated": "Tahmini"
   },
   "cashFlowForecast": {
     "title": "Nakit Akışı Tahmini",

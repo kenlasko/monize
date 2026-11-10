@@ -36,6 +36,7 @@ import type {
 } from './useCashFlowForecast';
 import { CHART_GRID_PROPS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { useAmountEstimateText } from '@/components/scheduled-transactions/useAmountEstimateText';
 
 function CashFlowTooltip({
   active,
@@ -120,6 +121,11 @@ function CashFlowTooltip({
                     >
                       {formatValue(tx.amount)}
                     </span>{' '}
+                    {tx.estimated && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {t('forecast.tooltipEstimated')}{' '}
+                      </span>
+                    )}
                     {accountName
                       ? t('forecast.tooltipTransactionForAccount', {
                           name: tx.name,
@@ -168,6 +174,7 @@ export function CashFlowForecastPlot({
   const { formatCurrency, formatCurrencyAxis, formatCurrencyFlag } =
     useNumberFormat();
   const formatChartDate = useChartDateFormat();
+  const estimateText = useAmountEstimateText();
   const { chartCurrency, isMultiAccount, accountLines, summary, totalForecastedTransactions } =
     forecast;
   const forecastData = forecast.points;
@@ -227,17 +234,45 @@ export function CashFlowForecastPlot({
   // A projected balance is cumulative, so one missing rate makes every day after
   // it wrong. The forecast builders return no points in that case and name the
   // currencies; the chart says so instead of drawing a plausible line.
-  if (forecast.missingCurrencies.length > 0) {
+  if (forecast.missingCurrencies.length > 0 || forecast.unknownEstimates.length > 0) {
     return (
-      <p
+      <div
         role="alert"
-        className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200"
+        className="space-y-1 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200"
       >
-        {t('forecast.unavailableMissingRates', {
-          currencies: forecast.missingCurrencies.join(', '),
-          displayCurrency: chartCurrency,
-        })}
-      </p>
+        {forecast.missingCurrencies.length > 0 && (
+          <p>
+            {t('forecast.unavailableMissingRates', {
+              currencies: forecast.missingCurrencies.join(', '),
+              displayCurrency: chartCurrency,
+            })}
+          </p>
+        )}
+        {/* An unknown history estimate (issue #2096) is its own gap: no rate
+            to add, but an occurrence amount to enter or a payment to record. */}
+        {forecast.unknownEstimates.length > 0 && (
+          <>
+            <p>{t('forecast.unavailableUnknownEstimates')}</p>
+            <ul className="list-disc pl-5">
+              {forecast.unknownEstimates.map((id) => {
+                const st = scheduledTransactions.find((s) => s.id === id);
+                if (!st) return null;
+                return (
+                  <li key={id}>
+                    {t('forecast.unknownEstimateItem', {
+                      name: st.name,
+                      reason: estimateText(st.amountEstimate, {
+                        payeeName: st.payee?.name ?? st.payeeName,
+                        categoryName: st.category?.name ?? null,
+                      }),
+                    })}
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </div>
     );
   }
 

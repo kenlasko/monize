@@ -47,6 +47,30 @@ export function BalanceForecastUnavailable({
 }: BalanceForecastUnavailableProps) {
   const t = useTranslations('accountDetail');
 
+  // What is missing for one schedule, by reason; the pair is named when there
+  // is one to fix.
+  const gapText = (gap: BalanceForecastGap): string => {
+    const pair = gap.fromCurrency && gap.toCurrency
+      ? { name: gap.name, from: gap.fromCurrency, to: gap.toCurrency }
+      : null;
+    switch (gap.reason) {
+      case 'crossCurrencyTransfer':
+        return t('forecastUnavailable.crossCurrencyTransfer', {
+          name: gap.name,
+          from: gap.fromCurrency ?? '',
+          to: gap.toCurrency ?? '',
+        });
+      case 'unknownEstimate':
+        return pair
+          ? t('forecastUnavailable.unknownEstimatePair', pair)
+          : t('forecastUnavailable.unknownEstimate', { name: gap.name });
+      default:
+        return pair
+          ? t('forecastUnavailable.missingRatePair', pair)
+          : t('forecastUnavailable.missingRate', { name: gap.name });
+    }
+  };
+
   if (reason === 'requestFailed') {
     return (
       <div
@@ -73,19 +97,7 @@ export function BalanceForecastUnavailable({
       <ul className="mt-2 list-disc pl-5 space-y-1">
         {gaps.map((gap) => (
           <li key={gap.scheduledTransactionId}>
-            {gap.reason === 'crossCurrencyTransfer'
-              ? t('forecastUnavailable.crossCurrencyTransfer', {
-                  name: gap.name,
-                  from: gap.fromCurrency ?? '',
-                  to: gap.toCurrency ?? '',
-                })
-              : gap.fromCurrency && gap.toCurrency
-                ? t('forecastUnavailable.missingRatePair', {
-                    name: gap.name,
-                    from: gap.fromCurrency,
-                    to: gap.toCurrency,
-                  })
-                : t('forecastUnavailable.missingRate', { name: gap.name })}
+            {gapText(gap)}
           </li>
         ))}
       </ul>
@@ -93,7 +105,11 @@ export function BalanceForecastUnavailable({
       {/* The fix, not just the diagnosis. Only the rate case has one the reader
           can act on; a cross-currency transfer's arriving amount is genuinely
           not knowable until it posts. */}
-      {gaps.some((gap) => gap.reason === 'unresolvedSettlementRate') && (
+      {gaps.some(
+        (gap) =>
+          gap.reason === 'unresolvedSettlementRate' ||
+          (gap.reason === 'unknownEstimate' && gap.fromCurrency !== null),
+      ) && (
         <p className="mt-2">{t('forecastUnavailable.howToFix')}</p>
       )}
     </div>

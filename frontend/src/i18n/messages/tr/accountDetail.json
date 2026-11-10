@@ -44,6 +44,8 @@
     "missingRatePair": "{name}: {from} biriminden {to} birimine döviz kuru bulunamadı, bu nedenle bu kaydın işleyeceği tutar bilinmiyor.",
     "missingRate": "{name}: bu kaydın uzlaştığı döviz kuru bulunamadı, bu nedenle tutar bilinmiyor.",
     "crossCurrencyTransfer": "{name}: bu hesap {to} biriminde iken {from} biriminde bir hesaptan gelen bir aktarım. Buraya girecek tutar aktarım işlenirken belirlenir, bu yüzden önceden öngörülemez.",
+    "unknownEstimate": "{name}: tahmin edilecek ödeme olmadığından tahmini tutar henüz hesaplanamıyor. Bu tekrarın tutarını girin veya bir ödeme kaydedin.",
+    "unknownEstimatePair": "{name}: tahminin kullandığı bir ödeme {from} cinsinden ve {from} - {to} döviz kuru yok, bu yüzden tahmini tutar bilinmiyor.",
     "howToFix": "Eksik kuru düzeltmek için: Para Birimleri'ni açıp kurları yenileyin ya da menkul kıymetin ve uzlaşma hesabının beklediğiniz para birimlerinde olduğunu doğrulayın."
   }
 }

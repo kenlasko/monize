@@ -2,7 +2,11 @@ import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 import { advanceByFrequency, anchorDayOf } from '@/lib/frequency';
-import { occurrenceSettlementAccountId } from '@/lib/scheduled-effective-amount';
+import {
+  estimatedOccurrenceAmount,
+  occurrenceFollowsEstimate,
+  occurrenceSettlementAccountId,
+} from '@/lib/scheduled-effective-amount';
 import {
   FIAT_MONEY_DECIMALS,
   fromMoneyUnits,
@@ -88,6 +92,11 @@ export interface ForecastTransaction {
    * occurrence's identity. Absent on everything dated inside the window.
    */
   overdueOriginalDate?: string;
+  /**
+   * The amount is the schedule's history estimate for this month (issue
+   * #2096), not an entered figure; the tooltip says so.
+   */
+  estimated?: true;
 }
 
 export interface ForecastDataPoint {
@@ -118,6 +127,8 @@ export interface MultiAccountForecastResult {
   points: MultiAccountForecastPoint[];
   series: ForecastAccountSeries[];
   missingCurrencies: string[];
+  /** See `ForecastResult.unknownEstimates`. */
+  unknownEstimates?: string[];
 }
 
 /**
@@ -130,6 +141,14 @@ export interface MultiAccountForecastResult {
 export interface ForecastResult {
   points: ForecastDataPoint[];
   missingCurrencies: string[];
+  /**
+   * The ids of estimated schedules with an occurrence in the window whose
+   * estimate is unknown (no payment history, or no rate to convert it): a
+   * different gap from a missing display rate, with a different repair, so it
+   * is reported apart. `points` is empty when it is not, for the same reason.
+   * Absent means none.
+   */
+  unknownEstimates?: string[];
 }
 
 export const FORECAST_PERIOD_DAYS: Record<ForecastPeriod, number> = {
@@ -192,6 +211,12 @@ interface Occurrence {
   stated?: boolean;
   /** What each ruled category deducts on this occurrence, once the room is spent. */
   deductions?: { categoryId: string; deducted: number }[];
+  /**
+   * Priced from the schedule's history estimate (issue #2096). With `unknown`,
+   * the estimate itself is unknown, which the builders report as an unknown
+   * estimate rather than a missing rate.
+   */
+  estimated?: boolean;
 }
 
 /**
@@ -229,6 +254,7 @@ function overrideHasInvestmentSplits(
 interface OverrideLookup {
   overrideDate: string;
   amount: number | null;
+  isSplit?: boolean | null;
   hasInvestmentSplits: boolean;
   investmentForecastAmount?: number | null;
 }
@@ -495,6 +521,7 @@ function generateOccurrences(
   const toLookup = (o: {
     overrideDate?: string;
     amount: number | null;
+    isSplit?: boolean | null;
     splits?: { splitKind?: string; investment?: unknown }[] | null;
     investmentForecastAmount?: number | null;
   }): OverrideLookup => ({
@@ -502,6 +529,7 @@ function generateOccurrences(
     // treats an absent date as "same date" (uses the occurrence's own date).
     overrideDate: o.overrideDate ? o.overrideDate.split('T')[0] : '',
     amount: o.amount,
+    isSplit: o.isSplit,
     hasInvestmentSplits: overrideHasInvestmentSplits(o),
     investmentForecastAmount: o.investmentForecastAmount,
   });
@@ -525,7 +553,22 @@ function generateOccurrences(
   const baseIsInvestment = transaction.isInvestment === true;
   const resolveOccurrence = (
     override: OverrideLookup | undefined,
-  ): { amount: number; unknown: boolean; stated: boolean } => {
+    dateKey: string,
+  ): { amount: number; unknown: boolean; stated: boolean; estimated?: boolean } => {
+    // An estimated schedule (issue #2096) prices each occurrence the override
+    // does not state at the estimate for the month it falls in; an unknown
+    // estimate is unknown, never the stored snapshot.
+    if (
+      occurrenceFollowsEstimate(
+        transaction,
+        override ? { amount: override.amount, isSplit: override.isSplit ?? null } : null,
+      )
+    ) {
+      const estimate = estimatedOccurrenceAmount(transaction, dateKey);
+      return estimate == null
+        ? { amount: 0, unknown: true, stated: false, estimated: true }
+        : { amount: estimate, unknown: false, stated: false, estimated: true };
+    }
     if (override && (baseIsInvestment || override.hasInvestmentSplits)) {
       if (override.investmentForecastAmount == null) {
         return { amount: 0, unknown: true, stated: true };
@@ -543,13 +586,14 @@ function generateOccurrences(
   // the occurrence records the day it falls on and whether an override stated
   // its amount, which is projected as stated and still spends.
   const withDeductions = (
-    resolved: { amount: number; unknown: boolean; stated: boolean },
+    resolved: { amount: number; unknown: boolean; stated: boolean; estimated?: boolean },
     dateKey: string,
-  ): Pick<Occurrence, 'amount' | 'unknown' | 'spendDate' | 'stated'> => ({
+  ): Pick<Occurrence, 'amount' | 'unknown' | 'spendDate' | 'stated' | 'estimated'> => ({
     amount: resolved.amount,
     unknown: resolved.unknown,
     spendDate: dateKey,
     stated: resolved.stated,
+    ...(resolved.estimated && { estimated: true }),
   });
 
   // For ONCE frequency, just check if it's in range
@@ -561,7 +605,7 @@ function generateOccurrences(
     const effectiveKey = formatDateKey(effectiveDate);
     const placed = place(effectiveTime, effectiveKey, slotKey);
     if (placed && (!txEndTime || effectiveTime <= txEndTime)) {
-      occurrences.push({ ...placed, ...withDeductions(resolveOccurrence(override), effectiveKey) });
+      occurrences.push({ ...placed, ...withDeductions(resolveOccurrence(override, effectiveKey), effectiveKey) });
     }
     return occurrences;
   }
@@ -595,7 +639,10 @@ function generateOccurrences(
     // carrying, before it)
     const placed = place(effectiveTime, effectiveDateKey, currentDateKey);
     if (placed) {
-      occurrences.push({ ...placed, ...withDeductions(resolveOccurrence(override), effectiveDateKey) });
+      occurrences.push({
+        ...placed,
+        ...withDeductions(resolveOccurrence(override, effectiveDateKey), effectiveDateKey),
+      });
     }
 
     // Every slot walked is one occurrence of the count, wherever it falls --
@@ -930,6 +977,7 @@ export function buildForecast(
   // series is reported as unavailable rather than silently drifting. `conv`
   // therefore contributes nothing and sets the flag.
   const missingRateCurrencies = new Set<string>();
+  const unknownEstimates = new Set<string>();
   const conv = (amount: number, acctId: string): number => {
     if (!convertAmount) return amount;
     const currency = accountCurrencyMap.get(acctId);
@@ -999,7 +1047,11 @@ export function buildForecast(
       // currency and contribute nothing, which withholds the whole series below.
       // The flag is per-occurrence (F5-2): a base occurrence and an override on
       // the same schedule can differ.
-      if (occ.unknown) {
+      // An unknown history estimate (issue #2096) withholds the series too,
+      // but is reported apart: it is not a rate the reader can add.
+      if (occ.unknown && occ.estimated) {
+        unknownEstimates.add(tx.id);
+      } else if (occ.unknown) {
         missingRateCurrencies.add(
           tx.investmentSecurity?.currencyCode ??
             accountCurrencyMap.get(txAccountId) ??
@@ -1015,6 +1067,7 @@ export function buildForecast(
         ...(occ.overdueOriginalDate !== undefined && {
           overdueOriginalDate: occ.overdueOriginalDate,
         }),
+        ...(occ.estimated && { estimated: true as const }),
       });
       transactionsByDate.set(occ.date, existing);
     }
@@ -1059,11 +1112,16 @@ export function buildForecast(
   }
 
   // A running balance cannot be partially right: report the whole series as
-  // unavailable when any leg of it needed a rate we do not have.
-  if (missingRateCurrencies.size > 0) {
-    return { points: [], missingCurrencies: [...missingRateCurrencies] };
+  // unavailable when any leg of it needed a rate we do not have, or an
+  // estimate nobody can work out yet.
+  if (missingRateCurrencies.size > 0 || unknownEstimates.size > 0) {
+    return {
+      points: [],
+      missingCurrencies: [...missingRateCurrencies],
+      unknownEstimates: [...unknownEstimates],
+    };
   }
-  return { points: dataPoints, missingCurrencies: [] };
+  return { points: dataPoints, missingCurrencies: [], unknownEstimates: [] };
 }
 
 /**
@@ -1118,6 +1176,7 @@ export function buildMultiAccountForecast(
   // An unknown rate contributes nothing and sets the flag; the whole result is
   // withheld below rather than reported as a shorter, wrong series.
   const missingRateCurrencies = new Set<string>();
+  const unknownEstimates = new Set<string>();
   const conv = (amount: number, currencyCode: string): number => {
     if (!convertAmount) return amount;
     const converted = convertAmount(amount, currencyCode);
@@ -1168,7 +1227,9 @@ export function buildMultiAccountForecast(
         // Unresolved current FX for an investment occurrence withholds the whole
         // result (issue #1167), the same as a missing display-currency rate. The
         // flag is per-occurrence (F5-2).
-        if (occ.unknown) {
+        if (occ.unknown && occ.estimated) {
+          unknownEstimates.add(transaction.id);
+        } else if (occ.unknown) {
           missingRateCurrencies.add(
             transaction.investmentSecurity?.currencyCode ?? account.currencyCode,
           );
@@ -1183,6 +1244,7 @@ export function buildMultiAccountForecast(
           ...(occ.overdueOriginalDate !== undefined && {
             overdueOriginalDate: occ.overdueOriginalDate,
           }),
+          ...(occ.estimated && { estimated: true as const }),
         });
       }
     }
@@ -1243,14 +1305,20 @@ export function buildMultiAccountForecast(
     }
   }
 
-  if (missingRateCurrencies.size > 0) {
-    return { points: [], series: [], missingCurrencies: [...missingRateCurrencies] };
+  if (missingRateCurrencies.size > 0 || unknownEstimates.size > 0) {
+    return {
+      points: [],
+      series: [],
+      missingCurrencies: [...missingRateCurrencies],
+      unknownEstimates: [...unknownEstimates],
+    };
   }
 
   return {
     points,
     series: targetAccounts.map(a => ({ accountId: a.id, name: a.name })),
     missingCurrencies: [],
+    unknownEstimates: [],
   };
 }
 

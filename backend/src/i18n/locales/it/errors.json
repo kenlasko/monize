@@ -600,7 +600,12 @@
     "overrideNotFound": "Sostituzione con ID {{ overrideId }} non trovata",
     "updateSplitOverrideRequiresAmount": "L'importo è obbligatorio per la sostituzione suddivisa",
     "dateMustBeYMD": "la data deve essere nel formato YYYY-MM-DD",
-    "loanLedgerUnreadable": "Non è stato possibile calcolare questo pagamento del prestito perché non è stato possibile leggere il saldo del suo registro. Riprova."
+    "loanLedgerUnreadable": "Non è stato possibile calcolare questo pagamento del prestito perché non è stato possibile leggere il saldo del suo registro. Riprova.",
+    "estimateRequiresPlain": "Un importo stimato è disponibile solo per una transazione con una sola categoria nella valuta del conto, non per una suddivisione, un trasferimento, un investimento o un importo in valuta estera",
+    "estimateNoAutoPost": "Una transazione pianificata con un importo stimato non può essere registrata automaticamente",
+    "estimateRequiresPayeeAndCategory": "Un importo stimato richiede un beneficiario e una categoria su cui confrontare lo storico dei pagamenti",
+    "estimateUnknown": "L'importo stimato di questa occorrenza è sconosciuto. Inserisci l'importo per registrarla.",
+    "estimateBasisOwnerOnly": "Solo il proprietario può cambiare il beneficiario o la categoria di una bolletta con importo stimato"
   },
   "bonds": {
     "securityNotLinked": "Titolo {{ securityId }} non trovato o non collegato a un programma obbligazionario",

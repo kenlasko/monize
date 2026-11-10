@@ -20,6 +20,8 @@
     "typeExpense": "Uitgaven",
     "typeUnknown": "Richting onbekend",
     "amountUnavailable": "Bedrag niet beschikbaar",
+    "estimated": "Geschat",
+    "estimateUnknown": "Schatting onbekend: voer het bedrag in bij het boeken",
     "button": "Facturen &amp; Stortingen bekijken"
   },
   "mortgageReminder": {

@@ -20,6 +20,8 @@
     "typeExpense": "व्यय",
     "typeUnknown": "दिशा अज्ञात",
     "amountUnavailable": "राशि उपलब्ध नहीं",
+    "estimated": "अनुमानित",
+    "estimateUnknown": "अनुमान अज्ञात: पोस्ट करते समय राशि दर्ज करें",
     "button": "बिल और जमा राशि देखें"
   },
   "mortgageReminder": {

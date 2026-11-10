@@ -110,7 +110,8 @@
     "viewCalendar": "Lịch",
     "previousMonth": "Tháng trước",
     "nextMonth": "Tháng sau",
-    "emptyAll": "Không có hóa đơn, khoản nạp hoặc chuyển khoản đang hoạt động nào được lên lịch."
+    "emptyAll": "Không có hóa đơn, khoản nạp hoặc chuyển khoản đang hoạt động nào được lên lịch.",
+    "estimated": "Ước tính"
   },
   "cashFlowForecast": {
     "title": "Dự báo dòng tiền",

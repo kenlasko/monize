@@ -666,6 +666,73 @@ describe('CashFlowForecastChart', () => {
    * ordinary-looking projection understated by a whole account, with nothing on
    * screen to say so.
    */
+  // Issue #2096: an unknown history estimate withholds the line like a missing
+  // rate, but names the bill and why, since there is no rate to add.
+  describe('when an estimate is unknown', () => {
+    it('names the bill and the reason instead of drawing a line', () => {
+      mockBuildForecast.mockReturnValue({
+        points: [],
+        missingCurrencies: [],
+        unknownEstimates: ['st-heat'],
+      });
+      render(
+        <CashFlowForecastChart
+          accounts={[makeAccount()] as any}
+          scheduledTransactions={[
+            {
+              id: 'st-heat',
+              name: 'Heating',
+              payeeName: 'Gas Co',
+              payee: null,
+              category: { id: 'cat-1', name: 'Utilities' },
+              amountIsEstimated: true,
+              amountEstimate: {
+                status: 'no-history',
+                currencyCode: 'CAD',
+                months: {},
+                paymentCount: 0,
+                latestPaymentDate: null,
+                growthRate: null,
+                historyMonths: 24,
+                missingPair: null,
+              },
+            } as any,
+          ]}
+          isLoading={false}
+        />,
+      );
+
+      const alert = screen.getByRole('alert');
+      expect(alert).toHaveTextContent('the estimated amount of a bill in it is unknown');
+      expect(alert).toHaveTextContent(
+        'Heating: No payments to Gas Co in Utilities in the last 24 months',
+      );
+      expect(alert).not.toHaveTextContent('no exchange rate is available');
+    });
+
+    it('marks an estimated occurrence in the tooltip', () => {
+      charts.tooltipPoint = {
+        date: '2025-01-15',
+        balance: 800,
+        transactions: [{ name: 'Heating', amount: -200, estimated: true }],
+      };
+      mockBuildForecast.mockReturnValue(
+        forecastOf([
+          { date: '2025-01-15', balance: 800, transactions: [{ name: 'Heating', amount: -200, estimated: true }] },
+        ]),
+      );
+      render(
+        <CashFlowForecastChart
+          scheduledTransactions={[{} as any]}
+          accounts={[makeAccount()]}
+          isLoading={false}
+        />,
+      );
+
+      expect(screen.getByText('(estimated)')).toBeInTheDocument();
+    });
+  });
+
   describe('when a rate is missing', () => {
     it('says so instead of drawing a line', () => {
       mockBuildForecast.mockReturnValue(forecastOf([], ['EUR']));

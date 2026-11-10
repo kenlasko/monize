@@ -1147,6 +1147,11 @@ CREATE TABLE scheduled_transactions (
     tag_ids JSONB DEFAULT '[]'::jsonb, -- array of tag UUIDs to apply when posting
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Every occurrence without an override stating its own amount is priced
+    -- from the payee and category's payment history, per calendar month
+    -- (docs/specs/scheduled-amount-estimate.md). Plain schedules only, never
+    -- auto-posted; `amount` is the snapshot for the next occurrence.
+    amount_is_estimated BOOLEAN NOT NULL DEFAULT false,
     CONSTRAINT chk_scheduled_transactions_kind_exclusive CHECK (
         NOT (is_transfer = TRUE AND is_investment = TRUE)
     ),

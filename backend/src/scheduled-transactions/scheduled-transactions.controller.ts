@@ -30,6 +30,7 @@ import { UpdateScheduledTransactionDto } from "./dto/update-scheduled-transactio
 import { PostScheduledTransactionDto } from "./dto/post-scheduled-transaction.dto";
 import { SkipScheduledTransactionDto } from "./dto/skip-scheduled-transaction.dto";
 import { ScheduledOccurrencesQueryDto } from "./dto/scheduled-occurrences-query.dto";
+import { AmountEstimateQueryDto } from "./dto/amount-estimate-query.dto";
 import {
   LOAN_OCCURRENCES_DEFAULT_COUNT,
   LoanOccurrencesQueryDto,
@@ -51,6 +52,20 @@ import { DelegateScheduledTransferMaskInterceptor } from "../delegation/intercep
 import { DelegationService } from "../delegation/delegation.service";
 import { JointAccountsService } from "../delegation/joint-accounts.service";
 import { tr } from "../i18n/translate";
+
+/**
+ * A delegate does not turn an estimate on or off (issue #2096): the estimate
+ * reads the owner's payments in every account, so a delegate choosing the
+ * payee and category would read history the delegation cannot. The key is
+ * dropped, so an edit keeps the stored flag and a create saves none.
+ */
+function withoutDelegateEstimateToggle<
+  T extends { amountIsEstimated?: boolean },
+>(req: { user: { isActing?: boolean } }, dto: T): T {
+  if (!req.user.isActing || dto.amountIsEstimated === undefined) return dto;
+  const { amountIsEstimated: _dropped, ...rest } = dto;
+  return rest as T;
+}
 
 @ApiTags("Scheduled Transactions")
 @Controller("scheduled-transactions")
@@ -111,7 +126,10 @@ export class ScheduledTransactionsController {
   )
   @DelegateRequires("create")
   create(@Request() req, @Body() createDto: CreateScheduledTransactionDto) {
-    return this.scheduledTransactionsService.create(req.user.id, createDto);
+    return this.scheduledTransactionsService.create(
+      req.user.id,
+      withoutDelegateEstimateToggle(req, createDto),
+    );
   }
 
   @Get()
@@ -127,7 +145,23 @@ export class ScheduledTransactionsController {
   @DelegateRequiresSection("bills")
   async findAll(@Request() req) {
     const rows = await this.scheduledTransactionsService.findAll(req.user.id);
-    return this.filterForDelegate(req, rows);
+    const visible = await this.filterForDelegate(req, rows);
+    if (!req.user.isActing) return visible;
+    // An estimate reads the owner's payments in every account. A delegate sees
+    // the bill's figures, as they would a typed amount, but not when or how
+    // often the owner paid, which may be in an account they cannot read.
+    return visible.map((row) =>
+      row.amountEstimate
+        ? {
+            ...row,
+            amountEstimate: {
+              ...row.amountEstimate,
+              paymentCount: null,
+              latestPaymentDate: null,
+            },
+          }
+        : row,
+    );
   }
 
   @Get("due")
@@ -195,6 +229,38 @@ export class ScheduledTransactionsController {
         { through: query.through, maxPerSchedule: query.maxPerSchedule },
       );
     return this.filterForDelegate(req, rows);
+  }
+
+  // Before `:id` as well: "amount-estimate" is a literal path segment.
+  @Get("amount-estimate/:accountId")
+  @ApiOperation({
+    summary:
+      "Preview the estimated amount a schedule paying this payee in this category would carry",
+    description:
+      "The per-month estimate from the payee and category's payment history " +
+      "over the last 24 months, in the account's currency (issue #2096). The " +
+      "same estimate a saved schedule with the Estimate option reads.",
+  })
+  @ApiParam({ name: "accountId", description: "Account UUID" })
+  @ApiResponse({ status: 200, description: "Estimate preview" })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  // Not open to a delegate: the history spans every one of the owner's
+  // accounts, including ones the delegation cannot read.
+  previewAmountEstimate(
+    @Request() req,
+    @Param("accountId", ParseUUIDPipe) accountId: string,
+    @Query() query: AmountEstimateQueryDto,
+  ) {
+    return this.scheduledTransactionsService.previewAmountEstimate(
+      req.user.id,
+      {
+        accountId,
+        payeeId: query.payeeId,
+        categoryId: query.categoryId,
+        nextDueDate: query.nextDueDate || undefined,
+      },
+    );
   }
 
   // Also before `:id`: "loan-anchor" is a literal path segment.
@@ -303,7 +369,12 @@ export class ScheduledTransactionsController {
     @Param("id", ParseUUIDPipe) id: string,
     @Body() updateDto: UpdateScheduledTransactionDto,
   ) {
-    return this.scheduledTransactionsService.update(req.user.id, id, updateDto);
+    return this.scheduledTransactionsService.update(
+      req.user.id,
+      id,
+      withoutDelegateEstimateToggle(req, updateDto),
+      { actorIsDelegate: !!req.user.isActing },
+    );
   }
 
   @Delete(":id")

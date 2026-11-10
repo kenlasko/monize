@@ -90,6 +90,8 @@ describe("AiForecastService", () => {
           name: "Rent",
           amount: 1500,
           amountComplete: true,
+          amountEstimated: false,
+          estimateStatus: null,
           frequency: "MONTHLY",
           nextDueDate: "2026-03-01",
           categoryName: "Housing",
@@ -522,6 +524,56 @@ describe("AiForecastService", () => {
           maxTokens: 4096,
         }),
         "forecast",
+      );
+    });
+
+    it("labels an estimated bill, and an unknown estimate as no history rather than a missing rate (issue #2096)", async () => {
+      const aggregates = await mockAggregatorService.computeAggregates!(
+        userId,
+        "USD",
+      );
+      const bill = aggregates.scheduledTransactions[0];
+      mockAggregatorService.computeAggregates!.mockResolvedValue({
+        ...aggregates,
+        scheduledTransactions: [
+          {
+            ...bill,
+            name: "Heating",
+            amount: 212.5,
+            amountEstimated: true,
+            estimateStatus: "estimated",
+          },
+          {
+            ...bill,
+            name: "Water",
+            amount: null,
+            amountComplete: false,
+            amountEstimated: true,
+            estimateStatus: "no-history",
+          },
+          {
+            ...bill,
+            name: "Hydro",
+            amount: null,
+            amountComplete: false,
+            amountEstimated: true,
+            estimateStatus: "missing-rate",
+          },
+        ],
+      });
+
+      await service.generateForecast(userId);
+
+      const sent = JSON.stringify(mockAiService.complete!.mock.calls[0]);
+      expect(sent).toContain(
+        "Heating: 212.50 (estimated from payment history)",
+      );
+      expect(sent).toContain(
+        "Water: unknown (estimated from payment history, which has no usable payments yet)",
+      );
+      expect(sent).not.toContain("Water: unknown (no current exchange rate)");
+      expect(sent).toContain(
+        "Hydro: unknown (estimated from payment history, but a past payment's currency has no current exchange rate)",
       );
     });
 

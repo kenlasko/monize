@@ -20,6 +20,8 @@
     "typeExpense": "Despesa",
     "typeUnknown": "Sentido desconhecido",
     "amountUnavailable": "Valor não disponível",
+    "estimated": "Estimado",
+    "estimateUnknown": "Estimativa desconhecida: informe o valor ao lançar",
     "button": "Ver Faturas &amp; Depósitos"
   },
   "mortgageReminder": {

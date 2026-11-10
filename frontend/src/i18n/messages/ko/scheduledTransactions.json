@@ -63,7 +63,8 @@
       "skipFailed": "발생 건너뛰기에 실패했습니다",
       "deleteFailed": "삭제에 실패했습니다"
     },
-    "foreignAmountTitle": "수취인이 청구하는 금액(수취인 통화 기준)"
+    "foreignAmountTitle": "수취인이 청구하는 금액(수취인 통화 기준)",
+    "estimatedLabel": "예상"
   },
   "filters": {
     "label": "필터",
@@ -113,7 +114,8 @@
       "totalAmountRequired": "총 금액이 필요합니다",
       "splitsMinimum": "분할 거래에는 최소 2개의 분할이 필요합니다",
       "splitsTotal": "분할 금액의 합계가 거래 금액과 같아야 합니다",
-      "fxRateUnavailable": "이 날짜에는 {from}에서 {to}로의 환율을 사용할 수 없습니다."
+      "fxRateUnavailable": "이 날짜에는 {from}에서 {to}로의 환율을 사용할 수 없습니다.",
+      "estimateUnknown": "이 회차의 예상 금액을 알 수 없습니다. 게시하려면 금액을 입력하세요."
     },
     "latestPlaceholder": "최신: {price}",
     "descriptionPlaceholder": "설명...",
@@ -126,7 +128,8 @@
       "noRateWarning": "{date}에 {from}에서 {to}로의 환율을 찾을 수 없습니다. 다른 날짜를 선택하거나 환율을 새로 고치세요.",
       "feeCaption": "{percent}% 해외 거래 수수료({fee})가 포함됩니다.",
       "totalInCurrency": "{currency} 기준 총액"
-    }
+    },
+    "estimatedHint": "이 금액은 예상치입니다. 실제로 지불한 금액으로 바꾸세요. {detail}"
   },
   "occurrencePicker": {
     "title": "발생 날짜 선택",
@@ -137,7 +140,9 @@
     "amountChange": "금액: {amount}",
     "categoryChange": "카테고리: {category}",
     "noteChange": "메모: {note}",
-    "splitModified": "분할 수정됨"
+    "splitModified": "분할 수정됨",
+    "estimatedAmount": "예상: {amount}",
+    "estimateUnknown": "예상 금액 알 수 없음"
   },
   "loanOccurrence": {
     "loading": "각 회차의 납부액을 계산하고 있습니다.",
@@ -197,7 +202,9 @@
       "quantityRequired": "수량은 0보다 커야 합니다",
       "priceRequired": "가격은 0보다 커야 합니다",
       "totalAmountRequired": "총 금액이 필요합니다"
-    }
+    },
+    "estimatedHint": "이 금액은 이 회차의 예상치입니다. 그대로 두면 새 결제가 들어올 때마다 이 회차는 계속 예상치를 따릅니다. {detail}",
+    "keepEstimate": "새 결제로 예상이 바뀌어도 이 금액 유지"
   },
   "form": {
     "tabs": {
@@ -302,14 +309,20 @@
       "quantityRequired": "수량은 0보다 커야 합니다",
       "priceRequired": "가격은 0보다 커야 합니다",
       "totalAmountRequired": "이 작업에는 총 금액이 필요합니다",
-      "fxRateRequired": "저장하기 전에 선택한 통화로 금액을 입력하세요. 아직 사용할 수 있는 환율이 없습니다."
+      "fxRateRequired": "저장하기 전에 선택한 통화로 금액을 입력하세요. 아직 사용할 수 있는 환율이 없습니다.",
+      "estimateNeedsPayeeAndCategory": "금액을 예상할 수취인과 카테고리를 선택하세요."
     },
     "fx": {
       "amountInCurrency": "{currency} 기준 금액",
       "estimateCaption": "약 {total}(1 {from} = {rate} {to}).",
       "noRateWarning": "{from}에서 {to}로의 환율을 찾을 수 없습니다. 다른 통화를 선택하거나 금액을 {to}로 입력하세요.",
       "feeCaption": "{percent}% 해외 거래 수수료({fee})가 포함됩니다."
-    }
+    },
+    "estimateLabel": "예상",
+    "estimateTooltip": "이 카테고리에서 이 수취인에게 지난 24개월 동안 결제한 내역으로 각 회차의 금액을 월별로 계산하여, 특정 달에 더 많이 드는 청구서를 그대로 예측합니다. 어느 회차든 계속 변경할 수 있으며, 게시할 때 금액을 확인합니다.",
+    "estimateDelegateDisabled": "예상은 소유자만 켜거나 끌 수 있습니다. 소유자의 모든 계좌에 있는 결제를 읽기 때문입니다.",
+    "estimatedAmountNote": "결제 내역으로 자동 계산됩니다. {detail}",
+    "autoPostDisabledEstimate": "예상 금액은 게시할 때 확인하므로 자동으로 게시되지 않습니다."
   },
   "postTransaction": {
     "minSplits": "분할 거래에는 최소 2개의 분할이 필요합니다",
@@ -333,5 +346,16 @@
   "validation": {
     "nameRequired": "이름은 필수입니다",
     "dueDateRequired": "만기일은 필수입니다"
+  },
+  "estimate": {
+    "thePayee": "이 수취인",
+    "theCategory": "이 카테고리",
+    "basis": "{count, plural, other {#건의 결제}}을 기준으로 예상했으며, 가장 최근은 {date}입니다.",
+    "basisWithGrowth": "{count, plural, other {#건의 결제}}을 기준으로 예상했으며, 가장 최근은 {date}이고 전년 대비 {growth} 변화를 반영했습니다.",
+    "basisWithheld": "수취인과 카테고리의 결제 내역을 기준으로 예상했습니다.",
+    "noHistory": "지난 {months}개월 동안 {category}에서 {payee}에 대한 결제가 없어 금액을 알 수 없습니다. 각 회차의 금액을 입력하거나 결제를 기록하세요.",
+    "missingRate": "이전 결제를 환산할 {from}에서 {to}로의 환율이 없어 금액을 알 수 없습니다. 통화 페이지에서 환율을 추가하세요.",
+    "noBasis": "수취인과 카테고리를 선택하면 그 결제 내역으로 금액을 예상합니다.",
+    "pending": "금액은 수취인과 카테고리의 결제 내역으로 계산됩니다."
   }
 }

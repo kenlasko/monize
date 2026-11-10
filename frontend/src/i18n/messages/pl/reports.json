@@ -1757,7 +1757,8 @@
     "pdfSubtitle": "{month} | {count} aktywnych rachunków",
     "pdfActiveBills": "Aktywne rachunki",
     "pdfOverdue": "Zaległe",
-    "pdfThisMonth": "Bieżący miesiąc"
+    "pdfThisMonth": "Bieżący miesiąc",
+    "estimated": "Szacowane"
   },
   "weekendVsWeekday": {
     "noData": "Nie znaleziono transakcji wydatków w tym okresie.",

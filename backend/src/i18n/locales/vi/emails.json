@@ -20,6 +20,8 @@
     "typeExpense": "Chi phí",
     "typeUnknown": "Không rõ chiều",
     "amountUnavailable": "Không có số tiền",
+    "estimated": "Ước tính",
+    "estimateUnknown": "Không rõ ước tính: hãy nhập số tiền khi ghi",
     "button": "Xem hóa đơn &amp; tiền gửi"
   },
   "mortgageReminder": {

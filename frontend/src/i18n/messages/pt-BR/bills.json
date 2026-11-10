@@ -55,7 +55,10 @@
     "legendAriaLabel": "Linhas da previsão",
     "tooltipTransactionForAccount": "{name} ({account})",
     "unavailableMissingRates": "Esta projeção não pode ser mostrada em {displayCurrency}: não há taxa de câmbio disponível para {currencies}, e um saldo projetado depende de cada dia anterior. Adicione uma taxa, ou escolha uma conta de moeda única.",
-    "untitledTransaction": "Transação"
+    "untitledTransaction": "Transação",
+    "tooltipEstimated": "(estimado)",
+    "unavailableUnknownEstimates": "Esta previsão ainda não pode ser exibida: o valor estimado de uma conta incluída é desconhecido, e um saldo projetado se baseia em cada dia anterior. Informe o valor dessa ocorrência ou desative Estimar na conta.",
+    "unknownEstimateItem": "{name}: {reason}"
   },
   "calendar": {
     "days": {

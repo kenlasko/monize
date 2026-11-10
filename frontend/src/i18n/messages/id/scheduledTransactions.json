@@ -63,7 +63,8 @@
       "skipFailed": "Gagal melewati kemunculan",
       "deleteFailed": "Gagal menghapus"
     },
-    "foreignAmountTitle": "Jumlah yang ditagih penerima, dalam mata uangnya sendiri"
+    "foreignAmountTitle": "Jumlah yang ditagih penerima, dalam mata uangnya sendiri",
+    "estimatedLabel": "Perkiraan"
   },
   "filters": {
     "label": "Filter",
@@ -113,7 +114,8 @@
       "totalAmountRequired": "Total jumlah wajib diisi",
       "splitsMinimum": "Transaksi terbagi memerlukan setidaknya 2 pembagian",
       "splitsTotal": "Jumlah pembagian harus sama dengan jumlah transaksi",
-      "fxRateUnavailable": "Tidak ada nilai tukar yang tersedia untuk {from} ke {to} pada tanggal ini."
+      "fxRateUnavailable": "Tidak ada nilai tukar yang tersedia untuk {from} ke {to} pada tanggal ini.",
+      "estimateUnknown": "Jumlah perkiraan untuk kejadian ini tidak diketahui. Masukkan jumlahnya untuk mempostingnya."
     },
     "latestPlaceholder": "Terbaru: {price}",
     "descriptionPlaceholder": "Deskripsi...",
@@ -126,7 +128,8 @@
       "noRateWarning": "Tidak ada nilai tukar untuk {from} ke {to} pada {date}. Pilih tanggal lain, atau segarkan kurs.",
       "feeCaption": "Termasuk biaya transaksi luar negeri {percent}% ({fee}).",
       "totalInCurrency": "Total dalam {currency}"
-    }
+    },
+    "estimatedHint": "Jumlah ini adalah perkiraan; ubah menjadi jumlah yang benar-benar Anda bayar. {detail}"
   },
   "occurrencePicker": {
     "title": "Pilih Tanggal Kemunculan",
@@ -137,7 +140,9 @@
     "amountChange": "Jumlah: {amount}",
     "categoryChange": "Kategori: {category}",
     "noteChange": "Catatan: {note}",
-    "splitModified": "Pembagian dimodifikasi"
+    "splitModified": "Pembagian dimodifikasi",
+    "estimatedAmount": "Perkiraan: {amount}",
+    "estimateUnknown": "Perkiraan tidak diketahui"
   },
   "loanOccurrence": {
     "loading": "Menghitung pembayaran setiap jadwal.",
@@ -197,7 +202,9 @@
       "quantityRequired": "Kuantitas harus lebih dari nol",
       "priceRequired": "Harga harus lebih dari nol",
       "totalAmountRequired": "Total jumlah wajib diisi"
-    }
+    },
+    "estimatedHint": "Jumlah ini adalah perkiraan untuk kejadian ini. Biarkan apa adanya dan kejadian ini akan terus mengikuti perkiraan saat pembayaran baru masuk. {detail}",
+    "keepEstimate": "Pertahankan jumlah ini, meskipun pembayaran baru mengubah perkiraan"
   },
   "form": {
     "tabs": {
@@ -302,14 +309,20 @@
       "quantityRequired": "Kuantitas harus lebih dari nol",
       "priceRequired": "Harga harus lebih dari nol",
       "totalAmountRequired": "Total jumlah wajib diisi untuk tindakan ini",
-      "fxRateRequired": "Masukkan jumlah dalam mata uang yang dipilih sebelum menyimpan. Belum ada nilai tukar yang tersedia."
+      "fxRateRequired": "Masukkan jumlah dalam mata uang yang dipilih sebelum menyimpan. Belum ada nilai tukar yang tersedia.",
+      "estimateNeedsPayeeAndCategory": "Pilih penerima dan kategori untuk memperkirakan jumlahnya."
     },
     "fx": {
       "amountInCurrency": "Jumlah dalam {currency}",
       "estimateCaption": "Sekitar {total} pada 1 {from} = {rate} {to}.",
       "noRateWarning": "Tidak ada nilai tukar untuk {from} ke {to}. Pilih mata uang lain, atau masukkan jumlah dalam {to}.",
       "feeCaption": "Termasuk biaya transaksi luar negeri {percent}% ({fee})."
-    }
+    },
+    "estimateLabel": "Perkirakan",
+    "estimateTooltip": "Hitung jumlah setiap kejadian dari pembayaran 24 bulan terakhir kepada penerima ini dalam kategori ini, bulan demi bulan, sehingga tagihan yang lebih mahal di beberapa bulan diperkirakan demikian. Anda tetap dapat mengubah kejadian mana pun, dan mengonfirmasi jumlahnya saat memposting.",
+    "estimateDelegateDisabled": "Hanya pemilik yang dapat menyalakan atau mematikan perkiraan: perkiraan membaca pembayaran di semua akun pemilik.",
+    "estimatedAmountNote": "Dihitung otomatis dari riwayat pembayaran. {detail}",
+    "autoPostDisabledEstimate": "Jumlah perkiraan dikonfirmasi saat Anda mempostingnya, jadi tidak diposting secara otomatis."
   },
   "postTransaction": {
     "minSplits": "Transaksi terbagi memerlukan setidaknya 2 pembagian",
@@ -333,5 +346,16 @@
   "validation": {
     "nameRequired": "Nama wajib diisi",
     "dueDateRequired": "Tanggal jatuh tempo wajib diisi"
+  },
+  "estimate": {
+    "thePayee": "penerima ini",
+    "theCategory": "kategori ini",
+    "basis": "Diperkirakan dari {count, plural, other {# pembayaran}}, yang terakhir pada {date}.",
+    "basisWithGrowth": "Diperkirakan dari {count, plural, other {# pembayaran}}, yang terakhir pada {date}, dengan perubahan {growth} dari tahun ke tahun.",
+    "basisWithheld": "Diperkirakan dari riwayat pembayaran penerima dan kategori.",
+    "noHistory": "Tidak ada pembayaran ke {payee} di {category} dalam {months} bulan terakhir, jadi jumlahnya tidak diketahui. Masukkan jumlah setiap kejadian, atau catat sebuah pembayaran.",
+    "missingRate": "Tidak ada kurs dari {from} ke {to} untuk mengonversi pembayaran sebelumnya, jadi jumlahnya tidak diketahui. Tambahkan kurs di halaman Mata Uang.",
+    "noBasis": "Pilih penerima dan kategori untuk memperkirakan jumlah dari riwayat pembayarannya.",
+    "pending": "Jumlahnya dihitung dari riwayat pembayaran penerima dan kategori."
   }
 }

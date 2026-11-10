@@ -146,6 +146,7 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-OCCURRENCE-001 one effect | supporting | -- | required | required | **required** | required | -- | required |
 | INV-OCCURRENCE-002 override price | required | -- | -- | -- | -- | -- | -- | required |
 | INV-OCCURRENCE-003 one effective occurrence | **required** | **required** | -- | -- | -- | -- | optional | optional |
+| INV-OCCURRENCE-004 an estimated occurrence is its month's estimate | **required** | -- | -- | -- | -- | -- | -- | optional |
 | INV-CLAIM-001 single-use claim | supporting | -- | required | **required** | optional | optional | -- | required |
 | INV-AUTH-001 refresh rotation | supporting | -- | required | **required** | -- | -- | -- | optional |
 | INV-AUTH-002 login counter | supporting | -- | required | **required** | -- | -- | -- | -- |

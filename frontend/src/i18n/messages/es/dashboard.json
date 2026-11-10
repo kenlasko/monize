@@ -110,7 +110,8 @@
     "viewCalendar": "Calendario",
     "previousMonth": "Mes anterior",
     "nextMonth": "Mes siguiente",
-    "emptyAll": "No hay facturas, ingresos ni transferencias activas programadas."
+    "emptyAll": "No hay facturas, ingresos ni transferencias activas programadas.",
+    "estimated": "Estimado"
   },
   "cashFlowForecast": {
     "title": "Pronóstico de flujo de caja",

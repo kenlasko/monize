@@ -129,6 +129,7 @@ implied.
 | INV-OCCURRENCE-001 | One scheduled occurrence has at most one financial effect | enforced |
 | INV-OCCURRENCE-002 | A stored override price survives reopening | enforced |
 | INV-OCCURRENCE-003 | Every surface reports the effective occurrence: its current amount and currency, its direction, on the date it falls | enforced |
+| INV-OCCURRENCE-004 | An estimated schedule's occurrence is its month's history estimate unless an override states its amount, and is never auto-posted | partial |
 | INV-PAYROLL-001 | A payroll deduction rule never writes a ledger row; changing one changes no posted transaction | enforced |
 | INV-PAYROLL-002 | The cap on a deduction line is decided under the posting lock from the ledger as it stands | enforced |
 | INV-PAYROLL-003 | The posting and the projection reduce a line by one definition over the server's own figures | enforced |
@@ -5410,6 +5411,56 @@ Known scope         Two client-side expansions remain, both named in the fronten
                     horizon (FORECAST_OCCURRENCE_HORIZON_DAYS) rather than a
                     product window.
 Status              enforced
+```
+
+### INV-OCCURRENCE-004 -- an estimated occurrence is its month's estimate
+
+```text
+Statement           An occurrence of a schedule with amount_is_estimated, which
+                    no override states the amount (or split lines) of, is priced
+                    at the payee and category's history estimate for the month
+                    it falls in, on every surface and at posting; an unknown
+                    estimate is unknown, never the stored snapshot; an override
+                    that states an amount is never replaced by an estimate; an
+                    estimated schedule is never posted automatically
+                    (docs/specs/scheduled-amount-estimate.md, issue #2096).
+Source of truth     The ledger (non-void payments to the payee in the category,
+                    24 months) read by ScheduledAmountEstimateService; the
+                    arithmetic in scheduled-transactions/amount-estimate.ts.
+                    scheduled_transactions.amount is a snapshot of the next
+                    occurrence's estimate, written on save.
+Enforcement         ScheduledOccurrenceService.expand prices each estimated slot
+                    (priceEstimatedOccurrences), so every occurrence consumer
+                    INV-OCCURRENCE-003 names reads it; findAll sends the
+                    per-month amountEstimate and the next occurrence's estimate
+                    as effectiveAmount; post() books the occurrence's estimate
+                    when no amount is entered and refuses an unknown one. On the
+                    client estimatedOccurrenceAmount (lib/scheduled-effective-
+                    amount.ts) is the one reader, used by lib/forecast.ts, the
+                    Post dialog, the occurrence editor and picker. Auto-post:
+                    assertEstimatable refuses the pair before any write, both
+                    auto-post candidate reads filter amount_is_estimated, and
+                    the under-lock requireActiveAutoPost check refuses it.
+Concurrency scope   schedule; the estimate is read-only.
+Retry semantics     a read; a retried post recomputes the same estimate from the
+                    same ledger.
+Crash semantics     nothing is written per occurrence; the snapshot is written
+                    in the schedule's own update.
+Failure response    unknown amount (null) with the status that says why; a post
+                    of an unknown estimate without an amount is a 400.
+Required tests      amount-estimate.spec.ts, scheduled-amount-estimate.service.spec.ts,
+                    scheduled-occurrence.service.spec.ts and
+                    scheduled-transactions.service.spec.ts (the estimate
+                    blocks), forecast.test.ts, the dialog and form tests named
+                    in docs/future-plans/scheduled-amount-estimate-tasks.md.
+Known scope         GET /scheduled-transactions/due and /upcoming return the raw
+                    row with its snapshot amount (no client surface reads them).
+                    No CHECK constraint holds auto_post off on an estimated row:
+                    the expanding migration leaves it to the service so the
+                    previous release keeps working during a rollout, and a later
+                    contract migration can add it. No source-scanning guard
+                    keeps a new client surface off amountEstimate.
+Status              partial
 ```
 
 ## Payroll deductions

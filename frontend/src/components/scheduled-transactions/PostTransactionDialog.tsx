@@ -22,7 +22,13 @@ import {
   LoanOccurrencesProjection,
 } from '@/types/scheduled-transaction';
 import { isLoanBillCandidate, loanOccurrenceLines } from '@/lib/loan-occurrence';
-import { nextOccurrenceDueDate, occurrencePin } from '@/lib/scheduled-effective-amount';
+import {
+  estimatedOccurrenceAmount,
+  nextOccurrenceDueDate,
+  occurrenceFollowsEstimate,
+  occurrencePin,
+} from '@/lib/scheduled-effective-amount';
+import { useAmountEstimateText } from './useAmountEstimateText';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
@@ -115,6 +121,17 @@ export function PostTransactionDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [amount, setAmount] = useState<number>(0);
   const [amountCopied, setAmountCopied] = useState(false);
+  const estimateText = useAmountEstimateText();
+  // An estimated occurrence (issue #2096) opens at its month's estimate:
+  // `undefined` when the schedule is not estimated or an override states this
+  // occurrence's amount, `null` when the estimate is unknown -- the person
+  // enters the amount, and an unchanged empty one is refused below.
+  const postEstimate = occurrenceFollowsEstimate(
+    scheduledTransaction,
+    scheduledTransaction.nextOverride,
+  )
+    ? estimatedOccurrenceAmount(scheduledTransaction, nextOccurrenceDueDate(scheduledTransaction))
+    : undefined;
   const [categoryId, setCategoryId] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [isSplit, setIsSplit] = useState(false);
@@ -476,7 +493,12 @@ export function PostTransactionDialog({
       // is 1,170.6458) and booked in the currency's smallest unit (1,170.65),
       // which is what the bank debits (issue #1581).
       const decimals = getDecimalPlacesForCurrency(scheduledTransaction.currencyCode);
-      const rawAmount = Number(nextOverride?.amount ?? scheduledTransaction.amount);
+      const rawAmount =
+        postEstimate !== undefined
+          ? postEstimate === null
+            ? 0
+            : postEstimate
+          : Number(nextOverride?.amount ?? scheduledTransaction.amount);
       // A coin the registry does not hold yet keeps its stored places at the
       // column scale (`loadedEntryAmount`'s rule), so posting before
       // `GET /currencies` answers does not book 0.00002500 BTC as 0.00.
@@ -844,6 +866,12 @@ export function PostTransactionDialog({
   }, [categories]);
 
   const handlePost = async () => {
+    // An unknown estimate opened the field at zero; posting that unchanged
+    // would book a figure nobody stated.
+    if (!isInvestmentKind && postEstimate === null && amount === 0) {
+      toast.error(t('postDialog.toasts.estimateUnknown'));
+      return;
+    }
     // A missing preview is not a reason to block: the backend resolves the rate
     // for the posting date itself (carry-forward over weekends, a fetched
     // window, then the latest stored rate) and raises a translated error only
@@ -1252,6 +1280,16 @@ export function PostTransactionDialog({
                 )}
               </button>
             </div>
+            {postEstimate !== undefined && (
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {t('postDialog.estimatedHint', {
+                  detail: estimateText(scheduledTransaction.amountEstimate, {
+                    payeeName: scheduledTransaction.payee?.name ?? scheduledTransaction.payeeName,
+                    categoryName: scheduledTransaction.category?.name ?? null,
+                  }),
+                })}
+              </p>
+            )}
             {isForeignPosting && (
               <CurrencyInput
                 label={t('postDialog.fx.totalInCurrency', {

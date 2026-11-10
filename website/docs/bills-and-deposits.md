@@ -34,7 +34,8 @@ The summary at the top counts your **Active Bills** and **Active Deposits**, the
 | **Next Due Date** | Yes | When the next occurrence is due; later occurrences follow from it |
 | **Payee** | No | Who the transaction is with |
 | **Category** | No | Expense or income category |
-| **Amount** | Yes | Transaction amount (negative for a bill, positive for a deposit). Leave it at zero for a reminder of a bill whose amount varies. The currency button beside it lets you enter the amount in the currency the biller charges |
+| **Amount** | Yes | Transaction amount (negative for a bill, positive for a deposit). Leave it at zero for a reminder of a bill whose amount varies, or turn on **Estimate**. The currency button beside it lets you enter the amount in the currency the biller charges |
+| **Estimate** | No | Work each occurrence's amount out from your payment history instead of typing it (see [Estimated Amounts](#estimated-amounts)). The **Amount** is then greyed out and shows the next occurrence's estimate |
 | **Reference Number** | No | Cheque number, confirmation number, or another reference; each posted transaction carries it unless you change it when posting |
 | **Frequency** | Yes | How often the transaction recurs (default Monthly; see [Frequency Options](#frequency-options)) |
 | **Remind Days Before** | No | How many days before the due date the schedule counts as coming up, for reminders and the dashboard's Due soon list (default 3) |
@@ -43,6 +44,21 @@ The summary at the top counts your **Active Bills** and **Active Deposits**, the
 | **Active** | No | Turn off to pause the schedule without deleting it |
 | **Auto-post on due date** | No | Whether to create the transaction automatically on the due date (see [Auto-Posting](#auto-posting)) |
 | **Tags** | No | One or more [tags](tags.md) applied when the transaction is posted |
+
+### Estimated Amounts
+
+For a bill whose amount changes from month to month, such as heating or electricity, turn on **Estimate** beside the **Amount**. Monize then works out each occurrence's amount from the last 24 months of payments to the schedule's **Payee** in its **Category**, in any of your accounts:
+
+- The starting point is the average of your three most recent payments, so a price change is the price from then on.
+- When two years of payments show the same pattern by month, both years, each month is shaped by that pattern: a bill that costs more in winter is forecast to cost more in winter. A bill that costs the same every month, or one whose price simply changed, is not treated as seasonal.
+- When every month went up (or down) by about the same share from one year to the next, the estimate carries that trend forward.
+- A payment in another currency is converted at the current exchange rate. Refunds from the biller are left out.
+
+![A schedule with Estimate on](images/scheduled-transaction-estimate.png)
+
+The estimate follows new payments as you record them. Under the **Amount**, the form says how many payments the estimate is based on, or what is missing when there is not enough to estimate from: no payments yet, or no exchange rate for a payment's currency. An estimated schedule needs a **Payee** and a **Category**, is available for a single-category transaction in the account's own currency (not a split, transfer, investment, or foreign-currency amount), and is never posted automatically, so **Auto-post on due date** is turned off.
+
+You still decide every occurrence: the bills list labels the amount **Estimated**, **Edit Occurrence** shows each upcoming occurrence's estimate and lets you change any of them, and the **Post Transaction** dialog opens on the estimate for you to correct before posting. An occurrence you change keeps your amount; one you leave alone keeps following the estimate.
 
 ### Split Scheduled Transactions
 
@@ -146,7 +162,7 @@ A posting that fails (for example, for want of an exchange rate) raises a notifi
 
 ### When NOT to Use Auto-Posting
 
-- **Variable-amount bills** (e.g., utilities, credit card payments) -- Use reminders instead and enter the actual amount manually
+- **Variable-amount bills** (e.g., utilities, credit card payments) -- Use reminders instead and enter the actual amount manually, or turn on [Estimate](#estimated-amounts) so the forecast follows your history (an estimated bill is never auto-posted)
 - **Bills your bank's import already brings in** -- the imported row and the auto-posted one would both be recorded
 
 ---
@@ -185,11 +201,11 @@ The **Cash Flow Forecast** at the top of the page projects your account balances
 
 - Choose how far ahead to look: **7D**, **30D**, **90D**, **6M**, or **1Y**
 - **Accounts to forecast** picks the accounts. With none picked, all your accounts are drawn as one line; with two or more, each account gets its own line beside a **Total of Accounts** line
-- Hover over the chart to see the balance on a day and the transactions that move it
+- Hover over the chart to see the balance on a day and the transactions that move it; an [estimated](#estimated-amounts) occurrence is marked **(estimated)**
 - Below the chart: the **Starting** and **Ending** balances and the lowest point of the period (**Min Balance** for liability accounts)
 - **Hide chart** (the arrow at the top right) folds the forecast to a thin strip; click the strip to bring it back. This browser remembers the choice
 
-An occurrence that fell due and was neither posted nor skipped counts on the first day of the forecast. If an exchange rate is missing for one of the currencies involved, the forecast says so rather than showing a total that leaves it out.
+An occurrence that fell due and was neither posted nor skipped counts on the first day of the forecast. If an exchange rate is missing for one of the currencies involved, the forecast says so rather than showing a total that leaves it out. Likewise, if an estimated bill's amount cannot be worked out yet, the forecast names the bill and why, until you enter that occurrence's amount or record a payment.
 
 This helps you:
 - Anticipate when account balances will be low

@@ -1438,3 +1438,103 @@ describe('OverrideEditorDialog', () => {
     });
   });
 });
+
+// Issue #2096: an estimated schedule's occurrence opens at its month's estimate
+// and keeps following it when saved unchanged.
+describe('OverrideEditorDialog: an estimated schedule (issue #2096)', () => {
+  const heating = {
+    id: 's9', name: 'Heating', amount: -999, currencyCode: 'CAD',
+    accountId: 'a1', categoryId: 'c1', description: '',
+    isTransfer: false, isSplit: false,
+    account: { name: 'Checking' },
+    amountIsEstimated: true,
+    amountEstimate: {
+      status: 'estimated',
+      currencyCode: 'CAD',
+      months: { '2025-03': { amount: -180, basis: 'seasonal' } },
+      paymentCount: 8,
+      latestPaymentDate: '2025-02-10',
+      growthRate: null,
+      historyMonths: 24,
+      missingPair: null,
+    },
+  } as any;
+  const props = {
+    isOpen: true,
+    scheduledTransaction: heating,
+    overrideDate: '2025-03-01',
+    categories: [{ id: 'c1', name: 'Utilities', parentId: null }] as any[],
+    accounts: [{ id: 'a1', name: 'Checking', currentBalance: 5000 }] as any[],
+    onClose: vi.fn(),
+    onSave: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("opens on the month's estimate, never the snapshot", () => {
+    render(<OverrideEditorDialog {...props} />);
+    const amountInput = screen.getByLabelText('Amount') as HTMLInputElement;
+    expect(Number(amountInput.value)).toBe(-180);
+    expect(screen.getByText(/keeps following the estimate/)).toBeInTheDocument();
+  });
+
+  it('saves an unchanged estimate as no amount, so it keeps following it', async () => {
+    render(<OverrideEditorDialog {...props} />);
+    fireEvent.click(screen.getByText('Save Override'));
+    await waitFor(() => {
+      expect(mockCreateOverride).toHaveBeenCalledWith(
+        's9',
+        expect.objectContaining({ amount: null, originalDate: '2025-03-01' }),
+      );
+    });
+  });
+
+  it('pins the estimate as a stated amount when asked to keep it', async () => {
+    render(<OverrideEditorDialog {...props} />);
+    fireEvent.click(
+      screen.getByRole('switch', { name: 'Keep this amount, even when new payments change the estimate' }),
+    );
+    fireEvent.click(screen.getByText('Save Override'));
+    await waitFor(() => {
+      expect(mockCreateOverride).toHaveBeenCalledWith(
+        's9',
+        expect.objectContaining({ amount: -180 }),
+      );
+    });
+  });
+
+  it('saves a changed amount as a stated one', async () => {
+    render(<OverrideEditorDialog {...props} />);
+    const amountInput = screen.getByLabelText('Amount') as HTMLInputElement;
+    fireEvent.change(amountInput, { target: { value: '-205' } });
+    fireEvent.blur(amountInput);
+    fireEvent.click(screen.getByText('Save Override'));
+    await waitFor(() => {
+      expect(mockCreateOverride).toHaveBeenCalledWith(
+        's9',
+        expect.objectContaining({ amount: -205 }),
+      );
+    });
+  });
+
+  it('saves an unknown estimate left empty as no amount, so it keeps following it', async () => {
+    render(
+      <OverrideEditorDialog
+        {...props}
+        scheduledTransaction={{ ...heating, amountEstimate: { ...heating.amountEstimate, status: 'no-history', months: {} } }}
+      />,
+    );
+    const amountInput = screen.getByLabelText('Amount') as HTMLInputElement;
+    expect(amountInput.value).toBe('');
+    fireEvent.click(screen.getByText('Save Override'));
+    await waitFor(() => {
+      expect(mockCreateOverride).toHaveBeenCalledWith(
+        's9',
+        expect.objectContaining({ amount: null }),
+      );
+    });
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+});

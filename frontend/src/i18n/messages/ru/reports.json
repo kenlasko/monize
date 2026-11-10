@@ -1757,7 +1757,8 @@
     "pdfSubtitle": "{month} | {count} активных счетов",
     "pdfActiveBills": "Активные счета",
     "pdfOverdue": "Просрочено",
-    "pdfThisMonth": "В этом месяце"
+    "pdfThisMonth": "В этом месяце",
+    "estimated": "Оценка"
   },
   "weekendVsWeekday": {
     "noData": "Расходные проводки за этот период не найдены.",

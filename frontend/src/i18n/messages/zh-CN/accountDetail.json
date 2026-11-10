@@ -44,6 +44,8 @@
     "missingRatePair": "{name}：找不到 {from} 兑 {to} 的汇率，因此这笔到期项目将记录的金额未知。",
     "missingRate": "{name}：找不到这笔到期项目的结算汇率，因此金额未知。",
     "crossCurrencyTransfer": "{name}：本账户为 {to}，而这是一笔来自 {from} 账户的转账。到账金额在转账记账时才确定，因此无法提前预测。",
+    "unknownEstimate": "{name}：由于没有可用于估算的付款，暂时无法计算估算金额。请输入这次发生的金额，或记录一笔付款。",
+    "unknownEstimatePair": "{name}：估算所用的一笔付款以 {from} 计价，且没有从 {from} 到 {to} 的汇率，因此估算金额未知。",
     "howToFix": "缺少汇率时的处理：打开“货币”页面刷新汇率，或检查该证券及其结算账户的币种是否符合预期。"
   }
 }

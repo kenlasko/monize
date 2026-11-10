@@ -2661,3 +2661,107 @@ describe('PostTransactionDialog - rate lookup while stepping the date', () => {
     expect(payload.amount).toBeUndefined();
   });
 });
+
+// Issue #2096: an estimated occurrence opens at its month's estimate.
+describe('PostTransactionDialog: an estimated schedule (issue #2096)', () => {
+  const baseRow = {
+    id: 's1', name: 'Heating', amount: -999, currencyCode: 'CAD',
+    accountId: 'a1', categoryId: 'c1', description: '',
+    nextDueDate: '2025-02-15T00:00:00Z', isTransfer: false, isSplit: false,
+    account: { name: 'Checking' },
+  } as any;
+  const statedOverride = {
+    amount: -250, categoryId: 'c1', description: null,
+    overrideDate: '2025-02-15', isSplit: false, splits: null,
+  };
+  const defaultProps = {
+    isOpen: true,
+    scheduledTransaction: baseRow,
+    categories: [{ id: 'c1', name: 'Utilities', parentId: null }] as any[],
+    accounts: [{ id: 'a1', name: 'Checking', currentBalance: 5000 }] as any[],
+    scheduledTransactions: [] as any[],
+    futureTransactions: [] as any[],
+    onClose: vi.fn(),
+    onPosted: vi.fn(),
+  };
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const estimate = (months: Record<string, { amount: number; basis: 'seasonal' | 'recent' }>) => ({
+    status: Object.keys(months).length > 0 ? 'estimated' : 'no-history',
+    currencyCode: 'CAD',
+    months,
+    paymentCount: Object.keys(months).length > 0 ? 6 : 0,
+    latestPaymentDate: Object.keys(months).length > 0 ? '2025-01-15' : null,
+    growthRate: null,
+    historyMonths: 24,
+    missingPair: null,
+  });
+  const heating = {
+    // The snapshot amount, -999, is what the dialog must not post.
+    ...baseRow,
+    amountIsEstimated: true,
+    amountEstimate: estimate({ '2025-02': { amount: -212.5, basis: 'seasonal' } }),
+  } as any;
+
+  it("posts the month's estimate and says it is one", async () => {
+    mockPostApi.mockClear();
+    render(<PostTransactionDialog {...defaultProps} scheduledTransaction={heating} />);
+
+    expect(screen.getByText(/This amount is an estimate/)).toBeInTheDocument();
+    const buttons = screen.getAllByText('Post Transaction');
+    fireEvent.click(buttons[buttons.length - 1]);
+
+    await waitFor(() => {
+      expect(mockPostApi).toHaveBeenCalledWith(
+        's1',
+        expect.objectContaining({ amount: -212.5 }),
+      );
+    });
+  });
+
+  it('refuses to post an unknown estimate left empty', async () => {
+    mockPostApi.mockClear();
+    render(
+      <PostTransactionDialog
+        {...defaultProps}
+        scheduledTransaction={{ ...heating, amountEstimate: estimate({}) }}
+      />,
+    );
+
+    const buttons = screen.getAllByText('Post Transaction');
+    fireEvent.click(buttons[buttons.length - 1]);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "This occurrence's estimated amount is unknown. Enter the amount to post it.",
+      );
+    });
+    expect(mockPostApi).not.toHaveBeenCalled();
+  });
+
+  it('posts an override that states the amount, not the estimate', async () => {
+    mockPostApi.mockClear();
+    render(
+      <PostTransactionDialog
+        {...defaultProps}
+        scheduledTransaction={{
+          ...heating,
+          nextOverride: statedOverride,
+        }}
+      />,
+    );
+
+    expect(screen.queryByText(/This amount is an estimate/)).not.toBeInTheDocument();
+    const buttons = screen.getAllByText('Post Transaction');
+    fireEvent.click(buttons[buttons.length - 1]);
+
+    await waitFor(() => {
+      expect(mockPostApi).toHaveBeenCalledWith(
+        's1',
+        expect.objectContaining({ amount: -250 }),
+      );
+    });
+  });
+});

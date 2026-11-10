@@ -1,3 +1,4 @@
+import type { ScheduleAmountEstimateStatus } from "../../scheduled-transactions/scheduled-amount-estimate.service";
 import { Injectable, Inject, Logger, forwardRef } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
@@ -60,6 +61,13 @@ export interface ScheduledTransactionSummary {
   name: string;
   amount: number | null;
   amountComplete: boolean;
+  /**
+   * The amount is the schedule's estimate from payment history (issue #2096),
+   * so the prompt labels it, and an unknown one is not a missing rate.
+   */
+  amountEstimated: boolean;
+  /** Why an estimated amount is what it is, or unknown; null when not estimated. */
+  estimateStatus: ScheduleAmountEstimateStatus | null;
   frequency: string;
   nextDueDate: string;
   categoryName: string | null;
@@ -469,6 +477,8 @@ export class ForecastAggregatorService {
         name: st.name,
         amount: occurrence.amount === null ? null : Math.abs(occurrence.amount),
         amountComplete: occurrence.amount !== null,
+        amountEstimated: occurrence.estimated,
+        estimateStatus: occurrence.estimateStatus,
         frequency: st.frequency,
         nextDueDate: occurrence.dueDate,
         categoryName: st.category?.name || null,

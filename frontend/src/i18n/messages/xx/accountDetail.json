@@ -44,6 +44,8 @@
     "missingRatePair": "[XX-{name}: no exchange rate is available for {from} to {to}, so the amount this occurrence will post is unknown.-XX]",
     "missingRate": "[XX-{name}: the exchange rate this occurrence settles at is not available, so the amount it will post is unknown.-XX]",
     "crossCurrencyTransfer": "[XX-{name}: a transfer arriving from an account in {from} while this account is in {to}. The amount that lands here is set when the transfer posts, so it cannot be projected in advance.-XX]",
+    "unknownEstimate": "[XX-{name}: the estimated amount cannot be worked out yet, because there are no payments to estimate it from. Enter this occurrence's amount, or record a payment.-XX]",
+    "unknownEstimatePair": "[XX-{name}: a payment the estimate reads is in {from}, and no exchange rate from {from} to {to} is available, so the estimated amount is unknown.-XX]",
     "howToFix": "[XX-To fix a missing rate: open Currencies and refresh the rates, or check that the security and its settlement account carry the currencies you expect.-XX]"
   }
 }

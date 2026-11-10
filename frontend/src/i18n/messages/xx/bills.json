@@ -55,7 +55,10 @@
     "legendAriaLabel": "[XX-Forecast lines-XX]",
     "tooltipTransactionForAccount": "[XX-{name} ({account})-XX]",
     "unavailableMissingRates": "[XX-This forecast cannot be shown in {displayCurrency}: no exchange rate is available for {currencies}, and a projected balance builds on every day before it. Add a rate, or pick a single-currency account.-XX]",
-    "untitledTransaction": "[XX-Transaction-XX]"
+    "untitledTransaction": "[XX-Transaction-XX]",
+    "tooltipEstimated": "[XX-(estimated)-XX]",
+    "unavailableUnknownEstimates": "[XX-This forecast cannot be shown yet: the estimated amount of a bill in it is unknown, and a projected balance builds on every day before it. Enter that occurrence's amount, or turn off Estimate on the bill.-XX]",
+    "unknownEstimateItem": "[XX-{name}: {reason}-XX]"
   },
   "calendar": {
     "days": {

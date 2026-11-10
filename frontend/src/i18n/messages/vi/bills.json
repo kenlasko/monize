@@ -55,7 +55,10 @@
     "legendAriaLabel": "Các đường dự báo",
     "tooltipTransactionForAccount": "{name} ({account})",
     "unavailableMissingRates": "Không thể hiển thị dự báo này bằng {displayCurrency}: không có tỷ giá cho {currencies}, và số dư dự phóng dựa trên mọi ngày trước đó. Hãy thêm tỷ giá, hoặc chọn một tài khoản chỉ dùng một loại tiền tệ.",
-    "untitledTransaction": "Giao tác"
+    "untitledTransaction": "Giao tác",
+    "tooltipEstimated": "(ước tính)",
+    "unavailableUnknownEstimates": "Chưa thể hiển thị dự báo này: số tiền ước tính của một hóa đơn trong đó chưa biết, và số dư dự kiến được xây dựng trên mọi ngày trước đó. Hãy nhập số tiền của lần đó, hoặc tắt Ước tính trên hóa đơn.",
+    "unknownEstimateItem": "{name}: {reason}"
   },
   "calendar": {
     "days": {

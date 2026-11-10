@@ -110,7 +110,8 @@
     "viewCalendar": "[XX-Calendar-XX]",
     "previousMonth": "[XX-Previous month-XX]",
     "nextMonth": "[XX-Next month-XX]",
-    "emptyAll": "[XX-No active bills, deposits, or transfers scheduled.-XX]"
+    "emptyAll": "[XX-No active bills, deposits, or transfers scheduled.-XX]",
+    "estimated": "[XX-Estimated-XX]"
   },
   "cashFlowForecast": {
     "title": "[XX-Cash Flow Forecast-XX]",

@@ -7,6 +7,7 @@ import { ScheduledTransaction } from "../scheduled-transactions/entities/schedul
 import { ScheduledTransactionOverride } from "../scheduled-transactions/entities/scheduled-transaction-override.entity";
 import { ScheduledEffectiveAmountService } from "../scheduled-transactions/scheduled-effective-amount.service";
 import { ScheduledOccurrenceService } from "../scheduled-transactions/scheduled-occurrence.service";
+import { ScheduledAmountEstimateService } from "../scheduled-transactions/scheduled-amount-estimate.service";
 import { ScheduledTransactionLoanService } from "../scheduled-transactions/scheduled-transaction-loan.service";
 import { InvestmentTransactionsService } from "../securities/investment-transactions.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
@@ -31,6 +32,7 @@ jest.mock("../common/date-utils", () => ({
 
 describe("BalanceForecastService", () => {
   let service: BalanceForecastService;
+  let module: TestingModule;
   let effectiveAmounts: ScheduledEffectiveAmountService;
   let accountsRepo: { findOne: jest.Mock };
   let scheduledRepo: { find: jest.Mock };
@@ -61,13 +63,22 @@ describe("BalanceForecastService", () => {
       { from: "CAD", to: "CAD" },
     );
 
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         BalanceForecastService,
         // Both read-side services are real, over a stubbed FX source: the dates,
         // the amounts and the account each occurrence is charged to ARE their
         // output, so a double would test nothing (issue #1247).
         ScheduledOccurrenceService,
+        // No estimated schedule unless a test says so (issue #2096); the
+        // estimate's own arithmetic is `amount-estimate.spec.ts`'s.
+        {
+          provide: ScheduledAmountEstimateService,
+          useValue: {
+            estimateMany: jest.fn().mockResolvedValue(new Map()),
+            estimateFor: jest.fn(),
+          },
+        },
         // No loan bill here: the per-occurrence loan pricing is
         // `scheduled-occurrence.service.spec.ts`'s.
         {
@@ -350,6 +361,58 @@ describe("BalanceForecastService", () => {
         fromCurrency: "USD",
         toCurrency: "CAD",
       });
+    });
+
+    it("reports an unknown estimate as one, not as a missing settlement rate (issue #2096)", async () => {
+      accountsRepo.findOne.mockResolvedValue(chequing);
+      stubBalances("1000");
+      scheduledRepo.find.mockResolvedValue([
+        {
+          id: "st-heat",
+          name: "Heating",
+          accountId: "acc-1",
+          transferAccountId: null,
+          amount: -999,
+          currencyCode: "CAD",
+          frequency: "MONTHLY",
+          nextDueDate: "2024-07-20",
+          isActive: true,
+          isSplit: false,
+          isTransfer: false,
+          isInvestment: false,
+          payeeId: "payee-1",
+          categoryId: "cat-1",
+          amountIsEstimated: true,
+          splits: [],
+        },
+      ]);
+      const estimates = module.get(ScheduledAmountEstimateService);
+      (estimates.estimateMany as jest.Mock).mockResolvedValue(
+        new Map([
+          [
+            "st-heat",
+            {
+              status: "missing-rate",
+              currencyCode: "CAD",
+              profile: null,
+              missingPair: { from: "EUR", to: "CAD" },
+            },
+          ],
+        ]),
+      );
+
+      const result = await service.getBalanceForecast("user-1", "acc-1", 60);
+
+      expect(result.complete).toBe(false);
+      expect(result.gaps).toEqual([
+        {
+          scheduledTransactionId: "st-heat",
+          name: "Heating",
+          reason: "unknownEstimate",
+          fromCurrency: "EUR",
+          toCurrency: "CAD",
+        },
+      ]);
     });
 
     it("withholds a transfer arriving from an account in another currency", async () => {

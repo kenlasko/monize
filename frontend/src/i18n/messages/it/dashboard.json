@@ -110,7 +110,8 @@
     "viewCalendar": "Calendario",
     "previousMonth": "Mese precedente",
     "nextMonth": "Mese successivo",
-    "emptyAll": "Nessuna bolletta, entrata o trasferimento attivo pianificato."
+    "emptyAll": "Nessuna bolletta, entrata o trasferimento attivo pianificato.",
+    "estimated": "Stimato"
   },
   "cashFlowForecast": {
     "title": "Previsione flusso di cassa",

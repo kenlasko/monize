@@ -63,7 +63,8 @@
       "skipFailed": "Échec de l'omission de l'occurrence",
       "deleteFailed": "Échec de la suppression"
     },
-    "foreignAmountTitle": "Le montant facturé par le bénéficiaire, dans sa propre devise"
+    "foreignAmountTitle": "Le montant facturé par le bénéficiaire, dans sa propre devise",
+    "estimatedLabel": "Estimé"
   },
   "filters": {
     "label": "Filtres",
@@ -113,7 +114,8 @@
       "totalAmountRequired": "Le montant total est requis",
       "splitsMinimum": "Les transactions réparties nécessitent au moins 2 répartitions",
       "splitsTotal": "Le total des répartitions doit être égal au montant de la transaction",
-      "fxRateUnavailable": "Aucun taux de change n'est disponible de {from} vers {to} à cette date."
+      "fxRateUnavailable": "Aucun taux de change n'est disponible de {from} vers {to} à cette date.",
+      "estimateUnknown": "Le montant estimé de cette occurrence est inconnu. Saisissez le montant pour l'enregistrer."
     },
     "latestPlaceholder": "Dernier : {price}",
     "descriptionPlaceholder": "Description…",
@@ -126,7 +128,8 @@
       "noRateWarning": "Aucun taux de change trouvé de {from} vers {to} le {date}. Choisissez une autre date ou actualisez les taux.",
       "feeCaption": "Comprend des frais de transaction à l'étranger de {percent}% ({fee}).",
       "totalInCurrency": "Total en {currency}"
-    }
+    },
+    "estimatedHint": "Ce montant est une estimation ; remplacez-le par ce que vous avez réellement payé. {detail}"
   },
   "occurrencePicker": {
     "title": "Sélectionner la date d'occurrence",
@@ -137,7 +140,9 @@
     "amountChange": "Montant : {amount}",
     "categoryChange": "Catégorie : {category}",
     "noteChange": "Note : {note}",
-    "splitModified": "Répartition modifiée"
+    "splitModified": "Répartition modifiée",
+    "estimatedAmount": "Estimé : {amount}",
+    "estimateUnknown": "Estimation inconnue"
   },
   "loanOccurrence": {
     "loading": "Calcul du paiement de chaque échéance.",
@@ -197,7 +202,9 @@
       "quantityRequired": "La quantité doit être supérieure à zéro",
       "priceRequired": "Le prix doit être supérieur à zéro",
       "totalAmountRequired": "Le montant total est requis"
-    }
+    },
+    "estimatedHint": "Ce montant est l'estimation de cette occurrence. Laissez-le tel quel et l'occurrence continuera de suivre l'estimation à mesure que de nouveaux paiements arrivent. {detail}",
+    "keepEstimate": "Garder ce montant, même si de nouveaux paiements modifient l'estimation"
   },
   "form": {
     "tabs": {
@@ -302,14 +309,20 @@
       "quantityRequired": "La quantité doit être supérieure à zéro",
       "priceRequired": "Le prix doit être supérieur à zéro",
       "totalAmountRequired": "Le montant total est requis pour cette action",
-      "fxRateRequired": "Saisissez un montant dans la devise choisie avant d'enregistrer. Aucun taux de change n'est encore disponible."
+      "fxRateRequired": "Saisissez un montant dans la devise choisie avant d'enregistrer. Aucun taux de change n'est encore disponible.",
+      "estimateNeedsPayeeAndCategory": "Choisissez un bénéficiaire et une catégorie à partir desquels estimer le montant."
     },
     "fx": {
       "amountInCurrency": "Montant en {currency}",
       "estimateCaption": "Environ {total} au taux 1 {from} = {rate} {to}.",
       "noRateWarning": "Aucun taux de change trouvé de {from} vers {to}. Choisissez une autre devise ou saisissez le montant en {to}.",
       "feeCaption": "Comprend des frais de transaction à l'étranger de {percent}% ({fee})."
-    }
+    },
+    "estimateLabel": "Estimer",
+    "estimateTooltip": "Calculer le montant de chaque occurrence à partir des paiements des 24 derniers mois à ce bénéficiaire dans cette catégorie, mois par mois, afin qu'une facture qui coûte plus certains mois soit prévue ainsi. Vous pouvez toujours modifier chaque occurrence, et vous confirmez le montant lors de l'enregistrement.",
+    "estimateDelegateDisabled": "Seul le propriétaire peut activer ou désactiver l'estimation : elle lit les paiements de tous les comptes du propriétaire.",
+    "estimatedAmountNote": "Calculé automatiquement à partir de l'historique des paiements. {detail}",
+    "autoPostDisabledEstimate": "Un montant estimé est confirmé lors de l'enregistrement, il n'est donc pas enregistré automatiquement."
   },
   "postTransaction": {
     "minSplits": "Les transactions réparties nécessitent au moins 2 répartitions",
@@ -333,5 +346,16 @@
   "validation": {
     "nameRequired": "Le nom est requis",
     "dueDateRequired": "La date d'échéance est requise"
+  },
+  "estimate": {
+    "thePayee": "ce bénéficiaire",
+    "theCategory": "cette catégorie",
+    "basis": "Estimé à partir de {count, plural, one {# paiement} other {# paiements}}, le dernier le {date}.",
+    "basisWithGrowth": "Estimé à partir de {count, plural, one {# paiement} other {# paiements}}, le dernier le {date}, avec une variation de {growth} d'une année sur l'autre.",
+    "basisWithheld": "Estimé à partir de l'historique des paiements du bénéficiaire et de la catégorie.",
+    "noHistory": "Aucun paiement à {payee} dans {category} au cours des {months} derniers mois, le montant est donc inconnu. Saisissez le montant de chaque occurrence, ou enregistrez un paiement.",
+    "missingRate": "Aucun taux de change de {from} vers {to} pour convertir un paiement passé, le montant est donc inconnu. Ajoutez le taux sur la page Devises.",
+    "noBasis": "Choisissez un bénéficiaire et une catégorie pour estimer le montant à partir de leur historique de paiements.",
+    "pending": "Le montant est calculé à partir de l'historique des paiements du bénéficiaire et de la catégorie."
   }
 }

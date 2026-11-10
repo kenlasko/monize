@@ -63,7 +63,8 @@
       "skipFailed": "跳过本次发生失败",
       "deleteFailed": "删除失败"
     },
-    "foreignAmountTitle": "收款人收取的金额，以其自身货币计"
+    "foreignAmountTitle": "收款人收取的金额，以其自身货币计",
+    "estimatedLabel": "估算"
   },
   "filters": {
     "label": "筛选",
@@ -113,7 +114,8 @@
       "totalAmountRequired": "总金额为必填项",
       "splitsMinimum": "拆分交易至少需要 2 个拆分项",
       "splitsTotal": "拆分金额之和必须等于交易金额",
-      "fxRateUnavailable": "该日期没有从 {from} 到 {to} 的可用汇率。"
+      "fxRateUnavailable": "该日期没有从 {from} 到 {to} 的可用汇率。",
+      "estimateUnknown": "此次发生的估算金额未知。请输入金额后再入账。"
     },
     "latestPlaceholder": "最新：{price}",
     "descriptionPlaceholder": "描述...",
@@ -126,7 +128,8 @@
       "noRateWarning": "未找到 {date} 从 {from} 到 {to} 的汇率。请选择其他日期，或刷新汇率。",
       "feeCaption": "包含 {percent}% 境外交易手续费（{fee}）。",
       "totalInCurrency": "以 {currency} 计的总额"
-    }
+    },
+    "estimatedHint": "此金额为估算值；请改为您实际支付的金额。{detail}"
   },
   "occurrencePicker": {
     "title": "选择发生日期",
@@ -137,7 +140,9 @@
     "amountChange": "金额：{amount}",
     "categoryChange": "分类：{category}",
     "noteChange": "备注：{note}",
-    "splitModified": "拆分已修改"
+    "splitModified": "拆分已修改",
+    "estimatedAmount": "估算：{amount}",
+    "estimateUnknown": "估算未知"
   },
   "loanOccurrence": {
     "loading": "正在计算每期的还款额。",
@@ -197,7 +202,9 @@
       "quantityRequired": "数量必须大于零",
       "priceRequired": "价格必须大于零",
       "totalAmountRequired": "总金额为必填项"
-    }
+    },
+    "estimatedHint": "此金额是这次发生的估算值。保持不变，这次发生会随着新付款继续沿用估算。{detail}",
+    "keepEstimate": "保留此金额，即使新付款改变了估算"
   },
   "form": {
     "tabs": {
@@ -302,14 +309,20 @@
       "quantityRequired": "数量必须大于零",
       "priceRequired": "价格必须大于零",
       "totalAmountRequired": "此操作需要填写总金额",
-      "fxRateRequired": "保存前请以所选货币输入金额。目前还没有可用的汇率。"
+      "fxRateRequired": "保存前请以所选货币输入金额。目前还没有可用的汇率。",
+      "estimateNeedsPayeeAndCategory": "请选择收款方和类别以估算金额。"
     },
     "fx": {
       "amountInCurrency": "以 {currency} 计的金额",
       "estimateCaption": "约 {total}，按 1 {from} = {rate} {to} 计。",
       "noRateWarning": "未找到从 {from} 到 {to} 的汇率。请选择其他货币，或以 {to} 输入金额。",
       "feeCaption": "包含 {percent}% 境外交易手续费（{fee}）。"
-    }
+    },
+    "estimateLabel": "估算",
+    "estimateTooltip": "根据过去 24 个月在此类别下向此收款方的付款，逐月计算每次发生的金额，使某些月份花费更多的账单按此预测。您仍可修改任意一次发生，并在入账时确认金额。",
+    "estimateDelegateDisabled": "只有所有者可以开启或关闭估算：估算会读取所有者所有账户中的付款。",
+    "estimatedAmountNote": "根据付款记录自动计算。{detail}",
+    "autoPostDisabledEstimate": "估算金额需在入账时确认，因此不会自动入账。"
   },
   "postTransaction": {
     "minSplits": "拆分交易至少需要 2 个拆分项",
@@ -333,5 +346,16 @@
   "validation": {
     "nameRequired": "名称为必填项",
     "dueDateRequired": "到期日为必填项"
+  },
+  "estimate": {
+    "thePayee": "此收款方",
+    "theCategory": "此类别",
+    "basis": "根据 {count, plural, other {# 笔付款}}估算，最近一笔在 {date}。",
+    "basisWithGrowth": "根据 {count, plural, other {# 笔付款}}估算，最近一笔在 {date}，并计入 {growth} 的同比变化。",
+    "basisWithheld": "根据收款方和类别的付款记录估算。",
+    "noHistory": "过去 {months} 个月内在 {category} 下没有向 {payee} 的付款，因此金额未知。请输入每次发生的金额，或记录一笔付款。",
+    "missingRate": "没有从 {from} 到 {to} 的汇率来换算以往的付款，因此金额未知。请在“货币”页面添加汇率。",
+    "noBasis": "请选择收款方和类别，以根据其付款记录估算金额。",
+    "pending": "金额根据收款方和类别的付款记录计算。"
   }
 }

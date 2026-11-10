@@ -600,7 +600,12 @@
     "overrideNotFound": "Overschrijving met ID {{ overrideId }} niet gevonden",
     "updateSplitOverrideRequiresAmount": "Bedrag is vereist voor splitsingsoverschrijving",
     "dateMustBeYMD": "datum moet in JJJJ-MM-DD-formaat zijn",
-    "loanLedgerUnreadable": "Deze leningbetaling kon niet worden berekend omdat het grootboeksaldo niet kon worden gelezen. Probeer het opnieuw."
+    "loanLedgerUnreadable": "Deze leningbetaling kon niet worden berekend omdat het grootboeksaldo niet kon worden gelezen. Probeer het opnieuw.",
+    "estimateRequiresPlain": "Een geschat bedrag is alleen beschikbaar voor een transactie met één categorie in de valuta van de rekening, niet voor een splitsing, een overboeking, een belegging of een bedrag in vreemde valuta",
+    "estimateNoAutoPost": "Een geplande transactie met een geschat bedrag kan niet automatisch worden geboekt",
+    "estimateRequiresPayeeAndCategory": "Een geschat bedrag heeft een begunstigde en een categorie nodig om de betalingsgeschiedenis op te matchen",
+    "estimateUnknown": "Het geschatte bedrag van deze keer is onbekend. Voer het bedrag in om het te boeken.",
+    "estimateBasisOwnerOnly": "Alleen de eigenaar kan de begunstigde of categorie wijzigen van een rekening met een geschat bedrag"
   },
   "bonds": {
     "securityNotLinked": "Effect {{ securityId }} niet gevonden of niet gekoppeld aan een obligatieprogramma",
