@@ -33,8 +33,40 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "Показати: {name}",
+    "cycleControls": "Виберіть, що показує головний блок",
     "cagrUnavailable": "Для CAGR потрібна щонайменше річна історія інвестицій на цих рахунках і поповнення більші за зняття.",
     "intradayUnavailable": "Для деяких позицій немає внутрішньоденних цін, тож денний графік побудувати не можна. Виберіть довший період у налаштуваннях."
+  },
+  "trivia": {
+    "title": "Цікавинки",
+    "position": "{index} із {total}",
+    "previous": "Попередня цікавинка",
+    "next": "Наступна цікавинка",
+    "empty": "Цікавинки з’являться тут, коли назбирається достатньо історії: два місяці чистих активів або інвестиції з ціною. Список оновлюється щоранку.",
+    "off": "Цікавинки від AI вимкнено. Увімкніть їх у розділі <link>Налаштування AI</link>.",
+    "topics": {
+      "netWorth": "Чисті активи",
+      "investments": "Інвестиції"
+    },
+    "aiGenerated": "Текст створено ШІ на основі ваших даних",
+    "facts": {
+      "netWorthSinceStart": "У {startMonth} ваші чисті активи становили {startAmount}. Відтоді вони зросли на {startGain}, тобто приблизно у {startMultiple} раза.",
+      "netWorthBiggestJump": "{jumpMonth} став вашим найбільшим стрибком за один місяць. Чисті активи зросли на {jumpAmount}: з {jumpFrom} у {jumpPreviousMonth} до {jumpTo}.",
+      "netWorthHighPoint": "Ваш пік становив {peakAmount} у {peakMonth}. Зараз ви на {peakBelow} нижче.",
+      "netWorthAtHighPoint": "Ви на піку: чисті активи ніколи не були вищими за {currentHigh}.",
+      "netWorthBiggestDip": "Ваше найбільше падіння знизило чисті активи з {dipFromAmount} у {dipFromMonth} до {dipToAmount} у {dipToMonth}, тобто на {dipPercent}.",
+      "netWorthBiggestDipRecovered": "Ваше найбільше падіння знизило чисті активи з {dipFromAmount} у {dipFromMonth} до {dipToAmount} у {dipToMonth}. До {dipRecoveredMonth} ви відновилися.",
+      "netWorthLargestAsset": "{assetName} коштує {assetValue}, це {assetPercent} ваших активів.",
+      "investmentsShareOfAssets": "Ваші інвестиції коштують {investmentsValue}, це {investmentsPercent} ваших активів.",
+      "investmentsGain": "Ваші інвестиції зросли на {gainAmount} ({gainPercent}) відносно базової вартості {gainCostBasis}.",
+      "investmentsLoss": "Ваші інвестиції впали на {gainAmount} ({gainPercent}) відносно базової вартості {gainCostBasis}.",
+      "investmentsCagr": "Річна дохідність ваших інвестицій становить близько {cagrPercent} (CAGR).",
+      "investmentsBiggestHolding": "Ваша найбільша позиція: {holdingSymbol}, приблизно {holdingPercent} портфеля ({holdingValue} у {holdingAccounts}).",
+      "investmentsBestPerformer": "Найкращий результат у {bestSymbol}: зростання на {bestPercent}. Купівля коштувала {bestCost}, зараз це {bestValue}.",
+      "investmentsForeignAccount": "Ваш рахунок {foreignName} ведеться у валюті {foreignCurrency}. Активи на {foreignBalance} за курсом близько {foreignRate} дорівнюють {foreignConverted}.",
+      "investmentsLargestAccount": "Ваш найбільший інвестиційний рахунок: {largestName}, {largestValue}."
+    }
   },
   "favouriteAccounts": {
     "title": "Обрані рахунки",
@@ -216,11 +248,12 @@
     },
     "hero": {
       "title": "Шапка панелі",
-      "description": "Показники й графік під привітанням: ваші чисті активи або портфель.",
+      "description": "Перші цифри та графік під привітанням: ваші чисті активи, ваш портфель або «Авто», яке щохвилини перемикає їх.",
       "show": "Показувати шапку панелі",
       "range": "Графік",
       "set": "Показувати",
       "sets": {
+        "auto": "Авто",
         "netWorth": "Чисті активи",
         "portfolio": "Вартість портфеля"
       },

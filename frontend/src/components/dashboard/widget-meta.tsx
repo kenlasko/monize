@@ -3,6 +3,7 @@
 import type { ComponentType, ReactNode, SVGProps } from 'react';
 import Link from 'next/link';
 import {
+  AcademicCapIcon,
   ArrowPathIcon,
   ArrowsRightLeftIcon,
   ArrowTrendingUpIcon,
@@ -55,6 +56,7 @@ export const WIDGET_ICONS: Record<DashboardWidgetId, WidgetIconComponent> = {
   'income-expenses': ArrowsUpDownIcon,
   'budget-status': ClipboardDocumentCheckIcon,
   insights: LightBulbIcon,
+  trivia: AcademicCapIcon,
   'favourite-reports': BookmarkIcon,
   'spending-by-payee': UsersIcon,
   'monthly-spending-trend': ChartBarIcon,
@@ -103,6 +105,7 @@ export const WIDGET_DOMAINS: Record<DashboardWidgetId, WidgetDomain> = {
   'income-by-source': 'insights',
   'weekend-weekday': 'insights',
   'cash-flow-sankey': 'insights',
+  trivia: 'insights',
 };
 
 /**

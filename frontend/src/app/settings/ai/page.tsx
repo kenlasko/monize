@@ -10,6 +10,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { ProviderList } from '@/components/settings/ai/ProviderList';
 import { UsageDashboard } from '@/components/settings/ai/UsageDashboard';
 import { AiBubbleToggle } from '@/components/settings/ai/AiBubbleToggle';
+import { AiTriviaToggle } from '@/components/settings/ai/AiTriviaToggle';
 import { aiApi } from '@/lib/ai';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { getErrorMessage } from '@/lib/errors';
@@ -103,11 +104,6 @@ function AiSettingsContent() {
           </div>
         )}
 
-        <AiBubbleToggle
-          disabled={isDemoMode}
-          aiConfigured={status?.configured ?? false}
-        />
-
         <div {...tourAnchor(TOUR_ANCHORS.aiProviderList)}>
           <ProviderList
             configs={configs}
@@ -119,6 +115,13 @@ function AiSettingsContent() {
             disabled={isDemoMode}
           />
         </div>
+
+        <AiBubbleToggle
+          disabled={isDemoMode}
+          aiConfigured={status?.configured ?? false}
+        />
+
+        <AiTriviaToggle disabled={isDemoMode} />
 
         {usage && (
           <UsageDashboard

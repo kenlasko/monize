@@ -99,6 +99,7 @@ export const RULES: Record<string, TableRules> = {
     default_quote_provider: keep,
     recent_transactions_limit: keep,
     ai_bubble_enabled: keep,
+    ai_trivia_enabled: keep,
     lock_reconciled_transactions: keep,
     payee_contact_lookup_enabled: keep,
     language: keep,

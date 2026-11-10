@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useMemo, useState } from 'react';
+import { createContext, type ReactNode, useContext, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/20/solid';
@@ -8,10 +8,7 @@ import { chartColors } from '@/lib/chart-colors';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useIsBelowDesktop } from '@/hooks/useIsMobile';
-import {
-  CollapsingTitleContext,
-  useCollapsingHeaderTitle,
-} from '@/hooks/useCollapsingHeaderTitle';
+import { useCollapsingHeaderTitle } from '@/hooks/useCollapsingHeaderTitle';
 import type { CollapsedHeaderTitle } from '@/store/mobileChromeStore';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 import { ChartAreaGradient } from '@/components/ui/ChartAreaGradient';
@@ -24,14 +21,21 @@ import {
 
 /**
  * The pieces both dashboard hero sets are drawn from, so net worth and the
- * portfolio read as one surface: the layout that seats the page header above
- * the figures with the chart beside them, its loading state, the area chart
- * with its dismissable high/low bubbles, and the figure pill.
+ * portfolio read as one surface: the layout of the figures with the chart
+ * beside them, its loading state, the area chart with its dismissable high/low
+ * bubbles, and the figure pill. The greeting above them is `DashboardHero`'s,
+ * so it stays still while the sets slide.
  */
 
 // Below `lg` the figures stack above the chart, so `gap-y-1` and the chart's
 // reduced top margin (`HeroAreaChart`) keep that seam tight.
-const LAYOUT_CLASS = 'mb-6 flex flex-col lg:flex-row gap-x-10 gap-y-1 lg:gap-y-4 lg:items-start';
+// Beside the chart, the figures take the width they need, never less than the
+// greeting row above them, and the chart takes the rest, rising past that row
+// to the top of the hero. `DashboardHero` measures the row into the variables.
+const FIGURES_COLUMN_CLASS = 'lg:flex-shrink-0 lg:min-w-[var(--hero-figures-min,0px)]';
+const CHART_COLUMN_CLASS = 'h-48 w-full lg:flex-1 lg:min-w-0 lg:-mt-[var(--hero-head-h,0px)]';
+
+const LAYOUT_CLASS = 'flex flex-col lg:flex-row gap-x-10 gap-y-1 lg:gap-y-4 lg:items-start';
 
 // The high/low bubbles sit beside their dot and are 22px tall, so they rise 11px
 // above a point at the top of the plot; stacked, the margin only has to clear that.
@@ -39,24 +43,17 @@ const CHART_TOP_MARGIN_STACKED = 12;
 const CHART_TOP_MARGIN_BESIDE = 36;
 
 /**
- * The page header, tucked close to the figures under it. Beside the figures the
- * headline is what collapses into the app header, so the greeting does not.
+ * Whether the set around a component is the one on screen. The other set stays
+ * mounted beside it on the hero's track, and only the one showing may hand its
+ * headline to the app header.
  */
-function HeaderBlock({ header }: { header: ReactNode }) {
-  return (
-    <CollapsingTitleContext.Provider value={false}>
-      <div className="-mb-3">{header}</div>
-    </CollapsingTitleContext.Provider>
-  );
-}
+export const HeroPanelActiveContext = createContext(true);
 
 export function HeroLayout({
-  header,
   label,
   figures,
   chart,
 }: {
-  header: ReactNode;
   /** The section's accessible name. */
   label: string;
   figures: ReactNode;
@@ -64,29 +61,25 @@ export function HeroLayout({
 }) {
   return (
     <section aria-label={label} data-testid="dashboard-hero" className={LAYOUT_CLASS}>
-      <div className="flex flex-col gap-2 lg:flex-shrink-0">
-        <HeaderBlock header={header} />
-        {figures}
-      </div>
-      <div className="h-48 w-full lg:flex-1 lg:min-w-0" data-testid="dashboard-hero-chart">
+      <div className={`flex flex-col gap-2 ${FIGURES_COLUMN_CLASS}`}>{figures}</div>
+      <div className={CHART_COLUMN_CLASS} data-testid="dashboard-hero-chart">
         {chart}
       </div>
     </section>
   );
 }
 
-export function HeroSkeleton({ header, label }: { header: ReactNode; label: string }) {
+export function HeroSkeleton({ label }: { label: string }) {
   return (
     <section aria-busy="true" aria-label={label} className={LAYOUT_CLASS}>
-      <div className="flex flex-col lg:flex-shrink-0">
-        <HeaderBlock header={header} />
+      <div className={FIGURES_COLUMN_CLASS}>
         <div className="animate-pulse skeleton-shimmer space-y-3 w-full max-w-md">
           <div className="h-3 w-24 rounded bg-gray-200 dark:bg-gray-700" />
           <div className="h-12 w-72 rounded bg-gray-200 dark:bg-gray-700" />
           <div className="h-4 w-80 rounded bg-gray-200 dark:bg-gray-700" />
         </div>
       </div>
-      <div className="animate-pulse skeleton-shimmer h-48 w-full lg:flex-1 lg:min-w-0 rounded-lg bg-gray-200/60 dark:bg-gray-700/60" />
+      <div className={`animate-pulse skeleton-shimmer rounded-lg bg-gray-200/60 dark:bg-gray-700/60 ${CHART_COLUMN_CLASS}`} />
     </section>
   );
 }
@@ -116,14 +109,9 @@ export function HeroChartSkeleton() {
   );
 }
 
-/** The header alone with one line under it: a failed load, an empty scope. */
-export function HeroMessage({ header, children }: { header: ReactNode; children: ReactNode }) {
-  return (
-    <>
-      {header}
-      <p className="-mt-3 mb-6 text-sm text-gray-500 dark:text-gray-400">{children}</p>
-    </>
-  );
+/** One line in the set's place: a failed load, an empty scope. */
+export function HeroMessage({ children }: { children: ReactNode }) {
+  return <p className="text-sm text-gray-500 dark:text-gray-400">{children}</p>;
 }
 
 /** The small caps caption over the headline figure. */
@@ -145,7 +133,8 @@ export function HeroHeadline({
   collapsed: CollapsedHeaderTitle;
   children: ReactNode;
 }) {
-  const ref = useCollapsingHeaderTitle<HTMLDivElement>(collapsed);
+  const active = useContext(HeroPanelActiveContext);
+  const ref = useCollapsingHeaderTitle<HTMLDivElement>(active ? collapsed : null);
   return (
     <div
       ref={ref}

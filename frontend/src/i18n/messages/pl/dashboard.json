@@ -33,8 +33,40 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "Pokaż: {name}",
+    "cycleControls": "Wybierz, co pokazuje sekcja główna",
     "cagrUnavailable": "CAGR wymaga co najmniej roku historii inwestycji na tych kontach, z wpłatami większymi niż wypłaty.",
     "intradayUnavailable": "Część pozycji nie ma cen śróddziennych, więc nie można narysować wykresu jednodniowego. Wybierz dłuższy okres w Dostosuj."
+  },
+  "trivia": {
+    "title": "Ciekawostki",
+    "position": "{index} z {total}",
+    "previous": "Poprzednia ciekawostka",
+    "next": "Następna ciekawostka",
+    "empty": "Ciekawostki pojawią się tutaj, gdy będzie wystarczająco dużo historii: dwa miesiące wartości netto lub inwestycje z wyceną. Lista jest odbudowywana każdego ranka.",
+    "off": "Ciekawostki AI są wyłączone. Włącz je w sekcji <link>Ustawienia AI</link>.",
+    "topics": {
+      "netWorth": "Wartość netto",
+      "investments": "Inwestycje"
+    },
+    "aiGenerated": "Napisane przez AI na podstawie Twoich danych",
+    "facts": {
+      "netWorthSinceStart": "Twoja wartość netto wynosiła {startAmount} w {startMonth}. Od tego czasu wzrosła o {startGain}, czyli jest około {startMultiple} razy większa.",
+      "netWorthBiggestJump": "{jumpMonth} to Twój największy skok w ciągu jednego miesiąca. Wartość netto wzrosła o {jumpAmount}, z {jumpFrom} w {jumpPreviousMonth} do {jumpTo}.",
+      "netWorthHighPoint": "Twój szczyt to {peakAmount} w {peakMonth}. Teraz jesteś {peakBelow} poniżej.",
+      "netWorthAtHighPoint": "Jesteś na szczycie: wartość netto nigdy nie była wyższa niż {currentHigh}.",
+      "netWorthBiggestDip": "Twój największy spadek obniżył wartość netto z {dipFromAmount} w {dipFromMonth} do {dipToAmount} w {dipToMonth}, czyli o {dipPercent}.",
+      "netWorthBiggestDipRecovered": "Twój największy spadek obniżył wartość netto z {dipFromAmount} w {dipFromMonth} do {dipToAmount} w {dipToMonth}. W {dipRecoveredMonth} wszystko się odbudowało.",
+      "netWorthLargestAsset": "{assetName} jest warte {assetValue}, czyli {assetPercent} Twoich aktywów.",
+      "investmentsShareOfAssets": "Twoje inwestycje są warte {investmentsValue}, czyli {investmentsPercent} Twoich aktywów.",
+      "investmentsGain": "Twoje inwestycje zyskały {gainAmount} ({gainPercent}) względem kosztu bazowego {gainCostBasis}.",
+      "investmentsLoss": "Twoje inwestycje są na minusie o {gainAmount} ({gainPercent}) względem kosztu bazowego {gainCostBasis}.",
+      "investmentsCagr": "Roczna stopa zwrotu z Twoich inwestycji wynosi około {cagrPercent} (CAGR).",
+      "investmentsBiggestHolding": "Twoja największa pozycja to {holdingSymbol}, około {holdingPercent} portfela ({holdingValue} w {holdingAccounts}).",
+      "investmentsBestPerformer": "Twój najlepszy wynik ma {bestSymbol}, z zyskiem {bestPercent}. Kosztowało {bestCost}, a teraz jest warte {bestValue}.",
+      "investmentsForeignAccount": "Twoje konto {foreignName} jest prowadzone w walucie {foreignCurrency}. Jego aktywa o wartości {foreignBalance} odpowiadają {foreignConverted} przy kursie około {foreignRate}.",
+      "investmentsLargestAccount": "Twoje największe konto inwestycyjne to {largestName} z kwotą {largestValue}."
+    }
   },
   "favouriteAccounts": {
     "title": "Ulubione konta",
@@ -216,11 +248,12 @@
     },
     "hero": {
       "title": "Nagłówek pulpitu",
-      "description": "Liczby i wykres pod powitaniem: Twoja wartość netto lub portfel.",
+      "description": "Pierwsze liczby i wykres pod powitaniem: Twoja wartość netto, Twój portfel lub Auto, które co minutę przełącza je między sobą.",
       "show": "Pokaż nagłówek pulpitu",
       "range": "Wykres",
       "set": "Pokaż",
       "sets": {
+        "auto": "Auto",
         "netWorth": "Wartość netto",
         "portfolio": "Wartość portfela"
       },

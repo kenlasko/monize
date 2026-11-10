@@ -2,5 +2,10 @@
   "customize": {
     "button": "Customise",
     "title": "Customise dashboard"
+  },
+  "trivia": {
+    "facts": {
+      "investmentsCagr": "Your investments' annualised return is about {cagrPercent} (CAGR)."
+    }
   }
 }

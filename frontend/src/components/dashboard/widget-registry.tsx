@@ -51,6 +51,7 @@ const SecurityTypeAllocationWidget = dynamic(() => import('./SecurityTypeAllocat
 const GeographicAllocationWidget = dynamic(() => import('./GeographicAllocationWidget').then(m => m.GeographicAllocationWidget), { ssr: false, loading: widgetSkeleton() });
 const RecurringExpensesWidget = dynamic(() => import('./RecurringExpensesWidget').then(m => m.RecurringExpensesWidget), { ssr: false, loading: widgetSkeleton() });
 const CashFlowForecastWidget = dynamic(() => import('./CashFlowForecastWidget').then(m => m.CashFlowForecastWidget), { ssr: false, loading: widgetSkeleton() });
+const TriviaWidget = dynamic(() => import('./TriviaWidget').then(m => m.TriviaWidget), { ssr: false, loading: widgetSkeleton() });
 const WeekendVsWeekdayWidget = dynamic(() => import('./WeekendVsWeekdayWidget').then(m => m.WeekendVsWeekdayWidget), { ssr: false, loading: widgetSkeleton() });
 
 export type DashboardWidgetId =
@@ -78,7 +79,8 @@ export type DashboardWidgetId =
   | 'recurring-expenses'
   | 'weekend-weekday'
   | 'cash-flow-sankey'
-  | 'warranties-expiring';
+  | 'warranties-expiring'
+  | 'trivia';
 
 /** The kind of visualization a widget renders, shown as an icon in Customize. */
 export type WidgetIconType = 'bar' | 'line' | 'pie' | 'table' | 'list';
@@ -363,6 +365,15 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     defaultEnabled: false,
     delegateVisible: (sections) => !!sections?.warranties,
     render: (ctx) => <WarrantiesExpiringWidget isLoading={ctx.isLoading} />,
+  },
+  // Opt-in, as every widget added after the default layout was set. The
+  // backend builds the facts only for a layout that holds it.
+  {
+    id: 'trivia',
+    titleSection: 'trivia',
+    iconType: 'list',
+    defaultEnabled: false,
+    render: (ctx) => <TriviaWidget isLoading={ctx.isLoading} />,
   },
 ];
 

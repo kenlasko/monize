@@ -33,9 +33,9 @@ Many more widgets are available but hidden by default; see [Optional Widgets](#o
 
 ### Dashboard Hero
 
-Above the widgets, beside the greeting, the dashboard hero sums up where you stand. It shows one of two sets, chosen in [Customize](#customizing-your-dashboard).
+Above the widgets, under the greeting, the dashboard hero sums up where you stand. It has two sets, chosen in [Customize](#customizing-your-dashboard). On **Auto**, the default, it slides from one to the other every minute if you have investments, and otherwise stays on net worth. Choose **Net worth** or **Portfolio value** instead to keep it on one set. Whichever you choose, the two dots after the greeting's gear and help icons switch to the other set at any time; on Auto, that set then stays for a full minute.
 
-**Net worth** (the default):
+**Net worth**:
 
 - **Net worth** -- your net worth as of the current month, in your default currency
 - **Change this month** -- how far net worth has moved since the end of last month, as an amount and a percentage
@@ -69,8 +69,8 @@ Click the **Customize** gear beside the greeting to tailor which widgets appear 
 - **Show or hide widgets** -- click a widget's **X** to hide it, or add one back later
 - **Reorder widgets** -- drag a widget tile to a new position, or use the arrow buttons (the arrow buttons also work on a phone, where widgets stack in a single column)
 - **Add opt-in widgets** -- hidden widgets appear in a **Hidden widgets** tray beneath the layout; click one to add it to your dashboard
-- **Dashboard hero** -- the section at the top of the dialog switches the [hero](#dashboard-hero) on or off and picks its set. **Net worth** sets how far back its chart goes; **Portfolio value** sets the accounts it covers (all of them if you choose none), the timeframe, and the return shown beside the holdings and cash
-- **Reset to default** -- restore the standard layout at any time, with the hero on, showing net worth over one year
+- **Dashboard hero** -- the section at the top of the dialog switches the [hero](#dashboard-hero) on or off and picks **Auto** or one set. **Net worth** sets how far back its chart goes; **Portfolio value** sets the accounts it covers (all of them if you choose none), the timeframe, and the return shown beside the holdings and cash. **Auto** offers the settings of both
+- **Reset to default** -- restore the standard layout at any time, with the hero on Auto, over one year
 
 Click **Save** to apply your changes. At least one widget must stay on the dashboard. Your layout is saved to your account, so it **syncs across all your devices**.
 
@@ -108,6 +108,7 @@ The widgets below are hidden by default and can be added from the **Customize** 
 | [Weekend vs Weekday Spending](#weekend-vs-weekday-spending) | Spending split between weekends and weekdays | Always |
 | [Cash Flow Sankey](#cash-flow-sankey) | Where your income came from and where it went | Always |
 | Warranties expiring soon | Warranties that expire in the next 30 days (see [Warranties](warranties.md#dashboard-widget)) | Always |
+| [Trivia](#trivia) | Facts about your net worth and investments, one at a time | Always |
 
 > [!NOTE]
 > The investment widgets (Top Movers, Portfolio Value, Sector Allocation, Security Type Allocation, and Geographic Allocation) only appear when you have investment holdings, and Favourite Securities only when you have securities.
@@ -384,6 +385,12 @@ The Cash Flow Sankey widget (opt-in) is a flow diagram of the chosen period (def
 ![The Cash Flow Sankey widget](images/dashboard-cash-flow-sankey.png)
 
 ---
+
+## Trivia
+
+The **Trivia** widget points out something about your money, one fact at a time: your high point, your biggest single-month jump, your largest holding, your best performer. Each fact wears its topic's colour and picture, blue for **Net worth** and green for **Investments**, with its figures picked out in the sentence. It moves to the next fact every 12 seconds, pauses while you point at it, and the arrows below it step through by hand.
+
+The list is rebuilt each morning while the widget is on your dashboard, and a fact is only stated when every figure in it is fully known. If you have an [AI provider](ai.md) set up, it words the facts in your language, marked **Written by AI from your figures**; every figure still comes from your own data, and account and security names are not sent to the provider. Without one, or if it doesn't answer, Monize words them itself from the same calculations. A provider reached through the MCP relay is not used for this. To switch the facts off, use **AI trivia** in [AI Settings](ai.md#ai-trivia).
 
 ## Refreshing Data
 

@@ -33,8 +33,40 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "Mostra {name}",
+    "cycleControls": "Scegli cosa mostra l'area principale",
     "cagrUnavailable": "Il CAGR richiede almeno un anno di storico degli investimenti in questi conti, con più versamenti che prelievi.",
     "intradayUnavailable": "Alcune di queste posizioni non hanno prezzi intraday, quindi non si può tracciare un grafico di un giorno. Scegli un periodo più lungo in Personalizza."
+  },
+  "trivia": {
+    "title": "Curiosità",
+    "position": "{index} di {total}",
+    "previous": "Curiosità precedente",
+    "next": "Curiosità successiva",
+    "empty": "Le curiosità compaiono qui quando c'è abbastanza storico: due mesi di patrimonio netto o investimenti con un prezzo. L'elenco viene rigenerato ogni mattina.",
+    "off": "Le curiosità AI sono disattivate. Attivale in <link>Impostazioni AI</link>.",
+    "topics": {
+      "netWorth": "Patrimonio netto",
+      "investments": "Investimenti"
+    },
+    "aiGenerated": "Scritto dall'IA a partire dai tuoi dati",
+    "facts": {
+      "netWorthSinceStart": "Il tuo patrimonio netto era di {startAmount} a {startMonth}. Da allora è cresciuto di {startGain}, quindi è circa {startMultiple} volte più grande.",
+      "netWorthBiggestJump": "{jumpMonth} è stato il tuo maggiore salto in un solo mese. Il patrimonio netto è salito di {jumpAmount}, da {jumpFrom} a {jumpPreviousMonth} a {jumpTo}.",
+      "netWorthHighPoint": "Il tuo massimo è stato {peakAmount} a {peakMonth}. Ora sei {peakBelow} sotto.",
+      "netWorthAtHighPoint": "Sei al tuo massimo: il patrimonio netto non è mai stato superiore a {currentHigh}.",
+      "netWorthBiggestDip": "Il tuo calo maggiore ha portato il patrimonio netto da {dipFromAmount} a {dipFromMonth} a {dipToAmount} a {dipToMonth}, una discesa del {dipPercent}.",
+      "netWorthBiggestDipRecovered": "Il tuo calo maggiore ha portato il patrimonio netto da {dipFromAmount} a {dipFromMonth} a {dipToAmount} a {dipToMonth}. Ti eri ripreso entro {dipRecoveredMonth}.",
+      "netWorthLargestAsset": "{assetName} vale {assetValue}, ovvero il {assetPercent} delle tue attività.",
+      "investmentsShareOfAssets": "I tuoi investimenti valgono {investmentsValue}, pari al {investmentsPercent} delle tue attività.",
+      "investmentsGain": "I tuoi investimenti sono saliti di {gainAmount} ({gainPercent}) rispetto al costo base di {gainCostBasis}.",
+      "investmentsLoss": "I tuoi investimenti sono in calo di {gainAmount} ({gainPercent}) rispetto al costo base di {gainCostBasis}.",
+      "investmentsCagr": "Il rendimento annualizzato dei tuoi investimenti è di circa {cagrPercent} (CAGR).",
+      "investmentsBiggestHolding": "La tua posizione maggiore è {holdingSymbol}, con circa il {holdingPercent} del portafoglio ({holdingValue} in {holdingAccounts}).",
+      "investmentsBestPerformer": "Il tuo titolo migliore è {bestSymbol}, in rialzo del {bestPercent}. È costato {bestCost} e ora vale {bestValue}.",
+      "investmentsForeignAccount": "Il tuo conto {foreignName} è detenuto in {foreignCurrency}. I suoi {foreignBalance} di posizioni equivalgono a {foreignConverted} a un cambio di circa {foreignRate}.",
+      "investmentsLargestAccount": "Il tuo conto di investimento più grande è {largestName} con {largestValue}."
+    }
   },
   "favouriteAccounts": {
     "title": "Conti preferiti",
@@ -216,11 +248,12 @@
     },
     "hero": {
       "title": "Intestazione della dashboard",
-      "description": "Le cifre e il grafico sotto il saluto: il tuo patrimonio netto o il tuo portafoglio.",
+      "description": "Le cifre iniziali e il grafico sotto il saluto: il tuo patrimonio netto, il tuo portafoglio oppure Auto per alternare i due ogni minuto.",
       "show": "Mostra l’intestazione della dashboard",
       "range": "Grafico",
       "set": "Mostra",
       "sets": {
+        "auto": "Auto",
         "netWorth": "Patrimonio netto",
         "portfolio": "Valore del portafoglio"
       },

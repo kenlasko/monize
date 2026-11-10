@@ -73,6 +73,8 @@ export const JobClaimType = {
   /** Serializes setup and records hashed one-time SimpleFIN token attempts. */
   SimplefinSetup: "simplefin_setup",
   EmailReceiptPoll: "email_receipt_poll",
+  /** One user's dashboard trivia, claimed once per UTC day. */
+  DashboardTrivia: "dashboard_trivia",
   /**
    * One sender's parser draft, held across the provider call so a second poll
    * does not draft the same sender beside it (A26-S11-01).

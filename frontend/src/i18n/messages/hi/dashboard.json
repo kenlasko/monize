@@ -33,8 +33,40 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "{name} दिखाएँ",
+    "cycleControls": "चुनें कि हीरो क्या दिखाए",
     "cagrUnavailable": "CAGR के लिए इन खातों में कम से कम एक साल का निवेश इतिहास चाहिए, जिसमें निकाले गए से ज़्यादा जमा किया गया हो।",
     "intradayUnavailable": "इनमें से कुछ होल्डिंग के इंट्राडे मूल्य नहीं हैं, इसलिए एक दिन का चार्ट नहीं बन सकता। कस्टमाइज़ में लंबी अवधि चुनें।"
+  },
+  "trivia": {
+    "title": "रोचक तथ्य",
+    "position": "{total} में से {index}",
+    "previous": "पिछला तथ्य",
+    "next": "अगला तथ्य",
+    "empty": "पर्याप्त इतिहास होने पर तथ्य यहाँ दिखेंगे: दो महीने की कुल संपत्ति, या मूल्य वाले निवेश। सूची हर सुबह फिर से बनाई जाती है।",
+    "off": "AI रोचक तथ्य बंद हैं। इन्हें <link>AI सेटिंग</link> में चालू करें।",
+    "topics": {
+      "netWorth": "कुल संपत्ति",
+      "investments": "निवेश"
+    },
+    "aiGenerated": "आपके आँकड़ों से AI द्वारा लिखा गया",
+    "facts": {
+      "netWorthSinceStart": "{startMonth} में आपकी कुल संपत्ति {startAmount} थी। तब से यह {startGain} बढ़ी है, यानी लगभग {startMultiple} गुना बड़ी हो गई है।",
+      "netWorthBiggestJump": "{jumpMonth} आपकी सबसे बड़ी एक-महीने की छलांग थी। कुल संपत्ति {jumpAmount} बढ़ी, {jumpPreviousMonth} में {jumpFrom} से {jumpTo} तक।",
+      "netWorthHighPoint": "आपका उच्चतम स्तर {peakMonth} में {peakAmount} था। अभी आप उससे {peakBelow} नीचे हैं।",
+      "netWorthAtHighPoint": "आप अपने उच्चतम स्तर पर हैं: कुल संपत्ति कभी {currentHigh} से ऊपर नहीं गई।",
+      "netWorthBiggestDip": "आपकी सबसे बड़ी गिरावट ने कुल संपत्ति को {dipFromMonth} में {dipFromAmount} से {dipToMonth} में {dipToAmount} तक पहुँचा दिया, यानी {dipPercent} की गिरावट।",
+      "netWorthBiggestDipRecovered": "आपकी सबसे बड़ी गिरावट ने कुल संपत्ति को {dipFromMonth} में {dipFromAmount} से {dipToMonth} में {dipToAmount} तक पहुँचा दिया। आप {dipRecoveredMonth} तक उबर चुके थे।",
+      "netWorthLargestAsset": "{assetName} का मूल्य {assetValue} है, यानी आपकी परिसंपत्तियों का {assetPercent}।",
+      "investmentsShareOfAssets": "आपके निवेश का मूल्य {investmentsValue} है, जो आपकी परिसंपत्तियों का {investmentsPercent} है।",
+      "investmentsGain": "आपके निवेश ने {gainCostBasis} की लागत से {gainAmount} ({gainPercent}) की बढ़त हासिल की है।",
+      "investmentsLoss": "आपके निवेश {gainCostBasis} की लागत से {gainAmount} ({gainPercent}) नीचे हैं।",
+      "investmentsCagr": "आपके निवेश का वार्षिकीकृत रिटर्न लगभग {cagrPercent} (CAGR) है।",
+      "investmentsBiggestHolding": "आपकी सबसे बड़ी होल्डिंग {holdingSymbol} है, जो पोर्टफ़ोलियो का लगभग {holdingPercent} है ({holdingAccounts} में {holdingValue})।",
+      "investmentsBestPerformer": "आपका सबसे अच्छा प्रदर्शन {bestSymbol} का है, जो {bestPercent} बढ़ा है। इसकी लागत {bestCost} थी और अब इसका मूल्य {bestValue} है।",
+      "investmentsForeignAccount": "आपका {foreignName} खाता {foreignCurrency} में है। इसकी {foreignBalance} की होल्डिंग लगभग {foreignRate} की दर पर {foreignConverted} के बराबर है।",
+      "investmentsLargestAccount": "आपका सबसे बड़ा निवेश खाता {largestName} है, जिसमें {largestValue} है।"
+    }
   },
   "favouriteAccounts": {
     "title": "पसंदीदा खाते",
@@ -216,11 +248,12 @@
     },
     "hero": {
       "title": "डैशबोर्ड हीरो",
-      "description": "अभिवादन के नीचे के आँकड़े और चार्ट: आपकी कुल संपत्ति या आपका पोर्टफ़ोलियो।",
+      "description": "अभिवादन के नीचे शुरुआती आँकड़े और चार्ट: आपकी कुल संपत्ति, आपका पोर्टफ़ोलियो, या ऑटो, जो हर मिनट दोनों के बीच बदलता रहता है।",
       "show": "डैशबोर्ड हीरो दिखाएँ",
       "range": "चार्ट",
       "set": "दिखाएँ",
       "sets": {
+        "auto": "ऑटो",
         "netWorth": "कुल संपत्ति",
         "portfolio": "पोर्टफ़ोलियो मूल्य"
       },

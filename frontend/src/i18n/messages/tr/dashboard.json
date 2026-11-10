@@ -33,8 +33,40 @@
       "mwr": "MWR",
       "cagr": "BYOB"
     },
+    "showSet": "{name} göster",
+    "cycleControls": "Ana bölümün neyi göstereceğini seçin",
     "cagrUnavailable": "CAGR için bu hesaplarda en az bir yıllık yatırım geçmişi ve çekilenden fazla yatırılan tutar gerekir.",
     "intradayUnavailable": "Bu varlıkların bazılarının gün içi fiyatı yok, bu nedenle bir günlük grafik çizilemiyor. Özelleştir bölümünden daha uzun bir dönem seçin."
+  },
+  "trivia": {
+    "title": "Bilgi notları",
+    "position": "{total} içinde {index}",
+    "previous": "Önceki bilgi",
+    "next": "Sonraki bilgi",
+    "empty": "Yeterli geçmiş oluştuğunda bilgi notları burada görünür: iki aylık net değer ya da fiyatı olan yatırımlar. Liste her sabah yeniden oluşturulur.",
+    "off": "Yapay zeka bilgi notları kapalı. <link>AI Ayarları</link> bölümünden açın.",
+    "topics": {
+      "netWorth": "Net değer",
+      "investments": "Yatırımlar"
+    },
+    "aiGenerated": "Rakamlarınızdan yapay zekayla yazıldı",
+    "facts": {
+      "netWorthSinceStart": "Net değeriniz {startMonth} ayında {startAmount} idi. O zamandan beri {startGain} arttı, yani yaklaşık {startMultiple} kat büyüdü.",
+      "netWorthBiggestJump": "{jumpMonth}, tek bir aydaki en büyük sıçramanız oldu. Net değer {jumpAmount} artarak {jumpPreviousMonth} ayındaki {jumpFrom} seviyesinden {jumpTo} seviyesine çıktı.",
+      "netWorthHighPoint": "En yüksek noktanız {peakMonth} ayında {peakAmount} idi. Şu an bunun {peakBelow} altındasınız.",
+      "netWorthAtHighPoint": "En yüksek noktanızdasınız: net değeriniz hiçbir zaman {currentHigh} seviyesinin üzerine çıkmadı.",
+      "netWorthBiggestDip": "En büyük düşüşünüz net değeri {dipFromMonth} ayındaki {dipFromAmount} seviyesinden {dipToMonth} ayında {dipToAmount} seviyesine indirdi, yani {dipPercent} düşüş.",
+      "netWorthBiggestDipRecovered": "En büyük düşüşünüz net değeri {dipFromMonth} ayındaki {dipFromAmount} seviyesinden {dipToMonth} ayında {dipToAmount} seviyesine indirdi. {dipRecoveredMonth} ayına kadar toparlandınız.",
+      "netWorthLargestAsset": "{assetName} {assetValue} değerinde, yani varlıklarınızın {assetPercent} kadarı.",
+      "investmentsShareOfAssets": "Yatırımlarınızın değeri {investmentsValue}, bu da varlıklarınızın {investmentsPercent} kadarı.",
+      "investmentsGain": "Yatırımlarınız {gainCostBasis} maliyet bazının {gainAmount} ({gainPercent}) üzerinde kazandı.",
+      "investmentsLoss": "Yatırımlarınız {gainCostBasis} maliyet bazının {gainAmount} ({gainPercent}) altında.",
+      "investmentsCagr": "Yatırımlarınızın yıllıklandırılmış getirisi yaklaşık {cagrPercent} (CAGR).",
+      "investmentsBiggestHolding": "En büyük varlığınız {holdingSymbol}, portföyün yaklaşık {holdingPercent} kadarı ({holdingAccounts} içinde {holdingValue}).",
+      "investmentsBestPerformer": "En iyi performans gösteren {bestSymbol}, {bestPercent} yükseldi. Maliyeti {bestCost} idi ve şimdi {bestValue} değerinde.",
+      "investmentsForeignAccount": "{foreignName} hesabınız {foreignCurrency} cinsinden tutuluyor. {foreignBalance} tutarındaki varlıkları yaklaşık {foreignRate} kuruyla {foreignConverted} eder.",
+      "investmentsLargestAccount": "En büyük yatırım hesabınız {largestName}, tutarı {largestValue}."
+    }
   },
   "favouriteAccounts": {
     "title": "Favori Hesaplar",
@@ -216,11 +248,12 @@
     },
     "hero": {
       "title": "Pano başlığı",
-      "description": "Selamlamanın altındaki rakamlar ve grafik: net değeriniz veya portföyünüz.",
+      "description": "Karşılamanın altındaki açılış rakamları ve grafik: net değeriniz, portföyünüz ya da her dakika ikisi arasında geçiş yapan Otomatik.",
       "show": "Pano başlığını göster",
       "range": "Grafik",
       "set": "Göster",
       "sets": {
+        "auto": "Otomatik",
         "netWorth": "Net değer",
         "portfolio": "Portföy değeri"
       },

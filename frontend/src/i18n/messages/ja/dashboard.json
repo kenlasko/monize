@@ -33,8 +33,40 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "{name}を表示",
+    "cycleControls": "ヒーローに表示する内容を選択",
     "cagrUnavailable": "CAGR には、これらの口座で 1 年以上の投資履歴と、引き出しを上回る入金が必要です。",
     "intradayUnavailable": "一部の保有銘柄に日中価格がないため、1 日のグラフを描けません。カスタマイズで長い期間を選んでください。"
+  },
+  "trivia": {
+    "title": "トリビア",
+    "position": "{index} / {total}",
+    "previous": "前のトリビア",
+    "next": "次のトリビア",
+    "empty": "十分な履歴がたまると、ここにトリビアが表示されます。純資産の 2 か月分、または価格のある投資が必要です。リストは毎朝再生成されます。",
+    "off": "AI トリビアはオフです。<link>AI設定</link>でオンにしてください。",
+    "topics": {
+      "netWorth": "純資産",
+      "investments": "投資"
+    },
+    "aiGenerated": "あなたの数字をもとにAIが作成しました",
+    "facts": {
+      "netWorthSinceStart": "{startMonth}の純資産は{startAmount}でした。その後{startGain}増え、約{startMultiple}倍になっています。",
+      "netWorthBiggestJump": "{jumpMonth}が1か月で最も大きく伸びた月でした。純資産は{jumpAmount}増え、{jumpPreviousMonth}の{jumpFrom}から{jumpTo}になりました。",
+      "netWorthHighPoint": "過去最高は{peakMonth}の{peakAmount}でした。現在はそこから{peakBelow}下回っています。",
+      "netWorthAtHighPoint": "今が最高値です。純資産が{currentHigh}を超えたことはありません。",
+      "netWorthBiggestDip": "最大の下落では、純資産が{dipFromMonth}の{dipFromAmount}から{dipToMonth}の{dipToAmount}まで、{dipPercent}減少しました。",
+      "netWorthBiggestDipRecovered": "最大の下落では、純資産が{dipFromMonth}の{dipFromAmount}から{dipToMonth}の{dipToAmount}まで減少しました。{dipRecoveredMonth}までに回復しています。",
+      "netWorthLargestAsset": "{assetName}の評価額は{assetValue}で、資産の{assetPercent}を占めます。",
+      "investmentsShareOfAssets": "投資の評価額は{investmentsValue}で、資産の{investmentsPercent}にあたります。",
+      "investmentsGain": "投資は取得原価{gainCostBasis}に対して{gainAmount}({gainPercent})の増加です。",
+      "investmentsLoss": "投資は取得原価{gainCostBasis}に対して{gainAmount}({gainPercent})の減少です。",
+      "investmentsCagr": "投資の年率リターンは約{cagrPercent}(CAGR)です。",
+      "investmentsBiggestHolding": "最大の保有銘柄は{holdingSymbol}で、ポートフォリオの約{holdingPercent}です({holdingAccounts}で{holdingValue})。",
+      "investmentsBestPerformer": "最も好調な銘柄は{bestSymbol}で、{bestPercent}上昇しました。取得額は{bestCost}で、現在は{bestValue}です。",
+      "investmentsForeignAccount": "{foreignName}口座は{foreignCurrency}で保有されています。保有額{foreignBalance}は、約{foreignRate}のレートで{foreignConverted}に相当します。",
+      "investmentsLargestAccount": "最大の投資口座は{largestName}で、{largestValue}です。"
+    }
   },
   "favouriteAccounts": {
     "title": "お気に入りの勘定科目",
@@ -216,11 +248,12 @@
     },
     "hero": {
       "title": "ダッシュボードのヒーロー",
-      "description": "挨拶の下の数値とグラフ：純資産またはポートフォリオ。",
+      "description": "あいさつの下に表示される最初の数字とチャート。純資産、ポートフォリオ、または1分ごとに両方を切り替える「自動」から選べます。",
       "show": "ダッシュボードのヒーローを表示",
       "range": "グラフ",
       "set": "表示",
       "sets": {
+        "auto": "自動",
         "netWorth": "純資産",
         "portfolio": "ポートフォリオ評価額"
       },

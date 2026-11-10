@@ -1134,6 +1134,14 @@
       "disabled": "Balão de conversa flutuante desativado",
       "saveFailed": "Não foi possível atualizar a definição do balão de conversa"
     },
+    "trivia": {
+      "title": "Curiosidades de IA",
+      "subtitle": "Preenche o widget Curiosidades do seu painel com factos sobre o seu património líquido e investimentos, refeitos todas as manhãs e redigidos pela IA se tiver um fornecedor configurado. Adicione o widget com Personalizar no painel. Quando desativada, o widget não mostra factos e nenhum fornecedor é consultado.",
+      "toggleLabel": "Preencher o widget Curiosidades do painel com curiosidades de IA",
+      "enabled": "Curiosidades de IA ativadas",
+      "disabled": "Curiosidades de IA desativadas",
+      "saveFailed": "Não foi possível atualizar a definição de curiosidades de IA"
+    },
     "demoRestricted": {
       "heading": "Restrito no Modo de Demonstração",
       "body": "A configuração de fornecedores de IA está desativada no modo de demonstração."

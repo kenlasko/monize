@@ -33,8 +33,40 @@
       "mwr": "MWR",
       "cagr": "TCAC"
     },
+    "showSet": "Afficher {name}",
+    "cycleControls": "Choisir ce qu'affiche l'en-tête",
     "cagrUnavailable": "Le TCAC nécessite au moins un an d’historique de placement dans ces comptes, avec plus d’apports que de retraits.",
     "intradayUnavailable": "Certaines de ces positions n’ont pas de cours intrajournaliers : un graphique sur un jour ne peut donc pas être tracé. Choisissez une période plus longue dans Personnaliser."
+  },
+  "trivia": {
+    "title": "Anecdotes",
+    "position": "{index} sur {total}",
+    "previous": "Anecdote précédente",
+    "next": "Anecdote suivante",
+    "empty": "Les anecdotes apparaissent ici dès qu'il y a assez d'historique : deux mois de valeur nette ou des investissements avec un cours. La liste est reconstruite chaque matin.",
+    "off": "Les anecdotes IA sont désactivées. Activez-les dans <link>Paramètres IA</link>.",
+    "topics": {
+      "netWorth": "Valeur nette",
+      "investments": "Investissements"
+    },
+    "aiGenerated": "Rédigé par l'IA à partir de vos chiffres",
+    "facts": {
+      "netWorthSinceStart": "Votre valeur nette était de {startAmount} en {startMonth}. Elle a gagné {startGain} depuis, soit environ {startMultiple} fois plus.",
+      "netWorthBiggestJump": "{jumpMonth} a été votre plus forte hausse en un seul mois. La valeur nette a augmenté de {jumpAmount}, passant de {jumpFrom} en {jumpPreviousMonth} à {jumpTo}.",
+      "netWorthHighPoint": "Votre sommet était de {peakAmount} en {peakMonth}. Vous en êtes actuellement à {peakBelow} en dessous.",
+      "netWorthAtHighPoint": "Vous êtes à votre sommet : la valeur nette n'a jamais dépassé {currentHigh}.",
+      "netWorthBiggestDip": "Votre plus forte baisse a fait passer la valeur nette de {dipFromAmount} en {dipFromMonth} à {dipToAmount} en {dipToMonth}, un recul de {dipPercent}.",
+      "netWorthBiggestDipRecovered": "Votre plus forte baisse a fait passer la valeur nette de {dipFromAmount} en {dipFromMonth} à {dipToAmount} en {dipToMonth}. Vous aviez retrouvé votre niveau en {dipRecoveredMonth}.",
+      "netWorthLargestAsset": "{assetName} vaut {assetValue}, soit {assetPercent} de vos actifs.",
+      "investmentsShareOfAssets": "Vos investissements valent {investmentsValue}, soit {investmentsPercent} de vos actifs.",
+      "investmentsGain": "Vos investissements ont gagné {gainAmount} ({gainPercent}) par rapport à leur coût de base de {gainCostBasis}.",
+      "investmentsLoss": "Vos investissements sont en baisse de {gainAmount} ({gainPercent}) par rapport à leur coût de base de {gainCostBasis}.",
+      "investmentsCagr": "Le rendement annualisé de vos investissements est d'environ {cagrPercent} (CAGR).",
+      "investmentsBiggestHolding": "Votre plus grosse position est {holdingSymbol}, à environ {holdingPercent} du portefeuille ({holdingValue} dans {holdingAccounts}).",
+      "investmentsBestPerformer": "Votre meilleure performance est {bestSymbol}, en hausse de {bestPercent}. Elle a coûté {bestCost} et vaut maintenant {bestValue}.",
+      "investmentsForeignAccount": "Votre compte {foreignName} est détenu en {foreignCurrency}. Ses avoirs de {foreignBalance} équivalent à {foreignConverted} à un taux d'environ {foreignRate}.",
+      "investmentsLargestAccount": "Votre plus grand compte de placement est {largestName}, à {largestValue}."
+    }
   },
   "favouriteAccounts": {
     "title": "Comptes favoris",
@@ -216,11 +248,12 @@
     },
     "hero": {
       "title": "En-tête du tableau de bord",
-      "description": "Les chiffres et le graphique sous la salutation : votre valeur nette ou votre portefeuille.",
+      "description": "Les chiffres d'ouverture et le graphique sous le message d'accueil : votre valeur nette, votre portefeuille, ou Auto pour alterner entre les deux chaque minute.",
       "show": "Afficher l’en-tête du tableau de bord",
       "range": "Graphique",
       "set": "Afficher",
       "sets": {
+        "auto": "Auto",
         "netWorth": "Valeur nette",
         "portfolio": "Valeur du portefeuille"
       },

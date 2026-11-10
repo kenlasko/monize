@@ -33,8 +33,40 @@
       "mwr": "MWR",
       "cagr": "年复合增长率"
     },
+    "showSet": "显示{name}",
+    "cycleControls": "选择主视图显示的内容",
     "cagrUnavailable": "CAGR 需要这些账户至少一年的投资历史，且投入多于取出。",
     "intradayUnavailable": "部分持仓没有日内价格，因此无法绘制一天的图表。请在“自定义”中选择更长的时间范围。"
+  },
+  "trivia": {
+    "title": "趣闻",
+    "position": "第 {index} 条，共 {total} 条",
+    "previous": "上一条趣闻",
+    "next": "下一条趣闻",
+    "empty": "有足够的历史数据后，趣闻会显示在这里：两个月的净资产，或有价格的投资。列表每天早上重新生成。",
+    "off": "AI 趣闻已关闭。请在<link>AI 设置</link>中开启。",
+    "topics": {
+      "netWorth": "净资产",
+      "investments": "投资"
+    },
+    "aiGenerated": "由 AI 根据您的数据撰写",
+    "facts": {
+      "netWorthSinceStart": "{startMonth}时您的净资产为{startAmount}。此后增加了{startGain},已是当时的约{startMultiple}倍。",
+      "netWorthBiggestJump": "{jumpMonth}是您单月涨幅最大的一个月。净资产增加{jumpAmount},从{jumpPreviousMonth}的{jumpFrom}升至{jumpTo}。",
+      "netWorthHighPoint": "您的最高点是{peakMonth}的{peakAmount}。目前比该水平低{peakBelow}。",
+      "netWorthAtHighPoint": "您正处于最高点:净资产从未超过{currentHigh}。",
+      "netWorthBiggestDip": "您最大的一次下跌使净资产从{dipFromMonth}的{dipFromAmount}降至{dipToMonth}的{dipToAmount},跌幅为{dipPercent}。",
+      "netWorthBiggestDipRecovered": "您最大的一次下跌使净资产从{dipFromMonth}的{dipFromAmount}降至{dipToMonth}的{dipToAmount}。到{dipRecoveredMonth}已经恢复。",
+      "netWorthLargestAsset": "{assetName}价值{assetValue},占您资产的{assetPercent}。",
+      "investmentsShareOfAssets": "您的投资价值{investmentsValue},占您资产的{investmentsPercent}。",
+      "investmentsGain": "您的投资相对{gainCostBasis}的成本基础增长了{gainAmount}({gainPercent})。",
+      "investmentsLoss": "您的投资相对{gainCostBasis}的成本基础下降了{gainAmount}({gainPercent})。",
+      "investmentsCagr": "您的投资年化收益率约为{cagrPercent}(CAGR)。",
+      "investmentsBiggestHolding": "您最大的持仓是{holdingSymbol},约占投资组合的{holdingPercent}({holdingAccounts}中的{holdingValue})。",
+      "investmentsBestPerformer": "表现最好的是{bestSymbol},上涨{bestPercent}。成本为{bestCost},现在价值{bestValue}。",
+      "investmentsForeignAccount": "您的{foreignName}账户以{foreignCurrency}持有。其{foreignBalance}的持仓按约{foreignRate}的汇率相当于{foreignConverted}。",
+      "investmentsLargestAccount": "您最大的投资账户是{largestName},金额为{largestValue}。"
+    }
   },
   "favouriteAccounts": {
     "title": "收藏账户",
@@ -216,11 +248,12 @@
     },
     "hero": {
       "title": "仪表板概览区",
-      "description": "问候语下方的数字和图表：您的净资产或投资组合。",
+      "description": "问候语下方的开场数据和图表:显示您的净资产、您的投资组合,或选择“自动”每分钟在两者之间切换。",
       "show": "显示仪表板概览区",
       "range": "图表",
       "set": "显示",
       "sets": {
+        "auto": "自动",
         "netWorth": "净资产",
         "portfolio": "投资组合价值"
       },

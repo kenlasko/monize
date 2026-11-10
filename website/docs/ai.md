@@ -85,7 +85,11 @@ Under **Query limits (optional)** you decide how much work this provider may do 
 
 ### Floating Chat Bubble
 
-**Floating chat bubble** at the top of **AI Settings** puts a chat button on every page, so you can ask the assistant from anywhere. It opens as a panel (a bottom sheet on a phone) that you can expand to full screen. It is off until you turn it on, and is offered once an AI provider is available.
+**Floating chat bubble**, under the provider list in **AI Settings**, puts a chat button on every page, so you can ask the assistant from anywhere. It opens as a panel (a bottom sheet on a phone) that you can expand to full screen. It is off until you turn it on, and is offered once an AI provider is available.
+
+### AI Trivia
+
+**AI trivia**, under the floating chat bubble in **AI Settings**, fills the dashboard's [Trivia widget](dashboard.md#trivia) with facts about your net worth and investments. Add the widget with **Customize** on the dashboard. The setting is on by default, with or without an AI provider. Turn it off and the widget says so, nothing is built for it each day, and no AI provider is asked about it.
 
 ---
 

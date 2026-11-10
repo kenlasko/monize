@@ -33,8 +33,40 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "{name} 표시",
+    "cycleControls": "히어로에 표시할 내용 선택",
     "cagrUnavailable": "CAGR을 계산하려면 이 계좌들에 1년 이상의 투자 기록이 있고 입금액이 출금액보다 많아야 합니다.",
     "intradayUnavailable": "일부 보유 종목에 장중 가격이 없어 1일 차트를 그릴 수 없습니다. 사용자 지정에서 더 긴 기간을 선택하세요."
+  },
+  "trivia": {
+    "title": "트리비아",
+    "position": "{total}개 중 {index}번째",
+    "previous": "이전 정보",
+    "next": "다음 정보",
+    "empty": "기록이 충분히 쌓이면 여기에 정보가 표시됩니다. 순자산 2개월 치 또는 가격이 있는 투자가 필요합니다. 목록은 매일 아침 새로 생성됩니다.",
+    "off": "AI 트리비아가 꺼져 있습니다. <link>AI 설정</link>에서 켜세요.",
+    "topics": {
+      "netWorth": "순자산",
+      "investments": "투자"
+    },
+    "aiGenerated": "회원님의 수치를 바탕으로 AI가 작성했습니다",
+    "facts": {
+      "netWorthSinceStart": "{startMonth}에 순자산은 {startAmount}였습니다. 그 후 {startGain} 늘어 약 {startMultiple}배가 되었습니다.",
+      "netWorthBiggestJump": "{jumpMonth}은(는) 한 달 기준 가장 크게 오른 달이었습니다. 순자산이 {jumpAmount} 늘어, {jumpPreviousMonth}의 {jumpFrom}에서 {jumpTo}가 되었습니다.",
+      "netWorthHighPoint": "최고점은 {peakMonth}의 {peakAmount}였습니다. 지금은 그보다 {peakBelow} 낮습니다.",
+      "netWorthAtHighPoint": "지금이 최고점입니다. 순자산이 {currentHigh}을(를) 넘은 적은 없습니다.",
+      "netWorthBiggestDip": "가장 큰 하락으로 순자산이 {dipFromMonth}의 {dipFromAmount}에서 {dipToMonth}의 {dipToAmount}으로 {dipPercent} 줄었습니다.",
+      "netWorthBiggestDipRecovered": "가장 큰 하락으로 순자산이 {dipFromMonth}의 {dipFromAmount}에서 {dipToMonth}의 {dipToAmount}으로 줄었습니다. {dipRecoveredMonth}에는 회복했습니다.",
+      "netWorthLargestAsset": "{assetName}의 가치는 {assetValue}로, 자산의 {assetPercent}입니다.",
+      "investmentsShareOfAssets": "투자 가치는 {investmentsValue}로, 자산의 {investmentsPercent}입니다.",
+      "investmentsGain": "투자는 취득 원가 {gainCostBasis} 대비 {gainAmount}({gainPercent}) 늘었습니다.",
+      "investmentsLoss": "투자는 취득 원가 {gainCostBasis} 대비 {gainAmount}({gainPercent}) 줄었습니다.",
+      "investmentsCagr": "투자의 연환산 수익률은 약 {cagrPercent}(CAGR)입니다.",
+      "investmentsBiggestHolding": "가장 큰 보유 종목은 {holdingSymbol}으로, 포트폴리오의 약 {holdingPercent}입니다({holdingAccounts}에서 {holdingValue}).",
+      "investmentsBestPerformer": "가장 잘 나간 종목은 {bestSymbol}으로 {bestPercent} 올랐습니다. 매입 비용은 {bestCost}였고 현재 가치는 {bestValue}입니다.",
+      "investmentsForeignAccount": "{foreignName} 계좌는 {foreignCurrency}로 보유 중입니다. 보유액 {foreignBalance}은(는) 약 {foreignRate} 환율로 {foreignConverted}에 해당합니다.",
+      "investmentsLargestAccount": "가장 큰 투자 계좌는 {largestName}이며 {largestValue}입니다."
+    }
   },
   "favouriteAccounts": {
     "title": "즐겨찾기 계정",
@@ -216,11 +248,12 @@
     },
     "hero": {
       "title": "대시보드 히어로",
-      "description": "인사말 아래의 수치와 차트: 순자산 또는 포트폴리오.",
+      "description": "인사말 아래의 첫 수치와 차트입니다. 순자산, 포트폴리오, 또는 1분마다 둘을 번갈아 보여 주는 자동 중에서 고를 수 있습니다.",
       "show": "대시보드 히어로 표시",
       "range": "차트",
       "set": "표시",
       "sets": {
+        "auto": "자동",
         "netWorth": "순자산",
         "portfolio": "포트폴리오 가치"
       },

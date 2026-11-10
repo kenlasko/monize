@@ -93,7 +93,6 @@ async function renderHero(cfg: DashboardHeroConfig = config(), props: { hasInves
     render(
       <PortfolioHero
         config={cfg}
-        header={<h1>Good evening, Ken</h1>}
         investmentAccounts={ACCOUNTS}
         hasInvestments={props.hasInvestments ?? true}
         isLoading={false}
@@ -131,7 +130,6 @@ describe('PortfolioHero', () => {
     expect(pill).toHaveTextContent(/1Y/);
     expect(screen.getByText(/holdings/)).toHaveTextContent(/150,000\.40/);
     expect(screen.getByText(/cash/)).toHaveTextContent(/4,523\.45/);
-    expect(screen.getByRole('heading', { name: 'Good evening, Ken' })).toBeInTheDocument();
   });
 
   it('names all accounts in brackets when none is chosen', async () => {
@@ -257,6 +255,5 @@ describe('PortfolioHero', () => {
     getPortfolioValuation.mockRejectedValue(new Error('boom'));
     await renderHero();
     expect(screen.getByText(/Couldn't load your portfolio/)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Good evening, Ken' })).toBeInTheDocument();
   });
 });

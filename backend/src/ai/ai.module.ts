@@ -14,6 +14,8 @@ import { ToolExecutorService } from "./query/tool-executor.service";
 import { AiInsightsService } from "./insights/ai-insights.service";
 import { AiInsightsController } from "./insights/ai-insights.controller";
 import { InsightsAggregatorService } from "./insights/insights-aggregator.service";
+import { DashboardTriviaService } from "./trivia/dashboard-trivia.service";
+import { DashboardTriviaController } from "./trivia/dashboard-trivia.controller";
 import { AiForecastService } from "./forecast/ai-forecast.service";
 import { AiForecastController } from "./forecast/ai-forecast.controller";
 import { ForecastAggregatorService } from "./forecast/forecast-aggregator.service";
@@ -101,6 +103,7 @@ import { HelpModule } from "../help/help.module";
     AiQueryService,
     ToolExecutorService,
     AiInsightsService,
+    DashboardTriviaService,
     InsightsAggregatorService,
     AiForecastService,
     ForecastAggregatorService,
@@ -112,6 +115,7 @@ import { HelpModule } from "../help/help.module";
     AiController,
     AiQueryController,
     AiInsightsController,
+    DashboardTriviaController,
     AiForecastController,
     AiActionsController,
     AiReviewApprovalController,

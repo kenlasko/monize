@@ -19,6 +19,12 @@ describe('resolveDashboardHeroConfig', () => {
     expect(resolveDashboardHeroConfig(stored)).toEqual(stored);
   });
 
+  it('opens on Auto, and keeps a set a reader already chose', () => {
+    expect(DASHBOARD_HERO_DEFAULT.set).toBe('auto');
+    expect(resolveDashboardHeroConfig({ set: 'auto' }).set).toBe('auto');
+    expect(resolveDashboardHeroConfig({ set: 'netWorth' }).set).toBe('netWorth');
+  });
+
   it('drops stale keys and falls back on any value no longer offered', () => {
     const resolved = resolveDashboardHeroConfig({
       greeting: false,

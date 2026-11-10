@@ -33,8 +33,40 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "Show {name}",
+    "cycleControls": "Choose what the hero shows",
     "cagrUnavailable": "CAGR needs at least a year of investment history in these accounts, with more paid in than taken out.",
     "intradayUnavailable": "Some of these holdings have no intraday prices, so a one-day chart can't be drawn. Choose a longer timeframe in Customize."
+  },
+  "trivia": {
+    "title": "Trivia",
+    "position": "{index} of {total}",
+    "previous": "Previous fact",
+    "next": "Next fact",
+    "empty": "Facts appear here once there is enough history to talk about: two months of net worth, or priced investments. The list is rebuilt each morning.",
+    "off": "AI trivia is turned off. Turn it on in <link>AI Settings</link>.",
+    "topics": {
+      "netWorth": "Net worth",
+      "investments": "Investments"
+    },
+    "aiGenerated": "Written by AI from your figures",
+    "facts": {
+      "netWorthSinceStart": "Your net worth was {startAmount} in {startMonth}. It has gained {startGain} since then, so it is about {startMultiple} times larger.",
+      "netWorthBiggestJump": "{jumpMonth} was your biggest single-month jump. Net worth rose by {jumpAmount}, from {jumpFrom} in {jumpPreviousMonth} to {jumpTo}.",
+      "netWorthHighPoint": "Your high point was {peakAmount} in {peakMonth}. You're {peakBelow} below that now.",
+      "netWorthAtHighPoint": "You're at your high point: net worth has never been above {currentHigh}.",
+      "netWorthBiggestDip": "Your biggest dip took net worth from {dipFromAmount} in {dipFromMonth} to {dipToAmount} in {dipToMonth}, a fall of {dipPercent}.",
+      "netWorthBiggestDipRecovered": "Your biggest dip took net worth from {dipFromAmount} in {dipFromMonth} to {dipToAmount} in {dipToMonth}. You had recovered by {dipRecoveredMonth}.",
+      "netWorthLargestAsset": "{assetName} is worth {assetValue}, or {assetPercent} of your assets.",
+      "investmentsShareOfAssets": "Your investments are worth {investmentsValue}, which is {investmentsPercent} of your assets.",
+      "investmentsGain": "Your investments have gained {gainAmount} ({gainPercent}) over their {gainCostBasis} cost basis.",
+      "investmentsLoss": "Your investments are down {gainAmount} ({gainPercent}) from their {gainCostBasis} cost basis.",
+      "investmentsCagr": "Your investments' annualized return is about {cagrPercent} (CAGR).",
+      "investmentsBiggestHolding": "Your biggest holding is {holdingSymbol} at about {holdingPercent} of the portfolio ({holdingValue} in {holdingAccounts}).",
+      "investmentsBestPerformer": "Your best performer is {bestSymbol}, up {bestPercent}. It cost {bestCost} and is now worth {bestValue}.",
+      "investmentsForeignAccount": "Your {foreignName} account is held in {foreignCurrency}. Its {foreignBalance} of holdings equals {foreignConverted} at a rate of about {foreignRate}.",
+      "investmentsLargestAccount": "Your largest investment account is {largestName} at {largestValue}."
+    }
   },
   "favouriteAccounts": {
     "title": "Favourite Accounts",
@@ -216,11 +248,12 @@
     },
     "hero": {
       "title": "Dashboard hero",
-      "description": "The opening figures and chart under the greeting: your net worth, or your portfolio.",
+      "description": "The opening figures and chart under the greeting: your net worth, your portfolio, or Auto to alternate between them every minute.",
       "show": "Show the dashboard hero",
       "range": "Chart",
       "set": "Show",
       "sets": {
+        "auto": "Auto",
         "netWorth": "Net worth",
         "portfolio": "Portfolio value"
       },

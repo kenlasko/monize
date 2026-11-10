@@ -23,7 +23,7 @@ import type { Account } from '@/types/account';
 import {
   DASHBOARD_HERO_DEFAULT,
   DASHBOARD_HERO_PORTFOLIO_METRICS,
-  DASHBOARD_HERO_SETS,
+  DASHBOARD_HERO_SET_CHOICES,
   DASHBOARD_HERO_WIDGET_ID,
   DashboardHeroConfig,
   NET_WORTH_RANGES,
@@ -260,7 +260,7 @@ export function CustomizeDashboardModal({
           <div className="mt-3 flex flex-col gap-3">
             <HeroRow label={t('customize.hero.set')} id="customize-hero-set">
               <div className={SEGMENTED_TOOLBAR_GROUP_CLASS} role="group" aria-labelledby="customize-hero-set">
-                {DASHBOARD_HERO_SETS.map((set) => (
+                {DASHBOARD_HERO_SET_CHOICES.map((set) => (
                   <button
                     key={set}
                     type="button"
@@ -273,7 +273,7 @@ export function CustomizeDashboardModal({
                 ))}
               </div>
             </HeroRow>
-            {hero.set === 'netWorth' ? (
+            {hero.set !== 'portfolio' && (
               <HeroRow label={t('customize.hero.range')} id="customize-hero-range">
                 <div className={SEGMENTED_GROUP_CLASS} role="group" aria-labelledby="customize-hero-range">
                   {NET_WORTH_RANGES.map((range) => (
@@ -289,7 +289,8 @@ export function CustomizeDashboardModal({
                   ))}
                 </div>
               </HeroRow>
-            ) : (
+            )}
+            {hero.set !== 'netWorth' && (
               <>
                 <HeroRow label={t('widgets.accounts')} id="customize-hero-accounts">
                   <ReportAccountMultiSelect

@@ -235,6 +235,13 @@ export const DASHBOARD_HERO_SETS = ['netWorth', 'portfolio'] as const;
 export type DashboardHeroSet = (typeof DASHBOARD_HERO_SETS)[number];
 
 /**
+ * What the hero is set to show: one set, or `auto`, which alternates between
+ * them where the reader has investments.
+ */
+export const DASHBOARD_HERO_SET_CHOICES = ['auto', ...DASHBOARD_HERO_SETS] as const;
+export type DashboardHeroSetChoice = (typeof DASHBOARD_HERO_SET_CHOICES)[number];
+
+/**
  * The portfolio set's one chosen return beside its holdings and cash: the
  * Investments page summary card's four, since inception. The change over the
  * chosen window is always shown, beside the value.
@@ -244,7 +251,7 @@ export type DashboardHeroPortfolioMetric = (typeof DASHBOARD_HERO_PORTFOLIO_METR
 
 export interface DashboardHeroConfig {
   enabled: boolean;
-  set: DashboardHeroSet;
+  set: DashboardHeroSetChoice;
   /** The net worth chart's window. */
   range: (typeof NET_WORTH_RANGES)[number];
   /** The portfolio chart's window: the Investments page value chart's ranges. */
@@ -258,7 +265,7 @@ export const DASHBOARD_HERO_WIDGET_ID = 'dashboard-hero';
 
 export const DASHBOARD_HERO_DEFAULT: DashboardHeroConfig = {
   enabled: true,
-  set: 'netWorth',
+  set: 'auto',
   range: '1y',
   portfolioRange: '1y',
   portfolioAccountIds: [],
@@ -278,7 +285,7 @@ export function resolveDashboardHeroConfig(stored: unknown): DashboardHeroConfig
   const d = DASHBOARD_HERO_DEFAULT;
   return {
     enabled: typeof s.enabled === 'boolean' ? s.enabled : d.enabled,
-    set: isOneOf(DASHBOARD_HERO_SETS, s.set) ? s.set : d.set,
+    set: isOneOf(DASHBOARD_HERO_SET_CHOICES, s.set) ? s.set : d.set,
     range: isOneOf(NET_WORTH_RANGES, s.range) ? s.range : d.range,
     portfolioRange: isOneOf(PORTFOLIO_CHART_RANGES, s.portfolioRange) ? s.portfolioRange : d.portfolioRange,
     portfolioAccountIds: Array.isArray(s.portfolioAccountIds)

@@ -101,6 +101,7 @@ export const INTENTIONALLY_EXCLUDED_TABLES: ReadonlySet<string> = new Set([
   "users", // the account row itself; a restore targets an existing user
   "action_history", // undo/redo log, wiped on restore (not undoable to prior state)
   "ai_insights", // regenerable AI cache
+  "dashboard_trivia", // rebuilt daily from the ledger
   "ai_usage_logs", // usage telemetry, not user content
   // The OPERATOR's Google Places counter. Deliberately not exported while
   // `payee_lookup_usage` beside it is: this row has no `user_id`, it counts a

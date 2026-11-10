@@ -79,7 +79,6 @@ async function renderHero(props: Partial<Parameters<typeof NetWorthHero>[0]> = {
         hasInvestments
         isLoading={false}
         investmentSummaryLoading={false}
-        header={<h1>Good evening, Ken</h1>}
         {...props}
       />,
     );
@@ -124,10 +123,9 @@ describe('NetWorthHero', () => {
     expect(screen.queryByText(/invested/)).not.toBeInTheDocument();
   });
 
-  it('draws the greeting header inside the hero, beside the chart', async () => {
+  it('draws the figures with the chart beside them', async () => {
     await renderHero();
     const hero = screen.getByTestId('dashboard-hero');
-    expect(within(hero).getByRole('heading', { name: 'Good evening, Ken' })).toBeInTheDocument();
     expect(within(hero).getByTestId('dashboard-hero-chart')).toBeInTheDocument();
     // The window is chosen in Customize Dashboard, not over the chart.
     expect(within(hero).queryByRole('group')).not.toBeInTheDocument();
@@ -208,7 +206,6 @@ describe('NetWorthHero', () => {
     getMonthly.mockRejectedValue(new Error('boom'));
     await renderHero();
     expect(screen.queryByTestId('dashboard-hero')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Good evening, Ken' })).toBeInTheDocument();
     expect(screen.getByText(/Couldn't load your net worth history/)).toBeInTheDocument();
   });
 

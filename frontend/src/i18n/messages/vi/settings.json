@@ -1134,6 +1134,14 @@
       "disabled": "Đã tắt bong bóng trò chuyện nổi",
       "saveFailed": "Không thể cập nhật cài đặt bong bóng trò chuyện"
     },
+    "trivia": {
+      "title": "Thông tin thú vị từ AI",
+      "subtitle": "Điền vào tiện ích Thông tin thú vị trên bảng điều khiển của bạn các thông tin về giá trị ròng và các khoản đầu tư, được tạo lại mỗi sáng và do AI viết nếu bạn đã thiết lập nhà cung cấp. Thêm tiện ích bằng Tùy chỉnh trên bảng điều khiển. Khi tắt, tiện ích không hiển thị thông tin nào và không hỏi nhà cung cấp nào.",
+      "toggleLabel": "Điền tiện ích Thông tin thú vị trên bảng điều khiển bằng thông tin thú vị từ AI",
+      "enabled": "Đã bật thông tin thú vị từ AI",
+      "disabled": "Đã tắt thông tin thú vị từ AI",
+      "saveFailed": "Không thể cập nhật cài đặt thông tin thú vị từ AI"
+    },
     "demoRestricted": {
       "heading": "Bị hạn chế trong chế độ demo",
       "body": "Cấu hình nhà cung cấp AI bị vô hiệu hóa trong chế độ demo."

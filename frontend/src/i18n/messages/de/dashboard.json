@@ -33,8 +33,40 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "{name} anzeigen",
+    "cycleControls": "Auswählen, was der Hero-Bereich zeigt",
     "cagrUnavailable": "Die CAGR braucht mindestens ein Jahr Anlagehistorie in diesen Konten, mit mehr Einzahlungen als Entnahmen.",
     "intradayUnavailable": "Für einige dieser Positionen gibt es keine Intraday-Kurse, daher kann kein Tagesdiagramm gezeichnet werden. Wählen Sie unter „Anpassen“ einen längeren Zeitraum."
+  },
+  "trivia": {
+    "title": "Wissenswertes",
+    "position": "{index} von {total}",
+    "previous": "Vorheriger Fakt",
+    "next": "Nächster Fakt",
+    "empty": "Fakten erscheinen hier, sobald genug Verlauf vorhanden ist: zwei Monate Nettovermögen oder bewertete Anlagen. Die Liste wird jeden Morgen neu erstellt.",
+    "off": "KI-Wissenswertes ist ausgeschaltet. Schalte es in den <link>KI-Einstellungen</link> ein.",
+    "topics": {
+      "netWorth": "Nettovermögen",
+      "investments": "Investments"
+    },
+    "aiGenerated": "Von KI aus Ihren Zahlen geschrieben",
+    "facts": {
+      "netWorthSinceStart": "Ihr Nettovermögen betrug im {startMonth} {startAmount}. Seitdem hat es um {startGain} zugelegt und ist damit etwa {startMultiple}-mal so groß.",
+      "netWorthBiggestJump": "{jumpMonth} war Ihr größter Sprung innerhalb eines Monats. Das Nettovermögen stieg um {jumpAmount}, von {jumpFrom} im {jumpPreviousMonth} auf {jumpTo}.",
+      "netWorthHighPoint": "Ihr Höchststand lag bei {peakAmount} im {peakMonth}. Aktuell liegen Sie {peakBelow} darunter.",
+      "netWorthAtHighPoint": "Sie sind auf Ihrem Höchststand: Das Nettovermögen lag nie über {currentHigh}.",
+      "netWorthBiggestDip": "Ihr größter Einbruch ließ das Nettovermögen von {dipFromAmount} im {dipFromMonth} auf {dipToAmount} im {dipToMonth} sinken, ein Rückgang von {dipPercent}.",
+      "netWorthBiggestDipRecovered": "Ihr größter Einbruch ließ das Nettovermögen von {dipFromAmount} im {dipFromMonth} auf {dipToAmount} im {dipToMonth} sinken. Bis {dipRecoveredMonth} hatten Sie sich erholt.",
+      "netWorthLargestAsset": "{assetName} ist {assetValue} wert, das sind {assetPercent} Ihres Vermögens.",
+      "investmentsShareOfAssets": "Ihre Investments sind {investmentsValue} wert, das sind {investmentsPercent} Ihres Vermögens.",
+      "investmentsGain": "Ihre Investments haben {gainAmount} ({gainPercent}) über ihren Anschaffungskosten von {gainCostBasis} zugelegt.",
+      "investmentsLoss": "Ihre Investments liegen {gainAmount} ({gainPercent}) unter ihren Anschaffungskosten von {gainCostBasis}.",
+      "investmentsCagr": "Die annualisierte Rendite Ihrer Investments beträgt etwa {cagrPercent} (CAGR).",
+      "investmentsBiggestHolding": "Ihre größte Position ist {holdingSymbol} mit etwa {holdingPercent} des Portfolios ({holdingValue} in {holdingAccounts}).",
+      "investmentsBestPerformer": "Ihr bester Wert ist {bestSymbol} mit einem Plus von {bestPercent}. Er kostete {bestCost} und ist jetzt {bestValue} wert.",
+      "investmentsForeignAccount": "Ihr Konto {foreignName} wird in {foreignCurrency} geführt. Die Bestände von {foreignBalance} entsprechen {foreignConverted} bei einem Kurs von etwa {foreignRate}.",
+      "investmentsLargestAccount": "Ihr größtes Anlagekonto ist {largestName} mit {largestValue}."
+    }
   },
   "favouriteAccounts": {
     "title": "Favoritenkonten",
@@ -216,11 +248,12 @@
     },
     "hero": {
       "title": "Dashboard-Kopfbereich",
-      "description": "Die Kennzahlen und das Diagramm unter der Begrüßung: Ihr Nettovermögen oder Ihr Portfolio.",
+      "description": "Die Eröffnungszahlen und das Diagramm unter der Begrüßung: Ihr Nettovermögen, Ihr Portfolio oder Auto, um jede Minute zwischen beiden zu wechseln.",
       "show": "Dashboard-Kopfbereich anzeigen",
       "range": "Diagramm",
       "set": "Anzeigen",
       "sets": {
+        "auto": "Auto",
         "netWorth": "Nettovermögen",
         "portfolio": "Portfoliowert"
       },

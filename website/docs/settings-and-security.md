@@ -21,7 +21,7 @@ Click **Settings** (the gear icon with your first name, in the top-right corner)
 | **Shared Access** | Delegated users (see [Shared Access](shared-access.md)) |
 | **Emergency Access** | Dead-man's switch for trusted contacts (see [Emergency Access](emergency-access.md)) |
 | **API Access** | Personal access tokens and the MCP server URL (see [Personal Access Tokens](#personal-access-tokens-pats)) |
-| **AI Settings** | AI providers, the floating chat bubble, and usage (see [AI](ai.md)) |
+| **AI Settings** | AI providers, the floating chat bubble, AI trivia, and usage (see [AI](ai.md)) |
 | **Bank Sync** | Import booked transactions straight from your bank (see [Bank Sync](#bank-sync)) |
 | **Email Receipts** | A mailbox for order confirmations and the profiles that read them (see [Email Receipts](email-receipts.md)) |
 | **Payee Lookup** | Where a payee's contact details come from (see [Payee Lookup](#payee-lookup)) |

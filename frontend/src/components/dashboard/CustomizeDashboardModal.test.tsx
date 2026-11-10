@@ -362,11 +362,23 @@ describe('CustomizeDashboardModal', () => {
       await renderModal();
       const section = screen.getByTestId('customize-hero');
       expect(within(section).getByRole('switch', { name: 'Show the dashboard hero' })).toBeChecked();
-      expect(within(section).getByRole('button', { name: 'Net worth' })).toHaveAttribute('aria-pressed', 'true');
+      expect(within(section).getByRole('button', { name: 'Auto' })).toHaveAttribute('aria-pressed', 'true');
       const windows = within(section).getByRole('group', { name: 'Chart' });
       expect(within(windows).getAllByRole('button').map((b) => b.textContent)).toEqual(['1Y', '2Y', '5Y', '10Y']);
       expect(within(windows).getByRole('button', { name: '1Y' })).toHaveAttribute('aria-pressed', 'true');
       expect(within(section).queryByRole('checkbox')).not.toBeInTheDocument();
+    });
+
+    it('offers both sets\' settings on Auto, and only the chosen set\'s otherwise', async () => {
+      await renderModal();
+      const section = screen.getByTestId('customize-hero');
+      expect(within(section).getByRole('group', { name: 'Chart' })).toBeInTheDocument();
+      expect(within(section).getByRole('group', { name: 'Figure' })).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(within(section).getByRole('button', { name: 'Net worth' }));
+      });
+      expect(within(section).getByRole('group', { name: 'Chart' })).toBeInTheDocument();
+      expect(within(section).queryByRole('group', { name: 'Figure' })).not.toBeInTheDocument();
     });
 
     it('saves the chart window with the layout, keeping other widgets\' settings', async () => {
@@ -481,7 +493,8 @@ describe('CustomizeDashboardModal', () => {
         dashboardWidgetConfig: { 'dashboard-hero': { range: '3m' } },
       };
       await renderModal();
-      expect(screen.getByRole('button', { name: '1Y' })).toHaveAttribute('aria-pressed', 'true');
+      const windows = within(screen.getByTestId('customize-hero')).getByRole('group', { name: 'Chart' });
+      expect(within(windows).getByRole('button', { name: '1Y' })).toHaveAttribute('aria-pressed', 'true');
     });
   });
 });

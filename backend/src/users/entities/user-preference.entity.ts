@@ -213,6 +213,10 @@ export class UserPreference {
   @Column({ name: "ai_bubble_enabled", default: false })
   aiBubbleEnabled: boolean;
 
+  // Whether the trivia line beside the dashboard greeting is shown and built.
+  @Column({ name: "ai_trivia_enabled", default: true })
+  aiTriviaEnabled: boolean;
+
   // Strict reconciled lock. The transaction form already prompts before an edit
   // that would move a reconciled row's date or amount, which is what Money
   // does; with this on the server refuses the write outright -- an edit, a

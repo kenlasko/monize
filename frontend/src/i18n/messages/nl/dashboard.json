@@ -33,8 +33,40 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "{name} tonen",
+    "cycleControls": "Kies wat de hoofdsectie toont",
     "cagrUnavailable": "CAGR vereist ten minste een jaar beleggingsgeschiedenis in deze rekeningen, met meer ingelegd dan opgenomen.",
     "intradayUnavailable": "Voor sommige posities zijn geen intraday-koersen, dus er kan geen dagrafiek worden getekend. Kies een langere periode in Aanpassen."
+  },
+  "trivia": {
+    "title": "Weetjes",
+    "position": "{index} van {total}",
+    "previous": "Vorig weetje",
+    "next": "Volgend weetje",
+    "empty": "Weetjes verschijnen hier zodra er genoeg geschiedenis is: twee maanden nettovermogen, of beleggingen met een koers. De lijst wordt elke ochtend opnieuw opgebouwd.",
+    "off": "AI-weetjes staan uit. Zet ze aan in de <link>AI-instellingen</link>.",
+    "topics": {
+      "netWorth": "Nettovermogen",
+      "investments": "Beleggingen"
+    },
+    "aiGenerated": "Door AI geschreven op basis van je cijfers",
+    "facts": {
+      "netWorthSinceStart": "Je nettovermogen was {startAmount} in {startMonth}. Sindsdien is het {startGain} gestegen, dus het is ongeveer {startMultiple} keer zo groot.",
+      "netWorthBiggestJump": "{jumpMonth} was je grootste sprong in één maand. Het nettovermogen steeg met {jumpAmount}, van {jumpFrom} in {jumpPreviousMonth} naar {jumpTo}.",
+      "netWorthHighPoint": "Je hoogtepunt was {peakAmount} in {peakMonth}. Je zit nu {peakBelow} eronder.",
+      "netWorthAtHighPoint": "Je zit op je hoogtepunt: je nettovermogen is nooit hoger geweest dan {currentHigh}.",
+      "netWorthBiggestDip": "Je grootste dip bracht het nettovermogen van {dipFromAmount} in {dipFromMonth} naar {dipToAmount} in {dipToMonth}, een daling van {dipPercent}.",
+      "netWorthBiggestDipRecovered": "Je grootste dip bracht het nettovermogen van {dipFromAmount} in {dipFromMonth} naar {dipToAmount} in {dipToMonth}. In {dipRecoveredMonth} had je je hersteld.",
+      "netWorthLargestAsset": "{assetName} is {assetValue} waard, oftewel {assetPercent} van je bezittingen.",
+      "investmentsShareOfAssets": "Je beleggingen zijn {investmentsValue} waard, dat is {investmentsPercent} van je bezittingen.",
+      "investmentsGain": "Je beleggingen zijn {gainAmount} ({gainPercent}) gestegen ten opzichte van de kostprijs van {gainCostBasis}.",
+      "investmentsLoss": "Je beleggingen staan {gainAmount} ({gainPercent}) lager dan de kostprijs van {gainCostBasis}.",
+      "investmentsCagr": "Het geannualiseerde rendement van je beleggingen is ongeveer {cagrPercent} (CAGR).",
+      "investmentsBiggestHolding": "Je grootste positie is {holdingSymbol} met ongeveer {holdingPercent} van de portefeuille ({holdingValue} in {holdingAccounts}).",
+      "investmentsBestPerformer": "Je beste belegging is {bestSymbol}, met {bestPercent} winst. Hij kostte {bestCost} en is nu {bestValue} waard.",
+      "investmentsForeignAccount": "Je rekening {foreignName} staat in {foreignCurrency}. De posities van {foreignBalance} zijn bij een koers van ongeveer {foreignRate} gelijk aan {foreignConverted}.",
+      "investmentsLargestAccount": "Je grootste beleggingsrekening is {largestName} met {largestValue}."
+    }
   },
   "favouriteAccounts": {
     "title": "Favoriete rekeningen",
@@ -216,11 +248,12 @@
     },
     "hero": {
       "title": "Dashboardkop",
-      "description": "De cijfers en de grafiek onder de begroeting: uw nettovermogen of uw portefeuille.",
+      "description": "De openingscijfers en de grafiek onder de begroeting: je nettovermogen, je portefeuille of Auto om elke minuut tussen beide af te wisselen.",
       "show": "Dashboardkop tonen",
       "range": "Grafiek",
       "set": "Tonen",
       "sets": {
+        "auto": "Auto",
         "netWorth": "Nettovermogen",
         "portfolio": "Portefeuillewaarde"
       },
