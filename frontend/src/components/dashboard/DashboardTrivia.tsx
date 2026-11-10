@@ -6,9 +6,12 @@ import { SparklesIcon } from '@heroicons/react/20/solid';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { useReportData } from '@/hooks/useReportData';
-import { dashboardTriviaApi } from '@/lib/dashboard-trivia';
-import type { TriviaFigure, TriviaItem, TriviaTopic } from '@/types/dashboard-trivia';
+import type {
+  DashboardTriviaResponse,
+  TriviaFigure,
+  TriviaItem,
+  TriviaTopic,
+} from '@/types/dashboard-trivia';
 
 /** How long one sentence stays while the hero itself is not moving. */
 export const TRIVIA_ROTATE_MS = 60_000;
@@ -21,15 +24,16 @@ const TOPIC_BADGE: Record<TriviaTopic, BadgeVariant> = {
 const PLACEHOLDER = /\{([A-Za-z]+)\}/g;
 
 /**
- * One sentence of the day's list beside the greeting: the facts about the set
- * the hero is showing, or the other set's when it has none. The badge says
- * which of the two it is about. It is decoration, so a failed request, or a
- * reader with no history to talk about, leaves the space empty.
+ * One sentence of the day's list, in its column between the figures and the
+ * chart: the facts about the set the hero is showing, or the other set's when
+ * it has none. The badge says which of the two it is about.
  */
 export function DashboardTrivia({
+  trivia,
   topic,
   heroCycling = false,
 }: {
+  trivia: DashboardTriviaResponse;
   topic: TriviaTopic;
   /** The hero is alternating on its own, so its changes pace the sentences. */
   heroCycling?: boolean;
@@ -37,13 +41,12 @@ export function DashboardTrivia({
   const t = useTranslations('dashboard');
   const { formatCurrency, formatNumber, formatPercent } = useNumberFormat();
   const formatChartDate = useChartDateFormat();
-  const { data } = useReportData(() => dashboardTriviaApi.get(), []);
 
   // The server shuffles the list; the minute the page opened is where a reader
   // joins it, so a reload does not always start on the same sentence.
   const [openedMinute] = useState(() => Math.floor(Date.now() / TRIVIA_ROTATE_MS));
 
-  const items = data?.items ?? [];
+  const { items } = trivia;
   const onTopic = items.filter((item) => item.topic === topic);
   const pool = onTopic.length > 0 ? onTopic : items;
   const poolTopic: TriviaTopic | undefined = pool[0]?.topic;
@@ -88,12 +91,12 @@ export function DashboardTrivia({
     [formatCurrency, formatNumber, formatPercent, formatChartDate],
   );
 
-  if (!data || !poolTopic) return null;
+  if (!poolTopic) return null;
 
   const item: TriviaItem = pool[(openedMinute + places[poolTopic]) % pool.length];
 
   const figures = Object.fromEntries(
-    Object.entries(data.figures).map(([name, figure]) => [name, formatFigure(figure)]),
+    Object.entries(trivia.figures).map(([name, figure]) => [name, formatFigure(figure)]),
   );
   const sentence =
     item.source === 'ai'
@@ -101,20 +104,17 @@ export function DashboardTrivia({
       : t(`trivia.facts.${item.factId}` as Parameters<typeof t>[0], figures);
 
   return (
-    <p
-      data-testid="dashboard-trivia"
-      className="text-sm leading-snug text-gray-600 dark:text-gray-300"
-    >
-      <Badge variant={TOPIC_BADGE[item.topic]} className="mr-2 align-text-bottom">
-        {t(`trivia.topics.${item.topic}`)}
-      </Badge>
-      {sentence}
-      {item.source === 'ai' && (
-        <SparklesIcon
-          title={t('trivia.aiGenerated')}
-          className="ml-1.5 inline h-3.5 w-3.5 align-text-bottom text-gray-400 dark:text-gray-500"
-        />
-      )}
-    </p>
+    <div data-testid="dashboard-trivia">
+      <Badge variant={TOPIC_BADGE[item.topic]}>{t(`trivia.topics.${item.topic}`)}</Badge>
+      <p className="mt-1.5 text-sm leading-snug text-gray-600 dark:text-gray-300">
+        {sentence}
+        {item.source === 'ai' && (
+          <SparklesIcon
+            title={t('trivia.aiGenerated')}
+            className="ml-1.5 inline h-3.5 w-3.5 align-text-bottom text-gray-400 dark:text-gray-500"
+          />
+        )}
+      </p>
+    </div>
   );
 }

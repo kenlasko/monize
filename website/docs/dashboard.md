@@ -58,9 +58,9 @@ In either set the highest and lowest points on the chart carry a green and a red
 
 The hero is on by default. With it off, the dashboard opens with just the greeting and today's date.
 
-#### Trivia beside the greeting
+#### Trivia
 
-Beside the greeting, a line of trivia points out something about your money: your high point, your biggest single-month jump, your largest holding. A **Net worth** or **Investments** badge says which it is about, and the line follows the set the hero is showing.
+On a large screen, a line of trivia beside the figures points out something about your money: your high point, your biggest single-month jump, your largest holding. A **Net worth** or **Investments** badge says which it is about, and the line follows the set the hero is showing.
 
 While the hero is on, the list is rebuilt once a day, and a sentence is only written about figures that are fully known. If you have an [AI provider](ai.md) set up, it words the sentences in your language, marked with a small sparkle; every figure in them still comes from your own data, and account and security names are not sent to the provider. Without one, or if it doesn't answer, Monize writes them itself from the same calculations. A provider reached through the MCP relay is not used for this. To turn the line off, use **AI trivia** in [AI Settings](ai.md#ai-trivia).
 

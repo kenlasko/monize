@@ -3,11 +3,6 @@ import { act, render, screen } from '@/test/render';
 import { DashboardTrivia, TRIVIA_ROTATE_MS } from './DashboardTrivia';
 import type { DashboardTriviaResponse } from '@/types/dashboard-trivia';
 
-const get = vi.fn();
-vi.mock('@/lib/dashboard-trivia', () => ({
-  dashboardTriviaApi: { get: () => get() },
-}));
-
 const list = (over: Partial<DashboardTriviaResponse>): DashboardTriviaResponse => ({
   items: [],
   figures: {},
@@ -15,15 +10,12 @@ const list = (over: Partial<DashboardTriviaResponse>): DashboardTriviaResponse =
   ...over,
 });
 
-const show = async (topic: 'netWorth' | 'investments' = 'netWorth') => {
-  await act(async () => {
-    render(<DashboardTrivia topic={topic} />);
-  });
-};
+let trivia: DashboardTriviaResponse;
+const show = (topic: 'netWorth' | 'investments' = 'netWorth') =>
+  render(<DashboardTrivia trivia={trivia} topic={topic} />);
 
 describe('DashboardTrivia', () => {
   beforeEach(() => {
-    get.mockReset();
     vi.useFakeTimers();
     vi.setSystemTime(0);
   });
@@ -32,17 +24,15 @@ describe('DashboardTrivia', () => {
   });
 
   it('writes a calculated fact from the catalog with formatted figures', async () => {
-    get.mockResolvedValue(
-      list({
+    trivia = list({
         items: [{ topic: 'netWorth', source: 'calculated', factId: 'netWorthHighPoint' }],
         figures: {
           peakAmount: { kind: 'money', value: 3913005.98, currency: 'CAD' },
           peakMonth: { kind: 'month', value: '2026-09' },
           peakBelow: { kind: 'money', value: 64910, currency: 'CAD' },
         },
-      }),
-    );
-    await show();
+      });
+    show();
     const line = screen.getByTestId('dashboard-trivia');
     expect(line).toHaveTextContent('Net worth');
     expect(line).toHaveTextContent('Your high point was');
@@ -52,8 +42,7 @@ describe('DashboardTrivia', () => {
   });
 
   it('fills a model sentence from the figures and marks it as AI', async () => {
-    get.mockResolvedValue(
-      list({
+    trivia = list({
         items: [{ topic: 'investments', source: 'ai', text: 'You hold {name}, up {pct} at {rate} and {multiple}x.' }],
         figures: {
           name: { kind: 'text', value: 'XGRO' },
@@ -61,9 +50,8 @@ describe('DashboardTrivia', () => {
           rate: { kind: 'rate', value: 1.4066 },
           multiple: { kind: 'multiple', value: 2.03 },
         },
-      }),
-    );
-    await show('investments');
+      });
+    show('investments');
     const line = screen.getByTestId('dashboard-trivia');
     expect(line).toHaveTextContent('Investments');
     expect(line).toHaveTextContent('You hold XGRO, up 12.50%');
@@ -73,13 +61,11 @@ describe('DashboardTrivia', () => {
   });
 
   it('never renders a model sentence as markup', async () => {
-    get.mockResolvedValue(
-      list({
+    trivia = list({
         items: [{ topic: 'netWorth', source: 'ai', text: '<img src=x onerror=alert(1)> {a}' }],
         figures: { a: { kind: 'text', value: 'A' } },
-      }),
-    );
-    await show();
+      });
+    show();
     const line = screen.getByTestId('dashboard-trivia');
     expect(line.querySelector('img')).toBeNull();
     expect(line).toHaveTextContent('<img src=x onerror=alert(1)> A');
@@ -95,14 +81,14 @@ describe('DashboardTrivia', () => {
   });
 
   it('shows the facts of the set on screen', async () => {
-    get.mockResolvedValue(twoTopics);
-    await show('investments');
+    trivia = twoTopics;
+    show('investments');
     expect(screen.getByTestId('dashboard-trivia')).toHaveTextContent('invest one A');
   });
 
   it('moves to the next sentence on a timer', async () => {
-    get.mockResolvedValue(twoTopics);
-    await show();
+    trivia = twoTopics;
+    show();
     expect(screen.getByTestId('dashboard-trivia')).toHaveTextContent('net one A');
     await act(async () => vi.advanceTimersByTime(TRIVIA_ROTATE_MS));
     expect(screen.getByTestId('dashboard-trivia')).toHaveTextContent('net two A');
@@ -110,57 +96,42 @@ describe('DashboardTrivia', () => {
 
   it('reaches every sentence of a list on Auto, one step per visit', async () => {
     const sentences = ['a', 'b', 'c', 'd'].map((x) => `net ${x} {v}`);
-    get.mockResolvedValue(
-      list({
+    trivia = list({
         items: [
           ...sentences.map((text) => ({ topic: 'netWorth' as const, source: 'ai' as const, text })),
           { topic: 'investments', source: 'ai', text: 'invest {v}' },
         ],
         figures: { v: { kind: 'text', value: 'V' } },
-      }),
-    );
-    let view!: ReturnType<typeof render>;
-    await act(async () => {
-      view = render(<DashboardTrivia topic="netWorth" heroCycling />);
-    });
+      });
+    const view = render(<DashboardTrivia trivia={trivia} topic="netWorth" heroCycling />);
     const seen = new Set([screen.getByTestId('dashboard-trivia').textContent]);
     for (let i = 0; i < 3; i++) {
-      await act(async () => view.rerender(<DashboardTrivia topic="investments" heroCycling />));
-      await act(async () => view.rerender(<DashboardTrivia topic="netWorth" heroCycling />));
+      view.rerender(<DashboardTrivia trivia={trivia} topic="investments" heroCycling />);
+      view.rerender(<DashboardTrivia trivia={trivia} topic="netWorth" heroCycling />);
       seen.add(screen.getByTestId('dashboard-trivia').textContent);
     }
     expect(seen.size).toBe(4);
   });
 
   it('leaves the pace to the hero while it alternates', async () => {
-    get.mockResolvedValue(twoTopics);
-    await act(async () => {
-      render(<DashboardTrivia topic="netWorth" heroCycling />);
-    });
+    trivia = twoTopics;
+    render(<DashboardTrivia trivia={trivia} topic="netWorth" heroCycling />);
     await act(async () => vi.advanceTimersByTime(TRIVIA_ROTATE_MS));
     expect(screen.getByTestId('dashboard-trivia')).toHaveTextContent('net one A');
   });
 
   it('falls back to the other topic when the set on screen has no facts', async () => {
-    get.mockResolvedValue(
-      list({
+    trivia = list({
         items: [{ topic: 'netWorth', source: 'ai', text: 'net one {a}' }],
         figures: { a: { kind: 'text', value: 'A' } },
-      }),
-    );
-    await show('investments');
+      });
+    show('investments');
     expect(screen.getByTestId('dashboard-trivia')).toHaveTextContent('net one A');
   });
 
-  it('leaves the space empty with nothing to say or a failed request', async () => {
-    get.mockResolvedValue(list({}));
-    await show();
-    expect(screen.queryByTestId('dashboard-trivia')).not.toBeInTheDocument();
-  });
-
-  it('stays empty when the request fails', async () => {
-    get.mockRejectedValue(new Error('nope'));
-    await show();
+  it('renders nothing with nothing to say', () => {
+    trivia = list({});
+    show();
     expect(screen.queryByTestId('dashboard-trivia')).not.toBeInTheDocument();
   });
 });

@@ -89,7 +89,7 @@ Under **Query limits (optional)** you decide how much work this provider may do 
 
 ### AI Trivia
 
-**AI trivia**, under the floating chat bubble in **AI Settings**, controls the [line of trivia beside the dashboard greeting](dashboard.md#trivia-beside-the-greeting). It is on by default, with or without an AI provider. Turn it off and the line goes, nothing is built for it each day, and no AI provider is asked about it.
+**AI trivia**, under the floating chat bubble in **AI Settings**, controls the [line of trivia on the dashboard](dashboard.md#trivia). It is on by default, with or without an AI provider. Turn it off and the line goes, nothing is built for it each day, and no AI provider is asked about it.
 
 ---
 

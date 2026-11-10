@@ -1,8 +1,9 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { CollapsingTitleContext } from '@/hooks/useCollapsingHeaderTitle';
+import { useHasMobileTabBar } from '@/hooks/useIsMobile';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import type { PortfolioValuation } from '@/types/investment';
 import type { Account } from '@/types/account';
@@ -11,6 +12,8 @@ import { DashboardTrivia } from './DashboardTrivia';
 import { HeroPanelActiveContext } from './hero-parts';
 import { NetWorthHero } from './NetWorthHero';
 import { PortfolioHero } from './PortfolioHero';
+import { useDashboardTrivia } from './useDashboardTrivia';
+import { useElementHeight } from './useElementHeight';
 import { useHeroCycle } from './useHeroCycle';
 
 interface DashboardHeroProps {
@@ -36,6 +39,9 @@ interface DashboardHeroProps {
   header: ReactNode;
 }
 
+/** The trivia column's width (`w-56`) and the gap before it (`gap-x-10`). */
+const TRIVIA_ZONE = '16.5rem';
+
 const TRIVIA_TOPIC = { netWorth: 'netWorth', portfolio: 'investments' } as const;
 
 /**
@@ -56,7 +62,12 @@ export function DashboardHero({
   const t = useTranslations('dashboard');
   const stored = usePreferencesStore((s) => s.preferences?.dashboardWidgetConfig?.[DASHBOARD_HERO_WIDGET_ID]);
   const config = resolveDashboardHeroConfig(stored);
-  const triviaEnabled = usePreferencesStore((s) => s.preferences?.aiTriviaEnabled) !== false;
+  const triviaOn = usePreferencesStore((s) => s.preferences?.aiTriviaEnabled) !== false;
+  // Only with the desktop layout: below it there is no room beside the chart.
+  const wideEnough = !useHasMobileTabBar();
+  const trivia = useDashboardTrivia(config.enabled && triviaOn && wideEnough);
+  const showTrivia = (trivia?.items.length ?? 0) > 0;
+  const [headRef, headHeight] = useElementHeight<HTMLDivElement>();
   const { sets, active, cycling, mounted, animate, goTo } = useHeroCycle({
     choice: config.set,
     hasInvestments,
@@ -69,39 +80,50 @@ export function DashboardHero({
   const activeIndex = sets.indexOf(active);
 
   return (
-    <div className="mb-6" data-testid="dashboard-hero-root">
-      <div className="-mb-1 flex flex-col lg:flex-row lg:items-start lg:gap-8">
+    <div
+      className="relative mb-6"
+      data-testid="dashboard-hero-root"
+      style={
+        {
+          '--hero-head-h': `${headHeight}px`,
+          '--hero-trivia-zone': showTrivia ? TRIVIA_ZONE : '0px',
+        } as CSSProperties
+      }
+    >
+      <div ref={headRef} className="flex items-start justify-between gap-3 lg:w-[26rem] xl:w-[30rem]">
         {/* Beside the figures the headline is what collapses into the app
             header, so the greeting does not. */}
-        <CollapsingTitleContext.Provider value={false}>{header}</CollapsingTitleContext.Provider>
-        <div className="-mt-4 mb-4 flex min-w-0 items-start gap-3 lg:mt-1 lg:mb-0 lg:flex-1">
-          <div className="min-w-0 flex-1">
-            {triviaEnabled && <DashboardTrivia topic={TRIVIA_TOPIC[active]} heroCycling={cycling} />}
-          </div>
-          {sets.length > 1 && (
-            <div role="group" aria-label={t('hero.cycleControls')} className="flex flex-shrink-0">
-              {sets.map((set) => (
-                <button
-                  key={set}
-                  type="button"
-                  aria-pressed={set === active}
-                  aria-label={t('hero.showSet', { name: setName(set) })}
-                  title={setName(set)}
-                  onClick={() => goTo(set)}
-                  className="flex h-6 w-6 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`h-2 w-2 rounded-full transition-colors motion-reduce:transition-none ${
-                      set === active ? 'bg-blue-600 dark:bg-blue-400' : 'bg-gray-300 dark:bg-gray-600'
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="min-w-0 flex-1">
+          <CollapsingTitleContext.Provider value={false}>{header}</CollapsingTitleContext.Provider>
         </div>
+        {sets.length > 1 && (
+          <div role="group" aria-label={t('hero.cycleControls')} className="mt-1 flex flex-shrink-0">
+            {sets.map((set) => (
+              <button
+                key={set}
+                type="button"
+                aria-pressed={set === active}
+                aria-label={t('hero.showSet', { name: setName(set) })}
+                title={setName(set)}
+                onClick={() => goTo(set)}
+                className="flex h-6 w-6 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`h-2 w-2 rounded-full transition-colors motion-reduce:transition-none ${
+                    set === active ? 'bg-blue-600 dark:bg-blue-400' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
+      {trivia && showTrivia && (
+        <div className="absolute top-1 left-[calc(30rem+2.5rem)] w-56">
+          <DashboardTrivia trivia={trivia} topic={TRIVIA_TOPIC[active]} heroCycling={cycling} />
+        </div>
+      )}
       {/* Clipped sideways only: a clip on both axes would cut off the figures'
           popovers below the track. */}
       <div className="overflow-x-clip">

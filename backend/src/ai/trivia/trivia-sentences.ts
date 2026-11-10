@@ -3,7 +3,7 @@ import type { TriviaFact, TriviaItem, TriviaTopic } from "./trivia.types";
 
 /** The most sentences kept from a model, and the longest one shown. */
 const MAX_AI_ITEMS = 16;
-const MAX_SENTENCE_CHARS = 320;
+const MAX_SENTENCE_CHARS = 240;
 
 const PLACEHOLDER = /\{([A-Za-z]+)\}/g;
 /**

@@ -12,6 +12,19 @@ vi.mock('@/store/preferencesStore', () => ({
     selector({ preferences: { dashboardWidgetConfig: prefs.current, aiTriviaEnabled: prefs.trivia } }),
 }));
 
+const triviaState: { list: unknown; asked: boolean[] } = { list: null, asked: [] };
+vi.mock('./useDashboardTrivia', () => ({
+  useDashboardTrivia: (enabled: boolean) => {
+    triviaState.asked.push(enabled);
+    return enabled ? triviaState.list : null;
+  },
+}));
+const viewport = { hasTabBar: false };
+vi.mock('@/hooks/useIsMobile', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/hooks/useIsMobile')>()),
+  useHasMobileTabBar: () => viewport.hasTabBar,
+}));
+
 vi.mock('./NetWorthHero', () => ({
   NetWorthHero: ({ config }: any) => (
     <div data-testid="net-worth-hero" data-range={config.range}>
@@ -61,6 +74,9 @@ describe('DashboardHero', () => {
   beforeEach(() => {
     prefs.current = undefined;
     prefs.trivia = undefined;
+    viewport.hasTabBar = false;
+    triviaState.asked = [];
+    triviaState.list = { items: [{ topic: 'netWorth', source: 'ai', text: 'x' }], figures: {}, generatedAt: '' };
     vi.useFakeTimers();
   });
   afterEach(() => {
@@ -133,6 +149,25 @@ describe('DashboardHero', () => {
       />,
     );
     expect(screen.getByTestId('greeting-collapses')).toHaveTextContent('false');
+  });
+
+  it('leaves trivia off phones and tablets, and does not ask for it', () => {
+    viewport.hasTabBar = true;
+    renderHero();
+    expect(screen.queryByTestId('trivia')).not.toBeInTheDocument();
+    expect(triviaState.asked).not.toContain(true);
+  });
+
+  it('reserves the trivia column only when there is something to put in it', () => {
+    const zone = () =>
+      screen.getByTestId('dashboard-hero-root').style.getPropertyValue('--hero-trivia-zone');
+    const first = renderHero();
+    expect(zone()).toBe('16.5rem');
+    first.unmount();
+    triviaState.list = { items: [], figures: {}, generatedAt: '' };
+    renderHero();
+    expect(zone()).toBe('0px');
+    expect(screen.queryByTestId('trivia')).not.toBeInTheDocument();
   });
 
   it('makes the set off screen inert', async () => {

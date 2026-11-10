@@ -70,7 +70,7 @@ You receive a list of facts. Each fact has a topic ("netWorth" or "investments")
 
 RULES:
 1. Reply with JSON only: {"trivia":[{"topic":"netWorth","text":"..."}]}.
-2. Write one sentence or two for each fact, addressed to the reader as "you". Vary the wording.
+2. Write one sentence, or two short ones, for each fact, addressed to the reader as "you", in under 160 characters; it is shown in a narrow column. Vary the wording.
 3. Refer to every figure ONLY by its placeholder, exactly as given, for example "Your high point was {peakAmount} in {peakMonth}." Placeholder names stay exactly as written, in English, whatever language you write in. The placeholder is replaced with the formatted value when shown; the value after each name is there so you understand the fact.
 4. Never write a digit, a number, a date, a percent sign or a currency symbol yourself; each placeholder's value already carries its own. Copy placeholder names exactly, with no spaces inside the braces. A sentence with a figure, symbol or brace outside a placeholder is discarded.
 5. Use only the figures of the fact the sentence is about, and give the sentence that fact's topic.
