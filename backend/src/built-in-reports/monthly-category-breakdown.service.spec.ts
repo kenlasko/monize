@@ -138,6 +138,35 @@ describe("MonthlyCategoryBreakdownService", () => {
     );
   });
 
+  it("leaves a category's foreign month out whole when one of its days has no rate (issue #2106)", async () => {
+    // EUR->USD is stored for the fixture day only; 2024-01-05 has no rate.
+    const part = (txDate: string, withdrawals: string) => ({
+      month: "2026-01",
+      category_id: null,
+      currency_code: "EUR",
+      tx_date: txDate,
+      own_rate: null,
+      deposits: "0",
+      withdrawals,
+    });
+    scopedManager.query
+      .mockResolvedValueOnce([
+        part(FIXTURE_TX_DATE, "100"),
+        part("2024-01-05", "50"),
+      ])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.getMonthlyCategoryBreakdown(
+      mockUserId,
+      "2024-01-01",
+      "2026-01-31",
+    );
+
+    expect(result.data).toEqual([]);
+    expect(result.excludedCount).toBe(1);
+    expect(result.missingCurrencies).toEqual(["EUR"]);
+  });
+
   it("returns empty data when no transactions exist", async () => {
     const result = await service.getMonthlyCategoryBreakdown(
       mockUserId,

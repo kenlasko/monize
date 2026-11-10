@@ -516,6 +516,34 @@ describe("TaxRecurringReportsService", () => {
   // getRecurringExpenses
   // ---------------------------------------------------------------------------
   describe("getRecurringExpenses", () => {
+    it("leaves a payee's foreign group out whole when one of its days has no rate (issue #2106)", async () => {
+      currencyService.convertRow.mockImplementation(
+        (amount: number, row: RawRateBasis) =>
+          row.tx_date === "2024-01-05" ? null : amount,
+      );
+      const part = (day: string) => ({
+        payee_id: "p-eur",
+        payee_name_normalized: "streaming",
+        payee_name: "Streaming",
+        category_name: null,
+        currency_code: "EUR",
+        tx_date: day,
+        occurrences: 2,
+        total_amount: "30",
+        last_transaction_date: new Date(day),
+        history_start: "2024-01-01",
+      });
+      scopedManager.query.mockResolvedValue([
+        part("2025-06-01"),
+        part("2024-01-05"),
+      ]);
+
+      const result = await service.getRecurringExpenses(mockUserId, 3);
+
+      expect(result.data).toEqual([]);
+      expect(result.excludedCount).toBe(1);
+    });
+
     it("ranks payees by their merged total, not by their largest day's part (issue #2106)", async () => {
       scopedManager.query.mockResolvedValue([
         // A home-currency payee: one 400 aggregate.
@@ -1022,6 +1050,31 @@ describe("TaxRecurringReportsService", () => {
   // getBillPaymentHistory
   // ---------------------------------------------------------------------------
   describe("getBillPaymentHistory", () => {
+    it("selects each payment with its day and own rate (issue #2106)", async () => {
+      scopedManager.query
+        .mockResolvedValueOnce([
+          {
+            id: "st-1",
+            name: "Phone",
+            amount: "-50",
+            amount_is_estimated: false,
+            category_id: null,
+            payee_name: "Phone Co",
+          },
+        ])
+        .mockResolvedValueOnce([]);
+
+      await service.getBillPaymentHistory(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      const [sql] = scopedManager.query.mock.calls[1];
+      expect(sql).toContain("AS tx_date");
+      expect(sql).toContain("AS own_rate");
+    });
+
     it("returns empty result when no scheduled transactions exist", async () => {
       // First query (scheduled_transactions) returns empty
       scopedManager.query.mockResolvedValueOnce([]);

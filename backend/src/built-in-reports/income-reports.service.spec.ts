@@ -680,6 +680,25 @@ describe("IncomeReportsService", () => {
       expect(result.data[0].periodEnd).toBe("2025-02-28");
     });
 
+    it("leaves a bucket's foreign group out whole when one of its days has no rate (issue #2106)", async () => {
+      // EUR->USD is stored for the fixture day only; 2024-01-05 has no rate.
+      scopedManager.query.mockResolvedValue([
+        row("2025-01-01", "100.00", "0.00", "EUR"),
+        { ...row("2025-01-01", "0.00", "40.00", "EUR"), tx_date: "2024-01-05" },
+      ]);
+
+      const result = await service.getIncomeVsExpenses(
+        mockUserId,
+        "2025-01-01",
+        "2025-01-31",
+      );
+
+      expect(result.data[0].income).toBe(0);
+      expect(result.data[0].expenses).toBe(0);
+      expect(result.totals.income).toBeNull();
+      expect(result.excludedCount).toBe(1);
+    });
+
     it("merges multiple currency rows for the same bucket", async () => {
       // EUR->USD is 1.1 in the fixture rates.
       scopedManager.query.mockResolvedValue([

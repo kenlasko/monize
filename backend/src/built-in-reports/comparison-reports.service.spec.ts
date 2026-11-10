@@ -125,6 +125,42 @@ describe("ComparisonReportsService", () => {
   // getYearOverYear
   // ---------------------------------------------------------------------------
   describe("getYearOverYear", () => {
+    it("leaves a month's foreign group out whole when one of its days has no rate (issue #2106)", async () => {
+      currencyService.convertRow.mockImplementation(
+        (amount: number, row: RawRateBasis) =>
+          row.tx_date === "2024-01-05" ? null : amount,
+      );
+      const year = new Date().getFullYear();
+      scopedManager.query.mockResolvedValue([
+        {
+          year,
+          month: 1,
+          currency_code: "EUR",
+          tx_date: `${year}-01-10`,
+          own_rate: null,
+          income: "0",
+          expenses: "100",
+        },
+        {
+          year,
+          month: 1,
+          currency_code: "EUR",
+          tx_date: "2024-01-05",
+          own_rate: null,
+          income: "0",
+          expenses: "-40",
+        },
+      ]);
+
+      const result = await service.getYearOverYear(mockUserId, 1);
+
+      expect(result.data[0].months[0].expenses).toBe(0);
+      expect(result.data[0].totals.expenses).toBeNull();
+      expect(result.excludedCount).toBe(1);
+      // Each foreign row is selected with its day and own rate.
+      expect(scopedManager.query.mock.calls[0][0]).toContain("AS tx_date");
+    });
+
     it("classifies income and expenses by category, like Income vs Expenses", async () => {
       scopedManager.query.mockResolvedValue([]);
       await service.getYearOverYear(mockUserId, 1);

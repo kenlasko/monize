@@ -64,6 +64,46 @@ describe("DataQualityReportsService", () => {
   // getUncategorizedTransactions
   // ---------------------------------------------------------------------------
   describe("getUncategorizedTransactions", () => {
+    it("leaves a currency's summary out whole when one of its days has no rate (issue #2106)", async () => {
+      currencyService.convertRow.mockImplementation(
+        (amount: number, row: RawRateBasis) =>
+          row.tx_date === "2024-01-05" ? null : amount,
+      );
+      scopedManager.query.mockResolvedValueOnce([]);
+      scopedManager.query.mockResolvedValueOnce([
+        {
+          currency_code: "EUR",
+          tx_date: "2025-06-01",
+          own_rate: null,
+          total_count: "1",
+          expense_count: "1",
+          expense_total: "100",
+          income_count: "0",
+          income_total: "0",
+        },
+        {
+          currency_code: "EUR",
+          tx_date: "2024-01-05",
+          own_rate: null,
+          total_count: "1",
+          expense_count: "1",
+          expense_total: "50",
+          income_count: "0",
+          income_total: "0",
+        },
+      ]);
+
+      const result = await service.getUncategorizedTransactions(
+        mockUserId,
+        undefined,
+        "2025-12-31",
+      );
+
+      expect(result.summary.expenseTotal).toBeNull();
+      expect(result.summary.knownExpenseTotal).toBe(0);
+      expect(result.summary.totalCount).toBe(2);
+    });
+
     it("returns empty result when no uncategorized transactions exist", async () => {
       // First call: transaction list query
       scopedManager.query.mockResolvedValueOnce([]);

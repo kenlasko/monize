@@ -160,6 +160,16 @@ describe("AnomalyReportsService", () => {
   // getSpendingAnomalies
   // ---------------------------------------------------------------------------
   describe("getSpendingAnomalies", () => {
+    it("selects each expense with its day and own rate and converts it by the row (issue #2106)", async () => {
+      scopedManager.query.mockResolvedValue([]);
+
+      await service.getSpendingAnomalies(mockUserId);
+
+      const [sql] = scopedManager.query.mock.calls[0];
+      expect(sql).toContain("AS tx_date");
+      expect(sql).toContain("AS own_rate");
+    });
+
     it("returns empty result when fewer than 10 transactions exist", async () => {
       scopedManager.query.mockResolvedValue(buildRawExpenses(5, 20));
 
