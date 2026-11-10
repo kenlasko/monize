@@ -288,6 +288,10 @@
     "missingDateRow": "Linha {line}: sem data",
     "unreadableDatesMore": "...e mais {count}",
     "unreadableDatesGoBack": "Se o arquivo escreve as datas em outra ordem, volte à etapa de mapeamento de colunas e escolha o formato de data que ele usa.",
+    "unreadableAmountsNotice": "{count, plural, one {# linha tem um valor que não pode ser lido} other {# linhas têm valores que não podem ser lidos}} e não {count, plural, one {será importada} other {serão importadas}}:",
+    "unreadableAmountRow": "Linha {line}: \"{rawAmount}\"",
+    "unreadableAmountsMore": "...e mais {count}",
+    "unreadableAmountsGoBack": "Verifique se as colunas de valor estão mapeadas corretamente, ou corrija essas linhas no arquivo e importe-o novamente.",
     "importButton": "Importar Transações"
   },
   "complete": {
@@ -320,6 +324,8 @@
     "skipReasonDuplicateTransfer": "transferência já registrada",
     "skipReasonUnreadableDate": "data ilegível",
     "skipReasonNoDate": "sem data",
+    "skipReasonUnreadableAmount": "valor ilegível",
+    "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "título ausente",
     "skipReasonMissingQuantity": "quantidade ausente",
     "skipReasonMissingAmount": "valor ausente",

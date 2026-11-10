@@ -12,6 +12,7 @@ const REASON_KEYS = {
   alreadyImported: 'complete.skipReasonAlreadyImported',
   duplicateTransfer: 'complete.skipReasonDuplicateTransfer',
   unreadableDate: 'complete.skipReasonUnreadableDate',
+  unreadableAmount: 'complete.skipReasonUnreadableAmount',
   missingSecurity: 'complete.skipReasonMissingSecurity',
   missingQuantity: 'complete.skipReasonMissingQuantity',
   missingAmount: 'complete.skipReasonMissingAmount',
@@ -33,8 +34,9 @@ interface SkippedRowsListProps {
 /**
  * The rows an import left out, each with its date (or, for a date the import
  * could not read, its line and raw text; for an investment row the parse
- * rejected, its line and date), amount, payee and why, so a person can check
- * them against the file.
+ * rejected, its line and date), amount (or, for an amount the import could not
+ * read, the file's text), payee and why, so a person can check them against
+ * the file.
  */
 export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total }: SkippedRowsListProps) {
   const t = useTranslations('import');
@@ -66,7 +68,11 @@ export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total }: SkippedR
   const describe = (row: ImportSkippedRow) => {
     const values = {
       date: describeDate(row),
-      amount: formatCurrency(row.amount, row.currencyCode),
+      // An unreadable amount has no number to format; the file's text is shown.
+      amount:
+        row.reason === 'unreadableAmount' && row.rawAmount !== undefined
+          ? t('complete.skippedRowRawAmount', { rawAmount: row.rawAmount })
+          : formatCurrency(row.amount, row.currencyCode),
       reason: describeReason(row),
     };
     return row.payee

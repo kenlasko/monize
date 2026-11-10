@@ -288,6 +288,10 @@
     "missingDateRow": "第 {line} 行：无日期",
     "unreadableDatesMore": "...以及另外 {count} 行",
     "unreadableDatesGoBack": "如果文件中的日期采用其他顺序，请返回列映射步骤并选择文件使用的日期格式。",
+    "unreadableAmountsNotice": "{count, plural, other {# 行}}的金额无法读取，将不会导入：",
+    "unreadableAmountRow": "第 {line} 行：“{rawAmount}”",
+    "unreadableAmountsMore": "...以及另外 {count} 行",
+    "unreadableAmountsGoBack": "请检查金额列是否映射正确，或在文件中更正这些行后重新导入。",
     "importButton": "导入交易"
   },
   "complete": {
@@ -320,6 +324,8 @@
     "skipReasonDuplicateTransfer": "转账已记录",
     "skipReasonUnreadableDate": "无法读取日期",
     "skipReasonNoDate": "无日期",
+    "skipReasonUnreadableAmount": "无法读取金额",
+    "skippedRowRawAmount": "“{rawAmount}”",
     "skipReasonMissingSecurity": "缺少证券",
     "skipReasonMissingQuantity": "缺少数量",
     "skipReasonMissingAmount": "缺少金额",

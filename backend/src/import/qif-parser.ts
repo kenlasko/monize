@@ -105,6 +105,12 @@ export interface QifParseResult {
    */
   unreadableDateRows?: import("./csv-parser").CsvUnreadableDateRow[];
   /**
+   * CSV parses only: every row left out because its amount (or debit or
+   * credit) field holds text that cannot be read as an amount, in file order.
+   * The preview counts them and the import records each as a skipped row.
+   */
+  unreadableAmountRows?: import("./csv-parser").CsvUnreadableAmountRow[];
+  /**
    * Investment-mode CSV parses only: every row left out because its action
    * needs data the row does not carry, in file order. The preview counts them
    * in `investmentSummary.rejectedRows` and the import records each as a

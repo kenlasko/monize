@@ -73,6 +73,18 @@ describe('SkippedRowsList', () => {
     expect(second).toHaveTextContent('Row 20: -$50.00 (no date)');
   });
 
+  it('names a row whose amount could not be read by its row, date and the amount text, never as 0', () => {
+    render(
+      <SkippedRowsList
+        rows={[row({ date: '2026-03-02', amount: 0, payee: 'Cafe', reason: 'unreadableAmount', rowNumber: 7, rawAmount: 'N/A' })]}
+      />,
+    );
+
+    const item = screen.getByRole('listitem');
+    expect(item).toHaveTextContent(/^Row 7, .*2026.*: "N\/A", Cafe \(amount could not be read\)$/);
+    expect(item).not.toHaveTextContent('$0.00');
+  });
+
   it('names an investment row the parse rejected by its row, date and what it was missing', () => {
     render(
       <SkippedRowsList

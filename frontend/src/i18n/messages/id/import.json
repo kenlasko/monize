@@ -288,6 +288,10 @@
     "missingDateRow": "Baris {line}: tanpa tanggal",
     "unreadableDatesMore": "...dan {count} lainnya",
     "unreadableDatesGoBack": "Jika file menulis tanggal dalam urutan lain, kembali ke langkah pemetaan kolom dan pilih format tanggal yang digunakannya.",
+    "unreadableAmountsNotice": "{count, plural, other {# baris}} memiliki jumlah yang tidak dapat dibaca dan tidak akan diimpor:",
+    "unreadableAmountRow": "Baris {line}: \"{rawAmount}\"",
+    "unreadableAmountsMore": "...dan {count} lainnya",
+    "unreadableAmountsGoBack": "Periksa apakah kolom jumlah sudah dipetakan dengan benar, atau perbaiki baris-baris ini di file lalu impor lagi.",
     "importButton": "Impor Transaksi"
   },
   "complete": {
@@ -320,6 +324,8 @@
     "skipReasonDuplicateTransfer": "transfer sudah tercatat",
     "skipReasonUnreadableDate": "tanggal tidak dapat dibaca",
     "skipReasonNoDate": "tanpa tanggal",
+    "skipReasonUnreadableAmount": "jumlah tidak dapat dibaca",
+    "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "sekuritas tidak ada",
     "skipReasonMissingQuantity": "kuantitas tidak ada",
     "skipReasonMissingAmount": "jumlah tidak ada",

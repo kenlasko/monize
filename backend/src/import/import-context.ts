@@ -244,6 +244,7 @@ export function recordSkippedRow(
     payee?: string | null;
     rowNumber?: number;
     rawDate?: string;
+    rawAmount?: string;
   },
   reason: ImportSkipReason,
   currencyCode: string,
@@ -258,6 +259,7 @@ export function recordSkippedRow(
     reason,
     ...(row.rowNumber !== undefined ? { rowNumber: row.rowNumber } : {}),
     ...(row.rawDate !== undefined ? { rawDate: row.rawDate } : {}),
+    ...(row.rawAmount !== undefined ? { rawAmount: row.rawAmount } : {}),
   });
 }
 

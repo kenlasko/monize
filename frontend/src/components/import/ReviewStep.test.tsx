@@ -302,6 +302,71 @@ describe('ReviewStep', () => {
     });
   });
 
+  // --- Unreadable CSV amounts ---
+
+  describe('unreadable amounts', () => {
+    function csvFile(unreadableAmounts: { count: number; rows: { rowNumber: number; rawAmount: string }[] } | undefined, fileName = 'march.csv') {
+      return {
+        fileName,
+        fileContent: '',
+        fileType: 'csv' as const,
+        parsedData: { ...defaultProps.parsedData, unreadableAmounts },
+        selectedAccountId: 'acc-1',
+        matchConfidence: 'exact',
+      };
+    }
+
+    it('counts the rows whose amount cannot be read and names each by row and text', () => {
+      const unreadable = {
+        count: 2,
+        rows: [
+          { rowNumber: 4, rawAmount: '12.34 pending' },
+          { rowNumber: 9, rawAmount: 'N/A' },
+        ],
+      };
+      render(<ReviewStep {...defaultProps} importFiles={[csvFile(unreadable)] as any[]} />);
+
+      expect(
+        screen.getByText('2 rows have amounts that cannot be read and will not be imported:'),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Row 4: "12.34 pending"')).toBeInTheDocument();
+      expect(screen.getByText('Row 9: "N/A"')).toBeInTheDocument();
+      expect(screen.getByText(/Check that the amount columns are mapped correctly/)).toBeInTheDocument();
+    });
+
+    it('lists the first five and counts the rest', () => {
+      const rows = Array.from({ length: 7 }, (_, i) => ({ rowNumber: i + 2, rawAmount: `x${i}` }));
+      render(<ReviewStep {...defaultProps} importFiles={[csvFile({ count: 12, rows })] as any[]} />);
+
+      expect(screen.getByText('Row 6: "x4"')).toBeInTheDocument();
+      expect(screen.queryByText('Row 7: "x5"')).not.toBeInTheDocument();
+      expect(screen.getByText('...and 7 more')).toBeInTheDocument();
+    });
+
+    it('names the file of each list in a bulk import', () => {
+      const one = { count: 1, rows: [{ rowNumber: 3, rawAmount: 'oops' }] };
+      render(
+        <ReviewStep
+          {...defaultProps}
+          isBulkImport={true}
+          importFiles={[csvFile(one, 'a.csv'), csvFile(undefined, 'b.csv')] as any[]}
+        />,
+      );
+
+      expect(
+        screen.getByText('1 row has an amount that cannot be read and will not be imported:'),
+      ).toBeInTheDocument();
+      expect(screen.getAllByText('a.csv')).toHaveLength(2);
+      expect(screen.getAllByText('b.csv')).toHaveLength(1);
+    });
+
+    it('shows nothing when every amount reads', () => {
+      render(<ReviewStep {...defaultProps} importFiles={[csvFile({ count: 0, rows: [] })] as any[]} />);
+
+      expect(screen.queryByText(/amounts? that cannot be read/)).not.toBeInTheDocument();
+    });
+  });
+
   // --- Investment summary section ---
 
   describe('investment summary', () => {

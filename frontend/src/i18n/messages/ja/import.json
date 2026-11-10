@@ -288,6 +288,10 @@
     "missingDateRow": "{line} 行目: 日付なし",
     "unreadableDatesMore": "...ほか {count} 件",
     "unreadableDatesGoBack": "ファイルの日付が別の順序で書かれている場合は、列マッピングの手順に戻り、ファイルが使用している日付形式を選択してください。",
+    "unreadableAmountsNotice": "{count, plural, other {# 件の行}}は金額を読み取れないため、インポートされません:",
+    "unreadableAmountRow": "{line} 行目: 「{rawAmount}」",
+    "unreadableAmountsMore": "...ほか {count} 件",
+    "unreadableAmountsGoBack": "金額の列が正しく割り当てられているか確認するか、ファイル内のこれらの行を修正してから再度インポートしてください。",
     "importButton": "取引をインポート"
   },
   "complete": {
@@ -320,6 +324,8 @@
     "skipReasonDuplicateTransfer": "振替は記録済み",
     "skipReasonUnreadableDate": "日付を読み取れません",
     "skipReasonNoDate": "日付なし",
+    "skipReasonUnreadableAmount": "金額を読み取れません",
+    "skippedRowRawAmount": "「{rawAmount}」",
     "skipReasonMissingSecurity": "有価証券がありません",
     "skipReasonMissingQuantity": "数量がありません",
     "skipReasonMissingAmount": "金額がありません",

@@ -288,6 +288,10 @@
     "missingDateRow": "[XX-Row {line}: no date-XX]",
     "unreadableDatesMore": "[XX-...and {count} more-XX]",
     "unreadableDatesGoBack": "[XX-If the file writes its dates in another order, go back to the column mapping step and choose the date format it uses.-XX]",
+    "unreadableAmountsNotice": "[XX-{count, plural, one {# row has an amount} other {# rows have amounts}} that cannot be read and will not be imported:-XX]",
+    "unreadableAmountRow": "[XX-Row {line}: \"{rawAmount}\"-XX]",
+    "unreadableAmountsMore": "[XX-...and {count} more-XX]",
+    "unreadableAmountsGoBack": "[XX-Check that the amount columns are mapped correctly, or correct these rows in the file and import it again.-XX]",
     "importButton": "[XX-Import Transactions-XX]"
   },
   "complete": {
@@ -320,6 +324,8 @@
     "skipReasonDuplicateTransfer": "[XX-transfer already recorded-XX]",
     "skipReasonUnreadableDate": "[XX-date could not be read-XX]",
     "skipReasonNoDate": "[XX-no date-XX]",
+    "skipReasonUnreadableAmount": "[XX-amount could not be read-XX]",
+    "skippedRowRawAmount": "[XX-\"{rawAmount}\"-XX]",
     "skipReasonMissingSecurity": "[XX-missing security-XX]",
     "skipReasonMissingQuantity": "[XX-missing quantity-XX]",
     "skipReasonMissingAmount": "[XX-missing amount-XX]",

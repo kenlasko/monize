@@ -3499,6 +3499,40 @@ describe("ImportService", () => {
         rawDate: "13/01/2026",
       });
     });
+    it("counts the rows with an unreadable amount and names them by line and text", async () => {
+      mockedValidateCsvContent.mockReturnValue({ valid: true });
+      mockedParseCsv.mockReturnValue({
+        accountType: "CHEQUING",
+        accountName: "",
+        transactions: [],
+        categories: [],
+        transferAccounts: [],
+        securities: [],
+        detectedDateFormat: "MM/DD/YYYY",
+        sampleDates: [],
+        openingBalance: null,
+        openingBalanceDate: null,
+        unreadableAmountRows: [
+          {
+            rowNumber: 4,
+            rawAmount: "12.34 pending",
+            date: "2026-01-16",
+            payee: "Cafe",
+          },
+        ],
+      });
+
+      const result = await service.parseCsvFile(
+        userId,
+        "content",
+        columnMapping,
+      );
+
+      expect(result.unreadableAmounts).toEqual({
+        count: 1,
+        rows: [{ rowNumber: 4, rawAmount: "12.34 pending" }],
+      });
+    });
   });
 
   describe("importCsvFile", () => {
@@ -3642,6 +3676,62 @@ describe("ImportService", () => {
           rawDate: "",
         },
       ]);
+    });
+
+    it("records each row whose amount the parse could not read as skipped, in file order", async () => {
+      mockedValidateCsvContent.mockReturnValue({ valid: true });
+      mockedParseCsv.mockReturnValue({
+        accountType: "CHEQUING",
+        accountName: "",
+        transactions: [],
+        categories: [],
+        transferAccounts: [],
+        securities: [],
+        detectedDateFormat: "MM/DD/YYYY",
+        sampleDates: [],
+        openingBalance: null,
+        openingBalanceDate: null,
+        unreadableDateRows: [
+          { rowNumber: 5, rawDate: "13/03/2026", amount: -1, payee: "" },
+        ],
+        unreadableAmountRows: [
+          {
+            rowNumber: 3,
+            rawAmount: "N/A",
+            date: "2026-03-02",
+            payee: "Cafe",
+          },
+        ],
+      });
+      accountsRepository.findOne.mockResolvedValue(mockChequingAccount);
+
+      const result = await service.importCsvFile(userId, {
+        content: "Date,Amount,Payee\n",
+        accountId: "acct-1",
+        columnMapping: {
+          date: 0,
+          amount: 1,
+          payee: 2,
+          dateFormat: "MM/DD/YYYY",
+          hasHeader: true,
+          delimiter: ",",
+        },
+        categoryMappings: [],
+        accountMappings: [],
+      } as any);
+
+      expect(result.imported).toBe(0);
+      expect(result.skipped).toBe(2);
+      expect(result.skippedRows.map((r) => r.rowNumber)).toEqual([3, 5]);
+      expect(result.skippedRows[0]).toEqual({
+        date: "2026-03-02",
+        amount: 0,
+        currencyCode: "CAD",
+        payee: "Cafe",
+        reason: "unreadableAmount",
+        rowNumber: 3,
+        rawAmount: "N/A",
+      });
     });
 
     const emptyParseResult = (accountType: string) => ({
