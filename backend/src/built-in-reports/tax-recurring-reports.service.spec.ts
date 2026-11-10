@@ -516,6 +516,43 @@ describe("TaxRecurringReportsService", () => {
   // getRecurringExpenses
   // ---------------------------------------------------------------------------
   describe("getRecurringExpenses", () => {
+    it("ranks payees by their merged total, not by their largest day's part (issue #2106)", async () => {
+      scopedManager.query.mockResolvedValue([
+        // A home-currency payee: one 400 aggregate.
+        {
+          payee_id: "p-home",
+          payee_name_normalized: "gym",
+          payee_name: "Gym",
+          category_name: null,
+          currency_code: "USD",
+          occurrences: 4,
+          total_amount: "400",
+          last_transaction_date: new Date("2025-06-01"),
+          history_start: "2025-01-01",
+        },
+        // A foreign payee, one part per day: 3 x 150 = 450.
+        ...["2025-04-01", "2025-05-01", "2025-06-01"].map((day) => ({
+          payee_id: "p-eur",
+          payee_name_normalized: "streaming",
+          payee_name: "Streaming",
+          category_name: null,
+          currency_code: "EUR",
+          tx_date: day,
+          occurrences: 1,
+          total_amount: "150",
+          last_transaction_date: new Date(day),
+          history_start: "2025-01-01",
+        })),
+      ]);
+
+      const result = await service.getRecurringExpenses(mockUserId, 3);
+
+      expect(result.data.map((item) => item.payeeName)).toEqual([
+        "Streaming",
+        "Gym",
+      ]);
+    });
+
     it("judges the occurrence threshold over the whole group, not one day's part (issue #2106)", async () => {
       scopedManager.query.mockResolvedValue([]);
 

@@ -314,6 +314,12 @@ describe("latest exchange rates and the readers that take them (integration)", (
       missingCurrencies: [],
     });
     expect(grouped.map((r) => r.convertedTotal)).toEqual([-2650]);
+    const byPayee = await withUserContext(userId, () =>
+      analytics.getGroupedTotals(userId, { groupBy: "payee" }),
+    );
+    expect(byPayee.map((r) => [r.name, r.convertedTotal])).toEqual([
+      ["Hotel", -2650],
+    ]);
     expect(byTag.map((r) => r.convertedTotal)).toEqual([2650]);
     expect(categoryDetail.accounts.map((r) => r.convertedTotal)).toEqual([
       -2650,

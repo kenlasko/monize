@@ -1139,16 +1139,14 @@ export class PortfolioService {
     // Total net invested in the default currency. The cash is today's balance,
     // so it converts at today's rate; the flows are history, each row at the
     // rate on its own date (issue #2106), not a lifetime of trades at one rate.
-    const foreignAccounts = new Map(
-      holdingsByAccount
-        .filter((acct) => acct.currencyCode !== defaultCurrency)
-        .map((acct) => [acct.accountId, acct.currencyCode] as const),
-    );
+    const foreignAccountIds = holdingsByAccount
+      .filter((acct) => acct.currencyCode !== defaultCurrency)
+      .map((acct) => acct.accountId);
     const datedFlows =
-      foreignAccounts.size > 0
+      foreignAccountIds.length > 0
         ? await this.calculationService.computeNetInvestmentFlowsInReporting(
             userId,
-            foreignAccounts,
+            foreignAccountIds,
             defaultCurrency,
           )
         : new Map<string, number | null>();

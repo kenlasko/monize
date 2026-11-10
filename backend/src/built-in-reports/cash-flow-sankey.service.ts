@@ -7,13 +7,11 @@ import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { Category } from "../categories/entities/category.entity";
 import { investmentExclusionSql } from "../common/investment-filter.util";
-import {
-  buildRateIndex,
-  convertAtDate,
-} from "../common/time-series/rate-index.util";
+import { buildRateIndex } from "../common/time-series/rate-index.util";
 import { tr } from "../i18n/translate";
 import {
   ReportCurrencyService,
+  convertRateBasis,
   ownRateSql,
   toOwnRate,
 } from "./report-currency.service";
@@ -351,22 +349,18 @@ export class CashFlowSankeyService {
         })),
         categorized,
         transfers,
-        convert: (amount, from, date, ownRate) => {
-          if (from === currency) return amount;
-          // INV-FX-002: the row's own rate, where it reaches the reporting
-          // currency, before the market's.
-          if (ownRate !== null) return amount / ownRate;
-          // INV-FX-001: the newest observation on or before the row's date,
-          // within the age bound, or unknown.
-          return convertAtDate(
+        // INV-FX-002 then INV-FX-001: the row's own rate where it reaches the
+        // reporting currency, else the newest observation on or before the
+        // row's date within the age bound, or unknown -- the rule every report
+        // converts by (`convertRateBasis`).
+        convert: (amount, from, date, ownRate) =>
+          convertRateBasis(
             amount,
-            from,
+            { currency_code: from, tx_date: date, own_rate: ownRate },
             currency,
-            date,
             rateIndex,
             this.logger,
-          );
-        },
+          ),
       });
     } catch (error) {
       if (error instanceof SankeyIdentityError) {

@@ -1,4 +1,5 @@
 import { GroupedTotal, TransactionSummary } from '@/types/transaction';
+import { roundMoney } from '@/lib/format';
 
 /**
  * The active Transactions-page filters a payee/category info widget must
@@ -84,7 +85,14 @@ export function summarizeInDisplayCurrency(
   excludedTransactionCount: number;
 } {
   const buckets = Object.entries(summary.byCurrency ?? {});
-  if (!strategy.converted || buckets.length <= 1) {
+  // Native only when the figures are already in the display currency: a period
+  // whose one bucket is a foreign currency (a year spent only in EUR on a page
+  // displayed in USD) still reads the server's conversion.
+  const nativeFits =
+    !strategy.converted ||
+    buckets.length === 0 ||
+    (buckets.length === 1 && buckets[0][0] === strategy.displayCurrency);
+  if (nativeFits) {
     return {
       income: summary.totalIncome,
       expenses: summary.totalExpenses,
@@ -111,7 +119,7 @@ export function summarizeInDisplayCurrency(
   return {
     income: converted.knownIncome,
     expenses: converted.knownExpenses,
-    net: converted.knownIncome - converted.knownExpenses,
+    net: roundMoney(converted.knownIncome - converted.knownExpenses),
     missingCurrencies: converted.missingCurrencies,
     includedTransactionCount: converted.includedTransactionCount,
     excludedTransactionCount: converted.excludedTransactionCount,

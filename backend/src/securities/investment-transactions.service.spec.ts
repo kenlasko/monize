@@ -4451,6 +4451,30 @@ describe("InvestmentTransactionsService", () => {
       });
     });
 
+    it("names the pair a report entry lacks for its period (issue #2106)", async () => {
+      (
+        portfolioCalculationService.calculateCapitalGainsByMonth as jest.Mock
+      ).mockResolvedValue([
+        makeEntry({
+          accountCurrencyCode: "USD",
+          totalCapitalGain: 50,
+          symbol: "USS",
+          securityId: "sec-us",
+        }),
+      ]);
+      mockQueryRunner.manager.query.mockResolvedValue([]);
+
+      const [entry] = await service.getCapitalGainsByMonth(userId, {
+        startDate: "2024-06-01",
+        endDate: "2024-06-30",
+      });
+
+      expect(entry.inReportingCurrency).toMatchObject({
+        totalCapitalGain: null,
+        missingRatePairs: ["USD->CAD"],
+      });
+    });
+
     it("filters by symbol (case-insensitive) before aggregating", async () => {
       (
         portfolioCalculationService.calculateCapitalGainsByMonth as jest.Mock

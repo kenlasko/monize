@@ -16,7 +16,11 @@ import {
 } from "./portfolio.service";
 import { roundMoney } from "../common/round.util";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
-import { convertDatedRows } from "../built-in-reports/report-currency.service";
+import { investmentRowRateInto } from "./investment-row-fx.util";
+import {
+  buildRateIndex,
+  resolveIndexedRate,
+} from "../common/time-series/rate-index.util";
 import { parseTag } from "../tags/tag-key-value.util";
 import {
   formatDateYMD,
@@ -241,6 +245,22 @@ function addDaysIso(iso: string, days: number): string {
  * position": below it the difference cannot move a per-share figure meaningfully.
  */
 const COST_BASIS_QUANTITY_TOLERANCE = 0.0001;
+
+/** A replay rate lookup that found no admissible rate. */
+interface UnresolvedReplayRate {
+  from: string;
+  to: string;
+  onDate: string;
+}
+
+/**
+ * A position's historical cost in the reporting currency, or `null` with the
+ * pair that could not be resolved on one of its own dates.
+ */
+interface DatedReportingCost {
+  cost: number | null;
+  missing: UnresolvedReplayRate | null;
+}
 
 interface PeriodBucket {
   key: string; // YYYY-MM for months, YYYY-MM-DD for days
@@ -724,70 +744,103 @@ export class PortfolioCalculationService {
   /**
    * Each account's net investment flow (BUYs less SELLs, redemptions, returns
    * of capital and income, the part of Net Invested that is history) in the
-   * reporting currency, every row at the market rate on its own date: a
-   * decade of deposits is what it cost the reader then, not at today's rate
-   * (issue #2106). `currencyByAccount` names the currency each account's flows
-   * are in, the one `computeInvestmentFlows` states them in; `null` is an
-   * account with a row no admissible rate reaches.
+   * reporting currency, every row by `investmentRowRateInto`: its own settled
+   * rate where that reaches the reporting currency (INV-FX-002), carried on or
+   * replaced by the market rate on its own date (INV-FX-001). A decade of
+   * deposits is what it cost the reader then, not at today's rate (issue
+   * #2106). `null` is an account with a row no admissible rate reaches.
    */
   async computeNetInvestmentFlowsInReporting(
     userId: string,
-    currencyByAccount: Map<string, string>,
+    accountIds: readonly string[],
     reportingCurrency: string,
   ): Promise<Map<string, number | null>> {
     const result = new Map<string, number | null>();
-    const accountIds = [...currencyByAccount.keys()];
     if (accountIds.length === 0) return result;
     return withScopedDb(this.dataSource, async (m) => {
-      const rows: { account_id: string; tx_date: string; flow: string }[] =
-        await m.query(
-          `SELECT account_id,
-                  TO_CHAR(transaction_date, 'YYYY-MM-DD') AS tx_date,
-                  COALESCE(SUM(CASE
-                    WHEN action = 'BUY' THEN total_amount * exchange_rate
-                    WHEN action = ANY($3) OR action = ANY($4) THEN -(total_amount * exchange_rate)
-                    ELSE 0
-                  END), 0) AS flow
-             FROM investment_transactions
-            WHERE user_id = $1
-              AND account_id = ANY($2)
-              AND transaction_date <= CURRENT_DATE
-              AND status != 'VOID'
-            GROUP BY account_id, transaction_date`,
+      // The amount is in the security's currency (the account's for a row with
+      // no security) and its own rate takes it into the settlement account's:
+      // the funding account, else the linked cash account, else the account --
+      // the same order the transaction-history summary reads.
+      const rows: {
+        account_id: string;
+        tx_date: string;
+        amount_currency: string | null;
+        settlement_currency: string | null;
+        exchange_rate: string | null;
+        flow: string;
+      }[] = await m.query(
+        `SELECT it.account_id,
+                TO_CHAR(it.transaction_date, 'YYYY-MM-DD') AS tx_date,
+                COALESCE(s.currency_code, a.currency_code) AS amount_currency,
+                COALESCE(f.currency_code, cash.currency_code, a.currency_code)
+                  AS settlement_currency,
+                it.exchange_rate::text AS exchange_rate,
+                COALESCE(SUM(CASE
+                  WHEN it.action = 'BUY' THEN it.total_amount
+                  WHEN it.action = ANY($3) OR it.action = ANY($4) THEN -it.total_amount
+                  ELSE 0
+                END), 0) AS flow
+           FROM investment_transactions it
+           LEFT JOIN securities s ON s.id = it.security_id
+           LEFT JOIN accounts a ON a.id = it.account_id
+           LEFT JOIN accounts f ON f.id = it.funding_account_id
+           LEFT JOIN accounts cash ON cash.id = a.linked_account_id
+          WHERE it.user_id = $1
+            AND it.account_id = ANY($2)
+            AND it.transaction_date <= CURRENT_DATE
+            AND it.status != 'VOID'
+          GROUP BY it.account_id, it.transaction_date, 3, 4, it.exchange_rate`,
+        [
+          userId,
+          [...accountIds],
+          // The same lists `computeInvestmentFlows` sums.
           [
-            userId,
-            accountIds,
-            // The same lists `computeInvestmentFlows` sums.
-            [
-              InvestmentAction.SELL,
-              InvestmentAction.REDEEM,
-              InvestmentAction.RETURN_OF_CAPITAL,
-            ],
-            CASH_INCOME_ACTIONS,
+            InvestmentAction.SELL,
+            InvestmentAction.REDEEM,
+            InvestmentAction.RETURN_OF_CAPITAL,
           ],
-        );
-      const converted = await convertDatedRows(
-        (sql, params) => m.query(sql, params),
-        rows.flatMap((row) => {
-          const currencyCode = currencyByAccount.get(row.account_id);
-          return currencyCode
-            ? [
-                {
-                  key: row.account_id,
-                  currencyCode,
-                  txDate: row.tx_date,
-                  amounts: { flow: Number(row.flow) || 0 },
-                },
-              ]
-            : [];
-        }),
-        reportingCurrency,
-        this.logger,
+          CASH_INCOME_ACTIONS,
+        ],
       );
-      for (const accountId of accountIds) {
-        // No row is no flow; a row with no rate is unknown, never zero.
-        const flow = converted.get(accountId)?.flow;
-        result.set(accountId, flow === undefined ? 0 : flow);
+      for (const accountId of accountIds) result.set(accountId, 0);
+      if (rows.length === 0) return result;
+
+      const currencies = new Set<string>();
+      for (const row of rows) {
+        if (row.amount_currency) currencies.add(row.amount_currency);
+        if (row.settlement_currency) currencies.add(row.settlement_currency);
+      }
+      currencies.delete(reportingCurrency);
+      const days = rows.map((row) => row.tx_date).sort();
+      const index = await buildRateIndex(
+        (sql, params) => m.query(sql, params),
+        currencies,
+        reportingCurrency,
+        days[0],
+        days[days.length - 1],
+      );
+      const rateOn = (from: string, to: string, date: string) =>
+        resolveIndexedRate(index, from, to, date).rate;
+
+      for (const row of rows) {
+        const flow = Number(row.flow) || 0;
+        const held = result.get(row.account_id) ?? 0;
+        if (held === null || flow === 0) continue;
+        const { rate } = await investmentRowRateInto(
+          reportingCurrency,
+          {
+            amountCurrency: row.amount_currency,
+            settlementCurrency: row.settlement_currency,
+            exchangeRate: row.exchange_rate,
+            date: row.tx_date,
+          },
+          rateOn,
+        );
+        result.set(
+          row.account_id,
+          rate === null ? null : roundMoney(held + flow * rate),
+        );
       }
       return result;
     });
@@ -1072,8 +1125,8 @@ export class PortfolioCalculationService {
     reportingCurrency: string,
     /** Units actually held, keyed `${accountId}:${securityId}`. */
     quantityByKey: Map<string, number>,
-  ): Promise<Map<string, number | null>> {
-    const usable = new Map<string, number | null>();
+  ): Promise<Map<string, DatedReportingCost>> {
+    const usable = new Map<string, DatedReportingCost>();
     if (holdingsAccountIds.length === 0) return usable;
     const transactions = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(InvestmentTransaction).find({
@@ -1089,7 +1142,7 @@ export class PortfolioCalculationService {
       }),
     );
     if (transactions.length === 0) return usable;
-    const { positions } = await this.replayWithRates(
+    const { positions, unresolved } = await this.replayWithRates(
       userId,
       transactions,
       reportingCurrency,
@@ -1103,8 +1156,19 @@ export class PortfolioCalculationService {
       ) {
         continue;
       }
-      if (entry.basisGap === null) usable.set(key, roundMoney(entry.costBasis));
-      else if (entry.basisGap === "mixed_basis_currency") usable.set(key, null);
+      if (entry.basisGap === null) {
+        usable.set(key, { cost: roundMoney(entry.costBasis), missing: null });
+      } else if (entry.basisGap === "mixed_basis_currency") {
+        // Name the pair that could not be resolved on one of this position's
+        // own dates, so the reader is told which rate to add.
+        const dates = new Set(
+          transactions
+            .filter((tx) => `${tx.accountId}:${tx.securityId}` === key)
+            .map((tx) => String(tx.transactionDate).slice(0, 10)),
+        );
+        const gap = unresolved.find((rate) => dates.has(rate.onDate)) ?? null;
+        usable.set(key, { cost: null, missing: gap });
+      }
     }
     return usable;
   }
@@ -1251,7 +1315,7 @@ export class PortfolioCalculationService {
     /** Report every position in this currency rather than its account's. */
     targetCurrency?: string,
     orphanTransferIn: "own_row" | "unknown" = "own_row",
-  ): Promise<ReplayResult> {
+  ): Promise<ReplayResult & { unresolved: UnresolvedReplayRate[] }> {
     const accountIds = [...new Set(transactions.map((tx) => tx.accountId))];
     // The account relation says when a trade can settle elsewhere: a funding
     // account, or a brokerage with a linked cash account. Without either every
@@ -1285,7 +1349,8 @@ export class PortfolioCalculationService {
       });
 
     const first = run();
-    if (wanted.size === 0) return first;
+    if (wanted.size === 0) return { ...first, unresolved: [] };
+    const unresolved: UnresolvedReplayRate[] = [];
     for (const [key, { from, to, onDate }] of wanted) {
       const answer = await this.exchangeRateService.resolveStoredRate(
         from,
@@ -1294,9 +1359,10 @@ export class PortfolioCalculationService {
         { mode: "historical" },
       );
       resolved.set(key, answer.rate);
+      if (answer.rate === null) unresolved.push({ from, to, onDate });
     }
     wanted.clear();
-    return run();
+    return { ...run(), unresolved };
   }
 
   /**
@@ -1906,7 +1972,7 @@ export class PortfolioCalculationService {
           defaultCurrency,
           quantityByKey,
         )
-      : new Map<string, number | null>();
+      : new Map<string, DatedReportingCost>();
 
     const costBasisTotal = new FxAggregate();
     const holdingsValueTotal = new FxAggregate();
@@ -1986,8 +2052,12 @@ export class PortfolioCalculationService {
         // that was not missing while never naming the one that was.
         costBasisTotal.add(null, holdingCurrency, accountCurrency);
       } else if (datedDefault !== undefined) {
-        costBasisDefaultCurrency = datedDefault;
-        costBasisTotal.add(datedDefault, accountCurrency, defaultCurrency);
+        costBasisDefaultCurrency = datedDefault.cost;
+        costBasisTotal.add(
+          datedDefault.cost,
+          datedDefault.missing?.from ?? accountCurrency,
+          datedDefault.missing?.to ?? defaultCurrency,
+        );
       } else {
         costBasisDefaultCurrency = await this.convertToDefault(
           costBasisAccountCurrency,

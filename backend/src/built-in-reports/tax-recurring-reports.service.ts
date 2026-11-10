@@ -491,8 +491,8 @@ export class TaxRecurringReportsService {
       );
     }
 
-    const data: RecurringExpenseItem[] = Array.from(payeeMerged.values()).map(
-      (row) => {
+    const data: RecurringExpenseItem[] = Array.from(payeeMerged.values())
+      .map((row) => {
         const totalAmount = row.totalAmount;
         const occurrences = row.occurrences;
         const frequency = classifyFrequency(occurrences, monthCount);
@@ -507,8 +507,11 @@ export class TaxRecurringReportsService {
           frequency,
           categoryName: row.categoryName,
         };
-      },
-    );
+      })
+      // Largest first, by the merged total: a foreign payee arrives as one
+      // part per day it was paid on (issue #2106), so the statement's order of
+      // parts no longer ranks the payees.
+      .sort((a, b) => b.totalAmount - a.totalAmount);
 
     const knownTotalRecurring = roundMoney(
       sumMoney(data.map((item) => item.totalAmount)),

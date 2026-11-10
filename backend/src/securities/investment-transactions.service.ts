@@ -494,6 +494,8 @@ interface CapitalGainFiguresInReporting {
   realizedGainKnownSubtotal: number | null;
   unrealizedGain: number | null;
   totalCapitalGain: number | null;
+  /** `"CAD->USD"` when a figure is unknown for want of this period's rate. */
+  missingRatePairs: string[];
 }
 
 /**
@@ -3813,17 +3815,31 @@ export class InvestmentTransactionsService {
     if (entries.length === 0) {
       return { currency: defaultCurrency, figures: [], missingRatePairs };
     }
-    const figures = entries.map((raw) => ({
-      startValue: toDefault(raw.startValue, raw),
-      endValue: toDefault(raw.endValue, raw),
-      realizedGain: toDefault(raw.realizedGain, raw),
-      realizedGainKnownSubtotal: toDefault(
-        raw.realizedGain ?? raw.realizedGainKnownSubtotal ?? 0,
-        raw,
-      ),
-      unrealizedGain: toDefault(raw.unrealizedGain, raw),
-      totalCapitalGain: toDefault(raw.totalCapitalGain, raw),
-    }));
+    const figures = entries.map((raw) => {
+      const converted = {
+        startValue: toDefault(raw.startValue, raw),
+        endValue: toDefault(raw.endValue, raw),
+        realizedGain: toDefault(raw.realizedGain, raw),
+        realizedGainKnownSubtotal: toDefault(
+          raw.realizedGain ?? raw.realizedGainKnownSubtotal ?? 0,
+          raw,
+        ),
+        unrealizedGain: toDefault(raw.unrealizedGain, raw),
+        totalCapitalGain: toDefault(raw.totalCapitalGain, raw),
+      };
+      // A figure known in the account's currency and unknown here lacks the
+      // pair's rate for this period: named, so the reader knows what to add.
+      const lacksRate =
+        (raw.startValue !== null && converted.startValue === null) ||
+        (raw.endValue !== null && converted.endValue === null) ||
+        (raw.totalCapitalGain !== null && converted.totalCapitalGain === null);
+      return {
+        ...converted,
+        missingRatePairs: lacksRate
+          ? [`${raw.accountCurrencyCode ?? "?"}->${defaultCurrency}`]
+          : [],
+      };
+    });
     return { currency: defaultCurrency, figures, missingRatePairs };
   }
 

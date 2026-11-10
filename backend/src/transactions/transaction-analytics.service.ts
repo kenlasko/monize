@@ -1074,19 +1074,30 @@ export class TransactionAnalyticsService {
         ),
         count: Number(row.count) || 0,
       }));
-      return this.withConvertedTotals(m, userId, filters, native, (qb) => {
-        if (groupBy === "category") {
-          qb.andWhere(categorizedOrNotTransfer());
+      return this.withConvertedTotals<(typeof native)[number]>(
+        m,
+        userId,
+        filters,
+        native,
+        (qb) => {
+          if (groupBy === "category") {
+            qb.andWhere(categorizedOrNotTransfer());
+            return {
+              keyExpr: categoryIdExpr,
+              sums: { total: `SUM(${amountExpr})` },
+            };
+          }
+          // A payee row is keyed by id AND name, as the read above groups it:
+          // free-text payees share a null id, and keying on the id alone gave
+          // every one of them the converted total of them all.
+          qb.leftJoin("transaction.payee", "groupPayee");
           return {
-            keyExpr: categoryIdExpr,
+            keyExpr: PAYEE_GROUP_KEY_SQL,
             sums: { total: `SUM(${amountExpr})` },
           };
-        }
-        return {
-          keyExpr: "transaction.payeeId",
-          sums: { total: `SUM(${amountExpr})` },
-        };
-      });
+        },
+        groupBy === "payee" ? payeeGroupKey : undefined,
+      );
     });
   }
 
@@ -1108,6 +1119,8 @@ export class TransactionAnalyticsService {
       keyExpr: string;
       sums: Record<string, string>;
     },
+    /** The key `shape`'s `keyExpr` yields for a row; its id by default. */
+    keyOf: (row: T) => string = (row) => row.id ?? "",
   ): Promise<
     Array<T & { convertedCurrency: string; convertedTotal: number | null }>
   > {
@@ -1122,7 +1135,7 @@ export class TransactionAnalyticsService {
       convertedTotal:
         row.currencyCode === reporting
           ? row.total
-          : (foreign.get(`${row.id ?? ""}|${row.currencyCode}`)?.total ?? null),
+          : (foreign.get(`${keyOf(row)}|${row.currencyCode}`)?.total ?? null),
     }));
   }
 
@@ -2481,6 +2494,15 @@ const DAY_TX_SQL = "TO_CHAR(transaction.transactionDate, 'YYYY-MM-DD')";
 
 /** A grouped raw row: its label columns, its currency and its day. */
 type RawGroupRow = Record<string, any>;
+
+/**
+ * A payee group's key in SQL and in TypeScript, the two halves of one rule: the
+ * payee id and the name the group reads, so free-text payees stay apart.
+ */
+const PAYEE_GROUP_KEY_SQL =
+  "CONCAT(COALESCE(CAST(transaction.payeeId AS text), ''), '#', COALESCE(groupPayee.name, transaction.payeeName, ''))";
+const payeeGroupKey = (row: { id: string | null; name: string | null }) =>
+  `${row.id ?? ""}#${row.name ?? ""}`;
 
 /** The transaction-list filter surface every analytics read applies. */
 interface AnalyticsReadFilters {

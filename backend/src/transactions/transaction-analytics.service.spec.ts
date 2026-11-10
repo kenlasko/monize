@@ -3520,6 +3520,59 @@ describe("TransactionAnalyticsService", () => {
       ]);
     });
 
+    it("keeps free-text payees apart when converting them (issue #2106)", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          {
+            id: null,
+            name: "Cafe A",
+            currencyCode: "USD",
+            total: "-10",
+            count: "1",
+          },
+          {
+            id: null,
+            name: "Shop B",
+            currencyCode: "USD",
+            total: "-90",
+            count: "1",
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            key: "#Cafe A",
+            currencyCode: "USD",
+            txDate: "2026-01-12",
+            originalCurrencyCode: null,
+            exchangeRate: "1",
+            total: "-10",
+          },
+          {
+            key: "#Shop B",
+            currencyCode: "USD",
+            txDate: "2026-01-12",
+            originalCurrencyCode: null,
+            exchangeRate: "1",
+            total: "-90",
+          },
+        ]);
+      managerMock.query.mockResolvedValue([
+        storedRate("USD", "CAD", 1.25, "2026-01-10"),
+      ]);
+
+      const result = await service.getGroupedTotals(userId, {
+        groupBy: "payee",
+      });
+
+      expect(result.map((r) => [r.name, r.convertedTotal])).toEqual([
+        ["Cafe A", -12.5],
+        ["Shop B", -112.5],
+      ]);
+    });
+
     it("converts a foreign group at its rows' own rates and dates (issue #2106)", async () => {
       userPreferenceRepository.findOne.mockResolvedValue({
         defaultCurrency: "CAD",

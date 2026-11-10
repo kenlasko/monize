@@ -4346,6 +4346,62 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues", () => {
     expect(result.holdingsWithValues[0].marketValueDefaultCurrency).toBe(400);
   });
 
+  it("withholds a cost with no rate on its purchase date and names that pair (issue #2106)", async () => {
+    const holdingRepo = { find: jest.fn().mockResolvedValue([holdingRow]) };
+    const buy = {
+      id: "buy",
+      userId,
+      accountId: "acct-1",
+      securityId: "sec-a",
+      action: InvestmentAction.BUY,
+      transactionDate: "2024-01-10",
+      quantity: 10,
+      price: 90,
+      commission: 0,
+      totalAmount: 900,
+      exchangeRate: 1,
+      account: { id: "acct-1", currencyCode: "PLN" },
+      security: { id: "sec-a", currencyCode: "PLN" },
+    } as unknown as InvestmentTransaction;
+    const resolveStoredRate = jest.fn(
+      async (
+        from: string,
+        to: string,
+        _onDate: string,
+        options: { mode: string },
+      ) =>
+        from === to
+          ? { status: "same_currency", rate: 1 }
+          : options.mode === "historical"
+            ? { status: "unknown", rate: null }
+            : { status: "resolved", rate: 0.4 },
+    );
+    const service = buildService(
+      [
+        [Holding, holdingRepo],
+        [InvestmentTransaction, { find: jest.fn().mockResolvedValue([buy]) }],
+        [Account, { find: jest.fn().mockResolvedValue([]) }],
+      ],
+      { resolveStoredRate },
+    );
+    jest
+      .spyOn(service, "calculateCostBasisLotsInAccountCurrency")
+      .mockResolvedValue(new Map([["acct-1:sec-a", lot()]]));
+
+    const result = await service.calculateHoldingsWithValues(
+      userId,
+      ["acct-1"],
+      "CAD",
+      new Map(),
+      async () => new Map([["sec-a", 100]]),
+    );
+
+    // Not 900 at today's 0.40: unknown, with the pair the purchase needed.
+    expect(result.totalCostBasis).toBe(0);
+    expect(result.missingRatePairs).toContain("PLN->CAD");
+    expect(result.fxComplete).toBe(false);
+  });
+
   it("uses a replayed basis that is known and in the account's currency", async () => {
     const result = await valuation(lot());
 
@@ -4940,5 +4996,100 @@ describe("PortfolioCalculationService.computeInvestmentFlows", () => {
     );
     expect(params[3]).not.toContain(InvestmentAction.RETURN_OF_CAPITAL);
     expect(flows.get("acct-1")).toEqual({ buys: 1000, sells: 250, income: 40 });
+  });
+});
+
+describe("PortfolioCalculationService.computeNetInvestmentFlowsInReporting (issue #2106)", () => {
+  const flowsQuery = (rows: unknown[], rates: unknown[] = []) =>
+    jest.fn((sql: string) =>
+      Promise.resolve(/WITH pairs AS/.test(sql) ? rates : rows),
+    );
+
+  it("takes a USD trade's own amount for a USD reader, not its CAD cash at the market rate", async () => {
+    // 1,000 USD bought from a CAD brokerage at its own 1.35 (1,350 CAD).
+    const service = buildService(
+      [],
+      {},
+      flowsQuery([
+        {
+          account_id: "acct-1",
+          tx_date: "2025-03-04",
+          amount_currency: "USD",
+          settlement_currency: "CAD",
+          exchange_rate: "1.35",
+          flow: "1000",
+        },
+      ]),
+    );
+
+    const flows = await service.computeNetInvestmentFlowsInReporting(
+      "user-1",
+      ["acct-1"],
+      "USD",
+    );
+
+    expect(flows.get("acct-1")).toBe(1000);
+  });
+
+  it("carries the own rate onward at the market rate on the row's date", async () => {
+    const service = buildService(
+      [],
+      {},
+      flowsQuery(
+        [
+          {
+            account_id: "acct-1",
+            tx_date: "2025-03-04",
+            amount_currency: "USD",
+            settlement_currency: "CAD",
+            exchange_rate: "1.35",
+            flow: "1000",
+          },
+        ],
+        [
+          {
+            from_currency: "CAD",
+            to_currency: "EUR",
+            rate: "0.7",
+            rate_date: "2025-03-03",
+          },
+        ],
+      ),
+    );
+
+    const flows = await service.computeNetInvestmentFlowsInReporting(
+      "user-1",
+      ["acct-1"],
+      "EUR",
+    );
+
+    // 1,000 USD -> 1,350 CAD at its own rate -> 945 EUR at that day's 0.70.
+    expect(flows.get("acct-1")).toBe(945);
+  });
+
+  it("is unknown for an account with a row no rate reaches, and zero with no rows", async () => {
+    const service = buildService(
+      [],
+      {},
+      flowsQuery([
+        {
+          account_id: "acct-1",
+          tx_date: "2025-03-04",
+          amount_currency: "JPY",
+          settlement_currency: "JPY",
+          exchange_rate: "1",
+          flow: "100000",
+        },
+      ]),
+    );
+
+    const flows = await service.computeNetInvestmentFlowsInReporting(
+      "user-1",
+      ["acct-1", "acct-2"],
+      "USD",
+    );
+
+    expect(flows.get("acct-1")).toBeNull();
+    expect(flows.get("acct-2")).toBe(0);
   });
 });

@@ -145,6 +145,29 @@ describe('summarizeInDisplayCurrency', () => {
     expect(result.excludedTransactionCount).toBe(5);
   });
 
+  it("converts a period whose one bucket is a foreign currency (issue #2106)", () => {
+    // The page displays USD; this year was spent only in EUR.
+    const result = summarizeInDisplayCurrency(
+      summary(
+        { EUR: { totalIncome: 0, totalExpenses: 100, netCashFlow: -100, transactionCount: 2 } },
+        {
+          currency: 'USD',
+          totalIncome: 0,
+          totalExpenses: 110.1234,
+          netCashFlow: -110.1234,
+          knownIncome: 0,
+          knownExpenses: 110.1234,
+          includedTransactionCount: 2,
+          excludedTransactionCount: 0,
+          missingCurrencies: [],
+        },
+      ),
+      converted('USD'),
+    );
+    expect(result.expenses).toBe(110.1234);
+    expect(result.net).toBe(-110.1234);
+  });
+
   it('reports every bucket unknown when the server sent no conversion', () => {
     const result = summarizeInDisplayCurrency(
       summary({

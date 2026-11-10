@@ -1559,7 +1559,16 @@ describe("PortfolioService", () => {
       // the same flow by day, which converts at its own date's rate (#2106).
       accountsRepository.query.mockImplementation(async (sql: string) =>
         /AS tx_date/.test(sql)
-          ? [{ account_id: "acct-eur", tx_date: "2026-01-15", flow: "1000" }]
+          ? [
+              {
+                account_id: "acct-eur",
+                tx_date: "2026-01-15",
+                amount_currency: "EUR",
+                settlement_currency: "EUR",
+                exchange_rate: "1",
+                flow: "1000",
+              },
+            ]
           : /investment_transactions/.test(sql)
             ? [
                 {
@@ -1599,8 +1608,22 @@ describe("PortfolioService", () => {
       accountsRepository.query.mockImplementation(async (sql: string) =>
         /AS tx_date/.test(sql)
           ? [
-              { account_id: "acct-eur", tx_date: "2026-01-15", flow: "1000" },
-              { account_id: "acct-eur", tx_date: "2026-06-15", flow: "1000" },
+              {
+                account_id: "acct-eur",
+                tx_date: "2026-01-15",
+                amount_currency: "EUR",
+                settlement_currency: "EUR",
+                exchange_rate: "1",
+                flow: "1000",
+              },
+              {
+                account_id: "acct-eur",
+                tx_date: "2026-06-15",
+                amount_currency: "EUR",
+                settlement_currency: "EUR",
+                exchange_rate: "1",
+                flow: "1000",
+              },
             ]
           : /WITH pairs AS/.test(sql)
             ? [
