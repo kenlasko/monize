@@ -466,6 +466,12 @@ export class TransactionAnalyticsService {
     excludeTransfers?: boolean,
     tagIds?: string[],
     jointAccountIds?: string[],
+    /**
+     * Add `converted`, the buckets in the reporting currency at each row's own
+     * rate or date. Opt-in: it is a second read, and only the summary
+     * endpoint's readers (the category and payee pages and widgets) use it.
+     */
+    options: { inReportingCurrency?: boolean } = {},
   ): Promise<{
     totalIncome: number;
     totalExpenses: number;
@@ -482,7 +488,7 @@ export class TransactionAnalyticsService {
         transactionCount: number;
       }
     >;
-    converted: SummaryInReportingCurrency;
+    converted?: SummaryInReportingCurrency;
   }> {
     return withScopedDb(this.dataSource, async (m) => {
       const filters: AnalyticsReadFilters = {
@@ -580,12 +586,9 @@ export class TransactionAnalyticsService {
         }
       }
 
-      const converted = await this.summaryInReportingCurrency(
-        m,
-        userId,
-        filters,
-        byCurrency,
-      );
+      const converted = options.inReportingCurrency
+        ? await this.summaryInReportingCurrency(m, userId, filters, byCurrency)
+        : undefined;
 
       return {
         totalIncome,
@@ -595,7 +598,7 @@ export class TransactionAnalyticsService {
         firstTransactionDate,
         lastTransactionDate,
         byCurrency,
-        converted,
+        ...(converted ? { converted } : {}),
       };
     });
   }

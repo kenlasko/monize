@@ -3941,6 +3941,7 @@ export class TransactionsService {
       undefined,
       tagIds,
       jointAccountIds,
+      { inReportingCurrency: true },
     );
   }
 

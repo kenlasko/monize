@@ -254,17 +254,6 @@ describe("TransactionAnalyticsService", () => {
         firstTransactionDate: null,
         lastTransactionDate: null,
         byCurrency: {},
-        converted: {
-          currency: "USD",
-          totalIncome: 0,
-          totalExpenses: 0,
-          netCashFlow: 0,
-          knownIncome: 0,
-          knownExpenses: 0,
-          includedTransactionCount: 0,
-          excludedTransactionCount: 0,
-          missingCurrencies: [],
-        },
       });
     });
 
@@ -313,7 +302,11 @@ describe("TransactionAnalyticsService", () => {
         storedRate("USD", "CAD", 1.4, "2026-06-10"),
       ]);
 
-      const result = await service.getSummary(userId);
+      const result = await service.getSummary(
+        userId,
+        ...Array<undefined>(12).fill(undefined),
+        { inReportingCurrency: true },
+      );
 
       // 50 CAD + 100 USD at 1.25 + 100 USD at 1.40; at one rate it read 330.
       expect(result.converted).toEqual({
@@ -328,6 +321,28 @@ describe("TransactionAnalyticsService", () => {
         missingCurrencies: [],
       });
       expect(result.byCurrency.USD.totalExpenses).toBe(200);
+    });
+
+    it("adds no reporting-currency read unless the caller asks for it", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValueOnce([
+        {
+          currencyCode: "USD",
+          totalIncome: "0",
+          totalExpenses: "5",
+          transactionCount: "1",
+        },
+        {
+          currencyCode: "EUR",
+          totalIncome: "0",
+          totalExpenses: "5",
+          transactionCount: "1",
+        },
+      ]);
+
+      const result = await service.getSummary(userId);
+
+      expect(result).not.toHaveProperty("converted");
+      expect(mockQueryBuilder.getRawMany).toHaveBeenCalledTimes(1);
     });
 
     it("leaves a bucket with no admissible rate out and names it", async () => {
@@ -362,7 +377,11 @@ describe("TransactionAnalyticsService", () => {
         ]);
       managerMock.query.mockResolvedValue([]);
 
-      const result = await service.getSummary(userId);
+      const result = await service.getSummary(
+        userId,
+        ...Array<undefined>(12).fill(undefined),
+        { inReportingCurrency: true },
+      );
 
       expect(result.converted).toMatchObject({
         totalIncome: null,
