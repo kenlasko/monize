@@ -70,6 +70,14 @@ export interface ReplayOptions {
    */
   rateFor?: ReplayRateLookup;
   /**
+   * With `rateFor`, report every position in this currency instead of its
+   * holding account's: the reader's reporting currency, for a historical cost
+   * and a realized gain stated in it. Each acquisition then joins the basis at
+   * its own row's amounts or the market rate on its own date, and each sale's
+   * proceeds at its own, never today's rate (issue #2106).
+   */
+  targetCurrency?: string;
+  /**
    * A TRANSFER_IN whose paired leg cannot be used: the leg is outside the rows,
    * its source basis is unknown, or the two accounts differ in currency.
    * `own_row` prices it from its own price and rate (the realized-gain and
@@ -131,7 +139,7 @@ export function replayPositionBasis(
   transactions: readonly InvestmentTransaction[],
   options: ReplayOptions,
 ): ReplayResult {
-  const { settlement, rateFor, orphanTransferIn } = options;
+  const { settlement, rateFor, orphanTransferIn, targetCurrency } = options;
   const entries = new Map<string, Entry>();
   const steps = new Map<InvestmentTransaction, ReplayStep>();
   // What each TRANSFER_OUT released, keyed by its id, which the IN leg names in
@@ -148,9 +156,10 @@ export function replayPositionBasis(
       ? settlement.own.get(tx.fundingAccountId)
       : settlement.brokerage.get(tx.accountId);
     // Converting with nothing recorded for the account: its own currency.
-    return (
-      found ?? (tx.fundingAccountId ? undefined : (entry.target ?? undefined))
-    );
+    if (found !== undefined || tx.fundingAccountId) return found;
+    return targetCurrency !== undefined
+      ? (tx.account?.currencyCode ?? undefined)
+      : (entry.target ?? undefined);
   };
 
   /** `settled` is in `from`; `native` in the security's currency; null when unconvertible. */
@@ -176,7 +185,9 @@ export function replayPositionBasis(
     const key = `${tx.accountId}:${tx.securityId}`;
     let entry = entries.get(key);
     if (!entry) {
-      const target = rateFor ? (tx.account?.currencyCode ?? null) : null;
+      const target = rateFor
+        ? (targetCurrency ?? tx.account?.currencyCode ?? null)
+        : null;
       entry = {
         quantity: 0,
         costBasis: 0,

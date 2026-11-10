@@ -1032,6 +1032,17 @@ export interface RealizedGainEntry {
    * (`mixed_basis_currency`). `null` when they are figures.
    */
   basisGap?: string | null;
+  /**
+   * The same disposal in the reader's reporting currency, from the server's
+   * fold with every position in it: proceeds at the sale's own rate or date,
+   * the basis at each purchase's (issue #2106). Null where unknown.
+   */
+  inReportingCurrency?: {
+    currency: string;
+    proceeds: number | null;
+    costBasis: number | null;
+    realizedGain: number | null;
+  };
 }
 
 /**

@@ -1555,18 +1555,21 @@ describe("PortfolioService", () => {
       ]);
       holdingsRepository.find.mockResolvedValue([]);
       securityPriceRepository.query.mockResolvedValue([]);
-      // The investment-flows aggregate: 1,000 EUR of buys, nothing sold.
+      // The investment-flows aggregate: 1,000 EUR of buys, nothing sold; and
+      // the same flow by day, which converts at its own date's rate (#2106).
       accountsRepository.query.mockImplementation(async (sql: string) =>
-        /investment_transactions/.test(sql)
-          ? [
-              {
-                account_id: "acct-eur",
-                buys: "1000",
-                sells: "0",
-                income: "0",
-              },
-            ]
-          : [],
+        /AS tx_date/.test(sql)
+          ? [{ account_id: "acct-eur", tx_date: "2026-01-15", flow: "1000" }]
+          : /investment_transactions/.test(sql)
+            ? [
+                {
+                  account_id: "acct-eur",
+                  buys: "1000",
+                  sells: "0",
+                  income: "0",
+                },
+              ]
+            : [],
       );
       // No EUR->CAD rate in either direction.
       exchangeRateService.getLatestRate.mockResolvedValue(null);
@@ -1577,6 +1580,61 @@ describe("PortfolioService", () => {
       expect(result.fxComplete).toBe(false);
       // Growth over an unknown amount invested is not a growth rate.
       expect(result.cagr).toBeNull();
+    });
+
+    it("converts net invested flows at each row's own date (issue #2106)", async () => {
+      prefRepository.findOne.mockResolvedValue(mockPref);
+      accountsRepository.find.mockResolvedValue([
+        {
+          ...mockBrokerageAccount,
+          id: "acct-eur",
+          name: "Europe - Brokerage",
+          currencyCode: "EUR",
+          linkedAccountId: null,
+        },
+      ]);
+      holdingsRepository.find.mockResolvedValue([]);
+      securityPriceRepository.query.mockResolvedValue([]);
+      // 1,000 EUR bought in January at 1.40 and 1,000 EUR in June at 1.50.
+      accountsRepository.query.mockImplementation(async (sql: string) =>
+        /AS tx_date/.test(sql)
+          ? [
+              { account_id: "acct-eur", tx_date: "2026-01-15", flow: "1000" },
+              { account_id: "acct-eur", tx_date: "2026-06-15", flow: "1000" },
+            ]
+          : /WITH pairs AS/.test(sql)
+            ? [
+                {
+                  from_currency: "EUR",
+                  to_currency: "CAD",
+                  rate: "1.4",
+                  rate_date: "2026-01-14",
+                },
+                {
+                  from_currency: "EUR",
+                  to_currency: "CAD",
+                  rate: "1.5",
+                  rate_date: "2026-06-14",
+                },
+              ]
+            : /investment_transactions/.test(sql)
+              ? [
+                  {
+                    account_id: "acct-eur",
+                    buys: "2000",
+                    sells: "0",
+                    income: "0",
+                  },
+                ]
+              : [],
+      );
+      // Today's rate, which the history must not be converted at.
+      exchangeRateService.getLatestRate.mockResolvedValue(2);
+
+      const result = await service.getPortfolioSummary(userId);
+
+      // 1,000 x 1.40 + 1,000 x 1.50, not 2,000 x 2.
+      expect(result.totalNetInvested).toBe(2900);
     });
 
     it("marks the valuation incomplete when a held position has no price (RR3-004)", async () => {

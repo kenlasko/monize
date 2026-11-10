@@ -97,7 +97,7 @@ export function RealizedGainsReport() {
     formatShareQuantity,
   } = useNumberFormat();
   const { formatDate } = useDateFormat();
-  const { defaultCurrency, convertToDefault } = useExchangeRates();
+  const { defaultCurrency } = useExchangeRates();
   const [accounts, setAccounts] = useState<Account[]>([]);
   // Persisted so the report opens on the accounts the user last chose.
   const [selectedAccountIds, setSelectedAccountIds] = usePersistedAccountFilter(
@@ -146,13 +146,18 @@ export function RealizedGainsReport() {
   const displayCurrency = selectedAccount?.currencyCode || defaultCurrency;
   const isForeign = displayCurrency !== defaultCurrency;
 
-  // Backend returns each figure in the holding account's currency. Convert to
-  // the default currency when viewing All Accounts or several accounts;
-  // otherwise (a single account) pass through in its native currency.
-  const toDisplay = useCallback((amount: number, accountCurrencyCode: string | null): number | null => {
-    if (isSingleAccount) return amount;
-    return convertToDefault(amount, accountCurrencyCode || defaultCurrency);
-  }, [isSingleAccount, defaultCurrency, convertToDefault]);
+  // Backend returns each figure in the holding account's currency, and the
+  // same disposal in the reporting currency (`inReportingCurrency`): the
+  // proceeds at the sale's own rate and the basis at each purchase's. A single
+  // account reads its native figures; All Accounts or several read the
+  // reporting-currency ones, never both converted at today's rate (issue #2106).
+  const toDisplay = useCallback(
+    (entry: RealizedGainEntry, field: 'proceeds' | 'costBasis' | 'realizedGain'): number | null => {
+      if (isSingleAccount) return entry[field];
+      return entry.inReportingCurrency?.[field] ?? null;
+    },
+    [isSingleAccount],
+  );
 
   const fmtValue = useCallback((value: number): string => {
     if (isForeign) {
@@ -230,9 +235,9 @@ export function RealizedGainsReport() {
         bucket.unknownCount += 1;
         return;
       }
-      const proceeds = toDisplay(entry.proceeds, entry.accountCurrencyCode);
-      const costBasis = toDisplay(entry.costBasis, entry.accountCurrencyCode);
-      const realizedGain = toDisplay(entry.realizedGain, entry.accountCurrencyCode);
+      const proceeds = toDisplay(entry, 'proceeds');
+      const costBasis = toDisplay(entry, 'costBasis');
+      const realizedGain = toDisplay(entry, 'realizedGain');
       // A gain is proceeds minus basis: if either side cannot be converted the
       // gain is unknown, and adding the half that converted would report a
       // profit or loss that never happened.
@@ -254,9 +259,9 @@ export function RealizedGainsReport() {
     let excludedCount = 0;
     for (const entry of entries) {
       if (entry.costBasis === null || entry.realizedGain === null) continue;
-      const proceeds = toDisplay(entry.proceeds, entry.accountCurrencyCode);
-      const costBasis = toDisplay(entry.costBasis, entry.accountCurrencyCode);
-      const realizedGain = toDisplay(entry.realizedGain, entry.accountCurrencyCode);
+      const proceeds = toDisplay(entry, 'proceeds');
+      const costBasis = toDisplay(entry, 'costBasis');
+      const realizedGain = toDisplay(entry, 'realizedGain');
       if (proceeds === null || costBasis === null || realizedGain === null) {
         missing.add(entry.accountCurrencyCode || defaultCurrency);
         excludedCount += 1;
@@ -338,8 +343,8 @@ export function RealizedGainsReport() {
           break;
         case 'proceeds':
           comparison = compareValues(
-            toDisplay(a.proceeds, a.accountCurrencyCode),
-            toDisplay(b.proceeds, b.accountCurrencyCode),
+            toDisplay(a, 'proceeds'),
+            toDisplay(b, 'proceeds'),
           );
           break;
       }
@@ -351,11 +356,11 @@ export function RealizedGainsReport() {
   const getExportData = useCallback(() => {
     const headers = [t('realizedGains.csvColSecurity'), t('realizedGains.csvColDateSold'), t('realizedGains.csvColQuantity'), t('realizedGains.csvColProceeds'), t('realizedGains.csvColCostBasis'), t('realizedGains.csvColGainLoss'), t('realizedGains.csvColReturn')];
     const rows: (string | number)[][] = sortedEntries.map((entry) => {
-      const proceeds = toDisplay(entry.proceeds, entry.accountCurrencyCode);
+      const proceeds = toDisplay(entry, 'proceeds');
       const costBasis =
-        entry.costBasis === null ? null : toDisplay(entry.costBasis, entry.accountCurrencyCode);
+        entry.costBasis === null ? null : toDisplay(entry, 'costBasis');
       const gain =
-        entry.realizedGain === null ? null : toDisplay(entry.realizedGain, entry.accountCurrencyCode);
+        entry.realizedGain === null ? null : toDisplay(entry, 'realizedGain');
       const unknownCost = entry.costBasis === null || entry.realizedGain === null;
       // An export cell that cannot be converted says so; a spreadsheet reading a
       // blank or a native-currency figure in a display-currency column is worse
@@ -744,7 +749,7 @@ export function RealizedGainsReport() {
                     <td role="cell" className={`col-start-1 col-span-2 row-start-3 font-medium text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                       <CellLabel className={CAPTION_CLASS}>{sellTransactionColumns.proceeds.label}</CellLabel>
                       {(() => {
-                        const proceeds = toDisplay(entry.proceeds, entry.accountCurrencyCode);
+                        const proceeds = toDisplay(entry, 'proceeds');
                         return proceeds === null
                           ? t('realizedGains.csvNoRate')
                           : fmtValue(proceeds);

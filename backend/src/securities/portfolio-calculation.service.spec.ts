@@ -12,6 +12,7 @@ import { Account, AccountSubType } from "../accounts/entities/account.entity";
 import { HoldingWithMarketValue } from "./portfolio.service";
 import { SecurityValueByAccount } from "../bonds/bond-valuation.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import { UserPreference } from "../users/entities/user-preference.entity";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -28,7 +29,18 @@ function buildService(
   rawQuery?: jest.Mock,
   bondValuation: unknown = { valueByAccount: jest.fn() },
 ): PortfolioCalculationService {
-  const { manager, dataSource } = createScopedDbMocks(repos as never);
+  // The reader reports in CAD, the fixtures' account currency, unless a case
+  // registers a preference of its own.
+  const withPreference = repos.some(([entity]) => entity === UserPreference)
+    ? repos
+    : [
+        ...repos,
+        [
+          UserPreference,
+          { findOne: jest.fn().mockResolvedValue({ defaultCurrency: "CAD" }) },
+        ] as [unknown, Record<string, jest.Mock>],
+      ];
+  const { manager, dataSource } = createScopedDbMocks(withPreference as never);
   manager.query.mockImplementation((sql: string, params?: unknown[]) =>
     rawQuery ? rawQuery(sql, params) : Promise.resolve([]),
   );
@@ -1966,9 +1978,17 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
       accountCurrency?: string;
       rates?: Record<string, number | null>;
       prices?: Array<{ date: string; price: number }>;
+      /** The reader's reporting currency; the account's unless named. */
+      reportingCurrency?: string;
     } = {},
   ) => {
     const txRepo = { find: jest.fn().mockResolvedValue(transactions) };
+    const preferenceRepo = {
+      findOne: jest.fn().mockResolvedValue({
+        defaultCurrency:
+          opts.reportingCurrency ?? opts.accountCurrency ?? "CAD",
+      }),
+    };
     const known = accounts(opts.accountCurrency ?? "CAD");
     const accountRepo = {
       find: jest.fn(({ where }: { where: { id: { _value: string[] } } }) =>
@@ -1987,6 +2007,7 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
       [
         [InvestmentTransaction, txRepo],
         [Account, accountRepo],
+        [UserPreference, preferenceRepo],
       ],
       { resolveStoredRate },
       priceQuery,
@@ -2322,6 +2343,42 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
 
       expect(sale).toMatchObject({ costBasis: 1000, realizedGain: 100 });
       expect(resolveStoredRate).not.toHaveBeenCalled();
+    });
+
+    it("states the gain in the reporting currency at each row's own date (issue #2106)", async () => {
+      // A USD account read in CAD: the basis is the CAD the buy cost (1,350 at
+      // its own 1.35), the proceeds are 1,100 USD at the sale day's 1.40.
+      const { service, resolveStoredRate } = build(
+        [
+          usdBuy({
+            accountCurrency: "USD",
+            exchangeRate: 1.35,
+            fundingAccountId: cadChequing,
+          }),
+          cadSell({ accountCurrency: "USD", exchangeRate: 1 }),
+        ],
+        {
+          accountCurrency: "USD",
+          reportingCurrency: "CAD",
+          rates: { "USD->CAD": 1.4 },
+        },
+      );
+
+      const [sale] = await service.calculateRealizedGains(userId);
+
+      expect(sale).toMatchObject({ costBasis: 1000, realizedGain: 100 });
+      expect(sale.inReportingCurrency).toEqual({
+        currency: "CAD",
+        proceeds: 1540,
+        costBasis: 1350,
+        realizedGain: 190,
+      });
+      expect(resolveStoredRate).toHaveBeenCalledWith(
+        "USD",
+        "CAD",
+        "2024-02-10",
+        { mode: "historical" },
+      );
     });
   });
 
@@ -4227,6 +4284,66 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues", () => {
     basisKnown: true,
     basisGap: null,
     ...over,
+  });
+
+  it("states a foreign account's cost in the reporting currency at each purchase's date (issue #2106)", async () => {
+    // 900 PLN bought on 2024-01-10 when a zloty was 0.30 CAD; today it is
+    // 0.40. The cost in CAD is what the shares cost then: 270, not 360.
+    const holdingRepo = { find: jest.fn().mockResolvedValue([holdingRow]) };
+    const buy = {
+      id: "buy",
+      userId,
+      accountId: "acct-1",
+      securityId: "sec-a",
+      action: InvestmentAction.BUY,
+      transactionDate: "2024-01-10",
+      quantity: 10,
+      price: 90,
+      commission: 0,
+      totalAmount: 900,
+      exchangeRate: 1,
+      account: { id: "acct-1", currencyCode: "PLN" },
+      security: { id: "sec-a", currencyCode: "PLN" },
+    } as unknown as InvestmentTransaction;
+    const txRepo = { find: jest.fn().mockResolvedValue([buy]) };
+    const accountRepo = { find: jest.fn().mockResolvedValue([]) };
+    const resolveStoredRate = jest.fn(
+      async (
+        from: string,
+        to: string,
+        onDate: string,
+        options: { mode: string },
+      ) => {
+        if (from === to) return { status: "same_currency", rate: 1 };
+        const rate =
+          options.mode === "historical" && onDate === "2024-01-10" ? 0.3 : 0.4;
+        return { status: "resolved", rate };
+      },
+    );
+    const service = buildService(
+      [
+        [Holding, holdingRepo],
+        [InvestmentTransaction, txRepo],
+        [Account, accountRepo],
+      ],
+      { resolveStoredRate },
+    );
+    jest
+      .spyOn(service, "calculateCostBasisLotsInAccountCurrency")
+      .mockResolvedValue(new Map([["acct-1:sec-a", lot()]]));
+
+    const result = await service.calculateHoldingsWithValues(
+      userId,
+      ["acct-1"],
+      "CAD",
+      new Map(),
+      async () => new Map([["sec-a", 100]]),
+    );
+
+    expect(result.holdingsWithValues[0].costBasisAccountCurrency).toBe(900);
+    expect(result.totalCostBasis).toBe(270);
+    // The value is today's: 1,000 PLN at 0.40.
+    expect(result.holdingsWithValues[0].marketValueDefaultCurrency).toBe(400);
   });
 
   it("uses a replayed basis that is known and in the account's currency", async () => {

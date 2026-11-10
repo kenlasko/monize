@@ -1136,16 +1136,37 @@ export class PortfolioService {
         ? (totalGainLoss / holdingsResult.gainCostBasis) * 100
         : 0;
 
-    // Calculate total net invested (converted to default currency)
+    // Total net invested in the default currency. The cash is today's balance,
+    // so it converts at today's rate; the flows are history, each row at the
+    // rate on its own date (issue #2106), not a lifetime of trades at one rate.
+    const foreignAccounts = new Map(
+      holdingsByAccount
+        .filter((acct) => acct.currencyCode !== defaultCurrency)
+        .map((acct) => [acct.accountId, acct.currencyCode] as const),
+    );
+    const datedFlows =
+      foreignAccounts.size > 0
+        ? await this.calculationService.computeNetInvestmentFlowsInReporting(
+            userId,
+            foreignAccounts,
+            defaultCurrency,
+          )
+        : new Map<string, number | null>();
     const netInvestedAgg = new FxAggregate();
     for (const acct of holdingsByAccount) {
+      if (acct.currencyCode === defaultCurrency) {
+        netInvestedAgg.addConverted(acct.netInvested);
+        continue;
+      }
+      const cash = await this.calculationService.convertToDefault(
+        acct.cashBalance,
+        acct.currencyCode,
+        defaultCurrency,
+        rateCache,
+      );
+      const flows = datedFlows.get(acct.accountId) ?? null;
       netInvestedAgg.add(
-        await this.calculationService.convertToDefault(
-          acct.netInvested,
-          acct.currencyCode,
-          defaultCurrency,
-          rateCache,
-        ),
+        cash === null || flows === null ? null : cash + flows,
         acct.currencyCode,
         defaultCurrency,
       );
