@@ -786,7 +786,9 @@ export class PortfolioCalculationService {
            LEFT JOIN securities s ON s.id = it.security_id
            LEFT JOIN accounts a ON a.id = it.account_id
            LEFT JOIN accounts f ON f.id = it.funding_account_id
-           LEFT JOIN accounts cash ON cash.id = a.linked_account_id
+           LEFT JOIN accounts cash
+             ON cash.id = a.linked_account_id
+            AND a.account_sub_type = $5
           WHERE it.user_id = $1
             AND it.account_id = ANY($2)
             AND it.transaction_date <= CURRENT_DATE
@@ -802,6 +804,8 @@ export class PortfolioCalculationService {
             InvestmentAction.RETURN_OF_CAPITAL,
           ],
           CASH_INCOME_ACTIONS,
+          // Only a brokerage settles in its linked cash account.
+          AccountSubType.INVESTMENT_BROKERAGE,
         ],
       );
       for (const accountId of accountIds) result.set(accountId, 0);

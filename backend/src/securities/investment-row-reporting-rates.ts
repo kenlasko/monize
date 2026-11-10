@@ -1,5 +1,5 @@
 import { EntityManager, In } from "typeorm";
-import { Account } from "../accounts/entities/account.entity";
+import { Account, AccountSubType } from "../accounts/entities/account.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { preferredCurrency } from "../common/default-currency.util";
 import {
@@ -36,6 +36,7 @@ export interface InvestmentRowRateSource {
   amountCurrencyCode?: string | null;
   account?: {
     currencyCode?: string | null;
+    accountSubType?: string | null;
     linkedAccountId?: string | null;
   } | null;
   fundingAccount?: { currencyCode?: string | null } | null;
@@ -79,7 +80,11 @@ export async function attachInvestmentRowReportingRates<
     amountCurrency: row.amountCurrencyCode ?? null,
     settlementCurrency:
       row.fundingAccount?.currencyCode ||
-      (row.account?.linkedAccountId
+      // Only a brokerage settles in its linked cash account (the replay's
+      // `settlementCurrencies`); a cash account linked back to its brokerage
+      // settles in its own currency.
+      (row.account?.linkedAccountId &&
+      row.account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE
         ? linkedCurrency.get(row.account.linkedAccountId)
         : undefined) ||
       row.account?.currencyCode ||

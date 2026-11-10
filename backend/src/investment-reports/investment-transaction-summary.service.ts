@@ -5,6 +5,7 @@ import { FxAggregate } from "../common/fx-aggregate";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { InvestmentAction } from "../securities/entities/investment-transaction.entity";
+import { AccountSubType } from "../accounts/entities/account.entity";
 import { investmentRowHasEffect } from "../securities/investment-row-effects.util";
 import { investmentRowRateInto } from "../securities/investment-row-fx.util";
 import {
@@ -258,6 +259,8 @@ export class InvestmentTransactionSummaryService {
         userId,
         InvestmentAction.INTEREST,
         InvestmentAction.REDEEM,
+        // Only a brokerage settles in its linked cash account.
+        AccountSubType.INVESTMENT_BROKERAGE,
       ];
       const clauses: string[] = [];
 
@@ -311,7 +314,9 @@ export class InvestmentTransactionSummaryService {
            LEFT JOIN securities s ON s.id = it.security_id
            LEFT JOIN accounts a ON a.id = it.account_id
            LEFT JOIN accounts f ON f.id = it.funding_account_id
-           LEFT JOIN accounts cash ON cash.id = a.linked_account_id
+           LEFT JOIN accounts cash
+             ON cash.id = a.linked_account_id
+            AND a.account_sub_type = $4
           WHERE it.user_id = $1
             AND NOT (it.action = $2 AND EXISTS (
                   -- The parent is looked up as a record (includes VOID): what

@@ -79,7 +79,11 @@ describe("attachInvestmentRowReportingRates (issue #2106)", () => {
         // 0.92 EUR per USD, the rate the cash leg settled at in EUR.
         exchangeRate: 0.92,
         amountCurrencyCode: "USD",
-        account: { currencyCode: "USD", linkedAccountId: "cash-1" },
+        account: {
+          currencyCode: "USD",
+          accountSubType: "INVESTMENT_BROKERAGE",
+          linkedAccountId: "cash-1",
+        },
         fundingAccount: null,
       },
     ];
@@ -91,6 +95,36 @@ describe("attachInvestmentRowReportingRates (issue #2106)", () => {
     // stored, so the onward hop and the market pair both answer null.
     expect((rows[0] as Record<string, unknown>).reportingRate).toBeNull();
     expect((rows[0] as Record<string, unknown>).accountRate).toBe(1);
+  });
+
+  it("settles a cash account linked back to its brokerage in its own currency", async () => {
+    const { manager } = setup([]);
+    const rows = [
+      {
+        transactionDate: "2025-01-12",
+        exchangeRate: 1,
+        amountCurrencyCode: "USD",
+        account: {
+          currencyCode: "USD",
+          accountSubType: "INVESTMENT_CASH",
+          linkedAccountId: "cash-1",
+        },
+        fundingAccount: null,
+      },
+    ];
+
+    await attachInvestmentRowReportingRates(manager as never, "user-1", rows);
+
+    // Its own USD, not the linked account's EUR: the row needs no rate into USD.
+    expect((rows[0] as Record<string, unknown>).accountRate).toBe(1);
+    expect(
+      (
+        (rows[0] as Record<string, unknown>).ratesInto as Record<
+          string,
+          unknown
+        >
+      ).EUR,
+    ).toBeNull();
   });
 
   it("does nothing for an empty page", async () => {
