@@ -746,7 +746,14 @@
     "oneOrMoreNotFound": "Una o più etichette non trovate",
     "oneOrMoreTransactionsNotFound": "Una o più transazioni non trovate",
     "tooManyTags": "Al massimo {{ max }} tag possono essere modificati in una sola chiamata",
-    "tooManyTransactions": "Al massimo {{ max }} transazioni possono essere modificate in una sola chiamata"
+    "tooManyTransactions": "Al massimo {{ max }} transazioni possono essere modificate in una sola chiamata",
+    "addAndRemove": "Il tag \"{{ name }}\" non può essere aggiunto e rimosso nella stessa modifica",
+    "unknownName": "Tag sconosciuto: {{ name }}.{{ suggestion }}",
+    "noChange": "Il tag \"{{ name }}\" ha già questi valori: indica un newName, color o icon diverso.",
+    "repeatedInBatch": "Un altro elemento di questa richiesta indica già questo tag.",
+    "nameRequired": "Un tag deve avere un nome.",
+    "invalidColor": "\"{{ color }}\" non è un colore: usa #RRGGBB, ad esempio #FF5733.",
+    "nothingToChange": "Niente da modificare: la transazione ha già tutti i tag da aggiungere e nessuno di quelli da rimuovere. Questa modifica non cambia i tag delle righe di suddivisione."
   },
   "transactionRules": {
     "notFound": "Regola di transazione con ID {{ id }} non trovata",
@@ -836,7 +843,9 @@
     "convertTransferCrossOwner": "Un trasferimento con il conto di un altro proprietario non può essere convertito. Eliminalo e crea invece la voce desiderata.",
     "splitTransferLegConvertLocked": "Questo trasferimento fa parte di una transazione suddivisa. Rimuovilo modificando la suddivisione nella transazione di origine.",
     "transferCounterpartChanged": "L'altro lato di questo trasferimento è cambiato durante la modifica. Ricarica e riprova.",
-    "splitTransferTargetAmountRequiresTransfer": "Solo un trasferimento in una suddivisione può avere un importo ricevuto"
+    "splitTransferTargetAmountRequiresTransfer": "Solo un trasferimento in una suddivisione può avere un importo ricevuto",
+    "splitIdNotOnTransaction": "splitId {{ splitId }} non è una riga di suddivisione di questa transazione. Rileggi le righe di suddivisione della transazione e usa i loro valori splitId.",
+    "splitIdRepeated": "splitId {{ splitId }} è indicato da più di una riga. Ogni riga esistente può essere ripresa una sola volta."
   },
   "users": {
     "userNotFound": "Utente non trovato",

@@ -746,7 +746,14 @@
     "oneOrMoreNotFound": "Een of meer labels niet gevonden",
     "oneOrMoreTransactionsNotFound": "Een of meer transacties niet gevonden",
     "tooManyTags": "Er kunnen maximaal {{ max }} tags in één aanroep worden gewijzigd",
-    "tooManyTransactions": "Er kunnen maximaal {{ max }} transacties in één aanroep worden gewijzigd"
+    "tooManyTransactions": "Er kunnen maximaal {{ max }} transacties in één aanroep worden gewijzigd",
+    "addAndRemove": "Het label \"{{ name }}\" kan niet in één bewerking worden toegevoegd en verwijderd",
+    "unknownName": "Onbekend label: {{ name }}.{{ suggestion }}",
+    "noChange": "Het label \"{{ name }}\" heeft deze waarden al: geef een andere newName, color of icon op.",
+    "repeatedInBatch": "Een ander item in dit verzoek noemt dit label al.",
+    "nameRequired": "Een label heeft een naam nodig.",
+    "invalidColor": "\"{{ color }}\" is geen kleur: gebruik #RRGGBB, bijvoorbeeld #FF5733.",
+    "nothingToChange": "Niets te wijzigen: de transactie heeft al elk label dat moet worden toegevoegd en geen van de labels die moeten worden verwijderd. Labels op splitsregels worden door deze bewerking niet gewijzigd."
   },
   "transactionRules": {
     "notFound": "Transactieregel met ID {{ id }} niet gevonden",
@@ -836,7 +843,9 @@
     "convertTransferCrossOwner": "Een overboeking met de rekening van een andere eigenaar kan niet worden omgezet. Verwijder hem en maak in plaats daarvan de gewenste boeking aan.",
     "splitTransferLegConvertLocked": "Deze overboeking maakt deel uit van een gesplitste transactie. Verwijder hem door de splitsing op de brontransactie te bewerken.",
     "transferCounterpartChanged": "De andere kant van deze overboeking is gewijzigd tijdens het bewerken. Herlaad en probeer het opnieuw.",
-    "splitTransferTargetAmountRequiresTransfer": "Alleen een overboeking in een splitsing kan een ontvangen bedrag hebben"
+    "splitTransferTargetAmountRequiresTransfer": "Alleen een overboeking in een splitsing kan een ontvangen bedrag hebben",
+    "splitIdNotOnTransaction": "splitId {{ splitId }} is geen splitsregel van deze transactie. Lees de splitsregels van de transactie opnieuw en gebruik hun splitId-waarden.",
+    "splitIdRepeated": "splitId {{ splitId }} wordt door meer dan één regel genoemd. Elke bestaande regel kan maar één keer worden voortgezet."
   },
   "users": {
     "userNotFound": "Gebruiker niet gevonden",

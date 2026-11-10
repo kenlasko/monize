@@ -746,7 +746,14 @@
     "oneOrMoreNotFound": "Nie znaleziono jednego lub więcej tagów",
     "oneOrMoreTransactionsNotFound": "Nie znaleziono jednej lub więcej transakcji",
     "tooManyTags": "W jednym wywołaniu można zmienić najwyżej {{ max }} tagów",
-    "tooManyTransactions": "W jednym wywołaniu można zmienić najwyżej {{ max }} transakcji"
+    "tooManyTransactions": "W jednym wywołaniu można zmienić najwyżej {{ max }} transakcji",
+    "addAndRemove": "Tagu „{{ name }}” nie można jednocześnie dodać i usunąć w jednej edycji",
+    "unknownName": "Nieznany tag: {{ name }}.{{ suggestion }}",
+    "noChange": "Tag „{{ name }}” ma już te wartości: podaj inny newName, color lub icon.",
+    "repeatedInBatch": "Inny element tego żądania już wskazuje ten tag.",
+    "nameRequired": "Tag musi mieć nazwę.",
+    "invalidColor": "„{{ color }}” nie jest kolorem: użyj #RRGGBB, na przykład #FF5733.",
+    "nothingToChange": "Nie ma nic do zmiany: transakcja ma już wszystkie tagi do dodania i żadnego z tagów do usunięcia. Ta edycja nie zmienia tagów linii podziału."
   },
   "transactionRules": {
     "notFound": "Nie znaleziono reguły transakcji o ID {{ id }}",
@@ -836,7 +843,9 @@
     "convertTransferCrossOwner": "Przelewu z kontem innego właściciela nie można przekonwertować. Usuń go i zamiast tego utwórz żądany wpis.",
     "splitTransferLegConvertLocked": "Ten przelew jest częścią transakcji podzielonej. Usuń go, edytując podział w transakcji źródłowej.",
     "transferCounterpartChanged": "Druga strona tego przelewu zmieniła się podczas edycji. Odśwież i spróbuj ponownie.",
-    "splitTransferTargetAmountRequiresTransfer": "Tylko przelew w podziale może mieć kwotę otrzymaną"
+    "splitTransferTargetAmountRequiresTransfer": "Tylko przelew w podziale może mieć kwotę otrzymaną",
+    "splitIdNotOnTransaction": "splitId {{ splitId }} nie jest linią podziału tej transakcji. Odczytaj ponownie linie podziału transakcji i użyj ich wartości splitId.",
+    "splitIdRepeated": "splitId {{ splitId }} jest wskazany przez więcej niż jedną linię. Każdą istniejącą linię można kontynuować tylko raz."
   },
   "users": {
     "userNotFound": "Nie znaleziono użytkownika",

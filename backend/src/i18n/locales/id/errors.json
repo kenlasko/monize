@@ -746,7 +746,14 @@
     "oneOrMoreNotFound": "Satu atau lebih tag tidak ditemukan",
     "oneOrMoreTransactionsNotFound": "Satu atau lebih transaksi tidak ditemukan",
     "tooManyTags": "Maksimal {{ max }} tag dapat diubah dalam satu panggilan",
-    "tooManyTransactions": "Maksimal {{ max }} transaksi dapat diubah dalam satu panggilan"
+    "tooManyTransactions": "Maksimal {{ max }} transaksi dapat diubah dalam satu panggilan",
+    "addAndRemove": "Tag \"{{ name }}\" tidak dapat ditambahkan dan dihapus dalam satu pengeditan",
+    "unknownName": "Tag tidak dikenal: {{ name }}.{{ suggestion }}",
+    "noChange": "Tag \"{{ name }}\" sudah memiliki nilai ini: berikan newName, color, atau icon yang berbeda.",
+    "repeatedInBatch": "Item lain dalam permintaan ini sudah menyebut tag ini.",
+    "nameRequired": "Tag memerlukan nama.",
+    "invalidColor": "\"{{ color }}\" bukan warna: gunakan #RRGGBB, misalnya #FF5733.",
+    "nothingToChange": "Tidak ada yang diubah: transaksi sudah memiliki setiap tag yang akan ditambahkan dan tidak memiliki tag yang akan dihapus. Tag pada baris pemisahan tidak diubah oleh pengeditan ini."
   },
   "transactionRules": {
     "notFound": "Aturan transaksi dengan ID {{ id }} tidak ditemukan",
@@ -836,7 +843,9 @@
     "convertTransferCrossOwner": "Transfer dengan akun pemilik lain tidak dapat dikonversi. Hapus dan buat entri yang Anda inginkan.",
     "splitTransferLegConvertLocked": "Transfer ini adalah bagian dari transaksi terpisah. Hapus dengan mengubah pemisahan pada transaksi sumber.",
     "transferCounterpartChanged": "Sisi lain transfer ini berubah saat Anda mengedit. Muat ulang dan coba lagi.",
-    "splitTransferTargetAmountRequiresTransfer": "Hanya transfer dalam pemisahan yang dapat memiliki jumlah diterima"
+    "splitTransferTargetAmountRequiresTransfer": "Hanya transfer dalam pemisahan yang dapat memiliki jumlah diterima",
+    "splitIdNotOnTransaction": "splitId {{ splitId }} bukan baris pemisahan transaksi ini. Baca ulang baris pemisahan transaksi dan gunakan nilai splitId-nya.",
+    "splitIdRepeated": "splitId {{ splitId }} disebut oleh lebih dari satu baris. Setiap baris yang ada hanya dapat dilanjutkan sekali."
   },
   "users": {
     "userNotFound": "Pengguna tidak ditemukan",

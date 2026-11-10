@@ -1,5 +1,8 @@
 {
   "accounts": {
     "useFavouriteUpdateEndpoint": "Use the account update endpoint to change favorites"
+  },
+  "tags": {
+    "invalidColor": "\"{{ color }}\" is not a color: use #RRGGBB, for example #FF5733."
   }
 }

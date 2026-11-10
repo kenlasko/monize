@@ -746,7 +746,14 @@
     "oneOrMoreNotFound": "Une ou plusieurs étiquettes introuvables",
     "oneOrMoreTransactionsNotFound": "Une ou plusieurs opérations sont introuvables",
     "tooManyTags": "Au plus {{ max }} étiquettes peuvent être modifiées en un seul appel",
-    "tooManyTransactions": "Au plus {{ max }} opérations peuvent être modifiées en un seul appel"
+    "tooManyTransactions": "Au plus {{ max }} opérations peuvent être modifiées en un seul appel",
+    "addAndRemove": "L'étiquette « {{ name }} » ne peut pas être ajoutée et retirée dans la même modification",
+    "unknownName": "Étiquette inconnue : {{ name }}.{{ suggestion }}",
+    "noChange": "L'étiquette « {{ name }} » a déjà ces valeurs : indiquez un newName, color ou icon différent.",
+    "repeatedInBatch": "Un autre élément de cette demande nomme déjà cette étiquette.",
+    "nameRequired": "Une étiquette doit avoir un nom.",
+    "invalidColor": "« {{ color }} » n'est pas une couleur : utilisez #RRGGBB, par exemple #FF5733.",
+    "nothingToChange": "Rien à modifier : l'opération porte déjà toutes les étiquettes à ajouter et aucune de celles à retirer. Les étiquettes des lignes de ventilation ne sont pas modifiées par cette édition."
   },
   "transactionRules": {
     "notFound": "Règle de transaction avec l'ID {{ id }} introuvable",
@@ -836,7 +843,9 @@
     "convertTransferCrossOwner": "Un virement impliquant le compte d'un autre propriétaire ne peut pas être converti. Supprimez-le et créez plutôt l'entrée souhaitée.",
     "splitTransferLegConvertLocked": "Ce virement fait partie d'une transaction fractionnée. Retirez-le en modifiant la répartition sur la transaction source.",
     "transferCounterpartChanged": "L'autre côté de ce virement a changé pendant votre modification. Rechargez et réessayez.",
-    "splitTransferTargetAmountRequiresTransfer": "Seul un virement d'une répartition peut porter un montant reçu"
+    "splitTransferTargetAmountRequiresTransfer": "Seul un virement d'une répartition peut porter un montant reçu",
+    "splitIdNotOnTransaction": "splitId {{ splitId }} n'est pas une ligne de ventilation de cette opération. Relisez les lignes de ventilation de l'opération et utilisez leurs valeurs splitId.",
+    "splitIdRepeated": "splitId {{ splitId }} est indiqué par plusieurs lignes. Chaque ligne existante ne peut être reprise qu'une fois."
   },
   "users": {
     "userNotFound": "Utilisateur introuvable",

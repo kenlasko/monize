@@ -746,7 +746,14 @@
     "oneOrMoreNotFound": "Ein oder mehrere Etiketten nicht gefunden",
     "oneOrMoreTransactionsNotFound": "Eine oder mehrere Buchungen nicht gefunden",
     "tooManyTags": "Höchstens {{ max }} Etiketten können in einem Aufruf geändert werden",
-    "tooManyTransactions": "Höchstens {{ max }} Buchungen können in einem Aufruf geändert werden"
+    "tooManyTransactions": "Höchstens {{ max }} Buchungen können in einem Aufruf geändert werden",
+    "addAndRemove": "Das Etikett \"{{ name }}\" kann in einer Bearbeitung nicht zugleich hinzugefügt und entfernt werden",
+    "unknownName": "Unbekanntes Etikett: {{ name }}.{{ suggestion }}",
+    "noChange": "Das Etikett \"{{ name }}\" hat diese Werte bereits: Geben Sie einen abweichenden newName, color oder icon an.",
+    "repeatedInBatch": "Ein anderer Eintrag in dieser Anfrage nennt dieses Etikett bereits.",
+    "nameRequired": "Ein Etikett braucht einen Namen.",
+    "invalidColor": "\"{{ color }}\" ist keine Farbe: Verwenden Sie #RRGGBB, zum Beispiel #FF5733.",
+    "nothingToChange": "Nichts zu ändern: Die Buchung trägt bereits jedes hinzuzufügende Etikett und keines der zu entfernenden. Etiketten auf Aufteilungszeilen werden durch diese Bearbeitung nicht geändert."
   },
   "transactionRules": {
     "notFound": "Transaktionsregel mit der ID {{ id }} nicht gefunden",
@@ -836,7 +843,9 @@
     "convertTransferCrossOwner": "Eine Überweisung mit dem Konto eines anderen Eigentümers kann nicht umgewandelt werden. Löschen Sie sie und erstellen Sie stattdessen den gewünschten Eintrag.",
     "splitTransferLegConvertLocked": "Diese Überweisung ist Teil einer aufgeteilten Transaktion. Entfernen Sie sie, indem Sie die Aufteilung in der Quelltransaktion bearbeiten.",
     "transferCounterpartChanged": "Die Gegenseite dieser Überweisung hat sich während der Bearbeitung geändert. Laden Sie neu und versuchen Sie es erneut.",
-    "splitTransferTargetAmountRequiresTransfer": "Nur eine Überweisung in einer Aufteilung kann einen erhaltenen Betrag haben"
+    "splitTransferTargetAmountRequiresTransfer": "Nur eine Überweisung in einer Aufteilung kann einen erhaltenen Betrag haben",
+    "splitIdNotOnTransaction": "splitId {{ splitId }} ist keine Aufteilungszeile dieser Buchung. Lesen Sie die Aufteilungszeilen der Buchung erneut und verwenden Sie deren splitId-Werte.",
+    "splitIdRepeated": "splitId {{ splitId }} wird von mehr als einer Zeile genannt. Jede bestehende Zeile kann nur einmal fortgeführt werden."
   },
   "users": {
     "userNotFound": "Benutzer nicht gefunden",
