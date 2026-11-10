@@ -14,12 +14,40 @@ const DASHES_ONLY = /^[-‐-―−﹣－]+$/;
 const GROUPING_MARKS = /[\s'’]/g;
 
 /**
- * A currency written beside the number: any run of currency symbols and at
- * most three letters ("$", "CHF", "kr", "R$", "US$", "zł").
+ * A currency written beside the number: a run of currency symbols and letters
+ * ("$", "CHF", "kr", "R$", "US$", "zł"), with the period that ends an
+ * abbreviation when it has letters ("Fr. 12.34", "Rs.12.50", "12,34 kr.").
  */
-const LEADING_CURRENCY = /^[\p{L}\p{Sc}]+/u;
-const TRAILING_CURRENCY = /[\p{L}\p{Sc}]+$/u;
+const LEADING_CURRENCY = /^[\p{L}\p{Sc}]+(?:(?<=\p{L})\.)?/u;
+const TRAILING_CURRENCY = /[\p{L}\p{Sc}]+(?:(?<=\p{L})\.)?$/u;
 const MAX_CURRENCY_LETTERS = 3;
+
+/**
+ * Currency abbreviations written in lower or mixed case. Any other word is a
+ * currency only when it carries a currency symbol or is all capitals (an ISO
+ * code), so "Tax 5" or "abc 12" is unreadable rather than read as 5 or 12.
+ */
+const MIXED_CASE_CURRENCIES = new Set([
+  "kr",
+  "zł",
+  "fr",
+  "sfr",
+  "rs",
+  "rp",
+  "ft",
+  "kč",
+  "lei",
+  "лв",
+  "руб",
+  "грн",
+]);
+
+/**
+ * A separator at either end of the number alongside another one (".12.50",
+ * "12.50.") is what a stray abbreviation period leaves; it is unreadable, never
+ * grouping.
+ */
+const STRAY_SEPARATOR = /^[.,].*[.,]|[.,].*[.,]$/;
 
 /** The number left once the sign, currency and grouping are stripped. */
 const PLAIN_NUMBER = /^(?:\d+\.?\d*|\.\d+)$/;
@@ -44,7 +72,8 @@ export function isBlankCsvAmount(value: string): boolean {
  * forms ("-12.34", "12.34-", "−12.34"); parentheses as negative
  * ("(12.34)"); a "DR" (debit, negative) or "CR" (credit, positive) marker
  * before or after the number; a currency symbol or code before or after it
- * ("$12.34", "CHF 12.34", "12.34 kr"); whitespace and apostrophe grouping; and
+ * ("$12.34", "CHF 12.34", "12.34 kr", "Fr. 12.34"), which is a symbol, an
+ * all-capitals code or a known abbreviation (`isCurrencyWord`); whitespace and apostrophe grouping; and
  * both US (1,234.56) and European (1.234,56 / 18,36) grouping and decimal
  * styles (`normalizeAmountSeparators`). Two signs, or a sign with a DR/CR
  * marker, contradict each other and are unreadable.
@@ -60,9 +89,9 @@ export function parseCsvAmount(value: string): number | null {
   const currencySides = new Set<"leading" | "trailing">();
   // One DR/CR marker in all, and one currency on each side of the number.
   const takeWord = (word: string, side: "leading" | "trailing"): boolean => {
-    if (/^(?:dr|cr)$/i.test(word)) {
+    if (/^(?:dr|cr)\.?$/i.test(word)) {
       if (marker) return false;
-      marker = word.toUpperCase() as "DR" | "CR";
+      marker = word.slice(0, 2).toUpperCase() as "DR" | "CR";
       return true;
     }
     if (currencySides.has(side) || !isCurrencyWord(word)) return false;
@@ -106,7 +135,11 @@ export function parseCsvAmount(value: string): number | null {
   if (signs > 1 || (marker && signs > 0)) {
     return null;
   }
-  const number = normalizeAmountSeparators(rest.replace(GROUPING_MARKS, ""));
+  const digits = rest.replace(GROUPING_MARKS, "");
+  if (STRAY_SEPARATOR.test(digits)) {
+    return null;
+  }
+  const number = normalizeAmountSeparators(digits);
   if (!PLAIN_NUMBER.test(number)) {
     return null;
   }
@@ -116,5 +149,11 @@ export function parseCsvAmount(value: string): number | null {
 }
 
 function isCurrencyWord(word: string): boolean {
-  return (word.match(/\p{L}/gu) ?? []).length <= MAX_CURRENCY_LETTERS;
+  const letters = word.replace(/[^\p{L}]/gu, "");
+  if (letters.length > MAX_CURRENCY_LETTERS) return false;
+  if (letters === "" || /\p{Sc}/u.test(word)) return true;
+  return (
+    letters === letters.toUpperCase() ||
+    MIXED_CASE_CURRENCIES.has(letters.toLowerCase())
+  );
 }

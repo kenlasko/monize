@@ -24,6 +24,9 @@ describe("parseCsvAmount", () => {
     ["12.34dr", -12.34],
     ["CR 12.34", 12.34],
     ["12.34 CR", 12.34],
+    ["12.34 DR.", -12.34],
+    ["Dr. 12.34", -12.34],
+    ["12.34 Cr.", 12.34],
     // currency symbols and codes on either side
     ["$12.34", 12.34],
     ["-$50.00", -50],
@@ -36,6 +39,14 @@ describe("parseCsvAmount", () => {
     ["R$ 1.234,56", 1234.56],
     ["US$12.34", 12.34],
     ["$12.34 USD", 12.34],
+    // an abbreviation's period belongs to the currency, not the number
+    ["Fr. 12.34", 12.34],
+    ["Rs. 12.50", 12.5],
+    ["Rs.12.50", 12.5],
+    ["Rs. 1,234.56", 1234.56],
+    ["12,34 kr.", 12.34],
+    ["SFr. 1'234.50", 1234.5],
+    ["12.34 Kr", 12.34],
     ["12.34 USD DR", -12.34],
     // grouping
     ["1,234.56", 1234.56],
@@ -60,6 +71,14 @@ describe("parseCsvAmount", () => {
     "12.34 abcd",
     "abcd 12.34",
     "12.34 pending",
+    // a short word is a currency only as a symbol, a code or a known one
+    "Tax 5",
+    "abc 12",
+    "12 ea",
+    // a stray separator next to another one is never grouping
+    ".12.50",
+    "12.50.",
+    "$.12.50",
     "N/A",
     "NaN",
     "Infinity",
