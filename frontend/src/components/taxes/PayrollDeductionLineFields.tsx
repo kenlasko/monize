@@ -11,6 +11,15 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getCurrencySymbol } from '@/lib/format';
 import type { PayrollResetPeriod } from '@/types/payroll-deduction';
 
+/**
+ * The two figures of a period side by side. Each cell is a subgrid over
+ * three shared rows (label, box, hint), so the boxes line up even when one
+ * label wraps onto a second line and the other does not.
+ */
+const FIELD_GRID_CLASS = 'grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 md:gap-y-1';
+const FIELD_CELL_CLASS = 'md:grid md:grid-rows-subgrid md:row-span-3';
+const FIELD_LABEL_ROW_CLASS = 'flex items-center mb-1 md:mb-0 self-end';
+
 /** One category row of the form. */
 export interface PayrollDeductionLineValues {
   categoryId: string;
@@ -118,9 +127,9 @@ export function PayrollDeductionLineFields({
         </p>
       )}
       {/* Label row above each box, so the two boxes share one baseline. */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <div className="flex items-center mb-1">
+      <div className={FIELD_GRID_CLASS}>
+        <div className={FIELD_CELL_CLASS}>
+          <div className={FIELD_LABEL_ROW_CLASS}>
             <label htmlFor={`payroll-yearly-maximum-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('form.yearlyMaximumLabel')}
             </label>
@@ -149,13 +158,13 @@ export function PayrollDeductionLineFields({
         </div>
 
         {lineAmount !== null && (
-          <p className="self-end text-sm text-gray-600 dark:text-gray-400">
+          <p className="self-end md:row-span-2 text-sm text-gray-600 dark:text-gray-400">
             {t('form.expectedFromLine', { amount: formatCurrency(lineAmount, currencyCode) })}
           </p>
         )}
         {lineAmount === null && (
-          <div>
-            <div className="flex items-center mb-1">
+          <div className={FIELD_CELL_CLASS}>
+            <div className={FIELD_LABEL_ROW_CLASS}>
               <label htmlFor={`payroll-expected-per-paycheque-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 {t('form.expectedLabel')}
               </label>
@@ -199,9 +208,9 @@ export function PayrollDeductionLineFields({
           <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {t('form.nextPeriod', { date: formatDate(period.nextStart) })}
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div className="flex items-center mb-1">
+          <div className={FIELD_GRID_CLASS}>
+            <div className={FIELD_CELL_CLASS}>
+              <div className={FIELD_LABEL_ROW_CLASS}>
                 <label htmlFor={`payroll-next-yearly-maximum-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   {t('form.nextYearlyMaximumLabel')}
                 </label>
@@ -227,8 +236,8 @@ export function PayrollDeductionLineFields({
               />
             </div>
             {lineAmount === null && (
-              <div>
-                <div className="flex items-center mb-1">
+              <div className={FIELD_CELL_CLASS}>
+                <div className={FIELD_LABEL_ROW_CLASS}>
                   <label htmlFor={`payroll-next-expected-per-paycheque-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     {t('form.nextExpectedLabel')}
                   </label>
