@@ -399,9 +399,9 @@ export function TransactionConfirmationCard({
       });
     if (type === 'delete_tag')
       rows.push({
-        label: t('confirmAction.tagUsage'),
-        value: t('confirmAction.tagUseCount', {
-          count: preview.tagUseCount ?? 0,
+        label: t('confirmAction.tagRemovedFrom'),
+        value: t('confirmAction.tagCarriedCount', {
+          count: preview.tagCarriedCount ?? 0,
         }),
       });
   } else if (type === 'delete_payee') {

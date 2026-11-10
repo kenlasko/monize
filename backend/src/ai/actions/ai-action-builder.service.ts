@@ -439,7 +439,7 @@ export class AiActionBuilderService {
     const envelope = { userId, actionId, expiresAt };
     const descriptor:
       CreateTagDescriptor | UpdateTagDescriptor | DeleteTagDescriptor =
-      "useCount" in preview
+      "carriedCount" in preview
         ? { ...envelope, type: "delete_tag", tagId: preview.tagId }
         : "tagId" in preview
           ? {

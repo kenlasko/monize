@@ -583,12 +583,7 @@ export class TransactionToolPrepService {
       // An edit that asked only for tags the transfer already has (or does not
       // have) changes nothing: refused like the standard path, never offered as
       // a card that rewrites the transfer from this snapshot.
-      const fieldChange =
-        item.amount !== undefined ||
-        item.date !== undefined ||
-        item.description !== undefined ||
-        item.payeeName !== undefined ||
-        item.categoryName !== undefined;
+      const fieldChange = preview.changesFields !== false;
       const tagChanges =
         tagChange.tagNames.length > 0 || tagChange.removeTagIds.length > 0;
       const askedForTags =
@@ -597,8 +592,8 @@ export class TransactionToolPrepService {
       if (!fieldChange && askedForTags && !tagChanges) {
         throw new BadRequestException(
           tr(
-            "errors.transactions.noUpdateFields",
-            "Provide at least one field to change.",
+            "errors.tags.nothingToChange",
+            "Nothing to change: the transaction already carries every tag to add and none of the tags to remove. Tags on split lines are not changed by this edit.",
           ),
         );
       }

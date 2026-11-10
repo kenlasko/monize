@@ -702,7 +702,7 @@ describe("ToolExecutorService", () => {
         okPreviews: rows.map((r) => ({
           tagId: `id-${r.name}`,
           name: r.name,
-          useCount: 1,
+          carriedCount: 1,
         })),
         okRows: rows.map((r) => ({ tagId: `id-${r.name}` })),
         previewRows: rows.map((r) => ({ status: "ok", name: r.name })),

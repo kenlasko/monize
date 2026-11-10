@@ -38,6 +38,14 @@ import { TagsService, TagChangePreview } from "../tags/tags.service";
 import { TransactionTag } from "../tags/entities/transaction-tag.entity";
 import { TransactionSplitTag } from "../tags/entities/transaction-split-tag.entity";
 import { tagChangeFields } from "../tags/tag-change.util";
+
+/** An edit that names no tag: nothing to read. */
+const NO_TAG_CHANGE = (): TagChangePreview => ({
+  tagNames: [],
+  newTagNames: [],
+  removeTagIds: [],
+  removeTagNames: [],
+});
 import {
   RuleEffectsPreview,
   TransactionRulesApplierService,
@@ -1092,13 +1100,38 @@ export class TransactionsService {
       // scalar field does.
       input.splitsAccompany === true;
     if (!hasFieldChange && !hasTagChange) {
+      const askedForTags =
+        (input.tagNames?.length ?? 0) > 0 ||
+        (input.removeTagNames?.length ?? 0) > 0;
       throw new BadRequestException(
-        tr(
-          "errors.transactions.noUpdateFields",
-          "Provide at least one field to change.",
-        ),
+        askedForTags
+          ? tr(
+              "errors.tags.nothingToChange",
+              "Nothing to change: the transaction already carries every tag to add and none of the tags to remove. Tags on split lines are not changed by this edit.",
+            )
+          : tr(
+              "errors.transactions.noUpdateFields",
+              "Provide at least one field to change.",
+            ),
       );
     }
+    // A value difference, not a field being present: a model resends fields it
+    // does not change, and a tag edit must not then commit the whole snapshot.
+    const fieldsDiffer =
+      (input.amount !== undefined &&
+        input.amount !== Number(existing.amount)) ||
+      (input.transactionDate !== undefined &&
+        input.transactionDate !== String(existing.transactionDate)) ||
+      (input.payeeName !== undefined &&
+        (stripHtml(input.payeeName) || null) !==
+          (existing.payeeName ?? null)) ||
+      (input.categoryId !== undefined &&
+        input.categoryId !== (existing.categoryId ?? null)) ||
+      (input.description !== undefined &&
+        (stripHtml(input.description) || null) !==
+          (existing.description ?? null)) ||
+      referenceChanges ||
+      input.splitsAccompany === true;
 
     if (input.amount !== undefined) {
       const newAmount = input.amount;
@@ -1184,7 +1217,7 @@ export class TransactionsService {
       isReconciled: existing.isReconciled,
       ...(referenceChanges ? { referenceNumber } : {}),
       ...tagChangeFields(tagChange),
-      ...(hasTagChange && !hasFieldChange ? { tagsOnly: true as const } : {}),
+      ...(hasTagChange && !fieldsDiffer ? { tagsOnly: true as const } : {}),
     };
   }
 
@@ -1201,6 +1234,9 @@ export class TransactionsService {
     addNames: readonly string[],
     removeNames: readonly string[],
   ): Promise<TagChangePreview> {
+    if (addNames.length === 0 && removeNames.length === 0) {
+      return NO_TAG_CHANGE();
+    }
     return withScopedDb(this.dataSource, async (m) => {
       const carried = new Set(
         (
@@ -1232,6 +1268,9 @@ export class TransactionsService {
     addNames: readonly string[],
     removeNames: readonly string[],
   ): Promise<TagChangePreview> {
+    if (addNames.length === 0 && removeNames.length === 0) {
+      return NO_TAG_CHANGE();
+    }
     return withScopedDb(this.dataSource, async (m) => {
       const leg = await m.findOne(Transaction, {
         where: { id: transactionId, userId },

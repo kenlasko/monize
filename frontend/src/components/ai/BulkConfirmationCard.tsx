@@ -270,8 +270,8 @@ export function BulkConfirmationCard({
         parts.push(`${t('confirmAction.tagColor')}: ${row.tagColor || t('confirmAction.none')}`);
       if (row.tagIcon !== undefined)
         parts.push(`${t('confirmAction.tagIcon')}: ${row.tagIcon || t('confirmAction.none')}`);
-      if (row.tagUseCount !== undefined)
-        parts.push(t('confirmAction.tagUseCount', { count: row.tagUseCount }));
+      if (row.tagCarriedCount !== undefined)
+        parts.push(t('confirmAction.tagCarriedCount', { count: row.tagCarriedCount }));
       return { primary: row.name || '', secondary: parts.join(' · ') };
     }
     if (isSecurity) {

@@ -3107,7 +3107,7 @@ export class ToolExecutorService {
           : ` "${name}"`;
         const lost =
           operation === "delete"
-            ? ` (used ${pendingAction.preview.tagUseCount ?? 0} time(s)); it is removed from every transaction and split line`
+            ? `; it is removed from ${pendingAction.preview.tagCarriedCount ?? 0} transaction(s) and split line(s)`
             : "";
         return {
           data: PENDING_ACTION_TOOL_RESULT,

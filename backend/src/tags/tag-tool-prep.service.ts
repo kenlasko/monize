@@ -17,6 +17,8 @@ import type {
   BatchUpdateTagRow,
 } from "../ai/actions/ai-action.types";
 import { Tag } from "./entities/tag.entity";
+import { TransactionTag } from "./entities/transaction-tag.entity";
+import { TransactionSplitTag } from "./entities/transaction-split-tag.entity";
 import { TagsService } from "./tags.service";
 
 /** One `manage_tags` item: the tag by name, and what to set. */
@@ -52,8 +54,11 @@ export interface UpdateTagPreview {
 export interface DeleteTagPreview {
   tagId: string;
   name: string;
-  /** How often the tag is used, counted as `list_tags` counts it (`getUsage`). */
-  useCount: number;
+  /**
+   * The transactions and split lines that carry the tag and lose it, void and
+   * future-dated rows and each leg of a transfer included.
+   */
+  carriedCount: number;
 }
 
 export type TagPreview = CreateTagPreview | UpdateTagPreview | DeleteTagPreview;
@@ -72,8 +77,12 @@ const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 export function tagPreviewRow(
   preview: CreateTagPreview | UpdateTagPreview | DeleteTagPreview,
 ): AiActionPreviewRow {
-  if ("useCount" in preview) {
-    return { status: "ok", name: preview.name, tagUseCount: preview.useCount };
+  if ("carriedCount" in preview) {
+    return {
+      status: "ok",
+      name: preview.name,
+      tagCarriedCount: preview.carriedCount,
+    };
   }
   if ("tagId" in preview) {
     return {
@@ -175,17 +184,23 @@ export class TagToolPrepService {
     userId: string,
     row: ManageTagRow,
   ): Promise<DeleteTagPreview> {
-    const tag = await withScopedDb(this.dataSource, (m) =>
-      this.resolve(m, userId, row.name),
-    );
-    // The figure list_tags gave the model for this tag, so the card and the
-    // listing never disagree about the same tag.
-    const usage = await this.tagsService.getUsage(userId);
-    return {
-      tagId: tag.id,
-      name: tag.name,
-      useCount: usage[tag.id]?.count ?? 0,
-    };
+    // Every row that loses the tag, void and future-dated ones and both legs
+    // of a transfer included: what the deletion does, which is not what
+    // list_tags' useCount (uses to date) measures.
+    return withScopedDb(this.dataSource, async (m) => {
+      const tag = await this.resolve(m, userId, row.name);
+      const onTransactions = await m.count(TransactionTag, {
+        where: { tagId: tag.id },
+      });
+      const onSplits = await m.count(TransactionSplitTag, {
+        where: { tagId: tag.id },
+      });
+      return {
+        tagId: tag.id,
+        name: tag.name,
+        carriedCount: onTransactions + onSplits,
+      };
+    });
   }
 
   /**
@@ -273,7 +288,7 @@ export class TagToolPrepService {
   private toBatchRow(
     preview: TagPreview,
   ): BatchCreateTagRow | BatchUpdateTagRow | BatchDeleteTagRow {
-    if ("useCount" in preview) return { tagId: preview.tagId };
+    if ("carriedCount" in preview) return { tagId: preview.tagId };
     if ("tagId" in preview) {
       return {
         tagId: preview.tagId,
@@ -286,7 +301,7 @@ export class TagToolPrepService {
   }
 
   private claimedNames(preview: TagPreview): string[] {
-    if ("useCount" in preview) return [preview.name.toLowerCase()];
+    if ("carriedCount" in preview) return [preview.name.toLowerCase()];
     if ("tagId" in preview) {
       return [preview.currentName, preview.name]
         .filter((name): name is string => name !== undefined)

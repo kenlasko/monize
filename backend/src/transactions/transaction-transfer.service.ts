@@ -203,6 +203,8 @@ export interface UpdateTransferPreview {
   removeTagNames?: string[];
   /** True when the edit changes the tags and nothing else (see UpdateTransactionPreview). */
   tagsOnly?: true;
+  /** Whether any of the fields above differs from what the transfer holds now. */
+  changesFields?: boolean;
 }
 
 /**
@@ -1724,6 +1726,15 @@ export class TransactionTransferService {
       payeeWillBeCreated,
       categoryId,
       categoryName,
+      // A value difference, not a field being present: a form or a model
+      // resends fields it does not change.
+      changesFields:
+        newAmount !== oldFromAmount ||
+        String(newDate) !== String(fromTransaction.transactionDate) ||
+        description !== (fromTransaction.description ?? null) ||
+        payeeName !== (fromTransaction.payeeName ?? null) ||
+        payeeId !== (fromTransaction.payeeId ?? null) ||
+        categoryId !== (fromTransaction.categoryId ?? null),
     };
   }
 
@@ -2343,11 +2354,9 @@ export class TransactionTransferService {
         }
       }
       if (withinWrite) {
-        // A leg of a joint account another member owns keeps its own tags.
+        // Both legs are the user's: the locks above are taken by owner.
         await withinWrite(m, {
-          legIds: [fromTransaction, toTransaction]
-            .filter((leg) => leg.userId === userId)
-            .map((leg) => leg.id),
+          legIds: [fromTransaction.id, toTransaction.id],
           parentSplitId: null,
         });
       }

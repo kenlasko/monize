@@ -22,7 +22,7 @@ function buildActionBuilderMock(): Record<string, jest.Mock> {
   return {
     buildTagAction: jest.fn((_userId: string, preview: any) => {
       const type =
-        "useCount" in preview
+        "carriedCount" in preview
           ? "delete_tag"
           : "tagId" in preview
             ? "update_tag"

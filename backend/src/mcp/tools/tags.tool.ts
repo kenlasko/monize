@@ -61,7 +61,7 @@ function confirmLineFor(card: PendingAiAction): string {
     (p.tagIcon !== undefined ? `\nIcon: ${p.tagIcon ?? "(cleared)"}` : "");
   switch (card.type) {
     case "delete_tag":
-      return `Delete this tag?\nName: ${p.name}\nUsed ${p.tagUseCount ?? 0} time(s); it is removed from every transaction and split line, and nothing else on them changes.`;
+      return `Delete this tag?\nName: ${p.name}\nIt is removed from ${p.tagCarriedCount ?? 0} transaction(s) and split line(s); nothing else on them changes.`;
     case "update_tag":
       return `Apply this tag edit?\nTag: ${p.previousName ?? p.name}${p.previousName ? `\nRename to: ${p.name}` : ""}${look}`;
     default:

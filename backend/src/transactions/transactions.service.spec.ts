@@ -10261,7 +10261,18 @@ describe("TransactionsService", () => {
         ]);
         await expect(
           service.previewUpdate("user-1", "tx-1", { tagNames: ["Allegro"] }),
-        ).rejects.toThrow(/at least one field/);
+        ).rejects.toThrow(/Nothing to change/);
+      });
+
+      it("stays tag-only when a field is resent as it is", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...baseTx });
+        tagsService.findByNames.mockResolvedValue([]);
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          transactionDate: String(baseTx.transactionDate),
+          description: baseTx.description ?? "",
+          tagNames: ["Allegro"],
+        });
+        expect(preview.tagsOnly).toBe(true);
       });
 
       it("is not tag-only when a field changes too", async () => {
@@ -10364,7 +10375,7 @@ describe("TransactionsService", () => {
           service.previewUpdate("user-1", "tx-1", {
             removeTagNames: ["Gifts"],
           }),
-        ).rejects.toThrow(/at least one field/);
+        ).rejects.toThrow(/Nothing to change/);
       });
     });
 

@@ -111,9 +111,9 @@ describe("AiActionsService tag actions", () => {
     const card = builder.buildTagAction(USER, {
       tagId: TAG,
       name: "Trip",
-      useCount: 4,
+      carriedCount: 4,
     });
-    expect(card.preview).toEqual({ name: "Trip", tagUseCount: 4 });
+    expect(card.preview).toEqual({ name: "Trip", tagCarriedCount: 4 });
     const result = await confirm(card.descriptor);
     expect(tags.remove).toHaveBeenCalledWith(USER, TAG);
     expect(result.id).toBe(TAG);

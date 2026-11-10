@@ -4719,6 +4719,26 @@ describe("TransactionTransferService", () => {
       linkedTransactionId: "from-tx",
     };
 
+    it("says whether a field differs from what the transfer holds, by value", async () => {
+      const findOne = jest.fn(async (_uid: string, id: string) =>
+        id === "from-tx" ? fromLeg : toLeg,
+      );
+      const resent = await service.previewUpdateTransfer(
+        "user-1",
+        "to-tx",
+        { amount: 100, transactionDate: "2026-01-15", description: "old" },
+        findOne as any,
+      );
+      expect(resent.changesFields).toBe(false);
+      const changed = await service.previewUpdateTransfer(
+        "user-1",
+        "to-tx",
+        { amount: 150 },
+        findOne as any,
+      );
+      expect(changed.changesFields).toBe(true);
+    });
+
     it("determines canonical from/to legs and returns the resulting state", async () => {
       const findOne = jest.fn(async (_uid: string, id: string) =>
         id === "from-tx" ? fromLeg : toLeg,

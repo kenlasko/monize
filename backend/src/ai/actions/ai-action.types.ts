@@ -1049,8 +1049,8 @@ export interface AiActionPreview {
   /** The colour (#RRGGBB) and icon the action sets: null clears, absent leaves it. */
   tagColor?: string | null;
   tagIcon?: string | null;
-  /** delete_tag: how many transactions and split lines carry the tag. */
-  tagUseCount?: number;
+  /** delete_tag: the transactions and split lines that carry the tag and lose it. */
+  tagCarriedCount?: number;
   /** Payee website, as the commit would store it (create_payee/update_payee). */
   website?: string | null;
   /** Payee contact fields, as the commit would store them. */
@@ -1150,8 +1150,8 @@ export interface AiActionPreviewRow {
   /** The colour (#RRGGBB) and icon the action sets: null clears, absent leaves it. */
   tagColor?: string | null;
   tagIcon?: string | null;
-  /** delete_tag: how many transactions and split lines carry the tag. */
-  tagUseCount?: number;
+  /** delete_tag: the transactions and split lines that carry the tag and lose it. */
+  tagCarriedCount?: number;
   website?: string | null;
   address?: string | null;
   email?: string | null;

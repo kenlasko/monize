@@ -354,7 +354,7 @@ export interface PendingActionPreview {
   tagColor?: string | null;
   tagIcon?: string | null;
   /** delete_tag: how many transactions and split lines carry the tag. */
-  tagUseCount?: number;
+  tagCarriedCount?: number;
   /** Payee website, as the commit would store it. */
   website?: string | null;
   /** Payee contact details, as the commit would store them. */
@@ -510,7 +510,7 @@ export interface PendingActionPreviewRow {
   tagColor?: string | null;
   tagIcon?: string | null;
   /** delete_tag: how many transactions and split lines carry the tag. */
-  tagUseCount?: number;
+  tagCarriedCount?: number;
   /** Payee website, as the commit would store it. */
   website?: string | null;
   /** Payee contact details, as the commit would store them. */

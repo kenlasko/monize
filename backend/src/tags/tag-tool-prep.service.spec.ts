@@ -5,6 +5,8 @@ import {
 } from "@nestjs/common";
 import { TagToolPrepService, tagPreviewRow } from "./tag-tool-prep.service";
 import { Tag } from "./entities/tag.entity";
+import { TransactionTag } from "./entities/transaction-tag.entity";
+import { TransactionSplitTag } from "./entities/transaction-split-tag.entity";
 import {
   createScopedDbMocks,
   ManagerMock,
@@ -118,12 +120,13 @@ describe("TagToolPrepService", () => {
   });
 
   describe("delete", () => {
-    it("counts the tag's use as list_tags does", async () => {
+    it("counts every transaction and split line that loses the tag", async () => {
+      manager.count.mockImplementation(async (entity: unknown) =>
+        entity === TransactionTag ? 3 : entity === TransactionSplitTag ? 2 : 0,
+      );
       await expect(
         service.prepareDelete(userId, { name: "trip" }),
-      ).resolves.toEqual({ tagId: "tag-trip", name: "Trip", useCount: 5 });
-      // The owner's own usage: the same call list_tags makes.
-      expect(tagsService.getUsage).toHaveBeenCalledWith(userId);
+      ).resolves.toEqual({ tagId: "tag-trip", name: "Trip", carriedCount: 5 });
     });
   });
 
@@ -154,13 +157,14 @@ describe("TagToolPrepService", () => {
     });
 
     it("maps a deletion to the tag id", async () => {
+      manager.count.mockResolvedValue(0);
       const result = await service.prepareMany(userId, "delete", [
         { name: "Home" },
       ]);
       expect(result.okRows).toEqual([{ tagId: "tag-home" }]);
       expect(result.previewRows[0]).toMatchObject({
         name: "Home",
-        tagUseCount: 0,
+        tagCarriedCount: 0,
       });
     });
   });

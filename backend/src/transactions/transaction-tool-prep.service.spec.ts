@@ -719,13 +719,18 @@ describe("TransactionToolPrepService", () => {
         isTransfer: true,
         linkedTransactionId: "t2",
       });
-      // previewTransferTagChange (the double) finds every tag already there.
+      // previewTransferTagChange (the double) finds every tag already there,
+      // and the transfer's fields are as they were.
+      transfer.previewUpdateTransfer.mockResolvedValueOnce({
+        transactionId: "t1",
+        changesFields: false,
+      });
       await expect(
         service.prepareUpdate(userId, {
           transactionId: "t1",
           tagNames: ["Trip"],
         }),
-      ).rejects.toThrow(/at least one field/);
+      ).rejects.toThrow(/Nothing to change/);
     });
 
     it("lets an edit that asked for no tags reach the surface's own transfer refusal", async () => {
@@ -754,8 +759,14 @@ describe("TransactionToolPrepService", () => {
         removeTagIds: [],
         removeTagNames: [],
       });
+      // The date is resent as it is: a value difference decides, not presence.
+      transfer.previewUpdateTransfer.mockResolvedValueOnce({
+        transactionId: "t1",
+        changesFields: false,
+      });
       const result = await service.prepareUpdate(userId, {
         transactionId: "t1",
+        date: "2026-02-01",
         tagNames: ["Trip"],
       });
       expect(result.preview).toMatchObject({ tagsOnly: true });
