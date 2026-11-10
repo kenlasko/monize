@@ -54,6 +54,8 @@ For a bill whose amount changes from month to month, such as heating or electric
 - When every month went up (or down) by about the same share from one year to the next, the estimate carries that trend forward.
 - A payment in another currency is converted at the current exchange rate. Refunds from the biller are left out.
 
+![A schedule with Estimate on](images/scheduled-transaction-estimate.png)
+
 The estimate follows new payments as you record them. Under the **Amount**, the form says how many payments the estimate is based on, or what is missing when there is not enough to estimate from: no payments yet, or no exchange rate for a payment's currency. An estimated schedule needs a **Payee** and a **Category**, is available for a single-category transaction in the account's own currency (not a split, transfer, investment, or foreign-currency amount), and is never posted automatically, so **Auto-post on due date** is turned off.
 
 You still decide every occurrence: the bills list labels the amount **Estimated**, **Edit Occurrence** shows each upcoming occurrence's estimate and lets you change any of them, and the **Post Transaction** dialog opens on the estimate for you to correct before posting. An occurrence you change keeps your amount; one you leave alone keeps following the estimate.

@@ -5,7 +5,7 @@ import {
   type Locator,
   type Page,
 } from "@playwright/test";
-import { scrollUnderHeader, waitForReady } from "../readme/session";
+import { apiFor, scrollUnderHeader, waitForReady } from "../readme/session";
 import { cardOf, docShot, openDocsSession } from "./capture";
 
 // website/docs/bills-and-deposits.md: the page, its forecast and list, the
@@ -20,7 +20,55 @@ test.beforeAll(async ({ browser }) => {
   test.setTimeout(300_000);
   context = await openDocsSession(browser);
   page = await context.newPage();
+  await estimateTheHydroBill();
 });
+
+interface ScheduleRow {
+  id: string;
+  name: string;
+  accountId: string;
+  payeeId: string | null;
+  categoryId: string | null;
+  amountIsEstimated?: boolean;
+}
+
+/**
+ * The demo's Hydro Bill with the Estimate option on (issue #2096), so the
+ * pictures show an estimated bill. The demo holds twelve months of Hydro One
+ * payments; the year before them, at the same seasonal shape and 5% cheaper,
+ * is added once, so the estimate has two years to find the season in.
+ */
+async function estimateTheHydroBill(): Promise<void> {
+  const api = apiFor(page);
+  const schedules = await api.get<ScheduleRow[]>("/scheduled-transactions");
+  const hydro = schedules.find((s) => s.name === "Hydro Bill");
+  if (!hydro || !hydro.payeeId || !hydro.categoryId) {
+    throw new Error("The demo data has no Hydro Bill with a payee and category");
+  }
+  if (hydro.amountIsEstimated) return;
+  const today = new Date();
+  for (let back = 13; back <= 24; back++) {
+    const date = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - back, 12),
+    );
+    // The demo's own shape: winter November to March, summer June to September.
+    const month = date.getUTCMonth();
+    const base =
+      month >= 10 || month <= 2 ? 140 : month >= 5 && month <= 8 ? 95 : 110;
+    await api.post("/transactions", {
+      accountId: hydro.accountId,
+      payeeId: hydro.payeeId,
+      categoryId: hydro.categoryId,
+      amount: -Math.round(base * 0.95 * 100) / 100,
+      currencyCode: "CAD",
+      transactionDate: date.toISOString().slice(0, 10),
+      description: "Monthly electricity",
+    });
+  }
+  await api.patch(`/scheduled-transactions/${hydro.id}`, {
+    amountIsEstimated: true,
+  });
+}
 
 // A busy development server can take minutes over one picture.
 test.beforeEach(() => {
@@ -161,8 +209,9 @@ test("scheduled-transaction-form", async () => {
 
 test("bills-post-transaction", async () => {
   await openBills();
+  // The estimated bill: the dialog opens on this month's estimate.
   const dialog = await openFromRow(
-    /Spotify/,
+    /Hydro Bill/,
     "Post Transaction",
     "Post Transaction",
   );
@@ -175,7 +224,7 @@ test("bills-post-transaction", async () => {
 test("bills-edit-occurrence", async () => {
   await openBills();
   const picker = await openFromRow(
-    /Spotify/,
+    /Hydro Bill/,
     "Edit Occurrence",
     "Select Occurrence Date",
   );
@@ -185,4 +234,19 @@ test("bills-edit-occurrence", async () => {
   await settled();
   await docShot(page, "bills-edit-occurrence", editor);
   await cancel(editor);
+});
+
+test("scheduled-transaction-estimate", async () => {
+  await openBills();
+  const dialog = await openFromRow(
+    /Hydro Bill/,
+    "Edit Schedule",
+    "Edit Scheduled Transaction",
+  );
+  await expect(dialog.getByText(/Auto-calculated from payment history/)).toBeVisible({
+    timeout: 30_000,
+  });
+  await settled();
+  await docShot(page, "scheduled-transaction-estimate", dialog);
+  await cancel(dialog);
 });
