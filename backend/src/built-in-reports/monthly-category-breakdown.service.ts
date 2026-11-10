@@ -7,6 +7,7 @@ import {
   RATE_BASIS_GROUP_BY,
   RawRateBasis,
   ReportCurrencyService,
+  wholeGroups,
   rateBasisColumnsSql,
 } from "./report-currency.service";
 import { MONEY_SCALE, roundMoney, toMoneyNumber } from "../common/round.util";
@@ -157,9 +158,14 @@ export class MonthlyCategoryBreakdownService {
       }),
     );
     const categoryMap = new Map(categories.map((c) => [c.id, c]));
-    const convert = await this.currencyService.buildConverter(
+    const convert = wholeGroups(
       rawResults,
-      defaultCurrency,
+      await this.currencyService.buildConverter(rawResults, defaultCurrency),
+      (row) => `${row.month}|${row.category_id ?? ""}|${row.currency_code}`,
+      (row) => [
+        toMoneyNumber(row.deposits, MONEY_SCALE),
+        toMoneyNumber(row.withdrawals, MONEY_SCALE),
+      ],
     );
 
     const accumulators = new Map<string, CategoryAccumulator>();
@@ -315,9 +321,14 @@ export class MonthlyCategoryBreakdownService {
       this.dataSource,
       (m) => m.query(query, params),
     );
-    const convert = await this.currencyService.buildConverter(
+    const convert = wholeGroups(
       rawResults,
-      defaultCurrency,
+      await this.currencyService.buildConverter(rawResults, defaultCurrency),
+      (row) => `transfer|${row.month}|${row.account_id}|${row.currency_code}`,
+      (row) => [
+        toMoneyNumber(row.outflow, MONEY_SCALE),
+        toMoneyNumber(row.inflow, MONEY_SCALE),
+      ],
     );
 
     // Accumulate the signed flow per (account, direction) across currencies.

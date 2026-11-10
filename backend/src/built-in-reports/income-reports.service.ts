@@ -6,6 +6,7 @@ import {
   ConversionGaps,
   RATE_BASIS_GROUP_BY,
   ReportCurrencyService,
+  wholeGroups,
   RawCategoryAggregate,
   RawPeriodAggregate,
   RawRateBasis,
@@ -154,9 +155,11 @@ export class IncomeReportsService {
       }),
     );
     const categoryMap = new Map(categories.map((c) => [c.id, c]));
-    const convert = await this.currencyService.buildConverter(
+    const convert = wholeGroups(
       rawResults,
-      defaultCurrency,
+      await this.currencyService.buildConverter(rawResults, defaultCurrency),
+      (row) => `${row.category_id ?? ""}|${row.currency_code}`,
+      (row) => [toMoneyNumber(row.total, MONEY_SCALE)],
     );
 
     const categoryTotals = new Map<
@@ -358,9 +361,14 @@ export class IncomeReportsService {
       (m) => m.query(query, params),
     );
 
-    const convert = await this.currencyService.buildConverter(
+    const convert = wholeGroups(
       rawResults,
-      defaultCurrency,
+      await this.currencyService.buildConverter(rawResults, defaultCurrency),
+      (row) => `${row.period_start}|${row.currency_code}`,
+      (row) => [
+        toMoneyNumber(row.income, MONEY_SCALE),
+        toMoneyNumber(row.expenses, MONEY_SCALE),
+      ],
     );
     const { data, totals, missingCurrencies, excludedCount } =
       this.summarizePeriodRows(
@@ -802,9 +810,29 @@ export class IncomeReportsService {
         await m.query(splitFlowQuery, splitFlowParams),
       ]);
     const flowRows = [...wholeFlowRows, ...splitFlowRows];
-    const convert = await this.currencyService.buildConverter(
-      [...valueRows, ...flowRows],
-      defaultCurrency,
+    // A value row and a flow row of one (value, period, currency) are two
+    // groups, each left out whole when a day of it has no rate.
+    const tagRows: RawRateBasis[] = [...valueRows, ...flowRows];
+    const groupOf = (row: RawRateBasis): string => {
+      const r = row as RawTagValuePeriodAggregate | RawTagFlowAggregate;
+      return `${"income" in r ? "v" : "f"}|${r.value ?? ""}|${r.period_start}|${r.currency_code}`;
+    };
+    const convert = wholeGroups(
+      tagRows,
+      await this.currencyService.buildConverter(tagRows, defaultCurrency),
+      groupOf,
+      (row) => {
+        const r = row as RawTagValuePeriodAggregate | RawTagFlowAggregate;
+        return "income" in r
+          ? [
+              toMoneyNumber(r.income, MONEY_SCALE),
+              toMoneyNumber(r.expenses, MONEY_SCALE),
+            ]
+          : [
+              toMoneyNumber(r.inflow, MONEY_SCALE),
+              toMoneyNumber(r.outflow, MONEY_SCALE),
+            ];
+      },
     );
 
     // ---- Assemble one bucket per discovered value, plus the untagged bucket ----

@@ -4349,7 +4349,15 @@ describe("InvestmentTransactionsService", () => {
       expect(result.entries[1].totalCapitalGain).toBe(-50);
     });
 
+    // The rate as it stood when June opened and when it closed: the opening
+    // mark converts at the first, every other figure at the second.
     const usdToCad = (rate: number) => [
+      {
+        from_currency: "USD",
+        to_currency: "CAD",
+        rate,
+        rate_date: "2024-05-31",
+      },
       {
         from_currency: "USD",
         to_currency: "CAD",

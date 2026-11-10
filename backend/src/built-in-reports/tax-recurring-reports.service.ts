@@ -7,6 +7,7 @@ import {
   RATE_BASIS_GROUP_BY,
   RawRateBasis,
   ReportCurrencyService,
+  wholeGroups,
   rateBasisColumnsSql,
 } from "./report-currency.service";
 import { FxAggregate } from "../common/fx-aggregate";
@@ -364,6 +365,11 @@ export class TaxRecurringReportsService {
         SUM(COUNT(*)) OVER (
           PARTITION BY t.payee_id, LOWER(TRIM(COALESCE(p.name, t.payee_name))), COALESCE(p.name, t.payee_name), c.name, t.currency_code
         ) as group_occurrences,
+        -- The whole group's total, so the payee's rows arrive in the order its
+        -- groups always did and the first one seen names it.
+        SUM(SUM(ABS(${REPORTABLE_TX_AMOUNT}))) OVER (
+          PARTITION BY t.payee_id, LOWER(TRIM(COALESCE(p.name, t.payee_name))), COALESCE(p.name, t.payee_name), c.name, t.currency_code
+        ) as group_total,
         SUM(ABS(${REPORTABLE_TX_AMOUNT})) as total_amount,
         MAX(t.transaction_date) as last_transaction_date,
         (
@@ -394,7 +400,7 @@ export class TaxRecurringReportsService {
       GROUP BY t.payee_id, LOWER(TRIM(COALESCE(p.name, t.payee_name))), COALESCE(p.name, t.payee_name), c.name, t.currency_code, ${RATE_BASIS_GROUP_BY}
       ) grouped
       WHERE grouped.group_occurrences >= $4
-      ORDER BY grouped.total_amount DESC
+      ORDER BY grouped.group_total DESC, grouped.total_amount DESC
     `;
 
     interface RawRecurring extends RawRateBasis {
@@ -420,9 +426,12 @@ export class TaxRecurringReportsService {
           defaultCurrency,
         ]),
     );
-    const convert = await this.currencyService.buildConverter(
+    const convert = wholeGroups(
       rawResults,
-      defaultCurrency,
+      await this.currencyService.buildConverter(rawResults, defaultCurrency),
+      (row) =>
+        `${row.payee_id ?? ""}|${row.payee_name_normalized}|${row.payee_name}|${row.category_name ?? ""}|${row.currency_code}`,
+      (row) => [toMoneyNumber(row.total_amount, MONEY_SCALE)],
     );
 
     const payeeMerged = new Map<

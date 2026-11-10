@@ -7,6 +7,7 @@ import {
   RATE_BASIS_GROUP_BY,
   RawRateBasis,
   ReportCurrencyService,
+  wholeGroups,
   rateBasisColumnsSql,
 } from "./report-currency.service";
 import { FxAggregate } from "../common/fx-aggregate";
@@ -101,9 +102,14 @@ export class ComparisonReportsService {
       this.dataSource,
       (m) => m.query(query, [userId, oldestYear, currentYear, defaultCurrency]),
     );
-    const convert = await this.currencyService.buildConverter(
+    const convert = wholeGroups(
       rawResults,
-      defaultCurrency,
+      await this.currencyService.buildConverter(rawResults, defaultCurrency),
+      (row) => `${row.year}|${row.month}|${row.currency_code}`,
+      (row) => [
+        toMoneyNumber(row.income, MONEY_SCALE),
+        toMoneyNumber(row.expenses, MONEY_SCALE),
+      ],
     );
 
     const yearMap = new Map<number, YearData>();

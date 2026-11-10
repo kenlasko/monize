@@ -7,6 +7,7 @@ import {
   ConversionGaps,
   RATE_BASIS_GROUP_BY,
   ReportCurrencyService,
+  wholeGroups,
   RawCategoryAggregate,
   RawPayeeAggregate,
   RawMonthlyCategoryAggregate,
@@ -202,9 +203,11 @@ export class SpendingReportsService {
       }),
     );
     const categoryMap = new Map(categories.map((c) => [c.id, c]));
-    const convert = await this.currencyService.buildConverter(
+    const convert = wholeGroups(
       rawResults,
-      defaultCurrency,
+      await this.currencyService.buildConverter(rawResults, defaultCurrency),
+      (row) => `${row.category_id ?? ""}|${row.currency_code}`,
+      (row) => [toMoneyNumber(row.total, MONEY_SCALE)],
     );
 
     const parentTotals = new Map<
@@ -364,9 +367,12 @@ export class SpendingReportsService {
           )
         : [];
     const payeeMap = new Map(payees.map((p) => [p.id, p]));
-    const convert = await this.currencyService.buildConverter(
+    const convert = wholeGroups(
       rawResults,
-      defaultCurrency,
+      await this.currencyService.buildConverter(rawResults, defaultCurrency),
+      (row) =>
+        `${row.payee_id ?? ""}|${row.payee_name ?? ""}|${row.currency_code}`,
+      (row) => [toMoneyNumber(row.total, MONEY_SCALE)],
     );
 
     const payeeTotals = new Map<
@@ -480,9 +486,11 @@ export class SpendingReportsService {
       }),
     );
     const categoryMap = new Map(categories.map((c) => [c.id, c]));
-    const convert = await this.currencyService.buildConverter(
+    const convert = wholeGroups(
       rawResults,
-      defaultCurrency,
+      await this.currencyService.buildConverter(rawResults, defaultCurrency),
+      (row) => `${row.month}|${row.category_id ?? ""}|${row.currency_code}`,
+      (row) => [toMoneyNumber(row.total, MONEY_SCALE)],
     );
 
     const monthlyData = new Map<

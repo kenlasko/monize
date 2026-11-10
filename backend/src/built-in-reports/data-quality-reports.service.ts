@@ -5,6 +5,7 @@ import {
   ConversionGaps,
   RawRateBasis,
   ReportCurrencyService,
+  wholeGroups,
   rateBasisColumnsSql,
 } from "./report-currency.service";
 import { FxAggregate } from "../common/fx-aggregate";
@@ -213,9 +214,14 @@ export class DataQualityReportsService {
     const summaryRows: RawSummary[] = await withScopedDb(this.dataSource, (m) =>
       m.query(summaryQuery, summaryParams),
     );
-    const convert = await this.currencyService.buildConverter(
+    const convert = wholeGroups(
       summaryRows,
-      defaultCurrency,
+      await this.currencyService.buildConverter(summaryRows, defaultCurrency),
+      (row) => row.currency_code,
+      (row) => [
+        toMoneyNumber(row.expense_total, MONEY_SCALE),
+        toMoneyNumber(row.income_total, MONEY_SCALE),
+      ],
     );
 
     let totalCount = 0;

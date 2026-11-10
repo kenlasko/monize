@@ -384,6 +384,36 @@ describe("AiUsageService", () => {
       expect(summary.totalEstimatedCostInReportingCurrency).toBe(4.4);
     });
 
+    it("sums a cheap model's daily costs before rounding them (issue #2106)", async () => {
+      mockConfigRepository.find.mockResolvedValueOnce([
+        {
+          provider: "openai",
+          model: "mini",
+          inputCostPer1M: 0.1,
+          outputCostPer1M: 0,
+          costCurrency: "USD",
+        },
+      ]);
+      // 500 tokens a day for 30 days: 0.00005 a day, 0.0015 in all.
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce(
+          Array.from({ length: 30 }, (_, i) => ({
+            provider: "openai",
+            model: "mini",
+            day: `2025-06-${String(i + 1).padStart(2, "0")}`,
+            requests: "1",
+            inputTokens: "500",
+            outputTokens: "0",
+          })),
+        )
+        .mockResolvedValueOnce([]);
+
+      const summary = await service.getUsageSummary("user-1");
+
+      expect(summary.totalEstimatedCostByCurrency).toEqual({ USD: 0.0015 });
+      expect(summary.totalEstimatedCostInReportingCurrency).toBe(0.0015);
+    });
+
     it("returns empty bucket when provider/model has no configured rate", async () => {
       mockConfigRepository.find.mockResolvedValueOnce([
         {

@@ -8,6 +8,7 @@ import {
   ownRateSql,
   rateBasisColumnsSql,
   transactionRateBasis,
+  wholeGroups,
 } from "./report-currency.service";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
@@ -326,6 +327,28 @@ describe("ReportCurrencyService", () => {
           "USD",
         ),
       ).toEqual({ currency_code: "USD", tx_date: null, own_rate: null });
+    });
+  });
+
+  describe("wholeGroups", () => {
+    it("answers null for every part of a group that has one part without a rate", () => {
+      const convert = (amount: number, row: { tx_date?: string | null }) =>
+        row.tx_date === "2024-01-05" ? null : amount;
+      const rows = [
+        { currency_code: "EUR", tx_date: "2025-06-20", key: "a" },
+        { currency_code: "EUR", tx_date: "2024-01-05", key: "a" },
+        { currency_code: "EUR", tx_date: "2025-06-20", key: "b" },
+      ];
+
+      const whole = wholeGroups(
+        rows,
+        convert,
+        (row) => row.key,
+        () => [1],
+      );
+
+      expect(whole(10, rows[0])).toBeNull();
+      expect(whole(10, rows[2])).toBe(10);
     });
   });
 

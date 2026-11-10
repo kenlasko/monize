@@ -499,6 +499,9 @@ interface IntradayFxSeries {
   latest: number | null;
 }
 
+/** A gap between intraday bars longer than this ends a trading session. */
+const SESSION_BREAK_MS = 6 * 60 * 60 * 1000;
+
 /**
  * Fully loaded intraday inputs, shared by the total-value and per-security
  * breakdown views so both are derived from a single set of Yahoo fetches. The
@@ -508,9 +511,6 @@ interface IntradayFxSeries {
  * When `fallbackToDaily` is true (or there are no holdings) the value arrays
  * are empty and the caller renders/flags the daily fallback instead.
  */
-/** A gap between intraday bars longer than this ends a trading session. */
-const SESSION_BREAK_MS = 6 * 60 * 60 * 1000;
-
 interface IntradayLoaded {
   interval: IntradayInterval;
   currency: string;

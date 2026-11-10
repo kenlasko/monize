@@ -3742,8 +3742,9 @@ export class InvestmentTransactionsService {
 
   /**
    * Capital-gain entries' figures in the reader's reporting currency, each at
-   * the rate for the period it belongs to -- a month's at its last day, a
-   * day's at its own -- never at today's (issue #2106). A pair with no rate
+   * the rate for the period it belongs to -- the opening mark at its first
+   * day, every other figure at its last (a day entry's own day for both) --
+   * never at today's (issue #2106). A pair with no rate
    * leaves the figure null and is named in `missingRatePairs`, never rate 1.
    * Shared by the report endpoints and the assistant's roll-up.
    */
@@ -3793,18 +3794,14 @@ export class InvestmentTransactionsService {
     const toDefault = (
       value: number | null,
       e: CapitalGainEntry,
+      /** The period's last day unless named: the opening mark is its first. */
+      onDate: string = periodEndOf(e.month),
     ): number | null => {
       if (value === null) return null;
       const from = e.accountCurrencyCode;
       if (from === defaultCurrency || value === 0) return value;
       const converted = from
-        ? convertAtDate(
-            value,
-            from,
-            defaultCurrency,
-            periodEndOf(e.month),
-            rateIndex,
-          )
+        ? convertAtDate(value, from, defaultCurrency, onDate, rateIndex)
         : null;
       if (converted === null) {
         missingRatePairs.add(`${from ?? "?"}->${defaultCurrency}`);
@@ -3817,7 +3814,9 @@ export class InvestmentTransactionsService {
     }
     const figures = entries.map((raw) => {
       const converted = {
-        startValue: toDefault(raw.startValue, raw),
+        // The opening mark at the period's first day, so it meets the previous
+        // period's closing mark; every flow figure at the period's last day.
+        startValue: toDefault(raw.startValue, raw, periodStartOf(raw.month)),
         endValue: toDefault(raw.endValue, raw),
         realizedGain: toDefault(raw.realizedGain, raw),
         realizedGainKnownSubtotal: toDefault(

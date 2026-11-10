@@ -9,7 +9,7 @@ import {
   RateIndexLogger,
   RateIndexQuery,
 } from "../common/time-series/rate-index.util";
-import { FIAT_MONEY_DECIMALS, roundMoney } from "../common/round.util";
+import { FIAT_MONEY_DECIMALS, sumMoney } from "../common/round.util";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { preferredCurrency } from "../common/default-currency.util";
 
@@ -71,6 +71,34 @@ export type ReportConverter = (
   amount: number,
   row: RawRateBasis,
 ) => number | null;
+
+/**
+ * `convert`, but leaving a whole group out when any day-part of it has no
+ * rate.
+ *
+ * A report splits a foreign aggregate by day so each part converts at its own
+ * rate (issue #2106); keeping the parts that converted would report a group
+ * whose debit is in and whose refund, struck on a day with no rate, is out. So
+ * the group is unknown as a whole, as it was before it was split. `keyOf` names
+ * the aggregate a row belongs to (the report's gap key) and `amountsOf` the
+ * figures the report converts from it.
+ */
+export function wholeGroups<T extends RawRateBasis>(
+  rows: readonly T[],
+  convert: ReportConverter,
+  keyOf: (row: T) => string,
+  amountsOf: (row: T) => number[],
+): ReportConverter {
+  const failed = new Set<string>();
+  for (const row of rows) {
+    if (amountsOf(row).some((amount) => convert(amount, row) === null)) {
+      failed.add(keyOf(row));
+    }
+  }
+  if (failed.size === 0) return convert;
+  return (amount, row) =>
+    failed.has(keyOf(row as T)) ? null : convert(amount, row);
+}
 
 /**
  * The row's own rate into the reporting currency, when it carries one that
@@ -299,8 +327,11 @@ export async function convertDatedRows(
       ? new Map()
       : await buildRateIndex(query, foreign, reportingCurrency, first, last);
 
+  // The parts of each figure, summed once at the end in integer units
+  // (`sumMoney`); `null` once a part has no rate.
+  const parts = new Map<string, Record<string, number[] | null>>();
   rows.forEach((row, i) => {
-    const acc = totals.get(row.key) ?? {};
+    const acc = parts.get(row.key) ?? {};
     for (const [name, amount] of Object.entries(row.amounts)) {
       const converted =
         amount === 0
@@ -312,16 +343,22 @@ export async function convertDatedRows(
               rateIndex,
               logger,
             );
-      const held = name in acc ? acc[name] : 0;
-      acc[name] = held === null || converted === null ? null : held + converted;
+      const held = name in acc ? acc[name] : [];
+      acc[name] =
+        held === null || converted === null ? null : [...held, converted];
     }
-    totals.set(row.key, acc);
+    parts.set(row.key, acc);
   });
-  for (const acc of totals.values()) {
-    for (const name of Object.keys(acc)) {
-      const value = acc[name];
-      if (value !== null) acc[name] = roundMoney(value, FIAT_MONEY_DECIMALS);
-    }
+  for (const [key, acc] of parts) {
+    totals.set(
+      key,
+      Object.fromEntries(
+        Object.entries(acc).map(([name, values]) => [
+          name,
+          values === null ? null : sumMoney(values, FIAT_MONEY_DECIMALS),
+        ]),
+      ),
+    );
   }
   return totals;
 }

@@ -627,8 +627,8 @@ export class TransactionAnalyticsService {
         }))
       : new Map<string, Record<string, number | null>>();
 
-    let knownIncome = 0;
-    let knownExpenses = 0;
+    const incomeParts: number[] = [];
+    const expenseParts: number[] = [];
     let includedTransactionCount = 0;
     let excludedTransactionCount = 0;
     const missing: string[] = [];
@@ -642,12 +642,12 @@ export class TransactionAnalyticsService {
         excludedTransactionCount += bucket.transactionCount;
         continue;
       }
-      knownIncome += parts.income;
-      knownExpenses += parts.expenses;
+      incomeParts.push(parts.income);
+      expenseParts.push(parts.expenses);
       includedTransactionCount += bucket.transactionCount;
     }
-    const income = roundMoney(knownIncome, FIAT_MONEY_DECIMALS);
-    const expenses = roundMoney(knownExpenses, FIAT_MONEY_DECIMALS);
+    const income = sumMoney(incomeParts, FIAT_MONEY_DECIMALS);
+    const expenses = sumMoney(expenseParts, FIAT_MONEY_DECIMALS);
     const complete = missing.length === 0;
     return {
       currency: reporting,

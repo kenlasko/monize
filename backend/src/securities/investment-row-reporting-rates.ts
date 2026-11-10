@@ -88,7 +88,10 @@ export async function attachInvestmentRowReportingRates<
     date: String(row.transactionDate).slice(0, 10),
   }));
 
-  const targets = new Set<string>([reporting]);
+  // The reporting currency, every account's on the page, and the linked
+  // accounts' (a brokerage's cash, a cash account's brokerage), so a surface
+  // totalling a pair kept in two currencies finds the one it reports in.
+  const targets = new Set<string>([reporting, ...linkedCurrency.values()]);
   const currencies = new Set<string>();
   for (const [i, row] of rows.entries()) {
     if (row.account?.currencyCode) targets.add(row.account.currencyCode);

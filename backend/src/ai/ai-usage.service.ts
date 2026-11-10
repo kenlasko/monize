@@ -45,7 +45,10 @@ function computeCost(
     rate.outputCostPer1M !== null
       ? (outputTokens / TOKENS_PER_UNIT) * rate.outputCostPer1M
       : 0;
-  return roundMoney(inputCost + outputCost);
+  // Unrounded: the aggregates are per day, and rounding each day before they
+  // are summed would drift a cheap model's cost; the figures are rounded once,
+  // where they leave the service.
+  return inputCost + outputCost;
 }
 
 /**
@@ -58,7 +61,17 @@ const usageDayOf = (createdAt: Date): string => formatDateYMDLocal(createdAt);
 
 /** A sum with an unknown part is unknown. */
 function addUnknown(sum: number | null, part: number | null): number | null {
-  return sum === null || part === null ? null : roundMoney(sum + part);
+  return sum === null || part === null ? null : sum + part;
+}
+
+/** A bucket's sums, each rounded once. */
+function roundBucket(bucket: EstimatedCostByCurrency): EstimatedCostByCurrency {
+  return Object.fromEntries(
+    Object.entries(bucket).map(([currency, amount]) => [
+      currency,
+      roundMoney(amount),
+    ]),
+  );
 }
 
 function roundOrNull(value: number | null): number | null {
@@ -70,8 +83,7 @@ function addCostToBucket(
   currency: string,
   cost: number,
 ): void {
-  const prev = bucket[currency] ?? 0;
-  bucket[currency] = roundMoney(prev + cost);
+  bucket[currency] = (bucket[currency] ?? 0) + cost;
 }
 
 interface LogUsageParams {
@@ -433,7 +445,7 @@ export class AiUsageService {
       totalRequests: parseInt(totals.totalRequests, 10) || 0,
       totalInputTokens: parseInt(totals.totalInputTokens, 10) || 0,
       totalOutputTokens: parseInt(totals.totalOutputTokens, 10) || 0,
-      totalEstimatedCostByCurrency,
+      totalEstimatedCostByCurrency: roundBucket(totalEstimatedCostByCurrency),
       reportingCurrency: toReporting.currency,
       totalEstimatedCostInReportingCurrency: roundOrNull(totalReportingCost),
       byProvider: Array.from(providerAgg.values()).map((agg) => ({
@@ -441,7 +453,7 @@ export class AiUsageService {
         requests: agg.requests,
         inputTokens: agg.inputTokens,
         outputTokens: agg.outputTokens,
-        estimatedCostByCurrency: agg.costs,
+        estimatedCostByCurrency: roundBucket(agg.costs),
         estimatedCostInReportingCurrency: roundOrNull(agg.reportingCost),
       })),
       byFeature: Array.from(featureAgg.values()).map((agg) => ({
@@ -449,7 +461,7 @@ export class AiUsageService {
         requests: agg.requests,
         inputTokens: agg.inputTokens,
         outputTokens: agg.outputTokens,
-        estimatedCostByCurrency: agg.costs,
+        estimatedCostByCurrency: roundBucket(agg.costs),
         estimatedCostInReportingCurrency: roundOrNull(agg.reportingCost),
       })),
       recentLogs: recentLogs.map((log) => {
@@ -463,7 +475,7 @@ export class AiUsageService {
           inputTokens: log.inputTokens,
           outputTokens: log.outputTokens,
           durationMs: log.durationMs,
-          estimatedCost: cost,
+          estimatedCost: cost === null ? null : roundMoney(cost),
           costCurrency: cost !== null && rate ? rate.currency : null,
           estimatedCostInReportingCurrency:
             cost !== null && rate

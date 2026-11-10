@@ -278,6 +278,39 @@ describe("SpendingReportsService", () => {
         expect([to, start, end]).toEqual(["USD", "2025-01-15", "2025-06-20"]);
       });
 
+      it("leaves a category out whole when one of its days has no rate", async () => {
+        // A 100 EUR debit in June converts; its 100 EUR refund from 2024, with
+        // no admissible rate, does not. Keeping the debit alone would report
+        // spending that netted to nothing.
+        scopedManager.query.mockResolvedValue([
+          {
+            category_id: "cat-parent",
+            currency_code: "EUR",
+            tx_date: "2025-06-20",
+            own_rate: null,
+            total: "100.00",
+          },
+          {
+            category_id: "cat-parent",
+            currency_code: "EUR",
+            tx_date: "2024-01-05",
+            own_rate: null,
+            total: "-100.00",
+          },
+        ]);
+
+        const result = await service.getSpendingByCategory(
+          mockUserId,
+          "2024-01-01",
+          "2025-12-31",
+        );
+
+        expect(result.data).toEqual([]);
+        expect(result.totalSpending).toBeNull();
+        expect(result.excludedCount).toBe(1);
+        expect(result.missingCurrencies).toEqual(["EUR"]);
+      });
+
       it("converts a row that settled into the reporting currency at its own rate", async () => {
         scopedManager.query.mockResolvedValue([
           {
