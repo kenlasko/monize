@@ -107,6 +107,28 @@ describe("TagsService (AI tag changes)", () => {
       await expect(preview([], names)).rejects.toThrow(BadRequestException);
     });
 
+    it("adds a tag missing from any place, and removes one carried on any place", async () => {
+      // A transfer: the leg carries Groceries, its split line Travel.
+      const result = await service.previewTagChange(
+        manager as any,
+        userId,
+        {
+          everywhere: new Set<string>(),
+          anywhere: new Set(["tag-g", "tag-t"]),
+        },
+        ["Groceries"],
+        ["Travel"],
+      );
+      expect(result.tagNames).toEqual(["Groceries"]);
+      expect(result.removeTagIds).toEqual(["tag-t"]);
+    });
+
+    it("strips markup from a name it would create, as a tag's DTO does", async () => {
+      const result = await preview([], ["<b>Gifts</b>"]);
+      expect(result.newTagNames).toEqual(["bGifts/b"]);
+      expect(result.newTagNames?.[0]).not.toMatch(/[<>]/);
+    });
+
     it("reads nothing when nothing is asked", async () => {
       await expect(preview(["tag-g"], [" "], [])).resolves.toEqual({
         tagNames: [],

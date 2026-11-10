@@ -495,7 +495,7 @@ describe("ToolExecutorService", () => {
         categoryId: "cat-1",
         newCategoryName: "Dining",
       }),
-      previewTagChange: jest.fn().mockResolvedValue({
+      previewTransferTagChange: jest.fn().mockResolvedValue({
         tagNames: [],
         newTagNames: [],
         removeTagIds: [],

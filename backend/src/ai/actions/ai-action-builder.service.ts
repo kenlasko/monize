@@ -5,6 +5,10 @@ import {
   UpdateTagPreview,
   tagPreviewRow,
 } from "../../tags/tag-tool-prep.service";
+import {
+  tagChangeDisplayFields,
+  tagChangeWriteFields,
+} from "../../tags/tag-change.util";
 import { randomUUID } from "crypto";
 import {
   AiActionSigningService,
@@ -659,10 +663,7 @@ export class AiActionBuilderService {
       currencyCode: preview.currencyCode,
       ...(splits ? { splits: splits.map(toSplitRowDescriptor) } : {}),
       ...(attachments?.length ? { attachments } : {}),
-      ...(preview.tagNames?.length ? { tagNames: [...preview.tagNames] } : {}),
-      ...(preview.removeTagIds?.length
-        ? { removeTagIds: [...preview.removeTagIds] }
-        : {}),
+      ...tagChangeWriteFields(preview),
       ...(preview.referenceNumber === undefined
         ? {}
         : { referenceNumber: preview.referenceNumber }),
@@ -693,17 +694,7 @@ export class AiActionBuilderService {
         ...(attachments?.length
           ? { attachments: attachments.map(toAttachmentPreview) }
           : {}),
-        ...(preview.tagNames?.length
-          ? {
-              tagNames: [...preview.tagNames],
-              ...(preview.newTagNames?.length
-                ? { newTagNames: [...preview.newTagNames] }
-                : {}),
-            }
-          : {}),
-        ...(preview.removeTagNames?.length
-          ? { removeTagNames: [...preview.removeTagNames] }
-          : {}),
+        ...tagChangeDisplayFields(preview),
         ...(preview.referenceNumber === undefined
           ? {}
           : { referenceNumber: preview.referenceNumber }),
@@ -978,10 +969,7 @@ export class AiActionBuilderService {
       payeeName: preview.payeeName,
       createPayee: preview.payeeWillBeCreated,
       categoryId: preview.categoryId,
-      ...(preview.tagNames?.length ? { tagNames: [...preview.tagNames] } : {}),
-      ...(preview.removeTagIds?.length
-        ? { removeTagIds: [...preview.removeTagIds] }
-        : {}),
+      ...tagChangeWriteFields(preview),
     };
     return {
       actionId,
@@ -1002,17 +990,7 @@ export class AiActionBuilderService {
         payeeName: preview.payeeName,
         payeeWillBeCreated: preview.payeeWillBeCreated,
         categoryName: preview.categoryName,
-        ...(preview.tagNames?.length
-          ? {
-              tagNames: [...preview.tagNames],
-              ...(preview.newTagNames?.length
-                ? { newTagNames: [...preview.newTagNames] }
-                : {}),
-            }
-          : {}),
-        ...(preview.removeTagNames?.length
-          ? { removeTagNames: [...preview.removeTagNames] }
-          : {}),
+        ...tagChangeDisplayFields(preview),
       },
     };
   }

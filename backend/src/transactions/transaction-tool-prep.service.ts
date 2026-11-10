@@ -40,6 +40,11 @@ import { didYouMean } from "../common/name-suggestions.util";
 import { tr } from "../i18n/translate";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { carrySplitTags } from "./split-tag-carry.util";
+import {
+  tagChangeDisplayFields,
+  tagChangeFields,
+  tagChangeWriteFields,
+} from "../tags/tag-change.util";
 
 /** One category-split line on a create/update row (names; resolved internally). */
 export interface SplitLineInput {
@@ -569,31 +574,36 @@ export class TransactionToolPrepService {
         },
         this.transactionsService.findOne.bind(this.transactionsService),
       );
-      const tagChange = await this.transactionsService.previewTagChange(
+      const tagChange = await this.transactionsService.previewTransferTagChange(
         userId,
         item.transactionId,
         item.tagNames ?? [],
         item.removeTagNames ?? [],
       );
+      // An edit that asked only for tags the transfer already has (or does not
+      // have) changes nothing: refused like the standard path, never offered as
+      // a card that rewrites the transfer from this snapshot.
+      const fieldChange =
+        item.amount !== undefined ||
+        item.date !== undefined ||
+        item.description !== undefined ||
+        item.payeeName !== undefined ||
+        item.categoryName !== undefined;
+      if (
+        !fieldChange &&
+        tagChange.tagNames.length === 0 &&
+        tagChange.removeTagIds.length === 0
+      ) {
+        throw new BadRequestException(
+          tr(
+            "errors.transactions.noUpdateFields",
+            "Provide at least one field to change.",
+          ),
+        );
+      }
       return {
         kind: "transfer",
-        preview: {
-          ...preview,
-          ...(tagChange.tagNames.length > 0
-            ? {
-                tagNames: tagChange.tagNames,
-                ...(tagChange.newTagNames.length > 0
-                  ? { newTagNames: tagChange.newTagNames }
-                  : {}),
-              }
-            : {}),
-          ...(tagChange.removeTagIds.length > 0
-            ? {
-                removeTagIds: tagChange.removeTagIds,
-                removeTagNames: tagChange.removeTagNames,
-              }
-            : {}),
-        },
+        preview: { ...preview, ...tagChangeFields(tagChange) },
       };
     }
 
@@ -772,12 +782,7 @@ export class TransactionToolPrepService {
           description: preview.description,
           currencyCode: preview.currencyCode,
           ...(splits ? { splits: splits.map(toSplitRowDescriptor) } : {}),
-          ...(preview.tagNames?.length
-            ? { tagNames: [...preview.tagNames] }
-            : {}),
-          ...(preview.removeTagIds?.length
-            ? { removeTagIds: [...preview.removeTagIds] }
-            : {}),
+          ...tagChangeWriteFields(preview),
         });
         okIndex.push(i);
         previewRows.push({
@@ -794,17 +799,7 @@ export class TransactionToolPrepService {
           description: preview.description,
           isReconciled: preview.isReconciled,
           ...(splits ? { splits: splits.map(toSplitPreview) } : {}),
-          ...(preview.tagNames?.length
-            ? {
-                tagNames: [...preview.tagNames],
-                ...(preview.newTagNames?.length
-                  ? { newTagNames: [...preview.newTagNames] }
-                  : {}),
-              }
-            : {}),
-          ...(preview.removeTagNames?.length
-            ? { removeTagNames: [...preview.removeTagNames] }
-            : {}),
+          ...tagChangeDisplayFields(preview),
         });
       } catch (err) {
         const reason = this.skipReason(err);

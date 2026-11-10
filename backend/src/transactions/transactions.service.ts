@@ -36,6 +36,8 @@ import { CreateTransferDto } from "./dto/create-transfer.dto";
 import { UpdateTransferDto } from "./dto/update-transfer.dto";
 import { TagsService, TagChangePreview } from "../tags/tags.service";
 import { TransactionTag } from "../tags/entities/transaction-tag.entity";
+import { TransactionSplitTag } from "../tags/entities/transaction-split-tag.entity";
+import { tagChangeFields } from "../tags/tag-change.util";
 import {
   RuleEffectsPreview,
   TransactionRulesApplierService,
@@ -1175,20 +1177,7 @@ export class TransactionsService {
       currencyCode: existing.currencyCode,
       isReconciled: existing.isReconciled,
       ...(referenceChanges ? { referenceNumber } : {}),
-      ...(tagChange.tagNames.length > 0
-        ? {
-            tagNames: tagChange.tagNames,
-            ...(tagChange.newTagNames.length > 0
-              ? { newTagNames: tagChange.newTagNames }
-              : {}),
-          }
-        : {}),
-      ...(tagChange.removeTagIds.length > 0
-        ? {
-            removeTagIds: tagChange.removeTagIds,
-            removeTagNames: tagChange.removeTagNames,
-          }
-        : {}),
+      ...tagChangeFields(tagChange),
     };
   }
 
@@ -1217,6 +1206,64 @@ export class TransactionsService {
         m,
         userId,
         carried,
+        addNames,
+        removeNames,
+      );
+    });
+  }
+
+  /**
+   * The tag change an edit of a transfer proposes. Its tags live in more than
+   * one place -- the edited leg, the counterpart leg when it is the user's, and
+   * the split a split-transfer leg belongs to -- and `applyTransferTagChange`
+   * writes all of them, so a tag is already added only when every place
+   * carries it, and is there to remove when any place does. Reads only.
+   */
+  async previewTransferTagChange(
+    userId: string,
+    transactionId: string,
+    addNames: readonly string[],
+    removeNames: readonly string[],
+  ): Promise<TagChangePreview> {
+    return withScopedDb(this.dataSource, async (m) => {
+      const leg = await m.findOne(Transaction, {
+        where: { id: transactionId, userId },
+      });
+      const parentSplit = await m.findOne(TransactionSplit, {
+        where: { linkedTransactionId: transactionId },
+      });
+      const places: Set<string>[] = [];
+      const tagsOf = async (id: string) =>
+        new Set(
+          (await m.find(TransactionTag, { where: { transactionId: id } })).map(
+            (link) => link.tagId,
+          ),
+        );
+      places.push(await tagsOf(transactionId));
+      if (parentSplit) {
+        places.push(
+          new Set(
+            (
+              await m.find(TransactionSplitTag, {
+                where: { transactionSplitId: parentSplit.id },
+              })
+            ).map((link) => link.tagId),
+          ),
+        );
+      } else if (leg?.linkedTransactionId) {
+        const counterpart = await m.findOne(Transaction, {
+          where: { id: leg.linkedTransactionId, userId },
+        });
+        if (counterpart) places.push(await tagsOf(counterpart.id));
+      }
+      const anywhere = new Set(places.flatMap((place) => [...place]));
+      const everywhere = new Set(
+        [...anywhere].filter((id) => places.every((place) => place.has(id))),
+      );
+      return this.tagsService.previewTagChange(
+        m,
+        userId,
+        { everywhere, anywhere },
         addNames,
         removeNames,
       );
@@ -4191,34 +4238,25 @@ export class TransactionsService {
       removeTagIds?: readonly string[];
     },
   ): Promise<TransferResult> {
+    const addTagNames = tagChange?.addTagNames ?? [];
+    const removeTagIds = tagChange?.removeTagIds ?? [];
     const result = await this.transferService.updateTransfer(
       userId,
       transactionId,
       updateDto,
       this.findOne.bind(this),
       actor,
+      addTagNames.length > 0 || removeTagIds.length > 0
+        ? (m, target) =>
+            this.applyTransferTagChange(
+              m,
+              userId,
+              target,
+              addTagNames,
+              removeTagIds,
+            )
+        : undefined,
     );
-
-    if (
-      (tagChange?.addTagNames?.length ?? 0) > 0 ||
-      (tagChange?.removeTagIds?.length ?? 0) > 0
-    ) {
-      await this.applyTransferTagChange(
-        userId,
-        transactionId,
-        [result.fromTransaction, result.toTransaction],
-        tagChange?.addTagNames ?? [],
-        tagChange?.removeTagIds ?? [],
-      );
-      if (updateDto.tagIds === undefined) {
-        const refresh = (leg: Transaction) =>
-          leg.userId === userId ? this.findOne(userId, leg.id) : leg;
-        return {
-          fromTransaction: await refresh(result.fromTransaction),
-          toTransaction: await refresh(result.toTransaction),
-        };
-      }
-    }
 
     if (updateDto.tagIds !== undefined) {
       // Tags are per-user reference data: cross-owner counterpart legs keep
@@ -4263,61 +4301,40 @@ export class TransactionsService {
   }
 
   /**
-   * Add and remove tags on a transfer in one transaction, the way `tagIds`
-   * replaces them: on every leg that is the user's own (a cross-owner leg keeps
-   * its owner's tags) and on the split a split-transfer leg belongs to.
+   * Add and remove tags on a transfer inside the edit's own transaction (the
+   * `TransferEditHook`), the way `tagIds` replaces them: on every leg that is
+   * the user's (a cross-owner leg keeps its owner's tags) and on the split a
+   * split-transfer leg belongs to. A tag no longer the user's refuses the
+   * whole edit with nothing written.
    */
   private async applyTransferTagChange(
+    m: EntityManager,
     userId: string,
-    transactionId: string,
-    legs: readonly Transaction[],
+    target: { legIds: string[]; parentSplitId: string | null },
     addTagNames: readonly string[],
     removeTagIds: readonly string[],
   ): Promise<void> {
-    const legIds = [
-      ...new Set(
-        legs.filter((leg) => leg.userId === userId).map((leg) => leg.id),
-      ),
-    ];
-    const parentSplit =
-      await this.splitService.getTransferSplitByLinkedTransaction(
-        transactionId,
+    const legIds = [...new Set(target.legIds)];
+    const splitIds = target.parentSplitId ? [target.parentSplitId] : [];
+    if (addTagNames.length > 0) {
+      const tags = await this.tagsService.findOrCreateByNames(
+        m,
+        userId,
+        addTagNames,
       );
-    await withScopedDb(this.dataSource, async (m) => {
-      if (addTagNames.length > 0) {
-        const tags = await this.tagsService.findOrCreateByNames(
-          m,
-          userId,
-          addTagNames,
-        );
-        const tagIds = tags.map((tag) => tag.id);
-        await this.tagsService.addTransactionTags(m, userId, legIds, tagIds);
-        if (parentSplit) {
-          await this.tagsService.addSplitTags(
-            m,
-            userId,
-            [parentSplit.id],
-            tagIds,
-          );
-        }
-      }
-      if (removeTagIds.length > 0) {
-        await this.tagsService.removeTransactionTags(
-          m,
-          userId,
-          legIds,
-          removeTagIds,
-        );
-        if (parentSplit) {
-          await this.tagsService.removeSplitTags(
-            m,
-            userId,
-            [parentSplit.id],
-            removeTagIds,
-          );
-        }
-      }
-    });
+      const tagIds = tags.map((tag) => tag.id);
+      await this.tagsService.addTransactionTags(m, userId, legIds, tagIds);
+      await this.tagsService.addSplitTags(m, userId, splitIds, tagIds);
+    }
+    if (removeTagIds.length > 0) {
+      await this.tagsService.removeTransactionTags(
+        m,
+        userId,
+        legIds,
+        removeTagIds,
+      );
+      await this.tagsService.removeSplitTags(m, userId, splitIds, removeTagIds);
+    }
   }
 
   async bulkUpdate(

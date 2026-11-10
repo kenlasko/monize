@@ -203,6 +203,17 @@ export interface UpdateTransferPreview {
   removeTagNames?: string[];
 }
 
+/**
+ * A write that must commit with a transfer edit (the AI tools' tag change):
+ * run inside the edit's own transaction, after its rows are written, with the
+ * legs that are the user's and the split a split-transfer leg belongs to. A
+ * throw refuses the whole edit with nothing written.
+ */
+export type TransferEditHook = (
+  m: EntityManager,
+  target: { legIds: string[]; parentSplitId: string | null },
+) => Promise<void>;
+
 @Injectable()
 export class TransactionTransferService {
   private readonly logger = new Logger(TransactionTransferService.name);
@@ -1975,6 +1986,7 @@ export class TransactionTransferService {
     updateDto: Partial<UpdateTransferDto>,
     findOne: (userId: string, id: string) => Promise<Transaction>,
     actor?: TransferActor,
+    withinWrite?: TransferEditHook,
   ): Promise<TransferResult> {
     const realUserId = actor?.realUserId ?? userId;
     const transaction = await findOne(userId, transactionId);
@@ -2002,6 +2014,7 @@ export class TransactionTransferService {
         parentSplit,
         updateDto,
         findOne,
+        withinWrite,
       );
     }
 
@@ -2013,6 +2026,16 @@ export class TransactionTransferService {
       );
     } catch (err) {
       if (!(err instanceof NotFoundException)) throw err;
+      // The AI tools refuse a cross-owner transfer before they build a card;
+      // the hook is never silently dropped on this path.
+      if (withinWrite) {
+        throw new BadRequestException(
+          tr(
+            "errors.ai.crossOwnerTransferUnsupported",
+            "This transfer involves another user's account, which the assistant can't edit or delete yet. Use the Transactions screen instead.",
+          ),
+        );
+      }
       // Cross-owner pair: the counterpart is not the effective user's row.
       return this.updateCrossOwnerTransfer(
         userId,
@@ -2316,6 +2339,15 @@ export class TransactionTransferService {
           );
           await this.accountsService.updateBalance(newToAccountId, newToAmount);
         }
+      }
+      if (withinWrite) {
+        // A leg of a joint account another member owns keeps its own tags.
+        await withinWrite(m, {
+          legIds: [fromTransaction, toTransaction]
+            .filter((leg) => leg.userId === userId)
+            .map((leg) => leg.id),
+          parentSplitId: null,
+        });
       }
     });
 
@@ -2959,6 +2991,7 @@ export class TransactionTransferService {
     parentSplit: TransactionSplit,
     updateDto: Partial<UpdateTransferDto>,
     findOne: (userId: string, id: string) => Promise<Transaction>,
+    withinWrite?: TransferEditHook,
   ): Promise<TransferResult> {
     const parentTransaction = await findOne(userId, parentSplit.transactionId);
 
@@ -3266,6 +3299,12 @@ export class TransactionTransferService {
           parentDecimals,
           this.accountsService,
         );
+      }
+      if (withinWrite) {
+        await withinWrite(m, {
+          legIds: [counterpart.id],
+          parentSplitId: parentSplit.id,
+        });
       }
     });
 

@@ -18,6 +18,7 @@ import { withScopedDb } from "../common/db/scoped-db";
 import { LEDGER_EXCLUDES_VOID } from "../common/ledger-balance.sql";
 import { todayYMD } from "../common/date-utils";
 import { didYouMean } from "../common/name-suggestions.util";
+import { stripHtml } from "../common/sanitization.util";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import {
   LLM_TAGS_DEFAULT_LIMIT,
@@ -35,6 +36,24 @@ export const MAX_TRANSACTIONS_PER_CALL = 1000;
  * (200000 parameters) is written in batches, all on the caller's transaction.
  */
 export const TAG_LINK_INSERT_BATCH = 5000;
+
+/**
+ * Tag names as a tag is stored: markup stripped (as `CreateTagDto`'s
+ * `@SanitizeHtml` does), trimmed, blanks dropped, each name once however it is
+ * spelled (the first spelling wins), in order.
+ */
+export function uniqueTagNames(names: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of names) {
+    const name = (stripHtml(raw) ?? "").trim();
+    const key = name.toLowerCase();
+    if (name === "" || seen.has(key)) continue;
+    seen.add(key);
+    out.push(name);
+  }
+  return out;
+}
 
 /** One tag's use on non-void transactions: latest date (YYYY-MM-DD) and number of uses. */
 export interface TagUsage {
@@ -353,7 +372,7 @@ export class TagsService {
 
   /**
    * Resolve the tag names an edit adds and removes against the tags a row
-   * carries now (`carriedTagIds`), on the caller's manager, reading only. A
+   * carries now (`carried`), on the caller's manager, reading only. A
    * name to add the user has no tag for is new (the write creates it); a name
    * to remove must be one of the user's tags (a typo is refused with the
    * closest names, never read as "nothing to remove"); a name in both lists is
@@ -362,31 +381,31 @@ export class TagsService {
   async previewTagChange(
     m: EntityManager,
     userId: string,
-    carriedTagIds: ReadonlySet<string>,
+    /**
+     * The tags the row carries now. A change that writes to several places (a
+     * transfer's legs and the split a leg belongs to) passes the tags carried
+     * on EVERY place, which decides an addition, and on ANY place, which
+     * decides a removal; one row passes one set for both.
+     */
+    carried:
+      | ReadonlySet<string>
+      | { everywhere: ReadonlySet<string>; anywhere: ReadonlySet<string> },
     addNames: readonly string[],
     removeNames: readonly string[],
   ): Promise<TagChangePreview> {
-    const dedupe = (names: readonly string[]) => {
-      const seen = new Set<string>();
-      const out: string[] = [];
-      for (const raw of names) {
-        const name = raw.trim();
-        const key = name.toLowerCase();
-        if (name === "" || seen.has(key)) continue;
-        seen.add(key);
-        out.push(name);
-      }
-      return out;
-    };
-    const add = dedupe(addNames);
-    const remove = dedupe(removeNames);
-    const empty: TagChangePreview = {
+    const { everywhere, anywhere } =
+      "everywhere" in carried
+        ? carried
+        : { everywhere: carried, anywhere: carried };
+    const add = uniqueTagNames(addNames);
+    const remove = uniqueTagNames(removeNames);
+    const preview: TagChangePreview = {
       tagNames: [],
       newTagNames: [],
       removeTagIds: [],
       removeTagNames: [],
     };
-    if (add.length === 0 && remove.length === 0) return empty;
+    if (add.length === 0 && remove.length === 0) return preview;
     if (add.length + remove.length > MAX_TAGS_PER_CALL) {
       throw new BadRequestException(
         tr(
@@ -410,37 +429,31 @@ export class TagsService {
 
     const known = await this.findByNames(m, userId, [...add, ...remove]);
     const byKey = new Map(known.map((tag) => [tag.name.toLowerCase(), tag]));
-    const preview: TagChangePreview = {
-      tagNames: [],
-      newTagNames: [],
-      removeTagIds: [],
-      removeTagNames: [],
-    };
+    const unknown = remove.find((name) => !byKey.has(name.toLowerCase()));
+    if (unknown !== undefined) {
+      const suggestion = didYouMean(
+        unknown,
+        (await m.find(Tag, { where: { userId } })).map((t) => t.name),
+      );
+      throw new NotFoundException(
+        tr("errors.tags.unknownName", `Unknown tag: ${unknown}.${suggestion}`, {
+          name: unknown,
+          suggestion,
+        }),
+      );
+    }
     for (const name of add) {
       const tag = byKey.get(name.toLowerCase());
       if (!tag) {
         preview.tagNames.push(name);
         preview.newTagNames.push(name);
-      } else if (!carriedTagIds.has(tag.id)) {
+      } else if (!everywhere.has(tag.id)) {
         preview.tagNames.push(tag.name);
       }
     }
-    let allNames: string[] | null = null;
     for (const name of remove) {
-      const tag = byKey.get(name.toLowerCase());
-      if (!tag) {
-        allNames ??= (await m.find(Tag, { where: { userId } })).map(
-          (t) => t.name,
-        );
-        throw new NotFoundException(
-          tr(
-            "errors.tags.unknownName",
-            `Unknown tag: ${name}.${didYouMean(name, allNames)}`,
-            { name, suggestion: didYouMean(name, allNames) },
-          ),
-        );
-      }
-      if (carriedTagIds.has(tag.id)) {
+      const tag = byKey.get(name.toLowerCase())!;
+      if (anywhere.has(tag.id)) {
         preview.removeTagIds.push(tag.id);
         preview.removeTagNames.push(tag.name);
       }
@@ -748,16 +761,7 @@ export class TagsService {
     userId: string,
     names: readonly string[],
   ): Promise<Tag[]> {
-    const wanted: string[] = [];
-    const seen = new Set<string>();
-    for (const raw of names) {
-      const name = raw.trim();
-      const key = name.toLowerCase();
-      if (name === "" || seen.has(key)) continue;
-      seen.add(key);
-      wanted.push(name);
-      if (wanted.length >= MAX_TAGS_PER_CALL) break;
-    }
+    const wanted = uniqueTagNames(names).slice(0, MAX_TAGS_PER_CALL);
     for (const name of wanted) {
       // The WHERE NOT EXISTS makes the common case a no-op; the unique index
       // `idx_tags_user_name` (user_id, LOWER(name)) is the backstop for two

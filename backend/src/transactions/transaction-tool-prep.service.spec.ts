@@ -63,7 +63,7 @@ describe("TransactionToolPrepService", () => {
         description: null,
         currencyCode: "USD",
       }),
-      previewTagChange: jest.fn().mockResolvedValue({
+      previewTransferTagChange: jest.fn().mockResolvedValue({
         tagNames: [],
         newTagNames: [],
         removeTagIds: [],
@@ -688,7 +688,7 @@ describe("TransactionToolPrepService", () => {
         isTransfer: true,
         linkedTransactionId: "t2",
       });
-      transactions.previewTagChange.mockResolvedValueOnce({
+      transactions.previewTransferTagChange.mockResolvedValueOnce({
         tagNames: ["Trip"],
         newTagNames: ["Trip"],
         removeTagIds: ["tag-o"],
@@ -699,7 +699,7 @@ describe("TransactionToolPrepService", () => {
         tagNames: ["Trip"],
         removeTagNames: ["Old"],
       });
-      expect(transactions.previewTagChange).toHaveBeenCalledWith(
+      expect(transactions.previewTransferTagChange).toHaveBeenCalledWith(
         userId,
         "t1",
         ["Trip"],
@@ -711,6 +711,21 @@ describe("TransactionToolPrepService", () => {
         removeTagIds: ["tag-o"],
         removeTagNames: ["Old"],
       });
+    });
+
+    it("refuses a tag-only transfer edit that changes nothing, building no card", async () => {
+      transactions.findOne.mockResolvedValueOnce({
+        id: "t1",
+        isTransfer: true,
+        linkedTransactionId: "t2",
+      });
+      // previewTransferTagChange (the double) finds every tag already there.
+      await expect(
+        service.prepareUpdate(userId, {
+          transactionId: "t1",
+          tagNames: ["Trip"],
+        }),
+      ).rejects.toThrow(/at least one field/);
     });
 
     it("carries a bulk row's tag change into the signed row and the card", async () => {
