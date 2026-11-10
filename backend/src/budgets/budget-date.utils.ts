@@ -1,3 +1,5 @@
+import { todayYMD } from "../common/date-utils";
+
 /**
  * Shared utility for computing budget period date ranges.
  * Centralizes the period date calculation used across multiple budget services.
@@ -10,11 +12,13 @@ export interface PeriodDateRange {
 
 /**
  * Returns the start and end dates for the current calendar month
- * in YYYY-MM-DD format.
+ * in YYYY-MM-DD format, using the request's (or cron's) timezone via
+ * `todayYMD()` rather than the server's UTC clock -- otherwise the current
+ * period flips a day early or late for anyone not on UTC.
  */
 export function getCurrentMonthPeriodDates(): PeriodDateRange {
-  const today = new Date();
-  return getMonthPeriodDates(today.getUTCFullYear(), today.getUTCMonth());
+  const [year, month] = todayYMD().split("-").map(Number);
+  return getMonthPeriodDates(year, month - 1);
 }
 
 /**
@@ -37,13 +41,15 @@ export function getMonthPeriodDates(
 
 /**
  * Returns the start and end dates for the previous calendar month
- * relative to today.
+ * relative to today, in the request's (or cron's) timezone (see
+ * `getCurrentMonthPeriodDates`).
  */
 export function getPreviousMonthPeriodDates(): PeriodDateRange {
-  const today = new Date();
-  const prevMonth = new Date(
-    Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1),
-  );
+  const [year, month] = todayYMD().split("-").map(Number);
+  // `month` is 1-based; `Date.UTC(year, month - 2, 1)` steps back one month
+  // using pure calendar arithmetic (rolling the year at January), with no
+  // dependency on the server's own timezone.
+  const prevMonth = new Date(Date.UTC(year, month - 2, 1));
   return getMonthPeriodDates(
     prevMonth.getUTCFullYear(),
     prevMonth.getUTCMonth(),
