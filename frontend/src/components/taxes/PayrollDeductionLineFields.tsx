@@ -6,9 +6,19 @@ import { Combobox } from '@/components/ui/Combobox';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { RemoveSplitLineButton } from '@/components/transactions/SplitLineButtons';
+import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getCurrencySymbol } from '@/lib/format';
 import type { PayrollResetPeriod } from '@/types/payroll-deduction';
+
+/**
+ * The two figures of a period side by side. Each cell is a subgrid over
+ * three shared rows (label, box, hint), so the boxes line up even when one
+ * label wraps onto a second line and the other does not.
+ */
+const FIELD_GRID_CLASS = 'grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 md:gap-y-1';
+const FIELD_CELL_CLASS = 'md:grid md:grid-rows-subgrid md:row-span-3';
+const FIELD_LABEL_ROW_CLASS = 'flex items-center mb-1 md:mb-0 self-end';
 
 /** One category row of the form. */
 export interface PayrollDeductionLineValues {
@@ -19,6 +29,11 @@ export interface PayrollDeductionLineValues {
   suggested?: boolean;
   /** Set when the maximum was estimated from what the category has collected. */
   maximumSuggested?: boolean;
+  /** The next period's maximum; empty carries this period's (spec section 11). */
+  nextYearlyMaximum?: number;
+  nextExpectedPerPaycheque?: number;
+  /** The next period's fields are open. */
+  showNext?: boolean;
 }
 
 /** The form's values: one bill and one reset, shared by every row. */
@@ -44,6 +59,11 @@ interface PayrollDeductionLineFieldsProps {
   onCategoryChange: (value: string) => void;
   /** Absent on the only row, and when editing a single rule. */
   onRemove?: () => void;
+  /** The current period's first and last days, and the next period's first. */
+  period: { start: string; end: string; nextStart: string };
+  /** Whether the next period's fields are open. */
+  showNext: boolean;
+  onShowNext: () => void;
 }
 
 /**
@@ -61,9 +81,13 @@ export function PayrollDeductionLineFields({
   maximumSuggested,
   onCategoryChange,
   onRemove,
+  period,
+  showNext,
+  onShowNext,
 }: PayrollDeductionLineFieldsProps) {
   const t = useTranslations('taxes.payroll');
   const { formatCurrency } = useNumberFormat();
+  const { formatDate } = useDateFormat();
   const ordinal = index + 1;
   // The bill's currency symbol in the box, as every money entry in Monize shows it.
   const symbol = currencyCode ? getCurrencySymbol(currencyCode) : undefined;
@@ -97,10 +121,15 @@ export function PayrollDeductionLineFields({
         </div>
       </div>
 
+      {showNext && (
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t('form.thisPeriod', { start: formatDate(period.start), end: formatDate(period.end) })}
+        </p>
+      )}
       {/* Label row above each box, so the two boxes share one baseline. */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <div className="flex items-center mb-1">
+      <div className={FIELD_GRID_CLASS}>
+        <div className={FIELD_CELL_CLASS}>
+          <div className={FIELD_LABEL_ROW_CLASS}>
             <label htmlFor={`payroll-yearly-maximum-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('form.yearlyMaximumLabel')}
             </label>
@@ -129,13 +158,13 @@ export function PayrollDeductionLineFields({
         </div>
 
         {lineAmount !== null && (
-          <p className="self-end text-sm text-gray-600 dark:text-gray-400">
+          <p className="self-end md:row-span-2 text-sm text-gray-600 dark:text-gray-400">
             {t('form.expectedFromLine', { amount: formatCurrency(lineAmount, currencyCode) })}
           </p>
         )}
         {lineAmount === null && (
-          <div>
-            <div className="flex items-center mb-1">
+          <div className={FIELD_CELL_CLASS}>
+            <div className={FIELD_LABEL_ROW_CLASS}>
               <label htmlFor={`payroll-expected-per-paycheque-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 {t('form.expectedLabel')}
               </label>
@@ -164,6 +193,79 @@ export function PayrollDeductionLineFields({
           </div>
         )}
       </div>
+
+      {!showNext && (
+        <button
+          type="button"
+          onClick={onShowNext}
+          className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 focus-visible:outline-2 focus-visible:outline-blue-500 rounded"
+        >
+          {t('form.setNextPeriod', { date: formatDate(period.nextStart) })}
+        </button>
+      )}
+      {showNext && (
+        <div className="space-y-3 border-t border-gray-200 dark:border-gray-700 pt-3">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {t('form.nextPeriod', { date: formatDate(period.nextStart) })}
+          </p>
+          <div className={FIELD_GRID_CLASS}>
+            <div className={FIELD_CELL_CLASS}>
+              <div className={FIELD_LABEL_ROW_CLASS}>
+                <label htmlFor={`payroll-next-yearly-maximum-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('form.nextYearlyMaximumLabel')}
+                </label>
+                <InfoTooltip text={t('form.nextYearlyMaximumHelp')} placement="bottom" usePortal />
+              </div>
+              <Controller
+                control={control}
+                name={`lines.${index}.nextYearlyMaximum` as const}
+                render={({ field }) => (
+                  <CurrencyInput
+                    id={`payroll-next-yearly-maximum-${index}`}
+                    prefix={symbol}
+                    allowNegative={false}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                    placeholder={t('form.sameAsThisPeriod')}
+                    error={errors?.nextYearlyMaximum?.message}
+                  />
+                )}
+              />
+            </div>
+            {lineAmount === null && (
+              <div className={FIELD_CELL_CLASS}>
+                <div className={FIELD_LABEL_ROW_CLASS}>
+                  <label htmlFor={`payroll-next-expected-per-paycheque-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('form.nextExpectedLabel')}
+                  </label>
+                  <InfoTooltip text={t('form.nextExpectedHelp')} placement="bottom" usePortal />
+                </div>
+                <Controller
+                  control={control}
+                  name={`lines.${index}.nextExpectedPerPaycheque` as const}
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id={`payroll-next-expected-per-paycheque-${index}`}
+                      prefix={symbol}
+                      allowNegative={false}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                      placeholder={t('form.sameAsThisPeriod')}
+                      error={errors?.nextExpectedPerPaycheque?.message}
+                    />
+                  )}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

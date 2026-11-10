@@ -169,7 +169,8 @@ function PayrollDeductionsContent() {
           isOpen={showForm}
           onClose={close}
           {...modalProps}
-          maxWidth="lg"
+          // Wide enough for the next period's labels to sit on one line.
+          maxWidth="3xl"
           padding="md"
           allowOverflow
           title={isEditing ? t('modal.editTitle') : t('modal.newTitle')}

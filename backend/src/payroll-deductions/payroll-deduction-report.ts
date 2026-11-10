@@ -12,6 +12,10 @@ import {
   DeductionPeriod,
   deductionPeriod,
 } from "./payroll-deduction-period";
+import {
+  figuresForPeriod,
+  RuleWithPeriods,
+} from "./payroll-deduction-rule-periods";
 
 /**
  * The payroll deductions report (docs/specs/payroll-deductions.md section 10):
@@ -55,9 +59,9 @@ export interface PayrollReportPeriodTotal {
 /** The selected year's period with the rule's ceiling beside it. */
 export interface PayrollReportCategorySummary extends PayrollReportPeriodTotal {
   /**
-   * The lowest maximum among the category's rules, which is the one that
-   * binds. `null` for a period that has closed: a rule holds only the figure
-   * it caps with now, and an earlier year's maximum was not recorded.
+   * The lowest maximum among the category's rules for this period, which is
+   * the one that binds. `null` for a closed period a rule recorded no figure
+   * for (docs/specs/payroll-deductions.md section 11).
    */
   yearlyMaximum: number | null;
   /** Room left under `yearlyMaximum`; `null` whenever the maximum is. */
@@ -129,7 +133,8 @@ export interface PayrollReportGroup {
   currencyCode: string;
   resetDate: string;
   billNames: string[];
-  yearlyMaximum: number;
+  /** Every rule on the category, whose figures per period the summary reads. */
+  rules: RuleWithPeriods[];
 }
 
 const SCALE = 10 ** MONEY_DECIMALS;
@@ -161,7 +166,6 @@ export function groupReportRules(
     const currencyCode = rule.scheduledTransaction?.currencyCode ?? "";
     const key = `${rule.categoryId}|${currencyCode}`;
     const billName = rule.scheduledTransaction?.name ?? "";
-    const maximum = roundMoney(Number(rule.yearlyMaximum));
     const group = groups.get(key);
     if (!group) {
       groups.set(key, {
@@ -170,12 +174,12 @@ export function groupReportRules(
         currencyCode,
         resetDate: rule.resetDate,
         billNames: [billName],
-        yearlyMaximum: maximum,
+        rules: [rule],
       });
       continue;
     }
     if (!group.billNames.includes(billName)) group.billNames.push(billName);
-    group.yearlyMaximum = Math.min(group.yearlyMaximum, maximum);
+    group.rules.push(rule);
   }
   return Array.from(groups.values());
 }
@@ -329,10 +333,17 @@ export function summariseReportCategory(
     },
     today,
   );
-  // A rule holds only the figure it caps with now; a closed period's own
-  // maximum was never stored, so it is not shown against that period.
+  // Each period reads its own figures, the lowest maximum binding (spec
+  // section 11). A closed period shows one only when every rule recorded a
+  // figure for it: the rule's columns hold today's figure, not that year's.
+  const figures = group.rules.map((r) =>
+    figuresForPeriod(r, selectedPeriod.periodStart),
+  );
+  const closed = selectedPeriod.periodEnd < today;
   const yearlyMaximum =
-    selectedPeriod.periodEnd >= today ? group.yearlyMaximum : null;
+    figures.length === 0 || (closed && figures.some((f) => !f.recorded))
+      ? null
+      : Math.min(...figures.map((f) => f.yearlyMaximum));
   let maximumReachedOn: string | null = null;
   if (yearlyMaximum !== null && yearlyMaximum > 0) {
     let units = 0;

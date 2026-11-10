@@ -40,6 +40,7 @@
       "bill": "Tagihan",
       "category": "Kategori",
       "yearlyMaximum": "Maksimum tahunan",
+      "nextMaximum": "Mulai {date}: {amount}",
       "resetsOn": "Diatur ulang pada",
       "perPaycheque": "Per gaji",
       "period": "Periode",
@@ -71,6 +72,14 @@
       "expectedHelp": "Baris transaksi untuk kategori ini nol, jadi perkiraan memerlukan jumlah yang biasanya dipotong setiap gaji.",
       "expectedFromLine": "Baris tagihan memotong {amount} per gaji.",
       "expectedSuggested": "Disarankan dari jumlah yang paling sering muncul pada transaksi Anda di kategori ini selama setahun terakhir.",
+      "thisPeriod": "Periode ini, {start} hingga {end}",
+      "nextPeriod": "Periode berikutnya, mulai {date}",
+      "setNextPeriod": "Tetapkan angka untuk periode berikutnya, mulai {date}",
+      "nextYearlyMaximumLabel": "Maksimum periode berikutnya",
+      "nextYearlyMaximumHelp": "Maksimum mulai reset berikutnya. Biarkan kosong untuk mempertahankan maksimum periode ini. Sisa dan persentase periode ini tidak berubah.",
+      "nextExpectedLabel": "Diharapkan per gaji pada periode berikutnya",
+      "nextExpectedHelp": "Jumlah yang dipotong setiap gaji mulai reset berikutnya. Biarkan kosong untuk mempertahankan jumlah periode ini.",
+      "sameAsThisPeriod": "Sama dengan periode ini",
       "periods": {
         "YEARLY": "Tahunan"
       },

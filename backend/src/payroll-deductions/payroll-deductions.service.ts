@@ -34,6 +34,12 @@ import {
 } from "./payroll-deduction-period";
 import { addDaysYMD } from "../common/date-utils";
 import {
+  deleteRulePeriodsAfter,
+  figuresForPeriod,
+  RulePeriodFigures,
+  writeRulePeriod,
+} from "./payroll-deduction-rule-periods";
+import {
   assemblePayrollReport,
   DeductionTransaction,
   groupReportRules,
@@ -55,6 +61,12 @@ export type PayrollDeductionRuleView = PayrollDeductionRule &
     categoryName: string;
     scheduledTransactionName: string;
   };
+
+/** One line of a batch, checked: the rule row and the period rows it writes. */
+interface PreparedLine {
+  row: Partial<PayrollDeductionRule>;
+  periods: RulePeriodFigures[];
+}
 
 /** How many closed periods `GET /payroll-deductions/history` looks back over. */
 export const HISTORY_PERIODS = 5;
@@ -108,6 +120,7 @@ export class PayrollDeductionsService {
         where: { userId },
         relations: [
           "category",
+          "periods",
           "scheduledTransaction",
           "scheduledTransaction.splits",
         ],
@@ -200,7 +213,7 @@ export class PayrollDeductionsService {
     return withScopedDb(this.dataSource, async (m) => {
       const rules = await m.getRepository(PayrollDeductionRule).find({
         where: { userId },
-        relations: ["category", "scheduledTransaction"],
+        relations: ["category", "periods", "scheduledTransaction"],
         order: { createdAt: "ASC" },
       });
       const byCategory = new Map<string, DeductionTransaction[]>();
@@ -419,6 +432,8 @@ export class PayrollDeductionsService {
           categoryId: dto.categoryId,
           yearlyMaximum: dto.yearlyMaximum,
           expectedPerPaycheque: dto.expectedPerPaycheque,
+          nextYearlyMaximum: dto.nextYearlyMaximum,
+          nextExpectedPerPaycheque: dto.nextExpectedPerPaycheque,
         },
       ],
     });
@@ -444,15 +459,20 @@ export class PayrollDeductionsService {
       await this.assertFiatBill(m, schedule);
       const repo = m.getRepository(PayrollDeductionRule);
       const seen = new Set<string>();
-      const rows: Partial<PayrollDeductionRule>[] = [];
+      const prepared: PreparedLine[] = [];
       for (const line of dto.lines) {
         if (seen.has(line.categoryId)) throw this.duplicate();
         seen.add(line.categoryId);
-        rows.push(await this.prepareLine(m, userId, schedule, dto, line));
+        prepared.push(
+          await this.prepareLine(m, userId, schedule, dto, line, today),
+        );
       }
       const views: PayrollDeductionRuleView[] = [];
-      for (const row of rows) {
+      for (const { row, periods } of prepared) {
         const saved = await repo.save(repo.create(row));
+        for (const figures of periods) {
+          await writeRulePeriod(m, userId, saved.id, figures);
+        }
         views.push(
           await this.toView(
             m,
@@ -476,7 +496,8 @@ export class PayrollDeductionsService {
       "scheduledTransactionId" | "resetPeriod" | "resetDate"
     >,
     line: PayrollDeductionLineDto,
-  ): Promise<Partial<PayrollDeductionRule>> {
+    today: string,
+  ): Promise<PreparedLine> {
     await this.ownedCategory(m, userId, line.categoryId);
     const duplicate = await m.getRepository(PayrollDeductionRule).findOne({
       where: {
@@ -486,19 +507,87 @@ export class PayrollDeductionsService {
       },
     });
     if (duplicate) throw this.duplicate();
-    return {
-      userId,
-      scheduledTransactionId: shared.scheduledTransactionId,
-      categoryId: line.categoryId,
+    const expected = this.expectedOrRefuse(
+      schedule,
+      line.categoryId,
+      line.expectedPerPaycheque,
+    );
+    const period = deductionPeriod(shared.resetDate, today);
+    const current: RulePeriodFigures = {
+      periodStart: period.periodStart,
       yearlyMaximum: roundMoney(line.yearlyMaximum),
-      resetPeriod: shared.resetPeriod ?? "YEARLY",
-      resetDate: shared.resetDate,
+      expectedPerPaycheque: expected,
+    };
+    const next = this.nextPeriodFigures(
+      schedule,
+      line.categoryId,
+      period.nextResetOn,
+      current,
+      null,
+      line.nextYearlyMaximum,
+      line.nextExpectedPerPaycheque,
+    );
+    const periods = next ? [current, next] : [current];
+    return {
+      row: {
+        userId,
+        scheduledTransactionId: shared.scheduledTransactionId,
+        categoryId: line.categoryId,
+        yearlyMaximum: roundMoney(line.yearlyMaximum),
+        resetPeriod: shared.resetPeriod ?? "YEARLY",
+        resetDate: shared.resetDate,
+        expectedPerPaycheque: expected,
+      },
+      periods,
+    };
+  }
+
+  /**
+   * The next period's row a request asks for (spec section 11): `undefined`
+   * leaves it as it is, `null` removes it, a row writes it. An empty next
+   * maximum means "this period's maximum", and an empty next expected amount
+   * means "this period's amount", so a request that names only one of the
+   * two keeps the other from the next period's own row, else from this
+   * period. A request whose result is this period's figures with the
+   * maximum cleared removes the row rather than storing a copy.
+   */
+  private nextPeriodFigures(
+    schedule: Pick<ScheduledTransaction, "splits">,
+    categoryId: string,
+    nextResetOn: string,
+    current: RulePeriodFigures,
+    scheduledNext: RulePeriodFigures | null,
+    maximum: number | null | undefined,
+    expected: number | null | undefined,
+  ): RulePeriodFigures | null | undefined {
+    if (maximum === undefined && expected === undefined) return undefined;
+    if (maximum === undefined && expected === null && !scheduledNext) {
+      return undefined;
+    }
+    const keep = maximum === undefined ? scheduledNext : null;
+    const row: RulePeriodFigures = {
+      periodStart: nextResetOn,
+      yearlyMaximum: roundMoney(
+        maximum ?? keep?.yearlyMaximum ?? current.yearlyMaximum,
+      ),
       expectedPerPaycheque: this.expectedOrRefuse(
         schedule,
-        line.categoryId,
-        line.expectedPerPaycheque,
+        categoryId,
+        expected ??
+          (expected === undefined
+            ? scheduledNext?.expectedPerPaycheque
+            : null) ??
+          current.expectedPerPaycheque,
       ),
     };
+    if (
+      maximum === null &&
+      row.yearlyMaximum === current.yearlyMaximum &&
+      row.expectedPerPaycheque === current.expectedPerPaycheque
+    ) {
+      return null;
+    }
+    return row;
   }
 
   private duplicate(): ConflictException {
@@ -518,7 +607,10 @@ export class PayrollDeductionsService {
     const today = todayYMD();
     return withScopedDb(this.dataSource, async (m) => {
       const repo = m.getRepository(PayrollDeductionRule);
-      const rule = await repo.findOne({ where: { id, userId } });
+      const rule = await repo.findOne({
+        where: { id, userId },
+        relations: ["periods"],
+      });
       if (!rule) throw this.notFound(id);
       const scheduledTransactionId =
         dto.scheduledTransactionId ?? rule.scheduledTransactionId;
@@ -541,27 +633,80 @@ export class PayrollDeductionsService {
         });
         if (duplicate && duplicate.id !== id) throw this.duplicate();
       }
-      const expected = this.expectedOrRefuse(
+      // The current period is the one containing today under the reset the
+      // rule will have; its figures and the next period's are written to
+      // their own rows (spec section 11), every refusal before any write.
+      // The figures are read under the reset the rule has now, so a moved
+      // reset carries this period's and the next period's figures to the
+      // new dates instead of leaving them on the old anniversaries.
+      const resetDate = dto.resetDate ?? rule.resetDate;
+      const resetChanged = resetDate !== rule.resetDate;
+      const period = deductionPeriod(resetDate, today);
+      const before = deductionPeriod(rule.resetDate, today);
+      const now = figuresForPeriod(rule, before.periodStart);
+      const was = figuresForPeriod(rule, before.nextResetOn);
+      const scheduledNext: RulePeriodFigures | null =
+        was.fromPeriodStart !== null && was.fromPeriodStart > before.periodStart
+          ? {
+              periodStart: period.nextResetOn,
+              yearlyMaximum: was.yearlyMaximum,
+              expectedPerPaycheque: was.expectedPerPaycheque,
+            }
+          : null;
+      const current: RulePeriodFigures = {
+        periodStart: period.periodStart,
+        yearlyMaximum:
+          dto.yearlyMaximum === undefined
+            ? now.yearlyMaximum
+            : roundMoney(dto.yearlyMaximum),
+        expectedPerPaycheque: this.expectedOrRefuse(
+          schedule,
+          categoryId,
+          dto.expectedPerPaycheque === undefined
+            ? now.expectedPerPaycheque
+            : dto.expectedPerPaycheque,
+        ),
+      };
+      let next = this.nextPeriodFigures(
         schedule,
         categoryId,
-        dto.expectedPerPaycheque === undefined
-          ? rule.expectedPerPaycheque
-          : dto.expectedPerPaycheque,
+        period.nextResetOn,
+        current,
+        scheduledNext,
+        dto.nextYearlyMaximum,
+        dto.nextExpectedPerPaycheque,
       );
+      if (next === undefined && resetChanged && scheduledNext) {
+        next = {
+          ...scheduledNext,
+          expectedPerPaycheque: this.expectedOrRefuse(
+            schedule,
+            categoryId,
+            scheduledNext.expectedPerPaycheque ?? current.expectedPerPaycheque,
+          ),
+        };
+      }
+      // The columns are the current period's pair, never half of one
+      // period and half of another.
       await repo.update(
         { id },
         {
           scheduledTransactionId,
           categoryId,
-          yearlyMaximum:
-            dto.yearlyMaximum === undefined
-              ? rule.yearlyMaximum
-              : roundMoney(dto.yearlyMaximum),
           resetPeriod: dto.resetPeriod ?? rule.resetPeriod,
-          resetDate: dto.resetDate ?? rule.resetDate,
-          expectedPerPaycheque: expected,
+          resetDate,
+          yearlyMaximum: current.yearlyMaximum,
+          expectedPerPaycheque: current.expectedPerPaycheque,
         },
       );
+      // Rows after the current period's start belong to the next period:
+      // cleared when it is cleared, and when the reset moved, since they
+      // sit on the old anniversaries.
+      if (next === null || resetChanged) {
+        await deleteRulePeriodsAfter(m, userId, id, period.periodStart);
+      }
+      await writeRulePeriod(m, userId, id, current);
+      if (next) await writeRulePeriod(m, userId, id, next);
       return this.toView(m, userId, await this.reload(m, userId, id), today);
     });
   }
@@ -683,6 +828,7 @@ export class PayrollDeductionsService {
       where: { id, userId },
       relations: [
         "category",
+        "periods",
         "scheduledTransaction",
         "scheduledTransaction.splits",
       ],
@@ -708,9 +854,9 @@ export class PayrollDeductionsService {
       asOf,
     );
     const { scheduledTransaction, category, ...row } = rule;
+    const { periods: _periods, ...columns } = row;
     return {
-      ...row,
-      yearlyMaximum: roundMoney(Number(rule.yearlyMaximum)),
+      ...columns,
       ...figures,
       categoryName: category?.name ?? "",
       scheduledTransactionName: scheduledTransaction?.name ?? "",

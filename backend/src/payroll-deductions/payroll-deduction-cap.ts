@@ -2,6 +2,11 @@ import { EntityManager } from "typeorm";
 import { returnedRows } from "../common/db/query-result";
 import { roundMoney } from "../common/round.util";
 import { deductionPeriod, DeductionPeriod } from "./payroll-deduction-period";
+import {
+  figuresForPeriod,
+  loadRulePeriods,
+  RulePeriodFigures,
+} from "./payroll-deduction-rule-periods";
 
 /**
  * The one definition of "paid", "remaining" and "capped" the posting and the
@@ -123,13 +128,18 @@ export async function queryCategoryPeriodPaid(
   };
 }
 
-/** A rule as the capping and figure helpers need it. */
+/**
+ * A rule as the capping and figure helpers need it. `yearlyMaximum` and
+ * `expectedPerPaycheque` are the rule's columns; `periods` the figures it
+ * stores per period, which win for every period they cover (spec section 11).
+ */
 export interface DeductionRuleFacts {
   id: string;
   categoryId: string;
   yearlyMaximum: number;
   resetDate: string;
   expectedPerPaycheque: number | null;
+  periods?: readonly RulePeriodFigures[] | null;
 }
 
 /** One split line as the posting payload carries it. */
@@ -185,12 +195,17 @@ export async function loadPooledPeerRules(
       [userId, [...categoryIds], scheduledTransactionId, currencyCode],
     ),
   );
+  const periods = await loadRulePeriods(
+    m,
+    rows.map((r) => r.id),
+  );
   return rows.map((r) => ({
     id: r.id,
     categoryId: r.category_id,
     yearlyMaximum: Number(r.yearly_maximum),
     resetDate: r.reset_date,
     expectedPerPaycheque: null,
+    periods: periods.get(r.id) ?? [],
   }));
 }
 
@@ -233,12 +248,12 @@ export async function applyPayrollDeductionCaps<T extends CappableSplit>(
         rule,
         ...peers.filter((p) => p.categoryId === rule.categoryId),
       ]) {
-        const paid = await paidLookup(
-          r.categoryId,
-          deductionPeriod(r.resetDate, postDate),
-          currencyCode,
-        );
-        room = Math.min(room, remainingRoom(r.yearlyMaximum, paid.paidToDate));
+        const period = deductionPeriod(r.resetDate, postDate);
+        const paid = await paidLookup(r.categoryId, period, currencyCode);
+        // The maximum of the period the posting falls in, not the one
+        // entered last (spec section 11).
+        const { yearlyMaximum } = figuresForPeriod(r, period.periodStart);
+        room = Math.min(room, remainingRoom(yearlyMaximum, paid.paidToDate));
       }
     }
     const capped = capDeductionLine(Number(split.amount), room);
@@ -254,8 +269,21 @@ export async function applyPayrollDeductionCaps<T extends CappableSplit>(
   return { splits: result, changed };
 }
 
+/** The next period's figures beside the current ones (spec section 11.4). */
+export interface PayrollDeductionNextPeriod {
+  /** The first day of the next period: the current period's `nextResetOn`. */
+  periodStart: string;
+  yearlyMaximum: number;
+  expectedPerPaycheque: number | null;
+  expectedSource: "line" | "entered" | null;
+  /** The next period has figures of its own, not the current ones carried. */
+  scheduled: boolean;
+}
+
 /** The figures a rule carries on every surface (spec section 5.3). */
 export interface PayrollDeductionFigures extends DeductionPeriod {
+  /** The current period's maximum. */
+  yearlyMaximum: number;
   paidToDate: number;
   remaining: number;
   foreignCurrencyRows: number;
@@ -263,6 +291,7 @@ export interface PayrollDeductionFigures extends DeductionPeriod {
   /** A magnitude, `null` when neither a line nor an entered value gives one. */
   expectedPerPaycheque: number | null;
   expectedSource: "line" | "entered" | null;
+  nextPeriod: PayrollDeductionNextPeriod;
 }
 
 /**
@@ -305,12 +334,35 @@ export async function resolvePayrollDeductionFigures(
 ): Promise<PayrollDeductionFigures> {
   const period = deductionPeriod(rule.resetDate, asOf);
   const paid = await paidLookup(rule.categoryId, period, currencyCode);
+  const current = figuresForPeriod(rule, period.periodStart);
+  const next = figuresForPeriod(rule, period.nextResetOn);
   return {
     ...period,
+    yearlyMaximum: current.yearlyMaximum,
     paidToDate: paid.paidToDate,
-    remaining: remainingRoom(rule.yearlyMaximum, paid.paidToDate),
+    remaining: remainingRoom(current.yearlyMaximum, paid.paidToDate),
     foreignCurrencyRows: paid.foreignCurrencyRows,
     currencyCode,
-    ...resolveExpectedPerPaycheque(rule, lines),
+    ...resolveExpectedPerPaycheque(
+      {
+        categoryId: rule.categoryId,
+        expectedPerPaycheque: current.expectedPerPaycheque,
+      },
+      lines,
+    ),
+    nextPeriod: {
+      periodStart: period.nextResetOn,
+      yearlyMaximum: next.yearlyMaximum,
+      ...resolveExpectedPerPaycheque(
+        {
+          categoryId: rule.categoryId,
+          expectedPerPaycheque: next.expectedPerPaycheque,
+        },
+        lines,
+      ),
+      scheduled:
+        next.fromPeriodStart !== null &&
+        next.fromPeriodStart > period.periodStart,
+    },
   };
 }

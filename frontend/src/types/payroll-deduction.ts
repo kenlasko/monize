@@ -13,8 +13,21 @@ export type PayrollResetPeriod = (typeof PAYROLL_RESET_PERIODS)[number];
 /** Where the expected amount came from: the bill's own line, the user, or nowhere. */
 export type ExpectedSource = 'line' | 'entered' | null;
 
+/** The next period's figures beside the current ones (spec section 11.4). */
+export interface PayrollDeductionNextPeriod {
+  /** The first day of the next period: the current period's `nextResetOn`. */
+  periodStart: string;
+  yearlyMaximum: number;
+  expectedPerPaycheque: number | null;
+  expectedSource: ExpectedSource;
+  /** The next period has figures of its own, not the current ones carried. */
+  scheduled: boolean;
+}
+
 /** The figures a rule carries on every surface (spec section 5.3). */
 export interface PayrollDeductionFigures {
+  /** The current period's maximum. */
+  yearlyMaximum: number;
   periodStart: string;
   periodEnd: string;
   nextResetOn: string;
@@ -26,6 +39,8 @@ export interface PayrollDeductionFigures {
   /** `null` when neither a line nor an entered value gives one. */
   expectedPerPaycheque: number | null;
   expectedSource: ExpectedSource;
+  /** Absent from an older backend, which kept one figure for every period. */
+  nextPeriod?: PayrollDeductionNextPeriod;
 }
 
 /** One rule as `GET /payroll-deductions` answers it. */
@@ -36,7 +51,6 @@ export interface PayrollDeductionRule extends PayrollDeductionFigures {
   scheduledTransactionName: string;
   categoryId: string;
   categoryName: string;
-  yearlyMaximum: number;
   resetPeriod: PayrollResetPeriod;
   resetDate: string;
   createdAt: string;
@@ -48,7 +62,6 @@ export interface ScheduledPayrollDeduction extends PayrollDeductionFigures {
   ruleId: string;
   categoryId: string;
   categoryName: string;
-  yearlyMaximum: number;
   /** The anchor the periods are anniversaries of; absent from an older backend. */
   resetDate?: string;
 }
@@ -73,6 +86,9 @@ export interface CreatePayrollDeductionRuleData {
   resetPeriod?: PayrollResetPeriod;
   resetDate: string;
   expectedPerPaycheque?: number | null;
+  /** The next period's maximum; `null` drops its own figures (spec section 11). */
+  nextYearlyMaximum?: number | null;
+  nextExpectedPerPaycheque?: number | null;
 }
 
 export type UpdatePayrollDeductionRuleData = Partial<CreatePayrollDeductionRuleData>;
@@ -82,6 +98,8 @@ export interface PayrollDeductionLineData {
   categoryId: string;
   yearlyMaximum: number;
   expectedPerPaycheque?: number | null;
+  nextYearlyMaximum?: number | null;
+  nextExpectedPerPaycheque?: number | null;
 }
 
 /** The most categories one batch names (`PAYROLL_BATCH_MAX_LINES` on the server). */

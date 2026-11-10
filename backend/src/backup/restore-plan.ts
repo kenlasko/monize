@@ -184,6 +184,13 @@ export const RESTORE_PLAN: ReadonlyArray<RestoreStep> = [
     scopeToUser: true,
   },
   {
+    // After `payroll_deduction_rules`, which it references (NOT NULL,
+    // ON DELETE CASCADE).
+    table: "payroll_deduction_rule_periods",
+    countKey: "payrollDeductionRulePeriods",
+    scopeToUser: true,
+  },
+  {
     table: "transaction_splits",
     countKey: "transactionSplits",
     scopeToUser: false,

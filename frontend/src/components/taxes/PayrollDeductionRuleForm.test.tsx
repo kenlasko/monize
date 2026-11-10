@@ -11,6 +11,12 @@ import {
 } from './PayrollDeductionRuleForm';
 
 vi.mock('@/lib/zodConfig', () => ({}));
+// Outside the two months before the next reset unless a test says otherwise,
+// so the next period's fields start closed (spec section 11).
+let mockToday = '2026-04-10';
+vi.mock('@/hooks/useFinancialToday', () => ({
+  useFinancialToday: () => mockToday,
+}));
 vi.mock('@/lib/logger', () => ({
   createLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
 }));
@@ -98,6 +104,7 @@ describe('PayrollDeductionRuleForm', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockToday = '2026-04-10';
     mockSuggest.mockResolvedValue({ expectedPerPaycheque: null, expectedSource: null, yearlyMaximum: null, yearlyMaximumSource: null });
   });
 
@@ -318,5 +325,113 @@ describe('PayrollDeductionRuleForm', () => {
     expect(screen.queryByRole('button', { name: /Remove category/ })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  describe('the next period (spec section 11)', () => {
+    const cppRule = (over: Partial<PayrollDeductionRule> = {}): PayrollDeductionRule => ({
+      id: 'r1',
+      userId: 'u1',
+      scheduledTransactionId: 'st-pay',
+      scheduledTransactionName: 'Paycheque',
+      categoryId: 'cat-cpp',
+      categoryName: 'CPP',
+      yearlyMaximum: 4034.1,
+      resetPeriod: 'YEARLY',
+      resetDate: '2026-01-01',
+      periodStart: '2026-01-01',
+      periodEnd: '2026-12-31',
+      nextResetOn: '2027-01-01',
+      paidToDate: 3800,
+      remaining: 234.1,
+      foreignCurrencyRows: 0,
+      currencyCode: 'CAD',
+      expectedPerPaycheque: 150,
+      expectedSource: 'entered',
+      createdAt: '',
+      updatedAt: '',
+      ...over,
+    });
+    const renderEdit = (rule: PayrollDeductionRule) =>
+      render(
+        <PayrollDeductionRuleForm
+          rule={rule}
+          scheduledTransactions={[bill()]}
+          categories={categories}
+          onSubmit={onSubmit}
+          onCancel={onCancel}
+        />,
+      );
+    const fill = (label: string, value: string) => {
+      const input = screen.getByLabelText(label);
+      fireEvent.change(input, { target: { value } });
+      fireEvent.blur(input);
+    };
+
+    it('opens in the months before the reset and sends next year apart from this year', async () => {
+      mockToday = '2026-11-10';
+      renderEdit(cppRule());
+      expect(screen.getByText(/^Next period, from/)).toBeInTheDocument();
+      fill("Next period's maximum", '4230.45');
+      fill("Next period's expected per paycheque", '160');
+      await save();
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      expect(onSubmit.mock.calls[0][0].lines).toEqual([
+        {
+          categoryId: 'cat-cpp',
+          yearlyMaximum: 4034.1,
+          expectedPerPaycheque: 150,
+          nextYearlyMaximum: 4230.45,
+          nextExpectedPerPaycheque: 160,
+        },
+      ]);
+    });
+
+    it('stays closed outside those months until asked for, and sends nothing for it on a new rule', async () => {
+      render(
+        <PayrollDeductionRuleForm scheduledTransactions={[bill()]} categories={categories} onSubmit={onSubmit} onCancel={onCancel} />,
+      );
+      expect(screen.queryByLabelText("Next period's maximum")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /^Set the figures for the next period/ }));
+      expect(screen.getByLabelText("Next period's maximum")).toBeInTheDocument();
+      await pickCategory(0, 'cat-ei');
+      fillMaximum(0, '1077.48');
+      await save();
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      expect(onSubmit.mock.calls[0][0].lines).toEqual([
+        { categoryId: 'cat-ei', yearlyMaximum: 1077.48, expectedPerPaycheque: null },
+      ]);
+    });
+
+    it('sends a next expected amount on its own, the next maximum left as this period\'s', async () => {
+      mockToday = '2026-11-10';
+      renderEdit(cppRule());
+      fill("Next period's expected per paycheque", '160');
+      await save();
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      expect(onSubmit.mock.calls[0][0].lines[0]).toMatchObject({
+        nextYearlyMaximum: null,
+        nextExpectedPerPaycheque: 160,
+      });
+    });
+
+    it("loads the next period's own figures and drops them when the maximum is cleared", async () => {
+      renderEdit(
+        cppRule({
+          nextPeriod: {
+            periodStart: '2027-01-01',
+            yearlyMaximum: 4230.45,
+            expectedPerPaycheque: 160,
+            expectedSource: 'entered',
+            scheduled: true,
+          },
+        }),
+      );
+      expect(screen.getByLabelText("Next period's maximum")).toHaveValue('4,230.45');
+      expect(screen.getByLabelText("Next period's expected per paycheque")).toHaveValue('160.00');
+      fill("Next period's maximum", '');
+      await save();
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      expect(onSubmit.mock.calls[0][0].lines[0]).toMatchObject({ nextYearlyMaximum: null });
+    });
   });
 });

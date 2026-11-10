@@ -101,6 +101,34 @@ describe("PayrollDeductionResetReminderService", () => {
     );
   });
 
+  it("names the maximum entered for the period the reset starts (spec section 11)", async () => {
+    manager.query.mockImplementation(async (sql: string) => {
+      const text = String(sql);
+      if (text.includes("FROM payroll_deduction_rule_periods")) {
+        return [
+          {
+            rule_id: RULE_ID,
+            period_start: "2027-01-01",
+            yearly_maximum: "1123.0700",
+            expected_per_paycheque: null,
+          },
+        ];
+      }
+      if (text.includes("FROM payroll_deduction_rules")) return rules;
+      if (text.includes("FROM users u")) {
+        return [
+          { user_id: USER_ID, timezone: "UTC", last_client_timezone: null },
+        ];
+      }
+      return [];
+    });
+    await service.evaluate(runAt("2026-11-10"));
+    expect(dispatch.notify.mock.calls[0][1].data).toMatchObject({
+      resetOn: "2027-01-01",
+      yearlyMaximum: 1123.07,
+    });
+  });
+
   it("writes nothing before the window opens", async () => {
     await expect(service.evaluate(runAt("2026-10-31"))).resolves.toEqual({
       written: 0,

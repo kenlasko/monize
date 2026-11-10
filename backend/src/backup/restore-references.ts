@@ -128,6 +128,7 @@ export const RESTORE_REFERENCE_COLUMNS: Readonly<
     scheduled_transaction_id: "scheduled_transactions",
     category_id: "categories",
   },
+  payroll_deduction_rule_periods: { rule_id: "payroll_deduction_rules" },
   security_prices: { security_id: "securities" },
   security_documents: { security_id: "securities" },
   holdings: { account_id: "accounts", security_id: "securities" },

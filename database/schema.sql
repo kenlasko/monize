@@ -3691,6 +3691,29 @@ CREATE TRIGGER update_payroll_deduction_rules_updated_at
   BEFORE UPDATE ON payroll_deduction_rules
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- A rule's figures per period (docs/specs/payroll-deductions.md section 11):
+-- the period starting on period_start uses the row with the greatest
+-- period_start at or before it; a rule with no such row reads its own columns.
+CREATE TABLE payroll_deduction_rule_periods (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    rule_id UUID NOT NULL REFERENCES payroll_deduction_rules(id) ON DELETE CASCADE,
+    -- The first day of the period these figures apply from.
+    period_start DATE NOT NULL,
+    yearly_maximum NUMERIC(24,8) NOT NULL CHECK (yearly_maximum >= 0),
+    -- Read only when the bill carries no split line for the category.
+    expected_per_paycheque NUMERIC(24,8) CHECK (expected_per_paycheque IS NULL OR expected_per_paycheque >= 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_payroll_deduction_rule_period UNIQUE (rule_id, period_start)
+);
+
+CREATE INDEX idx_payroll_deduction_rule_periods_user ON payroll_deduction_rule_periods(user_id);
+
+CREATE TRIGGER update_payroll_deduction_rule_periods_updated_at
+  BEFORE UPDATE ON payroll_deduction_rule_periods
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- ---------------------------------------------------------------------------
 -- Mortgage fees (docs/specs/mortgage-fees.md): insurance, tax or other fees
 -- collected with a mortgage payment. Each is a category line of the payment
@@ -3896,6 +3919,7 @@ DECLARE
         'payee_aliases',
         'payee_lookup_settings',
         'payee_lookup_usage',
+        'payroll_deduction_rule_periods',
         'payroll_deduction_rules',
         'push_subscriptions',
         'scheduled_transactions',

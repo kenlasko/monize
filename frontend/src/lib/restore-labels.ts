@@ -53,6 +53,7 @@ export const RESTORE_LABELS: Record<string, string | { translationKey: string }>
   institutions: 'Institutions',
   scheduledTransactionPostings: 'Scheduled Transaction Postings',
   payrollDeductionRules: 'Payroll Deduction Rules',
+  payrollDeductionRulePeriods: 'Payroll Deduction Rule Periods',
   securityDocuments: 'Security Documents',
   transactionAttachments: 'Transaction Attachments',
   attachmentBlobs: 'Attachment Files',

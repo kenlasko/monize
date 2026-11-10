@@ -112,6 +112,8 @@ export function ParserEditorDialog({
       isOpen
       onClose={onClose}
       maxWidth="3xl"
+      // 3xl (48rem) plus a quarter, for the profile's field rows.
+      className="!max-w-[60rem]"
       padding="md"
       pushHistory
       title={parser ? t('editTitle') : t('createTitle')}

@@ -138,7 +138,8 @@ start again at the next year's figure.
 
 - **INV-PAYROLL-001 (a rule never writes the ledger).** The module reads
   `transactions` and `transaction_splits` and writes only
-  `payroll_deduction_rules`; changing a rule changes no posted row. Held by
+  `payroll_deduction_rules` and `payroll_deduction_rule_periods` (section
+  11); changing a rule changes no posted row. Held by
   the source guard `payroll-deductions.guard.spec.ts`.
 - **INV-PAYROLL-002 (the cap is decided under the posting lock).** The
   year-to-date figure that caps a line is read inside the posting transaction
@@ -343,3 +344,116 @@ history range, the closed-period maximum, the maximum-reached date, the
 cross-currency total, money summed without float drift),
 `PayrollDeductionsReport.test.tsx` (the three sections, the year picker,
 the empty and error states, the CSV export).
+
+## 11. Figures per period
+
+Written from the maintainer's request of 2026-11-10. In November the
+maximum for the coming year was entered on the rule. A rule stored a single
+`yearly_maximum`, so the figure moved the current period's room, the
+year-to-date table and the report's percentage as soon as it was saved, and
+the forecast refilled the next period with it as well. A rule now keeps its
+figures per period, and the current period and the next one are edited
+separately.
+
+1. **What a period's figures are.** The table `payroll_deduction_rule_periods`
+   holds one row per rule and period start: the maximum and the entered
+   expected amount that period uses. The figures of the period starting on
+   `P` are those of the rule's row with the greatest `period_start <= P`
+   (`figuresForPeriod`), so a period with no row of its own carries the
+   previous figures forward, as a rule did before. When the rule has no row
+   at or before `P`, the rule's own columns answer (rules created before
+   this section have none until they are next edited). Those columns hold
+   the figures last entered for a current period, never a next period's.
+2. **Recorded or carried.** A period whose figures come from a row is
+   *recorded*. The report shows a closed period's maximum, room, percentage
+   and the date the maximum was reached only when every rule on the category
+   is recorded for it. A closed period that falls back to the rule's columns
+   still reads "Not recorded" (section 10.4): those columns hold today's
+   figure, not that year's.
+3. **Writing.** Creating a rule writes its columns and a row for the current
+   period. Every edit writes the current period's row (an upsert on
+   `(rule_id, period_start)`) and the rule's columns, both from the same
+   period, so the columns never hold one period's maximum beside another's
+   expected amount. The next period's row starts on the current period's
+   `nextResetOn`. `nextYearlyMaximum` and `nextExpectedPerPaycheque` write it.
+   An empty one, `null` or `""` (read as `null`), means "this period's
+   figure", and an absent one keeps the next period's own figure when it
+   has one. When both come out as this period's figures with the maximum
+   cleared, every row after the current period's start is deleted instead,
+   and the next period carries the current figures. A changed reset date
+   moves the figures: the rows after the new current period's start (on the
+   old anniversaries) are deleted, and the current and next periods' figures,
+   read under the old reset, are written on the new ones. Every check that
+   refuses a request, including a missing expected amount for the next
+   period on a bill with no line, runs before the first write in the rule's
+   `withScopedDb` transaction. A closed period's row is never written.
+4. **Who reads which period.** The posting caps against the figures of the
+   period containing the posting date (INV-PAYROLL-002). The page, the
+   year-to-date table and the read model report the period containing
+   today, and `nextPeriod` beside it: `periodStart`, `yearlyMaximum`,
+   `expectedPerPaycheque`, `expectedSource` and `scheduled` (whether the next
+   period has a row of its own). The forecast refills a pool at the reset
+   with the lowest `nextPeriod.yearlyMaximum` among the category's rules, and
+   from that reset each bill spends its `nextPeriod.expectedPerPaycheque`; a
+   rule with a positive expected figure in either period is projected.
+   Periods after the next carry the next period's figures. The reminder
+   (decision 8) names the next period's maximum. The report reads each
+   period's own figures (item 2).
+5. **The form.** Editing shows "This period" (with its dates) and "Next period
+   (from the reset date)" for the maximum and, where the bill has no line,
+   the expected amount. An empty next maximum means "same as this period". In
+   the two months before a reset, the window the reminder opens, the next
+   period's fields are expanded; outside them they sit behind a "Set next
+   period's figures" toggle. The rule list shows the next period's maximum
+   under the current one when it differs.
+
+### 11.1 Table `payroll_deduction_rule_periods`
+
+```
+id                       UUID PK
+user_id                  UUID NOT NULL -> users ON DELETE CASCADE
+rule_id                  UUID NOT NULL -> payroll_deduction_rules ON DELETE CASCADE
+period_start             DATE NOT NULL
+yearly_maximum           NUMERIC(24,8) NOT NULL CHECK (>= 0)
+expected_per_paycheque   NUMERIC(24,8) NULL CHECK (IS NULL OR >= 0)
+created_at, updated_at   TIMESTAMPTZ
+UNIQUE (rule_id, period_start)
+```
+
+Direct RLS policy on `user_id`. Exported in the portable backup after
+`payroll_deduction_rules`; every column `keep` in the support backup, the
+amounts `scale`. INV-PAYROLL-001 now reads "writes only
+`payroll_deduction_rules` and `payroll_deduction_rule_periods`".
+
+### 11.2 Truth table D: which figures a period uses
+
+Rule columns 1,000; rows at 2026-01-01 (1,100) and 2027-01-01 (1,200).
+
+| period start | figure | recorded |
+|---|---|---|
+| 2025-01-01 | 1,000 (columns) | no |
+| 2026-01-01 | 1,100 | yes |
+| 2027-01-01 | 1,200 | yes |
+| 2028-01-01 | 1,200 (carried) | yes |
+
+### 11.3 Numerical example
+
+CPP, 2026 maximum 4,034.10, paid so far 3,800.00 on 2026-11-10, 2027
+maximum entered as 4,230.45. The page reads remaining 234.10 and 94.2% for
+2026. The forecast spends the 234.10 in December and refills to 4,230.45 on
+2027-01-01. Before this section, saving 4,230.45 showed remaining 430.45 and
+89.8% for 2026.
+
+### 11.4 Tests
+
+- Pure: `figuresForPeriod` (table D), the report's recorded closed period
+  and its not-recorded one.
+- Service: an edit writes the current period's row and the columns; a next
+  maximum writes the next period's row and leaves the current figures alone;
+  `null` deletes it; a next period on a line-less bill with no expected
+  figure anywhere is refused before any write.
+- Posting: a post dated in the next period caps against the next row.
+- Forecast: the refill uses the next maximum; the next expected figure is
+  spent from the reset.
+- Form: editing sends the next fields; clearing the next maximum sends
+  `null`.

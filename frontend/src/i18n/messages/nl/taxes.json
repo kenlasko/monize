@@ -40,6 +40,7 @@
       "bill": "Rekening",
       "category": "Categorie",
       "yearlyMaximum": "Jaarmaximum",
+      "nextMaximum": "Vanaf {date}: {amount}",
       "resetsOn": "Reset op",
       "perPaycheque": "Per loonstrook",
       "period": "Periode",
@@ -71,6 +72,14 @@
       "expectedHelp": "De regel van de transactie voor deze categorie is nul, dus de prognose heeft het bedrag nodig dat elke loonstrook gewoonlijk inhoudt.",
       "expectedFromLine": "De regel van de rekening houdt {amount} per loonstrook in.",
       "expectedSuggested": "Voorgesteld op basis van het bedrag dat uw transacties in deze categorie het afgelopen jaar het vaakst tonen.",
+      "thisPeriod": "Deze periode, {start} tot {end}",
+      "nextPeriod": "Volgende periode, vanaf {date}",
+      "setNextPeriod": "Bedragen voor de volgende periode instellen, vanaf {date}",
+      "nextYearlyMaximumLabel": "Maximum volgende periode",
+      "nextYearlyMaximumHelp": "Het maximum vanaf de volgende reset. Laat leeg om het maximum van deze periode te houden. De resterende ruimte en het percentage van deze periode veranderen niet.",
+      "nextExpectedLabel": "Verwacht per loonstrook in de volgende periode",
+      "nextExpectedHelp": "Het bedrag dat elke loonstrook vanaf de volgende reset inhoudt. Laat leeg om het bedrag van deze periode te houden.",
+      "sameAsThisPeriod": "Gelijk aan deze periode",
       "periods": {
         "YEARLY": "Jaarlijks"
       },

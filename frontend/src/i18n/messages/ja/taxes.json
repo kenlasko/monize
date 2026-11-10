@@ -40,6 +40,7 @@
       "bill": "請求",
       "category": "カテゴリ",
       "yearlyMaximum": "年間上限額",
+      "nextMaximum": "{date} から: {amount}",
       "resetsOn": "リセット日",
       "perPaycheque": "給与ごと",
       "period": "期間",
@@ -71,6 +72,14 @@
       "expectedHelp": "このカテゴリの取引行はゼロのため、予測には各給与で通常控除される金額が必要です。",
       "expectedFromLine": "請求の行は給与ごとに {amount} を控除します。",
       "expectedSuggested": "過去1年間にこのカテゴリの取引で最も多く見られた金額から提案しています。",
+      "thisPeriod": "今期間、{start} から {end}",
+      "nextPeriod": "次の期間、{date} から",
+      "setNextPeriod": "{date} からの次の期間の金額を設定",
+      "nextYearlyMaximumLabel": "次の期間の上限額",
+      "nextYearlyMaximumHelp": "次のリセット以降の上限額です。空欄にすると今期間の上限額を引き継ぎます。今期間の残額と割合は変わりません。",
+      "nextExpectedLabel": "次の期間の給与ごとの予定額",
+      "nextExpectedHelp": "次のリセット以降、各給与から控除される金額です。空欄にすると今期間の金額を引き継ぎます。",
+      "sameAsThisPeriod": "今期間と同じ",
       "periods": {
         "YEARLY": "毎年"
       },

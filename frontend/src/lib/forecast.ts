@@ -1,3 +1,4 @@
+import { anniversaryInYear } from '@/lib/payroll-period';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
@@ -259,15 +260,9 @@ interface OverrideLookup {
   investmentForecastAmount?: number | null;
 }
 
-/** `ymd` one year on, the day clamped to the month (a leap day becomes the 28th). */
-function advanceOneYear(ymd: string): string {
-  const [y, m, d] = ymd.split('-').map(Number);
-  const lastDay = new Date(y + 1, m, 0).getDate();
-  return `${y + 1}-${String(m).padStart(2, '0')}-${String(Math.min(d, lastDay)).padStart(2, '0')}`;
-}
-
 interface DeductionPool {
-  maximum: number;
+  /** The maximum the pool refills to at the next reset, and every one after it. */
+  nextMaximum: number;
   remaining: number;
   nextResetOn: string;
   /** The current period's first day: an occurrence before it belongs to a closed period. */
@@ -278,33 +273,48 @@ interface DeductionPool {
 
 /**
  * The anniversary of `resetDate`'s month and day in the year after `after`,
- * the day clamped to the month, so a leap-day anchor returns to the 29th in
- * a leap year as the server's `anniversaryInYear` does. Without the anchor
- * the previous reset is stepped one year, which keeps a clamped day clamped.
+ * the day clamped to the month (`anniversaryInYear`), so a leap-day anchor
+ * returns to the 29th in a leap year as the server's does. Without the
+ * anchor the previous reset is stepped one year, which keeps a clamped day
+ * clamped.
  */
 function nextAnniversary(resetDate: string | undefined, after: string): string {
-  if (!resetDate) return advanceOneYear(after);
-  const [, m, d] = resetDate.split('-').map(Number);
-  const year = Number(after.slice(0, 4)) + 1;
-  const lastDay = new Date(year, m, 0).getDate();
-  return `${year}-${String(m).padStart(2, '0')}-${String(Math.min(d, lastDay)).padStart(2, '0')}`;
+  return anniversaryInYear(resetDate ?? after, Number(after.slice(0, 4)) + 1);
 }
 
-/** A bill's rules the projection can spend: those with a positive expected figure. */
+/** A positive expected figure, else `null`. */
+const positiveFigure = (value: number | null | undefined) =>
+  value != null && Number(value) > 0 ? Number(value) : null;
+
+/**
+ * A bill's rules the projection can spend: those with a positive expected
+ * figure this period or next (spec section 11), so a deduction that starts
+ * only at the reset is still projected from it.
+ */
 function spendableRules(transaction: ScheduledTransaction) {
   return (transaction.payrollDeductions ?? [])
-    .filter(r => r.expectedPerPaycheque != null && Number(r.expectedPerPaycheque) > 0)
+    .filter(
+      r =>
+        positiveFigure(r.expectedPerPaycheque) !== null ||
+        positiveFigure(r.nextPeriod?.expectedPerPaycheque) !== null,
+    )
     .map(r => ({
       key: `${r.categoryId}|${r.currencyCode}`,
       // The rule's money precision: its currency's (a payroll bill is fiat,
       // so four, as it has always been).
       decimals: moneyDecimalsForCurrency(r.currencyCode),
       categoryId: r.categoryId,
-      expected: Number(r.expectedPerPaycheque),
+      expected: positiveFigure(r.expectedPerPaycheque) ?? 0,
+      // From the reset on, the next period's figure (spec section 11); an
+      // older read model kept one figure for every period.
+      nextExpected:
+        r.nextPeriod?.expectedPerPaycheque != null
+          ? Number(r.nextPeriod.expectedPerPaycheque)
+          : (positiveFigure(r.expectedPerPaycheque) ?? 0),
       // What the template already deducts for the category: its own line, or
       // nothing when the figure was entered because the line is absent or zero.
-      lineAmount: r.expectedSource === 'line' ? Number(r.expectedPerPaycheque) : 0,
-      maximum: Number(r.yearlyMaximum),
+      lineAmount: r.expectedSource === 'line' ? (positiveFigure(r.expectedPerPaycheque) ?? 0) : 0,
+      nextMaximum: Number(r.nextPeriod?.yearlyMaximum ?? r.yearlyMaximum),
       remaining: Number(r.remaining),
       nextResetOn: r.nextResetOn,
       periodStart: r.periodStart,
@@ -328,14 +338,14 @@ function buildDeductionPools(transactions: ScheduledTransaction[]): Map<string, 
       const pool = pools.get(rule.key);
       if (!pool) {
         pools.set(rule.key, {
-          maximum: rule.maximum,
+          nextMaximum: rule.nextMaximum,
           remaining: rule.remaining,
           nextResetOn: rule.nextResetOn,
           periodStart: rule.periodStart,
           resetDate: rule.resetDate,
         });
       } else {
-        pool.maximum = Math.min(pool.maximum, rule.maximum);
+        pool.nextMaximum = Math.min(pool.nextMaximum, rule.nextMaximum);
         pool.remaining = Math.min(pool.remaining, rule.remaining);
         if (rule.periodStart < pool.periodStart) pool.periodStart = rule.periodStart;
         if (rule.nextResetOn < pool.nextResetOn) {
@@ -362,8 +372,9 @@ function buildDeductionPools(transactions: ScheduledTransaction[]): Map<string, 
  * reset and drops by the deduction from the first paycheque after it, and a
  * bill whose line still deducts rises by what the room cannot cover. An
  * override that states its amount is projected as stated and still spends.
- * An occurrence on or after the reset date refills the pool to the maximum
- * first; one dated inside a closed period (an overdue paycheque from before
+ * An occurrence on or after the reset date refills the pool to the next
+ * period's maximum first, and spends the next period's expected figure
+ * (spec section 11); one dated inside a closed period (an overdue paycheque from before
  * the current period) neither spends the pool nor changes. A rule with no
  * expected figure projects nothing, and a bill without rules walks
  * unchanged. Mutates the occurrences in place.
@@ -404,10 +415,11 @@ function spendPayrollDeductions(
         continue;
       }
       while (dateKey >= pool.nextResetOn) {
-        pool.remaining = pool.maximum;
+        pool.remaining = pool.nextMaximum;
         pool.nextResetOn = nextAnniversary(pool.resetDate, pool.nextResetOn);
       }
-      const applied = Math.min(rule.expected, Math.max(0, pool.remaining));
+      const expected = dateKey >= rule.nextResetOn ? rule.nextExpected : rule.expected;
+      const applied = Math.min(expected, Math.max(0, pool.remaining));
       pool.remaining = roundMoney(pool.remaining - applied, rule.decimals);
       deductions.push({ categoryId: rule.categoryId, deducted: roundMoney(applied, rule.decimals) });
       if (!occurrence.stated) delta += rule.lineAmount - applied;

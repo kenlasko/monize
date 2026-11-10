@@ -40,6 +40,7 @@
       "bill": "Fatura",
       "category": "Categoria",
       "yearlyMaximum": "Máximo anual",
+      "nextMaximum": "A partir de {date}: {amount}",
       "resetsOn": "Reinicia em",
       "perPaycheque": "Por salário",
       "period": "Período",
@@ -71,6 +72,14 @@
       "expectedHelp": "A linha da transação para esta categoria é zero, então a previsão precisa do valor que cada salário costuma deduzir.",
       "expectedFromLine": "A linha da fatura deduz {amount} por salário.",
       "expectedSuggested": "Sugerido a partir do valor que suas transações nesta categoria mostram com mais frequência no último ano.",
+      "thisPeriod": "Este período, {start} a {end}",
+      "nextPeriod": "Próximo período, a partir de {date}",
+      "setNextPeriod": "Definir os valores do próximo período, a partir de {date}",
+      "nextYearlyMaximumLabel": "Máximo do próximo período",
+      "nextYearlyMaximumHelp": "O máximo a partir da próxima redefinição. Deixe vazio para manter o máximo deste período. A margem e a porcentagem deste período não mudam.",
+      "nextExpectedLabel": "Previsto por salário no próximo período",
+      "nextExpectedHelp": "O valor que cada salário desconta a partir da próxima redefinição. Deixe vazio para manter o valor deste período.",
+      "sameAsThisPeriod": "Igual a este período",
       "periods": {
         "YEARLY": "Anual"
       },

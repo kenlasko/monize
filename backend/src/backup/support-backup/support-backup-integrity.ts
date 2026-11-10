@@ -68,6 +68,14 @@ const REFS: Record<string, RefRule[]> = withSharedSupportRefs({
     },
     { column: "category_id", refTable: "categories", onMissing: "dropRow" },
   ],
+  // A rule's figures per period cannot outlive the rule (NOT NULL, CASCADE).
+  payroll_deduction_rule_periods: [
+    {
+      column: "rule_id",
+      refTable: "payroll_deduction_rules",
+      onMissing: "dropRow",
+    },
+  ],
   // transaction_attachments.transaction_id is a real FK (the entity models the
   // relation) between two fully-exported tables, so the coverage guard requires
   // it here even though the de-identified support backup excludes the table. A
