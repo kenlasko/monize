@@ -624,7 +624,15 @@ const manageTransactionSplitSchema = z.object({
   categoryName: z.string().min(1).max(100),
   amount: amountSchema,
   memo: z.string().max(TRANSACTION_NOTE_MAX_LENGTH).optional(),
+  // update: the existing line this one continues, whose tags it keeps.
+  splitId: z.string().uuid().optional(),
 });
+
+/** Most tag names one `manage_transactions` row may add or remove. */
+const MAX_ROW_TAG_NAMES = 20;
+const tagNameListSchema = z
+  .array(z.string().trim().min(1).max(100))
+  .max(MAX_ROW_TAG_NAMES);
 
 /** Largest split set a single transaction row may carry through the tool. */
 const MAX_SPLIT_LINES = 50;
@@ -654,6 +662,9 @@ const manageTransactionItemSchema = z
       .array(manageTransactionSplitSchema)
       .max(MAX_SPLIT_LINES)
       .optional(),
+    // update: tags added and removed; the transaction's other tags stay.
+    addTagNames: tagNameListSchema.optional(),
+    removeTagNames: tagNameListSchema.optional(),
     // Chat attachments to save on the transaction: each entry names a file on
     // the CURRENT message by filename (string) or 1-based position (number).
     attachments: z
@@ -685,6 +696,21 @@ export const manageTransactionsSchema = z
       // cannot also be a transfer or name a top-level category.
       const hasSplits = item.splits !== undefined;
       const hasAttachments = item.attachments !== undefined;
+      const hasTags =
+        (item.addTagNames?.length ?? 0) > 0 ||
+        (item.removeTagNames?.length ?? 0) > 0;
+      if (
+        value.operation !== "update" &&
+        (item.addTagNames !== undefined || item.removeTagNames !== undefined)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: path(
+            item.addTagNames !== undefined ? "addTagNames" : "removeTagNames",
+          ),
+          message: "addTagNames and removeTagNames are used only with update.",
+        });
+      }
       if (hasAttachments) {
         if (
           item.toAccountName !== undefined ||
@@ -801,13 +827,14 @@ export const manageTransactionsSchema = z
           item.categoryName !== undefined ||
           item.description !== undefined ||
           hasSplits ||
-          hasAttachments;
+          hasAttachments ||
+          hasTags;
         if (!hasChange) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: path("transactionId"),
             message:
-              "Provide at least one field to change (amount, date, payeeName, categoryName, description, splits, or attachments).",
+              "Provide at least one field to change (amount, date, payeeName, categoryName, description, splits, attachments, addTagNames or removeTagNames).",
           });
         }
       } else {
@@ -833,9 +860,13 @@ export const manageTransactionsSchema = z
  * A category line as `manage_transactions` takes it, with the amount read the
  * tolerant way (`"-20"` from a hand-written tool call is -20, `""` is refused).
  */
-const reviewSplitLineSchema = manageTransactionSplitSchema.extend({
-  amount: numberArg(amountSchema),
-});
+const reviewSplitLineSchema = manageTransactionSplitSchema
+  // A proposal's lines keep their tags by category; `splitId` is an editing
+  // aid of the chat's update only.
+  .omit({ splitId: true })
+  .extend({
+    amount: numberArg(amountSchema),
+  });
 
 export const aiReviewRequestsFields = z.object({
   operation: z.enum(AI_REVIEW_OPERATIONS),

@@ -190,6 +190,21 @@ function contactSummary(preview: {
   return parts.length ? `, ${parts.join(", ")}` : "";
 }
 
+/** The tag change an edit card makes, as a clause of the tool's summary. */
+function tagSummarySuffix(change: {
+  tagNames?: string[];
+  removeTagNames?: string[];
+}): string {
+  return (
+    (change.tagNames?.length
+      ? `, adding the tag${change.tagNames.length === 1 ? "" : "s"} ${change.tagNames.map((n) => `"${n}"`).join(", ")}`
+      : "") +
+    (change.removeTagNames?.length
+      ? `, removing the tag${change.removeTagNames.length === 1 ? "" : "s"} ${change.removeTagNames.map((n) => `"${n}"`).join(", ")}`
+      : "")
+  );
+}
+
 @Injectable()
 export class ToolExecutorService {
   private readonly logger = new Logger(ToolExecutorService.name);
@@ -777,6 +792,8 @@ export class ToolExecutorService {
       description: item.description as string | undefined,
       createPayeeIfMissing: item.createPayeeIfMissing as boolean | undefined,
       splits: item.splits as SplitLineInput[] | undefined,
+      tagNames: item.addTagNames as string[] | undefined,
+      removeTagNames: item.removeTagNames as string[] | undefined,
     };
   }
 
@@ -959,7 +976,7 @@ export class ToolExecutorService {
           );
           return {
             data: PENDING_ACTION_TOOL_RESULT,
-            summary: `Prepared an update to the transfer (${result.preview.amount} ${result.preview.fromCurrencyCode}) from ${result.preview.fromAccountName} to ${result.preview.toAccountName}${result.preview.categoryName ? `, categorized as "${result.preview.categoryName}"` : ""}. Awaiting user confirmation.`,
+            summary: `Prepared an update to the transfer (${result.preview.amount} ${result.preview.fromCurrencyCode}) from ${result.preview.fromAccountName} to ${result.preview.toAccountName}${result.preview.categoryName ? `, categorized as "${result.preview.categoryName}"` : ""}${tagSummarySuffix(result.preview)}. Awaiting user confirmation.`,
             sources: [],
             pendingAction,
           };
@@ -977,7 +994,9 @@ export class ToolExecutorService {
           result.splits,
           attachmentRefs,
         );
-        const attachmentNote = this.attachmentSummarySuffix(attachmentRefs);
+        const attachmentNote =
+          this.attachmentSummarySuffix(attachmentRefs) +
+          tagSummarySuffix(result.preview);
         const summary = result.splits
           ? `Prepared an update to the transaction in ${result.preview.accountName} (${result.preview.amount} ${result.preview.currencyCode}) dated ${result.preview.transactionDate}, replacing its splits with ${result.splits.length} categories${attachmentNote}. Awaiting user confirmation.`
           : `Prepared an update to the transaction in ${result.preview.accountName} (${result.preview.amount} ${result.preview.currencyCode}) dated ${result.preview.transactionDate}${attachmentNote}.${result.preview.payeeWillBeCreated ? ` A new payee "${result.preview.payeeName}" will be created on approval.` : ""} Awaiting user confirmation.`;

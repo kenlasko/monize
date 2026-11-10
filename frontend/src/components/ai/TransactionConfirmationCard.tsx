@@ -81,6 +81,24 @@ export function TransactionConfirmationCard({
 
   const none = t('confirmAction.none');
   const rows: Array<{ label: string; value: string }> = [];
+  // The tags an edit adds (a name the user has no tag for yet is marked new)
+  // and removes; the transaction keeps every other tag it carries.
+  const pushTagChange = () => {
+    if (preview.tagNames && preview.tagNames.length > 0)
+      rows.push({
+        label: t('confirmAction.addTags'),
+        value: preview.tagNames
+          .map((name) =>
+            preview.newTagNames?.includes(name) ? `${name} ${t('confirmAction.newTag')}` : name,
+          )
+          .join(', '),
+      });
+    if (preview.removeTagNames && preview.removeTagNames.length > 0)
+      rows.push({
+        label: t('confirmAction.removeTags'),
+        value: preview.removeTagNames.join(', '),
+      });
+  };
 
   if (isCashTxType) {
     if (preview.accountName)
@@ -110,11 +128,15 @@ export function TransactionConfirmationCard({
         const category =
           (split.categoryName || none) +
           (split.categorySource === 'ai' ? ` (${t('confirmAction.aiCategory')})` : '');
+        const line = split.memo
+          ? `${category}: ${formatCurrency(split.amount, preview.currencyCode)} (${split.memo})`
+          : `${category}: ${formatCurrency(split.amount, preview.currencyCode)}`;
         rows.push({
           label,
-          value: split.memo
-            ? `${category}: ${formatCurrency(split.amount, preview.currencyCode)} (${split.memo})`
-            : `${category}: ${formatCurrency(split.amount, preview.currencyCode)}`,
+          value:
+            split.tagNames && split.tagNames.length > 0
+              ? `${line} · ${t('confirmAction.splitLineTags', { tags: split.tagNames.join(', ') })}`
+              : line,
         });
       });
     } else {
@@ -136,16 +158,7 @@ export function TransactionConfirmationCard({
         label: t('confirmAction.referenceNumber'),
         value: preview.referenceNumber,
       });
-    // Tags the approval adds (the transaction keeps its own); a name the user has no tag for yet is marked new.
-    if (preview.tagNames && preview.tagNames.length > 0)
-      rows.push({
-        label: t('confirmAction.tags'),
-        value: preview.tagNames
-          .map((name) =>
-            preview.newTagNames?.includes(name) ? `${name} ${t('confirmAction.newTag')}` : name,
-          )
-          .join(', '),
-      });
+    pushTagChange();
     // Files the approval will save as transaction attachments.
     if (preview.attachments && preview.attachments.length > 0) {
       preview.attachments.forEach((attachment, i) => {
@@ -323,6 +336,7 @@ export function TransactionConfirmationCard({
         label: t('confirmAction.description'),
         value: preview.description,
       });
+    pushTagChange();
   } else if (type === 'delete_security') {
     if (preview.symbol)
       rows.push({ label: t('confirmAction.symbol'), value: preview.symbol });

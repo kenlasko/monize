@@ -116,11 +116,18 @@ import { McpServerService } from "./mcp-server.service";
 // report_progress -68, list_accounts -49, get_portfolio_summary -47,
 // get_next_prompt -23, manage_securities -19. Their caps came down with them.
 // Total unchanged at 64,595 (64,580 measured).
+//
+// Raised, as a reviewed decision (MCP tag tools, issue #2094; the owner chose
+// to raise the total by the measured bytes, as for list_warranties):
+// `manage_transactions` takes `addTagNames` and `removeTagNames` on an update
+// and a `splitId` on a split line, whose tags it keeps, with one sentence in
+// the description. 5,592 -> 6,102 bytes measured (+510); cap 5,600 -> 6,110;
+// total 64,595 -> 65,105 (65,090 measured, the 15-byte margin kept).
 const TOOL_BYTE_BUDGET: Record<string, number> = {
   list_accounts: 2360,
   list_transactions: 3550,
   compare_periods: 1900,
-  manage_transactions: 5600,
+  manage_transactions: 6110,
   list_categories: 1200,
   list_payees: 2010,
   manage_payees: 2860,
@@ -146,7 +153,7 @@ const TOOL_BYTE_BUDGET: Record<string, number> = {
   report_progress: 1140,
 };
 
-const TOTAL_BYTE_BUDGET = 64_595;
+const TOTAL_BYTE_BUDGET = 65_105;
 const INSTRUCTIONS_BYTE_BUDGET = 2_600;
 
 /**

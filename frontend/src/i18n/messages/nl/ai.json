@@ -235,7 +235,6 @@
       "aiReview": "{count, plural, one {# AI-controleverzoek in de wachtrij zetten} other {# AI-controleverzoeken in de wachtrij zetten}}"
     },
     "aiCategory": "voorgesteld door AI",
-    "tags": "Tags",
     "newTag": "(nieuwe tag)",
     "marksPaidDue": "{name} (vervalt op {date})"
   },

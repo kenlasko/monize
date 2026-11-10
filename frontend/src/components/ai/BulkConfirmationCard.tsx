@@ -262,9 +262,32 @@ export function BulkConfirmationCard({
               `${split.categoryName ?? t('confirmAction.uncategorized')} ${formatCurrency(
                 split.amount,
                 row.currencyCode,
-              )}`,
+              )}${
+                split.tagNames && split.tagNames.length > 0
+                  ? ` (${t('confirmAction.splitLineTags', { tags: split.tagNames.join(', ') })})`
+                  : ''
+              }`,
           )
           .join(' + '),
+      );
+    }
+    // The tags the row adds and removes; its other tags stay.
+    if (row.tagNames && row.tagNames.length > 0) {
+      parts.push(
+        t('confirmAction.bulkTagsAdded', {
+          tags: row.tagNames
+            .map((name) =>
+              row.newTagNames?.includes(name) ? `${name} ${t('confirmAction.newTag')}` : name,
+            )
+            .join(', '),
+        }),
+      );
+    }
+    if (row.removeTagNames && row.removeTagNames.length > 0) {
+      parts.push(
+        t('confirmAction.bulkTagsRemoved', {
+          tags: row.removeTagNames.join(', '),
+        }),
       );
     }
     return { primary, secondary: parts.join(' · ') };

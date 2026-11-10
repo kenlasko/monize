@@ -235,7 +235,6 @@
       "aiReview": "{count, plural, one {Metti in coda # richiesta di revisione dell'IA} other {Metti in coda # richieste di revisione dell'IA}}"
     },
     "aiCategory": "suggerita dall'IA",
-    "tags": "Tag",
     "newTag": "(nuovo tag)",
     "marksPaidDue": "{name} (scadenza {date})"
   },

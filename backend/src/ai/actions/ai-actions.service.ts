@@ -79,6 +79,10 @@ import {
   AttachmentRefDescriptor,
   toSplitDtoRows,
 } from "./ai-action.types";
+import {
+  updateTransactionCommitArgs,
+  updateTransferCommitArgs,
+} from "./edit-commit-args";
 import { CreateTransferDto } from "../../transactions/dto/create-transfer.dto";
 import { UpdateTransferDto } from "../../transactions/dto/update-transfer.dto";
 import { BulkCreateSkip } from "../../common/bulk-create.types";
@@ -503,20 +507,14 @@ export class AiActionsService {
     descriptor: UpdateTransferDescriptor,
   ): Promise<ConfirmActionResult> {
     const payeeId = await this.resolveTransferPayeeId(userId, descriptor);
-    const dto = await this.toValidatedDto(UpdateTransferDto, {
-      amount: descriptor.amount,
-      transactionDate: descriptor.transactionDate,
-      exchangeRate: descriptor.exchangeRate,
-      toAmount: descriptor.toAmount,
-      description: descriptor.description ?? undefined,
-      payeeId,
-      payeeName: descriptor.payeeName ?? undefined,
-      categoryId: descriptor.categoryId,
-    });
+    const args = updateTransferCommitArgs(descriptor, payeeId);
+    const dto = await this.toValidatedDto(UpdateTransferDto, args.dto);
     const result = await this.transactionsService.updateTransfer(
       userId,
       descriptor.transactionId,
       dto,
+      undefined,
+      args.tagChange,
     );
     return { type: "update_transfer", id: result.fromTransaction.id };
   }
@@ -587,25 +585,16 @@ export class AiActionsService {
     switch (operation) {
       case "update": {
         const r = row as BatchUpdateTransactionRow;
-        const dto = await this.toValidatedDto(UpdateTransactionDto, {
-          accountId: r.accountId,
-          transactionDate: r.transactionDate,
-          amount: r.amount,
-          currencyCode: r.currencyCode,
-          payeeId: r.payeeId ?? undefined,
-          payeeName: r.payeeName ?? undefined,
-          // A row replacing a split set carries its categories in `splits`;
-          // the parent holds none. Same rule as the singular descriptor, and
-          // the splits ride in the SAME dto so the row commits once.
-          categoryId: r.splits ? undefined : (r.categoryId ?? undefined),
-          description: r.description ?? undefined,
-          splits: r.splits ? toSplitDtoRows(r.splits) : undefined,
-        });
+        // A row replacing a split set carries its categories in `splits`; the
+        // parent holds none. Same mapping as the singular descriptor, and the
+        // splits ride in the SAME dto so the row commits once.
+        const args = updateTransactionCommitArgs(r);
+        const dto = await this.toValidatedDto(UpdateTransactionDto, args.dto);
         const transaction = await this.transactionsService.update(
           userId,
           r.transactionId,
           dto,
-          { createPayeeIfMissing: r.createPayee === true },
+          args.options,
         );
         return transaction.id;
       }
@@ -770,27 +759,8 @@ export class AiActionsService {
       userId,
       descriptor.attachments,
     );
-    const dto = await this.toValidatedDto(UpdateTransactionDto, {
-      accountId: descriptor.accountId,
-      transactionDate: descriptor.transactionDate,
-      amount: descriptor.amount,
-      currencyCode: descriptor.currencyCode,
-      payeeId: descriptor.payeeId ?? undefined,
-      payeeName: descriptor.payeeName ?? undefined,
-      // When replacing the split set the parent keeps no single category.
-      categoryId: descriptor.splits
-        ? undefined
-        : (descriptor.categoryId ?? undefined),
-      description: descriptor.description ?? undefined,
-      // Only when the card sets one: a key present but undefined would clear it.
-      ...(descriptor.referenceNumber === undefined
-        ? {}
-        : { referenceNumber: descriptor.referenceNumber }),
-      // Splits ride inside the same DTO so update() rebuilds the set in the
-      // same transaction, under the same row lock, as the scalar fields
-      // (invariant I1) -- never as a separate follow-up write.
-      splits: descriptor.splits ? toSplitDtoRows(descriptor.splits) : undefined,
-    });
+    const args = updateTransactionCommitArgs(descriptor);
+    const dto = await this.toValidatedDto(UpdateTransactionDto, args.dto);
     // An edit that answers an AI review request marks it applied in the write's
     // own transaction, under the row lock and before anything is written: a
     // request that was dismissed or expired since the card was built refuses the
@@ -801,10 +771,7 @@ export class AiActionsService {
       descriptor.transactionId,
       dto,
       {
-        createPayeeIfMissing: descriptor.createPayee === true,
-        ...(descriptor.tagNames?.length
-          ? { addTagNames: descriptor.tagNames }
-          : {}),
+        ...args.options,
         ...(typeof reviewRequestId === "string"
           ? {
               beforeWrite: (m) =>

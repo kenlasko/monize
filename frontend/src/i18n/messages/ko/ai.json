@@ -235,7 +235,6 @@
       "aiReview": "{count, plural, other {AI 검토 요청 #건을 대기열에 추가}}"
     },
     "aiCategory": "AI 제안",
-    "tags": "태그",
     "newTag": "(새 태그)",
     "marksPaidDue": "{name} (만기 {date})"
   },

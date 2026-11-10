@@ -192,6 +192,15 @@ export interface UpdateTransferPreview {
   /** Spending category applied to both legs after the edit (null = none). */
   categoryId: string | null;
   categoryName: string | null;
+  /**
+   * The tag change the edit makes on both legs (`TransactionsService.previewTagChange`
+   * over the edited leg): names added, the new ones among them, and the
+   * carried tags removed. Set by the AI tools' prep, never by this service.
+   */
+  tagNames?: string[];
+  newTagNames?: string[];
+  removeTagIds?: string[];
+  removeTagNames?: string[];
 }
 
 @Injectable()

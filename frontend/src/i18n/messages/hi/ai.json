@@ -235,7 +235,6 @@
       "aiReview": "{count, plural, one {# AI समीक्षा अनुरोध कतार में जोड़ें} other {# AI समीक्षा अनुरोध कतार में जोड़ें}}"
     },
     "aiCategory": "AI द्वारा सुझाई गई",
-    "tags": "टैग",
     "newTag": "(नया टैग)",
     "marksPaidDue": "{name} (देय {date})"
   },

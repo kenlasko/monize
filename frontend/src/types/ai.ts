@@ -296,6 +296,8 @@ export interface PendingActionSplit {
   memo?: string | null;
   /** `"ai"` when the AI chose this line's category (email-receipt proposals). */
   categorySource?: 'ai';
+  /** Tags the line keeps from the line it replaces. */
+  tagNames?: string[];
 }
 
 /** One chat file a create/update card will save on the transaction on approval. */
@@ -334,6 +336,8 @@ export interface PendingActionPreview {
   tagNames?: string[];
   /** The subset of `tagNames` the approval creates because the user has no such tag yet. */
   newTagNames?: string[];
+  /** update_transaction / update_transfer: tag names the approval removes (the others stay). */
+  removeTagNames?: string[];
   /** update_transaction: the reference number ("Ref #") the approval sets; absent when it is left as it is. */
   referenceNumber?: string;
   name?: string | null;
@@ -512,7 +516,12 @@ export interface PendingActionPreviewRow {
     categoryName: string | null;
     amount: number;
     memo?: string | null;
+    tagNames?: string[];
   }>;
+  /** Bulk update: tag names the row adds, the new ones among them, and those it removes. */
+  tagNames?: string[];
+  newTagNames?: string[];
+  removeTagNames?: string[];
   /** True when this bulk update/delete row targets a reconciled transaction. */
   isReconciled?: boolean;
   /**

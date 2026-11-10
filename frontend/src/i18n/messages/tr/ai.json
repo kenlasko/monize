@@ -235,7 +235,6 @@
       "aiReview": "{count, plural, one {# yapay zekâ inceleme isteğini kuyruğa al} other {# yapay zekâ inceleme isteğini kuyruğa al}}"
     },
     "aiCategory": "yapay zekâ önerisi",
-    "tags": "Etiketler",
     "newTag": "(yeni etiket)",
     "marksPaidDue": "{name} (vadesi {date})"
   },

@@ -635,6 +635,84 @@ describe('TransactionConfirmationCard', () => {
       expect(screen.getByText('Groceries')).toBeInTheDocument();
     });
 
+    it('shows the tags an edit adds (marking new ones) and removes', () => {
+      render(
+        <TransactionConfirmationCard
+          action={makeAction({
+            type: 'update_transaction',
+            descriptor: { type: 'update_transaction' },
+            preview: {
+              accountName: 'Checking',
+              amount: -75,
+              currencyCode: 'USD',
+              transactionDate: '2026-02-01',
+              categoryName: 'Groceries',
+              tagNames: ['Trip', 'Family'],
+              newTagNames: ['Family'],
+              removeTagNames: ['Old'],
+            },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByText('Add tags')).toBeInTheDocument();
+      expect(screen.getByText('Trip, Family (new tag)')).toBeInTheDocument();
+      expect(screen.getByText('Remove tags')).toBeInTheDocument();
+      expect(screen.getByText('Old')).toBeInTheDocument();
+    });
+
+    it('shows the tags a split line keeps', () => {
+      render(
+        <TransactionConfirmationCard
+          action={makeAction({
+            type: 'update_transaction',
+            descriptor: { type: 'update_transaction' },
+            preview: {
+              accountName: 'Checking',
+              amount: -30,
+              currencyCode: 'USD',
+              transactionDate: '2026-02-01',
+              splits: [
+                { categoryName: 'Food', amount: -20, tagNames: ['Trip'] },
+                { categoryName: 'Home', amount: -10 },
+              ],
+            },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByText(/Food: .*20.* · tags: Trip/)).toBeInTheDocument();
+      expect(screen.queryByText(/Home: .*tags/)).toBeNull();
+    });
+
+    it('shows the tags a transfer edit adds and removes', () => {
+      render(
+        <TransactionConfirmationCard
+          action={makeAction({
+            type: 'update_transfer',
+            descriptor: { type: 'update_transfer' },
+            preview: {
+              fromAccountName: 'Checking',
+              toAccountName: 'Savings',
+              amount: 100,
+              currencyCode: 'USD',
+              transactionDate: '2026-02-01',
+              tagNames: ['Trip'],
+              removeTagNames: ['Old'],
+            },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByText('Add tags')).toBeInTheDocument();
+      expect(screen.getByText('Trip')).toBeInTheDocument();
+      expect(screen.getByText('Remove tags')).toBeInTheDocument();
+      expect(screen.getByText('Old')).toBeInTheDocument();
+    });
+
     it('shows the updated success message and a view link', () => {
       render(
         <TransactionConfirmationCard

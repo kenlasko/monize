@@ -235,7 +235,6 @@
       "aiReview": "{count, plural, one {# KI-Prüfanfrage einreihen} other {# KI-Prüfanfragen einreihen}}"
     },
     "aiCategory": "von der KI vorgeschlagen",
-    "tags": "Tags",
     "newTag": "(neuer Tag)",
     "marksPaidDue": "{name} (fällig am {date})"
   },

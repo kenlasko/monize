@@ -34,7 +34,7 @@ import { UpdateTransactionDto } from "./dto/update-transaction.dto";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
 import { UpdateTransferDto } from "./dto/update-transfer.dto";
-import { TagsService } from "../tags/tags.service";
+import { TagsService, TagChangePreview } from "../tags/tags.service";
 import { TransactionTag } from "../tags/entities/transaction-tag.entity";
 import {
   RuleEffectsPreview,
@@ -373,6 +373,12 @@ export interface UpdateTransactionPreview {
   tagNames?: string[];
   /** The subset of `tagNames` the user has no tag for yet: confirm creates them. */
   newTagNames?: string[];
+  /**
+   * Tags the edit REMOVES: those the caller named that the transaction
+   * carries, by id for the write and by name for the card. Absent when none.
+   */
+  removeTagIds?: string[];
+  removeTagNames?: string[];
   /** The reference number ("Ref #") the edit sets; absent when it leaves it as it is. */
   referenceNumber?: string;
   /** `"ai"` when the AI chose `categoryName` (display only; set by the review queue, never by this service). */
@@ -1014,6 +1020,11 @@ export class TransactionsService {
        * change.
        */
       tagNames?: readonly string[];
+      /**
+       * Tag names to remove. A name the transaction does not carry is not a
+       * change; a name the user has no tag for is refused.
+       */
+      removeTagNames?: readonly string[];
       /** The reference number to set; the value the transaction holds already is not a change. */
       referenceNumber?: string;
     },
@@ -1047,10 +1058,11 @@ export class TransactionsService {
       }
     }
 
-    const tagChange = await this.previewAddedTags(
+    const tagChange = await this.previewTagChange(
       userId,
       transactionId,
       input.tagNames ?? [],
+      input.removeTagNames ?? [],
     );
     const referenceNumber =
       input.referenceNumber === undefined
@@ -1066,6 +1078,7 @@ export class TransactionsService {
       input.categoryId !== undefined ||
       input.description !== undefined ||
       tagChange.tagNames.length > 0 ||
+      tagChange.removeTagIds.length > 0 ||
       referenceChanges ||
       // A splits-only replacement changes the transaction even though no
       // scalar field does.
@@ -1170,24 +1183,29 @@ export class TransactionsService {
               : {}),
           }
         : {}),
+      ...(tagChange.removeTagIds.length > 0
+        ? {
+            removeTagIds: tagChange.removeTagIds,
+            removeTagNames: tagChange.removeTagNames,
+          }
+        : {}),
     };
   }
 
   /**
-   * Which of the requested tag names an edit would add: the ones the
-   * transaction does not carry yet. A name the user has a tag for is spelled as
-   * that tag; one it has none for is new (confirm creates it). Reads only.
+   * The tag change an edit of `transactionId` proposes, against the tags it
+   * carries now (`TagsService.previewTagChange`): which names it adds (and
+   * which of those confirm creates) and which carried tags it removes. Reads
+   * only. Public for the transfer edit, whose tags live on both legs and are
+   * read from the edited one.
    */
-  private async previewAddedTags(
+  async previewTagChange(
     userId: string,
     transactionId: string,
-    names: readonly string[],
-  ): Promise<{ tagNames: string[]; newTagNames: string[] }> {
-    const wanted = [...new Set(names.map((n) => n.trim()).filter(Boolean))];
-    if (wanted.length === 0) return { tagNames: [], newTagNames: [] };
+    addNames: readonly string[],
+    removeNames: readonly string[],
+  ): Promise<TagChangePreview> {
     return withScopedDb(this.dataSource, async (m) => {
-      const known = await this.tagsService.findByNames(m, userId, wanted);
-      const byKey = new Map(known.map((t) => [t.name.toLowerCase(), t]));
       const carried = new Set(
         (
           await m.getRepository(TransactionTag).find({
@@ -1195,22 +1213,13 @@ export class TransactionsService {
           })
         ).map((link) => link.tagId),
       );
-      const tagNames: string[] = [];
-      const newTagNames: string[] = [];
-      const seen = new Set<string>();
-      for (const name of wanted) {
-        const key = name.toLowerCase();
-        if (seen.has(key)) continue;
-        seen.add(key);
-        const tag = byKey.get(key);
-        if (!tag) {
-          tagNames.push(name);
-          newTagNames.push(name);
-        } else if (!carried.has(tag.id)) {
-          tagNames.push(tag.name);
-        }
-      }
-      return { tagNames, newTagNames };
+      return this.tagsService.previewTagChange(
+        m,
+        userId,
+        carried,
+        addNames,
+        removeNames,
+      );
     });
   }
 
@@ -2821,6 +2830,12 @@ export class TransactionsService {
        */
       addTagNames?: readonly string[];
       /**
+       * Tag ids to REMOVE from the transaction, inside the write's transaction;
+       * the other tags it carries stay. A tag no longer the user's refuses the
+       * edit with nothing written.
+       */
+      removeTagIds?: readonly string[];
+      /**
        * `false` when the caller records the history entry itself: the
        * conversion of a transfer leg applies its body through this method
        * inside its own transaction, and one user action is one entry.
@@ -3277,6 +3292,14 @@ export class TransactionsService {
           userId,
           [id],
           tags.map((tag) => tag.id),
+        );
+      }
+      if (options?.removeTagIds && options.removeTagIds.length > 0) {
+        await this.tagsService.removeTransactionTags(
+          m,
+          userId,
+          [id],
+          options.removeTagIds,
         );
       }
 
@@ -4158,6 +4181,15 @@ export class TransactionsService {
     transactionId: string,
     updateDto: Partial<UpdateTransferDto>,
     actor?: TransferActor,
+    /**
+     * Tags to add (by name, created when missing) and remove (by id) on the
+     * transfer, leaving its other tags in place: the AI tools' additive edit.
+     * Independent of `updateDto.tagIds`, which replaces the whole set.
+     */
+    tagChange?: {
+      addTagNames?: readonly string[];
+      removeTagIds?: readonly string[];
+    },
   ): Promise<TransferResult> {
     const result = await this.transferService.updateTransfer(
       userId,
@@ -4166,6 +4198,27 @@ export class TransactionsService {
       this.findOne.bind(this),
       actor,
     );
+
+    if (
+      (tagChange?.addTagNames?.length ?? 0) > 0 ||
+      (tagChange?.removeTagIds?.length ?? 0) > 0
+    ) {
+      await this.applyTransferTagChange(
+        userId,
+        transactionId,
+        [result.fromTransaction, result.toTransaction],
+        tagChange?.addTagNames ?? [],
+        tagChange?.removeTagIds ?? [],
+      );
+      if (updateDto.tagIds === undefined) {
+        const refresh = (leg: Transaction) =>
+          leg.userId === userId ? this.findOne(userId, leg.id) : leg;
+        return {
+          fromTransaction: await refresh(result.fromTransaction),
+          toTransaction: await refresh(result.toTransaction),
+        };
+      }
+    }
 
     if (updateDto.tagIds !== undefined) {
       // Tags are per-user reference data: cross-owner counterpart legs keep
@@ -4207,6 +4260,64 @@ export class TransactionsService {
     }
 
     return result;
+  }
+
+  /**
+   * Add and remove tags on a transfer in one transaction, the way `tagIds`
+   * replaces them: on every leg that is the user's own (a cross-owner leg keeps
+   * its owner's tags) and on the split a split-transfer leg belongs to.
+   */
+  private async applyTransferTagChange(
+    userId: string,
+    transactionId: string,
+    legs: readonly Transaction[],
+    addTagNames: readonly string[],
+    removeTagIds: readonly string[],
+  ): Promise<void> {
+    const legIds = [
+      ...new Set(
+        legs.filter((leg) => leg.userId === userId).map((leg) => leg.id),
+      ),
+    ];
+    const parentSplit =
+      await this.splitService.getTransferSplitByLinkedTransaction(
+        transactionId,
+      );
+    await withScopedDb(this.dataSource, async (m) => {
+      if (addTagNames.length > 0) {
+        const tags = await this.tagsService.findOrCreateByNames(
+          m,
+          userId,
+          addTagNames,
+        );
+        const tagIds = tags.map((tag) => tag.id);
+        await this.tagsService.addTransactionTags(m, userId, legIds, tagIds);
+        if (parentSplit) {
+          await this.tagsService.addSplitTags(
+            m,
+            userId,
+            [parentSplit.id],
+            tagIds,
+          );
+        }
+      }
+      if (removeTagIds.length > 0) {
+        await this.tagsService.removeTransactionTags(
+          m,
+          userId,
+          legIds,
+          removeTagIds,
+        );
+        if (parentSplit) {
+          await this.tagsService.removeSplitTags(
+            m,
+            userId,
+            [parentSplit.id],
+            removeTagIds,
+          );
+        }
+      }
+    });
   }
 
   async bulkUpdate(

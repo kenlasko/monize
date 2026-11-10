@@ -239,6 +239,37 @@ describe('BulkConfirmationCard', () => {
       ).toBeInTheDocument();
     });
 
+    it('says which tags each update row adds and removes', () => {
+      render(
+        <BulkConfirmationCard
+          action={makeAction({
+            type: 'batch_actions',
+            descriptor: { type: 'batch_actions', operation: 'update' },
+            preview: {
+              rows: [
+                {
+                  status: 'ok',
+                  accountName: 'Checking',
+                  amount: -12.5,
+                  currencyCode: 'USD',
+                  transactionDate: '2026-01-15',
+                  payeeName: 'Starbucks',
+                  tagNames: ['Trip', 'Family'],
+                  newTagNames: ['Family'],
+                  removeTagNames: ['Old'],
+                },
+              ],
+            },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(
+        screen.getByText(/adds tags: Trip, Family \(new tag\) · removes tags: Old/),
+      ).toBeInTheDocument();
+    });
+
     it('flags reconciled rows in an update batch', () => {
       render(
         <BulkConfirmationCard

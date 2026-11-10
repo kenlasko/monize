@@ -235,7 +235,6 @@
       "aiReview": "{count, plural, other {Đưa # yêu cầu AI xem xét vào hàng đợi}}"
     },
     "aiCategory": "AI đề xuất",
-    "tags": "Thẻ",
     "newTag": "(thẻ mới)",
     "marksPaidDue": "{name} (đến hạn {date})"
   },

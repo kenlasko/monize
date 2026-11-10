@@ -487,6 +487,12 @@ describe("ToolExecutorService", () => {
         categoryId: "cat-1",
         newCategoryName: "Dining",
       }),
+      previewTagChange: jest.fn().mockResolvedValue({
+        tagNames: [],
+        newTagNames: [],
+        removeTagIds: [],
+        removeTagNames: [],
+      }),
       previewUpdate: jest.fn().mockResolvedValue({
         transactionId: "tx-1",
         accountId: "acc-1",
@@ -2579,6 +2585,27 @@ describe("ToolExecutorService", () => {
       );
       expect(result.pendingAction?.type).toBe("update_transaction");
       expect(JSON.stringify(result.data)).not.toContain("signature-abc");
+    });
+
+    it("hands the tags to add and remove to the shared preview", async () => {
+      await service.execute(userId, "manage_transactions", {
+        operation: "update",
+        items: [
+          {
+            transactionId: TXID,
+            addTagNames: ["Trip"],
+            removeTagNames: ["Old"],
+          },
+        ],
+      });
+      expect(transactions.previewUpdate).toHaveBeenCalledWith(
+        userId,
+        TXID,
+        expect.objectContaining({
+          tagNames: ["Trip"],
+          removeTagNames: ["Old"],
+        }),
+      );
     });
 
     it("auto-detects a transfer and builds an update_transfer card", async () => {

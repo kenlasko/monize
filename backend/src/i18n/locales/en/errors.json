@@ -746,7 +746,9 @@
     "oneOrMoreNotFound": "One or more tags not found",
     "oneOrMoreTransactionsNotFound": "One or more transactions not found",
     "tooManyTags": "At most {{ max }} tags can be changed in one call",
-    "tooManyTransactions": "At most {{ max }} transactions can be changed in one call"
+    "tooManyTransactions": "At most {{ max }} transactions can be changed in one call",
+    "addAndRemove": "The tag \"{{ name }}\" cannot be both added and removed in one edit",
+    "unknownName": "Unknown tag: {{ name }}.{{ suggestion }}"
   },
   "transactionRules": {
     "notFound": "Transaction rule with ID {{ id }} not found",
@@ -836,7 +838,9 @@
     "convertTransferCrossOwner": "A transfer with another owner's account can't be converted. Delete it and create the entry you want instead.",
     "splitTransferLegConvertLocked": "This transfer is part of a split transaction. Remove it by editing the split on the source transaction instead.",
     "transferCounterpartChanged": "The other side of this transfer changed while you were editing. Reload and try again.",
-    "splitTransferTargetAmountRequiresTransfer": "Only a transfer split can carry a received amount"
+    "splitTransferTargetAmountRequiresTransfer": "Only a transfer split can carry a received amount",
+    "splitIdNotOnTransaction": "splitId {{ splitId }} is not a split line of this transaction. Read the transaction's split lines again and use their splitId values.",
+    "splitIdRepeated": "splitId {{ splitId }} is named by more than one line. Each existing line can be continued once."
   },
   "users": {
     "userNotFound": "User not found",

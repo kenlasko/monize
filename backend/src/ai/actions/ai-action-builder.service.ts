@@ -609,6 +609,9 @@ export class AiActionBuilderService {
       ...(splits ? { splits: splits.map(toSplitRowDescriptor) } : {}),
       ...(attachments?.length ? { attachments } : {}),
       ...(preview.tagNames?.length ? { tagNames: [...preview.tagNames] } : {}),
+      ...(preview.removeTagIds?.length
+        ? { removeTagIds: [...preview.removeTagIds] }
+        : {}),
       ...(preview.referenceNumber === undefined
         ? {}
         : { referenceNumber: preview.referenceNumber }),
@@ -646,6 +649,9 @@ export class AiActionBuilderService {
                 ? { newTagNames: [...preview.newTagNames] }
                 : {}),
             }
+          : {}),
+        ...(preview.removeTagNames?.length
+          ? { removeTagNames: [...preview.removeTagNames] }
           : {}),
         ...(preview.referenceNumber === undefined
           ? {}
@@ -921,6 +927,10 @@ export class AiActionBuilderService {
       payeeName: preview.payeeName,
       createPayee: preview.payeeWillBeCreated,
       categoryId: preview.categoryId,
+      ...(preview.tagNames?.length ? { tagNames: [...preview.tagNames] } : {}),
+      ...(preview.removeTagIds?.length
+        ? { removeTagIds: [...preview.removeTagIds] }
+        : {}),
     };
     return {
       actionId,
@@ -941,6 +951,17 @@ export class AiActionBuilderService {
         payeeName: preview.payeeName,
         payeeWillBeCreated: preview.payeeWillBeCreated,
         categoryName: preview.categoryName,
+        ...(preview.tagNames?.length
+          ? {
+              tagNames: [...preview.tagNames],
+              ...(preview.newTagNames?.length
+                ? { newTagNames: [...preview.newTagNames] }
+                : {}),
+            }
+          : {}),
+        ...(preview.removeTagNames?.length
+          ? { removeTagNames: [...preview.removeTagNames] }
+          : {}),
       },
     };
   }

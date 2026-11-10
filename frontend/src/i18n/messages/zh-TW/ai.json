@@ -235,7 +235,6 @@
       "aiReview": "{count, plural, other {將 # 個 AI 審核請求加入佇列}}"
     },
     "aiCategory": "AI 建議",
-    "tags": "標籤",
     "newTag": "(新標籤)",
     "marksPaidDue": "{name}（到期日 {date}）"
   },

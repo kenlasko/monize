@@ -235,7 +235,6 @@
       "aiReview": "{count, plural, other {Antrekan # permintaan peninjauan AI}}"
     },
     "aiCategory": "disarankan AI",
-    "tags": "Tag",
     "newTag": "(tag baru)",
     "marksPaidDue": "{name} (jatuh tempo {date})"
   },

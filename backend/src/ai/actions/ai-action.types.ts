@@ -155,6 +155,11 @@ export interface SplitRowDescriptor {
   categoryId: string;
   amount: number;
   memo: string | null;
+  /**
+   * The tags this line keeps from the existing line it continues when a split
+   * set is replaced (`carrySplitTags`); absent when it keeps none.
+   */
+  tagIds?: string[];
 }
 
 /**
@@ -164,6 +169,8 @@ export interface SplitRowDescriptor {
  */
 export interface ResolvedSplitLine extends SplitRowDescriptor {
   categoryName: string;
+  /** The names of `tagIds`, for the card. */
+  tagNames?: string[];
   /** `"ai"` when the AI chose the category: shown on the card, never signed (see `toSplitRowDescriptor`). */
   categorySource?: "ai";
 }
@@ -177,13 +184,17 @@ export interface ResolvedSplitLine extends SplitRowDescriptor {
  * commit separately and a failure between the two would strand the parent
  * amount against the old lines.
  */
-export function toSplitDtoRows(
-  splits: readonly SplitRowDescriptor[],
-): { categoryId: string; amount: number; memo: string | undefined }[] {
+export function toSplitDtoRows(splits: readonly SplitRowDescriptor[]): {
+  categoryId: string;
+  amount: number;
+  memo: string | undefined;
+  tagIds?: string[];
+}[] {
   return splits.map((s) => ({
     categoryId: s.categoryId,
     amount: s.amount,
     memo: s.memo ?? undefined,
+    ...(s.tagIds?.length ? { tagIds: [...s.tagIds] } : {}),
   }));
 }
 
@@ -196,7 +207,12 @@ export function toSplitDtoRows(
 export function toSplitRowDescriptor(
   line: ResolvedSplitLine,
 ): SplitRowDescriptor {
-  return { categoryId: line.categoryId, amount: line.amount, memo: line.memo };
+  return {
+    categoryId: line.categoryId,
+    amount: line.amount,
+    memo: line.memo,
+    ...(line.tagIds?.length ? { tagIds: [...line.tagIds] } : {}),
+  };
 }
 
 /** Map a resolved split line to its display-only confirmation-card shape. */
@@ -206,6 +222,7 @@ export function toSplitPreview(line: ResolvedSplitLine): AiActionSplitPreview {
     amount: line.amount,
     memo: line.memo,
     ...(line.categorySource === "ai" ? { categorySource: "ai" as const } : {}),
+    ...(line.tagNames?.length ? { tagNames: [...line.tagNames] } : {}),
   };
 }
 
@@ -485,6 +502,11 @@ export interface UpdateTransactionDescriptor extends BaseDescriptor {
    */
   tagNames?: string[];
   /**
+   * Tag ids this edit REMOVES from the transaction (its other tags stay).
+   * Signed with the rest, so a client cannot remove a tag the card did not show.
+   */
+  removeTagIds?: string[];
+  /**
    * The reference number ("Ref #") this edit sets; absent: left as it is.
    * Signed with the rest, so a client cannot set one the card did not show.
    */
@@ -578,6 +600,10 @@ export interface UpdateTransferDescriptor extends BaseDescriptor {
    * confirm step re-applies it idempotently.
    */
   categoryId: string | null;
+  /** Tag names this edit ADDS to both legs (created when missing); the legs' other tags stay. */
+  tagNames?: string[];
+  /** Tag ids this edit REMOVES from both legs. */
+  removeTagIds?: string[];
 }
 
 /**
@@ -606,6 +632,10 @@ export interface BatchUpdateTransactionRow {
    * Rows without it are ordinary parent-field edits, unchanged.
    */
   splits?: SplitRowDescriptor[];
+  /** Tag names this row ADDS (created when missing), as on the singular descriptor. */
+  tagNames?: string[];
+  /** Tag ids this row REMOVES, as on the singular descriptor. */
+  removeTagIds?: string[];
 }
 
 export interface BatchDeleteTransactionRow {
@@ -860,6 +890,8 @@ export interface AiActionSplitPreview {
   memo?: string | null;
   /** `"ai"` when the AI chose this line's category (display only). */
   categorySource?: "ai";
+  /** Tags the line keeps from the line it continues (display only). */
+  tagNames?: string[];
 }
 
 /** Display-only preview of one file an action will attach on approval. */
@@ -982,6 +1014,8 @@ export interface AiActionPreview {
   tagNames?: string[];
   /** The subset of `tagNames` the approval creates because the user has no such tag yet. */
   newTagNames?: string[];
+  /** update_transaction / update_transfer: tag names the approval removes. */
+  removeTagNames?: string[];
   /** update_transaction: the reference number ("Ref #") the approval sets (display mirror of the descriptor's). */
   referenceNumber?: string;
   // create_investment_transaction display fields.
@@ -1064,6 +1098,10 @@ export interface AiActionPreviewRow {
    * approved for something else.
    */
   splits?: AiActionSplitPreview[];
+  /** Bulk update: tag names the row adds, those of them that are new, and those it removes. */
+  tagNames?: string[];
+  newTagNames?: string[];
+  removeTagNames?: string[];
   /**
    * True when this bulk update/delete row targets a reconciled transaction, so
    * the card can flag the row before the user approves the batch.

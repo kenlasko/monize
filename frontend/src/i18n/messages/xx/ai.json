@@ -235,8 +235,12 @@
       "aiReview": "[XX-{count, plural, one {Queue # AI review request} other {Queue # AI review requests}}-XX]"
     },
     "aiCategory": "[XX-suggested by AI-XX]",
-    "tags": "[XX-Tags-XX]",
     "newTag": "[XX-(new tag)-XX]",
+    "addTags": "[XX-Add tags-XX]",
+    "removeTags": "[XX-Remove tags-XX]",
+    "splitLineTags": "[XX-tags: {tags}-XX]",
+    "bulkTagsAdded": "[XX-adds tags: {tags}-XX]",
+    "bulkTagsRemoved": "[XX-removes tags: {tags}-XX]",
     "marksPaidDue": "[XX-{name} (due {date})-XX]"
   },
   "table": {

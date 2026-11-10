@@ -12,6 +12,10 @@ import { mcpTestCtx, McpTestContext } from "../testing/mcp-test-context";
 import { collectToolConfigs } from "../testing/collect-tool-configs";
 import { FINANCIAL_TOOLS } from "../../ai/query/tool-definitions";
 import { SEARCH_SYNTAX_SUMMARY } from "../../transactions/transaction-search-query.util";
+import {
+  ResolvedSplitLine,
+  toSplitRowDescriptor,
+} from "../../ai/actions/ai-action.types";
 
 /**
  * A builder double that mints a FRESH envelope per call, exactly as the real
@@ -37,14 +41,36 @@ function buildActionBuilderMock(): Record<string, jest.Mock> {
         expiresAt: 1_700_000_000_000 + minted,
       },
     }));
+  // An edit's descriptor carries the previewed fields, as the real builder's
+  // does: the MCP tool commits the signed descriptor, not the preview.
+  const buildEdit = (type: string) =>
+    jest.fn(
+      (
+        _userId: string,
+        preview: Record<string, unknown>,
+        splits?: ResolvedSplitLine[],
+      ) => ({
+        type,
+        preview: {},
+        descriptor: {
+          ...preview,
+          type,
+          userId: "u1",
+          actionId: `action-${++minted}`,
+          expiresAt: 1_700_000_000_000 + minted,
+          createPayee: preview?.payeeWillBeCreated === true,
+          ...(splits ? { splits: splits.map(toSplitRowDescriptor) } : {}),
+        },
+      }),
+    );
   return {
     buildCreateTransaction: build("create_transaction"),
     buildCreateTransactions: build("create_transactions"),
     buildCategorizeTransaction: jest.fn().mockReturnValue({}),
-    buildUpdateTransaction: build("update_transaction"),
+    buildUpdateTransaction: buildEdit("update_transaction"),
     buildDeleteTransaction: build("delete_transaction"),
     buildCreateTransfer: build("create_transfer"),
-    buildUpdateTransfer: build("update_transfer"),
+    buildUpdateTransfer: buildEdit("update_transfer"),
     buildBatchActions: build("batch_actions"),
   };
 }
@@ -976,6 +1002,8 @@ describe("McpTransactionsTools", () => {
         "u1",
         "t1",
         expect.objectContaining({ categoryId: "cat-1" }),
+        undefined,
+        {},
       );
     });
 
@@ -1577,6 +1605,70 @@ describe("McpTransactionsTools", () => {
       expect(parsed.ids).toEqual(["t1"]);
     });
 
+    it("commits a bulk row's split lines and tag change, not only its parent fields", async () => {
+      // The bulk commit once rebuilt the DTO by hand and dropped `splits`, so a
+      // confirmed recategorization of a split wrote nothing of it.
+      relayService.emitPendingAction.mockResolvedValue(false);
+      acceptingClient();
+      prepService.prepareUpdateBulk.mockResolvedValue({
+        okRows: [
+          {
+            transactionId: "t1",
+            accountId: "a1",
+            amount: -30,
+            transactionDate: "2025-01-01",
+            payeeId: null,
+            payeeName: null,
+            createPayee: false,
+            categoryId: null,
+            description: null,
+            currencyCode: "USD",
+            splits: [
+              { categoryId: "c1", amount: -20, memo: null, tagIds: ["tag-1"] },
+              { categoryId: "c2", amount: -10, memo: null },
+            ],
+            tagNames: ["Trip"],
+            removeTagIds: ["tag-o"],
+          },
+        ],
+        previewRows: [{ status: "ok" }],
+        okIndex: [0],
+        skipped: [],
+      });
+      transactionsService.update.mockResolvedValue({ id: "t1" });
+      await handlers["manage_transactions"](
+        {
+          operation: "update",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            transactionId: `t${i + 1}`,
+            addTagNames: ["Trip"],
+          })),
+        },
+        ctx,
+      );
+      expect(transactionsService.update).toHaveBeenCalledWith(
+        "u1",
+        "t1",
+        expect.objectContaining({
+          categoryId: undefined,
+          splits: [
+            {
+              categoryId: "c1",
+              amount: -20,
+              memo: undefined,
+              tagIds: ["tag-1"],
+            },
+            { categoryId: "c2", amount: -10, memo: undefined },
+          ],
+        }),
+        {
+          createPayeeIfMissing: false,
+          addTagNames: ["Trip"],
+          removeTagIds: ["tag-o"],
+        },
+      );
+    });
+
     it("errors when no bulk update row prepares", async () => {
       prepService.prepareUpdateBulk.mockResolvedValue({
         okRows: [],
@@ -1634,6 +1726,8 @@ describe("McpTransactionsTools", () => {
         "u1",
         "t1",
         expect.objectContaining({ payeeId: "new-payee-id" }),
+        undefined,
+        {},
       );
     });
 
@@ -1684,6 +1778,70 @@ describe("McpTransactionsTools", () => {
       expect(transactionsService.update).toHaveBeenCalledTimes(2);
       const parsed = result.structuredContent as any;
       expect(parsed.count).toBe(2);
+    });
+
+    it("commits an individual card's split lines and tag change", async () => {
+      relayService.emitPendingAction.mockResolvedValue(false);
+      acceptingClient();
+      prepService.prepareUpdate.mockResolvedValue({
+        kind: "standard",
+        createPayee: false,
+        preview: {
+          transactionId: "t1",
+          accountId: "a1",
+          accountName: "Checking",
+          amount: -30,
+          transactionDate: "2025-01-01",
+          payeeId: null,
+          payeeName: null,
+          categoryId: null,
+          categoryName: null,
+          description: null,
+          currencyCode: "USD",
+          tagNames: ["Trip"],
+          removeTagIds: ["tag-o"],
+        },
+        splits: [
+          {
+            categoryId: "c1",
+            categoryName: "Groceries",
+            amount: -30,
+            memo: null,
+            tagIds: ["tag-1"],
+          },
+        ],
+      });
+      transactionsService.update.mockResolvedValue({ id: "t1" });
+      await handlers["manage_transactions"](
+        {
+          operation: "update",
+          items: [
+            { transactionId: "t1", addTagNames: ["Trip"] },
+            { transactionId: "t2", removeTagNames: ["Old"] },
+          ],
+          approvalMode: "individual",
+        },
+        ctx,
+      );
+      expect(transactionsService.update).toHaveBeenCalledWith(
+        "u1",
+        "t1",
+        expect.objectContaining({
+          splits: [
+            {
+              categoryId: "c1",
+              amount: -30,
+              memo: undefined,
+              tagIds: ["tag-1"],
+            },
+          ],
+        }),
+        {
+          createPayeeIfMissing: false,
+          addTagNames: ["Trip"],
+          removeTagIds: ["tag-o"],
+        },
+      );
     });
 
     it("errors when every individual update row fails to prepare", async () => {
@@ -1938,6 +2096,8 @@ describe("McpTransactionsTools", () => {
         "u1",
         "t1",
         expect.objectContaining({ categoryId: "cat-1" }),
+        undefined,
+        {},
       );
       const parsed = result.structuredContent as any;
       expect(parsed.count).toBe(2);

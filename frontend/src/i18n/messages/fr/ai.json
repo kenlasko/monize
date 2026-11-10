@@ -235,7 +235,6 @@
       "aiReview": "{count, plural, one {Mettre en file # demande de révision par l'IA} other {Mettre en file # demandes de révision par l'IA}}"
     },
     "aiCategory": "suggérée par l'IA",
-    "tags": "Étiquettes",
     "newTag": "(nouvelle étiquette)",
     "marksPaidDue": "{name} (échéance le {date})"
   },

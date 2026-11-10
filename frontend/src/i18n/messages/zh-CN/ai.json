@@ -235,7 +235,6 @@
       "aiReview": "{count, plural, other {将 # 个 AI 审核请求加入队列}}"
     },
     "aiCategory": "AI 建议",
-    "tags": "标签",
     "newTag": "(新标签)",
     "marksPaidDue": "{name}（到期日 {date}）"
   },

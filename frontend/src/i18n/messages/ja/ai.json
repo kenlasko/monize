@@ -235,7 +235,6 @@
       "aiReview": "{count, plural, other {AIレビューの依頼 # 件をキューに追加}}"
     },
     "aiCategory": "AIの提案",
-    "tags": "タグ",
     "newTag": "(新しいタグ)",
     "marksPaidDue": "{name}（期日 {date}）"
   },

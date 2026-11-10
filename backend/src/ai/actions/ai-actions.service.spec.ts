@@ -1422,6 +1422,34 @@ describe("AiActionsService", () => {
       );
     });
 
+    it("hands update() the tag ids the card removes, and split lines with the tags they keep", async () => {
+      await service.confirm(
+        USER,
+        dtoFor(
+          reviewDescriptor({
+            removeTagIds: ["11111111-1111-4111-8111-11111111aaaa"],
+            splits: [
+              {
+                categoryId: CAT,
+                amount: -20,
+                memo: null,
+                tagIds: ["11111111-1111-4111-8111-11111111bbbb"],
+              },
+              { categoryId: CAT, amount: -10, memo: null },
+            ],
+          }),
+        ),
+      );
+      const [, , dto, options] = transactions.update.mock.calls[0];
+      expect(options.removeTagIds).toEqual([
+        "11111111-1111-4111-8111-11111111aaaa",
+      ]);
+      expect(dto.splits[0].tagIds).toEqual([
+        "11111111-1111-4111-8111-11111111bbbb",
+      ]);
+      expect(dto.splits[1]).not.toHaveProperty("tagIds");
+    });
+
     it("passes no tag names when the card has none", async () => {
       await service.confirm(USER, dtoFor(reviewDescriptor()));
       expect(transactions.update.mock.calls[0][3]).not.toHaveProperty(
@@ -2059,8 +2087,41 @@ describe("AiActionsService", () => {
           payeeName: "Edited transfer label",
           categoryId: CAT,
         }),
+        undefined,
+        {},
       );
       expect(result.type).toBe("update_transfer");
+    });
+
+    it("update_transfer hands updateTransfer the tags the card adds and removes", async () => {
+      const descriptor: import("./ai-action.types").UpdateTransferDescriptor = {
+        type: "update_transfer",
+        userId: USER,
+        actionId: "act-xfer-tags",
+        expiresAt: Date.now() + 60_000,
+        transactionId: TX,
+        fromAccountId: ACC,
+        toAccountId: ACC2,
+        amount: 200,
+        transactionDate: "2026-02-01",
+        exchangeRate: 1,
+        toAmount: 200,
+        description: null,
+        payeeId: PAYEE,
+        payeeName: null,
+        createPayee: false,
+        categoryId: null,
+        tagNames: ["Trip"],
+        removeTagIds: ["tag-old"],
+      };
+      await service.confirm(USER, dtoFor(descriptor));
+      expect(transactions.updateTransfer).toHaveBeenCalledWith(
+        USER,
+        TX,
+        expect.anything(),
+        undefined,
+        { addTagNames: ["Trip"], removeTagIds: ["tag-old"] },
+      );
     });
 
     it("update_transfer find-or-creates the payee for an unmatched label", async () => {
@@ -2091,6 +2152,8 @@ describe("AiActionsService", () => {
         USER,
         TX,
         expect.objectContaining({ payeeId: PAYEE2 }),
+        undefined,
+        {},
       );
     });
 
