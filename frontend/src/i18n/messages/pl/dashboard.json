@@ -33,8 +33,6 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
-    "showSet": "Pokaż: {name}",
-    "cycleControls": "Wybierz, co pokazuje sekcja główna",
     "cagrUnavailable": "CAGR wymaga co najmniej roku historii inwestycji na tych kontach, z wpłatami większymi niż wypłaty.",
     "intradayUnavailable": "Część pozycji nie ma cen śróddziennych, więc nie można narysować wykresu jednodniowego. Wybierz dłuższy okres w Dostosuj."
   },

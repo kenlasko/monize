@@ -33,15 +33,11 @@ interface HeroCycle {
   mounted: ReadonlySet<DashboardHeroSet>;
   /** False until the first change, so a page settling into place does not slide. */
   animate: boolean;
-  goTo: (set: DashboardHeroSet) => void;
 }
 
 /**
  * Which set the hero shows. `auto` alternates every minute where the reader has
- * investments; a chosen set stays. A reader can move to the other set at any
- * time, in either mode, and that holds until the page is reloaded or the next
- * Auto change, which is a full minute away because the timer restarts on every
- * change of set.
+ * investments; a chosen set stays.
  */
 export function useHeroCycle({ choice, hasInvestments, settled }: UseHeroCycleOptions): HeroCycle {
   const home: DashboardHeroSet = choice === 'auto' ? 'netWorth' : choice;
@@ -88,5 +84,5 @@ export function useHeroCycle({ choice, hasInvestments, settled }: UseHeroCycleOp
   const mounted = new Set<DashboardHeroSet>([active, ...visited]);
   if (preloaded && canCycle) sets.forEach((set) => mounted.add(set));
 
-  return { sets, active, cycling: canCycle, mounted, animate, goTo };
+  return { sets, active, cycling: canCycle, mounted, animate };
 }

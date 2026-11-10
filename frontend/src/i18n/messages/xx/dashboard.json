@@ -33,8 +33,6 @@
       "mwr": "[XX-MWR-XX]",
       "cagr": "[XX-CAGR-XX]"
     },
-    "showSet": "[XX-Show {name}-XX]",
-    "cycleControls": "[XX-Choose what the hero shows-XX]",
     "cagrUnavailable": "[XX-CAGR needs at least a year of investment history in these accounts, with more paid in than taken out.-XX]",
     "intradayUnavailable": "[XX-Some of these holdings have no intraday prices, so a one-day chart can't be drawn. Choose a longer timeframe in Customize.-XX]"
   },

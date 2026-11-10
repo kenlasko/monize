@@ -29,10 +29,13 @@ import {
 
 // Below `lg` the figures stack above the chart, so `gap-y-1` and the chart's
 // reduced top margin (`HeroAreaChart`) keep that seam tight.
-// Beside the chart, the figures take half the hero, as the greeting row above
-// them does, and the chart rises past that row to the top of the hero
-// (`DashboardHero` measures the row into `--hero-head-h`).
-const FIGURES_COLUMN_CLASS = 'lg:w-1/2 lg:flex-shrink-0';
+// Beside the chart, the figures take the width they need and the chart takes the
+// rest, rising past the greeting row to the top of the hero. To give the trivia
+// room beside the greeting, the figures are kept as wide as the greeting with
+// that space beside it, but never wider than half, so the chart keeps at least
+// half the hero. `DashboardHero` measures both into the variables.
+const FIGURES_COLUMN_CLASS =
+  'lg:flex-shrink-0 lg:min-w-[min(var(--hero-figures-min,0px),calc(50%_-_1.25rem))]';
 const CHART_COLUMN_CLASS = 'h-48 w-full lg:flex-1 lg:min-w-0 lg:-mt-[var(--hero-head-h,0px)]';
 
 const LAYOUT_CLASS = 'flex flex-col lg:flex-row gap-x-10 gap-y-1 lg:gap-y-4 lg:items-start';
@@ -49,6 +52,12 @@ const CHART_TOP_MARGIN_BESIDE = 36;
  */
 export const HeroPanelActiveContext = createContext(true);
 
+/**
+ * Where the set on screen reports its figures column, so the greeting row above
+ * can match its width; `null` for the set off screen.
+ */
+export const HeroFiguresRefContext = createContext<((node: HTMLDivElement | null) => void) | null>(null);
+
 export function HeroLayout({
   label,
   figures,
@@ -59,9 +68,12 @@ export function HeroLayout({
   figures: ReactNode;
   chart: ReactNode;
 }) {
+  const figuresRef = useContext(HeroFiguresRefContext) ?? undefined;
   return (
     <section aria-label={label} data-testid="dashboard-hero" className={LAYOUT_CLASS}>
-      <div className={`flex flex-col gap-2 ${FIGURES_COLUMN_CLASS}`}>{figures}</div>
+      <div ref={figuresRef} className={`flex flex-col gap-2 ${FIGURES_COLUMN_CLASS}`}>
+        {figures}
+      </div>
       <div className={CHART_COLUMN_CLASS} data-testid="dashboard-hero-chart">
         {chart}
       </div>
@@ -70,9 +82,10 @@ export function HeroLayout({
 }
 
 export function HeroSkeleton({ label }: { label: string }) {
+  const figuresRef = useContext(HeroFiguresRefContext) ?? undefined;
   return (
     <section aria-busy="true" aria-label={label} className={LAYOUT_CLASS}>
-      <div className={FIGURES_COLUMN_CLASS}>
+      <div ref={figuresRef} className={FIGURES_COLUMN_CLASS}>
         <div className="animate-pulse skeleton-shimmer space-y-3 w-full max-w-md">
           <div className="h-3 w-24 rounded bg-gray-200 dark:bg-gray-700" />
           <div className="h-12 w-72 rounded bg-gray-200 dark:bg-gray-700" />
@@ -117,8 +130,7 @@ export function HeroMessage({ children }: { children: ReactNode }) {
 /** The small caps caption over the headline figure. */
 export function HeroCaption({ children }: { children: ReactNode }) {
   return (
-    // Clear of the set switcher, which sits at the end of this line.
-    <div className="pr-14 text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400">
+    <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400">
       {children}
     </div>
   );

@@ -33,8 +33,6 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
-    "showSet": "{name} tonen",
-    "cycleControls": "Kies wat de hoofdsectie toont",
     "cagrUnavailable": "CAGR vereist ten minste een jaar beleggingsgeschiedenis in deze rekeningen, met meer ingelegd dan opgenomen.",
     "intradayUnavailable": "Voor sommige posities zijn geen intraday-koersen, dus er kan geen dagrafiek worden getekend. Kies een langere periode in Aanpassen."
   },

@@ -33,7 +33,7 @@ Many more widgets are available but hidden by default; see [Optional Widgets](#o
 
 ### Dashboard Hero
 
-Above the widgets, under the greeting, the dashboard hero sums up where you stand. It has two sets, chosen in [Customize](#customizing-your-dashboard). On **Auto**, the default, it slides from one to the other every minute if you have investments, and otherwise stays on net worth. Choose **Net worth** or **Portfolio value** instead to keep it on one set. Whichever you choose, the two dots at the end of the line under the greeting switch to the other set at any time; on Auto, that set then stays for a full minute.
+Above the widgets, under the greeting, the dashboard hero sums up where you stand. It has two sets, chosen in [Customize](#customizing-your-dashboard). On **Auto**, the default, it slides from one to the other every minute if you have investments, and otherwise stays on net worth. Choose **Net worth** or **Portfolio value** instead to keep it on one set.
 
 **Net worth**:
 

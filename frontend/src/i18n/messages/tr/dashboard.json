@@ -33,8 +33,6 @@
       "mwr": "MWR",
       "cagr": "BYOB"
     },
-    "showSet": "{name} göster",
-    "cycleControls": "Ana bölümün neyi göstereceğini seçin",
     "cagrUnavailable": "CAGR için bu hesaplarda en az bir yıllık yatırım geçmişi ve çekilenden fazla yatırılan tutar gerekir.",
     "intradayUnavailable": "Bu varlıkların bazılarının gün içi fiyatı yok, bu nedenle bir günlük grafik çizilemiyor. Özelleştir bölümünden daha uzun bir dönem seçin."
   },

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act, fireEvent, render, screen, within } from '@/test/render';
+import { act, render, screen, within } from '@/test/render';
 import { useContext } from 'react';
 import { CollapsingTitleContext } from '@/hooks/useCollapsingHeaderTitle';
 import { DashboardHero } from './DashboardHero';
@@ -130,9 +130,7 @@ describe('DashboardHero', () => {
     const probeIn = (id: string) => within(screen.getByTestId(id)).getByTestId('active-probe');
     expect(probeIn('net-worth-hero')).toHaveTextContent('true');
     expect(probeIn('portfolio-hero')).toHaveTextContent('false');
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Show Portfolio value' }));
-    });
+    await advance(HERO_CYCLE_MS);
     expect(probeIn('net-worth-hero')).toHaveTextContent('false');
     expect(probeIn('portfolio-hero')).toHaveTextContent('true');
   });
@@ -158,16 +156,18 @@ describe('DashboardHero', () => {
     expect(triviaState.asked).not.toContain(true);
   });
 
-  it('puts the trivia beside the greeting and the switcher outside it, both off the track', () => {
+  it('puts the trivia beside the greeting, off the track', () => {
     renderHero();
     const headRow = screen.getByRole('heading', { name: 'Good evening, Ken' }).closest(
       '[data-testid="dashboard-hero-root"] > div',
     );
-    const switcher = screen.getByRole('group', { name: 'Choose what the hero shows' });
     expect(headRow).toContainElement(screen.getByTestId('trivia'));
-    expect(headRow).not.toContainElement(switcher);
     expect(screen.getByTestId('dashboard-hero-track')).not.toContainElement(screen.getByTestId('trivia'));
-    expect(screen.getByTestId('dashboard-hero-track')).not.toContainElement(switcher);
+  });
+
+  it('offers no control to switch sets by hand', () => {
+    renderHero();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
   it('shows no trivia for an empty list', () => {
@@ -194,27 +194,12 @@ describe('DashboardHero', () => {
 
   it('has nothing to cycle without investments', async () => {
     renderHero({ hasInvestments: false });
-    expect(screen.queryByRole('group', { name: 'Choose what the hero shows' })).not.toBeInTheDocument();
     await advance(HERO_CYCLE_MS);
     expect(screen.getByTestId('net-worth-hero')).toBeInTheDocument();
     expect(screen.queryByTestId('portfolio-hero')).not.toBeInTheDocument();
   });
 
-  it('moves on the pager at once, and gives the new set its full minute', async () => {
-    renderHero();
-    await advance(HERO_CYCLE_MS - 1000);
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Show Portfolio value' }));
-    });
-    expect(onPortfolio()).toBe(true);
-    expect(screen.getByRole('button', { name: 'Show Portfolio value' })).toHaveAttribute('aria-pressed', 'true');
-    await advance(HERO_CYCLE_MS - 1000);
-    expect(onPortfolio()).toBe(true);
-    await advance(1000);
-    expect(onPortfolio()).toBe(false);
-  });
-
-  it('stays on a chosen set, and still answers the pager', async () => {
+  it('stays on a chosen set', async () => {
     prefs.current = { 'dashboard-hero': { set: 'portfolio', portfolioRange: 'ytd', portfolioMetric: 'cagr' } };
     renderHero();
     const hero = screen.getByTestId('portfolio-hero');
@@ -223,11 +208,7 @@ describe('DashboardHero', () => {
     expect(screen.queryByTestId('net-worth-hero')).not.toBeInTheDocument();
     await advance(HERO_CYCLE_MS * 2);
     expect(onPortfolio()).toBe(true);
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Show Net worth' }));
-    });
-    expect(onPortfolio()).toBe(false);
-    expect(screen.getByTestId('net-worth-hero')).toBeInTheDocument();
+    expect(screen.queryByTestId('net-worth-hero')).not.toBeInTheDocument();
   });
 
   it('does not slide into place on the first paint of a chosen portfolio', () => {

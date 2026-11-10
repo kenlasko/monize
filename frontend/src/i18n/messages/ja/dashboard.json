@@ -33,8 +33,6 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
-    "showSet": "{name}を表示",
-    "cycleControls": "ヒーローに表示する内容を選択",
     "cagrUnavailable": "CAGR には、これらの口座で 1 年以上の投資履歴と、引き出しを上回る入金が必要です。",
     "intradayUnavailable": "一部の保有銘柄に日中価格がないため、1 日のグラフを描けません。カスタマイズで長い期間を選んでください。"
   },
