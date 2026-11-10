@@ -31,7 +31,7 @@ describe('AiTriviaToggle', () => {
   it('is a switch, on until a reader turns it off', () => {
     preferences = {};
     render(<AiTriviaToggle />);
-    expect(screen.getByRole('switch', { name: 'Show AI trivia on the dashboard' })).toHaveAttribute(
+    expect(screen.getByRole('switch', { name: "Fill the dashboard's Trivia widget with AI trivia" })).toHaveAttribute(
       'aria-checked',
       'true',
     );
