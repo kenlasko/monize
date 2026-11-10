@@ -33,7 +33,8 @@ export const useMobileAddActionStore = create<MobileAddActionState>((set) => ({
  * same one its header button runs. `label` null registers nothing (a read-only
  * view, or a page still deciding), and the button falls back to a new
  * transaction. The latest `run` is always the one called, so a page need not
- * memoise it.
+ * memoise it. A header label's visual "+ " is dropped: the button already
+ * draws one, and a screen reader would read it as "plus".
  */
 export function useMobileAddAction(label: string | null, run: () => void): void {
   const runRef = useRef(run);
@@ -43,7 +44,11 @@ export function useMobileAddAction(label: string | null, run: () => void): void 
   useEffect(() => {
     if (label === null) return;
     const owner = Symbol('mobile-add-action');
-    useMobileAddActionStore.getState().setAction({ owner, label, run: () => runRef.current() });
+    useMobileAddActionStore.getState().setAction({
+      owner,
+      label: label.replace(/^\+\s*/, ''),
+      run: () => runRef.current(),
+    });
     return () => useMobileAddActionStore.getState().clearAction(owner);
   }, [label]);
 }

@@ -144,6 +144,12 @@ describe('MobileTabBar', () => {
     expect(calls).toEqual(['second']);
   });
 
+  it("drops a header label's visual + from the button's name", () => {
+    renderHook(() => useMobileAddAction('+ New Account', vi.fn()));
+    render(<MobileTabBar />);
+    expect(bar().getByRole('button', { name: 'New Account' })).toBeInTheDocument();
+  });
+
   it('registers nothing for a null label', () => {
     renderHook(() => useMobileAddAction(null, vi.fn()));
     expect(useMobileAddActionStore.getState().action).toBeNull();
