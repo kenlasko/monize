@@ -41,6 +41,10 @@ export interface CategoryAccountBreakdownRow {
   transactionCount: number;
   total: number;
   lastTransactionDate: string | null;
+  /** The reporting currency `convertedTotal` is in. */
+  convertedCurrency?: string;
+  /** `total` converted by the server at each row's own rate or date; null without one. */
+  convertedTotal?: number | null;
 }
 
 /**

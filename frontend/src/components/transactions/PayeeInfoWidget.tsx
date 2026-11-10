@@ -72,7 +72,7 @@ export function PayeeInfoWidget({
   const router = useRouter();
   const { formatCurrency } = useNumberFormat();
   const { formatDate } = useDateFormat();
-  const { convertToDefault, defaultCurrency } = useExchangeRates();
+  const { defaultCurrency } = useExchangeRates();
 
   const [summary, setSummary] = useState<TransactionSummary | null>(null);
   const [topCategories, setTopCategories] = useState<GroupedTotal[]>([]);
@@ -147,8 +147,8 @@ export function PayeeInfoWidget({
   );
 
   const currencyStrategy = useMemo(
-    () => buildDisplayCurrencyStrategy(summary, defaultCurrency, convertToDefault),
-    [summary, defaultCurrency, convertToDefault],
+    () => buildDisplayCurrencyStrategy(summary, defaultCurrency),
+    [summary, defaultCurrency],
   );
 
   const totals = useMemo(

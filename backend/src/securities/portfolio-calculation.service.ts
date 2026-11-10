@@ -15,6 +15,13 @@ import {
   AllocationItem,
 } from "./portfolio.service";
 import { roundMoney } from "../common/round.util";
+import { resolveUserDefaultCurrency } from "../common/default-currency.util";
+import { investmentRowRateInto } from "./investment-row-fx.util";
+import {
+  buildRateIndex,
+  RateIndex,
+  resolveIndexedRate,
+} from "../common/time-series/rate-index.util";
 import { parseTag } from "../tags/tag-key-value.util";
 import {
   formatDateYMD,
@@ -43,6 +50,7 @@ import { stripBrokerageSuffix } from "../accounts/account-name.util";
 import {
   ReplayedBasisGap,
   ReplayResult,
+  ReplayStep,
   replayPositionBasis,
   SettlementCurrencies,
 } from "./position-basis-replay";
@@ -155,6 +163,23 @@ export interface RealizedGainEntry {
   realizedGain: number | null;
   /** Why `costBasis` and `realizedGain` are null; null when they are figures. */
   basisGap: ReplayedBasisGap | null;
+  /**
+   * The same disposal in the reader's reporting currency, from the same fold
+   * with every position reported in it: the proceeds at the sale's own rate
+   * or date, the basis at each acquisition's (issue #2106). A figure is null
+   * when the account-currency one is, or when a row it needs has no rate.
+   */
+  inReportingCurrency: {
+    currency: string;
+    proceeds: number | null;
+    costBasis: number | null;
+    realizedGain: number | null;
+    /**
+     * `"USD->CAD"` for each rate the replay could not resolve on one of this
+     * position's own dates, when a figure above is null for want of one.
+     */
+    missingRatePairs: string[];
+  };
 }
 
 /**
@@ -227,6 +252,22 @@ function addDaysIso(iso: string, days: number): string {
  * position": below it the difference cannot move a per-share figure meaningfully.
  */
 const COST_BASIS_QUANTITY_TOLERANCE = 0.0001;
+
+/** A replay rate lookup that found no admissible rate. */
+interface UnresolvedReplayRate {
+  from: string;
+  to: string;
+  onDate: string;
+}
+
+/**
+ * A position's historical cost in the reporting currency, or `null` with the
+ * pair that could not be resolved on one of its own dates.
+ */
+interface DatedReportingCost {
+  cost: number | null;
+  missing: UnresolvedReplayRate | null;
+}
 
 interface PeriodBucket {
   key: string; // YYYY-MM for months, YYYY-MM-DD for days
@@ -707,6 +748,117 @@ export class PortfolioCalculationService {
     return investmentFlows;
   }
 
+  /**
+   * Each account's net investment flow (BUYs less SELLs, redemptions, returns
+   * of capital and income, the part of Net Invested that is history) in the
+   * reporting currency, every row by `investmentRowRateInto`: its own settled
+   * rate where that reaches the reporting currency (INV-FX-002), carried on or
+   * replaced by the market rate on its own date (INV-FX-001). A decade of
+   * deposits is what it cost the reader then, not at today's rate (issue
+   * #2106). `null` is an account with a row no admissible rate reaches.
+   */
+  async computeNetInvestmentFlowsInReporting(
+    userId: string,
+    accountIds: readonly string[],
+    reportingCurrency: string,
+  ): Promise<Map<string, number | null>> {
+    const result = new Map<string, number | null>();
+    if (accountIds.length === 0) return result;
+    return withScopedDb(this.dataSource, async (m) => {
+      // The amount is in the security's currency (the account's for a row with
+      // no security) and its own rate takes it into the settlement account's:
+      // the funding account, else the linked cash account, else the account --
+      // the same order the transaction-history summary reads.
+      const rows: {
+        account_id: string;
+        tx_date: string;
+        amount_currency: string | null;
+        settlement_currency: string | null;
+        exchange_rate: string | null;
+        flow: string;
+      }[] = await m.query(
+        `SELECT it.account_id,
+                TO_CHAR(it.transaction_date, 'YYYY-MM-DD') AS tx_date,
+                COALESCE(s.currency_code, a.currency_code) AS amount_currency,
+                COALESCE(f.currency_code, cash.currency_code, a.currency_code)
+                  AS settlement_currency,
+                it.exchange_rate::text AS exchange_rate,
+                COALESCE(SUM(CASE
+                  WHEN it.action = 'BUY' THEN it.total_amount
+                  WHEN it.action = ANY($3) OR it.action = ANY($4) THEN -it.total_amount
+                  ELSE 0
+                END), 0) AS flow
+           FROM investment_transactions it
+           LEFT JOIN securities s ON s.id = it.security_id
+           LEFT JOIN accounts a ON a.id = it.account_id
+           LEFT JOIN accounts f ON f.id = it.funding_account_id
+           LEFT JOIN accounts cash
+             ON cash.id = a.linked_account_id
+            AND a.account_sub_type = $5
+          WHERE it.user_id = $1
+            AND it.account_id = ANY($2)
+            AND it.transaction_date <= CURRENT_DATE
+            AND it.status != 'VOID'
+          GROUP BY it.account_id, it.transaction_date, 3, 4, it.exchange_rate`,
+        [
+          userId,
+          [...accountIds],
+          // The same lists `computeInvestmentFlows` sums.
+          [
+            InvestmentAction.SELL,
+            InvestmentAction.REDEEM,
+            InvestmentAction.RETURN_OF_CAPITAL,
+          ],
+          CASH_INCOME_ACTIONS,
+          // Only a brokerage settles in its linked cash account.
+          AccountSubType.INVESTMENT_BROKERAGE,
+        ],
+      );
+      for (const accountId of accountIds) result.set(accountId, 0);
+      if (rows.length === 0) return result;
+
+      const currencies = new Set<string>();
+      for (const row of rows) {
+        if (row.amount_currency) currencies.add(row.amount_currency);
+        if (row.settlement_currency) currencies.add(row.settlement_currency);
+      }
+      currencies.delete(reportingCurrency);
+      const days = rows.map((row) => row.tx_date).sort();
+      const index = await buildRateIndex(
+        (sql, params) => m.query(sql, params),
+        currencies,
+        reportingCurrency,
+        days[0],
+        days[days.length - 1],
+      );
+      const rateOn = (from: string, to: string, date: string) =>
+        resolveIndexedRate(index, from, to, date).rate;
+
+      for (const row of rows) {
+        const flow = Number(row.flow) || 0;
+        // Read before defaulting: `?? 0` would turn an account an earlier row
+        // already made unknown back into zero, whatever the row order.
+        const held = result.get(row.account_id);
+        if (held === null || flow === 0) continue;
+        const { rate } = await investmentRowRateInto(
+          reportingCurrency,
+          {
+            amountCurrency: row.amount_currency,
+            settlementCurrency: row.settlement_currency,
+            exchangeRate: row.exchange_rate,
+            date: row.tx_date,
+          },
+          rateOn,
+        );
+        result.set(
+          row.account_id,
+          rate === null ? null : roundMoney((held ?? 0) + flow * rate),
+        );
+      }
+      return result;
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Holdings valuation
   // ---------------------------------------------------------------------------
@@ -970,6 +1122,87 @@ export class PortfolioCalculationService {
   }
 
   /**
+   * Each held position's historical cost in the reporting currency: the same
+   * fold as the lots, with every acquisition converted at its own row's
+   * amounts or the market rate on its own date (decision on issue #2106, so a
+   * cost is what the shares cost the reader when they were bought, and the gain
+   * includes the currency's move since). Converting the account-currency basis
+   * at today's rate read a lifetime of purchases at one day's rate.
+   *
+   * Keyed `${accountId}:${securityId}`, present only where the replay holds the
+   * units the holding does; `null` where a row it needs has no rate.
+   */
+  private async historicalCostBasesInReporting(
+    userId: string,
+    holdingsAccountIds: string[],
+    reportingCurrency: string,
+    /** Units actually held, keyed `${accountId}:${securityId}`. */
+    quantityByKey: Map<string, number>,
+  ): Promise<Map<string, DatedReportingCost>> {
+    const usable = new Map<string, DatedReportingCost>();
+    if (holdingsAccountIds.length === 0) return usable;
+    const transactions = await withScopedDb(this.dataSource, (m) =>
+      m.getRepository(InvestmentTransaction).find({
+        where: {
+          userId,
+          accountId: In(holdingsAccountIds),
+          transactionDate: LessThanOrEqual(formatDateYMDLocal(new Date())),
+          // Rows as effects: a VOID transaction moved no shares and no cost.
+          status: NON_VOID_INVESTMENT_STATUS,
+        },
+        relations: ["security", "account"],
+        order: INVESTMENT_REPLAY_ORDER,
+      }),
+    );
+    if (transactions.length === 0) return usable;
+    const { positions, unresolved } = await this.replayWithRates(
+      userId,
+      transactions,
+      reportingCurrency,
+      "unknown",
+    );
+    for (const [key, entry] of positions) {
+      const held = quantityByKey.get(key);
+      if (
+        held === undefined ||
+        Math.abs(held - entry.quantity) > COST_BASIS_QUANTITY_TOLERANCE
+      ) {
+        continue;
+      }
+      if (entry.basisGap === null) {
+        usable.set(key, { cost: roundMoney(entry.costBasis), missing: null });
+      } else {
+        // Unknown in the reporting currency, whatever the gap: a missing rate
+        // on one of its own dates, or a transfer-in whose source lacked one.
+        // Never the account-currency basis at today's rate. Name the pair that
+        // could not be resolved on one of this position's own dates, in one of
+        // its own currencies where that tells them apart, so the reader is
+        // told which rate to add.
+        const own = transactions.filter(
+          (tx) => `${tx.accountId}:${tx.securityId}` === key,
+        );
+        const dates = new Set(
+          own.map((tx) => String(tx.transactionDate).slice(0, 10)),
+        );
+        const codes = new Set(
+          own.flatMap((tx) => [
+            tx.security?.currencyCode,
+            tx.account?.currencyCode,
+          ]),
+        );
+        const onItsDates = unresolved.filter((rate) => dates.has(rate.onDate));
+        const gap =
+          onItsDates.find((rate) => codes.has(rate.from)) ??
+          onItsDates[0] ??
+          unresolved.find((rate) => codes.has(rate.from)) ??
+          null;
+        usable.set(key, { cost: null, missing: gap });
+      }
+    }
+    return usable;
+  }
+
+  /**
    * Replay the user's investment transaction history to compute the realized
    * gain or loss of each SELL transaction using the average-cost method.
    *
@@ -1017,6 +1250,15 @@ export class PortfolioCalculationService {
       }),
     );
     const { steps } = await this.replayWithRates(userId, fetched);
+    // The same history folded with every position in the reporting currency,
+    // so a gain across accounts of several currencies is a historical cost
+    // against the sale's own proceeds, not both converted at today's rate.
+    const reporting = await resolveUserDefaultCurrency(this.dataSource, userId);
+    const inReporting = fetched.some(
+      (tx) => (tx.account?.currencyCode ?? reporting) !== reporting,
+    )
+      ? await this.replayWithRates(userId, fetched, reporting)
+      : { steps, unresolved: [] as UnresolvedReplayRate[] };
     const requestedAccounts =
       accountIds && accountIds.length > 0 ? new Set(accountIds) : null;
     const results: RealizedGainEntry[] = [];
@@ -1045,6 +1287,12 @@ export class PortfolioCalculationService {
       }
 
       const known = disposal.gap === null && disposal.proceeds !== null;
+      const reported = inReporting.steps.get(tx)?.disposal;
+      const reportedKnown =
+        known &&
+        reported !== undefined &&
+        reported.gap === null &&
+        reported.proceeds !== null;
       results.push({
         transactionId: tx.id,
         transactionDate: tx.transactionDate,
@@ -1067,10 +1315,59 @@ export class PortfolioCalculationService {
             ? roundMoney(disposal.realizedGain)
             : null,
         basisGap: disposal.gap,
+        inReportingCurrency: this.realizedInReporting(
+          tx,
+          fetched,
+          reporting,
+          reported,
+          reportedKnown,
+          inReporting.unresolved,
+        ),
       });
     }
 
     return results;
+  }
+
+  /**
+   * One sale's figures in the reporting currency. The gain is the difference
+   * of the two rounded figures, so `proceeds - costBasis` is the gain to the
+   * last place; a figure null for want of a rate names the pairs this
+   * position could not resolve on its own dates.
+   */
+  private realizedInReporting(
+    tx: InvestmentTransaction,
+    history: readonly InvestmentTransaction[],
+    currency: string,
+    reported: ReplayStep["disposal"] | undefined,
+    known: boolean,
+    unresolved: readonly UnresolvedReplayRate[],
+  ): RealizedGainEntry["inReportingCurrency"] {
+    const proceeds =
+      reported?.proceeds != null ? roundMoney(reported.proceeds) : null;
+    const costBasis =
+      known && reported ? roundMoney(reported.basisRelieved) : null;
+    const realizedGain =
+      known && proceeds !== null && costBasis !== null
+        ? roundMoney(proceeds - costBasis)
+        : null;
+    const position = `${tx.accountId}:${tx.securityId}`;
+    const dates = new Set(
+      history
+        .filter((row) => `${row.accountId}:${row.securityId}` === position)
+        .map((row) => String(row.transactionDate).slice(0, 10)),
+    );
+    const missingRatePairs =
+      proceeds === null || realizedGain === null
+        ? [
+            ...new Set(
+              unresolved
+                .filter((rate) => dates.has(rate.onDate))
+                .map((rate) => `${rate.from}->${rate.to}`),
+            ),
+          ]
+        : [];
+    return { currency, proceeds, costBasis, realizedGain, missingRatePairs };
   }
 
   /**
@@ -1083,7 +1380,10 @@ export class PortfolioCalculationService {
   private async replayWithRates(
     userId: string,
     transactions: readonly InvestmentTransaction[],
-  ): Promise<ReplayResult> {
+    /** Report every position in this currency rather than its account's. */
+    targetCurrency?: string,
+    orphanTransferIn: "own_row" | "unknown" = "own_row",
+  ): Promise<ReplayResult & { unresolved: UnresolvedReplayRate[] }> {
     const accountIds = [...new Set(transactions.map((tx) => tx.accountId))];
     // The account relation says when a trade can settle elsewhere: a funding
     // account, or a brokerage with a linked cash account. Without either every
@@ -1105,7 +1405,8 @@ export class PortfolioCalculationService {
     const run = () =>
       replayPositionBasis(transactions, {
         settlement,
-        orphanTransferIn: "own_row",
+        orphanTransferIn,
+        targetCurrency,
         rateFor: (from, to, onDate) => {
           const key = `${from}->${to}@${onDate}`;
           const known = resolved.get(key);
@@ -1116,18 +1417,51 @@ export class PortfolioCalculationService {
       });
 
     const first = run();
-    if (wanted.size === 0) return first;
+    if (wanted.size === 0) return { ...first, unresolved: [] };
+    const unresolved: UnresolvedReplayRate[] = [];
+    // Into one target currency every acquisition of a foreign account asks for
+    // its own day's rate, so the history is loaded once for the span rather
+    // than looked up a day at a time; the same resolver answers either way.
+    const index =
+      targetCurrency === undefined
+        ? null
+        : await this.targetRateIndex(wanted.values(), targetCurrency);
     for (const [key, { from, to, onDate }] of wanted) {
-      const answer = await this.exchangeRateService.resolveStoredRate(
-        from,
-        to,
-        onDate,
-        { mode: "historical" },
-      );
-      resolved.set(key, answer.rate);
+      const rate =
+        index !== null && to === targetCurrency
+          ? resolveIndexedRate(index, from, to, onDate).rate
+          : (
+              await this.exchangeRateService.resolveStoredRate(
+                from,
+                to,
+                onDate,
+                { mode: "historical" },
+              )
+            ).rate;
+      resolved.set(key, rate);
+      if (rate === null) unresolved.push({ from, to, onDate });
     }
     wanted.clear();
-    return run();
+    return { ...run(), unresolved };
+  }
+
+  /** The stored history the wanted lookups into `target` need, in one read. */
+  private async targetRateIndex(
+    wanted: Iterable<{ from: string; to: string; onDate: string }>,
+    target: string,
+  ): Promise<RateIndex> {
+    const froms = new Set<string>();
+    let start: string | null = null;
+    let end: string | null = null;
+    for (const { from, to, onDate } of wanted) {
+      if (to !== target) continue;
+      froms.add(from);
+      if (start === null || onDate < start) start = onDate;
+      if (end === null || onDate > end) end = onDate;
+    }
+    return start === null || end === null
+      ? new Map()
+      : this.exchangeRateService.getRateIndex(froms, target, start, end);
   }
 
   /**
@@ -1715,17 +2049,29 @@ export class PortfolioCalculationService {
         .filter((h) => h.account?.currencyCode)
         .map((h) => [h.accountId, h.account.currencyCode] as const),
     );
+    const quantityByKey = new Map(
+      holdings.map(
+        (h) => [`${h.accountId}:${h.securityId}`, Number(h.quantity)] as const,
+      ),
+    );
     const historicalCostBasis = await this.knownCostBasesIn(
       userId,
       holdingsAccountIds,
       currencyByAccount,
-      new Map(
-        holdings.map(
-          (h) =>
-            [`${h.accountId}:${h.securityId}`, Number(h.quantity)] as const,
-        ),
-      ),
+      quantityByKey,
     );
+    // The same histories in the reporting currency, at each purchase's date,
+    // for the accounts kept in another currency.
+    const historicalCostBasisDefault = [...currencyByAccount.values()].some(
+      (code) => code !== defaultCurrency,
+    )
+      ? await this.historicalCostBasesInReporting(
+          userId,
+          holdingsAccountIds,
+          defaultCurrency,
+          quantityByKey,
+        )
+      : new Map<string, DatedReportingCost>();
 
     const costBasisTotal = new FxAggregate();
     const holdingsValueTotal = new FxAggregate();
@@ -1789,6 +2135,19 @@ export class PortfolioCalculationService {
       // no rate. Kept so the gain can take the cost of exactly the holdings
       // whose value it takes.
       let costBasisDefaultCurrency: number | null = null;
+      // A basis the history states is converted the way it was paid, each
+      // purchase at its own date (issue #2106); only a holding with no usable
+      // history falls back to today's rate, having no dates to convert at.
+      // A foreign account whose history states the basis: the dated figure,
+      // or unknown -- never the account-currency basis at today's rate.
+      const datedDefault =
+        accountCurrency !== defaultCurrency &&
+        historicalCostBasis.has(historicalKey)
+          ? (historicalCostBasisDefault.get(historicalKey) ?? {
+              cost: null,
+              missing: null,
+            })
+          : undefined;
       if (costBasisAccountCurrency === null) {
         // The conversion that failed is holding -> account; record that pair.
         // Filing it under account -> default named a hop that was never
@@ -1796,6 +2155,13 @@ export class PortfolioCalculationService {
         // degenerate `JPY->JPY` -- so the report told the user to fix a rate
         // that was not missing while never naming the one that was.
         costBasisTotal.add(null, holdingCurrency, accountCurrency);
+      } else if (datedDefault !== undefined) {
+        costBasisDefaultCurrency = datedDefault.cost;
+        costBasisTotal.add(
+          datedDefault.cost,
+          datedDefault.missing?.from ?? accountCurrency,
+          datedDefault.missing?.to ?? defaultCurrency,
+        );
       } else {
         costBasisDefaultCurrency = await this.convertToDefault(
           costBasisAccountCurrency,

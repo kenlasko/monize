@@ -22,6 +22,10 @@ import {
   DataSourceMock,
   ManagerMock,
 } from "../test-helpers/scoped-db-testing";
+import {
+  FIXTURE_TX_DATE,
+  rateIndexOf,
+} from "../test-helpers/report-rate-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -132,7 +136,7 @@ describe("BuiltInReportsService", () => {
     };
 
     exchangeRateService = {
-      getLatestRates: jest.fn().mockResolvedValue(mockExchangeRates),
+      getRateIndex: jest.fn().mockResolvedValue(rateIndexOf(mockExchangeRates)),
     };
 
     ({ manager: scopedManager, dataSource: scopedDataSource } =
@@ -206,8 +210,18 @@ describe("BuiltInReportsService", () => {
 
     it("aggregates spending by parent category with rollup", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-child", currency_code: "USD", total: "150.00" },
-        { category_id: "cat-parent", currency_code: "USD", total: "50.00" },
+        {
+          category_id: "cat-child",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "150.00",
+        },
+        {
+          category_id: "cat-parent",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "50.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([
         mockParentCategory,
@@ -229,7 +243,12 @@ describe("BuiltInReportsService", () => {
 
     it("handles uncategorized transactions (null category_id)", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: null, currency_code: "USD", total: "75.50" },
+        {
+          category_id: null,
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "75.50",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([]);
 
@@ -247,7 +266,12 @@ describe("BuiltInReportsService", () => {
 
     it("treats unknown category_id as uncategorized", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "unknown-cat", currency_code: "USD", total: "30.00" },
+        {
+          category_id: "unknown-cat",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "30.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockParentCategory]);
 
@@ -264,7 +288,12 @@ describe("BuiltInReportsService", () => {
 
     it("converts foreign currency amounts to default currency", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-parent", currency_code: "EUR", total: "100.00" },
+        {
+          category_id: "cat-parent",
+          currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
+          total: "100.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockParentCategory]);
 
@@ -282,6 +311,7 @@ describe("BuiltInReportsService", () => {
       const rawResults = Array.from({ length: 20 }, (_, i) => ({
         category_id: `cat-gen-${i}`,
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         total: `${(20 - i) * 10}.00`,
       }));
       const categories: Category[] = Array.from({ length: 20 }, (_, i) => ({
@@ -316,7 +346,12 @@ describe("BuiltInReportsService", () => {
     it("uses default currency USD when user preference not found", async () => {
       userPreferenceRepository.findOne.mockResolvedValue(null);
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-parent", currency_code: "USD", total: "100.00" },
+        {
+          category_id: "cat-parent",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "100.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockParentCategory]);
 
@@ -341,7 +376,12 @@ describe("BuiltInReportsService", () => {
       );
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "2025-01-01"]);
+      expect(queryCall[1]).toEqual([
+        mockUserId,
+        "2025-12-31",
+        "USD",
+        "2025-01-01",
+      ]);
     });
 
     it("omits startDate filter when startDate is undefined", async () => {
@@ -351,13 +391,18 @@ describe("BuiltInReportsService", () => {
       await service.getSpendingByCategory(mockUserId, undefined, "2025-12-31");
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31"]);
-      expect(queryCall[0]).not.toContain("$3");
+      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "USD"]);
+      expect(queryCall[0]).not.toContain("transaction_date >= $");
     });
 
     it("returns color from parent category in response", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-child", currency_code: "USD", total: "100.00" },
+        {
+          category_id: "cat-child",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "100.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([
         mockParentCategory,
@@ -398,12 +443,14 @@ describe("BuiltInReportsService", () => {
           payee_id: "payee-1",
           payee_name: "Starbucks",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "50.00",
         },
         {
           payee_id: "payee-1",
           payee_name: "Starbucks",
           currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
           total: "20.00",
         },
       ]);
@@ -429,6 +476,7 @@ describe("BuiltInReportsService", () => {
           payee_id: null,
           payee_name: "Corner Store",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "25.00",
         },
       ]);
@@ -450,6 +498,7 @@ describe("BuiltInReportsService", () => {
         payee_id: `payee-${i}`,
         payee_name: `Payee ${i}`,
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         total: `${(25 - i) * 10}.00`,
       }));
       payeesRepository.findByIds.mockResolvedValue(
@@ -476,6 +525,7 @@ describe("BuiltInReportsService", () => {
           payee_id: null,
           payee_name: "Cash Payment",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "10.00",
         },
       ]);
@@ -506,7 +556,12 @@ describe("BuiltInReportsService", () => {
 
     it("aggregates income by parent category with rollup", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-income", currency_code: "USD", total: "5000.00" },
+        {
+          category_id: "cat-income",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "5000.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockIncomeCategory]);
 
@@ -524,7 +579,12 @@ describe("BuiltInReportsService", () => {
 
     it("skips uncategorized income (SQL is_income filter excludes them)", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: null, currency_code: "USD", total: "200.00" },
+        {
+          category_id: null,
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "200.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([]);
 
@@ -540,7 +600,12 @@ describe("BuiltInReportsService", () => {
 
     it("converts income amounts from foreign currencies", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-income", currency_code: "GBP", total: "1000.00" },
+        {
+          category_id: "cat-income",
+          currency_code: "GBP",
+          tx_date: FIXTURE_TX_DATE,
+          total: "1000.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockIncomeCategory]);
 
@@ -558,6 +623,7 @@ describe("BuiltInReportsService", () => {
       const rawResults = Array.from({ length: 20 }, (_, i) => ({
         category_id: `cat-inc-${i}`,
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         total: `${(20 - i) * 100}.00`,
       }));
       const categories: Category[] = Array.from({ length: 20 }, (_, i) => ({
@@ -600,6 +666,7 @@ describe("BuiltInReportsService", () => {
     ) => ({
       period_start: periodStart,
       currency_code: currency,
+      tx_date: FIXTURE_TX_DATE,
       income,
       expenses,
     });
@@ -707,18 +774,21 @@ describe("BuiltInReportsService", () => {
           month: "2025-01",
           category_id: "cat-child",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "100.00",
         },
         {
           month: "2025-01",
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "50.00",
         },
         {
           month: "2025-02",
           category_id: "cat-child",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "120.00",
         },
       ]);
@@ -762,6 +832,7 @@ describe("BuiltInReportsService", () => {
         month: "2025-01",
         category_id: c.id,
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         total: `${(12 - i) * 10}.00`,
       }));
 
@@ -783,12 +854,14 @@ describe("BuiltInReportsService", () => {
           month: "2025-03",
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "100.00",
         },
         {
           month: "2025-01",
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "200.00",
         },
       ]);
@@ -840,6 +913,7 @@ describe("BuiltInReportsService", () => {
           year: currentYear,
           month: 1,
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           income: "5000.00",
           expenses: "3000.00",
         },
@@ -847,6 +921,7 @@ describe("BuiltInReportsService", () => {
           year: currentYear,
           month: 6,
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           income: "5500.00",
           expenses: "2500.00",
         },
@@ -879,6 +954,7 @@ describe("BuiltInReportsService", () => {
           year: currentYear,
           month: 3,
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           income: "1000.00",
           expenses: "500.00",
         },
@@ -886,6 +962,7 @@ describe("BuiltInReportsService", () => {
           year: currentYear,
           month: 3,
           currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
           income: "1000.00",
           expenses: "200.00",
         },
@@ -908,6 +985,7 @@ describe("BuiltInReportsService", () => {
           year: currentYear,
           month: 1,
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           income: "100.333",
           expenses: "50.666",
         },
@@ -936,7 +1014,12 @@ describe("BuiltInReportsService", () => {
       await service.getYearOverYear(mockUserId, 3);
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, currentYear - 2, currentYear]);
+      expect(queryCall[1]).toEqual([
+        mockUserId,
+        currentYear - 2,
+        currentYear,
+        "USD",
+      ]);
     });
   });
 
@@ -968,6 +1051,7 @@ describe("BuiltInReportsService", () => {
           day_of_week: 0,
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           tx_count: 3,
           total: "150.00",
         },
@@ -975,6 +1059,7 @@ describe("BuiltInReportsService", () => {
           day_of_week: 6,
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           tx_count: 2,
           total: "100.00",
         },
@@ -982,6 +1067,7 @@ describe("BuiltInReportsService", () => {
           day_of_week: 1,
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           tx_count: 5,
           total: "200.00",
         },
@@ -989,6 +1075,7 @@ describe("BuiltInReportsService", () => {
           day_of_week: 3,
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           tx_count: 4,
           total: "180.00",
         },
@@ -1013,6 +1100,7 @@ describe("BuiltInReportsService", () => {
           day_of_week: 2,
           category_id: null,
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           tx_count: 1,
           total: "50.00",
         },
@@ -1052,6 +1140,7 @@ describe("BuiltInReportsService", () => {
         day_of_week: i % 7,
         category_id: c.id,
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         tx_count: 1,
         total: `${(12 - i) * 10}.00`,
       }));
@@ -1081,6 +1170,7 @@ describe("BuiltInReportsService", () => {
           payee_id: null,
           payee_name: "Store",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           category_id: null,
           amount: "50.00",
         })),
@@ -1106,6 +1196,7 @@ describe("BuiltInReportsService", () => {
         payee_id: null,
         payee_name: "Normal Store",
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         category_id: null,
         amount: "50.00",
       }));
@@ -1119,6 +1210,7 @@ describe("BuiltInReportsService", () => {
         payee_id: null,
         payee_name: "Big Purchase",
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         category_id: null,
         amount: "5000.00",
       };
@@ -1148,6 +1240,7 @@ describe("BuiltInReportsService", () => {
         payee_id: null,
         payee_name: "Store",
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         category_id: null,
         amount: "100.00",
       }));
@@ -1174,6 +1267,7 @@ describe("BuiltInReportsService", () => {
         payee_id: null,
         payee_name: "Normal Store",
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         category_id: null,
         amount: "10.00",
       }));
@@ -1188,6 +1282,7 @@ describe("BuiltInReportsService", () => {
         payee_id: null,
         payee_name: "Outlier 1",
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         category_id: null,
         amount: "500.00",
       });
@@ -1201,6 +1296,7 @@ describe("BuiltInReportsService", () => {
         payee_id: null,
         payee_name: "Outlier 2",
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         category_id: null,
         amount: "1000.00",
       });
@@ -1253,11 +1349,13 @@ describe("BuiltInReportsService", () => {
         {
           category_id: "cat-income",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           amount: "5000.00",
         },
         {
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           amount: "-1200.00",
         },
       ]);
@@ -1281,11 +1379,13 @@ describe("BuiltInReportsService", () => {
         {
           category_id: "cat-medical",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           amount: "-500.00",
         },
         {
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           amount: "-300.00",
         },
       ]);
@@ -1305,8 +1405,18 @@ describe("BuiltInReportsService", () => {
     it("does not cancel an income child against an expense child under one parent", async () => {
       const parent = { ...mockParentCategory, id: "p", name: "Employment" };
       scopedManager.query.mockResolvedValue([
-        { category_id: "c-sal", currency_code: "USD", amount: "50000.00" },
-        { category_id: "c-union", currency_code: "USD", amount: "-500.00" },
+        {
+          category_id: "c-sal",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          amount: "50000.00",
+        },
+        {
+          category_id: "c-union",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          amount: "-500.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([
         parent,
@@ -1328,8 +1438,18 @@ describe("BuiltInReportsService", () => {
 
     it("does not cancel uncategorized income against uncategorized spending", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: null, currency_code: "USD", amount: "1000.00" },
-        { category_id: null, currency_code: "USD", amount: "-400.00" },
+        {
+          category_id: null,
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          amount: "1000.00",
+        },
+        {
+          category_id: null,
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          amount: "-400.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([]);
 
@@ -1346,7 +1466,12 @@ describe("BuiltInReportsService", () => {
       await service.getTaxSummary(mockUserId, 2025);
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, "2025-01-01", "2025-12-31"]);
+      expect(queryCall[1]).toEqual([
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+        "USD",
+      ]);
     });
 
     it("converts foreign currency amounts for tax calculations", async () => {
@@ -1354,6 +1479,7 @@ describe("BuiltInReportsService", () => {
         {
           category_id: "cat-income",
           currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
           amount: "1000.00",
         },
       ]);
@@ -1370,6 +1496,7 @@ describe("BuiltInReportsService", () => {
         {
           category_id: "cat-child",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           amount: "-100.00",
         },
       ]);
@@ -1412,6 +1539,7 @@ describe("BuiltInReportsService", () => {
           payee_name: "Netflix",
           category_name: "Entertainment",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           occurrences: 6,
           total_amount: "90.00",
           last_transaction_date: new Date("2025-06-15"),
@@ -1436,6 +1564,7 @@ describe("BuiltInReportsService", () => {
           payee_name: "Weekly Sub",
           category_name: null,
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           occurrences: 24,
           total_amount: "120.00",
           last_transaction_date: new Date("2025-06-01"),
@@ -1446,6 +1575,7 @@ describe("BuiltInReportsService", () => {
           payee_name: "Biweekly",
           category_name: null,
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           occurrences: 12,
           total_amount: "240.00",
           last_transaction_date: new Date("2025-06-01"),
@@ -1456,6 +1586,7 @@ describe("BuiltInReportsService", () => {
           payee_name: "Occasional",
           category_name: null,
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           occurrences: 3,
           total_amount: "150.00",
           last_transaction_date: new Date("2025-06-01"),
@@ -1481,6 +1612,7 @@ describe("BuiltInReportsService", () => {
           payee_name: "Global Shop",
           category_name: "Shopping",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           occurrences: 3,
           total_amount: "100.00",
           last_transaction_date: new Date("2025-05-01"),
@@ -1491,6 +1623,7 @@ describe("BuiltInReportsService", () => {
           payee_name: "Global Shop",
           category_name: "Shopping",
           currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
           occurrences: 3,
           total_amount: "50.00",
           last_transaction_date: new Date("2025-06-01"),
@@ -1515,6 +1648,7 @@ describe("BuiltInReportsService", () => {
           payee_name: "Sub1",
           category_name: null,
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           occurrences: 6,
           total_amount: "600.00",
           last_transaction_date: new Date("2025-06-01"),
@@ -1525,6 +1659,7 @@ describe("BuiltInReportsService", () => {
           payee_name: "Sub2",
           category_name: null,
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           occurrences: 6,
           total_amount: "300.00",
           last_transaction_date: new Date("2025-06-01"),
@@ -1592,6 +1727,7 @@ describe("BuiltInReportsService", () => {
           id: "tx-1",
           transaction_date: new Date("2025-01-15"),
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           amount: "1480.00",
           payee_name_normalized: "landlord llc",
         },
@@ -1599,6 +1735,7 @@ describe("BuiltInReportsService", () => {
           id: "tx-2",
           transaction_date: new Date("2025-02-15"),
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           amount: "1500.00",
           payee_name_normalized: "landlord llc",
         },
@@ -1632,6 +1769,7 @@ describe("BuiltInReportsService", () => {
           id: "tx-1",
           transaction_date: new Date("2025-01-15"),
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           amount: "50.00", // 50% of expected, outside 20% tolerance
           payee_name_normalized: "isp corp",
         },
@@ -1663,6 +1801,7 @@ describe("BuiltInReportsService", () => {
           id: "tx-1",
           transaction_date: new Date("2025-01-15"),
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           // A winter bill, far outside the snapshot's 20% band.
           amount: "260.00",
           amount_sign: "-1",
@@ -1674,6 +1813,7 @@ describe("BuiltInReportsService", () => {
           id: "tx-2",
           transaction_date: new Date("2025-02-15"),
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           amount: "80.00",
           amount_sign: "1",
           category_id: "cat-heat",
@@ -1684,6 +1824,7 @@ describe("BuiltInReportsService", () => {
           id: "tx-3",
           transaction_date: new Date("2025-03-15"),
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           amount: "400.00",
           amount_sign: "-1",
           category_id: "cat-household",
@@ -1694,6 +1835,7 @@ describe("BuiltInReportsService", () => {
           id: "tx-4",
           transaction_date: new Date("2025-04-15"),
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           amount: "205.00",
           amount_sign: "-1",
           category_id: null,
@@ -1738,6 +1880,7 @@ describe("BuiltInReportsService", () => {
           id: "tx-1",
           transaction_date: new Date("2025-01-15"),
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           amount: "1500.00",
           payee_name_normalized: "landlord",
         },
@@ -1745,6 +1888,7 @@ describe("BuiltInReportsService", () => {
           id: "tx-2",
           transaction_date: new Date("2025-02-15"),
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           amount: "1500.00",
           payee_name_normalized: "landlord",
         },
@@ -1752,6 +1896,7 @@ describe("BuiltInReportsService", () => {
           id: "tx-3",
           transaction_date: new Date("2025-01-20"),
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           amount: "100.00",
           payee_name_normalized: "isp",
         },
@@ -1794,6 +1939,7 @@ describe("BuiltInReportsService", () => {
             id: "tx-1",
             transaction_date: "2025-06-15",
             currency_code: "EUR",
+            tx_date: FIXTURE_TX_DATE,
             amount: "-50.00",
             payee_name: "Unknown Shop",
             description: "Misc purchase",
@@ -1804,6 +1950,7 @@ describe("BuiltInReportsService", () => {
         .mockResolvedValueOnce([
           {
             currency_code: "EUR",
+            tx_date: FIXTURE_TX_DATE,
             total_count: "1",
             expense_count: "1",
             expense_total: "50.00",
@@ -1829,6 +1976,7 @@ describe("BuiltInReportsService", () => {
       scopedManager.query.mockResolvedValueOnce([]).mockResolvedValueOnce([
         {
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total_count: "5",
           expense_count: "3",
           expense_total: "300.00",
@@ -1837,6 +1985,7 @@ describe("BuiltInReportsService", () => {
         },
         {
           currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
           total_count: "2",
           expense_count: "1",
           expense_total: "100.00",
@@ -1885,7 +2034,7 @@ describe("BuiltInReportsService", () => {
 
       // First query params should only have userId, endDate, and limit
       const firstQueryParams = scopedManager.query.mock.calls[0][1];
-      expect(firstQueryParams).toEqual([mockUserId, "2025-12-31", 500]);
+      expect(firstQueryParams).toEqual([mockUserId, "2025-12-31", "USD", 500]);
     });
   });
 
@@ -2137,7 +2286,12 @@ describe("BuiltInReportsService", () => {
     it("uses inverse rate when direct rate is not available", async () => {
       // CAD->USD: no direct rate exists, but USD->CAD = 1.36 does
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-parent", currency_code: "CAD", total: "136.00" },
+        {
+          category_id: "cat-parent",
+          currency_code: "CAD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "136.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockParentCategory]);
 
@@ -2155,7 +2309,12 @@ describe("BuiltInReportsService", () => {
       // JPY has no rate in our mock rates. The report used to add the raw yen
       // to a dollar total, which is a wrong number rather than a missing one.
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-parent", currency_code: "JPY", total: "1000.00" },
+        {
+          category_id: "cat-parent",
+          currency_code: "JPY",
+          tx_date: FIXTURE_TX_DATE,
+          total: "1000.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockParentCategory]);
 
@@ -2174,7 +2333,12 @@ describe("BuiltInReportsService", () => {
 
     it("does not convert when currency matches default", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-parent", currency_code: "USD", total: "250.00" },
+        {
+          category_id: "cat-parent",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "250.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockParentCategory]);
 
@@ -2213,6 +2377,7 @@ describe("BuiltInReportsService", () => {
           month: "2025-01",
           category_id: "cat-child",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           deposits: "0.00",
           withdrawals: "100.00",
         },

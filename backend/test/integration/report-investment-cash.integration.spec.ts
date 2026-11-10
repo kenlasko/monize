@@ -110,7 +110,7 @@ describe("built-in reports and investment cash accounts (integration)", () => {
     // integration harness cannot build. Every fixture is USD, so no exchange
     // rate is ever looked up and an empty rate list is the honest stub.
     const currency = new ReportCurrencyService(dataSource, {
-      getLatestRates: async () => [],
+      getRateIndex: async () => new Map(),
     } as never);
     spending = new SpendingReportsService(dataSource, currency);
     income = new IncomeReportsService(dataSource, currency);

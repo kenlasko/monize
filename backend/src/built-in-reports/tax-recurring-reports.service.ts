@@ -4,7 +4,11 @@ import { withScopedDb } from "../common/db/scoped-db";
 import { Category } from "../categories/entities/category.entity";
 import {
   ConversionGaps,
+  RATE_BASIS_GROUP_BY,
+  RawRateBasis,
   ReportCurrencyService,
+  wholeGroups,
+  rateBasisColumnsSql,
 } from "./report-currency.service";
 import { FxAggregate } from "../common/fx-aggregate";
 import {
@@ -145,7 +149,6 @@ export class TaxRecurringReportsService {
   ): Promise<TaxSummaryResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
-    const rateMap = await this.currencyService.buildRateMap(defaultCurrency);
 
     const startDate = `${year}-01-01`;
     const endDate = `${year}-12-31`;
@@ -154,6 +157,7 @@ export class TaxRecurringReportsService {
       SELECT
         COALESCE(ts.category_id, t.category_id) as category_id,
         t.currency_code,
+        ${rateBasisColumnsSql("$4")},
         COALESCE(ts.amount, t.amount) as amount
       FROM transactions t
       LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
@@ -168,14 +172,22 @@ export class TaxRecurringReportsService {
         AND (ts.transfer_account_id IS NULL OR ts.id IS NULL)
     `;
 
-    interface RawTaxRow {
+    interface RawTaxRow extends RawRateBasis {
       category_id: string | null;
-      currency_code: string;
       amount: string;
     }
 
     const rawResults: RawTaxRow[] = await withScopedDb(this.dataSource, (m) =>
-      m.query(query, [userId, startDate, endDate]),
+      m.query(query, [userId, startDate, endDate, defaultCurrency]),
+    );
+    // A category nets its rows of both signs, so a category with a row no
+    // rate reaches on its date is left out whole: a debit kept beside a
+    // dropped refund would overstate it, or count it deductible.
+    const convert = wholeGroups(
+      rawResults,
+      await this.currencyService.buildConverter(rawResults, defaultCurrency),
+      (row) => `${row.category_id ?? ""}|${row.currency_code}`,
+      (row) => [toMoneyNumber(row.amount, MONEY_SCALE)],
     );
 
     const categories = await withScopedDb(this.dataSource, (m) =>
@@ -235,18 +247,19 @@ export class TaxRecurringReportsService {
     >();
 
     rawResults.forEach((row) => {
-      const amount = this.currencyService.tryConvertAmount(
+      const amount = convert(
         // An aggregate in the row's own currency, read before conversion: a coin's
         // sum keeps its stored 8 places (MONEY_SCALE, lossless; a fiat figure reads
         // the same), so a 2,500-sat total is not rounded to zero before it is
         // converted (INV-MONEY-001).
         toMoneyNumber(row.amount, MONEY_SCALE),
-        row.currency_code,
-        defaultCurrency,
-        rateMap,
+        row,
       );
       if (amount === null) {
-        gaps.record(row.currency_code);
+        gaps.record(
+          row.currency_code,
+          `${row.category_id ?? ""}|${row.currency_code}`,
+        );
         return;
       }
       const category = row.category_id
@@ -331,7 +344,6 @@ export class TaxRecurringReportsService {
   ): Promise<RecurringExpensesResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
-    const rateMap = await this.currencyService.buildRateMap(defaultCurrency);
 
     const now = new Date();
     const endDate = formatDateYMD(now);
@@ -345,14 +357,27 @@ export class TaxRecurringReportsService {
       startDate = formatDateYMD(windowStart);
     }
 
+    // A foreign group is split by the day it was struck on so each part
+    // converts at that day's rate; the occurrence threshold is still judged
+    // over the whole (payee, category, currency) group, by the window sum.
     const query = `
+      SELECT * FROM (
       SELECT
         t.payee_id,
         LOWER(TRIM(COALESCE(p.name, t.payee_name))) as payee_name_normalized,
         COALESCE(p.name, t.payee_name) as payee_name,
         c.name as category_name,
         t.currency_code,
+        ${rateBasisColumnsSql("$5")},
         COUNT(*)::int as occurrences,
+        SUM(COUNT(*)) OVER (
+          PARTITION BY t.payee_id, LOWER(TRIM(COALESCE(p.name, t.payee_name))), COALESCE(p.name, t.payee_name), c.name, t.currency_code
+        ) as group_occurrences,
+        -- The whole group's total, so the payee's rows arrive in the order its
+        -- groups always did and the first one seen names it.
+        SUM(SUM(ABS(${REPORTABLE_TX_AMOUNT}))) OVER (
+          PARTITION BY t.payee_id, LOWER(TRIM(COALESCE(p.name, t.payee_name))), COALESCE(p.name, t.payee_name), c.name, t.currency_code
+        ) as group_total,
         SUM(ABS(${REPORTABLE_TX_AMOUNT})) as total_amount,
         MAX(t.transaction_date) as last_transaction_date,
         (
@@ -380,17 +405,17 @@ export class TaxRecurringReportsService {
         AND t.parent_transaction_id IS NULL
         AND ${INVESTMENT_EXCLUSION_NO_SPLITS}
         AND (COALESCE(p.name, t.payee_name) IS NOT NULL AND TRIM(COALESCE(p.name, t.payee_name)) != '')
-      GROUP BY t.payee_id, LOWER(TRIM(COALESCE(p.name, t.payee_name))), COALESCE(p.name, t.payee_name), c.name, t.currency_code
-      HAVING COUNT(*) >= $4
-      ORDER BY total_amount DESC
+      GROUP BY t.payee_id, LOWER(TRIM(COALESCE(p.name, t.payee_name))), COALESCE(p.name, t.payee_name), c.name, t.currency_code, ${RATE_BASIS_GROUP_BY}
+      ) grouped
+      WHERE grouped.group_occurrences >= $4
+      ORDER BY grouped.group_total DESC, grouped.total_amount DESC
     `;
 
-    interface RawRecurring {
+    interface RawRecurring extends RawRateBasis {
       payee_id: string | null;
       payee_name_normalized: string;
       payee_name: string;
       category_name: string | null;
-      currency_code: string;
       occurrences: number;
       total_amount: string;
       last_transaction_date: Date;
@@ -400,7 +425,21 @@ export class TaxRecurringReportsService {
 
     const rawResults: RawRecurring[] = await withScopedDb(
       this.dataSource,
-      (m) => m.query(query, [userId, startDate, endDate, minOccurrences]),
+      (m) =>
+        m.query(query, [
+          userId,
+          startDate,
+          endDate,
+          minOccurrences,
+          defaultCurrency,
+        ]),
+    );
+    const convert = wholeGroups(
+      rawResults,
+      await this.currencyService.buildConverter(rawResults, defaultCurrency),
+      (row) =>
+        `${row.payee_id ?? ""}|${row.payee_name_normalized}|${row.payee_name}|${row.category_name ?? ""}|${row.currency_code}`,
+      (row) => [toMoneyNumber(row.total_amount, MONEY_SCALE)],
     );
 
     const payeeMerged = new Map<
@@ -422,14 +461,15 @@ export class TaxRecurringReportsService {
     const gaps = new ConversionGaps();
 
     for (const row of rawResults) {
-      const totalAmount = this.currencyService.tryConvertAmount(
+      const totalAmount = convert(
         toMoneyNumber(row.total_amount, MONEY_SCALE),
-        row.currency_code,
-        defaultCurrency,
-        rateMap,
+        row,
       );
       if (totalAmount === null) {
-        gaps.record(row.currency_code);
+        gaps.record(
+          row.currency_code,
+          `${row.payee_id ?? ""}|${row.payee_name_normalized}|${row.payee_name}|${row.category_name ?? ""}|${row.currency_code}`,
+        );
         continue;
       }
       const key = row.payee_name_normalized;
@@ -471,8 +511,8 @@ export class TaxRecurringReportsService {
       );
     }
 
-    const data: RecurringExpenseItem[] = Array.from(payeeMerged.values()).map(
-      (row) => {
+    const data: RecurringExpenseItem[] = Array.from(payeeMerged.values())
+      .map((row) => {
         const totalAmount = row.totalAmount;
         const occurrences = row.occurrences;
         const frequency = classifyFrequency(occurrences, monthCount);
@@ -487,8 +527,11 @@ export class TaxRecurringReportsService {
           frequency,
           categoryName: row.categoryName,
         };
-      },
-    );
+      })
+      // Largest first, by the merged total: a foreign payee arrives as one
+      // part per day it was paid on (issue #2106), so the statement's order of
+      // parts no longer ranks the payees.
+      .sort((a, b) => b.totalAmount - a.totalAmount);
 
     const knownTotalRecurring = roundMoney(
       sumMoney(data.map((item) => item.totalAmount)),
@@ -518,7 +561,6 @@ export class TaxRecurringReportsService {
   ): Promise<BillPaymentHistoryResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
-    const rateMap = await this.currencyService.buildRateMap(defaultCurrency);
 
     const scheduledQuery = `
       SELECT
@@ -606,6 +648,7 @@ export class TaxRecurringReportsService {
         t.id,
         t.transaction_date,
         t.currency_code,
+        ${rateBasisColumnsSql("$3")},
         ABS(${REPORTABLE_TX_AMOUNT}) as amount,
         SIGN(${REPORTABLE_TX_AMOUNT}) as amount_sign,
         t.category_id,
@@ -623,17 +666,16 @@ export class TaxRecurringReportsService {
         AND ${REPORTABLE_TX_AMOUNT} IS NOT NULL
     `;
 
-    const params: (string | undefined)[] = [userId, endDate];
+    const params: (string | undefined)[] = [userId, endDate, defaultCurrency];
 
     if (startDate) {
-      txQuery += ` AND t.transaction_date >= $3`;
+      txQuery += ` AND t.transaction_date >= $4`;
       params.push(startDate);
     }
 
-    interface RawTx {
+    interface RawTx extends RawRateBasis {
       id: string;
       transaction_date: Date;
-      currency_code: string;
       amount: string;
       amount_sign: string;
       category_id: string | null;
@@ -644,6 +686,10 @@ export class TaxRecurringReportsService {
 
     const transactions: RawTx[] = await withScopedDb(this.dataSource, (m) =>
       m.query(txQuery, params),
+    );
+    const convert = await this.currencyService.buildConverter(
+      transactions,
+      defaultCurrency,
     );
 
     const billPaymentMap = new Map<
@@ -691,12 +737,7 @@ export class TaxRecurringReportsService {
         paidAmount = Math.abs(signed);
       }
 
-      const txAmount = this.currencyService.tryConvertAmount(
-        paidAmount,
-        tx.currency_code,
-        defaultCurrency,
-        rateMap,
-      );
+      const txAmount = convert(paidAmount, tx);
       if (txAmount === null) {
         gaps.record(tx.currency_code);
         return;

@@ -24,12 +24,11 @@ vi.mock('@/lib/fx-fees-csv', () => ({
   exportForeignTransactionsCsv: (...a: unknown[]) => mockExportCsv(...a),
 }));
 
-// Convert to default currency (CAD) by a fixed 1.4 for USD, identity otherwise.
+// The reader reports in CAD; a foreign account's fees arrive already
+// converted by the server (`convertedFeeTotal`).
 vi.mock('@/hooks/useExchangeRates', () => ({
   useExchangeRates: () => ({
     defaultCurrency: 'CAD',
-    convertToDefault: (amount: number, from: string) =>
-      from === 'USD' ? amount * 1.4 : amount,
   }),
 }));
 
@@ -103,8 +102,9 @@ describe('ForeignCurrencyFeesReport', () => {
     mockGetFxFeeSummary.mockImplementation((id: string) =>
       Promise.resolve(
         id === 'cad-1'
-          ? [{ month: '2026-01', currencyCode: 'EUR', feeTotal: 10, count: 1 }]
-          : [{ month: '2026-01', currencyCode: 'USD', feeTotal: 5, count: 1 }],
+          ? [{ month: '2026-01', currencyCode: 'EUR', feeTotal: 10, count: 1, convertedCurrency: 'CAD', convertedFeeTotal: 10 }]
+          : // 5 USD of fees, converted at each fee's own date to 7 CAD.
+            [{ month: '2026-01', currencyCode: 'USD', feeTotal: 5, count: 1, convertedCurrency: 'CAD', convertedFeeTotal: 7 }],
       ),
     );
     mockGetAll.mockResolvedValue({
@@ -144,9 +144,25 @@ describe('ForeignCurrencyFeesReport', () => {
     // Both eligible accounts fetched (default = all eligible).
     expect(mockGetFxFeeSummary).toHaveBeenCalledWith('cad-1');
     expect(mockGetFxFeeSummary).toHaveBeenCalledWith('usd-1');
-    // Mixed currencies -> convert to CAD: 10 (CAD acct) + 5*1.4 (USD acct) = 17.
+    // Mixed currencies -> CAD: 10 (CAD acct) + the server's 7 for the USD acct.
     expect(chartProps.current.currencyCode).toBe('CAD');
     expect(chartProps.current.data).toEqual([{ month: '2026-01', total: 17, count: 2 }]);
+  });
+
+  it('leaves out a fee the server had no rate for on its date, never at face value', async () => {
+    mockGetFxFeeSummary.mockImplementation((id: string) =>
+      Promise.resolve(
+        id === 'cad-1'
+          ? [{ month: '2026-01', currencyCode: 'EUR', feeTotal: 10, count: 1, convertedCurrency: 'CAD', convertedFeeTotal: 10 }]
+          : [{ month: '2026-01', currencyCode: 'USD', feeTotal: 5, count: 1, convertedCurrency: 'CAD', convertedFeeTotal: null }],
+      ),
+    );
+    await renderReport();
+
+    await waitFor(() => {
+      expect(chartProps.current?.isLoading).toBe(false);
+    });
+    expect(chartProps.current.data).toEqual([{ month: '2026-01', total: 10, count: 1 }]);
   });
 
   it('shows native currency (no conversion) for a single-account selection', async () => {

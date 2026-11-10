@@ -464,13 +464,19 @@ export class AccountsController {
           ? ids.filter((id) => jointSet.has(id))
           : [...jointSet];
     }
-    return this.accountsService.getDailyBalances(
+    const rows = await this.accountsService.getDailyBalances(
       req.user.id,
       sd,
       ed,
       ids,
       allTimeFlag,
       jointIds,
+    );
+    // Each row also in the reporting currency at its own day's rate, so a
+    // reader summing several currencies never converts a past day at today's.
+    return this.dailyBalanceTotalsService.withReportingCurrency(
+      req.user.id,
+      rows,
     );
   }
 

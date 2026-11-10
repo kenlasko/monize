@@ -62,7 +62,7 @@ describe("Funding view report filters (integration)", () => {
     investments = module.get(InvestmentTransactionsService);
     dataSource = module.get(DataSource);
     const currency = new ReportCurrencyService(dataSource, {
-      getLatestRates: async () => [],
+      getRateIndex: async () => new Map(),
     } as never);
     spending = new SpendingReportsService(dataSource, currency);
     monthly = new MonthlyCategoryBreakdownService(dataSource, currency);

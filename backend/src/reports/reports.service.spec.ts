@@ -21,6 +21,8 @@ import { UserPreference } from "../users/entities/user-preference.entity";
 import { BudgetsService } from "../budgets/budgets.service";
 import { ActionHistoryService } from "../action-history/action-history.service";
 import { ReportCurrencyService } from "../built-in-reports/report-currency.service";
+import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { rateIndexOf } from "../test-helpers/report-rate-testing";
 import {
   createScopedDbMocks,
   DataSourceMock,
@@ -40,12 +42,10 @@ describe("ReportsService", () => {
   let userPreferencesRepository: Record<string, jest.Mock>;
   let mockActionHistoryService: Record<string, jest.Mock>;
   let mockCurrencyService: jest.Mocked<
-    Pick<
-      ReportCurrencyService,
-      "getDefaultCurrency" | "buildRateMap" | "tryConvertAmount"
-    >
+    Pick<ReportCurrencyService, "getDefaultCurrency" | "buildConverter">
   >;
-  let rateMap: Map<string, number>;
+  /** `"FROM->TO"` -> a stored rate, observed on the first day the rows need. */
+  let storedRates: Map<string, number>;
 
   const defaultConfig: ReportConfig = {
     metric: MetricType.TOTAL_AMOUNT,
@@ -227,15 +227,32 @@ describe("ReportsService", () => {
       record: jest.fn().mockResolvedValue(null),
     };
 
-    // The real conversion door over a supplied rate map, so a mock cannot answer
-    // a shape the real service cannot produce.
-    rateMap = new Map();
+    // The real conversion door over supplied rates, so a mock cannot answer a
+    // shape the real service cannot produce. Each rate is observed on the first
+    // day the converted rows need, so it is admissible for every one of them.
+    storedRates = new Map();
+    const rateHistory = {
+      getRateIndex: jest.fn(
+        async (_currencies: ReadonlySet<string>, _to: string, start: string) =>
+          rateIndexOf(
+            [...storedRates].map(([pair, rate]) => {
+              const [fromCurrency, toCurrency] = pair.split("->");
+              return { fromCurrency, toCurrency, rate, rateDate: start };
+            }),
+          ),
+      ),
+    };
+    const realCurrencyService = new ReportCurrencyService(
+      {} as DataSource,
+      rateHistory as unknown as ExchangeRateService,
+    );
     mockCurrencyService = {
       getDefaultCurrency: jest.fn().mockResolvedValue("USD"),
-      buildRateMap: jest.fn().mockImplementation(async () => rateMap),
-      tryConvertAmount: jest
+      buildConverter: jest
         .fn()
-        .mockImplementation(ReportCurrencyService.prototype.tryConvertAmount),
+        .mockImplementation((rows, currency) =>
+          realCurrencyService.buildConverter(rows, currency),
+        ),
     };
 
     ({ dataSource: scopedDataSource } = createScopedDbMocks([
@@ -1977,7 +1994,7 @@ describe("ReportsService", () => {
       const groceries = [cad("tx-1", -200), jpy("tx-2", -10000)];
 
       describe("with a rate", () => {
-        beforeEach(() => rateMap.set("JPY->CAD", 0.009));
+        beforeEach(() => storedRates.set("JPY->CAD", 0.009));
 
         it("converts each row before summing, by category", async () => {
           const result = await run(GroupByType.CATEGORY, groceries);
@@ -1994,8 +2011,8 @@ describe("ReportsService", () => {
         });
 
         it("converts through the inverse pair when only it is stored", async () => {
-          rateMap.clear();
-          rateMap.set("CAD->JPY", 1000 / 9);
+          storedRates.clear();
+          storedRates.set("CAD->JPY", 1000 / 9);
 
           const result = await run(GroupByType.CATEGORY, groceries);
 
@@ -2166,6 +2183,41 @@ describe("ReportsService", () => {
         expect(result.excludedCount).toBe(0);
       });
 
+      it("converts a row at its own settled rate, not the market's (issue #2106)", async () => {
+        // Bought in CAD on a USD card: 75 USD at 0.75 USD per CAD is 100 CAD,
+        // whatever the market rate is now.
+        storedRates.set("USD->CAD", 1.5);
+        const settled = createMockTransaction({
+          id: "tx-1",
+          amount: -75,
+          currencyCode: "USD",
+          originalCurrencyCode: "CAD",
+          exchangeRate: 0.75,
+        });
+
+        const result = await run(GroupByType.CATEGORY, [settled]);
+
+        expect(result.summary.total).toBe(100);
+      });
+
+      it("loads the rate history from the earliest foreign row's date (issue #2106)", async () => {
+        storedRates.set("JPY->CAD", 0.009);
+        await run(GroupByType.CATEGORY, [
+          cad("tx-1", -200),
+          jpy("tx-2", -10000, { transactionDate: "2025-03-02" }),
+          jpy("tx-3", -10000, { transactionDate: "2025-02-10" }),
+        ]);
+
+        const [rows, currency] =
+          mockCurrencyService.buildConverter.mock.calls[0];
+        expect(currency).toBe("CAD");
+        expect(rows).toEqual([
+          { currency_code: "CAD", tx_date: null, own_rate: null },
+          { currency_code: "JPY", tx_date: "2025-03-02", own_rate: null },
+          { currency_code: "JPY", tx_date: "2025-02-10", own_rate: null },
+        ]);
+      });
+
       it("needs no rate for the reporting currency itself", async () => {
         const result = await run(GroupByType.CATEGORY, [cad("tx-1", -200)]);
 
@@ -2173,11 +2225,11 @@ describe("ReportsService", () => {
       });
 
       it("resolves the currency and rates once per execution", async () => {
-        rateMap.set("JPY->CAD", 0.009);
+        storedRates.set("JPY->CAD", 0.009);
         await run(GroupByType.CATEGORY, groceries);
 
         expect(mockCurrencyService.getDefaultCurrency).toHaveBeenCalledTimes(1);
-        expect(mockCurrencyService.buildRateMap).toHaveBeenCalledTimes(1);
+        expect(mockCurrencyService.buildConverter).toHaveBeenCalledTimes(1);
       });
     });
 
@@ -3913,7 +3965,7 @@ describe("ReportsService", () => {
       });
 
       it("converts a foreign-currency budget into the reporting currency", async () => {
-        rateMap.set("EUR->USD", 2);
+        storedRates.set("EUR->USD", 2);
         setupExecuteMocks(
           {
             groupBy: GroupByType.CATEGORY,

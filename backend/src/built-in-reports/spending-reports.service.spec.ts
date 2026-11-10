@@ -13,6 +13,10 @@ import {
   DataSourceMock,
   ManagerMock,
 } from "../test-helpers/scoped-db-testing";
+import {
+  FIXTURE_TX_DATE,
+  rateIndexOf,
+} from "../test-helpers/report-rate-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -86,7 +90,7 @@ describe("SpendingReportsService", () => {
     };
 
     exchangeRateService = {
-      getLatestRates: jest.fn().mockResolvedValue(mockExchangeRates),
+      getRateIndex: jest.fn().mockResolvedValue(rateIndexOf(mockExchangeRates)),
     };
 
     ({ manager: scopedManager, dataSource: scopedDataSource } =
@@ -148,8 +152,18 @@ describe("SpendingReportsService", () => {
 
     it("aggregates spending by parent category with rollup", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-child", currency_code: "USD", total: "150.00" },
-        { category_id: "cat-parent", currency_code: "USD", total: "50.00" },
+        {
+          category_id: "cat-child",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "150.00",
+        },
+        {
+          category_id: "cat-parent",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "50.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([
         mockParentCategory,
@@ -174,8 +188,18 @@ describe("SpendingReportsService", () => {
       // the smaller number presented as a total nor the raw yen added to
       // dollars, which is what the report did before.
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-parent", currency_code: "USD", total: "100.00" },
-        { category_id: "cat-parent", currency_code: "JPY", total: "50000.00" },
+        {
+          category_id: "cat-parent",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "100.00",
+        },
+        {
+          category_id: "cat-parent",
+          currency_code: "JPY",
+          tx_date: FIXTURE_TX_DATE,
+          total: "50000.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockParentCategory]);
 
@@ -193,10 +217,153 @@ describe("SpendingReportsService", () => {
       expect(result.currency).toBe("USD");
     });
 
+    describe("a past period's rate (issue #2106)", () => {
+      beforeEach(() => {
+        categoriesRepository.find.mockResolvedValue([mockParentCategory]);
+        exchangeRateService.getRateIndex.mockResolvedValue(
+          rateIndexOf([
+            {
+              fromCurrency: "EUR",
+              toCurrency: "USD",
+              rate: 1.05,
+              rateDate: "2025-01-10",
+            },
+            {
+              fromCurrency: "EUR",
+              toCurrency: "USD",
+              rate: 1.15,
+              rateDate: "2025-06-02",
+            },
+            // Today's rate, which a past row must never be converted at.
+            {
+              fromCurrency: "EUR",
+              toCurrency: "USD",
+              rate: 1.3,
+              rateDate: "2026-11-01",
+            },
+          ]),
+        );
+      });
+
+      it("converts each foreign row at the rate on its own date", async () => {
+        scopedManager.query.mockResolvedValue([
+          {
+            category_id: "cat-parent",
+            currency_code: "EUR",
+            tx_date: "2025-01-15",
+            own_rate: null,
+            total: "100.00",
+          },
+          {
+            category_id: "cat-parent",
+            currency_code: "EUR",
+            tx_date: "2025-06-20",
+            own_rate: null,
+            total: "100.00",
+          },
+        ]);
+
+        const result = await service.getSpendingByCategory(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+        );
+
+        // 100 EUR at 1.05 plus 100 EUR at 1.15; at today's 1.30 it read 260.
+        expect(result.totalSpending).toBe(220);
+        expect(result.data[0].total).toBe(220);
+        const [currencies, to, start, end] =
+          exchangeRateService.getRateIndex.mock.calls[0];
+        expect([...currencies]).toEqual(["EUR"]);
+        expect([to, start, end]).toEqual(["USD", "2025-01-15", "2025-06-20"]);
+      });
+
+      it("leaves a category out whole when one of its days has no rate", async () => {
+        // A 100 EUR debit in June converts; its 100 EUR refund from 2024, with
+        // no admissible rate, does not. Keeping the debit alone would report
+        // spending that netted to nothing.
+        scopedManager.query.mockResolvedValue([
+          {
+            category_id: "cat-parent",
+            currency_code: "EUR",
+            tx_date: "2025-06-20",
+            own_rate: null,
+            total: "100.00",
+          },
+          {
+            category_id: "cat-parent",
+            currency_code: "EUR",
+            tx_date: "2024-01-05",
+            own_rate: null,
+            total: "-100.00",
+          },
+        ]);
+
+        const result = await service.getSpendingByCategory(
+          mockUserId,
+          "2024-01-01",
+          "2025-12-31",
+        );
+
+        expect(result.data).toEqual([]);
+        expect(result.totalSpending).toBeNull();
+        expect(result.excludedCount).toBe(1);
+        expect(result.missingCurrencies).toEqual(["EUR"]);
+      });
+
+      it("converts a row that settled into the reporting currency at its own rate", async () => {
+        scopedManager.query.mockResolvedValue([
+          {
+            category_id: "cat-parent",
+            currency_code: "EUR",
+            tx_date: "2025-01-15",
+            // 0.80 EUR per USD: 100 EUR settled 125 USD.
+            own_rate: "0.8",
+            total: "100.00",
+          },
+        ]);
+
+        const result = await service.getSpendingByCategory(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+        );
+
+        expect(result.totalSpending).toBe(125);
+        expect(exchangeRateService.getRateIndex).not.toHaveBeenCalled();
+      });
+
+      it("splits a foreign aggregate by day and keeps a home one whole, in SQL", async () => {
+        scopedManager.query.mockResolvedValue([]);
+
+        await service.getSpendingByCategory(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+        );
+
+        const [sql, params] = scopedManager.query.mock.calls[0];
+        expect(sql).toContain("WHEN t.currency_code = $3::text THEN NULL");
+        expect(sql).toContain("AS own_rate");
+        expect(sql).toMatch(/GROUP BY .*tx_date, own_rate/);
+        expect(params[2]).toBe("USD");
+      });
+    });
+
     it("reports a complete total when every row converted", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-parent", currency_code: "USD", total: "100.00" },
-        { category_id: "cat-parent", currency_code: "EUR", total: "100.00" },
+        {
+          category_id: "cat-parent",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "100.00",
+        },
+        {
+          category_id: "cat-parent",
+          currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
+          total: "100.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockParentCategory]);
 
@@ -224,13 +391,13 @@ describe("SpendingReportsService", () => {
       );
 
       const [sql, params] = scopedManager.query.mock.calls[0];
-      expect(sql).toContain("t.account_id = ANY($4::uuid[])");
-      expect(params[3]).toEqual(["acct-1", "acct-2"]);
+      expect(sql).toContain("t.account_id = ANY($5::uuid[])");
+      expect(params[4]).toEqual(["acct-1", "acct-2"]);
     });
 
     it("numbers the account parameter around an absent start date", async () => {
       // The filter is appended after the optional start date, so its position
-      // is not a constant. A hardcoded $4 here silently filtered on the date.
+      // is not a constant. A hardcoded $5 here silently filtered on the date.
       scopedManager.query.mockResolvedValue([]);
       categoriesRepository.find.mockResolvedValue([]);
 
@@ -239,8 +406,8 @@ describe("SpendingReportsService", () => {
       });
 
       const [sql, params] = scopedManager.query.mock.calls[0];
-      expect(sql).toContain("t.account_id = ANY($3::uuid[])");
-      expect(params[2]).toEqual(["acct-1"]);
+      expect(sql).toContain("t.account_id = ANY($4::uuid[])");
+      expect(params[3]).toEqual(["acct-1"]);
     });
 
     it("adds no account filter for an empty selection", async () => {
@@ -279,7 +446,12 @@ describe("SpendingReportsService", () => {
         const [sameSql, sameParams] = scopedManager.query.mock.calls[1];
         expect(plainSql).not.toContain("transaction_tags");
         expect(plainSql).not.toContain("transaction_split_tags");
-        expect(plainParams).toEqual([mockUserId, "2025-12-31", "2025-01-01"]);
+        expect(plainParams).toEqual([
+          mockUserId,
+          "2025-12-31",
+          "USD",
+          "2025-01-01",
+        ]);
         expect(sameSql).toBe(plainSql);
         expect(sameParams).toEqual(plainParams);
       });
@@ -296,17 +468,18 @@ describe("SpendingReportsService", () => {
         );
 
         const [sql, params] = scopedManager.query.mock.calls[0];
-        // After the account filter ($4): key $5, value $6; never interpolated.
+        // After the account filter ($5): key $6, value $7; never interpolated.
         expect(params).toEqual([
           mockUserId,
           "2025-12-31",
+          "USD",
           "2025-01-01",
           ["acct-1"],
           "scope",
           "household",
         ]);
-        expect(sql).toContain("$6::text = ANY(");
-        expect(sql).toContain("LOWER($5)");
+        expect(sql).toContain("$7::text = ANY(");
+        expect(sql).toContain("LOWER($6)");
         expect(sql).not.toContain("household");
         // Reads BOTH levels: the transaction's tags and this split's tags.
         expect(sql).toContain("FROM transaction_tags");
@@ -338,11 +511,12 @@ describe("SpendingReportsService", () => {
         expect(params).toEqual([
           mockUserId,
           "2025-12-31",
+          "USD",
           "scope",
           "household",
         ]);
-        expect(sql).toContain("$4::text = ANY(");
-        expect(sql).toContain("LOWER($3)");
+        expect(sql).toContain("$5::text = ANY(");
+        expect(sql).toContain("LOWER($4)");
       });
 
       it("filters on nothing when only one half is given", async () => {
@@ -360,13 +534,18 @@ describe("SpendingReportsService", () => {
 
         const [sql, params] = scopedManager.query.mock.calls[0];
         expect(sql).not.toContain("transaction_tags");
-        expect(params).toEqual([mockUserId, "2025-12-31"]);
+        expect(params).toEqual([mockUserId, "2025-12-31", "USD"]);
       });
     });
 
     it("handles uncategorized transactions (null category_id)", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: null, currency_code: "USD", total: "75.50" },
+        {
+          category_id: null,
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "75.50",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([]);
 
@@ -384,7 +563,12 @@ describe("SpendingReportsService", () => {
 
     it("treats unknown category_id as uncategorized", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "unknown-cat", currency_code: "USD", total: "30.00" },
+        {
+          category_id: "unknown-cat",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "30.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockParentCategory]);
 
@@ -401,7 +585,12 @@ describe("SpendingReportsService", () => {
 
     it("converts foreign currency amounts to default currency", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-parent", currency_code: "EUR", total: "100.00" },
+        {
+          category_id: "cat-parent",
+          currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
+          total: "100.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockParentCategory]);
 
@@ -418,6 +607,7 @@ describe("SpendingReportsService", () => {
       const rawResults = Array.from({ length: 20 }, (_, i) => ({
         category_id: `cat-gen-${i}`,
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         total: `${(20 - i) * 10}.00`,
       }));
       const categories: Category[] = Array.from({ length: 20 }, (_, i) => ({
@@ -457,7 +647,12 @@ describe("SpendingReportsService", () => {
     it("uses default currency USD when user preference not found", async () => {
       userPreferenceRepository.findOne.mockResolvedValue(null);
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-parent", currency_code: "USD", total: "100.00" },
+        {
+          category_id: "cat-parent",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "100.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockParentCategory]);
 
@@ -481,7 +676,12 @@ describe("SpendingReportsService", () => {
       );
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "2025-01-01"]);
+      expect(queryCall[1]).toEqual([
+        mockUserId,
+        "2025-12-31",
+        "USD",
+        "2025-01-01",
+      ]);
     });
 
     it("omits startDate filter when startDate is undefined", async () => {
@@ -491,13 +691,18 @@ describe("SpendingReportsService", () => {
       await service.getSpendingByCategory(mockUserId, undefined, "2025-12-31");
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31"]);
-      expect(queryCall[0]).not.toContain("$3");
+      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "USD"]);
+      expect(queryCall[0]).not.toContain("transaction_date >= $");
     });
 
     it("returns color from parent category in response", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-child", currency_code: "USD", total: "100.00" },
+        {
+          category_id: "cat-child",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "100.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([
         mockParentCategory,
@@ -515,8 +720,18 @@ describe("SpendingReportsService", () => {
 
     it("merges multiple uncategorized rows", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: null, currency_code: "USD", total: "50.00" },
-        { category_id: null, currency_code: "EUR", total: "100.00" },
+        {
+          category_id: null,
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "50.00",
+        },
+        {
+          category_id: null,
+          currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
+          total: "100.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([]);
 
@@ -534,7 +749,12 @@ describe("SpendingReportsService", () => {
 
     it("uses inverse rate for currency conversion when direct not available", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-parent", currency_code: "CAD", total: "136.00" },
+        {
+          category_id: "cat-parent",
+          currency_code: "CAD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "136.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockParentCategory]);
 
@@ -595,6 +815,7 @@ describe("SpendingReportsService", () => {
           {
             category_id: "cat-parent",
             currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
             total: "23206.07",
           },
         ]);
@@ -612,9 +833,24 @@ describe("SpendingReportsService", () => {
 
       it("drops a category whose credits outweigh its debits", async () => {
         scopedManager.query.mockResolvedValue([
-          { category_id: "cat-parent", currency_code: "USD", total: "-500.00" },
-          { category_id: "cat-child", currency_code: "USD", total: "-25.00" },
-          { category_id: null, currency_code: "USD", total: "40.00" },
+          {
+            category_id: "cat-parent",
+            currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
+            total: "-500.00",
+          },
+          {
+            category_id: "cat-child",
+            currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
+            total: "-25.00",
+          },
+          {
+            category_id: null,
+            currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
+            total: "40.00",
+          },
         ]);
         categoriesRepository.find.mockResolvedValue([
           { ...mockParentCategory, parentId: null },
@@ -633,7 +869,12 @@ describe("SpendingReportsService", () => {
 
       it("drops a category refunded back to exactly zero", async () => {
         scopedManager.query.mockResolvedValue([
-          { category_id: "cat-parent", currency_code: "USD", total: "0.00" },
+          {
+            category_id: "cat-parent",
+            currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
+            total: "0.00",
+          },
         ]);
         categoriesRepository.find.mockResolvedValue([mockParentCategory]);
 
@@ -649,8 +890,18 @@ describe("SpendingReportsService", () => {
 
       it("nets a subcategory's refund against its parent's spending", async () => {
         scopedManager.query.mockResolvedValue([
-          { category_id: "cat-parent", currency_code: "USD", total: "150.00" },
-          { category_id: "cat-child", currency_code: "USD", total: "-20.00" },
+          {
+            category_id: "cat-parent",
+            currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
+            total: "150.00",
+          },
+          {
+            category_id: "cat-child",
+            currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
+            total: "-20.00",
+          },
         ]);
         categoriesRepository.find.mockResolvedValue([
           mockParentCategory,
@@ -672,8 +923,18 @@ describe("SpendingReportsService", () => {
     describe("rollupToParent = false", () => {
       it("keeps subcategories separate with 'Parent: Child' name format", async () => {
         scopedManager.query.mockResolvedValue([
-          { category_id: "cat-child", currency_code: "USD", total: "150.00" },
-          { category_id: "cat-parent", currency_code: "USD", total: "50.00" },
+          {
+            category_id: "cat-child",
+            currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
+            total: "150.00",
+          },
+          {
+            category_id: "cat-parent",
+            currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
+            total: "50.00",
+          },
         ]);
         categoriesRepository.find.mockResolvedValue([
           mockParentCategory,
@@ -700,7 +961,12 @@ describe("SpendingReportsService", () => {
 
       it("keeps parent-only categories with their own name", async () => {
         scopedManager.query.mockResolvedValue([
-          { category_id: "cat-parent", currency_code: "USD", total: "200.00" },
+          {
+            category_id: "cat-parent",
+            currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
+            total: "200.00",
+          },
         ]);
         categoriesRepository.find.mockResolvedValue([mockParentCategory]);
 
@@ -717,7 +983,12 @@ describe("SpendingReportsService", () => {
 
       it("uses the subcategory's own color", async () => {
         scopedManager.query.mockResolvedValue([
-          { category_id: "cat-child", currency_code: "USD", total: "100.00" },
+          {
+            category_id: "cat-child",
+            currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
+            total: "100.00",
+          },
         ]);
         categoriesRepository.find.mockResolvedValue([
           mockParentCategory,
@@ -736,8 +1007,18 @@ describe("SpendingReportsService", () => {
 
       it("merges multi-currency rows for the same subcategory", async () => {
         scopedManager.query.mockResolvedValue([
-          { category_id: "cat-child", currency_code: "USD", total: "100.00" },
-          { category_id: "cat-child", currency_code: "EUR", total: "50.00" },
+          {
+            category_id: "cat-child",
+            currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
+            total: "100.00",
+          },
+          {
+            category_id: "cat-child",
+            currency_code: "EUR",
+            tx_date: FIXTURE_TX_DATE,
+            total: "50.00",
+          },
         ]);
         categoriesRepository.find.mockResolvedValue([
           mockParentCategory,
@@ -782,12 +1063,14 @@ describe("SpendingReportsService", () => {
           payee_id: "payee-1",
           payee_name: "Starbucks",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "50.00",
         },
         {
           payee_id: "payee-1",
           payee_name: "Starbucks",
           currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
           total: "20.00",
         },
       ]);
@@ -813,6 +1096,7 @@ describe("SpendingReportsService", () => {
           payee_id: null,
           payee_name: "Corner Store",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "25.00",
         },
       ]);
@@ -834,6 +1118,7 @@ describe("SpendingReportsService", () => {
         payee_id: `payee-${i}`,
         payee_name: `Payee ${i}`,
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         total: `${(25 - i) * 10}.00`,
       }));
       payeesRepository.findByIds.mockResolvedValue(
@@ -860,6 +1145,7 @@ describe("SpendingReportsService", () => {
           payee_id: null,
           payee_name: "Cash Payment",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "10.00",
         },
       ]);
@@ -875,6 +1161,7 @@ describe("SpendingReportsService", () => {
           payee_id: null,
           payee_name: null,
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "15.00",
         },
       ]);
@@ -895,7 +1182,12 @@ describe("SpendingReportsService", () => {
       await service.getSpendingByPayee(mockUserId, "2025-06-01", "2025-12-31");
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "2025-06-01"]);
+      expect(queryCall[1]).toEqual([
+        mockUserId,
+        "2025-12-31",
+        "USD",
+        "2025-06-01",
+      ]);
     });
 
     it("omits startDate filter when undefined", async () => {
@@ -904,7 +1196,7 @@ describe("SpendingReportsService", () => {
       await service.getSpendingByPayee(mockUserId, undefined, "2025-12-31");
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31"]);
+      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "USD"]);
     });
 
     it("calculates totalSpending from the top 20 results", async () => {
@@ -913,12 +1205,14 @@ describe("SpendingReportsService", () => {
           payee_id: "payee-1",
           payee_name: "Store A",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "100.00",
         },
         {
           payee_id: "payee-2",
           payee_name: "Store B",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "200.00",
         },
       ]);
@@ -971,18 +1265,21 @@ describe("SpendingReportsService", () => {
           month: "2025-01",
           category_id: "cat-child",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "100.00",
         },
         {
           month: "2025-01",
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "50.00",
         },
         {
           month: "2025-02",
           category_id: "cat-child",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "120.00",
         },
       ]);
@@ -1025,6 +1322,7 @@ describe("SpendingReportsService", () => {
         month: "2025-01",
         category_id: c.id,
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         total: `${(12 - i) * 10}.00`,
       }));
 
@@ -1046,12 +1344,14 @@ describe("SpendingReportsService", () => {
           month: "2025-03",
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "100.00",
         },
         {
           month: "2025-01",
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "200.00",
         },
       ]);
@@ -1073,6 +1373,7 @@ describe("SpendingReportsService", () => {
           month: "2025-01",
           category_id: null,
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "80.00",
         },
       ]);
@@ -1099,6 +1400,7 @@ describe("SpendingReportsService", () => {
           month: "2025-01",
           category_id: "cat-parent",
           currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
           total: "100.00",
         },
       ]);
@@ -1120,12 +1422,14 @@ describe("SpendingReportsService", () => {
           month: "2025-01",
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "100.00",
         },
         {
           month: "2025-02",
           category_id: null,
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "50.00",
         },
       ]);
@@ -1170,12 +1474,14 @@ describe("SpendingReportsService", () => {
             month: "2025-01",
             category_id: "cat-parent",
             currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
             total: "100.00",
           },
           {
             month: "2025-02",
             category_id: "cat-parent",
             currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
             total: "-30.00",
           },
         ]);
@@ -1196,12 +1502,14 @@ describe("SpendingReportsService", () => {
             month: "2025-01",
             category_id: "cat-parent",
             currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
             total: "100.00",
           },
           {
             month: "2025-01",
             category_id: "cat-child",
             currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
             total: "-80.00",
           },
         ]);
@@ -1227,12 +1535,14 @@ describe("SpendingReportsService", () => {
             month: "2025-01",
             category_id: "cat-parent",
             currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
             total: "100.00",
           },
           {
             month: "2025-02",
             category_id: "cat-income",
             currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
             total: "-4000.00",
           },
         ]);
@@ -1272,7 +1582,7 @@ describe("SpendingReportsService", () => {
   // ---------------------------------------------------------------------------
   describe("a currency that has no rate", () => {
     beforeEach(() => {
-      exchangeRateService.getLatestRates.mockResolvedValue([]);
+      exchangeRateService.getRateIndex.mockResolvedValue(rateIndexOf([]));
     });
 
     it("getSpendingByPayee withholds the total and drops the unconverted payee row", async () => {
@@ -1281,12 +1591,14 @@ describe("SpendingReportsService", () => {
           payee_id: "payee-1",
           payee_name: "Starbucks",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "50.00",
         },
         {
           payee_id: "payee-2",
           payee_name: "Tokyo Shop",
           currency_code: "JPY",
+          tx_date: FIXTURE_TX_DATE,
           total: "100000",
         },
       ]);
@@ -1330,18 +1642,21 @@ describe("SpendingReportsService", () => {
           month: "2025-01",
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "50.00",
         },
         {
           month: "2025-01",
           category_id: "cat-parent",
           currency_code: "JPY",
+          tx_date: FIXTURE_TX_DATE,
           total: "100000",
         },
         {
           month: "2025-02",
           category_id: "cat-parent",
           currency_code: "JPY",
+          tx_date: FIXTURE_TX_DATE,
           total: "100000",
         },
       ]);
@@ -1386,10 +1701,12 @@ describe("SpendingReportsService", () => {
       userPreferenceRepository.findOne.mockResolvedValue({
         defaultCurrency: "CAD",
       });
-      exchangeRateService.getLatestRates.mockResolvedValue([
-        { fromCurrency: "BTC", toCurrency: "CAD", rate: 136000 },
-        { fromCurrency: "USD", toCurrency: "CAD", rate: 1.36 },
-      ]);
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        rateIndexOf([
+          { fromCurrency: "BTC", toCurrency: "CAD", rate: 136000 },
+          { fromCurrency: "USD", toCurrency: "CAD", rate: 1.36 },
+        ]),
+      );
       categoriesRepository.find.mockResolvedValue([mockParentCategory]);
     });
 
@@ -1399,6 +1716,7 @@ describe("SpendingReportsService", () => {
         {
           category_id: "cat-parent",
           currency_code: "BTC",
+          tx_date: FIXTURE_TX_DATE,
           total: "0.00002500",
         },
       ]);
@@ -1421,6 +1739,7 @@ describe("SpendingReportsService", () => {
         {
           category_id: "cat-parent",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "12.34567800",
         },
       ]);

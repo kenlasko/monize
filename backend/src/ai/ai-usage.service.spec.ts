@@ -4,6 +4,7 @@ import { AiUsageService } from "./ai-usage.service";
 import { AiUsageLog } from "./entities/ai-usage-log.entity";
 import { AiProviderConfig } from "./entities/ai-provider-config.entity";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import { UserPreference } from "../users/entities/user-preference.entity";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -13,6 +14,7 @@ describe("AiUsageService", () => {
   let service: AiUsageService;
   let mockRepository: Record<string, jest.Mock>;
   let mockConfigRepository: Record<string, jest.Mock>;
+  let scopedDb: ReturnType<typeof createScopedDbMocks>;
 
   const mockQueryBuilder = {
     select: jest.fn().mockReturnThis(),
@@ -55,10 +57,19 @@ describe("AiUsageService", () => {
         AiUsageService,
         {
           provide: DataSource,
-          useValue: createScopedDbMocks([
+          useValue: (scopedDb = createScopedDbMocks([
             [AiUsageLog, mockRepository],
             [AiProviderConfig, mockConfigRepository],
-          ]).dataSource,
+            // The reader reports in USD, the configs' default cost currency.
+            [
+              UserPreference,
+              {
+                findOne: jest
+                  .fn()
+                  .mockResolvedValue({ defaultCurrency: "USD" }),
+              },
+            ],
+          ])).dataSource,
         },
       ],
     }).compile();
@@ -121,6 +132,8 @@ describe("AiUsageService", () => {
         totalInputTokens: 0,
         totalOutputTokens: 0,
         totalEstimatedCostByCurrency: {},
+        reportingCurrency: "USD",
+        totalEstimatedCostInReportingCurrency: null,
         byProvider: [],
         byFeature: [],
         recentLogs: [],
@@ -159,6 +172,7 @@ describe("AiUsageService", () => {
         durationMs: 1200,
         estimatedCost: null,
         costCurrency: null,
+        estimatedCostInReportingCurrency: null,
         createdAt: "2024-06-15T12:00:00.000Z",
       });
     });
@@ -203,6 +217,7 @@ describe("AiUsageService", () => {
           inputTokens: 500,
           outputTokens: 250,
           estimatedCostByCurrency: {},
+          estimatedCostInReportingCurrency: null,
         },
       ]);
       expect(summary.byFeature).toEqual([
@@ -212,6 +227,7 @@ describe("AiUsageService", () => {
           inputTokens: 300,
           outputTokens: 150,
           estimatedCostByCurrency: {},
+          estimatedCostInReportingCurrency: null,
         },
       ]);
     });
@@ -312,6 +328,134 @@ describe("AiUsageService", () => {
         USD: 3,
         EUR: 2,
       });
+    });
+
+    it("converts each day's cost into the reporting currency at that day's rate (issue #2106)", async () => {
+      mockConfigRepository.find.mockResolvedValueOnce([
+        {
+          provider: "openai",
+          model: "gpt-4o",
+          inputCostPer1M: 2,
+          outputCostPer1M: 0,
+          costCurrency: "EUR",
+        },
+      ]);
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          // 2 EUR in January at 1.05 and 2 EUR in June at 1.15.
+          {
+            provider: "openai",
+            model: "gpt-4o",
+            day: "2025-01-15",
+            requests: "1",
+            inputTokens: "1000000",
+            outputTokens: "0",
+          },
+          {
+            provider: "openai",
+            model: "gpt-4o",
+            day: "2025-06-15",
+            requests: "1",
+            inputTokens: "1000000",
+            outputTokens: "0",
+          },
+        ])
+        .mockResolvedValueOnce([]);
+      scopedDb.manager.query.mockResolvedValue([
+        {
+          from_currency: "EUR",
+          to_currency: "USD",
+          rate: "1.05",
+          rate_date: "2025-01-10",
+        },
+        {
+          from_currency: "EUR",
+          to_currency: "USD",
+          rate: "1.15",
+          rate_date: "2025-06-10",
+        },
+      ]);
+
+      const summary = await service.getUsageSummary("user-1");
+
+      expect(summary.totalEstimatedCostByCurrency).toEqual({ EUR: 4 });
+      expect(summary.reportingCurrency).toBe("USD");
+      expect(summary.byProvider[0].estimatedCostInReportingCurrency).toBe(4.4);
+      expect(summary.totalEstimatedCostInReportingCurrency).toBe(4.4);
+    });
+
+    it("sums a cheap model's daily costs before rounding them (issue #2106)", async () => {
+      mockConfigRepository.find.mockResolvedValueOnce([
+        {
+          provider: "openai",
+          model: "mini",
+          inputCostPer1M: 0.1,
+          outputCostPer1M: 0,
+          costCurrency: "USD",
+        },
+      ]);
+      // 500 tokens a day for 30 days: 0.00005 a day, 0.0015 in all.
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce(
+          Array.from({ length: 30 }, (_, i) => ({
+            provider: "openai",
+            model: "mini",
+            day: `2025-06-${String(i + 1).padStart(2, "0")}`,
+            requests: "1",
+            inputTokens: "500",
+            outputTokens: "0",
+          })),
+        )
+        .mockResolvedValueOnce([]);
+
+      const summary = await service.getUsageSummary("user-1");
+
+      expect(summary.totalEstimatedCostByCurrency).toEqual({ USD: 0.0015 });
+      expect(summary.totalEstimatedCostInReportingCurrency).toBe(0.0015);
+    });
+
+    it("dates a recent log by its UTC day, as the aggregates are, in any process time zone", async () => {
+      mockConfigRepository.find.mockResolvedValueOnce([
+        {
+          provider: "openai",
+          model: "gpt-4o",
+          inputCostPer1M: 2,
+          outputCostPer1M: 0,
+          costCurrency: "EUR",
+        },
+      ]);
+      // Stored 2025-06-16 02:00 (UTC, as main.ts parses it): the evening of
+      // the 15th in Toronto, but the 16th to the SQL that groups the logs.
+      mockRepository.find.mockResolvedValueOnce([
+        {
+          id: "log-1",
+          provider: "openai",
+          model: "gpt-4o",
+          feature: "categorize",
+          inputTokens: 1000000,
+          outputTokens: 0,
+          durationMs: 10,
+          createdAt: new Date("2025-06-16T02:00:00.000Z"),
+        },
+      ]);
+      scopedDb.manager.query.mockResolvedValue([
+        {
+          from_currency: "EUR",
+          to_currency: "USD",
+          rate: "1.1",
+          rate_date: "2025-06-15",
+        },
+        {
+          from_currency: "EUR",
+          to_currency: "USD",
+          rate: "1.2",
+          rate_date: "2025-06-16",
+        },
+      ]);
+
+      const summary = await service.getUsageSummary("user-1");
+
+      expect(summary.recentLogs[0].estimatedCostInReportingCurrency).toBe(2.4);
     });
 
     it("returns empty bucket when provider/model has no configured rate", async () => {

@@ -75,7 +75,7 @@ describe("Income vs Expenses tag-key breakdown (integration)", () => {
     // the report's own same-currency short circuit handles USD, and JPY simply
     // never resolves.
     const currency = new ReportCurrencyService(dataSource, {
-      getLatestRates: async () => [],
+      getRateIndex: async () => new Map(),
     } as never);
     income = new IncomeReportsService(dataSource, currency);
   });

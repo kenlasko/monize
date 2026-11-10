@@ -9,6 +9,7 @@ import {
 import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
 import { restrictToAccountScope } from "../delegation/delegate-account-scope.util";
 import { Account } from "../accounts/entities/account.entity";
+import { withAccountTotalsInReportingCurrency } from "../built-in-reports/account-breakdown-fx";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { Category } from "./entities/category.entity";
@@ -245,7 +246,7 @@ export class CategoryDetailService {
       m,
       rows.map((row) => row.currencyCode),
     );
-    return rows.map((row) => ({
+    const native = rows.map((row) => ({
       accountId: row.accountId,
       accountName: row.accountName,
       accountType: row.accountType,
@@ -257,6 +258,19 @@ export class CategoryDetailService {
       ),
       lastTransactionDate: row.lastTransactionDate ?? null,
     }));
+    return withAccountTotalsInReportingCurrency(
+      m,
+      userId,
+      native,
+      () =>
+        this.subtreeTransactionQuery(
+          m,
+          userId,
+          subtreeIds,
+          accountScope,
+        ).innerJoin(Account, "account", "account.id = t.account_id"),
+      "COALESCE(split.amount, t.amount)",
+    );
   }
 
   private async getLargestTransaction(

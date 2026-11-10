@@ -4,7 +4,9 @@ import { withScopedDb } from "../common/db/scoped-db";
 import { Category } from "../categories/entities/category.entity";
 import {
   ConversionGaps,
+  RawRateBasis,
   ReportCurrencyService,
+  rateBasisColumnsSql,
 } from "./report-currency.service";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { NumberT, numberFormatterFor } from "../common/number-locale.util";
@@ -35,12 +37,11 @@ const INVESTMENT_EXCLUSION = investmentExclusionSql({
   splitAlias: "ts",
 });
 
-interface RawExpense {
+interface RawExpense extends RawRateBasis {
   id: string;
   transaction_date: Date;
   payee_id: string | null;
   payee_name: string | null;
-  currency_code: string;
   category_id: string | null;
   amount: string;
 }
@@ -82,7 +83,6 @@ export class AnomalyReportsService {
       m.getRepository(UserPreference).findOne({ where: { userId } }),
     );
     const n = numberFormatterFor(prefs?.numberFormat, prefs?.language);
-    const rateMap = await this.currencyService.buildRateMap(defaultCurrency);
 
     const now = new Date();
     const windowStart = new Date(now);
@@ -97,6 +97,7 @@ export class AnomalyReportsService {
         t.payee_id,
         t.payee_name,
         t.currency_code,
+        ${rateBasisColumnsSql("$4")},
         COALESCE(ts.category_id, t.category_id) as category_id,
         ABS(COALESCE(ts.amount, t.amount)) as amount
       FROM transactions t
@@ -115,7 +116,11 @@ export class AnomalyReportsService {
     `;
 
     const rawResults: RawExpense[] = await withScopedDb(this.dataSource, (m) =>
-      m.query(query, [userId, startDate, endDate]),
+      m.query(query, [userId, startDate, endDate, defaultCurrency]),
+    );
+    const convert = await this.currencyService.buildConverter(
+      rawResults,
+      defaultCurrency,
     );
 
     // A transaction with no rate into the reporting currency is unknown, never
@@ -126,15 +131,13 @@ export class AnomalyReportsService {
     const gaps = new ConversionGaps();
     const converted: ConvertedExpense[] = [];
     for (const row of rawResults) {
-      const amount = this.currencyService.tryConvertAmount(
+      const amount = convert(
         // An aggregate in the row's own currency, read before conversion: a coin's
         // sum keeps its stored 8 places (MONEY_SCALE, lossless; a fiat figure reads
         // the same), so a 2,500-sat total is not rounded to zero before it is
         // converted (INV-MONEY-001).
         toMoneyNumber(row.amount, MONEY_SCALE),
-        row.currency_code,
-        defaultCurrency,
-        rateMap,
+        row,
       );
       if (amount === null) {
         gaps.record(row.currency_code);

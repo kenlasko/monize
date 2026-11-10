@@ -1049,6 +1049,23 @@ describe('TransactionsPage', () => {
       expect(screen.queryByTestId('chart-monthly-totals')).not.toBeInTheDocument();
     });
 
+    it("draws several currencies at the server's per-day conversion, not today's rate (issue #2106)", async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetDailyBalances.mockResolvedValue([
+        { date: '2026-02-01', balance: 1000, accountId: 'acc-1', currencyCode: 'USD', convertedCurrency: 'USD', convertedBalance: 1000 },
+        { date: '2026-02-15', balance: 1500, accountId: 'acc-1', currencyCode: 'USD', convertedCurrency: 'USD', convertedBalance: 1500 },
+        { date: '2026-02-01', balance: 5000, accountId: 'acc-2', currencyCode: 'CAD', convertedCurrency: 'USD', convertedBalance: 3600 },
+        { date: '2026-02-15', balance: 5000, accountId: 'acc-2', currencyCode: 'CAD', convertedCurrency: 'USD', convertedBalance: 3700 },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-account-acc-2')).toHaveTextContent('Savings:3700');
+      });
+      expect(screen.getByTestId('chart-account-acc-1')).toHaveTextContent('Checking:1500');
+    });
+
     it('excludes zero-balance accounts from the Account Balances chart', async () => {
       mockGetAllAccounts.mockResolvedValue(mockAccounts);
       mockGetDailyBalances.mockResolvedValue([

@@ -115,6 +115,49 @@ describe("DailyBalanceTotalsService", () => {
     overdue: null,
   });
 
+  describe("withReportingCurrency (issue #2106)", () => {
+    it("converts each per-account row at its own day's rate, and a future day at today's", async () => {
+      rateRows = [
+        rate("USD", "CAD", 1.25, "2026-01-10"),
+        rate("USD", "CAD", 1.4, "2026-06-14"),
+      ];
+
+      const rows = await service.withReportingCurrency("user-1", [
+        balance("savings", "2026-01-12", 100, "USD"),
+        balance("savings", "2026-06-15", 100, "USD"),
+        balance("savings", "2026-06-30", 100, "USD"),
+        balance("chequing", "2026-01-12", 50, "CAD"),
+      ]);
+
+      expect(rows.map((r) => r.convertedBalance)).toEqual([125, 140, 140, 50]);
+      expect(rows.every((r) => r.convertedCurrency === "CAD")).toBe(true);
+      // The row keeps its own balance and currency beside the converted one.
+      expect(rows[0]).toMatchObject({ balance: 100, currencyCode: "USD" });
+    });
+
+    it("answers null, not the row's own amount, without an admissible rate", async () => {
+      rateRows = [rate("USD", "CAD", 1.4, "2026-06-14")];
+
+      const rows = await service.withReportingCurrency("user-1", [
+        balance("savings", "2026-01-12", 100, "USD"),
+      ]);
+
+      expect(rows[0].convertedBalance).toBeNull();
+    });
+
+    it("loads no rates for a reporting-currency scope, and nothing for no rows", async () => {
+      const rows = await service.withReportingCurrency("user-1", [
+        balance("chequing", "2026-01-12", 50, "CAD"),
+      ]);
+
+      expect(rows[0].convertedBalance).toBe(50);
+      expect(queries.some((q) => q.sql.includes("exchange_rates"))).toBe(false);
+      await expect(
+        service.withReportingCurrency("user-1", []),
+      ).resolves.toEqual([]);
+    });
+  });
+
   describe("table A: history", () => {
     it("totals a two-currency scope at each day's own rate (example 1)", async () => {
       accountRows = [account("chequing", "CAD"), account("savings", "USD")];

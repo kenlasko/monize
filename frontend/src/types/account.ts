@@ -682,6 +682,22 @@ export interface AccountBalancesAsOfResponse {
   accounts: AccountBalanceAsOf[];
 }
 
+/**
+ * One account's end-of-day balance (`GET /accounts/daily-balances`), in its own
+ * currency, with the server's conversion into the reader's reporting currency
+ * at that day's rate (today's for a future day) beside it. A reader totalling
+ * several currencies sums `convertedBalance`, never the balance converted at
+ * today's rate (issue #2106); `null` is a day with no admissible rate.
+ */
+export interface DailyAccountBalance {
+  date: string;
+  balance: number;
+  accountId: string;
+  currencyCode: string;
+  convertedCurrency?: string;
+  convertedBalance?: number | null;
+}
+
 /** One day of GET /accounts/daily-balance-totals. */
 export interface DailyBalanceTotal {
   date: string;

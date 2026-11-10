@@ -52,29 +52,46 @@ export function rowConversionBasis(
  * An amount of this row, in `rowAmountCurrency(tx)`, expressed in `target`, or
  * `null` when it cannot be.
  *
- * Into the account's currency, a row carrying its own settlement rate converts
- * at that rate, the one its cash leg settled at (INV-FX-002). Beyond the
- * account's currency, and for a row without a rate of its own, `convert`
- * supplies the market rate. A row whose own currency is unknown is unknown:
- * it is never taken to be in the account's currency.
+ * The server states each row's factor into the reader's reporting currency and
+ * into the row's own account's currency, worked out at the row's own settlement
+ * rate where it reaches (INV-FX-002) and at the market rate on the row's own
+ * trade date beyond (INV-FX-001). A dividend from three years ago is never
+ * converted at today's rate (issue #2106). Any other target, or a row no rate
+ * reaches, is unknown; so is a row whose own currency is unknown, which is never
+ * taken to be in the account's currency.
  */
 export function convertRowAmount(
-  tx: Pick<InvestmentTransaction, 'amountCurrencyCode' | 'security' | 'exchangeRate'>,
+  tx: Pick<
+    InvestmentTransaction,
+    | 'amountCurrencyCode'
+    | 'security'
+    | 'exchangeRate'
+    | 'reportingCurrencyCode'
+    | 'reportingRate'
+    | 'accountRate'
+    | 'ratesInto'
+  >,
   amount: number,
   accountCurrency: string | null | undefined,
   target: string,
-  convert: (amount: number, from: string, to: string) => number | null,
 ): number | null {
   const from = rowAmountCurrency(tx);
   if (from === null) return null;
   if (from === target) return amount;
-  if (
-    accountCurrency &&
-    from !== accountCurrency &&
-    rowConversionBasis(tx) === 'transaction'
-  ) {
-    const inAccount = amount * Number(tx.exchangeRate);
-    return accountCurrency === target ? inAccount : convert(inAccount, accountCurrency, target);
+  if (tx.ratesInto && target in tx.ratesInto) {
+    const rate = tx.ratesInto[target];
+    return rate === null ? null : amount * rate;
   }
-  return convert(amount, from, target);
+  if (target === tx.reportingCurrencyCode && tx.reportingRate !== undefined) {
+    return tx.reportingRate === null ? null : amount * tx.reportingRate;
+  }
+  if (accountCurrency && target === accountCurrency) {
+    if (tx.accountRate !== undefined) {
+      return tx.accountRate === null ? null : amount * tx.accountRate;
+    }
+    // A backend that predates the factors: the row's own settlement rate is
+    // still the rate its cash leg booked at.
+    if (rowConversionBasis(tx) === 'transaction') return amount * Number(tx.exchangeRate);
+  }
+  return null;
 }

@@ -150,7 +150,7 @@ export function DividendIncomeReport() {
   const formatChartDate = useChartDateFormat();
   const mainAccountName = useMainAccountName();
   const { formatCurrency: formatCurrencyFull, formatCurrencyAxis } = useNumberFormat();
-  const { defaultCurrency, convert, convertToDefault } = useExchangeRates();
+  const { defaultCurrency } = useExchangeRates();
   const chartRef = useRef<HTMLDivElement>(null);
   // Persisted so the report opens on the accounts the user last chose.
   // Accounts arrive with the data below, so stale IDs are pruned there.
@@ -411,31 +411,31 @@ export function DividendIncomeReport() {
         investmentIncomeAmount(tx),
         accountCurrencyMap.get(tx.accountId),
         displayCurrency,
-        convert,
       ),
-    [accountCurrencyMap, displayCurrency, convert],
+    [accountCurrencyMap, displayCurrency],
   );
 
-  // Backend already returns each capital gain entry in the holding account's
-  // currency. Convert to the default currency for multi-account views; pass
-  // through when a single account is selected.
+  // Backend returns each capital gain entry in the holding account's currency,
+  // and the same figures in the reporting currency at the rate for the entry's
+  // own period (`inReportingCurrency`). A single account reads its native
+  // figures; several read the reporting-currency ones, never a past month at
+  // today's rate (issue #2106).
   const convertCapitalGain = useCallback((entry: CapitalGainEntry): number | null => {
     // A null gain is unknown (no rate between the security's currency and the
     // account's); it must not survive conversion as a 0.
     if (entry.totalCapitalGain === null) return null;
     if (isSingleAccount) return entry.totalCapitalGain;
-    return convertToDefault(entry.totalCapitalGain, entry.accountCurrencyCode || defaultCurrency);
-  }, [isSingleAccount, defaultCurrency, convertToDefault]);
+    return entry.inReportingCurrency?.totalCapitalGain ?? null;
+  }, [isSingleAccount]);
 
-  // Same conversion as convertCapitalGain but applied to an arbitrary amount
-  // denominated in the entry's account currency (e.g. start/end market values).
+  // The same reading for an entry's start or end market value.
   const convertFromAccountCurrency = useCallback(
-    (amount: number | null, accountCurrencyCode: string | null): number | null => {
-      if (amount === null) return null;
-      if (isSingleAccount) return amount;
-      return convertToDefault(amount, accountCurrencyCode || defaultCurrency);
+    (entry: CapitalGainEntry, field: 'startValue' | 'endValue'): number | null => {
+      if (entry[field] === null) return null;
+      if (isSingleAccount) return entry[field];
+      return entry.inReportingCurrency?.[field] ?? null;
     },
-    [isSingleAccount, defaultCurrency, convertToDefault],
+    [isSingleAccount],
   );
 
   // A sum with an unknown component is unknown. Used everywhere a nullable
@@ -541,11 +541,11 @@ export function DividendIncomeReport() {
       // mark-to-market snapshot at each month boundary.
       bucket.startValue = addOrUnknown(
         bucket.startValue,
-        convertFromAccountCurrency(entry.startValue, entry.accountCurrencyCode),
+        convertFromAccountCurrency(entry, 'startValue'),
       );
       bucket.endValue = addOrUnknown(
         bucket.endValue,
-        convertFromAccountCurrency(entry.endValue, entry.accountCurrencyCode),
+        convertFromAccountCurrency(entry, 'endValue'),
       );
     });
 
@@ -606,11 +606,11 @@ export function DividendIncomeReport() {
       bucket.total = addOrUnknown(bucket.total, gain);
       bucket.startValue = addOrUnknown(
         bucket.startValue,
-        convertFromAccountCurrency(entry.startValue, entry.accountCurrencyCode),
+        convertFromAccountCurrency(entry, 'startValue'),
       );
       bucket.endValue = addOrUnknown(
         bucket.endValue,
-        convertFromAccountCurrency(entry.endValue, entry.accountCurrencyCode),
+        convertFromAccountCurrency(entry, 'endValue'),
       );
     });
 

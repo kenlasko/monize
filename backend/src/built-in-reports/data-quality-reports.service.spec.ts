@@ -2,7 +2,7 @@ import { DataSource } from "typeorm";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { DataQualityReportsService } from "./data-quality-reports.service";
-import { ReportCurrencyService } from "./report-currency.service";
+import { RawRateBasis, ReportCurrencyService } from "./report-currency.service";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import {
   createScopedDbMocks,
@@ -30,9 +30,14 @@ describe("DataQualityReportsService", () => {
 
     currencyService = {
       getDefaultCurrency: jest.fn().mockResolvedValue("USD"),
-      buildRateMap: jest.fn().mockResolvedValue(new Map()),
-      tryConvertAmount: jest.fn().mockImplementation((amount) => amount),
+      // The converter a report builds, per row; a test swaps its body.
+      convertRow: jest.fn().mockImplementation((amount: number) => amount),
+      buildConverter: jest.fn(),
     };
+    currencyService.buildConverter.mockImplementation(
+      async () => (amount: number, row: RawRateBasis) =>
+        currencyService.convertRow(amount, row),
+    );
 
     ({ manager: scopedManager, dataSource: scopedDataSource } =
       createScopedDbMocks([[Transaction, transactionsRepository as never]]));
@@ -59,6 +64,46 @@ describe("DataQualityReportsService", () => {
   // getUncategorizedTransactions
   // ---------------------------------------------------------------------------
   describe("getUncategorizedTransactions", () => {
+    it("leaves a currency's summary out whole when one of its days has no rate (issue #2106)", async () => {
+      currencyService.convertRow.mockImplementation(
+        (amount: number, row: RawRateBasis) =>
+          row.tx_date === "2024-01-05" ? null : amount,
+      );
+      scopedManager.query.mockResolvedValueOnce([]);
+      scopedManager.query.mockResolvedValueOnce([
+        {
+          currency_code: "EUR",
+          tx_date: "2025-06-01",
+          own_rate: null,
+          total_count: "1",
+          expense_count: "1",
+          expense_total: "100",
+          income_count: "0",
+          income_total: "0",
+        },
+        {
+          currency_code: "EUR",
+          tx_date: "2024-01-05",
+          own_rate: null,
+          total_count: "1",
+          expense_count: "1",
+          expense_total: "50",
+          income_count: "0",
+          income_total: "0",
+        },
+      ]);
+
+      const result = await service.getUncategorizedTransactions(
+        mockUserId,
+        undefined,
+        "2025-12-31",
+      );
+
+      expect(result.summary.expenseTotal).toBeNull();
+      expect(result.summary.knownExpenseTotal).toBe(0);
+      expect(result.summary.totalCount).toBe(2);
+    });
+
     it("returns empty result when no uncategorized transactions exist", async () => {
       // First call: transaction list query
       scopedManager.query.mockResolvedValueOnce([]);
@@ -139,8 +184,8 @@ describe("DataQualityReportsService", () => {
     });
 
     it("converts summary currency groups into one explicitly denominated total", async () => {
-      currencyService.tryConvertAmount.mockImplementation(
-        (amount: number, fromCurrency: string) =>
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: fromCurrency }: RawRateBasis) =>
           fromCurrency === "EUR" ? amount * 1.1 : amount,
       );
       scopedManager.query.mockResolvedValueOnce([]);
@@ -178,8 +223,8 @@ describe("DataQualityReportsService", () => {
     });
 
     it("returns a transaction amount in the report currency", async () => {
-      currencyService.tryConvertAmount.mockImplementation(
-        (amount: number, fromCurrency: string) => {
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: fromCurrency }: RawRateBasis) => {
           if (fromCurrency === "EUR") return amount * 1.1;
           return amount;
         },
@@ -237,7 +282,7 @@ describe("DataQualityReportsService", () => {
 
       const listQueryCall = scopedManager.query.mock.calls[0];
       expect(listQueryCall[0]).not.toContain("transaction_date >= $");
-      expect(listQueryCall[1]).toEqual([mockUserId, "2025-12-31", 500]);
+      expect(listQueryCall[1]).toEqual([mockUserId, "2025-12-31", "USD", 500]);
     });
 
     it("uses custom limit parameter", async () => {
@@ -329,7 +374,10 @@ describe("DataQualityReportsService", () => {
       expect(currencyService.getDefaultCurrency).toHaveBeenCalledWith(
         mockUserId,
       );
-      expect(currencyService.buildRateMap).toHaveBeenCalledWith("USD");
+      expect(currencyService.buildConverter).toHaveBeenCalledWith(
+        expect.any(Array),
+        "USD",
+      );
       expect(result.summary.currencyCode).toBe("USD");
     });
 
@@ -345,10 +393,11 @@ describe("DataQualityReportsService", () => {
       );
 
       const listQueryCall = scopedManager.query.mock.calls[0];
-      // Params: userId, endDate, startDate, limit
+      // Params: userId, endDate, reporting currency, startDate, limit
       expect(listQueryCall[1]).toEqual([
         mockUserId,
         "2025-12-31",
+        "USD",
         "2025-06-01",
         50,
       ]);
@@ -360,8 +409,9 @@ describe("DataQualityReportsService", () => {
   // ---------------------------------------------------------------------------
   describe("getUncategorizedTransactions with a currency that has no rate", () => {
     beforeEach(() => {
-      currencyService.tryConvertAmount.mockImplementation(
-        (amount: number, from: string) => (from === "JPY" ? null : amount),
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: from }: RawRateBasis) =>
+          from === "JPY" ? null : amount,
       );
     });
 

@@ -46,6 +46,7 @@ import {
   buildDisplayCurrencyStrategy,
   summarizeInDisplayCurrency,
   aggregateGroupedTotals,
+  inDisplayCurrency,
 } from '@/components/transactions/widget-shared';
 import type { Category, CategoryDetail, UpdateCategoryData } from '@/types/category';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
@@ -136,7 +137,7 @@ function CategoryDetailContent() {
   const searchParams = useSearchParams();
   const categoryId = params.id as string;
 
-  const { convertToDefault, defaultCurrency } = useExchangeRates();
+  const { defaultCurrency } = useExchangeRates();
 
   const [detail, setDetail] = useState<CategoryDetail | null>(null);
   const [analytics, setAnalytics] = useState<CategoryAnalytics | null>(null);
@@ -348,9 +349,8 @@ function CategoryDetailContent() {
       buildDisplayCurrencyStrategy(
         analytics?.lifetimeSummary ?? null,
         defaultCurrency,
-        convertToDefault,
       ),
-    [analytics?.lifetimeSummary, defaultCurrency, convertToDefault],
+    [analytics?.lifetimeSummary, defaultCurrency],
   );
 
   const isMultiCurrency =
@@ -416,7 +416,7 @@ function CategoryDetailContent() {
     const rows = accounts.flatMap((row) => {
       // Unconvertible accounts have an unknown magnitude and are left out of
       // the ranked bars rather than shown as zero.
-      const total = currencyStrategy.toDisplay(row.total, row.currencyCode);
+      const total = inDisplayCurrency(currencyStrategy, row);
       return total === null
         ? []
         : [

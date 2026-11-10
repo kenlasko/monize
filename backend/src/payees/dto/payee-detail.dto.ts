@@ -14,6 +14,13 @@ export interface PayeeAccountBreakdownRow {
   transactionCount: number;
   total: number;
   lastTransactionDate: string | null;
+  /** The reader's reporting currency, which `convertedTotal` is in. */
+  convertedCurrency: string;
+  /**
+   * `total` with each part at its own settled rate or the market rate on its
+   * own date (issue #2106); null while a part has no admissible rate.
+   */
+  convertedTotal: number | null;
 }
 
 /** The payee's single largest transaction by absolute amount, linked from the page. */

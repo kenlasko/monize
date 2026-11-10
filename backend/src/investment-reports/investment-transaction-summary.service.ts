@@ -5,7 +5,9 @@ import { FxAggregate } from "../common/fx-aggregate";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { InvestmentAction } from "../securities/entities/investment-transaction.entity";
+import { AccountSubType } from "../accounts/entities/account.entity";
 import { investmentRowHasEffect } from "../securities/investment-row-effects.util";
+import { investmentRowRateInto } from "../securities/investment-row-fx.util";
 import {
   InvestmentTransactionActionSummary,
   InvestmentTransactionSummary,
@@ -36,37 +38,6 @@ interface ActionBucket {
   count: number;
   excluded: number;
   fx: FxAggregate;
-}
-
-/**
- * Which rate a row is converted at, as a value the response can carry.
- *
- * `transaction` -- the row's own stored rate did the conversion (possibly
- * carried onward from its settlement currency at the market rate, which the
- * KPI-level `onwardMarketCount` states). `market` -- the row carries no usable
- * rate of its own, so the rate that stood on its trade date was used. `null` --
- * the row was not converted at all: it is already in the reporting currency,
- * its amount is zero, or no rate could be found.
- */
-export type InvestmentConversionBasis = "transaction" | "market" | null;
-
-/**
- * The row's own rate, or `null` when it cannot be used.
- *
- * A stored `1` across two different currencies is the column's default rather
- * than a rate anybody struck ("rate 1 means same currency, never no rate
- * found"), so such a row is converted at the market rate instead.
- */
-export function usableRowRate(
-  storedRate: string | number | null,
-  amountCurrency: string,
-  settlementCurrency: string | null,
-): number | null {
-  if (storedRate === null || storedRate === undefined) return null;
-  const rate = Number(storedRate);
-  if (!Number.isFinite(rate) || rate <= 0) return null;
-  if (rate === 1 && amountCurrency !== settlementCurrency) return null;
-  return rate;
 }
 
 function describe(
@@ -191,45 +162,24 @@ export class InvestmentTransactionSummaryService {
       // Converting the same sale at the market rate that stood on its date
       // gave the reader two different figures for one event, with nothing on
       // either surface saying which rate it had used.
-      const settlement = row.settlement_currency_code;
-      const rowRate = usableRowRate(row.exchange_rate, from, settlement);
-      if (rowRate !== null && settlement !== null) {
-        if (settlement === currencyCode) {
-          overall.addConverted(amount * rowRate);
-          bucket.fx.addConverted(amount * rowRate);
-          transactionRateCount += 1;
-          continue;
-        }
-        // The row's rate reaches its settlement currency but not the reader's,
-        // so the cash leg is carried onward at the market rate for that pair.
-        const onward = await this.rateOn(
-          settlement,
-          currencyCode,
-          row.transaction_date,
-          rateCache,
-        );
-        if (onward !== null) {
-          overall.addConverted(amount * rowRate * onward);
-          bucket.fx.addConverted(amount * rowRate * onward);
-          transactionRateCount += 1;
-          onwardMarketCount += 1;
-          continue;
-        }
-        // No onward rate: fall through to the market rate for the whole pair
-        // rather than withholding a figure a market rate can still answer.
-      }
-
-      const rate = await this.rateOn(
-        from,
+      const { rate, basis, onward } = await investmentRowRateInto(
         currencyCode,
-        row.transaction_date,
-        rateCache,
+        {
+          amountCurrency: from,
+          settlementCurrency: row.settlement_currency_code,
+          exchangeRate: row.exchange_rate,
+          date: row.transaction_date,
+        },
+        (f, t, date) => this.rateOn(f, t, date, rateCache),
       );
       // `null` is unknown, never 1 and never the unconverted amount.
       const converted = rate === null ? null : amount * rate;
       if (converted === null) {
         excludedOverall += 1;
         bucket.excluded += 1;
+      } else if (basis === "transaction") {
+        transactionRateCount += 1;
+        if (onward) onwardMarketCount += 1;
       } else {
         marketRateCount += 1;
       }
@@ -309,6 +259,8 @@ export class InvestmentTransactionSummaryService {
         userId,
         InvestmentAction.INTEREST,
         InvestmentAction.REDEEM,
+        // Only a brokerage settles in its linked cash account.
+        AccountSubType.INVESTMENT_BROKERAGE,
       ];
       const clauses: string[] = [];
 
@@ -362,7 +314,9 @@ export class InvestmentTransactionSummaryService {
            LEFT JOIN securities s ON s.id = it.security_id
            LEFT JOIN accounts a ON a.id = it.account_id
            LEFT JOIN accounts f ON f.id = it.funding_account_id
-           LEFT JOIN accounts cash ON cash.id = a.linked_account_id
+           LEFT JOIN accounts cash
+             ON cash.id = a.linked_account_id
+            AND a.account_sub_type = $4
           WHERE it.user_id = $1
             AND NOT (it.action = $2 AND EXISTS (
                   -- The parent is looked up as a record (includes VOID): what

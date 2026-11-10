@@ -499,6 +499,9 @@ interface IntradayFxSeries {
   latest: number | null;
 }
 
+/** A gap between intraday bars longer than this ends a trading session. */
+const SESSION_BREAK_MS = 6 * 60 * 60 * 1000;
+
 /**
  * Fully loaded intraday inputs, shared by the total-value and per-security
  * breakdown views so both are derived from a single set of Yahoo fetches. The
@@ -1136,16 +1139,35 @@ export class PortfolioService {
         ? (totalGainLoss / holdingsResult.gainCostBasis) * 100
         : 0;
 
-    // Calculate total net invested (converted to default currency)
+    // Total net invested in the default currency. The cash is today's balance,
+    // so it converts at today's rate; the flows are history, each row at the
+    // rate on its own date (issue #2106), not a lifetime of trades at one rate.
+    const foreignAccountIds = holdingsByAccount
+      .filter((acct) => acct.currencyCode !== defaultCurrency)
+      .map((acct) => acct.accountId);
+    const datedFlows =
+      foreignAccountIds.length > 0
+        ? await this.calculationService.computeNetInvestmentFlowsInReporting(
+            userId,
+            foreignAccountIds,
+            defaultCurrency,
+          )
+        : new Map<string, number | null>();
     const netInvestedAgg = new FxAggregate();
     for (const acct of holdingsByAccount) {
+      if (acct.currencyCode === defaultCurrency) {
+        netInvestedAgg.addConverted(acct.netInvested);
+        continue;
+      }
+      const cash = await this.calculationService.convertToDefault(
+        acct.cashBalance,
+        acct.currencyCode,
+        defaultCurrency,
+        rateCache,
+      );
+      const flows = datedFlows.get(acct.accountId) ?? null;
       netInvestedAgg.add(
-        await this.calculationService.convertToDefault(
-          acct.netInvested,
-          acct.currencyCode,
-          defaultCurrency,
-          rateCache,
-        ),
+        cash === null || flows === null ? null : cash + flows,
         acct.currencyCode,
         defaultCurrency,
       );
@@ -2440,7 +2462,8 @@ export class PortfolioService {
    * call owns its cursor state, so the total-value and breakdown views can each
    * walk the (ascending) grid independently. See the original inline notes:
    * live intraday bar at-or-before `ts` wins, else the stored daily close for
-   * that bar's date, else the latest spot.
+   * that bar's date, else -- for a bar of the latest session only -- the
+   * latest spot.
    */
   private makeIntradayFxAt(
     loaded: IntradayLoaded,
@@ -2461,19 +2484,42 @@ export class PortfolioService {
       dailyRateCache.set(memoKey, rate);
       return rate;
     };
+    // The latest spot answers only a bar of the latest session the grid holds
+    // (today's, or the last trading day's over a weekend): a bar from an
+    // earlier session priced at today's rate reads the currency's move since as
+    // the portfolio's (issue #2106), so with no intraday bar and no stored
+    // close for its date it is unknown. The session is the run of bars ending
+    // at the last one with no gap longer than SESSION_BREAK_MS between them,
+    // so a session crossing UTC midnight stays one.
+    const times = loaded.timestamps;
+    let sessionStart = times.length > 0 ? times[times.length - 1] : Date.now();
+    for (let k = times.length - 1; k > 0; k--) {
+      if (times[k] - times[k - 1] > SESSION_BREAK_MS) break;
+      sessionStart = times[k - 1];
+    }
+    const inLatestSession = (ts: number) => ts >= sessionStart;
     // `null` means "no rate for this pair", never 1. Rate 1 is returned only
     // when the currency already IS the display currency.
     return (currency: string, ts: number): number | null => {
       if (currency === display) return 1;
       const fx = loaded.fxByCurrency.get(currency);
-      if (!fx) return loaded.spotRate.get(`${currency}->${display}`) ?? null;
+      if (!fx) {
+        return (
+          dailyFxAt(currency, ts) ??
+          (inLatestSession(ts)
+            ? (loaded.spotRate.get(`${currency}->${display}`) ?? null)
+            : null)
+        );
+      }
       if (fx.times.length > 0) {
         let c = cursors.get(currency) ?? -1;
         while (c + 1 < fx.times.length && fx.times[c + 1] <= ts) c++;
         cursors.set(currency, c);
         if (c >= 0) return fx.rates[c];
       }
-      return dailyFxAt(currency, ts) ?? fx.latest;
+      return (
+        dailyFxAt(currency, ts) ?? (inLatestSession(ts) ? fx.latest : null)
+      );
     };
   }
 

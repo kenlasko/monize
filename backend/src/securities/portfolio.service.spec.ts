@@ -1555,18 +1555,30 @@ describe("PortfolioService", () => {
       ]);
       holdingsRepository.find.mockResolvedValue([]);
       securityPriceRepository.query.mockResolvedValue([]);
-      // The investment-flows aggregate: 1,000 EUR of buys, nothing sold.
+      // The investment-flows aggregate: 1,000 EUR of buys, nothing sold; and
+      // the same flow by day, which converts at its own date's rate (#2106).
       accountsRepository.query.mockImplementation(async (sql: string) =>
-        /investment_transactions/.test(sql)
+        /AS tx_date/.test(sql)
           ? [
               {
                 account_id: "acct-eur",
-                buys: "1000",
-                sells: "0",
-                income: "0",
+                tx_date: "2026-01-15",
+                amount_currency: "EUR",
+                settlement_currency: "EUR",
+                exchange_rate: "1",
+                flow: "1000",
               },
             ]
-          : [],
+          : /investment_transactions/.test(sql)
+            ? [
+                {
+                  account_id: "acct-eur",
+                  buys: "1000",
+                  sells: "0",
+                  income: "0",
+                },
+              ]
+            : [],
       );
       // No EUR->CAD rate in either direction.
       exchangeRateService.getLatestRate.mockResolvedValue(null);
@@ -1577,6 +1589,75 @@ describe("PortfolioService", () => {
       expect(result.fxComplete).toBe(false);
       // Growth over an unknown amount invested is not a growth rate.
       expect(result.cagr).toBeNull();
+    });
+
+    it("converts net invested flows at each row's own date (issue #2106)", async () => {
+      prefRepository.findOne.mockResolvedValue(mockPref);
+      accountsRepository.find.mockResolvedValue([
+        {
+          ...mockBrokerageAccount,
+          id: "acct-eur",
+          name: "Europe - Brokerage",
+          currencyCode: "EUR",
+          linkedAccountId: null,
+        },
+      ]);
+      holdingsRepository.find.mockResolvedValue([]);
+      securityPriceRepository.query.mockResolvedValue([]);
+      // 1,000 EUR bought in January at 1.40 and 1,000 EUR in June at 1.50.
+      accountsRepository.query.mockImplementation(async (sql: string) =>
+        /AS tx_date/.test(sql)
+          ? [
+              {
+                account_id: "acct-eur",
+                tx_date: "2026-01-15",
+                amount_currency: "EUR",
+                settlement_currency: "EUR",
+                exchange_rate: "1",
+                flow: "1000",
+              },
+              {
+                account_id: "acct-eur",
+                tx_date: "2026-06-15",
+                amount_currency: "EUR",
+                settlement_currency: "EUR",
+                exchange_rate: "1",
+                flow: "1000",
+              },
+            ]
+          : /WITH pairs AS/.test(sql)
+            ? [
+                {
+                  from_currency: "EUR",
+                  to_currency: "CAD",
+                  rate: "1.4",
+                  rate_date: "2026-01-14",
+                },
+                {
+                  from_currency: "EUR",
+                  to_currency: "CAD",
+                  rate: "1.5",
+                  rate_date: "2026-06-14",
+                },
+              ]
+            : /investment_transactions/.test(sql)
+              ? [
+                  {
+                    account_id: "acct-eur",
+                    buys: "2000",
+                    sells: "0",
+                    income: "0",
+                  },
+                ]
+              : [],
+      );
+      // Today's rate, which the history must not be converted at.
+      exchangeRateService.getLatestRate.mockResolvedValue(2);
+
+      const result = await service.getPortfolioSummary(userId);
+
+      // 1,000 x 1.40 + 1,000 x 1.50, not 2,000 x 2.
+      expect(result.totalNetInvested).toBe(2900);
     });
 
     it("marks the valuation incomplete when a held position has no price (RR3-004)", async () => {
@@ -6416,13 +6497,14 @@ describe("PortfolioService", () => {
           unrated: Set<string>,
         ) => (amount: number, currency: string, ts: number) => number;
       };
+    const ts = Date.parse("2026-05-06T13:30:00.000Z");
     const loadedWith = (spot: Array<[string, number]>) => ({
       currency: "CAD",
       fxByCurrency: new Map(),
       spotRate: new Map(spot),
       dailyRateIndex: new Map(),
+      timestamps: [ts],
     });
-    const ts = Date.parse("2026-05-06T13:30:00.000Z");
 
     it("answers null, not 1, so the holding is not valued at its face number", () => {
       const fxAt = privates().makeIntradayFxAt(loadedWith([]));
@@ -6437,6 +6519,37 @@ describe("PortfolioService", () => {
 
       expect(fxAt("USD", ts)).toBe(1.4);
       expect(fxAt("JPY", ts)).toBeNull();
+    });
+
+    it("prices a series with no bars at its latest spot only within the latest session", () => {
+      const fxAt = privates().makeIntradayFxAt({
+        ...loadedWith([]),
+        fxByCurrency: new Map([["USD", { times: [], rates: [], latest: 1.4 }]]),
+      });
+
+      expect(fxAt("USD", ts)).toBe(1.4);
+      // A bar from an earlier session, with no stored close for its date.
+      expect(fxAt("USD", Date.parse("2026-04-29T13:30:00.000Z"))).toBeNull();
+    });
+
+    it("keeps a session that crosses UTC midnight whole", () => {
+      // An ASX morning in AEDT opens at 23:00 UTC the day before.
+      const open = Date.parse("2026-05-05T23:00:00.000Z");
+      const close = Date.parse("2026-05-06T05:00:00.000Z");
+      const fxAt = privates().makeIntradayFxAt({
+        ...loadedWith([["USD->CAD", 1.4]]),
+        timestamps: [open, Date.parse("2026-05-06T01:00:00.000Z"), close],
+      });
+
+      expect(fxAt("USD", open)).toBe(1.4);
+    });
+
+    it("never prices an earlier session's bar at today's spot (issue #2106)", () => {
+      const fxAt = privates().makeIntradayFxAt(loadedWith([["USD->CAD", 1.4]]));
+      const lastWeek = Date.parse("2026-04-29T13:30:00.000Z");
+
+      // No intraday bar and no stored close for that date: unknown.
+      expect(fxAt("USD", lastWeek)).toBeNull();
     });
 
     it("leaves the holding out of the point and records the currency for the warning", () => {

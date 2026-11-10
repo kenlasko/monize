@@ -6264,6 +6264,7 @@ describe("TransactionsService", () => {
         select: jest.fn().mockReturnValue(mockQb),
         addSelect: jest.fn().mockReturnValue(mockQb),
         groupBy: jest.fn().mockReturnValue(mockQb),
+        addGroupBy: jest.fn().mockReturnValue(mockQb),
         setParameter: jest.fn().mockReturnValue(mockQb),
         getMany: jest.fn().mockResolvedValue([]),
         getManyAndCount: jest.fn().mockResolvedValue([[], 0]),

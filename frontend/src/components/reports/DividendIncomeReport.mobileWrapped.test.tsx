@@ -69,13 +69,19 @@ const mockGetTransactions = vi.fn();
 const mockGetInvestmentAccounts = vi.fn();
 const mockGetCapitalGains = vi.fn();
 
-vi.mock('@/lib/investments', () => ({
-  investmentsApi: {
-    getTransactions: (...args: unknown[]) => mockGetTransactions(...args),
-    getInvestmentAccounts: (...args: unknown[]) => mockGetInvestmentAccounts(...args),
-    getCapitalGains: (...args: unknown[]) => mockGetCapitalGains(...args),
-  },
-}));
+// The server's per-row conversion figures, defaulted to a CAD reader of CAD
+// rows where a fixture states none (issue #2106).
+vi.mock('@/lib/investments', async () => {
+  const { withRowFactors, withCapitalGainReporting } = await import('@/test/investment-fx-fixtures');
+  return {
+    investmentsApi: {
+      getTransactions: async (...args: unknown[]) => withRowFactors(await mockGetTransactions(...args)),
+      getInvestmentAccounts: (...args: unknown[]) => mockGetInvestmentAccounts(...args),
+      getCapitalGains: async (...args: unknown[]) =>
+        withCapitalGainReporting(await mockGetCapitalGains(...args)),
+    },
+  };
+});
 
 const LONG_NAME = 'A deliberately long security name that must wrap without a clamp';
 

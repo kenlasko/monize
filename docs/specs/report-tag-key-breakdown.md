@@ -360,7 +360,7 @@ Invariants:
 | # | Invariant |
 |---|---|
 | I8 | **Per-period flows sum to the window figure.** `taggedInflows` / `taggedOutflows` on the bucket are the integer-cent sum (`sumMoney`) of the per-period values, never a separately computed number. |
-| I9 | **FX completeness per period.** A flow row converts through `tryConvertAmount`. A missing rate leaves that row out of its period, adds the currency to `missingCurrencies`, counts it in `excludedCount` and blanks the bucket's `totals` (I4); the other periods keep their flows. |
+| I9 | **FX completeness per period.** A flow row converts through the report's converter (`ReportCurrencyService.buildConverter`), at its own rate or the market rate on its own date (issue #2106). A missing rate leaves that row out of its period, adds the currency to `missingCurrencies`, counts it in `excludedCount` and blanks the bucket's `totals` (I4); the other periods keep their flows. |
 | I1, I2 | Unchanged. No `tagKey` returns today's response deep-equal; top-level `data` and `totals` (All) are unchanged; tagged flows are never added to `income`, `expenses` or `net` in any period (INV-REPORT-003). VOID (I6) and investment exclusion (I5) stay on both flow queries. |
 
 ### 10.4 Truth table -- RRSP cash -> Checking 7,066, both legs `scope:household`

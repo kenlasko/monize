@@ -16,7 +16,6 @@ vi.mock('@/hooks/useNumberFormat', async () => {
 });
 vi.mock('@/hooks/useExchangeRates', () => ({
   useExchangeRates: () => ({
-    convertToDefault: (amount: number, _currency: string) => amount,
     defaultCurrency: 'CAD',
   }),
 }));
@@ -105,7 +104,25 @@ vi.mock('@/lib/logger', () => ({
   }),
 }));
 
-const gainEntry = (overrides: Partial<Record<string, unknown>> = {}) => ({
+// The server's reporting-currency figures default to the native ones (a CAD
+// reader of CAD accounts); a case that is about conversion states its own.
+const gainEntry = (overrides: Partial<Record<string, unknown>> = {}) => {
+  const entry = {
+    ...gainEntryNative(),
+    ...overrides,
+  } as Record<string, unknown>;
+  return {
+    inReportingCurrency: {
+      currency: 'CAD',
+      proceeds: entry.proceeds,
+      costBasis: entry.costBasis,
+      realizedGain: entry.realizedGain,
+    },
+    ...entry,
+  };
+};
+
+const gainEntryNative = () => ({
   transactionId: 'sell-1',
   transactionDate: '2025-06-15',
   accountId: 'acc-1',
@@ -121,7 +138,6 @@ const gainEntry = (overrides: Partial<Record<string, unknown>> = {}) => ({
   proceeds: 5500,
   costBasis: 5000,
   realizedGain: 500,
-  ...overrides,
 });
 
 describe('RealizedGainsReport', () => {
@@ -586,17 +602,48 @@ describe('RealizedGainsReport', () => {
     expect(screen.queryByText('$5500.00 CAD')).not.toBeInTheDocument();
   });
 
-  it('uses convertToDefault when no account is selected (All Accounts)', async () => {
+  it("names the pair the server could not resolve, not the account's currency (issue #2106)", async () => {
     mockGetInvestmentAccounts.mockResolvedValue([]);
     mockGetRealizedGains.mockResolvedValue([
-      gainEntry({ accountCurrencyCode: 'USD', proceeds: 1000, costBasis: 800, realizedGain: 200 }),
+      gainEntry({
+        accountCurrencyCode: 'USD',
+        securityCurrencyCode: 'EUR',
+        inReportingCurrency: {
+          currency: 'CAD',
+          proceeds: null,
+          costBasis: null,
+          realizedGain: null,
+          missingRatePairs: ['EUR->CAD'],
+        },
+      }),
+    ]);
+    render(<RealizedGainsReport />);
+
+    const note = await screen.findByText(/EUR/, { selector: 'p' });
+    expect(note.textContent).not.toMatch(/\bUSD\b/);
+  });
+
+  it("reads the server's reporting-currency figures for All Accounts (issue #2106)", async () => {
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    // 1,000 USD of proceeds against an 800 USD basis; in CAD the basis is what
+    // the shares cost when bought (1,040) and the proceeds what the sale paid
+    // (1,400), so the gain is 360 CAD -- not 200 at any one rate.
+    mockGetRealizedGains.mockResolvedValue([
+      gainEntry({
+        accountCurrencyCode: 'USD',
+        proceeds: 1000,
+        costBasis: 800,
+        realizedGain: 200,
+        inReportingCurrency: { currency: 'CAD', proceeds: 1400, costBasis: 1040, realizedGain: 360 },
+      }),
     ]);
     render(<RealizedGainsReport />);
     await waitFor(() => {
       expect(screen.getByText('Total Proceeds')).toBeInTheDocument();
     });
-    // No account selected -> toDisplay calls convertToDefault (which is identity in mock)
-    expect(screen.getByText(/Sell Transactions/)).toBeInTheDocument();
+    expect(screen.getAllByText('$1400.00').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/\$360\.00/).length).toBeGreaterThan(0);
+    expect(screen.queryByText('$1000.00')).not.toBeInTheDocument();
   });
 
   it('exercises sort headers on security and sells tables', async () => {

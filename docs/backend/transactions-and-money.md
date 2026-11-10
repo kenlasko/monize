@@ -123,7 +123,7 @@ The Cash Flow Sankey (`backend/src/built-in-reports/cash-flow-sankey.service.ts`
 
 ## A calendar day's TOTAL is its own read model, and it is two halves of one series
 
-`GET /accounts/daily-balance-totals` (`accounts/daily-balance-totals.service.ts`) answers one question `GET /accounts/daily-balances` does not: what the accounts in scope are worth together, in one currency, on each day of a month. Its history half is `AccountsService.getDailyBalances` and its projection half is `BalanceForecastService.getBalanceForecast` per account; it computes no balance itself, and `currentBalance` is read on neither side, so both halves stay ledger sums under `LEDGER_MOVEMENT_PREDICATE` (INV-BALANCE-001).
+`GET /accounts/daily-balances` returns each account's balance in its own currency with `convertedBalance` beside it, the reporting-currency figure at that day's rate (today's for a future day, `DailyBalanceTotalsService.withReportingCurrency`), for a reader that sums several currencies; never convert the series at today's rate (issue #2106). `GET /accounts/daily-balance-totals` (`accounts/daily-balance-totals.service.ts`) answers one question `GET /accounts/daily-balances` does not: what the accounts in scope are worth together, in one currency, on each day of a month. Its history half is `AccountsService.getDailyBalances` and its projection half is `BalanceForecastService.getBalanceForecast` per account; it computes no balance itself, and `currentBalance` is read on neither side, so both halves stay ledger sums under `LEDGER_MOVEMENT_PREDICATE` (INV-BALANCE-001).
 
 Four rules make the two halves one honest series, and each one exists because its opposite is the plausible mistake:
 

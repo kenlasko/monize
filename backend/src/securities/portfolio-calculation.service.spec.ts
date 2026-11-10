@@ -12,6 +12,8 @@ import { Account, AccountSubType } from "../accounts/entities/account.entity";
 import { HoldingWithMarketValue } from "./portfolio.service";
 import { SecurityValueByAccount } from "../bonds/bond-valuation.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import { UserPreference } from "../users/entities/user-preference.entity";
+import { rateIndexOf } from "../test-helpers/report-rate-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -28,7 +30,18 @@ function buildService(
   rawQuery?: jest.Mock,
   bondValuation: unknown = { valueByAccount: jest.fn() },
 ): PortfolioCalculationService {
-  const { manager, dataSource } = createScopedDbMocks(repos as never);
+  // The reader reports in CAD, the fixtures' account currency, unless a case
+  // registers a preference of its own.
+  const withPreference = repos.some(([entity]) => entity === UserPreference)
+    ? repos
+    : [
+        ...repos,
+        [
+          UserPreference,
+          { findOne: jest.fn().mockResolvedValue({ defaultCurrency: "CAD" }) },
+        ] as [unknown, Record<string, jest.Mock>],
+      ];
+  const { manager, dataSource } = createScopedDbMocks(withPreference as never);
   manager.query.mockImplementation((sql: string, params?: unknown[]) =>
     rawQuery ? rawQuery(sql, params) : Promise.resolve([]),
   );
@@ -1966,9 +1979,17 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
       accountCurrency?: string;
       rates?: Record<string, number | null>;
       prices?: Array<{ date: string; price: number }>;
+      /** The reader's reporting currency; the account's unless named. */
+      reportingCurrency?: string;
     } = {},
   ) => {
     const txRepo = { find: jest.fn().mockResolvedValue(transactions) };
+    const preferenceRepo = {
+      findOne: jest.fn().mockResolvedValue({
+        defaultCurrency:
+          opts.reportingCurrency ?? opts.accountCurrency ?? "CAD",
+      }),
+    };
     const known = accounts(opts.accountCurrency ?? "CAD");
     const accountRepo = {
       find: jest.fn(({ where }: { where: { id: { _value: string[] } } }) =>
@@ -1976,6 +1997,24 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
       ),
     };
     const resolveStoredRate = storedRateDouble(opts.rates);
+    // The bulk read the reporting-currency replay makes: each rate observed on
+    // the first day the lookups need.
+    const getRateIndex = jest.fn(
+      async (_currencies: ReadonlySet<string>, _to: string, start: string) =>
+        rateIndexOf(
+          Object.entries(opts.rates ?? {})
+            .filter(([, rate]) => rate !== null)
+            .map(([pair, rate]) => {
+              const [fromCurrency, toCurrency] = pair.split("->");
+              return {
+                fromCurrency,
+                toCurrency,
+                rate: rate as number,
+                rateDate: start,
+              };
+            }),
+        ),
+    );
     const priceQuery = jest.fn().mockResolvedValue(
       (opts.prices ?? []).map((r) => ({
         security_id: securityId,
@@ -1987,11 +2026,12 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
       [
         [InvestmentTransaction, txRepo],
         [Account, accountRepo],
+        [UserPreference, preferenceRepo],
       ],
-      { resolveStoredRate },
+      { resolveStoredRate, getRateIndex },
       priceQuery,
     );
-    return { service, resolveStoredRate };
+    return { service, resolveStoredRate, getRateIndex };
   };
 
   const addUnpriced = (overrides: Partial<InvestmentTransaction> = {}) =>
@@ -2322,6 +2362,95 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
 
       expect(sale).toMatchObject({ costBasis: 1000, realizedGain: 100 });
       expect(resolveStoredRate).not.toHaveBeenCalled();
+    });
+
+    it("names the pair a sale's reporting-currency figures lack (issue #2106)", async () => {
+      const { service } = build(
+        [
+          usdBuy({
+            accountCurrency: "USD",
+            exchangeRate: 1.35,
+            fundingAccountId: cadChequing,
+          }),
+          cadSell({ accountCurrency: "USD", exchangeRate: 1 }),
+        ],
+        { accountCurrency: "USD", reportingCurrency: "CAD", rates: {} },
+      );
+
+      const [sale] = await service.calculateRealizedGains(userId);
+
+      expect(sale.inReportingCurrency).toMatchObject({
+        proceeds: null,
+        realizedGain: null,
+        missingRatePairs: ["USD->CAD"],
+      });
+    });
+
+    it("reads a stored 1 across two currencies as no rate in the reporting replay", async () => {
+      // Bought with CAD at the column's default 1 (not a rate anybody struck):
+      // the basis in EUR is the USD it cost at the market's 0.90, as the row
+      // factors read it, not 1,000 "CAD" at 0.60.
+      const { service } = build(
+        [
+          usdBuy({
+            accountCurrency: "CAD",
+            exchangeRate: 1,
+            fundingAccountId: cadChequing,
+          }),
+          cadSell({ accountCurrency: "CAD", exchangeRate: 1.35 }),
+        ],
+        {
+          accountCurrency: "CAD",
+          reportingCurrency: "EUR",
+          rates: { "USD->EUR": 0.9, "CAD->EUR": 0.6 },
+        },
+      );
+
+      const [sale] = await service.calculateRealizedGains(userId);
+
+      expect(sale.inReportingCurrency).toMatchObject({
+        currency: "EUR",
+        costBasis: 900,
+        proceeds: 891,
+      });
+    });
+
+    it("states the gain in the reporting currency at each row's own date (issue #2106)", async () => {
+      // A USD account read in CAD: the basis is the CAD the buy cost (1,350 at
+      // its own 1.35), the proceeds are 1,100 USD at the sale day's 1.40.
+      const { service, getRateIndex } = build(
+        [
+          usdBuy({
+            accountCurrency: "USD",
+            exchangeRate: 1.35,
+            fundingAccountId: cadChequing,
+          }),
+          cadSell({ accountCurrency: "USD", exchangeRate: 1 }),
+        ],
+        {
+          accountCurrency: "USD",
+          reportingCurrency: "CAD",
+          rates: { "USD->CAD": 1.4 },
+        },
+      );
+
+      const [sale] = await service.calculateRealizedGains(userId);
+
+      expect(sale).toMatchObject({ costBasis: 1000, realizedGain: 100 });
+      expect(sale.inReportingCurrency).toEqual({
+        currency: "CAD",
+        proceeds: 1540,
+        costBasis: 1350,
+        realizedGain: 190,
+        missingRatePairs: [],
+      });
+      // One bulk read for the sale's own day, never a lookup per row.
+      expect(getRateIndex).toHaveBeenCalledWith(
+        new Set(["USD"]),
+        "CAD",
+        "2024-02-10",
+        "2024-02-10",
+      );
     });
   });
 
@@ -4229,6 +4358,190 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues", () => {
     ...over,
   });
 
+  it("states a foreign account's cost in the reporting currency at each purchase's date (issue #2106)", async () => {
+    // 900 PLN bought on 2024-01-10 when a zloty was 0.30 CAD; today it is
+    // 0.40. The cost in CAD is what the shares cost then: 270, not 360.
+    const holdingRepo = { find: jest.fn().mockResolvedValue([holdingRow]) };
+    const buy = {
+      id: "buy",
+      userId,
+      accountId: "acct-1",
+      securityId: "sec-a",
+      action: InvestmentAction.BUY,
+      transactionDate: "2024-01-10",
+      quantity: 10,
+      price: 90,
+      commission: 0,
+      totalAmount: 900,
+      exchangeRate: 1,
+      account: { id: "acct-1", currencyCode: "PLN" },
+      security: { id: "sec-a", currencyCode: "PLN" },
+    } as unknown as InvestmentTransaction;
+    const txRepo = { find: jest.fn().mockResolvedValue([buy]) };
+    const accountRepo = { find: jest.fn().mockResolvedValue([]) };
+    // Today's live rate is 0.40; the stored history holds 0.30 on the day.
+    const resolveStoredRate = jest.fn(async (from: string, to: string) =>
+      from === to
+        ? { status: "same_currency", rate: 1 }
+        : { status: "resolved", rate: 0.4 },
+    );
+    const getRateIndex = jest.fn(async () =>
+      rateIndexOf([
+        {
+          fromCurrency: "PLN",
+          toCurrency: "CAD",
+          rate: 0.3,
+          rateDate: "2024-01-10",
+        },
+      ]),
+    );
+    const service = buildService(
+      [
+        [Holding, holdingRepo],
+        [InvestmentTransaction, txRepo],
+        [Account, accountRepo],
+      ],
+      { resolveStoredRate, getRateIndex },
+    );
+    jest
+      .spyOn(service, "calculateCostBasisLotsInAccountCurrency")
+      .mockResolvedValue(new Map([["acct-1:sec-a", lot()]]));
+
+    const result = await service.calculateHoldingsWithValues(
+      userId,
+      ["acct-1"],
+      "CAD",
+      new Map(),
+      async () => new Map([["sec-a", 100]]),
+    );
+
+    expect(result.holdingsWithValues[0].costBasisAccountCurrency).toBe(900);
+    expect(result.totalCostBasis).toBe(270);
+    // The value is today's: 1,000 PLN at 0.40.
+    expect(result.holdingsWithValues[0].marketValueDefaultCurrency).toBe(400);
+  });
+
+  it("withholds a cost with no rate on its purchase date and names that pair (issue #2106)", async () => {
+    const holdingRepo = { find: jest.fn().mockResolvedValue([holdingRow]) };
+    const buy = {
+      id: "buy",
+      userId,
+      accountId: "acct-1",
+      securityId: "sec-a",
+      action: InvestmentAction.BUY,
+      transactionDate: "2024-01-10",
+      quantity: 10,
+      price: 90,
+      commission: 0,
+      totalAmount: 900,
+      exchangeRate: 1,
+      account: { id: "acct-1", currencyCode: "PLN" },
+      security: { id: "sec-a", currencyCode: "PLN" },
+    } as unknown as InvestmentTransaction;
+    const resolveStoredRate = jest.fn(async (from: string, to: string) =>
+      from === to
+        ? { status: "same_currency", rate: 1 }
+        : { status: "resolved", rate: 0.4 },
+    );
+    // No stored rate for the purchase date.
+    const getRateIndex = jest.fn(async () => new Map());
+    const service = buildService(
+      [
+        [Holding, holdingRepo],
+        [InvestmentTransaction, { find: jest.fn().mockResolvedValue([buy]) }],
+        [Account, { find: jest.fn().mockResolvedValue([]) }],
+      ],
+      { resolveStoredRate, getRateIndex },
+    );
+    jest
+      .spyOn(service, "calculateCostBasisLotsInAccountCurrency")
+      .mockResolvedValue(new Map([["acct-1:sec-a", lot()]]));
+
+    const result = await service.calculateHoldingsWithValues(
+      userId,
+      ["acct-1"],
+      "CAD",
+      new Map(),
+      async () => new Map([["sec-a", 100]]),
+    );
+
+    // Not 900 at today's 0.40: unknown, with the pair the purchase needed.
+    expect(result.totalCostBasis).toBe(0);
+    expect(result.missingRatePairs).toContain("PLN->CAD");
+    expect(result.fxComplete).toBe(false);
+  });
+
+  it("withholds a transferred-in cost whose source lacked a rate, never at today's rate", async () => {
+    const holdingRepo = { find: jest.fn().mockResolvedValue([holdingRow]) };
+    const tx = (over: Record<string, unknown>) =>
+      ({
+        userId,
+        securityId: "sec-a",
+        quantity: 10,
+        price: 90,
+        commission: 0,
+        totalAmount: 900,
+        exchangeRate: 1,
+        security: { id: "sec-a", currencyCode: "PLN" },
+        ...over,
+      }) as unknown as InvestmentTransaction;
+    // Bought in one PLN account on a day with no stored PLN->CAD rate, then
+    // moved in kind to the account that holds it now.
+    const rows = [
+      tx({
+        id: "buy",
+        accountId: "acct-src",
+        action: InvestmentAction.BUY,
+        transactionDate: "2024-01-10",
+        account: { id: "acct-src", currencyCode: "PLN" },
+      }),
+      tx({
+        id: "out",
+        accountId: "acct-src",
+        action: InvestmentAction.TRANSFER_OUT,
+        transactionDate: "2024-02-01",
+        account: { id: "acct-src", currencyCode: "PLN" },
+      }),
+      tx({
+        id: "in",
+        accountId: "acct-1",
+        action: InvestmentAction.TRANSFER_IN,
+        linkedTransactionId: "out",
+        transactionDate: "2024-02-01",
+        account: { id: "acct-1", currencyCode: "PLN" },
+      }),
+    ];
+    const resolveStoredRate = jest.fn(async (from: string, to: string) =>
+      from === to
+        ? { status: "same_currency", rate: 1 }
+        : { status: "resolved", rate: 0.4 },
+    );
+    const service = buildService(
+      [
+        [Holding, holdingRepo],
+        [InvestmentTransaction, { find: jest.fn().mockResolvedValue(rows) }],
+        [Account, { find: jest.fn().mockResolvedValue([]) }],
+      ],
+      { resolveStoredRate, getRateIndex: jest.fn(async () => new Map()) },
+    );
+    jest
+      .spyOn(service, "calculateCostBasisLotsInAccountCurrency")
+      .mockResolvedValue(new Map([["acct-1:sec-a", lot()]]));
+
+    const result = await service.calculateHoldingsWithValues(
+      userId,
+      ["acct-1"],
+      "CAD",
+      new Map(),
+      async () => new Map([["sec-a", 100]]),
+    );
+
+    // Not 900 PLN at today's 0.40: unknown, naming the source's pair.
+    expect(result.totalCostBasis).toBe(0);
+    expect(result.missingRatePairs).toContain("PLN->CAD");
+    expect(result.fxComplete).toBe(false);
+  });
+
   it("uses a replayed basis that is known and in the account's currency", async () => {
     const result = await valuation(lot());
 
@@ -4823,5 +5136,131 @@ describe("PortfolioCalculationService.computeInvestmentFlows", () => {
     );
     expect(params[3]).not.toContain(InvestmentAction.RETURN_OF_CAPITAL);
     expect(flows.get("acct-1")).toEqual({ buys: 1000, sells: 250, income: 40 });
+  });
+});
+
+describe("PortfolioCalculationService.computeNetInvestmentFlowsInReporting (issue #2106)", () => {
+  const flowsQuery = (rows: unknown[], rates: unknown[] = []) =>
+    jest.fn((sql: string) =>
+      Promise.resolve(/WITH pairs AS/.test(sql) ? rates : rows),
+    );
+
+  it("takes a USD trade's own amount for a USD reader, not its CAD cash at the market rate", async () => {
+    // 1,000 USD bought from a CAD brokerage at its own 1.35 (1,350 CAD).
+    const service = buildService(
+      [],
+      {},
+      flowsQuery([
+        {
+          account_id: "acct-1",
+          tx_date: "2025-03-04",
+          amount_currency: "USD",
+          settlement_currency: "CAD",
+          exchange_rate: "1.35",
+          flow: "1000",
+        },
+      ]),
+    );
+
+    const flows = await service.computeNetInvestmentFlowsInReporting(
+      "user-1",
+      ["acct-1"],
+      "USD",
+    );
+
+    expect(flows.get("acct-1")).toBe(1000);
+  });
+
+  it("carries the own rate onward at the market rate on the row's date", async () => {
+    const service = buildService(
+      [],
+      {},
+      flowsQuery(
+        [
+          {
+            account_id: "acct-1",
+            tx_date: "2025-03-04",
+            amount_currency: "USD",
+            settlement_currency: "CAD",
+            exchange_rate: "1.35",
+            flow: "1000",
+          },
+        ],
+        [
+          {
+            from_currency: "CAD",
+            to_currency: "EUR",
+            rate: "0.7",
+            rate_date: "2025-03-03",
+          },
+        ],
+      ),
+    );
+
+    const flows = await service.computeNetInvestmentFlowsInReporting(
+      "user-1",
+      ["acct-1"],
+      "EUR",
+    );
+
+    // 1,000 USD -> 1,350 CAD at its own rate -> 945 EUR at that day's 0.70.
+    expect(flows.get("acct-1")).toBe(945);
+  });
+
+  it.each([
+    ["before", ["JPY", "USD"]],
+    ["after", ["USD", "JPY"]],
+  ])(
+    "stays unknown when the row no rate reaches comes %s one that converts",
+    async (_order, currencies) => {
+      const service = buildService(
+        [],
+        {},
+        flowsQuery(
+          currencies.map((code) => ({
+            account_id: "acct-1",
+            tx_date: "2025-03-04",
+            amount_currency: code,
+            settlement_currency: code,
+            exchange_rate: "1",
+            flow: "1000",
+          })),
+        ),
+      );
+
+      const flows = await service.computeNetInvestmentFlowsInReporting(
+        "user-1",
+        ["acct-1"],
+        "USD",
+      );
+
+      expect(flows.get("acct-1")).toBeNull();
+    },
+  );
+
+  it("is unknown for an account with a row no rate reaches, and zero with no rows", async () => {
+    const service = buildService(
+      [],
+      {},
+      flowsQuery([
+        {
+          account_id: "acct-1",
+          tx_date: "2025-03-04",
+          amount_currency: "JPY",
+          settlement_currency: "JPY",
+          exchange_rate: "1",
+          flow: "100000",
+        },
+      ]),
+    );
+
+    const flows = await service.computeNetInvestmentFlowsInReporting(
+      "user-1",
+      ["acct-1", "acct-2"],
+      "USD",
+    );
+
+    expect(flows.get("acct-1")).toBeNull();
+    expect(flows.get("acct-2")).toBe(0);
   });
 });

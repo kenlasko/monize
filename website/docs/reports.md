@@ -59,7 +59,9 @@ On the **Income vs Expenses** report, clicking an income or expense bar filters 
 
 ### Partial Figures
 
-When a figure cannot be worked out completely -- for example an amount in a currency with no exchange rate -- the report says which figures are partial and what is missing (such as the currency to add a rate for on the [Currencies](currency-management.md) page) instead of showing a wrong total.
+Amounts in another currency are converted to your default currency at the exchange rate of each transaction's own date, or at the rate a foreign-currency entry recorded, never at today's rate, so last year's spending reads the same whatever the currency has done since.
+
+When a figure cannot be worked out completely -- for example an amount in a currency with no exchange rate for its date -- the report says which figures are partial and what is missing (such as the currency to add a rate for on the [Currencies](currency-management.md) page) instead of showing a wrong total.
 
 ---
 
@@ -269,7 +271,7 @@ Click **Create Report** to save it. It then appears on the Reports page under **
 #### How Direction Affects Amounts
 
 - **Income Only** and **Expenses Only** show positive amounts: what came in, or what was spent. A refund lowers its category's spending.
-- **Both** with **No Grouping** and **No Aggregation** lists every matching transaction with its own sign: money coming into an account is positive, money leaving it is negative, and a refund stays positive even in an expense category. The headline is the **Net amount** of the listed rows. With **Include transfers** ticked it is the **Net cash movement**: a transfer between two accounts you both included shows as a negative and a positive row that cancel out, and a transfer with only one side in the report counts only that side. A transfer between accounts in two different currencies is the exception: each side is converted to your default currency at the latest exchange rate, not at the rate the transfer used, so the two sides can leave a small difference.
+- **Both** with **No Grouping** and **No Aggregation** lists every matching transaction with its own sign: money coming into an account is positive, money leaving it is negative, and a refund stays positive even in an expense category. The headline is the **Net amount** of the listed rows. With **Include transfers** ticked it is the **Net cash movement**: a transfer between two accounts you both included shows as a negative and a positive row that cancel out, and a transfer with only one side in the report counts only that side. A transfer between accounts in two different currencies is the exception: each side is converted to your default currency at the exchange rate of its own date (or the rate a foreign-currency entry recorded), not at the rate the transfer used, so the two sides can leave a small difference.
 - **Both** with **Total Amount** or **Average Amount**, or with **No Aggregation** and any grouping, adds up each category's net as a positive amount, so income and spending add together rather than cancel. The headline says so (*Total of unsigned category amounts*) so it is not mistaken for a net figure.
 
 To see one report of everything that came in and went out for a set of categories, in date order, choose **No Grouping**, **No Aggregation** and **Both**, and filter by those categories.

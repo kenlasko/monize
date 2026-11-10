@@ -1,5 +1,6 @@
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
+import { UserPreference } from "@/users/entities/user-preference.entity";
 import { TransactionsService } from "@/transactions/transactions.service";
 import { TransactionsModule } from "@/transactions/transactions.module";
 import {
@@ -49,10 +50,19 @@ describe("TransactionsService.getFxFeeSummary (integration)", () => {
       "accounts",
       "categories",
       "payees",
+      "user_preferences",
       "users",
     ]);
     const user = await createTestUserDirect(dataSource);
     userId = user.id;
+    // The reader reports in the account's CAD, so each fee is its own figure
+    // in the reporting currency as well (issue #2106).
+    await dataSource.manager.save(
+      dataSource.manager.create(UserPreference, {
+        userId,
+        defaultCurrency: "CAD",
+      }),
+    );
     const account = await createTestAccount(dataSource, userId, {
       currencyCode: "CAD",
       openingBalance: 0,
@@ -94,7 +104,14 @@ describe("TransactionsService.getFxFeeSummary (integration)", () => {
     );
 
     expect(rows).toEqual([
-      { month: "2026-07", currencyCode: "EUR", feeTotal: 4.01, count: 1 },
+      {
+        month: "2026-07",
+        currencyCode: "EUR",
+        feeTotal: 4.01,
+        count: 1,
+        convertedCurrency: "CAD",
+        convertedFeeTotal: 4.01,
+      },
     ]);
   });
 
@@ -111,7 +128,7 @@ describe("TransactionsService.getFxFeeSummary (integration)", () => {
       service.getFxFeeSummary(userId, accountId),
     );
 
-    expect(rows).toEqual([
+    expect(rows).toMatchObject([
       { month: "2026-07", currencyCode: "EUR", feeTotal: 0, count: 1 },
     ]);
   });
@@ -145,7 +162,7 @@ describe("TransactionsService.getFxFeeSummary (integration)", () => {
 
     // July EUR: fee 4.01 + fee (round(80.10)=80.10 - 82.10 = 2.00) = 6.01.
     // August USD: base 134.00 - 137.50 = 3.50.
-    expect(rows).toEqual([
+    expect(rows).toMatchObject([
       { month: "2026-07", currencyCode: "EUR", feeTotal: 6.01, count: 2 },
       { month: "2026-08", currencyCode: "USD", feeTotal: 3.5, count: 1 },
     ]);
@@ -182,7 +199,7 @@ describe("TransactionsService.getFxFeeSummary (integration)", () => {
       service.getFxFeeSummary(userId, accountId),
     );
 
-    expect(rows).toEqual([
+    expect(rows).toMatchObject([
       { month: "2026-07", currencyCode: "EUR", feeTotal: 4.01, count: 1 },
     ]);
   });

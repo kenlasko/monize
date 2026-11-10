@@ -405,6 +405,10 @@ Monize tracks your cost basis using the **average cost method**.
 | Buy 50 | 50 | $12 | $1,600 | 150 | $10.67 |
 | Sell 75 | -75 | $15 | $800 | 75 | $10.67 |
 
+### Cost Basis in Your Home Currency
+
+When an account is kept in another currency, its cost basis and net invested are converted to your home currency the way you paid: each purchase at the exchange rate of its own date (or the rate the trade recorded), not at today's rate. A gain in your home currency therefore includes what the currency itself did since you bought. Realized gains, dividends and capital gains across accounts are converted the same way, each at the rate of its own date. A holding with no transaction history has no purchase dates to convert at, so its cost uses today's rate.
+
 ### Zero Holdings
 
 When all shares of a security are sold, the holding is removed from your portfolio; its detail page shows the position as closed with its realized P/L. If you buy the same security again, a new cost basis starts from that purchase.

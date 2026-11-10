@@ -2,7 +2,7 @@ import { DataSource } from "typeorm";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { TaxRecurringReportsService } from "./tax-recurring-reports.service";
-import { ReportCurrencyService } from "./report-currency.service";
+import { RawRateBasis, ReportCurrencyService } from "./report-currency.service";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
 import {
@@ -136,9 +136,14 @@ describe("TaxRecurringReportsService", () => {
 
     currencyService = {
       getDefaultCurrency: jest.fn().mockResolvedValue("USD"),
-      buildRateMap: jest.fn().mockResolvedValue(new Map()),
-      tryConvertAmount: jest.fn().mockImplementation((amount) => amount),
+      // The converter a report builds, per row; a test swaps its body.
+      convertRow: jest.fn().mockImplementation((amount: number) => amount),
+      buildConverter: jest.fn(),
     };
+    currencyService.buildConverter.mockImplementation(
+      async () => (amount: number, row: RawRateBasis) =>
+        currencyService.convertRow(amount, row),
+    );
 
     ({ manager: scopedManager, dataSource: scopedDataSource } =
       createScopedDbMocks([
@@ -343,8 +348,8 @@ describe("TaxRecurringReportsService", () => {
     });
 
     it("converts foreign currency amounts", async () => {
-      currencyService.tryConvertAmount.mockImplementation(
-        (amount: number, fromCurrency: string) => {
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: fromCurrency }: RawRateBasis) => {
           if (fromCurrency === "EUR") return amount * 1.1;
           return amount;
         },
@@ -445,7 +450,12 @@ describe("TaxRecurringReportsService", () => {
       await service.getTaxSummary(mockUserId, 2024);
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, "2024-01-01", "2024-12-31"]);
+      expect(queryCall[1]).toEqual([
+        mockUserId,
+        "2024-01-01",
+        "2024-12-31",
+        "USD",
+      ]);
     });
 
     it("detects education-related deductible expenses", async () => {
@@ -495,7 +505,10 @@ describe("TaxRecurringReportsService", () => {
       expect(currencyService.getDefaultCurrency).toHaveBeenCalledWith(
         mockUserId,
       );
-      expect(currencyService.buildRateMap).toHaveBeenCalledWith("USD");
+      expect(currencyService.buildConverter).toHaveBeenCalledWith(
+        expect.any(Array),
+        "USD",
+      );
     });
   });
 
@@ -503,6 +516,87 @@ describe("TaxRecurringReportsService", () => {
   // getRecurringExpenses
   // ---------------------------------------------------------------------------
   describe("getRecurringExpenses", () => {
+    it("leaves a payee's foreign group out whole when one of its days has no rate (issue #2106)", async () => {
+      currencyService.convertRow.mockImplementation(
+        (amount: number, row: RawRateBasis) =>
+          row.tx_date === "2024-01-05" ? null : amount,
+      );
+      const part = (day: string) => ({
+        payee_id: "p-eur",
+        payee_name_normalized: "streaming",
+        payee_name: "Streaming",
+        category_name: null,
+        currency_code: "EUR",
+        tx_date: day,
+        occurrences: 2,
+        total_amount: "30",
+        last_transaction_date: new Date(day),
+        history_start: "2024-01-01",
+      });
+      scopedManager.query.mockResolvedValue([
+        part("2025-06-01"),
+        part("2024-01-05"),
+      ]);
+
+      const result = await service.getRecurringExpenses(mockUserId, 3);
+
+      expect(result.data).toEqual([]);
+      expect(result.excludedCount).toBe(1);
+    });
+
+    it("ranks payees by their merged total, not by their largest day's part (issue #2106)", async () => {
+      scopedManager.query.mockResolvedValue([
+        // A home-currency payee: one 400 aggregate.
+        {
+          payee_id: "p-home",
+          payee_name_normalized: "gym",
+          payee_name: "Gym",
+          category_name: null,
+          currency_code: "USD",
+          occurrences: 4,
+          total_amount: "400",
+          last_transaction_date: new Date("2025-06-01"),
+          history_start: "2025-01-01",
+        },
+        // A foreign payee, one part per day: 3 x 150 = 450.
+        ...["2025-04-01", "2025-05-01", "2025-06-01"].map((day) => ({
+          payee_id: "p-eur",
+          payee_name_normalized: "streaming",
+          payee_name: "Streaming",
+          category_name: null,
+          currency_code: "EUR",
+          tx_date: day,
+          occurrences: 1,
+          total_amount: "150",
+          last_transaction_date: new Date(day),
+          history_start: "2025-01-01",
+        })),
+      ]);
+
+      const result = await service.getRecurringExpenses(mockUserId, 3);
+
+      expect(result.data.map((item) => item.payeeName)).toEqual([
+        "Streaming",
+        "Gym",
+      ]);
+    });
+
+    it("judges the occurrence threshold over the whole group, not one day's part (issue #2106)", async () => {
+      scopedManager.query.mockResolvedValue([]);
+
+      await service.getRecurringExpenses(mockUserId, 3);
+
+      const [sql, params] = scopedManager.query.mock.calls[0];
+      // A foreign group is split by day to convert each part at its own rate,
+      // so a HAVING on the part would drop a payee paid once a month.
+      expect(sql).not.toContain("HAVING COUNT(*) >= $4");
+      expect(sql).toContain("SUM(COUNT(*)) OVER (");
+      expect(sql).toContain("grouped.group_occurrences >= $4");
+      expect(sql).toMatch(/GROUP BY .*tx_date, own_rate/);
+      expect(params[3]).toBe(3);
+      expect(params[4]).toBe("USD");
+    });
+
     it("returns empty result when no recurring expenses found", async () => {
       scopedManager.query.mockResolvedValue([]);
 
@@ -613,8 +707,8 @@ describe("TaxRecurringReportsService", () => {
       const lastDate1 = new Date("2025-06-15");
       const lastDate2 = new Date("2025-07-15");
 
-      currencyService.tryConvertAmount.mockImplementation(
-        (amount: number, fromCurrency: string) => {
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: fromCurrency }: RawRateBasis) => {
           if (fromCurrency === "EUR") return amount * 1.1;
           return amount;
         },
@@ -945,7 +1039,10 @@ describe("TaxRecurringReportsService", () => {
       expect(currencyService.getDefaultCurrency).toHaveBeenCalledWith(
         mockUserId,
       );
-      expect(currencyService.buildRateMap).toHaveBeenCalledWith("USD");
+      expect(currencyService.buildConverter).toHaveBeenCalledWith(
+        expect.any(Array),
+        "USD",
+      );
     });
   });
 
@@ -953,6 +1050,31 @@ describe("TaxRecurringReportsService", () => {
   // getBillPaymentHistory
   // ---------------------------------------------------------------------------
   describe("getBillPaymentHistory", () => {
+    it("selects each payment with its day and own rate (issue #2106)", async () => {
+      scopedManager.query
+        .mockResolvedValueOnce([
+          {
+            id: "st-1",
+            name: "Phone",
+            amount: "-50",
+            amount_is_estimated: false,
+            category_id: null,
+            payee_name: "Phone Co",
+          },
+        ])
+        .mockResolvedValueOnce([]);
+
+      await service.getBillPaymentHistory(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      const [sql] = scopedManager.query.mock.calls[1];
+      expect(sql).toContain("AS tx_date");
+      expect(sql).toContain("AS own_rate");
+    });
+
     it("returns empty result when no scheduled transactions exist", async () => {
       // First query (scheduled_transactions) returns empty
       scopedManager.query.mockResolvedValueOnce([]);
@@ -1344,8 +1466,8 @@ describe("TaxRecurringReportsService", () => {
       await service.getBillPaymentHistory(mockUserId, undefined, "2025-12-31");
 
       const txQueryCall = scopedManager.query.mock.calls[1];
-      expect(txQueryCall[1]).toEqual([mockUserId, "2025-12-31"]);
-      expect(txQueryCall[0]).not.toContain("$3");
+      expect(txQueryCall[1]).toEqual([mockUserId, "2025-12-31", "USD"]);
+      expect(txQueryCall[0]).not.toContain("transaction_date >= $");
     });
 
     it("handles lastPaymentDate correctly", async () => {
@@ -1385,8 +1507,8 @@ describe("TaxRecurringReportsService", () => {
     });
 
     it("converts foreign currency amounts", async () => {
-      currencyService.tryConvertAmount.mockImplementation(
-        (amount: number, fromCurrency: string) => {
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: fromCurrency }: RawRateBasis) => {
           if (fromCurrency === "EUR") return amount * 1.1;
           return amount;
         },
@@ -1461,7 +1583,8 @@ describe("TaxRecurringReportsService", () => {
       expect(currencyService.getDefaultCurrency).toHaveBeenCalledWith(
         mockUserId,
       );
-      expect(currencyService.buildRateMap).toHaveBeenCalledWith("USD");
+      // No bill, so no payment row to convert and no rate history to load.
+      expect(currencyService.buildConverter).not.toHaveBeenCalled();
     });
 
     it("rounds monetary values to 2 decimal places", async () => {
@@ -1514,9 +1637,40 @@ describe("TaxRecurringReportsService", () => {
   // ---------------------------------------------------------------------------
   describe("a currency that has no rate", () => {
     beforeEach(() => {
-      currencyService.tryConvertAmount.mockImplementation(
-        (amount: number, from: string) => (from === "JPY" ? null : amount),
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: from }: RawRateBasis) =>
+          from === "JPY" ? null : amount,
       );
+    });
+
+    it("getTaxSummary leaves a category out whole when one of its rows has no rate (issue #2106)", async () => {
+      // The debit converts; the refund in the same category, dated where no
+      // rate reaches, does not.
+      currencyService.convertRow.mockImplementation(
+        (amount: number, row: RawRateBasis) =>
+          row.tx_date === "2024-01-05" ? null : amount,
+      );
+      scopedManager.query.mockResolvedValue([
+        {
+          category_id: null,
+          currency_code: "EUR",
+          tx_date: "2024-06-05",
+          amount: "-500.00",
+        },
+        {
+          category_id: null,
+          currency_code: "EUR",
+          tx_date: "2024-01-05",
+          amount: "400.00",
+        },
+      ]);
+
+      const result = await service.getTaxSummary(mockUserId, 2024);
+
+      expect(result.totals.expenses).toBeNull();
+      expect(result.excludedCount).toBe(1);
+      expect(result.allExpenses).toEqual([]);
+      expect(result.totals.knownExpenses).toBe(0);
     });
 
     it("getTaxSummary withholds every total and leaves the JPY row out of every figure", async () => {

@@ -7,7 +7,7 @@ import type { MonthlyTotal } from '@/types/transaction';
 
 const strategy: DisplayCurrencyStrategy = {
   displayCurrency: 'CAD',
-  toDisplay: (amount) => amount,
+  converted: false,
 };
 
 function month(key: string, total: number): MonthlyTotal {

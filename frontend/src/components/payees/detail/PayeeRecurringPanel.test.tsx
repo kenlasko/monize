@@ -14,7 +14,7 @@ vi.mock('next/navigation', () => ({
 
 const strategy: DisplayCurrencyStrategy = {
   displayCurrency: 'CAD',
-  toDisplay: (amount) => amount,
+  converted: false,
 };
 
 function charge(overrides: Partial<RecurringChargeInfo> = {}): RecurringChargeInfo {

@@ -27,7 +27,6 @@ vi.mock('@/hooks/useDateFormat', () => ({
 
 vi.mock('@/hooks/useExchangeRates', () => ({
   useExchangeRates: () => ({
-    convertToDefault: (amount: number) => amount,
     defaultCurrency: 'CAD',
   }),
 }));
@@ -100,6 +99,7 @@ const ENTRIES = [
     proceeds: 1240,
     costBasis: 1000,
     realizedGain: 240,
+    inReportingCurrency: { currency: 'CAD', proceeds: 1240, costBasis: 1000, realizedGain: 240 },
   },
   {
     transactionId: 'sell-2',
@@ -117,6 +117,7 @@ const ENTRIES = [
     proceeds: 160,
     costBasis: 200,
     realizedGain: -40,
+    inReportingCurrency: { currency: 'CAD', proceeds: 160, costBasis: 200, realizedGain: -40 },
   },
 ];
 

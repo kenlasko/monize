@@ -476,14 +476,17 @@ describe("InvestmentTransactionSummaryService", () => {
         typeof call[0] === "string" &&
         (call[0] as string).includes("investment_transactions"),
     );
-    expect(rowsCall?.[0]).toContain("it.account_id = ANY($4)");
-    expect(rowsCall?.[0]).toContain("it.transaction_date >= $5");
-    expect(rowsCall?.[0]).toContain("it.transaction_date <= $6");
-    expect(rowsCall?.[0]).toContain("it.action = ANY($7)");
+    expect(rowsCall?.[0]).toContain("it.account_id = ANY($5)");
+    expect(rowsCall?.[0]).toContain("it.transaction_date >= $6");
+    expect(rowsCall?.[0]).toContain("it.transaction_date <= $7");
+    expect(rowsCall?.[0]).toContain("it.action = ANY($8)");
+    // Only a brokerage settles in its linked cash account.
+    expect(rowsCall?.[0]).toContain("AND a.account_sub_type = $4");
     expect(rowsCall?.[1]).toEqual([
       "u1",
       InvestmentAction.INTEREST,
       InvestmentAction.REDEEM,
+      "INVESTMENT_BROKERAGE",
       ["acc-1", "cash-1"],
       "2026-01-01",
       "2026-12-31",

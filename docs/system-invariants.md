@@ -1407,8 +1407,7 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     ExchangeRateService.getLatestRates answers one row per
                     directionless pair, the newer stored direction inside
                     FX_MAX_RATE_AGE_DAYS of today (a tie to the canonical row),
-                    so the built-in reports' rate map and GET
-                    /currencies/exchange-rates no longer carry a frozen
+                    so GET /currencies/exchange-rates no longer carries a frozen
                     pre-1.17 mirror row or a rate of any age; getLatestRate's
                     bound defaults to FX_MAX_RATE_AGE_DAYS instead of none; and
                     InvestmentTransactionsService.resolveCashExchangeRateOrNull
@@ -1427,7 +1426,8 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     path as well: ReportCurrencyService.convertAmount, the
                     pass-through that returned the unconverted amount, is
                     deleted, and every report converts through the nullable
-                    tryConvertAmount. A row whose currency has no rate is left
+                    converter ReportCurrencyService.buildConverter returns. A
+                    row whose currency has no rate on its date is left
                     out of every figure and recorded in a ConversionGaps
                     (built-in-reports/report-currency.service.ts); each response
                     carries `currency`, `missingCurrencies` and `excludedCount`,
@@ -1446,13 +1446,60 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     (NOT NULL DEFAULT 1) in files other remediation streams own.
                     convertWithRateLookup answers null for an empty currency
                     code rather than treating it as the target currency.
-Known gap           The built-in reports convert a past period at the current
-                    rate (a flat latest-rate map), which is the look-ahead clause
-                    of the statement for every historical bucket; that is a
-                    policy the maintainer has to state.
-                    Convert before summing (A26-H12) is closed on three paths:
+                    The built-in reports and the custom report engine convert a
+                    past period at the rate of each row's own date, never at
+                    today's (issue #2106, which closed the look-ahead gap a flat
+                    latest-rate map left in every historical bucket): each
+                    report query selects rateBasisColumnsSql's `tx_date` and
+                    `own_rate` and groups by them, so a foreign aggregate is
+                    split by day while a reporting-currency one stays whole
+                    (and a group with a day no rate reaches is left out whole,
+                    wholeGroups, counted once in excludedCount -- the tax
+                    summary's categories too; Bill Payment History converts
+                    each payment alone and nets nothing, and the custom report
+                    engine's cells, which net by group, still keep the rows of
+                    a group that converted while `summary.total` is withheld,
+                    a known gap);
+                    buildConverter takes the row's own rate where it reaches
+                    the reporting currency (INV-FX-002), else convertAtDate over
+                    one ExchangeRateService.getRateIndex load for the span the
+                    foreign rows cover. A grouping that judges its total
+                    (Weekend vs Weekday's net-spending test, Recurring
+                    Expenses' occurrence threshold) folds the days back
+                    together, or counts over a window, before judging. The
+                    custom report's budget variance converts the plan at the
+                    window's last day. fx-latest-rates.integration.spec.ts:
+                    1,000 USD from sixty days ago reads at that day's 1.25, not
+                    today's 1.40.
+                    The same issue moved every other surface that summed past
+                    amounts with the client's latest-rate map onto a server
+                    figure converted at each row's own rate or date
+                    (convertDatedRows in report-currency.service.ts for the
+                    dated fold): the transaction summary's `converted`, the
+                    grouped totals' and tag-key breakdown's `convertedTotal`,
+                    the category and payee detail account panels, the
+                    foreign-fee summary's `convertedFeeTotal`, the daily
+                    balances' `convertedBalance`, the capital-gain entries'
+                    `inReportingCurrency` (each period at its own end), the
+                    realized gains' `inReportingCurrency` and the AI usage
+                    costs; the intraday chart prices only the latest session at
+                    the live spot. A holding's cost and total net invested in
+                    the reporting currency are historical: the replay's
+                    targetCurrency converts each purchase at its own date
+                    (position-basis-replay.ts), computeNetInvestmentFlowsInReporting
+                    each flow at its own; a holding with no usable history
+                    still falls back to today's rate, having no dates.
+                    Known gap: a capital-gain entry's `inReportingCurrency`
+                    converts the account-currency period figures at the
+                    period's rates, while Realized Gains' `inReportingCurrency`
+                    replays each sale against each purchase's own rate, so the
+                    two state a sale's realized gain in the reporting currency
+                    differently by the currency's move since purchase. One
+                    answer needs the capital-gains fold run in the reporting
+                    currency, a follow-up for the maintainer to schedule.
+Known gap           Convert before summing (A26-H12) is closed on three paths:
                     the custom report engine (reports/reports.service.ts,
-                    tryConvertAmount per row, FxAggregate, `summary.total` null
+                    each row converted at its own date, FxAggregate, `summary.total` null
                     beside `knownTotal`), the AI/MCP transaction analytics
                     (TransactionAnalyticsService LLM methods, each row at its own
                     date, `totalsCurrency` / `fxComplete` / `missingRatePairs`)
@@ -1527,7 +1574,8 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     total_amount by the row's exchange_rate (realized gains, the
                     capital-gains fold, the cash-flow sums).
                     investment-reports/investment-transaction-summary.service.ts
-                    now does the same: usableRowRate() takes the stored rate when
+                    now does the same through investmentRowRateInto
+                    (securities/investment-row-fx.util.ts): usableRowRate() takes the stored rate when
                     it is positive and is not the column's default 1 across two
                     different currencies; the row's settlement currency comes
                     from its funding account, its brokerage's linked cash sleeve
@@ -1546,6 +1594,23 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     confirmation, which commit the rate it returns) carries the
                     stored rate unless the edit names one or another security
                     (A26-M20).
+                    GET /investment-transactions stamps every listed row with
+                    the same function's factors into the reporting and its
+                    account's currency (reportingRate, accountRate,
+                    securities/investment-row-reporting-rates.ts), and the
+                    client's convertRowAmount multiplies by them, so the
+                    Dividend Income, Dividend Yield and account YTD figures
+                    read a row's own rate as the summary does.
+                    The built-in reports and the custom report engine read
+                    transactions.exchange_rate the way the Cash Flow Sankey
+                    does: a foreign entry whose original currency is the
+                    reporting currency converts at its own rate, a stored 1
+                    across two codes is ignored (ownRateSql and
+                    transactionRateBasis in
+                    built-in-reports/report-currency.service.ts), and anything
+                    else takes the market rate on its own date (issue #2106).
+                    Like the Sankey, these reports do not yet say which of the
+                    two rates answered.
 Test                investment-transaction-summary.service.spec.ts: a sale of
                     820.91 USD settled at 3.7287 reads 3,060.9271 PLN and asks
                     for no market rate; a row without a rate is converted at the
@@ -1554,6 +1619,10 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     investment-transactions.service.spec.ts "the row's own exchange
                     rate": a description-only edit previews the stored 1.40, not
                     today's 1.37.
+                    report-currency.service.spec.ts: a row settled at 1.35
+                    converts 1,350 CAD to 1,000 USD and loads no rate history;
+                    spending-reports.service.spec.ts and reports.service.spec.ts
+                    the same through a report.
 Status              enforced
 ```
 
@@ -2823,10 +2892,10 @@ lists each matching leg by its own account and its own sign, and under BOTH its
 total is the signed sum of the listed rows, captioned "Net cash movement"
 rather than net (`customReportMeasure`, discussion #1978). Both legs of a
 same-currency transfer inside the report's scope cancel, because each is
-converted at the one rate map of the report execution (`createConverter` in
-reports.service.ts, the latest rates); a cross-currency transfer's legs are
-each converted at that latest rate, not at the rate the two amounts imply, so
-they can leave a residual. A leg whose counterpart does not match the filters
+converted by the one converter of the report execution (`createConverter` in
+reports.service.ts); a cross-currency transfer's legs are each converted at
+its own rate or the market rate on its own date (issue #2106), not at the
+rate the two amounts imply, so they can leave a residual. A leg whose counterpart does not match the filters
 counts alone, and no counterpart is added. Only the ungrouped list signs its
 rows: grouped, metric NONE sums each group's unsigned cells like
 TOTAL_AMOUNT, and the client names it so (`isSignedTransactionList`).

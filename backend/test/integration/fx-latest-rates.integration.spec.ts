@@ -29,7 +29,17 @@ import {
   cleanTables,
   createTestUserDirect,
 } from "../helpers/integration-setup";
-import { createTestAccount } from "../helpers/test-factories";
+import {
+  createTestAccount,
+  createTestCategory,
+  createTestPayee,
+} from "../helpers/test-factories";
+import { TransactionAnalyticsService } from "@/transactions/transaction-analytics.service";
+import { CategoryDetailService } from "@/categories/category-detail.service";
+import { PayeeDetailService } from "@/payees/payee-detail.service";
+import { Tag } from "@/tags/entities/tag.entity";
+import { PortfolioService } from "@/securities/portfolio.service";
+import { AiUsageService } from "@/ai/ai-usage.service";
 
 /**
  * INV-FX-001 and INV-FX-003 against a real PostgreSQL database: "the rate for a
@@ -110,10 +120,14 @@ describe("latest exchange rates and the readers that take them (integration)", (
       "security_prices",
       "securities",
       "transaction_splits",
+      "transaction_tags",
       "transactions",
       "investment_transactions",
       "monthly_account_balances",
       "accounts",
+      "tags",
+      "payees",
+      "categories",
       "exchange_rates",
       "user_preferences",
       "users",
@@ -186,6 +200,238 @@ describe("latest exchange rates and the readers that take them (integration)", (
 
     // 1,000 USD at 1 / 0.7142857143 is 1,400.00 CAD; the frozen mirror said 1,300.
     expect(report.totalSpending).toBe(1400);
+  });
+
+  it("converts a past report row at the rate on its own date, not today's (issue #2106)", async () => {
+    await dataSource.manager.save(
+      dataSource.manager.create(UserPreference, {
+        userId,
+        defaultCurrency: "CAD",
+      }),
+    );
+    const account = await createTestAccount(dataSource, userId, {
+      name: "US Chequing",
+      currencyCode: "USD",
+      openingBalance: 5000,
+      currentBalance: 3000,
+    });
+    const past = addDaysYMD(today, -60);
+    for (const [date, amount] of [
+      [past, -1000],
+      [today, -1000],
+    ] as const) {
+      await dataSource.manager.save(
+        dataSource.manager.create(Transaction, {
+          userId,
+          accountId: account.id,
+          transactionDate: date,
+          amount,
+          currencyCode: "USD",
+          payeeName: "Shop",
+          status: TransactionStatus.UNRECONCILED,
+          isTransfer: false,
+          isSplit: false,
+        } as Partial<Transaction>),
+      );
+    }
+    // 1.25 CAD per USD two days before the past row; 1.40 today.
+    await insertRate("CAD", "USD", addDaysYMD(past, -2), "0.8000000000");
+    await insertRate("CAD", "USD", today, "0.7142857143");
+
+    const report = await withUserContext(userId, () =>
+      spending.getSpendingByPayee(userId, addDaysYMD(today, -90), today),
+    );
+
+    // 1,000 USD at 1.25 plus 1,000 USD at 1.40; at today's rate it read 2,800.
+    expect(report.totalSpending).toBe(2650);
+    expect(report.excludedCount).toBe(0);
+  });
+
+  it("converts the analytics and detail figures at each row's own date (issue #2106)", async () => {
+    await dataSource.manager.save(
+      dataSource.manager.create(UserPreference, {
+        userId,
+        defaultCurrency: "CAD",
+      }),
+    );
+    const account = await createTestAccount(dataSource, userId, {
+      name: "US Chequing",
+      currencyCode: "USD",
+      openingBalance: 5000,
+      currentBalance: 3000,
+    });
+    const category = await createTestCategory(dataSource, userId, {
+      name: "Travel",
+    });
+    const payee = await createTestPayee(dataSource, userId, { name: "Hotel" });
+    const tag = await dataSource.manager.save(
+      dataSource.manager.create(Tag, { userId, name: "country:usa" }),
+    );
+    const past = addDaysYMD(today, -60);
+    for (const date of [past, today]) {
+      await dataSource.manager.save(
+        dataSource.manager.create(Transaction, {
+          userId,
+          accountId: account.id,
+          transactionDate: date,
+          amount: -1000,
+          currencyCode: "USD",
+          payeeId: payee.id,
+          payeeName: "Hotel",
+          categoryId: category.id,
+          status: TransactionStatus.UNRECONCILED,
+          isTransfer: false,
+          isSplit: false,
+          tags: [tag],
+        } as Partial<Transaction>),
+      );
+    }
+    await insertRate("CAD", "USD", addDaysYMD(past, -2), "0.8000000000");
+    await insertRate("CAD", "USD", today, "0.7142857143");
+
+    const analytics = new TransactionAnalyticsService(dataSource);
+    const [summary, grouped, byTag, categoryDetail, payeeDetail] =
+      await withUserContext(
+        userId,
+        async () =>
+          [
+            await analytics.getSummary(
+              userId,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              { inReportingCurrency: true },
+            ),
+            await analytics.getGroupedTotals(userId, { groupBy: "category" }),
+            await analytics.getTransactionBreakdownByTagKey(userId, "country"),
+            await new CategoryDetailService(dataSource, {
+              findOne: async () => category,
+            } as never).getDetail(userId, category.id),
+            await new PayeeDetailService(dataSource, {
+              findOne: async () => payee,
+            } as never).getDetail(userId, payee.id),
+          ] as const,
+      );
+
+    // 1,000 USD at 1.25 plus 1,000 USD at 1.40, never 2,800 at today's rate.
+    expect(summary.converted).toMatchObject({
+      currency: "CAD",
+      totalExpenses: 2650,
+      missingCurrencies: [],
+    });
+    expect(grouped.map((r) => r.convertedTotal)).toEqual([-2650]);
+    const byPayee = await withUserContext(userId, () =>
+      analytics.getGroupedTotals(userId, { groupBy: "payee" }),
+    );
+    expect(byPayee.map((r) => [r.name, r.convertedTotal])).toEqual([
+      ["Hotel", -2650],
+    ]);
+    expect(byTag.map((r) => r.convertedTotal)).toEqual([2650]);
+    expect(categoryDetail.accounts.map((r) => r.convertedTotal)).toEqual([
+      -2650,
+    ]);
+    expect(payeeDetail.accounts.map((r) => r.convertedTotal)).toEqual([-2650]);
+  });
+
+  it("states a foreign brokerage's history at each row's own date (issue #2106)", async () => {
+    await dataSource.manager.save(
+      dataSource.manager.create(UserPreference, {
+        userId,
+        defaultCurrency: "CAD",
+      }),
+    );
+    const past = addDaysYMD(today, -60);
+    // 1.25 CAD per USD around the purchase; 1.40 today.
+    await insertRate("CAD", "USD", addDaysYMD(past, -2), "0.8000000000");
+    await insertRate("CAD", "USD", today, "0.7142857143");
+    const cash = await createTestAccount(dataSource, userId, {
+      name: "US Cash",
+      currencyCode: "USD",
+    });
+    await dataSource.manager.update(Account, cash.id, {
+      accountType: AccountType.INVESTMENT,
+      accountSubType: AccountSubType.INVESTMENT_CASH,
+    });
+    const brokerage = await createTestAccount(dataSource, userId, {
+      name: "US Brokerage",
+      currencyCode: "USD",
+    });
+    await dataSource.manager.update(Account, brokerage.id, {
+      accountType: AccountType.INVESTMENT,
+      accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+      linkedAccountId: cash.id,
+    });
+    await dataSource.manager.update(Account, cash.id, {
+      linkedAccountId: brokerage.id,
+    });
+    const funding = await createTestAccount(dataSource, userId, {
+      name: "US Chequing",
+      currencyCode: "USD",
+      openingBalance: 10000,
+      currentBalance: 10000,
+    });
+    const security = await withUserContext(userId, () =>
+      module.get(SecuritiesService).create(userId, {
+        symbol: "MSFT",
+        name: "Microsoft",
+        securityType: "STOCK" as any,
+        currencyCode: "USD",
+      } as any),
+    );
+    await withUserContext(userId, () =>
+      investments.create(userId, {
+        accountId: brokerage.id,
+        action: InvestmentAction.BUY,
+        transactionDate: past,
+        securityId: security.id,
+        fundingAccountId: funding.id,
+        quantity: 10,
+        price: 100,
+        commission: 0,
+      }),
+    );
+
+    const [page, summary, gains, usage] = await withUserContext(
+      userId,
+      async () =>
+        [
+          await investments.findAll(userId),
+          await module
+            .get(PortfolioService, { strict: false })
+            .getPortfolioSummary(userId),
+          await investments.getCapitalGainsByMonth(userId, {
+            startDate: addDaysYMD(past, -1),
+            endDate: today,
+          }),
+          await new AiUsageService(dataSource).getUsageSummary(userId, 30),
+        ] as const,
+    );
+
+    // The row's factor into CAD is its own day's 1.25, not today's 1.40.
+    const buy = page.data.find((row) => row.action === InvestmentAction.BUY);
+    expect(buy).toMatchObject({
+      reportingCurrencyCode: "CAD",
+      reportingRate: 1.25,
+      accountRate: 1,
+    });
+    // 1,000 USD invested and paid for at 1.25: 1,250 CAD, never 1,400.
+    expect(summary.totalCostBasis).toBe(1250);
+    expect(summary.totalNetInvested).toBe(1250);
+    expect(
+      gains.every((entry) => entry.inReportingCurrency.currency === "CAD"),
+    ).toBe(true);
+    expect(usage.reportingCurrency).toBe("CAD");
+    // No usage logged: no cost to state, unknown rather than zero.
+    expect(usage.totalEstimatedCostInReportingCurrency).toBeNull();
   });
 
   it("rejects a back-dated cross-currency trade when only today's rate is stored", async () => {

@@ -13,6 +13,10 @@ import {
   DataSourceMock,
   ManagerMock,
 } from "../test-helpers/scoped-db-testing";
+import {
+  FIXTURE_TX_DATE,
+  rateIndexOf,
+} from "../test-helpers/report-rate-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -97,7 +101,7 @@ describe("IncomeReportsService", () => {
     };
 
     exchangeRateService = {
-      getLatestRates: jest.fn().mockResolvedValue(mockExchangeRates),
+      getRateIndex: jest.fn().mockResolvedValue(rateIndexOf(mockExchangeRates)),
     };
 
     ({ manager: scopedManager, dataSource: scopedDataSource } =
@@ -163,7 +167,7 @@ describe("IncomeReportsService", () => {
 
       for (const [sql, params] of scopedManager.query.mock.calls) {
         expect(sql).not.toContain("account_id = ANY");
-        expect(params).toEqual([mockUserId, "2025-12-31", "2025-01-01"]);
+        expect(params).toEqual([mockUserId, "2025-12-31", "USD", "2025-01-01"]);
       }
     });
 
@@ -177,8 +181,14 @@ describe("IncomeReportsService", () => {
       });
 
       const [sql, params] = scopedManager.query.mock.calls[0];
-      expect(sql).toContain("AND t.account_id = ANY($4::uuid[])");
-      expect(params).toEqual([mockUserId, "2025-12-31", "2025-01-01", ids]);
+      expect(sql).toContain("AND t.account_id = ANY($5::uuid[])");
+      expect(params).toEqual([
+        mockUserId,
+        "2025-12-31",
+        "USD",
+        "2025-01-01",
+        ids,
+      ]);
       expect(sql).toContain("(t.status IS NULL OR t.status != 'VOID')");
       expect(sql).toContain("t.is_transfer = false");
       expect(sql.indexOf("account_id = ANY")).toBeLessThan(
@@ -186,7 +196,7 @@ describe("IncomeReportsService", () => {
       );
     });
 
-    it("numbers the account parameter $3 when there is no start date", async () => {
+    it("numbers the account parameter $4 when there is no start date", async () => {
       scopedManager.query.mockResolvedValue([]);
       categoriesRepository.find.mockResolvedValue([]);
       const ids = ["a1b2c3d4-0000-4000-8000-000000000001"];
@@ -196,14 +206,24 @@ describe("IncomeReportsService", () => {
       });
 
       const [sql, params] = scopedManager.query.mock.calls[0];
-      expect(sql).toContain("AND t.account_id = ANY($3::uuid[])");
-      expect(params).toEqual([mockUserId, "2025-12-31", ids]);
+      expect(sql).toContain("AND t.account_id = ANY($4::uuid[])");
+      expect(params).toEqual([mockUserId, "2025-12-31", "USD", ids]);
     });
 
     it("keeps subcategories separate with 'Parent: Child' name format", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-child", currency_code: "USD", total: "1000.00" },
-        { category_id: "cat-parent", currency_code: "USD", total: "4000.00" },
+        {
+          category_id: "cat-child",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "1000.00",
+        },
+        {
+          category_id: "cat-parent",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "4000.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([
         mockParentCategory,
@@ -232,8 +252,18 @@ describe("IncomeReportsService", () => {
       // The query returns the signed net (5000 - 400); a positive-only
       // predicate would have reported 5000.
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-income", currency_code: "USD", total: "4600.00" },
-        { category_id: "cat-parent", currency_code: "USD", total: "-100.00" },
+        {
+          category_id: "cat-income",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "4600.00",
+        },
+        {
+          category_id: "cat-parent",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "-100.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([
         mockIncomeCategory,
@@ -255,7 +285,12 @@ describe("IncomeReportsService", () => {
 
     it("skips uncategorized rows in JS (SQL already filters them out)", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: null, currency_code: "USD", total: "200.00" },
+        {
+          category_id: null,
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "200.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([]);
 
@@ -274,6 +309,7 @@ describe("IncomeReportsService", () => {
         {
           category_id: "nonexistent-id",
           currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
           total: "300.00",
         },
       ]);
@@ -291,7 +327,12 @@ describe("IncomeReportsService", () => {
 
     it("converts income amounts from foreign currencies", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-income", currency_code: "GBP", total: "1000.00" },
+        {
+          category_id: "cat-income",
+          currency_code: "GBP",
+          tx_date: FIXTURE_TX_DATE,
+          total: "1000.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockIncomeCategory]);
 
@@ -309,6 +350,7 @@ describe("IncomeReportsService", () => {
       const rawResults = Array.from({ length: 20 }, (_, i) => ({
         category_id: `cat-inc-${i}`,
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         total: `${(20 - i) * 100}.00`,
       }));
       const categories: Category[] = Array.from({ length: 20 }, (_, i) => ({
@@ -345,7 +387,12 @@ describe("IncomeReportsService", () => {
       await service.getIncomeBySource(mockUserId, "2025-06-01", "2025-12-31");
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "2025-06-01"]);
+      expect(queryCall[1]).toEqual([
+        mockUserId,
+        "2025-12-31",
+        "USD",
+        "2025-06-01",
+      ]);
     });
 
     it("omits startDate filter when undefined", async () => {
@@ -355,13 +402,18 @@ describe("IncomeReportsService", () => {
       await service.getIncomeBySource(mockUserId, undefined, "2025-12-31");
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31"]);
-      expect(queryCall[0]).not.toContain("$3");
+      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "USD"]);
+      expect(queryCall[0]).not.toContain("transaction_date >= $");
     });
 
     it("uses the subcategory's own color (does not roll up to parent)", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-child", currency_code: "USD", total: "500.00" },
+        {
+          category_id: "cat-child",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "500.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([
         mockParentCategory,
@@ -380,8 +432,18 @@ describe("IncomeReportsService", () => {
 
     it("merges multi-currency rows for the same subcategory", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-income", currency_code: "USD", total: "100.00" },
-        { category_id: "cat-income", currency_code: "EUR", total: "200.00" },
+        {
+          category_id: "cat-income",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "100.00",
+        },
+        {
+          category_id: "cat-income",
+          currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
+          total: "200.00",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockIncomeCategory]);
 
@@ -410,7 +472,12 @@ describe("IncomeReportsService", () => {
 
     it("rounds totals to 2 decimal places", async () => {
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-income", currency_code: "USD", total: "33.333" },
+        {
+          category_id: "cat-income",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "33.333",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([mockIncomeCategory]);
 
@@ -443,10 +510,20 @@ describe("IncomeReportsService", () => {
   // ---------------------------------------------------------------------------
   describe("getIncomeBySource with a currency that has no rate", () => {
     it("withholds the total, keeps the converted subtotal and names the currency", async () => {
-      exchangeRateService.getLatestRates.mockResolvedValue([]);
+      exchangeRateService.getRateIndex.mockResolvedValue(rateIndexOf([]));
       scopedManager.query.mockResolvedValue([
-        { category_id: "cat-income", currency_code: "USD", total: "50.00" },
-        { category_id: "cat-parent", currency_code: "JPY", total: "100000" },
+        {
+          category_id: "cat-income",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "50.00",
+        },
+        {
+          category_id: "cat-parent",
+          currency_code: "JPY",
+          tx_date: FIXTURE_TX_DATE,
+          total: "100000",
+        },
       ]);
       categoriesRepository.find.mockResolvedValue([
         mockIncomeCategory,
@@ -493,13 +570,14 @@ describe("IncomeReportsService", () => {
       userPreferenceRepository.findOne.mockResolvedValue({
         defaultCurrency: "CAD",
       });
-      exchangeRateService.getLatestRates.mockResolvedValue([
-        { fromCurrency: "BTC", toCurrency: "CAD", rate: 136000 },
-      ]);
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        rateIndexOf([{ fromCurrency: "BTC", toCurrency: "CAD", rate: 136000 }]),
+      );
       scopedManager.query.mockResolvedValue([
         {
           category_id: "cat-income",
           currency_code: "BTC",
+          tx_date: FIXTURE_TX_DATE,
           total: "0.00002500",
         },
       ]);
@@ -530,6 +608,7 @@ describe("IncomeReportsService", () => {
     ) => ({
       period_start: periodStart,
       currency_code: currency,
+      tx_date: FIXTURE_TX_DATE,
       income,
       expenses,
     });
@@ -599,6 +678,25 @@ describe("IncomeReportsService", () => {
 
       expect(result.data[0].periodStart).toBe("2025-02-01");
       expect(result.data[0].periodEnd).toBe("2025-02-28");
+    });
+
+    it("leaves a bucket's foreign group out whole when one of its days has no rate (issue #2106)", async () => {
+      // EUR->USD is stored for the fixture day only; 2024-01-05 has no rate.
+      scopedManager.query.mockResolvedValue([
+        row("2025-01-01", "100.00", "0.00", "EUR"),
+        { ...row("2025-01-01", "0.00", "40.00", "EUR"), tx_date: "2024-01-05" },
+      ]);
+
+      const result = await service.getIncomeVsExpenses(
+        mockUserId,
+        "2025-01-01",
+        "2025-01-31",
+      );
+
+      expect(result.data[0].income).toBe(0);
+      expect(result.data[0].expenses).toBe(0);
+      expect(result.totals.income).toBeNull();
+      expect(result.excludedCount).toBe(1);
     });
 
     it("merges multiple currency rows for the same bucket", async () => {
@@ -681,8 +779,8 @@ describe("IncomeReportsService", () => {
       await service.getIncomeVsExpenses(mockUserId, "2025-06-01", "2025-06-30");
 
       const [sql, params] = scopedManager.query.mock.calls[0];
-      expect(sql).toContain("t.transaction_date >= $3");
-      expect(params[2]).toBe("2025-06-01");
+      expect(sql).toContain("t.transaction_date >= $4");
+      expect(params[3]).toBe("2025-06-01");
     });
 
     it("omits the startDate filter when it is undefined", async () => {
@@ -716,8 +814,8 @@ describe("IncomeReportsService", () => {
       );
 
       const [sql, params] = scopedManager.query.mock.calls[0];
-      expect(sql).toContain("t.account_id = ANY($4::uuid[])");
-      expect(params[3]).toEqual(["acct-1", "acct-2"]);
+      expect(sql).toContain("t.account_id = ANY($5::uuid[])");
+      expect(params[4]).toEqual(["acct-1", "acct-2"]);
     });
 
     it("adds no account filter for an empty selection", async () => {
@@ -778,7 +876,7 @@ describe("IncomeReportsService", () => {
       // The week offset is not bound at all: PostgreSQL infers a parameter's
       // type from where it appears, so an unused one is a query that will not
       // even plan ("could not determine data type of parameter $3").
-      expect(params).toEqual([mockUserId, "2025-01-31", "2025-01-01"]);
+      expect(params).toEqual([mockUserId, "2025-01-31", "USD", "2025-01-01"]);
       expect(sql).not.toContain("make_interval");
     });
   });
@@ -795,6 +893,7 @@ describe("IncomeReportsService", () => {
     ) => ({
       period_start: periodStart,
       currency_code: currency,
+      tx_date: FIXTURE_TX_DATE,
       income,
       expenses,
     });
@@ -808,6 +907,7 @@ describe("IncomeReportsService", () => {
     ) => ({
       period_start: periodStart,
       currency_code: currency,
+      tx_date: FIXTURE_TX_DATE,
       value,
       income,
       expenses,
@@ -823,6 +923,7 @@ describe("IncomeReportsService", () => {
       period_start: periodStart,
       value,
       currency_code: currency,
+      tx_date: FIXTURE_TX_DATE,
       inflow,
       outflow,
     });
@@ -1325,7 +1426,13 @@ describe("IncomeReportsService", () => {
 
       expect(valueSql).toContain("date_trunc('week'");
       // Default weekStartsOn is Monday (1); weekTruncOffsetDays(1) === 0.
-      expect(valueParams).toEqual([mockUserId, "2025-01-31", 0, "scope"]);
+      expect(valueParams).toEqual([
+        mockUserId,
+        "2025-01-31",
+        0,
+        "scope",
+        "USD",
+      ]);
       for (const sql of [valueSql, wholeFlowSql, splitFlowSql]) {
         expect(sql).not.toContain("transaction_date >=");
       }

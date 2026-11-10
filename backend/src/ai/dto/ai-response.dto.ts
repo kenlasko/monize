@@ -42,12 +42,20 @@ export interface AiUsageSummary {
    * Empty when no configured rates match any logs in the period.
    */
   totalEstimatedCostByCurrency: EstimatedCostByCurrency;
+  /** The user's reporting currency, which every `*InReportingCurrency` is in. */
+  reportingCurrency: string;
+  /**
+   * The estimated costs in the reporting currency, each day's at that day's
+   * rate (issue #2106); null while a cost has no admissible rate.
+   */
+  totalEstimatedCostInReportingCurrency: number | null;
   byProvider: Array<{
     provider: string;
     requests: number;
     inputTokens: number;
     outputTokens: number;
     estimatedCostByCurrency: EstimatedCostByCurrency;
+    estimatedCostInReportingCurrency: number | null;
   }>;
   byFeature: Array<{
     feature: string;
@@ -55,6 +63,7 @@ export interface AiUsageSummary {
     inputTokens: number;
     outputTokens: number;
     estimatedCostByCurrency: EstimatedCostByCurrency;
+    estimatedCostInReportingCurrency: number | null;
   }>;
   recentLogs: Array<{
     id: string;
@@ -68,6 +77,8 @@ export interface AiUsageSummary {
     estimatedCost: number | null;
     /** Currency code of `estimatedCost`, or null when no rate is configured. */
     costCurrency: string | null;
+    /** `estimatedCost` in the reporting currency at its day's rate, or null. */
+    estimatedCostInReportingCurrency: number | null;
     createdAt: string;
   }>;
 }

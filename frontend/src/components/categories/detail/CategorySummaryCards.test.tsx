@@ -8,7 +8,7 @@ import type { Category, CategoryDetail } from '@/types/category';
 
 const strategy: DisplayCurrencyStrategy = {
   displayCurrency: 'CAD',
-  toDisplay: (amount) => amount,
+  converted: false,
 };
 
 function category(overrides: Partial<Category> = {}): Category {
