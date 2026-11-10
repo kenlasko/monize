@@ -200,7 +200,7 @@ The owner can, from **Settings**:
 
 ### Keeping the Same Person Across Groups
 
-The **People** tab on the main page is your own list of the people you share costs with; nobody else sees it. Save a person there, optionally linked to one of your payees, then use **Link to a private person** in a group's Settings to connect their appearance in that group. **New Group** then offers **Add someone from your people**, so you do not retype names. Groups stay separate: linking does not merge balances.
+The **People** tab on the main page is your own list of the people you share costs with; nobody else sees it. It is a table: each person's **Name**, their **Linked Payee** (a link to the payee, or **None**), the **Groups** they are linked in with your position in each, and **Edit** and **Remove Private Contact**. Save a person there with **New Person**, optionally linked to one of your payees, then use **Link to a private person** in a group's Settings to connect their appearance in that group. **New Group** then offers **Add someone from your people**, so you do not retype names. Groups stay separate: linking does not merge balances.
 
 ---
 

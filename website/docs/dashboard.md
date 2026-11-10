@@ -69,7 +69,7 @@ Click the **Customize** gear beside the greeting to tailor which widgets appear 
 - **Show or hide widgets** -- click a widget's **X** to hide it, or add one back later
 - **Reorder widgets** -- drag a widget tile to a new position, or use the arrow buttons (the arrow buttons also work on a phone, where widgets stack in a single column)
 - **Add opt-in widgets** -- hidden widgets appear in a **Hidden widgets** tray beneath the layout; click one to add it to your dashboard
-- **Dashboard hero** -- the section at the top of the dialog switches the [hero](#dashboard-hero) on or off and picks **Auto** or one set. **Net worth** sets how far back its chart goes; **Portfolio value** sets the accounts it covers (all of them if you choose none), the timeframe, and the return shown beside the holdings and cash. **Auto** offers the settings of both
+- **Dashboard hero** -- the section at the top of the dialog switches the [hero](#dashboard-hero) on or off and picks **Auto** or one set. **Net worth** sets how far back its chart goes; **Portfolio value** sets the accounts it covers (all of them if you choose none), the timeframe, and the return shown beside the holdings and cash. **Auto** offers the settings of both, each set's under its own **Net worth** or **Portfolio value** heading so you can tell which chart a setting belongs to
 - **Reset to default** -- restore the standard layout at any time, with the hero on Auto, over one year
 
 Click **Save** to apply your changes. At least one widget must stay on the dashboard. Your layout is saved to your account, so it **syncs across all your devices**.
@@ -108,7 +108,7 @@ The widgets below are hidden by default and can be added from the **Customize** 
 | [Weekend vs Weekday Spending](#weekend-vs-weekday-spending) | Spending split between weekends and weekdays | Always |
 | [Cash Flow Sankey](#cash-flow-sankey) | Where your income came from and where it went | Always |
 | Warranties expiring soon | Warranties that expire in the next 30 days (see [Warranties](warranties.md#dashboard-widget)) | Always |
-| [Trivia](#trivia) | Facts about your net worth and investments, one at a time | Always |
+| [Trivia](#trivia) | Facts about your money and your records in Monize, one at a time | Always |
 
 > [!NOTE]
 > The investment widgets (Top Movers, Portfolio Value, Sector Allocation, Security Type Allocation, and Geographic Allocation) only appear when you have investment holdings, and Favourite Securities only when you have securities.
@@ -388,9 +388,18 @@ The Cash Flow Sankey widget (opt-in) is a flow diagram of the chosen period (def
 
 ## Trivia
 
-The **Trivia** widget points out something about your money, one fact at a time: your high point, your biggest single-month jump, your largest holding, your best performer. Each fact wears its topic's colour and picture, blue for **Net worth** and green for **Investments**, with its figures picked out in the sentence. It moves to the next fact every 12 seconds, pauses while you point at it, and the arrows below it step through by hand.
+The **Trivia** widget points out something about your Monize, one fact at a time. It covers six topics, each with its own colour and picture:
 
-The list is rebuilt each morning while the widget is on your dashboard, and a fact is only stated when every figure in it is fully known. If you have an [AI provider](ai.md) set up, it words the facts in your language, marked **Written by AI from your figures**; every figure still comes from your own data, and account and security names are not sent to the provider. Without one, or if it doesn't answer, Monize words them itself from the same calculations. A provider reached through the MCP relay is not used for this. To switch the facts off, use **AI trivia** in [AI Settings](ai.md#ai-trivia).
+- **Net worth**: your high point, your biggest single-month jump, your biggest dip and your largest asset.
+- **Investments**: your gain or loss, your annualized return, your largest holding and your best performer.
+- **Spending**: over the last twelve whole months, the category and the payee that took the most, and your biggest spending month.
+- **Income**: over the same months, how much of what came in you kept, how many months came out ahead, and your biggest source of income.
+- **Your records**: how many transactions your registers hold and how far back they go, how many payees and categories you keep, and how many scheduled transactions Monize tracks.
+- **Warranties**: how many of your warranties are still in cover, and which runs out next.
+
+A fact's figures are picked out in the sentence. The widget stays the same size whatever the sentence, so the widgets around it never move. It moves to the next fact every 12 seconds, pauses while you point at it, and the arrows below it step through by hand.
+
+The list is rebuilt each morning while the widget is on your dashboard, and a fact is only stated when every figure in it is fully known. If you have an [AI provider](ai.md) set up, it words the facts in your language, marked **Written by AI from your figures**; every figure still comes from your own data, and account, security, category, payee and warranty names are not sent to the provider. Without one, or if it doesn't answer, Monize words them itself from the same calculations. A provider reached through the MCP relay is not used for this. To switch the facts off, use **AI trivia** in [AI Settings](ai.md#ai-trivia).
 
 ## Refreshing Data
 
