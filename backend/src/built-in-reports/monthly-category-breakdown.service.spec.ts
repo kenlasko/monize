@@ -12,6 +12,10 @@ import {
   DataSourceMock,
   ManagerMock,
 } from "../test-helpers/scoped-db-testing";
+import {
+  FIXTURE_TX_DATE,
+  rateIndexOf,
+} from "../test-helpers/report-rate-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -92,7 +96,7 @@ describe("MonthlyCategoryBreakdownService", () => {
       findOne: jest.fn().mockResolvedValue({ defaultCurrency: "USD" }),
     };
     exchangeRateService = {
-      getLatestRates: jest.fn().mockResolvedValue(mockExchangeRates),
+      getRateIndex: jest.fn().mockResolvedValue(rateIndexOf(mockExchangeRates)),
     };
 
     ({ manager: scopedManager, dataSource: scopedDataSource } =
@@ -156,6 +160,7 @@ describe("MonthlyCategoryBreakdownService", () => {
         account_id: "acc-chequing",
         account_name: "Chequing",
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         outflow: "500.00",
         inflow: "0.00",
       },
@@ -164,6 +169,7 @@ describe("MonthlyCategoryBreakdownService", () => {
         account_id: "acc-savings",
         account_name: "Savings",
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         outflow: "0.00",
         inflow: "500.00",
       },
@@ -197,6 +203,7 @@ describe("MonthlyCategoryBreakdownService", () => {
         month: "2025-02",
         category_id: "cat-child",
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         deposits: "0.00",
         withdrawals: "120.00",
       },
@@ -204,6 +211,7 @@ describe("MonthlyCategoryBreakdownService", () => {
         month: "2025-01",
         category_id: "cat-child",
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         deposits: "0.00",
         withdrawals: "100.00",
       },
@@ -242,6 +250,7 @@ describe("MonthlyCategoryBreakdownService", () => {
         month: "2025-01",
         category_id: "cat-income",
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         deposits: "5000.00",
         withdrawals: "0.00",
       },
@@ -272,6 +281,7 @@ describe("MonthlyCategoryBreakdownService", () => {
         month: "2025-01",
         category_id: "cat-child",
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         deposits: "300.00",
         withdrawals: "100.00",
       },
@@ -299,6 +309,7 @@ describe("MonthlyCategoryBreakdownService", () => {
         month: "2025-01",
         category_id: null,
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         deposits: "0.00",
         withdrawals: "40.00",
       },
@@ -306,6 +317,7 @@ describe("MonthlyCategoryBreakdownService", () => {
         month: "2025-01",
         category_id: "ghost-cat",
         currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
         deposits: "0.00",
         withdrawals: "10.00",
       },
@@ -330,6 +342,7 @@ describe("MonthlyCategoryBreakdownService", () => {
         month: "2025-01",
         category_id: "cat-child",
         currency_code: "EUR",
+        tx_date: FIXTURE_TX_DATE,
         deposits: "0.00",
         withdrawals: "100.00",
       },
@@ -359,6 +372,7 @@ describe("MonthlyCategoryBreakdownService", () => {
     expect(scopedManager.query.mock.calls[0][1]).toEqual([
       mockUserId,
       "2025-12-31",
+      "USD",
       "2025-01-01",
     ]);
 
@@ -370,8 +384,8 @@ describe("MonthlyCategoryBreakdownService", () => {
       "2025-12-31",
     );
     const call = scopedManager.query.mock.calls[0];
-    expect(call[1]).toEqual([mockUserId, "2025-12-31"]);
-    expect(call[0]).not.toContain("$3");
+    expect(call[1]).toEqual([mockUserId, "2025-12-31", "USD"]);
+    expect(call[0]).not.toContain("transaction_date >= $");
   });
 
   it("excludes transfers, investments and the asset-value-change category in SQL", async () => {
@@ -422,7 +436,7 @@ describe("MonthlyCategoryBreakdownService", () => {
   // A missing exchange rate is unknown, never 1:1 (INV-FX-001).
   describe("a currency that has no rate", () => {
     beforeEach(() => {
-      exchangeRateService.getLatestRates.mockResolvedValue([]);
+      exchangeRateService.getRateIndex.mockResolvedValue(rateIndexOf([]));
     });
 
     it("leaves the unconverted rows out of every figure and names the currency", async () => {
@@ -433,6 +447,7 @@ describe("MonthlyCategoryBreakdownService", () => {
             month: "2025-01",
             category_id: "cat-income",
             currency_code: "USD",
+            tx_date: FIXTURE_TX_DATE,
             deposits: "50.00",
             withdrawals: "0.00",
           },
@@ -440,6 +455,7 @@ describe("MonthlyCategoryBreakdownService", () => {
             month: "2025-02",
             category_id: "cat-income",
             currency_code: "JPY",
+            tx_date: FIXTURE_TX_DATE,
             deposits: "100000",
             withdrawals: "0.00",
           },
@@ -450,6 +466,7 @@ describe("MonthlyCategoryBreakdownService", () => {
             account_id: "acc-yen",
             account_name: "Yen",
             currency_code: "JPY",
+            tx_date: FIXTURE_TX_DATE,
             outflow: "100000",
             inflow: "0.00",
           },
@@ -501,7 +518,7 @@ describe("MonthlyCategoryBreakdownService", () => {
       expect(calls).toHaveLength(4);
       for (const [sql, params] of calls) {
         expect(sql).not.toContain("ANY(");
-        expect(params).toEqual([mockUserId, "2025-12-31", "2025-01-01"]);
+        expect(params).toEqual([mockUserId, "2025-12-31", "USD", "2025-01-01"]);
       }
       // The two requests are the same SQL: omitting it is today's query.
       expect(calls[2][0]).toBe(calls[0][0]);
@@ -522,11 +539,12 @@ describe("MonthlyCategoryBreakdownService", () => {
         [categorySql, categoryParams],
         [transferSql, transferParams],
       ] as const) {
-        expect(sql).toContain("t.account_id = ANY($4::uuid[])");
+        expect(sql).toContain("t.account_id = ANY($5::uuid[])");
         expect(sql).not.toContain("acct-1");
         expect(params).toEqual([
           mockUserId,
           "2025-12-31",
+          "USD",
           "2025-01-01",
           ["acct-1", "acct-2"],
         ]);
@@ -542,8 +560,8 @@ describe("MonthlyCategoryBreakdownService", () => {
       );
 
       for (const [sql, params] of scopedManager.query.mock.calls) {
-        expect(sql).toContain("t.account_id = ANY($3::uuid[])");
-        expect(params).toEqual([mockUserId, "2025-12-31", ["acct-1"]]);
+        expect(sql).toContain("t.account_id = ANY($4::uuid[])");
+        expect(params).toEqual([mockUserId, "2025-12-31", "USD", ["acct-1"]]);
       }
     });
 

@@ -311,8 +311,9 @@ describe("currency conversion has no silent identity fallback", () => {
 
   it("never calls the removed ReportCurrencyService.convertAmount", () => {
     // A report with nowhere to say "unknown" was the only reason the
-    // unconverted-amount door existed. Each report now uses `tryConvertAmount`,
-    // excludes the row and names the currency.
+    // unconverted-amount door existed. Each report now converts through the
+    // nullable converter `buildConverter` returns, excludes the row and names
+    // the currency.
     const offenders: string[] = [];
     for (const file of files) {
       const rel = relative(SRC_ROOT, file).split("\\").join("/");

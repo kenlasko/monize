@@ -5,10 +5,12 @@ import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import {
   ConversionGaps,
+  RATE_BASIS_GROUP_BY,
   ReportCurrencyService,
   RawCategoryAggregate,
   RawPayeeAggregate,
   RawMonthlyCategoryAggregate,
+  rateBasisColumnsSql,
 } from "./report-currency.service";
 import {
   MONEY_SCALE,
@@ -126,12 +128,12 @@ export class SpendingReportsService {
     const { rollupToParent = true, accountIds, tagKey, tagValue } = options;
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
-    const rateMap = await this.currencyService.buildRateMap(defaultCurrency);
 
     let query = `
       SELECT
         COALESCE(ts.category_id, t.category_id) as category_id,
         t.currency_code,
+        ${rateBasisColumnsSql("$3")},
         SUM(${NET_SPEND_AMOUNT}) as total
       FROM transactions t
       LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
@@ -152,7 +154,11 @@ export class SpendingReportsService {
         )
     `;
 
-    const params: (string | string[] | undefined)[] = [userId, endDate];
+    const params: (string | string[] | undefined)[] = [
+      userId,
+      endDate,
+      defaultCurrency,
+    ];
 
     if (startDate) {
       query += ` AND t.transaction_date >= $${params.length + 1}`;
@@ -183,7 +189,7 @@ export class SpendingReportsService {
       params.push(tagKey, tagValue);
     }
 
-    query += ` GROUP BY COALESCE(ts.category_id, t.category_id), t.currency_code`;
+    query += ` GROUP BY COALESCE(ts.category_id, t.category_id), t.currency_code, ${RATE_BASIS_GROUP_BY}`;
 
     const rawResults: RawCategoryAggregate[] = await withScopedDb(
       this.dataSource,
@@ -196,6 +202,10 @@ export class SpendingReportsService {
       }),
     );
     const categoryMap = new Map(categories.map((c) => [c.id, c]));
+    const convert = await this.currencyService.buildConverter(
+      rawResults,
+      defaultCurrency,
+    );
 
     const parentTotals = new Map<
       string,
@@ -224,15 +234,13 @@ export class SpendingReportsService {
     for (const row of rawResults) {
       // A missing rate is unknown, never the unconverted figure: adding foreign
       // units to a home-currency total is the defect INV-FX-001 forbids.
-      const converted = this.currencyService.tryConvertAmount(
+      const converted = convert(
         // An aggregate in the row's own currency, read before conversion: a coin's
         // sum keeps its stored 8 places (MONEY_SCALE, lossless; a fiat figure reads
         // the same), so a 2,500-sat total is not rounded to zero before it is
         // converted (INV-MONEY-001).
         toMoneyNumber(row.total, MONEY_SCALE),
-        row.currency_code,
-        defaultCurrency,
-        rateMap,
+        row,
       );
       if (converted === null) {
         missingCurrencies.add(row.currency_code);
@@ -305,13 +313,13 @@ export class SpendingReportsService {
   ): Promise<SpendingByPayeeResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
-    const rateMap = await this.currencyService.buildRateMap(defaultCurrency);
 
     let query = `
       SELECT
         t.payee_id,
         t.payee_name,
         t.currency_code,
+        ${rateBasisColumnsSql("$3")},
         SUM(ABS(${REPORTABLE_TX_AMOUNT})) as total
       FROM transactions t
       LEFT JOIN accounts a ON a.id = t.account_id
@@ -330,14 +338,14 @@ export class SpendingReportsService {
         )
       `;
 
-    const params: (string | undefined)[] = [userId, endDate];
+    const params: (string | undefined)[] = [userId, endDate, defaultCurrency];
 
     if (startDate) {
-      query += ` AND t.transaction_date >= $3`;
+      query += ` AND t.transaction_date >= $4`;
       params.push(startDate);
     }
 
-    query += ` GROUP BY t.payee_id, t.payee_name, t.currency_code`;
+    query += ` GROUP BY t.payee_id, t.payee_name, t.currency_code, ${RATE_BASIS_GROUP_BY}`;
 
     const rawResults: RawPayeeAggregate[] = await withScopedDb(
       this.dataSource,
@@ -355,6 +363,10 @@ export class SpendingReportsService {
           )
         : [];
     const payeeMap = new Map(payees.map((p) => [p.id, p]));
+    const convert = await this.currencyService.buildConverter(
+      rawResults,
+      defaultCurrency,
+    );
 
     const payeeTotals = new Map<
       string,
@@ -365,12 +377,7 @@ export class SpendingReportsService {
     // twenty payees make the list, so the total is withheld, not merely smaller.
     const gaps = new ConversionGaps();
     for (const row of rawResults) {
-      const total = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.total, MONEY_SCALE),
-        row.currency_code,
-        defaultCurrency,
-        rateMap,
-      );
+      const total = convert(toMoneyNumber(row.total, MONEY_SCALE), row);
       if (total === null) {
         gaps.record(row.currency_code);
         continue;
@@ -419,13 +426,13 @@ export class SpendingReportsService {
   ): Promise<MonthlySpendingTrendResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
-    const rateMap = await this.currencyService.buildRateMap(defaultCurrency);
 
     let query = `
       SELECT
         TO_CHAR(t.transaction_date, 'YYYY-MM') as month,
         COALESCE(ts.category_id, t.category_id) as category_id,
         t.currency_code,
+        ${rateBasisColumnsSql("$3")},
         SUM(${NET_SPEND_AMOUNT}) as total
       FROM transactions t
       LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
@@ -446,15 +453,15 @@ export class SpendingReportsService {
         )
     `;
 
-    const params: (string | undefined)[] = [userId, endDate];
+    const params: (string | undefined)[] = [userId, endDate, defaultCurrency];
 
     if (startDate) {
-      query += ` AND t.transaction_date >= $3`;
+      query += ` AND t.transaction_date >= $4`;
       params.push(startDate);
     }
 
     query += `
-      GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'), COALESCE(ts.category_id, t.category_id), t.currency_code
+      GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'), COALESCE(ts.category_id, t.category_id), t.currency_code, ${RATE_BASIS_GROUP_BY}
       ORDER BY month
     `;
 
@@ -469,6 +476,10 @@ export class SpendingReportsService {
       }),
     );
     const categoryMap = new Map(categories.map((c) => [c.id, c]));
+    const convert = await this.currencyService.buildConverter(
+      rawResults,
+      defaultCurrency,
+    );
 
     const monthlyData = new Map<
       string,
@@ -481,12 +492,7 @@ export class SpendingReportsService {
 
     for (const row of rawResults) {
       const month = row.month;
-      const total = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.total, MONEY_SCALE),
-        row.currency_code,
-        defaultCurrency,
-        rateMap,
-      );
+      const total = convert(toMoneyNumber(row.total, MONEY_SCALE), row);
       if (total === null) {
         gaps.record(row.currency_code);
         continue;

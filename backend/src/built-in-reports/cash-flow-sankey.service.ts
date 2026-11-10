@@ -12,7 +12,11 @@ import {
   convertAtDate,
 } from "../common/time-series/rate-index.util";
 import { tr } from "../i18n/translate";
-import { ReportCurrencyService } from "./report-currency.service";
+import {
+  ReportCurrencyService,
+  ownRateSql,
+  toOwnRate,
+} from "./report-currency.service";
 import {
   assembleCashFlowSankey,
   SankeyCategorizedRow,
@@ -52,21 +56,6 @@ export const DEFAULT_SANKEY_SCOPE_TYPES = [
   "LINE_OF_CREDIT",
   "CRYPTO",
 ] as const;
-
-/**
- * The row's own rate into the reporting currency, when it carries one that
- * reaches it (INV-FX-002): a foreign entry whose original currency IS the
- * reporting currency settled at `exchange_rate` account-currency units per
- * reporting unit. A stored 1 between two different codes is the column's
- * default, not a rate, and falls back to the market rate like an absent one.
- */
-const OWN_RATE_SQL = (currencyParam: string) => `CASE
-          WHEN t.original_currency_code = ${currencyParam}
-           AND t.original_currency_code <> t.currency_code
-           AND t.exchange_rate > 0
-           AND t.exchange_rate <> 1
-          THEN t.exchange_rate
-        END`;
 
 /** What every query builder is handed. */
 interface SankeyQueryScope {
@@ -113,7 +102,7 @@ export function categorizedRowsQuery(scope: SankeyQueryScope): BuiltQuery {
         COALESCE(ts.category_id, t.category_id) AS category_id,
         t.currency_code,
         TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS tx_date,
-        ${OWN_RATE_SQL("$4")} AS own_rate,
+        ${ownRateSql("$4")} AS own_rate,
         SUM(CASE WHEN COALESCE(ts.amount, t.amount) > 0 THEN COALESCE(ts.amount, t.amount) ELSE 0 END) AS positive,
         SUM(CASE WHEN COALESCE(ts.amount, t.amount) < 0 THEN COALESCE(ts.amount, t.amount) ELSE 0 END) AS negative
       FROM transactions t
@@ -160,7 +149,7 @@ export function wholeTransferLegsQuery(scope: SankeyQueryScope): BuiltQuery {
         cp.name AS counterpart_name,
         t.currency_code,
         TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS tx_date,
-        ${OWN_RATE_SQL("$4")} AS own_rate,
+        ${ownRateSql("$4")} AS own_rate,
         cp.managed_purpose AS counterpart_managed_purpose,
         SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) AS inflow,
         SUM(CASE WHEN t.amount < 0 THEN t.amount ELSE 0 END) AS outflow
@@ -200,7 +189,7 @@ export function splitTransferLegsQuery(scope: SankeyQueryScope): BuiltQuery {
         cp.name AS counterpart_name,
         t.currency_code,
         TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS tx_date,
-        ${OWN_RATE_SQL("$4")} AS own_rate,
+        ${ownRateSql("$4")} AS own_rate,
         cp.managed_purpose AS counterpart_managed_purpose,
         SUM(CASE WHEN ts.amount > 0 THEN ts.amount ELSE 0 END) AS inflow,
         SUM(CASE WHEN ts.amount < 0 THEN ts.amount ELSE 0 END) AS outflow
@@ -247,12 +236,6 @@ interface RawTransferRow {
 const toNumber = (value: unknown): number => {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
-};
-
-const toRate = (value: unknown): number | null => {
-  if (value === null || value === undefined) return null;
-  const n = Number(value);
-  return Number.isFinite(n) && n > 0 ? n : null;
 };
 
 /**
@@ -310,7 +293,7 @@ export class CashFlowSankeyService {
       categoryId: row.category_id,
       currency: row.currency_code,
       date: row.tx_date,
-      ownRate: toRate(row.own_rate),
+      ownRate: toOwnRate(row.own_rate),
       positive: toNumber(row.positive),
       negative: toNumber(row.negative),
     }));
@@ -322,7 +305,7 @@ export class CashFlowSankeyService {
         counterpartName: row.counterpart_name,
         currency: row.currency_code,
         date: row.tx_date,
-        ownRate: toRate(row.own_rate),
+        ownRate: toOwnRate(row.own_rate),
         inflow: toNumber(row.inflow),
         outflow: toNumber(row.outflow),
       }),

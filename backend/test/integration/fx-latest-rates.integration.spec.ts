@@ -188,6 +188,51 @@ describe("latest exchange rates and the readers that take them (integration)", (
     expect(report.totalSpending).toBe(1400);
   });
 
+  it("converts a past report row at the rate on its own date, not today's (issue #2106)", async () => {
+    await dataSource.manager.save(
+      dataSource.manager.create(UserPreference, {
+        userId,
+        defaultCurrency: "CAD",
+      }),
+    );
+    const account = await createTestAccount(dataSource, userId, {
+      name: "US Chequing",
+      currencyCode: "USD",
+      openingBalance: 5000,
+      currentBalance: 3000,
+    });
+    const past = addDaysYMD(today, -60);
+    for (const [date, amount] of [
+      [past, -1000],
+      [today, -1000],
+    ] as const) {
+      await dataSource.manager.save(
+        dataSource.manager.create(Transaction, {
+          userId,
+          accountId: account.id,
+          transactionDate: date,
+          amount,
+          currencyCode: "USD",
+          payeeName: "Shop",
+          status: TransactionStatus.UNRECONCILED,
+          isTransfer: false,
+          isSplit: false,
+        } as Partial<Transaction>),
+      );
+    }
+    // 1.25 CAD per USD two days before the past row; 1.40 today.
+    await insertRate("CAD", "USD", addDaysYMD(past, -2), "0.8000000000");
+    await insertRate("CAD", "USD", today, "0.7142857143");
+
+    const report = await withUserContext(userId, () =>
+      spending.getSpendingByPayee(userId, addDaysYMD(today, -90), today),
+    );
+
+    // 1,000 USD at 1.25 plus 1,000 USD at 1.40; at today's rate it read 2,800.
+    expect(report.totalSpending).toBe(2650);
+    expect(report.excludedCount).toBe(0);
+  });
+
   it("rejects a back-dated cross-currency trade when only today's rate is stored", async () => {
     await insertRate("CAD", "USD", today, "0.7142857143");
     const cash = await createTestAccount(dataSource, userId, {

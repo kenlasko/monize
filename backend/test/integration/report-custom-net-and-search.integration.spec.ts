@@ -51,7 +51,7 @@ describe("custom report: signed category sums and escaped search (integration)",
     dataSource = module.get(DataSource);
     // Every fixture is USD, so no rate is looked up: an empty list is honest.
     const currency = new ReportCurrencyService(dataSource, {
-      getLatestRates: async () => [],
+      getRateIndex: async () => new Map(),
     } as never);
     // `execute` uses neither the budgets service nor action history.
     reports = new ReportsService(

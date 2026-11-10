@@ -4,7 +4,10 @@ import { withScopedDb } from "../common/db/scoped-db";
 import { Category } from "../categories/entities/category.entity";
 import {
   ConversionGaps,
+  RATE_BASIS_GROUP_BY,
+  RawRateBasis,
   ReportCurrencyService,
+  rateBasisColumnsSql,
 } from "./report-currency.service";
 import { MONEY_SCALE, roundMoney, toMoneyNumber } from "../common/round.util";
 import {
@@ -32,10 +35,9 @@ const INVESTMENT_EXCLUSION = investmentExclusionSql({
  * summed separately so the frontend can classify a category as income vs
  * expense and render a signed net value per month.
  */
-interface RawBreakdownAggregate {
+interface RawBreakdownAggregate extends RawRateBasis {
   month: string;
   category_id: string | null;
-  currency_code: string;
   deposits: string;
   withdrawals: string;
 }
@@ -45,11 +47,10 @@ interface RawBreakdownAggregate {
  * are summed separately so each account can be split into a "from" row
  * (outflows, a source of funds) and a "to" row (inflows, a use of funds).
  */
-interface RawTransferAggregate {
+interface RawTransferAggregate extends RawRateBasis {
   month: string;
   account_id: string;
   account_name: string;
-  currency_code: string;
   outflow: string;
   inflow: string;
 }
@@ -83,7 +84,6 @@ export class MonthlyCategoryBreakdownService {
     const { accountIds } = options;
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
-    const rateMap = await this.currencyService.buildRateMap(defaultCurrency);
 
     // Aggregate deposits (amount > 0) and withdrawals (amount < 0) per
     // category, month and currency. Transfers, voided rows, child rows of a
@@ -96,6 +96,7 @@ export class MonthlyCategoryBreakdownService {
         TO_CHAR(t.transaction_date, 'YYYY-MM') as month,
         COALESCE(ts.category_id, t.category_id) as category_id,
         t.currency_code,
+        ${rateBasisColumnsSql("$3")},
         SUM(CASE WHEN COALESCE(ts.amount, t.amount) > 0
               THEN COALESCE(ts.amount, t.amount) ELSE 0 END) as deposits,
         SUM(CASE WHEN COALESCE(ts.amount, t.amount) < 0
@@ -121,10 +122,14 @@ export class MonthlyCategoryBreakdownService {
         )
     `;
 
-    const params: (string | string[] | undefined)[] = [userId, endDate];
+    const params: (string | string[] | undefined)[] = [
+      userId,
+      endDate,
+      defaultCurrency,
+    ];
 
     if (startDate) {
-      query += ` AND t.transaction_date >= $3`;
+      query += ` AND t.transaction_date >= $4`;
       params.push(startDate);
     }
 
@@ -136,7 +141,8 @@ export class MonthlyCategoryBreakdownService {
 
     query += `
       GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'),
-               COALESCE(ts.category_id, t.category_id), t.currency_code
+               COALESCE(ts.category_id, t.category_id), t.currency_code,
+               ${RATE_BASIS_GROUP_BY}
       ORDER BY month
     `;
 
@@ -151,6 +157,10 @@ export class MonthlyCategoryBreakdownService {
       }),
     );
     const categoryMap = new Map(categories.map((c) => [c.id, c]));
+    const convert = await this.currencyService.buildConverter(
+      rawResults,
+      defaultCurrency,
+    );
 
     const accumulators = new Map<string, CategoryAccumulator>();
     const monthSet = new Set<string>();
@@ -162,21 +172,17 @@ export class MonthlyCategoryBreakdownService {
     for (const row of rawResults) {
       const month = row.month;
 
-      const deposits = this.currencyService.tryConvertAmount(
+      const deposits = convert(
         // An aggregate in the row's own currency, read before conversion: a coin's
         // sum keeps its stored 8 places (MONEY_SCALE, lossless; a fiat figure reads
         // the same), so a 2,500-sat total is not rounded to zero before it is
         // converted (INV-MONEY-001).
         toMoneyNumber(row.deposits, MONEY_SCALE),
-        row.currency_code,
-        defaultCurrency,
-        rateMap,
+        row,
       );
-      const withdrawals = this.currencyService.tryConvertAmount(
+      const withdrawals = convert(
         toMoneyNumber(row.withdrawals, MONEY_SCALE),
-        row.currency_code,
-        defaultCurrency,
-        rateMap,
+        row,
       );
       if (deposits === null || withdrawals === null) {
         gaps.record(row.currency_code);
@@ -221,7 +227,6 @@ export class MonthlyCategoryBreakdownService {
       startDate,
       endDate,
       defaultCurrency,
-      rateMap,
       monthSet,
       gaps,
       accountIds,
@@ -257,7 +262,6 @@ export class MonthlyCategoryBreakdownService {
     startDate: string | undefined,
     endDate: string,
     defaultCurrency: string,
-    rateMap: Map<string, number>,
     monthSet: Set<string>,
     gaps: ConversionGaps,
     accountIds?: string[],
@@ -268,6 +272,7 @@ export class MonthlyCategoryBreakdownService {
         t.account_id,
         a.name as account_name,
         t.currency_code,
+        ${rateBasisColumnsSql("$3")},
         SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END) as outflow,
         SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) as inflow
       FROM transactions t
@@ -279,10 +284,14 @@ export class MonthlyCategoryBreakdownService {
         AND t.parent_transaction_id IS NULL
     `;
 
-    const params: (string | string[] | undefined)[] = [userId, endDate];
+    const params: (string | string[] | undefined)[] = [
+      userId,
+      endDate,
+      defaultCurrency,
+    ];
 
     if (startDate) {
-      query += ` AND t.transaction_date >= $3`;
+      query += ` AND t.transaction_date >= $4`;
       params.push(startDate);
     }
 
@@ -295,13 +304,17 @@ export class MonthlyCategoryBreakdownService {
 
     query += `
       GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'),
-               t.account_id, a.name, t.currency_code
+               t.account_id, a.name, t.currency_code, ${RATE_BASIS_GROUP_BY}
       ORDER BY month
     `;
 
     const rawResults: RawTransferAggregate[] = await withScopedDb(
       this.dataSource,
       (m) => m.query(query, params),
+    );
+    const convert = await this.currencyService.buildConverter(
+      rawResults,
+      defaultCurrency,
     );
 
     // Accumulate the signed flow per (account, direction) across currencies.
@@ -333,18 +346,8 @@ export class MonthlyCategoryBreakdownService {
     };
 
     for (const row of rawResults) {
-      const outflow = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.outflow, MONEY_SCALE),
-        row.currency_code,
-        defaultCurrency,
-        rateMap,
-      );
-      const inflow = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.inflow, MONEY_SCALE),
-        row.currency_code,
-        defaultCurrency,
-        rateMap,
-      );
+      const outflow = convert(toMoneyNumber(row.outflow, MONEY_SCALE), row);
+      const inflow = convert(toMoneyNumber(row.inflow, MONEY_SCALE), row);
       if (outflow === null || inflow === null) {
         gaps.record(row.currency_code);
         continue;

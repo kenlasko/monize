@@ -2,7 +2,7 @@ import { DataSource } from "typeorm";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { AnomalyReportsService } from "./anomaly-reports.service";
-import { ReportCurrencyService } from "./report-currency.service";
+import { RawRateBasis, ReportCurrencyService } from "./report-currency.service";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
@@ -108,9 +108,14 @@ describe("AnomalyReportsService", () => {
 
     currencyService = {
       getDefaultCurrency: jest.fn().mockResolvedValue("USD"),
-      buildRateMap: jest.fn().mockResolvedValue(new Map()),
-      tryConvertAmount: jest.fn().mockImplementation((amount) => amount),
+      // The converter a report builds, per row; a test swaps its body.
+      convertRow: jest.fn().mockImplementation((amount: number) => amount),
+      buildConverter: jest.fn(),
     };
+    currencyService.buildConverter.mockImplementation(
+      async () => (amount: number, row: RawRateBasis) =>
+        currencyService.convertRow(amount, row),
+    );
 
     ({ manager: scopedManager, dataSource: scopedDataSource } =
       createScopedDbMocks([
@@ -567,8 +572,8 @@ describe("AnomalyReportsService", () => {
     });
 
     it("converts foreign currency amounts via currency service", async () => {
-      currencyService.tryConvertAmount.mockImplementation(
-        (amount: number, fromCurrency: string) => {
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: fromCurrency }: RawRateBasis) => {
           if (fromCurrency === "EUR") return amount * 1.1;
           return amount;
         },
@@ -607,7 +612,10 @@ describe("AnomalyReportsService", () => {
       expect(currencyService.getDefaultCurrency).toHaveBeenCalledWith(
         mockUserId,
       );
-      expect(currencyService.buildRateMap).toHaveBeenCalledWith("USD");
+      expect(currencyService.buildConverter).toHaveBeenCalledWith(
+        expect.any(Array),
+        "USD",
+      );
     });
 
     it("passes correct date range to the query (6 months)", async () => {
@@ -828,8 +836,9 @@ describe("AnomalyReportsService", () => {
     it("computes statistics over converted rows only and names the gap", async () => {
       jest.useFakeTimers();
       jest.setSystemTime(new Date("2025-06-25T12:00:00Z"));
-      currencyService.tryConvertAmount.mockImplementation(
-        (amount: number, from: string) => (from === "JPY" ? null : amount),
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: from }: RawRateBasis) =>
+          from === "JPY" ? null : amount,
       );
       const raw = buildRawExpenses(12, 50);
       raw.push({
@@ -867,8 +876,9 @@ describe("AnomalyReportsService", () => {
     });
 
     it("names the gap even when too few rows converted to analyse", async () => {
-      currencyService.tryConvertAmount.mockImplementation(
-        (amount: number, from: string) => (from === "JPY" ? null : amount),
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: from }: RawRateBasis) =>
+          from === "JPY" ? null : amount,
       );
       const raw = buildRawExpenses(5, 50).map((row) => ({
         ...row,

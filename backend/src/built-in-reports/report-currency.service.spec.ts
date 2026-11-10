@@ -3,8 +3,11 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import {
   ConversionGaps,
+  RATE_BASIS_GROUP_BY,
   ReportCurrencyService,
-  RateMap,
+  ownRateSql,
+  rateBasisColumnsSql,
+  transactionRateBasis,
 } from "./report-currency.service";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
@@ -12,6 +15,7 @@ import {
   createScopedDbMocks,
   DataSourceMock,
 } from "../test-helpers/scoped-db-testing";
+import { FixtureRate, rateIndexOf } from "../test-helpers/report-rate-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -21,15 +25,9 @@ describe("ReportCurrencyService", () => {
   let scopedDataSource: DataSourceMock;
   let service: ReportCurrencyService;
   let userPreferenceRepository: Record<string, jest.Mock>;
-  let exchangeRateService: Record<string, jest.Mock>;
+  let exchangeRateService: { getRateIndex: jest.Mock };
 
   const mockUserId = "user-1";
-
-  const mockExchangeRates = [
-    { fromCurrency: "EUR", toCurrency: "USD", rate: 1.1 },
-    { fromCurrency: "GBP", toCurrency: "USD", rate: 1.27 },
-    { fromCurrency: "USD", toCurrency: "CAD", rate: 1.36 },
-  ];
 
   beforeEach(async () => {
     userPreferenceRepository = {
@@ -37,7 +35,7 @@ describe("ReportCurrencyService", () => {
     };
 
     exchangeRateService = {
-      getLatestRates: jest.fn().mockResolvedValue(mockExchangeRates),
+      getRateIndex: jest.fn().mockResolvedValue(new Map()),
     };
 
     ({ dataSource: scopedDataSource } = createScopedDbMocks([
@@ -51,10 +49,7 @@ describe("ReportCurrencyService", () => {
           provide: getRepositoryToken(UserPreference),
           useValue: userPreferenceRepository,
         },
-        {
-          provide: ExchangeRateService,
-          useValue: exchangeRateService,
-        },
+        { provide: ExchangeRateService, useValue: exchangeRateService },
         { provide: DataSource, useValue: scopedDataSource },
       ],
     }).compile();
@@ -122,151 +117,215 @@ describe("ReportCurrencyService", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // buildRateMap
+  // buildConverter (issue #2106: a past row converts at its own date's rate)
   // ---------------------------------------------------------------------------
-  describe("buildRateMap", () => {
-    it("builds a rate map from exchange rates", async () => {
-      const rateMap = await service.buildRateMap("USD");
+  describe("buildConverter", () => {
+    /** The stored observations `getRateIndex` answers with. */
+    const useRates = (rates: FixtureRate[]) => {
+      exchangeRateService.getRateIndex.mockResolvedValue(rateIndexOf(rates));
+    };
 
-      expect(rateMap).toBeInstanceOf(Map);
-      expect(rateMap.get("EUR->USD")).toBe(1.1);
-      expect(rateMap.get("GBP->USD")).toBe(1.27);
-      expect(rateMap.get("USD->CAD")).toBe(1.36);
+    const EUR_HISTORY: FixtureRate[] = [
+      {
+        fromCurrency: "EUR",
+        toCurrency: "USD",
+        rate: "1.05",
+        rateDate: "2025-01-10",
+      },
+      {
+        fromCurrency: "EUR",
+        toCurrency: "USD",
+        rate: "1.15",
+        rateDate: "2025-06-02",
+      },
+    ];
+
+    it("returns a reporting-currency row unchanged and loads no rates", async () => {
+      const convert = await service.buildConverter(
+        [{ currency_code: "USD", tx_date: null, own_rate: null }],
+        "USD",
+      );
+
+      expect(convert(100, { currency_code: "USD" })).toBe(100);
+      expect(exchangeRateService.getRateIndex).not.toHaveBeenCalled();
     });
 
-    it("returns empty map when no exchange rates exist", async () => {
-      exchangeRateService.getLatestRates.mockResolvedValue([]);
+    it("converts each row at the rate on its own date, not the latest", async () => {
+      useRates(EUR_HISTORY);
+      const january = { currency_code: "EUR", tx_date: "2025-01-15" };
+      const june = { currency_code: "EUR", tx_date: "2025-06-20" };
 
-      const rateMap = await service.buildRateMap("USD");
+      const convert = await service.buildConverter([january, june], "USD");
 
-      expect(rateMap.size).toBe(0);
+      // 100 EUR on 2025-01-15 at 1.05, and on 2025-06-20 at 1.15.
+      expect(convert(100, january)).toBeCloseTo(105, 6);
+      expect(convert(100, june)).toBeCloseTo(115, 6);
     });
 
-    it("calls getLatestRates from exchange rate service", async () => {
-      await service.buildRateMap("USD");
+    it("loads the history once, for the span the foreign rows cover", async () => {
+      useRates(EUR_HISTORY);
 
-      expect(exchangeRateService.getLatestRates).toHaveBeenCalledTimes(1);
+      await service.buildConverter(
+        [
+          { currency_code: "EUR", tx_date: "2025-06-20" },
+          { currency_code: "GBP", tx_date: "2025-01-15" },
+          { currency_code: "USD", tx_date: null },
+          // Carries its own rate, so needs no history.
+          { currency_code: "CAD", tx_date: "2024-01-01", own_rate: "1.35" },
+        ],
+        "USD",
+      );
+
+      expect(exchangeRateService.getRateIndex).toHaveBeenCalledTimes(1);
+      const [currencies, ...window] =
+        exchangeRateService.getRateIndex.mock.calls[0];
+      expect([...currencies].sort()).toEqual(["EUR", "GBP"]);
+      expect(window).toEqual(["USD", "2025-01-15", "2025-06-20"]);
     });
 
-    it("converts rate values to numbers", async () => {
-      exchangeRateService.getLatestRates.mockResolvedValue([
-        { fromCurrency: "JPY", toCurrency: "USD", rate: "0.0067" },
+    it("answers null for a rate struck after the row's date (INV-FX-001)", async () => {
+      useRates(EUR_HISTORY);
+      const early = { currency_code: "EUR", tx_date: "2025-01-05" };
+
+      const convert = await service.buildConverter([early], "USD");
+
+      expect(convert(100, early)).toBeNull();
+    });
+
+    it("converts through a rate stored in the other direction", async () => {
+      useRates([
+        {
+          fromCurrency: "USD",
+          toCurrency: "CAD",
+          rate: "1.25",
+          rateDate: "2025-03-01",
+        },
       ]);
+      const row = { currency_code: "CAD", tx_date: "2025-03-04" };
 
-      const rateMap = await service.buildRateMap("USD");
+      const convert = await service.buildConverter([row], "USD");
 
-      expect(rateMap.get("JPY->USD")).toBe(0.0067);
-      expect(typeof rateMap.get("JPY->USD")).toBe("number");
+      // 125 CAD / 1.25 = 100 USD
+      expect(convert(125, row)).toBeCloseTo(100, 6);
     });
 
-    it("handles multiple rates and builds correct keys", async () => {
-      exchangeRateService.getLatestRates.mockResolvedValue([
-        { fromCurrency: "USD", toCurrency: "EUR", rate: 0.91 },
-        { fromCurrency: "USD", toCurrency: "GBP", rate: 0.79 },
-        { fromCurrency: "EUR", toCurrency: "GBP", rate: 0.86 },
+    it("uses the row's own rate before the market's (INV-FX-002)", async () => {
+      useRates([
+        {
+          fromCurrency: "CAD",
+          toCurrency: "USD",
+          rate: "0.70",
+          rateDate: "2025-03-01",
+        },
       ]);
+      // 1,350 CAD that settled 1,000 USD at 1.35 CAD per USD.
+      const row = {
+        currency_code: "CAD",
+        tx_date: "2025-03-04",
+        own_rate: "1.35",
+      };
 
-      const rateMap = await service.buildRateMap("USD");
+      const convert = await service.buildConverter([row], "USD");
 
-      expect(rateMap.size).toBe(3);
-      expect(rateMap.get("USD->EUR")).toBe(0.91);
-      expect(rateMap.get("USD->GBP")).toBe(0.79);
-      expect(rateMap.get("EUR->GBP")).toBe(0.86);
+      expect(convert(1350, row)).toBeCloseTo(1000, 6);
+      expect(exchangeRateService.getRateIndex).not.toHaveBeenCalled();
+    });
+
+    it("answers null, never the input, when no rate exists (INV-FX-001)", async () => {
+      useRates([]);
+      const row = { currency_code: "JPY", tx_date: "2025-03-04" };
+
+      const convert = await service.buildConverter([row], "USD");
+
+      expect(convert(1000, row)).toBeNull();
+    });
+
+    it("answers null for a foreign row with no date or no currency", async () => {
+      useRates(EUR_HISTORY);
+
+      const convert = await service.buildConverter([], "USD");
+
+      expect(convert(100, { currency_code: "EUR", tx_date: null })).toBeNull();
+      expect(convert(100, { currency_code: "" })).toBeNull();
+    });
+
+    it("converts zero to zero without a rate", async () => {
+      useRates([]);
+      const row = { currency_code: "JPY", tx_date: "2025-03-04" };
+
+      const convert = await service.buildConverter([row], "USD");
+
+      expect(convert(0, row)).toBe(0);
     });
   });
 
   // ---------------------------------------------------------------------------
-  // tryConvertAmount
+  // SQL columns and the entity form of the same rule
   // ---------------------------------------------------------------------------
-  describe("tryConvertAmount", () => {
-    let rateMap: RateMap;
+  describe("rate basis", () => {
+    it("selects a date only for a row outside the reporting currency", () => {
+      const sql = rateBasisColumnsSql("$5");
 
-    beforeEach(() => {
-      rateMap = new Map<string, number>();
-      rateMap.set("EUR->USD", 1.1);
-      rateMap.set("GBP->USD", 1.27);
-      rateMap.set("USD->CAD", 1.36);
+      expect(sql).toContain("t.currency_code = $5::text THEN NULL");
+      expect(sql).toContain("TO_CHAR(t.transaction_date, 'YYYY-MM-DD')");
+      expect(sql).toContain("AS tx_date");
+      expect(sql).toContain("AS own_rate");
+      expect(RATE_BASIS_GROUP_BY).toBe("tx_date, own_rate");
     });
 
-    it("returns the original amount when currencies match", () => {
-      const result = service.tryConvertAmount(100, "USD", "USD", rateMap);
+    it("takes the own rate only when it reaches the reporting currency", () => {
+      const sql = ownRateSql("$2", "x");
 
-      expect(result).toBe(100);
+      expect(sql).toContain("x.original_currency_code = $2::text");
+      expect(sql).toContain("x.exchange_rate <> 1");
     });
 
-    it("answers null when fromCurrency is empty (INV-FX-001)", () => {
-      const result = service.tryConvertAmount(100, "", "USD", rateMap);
-
-      expect(result).toBeNull();
-    });
-
-    it("converts using direct rate when available", () => {
-      const result = service.tryConvertAmount(100, "EUR", "USD", rateMap);
-
-      // 100 EUR * 1.1 = 110 USD
-      expect(result).toBeCloseTo(110, 2);
-    });
-
-    it("converts using inverse rate when direct rate is not available", () => {
-      const result = service.tryConvertAmount(136, "CAD", "USD", rateMap);
-
-      // No CAD->USD rate, but USD->CAD = 1.36, so 136 / 1.36 = 100
-      expect(result).toBeCloseTo(100, 2);
-    });
-
-    it("answers null, never the input, when no rate is available (INV-FX-001)", () => {
-      const result = service.tryConvertAmount(1000, "JPY", "USD", rateMap);
-
-      // No JPY->USD or USD->JPY rate
-      expect(result).toBeNull();
-    });
-
-    it("handles zero amount correctly", () => {
-      const result = service.tryConvertAmount(0, "EUR", "USD", rateMap);
-
-      expect(result).toBe(0);
-    });
-
-    it("handles negative amounts correctly", () => {
-      const result = service.tryConvertAmount(-50, "EUR", "USD", rateMap);
-
-      // -50 * 1.1 = -55
-      expect(result).toBeCloseTo(-55, 2);
-    });
-
-    it("handles large amounts", () => {
-      const result = service.tryConvertAmount(1000000, "GBP", "USD", rateMap);
-
-      // 1000000 * 1.27 = 1270000
-      expect(result).toBe(1270000);
-    });
-
-    it("handles fractional amounts", () => {
-      const result = service.tryConvertAmount(0.01, "EUR", "USD", rateMap);
-
-      // 0.01 * 1.1 = 0.011
-      expect(result).toBeCloseTo(0.011, 5);
-    });
-
-    it("does not divide by zero when inverse rate is zero", () => {
-      const zeroRateMap = new Map<string, number>();
-      zeroRateMap.set("USD->JPY", 0);
-
-      const result = service.tryConvertAmount(100, "JPY", "USD", zeroRateMap);
-
-      // Inverse rate is 0, which is no rate: unknown, not the input.
-      expect(result).toBeNull();
-    });
-
-    it("prefers direct rate over inverse rate", () => {
-      const bothRatesMap = new Map<string, number>();
-      bothRatesMap.set("EUR->USD", 1.1);
-      bothRatesMap.set("USD->EUR", 0.95);
-
-      const result = service.tryConvertAmount(100, "EUR", "USD", bothRatesMap);
-
-      // Should use direct rate EUR->USD = 1.1, not inverse of USD->EUR
-      expect(result).toBeCloseTo(110, 2);
+    it("derives the same basis from a loaded transaction", () => {
+      expect(
+        transactionRateBasis(
+          {
+            currencyCode: "CAD",
+            transactionDate: "2025-03-04",
+            originalCurrencyCode: "USD",
+            exchangeRate: 1.35,
+          },
+          "USD",
+        ),
+      ).toEqual({
+        currency_code: "CAD",
+        tx_date: "2025-03-04",
+        own_rate: 1.35,
+      });
+      // A stored 1 across two codes is the column default, not a rate.
+      expect(
+        transactionRateBasis(
+          {
+            currencyCode: "CAD",
+            transactionDate: "2025-03-04",
+            originalCurrencyCode: "USD",
+            exchangeRate: 1,
+          },
+          "USD",
+        ).own_rate,
+      ).toBeNull();
+      // A rate into a third currency does not reach the reporting currency.
+      expect(
+        transactionRateBasis(
+          {
+            currencyCode: "CAD",
+            transactionDate: "2025-03-04",
+            originalCurrencyCode: "EUR",
+            exchangeRate: 1.5,
+          },
+          "USD",
+        ).own_rate,
+      ).toBeNull();
+      expect(
+        transactionRateBasis(
+          { currencyCode: "USD", transactionDate: "2025-03-04" },
+          "USD",
+        ),
+      ).toEqual({ currency_code: "USD", tx_date: null, own_rate: null });
     });
   });
 

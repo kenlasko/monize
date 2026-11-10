@@ -16,6 +16,10 @@ import { resolveFxRateOrNull, roundFxRate } from "../common/fx-entry.util";
 import { roundMoney } from "../common/round.util";
 import { addDaysYMD, todayYMD } from "../common/date-utils";
 import { withScopedDb } from "../common/db/scoped-db";
+import {
+  buildRateIndex,
+  RateIndex,
+} from "../common/time-series/rate-index.util";
 import { returnedRows } from "../common/db/query-result";
 import { withSystemContext, withUserContext } from "../common/db/with-context";
 import {
@@ -1552,6 +1556,29 @@ export class ExchangeRateService implements OnModuleInit {
       );
     }
     return stored.rate;
+  }
+
+  /**
+   * The stored history a set of dated conversions into `toCurrency` needs, as
+   * the pair index `convertAtDate` reads: every observation of each of
+   * `currencies` against `toCurrency`, in either direction, that a date in
+   * `[startDate, endDate]` could be priced by (`buildRateIndex`). Stored rows
+   * only; nothing is fetched from a provider.
+   */
+  async getRateIndex(
+    currencies: ReadonlySet<string>,
+    toCurrency: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<RateIndex> {
+    return buildRateIndex(
+      (sql, params) =>
+        withScopedDb(this.dataSource, (manager) => manager.query(sql, params)),
+      new Set(currencies),
+      toCurrency,
+      startDate,
+      endDate,
+    );
   }
 
   /**

@@ -46,6 +46,7 @@ import { roundMoney, sumMoney } from "../common/round.util";
 import {
   ConversionGaps,
   ReportCurrencyService,
+  transactionRateBasis,
 } from "../built-in-reports/report-currency.service";
 import { transferPayeeLabel } from "../transactions/transfer-payee-label.util";
 import { applyRegisterOrder } from "../transactions/register-order";
@@ -70,17 +71,24 @@ import {
 /** Rows one execution reads; past it the report is truncated, never complete. */
 const REPORT_ROW_LIMIT = 50000;
 
+/** What {@link RowConverter.convert} reads of a row: its currency, date and rate. */
+type ConvertibleRow = Pick<
+  Transaction,
+  "currencyCode" | "transactionDate" | "originalCurrencyCode" | "exchangeRate"
+>;
+
 /**
  * The one conversion door of a single report execution: the reporting currency
- * and the rate map are resolved once, and every row is converted through
- * {@link RowConverter.convert}, which records a row it cannot convert instead of
- * letting it join a sum in its own units (INV-FX-001).
+ * and the rate history the rows need are resolved once, and every row is
+ * converted through {@link RowConverter.convert} at its own rate, or the market
+ * rate on its own date (issue #2106), which records a row it cannot convert
+ * instead of letting it join a sum in its own units (INV-FX-001).
  */
 interface RowConverter {
   readonly currency: string;
   readonly gaps: ConversionGaps;
-  /** `null` when `currencyCode` has no rate into the reporting currency. */
-  convert(amount: number, currencyCode: string): number | null;
+  /** `null` when `row` has no rate into the reporting currency on its date. */
+  convert(amount: number, row: ConvertibleRow): number | null;
 }
 
 /**
@@ -118,23 +126,27 @@ export class ReportsService {
     private currencyService: ReportCurrencyService,
   ) {}
 
-  private async createConverter(userId: string): Promise<RowConverter> {
+  private async createConverter(
+    userId: string,
+    transactions: readonly ConvertibleRow[],
+  ): Promise<RowConverter> {
     const currency = await this.currencyService.getDefaultCurrency(userId);
-    const rateMap = await this.currencyService.buildRateMap(currency);
+    const convertRow = await this.currencyService.buildConverter(
+      transactions.map((tx) => transactionRateBasis(tx, currency)),
+      currency,
+    );
     const gaps = new ConversionGaps();
     return {
       currency,
       gaps,
-      convert: (amount, currencyCode) => {
+      convert: (amount, row) => {
         // Zero converts to zero at any rate, so an empty row records no gap.
         if (amount === 0) return 0;
-        const converted = this.currencyService.tryConvertAmount(
+        const converted = convertRow(
           amount,
-          currencyCode,
-          currency,
-          rateMap,
+          transactionRateBasis(row, currency),
         );
-        if (converted === null) gaps.record(currencyCode);
+        if (converted === null) gaps.record(row.currencyCode);
         return converted;
       },
     };
@@ -342,7 +354,7 @@ export class ReportsService {
       for (const p of payees) payeeMap.set(p.id, p);
     }
 
-    const converter = await this.createConverter(userId);
+    const converter = await this.createConverter(userId, transactions);
 
     // Aggregate data based on groupBy type
     let data = this.aggregateData(
@@ -961,8 +973,9 @@ export class ReportsService {
       // positive, money out negative, and the headline is the signed net of
       // the listed rows (discussion #1978). A transfer leg keeps its sign too,
       // so both legs of an in-scope same-currency transfer net to zero; a
-      // cross-currency pair converts each leg at the latest rate, not the one
-      // its two amounts imply, and can leave a residual.
+      // cross-currency pair converts each leg at its own rate or the market
+      // rate on its date, not the one its two amounts imply, and can leave a
+      // residual.
       const lineAmount = (amount: string | number): number =>
         config.direction === DirectionFilter.BOTH
           ? Number(amount)
@@ -984,10 +997,7 @@ export class ReportsService {
           // Only the lines that are ordinary cash: an embedded investment line
           // is the trade's own cash side, not a row of this report.
           for (const split of ordinarySplitLines(tx)) {
-            const value = conv.convert(
-              lineAmount(split.amount),
-              tx.currencyCode,
-            );
+            const value = conv.convert(lineAmount(split.amount), tx);
             if (value === null) continue;
             result.push({
               id: tx.id,
@@ -1009,7 +1019,7 @@ export class ReportsService {
             });
           }
         } else {
-          const value = conv.convert(lineAmount(tx.amount), tx.currencyCode);
+          const value = conv.convert(lineAmount(tx.amount), tx);
           if (value === null) continue;
           result.push({
             id: tx.id,
@@ -1038,7 +1048,7 @@ export class ReportsService {
     );
     for (const tx of transactions) {
       for (const line of netLinesOf(tx, false)) {
-        cells.add("total", line, conv.convert(line.amount, tx.currencyCode));
+        cells.add("total", line, conv.convert(line.amount, tx));
       }
     }
 
@@ -1076,11 +1086,7 @@ export class ReportsService {
     // under "Uncategorized" spending (re-audit F-CUSTOM-001).
     for (const tx of transactions) {
       for (const line of netLinesOf(tx, true)) {
-        cells.add(
-          line.category,
-          line,
-          conv.convert(line.amount, tx.currencyCode),
-        );
+        cells.add(line.category, line, conv.convert(line.amount, tx));
       }
     }
     const dataMap = cells.settle();
@@ -1140,7 +1146,7 @@ export class ReportsService {
       if (lines.length === 0) continue;
       const payeeId = tx.payeeId || "unknown";
       for (const line of lines) {
-        cells.add(payeeId, line, conv.convert(line.amount, tx.currencyCode));
+        cells.add(payeeId, line, conv.convert(line.amount, tx));
       }
       if (!payeeNames.has(payeeId) && tx.payeeName) {
         payeeNames.set(payeeId, tx.payeeName);
@@ -1192,7 +1198,7 @@ export class ReportsService {
       // Converted once per line, so a row under several tags records one gap.
       const converted = lines.map((line) => ({
         line,
-        value: conv.convert(line.amount, tx.currencyCode),
+        value: conv.convert(line.amount, tx),
       }));
       // A line sits under its own tags plus the parent's, never under a tag
       // that only a sibling line carries. `netLinesOf` maps `ordinarySplitLines`
@@ -1289,7 +1295,7 @@ export class ReportsService {
 
       labels.set(key, label);
       for (const line of lines) {
-        cells.add(key, line, conv.convert(line.amount, tx.currencyCode));
+        cells.add(key, line, conv.convert(line.amount, tx));
       }
     }
     const dataMap = cells.settle();
@@ -1362,18 +1368,30 @@ export class ReportsService {
                 months) /
               12
             : months;
-      // In the reporting currency, through the report's own converter; a budget
-      // currency with no rate leaves its categories unenriched and records the gap.
+      // In the reporting currency at the rate on the window's last day: a plan
+      // has no date of its own, and the actuals it is set against are each
+      // converted at theirs. A budget currency with no rate leaves its
+      // categories unenriched and records the gap in the report's own gaps.
+      const budgetBasis = transactionRateBasis(
+        { currencyCode: budget.currencyCode, transactionDate: endDate },
+        conv.currency,
+      );
+      const convertBudget = await this.currencyService.buildConverter(
+        [budgetBasis],
+        conv.currency,
+      );
       const budgetMap = new Map<string, number>();
       const unconvertible = new Set<string>();
       for (const bc of budget.categories || []) {
         if (bc.categoryId && !bc.isIncome) {
-          const converted = conv.convert(
-            (Number(bc.amount) || 0) * periodsInWindow,
-            budget.currencyCode,
-          );
-          if (converted === null) unconvertible.add(bc.categoryId);
-          else budgetMap.set(bc.categoryId, converted);
+          const amount = (Number(bc.amount) || 0) * periodsInWindow;
+          // Zero converts to zero at any rate, so it records no gap.
+          const converted =
+            amount === 0 ? 0 : convertBudget(amount, budgetBasis);
+          if (converted === null) {
+            conv.gaps.record(budget.currencyCode);
+            unconvertible.add(bc.categoryId);
+          } else budgetMap.set(bc.categoryId, converted);
         }
       }
 

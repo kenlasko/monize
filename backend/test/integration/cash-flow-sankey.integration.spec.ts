@@ -69,7 +69,7 @@ describe("Cash Flow Sankey (integration)", () => {
     // only the default currency from the currency service, so it is
     // constructed directly; no latest-rate map is consulted.
     const currency = new ReportCurrencyService(dataSource, {
-      getLatestRates: async () => [],
+      getRateIndex: async () => new Map(),
     } as never);
     service = new CashFlowSankeyService(dataSource, currency);
   });

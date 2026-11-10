@@ -2,7 +2,7 @@ import { DataSource } from "typeorm";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { ComparisonReportsService } from "./comparison-reports.service";
-import { ReportCurrencyService } from "./report-currency.service";
+import { RawRateBasis, ReportCurrencyService } from "./report-currency.service";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
 import {
@@ -84,9 +84,14 @@ describe("ComparisonReportsService", () => {
 
     currencyService = {
       getDefaultCurrency: jest.fn().mockResolvedValue("USD"),
-      buildRateMap: jest.fn().mockResolvedValue(new Map()),
-      tryConvertAmount: jest.fn().mockImplementation((amount) => amount),
+      // The converter a report builds, per row; a test swaps its body.
+      convertRow: jest.fn().mockImplementation((amount: number) => amount),
+      buildConverter: jest.fn(),
     };
+    currencyService.buildConverter.mockImplementation(
+      async () => (amount: number, row: RawRateBasis) =>
+        currencyService.convertRow(amount, row),
+    );
 
     ({ manager: scopedManager, dataSource: scopedDataSource } =
       createScopedDbMocks([
@@ -231,8 +236,8 @@ describe("ComparisonReportsService", () => {
 
     it("merges multiple currency rows for the same month into one entry", async () => {
       const currentYear = new Date().getFullYear();
-      currencyService.tryConvertAmount.mockImplementation(
-        (amount: number, fromCurrency: string) => {
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: fromCurrency }: RawRateBasis) => {
           if (fromCurrency === "EUR") return amount * 1.1;
           return amount;
         },
@@ -298,7 +303,12 @@ describe("ComparisonReportsService", () => {
       await service.getYearOverYear(mockUserId, 3);
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, currentYear - 2, currentYear]);
+      expect(queryCall[1]).toEqual([
+        mockUserId,
+        currentYear - 2,
+        currentYear,
+        "USD",
+      ]);
     });
 
     it("rounds monetary values to 2 decimal places", async () => {
@@ -387,7 +397,10 @@ describe("ComparisonReportsService", () => {
       expect(currencyService.getDefaultCurrency).toHaveBeenCalledWith(
         mockUserId,
       );
-      expect(currencyService.buildRateMap).toHaveBeenCalledWith("USD");
+      expect(currencyService.buildConverter).toHaveBeenCalledWith(
+        expect.any(Array),
+        "USD",
+      );
     });
   });
 
@@ -414,6 +427,67 @@ describe("ComparisonReportsService", () => {
         expect(d.total).toBe(0);
         expect(d.count).toBe(0);
       });
+    });
+
+    it("folds a foreign group's days back together before judging it (issue #2106)", async () => {
+      // A foreign aggregate arrives once per day so each part converts at that
+      // day's rate; the refund on the second Saturday still nets the first.
+      currencyService.convertRow.mockImplementation(
+        (amount: number, row: RawRateBasis) =>
+          row.tx_date === "2025-06-07" ? amount * 1.1 : amount * 1.2,
+      );
+      scopedManager.query.mockResolvedValue([
+        {
+          day_of_week: 6,
+          category_id: null,
+          currency_code: "EUR",
+          tx_date: "2025-06-07",
+          own_rate: null,
+          tx_count: 1,
+          total: "100.00",
+        },
+        {
+          day_of_week: 6,
+          category_id: null,
+          currency_code: "EUR",
+          tx_date: "2025-06-14",
+          own_rate: null,
+          tx_count: 1,
+          total: "-25.00",
+        },
+        // Netted, this group is a credit: it was not spent in.
+        {
+          day_of_week: 2,
+          category_id: null,
+          currency_code: "EUR",
+          tx_date: "2025-06-03",
+          own_rate: null,
+          tx_count: 1,
+          total: "20.00",
+        },
+        {
+          day_of_week: 2,
+          category_id: null,
+          currency_code: "EUR",
+          tx_date: "2025-06-10",
+          own_rate: null,
+          tx_count: 1,
+          total: "-30.00",
+        },
+      ]);
+      categoriesRepository.find.mockResolvedValue([]);
+
+      const result = await service.getWeekendVsWeekday(
+        mockUserId,
+        "2025-06-01",
+        "2025-06-30",
+      );
+
+      // 100 x 1.1 - 25 x 1.2 = 80, over both Saturday rows.
+      expect(result.byDay[6]).toEqual({ dayOfWeek: 6, total: 80, count: 2 });
+      expect(result.byDay[2]).toEqual({ dayOfWeek: 2, total: 0, count: 0 });
+      expect(result.summary.weekendTotal).toBe(80);
+      expect(result.summary.weekdayTotal).toBe(0);
     });
 
     it("nets refunds within a category instead of dropping credit rows", async () => {
@@ -661,8 +735,8 @@ describe("ComparisonReportsService", () => {
     });
 
     it("converts foreign currency amounts", async () => {
-      currencyService.tryConvertAmount.mockImplementation(
-        (amount: number, fromCurrency: string) => {
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: fromCurrency }: RawRateBasis) => {
           if (fromCurrency === "EUR") return amount * 1.1;
           return amount;
         },
@@ -726,7 +800,12 @@ describe("ComparisonReportsService", () => {
       await service.getWeekendVsWeekday(mockUserId, "2025-06-01", "2025-12-31");
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "2025-06-01"]);
+      expect(queryCall[1]).toEqual([
+        mockUserId,
+        "2025-12-31",
+        "USD",
+        "2025-06-01",
+      ]);
     });
 
     it("omits startDate filter when undefined", async () => {
@@ -736,8 +815,8 @@ describe("ComparisonReportsService", () => {
       await service.getWeekendVsWeekday(mockUserId, undefined, "2025-12-31");
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31"]);
-      expect(queryCall[0]).not.toContain("$3");
+      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "USD"]);
+      expect(queryCall[0]).not.toContain("transaction_date >= $");
     });
 
     it("handles a category appearing in both weekend and weekday by-category maps", async () => {
@@ -808,7 +887,10 @@ describe("ComparisonReportsService", () => {
       expect(currencyService.getDefaultCurrency).toHaveBeenCalledWith(
         mockUserId,
       );
-      expect(currencyService.buildRateMap).toHaveBeenCalledWith("USD");
+      expect(currencyService.buildConverter).toHaveBeenCalledWith(
+        expect.any(Array),
+        "USD",
+      );
     });
   });
 
@@ -816,12 +898,14 @@ describe("ComparisonReportsService", () => {
   // A missing exchange rate is unknown, never 1:1 (INV-FX-001)
   // ---------------------------------------------------------------------------
   describe("a currency that has no rate", () => {
-    const noJpyRate = (amount: number, from: string) =>
-      from === "JPY" ? null : amount;
+    const noJpyRate = (
+      amount: number,
+      { currency_code: from }: RawRateBasis,
+    ) => (from === "JPY" ? null : amount);
 
     it("getYearOverYear withholds the year's totals and keeps the converted part", async () => {
       const currentYear = new Date().getFullYear();
-      currencyService.tryConvertAmount.mockImplementation(noJpyRate);
+      currencyService.convertRow.mockImplementation(noJpyRate);
       scopedManager.query.mockResolvedValue([
         {
           year: currentYear,
@@ -857,7 +941,7 @@ describe("ComparisonReportsService", () => {
 
     it("getYearOverYear keeps a year without a gap complete", async () => {
       const currentYear = new Date().getFullYear();
-      currencyService.tryConvertAmount.mockImplementation(noJpyRate);
+      currencyService.convertRow.mockImplementation(noJpyRate);
       scopedManager.query.mockResolvedValue([
         {
           year: currentYear - 1,
@@ -882,7 +966,7 @@ describe("ComparisonReportsService", () => {
     });
 
     it("getWeekendVsWeekday withholds both totals and counts only what converted", async () => {
-      currencyService.tryConvertAmount.mockImplementation(noJpyRate);
+      currencyService.convertRow.mockImplementation(noJpyRate);
       scopedManager.query.mockResolvedValue([
         {
           day_of_week: 6,
