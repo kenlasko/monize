@@ -43,7 +43,9 @@ async function estimateTheHydroBill(): Promise<void> {
   const schedules = await api.get<ScheduleRow[]>("/scheduled-transactions");
   const hydro = schedules.find((s) => s.name === "Hydro Bill");
   if (!hydro || !hydro.payeeId || !hydro.categoryId) {
-    throw new Error("The demo data has no Hydro Bill with a payee and category");
+    throw new Error(
+      "The demo data has no Hydro Bill with a payee and category",
+    );
   }
   if (hydro.amountIsEstimated) return;
   const today = new Date();
@@ -243,7 +245,9 @@ test("scheduled-transaction-estimate", async () => {
     "Edit Schedule",
     "Edit Scheduled Transaction",
   );
-  await expect(dialog.getByText(/Auto-calculated from payment history/)).toBeVisible({
+  await expect(
+    dialog.getByText(/Auto-calculated from payment history/),
+  ).toBeVisible({
     timeout: 30_000,
   });
   await settled();

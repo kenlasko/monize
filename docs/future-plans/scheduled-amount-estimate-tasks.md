@@ -28,7 +28,7 @@ when its gate passes and is quoted in the commit or PR.
       `CashFlowForecastChart.test.tsx`.
 - [x] `website/docs` bills page; `docs/frontend/financial-figures.md`;
       INV-OCCURRENCE-004 in the catalog and the verification matrix.
-- [ ] Screenshots of the changed screens (`npm run docs:screenshots` in `e2e/`).
+- [x] Screenshots of the changed screens (`npm run docs:screenshots` in `e2e/`).
 
 ## Phase 3 -- translations
 
