@@ -254,6 +254,125 @@ describe("TransactionAnalyticsService", () => {
         firstTransactionDate: null,
         lastTransactionDate: null,
         byCurrency: {},
+        converted: {
+          currency: "USD",
+          totalIncome: 0,
+          totalExpenses: 0,
+          netCashFlow: 0,
+          knownIncome: 0,
+          knownExpenses: 0,
+          includedTransactionCount: 0,
+          excludedTransactionCount: 0,
+          missingCurrencies: [],
+        },
+      });
+    });
+
+    it("converts each foreign bucket at its rows' own dates into the reporting currency (issue #2106)", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          {
+            currencyCode: "CAD",
+            totalIncome: "0",
+            totalExpenses: "50",
+            transactionCount: "1",
+          },
+          {
+            currencyCode: "USD",
+            totalIncome: "0",
+            totalExpenses: "200",
+            transactionCount: "2",
+          },
+        ])
+        // The USD bucket, by day: 100 in January, 100 in June.
+        .mockResolvedValueOnce([
+          {
+            key: "USD",
+            currencyCode: "USD",
+            txDate: "2026-01-12",
+            originalCurrencyCode: null,
+            exchangeRate: "1",
+            income: "0",
+            expenses: "100",
+          },
+          {
+            key: "USD",
+            currencyCode: "USD",
+            txDate: "2026-06-12",
+            originalCurrencyCode: null,
+            exchangeRate: "1",
+            income: "0",
+            expenses: "100",
+          },
+        ]);
+      managerMock.query.mockResolvedValue([
+        storedRate("USD", "CAD", 1.25, "2026-01-10"),
+        storedRate("USD", "CAD", 1.4, "2026-06-10"),
+      ]);
+
+      const result = await service.getSummary(userId);
+
+      // 50 CAD + 100 USD at 1.25 + 100 USD at 1.40; at one rate it read 330.
+      expect(result.converted).toEqual({
+        currency: "CAD",
+        totalIncome: 0,
+        totalExpenses: 315,
+        netCashFlow: -315,
+        knownIncome: 0,
+        knownExpenses: 315,
+        includedTransactionCount: 3,
+        excludedTransactionCount: 0,
+        missingCurrencies: [],
+      });
+      expect(result.byCurrency.USD.totalExpenses).toBe(200);
+    });
+
+    it("leaves a bucket with no admissible rate out and names it", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          {
+            currencyCode: "CAD",
+            totalIncome: "10",
+            totalExpenses: "50",
+            transactionCount: "1",
+          },
+          {
+            currencyCode: "JPY",
+            totalIncome: "0",
+            totalExpenses: "1000",
+            transactionCount: "1",
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            key: "JPY",
+            currencyCode: "JPY",
+            txDate: "2026-01-12",
+            originalCurrencyCode: null,
+            exchangeRate: "1",
+            income: "0",
+            expenses: "1000",
+          },
+        ]);
+      managerMock.query.mockResolvedValue([]);
+
+      const result = await service.getSummary(userId);
+
+      expect(result.converted).toMatchObject({
+        totalIncome: null,
+        totalExpenses: null,
+        netCashFlow: null,
+        knownIncome: 10,
+        knownExpenses: 50,
+        includedTransactionCount: 1,
+        excludedTransactionCount: 1,
+        missingCurrencies: ["JPY"],
       });
     });
 
@@ -3335,6 +3454,9 @@ describe("TransactionAnalyticsService", () => {
     });
 
     it("groups by category with split-aware id and name expressions", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
       mockQueryBuilder.getRawMany.mockResolvedValue([
         {
           id: "cat-1",
@@ -3383,9 +3505,96 @@ describe("TransactionAnalyticsService", () => {
           currencyCode: "CAD",
           total: -450.7512,
           count: 12,
+          convertedCurrency: "CAD",
+          convertedTotal: -450.7512,
         },
-        { id: null, name: null, currencyCode: "CAD", total: -25.25, count: 2 },
+        {
+          id: null,
+          name: null,
+          currencyCode: "CAD",
+          total: -25.25,
+          count: 2,
+          convertedCurrency: "CAD",
+          convertedTotal: -25.25,
+        },
       ]);
+    });
+
+    it("converts a foreign group at its rows' own rates and dates (issue #2106)", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          {
+            id: "cat-1",
+            name: "Groceries",
+            currencyCode: "USD",
+            total: "-300",
+            count: "3",
+          },
+          {
+            id: null,
+            name: null,
+            currencyCode: "USD",
+            total: "-10",
+            count: "1",
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            key: "cat-1",
+            currencyCode: "USD",
+            txDate: "2026-01-12",
+            originalCurrencyCode: null,
+            exchangeRate: "1",
+            total: "-100",
+          },
+          // Settled into CAD at its own 1.30: 130 CAD, whatever the market said.
+          {
+            key: "cat-1",
+            currencyCode: "USD",
+            txDate: "2026-06-12",
+            originalCurrencyCode: "CAD",
+            exchangeRate: "0.7692307692",
+            total: "-100",
+          },
+          {
+            key: "cat-1",
+            currencyCode: "USD",
+            txDate: "2026-06-12",
+            originalCurrencyCode: null,
+            exchangeRate: "1",
+            total: "-100",
+          },
+          {
+            key: null,
+            currencyCode: "USD",
+            txDate: "2026-01-12",
+            originalCurrencyCode: null,
+            exchangeRate: "1",
+            total: "-10",
+          },
+        ]);
+      managerMock.query.mockResolvedValue([
+        storedRate("USD", "CAD", 1.25, "2026-01-10"),
+        storedRate("USD", "CAD", 1.4, "2026-06-10"),
+      ]);
+
+      const result = await service.getGroupedTotals(userId, {
+        groupBy: "category",
+      });
+
+      expect(result.map((r) => [r.id, r.convertedTotal])).toEqual([
+        ["cat-1", -395],
+        [null, -12.5],
+      ]);
+      expect(result[0].convertedCurrency).toBe("CAD");
+      // The dated read covers only the rows outside the reporting currency.
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.currencyCode <> :fxReportingCurrency",
+        { fxReportingCurrency: "CAD" },
+      );
     });
 
     it("groups by payee falling back to the free-text payee name", async () => {
@@ -3475,6 +3684,9 @@ describe("TransactionAnalyticsService", () => {
 
   describe("getTransactionBreakdownByTagKey", () => {
     it("maps per-currency rows keyed by the parsed tag value", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
       mockQueryBuilder.getRawMany.mockResolvedValue([
         { value: "usa", currencyCode: "CAD", total: "200", count: "2" },
         { value: "poland", currencyCode: "CAD", total: "100", count: "1" },
@@ -3487,13 +3699,23 @@ describe("TransactionAnalyticsService", () => {
       );
 
       expect(result).toEqual([
-        { id: "usa", name: "usa", currencyCode: "CAD", total: 200, count: 2 },
+        {
+          id: "usa",
+          name: "usa",
+          currencyCode: "CAD",
+          total: 200,
+          count: 2,
+          convertedCurrency: "CAD",
+          convertedTotal: 200,
+        },
         {
           id: "poland",
           name: "poland",
           currencyCode: "CAD",
           total: 100,
           count: 1,
+          convertedCurrency: "CAD",
+          convertedTotal: 100,
         },
       ]);
       // Joins the transaction's tags and groups by value + currency.

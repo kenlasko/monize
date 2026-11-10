@@ -176,6 +176,24 @@ export interface CurrencySummary {
   transactionCount: number;
 }
 
+/**
+ * A summary in the reader's reporting currency, converted by the server with
+ * each row at its own settled rate or the market rate on its own date (issue
+ * #2106). The totals are null while a bucket has no rate; `known*` carry what
+ * converted.
+ */
+export interface SummaryInReportingCurrency {
+  currency: string;
+  totalIncome: number | null;
+  totalExpenses: number | null;
+  netCashFlow: number | null;
+  knownIncome: number;
+  knownExpenses: number;
+  includedTransactionCount: number;
+  excludedTransactionCount: number;
+  missingCurrencies: string[];
+}
+
 export interface TransactionSummary {
   totalIncome: number;
   totalExpenses: number;
@@ -184,6 +202,7 @@ export interface TransactionSummary {
   firstTransactionDate?: string | null;
   lastTransactionDate?: string | null;
   byCurrency?: Record<string, CurrencySummary>;
+  converted?: SummaryInReportingCurrency;
 }
 
 export interface GroupedTotal {
@@ -192,6 +211,10 @@ export interface GroupedTotal {
   currencyCode: string;
   total: number;
   count: number;
+  /** The reporting currency `convertedTotal` is in. */
+  convertedCurrency?: string;
+  /** `total` converted by the server at each row's own rate or date; null without one. */
+  convertedTotal?: number | null;
 }
 
 export interface RecurringChargeInfo {

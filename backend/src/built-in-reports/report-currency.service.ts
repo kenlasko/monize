@@ -2,7 +2,14 @@ import { Injectable, Logger } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { UserPreference } from "../users/entities/user-preference.entity";
-import { convertAtDate } from "../common/time-series/rate-index.util";
+import {
+  buildRateIndex,
+  convertAtDate,
+  RateIndex,
+  RateIndexLogger,
+  RateIndexQuery,
+} from "../common/time-series/rate-index.util";
+import { FIAT_MONEY_DECIMALS, roundMoney } from "../common/round.util";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { preferredCurrency } from "../common/default-currency.util";
 
@@ -205,23 +212,124 @@ export class ReportCurrencyService {
             end,
           );
 
-    return (amount, row) => {
-      const from = row.currency_code;
-      if (!from || !defaultCurrency) return null;
-      if (from === defaultCurrency) return amount;
-      const ownRate = toOwnRate(row.own_rate);
-      if (ownRate !== null) return amount / ownRate;
-      if (!row.tx_date) return null;
-      return convertAtDate(
-        amount,
-        from,
-        defaultCurrency,
-        row.tx_date,
-        rateIndex,
-        this.logger,
-      );
-    };
+    return (amount, row) =>
+      convertRateBasis(amount, row, defaultCurrency, rateIndex, this.logger);
   }
+}
+
+/**
+ * One amount of `row` in `reportingCurrency`: its own amount in that currency,
+ * its own settled rate where it has one (INV-FX-002), else the market rate on
+ * its date from `rateIndex` (INV-FX-001); `null` when none applies. The rule
+ * {@link ReportCurrencyService.buildConverter} applies, for a caller that loads
+ * its own index.
+ */
+export function convertRateBasis(
+  amount: number,
+  row: RawRateBasis,
+  reportingCurrency: string,
+  rateIndex: RateIndex,
+  logger?: RateIndexLogger,
+): number | null {
+  const from = row.currency_code;
+  if (!from || !reportingCurrency) return null;
+  if (from === reportingCurrency) return amount;
+  const ownRate = toOwnRate(row.own_rate);
+  if (ownRate !== null) return amount / ownRate;
+  if (!row.tx_date) return null;
+  return convertAtDate(
+    amount,
+    from,
+    reportingCurrency,
+    row.tx_date,
+    rateIndex,
+    logger,
+  );
+}
+
+/** One dated, per-key aggregate in its own currency, for {@link convertDatedRows}. */
+export interface DatedAmountRow {
+  key: string;
+  currencyCode: string;
+  /** `YYYY-MM-DD` of the rows the aggregate sums. */
+  txDate: string;
+  originalCurrencyCode?: string | null;
+  exchangeRate?: number | string | null;
+  /** The sums the aggregate carries, by name. */
+  amounts: Record<string, number>;
+}
+
+/**
+ * Fold dated per-key aggregates into one reporting-currency figure per key and
+ * sum name, each part at its own settled rate (INV-FX-002) or the market rate
+ * on its own date (INV-FX-001), never at today's (issue #2106). A figure is
+ * `null` while any part has no admissible rate. The history is loaded once,
+ * through `query`, for the days the market-rate parts cover.
+ */
+export async function convertDatedRows(
+  query: RateIndexQuery,
+  rows: readonly DatedAmountRow[],
+  reportingCurrency: string,
+  logger?: RateIndexLogger,
+): Promise<Map<string, Record<string, number | null>>> {
+  const totals = new Map<string, Record<string, number | null>>();
+  if (rows.length === 0) return totals;
+  const bases = rows.map((row) =>
+    transactionRateBasis(
+      {
+        currencyCode: row.currencyCode,
+        transactionDate: row.txDate,
+        originalCurrencyCode: row.originalCurrencyCode,
+        exchangeRate: row.exchangeRate,
+      },
+      reportingCurrency,
+    ),
+  );
+  const foreign = new Set<string>();
+  const days: string[] = [];
+  bases.forEach((basis) => {
+    if (basis.tx_date && toOwnRate(basis.own_rate) === null) {
+      foreign.add(basis.currency_code);
+      days.push(basis.tx_date);
+    }
+  });
+  days.sort();
+  const rateIndex: RateIndex =
+    foreign.size === 0
+      ? new Map()
+      : await buildRateIndex(
+          query,
+          foreign,
+          reportingCurrency,
+          days[0],
+          days[days.length - 1],
+        );
+
+  rows.forEach((row, i) => {
+    const acc = totals.get(row.key) ?? {};
+    for (const [name, amount] of Object.entries(row.amounts)) {
+      const converted =
+        amount === 0
+          ? 0
+          : convertRateBasis(
+              amount,
+              bases[i],
+              reportingCurrency,
+              rateIndex,
+              logger,
+            );
+      const held = name in acc ? acc[name] : 0;
+      acc[name] = held === null || converted === null ? null : held + converted;
+    }
+    totals.set(row.key, acc);
+  });
+  for (const acc of totals.values()) {
+    for (const name of Object.keys(acc)) {
+      const value = acc[name];
+      if (value !== null) acc[name] = roundMoney(value, FIAT_MONEY_DECIMALS);
+    }
+  }
+  return totals;
 }
 
 /**

@@ -29,7 +29,15 @@ import {
   cleanTables,
   createTestUserDirect,
 } from "../helpers/integration-setup";
-import { createTestAccount } from "../helpers/test-factories";
+import {
+  createTestAccount,
+  createTestCategory,
+  createTestPayee,
+} from "../helpers/test-factories";
+import { TransactionAnalyticsService } from "@/transactions/transaction-analytics.service";
+import { CategoryDetailService } from "@/categories/category-detail.service";
+import { PayeeDetailService } from "@/payees/payee-detail.service";
+import { Tag } from "@/tags/entities/tag.entity";
 
 /**
  * INV-FX-001 and INV-FX-003 against a real PostgreSQL database: "the rate for a
@@ -110,10 +118,14 @@ describe("latest exchange rates and the readers that take them (integration)", (
       "security_prices",
       "securities",
       "transaction_splits",
+      "transaction_tags",
       "transactions",
       "investment_transactions",
       "monthly_account_balances",
       "accounts",
+      "tags",
+      "payees",
+      "categories",
       "exchange_rates",
       "user_preferences",
       "users",
@@ -231,6 +243,80 @@ describe("latest exchange rates and the readers that take them (integration)", (
     // 1,000 USD at 1.25 plus 1,000 USD at 1.40; at today's rate it read 2,800.
     expect(report.totalSpending).toBe(2650);
     expect(report.excludedCount).toBe(0);
+  });
+
+  it("converts the analytics and detail figures at each row's own date (issue #2106)", async () => {
+    await dataSource.manager.save(
+      dataSource.manager.create(UserPreference, {
+        userId,
+        defaultCurrency: "CAD",
+      }),
+    );
+    const account = await createTestAccount(dataSource, userId, {
+      name: "US Chequing",
+      currencyCode: "USD",
+      openingBalance: 5000,
+      currentBalance: 3000,
+    });
+    const category = await createTestCategory(dataSource, userId, {
+      name: "Travel",
+    });
+    const payee = await createTestPayee(dataSource, userId, { name: "Hotel" });
+    const tag = await dataSource.manager.save(
+      dataSource.manager.create(Tag, { userId, name: "country:usa" }),
+    );
+    const past = addDaysYMD(today, -60);
+    for (const date of [past, today]) {
+      await dataSource.manager.save(
+        dataSource.manager.create(Transaction, {
+          userId,
+          accountId: account.id,
+          transactionDate: date,
+          amount: -1000,
+          currencyCode: "USD",
+          payeeId: payee.id,
+          payeeName: "Hotel",
+          categoryId: category.id,
+          status: TransactionStatus.UNRECONCILED,
+          isTransfer: false,
+          isSplit: false,
+          tags: [tag],
+        } as Partial<Transaction>),
+      );
+    }
+    await insertRate("CAD", "USD", addDaysYMD(past, -2), "0.8000000000");
+    await insertRate("CAD", "USD", today, "0.7142857143");
+
+    const analytics = new TransactionAnalyticsService(dataSource);
+    const [summary, grouped, byTag, categoryDetail, payeeDetail] =
+      await withUserContext(
+        userId,
+        async () =>
+          [
+            await analytics.getSummary(userId),
+            await analytics.getGroupedTotals(userId, { groupBy: "category" }),
+            await analytics.getTransactionBreakdownByTagKey(userId, "country"),
+            await new CategoryDetailService(dataSource, {
+              findOne: async () => category,
+            } as never).getDetail(userId, category.id),
+            await new PayeeDetailService(dataSource, {
+              findOne: async () => payee,
+            } as never).getDetail(userId, payee.id),
+          ] as const,
+      );
+
+    // 1,000 USD at 1.25 plus 1,000 USD at 1.40, never 2,800 at today's rate.
+    expect(summary.converted).toMatchObject({
+      currency: "CAD",
+      totalExpenses: 2650,
+      missingCurrencies: [],
+    });
+    expect(grouped.map((r) => r.convertedTotal)).toEqual([-2650]);
+    expect(byTag.map((r) => r.convertedTotal)).toEqual([2650]);
+    expect(categoryDetail.accounts.map((r) => r.convertedTotal)).toEqual([
+      -2650,
+    ]);
+    expect(payeeDetail.accounts.map((r) => r.convertedTotal)).toEqual([-2650]);
   });
 
   it("rejects a back-dated cross-currency trade when only today's rate is stored", async () => {

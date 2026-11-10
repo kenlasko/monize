@@ -79,7 +79,7 @@ export function CategoryInfoWidget({
   const router = useRouter();
   const { formatCurrency, formatPercentTrimmed } = useNumberFormat();
   const { formatDate } = useDateFormat();
-  const { convertToDefault, defaultCurrency } = useExchangeRates();
+  const { defaultCurrency } = useExchangeRates();
 
   const [summary, setSummary] = useState<TransactionSummary | null>(null);
   const [groupedPayees, setGroupedPayees] = useState<GroupedTotal[]>([]);
@@ -152,8 +152,8 @@ export function CategoryInfoWidget({
   );
 
   const currencyStrategy = useMemo(
-    () => buildDisplayCurrencyStrategy(summary, defaultCurrency, convertToDefault),
-    [summary, defaultCurrency, convertToDefault],
+    () => buildDisplayCurrencyStrategy(summary, defaultCurrency),
+    [summary, defaultCurrency],
   );
 
   const totals = useMemo(

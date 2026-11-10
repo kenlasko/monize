@@ -70,7 +70,7 @@ function ChartTooltip({
 export function TagKeyBreakdownChart({ tagKey, params }: TagKeyBreakdownChartProps) {
   const t = useTranslations('transactions');
   const { formatCurrencyCompact: formatCurrency, formatPercent } = useNumberFormat();
-  const { convertToDefault, defaultCurrency } = useExchangeRates();
+  const { defaultCurrency } = useExchangeRates();
 
   const [rows, setRows] = useState<GroupedTotal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -101,15 +101,17 @@ export function TagKeyBreakdownChart({ tagKey, params }: TagKeyBreakdownChartPro
   const tCommon = useTranslations('common');
   const { chartData, displayCurrency, excludedCount } = useMemo(() => {
     const currencies = new Set(rows.map((r) => r.currencyCode));
+    // Several currencies read the server's conversion of each value, made at
+    // each transaction's own rate or date, never today's (issue #2106).
     const strategy: DisplayCurrencyStrategy =
       currencies.size <= 1
         ? {
             displayCurrency: [...currencies][0] ?? defaultCurrency,
-            toDisplay: (amount) => amount,
+            converted: false,
           }
         : {
-            displayCurrency: defaultCurrency,
-            toDisplay: (amount, from) => convertToDefault(amount, from),
+            displayCurrency: rows[0]?.convertedCurrency ?? defaultCurrency,
+            converted: true,
           };
 
     // No rate, no slice: a bar cannot represent unknown. Count the tags left out
@@ -146,7 +148,7 @@ export function TagKeyBreakdownChart({ tagKey, params }: TagKeyBreakdownChartPro
     }));
 
     return { chartData: data, displayCurrency: strategy.displayCurrency, excludedCount };
-  }, [rows, convertToDefault, defaultCurrency, t]);
+  }, [rows, defaultCurrency, t]);
 
   const fmt = (v: number) => formatCurrency(v, displayCurrency);
 

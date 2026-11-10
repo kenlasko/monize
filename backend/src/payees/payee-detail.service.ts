@@ -7,6 +7,7 @@ import {
   moneyDecimalsForCode,
 } from "../common/currency-places.util";
 import { Account } from "../accounts/entities/account.entity";
+import { withAccountTotalsInReportingCurrency } from "../built-in-reports/account-breakdown-fx";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { PayeeAlias } from "./entities/payee-alias.entity";
 import { PayeesService } from "./payees.service";
@@ -155,24 +156,28 @@ export class PayeeDetailService {
     payeeId: string,
     accountScope: readonly string[] | undefined,
   ): Promise<PayeeAccountBreakdownRow[]> {
-    const rows = await restrictToAccountScope(
-      realTransactionScope(
-        m
-          .createQueryBuilder(Transaction, "t")
-          .innerJoin(Account, "account", "account.id = t.account_id")
-          .select("account.id", "accountId")
-          .addSelect("account.name", "accountName")
-          .addSelect("account.account_type", "accountType")
-          .addSelect("account.currency_code", "currencyCode")
-          .addSelect("COUNT(*)", "transactionCount")
-          .addSelect("SUM(t.amount)", "total")
-          .addSelect(dateText("MAX(t.transaction_date)"), "lastTransactionDate")
-          .where("t.user_id = :userId", { userId })
-          .andWhere("t.payee_id = :payeeId", { payeeId }),
-      ),
-      "t.account_id",
-      accountScope,
-    )
+    // The payee's real transactions in the caller's scope, joined to their
+    // account; each read below adds its own select.
+    const payeeRows = () =>
+      restrictToAccountScope(
+        realTransactionScope(
+          m
+            .createQueryBuilder(Transaction, "t")
+            .innerJoin(Account, "account", "account.id = t.account_id")
+            .where("t.user_id = :userId", { userId })
+            .andWhere("t.payee_id = :payeeId", { payeeId }),
+        ),
+        "t.account_id",
+        accountScope,
+      );
+    const rows = await payeeRows()
+      .select("account.id", "accountId")
+      .addSelect("account.name", "accountName")
+      .addSelect("account.account_type", "accountType")
+      .addSelect("account.currency_code", "currencyCode")
+      .addSelect("COUNT(*)", "transactionCount")
+      .addSelect("SUM(t.amount)", "total")
+      .addSelect(dateText("MAX(t.transaction_date)"), "lastTransactionDate")
       .groupBy("account.id")
       .addGroupBy("account.name")
       .addGroupBy("account.account_type")
@@ -193,7 +198,7 @@ export class PayeeDetailService {
       m,
       rows.map((row) => row.currencyCode),
     );
-    return rows.map((row) => ({
+    const native = rows.map((row) => ({
       accountId: row.accountId,
       accountName: row.accountName,
       accountType: row.accountType,
@@ -205,6 +210,13 @@ export class PayeeDetailService {
       ),
       lastTransactionDate: row.lastTransactionDate ?? null,
     }));
+    return withAccountTotalsInReportingCurrency(
+      m,
+      userId,
+      native,
+      payeeRows,
+      "t.amount",
+    );
   }
 
   private async getLargestTransaction(

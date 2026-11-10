@@ -19,33 +19,46 @@ export interface DisplayCurrencyStrategy {
   /** The currency every widget figure is rendered in. */
   displayCurrency: string;
   /**
-   * Convert an amount from its source currency into the display currency, or
-   * `null` when no rate for that pair is known. A widget figure built by
-   * dropping the unconverted amount in unchanged is a wrong number under the
-   * display currency's symbol, not a rounded one.
+   * True when the result spans several currencies, so every figure is the
+   * server's conversion into `displayCurrency` (each row at its own settled
+   * rate or the market rate on its own date, issue #2106). Converting a
+   * lifetime total at today's rate on the client read a currency's move as a
+   * change in what the category cost.
    */
-  toDisplay: (amount: number, fromCurrency: string) => number | null;
+  converted: boolean;
 }
 
 /**
  * Pick the widget's display currency from a summary's per-currency buckets:
- * a single-currency result renders natively, a multi-currency result is
- * converted bucket-by-bucket into the user's default currency (naively
- * summing across currencies would produce a meaningless figure).
+ * a single-currency result renders natively, a multi-currency result reads
+ * the server's conversion into the reporting currency (naively summing across
+ * currencies would produce a meaningless figure).
  */
 export function buildDisplayCurrencyStrategy(
   summary: TransactionSummary | null,
   defaultCurrency: string,
-  convertToDefault: (amount: number, fromCurrency: string) => number | null,
 ): DisplayCurrencyStrategy {
   const currencies = Object.keys(summary?.byCurrency ?? {});
   if (currencies.length === 1) {
-    return { displayCurrency: currencies[0], toDisplay: (amount) => amount };
+    return { displayCurrency: currencies[0], converted: false };
   }
   return {
-    displayCurrency: defaultCurrency,
-    toDisplay: (amount, fromCurrency) => convertToDefault(amount, fromCurrency),
+    displayCurrency: summary?.converted?.currency ?? defaultCurrency,
+    converted: true,
   };
+}
+
+/**
+ * One row's figure in the display currency: its own total when the result is
+ * single-currency, otherwise the server's `convertedTotal`, or `null` when the
+ * server had no rate for it (or sent no conversion). Never the row's own amount
+ * under another currency's symbol.
+ */
+export function inDisplayCurrency(
+  strategy: DisplayCurrencyStrategy,
+  row: { total: number; convertedTotal?: number | null },
+): number | null {
+  return strategy.converted ? (row.convertedTotal ?? null) : row.total;
 }
 
 /** Headline figures reduced to the display currency. */
@@ -71,7 +84,7 @@ export function summarizeInDisplayCurrency(
   excludedTransactionCount: number;
 } {
   const buckets = Object.entries(summary.byCurrency ?? {});
-  if (buckets.length <= 1) {
+  if (!strategy.converted || buckets.length <= 1) {
     return {
       income: summary.totalIncome,
       expenses: summary.totalExpenses,
@@ -81,32 +94,27 @@ export function summarizeInDisplayCurrency(
       excludedTransactionCount: 0,
     };
   }
-  // A bucket with no rate is excluded and named, so the caller can label the
-  // figures as partial rather than presenting a short total as the whole.
-  let income = 0;
-  let expenses = 0;
-  let includedTransactionCount = 0;
-  let excludedTransactionCount = 0;
-  const missing = new Set<string>();
-  for (const [currency, bucket] of buckets) {
-    const bucketIncome = strategy.toDisplay(bucket.totalIncome, currency);
-    const bucketExpenses = strategy.toDisplay(bucket.totalExpenses, currency);
-    if (bucketIncome === null || bucketExpenses === null) {
-      missing.add(currency);
-      excludedTransactionCount += bucket.transactionCount;
-      continue;
-    }
-    income += bucketIncome;
-    expenses += bucketExpenses;
-    includedTransactionCount += bucket.transactionCount;
+  // The server's conversion. A bucket with no rate is excluded and named, so
+  // the caller can label the figures as partial rather than presenting a short
+  // total as the whole; with no conversion at all, every bucket is unknown.
+  const converted = summary.converted;
+  if (!converted) {
+    return {
+      income: 0,
+      expenses: 0,
+      net: 0,
+      missingCurrencies: buckets.map(([currency]) => currency).sort(),
+      includedTransactionCount: 0,
+      excludedTransactionCount: summary.transactionCount,
+    };
   }
   return {
-    income,
-    expenses,
-    net: income - expenses,
-    missingCurrencies: [...missing],
-    includedTransactionCount,
-    excludedTransactionCount,
+    income: converted.knownIncome,
+    expenses: converted.knownExpenses,
+    net: converted.knownIncome - converted.knownExpenses,
+    missingCurrencies: converted.missingCurrencies,
+    includedTransactionCount: converted.includedTransactionCount,
+    excludedTransactionCount: converted.excludedTransactionCount,
   };
 }
 
@@ -157,7 +165,7 @@ export function aggregateGroupedTotals(
   const byId = new Map<string | null, AggregatedGroupRow>();
   for (const row of rows) {
     const existing = byId.get(row.id);
-    const converted = strategy.toDisplay(row.total, row.currencyCode);
+    const converted = inDisplayCurrency(strategy, row);
     if (existing) {
       byId.set(row.id, {
         ...existing,

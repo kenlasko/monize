@@ -1,5 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { Brackets, DataSource, EntityManager } from "typeorm";
+import {
+  Brackets,
+  DataSource,
+  EntityManager,
+  SelectQueryBuilder,
+} from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
@@ -44,6 +49,7 @@ import {
   RateIndex,
 } from "../common/time-series/rate-index.util";
 import { isNetSpending } from "../built-in-reports/spending-reports.service";
+import { convertDatedRows } from "../built-in-reports/report-currency.service";
 
 /**
  * The ordinary-cash amount of one transaction, for the recurring-charge
@@ -469,9 +475,10 @@ export class TransactionAnalyticsService {
         transactionCount: number;
       }
     >;
+    converted: SummaryInReportingCurrency;
   }> {
     return withScopedDb(this.dataSource, async (m) => {
-      const queryBuilder = await this.createFilteredAnalyticsQuery(m, userId, {
+      const filters: AnalyticsReadFilters = {
         accountIds,
         startDate,
         endDate,
@@ -484,7 +491,12 @@ export class TransactionAnalyticsService {
         excludeTransfers,
         tagIds,
         jointAccountIds,
-      });
+      };
+      const queryBuilder = await this.createFilteredAnalyticsQuery(
+        m,
+        userId,
+        filters,
+      );
 
       // Use the split amount when the row came from the splits join;
       // otherwise the transaction's own amount. A split parent's `amount`
@@ -561,6 +573,13 @@ export class TransactionAnalyticsService {
         }
       }
 
+      const converted = await this.summaryInReportingCurrency(
+        m,
+        userId,
+        filters,
+        byCurrency,
+      );
+
       return {
         totalIncome,
         totalExpenses,
@@ -569,8 +588,128 @@ export class TransactionAnalyticsService {
         firstTransactionDate,
         lastTransactionDate,
         byCurrency,
+        converted,
       };
     });
+  }
+
+  /**
+   * A summary's buckets in the reader's reporting currency, each foreign row at
+   * its own rate or the market rate on its own date, never at today's (issue
+   * #2106). A bucket with no admissible rate is left out of both figures and
+   * named, so a surface labels the figures partial rather than short.
+   */
+  private async summaryInReportingCurrency(
+    m: EntityManager,
+    userId: string,
+    filters: AnalyticsReadFilters,
+    byCurrency: Record<
+      string,
+      { totalIncome: number; totalExpenses: number; transactionCount: number }
+    >,
+  ): Promise<SummaryInReportingCurrency> {
+    const reporting = await resolveUserDefaultCurrency(this.dataSource, userId);
+    const amountExpr = "COALESCE(splits.amount, transaction.amount)";
+    const foreign = Object.keys(byCurrency).some((code) => code !== reporting)
+      ? await this.datedForeignTotals(m, userId, filters, reporting, () => ({
+          keyExpr: "transaction.currencyCode",
+          sums: {
+            income: `SUM(CASE WHEN ${amountExpr} > 0 THEN ${amountExpr} ELSE 0 END)`,
+            expenses: `SUM(CASE WHEN ${amountExpr} < 0 THEN ABS(${amountExpr}) ELSE 0 END)`,
+          },
+        }))
+      : new Map<string, Record<string, number | null>>();
+
+    let knownIncome = 0;
+    let knownExpenses = 0;
+    let includedTransactionCount = 0;
+    let excludedTransactionCount = 0;
+    const missing: string[] = [];
+    for (const [code, bucket] of Object.entries(byCurrency)) {
+      const parts =
+        code === reporting
+          ? { income: bucket.totalIncome, expenses: bucket.totalExpenses }
+          : (foreign.get(`${code}|${code}`) ?? { income: 0, expenses: 0 });
+      if (parts.income === null || parts.expenses === null) {
+        missing.push(code);
+        excludedTransactionCount += bucket.transactionCount;
+        continue;
+      }
+      knownIncome += parts.income;
+      knownExpenses += parts.expenses;
+      includedTransactionCount += bucket.transactionCount;
+    }
+    const income = roundMoney(knownIncome, FIAT_MONEY_DECIMALS);
+    const expenses = roundMoney(knownExpenses, FIAT_MONEY_DECIMALS);
+    const complete = missing.length === 0;
+    return {
+      currency: reporting,
+      totalIncome: complete ? income : null,
+      totalExpenses: complete ? expenses : null,
+      netCashFlow: complete
+        ? roundMoney(income - expenses, FIAT_MONEY_DECIMALS)
+        : null,
+      knownIncome: income,
+      knownExpenses: expenses,
+      includedTransactionCount,
+      excludedTransactionCount,
+      missingCurrencies: missing.sort(),
+    };
+  }
+
+  /**
+   * The reporting-currency figures of every foreign (key, currency) a filtered
+   * analytics read covers, keyed `"<key>|<currency>"` (an absent key is `""`).
+   *
+   * Grouped by day and by the row's own rate, so each part converts at the rate
+   * it settled at where that reaches the reporting currency (INV-FX-002), else
+   * at the market rate on its own date (INV-FX-001); a figure is `null` while
+   * any of its parts has no admissible rate. `shape` adds the joins and
+   * predicates the read's key needs and names the key and the sums.
+   */
+  private async datedForeignTotals(
+    m: EntityManager,
+    userId: string,
+    filters: AnalyticsReadFilters,
+    reporting: string,
+    shape: (qb: SelectQueryBuilder<Transaction>) => {
+      keyExpr: string;
+      sums: Record<string, string>;
+    },
+  ): Promise<Map<string, Record<string, number | null>>> {
+    const qb = await this.createFilteredAnalyticsQuery(m, userId, filters);
+    const { keyExpr, sums } = shape(qb);
+    const sumAliases = Object.keys(sums);
+    qb.andWhere("transaction.currencyCode <> :fxReportingCurrency", {
+      fxReportingCurrency: reporting,
+    })
+      .select(keyExpr, "key")
+      .addSelect("transaction.currencyCode", "currencyCode")
+      .addSelect(DAY_TX_SQL, "txDate")
+      .addSelect("transaction.originalCurrencyCode", "originalCurrencyCode")
+      .addSelect("transaction.exchangeRate", "exchangeRate");
+    for (const alias of sumAliases) qb.addSelect(sums[alias], alias);
+    qb.groupBy(keyExpr)
+      .addGroupBy("transaction.currencyCode")
+      .addGroupBy(DAY_TX_SQL)
+      .addGroupBy("transaction.originalCurrencyCode")
+      .addGroupBy("transaction.exchangeRate");
+    const rows: RawGroupRow[] = await qb.getRawMany();
+    return convertDatedRows(
+      (sql, params) => m.query(sql, params),
+      rows.map((row) => ({
+        key: `${row.key ?? ""}|${row.currencyCode}`,
+        currencyCode: row.currencyCode,
+        txDate: row.txDate,
+        originalCurrencyCode: row.originalCurrencyCode,
+        exchangeRate: row.exchangeRate,
+        amounts: Object.fromEntries(
+          sumAliases.map((alias) => [alias, Number(row[alias]) || 0]),
+        ),
+      })),
+      reporting,
+      this.logger,
+    );
   }
 
   /**
@@ -609,21 +748,7 @@ export class TransactionAnalyticsService {
   private async createFilteredAnalyticsQuery(
     m: EntityManager,
     userId: string,
-    filters: {
-      accountIds?: string[];
-      startDate?: string;
-      endDate?: string;
-      categoryIds?: string[];
-      payeeIds?: string[];
-      search?: string;
-      amountFrom?: number;
-      amountTo?: number;
-      excludeInvestmentLinked?: boolean;
-      excludeTransfers?: boolean;
-      tagIds?: string[];
-      includeUnreconciledBeforeStart?: boolean;
-      jointAccountIds?: string[];
-    },
+    filters: AnalyticsReadFilters,
   ) {
     const {
       accountIds,
@@ -872,15 +997,7 @@ export class TransactionAnalyticsService {
       includeUnreconciledBeforeStart?: boolean;
       jointAccountIds?: string[];
     },
-  ): Promise<
-    Array<{
-      id: string | null;
-      name: string | null;
-      currencyCode: string;
-      total: number;
-      count: number;
-    }>
-  > {
+  ): Promise<Array<GroupedTotalRow>> {
     return withScopedDb(this.dataSource, async (m) => {
       const { groupBy, limit, ...filters } = params;
 
@@ -891,10 +1008,23 @@ export class TransactionAnalyticsService {
       );
 
       const amountExpr = "COALESCE(splits.amount, transaction.amount)";
+      // A split row's own category wins over the parent transaction's.
+      const categoryIdExpr =
+        "COALESCE(splits.categoryId, transaction.categoryId)";
+      // Transfers are movements between own accounts, not spending, so a
+      // transfer with no category must not swell the "Uncategorized" bucket.
+      // This matches the transaction-list filter, which excludes transfers
+      // from "uncategorized". A transfer carrying an optional category still
+      // shows under that category.
+      const categorizedOrNotTransfer = () =>
+        new Brackets((qb) => {
+          qb.where(`${categoryIdExpr} IS NOT NULL`).orWhere(
+            "transaction.isTransfer = false",
+          );
+        });
 
       if (groupBy === "category") {
-        // A split row's own category wins over the parent transaction's.
-        const idExpr = "COALESCE(splits.categoryId, transaction.categoryId)";
+        const idExpr = categoryIdExpr;
         queryBuilder
           .leftJoin("transaction.category", "groupCat")
           .leftJoin("splits.category", "groupSplitCat")
@@ -902,18 +1032,7 @@ export class TransactionAnalyticsService {
           .addSelect("COALESCE(groupSplitCat.name, groupCat.name)", "name")
           .groupBy(idExpr)
           .addGroupBy("COALESCE(groupSplitCat.name, groupCat.name)")
-          // Transfers are movements between own accounts, not spending, so a
-          // transfer with no category must not swell the "Uncategorized" bucket.
-          // This matches the transaction-list filter, which excludes transfers
-          // from "uncategorized". A transfer carrying an optional category still
-          // shows under that category.
-          .andWhere(
-            new Brackets((qb) => {
-              qb.where(`${idExpr} IS NOT NULL`).orWhere(
-                "transaction.isTransfer = false",
-              );
-            }),
-          );
+          .andWhere(categorizedOrNotTransfer());
       } else {
         queryBuilder
           .leftJoin("transaction.payee", "groupPayee")
@@ -938,17 +1057,66 @@ export class TransactionAnalyticsService {
         m,
         rows.map((row) => row.currencyCode),
       );
-      return rows.map((row) => ({
-        id: row.id ?? null,
-        name: row.name ?? null,
-        currencyCode: row.currencyCode,
+      const native = rows.map((row) => ({
+        id: (row.id ?? null) as string | null,
+        name: (row.name ?? null) as string | null,
+        currencyCode: row.currencyCode as string,
         total: roundMoney(
           Number(row.total) || 0,
           moneyDecimalsForCode(places, row.currencyCode),
         ),
         count: Number(row.count) || 0,
       }));
+      return this.withConvertedTotals(m, userId, filters, native, (qb) => {
+        if (groupBy === "category") {
+          qb.andWhere(categorizedOrNotTransfer());
+          return {
+            keyExpr: categoryIdExpr,
+            sums: { total: `SUM(${amountExpr})` },
+          };
+        }
+        return {
+          keyExpr: "transaction.payeeId",
+          sums: { total: `SUM(${amountExpr})` },
+        };
+      });
     });
+  }
+
+  /**
+   * Per-(key, currency) rows with each one's figure in the reader's reporting
+   * currency beside it, at each underlying row's own rate or the market rate on
+   * its own date (issue #2106): a surface that sums several currencies reads
+   * `convertedTotal` rather than converting a lifetime total at today's rate.
+   * `null` is a row with a part no admissible rate reaches.
+   */
+  private async withConvertedTotals<
+    T extends { id: string | null; currencyCode: string; total: number },
+  >(
+    m: EntityManager,
+    userId: string,
+    filters: AnalyticsReadFilters,
+    rows: T[],
+    shape: (qb: SelectQueryBuilder<Transaction>) => {
+      keyExpr: string;
+      sums: Record<string, string>;
+    },
+  ): Promise<
+    Array<T & { convertedCurrency: string; convertedTotal: number | null }>
+  > {
+    if (rows.length === 0) return [];
+    const reporting = await resolveUserDefaultCurrency(this.dataSource, userId);
+    const foreign = rows.some((row) => row.currencyCode !== reporting)
+      ? await this.datedForeignTotals(m, userId, filters, reporting, shape)
+      : new Map<string, Record<string, number | null>>();
+    return rows.map((row) => ({
+      ...row,
+      convertedCurrency: reporting,
+      convertedTotal:
+        row.currencyCode === reporting
+          ? row.total
+          : (foreign.get(`${row.id ?? ""}|${row.currencyCode}`)?.total ?? null),
+    }));
   }
 
   /**
@@ -985,6 +1153,8 @@ export class TransactionAnalyticsService {
       currencyCode: string;
       total: number;
       count: number;
+      convertedCurrency: string;
+      convertedTotal: number | null;
     }>
   > {
     return withScopedDb(this.dataSource, async (m) => {
@@ -998,17 +1168,19 @@ export class TransactionAnalyticsService {
       const amountExpr = "COALESCE(splits.amount, transaction.amount)";
       const valueExpr =
         "TRIM(SUBSTRING(brkTag.name FROM POSITION(':' IN brkTag.name) + 1))";
+      const keyedByTagValue = (qb: SelectQueryBuilder<Transaction>) =>
+        qb
+          .innerJoin("transaction.tags", "brkTag")
+          .andWhere("POSITION(':' IN brkTag.name) > 1")
+          .andWhere(
+            "LOWER(TRIM(SPLIT_PART(brkTag.name, ':', 1))) = LOWER(:brkKey)",
+            {
+              brkKey: key.trim(),
+            },
+          )
+          .andWhere(`${valueExpr} <> ''`);
 
-      queryBuilder
-        .innerJoin("transaction.tags", "brkTag")
-        .andWhere("POSITION(':' IN brkTag.name) > 1")
-        .andWhere(
-          "LOWER(TRIM(SPLIT_PART(brkTag.name, ':', 1))) = LOWER(:brkKey)",
-          {
-            brkKey: key.trim(),
-          },
-        )
-        .andWhere(`${valueExpr} <> ''`)
+      keyedByTagValue(queryBuilder)
         .select(valueExpr, "value")
         .addSelect("transaction.currencyCode", "currencyCode")
         .addSelect(`SUM(ABS(${amountExpr}))`, "total")
@@ -1025,16 +1197,23 @@ export class TransactionAnalyticsService {
         m,
         rows.map((row) => row.currencyCode),
       );
-      return rows.map((row) => ({
-        id: row.value,
-        name: row.value,
-        currencyCode: row.currencyCode,
+      const native = rows.map((row) => ({
+        id: row.value as string,
+        name: row.value as string,
+        currencyCode: row.currencyCode as string,
         total: roundMoney(
           Number(row.total) || 0,
           moneyDecimalsForCode(places, row.currencyCode),
         ),
         count: Number(row.count) || 0,
       }));
+      return this.withConvertedTotals(m, userId, filters, native, (qb) => {
+        keyedByTagValue(qb);
+        return {
+          keyExpr: valueExpr,
+          sums: { total: `SUM(ABS(${amountExpr}))` },
+        };
+      });
     });
   }
 
@@ -2241,6 +2420,54 @@ const DAY_TX_SQL = "TO_CHAR(transaction.transactionDate, 'YYYY-MM-DD')";
 
 /** A grouped raw row: its label columns, its currency and its day. */
 type RawGroupRow = Record<string, any>;
+
+/** The transaction-list filter surface every analytics read applies. */
+interface AnalyticsReadFilters {
+  accountIds?: string[];
+  startDate?: string;
+  endDate?: string;
+  categoryIds?: string[];
+  payeeIds?: string[];
+  search?: string;
+  amountFrom?: number;
+  amountTo?: number;
+  excludeInvestmentLinked?: boolean;
+  excludeTransfers?: boolean;
+  tagIds?: string[];
+  includeUnreconciledBeforeStart?: boolean;
+  jointAccountIds?: string[];
+}
+
+/**
+ * A transaction summary in the reader's reporting currency, each row converted
+ * at its own rate or on its own date. `totalIncome`, `totalExpenses` and
+ * `netCashFlow` are null while any bucket has no rate; the `known*` figures
+ * carry what converted, and the transaction counts split on the same line.
+ */
+/** One (key, currency) row of a grouped analytics read. */
+export interface GroupedTotalRow {
+  id: string | null;
+  name: string | null;
+  currencyCode: string;
+  total: number;
+  count: number;
+  /** The reader's reporting currency, which `convertedTotal` is in. */
+  convertedCurrency: string;
+  /** `total` at each row's own rate or on its own date; null without one. */
+  convertedTotal: number | null;
+}
+
+export interface SummaryInReportingCurrency {
+  currency: string;
+  totalIncome: number | null;
+  totalExpenses: number | null;
+  netCashFlow: number | null;
+  knownIncome: number;
+  knownExpenses: number;
+  includedTransactionCount: number;
+  excludedTransactionCount: number;
+  missingCurrencies: string[];
+}
 
 interface FoldedGroup {
   first: RawGroupRow;

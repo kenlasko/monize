@@ -13,6 +13,7 @@ import {
   ManagerMock,
 } from "../test-helpers/scoped-db-testing";
 import { Currency } from "../currencies/entities/currency.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 
 jest.mock("../common/db/scoped-db", () =>
@@ -68,6 +69,8 @@ describe("PayeeDetailService", () => {
   function given(options: {
     stats?: { count: string; first: string | null; last: string | null };
     accountRows?: Record<string, unknown>[];
+    /** The foreign accounts' rows by day, read only when one is foreign. */
+    datedAccountRows?: Record<string, unknown>[];
     largestRow?: Record<string, unknown>;
     uncategorizedCount?: number;
     aliasCount?: number;
@@ -83,12 +86,19 @@ describe("PayeeDetailService", () => {
         queryBuilder({
           getRawMany: jest.fn().mockResolvedValue(options.accountRows ?? []),
         }),
-      )
-      .mockImplementationOnce(() =>
+      );
+    if (options.datedAccountRows) {
+      txManager.createQueryBuilder.mockImplementationOnce(() =>
         queryBuilder({
-          getRawOne: jest.fn().mockResolvedValue(options.largestRow),
+          getRawMany: jest.fn().mockResolvedValue(options.datedAccountRows),
         }),
       );
+    }
+    txManager.createQueryBuilder.mockImplementationOnce(() =>
+      queryBuilder({
+        getRawOne: jest.fn().mockResolvedValue(options.largestRow),
+      }),
+    );
     txManager.count.mockResolvedValue(options.uncategorizedCount ?? 0);
     aliasRepository.count.mockResolvedValue(options.aliasCount ?? 0);
     accountRepository.find.mockResolvedValue(options.overpaymentAccounts ?? []);
@@ -105,6 +115,11 @@ describe("PayeeDetailService", () => {
       [Currency, currencyPlacesRepoMock({ BTC: 8 })],
       [PayeeAlias, aliasRepository],
       [Account, accountRepository],
+      // The reader reports in CAD, the fixtures' fiat currency.
+      [
+        UserPreference,
+        { findOne: jest.fn().mockResolvedValue({ defaultCurrency: "CAD" }) },
+      ],
     ]);
     txManager = manager;
     mockDataSource = dataSource;
@@ -207,6 +222,8 @@ describe("PayeeDetailService", () => {
         transactionCount: 37,
         total: -1234.5679,
         lastTransactionDate: "2026-06-30",
+        convertedCurrency: "CAD",
+        convertedTotal: -1234.5679,
       },
       {
         accountId: "acct-2",
@@ -216,11 +233,21 @@ describe("PayeeDetailService", () => {
         transactionCount: 4,
         total: -89.5,
         lastTransactionDate: null,
+        convertedCurrency: "CAD",
+        convertedTotal: -89.5,
       },
     ]);
   });
 
   it("keeps a BTC account's total and largest row at its eight places (INV-MONEY-001)", async () => {
+    txManager.query.mockResolvedValue([
+      {
+        from_currency: "BTC",
+        to_currency: "CAD",
+        rate: "100000",
+        rate_date: "2026-06-29",
+      },
+    ]);
     given({
       accountRows: [
         {
@@ -242,6 +269,16 @@ describe("PayeeDetailService", () => {
           lastTransactionDate: "2026-06-30",
         },
       ],
+      datedAccountRows: [
+        {
+          accountId: "acct-btc",
+          currencyCode: "BTC",
+          txDate: "2026-06-30",
+          originalCurrencyCode: null,
+          exchangeRate: "1",
+          total: "-0.00045710",
+        },
+      ],
       largestRow: {
         id: "tx-btc",
         transactionDate: "2026-06-30",
@@ -257,6 +294,10 @@ describe("PayeeDetailService", () => {
 
     // The coin keeps its satoshis; the fiat figure still rounds at four.
     expect(detail.accounts.map((a) => a.total)).toEqual([-0.0004571, -12.3457]);
+    // Into CAD at the coin's rate on its own day (issue #2106).
+    expect(detail.accounts.map((a) => a.convertedTotal)).toEqual([
+      -45.71, -12.3457,
+    ]);
     expect(detail.largestTransaction?.amount).toBe(-0.0004321);
   });
 

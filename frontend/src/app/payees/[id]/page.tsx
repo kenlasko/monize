@@ -38,6 +38,7 @@ import {
   buildDisplayCurrencyStrategy,
   summarizeInDisplayCurrency,
   aggregateGroupedTotals,
+  inDisplayCurrency,
 } from '@/components/transactions/widget-shared';
 import type { Payee, PayeeDetail, UpdatePayeeData } from '@/types/payee';
 import type { PayeeFormSubmitData } from '@/components/payees/PayeeForm';
@@ -148,7 +149,7 @@ function PayeeDetailContent() {
   const searchParams = useSearchParams();
   const payeeId = params.id as string;
 
-  const { convertToDefault, defaultCurrency } = useExchangeRates();
+  const { defaultCurrency } = useExchangeRates();
 
   const [detail, setDetail] = useState<PayeeDetail | null>(null);
   const [analytics, setAnalytics] = useState<PayeeAnalytics | null>(null);
@@ -331,9 +332,8 @@ function PayeeDetailContent() {
       buildDisplayCurrencyStrategy(
         analytics?.lifetimeSummary ?? null,
         defaultCurrency,
-        convertToDefault,
       ),
-    [analytics?.lifetimeSummary, defaultCurrency, convertToDefault],
+    [analytics?.lifetimeSummary, defaultCurrency],
   );
 
   const isMultiCurrency =
@@ -414,7 +414,7 @@ function PayeeDetailContent() {
         id: row.accountId,
         name: row.accountName,
         currencyCode: currencyStrategy.displayCurrency,
-        total: currencyStrategy.toDisplay(row.total, row.currencyCode),
+        total: inDisplayCurrency(currencyStrategy, row),
         count: row.transactionCount,
       }))
       // Same reasoning as the category panel: no rate, no bar.

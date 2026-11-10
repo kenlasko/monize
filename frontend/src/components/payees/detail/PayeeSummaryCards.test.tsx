@@ -7,7 +7,7 @@ import type { PayeeDetail } from '@/types/payee';
 
 const strategy: DisplayCurrencyStrategy = {
   displayCurrency: 'CAD',
-  toDisplay: (amount) => amount,
+  converted: false,
 };
 
 function detailFixture(overrides: Partial<PayeeDetail> = {}): PayeeDetail {
