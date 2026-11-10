@@ -25,6 +25,7 @@ import {
   MAX_ATTACHMENT_BYTES,
   MAX_ATTACHMENTS_PER_TRANSACTION,
 } from '@/types/attachment';
+import { WarrantyAddExistingDocument } from '@/components/warranties/WarrantyAddExistingDocument';
 
 const logger = createLogger('AttachmentsSection');
 
@@ -287,6 +288,7 @@ function SavedAttachments({
    * render of this list is a different subject to anything downstream.
    */
   const [preview, setPreview] = useState<PreviewTarget | null>(null);
+  const [addingExisting, setAddingExisting] = useState(false);
 
   const load = useCallback(() => {
     // The writes live in the inner function so they run after the request,
@@ -587,9 +589,30 @@ function SavedAttachments({
               loading={uploading}
               disabled={uploading || atLimit}
             />
+            {/* A warranty can take a copy of a file already uploaded elsewhere. */}
+            {isWarranty && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploading || atLimit}
+                // The phone row is two half-width cells; a third takes the line.
+                className="col-span-2"
+                onClick={() => setAddingExisting(true)}
+              >
+                {tw('documents.addExisting')}
+              </Button>
+            )}
           </>
         )}
       </AttachmentsHeader>
+      {addingExisting && (
+        <WarrantyAddExistingDocument
+          warrantyId={parentId}
+          onClose={() => setAddingExisting(false)}
+          onAdded={() => void load()}
+        />
+      )}
 
       {body ?? (
         <>

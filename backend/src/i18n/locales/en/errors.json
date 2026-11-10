@@ -32,7 +32,9 @@
     "pairRequiresImages": "A scanned document and its original must both be images",
     "warrantyNotFound": "Warranty not found",
     "tooManyForWarranty": "This warranty already has the maximum of {{ max }} attachments",
-    "documentKindNotForTransaction": "A document kind applies only to a warranty's documents"
+    "documentKindNotForTransaction": "A document kind applies only to a warranty's documents",
+    "copyNotOwnDocument": "Only one of your own documents can be added to a warranty",
+    "copyAlreadyOnWarranty": "This document is already on this warranty"
   },
   "accounts": {
     "accountWithIdNotFound": "Account with ID {{ id }} not found",
