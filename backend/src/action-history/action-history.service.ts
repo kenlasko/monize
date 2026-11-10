@@ -64,6 +64,7 @@ import {
   precisionCurrencyFor,
 } from "../common/currency-places.util";
 import { invalidatePortfolioSummary } from "../securities/portfolio-summary-memo";
+import { todayYMD } from "../common/date-utils";
 
 /**
  * A create whose snapshot links the row to a counterpart leg (a transfer leg,
@@ -2216,6 +2217,11 @@ export class ActionHistoryService {
     // Use the same recalculation logic as AccountsService
     // The account's currency places come back with the sum, so the balance
     // rounds at its money precision: a coin wallet keeps its satoshis.
+    //
+    // Bounded by the user's own day (todayYMD), not the database server's
+    // CURRENT_DATE: for the hours the two days differ, CURRENT_DATE counts or
+    // drops a day's transactions that the rest of the app (recalculateCurrentBalance,
+    // every create/edit/delete) decides by the user's day (issue #2070).
     const result = await manager.query(
       `SELECT a.opening_balance, COALESCE(SUM(t.amount), 0) as tx_sum,
               c.decimal_places
@@ -2223,10 +2229,10 @@ export class ActionHistoryService {
        LEFT JOIN currencies c ON c.code = a.currency_code
        LEFT JOIN transactions t ON t.account_id = a.id
          AND ${LEDGER_MOVEMENT_PREDICATE}
-         AND t.transaction_date <= CURRENT_DATE
+         AND t.transaction_date <= $2
        WHERE a.id = $1
        GROUP BY a.id, a.opening_balance, c.decimal_places`,
-      [accountId],
+      [accountId, todayYMD()],
     );
 
     if (result.length > 0) {

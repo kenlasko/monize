@@ -22,6 +22,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { BondPriceService } from "../bonds/bond-price.service";
 import { HoldingsService } from "../securities/holdings.service";
+import { requestContextStorage } from "../common/request-context";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -3581,6 +3582,47 @@ describe("ActionHistoryService", () => {
           call[0].includes("UPDATE accounts SET current_balance"),
       );
       expect(balanceUpdateCalls.length).toBe(0);
+    });
+
+    it("bounds the recompute by the user's day, not the database server's (issue #2070)", async () => {
+      const txAction = {
+        ...mockAction,
+        entityType: "transaction",
+        action: "create",
+        entityId: "tx-1",
+        afterData: { id: "tx-1", accountId: "acc-1" },
+      };
+      mockRepository.findOne.mockResolvedValue(txAction);
+
+      const mockTransaction = {
+        id: "tx-1",
+        userId,
+        accountId: "acc-1",
+        amount: 100,
+        splits: [],
+      };
+      mockQueryRunner.manager.findOne.mockResolvedValue(mockTransaction);
+      mockQueryRunner.manager.remove.mockResolvedValue(undefined);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      mockLockedRows({ "tx-1": { account_id: "acc-1", amount: "100" } });
+
+      // 21:00 in Toronto on Jan 1 is already 02:00 UTC on Jan 2: the database
+      // server's CURRENT_DATE would be a day ahead of the user's.
+      jest.useFakeTimers({ now: new Date("2026-01-02T02:00:00Z") });
+      try {
+        await requestContextStorage.run({ timezone: "America/Toronto" }, () =>
+          service.undo(userId),
+        );
+      } finally {
+        jest.useRealTimers();
+      }
+
+      const balanceQuery = mockQueryRunner.query.mock.calls.find(
+        (call: any[]) =>
+          typeof call[0] === "string" &&
+          call[0].includes("COALESCE(SUM(t.amount)"),
+      );
+      expect(balanceQuery![1]).toEqual(["acc-1", "2026-01-01"]);
     });
   });
 
