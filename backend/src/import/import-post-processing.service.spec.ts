@@ -9,6 +9,7 @@ import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import { lockAccountsForBalanceWrite } from "../common/db/locks";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
+import { requestContextStorage } from "../common/request-context";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -193,7 +194,27 @@ describe("ImportPostProcessingService", () => {
       // Guarded on the same two exclusions the live balance uses, so the
       // import's answer and recalculateCurrentBalance's cannot disagree.
       expect(sql).toContain("t.parent_transaction_id IS NULL");
-      expect(sql).toContain("t.transaction_date <= CURRENT_DATE");
+      expect(sql).toContain("t.transaction_date <= $2");
+    });
+
+    it("bounds the recompute by the user's day, not the database server's (issue #2070)", async () => {
+      // 21:00 in Toronto on Jan 1 is already 02:00 UTC on Jan 2: the database
+      // server's CURRENT_DATE would be a day ahead of the user's, counting a
+      // transaction dated the user's tomorrow into today's balance.
+      jest.useFakeTimers({ now: new Date("2026-01-02T02:00:00Z") });
+      try {
+        await requestContextStorage.run({ timezone: "America/Toronto" }, () =>
+          service.run(userId, false, new Set([accountA])),
+        );
+      } finally {
+        jest.useRealTimers();
+      }
+
+      const [sql, params] = scoped.manager.query.mock.calls.find(
+        (call: string[]) => call[0].includes("SELECT"),
+      )!;
+      expect(sql).toContain("t.transaction_date <= $2");
+      expect(params).toEqual([[accountA], "2026-01-01"]);
     });
 
     it("does nothing at all when no account was touched", async () => {

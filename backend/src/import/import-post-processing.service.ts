@@ -9,6 +9,7 @@ import { SecuritiesService } from "../securities/securities.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { moneyDecimalsFor, roundMoney } from "../common/round.util";
 import { LEDGER_MOVEMENT_PREDICATE } from "../common/ledger-balance.sql";
+import { todayYMD } from "../common/date-utils";
 
 /**
  * The work every import pipeline does once its rows are written: recompute
@@ -51,6 +52,9 @@ export class ImportPostProcessingService {
     // future-dated transactions are excluded. During import,
     // updateAccountBalance() adds every transaction amount regardless
     // of date, which inflates the balance when future transactions exist.
+    // "Future-dated" is decided by the user's own day (todayYMD), not the
+    // database server's CURRENT_DATE, matching AccountsService.recalculateCurrentBalance
+    // and every create/edit/delete (issue #2070).
     // Compute every affected account's balance in one grouped query and write
     // them back in one bulk UPDATE rather than 3 queries per account.
     const affectedIds = [...affectedAccountIds];
@@ -83,10 +87,10 @@ export class ImportPostProcessingService {
                LEFT JOIN currencies c ON c.code = a.currency_code
                LEFT JOIN transactions t ON t.account_id = a.id
                  AND ${LEDGER_MOVEMENT_PREDICATE}
-                 AND t.transaction_date <= CURRENT_DATE
+                 AND t.transaction_date <= $2
               WHERE a.id = ANY($1)
               GROUP BY a.id, a.opening_balance, c.decimal_places`,
-            [affectedIds],
+            [affectedIds, todayYMD()],
           );
 
           if (balances.length > 0) {
