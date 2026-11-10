@@ -88,7 +88,7 @@ export interface ScheduleAmountEstimate {
   /** `null` when withheld: a delegate is not told how often the owner paid. */
   paymentCount: number | null;
   latestPaymentDate: string | null;
-  /** The year-over-year growth applied, or null when the history is not seasonal. */
+  /** The year-over-year growth applied, or null when the history shows no trend. */
   growthRate: number | null;
   historyMonths: number;
   missingPair: { from: string; to: string } | null;

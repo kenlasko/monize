@@ -1062,13 +1062,15 @@ describe("ScheduledOccurrenceService", () => {
     it("varies by month once the history is seasonal", async () => {
       const seasonal: ScheduleAmountEstimate = {
         ...seasonalEstimate(),
+        // A quarterly bill both years bill the same way: January dear,
+        // July cheap.
         profile: buildEstimateProfile(
-          [
-            { date: "2025-01-15", amount: -200 },
-            { date: "2025-07-15", amount: -50 },
-            { date: "2026-01-15", amount: -200 },
-            { date: "2026-07-15", amount: -50 },
-          ],
+          ["2025", "2026"].flatMap((year) => [
+            { date: `${year}-01-15`, amount: -200 },
+            { date: `${year}-04-15`, amount: -120 },
+            { date: `${year}-07-15`, amount: -50 },
+            { date: `${year}-10-15`, amount: -130 },
+          ]),
           today,
           2,
         ),

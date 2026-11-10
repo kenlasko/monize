@@ -70,40 +70,54 @@ estimated schedule in it:
 
 ## 4. The estimate for one month
 
-`backend/src/scheduled-transactions/amount-estimate.ts`, pure:
+`backend/src/scheduled-transactions/amount-estimate.ts`, pure. The estimate
+is a **level**, a **seasonal index** and a **trend**, each admitted only when
+the history shows it, so a flat bill stays flat and a price change is the
+price from then on (review of the first version: a two-year history was read
+as seasonal whatever its shape, and a price step as both a season and a
+trend).
 
-1. **Seasonal** when the counted payments include one in the latest twelve
-   months (after today minus 12 months) and one before that.
-2. **Year-over-year growth** `g`, seasonal history only: each payment is
-   bucketed by how many calendar months before today's it falls (0 to 11 the
-   latest year, 12 to 23 the one before); over the offsets `k` holding a
-   payment at both `k` and `k + 12`, the sum of the latest year's monthly
-   means over the sum of the earlier year's, minus one. The current month's
-   payments are never pooled across two years. Fewer
-   than three such months (`ESTIMATE_MIN_GROWTH_MONTHS`) gives `g = 0`; `g` is
-   clamped to [-50%, +100%].
-3. For an occurrence falling in month `M` (the date it falls on, an override's
-   moved date included):
-   - seasonal history with payments in `M`'s calendar month: each such payment
-     projected forward by `(1 + g)^k`, `k` the whole years between its month
-     and `M`, then averaged (`basis: "seasonal"`);
-   - otherwise the mean of the newest three payments (`basis: "recent"`), with
-     no trend.
-4. Rounded to the currency's entry places (`currencies.decimal_places`): an
+Each payment is placed by its calendar-month offset from today's month: 0 to
+11 is the latest year, 12 to 23 the one before.
+
+1. **Seasonal index.** Per year, a calendar month's mean over the mean of that
+   year's monthly means, so a price change between the years cancels out. The
+   history is **seasonal** only when each year holds at least four months
+   (`ESTIMATE_SEASONAL_MIN_MONTHS`, a quarterly bill), each year's index
+   strays at least 10% from 1 somewhere (`ESTIMATE_SEASONAL_MIN_SPREAD`), and
+   the months both years hold agree with a correlation of at least 0.6
+   (`ESTIMATE_SEASONAL_MIN_CORRELATION`). A flat bill does not vary; a price
+   step varies in one year only. The index used is the two years' average.
+2. **Level.** The mean of the newest three payments, each divided by its
+   month's index (1 when not seasonal): what a month of index 1 costs at the
+   latest price.
+3. **Growth** `g`. Over the offsets `k` holding a payment at both `k` and
+   `k + 12`, the sum of the latest year's monthly means over the earlier
+   year's, minus one, only when at least three months compare
+   (`ESTIMATE_MIN_GROWTH_MONTHS`) and their per-month ratios agree within a
+   standard deviation of 0.1 (`ESTIMATE_GROWTH_MAX_DISPERSION`): a trend moves
+   every month alike, a step moves some and not others and is already in the
+   level. Clamped to [-50%, +100%].
+4. For an occurrence falling in month `M` (the date it falls on, an override's
+   moved date included): `level x index(M) x (1 + g)^(months from the newest
+   payment to M / 12)`, `basis: "seasonal"` when the index holds `M`,
+   `"recent"` otherwise.
+5. Rounded to the currency's entry places (`currencies.decimal_places`): an
    estimate is a figure a person would have typed. The amount is per payment,
    not per month, so a weekly bill's estimate is one week's payment.
 
-Worked examples, all from `amount-estimate.spec.ts` with today 2026-11-09:
+Worked examples, all from `amount-estimate.spec.ts` with today 2026-11-09 and
+one payment on the 5th of each month from December 2024:
 
 | History | Month | Estimate |
 | --- | --- | --- |
-| -100 (Jul), -110 (Aug), -120 (Sep), -130 (Oct 2026) | 2026-12 | (-110 - 120 - 130) / 3 = -120, recent |
-| Jan -200, Feb -180, Jul -50 (2025); Jan -220, Feb -198, Jul -55 (2026) | growth | 473 / 430 - 1 = 10% |
-| same | 2027-01 | mean(-200 x 1.1^2, -220 x 1.1) = -242, seasonal |
-| same | 2027-07 | mean(-50 x 1.21, -55 x 1.1) = -60.50, seasonal |
-| same | 2026-12 (no December payment) | (-220 - 198 - 55) / 3 = -157.67, recent |
-| same | 2028-01 | -266.20 (one more year of growth) |
-| Jan and Feb only in both years | 2027-01 | (-200 - 220) / 2 = -210, no trend |
+| -100 (Jul), -110 (Aug), -120 (Sep), -130 (Oct 2026) only | any | (-110 - 120 - 130) / 3 = -120, recent |
+| -10 every month | any | -10: no season, no trend |
+| -10, then -15 from May 2026 (24 or 13 months) | 2026-12 to 2027-11 | -15: the new level; no season, no trend |
+| -100, then -105 every month from Dec 2025 | 2027-11 | -105 x 1.05 = -110.25 |
+| heating shape (Jan 200 ... Jul 50), latest year 10% dearer | 2027-01 | -220 x 1.1^(2/12) = -223.52, seasonal |
+| same | 2027-07 | -55 x 1.1^(8/12) = -58.61, seasonal |
+| same | 2027-11 | -165 x 1.1 = -181.50, seasonal |
 
 ## 5. Missing data
 

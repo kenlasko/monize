@@ -77,7 +77,7 @@ export interface ScheduleAmountEstimateReadModel {
   paymentCount: number | null;
   /** The newest payment the estimate read, `YYYY-MM-DD`; null when none or withheld. */
   latestPaymentDate: string | null;
-  /** The year-over-year growth applied, or null when the history is not seasonal. */
+  /** The year-over-year growth applied, or null when the history shows no trend. */
   growthRate: number | null;
   historyMonths: number;
   missingPair: { from: string; to: string } | null;
@@ -169,7 +169,7 @@ export function estimateReadModel(
       profile && profile.payments.length > 0
         ? profile.payments[profile.payments.length - 1].date
         : null,
-    growthRate: profile?.seasonal ? profile.growthRate : null,
+    growthRate: profile && profile.growthRate !== 0 ? profile.growthRate : null,
     historyMonths: ESTIMATE_HISTORY_MONTHS,
     missingPair: estimate.missingPair,
   };
