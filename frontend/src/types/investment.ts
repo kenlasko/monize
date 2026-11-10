@@ -533,6 +533,16 @@ export interface InvestmentTransaction {
   commissionCurrencyCode?: string | null;
   /** Currency the row's cash leg settles in (funding account, else the account). */
   settlementCurrencyCode?: string | null;
+  /**
+   * The server's factors taking `totalAmount` (in `amountCurrencyCode`) into
+   * the reader's reporting currency and into the row's own account's currency,
+   * at the row's own settled rate or the market rate on its own date (issue
+   * #2106). `null` is a row no admissible rate reaches; absent is a backend
+   * that predates them.
+   */
+  reportingCurrencyCode?: string;
+  reportingRate?: number | null;
+  accountRate?: number | null;
   description: string | null;
   // Same enum as regular transactions. A VOID row moves no shares and no
   // cash; the register strikes it through and excludes it from balances.
@@ -1084,6 +1094,20 @@ export interface CapitalGainEntry {
   realizedGainKnownSubtotal?: number | null;
   unrealizedGain: number | null;
   totalCapitalGain: number | null;
+  /**
+   * The same figures in the reader's reporting currency, at the rate for the
+   * entry's own period (a month's last day, a day's own), from the server
+   * (issue #2106). Null where unknown.
+   */
+  inReportingCurrency?: {
+    currency: string;
+    startValue: number | null;
+    endValue: number | null;
+    realizedGain: number | null;
+    realizedGainKnownSubtotal: number | null;
+    unrealizedGain: number | null;
+    totalCapitalGain: number | null;
+  };
 }
 
 // --- Performance comparison (Security Performance report) -------------------

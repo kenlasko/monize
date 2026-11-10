@@ -25,7 +25,7 @@ import {
   TransactionStatus,
 } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
-import { AccountSubType } from "../accounts/entities/account.entity";
+import { Account, AccountSubType } from "../accounts/entities/account.entity";
 import { isTransactionInFuture, todayYMD } from "../common/date-utils";
 
 jest.mock("../common/date-utils", () => ({
@@ -373,6 +373,9 @@ describe("InvestmentTransactionsService", () => {
       [Transaction, transactionRepository],
       [TransactionSplit, transactionSplitRepository],
       [UserPreference, userPreferenceRepository],
+      // The register's linked cash accounts, read for each row's settlement
+      // currency when the page is stamped with its reporting rates.
+      [Account, { find: jest.fn().mockResolvedValue([]) }],
     ]);
     dataSource = mocks.dataSource;
     // Reuse the direct-manager behaviours the spec already defines.
@@ -4410,6 +4413,42 @@ describe("InvestmentTransactionsService", () => {
       expect(result.totals.fxComplete).toBe(false);
       expect(result.totals.missingRatePairs).toEqual(["USD->CAD"]);
       expect(result.entries[0].totalCapitalGain).toBeNull();
+    });
+
+    it("gives each report entry its figures in the reporting currency at its own period's rate (issue #2106)", async () => {
+      (
+        portfolioCalculationService.calculateCapitalGainsByMonth as jest.Mock
+      ).mockResolvedValue([
+        makeEntry({ accountCurrencyCode: "CAD", totalCapitalGain: 100 }),
+        makeEntry({
+          accountCurrencyCode: "USD",
+          totalCapitalGain: 50,
+          unrealizedGain: 50,
+          startValue: 1000,
+          endValue: 1050,
+          symbol: "USS",
+          securityId: "sec-us",
+        }),
+      ]);
+      mockQueryRunner.manager.query.mockResolvedValue(usdToCad(1.5));
+
+      const entries = await service.getCapitalGainsByMonth(userId, {
+        startDate: "2024-06-01",
+        endDate: "2024-06-30",
+      });
+
+      expect(entries[0].inReportingCurrency).toMatchObject({
+        currency: "CAD",
+        totalCapitalGain: 100,
+      });
+      // The USD entry at June's month-end rate, 1.5.
+      expect(entries[1].totalCapitalGain).toBe(50);
+      expect(entries[1].inReportingCurrency).toMatchObject({
+        currency: "CAD",
+        totalCapitalGain: 75,
+        startValue: 1500,
+        endValue: 1575,
+      });
     });
 
     it("filters by symbol (case-insensitive) before aggregating", async () => {

@@ -12,7 +12,6 @@ import {
   investmentRowHasEffect,
 } from '@/lib/investment-actions';
 import { convertRowAmount, rowAmountCurrency } from '@/lib/investment-row-currency';
-import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { PortfolioSummaryCard } from '@/components/investments/PortfolioSummaryCard';
 import { AssetAllocationChart } from '@/components/investments/AssetAllocationChart';
 import { InvestmentValueChart } from '@/components/investments/InvestmentValueChart';
@@ -38,7 +37,6 @@ function dividendInterestYtdOf(
   incomeTx: readonly InvestmentTransaction[],
   brokerage: Account,
   cash: Account | null,
-  convert: (amount: number, from: string, to: string) => number | null,
 ): DividendInterestYtd {
   const accountCurrency = new Map<string, string>([[brokerage.id, brokerage.currencyCode]]);
   if (cash) accountCurrency.set(cash.id, cash.currencyCode);
@@ -49,7 +47,6 @@ function dividendInterestYtdOf(
       investmentIncomeAmount(tx),
       accountCurrency.get(tx.accountId),
       brokerage.currencyCode,
-      convert,
     );
     if (amount === null) {
       // Two different repairs: a security to name, or a rate to add.
@@ -173,8 +170,7 @@ export function InvestmentDetailView({ account, refreshKey = 0 }: InvestmentDeta
   const accountIds = cash ? [brokerage.id, cash.id] : [brokerage.id];
   const currency = brokerage.currencyCode;
 
-  const { convert } = useExchangeRates();
-  const dividendInterestYtd = dividendInterestYtdOf(incomeTx, brokerage, cash, convert);
+  const dividendInterestYtd = dividendInterestYtdOf(incomeTx, brokerage, cash);
 
   return (
     <div className="space-y-6">

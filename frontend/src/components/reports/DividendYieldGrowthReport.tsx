@@ -153,9 +153,8 @@ export function DividendYieldGrowthReport() {
         investmentIncomeAmount(tx),
         accountCurrencyMap.get(tx.accountId),
         displayCurrency,
-        convert,
       ),
-    [accountCurrencyMap, displayCurrency, convert],
+    [accountCurrencyMap, displayCurrency],
   );
 
   /**

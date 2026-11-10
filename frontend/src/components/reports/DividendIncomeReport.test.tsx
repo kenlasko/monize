@@ -44,8 +44,6 @@ vi.mock('@/hooks/useNumberFormat', async () => {
 });
 vi.mock('@/hooks/useExchangeRates', () => ({
   useExchangeRates: () => ({
-    convert: (amount: number, _from: string, _to?: string) => amount,
-    convertToDefault: (amount: number, _currency: string) => amount,
     defaultCurrency: 'CAD',
   }),
 }));
@@ -103,13 +101,19 @@ const mockGetTransactions = vi.fn();
 const mockGetInvestmentAccounts = vi.fn();
 const mockGetCapitalGains = vi.fn();
 
-vi.mock('@/lib/investments', () => ({
-  investmentsApi: {
-    getTransactions: (...args: any[]) => mockGetTransactions(...args),
-    getInvestmentAccounts: (...args: any[]) => mockGetInvestmentAccounts(...args),
-    getCapitalGains: (...args: any[]) => mockGetCapitalGains(...args),
-  },
-}));
+// The server's per-row conversion figures, defaulted to a CAD reader of CAD
+// rows where a fixture states none (issue #2106).
+vi.mock('@/lib/investments', async () => {
+  const { withRowFactors, withCapitalGainReporting } = await import('@/test/investment-fx-fixtures');
+  return {
+    investmentsApi: {
+      getTransactions: async (...args: any[]) => withRowFactors(await mockGetTransactions(...args)),
+      getInvestmentAccounts: (...args: any[]) => mockGetInvestmentAccounts(...args),
+      getCapitalGains: async (...args: any[]) =>
+        withCapitalGainReporting(await mockGetCapitalGains(...args)),
+    },
+  };
+});
 
 const mockExportToCsv = vi.fn();
 vi.mock('@/lib/csv-export', () => ({
@@ -384,6 +388,10 @@ describe('DividendIncomeReport', () => {
           totalAmount: 100,
           amountCurrencyCode: 'USD',
           exchangeRate: 1.35,
+          // The server's factors: the row's own rate reaches CAD.
+          reportingCurrencyCode: 'CAD',
+          reportingRate: 1.35,
+          accountRate: 1.35,
           accountId: 'acc-1',
           security: { symbol: 'SPY', name: 'S&P 500 ETF' },
         },
@@ -399,6 +407,51 @@ describe('DividendIncomeReport', () => {
       expect(screen.getAllByText('$135.00').length).toBeGreaterThan(0);
     });
     expect(screen.queryByText('$100.00')).not.toBeInTheDocument();
+  });
+
+  it("converts a past dividend at the server's factor for its own date, not today's rate (issue #2106)", async () => {
+    // Two USD dividends of 100 in a USD account, read in CAD: January's at
+    // 1.25 and June's at 1.40 -- 265 CAD, whatever the rate is today.
+    mockGetTransactions.mockResolvedValue({
+      data: [
+        {
+          id: 'tx-1',
+          transactionDate: '2024-01-15',
+          action: 'DIVIDEND',
+          totalAmount: 100,
+          amountCurrencyCode: 'USD',
+          exchangeRate: 1,
+          reportingCurrencyCode: 'CAD',
+          reportingRate: 1.25,
+          accountRate: 1,
+          accountId: 'acc-us',
+          security: { symbol: 'SPY', name: 'S&P 500 ETF' },
+        },
+        {
+          id: 'tx-2',
+          transactionDate: '2024-06-15',
+          action: 'DIVIDEND',
+          totalAmount: 100,
+          amountCurrencyCode: 'USD',
+          exchangeRate: 1,
+          reportingCurrencyCode: 'CAD',
+          reportingRate: 1.4,
+          accountRate: 1,
+          accountId: 'acc-us',
+          security: { symbol: 'SPY', name: 'S&P 500 ETF' },
+        },
+      ],
+      pagination: { hasMore: false },
+    });
+    mockGetInvestmentAccounts.mockResolvedValue([
+      { id: 'acc-us', name: 'US Margin', currencyCode: 'USD', accountSubType: 'INVESTMENT_CASH' },
+      { id: 'acc-ca', name: 'TFSA', currencyCode: 'CAD', accountSubType: 'INVESTMENT_CASH' },
+    ]);
+    mockGetCapitalGains.mockResolvedValue([]);
+    render(<DividendIncomeReport />);
+    await waitFor(() => {
+      expect(screen.getAllByText('$265.00').length).toBeGreaterThan(0);
+    });
   });
 
   it('leaves a VOID distribution out: it paid nothing', async () => {
@@ -2330,13 +2383,12 @@ describe('DividendIncomeReport', () => {
     expect(screen.queryByText('Month')).not.toBeInTheDocument();
   });
 
-  it('capital gains account-currency conversion in the all-accounts view', async () => {
+  it("reads a USD account's capital gains in the server's reporting currency for their month (issue #2106)", async () => {
     mockGetTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
     mockGetInvestmentAccounts.mockResolvedValue([
       { id: 'acc-1', name: 'USD TFSA', currencyCode: 'USD', accountSubType: 'INVESTMENT_CASH' },
     ]);
-    // The convertToDefault mock is an identity function, but we verify the
-    // conversion path is exercised for capital gains entries.
+    // The server converted June's USD figures at June's rate, 1.40.
     mockGetCapitalGains.mockResolvedValue([
       {
         month: '2024-06',
@@ -2356,14 +2408,23 @@ describe('DividendIncomeReport', () => {
         realizedGain: 0,
         unrealizedGain: 200,
         totalCapitalGain: 200,
+        inReportingCurrency: {
+          currency: 'CAD',
+          startValue: 3500,
+          endValue: 3780,
+          realizedGain: 0,
+          realizedGainKnownSubtotal: null,
+          unrealizedGain: 280,
+          totalCapitalGain: 280,
+        },
       },
     ]);
 
     render(<DividendIncomeReport />);
 
     await waitFor(() => {
-      // $200 capital gain shows in summary card
-      expect(screen.getAllByText('$200.00').length).toBeGreaterThan(0);
+      // 280 CAD in the summary card, not the account's 200 USD.
+      expect(screen.getAllByText('$280.00').length).toBeGreaterThan(0);
     });
   });
 
