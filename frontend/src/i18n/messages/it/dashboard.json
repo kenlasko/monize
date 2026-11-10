@@ -39,6 +39,12 @@
     "intradayUnavailable": "Alcune di queste posizioni non hanno prezzi intraday, quindi non si può tracciare un grafico di un giorno. Scegli un periodo più lungo in Personalizza."
   },
   "trivia": {
+    "title": "Curiosità",
+    "position": "{index} di {total}",
+    "previous": "Curiosità precedente",
+    "next": "Curiosità successiva",
+    "empty": "Le curiosità compaiono qui quando c'è abbastanza storico: due mesi di patrimonio netto o investimenti con un prezzo. L'elenco viene rigenerato ogni mattina.",
+    "off": "Le curiosità AI sono disattivate. Attivale in <link>Impostazioni AI</link>.",
     "topics": {
       "netWorth": "Patrimonio netto",
       "investments": "Investimenti"

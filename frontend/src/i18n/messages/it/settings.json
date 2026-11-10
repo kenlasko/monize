@@ -1136,8 +1136,8 @@
     },
     "trivia": {
       "title": "Curiosità AI",
-      "subtitle": "Mostra una riga di curiosità sul tuo patrimonio netto e sui tuoi investimenti accanto al saluto della dashboard. Viene rigenerata ogni giorno e formulata dall'AI se hai configurato un provider.",
-      "toggleLabel": "Mostra le curiosità AI nella dashboard",
+      "subtitle": "Riempie il widget Curiosità della tua dashboard con fatti sul tuo patrimonio netto e sui tuoi investimenti, rigenerati ogni mattina e formulati dall'AI se hai configurato un provider. Aggiungi il widget con Personalizza nella dashboard. Se disattivata, il widget non mostra fatti e nessun provider viene interpellato.",
+      "toggleLabel": "Riempi il widget Curiosità della dashboard con curiosità AI",
       "enabled": "Curiosità AI abilitate",
       "disabled": "Curiosità AI disabilitate",
       "saveFailed": "Impossibile aggiornare l'impostazione delle curiosità AI"

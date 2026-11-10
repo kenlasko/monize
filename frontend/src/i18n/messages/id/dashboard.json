@@ -39,6 +39,12 @@
     "intradayUnavailable": "Beberapa kepemilikan ini tidak memiliki harga intrahari, jadi grafik satu hari tidak dapat dibuat. Pilih jangka waktu lebih panjang di Sesuaikan."
   },
   "trivia": {
+    "title": "Trivia",
+    "position": "{index} dari {total}",
+    "previous": "Fakta sebelumnya",
+    "next": "Fakta berikutnya",
+    "empty": "Fakta akan muncul di sini setelah riwayat cukup: kekayaan bersih dua bulan, atau investasi yang sudah berharga. Daftar dibuat ulang setiap pagi.",
+    "off": "Trivia AI dimatikan. Aktifkan di <link>Pengaturan AI</link>.",
     "topics": {
       "netWorth": "Kekayaan bersih",
       "investments": "Investasi"

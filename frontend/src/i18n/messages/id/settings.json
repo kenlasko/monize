@@ -1136,8 +1136,8 @@
     },
     "trivia": {
       "title": "Trivia AI",
-      "subtitle": "Menampilkan satu baris trivia tentang kekayaan bersih dan investasi Anda di samping sapaan dasbor. Diperbarui setiap hari, dan dirangkai oleh AI jika Anda telah menyiapkan penyedia.",
-      "toggleLabel": "Tampilkan trivia AI di dasbor",
+      "subtitle": "Mengisi widget Trivia di dasbor Anda dengan fakta tentang kekayaan bersih dan investasi Anda, dibuat ulang setiap pagi dan dirangkai oleh AI jika Anda telah menyiapkan penyedia. Tambahkan widget lewat Sesuaikan di dasbor. Jika dimatikan, widget tidak menampilkan fakta dan tidak ada penyedia yang dihubungi.",
+      "toggleLabel": "Isi widget Trivia di dasbor dengan trivia AI",
       "enabled": "Trivia AI diaktifkan",
       "disabled": "Trivia AI dinonaktifkan",
       "saveFailed": "Tidak dapat memperbarui pengaturan trivia AI"

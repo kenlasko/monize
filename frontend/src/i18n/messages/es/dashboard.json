@@ -39,6 +39,12 @@
     "intradayUnavailable": "Algunas de estas posiciones no tienen precios intradía, así que no se puede dibujar un gráfico de un día. Elige un periodo más largo en Personalizar."
   },
   "trivia": {
+    "title": "Datos curiosos",
+    "position": "{index} de {total}",
+    "previous": "Dato anterior",
+    "next": "Dato siguiente",
+    "empty": "Los datos aparecerán aquí cuando haya suficiente historial: dos meses de patrimonio neto o inversiones con precio. La lista se genera de nuevo cada mañana.",
+    "off": "Los datos curiosos de IA están desactivados. Actívelos en <link>Configuración de IA</link>.",
     "topics": {
       "netWorth": "Patrimonio neto",
       "investments": "Inversiones"

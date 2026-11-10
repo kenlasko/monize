@@ -39,6 +39,12 @@
     "intradayUnavailable": "Bu varlıkların bazılarının gün içi fiyatı yok, bu nedenle bir günlük grafik çizilemiyor. Özelleştir bölümünden daha uzun bir dönem seçin."
   },
   "trivia": {
+    "title": "Bilgi notları",
+    "position": "{total} içinde {index}",
+    "previous": "Önceki bilgi",
+    "next": "Sonraki bilgi",
+    "empty": "Yeterli geçmiş oluştuğunda bilgi notları burada görünür: iki aylık net değer ya da fiyatı olan yatırımlar. Liste her sabah yeniden oluşturulur.",
+    "off": "Yapay zeka bilgi notları kapalı. <link>AI Ayarları</link> bölümünden açın.",
     "topics": {
       "netWorth": "Net değer",
       "investments": "Yatırımlar"

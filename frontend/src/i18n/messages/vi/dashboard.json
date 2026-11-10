@@ -39,6 +39,12 @@
     "intradayUnavailable": "Một số khoản nắm giữ không có giá trong ngày nên không thể vẽ biểu đồ một ngày. Hãy chọn khoảng thời gian dài hơn trong Tùy chỉnh."
   },
   "trivia": {
+    "title": "Thông tin thú vị",
+    "position": "{index} / {total}",
+    "previous": "Thông tin trước",
+    "next": "Thông tin tiếp theo",
+    "empty": "Thông tin sẽ xuất hiện ở đây khi có đủ lịch sử: giá trị ròng của hai tháng, hoặc các khoản đầu tư đã có giá. Danh sách được tạo lại mỗi sáng.",
+    "off": "Thông tin thú vị từ AI đang tắt. Hãy bật trong <link>Cài đặt AI</link>.",
     "topics": {
       "netWorth": "Giá trị ròng",
       "investments": "Đầu tư"

@@ -39,6 +39,12 @@
     "intradayUnavailable": "Certaines de ces positions n’ont pas de cours intrajournaliers : un graphique sur un jour ne peut donc pas être tracé. Choisissez une période plus longue dans Personnaliser."
   },
   "trivia": {
+    "title": "Anecdotes",
+    "position": "{index} sur {total}",
+    "previous": "Anecdote précédente",
+    "next": "Anecdote suivante",
+    "empty": "Les anecdotes apparaissent ici dès qu'il y a assez d'historique : deux mois de valeur nette ou des investissements avec un cours. La liste est reconstruite chaque matin.",
+    "off": "Les anecdotes IA sont désactivées. Activez-les dans <link>Paramètres IA</link>.",
     "topics": {
       "netWorth": "Valeur nette",
       "investments": "Investissements"

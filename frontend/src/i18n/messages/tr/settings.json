@@ -1136,8 +1136,8 @@
     },
     "trivia": {
       "title": "Yapay zeka bilgi notları",
-      "subtitle": "Pano karşılamasının yanında net değeriniz ve yatırımlarınız hakkında tek satırlık bir bilgi notu gösterir. Her gün yeniden oluşturulur ve bir sağlayıcı ayarladıysanız yapay zeka tarafından yazılır.",
-      "toggleLabel": "Panoda yapay zeka bilgi notlarını göster",
+      "subtitle": "Panonuzdaki Bilgi notları bileşenini net değeriniz ve yatırımlarınız hakkındaki bilgilerle doldurur. Bilgiler her sabah yeniden oluşturulur ve bir sağlayıcı ayarladıysanız yapay zeka tarafından yazılır. Bileşeni panoda Özelleştir ile ekleyin. Kapalıyken bileşen bilgi göstermez ve hiçbir sağlayıcıya sorulmaz.",
+      "toggleLabel": "Panodaki Bilgi notları bileşenini yapay zeka bilgi notlarıyla doldur",
       "enabled": "Yapay zeka bilgi notları etkinleştirildi",
       "disabled": "Yapay zeka bilgi notları devre dışı bırakıldı",
       "saveFailed": "Yapay zeka bilgi notları ayarı güncellenemedi"

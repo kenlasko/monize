@@ -39,6 +39,12 @@
     "intradayUnavailable": "部分持仓没有日内价格，因此无法绘制一天的图表。请在“自定义”中选择更长的时间范围。"
   },
   "trivia": {
+    "title": "趣闻",
+    "position": "第 {index} 条，共 {total} 条",
+    "previous": "上一条趣闻",
+    "next": "下一条趣闻",
+    "empty": "有足够的历史数据后，趣闻会显示在这里：两个月的净资产，或有价格的投资。列表每天早上重新生成。",
+    "off": "AI 趣闻已关闭。请在<link>AI 设置</link>中开启。",
     "topics": {
       "netWorth": "净资产",
       "investments": "投资"

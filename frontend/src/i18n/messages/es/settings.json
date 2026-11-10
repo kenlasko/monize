@@ -1136,8 +1136,8 @@
     },
     "trivia": {
       "title": "Datos curiosos de AI",
-      "subtitle": "Muestra una línea de datos curiosos sobre su patrimonio neto y sus inversiones junto al saludo del panel. Se genera de nuevo cada día y la redacta la AI si tiene un proveedor configurado.",
-      "toggleLabel": "Mostrar datos curiosos de AI en el panel",
+      "subtitle": "Rellena el widget «Datos curiosos» de su panel con datos sobre su patrimonio neto y sus inversiones, que se generan de nuevo cada mañana y los redacta la IA si tiene un proveedor configurado. Añada el widget con Personalizar en el panel. Si está desactivado, el widget no muestra datos y no se consulta a ningún proveedor.",
+      "toggleLabel": "Rellenar el widget «Datos curiosos» del panel con datos curiosos de IA",
       "enabled": "Datos curiosos de AI activados",
       "disabled": "Datos curiosos de AI desactivados",
       "saveFailed": "No se pudo actualizar la configuración de datos curiosos de AI"

@@ -39,6 +39,12 @@
     "intradayUnavailable": "Für einige dieser Positionen gibt es keine Intraday-Kurse, daher kann kein Tagesdiagramm gezeichnet werden. Wählen Sie unter „Anpassen“ einen längeren Zeitraum."
   },
   "trivia": {
+    "title": "Wissenswertes",
+    "position": "{index} von {total}",
+    "previous": "Vorheriger Fakt",
+    "next": "Nächster Fakt",
+    "empty": "Fakten erscheinen hier, sobald genug Verlauf vorhanden ist: zwei Monate Nettovermögen oder bewertete Anlagen. Die Liste wird jeden Morgen neu erstellt.",
+    "off": "KI-Wissenswertes ist ausgeschaltet. Schalte es in den <link>KI-Einstellungen</link> ein.",
     "topics": {
       "netWorth": "Nettovermögen",
       "investments": "Investments"

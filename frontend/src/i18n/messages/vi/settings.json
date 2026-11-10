@@ -1136,8 +1136,8 @@
     },
     "trivia": {
       "title": "Thông tin thú vị từ AI",
-      "subtitle": "Hiển thị một dòng thông tin thú vị về giá trị ròng và các khoản đầu tư của bạn bên cạnh lời chào trên bảng điều khiển. Được tạo lại hằng ngày và do AI viết nếu bạn đã thiết lập nhà cung cấp.",
-      "toggleLabel": "Hiển thị thông tin thú vị từ AI trên bảng điều khiển",
+      "subtitle": "Điền vào tiện ích Thông tin thú vị trên bảng điều khiển của bạn các thông tin về giá trị ròng và các khoản đầu tư, được tạo lại mỗi sáng và do AI viết nếu bạn đã thiết lập nhà cung cấp. Thêm tiện ích bằng Tùy chỉnh trên bảng điều khiển. Khi tắt, tiện ích không hiển thị thông tin nào và không hỏi nhà cung cấp nào.",
+      "toggleLabel": "Điền tiện ích Thông tin thú vị trên bảng điều khiển bằng thông tin thú vị từ AI",
       "enabled": "Đã bật thông tin thú vị từ AI",
       "disabled": "Đã tắt thông tin thú vị từ AI",
       "saveFailed": "Không thể cập nhật cài đặt thông tin thú vị từ AI"

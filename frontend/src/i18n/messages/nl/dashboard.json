@@ -39,6 +39,12 @@
     "intradayUnavailable": "Voor sommige posities zijn geen intraday-koersen, dus er kan geen dagrafiek worden getekend. Kies een langere periode in Aanpassen."
   },
   "trivia": {
+    "title": "Weetjes",
+    "position": "{index} van {total}",
+    "previous": "Vorig weetje",
+    "next": "Volgend weetje",
+    "empty": "Weetjes verschijnen hier zodra er genoeg geschiedenis is: twee maanden nettovermogen, of beleggingen met een koers. De lijst wordt elke ochtend opnieuw opgebouwd.",
+    "off": "AI-weetjes staan uit. Zet ze aan in de <link>AI-instellingen</link>.",
     "topics": {
       "netWorth": "Nettovermogen",
       "investments": "Beleggingen"

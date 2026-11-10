@@ -39,6 +39,12 @@
     "intradayUnavailable": "일부 보유 종목에 장중 가격이 없어 1일 차트를 그릴 수 없습니다. 사용자 지정에서 더 긴 기간을 선택하세요."
   },
   "trivia": {
+    "title": "트리비아",
+    "position": "{total}개 중 {index}번째",
+    "previous": "이전 정보",
+    "next": "다음 정보",
+    "empty": "기록이 충분히 쌓이면 여기에 정보가 표시됩니다. 순자산 2개월 치 또는 가격이 있는 투자가 필요합니다. 목록은 매일 아침 새로 생성됩니다.",
+    "off": "AI 트리비아가 꺼져 있습니다. <link>AI 설정</link>에서 켜세요.",
     "topics": {
       "netWorth": "순자산",
       "investments": "투자"

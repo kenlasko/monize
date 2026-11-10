@@ -1136,8 +1136,8 @@
     },
     "trivia": {
       "title": "Ciekawostki AI",
-      "subtitle": "Wyświetla obok powitania na pulpicie linijkę z ciekawostką o Twojej wartości netto i inwestycjach. Jest odbudowywana codziennie i formułowana przez AI, jeśli skonfigurowano dostawcę.",
-      "toggleLabel": "Pokaż ciekawostki AI na pulpicie",
+      "subtitle": "Wypełnia widżet Ciekawostki na pulpicie faktami o Twojej wartości netto i inwestycjach. Są odbudowywane każdego ranka i formułowane przez AI, jeśli skonfigurowano dostawcę. Dodaj widżet przez Dostosuj na pulpicie. Gdy opcja jest wyłączona, widżet nie pokazuje faktów i nie jest odpytywany żaden dostawca.",
+      "toggleLabel": "Wypełnij widżet Ciekawostki na pulpicie ciekawostkami AI",
       "enabled": "Ciekawostki AI włączone",
       "disabled": "Ciekawostki AI wyłączone",
       "saveFailed": "Nie udało się zaktualizować ustawienia ciekawostek AI"

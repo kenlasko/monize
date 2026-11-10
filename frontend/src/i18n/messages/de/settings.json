@@ -1136,8 +1136,8 @@
     },
     "trivia": {
       "title": "KI-Wissenswertes",
-      "subtitle": "Zeigt neben der Begrüßung im Dashboard eine Zeile mit Wissenswertem zu deinem Nettovermögen und deinen Anlagen an. Sie wird täglich neu erstellt und von der KI formuliert, wenn ein Anbieter eingerichtet ist.",
-      "toggleLabel": "KI-Wissenswertes im Dashboard anzeigen",
+      "subtitle": "Füllt das Widget „Wissenswertes“ in deinem Dashboard mit Fakten zu deinem Nettovermögen und deinen Anlagen. Sie werden jeden Morgen neu erstellt und von der KI formuliert, wenn ein Anbieter eingerichtet ist. Füge das Widget im Dashboard über „Anpassen“ hinzu. Ist die Funktion ausgeschaltet, zeigt das Widget keine Fakten und es wird kein Anbieter angefragt.",
+      "toggleLabel": "Das Widget „Wissenswertes“ im Dashboard mit KI-Wissenswertem füllen",
       "enabled": "KI-Wissenswertes aktiviert",
       "disabled": "KI-Wissenswertes deaktiviert",
       "saveFailed": "Die Einstellung für KI-Wissenswertes konnte nicht aktualisiert werden"

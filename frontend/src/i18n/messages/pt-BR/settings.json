@@ -1136,8 +1136,8 @@
     },
     "trivia": {
       "title": "Curiosidades de IA",
-      "subtitle": "Mostra uma linha de curiosidades sobre seu patrimônio líquido e seus investimentos ao lado da saudação do painel. É refeita diariamente e redigida pela IA se você tiver um provedor configurado.",
-      "toggleLabel": "Mostrar curiosidades de IA no painel",
+      "subtitle": "Preenche o widget Curiosidades do seu painel com fatos sobre seu patrimônio líquido e seus investimentos, refeitos toda manhã e redigidos pela IA se você tiver um provedor configurado. Adicione o widget com Personalizar no painel. Quando desativada, o widget não mostra fatos e nenhum provedor é consultado.",
+      "toggleLabel": "Preencher o widget Curiosidades do painel com curiosidades de IA",
       "enabled": "Curiosidades de IA ativadas",
       "disabled": "Curiosidades de IA desativadas",
       "saveFailed": "Não foi possível atualizar a configuração de curiosidades de IA"

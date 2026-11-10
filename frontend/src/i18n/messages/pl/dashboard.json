@@ -39,6 +39,12 @@
     "intradayUnavailable": "Część pozycji nie ma cen śróddziennych, więc nie można narysować wykresu jednodniowego. Wybierz dłuższy okres w Dostosuj."
   },
   "trivia": {
+    "title": "Ciekawostki",
+    "position": "{index} z {total}",
+    "previous": "Poprzednia ciekawostka",
+    "next": "Następna ciekawostka",
+    "empty": "Ciekawostki pojawią się tutaj, gdy będzie wystarczająco dużo historii: dwa miesiące wartości netto lub inwestycje z wyceną. Lista jest odbudowywana każdego ranka.",
+    "off": "Ciekawostki AI są wyłączone. Włącz je w sekcji <link>Ustawienia AI</link>.",
     "topics": {
       "netWorth": "Wartość netto",
       "investments": "Inwestycje"

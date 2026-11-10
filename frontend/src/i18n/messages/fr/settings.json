@@ -1136,8 +1136,8 @@
     },
     "trivia": {
       "title": "Anecdotes IA",
-      "subtitle": "Affiche une ligne d'anecdotes sur votre valeur nette et vos investissements à côté du message d'accueil du tableau de bord. Elle est régénérée chaque jour et rédigée par l'IA si un fournisseur est configuré.",
-      "toggleLabel": "Afficher les anecdotes IA sur le tableau de bord",
+      "subtitle": "Remplit le widget Anecdotes de votre tableau de bord avec des faits sur votre valeur nette et vos investissements, reconstruits chaque matin et rédigés par l'IA si un fournisseur est configuré. Ajoutez le widget avec Personnaliser sur le tableau de bord. Si la fonction est désactivée, le widget n'affiche aucun fait et aucun fournisseur n'est sollicité.",
+      "toggleLabel": "Remplir le widget Anecdotes du tableau de bord avec des anecdotes IA",
       "enabled": "Anecdotes IA activées",
       "disabled": "Anecdotes IA désactivées",
       "saveFailed": "Impossible de mettre à jour le paramètre des anecdotes IA"
