@@ -4419,6 +4419,77 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues", () => {
     expect(result.fxComplete).toBe(false);
   });
 
+  it("withholds a transferred-in cost whose source lacked a rate, never at today's rate", async () => {
+    const holdingRepo = { find: jest.fn().mockResolvedValue([holdingRow]) };
+    const tx = (over: Record<string, unknown>) =>
+      ({
+        userId,
+        securityId: "sec-a",
+        quantity: 10,
+        price: 90,
+        commission: 0,
+        totalAmount: 900,
+        exchangeRate: 1,
+        security: { id: "sec-a", currencyCode: "PLN" },
+        ...over,
+      }) as unknown as InvestmentTransaction;
+    // Bought in one PLN account on a day with no stored PLN->CAD rate, then
+    // moved in kind to the account that holds it now.
+    const rows = [
+      tx({
+        id: "buy",
+        accountId: "acct-src",
+        action: InvestmentAction.BUY,
+        transactionDate: "2024-01-10",
+        account: { id: "acct-src", currencyCode: "PLN" },
+      }),
+      tx({
+        id: "out",
+        accountId: "acct-src",
+        action: InvestmentAction.TRANSFER_OUT,
+        transactionDate: "2024-02-01",
+        account: { id: "acct-src", currencyCode: "PLN" },
+      }),
+      tx({
+        id: "in",
+        accountId: "acct-1",
+        action: InvestmentAction.TRANSFER_IN,
+        linkedTransactionId: "out",
+        transactionDate: "2024-02-01",
+        account: { id: "acct-1", currencyCode: "PLN" },
+      }),
+    ];
+    const resolveStoredRate = jest.fn(async (from: string, to: string) =>
+      from === to
+        ? { status: "same_currency", rate: 1 }
+        : { status: "resolved", rate: 0.4 },
+    );
+    const service = buildService(
+      [
+        [Holding, holdingRepo],
+        [InvestmentTransaction, { find: jest.fn().mockResolvedValue(rows) }],
+        [Account, { find: jest.fn().mockResolvedValue([]) }],
+      ],
+      { resolveStoredRate, getRateIndex: jest.fn(async () => new Map()) },
+    );
+    jest
+      .spyOn(service, "calculateCostBasisLotsInAccountCurrency")
+      .mockResolvedValue(new Map([["acct-1:sec-a", lot()]]));
+
+    const result = await service.calculateHoldingsWithValues(
+      userId,
+      ["acct-1"],
+      "CAD",
+      new Map(),
+      async () => new Map([["sec-a", 100]]),
+    );
+
+    // Not 900 PLN at today's 0.40: unknown, naming the source's pair.
+    expect(result.totalCostBasis).toBe(0);
+    expect(result.missingRatePairs).toContain("PLN->CAD");
+    expect(result.fxComplete).toBe(false);
+  });
+
   it("uses a replayed basis that is known and in the account's currency", async () => {
     const result = await valuation(lot());
 

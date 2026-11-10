@@ -1161,10 +1161,13 @@ export class PortfolioCalculationService {
       }
       if (entry.basisGap === null) {
         usable.set(key, { cost: roundMoney(entry.costBasis), missing: null });
-      } else if (entry.basisGap === "mixed_basis_currency") {
-        // Name the pair that could not be resolved on one of this position's
-        // own dates, in one of its own currencies where that tells them
-        // apart, so the reader is told which rate to add.
+      } else {
+        // Unknown in the reporting currency, whatever the gap: a missing rate
+        // on one of its own dates, or a transfer-in whose source lacked one.
+        // Never the account-currency basis at today's rate. Name the pair that
+        // could not be resolved on one of this position's own dates, in one of
+        // its own currencies where that tells them apart, so the reader is
+        // told which rate to add.
         const own = transactions.filter(
           (tx) => `${tx.accountId}:${tx.securityId}` === key,
         );
@@ -1181,6 +1184,7 @@ export class PortfolioCalculationService {
         const gap =
           onItsDates.find((rate) => codes.has(rate.from)) ??
           onItsDates[0] ??
+          unresolved.find((rate) => codes.has(rate.from)) ??
           null;
         usable.set(key, { cost: null, missing: gap });
       }
@@ -2085,10 +2089,15 @@ export class PortfolioCalculationService {
       // A basis the history states is converted the way it was paid, each
       // purchase at its own date (issue #2106); only a holding with no usable
       // history falls back to today's rate, having no dates to convert at.
+      // A foreign account whose history states the basis: the dated figure,
+      // or unknown -- never the account-currency basis at today's rate.
       const datedDefault =
         accountCurrency !== defaultCurrency &&
         historicalCostBasis.has(historicalKey)
-          ? historicalCostBasisDefault.get(historicalKey)
+          ? (historicalCostBasisDefault.get(historicalKey) ?? {
+              cost: null,
+              missing: null,
+            })
           : undefined;
       if (costBasisAccountCurrency === null) {
         // The conversion that failed is holding -> account; record that pair.
