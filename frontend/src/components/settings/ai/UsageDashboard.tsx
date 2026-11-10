@@ -9,7 +9,6 @@ import type {
   EstimatedCostByCurrency,
 } from '@/types/ai';
 import { AI_PROVIDER_LABELS } from '@/types/ai';
-import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -89,7 +88,6 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
   );
   const [selectedPeriod, setSelectedPeriod] = useState<number | undefined>(30);
   const [showInHomeCurrency, setShowInHomeCurrency] = useState(true);
-  const { convert } = useExchangeRates();
   const homeCurrency =
     preferredCurrency(
       usePreferencesStore((state) => state.preferences?.defaultCurrency),
@@ -122,20 +120,24 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
     return false;
   }, [currenciesInUse, homeCurrency]);
 
-  // Format a bucket either as a single converted home-currency amount or as
-  // one line per provider currency.
-  const renderBucket = (bucket: EstimatedCostByCurrency): string => {
+  // Format a bucket either as a single home-currency amount or as one line
+  // per provider currency. The home-currency figure is the server's, each
+  // day's cost at that day's rate, never a period of usage at today's rate
+  // (issue #2106).
+  const renderBucket = (
+    bucket: EstimatedCostByCurrency,
+    inReportingCurrency: number | null | undefined,
+  ): string => {
     if (!hasAnyCost(bucket)) return '-';
     if (showInHomeCurrency || !hasForeignCurrency) {
+      if (!hasForeignCurrency) {
+        const [[currency, amount]] = Object.entries(bucket);
+        return formatCost(amount, currency);
+      }
       // A bucket that cannot be fully converted is reported as unavailable
       // rather than as the sum of the currencies that happened to have rates.
-      let total = 0;
-      for (const [currency, amount] of Object.entries(bucket)) {
-        const converted = convert(amount, currency, homeCurrency);
-        if (converted === null) return '-';
-        total += converted;
-      }
-      return formatCost(total, homeCurrency);
+      if (inReportingCurrency === null || inReportingCurrency === undefined) return '-';
+      return formatCost(inReportingCurrency, usage.reportingCurrency ?? homeCurrency);
     }
     return Object.entries(bucket)
       .filter(([, amount]) => amount > 0)
@@ -143,17 +145,14 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
       .join(' + ');
   };
 
-  const renderLogCost = (
-    cost: number | null,
-    costCurrency: string | null,
-  ): string => {
-    if (cost === null || !costCurrency) return '-';
-    if (showInHomeCurrency) {
-      const converted = convert(cost, costCurrency, homeCurrency);
-      if (converted === null) return '-';
-      return formatCost(converted, homeCurrency);
+  const renderLogCost = (log: AiUsageSummary['recentLogs'][number]): string => {
+    if (log.estimatedCost === null || !log.costCurrency) return '-';
+    if (showInHomeCurrency && log.costCurrency !== homeCurrency) {
+      const converted = log.estimatedCostInReportingCurrency;
+      if (converted === null || converted === undefined) return '-';
+      return formatCost(converted, usage.reportingCurrency ?? homeCurrency);
     }
-    return formatCost(cost, costCurrency);
+    return formatCost(log.estimatedCost, log.costCurrency);
   };
 
   const totalHasCost = hasAnyCost(usage.totalEstimatedCostByCurrency);
@@ -234,7 +233,7 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
         >
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('estCost')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {totalHasCost ? renderBucket(usage.totalEstimatedCostByCurrency) : '-'}
+            {totalHasCost ? renderBucket(usage.totalEstimatedCostByCurrency, usage.totalEstimatedCostInReportingCurrency) : '-'}
           </p>
           {!totalHasCost && (
             <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
@@ -266,7 +265,7 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
                     <td className="py-2 px-2 first:pl-0 last:pr-0 text-right text-gray-600 dark:text-gray-300">{formatNumber(row.requests, 0)}</td>
                     <td className="py-2 px-2 first:pl-0 last:pr-0 text-right text-gray-600 dark:text-gray-300">{formatNumber(row.inputTokens, 0)}</td>
                     <td className="py-2 px-2 first:pl-0 last:pr-0 text-right text-gray-600 dark:text-gray-300">{formatNumber(row.outputTokens, 0)}</td>
-                    <td className="py-2 px-2 first:pl-0 last:pr-0 text-right text-gray-600 dark:text-gray-300">{renderBucket(row.estimatedCostByCurrency)}</td>
+                    <td className="py-2 px-2 first:pl-0 last:pr-0 text-right text-gray-600 dark:text-gray-300">{renderBucket(row.estimatedCostByCurrency, row.estimatedCostInReportingCurrency)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -306,7 +305,7 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
                       {log.durationMs}ms
                     </td>
                     <td className="py-2 px-2 first:pl-0 last:pr-0 text-right text-gray-600 dark:text-gray-300">
-                      {renderLogCost(log.estimatedCost, log.costCurrency)}
+                      {renderLogCost(log)}
                     </td>
                   </tr>
                 ))}

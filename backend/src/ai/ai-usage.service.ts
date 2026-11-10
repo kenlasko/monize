@@ -7,6 +7,13 @@ import { AiUsageSummary, EstimatedCostByCurrency } from "./dto/ai-response.dto";
 import { roundMoney } from "../common/round.util";
 import { withSystemContext } from "../common/db/with-context";
 import { withScopedDb } from "../common/db/scoped-db";
+import { preferredCurrency } from "../common/default-currency.util";
+import {
+  buildRateIndex,
+  convertAtDate,
+  RateIndex,
+} from "../common/time-series/rate-index.util";
+import { UserPreference } from "../users/entities/user-preference.entity";
 
 interface CostRate {
   inputCostPer1M: number | null;
@@ -38,6 +45,19 @@ function computeCost(
       ? (outputTokens / TOKENS_PER_UNIT) * rate.outputCostPer1M
       : 0;
   return roundMoney(inputCost + outputCost);
+}
+
+/** The day a usage row was logged, in UTC, for its rate. */
+const USAGE_DAY_SQL =
+  "TO_CHAR(log.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')";
+
+/** A sum with an unknown part is unknown. */
+function addUnknown(sum: number | null, part: number | null): number | null {
+  return sum === null || part === null ? null : sum + part;
+}
+
+function roundOrNull(value: number | null): number | null {
+  return value === null ? null : roundMoney(value);
 }
 
 function addCostToBucket(
@@ -122,6 +142,63 @@ export class AiUsageService {
     );
   }
 
+  /**
+   * Converts a cost in a provider's currency on a day into the user's
+   * reporting currency at the rate for that day, loading the history the
+   * rows' currencies and days need once. `null` without an admissible rate.
+   */
+  private async reportingCurrencyConverter(
+    userId: string,
+    rows: ReadonlyArray<{
+      provider?: string | null;
+      model?: string | null;
+      day?: string | null;
+    }>,
+    configs: ReadonlyArray<Pick<AiProviderConfig, "costCurrency">>,
+  ): Promise<{
+    currency: string;
+    convert: (
+      cost: number,
+      currency: string,
+      day: string | null | undefined,
+    ) => number | null;
+  }> {
+    const currency = preferredCurrency(
+      await withScopedDb(this.dataSource, (m) =>
+        m.getRepository(UserPreference).findOne({ where: { userId } }),
+      ),
+    );
+    const foreign = new Set(
+      configs
+        .map((cfg) => cfg.costCurrency || "USD")
+        .filter((code) => code !== currency),
+    );
+    const days = rows
+      .map((row) => row.day)
+      .filter((day): day is string => Boolean(day))
+      .sort();
+    const index: RateIndex =
+      foreign.size === 0 || days.length === 0
+        ? new Map()
+        : await withScopedDb(this.dataSource, (m) =>
+            buildRateIndex(
+              (sql, params) => m.query(sql, params),
+              foreign,
+              currency,
+              days[0],
+              days[days.length - 1],
+            ),
+          );
+    return {
+      currency,
+      convert: (cost, from, day) => {
+        if (from === currency || cost === 0) return cost;
+        if (!day) return null;
+        return convertAtDate(cost, from, currency, day, index, this.logger);
+      },
+    };
+  }
+
   async getUsageSummary(
     userId: string,
     days?: number,
@@ -137,6 +214,7 @@ export class AiUsageService {
             .addSelect("COUNT(*)", "requests")
             .addSelect("SUM(log.input_tokens)", "inputTokens")
             .addSelect("SUM(log.output_tokens)", "outputTokens")
+            .addSelect(USAGE_DAY_SQL, "day")
             .where("log.user_id = :userId", { userId })
             .andWhere(
               days
@@ -146,6 +224,7 @@ export class AiUsageService {
             )
             .groupBy("log.provider")
             .addGroupBy("log.model")
+            .addGroupBy(USAGE_DAY_SQL)
             .getRawMany(),
         ),
 
@@ -158,6 +237,7 @@ export class AiUsageService {
             .addSelect("COUNT(*)", "requests")
             .addSelect("SUM(log.input_tokens)", "inputTokens")
             .addSelect("SUM(log.output_tokens)", "outputTokens")
+            .addSelect(USAGE_DAY_SQL, "day")
             .where("log.user_id = :userId", { userId })
             .andWhere(
               days
@@ -168,6 +248,7 @@ export class AiUsageService {
             .groupBy("log.feature")
             .addGroupBy("log.provider")
             .addGroupBy("log.model")
+            .addGroupBy(USAGE_DAY_SQL)
             .getRawMany(),
         ),
 
@@ -212,6 +293,23 @@ export class AiUsageService {
         ),
       ]);
 
+    // Each day's cost in the reader's reporting currency at that day's rate,
+    // never a month of usage at today's (issue #2106). A cost with no
+    // admissible rate leaves its figure unknown.
+    const toReporting = await this.reportingCurrencyConverter(
+      userId,
+      [
+        ...(byProviderModel as Record<string, string | null>[]),
+        ...(byFeatureModel as Record<string, string | null>[]),
+        ...recentLogs.map((log) => ({
+          provider: log.provider,
+          model: log.model,
+          day: log.createdAt.toISOString().slice(0, 10),
+        })),
+      ],
+      userConfigs,
+    );
+
     // Build (provider, model) -> rate lookup from the user's configured providers.
     const rateMap = new Map<string, CostRate>();
     for (const cfg of userConfigs) {
@@ -232,6 +330,7 @@ export class AiUsageService {
         inputTokens: number;
         outputTokens: number;
         costs: EstimatedCostByCurrency;
+        reportingCost: number | null;
       }
     >();
 
@@ -252,6 +351,7 @@ export class AiUsageService {
           inputTokens: 0,
           outputTokens: 0,
           costs: {},
+          reportingCost: 0,
         };
         providerAgg.set(provider, existing);
       }
@@ -260,6 +360,10 @@ export class AiUsageService {
       existing.outputTokens += outputTokens;
       if (cost !== null && rate) {
         addCostToBucket(existing.costs, rate.currency, cost);
+        existing.reportingCost = addUnknown(
+          existing.reportingCost,
+          toReporting.convert(cost, rate.currency, row.day),
+        );
       }
     }
 
@@ -272,6 +376,7 @@ export class AiUsageService {
         inputTokens: number;
         outputTokens: number;
         costs: EstimatedCostByCurrency;
+        reportingCost: number | null;
       }
     >();
 
@@ -293,6 +398,7 @@ export class AiUsageService {
           inputTokens: 0,
           outputTokens: 0,
           costs: {},
+          reportingCost: 0,
         };
         featureAgg.set(feature, existing);
       }
@@ -301,15 +407,21 @@ export class AiUsageService {
       existing.outputTokens += outputTokens;
       if (cost !== null && rate) {
         addCostToBucket(existing.costs, rate.currency, cost);
+        existing.reportingCost = addUnknown(
+          existing.reportingCost,
+          toReporting.convert(cost, rate.currency, row.day),
+        );
       }
     }
 
     // Sum all provider buckets to produce the totals-by-currency.
     const totalEstimatedCostByCurrency: EstimatedCostByCurrency = {};
+    let totalReportingCost: number | null = 0;
     for (const agg of providerAgg.values()) {
       for (const [currency, amount] of Object.entries(agg.costs)) {
         addCostToBucket(totalEstimatedCostByCurrency, currency, amount);
       }
+      totalReportingCost = addUnknown(totalReportingCost, agg.reportingCost);
     }
 
     return {
@@ -317,12 +429,15 @@ export class AiUsageService {
       totalInputTokens: parseInt(totals.totalInputTokens, 10) || 0,
       totalOutputTokens: parseInt(totals.totalOutputTokens, 10) || 0,
       totalEstimatedCostByCurrency,
+      reportingCurrency: toReporting.currency,
+      totalEstimatedCostInReportingCurrency: roundOrNull(totalReportingCost),
       byProvider: Array.from(providerAgg.values()).map((agg) => ({
         provider: agg.provider,
         requests: agg.requests,
         inputTokens: agg.inputTokens,
         outputTokens: agg.outputTokens,
         estimatedCostByCurrency: agg.costs,
+        estimatedCostInReportingCurrency: roundOrNull(agg.reportingCost),
       })),
       byFeature: Array.from(featureAgg.values()).map((agg) => ({
         feature: agg.feature,
@@ -330,6 +445,7 @@ export class AiUsageService {
         inputTokens: agg.inputTokens,
         outputTokens: agg.outputTokens,
         estimatedCostByCurrency: agg.costs,
+        estimatedCostInReportingCurrency: roundOrNull(agg.reportingCost),
       })),
       recentLogs: recentLogs.map((log) => {
         const rate = rateMap.get(rateKey(log.provider, log.model));
@@ -344,6 +460,16 @@ export class AiUsageService {
           durationMs: log.durationMs,
           estimatedCost: cost,
           costCurrency: cost !== null && rate ? rate.currency : null,
+          estimatedCostInReportingCurrency:
+            cost !== null && rate
+              ? roundOrNull(
+                  toReporting.convert(
+                    cost,
+                    rate.currency,
+                    log.createdAt.toISOString().slice(0, 10),
+                  ),
+                )
+              : null,
           createdAt: log.createdAt.toISOString(),
         };
       }),

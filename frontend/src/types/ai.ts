@@ -101,12 +101,20 @@ export interface AiUsageSummary {
   totalInputTokens: number;
   totalOutputTokens: number;
   totalEstimatedCostByCurrency: EstimatedCostByCurrency;
+  /** The reporting currency every `*InReportingCurrency` figure is in. */
+  reportingCurrency?: string;
+  /**
+   * The costs converted by the server, each day's at that day's rate (issue
+   * #2106); null while a cost has no admissible rate.
+   */
+  totalEstimatedCostInReportingCurrency?: number | null;
   byProvider: Array<{
     provider: string;
     requests: number;
     inputTokens: number;
     outputTokens: number;
     estimatedCostByCurrency: EstimatedCostByCurrency;
+    estimatedCostInReportingCurrency?: number | null;
   }>;
   byFeature: Array<{
     feature: string;
@@ -114,6 +122,7 @@ export interface AiUsageSummary {
     inputTokens: number;
     outputTokens: number;
     estimatedCostByCurrency: EstimatedCostByCurrency;
+    estimatedCostInReportingCurrency?: number | null;
   }>;
   recentLogs: Array<{
     id: string;
@@ -125,6 +134,7 @@ export interface AiUsageSummary {
     durationMs: number;
     estimatedCost: number | null;
     costCurrency: string | null;
+    estimatedCostInReportingCurrency?: number | null;
     createdAt: string;
   }>;
 }

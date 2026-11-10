@@ -2,27 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
 import type { AiUsageSummary, AiProviderConfig } from '@/types/ai';
 
-// Mock the stores/hooks the dashboard reads for currency conversion.
-// By default the user's home currency is USD and conversion is 1:1, so the
-// tests that don't care about conversion behave the same as before.
+// Mock the store the dashboard reads the home currency from. By default the
+// user's home currency is USD; converted figures come from the server.
 let mockHomeCurrency = 'USD';
 vi.mock('@/store/preferencesStore', () => ({
   usePreferencesStore: (selector: (state: unknown) => unknown) =>
     selector({ preferences: { defaultCurrency: mockHomeCurrency } }),
 }));
 
-vi.mock('@/hooks/useExchangeRates', () => ({
-  useExchangeRates: () => ({
-    convert: (amount: number, from: string, to?: string) => {
-      if (!to || from === to) return amount;
-      // Simple fake rate: EUR->USD = 1.1.
-      if (from === 'EUR' && to === 'USD') return amount * 1.1;
-      if (from === 'USD' && to === 'EUR') return amount / 1.1;
-      return amount;
-    },
-    defaultCurrency: mockHomeCurrency,
-  }),
-}));
 
 // Import after mocks are registered.
 import { UsageDashboard } from './UsageDashboard';
@@ -205,10 +192,12 @@ describe('UsageDashboard', () => {
     expect(screen.queryByText(/In provider currency/i)).not.toBeInTheDocument();
   });
 
-  it('shows the currency toggle and switches between home and provider currency', () => {
+  it("shows the server's per-day conversion, and a dash where it found no rate (issue #2106)", () => {
     const foreignUsage: AiUsageSummary = {
       ...populatedUsage,
       totalEstimatedCostByCurrency: { EUR: 10 },
+      reportingCurrency: 'USD',
+      totalEstimatedCostInReportingCurrency: null,
       byProvider: [
         {
           provider: 'anthropic',
@@ -216,13 +205,40 @@ describe('UsageDashboard', () => {
           inputTokens: 3500,
           outputTokens: 1800,
           estimatedCostByCurrency: { EUR: 10 },
+          estimatedCostInReportingCurrency: 12.34,
         },
       ],
       recentLogs: [],
     };
     render(<UsageDashboard usage={foreignUsage} configs={noConfigs} onPeriodChange={onPeriodChange} />);
 
-    // Home currency (USD) mode is the default: EUR 10 -> USD 11 via the fake rate.
+    // The row reads the server's 12.34, never a conversion of its own.
+    expect(screen.getAllByText('$12.34').length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText('$11.00')).not.toBeInTheDocument();
+  });
+
+  it('shows the currency toggle and switches between home and provider currency', () => {
+    const foreignUsage: AiUsageSummary = {
+      ...populatedUsage,
+      totalEstimatedCostByCurrency: { EUR: 10 },
+      // The server's conversion, each day's cost at that day's rate.
+      reportingCurrency: 'USD',
+      totalEstimatedCostInReportingCurrency: 11,
+      byProvider: [
+        {
+          provider: 'anthropic',
+          requests: 30,
+          inputTokens: 3500,
+          outputTokens: 1800,
+          estimatedCostByCurrency: { EUR: 10 },
+          estimatedCostInReportingCurrency: 11,
+        },
+      ],
+      recentLogs: [],
+    };
+    render(<UsageDashboard usage={foreignUsage} configs={noConfigs} onPeriodChange={onPeriodChange} />);
+
+    // Home currency (USD) mode is the default: the server's USD 11 for EUR 10.
     // Appears in both the summary card and the byProvider row.
     expect(screen.getAllByText('$11.00').length).toBeGreaterThanOrEqual(1);
 
