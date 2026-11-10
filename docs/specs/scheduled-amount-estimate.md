@@ -168,7 +168,9 @@ occurrence follows the estimate is `occurrenceFollowsEstimate` on each side.
 the form's preview, through the same service.
 
 The history spans every one of the owner's accounts, so a delegate (an acting
-session) is refused the preview, and `findAll` withholds `paymentCount` and
+session) is refused the preview, cannot turn the estimate on or off (the key is
+dropped from its create or update) and cannot change an estimated bill's payee
+or category (`estimateBasisOwnerOnly`), and `findAll` withholds `paymentCount` and
 `latestPaymentDate` from one (`null`): the delegate sees the bill's figures, as
 they would a typed amount, but not when or how often the owner paid. The AI
 forecast prompt and the bill reminder email label an estimated amount, and an
@@ -179,8 +181,13 @@ status). The `list_upcoming_bills` descriptions, assistant and MCP, describe
 Client: `estimatedOccurrenceAmount` (`frontend/src/lib/scheduled-effective-amount.ts`)
 is the one reader of `amountEstimate`; the cash-flow forecast, the Post dialog,
 the occurrence editor and the occurrence picker read the month's estimate
-through it, and the bills list and the forecast tooltip label the figure as an
-estimate.
+through it, and the bills list, the forecast tooltip, the dashboard's
+Upcoming Bills and the Upcoming Bills report label the figure as an estimate.
+The account balance forecast reports an unknown estimate as `unknownEstimate`,
+naming the pair when a payment's currency has no rate. The Bills page's monthly
+totals use the estimate's typical month over the year ahead
+(`estimatedTypicalAmount`). The bills CSV export carries the figure without a
+marker.
 
 ## 8. Test matrix
 

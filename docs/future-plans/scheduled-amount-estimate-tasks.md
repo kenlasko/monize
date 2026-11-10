@@ -32,4 +32,4 @@ when its gate passes and is quoted in the commit or PR.
 
 ## Phase 3 -- translations
 
-- [ ] Every locale, backend and frontend, as the final commit.
+- [x] Every locale, backend and frontend, as the final commit.
