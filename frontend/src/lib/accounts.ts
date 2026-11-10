@@ -21,6 +21,7 @@ import {
   PreviewLoanPaymentSetupData,
   PreviewLoanPaymentSetupResponse,
   AccountBalancesAsOfResponse,
+  DailyAccountBalance,
   DailyBalanceTotalsResponse,
   LoanSettlementRow,
   PaymentMatching,
@@ -224,7 +225,7 @@ export const accountsApi = {
     // of the backend's default one-year window. Only honoured when no
     // startDate is given.
     allTime?: boolean;
-  }): Promise<Array<{ date: string; balance: number; accountId: string; currencyCode: string }>> => {
+  }): Promise<DailyAccountBalance[]> => {
     // Dedupe so multiple components requesting the same range/accounts share
     // a single network call. Daily balances roll forward as transactions
     // change, so cache TTL is short.
@@ -232,7 +233,7 @@ export const accountsApi = {
     return dedupe(
       cacheKey,
       async () => {
-        const response = await apiClient.get<Array<{ date: string; balance: number; accountId: string; currencyCode: string }>>(
+        const response = await apiClient.get<DailyAccountBalance[]>(
           '/accounts/daily-balances',
           { params },
         );

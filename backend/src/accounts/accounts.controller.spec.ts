@@ -80,6 +80,10 @@ describe("AccountsController", () => {
 
     mockDailyBalanceTotals = {
       getDailyBalanceTotals: jest.fn(),
+      // The rows as the service converted them; here, the rows themselves.
+      withReportingCurrency: jest.fn(
+        async (_userId: string, rows: unknown) => rows,
+      ),
     };
 
     mockBalancesReport = {
@@ -981,6 +985,17 @@ describe("AccountsController", () => {
         ["acc-1", "acc-2"],
         false,
         [],
+      );
+    });
+
+    it("converts each row into the reporting currency at its own date (issue #2106)", async () => {
+      mockAccountsService.getDailyBalances!.mockResolvedValue("balances");
+
+      await controller.getDailyBalances(mockReq, "2025-01-01", "2025-12-31");
+
+      expect(mockDailyBalanceTotals.withReportingCurrency).toHaveBeenCalledWith(
+        "user-1",
+        "balances",
       );
     });
 

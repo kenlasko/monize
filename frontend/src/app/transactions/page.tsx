@@ -56,7 +56,7 @@ import {
 import { useHiddenColumns } from '@/hooks/useHiddenColumns';
 import { useRegisterPhoneCard } from '@/hooks/useRegisterPhoneCard';
 import { BulkSelectionBanner } from '@/components/transactions/BulkSelectionBanner';
-import { Account, isLiabilityAccountType } from '@/types/account';
+import { Account, DailyAccountBalance, isLiabilityAccountType } from '@/types/account';
 import { Institution } from '@/types/institution';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
@@ -67,7 +67,6 @@ import { ChartCollapseButton, CollapsedChartStrip } from '@/components/transacti
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useAuthStore } from '@/store/authStore';
-import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useCommandPaletteStore, type NewTransactionPayee } from '@/store/commandPaletteStore';
 import { useSwipeToPaginate } from '@/hooks/useSwipeToPaginate';
@@ -138,7 +137,6 @@ function TransactionsContent() {
   const defaultCurrency = preferredCurrency(
     usePreferencesStore((s) => s.preferences?.defaultCurrency),
   );
-  const { convertToDefault } = useExchangeRates();
   // An acting delegate never adds a warranty: every warranty write is the
   // owner's.
   const actingAsDelegate = useAuthStore((s) => s.actingAsUserId) !== null;
@@ -161,7 +159,7 @@ function TransactionsContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
-  const [dailyBalances, setDailyBalances] = useState<Array<{ date: string; balance: number; accountId: string; currencyCode: string }>>([]);
+  const [dailyBalances, setDailyBalances] = useState<DailyAccountBalance[]>([]);
   const [monthlyTotals, setMonthlyTotals] = useState<MonthlyTotal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { showForm, editingItem: editingTransaction, openCreate, openEdit, close, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Transaction>();
@@ -467,7 +465,7 @@ function TransactionsContent() {
             }).catch(() => [] as MonthlyTotal[])
           : accountsApi.getDailyBalances(
               Object.keys(chartParams).length > 0 ? chartParams : undefined,
-            ).catch(() => [] as Array<{ date: string; balance: number; accountId: string; currencyCode: string }>);
+            ).catch(() => [] as DailyAccountBalance[]);
 
         const requestedSearch = filters.filterSearch;
         const [transactionsResponse, chartResult] = await Promise.all([
@@ -944,7 +942,9 @@ function TransactionsContent() {
 
     const currencies = new Set(dailyBalances.map((r) => r.currencyCode));
     const isSingleCurrency = currencies.size === 1;
-    const displayCurrency = isSingleCurrency ? [...currencies][0] : defaultCurrency;
+    const displayCurrency = isSingleCurrency
+      ? [...currencies][0]
+      : (dailyBalances[0].convertedCurrency ?? defaultCurrency);
     // Unconverted, the one currency's money precision (a coin's eight);
     // converted into the reporting currency, the fiat four.
     const chartMoneyDecimals = isSingleCurrency
@@ -955,11 +955,11 @@ function TransactionsContent() {
     // smaller one. `null` marks the gap so the line breaks there rather than
     // drawing a straight segment through it (`connectNulls={false}`).
     const byDate = new Map<string, number | null>();
-    const latestByAccount = new Map<string, { date: string; balance: number; currencyCode: string }>();
+    const latestByAccount = new Map<string, { date: string; balance: number; convertedBalance: number | null }>();
     for (const row of dailyBalances) {
-      const amount = isSingleCurrency
-        ? row.balance
-        : convertToDefault(row.balance, row.currencyCode);
+      // Several currencies are summed in the server's conversion at each day's
+      // own rate; today's rate would redraw every past day (issue #2106).
+      const amount = isSingleCurrency ? row.balance : (row.convertedBalance ?? null);
       const running = byDate.get(row.date);
       byDate.set(
         row.date,
@@ -970,7 +970,11 @@ function TransactionsContent() {
 
       const existing = latestByAccount.get(row.accountId);
       if (!existing || existing.date < row.date) {
-        latestByAccount.set(row.accountId, { date: row.date, balance: row.balance, currencyCode: row.currencyCode });
+        latestByAccount.set(row.accountId, {
+          date: row.date,
+          balance: row.balance,
+          convertedBalance: row.convertedBalance ?? null,
+        });
       }
     }
 
@@ -983,9 +987,7 @@ function TransactionsContent() {
       .map(([accountId, info]) => ({
         accountId,
         accountName: accountNameById.get(accountId) ?? 'Unknown',
-        balance: isSingleCurrency
-          ? info.balance
-          : convertToDefault(info.balance, info.currencyCode),
+        balance: isSingleCurrency ? info.balance : info.convertedBalance,
       }))
       // An unconvertible balance cannot be drawn as a bar, so it is left out
       // rather than shown at an arbitrary length.
@@ -998,7 +1000,7 @@ function TransactionsContent() {
 
     return { chartBalances: aggregated, chartCurrency: displayCurrency, accountBalances: perAccount, accountCount: latestByAccount.size };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-runs the read
-  }, [dailyBalances, accounts, defaultCurrency, convertToDefault, registryVersion]);
+  }, [dailyBalances, accounts, defaultCurrency, registryVersion]);
 
   // Label appended to the Monthly Totals download filename so it reflects
   // which category/payee/tag/search the chart is scoped to. When a full list

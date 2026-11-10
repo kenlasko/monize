@@ -83,6 +83,22 @@ export interface DailyBalanceTotalsResponse {
  */
 const FORECAST_CONCURRENCY = 5;
 
+/** One row of `AccountsService.getDailyBalances`. */
+export interface DailyAccountBalance {
+  date: string;
+  balance: number;
+  accountId: string;
+  currencyCode: string;
+}
+
+/** A {@link DailyAccountBalance} with its value in the reporting currency. */
+export interface DailyAccountBalanceConverted extends DailyAccountBalance {
+  /** The reader's reporting currency, which `convertedBalance` is in. */
+  convertedCurrency: string;
+  /** The balance at the day's own rate (today's for a future day), or null. */
+  convertedBalance: number | null;
+}
+
 /** One scoped account, as both halves of the answer need it. */
 interface ScopedAccount {
   id: string;
@@ -262,6 +278,58 @@ export class DailyBalanceTotalsService {
   }
 
   /**
+   * Each per-account daily balance with its value in the reader's reporting
+   * currency beside it, for a reader that totals accounts of several
+   * currencies (the Transactions page's balance line).
+   *
+   * A history day converts at that day's rate and a projected day at today's,
+   * the same rule as {@link getDailyBalanceTotals}. Converting the whole series
+   * at today's rate read a currency's move since a day as a move in the
+   * balance (issue #2106). A row with no admissible rate carries
+   * `convertedBalance: null`, never its own amount.
+   */
+  async withReportingCurrency(
+    userId: string,
+    rows: ReadonlyArray<DailyAccountBalance>,
+  ): Promise<DailyAccountBalanceConverted[]> {
+    if (rows.length === 0) return [];
+    const today = todayYMD();
+    const pref = await withScopedDb(this.dataSource, (m) =>
+      m.getRepository(UserPreference).findOne({ where: { userId } }),
+    );
+    const currencyCode = preferredCurrency(pref);
+    const currencies = new Set(
+      rows.map((r) => r.currencyCode).filter((code) => code !== currencyCode),
+    );
+    const dates = rows.map((r) => r.date).sort();
+    const rateIndex =
+      currencies.size === 0
+        ? new Map()
+        : await this.loadRateIndex(
+            currencies,
+            currencyCode,
+            dates[0],
+            dates[dates.length - 1],
+            today,
+          );
+    return rows.map((row) => ({
+      ...row,
+      convertedCurrency: currencyCode,
+      convertedBalance:
+        row.currencyCode === currencyCode
+          ? row.balance
+          : convertAtDate(
+              row.balance,
+              row.currencyCode,
+              currencyCode,
+              row.date > today ? today : row.date,
+              rateIndex,
+              this.logger,
+            ),
+    }));
+  }
+
+  /**
    * The accounts to total, with the currency each one's balance is in.
    *
    * Resolved explicitly rather than left to `getDailyBalances`'s "no ids means
@@ -313,6 +381,23 @@ export class DailyBalanceTotalsService {
     const currencies = new Set(
       scope.map((a) => a.currencyCode).filter((code) => code !== currencyCode),
     );
+    return this.loadRateIndex(
+      currencies,
+      currencyCode,
+      startDate,
+      endDate,
+      today,
+    );
+  }
+
+  /** {@link loadRates} for an explicit set of currencies. */
+  private loadRateIndex(
+    currencies: Set<string>,
+    currencyCode: string,
+    startDate: string,
+    endDate: string,
+    today: string,
+  ): Promise<RateIndex> {
     const from = startDate < today ? startDate : today;
     const to = endDate > today ? endDate : today;
     return buildRateIndex(
