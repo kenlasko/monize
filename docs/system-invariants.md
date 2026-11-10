@@ -1452,7 +1452,9 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     latest-rate map left in every historical bucket): each
                     report query selects rateBasisColumnsSql's `tx_date` and
                     `own_rate` and groups by them, so a foreign aggregate is
-                    split by day while a reporting-currency one stays whole;
+                    split by day while a reporting-currency one stays whole
+                    (and a group with a day no rate reaches is left out whole,
+                    wholeGroups, counted once in excludedCount);
                     buildConverter takes the row's own rate where it reaches
                     the reporting currency (INV-FX-002), else convertAtDate over
                     one ExchangeRateService.getRateIndex load for the span the
