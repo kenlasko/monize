@@ -11,6 +11,7 @@ import {
   orderTransferOutBeforeIn,
   returnOfCapitalAmount,
 } from "./investment-replay.util";
+import { usableRowRate } from "./investment-row-fx.util";
 
 /**
  * The one fold of a position's cost basis (`docs/specs/realized-gain-basis-and-currency.md`).
@@ -173,10 +174,36 @@ export function replayPositionBasis(
     const target = entry.target;
     if (target === null || rateFor === undefined) return settled;
     if (from === undefined) return null;
-    if (from === target) return settled;
-    if (native !== null && tx.security?.currencyCode === target) return native;
-    const rate = rateFor(from, target, tx.transactionDate);
-    return rate === null ? null : settled * rate;
+    const securityCurrency = tx.security?.currencyCode ?? null;
+    // Into the reporting currency, the row's own rate only where
+    // `usableRowRate` accepts it -- the rule the row factors, net invested and
+    // the transaction summary apply: a stored 1 across two currencies is the
+    // column's default, not a rate anybody struck. The account-currency
+    // replay keeps its recorded behaviour for such legacy rows (A26-M21).
+    const ownRateUsable =
+      targetCurrency === undefined ||
+      native === null ||
+      securityCurrency === null ||
+      usableRowRate(tx.exchangeRate, securityCurrency, from) !== null;
+    if (ownRateUsable && from === target) return settled;
+    if (native !== null && securityCurrency === target) return native;
+    if (ownRateUsable) {
+      const onward = rateFor(from, target, tx.transactionDate);
+      if (onward !== null) return settled * onward;
+    }
+    // No usable own rate, or no onward rate: in the reporting replay, the
+    // market rate for the whole pair on the row's date, as
+    // `investmentRowRateInto` falls back to.
+    if (
+      targetCurrency === undefined ||
+      native === null ||
+      securityCurrency === null ||
+      securityCurrency === from
+    ) {
+      return null;
+    }
+    const market = rateFor(securityCurrency, target, tx.transactionDate);
+    return market === null ? null : native * market;
   };
 
   for (const tx of orderTransferOutBeforeIn(transactions)) {

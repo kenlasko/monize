@@ -2364,6 +2364,35 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
       expect(resolveStoredRate).not.toHaveBeenCalled();
     });
 
+    it("reads a stored 1 across two currencies as no rate in the reporting replay", async () => {
+      // Bought with CAD at the column's default 1 (not a rate anybody struck):
+      // the basis in EUR is the USD it cost at the market's 0.90, as the row
+      // factors read it, not 1,000 "CAD" at 0.60.
+      const { service } = build(
+        [
+          usdBuy({
+            accountCurrency: "CAD",
+            exchangeRate: 1,
+            fundingAccountId: cadChequing,
+          }),
+          cadSell({ accountCurrency: "CAD", exchangeRate: 1.35 }),
+        ],
+        {
+          accountCurrency: "CAD",
+          reportingCurrency: "EUR",
+          rates: { "USD->EUR": 0.9, "CAD->EUR": 0.6 },
+        },
+      );
+
+      const [sale] = await service.calculateRealizedGains(userId);
+
+      expect(sale.inReportingCurrency).toMatchObject({
+        currency: "EUR",
+        costBasis: 900,
+        proceeds: 891,
+      });
+    });
+
     it("states the gain in the reporting currency at each row's own date (issue #2106)", async () => {
       // A USD account read in CAD: the basis is the CAD the buy cost (1,350 at
       // its own 1.35), the proceeds are 1,100 USD at the sale day's 1.40.
