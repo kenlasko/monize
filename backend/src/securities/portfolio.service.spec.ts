@@ -6474,13 +6474,14 @@ describe("PortfolioService", () => {
           unrated: Set<string>,
         ) => (amount: number, currency: string, ts: number) => number;
       };
+    const ts = Date.parse("2026-05-06T13:30:00.000Z");
     const loadedWith = (spot: Array<[string, number]>) => ({
       currency: "CAD",
       fxByCurrency: new Map(),
       spotRate: new Map(spot),
       dailyRateIndex: new Map(),
+      timestamps: [ts],
     });
-    const ts = Date.parse("2026-05-06T13:30:00.000Z");
 
     it("answers null, not 1, so the holding is not valued at its face number", () => {
       const fxAt = privates().makeIntradayFxAt(loadedWith([]));
@@ -6495,6 +6496,14 @@ describe("PortfolioService", () => {
 
       expect(fxAt("USD", ts)).toBe(1.4);
       expect(fxAt("JPY", ts)).toBeNull();
+    });
+
+    it("never prices an earlier session's bar at today's spot (issue #2106)", () => {
+      const fxAt = privates().makeIntradayFxAt(loadedWith([["USD->CAD", 1.4]]));
+      const lastWeek = Date.parse("2026-04-29T13:30:00.000Z");
+
+      // No intraday bar and no stored close for that date: unknown.
+      expect(fxAt("USD", lastWeek)).toBeNull();
     });
 
     it("leaves the holding out of the point and records the currency for the warning", () => {

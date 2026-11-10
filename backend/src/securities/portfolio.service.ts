@@ -2461,7 +2461,8 @@ export class PortfolioService {
    * call owns its cursor state, so the total-value and breakdown views can each
    * walk the (ascending) grid independently. See the original inline notes:
    * live intraday bar at-or-before `ts` wins, else the stored daily close for
-   * that bar's date, else the latest spot.
+   * that bar's date, else -- for a bar of the latest session only -- the
+   * latest spot.
    */
   private makeIntradayFxAt(
     loaded: IntradayLoaded,
@@ -2482,19 +2483,39 @@ export class PortfolioService {
       dailyRateCache.set(memoKey, rate);
       return rate;
     };
+    // The latest spot answers only a bar of the latest session the grid holds
+    // (today's, or the last trading day's over a weekend): a bar from an
+    // earlier day priced at today's rate reads the currency's move since as the
+    // portfolio's (issue #2106), so with no intraday bar and no stored close
+    // for its date it is unknown.
+    const lastTs = loaded.timestamps.length
+      ? Math.max(...loaded.timestamps)
+      : Date.now();
+    const latestSession = formatDateYMD(new Date(lastTs));
+    const inLatestSession = (ts: number) =>
+      formatDateYMD(new Date(ts)) === latestSession;
     // `null` means "no rate for this pair", never 1. Rate 1 is returned only
     // when the currency already IS the display currency.
     return (currency: string, ts: number): number | null => {
       if (currency === display) return 1;
       const fx = loaded.fxByCurrency.get(currency);
-      if (!fx) return loaded.spotRate.get(`${currency}->${display}`) ?? null;
+      if (!fx) {
+        return (
+          dailyFxAt(currency, ts) ??
+          (inLatestSession(ts)
+            ? (loaded.spotRate.get(`${currency}->${display}`) ?? null)
+            : null)
+        );
+      }
       if (fx.times.length > 0) {
         let c = cursors.get(currency) ?? -1;
         while (c + 1 < fx.times.length && fx.times[c + 1] <= ts) c++;
         cursors.set(currency, c);
         if (c >= 0) return fx.rates[c];
       }
-      return dailyFxAt(currency, ts) ?? fx.latest;
+      return (
+        dailyFxAt(currency, ts) ?? (inLatestSession(ts) ? fx.latest : null)
+      );
     };
   }
 
