@@ -55,7 +55,10 @@
     "legendAriaLabel": "Linie prognozy",
     "tooltipTransactionForAccount": "{name} ({account})",
     "unavailableMissingRates": "Tej prognozy nie można pokazać w {displayCurrency}: brak kursu wymiany dla {currencies}, a prognozowane saldo opiera się na każdym wcześniejszym dniu. Dodaj kurs lub wybierz konto jednowalutowe.",
-    "untitledTransaction": "Transakcja"
+    "untitledTransaction": "Transakcja",
+    "tooltipEstimated": "(szacowane)",
+    "unavailableUnknownEstimates": "Tej prognozy nie można jeszcze pokazać: szacowana kwota jednego z rachunków jest nieznana, a prognozowane saldo opiera się na każdym wcześniejszym dniu. Wprowadź kwotę tego wystąpienia albo wyłącz Szacuj w rachunku.",
+    "unknownEstimateItem": "{name}: {reason}"
   },
   "calendar": {
     "days": {

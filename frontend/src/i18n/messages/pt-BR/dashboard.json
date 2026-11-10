@@ -78,7 +78,8 @@
     "viewCalendar": "Calendário",
     "previousMonth": "Mês anterior",
     "nextMonth": "Próximo mês",
-    "emptyAll": "Não há contas, depósitos ou transferências ativas agendadas."
+    "emptyAll": "Não há contas, depósitos ou transferências ativas agendadas.",
+    "estimated": "Estimado"
   },
   "cashFlowForecast": {
     "title": "Previsão de fluxo de caixa",

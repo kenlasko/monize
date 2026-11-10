@@ -78,7 +78,8 @@
     "viewCalendar": "Kalender",
     "previousMonth": "Vorheriger Monat",
     "nextMonth": "Nächster Monat",
-    "emptyAll": "Keine aktiven Rechnungen, Einzahlungen oder Überweisungen geplant."
+    "emptyAll": "Keine aktiven Rechnungen, Einzahlungen oder Überweisungen geplant.",
+    "estimated": "Geschätzt"
   },
   "cashFlowForecast": {
     "title": "Cashflow-Prognose",

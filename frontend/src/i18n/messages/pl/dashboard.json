@@ -78,7 +78,8 @@
     "viewCalendar": "Kalendarz",
     "previousMonth": "Poprzedni miesiąc",
     "nextMonth": "Następny miesiąc",
-    "emptyAll": "Brak zaplanowanych aktywnych rachunków, wpłat lub przelewów."
+    "emptyAll": "Brak zaplanowanych aktywnych rachunków, wpłat lub przelewów.",
+    "estimated": "Szacowane"
   },
   "cashFlowForecast": {
     "title": "Prognoza przepływów pieniężnych",

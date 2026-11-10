@@ -44,6 +44,8 @@
     "missingRatePair": "{name} : aucun taux de change n'est disponible de {from} vers {to}, le montant que cette échéance enregistrera est donc inconnu.",
     "missingRate": "{name} : le taux de change de règlement de cette échéance n'est pas disponible, le montant est donc inconnu.",
     "crossCurrencyTransfer": "{name} : un virement arrivant d'un compte en {from} alors que ce compte est en {to}. Le montant reçu ici est fixé lors de l'enregistrement du virement et ne peut donc pas être projeté à l'avance.",
+    "unknownEstimate": "{name} : le montant estimé ne peut pas encore être calculé, faute de paiements à partir desquels l'estimer. Saisissez le montant de cette occurrence, ou enregistrez un paiement.",
+    "unknownEstimatePair": "{name} : un paiement utilisé par l'estimation est en {from}, et aucun taux de change de {from} vers {to} n'est disponible, le montant estimé est donc inconnu.",
     "howToFix": "Pour corriger un taux manquant : ouvrez Devises et actualisez les taux, ou vérifiez que le titre et son compte de règlement portent bien les devises attendues."
   }
 }

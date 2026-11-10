@@ -63,7 +63,8 @@
       "skipFailed": "Không thể bỏ qua lần xuất hiện",
       "deleteFailed": "Không thể xóa"
     },
-    "foreignAmountTitle": "Số tiền người nhận tính phí, bằng đơn vị tiền tệ của họ"
+    "foreignAmountTitle": "Số tiền người nhận tính phí, bằng đơn vị tiền tệ của họ",
+    "estimatedLabel": "Ước tính"
   },
   "filters": {
     "label": "Bộ lọc",
@@ -113,7 +114,8 @@
       "totalAmountRequired": "Cần có tổng số tiền",
       "splitsMinimum": "Giao tác chia cần ít nhất 2 phần",
       "splitsTotal": "Tổng số tiền các phần phải bằng số tiền giao tác",
-      "fxRateUnavailable": "Không có tỷ giá từ {from} sang {to} vào ngày này."
+      "fxRateUnavailable": "Không có tỷ giá từ {from} sang {to} vào ngày này.",
+      "estimateUnknown": "Không biết số tiền ước tính của lần này. Hãy nhập số tiền để ghi."
     },
     "latestPlaceholder": "Mới nhất: {price}",
     "descriptionPlaceholder": "Mô tả...",
@@ -126,7 +128,8 @@
       "noRateWarning": "Không tìm thấy tỷ giá từ {from} sang {to} vào {date}. Hãy chọn ngày khác, hoặc làm mới tỷ giá.",
       "feeCaption": "Bao gồm phí giao dịch nước ngoài {percent}% ({fee}).",
       "totalInCurrency": "Tổng bằng {currency}"
-    }
+    },
+    "estimatedHint": "Số tiền này là ước tính; hãy đổi thành số bạn thực sự đã trả. {detail}"
   },
   "occurrencePicker": {
     "title": "Chọn ngày xuất hiện",
@@ -137,7 +140,9 @@
     "amountChange": "Số tiền: {amount}",
     "categoryChange": "Danh mục: {category}",
     "noteChange": "Ghi chú: {note}",
-    "splitModified": "Phần chia đã được sửa"
+    "splitModified": "Phần chia đã được sửa",
+    "estimatedAmount": "Ước tính: {amount}",
+    "estimateUnknown": "Không rõ ước tính"
   },
   "loanOccurrence": {
     "loading": "Đang tính khoản thanh toán của từng kỳ.",
@@ -197,7 +202,8 @@
       "quantityRequired": "Số lượng phải lớn hơn không",
       "priceRequired": "Giá phải lớn hơn không",
       "totalAmountRequired": "Cần có tổng số tiền"
-    }
+    },
+    "estimatedHint": "Số tiền này là ước tính cho lần này. Giữ nguyên thì lần này sẽ tiếp tục theo ước tính khi có các khoản thanh toán mới. {detail}"
   },
   "form": {
     "tabs": {
@@ -302,14 +308,19 @@
       "quantityRequired": "Số lượng phải lớn hơn không",
       "priceRequired": "Giá phải lớn hơn không",
       "totalAmountRequired": "Tổng số tiền là bắt buộc cho hành động này",
-      "fxRateRequired": "Hãy nhập số tiền bằng đơn vị tiền tệ đã chọn trước khi lưu. Hiện chưa có tỷ giá."
+      "fxRateRequired": "Hãy nhập số tiền bằng đơn vị tiền tệ đã chọn trước khi lưu. Hiện chưa có tỷ giá.",
+      "estimateNeedsPayeeAndCategory": "Chọn người nhận và danh mục để ước tính số tiền."
     },
     "fx": {
       "amountInCurrency": "Số tiền bằng {currency}",
       "estimateCaption": "Khoảng {total} theo tỷ giá 1 {from} = {rate} {to}.",
       "noRateWarning": "Không tìm thấy tỷ giá từ {from} sang {to}. Hãy chọn đơn vị tiền tệ khác, hoặc nhập số tiền bằng {to}.",
       "feeCaption": "Bao gồm phí giao dịch nước ngoài {percent}% ({fee})."
-    }
+    },
+    "estimateLabel": "Ước tính",
+    "estimateTooltip": "Tính số tiền của mỗi lần từ các khoản thanh toán trong 24 tháng qua cho người nhận này thuộc danh mục này, theo từng tháng, để hóa đơn tốn nhiều hơn vào một số tháng được dự báo như vậy. Bạn vẫn có thể thay đổi bất kỳ lần nào và xác nhận số tiền khi ghi.",
+    "estimatedAmountNote": "Tự động tính từ lịch sử thanh toán. {detail}",
+    "autoPostDisabledEstimate": "Số tiền ước tính được xác nhận khi bạn ghi, nên không được ghi tự động."
   },
   "postTransaction": {
     "minSplits": "Giao tác chia cần ít nhất 2 phần",
@@ -333,5 +344,16 @@
   "validation": {
     "nameRequired": "Tên là bắt buộc",
     "dueDateRequired": "Ngày đến hạn là bắt buộc"
+  },
+  "estimate": {
+    "thePayee": "người nhận này",
+    "theCategory": "danh mục này",
+    "basis": "Ước tính từ {count, plural, other {# khoản thanh toán}}, lần gần nhất vào {date}.",
+    "basisWithGrowth": "Ước tính từ {count, plural, other {# khoản thanh toán}}, lần gần nhất vào {date}, với mức thay đổi {growth} so với cùng kỳ năm trước.",
+    "basisWithheld": "Ước tính từ lịch sử thanh toán của người nhận và danh mục.",
+    "noHistory": "Không có khoản thanh toán nào cho {payee} trong {category} trong {months} tháng qua, nên chưa biết số tiền. Hãy nhập số tiền của mỗi lần, hoặc ghi một khoản thanh toán.",
+    "missingRate": "Không có tỷ giá từ {from} sang {to} để quy đổi một khoản thanh toán trước đây, nên chưa biết số tiền. Hãy thêm tỷ giá ở trang Tiền tệ.",
+    "noBasis": "Chọn người nhận và danh mục để ước tính số tiền từ lịch sử thanh toán của chúng.",
+    "pending": "Số tiền được tính từ lịch sử thanh toán của người nhận và danh mục."
   }
 }

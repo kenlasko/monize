@@ -600,7 +600,12 @@
     "overrideNotFound": "Substituição com ID {{ overrideId }} não encontrada",
     "updateSplitOverrideRequiresAmount": "O valor é obrigatório para substituição de divisão",
     "dateMustBeYMD": "date deve estar no formato YYYY-MM-DD",
-    "loanLedgerUnreadable": "Não foi possível calcular este pagamento do empréstimo porque não foi possível ler o saldo do seu livro-razão. Tente novamente."
+    "loanLedgerUnreadable": "Não foi possível calcular este pagamento do empréstimo porque não foi possível ler o saldo do seu livro-razão. Tente novamente.",
+    "estimateRequiresPlain": "Um valor estimado só está disponível para uma transação de categoria única na moeda da conta, não para uma divisão, uma transferência, um investimento ou um valor em moeda estrangeira",
+    "estimateNoAutoPost": "Uma transação agendada com um valor estimado não pode ser lançada automaticamente",
+    "estimateRequiresPayeeAndCategory": "Um valor estimado precisa de um favorecido e de uma categoria para corresponder ao histórico de pagamentos",
+    "estimateUnknown": "O valor estimado desta ocorrência é desconhecido. Informe o valor para lançá-la.",
+    "estimateBasisOwnerOnly": "Somente o proprietário pode alterar o favorecido ou a categoria de uma conta com valor estimado"
   },
   "bonds": {
     "securityNotLinked": "Ativo {{ securityId }} não encontrado ou não vinculado a um programa de títulos",

@@ -44,6 +44,8 @@
     "missingRatePair": "{name}: não há taxa de câmbio disponível de {from} para {to}, pelo que o valor que esta ocorrência vai registar é desconhecido.",
     "missingRate": "{name}: a taxa de câmbio com que esta ocorrência é liquidada não está disponível, pelo que o valor é desconhecido.",
     "crossCurrencyTransfer": "{name}: uma transferência que chega de uma conta em {from} enquanto esta conta está em {to}. O valor que entra aqui é definido no momento do registo, pelo que não pode ser projetado antecipadamente.",
+    "unknownEstimate": "{name}: o montante estimado ainda não pode ser calculado, porque não há pagamentos a partir dos quais o estimar. Introduza o montante desta ocorrência ou registe um pagamento.",
+    "unknownEstimatePair": "{name}: um pagamento usado pela estimativa está em {from} e não há taxa de câmbio de {from} para {to}, por isso o montante estimado é desconhecido.",
     "howToFix": "Para corrigir uma taxa em falta: abra Moedas e atualize as taxas, ou verifique se o título e a sua conta de liquidação têm as moedas que espera."
   }
 }

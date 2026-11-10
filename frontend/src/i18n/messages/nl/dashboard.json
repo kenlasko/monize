@@ -78,7 +78,8 @@
     "viewCalendar": "Kalender",
     "previousMonth": "Vorige maand",
     "nextMonth": "Volgende maand",
-    "emptyAll": "Geen actieve rekeningen, stortingen of overboekingen gepland."
+    "emptyAll": "Geen actieve rekeningen, stortingen of overboekingen gepland.",
+    "estimated": "Geschat"
   },
   "cashFlowForecast": {
     "title": "Kasstroomprognose",

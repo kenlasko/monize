@@ -600,7 +600,12 @@
     "overrideNotFound": "未找到 ID 为 {{ overrideId }} 的覆盖",
     "updateSplitOverrideRequiresAmount": "拆分覆盖需要金额",
     "dateMustBeYMD": "date 必须为 YYYY-MM-DD 格式",
-    "loanLedgerUnreadable": "无法计算此贷款还款，因为无法读取其账簿余额。请重试。"
+    "loanLedgerUnreadable": "无法计算此贷款还款，因为无法读取其账簿余额。请重试。",
+    "estimateRequiresPlain": "估算金额仅适用于以账户币种记账的单一类别交易，不适用于拆分、转账、投资或外币金额",
+    "estimateNoAutoPost": "金额为估算值的计划交易不能自动入账",
+    "estimateRequiresPayeeAndCategory": "估算金额需要收款方和类别，以便匹配付款记录",
+    "estimateUnknown": "此次发生的估算金额未知。请输入金额后再入账。",
+    "estimateBasisOwnerOnly": "只有所有者可以更改金额为估算值的账单的收款方或类别"
   },
   "bonds": {
     "securityNotLinked": "未找到证券 {{ securityId }}，或该证券未关联到债券计划",

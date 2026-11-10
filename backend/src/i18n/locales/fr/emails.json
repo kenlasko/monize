@@ -20,6 +20,8 @@
     "typeExpense": "Dépense",
     "typeUnknown": "Sens inconnu",
     "amountUnavailable": "Montant non disponible",
+    "estimated": "Estimé",
+    "estimateUnknown": "Estimation inconnue : saisissez le montant lors de l'enregistrement",
     "button": "Voir les Factures &amp; Dépôts"
   },
   "mortgageReminder": {

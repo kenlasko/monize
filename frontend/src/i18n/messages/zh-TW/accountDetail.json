@@ -44,6 +44,8 @@
     "missingRatePair": "{name}：找不到 {from} 兌 {to} 的匯率，因此這筆到期項目將記錄的金額未知。",
     "missingRate": "{name}：找不到這筆到期項目的結算匯率，因此金額未知。",
     "crossCurrencyTransfer": "{name}：本帳戶為 {to}，而這是一筆來自 {from} 帳戶的轉帳。入帳金額在轉帳記帳時才確定，因此無法提前預測。",
+    "unknownEstimate": "{name}：由於沒有可用於估算的付款，暫時無法計算估算金額。請輸入這次發生的金額，或記錄一筆付款。",
+    "unknownEstimatePair": "{name}：估算所用的一筆付款以 {from} 計價，且沒有從 {from} 到 {to} 的匯率，因此估算金額未知。",
     "howToFix": "缺少匯率時的處理：開啟「貨幣」頁面重新整理匯率，或檢查該證券及其結算帳戶的幣別是否符合預期。"
   }
 }

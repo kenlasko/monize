@@ -20,6 +20,8 @@
     "typeExpense": "Gasto",
     "typeUnknown": "Dirección desconocida",
     "amountUnavailable": "Importe no disponible",
+    "estimated": "Estimado",
+    "estimateUnknown": "Estimación desconocida: introduzca el importe al registrarla",
     "button": "Ver Facturas &amp; Depósitos"
   },
   "mortgageReminder": {

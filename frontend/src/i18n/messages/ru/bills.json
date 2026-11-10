@@ -55,7 +55,10 @@
     "legendAriaLabel": "Линии прогноза",
     "tooltipTransactionForAccount": "{name} ({account})",
     "unavailableMissingRates": "Этот прогноз нельзя показать в {displayCurrency}: нет курса обмена для {currencies}, а прогнозируемый баланс опирается на каждый предыдущий день. Добавьте курс или выберите счёт с одной валютой.",
-    "untitledTransaction": "Проводка"
+    "untitledTransaction": "Проводка",
+    "tooltipEstimated": "(оценка)",
+    "unavailableUnknownEstimates": "Этот прогноз пока нельзя показать: оценочная сумма одного из счетов в нём неизвестна, а прогнозный остаток строится на каждом предыдущем дне. Введите сумму этого платежа или отключите «Оценка» у счёта.",
+    "unknownEstimateItem": "{name}: {reason}"
   },
   "calendar": {
     "days": {

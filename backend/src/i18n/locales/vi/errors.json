@@ -600,7 +600,12 @@
     "overrideNotFound": "Không tìm thấy ghi đè với ID {{ overrideId }}",
     "updateSplitOverrideRequiresAmount": "Số tiền là bắt buộc cho ghi đè chia nhỏ",
     "dateMustBeYMD": "date phải có định dạng YYYY-MM-DD",
-    "loanLedgerUnreadable": "Không thể tính khoản thanh toán vay này vì không thể đọc số dư sổ cái của nó. Vui lòng thử lại."
+    "loanLedgerUnreadable": "Không thể tính khoản thanh toán vay này vì không thể đọc số dư sổ cái của nó. Vui lòng thử lại.",
+    "estimateRequiresPlain": "Số tiền ước tính chỉ có cho giao dịch một danh mục bằng đơn vị tiền tệ của tài khoản, không áp dụng cho giao dịch chia, chuyển khoản, đầu tư hoặc số tiền ngoại tệ",
+    "estimateNoAutoPost": "Giao dịch định kỳ có số tiền ước tính không thể được ghi tự động",
+    "estimateRequiresPayeeAndCategory": "Số tiền ước tính cần có người nhận và danh mục để đối chiếu lịch sử thanh toán",
+    "estimateUnknown": "Không biết số tiền ước tính của lần này. Hãy nhập số tiền để ghi.",
+    "estimateBasisOwnerOnly": "Chỉ chủ sở hữu mới có thể đổi người nhận hoặc danh mục của hóa đơn có số tiền ước tính"
   },
   "bonds": {
     "securityNotLinked": "Không tìm thấy chứng khoán {{ securityId }} hoặc chứng khoán chưa liên kết với chương trình trái phiếu",

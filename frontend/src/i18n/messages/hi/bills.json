@@ -55,7 +55,10 @@
     "legendAriaLabel": "पूर्वानुमान रेखाएँ",
     "tooltipTransactionForAccount": "{name} ({account})",
     "unavailableMissingRates": "यह पूर्वानुमान {displayCurrency} में नहीं दिखाया जा सकता: {currencies} के लिए कोई विनिमय दर उपलब्ध नहीं है, और अनुमानित शेष उससे पहले के हर दिन पर आधारित होता है। एक दर जोड़ें, या एकल-मुद्रा खाता चुनें।",
-    "untitledTransaction": "लेन-देन"
+    "untitledTransaction": "लेन-देन",
+    "tooltipEstimated": "(अनुमानित)",
+    "unavailableUnknownEstimates": "यह पूर्वानुमान अभी नहीं दिखाया जा सकता: इसमें एक बिल की अनुमानित राशि अज्ञात है, और अनुमानित शेष हर पिछले दिन पर आधारित होता है। उस घटना की राशि दर्ज करें, या बिल पर अनुमान बंद करें।",
+    "unknownEstimateItem": "{name}: {reason}"
   },
   "calendar": {
     "days": {

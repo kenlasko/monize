@@ -1757,7 +1757,8 @@
     "pdfSubtitle": "{month} | {count} actieve rekeningen",
     "pdfActiveBills": "Actieve rekeningen",
     "pdfOverdue": "Achterstallig",
-    "pdfThisMonth": "Deze maand"
+    "pdfThisMonth": "Deze maand",
+    "estimated": "Geschat"
   },
   "weekendVsWeekday": {
     "noData": "Geen uitgaventransacties gevonden voor deze periode.",

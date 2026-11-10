@@ -55,7 +55,10 @@
     "legendAriaLabel": "Prognoselinien",
     "tooltipTransactionForAccount": "{name} ({account})",
     "unavailableMissingRates": "Diese Prognose kann nicht in {displayCurrency} angezeigt werden: Für {currencies} ist kein Wechselkurs verfügbar, und ein prognostizierter Saldo baut auf jedem vorherigen Tag auf. Fügen Sie einen Kurs hinzu, oder wählen Sie ein Konto mit nur einer Währung.",
-    "untitledTransaction": "Buchung"
+    "untitledTransaction": "Buchung",
+    "tooltipEstimated": "(geschätzt)",
+    "unavailableUnknownEstimates": "Diese Prognose kann noch nicht angezeigt werden: Der geschätzte Betrag einer Rechnung darin ist unbekannt, und ein prognostizierter Saldo baut auf jedem Tag davor auf. Geben Sie den Betrag dieses Termins ein oder schalten Sie Schätzen bei der Rechnung aus.",
+    "unknownEstimateItem": "{name}: {reason}"
   },
   "calendar": {
     "days": {

@@ -20,6 +20,8 @@
     "typeExpense": "Pengeluaran",
     "typeUnknown": "Arah tidak diketahui",
     "amountUnavailable": "Jumlah tidak tersedia",
+    "estimated": "Perkiraan",
+    "estimateUnknown": "Perkiraan tidak diketahui: masukkan jumlahnya saat memposting",
     "button": "Lihat Tagihan &amp; Setoran"
   },
   "mortgageReminder": {

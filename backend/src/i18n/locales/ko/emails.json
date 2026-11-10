@@ -20,6 +20,8 @@
     "typeExpense": "지출",
     "typeUnknown": "방향 알 수 없음",
     "amountUnavailable": "금액을 확인할 수 없음",
+    "estimated": "예상",
+    "estimateUnknown": "예상 금액 알 수 없음: 게시할 때 금액을 입력하세요",
     "button": "청구서 &amp; 입금 보기"
   },
   "mortgageReminder": {

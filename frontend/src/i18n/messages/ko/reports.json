@@ -1757,7 +1757,8 @@
     "pdfSubtitle": "{month} | 활성 청구서 {count}건",
     "pdfActiveBills": "활성 청구서",
     "pdfOverdue": "연체",
-    "pdfThisMonth": "이번 달"
+    "pdfThisMonth": "이번 달",
+    "estimated": "예상"
   },
   "weekendVsWeekday": {
     "noData": "이 기간에 지출 거래를 찾을 수 없습니다.",

@@ -44,6 +44,8 @@
     "missingRatePair": "{name}: no hay tipo de cambio disponible de {from} a {to}, así que se desconoce el importe que registrará esta ocurrencia.",
     "missingRate": "{name}: el tipo de cambio con el que se liquida esta ocurrencia no está disponible, así que se desconoce el importe.",
     "crossCurrencyTransfer": "{name}: una transferencia que llega desde una cuenta en {from} mientras esta cuenta está en {to}. El importe que entra aquí se fija al registrarse la transferencia, así que no se puede prever.",
+    "unknownEstimate": "{name}: el importe estimado aún no se puede calcular, porque no hay pagos de los que estimarlo. Introduzca el importe de esta ocurrencia o registre un pago.",
+    "unknownEstimatePair": "{name}: un pago que usa la estimación está en {from} y no hay tipo de cambio de {from} a {to}, así que se desconoce el importe estimado.",
     "howToFix": "Para corregir un tipo de cambio ausente: abre Divisas y actualiza los tipos, o comprueba que el valor y su cuenta de liquidación tengan las divisas que esperas."
   }
 }

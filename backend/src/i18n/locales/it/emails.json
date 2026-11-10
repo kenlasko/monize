@@ -20,6 +20,8 @@
     "typeExpense": "Uscita",
     "typeUnknown": "Direzione sconosciuta",
     "amountUnavailable": "Importo non disponibile",
+    "estimated": "Stimato",
+    "estimateUnknown": "Stima sconosciuta: inserisci l'importo quando la registri",
     "button": "Visualizza fatture &amp; versamenti"
   },
   "mortgageReminder": {

@@ -63,7 +63,8 @@
       "skipFailed": "Error al omitir la ocurrencia",
       "deleteFailed": "Error al eliminar"
     },
-    "foreignAmountTitle": "El importe que cobra el beneficiario, en su propia moneda"
+    "foreignAmountTitle": "El importe que cobra el beneficiario, en su propia moneda",
+    "estimatedLabel": "Estimado"
   },
   "filters": {
     "label": "Filtros",
@@ -113,7 +114,8 @@
       "totalAmountRequired": "El monto total es obligatorio",
       "splitsMinimum": "Los desgloses de transacción requieren al menos 2 partes",
       "splitsTotal": "Los montos de las partes deben ser iguales a la cantidad de la transacción",
-      "fxRateUnavailable": "No hay un tipo de cambio disponible de {from} a {to} en esta fecha."
+      "fxRateUnavailable": "No hay un tipo de cambio disponible de {from} a {to} en esta fecha.",
+      "estimateUnknown": "Se desconoce el importe estimado de esta ocurrencia. Introduzca el importe para registrarla."
     },
     "latestPlaceholder": "Último: {price}",
     "descriptionPlaceholder": "Descripción...",
@@ -126,7 +128,8 @@
       "noRateWarning": "No se encontró un tipo de cambio de {from} a {to} el {date}. Elige otra fecha o actualiza los tipos.",
       "feeCaption": "Incluye una comisión por transacción en el extranjero del {percent}% ({fee}).",
       "totalInCurrency": "Total en {currency}"
-    }
+    },
+    "estimatedHint": "Este importe es una estimación; cámbielo por lo que realmente pagó. {detail}"
   },
   "occurrencePicker": {
     "title": "Seleccionar fecha de ocurrencia",
@@ -137,7 +140,9 @@
     "amountChange": "Monto: {amount}",
     "categoryChange": "Categoría: {category}",
     "noteChange": "Nota: {note}",
-    "splitModified": "Desglose modificado"
+    "splitModified": "Desglose modificado",
+    "estimatedAmount": "Estimado: {amount}",
+    "estimateUnknown": "Estimación desconocida"
   },
   "loanOccurrence": {
     "loading": "Calculando el pago de cada vencimiento.",
@@ -197,7 +202,8 @@
       "quantityRequired": "La cantidad debe ser mayor que cero",
       "priceRequired": "El precio debe ser mayor que cero",
       "totalAmountRequired": "El monto total es obligatorio"
-    }
+    },
+    "estimatedHint": "Este importe es la estimación para esta ocurrencia. Si lo deja tal cual, la ocurrencia seguirá la estimación a medida que lleguen nuevos pagos. {detail}"
   },
   "form": {
     "tabs": {
@@ -302,14 +308,19 @@
       "quantityRequired": "La cantidad debe ser mayor que cero",
       "priceRequired": "El precio debe ser mayor que cero",
       "totalAmountRequired": "El monto total es obligatorio para esta acción",
-      "fxRateRequired": "Introduce un importe en la moneda elegida antes de guardar. Todavía no hay un tipo de cambio disponible."
+      "fxRateRequired": "Introduce un importe en la moneda elegida antes de guardar. Todavía no hay un tipo de cambio disponible.",
+      "estimateNeedsPayeeAndCategory": "Elija un beneficiario y una categoría a partir de los cuales estimar el importe."
     },
     "fx": {
       "amountInCurrency": "Monto en {currency}",
       "estimateCaption": "Unos {total} a 1 {from} = {rate} {to}.",
       "noRateWarning": "No se encontró un tipo de cambio de {from} a {to}. Elige otra moneda o introduce el importe en {to}.",
       "feeCaption": "Incluye una comisión por transacción en el extranjero del {percent}% ({fee})."
-    }
+    },
+    "estimateLabel": "Estimar",
+    "estimateTooltip": "Calcular el importe de cada ocurrencia a partir de los pagos de los últimos 24 meses a este beneficiario en esta categoría, mes a mes, para que una factura que cuesta más algunos meses se prevea así. Puede seguir cambiando cualquier ocurrencia y confirma el importe al registrarla.",
+    "estimatedAmountNote": "Calculado automáticamente a partir del historial de pagos. {detail}",
+    "autoPostDisabledEstimate": "Un importe estimado se confirma al registrarlo, así que no se registra automáticamente."
   },
   "postTransaction": {
     "minSplits": "Los desgloses de transacción requieren al menos 2 partes",
@@ -333,5 +344,16 @@
   "validation": {
     "nameRequired": "El nombre es obligatorio",
     "dueDateRequired": "La fecha de vencimiento es obligatoria"
+  },
+  "estimate": {
+    "thePayee": "este beneficiario",
+    "theCategory": "esta categoría",
+    "basis": "Estimado a partir de {count, plural, one {# pago} other {# pagos}}, el último el {date}.",
+    "basisWithGrowth": "Estimado a partir de {count, plural, one {# pago} other {# pagos}}, el último el {date}, con un cambio interanual del {growth}.",
+    "basisWithheld": "Estimado a partir del historial de pagos del beneficiario y la categoría.",
+    "noHistory": "No hay pagos a {payee} en {category} en los últimos {months} meses, así que se desconoce el importe. Introduzca el importe de cada ocurrencia o registre un pago.",
+    "missingRate": "No hay tipo de cambio de {from} a {to} para convertir un pago anterior, así que se desconoce el importe. Añada el tipo en la página Monedas.",
+    "noBasis": "Elija un beneficiario y una categoría para estimar el importe a partir de su historial de pagos.",
+    "pending": "El importe se calcula a partir del historial de pagos del beneficiario y la categoría."
   }
 }

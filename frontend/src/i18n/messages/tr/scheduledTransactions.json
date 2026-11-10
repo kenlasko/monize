@@ -63,7 +63,8 @@
       "skipFailed": "Tekrar atlanamadı",
       "deleteFailed": "Silinemedi"
     },
-    "foreignAmountTitle": "Alacaklının tahsil ettiği tutar, kendi para biriminde"
+    "foreignAmountTitle": "Alacaklının tahsil ettiği tutar, kendi para biriminde",
+    "estimatedLabel": "Tahmini"
   },
   "filters": {
     "label": "Filtreler",
@@ -113,7 +114,8 @@
       "totalAmountRequired": "Toplam tutar zorunludur",
       "splitsMinimum": "Bölünmüş işlemler için en az 2 bölüm gereklidir",
       "splitsTotal": "Bölüm tutarları işlem tutarına eşit olmalıdır",
-      "fxRateUnavailable": "Bu tarih için {from} biriminden {to} birimine döviz kuru yok."
+      "fxRateUnavailable": "Bu tarih için {from} biriminden {to} birimine döviz kuru yok.",
+      "estimateUnknown": "Bu tekrarın tahmini tutarı bilinmiyor. Kaydetmek için tutarı girin."
     },
     "latestPlaceholder": "En güncel: {price}",
     "descriptionPlaceholder": "Açıklama...",
@@ -126,7 +128,8 @@
       "noRateWarning": "{date} tarihinde {from} biriminden {to} birimine döviz kuru bulunamadı. Başka bir tarih seçin veya kurları yenileyin.",
       "feeCaption": "%{percent} yurt dışı işlem ücreti ({fee}) içerir.",
       "totalInCurrency": "{currency} cinsinden toplam"
-    }
+    },
+    "estimatedHint": "Bu tutar bir tahmindir; gerçekte ödediğiniz tutarla değiştirin. {detail}"
   },
   "occurrencePicker": {
     "title": "Tekrar Tarihi Seçin",
@@ -137,7 +140,9 @@
     "amountChange": "Tutar: {amount}",
     "categoryChange": "Kategori: {category}",
     "noteChange": "Not: {note}",
-    "splitModified": "Bölüm değiştirildi"
+    "splitModified": "Bölüm değiştirildi",
+    "estimatedAmount": "Tahmini: {amount}",
+    "estimateUnknown": "Tahmin bilinmiyor"
   },
   "loanOccurrence": {
     "loading": "Her taksitin ödemesi hesaplanıyor.",
@@ -197,7 +202,8 @@
       "quantityRequired": "Miktar sıfırdan büyük olmalıdır",
       "priceRequired": "Fiyat sıfırdan büyük olmalıdır",
       "totalAmountRequired": "Toplam tutar zorunludur"
-    }
+    },
+    "estimatedHint": "Bu tutar bu tekrarın tahminidir. Olduğu gibi bırakırsanız yeni ödemeler geldikçe bu tekrar tahmini izlemeye devam eder. {detail}"
   },
   "form": {
     "tabs": {
@@ -302,14 +308,19 @@
       "quantityRequired": "Miktar sıfırdan büyük olmalıdır",
       "priceRequired": "Fiyat sıfırdan büyük olmalıdır",
       "totalAmountRequired": "Bu işlem için toplam tutar zorunludur",
-      "fxRateRequired": "Kaydetmeden önce seçilen para biriminde bir tutar girin. Henüz kullanılabilir bir döviz kuru yok."
+      "fxRateRequired": "Kaydetmeden önce seçilen para biriminde bir tutar girin. Henüz kullanılabilir bir döviz kuru yok.",
+      "estimateNeedsPayeeAndCategory": "Tutarın tahmin edileceği bir alıcı ve kategori seçin."
     },
     "fx": {
       "amountInCurrency": "{currency} cinsinden tutar",
       "estimateCaption": "Yaklaşık {total}, 1 {from} = {rate} {to} kurundan.",
       "noRateWarning": "{from} biriminden {to} birimine döviz kuru bulunamadı. Başka bir para birimi seçin veya tutarı {to} cinsinden girin.",
       "feeCaption": "%{percent} yurt dışı işlem ücreti ({fee}) içerir."
-    }
+    },
+    "estimateLabel": "Tahmin et",
+    "estimateTooltip": "Her tekrarın tutarını, bu kategoride bu alıcıya son 24 ayda yapılan ödemelerden ay ay hesaplayın; böylece bazı aylarda daha pahalı olan bir fatura öyle tahmin edilir. Herhangi bir tekrarı yine değiştirebilir ve tutarı kaydederken onaylarsınız.",
+    "estimatedAmountNote": "Ödeme geçmişinden otomatik hesaplanır. {detail}",
+    "autoPostDisabledEstimate": "Tahmini tutar kaydederken onaylanır, bu yüzden otomatik olarak kaydedilmez."
   },
   "postTransaction": {
     "minSplits": "Bölünmüş işlemler için en az 2 bölüm gereklidir",
@@ -333,5 +344,16 @@
   "validation": {
     "nameRequired": "Ad zorunludur",
     "dueDateRequired": "Vade tarihi zorunludur"
+  },
+  "estimate": {
+    "thePayee": "bu alıcı",
+    "theCategory": "bu kategori",
+    "basis": "{count, plural, other {# ödeme}} üzerinden tahmin edildi, en sonuncusu {date}.",
+    "basisWithGrowth": "{count, plural, other {# ödeme}} üzerinden tahmin edildi, en sonuncusu {date}, yıllık {growth} değişimle.",
+    "basisWithheld": "Alıcının ve kategorinin ödeme geçmişinden tahmin edildi.",
+    "noHistory": "Son {months} ayda {category} kategorisinde {payee} alıcısına ödeme yok, bu yüzden tutar bilinmiyor. Her tekrarın tutarını girin veya bir ödeme kaydedin.",
+    "missingRate": "Geçmiş bir ödemeyi çevirmek için {from} - {to} döviz kuru yok, bu yüzden tutar bilinmiyor. Kuru Para Birimleri sayfasından ekleyin.",
+    "noBasis": "Tutarı ödeme geçmişinden tahmin etmek için bir alıcı ve kategori seçin.",
+    "pending": "Tutar, alıcının ve kategorinin ödeme geçmişinden hesaplanır."
   }
 }

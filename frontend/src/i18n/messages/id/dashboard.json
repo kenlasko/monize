@@ -78,7 +78,8 @@
     "viewCalendar": "Kalender",
     "previousMonth": "Bulan sebelumnya",
     "nextMonth": "Bulan berikutnya",
-    "emptyAll": "Tidak ada tagihan, setoran, atau transfer aktif yang dijadwalkan."
+    "emptyAll": "Tidak ada tagihan, setoran, atau transfer aktif yang dijadwalkan.",
+    "estimated": "Perkiraan"
   },
   "cashFlowForecast": {
     "title": "Prakiraan Arus Kas",

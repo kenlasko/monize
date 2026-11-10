@@ -600,7 +600,12 @@
     "overrideNotFound": "Überschreibung mit ID {{ overrideId }} nicht gefunden",
     "updateSplitOverrideRequiresAmount": "Betrag ist für Buchungsteil-Überschreibung erforderlich",
     "dateMustBeYMD": "Datum muss im Format YYYY-MM-DD sein",
-    "loanLedgerUnreadable": "Diese Kreditrate konnte nicht berechnet werden, da ihr Kontosaldo nicht gelesen werden konnte. Bitte erneut versuchen."
+    "loanLedgerUnreadable": "Diese Kreditrate konnte nicht berechnet werden, da ihr Kontosaldo nicht gelesen werden konnte. Bitte erneut versuchen.",
+    "estimateRequiresPlain": "Ein geschätzter Betrag ist nur für eine Buchung mit einer Kategorie in der Kontowährung verfügbar, nicht für eine Aufteilung, eine Überweisung, eine Investition oder einen Betrag in Fremdwährung",
+    "estimateNoAutoPost": "Eine geplante Buchung mit geschätztem Betrag kann nicht automatisch gebucht werden",
+    "estimateRequiresPayeeAndCategory": "Ein geschätzter Betrag braucht einen Zahlungsempfänger und eine Kategorie, um den Zahlungsverlauf abzugleichen",
+    "estimateUnknown": "Der geschätzte Betrag dieses Termins ist unbekannt. Geben Sie den Betrag ein, um ihn zu buchen.",
+    "estimateBasisOwnerOnly": "Nur der Eigentümer kann Zahlungsempfänger oder Kategorie einer Rechnung mit geschätztem Betrag ändern"
   },
   "bonds": {
     "securityNotLinked": "Wertpapier {{ securityId }} nicht gefunden oder nicht mit einem Anleiheprogramm verknüpft",

@@ -55,7 +55,10 @@
     "legendAriaLabel": "予測の線",
     "tooltipTransactionForAccount": "{name} ({account})",
     "unavailableMissingRates": "この予測は {displayCurrency} では表示できません。{currencies} の為替レートがなく、予測残高はそれ以前のすべての日を土台にするためです。レートを追加するか、単一通貨の口座を選んでください。",
-    "untitledTransaction": "取引"
+    "untitledTransaction": "取引",
+    "tooltipEstimated": "(見積もり)",
+    "unavailableUnknownEstimates": "この予測はまだ表示できません。含まれる請求の見積もり金額が不明で、予測残高はそれ以前の毎日の上に積み上がるためです。その回の金額を入力するか、請求の「見積もり」をオフにしてください。",
+    "unknownEstimateItem": "{name}: {reason}"
   },
   "calendar": {
     "days": {

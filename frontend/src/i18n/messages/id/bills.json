@@ -55,7 +55,10 @@
     "legendAriaLabel": "Garis prakiraan",
     "tooltipTransactionForAccount": "{name} ({account})",
     "unavailableMissingRates": "Prakiraan ini tidak dapat ditampilkan dalam {displayCurrency}: tidak ada nilai tukar untuk {currencies}, dan saldo proyeksi dibangun dari setiap hari sebelumnya. Tambahkan kurs, atau pilih akun satu mata uang.",
-    "untitledTransaction": "Transaksi"
+    "untitledTransaction": "Transaksi",
+    "tooltipEstimated": "(perkiraan)",
+    "unavailableUnknownEstimates": "Perkiraan arus kas ini belum dapat ditampilkan: jumlah perkiraan salah satu tagihan di dalamnya tidak diketahui, dan saldo proyeksi dibangun dari setiap hari sebelumnya. Masukkan jumlah kejadian itu, atau nonaktifkan Perkirakan pada tagihan.",
+    "unknownEstimateItem": "{name}: {reason}"
   },
   "calendar": {
     "days": {

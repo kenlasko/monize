@@ -1757,7 +1757,8 @@
     "pdfSubtitle": "{month} | {count} 个活跃账单",
     "pdfActiveBills": "活跃账单",
     "pdfOverdue": "已逾期",
-    "pdfThisMonth": "本月"
+    "pdfThisMonth": "本月",
+    "estimated": "估算"
   },
   "weekendVsWeekday": {
     "noData": "此期间未找到支出交易。",

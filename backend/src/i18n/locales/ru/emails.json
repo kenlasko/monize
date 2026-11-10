@@ -20,6 +20,8 @@
     "typeExpense": "Расход",
     "typeUnknown": "Направление неизвестно",
     "amountUnavailable": "Сумма недоступна",
+    "estimated": "Оценка",
+    "estimateUnknown": "Оценка неизвестна: введите сумму при проведении",
     "button": "Просмотреть счета &amp; поступления"
   },
   "mortgageReminder": {

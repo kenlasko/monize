@@ -55,7 +55,10 @@
     "legendAriaLabel": "Tahmin çizgileri",
     "tooltipTransactionForAccount": "{name} ({account})",
     "unavailableMissingRates": "Bu tahmin {displayCurrency} cinsinden gösterilemiyor: {currencies} için döviz kuru yok ve öngörülen bakiye önceki her güne dayanır. Bir kur ekleyin veya tek para birimli bir hesap seçin.",
-    "untitledTransaction": "İşlem"
+    "untitledTransaction": "İşlem",
+    "tooltipEstimated": "(tahmini)",
+    "unavailableUnknownEstimates": "Bu tahmin henüz gösterilemiyor: içindeki bir faturanın tahmini tutarı bilinmiyor ve öngörülen bakiye önceki her günün üzerine kurulur. O tekrarın tutarını girin veya faturada Tahmin et seçeneğini kapatın.",
+    "unknownEstimateItem": "{name}: {reason}"
   },
   "calendar": {
     "days": {

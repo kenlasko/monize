@@ -20,6 +20,8 @@
     "typeExpense": "Ausgabe",
     "typeUnknown": "Richtung unbekannt",
     "amountUnavailable": "Betrag nicht verfügbar",
+    "estimated": "Geschätzt",
+    "estimateUnknown": "Schätzung unbekannt: Geben Sie den Betrag beim Buchen ein",
     "button": "Rechnungen &amp; Einzahlungen anzeigen"
   },
   "mortgageReminder": {

@@ -55,7 +55,10 @@
     "legendAriaLabel": "Líneas del pronóstico",
     "tooltipTransactionForAccount": "{name} ({account})",
     "unavailableMissingRates": "Esta previsión no puede mostrarse en {displayCurrency}: no hay tipo de cambio disponible para {currencies}, y un saldo proyectado se apoya en cada día anterior. Añade un tipo, o elige una cuenta de una sola moneda.",
-    "untitledTransaction": "Transacción"
+    "untitledTransaction": "Transacción",
+    "tooltipEstimated": "(estimado)",
+    "unavailableUnknownEstimates": "Esta previsión aún no se puede mostrar: se desconoce el importe estimado de una factura incluida, y un saldo previsto se basa en cada día anterior. Introduzca el importe de esa ocurrencia o desactive Estimar en la factura.",
+    "unknownEstimateItem": "{name}: {reason}"
   },
   "calendar": {
     "days": {

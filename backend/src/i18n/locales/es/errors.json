@@ -600,7 +600,12 @@
     "overrideNotFound": "Modificación con ID {{ overrideId }} no encontrada",
     "updateSplitOverrideRequiresAmount": "La cantidad es obligatoria para la modificación de desglose",
     "dateMustBeYMD": "la fecha debe estar en formato YYYY-MM-DD",
-    "loanLedgerUnreadable": "No se pudo calcular este pago del préstamo porque no se pudo leer el saldo de su libro mayor. Vuelve a intentarlo."
+    "loanLedgerUnreadable": "No se pudo calcular este pago del préstamo porque no se pudo leer el saldo de su libro mayor. Vuelve a intentarlo.",
+    "estimateRequiresPlain": "Un importe estimado solo está disponible para una transacción de una sola categoría en la moneda de la cuenta, no para una división, una transferencia, una inversión ni un importe en moneda extranjera",
+    "estimateNoAutoPost": "Una transacción programada con un importe estimado no se puede registrar automáticamente",
+    "estimateRequiresPayeeAndCategory": "Un importe estimado necesita un beneficiario y una categoría con los que buscar el historial de pagos",
+    "estimateUnknown": "Se desconoce el importe estimado de esta ocurrencia. Introduzca el importe para registrarla.",
+    "estimateBasisOwnerOnly": "Solo el propietario puede cambiar el beneficiario o la categoría de una factura con importe estimado"
   },
   "bonds": {
     "securityNotLinked": "Valor {{ securityId }} no encontrado o no vinculado a un programa de bonos",

@@ -78,7 +78,8 @@
     "viewCalendar": "달력",
     "previousMonth": "이전 달",
     "nextMonth": "다음 달",
-    "emptyAll": "예약된 활성 청구, 입금 또는 이체가 없습니다."
+    "emptyAll": "예약된 활성 청구, 입금 또는 이체가 없습니다.",
+    "estimated": "예상"
   },
   "cashFlowForecast": {
     "title": "현금 흐름 예측",

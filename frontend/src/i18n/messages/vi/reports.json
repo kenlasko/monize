@@ -1757,7 +1757,8 @@
     "pdfSubtitle": "{month} | {count} hóa đơn đang hoạt động",
     "pdfActiveBills": "Hóa đơn đang hoạt động",
     "pdfOverdue": "Quá hạn",
-    "pdfThisMonth": "Tháng này"
+    "pdfThisMonth": "Tháng này",
+    "estimated": "Ước tính"
   },
   "weekendVsWeekday": {
     "noData": "Không tìm thấy giao tác chi phí nào trong kỳ này.",

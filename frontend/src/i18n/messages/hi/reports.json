@@ -1757,7 +1757,8 @@
     "pdfSubtitle": "{month} | {count} सक्रिय बिल",
     "pdfActiveBills": "सक्रिय बिल",
     "pdfOverdue": "अतिदेय",
-    "pdfThisMonth": "इस महीने"
+    "pdfThisMonth": "इस महीने",
+    "estimated": "अनुमानित"
   },
   "weekendVsWeekday": {
     "noData": "इस अवधि के लिए कोई व्यय लेनदेन नहीं मिला।",

@@ -1757,7 +1757,8 @@
     "pdfSubtitle": "{month} | {count} 件の有効な請求書",
     "pdfActiveBills": "有効な請求書",
     "pdfOverdue": "期限超過",
-    "pdfThisMonth": "今月"
+    "pdfThisMonth": "今月",
+    "estimated": "見積もり"
   },
   "weekendVsWeekday": {
     "noData": "この期間に支出取引が見つかりません。",

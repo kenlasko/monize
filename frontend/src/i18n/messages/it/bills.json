@@ -55,7 +55,10 @@
     "legendAriaLabel": "Linee della previsione",
     "tooltipTransactionForAccount": "{name} ({account})",
     "unavailableMissingRates": "Questa previsione non può essere mostrata in {displayCurrency}: nessun tasso di cambio disponibile per {currencies}, e un saldo proiettato si basa su ogni giorno precedente. Aggiungi un tasso, oppure scegli un conto a valuta singola.",
-    "untitledTransaction": "Transazione"
+    "untitledTransaction": "Transazione",
+    "tooltipEstimated": "(stimato)",
+    "unavailableUnknownEstimates": "Questa previsione non può ancora essere mostrata: l'importo stimato di una bolletta inclusa è sconosciuto, e un saldo previsto si basa su ogni giorno precedente. Inserisci l'importo di quell'occorrenza oppure disattiva Stima sulla bolletta.",
+    "unknownEstimateItem": "{name}: {reason}"
   },
   "calendar": {
     "days": {

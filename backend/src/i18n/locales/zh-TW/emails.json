@@ -20,6 +20,8 @@
     "typeExpense": "支出",
     "typeUnknown": "方向未知",
     "amountUnavailable": "金額不可用",
+    "estimated": "估算",
+    "estimateUnknown": "估算未知：入帳時請輸入金額",
     "button": "查看帳單與存款"
   },
   "mortgageReminder": {

@@ -78,7 +78,8 @@
     "viewCalendar": "日历",
     "previousMonth": "上个月",
     "nextMonth": "下个月",
-    "emptyAll": "没有已安排的有效账单、存入或转账。"
+    "emptyAll": "没有已安排的有效账单、存入或转账。",
+    "estimated": "估算"
   },
   "cashFlowForecast": {
     "title": "现金流预测",

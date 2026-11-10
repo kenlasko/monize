@@ -1757,7 +1757,8 @@
     "pdfSubtitle": "{month} | {count} aktif fatura",
     "pdfActiveBills": "Aktif Faturalar",
     "pdfOverdue": "Gecikmiş",
-    "pdfThisMonth": "Bu Ay"
+    "pdfThisMonth": "Bu Ay",
+    "estimated": "Tahmini"
   },
   "weekendVsWeekday": {
     "noData": "Bu dönem için gider işlemi bulunamadı.",

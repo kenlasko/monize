@@ -1757,7 +1757,8 @@
     "pdfSubtitle": "{month} | {count} aktive Rechnungen",
     "pdfActiveBills": "Aktive Rechnungen",
     "pdfOverdue": "Überfällig",
-    "pdfThisMonth": "Diesen Monat"
+    "pdfThisMonth": "Diesen Monat",
+    "estimated": "Geschätzt"
   },
   "weekendVsWeekday": {
     "noData": "Keine Ausgabenbuchungen für diesen Zeitraum gefunden.",
