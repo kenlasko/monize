@@ -1,6 +1,11 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { ScheduledOccurrenceService } from "./scheduled-occurrence.service";
+import {
+  ScheduleAmountEstimate,
+  ScheduledAmountEstimateService,
+} from "./scheduled-amount-estimate.service";
+import { buildEstimateProfile } from "./amount-estimate";
 import { ScheduledEffectiveAmountService } from "./scheduled-effective-amount.service";
 import {
   LoanOccurrencesProjection,
@@ -66,6 +71,7 @@ describe("ScheduledOccurrenceService", () => {
   let dataSource: DataSourceMock;
   let fx: InvestmentFxMock;
   let loanService: { projectLoanOccurrencesMany: jest.Mock };
+  let estimates: { estimateMany: jest.Mock };
 
   const userId = "user-1";
 
@@ -108,6 +114,15 @@ describe("ScheduledOccurrenceService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ScheduledOccurrenceService,
+        // No estimated schedule unless a test says so (issue #2096); the
+        // estimate's own arithmetic is `amount-estimate.spec.ts`'s.
+        {
+          provide: ScheduledAmountEstimateService,
+          useValue: {
+            estimateMany: jest.fn().mockResolvedValue(new Map()),
+            estimateFor: jest.fn(),
+          },
+        },
         // The real resolver over a stubbed FX source: the amounts asserted here
         // ARE its output, so a double of it would test nothing.
         ScheduledEffectiveAmountService,
@@ -121,6 +136,7 @@ describe("ScheduledOccurrenceService", () => {
     }).compile();
 
     service = module.get(ScheduledOccurrenceService);
+    estimates = module.get(ScheduledAmountEstimateService);
   });
 
   it("prices every occurrence at the current rate, never the persisted snapshot", async () => {
@@ -969,6 +985,186 @@ describe("ScheduledOccurrenceService", () => {
         ["2023-02-03", -584.59],
         ["2023-03-03", -212.4],
       ]);
+    });
+  });
+
+  describe("an estimated schedule (issue #2096)", () => {
+    const today = "2026-11-09";
+    /** A heating bill whose January costs 220 and whose July costs 55. */
+    const seasonalEstimate = (): ScheduleAmountEstimate => ({
+      status: "estimated",
+      currencyCode: "CAD",
+      missingPair: null,
+      profile: buildEstimateProfile(
+        [
+          { date: "2025-12-15", amount: -180 },
+          { date: "2026-01-15", amount: -220 },
+          { date: "2026-07-15", amount: -55 },
+        ],
+        today,
+        2,
+      ),
+    });
+    const heatingBill = (
+      overrides: Partial<ScheduledTransaction> = {},
+    ): ScheduledTransaction =>
+      ({
+        id: "st-heat",
+        userId: "user-1",
+        accountId: "chequing-1",
+        name: "Heating",
+        payeeId: "payee-1",
+        categoryId: "cat-1",
+        // The stored snapshot, which no occurrence may show.
+        amount: -999,
+        currencyCode: "CAD",
+        frequency: "MONTHLY",
+        nextDueDate: "2026-12-15",
+        endDate: null,
+        occurrencesRemaining: null,
+        isActive: true,
+        isSplit: false,
+        isTransfer: false,
+        isInvestment: false,
+        amountIsEstimated: true,
+        splits: [],
+        ...overrides,
+      }) as unknown as ScheduledTransaction;
+
+    it("prices each occurrence at its own month's estimate", async () => {
+      estimates.estimateMany.mockResolvedValue(
+        new Map([["st-heat", seasonalEstimate()]]),
+      );
+
+      const occurrences = await service.expand(userId, [heatingBill()], {
+        through: "2027-01-31",
+      });
+
+      // One year of history is not seasonal, so every month is the mean of
+      // the newest three: (-180 - 220 - 55) / 3 = -151.67.
+      expect(occurrences.map((o) => [o.dueDate, o.amount])).toEqual([
+        ["2026-12-15", -151.67],
+        ["2027-01-15", -151.67],
+      ]);
+      expect(occurrences.every((o) => o.estimated && o.complete)).toBe(true);
+      expect(occurrences[0].estimateStatus).toBe("estimated");
+      expect(estimates.estimateMany).toHaveBeenCalledWith(
+        userId,
+        new Map([
+          [
+            "st-heat",
+            { payeeId: "payee-1", categoryId: "cat-1", currencyCode: "CAD" },
+          ],
+        ]),
+      );
+    });
+
+    it("varies by month once the history is seasonal", async () => {
+      const seasonal: ScheduleAmountEstimate = {
+        ...seasonalEstimate(),
+        profile: buildEstimateProfile(
+          [
+            { date: "2025-01-15", amount: -200 },
+            { date: "2025-07-15", amount: -50 },
+            { date: "2026-01-15", amount: -200 },
+            { date: "2026-07-15", amount: -50 },
+          ],
+          today,
+          2,
+        ),
+      };
+      estimates.estimateMany.mockResolvedValue(
+        new Map([["st-heat", seasonal]]),
+      );
+
+      const occurrences = await service.expand(
+        userId,
+        [heatingBill({ nextDueDate: "2027-01-15" } as never)],
+        { through: "2027-07-31" },
+      );
+
+      const byMonth = new Map(
+        occurrences.map((o) => [o.dueDate.slice(0, 7), o.amount]),
+      );
+      expect(byMonth.get("2027-01")).toBe(-200);
+      expect(byMonth.get("2027-07")).toBe(-50);
+    });
+
+    it("keeps an override's stated amount and estimates an amountless one", async () => {
+      estimates.estimateMany.mockResolvedValue(
+        new Map([["st-heat", seasonalEstimate()]]),
+      );
+      overridesRepo.find.mockResolvedValue([
+        {
+          id: "ovr-stated",
+          scheduledTransactionId: "st-heat",
+          originalDate: "2026-12-15",
+          overrideDate: "2026-12-15",
+          amount: -175,
+        },
+        {
+          id: "ovr-moved",
+          scheduledTransactionId: "st-heat",
+          originalDate: "2027-01-15",
+          overrideDate: "2027-01-20",
+          amount: null,
+        },
+      ]);
+
+      const occurrences = await service.expand(userId, [heatingBill()], {
+        through: "2027-01-31",
+      });
+
+      expect(occurrences[0]).toMatchObject({
+        overrideId: "ovr-stated",
+        amount: -175,
+        estimated: false,
+      });
+      expect(occurrences[1]).toMatchObject({
+        overrideId: "ovr-moved",
+        dueDate: "2027-01-20",
+        amount: -151.67,
+        estimated: true,
+      });
+    });
+
+    it("reports an unknown estimate as unknown, never the snapshot", async () => {
+      estimates.estimateMany.mockResolvedValue(
+        new Map([
+          [
+            "st-heat",
+            {
+              status: "missing-rate",
+              currencyCode: "CAD",
+              profile: null,
+              missingPair: { from: "USD", to: "CAD" },
+            },
+          ],
+        ]),
+      );
+
+      const [occurrence] = await service.expand(userId, [heatingBill()], {
+        through: "2026-12-31",
+      });
+
+      expect(occurrence).toMatchObject({
+        amount: null,
+        directionAmount: null,
+        complete: false,
+        estimated: true,
+        estimateStatus: "missing-rate",
+      });
+    });
+
+    it("asks for no estimate when no schedule is estimated", async () => {
+      await service.expand(
+        userId,
+        [heatingBill({ amountIsEstimated: false })],
+        {
+          through: "2026-12-31",
+        },
+      );
+      expect(estimates.estimateMany).not.toHaveBeenCalled();
     });
   });
 });

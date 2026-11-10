@@ -1646,6 +1646,38 @@ describe("BuiltInReportsService", () => {
       expect(result.billPayments).toHaveLength(0);
     });
 
+    it("matches every payment to an estimated bill's payee, whatever its amount (issue #2096)", async () => {
+      scopedManager.query.mockResolvedValueOnce([
+        {
+          id: "sched-1",
+          name: "Heating",
+          amount: "-100.00",
+          amount_is_estimated: true,
+          payee_name: "Gas Co",
+        },
+      ]);
+
+      scopedManager.query.mockResolvedValueOnce([
+        {
+          id: "tx-1",
+          transaction_date: new Date("2025-01-15"),
+          currency_code: "USD",
+          // A winter bill, far outside the snapshot's 20% band.
+          amount: "260.00",
+          payee_name_normalized: "gas co",
+        },
+      ]);
+
+      const result = await service.getBillPaymentHistory(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.billPayments).toHaveLength(1);
+      expect(result.billPayments[0].paymentCount).toBe(1);
+    });
+
     it("calculates summary statistics correctly", async () => {
       scopedManager.query.mockResolvedValueOnce([
         {

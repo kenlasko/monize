@@ -37,6 +37,7 @@ describe("ScheduledTransactionsController", () => {
       post: jest.fn(),
       skip: jest.fn(),
       getLoanProjectionAnchor: jest.fn(),
+      previewAmountEstimate: jest.fn(),
       projectLoanOccurrences: jest.fn(),
       findOverrides: jest.fn(),
       hasOverrides: jest.fn(),
@@ -348,6 +349,24 @@ describe("ScheduledTransactionsController", () => {
         actorIsNotOwner: true,
         occurrencePin: PIN,
       });
+    });
+  });
+
+  describe("previewAmountEstimate()", () => {
+    it("delegates to the service with the caller's id and the matched basis", async () => {
+      const expected = { status: "no-history", months: {} };
+      mockService.previewAmountEstimate.mockResolvedValue(expected);
+
+      const result = await controller.previewAmountEstimate(mockReq, "acc-1", {
+        payeeId: "payee-1",
+        categoryId: "cat-1",
+      });
+
+      expect(result).toBe(expected);
+      expect(mockService.previewAmountEstimate).toHaveBeenCalledWith(
+        mockReq.user.id,
+        { accountId: "acc-1", payeeId: "payee-1", categoryId: "cat-1" },
+      );
     });
   });
 

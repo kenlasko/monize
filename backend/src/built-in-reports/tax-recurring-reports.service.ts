@@ -511,6 +511,7 @@ export class TaxRecurringReportsService {
         st.id,
         st.name,
         st.amount,
+        st.amount_is_estimated,
         COALESCE(p.name, st.payee_name) as payee_name
       FROM scheduled_transactions st
       LEFT JOIN payees p ON p.id = st.payee_id
@@ -522,6 +523,7 @@ export class TaxRecurringReportsService {
       id: string;
       name: string;
       amount: string;
+      amount_is_estimated: boolean;
       payee_name: string | null;
     }
 
@@ -554,7 +556,13 @@ export class TaxRecurringReportsService {
     // the report once showed the lowercased key as the payee.
     const payeeToScheduled = new Map<
       string,
-      { id: string; name: string; payeeName: string; amount: number }
+      {
+        id: string;
+        name: string;
+        payeeName: string;
+        amount: number;
+        estimated: boolean;
+      }
     >();
     scheduledTx.forEach((st) => {
       if (st.payee_name) {
@@ -563,6 +571,7 @@ export class TaxRecurringReportsService {
           name: st.name,
           payeeName: st.payee_name,
           amount: Math.abs(toMoneyNumber(st.amount, MONEY_SCALE)),
+          estimated: st.amount_is_estimated === true,
         });
       }
     });
@@ -636,9 +645,13 @@ export class TaxRecurringReportsService {
         gaps.record(tx.currency_code);
         return;
       }
+      // An estimated bill (issue #2096) varies by month by design, so its
+      // stored snapshot is no band to match a payment against: every payment
+      // to its payee is one of its payments.
       if (
-        txAmount >= scheduled.amount * 0.8 &&
-        txAmount <= scheduled.amount * 1.2
+        scheduled.estimated ||
+        (txAmount >= scheduled.amount * 0.8 &&
+          txAmount <= scheduled.amount * 1.2)
       ) {
         let payment = billPaymentMap.get(scheduled.id);
         if (!payment) {

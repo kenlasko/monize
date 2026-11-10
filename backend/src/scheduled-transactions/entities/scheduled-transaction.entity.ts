@@ -176,6 +176,16 @@ export class ScheduledTransaction {
   @Column({ name: "auto_post", default: false })
   autoPost: boolean;
 
+  /**
+   * Price every occurrence without an amount-stating override from the payee
+   * and category's payment history, per calendar month
+   * (`ScheduledAmountEstimateService`, docs/specs/scheduled-amount-estimate.md).
+   * `amount` is then the snapshot for the next occurrence, never the figure a
+   * surface shows. Plain schedules only, never auto-posted.
+   */
+  @Column({ name: "amount_is_estimated", default: false })
+  amountIsEstimated: boolean;
+
   @Column({ type: "int", name: "reminder_days_before", default: 3 })
   reminderDaysBefore: number;
 

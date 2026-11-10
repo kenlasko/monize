@@ -30,6 +30,7 @@ import { UpdateScheduledTransactionDto } from "./dto/update-scheduled-transactio
 import { PostScheduledTransactionDto } from "./dto/post-scheduled-transaction.dto";
 import { SkipScheduledTransactionDto } from "./dto/skip-scheduled-transaction.dto";
 import { ScheduledOccurrencesQueryDto } from "./dto/scheduled-occurrences-query.dto";
+import { AmountEstimateQueryDto } from "./dto/amount-estimate-query.dto";
 import {
   LOAN_OCCURRENCES_DEFAULT_COUNT,
   LoanOccurrencesQueryDto,
@@ -40,6 +41,7 @@ import {
 } from "./dto/scheduled-transaction-override.dto";
 import {
   AllowDelegate,
+  DelegatedAccountParam,
   DelegatedBodyAccounts,
   DelegatedTransferBody,
   DelegatedScheduledParam,
@@ -195,6 +197,34 @@ export class ScheduledTransactionsController {
         { through: query.through, maxPerSchedule: query.maxPerSchedule },
       );
     return this.filterForDelegate(req, rows);
+  }
+
+  // Before `:id` as well: "amount-estimate" is a literal path segment.
+  @Get("amount-estimate/:accountId")
+  @ApiOperation({
+    summary:
+      "Preview the estimated amount a schedule paying this payee in this category would carry",
+    description:
+      "The per-month estimate from the payee and category's payment history " +
+      "over the last 24 months, in the account's currency (issue #2096). The " +
+      "same estimate a saved schedule with the Estimate option reads.",
+  })
+  @ApiParam({ name: "accountId", description: "Account UUID" })
+  @ApiResponse({ status: 200, description: "Estimate preview" })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @AllowDelegate()
+  @DelegateRequiresSection("bills")
+  @DelegatedAccountParam("accountId")
+  previewAmountEstimate(
+    @Request() req,
+    @Param("accountId", ParseUUIDPipe) accountId: string,
+    @Query() query: AmountEstimateQueryDto,
+  ) {
+    return this.scheduledTransactionsService.previewAmountEstimate(
+      req.user.id,
+      { accountId, payeeId: query.payeeId, categoryId: query.categoryId },
+    );
   }
 
   // Also before `:id`: "loan-anchor" is a literal path segment.

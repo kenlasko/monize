@@ -115,6 +115,14 @@ import {
 } from "../common/fx-entry.util";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import {
+  ScheduleAmountEstimate,
+  ScheduleAmountEstimateReadModel,
+  ScheduleEstimateBasis,
+  ScheduledAmountEstimateService,
+  estimateReadModel,
+  estimatedAmountFor,
+} from "./scheduled-amount-estimate.service";
+import {
   convertingTotal,
   memoizedRateResolver,
 } from "../common/converting-total";
@@ -154,6 +162,11 @@ export interface LlmScheduledItem {
   amount: number | null;
   /** `amount !== null`. False means the current amount could not be determined. */
   amountComplete: boolean;
+  /**
+   * `amount` is the schedule's estimate from its payment history (issue
+   * #2096), not a figure the user entered; an answer calls it an estimate.
+   */
+  amountEstimated: boolean;
   /**
    * The currency `amount` is in. For an investment schedule this is the
    * *settlement* currency the cash lands in, not the brokerage account's.
@@ -266,6 +279,13 @@ export type ScheduledTransactionReadModel = ScheduledTransaction & {
    * occurrence by occurrence. Empty for a bill without a rule.
    */
   payrollDeductions: ScheduledPayrollDeduction[];
+  /**
+   * The history estimate of an `amountIsEstimated` schedule, one amount per
+   * month over the horizon a client projects (issue #2096); `null` for every
+   * other schedule. `effectiveAmount` is then the next occurrence's month, and
+   * an override that states no amount carries its own month's estimate.
+   */
+  amountEstimate: ScheduleAmountEstimateReadModel | null;
 };
 
 /**
@@ -299,6 +319,8 @@ export interface ScheduledOccurrenceReadModel {
   overrideId: string | null;
   /** True when an override moved this occurrence off its recurrence slot. */
   moved: boolean;
+  /** `amount` is the schedule's history estimate for this month (issue #2096). */
+  estimated: boolean;
   accountId: string;
   transferAccountId: string | null;
   isTransfer: boolean;
@@ -360,6 +382,9 @@ function sameScheduleMutationBasis(
     a.isInvestment === b.isInvestment &&
     a.isTransfer === b.isTransfer &&
     a.isSplit === b.isSplit &&
+    // An estimated schedule posts the estimate prepared before the lock; a
+    // concurrent switch to or from estimating changes what the post means.
+    (a.amountIsEstimated ?? false) === (b.amountIsEstimated ?? false) &&
     a.accountId === b.accountId &&
     a.transferAccountId === b.transferAccountId &&
     a.categoryId === b.categoryId &&
@@ -554,6 +579,10 @@ export class ScheduledTransactionsService {
     // imports this module back -- the edge sits on a require cycle.
     @Inject(forwardRef(() => SystemAlertService))
     private systemAlerts: SystemAlertService,
+    // The history estimate of an estimated schedule (issue #2096): the list
+    // read model, the save-time snapshot, the form's preview and the posting
+    // default all read it from here.
+    private amountEstimates: ScheduledAmountEstimateService,
   ) {}
 
   @Cron("5 * * * *")
@@ -597,6 +626,9 @@ export class ScheduledTransactionsService {
                   userId: In(userIds),
                   isActive: true,
                   autoPost: true,
+                  // An estimated schedule is never auto-posted (issue #2096):
+                  // the estimate is a forecast, and a person confirms it.
+                  amountIsEstimated: false,
                   nextDueDate: LessThanOrEqual(today) as any,
                 },
                 relations: INVESTMENT_RELATIONS,
@@ -618,6 +650,9 @@ export class ScheduledTransactionsService {
               .andWhere("o.originalDate = st.nextDueDate")
               .andWhere("st.isActive = :active", { active: true })
               .andWhere("st.autoPost = :autoPost", { autoPost: true })
+              .andWhere("st.amountIsEstimated = :estimated", {
+                estimated: false,
+              })
               .select("st.id", "id")
               .distinct(true)
               .getRawMany();
@@ -1017,6 +1052,32 @@ export class ScheduledTransactionsService {
       isInvestment: !!isInvestment,
     });
 
+    // An estimated schedule (issue #2096) is refused in any shape the estimate
+    // cannot price, before anything is written; its stored amount is the next
+    // occurrence's estimate when there is one.
+    if (createDto.amountIsEstimated) {
+      this.assertEstimatable({
+        isSplit: !!(hasSplits && !isTransfer),
+        isTransfer: !!isTransfer,
+        isInvestment: !!isInvestment,
+        isForeign: fx.originalCurrencyCode !== null,
+        autoPost: !!createDto.autoPost,
+        payeeId: createDto.payeeId ?? null,
+        categoryId: createDto.categoryId ?? null,
+      });
+    }
+    const scheduleAmount = createDto.amountIsEstimated
+      ? ((await this.estimatedSnapshot(
+          userId,
+          {
+            payeeId: createDto.payeeId ?? null,
+            categoryId: createDto.categoryId ?? null,
+            currencyCode: account.currencyCode,
+          },
+          createDto.nextDueDate,
+        )) ?? createDto.amount)
+      : createDto.amount;
+
     // Record the currency pair a stored investment rate belongs to (issue
     // #1167). Only resolved when a rate is actually supplied, so a rateless
     // investment schedule adds no reads and no new failure modes.
@@ -1041,7 +1102,7 @@ export class ScheduledTransactionsService {
         m,
         account.currencyCode,
         {
-          amount: createDto.amount,
+          amount: scheduleAmount,
           originalAmount: fx.originalAmount,
           originalCurrencyCode: fx.originalCurrencyCode,
           splits: hasSplits && !isTransfer ? splits : undefined,
@@ -1055,6 +1116,8 @@ export class ScheduledTransactionsService {
       const repo = m.getRepository(ScheduledTransaction);
       const scheduledTransaction = repo.create({
         ...transactionData,
+        amount: scheduleAmount,
+        amountIsEstimated: createDto.amountIsEstimated === true,
         userId,
         startDate: transactionData.startDate || transactionData.nextDueDate,
         totalOccurrences: transactionData.occurrencesRemaining,
@@ -1128,6 +1191,66 @@ export class ScheduledTransactionsService {
     });
 
     return this.findOne(userId, saved.id);
+  }
+
+  /**
+   * Refuse a schedule an estimate cannot price (issue #2096,
+   * docs/specs/scheduled-amount-estimate.md 2): only a plain, single-category,
+   * account-currency schedule with a payee is estimated, and never auto-posted,
+   * because the estimate is a forecast a person confirms when posting.
+   */
+  private assertEstimatable(shape: {
+    isSplit: boolean;
+    isTransfer: boolean;
+    isInvestment: boolean;
+    isForeign: boolean;
+    autoPost: boolean;
+    payeeId: string | null;
+    categoryId: string | null;
+  }): void {
+    if (
+      shape.isSplit ||
+      shape.isTransfer ||
+      shape.isInvestment ||
+      shape.isForeign
+    ) {
+      throw new BadRequestException(
+        tr(
+          "errors.scheduled.estimateRequiresPlain",
+          "An estimated amount is only available for a single-category transaction in the account's currency, not a split, a transfer, an investment or a foreign-currency amount",
+        ),
+      );
+    }
+    if (shape.autoPost) {
+      throw new BadRequestException(
+        tr(
+          "errors.scheduled.estimateNoAutoPost",
+          "A scheduled transaction with an estimated amount cannot be posted automatically",
+        ),
+      );
+    }
+    if (!shape.payeeId || !shape.categoryId) {
+      throw new BadRequestException(
+        tr(
+          "errors.scheduled.estimateRequiresPayeeAndCategory",
+          "An estimated amount needs a payee and a category to match the payment history on",
+        ),
+      );
+    }
+  }
+
+  /**
+   * The estimate for the occurrence due on `dueDate`, the snapshot an estimated
+   * schedule stores in `amount`; `null` when the estimate is unknown, in which
+   * case the caller keeps the amount it has.
+   */
+  private async estimatedSnapshot(
+    userId: string,
+    basis: ScheduleEstimateBasis,
+    dueDate: string,
+  ): Promise<number | null> {
+    const estimate = await this.amountEstimates.estimateFor(userId, basis);
+    return estimatedAmountFor(estimate, ensureYMD(dueDate));
   }
 
   /**
@@ -1852,9 +1975,14 @@ export class ScheduledTransactionsService {
     // read one server-authoritative answer rather than each deriving its own
     // (issue #1247).
     const effective = await this.effectiveAmounts.resolveMany(userId, rows);
+    // The history estimate of each estimated schedule (issue #2096), read
+    // outside the list transaction for the same reason: its rate lookup can
+    // fetch from a provider.
+    const estimates = await this.estimatesFor(userId, rows);
 
     return rows.map((row) => {
       const resolved = effective.get(row.id)!;
+      const estimate = estimates.get(row.id) ?? null;
       // Each override that carries an investment gets its own effective total
       // too (#1167 F5-2): a per-occurrence override is FX-sensitive the same way
       // the base schedule is, and its stored `amount` is a stale snapshot once a
@@ -1864,6 +1992,26 @@ export class ScheduledTransactionsService {
       // what other readers of the same transaction hold.
       const augmentOverride = (override: ScheduledTransactionOverride) => {
         const own = resolved.overrides.get(overrideEffectiveKey(override));
+        // An override that states no amount of its own follows the estimate
+        // for the month it falls in, exactly as the occurrence expansion
+        // prices it.
+        if (
+          estimate &&
+          (override.amount === null || override.amount === undefined) &&
+          override.isSplit !== true
+        ) {
+          const amount = estimatedAmountFor(
+            estimate,
+            ensureYMD(override.overrideDate),
+          );
+          return {
+            ...override,
+            investmentForecastAmount: null,
+            effectiveAmount: amount,
+            effectiveAmountComplete: amount !== null,
+            effectiveDirectionAmount: amount,
+          };
+        }
         return {
           ...override,
           investmentForecastAmount: own?.investmentForecastAmount ?? null,
@@ -1872,6 +2020,22 @@ export class ScheduledTransactionsService {
           effectiveDirectionAmount: own?.effective.directionAmount ?? null,
         };
       };
+      // An estimated schedule's base is its estimate for the next occurrence's
+      // slot: the figure every "what is coming up" surface shows.
+      const base = estimate
+        ? (() => {
+            const amount = estimatedAmountFor(
+              estimate,
+              ensureYMD(row.nextDueDate),
+            );
+            return {
+              amount,
+              complete: amount !== null,
+              currencyCode: estimate.currencyCode,
+              directionAmount: amount,
+            };
+          })()
+        : resolved.base;
       return {
         ...row,
         nextOverride: row.nextOverride
@@ -1880,17 +2044,55 @@ export class ScheduledTransactionsService {
         futureOverrides: row.futureOverrides?.map(augmentOverride),
         investmentForecastExchangeRate: resolved.investmentForecastExchangeRate,
         investmentForecastAmount: resolved.investmentForecastAmount,
-        effectiveAmount: resolved.base.amount,
-        effectiveAmountComplete: resolved.base.complete,
-        effectiveCurrencyCode: resolved.base.currencyCode,
+        effectiveAmount: base.amount,
+        effectiveAmountComplete: base.complete,
+        effectiveCurrencyCode: base.currencyCode,
         // The account that effective amount belongs to, so no client has to
         // re-derive "which account settles this" (issue #1247).
         settlementAccountId: resolved.settlementAccountId,
         // Whether the direction is derivable at all, so a client never has to
         // reach for the snapshot's sign (issue #1247 re-audit).
-        effectiveDirectionAmount: resolved.base.directionAmount,
+        effectiveDirectionAmount: base.directionAmount,
+        amountEstimate: estimate ? estimateReadModel(estimate) : null,
       };
     });
+  }
+
+  /** The history estimate of every estimated row, keyed by schedule id. */
+  private async estimatesFor(
+    userId: string,
+    rows: ScheduledTransaction[],
+  ): Promise<Map<string, ScheduleAmountEstimate>> {
+    const bases = new Map<string, ScheduleEstimateBasis>();
+    for (const row of rows) {
+      if (!row.amountIsEstimated) continue;
+      bases.set(row.id, {
+        payeeId: row.payeeId,
+        categoryId: row.categoryId,
+        currencyCode: row.currencyCode,
+      });
+    }
+    if (bases.size === 0) return new Map();
+    return this.amountEstimates.estimateMany(userId, bases);
+  }
+
+  /**
+   * The estimate a schedule on `accountId` paying `payeeId` in `categoryId`
+   * would carry: the schedule form's preview (issue #2096). The same service,
+   * basis and rounding as the saved schedule's read, so the preview is what
+   * the save will show.
+   */
+  async previewAmountEstimate(
+    userId: string,
+    query: { accountId: string; payeeId: string; categoryId: string },
+  ): Promise<ScheduleAmountEstimateReadModel> {
+    const account = await this.accountsService.findOne(userId, query.accountId);
+    const estimate = await this.amountEstimates.estimateFor(userId, {
+      payeeId: query.payeeId,
+      categoryId: query.categoryId,
+      currencyCode: account.currencyCode,
+    });
+    return estimateReadModel(estimate);
   }
 
   async findOne(userId: string, id: string): Promise<ScheduledTransaction> {
@@ -2206,6 +2408,7 @@ export class ScheduledTransactionsService {
       currencyCode: occurrence.currencyCode,
       overrideId: occurrence.overrideId,
       moved: occurrence.moved,
+      estimated: occurrence.estimated,
       accountId: occurrence.schedule.accountId,
       transferAccountId: occurrence.schedule.transferAccountId ?? null,
       isTransfer: !!occurrence.schedule.isTransfer,
@@ -2431,6 +2634,72 @@ export class ScheduledTransactionsService {
       fieldsToUpdate.reminderDaysBefore = updateData.reminderDaysBefore;
     if (updateData.tagIds !== undefined)
       fieldsToUpdate.tagIds = updateData.tagIds;
+
+    // The estimate flag (issue #2096). Asked for explicitly, an unpriceable
+    // shape is refused; carried over from the stored row, a switch to a split,
+    // transfer, investment or foreign-currency amount drops it -- as that
+    // switch drops the foreign-currency trio -- while turning auto-post on or
+    // clearing the payee or category is refused.
+    const estimateShape = {
+      isSplit: effectiveIsSplit,
+      isTransfer: !!effectiveIsTransfer,
+      isInvestment: !!effectiveIsInvestment,
+      isForeign:
+        (fieldsToUpdate.originalCurrencyCode !== undefined
+          ? fieldsToUpdate.originalCurrencyCode
+          : scheduled.originalCurrencyCode) != null,
+      autoPost: updateData.autoPost ?? scheduled.autoPost,
+      payeeId:
+        fieldsToUpdate.payeeId !== undefined
+          ? (fieldsToUpdate.payeeId as string | null)
+          : scheduled.payeeId,
+      categoryId: effectiveIsInvestment
+        ? null
+        : fieldsToUpdate.categoryId !== undefined
+          ? (fieldsToUpdate.categoryId as string | null)
+          : scheduled.categoryId,
+    };
+    let effectiveEstimated =
+      updateData.amountIsEstimated ?? scheduled.amountIsEstimated ?? false;
+    if (updateData.amountIsEstimated === true) {
+      this.assertEstimatable(estimateShape);
+    } else if (effectiveEstimated) {
+      if (
+        estimateShape.isSplit ||
+        estimateShape.isTransfer ||
+        estimateShape.isInvestment ||
+        estimateShape.isForeign
+      ) {
+        effectiveEstimated = false;
+      } else {
+        this.assertEstimatable(estimateShape);
+      }
+    }
+    if (effectiveEstimated !== (scheduled.amountIsEstimated ?? false)) {
+      fieldsToUpdate.amountIsEstimated = effectiveEstimated;
+    }
+    if (effectiveEstimated) {
+      const snapshot = await this.estimatedSnapshot(
+        userId,
+        {
+          payeeId: estimateShape.payeeId,
+          categoryId: estimateShape.categoryId,
+          currencyCode: accountCurrencyCode,
+        },
+        (fieldsToUpdate.nextDueDate as string | undefined) ??
+          ensureYMD(scheduled.nextDueDate),
+      );
+      // A form resends the amount it loaded; only a different estimate is a
+      // change worth writing.
+      if (
+        snapshot !== null &&
+        !sameNullableNumber(snapshot, Number(scheduled.amount))
+      ) {
+        fieldsToUpdate.amount = snapshot;
+      } else if (snapshot !== null) {
+        delete fieldsToUpdate.amount;
+      }
+    }
 
     if (isTransfer !== undefined) {
       fieldsToUpdate.isTransfer = isTransfer;
@@ -2709,7 +2978,12 @@ export class ScheduledTransactionsService {
         m,
         accountCurrencyCode,
         {
-          amount: updateData.amount ?? Number(current.amount),
+          // The amount being written: the request's, or an estimated
+          // schedule's snapshot (issue #2096), else the stored one.
+          amount:
+            fieldsToUpdate.amount !== undefined
+              ? Number(fieldsToUpdate.amount)
+              : Number(current.amount),
           originalAmount:
             fieldsToUpdate.originalAmount !== undefined
               ? fieldsToUpdate.originalAmount
@@ -3321,14 +3595,49 @@ export class ScheduledTransactionsService {
       moneyDecimals,
     });
 
+    // An estimated occurrence with no amount of its own posts the estimate for
+    // the month it falls in -- the figure the bills list and the forecast
+    // showed for it (issue #2096) -- never the stored snapshot. An unknown
+    // estimate is refused: the person enters the amount instead.
+    const overrideStatesAmount =
+      storedOverride?.amount !== null && storedOverride?.amount !== undefined;
+    let estimatedAmount: number | null = null;
+    if (
+      scheduled.amountIsEstimated &&
+      !fx &&
+      !hasInlineAmount &&
+      !overrideStatesAmount
+    ) {
+      estimatedAmount = await this.estimatedSnapshot(
+        userId,
+        {
+          payeeId: scheduled.payeeId,
+          categoryId: scheduled.categoryId,
+          currencyCode: scheduled.currencyCode,
+        },
+        storedOverride?.overrideDate
+          ? ensureYMD(storedOverride.overrideDate)
+          : nextDueDateStr,
+      );
+      if (estimatedAmount === null) {
+        throw new BadRequestException(
+          tr(
+            "errors.scheduled.estimateUnknown",
+            "The estimated amount of this occurrence is unknown. Enter the amount to post it.",
+          ),
+        );
+      }
+    }
+
     const finalAmount = fx
       ? fx.amount
       : hasInlineAmount
         ? Number(postDto.amount)
-        : storedOverride?.amount !== null &&
-            storedOverride?.amount !== undefined
+        : overrideStatesAmount
           ? Number(storedOverride.amount)
-          : Number(scheduled.amount);
+          : estimatedAmount !== null
+            ? estimatedAmount
+            : Number(scheduled.amount);
 
     const finalDescription = hasInlineDescription
       ? postDto.description
@@ -3731,7 +4040,7 @@ export class ScheduledTransactionsService {
       // option, so an explicit user post of an inactive schedule still works.
       if (
         options.requireActiveAutoPost &&
-        (!current.isActive || !current.autoPost)
+        (!current.isActive || !current.autoPost || current.amountIsEstimated)
       ) {
         throw new ConflictException(
           tr(
@@ -4758,6 +5067,7 @@ function toLlmScheduledItem(
     categoryName: row.category?.name ?? null,
     amount: occurrence.amount,
     amountComplete: occurrence.complete,
+    amountEstimated: occurrence.estimated,
     currency: occurrence.currencyCode,
     frequency: row.frequency,
     nextDueDate: occurrence.dueDate,

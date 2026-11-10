@@ -5,6 +5,7 @@ import { I18nService } from "nestjs-i18n";
 import { BillReminderService } from "./bill-reminder.service";
 import { ScheduledEffectiveAmountService } from "../scheduled-transactions/scheduled-effective-amount.service";
 import { ScheduledOccurrenceService } from "../scheduled-transactions/scheduled-occurrence.service";
+import { ScheduledAmountEstimateService } from "../scheduled-transactions/scheduled-amount-estimate.service";
 import { ScheduledTransactionLoanService } from "../scheduled-transactions/scheduled-transaction-loan.service";
 import { InvestmentTransactionsService } from "../securities/investment-transactions.service";
 import {
@@ -98,6 +99,15 @@ describe("BillReminderService", () => {
         // Both read-side services are real over the stubbed FX source: which
         // occurrence is due and what it costs ARE their output (issue #1247).
         ScheduledOccurrenceService,
+        // No estimated schedule unless a test says so (issue #2096); the
+        // estimate's own arithmetic is `amount-estimate.spec.ts`'s.
+        {
+          provide: ScheduledAmountEstimateService,
+          useValue: {
+            estimateMany: jest.fn().mockResolvedValue(new Map()),
+            estimateFor: jest.fn(),
+          },
+        },
         // No loan bill here: the per-occurrence loan pricing is
         // `scheduled-occurrence.service.spec.ts`'s.
         {

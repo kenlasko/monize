@@ -18,6 +18,12 @@ import {
   LoanOccurrencesProjection,
   ScheduledTransactionLoanService,
 } from "./scheduled-transaction-loan.service";
+import {
+  ScheduleAmountEstimateStatus,
+  ScheduleEstimateBasis,
+  ScheduledAmountEstimateService,
+  estimatedAmountFor,
+} from "./scheduled-amount-estimate.service";
 
 /**
  * How far ahead of today a loan bill's occurrences after the next are priced
@@ -86,6 +92,17 @@ export interface EffectiveScheduledOccurrence {
   settlementAccountId: string;
   /** The settlement pair behind an unresolvable amount, when there is one to name. */
   settlementPair: { from: string; to: string } | null;
+  /**
+   * The amount is the schedule's estimate from its payment history (issue
+   * #2096), not a figure anyone entered. A surface labels it as an estimate.
+   * False for every occurrence an override states the amount of.
+   */
+  estimated: boolean;
+  /**
+   * Why an estimated occurrence's amount is what it is, or unknown
+   * (`ScheduleAmountEstimateStatus`); `null` when `estimated` is false.
+   */
+  estimateStatus: ScheduleAmountEstimateStatus | null;
 }
 
 /**
@@ -132,6 +149,7 @@ export class ScheduledOccurrenceService {
     private readonly dataSource: DataSource,
     private readonly effectiveAmounts: ScheduledEffectiveAmountService,
     private readonly loanService: ScheduledTransactionLoanService,
+    private readonly estimates: ScheduledAmountEstimateService,
   ) {}
 
   /**
@@ -192,14 +210,24 @@ export class ScheduledOccurrenceService {
           moved: slot.moved,
           settlementAccountId: resolved.settlementAccountId,
           settlementPair: resolved.settlementPair,
+          // Priced from the history below; an override stating an amount (or
+          // its own split lines) keeps that amount.
+          estimated:
+            row.amountIsEstimated === true &&
+            (!slot.override ||
+              ((slot.override.amount === null ||
+                slot.override.amount === undefined) &&
+                slot.override.isSplit !== true)),
+          estimateStatus: null,
           schedule: row,
         });
       }
     }
 
+    const estimated = await this.priceEstimatedOccurrences(userId, occurrences);
     const priced = await this.priceLoanOccurrences(
       userId,
-      occurrences,
+      estimated,
       overridesBySchedule,
     );
 
@@ -291,7 +319,7 @@ export class ScheduledOccurrenceService {
               SELECT 1 FROM scheduled_transaction_overrides ovr
               WHERE ovr.scheduled_transaction_id = st.id
                 AND (ovr.amount IS NOT NULL OR ovr.is_split = true)
-            ))`,
+            ) OR st.amountIsEstimated = true)`,
           { investmentKind: SplitKind.INVESTMENT },
         );
       }
@@ -337,6 +365,48 @@ export class ScheduledOccurrenceService {
       kept.push(occurrence);
     }
     return kept;
+  }
+
+  /**
+   * Each estimated occurrence at its schedule's estimate for the month it falls
+   * in (issue #2096, docs/specs/scheduled-amount-estimate.md).
+   *
+   * The estimate is read here, per occurrence, rather than folded into the
+   * resolver's one base amount: a seasonal bill costs a different amount each
+   * month, and a single base would price every month the same. An unknown
+   * estimate (no payee or category, no history, no current rate) is unknown
+   * here too, with an unknown direction -- never the stored snapshot.
+   */
+  private async priceEstimatedOccurrences(
+    userId: string,
+    occurrences: ResolvedScheduledOccurrence[],
+  ): Promise<ResolvedScheduledOccurrence[]> {
+    const bases = new Map<string, ScheduleEstimateBasis>();
+    for (const occurrence of occurrences) {
+      if (!occurrence.estimated) continue;
+      const { schedule } = occurrence;
+      bases.set(schedule.id, {
+        payeeId: schedule.payeeId,
+        categoryId: schedule.categoryId,
+        currencyCode: schedule.currencyCode,
+      });
+    }
+    if (bases.size === 0) return occurrences;
+
+    const estimates = await this.estimates.estimateMany(userId, bases);
+    return occurrences.map((occurrence) => {
+      if (!occurrence.estimated) return occurrence;
+      const estimate = estimates.get(occurrence.scheduledTransactionId)!;
+      const amount = estimatedAmountFor(estimate, occurrence.dueDate);
+      return {
+        ...occurrence,
+        amount,
+        directionAmount: amount,
+        currencyCode: estimate.currencyCode,
+        complete: amount !== null,
+        estimateStatus: estimate.status,
+      };
+    });
   }
 
   /**
