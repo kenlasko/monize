@@ -33,7 +33,7 @@ Many more widgets are available but hidden by default; see [Optional Widgets](#o
 
 ### Dashboard Hero
 
-Above the widgets, under the greeting, the dashboard hero sums up where you stand. It has two sets, chosen in [Customize](#customizing-your-dashboard). On **Auto**, the default, it slides from one to the other every minute if you have investments, and otherwise stays on net worth. Choose **Net worth** or **Portfolio value** instead to keep it on one set. Whichever you choose, the two dots beside the greeting switch to the other set at any time; on Auto, that set then stays for a full minute.
+Above the widgets, under the greeting, the dashboard hero sums up where you stand. It has two sets, chosen in [Customize](#customizing-your-dashboard). On **Auto**, the default, it slides from one to the other every minute if you have investments, and otherwise stays on net worth. Choose **Net worth** or **Portfolio value** instead to keep it on one set. Whichever you choose, the two dots at the end of the line under the greeting switch to the other set at any time; on Auto, that set then stays for a full minute.
 
 **Net worth**:
 
@@ -60,7 +60,7 @@ The hero is on by default. With it off, the dashboard opens with just the greeti
 
 #### Trivia
 
-On a large screen, a line of trivia beside the figures points out something about your money: your high point, your biggest single-month jump, your largest holding. A **Net worth** or **Investments** badge says which it is about, and the line follows the set the hero is showing.
+On a large screen, a line of trivia beside the greeting points out something about your money: your high point, your biggest single-month jump, your largest holding. A **Net worth** or **Investments** badge says which it is about, and the line follows the set the hero is showing.
 
 While the hero is on, the list is rebuilt once a day, and a sentence is only written about figures that are fully known. If you have an [AI provider](ai.md) set up, it words the sentences in your language, marked with a small sparkle; every figure in them still comes from your own data, and account and security names are not sent to the provider. Without one, or if it doesn't answer, Monize writes them itself from the same calculations. A provider reached through the MCP relay is not used for this. To turn the line off, use **AI trivia** in [AI Settings](ai.md#ai-trivia).
 

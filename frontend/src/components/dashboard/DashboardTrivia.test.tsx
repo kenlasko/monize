@@ -129,6 +129,17 @@ describe('DashboardTrivia', () => {
     expect(screen.getByTestId('dashboard-trivia')).toHaveTextContent('net one A');
   });
 
+  it('keeps to four lines and offers the whole sentence on hover', () => {
+    trivia = list({
+      items: [{ topic: 'netWorth', source: 'ai', text: 'Long {a}' }],
+      figures: { a: { kind: 'text', value: 'A' } },
+    });
+    show();
+    const line = screen.getByTestId('dashboard-trivia');
+    expect(line.className).toContain('line-clamp-4');
+    expect(line).toHaveAttribute('title', 'Long A');
+  });
+
   it('renders nothing with nothing to say', () => {
     trivia = list({});
     show();

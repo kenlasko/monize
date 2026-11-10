@@ -24,8 +24,8 @@ const TOPIC_BADGE: Record<TriviaTopic, BadgeVariant> = {
 const PLACEHOLDER = /\{([A-Za-z]+)\}/g;
 
 /**
- * One sentence of the day's list, in its column between the figures and the
- * chart: the facts about the set the hero is showing, or the other set's when
+ * One sentence of the day's list, beside the greeting and above the figures:
+ * the facts about the set the hero is showing, or the other set's when
  * it has none. The badge says which of the two it is about.
  */
 export function DashboardTrivia({
@@ -104,17 +104,23 @@ export function DashboardTrivia({
       : t(`trivia.facts.${item.factId}` as Parameters<typeof t>[0], figures);
 
   return (
-    <div data-testid="dashboard-trivia">
-      <Badge variant={TOPIC_BADGE[item.topic]}>{t(`trivia.topics.${item.topic}`)}</Badge>
-      <p className="mt-1.5 text-sm leading-snug text-gray-600 dark:text-gray-300">
-        {sentence}
-        {item.source === 'ai' && (
-          <SparklesIcon
-            title={t('trivia.aiGenerated')}
-            className="ml-1.5 inline h-3.5 w-3.5 align-text-bottom text-gray-400 dark:text-gray-500"
-          />
-        )}
-      </p>
-    </div>
+    // At most four lines, so it never makes the greeting's row taller; a longer
+    // sentence ends in an ellipsis and is whole on hover.
+    <p
+      data-testid="dashboard-trivia"
+      title={sentence}
+      className="line-clamp-4 text-xs leading-5 text-gray-600 dark:text-gray-300"
+    >
+      <Badge variant={TOPIC_BADGE[item.topic]} className="mr-1.5">
+        {t(`trivia.topics.${item.topic}`)}
+      </Badge>
+      {sentence}
+      {item.source === 'ai' && (
+        <SparklesIcon
+          title={t('trivia.aiGenerated')}
+          className="ml-1.5 inline h-3.5 w-3.5 align-text-bottom text-gray-400 dark:text-gray-500"
+        />
+      )}
+    </p>
   );
 }

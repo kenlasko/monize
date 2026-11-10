@@ -158,15 +158,21 @@ describe('DashboardHero', () => {
     expect(triviaState.asked).not.toContain(true);
   });
 
-  it('reserves the trivia column only when there is something to put in it', () => {
-    const zone = () =>
-      screen.getByTestId('dashboard-hero-root').style.getPropertyValue('--hero-trivia-zone');
-    const first = renderHero();
-    expect(zone()).toBe('16.5rem');
-    first.unmount();
+  it('puts the trivia beside the greeting and the switcher outside it, both off the track', () => {
+    renderHero();
+    const headRow = screen.getByRole('heading', { name: 'Good evening, Ken' }).closest(
+      '[data-testid="dashboard-hero-root"] > div',
+    );
+    const switcher = screen.getByRole('group', { name: 'Choose what the hero shows' });
+    expect(headRow).toContainElement(screen.getByTestId('trivia'));
+    expect(headRow).not.toContainElement(switcher);
+    expect(screen.getByTestId('dashboard-hero-track')).not.toContainElement(screen.getByTestId('trivia'));
+    expect(screen.getByTestId('dashboard-hero-track')).not.toContainElement(switcher);
+  });
+
+  it('shows no trivia for an empty list', () => {
     triviaState.list = { items: [], figures: {}, generatedAt: '' };
     renderHero();
-    expect(zone()).toBe('0px');
     expect(screen.queryByTestId('trivia')).not.toBeInTheDocument();
   });
 

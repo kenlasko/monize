@@ -39,9 +39,6 @@ interface DashboardHeroProps {
   header: ReactNode;
 }
 
-/** The trivia column's width (`w-56`) and the gap before it (`gap-x-10`). */
-const TRIVIA_ZONE = '16.5rem';
-
 const TRIVIA_TOPIC = { netWorth: 'netWorth', portfolio: 'investments' } as const;
 
 /**
@@ -83,45 +80,50 @@ export function DashboardHero({
     <div
       className="relative mb-6"
       data-testid="dashboard-hero-root"
-      style={
-        {
-          '--hero-head-h': `${headHeight}px`,
-          '--hero-trivia-zone': showTrivia ? TRIVIA_ZONE : '0px',
-        } as CSSProperties
-      }
+      style={{ '--hero-head-h': `${headHeight}px` } as CSSProperties}
     >
-      <div ref={headRef} className="flex items-start justify-between gap-3 lg:w-[26rem] xl:w-[30rem]">
+      <div ref={headRef} className="flex items-start gap-4 lg:w-1/2">
         {/* Beside the figures the headline is what collapses into the app
             header, so the greeting does not. */}
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-initial">
           <CollapsingTitleContext.Provider value={false}>{header}</CollapsingTitleContext.Provider>
         </div>
-        {sets.length > 1 && (
-          <div role="group" aria-label={t('hero.cycleControls')} className="mt-1 flex flex-shrink-0">
-            {sets.map((set) => (
-              <button
-                key={set}
-                type="button"
-                aria-pressed={set === active}
-                aria-label={t('hero.showSet', { name: setName(set) })}
-                title={setName(set)}
-                onClick={() => goTo(set)}
-                className="flex h-6 w-6 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                <span
-                  aria-hidden="true"
-                  className={`h-2 w-2 rounded-full transition-colors motion-reduce:transition-none ${
-                    set === active ? 'bg-blue-600 dark:bg-blue-400' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                />
-              </button>
-            ))}
+        {/* The space beside the greeting, above the figures. */}
+        {/* Out of the flow, so the row keeps the greeting's height whatever it holds. */}
+        {trivia && showTrivia && (
+          <div className="relative min-w-[12rem] flex-1 self-stretch">
+            <div className="absolute inset-x-0 top-1">
+              <DashboardTrivia trivia={trivia} topic={TRIVIA_TOPIC[active]} heroCycling={cycling} />
+            </div>
           </div>
         )}
       </div>
-      {trivia && showTrivia && (
-        <div className="absolute top-1 left-[calc(30rem+2.5rem)] w-56">
-          <DashboardTrivia trivia={trivia} topic={TRIVIA_TOPIC[active]} heroCycling={cycling} />
+      {/* At the end of the figures' caption line, which the greeting row ends
+          above: stationary while the sets slide under it. */}
+      {sets.length > 1 && (
+        <div
+          role="group"
+          aria-label={t('hero.cycleControls')}
+          className="absolute right-0 top-[calc(var(--hero-head-h)-0.375rem)] z-10 flex lg:right-1/2"
+        >
+          {sets.map((set) => (
+            <button
+              key={set}
+              type="button"
+              aria-pressed={set === active}
+              aria-label={t('hero.showSet', { name: setName(set) })}
+              title={setName(set)}
+              onClick={() => goTo(set)}
+              className="flex h-6 w-6 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              <span
+                aria-hidden="true"
+                className={`h-2 w-2 rounded-full transition-colors motion-reduce:transition-none ${
+                  set === active ? 'bg-blue-600 dark:bg-blue-400' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              />
+            </button>
+          ))}
         </div>
       )}
       {/* Clipped sideways only: a clip on both axes would cut off the figures'

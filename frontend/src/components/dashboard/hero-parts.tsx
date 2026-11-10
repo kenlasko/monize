@@ -29,10 +29,10 @@ import {
 
 // Below `lg` the figures stack above the chart, so `gap-y-1` and the chart's
 // reduced top margin (`HeroAreaChart`) keep that seam tight.
-// Beside the chart, the figures keep one width so the greeting above them lines
-// up, leave room for the trivia column when there is one, and the chart rises
-// past them to the top of the hero (`DashboardHero` sets both variables).
-const FIGURES_COLUMN_CLASS = 'lg:w-[26rem] xl:w-[30rem] lg:flex-shrink-0 lg:mr-[var(--hero-trivia-zone,0px)]';
+// Beside the chart, the figures take half the hero, as the greeting row above
+// them does, and the chart rises past that row to the top of the hero
+// (`DashboardHero` measures the row into `--hero-head-h`).
+const FIGURES_COLUMN_CLASS = 'lg:w-1/2 lg:flex-shrink-0';
 const CHART_COLUMN_CLASS = 'h-48 w-full lg:flex-1 lg:min-w-0 lg:-mt-[var(--hero-head-h,0px)]';
 
 const LAYOUT_CLASS = 'flex flex-col lg:flex-row gap-x-10 gap-y-1 lg:gap-y-4 lg:items-start';
@@ -117,7 +117,8 @@ export function HeroMessage({ children }: { children: ReactNode }) {
 /** The small caps caption over the headline figure. */
 export function HeroCaption({ children }: { children: ReactNode }) {
   return (
-    <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400">
+    // Clear of the set switcher, which sits at the end of this line.
+    <div className="pr-14 text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400">
       {children}
     </div>
   );
