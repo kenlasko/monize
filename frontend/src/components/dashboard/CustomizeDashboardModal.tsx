@@ -135,6 +135,38 @@ function HeroRow({ label, id, children }: { label: string; id: string; children:
   );
 }
 
+/**
+ * One set's settings. On Auto both sets' rows are shown, so each group carries
+ * the set's name and its own rule, and a reader can tell which chart a range
+ * belongs to; with one set chosen its rows stand alone.
+ */
+function HeroSetGroup({
+  id,
+  title,
+  labelled,
+  children,
+}: {
+  id: string;
+  title: string;
+  labelled: boolean;
+  children: ReactNode;
+}) {
+  if (!labelled) return <>{children}</>;
+  return (
+    <div
+      role="group"
+      aria-labelledby={id}
+      data-testid={id}
+      className="flex flex-col gap-3 border-l-2 border-gray-200 pl-3 dark:border-gray-700"
+    >
+      <h5 id={id} className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        {title}
+      </h5>
+      {children}
+    </div>
+  );
+}
+
 export function CustomizeDashboardModal({
   isOpen,
   onClose,
@@ -274,24 +306,34 @@ export function CustomizeDashboardModal({
               </div>
             </HeroRow>
             {hero.set !== 'portfolio' && (
-              <HeroRow label={t('customize.hero.range')} id="customize-hero-range">
-                <div className={SEGMENTED_GROUP_CLASS} role="group" aria-labelledby="customize-hero-range">
-                  {NET_WORTH_RANGES.map((range) => (
-                    <button
-                      key={range}
-                      type="button"
-                      aria-pressed={hero.range === range}
-                      onClick={() => setHero((prev) => ({ ...prev, range }))}
-                      className={segmentClass(hero.range === range)}
-                    >
-                      {t(`widgets.rangeLabels.${range}` as Parameters<typeof t>[0])}
-                    </button>
-                  ))}
-                </div>
-              </HeroRow>
+              <HeroSetGroup
+                id="customize-hero-group-netWorth"
+                title={t('customize.hero.sets.netWorth')}
+                labelled={hero.set === 'auto'}
+              >
+                <HeroRow label={t('customize.hero.range')} id="customize-hero-range">
+                  <div className={SEGMENTED_GROUP_CLASS} role="group" aria-labelledby="customize-hero-range">
+                    {NET_WORTH_RANGES.map((range) => (
+                      <button
+                        key={range}
+                        type="button"
+                        aria-pressed={hero.range === range}
+                        onClick={() => setHero((prev) => ({ ...prev, range }))}
+                        className={segmentClass(hero.range === range)}
+                      >
+                        {t(`widgets.rangeLabels.${range}` as Parameters<typeof t>[0])}
+                      </button>
+                    ))}
+                  </div>
+                </HeroRow>
+              </HeroSetGroup>
             )}
             {hero.set !== 'netWorth' && (
-              <>
+              <HeroSetGroup
+                id="customize-hero-group-portfolio"
+                title={t('customize.hero.sets.portfolio')}
+                labelled={hero.set === 'auto'}
+              >
                 <HeroRow label={t('widgets.accounts')} id="customize-hero-accounts">
                   <ReportAccountMultiSelect
                     accounts={investmentAccounts}
@@ -331,7 +373,7 @@ export function CustomizeDashboardModal({
                     ))}
                   </div>
                 </HeroRow>
-              </>
+              </HeroSetGroup>
             )}
           </div>
         )}

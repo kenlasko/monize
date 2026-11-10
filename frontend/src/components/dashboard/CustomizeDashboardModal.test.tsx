@@ -381,6 +381,23 @@ describe('CustomizeDashboardModal', () => {
       expect(within(section).queryByRole('group', { name: 'Figure' })).not.toBeInTheDocument();
     });
 
+    it('names which set each setting belongs to on Auto, and drops the names for one set', async () => {
+      await renderModal();
+      const section = screen.getByTestId('customize-hero');
+      const netWorth = within(section).getByRole('group', { name: 'Net worth' });
+      const portfolio = within(section).getByRole('group', { name: 'Portfolio value' });
+      expect(within(netWorth).getByRole('group', { name: 'Chart' })).toBeInTheDocument();
+      expect(within(netWorth).queryByRole('group', { name: 'Figure' })).not.toBeInTheDocument();
+      expect(within(portfolio).getByRole('group', { name: 'Figure' })).toBeInTheDocument();
+      expect(within(portfolio).getByRole('group', { name: 'Timeframe' })).toBeInTheDocument();
+      expect(within(portfolio).queryByRole('group', { name: 'Chart' })).not.toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(within(section).getByRole('button', { name: 'Portfolio value' }));
+      });
+      expect(within(section).queryByRole('group', { name: 'Portfolio value' })).not.toBeInTheDocument();
+      expect(within(section).getByRole('group', { name: 'Figure' })).toBeInTheDocument();
+    });
+
     it('saves the chart window with the layout, keeping other widgets\' settings', async () => {
       prefsState.current = {
         dashboardWidgets: [],
