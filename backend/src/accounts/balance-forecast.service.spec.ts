@@ -32,6 +32,7 @@ jest.mock("../common/date-utils", () => ({
 
 describe("BalanceForecastService", () => {
   let service: BalanceForecastService;
+  let module: TestingModule;
   let effectiveAmounts: ScheduledEffectiveAmountService;
   let accountsRepo: { findOne: jest.Mock };
   let scheduledRepo: { find: jest.Mock };
@@ -62,7 +63,7 @@ describe("BalanceForecastService", () => {
       { from: "CAD", to: "CAD" },
     );
 
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         BalanceForecastService,
         // Both read-side services are real, over a stubbed FX source: the dates,
@@ -360,6 +361,58 @@ describe("BalanceForecastService", () => {
         fromCurrency: "USD",
         toCurrency: "CAD",
       });
+    });
+
+    it("reports an unknown estimate as one, not as a missing settlement rate (issue #2096)", async () => {
+      accountsRepo.findOne.mockResolvedValue(chequing);
+      stubBalances("1000");
+      scheduledRepo.find.mockResolvedValue([
+        {
+          id: "st-heat",
+          name: "Heating",
+          accountId: "acc-1",
+          transferAccountId: null,
+          amount: -999,
+          currencyCode: "CAD",
+          frequency: "MONTHLY",
+          nextDueDate: "2024-07-20",
+          isActive: true,
+          isSplit: false,
+          isTransfer: false,
+          isInvestment: false,
+          payeeId: "payee-1",
+          categoryId: "cat-1",
+          amountIsEstimated: true,
+          splits: [],
+        },
+      ]);
+      const estimates = module.get(ScheduledAmountEstimateService);
+      (estimates.estimateMany as jest.Mock).mockResolvedValue(
+        new Map([
+          [
+            "st-heat",
+            {
+              status: "missing-rate",
+              currencyCode: "CAD",
+              profile: null,
+              missingPair: { from: "EUR", to: "CAD" },
+            },
+          ],
+        ]),
+      );
+
+      const result = await service.getBalanceForecast("user-1", "acc-1", 60);
+
+      expect(result.complete).toBe(false);
+      expect(result.gaps).toEqual([
+        {
+          scheduledTransactionId: "st-heat",
+          name: "Heating",
+          reason: "unknownEstimate",
+          fromCurrency: "EUR",
+          toCurrency: "CAD",
+        },
+      ]);
     });
 
     it("withholds a transfer arriving from an account in another currency", async () => {

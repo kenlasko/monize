@@ -1,6 +1,7 @@
 import {
   Injectable,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
   BadRequestException,
   Inject,
@@ -117,6 +118,7 @@ import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import {
   ScheduleAmountEstimate,
   ScheduleAmountEstimateReadModel,
+  ScheduleAmountEstimateStatus,
   ScheduleEstimateBasis,
   ScheduledAmountEstimateService,
   estimateReadModel,
@@ -168,6 +170,12 @@ export interface LlmScheduledItem {
    * #2096), not a figure the user entered; an answer calls it an estimate.
    */
   amountEstimated: boolean;
+  /**
+   * Why an estimated amount is what it is, or unknown: `no-history` (no
+   * payments yet), `missing-rate` (a payment's currency has no current rate),
+   * `no-basis` (no payee or category); `null` when not estimated.
+   */
+  estimateStatus: ScheduleAmountEstimateStatus | null;
   /**
    * The currency `amount` is in. For an investment schedule this is the
    * *settlement* currency the cash lands in, not the brokerage account's.
@@ -1982,8 +1990,8 @@ export class ScheduledTransactionsService {
     // (issue #1247).
     const effective = await this.effectiveAmounts.resolveMany(userId, rows);
     // The history estimate of each estimated schedule (issue #2096), read
-    // outside the list transaction for the same reason: its rate lookup can
-    // fetch from a provider.
+    // after the list transaction like the resolver; it reads stored rates
+    // only, so it never waits on a provider.
     const estimates = await this.estimatesFor(userId, rows);
 
     return rows.map((row) => {
@@ -2438,6 +2446,14 @@ export class ScheduledTransactionsService {
     userId: string,
     id: string,
     updateDto: UpdateScheduledTransactionDto,
+    options: {
+      /**
+       * The editor is a delegate acting for the owner: an estimated
+       * schedule's payee and category, which decide whose history it reads,
+       * are the owner's to change (issue #2096).
+       */
+      actorIsDelegate?: boolean;
+    } = {},
   ): Promise<ScheduledTransaction> {
     const scheduled = await this.findOne(userId, id);
     const beforeData = { ...scheduled };
@@ -2704,7 +2720,32 @@ export class ScheduledTransactionsService {
     if (effectiveEstimated !== (scheduled.amountIsEstimated ?? false)) {
       fieldsToUpdate.amountIsEstimated = effectiveEstimated;
     }
-    if (effectiveEstimated) {
+    const basisChanged =
+      estimateShape.payeeId !== scheduled.payeeId ||
+      estimateShape.categoryId !== scheduled.categoryId ||
+      accountCurrencyCode !== scheduled.currencyCode;
+    if (effectiveEstimated && options.actorIsDelegate && basisChanged) {
+      throw new ForbiddenException(
+        tr(
+          "errors.scheduled.estimateBasisOwnerOnly",
+          "Only the owner can change the payee or category of a bill whose amount is estimated",
+        ),
+      );
+    }
+    // The history is read only when the snapshot can move: the estimate was
+    // just turned on, or its basis or next due date changed. A rename or a
+    // pause leaves it as it is.
+    const snapshotMayMove =
+      fieldsToUpdate.amountIsEstimated === true ||
+      basisChanged ||
+      (fieldsToUpdate.nextDueDate !== undefined &&
+        ensureYMD(fieldsToUpdate.nextDueDate as string) !==
+          ensureYMD(scheduled.nextDueDate));
+    if (effectiveEstimated && !snapshotMayMove) {
+      // A form resends the amount it loaded: not a change.
+      delete fieldsToUpdate.amount;
+    }
+    if (effectiveEstimated && snapshotMayMove) {
       const snapshot = await this.estimatedSnapshot(
         userId,
         {
@@ -5138,6 +5179,7 @@ function toLlmScheduledItem(
     amount: occurrence.amount,
     amountComplete: occurrence.complete,
     amountEstimated: occurrence.estimated,
+    estimateStatus: occurrence.estimateStatus,
     currency: occurrence.currencyCode,
     frequency: row.frequency,
     nextDueDate: occurrence.dueDate,

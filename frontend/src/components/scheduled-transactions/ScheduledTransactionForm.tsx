@@ -440,9 +440,10 @@ export function ScheduledTransactionForm({
         if (!cancelled) setEstimatePreview({ key: estimateRequestKey, estimate });
       })
       .catch((err) => {
-        // A failed lookup is not "no history": nothing is shown as known, and
-        // the save still works out the estimate on the server.
-        if (!cancelled) setEstimatePreview({ key: estimateRequestKey, estimate: null });
+        // A failed lookup is not "no history", and not a reason to drop the
+        // saved schedule's own estimate (a delegate is refused the preview):
+        // whatever was shown stays, and the save still works the estimate out
+        // on the server.
         logger.warn?.('Failed to fetch the amount estimate', err);
       });
     return () => {

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { ScheduledTransactionsService } from "./scheduled-transactions.service";
@@ -10585,6 +10586,33 @@ describe("ScheduledTransactionsService", () => {
           ScheduledTransaction,
           stId,
           expect.objectContaining({ name: "Gas" }),
+        );
+      });
+
+      it("refuses a delegate moving an estimated schedule to another payee", async () => {
+        stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
+
+        await expect(
+          service.update(
+            userId,
+            stId,
+            { payeeId: "22222222-2222-2222-2222-222222222222" },
+            { actorIsDelegate: true },
+          ),
+        ).rejects.toThrow(ForbiddenException);
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
+
+      it("reads no history for an edit that cannot move the snapshot", async () => {
+        stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
+
+        await service.update(userId, stId, { name: "Gas", amount: -1 });
+
+        expect(amountEstimates.estimateFor).not.toHaveBeenCalled();
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          ScheduledTransaction,
+          stId,
+          expect.not.objectContaining({ amount: -1 }),
         );
       });
 

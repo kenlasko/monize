@@ -11,9 +11,12 @@ import { FIAT_MONEY_DECIMALS, roundMoney } from "../common/round.util";
  *    currency and this projection is for the destination, whose currency differs.
  *    The arriving amount is resolved at posting time and no rate is applied here,
  *    so adding the source figure would be a foreign number on this balance.
+ *  - `unknownEstimate` -- an estimated schedule (issue #2096) whose history
+ *    estimate is unknown: no payment to estimate from, or, with a pair, a
+ *    payment in a currency with no current rate.
  */
 export type BalanceForecastGapReason =
-  "unresolvedSettlementRate" | "crossCurrencyTransfer";
+  "unresolvedSettlementRate" | "crossCurrencyTransfer" | "unknownEstimate";
 
 /** One schedule the projection could not price, and why. */
 export interface BalanceForecastGap {

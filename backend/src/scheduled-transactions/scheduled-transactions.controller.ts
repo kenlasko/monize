@@ -53,6 +53,20 @@ import { DelegationService } from "../delegation/delegation.service";
 import { JointAccountsService } from "../delegation/joint-accounts.service";
 import { tr } from "../i18n/translate";
 
+/**
+ * A delegate does not turn an estimate on or off (issue #2096): the estimate
+ * reads the owner's payments in every account, so a delegate choosing the
+ * payee and category would read history the delegation cannot. The key is
+ * dropped, so an edit keeps the stored flag and a create saves none.
+ */
+function withoutDelegateEstimateToggle<
+  T extends { amountIsEstimated?: boolean },
+>(req: { user: { isActing?: boolean } }, dto: T): T {
+  if (!req.user.isActing || dto.amountIsEstimated === undefined) return dto;
+  const { amountIsEstimated: _dropped, ...rest } = dto;
+  return rest as T;
+}
+
 @ApiTags("Scheduled Transactions")
 @Controller("scheduled-transactions")
 @UseGuards(AuthGuard("jwt"))
@@ -112,7 +126,10 @@ export class ScheduledTransactionsController {
   )
   @DelegateRequires("create")
   create(@Request() req, @Body() createDto: CreateScheduledTransactionDto) {
-    return this.scheduledTransactionsService.create(req.user.id, createDto);
+    return this.scheduledTransactionsService.create(
+      req.user.id,
+      withoutDelegateEstimateToggle(req, createDto),
+    );
   }
 
   @Get()
@@ -352,7 +369,12 @@ export class ScheduledTransactionsController {
     @Param("id", ParseUUIDPipe) id: string,
     @Body() updateDto: UpdateScheduledTransactionDto,
   ) {
-    return this.scheduledTransactionsService.update(req.user.id, id, updateDto);
+    return this.scheduledTransactionsService.update(
+      req.user.id,
+      id,
+      withoutDelegateEstimateToggle(req, updateDto),
+      { actorIsDelegate: !!req.user.isActing },
+    );
   }
 
   @Delete(":id")

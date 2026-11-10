@@ -608,7 +608,9 @@ export function OverrideEditorDialog({
       }
     }
 
-    if (!isInvestmentKind && amountUnknown) {
+    // An unknown estimate left empty is no amount stated: a date, category or
+    // note change saves and the occurrence keeps following the estimate.
+    if (!isInvestmentKind && amountUnknown && estimateSeed !== null) {
       toast.error(t('loanOccurrence.amountRequired'));
       return;
     }
@@ -619,7 +621,9 @@ export function OverrideEditorDialog({
       // An estimate saved unchanged is not a stated amount: the occurrence
       // keeps following the estimate as new payments arrive (issue #2096).
       const followsEstimate =
-        typeof estimateSeed === 'number' && !isSplit && amount === estimateSeed;
+        !isSplit &&
+        ((typeof estimateSeed === 'number' && amount === estimateSeed) ||
+          (estimateSeed === null && amountUnknown));
       const savedAmount = followsEstimate
         ? null
         : scheduledTransaction.isTransfer

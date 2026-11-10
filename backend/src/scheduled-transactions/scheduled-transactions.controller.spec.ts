@@ -96,6 +96,24 @@ describe("ScheduledTransactionsController", () => {
     });
   });
 
+  describe("create() by a delegate (issue #2096)", () => {
+    it("saves no estimate a delegate asked for", async () => {
+      const actingReq = {
+        user: { id: "owner-1", isActing: true, delegationId: "g1" },
+      };
+      mockService.create.mockResolvedValue({ id: "st-1" });
+
+      await controller.create(actingReq, {
+        name: "Gas",
+        amountIsEstimated: true,
+      } as any);
+
+      expect(mockService.create).toHaveBeenCalledWith("owner-1", {
+        name: "Gas",
+      });
+    });
+  });
+
   describe("findAll()", () => {
     it("delegates to service.findAll with userId", async () => {
       const expected = [{ id: "st-1" }];
@@ -316,7 +334,28 @@ describe("ScheduledTransactionsController", () => {
       const result = await controller.update(mockReq, "st-1", dto as any);
 
       expect(result).toEqual(expected);
-      expect(mockService.update).toHaveBeenCalledWith("user-1", "st-1", dto);
+      expect(mockService.update).toHaveBeenCalledWith("user-1", "st-1", dto, {
+        actorIsDelegate: false,
+      });
+    });
+
+    it("drops a delegate's estimate toggle and says the editor is a delegate (issue #2096)", async () => {
+      const actingReq = {
+        user: { id: "owner-1", isActing: true, delegationId: "g1" },
+      };
+      mockService.update.mockResolvedValue({ id: "st-1" });
+
+      await controller.update(actingReq, "st-1", {
+        name: "Gas",
+        amountIsEstimated: true,
+      } as any);
+
+      expect(mockService.update).toHaveBeenCalledWith(
+        "owner-1",
+        "st-1",
+        { name: "Gas" },
+        { actorIsDelegate: true },
+      );
     });
   });
 

@@ -266,6 +266,16 @@ export class BalanceForecastService {
         to: account.currencyCode,
       };
     }
+    if (occurrence.amount === null && occurrence.estimated) {
+      // An unknown history estimate (issue #2096) is not a settlement rate:
+      // the repair is a payment or an entered amount, unless a payment's
+      // currency lacks a rate, which the pair then names.
+      return {
+        reason: "unknownEstimate",
+        from: occurrence.settlementPair?.from ?? null,
+        to: occurrence.settlementPair?.to ?? null,
+      };
+    }
     if (occurrence.amount === null) {
       // Name the pair when there is one: "no rate from USD to CAD" is something
       // the reader can go and fix. A split parent's lines each settle their own

@@ -1505,7 +1505,7 @@ describe('OverrideEditorDialog: an estimated schedule (issue #2096)', () => {
     });
   });
 
-  it('asks for the amount when the estimate is unknown', async () => {
+  it('saves an unknown estimate left empty as no amount, so it keeps following it', async () => {
     render(
       <OverrideEditorDialog
         {...props}
@@ -1516,8 +1516,11 @@ describe('OverrideEditorDialog: an estimated schedule (issue #2096)', () => {
     expect(amountInput.value).toBe('');
     fireEvent.click(screen.getByText('Save Override'));
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalled();
+      expect(mockCreateOverride).toHaveBeenCalledWith(
+        's9',
+        expect.objectContaining({ amount: null }),
+      );
     });
-    expect(mockCreateOverride).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
   });
 });

@@ -4,6 +4,7 @@ import type {
   ScheduledTransactionOverride,
 } from '@/types/scheduled-transaction';
 import { sumConverted, type ConvertedTotal } from '@/lib/currency-total';
+import { moneyDecimalsForCurrency, roundMoney, sumMoney } from '@/lib/format';
 
 /**
  * The cash amount one scheduled occurrence would post today, and whether that is
@@ -169,6 +170,30 @@ export function estimateAmountOn(
 ): number | null {
   const entry = estimate?.months[String(dueDate).slice(0, 7)];
   return entry ? entry.amount : null;
+}
+
+/**
+ * An estimated schedule's typical occurrence: the mean of its estimate over the
+ * twelve months from `fromYmd`'s, for a figure that stands for the bill rather
+ * than for one season (the Bills page's monthly totals). `undefined` when `st`
+ * is not estimated, `null` when any of those months is unknown.
+ */
+export function estimatedTypicalAmount(
+  st: ScheduledTransaction,
+  fromYmd: string,
+): number | null | undefined {
+  if (st.amountIsEstimated !== true) return undefined;
+  const [year, month] = fromYmd.split('-').map(Number);
+  const amounts: number[] = [];
+  for (let i = 0; i < 12; i++) {
+    const index = year * 12 + (month - 1) + i;
+    const key = `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, '0')}`;
+    const entry = st.amountEstimate?.months[key];
+    if (!entry) return null;
+    amounts.push(entry.amount);
+  }
+  const decimals = moneyDecimalsForCurrency(st.currencyCode);
+  return roundMoney(sumMoney(amounts, decimals) / amounts.length, decimals);
 }
 
 /**

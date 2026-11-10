@@ -401,6 +401,9 @@ export class ScheduledOccurrenceService {
         currencyCode: estimate.currencyCode,
         complete: amount !== null,
         estimateStatus: estimate.status,
+        // The pair behind an unknown estimate, when a payment's currency has
+        // no current rate; none otherwise (no settlement rate is involved).
+        settlementPair: estimate.missingPair,
       };
     });
   }

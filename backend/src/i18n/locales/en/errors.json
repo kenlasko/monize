@@ -604,7 +604,8 @@
     "estimateRequiresPlain": "An estimated amount is only available for a single-category transaction in the account's currency, not a split, a transfer, an investment or a foreign-currency amount",
     "estimateNoAutoPost": "A scheduled transaction with an estimated amount cannot be posted automatically",
     "estimateRequiresPayeeAndCategory": "An estimated amount needs a payee and a category to match the payment history on",
-    "estimateUnknown": "The estimated amount of this occurrence is unknown. Enter the amount to post it."
+    "estimateUnknown": "The estimated amount of this occurrence is unknown. Enter the amount to post it.",
+    "estimateBasisOwnerOnly": "Only the owner can change the payee or category of a bill whose amount is estimated"
   },
   "bonds": {
     "securityNotLinked": "Security {{ securityId }} not found or not linked to a bond program",
