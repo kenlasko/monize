@@ -33,6 +33,8 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "顯示{name}",
+    "cycleControls": "選擇主視覺顯示的內容",
     "cagrUnavailable": "CAGR 需要這些帳戶至少一年的投資歷史，且投入多於取出。",
     "intradayUnavailable": "部分持股沒有盤中價格，因此無法繪製一天的圖表。請在「自訂」中選擇較長的時間範圍。"
   },

@@ -33,6 +33,8 @@
       "mwr": "MWR",
       "cagr": "年复合增长率"
     },
+    "showSet": "显示{name}",
+    "cycleControls": "选择主视图显示的内容",
     "cagrUnavailable": "CAGR 需要这些账户至少一年的投资历史，且投入多于取出。",
     "intradayUnavailable": "部分持仓没有日内价格，因此无法绘制一天的图表。请在“自定义”中选择更长的时间范围。"
   },

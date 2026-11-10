@@ -33,6 +33,8 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "Hiển thị {name}",
+    "cycleControls": "Chọn nội dung hiển thị ở phần chính",
     "cagrUnavailable": "CAGR cần ít nhất một năm lịch sử đầu tư trong các tài khoản này, với số tiền nạp nhiều hơn số rút.",
     "intradayUnavailable": "Một số khoản nắm giữ không có giá trong ngày nên không thể vẽ biểu đồ một ngày. Hãy chọn khoảng thời gian dài hơn trong Tùy chỉnh."
   },

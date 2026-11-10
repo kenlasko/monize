@@ -1,17 +1,15 @@
 'use client';
 
 import type { CSSProperties, ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import { CollapsingTitleContext } from '@/hooks/useCollapsingHeaderTitle';
-import { useHasMobileTabBar } from '@/hooks/useIsMobile';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import type { PortfolioValuation } from '@/types/investment';
 import type { Account } from '@/types/account';
-import { DASHBOARD_HERO_WIDGET_ID, resolveDashboardHeroConfig } from './widget-config';
-import { DashboardTrivia } from './DashboardTrivia';
-import { HeroFiguresRefContext, HeroPanelActiveContext } from './hero-parts';
+import { DASHBOARD_HERO_WIDGET_ID, resolveDashboardHeroConfig, type DashboardHeroSet } from './widget-config';
+import { HeroPanelActiveContext } from './hero-parts';
 import { NetWorthHero } from './NetWorthHero';
 import { PortfolioHero } from './PortfolioHero';
-import { useDashboardTrivia } from './useDashboardTrivia';
 import { useElementSize } from './useElementSize';
 import { useHeroCycle } from './useHeroCycle';
 
@@ -38,11 +36,6 @@ interface DashboardHeroProps {
   header: ReactNode;
 }
 
-/** The least room the trivia gets beside the greeting: 16rem and the row's gap. */
-const TRIVIA_MIN_SPACE = '17rem';
-
-const TRIVIA_TOPIC = { netWorth: 'netWorth', portfolio: 'investments' } as const;
-
 /**
  * The dashboard's opening figures, in the set chosen in Customize Dashboard:
  * net worth (`NetWorthHero`), the portfolio (`PortfolioHero`), or Auto, which
@@ -58,17 +51,13 @@ export function DashboardHero({
   investmentAccounts,
   header,
 }: DashboardHeroProps) {
+  const t = useTranslations('dashboard');
   const stored = usePreferencesStore((s) => s.preferences?.dashboardWidgetConfig?.[DASHBOARD_HERO_WIDGET_ID]);
   const config = resolveDashboardHeroConfig(stored);
-  const triviaOn = usePreferencesStore((s) => s.preferences?.aiTriviaEnabled) !== false;
-  // Only with the desktop layout: below it there is no room beside the chart.
-  const wideEnough = !useHasMobileTabBar();
-  const trivia = useDashboardTrivia(config.enabled && triviaOn && wideEnough);
-  const showTrivia = (trivia?.items.length ?? 0) > 0;
+  // The greeting row, measured: the chart rises beside it, and the figures are
+  // never narrower than it, as when the greeting sat in their column.
   const [headRef, head] = useElementSize<HTMLDivElement>();
-  const [greetingRef, greeting] = useElementSize<HTMLDivElement>();
-  const [figuresRef, figures] = useElementSize<HTMLDivElement>();
-  const { sets, active, cycling, mounted, animate } = useHeroCycle({
+  const { sets, active, mounted, animate, goTo } = useHeroCycle({
     choice: config.set,
     hasInvestments,
     settled: !isLoading && !investmentSummaryLoading,
@@ -76,34 +65,42 @@ export function DashboardHero({
 
   if (!config.enabled) return <>{header}</>;
 
+  const setName = (set: DashboardHeroSet) => t(`customize.hero.sets.${set}`);
   const activeIndex = sets.indexOf(active);
 
   return (
     <div
       className="mb-6"
       data-testid="dashboard-hero-root"
-      style={
-        {
-          '--hero-head-h': `${head.height}px`,
-          '--hero-figures-min': showTrivia ? `calc(${greeting.width}px + ${TRIVIA_MIN_SPACE})` : `${greeting.width}px`,
-          ...(figures.width > 0 ? { '--hero-figures-w': `${figures.width}px` } : {}),
-        } as CSSProperties
-      }
+      style={{ '--hero-head-h': `${head.height}px`, '--hero-figures-min': `${head.width}px` } as CSSProperties}
     >
-      {/* As wide as the figures under it, so the trivia ends where the chart begins. */}
-      <div ref={headRef} className="flex items-start gap-4 lg:w-[var(--hero-figures-w,auto)]">
+      <div ref={headRef} className="flex w-max max-w-full items-start gap-2">
         {/* Beside the figures the headline is what collapses into the app
             header, so the greeting does not. */}
-        <div ref={greetingRef} className="min-w-0 flex-none">
+        <div className="min-w-0">
           <CollapsingTitleContext.Provider value={false}>{header}</CollapsingTitleContext.Provider>
         </div>
-        {/* The space beside the greeting, above the figures. */}
-        {/* Out of the flow, so the row keeps the greeting's height whatever it holds. */}
-        {trivia && showTrivia && (
-          <div className="relative min-w-0 flex-1 self-stretch">
-            <div className="absolute inset-x-0 top-1">
-              <DashboardTrivia trivia={trivia} topic={TRIVIA_TOPIC[active]} heroCycling={cycling} />
-            </div>
+        {/* After the gear and the help mark, on the greeting's line. */}
+        {sets.length > 1 && (
+          <div role="group" aria-label={t('hero.cycleControls')} className="mt-1 flex flex-shrink-0 sm:mt-1.5">
+            {sets.map((set) => (
+              <button
+                key={set}
+                type="button"
+                aria-pressed={set === active}
+                aria-label={t('hero.showSet', { name: setName(set) })}
+                title={setName(set)}
+                onClick={() => goTo(set)}
+                className="flex h-6 w-6 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`h-2 w-2 rounded-full transition-colors motion-reduce:transition-none ${
+                    set === active ? 'bg-blue-600 dark:bg-blue-400' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                />
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -118,25 +115,23 @@ export function DashboardHero({
           {sets.map((set) => (
             <div key={set} className="w-full min-w-0 flex-shrink-0" inert={set !== active}>
               <HeroPanelActiveContext.Provider value={set === active}>
-                <HeroFiguresRefContext.Provider value={set === active ? figuresRef : null}>
-                  {mounted.has(set) &&
-                    (set === 'portfolio' ? (
-                      <PortfolioHero
-                        config={config}
-                        investmentAccounts={investmentAccounts}
-                        hasInvestments={hasInvestments}
-                        isLoading={isLoading}
-                      />
-                    ) : (
-                      <NetWorthHero
-                        config={config}
-                        portfolioValuation={portfolioValuation}
-                        hasInvestments={hasInvestments}
-                        isLoading={isLoading}
-                        investmentSummaryLoading={investmentSummaryLoading}
-                      />
-                    ))}
-                </HeroFiguresRefContext.Provider>
+                {mounted.has(set) &&
+                  (set === 'portfolio' ? (
+                    <PortfolioHero
+                      config={config}
+                      investmentAccounts={investmentAccounts}
+                      hasInvestments={hasInvestments}
+                      isLoading={isLoading}
+                    />
+                  ) : (
+                    <NetWorthHero
+                      config={config}
+                      portfolioValuation={portfolioValuation}
+                      hasInvestments={hasInvestments}
+                      isLoading={isLoading}
+                      investmentSummaryLoading={investmentSummaryLoading}
+                    />
+                  ))}
               </HeroPanelActiveContext.Provider>
             </div>
           ))}

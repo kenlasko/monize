@@ -33,6 +33,8 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "Mostra {name}",
+    "cycleControls": "Scegli cosa mostra l'area principale",
     "cagrUnavailable": "Il CAGR richiede almeno un anno di storico degli investimenti in questi conti, con più versamenti che prelievi.",
     "intradayUnavailable": "Alcune di queste posizioni non hanno prezzi intraday, quindi non si può tracciare un grafico di un giorno. Scegli un periodo più lungo in Personalizza."
   },

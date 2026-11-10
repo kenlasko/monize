@@ -33,6 +33,8 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "{name} 표시",
+    "cycleControls": "히어로에 표시할 내용 선택",
     "cagrUnavailable": "CAGR을 계산하려면 이 계좌들에 1년 이상의 투자 기록이 있고 입금액이 출금액보다 많아야 합니다.",
     "intradayUnavailable": "일부 보유 종목에 장중 가격이 없어 1일 차트를 그릴 수 없습니다. 사용자 지정에서 더 긴 기간을 선택하세요."
   },

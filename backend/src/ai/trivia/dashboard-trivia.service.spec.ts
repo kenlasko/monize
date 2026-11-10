@@ -39,9 +39,11 @@ describe("DashboardTriviaService", () => {
 
   beforeEach(() => {
     prefRepo = {
-      findOne: jest
-        .fn()
-        .mockResolvedValue({ defaultCurrency: "CAD", language: "fr" }),
+      findOne: jest.fn().mockResolvedValue({
+        defaultCurrency: "CAD",
+        language: "fr",
+        dashboardWidgets: ["trivia"],
+      }),
     };
     triviaRepo = {
       findOne: jest.fn().mockResolvedValue(null),
@@ -208,7 +210,10 @@ describe("DashboardTriviaService", () => {
 
   describe("generateForUser", () => {
     it("has the job write in the browser's language for a reader following it", async () => {
-      prefRepo.findOne.mockResolvedValue({ language: "browser" });
+      prefRepo.findOne.mockResolvedValue({
+        language: "browser",
+        dashboardWidgets: ["trivia"],
+      });
       triviaRepo.findOne.mockResolvedValue({ language: "ja" });
       await service.generateForUser(userId);
       expect(ai.complete.mock.calls[0][1].systemPrompt).toContain("Japanese");
@@ -232,16 +237,19 @@ describe("DashboardTriviaService", () => {
       expect(ai.complete.mock.calls[0][1].maxTokens).toBe(4096);
     });
 
-    it("builds nothing and calls no provider with the hero switched off", async () => {
-      prefRepo.findOne.mockResolvedValue({
-        defaultCurrency: "CAD",
-        dashboardWidgetConfig: { "dashboard-hero": { enabled: false } },
-      });
-      await service.generateForUser(userId);
+    it("builds nothing and calls no provider without the Trivia widget on the dashboard", async () => {
+      for (const dashboardWidgets of [[], ["insights"]]) {
+        prefRepo.findOne.mockResolvedValue({
+          defaultCurrency: "CAD",
+          dashboardWidgets,
+        });
+        triviaRepo.delete.mockClear();
+        await service.generateForUser(userId);
+        expect(triviaRepo.delete).toHaveBeenCalledWith({ userId });
+      }
       expect(netWorth.getMonthlyNetWorth).not.toHaveBeenCalled();
       expect(ai.complete).not.toHaveBeenCalled();
       expect(jobClaims.claimOnce).not.toHaveBeenCalled();
-      expect(triviaRepo.delete).toHaveBeenCalledWith({ userId });
     });
 
     it("builds nothing and calls no provider with trivia switched off", async () => {

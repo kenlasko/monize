@@ -1136,8 +1136,8 @@
     },
     "trivia": {
       "title": "AI trivia",
-      "subtitle": "Show a line of trivia about your net worth and investments beside the dashboard greeting. It is rebuilt daily, and worded by AI if you have a provider set up.",
-      "toggleLabel": "Show AI trivia on the dashboard",
+      "subtitle": "Fills the Trivia widget on your dashboard with facts about your net worth and investments, rebuilt each morning and worded by AI when you have a provider set up. Add the widget with Customize on the dashboard. Turned off, the widget shows no facts and no provider is asked.",
+      "toggleLabel": "Fill the dashboard's Trivia widget with AI trivia",
       "enabled": "AI trivia enabled",
       "disabled": "AI trivia disabled",
       "saveFailed": "Could not update the AI trivia setting"

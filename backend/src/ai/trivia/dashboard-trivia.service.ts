@@ -45,8 +45,12 @@ import type {
 /** Users built at once by the daily job: each reads a whole portfolio. */
 const TRIVIA_GENERATION_CONCURRENCY = 5;
 
-/** The hero's key in `dashboardWidgetConfig`; the frontend's `DASHBOARD_HERO_WIDGET_ID`. */
-const DASHBOARD_HERO_WIDGET_ID = "dashboard-hero";
+/**
+ * The Trivia widget's id in `dashboardWidgets`, the frontend's `'trivia'` in
+ * `widget-registry.tsx`. It is not in the default layout, so only a layout
+ * that lists it shows the facts.
+ */
+const TRIVIA_WIDGET_ID = "trivia";
 
 function shuffled<T>(items: readonly T[]): T[] {
   const result = [...items];
@@ -154,16 +158,16 @@ export class DashboardTriviaService {
    * released on failure: yesterday's row stays until tomorrow's run, which is
    * what a list of trivia can afford.
    *
-   * A reader who switched the trivia or the hero off never sees the list, so
-   * nothing is built or sent to their provider. Their row goes, as does one with nothing
+   * A reader who switched the trivia off, or has no Trivia widget on the
+   * dashboard, never sees the list, so nothing is built or sent to their
+   * provider. Their row goes, as does one with nothing
    * left to say, so the next dashboard load works out a current list.
    */
   async generateForUser(userId: string): Promise<void> {
     const preferences = await this.loadPreferences(userId);
-    const hero = preferences?.dashboardWidgetConfig?.[
-      DASHBOARD_HERO_WIDGET_ID
-    ] as { enabled?: unknown } | undefined;
-    if (preferences?.aiTriviaEnabled === false || hero?.enabled === false) {
+    const widgetShown =
+      preferences?.dashboardWidgets?.includes(TRIVIA_WIDGET_ID) ?? false;
+    if (preferences?.aiTriviaEnabled === false || !widgetShown) {
       await this.deleteRow(userId);
       return;
     }

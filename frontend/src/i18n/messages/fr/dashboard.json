@@ -33,6 +33,8 @@
       "mwr": "MWR",
       "cagr": "TCAC"
     },
+    "showSet": "Afficher {name}",
+    "cycleControls": "Choisir ce qu'affiche l'en-tête",
     "cagrUnavailable": "Le TCAC nécessite au moins un an d’historique de placement dans ces comptes, avec plus d’apports que de retraits.",
     "intradayUnavailable": "Certaines de ces positions n’ont pas de cours intrajournaliers : un graphique sur un jour ne peut donc pas être tracé. Choisissez une période plus longue dans Personnaliser."
   },

@@ -33,6 +33,8 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "Tampilkan {name}",
+    "cycleControls": "Pilih apa yang ditampilkan di bagian utama",
     "cagrUnavailable": "CAGR memerlukan setidaknya satu tahun riwayat investasi di akun-akun ini, dengan setoran lebih besar dari penarikan.",
     "intradayUnavailable": "Beberapa kepemilikan ini tidak memiliki harga intrahari, jadi grafik satu hari tidak dapat dibuat. Pilih jangka waktu lebih panjang di Sesuaikan."
   },

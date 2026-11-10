@@ -33,10 +33,18 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "Show {name}",
+    "cycleControls": "Choose what the hero shows",
     "cagrUnavailable": "CAGR needs at least a year of investment history in these accounts, with more paid in than taken out.",
     "intradayUnavailable": "Some of these holdings have no intraday prices, so a one-day chart can't be drawn. Choose a longer timeframe in Customize."
   },
   "trivia": {
+    "title": "Trivia",
+    "position": "{index} of {total}",
+    "previous": "Previous fact",
+    "next": "Next fact",
+    "empty": "Facts appear here once there is enough history to talk about: two months of net worth, or priced investments. The list is rebuilt each morning.",
+    "off": "AI trivia is turned off. Turn it on in <link>AI Settings</link>.",
     "topics": {
       "netWorth": "Net worth",
       "investments": "Investments"

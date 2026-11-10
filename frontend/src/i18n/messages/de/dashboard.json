@@ -33,6 +33,8 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "{name} anzeigen",
+    "cycleControls": "Auswählen, was der Hero-Bereich zeigt",
     "cagrUnavailable": "Die CAGR braucht mindestens ein Jahr Anlagehistorie in diesen Konten, mit mehr Einzahlungen als Entnahmen.",
     "intradayUnavailable": "Für einige dieser Positionen gibt es keine Intraday-Kurse, daher kann kein Tagesdiagramm gezeichnet werden. Wählen Sie unter „Anpassen“ einen längeren Zeitraum."
   },

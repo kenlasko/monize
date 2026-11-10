@@ -33,6 +33,8 @@
       "mwr": "MWR",
       "cagr": "CAGR"
     },
+    "showSet": "Mostrar {name}",
+    "cycleControls": "Escolher o que o destaque mostra",
     "cagrUnavailable": "A CAGR precisa de pelo menos um ano de histórico de investimento nestas contas, com mais entradas do que saídas.",
     "intradayUnavailable": "Algumas destas posições não têm preços intradiários, por isso não é possível desenhar um gráfico de um dia. Escolha um período mais longo em Personalizar."
   },

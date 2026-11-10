@@ -33,7 +33,7 @@ Many more widgets are available but hidden by default; see [Optional Widgets](#o
 
 ### Dashboard Hero
 
-Above the widgets, under the greeting, the dashboard hero sums up where you stand. It has two sets, chosen in [Customize](#customizing-your-dashboard). On **Auto**, the default, it slides from one to the other every minute if you have investments, and otherwise stays on net worth. Choose **Net worth** or **Portfolio value** instead to keep it on one set.
+Above the widgets, under the greeting, the dashboard hero sums up where you stand. It has two sets, chosen in [Customize](#customizing-your-dashboard). On **Auto**, the default, it slides from one to the other every minute if you have investments, and otherwise stays on net worth. Choose **Net worth** or **Portfolio value** instead to keep it on one set. Whichever you choose, the two dots after the greeting's gear and help icons switch to the other set at any time; on Auto, that set then stays for a full minute.
 
 **Net worth**:
 
@@ -57,12 +57,6 @@ Above the widgets, under the greeting, the dashboard hero sums up where you stan
 In either set the highest and lowest points on the chart carry a green and a red value bubble; click a bubble's **x** to hide it until the chart changes. A figure that includes an account whose currency could not be converted, or a holding with no current price, is marked with an amber **\***; hover over it for what is missing. A point that could not be fully worked out is left as a gap in the chart, and a change or return the figures cannot support is shown as unknown, with the reason on hover.
 
 The hero is on by default. With it off, the dashboard opens with just the greeting and today's date.
-
-#### Trivia
-
-On a large screen, a line of trivia beside the greeting points out something about your money: your high point, your biggest single-month jump, your largest holding. A **Net worth** or **Investments** badge says which it is about, and the line follows the set the hero is showing.
-
-While the hero is on, the list is rebuilt once a day, and a sentence is only written about figures that are fully known. If you have an [AI provider](ai.md) set up, it words the sentences in your language, marked with a small sparkle; every figure in them still comes from your own data, and account and security names are not sent to the provider. Without one, or if it doesn't answer, Monize writes them itself from the same calculations. A provider reached through the MCP relay is not used for this. To turn the line off, use **AI trivia** in [AI Settings](ai.md#ai-trivia).
 
 ---
 
@@ -114,6 +108,7 @@ The widgets below are hidden by default and can be added from the **Customize** 
 | [Weekend vs Weekday Spending](#weekend-vs-weekday-spending) | Spending split between weekends and weekdays | Always |
 | [Cash Flow Sankey](#cash-flow-sankey) | Where your income came from and where it went | Always |
 | Warranties expiring soon | Warranties that expire in the next 30 days (see [Warranties](warranties.md#dashboard-widget)) | Always |
+| [Trivia](#trivia) | Facts about your net worth and investments, one at a time | Always |
 
 > [!NOTE]
 > The investment widgets (Top Movers, Portfolio Value, Sector Allocation, Security Type Allocation, and Geographic Allocation) only appear when you have investment holdings, and Favourite Securities only when you have securities.
@@ -390,6 +385,12 @@ The Cash Flow Sankey widget (opt-in) is a flow diagram of the chosen period (def
 ![The Cash Flow Sankey widget](images/dashboard-cash-flow-sankey.png)
 
 ---
+
+## Trivia
+
+The **Trivia** widget points out something about your money, one fact at a time: your high point, your biggest single-month jump, your largest holding, your best performer. Each fact wears its topic's colour and picture, blue for **Net worth** and green for **Investments**, with its figures picked out in the sentence. It moves to the next fact every 12 seconds, pauses while you point at it, and the arrows below it step through by hand.
+
+The list is rebuilt each morning while the widget is on your dashboard, and a fact is only stated when every figure in it is fully known. If you have an [AI provider](ai.md) set up, it words the facts in your language, marked **Written by AI from your figures**; every figure still comes from your own data, and account and security names are not sent to the provider. Without one, or if it doesn't answer, Monize words them itself from the same calculations. A provider reached through the MCP relay is not used for this. To switch the facts off, use **AI trivia** in [AI Settings](ai.md#ai-trivia).
 
 ## Refreshing Data
 
