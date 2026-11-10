@@ -149,7 +149,7 @@ Select the amount type based on how your CSV represents transaction amounts:
 
 ![The transaction type column settings](images/import-csv-type-column.png)
 
-> **Amount Parsing:** Monize handles currency symbols ($, £, €, ¥, ₹), thousands separators, European decimal commas (`18,36` is 18.36 and `1.234,56` is 1234.56), and parenthesized negatives -- e.g., `($50.00)` is treated as `-$50.00`. A single separator followed by exactly three digits, such as `1,234`, is read as a thousands separator.
+> **Amount Parsing:** Monize handles currency symbols ($, £, €, ¥, ₹ and others) and currency codes before or after the number (`CHF 12.34`, `12.34 kr`), thousands separators (including spaces and apostrophes, `1'234.56`), European decimal commas (`18,36` is 18.36 and `1.234,56` is 1234.56), parenthesized negatives (`($50.00)` is `-$50.00`), a minus sign before or after the number (`-12.34`, `12.34-`, including the typographic minus `−12.34`), and `DR` / `CR` markers (`12.34 DR` is -12.34, `12.34 CR` is 12.34). A single separator followed by exactly three digits, such as `1,234`, is read as a thousands separator. An empty amount, or one that is only a dash, is read as zero. A row whose amount cannot be read any of these ways (`N/A`, `12.34 pending`) is not imported: the review step lists it by row and the text the file gave, and the import result counts it among the skipped rows, so it is never imported as 0.00.
 
 #### Transfer Detection Rules
 
