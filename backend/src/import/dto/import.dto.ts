@@ -293,6 +293,30 @@ export class CsvUnreadableDatesDto {
   rows: CsvUnreadableDateRowDto[];
 }
 
+export class CsvUnreadableAmountRowDto {
+  @ApiProperty({
+    description:
+      "The line of the file the row starts on, 1-based with the header",
+  })
+  rowNumber: number;
+
+  @ApiProperty({ description: "The amount field as the file gave it" })
+  rawAmount: string;
+}
+
+export class CsvUnreadableAmountsDto {
+  @ApiProperty({
+    description: "How many rows have an amount that cannot be read",
+  })
+  count: number;
+
+  @ApiProperty({
+    type: [CsvUnreadableAmountRowDto],
+    description: "The first of them in file order (at most SKIPPED_ROWS_LIMIT)",
+  })
+  rows: CsvUnreadableAmountRowDto[];
+}
+
 export class ParsedQifResponseDto {
   @ApiProperty()
   accountType: string;
@@ -349,6 +373,13 @@ export class ParsedQifResponseDto {
       "CSV parses only: the rows the import will leave out because their date cannot be read under the mapping's date format",
   })
   unreadableDates?: CsvUnreadableDatesDto;
+
+  @ApiPropertyOptional({
+    type: () => CsvUnreadableAmountsDto,
+    description:
+      "CSV parses only: the rows the import will leave out because their amount cannot be read",
+  })
+  unreadableAmounts?: CsvUnreadableAmountsDto;
 }
 
 /**
@@ -356,7 +387,9 @@ export class ParsedQifResponseDto {
  * already holds the row's bank id (OFX `FITID`), `duplicateTransfer` when the
  * transfer is already recorded between the same two accounts,
  * `unreadableDate` when a CSV row's date cannot be read under the mapping's
- * date format (or the row has none). The rest are an investment-mode CSV row
+ * date format (or the row has none), `unreadableAmount` when a CSV row's amount
+ * (or debit or credit) field holds text that cannot be read as an amount. The
+ * rest are an investment-mode CSV row
  * whose action needs data it does not carry (`InvestmentRejectReason`):
  * `missingSecurity`, `missingQuantity`, `missingAmount`, `missingProceeds`
  * (a sell with neither price nor amount), `missingSplitRatio`.
@@ -365,6 +398,7 @@ export const IMPORT_SKIP_REASONS = [
   "alreadyImported",
   "duplicateTransfer",
   "unreadableDate",
+  "unreadableAmount",
   "missingSecurity",
   "missingQuantity",
   "missingAmount",
@@ -397,7 +431,7 @@ export class ImportSkippedRowDto {
 
   @ApiPropertyOptional({
     description:
-      "The line of the file the row starts on, 1-based with the header; set for a CSV row the parse left out (`unreadableDate` and the investment-mode reasons)",
+      "The line of the file the row starts on, 1-based with the header; set for a CSV row the parse left out (`unreadableDate`, `unreadableAmount` and the investment-mode reasons)",
   })
   rowNumber?: number;
 
@@ -406,6 +440,12 @@ export class ImportSkippedRowDto {
       "The date field as the file gave it, empty when it has none; set for `unreadableDate`",
   })
   rawDate?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "The amount field as the file gave it; set for `unreadableAmount`, whose `amount` is 0 because the file's text gives none",
+  })
+  rawAmount?: string;
 }
 
 /**

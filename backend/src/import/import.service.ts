@@ -1250,6 +1250,16 @@ export class ImportService {
             },
           }
         : {}),
+      ...(result.unreadableAmountRows
+        ? {
+            unreadableAmounts: {
+              count: result.unreadableAmountRows.length,
+              rows: result.unreadableAmountRows
+                .slice(0, SKIPPED_ROWS_LIMIT)
+                .map(({ rowNumber, rawAmount }) => ({ rowNumber, rawAmount })),
+            },
+          }
+        : {}),
     };
   }
 
@@ -1366,6 +1376,16 @@ export class ImportService {
           rawDate: row.rawDate,
         },
         reason: "unreadableDate" as const,
+      })),
+      ...(result.unreadableAmountRows ?? []).map((row) => ({
+        row: {
+          date: row.date,
+          amount: 0,
+          payee: row.payee,
+          rowNumber: row.rowNumber,
+          rawAmount: row.rawAmount,
+        },
+        reason: "unreadableAmount" as const,
       })),
       ...(result.rejectedInvestmentRows ?? []).map((row) => ({
         row: {

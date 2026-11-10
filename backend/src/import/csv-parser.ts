@@ -11,7 +11,7 @@
 import type { QifTransaction, QifParseResult } from "./qif-parser";
 import { escapeRegExp } from "../common/escape-regexp.util";
 import { roundToDecimals } from "../common/round.util";
-import { normalizeAmountSeparators } from "./amount-separators.util";
+import { isBlankCsvAmount, parseCsvAmount } from "./csv-amount.util";
 import { isCalendarDate } from "../common/validators/is-calendar-date.validator";
 import { monthFromName } from "./csv-month-names";
 
@@ -103,6 +103,22 @@ export interface CsvUnreadableDateRow {
 }
 
 /**
+ * A row of the file whose amount (or debit or credit) field holds text
+ * `parseCsvAmount` cannot read, so the parse left it out rather than import
+ * it at 0. The preview counts them and the import result lists them among its
+ * skipped rows, by the line of the file.
+ */
+export interface CsvUnreadableAmountRow {
+  /** The line of the file the row starts on, 1-based, the header included. */
+  rowNumber: number;
+  /** The amount field as the file gave it. */
+  rawAmount: string;
+  /** The row's date, YYYY-MM-DD. */
+  date: string;
+  payee: string;
+}
+
+/**
  * An investment-mode row the parse left out because its action needs data the
  * row does not carry (`buildInvestmentRow`). The preview counts them per
  * reason in `investmentSummary.rejectedRows`; the import result lists each
@@ -120,6 +136,8 @@ export interface CsvRejectedInvestmentRow {
 
 /** Longest raw date text an unreadable-date row carries back. */
 const RAW_DATE_LIMIT = 50;
+/** The same cap for an unreadable amount's text. */
+const RAW_AMOUNT_LIMIT = 50;
 
 /** Per-canonical-action row counts and skip reporting for the preview step. */
 export interface CsvInvestmentSummary {
@@ -915,33 +933,6 @@ function parseStrippedCsvDate(trimmed: string, format: string): string | null {
 }
 
 /**
- * Parse an amount string from a CSV field.
- * Handles currency symbols, spaces, parentheses-as-negative notation, and
- * both US (1,234.56) and European (1.234,56 / 18,36) grouping/decimal styles
- * (`normalizeAmountSeparators`).
- */
-function parseCsvAmount(value: string): number | null {
-  let cleaned = value.trim();
-  if (!cleaned) {
-    return null;
-  }
-
-  // Handle parentheses as negative: (50.00) -> -50.00
-  const parenMatch = cleaned.match(/^\((.+)\)$/);
-  if (parenMatch) {
-    cleaned = "-" + parenMatch[1];
-  }
-
-  // Strip currency symbols and whitespace
-  cleaned = cleaned.replace(/[$£€¥₹\s]/g, "");
-
-  cleaned = normalizeAmountSeparators(cleaned);
-
-  const amount = parseFloat(cleaned);
-  return isNaN(amount) ? null : amount;
-}
-
-/**
  * Get the value at a column index from a row, returning empty string
  * if the index is out of bounds.
  */
@@ -1220,32 +1211,38 @@ export function validateCsvContent(content: string): {
  * A row's amount before any type column or transfer rule adjusts its sign:
  * the amount column (negated under `reverseSign`), or the credit column as an
  * inflow and the debit column as an outflow. `rawAmount` is the amount
- * column's value before `reverseSign`.
+ * column's value before `reverseSign`. A blank field reads as 0; a field that
+ * holds text `parseCsvAmount` cannot read is returned as `unreadable`, the
+ * file's text, so the row is reported rather than imported at 0.
  */
 function readRowAmount(
   row: string[],
   config: CsvColumnMappingConfig,
-): { amount: number; rawAmount: number } {
+): { amount: number; rawAmount: number; unreadable?: string } {
+  const read = (column: number | undefined) => {
+    const text = column !== undefined ? getField(row, column) : "";
+    if (isBlankCsvAmount(text)) return { value: 0 };
+    const value = parseCsvAmount(text);
+    return value === null ? { value: 0, unreadable: text.trim() } : { value };
+  };
   if (config.amount !== undefined) {
-    const rawAmount = parseCsvAmount(getField(row, config.amount)) ?? 0;
+    const { value: rawAmount, unreadable } = read(config.amount);
     return {
       amount: config.reverseSign ? -rawAmount : rawAmount,
       rawAmount,
+      ...(unreadable !== undefined ? { unreadable } : {}),
     };
   }
   if (config.debit !== undefined || config.credit !== undefined) {
-    const creditVal =
-      config.credit !== undefined
-        ? (parseCsvAmount(getField(row, config.credit)) ?? 0)
-        : 0;
-    const debitVal =
-      config.debit !== undefined
-        ? (parseCsvAmount(getField(row, config.debit)) ?? 0)
-        : 0;
+    const credit = read(config.credit);
+    const debit = read(config.debit);
+    const unreadable = credit.unreadable ?? debit.unreadable;
     // Strip sign from debit and negate -- debit is always an outflow
     return {
-      amount: creditVal !== 0 ? Math.abs(creditVal) : -Math.abs(debitVal),
+      amount:
+        credit.value !== 0 ? Math.abs(credit.value) : -Math.abs(debit.value),
       rawAmount: 0,
+      ...(unreadable !== undefined ? { unreadable } : {}),
     };
   }
   return { amount: 0, rawAmount: 0 };
@@ -1361,6 +1358,7 @@ export function parseCsv(
       openingBalance: null,
       openingBalanceDate: null,
       unreadableDateRows: [],
+      unreadableAmountRows: [],
       ...(investmentMode
         ? {
             rejectedInvestmentRows: [],
@@ -1390,6 +1388,7 @@ export function parseCsv(
   let uncostedShareRows = 0;
   const rawDates: string[] = [];
   const unreadableDateRows: CsvUnreadableDateRow[] = [];
+  const unreadableAmountRows: CsvUnreadableAmountRow[] = [];
   const rules = transferRules || [];
 
   // Tag separator is detected once per import by scanning every tag value in
@@ -1409,7 +1408,11 @@ export function parseCsv(
       : null;
 
     // Extract and parse the amount
-    const { amount: rowAmount, rawAmount } = readRowAmount(row, config);
+    const {
+      amount: rowAmount,
+      rawAmount,
+      unreadable: unreadableAmount,
+    } = readRowAmount(row, config);
     let amount = rowAmount;
 
     // Extract text fields with sanitization
@@ -1428,6 +1431,16 @@ export function parseCsv(
     }
 
     rawDates.push(rawDate);
+    if (unreadableAmount !== undefined) {
+      // Never imported at 0: the row is named in the preview and the result.
+      unreadableAmountRows.push({
+        rowNumber: line,
+        rawAmount: truncate(unreadableAmount, RAW_AMOUNT_LIMIT),
+        date: parsedDate,
+        payee,
+      });
+      continue;
+    }
     const categoryPart = truncate(
       getField(row, config.category),
       FIELD_LIMITS.CATEGORY,
@@ -1627,6 +1640,7 @@ export function parseCsv(
     openingBalance: null,
     openingBalanceDate: null,
     unreadableDateRows,
+    unreadableAmountRows,
     ...(investmentMode
       ? {
           rejectedInvestmentRows,
