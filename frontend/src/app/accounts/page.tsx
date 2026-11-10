@@ -35,6 +35,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { showErrorToast } from '@/lib/errors';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 
 const logger = createLogger('Accounts');
 
@@ -243,6 +244,8 @@ function AccountsContent() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, portfolioFailed, convertToDefault]);
+
+  useMobileAddAction(t('page.newAccount'), openCreate);
 
   return (
     <PageLayout>

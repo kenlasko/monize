@@ -9,6 +9,7 @@ import { isPublicPath } from '@/lib/public-paths';
 import { useAuthStore } from '@/store/authStore';
 import { startNewTransaction, useCommandPaletteStore } from '@/store/commandPaletteStore';
 import { useMobileChromeStore } from '@/store/mobileChromeStore';
+import { useMobileAddActionStore } from '@/store/mobileAddActionStore';
 
 const TAB_CLASS =
   'flex min-w-0 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500';
@@ -18,7 +19,9 @@ const TAB_IDLE_CLASS =
 
 /**
  * The app's navigation below `xl`: up to three tabs the reader chooses (Settings
- * -> Preferences), the add button in the middle and More at the end. More is not
+ * -> Preferences), the add button in the middle and More at the end. The add
+ * button runs the page's own primary "new" action where the page registered
+ * one (`useMobileAddAction`), and a new transaction everywhere else. More is not
  * one of the choices because it is the way to everything the bar leaves out.
  *
  * The five columns stay put however few tabs are chosen, so the add button is
@@ -41,6 +44,9 @@ export function MobileTabBar() {
     (s) => s.clearNewTransactionRequest,
   );
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  // The page on screen may name its own "new" action (a new account on
+  // Accounts); without one the button opens a new transaction.
+  const pageAction = useMobileAddActionStore((s) => s.action);
 
   if (!isAuthenticated || isPublicPath(pathname)) return null;
 
@@ -81,12 +87,19 @@ export function MobileTabBar() {
       <div className="grid h-16 grid-cols-5">
         {renderTab(tabs[0])}
         {renderTab(tabs[1])}
-        {canAddTransaction ? (
+        {pageAction || canAddTransaction ? (
           <div className="flex items-start justify-center">
             <button
               type="button"
-              onClick={() => startNewTransaction(pathname, router.push)}
-              aria-label={tPalette('newTransaction')}
+              onClick={() => {
+                if (pageAction) {
+                  clearNewTransactionRequest();
+                  pageAction.run();
+                } else {
+                  startNewTransaction(pathname, router.push);
+                }
+              }}
+              aria-label={pageAction?.label ?? tPalette('newTransaction')}
               className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 motion-reduce:transition-none dark:focus-visible:ring-offset-gray-900"
             >
               <PlusIcon aria-hidden className="h-7 w-7" />

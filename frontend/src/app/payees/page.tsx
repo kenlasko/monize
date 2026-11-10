@@ -36,6 +36,7 @@ import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { PAGE_SIZE } from '@/lib/constants';
 import { useHighlightParam } from '@/hooks/useHighlightTarget';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 
 const logger = createLogger('Payees');
 
@@ -309,6 +310,8 @@ function PayeesContent() {
   const payeesWithCategory = payees.filter((p) => p.defaultCategoryId).length;
   const payeesWithoutCategory = payees.length - payeesWithCategory;
   const payeesWithUncategorizedTx = payees.filter((p) => (p.uncategorizedCount ?? 0) > 0).length;
+
+  useMobileAddAction(t('page.newPayee'), openCreate);
 
   return (
     <PageLayout>

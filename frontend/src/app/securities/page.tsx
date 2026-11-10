@@ -17,6 +17,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import dynamic from 'next/dynamic';
 import { investmentsApi } from '@/lib/investments';
 import { Security, CreateSecurityData, Holding } from '@/types/investment';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 const SecurityForm = dynamic(() => import('@/components/securities/SecurityForm').then(m => m.SecurityForm), { ssr: false });
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { CARD_CLASS } from '@/components/ui/Card';
@@ -388,6 +389,8 @@ function SecuritiesContent() {
   const distinctTypes = useMemo(() => new Set(allSecurities.map(s => s.securityType).filter(Boolean)).size, [allSecurities]);
   const distinctExchanges = useMemo(() => new Set(allSecurities.map(s => s.exchange).filter(Boolean)).size, [allSecurities]);
   const distinctCurrencies = useMemo(() => new Set(allSecurities.map(s => s.currencyCode).filter(Boolean)).size, [allSecurities]);
+
+  useMobileAddAction(t('page.newSecurity'), handleCreateNew);
 
   return (
     <PageLayout>

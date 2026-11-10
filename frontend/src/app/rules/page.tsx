@@ -1,11 +1,13 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
-import { CreateRuleLink, RulesManager } from '@/components/rules/RulesManager';
+import { CreateRuleLink, NEW_RULE_HREF, RulesManager } from '@/components/rules/RulesManager';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 
 export default function RulesPage() {
   return (
@@ -17,6 +19,8 @@ export default function RulesPage() {
 
 function RulesContent() {
   const t = useTranslations('rules');
+  const router = useRouter();
+  useMobileAddAction(t('page.createButton'), () => router.push(NEW_RULE_HREF));
 
   return (
     <PageLayout>

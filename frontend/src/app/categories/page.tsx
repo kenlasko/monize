@@ -8,6 +8,7 @@ import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { useHighlightParam } from '@/hooks/useHighlightTarget';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 const CategoryForm = dynamic(() => import('@/components/categories/CategoryForm').then(m => m.CategoryForm), { ssr: false });
 import { ImportDefaultCategoriesDialog } from '@/components/categories/ImportDefaultCategoriesDialog';
 import { CategoryList, type SortField, type SortDirection } from '@/components/categories/CategoryList';
@@ -173,6 +174,8 @@ function CategoriesContent() {
   const incomeCount = categories.filter((c) => c.isIncome).length;
   const expenseCount = categories.filter((c) => !c.isIncome).length;
   const topLevelCount = categories.filter((c) => !c.parentId).length;
+
+  useMobileAddAction(t('page.newButton'), openCreate);
 
   return (
     <PageLayout>

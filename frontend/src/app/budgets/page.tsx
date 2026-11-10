@@ -20,6 +20,7 @@ import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { getErrorMessage } from '@/lib/errors';
 import type { Budget } from '@/types/budget';
 import type { Account } from '@/types/account';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 
 export default function BudgetsPage() {
   return (
@@ -37,6 +38,7 @@ function BudgetsContent() {
   const [showWizard, setShowWizard] = useState(false);
   const { defaultCurrency } = useExchangeRates();
   const router = useRouter();
+  useMobileAddAction(t('pages.list.newBudget'), () => setShowWizard(true));
 
   // The mount load: the state already says loading.
   const fetchBudgets = useCallback(() => {

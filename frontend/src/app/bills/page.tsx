@@ -65,6 +65,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { useHighlightParam } from '@/hooks/useHighlightTarget';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 
 const logger = createLogger('Bills');
 
@@ -715,6 +716,8 @@ function BillsContent() {
     () => buildScheduledCalendarDays(scheduledTransactions, calendarMonth),
     [calendarMonth, scheduledTransactions],
   );
+
+  useMobileAddAction(t('page.newButton'), handleCreateNew);
 
   return (
     <PageLayout>

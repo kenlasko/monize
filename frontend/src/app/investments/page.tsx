@@ -51,6 +51,7 @@ import {
   type InvestmentTransactionView,
 } from '@/components/investments/InvestmentViewToggle';
 import { PAGE_SIZE } from '@/lib/constants';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 
 const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
 
@@ -228,6 +229,8 @@ function InvestmentsContent() {
     displayCurrency: singleAccountCurrency ?? undefined,
     reloadKey: data.writeRefreshKey,
   });
+
+  useMobileAddAction(t('page.newInvestmentTransaction'), handleNewInvestmentTransaction);
 
   return (
     <PageLayout>
