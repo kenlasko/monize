@@ -1590,6 +1590,36 @@ describe("TaxRecurringReportsService", () => {
       );
     });
 
+    it("getTaxSummary leaves a category out whole when one of its rows has no rate (issue #2106)", async () => {
+      // The debit converts; the refund in the same category, dated where no
+      // rate reaches, does not.
+      currencyService.convertRow.mockImplementation(
+        (amount: number, row: RawRateBasis) =>
+          row.tx_date === "2024-01-05" ? null : amount,
+      );
+      scopedManager.query.mockResolvedValue([
+        {
+          category_id: null,
+          currency_code: "EUR",
+          tx_date: "2024-06-05",
+          amount: "-500.00",
+        },
+        {
+          category_id: null,
+          currency_code: "EUR",
+          tx_date: "2024-01-05",
+          amount: "400.00",
+        },
+      ]);
+
+      const result = await service.getTaxSummary(mockUserId, 2024);
+
+      expect(result.totals.expenses).toBeNull();
+      expect(result.excludedCount).toBe(1);
+      expect(result.allExpenses).toEqual([]);
+      expect(result.totals.knownExpenses).toBe(0);
+    });
+
     it("getTaxSummary withholds every total and leaves the JPY row out of every figure", async () => {
       scopedManager.query.mockResolvedValue([
         { category_id: null, currency_code: "USD", amount: "-50.00" },

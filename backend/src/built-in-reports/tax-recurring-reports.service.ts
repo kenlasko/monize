@@ -180,9 +180,14 @@ export class TaxRecurringReportsService {
     const rawResults: RawTaxRow[] = await withScopedDb(this.dataSource, (m) =>
       m.query(query, [userId, startDate, endDate, defaultCurrency]),
     );
-    const convert = await this.currencyService.buildConverter(
+    // A category nets its rows of both signs, so a category with a row no
+    // rate reaches on its date is left out whole: a debit kept beside a
+    // dropped refund would overstate it, or count it deductible.
+    const convert = wholeGroups(
       rawResults,
-      defaultCurrency,
+      await this.currencyService.buildConverter(rawResults, defaultCurrency),
+      (row) => `${row.category_id ?? ""}|${row.currency_code}`,
+      (row) => [toMoneyNumber(row.amount, MONEY_SCALE)],
     );
 
     const categories = await withScopedDb(this.dataSource, (m) =>
@@ -251,7 +256,10 @@ export class TaxRecurringReportsService {
         row,
       );
       if (amount === null) {
-        gaps.record(row.currency_code);
+        gaps.record(
+          row.currency_code,
+          `${row.category_id ?? ""}|${row.currency_code}`,
+        );
         return;
       }
       const category = row.category_id

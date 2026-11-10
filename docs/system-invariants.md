@@ -1454,7 +1454,12 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     `own_rate` and groups by them, so a foreign aggregate is
                     split by day while a reporting-currency one stays whole
                     (and a group with a day no rate reaches is left out whole,
-                    wholeGroups, counted once in excludedCount);
+                    wholeGroups, counted once in excludedCount -- the tax
+                    summary's categories too; Bill Payment History converts
+                    each payment alone and nets nothing, and the custom report
+                    engine's cells, which net by group, still keep the rows of
+                    a group that converted while `summary.total` is withheld,
+                    a known gap);
                     buildConverter takes the row's own rate where it reaches
                     the reporting currency (INV-FX-002), else convertAtDate over
                     one ExchangeRateService.getRateIndex load for the span the
@@ -1484,6 +1489,14 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     (position-basis-replay.ts), computeNetInvestmentFlowsInReporting
                     each flow at its own; a holding with no usable history
                     still falls back to today's rate, having no dates.
+                    Known gap: a capital-gain entry's `inReportingCurrency`
+                    converts the account-currency period figures at the
+                    period's rates, while Realized Gains' `inReportingCurrency`
+                    replays each sale against each purchase's own rate, so the
+                    two state a sale's realized gain in the reporting currency
+                    differently by the currency's move since purchase. One
+                    answer needs the capital-gains fold run in the reporting
+                    currency, a follow-up for the maintainer to schedule.
 Known gap           Convert before summing (A26-H12) is closed on three paths:
                     the custom report engine (reports/reports.service.ts,
                     each row converted at its own date, FxAggregate, `summary.total` null
