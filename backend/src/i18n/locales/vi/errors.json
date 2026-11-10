@@ -32,7 +32,9 @@
     "pairRequiresImages": "Tài liệu đã quét và ảnh gốc của nó đều phải là hình ảnh",
     "warrantyNotFound": "Không tìm thấy bảo hành",
     "tooManyForWarranty": "Bảo hành này đã có tối đa {{ max }} tệp đính kèm",
-    "documentKindNotForTransaction": "Loại tài liệu chỉ áp dụng cho tài liệu của bảo hành"
+    "documentKindNotForTransaction": "Loại tài liệu chỉ áp dụng cho tài liệu của bảo hành",
+    "copyNotOwnDocument": "Chỉ có thể thêm tài liệu của chính bạn vào một bảo hành",
+    "copyAlreadyOnWarranty": "Tài liệu này đã có trong bảo hành này"
   },
   "accounts": {
     "accountWithIdNotFound": "Không tìm thấy tài khoản với ID {{ id }}",
@@ -436,6 +438,8 @@
     "parserNotFound": "Không tìm thấy trình phân tích biên lai {{ id }}",
     "parserRevisionConflict": "Trình phân tích này đã được thay đổi kể từ khi bạn mở nó. Hãy tải lại và thử lại.",
     "parserCategoryNotFound": "Không tìm thấy danh mục được nêu trong trình phân tích này.",
+    "parserCategoryNameUnknown": "Không tìm thấy danh mục \"{{ name }}\". Sử dụng tên của một trong các danh mục của bạn.",
+    "parserCategoryNameAmbiguous": "Danh mục \"{{ name }}\" khớp với nhiều danh mục ({{ candidates }}). Sử dụng tên đầy đủ, ví dụ \"Cha mẹ: Con\".",
     "parserDefinitionInvalid": "Định nghĩa trình phân tích không hợp lệ: {{ codes }}",
     "receiptSkipped": "Không thể đọc email này (quá lớn hoặc không thể giải mã) nên không có gì để xử lý.",
     "notATradeEmail": "Email này không được đọc như một xác nhận giao dịch.",
@@ -467,8 +471,6 @@
     "generateReceiptOutsideDomain": "Một email không đến từ miền người gửi mà trình phân tích này dành cho.",
     "previewExpectedNotSelected": "Đã nêu một giao dịch dự kiến cho một email không nằm trong số email được chọn.",
     "previewReceiptOutsideDomain": "Một email không đến từ miền người gửi nào của trình phân tích này.",
-    "parserCategoryNameUnknown": "Không tìm thấy danh mục \"{{ name }}\". Sử dụng tên của một trong các danh mục của bạn.",
-    "parserCategoryNameAmbiguous": "Danh mục \"{{ name }}\" khớp với nhiều danh mục ({{ candidates }}). Sử dụng tên đầy đủ, ví dụ \"Cha mẹ: Con\".",
     "tradeNotBankLinkable": "Email này được đọc là xác nhận giao dịch. Hãy liên kết nó với một giao dịch đầu tư.",
     "tradeAccountedFor": "Email này đã tương ứng với một giao dịch đầu tư, nên không được đọc lại.",
     "tradeLinkedElsewhere": "Một email khác đã tương ứng với giao dịch đó.",
@@ -494,6 +496,7 @@
     "internal": "Lỗi máy chủ nội bộ"
   },
   "import": {
+    "accountClosed": "Tài khoản đã đóng. Hãy mở lại hoặc chọn tài khoản khác.",
     "noAccountBlocks": "Không tìm thấy khối tài khoản trong tệp QIF. Tệp này có thể không phải là xuất khẩu nhiều tài khoản.",
     "accountTypeRequired": "Chọn loại tài khoản cho các tài khoản này trước khi nhập: {{ accounts }}",
     "importFailed": "Nhập khẩu thất bại sau {{ imported }} giao tác: {{ message }}",
@@ -520,8 +523,7 @@
     "mnyExistingAccountCurrency": "Tài khoản hiện có \"{{ name }}\" dùng {{ existing }}, nhưng tài khoản trong tệp Money dùng {{ file }}. Hãy đổi tên một trong hai rồi nhập lại.",
     "mnyJobNotFound": "Không tìm thấy tác vụ nhập",
     "mnyFileTooLarge": "Tệp Money đó lớn hơn giới hạn nhập {{ limit }} MB.",
-    "noRateForSplitTransfer": "Không có tỷ giá cho {{ pair }} vào ngày {{ date }}: một dòng chia tách chuyển sang tài khoản bằng loại tiền khác. Hãy thêm tỷ giá cho cặp tiền và ngày đó, rồi nhập lại.",
-    "accountClosed": "Tài khoản đã đóng. Hãy mở lại hoặc chọn tài khoản khác."
+    "noRateForSplitTransfer": "Không có tỷ giá cho {{ pair }} vào ngày {{ date }}: một dòng chia tách chuyển sang tài khoản bằng loại tiền khác. Hãy thêm tỷ giá cho cặp tiền và ngày đó, rồi nhập lại."
   },
   "monteCarlo": {
     "scenarioNotFound": "Không tìm thấy kịch bản {{ id }}",

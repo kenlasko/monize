@@ -153,6 +153,8 @@
   "payee": "O meu beneficiário (opcional)",
   "choose": "Escolher…",
   "none": "Nenhum",
+  "linkedPayee": "Beneficiário vinculado",
+  "actions": "Ações",
   "bookPreview": "Visualizar alterações",
   "acceptBooking": "Salvar nas minhas finanças",
   "unlink": "Remover das minhas finanças",
@@ -373,9 +375,9 @@
   "releaseShare": "Limpar cota fixa de {name}",
   "splitAmountNeeded": "Informe uma despesa positiva para ver o custo de cada pessoa. A despesa será verificada novamente antes de salvar.",
   "otherRepayment": "Registrar outro reembolso",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, one {# grupo} other {# grupos}}",
   "entryCount": "{count, plural, one {# lançamento} other {# lançamentos}}",
   "saveChanges": "Salvar alterações",
-  "searchGroups": "Buscar grupos",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "Buscar grupos"
 }

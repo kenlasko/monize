@@ -43,11 +43,15 @@
     "position": "{index} de {total}",
     "previous": "Curiosidade anterior",
     "next": "Próxima curiosidade",
-    "empty": "As curiosidades aparecem aqui quando houver histórico suficiente: dois meses de patrimônio líquido ou investimentos com preço. A lista é refeita toda manhã.",
+    "empty": "As curiosidades aparecem aqui quando houver histórico suficiente: dois meses de patrimônio líquido, investimentos com preço, alguns meses de despesas e receitas ou garantias que você acompanha. A lista é refeita toda manhã.",
     "off": "As curiosidades de IA estão desativadas. Ative em <link>Configurações de IA</link>.",
     "topics": {
       "netWorth": "Patrimônio líquido",
-      "investments": "Investimentos"
+      "investments": "Investimentos",
+      "spending": "Despesas",
+      "income": "Receitas",
+      "activity": "Seus registros",
+      "warranties": "Garantias"
     },
     "aiGenerated": "Escrito por IA a partir dos seus números",
     "facts": {
@@ -65,7 +69,18 @@
       "investmentsBiggestHolding": "Sua maior posição é {holdingSymbol}, com cerca de {holdingPercent} da carteira ({holdingValue} em {holdingAccounts}).",
       "investmentsBestPerformer": "Seu melhor desempenho é {bestSymbol}, com alta de {bestPercent}. Custou {bestCost} e agora vale {bestValue}.",
       "investmentsForeignAccount": "Sua conta {foreignName} é mantida em {foreignCurrency}. As posições de {foreignBalance} equivalem a {foreignConverted} a uma taxa de cerca de {foreignRate}.",
-      "investmentsLargestAccount": "Sua maior conta de investimento é {largestName}, com {largestValue}."
+      "investmentsLargestAccount": "Sua maior conta de investimento é {largestName}, com {largestValue}.",
+      "spendingTopCategory": "Nos últimos doze meses, {topCategoryName} ficou com a maior parte das suas despesas: {topCategoryAmount}, ou seja, {topCategoryPercent}.",
+      "spendingTopPayee": "Nos últimos doze meses, você gastou mais em {topPayeeName}: {topPayeeAmount}.",
+      "spendingBiggestMonth": "{biggestSpendMonth} foi seu mês de maior despesa dos últimos doze, com {biggestSpendAmount}.",
+      "incomeKeptShare": "Nos últimos doze meses você ficou com {keptAmount} do que entrou, o que corresponde a {keptPercent} das suas receitas.",
+      "incomeSurplusMonths": "Meses dos últimos {windowMonths} em que entrou mais do que saiu: {surplusMonths}.",
+      "incomeTopSource": "{topSourceName} trouxe {topSourcePercent} das suas receitas nos últimos doze meses.",
+      "activityTransactions": "Transações nos seus registros: {transactionCount}, desde {firstTransactionMonth}.",
+      "activityPayees": "Beneficiários que você guarda no Monize: {payeeCount}. Categorias: {categoryCount}.",
+      "activityScheduled": "Transações agendadas que o Monize acompanha para você: {scheduledCount}.",
+      "warrantiesCovered": "Garantias que você acompanha e que ainda estão em vigor: {warrantyCount}.",
+      "warrantiesNextExpiry": "A próxima garantia a vencer é {nextWarrantyName}, em {nextWarrantyMonth}."
     }
   },
   "favouriteAccounts": {
@@ -287,6 +302,8 @@
     "descriptionPlaceholder": "Adicione uma descrição opcional",
     "rangeLabels": {
       "1d": "1D",
+      "1w": "1S",
+      "mtd": "MTD",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",
@@ -295,9 +312,7 @@
       "5y": "5Y",
       "10y": "10Y",
       "ytd": "YTD",
-      "all": "Tudo",
-      "1w": "1S",
-      "mtd": "MTD"
+      "all": "Tudo"
     }
   },
   "portfolioValue": {

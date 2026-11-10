@@ -153,6 +153,8 @@
   "payee": "Người nhận thanh toán của tôi (tùy chọn)",
   "choose": "Chọn…",
   "none": "Không có",
+  "linkedPayee": "Người nhận thanh toán được liên kết",
+  "actions": "Hành động",
   "bookPreview": "Xem trước thay đổi",
   "acceptBooking": "Lưu vào tài chính của tôi",
   "unlink": "Xóa khỏi tài chính của tôi",
@@ -373,9 +375,9 @@
   "releaseShare": "Xóa phần cố định của {name}",
   "splitAmountNeeded": "Nhập số tiền chi tiêu dương để xem chi phí mỗi người. Khoản chi sẽ được kiểm tra lại trước khi lưu.",
   "otherRepayment": "Ghi khoản hoàn trả khác",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, other {# nhóm}}",
   "entryCount": "{count, plural, other {# mục}}",
   "saveChanges": "Lưu thay đổi",
-  "searchGroups": "Tìm nhóm",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "Tìm nhóm"
 }

@@ -32,7 +32,9 @@
     "pairRequiresImages": "스캔한 문서와 원본은 모두 이미지여야 합니다",
     "warrantyNotFound": "보증을 찾을 수 없습니다",
     "tooManyForWarranty": "이 보증에는 이미 최대 {{ max }}개의 첨부 파일이 있습니다",
-    "documentKindNotForTransaction": "문서 종류는 보증 문서에만 적용됩니다"
+    "documentKindNotForTransaction": "문서 종류는 보증 문서에만 적용됩니다",
+    "copyNotOwnDocument": "보증에는 본인의 문서만 추가할 수 있습니다",
+    "copyAlreadyOnWarranty": "이 문서는 이미 이 보증에 있습니다"
   },
   "accounts": {
     "accountWithIdNotFound": "ID가 {{ id }}인 계정을 찾을 수 없습니다",
@@ -436,6 +438,8 @@
     "parserNotFound": "영수증 프로필 {{ id }}을(를) 찾을 수 없습니다",
     "parserRevisionConflict": "이 프로필는 열어 본 이후에 변경되었습니다. 다시 불러온 후 다시 시도하세요.",
     "parserCategoryNotFound": "이 프로필에 지정된 카테고리를 찾을 수 없습니다.",
+    "parserCategoryNameUnknown": "\"{{ name }}\" 카테고리를 찾을 수 없습니다. 사용자의 카테고리 중 하나의 이름을 사용하세요.",
+    "parserCategoryNameAmbiguous": "\"{{ name }}\" 카테고리가 여러 카테고리와 일치합니다（{{ candidates }}）。예를 들어 \"Parent: Child\"와 같이 전체 이름을 사용하세요.",
     "parserDefinitionInvalid": "프로필 정의가 유효하지 않습니다: {{ codes }}",
     "receiptSkipped": "이 이메일을 읽을 수 없어(너무 크거나 디코딩할 수 없었습니다) 처리할 내용이 없습니다.",
     "notATradeEmail": "이 메일은 거래 확인으로 읽히지 않았습니다.",
@@ -467,8 +471,6 @@
     "generateReceiptOutsideDomain": "이메일 중 하나가 프로필 대상 발신자 도메인에서 온 것이 아닙니다.",
     "previewExpectedNotSelected": "선택한 이메일에 포함되지 않은 이메일에 대해 예상 거래가 지정되었습니다.",
     "previewReceiptOutsideDomain": "이메일 중 하나가 이 프로필의 발신자 도메인에서 온 것이 아닙니다.",
-    "parserCategoryNameUnknown": "\"{{ name }}\" 카테고리를 찾을 수 없습니다. 사용자의 카테고리 중 하나의 이름을 사용하세요.",
-    "parserCategoryNameAmbiguous": "\"{{ name }}\" 카테고리가 여러 카테고리와 일치합니다（{{ candidates }}）。예를 들어 \"Parent: Child\"와 같이 전체 이름을 사용하세요.",
     "tradeNotBankLinkable": "이 이메일은 거래 확인서로 읽힙니다. 대신 투자 거래에 연결하세요.",
     "tradeAccountedFor": "이 이메일은 이미 투자 거래에 대응되므로 다시 읽지 않습니다.",
     "tradeLinkedElsewhere": "다른 이메일이 이미 해당 거래에 대응됩니다.",
@@ -494,6 +496,7 @@
     "internal": "내부 서버 오류입니다"
   },
   "import": {
+    "accountClosed": "계좌가 해지되었습니다. 다시 열거나 다른 계좌를 선택하세요.",
     "noAccountBlocks": "QIF 파일에서 계정 블록을 찾을 수 없습니다. 이 파일은 다중 계정 내보내기가 아닐 수 있습니다.",
     "accountTypeRequired": "가져오기 전에 다음 계정의 계정 유형을 선택하세요: {{ accounts }}",
     "importFailed": "{{ imported }}건의 거래 후 가져오기에 실패했습니다: {{ message }}",
@@ -520,8 +523,7 @@
     "mnyExistingAccountCurrency": "기존 계좌 \"{{ name }}\"은(는) {{ existing }}을(를) 사용하지만 Money 파일의 계좌는 {{ file }}을(를) 사용합니다. 둘 중 하나의 이름을 바꾼 후 다시 가져오세요.",
     "mnyJobNotFound": "가져오기 작업을 찾을 수 없습니다",
     "mnyFileTooLarge": "이 Money 파일은 가져오기 한도인 {{ limit }} MB를 초과합니다.",
-    "noRateForSplitTransfer": "{{ date }}의 {{ pair }} 환율이 없습니다. 분할 항목이 다른 통화의 계좌로 이체합니다. 해당 통화 쌍과 날짜의 환율을 추가한 다음 다시 가져오세요.",
-    "accountClosed": "계좌가 해지되었습니다. 다시 열거나 다른 계좌를 선택하세요."
+    "noRateForSplitTransfer": "{{ date }}의 {{ pair }} 환율이 없습니다. 분할 항목이 다른 통화의 계좌로 이체합니다. 해당 통화 쌍과 날짜의 환율을 추가한 다음 다시 가져오세요."
   },
   "monteCarlo": {
     "scenarioNotFound": "시나리오 {{ id }}을(를) 찾을 수 없습니다",

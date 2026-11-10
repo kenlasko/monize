@@ -153,6 +153,8 @@
   "payee": "मेरा भुगतानकर्ता (वैकल्पिक)",
   "choose": "चुनें...",
   "none": "कोई नहीं",
+  "linkedPayee": "लिंक किया गया भुगतानकर्ता",
+  "actions": "क्रियाएं",
   "bookPreview": "बदलावों का पूर्वावलोकन",
   "acceptBooking": "मेरे वित्त में सहेजें",
   "unlink": "मेरे वित्त से हटाएँ",
@@ -373,9 +375,9 @@
   "releaseShare": "{name} का निश्चित हिस्सा हटाएँ",
   "splitAmountNeeded": "हर व्यक्ति का खर्च देखने के लिए धनात्मक खर्च राशि दर्ज करें। सहेजने से पहले खर्च दोबारा जाँचा जाएगा।",
   "otherRepayment": "अन्य चुकौती दर्ज करें",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, one {# समूह} other {# समूह}}",
   "entryCount": "{count, plural, one {# प्रविष्टि} other {# प्रविष्टियाँ}}",
   "saveChanges": "बदलाव सहेजें",
-  "searchGroups": "समूह खोजें",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "समूह खोजें"
 }

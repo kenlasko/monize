@@ -32,7 +32,9 @@
     "pairRequiresImages": "Een gescand document en het origineel moeten allebei afbeeldingen zijn",
     "warrantyNotFound": "Garantie niet gevonden",
     "tooManyForWarranty": "Deze garantie heeft al het maximum van {{ max }} bijlagen",
-    "documentKindNotForTransaction": "Een documentsoort geldt alleen voor de documenten van een garantie"
+    "documentKindNotForTransaction": "Een documentsoort geldt alleen voor de documenten van een garantie",
+    "copyNotOwnDocument": "Alleen een van je eigen documenten kan aan een garantie worden toegevoegd",
+    "copyAlreadyOnWarranty": "Dit document staat al bij deze garantie"
   },
   "accounts": {
     "accountWithIdNotFound": "Rekening met ID {{ id }} niet gevonden",
@@ -436,6 +438,8 @@
     "parserNotFound": "Bonprofiel {{ id }} niet gevonden",
     "parserRevisionConflict": "Deze profiel is gewijzigd sinds u hem opende. Laad hem opnieuw en probeer het nogmaals.",
     "parserCategoryNotFound": "Een in deze profiel genoemde categorie is niet gevonden.",
+    "parserCategoryNameUnknown": "De categorie \"{{ name }}\" is niet gevonden. Gebruik de naam van een van uw categorieën.",
+    "parserCategoryNameAmbiguous": "De categorie \"{{ name }}\" komt overeen met meerdere categorieën ({{ candidates }}). Gebruik de volledige naam, bijvoorbeeld \"Parent: Child\".",
     "parserDefinitionInvalid": "De profieldefinitie is ongeldig: {{ codes }}",
     "receiptSkipped": "Deze e-mail kon niet worden gelezen (hij was te groot of kon niet worden gedecodeerd), dus er valt niets te verwerken.",
     "notATradeEmail": "Deze e-mail is niet gelezen als handelsbevestiging.",
@@ -467,8 +471,6 @@
     "generateReceiptOutsideDomain": "Een e-mail komt niet van het afzenderdomein waarvoor het profiel is bedoeld.",
     "previewExpectedNotSelected": "Er is een verwachte transactie genoemd voor een e-mail die niet bij de geselecteerde e-mails hoort.",
     "previewReceiptOutsideDomain": "Een e-mail komt niet van een afzenderdomein van dit profiel.",
-    "parserCategoryNameUnknown": "De categorie \"{{ name }}\" is niet gevonden. Gebruik de naam van een van uw categorieën.",
-    "parserCategoryNameAmbiguous": "De categorie \"{{ name }}\" komt overeen met meerdere categorieën ({{ candidates }}). Gebruik de volledige naam, bijvoorbeeld \"Parent: Child\".",
     "tradeNotBankLinkable": "Deze e-mail wordt gelezen als transactiebevestiging. Koppel hem in plaats daarvan aan een beleggingstransactie.",
     "tradeAccountedFor": "Deze e-mail hoort al bij een beleggingstransactie en wordt daarom niet opnieuw gelezen.",
     "tradeLinkedElsewhere": "Een andere e-mail hoort al bij die transactie.",
@@ -494,6 +496,7 @@
     "internal": "Interne serverfout"
   },
   "import": {
+    "accountClosed": "De rekening is gesloten. Heropen deze of kies een andere rekening.",
     "noAccountBlocks": "Geen rekeningblokken gevonden in QIF-bestand. Dit bestand is mogelijk geen export met meerdere rekeningen.",
     "accountTypeRequired": "Kies een rekeningtype voor deze rekeningen voordat u importeert: {{ accounts }}",
     "importFailed": "Import mislukt na {{ imported }} transacties: {{ message }}",
@@ -520,8 +523,7 @@
     "mnyExistingAccountCurrency": "De bestaande rekening \"{{ name }}\" gebruikt {{ existing }}, maar de rekening in het Money-bestand gebruikt {{ file }}. Hernoem een van beide en importeer opnieuw.",
     "mnyJobNotFound": "Importtaak niet gevonden",
     "mnyFileTooLarge": "Dit Money-bestand is groter dan de importlimiet van {{ limit }} MB.",
-    "noRateForSplitTransfer": "Geen wisselkoers voor {{ pair }} op {{ date }}: een gesplitste regel boekt over naar een rekening in een andere valuta. Voeg een wisselkoers toe voor dat paar en die datum en importeer opnieuw.",
-    "accountClosed": "De rekening is gesloten. Heropen deze of kies een andere rekening."
+    "noRateForSplitTransfer": "Geen wisselkoers voor {{ pair }} op {{ date }}: een gesplitste regel boekt over naar een rekening in een andere valuta. Voeg een wisselkoers toe voor dat paar en die datum en importeer opnieuw."
   },
   "monteCarlo": {
     "scenarioNotFound": "Scenario {{ id }} niet gevonden",

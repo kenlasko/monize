@@ -153,6 +153,8 @@
   "payee": "Penerima saya (opsional)",
   "choose": "Pilih…",
   "none": "Tidak ada",
+  "linkedPayee": "Penerima tertaut",
+  "actions": "Tindakan",
   "bookPreview": "Pratinjau perubahan",
   "acceptBooking": "Simpan ke keuangan saya",
   "unlink": "Hapus dari keuangan saya",
@@ -373,9 +375,9 @@
   "releaseShare": "Hapus porsi tetap {name}",
   "splitAmountNeeded": "Masukkan jumlah pengeluaran positif untuk melihat biaya tiap orang. Pengeluaran diperiksa lagi sebelum disimpan.",
   "otherRepayment": "Catat pembayaran kembali lainnya",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, other {# grup}}",
   "entryCount": "{count, plural, other {# entri}}",
   "saveChanges": "Simpan perubahan",
-  "searchGroups": "Cari grup",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "Cari grup"
 }

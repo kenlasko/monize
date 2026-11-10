@@ -43,11 +43,15 @@
     "position": "{index} / {total}",
     "previous": "前のトリビア",
     "next": "次のトリビア",
-    "empty": "十分な履歴がたまると、ここにトリビアが表示されます。純資産の 2 か月分、または価格のある投資が必要です。リストは毎朝再生成されます。",
+    "empty": "十分な履歴がたまると、ここにトリビアが表示されます。純資産の 2 か月分、価格のある投資、数か月分の支出と収入、または管理している保証が対象です。リストは毎朝再生成されます。",
     "off": "AI トリビアはオフです。<link>AI設定</link>でオンにしてください。",
     "topics": {
       "netWorth": "純資産",
-      "investments": "投資"
+      "investments": "投資",
+      "spending": "支出",
+      "income": "収入",
+      "activity": "あなたの記録",
+      "warranties": "保証"
     },
     "aiGenerated": "あなたの数字をもとにAIが作成しました",
     "facts": {
@@ -65,7 +69,18 @@
       "investmentsBiggestHolding": "最大の保有銘柄は{holdingSymbol}で、ポートフォリオの約{holdingPercent}です({holdingAccounts}で{holdingValue})。",
       "investmentsBestPerformer": "最も好調な銘柄は{bestSymbol}で、{bestPercent}上昇しました。取得額は{bestCost}で、現在は{bestValue}です。",
       "investmentsForeignAccount": "{foreignName}口座は{foreignCurrency}で保有されています。保有額{foreignBalance}は、約{foreignRate}のレートで{foreignConverted}に相当します。",
-      "investmentsLargestAccount": "最大の投資口座は{largestName}で、{largestValue}です。"
+      "investmentsLargestAccount": "最大の投資口座は{largestName}で、{largestValue}です。",
+      "spendingTopCategory": "過去 12 か月で、支出の最も大きな部分を占めたのは{topCategoryName}で、{topCategoryAmount}、全体の{topCategoryPercent}でした。",
+      "spendingTopPayee": "過去 12 か月で、最も多くお金を使った相手は{topPayeeName}で、{topPayeeAmount}でした。",
+      "spendingBiggestMonth": "{biggestSpendMonth}は過去 12 か月で最も支出が多い月で、{biggestSpendAmount}でした。",
+      "incomeKeptShare": "過去 12 か月で、入ってきたお金のうち{keptAmount}が手元に残り、収入の{keptPercent}にあたります。",
+      "incomeSurplusMonths": "直近{windowMonths}か月のうち、出ていくより入ってくるお金が多かった月:{surplusMonths}。",
+      "incomeTopSource": "過去 12 か月の収入のうち、{topSourcePercent}は{topSourceName}によるものでした。",
+      "activityTransactions": "登録簿にある取引:{transactionCount}件、{firstTransactionMonth}までさかのぼります。",
+      "activityPayees": "Monize に登録している受取人:{payeeCount}件。カテゴリ:{categoryCount}件。",
+      "activityScheduled": "Monize があなたのために管理している定期取引:{scheduledCount}件。",
+      "warrantiesCovered": "管理している保証のうち、まだ有効なもの:{warrantyCount}件。",
+      "warrantiesNextExpiry": "次に期限が切れる保証は{nextWarrantyName}で、{nextWarrantyMonth}です。"
     }
   },
   "favouriteAccounts": {
@@ -287,6 +302,8 @@
     "descriptionPlaceholder": "任意の説明を追加",
     "rangeLabels": {
       "1d": "1D",
+      "1w": "1週",
+      "mtd": "月初来",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",
@@ -295,9 +312,7 @@
       "5y": "5Y",
       "10y": "10Y",
       "ytd": "YTD",
-      "all": "すべて",
-      "1w": "1週",
-      "mtd": "月初来"
+      "all": "すべて"
     }
   },
   "portfolioValue": {

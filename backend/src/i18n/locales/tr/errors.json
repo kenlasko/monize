@@ -32,7 +32,9 @@
     "pairRequiresImages": "Taranan bir belge ve orijinali ikisi de görsel olmalıdır",
     "warrantyNotFound": "Garanti bulunamadı",
     "tooManyForWarranty": "Bu garantide zaten en fazla {{ max }} ek var",
-    "documentKindNotForTransaction": "Belge türü yalnızca bir garantinin belgeleri için geçerlidir"
+    "documentKindNotForTransaction": "Belge türü yalnızca bir garantinin belgeleri için geçerlidir",
+    "copyNotOwnDocument": "Bir garantiye yalnızca kendi belgelerinizden biri eklenebilir",
+    "copyAlreadyOnWarranty": "Bu belge zaten bu garantide var"
   },
   "accounts": {
     "accountWithIdNotFound": "{{ id }} kimliğine sahip hesap bulunamadı",
@@ -436,6 +438,8 @@
     "parserNotFound": "{{ id }} kimlikli makbuz ayrıştırıcısı bulunamadı",
     "parserRevisionConflict": "Bu ayrıştırıcı siz açtıktan sonra değiştirilmiş. Yeniden yükleyin ve tekrar deneyin.",
     "parserCategoryNotFound": "Bu ayrıştırıcıda adı geçen bir kategori bulunamadı.",
+    "parserCategoryNameUnknown": "\"{{ name }}\" kategorisi bulunamadı. Kategorilerinizden birinin adını kullanın.",
+    "parserCategoryNameAmbiguous": "\"{{ name }}\" kategorisi birkaç kategoriye ({{ candidates }}) eşleşiyor. Tam adı kullanın, örneğin \"Üst: Alt\".",
     "parserDefinitionInvalid": "Ayrıştırıcı tanımı geçerli değil: {{ codes }}",
     "receiptSkipped": "Bu e-posta okunamadı (çok büyüktü veya çözülemedi), bu nedenle işlenecek bir şey yok.",
     "notATradeEmail": "Bu e-posta işlem onayı olarak okunmadı.",
@@ -467,8 +471,6 @@
     "generateReceiptOutsideDomain": "Bir e-posta, ayrıştırıcının hedeflediği gönderen alan adından gelmiyor.",
     "previewExpectedNotSelected": "Seçilenler arasında olmayan bir e-posta için beklenen bir işlem belirtildi.",
     "previewReceiptOutsideDomain": "Bir e-posta, bu ayrıştırıcının gönderen alan adlarından birinden gelmiyor.",
-    "parserCategoryNameUnknown": "\"{{ name }}\" kategorisi bulunamadı. Kategorilerinizden birinin adını kullanın.",
-    "parserCategoryNameAmbiguous": "\"{{ name }}\" kategorisi birkaç kategoriye ({{ candidates }}) eşleşiyor. Tam adı kullanın, örneğin \"Üst: Alt\".",
     "tradeNotBankLinkable": "Bu e-posta bir işlem onayı olarak okunuyor. Bunun yerine bir yatırım işlemine bağlayın.",
     "tradeAccountedFor": "Bu e-posta zaten bir yatırım işlemine karşılık geliyor, bu yüzden tekrar okunmaz.",
     "tradeLinkedElsewhere": "Başka bir e-posta zaten o işleme karşılık geliyor.",
@@ -494,6 +496,7 @@
     "internal": "Dahili sunucu hatası"
   },
   "import": {
+    "accountClosed": "Hesap kapalı. Yeniden açın veya başka bir hesap seçin.",
     "noAccountBlocks": "QIF dosyasında hesap bloğu bulunamadı. Bu dosya çok hesaplı dışa aktarma olmayabilir.",
     "accountTypeRequired": "İçe aktarmadan önce bu hesaplar için bir hesap türü seçin: {{ accounts }}",
     "importFailed": "{{ imported }} işlemden sonra içe aktarma başarısız oldu: {{ message }}",
@@ -520,8 +523,7 @@
     "mnyExistingAccountCurrency": "Mevcut \"{{ name }}\" hesabı {{ existing }} kullanıyor, ancak Money dosyasındaki hesap {{ file }} kullanıyor. Birinin adını değiştirin, ardından yeniden içe aktarın.",
     "mnyJobNotFound": "İçe aktarma görevi bulunamadı",
     "mnyFileTooLarge": "Bu Money dosyası {{ limit }} MB içe aktarma sınırından büyük.",
-    "noRateForSplitTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: bir bölünmüş satır başka para birimindeki bir hesaba transfer ediyor. Bu çift ve tarih için bir döviz kuru ekleyin, ardından yeniden içe aktarın.",
-    "accountClosed": "Hesap kapalı. Yeniden açın veya başka bir hesap seçin."
+    "noRateForSplitTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: bir bölünmüş satır başka para birimindeki bir hesaba transfer ediyor. Bu çift ve tarih için bir döviz kuru ekleyin, ardından yeniden içe aktarın."
   },
   "monteCarlo": {
     "scenarioNotFound": "{{ id }} senaryosu bulunamadı",

@@ -32,7 +32,9 @@
     "pairRequiresImages": "Un documento scansionato e il suo originale devono essere entrambi immagini",
     "warrantyNotFound": "Garanzia non trovata",
     "tooManyForWarranty": "Questa garanzia ha già il numero massimo di {{ max }} allegati",
-    "documentKindNotForTransaction": "Il tipo di documento si applica solo ai documenti di una garanzia"
+    "documentKindNotForTransaction": "Il tipo di documento si applica solo ai documenti di una garanzia",
+    "copyNotOwnDocument": "A una garanzia si può aggiungere solo un tuo documento",
+    "copyAlreadyOnWarranty": "Questo documento è già su questa garanzia"
   },
   "accounts": {
     "accountWithIdNotFound": "Conto con ID {{ id }} non trovato",
@@ -436,6 +438,8 @@
     "parserNotFound": "Parser di ricevute {{ id }} non trovato",
     "parserRevisionConflict": "Questo parser è stato modificato da quando l'hai aperto. Ricaricalo e riprova.",
     "parserCategoryNotFound": "Una categoria indicata in questo parser non è stata trovata.",
+    "parserCategoryNameUnknown": "La categoria \"{{ name }}\" non è stata trovata. Utilizzare il nome di una delle tue categorie.",
+    "parserCategoryNameAmbiguous": "La categoria \"{{ name }}\" corrisponde a diverse categorie ({{ candidates }}). Utilizzare il nome completo, ad esempio \"Parent: Child\".",
     "parserDefinitionInvalid": "La definizione del parser non è valida: {{ codes }}",
     "receiptSkipped": "Non è stato possibile leggere questa email (era troppo grande o non è stato possibile decodificarla), quindi non c'è nulla da elaborare.",
     "notATradeEmail": "Questa email non è stata letta come conferma di un'operazione.",
@@ -467,8 +471,6 @@
     "generateReceiptOutsideDomain": "Un'email non proviene dal dominio del mittente a cui è destinato il parser.",
     "previewExpectedNotSelected": "È stata indicata una transazione attesa per un'email che non è tra quelle selezionate.",
     "previewReceiptOutsideDomain": "Un'email non proviene da un dominio mittente di questo parser.",
-    "parserCategoryNameUnknown": "La categoria \"{{ name }}\" non è stata trovata. Utilizzare il nome di una delle tue categorie.",
-    "parserCategoryNameAmbiguous": "La categoria \"{{ name }}\" corrisponde a diverse categorie ({{ candidates }}). Utilizzare il nome completo, ad esempio \"Parent: Child\".",
     "tradeNotBankLinkable": "Questa email viene letta come conferma di un'operazione. Collegala invece a una transazione di investimento.",
     "tradeAccountedFor": "Questa email corrisponde già a una transazione di investimento, quindi non viene riletta.",
     "tradeLinkedElsewhere": "Un'altra email corrisponde già a quella transazione.",
@@ -494,6 +496,7 @@
     "internal": "Errore interno del server"
   },
   "import": {
+    "accountClosed": "Il conto è chiuso. Riaprilo o scegli un altro conto.",
     "noAccountBlocks": "Nessun blocco account trovato nel file QIF. Questo file potrebbe non essere un'esportazione multi-account.",
     "accountTypeRequired": "Scegli un tipo di conto per questi conti prima di importare: {{ accounts }}",
     "importFailed": "Importazione non riuscita dopo {{ imported }} transazioni: {{ message }}",
@@ -520,8 +523,7 @@
     "mnyExistingAccountCurrency": "Il conto esistente \"{{ name }}\" usa {{ existing }}, ma il conto nel file Money usa {{ file }}. Rinomina uno dei due, poi importa di nuovo.",
     "mnyJobNotFound": "Attività di importazione non trovata",
     "mnyFileTooLarge": "Questo file Money supera il limite di importazione di {{ limit }} MB.",
-    "noRateForSplitTransfer": "Nessun tasso di cambio per {{ pair }} il {{ date }}: una riga suddivisa trasferisce su un conto in un'altra valuta. Aggiungi un tasso di cambio per quella coppia e quella data, poi importa di nuovo.",
-    "accountClosed": "Il conto è chiuso. Riaprilo o scegli un altro conto."
+    "noRateForSplitTransfer": "Nessun tasso di cambio per {{ pair }} il {{ date }}: una riga suddivisa trasferisce su un conto in un'altra valuta. Aggiungi un tasso di cambio per quella coppia e quella data, poi importa di nuovo."
   },
   "monteCarlo": {
     "scenarioNotFound": "Scenario {{ id }} non trovato",

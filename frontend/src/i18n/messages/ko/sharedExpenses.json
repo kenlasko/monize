@@ -153,6 +153,8 @@
   "payee": "내 수취인(선택사항)",
   "choose": "선택…",
   "none": "없음",
+  "linkedPayee": "연결된 수취인",
+  "actions": "작업",
   "bookPreview": "변경 사항 미리보기",
   "acceptBooking": "내 재정에 저장",
   "unlink": "내 재정에서 제거",
@@ -373,9 +375,9 @@
   "releaseShare": "{name}의 고정 지분 해제",
   "splitAmountNeeded": "각자의 비용을 미리 보려면 양수 지출액을 입력하세요. 저장 전에 지출을 다시 확인합니다.",
   "otherRepayment": "다른 상환 기록",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, other {#개 그룹}}",
   "entryCount": "{count, plural, other {#개 항목}}",
   "saveChanges": "변경 사항 저장",
-  "searchGroups": "그룹 검색",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "그룹 검색"
 }

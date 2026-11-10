@@ -32,7 +32,9 @@
     "pairRequiresImages": "Zeskanowany dokument i jego oryginał muszą być obrazami",
     "warrantyNotFound": "Nie znaleziono gwarancji",
     "tooManyForWarranty": "Ta gwarancja ma już maksymalną liczbę {{ max }} załączników",
-    "documentKindNotForTransaction": "Rodzaj dokumentu dotyczy wyłącznie dokumentów gwarancji"
+    "documentKindNotForTransaction": "Rodzaj dokumentu dotyczy wyłącznie dokumentów gwarancji",
+    "copyNotOwnDocument": "Do gwarancji można dodać tylko własny dokument",
+    "copyAlreadyOnWarranty": "Ten dokument jest już przypisany do tej gwarancji"
   },
   "accounts": {
     "accountWithIdNotFound": "Nie znaleziono konta o ID {{ id }}",
@@ -436,6 +438,8 @@
     "parserNotFound": "Nie znaleziono parsera paragonów {{ id }}",
     "parserRevisionConflict": "Ten parser został zmieniony od chwili jego otwarcia. Załaduj go ponownie i spróbuj jeszcze raz.",
     "parserCategoryNotFound": "Nie znaleziono kategorii wskazanej w tym parserze.",
+    "parserCategoryNameUnknown": "Kategoria \"{{ name }}\" nie została znaleziona. Użyj nazwy jednej z Twoich kategorii.",
+    "parserCategoryNameAmbiguous": "Kategoria \"{{ name }}\" pasuje do kilku kategorii ({{ candidates }}). Użyj pełnej nazwy, na przykład \"Nadrzędna: Podrzędna\".",
     "parserDefinitionInvalid": "Definicja parsera jest nieprawidłowa: {{ codes }}",
     "receiptSkipped": "Nie udało się odczytać tej wiadomości (była za duża lub nie dało się jej zdekodować), więc nie ma czego przetwarzać.",
     "notATradeEmail": "Ta wiadomość nie została odczytana jako potwierdzenie transakcji.",
@@ -467,8 +471,6 @@
     "generateReceiptOutsideDomain": "Wiadomość nie pochodzi z domeny nadawcy, dla której przeznaczony jest parser.",
     "previewExpectedNotSelected": "Podano oczekiwaną transakcję dla wiadomości, której nie ma wśród wybranych.",
     "previewReceiptOutsideDomain": "Wiadomość nie pochodzi z żadnej domeny nadawcy tego parsera.",
-    "parserCategoryNameUnknown": "Kategoria \"{{ name }}\" nie została znaleziona. Użyj nazwy jednej z Twoich kategorii.",
-    "parserCategoryNameAmbiguous": "Kategoria \"{{ name }}\" pasuje do kilku kategorii ({{ candidates }}). Użyj pełnej nazwy, na przykład \"Nadrzędna: Podrzędna\".",
     "tradeNotBankLinkable": "Ten e-mail jest odczytywany jako potwierdzenie transakcji. Zamiast tego połącz go z transakcją inwestycyjną.",
     "tradeAccountedFor": "Ten e-mail odpowiada już transakcji inwestycyjnej, więc nie jest odczytywany ponownie.",
     "tradeLinkedElsewhere": "Inny e-mail odpowiada już tej transakcji.",
@@ -494,6 +496,7 @@
     "internal": "Wewnętrzny błąd serwera"
   },
   "import": {
+    "accountClosed": "Konto jest zamknięte. Otwórz je ponownie lub wybierz inne konto.",
     "noAccountBlocks": "Nie znaleziono bloków kont w pliku QIF. Ten plik może nie być eksportem wielokontowym.",
     "accountTypeRequired": "Przed importem wybierz typ konta dla tych kont: {{ accounts }}",
     "importFailed": "Import nie powiódł się po {{ imported }} transakcjach: {{ message }}",
@@ -520,8 +523,7 @@
     "mnyExistingAccountCurrency": "Istniejące konto „{{ name }}” ma walutę {{ existing }}, a konto w pliku Money ma walutę {{ file }}. Zmień nazwę jednego z nich, a potem zaimportuj plik jeszcze raz.",
     "mnyJobNotFound": "Nie znaleziono zadania importu",
     "mnyFileTooLarge": "Ten plik Money jest większy niż limit importu wynoszący {{ limit }} MB.",
-    "noRateForSplitTransfer": "Brak kursu wymiany dla {{ pair }} na dzień {{ date }}: pozycja podziału przelewa na konto w innej walucie. Dodaj kurs wymiany dla tej pary i daty, a następnie zaimportuj ponownie.",
-    "accountClosed": "Konto jest zamknięte. Otwórz je ponownie lub wybierz inne konto."
+    "noRateForSplitTransfer": "Brak kursu wymiany dla {{ pair }} na dzień {{ date }}: pozycja podziału przelewa na konto w innej walucie. Dodaj kurs wymiany dla tej pary i daty, a następnie zaimportuj ponownie."
   },
   "monteCarlo": {
     "scenarioNotFound": "Nie znaleziono scenariusza {{ id }}",

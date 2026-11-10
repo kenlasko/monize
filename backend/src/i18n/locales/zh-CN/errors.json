@@ -32,7 +32,9 @@
     "pairRequiresImages": "扫描的文档及其原图都必须是图片",
     "warrantyNotFound": "未找到保修",
     "tooManyForWarranty": "此保修已达到最多 {{ max }} 个附件的上限",
-    "documentKindNotForTransaction": "文档类型仅适用于保修的文档"
+    "documentKindNotForTransaction": "文档类型仅适用于保修的文档",
+    "copyNotOwnDocument": "只能向保修添加您自己的文档",
+    "copyAlreadyOnWarranty": "此文档已在该保修中"
   },
   "accounts": {
     "accountWithIdNotFound": "未找到 ID 为 {{ id }} 的账户",
@@ -436,6 +438,8 @@
     "parserNotFound": "未找到收据解析器 {{ id }}",
     "parserRevisionConflict": "此解析器在您打开后已被更改。请重新加载后再试。",
     "parserCategoryNotFound": "未找到此解析器中指定的类别。",
+    "parserCategoryNameUnknown": "类别\"{{ name }}\"未找到。请使用您的某个类别的名称。",
+    "parserCategoryNameAmbiguous": "类别\"{{ name }}\"与多个类别匹配({{ candidates }})。请使用完整名称，例如\"父类：子类\"。",
     "parserDefinitionInvalid": "解析器定义无效：{{ codes }}",
     "receiptSkipped": "无法读取此邮件（邮件过大或无法解码），因此没有可处理的内容。",
     "notATradeEmail": "这封邮件没有被读取为交易确认。",
@@ -467,8 +471,6 @@
     "generateReceiptOutsideDomain": "有一封邮件并非来自该解析器所针对的发件人域名。",
     "previewExpectedNotSelected": "为一封不在所选邮件之列的邮件指定了预期交易。",
     "previewReceiptOutsideDomain": "有一封邮件并非来自此解析器的任何发件人域名。",
-    "parserCategoryNameUnknown": "类别\"{{ name }}\"未找到。请使用您的某个类别的名称。",
-    "parserCategoryNameAmbiguous": "类别\"{{ name }}\"与多个类别匹配({{ candidates }})。请使用完整名称，例如\"父类：子类\"。",
     "tradeNotBankLinkable": "此邮件被读取为交易确认。请改为将其关联到一笔投资交易。",
     "tradeAccountedFor": "此邮件已对应一笔投资交易，因此不会再次读取。",
     "tradeLinkedElsewhere": "另一封邮件已对应该交易。",
@@ -494,6 +496,7 @@
     "internal": "内部服务器错误"
   },
   "import": {
+    "accountClosed": "该账户已关闭。请重新打开或选择其他账户。",
     "noAccountBlocks": "QIF 文件中未找到账户块。此文件可能不是多账户导出文件。",
     "accountTypeRequired": "导入前请为以下账户选择账户类型：{{ accounts }}",
     "importFailed": "导入在 {{ imported }} 笔交易后失败：{{ message }}",
@@ -520,8 +523,7 @@
     "mnyExistingAccountCurrency": "现有账户“{{ name }}”使用 {{ existing }}，但 Money 文件中的账户使用 {{ file }}。请重命名其中一个，然后再次导入。",
     "mnyJobNotFound": "未找到导入任务",
     "mnyFileTooLarge": "该 Money 文件超过 {{ limit }} MB 的导入上限。",
-    "noRateForSplitTransfer": "{{ date }} 没有 {{ pair }} 的汇率：一条拆分行转账到另一种货币的账户。请为该货币对和日期添加汇率，然后重新导入。",
-    "accountClosed": "该账户已关闭。请重新打开或选择其他账户。"
+    "noRateForSplitTransfer": "{{ date }} 没有 {{ pair }} 的汇率：一条拆分行转账到另一种货币的账户。请为该货币对和日期添加汇率，然后重新导入。"
   },
   "monteCarlo": {
     "scenarioNotFound": "未找到情景 {{ id }}",

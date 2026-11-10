@@ -43,11 +43,15 @@
     "position": "{index} dari {total}",
     "previous": "Fakta sebelumnya",
     "next": "Fakta berikutnya",
-    "empty": "Fakta akan muncul di sini setelah riwayat cukup: kekayaan bersih dua bulan, atau investasi yang sudah berharga. Daftar dibuat ulang setiap pagi.",
+    "empty": "Fakta akan muncul di sini setelah riwayat cukup: kekayaan bersih dua bulan, investasi yang sudah berharga, beberapa bulan pengeluaran dan pemasukan, atau garansi yang Anda catat. Daftar dibuat ulang setiap pagi.",
     "off": "Trivia AI dimatikan. Aktifkan di <link>Pengaturan AI</link>.",
     "topics": {
       "netWorth": "Kekayaan bersih",
-      "investments": "Investasi"
+      "investments": "Investasi",
+      "spending": "Pengeluaran",
+      "income": "Pemasukan",
+      "activity": "Catatan Anda",
+      "warranties": "Garansi"
     },
     "aiGenerated": "Ditulis oleh AI dari angka Anda",
     "facts": {
@@ -65,7 +69,18 @@
       "investmentsBiggestHolding": "Kepemilikan terbesar Anda adalah {holdingSymbol}, sekitar {holdingPercent} dari portofolio ({holdingValue} di {holdingAccounts}).",
       "investmentsBestPerformer": "Performa terbaik Anda adalah {bestSymbol}, naik {bestPercent}. Biayanya {bestCost} dan kini bernilai {bestValue}.",
       "investmentsForeignAccount": "Akun {foreignName} Anda disimpan dalam {foreignCurrency}. Kepemilikan senilai {foreignBalance} setara dengan {foreignConverted} pada kurs sekitar {foreignRate}.",
-      "investmentsLargestAccount": "Akun investasi terbesar Anda adalah {largestName} sebesar {largestValue}."
+      "investmentsLargestAccount": "Akun investasi terbesar Anda adalah {largestName} sebesar {largestValue}.",
+      "spendingTopCategory": "Dalam dua belas bulan terakhir, {topCategoryName} menyerap pengeluaran terbesar Anda: {topCategoryAmount}, atau {topCategoryPercent} dari total.",
+      "spendingTopPayee": "Dalam dua belas bulan terakhir, Anda paling banyak berbelanja di {topPayeeName}: {topPayeeAmount}.",
+      "spendingBiggestMonth": "{biggestSpendMonth} adalah bulan dengan pengeluaran terbesar Anda dalam dua belas bulan terakhir, sebesar {biggestSpendAmount}.",
+      "incomeKeptShare": "Dalam dua belas bulan terakhir Anda menyimpan {keptAmount} dari uang yang masuk, yaitu {keptPercent} dari pemasukan Anda.",
+      "incomeSurplusMonths": "Bulan dalam {windowMonths} bulan terakhir ketika uang yang masuk lebih banyak daripada yang keluar: {surplusMonths}.",
+      "incomeTopSource": "{topSourceName} menyumbang {topSourcePercent} dari pemasukan Anda dalam dua belas bulan terakhir.",
+      "activityTransactions": "Transaksi di register Anda: {transactionCount}, sejak {firstTransactionMonth}.",
+      "activityPayees": "Penerima yang Anda simpan di Monize: {payeeCount}. Kategori: {categoryCount}.",
+      "activityScheduled": "Transaksi terjadwal yang dipantau Monize untuk Anda: {scheduledCount}.",
+      "warrantiesCovered": "Garansi yang Anda catat dan masih berlaku: {warrantyCount}.",
+      "warrantiesNextExpiry": "Garansi berikutnya yang akan berakhir adalah {nextWarrantyName}, pada {nextWarrantyMonth}."
     }
   },
   "favouriteAccounts": {
@@ -287,6 +302,8 @@
     "descriptionPlaceholder": "Tambahkan deskripsi opsional",
     "rangeLabels": {
       "1d": "1D",
+      "1w": "1M",
+      "mtd": "MTD",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",
@@ -295,9 +312,7 @@
       "5y": "5Y",
       "10y": "10Y",
       "ytd": "YTD",
-      "all": "Semua",
-      "1w": "1M",
-      "mtd": "MTD"
+      "all": "Semua"
     }
   },
   "portfolioValue": {

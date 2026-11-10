@@ -43,11 +43,15 @@
     "position": "{total} içinde {index}",
     "previous": "Önceki bilgi",
     "next": "Sonraki bilgi",
-    "empty": "Yeterli geçmiş oluştuğunda bilgi notları burada görünür: iki aylık net değer ya da fiyatı olan yatırımlar. Liste her sabah yeniden oluşturulur.",
+    "empty": "Yeterli geçmiş oluştuğunda bilgi notları burada görünür: iki aylık net değer, fiyatı olan yatırımlar, birkaç aylık gider ve gelir ya da takip ettiğiniz garantiler. Liste her sabah yeniden oluşturulur.",
     "off": "Yapay zeka bilgi notları kapalı. <link>AI Ayarları</link> bölümünden açın.",
     "topics": {
       "netWorth": "Net değer",
-      "investments": "Yatırımlar"
+      "investments": "Yatırımlar",
+      "spending": "Giderler",
+      "income": "Gelirler",
+      "activity": "Kayıtlarınız",
+      "warranties": "Garantiler"
     },
     "aiGenerated": "Rakamlarınızdan yapay zekayla yazıldı",
     "facts": {
@@ -65,7 +69,18 @@
       "investmentsBiggestHolding": "En büyük varlığınız {holdingSymbol}, portföyün yaklaşık {holdingPercent} kadarı ({holdingAccounts} içinde {holdingValue}).",
       "investmentsBestPerformer": "En iyi performans gösteren {bestSymbol}, {bestPercent} yükseldi. Maliyeti {bestCost} idi ve şimdi {bestValue} değerinde.",
       "investmentsForeignAccount": "{foreignName} hesabınız {foreignCurrency} cinsinden tutuluyor. {foreignBalance} tutarındaki varlıkları yaklaşık {foreignRate} kuruyla {foreignConverted} eder.",
-      "investmentsLargestAccount": "En büyük yatırım hesabınız {largestName}, tutarı {largestValue}."
+      "investmentsLargestAccount": "En büyük yatırım hesabınız {largestName}, tutarı {largestValue}.",
+      "spendingTopCategory": "Son on iki ayda giderlerinizin en büyük kısmı {topCategoryName} kategorisine gitti: {topCategoryAmount}, yani {topCategoryPercent}.",
+      "spendingTopPayee": "Son on iki ayda en çok {topPayeeName} için harcadınız: {topPayeeAmount}.",
+      "spendingBiggestMonth": "{biggestSpendMonth}, son on iki ayın en çok harcama yaptığınız ayıydı: {biggestSpendAmount}.",
+      "incomeKeptShare": "Son on iki ayda gelen paranın {keptAmount} kadarını elinizde tuttunuz, bu gelirinizin {keptPercent} kadarı.",
+      "incomeSurplusMonths": "Son {windowMonths} ayın içinde gelenin çıkandan fazla olduğu aylar: {surplusMonths}.",
+      "incomeTopSource": "Son on iki ayda gelirinizin {topSourcePercent} kadarı {topSourceName} kaynağından geldi.",
+      "activityTransactions": "Kayıtlarınızdaki işlemler: {transactionCount}, {firstTransactionMonth} tarihine kadar uzanıyor.",
+      "activityPayees": "Monize'da tuttuğunuz alacaklılar: {payeeCount}. Kategoriler: {categoryCount}.",
+      "activityScheduled": "Monize'ın sizin için takip ettiği zamanlanmış işlemler: {scheduledCount}.",
+      "warrantiesCovered": "Takip ettiğiniz ve hâlâ geçerli olan garantiler: {warrantyCount}.",
+      "warrantiesNextExpiry": "Süresi dolacak bir sonraki garanti {nextWarrantyName}, {nextWarrantyMonth} ayında."
     }
   },
   "favouriteAccounts": {
@@ -287,6 +302,8 @@
     "descriptionPlaceholder": "İsteğe bağlı bir açıklama ekleyin",
     "rangeLabels": {
       "1d": "1D",
+      "1w": "1H",
+      "mtd": "AYB",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",
@@ -295,9 +312,7 @@
       "5y": "5Y",
       "10y": "10Y",
       "ytd": "YTD",
-      "all": "Tümü",
-      "1w": "1H",
-      "mtd": "AYB"
+      "all": "Tümü"
     }
   },
   "portfolioValue": {

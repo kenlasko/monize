@@ -43,11 +43,15 @@
     "position": "{total}개 중 {index}번째",
     "previous": "이전 정보",
     "next": "다음 정보",
-    "empty": "기록이 충분히 쌓이면 여기에 정보가 표시됩니다. 순자산 2개월 치 또는 가격이 있는 투자가 필요합니다. 목록은 매일 아침 새로 생성됩니다.",
+    "empty": "기록이 충분히 쌓이면 여기에 정보가 표시됩니다. 순자산 2개월 치, 가격이 있는 투자, 몇 달 치 지출과 수입, 또는 관리 중인 보증이 있어야 합니다. 목록은 매일 아침 새로 생성됩니다.",
     "off": "AI 트리비아가 꺼져 있습니다. <link>AI 설정</link>에서 켜세요.",
     "topics": {
       "netWorth": "순자산",
-      "investments": "투자"
+      "investments": "투자",
+      "spending": "지출",
+      "income": "수입",
+      "activity": "내 기록",
+      "warranties": "보증"
     },
     "aiGenerated": "회원님의 수치를 바탕으로 AI가 작성했습니다",
     "facts": {
@@ -65,7 +69,18 @@
       "investmentsBiggestHolding": "가장 큰 보유 종목은 {holdingSymbol}으로, 포트폴리오의 약 {holdingPercent}입니다({holdingAccounts}에서 {holdingValue}).",
       "investmentsBestPerformer": "가장 잘 나간 종목은 {bestSymbol}으로 {bestPercent} 올랐습니다. 매입 비용은 {bestCost}였고 현재 가치는 {bestValue}입니다.",
       "investmentsForeignAccount": "{foreignName} 계좌는 {foreignCurrency}로 보유 중입니다. 보유액 {foreignBalance}은(는) 약 {foreignRate} 환율로 {foreignConverted}에 해당합니다.",
-      "investmentsLargestAccount": "가장 큰 투자 계좌는 {largestName}이며 {largestValue}입니다."
+      "investmentsLargestAccount": "가장 큰 투자 계좌는 {largestName}이며 {largestValue}입니다.",
+      "spendingTopCategory": "최근 12개월 동안 지출의 가장 큰 부분은 {topCategoryName}이며, {topCategoryAmount}으로 전체의 {topCategoryPercent}입니다.",
+      "spendingTopPayee": "최근 12개월 동안 가장 많이 지출한 곳은 {topPayeeName}이며, {topPayeeAmount}입니다.",
+      "spendingBiggestMonth": "{biggestSpendMonth}은 최근 12개월 중 지출이 가장 많은 달로, {biggestSpendAmount}였습니다.",
+      "incomeKeptShare": "최근 12개월 동안 들어온 돈 중 {keptAmount}을 남겼으며, 이는 수입의 {keptPercent}입니다.",
+      "incomeSurplusMonths": "최근 {windowMonths}개월 중 나간 돈보다 들어온 돈이 많았던 달: {surplusMonths}.",
+      "incomeTopSource": "최근 12개월 동안 수입의 {topSourcePercent}는 {topSourceName}에서 들어왔습니다.",
+      "activityTransactions": "장부에 있는 거래: {transactionCount}건, {firstTransactionMonth}까지 거슬러 올라갑니다.",
+      "activityPayees": "Monize에 저장해 둔 수취인: {payeeCount}명. 카테고리: {categoryCount}개.",
+      "activityScheduled": "Monize가 대신 추적하고 있는 예약 거래: {scheduledCount}건.",
+      "warrantiesCovered": "관리 중인 보증 중 아직 유효한 것: {warrantyCount}건.",
+      "warrantiesNextExpiry": "다음에 만료되는 보증은 {nextWarrantyName}이며, {nextWarrantyMonth}입니다."
     }
   },
   "favouriteAccounts": {
@@ -287,6 +302,8 @@
     "descriptionPlaceholder": "선택적인 설명을 추가하세요",
     "rangeLabels": {
       "1d": "1D",
+      "1w": "1주",
+      "mtd": "월초 이후",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",
@@ -295,9 +312,7 @@
       "5y": "5Y",
       "10y": "10Y",
       "ytd": "YTD",
-      "all": "전체",
-      "1w": "1주",
-      "mtd": "월초 이후"
+      "all": "전체"
     }
   },
   "portfolioValue": {

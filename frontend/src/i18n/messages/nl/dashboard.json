@@ -43,11 +43,15 @@
     "position": "{index} van {total}",
     "previous": "Vorig weetje",
     "next": "Volgend weetje",
-    "empty": "Weetjes verschijnen hier zodra er genoeg geschiedenis is: twee maanden nettovermogen, of beleggingen met een koers. De lijst wordt elke ochtend opnieuw opgebouwd.",
+    "empty": "Weetjes verschijnen hier zodra er genoeg geschiedenis is: twee maanden nettovermogen, beleggingen met een koers, een paar maanden uitgaven en inkomsten, of garanties die je bijhoudt. De lijst wordt elke ochtend opnieuw opgebouwd.",
     "off": "AI-weetjes staan uit. Zet ze aan in de <link>AI-instellingen</link>.",
     "topics": {
       "netWorth": "Nettovermogen",
-      "investments": "Beleggingen"
+      "investments": "Beleggingen",
+      "spending": "Uitgaven",
+      "income": "Inkomsten",
+      "activity": "Je gegevens",
+      "warranties": "Garanties"
     },
     "aiGenerated": "Door AI geschreven op basis van je cijfers",
     "facts": {
@@ -65,7 +69,18 @@
       "investmentsBiggestHolding": "Je grootste positie is {holdingSymbol} met ongeveer {holdingPercent} van de portefeuille ({holdingValue} in {holdingAccounts}).",
       "investmentsBestPerformer": "Je beste belegging is {bestSymbol}, met {bestPercent} winst. Hij kostte {bestCost} en is nu {bestValue} waard.",
       "investmentsForeignAccount": "Je rekening {foreignName} staat in {foreignCurrency}. De posities van {foreignBalance} zijn bij een koers van ongeveer {foreignRate} gelijk aan {foreignConverted}.",
-      "investmentsLargestAccount": "Je grootste beleggingsrekening is {largestName} met {largestValue}."
+      "investmentsLargestAccount": "Je grootste beleggingsrekening is {largestName} met {largestValue}.",
+      "spendingTopCategory": "In de afgelopen twaalf maanden ging het grootste deel van je uitgaven naar {topCategoryName}: {topCategoryAmount}, oftewel {topCategoryPercent}.",
+      "spendingTopPayee": "In de afgelopen twaalf maanden gaf je het meeste uit bij {topPayeeName}: {topPayeeAmount}.",
+      "spendingBiggestMonth": "{biggestSpendMonth} was je duurste maand van de afgelopen twaalf, met {biggestSpendAmount}.",
+      "incomeKeptShare": "In de afgelopen twaalf maanden hield je {keptAmount} over van wat er binnenkwam, dat is {keptPercent} van je inkomen.",
+      "incomeSurplusMonths": "Maanden van de afgelopen {windowMonths} waarin er meer binnenkwam dan eruit ging: {surplusMonths}.",
+      "incomeTopSource": "{topSourceName} leverde in de afgelopen twaalf maanden {topSourcePercent} van je inkomen op.",
+      "activityTransactions": "Transacties in je registers: {transactionCount}, teruggaand tot {firstTransactionMonth}.",
+      "activityPayees": "Begunstigden die je in Monize bewaart: {payeeCount}. Categorieën: {categoryCount}.",
+      "activityScheduled": "Geplande transacties die Monize voor je bijhoudt: {scheduledCount}.",
+      "warrantiesCovered": "Garanties die je bijhoudt en die nog lopen: {warrantyCount}.",
+      "warrantiesNextExpiry": "De eerstvolgende garantie die afloopt is {nextWarrantyName}, in {nextWarrantyMonth}."
     }
   },
   "favouriteAccounts": {
@@ -287,6 +302,8 @@
     "descriptionPlaceholder": "Voeg een optionele beschrijving toe",
     "rangeLabels": {
       "1d": "1D",
+      "1w": "1W",
+      "mtd": "MTD",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",
@@ -295,9 +312,7 @@
       "5y": "5Y",
       "10y": "10Y",
       "ytd": "YTD",
-      "all": "Alle",
-      "1w": "1W",
-      "mtd": "MTD"
+      "all": "Alle"
     }
   },
   "portfolioValue": {

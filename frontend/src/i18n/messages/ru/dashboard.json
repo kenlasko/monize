@@ -43,11 +43,15 @@
     "position": "{index} из {total}",
     "previous": "Предыдущий факт",
     "next": "Следующий факт",
-    "empty": "Факты появятся здесь, когда накопится достаточно истории: два месяца чистых активов или инвестиции с ценой. Список обновляется каждое утро.",
+    "empty": "Факты появятся здесь, когда накопится достаточно истории: два месяца чистых активов, инвестиции с ценой, несколько месяцев расходов и доходов или гарантии, которые вы отслеживаете. Список обновляется каждое утро.",
     "off": "Интересные факты от ИИ отключены. Включите их в разделе <link>Настройки ИИ</link>.",
     "topics": {
       "netWorth": "Чистые активы",
-      "investments": "Инвестиции"
+      "investments": "Инвестиции",
+      "spending": "Расходы",
+      "income": "Доходы",
+      "activity": "Ваши записи",
+      "warranties": "Гарантии"
     },
     "aiGenerated": "Текст составлен ИИ по вашим данным",
     "facts": {
@@ -65,7 +69,18 @@
       "investmentsBiggestHolding": "Ваша крупнейшая позиция: {holdingSymbol}, примерно {holdingPercent} портфеля ({holdingValue} в {holdingAccounts}).",
       "investmentsBestPerformer": "Лучший результат у {bestSymbol}: рост на {bestPercent}. Покупка обошлась в {bestCost}, сейчас это {bestValue}.",
       "investmentsForeignAccount": "Ваш счёт {foreignName} ведётся в валюте {foreignCurrency}. Активы на {foreignBalance} при курсе около {foreignRate} равны {foreignConverted}.",
-      "investmentsLargestAccount": "Ваш крупнейший инвестиционный счёт: {largestName}, {largestValue}."
+      "investmentsLargestAccount": "Ваш крупнейший инвестиционный счёт: {largestName}, {largestValue}.",
+      "spendingTopCategory": "За последние двенадцать месяцев больше всего ваших расходов пришлось на «{topCategoryName}»: {topCategoryAmount}, или {topCategoryPercent}.",
+      "spendingTopPayee": "За последние двенадцать месяцев больше всего вы потратили у получателя «{topPayeeName}»: {topPayeeAmount}.",
+      "spendingBiggestMonth": "{biggestSpendMonth} стал вашим самым затратным месяцем из последних двенадцати: {biggestSpendAmount}.",
+      "incomeKeptShare": "За последние двенадцать месяцев вы сохранили {keptAmount} из поступивших средств, это {keptPercent} вашего дохода.",
+      "incomeSurplusMonths": "Месяцы из последних {windowMonths}, в которые поступило больше, чем потрачено: {surplusMonths}.",
+      "incomeTopSource": "{topSourceName} принёс {topSourcePercent} вашего дохода за последние двенадцать месяцев.",
+      "activityTransactions": "Транзакций в ваших реестрах: {transactionCount}, начиная с {firstTransactionMonth}.",
+      "activityPayees": "Получателей платежей в Monize: {payeeCount}. Категорий: {categoryCount}.",
+      "activityScheduled": "Запланированных транзакций, которые Monize отслеживает для вас: {scheduledCount}.",
+      "warrantiesCovered": "Отслеживаемые вами гарантии, которые ещё действуют: {warrantyCount}.",
+      "warrantiesNextExpiry": "Следующая гарантия, срок которой истекает, это {nextWarrantyName}, в {nextWarrantyMonth}."
     }
   },
   "favouriteAccounts": {
@@ -287,6 +302,8 @@
     "descriptionPlaceholder": "Добавьте необязательное описание",
     "rangeLabels": {
       "1d": "1D",
+      "1w": "1Н",
+      "mtd": "С нач. мес.",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",
@@ -295,9 +312,7 @@
       "5y": "5Y",
       "10y": "10Y",
       "ytd": "YTD",
-      "all": "Всё",
-      "1w": "1Н",
-      "mtd": "С нач. мес."
+      "all": "Всё"
     }
   },
   "portfolioValue": {

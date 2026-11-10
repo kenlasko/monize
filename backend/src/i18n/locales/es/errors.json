@@ -32,7 +32,9 @@
     "pairRequiresImages": "Un documento escaneado y su original deben ser ambos imágenes",
     "warrantyNotFound": "Garantía no encontrada",
     "tooManyForWarranty": "Esta garantía ya tiene el máximo de {{ max }} adjuntos",
-    "documentKindNotForTransaction": "El tipo de documento solo se aplica a los documentos de una garantía"
+    "documentKindNotForTransaction": "El tipo de documento solo se aplica a los documentos de una garantía",
+    "copyNotOwnDocument": "Solo se puede añadir a una garantía uno de tus propios documentos",
+    "copyAlreadyOnWarranty": "Este documento ya está en esta garantía"
   },
   "accounts": {
     "accountWithIdNotFound": "Cuenta con ID {{ id }} no encontrada",
@@ -436,6 +438,8 @@
     "parserNotFound": "No se encontró el perfil de recibos {{ id }}",
     "parserRevisionConflict": "Este perfil se modificó desde que lo abrió. Vuelva a cargarlo e inténtelo de nuevo.",
     "parserCategoryNotFound": "No se encontró una categoría mencionada en este perfil.",
+    "parserCategoryNameUnknown": "No se encontró la categoría \"{{ name }}\". Use el nombre de una de sus categorías.",
+    "parserCategoryNameAmbiguous": "La categoría \"{{ name }}\" coincide con varias categorías ({{ candidates }}). Use el nombre completo, por ejemplo \"Parent: Child\".",
     "parserDefinitionInvalid": "La definición del perfil no es válida: {{ codes }}",
     "receiptSkipped": "Este correo no se pudo leer (era demasiado grande o no se pudo decodificar), por lo que no hay nada que procesar.",
     "notATradeEmail": "Este correo no se leyó como confirmación de una operación.",
@@ -467,8 +471,6 @@
     "generateReceiptOutsideDomain": "Un correo no procede del dominio de remitente para el que es el perfil.",
     "previewExpectedNotSelected": "Se indicó una transacción esperada para un correo que no está entre los seleccionados.",
     "previewReceiptOutsideDomain": "Un correo no procede de un dominio de remitente de este perfil.",
-    "parserCategoryNameUnknown": "No se encontró la categoría \"{{ name }}\". Use el nombre de una de sus categorías.",
-    "parserCategoryNameAmbiguous": "La categoría \"{{ name }}\" coincide con varias categorías ({{ candidates }}). Use el nombre completo, por ejemplo \"Parent: Child\".",
     "tradeNotBankLinkable": "Este correo se lee como una confirmación de operación. Vincúlalo a una transacción de inversión.",
     "tradeAccountedFor": "Este correo ya corresponde a una transacción de inversión, así que no se vuelve a leer.",
     "tradeLinkedElsewhere": "Otro correo ya corresponde a esa transacción.",
@@ -494,6 +496,7 @@
     "internal": "Error interno del servidor"
   },
   "import": {
+    "accountClosed": "La cuenta está cerrada. Vuelva a abrirla o elija otra cuenta.",
     "noAccountBlocks": "No se encontraron bloques de cuenta en el archivo QIF. Es posible que este archivo no sea una exportación de múltiples cuentas.",
     "accountTypeRequired": "Elija un tipo de cuenta para estas cuentas antes de importar: {{ accounts }}",
     "importFailed": "Importación fallida tras {{ imported }} transacciones: {{ message }}",
@@ -520,8 +523,7 @@
     "mnyExistingAccountCurrency": "La cuenta existente \"{{ name }}\" usa {{ existing }}, pero la cuenta del archivo de Money usa {{ file }}. Cambie el nombre de una de ellas y vuelva a importar.",
     "mnyJobNotFound": "Tarea de importación no encontrada",
     "mnyFileTooLarge": "Ese archivo de Money supera el límite de importación de {{ limit }} MB.",
-    "noRateForSplitTransfer": "No hay tipo de cambio para {{ pair }} el {{ date }}: una línea dividida transfiere a una cuenta en otra moneda. Añade un tipo de cambio para ese par y esa fecha y vuelve a importar.",
-    "accountClosed": "La cuenta está cerrada. Vuelva a abrirla o elija otra cuenta."
+    "noRateForSplitTransfer": "No hay tipo de cambio para {{ pair }} el {{ date }}: una línea dividida transfiere a una cuenta en otra moneda. Añade un tipo de cambio para ese par y esa fecha y vuelve a importar."
   },
   "monteCarlo": {
     "scenarioNotFound": "Escenario {{ id }} no encontrado",

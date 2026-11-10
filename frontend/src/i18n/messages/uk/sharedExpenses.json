@@ -153,6 +153,8 @@
   "payee": "Мій одержувач (необов'язково)",
   "choose": "Виберіть…",
   "none": "Немає",
+  "linkedPayee": "Пов'язаний одержувач",
+  "actions": "Дії",
   "bookPreview": "Переглянути зміни",
   "acceptBooking": "Зберегти в моїх фінансах",
   "unlink": "Вилучити з моїх фінансів",
@@ -373,9 +375,9 @@
   "releaseShare": "Прибрати фіксовану частку: {name}",
   "splitAmountNeeded": "Введіть додатну суму витрати, щоб побачити вартість для кожного. Перед збереженням витрату буде перевірено ще раз.",
   "otherRepayment": "Записати інше повернення боргу",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, one {# група} few {# групи} many {# груп} other {# групи}}",
   "entryCount": "{count, plural, one {# запис} few {# записи} many {# записів} other {# запису}}",
   "saveChanges": "Зберегти зміни",
-  "searchGroups": "Пошук груп",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "Пошук груп"
 }

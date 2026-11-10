@@ -43,11 +43,15 @@
     "position": "第 {index} 条，共 {total} 条",
     "previous": "上一条趣闻",
     "next": "下一条趣闻",
-    "empty": "有足够的历史数据后，趣闻会显示在这里：两个月的净资产，或有价格的投资。列表每天早上重新生成。",
+    "empty": "有足够的历史数据后，趣闻会显示在这里：两个月的净资产、有价格的投资、几个月的支出和收入，或您跟踪的保修。列表每天早上重新生成。",
     "off": "AI 趣闻已关闭。请在<link>AI 设置</link>中开启。",
     "topics": {
       "netWorth": "净资产",
-      "investments": "投资"
+      "investments": "投资",
+      "spending": "支出",
+      "income": "收入",
+      "activity": "您的记录",
+      "warranties": "保修"
     },
     "aiGenerated": "由 AI 根据您的数据撰写",
     "facts": {
@@ -65,7 +69,18 @@
       "investmentsBiggestHolding": "您最大的持仓是{holdingSymbol},约占投资组合的{holdingPercent}({holdingAccounts}中的{holdingValue})。",
       "investmentsBestPerformer": "表现最好的是{bestSymbol},上涨{bestPercent}。成本为{bestCost},现在价值{bestValue}。",
       "investmentsForeignAccount": "您的{foreignName}账户以{foreignCurrency}持有。其{foreignBalance}的持仓按约{foreignRate}的汇率相当于{foreignConverted}。",
-      "investmentsLargestAccount": "您最大的投资账户是{largestName},金额为{largestValue}。"
+      "investmentsLargestAccount": "您最大的投资账户是{largestName},金额为{largestValue}。",
+      "spendingTopCategory": "过去十二个月中，{topCategoryName}占了您支出的最大部分：{topCategoryAmount}，即{topCategoryPercent}。",
+      "spendingTopPayee": "过去十二个月中，您在{topPayeeName}花得最多：{topPayeeAmount}。",
+      "spendingBiggestMonth": "{biggestSpendMonth}是您过去十二个月中支出最多的月份，共{biggestSpendAmount}。",
+      "incomeKeptShare": "过去十二个月中，您留下了收入款项中的{keptAmount}，占您收入的{keptPercent}。",
+      "incomeSurplusMonths": "最近{windowMonths}个月中，收入多于支出的月份：{surplusMonths}。",
+      "incomeTopSource": "过去十二个月中，{topSourceName}带来了您收入的{topSourcePercent}。",
+      "activityTransactions": "您账簿中的交易：{transactionCount}笔，最早可追溯到{firstTransactionMonth}。",
+      "activityPayees": "您在 Monize 中保存的收款人：{payeeCount}个。类别：{categoryCount}个。",
+      "activityScheduled": "Monize 为您跟踪的计划交易：{scheduledCount}笔。",
+      "warrantiesCovered": "您跟踪的仍在保修期内的保修：{warrantyCount}份。",
+      "warrantiesNextExpiry": "下一个到期的保修是{nextWarrantyName}，时间为{nextWarrantyMonth}。"
     }
   },
   "favouriteAccounts": {
@@ -287,6 +302,8 @@
     "descriptionPlaceholder": "添加可选描述",
     "rangeLabels": {
       "1d": "1D",
+      "1w": "1周",
+      "mtd": "本月至今",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",
@@ -295,9 +312,7 @@
       "5y": "5Y",
       "10y": "10Y",
       "ytd": "YTD",
-      "all": "全部",
-      "1w": "1周",
-      "mtd": "本月至今"
+      "all": "全部"
     }
   },
   "portfolioValue": {
