@@ -376,7 +376,7 @@ export async function convertDatedRows(
 export class ConversionGaps {
   private currencies: readonly string[] = [];
   private excluded = 0;
-  private readonly groups = new Set<string>();
+  private groups: readonly string[] = [];
 
   /**
    * Record one aggregate row left out because `currency` has no rate.
@@ -391,8 +391,8 @@ export class ConversionGaps {
       this.currencies = [...this.currencies, currency];
     }
     if (group !== undefined) {
-      if (this.groups.has(group)) return;
-      this.groups.add(group);
+      if (this.groups.includes(group)) return;
+      this.groups = [...this.groups, group];
     }
     this.excluded += 1;
   }
