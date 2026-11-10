@@ -8,6 +8,7 @@ import {
   moneyDecimalsForCode,
 } from "../common/currency-places.util";
 import { investmentExclusionSql } from "../common/investment-filter.util";
+import { LEDGER_MOVEMENT_PREDICATE } from "../common/ledger-balance.sql";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import {
   ESTIMATE_HISTORY_MONTHS,
@@ -375,8 +376,7 @@ export class ScheduledAmountEstimateService {
            )
            AND COALESCE(t.is_split, false) = false
            AND COALESCE(t.is_transfer, false) = false
-           AND t.parent_transaction_id IS NULL
-           AND (t.status IS NULL OR t.status <> 'VOID')
+           AND ${LEDGER_MOVEMENT_PREDICATE}
            AND t.transaction_date > $4
            AND t.transaction_date <= $5
            AND ${investmentExclusionSql({ accountAlias: "a", transactionAlias: "t" })}
@@ -395,8 +395,7 @@ export class ScheduledAmountEstimateService {
            AND t.is_split = true
            AND ts.transfer_account_id IS NULL
            AND COALESCE(t.is_transfer, false) = false
-           AND t.parent_transaction_id IS NULL
-           AND (t.status IS NULL OR t.status <> 'VOID')
+           AND ${LEDGER_MOVEMENT_PREDICATE}
            AND t.transaction_date > $4
            AND t.transaction_date <= $5
            AND ${investmentExclusionSql({ accountAlias: "a", transactionAlias: "t", splitAlias: "ts" })}
