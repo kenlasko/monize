@@ -34,8 +34,18 @@ import { UpdateTransactionDto } from "./dto/update-transaction.dto";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
 import { UpdateTransferDto } from "./dto/update-transfer.dto";
-import { TagsService } from "../tags/tags.service";
+import { TagsService, TagChangePreview } from "../tags/tags.service";
 import { TransactionTag } from "../tags/entities/transaction-tag.entity";
+import { TransactionSplitTag } from "../tags/entities/transaction-split-tag.entity";
+import { tagChangeFields } from "../tags/tag-change.util";
+
+/** An edit that names no tag: nothing to read. */
+const NO_TAG_CHANGE = (): TagChangePreview => ({
+  tagNames: [],
+  newTagNames: [],
+  removeTagIds: [],
+  removeTagNames: [],
+});
 import {
   RuleEffectsPreview,
   TransactionRulesApplierService,
@@ -373,8 +383,20 @@ export interface UpdateTransactionPreview {
   tagNames?: string[];
   /** The subset of `tagNames` the user has no tag for yet: confirm creates them. */
   newTagNames?: string[];
+  /**
+   * Tags the edit REMOVES: those the caller named that the transaction
+   * carries, by id for the write and by name for the card. Absent when none.
+   */
+  removeTagIds?: string[];
+  removeTagNames?: string[];
   /** The reference number ("Ref #") the edit sets; absent when it leaves it as it is. */
   referenceNumber?: string;
+  /**
+   * True when the edit changes the transaction's tags and nothing else: the
+   * commit then writes only the tags, never the rest of this snapshot over an
+   * edit made since.
+   */
+  tagsOnly?: true;
   /** `"ai"` when the AI chose `categoryName` (display only; set by the review queue, never by this service). */
   categorySource?: "ai";
 }
@@ -1014,6 +1036,11 @@ export class TransactionsService {
        * change.
        */
       tagNames?: readonly string[];
+      /**
+       * Tag names to remove. A name the transaction does not carry is not a
+       * change; a name the user has no tag for is refused.
+       */
+      removeTagNames?: readonly string[];
       /** The reference number to set; the value the transaction holds already is not a change. */
       referenceNumber?: string;
     },
@@ -1047,10 +1074,11 @@ export class TransactionsService {
       }
     }
 
-    const tagChange = await this.previewAddedTags(
+    const tagChange = await this.previewTagChange(
       userId,
       transactionId,
       input.tagNames ?? [],
+      input.removeTagNames ?? [],
     );
     const referenceNumber =
       input.referenceNumber === undefined
@@ -1059,25 +1087,51 @@ export class TransactionsService {
     const referenceChanges =
       referenceNumber !== undefined &&
       referenceNumber !== (existing.referenceNumber ?? null);
-    const hasChange =
+    const hasTagChange =
+      tagChange.tagNames.length > 0 || tagChange.removeTagIds.length > 0;
+    const hasFieldChange =
       input.amount !== undefined ||
       input.transactionDate !== undefined ||
       input.payeeName !== undefined ||
       input.categoryId !== undefined ||
       input.description !== undefined ||
-      tagChange.tagNames.length > 0 ||
       referenceChanges ||
       // A splits-only replacement changes the transaction even though no
       // scalar field does.
       input.splitsAccompany === true;
-    if (!hasChange) {
+    if (!hasFieldChange && !hasTagChange) {
+      const askedForTags =
+        (input.tagNames?.length ?? 0) > 0 ||
+        (input.removeTagNames?.length ?? 0) > 0;
       throw new BadRequestException(
-        tr(
-          "errors.transactions.noUpdateFields",
-          "Provide at least one field to change.",
-        ),
+        askedForTags
+          ? tr(
+              "errors.tags.nothingToChange",
+              "Nothing to change: the transaction already carries every tag to add and none of the tags to remove. Tags on split lines are not changed by this edit.",
+            )
+          : tr(
+              "errors.transactions.noUpdateFields",
+              "Provide at least one field to change.",
+            ),
       );
     }
+    // A value difference, not a field being present: a model resends fields it
+    // does not change, and a tag edit must not then commit the whole snapshot.
+    const fieldsDiffer =
+      (input.amount !== undefined &&
+        input.amount !== Number(existing.amount)) ||
+      (input.transactionDate !== undefined &&
+        input.transactionDate !== String(existing.transactionDate)) ||
+      (input.payeeName !== undefined &&
+        (stripHtml(input.payeeName) || null) !==
+          (existing.payeeName ?? null)) ||
+      (input.categoryId !== undefined &&
+        input.categoryId !== (existing.categoryId ?? null)) ||
+      (input.description !== undefined &&
+        (stripHtml(input.description) || null) !==
+          (existing.description ?? null)) ||
+      referenceChanges ||
+      input.splitsAccompany === true;
 
     if (input.amount !== undefined) {
       const newAmount = input.amount;
@@ -1162,32 +1216,28 @@ export class TransactionsService {
       currencyCode: existing.currencyCode,
       isReconciled: existing.isReconciled,
       ...(referenceChanges ? { referenceNumber } : {}),
-      ...(tagChange.tagNames.length > 0
-        ? {
-            tagNames: tagChange.tagNames,
-            ...(tagChange.newTagNames.length > 0
-              ? { newTagNames: tagChange.newTagNames }
-              : {}),
-          }
-        : {}),
+      ...tagChangeFields(tagChange),
+      ...(hasTagChange && !fieldsDiffer ? { tagsOnly: true as const } : {}),
     };
   }
 
   /**
-   * Which of the requested tag names an edit would add: the ones the
-   * transaction does not carry yet. A name the user has a tag for is spelled as
-   * that tag; one it has none for is new (confirm creates it). Reads only.
+   * The tag change an edit of `transactionId` proposes, against the tags it
+   * carries now (`TagsService.previewTagChange`): which names it adds (and
+   * which of those confirm creates) and which carried tags it removes. Reads
+   * only. Public for the transfer edit, whose tags live on both legs and are
+   * read from the edited one.
    */
-  private async previewAddedTags(
+  async previewTagChange(
     userId: string,
     transactionId: string,
-    names: readonly string[],
-  ): Promise<{ tagNames: string[]; newTagNames: string[] }> {
-    const wanted = [...new Set(names.map((n) => n.trim()).filter(Boolean))];
-    if (wanted.length === 0) return { tagNames: [], newTagNames: [] };
+    addNames: readonly string[],
+    removeNames: readonly string[],
+  ): Promise<TagChangePreview> {
+    if (addNames.length === 0 && removeNames.length === 0) {
+      return NO_TAG_CHANGE();
+    }
     return withScopedDb(this.dataSource, async (m) => {
-      const known = await this.tagsService.findByNames(m, userId, wanted);
-      const byKey = new Map(known.map((t) => [t.name.toLowerCase(), t]));
       const carried = new Set(
         (
           await m.getRepository(TransactionTag).find({
@@ -1195,22 +1245,74 @@ export class TransactionsService {
           })
         ).map((link) => link.tagId),
       );
-      const tagNames: string[] = [];
-      const newTagNames: string[] = [];
-      const seen = new Set<string>();
-      for (const name of wanted) {
-        const key = name.toLowerCase();
-        if (seen.has(key)) continue;
-        seen.add(key);
-        const tag = byKey.get(key);
-        if (!tag) {
-          tagNames.push(name);
-          newTagNames.push(name);
-        } else if (!carried.has(tag.id)) {
-          tagNames.push(tag.name);
-        }
+      return this.tagsService.previewTagChange(
+        m,
+        userId,
+        carried,
+        addNames,
+        removeNames,
+      );
+    });
+  }
+
+  /**
+   * The tag change an edit of a transfer proposes. Its tags live in more than
+   * one place -- the edited leg, the counterpart leg when it is the user's, and
+   * the split a split-transfer leg belongs to -- and `applyTransferTagChange`
+   * writes all of them, so a tag is already added only when every place
+   * carries it, and is there to remove when any place does. Reads only.
+   */
+  async previewTransferTagChange(
+    userId: string,
+    transactionId: string,
+    addNames: readonly string[],
+    removeNames: readonly string[],
+  ): Promise<TagChangePreview> {
+    if (addNames.length === 0 && removeNames.length === 0) {
+      return NO_TAG_CHANGE();
+    }
+    return withScopedDb(this.dataSource, async (m) => {
+      const leg = await m.findOne(Transaction, {
+        where: { id: transactionId, userId },
+      });
+      const parentSplit = await m.findOne(TransactionSplit, {
+        where: { linkedTransactionId: transactionId },
+      });
+      const places: Set<string>[] = [];
+      const tagsOf = async (id: string) =>
+        new Set(
+          (await m.find(TransactionTag, { where: { transactionId: id } })).map(
+            (link) => link.tagId,
+          ),
+        );
+      places.push(await tagsOf(transactionId));
+      if (parentSplit) {
+        places.push(
+          new Set(
+            (
+              await m.find(TransactionSplitTag, {
+                where: { transactionSplitId: parentSplit.id },
+              })
+            ).map((link) => link.tagId),
+          ),
+        );
+      } else if (leg?.linkedTransactionId) {
+        const counterpart = await m.findOne(Transaction, {
+          where: { id: leg.linkedTransactionId, userId },
+        });
+        if (counterpart) places.push(await tagsOf(counterpart.id));
       }
-      return { tagNames, newTagNames };
+      const anywhere = new Set(places.flatMap((place) => [...place]));
+      const everywhere = new Set(
+        [...anywhere].filter((id) => places.every((place) => place.has(id))),
+      );
+      return this.tagsService.previewTagChange(
+        m,
+        userId,
+        { everywhere, anywhere },
+        addNames,
+        removeNames,
+      );
     });
   }
 
@@ -2821,6 +2923,12 @@ export class TransactionsService {
        */
       addTagNames?: readonly string[];
       /**
+       * Tag ids to REMOVE from the transaction, inside the write's transaction;
+       * the other tags it carries stay. A tag no longer the user's refuses the
+       * edit with nothing written.
+       */
+      removeTagIds?: readonly string[];
+      /**
        * `false` when the caller records the history entry itself: the
        * conversion of a transfer leg applies its body through this method
        * inside its own transaction, and one user action is one entry.
@@ -3277,6 +3385,14 @@ export class TransactionsService {
           userId,
           [id],
           tags.map((tag) => tag.id),
+        );
+      }
+      if (options?.removeTagIds && options.removeTagIds.length > 0) {
+        await this.tagsService.removeTransactionTags(
+          m,
+          userId,
+          [id],
+          options.removeTagIds,
         );
       }
 
@@ -4158,13 +4274,34 @@ export class TransactionsService {
     transactionId: string,
     updateDto: Partial<UpdateTransferDto>,
     actor?: TransferActor,
+    /**
+     * Tags to add (by name, created when missing) and remove (by id) on the
+     * transfer, leaving its other tags in place: the AI tools' additive edit.
+     * Independent of `updateDto.tagIds`, which replaces the whole set.
+     */
+    tagChange?: {
+      addTagNames?: readonly string[];
+      removeTagIds?: readonly string[];
+    },
   ): Promise<TransferResult> {
+    const addTagNames = tagChange?.addTagNames ?? [];
+    const removeTagIds = tagChange?.removeTagIds ?? [];
     const result = await this.transferService.updateTransfer(
       userId,
       transactionId,
       updateDto,
       this.findOne.bind(this),
       actor,
+      addTagNames.length > 0 || removeTagIds.length > 0
+        ? (m, target) =>
+            this.applyTransferTagChange(
+              m,
+              userId,
+              target,
+              addTagNames,
+              removeTagIds,
+            )
+        : undefined,
     );
 
     if (updateDto.tagIds !== undefined) {
@@ -4207,6 +4344,43 @@ export class TransactionsService {
     }
 
     return result;
+  }
+
+  /**
+   * Add and remove tags on a transfer inside the edit's own transaction (the
+   * `TransferEditHook`), the way `tagIds` replaces them: on every leg that is
+   * the user's (a cross-owner leg keeps its owner's tags) and on the split a
+   * split-transfer leg belongs to. A tag no longer the user's refuses the
+   * whole edit with nothing written.
+   */
+  private async applyTransferTagChange(
+    m: EntityManager,
+    userId: string,
+    target: { legIds: string[]; parentSplitId: string | null },
+    addTagNames: readonly string[],
+    removeTagIds: readonly string[],
+  ): Promise<void> {
+    const legIds = [...new Set(target.legIds)];
+    const splitIds = target.parentSplitId ? [target.parentSplitId] : [];
+    if (addTagNames.length > 0) {
+      const tags = await this.tagsService.findOrCreateByNames(
+        m,
+        userId,
+        addTagNames,
+      );
+      const tagIds = tags.map((tag) => tag.id);
+      await this.tagsService.addTransactionTags(m, userId, legIds, tagIds);
+      await this.tagsService.addSplitTags(m, userId, splitIds, tagIds);
+    }
+    if (removeTagIds.length > 0) {
+      await this.tagsService.removeTransactionTags(
+        m,
+        userId,
+        legIds,
+        removeTagIds,
+      );
+      await this.tagsService.removeSplitTags(m, userId, splitIds, removeTagIds);
+    }
   }
 
   async bulkUpdate(

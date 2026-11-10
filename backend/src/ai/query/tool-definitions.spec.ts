@@ -8,8 +8,8 @@ import {
 } from "./tool-input-schemas";
 
 describe("FINANCIAL_TOOLS", () => {
-  it("defines exactly 25 tools", () => {
-    expect(FINANCIAL_TOOLS).toHaveLength(25);
+  it("defines exactly 27 tools", () => {
+    expect(FINANCIAL_TOOLS).toHaveLength(27);
   });
 
   it("has unique tool names", () => {
@@ -43,6 +43,8 @@ describe("FINANCIAL_TOOLS", () => {
     "fetch_bond_series",
     "list_warranties",
     "search_help",
+    "list_tags",
+    "manage_tags",
   ];
 
   it("matches the expected tool set exactly", () => {

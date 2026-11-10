@@ -746,7 +746,14 @@
     "oneOrMoreNotFound": "Uma ou mais etiquetas não foram encontradas",
     "oneOrMoreTransactionsNotFound": "Não foram encontradas uma ou mais transações",
     "tooManyTags": "É possível alterar no máximo {{ max }} etiquetas numa só chamada",
-    "tooManyTransactions": "É possível alterar no máximo {{ max }} transações numa só chamada"
+    "tooManyTransactions": "É possível alterar no máximo {{ max }} transações numa só chamada",
+    "addAndRemove": "A etiqueta \"{{ name }}\" não pode ser adicionada e removida na mesma edição",
+    "unknownName": "Etiqueta desconhecida: {{ name }}.{{ suggestion }}",
+    "noChange": "A etiqueta \"{{ name }}\" já tem estes valores: indique um newName, color ou icon diferente.",
+    "repeatedInBatch": "Outro item deste pedido já indica esta etiqueta.",
+    "nameRequired": "Uma etiqueta precisa de um nome.",
+    "invalidColor": "\"{{ color }}\" não é uma cor: use #RRGGBB, por exemplo #FF5733.",
+    "nothingToChange": "Nada a alterar: a transação já tem todas as etiquetas a adicionar e nenhuma das etiquetas a remover. As etiquetas das linhas de divisão não são alteradas por esta edição."
   },
   "transactionRules": {
     "notFound": "Regra de transação com ID {{ id }} não encontrada",
@@ -836,7 +843,9 @@
     "convertTransferCrossOwner": "Uma transferência com a conta de outro proprietário não pode ser convertida. Elimine-a e crie a entrada pretendida.",
     "splitTransferLegConvertLocked": "Esta transferência faz parte de uma transação dividida. Remova-a editando a divisão na transação de origem.",
     "transferCounterpartChanged": "O outro lado desta transferência mudou enquanto editava. Recarregue e tente novamente.",
-    "splitTransferTargetAmountRequiresTransfer": "Apenas uma transferência dentro de uma divisão pode ter um montante recebido"
+    "splitTransferTargetAmountRequiresTransfer": "Apenas uma transferência dentro de uma divisão pode ter um montante recebido",
+    "splitIdNotOnTransaction": "splitId {{ splitId }} não é uma linha de divisão desta transação. Leia novamente as linhas de divisão da transação e use os respetivos valores de splitId.",
+    "splitIdRepeated": "splitId {{ splitId }} é indicado por mais de uma linha. Cada linha existente só pode ser continuada uma vez."
   },
   "users": {
     "userNotFound": "Utilizador não encontrado",

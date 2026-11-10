@@ -125,7 +125,7 @@ The assistant has access to the following financial tools:
 |------|-------------|
 | **List Transactions** | Search and summarize transactions with filters |
 | **List Accounts** | Account balances and net worth, with foreign accounts converted to your default currency |
-| **List Categories** and **List Payees** | Your category tree and payees |
+| **List Categories**, **List Payees** and **List Tags** | Your category tree, payees and [tags](tags.md) (with how often each tag is used) |
 | **Compare Periods** | Side-by-side comparison of two time periods |
 | **Generate Report** | A built-in report: spending by category or payee, income vs. expenses, trends, anomalies, month comparison, net-worth history |
 | **Budget Status** | Current budget vs actual spending |
@@ -150,7 +150,9 @@ When the assistant mentions one of your accounts, categories, payees, or transac
 
 ### Making Changes
 
-Beyond answering questions, the assistant can make changes on your behalf -- creating, updating, and deleting transactions, transfers, payees, securities, investment transactions and transaction rules (**Tools > Rules**), changing a transaction's category, and running a rule on existing transactions.
+Beyond answering questions, the assistant can make changes on your behalf -- creating, updating, and deleting transactions, transfers, payees, tags, securities, investment transactions and transaction rules (**Tools > Rules**), changing a transaction's category, adding or removing tags on transactions, and running a rule on existing transactions.
+
+Adding or removing tags on a transaction keeps every other tag it carries and changes nothing else on it; on a transfer both sides change. A name you have no tag for yet is created when you approve the card, and the card marks it as new. When the assistant rewrites a split transaction's lines, each line keeps the tags of the line it replaces.
 
 Nothing is saved until you approve it. Each proposed change is presented as an on-screen confirmation card showing exactly what would be written, which you **Approve** or **Cancel**:
 
@@ -331,6 +333,7 @@ External AI clients can use the following tools through MCP. Read tools require 
 | `list_accounts` | List accounts with balances and net worth | read |
 | `list_categories` | Browse the category tree | read |
 | `list_payees` | List payees | read |
+| `list_tags` | List tags and how often each is used | read |
 | `list_upcoming_bills` | Upcoming scheduled bills and deposits | read |
 | `list_capital_gains` | Realized capital gains | read |
 | `list_investment_transactions` | Investment transactions (buys, sells, dividends, etc.) | read |
@@ -342,8 +345,9 @@ External AI clients can use the following tools through MCP. Read tools require 
 | `generate_report` | Run a built-in report (spending by category/payee, income vs. expenses, trends, anomalies, month comparison, net-worth history) | read |
 | `lookup_securities` | Look up securities by name or symbol | read |
 | `search_help` | Search this guide; returns the matching sections with their links | read |
-| `manage_transactions` | Create, update, or delete transactions | **write** |
+| `manage_transactions` | Create, update, or delete transactions, and add or remove their tags | **write** |
 | `manage_payees` | Create, update, or delete payees | **write** |
+| `manage_tags` | Create, rename, recolour, or delete tags | **write** |
 | `manage_securities` | Create, update, or delete securities | **write** |
 | `manage_investment_transactions` | Create, update, or delete investment transactions | **write** |
 | `manage_transaction_rules` | List and test transaction rules (read), or create, update, delete and run them (write) | read / **write** |

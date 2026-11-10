@@ -564,6 +564,26 @@ export const listWarrantiesOutput = toolOutput({
 });
 
 // ---------------------------------------------------------------------------
+// tags.tool.ts
+// ---------------------------------------------------------------------------
+
+/**
+ * `list_tags`: the tags (each row's `name` is what `manage_tags` and
+ * `manage_transactions` take back), how many matched, and whether `limit` cut
+ * the list.
+ */
+export const listTagsOutput = toolOutput({
+  tags: rows(),
+  total: num,
+  truncated: bool,
+});
+
+/** `manage_tags`: the shared write envelope; a single write names its tag. */
+export const manageTagsOutput = manageToolOutput({
+  id: str.optional(),
+});
+
+// ---------------------------------------------------------------------------
 // help.tool.ts
 // ---------------------------------------------------------------------------
 

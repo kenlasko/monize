@@ -746,7 +746,14 @@
     "oneOrMoreNotFound": "Bir veya daha fazla etiket bulunamadı",
     "oneOrMoreTransactionsNotFound": "Bir veya daha fazla işlem bulunamadı",
     "tooManyTags": "Tek bir çağrıda en fazla {{ max }} etiket değiştirilebilir",
-    "tooManyTransactions": "Tek bir çağrıda en fazla {{ max }} işlem değiştirilebilir"
+    "tooManyTransactions": "Tek bir çağrıda en fazla {{ max }} işlem değiştirilebilir",
+    "addAndRemove": "\"{{ name }}\" etiketi aynı düzenlemede hem eklenip hem kaldırılamaz",
+    "unknownName": "Bilinmeyen etiket: {{ name }}.{{ suggestion }}",
+    "noChange": "\"{{ name }}\" etiketi zaten bu değerlere sahip: farklı bir newName, color veya icon verin.",
+    "repeatedInBatch": "Bu istekteki başka bir öğe bu etiketi zaten belirtiyor.",
+    "nameRequired": "Bir etiketin adı olmalıdır.",
+    "invalidColor": "\"{{ color }}\" bir renk değil: #RRGGBB kullanın, örneğin #FF5733.",
+    "nothingToChange": "Değiştirilecek bir şey yok: işlem eklenecek tüm etiketlere zaten sahip ve kaldırılacak etiketlerin hiçbirine sahip değil. Bölme satırlarındaki etiketler bu düzenlemeyle değişmez."
   },
   "transactionRules": {
     "notFound": "{{ id }} kimlikli işlem kuralı bulunamadı",
@@ -836,7 +843,9 @@
     "convertTransferCrossOwner": "Başka bir sahibin hesabını içeren bir transfer dönüştürülemez. Silin ve bunun yerine istediğiniz kaydı oluşturun.",
     "splitTransferLegConvertLocked": "Bu transfer bölünmüş bir işlemin parçasıdır. Kaynak işlemdeki bölmeyi düzenleyerek kaldırın.",
     "transferCounterpartChanged": "Düzenleme sırasında bu transferin diğer tarafı değişti. Yeniden yükleyip tekrar deneyin.",
-    "splitTransferTargetAmountRequiresTransfer": "Yalnızca bölmedeki bir transfer alınan tutar taşıyabilir"
+    "splitTransferTargetAmountRequiresTransfer": "Yalnızca bölmedeki bir transfer alınan tutar taşıyabilir",
+    "splitIdNotOnTransaction": "splitId {{ splitId }} bu işlemin bir bölme satırı değil. İşlemin bölme satırlarını yeniden okuyun ve splitId değerlerini kullanın.",
+    "splitIdRepeated": "splitId {{ splitId }} birden fazla satırda belirtilmiş. Mevcut her satır yalnızca bir kez sürdürülebilir."
   },
   "users": {
     "userNotFound": "Kullanıcı bulunamadı",

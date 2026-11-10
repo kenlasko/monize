@@ -80,6 +80,9 @@ export const DELEGATE_ALLOWED_AI_TOOLS: readonly string[] = [
   "generate_report",
   "list_warranties",
   "search_help",
+  // `GET /tags` and `GET /tags/usage` are `@AllowDelegate`, and a full-scope
+  // delegate's usage is the owner's (no account narrows it).
+  "list_tags",
 ];
 
 /**
@@ -96,6 +99,7 @@ export const DELEGATE_ALLOWED_AI_TOOLS: readonly string[] = [
 export const DELEGATE_DENIED_AI_TOOLS: readonly string[] = [
   "manage_transactions",
   "manage_payees",
+  "manage_tags",
   "manage_securities",
   "manage_investment_transactions",
   "manage_transaction_rules",

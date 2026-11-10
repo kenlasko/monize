@@ -440,8 +440,20 @@ describe("TransactionsService", () => {
             setTransactionTags: jest.fn().mockResolvedValue(undefined),
             addTransactionTags: jest.fn().mockResolvedValue(undefined),
             setSplitTags: jest.fn().mockResolvedValue(undefined),
+            removeTransactionTags: jest.fn().mockResolvedValue(undefined),
+            addSplitTags: jest.fn().mockResolvedValue(undefined),
+            removeSplitTags: jest.fn().mockResolvedValue(undefined),
             findByNames: jest.fn().mockResolvedValue([]),
             findOrCreateByNames: jest.fn().mockResolvedValue([]),
+            // The real resolution over the double's findByNames, so the tag
+            // previews below exercise what the edit would add and remove.
+            previewTagChange(...args: unknown[]) {
+              return (
+                TagsService.prototype.previewTagChange as (
+                  ...a: unknown[]
+                ) => unknown
+              ).apply(this, args);
+            },
           },
         },
         { provide: NetWorthService, useValue: netWorthService },
@@ -2149,11 +2161,24 @@ describe("TransactionsService", () => {
         expect(tagsService.setTransactionTags).not.toHaveBeenCalled();
       });
 
+      it("removes the named tags in the write's own transaction, keeping the rest", async () => {
+        await update({ removeTagIds: ["tag-r"] });
+
+        expect(tagsService.removeTransactionTags).toHaveBeenCalledWith(
+          mockQueryRunner.manager,
+          "user-1",
+          ["tx-1"],
+          ["tag-r"],
+        );
+        expect(tagsService.setTransactionTags).not.toHaveBeenCalled();
+      });
+
       it("does nothing about tags when none are asked for", async () => {
         await update({});
-        await update({ addTagNames: [] });
+        await update({ addTagNames: [], removeTagIds: [] });
         expect(tagsService.findOrCreateByNames).not.toHaveBeenCalled();
         expect(tagsService.addTransactionTags).not.toHaveBeenCalled();
+        expect(tagsService.removeTransactionTags).not.toHaveBeenCalled();
       });
 
       it("is independent of tagIds, which still replaces the whole set", async () => {
@@ -7867,6 +7892,100 @@ describe("TransactionsService", () => {
         expect.anything(),
       );
     });
+
+    describe("adding and removing tags (the AI tools' additive edit)", () => {
+      // The transfer service runs the hook inside its own write transaction;
+      // this double runs it with the target a two-leg or a split-leg edit has.
+      const stubTransfer = (target: {
+        legIds: string[];
+        parentSplitId: string | null;
+      }) =>
+        jest
+          .spyOn((service as any).transferService, "updateTransfer")
+          .mockImplementation(async (...args: unknown[]) => {
+            const hook = args[5] as
+              ((m: unknown, t: typeof target) => Promise<void>) | undefined;
+            if (hook) await hook(mockQueryRunner.manager, target);
+            return {
+              fromTransaction: { ...fromTx },
+              toTransaction: { ...toTx },
+            };
+          });
+
+      it("adds the tags to both legs inside the edit's own transaction", async () => {
+        stubTransfer({ legIds: ["tx-from", "tx-to"], parentSplitId: null });
+        tagsService.findOrCreateByNames.mockResolvedValue([
+          { id: "tag-a", name: "Allegro" },
+        ]);
+
+        await service.updateTransfer(
+          "user-1",
+          "tx-from",
+          { amount: 200 },
+          undefined,
+          { addTagNames: ["Allegro"] },
+        );
+
+        expect(tagsService.findOrCreateByNames).toHaveBeenCalledWith(
+          mockQueryRunner.manager,
+          "user-1",
+          ["Allegro"],
+        );
+        expect(tagsService.addTransactionTags).toHaveBeenCalledWith(
+          mockQueryRunner.manager,
+          "user-1",
+          ["tx-from", "tx-to"],
+          ["tag-a"],
+        );
+        // Never the replacing call: the legs keep the tags they carry.
+        expect(tagsService.setTransactionTags).not.toHaveBeenCalled();
+      });
+
+      it("removes the tags from a split-transfer leg and the split it belongs to", async () => {
+        stubTransfer({ legIds: ["leg-tx"], parentSplitId: "split-1" });
+
+        await service.updateTransfer(
+          "user-1",
+          "leg-tx",
+          { amount: 200 },
+          undefined,
+          { removeTagIds: ["tag-r"] },
+        );
+
+        expect(tagsService.removeTransactionTags).toHaveBeenCalledWith(
+          mockQueryRunner.manager,
+          "user-1",
+          ["leg-tx"],
+          ["tag-r"],
+        );
+        expect(tagsService.removeSplitTags).toHaveBeenCalledWith(
+          mockQueryRunner.manager,
+          "user-1",
+          ["split-1"],
+          ["tag-r"],
+        );
+        expect(tagsService.findOrCreateByNames).not.toHaveBeenCalled();
+      });
+
+      it("passes no hook when the change is empty", async () => {
+        const spy = stubTransfer({ legIds: [], parentSplitId: null });
+        await service.updateTransfer("user-1", "tx-from", {}, undefined, {});
+        expect(spy.mock.calls[0][5]).toBeUndefined();
+        expect(tagsService.addTransactionTags).not.toHaveBeenCalled();
+      });
+
+      it("lets a refused tag refuse the transfer edit itself", async () => {
+        stubTransfer({ legIds: ["tx-from", "tx-to"], parentSplitId: null });
+        tagsService.removeTransactionTags.mockRejectedValueOnce(
+          new NotFoundException("One or more tags not found"),
+        );
+        await expect(
+          service.updateTransfer("user-1", "tx-from", {}, undefined, {
+            removeTagIds: ["tag-gone"],
+          }),
+        ).rejects.toThrow(NotFoundException);
+      });
+    });
   });
 
   describe("applySplitTags (split <-> transfer-leg tag mirroring)", () => {
@@ -10142,7 +10261,28 @@ describe("TransactionsService", () => {
         ]);
         await expect(
           service.previewUpdate("user-1", "tx-1", { tagNames: ["Allegro"] }),
-        ).rejects.toThrow(/at least one field/);
+        ).rejects.toThrow(/Nothing to change/);
+      });
+
+      it("stays tag-only when a field is resent as it is", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...baseTx });
+        tagsService.findByNames.mockResolvedValue([]);
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          transactionDate: String(baseTx.transactionDate),
+          description: baseTx.description ?? "",
+          tagNames: ["Allegro"],
+        });
+        expect(preview.tagsOnly).toBe(true);
+      });
+
+      it("is not tag-only when a field changes too", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...baseTx });
+        tagsService.findByNames.mockResolvedValue([]);
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          description: "x",
+          tagNames: ["Allegro"],
+        });
+        expect(preview).not.toHaveProperty("tagsOnly");
       });
 
       it("shows no tags when none were asked for, and reads none", async () => {
@@ -10163,6 +10303,79 @@ describe("TransactionsService", () => {
         expect(preview.tagNames).toEqual(["Allegro"]);
         expect(tagsService.findOrCreateByNames).not.toHaveBeenCalled();
         expect(tagsService.addTransactionTags).not.toHaveBeenCalled();
+      });
+
+      it("previews the carried tags a removal takes off, by id, as a change on its own", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...baseTx });
+        tagsService.findByNames.mockResolvedValue([
+          { id: "t1", name: "Allegro" },
+          { id: "t2", name: "Gifts" },
+        ]);
+        transactionTagsRepository.find.mockResolvedValue([
+          { transactionId: "tx-1", tagId: "t1" },
+        ]);
+
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          removeTagNames: ["allegro", "Gifts"],
+        });
+
+        // Gifts is the user's tag but not on this row: no change.
+        expect(preview.removeTagIds).toEqual(["t1"]);
+        expect(preview.removeTagNames).toEqual(["Allegro"]);
+        expect(preview).not.toHaveProperty("tagNames");
+        // Nothing but tags changes, so the commit writes only the tags.
+        expect(preview.tagsOnly).toBe(true);
+      });
+
+      it("reads a transfer's tags on both legs: added only where missing, removed where carried", async () => {
+        transactionsRepository.findOne.mockReset();
+        mockQueryRunner.manager.findOne.mockImplementation(
+          async (_entity: unknown, opts: any) =>
+            opts.where.id === "tx-1"
+              ? { id: "tx-1", userId: "user-1", linkedTransactionId: "tx-2" }
+              : opts.where.id === "tx-2"
+                ? { id: "tx-2", userId: "user-1" }
+                : null,
+        );
+        tagsService.findByNames.mockResolvedValue([
+          { id: "t1", name: "Allegro" },
+          { id: "t2", name: "Gifts" },
+        ]);
+        // tx-1 carries Allegro; tx-2 carries Gifts.
+        transactionTagsRepository.find.mockImplementation(async (opts: any) =>
+          opts.where.transactionId === "tx-1"
+            ? [{ transactionId: "tx-1", tagId: "t1" }]
+            : [{ transactionId: "tx-2", tagId: "t2" }],
+        );
+        mockQueryRunner.manager.find.mockImplementation(
+          async (_entity: unknown, opts: any) =>
+            transactionTagsRepository.find(opts),
+        );
+
+        const change = await service.previewTransferTagChange(
+          "user-1",
+          "tx-1",
+          ["Allegro"],
+          ["Gifts"],
+        );
+
+        // Allegro is on one leg only, so the edit adds it to the other.
+        expect(change.tagNames).toEqual(["Allegro"]);
+        // Gifts is on the other leg, so it is there to remove.
+        expect(change.removeTagIds).toEqual(["t2"]);
+      });
+
+      it("refuses a removal that changes nothing", async () => {
+        transactionsRepository.findOne.mockResolvedValue({ ...baseTx });
+        tagsService.findByNames.mockResolvedValue([
+          { id: "t2", name: "Gifts" },
+        ]);
+        transactionTagsRepository.find.mockResolvedValue([]);
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            removeTagNames: ["Gifts"],
+          }),
+        ).rejects.toThrow(/Nothing to change/);
       });
     });
 

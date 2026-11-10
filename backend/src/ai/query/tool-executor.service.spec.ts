@@ -4,7 +4,11 @@ import {
 } from "../../shared-expenses/shared-review.service";
 import { sharedReviewProvider } from "../../shared-expenses/__fixtures__/shared-review";
 import { Test, TestingModule } from "@nestjs/testing";
-import { BadRequestException, HttpException } from "@nestjs/common";
+import {
+  BadRequestException,
+  HttpException,
+  NotFoundException,
+} from "@nestjs/common";
 import { ToolExecutorService } from "./tool-executor.service";
 import { AccountsService } from "../../accounts/accounts.service";
 import { CategoriesService } from "../../categories/categories.service";
@@ -35,6 +39,8 @@ import { SeriesFetchError } from "../../bonds/bond-adapter";
 import { BondSeriesService } from "../../bonds/bond-series.service";
 import { WarrantiesService } from "../../warranties/warranties.service";
 import { HelpService } from "../../help/help.service";
+import { TagsService } from "../../tags/tags.service";
+import { TagToolPrepService } from "../../tags/tag-tool-prep.service";
 import { LlmWarrantyList } from "../../warranties/warranty-llm-shape";
 import { TransactionRuleToolPrepService } from "../../transaction-rules/rule-tool-prep.service";
 
@@ -66,6 +72,8 @@ describe("ToolExecutorService", () => {
       WarrantiesService["getLlmWarranties"]
     >;
   };
+  let tagsService: { getLlmTags: jest.Mock };
+  let tagPrep: Record<string, jest.Mock>;
   let attachmentPrep: Record<string, jest.Mock>;
   let attachmentStore: Record<string, jest.Mock>;
 
@@ -487,6 +495,12 @@ describe("ToolExecutorService", () => {
         categoryId: "cat-1",
         newCategoryName: "Dining",
       }),
+      previewTransferTagChange: jest.fn().mockResolvedValue({
+        tagNames: [],
+        newTagNames: [],
+        removeTagIds: [],
+        removeTagNames: [],
+      }),
       previewUpdate: jest.fn().mockResolvedValue({
         transactionId: "tx-1",
         accountId: "acc-1",
@@ -662,6 +676,40 @@ describe("ToolExecutorService", () => {
     warranties = {
       getLlmWarranties: jest.fn().mockResolvedValue(warrantyList()),
     };
+    tagsService = {
+      getLlmTags: jest.fn().mockResolvedValue({
+        tags: [
+          {
+            id: "tag-1",
+            name: "Trip",
+            color: null,
+            icon: null,
+            useCount: 3,
+            lastUsed: "2026-10-01",
+          },
+        ],
+        total: 4,
+        truncated: true,
+      }),
+    };
+    tagPrep = {
+      prepareOne: jest.fn().mockResolvedValue({
+        tagId: "tag-1",
+        currentName: "Trip",
+        name: "Travel",
+      }),
+      prepareMany: jest.fn(async (_u: string, _op: string, rows: any[]) => ({
+        okPreviews: rows.map((r) => ({
+          tagId: `id-${r.name}`,
+          name: r.name,
+          carriedCount: 1,
+        })),
+        okRows: rows.map((r) => ({ tagId: `id-${r.name}` })),
+        previewRows: rows.map((r) => ({ status: "ok", name: r.name })),
+        okIndex: rows.map((_r, i) => i),
+        skipped: [],
+      })),
+    };
 
     bondSeries = {
       fetchSeries: jest.fn().mockResolvedValue({
@@ -770,6 +818,8 @@ describe("ToolExecutorService", () => {
         { provide: BondSeriesService, useValue: bondSeries },
         { provide: WarrantiesService, useValue: warranties },
         { provide: HelpService, useValue: {} },
+        { provide: TagsService, useValue: tagsService },
+        { provide: TagToolPrepService, useValue: tagPrep },
         { provide: TransactionRuleToolPrepService, useValue: {} },
         // Real prep + builder wrapping the mocked services, so the executor's
         // name resolution, preview building, and pending-action construction
@@ -2581,6 +2631,27 @@ describe("ToolExecutorService", () => {
       expect(JSON.stringify(result.data)).not.toContain("signature-abc");
     });
 
+    it("hands the tags to add and remove to the shared preview", async () => {
+      await service.execute(userId, "manage_transactions", {
+        operation: "update",
+        items: [
+          {
+            transactionId: TXID,
+            addTagNames: ["Trip"],
+            removeTagNames: ["Old"],
+          },
+        ],
+      });
+      expect(transactions.previewUpdate).toHaveBeenCalledWith(
+        userId,
+        TXID,
+        expect.objectContaining({
+          tagNames: ["Trip"],
+          removeTagNames: ["Old"],
+        }),
+      );
+    });
+
     it("auto-detects a transfer and builds an update_transfer card", async () => {
       transactions.findOne.mockResolvedValueOnce({
         id: TXID,
@@ -3345,6 +3416,83 @@ describe("ToolExecutorService", () => {
       });
       expect(result.isError).toBe(true);
       expect(result.summary).toBe("Could not fetch the bond series.");
+    });
+  });
+
+  describe("list_tags", () => {
+    it("answers TagsService.getLlmTags and says the list was cut", async () => {
+      const result = await service.execute(userId, "list_tags", {
+        search: "tr",
+        limit: "1",
+      });
+      expect(tagsService.getLlmTags).toHaveBeenCalledWith(userId, {
+        search: "tr",
+        limit: 1,
+      });
+      expect(result.summary).toBe('1 tag matching "tr" (of 4).');
+      expect((result.data as any).tags[0].name).toBe("Trip");
+    });
+  });
+
+  describe("manage_tags (human-in-the-loop)", () => {
+    it("proposes one signed card for one item, writing nothing", async () => {
+      const result = await service.execute(userId, "manage_tags", {
+        operation: "update",
+        items: [{ name: "Trip", newName: "Travel" }],
+      });
+      expect(tagPrep.prepareOne).toHaveBeenCalledWith(userId, "update", {
+        name: "Trip",
+        newName: "Travel",
+      });
+      expect(result.pendingAction?.type).toBe("update_tag");
+      expect(result.pendingAction?.descriptor).toMatchObject({
+        tagId: "tag-1",
+        name: "Travel",
+      });
+      expect(result.summary).toContain('"Trip" (renaming it to "Travel")');
+      expect(JSON.stringify(result.data)).not.toContain("signature");
+    });
+
+    it("relays a refusal from the shared prep", async () => {
+      tagPrep.prepareOne.mockRejectedValueOnce(
+        new NotFoundException("Unknown tag: Trp. Did you mean: Trip?"),
+      );
+      const result = await service.execute(userId, "manage_tags", {
+        operation: "delete",
+        items: [{ name: "Trp" }],
+      });
+      expect(result.isError).toBe(true);
+      expect(result.summary).toContain("Did you mean: Trip?");
+    });
+
+    it("proposes one batch card for six items and one card each below that", async () => {
+      const six = ["A", "B", "C", "D", "E", "F"].map((name) => ({ name }));
+      const batch = await service.execute(userId, "manage_tags", {
+        operation: "delete",
+        items: six,
+      });
+      expect(batch.pendingAction?.type).toBe("batch_actions");
+      expect(batch.pendingAction?.descriptor).toMatchObject({
+        operation: "delete_tag",
+      });
+
+      const two = await service.execute(userId, "manage_tags", {
+        operation: "delete",
+        items: six.slice(0, 2),
+      });
+      expect(two.pendingActions?.map((a) => a.type)).toEqual([
+        "delete_tag",
+        "delete_tag",
+      ]);
+    });
+
+    it("refuses an update with nothing to change before preparing", async () => {
+      const result = await service.execute(userId, "manage_tags", {
+        operation: "update",
+        items: [{ name: "Trip" }],
+      });
+      expect(result.isError).toBe(true);
+      expect(tagPrep.prepareOne).not.toHaveBeenCalled();
     });
   });
 

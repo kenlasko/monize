@@ -28,9 +28,15 @@ import {
   ApprovalMode,
   AttachmentRefDescriptor,
   PendingAiAction,
+  UpdateTransactionDescriptor,
+  UpdateTransferDescriptor,
   resolveApprovalMode,
   toSplitDtoRows,
 } from "../../ai/actions/ai-action.types";
+import {
+  updateTransactionCommitArgs,
+  updateTransferCommitArgs,
+} from "../../ai/actions/edit-commit-args";
 import {
   AttachmentDto,
   MAX_ATTACHMENT_BASE64_LENGTH,
@@ -74,6 +80,7 @@ import {
 import { READ_ONLY, WRITE } from "../mcp-annotations";
 import {
   uuidString,
+  nameList,
   manageOperation,
   approvalMode,
   dryRun,
@@ -91,6 +98,21 @@ type ManageOperation = "create" | "update" | "delete";
  */
 const RECONCILED_CONFIRM_NOTE =
   "\nWarning: this transaction is reconciled. Changing it will affect a completed reconciliation.";
+
+/** The tag change an edit makes, as lines of an MCP confirmation prompt. */
+function tagConfirmNote(change: {
+  tagNames?: string[];
+  removeTagNames?: string[];
+}): string {
+  return (
+    (change.tagNames?.length
+      ? `\nAdd tags: ${change.tagNames.join(", ")}`
+      : "") +
+    (change.removeTagNames?.length
+      ? `\nRemove tags: ${change.removeTagNames.join(", ")}`
+      : "")
+  );
+}
 
 /**
  * One file to save on the transaction: either a relayed chat attachment
@@ -121,7 +143,15 @@ interface ManageItem {
   exchangeRate?: number;
   toAmount?: number;
   // split transactions (category splits only)
-  splits?: { categoryName: string; amount: number; memo?: string }[];
+  splits?: {
+    categoryName: string;
+    amount: number;
+    memo?: string;
+    splitId?: string;
+  }[];
+  // update: tags added and removed (the others stay)
+  addTagNames?: string[];
+  removeTagNames?: string[];
   // files to save on the transaction (create/update, single item only)
   attachments?: ManageAttachmentInput[];
 }
@@ -370,8 +400,9 @@ export class McpTransactionsTools {
           "always the whole set even when filtered by category: read the lines " +
           "first and resend every one with your change. Several split " +
           "transactions CAN be sent in one call, each with its own complete " +
-          "array. Deleting a row removes its transfer legs and split children " +
-          "too.",
+          "array. addTagNames/removeTagNames change only those tags (both " +
+          "legs of a transfer). Deleting a row removes its transfer legs and " +
+          "split children too.",
         inputSchema: z.object({
           operation: manageOperation(),
           items: itemsArray(
@@ -452,6 +483,9 @@ export class McpTransactionsTools {
                       .max(TRANSACTION_NOTE_MAX_LENGTH)
                       .optional()
                       .describe("Memo for this line."),
+                    splitId: uuidString()
+                      .optional()
+                      .describe("update: keeps this existing line's tags."),
                   }),
                 )
                 .max(50)
@@ -459,6 +493,10 @@ export class McpTransactionsTools {
                 .describe(
                   "Two or more category lines instead of a single categoryName. See the tool description for editing an existing split.",
                 ),
+              addTagNames: nameList(20)
+                .optional()
+                .describe("update: a new name creates the tag."),
+              removeTagNames: nameList(20).optional().describe("update only."),
               attachments: z
                 .array(
                   z.object({
@@ -510,6 +548,19 @@ export class McpTransactionsTools {
         );
 
         try {
+          // Tags are an edit of an existing row; a create or a delete that
+          // names them would silently drop them.
+          if (
+            operation !== "update" &&
+            items.some(
+              (i) =>
+                i.addTagNames !== undefined || i.removeTagNames !== undefined,
+            )
+          ) {
+            return toolError(
+              "addTagNames and removeTagNames are used only with operation update.",
+            );
+          }
           // Attachments only ride the singular create/update card, mirroring
           // the AI Assistant executor's rules.
           let attachmentDtos: AttachmentDto[] | undefined;
@@ -750,6 +801,8 @@ export class McpTransactionsTools {
       description: item.description,
       createPayeeIfMissing: item.createPayeeIfMissing,
       splits: item.splits,
+      tagNames: item.addTagNames,
+      removeTagNames: item.removeTagNames,
     };
   }
 
@@ -814,7 +867,12 @@ export class McpTransactionsTools {
             categoryName: s.categoryName,
             amount: s.amount,
             memo: s.memo,
+            ...(s.tagNames?.length ? { tagNames: s.tagNames } : {}),
           })),
+          ...(preview.tagNames?.length ? { tagNames: preview.tagNames } : {}),
+          ...(preview.removeTagNames?.length
+            ? { removeTagNames: preview.removeTagNames }
+            : {}),
         },
       ],
       skipped: [],
@@ -1422,7 +1480,7 @@ export class McpTransactionsTools {
           ctx,
           userId,
           action,
-          `Apply this transfer edit?\nFrom: ${preview.fromAccountName}\nTo: ${preview.toAccountName}\nAmount: ${preview.amount} ${preview.fromCurrencyCode}\nDate: ${preview.transactionDate}${preview.categoryName ? `\nCategory: ${preview.categoryName}` : ""}`,
+          `Apply this transfer edit?\nFrom: ${preview.fromAccountName}\nTo: ${preview.toAccountName}\nAmount: ${preview.amount} ${preview.fromCurrencyCode}\nDate: ${preview.transactionDate}${preview.categoryName ? `\nCategory: ${preview.categoryName}` : ""}${tagConfirmNote(preview)}`,
         );
         if (isAsk(outcome)) return outcome.ask;
         if (outcome === "relay") return toolResult(RELAY_PREVIEW_SHOWN);
@@ -1431,19 +1489,16 @@ export class McpTransactionsTools {
             "Cancelled: the confirmation was declined, so the transfer was not changed.",
           );
         const payeeId = await this.resolveTransferPayeeId(userId, preview);
+        const args = updateTransferCommitArgs(
+          action.descriptor as UpdateTransferDescriptor,
+          payeeId,
+        );
         const r = await this.transactionsService.updateTransfer(
           userId,
           preview.transactionId,
-          {
-            amount: preview.amount,
-            transactionDate: preview.transactionDate,
-            exchangeRate: preview.exchangeRate,
-            toAmount: preview.toAmount,
-            description: preview.description ?? undefined,
-            payeeId,
-            payeeName: preview.payeeName ?? undefined,
-            categoryId: preview.categoryId,
-          },
+          args.dto,
+          undefined,
+          args.tagChange,
         );
         await this.writeLimiter.record(userId, "update_transfer");
         return toolResult({ id: r.fromTransaction.id, count: 1 });
@@ -1466,7 +1521,8 @@ export class McpTransactionsTools {
       const reconciledNote = preview.isReconciled
         ? RECONCILED_CONFIRM_NOTE
         : "";
-      const attachmentNote = this.attachmentConfirmNote(attachmentRefs);
+      const attachmentNote =
+        this.attachmentConfirmNote(attachmentRefs) + tagConfirmNote(preview);
       const confirmMessage = splits
         ? `Apply this transaction edit?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}\nSplits: ${splits.map((s) => `${s.categoryName} ${s.amount}`).join(", ")}${attachmentNote}${reconciledNote}`
         : `Apply this transaction edit?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}${attachmentNote}${reconciledNote}`;
@@ -1489,24 +1545,16 @@ export class McpTransactionsTools {
           "Cancelled: the confirmation was declined, so the transaction was not changed.",
         );
       }
+      // What is written is the signed descriptor the user approved, through
+      // the mapping every commit path shares.
+      const args = updateTransactionCommitArgs(
+        action.descriptor as UpdateTransactionDescriptor,
+      );
       const tx = await this.transactionsService.update(
         userId,
         preview.transactionId,
-        {
-          amount: preview.amount,
-          transactionDate: preview.transactionDate,
-          payeeId: preview.payeeId ?? undefined,
-          payeeName: preview.payeeName ?? undefined,
-          // Replacing the split set clears any single category on the parent.
-          categoryId: splits ? undefined : (preview.categoryId ?? undefined),
-          description: preview.description ?? undefined,
-          currencyCode: preview.currencyCode,
-          // Splits ride inside the same DTO so update() rebuilds the set in
-          // the same transaction, under the same row lock, as the scalar
-          // fields (invariant I1) -- never as a separate follow-up write.
-          splits: splits ? toSplitDtoRows(splits) : undefined,
-        },
-        { createPayeeIfMissing: result.createPayee },
+        args.dto,
+        { ...args.options, createPayeeIfMissing: result.createPayee },
       );
       await this.writeLimiter.record(userId, "update_transaction");
       const attachments =
@@ -1595,19 +1643,12 @@ export class McpTransactionsTools {
       );
     const ids: string[] = [];
     for (const row of bulk.okRows) {
+      const args = updateTransactionCommitArgs(row);
       const tx = await this.transactionsService.update(
         userId,
         row.transactionId,
-        {
-          amount: row.amount,
-          transactionDate: row.transactionDate,
-          payeeId: row.payeeId ?? undefined,
-          payeeName: row.payeeName ?? undefined,
-          categoryId: row.categoryId ?? undefined,
-          description: row.description ?? undefined,
-          currencyCode: row.currencyCode,
-        },
-        { createPayeeIfMissing: row.createPayee === true },
+        args.dto,
+        args.options,
       );
       ids.push(tx.id);
       await this.writeLimiter.record(userId, "update_transaction");
@@ -1761,11 +1802,11 @@ export class McpTransactionsTools {
     switch (card.type) {
       case "create_transfer":
       case "update_transfer":
-        return `${card.type === "create_transfer" ? "Create" : "Edit"} transfer?\nFrom: ${p.fromAccountName}\nTo: ${p.toAccountName}\nAmount: ${p.amount} ${p.currencyCode}`;
+        return `${card.type === "create_transfer" ? "Create" : "Edit"} transfer?\nFrom: ${p.fromAccountName}\nTo: ${p.toAccountName}\nAmount: ${p.amount} ${p.currencyCode}${tagConfirmNote(p)}`;
       case "delete_transaction":
         return `Delete this transaction?\nAccount: ${p.accountName}${p.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`;
       case "update_transaction":
-        return `Apply this transaction edit?\nAccount: ${p.accountName}\nAmount: ${p.amount} ${p.currencyCode}${p.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`;
+        return `Apply this transaction edit?\nAccount: ${p.accountName}\nAmount: ${p.amount} ${p.currencyCode}${tagConfirmNote(p)}${p.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`;
       default:
         return `Create this transaction?\nAccount: ${p.accountName}\nAmount: ${p.amount} ${p.currencyCode}`;
     }
@@ -1815,38 +1856,25 @@ export class McpTransactionsTools {
         return r.fromTransaction.id;
       }
       case "update_transaction": {
+        const args = updateTransactionCommitArgs(d);
         const tx = await this.transactionsService.update(
           userId,
           d.transactionId,
-          {
-            amount: d.amount,
-            transactionDate: d.transactionDate,
-            payeeId: d.payeeId ?? undefined,
-            payeeName: d.payeeName ?? undefined,
-            categoryId: d.categoryId ?? undefined,
-            description: d.description ?? undefined,
-            currencyCode: d.currencyCode,
-          },
-          { createPayeeIfMissing: d.createPayee === true },
+          args.dto,
+          args.options,
         );
         await this.writeLimiter.record(userId, "update_transaction");
         return tx.id;
       }
       case "update_transfer": {
         const payeeId = await this.resolveTransferPayeeId(userId, d);
+        const args = updateTransferCommitArgs(d, payeeId);
         const r = await this.transactionsService.updateTransfer(
           userId,
           d.transactionId,
-          {
-            amount: d.amount,
-            transactionDate: d.transactionDate,
-            exchangeRate: d.exchangeRate,
-            toAmount: d.toAmount,
-            description: d.description ?? undefined,
-            payeeId,
-            payeeName: d.payeeName ?? undefined,
-            categoryId: d.categoryId,
-          },
+          args.dto,
+          undefined,
+          args.tagChange,
         );
         await this.writeLimiter.record(userId, "update_transfer");
         return r.fromTransaction.id;

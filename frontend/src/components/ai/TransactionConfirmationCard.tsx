@@ -76,11 +76,32 @@ export function TransactionConfirmationCard({
     delete_payee: t('confirmAction.deletePayeeTitle'),
     create_transfer: t('confirmAction.createTransferTitle'),
     update_transfer: t('confirmAction.updateTransferTitle'),
+    create_tag: t('confirmAction.createTagTitle'),
+    update_tag: t('confirmAction.updateTagTitle'),
+    delete_tag: t('confirmAction.deleteTagTitle'),
   };
   const title = titleByType[type] ?? t('confirmAction.unknownTitle');
 
   const none = t('confirmAction.none');
   const rows: Array<{ label: string; value: string }> = [];
+  // The tags an edit adds (a name the user has no tag for yet is marked new)
+  // and removes; the transaction keeps every other tag it carries.
+  const pushTagChange = () => {
+    if (preview.tagNames && preview.tagNames.length > 0)
+      rows.push({
+        label: t('confirmAction.addTags'),
+        value: preview.tagNames
+          .map((name) =>
+            preview.newTagNames?.includes(name) ? `${name} ${t('confirmAction.newTag')}` : name,
+          )
+          .join(', '),
+      });
+    if (preview.removeTagNames && preview.removeTagNames.length > 0)
+      rows.push({
+        label: t('confirmAction.removeTags'),
+        value: preview.removeTagNames.join(', '),
+      });
+  };
 
   if (isCashTxType) {
     if (preview.accountName)
@@ -110,11 +131,15 @@ export function TransactionConfirmationCard({
         const category =
           (split.categoryName || none) +
           (split.categorySource === 'ai' ? ` (${t('confirmAction.aiCategory')})` : '');
+        const line = split.memo
+          ? `${category}: ${formatCurrency(split.amount, preview.currencyCode)} (${split.memo})`
+          : `${category}: ${formatCurrency(split.amount, preview.currencyCode)}`;
         rows.push({
           label,
-          value: split.memo
-            ? `${category}: ${formatCurrency(split.amount, preview.currencyCode)} (${split.memo})`
-            : `${category}: ${formatCurrency(split.amount, preview.currencyCode)}`,
+          value:
+            split.tagNames && split.tagNames.length > 0
+              ? `${line} · ${t('confirmAction.splitLineTags', { tags: split.tagNames.join(', ') })}`
+              : line,
         });
       });
     } else {
@@ -136,16 +161,7 @@ export function TransactionConfirmationCard({
         label: t('confirmAction.referenceNumber'),
         value: preview.referenceNumber,
       });
-    // Tags the approval adds (the transaction keeps its own); a name the user has no tag for yet is marked new.
-    if (preview.tagNames && preview.tagNames.length > 0)
-      rows.push({
-        label: t('confirmAction.tags'),
-        value: preview.tagNames
-          .map((name) =>
-            preview.newTagNames?.includes(name) ? `${name} ${t('confirmAction.newTag')}` : name,
-          )
-          .join(', '),
-      });
+    pushTagChange();
     // Files the approval will save as transaction attachments.
     if (preview.attachments && preview.attachments.length > 0) {
       preview.attachments.forEach((attachment, i) => {
@@ -323,6 +339,7 @@ export function TransactionConfirmationCard({
         label: t('confirmAction.description'),
         value: preview.description,
       });
+    pushTagChange();
   } else if (type === 'delete_security') {
     if (preview.symbol)
       rows.push({ label: t('confirmAction.symbol'), value: preview.symbol });
@@ -350,6 +367,42 @@ export function TransactionConfirmationCard({
       rows.push({
         label: t('confirmAction.favourite'),
         value: t('confirmAction.favouriteYes'),
+      });
+  } else if (
+    type === 'create_tag' ||
+    type === 'update_tag' ||
+    type === 'delete_tag'
+  ) {
+    // A rename shows the name the tag has now beside the one it gets.
+    if (preview.previousName)
+      rows.push({
+        label: t('confirmAction.tagCurrentName'),
+        value: preview.previousName,
+      });
+    rows.push({
+      label: preview.previousName
+        ? t('confirmAction.tagNewName')
+        : t('confirmAction.name'),
+      value: preview.name || none,
+    });
+    // Only what the action sets: a rename that leaves the colour alone must
+    // not read as clearing it.
+    if (preview.tagColor !== undefined)
+      rows.push({
+        label: t('confirmAction.tagColor'),
+        value: preview.tagColor || none,
+      });
+    if (preview.tagIcon !== undefined)
+      rows.push({
+        label: t('confirmAction.tagIcon'),
+        value: preview.tagIcon || none,
+      });
+    if (type === 'delete_tag')
+      rows.push({
+        label: t('confirmAction.tagRemovedFrom'),
+        value: t('confirmAction.tagCarriedCount', {
+          count: preview.tagCarriedCount ?? 0,
+        }),
       });
   } else if (type === 'delete_payee') {
     rows.push({
@@ -408,12 +461,14 @@ export function TransactionConfirmationCard({
   const isSecurityResult =
     type === 'create_security' || type === 'update_security';
   const isPayeeWriteType = type === 'create_payee' || type === 'update_payee';
+  const isTagWriteType = type === 'create_tag' || type === 'update_tag';
   // A deletion removes the record, so there is nothing to navigate to.
   const isDeletion =
     type === 'delete_transaction' ||
     type === 'delete_investment_transaction' ||
     type === 'delete_payee' ||
-    type === 'delete_security';
+    type === 'delete_security' ||
+    type === 'delete_tag';
   // The affected record's home, surfaced as a "view" link on success. For
   // list-backed destinations we deep-link to the created/edited record
   // (?highlight=<id>) so the list flashes and scrolls to it; without a result
@@ -428,7 +483,9 @@ export function TransactionConfirmationCard({
         ? { href: highlightHref('/securities'), label: t('confirmAction.viewSecurities') }
         : isPayeeWriteType
           ? { href: highlightHref('/payees'), label: t('confirmAction.viewPayees') }
-          : isCashTxType || isTransferType || type === 'categorize_transaction'
+          : isTagWriteType
+            ? { href: '/tags', label: t('confirmAction.viewTags') }
+            : isCashTxType || isTransferType || type === 'categorize_transaction'
             ? {
                 // Deep-link to the affected transaction so the list jumps to and
                 // flashes that row; fall back to the unfiltered list if the id
@@ -461,6 +518,9 @@ export function TransactionConfirmationCard({
     delete_payee: t('confirmAction.deletedPayee'),
     create_transfer: t('confirmAction.createdTransfer'),
     update_transfer: t('confirmAction.updatedTransfer'),
+    create_tag: t('confirmAction.createdTag'),
+    update_tag: t('confirmAction.updatedTag'),
+    delete_tag: t('confirmAction.deletedTag'),
   };
   const successMessage =
     successByType[type] ?? t('confirmAction.unknownDone');

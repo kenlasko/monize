@@ -38,12 +38,25 @@ import {
 import { BulkCreateSkip, bulkSkipReason } from "../common/bulk-create.types";
 import { didYouMean } from "../common/name-suggestions.util";
 import { tr } from "../i18n/translate";
+import { TransactionSplit } from "./entities/transaction-split.entity";
+import { carrySplitTags } from "./split-tag-carry.util";
+import {
+  tagChangeDisplayFields,
+  tagChangeFields,
+  tagChangeWriteFields,
+} from "../tags/tag-change.util";
 
 /** One category-split line on a create/update row (names; resolved internally). */
 export interface SplitLineInput {
   categoryName: string;
   amount: number;
   memo?: string;
+  /**
+   * Update only: the existing line this one continues (a read tool's
+   * `splitId`), whose tags it keeps. Without it a line keeps the tags of an
+   * existing line of the same category (`carrySplitTags`).
+   */
+  splitId?: string;
   /** `"ai"` marks a category the AI chose, on the confirmation card only. */
   categorySource?: "ai";
 }
@@ -87,11 +100,17 @@ export interface UpdateRowInput {
   /** Category splits; when present the transaction's split set is replaced. */
   splits?: SplitLineInput[];
   /**
-   * Tag names to ADD (created at confirm when missing). Set by the review queue
-   * from an email-receipt profile's `tag`; the chat and MCP tools do not send it.
-   * Standard edits only: a transfer ignores it.
+   * Tag names to ADD (created at confirm when missing); the tags the row
+   * carries stay. Sent by `manage_transactions` (`addTagNames`) and by the
+   * review queue from an email-receipt profile's `tag`. On a transfer both
+   * legs get them.
    */
   tagNames?: string[];
+  /**
+   * Tag names to REMOVE; a name the row does not carry is no change, one the
+   * user has no tag for is refused. On a transfer, from both legs.
+   */
+  removeTagNames?: string[];
   /**
    * The reference number ("Ref #") to set. Set by the review queue from an
    * email receipt's order number; the chat and MCP tools do not send it.
@@ -555,7 +574,37 @@ export class TransactionToolPrepService {
         },
         this.transactionsService.findOne.bind(this.transactionsService),
       );
-      return { kind: "transfer", preview };
+      const tagChange = await this.transactionsService.previewTransferTagChange(
+        userId,
+        item.transactionId,
+        item.tagNames ?? [],
+        item.removeTagNames ?? [],
+      );
+      // An edit that asked only for tags the transfer already has (or does not
+      // have) changes nothing: refused like the standard path, never offered as
+      // a card that rewrites the transfer from this snapshot.
+      const fieldChange = preview.changesFields !== false;
+      const tagChanges =
+        tagChange.tagNames.length > 0 || tagChange.removeTagIds.length > 0;
+      const askedForTags =
+        (item.tagNames?.length ?? 0) > 0 ||
+        (item.removeTagNames?.length ?? 0) > 0;
+      if (!fieldChange && askedForTags && !tagChanges) {
+        throw new BadRequestException(
+          tr(
+            "errors.tags.nothingToChange",
+            "Nothing to change: the transaction already carries every tag to add and none of the tags to remove. Tags on split lines are not changed by this edit.",
+          ),
+        );
+      }
+      return {
+        kind: "transfer",
+        preview: {
+          ...preview,
+          ...tagChangeFields(tagChange),
+          ...(tagChanges && !fieldChange ? { tagsOnly: true as const } : {}),
+        },
+      };
     }
 
     const createPayee = item.createPayeeIfMissing ?? true;
@@ -580,12 +629,13 @@ export class TransactionToolPrepService {
         // amount change (Truth table B).
         splitsAccompany: item.splits !== undefined,
         tagNames: item.tagNames,
+        removeTagNames: item.removeTagNames,
         referenceNumber: item.referenceNumber,
       },
     );
     // Validate splits against the effective amount the edit will leave on the
     // transaction (preview.amount reflects item.amount or the existing value).
-    const splits = item.splits
+    const resolved = item.splits
       ? await this.resolveSplits(
           userId,
           item.splits,
@@ -593,6 +643,12 @@ export class TransactionToolPrepService {
           preview.currencyCode,
         )
       : undefined;
+    // Replacing the set deletes the old lines: each new line keeps the tags of
+    // the line it continues, or they would be lost with it.
+    const splits =
+      resolved && item.splits
+        ? this.withCarriedSplitTags(existing, resolved, item.splits)
+        : undefined;
     return {
       kind: "standard",
       preview:
@@ -602,6 +658,32 @@ export class TransactionToolPrepService {
       createPayee,
       splits,
     };
+  }
+
+  private withCarriedSplitTags(
+    existing: { splits?: TransactionSplit[] | null },
+    resolved: ResolvedSplitLine[],
+    inputs: SplitLineInput[],
+  ): ResolvedSplitLine[] {
+    const carried = carrySplitTags(
+      (existing.splits ?? []).map((line) => ({
+        id: line.id,
+        categoryId: line.categoryId,
+        amount: line.amount,
+        tags: line.tags,
+      })),
+      resolved.map((line, i) => ({
+        categoryId: line.categoryId,
+        amount: line.amount,
+        ...(inputs[i]?.splitId ? { splitId: inputs[i].splitId } : {}),
+      })),
+    );
+    return resolved.map((line, i) => {
+      const tags = carried[i];
+      return tags
+        ? { ...line, tagIds: tags.tagIds, tagNames: tags.tagNames }
+        : line;
+    });
   }
 
   /** Preview a single delete (works for standard, split, and transfer). */
@@ -700,6 +782,8 @@ export class TransactionToolPrepService {
           description: preview.description,
           currencyCode: preview.currencyCode,
           ...(splits ? { splits: splits.map(toSplitRowDescriptor) } : {}),
+          ...tagChangeWriteFields(preview),
+          ...(preview.tagsOnly ? { tagsOnly: true as const } : {}),
         });
         okIndex.push(i);
         previewRows.push({
@@ -716,6 +800,7 @@ export class TransactionToolPrepService {
           description: preview.description,
           isReconciled: preview.isReconciled,
           ...(splits ? { splits: splits.map(toSplitPreview) } : {}),
+          ...tagChangeDisplayFields(preview),
         });
       } catch (err) {
         const reason = this.skipReason(err);

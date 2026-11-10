@@ -17,6 +17,14 @@ import { ActionHistoryService } from "../action-history/action-history.service";
 import { withScopedDb } from "../common/db/scoped-db";
 import { LEDGER_EXCLUDES_VOID } from "../common/ledger-balance.sql";
 import { todayYMD } from "../common/date-utils";
+import { didYouMean } from "../common/name-suggestions.util";
+import { stripHtml } from "../common/sanitization.util";
+import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
+import {
+  LLM_TAGS_DEFAULT_LIMIT,
+  LLM_TAGS_MAX_LIMIT,
+  LlmTagsResult,
+} from "./tag-llm-shape";
 
 /** Upper bounds for one additive/removal call (design 6.2). */
 export const MAX_TAGS_PER_CALL = 100;
@@ -29,10 +37,43 @@ export const MAX_TRANSACTIONS_PER_CALL = 1000;
  */
 export const TAG_LINK_INSERT_BATCH = 5000;
 
+/**
+ * Tag names to look up: trimmed, blanks dropped, each name once however it is
+ * spelled (the first spelling wins), in order. A name is matched as stored;
+ * only one a write will create is cleaned (`previewTagChange`).
+ */
+export function uniqueTagNames(names: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of names) {
+    const name = raw.trim();
+    const key = name.toLowerCase();
+    if (name === "" || seen.has(key)) continue;
+    seen.add(key);
+    out.push(name);
+  }
+  return out;
+}
+
 /** One tag's use on non-void transactions: latest date (YYYY-MM-DD) and number of uses. */
 export interface TagUsage {
   lastUsed: string;
   count: number;
+}
+
+/**
+ * The tag change an edit proposes against the tags a row carries now, resolved
+ * by name: only what differs is in it (a tag the row already carries is not
+ * added again, one it does not carry is not removed).
+ */
+export interface TagChangePreview {
+  /** Names to add, spelled as the user's existing tag when there is one. */
+  tagNames: string[];
+  /** The subset of `tagNames` the user has no tag for yet: the write creates them. */
+  newTagNames: string[];
+  /** Ids of the carried tags to remove, and their names for the card. */
+  removeTagIds: string[];
+  removeTagNames: string[];
 }
 
 @Injectable()
@@ -297,6 +338,205 @@ export class TagsService {
   }
 
   /**
+   * The user's tags for the AI tools, in name order, each with how it has been
+   * used (`getUsage`: non-void rows dated today or earlier, a transfer once).
+   * `search` keeps the names containing it, case-insensitively.
+   */
+  async getLlmTags(
+    userId: string,
+    options: { search?: string; limit?: number } = {},
+  ): Promise<LlmTagsResult> {
+    const limit = Math.min(
+      Math.max(1, Math.trunc(options.limit ?? LLM_TAGS_DEFAULT_LIMIT)),
+      LLM_TAGS_MAX_LIMIT,
+    );
+    const needle = options.search?.trim().toLowerCase() ?? "";
+    const all = await this.findAll(userId);
+    const matched = needle
+      ? all.filter((tag) => tag.name.toLowerCase().includes(needle))
+      : all;
+    const usage = await this.getUsage(userId);
+    return {
+      tags: matched.slice(0, limit).map((tag) => ({
+        id: tag.id,
+        name: tag.name,
+        color: tag.color,
+        icon: tag.icon,
+        useCount: usage[tag.id]?.count ?? 0,
+        lastUsed: usage[tag.id]?.lastUsed ?? null,
+      })),
+      total: matched.length,
+      truncated: matched.length > limit,
+    };
+  }
+
+  /**
+   * Resolve the tag names an edit adds and removes against the tags a row
+   * carries now (`carried`), on the caller's manager, reading only. A
+   * name to add the user has no tag for is new (the write creates it); a name
+   * to remove must be one of the user's tags (a typo is refused with the
+   * closest names, never read as "nothing to remove"); a name in both lists is
+   * refused, since the edit would contradict itself.
+   */
+  async previewTagChange(
+    m: EntityManager,
+    userId: string,
+    /**
+     * The tags the row carries now. A change that writes to several places (a
+     * transfer's legs and the split a leg belongs to) passes the tags carried
+     * on EVERY place, which decides an addition, and on ANY place, which
+     * decides a removal; one row passes one set for both.
+     */
+    carried:
+      | ReadonlySet<string>
+      | { everywhere: ReadonlySet<string>; anywhere: ReadonlySet<string> },
+    addNames: readonly string[],
+    removeNames: readonly string[],
+  ): Promise<TagChangePreview> {
+    const { everywhere, anywhere } =
+      "everywhere" in carried
+        ? carried
+        : { everywhere: carried, anywhere: carried };
+    const add = uniqueTagNames(addNames);
+    const remove = uniqueTagNames(removeNames);
+    const preview: TagChangePreview = {
+      tagNames: [],
+      newTagNames: [],
+      removeTagIds: [],
+      removeTagNames: [],
+    };
+    if (add.length === 0 && remove.length === 0) return preview;
+    if (add.length + remove.length > MAX_TAGS_PER_CALL) {
+      throw new BadRequestException(
+        tr(
+          "errors.tags.tooManyTags",
+          `At most ${MAX_TAGS_PER_CALL} tags can be changed in one call`,
+          { max: MAX_TAGS_PER_CALL },
+        ),
+      );
+    }
+    const removeKeys = new Set(remove.map((name) => name.toLowerCase()));
+    const both = add.find((name) => removeKeys.has(name.toLowerCase()));
+    if (both !== undefined) {
+      throw new BadRequestException(
+        tr(
+          "errors.tags.addAndRemove",
+          `The tag "${both}" cannot be both added and removed in one edit`,
+          { name: both },
+        ),
+      );
+    }
+
+    // A name the user has no tag for is created as `CreateTagDto` would store
+    // it (markup stripped), so its cleaned spelling is looked up too.
+    const cleaned = (name: string) => (stripHtml(name) ?? "").trim();
+    const known = await this.findByNames(m, userId, [
+      ...add,
+      ...add.map(cleaned),
+      ...remove,
+    ]);
+    const byKey = new Map(known.map((tag) => [tag.name.toLowerCase(), tag]));
+    const unknown = remove.find((name) => !byKey.has(name.toLowerCase()));
+    if (unknown !== undefined) {
+      const suggestion = didYouMean(
+        unknown,
+        (await m.find(Tag, { where: { userId } })).map((t) => t.name),
+      );
+      throw new NotFoundException(
+        tr("errors.tags.unknownName", `Unknown tag: ${unknown}.${suggestion}`, {
+          name: unknown,
+          suggestion,
+        }),
+      );
+    }
+    const added = new Set<string>();
+    for (const name of add) {
+      const clean = cleaned(name);
+      const tag =
+        byKey.get(name.toLowerCase()) ?? byKey.get(clean.toLowerCase());
+      const spelled = tag?.name ?? clean;
+      if (!spelled || added.has(spelled.toLowerCase())) continue;
+      added.add(spelled.toLowerCase());
+      if (!tag) {
+        preview.tagNames.push(spelled);
+        preview.newTagNames.push(spelled);
+      } else if (!everywhere.has(tag.id)) {
+        preview.tagNames.push(spelled);
+      }
+    }
+    for (const name of remove) {
+      const tag = byKey.get(name.toLowerCase())!;
+      if (anywhere.has(tag.id)) {
+        preview.removeTagIds.push(tag.id);
+        preview.removeTagNames.push(tag.name);
+      }
+    }
+    return preview;
+  }
+
+  /**
+   * Add tags to transaction splits without touching the tags they carry, on
+   * the caller's manager. The split counterpart of `addTransactionTags`: tag
+   * and split ownership are checked before the write, and the insert is
+   * ON CONFLICT DO NOTHING on the (split, tag) primary key, so a repeat leaves
+   * one link.
+   */
+  async addSplitTags(
+    m: EntityManager,
+    userId: string,
+    splitIds: readonly string[],
+    tagIds: readonly string[],
+  ): Promise<void> {
+    const plan = await this.prepareSplitTagChange(m, userId, splitIds, tagIds);
+    if (!plan) return;
+    await m
+      .createQueryBuilder()
+      .insert()
+      .into(TransactionSplitTag)
+      .values(
+        plan.splitIds.flatMap((transactionSplitId) =>
+          plan.tagIds.map((tagId) => ({ transactionSplitId, tagId })),
+        ),
+      )
+      .orIgnore()
+      .execute();
+  }
+
+  /** Remove exactly the named (split, tag) links; other tags stay. */
+  async removeSplitTags(
+    m: EntityManager,
+    userId: string,
+    splitIds: readonly string[],
+    tagIds: readonly string[],
+  ): Promise<void> {
+    const plan = await this.prepareSplitTagChange(m, userId, splitIds, tagIds);
+    if (!plan) return;
+    await m.delete(TransactionSplitTag, {
+      transactionSplitId: In(plan.splitIds),
+      tagId: In(plan.tagIds),
+    });
+  }
+
+  private async prepareSplitTagChange(
+    m: EntityManager,
+    userId: string,
+    splitIds: readonly string[],
+    tagIds: readonly string[],
+  ): Promise<{ splitIds: string[]; tagIds: string[] } | null> {
+    const plan = await this.prepareTagLinkChange(
+      m,
+      userId,
+      splitIds,
+      tagIds,
+      (ids) =>
+        m.count(TransactionSplit, {
+          where: { id: In(ids), transaction: { userId } },
+        }),
+    );
+    return plan && { splitIds: plan.rowIds, tagIds: plan.tIds };
+  }
+
+  /**
    * Run `fn` against the caller's QueryRunner transaction when one is passed
    * (the transactions module's flows still manage their own QueryRunner until
    * task R2), otherwise inside a `withScopedDb` of our own.
@@ -397,9 +637,35 @@ export class TagsService {
     transactionIds: readonly string[],
     tagIds: readonly string[],
   ): Promise<{ txIds: string[]; tIds: string[] } | null> {
-    const txIds = [...new Set(transactionIds)];
+    // The existing methods rely on RLS alone for the transaction side; the
+    // additive path checks it explicitly so a foreign id is refused, not
+    // silently skipped or written.
+    const plan = await this.prepareTagLinkChange(
+      m,
+      userId,
+      transactionIds,
+      tagIds,
+      (ids) => m.count(Transaction, { where: { id: In(ids), userId } }),
+    );
+    return plan && { txIds: plan.rowIds, tIds: plan.tIds };
+  }
+
+  /**
+   * The checks every additive or removing tag-link change makes, for
+   * transactions and split lines alike: dedupe, the bounds first (no query),
+   * then tag ownership and row ownership (`countOwned`) on the caller's
+   * manager, before any write. Returns null when there is nothing to do.
+   */
+  private async prepareTagLinkChange(
+    m: EntityManager,
+    userId: string,
+    rowIds: readonly string[],
+    tagIds: readonly string[],
+    countOwned: (ids: string[]) => Promise<number>,
+  ): Promise<{ rowIds: string[]; tIds: string[] } | null> {
+    const ids = [...new Set(rowIds)];
     const tIds = [...new Set(tagIds)];
-    if (txIds.length === 0 || tIds.length === 0) {
+    if (ids.length === 0 || tIds.length === 0) {
       return null;
     }
     if (tIds.length > MAX_TAGS_PER_CALL) {
@@ -411,7 +677,7 @@ export class TagsService {
         ),
       );
     }
-    if (txIds.length > MAX_TRANSACTIONS_PER_CALL) {
+    if (ids.length > MAX_TRANSACTIONS_PER_CALL) {
       throw new BadRequestException(
         tr(
           "errors.tags.tooManyTransactions",
@@ -428,14 +694,7 @@ export class TagsService {
         tr("errors.tags.oneOrMoreNotFound", "One or more tags not found"),
       );
     }
-
-    // The existing methods rely on RLS alone for the transaction side; the
-    // additive path checks it explicitly so a foreign id is refused, not
-    // silently skipped or written.
-    const ownedTransactions = await m.count(Transaction, {
-      where: { id: In(txIds), userId },
-    });
-    if (ownedTransactions !== txIds.length) {
+    if ((await countOwned(ids)) !== ids.length) {
       throw new NotFoundException(
         tr(
           "errors.tags.oneOrMoreTransactionsNotFound",
@@ -443,7 +702,7 @@ export class TagsService {
         ),
       );
     }
-    return { txIds, tIds };
+    return { rowIds: ids, tIds };
   }
 
   /**
@@ -515,16 +774,7 @@ export class TagsService {
     userId: string,
     names: readonly string[],
   ): Promise<Tag[]> {
-    const wanted: string[] = [];
-    const seen = new Set<string>();
-    for (const raw of names) {
-      const name = raw.trim();
-      const key = name.toLowerCase();
-      if (name === "" || seen.has(key)) continue;
-      seen.add(key);
-      wanted.push(name);
-      if (wanted.length >= MAX_TAGS_PER_CALL) break;
-    }
+    const wanted = uniqueTagNames(names).slice(0, MAX_TAGS_PER_CALL);
     for (const name of wanted) {
       // The WHERE NOT EXISTS makes the common case a no-op; the unique index
       // `idx_tags_user_name` (user_id, LOWER(name)) is the backstop for two

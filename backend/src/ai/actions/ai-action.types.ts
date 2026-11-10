@@ -53,7 +53,10 @@ export type AiActionType =
   | "create_transaction_rule"
   | "update_transaction_rule"
   | "delete_transaction_rule"
-  | "run_transaction_rule";
+  | "run_transaction_rule"
+  | "create_tag"
+  | "update_tag"
+  | "delete_tag";
 
 export const AI_ACTION_TYPES: AiActionType[] = [
   "create_transaction",
@@ -78,6 +81,9 @@ export const AI_ACTION_TYPES: AiActionType[] = [
   "update_transaction_rule",
   "delete_transaction_rule",
   "run_transaction_rule",
+  "create_tag",
+  "update_tag",
+  "delete_tag",
 ];
 
 /**
@@ -155,6 +161,11 @@ export interface SplitRowDescriptor {
   categoryId: string;
   amount: number;
   memo: string | null;
+  /**
+   * The tags this line keeps from the existing line it continues when a split
+   * set is replaced (`carrySplitTags`); absent when it keeps none.
+   */
+  tagIds?: string[];
 }
 
 /**
@@ -164,6 +175,8 @@ export interface SplitRowDescriptor {
  */
 export interface ResolvedSplitLine extends SplitRowDescriptor {
   categoryName: string;
+  /** The names of `tagIds`, for the card. */
+  tagNames?: string[];
   /** `"ai"` when the AI chose the category: shown on the card, never signed (see `toSplitRowDescriptor`). */
   categorySource?: "ai";
 }
@@ -177,13 +190,17 @@ export interface ResolvedSplitLine extends SplitRowDescriptor {
  * commit separately and a failure between the two would strand the parent
  * amount against the old lines.
  */
-export function toSplitDtoRows(
-  splits: readonly SplitRowDescriptor[],
-): { categoryId: string; amount: number; memo: string | undefined }[] {
+export function toSplitDtoRows(splits: readonly SplitRowDescriptor[]): {
+  categoryId: string;
+  amount: number;
+  memo: string | undefined;
+  tagIds?: string[];
+}[] {
   return splits.map((s) => ({
     categoryId: s.categoryId,
     amount: s.amount,
     memo: s.memo ?? undefined,
+    ...(s.tagIds?.length ? { tagIds: [...s.tagIds] } : {}),
   }));
 }
 
@@ -196,7 +213,12 @@ export function toSplitDtoRows(
 export function toSplitRowDescriptor(
   line: ResolvedSplitLine,
 ): SplitRowDescriptor {
-  return { categoryId: line.categoryId, amount: line.amount, memo: line.memo };
+  return {
+    categoryId: line.categoryId,
+    amount: line.amount,
+    memo: line.memo,
+    ...(line.tagIds?.length ? { tagIds: [...line.tagIds] } : {}),
+  };
 }
 
 /** Map a resolved split line to its display-only confirmation-card shape. */
@@ -206,6 +228,7 @@ export function toSplitPreview(line: ResolvedSplitLine): AiActionSplitPreview {
     amount: line.amount,
     memo: line.memo,
     ...(line.categorySource === "ai" ? { categorySource: "ai" as const } : {}),
+    ...(line.tagNames?.length ? { tagNames: [...line.tagNames] } : {}),
   };
 }
 
@@ -303,6 +326,32 @@ export interface UpdatePayeeDescriptor extends BaseDescriptor {
 export interface DeletePayeeDescriptor extends BaseDescriptor {
   type: "delete_payee";
   payeeId: string;
+}
+
+/** Create a tag (`manage_tags`); confirm refuses a name the user already has. */
+export interface CreateTagDescriptor extends BaseDescriptor {
+  type: "create_tag";
+  name: string;
+  color: string | null;
+  icon: string | null;
+}
+
+/**
+ * Edit a tag. Only the fields the edit changes are present: an absent field is
+ * left as it is, a null colour or icon clears it.
+ */
+export interface UpdateTagDescriptor extends BaseDescriptor {
+  type: "update_tag";
+  tagId: string;
+  name?: string;
+  color?: string | null;
+  icon?: string | null;
+}
+
+/** Delete a tag; its links to transactions and split lines go with it. */
+export interface DeleteTagDescriptor extends BaseDescriptor {
+  type: "delete_tag";
+  tagId: string;
 }
 
 export interface CreateSecurityDescriptor extends BaseDescriptor {
@@ -485,6 +534,16 @@ export interface UpdateTransactionDescriptor extends BaseDescriptor {
    */
   tagNames?: string[];
   /**
+   * Tag ids this edit REMOVES from the transaction (its other tags stay).
+   * Signed with the rest, so a client cannot remove a tag the card did not show.
+   */
+  removeTagIds?: string[];
+  /**
+   * The edit changes the tags and nothing else: confirm writes only the tags,
+   * never the snapshot above over an edit made since the card was built.
+   */
+  tagsOnly?: true;
+  /**
    * The reference number ("Ref #") this edit sets; absent: left as it is.
    * Signed with the rest, so a client cannot set one the card did not show.
    */
@@ -578,6 +637,12 @@ export interface UpdateTransferDescriptor extends BaseDescriptor {
    * confirm step re-applies it idempotently.
    */
   categoryId: string | null;
+  /** Tag names this edit ADDS to both legs (created when missing); the legs' other tags stay. */
+  tagNames?: string[];
+  /** Tag ids this edit REMOVES from both legs. */
+  removeTagIds?: string[];
+  /** The edit changes the tags and nothing else (as on update_transaction). */
+  tagsOnly?: true;
 }
 
 /**
@@ -606,6 +671,12 @@ export interface BatchUpdateTransactionRow {
    * Rows without it are ordinary parent-field edits, unchanged.
    */
   splits?: SplitRowDescriptor[];
+  /** Tag names this row ADDS (created when missing), as on the singular descriptor. */
+  tagNames?: string[];
+  /** Tag ids this row REMOVES, as on the singular descriptor. */
+  removeTagIds?: string[];
+  /** The row changes the tags and nothing else, as on the singular descriptor. */
+  tagsOnly?: true;
 }
 
 export interface BatchDeleteTransactionRow {
@@ -684,6 +755,15 @@ export interface BatchDeletePayeeRow {
   payeeId: string;
 }
 
+/** One new tag inside a `batch_actions` envelope (operation `create_tag`). */
+export type BatchCreateTagRow = Omit<CreateTagDescriptor, keyof BaseDescriptor>;
+
+/** One tag edit inside a `batch_actions` envelope (operation `update_tag`). */
+export type BatchUpdateTagRow = Omit<UpdateTagDescriptor, keyof BaseDescriptor>;
+
+/** One tag deletion inside a `batch_actions` envelope (operation `delete_tag`). */
+export type BatchDeleteTagRow = Omit<DeleteTagDescriptor, keyof BaseDescriptor>;
+
 /** One resolved new security inside a `batch_actions` envelope (operation `create_security`). */
 export interface BatchCreateSecurityRow {
   symbol: string;
@@ -732,7 +812,10 @@ export type BatchActionRow =
   | BatchDeletePayeeRow
   | BatchCreateSecurityRow
   | BatchUpdateSecurityRow
-  | BatchDeleteSecurityRow;
+  | BatchDeleteSecurityRow
+  | BatchCreateTagRow
+  | BatchUpdateTagRow
+  | BatchDeleteTagRow;
 
 /**
  * Generic homogeneous bulk envelope executed as one unit. `operation` selects
@@ -756,7 +839,10 @@ export interface BatchActionsDescriptor extends BaseDescriptor {
     | "delete_payee"
     | "create_security"
     | "update_security"
-    | "delete_security";
+    | "delete_security"
+    | "create_tag"
+    | "update_tag"
+    | "delete_tag";
   /** Order is load-bearing: covered by the signature and preserved on confirm. */
   rows: BatchActionRow[];
 }
@@ -848,7 +934,10 @@ export type AiActionDescriptor =
   | CreateTransactionRuleDescriptor
   | UpdateTransactionRuleDescriptor
   | DeleteTransactionRuleDescriptor
-  | RunTransactionRuleDescriptor;
+  | RunTransactionRuleDescriptor
+  | CreateTagDescriptor
+  | UpdateTagDescriptor
+  | DeleteTagDescriptor;
 
 /**
  * Display-only preview of one category-split line on a split create/update card.
@@ -860,6 +949,8 @@ export interface AiActionSplitPreview {
   memo?: string | null;
   /** `"ai"` when the AI chose this line's category (display only). */
   categorySource?: "ai";
+  /** Tags the line keeps from the line it continues (display only). */
+  tagNames?: string[];
 }
 
 /** Display-only preview of one file an action will attach on approval. */
@@ -951,6 +1042,15 @@ export interface AiActionPreview {
   currentCategoryName?: string | null;
   description?: string | null;
   name?: string | null;
+  // Tag display fields (create_tag / update_tag / delete_tag); `name` is the
+  // tag's name after the action.
+  /** update_tag: the tag's current name, when the edit renames it. */
+  previousName?: string;
+  /** The colour (#RRGGBB) and icon the action sets: null clears, absent leaves it. */
+  tagColor?: string | null;
+  tagIcon?: string | null;
+  /** delete_tag: the transactions and split lines that carry the tag and lose it. */
+  tagCarriedCount?: number;
   /** Payee website, as the commit would store it (create_payee/update_payee). */
   website?: string | null;
   /** Payee contact fields, as the commit would store them. */
@@ -982,6 +1082,8 @@ export interface AiActionPreview {
   tagNames?: string[];
   /** The subset of `tagNames` the approval creates because the user has no such tag yet. */
   newTagNames?: string[];
+  /** update_transaction / update_transfer: tag names the approval removes. */
+  removeTagNames?: string[];
   /** update_transaction: the reference number ("Ref #") the approval sets (display mirror of the descriptor's). */
   referenceNumber?: string;
   // create_investment_transaction display fields.
@@ -1041,6 +1143,15 @@ export interface AiActionPreviewRow {
   error?: string;
   // Payee display fields (batch_actions with a payee operation).
   name?: string | null;
+  // Tag display fields (create_tag / update_tag / delete_tag); `name` is the
+  // tag's name after the action.
+  /** update_tag: the tag's current name, when the edit renames it. */
+  previousName?: string;
+  /** The colour (#RRGGBB) and icon the action sets: null clears, absent leaves it. */
+  tagColor?: string | null;
+  tagIcon?: string | null;
+  /** delete_tag: the transactions and split lines that carry the tag and lose it. */
+  tagCarriedCount?: number;
   website?: string | null;
   address?: string | null;
   email?: string | null;
@@ -1064,6 +1175,10 @@ export interface AiActionPreviewRow {
    * approved for something else.
    */
   splits?: AiActionSplitPreview[];
+  /** Bulk update: tag names the row adds, those of them that are new, and those it removes. */
+  tagNames?: string[];
+  newTagNames?: string[];
+  removeTagNames?: string[];
   /**
    * True when this bulk update/delete row targets a reconciled transaction, so
    * the card can flag the row before the user approves the batch.

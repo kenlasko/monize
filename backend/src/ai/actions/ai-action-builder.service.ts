@@ -1,4 +1,14 @@
 import { Injectable } from "@nestjs/common";
+import {
+  CreateTagPreview,
+  DeleteTagPreview,
+  UpdateTagPreview,
+  tagPreviewRow,
+} from "../../tags/tag-tool-prep.service";
+import {
+  tagChangeDisplayFields,
+  tagChangeWriteFields,
+} from "../../tags/tag-change.util";
 import { randomUUID } from "crypto";
 import {
   AiActionSigningService,
@@ -16,6 +26,9 @@ import {
   CreatePayeeDescriptor,
   UpdatePayeeDescriptor,
   DeletePayeeDescriptor,
+  CreateTagDescriptor,
+  UpdateTagDescriptor,
+  DeleteTagDescriptor,
   CreateSecurityDescriptor,
   UpdateSecurityDescriptor,
   DeleteSecurityDescriptor,
@@ -413,6 +426,48 @@ export class AiActionBuilderService {
     };
   }
 
+  /**
+   * One tag card (create_tag / update_tag / delete_tag). The descriptor carries
+   * exactly what the write sets -- an edit only the fields it changes -- and the
+   * card shows the same through `tagPreviewRow`.
+   */
+  buildTagAction(
+    userId: string,
+    preview: CreateTagPreview | UpdateTagPreview | DeleteTagPreview,
+  ): PendingAiAction {
+    const { actionId, expiresAt } = this.newEnvelope();
+    const envelope = { userId, actionId, expiresAt };
+    const descriptor:
+      CreateTagDescriptor | UpdateTagDescriptor | DeleteTagDescriptor =
+      "carriedCount" in preview
+        ? { ...envelope, type: "delete_tag", tagId: preview.tagId }
+        : "tagId" in preview
+          ? {
+              ...envelope,
+              type: "update_tag",
+              tagId: preview.tagId,
+              ...(preview.name !== undefined ? { name: preview.name } : {}),
+              ...(preview.color !== undefined ? { color: preview.color } : {}),
+              ...(preview.icon !== undefined ? { icon: preview.icon } : {}),
+            }
+          : {
+              ...envelope,
+              type: "create_tag",
+              name: preview.name,
+              color: preview.color,
+              icon: preview.icon,
+            };
+    const { status: _status, ...display } = tagPreviewRow(preview);
+    return {
+      actionId,
+      type: descriptor.type,
+      expiresAt,
+      descriptor,
+      signature: this.signingService.sign(descriptor),
+      preview: display,
+    };
+  }
+
   buildCreateSecurity(
     userId: string,
     preview: CreateSecurityPreview,
@@ -608,7 +663,8 @@ export class AiActionBuilderService {
       currencyCode: preview.currencyCode,
       ...(splits ? { splits: splits.map(toSplitRowDescriptor) } : {}),
       ...(attachments?.length ? { attachments } : {}),
-      ...(preview.tagNames?.length ? { tagNames: [...preview.tagNames] } : {}),
+      ...tagChangeWriteFields(preview),
+      ...(preview.tagsOnly ? { tagsOnly: true as const } : {}),
       ...(preview.referenceNumber === undefined
         ? {}
         : { referenceNumber: preview.referenceNumber }),
@@ -639,14 +695,7 @@ export class AiActionBuilderService {
         ...(attachments?.length
           ? { attachments: attachments.map(toAttachmentPreview) }
           : {}),
-        ...(preview.tagNames?.length
-          ? {
-              tagNames: [...preview.tagNames],
-              ...(preview.newTagNames?.length
-                ? { newTagNames: [...preview.newTagNames] }
-                : {}),
-            }
-          : {}),
+        ...tagChangeDisplayFields(preview),
         ...(preview.referenceNumber === undefined
           ? {}
           : { referenceNumber: preview.referenceNumber }),
@@ -921,6 +970,8 @@ export class AiActionBuilderService {
       payeeName: preview.payeeName,
       createPayee: preview.payeeWillBeCreated,
       categoryId: preview.categoryId,
+      ...tagChangeWriteFields(preview),
+      ...(preview.tagsOnly ? { tagsOnly: true as const } : {}),
     };
     return {
       actionId,
@@ -941,6 +992,7 @@ export class AiActionBuilderService {
         payeeName: preview.payeeName,
         payeeWillBeCreated: preview.payeeWillBeCreated,
         categoryName: preview.categoryName,
+        ...tagChangeDisplayFields(preview),
       },
     };
   }

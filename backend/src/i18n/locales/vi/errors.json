@@ -746,7 +746,14 @@
     "oneOrMoreNotFound": "Không tìm thấy một hoặc nhiều thẻ",
     "oneOrMoreTransactionsNotFound": "Không tìm thấy một hoặc nhiều giao dịch",
     "tooManyTags": "Mỗi lần gọi chỉ có thể thay đổi tối đa {{ max }} thẻ",
-    "tooManyTransactions": "Mỗi lần gọi chỉ có thể thay đổi tối đa {{ max }} giao dịch"
+    "tooManyTransactions": "Mỗi lần gọi chỉ có thể thay đổi tối đa {{ max }} giao dịch",
+    "addAndRemove": "Không thể vừa thêm vừa gỡ thẻ \"{{ name }}\" trong cùng một lần sửa",
+    "unknownName": "Thẻ không xác định: {{ name }}.{{ suggestion }}",
+    "noChange": "Thẻ \"{{ name }}\" đã có các giá trị này: hãy cung cấp newName, color hoặc icon khác.",
+    "repeatedInBatch": "Một mục khác trong yêu cầu này đã nêu thẻ này.",
+    "nameRequired": "Thẻ cần có tên.",
+    "invalidColor": "\"{{ color }}\" không phải là màu: hãy dùng #RRGGBB, ví dụ #FF5733.",
+    "nothingToChange": "Không có gì để thay đổi: giao dịch đã có mọi thẻ cần thêm và không có thẻ nào cần gỡ. Lần sửa này không thay đổi thẻ trên các dòng chia."
   },
   "transactionRules": {
     "notFound": "Không tìm thấy quy tắc giao dịch có ID {{ id }}",
@@ -836,7 +843,9 @@
     "convertTransferCrossOwner": "Không thể chuyển đổi giao dịch chuyển khoản có tài khoản của chủ sở hữu khác. Hãy xóa và tạo mục bạn muốn.",
     "splitTransferLegConvertLocked": "Giao dịch chuyển khoản này là một phần của giao dịch tách. Hãy xóa bằng cách chỉnh sửa phần tách trên giao dịch nguồn.",
     "transferCounterpartChanged": "Phía bên kia của giao dịch chuyển khoản này đã thay đổi trong khi bạn chỉnh sửa. Hãy tải lại và thử lại.",
-    "splitTransferTargetAmountRequiresTransfer": "Chỉ giao dịch chuyển khoản trong phần tách mới có thể có số tiền nhận"
+    "splitTransferTargetAmountRequiresTransfer": "Chỉ giao dịch chuyển khoản trong phần tách mới có thể có số tiền nhận",
+    "splitIdNotOnTransaction": "splitId {{ splitId }} không phải là dòng chia của giao dịch này. Hãy đọc lại các dòng chia của giao dịch và dùng giá trị splitId của chúng.",
+    "splitIdRepeated": "splitId {{ splitId }} được nêu ở nhiều hơn một dòng. Mỗi dòng hiện có chỉ được tiếp nối một lần."
   },
   "users": {
     "userNotFound": "Không tìm thấy người dùng",

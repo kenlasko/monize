@@ -63,6 +63,12 @@ describe("TransactionToolPrepService", () => {
         description: null,
         currencyCode: "USD",
       }),
+      previewTransferTagChange: jest.fn().mockResolvedValue({
+        tagNames: [],
+        newTagNames: [],
+        removeTagIds: [],
+        removeTagNames: [],
+      }),
       previewDelete: jest.fn().mockResolvedValue({
         transactionId: "t1",
         accountName: "Checking",
@@ -567,6 +573,240 @@ describe("TransactionToolPrepService", () => {
           splitsAccompany: true,
         }),
       );
+    });
+
+    describe("a replaced split set keeps its lines' tags", () => {
+      // Every resolved line is category c1 (the analytics double), so the
+      // existing lines' categories decide the matching here.
+      const splitTx = {
+        id: "t1",
+        isTransfer: false,
+        isSplit: true,
+        splits: [
+          {
+            id: "s1",
+            categoryId: "c1",
+            amount: "-20.0000",
+            tags: [{ id: "tag-1", name: "Trip" }],
+          },
+          { id: "s2", categoryId: "c9", amount: -10, tags: [] },
+        ],
+      };
+
+      it("carries a line's tags into the signed line and the card", async () => {
+        transactions.findOne.mockResolvedValueOnce(splitTx);
+        const result = await service.prepareUpdate(userId, {
+          transactionId: "t1",
+          splits: [
+            { categoryName: "Dining", amount: -20 },
+            { categoryName: "Dining", amount: -10 },
+          ],
+        });
+        if (result.kind !== "standard") throw new Error("expected standard");
+        expect(result.splits?.[0]).toMatchObject({
+          tagIds: ["tag-1"],
+          tagNames: ["Trip"],
+        });
+        expect(result.splits?.[1]).not.toHaveProperty("tagIds");
+      });
+
+      it("follows a named splitId", async () => {
+        transactions.findOne.mockResolvedValueOnce({
+          ...splitTx,
+          splits: [
+            { ...splitTx.splits[0], categoryId: "c7" },
+            splitTx.splits[1],
+          ],
+        });
+        const result = await service.prepareUpdate(userId, {
+          transactionId: "t1",
+          splits: [
+            { categoryName: "Dining", amount: -10 },
+            { categoryName: "Dining", amount: -20, splitId: "s1" },
+          ],
+        });
+        if (result.kind !== "standard") throw new Error("expected standard");
+        expect(result.splits?.[0]).not.toHaveProperty("tagIds");
+        expect(result.splits?.[1]).toMatchObject({ tagIds: ["tag-1"] });
+      });
+
+      it("refuses a splitId from another transaction", async () => {
+        transactions.findOne.mockResolvedValueOnce(splitTx);
+        await expect(
+          service.prepareUpdate(userId, {
+            transactionId: "t1",
+            splits: [
+              { categoryName: "Dining", amount: -20, splitId: "elsewhere" },
+              { categoryName: "Dining", amount: -10 },
+            ],
+          }),
+        ).rejects.toThrow(/not a split line of this transaction/);
+      });
+
+      it("carries the tags onto a bulk row's lines too", async () => {
+        transactions.findOne.mockResolvedValueOnce(splitTx);
+        const result = await service.prepareUpdateBulk(userId, [
+          {
+            transactionId: "t1",
+            splits: [
+              { categoryName: "Dining", amount: -20 },
+              { categoryName: "Dining", amount: -10 },
+            ],
+          },
+        ]);
+        expect(result.okRows[0].splits?.[0]).toEqual({
+          categoryId: "c1",
+          amount: -20,
+          memo: null,
+          tagIds: ["tag-1"],
+        });
+        expect(result.previewRows[0].splits?.[0]).toMatchObject({
+          tagNames: ["Trip"],
+        });
+      });
+    });
+
+    it("passes the tags to add and remove to previewUpdate", async () => {
+      await service.prepareUpdate(userId, {
+        transactionId: "t1",
+        tagNames: ["Trip"],
+        removeTagNames: ["Old"],
+      });
+      expect(transactions.previewUpdate).toHaveBeenCalledWith(
+        userId,
+        "t1",
+        expect.objectContaining({
+          tagNames: ["Trip"],
+          removeTagNames: ["Old"],
+        }),
+      );
+    });
+
+    it("previews a transfer's tag change from the edited leg", async () => {
+      transactions.findOne.mockResolvedValueOnce({
+        id: "t1",
+        isTransfer: true,
+        linkedTransactionId: "t2",
+      });
+      transactions.previewTransferTagChange.mockResolvedValueOnce({
+        tagNames: ["Trip"],
+        newTagNames: ["Trip"],
+        removeTagIds: ["tag-o"],
+        removeTagNames: ["Old"],
+      });
+      const result = await service.prepareUpdate(userId, {
+        transactionId: "t1",
+        tagNames: ["Trip"],
+        removeTagNames: ["Old"],
+      });
+      expect(transactions.previewTransferTagChange).toHaveBeenCalledWith(
+        userId,
+        "t1",
+        ["Trip"],
+        ["Old"],
+      );
+      expect(result.preview).toMatchObject({
+        tagNames: ["Trip"],
+        newTagNames: ["Trip"],
+        removeTagIds: ["tag-o"],
+        removeTagNames: ["Old"],
+      });
+    });
+
+    it("refuses a tag-only transfer edit that changes nothing, building no card", async () => {
+      transactions.findOne.mockResolvedValueOnce({
+        id: "t1",
+        isTransfer: true,
+        linkedTransactionId: "t2",
+      });
+      // previewTransferTagChange (the double) finds every tag already there,
+      // and the transfer's fields are as they were.
+      transfer.previewUpdateTransfer.mockResolvedValueOnce({
+        transactionId: "t1",
+        changesFields: false,
+      });
+      await expect(
+        service.prepareUpdate(userId, {
+          transactionId: "t1",
+          tagNames: ["Trip"],
+        }),
+      ).rejects.toThrow(/Nothing to change/);
+    });
+
+    it("lets an edit that asked for no tags reach the surface's own transfer refusal", async () => {
+      // An attachments-only edit of a transfer: the surface, not this check,
+      // says transfers take no attachments.
+      transactions.findOne.mockResolvedValueOnce({
+        id: "t1",
+        isTransfer: true,
+        linkedTransactionId: "t2",
+      });
+      const result = await service.prepareUpdate(userId, {
+        transactionId: "t1",
+      });
+      expect(result.kind).toBe("transfer");
+    });
+
+    it("marks a transfer edit that changes only tags as tag-only", async () => {
+      transactions.findOne.mockResolvedValueOnce({
+        id: "t1",
+        isTransfer: true,
+        linkedTransactionId: "t2",
+      });
+      transactions.previewTransferTagChange.mockResolvedValueOnce({
+        tagNames: ["Trip"],
+        newTagNames: [],
+        removeTagIds: [],
+        removeTagNames: [],
+      });
+      // The date is resent as it is: a value difference decides, not presence.
+      transfer.previewUpdateTransfer.mockResolvedValueOnce({
+        transactionId: "t1",
+        changesFields: false,
+      });
+      const result = await service.prepareUpdate(userId, {
+        transactionId: "t1",
+        date: "2026-02-01",
+        tagNames: ["Trip"],
+      });
+      expect(result.preview).toMatchObject({ tagsOnly: true });
+    });
+
+    it("carries a bulk row's tag change into the signed row and the card", async () => {
+      transactions.previewUpdate.mockResolvedValueOnce({
+        transactionId: "t1",
+        accountId: "a1",
+        accountName: "Checking",
+        amount: -30,
+        transactionDate: "2026-02-01",
+        payeeId: null,
+        payeeName: null,
+        payeeMatched: false,
+        payeeWillBeCreated: false,
+        categoryId: "c1",
+        categoryName: "Dining",
+        description: null,
+        currencyCode: "USD",
+        isReconciled: false,
+        tagNames: ["Trip"],
+        newTagNames: ["Trip"],
+        removeTagIds: ["tag-o"],
+        removeTagNames: ["Old"],
+        tagsOnly: true,
+      });
+      const result = await service.prepareUpdateBulk(userId, [
+        { transactionId: "t1", tagNames: ["Trip"], removeTagNames: ["Old"] },
+      ]);
+      expect(result.okRows[0]).toMatchObject({
+        tagNames: ["Trip"],
+        removeTagIds: ["tag-o"],
+        tagsOnly: true,
+      });
+      expect(result.previewRows[0]).toMatchObject({
+        tagNames: ["Trip"],
+        newTagNames: ["Trip"],
+        removeTagNames: ["Old"],
+      });
     });
 
     it("surfaces previewUpdate's actionable refusal of a category-only edit on an existing split", async () => {

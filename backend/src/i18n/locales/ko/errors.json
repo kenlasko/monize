@@ -746,7 +746,14 @@
     "oneOrMoreNotFound": "하나 이상의 태그를 찾을 수 없습니다",
     "oneOrMoreTransactionsNotFound": "하나 이상의 거래를 찾을 수 없습니다",
     "tooManyTags": "한 번에 최대 {{ max }}개의 태그만 변경할 수 있습니다",
-    "tooManyTransactions": "한 번에 최대 {{ max }}개의 거래만 변경할 수 있습니다"
+    "tooManyTransactions": "한 번에 최대 {{ max }}개의 거래만 변경할 수 있습니다",
+    "addAndRemove": "태그 \"{{ name }}\"을(를) 한 번의 편집에서 추가와 제거에 모두 지정할 수 없습니다",
+    "unknownName": "알 수 없는 태그: {{ name }}.{{ suggestion }}",
+    "noChange": "태그 \"{{ name }}\"은(는) 이미 이 값입니다. 다른 newName, color 또는 icon을 지정하세요.",
+    "repeatedInBatch": "이 요청의 다른 항목이 이미 이 태그를 지정하고 있습니다.",
+    "nameRequired": "태그에는 이름이 필요합니다.",
+    "invalidColor": "\"{{ color }}\"은(는) 색상이 아닙니다. #RRGGBB 형식(예: #FF5733)을 사용하세요.",
+    "nothingToChange": "변경할 내용이 없습니다. 이 거래에는 추가할 태그가 모두 있고 제거할 태그는 없습니다. 분할 항목의 태그는 이 편집으로 변경되지 않습니다."
   },
   "transactionRules": {
     "notFound": "ID가 {{ id }}인 거래 규칙을 찾을 수 없습니다",
@@ -836,7 +843,9 @@
     "convertTransferCrossOwner": "다른 소유자의 계좌가 포함된 이체는 변환할 수 없습니다. 삭제한 뒤 원하는 항목을 새로 만드세요.",
     "splitTransferLegConvertLocked": "이 이체는 분할 거래의 일부입니다. 원본 거래의 분할을 편집하여 제거하세요.",
     "transferCounterpartChanged": "편집 중에 이 이체의 상대편이 변경되었습니다. 새로 고친 뒤 다시 시도하세요.",
-    "splitTransferTargetAmountRequiresTransfer": "수령 금액은 분할 내 이체에만 지정할 수 있습니다"
+    "splitTransferTargetAmountRequiresTransfer": "수령 금액은 분할 내 이체에만 지정할 수 있습니다",
+    "splitIdNotOnTransaction": "splitId {{ splitId }}은(는) 이 거래의 분할 항목이 아닙니다. 거래의 분할 항목을 다시 읽고 해당 splitId 값을 사용하세요.",
+    "splitIdRepeated": "splitId {{ splitId }}이(가) 여러 줄에 지정되었습니다. 기존 각 항목은 한 번만 이어받을 수 있습니다."
   },
   "users": {
     "userNotFound": "사용자를 찾을 수 없습니다",

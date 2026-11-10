@@ -192,7 +192,31 @@ export interface UpdateTransferPreview {
   /** Spending category applied to both legs after the edit (null = none). */
   categoryId: string | null;
   categoryName: string | null;
+  /**
+   * The tag change the edit makes on both legs (`TransactionsService.previewTagChange`
+   * over the edited leg): names added, the new ones among them, and the
+   * carried tags removed. Set by the AI tools' prep, never by this service.
+   */
+  tagNames?: string[];
+  newTagNames?: string[];
+  removeTagIds?: string[];
+  removeTagNames?: string[];
+  /** True when the edit changes the tags and nothing else (see UpdateTransactionPreview). */
+  tagsOnly?: true;
+  /** Whether any of the fields above differs from what the transfer holds now. */
+  changesFields?: boolean;
 }
+
+/**
+ * A write that must commit with a transfer edit (the AI tools' tag change):
+ * run inside the edit's own transaction, after its rows are written, with the
+ * legs that are the user's and the split a split-transfer leg belongs to. A
+ * throw refuses the whole edit with nothing written.
+ */
+export type TransferEditHook = (
+  m: EntityManager,
+  target: { legIds: string[]; parentSplitId: string | null },
+) => Promise<void>;
 
 @Injectable()
 export class TransactionTransferService {
@@ -1702,6 +1726,15 @@ export class TransactionTransferService {
       payeeWillBeCreated,
       categoryId,
       categoryName,
+      // A value difference, not a field being present: a form or a model
+      // resends fields it does not change.
+      changesFields:
+        newAmount !== oldFromAmount ||
+        String(newDate) !== String(fromTransaction.transactionDate) ||
+        description !== (fromTransaction.description ?? null) ||
+        payeeName !== (fromTransaction.payeeName ?? null) ||
+        payeeId !== (fromTransaction.payeeId ?? null) ||
+        categoryId !== (fromTransaction.categoryId ?? null),
     };
   }
 
@@ -1966,6 +1999,7 @@ export class TransactionTransferService {
     updateDto: Partial<UpdateTransferDto>,
     findOne: (userId: string, id: string) => Promise<Transaction>,
     actor?: TransferActor,
+    withinWrite?: TransferEditHook,
   ): Promise<TransferResult> {
     const realUserId = actor?.realUserId ?? userId;
     const transaction = await findOne(userId, transactionId);
@@ -1993,6 +2027,7 @@ export class TransactionTransferService {
         parentSplit,
         updateDto,
         findOne,
+        withinWrite,
       );
     }
 
@@ -2004,6 +2039,16 @@ export class TransactionTransferService {
       );
     } catch (err) {
       if (!(err instanceof NotFoundException)) throw err;
+      // The AI tools refuse a cross-owner transfer before they build a card;
+      // the hook is never silently dropped on this path.
+      if (withinWrite) {
+        throw new BadRequestException(
+          tr(
+            "errors.ai.crossOwnerTransferUnsupported",
+            "This transfer involves another user's account, which the assistant can't edit or delete yet. Use the Transactions screen instead.",
+          ),
+        );
+      }
       // Cross-owner pair: the counterpart is not the effective user's row.
       return this.updateCrossOwnerTransfer(
         userId,
@@ -2317,6 +2362,13 @@ export class TransactionTransferService {
           );
           await this.accountsService.updateBalance(newToAccountId, newToAmount);
         }
+      }
+      if (withinWrite) {
+        // Both legs are the user's: the locks above are taken by owner.
+        await withinWrite(m, {
+          legIds: [fromTransaction.id, toTransaction.id],
+          parentSplitId: null,
+        });
       }
     });
 
@@ -2960,6 +3012,7 @@ export class TransactionTransferService {
     parentSplit: TransactionSplit,
     updateDto: Partial<UpdateTransferDto>,
     findOne: (userId: string, id: string) => Promise<Transaction>,
+    withinWrite?: TransferEditHook,
   ): Promise<TransferResult> {
     const parentTransaction = await findOne(userId, parentSplit.transactionId);
 
@@ -3267,6 +3320,12 @@ export class TransactionTransferService {
           parentDecimals,
           this.accountsService,
         );
+      }
+      if (withinWrite) {
+        await withinWrite(m, {
+          legIds: [counterpart.id],
+          parentSplitId: parentSplit.id,
+        });
       }
     });
 

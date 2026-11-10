@@ -38,6 +38,10 @@ import {
   LLM_HELP_MAX_LIMIT,
   LLM_HELP_QUERY_MAX_CHARS,
 } from "../../help/help-llm-shape";
+import {
+  LLM_TAGS_DEFAULT_LIMIT,
+  LLM_TAGS_MAX_LIMIT,
+} from "../../tags/tag-llm-shape";
 import { MAX_RULE_ACTIONS } from "../../transaction-rules/rule-validation";
 import {
   MAX_RULE_RUN_ACCOUNTS,
@@ -624,7 +628,15 @@ const manageTransactionSplitSchema = z.object({
   categoryName: z.string().min(1).max(100),
   amount: amountSchema,
   memo: z.string().max(TRANSACTION_NOTE_MAX_LENGTH).optional(),
+  // update: the existing line this one continues, whose tags it keeps.
+  splitId: z.string().uuid().optional(),
 });
+
+/** Most tag names one `manage_transactions` row may add or remove. */
+const MAX_ROW_TAG_NAMES = 20;
+const tagNameListSchema = z
+  .array(z.string().trim().min(1).max(100))
+  .max(MAX_ROW_TAG_NAMES);
 
 /** Largest split set a single transaction row may carry through the tool. */
 const MAX_SPLIT_LINES = 50;
@@ -654,6 +666,9 @@ const manageTransactionItemSchema = z
       .array(manageTransactionSplitSchema)
       .max(MAX_SPLIT_LINES)
       .optional(),
+    // update: tags added and removed; the transaction's other tags stay.
+    addTagNames: tagNameListSchema.optional(),
+    removeTagNames: tagNameListSchema.optional(),
     // Chat attachments to save on the transaction: each entry names a file on
     // the CURRENT message by filename (string) or 1-based position (number).
     attachments: z
@@ -685,6 +700,21 @@ export const manageTransactionsSchema = z
       // cannot also be a transfer or name a top-level category.
       const hasSplits = item.splits !== undefined;
       const hasAttachments = item.attachments !== undefined;
+      const hasTags =
+        (item.addTagNames?.length ?? 0) > 0 ||
+        (item.removeTagNames?.length ?? 0) > 0;
+      if (
+        value.operation !== "update" &&
+        (item.addTagNames !== undefined || item.removeTagNames !== undefined)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: path(
+            item.addTagNames !== undefined ? "addTagNames" : "removeTagNames",
+          ),
+          message: "addTagNames and removeTagNames are used only with update.",
+        });
+      }
       if (hasAttachments) {
         if (
           item.toAccountName !== undefined ||
@@ -801,13 +831,14 @@ export const manageTransactionsSchema = z
           item.categoryName !== undefined ||
           item.description !== undefined ||
           hasSplits ||
-          hasAttachments;
+          hasAttachments ||
+          hasTags;
         if (!hasChange) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: path("transactionId"),
             message:
-              "Provide at least one field to change (amount, date, payeeName, categoryName, description, splits, or attachments).",
+              "Provide at least one field to change (amount, date, payeeName, categoryName, description, splits, attachments, addTagNames or removeTagNames).",
           });
         }
       } else {
@@ -833,9 +864,13 @@ export const manageTransactionsSchema = z
  * A category line as `manage_transactions` takes it, with the amount read the
  * tolerant way (`"-20"` from a hand-written tool call is -20, `""` is refused).
  */
-const reviewSplitLineSchema = manageTransactionSplitSchema.extend({
-  amount: numberArg(amountSchema),
-});
+const reviewSplitLineSchema = manageTransactionSplitSchema
+  // A proposal's lines keep their tags by category; `splitId` is an editing
+  // aid of the chat's update only.
+  .omit({ splitId: true })
+  .extend({
+    amount: numberArg(amountSchema),
+  });
 
 export const aiReviewRequestsFields = z.object({
   operation: z.enum(AI_REVIEW_OPERATIONS),
@@ -1060,6 +1095,80 @@ export const listWarrantiesSchema = z.object({
 });
 
 /**
+ * `list_tags`, one definition for both surfaces like `list_warranties`: the MCP
+ * tool registers this schema and description as they are.
+ */
+export const LIST_TAGS_DESCRIPTION =
+  "The user's tags in name order, each with useCount and lastUsed " +
+  "(non-void transactions dated today or earlier; a transfer counts once). " +
+  "`total` counts matches; when `truncated`, only the first `limit` are listed.";
+
+export const listTagsSchema = z.object({
+  search: z
+    .string()
+    .max(100)
+    .optional()
+    .describe("Case-insensitive substring of the name."),
+  limit: numberArg(z.number().int().min(1).max(LLM_TAGS_MAX_LIMIT))
+    .optional()
+    .describe(`Default ${LLM_TAGS_DEFAULT_LIMIT}.`),
+});
+
+/** One `manage_tags` item: a tag by name and what to set on it. */
+export const manageTagItemSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  newName: z.string().trim().min(1).max(100).optional(),
+  color: z.string().max(7).optional(),
+  icon: z.string().max(50).optional(),
+});
+
+/**
+ * The assistant's `manage_tags` input. An update needs a change; a create or a
+ * delete takes no `newName`. Name resolution, conflicts and the colour format
+ * are checked by `TagToolPrepService`, the same door the MCP tool uses.
+ */
+export const manageTagsSchema = z
+  .object({
+    operation: z.enum(["create", "update", "delete"]),
+    items: z.array(manageTagItemSchema).min(1).max(MAX_BULK_ACTION_ROWS),
+    approvalMode: z.enum(["bulk", "individual"]).optional(),
+  })
+  .superRefine((value, ctx) => {
+    value.items.forEach((item, index) => {
+      const path = (field: string) => ["items", index, field];
+      if (value.operation !== "update" && item.newName !== undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: path("newName"),
+          message: "newName is used only with update.",
+        });
+      }
+      if (
+        value.operation === "delete" &&
+        (item.color ?? item.icon) !== undefined
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: path("name"),
+          message: "A delete takes only the tag's name.",
+        });
+      }
+      if (
+        value.operation === "update" &&
+        item.newName === undefined &&
+        item.color === undefined &&
+        item.icon === undefined
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: path("name"),
+          message: "Provide at least one change (newName, color or icon).",
+        });
+      }
+    });
+  });
+
+/**
  * `search_help` (in-app help plan 6), one definition for both surfaces, like
  * `list_warranties`: the MCP tool registers this schema and description as
  * they are. The description is what keeps a model from answering a product
@@ -1111,6 +1220,8 @@ export const toolInputSchemas: Record<string, z.ZodSchema> = {
   fetch_bond_series: fetchBondSeriesSchema,
   list_warranties: listWarrantiesSchema,
   search_help: searchHelpSchema,
+  list_tags: listTagsSchema,
+  manage_tags: manageTagsSchema,
 };
 
 /**

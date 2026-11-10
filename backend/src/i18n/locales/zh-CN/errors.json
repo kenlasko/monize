@@ -746,7 +746,14 @@
     "oneOrMoreNotFound": "一个或多个标签未找到",
     "oneOrMoreTransactionsNotFound": "未找到一个或多个交易",
     "tooManyTags": "每次调用最多可更改 {{ max }} 个标签",
-    "tooManyTransactions": "每次调用最多可更改 {{ max }} 笔交易"
+    "tooManyTransactions": "每次调用最多可更改 {{ max }} 笔交易",
+    "addAndRemove": "标签“{{ name }}”不能在同一次编辑中既添加又移除",
+    "unknownName": "未知标签：{{ name }}.{{ suggestion }}",
+    "noChange": "标签“{{ name }}”已是这些值：请提供不同的 newName、color 或 icon。",
+    "repeatedInBatch": "此请求中的另一项已指定此标签。",
+    "nameRequired": "标签需要一个名称。",
+    "invalidColor": "“{{ color }}”不是颜色：请使用 #RRGGBB，例如 #FF5733。",
+    "nothingToChange": "无需更改：该交易已带有所有要添加的标签，且不带任何要移除的标签。此编辑不会更改拆分行上的标签。"
   },
   "transactionRules": {
     "notFound": "未找到 ID 为 {{ id }} 的交易规则",
@@ -836,7 +843,9 @@
     "convertTransferCrossOwner": "无法转换涉及其他所有者账户的转账。请删除它并新建所需的条目。",
     "splitTransferLegConvertLocked": "此转账属于一笔拆分交易。请在源交易中编辑拆分来移除它。",
     "transferCounterpartChanged": "编辑期间此转账的另一方已更改。请重新加载后重试。",
-    "splitTransferTargetAmountRequiresTransfer": "只有拆分中的转账才能带有收到金额"
+    "splitTransferTargetAmountRequiresTransfer": "只有拆分中的转账才能带有收到金额",
+    "splitIdNotOnTransaction": "splitId {{ splitId }} 不是此交易的拆分行。请重新读取该交易的拆分行并使用其 splitId 值。",
+    "splitIdRepeated": "splitId {{ splitId }} 被多行指定。每个现有行只能被延续一次。"
   },
   "users": {
     "userNotFound": "未找到用户",

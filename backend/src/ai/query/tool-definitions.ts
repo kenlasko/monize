@@ -32,9 +32,14 @@ import {
   LLM_HELP_QUERY_MAX_CHARS,
 } from "../../help/help-llm-shape";
 import {
+  LIST_TAGS_DESCRIPTION,
   LIST_WARRANTIES_DESCRIPTION,
   SEARCH_HELP_DESCRIPTION,
 } from "./tool-input-schemas";
+import {
+  LLM_TAGS_DEFAULT_LIMIT,
+  LLM_TAGS_MAX_LIMIT,
+} from "../../tags/tag-llm-shape";
 
 export { RULE_LANGUAGE_GUIDE };
 
@@ -520,7 +525,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
       "create (standard): { accountName, amount, date, payeeName?, categoryName?, description?, createPayeeIfMissing? } -- amount is positive for income, negative for expenses. " +
       "create (transfer): { fromAccountName, toAccountName, amount, date, description?, payeeName?, categoryName?, createPayeeIfMissing?, exchangeRate?, toAmount? } -- an item is a transfer when toAccountName is present; amount is the positive transfer amount (exchangeRate/toAmount only for cross-currency); payeeName is an optional custom label for the transfer, matched to an existing payee (or created if missing, like a normal transaction) and applied to both legs (omit to leave the payee blank; blank transfer payees display as 'Transfer to/from <account>' resolved from the current account name); categoryName is an optional spending category stored on both legs (surfaces the transfer in the monthly category breakdown without counting as income/expense). " +
       "update: { transactionId, amount?, date?, payeeName?, categoryName?, description?, createPayeeIfMissing? } -- provide only the fields to change (at least one); a category-only change is just transactionId + categoryName. First call search_transactions to obtain the transactionId. Transfers are auto-detected and edited correctly; for a transfer, categoryName is stored on both legs and surfaces the transfer in the monthly category breakdown (without making it count as income/expense), and payeeName sets its custom label (matched to an existing payee or created if missing, like a normal transaction). " +
-      "split transactions (create or update): add a 'splits' array of { categoryName, amount, memo? } (>= 2 lines, category splits only) instead of a single categoryName; the split amounts must sum to the transaction amount (e.g. a -100 expense split -60 Groceries / -40 Household). On create also give accountName, amount, date; on update give transactionId and splits (replaces the whole split set). Updating an EXISTING split transaction: parent fields (date, payeeName, description) work without splits, but changing its categories or its amount requires resending the COMPLETE splits array (the tool errors with instructions otherwise). Read tools return one row per split line (same transaction id, distinct splitId), and always the COMPLETE set for each transaction even when you filtered by category -- so read the current lines first, then resend all of them with your change applied. Several split transactions CAN go in one call: give each item its own complete splits array, and every row is previewed and applied with its own set (up to 25 rows). Only one proposing tool call is allowed per reply, so send them as ONE call with many items rather than several calls. Never promise cards for transactions you have not proposed. " +
+      "split transactions (create or update): add a 'splits' array of { categoryName, amount, memo? } (>= 2 lines, category splits only) instead of a single categoryName; the split amounts must sum to the transaction amount (e.g. a -100 expense split -60 Groceries / -40 Household). On create also give accountName, amount, date; on update give transactionId and splits (replaces the whole split set). Updating an EXISTING split transaction: parent fields (date, payeeName, description) work without splits, but changing its categories or its amount requires resending the COMPLETE splits array (the tool errors with instructions otherwise). Read tools return one row per split line (same transaction id, distinct splitId), and always the COMPLETE set for each transaction even when you filtered by category -- so read the current lines first, then resend all of them with your change applied. Several split transactions CAN go in one call: give each item its own complete splits array, and every row is previewed and applied with its own set (up to 25 rows). Replacing a split set keeps each line's tags when the line names its existing splitId (else a line keeps the tags of an existing line in the same category). Tags (update only): addTagNames adds tags (a name the user has no tag for creates it) and removeTagNames removes them; the transaction's other tags stay, and a tag-only item changes nothing else. On a transfer both legs change. Call list_tags for the user's tag names. Only one proposing tool call is allowed per reply, so send them as ONE call with many items rather than several calls. Never promise cards for transactions you have not proposed. " +
       "delete: { transactionId } -- removes the transaction (and any linked transfer legs / split children). First call search_transactions to obtain the transactionId. " +
       "attachments (create or update): add an 'attachments' array naming files the user attached to their CURRENT chat message, each entry a filename (string) or 1-based position (number); the named files are saved as permanent attachments on the transaction when the card is approved. Only images and PDFs up to 5 MB can be saved (CSV/text chat files cannot). Use this when the user asks to save/attach a receipt or document they just sent -- on create the file lands on the new transaction, on update an attachments-only item is a valid edit. Send attachment items one at a time (a single item), never on transfers or delete. " +
       "approvalMode controls the confirmation: by default a batch of 6 or more items shows one card for the whole batch, while 1-5 items show one card per item the user approves separately. Pass 'individual' to force one card per item at any count. Ignored for a single item. Maximum 25 items per call; if the user pastes more, process the first 25 and tell them to send the rest. After calling this tool, briefly tell the user to review and approve the card(s); never claim the change was applied.",
@@ -621,9 +626,27 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
                       type: "string",
                       description: "Optional memo for this split line.",
                     },
+                    splitId: {
+                      type: "string",
+                      description:
+                        "update: the splitId (from a read tool) of the existing line this one continues; the line keeps that line's tags.",
+                    },
                   },
                   required: ["categoryName", "amount"],
                 },
+              },
+              addTagNames: {
+                type: "array",
+                maxItems: 20,
+                items: { type: "string", maxLength: 100 },
+                description:
+                  "update: tag names to add; a name the user has no tag for creates it.",
+              },
+              removeTagNames: {
+                type: "array",
+                maxItems: 20,
+                items: { type: "string", maxLength: 100 },
+                description: "update: tag names to remove.",
               },
               attachments: {
                 type: "array",
@@ -1380,6 +1403,73 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
         },
       },
       required: ["query"],
+    },
+  },
+  {
+    name: "list_tags",
+    description: LIST_TAGS_DESCRIPTION,
+    inputSchema: {
+      type: "object",
+      properties: {
+        search: {
+          type: "string",
+          description: "Case-insensitive substring of the name.",
+        },
+        limit: {
+          type: "number",
+          description: `Default ${LLM_TAGS_DEFAULT_LIMIT}, at most ${LLM_TAGS_MAX_LIMIT}.`,
+        },
+      },
+    },
+  },
+  {
+    name: "manage_tags",
+    description:
+      "Create, rename, recolour or delete the user's tags. This does NOT change anything immediately: it shows the user a confirmation card (or cards) they must approve. operation = 'create' | 'update' | 'delete' with an items array (1-25 rows). create: { name, color?, icon? }. update: { name, newName?, color?, icon? } (name is the tag's current name; at least one change; an empty color or icon clears it). delete: { name } -- the tag is removed from every transaction and split line that carries it, and nothing else on them changes. color is #RRGGBB. Tag names are unique per user regardless of case. To add or remove tags on transactions use manage_transactions (addTagNames / removeTagNames), not this tool. approvalMode: by default 6 or more items show one card for the batch and 1-5 one card each; 'individual' forces one card per item. After calling, briefly tell the user to review and approve the card(s); never claim the change was made.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        operation: {
+          type: "string",
+          enum: ["create", "update", "delete"],
+          description: "The operation to perform on every item.",
+        },
+        items: {
+          type: "array",
+          minItems: 1,
+          maxItems: 25,
+          items: {
+            type: "object",
+            properties: {
+              name: {
+                type: "string",
+                description:
+                  "create: the new tag's name. update/delete: the tag's current name.",
+              },
+              newName: {
+                type: "string",
+                description: "update: rename the tag to this.",
+              },
+              color: {
+                type: "string",
+                description: "#RRGGBB; an empty string clears it.",
+              },
+              icon: {
+                type: "string",
+                description: "Icon name; an empty string clears it.",
+              },
+            },
+            required: ["name"],
+          },
+        },
+        approvalMode: {
+          type: "string",
+          enum: ["bulk", "individual"],
+          description:
+            "'individual' forces one card per item; by default 6 or more items share one card.",
+        },
+      },
+      required: ["operation", "items"],
     },
   },
 ];

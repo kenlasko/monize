@@ -963,6 +963,84 @@ describe("tool-input-schemas", () => {
     });
   });
 
+  describe("manageTransactionsSchema (tags)", () => {
+    const TXID = "11111111-1111-4111-8111-111111111111";
+
+    it("accepts a tag-only update as a change on its own", () => {
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "update",
+          items: [{ transactionId: TXID, addTagNames: ["Trip"] }],
+        }).success,
+      ).toBe(true);
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "update",
+          items: [{ transactionId: TXID, removeTagNames: ["Old"] }],
+        }).success,
+      ).toBe(true);
+    });
+
+    it("does not count empty tag lists as a change", () => {
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "update",
+          items: [{ transactionId: TXID, addTagNames: [] }],
+        }).success,
+      ).toBe(false);
+    });
+
+    it("refuses tags on a create or a delete, where they would be dropped", () => {
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "create",
+          items: [
+            {
+              accountName: "Checking",
+              amount: -10,
+              date: "2026-01-15",
+              addTagNames: ["Trip"],
+            },
+          ],
+        }).success,
+      ).toBe(false);
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "delete",
+          items: [{ transactionId: TXID, removeTagNames: ["Old"] }],
+        }).success,
+      ).toBe(false);
+    });
+
+    it("bounds the names and takes a split line's splitId", () => {
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "update",
+          items: [
+            {
+              transactionId: TXID,
+              addTagNames: Array.from({ length: 21 }, (_, i) => `T${i}`),
+            },
+          ],
+        }).success,
+      ).toBe(false);
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "update",
+          items: [
+            {
+              transactionId: TXID,
+              splits: [
+                { categoryName: "A", amount: -1, splitId: TXID },
+                { categoryName: "B", amount: -1 },
+              ],
+            },
+          ],
+        }).success,
+      ).toBe(true);
+    });
+  });
+
   describe("manageTransactionsSchema (attachments)", () => {
     const TXID = "11111111-1111-4111-8111-111111111111";
     const createItem = {

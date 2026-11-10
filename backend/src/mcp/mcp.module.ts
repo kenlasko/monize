@@ -23,6 +23,7 @@ import { EmailReceiptParsersModule } from "../email-receipts/parsers/email-recei
 import { BondsModule } from "../bonds/bonds.module";
 import { WarrantiesModule } from "../warranties/warranties.module";
 import { HelpModule } from "../help/help.module";
+import { TagsModule } from "../tags/tags.module";
 
 import { McpServerService } from "./mcp-server.service";
 import { McpHttpController } from "./mcp-http.controller";
@@ -45,6 +46,7 @@ import { McpEmailReceiptParserTools } from "./tools/email-receipt-parsers.tool";
 import { McpBondSeriesTools } from "./tools/bond-series.tool";
 import { McpWarrantiesTools } from "./tools/warranties.tool";
 import { McpHelpTools } from "./tools/help.tool";
+import { McpTagsTools } from "./tools/tags.tool";
 
 import { McpAccountListResource } from "./resources/account-list.resource";
 import { McpCategoryTreeResource } from "./resources/category-tree.resource";
@@ -97,6 +99,8 @@ import { McpSpendingAnalysisPrompt } from "./prompts/spending-analysis.prompt";
     WarrantiesModule,
     // search_help: HelpService.getLlmHelp.
     HelpModule,
+    // list_tags and manage_tags: TagsService.getLlmTags and TagToolPrepService.
+    TagsModule,
   ],
   providers: [
     McpServerService,
@@ -118,6 +122,7 @@ import { McpSpendingAnalysisPrompt } from "./prompts/spending-analysis.prompt";
     McpBondSeriesTools,
     McpWarrantiesTools,
     McpHelpTools,
+    McpTagsTools,
     McpAccountListResource,
     McpCategoryTreeResource,
     McpRecentTransactionsResource,

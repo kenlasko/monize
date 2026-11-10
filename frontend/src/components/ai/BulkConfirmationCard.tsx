@@ -51,13 +51,24 @@ export function BulkConfirmationCard({
     batchOp === 'create_security' ||
     batchOp === 'update_security' ||
     batchOp === 'delete_security';
+  const isTag =
+    batchOp === 'create_tag' ||
+    batchOp === 'update_tag' ||
+    batchOp === 'delete_tag';
 
   const rows = preview.rows ?? [];
   const validCount = rows.filter((r) => r.status === 'ok').length;
   const flaggedCount = rows.length - validCount;
 
-  const title =
-    batchOp === 'update_investment'
+  const tagTitle =
+    batchOp === 'create_tag'
+      ? t('confirmAction.createTagsTitle')
+      : batchOp === 'update_tag'
+        ? t('confirmAction.updateTagsTitle')
+        : t('confirmAction.deleteTagsTitle');
+  const title = isTag
+    ? tagTitle
+    : batchOp === 'update_investment'
       ? t('confirmAction.updateInvestmentTransactionsTitle')
       : batchOp === 'delete_investment'
         ? t('confirmAction.deleteInvestmentTransactionsTitle')
@@ -89,13 +100,22 @@ export function BulkConfirmationCard({
       ? { href: '/payees', label: t('confirmAction.viewPayees') }
       : isSecurity
         ? { href: '/securities', label: t('confirmAction.viewSecurities') }
+        : isTag
+          ? { href: '/tags', label: t('confirmAction.viewTags') }
         : { href: '/transactions', label: t('confirmAction.viewTransaction') };
 
   // On success, prefer the server's actual affected count; fall back to the
   // number of valid rows the card displayed.
   const createdCount = action.resultCount ?? validCount;
-  const successMessage =
-    batchOp === 'update_investment'
+  const tagSuccess =
+    batchOp === 'create_tag'
+      ? t('confirmAction.createdTags', { count: createdCount })
+      : batchOp === 'update_tag'
+        ? t('confirmAction.updatedTags', { count: createdCount })
+        : t('confirmAction.deletedTags', { count: createdCount });
+  const successMessage = isTag
+    ? tagSuccess
+    : batchOp === 'update_investment'
       ? t('confirmAction.updatedInvestmentTransactions', { count: createdCount })
       : batchOp === 'delete_investment'
         ? t('confirmAction.deletedInvestmentTransactions', {
@@ -239,6 +259,21 @@ export function BulkConfirmationCard({
         secondary: [row.categoryName, ...optional].filter(Boolean).join(' · '),
       };
     }
+    if (isTag) {
+      // The tag after the action, and what the action does to it: a rename
+      // names the tag it renames, a colour or icon shows only when set, and a
+      // deletion says how many rows lose the tag.
+      const parts: string[] = [];
+      if (row.previousName)
+        parts.push(t('confirmAction.tagRenamedFrom', { name: row.previousName }));
+      if (row.tagColor !== undefined)
+        parts.push(`${t('confirmAction.tagColor')}: ${row.tagColor || t('confirmAction.none')}`);
+      if (row.tagIcon !== undefined)
+        parts.push(`${t('confirmAction.tagIcon')}: ${row.tagIcon || t('confirmAction.none')}`);
+      if (row.tagCarriedCount !== undefined)
+        parts.push(t('confirmAction.tagCarriedCount', { count: row.tagCarriedCount }));
+      return { primary: row.name || '', secondary: parts.join(' · ') };
+    }
     if (isSecurity) {
       return {
         primary: row.symbol || '',
@@ -262,9 +297,32 @@ export function BulkConfirmationCard({
               `${split.categoryName ?? t('confirmAction.uncategorized')} ${formatCurrency(
                 split.amount,
                 row.currencyCode,
-              )}`,
+              )}${
+                split.tagNames && split.tagNames.length > 0
+                  ? ` (${t('confirmAction.splitLineTags', { tags: split.tagNames.join(', ') })})`
+                  : ''
+              }`,
           )
           .join(' + '),
+      );
+    }
+    // The tags the row adds and removes; its other tags stay.
+    if (row.tagNames && row.tagNames.length > 0) {
+      parts.push(
+        t('confirmAction.bulkTagsAdded', {
+          tags: row.tagNames
+            .map((name) =>
+              row.newTagNames?.includes(name) ? `${name} ${t('confirmAction.newTag')}` : name,
+            )
+            .join(', '),
+        }),
+      );
+    }
+    if (row.removeTagNames && row.removeTagNames.length > 0) {
+      parts.push(
+        t('confirmAction.bulkTagsRemoved', {
+          tags: row.removeTagNames.join(', '),
+        }),
       );
     }
     return { primary, secondary: parts.join(' · ') };

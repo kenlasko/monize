@@ -270,6 +270,11 @@ export const AI_ACTION_TYPES = [
   'update_transaction_rule',
   'delete_transaction_rule',
   'run_transaction_rule',
+  // Tags (`manage_tags`): one card each on the single card, or a batch_actions
+  // envelope with a `*_tag` operation on the bulk card.
+  'create_tag',
+  'update_tag',
+  'delete_tag',
 ] as const;
 
 export type AiActionType = (typeof AI_ACTION_TYPES)[number];
@@ -296,6 +301,8 @@ export interface PendingActionSplit {
   memo?: string | null;
   /** `"ai"` when the AI chose this line's category (email-receipt proposals). */
   categorySource?: 'ai';
+  /** Tags the line keeps from the line it replaces. */
+  tagNames?: string[];
 }
 
 /** One chat file a create/update card will save on the transaction on approval. */
@@ -334,9 +341,20 @@ export interface PendingActionPreview {
   tagNames?: string[];
   /** The subset of `tagNames` the approval creates because the user has no such tag yet. */
   newTagNames?: string[];
+  /** update_transaction / update_transfer: tag names the approval removes (the others stay). */
+  removeTagNames?: string[];
   /** update_transaction: the reference number ("Ref #") the approval sets; absent when it is left as it is. */
   referenceNumber?: string;
   name?: string | null;
+  // Tag display fields (create_tag / update_tag / delete_tag); `name` is the
+  // tag's name after the action.
+  /** update_tag: the tag's current name, when the edit renames it. */
+  previousName?: string;
+  /** The colour (#RRGGBB) and icon the action sets: null clears, absent leaves it. */
+  tagColor?: string | null;
+  tagIcon?: string | null;
+  /** delete_tag: how many transactions and split lines carry the tag. */
+  tagCarriedCount?: number;
   /** Payee website, as the commit would store it. */
   website?: string | null;
   /** Payee contact details, as the commit would store them. */
@@ -484,6 +502,15 @@ export interface PendingActionPreviewRow {
   error?: string;
   // Payee display field (batch_actions with a payee operation).
   name?: string | null;
+  // Tag display fields (create_tag / update_tag / delete_tag); `name` is the
+  // tag's name after the action.
+  /** update_tag: the tag's current name, when the edit renames it. */
+  previousName?: string;
+  /** The colour (#RRGGBB) and icon the action sets: null clears, absent leaves it. */
+  tagColor?: string | null;
+  tagIcon?: string | null;
+  /** delete_tag: how many transactions and split lines carry the tag. */
+  tagCarriedCount?: number;
   /** Payee website, as the commit would store it. */
   website?: string | null;
   /** Payee contact details, as the commit would store them. */
@@ -512,7 +539,12 @@ export interface PendingActionPreviewRow {
     categoryName: string | null;
     amount: number;
     memo?: string | null;
+    tagNames?: string[];
   }>;
+  /** Bulk update: tag names the row adds, the new ones among them, and those it removes. */
+  tagNames?: string[];
+  newTagNames?: string[];
+  removeTagNames?: string[];
   /** True when this bulk update/delete row targets a reconciled transaction. */
   isReconciled?: boolean;
   /**

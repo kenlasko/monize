@@ -14,6 +14,7 @@ import { McpEmailReceiptParserTools } from "../tools/email-receipt-parsers.tool"
 import { McpBondSeriesTools } from "../tools/bond-series.tool";
 import { McpWarrantiesTools } from "../tools/warranties.tool";
 import { McpHelpTools } from "../tools/help.tool";
+import { McpTagsTools } from "../tools/tags.tool";
 
 /**
  * Test helper: capture every tool's `registerTool` config without booting Nest.
@@ -94,6 +95,14 @@ export function collectToolConfigs(): CapturedToolConfig[] {
     new McpBondSeriesTools({} as any, {} as any) as unknown as ToolProvider,
     new McpWarrantiesTools({} as any) as unknown as ToolProvider,
     new McpHelpTools({} as any) as unknown as ToolProvider,
+    new McpTagsTools(
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+    ) as unknown as ToolProvider,
     new McpRelayTools({} as any) as unknown as ToolProvider,
   ];
 

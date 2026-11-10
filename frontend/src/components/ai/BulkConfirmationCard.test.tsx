@@ -239,6 +239,59 @@ describe('BulkConfirmationCard', () => {
       ).toBeInTheDocument();
     });
 
+    it('says which tags each update row adds and removes', () => {
+      render(
+        <BulkConfirmationCard
+          action={makeAction({
+            type: 'batch_actions',
+            descriptor: { type: 'batch_actions', operation: 'update' },
+            preview: {
+              rows: [
+                {
+                  status: 'ok',
+                  accountName: 'Checking',
+                  amount: -12.5,
+                  currencyCode: 'USD',
+                  transactionDate: '2026-01-15',
+                  payeeName: 'Starbucks',
+                  tagNames: ['Trip', 'Family'],
+                  newTagNames: ['Family'],
+                  removeTagNames: ['Old'],
+                },
+              ],
+            },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(
+        screen.getByText(/adds tags: Trip, Family \(new tag\) · removes tags: Old/),
+      ).toBeInTheDocument();
+    });
+
+    it('titles a tag batch and describes each tag change', () => {
+      render(
+        <BulkConfirmationCard
+          action={makeAction({
+            type: 'batch_actions',
+            descriptor: { type: 'batch_actions', operation: 'update_tag' },
+            preview: {
+              rows: [
+                { status: 'ok', name: 'Travel', previousName: 'Trip' },
+                { status: 'ok', name: 'Home', tagIcon: 'house' },
+              ],
+            },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByText('Edit these tags?')).toBeInTheDocument();
+      expect(screen.getByText('renamed from Trip')).toBeInTheDocument();
+      expect(screen.getByText('Icon: house')).toBeInTheDocument();
+    });
+
     it('flags reconciled rows in an update batch', () => {
       render(
         <BulkConfirmationCard

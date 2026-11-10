@@ -2414,6 +2414,58 @@ describe("TransactionTransferService", () => {
       );
     });
 
+    describe("a write that commits with the edit (withinWrite)", () => {
+      const own = (tx: Transaction) =>
+        ({ ...tx, userId: "user-1" }) as unknown as Transaction;
+
+      it("runs inside the edit's transaction with the user's legs", async () => {
+        mockFindOne
+          .mockResolvedValueOnce(own(fromTransaction))
+          .mockResolvedValueOnce(own(toTransaction))
+          .mockResolvedValueOnce(own(fromTransaction))
+          .mockResolvedValueOnce(own(toTransaction));
+        const hook = jest.fn().mockResolvedValue(undefined);
+
+        await service.updateTransfer(
+          "user-1",
+          "from-tx",
+          { description: "Tagged" },
+          mockFindOne,
+          undefined,
+          hook,
+        );
+
+        expect(hook).toHaveBeenCalledTimes(1);
+        expect(hook).toHaveBeenCalledWith(expect.anything(), {
+          legIds: ["from-tx", "to-tx"],
+          parentSplitId: null,
+        });
+        // The edit's own manager: the same one its row update used.
+        const [manager] = hook.mock.calls[0];
+        expect(manager.getRepository).toBeDefined();
+      });
+
+      it("refuses the whole edit when the hook refuses", async () => {
+        mockFindOne
+          .mockResolvedValueOnce(own(fromTransaction))
+          .mockResolvedValueOnce(own(toTransaction));
+        const hook = jest
+          .fn()
+          .mockRejectedValue(new BadRequestException("tag gone"));
+
+        await expect(
+          service.updateTransfer(
+            "user-1",
+            "from-tx",
+            { description: "Tagged" },
+            mockFindOne,
+            undefined,
+            hook,
+          ),
+        ).rejects.toThrow("tag gone");
+      });
+    });
+
     describe("split transfer leg", () => {
       // A transfer split's counterpart in the target account. Its
       // linkedTransactionId points at the split PARENT (amount = sum of splits),
@@ -2491,6 +2543,29 @@ describe("TransactionTransferService", () => {
         );
         // No amount change => no balance movement.
         expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+
+      it("hands withinWrite the leg and the split it belongs to", async () => {
+        splitsRepository.findOne.mockResolvedValue(parentSplit);
+        mockFindOne
+          .mockResolvedValueOnce(counterpartLeg)
+          .mockResolvedValueOnce(splitParent)
+          .mockResolvedValueOnce(counterpartLeg);
+        const hook = jest.fn().mockResolvedValue(undefined);
+
+        await service.updateTransfer(
+          "user-1",
+          "leg-tx",
+          { description: "Tagged" },
+          mockFindOne,
+          undefined,
+          hook,
+        );
+
+        expect(hook).toHaveBeenCalledWith(expect.anything(), {
+          legIds: ["leg-tx"],
+          parentSplitId: "split-1",
+        });
       });
 
       it("syncs a leg amount change into the split row, parent total, and both balances", async () => {
@@ -4645,6 +4720,26 @@ describe("TransactionTransferService", () => {
       isTransfer: true,
       linkedTransactionId: "from-tx",
     };
+
+    it("says whether a field differs from what the transfer holds, by value", async () => {
+      const findOne = jest.fn(async (_uid: string, id: string) =>
+        id === "from-tx" ? fromLeg : toLeg,
+      );
+      const resent = await service.previewUpdateTransfer(
+        "user-1",
+        "to-tx",
+        { amount: 100, transactionDate: "2026-01-15", description: "old" },
+        findOne as any,
+      );
+      expect(resent.changesFields).toBe(false);
+      const changed = await service.previewUpdateTransfer(
+        "user-1",
+        "to-tx",
+        { amount: 150 },
+        findOne as any,
+      );
+      expect(changed.changesFields).toBe(true);
+    });
 
     it("determines canonical from/to legs and returns the resulting state", async () => {
       const findOne = jest.fn(async (_uid: string, id: string) =>

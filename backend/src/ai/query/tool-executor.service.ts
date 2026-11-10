@@ -88,6 +88,12 @@ import {
   SPENDING_ANOMALY_DEFAULT_THRESHOLD,
 } from "../../built-in-reports/anomaly-reports.service";
 import { WarrantiesService } from "../../warranties/warranties.service";
+import { TagsService } from "../../tags/tags.service";
+import {
+  ManageTagOperation,
+  ManageTagRow,
+  TagToolPrepService,
+} from "../../tags/tag-tool-prep.service";
 import { LlmWarrantyQuery } from "../../warranties/warranty-llm-shape";
 import { HelpService } from "../../help/help.service";
 import { LlmHelpQuery } from "../../help/help-llm-shape";
@@ -190,6 +196,21 @@ function contactSummary(preview: {
   return parts.length ? `, ${parts.join(", ")}` : "";
 }
 
+/** The tag change an edit card makes, as a clause of the tool's summary. */
+function tagSummarySuffix(change: {
+  tagNames?: string[];
+  removeTagNames?: string[];
+}): string {
+  return (
+    (change.tagNames?.length
+      ? `, adding the tag${change.tagNames.length === 1 ? "" : "s"} ${change.tagNames.map((n) => `"${n}"`).join(", ")}`
+      : "") +
+    (change.removeTagNames?.length
+      ? `, removing the tag${change.removeTagNames.length === 1 ? "" : "s"} ${change.removeTagNames.map((n) => `"${n}"`).join(", ")}`
+      : "")
+  );
+}
+
 @Injectable()
 export class ToolExecutorService {
   private readonly logger = new Logger(ToolExecutorService.name);
@@ -242,6 +263,9 @@ export class ToolExecutorService {
     private readonly sharedReview: SharedReviewService,
     // `search_help` (in-app help plan 6): the bundled guide, no user data.
     private readonly helpService: HelpService,
+    // `list_tags` and `manage_tags`.
+    private readonly tagsService: TagsService,
+    private readonly tagPrep: TagToolPrepService,
   ) {}
 
   async execute(
@@ -357,6 +381,12 @@ export class ToolExecutorService {
           break;
         case "search_help":
           result = this.searchHelp(validatedInput);
+          break;
+        case "list_tags":
+          result = await this.listTags(userId, validatedInput);
+          break;
+        case "manage_tags":
+          result = await this.manageTags(userId, validatedInput);
           break;
         default:
           this.logger.warn(`execute unknown tool=${toolName} user=${userId}`);
@@ -777,6 +807,8 @@ export class ToolExecutorService {
       description: item.description as string | undefined,
       createPayeeIfMissing: item.createPayeeIfMissing as boolean | undefined,
       splits: item.splits as SplitLineInput[] | undefined,
+      tagNames: item.addTagNames as string[] | undefined,
+      removeTagNames: item.removeTagNames as string[] | undefined,
     };
   }
 
@@ -959,7 +991,7 @@ export class ToolExecutorService {
           );
           return {
             data: PENDING_ACTION_TOOL_RESULT,
-            summary: `Prepared an update to the transfer (${result.preview.amount} ${result.preview.fromCurrencyCode}) from ${result.preview.fromAccountName} to ${result.preview.toAccountName}${result.preview.categoryName ? `, categorized as "${result.preview.categoryName}"` : ""}. Awaiting user confirmation.`,
+            summary: `Prepared an update to the transfer (${result.preview.amount} ${result.preview.fromCurrencyCode}) from ${result.preview.fromAccountName} to ${result.preview.toAccountName}${result.preview.categoryName ? `, categorized as "${result.preview.categoryName}"` : ""}${tagSummarySuffix(result.preview)}. Awaiting user confirmation.`,
             sources: [],
             pendingAction,
           };
@@ -977,7 +1009,9 @@ export class ToolExecutorService {
           result.splits,
           attachmentRefs,
         );
-        const attachmentNote = this.attachmentSummarySuffix(attachmentRefs);
+        const attachmentNote =
+          this.attachmentSummarySuffix(attachmentRefs) +
+          tagSummarySuffix(result.preview);
         const summary = result.splits
           ? `Prepared an update to the transaction in ${result.preview.accountName} (${result.preview.amount} ${result.preview.currencyCode}) dated ${result.preview.transactionDate}, replacing its splits with ${result.splits.length} categories${attachmentNote}. Awaiting user confirmation.`
           : `Prepared an update to the transaction in ${result.preview.accountName} (${result.preview.amount} ${result.preview.currencyCode}) dated ${result.preview.transactionDate}${attachmentNote}.${result.preview.payeeWillBeCreated ? ` A new payee "${result.preview.payeeName}" will be created on approval.` : ""} Awaiting user confirmation.`;
@@ -3014,6 +3048,121 @@ export class ToolExecutorService {
           description: filter ? `Warranties ${filter}` : "Current warranties",
         },
       ],
+    };
+  }
+
+  /** `list_tags` over `TagsService.getLlmTags`, the MCP tool's own method. */
+  private async listTags(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const search = input.search as string | undefined;
+    const result = await this.tagsService.getLlmTags(userId, {
+      search,
+      limit: input.limit as number | undefined,
+    });
+    const count = result.tags.length;
+    return {
+      data: result,
+      summary: `${count} tag${count === 1 ? "" : "s"}${
+        search ? ` matching "${search}"` : ""
+      }${result.truncated ? ` (of ${result.total})` : ""}.`,
+      sources: [
+        {
+          type: "tags",
+          description: search ? `Tags matching "${search}"` : "Tags",
+        },
+      ],
+    };
+  }
+
+  /**
+   * `manage_tags`: previews through `TagToolPrepService` (the MCP tool's door)
+   * and proposes cards, one per item or one for a batch, as `manage_payees`
+   * does. Nothing is written until the user approves.
+   */
+  private async manageTags(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const operation = input.operation as ManageTagOperation;
+    const items = (input.items as ManageTagRow[]) ?? [];
+    const verb = { create: "create", update: "edit", delete: "delete" }[
+      operation
+    ];
+    if (items.length === 1) {
+      try {
+        const preview = await this.tagPrep.prepareOne(
+          userId,
+          operation,
+          items[0],
+        );
+        const pendingAction = this.actionBuilder.buildTagAction(
+          userId,
+          preview,
+        );
+        const name = pendingAction.preview.name;
+        const renamed = pendingAction.preview.previousName
+          ? ` "${pendingAction.preview.previousName}" (renaming it to "${name}")`
+          : ` "${name}"`;
+        const lost =
+          operation === "delete"
+            ? `; it is removed from ${pendingAction.preview.tagCarriedCount ?? 0} transaction(s) and split line(s)`
+            : "";
+        return {
+          data: PENDING_ACTION_TOOL_RESULT,
+          summary: `Prepared to ${verb} the tag${renamed}${lost}. Awaiting user confirmation.`,
+          sources: [],
+          pendingAction,
+        };
+      } catch (err) {
+        return this.toolErrorFromException(
+          err,
+          "Could not prepare the tag change.",
+        );
+      }
+    }
+
+    const prep =
+      operation === "create"
+        ? await this.tagPrep.prepareMany(userId, "create", items)
+        : operation === "update"
+          ? await this.tagPrep.prepareMany(userId, "update", items)
+          : await this.tagPrep.prepareMany(userId, "delete", items);
+    if (prep.okPreviews.length === 0) {
+      return this.toolError(
+        `None of the tag changes could be prepared.${describeSkippedRows(prep.skipped, items.length)}`,
+      );
+    }
+    const skippedNote = prep.skipped.length
+      ? ` (${prep.skipped.length} skipped)${describeSkippedRows(prep.skipped, items.length)}`
+      : "";
+    const mode = resolveApprovalMode(
+      input.approvalMode as "bulk" | "individual" | undefined,
+      items.length,
+    );
+    if (mode === "individual") {
+      const pendingActions = prep.okPreviews.map((p) =>
+        this.actionBuilder.buildTagAction(userId, p),
+      );
+      return {
+        data: PENDING_ACTION_TOOL_RESULT,
+        summary: `Prepared ${pendingActions.length} tag card${pendingActions.length === 1 ? "" : "s"} to ${verb}${skippedNote}. Awaiting user confirmation.`,
+        sources: [],
+        pendingActions,
+      };
+    }
+    const pendingAction = this.actionBuilder.buildBatchActions(
+      userId,
+      `${operation}_tag`,
+      prep.okRows,
+      prep.previewRows,
+    );
+    return {
+      data: PENDING_ACTION_TOOL_RESULT,
+      summary: `Prepared to ${verb} ${prep.okPreviews.length} tags on one card${skippedNote}. Awaiting user confirmation.`,
+      sources: [],
+      pendingAction,
     };
   }
 

@@ -82,6 +82,7 @@ describe("AiActionsService transaction rule actions", () => {
       runs as never,
       {} as never,
       {} as never,
+      {} as never,
     );
   });
 
@@ -265,6 +266,7 @@ describe("AiActionsService transaction rule actions", () => {
       singleUseTokens as never,
       rules as never,
       runs as never,
+      {} as never,
       {} as never,
       {} as never,
     );
