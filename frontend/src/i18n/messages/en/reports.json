@@ -1757,7 +1757,8 @@
     "pdfSubtitle": "{month} | {count} active bills",
     "pdfActiveBills": "Active Bills",
     "pdfOverdue": "Overdue",
-    "pdfThisMonth": "This Month"
+    "pdfThisMonth": "This Month",
+    "estimated": "Estimated"
   },
   "weekendVsWeekday": {
     "noData": "No expense transactions found for this period.",

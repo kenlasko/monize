@@ -506,6 +506,11 @@ export interface ScheduledOccurrence {
   overrideId: string | null;
   /** True when an override moved this occurrence off its recurrence slot. */
   moved: boolean;
+  /**
+   * `amount` is the schedule's history estimate for this month (issue #2096).
+   * Absent on an older backend, which never estimates.
+   */
+  estimated?: boolean;
   accountId: string;
   transferAccountId: string | null;
   isTransfer: boolean;

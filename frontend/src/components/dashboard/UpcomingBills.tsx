@@ -28,6 +28,7 @@ import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import {
   nextOccurrenceDueDate,
   nextOccurrenceEffectiveAmount,
+  occurrenceFollowsEstimate,
   occurrenceSettlementAccountId,
 } from '@/lib/scheduled-effective-amount';
 import { moneyDecimalsForCurrency, roundMoney } from '@/lib/format';
@@ -427,8 +428,14 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
                     className="w-4 h-4 flex-shrink-0 text-amber-500 dark:text-amber-400"
                   />
                 )}
-                <div className={`font-semibold ${amountDisplay.className} whitespace-nowrap`}>
+                <div className={`font-semibold ${amountDisplay.className} whitespace-nowrap text-right`}>
                   {amountDisplay.text ?? <UnknownAmount />}
+                  {/* The history estimate, said as one (issue #2096). */}
+                  {occurrenceFollowsEstimate(item, item.nextOverride) && (
+                    <div className="text-xs font-normal text-gray-500 dark:text-gray-400">
+                      {t('upcomingBills.estimated')}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

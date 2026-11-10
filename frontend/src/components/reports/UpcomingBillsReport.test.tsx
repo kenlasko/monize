@@ -555,6 +555,20 @@ describe('UpcomingBillsReport', () => {
       });
     });
 
+    it('labels an estimated occurrence as one (issue #2096)', async () => {
+      const st = makeTransaction({ nextDueDate: '2026-02-15', frequency: 'MONTHLY' });
+      mockGetAll.mockResolvedValue([st]);
+      mockGetOccurrences.mockResolvedValue([
+        { ...occurrencesFrom([st])[0], estimated: true },
+      ]);
+      render(<UpcomingBillsReport />);
+      await waitFor(() => expect(screen.getByText('List')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('List'));
+      await waitFor(() => {
+        expect(screen.getByText('Estimated')).toBeInTheDocument();
+      });
+    });
+
     it('does not invent occurrences the server did not send', async () => {
       const st = makeTransaction({ nextDueDate: '2026-02-15', frequency: 'DAILY' });
       mockGetAll.mockResolvedValue([st]);
