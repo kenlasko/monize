@@ -342,6 +342,59 @@ describe("TransactionReconciliationService", () => {
       );
     });
 
+    it("restores a voided transfer's mirror leg to UNRECONCILED, not the chosen status (#2071)", async () => {
+      // Restoring leg-1 as RECONCILED must not stamp RECONCILED onto leg-2:
+      // reconciliation state is per-ledger (INV-TRANSFER-001), and leg-2's own
+      // account was never checked against a statement. Only VOID-ness is
+      // shared, so leg-2 returns to UNRECONCILED with no reconciled date.
+      stubLockedTransactions(
+        {
+          lockTransactionRow: lockTransactionRow as jest.Mock,
+          lockTransactionRows: jest.fn(),
+        },
+        [
+          lockedTransactionRow({
+            id: "leg-1",
+            accountId,
+            amount: -100,
+            transactionDate: "2026-01-15",
+            status: TransactionStatus.VOID,
+            isSplit: false,
+            linkedTransactionId: "leg-2",
+          }),
+          lockedTransactionRow({
+            id: "leg-2",
+            accountId: "account-2",
+            amount: 100,
+            transactionDate: "2026-01-15",
+            status: TransactionStatus.VOID,
+            isSplit: false,
+            linkedTransactionId: "leg-1",
+          }),
+        ],
+      );
+      mockFindOne.mockResolvedValue(
+        makeTransaction({ status: TransactionStatus.RECONCILED }),
+      );
+
+      await service.updateStatus(
+        userId,
+        "leg-1",
+        TransactionStatus.RECONCILED,
+        mockTriggerNetWorthRecalc,
+        mockFindOne,
+      );
+
+      expect(transactionsRepository.update).toHaveBeenCalledWith("leg-2", {
+        status: TransactionStatus.UNRECONCILED,
+        reconciledDate: null,
+      });
+      expect(transactionsRepository.update).toHaveBeenCalledWith(
+        "leg-1",
+        expect.objectContaining({ status: TransactionStatus.RECONCILED }),
+      );
+    });
+
     it("refuses to void a split-transfer counterpart leg on its own", async () => {
       // The pairing belongs to the split parent, which has a propagation path;
       // voiding the leg alone leaves the parent's split row recording money

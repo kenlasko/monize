@@ -3412,7 +3412,7 @@ describe("InvestmentTransactionsService", () => {
       ).toHaveBeenCalled();
     });
 
-    it("VOID -> CLEARED applies the holdings and debits the cash leg", async () => {
+    it("VOID -> CLEARED applies the holdings and resets the cash leg to UNRECONCILED (#2071)", async () => {
       stageLocks(
         [invLockRow({ status: TransactionStatus.VOID })],
         [cashLockRow({ status: TransactionStatus.VOID })],
@@ -3431,10 +3431,14 @@ describe("InvestmentTransactionsService", () => {
         [{ accountId: accountId, securityId: securityId }],
         expect.anything(),
       );
+      // Only VOID-ness is shared with the cash leg, the same rule as a
+      // transfer's mirror leg (INV-TRANSFER-001): the cash row returns to its
+      // own per-ledger UNRECONCILED rather than inheriting the trade's CLEARED,
+      // with no reconciled date behind it.
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         Transaction,
         cashTransactionId,
-        { status: TransactionStatus.CLEARED },
+        { status: TransactionStatus.UNRECONCILED, reconciledDate: null },
       );
       // Un-voiding a BUY takes the purchase money back out of the cash account.
       expect(accountsService.updateBalance).toHaveBeenCalledWith(

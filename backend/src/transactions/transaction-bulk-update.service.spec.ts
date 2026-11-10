@@ -3429,6 +3429,99 @@ describe("TransactionBulkUpdateService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith("acc-2", -100);
     });
 
+    it("resets a dragged mirror leg to UNRECONCILED, not the chosen status, when un-voiding (#2071)", async () => {
+      // Restoring tx-1 as RECONCILED must not stamp RECONCILED onto the
+      // dragged-in counterpart tx-2: only VOID-ness is shared
+      // (INV-TRANSFER-001), and tx-2's own account was never checked against a
+      // statement. This mirrors `updateTransfer` and `applyVoidTransitionToMirrorLeg`.
+      const sourceLeg = makeTransaction({
+        id: "tx-1",
+        accountId: "acc-1",
+        amount: -100,
+        isTransfer: true,
+        linkedTransactionId: "tx-2",
+        status: TransactionStatus.VOID,
+      });
+
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }]),
+      });
+      const exclusionsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([sourceLeg]),
+      });
+      const transferLegsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([
+          {
+            id: "tx-1",
+            linkedTransactionId: "tx-2",
+            status: TransactionStatus.VOID,
+          },
+        ]),
+      });
+      const sameUserQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-2" }]),
+      });
+      const balanceQb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([
+          { accountId: "acc-1", totalAmount: "-100" },
+          { accountId: "acc-2", totalAmount: "100" },
+        ]),
+      });
+      const accountIdsQb = createMockQueryBuilder({
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ accountId: "acc-1" }, { accountId: "acc-2" }]),
+      });
+      const splitParentsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([]),
+      });
+
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(exclusionsQb)
+        .mockReturnValueOnce(exclusionsQb)
+        .mockReturnValueOnce(transferLegsQb)
+        .mockReturnValueOnce(sameUserQb)
+        .mockReturnValueOnce(splitParentsQb)
+        .mockReturnValueOnce(balanceQb)
+        .mockReturnValueOnce(accountIdsQb);
+
+      mockManagerFind.mockResolvedValue([]);
+
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      });
+      mockManagerCreateQueryBuilder.mockReturnValue(updateQb);
+
+      const dto: BulkUpdateDto = {
+        mode: "ids",
+        transactionIds: ["tx-1"],
+        status: TransactionStatus.RECONCILED,
+      };
+
+      await service.bulkUpdate(userId, dto);
+
+      // The selected leg takes the chosen status...
+      expect(updateQb.set).toHaveBeenCalledWith({
+        status: TransactionStatus.RECONCILED,
+      });
+      // ...and the dragged-in counterpart returns to UNRECONCILED with no
+      // reconciled date, never RECONCILED.
+      expect(updateQb.set).toHaveBeenCalledWith({
+        status: TransactionStatus.UNRECONCILED,
+        reconciledDate: null,
+      });
+
+      const idsByCall = updateQb.where.mock.calls
+        .map((c: unknown[]) => c[1] as { ids?: string[] } | undefined)
+        .filter((params): params is { ids: string[] } =>
+          Array.isArray(params?.ids),
+        )
+        .map((params) => params.ids);
+      expect(idsByCall).toContainEqual(["tx-1"]);
+      expect(idsByCall).toContainEqual(["tx-2"]);
+    });
+
     it("returns empty when transactionIds is empty array in ids mode", async () => {
       const dto: BulkUpdateDto = {
         mode: "ids",

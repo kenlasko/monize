@@ -964,7 +964,13 @@ Enforcement         The balance decision is made once per pair, keyed on VOID.
                     boundary mirrors the counterpart leg and a split parent's
                     transfer children (applyVoidTransitionToMirrorLeg,
                     applyParentStatusToTransferCounterparts in
-                    transaction-reconciliation.service.ts). markCleared / reconcile
+                    transaction-reconciliation.service.ts). Only VOID-ness
+                    itself is shared: entering VOID writes VOID onto the
+                    counterpart, but leaving it writes UNRECONCILED with no
+                    reconciled date, never the CLEARED/RECONCILED status chosen
+                    for the leg the user opened -- the same rule covers
+                    updateTransfer's inline pairing and the bulk path's
+                    dragged-in mirror legs (#2071). markCleared / reconcile
                     / unreconcile deliberately do NOT mirror, because a reconcile
                     state is per-ledger. Guards: deletion-balance.guard.spec.ts,
                     investment-void-classification.guard.spec.ts,
