@@ -2239,24 +2239,34 @@ export class TransactionTransferService {
       // there (audit P6-RECHECK-004). So for a non-VOID edit the status stays on
       // the leg the user opened and is stripped from the counterpart.
       //
-      // A VOID crossing is the exception, and it PAIRS the status onto both
+      // A VOID crossing is the exception, and it PAIRS VOID-ness onto both
       // legs: VOID decides balance inclusion, and a same-owner pair must be VOID
       // on both legs or neither or its balances diverge. This matches the bulk
       // path exactly -- `expandTransferCounterparts` drags the counterpart in on
-      // a VOID crossing only, and the same UPDATE stamps the submitted status
-      // onto it -- so the same action reads the same way whether done in the
-      // register or in bulk. Keeping the two surfaces in step is deliberate; the
-      // un-void sub-status question (a reactivated counterpart inheriting the
-      // opened leg's CLEARED/RECONCILED) is a platform-wide decision that must
-      // move both surfaces together, not something for one edit path to answer
-      // alone. `voidChanged` is read from the locked row above, so the
-      // strip-versus-pair choice here is made on the committed status rather
-      // than a stale snapshot -- this scopes only that choice, not the wider
-      // concurrency guard, which compares amount/account/date.
+      // a VOID crossing only -- so the same action reads the same way whether
+      // done in the register or in bulk. `voidChanged` is read from the locked
+      // row above, so the strip-versus-pair choice here is made on the
+      // committed status rather than a stale snapshot -- this scopes only that
+      // choice, not the wider concurrency guard, which compares
+      // amount/account/date.
+      //
+      // Only VOID-ness itself is shared (INV-TRANSFER-001). Entering VOID
+      // stamps the submitted VOID onto both legs; leaving VOID returns the
+      // counterpart to UNRECONCILED, never the status chosen for the leg the
+      // user opened -- CLEARED and RECONCILED are per-ledger, and copying one
+      // across used to remove the counterpart's account from reconciliation
+      // candidates its own statement never touched, with no reconciled date
+      // behind it.
       if (!voidChanged) {
         // `isFromTransaction` already names which leg the user opened, so the
         // counterpart is the other one.
         delete (isFromTransaction ? toUpdateData : fromUpdateData).status;
+      } else if (!isVoid) {
+        const counterpartData = isFromTransaction
+          ? toUpdateData
+          : fromUpdateData;
+        counterpartData.status = TransactionStatus.UNRECONCILED;
+        counterpartData.reconciledDate = null;
       }
 
       if (Object.keys(fromUpdateData).length > 0) {

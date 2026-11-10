@@ -437,9 +437,36 @@ export class TransactionBulkUpdateService {
             .createQueryBuilder()
             .update(Transaction)
             .set({ status: statusField } as Partial<Transaction>)
-            .where("id IN (:...ids)", { ids: statusIds })
+            .where("id IN (:...ids)", { ids: eligibleIds })
             .andWhere("userId = :userId", { userId })
             .execute();
+
+          // A mirror leg dragged in by `expandTransferCounterparts` only
+          // because its pair crossed the VOID boundary shares the VOID-ness,
+          // never the status the user picked for the leg they selected
+          // (INV-TRANSFER-001): CLEARED/RECONCILED are per-ledger, and
+          // stamping one across used to remove the counterpart's account from
+          // reconciliation candidates its own statement never touched.
+          const eligibleIdSet = new Set(eligibleIds);
+          const draggedCounterpartIds = statusIds.filter(
+            (id) => !eligibleIdSet.has(id),
+          );
+          if (draggedCounterpartIds.length > 0) {
+            await m
+              .createQueryBuilder()
+              .update(Transaction)
+              .set(
+                statusField === TransactionStatus.VOID
+                  ? ({ status: TransactionStatus.VOID } as Partial<Transaction>)
+                  : ({
+                      status: TransactionStatus.UNRECONCILED,
+                      reconciledDate: null,
+                    } as Partial<Transaction>),
+              )
+              .where("id IN (:...ids)", { ids: draggedCounterpartIds })
+              .andWhere("userId = :userId", { userId })
+              .execute();
+          }
         }
 
         // Step 4b: Sync payee/description to linked transfer transactions

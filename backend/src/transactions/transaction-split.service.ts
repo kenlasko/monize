@@ -1020,7 +1020,16 @@ export class TransactionSplitService {
       const isVoid = newStatus === TransactionStatus.VOID;
       if (wasVoid === isVoid) continue;
 
-      await m.update(Transaction, counterpart.id, { status: newStatus });
+      // Only VOID-ness is shared (INV-TRANSFER-001): leaving VOID returns the
+      // counterpart to UNRECONCILED, never the parent's new status -- CLEARED
+      // and RECONCILED are per-ledger, matching applyVoidTransitionToMirrorLeg.
+      await m.update(
+        Transaction,
+        counterpart.id,
+        isVoid
+          ? { status: TransactionStatus.VOID }
+          : { status: TransactionStatus.UNRECONCILED, reconciledDate: null },
+      );
       affectedAccountIds.add(counterpart.accountId);
 
       if (isTransactionInFuture(counterpart.transactionDate)) {

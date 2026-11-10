@@ -1081,6 +1081,26 @@ describe("TransactionSplitService", () => {
       expect(transactionsRepository.update).not.toHaveBeenCalled();
     });
 
+    it("restores the counterpart to UNRECONCILED, not the parent's new status (#2071)", async () => {
+      // Only VOID-ness is shared (INV-TRANSFER-001). The parent leaving VOID as
+      // RECONCILED must not stamp RECONCILED onto the counterpart leg -- that
+      // account's own statement never touched it.
+      splitsRepository.find.mockResolvedValue([transferSplit]);
+      stubLocks([counterpartRow(TransactionStatus.VOID)]);
+
+      await service.applyParentStatusToTransferCounterparts(
+        mockQueryRunner.manager as never,
+        "tx-1",
+        "user-1",
+        TransactionStatus.RECONCILED,
+      );
+
+      expect(transactionsRepository.update).toHaveBeenCalledWith(
+        "linked-tx-1",
+        { status: TransactionStatus.UNRECONCILED, reconciledDate: null },
+      );
+    });
+
     it("leaves a category child's split alone", async () => {
       // Only transfer children have a counterpart row to carry the status to.
       splitsRepository.find.mockResolvedValue([

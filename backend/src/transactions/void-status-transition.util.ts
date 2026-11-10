@@ -112,6 +112,12 @@ export async function assertVoidTransitionAllowedOnRow(
  * user (cross-owner: per-ledger inclusion), for a linked row that is a split
  * PARENT (that pairing is governed by the split propagation path), and for a
  * counterpart already on the target side of the boundary.
+ *
+ * Only VOID-ness is shared (INV-TRANSFER-001): entering VOID writes VOID onto
+ * the counterpart, but leaving it writes UNRECONCILED, never the status
+ * chosen for the leg the user opened -- CLEARED/RECONCILED are per-ledger and
+ * copying one across removed the counterpart's account from reconciliation
+ * candidates it was never checked against, with no reconciled date behind it.
  */
 export async function applyVoidTransitionToMirrorLeg(
   m: EntityManager,
@@ -133,7 +139,13 @@ export async function applyVoidTransitionToMirrorLeg(
   const counterpartWasVoid = counterpart.status === TransactionStatus.VOID;
   if (counterpartWasVoid === isVoid) return [];
 
-  await m.update(Transaction, counterpart.id, { status: newStatus });
+  await m.update(
+    Transaction,
+    counterpart.id,
+    isVoid
+      ? { status: TransactionStatus.VOID }
+      : { status: TransactionStatus.UNRECONCILED, reconciledDate: null },
+  );
   if (isTransactionInFuture(counterpart.transactionDate)) {
     await accounts.recalculateCurrentBalance(userId, counterpart.accountId);
   } else {

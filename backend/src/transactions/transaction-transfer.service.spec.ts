@@ -2294,7 +2294,7 @@ describe("TransactionTransferService", () => {
         expect(toUpdate).toMatchObject({ status: TransactionStatus.VOID });
       });
 
-      it("pairs the submitted status onto both legs when un-voiding directly to CLEARED, matching the bulk path", async () => {
+      it("resets the counterpart to UNRECONCILED, not the submitted status, when un-voiding (#2071)", async () => {
         const voidFrom = {
           ...fromTransaction,
           status: TransactionStatus.VOID,
@@ -2304,28 +2304,27 @@ describe("TransactionTransferService", () => {
           status: TransactionStatus.VOID,
         } as unknown as Transaction;
 
-        // Un-void the FROM leg straight to CLEARED (VOID -> CLEARED). Leaving
-        // VOID crosses the boundary, so the status is NOT stripped and both legs
-        // reactivate carrying the submitted CLEARED -- identical to a bulk
-        // un-void through `expandTransferCounterparts`. A non-UNRECONCILED
-        // target is the case that distinguishes "pair the submitted status" from
-        // "reset the counterpart to UNRECONCILED"; this pins the former.
+        // Un-void the FROM leg straight to RECONCILED (VOID -> RECONCILED).
+        // Only VOID-ness is shared (INV-TRANSFER-001): the TO leg leaves VOID
+        // alongside it but returns to its own per-ledger UNRECONCILED, with no
+        // reconciled date, rather than inheriting RECONCILED from a statement
+        // its own account was never checked against.
         mockFindOne
           .mockResolvedValueOnce(voidFrom)
           .mockResolvedValueOnce(voidTo)
           .mockResolvedValueOnce({
             ...voidFrom,
-            status: TransactionStatus.CLEARED,
+            status: TransactionStatus.RECONCILED,
           })
           .mockResolvedValueOnce({
             ...voidTo,
-            status: TransactionStatus.CLEARED,
+            status: TransactionStatus.UNRECONCILED,
           });
 
         await service.updateTransfer(
           "user-1",
           "from-tx",
-          { status: TransactionStatus.CLEARED },
+          { status: TransactionStatus.RECONCILED },
           mockFindOne,
         );
 
@@ -2333,10 +2332,13 @@ describe("TransactionTransferService", () => {
         const fromUpdate = updateCalls.find((c) => c[0] === "from-tx")?.[1];
         const toUpdate = updateCalls.find((c) => c[0] === "to-tx")?.[1];
 
-        // Both legs leave VOID together and both carry CLEARED -- the counterpart
-        // is neither stripped nor reset to UNRECONCILED.
-        expect(fromUpdate).toMatchObject({ status: TransactionStatus.CLEARED });
-        expect(toUpdate).toMatchObject({ status: TransactionStatus.CLEARED });
+        expect(fromUpdate).toMatchObject({
+          status: TransactionStatus.RECONCILED,
+        });
+        expect(toUpdate).toMatchObject({
+          status: TransactionStatus.UNRECONCILED,
+          reconciledDate: null,
+        });
       });
     });
 
