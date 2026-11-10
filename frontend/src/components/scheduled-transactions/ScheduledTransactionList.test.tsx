@@ -513,6 +513,25 @@ describe('ScheduledTransactionList', () => {
     ).toBeGreaterThan(0);
   });
 
+  it('shows a moved occurrence at its own month estimate, not as modified', () => {
+    const transactions = [createTransaction({
+      amountIsEstimated: true,
+      effectiveAmount: -242,
+      effectiveAmountComplete: true,
+      nextOverride: {
+        amount: null,
+        isSplit: null,
+        overrideDate: '2026-11-28',
+        effectiveAmount: -180,
+        effectiveAmountComplete: true,
+      },
+      amountEstimate: null,
+    })];
+    render(<ScheduledTransactionList transactions={transactions} />);
+    expect(screen.queryByRole('button', { name: 'Modified for next occurrence' })).toBeNull();
+    expect(screen.getAllByText('Estimated').length).toBeGreaterThan(0);
+  });
+
   it('does not label an amount an override states', () => {
     const transactions = [createTransaction({
       amountIsEstimated: true,

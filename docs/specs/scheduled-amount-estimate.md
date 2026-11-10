@@ -33,7 +33,7 @@ single-category schedule in its account's currency, with a payee and a category:
 | Split, transfer, investment | refused (`estimateRequiresPlain`) | flag dropped, like the foreign-currency trio |
 | Foreign-currency amount (`original_currency_code`) | refused (`estimateRequiresPlain`) | flag dropped |
 | Auto-post on | refused (`estimateNoAutoPost`) | refused |
-| No payee id or no category | refused (`estimateRequiresPayeeAndCategory`) | refused |
+| No payee id or no category | refused (`estimateRequiresPayeeAndCategory`) | refused when this request clears it; a payee or category gone on its own leaves the schedule editable (status `no-basis`) |
 
 A loan or payroll bill is a split and so never qualifies. The refusals run
 before anything is written (`ScheduledTransactionsService.assertEstimatable`).
@@ -132,14 +132,21 @@ amount entered is refused (`estimateUnknown`); the Post dialog asks for it.
   stored like any other override.
 - `scheduled_transactions.amount` is a snapshot: on create and update it is set
   to the next occurrence's estimate when that is known (the sent amount is kept
-  otherwise). No surface shows it for an estimated schedule.
+  otherwise), and after each post it follows the new next occurrence
+  (`refreshEstimateSnapshot`, a post-commit step writing only that column while
+  the row is still estimated). No surface shows it for an estimated schedule.
+- The posting's under-lock basis check (`sameScheduleMutationBasis`) compares
+  the payee as well for an estimated schedule: the estimate prepared before the
+  lock is that payee's.
 - `post()` without an inline amount and without an amount-stating override
   posts the estimate for the occurrence's month, computed by the same service
   the bills list read.
 - The Bill Payment History report matches an estimated bill's payments by its
-  payee, its category and its direction rather than inside the snapshot's 20%
-  band, since the amount varies by design: a refund from the biller or another
-  purchase from it is not a payment of the bill.
+  payee, its category (the row's, or a split's line in it, counted at the
+  line's amount) and its direction rather than inside the snapshot's 20% band,
+  since the amount varies by design: a refund from the biller or another
+  purchase from it is not a payment of the bill. A zero snapshot (an estimate
+  saved before any history) assumes no direction.
 - Undo restores `amount_is_estimated` with `auto_post`
   (`ActionHistoryService` `ALLOWED_COLUMNS`), so undoing the edit that switched
   the estimate on cannot leave an estimated schedule auto-posting.
@@ -165,7 +172,9 @@ session) is refused the preview, and `findAll` withholds `paymentCount` and
 `latestPaymentDate` from one (`null`): the delegate sees the bill's figures, as
 they would a typed amount, but not when or how often the owner paid. The AI
 forecast prompt and the bill reminder email label an estimated amount, and an
-unknown estimate there is not called a missing rate.
+unknown estimate there is not called a missing rate (the prompt names the
+status). The `list_upcoming_bills` descriptions, assistant and MCP, describe
+`amountEstimated`.
 
 Client: `estimatedOccurrenceAmount` (`frontend/src/lib/scheduled-effective-amount.ts`)
 is the one reader of `amountEstimate`; the cash-flow forecast, the Post dialog,

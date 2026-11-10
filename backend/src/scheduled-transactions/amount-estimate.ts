@@ -110,7 +110,9 @@ export function yearOverYearGrowth(
   for (const p of payments) {
     const offset = current - monthIndex(p.date);
     if (offset < 0 || offset >= 24) continue;
-    byOffset.set(offset, [...(byOffset.get(offset) ?? []), p.amount]);
+    const list = byOffset.get(offset);
+    if (list) list.push(p.amount);
+    else byOffset.set(offset, [p.amount]);
   }
   const latestMeans: number[] = [];
   const priorMeans: number[] = [];

@@ -383,9 +383,11 @@ function sameScheduleMutationBasis(
     a.isInvestment === b.isInvestment &&
     a.isTransfer === b.isTransfer &&
     a.isSplit === b.isSplit &&
-    // An estimated schedule posts the estimate prepared before the lock; a
-    // concurrent switch to or from estimating changes what the post means.
+    // An estimated schedule posts the estimate prepared before the lock, from
+    // its payee's history: a concurrent switch to or from estimating, or to
+    // another payee, changes what the post means.
     (a.amountIsEstimated ?? false) === (b.amountIsEstimated ?? false) &&
+    (!a.amountIsEstimated || a.payeeId === b.payeeId) &&
     a.accountId === b.accountId &&
     a.transferAccountId === b.transferAccountId &&
     a.categoryId === b.categoryId &&
@@ -1200,15 +1202,18 @@ export class ScheduledTransactionsService {
    * account-currency schedule with a payee is estimated, and never auto-posted,
    * because the estimate is a forecast a person confirms when posting.
    */
-  private assertEstimatable(shape: {
-    isSplit: boolean;
-    isTransfer: boolean;
-    isInvestment: boolean;
-    isForeign: boolean;
-    autoPost: boolean;
-    payeeId: string | null;
-    categoryId: string | null;
-  }): void {
+  private assertEstimatable(
+    shape: {
+      isSplit: boolean;
+      isTransfer: boolean;
+      isInvestment: boolean;
+      isForeign: boolean;
+      autoPost: boolean;
+      payeeId: string | null;
+      categoryId: string | null;
+    },
+    { requireBasis = true }: { requireBasis?: boolean } = {},
+  ): void {
     if (
       shape.isSplit ||
       shape.isTransfer ||
@@ -1230,7 +1235,7 @@ export class ScheduledTransactionsService {
         ),
       );
     }
-    if (!shape.payeeId || !shape.categoryId) {
+    if (requireBasis && (!shape.payeeId || !shape.categoryId)) {
       throw new BadRequestException(
         tr(
           "errors.scheduled.estimateRequiresPayeeAndCategory",
@@ -2050,8 +2055,17 @@ export class ScheduledTransactionsService {
         // Whether the direction is derivable at all, so a client never has to
         // reach for the snapshot's sign (issue #1247 re-audit).
         effectiveDirectionAmount: base.directionAmount,
+        // From the earliest date an occurrence falls on: the cursor, or an
+        // override that moved one earlier.
         amountEstimate: estimate
-          ? estimateReadModel(estimate, todayYMD(), ensureYMD(row.nextDueDate))
+          ? estimateReadModel(
+              estimate,
+              todayYMD(),
+              (row.futureOverrides ?? []).reduce((earliest, o) => {
+                const date = ensureYMD(o.overrideDate);
+                return date < earliest ? date : earliest;
+              }, ensureYMD(row.nextDueDate)),
+            )
           : null,
       };
     });
@@ -2083,7 +2097,13 @@ export class ScheduledTransactionsService {
    */
   async previewAmountEstimate(
     userId: string,
-    query: { accountId: string; payeeId: string; categoryId: string },
+    query: {
+      accountId: string;
+      payeeId: string;
+      categoryId: string;
+      /** The form's next due date, so an overdue one has its month. */
+      nextDueDate?: string;
+    },
   ): Promise<ScheduleAmountEstimateReadModel> {
     const account = await this.accountsService.findOne(userId, query.accountId);
     const estimate = await this.amountEstimates.estimateFor(userId, {
@@ -2091,7 +2111,7 @@ export class ScheduledTransactionsService {
       categoryId: query.categoryId,
       currencyCode: account.currencyCode,
     });
-    return estimateReadModel(estimate);
+    return estimateReadModel(estimate, todayYMD(), query.nextDueDate);
   }
 
   async findOne(userId: string, id: string): Promise<ScheduledTransaction> {
@@ -2637,8 +2657,10 @@ export class ScheduledTransactionsService {
     // The estimate flag (issue #2096). Asked for explicitly, an unpriceable
     // shape is refused; carried over from the stored row, a switch to a split,
     // transfer, investment or foreign-currency amount drops it -- as that
-    // switch drops the foreign-currency trio -- while turning auto-post on or
-    // clearing the payee or category is refused.
+    // switch drops the foreign-currency trio -- while turning auto-post on, or
+    // this request clearing the payee or category, is refused. A payee or
+    // category that went away on its own (a deleted category is SET NULL)
+    // leaves the schedule editable, estimated with status no-basis.
     const estimateShape = {
       isSplit: effectiveIsSplit,
       isTransfer: !!effectiveIsTransfer,
@@ -2671,7 +2693,12 @@ export class ScheduledTransactionsService {
       ) {
         effectiveEstimated = false;
       } else {
-        this.assertEstimatable(estimateShape);
+        // Only this request's own clearing of the basis is refused.
+        const clearsBasis =
+          (fieldsToUpdate.payeeId !== undefined && !estimateShape.payeeId) ||
+          (fieldsToUpdate.categoryId !== undefined &&
+            !estimateShape.categoryId);
+        this.assertEstimatable(estimateShape, { requireBasis: clearsBasis });
       }
     }
     if (effectiveEstimated !== (scheduled.amountIsEstimated ?? false)) {
@@ -4532,7 +4559,47 @@ export class ScheduledTransactionsService {
       );
     }
 
+    // The posting moved the cursor and, usually, added a payment to the
+    // history: the snapshot follows the new next occurrence (issue #2096).
+    if (scheduled.amountIsEstimated) {
+      await this.afterPostCommit(id, "refreshEstimateSnapshot", () =>
+        this.refreshEstimateSnapshot(userId, id),
+      );
+    }
+
     return this.findOne(userId, id);
+  }
+
+  /**
+   * Rewrite an estimated schedule's stored `amount` to its next occurrence's
+   * estimate, when that is known and differs. Only the snapshot column, and
+   * only while the row is still estimated (CONC-008): no surface reads the
+   * snapshot as a figure, but the Bill Payment History direction and the raw
+   * `/due` rows do.
+   */
+  private async refreshEstimateSnapshot(
+    userId: string,
+    id: string,
+  ): Promise<void> {
+    const row = await this.findOne(userId, id);
+    if (!row.amountIsEstimated) return;
+    const snapshot = await this.estimatedSnapshot(
+      userId,
+      {
+        payeeId: row.payeeId,
+        categoryId: row.categoryId,
+        currencyCode: row.currencyCode,
+      },
+      ensureYMD(row.nextDueDate),
+    );
+    if (snapshot === null || sameNullableNumber(snapshot, Number(row.amount))) {
+      return;
+    }
+    await withScopedDb(this.dataSource, (m) =>
+      m
+        .getRepository(ScheduledTransaction)
+        .update({ id, userId, amountIsEstimated: true }, { amount: snapshot }),
+    );
   }
 
   /**

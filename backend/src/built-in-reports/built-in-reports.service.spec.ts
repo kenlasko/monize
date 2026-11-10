@@ -1689,6 +1689,20 @@ describe("BuiltInReportsService", () => {
           category_id: "cat-household",
           payee_name_normalized: "gas co",
         },
+        {
+          // A split payment counts its heating line, as the estimate does.
+          id: "tx-4",
+          transaction_date: new Date("2025-04-15"),
+          currency_code: "USD",
+          amount: "205.00",
+          amount_sign: "-1",
+          category_id: null,
+          split_lines: [
+            { categoryId: "cat-heat", amount: "-200.00" },
+            { categoryId: "cat-fees", amount: "-5.00" },
+          ],
+          payee_name_normalized: "gas co",
+        },
       ]);
 
       const result = await service.getBillPaymentHistory(
@@ -1698,7 +1712,9 @@ describe("BuiltInReportsService", () => {
       );
 
       expect(result.billPayments).toHaveLength(1);
-      expect(result.billPayments[0].paymentCount).toBe(1);
+      expect(result.billPayments[0].paymentCount).toBe(2);
+      // 260 plus the 200 heating line, not the 205 parent.
+      expect(result.billPayments[0].totalPaid).toBe(460);
     });
 
     it("calculates summary statistics correctly", async () => {

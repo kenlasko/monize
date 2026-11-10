@@ -232,7 +232,9 @@ export class ScheduledAmountEstimateService {
     const byPair = new Map<string, RawHistoryRow[]>();
     for (const row of rows) {
       const key = basisKey(row.payee_id, row.category_id);
-      byPair.set(key, [...(byPair.get(key) ?? []), row]);
+      const list = byPair.get(key);
+      if (list) list.push(row);
+      else byPair.set(key, [row]);
     }
 
     // Converted at the current rate, the newest on or before today: one lookup

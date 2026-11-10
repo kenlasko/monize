@@ -123,10 +123,11 @@ export const scheduledTransactionsApi = {
     accountId: string,
     payeeId: string,
     categoryId: string,
+    nextDueDate?: string,
   ): Promise<ScheduleAmountEstimate> => {
     const response = await apiClient.get<ScheduleAmountEstimate>(
       `/scheduled-transactions/amount-estimate/${accountId}`,
-      { params: { payeeId, categoryId } },
+      { params: { payeeId, categoryId, ...(nextDueDate ? { nextDueDate } : {}) } },
     );
     return response.data;
   },

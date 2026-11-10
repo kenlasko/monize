@@ -91,6 +91,7 @@ describe("AiForecastService", () => {
           amount: 1500,
           amountComplete: true,
           amountEstimated: false,
+          estimateStatus: null,
           frequency: "MONTHLY",
           nextDueDate: "2026-03-01",
           categoryName: "Housing",
@@ -535,13 +536,28 @@ describe("AiForecastService", () => {
       mockAggregatorService.computeAggregates!.mockResolvedValue({
         ...aggregates,
         scheduledTransactions: [
-          { ...bill, name: "Heating", amount: 212.5, amountEstimated: true },
+          {
+            ...bill,
+            name: "Heating",
+            amount: 212.5,
+            amountEstimated: true,
+            estimateStatus: "estimated",
+          },
           {
             ...bill,
             name: "Water",
             amount: null,
             amountComplete: false,
             amountEstimated: true,
+            estimateStatus: "no-history",
+          },
+          {
+            ...bill,
+            name: "Hydro",
+            amount: null,
+            amountComplete: false,
+            amountEstimated: true,
+            estimateStatus: "missing-rate",
           },
         ],
       });
@@ -556,6 +572,9 @@ describe("AiForecastService", () => {
         "Water: unknown (estimated from payment history, which has no usable payments yet)",
       );
       expect(sent).not.toContain("Water: unknown (no current exchange rate)");
+      expect(sent).toContain(
+        "Hydro: unknown (estimated from payment history, but a past payment's currency has no current exchange rate)",
+      );
     });
 
     it("handles aggregator failure gracefully", async () => {

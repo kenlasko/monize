@@ -4,6 +4,7 @@ import {
   ScheduledAmountEstimateService,
   estimateReadModel,
   estimatedAmountFor,
+  occurrenceFollowsEstimate,
 } from "./scheduled-amount-estimate.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { Currency } from "../currencies/entities/currency.entity";
@@ -188,5 +189,22 @@ describe("ScheduledAmountEstimateService", () => {
 
     const ancient = estimateReadModel(estimate, TODAY, "2019-01-01");
     expect(Object.keys(ancient.months)[0]).toBe("2024-11");
+  });
+
+  it("lets an override's stated amount or own lines govern its occurrence", () => {
+    const estimated = { amountIsEstimated: true };
+    expect(occurrenceFollowsEstimate(estimated, null)).toBe(true);
+    expect(
+      occurrenceFollowsEstimate(estimated, { amount: null, isSplit: false }),
+    ).toBe(true);
+    expect(
+      occurrenceFollowsEstimate(estimated, { amount: -250, isSplit: false }),
+    ).toBe(false);
+    expect(
+      occurrenceFollowsEstimate(estimated, { amount: null, isSplit: true }),
+    ).toBe(false);
+    expect(occurrenceFollowsEstimate({ amountIsEstimated: false }, null)).toBe(
+      false,
+    );
   });
 });

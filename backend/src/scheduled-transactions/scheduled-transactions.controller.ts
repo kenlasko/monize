@@ -237,7 +237,12 @@ export class ScheduledTransactionsController {
   ) {
     return this.scheduledTransactionsService.previewAmountEstimate(
       req.user.id,
-      { accountId, payeeId: query.payeeId, categoryId: query.categoryId },
+      {
+        accountId,
+        payeeId: query.payeeId,
+        categoryId: query.categoryId,
+        nextDueDate: query.nextDueDate || undefined,
+      },
     );
   }
 

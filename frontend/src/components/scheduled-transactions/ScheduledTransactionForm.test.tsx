@@ -3676,7 +3676,9 @@ describe('ScheduledTransactionForm: Estimate', () => {
 
   it('shows the next estimate in a disabled Amount field, and no auto-post', async () => {
     render(<ScheduledTransactionForm scheduledTransaction={estimatedSt} />);
-    await waitFor(() => expect(mockGetAmountEstimate).toHaveBeenCalledWith('acc-1', 'payee-1', 'cat-1'));
+    await waitFor(() =>
+      expect(mockGetAmountEstimate).toHaveBeenCalledWith('acc-1', 'payee-1', 'cat-1', '2024-03-01'),
+    );
 
     const amount = screen.getByLabelText('Amount') as HTMLInputElement;
     expect(amount).toBeDisabled();

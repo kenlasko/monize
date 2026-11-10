@@ -10571,6 +10571,32 @@ describe("ScheduledTransactionsService", () => {
         expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
       });
 
+      it("stays editable when its category went away on its own", async () => {
+        // A deleted category is SET NULL: the schedule is estimated with
+        // status no-basis, and an unrelated edit must still save.
+        stubFindOne(
+          makeScheduled({ amountIsEstimated: true, categoryId: null } as never),
+        );
+        amountEstimates.estimateFor.mockResolvedValue(unknownEstimate);
+
+        await service.update(userId, stId, { name: "Gas" });
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          ScheduledTransaction,
+          stId,
+          expect.objectContaining({ name: "Gas" }),
+        );
+      });
+
+      it("refuses this request clearing the category of an estimated schedule", async () => {
+        stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
+
+        await expect(
+          service.update(userId, stId, { categoryId: "" }),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
+
       it("drops the flag when the schedule becomes a transfer", async () => {
         stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
 
@@ -10626,13 +10652,26 @@ describe("ScheduledTransactionsService", () => {
         );
       });
 
+      it("refreshes the snapshot to the next occurrence's estimate after posting", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(knownEstimate());
+        stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
+        stubNoOverride();
+        scheduledRepo.update = jest.fn().mockResolvedValue({ affected: 1 });
+
+        await service.post(userId, stId);
+
+        expect(scheduledRepo.update).toHaveBeenCalledWith(
+          { id: stId, userId, amountIsEstimated: true },
+          { amount: -110 },
+        );
+      });
+
       it("posts the amount the person entered", async () => {
         stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
         stubNoOverride();
 
         await service.post(userId, stId, { amount: -133.5 } as never);
 
-        expect(amountEstimates.estimateFor).not.toHaveBeenCalled();
         expect(transactionsService.create).toHaveBeenCalledWith(
           userId,
           expect.objectContaining({ amount: -133.5 }),

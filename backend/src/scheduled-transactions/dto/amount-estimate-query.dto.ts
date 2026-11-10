@@ -1,5 +1,6 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsUUID } from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsOptional, IsUUID, ValidateIf } from "class-validator";
+import { IsCalendarDate } from "../../common/validators/is-calendar-date.validator";
 
 /**
  * The query of `GET /scheduled-transactions/amount-estimate/:accountId`: the
@@ -15,4 +16,13 @@ export class AmountEstimateQueryDto {
   })
   @IsUUID()
   categoryId: string;
+
+  @ApiPropertyOptional({
+    description:
+      "The schedule's next due date (YYYY-MM-DD), so an overdue occurrence's month is in the answer",
+  })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
+  @IsCalendarDate()
+  nextDueDate?: string;
 }

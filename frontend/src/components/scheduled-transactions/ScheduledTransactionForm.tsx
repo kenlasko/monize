@@ -417,7 +417,7 @@ export function ScheduledTransactionForm({
   // until the first answer arrives.
   const estimateRequestKey =
     estimating && watchedAccountId && selectedPayeeId && selectedCategoryId
-      ? `${watchedAccountId}|${selectedPayeeId}|${selectedCategoryId}`
+      ? `${watchedAccountId}|${selectedPayeeId}|${selectedCategoryId}|${watchedNextDueDate || ''}`
       : null;
   const [estimatePreview, setEstimatePreview] = useState<{
     key: string;
@@ -425,17 +425,17 @@ export function ScheduledTransactionForm({
   } | null>(() =>
     scheduledTransaction?.amountEstimate
       ? {
-          key: `${scheduledTransaction.accountId}|${scheduledTransaction.payeeId}|${scheduledTransaction.categoryId}`,
+          key: `${scheduledTransaction.accountId}|${scheduledTransaction.payeeId}|${scheduledTransaction.categoryId}|${scheduledTransaction.nextDueDate.split('T')[0]}`,
           estimate: scheduledTransaction.amountEstimate,
         }
       : null,
   );
   useEffect(() => {
     if (!estimateRequestKey) return;
-    const [accountId, payeeId, categoryId] = estimateRequestKey.split('|');
+    const [accountId, payeeId, categoryId, nextDueDate] = estimateRequestKey.split('|');
     let cancelled = false;
     scheduledTransactionsApi
-      .getAmountEstimate(accountId, payeeId, categoryId)
+      .getAmountEstimate(accountId, payeeId, categoryId, nextDueDate || undefined)
       .then((estimate) => {
         if (!cancelled) setEstimatePreview({ key: estimateRequestKey, estimate });
       })
