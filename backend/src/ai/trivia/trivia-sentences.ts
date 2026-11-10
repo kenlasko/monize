@@ -1,8 +1,16 @@
 import { extractJsonObject } from "../../email-receipts/ai/email-receipt-ai.schema";
-import type { TriviaFact, TriviaItem, TriviaTopic } from "./trivia.types";
+import {
+  TRIVIA_TOPICS,
+  type TriviaFact,
+  type TriviaItem,
+  type TriviaTopic,
+} from "./trivia.types";
 
-/** The most sentences kept from a model, and the longest one shown. */
-const MAX_AI_ITEMS = 16;
+/**
+ * The most sentences kept from a model, and the longest one shown. About two
+ * per fact the catalog can produce, so no topic is crowded out.
+ */
+const MAX_AI_ITEMS = 40;
 const MAX_SENTENCE_CHARS = 240;
 
 const PLACEHOLDER = /\{([A-Za-z]+)\}/g;
@@ -15,6 +23,10 @@ const PLACEHOLDER = /\{([A-Za-z]+)\}/g;
  */
 const OWN_FIGURE =
   /\p{N}|[零一二三四五六七八九十百千万億亿兆]{2,}|[%\p{Sc}{}]/u;
+
+function isTriviaTopic(value: unknown): value is TriviaTopic {
+  return (TRIVIA_TOPICS as readonly unknown[]).includes(value);
+}
 
 /** The prompt's list of facts. Names never leave the server, only their meaning. */
 export function buildTriviaPrompt(facts: TriviaFact[]): string {
@@ -59,10 +71,7 @@ export function parseTriviaSentences(
   for (const entry of parsed.trivia as unknown[]) {
     if (items.length >= MAX_AI_ITEMS) break;
     const { topic, text } = (entry ?? {}) as Record<string, unknown>;
-    if (
-      (topic !== "netWorth" && topic !== "investments") ||
-      typeof text !== "string"
-    ) {
+    if (!isTriviaTopic(topic) || typeof text !== "string") {
       continue;
     }
     const sentence = text.trim();

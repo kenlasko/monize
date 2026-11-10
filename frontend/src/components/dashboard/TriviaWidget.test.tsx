@@ -141,6 +141,30 @@ describe('TriviaWidget', () => {
     expect(caption).toBeInTheDocument();
   });
 
+  it('draws the newer topics in their own colour and formats a count as a whole number', () => {
+    state.trivia = list({
+      items: [{ topic: 'warranties', source: 'calculated', factId: 'warrantiesCovered' }],
+      figures: { warrantyCount: { kind: 'count', value: 3 } },
+    });
+    render(<TriviaWidget isLoading={false} />);
+    expect(screen.getByText('Warranties')).toHaveClass('text-cyan-700');
+    expect(screen.getByTestId('trivia-sentence')).toHaveTextContent(
+      'Warranties you track that are still in cover: 3.',
+    );
+  });
+
+  it('every topic the server sends has a label and a look', () => {
+    for (const topic of ['spending', 'income', 'activity'] as const) {
+      state.trivia = list({
+        items: [{ topic, source: 'ai', text: 'x {a}' }],
+        figures: { a: { kind: 'count', value: 1200 } },
+      });
+      const { unmount } = render(<TriviaWidget isLoading={false} />);
+      expect(screen.getByTestId('trivia-card').className).toContain('from-');
+      unmount();
+    }
+  });
+
   it('offers no arrows for a single fact', () => {
     state.trivia = list({
       items: [{ topic: 'netWorth', source: 'ai', text: 'only {a}' }],

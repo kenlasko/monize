@@ -1,4 +1,11 @@
-export const TRIVIA_TOPICS = ["netWorth", "investments"] as const;
+export const TRIVIA_TOPICS = [
+  "netWorth",
+  "investments",
+  "spending",
+  "income",
+  "activity",
+  "warranties",
+] as const;
 export type TriviaTopic = (typeof TRIVIA_TOPICS)[number];
 
 /** One figure a sentence can quote, typed so the reader's browser can format it. */
@@ -7,6 +14,8 @@ export type TriviaFigure =
   | { kind: "percent"; value: number }
   | { kind: "multiple"; value: number }
   | { kind: "rate"; value: number }
+  /** A whole number of things: transactions, payees, months. */
+  | { kind: "count"; value: number }
   /** `YYYY-MM`. */
   | { kind: "month"; value: string }
   | { kind: "text"; value: string };
@@ -30,6 +39,17 @@ export const TRIVIA_FACT_IDS = [
   "investmentsBestPerformer",
   "investmentsForeignAccount",
   "investmentsLargestAccount",
+  "spendingTopCategory",
+  "spendingTopPayee",
+  "spendingBiggestMonth",
+  "incomeKeptShare",
+  "incomeSurplusMonths",
+  "incomeTopSource",
+  "activityTransactions",
+  "activityPayees",
+  "activityScheduled",
+  "warrantiesCovered",
+  "warrantiesNextExpiry",
 ] as const;
 export type TriviaFactId = (typeof TRIVIA_FACT_IDS)[number];
 

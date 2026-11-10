@@ -3,7 +3,16 @@
 import { useEffect, useMemo, useState, type ComponentType, type SVGProps } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { ChevronLeftIcon, ChevronRightIcon, PresentationChartLineIcon, ScaleIcon } from '@heroicons/react/24/outline';
+import {
+  BanknotesIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PresentationChartLineIcon,
+  ScaleIcon,
+  ShieldCheckIcon,
+  ShoppingCartIcon,
+  TableCellsIcon,
+} from '@heroicons/react/24/outline';
 import { SparklesIcon } from '@heroicons/react/20/solid';
 import { CARD_CLASS, HOVER_TOOLBAR_BUTTON } from '@/components/ui/Card';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
@@ -52,7 +61,44 @@ const TOPIC_LOOK: Record<TriviaTopic, TopicLook> = {
     label: 'text-emerald-700 dark:text-emerald-300',
     figure: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-400/15 dark:text-emerald-100',
   },
+  spending: {
+    icon: ShoppingCartIcon,
+    panel: 'from-rose-50 via-white to-orange-50 dark:from-rose-950/50 dark:via-gray-900 dark:to-orange-950/50',
+    glow: 'bg-rose-300/40 dark:bg-rose-500/20',
+    medallion: 'bg-rose-600 text-white shadow-rose-600/30 dark:bg-rose-500',
+    label: 'text-rose-700 dark:text-rose-300',
+    figure: 'bg-rose-100 text-rose-900 dark:bg-rose-400/15 dark:text-rose-100',
+  },
+  income: {
+    icon: BanknotesIcon,
+    panel: 'from-amber-50 via-white to-lime-50 dark:from-amber-950/50 dark:via-gray-900 dark:to-lime-950/50',
+    glow: 'bg-amber-300/40 dark:bg-amber-500/20',
+    medallion: 'bg-amber-600 text-white shadow-amber-600/30 dark:bg-amber-500',
+    label: 'text-amber-700 dark:text-amber-300',
+    figure: 'bg-amber-100 text-amber-900 dark:bg-amber-400/15 dark:text-amber-100',
+  },
+  activity: {
+    icon: TableCellsIcon,
+    panel: 'from-violet-50 via-white to-fuchsia-50 dark:from-violet-950/50 dark:via-gray-900 dark:to-fuchsia-950/50',
+    glow: 'bg-violet-300/40 dark:bg-violet-500/20',
+    medallion: 'bg-violet-600 text-white shadow-violet-600/30 dark:bg-violet-500',
+    label: 'text-violet-700 dark:text-violet-300',
+    figure: 'bg-violet-100 text-violet-900 dark:bg-violet-400/15 dark:text-violet-100',
+  },
+  warranties: {
+    icon: ShieldCheckIcon,
+    panel: 'from-cyan-50 via-white to-slate-50 dark:from-cyan-950/50 dark:via-gray-900 dark:to-slate-900/50',
+    glow: 'bg-cyan-300/40 dark:bg-cyan-500/20',
+    medallion: 'bg-cyan-600 text-white shadow-cyan-600/30 dark:bg-cyan-500',
+    label: 'text-cyan-700 dark:text-cyan-300',
+    figure: 'bg-cyan-100 text-cyan-900 dark:bg-cyan-400/15 dark:text-cyan-100',
+  },
 };
+
+/** A topic this build does not know yet (a newer server) wears net worth's look. */
+function lookOf(topic: TriviaTopic): TopicLook {
+  return TOPIC_LOOK[topic] ?? TOPIC_LOOK.netWorth;
+}
 
 /** A sentence as text and figures, each figure by the name it is quoted by. */
 type Part = { text: string } | { figure: string };
@@ -70,7 +116,8 @@ function splitSentence(template: string): Part[] {
 }
 
 /**
- * The day's trivia about the reader's net worth and investments, one fact at a
+ * The day's trivia about the reader's Monize (net worth, investments, spending,
+ * income, their records and their warranties), one fact at a
  * time: it moves on by itself, and the arrows step through by hand. Each fact
  * wears its topic's colour and picture, its figures picked out in the sentence.
  * Switched off in AI Settings, it says so and links there.
@@ -110,6 +157,8 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
             return formatNumber(figure.value, 2);
           case 'rate':
             return formatNumber(figure.value, 4);
+          case 'count':
+            return formatNumber(figure.value, 0);
           case 'month':
             return formatChartDate(`${figure.value}-01`, 'MMMM yyyy');
           case 'text':
@@ -162,7 +211,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
 
   const index = (((start + step) % count) + count) % count;
   const item: TriviaItem = trivia.items[index];
-  const look = TOPIC_LOOK[item.topic];
+  const look = lookOf(item.topic);
   const TopicIcon = look.icon;
   const template =
     item.source === 'ai'
@@ -255,7 +304,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
               <span
                 key={i}
                 className={`h-1.5 rounded-full transition-all motion-reduce:transition-none ${
-                  i === index ? `w-5 ${TOPIC_LOOK[other.topic].medallion.split(' ')[0]}` : 'w-1.5 bg-gray-300 dark:bg-gray-600'
+                  i === index ? `w-5 ${lookOf(other.topic).medallion.split(' ')[0]}` : 'w-1.5 bg-gray-300 dark:bg-gray-600'
                 }`}
               />
             ))}

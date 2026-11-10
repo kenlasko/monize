@@ -43,11 +43,15 @@
     "position": "{index} of {total}",
     "previous": "Previous fact",
     "next": "Next fact",
-    "empty": "Facts appear here once there is enough history to talk about: two months of net worth, or priced investments. The list is rebuilt each morning.",
+    "empty": "Facts appear here once there is enough history to talk about: two months of net worth, priced investments, a few months of spending and income, or warranties you track. The list is rebuilt each morning.",
     "off": "AI trivia is turned off. Turn it on in <link>AI Settings</link>.",
     "topics": {
       "netWorth": "Net worth",
-      "investments": "Investments"
+      "investments": "Investments",
+      "spending": "Spending",
+      "income": "Income",
+      "activity": "Your records",
+      "warranties": "Warranties"
     },
     "aiGenerated": "Written by AI from your figures",
     "facts": {
@@ -65,7 +69,18 @@
       "investmentsBiggestHolding": "Your biggest holding is {holdingSymbol} at about {holdingPercent} of the portfolio ({holdingValue} in {holdingAccounts}).",
       "investmentsBestPerformer": "Your best performer is {bestSymbol}, up {bestPercent}. It cost {bestCost} and is now worth {bestValue}.",
       "investmentsForeignAccount": "Your {foreignName} account is held in {foreignCurrency}. Its {foreignBalance} of holdings equals {foreignConverted} at a rate of about {foreignRate}.",
-      "investmentsLargestAccount": "Your largest investment account is {largestName} at {largestValue}."
+      "investmentsLargestAccount": "Your largest investment account is {largestName} at {largestValue}.",
+      "spendingTopCategory": "Over the last twelve months, {topCategoryName} took the most of your spending: {topCategoryAmount}, or {topCategoryPercent} of it.",
+      "spendingTopPayee": "Over the last twelve months, you spent the most with {topPayeeName}: {topPayeeAmount}.",
+      "spendingBiggestMonth": "{biggestSpendMonth} was your biggest spending month of the last twelve, at {biggestSpendAmount}.",
+      "incomeKeptShare": "Over the last twelve months you kept {keptAmount} of what came in, which is {keptPercent} of your income.",
+      "incomeSurplusMonths": "Months of the last {windowMonths} in which more came in than went out: {surplusMonths}.",
+      "incomeTopSource": "{topSourceName} brought in {topSourcePercent} of your income over the last twelve months.",
+      "activityTransactions": "Transactions in your registers: {transactionCount}, going back to {firstTransactionMonth}.",
+      "activityPayees": "Payees you keep in Monize: {payeeCount}. Categories: {categoryCount}.",
+      "activityScheduled": "Scheduled transactions Monize is tracking for you: {scheduledCount}.",
+      "warrantiesCovered": "Warranties you track that are still in cover: {warrantyCount}.",
+      "warrantiesNextExpiry": "The next warranty to run out is {nextWarrantyName}, in {nextWarrantyMonth}."
     }
   },
   "favouriteAccounts": {

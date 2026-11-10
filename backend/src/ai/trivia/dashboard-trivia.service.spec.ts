@@ -31,6 +31,7 @@ describe("DashboardTriviaService", () => {
   let portfolio: Record<string, jest.Mock>;
   let ai: Record<string, jest.Mock>;
   let jobClaims: Record<string, jest.Mock>;
+  let ledger: Record<string, jest.Mock>;
   let service: DashboardTriviaService;
   let prefRepo: { findOne: jest.Mock };
 
@@ -86,6 +87,18 @@ describe("DashboardTriviaService", () => {
         .mockResolvedValue({ content: aiReply("Peak {currentHigh}") }),
     };
     jobClaims = { claimOnce: jest.fn().mockResolvedValue(true) };
+    // Nothing from the rest of the ledger unless a test asks for it.
+    ledger = {
+      load: jest.fn().mockResolvedValue({
+        currency: "CAD",
+        spendingByCategory: null,
+        spendingByPayee: null,
+        incomeVsExpenses: null,
+        incomeBySource: null,
+        records: null,
+        warranties: null,
+      }),
+    };
     service = new DashboardTriviaService(
       {} as DataSource,
       accounts as never,
@@ -93,6 +106,7 @@ describe("DashboardTriviaService", () => {
       portfolio as never,
       ai as never,
       jobClaims as never,
+      ledger as never,
     );
   });
 
@@ -196,6 +210,88 @@ describe("DashboardTriviaService", () => {
       expect(result.items).toEqual([]);
       expect(triviaRepo.findOne).not.toHaveBeenCalled();
       expect(netWorth.getMonthlyNetWorth).not.toHaveBeenCalled();
+      expect(ledger.load).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("the rest of Monize", () => {
+    const records = {
+      transactions: 1234,
+      firstTransactionDate: "2019-04-02",
+      activePayees: 80,
+      categories: 40,
+      activeScheduled: 6,
+    };
+
+    it("adds the ledger's facts beside net worth's, in the reader's currency", async () => {
+      ledger.load.mockResolvedValue({
+        currency: "CAD",
+        spendingByCategory: null,
+        spendingByPayee: null,
+        incomeVsExpenses: null,
+        incomeBySource: null,
+        records,
+        warranties: { covered: 2, nextExpiring: null },
+      });
+      const result = await service.getTrivia(userId);
+      expect(ledger.load).toHaveBeenCalledWith(userId, "CAD");
+      const ids = result.items.map((item) =>
+        item.source === "calculated" ? item.factId : null,
+      );
+      expect(ids).toEqual(
+        expect.arrayContaining([
+          "netWorthAtHighPoint",
+          "activityTransactions",
+          "activityPayees",
+          "activityScheduled",
+          "warrantiesCovered",
+        ]),
+      );
+      expect(result.figures.transactionCount).toEqual({
+        kind: "count",
+        value: 1234,
+      });
+    });
+
+    it("keeps a model's sentence on a new topic, and the topic's calculated ones for a topic it skipped", async () => {
+      ledger.load.mockResolvedValue({
+        currency: "CAD",
+        spendingByCategory: null,
+        spendingByPayee: null,
+        incomeVsExpenses: null,
+        incomeBySource: null,
+        records,
+        warranties: { covered: 1, nextExpiring: null },
+      });
+      ai.complete.mockResolvedValue({
+        content: JSON.stringify({
+          trivia: [
+            {
+              topic: "activity",
+              text: "{transactionCount} rows since {firstTransactionMonth}.",
+            },
+          ],
+        }),
+      });
+      await service.generateForUser(userId);
+      const prompt = ai.complete.mock.calls[0][1];
+      expect(prompt.systemPrompt).toContain('"warranties"');
+      expect(prompt.messages[0].content).toContain("topic activity");
+      const items = triviaRepo.upsert.mock.calls[0][0].items;
+      expect(items).toContainEqual({
+        topic: "activity",
+        source: "ai",
+        text: "{transactionCount} rows since {firstTransactionMonth}.",
+      });
+      // The model left net worth and warranties out; their sentences stay.
+      expect(items).toContainEqual({
+        topic: "warranties",
+        source: "calculated",
+        factId: "warrantiesCovered",
+      });
+      expect(items).not.toContainEqual(
+        expect.objectContaining({ factId: "activityTransactions" }),
+      );
     });
   });
 
