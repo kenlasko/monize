@@ -153,6 +153,8 @@
   "payee": "[XX-My payee (optional)-XX]",
   "choose": "[XX-Choose…-XX]",
   "none": "[XX-None-XX]",
+  "linkedPayee": "[XX-Linked Payee-XX]",
+  "actions": "[XX-Actions-XX]",
   "bookPreview": "[XX-Preview Changes-XX]",
   "acceptBooking": "[XX-Save to My Finances-XX]",
   "unlink": "[XX-Remove from My Finances-XX]",
