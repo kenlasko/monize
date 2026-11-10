@@ -1542,6 +1542,49 @@ describe("BudgetAlertService", () => {
 
       await expect(service.checkBudgetAlerts()).resolves.not.toThrow();
     });
+
+    it("resolves each budget owner's own current period, not the server's UTC day", async () => {
+      // 01:00 UTC on 1 November is still 18:00 on 31 October in Los Angeles.
+      jest.useFakeTimers({ now: new Date("2026-11-01T01:00:00.000Z") });
+      try {
+        const budget1 = makeBudget({ id: "budget-1", categories: [] });
+        const budget2 = makeBudget({
+          id: "budget-2",
+          userId: "22222222-2222-2222-2222-222222222222",
+          categories: [],
+        });
+        budgetsRepository.find.mockResolvedValue([budget1, budget2]);
+
+        // budget1's owner has no stored timezone, so resolves to UTC; budget2's
+        // owner has one on file, the shape `getUsersByEffectiveTimezone` reads.
+        scopedDataSource.manager.query.mockImplementation(
+          async (sql: string) =>
+            sql.includes("FROM users u")
+              ? [
+                  {
+                    user_id: "22222222-2222-2222-2222-222222222222",
+                    timezone: "America/Los_Angeles",
+                    last_client_timezone: null,
+                  },
+                ]
+              : [],
+        );
+
+        const spy = jest.spyOn(service, "getCurrentPeriodDates");
+        await service.checkBudgetAlerts();
+
+        expect(spy.mock.results[0].value).toEqual({
+          periodStart: "2026-11-01",
+          periodEnd: "2026-11-30",
+        });
+        expect(spy.mock.results[1].value).toEqual({
+          periodStart: "2026-10-01",
+          periodEnd: "2026-10-31",
+        });
+      } finally {
+        jest.useRealTimers();
+      }
+    });
   });
 
   describe("sendWeeklyDigest", () => {

@@ -7,6 +7,7 @@ import { I18nService } from "nestjs-i18n";
 import { emailTranslator } from "../i18n/email-translator";
 import { DEFAULT_LOCALE } from "../i18n/config";
 import { withSystemContext, withUserContext } from "../common/db/with-context";
+import { getUsersByEffectiveTimezone } from "../common/users-by-timezone.util";
 import {
   JobClaimService,
   JobClaimType,
@@ -159,14 +160,21 @@ export class BudgetAlertService {
         return;
       }
 
+      // The user's own day, so "current period" is October at 18:00 PDT on
+      // the 31st, not November (issue #2073) -- same bucket-once pattern as
+      // `getUsersByEffectiveTimezone`'s other callers.
+      const timezoneByUserId = await this.buildTimezoneLookup();
+
       let alertsCreated = 0;
       let emailsSent = 0;
 
       for (const budget of activeBudgets) {
         try {
           // RLS: per-user body keeps the user's RLS net.
-          const result = await withUserContext(budget.userId, () =>
-            this.processAlerts(budget),
+          const result = await withUserContext(
+            budget.userId,
+            () => this.processAlerts(budget),
+            timezoneByUserId.get(budget.userId),
           );
           alertsCreated += result.alertsCreated;
           emailsSent += result.emailsSent;
@@ -226,6 +234,10 @@ export class BudgetAlertService {
         budgetsByUser.set(budget.userId, existing);
       }
 
+      // The user's own day, so the digest's "current period" matches what the
+      // app itself shows them (issue #2073), distinct from `runDate` below.
+      const timezoneByUserId = await this.buildTimezoneLookup();
+
       // The run's date, read ONCE for every user. It is the digest's claim
       // key, and a run that spans midnight while reading the date per user
       // claims the early users under one key and the rest under another --
@@ -243,8 +255,10 @@ export class BudgetAlertService {
       for (const [userId, userBudgets] of budgetsByUser) {
         try {
           // RLS: per-user body keeps the user's RLS net.
-          const sent = await withUserContext(userId, () =>
-            this.sendDigestForUser(userId, userBudgets, runDate),
+          const sent = await withUserContext(
+            userId,
+            () => this.sendDigestForUser(userId, userBudgets, runDate),
+            timezoneByUserId.get(userId),
           );
           if (sent) {
             sentCount++;
@@ -1156,6 +1170,25 @@ export class BudgetAlertService {
 
   getCurrentPeriodDates(): PeriodDateRange {
     return getCurrentMonthPeriodDates();
+  }
+
+  /**
+   * Inverts `getUsersByEffectiveTimezone`'s bucketing into a per-user lookup,
+   * so each `withUserContext` call below carries the zone `todayYMD()` (and
+   * so `getCurrentPeriodDates()`) needs to name the user's own current period
+   * rather than falling back to the server's local date (issue #2073).
+   */
+  private async buildTimezoneLookup(): Promise<Map<string, string>> {
+    const usersByTz = await withSystemContext(() =>
+      getUsersByEffectiveTimezone(this.dataSource),
+    );
+    const timezoneByUserId = new Map<string, string>();
+    for (const [tz, userIds] of usersByTz) {
+      for (const userId of userIds) {
+        timezoneByUserId.set(userId, tz);
+      }
+    }
+    return timezoneByUserId;
   }
 
   private async computeCategoryActuals(

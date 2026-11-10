@@ -51,7 +51,7 @@ describe("budgets module RLS context smoke (real withScopedDb)", () => {
       ]),
       findOne: jest.fn().mockResolvedValue(null),
     };
-    const { dataSource } = createScopedDbMocks([
+    const { manager, dataSource } = createScopedDbMocks([
       [Budget, budgetsRepo],
       [Notification, { find: jest.fn().mockResolvedValue([]) }],
       [Transaction, { createQueryBuilder: jest.fn() }],
@@ -60,6 +60,10 @@ describe("budgets module RLS context smoke (real withScopedDb)", () => {
       [User, { findOne: jest.fn() }],
       [UserPreference, { findOne: jest.fn() }],
     ]);
+    // `buildTimezoneLookup`'s raw `getUsersByEffectiveTimezone` query, routed
+    // through the real `withScopedDb` this suite exercises; no rows is a user
+    // table this smoke test never populated.
+    manager.query.mockResolvedValue([]);
 
     const service = new BudgetAlertService(
       dataSource as never,

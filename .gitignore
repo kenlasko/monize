@@ -56,6 +56,9 @@ e2e/test-results-docs-*/
 e2e/playwright-readme-report/
 e2e/readme-recordings/
 
+# Local tool caches (trail/graft code-graph tooling; machine-local, never committed)
+graft/
+
 # Temporary files
 tmp/
 temp/
