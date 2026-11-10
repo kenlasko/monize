@@ -1,4 +1,4 @@
-export type TriviaTopic = 'netWorth' | 'investments';
+export type TriviaTopic = 'netWorth' | 'investments' | 'spending' | 'income' | 'activity' | 'warranties';
 
 /** One figure a sentence can quote, formatted in the reader's own number format. */
 export type TriviaFigure =
@@ -6,6 +6,8 @@ export type TriviaFigure =
   | { kind: 'percent'; value: number }
   | { kind: 'multiple'; value: number }
   | { kind: 'rate'; value: number }
+  /** A whole number of things: transactions, payees, months. */
+  | { kind: 'count'; value: number }
   /** `YYYY-MM`. */
   | { kind: 'month'; value: string }
   | { kind: 'text'; value: string };

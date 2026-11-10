@@ -153,6 +153,8 @@
   "payee": "我的收款人（可选）",
   "choose": "选择……",
   "none": "无",
+  "linkedPayee": "关联收款人",
+  "actions": "操作",
   "bookPreview": "预览变更",
   "acceptBooking": "保存到我的财务",
   "unlink": "从我的财务中移除",
@@ -373,9 +375,9 @@
   "releaseShare": "清除{name}的固定份额",
   "splitAmountNeeded": "输入正数支出金额以预览每个人的费用。保存前将再次检查该支出。",
   "otherRepayment": "记录其他还款",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, other {#个群组}}",
   "entryCount": "{count, plural, other {#条记录}}",
   "saveChanges": "保存更改",
-  "searchGroups": "搜索群组",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "搜索群组"
 }

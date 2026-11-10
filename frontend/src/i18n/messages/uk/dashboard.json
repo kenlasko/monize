@@ -43,11 +43,15 @@
     "position": "{index} із {total}",
     "previous": "Попередня цікавинка",
     "next": "Наступна цікавинка",
-    "empty": "Цікавинки з’являться тут, коли назбирається достатньо історії: два місяці чистих активів або інвестиції з ціною. Список оновлюється щоранку.",
+    "empty": "Цікавинки з’являться тут, коли назбирається достатньо історії: два місяці чистих активів, інвестиції з ціною, кілька місяців витрат і доходів або гарантії, які ви відстежуєте. Список оновлюється щоранку.",
     "off": "Цікавинки від AI вимкнено. Увімкніть їх у розділі <link>Налаштування AI</link>.",
     "topics": {
       "netWorth": "Чисті активи",
-      "investments": "Інвестиції"
+      "investments": "Інвестиції",
+      "spending": "Витрати",
+      "income": "Доходи",
+      "activity": "Ваші записи",
+      "warranties": "Гарантії"
     },
     "aiGenerated": "Текст створено ШІ на основі ваших даних",
     "facts": {
@@ -65,7 +69,18 @@
       "investmentsBiggestHolding": "Ваша найбільша позиція: {holdingSymbol}, приблизно {holdingPercent} портфеля ({holdingValue} у {holdingAccounts}).",
       "investmentsBestPerformer": "Найкращий результат у {bestSymbol}: зростання на {bestPercent}. Купівля коштувала {bestCost}, зараз це {bestValue}.",
       "investmentsForeignAccount": "Ваш рахунок {foreignName} ведеться у валюті {foreignCurrency}. Активи на {foreignBalance} за курсом близько {foreignRate} дорівнюють {foreignConverted}.",
-      "investmentsLargestAccount": "Ваш найбільший інвестиційний рахунок: {largestName}, {largestValue}."
+      "investmentsLargestAccount": "Ваш найбільший інвестиційний рахунок: {largestName}, {largestValue}.",
+      "spendingTopCategory": "За останні дванадцять місяців найбільше ваших витрат припало на «{topCategoryName}»: {topCategoryAmount}, або {topCategoryPercent}.",
+      "spendingTopPayee": "За останні дванадцять місяців найбільше ви витратили в одержувача «{topPayeeName}»: {topPayeeAmount}.",
+      "spendingBiggestMonth": "{biggestSpendMonth} став вашим найвитратнішим місяцем з останніх дванадцяти: {biggestSpendAmount}.",
+      "incomeKeptShare": "За останні дванадцять місяців ви зберегли {keptAmount} із надходжень, це {keptPercent} вашого доходу.",
+      "incomeSurplusMonths": "Місяці з останніх {windowMonths}, у які надійшло більше, ніж витрачено: {surplusMonths}.",
+      "incomeTopSource": "{topSourceName} приніс {topSourcePercent} вашого доходу за останні дванадцять місяців.",
+      "activityTransactions": "Транзакцій у ваших реєстрах: {transactionCount}, починаючи з {firstTransactionMonth}.",
+      "activityPayees": "Одержувачів платежів у Monize: {payeeCount}. Категорій: {categoryCount}.",
+      "activityScheduled": "Запланованих транзакцій, які Monize відстежує для вас: {scheduledCount}.",
+      "warrantiesCovered": "Гарантії, які ви відстежуєте і які ще діють: {warrantyCount}.",
+      "warrantiesNextExpiry": "Наступна гарантія, термін дії якої спливає, це {nextWarrantyName}, у {nextWarrantyMonth}."
     }
   },
   "favouriteAccounts": {
@@ -287,6 +302,8 @@
     "descriptionPlaceholder": "Додайте необов’язковий опис",
     "rangeLabels": {
       "1d": "1D",
+      "1w": "1Т",
+      "mtd": "З поч. міс.",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",
@@ -295,9 +312,7 @@
       "5y": "5Y",
       "10y": "10Y",
       "ytd": "YTD",
-      "all": "Всі",
-      "1w": "1Т",
-      "mtd": "З поч. міс."
+      "all": "Всі"
     }
   },
   "portfolioValue": {

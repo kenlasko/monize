@@ -153,6 +153,8 @@
   "payee": "Mój kontrahent (opcjonalnie)",
   "choose": "Wybierz…",
   "none": "Brak",
+  "linkedPayee": "Powiązany kontrahent",
+  "actions": "Akcje",
   "bookPreview": "Podgląd zmian",
   "acceptBooking": "Zapisz w moich finansach",
   "unlink": "Usuń z moich finansów",
@@ -373,9 +375,9 @@
   "releaseShare": "Usuń stały udział: {name}",
   "splitAmountNeeded": "Wpisz dodatnią kwotę wydatku, aby zobaczyć koszt każdej osoby. Przed zapisem wydatek zostanie ponownie sprawdzony.",
   "otherRepayment": "Zapisz inną spłatę",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, one {# grupa} few {# grupy} many {# grup} other {# grupy}}",
   "entryCount": "{count, plural, one {# wpis} few {# wpisy} many {# wpisów} other {# wpisu}}",
   "saveChanges": "Zapisz zmiany",
-  "searchGroups": "Szukaj grup",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "Szukaj grup"
 }

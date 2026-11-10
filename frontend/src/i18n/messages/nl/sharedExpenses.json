@@ -153,6 +153,8 @@
   "payee": "Mijn begunstigde (optioneel)",
   "choose": "Kiezen…",
   "none": "Geen",
+  "linkedPayee": "Gekoppelde begunstigde",
+  "actions": "Acties",
   "bookPreview": "Wijzigingen bekijken",
   "acceptBooking": "Opslaan in mijn financiën",
   "unlink": "Verwijderen uit mijn financiën",
@@ -373,9 +375,9 @@
   "releaseShare": "Vast deel van {name} wissen",
   "splitAmountNeeded": "Vul een positief uitgavenbedrag in om de kosten per persoon te bekijken. De uitgave wordt vóór het opslaan opnieuw gecontroleerd.",
   "otherRepayment": "Andere terugbetaling vastleggen",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, one {# groep} other {# groepen}}",
   "entryCount": "{count, plural, one {# boeking} other {# boekingen}}",
   "saveChanges": "Wijzigingen opslaan",
-  "searchGroups": "Groepen zoeken",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "Groepen zoeken"
 }

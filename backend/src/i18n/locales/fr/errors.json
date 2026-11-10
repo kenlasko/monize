@@ -32,7 +32,10 @@
     "pairRequiresImages": "Un document numérisé et son original doivent tous deux être des images",
     "warrantyNotFound": "Garantie introuvable",
     "tooManyForWarranty": "Cette garantie a déjà le maximum de {{ max }} pièces jointes",
-    "documentKindNotForTransaction": "Le type de document ne s'applique qu'aux documents d'une garantie"
+    "documentKindNotForTransaction": "Le type de document ne s'applique qu'aux documents d'une garantie",
+    "copyNotOwnDocument": "Seul l'un de vos propres documents peut être ajouté à une garantie",
+    "copyAlreadyOnWarranty": "Ce document figure déjà sur cette garantie",
+    "copySourceChanged": "Le document a changé pendant son ajout. Veuillez réessayer."
   },
   "accounts": {
     "accountWithIdNotFound": "Compte avec l'ID {{ id }} introuvable",
@@ -436,6 +439,8 @@
     "parserNotFound": "Profil de reçus {{ id }} introuvable",
     "parserRevisionConflict": "Cet profil a été modifié depuis que vous l'avez ouvert. Rechargez-le et réessayez.",
     "parserCategoryNotFound": "Une catégorie citée dans cet profil est introuvable.",
+    "parserCategoryNameUnknown": "La catégorie \"{{ name }}\" n'a pas été trouvée. Utilisez le nom de l'une de vos catégories.",
+    "parserCategoryNameAmbiguous": "La catégorie \"{{ name }}\" correspond à plusieurs catégories ({{ candidates }}). Utilisez le nom complet, par exemple \"Parent: Child\".",
     "parserDefinitionInvalid": "La définition de l'profil n'est pas valide : {{ codes }}",
     "receiptSkipped": "Cet e-mail n'a pas pu être lu (il était trop volumineux ou n'a pas pu être décodé), il n'y a donc rien à traiter.",
     "notATradeEmail": "Cet e-mail n'a pas été lu comme une confirmation d'opération.",
@@ -467,8 +472,6 @@
     "generateReceiptOutsideDomain": "Un e-mail ne provient pas du domaine d'expéditeur auquel le profil est destiné.",
     "previewExpectedNotSelected": "Une transaction attendue a été indiquée pour un e-mail qui ne fait pas partie des e-mails sélectionnés.",
     "previewReceiptOutsideDomain": "Un e-mail ne provient pas d'un domaine d'expéditeur de ce profil.",
-    "parserCategoryNameUnknown": "La catégorie \"{{ name }}\" n'a pas été trouvée. Utilisez le nom de l'une de vos catégories.",
-    "parserCategoryNameAmbiguous": "La catégorie \"{{ name }}\" correspond à plusieurs catégories ({{ candidates }}). Utilisez le nom complet, par exemple \"Parent: Child\".",
     "tradeNotBankLinkable": "Ce courriel est lu comme une confirmation d'opération. Liez-le plutôt à une opération de placement.",
     "tradeAccountedFor": "Ce courriel correspond déjà à une opération de placement ; il n'est donc pas relu.",
     "tradeLinkedElsewhere": "Un autre courriel correspond déjà à cette opération.",
@@ -494,6 +497,7 @@
     "internal": "Erreur interne du serveur"
   },
   "import": {
+    "accountClosed": "Le compte est clôturé. Rouvrez-le ou choisissez un autre compte.",
     "noAccountBlocks": "Aucun bloc de compte trouvé dans le fichier QIF. Ce fichier n'est peut-être pas une exportation multi-compte.",
     "accountTypeRequired": "Choisissez un type de compte pour ces comptes avant l'importation : {{ accounts }}",
     "importFailed": "L'importation a échoué après {{ imported }} transactions : {{ message }}",
@@ -520,8 +524,7 @@
     "mnyExistingAccountCurrency": "Le compte existant « {{ name }} » utilise {{ existing }}, mais le compte du fichier Money utilise {{ file }}. Renommez l'un des deux, puis importez à nouveau.",
     "mnyJobNotFound": "Tâche d'import introuvable",
     "mnyFileTooLarge": "Ce fichier Money dépasse la limite d'import de {{ limit }} Mo.",
-    "noRateForSplitTransfer": "Aucun taux de change pour {{ pair }} au {{ date }} : une ligne ventilée transfère vers un compte dans une autre devise. Ajoutez un taux de change pour cette paire et cette date, puis importez à nouveau.",
-    "accountClosed": "Le compte est clôturé. Rouvrez-le ou choisissez un autre compte."
+    "noRateForSplitTransfer": "Aucun taux de change pour {{ pair }} au {{ date }} : une ligne ventilée transfère vers un compte dans une autre devise. Ajoutez un taux de change pour cette paire et cette date, puis importez à nouveau."
   },
   "monteCarlo": {
     "scenarioNotFound": "Scénario {{ id }} introuvable",

@@ -32,7 +32,10 @@
     "pairRequiresImages": "スキャンした書類と元の写真は、どちらも画像である必要があります",
     "warrantyNotFound": "保証が見つかりません",
     "tooManyForWarranty": "この保証にはすでに最大 {{ max }} 件の添付ファイルがあります",
-    "documentKindNotForTransaction": "書類の種類は保証の書類にのみ指定できます"
+    "documentKindNotForTransaction": "書類の種類は保証の書類にのみ指定できます",
+    "copyNotOwnDocument": "保証に追加できるのは、自分の書類のみです",
+    "copyAlreadyOnWarranty": "この書類はすでにこの保証に追加されています",
+    "copySourceChanged": "追加中にドキュメントが変更されました。もう一度お試しください。"
   },
   "accounts": {
     "accountWithIdNotFound": "ID {{ id }} の口座が見つかりません",
@@ -436,6 +439,8 @@
     "parserNotFound": "レシートプロフィール {{ id }} が見つかりません",
     "parserRevisionConflict": "このプロフィールは、開いた後に変更されました。再読み込みしてからもう一度お試しください。",
     "parserCategoryNotFound": "このプロフィールで指定されているカテゴリが見つかりませんでした。",
+    "parserCategoryNameUnknown": "カテゴリ「{{ name }}」が見つかりません。あなたのカテゴリの1つの名前を使用してください。",
+    "parserCategoryNameAmbiguous": "カテゴリ「{{ name }}」は複数のカテゴリと一致しています（{{ candidates }}）。完全な名前を使用してください（例：「Parent: Child」）。",
     "parserDefinitionInvalid": "プロフィールの定義が無効です: {{ codes }}",
     "receiptSkipped": "このメールは読み取れなかったため（サイズが大きすぎるか、デコードできませんでした）、処理するものがありません。",
     "notATradeEmail": "このメールは取引確認として読み取られていません。",
@@ -467,8 +472,6 @@
     "generateReceiptOutsideDomain": "メールの 1 通が、プロフィールの対象である送信元ドメインから届いたものではありません。",
     "previewExpectedNotSelected": "選択されたメールに含まれていないメールに対して、期待される取引が指定されました。",
     "previewReceiptOutsideDomain": "メールの 1 通が、このプロフィールの送信元ドメインから届いたものではありません。",
-    "parserCategoryNameUnknown": "カテゴリ「{{ name }}」が見つかりません。あなたのカテゴリの1つの名前を使用してください。",
-    "parserCategoryNameAmbiguous": "カテゴリ「{{ name }}」は複数のカテゴリと一致しています（{{ candidates }}）。完全な名前を使用してください（例：「Parent: Child」）。",
     "tradeNotBankLinkable": "このメールは取引確認として読み取られています。代わりに投資取引に紐付けてください。",
     "tradeAccountedFor": "このメールはすでに投資取引に対応しているため、再度読み取られません。",
     "tradeLinkedElsewhere": "別のメールがすでにその取引に対応しています。",
@@ -494,6 +497,7 @@
     "internal": "内部サーバーエラー"
   },
   "import": {
+    "accountClosed": "この口座は閉鎖されています。再開するか、別の口座を選択してください。",
     "noAccountBlocks": "QIFファイルに口座ブロックが見つかりません。このファイルはマルチアカウントエクスポートではない可能性があります。",
     "accountTypeRequired": "インポートする前に、次の口座の種類を選択してください: {{ accounts }}",
     "importFailed": "{{ imported }} 件の取引後にインポートが失敗しました：{{ message }}",
@@ -520,8 +524,7 @@
     "mnyExistingAccountCurrency": "既存の口座「{{ name }}」は {{ existing }} を使用していますが、Money ファイルの口座は {{ file }} を使用しています。どちらかの名前を変更してから、もう一度インポートしてください。",
     "mnyJobNotFound": "インポートジョブが見つかりません",
     "mnyFileTooLarge": "この Money ファイルはインポート上限の {{ limit }} MB を超えています。",
-    "noRateForSplitTransfer": "{{ date }} の {{ pair }} の為替レートがありません。分割行が別の通貨の口座へ振り替えています。その通貨ペアと日付の為替レートを追加してから、もう一度インポートしてください。",
-    "accountClosed": "この口座は閉鎖されています。再開するか、別の口座を選択してください。"
+    "noRateForSplitTransfer": "{{ date }} の {{ pair }} の為替レートがありません。分割行が別の通貨の口座へ振り替えています。その通貨ペアと日付の為替レートを追加してから、もう一度インポートしてください。"
   },
   "monteCarlo": {
     "scenarioNotFound": "シナリオ {{ id }} が見つかりません",

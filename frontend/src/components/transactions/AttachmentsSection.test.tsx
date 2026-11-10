@@ -617,6 +617,27 @@ describe('AttachmentsSection', () => {
       expect(name.closest('li')).not.toHaveClass('flex-wrap');
     });
 
+    it('offers a file already uploaded elsewhere, on its own phone line, and only to the owner', async () => {
+      mockList.mockResolvedValue([]);
+      await renderWarranty();
+      const button = screen.getByRole('button', { name: 'Add Existing' });
+      expect(button).toHaveClass('col-span-2');
+      await act(async () => {
+        fireEvent.click(button);
+      });
+      expect(screen.getByRole('dialog', { name: 'Add an Existing Document' })).toBeInTheDocument();
+      cleanup();
+      await act(async () => {
+        render(<AttachmentsSection warrantyId="w-1" readOnly />);
+      });
+      expect(screen.queryByRole('button', { name: 'Add Existing' })).not.toBeInTheDocument();
+    });
+
+    it("does not offer an existing file to a transaction's own list", async () => {
+      await renderSection();
+      expect(screen.queryByRole('button', { name: 'Add Existing' })).not.toBeInTheDocument();
+    });
+
     it('says there are no documents yet when the list is empty', async () => {
       mockList.mockResolvedValue([]);
       await renderWarranty();

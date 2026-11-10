@@ -29,6 +29,7 @@ import {
   SharedError,
   SharedTabs,
 } from "@/components/shared-expenses/SharedPrimitives";
+import { useMobileAddAction } from "@/store/mobileAddActionStore";
 const SharedGroupForm = dynamic(
   () =>
     import("@/components/shared-expenses/SharedGroupForm").then(
@@ -73,6 +74,10 @@ function GroupsContent() {
   );
   const totalPages = Math.max(1, Math.ceil((visible?.length ?? 0) / 25));
   const currentPage = Math.min(page, totalPages);
+  // The People tab names its own (a new contact); retained finance has none.
+  useMobileAddAction(tab === "groups" ? t("newGroup") : null, () =>
+    setForm(true),
+  );
   return (
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8 space-y-5">

@@ -43,11 +43,15 @@
     "position": "{index} von {total}",
     "previous": "Vorheriger Fakt",
     "next": "Nächster Fakt",
-    "empty": "Fakten erscheinen hier, sobald genug Verlauf vorhanden ist: zwei Monate Nettovermögen oder bewertete Anlagen. Die Liste wird jeden Morgen neu erstellt.",
+    "empty": "Fakten erscheinen hier, sobald genug Verlauf vorhanden ist: zwei Monate Nettovermögen, bewertete Anlagen, einige Monate Ausgaben und Einnahmen oder Garantien, die Sie erfassen. Die Liste wird jeden Morgen neu erstellt.",
     "off": "KI-Wissenswertes ist ausgeschaltet. Schalte es in den <link>KI-Einstellungen</link> ein.",
     "topics": {
       "netWorth": "Nettovermögen",
-      "investments": "Investments"
+      "investments": "Investments",
+      "spending": "Ausgaben",
+      "income": "Einnahmen",
+      "activity": "Ihre Daten",
+      "warranties": "Garantien"
     },
     "aiGenerated": "Von KI aus Ihren Zahlen geschrieben",
     "facts": {
@@ -65,7 +69,18 @@
       "investmentsBiggestHolding": "Ihre größte Position ist {holdingSymbol} mit etwa {holdingPercent} des Portfolios ({holdingValue} in {holdingAccounts}).",
       "investmentsBestPerformer": "Ihr bester Wert ist {bestSymbol} mit einem Plus von {bestPercent}. Er kostete {bestCost} und ist jetzt {bestValue} wert.",
       "investmentsForeignAccount": "Ihr Konto {foreignName} wird in {foreignCurrency} geführt. Die Bestände von {foreignBalance} entsprechen {foreignConverted} bei einem Kurs von etwa {foreignRate}.",
-      "investmentsLargestAccount": "Ihr größtes Anlagekonto ist {largestName} mit {largestValue}."
+      "investmentsLargestAccount": "Ihr größtes Anlagekonto ist {largestName} mit {largestValue}.",
+      "spendingTopCategory": "In den letzten zwölf Monaten entfiel der größte Teil Ihrer Ausgaben auf {topCategoryName}: {topCategoryAmount}, das sind {topCategoryPercent}.",
+      "spendingTopPayee": "In den letzten zwölf Monaten haben Sie am meisten bei {topPayeeName} ausgegeben: {topPayeeAmount}.",
+      "spendingBiggestMonth": "{biggestSpendMonth} war mit {biggestSpendAmount} Ihr ausgabenstärkster Monat der letzten zwölf.",
+      "incomeKeptShare": "In den letzten zwölf Monaten haben Sie {keptAmount} von Ihren Einnahmen behalten, das sind {keptPercent} Ihres Einkommens.",
+      "incomeSurplusMonths": "Monate der letzten {windowMonths}, in denen mehr einging als ausging: {surplusMonths}.",
+      "incomeTopSource": "{topSourceName} machte in den letzten zwölf Monaten {topSourcePercent} Ihres Einkommens aus.",
+      "activityTransactions": "Transaktionen in Ihren Konten: {transactionCount}, zurück bis {firstTransactionMonth}.",
+      "activityPayees": "Zahlungsempfänger, die Sie in Monize führen: {payeeCount}. Kategorien: {categoryCount}.",
+      "activityScheduled": "Geplante Transaktionen, die Monize für Sie verfolgt: {scheduledCount}.",
+      "warrantiesCovered": "Garantien, die Sie erfassen und die noch gelten: {warrantyCount}.",
+      "warrantiesNextExpiry": "Die nächste Garantie, die abläuft, ist {nextWarrantyName}, im {nextWarrantyMonth}."
     }
   },
   "favouriteAccounts": {
@@ -287,6 +302,8 @@
     "descriptionPlaceholder": "Optionale Beschreibung hinzufügen",
     "rangeLabels": {
       "1d": "1D",
+      "1w": "1W",
+      "mtd": "MTD",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",
@@ -295,9 +312,7 @@
       "5y": "5Y",
       "10y": "10Y",
       "ytd": "YTD",
-      "all": "Alle",
-      "1w": "1W",
-      "mtd": "MTD"
+      "all": "Alle"
     }
   },
   "portfolioValue": {

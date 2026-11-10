@@ -14,6 +14,7 @@ import { CARD_CLASS } from '@/components/ui/Card';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import dynamic from 'next/dynamic';
 import { exchangeRatesApi, CurrencyInfo, CreateCurrencyData, CurrencyUsage, FxProviderDescription, isRateProviderName } from '@/lib/exchange-rates';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 const CurrencyForm = dynamic(() => import('@/components/currencies/CurrencyForm').then(m => m.CurrencyForm), { ssr: false });
 import { CurrencyList, type CurrencySortField, type SortDirection } from '@/components/currencies/CurrencyList';
 import { RateHistoryCoverage } from '@/components/currencies/RateHistoryCoverage';
@@ -300,6 +301,8 @@ function CurrenciesContent() {
   // Summary counts always reflect all currencies, not just visible ones
   const activeCount = allCurrencies.filter((c) => c.isActive).length;
   const inactiveCount = allCurrencies.filter((c) => !c.isActive).length;
+
+  useMobileAddAction(t('page.newCurrency'), handleCreateNew);
 
   return (
     <PageLayout>

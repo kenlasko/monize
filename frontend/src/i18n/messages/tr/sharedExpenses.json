@@ -153,6 +153,8 @@
   "payee": "Alacaklım (isteğe bağlı)",
   "choose": "Seçin…",
   "none": "Yok",
+  "linkedPayee": "Bağlı alacaklı",
+  "actions": "İşlemler",
   "bookPreview": "Değişiklikleri önizle",
   "acceptBooking": "Finanslarıma kaydet",
   "unlink": "Finanslarımdan kaldır",
@@ -373,9 +375,9 @@
   "releaseShare": "{name} için sabit payı temizle",
   "splitAmountNeeded": "Kişi başı maliyeti görmek için pozitif bir gider tutarı girin. Kaydetmeden önce gider yeniden kontrol edilir.",
   "otherRepayment": "Başka geri ödeme kaydet",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, other {# grup}}",
   "entryCount": "{count, plural, other {# kayıt}}",
   "saveChanges": "Değişiklikleri kaydet",
-  "searchGroups": "Grup ara",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "Grup ara"
 }

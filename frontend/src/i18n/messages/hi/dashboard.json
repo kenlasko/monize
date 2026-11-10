@@ -43,11 +43,15 @@
     "position": "{total} में से {index}",
     "previous": "पिछला तथ्य",
     "next": "अगला तथ्य",
-    "empty": "पर्याप्त इतिहास होने पर तथ्य यहाँ दिखेंगे: दो महीने की कुल संपत्ति, या मूल्य वाले निवेश। सूची हर सुबह फिर से बनाई जाती है।",
+    "empty": "पर्याप्त इतिहास होने पर तथ्य यहाँ दिखेंगे: दो महीने की कुल संपत्ति, मूल्य वाले निवेश, कुछ महीनों के खर्च और आय, या आपकी ट्रैक की गई वारंटियाँ। सूची हर सुबह फिर से बनाई जाती है।",
     "off": "AI रोचक तथ्य बंद हैं। इन्हें <link>AI सेटिंग</link> में चालू करें।",
     "topics": {
       "netWorth": "कुल संपत्ति",
-      "investments": "निवेश"
+      "investments": "निवेश",
+      "spending": "खर्च",
+      "income": "आय",
+      "activity": "आपके रिकॉर्ड",
+      "warranties": "वारंटी"
     },
     "aiGenerated": "आपके आँकड़ों से AI द्वारा लिखा गया",
     "facts": {
@@ -65,7 +69,18 @@
       "investmentsBiggestHolding": "आपकी सबसे बड़ी होल्डिंग {holdingSymbol} है, जो पोर्टफ़ोलियो का लगभग {holdingPercent} है ({holdingAccounts} में {holdingValue})।",
       "investmentsBestPerformer": "आपका सबसे अच्छा प्रदर्शन {bestSymbol} का है, जो {bestPercent} बढ़ा है। इसकी लागत {bestCost} थी और अब इसका मूल्य {bestValue} है।",
       "investmentsForeignAccount": "आपका {foreignName} खाता {foreignCurrency} में है। इसकी {foreignBalance} की होल्डिंग लगभग {foreignRate} की दर पर {foreignConverted} के बराबर है।",
-      "investmentsLargestAccount": "आपका सबसे बड़ा निवेश खाता {largestName} है, जिसमें {largestValue} है।"
+      "investmentsLargestAccount": "आपका सबसे बड़ा निवेश खाता {largestName} है, जिसमें {largestValue} है।",
+      "spendingTopCategory": "पिछले बारह महीनों में आपके खर्च का सबसे बड़ा हिस्सा {topCategoryName} पर गया: {topCategoryAmount}, यानी {topCategoryPercent}।",
+      "spendingTopPayee": "पिछले बारह महीनों में आपने सबसे ज़्यादा {topPayeeName} पर खर्च किया: {topPayeeAmount}।",
+      "spendingBiggestMonth": "पिछले बारह महीनों में {biggestSpendMonth} आपका सबसे ज़्यादा खर्च वाला महीना था, जिसमें {biggestSpendAmount} खर्च हुए।",
+      "incomeKeptShare": "पिछले बारह महीनों में आपने आई हुई रकम में से {keptAmount} बचाए, जो आपकी आय का {keptPercent} है।",
+      "incomeSurplusMonths": "पिछले {windowMonths} महीनों में वे महीने जिनमें जाने से ज़्यादा आया: {surplusMonths}।",
+      "incomeTopSource": "पिछले बारह महीनों में आपकी आय का {topSourcePercent} {topSourceName} से आया।",
+      "activityTransactions": "आपके रजिस्टरों में लेन-देन: {transactionCount}, {firstTransactionMonth} तक पीछे।",
+      "activityPayees": "Monize में आपके रखे भुगतानकर्ता: {payeeCount}। श्रेणियाँ: {categoryCount}।",
+      "activityScheduled": "Monize आपके लिए जिन निर्धारित लेन-देन को ट्रैक कर रहा है: {scheduledCount}।",
+      "warrantiesCovered": "आपकी ट्रैक की गई वारंटियाँ जो अभी भी लागू हैं: {warrantyCount}।",
+      "warrantiesNextExpiry": "अगली वारंटी जो खत्म होगी, वह {nextWarrantyName} है, {nextWarrantyMonth} में।"
     }
   },
   "favouriteAccounts": {
@@ -287,6 +302,8 @@
     "descriptionPlaceholder": "एक वैकल्पिक विवरण जोड़ें",
     "rangeLabels": {
       "1d": "1D",
+      "1w": "1H",
+      "mtd": "MTD",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",
@@ -295,9 +312,7 @@
       "5y": "5Y",
       "10y": "10Y",
       "ytd": "YTD",
-      "all": "सभी",
-      "1w": "1H",
-      "mtd": "MTD"
+      "all": "सभी"
     }
   },
   "portfolioValue": {

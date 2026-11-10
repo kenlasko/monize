@@ -32,7 +32,10 @@
     "pairRequiresImages": "掃描的文件及其原圖都必須是圖片",
     "warrantyNotFound": "找不到保固",
     "tooManyForWarranty": "此保固已達到最多 {{ max }} 個附件的上限",
-    "documentKindNotForTransaction": "文件類型僅適用於保固的文件"
+    "documentKindNotForTransaction": "文件類型僅適用於保固的文件",
+    "copyNotOwnDocument": "只能向保固新增您自己的文件",
+    "copyAlreadyOnWarranty": "此文件已在該保固中",
+    "copySourceChanged": "新增過程中文件已變更。請再試一次。"
   },
   "accounts": {
     "accountWithIdNotFound": "找不到 ID 為 {{ id }} 的科目",
@@ -436,6 +439,8 @@
     "parserNotFound": "找不到收據解析器 {{ id }}",
     "parserRevisionConflict": "此解析器在您開啟後已被變更。請重新載入後再試。",
     "parserCategoryNotFound": "找不到此解析器中指定的類別。",
+    "parserCategoryNameUnknown": "找不到類別\"{{ name }}\"。請使用您的其中一個類別的名稱。",
+    "parserCategoryNameAmbiguous": "類別\"{{ name }}\"符合多個類別({{ candidates }})。請使用完整名稱，例如\"父級：子級\"。",
     "parserDefinitionInvalid": "解析器定義無效：{{ codes }}",
     "receiptSkipped": "無法讀取此郵件（郵件過大或無法解碼），因此沒有可處理的內容。",
     "notATradeEmail": "這封郵件沒有被讀取為交易確認。",
@@ -467,8 +472,6 @@
     "generateReceiptOutsideDomain": "有一封郵件並非來自該解析器所針對的寄件者網域。",
     "previewExpectedNotSelected": "為一封不在所選郵件之列的郵件指定了預期交易。",
     "previewReceiptOutsideDomain": "有一封郵件並非來自此解析器的任何寄件者網域。",
-    "parserCategoryNameUnknown": "找不到類別\"{{ name }}\"。請使用您的其中一個類別的名稱。",
-    "parserCategoryNameAmbiguous": "類別\"{{ name }}\"符合多個類別({{ candidates }})。請使用完整名稱，例如\"父級：子級\"。",
     "tradeNotBankLinkable": "此郵件被讀取為交易確認。請改為將其連結到一筆投資交易。",
     "tradeAccountedFor": "此郵件已對應一筆投資交易，因此不會再次讀取。",
     "tradeLinkedElsewhere": "另一封郵件已對應該交易。",
@@ -494,6 +497,7 @@
     "internal": "伺服器內部錯誤"
   },
   "import": {
+    "accountClosed": "此帳戶已關閉。請重新開啟或選擇其他帳戶。",
     "noAccountBlocks": "在 QIF 檔案中找不到科目區塊。此檔案可能不是多科目匯出。",
     "accountTypeRequired": "匯入前請為以下科目選擇科目類型：{{ accounts }}",
     "importFailed": "匯入在 {{ imported }} 筆交易後失敗：{{ message }}",
@@ -520,8 +524,7 @@
     "mnyExistingAccountCurrency": "現有帳戶「{{ name }}」使用 {{ existing }}，但 Money 檔案中的帳戶使用 {{ file }}。請重新命名其中一個，然後再次匯入。",
     "mnyJobNotFound": "找不到匯入工作",
     "mnyFileTooLarge": "這個 Money 檔案超過 {{ limit }} MB 的匯入上限。",
-    "noRateForSplitTransfer": "{{ date }} 沒有 {{ pair }} 的匯率：一筆分割行轉帳到另一種貨幣的帳戶。請為該貨幣對與日期新增匯率，然後重新匯入。",
-    "accountClosed": "此帳戶已關閉。請重新開啟或選擇其他帳戶。"
+    "noRateForSplitTransfer": "{{ date }} 沒有 {{ pair }} 的匯率：一筆分割行轉帳到另一種貨幣的帳戶。請為該貨幣對與日期新增匯率，然後重新匯入。"
   },
   "monteCarlo": {
     "scenarioNotFound": "找不到情境 {{ id }}",

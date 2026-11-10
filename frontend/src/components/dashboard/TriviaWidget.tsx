@@ -3,7 +3,16 @@
 import { useEffect, useMemo, useState, type ComponentType, type SVGProps } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { ChevronLeftIcon, ChevronRightIcon, PresentationChartLineIcon, ScaleIcon } from '@heroicons/react/24/outline';
+import {
+  BanknotesIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PresentationChartLineIcon,
+  ScaleIcon,
+  ShieldCheckIcon,
+  ShoppingCartIcon,
+  TableCellsIcon,
+} from '@heroicons/react/24/outline';
 import { SparklesIcon } from '@heroicons/react/20/solid';
 import { CARD_CLASS, HOVER_TOOLBAR_BUTTON } from '@/components/ui/Card';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
@@ -17,6 +26,13 @@ import { WidgetHeading } from './widget-meta';
 export const TRIVIA_ROTATE_MS = 12_000;
 
 const PLACEHOLDER = /\{([A-Za-z]+)\}/g;
+
+/**
+ * Every state of the card is one height: the sentence scrolls inside a fixed
+ * box rather than growing the card, so a long fact never moves the widgets
+ * around it. The grid can still stretch it to its row.
+ */
+const TRIVIA_CARD_CLASS = `${CARD_CLASS} flex flex-col p-3 sm:p-6 min-h-[390px]`;
 
 interface TopicLook {
   icon: ComponentType<SVGProps<SVGSVGElement>>;
@@ -45,7 +61,44 @@ const TOPIC_LOOK: Record<TriviaTopic, TopicLook> = {
     label: 'text-emerald-700 dark:text-emerald-300',
     figure: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-400/15 dark:text-emerald-100',
   },
+  spending: {
+    icon: ShoppingCartIcon,
+    panel: 'from-rose-50 via-white to-orange-50 dark:from-rose-950/50 dark:via-gray-900 dark:to-orange-950/50',
+    glow: 'bg-rose-300/40 dark:bg-rose-500/20',
+    medallion: 'bg-rose-600 text-white shadow-rose-600/30 dark:bg-rose-500',
+    label: 'text-rose-700 dark:text-rose-300',
+    figure: 'bg-rose-100 text-rose-900 dark:bg-rose-400/15 dark:text-rose-100',
+  },
+  income: {
+    icon: BanknotesIcon,
+    panel: 'from-amber-50 via-white to-lime-50 dark:from-amber-950/50 dark:via-gray-900 dark:to-lime-950/50',
+    glow: 'bg-amber-300/40 dark:bg-amber-500/20',
+    medallion: 'bg-amber-600 text-white shadow-amber-600/30 dark:bg-amber-500',
+    label: 'text-amber-700 dark:text-amber-300',
+    figure: 'bg-amber-100 text-amber-900 dark:bg-amber-400/15 dark:text-amber-100',
+  },
+  activity: {
+    icon: TableCellsIcon,
+    panel: 'from-violet-50 via-white to-fuchsia-50 dark:from-violet-950/50 dark:via-gray-900 dark:to-fuchsia-950/50',
+    glow: 'bg-violet-300/40 dark:bg-violet-500/20',
+    medallion: 'bg-violet-600 text-white shadow-violet-600/30 dark:bg-violet-500',
+    label: 'text-violet-700 dark:text-violet-300',
+    figure: 'bg-violet-100 text-violet-900 dark:bg-violet-400/15 dark:text-violet-100',
+  },
+  warranties: {
+    icon: ShieldCheckIcon,
+    panel: 'from-cyan-50 via-white to-slate-50 dark:from-cyan-950/50 dark:via-gray-900 dark:to-slate-900/50',
+    glow: 'bg-cyan-300/40 dark:bg-cyan-500/20',
+    medallion: 'bg-cyan-600 text-white shadow-cyan-600/30 dark:bg-cyan-500',
+    label: 'text-cyan-700 dark:text-cyan-300',
+    figure: 'bg-cyan-100 text-cyan-900 dark:bg-cyan-400/15 dark:text-cyan-100',
+  },
 };
+
+/** A topic this build does not know yet (a newer server) wears net worth's look. */
+function lookOf(topic: TriviaTopic): TopicLook {
+  return TOPIC_LOOK[topic] ?? TOPIC_LOOK.netWorth;
+}
 
 /** A sentence as text and figures, each figure by the name it is quoted by. */
 type Part = { text: string } | { figure: string };
@@ -63,7 +116,8 @@ function splitSentence(template: string): Part[] {
 }
 
 /**
- * The day's trivia about the reader's net worth and investments, one fact at a
+ * The day's trivia about the reader's Monize (net worth, investments, spending,
+ * income, their records and their warranties), one fact at a
  * time: it moves on by itself, and the arrows step through by hand. Each fact
  * wears its topic's colour and picture, its figures picked out in the sentence.
  * Switched off in AI Settings, it says so and links there.
@@ -103,6 +157,8 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
             return formatNumber(figure.value, 2);
           case 'rate':
             return formatNumber(figure.value, 4);
+          case 'count':
+            return formatNumber(figure.value, 0);
           case 'month':
             return formatChartDate(`${figure.value}-01`, 'MMMM yyyy');
           case 'text':
@@ -120,7 +176,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
 
   if (!enabled) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`}>
+      <div className={TRIVIA_CARD_CLASS}>
         {heading}
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {t.rich('trivia.off', {
@@ -137,16 +193,16 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
 
   if (parentLoading || trivia === null) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`} aria-busy="true">
+      <div className={TRIVIA_CARD_CLASS} aria-busy="true">
         {heading}
-        <div className="h-64 w-full rounded-xl animate-pulse skeleton-shimmer bg-gray-200 dark:bg-gray-700" />
+        <div className="flex-1 w-full rounded-xl animate-pulse skeleton-shimmer bg-gray-200 dark:bg-gray-700" />
       </div>
     );
   }
 
   if (count === 0) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`}>
+      <div className={TRIVIA_CARD_CLASS}>
         {heading}
         <p className="text-sm text-gray-500 dark:text-gray-400">{t('trivia.empty')}</p>
       </div>
@@ -155,7 +211,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
 
   const index = (((start + step) % count) + count) % count;
   const item: TriviaItem = trivia.items[index];
-  const look = TOPIC_LOOK[item.topic];
+  const look = lookOf(item.topic);
   const TopicIcon = look.icon;
   const template =
     item.source === 'ai'
@@ -169,7 +225,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
 
   return (
     <div
-      className={`${CARD_CLASS} flex flex-col p-3 sm:p-6 lg:min-h-[390px]`}
+      className={TRIVIA_CARD_CLASS}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -184,7 +240,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
 
       <figure
         data-testid="trivia-card"
-        className={`relative flex flex-1 flex-col overflow-hidden rounded-xl bg-gradient-to-br p-5 sm:p-7 ring-1 ring-black/5 dark:ring-white/10 ${look.panel}`}
+        className={`relative flex flex-1 flex-col overflow-hidden rounded-xl bg-gradient-to-br p-5 sm:p-6 ring-1 ring-black/5 dark:ring-white/10 ${look.panel}`}
       >
         {/* Decoration: a soft glow and the topic's picture, large and faint. */}
         <div aria-hidden="true" className={`pointer-events-none absolute -top-16 -left-16 h-48 w-48 rounded-full blur-3xl ${look.glow}`} />
@@ -205,7 +261,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
         <blockquote
           key={`${index}-${step}`}
           data-testid="trivia-sentence"
-          className="relative mt-5 flex-1 text-lg leading-relaxed font-medium text-gray-800 motion-safe:animate-chart-in dark:text-gray-100 sm:text-xl"
+          className="relative mt-4 h-0 min-h-[8.5rem] flex-1 overflow-y-auto text-base leading-relaxed font-medium text-gray-800 motion-safe:animate-chart-in dark:text-gray-100 sm:min-h-[7rem] sm:text-lg"
         >
           {splitSentence(template).map((part, i) =>
             'text' in part ? (
@@ -220,12 +276,15 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
           )}
         </blockquote>
 
-        {item.source === 'ai' && (
-          <figcaption className="relative mt-4 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-            <SparklesIcon aria-hidden="true" className="h-3.5 w-3.5" />
-            {t('trivia.aiGenerated')}
-          </figcaption>
-        )}
+        {/* Its line is kept on every fact, so the card does not move between kinds. */}
+        <figcaption className="relative mt-4 flex h-4 items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+          {item.source === 'ai' && (
+            <>
+              <SparklesIcon aria-hidden="true" className="h-3.5 w-3.5" />
+              {t('trivia.aiGenerated')}
+            </>
+          )}
+        </figcaption>
       </figure>
 
       {count > 1 && (
@@ -245,7 +304,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
               <span
                 key={i}
                 className={`h-1.5 rounded-full transition-all motion-reduce:transition-none ${
-                  i === index ? `w-5 ${TOPIC_LOOK[other.topic].medallion.split(' ')[0]}` : 'w-1.5 bg-gray-300 dark:bg-gray-600'
+                  i === index ? `w-5 ${lookOf(other.topic).medallion.split(' ')[0]}` : 'w-1.5 bg-gray-300 dark:bg-gray-600'
                 }`}
               />
             ))}

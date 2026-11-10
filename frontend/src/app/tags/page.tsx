@@ -8,6 +8,7 @@ import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 const TagForm = dynamic(() => import('@/components/tags/TagForm').then(m => m.TagForm), { ssr: false });
 import { TagList, type SortField, type SortDirection } from '@/components/tags/TagList';
 import { Modal } from '@/components/ui/Modal';
@@ -156,6 +157,8 @@ function TagsContent() {
 
   const tagsWithColor = tags.filter((t) => t.color).length;
   const tagsWithIcon = tags.filter((t) => t.icon).length;
+
+  useMobileAddAction(t('page.newButton'), openCreate);
 
   return (
     <PageLayout>

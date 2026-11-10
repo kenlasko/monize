@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen, within } from '@/test/render';
+import { act, fireEvent, render, renderHook, screen, within } from '@/test/render';
 import { MobileTabBar } from './MobileTabBar';
 import { useCommandPaletteStore } from '@/store/commandPaletteStore';
 import { useMobileChromeStore } from '@/store/mobileChromeStore';
+import { useMobileAddAction, useMobileAddActionStore } from '@/store/mobileAddActionStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import type { UserPreferences } from '@/types/auth';
 
@@ -47,6 +48,7 @@ describe('MobileTabBar', () => {
     usePreferencesStore.setState({ preferences: null });
     useMobileChromeStore.setState({ drawerOpen: false, collapsedTitle: null });
     useCommandPaletteStore.setState({ newTransactionRequest: null });
+    useMobileAddActionStore.setState({ action: null });
   });
 
   it('defaults to Home, Transactions, Accounts and More around the add button', () => {
@@ -104,6 +106,61 @@ describe('MobileTabBar', () => {
     fireEvent.click(bar().getByRole('button', { name: 'New transaction' }));
     expect(useCommandPaletteStore.getState().newTransactionRequest).toEqual({ payee: null });
     expect(mockPush).toHaveBeenCalledWith('/transactions');
+  });
+
+  it("runs the page's own new action instead of a new transaction", () => {
+    mockPathname = '/accounts';
+    const run = vi.fn();
+    renderHook(() => useMobileAddAction('New Account', run));
+    render(<MobileTabBar />);
+    fireEvent.click(bar().getByRole('button', { name: 'New Account' }));
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(useCommandPaletteStore.getState().newTransactionRequest).toBeNull();
+  });
+
+  it('falls back to a new transaction once the page that named an action leaves', () => {
+    const page = renderHook(() => useMobileAddAction('New Account', vi.fn()));
+    render(<MobileTabBar />);
+    expect(bar().getByRole('button', { name: 'New Account' })).toBeInTheDocument();
+    act(() => page.unmount());
+    expect(bar().getByRole('button', { name: 'New transaction' })).toBeInTheDocument();
+  });
+
+  it("does not let a leaving page clear the next page's action", () => {
+    const first = renderHook(() => useMobileAddAction('New Account', vi.fn()));
+    renderHook(() => useMobileAddAction('New Payee', vi.fn()));
+    act(() => first.unmount());
+    expect(useMobileAddActionStore.getState().action?.label).toBe('New Payee');
+  });
+
+  it('calls the newest handler a page rendered, not the first', () => {
+    const calls: string[] = [];
+    const page = renderHook(({ v }) => useMobileAddAction('New Account', () => calls.push(v)), {
+      initialProps: { v: 'first' },
+    });
+    page.rerender({ v: 'second' });
+    act(() => useMobileAddActionStore.getState().action?.run());
+    expect(calls).toEqual(['second']);
+  });
+
+  it("drops a header label's visual + from the button's name", () => {
+    renderHook(() => useMobileAddAction('+ New Account', vi.fn()));
+    render(<MobileTabBar />);
+    expect(bar().getByRole('button', { name: 'New Account' })).toBeInTheDocument();
+  });
+
+  it('registers nothing for a null label', () => {
+    renderHook(() => useMobileAddAction(null, vi.fn()));
+    expect(useMobileAddActionStore.getState().action).toBeNull();
+  });
+
+  it("offers a page's action even where transactions are out of reach", () => {
+    mockActingAsUserId = 'owner';
+    mockDelegateSections = { accounts: true };
+    renderHook(() => useMobileAddAction('New Account', vi.fn()));
+    render(<MobileTabBar />);
+    expect(bar().getByRole('button', { name: 'New Account' })).toBeInTheDocument();
   });
 
   it('does not push the tab for the page already open', () => {

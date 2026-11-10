@@ -43,11 +43,15 @@
     "position": "[XX-{index} of {total}-XX]",
     "previous": "[XX-Previous fact-XX]",
     "next": "[XX-Next fact-XX]",
-    "empty": "[XX-Facts appear here once there is enough history to talk about: two months of net worth, or priced investments. The list is rebuilt each morning.-XX]",
+    "empty": "[XX-Facts appear here once there is enough history to talk about: two months of net worth, priced investments, a few months of spending and income, or warranties you track. The list is rebuilt each morning.-XX]",
     "off": "[XX-AI trivia is turned off. Turn it on in <link>AI Settings</link>.-XX]",
     "topics": {
       "netWorth": "[XX-Net worth-XX]",
-      "investments": "[XX-Investments-XX]"
+      "investments": "[XX-Investments-XX]",
+      "spending": "[XX-Spending-XX]",
+      "income": "[XX-Income-XX]",
+      "activity": "[XX-Your records-XX]",
+      "warranties": "[XX-Warranties-XX]"
     },
     "aiGenerated": "[XX-Written by AI from your figures-XX]",
     "facts": {
@@ -65,7 +69,18 @@
       "investmentsBiggestHolding": "[XX-Your biggest holding is {holdingSymbol} at about {holdingPercent} of the portfolio ({holdingValue} in {holdingAccounts}).-XX]",
       "investmentsBestPerformer": "[XX-Your best performer is {bestSymbol}, up {bestPercent}. It cost {bestCost} and is now worth {bestValue}.-XX]",
       "investmentsForeignAccount": "[XX-Your {foreignName} account is held in {foreignCurrency}. Its {foreignBalance} of holdings equals {foreignConverted} at a rate of about {foreignRate}.-XX]",
-      "investmentsLargestAccount": "[XX-Your largest investment account is {largestName} at {largestValue}.-XX]"
+      "investmentsLargestAccount": "[XX-Your largest investment account is {largestName} at {largestValue}.-XX]",
+      "spendingTopCategory": "[XX-Over the last twelve months, {topCategoryName} took the most of your spending: {topCategoryAmount}, or {topCategoryPercent} of it.-XX]",
+      "spendingTopPayee": "[XX-Over the last twelve months, you spent the most with {topPayeeName}: {topPayeeAmount}.-XX]",
+      "spendingBiggestMonth": "[XX-{biggestSpendMonth} was your biggest spending month of the last twelve, at {biggestSpendAmount}.-XX]",
+      "incomeKeptShare": "[XX-Over the last twelve months you kept {keptAmount} of what came in, which is {keptPercent} of your income.-XX]",
+      "incomeSurplusMonths": "[XX-Months of the last {windowMonths} in which more came in than went out: {surplusMonths}.-XX]",
+      "incomeTopSource": "[XX-{topSourceName} brought in {topSourcePercent} of your income over the last twelve months.-XX]",
+      "activityTransactions": "[XX-Transactions in your registers: {transactionCount}, going back to {firstTransactionMonth}.-XX]",
+      "activityPayees": "[XX-Payees you keep in Monize: {payeeCount}. Categories: {categoryCount}.-XX]",
+      "activityScheduled": "[XX-Scheduled transactions Monize is tracking for you: {scheduledCount}.-XX]",
+      "warrantiesCovered": "[XX-Warranties you track that are still in cover: {warrantyCount}.-XX]",
+      "warrantiesNextExpiry": "[XX-The next warranty to run out is {nextWarrantyName}, in {nextWarrantyMonth}.-XX]"
     }
   },
   "favouriteAccounts": {

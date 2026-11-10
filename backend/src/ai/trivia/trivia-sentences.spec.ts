@@ -113,11 +113,65 @@ describe("parseTriviaSentences", () => {
   });
 
   it("caps the list", () => {
-    const many = Array.from({ length: 30 }, (_, i) => ({
+    const many = Array.from({ length: 50 }, (_, i) => ({
       topic: "netWorth",
       text: `{peakAmount} ${"a".repeat(i + 1)}`,
     }));
-    expect(parseTriviaSentences(reply(...many), facts)).toHaveLength(16);
+    // One item per fact it was given: two facts, two sentences.
+    expect(parseTriviaSentences(reply(...many), facts)).toHaveLength(2);
+    const manyFacts = Array.from({ length: 60 }, () => facts[0]);
+    expect(parseTriviaSentences(reply(...many), manyFacts)).toHaveLength(26);
+  });
+
+  it("takes the newer topics, each held to its own figures", () => {
+    const wider: TriviaFact[] = [
+      ...facts,
+      {
+        id: "activityTransactions",
+        topic: "activity",
+        figures: {
+          transactionCount: { kind: "count", value: 12 },
+          firstTransactionMonth: { kind: "month", value: "2020-01" },
+        },
+      },
+      {
+        id: "warrantiesCovered",
+        topic: "warranties",
+        figures: { warrantyCount: { kind: "count", value: 3 } },
+      },
+    ];
+    const parsed = parseTriviaSentences(
+      reply(
+        {
+          topic: "activity",
+          text: "{transactionCount} since {firstTransactionMonth}.",
+        },
+        { topic: "warranties", text: "{warrantyCount} covered." },
+        // Another topic's figure is refused, as for the first two topics.
+        {
+          topic: "warranties",
+          text: "{warrantyCount} and {transactionCount}.",
+        },
+        { topic: "budgets", text: "{warrantyCount} budgets." },
+      ),
+      wider,
+    );
+    expect(parsed.map((item) => item.topic)).toEqual([
+      "activity",
+      "warranties",
+    ]);
+  });
+
+  it("describes a count to the model by its value", () => {
+    expect(
+      buildTriviaPrompt([
+        {
+          id: "warrantiesCovered",
+          topic: "warranties",
+          figures: { warrantyCount: { kind: "count", value: 3 } },
+        },
+      ]),
+    ).toContain("{warrantyCount}: count, 3");
   });
 });
 

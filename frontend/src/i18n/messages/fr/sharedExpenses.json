@@ -153,6 +153,8 @@
   "payee": "Mon bénéficiaire (facultatif)",
   "choose": "Choisir…",
   "none": "Aucun",
+  "linkedPayee": "Bénéficiaire lié",
+  "actions": "Actions",
   "bookPreview": "Aperçu des modifications",
   "acceptBooking": "Enregistrer dans mes finances",
   "unlink": "Retirer de mes finances",
@@ -373,9 +375,9 @@
   "releaseShare": "Retirer la part fixe de {name}",
   "splitAmountNeeded": "Saisissez une dépense positive pour prévisualiser le coût par personne. La dépense sera revérifiée avant l’enregistrement.",
   "otherRepayment": "Enregistrer un autre remboursement",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, one {# groupe} other {# groupes}}",
   "entryCount": "{count, plural, one {# écriture} other {# écritures}}",
   "saveChanges": "Enregistrer les modifications",
-  "searchGroups": "Rechercher des groupes",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "Rechercher des groupes"
 }

@@ -153,6 +153,8 @@
   "payee": "我的收款人（可選）",
   "choose": "選擇…",
   "none": "無",
+  "linkedPayee": "連結的收款人",
+  "actions": "操作",
   "bookPreview": "預覽變更",
   "acceptBooking": "儲存至我的財務",
   "unlink": "從我的財務中移除",
@@ -373,9 +375,9 @@
   "releaseShare": "清除{name}的固定份額",
   "splitAmountNeeded": "輸入正數支出金額以預覽每個人的費用。儲存前將再次檢查該支出。",
   "otherRepayment": "記錄其他還款",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, other {#個群組}}",
   "entryCount": "{count, plural, other {#筆記錄}}",
   "saveChanges": "儲存變更",
-  "searchGroups": "搜尋群組",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "搜尋群組"
 }

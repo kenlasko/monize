@@ -32,7 +32,10 @@
     "pairRequiresImages": "Ein gescanntes Dokument und sein Original müssen beide Bilder sein",
     "warrantyNotFound": "Garantie nicht gefunden",
     "tooManyForWarranty": "Diese Garantie hat bereits die maximale Anzahl von {{ max }} Anhängen",
-    "documentKindNotForTransaction": "Eine Dokumentart gilt nur für die Dokumente einer Garantie"
+    "documentKindNotForTransaction": "Eine Dokumentart gilt nur für die Dokumente einer Garantie",
+    "copyNotOwnDocument": "Nur eines Ihrer eigenen Dokumente kann zu einer Garantie hinzugefügt werden",
+    "copyAlreadyOnWarranty": "Dieses Dokument gehört bereits zu dieser Garantie",
+    "copySourceChanged": "Das Dokument hat sich beim Hinzufügen geändert. Bitte versuchen Sie es erneut."
   },
   "accounts": {
     "accountWithIdNotFound": "Konto mit ID {{ id }} nicht gefunden",
@@ -436,6 +439,8 @@
     "parserNotFound": "Beleg-Profil {{ id }} nicht gefunden",
     "parserRevisionConflict": "Dieser Profil wurde geändert, seit Sie ihn geöffnet haben. Laden Sie ihn neu und versuchen Sie es erneut.",
     "parserCategoryNotFound": "Eine in diesem Profil genannte Kategorie wurde nicht gefunden.",
+    "parserCategoryNameUnknown": "Die Kategorie \"{{ name }}\" wurde nicht gefunden. Verwenden Sie den Namen einer Ihrer Kategorien.",
+    "parserCategoryNameAmbiguous": "Die Kategorie \"{{ name }}\" passt zu mehreren Kategorien ({{ candidates }}). Verwenden Sie den vollständigen Namen, zum Beispiel \"Parent: Child\".",
     "parserDefinitionInvalid": "Die Profil-Definition ist ungültig: {{ codes }}",
     "receiptSkipped": "Diese E-Mail konnte nicht gelesen werden (sie war zu groß oder konnte nicht dekodiert werden), daher gibt es nichts zu verarbeiten.",
     "notATradeEmail": "Diese E-Mail wurde nicht als Handelsbestätigung gelesen.",
@@ -467,8 +472,6 @@
     "generateReceiptOutsideDomain": "Eine E-Mail stammt nicht von der Absenderdomain, für die das Profil gedacht ist.",
     "previewExpectedNotSelected": "Für eine E-Mail wurde eine erwartete Buchung angegeben, die nicht zu den ausgewählten gehört.",
     "previewReceiptOutsideDomain": "Eine E-Mail stammt nicht von einer Absenderdomain dieses Profils.",
-    "parserCategoryNameUnknown": "Die Kategorie \"{{ name }}\" wurde nicht gefunden. Verwenden Sie den Namen einer Ihrer Kategorien.",
-    "parserCategoryNameAmbiguous": "Die Kategorie \"{{ name }}\" passt zu mehreren Kategorien ({{ candidates }}). Verwenden Sie den vollständigen Namen, zum Beispiel \"Parent: Child\".",
     "tradeNotBankLinkable": "Diese E-Mail wird als Handelsbestätigung gelesen. Verknüpfe sie stattdessen mit einer Investmenttransaktion.",
     "tradeAccountedFor": "Diese E-Mail steht bereits für eine Investmenttransaktion und wird daher nicht erneut gelesen.",
     "tradeLinkedElsewhere": "Eine andere E-Mail steht bereits für diese Transaktion.",
@@ -494,6 +497,7 @@
     "internal": "Interner Serverfehler"
   },
   "import": {
+    "accountClosed": "Das Konto ist geschlossen. Öffnen Sie es wieder oder wählen Sie ein anderes Konto.",
     "noAccountBlocks": "Keine Kontoblöcke in der QIF-Datei gefunden. Diese Datei ist möglicherweise kein Multi-Konto-Export.",
     "accountTypeRequired": "Wählen Sie vor dem Import eine Kontoart für diese Konten: {{ accounts }}",
     "importFailed": "Import fehlgeschlagen nach {{ imported }} Buchungen: {{ message }}",
@@ -520,8 +524,7 @@
     "mnyExistingAccountCurrency": "Das bestehende Konto \"{{ name }}\" verwendet {{ existing }}, das Konto in der Money-Datei jedoch {{ file }}. Benennen Sie eines davon um und importieren Sie erneut.",
     "mnyJobNotFound": "Import-Auftrag nicht gefunden",
     "mnyFileTooLarge": "Diese Money-Datei ist größer als das Importlimit von {{ limit }} MB.",
-    "noRateForSplitTransfer": "Kein Wechselkurs für {{ pair }} am {{ date }}: Eine Splitzeile überweist auf ein Konto in einer anderen Währung. Fügen Sie einen Wechselkurs für dieses Paar und Datum hinzu und importieren Sie erneut.",
-    "accountClosed": "Das Konto ist geschlossen. Öffnen Sie es wieder oder wählen Sie ein anderes Konto."
+    "noRateForSplitTransfer": "Kein Wechselkurs für {{ pair }} am {{ date }}: Eine Splitzeile überweist auf ein Konto in einer anderen Währung. Fügen Sie einen Wechselkurs für dieses Paar und Datum hinzu und importieren Sie erneut."
   },
   "monteCarlo": {
     "scenarioNotFound": "Szenario {{ id }} nicht gefunden",

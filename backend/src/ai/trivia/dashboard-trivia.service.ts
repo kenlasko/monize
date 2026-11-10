@@ -30,6 +30,8 @@ import {
 import { currentRequestLocale } from "../../i18n/request-locale";
 import { DashboardTrivia } from "../entities/dashboard-trivia.entity";
 import { buildTriviaFacts, TriviaAsset } from "./trivia-facts";
+import { buildLedgerTriviaFacts } from "./trivia-ledger-facts";
+import { TriviaLedgerLoader } from "./trivia-ledger.loader";
 import {
   buildTriviaPrompt,
   mergeTriviaItems,
@@ -72,6 +74,7 @@ export class DashboardTriviaService {
     private readonly portfolioService: PortfolioService,
     private readonly aiService: AiService,
     private readonly jobClaims: JobClaimService,
+    private readonly ledger: TriviaLedgerLoader,
   ) {}
 
   /**
@@ -265,16 +268,22 @@ export class DashboardTriviaService {
     const portfolio = await this.loadPortfolio(userId);
     const accounts = await this.accountsService.findAll(userId);
 
-    return buildTriviaFacts({
-      currency,
-      months,
-      portfolio,
-      otherAssets: this.otherAssets(accounts, currency),
-      portfolioInNetWorth: !accounts.some(
-        (a) =>
-          a.accountType === AccountType.INVESTMENT && a.excludeFromNetWorth,
-      ),
-    });
+    const ledger = await this.ledger.load(userId, currency);
+
+    return [
+      ...buildTriviaFacts({
+        currency,
+        months,
+        portfolio,
+        otherAssets: this.otherAssets(accounts, currency),
+        portfolioInNetWorth: !accounts.some(
+          (a) =>
+            a.accountType === AccountType.INVESTMENT && a.excludeFromNetWorth,
+        ),
+      }),
+      // Spending, income, records and warranties: the rest of Monize.
+      ...buildLedgerTriviaFacts(ledger),
+    ];
   }
 
   /** A portfolio that cannot be read leaves out its facts, and only those. */

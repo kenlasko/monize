@@ -27,6 +27,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { PAGE_SIZE } from '@/lib/constants';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 
 const logger = createLogger('Institutions');
 
@@ -191,6 +192,8 @@ function InstitutionsContent() {
     (sum, i) => sum + (i.accountCount || 0),
     0,
   );
+
+  useMobileAddAction(t('page.newInstitution'), openCreate);
 
   return (
     <PageLayout>

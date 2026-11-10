@@ -32,7 +32,10 @@
     "pairRequiresImages": "Dokumen yang dipindai dan aslinya harus sama-sama berupa gambar",
     "warrantyNotFound": "Garansi tidak ditemukan",
     "tooManyForWarranty": "Garansi ini sudah memiliki maksimum {{ max }} lampiran",
-    "documentKindNotForTransaction": "Jenis dokumen hanya berlaku untuk dokumen garansi"
+    "documentKindNotForTransaction": "Jenis dokumen hanya berlaku untuk dokumen garansi",
+    "copyNotOwnDocument": "Hanya dokumen milik Anda sendiri yang dapat ditambahkan ke garansi",
+    "copyAlreadyOnWarranty": "Dokumen ini sudah ada di garansi ini",
+    "copySourceChanged": "Dokumen berubah saat sedang ditambahkan. Silakan coba lagi."
   },
   "accounts": {
     "accountWithIdNotFound": "Akun dengan ID {{ id }} tidak ditemukan",
@@ -436,6 +439,8 @@
     "parserNotFound": "Parser struk {{ id }} tidak ditemukan",
     "parserRevisionConflict": "Parser ini telah diubah sejak Anda membukanya. Muat ulang dan coba lagi.",
     "parserCategoryNotFound": "Kategori yang disebut dalam parser ini tidak ditemukan.",
+    "parserCategoryNameUnknown": "Kategori \"{{ name }}\" tidak ditemukan. Gunakan nama salah satu kategori Anda.",
+    "parserCategoryNameAmbiguous": "Kategori \"{{ name }}\" cocok dengan beberapa kategori ({{ candidates }}). Gunakan nama lengkap, misalnya \"Parent: Child\".",
     "parserDefinitionInvalid": "Definisi parser tidak valid: {{ codes }}",
     "receiptSkipped": "Email ini tidak dapat dibaca (terlalu besar atau tidak dapat didekode), sehingga tidak ada yang perlu diproses.",
     "notATradeEmail": "Surel ini tidak dibaca sebagai konfirmasi perdagangan.",
@@ -467,8 +472,6 @@
     "generateReceiptOutsideDomain": "Sebuah surel bukan berasal dari domain pengirim yang menjadi tujuan parser ini.",
     "previewExpectedNotSelected": "Transaksi yang diharapkan disebutkan untuk surel yang tidak termasuk surel terpilih.",
     "previewReceiptOutsideDomain": "Sebuah surel bukan berasal dari domain pengirim parser ini.",
-    "parserCategoryNameUnknown": "Kategori \"{{ name }}\" tidak ditemukan. Gunakan nama salah satu kategori Anda.",
-    "parserCategoryNameAmbiguous": "Kategori \"{{ name }}\" cocok dengan beberapa kategori ({{ candidates }}). Gunakan nama lengkap, misalnya \"Parent: Child\".",
     "tradeNotBankLinkable": "Email ini dibaca sebagai konfirmasi transaksi. Tautkan ke transaksi investasi.",
     "tradeAccountedFor": "Email ini sudah mewakili sebuah transaksi investasi, jadi tidak dibaca ulang.",
     "tradeLinkedElsewhere": "Email lain sudah mewakili transaksi tersebut.",
@@ -494,6 +497,7 @@
     "internal": "Kesalahan server internal"
   },
   "import": {
+    "accountClosed": "Akun ditutup. Buka kembali atau pilih akun lain.",
     "noAccountBlocks": "Tidak ada blok akun yang ditemukan dalam file QIF. File ini mungkin bukan ekspor multi-akun.",
     "accountTypeRequired": "Pilih jenis akun untuk akun-akun ini sebelum mengimpor: {{ accounts }}",
     "importFailed": "Impor gagal setelah {{ imported }} transaksi: {{ message }}",
@@ -520,8 +524,7 @@
     "mnyExistingAccountCurrency": "Akun \"{{ name }}\" yang sudah ada memakai {{ existing }}, tetapi akun di file Money memakai {{ file }}. Ganti nama salah satunya, lalu impor lagi.",
     "mnyJobNotFound": "Tugas impor tidak ditemukan",
     "mnyFileTooLarge": "Berkas Money itu lebih besar dari batas impor {{ limit }} MB.",
-    "noRateForSplitTransfer": "Tidak ada kurs untuk {{ pair }} pada {{ date }}: sebuah baris pecahan mentransfer ke akun dengan mata uang lain. Tambahkan kurs untuk pasangan dan tanggal tersebut, lalu impor lagi.",
-    "accountClosed": "Akun ditutup. Buka kembali atau pilih akun lain."
+    "noRateForSplitTransfer": "Tidak ada kurs untuk {{ pair }} pada {{ date }}: sebuah baris pecahan mentransfer ke akun dengan mata uang lain. Tambahkan kurs untuk pasangan dan tanggal tersebut, lalu impor lagi."
   },
   "monteCarlo": {
     "scenarioNotFound": "Skenario {{ id }} tidak ditemukan",

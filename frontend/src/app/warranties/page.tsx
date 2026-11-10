@@ -49,6 +49,7 @@ import type {
   WarrantyStatusFilter,
   WarrantySummary,
 } from '@/types/warranty';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 
 const WarrantyForm = dynamic(
   () => import('@/components/warranties/WarrantyForm').then((m) => m.WarrantyForm),
@@ -429,6 +430,9 @@ function WarrantiesContent() {
       />
     );
   }
+
+  // Adding is the owner's, as the header button is.
+  useMobileAddAction(readOnly ? null : t('page.newButton'), openNew);
 
   return (
     <PageLayout>

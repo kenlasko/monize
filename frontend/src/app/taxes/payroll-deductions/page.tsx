@@ -31,6 +31,7 @@ import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import type { Category } from '@/types/category';
 import type { CreatePayrollDeductionRulesData, PayrollDeductionRule } from '@/types/payroll-deduction';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 
 const PayrollDeductionRuleForm = dynamic(
   () => import('@/components/taxes/PayrollDeductionRuleForm').then((m) => m.PayrollDeductionRuleForm),
@@ -140,6 +141,8 @@ function PayrollDeductionsContent() {
       setDeleteRule(null);
     }
   };
+
+  useMobileAddAction(t('newButton'), openCreate);
 
   return (
     <PageLayout>

@@ -153,6 +153,8 @@
   "payee": "O meu beneficiário (opcional)",
   "choose": "Escolher…",
   "none": "Nenhum",
+  "linkedPayee": "Beneficiário associado",
+  "actions": "Ações",
   "bookPreview": "Pré-visualizar alterações",
   "acceptBooking": "Guardar nas minhas finanças",
   "unlink": "Remover das minhas finanças",
@@ -373,9 +375,9 @@
   "releaseShare": "Limpar parte fixa de {name}",
   "splitAmountNeeded": "Introduza uma despesa positiva para ver o custo de cada pessoa. A despesa será novamente verificada antes de guardar.",
   "otherRepayment": "Registar outro reembolso",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, one {# grupo} other {# grupos}}",
   "entryCount": "{count, plural, one {# registo} other {# registos}}",
   "saveChanges": "Guardar alterações",
-  "searchGroups": "Pesquisar grupos",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "Pesquisar grupos"
 }

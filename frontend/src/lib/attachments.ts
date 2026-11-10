@@ -151,6 +151,27 @@ export const attachmentsApi = {
   },
 
   /**
+   * Put a document the reader already uploaded (a transaction's receipt,
+   * another warranty's manual) on a warranty as well. The server copies it:
+   * an attachment has one parent, so the source stays where it was. A retry
+   * with the same `operationId` returns the first copy.
+   */
+  copyToWarranty: async (
+    warrantyId: string,
+    sourceAttachmentId: string,
+    documentKind: DocumentKind,
+    operationId: string,
+  ): Promise<Attachment> => {
+    const response = await apiClient.post<Attachment>(
+      `/warranties/${warrantyId}/attachments/copy`,
+      { sourceAttachmentId, documentKind, operationId },
+    );
+    invalidateCache('attachments:');
+    invalidateCache('warranties:');
+    return response.data;
+  },
+
+  /**
    * The bytes behind an attachment, for the in-app preview.
    *
    * Through the axios client rather than a bare `<img src>` or a plain

@@ -30,6 +30,7 @@ import {
 import { useDensityPreference } from '@/store/densityStore';
 import { DensityToggle } from '@/components/ui/DensityToggle';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 
 const logger = createLogger('Reports');
 
@@ -325,6 +326,8 @@ function ReportsContent() {
     }
     return {};
   };
+
+  useMobileAddAction(t('page.newReport'), () => router.push('/reports/custom/new'));
 
   return (
     <PageLayout>

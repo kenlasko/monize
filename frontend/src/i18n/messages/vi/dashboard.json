@@ -43,11 +43,15 @@
     "position": "{index} / {total}",
     "previous": "Thông tin trước",
     "next": "Thông tin tiếp theo",
-    "empty": "Thông tin sẽ xuất hiện ở đây khi có đủ lịch sử: giá trị ròng của hai tháng, hoặc các khoản đầu tư đã có giá. Danh sách được tạo lại mỗi sáng.",
+    "empty": "Thông tin sẽ xuất hiện ở đây khi có đủ lịch sử: giá trị ròng của hai tháng, các khoản đầu tư đã có giá, vài tháng chi tiêu và thu nhập, hoặc các bảo hành bạn theo dõi. Danh sách được tạo lại mỗi sáng.",
     "off": "Thông tin thú vị từ AI đang tắt. Hãy bật trong <link>Cài đặt AI</link>.",
     "topics": {
       "netWorth": "Giá trị ròng",
-      "investments": "Đầu tư"
+      "investments": "Đầu tư",
+      "spending": "Chi tiêu",
+      "income": "Thu nhập",
+      "activity": "Dữ liệu của bạn",
+      "warranties": "Bảo hành"
     },
     "aiGenerated": "Do AI viết từ số liệu của bạn",
     "facts": {
@@ -65,7 +69,18 @@
       "investmentsBiggestHolding": "Khoản nắm giữ lớn nhất của bạn là {holdingSymbol}, chiếm khoảng {holdingPercent} danh mục ({holdingValue} trong {holdingAccounts}).",
       "investmentsBestPerformer": "Khoản hiệu quả nhất của bạn là {bestSymbol}, tăng {bestPercent}. Giá vốn là {bestCost} và hiện trị giá {bestValue}.",
       "investmentsForeignAccount": "Tài khoản {foreignName} của bạn được giữ bằng {foreignCurrency}. Các khoản nắm giữ {foreignBalance} tương đương {foreignConverted} với tỷ giá khoảng {foreignRate}.",
-      "investmentsLargestAccount": "Tài khoản đầu tư lớn nhất của bạn là {largestName} với {largestValue}."
+      "investmentsLargestAccount": "Tài khoản đầu tư lớn nhất của bạn là {largestName} với {largestValue}.",
+      "spendingTopCategory": "Trong mười hai tháng qua, {topCategoryName} chiếm phần lớn nhất trong chi tiêu của bạn: {topCategoryAmount}, tức {topCategoryPercent}.",
+      "spendingTopPayee": "Trong mười hai tháng qua, bạn chi nhiều nhất cho {topPayeeName}: {topPayeeAmount}.",
+      "spendingBiggestMonth": "{biggestSpendMonth} là tháng bạn chi tiêu nhiều nhất trong mười hai tháng qua, với {biggestSpendAmount}.",
+      "incomeKeptShare": "Trong mười hai tháng qua, bạn giữ lại {keptAmount} trong số tiền nhận được, tương đương {keptPercent} thu nhập của bạn.",
+      "incomeSurplusMonths": "Các tháng trong {windowMonths} tháng qua có tiền vào nhiều hơn tiền ra: {surplusMonths}.",
+      "incomeTopSource": "{topSourceName} đem lại {topSourcePercent} thu nhập của bạn trong mười hai tháng qua.",
+      "activityTransactions": "Giao dịch trong sổ của bạn: {transactionCount}, tính từ {firstTransactionMonth}.",
+      "activityPayees": "Người nhận thanh toán bạn lưu trong Monize: {payeeCount}. Danh mục: {categoryCount}.",
+      "activityScheduled": "Giao dịch định kỳ mà Monize đang theo dõi cho bạn: {scheduledCount}.",
+      "warrantiesCovered": "Các bảo hành bạn theo dõi và vẫn còn hiệu lực: {warrantyCount}.",
+      "warrantiesNextExpiry": "Bảo hành tiếp theo hết hạn là {nextWarrantyName}, vào {nextWarrantyMonth}."
     }
   },
   "favouriteAccounts": {
@@ -287,6 +302,8 @@
     "descriptionPlaceholder": "Thêm mô tả tùy chọn",
     "rangeLabels": {
       "1d": "1D",
+      "1w": "1T",
+      "mtd": "MTD",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",
@@ -295,9 +312,7 @@
       "5y": "5Y",
       "10y": "10Y",
       "ytd": "YTD",
-      "all": "Tất cả",
-      "1w": "1T",
-      "mtd": "MTD"
+      "all": "Tất cả"
     }
   },
   "portfolioValue": {

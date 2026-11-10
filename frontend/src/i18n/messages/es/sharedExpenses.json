@@ -153,6 +153,8 @@
   "payee": "Mi beneficiario (opcional)",
   "choose": "Elegir…",
   "none": "Ninguno",
+  "linkedPayee": "Beneficiario vinculado",
+  "actions": "Acciones",
   "bookPreview": "Vista previa de cambios",
   "acceptBooking": "Guardar en mis finanzas",
   "unlink": "Eliminar de mis finanzas",
@@ -373,9 +375,9 @@
   "releaseShare": "Quitar participación fija de {name}",
   "splitAmountNeeded": "Introduce un gasto positivo para ver el coste de cada persona. Se volverá a comprobar antes de guardar.",
   "otherRepayment": "Registrar otro reembolso",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, one {# grupo} other {# grupos}}",
   "entryCount": "{count, plural, one {# movimiento} other {# movimientos}}",
   "saveChanges": "Guardar cambios",
-  "searchGroups": "Buscar grupos",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "Buscar grupos"
 }

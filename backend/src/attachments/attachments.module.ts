@@ -2,6 +2,8 @@ import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { AttachmentsController } from "./attachments.controller";
 import { AttachmentsService } from "./attachments.service";
+import { WarrantyAttachmentCopyController } from "./warranty-attachment-copy.controller";
+import { WarrantyAttachmentCopyService } from "./warranty-attachment-copy.service";
 import { AttachmentToolPrepService } from "./attachment-tool-prep.service";
 import { AttachmentOrphanSweeper } from "./attachment-orphan-sweeper.service";
 import { DatabaseStorageProvider } from "./storage/database-storage.provider";
@@ -30,9 +32,10 @@ import { AttachmentStorageMigrator } from "./storage/attachment-storage-migrator
  */
 @Module({
   imports: [ConfigModule],
-  controllers: [AttachmentsController],
+  controllers: [AttachmentsController, WarrantyAttachmentCopyController],
   providers: [
     AttachmentsService,
+    WarrantyAttachmentCopyService,
     AttachmentToolPrepService,
     AttachmentOrphanSweeper,
     AttachmentStorageMigrator,

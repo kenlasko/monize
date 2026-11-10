@@ -263,7 +263,7 @@ The right-hand side of the bar holds:
 - **Settings** -- The gear icon with your first name: preferences, security, two-factor authentication, trusted devices, sharing, backups and more
 - **Logout** -- Sign out of the application
 
-On a phone or tablet, a bar at the bottom of the screen replaces the menus. It holds up to three tabs of your choice (Home, Transactions and Accounts unless you change them in [Preferences](settings-and-security.md#preferences)), a **+** button for a new transaction, and **More**, which opens a drawer with everything else, including Help, Settings and Logout. As you scroll, the page title moves into the header at the top.
+On a phone or tablet, a bar at the bottom of the screen replaces the menus. It holds up to three tabs of your choice (Home, Transactions and Accounts unless you change them in [Preferences](settings-and-security.md#preferences)), a **+** button, and **More**, which opens a drawer with everything else, including Help, Settings and Logout. The **+** button does the page's own main action: on Accounts it opens a new account, on Payees a new payee, on Bills & Deposits a new scheduled transaction, and so on for Categories, Tags, Budgets, Investments, Securities, Currencies, Institutions, Reports, Rules, Warranties, Payroll Deductions and Shared Expenses (a new group, or a new person on the People tab). Everywhere else it opens a new transaction. As you scroll, the page title moves into the header at the top.
 
 ### Getting Help in the App
 

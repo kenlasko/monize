@@ -153,6 +153,8 @@
   "payee": "私の受取人 (オプション)",
   "choose": "選択してください…",
   "none": "なし",
+  "linkedPayee": "リンクされた受取人",
+  "actions": "操作",
   "bookPreview": "変更をプレビュー",
   "acceptBooking": "自分の家計に保存",
   "unlink": "自分の家計から削除",
@@ -373,9 +375,9 @@
   "releaseShare": "{name}の固定持分を解除",
   "splitAmountNeeded": "各人の負担を確認するには、正の支出額を入力してください。保存前に支出を再確認します。",
   "otherRepayment": "別の返済を記録",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, other {#グループ}}",
   "entryCount": "{count, plural, other {#件}}",
   "saveChanges": "変更を保存",
-  "searchGroups": "グループを検索",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "グループを検索"
 }

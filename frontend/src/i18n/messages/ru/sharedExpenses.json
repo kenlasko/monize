@@ -153,6 +153,8 @@
   "payee": "Мой получатель платежа (необязательно)",
   "choose": "Выбери…",
   "none": "Нет",
+  "linkedPayee": "Связанный получатель платежа",
+  "actions": "Действия",
   "bookPreview": "Предпросмотр изменений",
   "acceptBooking": "Сохранить в моих финансах",
   "unlink": "Удалить из моих финансов",
@@ -373,9 +375,9 @@
   "releaseShare": "Убрать фиксированную долю: {name}",
   "splitAmountNeeded": "Введите положительную сумму расхода, чтобы увидеть затраты каждого. Перед сохранением расход будет проверен ещё раз.",
   "otherRepayment": "Записать другой возврат долга",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, one {# группа} few {# группы} many {# групп} other {# группы}}",
   "entryCount": "{count, plural, one {# запись} few {# записи} many {# записей} other {# записи}}",
   "saveChanges": "Сохранить изменения",
-  "searchGroups": "Поиск групп",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "Поиск групп"
 }

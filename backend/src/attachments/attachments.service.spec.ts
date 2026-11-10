@@ -402,6 +402,29 @@ describe("AttachmentsService", () => {
         expect(where.originalOfAttachmentId).toBeDefined();
       });
 
+      it("runs a caller's precondition under the warranty's lock, and a refusal writes nothing", async () => {
+        const precondition = jest
+          .fn()
+          .mockRejectedValue(new BadRequestException("no"));
+        await expect(
+          service.create(
+            "user-1",
+            WTY,
+            pngFile(),
+            undefined,
+            "receipt",
+            undefined,
+            precondition,
+          ),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(precondition).toHaveBeenCalledTimes(1);
+        expect(
+          (lockWarrantyRow as jest.Mock).mock.invocationCallOrder[0],
+        ).toBeLessThan(precondition.mock.invocationCallOrder[0]);
+        expect(attRepo.save).not.toHaveBeenCalled();
+        expect(storage.save).not.toHaveBeenCalled();
+      });
+
       it("rejects when the warranty's cap is reached", async () => {
         attRepo.count.mockResolvedValue(MAX_ATTACHMENTS_PER_TRANSACTION);
         await expect(

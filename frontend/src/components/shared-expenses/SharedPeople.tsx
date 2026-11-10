@@ -3,7 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Card } from "@/components/ui/Card";
+import { Card, HOVER_ROW_ON_CARD } from "@/components/ui/Card";
+import {
+  CellLabel,
+  CAPTION_CLASS,
+  TABLE_CLASS,
+  TABLE_BODY_CLASS,
+  Th,
+  Td,
+} from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Combobox } from "@/components/ui/Combobox";
@@ -13,6 +21,7 @@ import { Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Badge } from "@/components/ui/Badge";
 import { useReportData } from "@/hooks/useReportData";
+import { useMobileAddAction } from "@/store/mobileAddActionStore";
 import { sharedExpensesApi } from "@/lib/shared-expenses";
 import { payeesApi } from "@/lib/payees";
 import type { SharedPerson } from "@/types/shared-expense";
@@ -47,6 +56,15 @@ export function SharedPeople({
       setBusy(false);
     }
   };
+  const startNew = () => {
+    setEdit("new");
+    setName(payees.data?.find((p) => p.id === linkedPayeeId)?.name ?? "");
+    setPayee(linkedPayeeId ?? "");
+  };
+  useMobileAddAction(t("newContact"), startNew);
+  const payeeNames = new Map(
+    (payees.data ?? []).map((payee) => [payee.id, payee.name]),
+  );
   const visible = people.data?.filter(
     (person) => !linkedPayeeId || person.payeeId === linkedPayeeId,
   );
@@ -54,16 +72,7 @@ export function SharedPeople({
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3 items-center">
         <Badge>{t("privateOnly")}</Badge>
-        <Button
-          className="sm:ml-auto"
-          onClick={() => {
-            setEdit("new");
-            setName(
-              payees.data?.find((p) => p.id === linkedPayeeId)?.name ?? "",
-            );
-            setPayee(linkedPayeeId ?? "");
-          }}
-        >
+        <Button className="sm:ml-auto" onClick={startNew}>
           {t("newContact")}
         </Button>
       </div>
@@ -72,57 +81,132 @@ export function SharedPeople({
       {visible?.length === 0 && (
         <EmptyState title={t("noPeople")} description={t("noPeopleHelp")} help="sharedExpenses" />
       )}
-      <div className="grid gap-4 md:grid-cols-2">
-        {visible?.map((person) => (
-          <Card key={person.id} padding="none" className="p-6">
-            <div className="flex justify-between gap-2">
-              <h2 className="font-semibold break-words">{person.name}</h2>
-              <div className="flex flex-wrap gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setEdit(person);
-                    setName(person.name);
-                    setPayee(person.payeeId ?? "");
-                  }}
-                >
-                  {t("edit")}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setError(null);
-                    setRemove(person);
-                  }}
-                >
-                  {t("deleteContact")}
-                </Button>
-              </div>
-            </div>
-            <ul className="space-y-2 mt-3">
-              {person.groups.map((group) => (
-                <li
-                  key={group.groupId}
-                  className="flex flex-wrap justify-between gap-2"
-                >
-                  <Link
-                    href={`/shared-expenses/${group.groupId}`}
-                    className="text-blue-600 dark:text-blue-400 hover:underline"
+      {!!visible?.length && (
+        <Card className="overflow-hidden">
+          <table
+            role="table"
+            aria-label={t("people")}
+            className={`${TABLE_CLASS} block sm:table w-full`}
+          >
+            <thead role="rowgroup" className="hidden sm:table-header-group">
+              <tr role="row">
+                <Th>{t("contactName")}</Th>
+                <Th>{t("linkedPayee")}</Th>
+                <Th>{t("groups")}</Th>
+                <Th align="right">
+                  <span className="sr-only">{t("actions")}</span>
+                </Th>
+              </tr>
+            </thead>
+            <tbody
+              role="rowgroup"
+              className={`${TABLE_BODY_CLASS} block sm:table-row-group`}
+            >
+              {visible.map((person) => {
+                const payee = person.payeeId
+                  ? payeeNames.get(person.payeeId)
+                  : undefined;
+                return (
+                  <tr
+                    key={person.id}
+                    role="row"
+                    className={`grid grid-cols-2 sm:table-row ${HOVER_ROW_ON_CARD}`}
                   >
-                    {group.groupName}
-                  </Link>
-                  <SharedAmount
-                    amount={group.position.balance}
-                    currency={group.currencyCode}
-                  />
-                </li>
-              ))}
-            </ul>
-          </Card>
-        ))}
-      </div>
+                    <Td
+                      role="cell"
+                      className="col-start-1 row-start-1 min-w-0 break-words sm:break-normal align-top"
+                    >
+                      <span className="font-medium">{person.name}</span>
+                    </Td>
+                    <Td
+                      role="cell"
+                      className="col-start-1 col-span-2 row-start-2 min-w-0 break-words align-top"
+                    >
+                      <CellLabel className={CAPTION_CLASS}>
+                        {t("linkedPayee")}
+                      </CellLabel>
+                      {person.payeeId && payee ? (
+                        <Link
+                          href={`/payees/${person.payeeId}`}
+                          className="text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          {payee}
+                        </Link>
+                      ) : (
+                        <span className="text-gray-500 dark:text-gray-400">
+                          {t("none")}
+                        </span>
+                      )}
+                    </Td>
+                    <Td
+                      role="cell"
+                      className="col-start-1 col-span-2 row-start-3 min-w-0 align-top"
+                    >
+                      <CellLabel className={CAPTION_CLASS}>
+                        {t("groups")}
+                      </CellLabel>
+                      {person.groups.length === 0 ? (
+                        <span className="text-gray-500 dark:text-gray-400">
+                          {t("none")}
+                        </span>
+                      ) : (
+                        <ul className="space-y-1">
+                          {person.groups.map((group) => (
+                            <li
+                              key={group.groupId}
+                              className="flex flex-wrap justify-between gap-x-4 gap-y-1"
+                            >
+                              <Link
+                                href={`/shared-expenses/${group.groupId}`}
+                                className="text-blue-600 dark:text-blue-400 hover:underline"
+                              >
+                                {group.groupName}
+                              </Link>
+                              <SharedAmount
+                                amount={group.position.balance}
+                                currency={group.currencyCode}
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </Td>
+                    <Td
+                      role="cell"
+                      align="right"
+                      className="col-start-2 row-start-1 align-top whitespace-nowrap"
+                    >
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEdit(person);
+                            setName(person.name);
+                            setPayee(person.payeeId ?? "");
+                          }}
+                        >
+                          {t("edit")}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setError(null);
+                            setRemove(person);
+                          }}
+                        >
+                          {t("deleteContact")}
+                        </Button>
+                      </div>
+                    </Td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Card>
+      )}
       <SharedError error={!edit ? error : null} />
       <ConfirmDialog
         isOpen={!!remove}

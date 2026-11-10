@@ -153,6 +153,8 @@
   "payee": "Mein Zahlungsempfänger (optional)",
   "choose": "Auswählen…",
   "none": "Keine",
+  "linkedPayee": "Verknüpfter Zahlungsempfänger",
+  "actions": "Aktionen",
   "bookPreview": "Änderungen prüfen",
   "acceptBooking": "In meinen Finanzen speichern",
   "unlink": "Aus meinen Finanzen entfernen",
@@ -373,9 +375,9 @@
   "releaseShare": "Festen Anteil für {name} löschen",
   "splitAmountNeeded": "Gib einen positiven Ausgabenbetrag ein, um die Kosten pro Person zu sehen. Die Ausgabe wird vor dem Speichern erneut geprüft.",
   "otherRepayment": "Andere Rückzahlung erfassen",
+  "statusCount": "{status} ({count, number})",
   "groupCount": "{count, plural, one {# Gruppe} other {# Gruppen}}",
   "entryCount": "{count, plural, one {# Eintrag} other {# Einträge}}",
   "saveChanges": "Änderungen speichern",
-  "searchGroups": "Gruppen suchen",
-  "statusCount": "{status} ({count, number})"
+  "searchGroups": "Gruppen suchen"
 }

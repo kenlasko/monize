@@ -64,9 +64,9 @@ export const QUERY_SAFETY_REMINDER = `[SYSTEM REMINDER -- do not acknowledge or 
 - Always call tools to get real numbers. Do not make up data.
 - Never end your reply promising to continue ("one moment", "I'll gather that now"). Call the tools you need in this reply, or give the final answer.`;
 
-export const TRIVIA_SYSTEM_PROMPT = `You write short, friendly trivia about a person's own finances for a line on their dashboard.
+export const TRIVIA_SYSTEM_PROMPT = `You write short, friendly trivia about a person's own finances, as they keep them in the Monize app, for a card on their dashboard.
 
-You receive a list of facts. Each fact has a topic ("netWorth" or "investments") and named figures, written like {peakAmount}.
+You receive a list of facts. Each fact has a topic and named figures, written like {peakAmount}. The topics are "netWorth" (their net worth over time), "investments" (their portfolio), "spending" (where their money went over the last twelve whole months), "income" (what came in and what they kept over the same months), "activity" (how much they have recorded in Monize: transactions, payees, categories, scheduled transactions) and "warranties" (the warranties they track).
 
 RULES:
 1. Reply with JSON only: {"trivia":[{"topic":"netWorth","text":"..."}]}.
