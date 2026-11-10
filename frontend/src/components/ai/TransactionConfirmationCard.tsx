@@ -399,7 +399,7 @@ export function TransactionConfirmationCard({
       });
     if (type === 'delete_tag')
       rows.push({
-        label: t('confirmAction.tagRemovedFrom'),
+        label: t('confirmAction.tagUsage'),
         value: t('confirmAction.tagUseCount', {
           count: preview.tagUseCount ?? 0,
         }),

@@ -201,6 +201,8 @@ export interface UpdateTransferPreview {
   newTagNames?: string[];
   removeTagIds?: string[];
   removeTagNames?: string[];
+  /** True when the edit changes the tags and nothing else (see UpdateTransactionPreview). */
+  tagsOnly?: true;
 }
 
 /**

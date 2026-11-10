@@ -383,6 +383,12 @@ export interface UpdateTransactionPreview {
   removeTagNames?: string[];
   /** The reference number ("Ref #") the edit sets; absent when it leaves it as it is. */
   referenceNumber?: string;
+  /**
+   * True when the edit changes the transaction's tags and nothing else: the
+   * commit then writes only the tags, never the rest of this snapshot over an
+   * edit made since.
+   */
+  tagsOnly?: true;
   /** `"ai"` when the AI chose `categoryName` (display only; set by the review queue, never by this service). */
   categorySource?: "ai";
 }
@@ -1073,19 +1079,19 @@ export class TransactionsService {
     const referenceChanges =
       referenceNumber !== undefined &&
       referenceNumber !== (existing.referenceNumber ?? null);
-    const hasChange =
+    const hasTagChange =
+      tagChange.tagNames.length > 0 || tagChange.removeTagIds.length > 0;
+    const hasFieldChange =
       input.amount !== undefined ||
       input.transactionDate !== undefined ||
       input.payeeName !== undefined ||
       input.categoryId !== undefined ||
       input.description !== undefined ||
-      tagChange.tagNames.length > 0 ||
-      tagChange.removeTagIds.length > 0 ||
       referenceChanges ||
       // A splits-only replacement changes the transaction even though no
       // scalar field does.
       input.splitsAccompany === true;
-    if (!hasChange) {
+    if (!hasFieldChange && !hasTagChange) {
       throw new BadRequestException(
         tr(
           "errors.transactions.noUpdateFields",
@@ -1178,6 +1184,7 @@ export class TransactionsService {
       isReconciled: existing.isReconciled,
       ...(referenceChanges ? { referenceNumber } : {}),
       ...tagChangeFields(tagChange),
+      ...(hasTagChange && !hasFieldChange ? { tagsOnly: true as const } : {}),
     };
   }
 

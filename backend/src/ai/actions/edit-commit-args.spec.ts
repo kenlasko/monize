@@ -71,6 +71,19 @@ describe("updateTransactionCommitArgs", () => {
     ]);
   });
 
+  it("writes only the tags of a tag-only edit, never its snapshot", () => {
+    expect(
+      updateTransactionCommitArgs({
+        ...edit,
+        tagNames: ["Trip"],
+        tagsOnly: true,
+      }),
+    ).toEqual({
+      dto: {},
+      options: { createPayeeIfMissing: true, addTagNames: ["Trip"] },
+    });
+  });
+
   it("sets a reference number only when the card does", () => {
     expect(
       updateTransactionCommitArgs({ ...edit, referenceNumber: "A-1" }).dto,
@@ -144,6 +157,15 @@ describe("updateTransferCommitArgs", () => {
       },
       tagChange: {},
     });
+  });
+
+  it("writes no field of a tag-only transfer edit", () => {
+    expect(
+      updateTransferCommitArgs(
+        { ...transfer, removeTagIds: ["tag-o"], tagsOnly: true },
+        "p1",
+      ),
+    ).toEqual({ dto: {}, tagChange: { removeTagIds: ["tag-o"] } });
   });
 
   it("carries the tags a card adds and removes on both legs", () => {

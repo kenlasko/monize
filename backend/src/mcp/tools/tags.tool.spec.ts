@@ -227,6 +227,15 @@ describe("McpTagsTools", () => {
       expect(aiActions.commitApproved).not.toHaveBeenCalled();
     });
 
+    it("refuses what the assistant's schema refuses: a delete carrying a colour", async () => {
+      const result = await call("manage_tags", {
+        operation: "delete",
+        items: [{ name: "Trip", color: "#FF0000" }],
+      });
+      expect(result.isError).toBe(true);
+      expect(prep.prepareOne).not.toHaveBeenCalled();
+    });
+
     it("refuses newName outside an update", async () => {
       const result = await call("manage_tags", {
         operation: "create",

@@ -556,7 +556,7 @@ export class AiActionsService {
   ): Promise<ConfirmActionResult> {
     const payeeId = await this.resolveTransferPayeeId(userId, descriptor);
     const args = updateTransferCommitArgs(descriptor, payeeId);
-    const dto = await this.toValidatedDto(UpdateTransferDto, args.dto);
+    const dto = await this.toValidatedDto(UpdateTransferDto, { ...args.dto });
     const result = await this.transactionsService.updateTransfer(
       userId,
       descriptor.transactionId,
@@ -637,7 +637,9 @@ export class AiActionsService {
         // parent holds none. Same mapping as the singular descriptor, and the
         // splits ride in the SAME dto so the row commits once.
         const args = updateTransactionCommitArgs(r);
-        const dto = await this.toValidatedDto(UpdateTransactionDto, args.dto);
+        const dto = await this.toValidatedDto(UpdateTransactionDto, {
+          ...args.dto,
+        });
         const transaction = await this.transactionsService.update(
           userId,
           r.transactionId,
@@ -816,7 +818,9 @@ export class AiActionsService {
       descriptor.attachments,
     );
     const args = updateTransactionCommitArgs(descriptor);
-    const dto = await this.toValidatedDto(UpdateTransactionDto, args.dto);
+    const dto = await this.toValidatedDto(UpdateTransactionDto, {
+      ...args.dto,
+    });
     // An edit that answers an AI review request marks it applied in the write's
     // own transaction, under the row lock and before anything is written: a
     // request that was dismissed or expired since the card was built refuses the

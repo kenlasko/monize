@@ -664,6 +664,7 @@ export class AiActionBuilderService {
       ...(splits ? { splits: splits.map(toSplitRowDescriptor) } : {}),
       ...(attachments?.length ? { attachments } : {}),
       ...tagChangeWriteFields(preview),
+      ...(preview.tagsOnly ? { tagsOnly: true as const } : {}),
       ...(preview.referenceNumber === undefined
         ? {}
         : { referenceNumber: preview.referenceNumber }),
@@ -970,6 +971,7 @@ export class AiActionBuilderService {
       createPayee: preview.payeeWillBeCreated,
       categoryId: preview.categoryId,
       ...tagChangeWriteFields(preview),
+      ...(preview.tagsOnly ? { tagsOnly: true as const } : {}),
     };
     return {
       actionId,

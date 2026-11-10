@@ -589,11 +589,12 @@ export class TransactionToolPrepService {
         item.description !== undefined ||
         item.payeeName !== undefined ||
         item.categoryName !== undefined;
-      if (
-        !fieldChange &&
-        tagChange.tagNames.length === 0 &&
-        tagChange.removeTagIds.length === 0
-      ) {
+      const tagChanges =
+        tagChange.tagNames.length > 0 || tagChange.removeTagIds.length > 0;
+      const askedForTags =
+        (item.tagNames?.length ?? 0) > 0 ||
+        (item.removeTagNames?.length ?? 0) > 0;
+      if (!fieldChange && askedForTags && !tagChanges) {
         throw new BadRequestException(
           tr(
             "errors.transactions.noUpdateFields",
@@ -603,7 +604,11 @@ export class TransactionToolPrepService {
       }
       return {
         kind: "transfer",
-        preview: { ...preview, ...tagChangeFields(tagChange) },
+        preview: {
+          ...preview,
+          ...tagChangeFields(tagChange),
+          ...(tagChanges && !fieldChange ? { tagsOnly: true as const } : {}),
+        },
       };
     }
 
@@ -783,6 +788,7 @@ export class TransactionToolPrepService {
           currencyCode: preview.currencyCode,
           ...(splits ? { splits: splits.map(toSplitRowDescriptor) } : {}),
           ...tagChangeWriteFields(preview),
+          ...(preview.tagsOnly ? { tagsOnly: true as const } : {}),
         });
         okIndex.push(i);
         previewRows.push({

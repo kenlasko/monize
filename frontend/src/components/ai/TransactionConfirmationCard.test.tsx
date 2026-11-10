@@ -735,7 +735,7 @@ describe('TransactionConfirmationCard', () => {
       expect(screen.queryByText('Icon')).toBeNull();
     });
 
-    it('says how many rows a tag deletion takes the tag off, with no view link', () => {
+    it('says how often a deleted tag is used, with no view link', () => {
       render(
         <TransactionConfirmationCard
           action={makeAction({
@@ -748,10 +748,8 @@ describe('TransactionConfirmationCard', () => {
           onCancel={vi.fn()}
         />,
       );
-      expect(screen.getByText('Removed from')).toBeInTheDocument();
-      expect(
-        screen.getByText('3 transactions and split lines'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Use')).toBeInTheDocument();
+      expect(screen.getByText('Used 3 times')).toBeInTheDocument();
       expect(screen.getByText('Tag deleted')).toBeInTheDocument();
       expect(screen.queryByRole('link')).toBeNull();
     });

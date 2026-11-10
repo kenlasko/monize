@@ -539,6 +539,11 @@ export interface UpdateTransactionDescriptor extends BaseDescriptor {
    */
   removeTagIds?: string[];
   /**
+   * The edit changes the tags and nothing else: confirm writes only the tags,
+   * never the snapshot above over an edit made since the card was built.
+   */
+  tagsOnly?: true;
+  /**
    * The reference number ("Ref #") this edit sets; absent: left as it is.
    * Signed with the rest, so a client cannot set one the card did not show.
    */
@@ -636,6 +641,8 @@ export interface UpdateTransferDescriptor extends BaseDescriptor {
   tagNames?: string[];
   /** Tag ids this edit REMOVES from both legs. */
   removeTagIds?: string[];
+  /** The edit changes the tags and nothing else (as on update_transaction). */
+  tagsOnly?: true;
 }
 
 /**
@@ -668,6 +675,8 @@ export interface BatchUpdateTransactionRow {
   tagNames?: string[];
   /** Tag ids this row REMOVES, as on the singular descriptor. */
   removeTagIds?: string[];
+  /** The row changes the tags and nothing else, as on the singular descriptor. */
+  tagsOnly?: true;
 }
 
 export interface BatchDeleteTransactionRow {

@@ -17,8 +17,6 @@ import type {
   BatchUpdateTagRow,
 } from "../ai/actions/ai-action.types";
 import { Tag } from "./entities/tag.entity";
-import { TransactionTag } from "./entities/transaction-tag.entity";
-import { TransactionSplitTag } from "./entities/transaction-split-tag.entity";
 import { TagsService } from "./tags.service";
 
 /** One `manage_tags` item: the tag by name, and what to set. */
@@ -54,7 +52,7 @@ export interface UpdateTagPreview {
 export interface DeleteTagPreview {
   tagId: string;
   name: string;
-  /** Transactions and split lines that carry the tag and lose it. */
+  /** How often the tag is used, counted as `list_tags` counts it (`getUsage`). */
   useCount: number;
 }
 
@@ -177,20 +175,17 @@ export class TagToolPrepService {
     userId: string,
     row: ManageTagRow,
   ): Promise<DeleteTagPreview> {
-    return withScopedDb(this.dataSource, async (m) => {
-      const tag = await this.resolve(m, userId, row.name);
-      const onTransactions = await m.count(TransactionTag, {
-        where: { tagId: tag.id },
-      });
-      const onSplits = await m.count(TransactionSplitTag, {
-        where: { tagId: tag.id },
-      });
-      return {
-        tagId: tag.id,
-        name: tag.name,
-        useCount: onTransactions + onSplits,
-      };
-    });
+    const tag = await withScopedDb(this.dataSource, (m) =>
+      this.resolve(m, userId, row.name),
+    );
+    // The figure list_tags gave the model for this tag, so the card and the
+    // listing never disagree about the same tag.
+    const usage = await this.tagsService.getUsage(userId);
+    return {
+      tagId: tag.id,
+      name: tag.name,
+      useCount: usage[tag.id]?.count ?? 0,
+    };
   }
 
   /**

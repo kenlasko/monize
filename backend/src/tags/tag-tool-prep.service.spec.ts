@@ -5,8 +5,6 @@ import {
 } from "@nestjs/common";
 import { TagToolPrepService, tagPreviewRow } from "./tag-tool-prep.service";
 import { Tag } from "./entities/tag.entity";
-import { TransactionTag } from "./entities/transaction-tag.entity";
-import { TransactionSplitTag } from "./entities/transaction-split-tag.entity";
 import {
   createScopedDbMocks,
   ManagerMock,
@@ -25,7 +23,7 @@ describe("TagToolPrepService", () => {
 
   let service: TagToolPrepService;
   let manager: ManagerMock;
-  let tagsService: { findByNames: jest.Mock };
+  let tagsService: { findByNames: jest.Mock; getUsage: jest.Mock };
 
   beforeEach(() => {
     const mocks = createScopedDbMocks();
@@ -36,6 +34,9 @@ describe("TagToolPrepService", () => {
           names.some((n) => n.trim().toLowerCase() === t.name.toLowerCase()),
         ),
       ),
+      getUsage: jest.fn().mockResolvedValue({
+        "tag-trip": { lastUsed: "2026-10-01", count: 5 },
+      }),
     };
     manager.find.mockResolvedValue([trip, home]);
     service = new TagToolPrepService(
@@ -117,13 +118,12 @@ describe("TagToolPrepService", () => {
   });
 
   describe("delete", () => {
-    it("counts the transactions and split lines that lose the tag", async () => {
-      manager.count.mockImplementation(async (entity: unknown) =>
-        entity === TransactionTag ? 3 : entity === TransactionSplitTag ? 2 : 0,
-      );
+    it("counts the tag's use as list_tags does", async () => {
       await expect(
         service.prepareDelete(userId, { name: "trip" }),
       ).resolves.toEqual({ tagId: "tag-trip", name: "Trip", useCount: 5 });
+      // The owner's own usage: the same call list_tags makes.
+      expect(tagsService.getUsage).toHaveBeenCalledWith(userId);
     });
   });
 
@@ -154,7 +154,6 @@ describe("TagToolPrepService", () => {
     });
 
     it("maps a deletion to the tag id", async () => {
-      manager.count.mockResolvedValue(0);
       const result = await service.prepareMany(userId, "delete", [
         { name: "Home" },
       ]);

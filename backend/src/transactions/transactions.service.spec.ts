@@ -10264,6 +10264,16 @@ describe("TransactionsService", () => {
         ).rejects.toThrow(/at least one field/);
       });
 
+      it("is not tag-only when a field changes too", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...baseTx });
+        tagsService.findByNames.mockResolvedValue([]);
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          description: "x",
+          tagNames: ["Allegro"],
+        });
+        expect(preview).not.toHaveProperty("tagsOnly");
+      });
+
       it("shows no tags when none were asked for, and reads none", async () => {
         transactionsRepository.findOne.mockResolvedValueOnce({ ...baseTx });
         const preview = await service.previewUpdate("user-1", "tx-1", {
@@ -10302,6 +10312,8 @@ describe("TransactionsService", () => {
         expect(preview.removeTagIds).toEqual(["t1"]);
         expect(preview.removeTagNames).toEqual(["Allegro"]);
         expect(preview).not.toHaveProperty("tagNames");
+        // Nothing but tags changes, so the commit writes only the tags.
+        expect(preview.tagsOnly).toBe(true);
       });
 
       it("reads a transfer's tags on both legs: added only where missing, removed where carried", async () => {

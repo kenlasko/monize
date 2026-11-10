@@ -4,6 +4,8 @@ import {
   UpdateTransferDescriptor,
   toSplitDtoRows,
 } from "./ai-action.types";
+import type { UpdateTransactionDto } from "../../transactions/dto/update-transaction.dto";
+import type { UpdateTransferDto } from "../../transactions/dto/update-transfer.dto";
 
 /**
  * What `TransactionsService.update` is called with for an approved cash edit:
@@ -14,9 +16,24 @@ import {
  */
 export function updateTransactionCommitArgs(
   d: UpdateTransactionDescriptor | BatchUpdateTransactionRow,
-) {
+): {
+  dto: UpdateTransactionDto;
+  options: {
+    createPayeeIfMissing: boolean;
+    addTagNames?: string[];
+    removeTagIds?: string[];
+  };
+} {
   const referenceNumber =
     "referenceNumber" in d ? d.referenceNumber : undefined;
+  const options = {
+    createPayeeIfMissing: d.createPayee === true,
+    ...(d.tagNames?.length ? { addTagNames: [...d.tagNames] } : {}),
+    ...(d.removeTagIds?.length ? { removeTagIds: [...d.removeTagIds] } : {}),
+  };
+  // A tag-only edit writes the tags and no field: the snapshot the card was
+  // built from must not overwrite an edit made since.
+  if (d.tagsOnly) return { dto: {}, options };
   return {
     dto: {
       accountId: d.accountId,
@@ -35,11 +52,7 @@ export function updateTransactionCommitArgs(
       // (invariant I1) -- never as a separate follow-up write.
       splits: d.splits ? toSplitDtoRows(d.splits) : undefined,
     },
-    options: {
-      createPayeeIfMissing: d.createPayee === true,
-      ...(d.tagNames?.length ? { addTagNames: [...d.tagNames] } : {}),
-      ...(d.removeTagIds?.length ? { removeTagIds: [...d.removeTagIds] } : {}),
-    },
+    options,
   };
 }
 
@@ -51,7 +64,16 @@ export function updateTransactionCommitArgs(
 export function updateTransferCommitArgs(
   d: UpdateTransferDescriptor,
   payeeId: string | undefined,
-) {
+): {
+  dto: Partial<UpdateTransferDto>;
+  tagChange: { addTagNames?: string[]; removeTagIds?: string[] };
+} {
+  const tagChange = {
+    ...(d.tagNames?.length ? { addTagNames: [...d.tagNames] } : {}),
+    ...(d.removeTagIds?.length ? { removeTagIds: [...d.removeTagIds] } : {}),
+  };
+  // As above: a tag-only edit writes no field of the transfer.
+  if (d.tagsOnly) return { dto: {}, tagChange };
   return {
     dto: {
       amount: d.amount,
@@ -63,9 +85,6 @@ export function updateTransferCommitArgs(
       payeeName: d.payeeName ?? undefined,
       categoryId: d.categoryId,
     },
-    tagChange: {
-      ...(d.tagNames?.length ? { addTagNames: [...d.tagNames] } : {}),
-      ...(d.removeTagIds?.length ? { removeTagIds: [...d.removeTagIds] } : {}),
-    },
+    tagChange,
   };
 }

@@ -38,15 +38,15 @@ export const MAX_TRANSACTIONS_PER_CALL = 1000;
 export const TAG_LINK_INSERT_BATCH = 5000;
 
 /**
- * Tag names as a tag is stored: markup stripped (as `CreateTagDto`'s
- * `@SanitizeHtml` does), trimmed, blanks dropped, each name once however it is
- * spelled (the first spelling wins), in order.
+ * Tag names to look up: trimmed, blanks dropped, each name once however it is
+ * spelled (the first spelling wins), in order. A name is matched as stored;
+ * only one a write will create is cleaned (`previewTagChange`).
  */
 export function uniqueTagNames(names: readonly string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const raw of names) {
-    const name = (stripHtml(raw) ?? "").trim();
+    const name = raw.trim();
     const key = name.toLowerCase();
     if (name === "" || seen.has(key)) continue;
     seen.add(key);
@@ -427,7 +427,14 @@ export class TagsService {
       );
     }
 
-    const known = await this.findByNames(m, userId, [...add, ...remove]);
+    // A name the user has no tag for is created as `CreateTagDto` would store
+    // it (markup stripped), so its cleaned spelling is looked up too.
+    const cleaned = (name: string) => (stripHtml(name) ?? "").trim();
+    const known = await this.findByNames(m, userId, [
+      ...add,
+      ...add.map(cleaned),
+      ...remove,
+    ]);
     const byKey = new Map(known.map((tag) => [tag.name.toLowerCase(), tag]));
     const unknown = remove.find((name) => !byKey.has(name.toLowerCase()));
     if (unknown !== undefined) {
@@ -442,13 +449,19 @@ export class TagsService {
         }),
       );
     }
+    const added = new Set<string>();
     for (const name of add) {
-      const tag = byKey.get(name.toLowerCase());
+      const clean = cleaned(name);
+      const tag =
+        byKey.get(name.toLowerCase()) ?? byKey.get(clean.toLowerCase());
+      const spelled = tag?.name ?? clean;
+      if (!spelled || added.has(spelled.toLowerCase())) continue;
+      added.add(spelled.toLowerCase());
       if (!tag) {
-        preview.tagNames.push(name);
-        preview.newTagNames.push(name);
+        preview.tagNames.push(spelled);
+        preview.newTagNames.push(spelled);
       } else if (!everywhere.has(tag.id)) {
-        preview.tagNames.push(tag.name);
+        preview.tagNames.push(spelled);
       }
     }
     for (const name of remove) {
@@ -510,36 +523,17 @@ export class TagsService {
     splitIds: readonly string[],
     tagIds: readonly string[],
   ): Promise<{ splitIds: string[]; tagIds: string[] } | null> {
-    const sIds = [...new Set(splitIds)];
-    const tIds = [...new Set(tagIds)];
-    if (sIds.length === 0 || tIds.length === 0) return null;
-    if (tIds.length > MAX_TAGS_PER_CALL) {
-      throw new BadRequestException(
-        tr(
-          "errors.tags.tooManyTags",
-          `At most ${MAX_TAGS_PER_CALL} tags can be changed in one call`,
-          { max: MAX_TAGS_PER_CALL },
-        ),
-      );
-    }
-    const tags = await m.find(Tag, { where: { id: In(tIds), userId } });
-    if (tags.length !== tIds.length) {
-      throw new NotFoundException(
-        tr("errors.tags.oneOrMoreNotFound", "One or more tags not found"),
-      );
-    }
-    const ownedSplits = await m.count(TransactionSplit, {
-      where: { id: In(sIds), transaction: { userId } },
-    });
-    if (ownedSplits !== sIds.length) {
-      throw new NotFoundException(
-        tr(
-          "errors.tags.oneOrMoreTransactionsNotFound",
-          "One or more transactions not found",
-        ),
-      );
-    }
-    return { splitIds: sIds, tagIds: tIds };
+    const plan = await this.prepareTagLinkChange(
+      m,
+      userId,
+      splitIds,
+      tagIds,
+      (ids) =>
+        m.count(TransactionSplit, {
+          where: { id: In(ids), transaction: { userId } },
+        }),
+    );
+    return plan && { splitIds: plan.rowIds, tagIds: plan.tIds };
   }
 
   /**
@@ -643,9 +637,35 @@ export class TagsService {
     transactionIds: readonly string[],
     tagIds: readonly string[],
   ): Promise<{ txIds: string[]; tIds: string[] } | null> {
-    const txIds = [...new Set(transactionIds)];
+    // The existing methods rely on RLS alone for the transaction side; the
+    // additive path checks it explicitly so a foreign id is refused, not
+    // silently skipped or written.
+    const plan = await this.prepareTagLinkChange(
+      m,
+      userId,
+      transactionIds,
+      tagIds,
+      (ids) => m.count(Transaction, { where: { id: In(ids), userId } }),
+    );
+    return plan && { txIds: plan.rowIds, tIds: plan.tIds };
+  }
+
+  /**
+   * The checks every additive or removing tag-link change makes, for
+   * transactions and split lines alike: dedupe, the bounds first (no query),
+   * then tag ownership and row ownership (`countOwned`) on the caller's
+   * manager, before any write. Returns null when there is nothing to do.
+   */
+  private async prepareTagLinkChange(
+    m: EntityManager,
+    userId: string,
+    rowIds: readonly string[],
+    tagIds: readonly string[],
+    countOwned: (ids: string[]) => Promise<number>,
+  ): Promise<{ rowIds: string[]; tIds: string[] } | null> {
+    const ids = [...new Set(rowIds)];
     const tIds = [...new Set(tagIds)];
-    if (txIds.length === 0 || tIds.length === 0) {
+    if (ids.length === 0 || tIds.length === 0) {
       return null;
     }
     if (tIds.length > MAX_TAGS_PER_CALL) {
@@ -657,7 +677,7 @@ export class TagsService {
         ),
       );
     }
-    if (txIds.length > MAX_TRANSACTIONS_PER_CALL) {
+    if (ids.length > MAX_TRANSACTIONS_PER_CALL) {
       throw new BadRequestException(
         tr(
           "errors.tags.tooManyTransactions",
@@ -674,14 +694,7 @@ export class TagsService {
         tr("errors.tags.oneOrMoreNotFound", "One or more tags not found"),
       );
     }
-
-    // The existing methods rely on RLS alone for the transaction side; the
-    // additive path checks it explicitly so a foreign id is refused, not
-    // silently skipped or written.
-    const ownedTransactions = await m.count(Transaction, {
-      where: { id: In(txIds), userId },
-    });
-    if (ownedTransactions !== txIds.length) {
+    if ((await countOwned(ids)) !== ids.length) {
       throw new NotFoundException(
         tr(
           "errors.tags.oneOrMoreTransactionsNotFound",
@@ -689,7 +702,7 @@ export class TagsService {
         ),
       );
     }
-    return { txIds, tIds };
+    return { rowIds: ids, tIds };
   }
 
   /**

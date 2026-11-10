@@ -728,6 +728,39 @@ describe("TransactionToolPrepService", () => {
       ).rejects.toThrow(/at least one field/);
     });
 
+    it("lets an edit that asked for no tags reach the surface's own transfer refusal", async () => {
+      // An attachments-only edit of a transfer: the surface, not this check,
+      // says transfers take no attachments.
+      transactions.findOne.mockResolvedValueOnce({
+        id: "t1",
+        isTransfer: true,
+        linkedTransactionId: "t2",
+      });
+      const result = await service.prepareUpdate(userId, {
+        transactionId: "t1",
+      });
+      expect(result.kind).toBe("transfer");
+    });
+
+    it("marks a transfer edit that changes only tags as tag-only", async () => {
+      transactions.findOne.mockResolvedValueOnce({
+        id: "t1",
+        isTransfer: true,
+        linkedTransactionId: "t2",
+      });
+      transactions.previewTransferTagChange.mockResolvedValueOnce({
+        tagNames: ["Trip"],
+        newTagNames: [],
+        removeTagIds: [],
+        removeTagNames: [],
+      });
+      const result = await service.prepareUpdate(userId, {
+        transactionId: "t1",
+        tagNames: ["Trip"],
+      });
+      expect(result.preview).toMatchObject({ tagsOnly: true });
+    });
+
     it("carries a bulk row's tag change into the signed row and the card", async () => {
       transactions.previewUpdate.mockResolvedValueOnce({
         transactionId: "t1",
@@ -748,6 +781,7 @@ describe("TransactionToolPrepService", () => {
         newTagNames: ["Trip"],
         removeTagIds: ["tag-o"],
         removeTagNames: ["Old"],
+        tagsOnly: true,
       });
       const result = await service.prepareUpdateBulk(userId, [
         { transactionId: "t1", tagNames: ["Trip"], removeTagNames: ["Old"] },
@@ -755,6 +789,7 @@ describe("TransactionToolPrepService", () => {
       expect(result.okRows[0]).toMatchObject({
         tagNames: ["Trip"],
         removeTagIds: ["tag-o"],
+        tagsOnly: true,
       });
       expect(result.previewRows[0]).toMatchObject({
         tagNames: ["Trip"],

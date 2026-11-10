@@ -123,6 +123,16 @@ describe("TagsService (AI tag changes)", () => {
       expect(result.removeTagIds).toEqual(["tag-t"]);
     });
 
+    it("matches a stored name as it is, markup and all, before cleaning it", async () => {
+      (service.findByNames as jest.Mock).mockResolvedValue([
+        tag("tag-heart", "<3 Coffee"),
+      ]);
+      const result = await preview(["tag-heart"], ["<3 Coffee"], []);
+      expect(result.tagNames).toEqual([]);
+      const removal = await preview(["tag-heart"], [], ["<3 coffee"]);
+      expect(removal.removeTagIds).toEqual(["tag-heart"]);
+    });
+
     it("strips markup from a name it would create, as a tag's DTO does", async () => {
       const result = await preview([], ["<b>Gifts</b>"]);
       expect(result.newTagNames).toEqual(["bGifts/b"]);
