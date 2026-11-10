@@ -304,11 +304,15 @@ export function splitWords(text: string): string[] {
     .filter((word) => word !== '');
 }
 
-/** Domains separated by whitespace, commas or semicolons; a leading `@` is what a pasted address leaves. */
+/**
+ * Domains separated by whitespace, commas or semicolons. A pasted sender
+ * address (`notifications@shop.example.com`, or `@shop.example.com`) keeps
+ * only its domain: everything up to the last `@` is dropped.
+ */
 export function splitDomains(text: string): string[] {
   return text
     .split(/[\s,;]+/)
-    .map((domain) => domain.trim().replace(/^@+/, ''))
+    .map((domain) => domain.trim().replace(/^.*@/, ''))
     .filter((domain) => domain !== '');
 }
 

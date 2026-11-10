@@ -18,6 +18,15 @@ describe("receipt domains", () => {
     expect(normalizeReceiptDomain(42)).toBe(42);
   });
 
+  it("keeps only the domain of a pasted sender address", () => {
+    expect(normalizeReceiptDomain(" Notifications@O.Wealthsimple.com ")).toBe(
+      "o.wealthsimple.com",
+    );
+    expect(normalizeReceiptDomain("a@b@shop.example.com")).toBe(
+      "shop.example.com",
+    );
+  });
+
   it.each(["shop.example.com", "a.co", "x-y.example.org", "1.example.com"])(
     "accepts %s",
     (value) => expect(isReceiptDomain(value)).toBe(true),
