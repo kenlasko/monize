@@ -203,7 +203,8 @@
       "priceRequired": "O preço deve ser superior a zero",
       "totalAmountRequired": "O valor total é obrigatório"
     },
-    "estimatedHint": "Este valor é a estimativa desta ocorrência. Deixe-o como está e a ocorrência continuará seguindo a estimativa conforme chegarem novos pagamentos. {detail}"
+    "estimatedHint": "Este valor é a estimativa desta ocorrência. Deixe-o como está e a ocorrência continuará seguindo a estimativa conforme chegarem novos pagamentos. {detail}",
+    "keepEstimate": "Manter este valor, mesmo que novos pagamentos alterem a estimativa"
   },
   "form": {
     "tabs": {
@@ -319,6 +320,7 @@
     },
     "estimateLabel": "Estimar",
     "estimateTooltip": "Calcular o valor de cada ocorrência a partir dos pagamentos dos últimos 24 meses a este favorecido nesta categoria, mês a mês, para que uma conta que custa mais em alguns meses seja prevista assim. Você ainda pode alterar qualquer ocorrência e confirma o valor ao lançá-la.",
+    "estimateDelegateDisabled": "Somente o proprietário pode ativar ou desativar a estimativa: ela lê os pagamentos de todas as contas do proprietário.",
     "estimatedAmountNote": "Calculado automaticamente a partir do histórico de pagamentos. {detail}",
     "autoPostDisabledEstimate": "Um valor estimado é confirmado ao lançá-lo, por isso não é lançado automaticamente."
   },

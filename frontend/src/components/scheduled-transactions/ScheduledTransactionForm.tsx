@@ -25,6 +25,7 @@ import { CurrencyPickerButton } from '@/components/transactions/CurrencyPickerBu
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { estimateAmountOn } from '@/lib/scheduled-effective-amount';
 import { useAmountEstimateText } from './useAmountEstimateText';
+import { useAuthStore } from '@/store/authStore';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 import { investmentsApi } from '@/lib/investments';
 import { getLocalDateString } from '@/lib/utils';
@@ -411,6 +412,9 @@ export function ScheduledTransactionForm({
   // schedules only, as the server allows.
   const estimating = mode === 'transaction' && !isForeign && watchedEstimate === true;
   const estimateText = useAmountEstimateText();
+  // A delegate does not turn the estimate on or off, and is refused its
+  // preview: it reads the owner's payments in every account (issue #2096).
+  const isActingDelegate = useAuthStore((state) => !!state.actingAsUserId);
   // The preview is the payload of the request that produced it, keyed by what
   // it was asked for, so a stale answer for another payee is never shown
   // (docs/frontend/api-and-cache.md). A saved schedule's own estimate stands in
@@ -431,7 +435,7 @@ export function ScheduledTransactionForm({
       : null,
   );
   useEffect(() => {
-    if (!estimateRequestKey) return;
+    if (!estimateRequestKey || isActingDelegate) return;
     const [accountId, payeeId, categoryId, nextDueDate] = estimateRequestKey.split('|');
     let cancelled = false;
     scheduledTransactionsApi
@@ -449,7 +453,7 @@ export function ScheduledTransactionForm({
     return () => {
       cancelled = true;
     };
-  }, [estimateRequestKey]);
+  }, [estimateRequestKey, isActingDelegate]);
   const currentEstimate =
     estimateRequestKey && estimatePreview?.key === estimateRequestKey
       ? estimatePreview.estimate
@@ -1644,7 +1648,9 @@ export function ScheduledTransactionForm({
                   value={entryCurrency}
                   accountCurrencyCode={accountCurrency}
                   onChange={handleEntryCurrencyChange}
-                  disabled={isLoading}
+                  // An estimate is in the account's currency: switching to a
+                  // foreign entry would silently turn it off.
+                  disabled={isLoading || estimating}
                 />
                 <div className="flex-1 min-w-0">
                   <CurrencyInput
@@ -1681,14 +1687,20 @@ export function ScheduledTransactionForm({
                   <div className="flex shrink-0 flex-col">
                     <span className="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
                       {t('form.estimateLabel')}
-                      <InfoTooltip text={t('form.estimateTooltip')} />
+                      <InfoTooltip
+                        text={
+                          isActingDelegate
+                            ? t('form.estimateDelegateDisabled')
+                            : t('form.estimateTooltip')
+                        }
+                      />
                     </span>
                     <div className="flex flex-1 items-center">
                       <ToggleSwitch
                         checked={estimating}
                         onChange={handleEstimateChange}
                         label={t('form.estimateLabel')}
-                        disabled={isLoading}
+                        disabled={isLoading || isActingDelegate}
                       />
                     </div>
                   </div>

@@ -203,7 +203,8 @@
       "priceRequired": "价格必须大于零",
       "totalAmountRequired": "总金额为必填项"
     },
-    "estimatedHint": "此金额是这次发生的估算值。保持不变，这次发生会随着新付款继续沿用估算。{detail}"
+    "estimatedHint": "此金额是这次发生的估算值。保持不变，这次发生会随着新付款继续沿用估算。{detail}",
+    "keepEstimate": "保留此金额，即使新付款改变了估算"
   },
   "form": {
     "tabs": {
@@ -319,6 +320,7 @@
     },
     "estimateLabel": "估算",
     "estimateTooltip": "根据过去 24 个月在此类别下向此收款方的付款，逐月计算每次发生的金额，使某些月份花费更多的账单按此预测。您仍可修改任意一次发生，并在入账时确认金额。",
+    "estimateDelegateDisabled": "只有所有者可以开启或关闭估算：估算会读取所有者所有账户中的付款。",
     "estimatedAmountNote": "根据付款记录自动计算。{detail}",
     "autoPostDisabledEstimate": "估算金额需在入账时确认，因此不会自动入账。"
   },

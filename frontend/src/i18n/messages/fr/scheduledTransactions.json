@@ -203,7 +203,8 @@
       "priceRequired": "Le prix doit être supérieur à zéro",
       "totalAmountRequired": "Le montant total est requis"
     },
-    "estimatedHint": "Ce montant est l'estimation de cette occurrence. Laissez-le tel quel et l'occurrence continuera de suivre l'estimation à mesure que de nouveaux paiements arrivent. {detail}"
+    "estimatedHint": "Ce montant est l'estimation de cette occurrence. Laissez-le tel quel et l'occurrence continuera de suivre l'estimation à mesure que de nouveaux paiements arrivent. {detail}",
+    "keepEstimate": "Garder ce montant, même si de nouveaux paiements modifient l'estimation"
   },
   "form": {
     "tabs": {
@@ -319,6 +320,7 @@
     },
     "estimateLabel": "Estimer",
     "estimateTooltip": "Calculer le montant de chaque occurrence à partir des paiements des 24 derniers mois à ce bénéficiaire dans cette catégorie, mois par mois, afin qu'une facture qui coûte plus certains mois soit prévue ainsi. Vous pouvez toujours modifier chaque occurrence, et vous confirmez le montant lors de l'enregistrement.",
+    "estimateDelegateDisabled": "Seul le propriétaire peut activer ou désactiver l'estimation : elle lit les paiements de tous les comptes du propriétaire.",
     "estimatedAmountNote": "Calculé automatiquement à partir de l'historique des paiements. {detail}",
     "autoPostDisabledEstimate": "Un montant estimé est confirmé lors de l'enregistrement, il n'est donc pas enregistré automatiquement."
   },

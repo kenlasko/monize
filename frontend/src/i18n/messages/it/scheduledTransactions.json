@@ -203,7 +203,8 @@
       "priceRequired": "Il prezzo deve essere maggiore di zero",
       "totalAmountRequired": "L'importo totale è obbligatorio"
     },
-    "estimatedHint": "Questo importo è la stima per questa occorrenza. Lascialo invariato e l'occorrenza continuerà a seguire la stima man mano che arrivano nuovi pagamenti. {detail}"
+    "estimatedHint": "Questo importo è la stima per questa occorrenza. Lascialo invariato e l'occorrenza continuerà a seguire la stima man mano che arrivano nuovi pagamenti. {detail}",
+    "keepEstimate": "Mantieni questo importo, anche se nuovi pagamenti cambiano la stima"
   },
   "form": {
     "tabs": {
@@ -319,6 +320,7 @@
     },
     "estimateLabel": "Stima",
     "estimateTooltip": "Calcola l'importo di ogni occorrenza dai pagamenti degli ultimi 24 mesi a questo beneficiario in questa categoria, mese per mese, così una bolletta che costa di più in alcuni mesi viene prevista in quel modo. Puoi sempre modificare qualsiasi occorrenza e confermi l'importo quando la registri.",
+    "estimateDelegateDisabled": "Solo il proprietario può attivare o disattivare la stima: legge i pagamenti di tutti i conti del proprietario.",
     "estimatedAmountNote": "Calcolato automaticamente dallo storico dei pagamenti. {detail}",
     "autoPostDisabledEstimate": "Un importo stimato si conferma quando lo registri, quindi non viene registrato automaticamente."
   },

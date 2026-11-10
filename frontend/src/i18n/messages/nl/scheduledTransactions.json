@@ -203,7 +203,8 @@
       "priceRequired": "Koers moet groter zijn dan nul",
       "totalAmountRequired": "Totaalbedrag is verplicht"
     },
-    "estimatedHint": "Dit bedrag is de schatting voor deze keer. Laat het zoals het is en deze keer blijft de schatting volgen naarmate er nieuwe betalingen binnenkomen. {detail}"
+    "estimatedHint": "Dit bedrag is de schatting voor deze keer. Laat het zoals het is en deze keer blijft de schatting volgen naarmate er nieuwe betalingen binnenkomen. {detail}",
+    "keepEstimate": "Dit bedrag behouden, ook als nieuwe betalingen de schatting veranderen"
   },
   "form": {
     "tabs": {
@@ -319,6 +320,7 @@
     },
     "estimateLabel": "Schatten",
     "estimateTooltip": "Het bedrag van elke keer berekenen uit de betalingen van de afgelopen 24 maanden aan deze begunstigde in deze categorie, maand voor maand, zodat een rekening die in sommige maanden meer kost zo wordt voorspeld. U kunt elke keer nog steeds wijzigen en u bevestigt het bedrag bij het boeken.",
+    "estimateDelegateDisabled": "Alleen de eigenaar kan de schatting aan- of uitzetten: die leest de betalingen in alle rekeningen van de eigenaar.",
     "estimatedAmountNote": "Automatisch berekend uit de betalingsgeschiedenis. {detail}",
     "autoPostDisabledEstimate": "Een geschat bedrag bevestigt u bij het boeken, dus het wordt niet automatisch geboekt."
   },

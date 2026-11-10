@@ -203,7 +203,8 @@
       "priceRequired": "Price must be greater than zero",
       "totalAmountRequired": "Total amount is required"
     },
-    "estimatedHint": "This amount is the estimate for this occurrence. Leave it as it is and the occurrence keeps following the estimate as new payments arrive. {detail}"
+    "estimatedHint": "This amount is the estimate for this occurrence. Leave it as it is and the occurrence keeps following the estimate as new payments arrive. {detail}",
+    "keepEstimate": "Keep this amount, even when new payments change the estimate"
   },
   "form": {
     "tabs": {
@@ -319,6 +320,7 @@
     },
     "estimateLabel": "Estimate",
     "estimateTooltip": "Work out each occurrence's amount from the last 24 months of payments to this payee in this category, month by month, so a bill that costs more in some months is forecast that way. You can still change any occurrence, and you confirm the amount when you post it.",
+    "estimateDelegateDisabled": "Only the owner can turn the estimate on or off: it reads the payments in all of the owner's accounts.",
     "estimatedAmountNote": "Auto-calculated from payment history. {detail}",
     "autoPostDisabledEstimate": "An estimated amount is confirmed when you post it, so it is not posted automatically."
   },

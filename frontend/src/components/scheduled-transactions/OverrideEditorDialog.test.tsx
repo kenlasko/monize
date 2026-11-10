@@ -1491,6 +1491,20 @@ describe('OverrideEditorDialog: an estimated schedule (issue #2096)', () => {
     });
   });
 
+  it('pins the estimate as a stated amount when asked to keep it', async () => {
+    render(<OverrideEditorDialog {...props} />);
+    fireEvent.click(
+      screen.getByRole('switch', { name: 'Keep this amount, even when new payments change the estimate' }),
+    );
+    fireEvent.click(screen.getByText('Save Override'));
+    await waitFor(() => {
+      expect(mockCreateOverride).toHaveBeenCalledWith(
+        's9',
+        expect.objectContaining({ amount: -180 }),
+      );
+    });
+  });
+
   it('saves a changed amount as a stated one', async () => {
     render(<OverrideEditorDialog {...props} />);
     const amountInput = screen.getByLabelText('Amount') as HTMLInputElement;

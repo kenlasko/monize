@@ -45,6 +45,17 @@ release could still turn auto-post on during a rolling deployment
 deleted later (`ON DELETE SET NULL`) leaves the schedule estimated with status
 `no-basis` (section 5).
 
+The refusals read the row from before the update's transaction, so two
+concurrent edits, one turning auto-post on and one turning the estimate on, can
+leave a row with both set. Nothing posts it: both auto-post candidate reads
+filter `amount_is_estimated` and the under-lock `requireActiveAutoPost` check
+refuses it. The row only reads oddly until the next edit refuses the pair; the
+CHECK constraint in a later contract migration closes it.
+
+In the form, the toggle is disabled for a delegate (the reason in its tooltip)
+and the currency picker is disabled while estimating, so neither a delegate's
+toggle nor a switch to a foreign entry is dropped silently.
+
 ## 3. Which payments count
 
 `ScheduledAmountEstimateService.loadHistory`, one statement per read for every
@@ -141,9 +152,10 @@ amount entered is refused (`estimateUnknown`); the Post dialog asks for it.
 - An override that states an amount, or carries split lines, governs its
   occurrence; `estimated` is false on it. An override that states only a date,
   category or description follows the estimate for the month it falls in.
-- The occurrence editor prefills the estimate; saving it unchanged sends no
-  amount, so the occurrence keeps following the estimate. A changed amount is
-  stored like any other override.
+- The occurrence editor prefills the estimate and says that saving it
+  unchanged sends no amount, so the occurrence keeps following the estimate;
+  "Keep this amount" pins the shown estimate as the occurrence's own amount
+  instead. A changed amount is stored like any other override.
 - `scheduled_transactions.amount` is a snapshot: on create and update it is set
   to the next occurrence's estimate when that is known (the sent amount is kept
   otherwise), and after each post it follows the new next occurrence

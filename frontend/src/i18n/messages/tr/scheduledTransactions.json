@@ -203,7 +203,8 @@
       "priceRequired": "Fiyat sıfırdan büyük olmalıdır",
       "totalAmountRequired": "Toplam tutar zorunludur"
     },
-    "estimatedHint": "Bu tutar bu tekrarın tahminidir. Olduğu gibi bırakırsanız yeni ödemeler geldikçe bu tekrar tahmini izlemeye devam eder. {detail}"
+    "estimatedHint": "Bu tutar bu tekrarın tahminidir. Olduğu gibi bırakırsanız yeni ödemeler geldikçe bu tekrar tahmini izlemeye devam eder. {detail}",
+    "keepEstimate": "Yeni ödemeler tahmini değiştirse bile bu tutarı koru"
   },
   "form": {
     "tabs": {
@@ -319,6 +320,7 @@
     },
     "estimateLabel": "Tahmin et",
     "estimateTooltip": "Her tekrarın tutarını, bu kategoride bu alıcıya son 24 ayda yapılan ödemelerden ay ay hesaplayın; böylece bazı aylarda daha pahalı olan bir fatura öyle tahmin edilir. Herhangi bir tekrarı yine değiştirebilir ve tutarı kaydederken onaylarsınız.",
+    "estimateDelegateDisabled": "Tahmini yalnızca sahibi açıp kapatabilir: tahmin, sahibin tüm hesaplarındaki ödemeleri okur.",
     "estimatedAmountNote": "Ödeme geçmişinden otomatik hesaplanır. {detail}",
     "autoPostDisabledEstimate": "Tahmini tutar kaydederken onaylanır, bu yüzden otomatik olarak kaydedilmez."
   },

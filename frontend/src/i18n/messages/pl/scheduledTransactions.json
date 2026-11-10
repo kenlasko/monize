@@ -203,7 +203,8 @@
       "priceRequired": "Cena musi być większa od zera",
       "totalAmountRequired": "Kwota łączna jest wymagana"
     },
-    "estimatedHint": "Ta kwota to szacunek dla tego wystąpienia. Pozostaw ją bez zmian, a wystąpienie będzie nadal podążać za szacunkiem w miarę napływu nowych płatności. {detail}"
+    "estimatedHint": "Ta kwota to szacunek dla tego wystąpienia. Pozostaw ją bez zmian, a wystąpienie będzie nadal podążać za szacunkiem w miarę napływu nowych płatności. {detail}",
+    "keepEstimate": "Zachowaj tę kwotę, nawet gdy nowe płatności zmienią szacunek"
   },
   "form": {
     "tabs": {
@@ -319,6 +320,7 @@
     },
     "estimateLabel": "Szacuj",
     "estimateTooltip": "Obliczaj kwotę każdego wystąpienia z płatności z ostatnich 24 miesięcy na rzecz tego odbiorcy w tej kategorii, miesiąc po miesiącu, aby rachunek droższy w niektórych miesiącach był tak prognozowany. Nadal możesz zmienić każde wystąpienie, a kwotę potwierdzasz przy księgowaniu.",
+    "estimateDelegateDisabled": "Tylko właściciel może włączyć lub wyłączyć szacowanie: korzysta ono z płatności ze wszystkich kont właściciela.",
     "estimatedAmountNote": "Obliczane automatycznie na podstawie historii płatności. {detail}",
     "autoPostDisabledEstimate": "Szacowaną kwotę potwierdzasz przy księgowaniu, więc nie jest księgowana automatycznie."
   },

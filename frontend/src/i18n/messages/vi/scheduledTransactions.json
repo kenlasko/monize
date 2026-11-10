@@ -203,7 +203,8 @@
       "priceRequired": "Giá phải lớn hơn không",
       "totalAmountRequired": "Cần có tổng số tiền"
     },
-    "estimatedHint": "Số tiền này là ước tính cho lần này. Giữ nguyên thì lần này sẽ tiếp tục theo ước tính khi có các khoản thanh toán mới. {detail}"
+    "estimatedHint": "Số tiền này là ước tính cho lần này. Giữ nguyên thì lần này sẽ tiếp tục theo ước tính khi có các khoản thanh toán mới. {detail}",
+    "keepEstimate": "Giữ số tiền này, ngay cả khi các khoản thanh toán mới làm thay đổi ước tính"
   },
   "form": {
     "tabs": {
@@ -319,6 +320,7 @@
     },
     "estimateLabel": "Ước tính",
     "estimateTooltip": "Tính số tiền của mỗi lần từ các khoản thanh toán trong 24 tháng qua cho người nhận này thuộc danh mục này, theo từng tháng, để hóa đơn tốn nhiều hơn vào một số tháng được dự báo như vậy. Bạn vẫn có thể thay đổi bất kỳ lần nào và xác nhận số tiền khi ghi.",
+    "estimateDelegateDisabled": "Chỉ chủ sở hữu mới có thể bật hoặc tắt ước tính: ước tính đọc các khoản thanh toán trong mọi tài khoản của chủ sở hữu.",
     "estimatedAmountNote": "Tự động tính từ lịch sử thanh toán. {detail}",
     "autoPostDisabledEstimate": "Số tiền ước tính được xác nhận khi bạn ghi, nên không được ghi tự động."
   },

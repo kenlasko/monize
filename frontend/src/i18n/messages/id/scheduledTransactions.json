@@ -203,7 +203,8 @@
       "priceRequired": "Harga harus lebih dari nol",
       "totalAmountRequired": "Total jumlah wajib diisi"
     },
-    "estimatedHint": "Jumlah ini adalah perkiraan untuk kejadian ini. Biarkan apa adanya dan kejadian ini akan terus mengikuti perkiraan saat pembayaran baru masuk. {detail}"
+    "estimatedHint": "Jumlah ini adalah perkiraan untuk kejadian ini. Biarkan apa adanya dan kejadian ini akan terus mengikuti perkiraan saat pembayaran baru masuk. {detail}",
+    "keepEstimate": "Pertahankan jumlah ini, meskipun pembayaran baru mengubah perkiraan"
   },
   "form": {
     "tabs": {
@@ -319,6 +320,7 @@
     },
     "estimateLabel": "Perkirakan",
     "estimateTooltip": "Hitung jumlah setiap kejadian dari pembayaran 24 bulan terakhir kepada penerima ini dalam kategori ini, bulan demi bulan, sehingga tagihan yang lebih mahal di beberapa bulan diperkirakan demikian. Anda tetap dapat mengubah kejadian mana pun, dan mengonfirmasi jumlahnya saat memposting.",
+    "estimateDelegateDisabled": "Hanya pemilik yang dapat menyalakan atau mematikan perkiraan: perkiraan membaca pembayaran di semua akun pemilik.",
     "estimatedAmountNote": "Dihitung otomatis dari riwayat pembayaran. {detail}",
     "autoPostDisabledEstimate": "Jumlah perkiraan dikonfirmasi saat Anda mempostingnya, jadi tidak diposting secara otomatis."
   },

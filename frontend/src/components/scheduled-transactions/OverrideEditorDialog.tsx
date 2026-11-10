@@ -123,6 +123,9 @@ export function OverrideEditorDialog({
   // when it does not follow one, `null` when the estimate is unknown. Saving
   // the amount unchanged keeps it following the estimate.
   const [estimateSeed, setEstimateSeed] = useState<number | null | undefined>(undefined);
+  // Keep the estimate shown as this occurrence's own amount, so later
+  // payments no longer move it.
+  const [keepEstimate, setKeepEstimate] = useState(false);
   const estimateText = useAmountEstimateText();
   const [categoryId, setCategoryId] = useState<string>('');
   const [description, setDescription] = useState<string>('');
@@ -296,6 +299,7 @@ export function OverrideEditorDialog({
             )
           : undefined;
       setEstimateSeed(seed === undefined ? undefined : seed === null ? null : toLoadedPlaces(seed));
+      setKeepEstimate(false);
       if (seed === null) {
         setAmount(0);
         setAmountUnknown(true);
@@ -622,7 +626,7 @@ export function OverrideEditorDialog({
       // keeps following the estimate as new payments arrive (issue #2096).
       const followsEstimate =
         !isSplit &&
-        ((typeof estimateSeed === 'number' && amount === estimateSeed) ||
+        ((typeof estimateSeed === 'number' && amount === estimateSeed && !keepEstimate) ||
           (estimateSeed === null && amountUnknown));
       const savedAmount = followsEstimate
         ? null
@@ -872,6 +876,20 @@ export function OverrideEditorDialog({
               }),
             })}
           </p>
+        )}
+        {/* Saved unchanged, the occurrence keeps following the estimate; this
+            is the explicit way to pin today's figure instead. */}
+        {!isInvestmentKind && typeof estimateSeed === 'number' && amount === estimateSeed && (
+          <label className="flex items-center gap-2 cursor-pointer w-fit">
+            <ToggleSwitch
+              checked={keepEstimate}
+              onChange={setKeepEstimate}
+              label={t('overrideEditor.keepEstimate')}
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              {t('overrideEditor.keepEstimate')}
+            </span>
+          </label>
         )}
         {!isInvestmentKind && loanSeedGap && (
           <p className="-mt-2 text-xs text-amber-700 dark:text-amber-300" role="note">

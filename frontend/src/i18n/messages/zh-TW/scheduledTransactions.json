@@ -203,7 +203,8 @@
       "priceRequired": "價格必須大於零",
       "totalAmountRequired": "總金額為必填"
     },
-    "estimatedHint": "此金額是這次發生的估算值。保持不變，這次發生會隨著新付款繼續沿用估算。{detail}"
+    "estimatedHint": "此金額是這次發生的估算值。保持不變，這次發生會隨著新付款繼續沿用估算。{detail}",
+    "keepEstimate": "保留此金額，即使新付款改變了估算"
   },
   "form": {
     "tabs": {
@@ -319,6 +320,7 @@
     },
     "estimateLabel": "估算",
     "estimateTooltip": "根據過去 24 個月在此類別下向此收款對象的付款，逐月計算每次發生的金額，使某些月份花費較多的帳單依此預測。您仍可修改任何一次發生，並在入帳時確認金額。",
+    "estimateDelegateDisabled": "只有擁有者可以開啟或關閉估算：估算會讀取擁有者所有帳戶中的付款。",
     "estimatedAmountNote": "根據付款紀錄自動計算。{detail}",
     "autoPostDisabledEstimate": "估算金額需在入帳時確認，因此不會自動入帳。"
   },

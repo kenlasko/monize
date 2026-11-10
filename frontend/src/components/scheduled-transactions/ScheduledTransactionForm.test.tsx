@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { ScheduledTransactionForm } from './ScheduledTransactionForm';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '@/store/authStore';
 
 vi.mock('react-hot-toast', () => ({
   default: {
@@ -56,8 +57,8 @@ vi.mock('@/lib/exchange-rates', () => ({
 // The picker itself is covered by CurrencyPickerButton.test.tsx; here it stands
 // in as a plain control so the form's conversion behaviour is what is under test.
 vi.mock('@/components/transactions/CurrencyPickerButton', () => ({
-  CurrencyPickerButton: ({ value, accountCurrencyCode, onChange }: any) => (
-    <div data-testid="currency-picker">
+  CurrencyPickerButton: ({ value, accountCurrencyCode, onChange, disabled }: any) => (
+    <div data-testid="currency-picker" data-disabled={disabled ? 'true' : 'false'}>
       <span data-testid="currency-picker-value">{value || accountCurrencyCode}</span>
       <button type="button" data-testid="pick-usd" onClick={() => onChange('USD')}>
         USD
@@ -3721,6 +3722,34 @@ describe('ScheduledTransactionForm: Estimate', () => {
 
     await act(async () => { fireEvent.click(screen.getByRole('switch', { name: 'Estimate' })); });
     expect(screen.getByLabelText('Amount')).not.toBeDisabled();
+  });
+
+  it('disables the currency picker while estimating', async () => {
+    render(<ScheduledTransactionForm scheduledTransaction={estimatedSt} />);
+    await waitFor(() => expect(mockGetAmountEstimate).toHaveBeenCalled());
+    expect(screen.getByTestId('currency-picker')).toHaveAttribute('data-disabled', 'true');
+  });
+
+  it('does not let a delegate turn the estimate on, and asks for no preview', async () => {
+    useAuthStore.setState({ actingAsUserId: 'owner-1' } as never);
+    try {
+      render(
+        <ScheduledTransactionForm
+          scheduledTransaction={{ ...estimatedSt, amountIsEstimated: false, amountEstimate: null }}
+        />,
+      );
+      await waitFor(() => expect(mockAccountsGetAll).toHaveBeenCalled());
+      const toggle = screen.getByRole('switch', { name: 'Estimate' });
+      expect(toggle).toBeDisabled();
+      expect(
+        screen.getByRole('button', { name: /Only the owner can turn the estimate on or off/ }),
+      ).toBeInTheDocument();
+      expect(mockGetAmountEstimate).not.toHaveBeenCalled();
+    } finally {
+      act(() => {
+        useAuthStore.setState({ actingAsUserId: null } as never);
+      });
+    }
   });
 
   it('refuses to save an estimate without a category', async () => {

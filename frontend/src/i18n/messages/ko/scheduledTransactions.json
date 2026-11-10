@@ -203,7 +203,8 @@
       "priceRequired": "가격은 0보다 커야 합니다",
       "totalAmountRequired": "총 금액이 필요합니다"
     },
-    "estimatedHint": "이 금액은 이 회차의 예상치입니다. 그대로 두면 새 결제가 들어올 때마다 이 회차는 계속 예상치를 따릅니다. {detail}"
+    "estimatedHint": "이 금액은 이 회차의 예상치입니다. 그대로 두면 새 결제가 들어올 때마다 이 회차는 계속 예상치를 따릅니다. {detail}",
+    "keepEstimate": "새 결제로 예상이 바뀌어도 이 금액 유지"
   },
   "form": {
     "tabs": {
@@ -319,6 +320,7 @@
     },
     "estimateLabel": "예상",
     "estimateTooltip": "이 카테고리에서 이 수취인에게 지난 24개월 동안 결제한 내역으로 각 회차의 금액을 월별로 계산하여, 특정 달에 더 많이 드는 청구서를 그대로 예측합니다. 어느 회차든 계속 변경할 수 있으며, 게시할 때 금액을 확인합니다.",
+    "estimateDelegateDisabled": "예상은 소유자만 켜거나 끌 수 있습니다. 소유자의 모든 계좌에 있는 결제를 읽기 때문입니다.",
     "estimatedAmountNote": "결제 내역으로 자동 계산됩니다. {detail}",
     "autoPostDisabledEstimate": "예상 금액은 게시할 때 확인하므로 자동으로 게시되지 않습니다."
   },
