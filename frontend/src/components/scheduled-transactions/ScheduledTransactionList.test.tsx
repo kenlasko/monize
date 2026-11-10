@@ -462,6 +462,42 @@ describe('ScheduledTransactionList', () => {
     expect(document.querySelector('[title="Modified for next occurrence"]')).toBeNull();
   });
 
+  // Issue #2096: the next occurrence's estimate is labelled as one, with where
+  // it comes from behind the info button.
+  it('labels an estimated amount and says where it comes from', () => {
+    const transactions = [createTransaction({
+      amount: -999,
+      effectiveAmount: -180,
+      effectiveAmountComplete: true,
+      amountIsEstimated: true,
+      payeeName: 'Gas Co',
+      amountEstimate: {
+        status: 'estimated',
+        currencyCode: 'CAD',
+        months: {},
+        paymentCount: 9,
+        latestPaymentDate: '2025-02-10',
+        growthRate: null,
+        historyMonths: 24,
+        missingPair: null,
+      },
+    })];
+    render(<ScheduledTransactionList transactions={transactions} />);
+    expect(screen.getAllByText('Estimated').length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole('button', { name: /Estimated from 9 payments/ }).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it('does not label an amount an override states', () => {
+    const transactions = [createTransaction({
+      amountIsEstimated: true,
+      nextOverride: { amount: -250, overrideDate: null },
+    })];
+    render(<ScheduledTransactionList transactions={transactions} />);
+    expect(screen.queryByText('Estimated')).not.toBeInTheDocument();
+  });
+
   it('shows dash when autoPost is false', () => {
     const transactions = [createTransaction({ autoPost: false })];
     render(<ScheduledTransactionList transactions={transactions} />);

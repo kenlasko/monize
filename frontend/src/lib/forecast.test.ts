@@ -2322,7 +2322,12 @@ describe('buildMultiAccountForecast', () => {
     const result = buildMultiAccountForecast(
       accounts, [], 'month', ['acc-1', 'acc-2'], [], convert,
     );
-    expect(result).toEqual({ points: [], series: [], missingCurrencies: ['EUR'] });
+    expect(result).toEqual({
+      points: [],
+      series: [],
+      missingCurrencies: ['EUR'],
+      unknownEstimates: [],
+    });
   });
 
   it('ignores ids with no account behind them', () => {
@@ -2742,5 +2747,143 @@ describe('buildForecast with payroll deductions', () => {
       ['2026-04-24', 2446.52],
       ['2026-05-08', 2500],
     ]);
+  });
+});
+
+describe('an estimated schedule (issue #2096)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 0, 15)); // Jan 15, 2025
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** A heating bill: -220 in February, -180 in March; the snapshot is -999. */
+  const heating = (overrides: Partial<ScheduledTransaction> = {}) =>
+    makeScheduled({
+      id: 'st-heat',
+      name: 'Heating',
+      amount: -999,
+      nextDueDate: '2025-02-10',
+      amountIsEstimated: true,
+      amountEstimate: {
+        status: 'estimated',
+        currencyCode: 'CAD',
+        months: {
+          '2025-02': { amount: -220, basis: 'seasonal' },
+          '2025-03': { amount: -180, basis: 'seasonal' },
+          '2025-04': { amount: -150, basis: 'seasonal' },
+        },
+        paymentCount: 12,
+        latestPaymentDate: '2025-01-10',
+        growthRate: 0.1,
+        historyMonths: 24,
+        missingPair: null,
+      },
+      ...overrides,
+    });
+
+  it("projects each occurrence at its own month's estimate, marked as one", () => {
+    const result = buildForecast([makeAccount()], [heating()], '90days', 'all');
+
+    expect(result.unknownEstimates).toEqual([]);
+    const feb = result.points.find(dp => dp.date === '2025-02-10');
+    const mar = result.points.find(dp => dp.date === '2025-03-10');
+    expect(feb?.transactions).toEqual([
+      expect.objectContaining({ amount: -220, estimated: true }),
+    ]);
+    expect(mar?.transactions).toEqual([
+      expect.objectContaining({ amount: -180, estimated: true }),
+    ]);
+    // 1000 - 220 - 180: the snapshot never moves the balance.
+    expect(mar?.balance).toBe(600);
+  });
+
+  it("keeps an override's stated amount and estimates an amountless one", () => {
+    const st = heating({
+      futureOverrides: [
+        {
+          id: 'ovr-1',
+          scheduledTransactionId: 'st-heat',
+          originalDate: '2025-02-10',
+          overrideDate: '2025-02-10',
+          amount: -250,
+          categoryId: null,
+          category: null,
+          description: null,
+          isSplit: null,
+          splits: null,
+          createdAt: '',
+          updatedAt: '',
+        },
+        {
+          id: 'ovr-2',
+          scheduledTransactionId: 'st-heat',
+          originalDate: '2025-03-10',
+          overrideDate: '2025-03-12',
+          amount: null,
+          categoryId: null,
+          category: null,
+          description: 'moved',
+          isSplit: null,
+          splits: null,
+          createdAt: '',
+          updatedAt: '',
+        },
+      ] as never,
+    });
+
+    const result = buildForecast([makeAccount()], [st], '90days', 'all');
+
+    const feb = result.points.find(dp => dp.date === '2025-02-10');
+    const mar = result.points.find(dp => dp.date === '2025-03-12');
+    expect(feb?.transactions[0]).toEqual(
+      expect.not.objectContaining({ estimated: true }),
+    );
+    expect(feb?.transactions[0].amount).toBe(-250);
+    expect(mar?.transactions[0]).toEqual(
+      expect.objectContaining({ amount: -180, estimated: true }),
+    );
+  });
+
+  it('withholds the series and names the schedule when an estimate is unknown', () => {
+    const st = heating({
+      amountEstimate: {
+        status: 'no-history',
+        currencyCode: 'CAD',
+        months: {},
+        paymentCount: 0,
+        latestPaymentDate: null,
+        growthRate: null,
+        historyMonths: 24,
+        missingPair: null,
+      },
+    });
+
+    const single = buildForecast([makeAccount()], [st], 'month', 'all');
+    expect(single).toEqual({
+      points: [],
+      missingCurrencies: [],
+      unknownEstimates: ['st-heat'],
+    });
+
+    const multi = buildMultiAccountForecast(
+      [makeAccount(), makeAccount({ id: 'acc-2', name: 'Savings' })],
+      [st],
+      'month',
+      ['acc-1', 'acc-2'],
+    );
+    expect(multi.points).toEqual([]);
+    expect(multi.unknownEstimates).toEqual(['st-heat']);
+    expect(multi.missingCurrencies).toEqual([]);
+  });
+
+  it('leaves the projected balance unknown before posting an unknown estimate', () => {
+    const st = heating({ amountEstimate: null });
+    expect(
+      getProjectedBalanceAtDate(makeAccount(), '2025-03-31', [st]),
+    ).toBeNull();
   });
 });

@@ -114,7 +114,7 @@ export function CashFlowForecastChart({
     );
   }
 
-  if (forecast.missingCurrencies.length > 0) {
+  if (forecast.missingCurrencies.length > 0 || forecast.unknownEstimates.length > 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6">
         <div className="flex items-center justify-between mb-4">

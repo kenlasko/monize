@@ -119,10 +119,13 @@ vi.mock('@/lib/tags', () => ({
   },
 }));
 
+const mockGetAmountEstimate = vi.fn();
+
 vi.mock('@/lib/scheduled-transactions', () => ({
   scheduledTransactionsApi: {
     create: (...args: any[]) => mockCreate(...args),
     update: (...args: any[]) => mockUpdate(...args),
+    getAmountEstimate: (...args: any[]) => mockGetAmountEstimate(...args),
   },
 }));
 
@@ -3638,5 +3641,96 @@ describe('ScheduledTransactionForm - foreign currency', () => {
     expect(screen.getByTestId('currency-picker-value')).toHaveTextContent('USD');
     expect(screen.getByLabelText('Amount in USD')).toBeInTheDocument();
     expect((screen.getByLabelText('Amount in USD') as HTMLInputElement).value).toContain('40');
+  });
+});
+
+// Issue #2096: the Estimate toggle between Amount and Reference Number.
+describe('ScheduledTransactionForm: Estimate', () => {
+  const estimate = {
+    status: 'estimated',
+    currencyCode: 'CAD',
+    months: { '2024-03': { amount: -180, basis: 'seasonal' } },
+    paymentCount: 9,
+    latestPaymentDate: '2024-02-10',
+    growthRate: 0.05,
+    historyMonths: 24,
+    missingPair: null,
+  };
+  const estimatedSt = {
+    id: 's1', accountId: 'acc-1', name: 'Heating', amount: -999,
+    currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+    nextDueDate: '2024-03-01', isActive: true, autoPost: false,
+    reminderDaysBefore: 3, isTransfer: false, isSplit: false,
+    payeeId: 'payee-1', categoryId: 'cat-1',
+    amountIsEstimated: true,
+    amountEstimate: estimate,
+  } as any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAccountsGetAll.mockResolvedValue(mockAccounts);
+    mockCategoriesGetAll.mockResolvedValue(mockCategories);
+    mockPayeesGetAll.mockResolvedValue(mockPayees);
+    mockGetAmountEstimate.mockResolvedValue(estimate);
+  });
+
+  it('shows the next estimate in a disabled Amount field, and no auto-post', async () => {
+    render(<ScheduledTransactionForm scheduledTransaction={estimatedSt} />);
+    await waitFor(() => expect(mockGetAmountEstimate).toHaveBeenCalledWith('acc-1', 'payee-1', 'cat-1'));
+
+    const amount = screen.getByLabelText('Amount') as HTMLInputElement;
+    expect(amount).toBeDisabled();
+    expect(amount.value).toContain('180');
+    expectToggle(screen.getByRole('switch', { name: 'Estimate' }), true);
+    const autoPost = screen.getByRole('switch', { name: 'Auto-post on due date' });
+    expect(autoPost).toBeDisabled();
+    expect(screen.getByText(/Auto-calculated from payment history/)).toBeInTheDocument();
+  });
+
+  it('saves the flag with the estimate as the amount and auto-post off', async () => {
+    const { container } = render(
+      <ScheduledTransactionForm scheduledTransaction={{ ...estimatedSt, autoPost: true }} />,
+    );
+    await waitFor(() => expect(mockGetAmountEstimate).toHaveBeenCalled());
+
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith(
+        's1',
+        expect.objectContaining({ amountIsEstimated: true, autoPost: false, amount: -180 }),
+      );
+    });
+  });
+
+  it('turns auto-post off when the estimate is switched on, and back to an editable amount when off', async () => {
+    render(
+      <ScheduledTransactionForm
+        scheduledTransaction={{ ...estimatedSt, amountIsEstimated: false, amountEstimate: null, autoPost: true }}
+      />,
+    );
+    await waitFor(() => expect(mockAccountsGetAll).toHaveBeenCalled());
+    expectToggle(screen.getByRole('switch', { name: 'Auto-post on due date' }), true);
+
+    await act(async () => { fireEvent.click(screen.getByRole('switch', { name: 'Estimate' })); });
+    expectToggle(screen.getByRole('switch', { name: 'Auto-post on due date' }), false);
+    expect(screen.getByLabelText('Amount')).toBeDisabled();
+
+    await act(async () => { fireEvent.click(screen.getByRole('switch', { name: 'Estimate' })); });
+    expect(screen.getByLabelText('Amount')).not.toBeDisabled();
+  });
+
+  it('refuses to save an estimate without a category', async () => {
+    const { container } = render(
+      <ScheduledTransactionForm scheduledTransaction={{ ...estimatedSt, categoryId: null }} />,
+    );
+    await waitFor(() => expect(mockAccountsGetAll).toHaveBeenCalled());
+
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    expect(toast.error).toHaveBeenCalledWith('Choose a payee and a category to estimate the amount from.');
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 });

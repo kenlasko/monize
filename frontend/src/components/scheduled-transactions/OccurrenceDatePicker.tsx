@@ -20,6 +20,7 @@ import { LOAN_OCCURRENCES_MAX_COUNT, scheduledTransactionsApi } from '@/lib/sche
 import { isLoanBillCandidate } from '@/lib/loan-occurrence';
 import { createLogger } from '@/lib/logger';
 import { useLoanOccurrenceMissingText } from './useLoanOccurrenceMissingText';
+import { estimatedOccurrenceAmount, occurrenceFollowsEstimate } from '@/lib/scheduled-effective-amount';
 
 const logger = createLogger('OccurrenceDatePicker');
 
@@ -254,6 +255,11 @@ export function OccurrenceDatePicker({
           const hasOverride = overrideDateSet.has(date);
           const isNextDue = date === nextDueDate;
           const override = hasOverride ? overrideByDate.get(date) : undefined;
+          // Each month's estimate, where this occurrence follows it (issue
+          // #2096): the figure the forecast projects for the date it falls on.
+          const estimate = occurrenceFollowsEstimate(scheduledTransaction, override)
+            ? estimatedOccurrenceAmount(scheduledTransaction, override?.overrideDate ?? date)
+            : undefined;
           const changes: string[] = [];
           if (override) {
             if (override.originalDate !== override.overrideDate) {
@@ -262,7 +268,14 @@ export function OccurrenceDatePicker({
             // A priced loan occurrence shows its own amount below, override
             // included; comparing the override with the template would set it
             // against a figure the occurrence never had.
-            if (!pricedProjection && override.amount != null && Number(override.amount) !== Number(scheduledTransaction.amount)) {
+            // An estimated schedule's stored amount is only a snapshot, so any
+            // amount an override states is a change (issue #2096).
+            if (
+              !pricedProjection &&
+              override.amount != null &&
+              (scheduledTransaction.amountIsEstimated === true ||
+                Number(override.amount) !== Number(scheduledTransaction.amount))
+            ) {
               changes.push(t('occurrencePicker.amountChange', { amount: formatCurrency(Math.abs(override.amount), scheduledTransaction.currencyCode) }));
             }
             if (override.category && override.categoryId !== scheduledTransaction.categoryId) {
@@ -332,6 +345,15 @@ export function OccurrenceDatePicker({
                       {t('loanOccurrence.notProjected')}
                     </span>
                   )}
+                </div>
+              )}
+              {estimate !== undefined && (
+                <div className="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                  {estimate === null
+                    ? t('occurrencePicker.estimateUnknown')
+                    : t('occurrencePicker.estimatedAmount', {
+                        amount: formatCurrency(estimate, scheduledTransaction.currencyCode),
+                      })}
                 </div>
               )}
               {changes.length > 0 && (

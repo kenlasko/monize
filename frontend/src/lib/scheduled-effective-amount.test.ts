@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
+  estimateAmountOn,
+  estimatedOccurrenceAmount,
   nextOccurrenceEffectiveAmount,
+  occurrenceFollowsEstimate,
   occurrenceAccountIds,
   occurrencePin,
   occurrenceSettlementAccountId,
@@ -503,5 +506,58 @@ describe('the accounts an occurrence touches', () => {
     expect(
       occurrenceTouchesAccounts(occurrence(), schedule, accountsById, new Set(['chequing-1'])),
     ).toBe(false);
+  });
+});
+
+describe('estimated amounts (issue #2096)', () => {
+  const estimated = (overrides: Partial<ScheduledTransaction> = {}) =>
+    ({
+      id: 'st-heat',
+      amount: -999,
+      currencyCode: 'CAD',
+      isInvestment: false,
+      isSplit: false,
+      isTransfer: false,
+      amountIsEstimated: true,
+      amountEstimate: {
+        status: 'estimated',
+        currencyCode: 'CAD',
+        months: { '2025-02': { amount: -220, basis: 'seasonal' } },
+        paymentCount: 3,
+        latestPaymentDate: '2025-01-10',
+        growthRate: null,
+        historyMonths: 24,
+        missingPair: null,
+      },
+      ...overrides,
+    }) as ScheduledTransaction;
+
+  it("reads the month's estimate, never the snapshot", () => {
+    expect(estimatedOccurrenceAmount(estimated(), '2025-02-10')).toBe(-220);
+    // A month the estimate does not hold is unknown, not -999.
+    expect(estimatedOccurrenceAmount(estimated(), '2025-09-10')).toBeNull();
+    expect(
+      estimatedOccurrenceAmount(estimated({ amountEstimate: null }), '2025-02-10'),
+    ).toBeNull();
+  });
+
+  it('is undefined for a schedule that does not estimate', () => {
+    expect(
+      estimatedOccurrenceAmount(estimated({ amountIsEstimated: false }), '2025-02-10'),
+    ).toBeUndefined();
+    expect(occurrenceFollowsEstimate(estimated({ amountIsEstimated: undefined }))).toBe(false);
+  });
+
+  it('lets an override that states an amount or lines govern its occurrence', () => {
+    const st = estimated();
+    expect(occurrenceFollowsEstimate(st)).toBe(true);
+    expect(occurrenceFollowsEstimate(st, { amount: null, isSplit: null })).toBe(true);
+    expect(occurrenceFollowsEstimate(st, { amount: -250, isSplit: null })).toBe(false);
+    expect(occurrenceFollowsEstimate(st, { amount: null, isSplit: true })).toBe(false);
+  });
+
+  it('reads a preview estimate by month', () => {
+    expect(estimateAmountOn(estimated().amountEstimate, '2025-02-28')).toBe(-220);
+    expect(estimateAmountOn(null, '2025-02-28')).toBeNull();
   });
 });
