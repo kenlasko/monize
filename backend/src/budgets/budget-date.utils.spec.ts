@@ -1,3 +1,4 @@
+import { requestContextStorage } from "../common/request-context";
 import {
   getCurrentMonthPeriodDates,
   getFollowingMonthPeriodDates,
@@ -66,6 +67,21 @@ describe("budget-date.utils", () => {
         new RegExp(`^${today.getFullYear()}-${expectedMonth}-\\d{2}$`),
       );
     });
+
+    it("uses the request timezone's calendar day, not UTC's", () => {
+      // 01:00 UTC on 1 November is still 18:00 on 31 October in Los Angeles.
+      jest.useFakeTimers({ now: new Date("2026-11-01T01:00:00.000Z") });
+      try {
+        requestContextStorage.run({ timezone: "America/Los_Angeles" }, () => {
+          expect(getCurrentMonthPeriodDates()).toEqual({
+            periodStart: "2026-10-01",
+            periodEnd: "2026-10-31",
+          });
+        });
+      } finally {
+        jest.useRealTimers();
+      }
+    });
   });
 
   describe("getPreviousMonthPeriodDates", () => {
@@ -77,6 +93,20 @@ describe("budget-date.utils", () => {
       expect(result.periodStart).toBe(
         `${prevMonth.getFullYear()}-${expectedMonth}-01`,
       );
+    });
+
+    it("uses the request timezone's calendar day, not UTC's", () => {
+      jest.useFakeTimers({ now: new Date("2026-11-01T01:00:00.000Z") });
+      try {
+        requestContextStorage.run({ timezone: "America/Los_Angeles" }, () => {
+          expect(getPreviousMonthPeriodDates()).toEqual({
+            periodStart: "2026-09-01",
+            periodEnd: "2026-09-30",
+          });
+        });
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 
