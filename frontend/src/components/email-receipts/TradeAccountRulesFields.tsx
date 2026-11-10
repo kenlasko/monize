@@ -125,7 +125,10 @@ export function TradeAccountRulesFields({ form, accounts, currencies, baseCurren
             const number = index + 1;
             return (
               <li key={rule.id} className="space-y-1">
-                <div className="grid grid-cols-1 items-center gap-2 sm:grid-cols-[minmax(0,1fr)_10rem_minmax(0,1fr)_auto]">
+                {/* The currency column is as wide as its longest option, so
+                    "CAD (your base currency)" shows whole in every language;
+                    the pattern box gives up the room. */}
+                <div className="grid grid-cols-1 items-center gap-2 sm:grid-cols-[minmax(6rem,0.6fr)_max-content_minmax(0,1fr)_auto]">
                   <Input
                     id={`parser-trade-rule-${rule.id}-match`}
                     aria-label={t('ruleMatchLabel', { rule: number })}
