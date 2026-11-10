@@ -7,10 +7,11 @@ import {
 } from "./trivia.types";
 
 /**
- * The most sentences kept from a model, and the longest one shown. About two
- * per fact the catalog can produce, so no topic is crowded out.
+ * The most sentences kept from a model, and the longest one shown. The prompt
+ * asks for one item per fact, so a reply is held to one per fact it was given,
+ * never more than every fact the catalog can produce.
  */
-const MAX_AI_ITEMS = 40;
+const MAX_AI_ITEMS = 26;
 const MAX_SENTENCE_CHARS = 240;
 
 const PLACEHOLDER = /\{([A-Za-z]+)\}/g;
@@ -69,7 +70,7 @@ export function parseTriviaSentences(
   const seen = new Set<string>();
   const items: TriviaItem[] = [];
   for (const entry of parsed.trivia as unknown[]) {
-    if (items.length >= MAX_AI_ITEMS) break;
+    if (items.length >= Math.min(MAX_AI_ITEMS, facts.length)) break;
     const { topic, text } = (entry ?? {}) as Record<string, unknown>;
     if (!isTriviaTopic(topic) || typeof text !== "string") {
       continue;

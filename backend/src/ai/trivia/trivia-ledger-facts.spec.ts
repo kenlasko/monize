@@ -105,7 +105,8 @@ describe("buildLedgerTriviaFacts", () => {
           {
             spendingByPayee: {
               data: [
-                { payeeId: null, payeeName: " ", total: 999 },
+                // No payee: the report's "Unknown" bucket, never a payee.
+                { payeeId: null, payeeName: "Unknown", total: 999 },
                 { payeeId: "p", payeeName: "Grocer", total: 400 },
               ],
               totalSpending: 1399,
@@ -143,6 +144,18 @@ describe("buildLedgerTriviaFacts", () => {
       });
     });
 
+    it("counts months from the first one with money in it", () => {
+      const late = flows({
+        data: [month("2025-08", 0, 0), month("2025-09", 0, 0), ...flows().data],
+      });
+      expect(
+        figuresOf({ incomeVsExpenses: late }, "incomeSurplusMonths"),
+      ).toEqual({
+        surplusMonths: { kind: "count", value: 2 },
+        windowMonths: { kind: "count", value: 3 },
+      });
+    });
+
     it("counts the months that came out ahead", () => {
       expect(
         figuresOf({ incomeVsExpenses: flows() }, "incomeSurplusMonths"),
@@ -165,6 +178,17 @@ describe("buildLedgerTriviaFacts", () => {
       ["a missing currency", { missingCurrencies: ["JPY"] }],
       ["an unknown total", { totals: { ...flows().totals, income: null } }],
       ["too few months", { data: flows().data.slice(0, 2) }],
+      [
+        "a year of empty months before the last two",
+        {
+          data: [
+            ...Array.from({ length: 10 }, (_, i) =>
+              month(`2025-${String(i + 1).padStart(2, "0")}`, 0, 0),
+            ),
+            ...flows().data.slice(0, 2),
+          ],
+        },
+      ],
     ])("says nothing of cash flow with %s", (_label, patch) => {
       expect(
         ids({

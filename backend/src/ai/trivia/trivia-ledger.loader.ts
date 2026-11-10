@@ -8,7 +8,7 @@ import {
 } from "../../common/date-utils";
 import { getEffectiveTimezoneOfUser } from "../../common/users-by-timezone.util";
 import { BuiltInReportsService } from "../../built-in-reports/built-in-reports.service";
-import { warrantyStatus } from "../../warranties/warranty-status.util";
+import { warrantyStatusBounds } from "../../warranties/warranty-status.util";
 import type {
   TriviaLedgerInput,
   TriviaRecordCounts,
@@ -60,24 +60,32 @@ export class TriviaLedgerLoader {
     const today = todayInTimezoneOrUtc(timezone);
     const { startDate, endDate } = triviaWindow(today);
 
-    const spendingByCategory = await this.attempt(userId, "spending", () =>
-      this.reports.getSpendingByCategory(userId, startDate, endDate),
-    );
-    const spendingByPayee = await this.attempt(userId, "payees", () =>
-      this.reports.getSpendingByPayee(userId, startDate, endDate),
-    );
-    const incomeVsExpenses = await this.attempt(userId, "cash flow", () =>
-      this.reports.getIncomeVsExpenses(userId, startDate, endDate),
-    );
-    const incomeBySource = await this.attempt(userId, "income", () =>
-      this.reports.getIncomeBySource(userId, startDate, endDate),
-    );
-    const records = await this.attempt(userId, "records", () =>
-      this.countRecords(userId),
-    );
-    const warranties = await this.attempt(userId, "warranties", () =>
-      this.readWarranties(userId, today),
-    );
+    // Independent reads, each already isolated by `attempt`.
+    const [
+      spendingByCategory,
+      spendingByPayee,
+      incomeVsExpenses,
+      incomeBySource,
+      records,
+      warranties,
+    ] = await Promise.all([
+      this.attempt(userId, "spending", () =>
+        this.reports.getSpendingByCategory(userId, startDate, endDate),
+      ),
+      this.attempt(userId, "payees", () =>
+        this.reports.getSpendingByPayee(userId, startDate, endDate),
+      ),
+      this.attempt(userId, "cash flow", () =>
+        this.reports.getIncomeVsExpenses(userId, startDate, endDate),
+      ),
+      this.attempt(userId, "income", () =>
+        this.reports.getIncomeBySource(userId, startDate, endDate),
+      ),
+      this.attempt(userId, "records", () => this.countRecords(userId)),
+      this.attempt(userId, "warranties", () =>
+        this.readWarranties(userId, today),
+      ),
+    ]);
 
     return {
       currency,
@@ -141,39 +149,38 @@ export class TriviaLedgerLoader {
     });
   }
 
-  /** Expiry is `warrantyStatus`'s to decide (WTY-002), never a date compare here. */
+  /**
+   * Expiry is `warrantyStatus`'s to decide (WTY-002): the bounds come from
+   * `warrantyStatusBounds`, which is held to it day by day, never a date
+   * compare written here.
+   */
   private readWarranties(
     userId: string,
     today: string,
   ): Promise<TriviaWarranties> {
+    // The last day a warranty reads `expired`; any later end is in cover.
+    const lastExpired = warrantyStatusBounds("expired", today)
+      .expiresTo as string;
     return withScopedDb(this.dataSource, async (m) => {
-      const rows: {
-        name: string;
-        expires_on: string | null;
-        is_lifetime: boolean;
-      }[] = await m.query(
-        `SELECT name, to_char(expires_on, 'YYYY-MM-DD') AS expires_on, is_lifetime
+      const counts: { covered: number }[] = await m.query(
+        `SELECT count(*)::int AS covered FROM warranties
+          WHERE user_id = $1 AND archived_at IS NULL
+            AND (is_lifetime OR expires_on > $2)`,
+        [userId, lastExpired],
+      );
+      const next: { name: string; expires_on: string }[] = await m.query(
+        `SELECT name, to_char(expires_on, 'YYYY-MM-DD') AS expires_on
            FROM warranties
-          WHERE user_id = $1 AND archived_at IS NULL`,
-        [userId],
+          WHERE user_id = $1 AND archived_at IS NULL
+            AND NOT is_lifetime AND expires_on > $2
+          ORDER BY expires_on, name
+          LIMIT 1`,
+        [userId, lastExpired],
       );
-      const covered = rows.filter(
-        (row) =>
-          warrantyStatus(row.expires_on, row.is_lifetime, today).status !==
-          "expired",
-      );
-      const next =
-        covered
-          .filter((row) => !row.is_lifetime && row.expires_on !== null)
-          .sort(
-            (a, b) =>
-              (a.expires_on as string).localeCompare(b.expires_on as string) ||
-              a.name.localeCompare(b.name),
-          )[0] ?? null;
       return {
-        covered: covered.length,
-        nextExpiring: next
-          ? { name: next.name, expiresOn: next.expires_on as string }
+        covered: Number(counts[0]?.covered ?? 0),
+        nextExpiring: next[0]
+          ? { name: next[0].name, expiresOn: next[0].expires_on }
           : null,
       };
     });

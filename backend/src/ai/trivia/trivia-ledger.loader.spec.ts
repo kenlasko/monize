@@ -107,29 +107,60 @@ describe("TriviaLedgerLoader", () => {
     expect(input.records).not.toBeNull();
   });
 
-  it("counts a warranty in cover by its status, and names the soonest to run out", async () => {
-    answer(
-      {
-        transactions: 0,
-        first_date: null,
-        payees: 0,
-        categories: 0,
-        scheduled: 0,
-      },
-      [
-        { name: "Old TV", expires_on: "2026-01-01", is_lifetime: false },
-        { name: "Kettle", expires_on: "2027-06-01", is_lifetime: false },
-        { name: "Fridge", expires_on: "2026-12-01", is_lifetime: false },
-        { name: "Knife", expires_on: null, is_lifetime: true },
-        // Expires today: still in cover, as warrantyStatus reads it.
-        { name: "Phone", expires_on: "2026-11-10", is_lifetime: false },
-      ],
+  it("reads warranty cover by warrantyStatus's bounds: a warranty ending today is in cover", async () => {
+    query.mockImplementation((sql: string) =>
+      Promise.resolve(
+        !sql.includes("FROM warranties")
+          ? [
+              {
+                transactions: 0,
+                first_date: null,
+                payees: 0,
+                categories: 0,
+                scheduled: 0,
+              },
+            ]
+          : sql.includes("count(*)")
+            ? [{ covered: 4 }]
+            : [{ name: "Phone", expires_on: "2026-11-10" }],
+      ),
     );
     const input = await loader.load("user-1", "CAD");
     expect(input.warranties).toEqual({
       covered: 4,
       nextExpiring: { name: "Phone", expiresOn: "2026-11-10" },
     });
+    const warrantyCalls = query.mock.calls.filter(([sql]) =>
+      sql.includes("FROM warranties"),
+    );
+    // Yesterday is the last day that reads `expired`.
+    for (const [sql, params] of warrantyCalls) {
+      expect(params).toEqual(["user-1", "2026-11-09"]);
+      expect(sql).toContain("expires_on > $2");
+      expect(sql).toContain("archived_at IS NULL");
+    }
+  });
+
+  it("names no next warranty when none ends", async () => {
+    query.mockImplementation((sql: string) =>
+      Promise.resolve(
+        !sql.includes("FROM warranties")
+          ? [
+              {
+                transactions: 0,
+                first_date: null,
+                payees: 0,
+                categories: 0,
+                scheduled: 0,
+              },
+            ]
+          : sql.includes("count(*)")
+            ? [{ covered: 1 }]
+            : [],
+      ),
+    );
+    const input = await loader.load("user-1", "CAD");
+    expect(input.warranties).toEqual({ covered: 1, nextExpiring: null });
   });
 
   it("dates the window by the reader's own zone", async () => {

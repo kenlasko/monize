@@ -101,7 +101,8 @@ function spendingFacts(input: TriviaLedgerInput): TriviaFact[] {
   const byPayee = input.spendingByPayee;
   if (byPayee && byPayee.totalSpending !== null && byPayee.totalSpending > 0) {
     const top = byPayee.data
-      .filter((row) => row.payeeName.trim() !== "" && row.total > 0)
+      // A row with no payee is the report's "Unknown" bucket, not a payee.
+      .filter((row) => row.payeeId !== null && row.total > 0)
       .sort((a, b) => b.total - a.total)[0];
     if (top) {
       facts.push(
@@ -135,7 +136,12 @@ function spendingFacts(input: TriviaLedgerInput): TriviaFact[] {
   return facts;
 }
 
-/** The window's months, only when every row in them converted. */
+/**
+ * The window's months from the first one with any money in it, only when
+ * every row converted. The report fills a month with nothing in it as zero,
+ * so a ledger begun last month arrives as twelve months, eleven of them
+ * empty; counted from its first active month it is one, and says nothing.
+ */
 function completeFlows(
   report: IncomeVsExpensesResponse | null,
 ): IncomeVsExpensesResponse | null {
@@ -144,12 +150,16 @@ function completeFlows(
     report.missingCurrencies.length > 0 ||
     report.totals.income === null ||
     report.totals.expenses === null ||
-    report.totals.net === null ||
-    report.data.length < MIN_WINDOW_MONTHS
+    report.totals.net === null
   ) {
     return null;
   }
-  return report;
+  const first = report.data.findIndex(
+    (row) => row.income !== 0 || row.expenses !== 0,
+  );
+  const data = first === -1 ? [] : report.data.slice(first);
+  if (data.length < MIN_WINDOW_MONTHS) return null;
+  return { ...report, data };
 }
 
 function incomeFacts(input: TriviaLedgerInput): TriviaFact[] {

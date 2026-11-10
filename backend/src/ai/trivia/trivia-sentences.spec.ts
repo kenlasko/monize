@@ -117,7 +117,10 @@ describe("parseTriviaSentences", () => {
       topic: "netWorth",
       text: `{peakAmount} ${"a".repeat(i + 1)}`,
     }));
-    expect(parseTriviaSentences(reply(...many), facts)).toHaveLength(40);
+    // One item per fact it was given: two facts, two sentences.
+    expect(parseTriviaSentences(reply(...many), facts)).toHaveLength(2);
+    const manyFacts = Array.from({ length: 60 }, () => facts[0]);
+    expect(parseTriviaSentences(reply(...many), manyFacts)).toHaveLength(26);
   });
 
   it("takes the newer topics, each held to its own figures", () => {
