@@ -38,6 +38,10 @@ import {
   LLM_HELP_MAX_LIMIT,
   LLM_HELP_QUERY_MAX_CHARS,
 } from "../../help/help-llm-shape";
+import {
+  LLM_TAGS_DEFAULT_LIMIT,
+  LLM_TAGS_MAX_LIMIT,
+} from "../../tags/tag-llm-shape";
 import { MAX_RULE_ACTIONS } from "../../transaction-rules/rule-validation";
 import {
   MAX_RULE_RUN_ACCOUNTS,
@@ -1091,6 +1095,80 @@ export const listWarrantiesSchema = z.object({
 });
 
 /**
+ * `list_tags`, one definition for both surfaces like `list_warranties`: the MCP
+ * tool registers this schema and description as they are.
+ */
+export const LIST_TAGS_DESCRIPTION =
+  "The user's tags in name order, each with useCount and lastUsed " +
+  "(non-void transactions dated today or earlier; a transfer counts once). " +
+  "`total` counts matches; when `truncated`, only the first `limit` are listed.";
+
+export const listTagsSchema = z.object({
+  search: z
+    .string()
+    .max(100)
+    .optional()
+    .describe("Case-insensitive substring of the name."),
+  limit: numberArg(z.number().int().min(1).max(LLM_TAGS_MAX_LIMIT))
+    .optional()
+    .describe(`Default ${LLM_TAGS_DEFAULT_LIMIT}.`),
+});
+
+/** One `manage_tags` item: a tag by name and what to set on it. */
+export const manageTagItemSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  newName: z.string().trim().min(1).max(100).optional(),
+  color: z.string().max(7).optional(),
+  icon: z.string().max(50).optional(),
+});
+
+/**
+ * The assistant's `manage_tags` input. An update needs a change; a create or a
+ * delete takes no `newName`. Name resolution, conflicts and the colour format
+ * are checked by `TagToolPrepService`, the same door the MCP tool uses.
+ */
+export const manageTagsSchema = z
+  .object({
+    operation: z.enum(["create", "update", "delete"]),
+    items: z.array(manageTagItemSchema).min(1).max(MAX_BULK_ACTION_ROWS),
+    approvalMode: z.enum(["bulk", "individual"]).optional(),
+  })
+  .superRefine((value, ctx) => {
+    value.items.forEach((item, index) => {
+      const path = (field: string) => ["items", index, field];
+      if (value.operation !== "update" && item.newName !== undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: path("newName"),
+          message: "newName is used only with update.",
+        });
+      }
+      if (
+        value.operation === "delete" &&
+        (item.color ?? item.icon) !== undefined
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: path("name"),
+          message: "A delete takes only the tag's name.",
+        });
+      }
+      if (
+        value.operation === "update" &&
+        item.newName === undefined &&
+        item.color === undefined &&
+        item.icon === undefined
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: path("name"),
+          message: "Provide at least one change (newName, color or icon).",
+        });
+      }
+    });
+  });
+
+/**
  * `search_help` (in-app help plan 6), one definition for both surfaces, like
  * `list_warranties`: the MCP tool registers this schema and description as
  * they are. The description is what keeps a model from answering a product
@@ -1142,6 +1220,8 @@ export const toolInputSchemas: Record<string, z.ZodSchema> = {
   fetch_bond_series: fetchBondSeriesSchema,
   list_warranties: listWarrantiesSchema,
   search_help: searchHelpSchema,
+  list_tags: listTagsSchema,
+  manage_tags: manageTagsSchema,
 };
 
 /**

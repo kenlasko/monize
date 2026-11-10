@@ -31,6 +31,9 @@ export const AI_ACTION_CARD_KIND: Readonly<Record<AiActionType, AiActionCardKind
   update_transaction_rule: 'rule',
   delete_transaction_rule: 'rule',
   run_transaction_rule: 'rule',
+  create_tag: 'single',
+  update_tag: 'single',
+  delete_tag: 'single',
 };
 
 /**

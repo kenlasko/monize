@@ -713,6 +713,69 @@ describe('TransactionConfirmationCard', () => {
       expect(screen.getByText('Old')).toBeInTheDocument();
     });
 
+    it('renders a tag rename with the name it has now and only what changes', () => {
+      render(
+        <TransactionConfirmationCard
+          action={makeAction({
+            type: 'update_tag',
+            descriptor: { type: 'update_tag' },
+            preview: { name: 'Travel', previousName: 'Trip', tagColor: null },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByText('Edit this tag?')).toBeInTheDocument();
+      expect(screen.getByText('Current name')).toBeInTheDocument();
+      expect(screen.getByText('Trip')).toBeInTheDocument();
+      expect(screen.getByText('New name')).toBeInTheDocument();
+      expect(screen.getByText('Travel')).toBeInTheDocument();
+      // A cleared colour says so; an icon the edit leaves alone is not shown.
+      expect(screen.getByText('Colour')).toBeInTheDocument();
+      expect(screen.queryByText('Icon')).toBeNull();
+    });
+
+    it('says how many rows a tag deletion takes the tag off, with no view link', () => {
+      render(
+        <TransactionConfirmationCard
+          action={makeAction({
+            type: 'delete_tag',
+            status: 'confirmed',
+            descriptor: { type: 'delete_tag' },
+            preview: { name: 'Trip', tagUseCount: 3 },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByText('Removed from')).toBeInTheDocument();
+      expect(
+        screen.getByText('3 transactions and split lines'),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Tag deleted')).toBeInTheDocument();
+      expect(screen.queryByRole('link')).toBeNull();
+    });
+
+    it('links a created tag to the tags page', () => {
+      render(
+        <TransactionConfirmationCard
+          action={makeAction({
+            type: 'create_tag',
+            status: 'confirmed',
+            descriptor: { type: 'create_tag' },
+            preview: { name: 'Trip', tagColor: '#FF5733', tagIcon: null },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByText('#FF5733')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'View tags' })).toHaveAttribute(
+        'href',
+        '/tags',
+      );
+    });
+
     it('shows the updated success message and a view link', () => {
       render(
         <TransactionConfirmationCard

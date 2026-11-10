@@ -748,7 +748,11 @@
     "tooManyTags": "[XX-At most {{ max }} tags can be changed in one call-XX]",
     "tooManyTransactions": "[XX-At most {{ max }} transactions can be changed in one call-XX]",
     "addAndRemove": "[XX-The tag \"{{ name }}\" cannot be both added and removed in one edit-XX]",
-    "unknownName": "[XX-Unknown tag: {{ name }}.{{ suggestion }}-XX]"
+    "unknownName": "[XX-Unknown tag: {{ name }}.{{ suggestion }}-XX]",
+    "noChange": "[XX-The tag \"{{ name }}\" already has these values: give a newName, color or icon that differs.-XX]",
+    "repeatedInBatch": "[XX-Another item in this request already names this tag.-XX]",
+    "nameRequired": "[XX-A tag needs a name.-XX]",
+    "invalidColor": "[XX-\"{{ color }}\" is not a colour: use #RRGGBB, for example #FF5733.-XX]"
   },
   "transactionRules": {
     "notFound": "[XX-Transaction rule with ID {{ id }} not found-XX]",

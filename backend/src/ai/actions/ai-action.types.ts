@@ -53,7 +53,10 @@ export type AiActionType =
   | "create_transaction_rule"
   | "update_transaction_rule"
   | "delete_transaction_rule"
-  | "run_transaction_rule";
+  | "run_transaction_rule"
+  | "create_tag"
+  | "update_tag"
+  | "delete_tag";
 
 export const AI_ACTION_TYPES: AiActionType[] = [
   "create_transaction",
@@ -78,6 +81,9 @@ export const AI_ACTION_TYPES: AiActionType[] = [
   "update_transaction_rule",
   "delete_transaction_rule",
   "run_transaction_rule",
+  "create_tag",
+  "update_tag",
+  "delete_tag",
 ];
 
 /**
@@ -320,6 +326,32 @@ export interface UpdatePayeeDescriptor extends BaseDescriptor {
 export interface DeletePayeeDescriptor extends BaseDescriptor {
   type: "delete_payee";
   payeeId: string;
+}
+
+/** Create a tag (`manage_tags`); confirm refuses a name the user already has. */
+export interface CreateTagDescriptor extends BaseDescriptor {
+  type: "create_tag";
+  name: string;
+  color: string | null;
+  icon: string | null;
+}
+
+/**
+ * Edit a tag. Only the fields the edit changes are present: an absent field is
+ * left as it is, a null colour or icon clears it.
+ */
+export interface UpdateTagDescriptor extends BaseDescriptor {
+  type: "update_tag";
+  tagId: string;
+  name?: string;
+  color?: string | null;
+  icon?: string | null;
+}
+
+/** Delete a tag; its links to transactions and split lines go with it. */
+export interface DeleteTagDescriptor extends BaseDescriptor {
+  type: "delete_tag";
+  tagId: string;
 }
 
 export interface CreateSecurityDescriptor extends BaseDescriptor {
@@ -714,6 +746,15 @@ export interface BatchDeletePayeeRow {
   payeeId: string;
 }
 
+/** One new tag inside a `batch_actions` envelope (operation `create_tag`). */
+export type BatchCreateTagRow = Omit<CreateTagDescriptor, keyof BaseDescriptor>;
+
+/** One tag edit inside a `batch_actions` envelope (operation `update_tag`). */
+export type BatchUpdateTagRow = Omit<UpdateTagDescriptor, keyof BaseDescriptor>;
+
+/** One tag deletion inside a `batch_actions` envelope (operation `delete_tag`). */
+export type BatchDeleteTagRow = Omit<DeleteTagDescriptor, keyof BaseDescriptor>;
+
 /** One resolved new security inside a `batch_actions` envelope (operation `create_security`). */
 export interface BatchCreateSecurityRow {
   symbol: string;
@@ -762,7 +803,10 @@ export type BatchActionRow =
   | BatchDeletePayeeRow
   | BatchCreateSecurityRow
   | BatchUpdateSecurityRow
-  | BatchDeleteSecurityRow;
+  | BatchDeleteSecurityRow
+  | BatchCreateTagRow
+  | BatchUpdateTagRow
+  | BatchDeleteTagRow;
 
 /**
  * Generic homogeneous bulk envelope executed as one unit. `operation` selects
@@ -786,7 +830,10 @@ export interface BatchActionsDescriptor extends BaseDescriptor {
     | "delete_payee"
     | "create_security"
     | "update_security"
-    | "delete_security";
+    | "delete_security"
+    | "create_tag"
+    | "update_tag"
+    | "delete_tag";
   /** Order is load-bearing: covered by the signature and preserved on confirm. */
   rows: BatchActionRow[];
 }
@@ -878,7 +925,10 @@ export type AiActionDescriptor =
   | CreateTransactionRuleDescriptor
   | UpdateTransactionRuleDescriptor
   | DeleteTransactionRuleDescriptor
-  | RunTransactionRuleDescriptor;
+  | RunTransactionRuleDescriptor
+  | CreateTagDescriptor
+  | UpdateTagDescriptor
+  | DeleteTagDescriptor;
 
 /**
  * Display-only preview of one category-split line on a split create/update card.
@@ -983,6 +1033,15 @@ export interface AiActionPreview {
   currentCategoryName?: string | null;
   description?: string | null;
   name?: string | null;
+  // Tag display fields (create_tag / update_tag / delete_tag); `name` is the
+  // tag's name after the action.
+  /** update_tag: the tag's current name, when the edit renames it. */
+  previousName?: string;
+  /** The colour (#RRGGBB) and icon the action sets: null clears, absent leaves it. */
+  tagColor?: string | null;
+  tagIcon?: string | null;
+  /** delete_tag: how many transactions and split lines carry the tag. */
+  tagUseCount?: number;
   /** Payee website, as the commit would store it (create_payee/update_payee). */
   website?: string | null;
   /** Payee contact fields, as the commit would store them. */
@@ -1075,6 +1134,15 @@ export interface AiActionPreviewRow {
   error?: string;
   // Payee display fields (batch_actions with a payee operation).
   name?: string | null;
+  // Tag display fields (create_tag / update_tag / delete_tag); `name` is the
+  // tag's name after the action.
+  /** update_tag: the tag's current name, when the edit renames it. */
+  previousName?: string;
+  /** The colour (#RRGGBB) and icon the action sets: null clears, absent leaves it. */
+  tagColor?: string | null;
+  tagIcon?: string | null;
+  /** delete_tag: how many transactions and split lines carry the tag. */
+  tagUseCount?: number;
   website?: string | null;
   address?: string | null;
   email?: string | null;

@@ -270,6 +270,28 @@ describe('BulkConfirmationCard', () => {
       ).toBeInTheDocument();
     });
 
+    it('titles a tag batch and describes each tag change', () => {
+      render(
+        <BulkConfirmationCard
+          action={makeAction({
+            type: 'batch_actions',
+            descriptor: { type: 'batch_actions', operation: 'update_tag' },
+            preview: {
+              rows: [
+                { status: 'ok', name: 'Travel', previousName: 'Trip' },
+                { status: 'ok', name: 'Home', tagIcon: 'house' },
+              ],
+            },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByText('Edit these tags?')).toBeInTheDocument();
+      expect(screen.getByText('renamed from Trip')).toBeInTheDocument();
+      expect(screen.getByText('Icon: house')).toBeInTheDocument();
+    });
+
     it('flags reconciled rows in an update batch', () => {
       render(
         <BulkConfirmationCard

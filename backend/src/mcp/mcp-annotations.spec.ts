@@ -4,6 +4,7 @@ import { collectToolConfigs } from "./testing/collect-tool-configs";
 const WRITE_TOOLS = new Set([
   "manage_transactions",
   "manage_payees",
+  "manage_tags",
   "manage_securities",
   "manage_investment_transactions",
   "manage_transaction_rules",
@@ -29,12 +30,13 @@ const OPEN_WORLD_TOOLS = new Set<string>(["fetch_bond_series"]);
 const DESTRUCTIVE_TOOLS = new Set([
   "manage_transactions",
   "manage_payees",
+  "manage_tags",
   "manage_securities",
   "manage_investment_transactions",
   "manage_transaction_rules",
 ]);
 
-const EXPECTED_TOOL_COUNT = 27;
+const EXPECTED_TOOL_COUNT = 29;
 
 describe("MCP tool spec compliance", () => {
   const configs = collectToolConfigs();

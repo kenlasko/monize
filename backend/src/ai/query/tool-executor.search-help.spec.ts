@@ -2,6 +2,8 @@ import { sharedReviewProvider } from "../../shared-expenses/__fixtures__/shared-
 import { Test } from "@nestjs/testing";
 import { ToolExecutorService } from "./tool-executor.service";
 import { HelpService } from "../../help/help.service";
+import { TagsService } from "../../tags/tags.service";
+import { TagToolPrepService } from "../../tags/tag-tool-prep.service";
 import type { LlmHelpAnswer } from "../../help/help-llm-shape";
 import { AiReviewWorkService } from "../../ai-review/ai-review-work.service";
 import { EmailReceiptParserToolsService } from "../../email-receipts/parsers/email-receipt-parser-tools.service";
@@ -82,6 +84,8 @@ describe("ToolExecutorService search_help", () => {
       EmailReceiptParserToolsService,
       BondSeriesService,
       WarrantiesService,
+      TagsService,
+      TagToolPrepService,
     ].map((provide) => ({ provide, useValue: {} }));
     const module = await Test.createTestingModule({
       providers: [

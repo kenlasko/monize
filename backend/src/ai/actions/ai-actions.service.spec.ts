@@ -140,6 +140,7 @@ describe("AiActionsService", () => {
       {} as never,
       aiReviewRequests as never,
       scheduled as never,
+      {} as never,
     );
   });
 

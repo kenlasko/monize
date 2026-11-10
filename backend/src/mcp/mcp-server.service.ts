@@ -20,6 +20,7 @@ import { McpEmailReceiptParserTools } from "./tools/email-receipt-parsers.tool";
 import { McpBondSeriesTools } from "./tools/bond-series.tool";
 import { McpWarrantiesTools } from "./tools/warranties.tool";
 import { McpHelpTools } from "./tools/help.tool";
+import { McpTagsTools } from "./tools/tags.tool";
 import { McpAccountListResource } from "./resources/account-list.resource";
 import { McpCategoryTreeResource } from "./resources/category-tree.resource";
 import { McpRecentTransactionsResource } from "./resources/recent-transactions.resource";
@@ -73,6 +74,7 @@ export class McpServerService {
     private readonly budgetCheckPrompt: McpBudgetCheckPrompt,
     private readonly transactionLookupPrompt: McpTransactionLookupPrompt,
     private readonly spendingAnalysisPrompt: McpSpendingAnalysisPrompt,
+    private readonly tagsTools: McpTagsTools,
   ) {}
 
   /**
@@ -106,7 +108,7 @@ export class McpServerService {
           "- Never do arithmetic yourself: use calculate, and present a value a tool already computed as it stands.",
           "",
           "## Writing",
-          "- manage_transactions, manage_payees, manage_securities and manage_investment_transactions each take operation = create/update/delete and 1-25 items (manage_securities also takes list with an accountName).",
+          "- manage_transactions, manage_payees, manage_tags, manage_securities and manage_investment_transactions each take operation = create/update/delete and 1-25 items (manage_securities also takes list with an accountName).",
           "- Every write is confirmed by the user before it is saved. By default 6 or more items are confirmed as one batch and 1-5 one at a time; approvalMode 'individual' forces one each. dryRun previews without saving.",
           "",
           "## Choosing a tool",
@@ -183,6 +185,7 @@ export class McpServerService {
     this.bondSeriesTools.register(server);
     this.warrantiesTools.register(server);
     this.helpTools.register(server);
+    this.tagsTools.register(server);
     this.relayTools.register(server);
 
     this.accountListResource.register(server);

@@ -8,6 +8,8 @@ import { EmailReceiptParserToolsService } from "../../email-receipts/parsers/ema
 import { BondSeriesService } from "../../bonds/bond-series.service";
 import { WarrantiesService } from "../../warranties/warranties.service";
 import { HelpService } from "../../help/help.service";
+import { TagsService } from "../../tags/tags.service";
+import { TagToolPrepService } from "../../tags/tag-tool-prep.service";
 import { ASSISTANT_CLAIM_KEY } from "../../ai-review/ai-review-work.types";
 import { AiActionBuilderService } from "../actions/ai-action-builder.service";
 import { AccountsService } from "../../accounts/accounts.service";
@@ -91,6 +93,8 @@ describe("ToolExecutorService ai_review_requests", () => {
         { provide: BondSeriesService, useValue: {} },
         { provide: WarrantiesService, useValue: {} },
         { provide: HelpService, useValue: {} },
+        { provide: TagsService, useValue: {} },
+        { provide: TagToolPrepService, useValue: {} },
         ...unused,
       ],
     }).compile();

@@ -9,6 +9,8 @@ import { EmailReceiptParserToolsService } from "../../email-receipts/parsers/ema
 import { BondSeriesService } from "../../bonds/bond-series.service";
 import { WarrantiesService } from "../../warranties/warranties.service";
 import { HelpService } from "../../help/help.service";
+import { TagsService } from "../../tags/tags.service";
+import { TagToolPrepService } from "../../tags/tag-tool-prep.service";
 import { EMAIL_RECEIPT_PARSER_TOOL_DESCRIPTION } from "../../email-receipts/parsers/parser-tool.guide";
 import { AiActionBuilderService } from "../actions/ai-action-builder.service";
 import { AccountsService } from "../../accounts/accounts.service";
@@ -89,6 +91,8 @@ describe("ToolExecutorService email_receipt_parsers", () => {
         { provide: BondSeriesService, useValue: {} },
         { provide: WarrantiesService, useValue: {} },
         { provide: HelpService, useValue: {} },
+        { provide: TagsService, useValue: {} },
+        { provide: TagToolPrepService, useValue: {} },
         ...unused,
       ],
     }).compile();

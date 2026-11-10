@@ -34,6 +34,9 @@ import type { RuleRunResult } from "../../transaction-rules/rule-run.types";
 import { TransactionRulesService } from "../../transaction-rules/transaction-rules.service";
 import { TransactionRulesRunService } from "../../transaction-rules/transaction-rules-run.service";
 import { UpdateSecurityDto } from "../../securities/dto/update-security.dto";
+import { TagsService } from "../../tags/tags.service";
+import { CreateTagDto } from "../../tags/dto/create-tag.dto";
+import { UpdateTagDto } from "../../tags/dto/update-tag.dto";
 import { tr } from "../../i18n/translate";
 import { isPostCommitFailure } from "../../common/post-commit-failure";
 import { AiActionSigningService } from "./ai-action-signing.service";
@@ -78,6 +81,9 @@ import {
   MAX_BULK_ACTION_ROWS,
   AttachmentRefDescriptor,
   toSplitDtoRows,
+  BatchCreateTagRow,
+  BatchUpdateTagRow,
+  BatchDeleteTagRow,
 } from "./ai-action.types";
 import {
   updateTransactionCommitArgs,
@@ -143,6 +149,7 @@ export class AiActionsService {
     private readonly aiReviewRequests: AiReviewRequestsService,
     @Inject(forwardRef(() => ScheduledTransactionsService))
     private readonly scheduledTransactionsService: ScheduledTransactionsService,
+    private readonly tagsService: TagsService,
   ) {}
 
   async confirm(
@@ -397,7 +404,48 @@ export class AiActionsService {
         return this.executeDeleteTransactionRule(userId, descriptor);
       case "run_transaction_rule":
         return this.executeRunTransactionRule(userId, descriptor);
+      case "create_tag":
+      case "update_tag":
+      case "delete_tag":
+        return {
+          type: descriptor.type,
+          id: await this.executeTagRow(userId, descriptor.type, descriptor),
+        };
     }
+  }
+
+  /**
+   * One tag write, singular or a batch row, through `TagsService` (which
+   * refuses a taken name and a tag that is not the user's inside its own
+   * transaction) with the REST DTOs' validation. Returns the tag's id.
+   */
+  private async executeTagRow(
+    userId: string,
+    type: "create_tag" | "update_tag" | "delete_tag",
+    row: BatchCreateTagRow | BatchUpdateTagRow | BatchDeleteTagRow,
+  ): Promise<string> {
+    if (type === "create_tag") {
+      const r = row as BatchCreateTagRow;
+      const dto = await this.toValidatedDto(CreateTagDto, {
+        name: r.name,
+        ...(r.color ? { color: r.color } : {}),
+        ...(r.icon ? { icon: r.icon } : {}),
+      });
+      return (await this.tagsService.create(userId, dto)).id;
+    }
+    if (type === "update_tag") {
+      const r = row as BatchUpdateTagRow;
+      const dto = await this.toValidatedDto(UpdateTagDto, {
+        ...(r.name !== undefined ? { name: r.name } : {}),
+        // null clears a colour or an icon (TagsService.update stores null).
+        ...(r.color !== undefined ? { color: r.color } : {}),
+        ...(r.icon !== undefined ? { icon: r.icon } : {}),
+      });
+      return (await this.tagsService.update(userId, r.tagId, dto)).id;
+    }
+    const r = row as BatchDeleteTagRow;
+    await this.tagsService.remove(userId, r.tagId);
+    return r.tagId;
   }
 
   // The rule executors commit through TransactionRulesService and
@@ -748,6 +796,14 @@ export class AiActionsService {
         await this.securitiesService.remove(userId, r.securityId);
         return r.securityId;
       }
+      case "create_tag":
+      case "update_tag":
+      case "delete_tag":
+        return this.executeTagRow(
+          userId,
+          operation,
+          row as BatchCreateTagRow | BatchUpdateTagRow | BatchDeleteTagRow,
+        );
     }
   }
 

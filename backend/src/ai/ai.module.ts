@@ -44,6 +44,7 @@ import { EmailReceiptParsersModule } from "../email-receipts/parsers/email-recei
 import { BondsModule } from "../bonds/bonds.module";
 import { WarrantiesModule } from "../warranties/warranties.module";
 import { HelpModule } from "../help/help.module";
+import { TagsModule } from "../tags/tags.module";
 
 @Module({
   imports: [
@@ -91,6 +92,9 @@ import { HelpModule } from "../help/help.module";
     WarrantiesModule,
     // The `search_help` tool's logic (HelpModule exports HelpService).
     HelpModule,
+    // `list_tags` / `manage_tags`: TagsService and TagToolPrepService, and the
+    // executor of an approved tag card.
+    TagsModule,
   ],
   providers: [
     AiService,

@@ -27,6 +27,8 @@ import { EmailReceiptParserToolsService } from "../../email-receipts/parsers/ema
 import { BondSeriesService } from "../../bonds/bond-series.service";
 import { WarrantiesService } from "../../warranties/warranties.service";
 import { HelpService } from "../../help/help.service";
+import { TagsService } from "../../tags/tags.service";
+import { TagToolPrepService } from "../../tags/tag-tool-prep.service";
 import { TransactionRuleToolPrepService } from "../../transaction-rules/rule-tool-prep.service";
 
 const USER = "user-1";
@@ -148,6 +150,8 @@ describe("ToolExecutorService transaction rule tools", () => {
         { provide: BondSeriesService, useValue: {} },
         { provide: WarrantiesService, useValue: {} },
         { provide: HelpService, useValue: {} },
+        { provide: TagsService, useValue: {} },
+        { provide: TagToolPrepService, useValue: {} },
         { provide: TransactionRuleToolPrepService, useValue: prep },
         ...unused,
       ],

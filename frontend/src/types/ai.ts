@@ -270,6 +270,11 @@ export const AI_ACTION_TYPES = [
   'update_transaction_rule',
   'delete_transaction_rule',
   'run_transaction_rule',
+  // Tags (`manage_tags`): one card each on the single card, or a batch_actions
+  // envelope with a `*_tag` operation on the bulk card.
+  'create_tag',
+  'update_tag',
+  'delete_tag',
 ] as const;
 
 export type AiActionType = (typeof AI_ACTION_TYPES)[number];
@@ -341,6 +346,15 @@ export interface PendingActionPreview {
   /** update_transaction: the reference number ("Ref #") the approval sets; absent when it is left as it is. */
   referenceNumber?: string;
   name?: string | null;
+  // Tag display fields (create_tag / update_tag / delete_tag); `name` is the
+  // tag's name after the action.
+  /** update_tag: the tag's current name, when the edit renames it. */
+  previousName?: string;
+  /** The colour (#RRGGBB) and icon the action sets: null clears, absent leaves it. */
+  tagColor?: string | null;
+  tagIcon?: string | null;
+  /** delete_tag: how many transactions and split lines carry the tag. */
+  tagUseCount?: number;
   /** Payee website, as the commit would store it. */
   website?: string | null;
   /** Payee contact details, as the commit would store them. */
@@ -488,6 +502,15 @@ export interface PendingActionPreviewRow {
   error?: string;
   // Payee display field (batch_actions with a payee operation).
   name?: string | null;
+  // Tag display fields (create_tag / update_tag / delete_tag); `name` is the
+  // tag's name after the action.
+  /** update_tag: the tag's current name, when the edit renames it. */
+  previousName?: string;
+  /** The colour (#RRGGBB) and icon the action sets: null clears, absent leaves it. */
+  tagColor?: string | null;
+  tagIcon?: string | null;
+  /** delete_tag: how many transactions and split lines carry the tag. */
+  tagUseCount?: number;
   /** Payee website, as the commit would store it. */
   website?: string | null;
   /** Payee contact details, as the commit would store them. */

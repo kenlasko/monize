@@ -19,6 +19,11 @@ import { LEDGER_EXCLUDES_VOID } from "../common/ledger-balance.sql";
 import { todayYMD } from "../common/date-utils";
 import { didYouMean } from "../common/name-suggestions.util";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
+import {
+  LLM_TAGS_DEFAULT_LIMIT,
+  LLM_TAGS_MAX_LIMIT,
+  LlmTagsResult,
+} from "./tag-llm-shape";
 
 /** Upper bounds for one additive/removal call (design 6.2). */
 export const MAX_TAGS_PER_CALL = 100;
@@ -35,31 +40,6 @@ export const TAG_LINK_INSERT_BATCH = 5000;
 export interface TagUsage {
   lastUsed: string;
   count: number;
-}
-
-/** Most tags `getLlmTags` returns in one answer. */
-export const LLM_TAGS_MAX_LIMIT = 500;
-export const LLM_TAGS_DEFAULT_LIMIT = 100;
-
-/** One of the user's tags as the AI tools (`list_tags`) read it. */
-export interface LlmTag {
-  id: string;
-  name: string;
-  color: string | null;
-  icon: string | null;
-  /** Uses on non-void transactions dated today or earlier (a transfer counts once). */
-  useCount: number;
-  /** Date (YYYY-MM-DD) of the latest such use; null when never used. */
-  lastUsed: string | null;
-}
-
-/** What `getLlmTags` answers: the matching tags, name order, and how many matched. */
-export interface LlmTagsResult {
-  tags: LlmTag[];
-  /** How many tags matched the search, before `limit`. */
-  total: number;
-  /** True when `limit` cut the list short of `total`. */
-  truncated: boolean;
 }
 
 /**

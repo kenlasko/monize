@@ -32,9 +32,14 @@ import {
   LLM_HELP_QUERY_MAX_CHARS,
 } from "../../help/help-llm-shape";
 import {
+  LIST_TAGS_DESCRIPTION,
   LIST_WARRANTIES_DESCRIPTION,
   SEARCH_HELP_DESCRIPTION,
 } from "./tool-input-schemas";
+import {
+  LLM_TAGS_DEFAULT_LIMIT,
+  LLM_TAGS_MAX_LIMIT,
+} from "../../tags/tag-llm-shape";
 
 export { RULE_LANGUAGE_GUIDE };
 
@@ -1398,6 +1403,73 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
         },
       },
       required: ["query"],
+    },
+  },
+  {
+    name: "list_tags",
+    description: LIST_TAGS_DESCRIPTION,
+    inputSchema: {
+      type: "object",
+      properties: {
+        search: {
+          type: "string",
+          description: "Case-insensitive substring of the name.",
+        },
+        limit: {
+          type: "number",
+          description: `Default ${LLM_TAGS_DEFAULT_LIMIT}, at most ${LLM_TAGS_MAX_LIMIT}.`,
+        },
+      },
+    },
+  },
+  {
+    name: "manage_tags",
+    description:
+      "Create, rename, recolour or delete the user's tags. This does NOT change anything immediately: it shows the user a confirmation card (or cards) they must approve. operation = 'create' | 'update' | 'delete' with an items array (1-25 rows). create: { name, color?, icon? }. update: { name, newName?, color?, icon? } (name is the tag's current name; at least one change; an empty color or icon clears it). delete: { name } -- the tag is removed from every transaction and split line that carries it, and nothing else on them changes. color is #RRGGBB. Tag names are unique per user regardless of case. To add or remove tags on transactions use manage_transactions (addTagNames / removeTagNames), not this tool. approvalMode: by default 6 or more items show one card for the batch and 1-5 one card each; 'individual' forces one card per item. After calling, briefly tell the user to review and approve the card(s); never claim the change was made.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        operation: {
+          type: "string",
+          enum: ["create", "update", "delete"],
+          description: "The operation to perform on every item.",
+        },
+        items: {
+          type: "array",
+          minItems: 1,
+          maxItems: 25,
+          items: {
+            type: "object",
+            properties: {
+              name: {
+                type: "string",
+                description:
+                  "create: the new tag's name. update/delete: the tag's current name.",
+              },
+              newName: {
+                type: "string",
+                description: "update: rename the tag to this.",
+              },
+              color: {
+                type: "string",
+                description: "#RRGGBB; an empty string clears it.",
+              },
+              icon: {
+                type: "string",
+                description: "Icon name; an empty string clears it.",
+              },
+            },
+            required: ["name"],
+          },
+        },
+        approvalMode: {
+          type: "string",
+          enum: ["bulk", "individual"],
+          description:
+            "'individual' forces one card per item; by default 6 or more items share one card.",
+        },
+      },
+      required: ["operation", "items"],
     },
   },
 ];
