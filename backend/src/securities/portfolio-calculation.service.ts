@@ -19,6 +19,7 @@ import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { investmentRowRateInto } from "./investment-row-fx.util";
 import {
   buildRateIndex,
+  RateIndex,
   resolveIndexedRate,
 } from "../common/time-series/rate-index.util";
 import { parseTag } from "../tags/tag-key-value.util";
@@ -1160,13 +1161,25 @@ export class PortfolioCalculationService {
         usable.set(key, { cost: roundMoney(entry.costBasis), missing: null });
       } else if (entry.basisGap === "mixed_basis_currency") {
         // Name the pair that could not be resolved on one of this position's
-        // own dates, so the reader is told which rate to add.
-        const dates = new Set(
-          transactions
-            .filter((tx) => `${tx.accountId}:${tx.securityId}` === key)
-            .map((tx) => String(tx.transactionDate).slice(0, 10)),
+        // own dates, in one of its own currencies where that tells them
+        // apart, so the reader is told which rate to add.
+        const own = transactions.filter(
+          (tx) => `${tx.accountId}:${tx.securityId}` === key,
         );
-        const gap = unresolved.find((rate) => dates.has(rate.onDate)) ?? null;
+        const dates = new Set(
+          own.map((tx) => String(tx.transactionDate).slice(0, 10)),
+        );
+        const codes = new Set(
+          own.flatMap((tx) => [
+            tx.security?.currencyCode,
+            tx.account?.currencyCode,
+          ]),
+        );
+        const onItsDates = unresolved.filter((rate) => dates.has(rate.onDate));
+        const gap =
+          onItsDates.find((rate) => codes.has(rate.from)) ??
+          onItsDates[0] ??
+          null;
         usable.set(key, { cost: null, missing: gap });
       }
     }
@@ -1351,18 +1364,49 @@ export class PortfolioCalculationService {
     const first = run();
     if (wanted.size === 0) return { ...first, unresolved: [] };
     const unresolved: UnresolvedReplayRate[] = [];
+    // Into one target currency every acquisition of a foreign account asks for
+    // its own day's rate, so the history is loaded once for the span rather
+    // than looked up a day at a time; the same resolver answers either way.
+    const index =
+      targetCurrency === undefined
+        ? null
+        : await this.targetRateIndex(wanted.values(), targetCurrency);
     for (const [key, { from, to, onDate }] of wanted) {
-      const answer = await this.exchangeRateService.resolveStoredRate(
-        from,
-        to,
-        onDate,
-        { mode: "historical" },
-      );
-      resolved.set(key, answer.rate);
-      if (answer.rate === null) unresolved.push({ from, to, onDate });
+      const rate =
+        index !== null && to === targetCurrency
+          ? resolveIndexedRate(index, from, to, onDate).rate
+          : (
+              await this.exchangeRateService.resolveStoredRate(
+                from,
+                to,
+                onDate,
+                { mode: "historical" },
+              )
+            ).rate;
+      resolved.set(key, rate);
+      if (rate === null) unresolved.push({ from, to, onDate });
     }
     wanted.clear();
     return { ...run(), unresolved };
+  }
+
+  /** The stored history the wanted lookups into `target` need, in one read. */
+  private async targetRateIndex(
+    wanted: Iterable<{ from: string; to: string; onDate: string }>,
+    target: string,
+  ): Promise<RateIndex> {
+    const froms = new Set<string>();
+    let start: string | null = null;
+    let end: string | null = null;
+    for (const { from, to, onDate } of wanted) {
+      if (to !== target) continue;
+      froms.add(from);
+      if (start === null || onDate < start) start = onDate;
+      if (end === null || onDate > end) end = onDate;
+    }
+    return start === null || end === null
+      ? new Map()
+      : this.exchangeRateService.getRateIndex(froms, target, start, end);
   }
 
   /**

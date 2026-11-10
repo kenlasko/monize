@@ -490,6 +490,46 @@ describe("ComparisonReportsService", () => {
       expect(result.summary.weekdayTotal).toBe(0);
     });
 
+    it("leaves a group out whole when one of its days has no rate (issue #2106)", async () => {
+      // The debit converts; its refund, on a day with no rate, does not.
+      currencyService.convertRow.mockImplementation(
+        (amount: number, row: RawRateBasis) =>
+          row.tx_date === "2025-06-07" ? amount : null,
+      );
+      scopedManager.query.mockResolvedValue([
+        {
+          day_of_week: 6,
+          category_id: null,
+          currency_code: "EUR",
+          tx_date: "2025-06-07",
+          own_rate: null,
+          tx_count: 1,
+          total: "100.00",
+        },
+        {
+          day_of_week: 6,
+          category_id: null,
+          currency_code: "EUR",
+          tx_date: "2025-06-14",
+          own_rate: null,
+          tx_count: 1,
+          total: "-100.00",
+        },
+      ]);
+      categoriesRepository.find.mockResolvedValue([]);
+
+      const result = await service.getWeekendVsWeekday(
+        mockUserId,
+        "2025-06-01",
+        "2025-06-30",
+      );
+
+      expect(result.byDay[6]).toEqual({ dayOfWeek: 6, total: 0, count: 0 });
+      expect(result.summary.weekendTotal).toBeNull();
+      expect(result.excludedCount).toBe(1);
+      expect(result.missingCurrencies).toEqual(["EUR"]);
+    });
+
     it("nets refunds within a category instead of dropping credit rows", async () => {
       scopedManager.query.mockResolvedValue([
         // Dining on Saturday: 100 spent, 30 refunded -> 70 net.

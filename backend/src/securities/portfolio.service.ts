@@ -508,6 +508,9 @@ interface IntradayFxSeries {
  * When `fallbackToDaily` is true (or there are no holdings) the value arrays
  * are empty and the caller renders/flags the daily fallback instead.
  */
+/** A gap between intraday bars longer than this ends a trading session. */
+const SESSION_BREAK_MS = 6 * 60 * 60 * 1000;
+
 interface IntradayLoaded {
   interval: IntradayInterval;
   currency: string;
@@ -2483,15 +2486,18 @@ export class PortfolioService {
     };
     // The latest spot answers only a bar of the latest session the grid holds
     // (today's, or the last trading day's over a weekend): a bar from an
-    // earlier day priced at today's rate reads the currency's move since as the
-    // portfolio's (issue #2106), so with no intraday bar and no stored close
-    // for its date it is unknown.
-    const lastTs = loaded.timestamps.length
-      ? Math.max(...loaded.timestamps)
-      : Date.now();
-    const latestSession = formatDateYMD(new Date(lastTs));
-    const inLatestSession = (ts: number) =>
-      formatDateYMD(new Date(ts)) === latestSession;
+    // earlier session priced at today's rate reads the currency's move since as
+    // the portfolio's (issue #2106), so with no intraday bar and no stored
+    // close for its date it is unknown. The session is the run of bars ending
+    // at the last one with no gap longer than SESSION_BREAK_MS between them,
+    // so a session crossing UTC midnight stays one.
+    const times = loaded.timestamps;
+    let sessionStart = times.length > 0 ? times[times.length - 1] : Date.now();
+    for (let k = times.length - 1; k > 0; k--) {
+      if (times[k] - times[k - 1] > SESSION_BREAK_MS) break;
+      sessionStart = times[k - 1];
+    }
+    const inLatestSession = (ts: number) => ts >= sessionStart;
     // `null` means "no rate for this pair", never 1. Rate 1 is returned only
     // when the currency already IS the display currency.
     return (currency: string, ts: number): number | null => {

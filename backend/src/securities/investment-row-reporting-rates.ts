@@ -21,6 +21,12 @@ export interface InvestmentRowReportingRates {
   reportingCurrencyCode: string;
   reportingRate: number | null;
   accountRate: number | null;
+  /**
+   * The same factor into every currency the page's accounts are kept in, and
+   * the reporting currency: a surface totalling a brokerage whose linked cash
+   * account is in another currency reads the one it reports in.
+   */
+  ratesInto: Record<string, number | null>;
 }
 
 /** What a listed row carries that the rates are worked out from. */
@@ -111,17 +117,19 @@ export async function attachInvestmentRowReportingRates<
   };
 
   for (const [i, row] of rows.entries()) {
+    const ratesInto: Record<string, number | null> = {};
+    for (const target of targets) {
+      ratesInto[target] = (
+        await investmentRowRateInto(target, sources[i], rateOn)
+      ).rate;
+    }
     const accountCurrency = row.account?.currencyCode ?? null;
     Object.assign(row, {
       reportingCurrencyCode: reporting,
-      reportingRate: (
-        await investmentRowRateInto(reporting, sources[i], rateOn)
-      ).rate,
+      reportingRate: ratesInto[reporting] ?? null,
       accountRate:
-        accountCurrency === null
-          ? null
-          : (await investmentRowRateInto(accountCurrency, sources[i], rateOn))
-              .rate,
+        accountCurrency === null ? null : (ratesInto[accountCurrency] ?? null),
+      ratesInto,
     });
   }
 }

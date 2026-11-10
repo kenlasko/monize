@@ -4,6 +4,7 @@ import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { FxAggregate } from "../common/fx-aggregate";
+import { roundMoney } from "../common/round.util";
 import { addDaysYMD, todayYMD } from "../common/date-utils";
 import { preferredCurrency } from "../common/default-currency.util";
 import {
@@ -301,21 +302,24 @@ export class DailyBalanceTotalsService {
     const currencies = new Set(
       rows.map((r) => r.currencyCode).filter((code) => code !== currencyCode),
     );
-    const dates = rows.map((r) => r.date).sort();
+    let first = rows[0].date;
+    let last = rows[0].date;
+    for (const row of rows) {
+      if (row.date < first) first = row.date;
+      if (row.date > last) last = row.date;
+    }
     const rateIndex =
       currencies.size === 0
         ? new Map()
         : await this.loadRateIndex(
             currencies,
             currencyCode,
-            dates[0],
-            dates[dates.length - 1],
+            first,
+            last,
             today,
           );
-    return rows.map((row) => ({
-      ...row,
-      convertedCurrency: currencyCode,
-      convertedBalance:
+    return rows.map((row) => {
+      const converted =
         row.currencyCode === currencyCode
           ? row.balance
           : convertAtDate(
@@ -325,8 +329,17 @@ export class DailyBalanceTotalsService {
               row.date > today ? today : row.date,
               rateIndex,
               this.logger,
-            ),
-    }));
+            );
+      return {
+        ...row,
+        convertedCurrency: currencyCode,
+        // A converted, reporting-currency figure: the fiat four places.
+        convertedBalance:
+          converted === null || row.currencyCode === currencyCode
+            ? converted
+            : roundMoney(converted),
+      };
+    });
   }
 
   /**

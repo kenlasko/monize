@@ -286,24 +286,18 @@ export async function convertDatedRows(
     ),
   );
   const foreign = new Set<string>();
-  const days: string[] = [];
-  bases.forEach((basis) => {
-    if (basis.tx_date && toOwnRate(basis.own_rate) === null) {
-      foreign.add(basis.currency_code);
-      days.push(basis.tx_date);
-    }
-  });
-  days.sort();
+  let first: string | null = null;
+  let last: string | null = null;
+  for (const basis of bases) {
+    if (!basis.tx_date || toOwnRate(basis.own_rate) !== null) continue;
+    foreign.add(basis.currency_code);
+    if (first === null || basis.tx_date < first) first = basis.tx_date;
+    if (last === null || basis.tx_date > last) last = basis.tx_date;
+  }
   const rateIndex: RateIndex =
-    foreign.size === 0
+    first === null || last === null
       ? new Map()
-      : await buildRateIndex(
-          query,
-          foreign,
-          reportingCurrency,
-          days[0],
-          days[days.length - 1],
-        );
+      : await buildRateIndex(query, foreign, reportingCurrency, first, last);
 
   rows.forEach((row, i) => {
     const acc = totals.get(row.key) ?? {};
@@ -345,11 +339,23 @@ export async function convertDatedRows(
 export class ConversionGaps {
   private currencies: readonly string[] = [];
   private excluded = 0;
+  private readonly groups = new Set<string>();
 
-  /** Record one aggregate row left out because `currency` has no rate. */
-  record(currency: string): void {
+  /**
+   * Record one aggregate row left out because `currency` has no rate.
+   *
+   * `group` names the aggregate the row is a part of when a report splits a
+   * foreign aggregate by day to convert each part at its own rate (issue
+   * #2106): the parts of one group count once, so "amounts left out" still
+   * counts what the report shows, not the days it was paid on.
+   */
+  record(currency: string, group?: string): void {
     if (!this.currencies.includes(currency)) {
       this.currencies = [...this.currencies, currency];
+    }
+    if (group !== undefined) {
+      if (this.groups.has(group)) return;
+      this.groups.add(group);
     }
     this.excluded += 1;
   }

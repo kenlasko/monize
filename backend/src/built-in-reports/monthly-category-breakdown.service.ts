@@ -185,7 +185,10 @@ export class MonthlyCategoryBreakdownService {
         row,
       );
       if (deposits === null || withdrawals === null) {
-        gaps.record(row.currency_code);
+        gaps.record(
+          row.currency_code,
+          `${month}|${row.category_id ?? ""}|${row.currency_code}`,
+        );
         continue;
       }
       monthSet.add(month);
@@ -349,7 +352,10 @@ export class MonthlyCategoryBreakdownService {
       const outflow = convert(toMoneyNumber(row.outflow, MONEY_SCALE), row);
       const inflow = convert(toMoneyNumber(row.inflow, MONEY_SCALE), row);
       if (outflow === null || inflow === null) {
-        gaps.record(row.currency_code);
+        gaps.record(
+          row.currency_code,
+          `transfer|${row.month}|${row.account_id}|${row.currency_code}`,
+        );
         continue;
       }
       monthSet.add(row.month);

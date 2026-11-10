@@ -178,7 +178,10 @@ export class IncomeReportsService {
         row,
       );
       if (total === null) {
-        gaps.record(row.currency_code);
+        gaps.record(
+          row.currency_code,
+          `${row.category_id ?? ""}|${row.currency_code}`,
+        );
         continue;
       }
       const categoryId = row.category_id;
@@ -438,16 +441,17 @@ export class IncomeReportsService {
      * gap is reported rather than absorbed. Folding the amount in UNCONVERTED
      * would add foreign units straight into a home-currency bar.
      */
-    const missingCurrencies = new Set<string>();
-    let excludedCount = 0;
+    const gaps = new ConversionGaps();
 
     for (const row of rows) {
       const income = convert(toMoneyNumber(row.income, MONEY_SCALE), row);
       const expenses = convert(toMoneyNumber(row.expenses, MONEY_SCALE), row);
       // One rate serves both halves of the row, so they fail together.
       if (income === null || expenses === null) {
-        missingCurrencies.add(row.currency_code);
-        excludedCount += 1;
+        gaps.record(
+          row.currency_code,
+          `${row.period_start}|${row.currency_code}`,
+        );
         continue;
       }
       const key = periodKeyForStart(row.period_start, bucket);
@@ -495,7 +499,7 @@ export class IncomeReportsService {
       sumMoney(data.map((item) => item.expenses)),
     );
     const knownNet = roundMoney(sumMoney(data.map((item) => item.net)));
-    const complete = excludedCount === 0;
+    const complete = gaps.isComplete;
 
     return {
       data,
@@ -507,8 +511,8 @@ export class IncomeReportsService {
         knownExpenses,
         knownNet,
       },
-      missingCurrencies: [...missingCurrencies].sort(),
-      excludedCount,
+      missingCurrencies: gaps.missingCurrencies,
+      excludedCount: gaps.excludedCount,
     };
   }
 
@@ -868,6 +872,8 @@ export class IncomeReportsService {
 
     const missing = new Set(missingCurrencies);
     let flowExcludedCount = 0;
+    // A flow aggregate split by day counts once (see `ConversionGaps.record`).
+    const flowGapGroups = new Set<string>();
     const flowsByPeriod = new Map<
       string,
       { inflows: number[]; outflows: number[] }
@@ -878,7 +884,11 @@ export class IncomeReportsService {
       const outflow = convert(toMoneyNumber(row.outflow, MONEY_SCALE), row);
       if (inflow === null || outflow === null) {
         missing.add(row.currency_code);
-        flowExcludedCount += 1;
+        const group = `${row.period_start}|${row.currency_code}`;
+        if (!flowGapGroups.has(group)) {
+          flowGapGroups.add(group);
+          flowExcludedCount += 1;
+        }
         continue;
       }
       const key = periodKeyForStart(row.period_start, bucket);

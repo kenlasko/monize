@@ -8,6 +8,7 @@ import { roundMoney } from "../common/round.util";
 import { withSystemContext } from "../common/db/with-context";
 import { withScopedDb } from "../common/db/scoped-db";
 import { preferredCurrency } from "../common/default-currency.util";
+import { formatDateYMDLocal } from "../common/date-utils";
 import {
   buildRateIndex,
   convertAtDate,
@@ -47,13 +48,17 @@ function computeCost(
   return roundMoney(inputCost + outputCost);
 }
 
-/** The day a usage row was logged, in UTC, for its rate. */
-const USAGE_DAY_SQL =
-  "TO_CHAR(log.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')";
+/**
+ * The day a usage row was logged, for its rate. `created_at` is a TIMESTAMP
+ * without a time zone, so its own calendar date is the day; `usageDayOf` reads
+ * the same date off an entity, whose driver builds the Date in local time.
+ */
+const USAGE_DAY_SQL = "TO_CHAR(log.created_at, 'YYYY-MM-DD')";
+const usageDayOf = (createdAt: Date): string => formatDateYMDLocal(createdAt);
 
 /** A sum with an unknown part is unknown. */
 function addUnknown(sum: number | null, part: number | null): number | null {
-  return sum === null || part === null ? null : sum + part;
+  return sum === null || part === null ? null : roundMoney(sum + part);
 }
 
 function roundOrNull(value: number | null): number | null {
@@ -304,7 +309,7 @@ export class AiUsageService {
         ...recentLogs.map((log) => ({
           provider: log.provider,
           model: log.model,
-          day: log.createdAt.toISOString().slice(0, 10),
+          day: usageDayOf(log.createdAt),
         })),
       ],
       userConfigs,
@@ -466,7 +471,7 @@ export class AiUsageService {
                   toReporting.convert(
                     cost,
                     rate.currency,
-                    log.createdAt.toISOString().slice(0, 10),
+                    usageDayOf(log.createdAt),
                   ),
                 )
               : null,

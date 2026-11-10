@@ -13,6 +13,7 @@ import { HoldingWithMarketValue } from "./portfolio.service";
 import { SecurityValueByAccount } from "../bonds/bond-valuation.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { rateIndexOf } from "../test-helpers/report-rate-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -1996,6 +1997,24 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
       ),
     };
     const resolveStoredRate = storedRateDouble(opts.rates);
+    // The bulk read the reporting-currency replay makes: each rate observed on
+    // the first day the lookups need.
+    const getRateIndex = jest.fn(
+      async (_currencies: ReadonlySet<string>, _to: string, start: string) =>
+        rateIndexOf(
+          Object.entries(opts.rates ?? {})
+            .filter(([, rate]) => rate !== null)
+            .map(([pair, rate]) => {
+              const [fromCurrency, toCurrency] = pair.split("->");
+              return {
+                fromCurrency,
+                toCurrency,
+                rate: rate as number,
+                rateDate: start,
+              };
+            }),
+        ),
+    );
     const priceQuery = jest.fn().mockResolvedValue(
       (opts.prices ?? []).map((r) => ({
         security_id: securityId,
@@ -2009,10 +2028,10 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
         [Account, accountRepo],
         [UserPreference, preferenceRepo],
       ],
-      { resolveStoredRate },
+      { resolveStoredRate, getRateIndex },
       priceQuery,
     );
-    return { service, resolveStoredRate };
+    return { service, resolveStoredRate, getRateIndex };
   };
 
   const addUnpriced = (overrides: Partial<InvestmentTransaction> = {}) =>
@@ -2348,7 +2367,7 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
     it("states the gain in the reporting currency at each row's own date (issue #2106)", async () => {
       // A USD account read in CAD: the basis is the CAD the buy cost (1,350 at
       // its own 1.35), the proceeds are 1,100 USD at the sale day's 1.40.
-      const { service, resolveStoredRate } = build(
+      const { service, getRateIndex } = build(
         [
           usdBuy({
             accountCurrency: "USD",
@@ -2373,11 +2392,12 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
         costBasis: 1350,
         realizedGain: 190,
       });
-      expect(resolveStoredRate).toHaveBeenCalledWith(
-        "USD",
+      // One bulk read for the sale's own day, never a lookup per row.
+      expect(getRateIndex).toHaveBeenCalledWith(
+        new Set(["USD"]),
         "CAD",
         "2024-02-10",
-        { mode: "historical" },
+        "2024-02-10",
       );
     });
   });
@@ -4307,18 +4327,21 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues", () => {
     } as unknown as InvestmentTransaction;
     const txRepo = { find: jest.fn().mockResolvedValue([buy]) };
     const accountRepo = { find: jest.fn().mockResolvedValue([]) };
-    const resolveStoredRate = jest.fn(
-      async (
-        from: string,
-        to: string,
-        onDate: string,
-        options: { mode: string },
-      ) => {
-        if (from === to) return { status: "same_currency", rate: 1 };
-        const rate =
-          options.mode === "historical" && onDate === "2024-01-10" ? 0.3 : 0.4;
-        return { status: "resolved", rate };
-      },
+    // Today's live rate is 0.40; the stored history holds 0.30 on the day.
+    const resolveStoredRate = jest.fn(async (from: string, to: string) =>
+      from === to
+        ? { status: "same_currency", rate: 1 }
+        : { status: "resolved", rate: 0.4 },
+    );
+    const getRateIndex = jest.fn(async () =>
+      rateIndexOf([
+        {
+          fromCurrency: "PLN",
+          toCurrency: "CAD",
+          rate: 0.3,
+          rateDate: "2024-01-10",
+        },
+      ]),
     );
     const service = buildService(
       [
@@ -4326,7 +4349,7 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues", () => {
         [InvestmentTransaction, txRepo],
         [Account, accountRepo],
       ],
-      { resolveStoredRate },
+      { resolveStoredRate, getRateIndex },
     );
     jest
       .spyOn(service, "calculateCostBasisLotsInAccountCurrency")
@@ -4363,26 +4386,20 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues", () => {
       account: { id: "acct-1", currencyCode: "PLN" },
       security: { id: "sec-a", currencyCode: "PLN" },
     } as unknown as InvestmentTransaction;
-    const resolveStoredRate = jest.fn(
-      async (
-        from: string,
-        to: string,
-        _onDate: string,
-        options: { mode: string },
-      ) =>
-        from === to
-          ? { status: "same_currency", rate: 1 }
-          : options.mode === "historical"
-            ? { status: "unknown", rate: null }
-            : { status: "resolved", rate: 0.4 },
+    const resolveStoredRate = jest.fn(async (from: string, to: string) =>
+      from === to
+        ? { status: "same_currency", rate: 1 }
+        : { status: "resolved", rate: 0.4 },
     );
+    // No stored rate for the purchase date.
+    const getRateIndex = jest.fn(async () => new Map());
     const service = buildService(
       [
         [Holding, holdingRepo],
         [InvestmentTransaction, { find: jest.fn().mockResolvedValue([buy]) }],
         [Account, { find: jest.fn().mockResolvedValue([]) }],
       ],
-      { resolveStoredRate },
+      { resolveStoredRate, getRateIndex },
     );
     jest
       .spyOn(service, "calculateCostBasisLotsInAccountCurrency")

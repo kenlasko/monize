@@ -6521,6 +6521,18 @@ describe("PortfolioService", () => {
       expect(fxAt("JPY", ts)).toBeNull();
     });
 
+    it("keeps a session that crosses UTC midnight whole", () => {
+      // An ASX morning in AEDT opens at 23:00 UTC the day before.
+      const open = Date.parse("2026-05-05T23:00:00.000Z");
+      const close = Date.parse("2026-05-06T05:00:00.000Z");
+      const fxAt = privates().makeIntradayFxAt({
+        ...loadedWith([["USD->CAD", 1.4]]),
+        timestamps: [open, Date.parse("2026-05-06T01:00:00.000Z"), close],
+      });
+
+      expect(fxAt("USD", open)).toBe(1.4);
+    });
+
     it("never prices an earlier session's bar at today's spot (issue #2106)", () => {
       const fxAt = privates().makeIntradayFxAt(loadedWith([["USD->CAD", 1.4]]));
       const lastWeek = Date.parse("2026-04-29T13:30:00.000Z");

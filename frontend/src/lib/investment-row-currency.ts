@@ -69,6 +69,7 @@ export function convertRowAmount(
     | 'reportingCurrencyCode'
     | 'reportingRate'
     | 'accountRate'
+    | 'ratesInto'
   >,
   amount: number,
   accountCurrency: string | null | undefined,
@@ -77,6 +78,10 @@ export function convertRowAmount(
   const from = rowAmountCurrency(tx);
   if (from === null) return null;
   if (from === target) return amount;
+  if (tx.ratesInto && target in tx.ratesInto) {
+    const rate = tx.ratesInto[target];
+    return rate === null ? null : amount * rate;
+  }
   if (target === tx.reportingCurrencyCode && tx.reportingRate !== undefined) {
     return tx.reportingRate === null ? null : amount * tx.reportingRate;
   }

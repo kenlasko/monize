@@ -159,7 +159,10 @@ export class ComparisonReportsService {
         );
         const expenses = convert(toMoneyNumber(row.expenses, MONEY_SCALE), row);
         if (income === null || expenses === null) {
-          gaps.record(row.currency_code);
+          gaps.record(
+            row.currency_code,
+            `${row.year}|${row.month}|${row.currency_code}`,
+          );
           aggregate.complete = false;
           return;
         }
@@ -279,6 +282,9 @@ export class ComparisonReportsService {
     // that day's rate; the converted parts are folded back into their (day,
     // category, currency) group before the group is judged, so a refund still
     // nets against the debits it always did.
+    // A group with a part no rate reaches is left out whole, as the group was
+    // before it was split: judging the parts that converted could keep a
+    // debit whose refund is the part that did not.
     const groups = new Map<
       string,
       {
@@ -286,30 +292,34 @@ export class ComparisonReportsService {
         category_id: string | null;
         tx_count: number;
         totals: number[];
+        failed: boolean;
       }
     >();
     rawResults.forEach((row) => {
-      const converted = convert(toMoneyNumber(row.total, MONEY_SCALE), row);
-      if (converted === null) {
-        gaps.record(row.currency_code);
-        return;
-      }
       const key = `${row.day_of_week}|${row.category_id ?? ""}|${row.currency_code}`;
-      const group = groups.get(key);
-      if (group) {
-        group.tx_count += row.tx_count;
-        group.totals.push(converted);
-      } else {
-        groups.set(key, {
+      const converted = convert(toMoneyNumber(row.total, MONEY_SCALE), row);
+      let group = groups.get(key);
+      if (!group) {
+        group = {
           day_of_week: row.day_of_week,
           category_id: row.category_id,
-          tx_count: row.tx_count,
-          totals: [converted],
-        });
+          tx_count: 0,
+          totals: [],
+          failed: false,
+        };
+        groups.set(key, group);
       }
+      if (converted === null) {
+        gaps.record(row.currency_code, key);
+        group.failed = true;
+        return;
+      }
+      group.tx_count += row.tx_count;
+      group.totals.push(converted);
     });
 
     groups.forEach((row) => {
+      if (row.failed) return;
       const total = sumMoney(row.totals);
       // A refund nets against the debits of its own (day, category); a group
       // whose credits meet its debits was not spent in (INV-REPORT-004).

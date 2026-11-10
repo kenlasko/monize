@@ -236,7 +236,7 @@ export class DataQualityReportsService {
       );
       const income = convert(toMoneyNumber(row.income_total, MONEY_SCALE), row);
       if (expense === null || income === null) {
-        gaps.record(row.currency_code);
+        gaps.record(row.currency_code, row.currency_code);
         continue;
       }
       expenseTotal.addConverted(expense);

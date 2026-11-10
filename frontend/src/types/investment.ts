@@ -543,6 +543,8 @@ export interface InvestmentTransaction {
   reportingCurrencyCode?: string;
   reportingRate?: number | null;
   accountRate?: number | null;
+  /** The same factor into every account currency on the page, by code. */
+  ratesInto?: Record<string, number | null>;
   description: string | null;
   // Same enum as regular transactions. A VOID row moves no shares and no
   // cash; the register strikes it through and excludes it from balances.

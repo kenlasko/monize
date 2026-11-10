@@ -449,7 +449,10 @@ export class TaxRecurringReportsService {
         row,
       );
       if (totalAmount === null) {
-        gaps.record(row.currency_code);
+        gaps.record(
+          row.currency_code,
+          `${row.payee_id ?? ""}|${row.payee_name_normalized}|${row.payee_name}|${row.category_name ?? ""}|${row.currency_code}`,
+        );
         continue;
       }
       const key = row.payee_name_normalized;

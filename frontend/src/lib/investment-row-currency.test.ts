@@ -31,6 +31,12 @@ describe('convertRowAmount', () => {
     expect(convertRowAmount(row({ accountRate: null }), 100, 'CAD', 'CAD')).toBeNull();
   });
 
+  it("reads the page's factor into another account's currency, such as a linked cash account's", () => {
+    expect(convertRowAmount(row({ ratesInto: { USD: 0.74 } }), 100, 'CAD', 'USD')).toBe(100);
+    expect(convertRowAmount(row({ ratesInto: { GBP: 0.55 } }), 100, 'CAD', 'GBP')).toBeCloseTo(55, 6);
+    expect(convertRowAmount(row({ ratesInto: { GBP: null } }), 100, 'CAD', 'GBP')).toBeNull();
+  });
+
   it('is unknown for a target the server stated no factor for', () => {
     expect(convertRowAmount(row(), 100, 'CAD', 'JPY')).toBeNull();
   });

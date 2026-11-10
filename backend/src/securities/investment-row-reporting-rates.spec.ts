@@ -65,6 +65,10 @@ describe("attachInvestmentRowReportingRates (issue #2106)", () => {
     expect((rows[0] as Record<string, unknown>).reportingCurrencyCode).toBe(
       "CAD",
     );
+    expect((rows[0] as Record<string, unknown>).ratesInto).toEqual({
+      CAD: 1.25,
+      USD: 1,
+    });
   });
 
   it("reads the settlement currency from the brokerage's linked cash account", async () => {

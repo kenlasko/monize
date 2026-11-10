@@ -341,6 +341,16 @@ describe("ReportCurrencyService", () => {
       expect(gaps.headline(12.5)).toBe(12.5);
     });
 
+    it("counts the day-parts of one aggregate once (issue #2106)", () => {
+      const gaps = new ConversionGaps();
+      gaps.record("EUR", "groceries|EUR");
+      gaps.record("EUR", "groceries|EUR");
+      gaps.record("EUR", "dining|EUR");
+
+      expect(gaps.excludedCount).toBe(2);
+      expect(gaps.missingCurrencies).toEqual(["EUR"]);
+    });
+
     it("withholds the headline and lists currencies sorted and unique", () => {
       const gaps = new ConversionGaps();
       gaps.record("JPY");

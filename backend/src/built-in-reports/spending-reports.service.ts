@@ -220,8 +220,7 @@ export class SpendingReportsService {
      * it nets to spending. So a single exclusion anywhere withholds the report's
      * total rather than only the affected category's.
      */
-    const missingCurrencies = new Set<string>();
-    let excludedCount = 0;
+    const gaps = new ConversionGaps();
 
     const bucketFor = (key: string, category: Category | null) => {
       const existing = parentTotals.get(key);
@@ -243,8 +242,10 @@ export class SpendingReportsService {
         row,
       );
       if (converted === null) {
-        missingCurrencies.add(row.currency_code);
-        excludedCount += 1;
+        gaps.record(
+          row.currency_code,
+          `${row.category_id ?? ""}|${row.currency_code}`,
+        );
         continue;
       }
 
@@ -298,11 +299,11 @@ export class SpendingReportsService {
 
     return {
       data,
-      totalSpending: excludedCount === 0 ? knownSpending : null,
+      totalSpending: gaps.headline(knownSpending),
       knownSpending,
       currency: defaultCurrency,
-      missingCurrencies: [...missingCurrencies].sort(),
-      excludedCount,
+      missingCurrencies: gaps.missingCurrencies,
+      excludedCount: gaps.excludedCount,
     };
   }
 
@@ -379,7 +380,10 @@ export class SpendingReportsService {
     for (const row of rawResults) {
       const total = convert(toMoneyNumber(row.total, MONEY_SCALE), row);
       if (total === null) {
-        gaps.record(row.currency_code);
+        gaps.record(
+          row.currency_code,
+          `${row.payee_id ?? ""}|${row.payee_name ?? ""}|${row.currency_code}`,
+        );
         continue;
       }
       const key = row.payee_id || row.payee_name || "unknown";
@@ -494,7 +498,10 @@ export class SpendingReportsService {
       const month = row.month;
       const total = convert(toMoneyNumber(row.total, MONEY_SCALE), row);
       if (total === null) {
-        gaps.record(row.currency_code);
+        gaps.record(
+          row.currency_code,
+          `${month}|${row.category_id ?? ""}|${row.currency_code}`,
+        );
         continue;
       }
       const categoryId = row.category_id;
