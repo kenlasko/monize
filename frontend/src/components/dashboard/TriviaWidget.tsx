@@ -18,6 +18,13 @@ export const TRIVIA_ROTATE_MS = 12_000;
 
 const PLACEHOLDER = /\{([A-Za-z]+)\}/g;
 
+/**
+ * Every state of the card is one height: the sentence scrolls inside a fixed
+ * box rather than growing the card, so a long fact never moves the widgets
+ * around it. The grid can still stretch it to its row.
+ */
+const TRIVIA_CARD_CLASS = `${CARD_CLASS} flex flex-col p-3 sm:p-6 min-h-[390px]`;
+
 interface TopicLook {
   icon: ComponentType<SVGProps<SVGSVGElement>>;
   /** The panel's wash, its glow and the figures' highlight. */
@@ -120,7 +127,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
 
   if (!enabled) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`}>
+      <div className={TRIVIA_CARD_CLASS}>
         {heading}
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {t.rich('trivia.off', {
@@ -137,16 +144,16 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
 
   if (parentLoading || trivia === null) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`} aria-busy="true">
+      <div className={TRIVIA_CARD_CLASS} aria-busy="true">
         {heading}
-        <div className="h-64 w-full rounded-xl animate-pulse skeleton-shimmer bg-gray-200 dark:bg-gray-700" />
+        <div className="flex-1 w-full rounded-xl animate-pulse skeleton-shimmer bg-gray-200 dark:bg-gray-700" />
       </div>
     );
   }
 
   if (count === 0) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`}>
+      <div className={TRIVIA_CARD_CLASS}>
         {heading}
         <p className="text-sm text-gray-500 dark:text-gray-400">{t('trivia.empty')}</p>
       </div>
@@ -169,7 +176,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
 
   return (
     <div
-      className={`${CARD_CLASS} flex flex-col p-3 sm:p-6 lg:min-h-[390px]`}
+      className={TRIVIA_CARD_CLASS}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -184,7 +191,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
 
       <figure
         data-testid="trivia-card"
-        className={`relative flex flex-1 flex-col overflow-hidden rounded-xl bg-gradient-to-br p-5 sm:p-7 ring-1 ring-black/5 dark:ring-white/10 ${look.panel}`}
+        className={`relative flex flex-1 flex-col overflow-hidden rounded-xl bg-gradient-to-br p-5 sm:p-6 ring-1 ring-black/5 dark:ring-white/10 ${look.panel}`}
       >
         {/* Decoration: a soft glow and the topic's picture, large and faint. */}
         <div aria-hidden="true" className={`pointer-events-none absolute -top-16 -left-16 h-48 w-48 rounded-full blur-3xl ${look.glow}`} />
@@ -205,7 +212,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
         <blockquote
           key={`${index}-${step}`}
           data-testid="trivia-sentence"
-          className="relative mt-5 flex-1 text-lg leading-relaxed font-medium text-gray-800 motion-safe:animate-chart-in dark:text-gray-100 sm:text-xl"
+          className="relative mt-4 h-0 min-h-[8.5rem] flex-1 overflow-y-auto text-base leading-relaxed font-medium text-gray-800 motion-safe:animate-chart-in dark:text-gray-100 sm:min-h-[7rem] sm:text-lg"
         >
           {splitSentence(template).map((part, i) =>
             'text' in part ? (
@@ -220,12 +227,15 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
           )}
         </blockquote>
 
-        {item.source === 'ai' && (
-          <figcaption className="relative mt-4 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-            <SparklesIcon aria-hidden="true" className="h-3.5 w-3.5" />
-            {t('trivia.aiGenerated')}
-          </figcaption>
-        )}
+        {/* Its line is kept on every fact, so the card does not move between kinds. */}
+        <figcaption className="relative mt-4 flex h-4 items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+          {item.source === 'ai' && (
+            <>
+              <SparklesIcon aria-hidden="true" className="h-3.5 w-3.5" />
+              {t('trivia.aiGenerated')}
+            </>
+          )}
+        </figcaption>
       </figure>
 
       {count > 1 && (

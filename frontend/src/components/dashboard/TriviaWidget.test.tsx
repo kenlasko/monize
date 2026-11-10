@@ -119,6 +119,28 @@ describe('TriviaWidget', () => {
     expect(sentence()).toHaveTextContent('two A');
   });
 
+  it('keeps one card size whatever the sentence, so the widgets around it never shift', () => {
+    state.trivia = list({
+      items: [
+        { topic: 'netWorth', source: 'ai', text: 'short {a}' },
+        { topic: 'investments', source: 'calculated', factId: 'investmentsCagr' },
+      ],
+      figures: { a: { kind: 'text', value: 'A' }, cagrPercent: { kind: 'percent', value: 7 } },
+    });
+    render(<TriviaWidget isLoading={false} />);
+    const sentence = screen.getByTestId('trivia-sentence');
+    // The sentence takes no height of its own: it fills a fixed box and scrolls.
+    expect(sentence).toHaveClass('h-0', 'flex-1', 'overflow-y-auto');
+    const card = sentence.closest('figure')!.parentElement!;
+    const before = card.className;
+    const caption = card.querySelector('figcaption')!;
+    fireEvent.click(screen.getByRole('button', { name: 'Next fact' }));
+    expect(card.className).toBe(before);
+    // The AI line keeps its place on a calculated fact too.
+    expect(card.querySelector('figcaption')).toHaveClass('h-4');
+    expect(caption).toBeInTheDocument();
+  });
+
   it('offers no arrows for a single fact', () => {
     state.trivia = list({
       items: [{ topic: 'netWorth', source: 'ai', text: 'only {a}' }],
