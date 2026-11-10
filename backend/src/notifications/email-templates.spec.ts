@@ -81,6 +81,24 @@ describe("Email Templates", () => {
       expect(html).toContain("$79.99");
     });
 
+    it("labels an estimated amount, and says an unknown estimate is entered on posting (issue #2096)", () => {
+      const html = billReminderTemplate(
+        "Alice",
+        [
+          { ...sampleBills[0], amount: 212.5, estimated: true },
+          { ...sampleBills[1], amount: null, estimated: true },
+        ],
+        "https://monize.app",
+      );
+
+      expect(html).toContain("$212.50");
+      expect(html).toContain("Estimated");
+      expect(html).toContain(
+        "Estimate unknown: enter the amount when you post it",
+      );
+      expect(html).not.toContain("Amount unavailable");
+    });
+
     /**
      * Issue #1316: the template already took the recipient's localized
      * translator and then rendered the amount through the deterministic `en-US`

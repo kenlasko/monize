@@ -90,6 +90,7 @@ describe("AiForecastService", () => {
           name: "Rent",
           amount: 1500,
           amountComplete: true,
+          amountEstimated: false,
           frequency: "MONTHLY",
           nextDueDate: "2026-03-01",
           categoryName: "Housing",
@@ -523,6 +524,38 @@ describe("AiForecastService", () => {
         }),
         "forecast",
       );
+    });
+
+    it("labels an estimated bill, and an unknown estimate as no history rather than a missing rate (issue #2096)", async () => {
+      const aggregates = await mockAggregatorService.computeAggregates!(
+        userId,
+        "USD",
+      );
+      const bill = aggregates.scheduledTransactions[0];
+      mockAggregatorService.computeAggregates!.mockResolvedValue({
+        ...aggregates,
+        scheduledTransactions: [
+          { ...bill, name: "Heating", amount: 212.5, amountEstimated: true },
+          {
+            ...bill,
+            name: "Water",
+            amount: null,
+            amountComplete: false,
+            amountEstimated: true,
+          },
+        ],
+      });
+
+      await service.generateForecast(userId);
+
+      const sent = JSON.stringify(mockAiService.complete!.mock.calls[0]);
+      expect(sent).toContain(
+        "Heating: 212.50 (estimated from payment history)",
+      );
+      expect(sent).toContain(
+        "Water: unknown (estimated from payment history, which has no usable payments yet)",
+      );
+      expect(sent).not.toContain("Water: unknown (no current exchange rate)");
     });
 
     it("handles aggregator failure gracefully", async () => {

@@ -85,7 +85,8 @@ export interface ScheduleAmountEstimate {
   status: ScheduleAmountEstimateStatus;
   currencyCode: string;
   months: Record<string, EstimatedMonth>;
-  paymentCount: number;
+  /** `null` when withheld: a delegate is not told how often the owner paid. */
+  paymentCount: number | null;
   latestPaymentDate: string | null;
   /** The year-over-year growth applied, or null when the history is not seasonal. */
   growthRate: number | null;

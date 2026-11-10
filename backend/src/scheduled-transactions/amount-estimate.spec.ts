@@ -4,7 +4,6 @@ import {
   estimateForMonth,
   historyWindowStart,
   shiftMonthKey,
-  shiftMonthsYMD,
   yearOverYearGrowth,
 } from "./amount-estimate";
 
@@ -12,10 +11,10 @@ const TODAY = "2026-11-09";
 
 describe("amount-estimate", () => {
   describe("calendar helpers", () => {
-    it("clamps the day to the target month's end", () => {
-      expect(shiftMonthsYMD("2026-03-31", -1)).toBe("2026-02-28");
-      expect(shiftMonthsYMD("2024-03-31", -1)).toBe("2024-02-29");
-      expect(shiftMonthsYMD("2026-01-15", -2)).toBe("2025-11-15");
+    it("clamps the window's day to the target month's end", () => {
+      expect(historyWindowStart("2026-02-28")).toBe("2024-02-28");
+      expect(historyWindowStart("2026-03-31")).toBe("2024-03-31");
+      expect(historyWindowStart("2026-08-31")).toBe("2024-08-31");
     });
 
     it("steps month keys across years", () => {
@@ -128,6 +127,21 @@ describe("amount-estimate", () => {
       const profile = buildEstimateProfile(twoMonths, TODAY, 2)!;
       // (-200 + -220) / 2, unprojected.
       expect(estimateForMonth(profile, "2027-01").amount).toBe(-210);
+    });
+
+    it("never pools the current month's payments across two years", () => {
+      // Offsets 0 (Nov 2026) and 12 (Nov 2025) compare; Nov 2024 (offset 24)
+      // is too old to compare. Three matched months, each 10% dearer.
+      const matched = [
+        { date: "2024-11-15", amount: -500 },
+        { date: "2025-09-15", amount: -100 },
+        { date: "2025-10-15", amount: -100 },
+        { date: "2025-11-15", amount: -100 },
+        { date: "2026-09-15", amount: -110 },
+        { date: "2026-10-15", amount: -110 },
+        { date: "2026-11-01", amount: -110 },
+      ];
+      expect(yearOverYearGrowth(matched, TODAY)).toBeCloseTo(0.1, 10);
     });
 
     it("clamps a runaway growth rate", () => {

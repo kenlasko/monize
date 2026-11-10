@@ -121,6 +121,7 @@ import {
   ScheduledAmountEstimateService,
   estimateReadModel,
   estimatedAmountFor,
+  occurrenceFollowsEstimate,
 } from "./scheduled-amount-estimate.service";
 import {
   convertingTotal,
@@ -1995,11 +1996,7 @@ export class ScheduledTransactionsService {
         // An override that states no amount of its own follows the estimate
         // for the month it falls in, exactly as the occurrence expansion
         // prices it.
-        if (
-          estimate &&
-          (override.amount === null || override.amount === undefined) &&
-          override.isSplit !== true
-        ) {
+        if (estimate && occurrenceFollowsEstimate(row, override)) {
           const amount = estimatedAmountFor(
             estimate,
             ensureYMD(override.overrideDate),
@@ -2053,7 +2050,9 @@ export class ScheduledTransactionsService {
         // Whether the direction is derivable at all, so a client never has to
         // reach for the snapshot's sign (issue #1247 re-audit).
         effectiveDirectionAmount: base.directionAmount,
-        amountEstimate: estimate ? estimateReadModel(estimate) : null,
+        amountEstimate: estimate
+          ? estimateReadModel(estimate, todayYMD(), ensureYMD(row.nextDueDate))
+          : null,
       };
     });
   }
@@ -3601,12 +3600,16 @@ export class ScheduledTransactionsService {
     // estimate is refused: the person enters the amount instead.
     const overrideStatesAmount =
       storedOverride?.amount !== null && storedOverride?.amount !== undefined;
+    // Lines sent with the post, or an override's own split, carry the amount
+    // themselves: the estimate is for a plain occurrence nobody priced.
+    const postStatesLines =
+      (hasInlineIsSplit && postDto?.isSplit === true) || !!hasInlineSplits;
     let estimatedAmount: number | null = null;
     if (
-      scheduled.amountIsEstimated &&
       !fx &&
       !hasInlineAmount &&
-      !overrideStatesAmount
+      !postStatesLines &&
+      occurrenceFollowsEstimate(scheduled, storedOverride)
     ) {
       estimatedAmount = await this.estimatedSnapshot(
         userId,

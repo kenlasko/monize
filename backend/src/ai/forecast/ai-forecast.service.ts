@@ -233,10 +233,17 @@ export class AiForecastService {
         // An amount the server could not resolve is stated as unknown rather
         // than quoted from the persisted snapshot, which was calculated at an
         // older exchange rate (issue #1247).
+        // An estimated amount (issue #2096) is labelled as one, and an
+        // unknown estimate is not a missing rate: there is no payment
+        // history to estimate it from yet.
         const amount =
           st.amount === null
-            ? "unknown (no current exchange rate)"
-            : st.amount.toFixed(2);
+            ? st.amountEstimated
+              ? "unknown (estimated from payment history, which has no usable payments yet)"
+              : "unknown (no current exchange rate)"
+            : st.amountEstimated
+              ? `${st.amount.toFixed(2)} (estimated from payment history)`
+              : st.amount.toFixed(2);
         sections.push(
           `${sanitizePromptValue(st.name)}: ${amount} (${st.frequency}, next: ${st.nextDueDate}, ${type}, category: ${sanitizePromptValue(st.categoryName || "unknown")})`,
         );

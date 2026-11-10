@@ -23,6 +23,7 @@ import {
   ScheduleEstimateBasis,
   ScheduledAmountEstimateService,
   estimatedAmountFor,
+  occurrenceFollowsEstimate,
 } from "./scheduled-amount-estimate.service";
 
 /**
@@ -212,12 +213,7 @@ export class ScheduledOccurrenceService {
           settlementPair: resolved.settlementPair,
           // Priced from the history below; an override stating an amount (or
           // its own split lines) keeps that amount.
-          estimated:
-            row.amountIsEstimated === true &&
-            (!slot.override ||
-              ((slot.override.amount === null ||
-                slot.override.amount === undefined) &&
-                slot.override.isSplit !== true)),
+          estimated: occurrenceFollowsEstimate(row, slot.override),
           estimateStatus: null,
           schedule: row,
         });

@@ -57,8 +57,10 @@ estimated schedule in it:
   to the month's end) and on or before today. A future-dated row is not a
   payment yet.
 - Any account. A payment in another currency is converted into the schedule's
-  currency at the **current** rate, the newest on or before today
-  (`ExchangeRateService.getRateForDate(from, to, today)`), at the schedule
+  currency at the **current** rate, the newest stored on or before today
+  (`ExchangeRateService.getRateForDate(from, to, today, { fetchMissing: false })`:
+  this runs on every list read, expansion and reminder pass, and the daily
+  refresh stores the currencies accounts are held in), at the schedule
   currency's money precision. No rate for one payment makes the whole estimate
   unknown (`missing-rate`, with the pair named): the mean of the rest would be
   another bill's mean.
@@ -72,9 +74,12 @@ estimated schedule in it:
 
 1. **Seasonal** when the counted payments include one in the latest twelve
    months (after today minus 12 months) and one before that.
-2. **Year-over-year growth** `g`, seasonal history only: over the calendar
-   months holding a payment in both twelve-month spans, the sum of the latest
-   span's monthly means over the sum of the earlier span's, minus one. Fewer
+2. **Year-over-year growth** `g`, seasonal history only: each payment is
+   bucketed by how many calendar months before today's it falls (0 to 11 the
+   latest year, 12 to 23 the one before); over the offsets `k` holding a
+   payment at both `k` and `k + 12`, the sum of the latest year's monthly
+   means over the sum of the earlier year's, minus one. The current month's
+   payments are never pooled across two years. Fewer
    than three such months (`ESTIMATE_MIN_GROWTH_MONTHS`) gives `g = 0`; `g` is
    clamped to [-50%, +100%].
 3. For an occurrence falling in month `M` (the date it falls on, an override's
@@ -131,9 +136,13 @@ amount entered is refused (`estimateUnknown`); the Post dialog asks for it.
 - `post()` without an inline amount and without an amount-stating override
   posts the estimate for the occurrence's month, computed by the same service
   the bills list read.
-- The Bill Payment History report matches every payment to an estimated bill's
-  payee rather than inside the snapshot's 20% band, since the amount varies by
-  design.
+- The Bill Payment History report matches an estimated bill's payments by its
+  payee, its category and its direction rather than inside the snapshot's 20%
+  band, since the amount varies by design: a refund from the biller or another
+  purchase from it is not a payment of the bill.
+- Undo restores `amount_is_estimated` with `auto_post`
+  (`ActionHistoryService` `ALLOWED_COLUMNS`), so undoing the edit that switched
+  the estimate on cannot leave an estimated schedule auto-posting.
 
 ## 7. Surfaces
 
@@ -143,11 +152,20 @@ Server: `ScheduledOccurrenceService.expand` prices each estimated occurrence
 forecast, the balance forecast, `GET /scheduled-transactions/occurrences`, the
 AI assistant and MCP, whose items carry `amountEstimated`) reads the same
 figure. `findAll` sends `amountEstimate` (status, one amount per month from the
-month before today for 26 months, payment count, newest payment date, growth,
+earlier of the month before today's and the next due month, at most 24 months
+back, through 24 months ahead; payment count, newest payment date, growth,
 missing pair), sets `effectiveAmount` to the next occurrence's estimate and each
-amountless override's `effectiveAmount` to its own month's.
+amountless override's `effectiveAmount` to its own month's. The rule for which
+occurrence follows the estimate is `occurrenceFollowsEstimate` on each side.
 `GET /scheduled-transactions/amount-estimate/:accountId?payeeId&categoryId` is
 the form's preview, through the same service.
+
+The history spans every one of the owner's accounts, so a delegate (an acting
+session) is refused the preview, and `findAll` withholds `paymentCount` and
+`latestPaymentDate` from one (`null`): the delegate sees the bill's figures, as
+they would a typed amount, but not when or how often the owner paid. The AI
+forecast prompt and the bill reminder email label an estimated amount, and an
+unknown estimate there is not called a missing rate.
 
 Client: `estimatedOccurrenceAmount` (`frontend/src/lib/scheduled-effective-amount.ts`)
 is the one reader of `amountEstimate`; the cash-flow forecast, the Post dialog,

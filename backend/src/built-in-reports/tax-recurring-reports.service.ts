@@ -512,6 +512,7 @@ export class TaxRecurringReportsService {
         st.name,
         st.amount,
         st.amount_is_estimated,
+        st.category_id,
         COALESCE(p.name, st.payee_name) as payee_name
       FROM scheduled_transactions st
       LEFT JOIN payees p ON p.id = st.payee_id
@@ -524,6 +525,7 @@ export class TaxRecurringReportsService {
       name: string;
       amount: string;
       amount_is_estimated: boolean;
+      category_id: string | null;
       payee_name: string | null;
     }
 
@@ -562,6 +564,9 @@ export class TaxRecurringReportsService {
         payeeName: string;
         amount: number;
         estimated: boolean;
+        categoryId: string | null;
+        /** The bill's direction: -1 for a bill, 1 for a deposit. */
+        sign: number;
       }
     >();
     scheduledTx.forEach((st) => {
@@ -572,6 +577,8 @@ export class TaxRecurringReportsService {
           payeeName: st.payee_name,
           amount: Math.abs(toMoneyNumber(st.amount, MONEY_SCALE)),
           estimated: st.amount_is_estimated === true,
+          categoryId: st.category_id,
+          sign: toMoneyNumber(st.amount, MONEY_SCALE) > 0 ? 1 : -1,
         });
       }
     });
@@ -582,6 +589,8 @@ export class TaxRecurringReportsService {
         t.transaction_date,
         t.currency_code,
         ABS(${REPORTABLE_TX_AMOUNT}) as amount,
+        SIGN(${REPORTABLE_TX_AMOUNT}) as amount_sign,
+        t.category_id,
         LOWER(TRIM(COALESCE(p.name, t.payee_name))) as payee_name_normalized
       FROM transactions t
       LEFT JOIN payees p ON p.id = t.payee_id
@@ -607,6 +616,8 @@ export class TaxRecurringReportsService {
       transaction_date: Date;
       currency_code: string;
       amount: string;
+      amount_sign: string;
+      category_id: string | null;
       payee_name_normalized: string | null;
     }
 
@@ -646,13 +657,15 @@ export class TaxRecurringReportsService {
         return;
       }
       // An estimated bill (issue #2096) varies by month by design, so its
-      // stored snapshot is no band to match a payment against: every payment
-      // to its payee is one of its payments.
-      if (
-        scheduled.estimated ||
-        (txAmount >= scheduled.amount * 0.8 &&
-          txAmount <= scheduled.amount * 1.2)
-      ) {
+      // stored snapshot is no band to match a payment against. Its payments
+      // are the ones its estimate reads: to its payee, in its category, in its
+      // direction -- not a refund from the biller, nor another purchase there.
+      const matches = scheduled.estimated
+        ? tx.category_id === scheduled.categoryId &&
+          Number(tx.amount_sign) === scheduled.sign
+        : txAmount >= scheduled.amount * 0.8 &&
+          txAmount <= scheduled.amount * 1.2;
+      if (matches) {
         let payment = billPaymentMap.get(scheduled.id);
         if (!payment) {
           payment = {

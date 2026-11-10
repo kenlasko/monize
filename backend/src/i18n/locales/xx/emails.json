@@ -20,6 +20,8 @@
     "typeExpense": "[XX-Expense-XX]",
     "typeUnknown": "[XX-Direction unknown-XX]",
     "amountUnavailable": "[XX-Amount unavailable-XX]",
+    "estimated": "[XX-Estimated-XX]",
+    "estimateUnknown": "[XX-Estimate unknown: enter the amount when you post it-XX]",
     "button": "[XX-View Bills &amp; Deposits-XX]"
   },
   "mortgageReminder": {

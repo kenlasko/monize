@@ -1646,13 +1646,14 @@ describe("BuiltInReportsService", () => {
       expect(result.billPayments).toHaveLength(0);
     });
 
-    it("matches every payment to an estimated bill's payee, whatever its amount (issue #2096)", async () => {
+    it("matches an estimated bill's payments by category and direction, whatever their amount (issue #2096)", async () => {
       scopedManager.query.mockResolvedValueOnce([
         {
           id: "sched-1",
           name: "Heating",
           amount: "-100.00",
           amount_is_estimated: true,
+          category_id: "cat-heat",
           payee_name: "Gas Co",
         },
       ]);
@@ -1664,6 +1665,28 @@ describe("BuiltInReportsService", () => {
           currency_code: "USD",
           // A winter bill, far outside the snapshot's 20% band.
           amount: "260.00",
+          amount_sign: "-1",
+          category_id: "cat-heat",
+          payee_name_normalized: "gas co",
+        },
+        {
+          // A refund from the biller is not a payment of the bill.
+          id: "tx-2",
+          transaction_date: new Date("2025-02-15"),
+          currency_code: "USD",
+          amount: "80.00",
+          amount_sign: "1",
+          category_id: "cat-heat",
+          payee_name_normalized: "gas co",
+        },
+        {
+          // Nor is another purchase from the same payee.
+          id: "tx-3",
+          transaction_date: new Date("2025-03-15"),
+          currency_code: "USD",
+          amount: "400.00",
+          amount_sign: "-1",
+          category_id: "cat-household",
           payee_name_normalized: "gas co",
         },
       ]);

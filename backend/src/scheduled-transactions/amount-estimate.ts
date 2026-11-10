@@ -1,4 +1,5 @@
-import { roundMoney } from "../common/round.util";
+import { MONEY_SCALE, roundMoney, sumMoney } from "../common/round.util";
+import { addMonthsClamped } from "../common/recurrence";
 
 /**
  * The arithmetic behind an estimated scheduled amount (issue #2096,
@@ -69,66 +70,62 @@ function monthIndex(ymdOrMonth: string): number {
 
 /** The `YYYY-MM` `count` months after `month` (negative goes back). */
 export function shiftMonthKey(month: string, count: number): string {
-  const index = monthIndex(month) + count;
-  const year = Math.floor(index / 12);
-  const m = index - year * 12 + 1;
-  return `${String(year).padStart(4, "0")}-${String(m).padStart(2, "0")}`;
+  return monthKeyOf(addMonthsClamped(`${month}-01`, count));
 }
 
 /**
- * The calendar date `count` months from `ymd`, the day clamped to the target
- * month's last day (31 March back one month is 28 or 29 February).
+ * The earliest date a payment may carry to count on `today`, exclusive: the
+ * same day `ESTIMATE_HISTORY_MONTHS` back, clamped to that month's end.
  */
-export function shiftMonthsYMD(ymd: string, count: number): string {
-  const target = shiftMonthKey(monthKeyOf(ymd), count);
-  const year = Number(target.slice(0, 4));
-  const month = Number(target.slice(5, 7));
-  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const day = Math.min(Number(ymd.slice(8, 10)), lastDay);
-  return `${target}-${String(day).padStart(2, "0")}`;
+export function historyWindowStart(today: string): string {
+  return addMonthsClamped(today, -ESTIMATE_HISTORY_MONTHS);
 }
 
-/** The earliest date a payment may carry to count on `today`, exclusive. */
-export function historyWindowStart(today: string): string {
-  return shiftMonthsYMD(today, -ESTIMATE_HISTORY_MONTHS);
+/** An exact sum at the column's scale, so no float drift decides a sign. */
+function total(values: number[]): number {
+  return sumMoney(values, MONEY_SCALE);
 }
 
 function mean(values: number[]): number {
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
+  return roundMoney(total(values) / values.length, MONEY_SCALE);
 }
 
 /**
  * The year-over-year growth of the history, or 0 when it cannot be read.
  *
- * Compares each calendar month that holds a payment in both the latest twelve
- * months and the twelve before them: the ratio of the summed monthly means,
- * minus one. Matching on calendar months is what keeps a seasonal bill's
- * winter from reading as growth over the previous summer.
+ * Buckets each payment by how many calendar months before today's it falls:
+ * 0 to 11 is the latest year, 12 to 23 the year before, and a month is
+ * compared with the one exactly twelve months earlier -- the same calendar
+ * month, a year apart, so a seasonal bill's winter never reads as growth over
+ * the previous summer and the current month's payments are never pooled across
+ * two years. The rate is the ratio of the summed monthly means over the months
+ * both years hold, minus one.
  */
 export function yearOverYearGrowth(
   payments: EstimatePayment[],
   today: string,
 ): number {
-  const yearStart = shiftMonthsYMD(today, -12);
-  const latest = new Map<number, number[]>();
-  const prior = new Map<number, number[]>();
+  const current = monthIndex(today);
+  const byOffset = new Map<number, number[]>();
   for (const p of payments) {
-    const month = Number(p.date.slice(5, 7));
-    const bucket = p.date > yearStart ? latest : prior;
-    bucket.set(month, [...(bucket.get(month) ?? []), p.amount]);
+    const offset = current - monthIndex(p.date);
+    if (offset < 0 || offset >= 24) continue;
+    byOffset.set(offset, [...(byOffset.get(offset) ?? []), p.amount]);
   }
-  let latestSum = 0;
-  let priorSum = 0;
-  let matched = 0;
-  for (const [month, values] of latest) {
-    const before = prior.get(month);
-    if (!before) continue;
-    latestSum += mean(values);
-    priorSum += mean(before);
-    matched++;
+  const latestMeans: number[] = [];
+  const priorMeans: number[] = [];
+  for (let offset = 0; offset < 12; offset++) {
+    const latest = byOffset.get(offset);
+    const prior = byOffset.get(offset + 12);
+    if (!latest || !prior) continue;
+    latestMeans.push(mean(latest));
+    priorMeans.push(mean(prior));
   }
-  if (matched < ESTIMATE_MIN_GROWTH_MONTHS || priorSum === 0) return 0;
-  const growth = latestSum / priorSum - 1;
+  const priorSum = total(priorMeans);
+  if (latestMeans.length < ESTIMATE_MIN_GROWTH_MONTHS || priorSum === 0) {
+    return 0;
+  }
+  const growth = total(latestMeans) / priorSum - 1;
   if (!Number.isFinite(growth)) return 0;
   return Math.min(ESTIMATE_GROWTH_MAX, Math.max(ESTIMATE_GROWTH_MIN, growth));
 }
@@ -154,14 +151,14 @@ export function buildEstimateProfile(
     .sort((a, b) => a.date.localeCompare(b.date));
   if (inWindow.length === 0) return null;
 
-  const total = inWindow.reduce((sum, p) => sum + p.amount, 0);
+  const sum = total(inWindow.map((p) => p.amount));
   const sign =
-    total !== 0
-      ? Math.sign(total)
+    sum !== 0
+      ? Math.sign(sum)
       : Math.sign(inWindow[inWindow.length - 1].amount);
   const payments = inWindow.filter((p) => Math.sign(p.amount) === sign);
 
-  const yearStart = shiftMonthsYMD(today, -12);
+  const yearStart = addMonthsClamped(today, -12);
   const seasonal =
     payments.some((p) => p.date <= yearStart) &&
     payments.some((p) => p.date > yearStart);

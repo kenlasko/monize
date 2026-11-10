@@ -79,6 +79,29 @@ interface BillData {
    * would be a guess presented as a fact.
    */
   isIncome: boolean | null;
+  /**
+   * The amount is the schedule's estimate from payment history (issue #2096):
+   * the row says so, and an unknown one says the person enters it on posting.
+   */
+  estimated?: boolean;
+}
+
+/** A bill row's amount cell: the figure, labelled when it is an estimate. */
+function billAmountCell(b: BillData, t: EmailT, n: NumberT): string {
+  if (b.amount === null) {
+    return escapeHtml(
+      b.estimated
+        ? t(
+            "emails.billReminder.estimateUnknown",
+            "Estimate unknown: enter the amount when you post it",
+          )
+        : t("emails.billReminder.amountUnavailable", "Amount unavailable"),
+    );
+  }
+  const amount = n.formatCurrency(Math.abs(b.amount), b.currencyCode);
+  return b.estimated
+    ? `${amount}<br><span style="font-size: 12px; font-weight: 400; color: #6b7280;">${escapeHtml(t("emails.billReminder.estimated", "Estimated"))}</span>`
+    : amount;
 }
 
 /**
@@ -118,7 +141,7 @@ export function billReminderTemplate(
           <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">
             <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: white; background: ${billTypeColour(b.isIncome)};">${escapeHtml(billTypeLabel(b.isIncome, t))}</span>
           </td>
-          <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: ${billTypeColour(b.isIncome)}; font-weight: 500;">${b.amount === null ? escapeHtml(t("emails.billReminder.amountUnavailable", "Amount unavailable")) : n.formatCurrency(Math.abs(b.amount), b.currencyCode)}</td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: ${billTypeColour(b.isIncome)}; font-weight: 500;">${billAmountCell(b, t, n)}</td>
         </tr>`,
     )
     .join("");

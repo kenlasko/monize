@@ -489,6 +489,30 @@ describe('ScheduledTransactionList', () => {
     ).toBeGreaterThan(0);
   });
 
+  it('says only where the estimate comes from when the payment count is withheld', () => {
+    const transactions = [createTransaction({
+      amountIsEstimated: true,
+      effectiveAmount: -180,
+      effectiveAmountComplete: true,
+      amountEstimate: {
+        status: 'estimated',
+        currencyCode: 'CAD',
+        months: {},
+        paymentCount: null,
+        latestPaymentDate: null,
+        growthRate: null,
+        historyMonths: 24,
+        missingPair: null,
+      },
+    })];
+    render(<ScheduledTransactionList transactions={transactions} />);
+    expect(
+      screen.getAllByRole('button', {
+        name: "Estimated from the payee and category's payment history.",
+      }).length,
+    ).toBeGreaterThan(0);
+  });
+
   it('does not label an amount an override states', () => {
     const transactions = [createTransaction({
       amountIsEstimated: true,

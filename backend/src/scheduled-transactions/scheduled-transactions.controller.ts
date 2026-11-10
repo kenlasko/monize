@@ -41,7 +41,6 @@ import {
 } from "./dto/scheduled-transaction-override.dto";
 import {
   AllowDelegate,
-  DelegatedAccountParam,
   DelegatedBodyAccounts,
   DelegatedTransferBody,
   DelegatedScheduledParam,
@@ -129,7 +128,23 @@ export class ScheduledTransactionsController {
   @DelegateRequiresSection("bills")
   async findAll(@Request() req) {
     const rows = await this.scheduledTransactionsService.findAll(req.user.id);
-    return this.filterForDelegate(req, rows);
+    const visible = await this.filterForDelegate(req, rows);
+    if (!req.user.isActing) return visible;
+    // An estimate reads the owner's payments in every account. A delegate sees
+    // the bill's figures, as they would a typed amount, but not when or how
+    // often the owner paid, which may be in an account they cannot read.
+    return visible.map((row) =>
+      row.amountEstimate
+        ? {
+            ...row,
+            amountEstimate: {
+              ...row.amountEstimate,
+              paymentCount: null,
+              latestPaymentDate: null,
+            },
+          }
+        : row,
+    );
   }
 
   @Get("due")
@@ -213,9 +228,8 @@ export class ScheduledTransactionsController {
   @ApiResponse({ status: 200, description: "Estimate preview" })
   @ApiResponse({ status: 400, description: "Bad request" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
-  @AllowDelegate()
-  @DelegateRequiresSection("bills")
-  @DelegatedAccountParam("accountId")
+  // Not open to a delegate: the history spans every one of the owner's
+  // accounts, including ones the delegation cannot read.
   previewAmountEstimate(
     @Request() req,
     @Param("accountId", ParseUUIDPipe) accountId: string,

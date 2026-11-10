@@ -8,7 +8,7 @@ import {
   ScheduledAmountEstimateService,
   estimatedAmountFor,
 } from "@/scheduled-transactions/scheduled-amount-estimate.service";
-import { shiftMonthsYMD } from "@/scheduled-transactions/amount-estimate";
+import { addMonthsClamped } from "@/common/recurrence";
 import {
   cleanTables,
   createIntegrationModule,
@@ -42,7 +42,7 @@ describe("Scheduled amount estimate (integration)", () => {
   let otherCategoryId: string;
 
   const today = todayYMD();
-  const monthsAgo = (n: number) => shiftMonthsYMD(today, -n);
+  const monthsAgo = (n: number) => addMonthsClamped(today, -n);
 
   beforeAll(async () => {
     module = await createIntegrationModule([ScheduledTransactionsModule]);
@@ -122,7 +122,7 @@ describe("Scheduled amount estimate (integration)", () => {
     });
     await insertTransaction(monthsAgo(1), -900, { is_transfer: true });
     await insertTransaction(monthsAgo(30), -900);
-    await insertTransaction(shiftMonthsYMD(today, 1), -900);
+    await insertTransaction(addMonthsClamped(today, 1), -900);
 
     const estimate = await withUserContext(userId, () =>
       estimates.estimateFor(userId, basis()),
@@ -133,7 +133,7 @@ describe("Scheduled amount estimate (integration)", () => {
       estimate.profile?.payments.map((p) => p.amount).sort((a, b) => a - b),
     ).toEqual([-120, -110, -100]);
     // Not seasonal (one year), so every month is the newest three's mean.
-    expect(estimatedAmountFor(estimate, shiftMonthsYMD(today, 1))).toBe(-110);
+    expect(estimatedAmountFor(estimate, addMonthsClamped(today, 1))).toBe(-110);
   });
 
   it("is no-history for a payee with no matching payment", async () => {
@@ -150,7 +150,7 @@ describe("Scheduled amount estimate (integration)", () => {
     await insertTransaction(monthsAgo(1), -80);
     await insertTransaction(monthsAgo(2), -90);
     await insertTransaction(monthsAgo(3), -100);
-    const nextDue = shiftMonthsYMD(today, 1);
+    const nextDue = addMonthsClamped(today, 1);
     const [{ id }] = await db.query(
       `INSERT INTO scheduled_transactions (user_id, account_id, name, amount,
          currency_code, frequency, next_due_date, start_date, payee_id,
@@ -170,7 +170,7 @@ describe("Scheduled amount estimate (integration)", () => {
 
     const occurrences = await withUserContext(userId, () =>
       scheduled.findEffectiveOccurrences(userId, {
-        through: shiftMonthsYMD(today, 3),
+        through: addMonthsClamped(today, 3),
       }),
     );
     expect(occurrences.length).toBeGreaterThanOrEqual(2);

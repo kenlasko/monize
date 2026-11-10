@@ -441,6 +441,9 @@ const ALLOWED_COLUMNS: Record<string, Set<string>> = {
     "total_occurrences",
     "is_active",
     "auto_post",
+    // Restored with auto_post: undoing an edit that switched the estimate on
+    // must not leave an estimated schedule auto-posting (issue #2096).
+    "amount_is_estimated",
     "reminder_days_before",
     "last_posted_date",
     "is_split",

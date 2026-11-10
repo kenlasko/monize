@@ -20,6 +20,8 @@
     "typeExpense": "Expense",
     "typeUnknown": "Direction unknown",
     "amountUnavailable": "Amount unavailable",
+    "estimated": "Estimated",
+    "estimateUnknown": "Estimate unknown: enter the amount when you post it",
     "button": "View Bills &amp; Deposits"
   },
   "mortgageReminder": {

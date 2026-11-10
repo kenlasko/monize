@@ -60,6 +60,11 @@ export interface ScheduledTransactionSummary {
   name: string;
   amount: number | null;
   amountComplete: boolean;
+  /**
+   * The amount is the schedule's estimate from payment history (issue #2096),
+   * so the prompt labels it, and an unknown one is not a missing rate.
+   */
+  amountEstimated: boolean;
   frequency: string;
   nextDueDate: string;
   categoryName: string | null;
@@ -469,6 +474,7 @@ export class ForecastAggregatorService {
         name: st.name,
         amount: occurrence.amount === null ? null : Math.abs(occurrence.amount),
         amountComplete: occurrence.amount !== null,
+        amountEstimated: occurrence.estimated,
         frequency: st.frequency,
         nextDueDate: occurrence.dueDate,
         categoryName: st.category?.name || null,

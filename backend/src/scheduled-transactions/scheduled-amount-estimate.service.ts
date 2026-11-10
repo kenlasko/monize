@@ -70,9 +70,12 @@ export interface ScheduleAmountEstimateReadModel {
   currencyCode: string;
   /** `YYYY-MM` -> the per-occurrence estimate for occurrences in that month. */
   months: Record<string, EstimatedMonthReadModel>;
-  /** How many payments the estimate averages. */
-  paymentCount: number;
-  /** The newest payment the estimate read, `YYYY-MM-DD`, or null. */
+  /**
+   * How many payments the estimate averages; `null` when withheld (a delegate
+   * is not told how often the owner paid).
+   */
+  paymentCount: number | null;
+  /** The newest payment the estimate read, `YYYY-MM-DD`; null when none or withheld. */
   latestPaymentDate: string | null;
   /** The year-over-year growth applied, or null when the history is not seasonal. */
   growthRate: number | null;
@@ -81,10 +84,43 @@ export interface ScheduleAmountEstimateReadModel {
 }
 
 /**
- * How many months the read model covers: the month before today (an overdue
- * occurrence) through two years ahead, past the longest forecast period.
+ * How far ahead the read model reaches, in months past today's: beyond the
+ * longest forecast period (one year) and the occurrence picker's dates.
  */
-export const ESTIMATE_READ_MODEL_MONTHS = 26;
+export const ESTIMATE_READ_MODEL_MONTHS_AHEAD = 24;
+
+/**
+ * How far back the read model reaches at most, in months before today's. It
+ * starts at the schedule's next due month, so an overdue occurrence the
+ * forecast carries, the Post dialog or the editor opens is priced by the
+ * client exactly as by the server; a schedule overdue for longer than this is
+ * read from this bound.
+ */
+export const ESTIMATE_READ_MODEL_MONTHS_BACK = 24;
+
+/**
+ * Whether an occurrence governed by `override` (or by none) is priced from the
+ * schedule's estimate (docs/specs/scheduled-amount-estimate.md section 6): an
+ * override that states an amount, or carries its own split lines, is that
+ * occurrence's amount; any other follows the estimate. The one statement of
+ * the rule on the server -- the expansion, the list read and the posting all
+ * ask here; `occurrenceFollowsEstimate` in
+ * frontend/src/lib/scheduled-effective-amount.ts is its client twin.
+ */
+export function occurrenceFollowsEstimate(
+  schedule: { amountIsEstimated?: boolean | null },
+  override:
+    | { amount?: number | string | null; isSplit?: boolean | null }
+    | null
+    | undefined,
+): boolean {
+  if (schedule.amountIsEstimated !== true) return false;
+  if (!override) return true;
+  return (
+    (override.amount === null || override.amount === undefined) &&
+    override.isSplit !== true
+  );
+}
 
 /**
  * The amount of an occurrence falling on `dueDate`, or `null` when the
@@ -98,18 +134,30 @@ export function estimatedAmountFor(
   return estimateForMonth(estimate.profile, monthKeyOf(dueDate)).amount;
 }
 
-/** The read model of `estimate`, months from the month before `today`. */
+/**
+ * The read model of `estimate`: one month per entry from the earlier of the
+ * month before today's and `nextDueDate`'s month (an overdue occurrence, at
+ * most `ESTIMATE_READ_MODEL_MONTHS_BACK` back) through
+ * `ESTIMATE_READ_MODEL_MONTHS_AHEAD` past today's.
+ */
 export function estimateReadModel(
   estimate: ScheduleAmountEstimate,
   today: string = todayYMD(),
+  nextDueDate?: string,
 ): ScheduleAmountEstimateReadModel {
   const months: Record<string, EstimatedMonthReadModel> = {};
   const profile = estimate.profile;
   if (estimate.status === "estimated" && profile) {
-    const first = shiftMonthKey(monthKeyOf(today), -1);
-    for (let i = 0; i < ESTIMATE_READ_MODEL_MONTHS; i++) {
-      const month = shiftMonthKey(first, i);
+    const todayMonth = monthKeyOf(today);
+    const floor = shiftMonthKey(todayMonth, -ESTIMATE_READ_MODEL_MONTHS_BACK);
+    const dueMonth = nextDueDate ? monthKeyOf(nextDueDate) : todayMonth;
+    const monthBefore = shiftMonthKey(todayMonth, -1);
+    let month = dueMonth < monthBefore ? dueMonth : monthBefore;
+    if (month < floor) month = floor;
+    const last = shiftMonthKey(todayMonth, ESTIMATE_READ_MODEL_MONTHS_AHEAD);
+    while (month <= last) {
       months[month] = estimateForMonth(profile, month);
+      month = shiftMonthKey(month, 1);
     }
   }
   return {
@@ -188,16 +236,21 @@ export class ScheduledAmountEstimateService {
     }
 
     // Converted at the current rate, the newest on or before today: one lookup
-    // per pair for the whole call. The lookup may fetch from a provider, which
-    // is why it runs here, after the history read's transaction has closed.
+    // per pair for the whole call, after the history read's transaction has
+    // closed.
     const rates = new Map<string, number | null>();
     const rateFor = async (from: string, to: string) => {
       const key = `${from}->${to}`;
       if (!rates.has(key)) {
+        // `fetchMissing: false`: this runs on every list read, occurrence
+        // expansion and reminder pass, and the daily rate refresh stores the
+        // currencies accounts are held in, so a stored rate or none.
         const rate =
           from === to
             ? 1
-            : await this.exchangeRates.getRateForDate(from, to, today);
+            : await this.exchangeRates.getRateForDate(from, to, today, {
+                fetchMissing: false,
+              });
         rates.set(key, rate !== null && rate > 0 ? rate : null);
       }
       return rates.get(key) ?? null;

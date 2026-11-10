@@ -35,6 +35,7 @@ export function useAmountEstimateText(): (
       const category = subject.categoryName ?? t('estimate.theCategory');
       switch (estimate?.status) {
         case 'estimated':
+          if (estimate.paymentCount === null) return t('estimate.basisWithheld');
           return estimate.growthRate !== null && estimate.growthRate !== 0
             ? t('estimate.basisWithGrowth', {
                 count: estimate.paymentCount,

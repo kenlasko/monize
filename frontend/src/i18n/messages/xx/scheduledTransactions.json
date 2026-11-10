@@ -350,6 +350,7 @@
     "theCategory": "[XX-this category-XX]",
     "basis": "[XX-Estimated from {count, plural, one {# payment} other {# payments}}, the latest on {date}.-XX]",
     "basisWithGrowth": "[XX-Estimated from {count, plural, one {# payment} other {# payments}}, the latest on {date}, with a {growth} change year over year.-XX]",
+    "basisWithheld": "[XX-Estimated from the payee and category's payment history.-XX]",
     "noHistory": "[XX-No payments to {payee} in {category} in the last {months} months, so the amount is unknown. Enter each occurrence's amount, or record a payment.-XX]",
     "missingRate": "[XX-No exchange rate from {from} to {to} to convert a past payment, so the amount is unknown. Add the rate on the Currencies page.-XX]",
     "noBasis": "[XX-Choose a payee and a category to estimate the amount from their payment history.-XX]",

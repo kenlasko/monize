@@ -123,6 +123,36 @@ describe("ScheduledTransactionsController", () => {
       expect(delegationMock.readableAccountIds).toHaveBeenCalledWith("g1");
     });
 
+    it("withholds when and how often the owner paid from a delegate (issue #2096)", async () => {
+      const actingReq = {
+        user: { id: "owner-1", isActing: true, delegationId: "g1" },
+      };
+      const amountEstimate = {
+        status: "estimated",
+        months: { "2026-12": { amount: -120, basis: "recent" } },
+        paymentCount: 7,
+        latestPaymentDate: "2026-10-15",
+      };
+      mockService.findAll.mockResolvedValue([
+        { id: "st-1", accountId: "a1", amountEstimate },
+      ]);
+      delegationMock.readableAccountIds.mockResolvedValue(["a1"]);
+
+      const [row] = (await controller.findAll(actingReq)) as any[];
+
+      expect(row.amountEstimate).toEqual({
+        ...amountEstimate,
+        paymentCount: null,
+        latestPaymentDate: null,
+      });
+      // The owner's own read is untouched.
+      mockService.findAll.mockResolvedValue([
+        { id: "st-1", accountId: "a1", amountEstimate },
+      ]);
+      const [own] = (await controller.findAll(mockReq)) as any[];
+      expect(own.amountEstimate.paymentCount).toBe(7);
+    });
+
     it("keeps a transfer where the delegate holds the recipient side", async () => {
       const actingReq = {
         user: { id: "owner-1", isActing: true, delegationId: "g1" },

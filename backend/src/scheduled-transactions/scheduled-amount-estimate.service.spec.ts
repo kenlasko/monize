@@ -97,10 +97,12 @@ describe("ScheduledAmountEstimateService", () => {
 
     // (-140 - 100) / 2 at today's 1.4.
     expect(estimatedAmountFor(estimate, "2026-12-15")).toBe(-120);
+    // From what is stored: this read runs on every list, expansion and cron.
     expect(exchangeRates.getRateForDate).toHaveBeenCalledWith(
       "USD",
       "CAD",
       TODAY,
+      { fetchMissing: false },
     );
   });
 
@@ -165,7 +167,7 @@ describe("ScheduledAmountEstimateService", () => {
 
     const months = Object.keys(model.months);
     expect(months[0]).toBe("2026-10");
-    expect(months).toHaveLength(26);
+    expect(months[months.length - 1]).toBe("2028-11");
     expect(model.months["2026-12"]).toEqual({ amount: -80, basis: "recent" });
     expect(model).toMatchObject({
       status: "estimated",
@@ -174,5 +176,17 @@ describe("ScheduledAmountEstimateService", () => {
       growthRate: null,
       historyMonths: 24,
     });
+  });
+
+  it("reaches back to an overdue next occurrence's month, at most two years", async () => {
+    manager.query.mockResolvedValue([historyRow("2026-10-15", -80)]);
+    const estimate = await service.estimateFor("user-1", basis, TODAY);
+
+    const overdue = estimateReadModel(estimate, TODAY, "2026-07-20");
+    expect(Object.keys(overdue.months)[0]).toBe("2026-07");
+    expect(overdue.months["2026-07"]).toEqual({ amount: -80, basis: "recent" });
+
+    const ancient = estimateReadModel(estimate, TODAY, "2019-01-01");
+    expect(Object.keys(ancient.months)[0]).toBe("2024-11");
   });
 });
