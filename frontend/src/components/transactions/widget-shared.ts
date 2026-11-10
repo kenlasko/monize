@@ -183,7 +183,7 @@ export function aggregateGroupedTotals(
         total:
           existing.total === null || converted === null
             ? null
-            : existing.total + converted,
+            : roundMoney(existing.total + converted),
         count: existing.count + row.count,
       });
     } else {

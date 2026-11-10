@@ -81,7 +81,12 @@ import {
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { attachInvestmentRowReportingRates } from "./investment-row-reporting-rates";
 import { CurrenciesService } from "../currencies/currencies.service";
-import { roundToDecimals, roundMoney, sumMoney } from "../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  roundToDecimals,
+  roundMoney,
+  sumMoney,
+} from "../common/round.util";
 import { stripHtml } from "../common/sanitization.util";
 import {
   BulkCreateResult,
@@ -3805,8 +3810,10 @@ export class InvestmentTransactionsService {
         : null;
       if (converted === null) {
         missingRatePairs.add(`${from ?? "?"}->${defaultCurrency}`);
+        return null;
       }
-      return converted;
+      // A converted, reporting-currency figure: the fiat four places.
+      return roundMoney(converted, FIAT_MONEY_DECIMALS);
     };
 
     if (entries.length === 0) {

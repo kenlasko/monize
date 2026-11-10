@@ -2364,6 +2364,28 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
       expect(resolveStoredRate).not.toHaveBeenCalled();
     });
 
+    it("names the pair a sale's reporting-currency figures lack (issue #2106)", async () => {
+      const { service } = build(
+        [
+          usdBuy({
+            accountCurrency: "USD",
+            exchangeRate: 1.35,
+            fundingAccountId: cadChequing,
+          }),
+          cadSell({ accountCurrency: "USD", exchangeRate: 1 }),
+        ],
+        { accountCurrency: "USD", reportingCurrency: "CAD", rates: {} },
+      );
+
+      const [sale] = await service.calculateRealizedGains(userId);
+
+      expect(sale.inReportingCurrency).toMatchObject({
+        proceeds: null,
+        realizedGain: null,
+        missingRatePairs: ["USD->CAD"],
+      });
+    });
+
     it("reads a stored 1 across two currencies as no rate in the reporting replay", async () => {
       // Bought with CAD at the column's default 1 (not a rate anybody struck):
       // the basis in EUR is the USD it cost at the market's 0.90, as the row
@@ -2420,6 +2442,7 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
         proceeds: 1540,
         costBasis: 1350,
         realizedGain: 190,
+        missingRatePairs: [],
       });
       // One bulk read for the sale's own day, never a lookup per row.
       expect(getRateIndex).toHaveBeenCalledWith(

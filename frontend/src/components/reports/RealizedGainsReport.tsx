@@ -263,7 +263,14 @@ export function RealizedGainsReport() {
       const costBasis = toDisplay(entry, 'costBasis');
       const realizedGain = toDisplay(entry, 'realizedGain');
       if (proceeds === null || costBasis === null || realizedGain === null) {
-        missing.add(entry.accountCurrencyCode || defaultCurrency);
+        // The pair the server could not resolve names the currency to add; a
+        // backend that names none falls back to the holding account's.
+        const pairs = entry.inReportingCurrency?.missingRatePairs ?? [];
+        if (pairs.length > 0) {
+          for (const pair of pairs) missing.add(pair.split('->')[0]);
+        } else {
+          missing.add(entry.accountCurrencyCode || defaultCurrency);
+        }
         excludedCount += 1;
       }
     }

@@ -1,3 +1,5 @@
+import { roundFxRate } from "../common/fx-entry.util";
+
 /**
  * The rate that takes one investment row's amount into a target currency, by
  * the rule INV-FX-002 sets: the row's OWN rate first, the one its cash leg
@@ -81,7 +83,11 @@ export async function investmentRowRateInto(
     }
     const onward = await rateOn(settlement, target, row.date);
     if (onward !== null) {
-      return { rate: rowRate * onward, basis: "transaction", onward: true };
+      return {
+        rate: roundFxRate(rowRate * onward),
+        basis: "transaction",
+        onward: true,
+      };
     }
     // No onward rate: the market rate for the whole pair can still answer.
   }

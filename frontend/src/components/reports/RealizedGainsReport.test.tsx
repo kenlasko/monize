@@ -602,6 +602,27 @@ describe('RealizedGainsReport', () => {
     expect(screen.queryByText('$5500.00 CAD')).not.toBeInTheDocument();
   });
 
+  it("names the pair the server could not resolve, not the account's currency (issue #2106)", async () => {
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    mockGetRealizedGains.mockResolvedValue([
+      gainEntry({
+        accountCurrencyCode: 'USD',
+        securityCurrencyCode: 'EUR',
+        inReportingCurrency: {
+          currency: 'CAD',
+          proceeds: null,
+          costBasis: null,
+          realizedGain: null,
+          missingRatePairs: ['EUR->CAD'],
+        },
+      }),
+    ]);
+    render(<RealizedGainsReport />);
+
+    const note = await screen.findByText(/EUR/, { selector: 'p' });
+    expect(note.textContent).not.toMatch(/\bUSD\b/);
+  });
+
   it("reads the server's reporting-currency figures for All Accounts (issue #2106)", async () => {
     mockGetInvestmentAccounts.mockResolvedValue([]);
     // 1,000 USD of proceeds against an 800 USD basis; in CAD the basis is what

@@ -295,7 +295,22 @@ describe("latest exchange rates and the readers that take them (integration)", (
         userId,
         async () =>
           [
-            await analytics.getSummary(userId),
+            await analytics.getSummary(
+              userId,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              { inReportingCurrency: true },
+            ),
             await analytics.getGroupedTotals(userId, { groupBy: "category" }),
             await analytics.getTransactionBreakdownByTagKey(userId, "country"),
             await new CategoryDetailService(dataSource, {
@@ -415,7 +430,8 @@ describe("latest exchange rates and the readers that take them (integration)", (
       gains.every((entry) => entry.inReportingCurrency.currency === "CAD"),
     ).toBe(true);
     expect(usage.reportingCurrency).toBe("CAD");
-    expect(usage.totalEstimatedCostInReportingCurrency).toBe(0);
+    // No usage logged: no cost to state, unknown rather than zero.
+    expect(usage.totalEstimatedCostInReportingCurrency).toBeNull();
   });
 
   it("rejects a back-dated cross-currency trade when only today's rate is stored", async () => {

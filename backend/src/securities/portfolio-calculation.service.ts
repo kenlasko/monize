@@ -50,6 +50,7 @@ import { stripBrokerageSuffix } from "../accounts/account-name.util";
 import {
   ReplayedBasisGap,
   ReplayResult,
+  ReplayStep,
   replayPositionBasis,
   SettlementCurrencies,
 } from "./position-basis-replay";
@@ -173,6 +174,11 @@ export interface RealizedGainEntry {
     proceeds: number | null;
     costBasis: number | null;
     realizedGain: number | null;
+    /**
+     * `"USD->CAD"` for each rate the replay could not resolve on one of this
+     * position's own dates, when a figure above is null for want of one.
+     */
+    missingRatePairs: string[];
   };
 }
 
@@ -1251,8 +1257,8 @@ export class PortfolioCalculationService {
     const inReporting = fetched.some(
       (tx) => (tx.account?.currencyCode ?? reporting) !== reporting,
     )
-      ? (await this.replayWithRates(userId, fetched, reporting)).steps
-      : steps;
+      ? await this.replayWithRates(userId, fetched, reporting)
+      : { steps, unresolved: [] as UnresolvedReplayRate[] };
     const requestedAccounts =
       accountIds && accountIds.length > 0 ? new Set(accountIds) : null;
     const results: RealizedGainEntry[] = [];
@@ -1281,7 +1287,7 @@ export class PortfolioCalculationService {
       }
 
       const known = disposal.gap === null && disposal.proceeds !== null;
-      const reported = inReporting.get(tx)?.disposal;
+      const reported = inReporting.steps.get(tx)?.disposal;
       const reportedKnown =
         known &&
         reported !== undefined &&
@@ -1309,20 +1315,59 @@ export class PortfolioCalculationService {
             ? roundMoney(disposal.realizedGain)
             : null,
         basisGap: disposal.gap,
-        inReportingCurrency: {
-          currency: reporting,
-          proceeds:
-            reported?.proceeds != null ? roundMoney(reported.proceeds) : null,
-          costBasis: reportedKnown ? roundMoney(reported.basisRelieved) : null,
-          realizedGain:
-            reportedKnown && reported.realizedGain !== null
-              ? roundMoney(reported.realizedGain)
-              : null,
-        },
+        inReportingCurrency: this.realizedInReporting(
+          tx,
+          fetched,
+          reporting,
+          reported,
+          reportedKnown,
+          inReporting.unresolved,
+        ),
       });
     }
 
     return results;
+  }
+
+  /**
+   * One sale's figures in the reporting currency. The gain is the difference
+   * of the two rounded figures, so `proceeds - costBasis` is the gain to the
+   * last place; a figure null for want of a rate names the pairs this
+   * position could not resolve on its own dates.
+   */
+  private realizedInReporting(
+    tx: InvestmentTransaction,
+    history: readonly InvestmentTransaction[],
+    currency: string,
+    reported: ReplayStep["disposal"] | undefined,
+    known: boolean,
+    unresolved: readonly UnresolvedReplayRate[],
+  ): RealizedGainEntry["inReportingCurrency"] {
+    const proceeds =
+      reported?.proceeds != null ? roundMoney(reported.proceeds) : null;
+    const costBasis =
+      known && reported ? roundMoney(reported.basisRelieved) : null;
+    const realizedGain =
+      known && proceeds !== null && costBasis !== null
+        ? roundMoney(proceeds - costBasis)
+        : null;
+    const position = `${tx.accountId}:${tx.securityId}`;
+    const dates = new Set(
+      history
+        .filter((row) => `${row.accountId}:${row.securityId}` === position)
+        .map((row) => String(row.transactionDate).slice(0, 10)),
+    );
+    const missingRatePairs =
+      proceeds === null || realizedGain === null
+        ? [
+            ...new Set(
+              unresolved
+                .filter((rate) => dates.has(rate.onDate))
+                .map((rate) => `${rate.from}->${rate.to}`),
+            ),
+          ]
+        : [];
+    return { currency, proceeds, costBasis, realizedGain, missingRatePairs };
   }
 
   /**

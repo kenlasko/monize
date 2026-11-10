@@ -304,7 +304,18 @@ describe("TransactionAnalyticsService", () => {
 
       const result = await service.getSummary(
         userId,
-        ...Array<undefined>(12).fill(undefined),
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
         { inReportingCurrency: true },
       );
 
@@ -379,7 +390,18 @@ describe("TransactionAnalyticsService", () => {
 
       const result = await service.getSummary(
         userId,
-        ...Array<undefined>(12).fill(undefined),
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
         { inReportingCurrency: true },
       );
 

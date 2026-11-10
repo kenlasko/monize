@@ -1054,6 +1054,8 @@ export interface RealizedGainEntry {
     proceeds: number | null;
     costBasis: number | null;
     realizedGain: number | null;
+    /** `"USD->CAD"` for each rate the server could not resolve for this sale. */
+    missingRatePairs?: string[];
   };
 }
 
