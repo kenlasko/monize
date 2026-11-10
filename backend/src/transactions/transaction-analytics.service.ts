@@ -76,6 +76,13 @@ export interface FxFeeMonthlySummaryRow {
   feeTotal: number;
   /** Number of foreign-entered transactions in the month. */
   count: number;
+  /** The reader's reporting currency, which `convertedFeeTotal` is in. */
+  convertedCurrency: string;
+  /**
+   * `feeTotal` with each transaction's fee at its own settled rate or the
+   * market rate on its own date (issue #2106); null without an admissible one.
+   */
+  convertedFeeTotal: number | null;
 }
 
 /**
@@ -1349,20 +1356,23 @@ export class TransactionAnalyticsService {
         "ELSE ROUND(transaction.originalAmount * transaction.exchangeRate, CAST(:feeDecimals AS int)) - transaction.amount " +
         "END";
 
-      const rows = await m
-        .getRepository(Transaction)
-        .createQueryBuilder("transaction")
-        .where("transaction.userId = :userId", { userId })
-        .andWhere("transaction.accountId = :accountId", { accountId })
-        .andWhere("transaction.originalCurrencyCode IS NOT NULL")
-        .andWhere("transaction.parentTransactionId IS NULL")
-        .andWhere("transaction.status != :voidStatus", {
-          voidStatus: TransactionStatus.VOID,
-        })
+      const feeRows = () =>
+        m
+          .getRepository(Transaction)
+          .createQueryBuilder("transaction")
+          .where("transaction.userId = :userId", { userId })
+          .andWhere("transaction.accountId = :accountId", { accountId })
+          .andWhere("transaction.originalCurrencyCode IS NOT NULL")
+          .andWhere("transaction.parentTransactionId IS NULL")
+          .andWhere("transaction.status != :voidStatus", {
+            voidStatus: TransactionStatus.VOID,
+          })
+          .setParameter("feeDecimals", decimals);
+
+      const rows = await feeRows()
         .select("TO_CHAR(transaction.transactionDate, 'YYYY-MM')", "month")
         .addSelect("transaction.originalCurrencyCode", "currencyCode")
         .addSelect(`COALESCE(SUM(${feeExpr}), 0)`, "feeTotal")
-        .setParameter("feeDecimals", decimals)
         .addSelect("COUNT(DISTINCT transaction.id)", "count")
         .groupBy("month")
         .addGroupBy("transaction.originalCurrencyCode")
@@ -1370,12 +1380,63 @@ export class TransactionAnalyticsService {
         .addOrderBy("transaction.originalCurrencyCode", "ASC")
         .getRawMany();
 
-      return rows.map((row) => ({
-        month: row.month,
-        currencyCode: row.currencyCode,
-        feeTotal: roundMoney(Number(row.feeTotal) || 0, decimals),
-        count: Number(row.count) || 0,
-      }));
+      // The fee is in the account's currency; a reader in another currency
+      // gets it converted per transaction at its own rate or its own date's
+      // market rate, never a lifetime of fees at today's rate (issue #2106).
+      const reporting = await resolveUserDefaultCurrency(
+        this.dataSource,
+        userId,
+      );
+      const accountCurrency = account?.currencyCode;
+      const converted =
+        accountCurrency && accountCurrency !== reporting && rows.length > 0
+          ? await convertDatedRows(
+              (sql, params) => m.query(sql, params),
+              (
+                await feeRows()
+                  .select(
+                    "TO_CHAR(transaction.transactionDate, 'YYYY-MM')",
+                    "month",
+                  )
+                  .addSelect("transaction.originalCurrencyCode", "currencyCode")
+                  .addSelect(DAY_TX_SQL, "txDate")
+                  .addSelect("transaction.exchangeRate", "exchangeRate")
+                  .addSelect(`COALESCE(SUM(${feeExpr}), 0)`, "feeTotal")
+                  .groupBy("month")
+                  .addGroupBy("transaction.originalCurrencyCode")
+                  .addGroupBy(DAY_TX_SQL)
+                  .addGroupBy("transaction.exchangeRate")
+                  .getRawMany()
+              ).map((row) => ({
+                key: `${row.month}|${row.currencyCode}`,
+                currencyCode: accountCurrency,
+                txDate: row.txDate,
+                originalCurrencyCode: row.currencyCode,
+                exchangeRate: row.exchangeRate,
+                amounts: { feeTotal: Number(row.feeTotal) || 0 },
+              })),
+              reporting,
+              this.logger,
+            )
+          : null;
+
+      return rows.map((row) => {
+        const feeTotal = roundMoney(Number(row.feeTotal) || 0, decimals);
+        return {
+          month: row.month,
+          currencyCode: row.currencyCode,
+          feeTotal,
+          count: Number(row.count) || 0,
+          convertedCurrency: reporting,
+          convertedFeeTotal:
+            converted === null
+              ? accountCurrency === reporting
+                ? feeTotal
+                : null
+              : (converted.get(`${row.month}|${row.currencyCode}`)?.feeTotal ??
+                null),
+        };
+      });
     });
   }
 

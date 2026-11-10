@@ -250,6 +250,13 @@ export interface FxFeeMonthlyTotal {
   currencyCode: string;
   feeTotal: number;
   count: number;
+  /** The reporting currency `convertedFeeTotal` is in. */
+  convertedCurrency?: string;
+  /**
+   * `feeTotal` converted by the server, each fee at its own transaction's rate
+   * or date (issue #2106); null without an admissible rate.
+   */
+  convertedFeeTotal?: number | null;
 }
 
 export interface TransactionFilters {

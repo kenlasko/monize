@@ -3750,6 +3750,9 @@ describe("TransactionAnalyticsService", () => {
     });
 
     it("maps monthly rows per paid currency with numeric fee totals", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
       mockQueryBuilder.getRawMany.mockResolvedValue([
         { month: "2026-01", currencyCode: "EUR", feeTotal: "12.5", count: "3" },
         { month: "2026-01", currencyCode: "USD", feeTotal: "0", count: "2" },
@@ -3758,10 +3761,77 @@ describe("TransactionAnalyticsService", () => {
 
       const result = await service.getFxFeeSummary(userId, "acc-1");
 
+      // The account is in the reporting currency, so the fee is its own figure.
+      const same = { convertedCurrency: "CAD" };
       expect(result).toEqual([
-        { month: "2026-01", currencyCode: "EUR", feeTotal: 12.5, count: 3 },
-        { month: "2026-01", currencyCode: "USD", feeTotal: 0, count: 2 },
-        { month: "2026-02", currencyCode: "EUR", feeTotal: 4.25, count: 1 },
+        {
+          month: "2026-01",
+          currencyCode: "EUR",
+          feeTotal: 12.5,
+          count: 3,
+          ...same,
+          convertedFeeTotal: 12.5,
+        },
+        {
+          month: "2026-01",
+          currencyCode: "USD",
+          feeTotal: 0,
+          count: 2,
+          ...same,
+          convertedFeeTotal: 0,
+        },
+        {
+          month: "2026-02",
+          currencyCode: "EUR",
+          feeTotal: 4.25,
+          count: 1,
+          ...same,
+          convertedFeeTotal: 4.25,
+        },
+      ]);
+    });
+
+    it("converts a foreign account's fees at each transaction's own date (issue #2106)", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          { month: "2026-01", currencyCode: "EUR", feeTotal: "20", count: "2" },
+        ])
+        .mockResolvedValueOnce([
+          {
+            month: "2026-01",
+            currencyCode: "EUR",
+            txDate: "2026-01-05",
+            exchangeRate: "1.5",
+            feeTotal: "10",
+          },
+          {
+            month: "2026-01",
+            currencyCode: "EUR",
+            txDate: "2026-01-25",
+            exchangeRate: "1.5",
+            feeTotal: "10",
+          },
+        ]);
+      managerMock.query.mockResolvedValue([
+        storedRate("USD", "CAD", 1.25, "2026-01-04"),
+        storedRate("USD", "CAD", 1.6, "2026-01-24"),
+      ]);
+
+      const result = await service.getFxFeeSummary(userId, "acc-1");
+
+      // 10 CAD at 1.25 plus 10 CAD at 1.60 per USD.
+      expect(result).toEqual([
+        {
+          month: "2026-01",
+          currencyCode: "EUR",
+          feeTotal: 20,
+          count: 2,
+          convertedCurrency: "USD",
+          convertedFeeTotal: 14.25,
+        },
       ]);
     });
 
@@ -3838,7 +3908,7 @@ describe("TransactionAnalyticsService", () => {
         8,
       );
       // A 2,500-sat fee, which four places read as zero.
-      expect(result).toEqual([
+      expect(result).toMatchObject([
         { month: "2026-03", currencyCode: "CAD", feeTotal: 0.000025, count: 1 },
       ]);
     });

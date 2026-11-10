@@ -58,7 +58,7 @@ export function ForeignCurrencyFeesReport() {
   const tr = useTranslations('reports');
   const tCommon = useTranslations('common');
   const router = useRouter();
-  const { defaultCurrency, convertToDefault } = useExchangeRates();
+  const { defaultCurrency } = useExchangeRates();
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountsLoaded, setAccountsLoaded] = useState(false);
@@ -141,12 +141,13 @@ export function ForeignCurrencyFeesReport() {
     return currencies.size === 1 ? [...currencies][0] : defaultCurrency;
   }, [effectiveAccountIds, accountsById, defaultCurrency]);
 
+  // A fee in another currency is the server's conversion, each fee at its own
+  // transaction's rate or date; a month of fees at today's rate would move
+  // with the currency rather than with what the bank charged (issue #2106).
   const convertFee = useCallback(
-    (amount: number, accountCurrency: string): number | null => {
-      if (accountCurrency === displayCurrency) return amount;
-      return convertToDefault(amount, accountCurrency || defaultCurrency);
-    },
-    [displayCurrency, convertToDefault, defaultCurrency],
+    (row: FxFeeMonthlyTotal, accountCurrency: string): number | null =>
+      accountCurrency === displayCurrency ? row.feeTotal : (row.convertedFeeTotal ?? null),
+    [displayCurrency],
   );
 
   // Nothing to fetch (no account in scope, or the account list has not
@@ -220,7 +221,7 @@ export function ForeignCurrencyFeesReport() {
     for (const result of feeResults) {
       for (const row of result.rows) {
         if (active && !active.has(row.currencyCode)) continue;
-        const converted = convertFee(row.feeTotal, result.currency);
+        const converted = convertFee(row, result.currency);
         if (converted === null) {
           missing.add(result.currency);
           excludedCount += row.count;
