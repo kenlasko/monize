@@ -1464,6 +1464,24 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     window's last day. fx-latest-rates.integration.spec.ts:
                     1,000 USD from sixty days ago reads at that day's 1.25, not
                     today's 1.40.
+                    The same issue moved every other surface that summed past
+                    amounts with the client's latest-rate map onto a server
+                    figure converted at each row's own rate or date
+                    (convertDatedRows in report-currency.service.ts for the
+                    dated fold): the transaction summary's `converted`, the
+                    grouped totals' and tag-key breakdown's `convertedTotal`,
+                    the category and payee detail account panels, the
+                    foreign-fee summary's `convertedFeeTotal`, the daily
+                    balances' `convertedBalance`, the capital-gain entries'
+                    `inReportingCurrency` (each period at its own end), the
+                    realized gains' `inReportingCurrency` and the AI usage
+                    costs; the intraday chart prices only the latest session at
+                    the live spot. A holding's cost and total net invested in
+                    the reporting currency are historical: the replay's
+                    targetCurrency converts each purchase at its own date
+                    (position-basis-replay.ts), computeNetInvestmentFlowsInReporting
+                    each flow at its own; a holding with no usable history
+                    still falls back to today's rate, having no dates.
 Known gap           Convert before summing (A26-H12) is closed on three paths:
                     the custom report engine (reports/reports.service.ts,
                     each row converted at its own date, FxAggregate, `summary.total` null
@@ -1541,7 +1559,8 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     total_amount by the row's exchange_rate (realized gains, the
                     capital-gains fold, the cash-flow sums).
                     investment-reports/investment-transaction-summary.service.ts
-                    now does the same: usableRowRate() takes the stored rate when
+                    now does the same through investmentRowRateInto
+                    (securities/investment-row-fx.util.ts): usableRowRate() takes the stored rate when
                     it is positive and is not the column's default 1 across two
                     different currencies; the row's settlement currency comes
                     from its funding account, its brokerage's linked cash sleeve
@@ -1560,6 +1579,13 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     confirmation, which commit the rate it returns) carries the
                     stored rate unless the edit names one or another security
                     (A26-M20).
+                    GET /investment-transactions stamps every listed row with
+                    the same function's factors into the reporting and its
+                    account's currency (reportingRate, accountRate,
+                    securities/investment-row-reporting-rates.ts), and the
+                    client's convertRowAmount multiplies by them, so the
+                    Dividend Income, Dividend Yield and account YTD figures
+                    read a row's own rate as the summary does.
                     The built-in reports and the custom report engine read
                     transactions.exchange_rate the way the Cash Flow Sankey
                     does: a foreign entry whose original currency is the
@@ -2851,10 +2877,10 @@ lists each matching leg by its own account and its own sign, and under BOTH its
 total is the signed sum of the listed rows, captioned "Net cash movement"
 rather than net (`customReportMeasure`, discussion #1978). Both legs of a
 same-currency transfer inside the report's scope cancel, because each is
-converted at the one rate map of the report execution (`createConverter` in
-reports.service.ts, the latest rates); a cross-currency transfer's legs are
-each converted at that latest rate, not at the rate the two amounts imply, so
-they can leave a residual. A leg whose counterpart does not match the filters
+converted by the one converter of the report execution (`createConverter` in
+reports.service.ts); a cross-currency transfer's legs are each converted at
+its own rate or the market rate on its own date (issue #2106), not at the
+rate the two amounts imply, so they can leave a residual. A leg whose counterpart does not match the filters
 counts alone, and no counterpart is added. Only the ungrouped list signs its
 rows: grouped, metric NONE sums each group's unsigned cells like
 TOTAL_AMOUNT, and the client names it so (`isSignedTransactionList`).
