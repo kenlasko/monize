@@ -34,7 +34,10 @@ import {
   LockedInvestmentTransactionRow,
 } from "../common/db/locks";
 import { lockUnchangedInvestmentRow } from "./investment-row-lock.util";
-import { applyVoidTransitionToMirrorLeg } from "../transactions/void-status-transition.util";
+import {
+  applyVoidTransitionToMirrorLeg,
+  assertMirrorLegVoidTransitionMutable,
+} from "../transactions/void-status-transition.util";
 import { assertReconciledRowsMutable } from "../transactions/reconciled-lock.util";
 import { investmentRowHasEffect } from "./investment-row-effects.util";
 import { formatInvestmentCashPayeeName } from "./investment-cash-payee.util";
@@ -4431,6 +4434,20 @@ export class InvestmentTransactionsService {
           (linkedLeg.status === TransactionStatus.VOID) !== isVoid
         ) {
           legs.push(linkedLeg);
+        }
+      }
+
+      // Each leg's cash row crosses with it (below), so a reconciled cash row
+      // under the strict lock refuses the crossing before anything is written
+      // (INV-RECONCILE-001, issue #2072).
+      for (const leg of legs) {
+        if (leg.transactionId) {
+          await assertMirrorLegVoidTransitionMutable(
+            manager,
+            userId,
+            { linkedTransactionId: leg.transactionId },
+            newStatus,
+          );
         }
       }
 

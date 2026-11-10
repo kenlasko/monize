@@ -1069,6 +1069,51 @@ describe("TransactionReconciliationService", () => {
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
 
+    it("refuses a VOID whose mirror transfer leg is reconciled, writing nothing (#2072)", async () => {
+      // The request names the Chequing leg, but the VOID also writes the
+      // Savings leg and its balance, so that leg answers the lock too.
+      lockOn();
+      stubLockedTransactions(
+        {
+          lockTransactionRow: lockTransactionRow as jest.Mock,
+          lockTransactionRows: jest.fn(),
+        },
+        [
+          lockedTransactionRow({
+            id: "leg-1",
+            accountId,
+            amount: -100,
+            transactionDate: "2026-01-15",
+            status: TransactionStatus.CLEARED,
+            isSplit: false,
+            linkedTransactionId: "leg-2",
+          }),
+          lockedTransactionRow({
+            id: "leg-2",
+            accountId: "account-2",
+            amount: 100,
+            transactionDate: "2026-01-15",
+            status: TransactionStatus.RECONCILED,
+            isSplit: false,
+            linkedTransactionId: "leg-1",
+          }),
+        ],
+      );
+
+      await expect(
+        service.updateStatus(
+          userId,
+          "leg-1",
+          TransactionStatus.VOID,
+          mockTriggerNetWorthRecalc,
+          mockFindOne,
+        ),
+      ).rejects.toThrow(ConflictException);
+      expect(transactionsRepository.update).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      expect(accountsService.recalculateCurrentBalance).not.toHaveBeenCalled();
+    });
+
     it("leaves a row that is not reconciled alone", async () => {
       // The lock is about reconciled rows. Clearing an unreconciled one is
       // ordinary work and must not be caught by it.

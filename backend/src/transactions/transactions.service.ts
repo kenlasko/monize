@@ -76,6 +76,7 @@ import {
   investmentCashLegLockedError,
   isInvestmentCashLeg,
   applyVoidTransitionToMirrorLeg,
+  assertMirrorLegVoidTransitionMutable,
 } from "./void-status-transition.util";
 import {
   PreparedTransfer,
@@ -3176,6 +3177,21 @@ export class TransactionsService {
       }
       if (options?.beforeWrite) await options.beforeWrite(m);
       if (changesAccount) this.assertAccountOpen(effectiveAccount);
+      // A VOID crossing writes the mirror transfer leg too, so that leg is
+      // asked the strict reconciled lock before the first write (issue #2072).
+      if (
+        updateData.status !== undefined &&
+        !locked.isSplit &&
+        (locked.status === TransactionStatus.VOID) !==
+          (updateData.status === TransactionStatus.VOID)
+      ) {
+        await assertMirrorLegVoidTransitionMutable(
+          m,
+          userId,
+          locked,
+          updateData.status,
+        );
+      }
 
       const oldAmount = locked.amount;
       const oldLockedAccountId = locked.accountId;
