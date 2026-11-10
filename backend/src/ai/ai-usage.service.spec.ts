@@ -133,7 +133,7 @@ describe("AiUsageService", () => {
         totalOutputTokens: 0,
         totalEstimatedCostByCurrency: {},
         reportingCurrency: "USD",
-        totalEstimatedCostInReportingCurrency: 0,
+        totalEstimatedCostInReportingCurrency: null,
         byProvider: [],
         byFeature: [],
         recentLogs: [],
@@ -217,7 +217,7 @@ describe("AiUsageService", () => {
           inputTokens: 500,
           outputTokens: 250,
           estimatedCostByCurrency: {},
-          estimatedCostInReportingCurrency: 0,
+          estimatedCostInReportingCurrency: null,
         },
       ]);
       expect(summary.byFeature).toEqual([
@@ -227,7 +227,7 @@ describe("AiUsageService", () => {
           inputTokens: 300,
           outputTokens: 150,
           estimatedCostByCurrency: {},
-          estimatedCostInReportingCurrency: 0,
+          estimatedCostInReportingCurrency: null,
         },
       ]);
     });
@@ -412,6 +412,50 @@ describe("AiUsageService", () => {
 
       expect(summary.totalEstimatedCostByCurrency).toEqual({ USD: 0.0015 });
       expect(summary.totalEstimatedCostInReportingCurrency).toBe(0.0015);
+    });
+
+    it("dates a recent log by its UTC day, as the aggregates are, in any process time zone", async () => {
+      mockConfigRepository.find.mockResolvedValueOnce([
+        {
+          provider: "openai",
+          model: "gpt-4o",
+          inputCostPer1M: 2,
+          outputCostPer1M: 0,
+          costCurrency: "EUR",
+        },
+      ]);
+      // Stored 2025-06-16 02:00 (UTC, as main.ts parses it): the evening of
+      // the 15th in Toronto, but the 16th to the SQL that groups the logs.
+      mockRepository.find.mockResolvedValueOnce([
+        {
+          id: "log-1",
+          provider: "openai",
+          model: "gpt-4o",
+          feature: "categorize",
+          inputTokens: 1000000,
+          outputTokens: 0,
+          durationMs: 10,
+          createdAt: new Date("2025-06-16T02:00:00.000Z"),
+        },
+      ]);
+      scopedDb.manager.query.mockResolvedValue([
+        {
+          from_currency: "EUR",
+          to_currency: "USD",
+          rate: "1.1",
+          rate_date: "2025-06-15",
+        },
+        {
+          from_currency: "EUR",
+          to_currency: "USD",
+          rate: "1.2",
+          rate_date: "2025-06-16",
+        },
+      ]);
+
+      const summary = await service.getUsageSummary("user-1");
+
+      expect(summary.recentLogs[0].estimatedCostInReportingCurrency).toBe(2.4);
     });
 
     it("returns empty bucket when provider/model has no configured rate", async () => {

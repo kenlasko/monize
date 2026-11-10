@@ -8,7 +8,7 @@ import { roundMoney } from "../common/round.util";
 import { withSystemContext } from "../common/db/with-context";
 import { withScopedDb } from "../common/db/scoped-db";
 import { preferredCurrency } from "../common/default-currency.util";
-import { formatDateYMDLocal } from "../common/date-utils";
+import { formatDateYMD } from "../common/date-utils";
 import {
   buildRateIndex,
   convertAtDate,
@@ -54,10 +54,11 @@ function computeCost(
 /**
  * The day a usage row was logged, for its rate. `created_at` is a TIMESTAMP
  * without a time zone, so its own calendar date is the day; `usageDayOf` reads
- * the same date off an entity, whose driver builds the Date in local time.
+ * the same date off an entity, whose Date `main.ts` builds as UTC (OID 1114
+ * parsed with a "Z"), so the UTC calendar date in any process time zone.
  */
 const USAGE_DAY_SQL = "TO_CHAR(log.created_at, 'YYYY-MM-DD')";
-const usageDayOf = (createdAt: Date): string => formatDateYMDLocal(createdAt);
+const usageDayOf = (createdAt: Date): string => formatDateYMD(createdAt);
 
 /** A sum with an unknown part is unknown. */
 function addUnknown(sum: number | null, part: number | null): number | null {
@@ -72,6 +73,10 @@ function roundBucket(bucket: EstimatedCostByCurrency): EstimatedCostByCurrency {
       roundMoney(amount),
     ]),
   );
+}
+
+function hasAnyCost(bucket: EstimatedCostByCurrency): boolean {
+  return Object.keys(bucket).length > 0;
 }
 
 function roundOrNull(value: number | null): number | null {
@@ -447,14 +452,21 @@ export class AiUsageService {
       totalOutputTokens: parseInt(totals.totalOutputTokens, 10) || 0,
       totalEstimatedCostByCurrency: roundBucket(totalEstimatedCostByCurrency),
       reportingCurrency: toReporting.currency,
-      totalEstimatedCostInReportingCurrency: roundOrNull(totalReportingCost),
+      totalEstimatedCostInReportingCurrency: hasAnyCost(
+        totalEstimatedCostByCurrency,
+      )
+        ? roundOrNull(totalReportingCost)
+        : null,
       byProvider: Array.from(providerAgg.values()).map((agg) => ({
         provider: agg.provider,
         requests: agg.requests,
         inputTokens: agg.inputTokens,
         outputTokens: agg.outputTokens,
         estimatedCostByCurrency: roundBucket(agg.costs),
-        estimatedCostInReportingCurrency: roundOrNull(agg.reportingCost),
+        // No configured rate, no cost: unknown, not zero.
+        estimatedCostInReportingCurrency: hasAnyCost(agg.costs)
+          ? roundOrNull(agg.reportingCost)
+          : null,
       })),
       byFeature: Array.from(featureAgg.values()).map((agg) => ({
         feature: agg.feature,
@@ -462,7 +474,10 @@ export class AiUsageService {
         inputTokens: agg.inputTokens,
         outputTokens: agg.outputTokens,
         estimatedCostByCurrency: roundBucket(agg.costs),
-        estimatedCostInReportingCurrency: roundOrNull(agg.reportingCost),
+        // No configured rate, no cost: unknown, not zero.
+        estimatedCostInReportingCurrency: hasAnyCost(agg.costs)
+          ? roundOrNull(agg.reportingCost)
+          : null,
       })),
       recentLogs: recentLogs.map((log) => {
         const rate = rateMap.get(rateKey(log.provider, log.model));
