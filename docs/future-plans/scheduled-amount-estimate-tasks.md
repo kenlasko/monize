@@ -18,13 +18,17 @@ when its gate passes and is quoted in the commit or PR.
 
 ## Phase 2 -- frontend
 
-- [ ] Types and `estimatedOccurrenceAmount`; `lib/scheduled-effective-amount.test.ts`.
-- [ ] `lib/forecast.ts` per-month estimate and the tooltip label; `lib/forecast.test.ts`.
-- [ ] Form toggle, disabled amount, preview, auto-post; `ScheduledTransactionForm.test.tsx`.
-- [ ] Post dialog prefill; `PostTransactionDialog.test.tsx`.
-- [ ] Occurrence editor prefill and unchanged-save; `OverrideEditorDialog.test.tsx`.
-- [ ] Occurrence picker badge; bills list label.
-- [ ] `website/docs` bills page.
+- [x] Types and `estimatedOccurrenceAmount`; `lib/scheduled-effective-amount.test.ts`.
+- [x] `lib/forecast.ts` per-month estimate and the tooltip label; `lib/forecast.test.ts`.
+- [x] Form toggle, disabled amount, preview, auto-post; `ScheduledTransactionForm.test.tsx`.
+- [x] Post dialog prefill; `PostTransactionDialog.test.tsx`.
+- [x] Occurrence editor prefill and unchanged-save; `OverrideEditorDialog.test.tsx`.
+- [x] Occurrence picker per-month estimate and badge; bills list label;
+      `OccurrenceDatePicker.test.tsx`, `ScheduledTransactionList.test.tsx`,
+      `CashFlowForecastChart.test.tsx`.
+- [x] `website/docs` bills page; `docs/frontend/financial-figures.md`;
+      INV-OCCURRENCE-004 in the catalog and the verification matrix.
+- [ ] Screenshots of the changed screens (`npm run docs:screenshots` in `e2e/`).
 
 ## Phase 3 -- translations
 
