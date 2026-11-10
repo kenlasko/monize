@@ -145,6 +145,8 @@ export interface ParsedQifResponse {
   investmentSummary?: CsvInvestmentSummary;
   /** CSV parses only: the rows the import will leave out because their date cannot be read. */
   unreadableDates?: CsvUnreadableDates;
+  /** CSV parses only: the rows the import will leave out because their amount cannot be read. */
+  unreadableAmounts?: CsvUnreadableAmounts;
 }
 
 /** A CSV row whose date the mapping's date format cannot read, by its line in the file. */
@@ -158,6 +160,19 @@ export interface CsvUnreadableDates {
   count: number;
   /** The first of them in file order. */
   rows: CsvUnreadableDateRow[];
+}
+
+/** A CSV row whose amount (or debit or credit) field cannot be read, by its line in the file. */
+export interface CsvUnreadableAmountRow {
+  rowNumber: number;
+  /** The amount field as the file gave it. */
+  rawAmount: string;
+}
+
+export interface CsvUnreadableAmounts {
+  count: number;
+  /** The first of them in file order. */
+  rows: CsvUnreadableAmountRow[];
 }
 
 export interface CategoryMapping {
@@ -379,6 +394,7 @@ export type ImportSkipReason =
   | 'alreadyImported'
   | 'duplicateTransfer'
   | 'unreadableDate'
+  | 'unreadableAmount'
   // An investment-mode CSV row whose action needs data it does not carry.
   | 'missingSecurity'
   | 'missingQuantity'
@@ -399,6 +415,8 @@ export interface ImportSkippedRow {
   rowNumber?: number;
   /** The date field as the file gave it, empty when it has none; set for `unreadableDate`. */
   rawDate?: string;
+  /** The amount field as the file gave it; set for `unreadableAmount`, whose `amount` is 0. */
+  rawAmount?: string;
 }
 
 export interface ImportResult {
