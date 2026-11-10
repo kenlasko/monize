@@ -179,6 +179,13 @@ export class AttachmentsService {
     original?: UploadedAttachmentFile | undefined,
     documentKind: DocumentKind = DEFAULT_DOCUMENT_KIND,
     operationId?: string,
+    /**
+     * A caller's own refusal, run in this transaction under the parent lock
+     * (after a retried request has been answered), so a refused write has
+     * written nothing and a concurrent change cannot slip between the check
+     * and the insert.
+     */
+    precondition?: (m: EntityManager) => Promise<void>,
   ): Promise<TransactionAttachment> {
     // A kind names a warranty's document; a transaction's attachment has none
     // to name, so anything but the default is a malformed request.
@@ -268,6 +275,8 @@ export class AttachmentsService {
             return prior;
           }
         }
+
+        if (precondition) await precondition(m);
 
         // Primaries only: a scan pair is one attachment as far as the cap is
         // concerned, so its hidden original must not consume a slot the user

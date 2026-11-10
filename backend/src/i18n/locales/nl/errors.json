@@ -34,7 +34,8 @@
     "tooManyForWarranty": "Deze garantie heeft al het maximum van {{ max }} bijlagen",
     "documentKindNotForTransaction": "Een documentsoort geldt alleen voor de documenten van een garantie",
     "copyNotOwnDocument": "Alleen een van je eigen documenten kan aan een garantie worden toegevoegd",
-    "copyAlreadyOnWarranty": "Dit document staat al bij deze garantie"
+    "copyAlreadyOnWarranty": "Dit document staat al bij deze garantie",
+    "copySourceChanged": "Het document is gewijzigd terwijl het werd toegevoegd. Probeer het opnieuw."
   },
   "accounts": {
     "accountWithIdNotFound": "Rekening met ID {{ id }} niet gevonden",

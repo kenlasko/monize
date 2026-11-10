@@ -34,7 +34,8 @@
     "tooManyForWarranty": "Esta garantía ya tiene el máximo de {{ max }} adjuntos",
     "documentKindNotForTransaction": "El tipo de documento solo se aplica a los documentos de una garantía",
     "copyNotOwnDocument": "Solo se puede añadir a una garantía uno de tus propios documentos",
-    "copyAlreadyOnWarranty": "Este documento ya está en esta garantía"
+    "copyAlreadyOnWarranty": "Este documento ya está en esta garantía",
+    "copySourceChanged": "El documento cambió mientras se añadía. Inténtalo de nuevo."
   },
   "accounts": {
     "accountWithIdNotFound": "Cuenta con ID {{ id }} no encontrada",

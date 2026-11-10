@@ -34,7 +34,8 @@
     "tooManyForWarranty": "此保修已达到最多 {{ max }} 个附件的上限",
     "documentKindNotForTransaction": "文档类型仅适用于保修的文档",
     "copyNotOwnDocument": "只能向保修添加您自己的文档",
-    "copyAlreadyOnWarranty": "此文档已在该保修中"
+    "copyAlreadyOnWarranty": "此文档已在该保修中",
+    "copySourceChanged": "添加过程中文档已更改。请重试。"
   },
   "accounts": {
     "accountWithIdNotFound": "未找到 ID 为 {{ id }} 的账户",

@@ -34,7 +34,8 @@
     "tooManyForWarranty": "이 보증에는 이미 최대 {{ max }}개의 첨부 파일이 있습니다",
     "documentKindNotForTransaction": "문서 종류는 보증 문서에만 적용됩니다",
     "copyNotOwnDocument": "보증에는 본인의 문서만 추가할 수 있습니다",
-    "copyAlreadyOnWarranty": "이 문서는 이미 이 보증에 있습니다"
+    "copyAlreadyOnWarranty": "이 문서는 이미 이 보증에 있습니다",
+    "copySourceChanged": "추가하는 동안 문서가 변경되었습니다. 다시 시도해 주세요."
   },
   "accounts": {
     "accountWithIdNotFound": "ID가 {{ id }}인 계정을 찾을 수 없습니다",

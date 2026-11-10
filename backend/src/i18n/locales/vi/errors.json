@@ -34,7 +34,8 @@
     "tooManyForWarranty": "Bảo hành này đã có tối đa {{ max }} tệp đính kèm",
     "documentKindNotForTransaction": "Loại tài liệu chỉ áp dụng cho tài liệu của bảo hành",
     "copyNotOwnDocument": "Chỉ có thể thêm tài liệu của chính bạn vào một bảo hành",
-    "copyAlreadyOnWarranty": "Tài liệu này đã có trong bảo hành này"
+    "copyAlreadyOnWarranty": "Tài liệu này đã có trong bảo hành này",
+    "copySourceChanged": "Tài liệu đã thay đổi trong khi đang được thêm. Vui lòng thử lại."
   },
   "accounts": {
     "accountWithIdNotFound": "Không tìm thấy tài khoản với ID {{ id }}",

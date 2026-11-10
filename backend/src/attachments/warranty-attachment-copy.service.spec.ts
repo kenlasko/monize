@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from "@nestjs/common";
 import { DataSource, EntityManager } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { AttachmentsService } from "./attachments.service";
@@ -13,6 +17,8 @@ jest.mock("./shared-attachment-access", () => ({
 
 describe("WarrantyAttachmentCopyService", () => {
   let query: jest.Mock;
+  let sameFile: { id: string }[];
+  let originals: { id: string }[];
   let create: jest.Mock;
   let getForDownload: jest.Mock;
   let service: WarrantyAttachmentCopyService;
@@ -27,6 +33,7 @@ describe("WarrantyAttachmentCopyService", () => {
       sharedEntryId: null,
       originalOfAttachmentId: null,
       documentKind: "other",
+      sha256: "abc",
       ...patch,
     });
   const download = (filename: string, bytes: string) => ({
@@ -38,7 +45,12 @@ describe("WarrantyAttachmentCopyService", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    query = jest.fn().mockResolvedValue([]);
+    // The same-file lookup and the scan-original lookup, told apart by SQL.
+    sameFile = [];
+    originals = [];
+    query = jest.fn((sql: string) =>
+      Promise.resolve(sql.includes("sha256") ? sameFile : originals),
+    );
     create = jest.fn().mockResolvedValue({ id: "copy" });
     getForDownload = jest
       .fn()
@@ -71,6 +83,7 @@ describe("WarrantyAttachmentCopyService", () => {
       undefined,
       "receipt",
       "op",
+      expect.any(Function),
     );
     // A read and a copy: nothing about the source row is written.
     expect(
@@ -93,7 +106,7 @@ describe("WarrantyAttachmentCopyService", () => {
   });
 
   it("carries a scan's original with it, as one pair", async () => {
-    query.mockResolvedValue([{ id: "scan-original" }]);
+    originals = [{ id: "scan-original" }];
     getForDownload.mockImplementation((_user: string, id: string) =>
       Promise.resolve(
         id === "scan-original"
@@ -104,7 +117,11 @@ describe("WarrantyAttachmentCopyService", () => {
     await service.copyToWarranty("owner", "warranty", {
       sourceAttachmentId: "receipt",
     });
-    expect(query.mock.calls[0][1]).toEqual(["receipt", "owner"]);
+    expect(
+      query.mock.calls.find(([sql]) =>
+        sql.includes("original_of_attachment_id = "),
+      )?.[1],
+    ).toEqual(["receipt", "owner"]);
     expect(create.mock.calls[0][3]).toEqual({
       originalname: "photo.jpg",
       buffer: Buffer.from("jpeg!"),
@@ -138,6 +155,58 @@ describe("WarrantyAttachmentCopyService", () => {
       }),
     ).rejects.toThrow("already on this warranty");
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it("refuses the same file copied onto this warranty before", async () => {
+    sameFile = [{ id: "earlier-copy" }];
+    await expect(
+      service.copyToWarranty("owner", "warranty", {
+        sourceAttachmentId: "receipt",
+      }),
+    ).rejects.toThrow("already on this warranty");
+    expect(query.mock.calls[0][1]).toEqual(["warranty", "owner", "abc"]);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  describe("inside the write's transaction", () => {
+    const precondition = async () => {
+      await service.copyToWarranty("owner", "warranty", {
+        sourceAttachmentId: "receipt",
+      });
+      return create.mock.calls[0][6] as (m: EntityManager) => Promise<void>;
+    };
+    const manager = () => ({ query }) as unknown as EntityManager;
+
+    it("passes when the source is as it was", async () => {
+      const check = await precondition();
+      await expect(check(manager())).resolves.toBeUndefined();
+    });
+
+    it("refuses a source moved into a shared group while its bytes were read", async () => {
+      const check = await precondition();
+      (authorizedAttachment as jest.Mock).mockResolvedValue(
+        attachment({ sharedGroupId: "group", transactionId: null }),
+      );
+      await expect(check(manager())).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it("refuses a copy that landed meanwhile", async () => {
+      const check = await precondition();
+      sameFile = [{ id: "concurrent-copy" }];
+      await expect(check(manager())).rejects.toThrow(
+        "already on this warranty",
+      );
+    });
+
+    it("refuses a source whose file changed", async () => {
+      const check = await precondition();
+      (authorizedAttachment as jest.Mock).mockResolvedValue(
+        attachment({ sha256: "different" }),
+      );
+      await expect(check(manager())).rejects.toBeInstanceOf(ConflictException);
+    });
   });
 
   it("passes a missing source through as not found", async () => {

@@ -34,7 +34,8 @@
     "tooManyForWarranty": "此保固已達到最多 {{ max }} 個附件的上限",
     "documentKindNotForTransaction": "文件類型僅適用於保固的文件",
     "copyNotOwnDocument": "只能向保固新增您自己的文件",
-    "copyAlreadyOnWarranty": "此文件已在該保固中"
+    "copyAlreadyOnWarranty": "此文件已在該保固中",
+    "copySourceChanged": "新增過程中文件已變更。請再試一次。"
   },
   "accounts": {
     "accountWithIdNotFound": "找不到 ID 為 {{ id }} 的科目",

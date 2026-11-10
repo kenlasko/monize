@@ -88,6 +88,50 @@ describe('WarrantyAddExistingDocument', () => {
     expect(screen.getByLabelText('Document type on this warranty')).toHaveValue('manual');
   });
 
+  it("starts a transaction's file as a receipt, whatever an earlier pick was", async () => {
+    list.mockImplementation((parent: { warrantyId?: string }) =>
+      Promise.resolve(
+        parent.warrantyId
+          ? [file({ id: 'manual', transactionId: null, warrantyId: 'other-warranty', documentKind: 'manual' })]
+          : [file({})],
+      ),
+    );
+    await open();
+    fireEvent.click(screen.getByRole('button', { name: 'Another warranty' }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'pick warranty' }));
+    });
+    fireEvent.change(screen.getByLabelText('Document'), { target: { value: 'manual' } });
+    expect(screen.getByLabelText('Document type on this warranty')).toHaveValue('manual');
+    fireEvent.click(screen.getByRole('button', { name: 'A transaction' }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'pick purchase' }));
+    });
+    fireEvent.change(screen.getByLabelText('Document'), { target: { value: 'receipt' } });
+    expect(screen.getByLabelText('Document type on this warranty')).toHaveValue('receipt');
+  });
+
+  it('sends a new request id once the choice changes, the same one on a plain retry', async () => {
+    list.mockResolvedValue([file({}), file({ id: 'other', filename: 'other.pdf' })]);
+    copyToWarranty.mockRejectedValueOnce(new Error('timeout')).mockRejectedValueOnce(new Error('timeout'));
+    await open();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'pick purchase' }));
+    });
+    const submit = async () =>
+      act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Add Document' }));
+      });
+    fireEvent.change(screen.getByLabelText('Document'), { target: { value: 'receipt' } });
+    await submit();
+    await submit();
+    fireEvent.change(screen.getByLabelText('Document'), { target: { value: 'other' } });
+    await submit();
+    const ids = copyToWarranty.mock.calls.map((call) => call[3]);
+    expect(ids[0]).toBe(ids[1]);
+    expect(ids[2]).not.toBe(ids[1]);
+  });
+
   it('does not offer what this warranty already holds', async () => {
     list.mockResolvedValue([file({ id: 'mine', warrantyId: 'this-warranty', transactionId: null })]);
     await open();

@@ -34,7 +34,8 @@
     "tooManyForWarranty": "इस वारंटी में पहले से ही अधिकतम {{ max }} अटैचमेंट हैं",
     "documentKindNotForTransaction": "दस्तावेज़ का प्रकार केवल वारंटी के दस्तावेज़ों पर लागू होता है",
     "copyNotOwnDocument": "वारंटी में केवल आपका अपना दस्तावेज़ जोड़ा जा सकता है",
-    "copyAlreadyOnWarranty": "यह दस्तावेज़ पहले से इस वारंटी में है"
+    "copyAlreadyOnWarranty": "यह दस्तावेज़ पहले से इस वारंटी में है",
+    "copySourceChanged": "जोड़ते समय दस्तावेज़ बदल गया। कृपया फिर से प्रयास करें।"
   },
   "accounts": {
     "accountWithIdNotFound": "ID {{ id }} वाला खाता नहीं मिला",

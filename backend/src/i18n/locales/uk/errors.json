@@ -34,7 +34,8 @@
     "tooManyForWarranty": "Ця гарантія вже має максимальну кількість вкладень — {{ max }}",
     "documentKindNotForTransaction": "Тип документа застосовується лише до документів гарантії",
     "copyNotOwnDocument": "До гарантії можна додати лише власний документ",
-    "copyAlreadyOnWarranty": "Цей документ уже є в цій гарантії"
+    "copyAlreadyOnWarranty": "Цей документ уже є в цій гарантії",
+    "copySourceChanged": "Документ змінився під час додавання. Спробуйте ще раз."
   },
   "accounts": {
     "accountWithIdNotFound": "Рахунок з ідентифікатором {{ id }} не знайдено",

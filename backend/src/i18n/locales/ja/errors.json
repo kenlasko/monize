@@ -34,7 +34,8 @@
     "tooManyForWarranty": "この保証にはすでに最大 {{ max }} 件の添付ファイルがあります",
     "documentKindNotForTransaction": "書類の種類は保証の書類にのみ指定できます",
     "copyNotOwnDocument": "保証に追加できるのは、自分の書類のみです",
-    "copyAlreadyOnWarranty": "この書類はすでにこの保証に追加されています"
+    "copyAlreadyOnWarranty": "この書類はすでにこの保証に追加されています",
+    "copySourceChanged": "追加中にドキュメントが変更されました。もう一度お試しください。"
   },
   "accounts": {
     "accountWithIdNotFound": "ID {{ id }} の口座が見つかりません",

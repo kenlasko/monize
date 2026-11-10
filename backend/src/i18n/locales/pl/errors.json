@@ -34,7 +34,8 @@
     "tooManyForWarranty": "Ta gwarancja ma już maksymalną liczbę {{ max }} załączników",
     "documentKindNotForTransaction": "Rodzaj dokumentu dotyczy wyłącznie dokumentów gwarancji",
     "copyNotOwnDocument": "Do gwarancji można dodać tylko własny dokument",
-    "copyAlreadyOnWarranty": "Ten dokument jest już przypisany do tej gwarancji"
+    "copyAlreadyOnWarranty": "Ten dokument jest już przypisany do tej gwarancji",
+    "copySourceChanged": "Dokument zmienił się podczas dodawania. Spróbuj ponownie."
   },
   "accounts": {
     "accountWithIdNotFound": "Nie znaleziono konta o ID {{ id }}",

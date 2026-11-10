@@ -34,7 +34,8 @@
     "tooManyForWarranty": "Garansi ini sudah memiliki maksimum {{ max }} lampiran",
     "documentKindNotForTransaction": "Jenis dokumen hanya berlaku untuk dokumen garansi",
     "copyNotOwnDocument": "Hanya dokumen milik Anda sendiri yang dapat ditambahkan ke garansi",
-    "copyAlreadyOnWarranty": "Dokumen ini sudah ada di garansi ini"
+    "copyAlreadyOnWarranty": "Dokumen ini sudah ada di garansi ini",
+    "copySourceChanged": "Dokumen berubah saat sedang ditambahkan. Silakan coba lagi."
   },
   "accounts": {
     "accountWithIdNotFound": "Akun dengan ID {{ id }} tidak ditemukan",

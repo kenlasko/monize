@@ -34,7 +34,8 @@
     "tooManyForWarranty": "Diese Garantie hat bereits die maximale Anzahl von {{ max }} Anhängen",
     "documentKindNotForTransaction": "Eine Dokumentart gilt nur für die Dokumente einer Garantie",
     "copyNotOwnDocument": "Nur eines Ihrer eigenen Dokumente kann zu einer Garantie hinzugefügt werden",
-    "copyAlreadyOnWarranty": "Dieses Dokument gehört bereits zu dieser Garantie"
+    "copyAlreadyOnWarranty": "Dieses Dokument gehört bereits zu dieser Garantie",
+    "copySourceChanged": "Das Dokument hat sich beim Hinzufügen geändert. Bitte versuchen Sie es erneut."
   },
   "accounts": {
     "accountWithIdNotFound": "Konto mit ID {{ id }} nicht gefunden",

@@ -38,7 +38,9 @@ export function WarrantyAddExistingDocument({ warrantyId, onClose, onAdded }: Wa
   const [sourceId, setSourceId] = useState('');
   const [kind, setKind] = useState<DocumentKind>('receipt');
   const [preview, setPreview] = useState(false);
-  const [operationId] = useState(() => newClientId());
+  // One per choice: a retry of the same copy is answered by the server with
+  // the first one, and a different file or type is a new request.
+  const [operationId, setOperationId] = useState(() => newClientId());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,6 +64,7 @@ export function WarrantyAddExistingDocument({ warrantyId, onClose, onAdded }: Wa
     setParentId(next.parent ?? '');
     setSourceId('');
     setError(null);
+    setOperationId(newClientId());
   };
 
   const add = async () => {
@@ -142,8 +145,11 @@ export function WarrantyAddExistingDocument({ warrantyId, onClose, onAdded }: Wa
                   onChange={(event) => {
                     const next = choices.find((file) => file.id === event.target.value);
                     setSourceId(event.target.value);
-                    // A warranty's document says what it is; a transaction's is always "other".
-                    if (next && next.warrantyId !== null) setKind(next.documentKind);
+                    setOperationId(newClientId());
+                    // A warranty's document says what it is; a transaction's is
+                    // always "other", so it starts as a receipt, never as the
+                    // type an earlier choice left behind.
+                    setKind(next && next.warrantyId !== null ? next.documentKind : 'receipt');
                   }}
                 />
                 {chosen && (
@@ -158,7 +164,10 @@ export function WarrantyAddExistingDocument({ warrantyId, onClose, onAdded }: Wa
                         value: option,
                         label: t(`documents.kinds.${option}`),
                       }))}
-                      onChange={(event) => setKind(event.target.value as DocumentKind)}
+                      onChange={(event) => {
+                        setKind(event.target.value as DocumentKind);
+                        setOperationId(newClientId());
+                      }}
                     />
                   </>
                 )}

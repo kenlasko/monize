@@ -34,7 +34,8 @@
     "tooManyForWarranty": "Bu garantide zaten en fazla {{ max }} ek var",
     "documentKindNotForTransaction": "Belge türü yalnızca bir garantinin belgeleri için geçerlidir",
     "copyNotOwnDocument": "Bir garantiye yalnızca kendi belgelerinizden biri eklenebilir",
-    "copyAlreadyOnWarranty": "Bu belge zaten bu garantide var"
+    "copyAlreadyOnWarranty": "Bu belge zaten bu garantide var",
+    "copySourceChanged": "Belge eklenirken değişti. Lütfen tekrar deneyin."
   },
   "accounts": {
     "accountWithIdNotFound": "{{ id }} kimliğine sahip hesap bulunamadı",
