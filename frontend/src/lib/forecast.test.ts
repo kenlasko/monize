@@ -2602,6 +2602,67 @@ describe('buildForecast with payroll deductions', () => {
     ]);
   });
 
+  it('refills to the next period\'s maximum and spends its expected figure (spec section 11)', () => {
+    vi.setSystemTime(new Date(2026, 11, 10)); // Dec 10, 2026
+    const entered = (nextPeriod: object) => ({
+      ...eiRule(0),
+      expectedSource: 'entered' as const,
+      nextPeriod: {
+        periodStart: '2027-01-01',
+        yearlyMaximum: 1077.48,
+        expectedPerPaycheque: 64,
+        expectedSource: 'entered' as const,
+        scheduled: true,
+        ...nextPeriod,
+      },
+    });
+    const run = (rule: ReturnType<typeof entered>) =>
+      paycheques(
+        forecastPoints(
+          [makeAccount()],
+          [paycheque({ amount: 2500, nextDueDate: '2026-12-18', payrollDeductions: [rule] })],
+          'month',
+          'all',
+        ),
+      );
+    // A smaller next maximum binds on the first paycheque of 2027.
+    expect(run(entered({ yearlyMaximum: 50 }))).toEqual([
+      ['2026-12-18', 2500],
+      ['2027-01-01', 2450],
+    ]);
+    // The next period's own expected figure is what 2027 deducts.
+    expect(run(entered({ expectedPerPaycheque: 70 }))).toEqual([
+      ['2026-12-18', 2500],
+      ['2027-01-01', 2430],
+    ]);
+  });
+
+  it('projects a deduction that starts only at the reset, the current period having no figure', () => {
+    vi.setSystemTime(new Date(2026, 11, 10)); // Dec 10, 2026
+    const startsNextYear = {
+      ...eiRule(1077.48),
+      expectedPerPaycheque: null,
+      expectedSource: null,
+      nextPeriod: {
+        periodStart: '2027-01-01',
+        yearlyMaximum: 1077.48,
+        expectedPerPaycheque: 64,
+        expectedSource: 'entered' as const,
+        scheduled: true,
+      },
+    };
+    const points = forecastPoints(
+      [makeAccount()],
+      [paycheque({ amount: 2500, nextDueDate: '2026-12-18', payrollDeductions: [startsNextYear] })],
+      'month',
+      'all',
+    );
+    expect(paycheques(points)).toEqual([
+      ['2026-12-18', 2500],
+      ['2027-01-01', 2436],
+    ]);
+  });
+
   it('projects an overridden amount as stated and still spends the room', () => {
     const points = forecastPoints(
       [makeAccount()],

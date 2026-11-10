@@ -40,6 +40,7 @@
       "bill": "청구",
       "category": "카테고리",
       "yearlyMaximum": "연간 상한액",
+      "nextMaximum": "{date}부터: {amount}",
       "resetsOn": "초기화 날짜",
       "perPaycheque": "급여당",
       "period": "기간",
@@ -71,6 +72,14 @@
       "expectedHelp": "이 카테고리의 거래 행이 0이므로 예측에는 급여마다 보통 공제되는 금액이 필요합니다.",
       "expectedFromLine": "청구 항목은 급여당 {amount}을(를) 공제합니다.",
       "expectedSuggested": "지난 1년간 이 카테고리의 거래에서 가장 자주 나타난 금액에서 제안했습니다.",
+      "thisPeriod": "이번 기간, {start} ~ {end}",
+      "nextPeriod": "다음 기간, {date}부터",
+      "setNextPeriod": "{date}부터 다음 기간의 금액 설정",
+      "nextYearlyMaximumLabel": "다음 기간 상한액",
+      "nextYearlyMaximumHelp": "다음 초기화부터 적용되는 상한액입니다. 비워 두면 이번 기간의 상한액을 유지합니다. 이번 기간의 남은 한도와 비율은 바뀌지 않습니다.",
+      "nextExpectedLabel": "다음 기간 급여당 예상액",
+      "nextExpectedHelp": "다음 초기화부터 급여마다 공제되는 금액입니다. 비워 두면 이번 기간의 금액을 유지합니다.",
+      "sameAsThisPeriod": "이번 기간과 동일",
       "periods": {
         "YEARLY": "매년"
       },

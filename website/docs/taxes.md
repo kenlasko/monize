@@ -119,5 +119,14 @@ When two paycheques deduct to the same category (a mid-month and a month-end pay
 
 Two months before a rule resets, Monize sends a notification asking you to confirm next year's maximum, since most maximums change every year. Nothing changes if you do not act: the rule keeps its values and resets on its date. Open the notification to go to Payroll Deductions and edit the rule. Where the notification is delivered is set under [Notifications](settings-and-security.md#notifications).
 
+### This Year and Next Year
+
+A rule keeps its figures for each period separately, so you can enter next year's maximum before this year is over without changing this year's. When you edit a rule, the dialog shows **This period** and **Next period** separately, each with its own maximum and, where the bill has no line for the category, its own expected amount per paycheque. In the two months before the reset, the window the reminder opens, the next period's fields are already showing. At any other time, select **Set the figures for the next period** to show them.
+
+- **This period** is the maximum the paycheque is capped against now, and the one the year-to-date table and the report measure this year's paid figure and percentage against.
+- **Next period** takes over on the reset date. The forecast refills the room to this figure on that day, and a paycheque posted on or after it is capped against it. Leave it empty to keep this period's figures. Clearing a next maximum you entered earlier goes back to carrying this period's figures forward.
+
+The rules list shows the next period's maximum under the current one when they differ. Once the reset date passes, the next period becomes this period. The report then shows last year's maximum, remaining room and percentage against last year, rather than **Not recorded**.
+
 > [!TIP]
 > Set the rules up early in the year, before any maximum is reached. Rules created later still work: the paid figure always comes from the transactions already in the category, so the next paycheque is capped correctly from the day you save.

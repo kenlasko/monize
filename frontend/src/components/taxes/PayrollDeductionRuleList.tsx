@@ -38,7 +38,18 @@ export function PayrollDeductionRuleList({ rules, onEdit, onDelete }: PayrollDed
             <tr key={rule.id}>
               <Td>{rule.scheduledTransactionName}</Td>
               <Td>{rule.categoryName}</Td>
-              <Td align="right">{formatCurrency(rule.yearlyMaximum, rule.currencyCode)}</Td>
+              <Td align="right">
+                {formatCurrency(rule.yearlyMaximum, rule.currencyCode)}
+                {/* The next period's own maximum, when it differs (spec section 11). */}
+                {rule.nextPeriod?.scheduled && rule.nextPeriod.yearlyMaximum !== rule.yearlyMaximum && (
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">
+                    {t('list.nextMaximum', {
+                      date: formatDate(rule.nextPeriod.periodStart),
+                      amount: formatCurrency(rule.nextPeriod.yearlyMaximum, rule.currencyCode),
+                    })}
+                  </span>
+                )}
+              </Td>
               <Td>{formatDate(rule.nextResetOn)}</Td>
               <Td align="right">
                 {rule.expectedPerPaycheque === null ? (

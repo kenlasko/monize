@@ -4418,9 +4418,11 @@ export class ScheduledTransactionsService {
         Array.isArray(transactionPayload.splits) &&
         !transactionPayload.splits.some((s: any) => s.investment)
       ) {
-        const rules = await m
-          .getRepository(PayrollDeductionRule)
-          .find({ where: { scheduledTransactionId: id, userId } });
+        const rules = await m.getRepository(PayrollDeductionRule).find({
+          where: { scheduledTransactionId: id, userId },
+          // The figures of the posting date's own period (spec section 11).
+          relations: ["periods"],
+        });
         // Two bills on one category draw down one maximum: queue behind
         // the other poster before the paid figure is read. The schedule row
         // is already locked; every payroll poster takes the two in that

@@ -40,6 +40,7 @@
       "bill": "Factura",
       "category": "Categoría",
       "yearlyMaximum": "Máximo anual",
+      "nextMaximum": "Desde el {date}: {amount}",
       "resetsOn": "Se reinicia el",
       "perPaycheque": "Por nómina",
       "period": "Período",
@@ -71,6 +72,14 @@
       "expectedHelp": "La línea de la transacción para esta categoría es cero, así que la previsión necesita el importe que cada nómina suele deducir.",
       "expectedFromLine": "La línea de la factura deduce {amount} por nómina.",
       "expectedSuggested": "Sugerido a partir del importe que sus transacciones de esta categoría muestran con más frecuencia en el último año.",
+      "thisPeriod": "Este periodo, {start} a {end}",
+      "nextPeriod": "Próximo periodo, desde el {date}",
+      "setNextPeriod": "Definir los importes del próximo periodo, desde el {date}",
+      "nextYearlyMaximumLabel": "Máximo del próximo periodo",
+      "nextYearlyMaximumHelp": "El máximo a partir del próximo reinicio. Déjalo vacío para mantener el máximo de este periodo. El margen y el porcentaje de este periodo no cambian.",
+      "nextExpectedLabel": "Previsto por nómina en el próximo periodo",
+      "nextExpectedHelp": "El importe que cada nómina deduce a partir del próximo reinicio. Déjalo vacío para mantener el importe de este periodo.",
+      "sameAsThisPeriod": "Igual que este periodo",
       "periods": {
         "YEARLY": "Anual"
       },

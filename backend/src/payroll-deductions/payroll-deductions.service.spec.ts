@@ -459,6 +459,31 @@ describe("PayrollDeductionsService", () => {
       expect(mocks.dataSource.transaction).toHaveBeenCalledTimes(1);
     });
 
+    it("writes each line's current period, and its next period when one is given", async () => {
+      rulesRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(rule());
+      await service.createMany(USER, {
+        ...batch,
+        lines: [
+          {
+            categoryId: EI,
+            yearlyMaximum: 1077.48,
+            nextYearlyMaximum: 1123.07,
+          },
+        ],
+      });
+      const inserts = mocks.manager.query.mock.calls
+        .filter(([sql]: [string]) =>
+          String(sql).includes("INSERT INTO payroll_deduction_rule_periods"),
+        )
+        .map((c: unknown[]) => c[1]);
+      expect(inserts).toEqual([
+        [USER, RULE, "2026-01-01", 1077.48, null],
+        [USER, RULE, "2027-01-01", 1123.07, null],
+      ]);
+    });
+
     it("writes nothing when a later line is refused", async () => {
       await expect(
         service.createMany(USER, {
@@ -491,6 +516,167 @@ describe("PayrollDeductionsService", () => {
         }),
       );
       expect(view.remaining).toBe(76);
+    });
+
+    const periodCalls = (verb: "INSERT" | "DELETE") =>
+      mocks.manager.query.mock.calls.filter(([sql]: [string]) =>
+        String(sql).includes(
+          `${verb} ${verb === "INSERT" ? "INTO" : "FROM"} payroll_deduction_rule_periods`,
+        ),
+      );
+    const inserts = () => periodCalls("INSERT").map((c) => c[1]);
+    const deletes = () => periodCalls("DELETE").map((c) => c[1]);
+    type Rows = Partial<PayrollDeductionRule>;
+    const row = (
+      periodStart: string,
+      yearlyMaximum: number,
+      expectedPerPaycheque: number | null = null,
+    ) => ({
+      periodStart,
+      yearlyMaximum,
+      expectedPerPaycheque,
+    });
+
+    it("writes the current period's figures to its own row and both columns (spec section 11)", async () => {
+      rulesRepo.findOne
+        .mockResolvedValueOnce(rule())
+        .mockResolvedValueOnce(rule({ yearlyMaximum: 1100 }));
+      await service.update(USER, RULE, { yearlyMaximum: 1100 });
+      expect(inserts()).toEqual([[USER, RULE, "2026-01-01", 1100, null]]);
+      expect(deletes()).toEqual([]);
+    });
+
+    it("writes next year's maximum to the next period and leaves this period's figures as they were", async () => {
+      const periods = [row("2026-01-01", 1077.48)];
+      rulesRepo.findOne
+        .mockResolvedValueOnce(rule({ periods } as Rows))
+        .mockResolvedValueOnce(
+          rule({ periods: [...periods, row("2027-01-01", 1123.07)] } as Rows),
+        );
+      const view = await service.update(USER, RULE, {
+        nextYearlyMaximum: 1123.07,
+      });
+      expect(rulesRepo.update.mock.calls[0][1]).toMatchObject({
+        yearlyMaximum: 1077.48,
+        expectedPerPaycheque: null,
+      });
+      expect(inserts()).toEqual([
+        [USER, RULE, "2026-01-01", 1077.48, null],
+        [USER, RULE, "2027-01-01", 1123.07, null],
+      ]);
+      // This period's room is unchanged: 1,077.48 - 1,024.
+      expect(view.remaining).toBe(53.48);
+      expect(view.yearlyMaximum).toBe(1077.48);
+      expect(view.nextPeriod).toMatchObject({
+        periodStart: "2027-01-01",
+        yearlyMaximum: 1123.07,
+        scheduled: true,
+      });
+    });
+
+    it("removes every row after this period's start when the next maximum is cleared", async () => {
+      rulesRepo.findOne
+        .mockResolvedValueOnce(rule())
+        .mockResolvedValueOnce(rule());
+      await service.update(USER, RULE, { nextYearlyMaximum: null });
+      expect(deletes()).toEqual([[USER, RULE, "2026-01-01"]]);
+      expect(inserts()).toEqual([[USER, RULE, "2026-01-01", 1077.48, null]]);
+    });
+
+    it("carries the next period's figures to the new anniversary when the reset moves", async () => {
+      const moved = rule({
+        periods: [row("2026-01-01", 1000), row("2027-01-01", 1100)],
+      } as Rows);
+      rulesRepo.findOne
+        .mockResolvedValueOnce(moved)
+        .mockResolvedValueOnce(moved);
+      await service.update(USER, RULE, { resetDate: "2026-07-01" });
+      // The rows on the old anniversaries go; this period and the next one
+      // are written again on the new ones (today is 2026-04-10, so this
+      // period started on 2025-07-01).
+      expect(deletes()).toEqual([[USER, RULE, "2025-07-01"]]);
+      expect(inserts()).toEqual([
+        [USER, RULE, "2025-07-01", 1000, null],
+        [USER, RULE, "2026-07-01", 1100, null],
+      ]);
+      expect(rulesRepo.update.mock.calls[0][1]).toMatchObject({
+        resetDate: "2026-07-01",
+        yearlyMaximum: 1000,
+      });
+    });
+
+    it("keeps the columns a pair from the current period when only the bill-side fields change", async () => {
+      // After a reset: the current period's row is 1100 / 70, the columns
+      // still hold last year's 1000 / 64.
+      scheduledRepo.findOne.mockResolvedValue(bill([]));
+      const after = rule({
+        categoryId: CPP,
+        yearlyMaximum: 1000,
+        expectedPerPaycheque: 64,
+        periods: [row("2025-01-01", 1000, 64), row("2026-01-01", 1100, 70)],
+      } as Rows);
+      rulesRepo.findOne
+        .mockResolvedValueOnce(after)
+        .mockResolvedValueOnce(after);
+      await service.update(USER, RULE, { resetPeriod: "YEARLY" });
+      expect(rulesRepo.update.mock.calls[0][1]).toMatchObject({
+        yearlyMaximum: 1100,
+        expectedPerPaycheque: 70,
+      });
+    });
+
+    it("writes a next expected amount sent on its own, keeping the next maximum or this period's", async () => {
+      scheduledRepo.findOne.mockResolvedValue(bill([]));
+      const scheduled = rule({
+        categoryId: CPP,
+        expectedPerPaycheque: 150,
+        periods: [
+          row("2026-01-01", 4034.1, 150),
+          row("2027-01-01", 4230.45, 155),
+        ],
+      } as Rows);
+      rulesRepo.findOne
+        .mockResolvedValueOnce(scheduled)
+        .mockResolvedValueOnce(scheduled);
+      await service.update(USER, RULE, { nextExpectedPerPaycheque: 160 });
+      expect(inserts()[1]).toEqual([USER, RULE, "2027-01-01", 4230.45, 160]);
+
+      mocks.manager.query.mockClear();
+      const unscheduled = rule({
+        categoryId: CPP,
+        expectedPerPaycheque: 150,
+        periods: [row("2026-01-01", 4034.1, 150)],
+      } as Rows);
+      rulesRepo.findOne
+        .mockResolvedValueOnce(unscheduled)
+        .mockResolvedValueOnce(unscheduled);
+      await service.update(USER, RULE, {
+        nextYearlyMaximum: null,
+        nextExpectedPerPaycheque: 160,
+      });
+      expect(inserts()[1]).toEqual([USER, RULE, "2027-01-01", 4034.1, 160]);
+      expect(deletes()).toEqual([]);
+    });
+
+    it("carries the current entered amount into the next period, and refuses before writing when there is none", async () => {
+      scheduledRepo.findOne.mockResolvedValue(bill([]));
+      rulesRepo.findOne
+        .mockResolvedValueOnce(
+          rule({ categoryId: CPP, expectedPerPaycheque: 150 }),
+        )
+        .mockResolvedValueOnce(
+          rule({ categoryId: CPP, expectedPerPaycheque: 150 }),
+        );
+      await service.update(USER, RULE, { nextYearlyMaximum: 4230.45 });
+      expect(inserts()[1]).toEqual([USER, RULE, "2027-01-01", 4230.45, 150]);
+      mocks.manager.query.mockClear();
+      rulesRepo.update.mockClear();
+      rulesRepo.findOne.mockResolvedValueOnce(rule({ categoryId: CPP }));
+      await expect(
+        service.update(USER, RULE, { nextYearlyMaximum: 4230.45 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(rulesRepo.update).not.toHaveBeenCalled();
+      expect(inserts()).toEqual([]);
     });
 
     it("refuses a move onto a line another rule holds, and an unknown id", async () => {

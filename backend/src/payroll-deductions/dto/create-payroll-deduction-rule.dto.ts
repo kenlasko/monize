@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
-import { Type } from "class-transformer";
+import { Transform, Type } from "class-transformer";
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -18,6 +18,13 @@ import {
   PayrollResetPeriod,
 } from "../entities/payroll-deduction-rule.entity";
 import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
+
+/**
+ * An empty box sent as `""` means "no figure", as `null` does: the
+ * validators skip it, so it must not reach the service as a value.
+ */
+const emptyAsNull = ({ value }: { value: unknown }) =>
+  value === "" ? null : value;
 
 /** The largest magnitude a rule stores; `NUMERIC(20,4)` holds far more. */
 export const PAYROLL_AMOUNT_MAX = 1_000_000_000;
@@ -65,12 +72,41 @@ export class CreatePayrollDeductionRuleDto {
     description:
       "Expected per paycheque, read only when the bill has no line for the category",
   })
+  @Transform(emptyAsNull)
   @IsOptional()
   @ValidateIf((_o, v) => v !== null && v !== "")
   @IsMoneyAmount(4)
   @Min(0)
   @Max(PAYROLL_AMOUNT_MAX)
   expectedPerPaycheque?: number | null;
+
+  @ApiPropertyOptional({
+    example: 1123.07,
+    nullable: true,
+    description:
+      "The next period's maximum (spec section 11); null removes the next period's own figures, so it carries the current ones",
+  })
+  @Transform(emptyAsNull)
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
+  @IsMoneyAmount(4)
+  @Min(0)
+  @Max(PAYROLL_AMOUNT_MAX)
+  nextYearlyMaximum?: number | null;
+
+  @ApiPropertyOptional({
+    example: 66,
+    nullable: true,
+    description:
+      "The next period's expected amount per paycheque, read with nextYearlyMaximum when the bill has no line for the category",
+  })
+  @Transform(emptyAsNull)
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
+  @IsMoneyAmount(4)
+  @Min(0)
+  @Max(PAYROLL_AMOUNT_MAX)
+  nextExpectedPerPaycheque?: number | null;
 }
 
 /** `PATCH /payroll-deductions/:id`: any subset of the create fields. */
@@ -94,12 +130,41 @@ export class PayrollDeductionLineDto {
   yearlyMaximum: number;
 
   @ApiPropertyOptional({ example: 64, nullable: true })
+  @Transform(emptyAsNull)
   @IsOptional()
   @ValidateIf((_o, v) => v !== null && v !== "")
   @IsMoneyAmount(4)
   @Min(0)
   @Max(PAYROLL_AMOUNT_MAX)
   expectedPerPaycheque?: number | null;
+
+  @ApiPropertyOptional({
+    example: 1123.07,
+    nullable: true,
+    description:
+      "The next period's maximum (spec section 11); null removes the next period's own figures, so it carries the current ones",
+  })
+  @Transform(emptyAsNull)
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
+  @IsMoneyAmount(4)
+  @Min(0)
+  @Max(PAYROLL_AMOUNT_MAX)
+  nextYearlyMaximum?: number | null;
+
+  @ApiPropertyOptional({
+    example: 66,
+    nullable: true,
+    description:
+      "The next period's expected amount per paycheque, read with nextYearlyMaximum when the bill has no line for the category",
+  })
+  @Transform(emptyAsNull)
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
+  @IsMoneyAmount(4)
+  @Min(0)
+  @Max(PAYROLL_AMOUNT_MAX)
+  nextExpectedPerPaycheque?: number | null;
 }
 
 /**

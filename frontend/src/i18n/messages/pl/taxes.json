@@ -40,6 +40,7 @@
       "bill": "Rachunek",
       "category": "Kategoria",
       "yearlyMaximum": "Roczne maksimum",
+      "nextMaximum": "Od {date}: {amount}",
       "resetsOn": "Reset",
       "perPaycheque": "Na wypłatę",
       "period": "Okres",
@@ -71,6 +72,14 @@
       "expectedHelp": "Pozycja transakcji dla tej kategorii wynosi zero, więc prognoza potrzebuje kwoty, jaką zwykle potrąca każda wypłata.",
       "expectedFromLine": "Pozycja rachunku potrąca {amount} na wypłatę.",
       "expectedSuggested": "Zasugerowano na podstawie kwoty, która najczęściej występuje w Twoich transakcjach w tej kategorii w ostatnim roku.",
+      "thisPeriod": "Ten okres, od {start} do {end}",
+      "nextPeriod": "Następny okres, od {date}",
+      "setNextPeriod": "Ustaw kwoty na następny okres, od {date}",
+      "nextYearlyMaximumLabel": "Maksimum w następnym okresie",
+      "nextYearlyMaximumHelp": "Maksimum od następnego resetu. Zostaw puste, aby zachować maksimum tego okresu. Pozostały limit i procent tego okresu się nie zmieniają.",
+      "nextExpectedLabel": "Oczekiwane na wypłatę w następnym okresie",
+      "nextExpectedHelp": "Kwota potrącana z każdej wypłaty od następnego resetu. Zostaw puste, aby zachować kwotę tego okresu.",
+      "sameAsThisPeriod": "Tak jak w tym okresie",
       "periods": {
         "YEARLY": "Rocznie"
       },

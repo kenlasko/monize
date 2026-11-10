@@ -40,6 +40,7 @@
       "bill": "Hóa đơn",
       "category": "Danh mục",
       "yearlyMaximum": "Tối đa hằng năm",
+      "nextMaximum": "Từ {date}: {amount}",
       "resetsOn": "Đặt lại vào",
       "perPaycheque": "Mỗi kỳ lương",
       "period": "Kỳ",
@@ -71,6 +72,14 @@
       "expectedHelp": "Dòng của giao dịch cho danh mục này bằng không, nên dự báo cần số tiền mà mỗi kỳ lương thường khấu trừ.",
       "expectedFromLine": "Dòng của hóa đơn khấu trừ {amount} mỗi kỳ lương.",
       "expectedSuggested": "Được đề xuất từ số tiền xuất hiện nhiều nhất trong các giao dịch của bạn ở danh mục này trong năm qua.",
+      "thisPeriod": "Kỳ này, {start} đến {end}",
+      "nextPeriod": "Kỳ tiếp theo, từ {date}",
+      "setNextPeriod": "Đặt số liệu cho kỳ tiếp theo, từ {date}",
+      "nextYearlyMaximumLabel": "Mức tối đa kỳ tiếp theo",
+      "nextYearlyMaximumHelp": "Mức tối đa từ lần đặt lại tiếp theo. Để trống để giữ mức tối đa của kỳ này. Hạn mức còn lại và tỷ lệ phần trăm của kỳ này không thay đổi.",
+      "nextExpectedLabel": "Dự kiến mỗi kỳ lương trong kỳ tiếp theo",
+      "nextExpectedHelp": "Số tiền mỗi kỳ lương khấu trừ từ lần đặt lại tiếp theo. Để trống để giữ số tiền của kỳ này.",
+      "sameAsThisPeriod": "Giống kỳ này",
       "periods": {
         "YEARLY": "Hằng năm"
       },

@@ -433,6 +433,17 @@ export const RULES: Record<string, TableRules> = {
     created_at: keep,
     updated_at: keep,
   },
+  // A rule's figures from one period on: structure plus the same two amounts.
+  payroll_deduction_rule_periods: {
+    id: keep,
+    user_id: keep,
+    rule_id: keep,
+    period_start: keep,
+    yearly_maximum: scale,
+    expected_per_paycheque: scale,
+    created_at: keep,
+    updated_at: keep,
+  },
   securities: {
     id: keep,
     user_id: keep,

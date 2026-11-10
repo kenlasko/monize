@@ -544,6 +544,11 @@ export function buildExportTableQueries(
       key: "payroll_deduction_rules",
       sql: "SELECT * FROM payroll_deduction_rules WHERE user_id = $1 ORDER BY created_at, id",
     },
+    {
+      // After the rules it references.
+      key: "payroll_deduction_rule_periods",
+      sql: "SELECT * FROM payroll_deduction_rule_periods WHERE user_id = $1 ORDER BY rule_id, period_start",
+    },
     { key: "securities", sql: "SELECT * FROM securities WHERE user_id = $1" },
     {
       key: "security_prices",

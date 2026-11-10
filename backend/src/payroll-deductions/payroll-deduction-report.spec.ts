@@ -19,13 +19,19 @@ const USER = "11111111-1111-4111-8111-111111111111";
 const EI = "33333333-3333-4333-8333-333333333333";
 const CPP = "44444444-4444-4444-8444-444444444444";
 
-const group = (over: Partial<PayrollReportGroup> = {}): PayrollReportGroup => ({
+/** A group with one rule whose columns hold `yearlyMaximum` and no period rows. */
+const group = ({
+  yearlyMaximum = 1077.48,
+  ...over
+}: Partial<PayrollReportGroup> & {
+  yearlyMaximum?: number;
+} = {}): PayrollReportGroup => ({
   categoryId: EI,
   categoryName: "EI",
   currencyCode: "CAD",
   resetDate: "2026-01-01",
   billNames: ["Paycheque"],
-  yearlyMaximum: 1077.48,
+  rules: [{ yearlyMaximum, expectedPerPaycheque: null, periods: [] }],
   ...over,
 });
 
@@ -71,7 +77,7 @@ describe("payroll deduction report", () => {
         ...over,
       }) as PayrollDeductionRule;
 
-    it("keeps one group per category and currency, naming every bill, the lower maximum binding", () => {
+    it("keeps one group per category and currency, naming every bill and keeping every rule", () => {
       const groups = groupReportRules([
         rule({}),
         rule({
@@ -97,7 +103,14 @@ describe("payroll deduction report", () => {
           // The earliest rule's anchor, as the history route uses.
           resetDate: "2026-01-01",
           billNames: ["Mid-month", "Month-end"],
-          yearlyMaximum: 1000,
+          // The rules themselves, whose figures per period the summary reads.
+          rules: [
+            expect.objectContaining({ resetDate: "2026-01-01" }),
+            expect.objectContaining({
+              yearlyMaximum: 1000,
+              resetDate: "2026-07-01",
+            }),
+          ],
         },
         {
           categoryId: EI,
@@ -105,7 +118,7 @@ describe("payroll deduction report", () => {
           currencyCode: "USD",
           resetDate: "2026-01-01",
           billNames: ["US job"],
-          yearlyMaximum: 1077.48,
+          rules: [expect.objectContaining({ categoryId: EI })],
         },
       ]);
     });
@@ -201,6 +214,71 @@ describe("payroll deduction report", () => {
         remaining: 0,
         percentOfMaximum: 100,
         maximumReachedOn: "2026-02-15",
+      });
+    });
+
+    it("reads the selected period's own figure, not the next period's, the lower rule binding", () => {
+      const periods = [
+        {
+          periodStart: "2026-01-01",
+          yearlyMaximum: 150,
+          expectedPerPaycheque: null,
+        },
+        {
+          periodStart: "2027-01-01",
+          yearlyMaximum: 400,
+          expectedPerPaycheque: null,
+        },
+      ];
+      const { category } = summariseReportCategory(
+        group({
+          rules: [
+            { yearlyMaximum: 400, expectedPerPaycheque: null, periods },
+            { yearlyMaximum: 500, expectedPerPaycheque: null, periods: [] },
+          ],
+        }),
+        [tx("a", "2026-01-15", 120)],
+        2026,
+        today,
+      );
+      expect(category.summary).toMatchObject({
+        yearlyMaximum: 150,
+        remaining: 30,
+        percentOfMaximum: 80,
+      });
+    });
+
+    it("shows a closed period's maximum when every rule recorded one for it", () => {
+      const { category } = summariseReportCategory(
+        group({
+          rules: [
+            {
+              yearlyMaximum: 2000,
+              expectedPerPaycheque: null,
+              periods: [
+                {
+                  periodStart: "2025-01-01",
+                  yearlyMaximum: 1000,
+                  expectedPerPaycheque: null,
+                },
+                {
+                  periodStart: "2026-01-01",
+                  yearlyMaximum: 2000,
+                  expectedPerPaycheque: null,
+                },
+              ],
+            },
+          ],
+        }),
+        [tx("a", "2025-03-15", 600), tx("b", "2025-04-15", 400)],
+        2025,
+        today,
+      );
+      expect(category.summary).toMatchObject({
+        yearlyMaximum: 1000,
+        remaining: 0,
+        percentOfMaximum: 100,
+        maximumReachedOn: "2025-04-15",
       });
     });
 

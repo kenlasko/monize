@@ -40,6 +40,7 @@
       "bill": "Buchung",
       "category": "Kategorie",
       "yearlyMaximum": "Jahreshöchstbetrag",
+      "nextMaximum": "Ab {date}: {amount}",
       "resetsOn": "Zurücksetzung am",
       "perPaycheque": "Pro Gehaltsabrechnung",
       "period": "Zeitraum",
@@ -71,6 +72,14 @@
       "expectedHelp": "Die Zeile der Buchung für diese Kategorie ist null, daher braucht die Prognose den Betrag, den jede Gehaltsabrechnung üblicherweise abzieht.",
       "expectedFromLine": "Die Zeile der Buchung zieht {amount} pro Gehaltsabrechnung ab.",
       "expectedSuggested": "Vorgeschlagen aus dem Betrag, den Ihre Transaktionen in dieser Kategorie im letzten Jahr am häufigsten zeigen.",
+      "thisPeriod": "Dieser Zeitraum, {start} bis {end}",
+      "nextPeriod": "Nächster Zeitraum, ab {date}",
+      "setNextPeriod": "Werte für den nächsten Zeitraum ab {date} festlegen",
+      "nextYearlyMaximumLabel": "Höchstbetrag im nächsten Zeitraum",
+      "nextYearlyMaximumHelp": "Der Höchstbetrag ab dem nächsten Zurücksetzen. Leer lassen, um den Höchstbetrag dieses Zeitraums beizubehalten. Restbetrag und Prozentsatz dieses Zeitraums ändern sich nicht.",
+      "nextExpectedLabel": "Erwartet pro Gehaltsabrechnung im nächsten Zeitraum",
+      "nextExpectedHelp": "Der Betrag, den jede Gehaltsabrechnung ab dem nächsten Zurücksetzen abzieht. Leer lassen, um den Betrag dieses Zeitraums beizubehalten.",
+      "sameAsThisPeriod": "Wie in diesem Zeitraum",
       "periods": {
         "YEARLY": "Jährlich"
       },

@@ -40,6 +40,7 @@
       "bill": "Fatura",
       "category": "Kategori",
       "yearlyMaximum": "Yıllık üst sınır",
+      "nextMaximum": "{date} itibarıyla: {amount}",
       "resetsOn": "Sıfırlanma tarihi",
       "perPaycheque": "Maaş başına",
       "period": "Dönem",
@@ -71,6 +72,14 @@
       "expectedHelp": "İşlemin bu kategorideki satırı sıfır olduğundan tahmin, her maaştan genellikle kesilen tutara ihtiyaç duyar.",
       "expectedFromLine": "Faturanın satırı maaş başına {amount} keser.",
       "expectedSuggested": "Son bir yılda bu kategorideki işlemlerinizde en sık görülen tutardan önerildi.",
+      "thisPeriod": "Bu dönem, {start} - {end}",
+      "nextPeriod": "Sonraki dönem, {date} itibarıyla",
+      "setNextPeriod": "{date} itibarıyla sonraki dönemin tutarlarını belirle",
+      "nextYearlyMaximumLabel": "Sonraki dönemin üst sınırı",
+      "nextYearlyMaximumHelp": "Sonraki sıfırlamadan itibaren geçerli üst sınır. Bu dönemin üst sınırını korumak için boş bırakın. Bu dönemin kalan payı ve yüzdesi değişmez.",
+      "nextExpectedLabel": "Sonraki dönemde maaş başına beklenen",
+      "nextExpectedHelp": "Sonraki sıfırlamadan itibaren her maaştan kesilen tutar. Bu dönemin tutarını korumak için boş bırakın.",
+      "sameAsThisPeriod": "Bu dönemle aynı",
       "periods": {
         "YEARLY": "Yıllık"
       },

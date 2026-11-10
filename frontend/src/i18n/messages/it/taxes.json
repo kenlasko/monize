@@ -40,6 +40,7 @@
       "bill": "Fattura",
       "category": "Categoria",
       "yearlyMaximum": "Massimo annuo",
+      "nextMaximum": "Dal {date}: {amount}",
       "resetsOn": "Si azzera il",
       "perPaycheque": "Per busta paga",
       "period": "Periodo",
@@ -71,6 +72,14 @@
       "expectedHelp": "La riga della transazione per questa categoria è zero, quindi la previsione ha bisogno dell'importo che ogni busta paga trattiene di solito.",
       "expectedFromLine": "La riga della fattura trattiene {amount} per busta paga.",
       "expectedSuggested": "Suggerito dall'importo che le tue transazioni in questa categoria mostrano più spesso nell'ultimo anno.",
+      "thisPeriod": "Questo periodo, dal {start} al {end}",
+      "nextPeriod": "Periodo successivo, dal {date}",
+      "setNextPeriod": "Imposta gli importi del periodo successivo, dal {date}",
+      "nextYearlyMaximumLabel": "Massimo del periodo successivo",
+      "nextYearlyMaximumHelp": "Il massimo dal prossimo azzeramento. Lascia vuoto per mantenere il massimo di questo periodo. Il margine e la percentuale di questo periodo non cambiano.",
+      "nextExpectedLabel": "Previsto per busta paga nel periodo successivo",
+      "nextExpectedHelp": "L'importo trattenuto da ogni busta paga dal prossimo azzeramento. Lascia vuoto per mantenere l'importo di questo periodo.",
+      "sameAsThisPeriod": "Come questo periodo",
       "periods": {
         "YEARLY": "Annuale"
       },

@@ -10,6 +10,11 @@ import { roundMoney } from "../common/round.util";
 import { NotificationDispatchService } from "../notifications/notification-dispatch.service";
 import { buildResetReminderNotification } from "./payroll-deduction-notifications";
 import { resetReminderDueFor } from "./payroll-deduction-period";
+import {
+  figuresForPeriod,
+  loadRulePeriods,
+  RulePeriodFigures,
+} from "./payroll-deduction-rule-periods";
 
 /** A rule with the names its reminder prints. */
 interface RuleCandidate {
@@ -17,6 +22,8 @@ interface RuleCandidate {
   userId: string;
   resetDate: string;
   yearlyMaximum: number;
+  /** The figures the rule stores per period (spec section 11). */
+  periods: RulePeriodFigures[];
   categoryName: string;
   scheduledTransactionName: string;
   currencyCode: string;
@@ -141,11 +148,16 @@ export class PayrollDeductionResetReminderService {
             ORDER BY r.user_id, r.created_at, r.id`,
         ),
       );
+      const periods = await loadRulePeriods(
+        m,
+        rows.map((row) => row.id),
+      );
       return rows.map((row) => ({
         id: row.id,
         userId: row.user_id,
         resetDate: row.reset_date,
         yearlyMaximum: roundMoney(Number(row.yearly_maximum)),
+        periods: periods.get(row.id) ?? [],
         categoryName: row.category_name,
         scheduledTransactionName: row.scheduled_name,
         currencyCode: row.currency_code,
@@ -174,7 +186,8 @@ export class PayrollDeductionResetReminderService {
           categoryName: rule.categoryName,
           scheduledTransactionName: rule.scheduledTransactionName,
           resetOn,
-          yearlyMaximum: rule.yearlyMaximum,
+          // The figure the period starting on the reset will cap with.
+          yearlyMaximum: figuresForPeriod(rule, resetOn).yearlyMaximum,
           currencyCode: rule.currencyCode,
         },
         today,

@@ -40,6 +40,7 @@
       "bill": "Bill",
       "category": "Category",
       "yearlyMaximum": "Yearly maximum",
+      "nextMaximum": "From {date}: {amount}",
       "resetsOn": "Resets on",
       "perPaycheque": "Per paycheque",
       "period": "Period",
@@ -71,6 +72,14 @@
       "expectedHelp": "The bill's line for this category is zero, so the forecast needs the amount each paycheque usually deducts.",
       "expectedFromLine": "The bill's line deducts {amount} per paycheque.",
       "expectedSuggested": "Suggested from the amount your transactions in this category most often show over the last year.",
+      "thisPeriod": "This period, {start} to {end}",
+      "nextPeriod": "Next period, from {date}",
+      "setNextPeriod": "Set the figures for the next period, from {date}",
+      "nextYearlyMaximumLabel": "Next period's maximum",
+      "nextYearlyMaximumHelp": "The maximum from the next reset on. Leave it empty to keep this period's maximum. This period's room and percentage do not change.",
+      "nextExpectedLabel": "Next period's expected per paycheque",
+      "nextExpectedHelp": "The amount each paycheque deducts from the next reset on. Leave it empty to keep this period's amount.",
+      "sameAsThisPeriod": "Same as this period",
       "periods": {
         "YEARLY": "Yearly"
       },

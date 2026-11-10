@@ -5549,7 +5549,8 @@ forecast projects the same reduction.
 ### INV-PAYROLL-001 -- a rule never writes the ledger
 
 - **Statement.** `backend/src/payroll-deductions/` reads `transactions` and
-  `transaction_splits` and writes only `payroll_deduction_rules`. A rule
+  `transaction_splits` and writes only `payroll_deduction_rules` and its
+  figures per period, `payroll_deduction_rule_periods`. A rule
   created, changed or deleted in October leaves every row posted before
   October as it was; the cap applies to the next occurrence posted.
 - **Mechanism.** The module imports no ledger writer and issues no

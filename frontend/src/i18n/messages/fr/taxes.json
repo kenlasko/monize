@@ -40,6 +40,7 @@
       "bill": "Facture",
       "category": "Catégorie",
       "yearlyMaximum": "Maximum annuel",
+      "nextMaximum": "À partir du {date} : {amount}",
       "resetsOn": "Réinitialisation le",
       "perPaycheque": "Par paie",
       "period": "Période",
@@ -71,6 +72,14 @@
       "expectedHelp": "La ligne de l'opération pour cette catégorie est à zéro ; la prévision a donc besoin du montant que chaque paie retient habituellement.",
       "expectedFromLine": "La ligne de la facture retient {amount} par paie.",
       "expectedSuggested": "Suggéré d'après le montant que vos opérations de cette catégorie affichent le plus souvent sur la dernière année.",
+      "thisPeriod": "Cette période, du {start} au {end}",
+      "nextPeriod": "Période suivante, à partir du {date}",
+      "setNextPeriod": "Définir les montants de la période suivante, à partir du {date}",
+      "nextYearlyMaximumLabel": "Maximum de la période suivante",
+      "nextYearlyMaximumHelp": "Le maximum à partir de la prochaine réinitialisation. Laissez vide pour conserver le maximum de cette période. La marge restante et le pourcentage de cette période ne changent pas.",
+      "nextExpectedLabel": "Attendu par paie pour la période suivante",
+      "nextExpectedHelp": "Le montant déduit de chaque paie à partir de la prochaine réinitialisation. Laissez vide pour conserver le montant de cette période.",
+      "sameAsThisPeriod": "Identique à cette période",
       "periods": {
         "YEARLY": "Annuel"
       },

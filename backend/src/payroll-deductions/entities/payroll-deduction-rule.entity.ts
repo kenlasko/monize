@@ -4,6 +4,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
@@ -11,6 +12,7 @@ import {
 import { Category } from "../../categories/entities/category.entity";
 import { ScheduledTransaction } from "../../scheduled-transactions/entities/scheduled-transaction.entity";
 import { User } from "../../users/entities/user.entity";
+import { PayrollDeductionRulePeriod } from "./payroll-deduction-rule-period.entity";
 
 /** The periods a rule can reset on. Yearly only for now (spec decision 4). */
 export const PAYROLL_RESET_PERIODS = ["YEARLY"] as const;
@@ -95,6 +97,10 @@ export class PayrollDeductionRule {
     nullable: true,
   })
   expectedPerPaycheque: number | null;
+
+  /** The figures per period (spec section 11); loaded only where asked for. */
+  @OneToMany(() => PayrollDeductionRulePeriod, (period) => period.rule)
+  periods?: PayrollDeductionRulePeriod[];
 
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt: Date;

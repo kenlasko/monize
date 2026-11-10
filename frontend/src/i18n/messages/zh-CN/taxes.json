@@ -40,6 +40,7 @@
       "bill": "账单",
       "category": "类别",
       "yearlyMaximum": "年度上限",
+      "nextMaximum": "自 {date} 起：{amount}",
       "resetsOn": "重置日期",
       "perPaycheque": "每次发薪",
       "period": "周期",
@@ -71,6 +72,14 @@
       "expectedHelp": "此交易在该类别的行为零，因此预测需要每次工资通常扣除的金额。",
       "expectedFromLine": "账单的行每次发薪扣除 {amount}。",
       "expectedSuggested": "根据过去一年中您在此类别的交易最常出现的金额建议。",
+      "thisPeriod": "本期，{start} 至 {end}",
+      "nextPeriod": "下一期，自 {date} 起",
+      "setNextPeriod": "设置自 {date} 起的下一期金额",
+      "nextYearlyMaximumLabel": "下一期上限",
+      "nextYearlyMaximumHelp": "自下次重置起的上限。留空则沿用本期上限。本期的剩余额度和百分比不变。",
+      "nextExpectedLabel": "下一期每次发薪的预期金额",
+      "nextExpectedHelp": "自下次重置起每次发薪扣除的金额。留空则沿用本期金额。",
+      "sameAsThisPeriod": "与本期相同",
       "periods": {
         "YEARLY": "每年"
       },

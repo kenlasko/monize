@@ -289,6 +289,79 @@ describe("payroll deduction cap", () => {
       currencyCode: "CAD",
       expectedPerPaycheque: 64,
       expectedSource: "line",
+      yearlyMaximum: 1077.48,
+      nextPeriod: {
+        periodStart: "2027-01-01",
+        yearlyMaximum: 1077.48,
+        expectedPerPaycheque: 64,
+        expectedSource: "line",
+        scheduled: false,
+      },
+    });
+  });
+
+  describe("figures per period (spec section 11)", () => {
+    const withNext = {
+      ...eiRule,
+      yearlyMaximum: 1077.48,
+      expectedPerPaycheque: 60,
+      periods: [
+        {
+          periodStart: "2026-01-01",
+          yearlyMaximum: 1077.48,
+          expectedPerPaycheque: 60,
+        },
+        {
+          periodStart: "2027-01-01",
+          yearlyMaximum: 1123.07,
+          expectedPerPaycheque: 66,
+        },
+      ],
+    };
+
+    it("keeps the current period's room when next year's maximum is entered", async () => {
+      const { m } = managerAnswering(() => ({
+        total: "-1024",
+        foreign_rows: "0",
+      }));
+      const figures = await resolvePayrollDeductionFigures(
+        m,
+        USER,
+        withNext,
+        [],
+        "CAD",
+        "2026-11-10",
+      );
+      expect(figures).toMatchObject({
+        yearlyMaximum: 1077.48,
+        remaining: 53.48,
+        expectedPerPaycheque: 60,
+        expectedSource: "entered",
+        nextPeriod: {
+          periodStart: "2027-01-01",
+          yearlyMaximum: 1123.07,
+          expectedPerPaycheque: 66,
+          expectedSource: "entered",
+          scheduled: true,
+        },
+      });
+    });
+
+    it("caps a posting dated in the next period against that period's maximum", async () => {
+      const { m } = managerAnswering(() => ({
+        total: "-1100",
+        foreign_rows: "0",
+      }));
+      const result = await applyPayrollDeductionCaps(
+        m,
+        USER,
+        [withNext],
+        "CAD",
+        "2027-11-15",
+        [{ categoryId: EI, amount: -64 }],
+      );
+      // 1,123.07 - 1,100 = 23.07 left in 2027, not 0 under 2026's 1,077.48.
+      expect(result.splits[0].amount).toBe(-23.07);
     });
   });
 });

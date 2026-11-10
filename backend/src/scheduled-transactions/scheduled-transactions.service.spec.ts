@@ -4157,6 +4157,7 @@ describe("ScheduledTransactionsService", () => {
 
       expect(payrollRulesRepo.find).toHaveBeenCalledWith({
         where: { scheduledTransactionId: stId, userId },
+        relations: ["periods"],
       });
       const payload = transactionsService.create.mock.calls[0][1];
       expect(payload.splits.map((s: any) => s.amount)).toEqual([2500, -53.48]);

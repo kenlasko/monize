@@ -1,5 +1,4 @@
 import { EntityManager } from "typeorm";
-import { roundMoney } from "../common/round.util";
 import { PayrollDeductionRule } from "./entities/payroll-deduction-rule.entity";
 import {
   PayrollDeductionFigures,
@@ -12,7 +11,6 @@ export type ScheduledPayrollDeduction = PayrollDeductionFigures & {
   ruleId: string;
   categoryId: string;
   categoryName: string;
-  yearlyMaximum: number;
   /** The anchor the periods are anniversaries of; the forecast steps resets from it. */
   resetDate: string;
 };
@@ -41,7 +39,7 @@ export async function loadScheduledPayrollDeductions(
   if (schedules.length === 0) return result;
   const rules = await m.getRepository(PayrollDeductionRule).find({
     where: { userId },
-    relations: ["category"],
+    relations: ["category", "periods"],
     order: { createdAt: "ASC" },
   });
   if (rules.length === 0) return result;
@@ -66,7 +64,6 @@ export async function loadScheduledPayrollDeductions(
         ruleId: rule.id,
         categoryId: rule.categoryId,
         categoryName: rule.category?.name ?? "",
-        yearlyMaximum: roundMoney(Number(rule.yearlyMaximum)),
         resetDate: rule.resetDate,
       },
     ]);

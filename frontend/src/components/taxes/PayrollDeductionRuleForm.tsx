@@ -16,6 +16,7 @@ import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { getCategorySelectOptions } from '@/lib/categoryUtils';
 import { createLogger } from '@/lib/logger';
 import { payrollDeductionsApi } from '@/lib/payroll-deductions';
+import { nextPeriodWindowOpen, payrollPeriodOf } from '@/lib/payroll-period';
 import type { Category } from '@/types/category';
 import {
   PAYROLL_BATCH_MAX_LINES,
@@ -84,6 +85,9 @@ function buildSchema(
             /** Set when the expected figure was prefilled from the ledger. */
             suggested: z.boolean().optional(),
             maximumSuggested: z.boolean().optional(),
+            nextYearlyMaximum: z.number().min(0).optional(),
+            nextExpectedPerPaycheque: z.number().min(0).optional(),
+            showNext: z.boolean().optional(),
           }),
         )
         .min(1)
@@ -120,13 +124,20 @@ function buildSchema(
 // The resolver's typing holds the schema's output to this shape.
 type FormValues = PayrollDeductionFormValues;
 
-/** A fresh row: no category and an empty maximum, which the schema refuses. */
-const emptyLine = (): FormValues['lines'][number] => ({
+/**
+ * A fresh row: no category and an empty maximum, which the schema refuses.
+ * The next period's fields start open in the months the reset reminder asks
+ * for them (spec section 11).
+ */
+const emptyLine = (showNext = false): FormValues['lines'][number] => ({
   categoryId: '',
   yearlyMaximum: undefined as unknown as number,
   expectedPerPaycheque: undefined,
   suggested: false,
   maximumSuggested: false,
+  nextYearlyMaximum: undefined,
+  nextExpectedPerPaycheque: undefined,
+  showNext,
 });
 
 interface PayrollDeductionRuleFormProps {
@@ -180,6 +191,11 @@ export function PayrollDeductionRuleForm({
     [billsById],
   );
   const schema = useMemo(() => buildSchema(t, hasLine), [t, hasLine]);
+  // A new rule defaults to resetting next 1 January.
+  const defaultResetDate = rule?.resetDate ?? `${Number(today.slice(0, 4)) + 1}-01-01`;
+  const windowOpenFor = (anchor: string) =>
+    nextPeriodWindowOpen(payrollPeriodOf(anchor, today).nextResetOn, today);
+  const editNext = rule?.nextPeriod?.scheduled === true ? rule.nextPeriod : undefined;
 
   const {
     register,
@@ -205,6 +221,12 @@ export function PayrollDeductionRuleForm({
                   : undefined,
               suggested: false,
               maximumSuggested: false,
+              nextYearlyMaximum: editNext ? Number(editNext.yearlyMaximum) : undefined,
+              nextExpectedPerPaycheque:
+                editNext?.expectedSource === 'entered' && editNext.expectedPerPaycheque !== null
+                  ? Number(editNext.expectedPerPaycheque)
+                  : undefined,
+              showNext: editNext !== undefined || windowOpenFor(rule.resetDate),
             },
           ],
         }
@@ -212,8 +234,8 @@ export function PayrollDeductionRuleForm({
           scheduledTransactionId: bills.length === 1 ? bills[0].id : '',
           resetPeriod: 'YEARLY',
           // The next 1 January: the count resets at the turn of the year.
-          resetDate: `${Number(today.slice(0, 4)) + 1}-01-01`,
-          lines: [emptyLine()],
+          resetDate: defaultResetDate,
+          lines: [emptyLine(windowOpenFor(defaultResetDate))],
         },
   });
   const { fields, append, remove, replace } = useFieldArray({ control, name: 'lines' });
@@ -224,6 +246,7 @@ export function PayrollDeductionRuleForm({
   const lines = useWatch({ control, name: 'lines' });
   const resetDate = useWatch({ control, name: 'resetDate' });
   const bill = billsById.get(billId);
+  const period = payrollPeriodOf(resetDate || defaultResetDate, today);
 
   const billOptions = useMemo(
     () => [
@@ -265,7 +288,7 @@ export function PayrollDeductionRuleForm({
 
   // A new bill means new lines: the rows start over.
   const handleBillChange = () => {
-    if (!rule) replace([emptyLine()]);
+    if (!rule) replace([emptyLine(windowOpenFor(getValues('resetDate') || defaultResetDate))]);
   };
 
   // Ask the server what the ledger says about the category: the maximum it
@@ -334,15 +357,29 @@ export function PayrollDeductionRuleForm({
         scheduledTransactionId: values.scheduledTransactionId,
         resetPeriod: values.resetPeriod,
         resetDate: values.resetDate,
-        lines: values.lines.map((line) => ({
-          categoryId: line.categoryId,
-          yearlyMaximum: line.yearlyMaximum,
-          expectedPerPaycheque:
-            billLineAmount(bill, line.categoryId) === null ? (line.expectedPerPaycheque ?? null) : null,
-        })),
+        lines: values.lines.map((line) => {
+          const lineless = billLineAmount(bill, line.categoryId) === null;
+          // The next period's figures, when either is entered; an empty
+          // one means "same as this period". With neither, an edit drops the
+          // next period's own figures (`null`) and a new rule sends nothing.
+          const nextMaximum = line.showNext ? (line.nextYearlyMaximum ?? null) : null;
+          const nextExpected = line.showNext && lineless ? (line.nextExpectedPerPaycheque ?? null) : null;
+          const next =
+            nextMaximum !== null || nextExpected !== null
+              ? { nextYearlyMaximum: nextMaximum, nextExpectedPerPaycheque: nextExpected }
+              : rule?.nextPeriod?.scheduled
+                ? { nextYearlyMaximum: null }
+                : {};
+          return {
+            categoryId: line.categoryId,
+            yearlyMaximum: line.yearlyMaximum,
+            expectedPerPaycheque: lineless ? (line.expectedPerPaycheque ?? null) : null,
+            ...next,
+          };
+        }),
       });
     },
-    [onSubmit, bill],
+    [onSubmit, bill, rule?.nextPeriod?.scheduled],
   );
   // The unsaved-changes dialog's Save runs the same mapping as the Save button.
   useFormSubmitRef(submitRef, handleSubmit, submit);
@@ -407,12 +444,15 @@ export function PayrollDeductionRuleForm({
             maximumSuggested={lines?.[index]?.maximumSuggested === true}
             onCategoryChange={(value) => handleCategoryChange(index, value)}
             onRemove={!rule && fields.length > 1 ? () => remove(index) : undefined}
+            period={{ start: period.periodStart, end: period.periodEnd, nextStart: period.nextResetOn }}
+            showNext={lines?.[index]?.showNext === true}
+            onShowNext={() => setValue(`lines.${index}.showNext`, true)}
           />
         ))}
         {canAddRow && (
           <button
             type="button"
-            onClick={() => append(emptyLine())}
+            onClick={() => append(emptyLine(windowOpenFor(resetDate || defaultResetDate)))}
             className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 focus-visible:outline-2 focus-visible:outline-blue-500 rounded"
           >
             {t('form.addCategory')}
