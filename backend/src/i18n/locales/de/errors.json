@@ -98,6 +98,8 @@
     "undoNotSupportedForEntityType": "Rückgängig machen wird für den Entitätstyp nicht unterstützt: {{ entityType }}",
     "unsupportedTransactionAction": "Nicht unterstützte Buchungsaktion: {{ action }}",
     "undoTransactionGone": "Rückgängig machen nicht möglich: Buchung existiert nicht mehr",
+    "undoSplitLineGone": "Rückgängig machen nicht möglich: Eine Aufteilungszeile, deren Etiketten diese Änderung geändert hat, gehört nicht mehr zur Buchung",
+    "undoTagGone": "Rückgängig machen nicht möglich: Ein Etikett dieser Änderung wurde inzwischen gelöscht",
     "redoCreateWithLegs": "Diese Transaktion hat Einträge in anderen Konten angelegt und kann daher nicht wiederholt werden. Legen Sie sie stattdessen neu an",
     "undoAccountGone": "Rückgängig machen nicht möglich: Das Konto existiert nicht mehr",
     "unsupportedTransferAction": "Nicht unterstützte Überweisungsaktion: {{ action }}",
@@ -758,7 +760,11 @@
     "repeatedInBatch": "Ein anderer Eintrag in dieser Anfrage nennt dieses Etikett bereits.",
     "nameRequired": "Ein Etikett braucht einen Namen.",
     "invalidColor": "\"{{ color }}\" ist keine Farbe: Verwenden Sie #RRGGBB, zum Beispiel #FF5733.",
-    "nothingToChange": "Nichts zu ändern: Die Buchung trägt bereits jedes hinzuzufügende Etikett und keines der zu entfernenden. Etiketten auf Aufteilungszeilen werden durch diese Bearbeitung nicht geändert."
+    "nothingToChange": "Nichts zu ändern: Die Buchung trägt bereits jedes hinzuzufügende Etikett und keines der zu entfernenden. Etiketten auf Aufteilungszeilen werden nur über splitTags geändert.",
+    "splitTagsNotSplit": "splitTags ändert die Etiketten auf den Zeilen einer aufgeteilten Buchung, und diese Buchung ist nicht aufgeteilt. Verwenden Sie addTagNames und removeTagNames für ihre eigenen Etiketten.",
+    "splitTagsRepeated": "splitId {{ splitId }} kommt in splitTags mehr als einmal vor. Geben Sie jeder Zeile einen Eintrag.",
+    "splitTagsWithSplits": "splitTags kann nicht zusammen mit splits gesendet werden. Eine ersetzte Zeile behält ihre Etiketten, wenn sie ihre splitId nennt; ändern Sie die Etiketten der Zeilen in einer eigenen Bearbeitung.",
+    "splitLineGone": "Die Aufteilungszeile {{ splitId }} gehört nicht mehr zu dieser Buchung: Ihre Aufteilungszeilen haben sich geändert, nachdem diese Änderung vorgeschlagen wurde. Lesen Sie die Buchung erneut und schlagen Sie die Etikettenänderung neu vor."
   },
   "transactionRules": {
     "notFound": "Transaktionsregel mit der ID {{ id }} nicht gefunden",

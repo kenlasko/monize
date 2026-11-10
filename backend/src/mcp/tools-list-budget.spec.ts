@@ -130,11 +130,18 @@ import { McpServerService } from "./mcp-server.service";
 // by name, on the shared manage_* envelope). Total 65,105 -> 68,458 = exactly
 // the two tools' measured bytes (68,443 measured, the 15-byte margin kept); no
 // existing cap moved.
+//
+// Raised, as the follow-up the #2094 decision left open (tags on split
+// lines), by the measured bytes as before: `manage_transactions` takes
+// `splitTags` on an update (per existing line: a splitId and the names to add
+// and remove), with one clause in the description. 6,102 -> 6,626 bytes
+// measured (+524); cap 6,110 -> 6,634; total 68,458 -> 68,982 (68,966
+// measured, the margin kept).
 const TOOL_BYTE_BUDGET: Record<string, number> = {
   list_accounts: 2360,
   list_transactions: 3550,
   compare_periods: 1900,
-  manage_transactions: 6110,
+  manage_transactions: 6634,
   list_categories: 1200,
   list_payees: 2010,
   manage_payees: 2860,
@@ -162,7 +169,7 @@ const TOOL_BYTE_BUDGET: Record<string, number> = {
   report_progress: 1140,
 };
 
-const TOTAL_BYTE_BUDGET = 68_458;
+const TOTAL_BYTE_BUDGET = 68_982;
 const INSTRUCTIONS_BYTE_BUDGET = 2_600;
 
 /**

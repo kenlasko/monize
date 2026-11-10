@@ -259,6 +259,12 @@
     "addTags": "Adicionar etiquetas",
     "removeTags": "Remover etiquetas",
     "splitLineTags": "etiquetas: {tags}",
+    "splitLineTagChanges": "Etiquetas das linhas de divisão",
+    "splitLineName": "{category} {amount}",
+    "splitLineNameWithMemo": "{category} {amount} ({memo})",
+    "splitLineWithLeg": "{line} e a respetiva transferência em {account}",
+    "splitLineTagChange": "{line}: {changes}",
+    "splitLineTagChangeBoth": "{added}; {removed}",
     "bulkTagsAdded": "adiciona etiquetas: {tags}",
     "bulkTagsRemoved": "remove etiquetas: {tags}",
     "marksPaidDue": "{name} (vence a {date})"

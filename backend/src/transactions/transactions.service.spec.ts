@@ -16,6 +16,7 @@ import {
 } from "../attachments/attachment-parent";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
+import { TransactionSplitTag } from "../tags/entities/transaction-split-tag.entity";
 import { Category } from "../categories/entities/category.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
 import { Payee } from "../payees/entities/payee.entity";
@@ -2215,6 +2216,247 @@ describe("TransactionsService", () => {
           },
         });
         expect(order).toEqual(["hook", "tags"]);
+      });
+    });
+
+    describe("splitTagChanges (tags on existing split lines)", () => {
+      const update = async (options: object) => {
+        transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
+        lockedRow = { ...mockTx };
+        mockQueryRunner.manager.findOne.mockResolvedValueOnce({ ...mockTx });
+        return service.update("user-1", "tx-1", {} as any, options);
+      };
+
+      it("adds and removes tags on the named line only, in the write's own transaction", async () => {
+        splitsRepository.find.mockResolvedValue([
+          { id: "s1", transactionId: "tx-1", linkedTransactionId: null },
+        ]);
+        tagsService.findOrCreateByNames.mockResolvedValue([
+          { id: "tag-v", name: "Vacation" },
+        ]);
+
+        await update({
+          splitTagChanges: [
+            {
+              splitId: "s1",
+              addTagNames: ["Vacation"],
+              removeTagIds: ["tag-w"],
+            },
+          ],
+        });
+
+        expect(splitsRepository.find).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({ transactionId: "tx-1" }),
+          }),
+        );
+        expect(tagsService.addSplitTags).toHaveBeenCalledWith(
+          mockQueryRunner.manager,
+          "user-1",
+          ["s1"],
+          ["tag-v"],
+        );
+        expect(tagsService.removeSplitTags).toHaveBeenCalledWith(
+          mockQueryRunner.manager,
+          "user-1",
+          ["s1"],
+          ["tag-w"],
+        );
+        // A plain line has no counterpart leg to mirror onto.
+        expect(tagsService.addTransactionTags).toHaveBeenCalledWith(
+          mockQueryRunner.manager,
+          "user-1",
+          [],
+          ["tag-v"],
+        );
+        expect(tagsService.setSplitTags).not.toHaveBeenCalled();
+      });
+
+      it("mirrors a transfer line's change onto its counterpart leg when the leg is the user's", async () => {
+        splitsRepository.find.mockResolvedValue([
+          { id: "s1", transactionId: "tx-1", linkedTransactionId: "leg-1" },
+        ]);
+        const routed = (
+          lockTransactionRows as jest.Mock
+        ).getMockImplementation();
+        (lockTransactionRows as jest.Mock).mockImplementation(
+          (m: unknown, ids: readonly string[], user: string) =>
+            ids.includes("leg-1")
+              ? Promise.resolve(
+                  new Map([["leg-1", { id: "leg-1", status: "CLEARED" }]]),
+                )
+              : routed!(m, ids, user),
+        );
+
+        // Not the helper: its queued row would answer the leg lookup.
+        transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
+        lockedRow = { ...mockTx };
+        await service.update("user-1", "tx-1", {} as any, {
+          splitTagChanges: [{ splitId: "s1", removeTagIds: ["tag-w"] }],
+        });
+
+        expect(tagsService.removeSplitTags).toHaveBeenCalledWith(
+          mockQueryRunner.manager,
+          "user-1",
+          ["s1"],
+          ["tag-w"],
+        );
+        expect(tagsService.removeTransactionTags).toHaveBeenCalledWith(
+          mockQueryRunner.manager,
+          "user-1",
+          ["leg-1"],
+          ["tag-w"],
+        );
+        expect(lockTransactionRows).toHaveBeenCalledWith(
+          mockQueryRunner.manager,
+          ["leg-1"],
+          "user-1",
+        );
+        (lockTransactionRows as jest.Mock).mockImplementation(routed!);
+      });
+
+      it("refuses the edit when the counterpart leg is held by the reconciled lock", async () => {
+        splitsRepository.find.mockResolvedValue([
+          { id: "s1", transactionId: "tx-1", linkedTransactionId: "leg-1" },
+        ]);
+        const routed = (
+          lockTransactionRows as jest.Mock
+        ).getMockImplementation();
+        (lockTransactionRows as jest.Mock).mockImplementation(
+          (m: unknown, ids: readonly string[], user: string) =>
+            ids.includes("leg-1")
+              ? Promise.resolve(
+                  new Map([["leg-1", { id: "leg-1", status: "RECONCILED" }]]),
+                )
+              : routed!(m, ids, user),
+        );
+        // The user has the reconciled lock on.
+        const repoOf =
+          mockQueryRunner.manager.getRepository.getMockImplementation();
+        mockQueryRunner.manager.getRepository.mockImplementation(
+          (entity: any) =>
+            entity === UserPreference
+              ? {
+                  findOne: jest
+                    .fn()
+                    .mockResolvedValue({ lockReconciledTransactions: true }),
+                }
+              : repoOf!(entity),
+        );
+        transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
+        lockedRow = { ...mockTx };
+
+        mockQueryRunner.manager.update.mockClear();
+        await expect(
+          service.update("user-1", "tx-1", { description: "x" } as any, {
+            splitTagChanges: [{ splitId: "s1", removeTagIds: ["tag-w"] }],
+          }),
+        ).rejects.toThrow(/reconcil/i);
+        // Refused before the edit wrote anything, not rolled back after.
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+        expect(tagsService.removeSplitTags).not.toHaveBeenCalled();
+        (lockTransactionRows as jest.Mock).mockImplementation(routed!);
+        mockQueryRunner.manager.getRepository.mockImplementation(repoOf!);
+      });
+
+      it("records in the history entry exactly which touched tags the line and leg carried", async () => {
+        splitsRepository.find.mockResolvedValue([
+          { id: "s1", transactionId: "tx-1", linkedTransactionId: "leg-1" },
+        ]);
+        const routedFind = mockQueryRunner.manager.find.getMockImplementation();
+        mockQueryRunner.manager.find.mockImplementation(
+          (entity: any, opts: any) =>
+            entity === TransactionSplitTag
+              ? Promise.resolve([{ transactionSplitId: "s1", tagId: "tag-w" }])
+              : routedFind!(entity, opts),
+        );
+        transactionTagsRepository.find.mockResolvedValue([
+          { transactionId: "leg-1", tagId: "tag-v" },
+        ]);
+        const routedLock = (
+          lockTransactionRows as jest.Mock
+        ).getMockImplementation();
+        (lockTransactionRows as jest.Mock).mockImplementation(
+          (m: unknown, ids: readonly string[], user: string) =>
+            ids.includes("leg-1")
+              ? Promise.resolve(
+                  new Map([["leg-1", { id: "leg-1", status: "CLEARED" }]]),
+                )
+              : routedLock!(m, ids, user),
+        );
+        tagsService.findOrCreateByNames.mockResolvedValue([
+          { id: "tag-v", name: "Vacation" },
+        ]);
+        const record = (service as any).actionHistoryService
+          .record as jest.Mock;
+        record.mockClear();
+        transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
+        lockedRow = { ...mockTx };
+
+        await service.update("user-1", "tx-1", {} as any, {
+          splitTagChanges: [
+            {
+              splitId: "s1",
+              addTagNames: ["Vacation"],
+              removeTagIds: ["tag-w"],
+            },
+          ],
+        });
+
+        const place = {
+          splitId: "s1",
+          legId: "leg-1",
+          touched: ["tag-v", "tag-w"],
+        };
+        const entry = record.mock.calls[0][1];
+        // Before: the line carried Work, the leg already Vacation.
+        expect(entry.beforeData.splitTagPlaces).toEqual([
+          { ...place, line: ["tag-w"], leg: ["tag-v"] },
+        ]);
+        expect(entry.afterData.splitTagPlaces).toEqual([
+          { ...place, line: ["tag-v"], leg: ["tag-v"] },
+        ]);
+        mockQueryRunner.manager.find.mockImplementation(routedFind!);
+        (lockTransactionRows as jest.Mock).mockImplementation(routedLock!);
+      });
+
+      it("refuses, writing nothing, more new names across lines than one lookup resolves", async () => {
+        splitsRepository.find.mockResolvedValue(
+          Array.from({ length: 6 }, (_, i) => ({
+            id: `s${i}`,
+            transactionId: "tx-1",
+            linkedTransactionId: null,
+          })),
+        );
+        mockQueryRunner.manager.update.mockClear();
+        transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
+        lockedRow = { ...mockTx };
+
+        await expect(
+          service.update("user-1", "tx-1", { description: "x" } as any, {
+            splitTagChanges: Array.from({ length: 6 }, (_, i) => ({
+              splitId: `s${i}`,
+              addTagNames: Array.from({ length: 20 }, (_, n) => `T${i}-${n}`),
+            })),
+          }),
+        ).rejects.toThrow(/At most 100 tags/);
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+        expect(tagsService.findOrCreateByNames).not.toHaveBeenCalled();
+      });
+
+      it("refuses the edit when the line is no longer on the transaction", async () => {
+        splitsRepository.find.mockResolvedValue([]);
+
+        mockQueryRunner.manager.update.mockClear();
+        transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
+        lockedRow = { ...mockTx };
+        await expect(
+          service.update("user-1", "tx-1", { description: "x" } as any, {
+            splitTagChanges: [{ splitId: "s1", removeTagIds: ["t"] }],
+          }),
+        ).rejects.toThrow(/no longer on this transaction/);
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+        expect(tagsService.removeSplitTags).not.toHaveBeenCalled();
       });
     });
 
@@ -9626,6 +9868,85 @@ describe("TransactionsService", () => {
         });
       });
 
+      it("shows each split line's own tags, and the transaction's on every line", async () => {
+        categoriesRepository.find.mockResolvedValue([]);
+        jest.spyOn(service, "findOne").mockResolvedValue({
+          id: "t-split",
+          transactionDate: "2026-01-15",
+          payeeName: "Costco",
+          category: null,
+          amount: -90,
+          account: { name: "Checking" },
+          description: null,
+          status: "cleared",
+          isSplit: true,
+          splits: [],
+          tags: [{ id: "t1", name: "Household" }],
+        } as any);
+        splitsRepository.find.mockResolvedValue([
+          {
+            id: "s1",
+            transactionId: "t-split",
+            amount: -40,
+            memo: null,
+            category: null,
+            tags: [{ id: "t2", name: "Vacation" }],
+          },
+          {
+            id: "s2",
+            transactionId: "t-split",
+            amount: -50,
+            memo: null,
+            category: null,
+            tags: [],
+          },
+        ]);
+
+        const rows = await service.getLlmTransactionById("user-1", "t-split");
+
+        expect(splitsRepository.find).toHaveBeenCalledWith(
+          expect.objectContaining({ relations: ["category", "tags"] }),
+        );
+        expect(rows[0]).toMatchObject({
+          splitId: "s1",
+          tagNames: ["Vacation"],
+          transactionTagNames: ["Household"],
+        });
+        // On every line: an amount filter may return any one of them.
+        expect(rows[1]).not.toHaveProperty("tagNames");
+        expect(rows[1].transactionTagNames).toEqual(["Household"]);
+      });
+
+      it("shows a plain transaction's tags on its row, and none when it has none", async () => {
+        const plain = {
+          id: "t-plain",
+          transactionDate: "2026-01-14",
+          payeeName: "Coffee",
+          category: null,
+          amount: -5,
+          account: { name: "Checking" },
+          description: null,
+          status: "cleared",
+          isSplit: false,
+        };
+        jest.spyOn(service, "findOne").mockResolvedValue({
+          ...plain,
+          tags: [{ id: "t1", name: "Work" }],
+        } as any);
+        const [tagged] = await service.getLlmTransactionById(
+          "user-1",
+          "t-plain",
+        );
+        expect(tagged.tagNames).toEqual(["Work"]);
+        expect(tagged).not.toHaveProperty("transactionTagNames");
+
+        jest
+          .spyOn(service, "findOne")
+          .mockResolvedValue({ ...plain, tags: [] } as any);
+        const [bare] = await service.getLlmTransactionById("user-1", "t-plain");
+        expect(bare).not.toHaveProperty("tagNames");
+      });
+
       it("answers a plain transaction as one row without reading splits", async () => {
         splitsRepository.find.mockClear();
         jest.spyOn(service, "findOne").mockResolvedValue({
@@ -10196,6 +10517,206 @@ describe("TransactionsService", () => {
         await expect(
           service.previewUpdate("user-1", "tx-1", { referenceNumber: "EX-1" }),
         ).rejects.toThrow(/at least one field/);
+      });
+    });
+
+    describe("split line tags (splitTags)", () => {
+      const splitTx = {
+        ...baseTx,
+        isSplit: true,
+        categoryId: null,
+        category: null,
+        splits: [
+          {
+            id: "s1",
+            amount: -8.5,
+            memo: null,
+            category: { name: "Groceries" },
+            linkedTransactionId: null,
+            tags: [{ id: "t-work", name: "Work" }],
+          },
+          {
+            id: "s2",
+            amount: -4,
+            memo: "snacks",
+            category: { name: "Dining" },
+            linkedTransactionId: null,
+            tags: [],
+          },
+        ],
+      };
+
+      it("previews a tag added to one line and one removed from another, as a tag-only edit", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...splitTx });
+        tagsService.findByNames.mockResolvedValue([
+          { id: "t-work", name: "Work" },
+          { id: "t-vac", name: "Vacation" },
+        ]);
+
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          splitTags: [
+            { splitId: "s2", addNames: ["vacation"] },
+            { splitId: "s1", removeNames: ["Work"] },
+          ],
+        });
+
+        expect(preview.splitTagChanges).toEqual([
+          {
+            splitId: "s2",
+            categoryName: "Dining",
+            amount: -4,
+            memo: "snacks",
+            tagNames: ["Vacation"],
+          },
+          {
+            splitId: "s1",
+            categoryName: "Groceries",
+            amount: -8.5,
+            memo: null,
+            removeTagIds: ["t-work"],
+            removeTagNames: ["Work"],
+          },
+        ]);
+        // The transaction's own tags are not touched.
+        expect(preview).not.toHaveProperty("tagNames");
+        expect(preview).not.toHaveProperty("removeTagIds");
+        expect(preview.tagsOnly).toBe(true);
+      });
+
+      it("leaves out a line whose tags already match, and refuses an edit that changes nothing", async () => {
+        transactionsRepository.findOne.mockResolvedValue({ ...splitTx });
+        tagsService.findByNames.mockResolvedValue([
+          { id: "t-work", name: "Work" },
+        ]);
+
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          description: "x",
+          splitTags: [{ splitId: "s1", addNames: ["Work"] }],
+        });
+        expect(preview).not.toHaveProperty("splitTagChanges");
+
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            splitTags: [{ splitId: "s2", removeNames: ["Work"] }],
+          }),
+        ).rejects.toThrow(/Nothing to change/);
+      });
+
+      it("refuses a splitId that is not a line of the transaction, or one named twice", async () => {
+        transactionsRepository.findOne.mockResolvedValue({ ...splitTx });
+
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            splitTags: [{ splitId: "s9", addNames: ["A"] }],
+          }),
+        ).rejects.toThrow(/s9 is not a split line/);
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            splitTags: [
+              { splitId: "s1", addNames: ["A"] },
+              { splitId: "s1", removeNames: ["Work"] },
+            ],
+          }),
+        ).rejects.toThrow(/more than once in splitTags/);
+      });
+
+      it("refuses splitTags on a transaction that is not split", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...baseTx });
+
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            splitTags: [{ splitId: "s1", addNames: ["A"] }],
+          }),
+        ).rejects.toThrow(/not split/);
+      });
+
+      it("refuses more new names across lines than one lookup resolves", async () => {
+        transactionsRepository.findOne.mockResolvedValue({
+          ...splitTx,
+          splits: Array.from({ length: 6 }, (_, i) => ({
+            ...splitTx.splits[1],
+            id: `s${i}`,
+          })),
+        });
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            splitTags: Array.from({ length: 6 }, (_, i) => ({
+              splitId: `s${i}`,
+              addNames: Array.from({ length: 20 }, (_, n) => `T${i}-${n}`),
+            })),
+          }),
+        ).rejects.toThrow(/At most 100 tags/);
+      });
+
+      it("refuses a change whose counterpart leg the reconciled lock holds", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({
+          ...splitTx,
+          splits: [
+            { ...splitTx.splits[0], linkedTransactionId: "leg-1", tags: [] },
+            splitTx.splits[1],
+          ],
+        });
+        mockQueryRunner.manager.find.mockImplementationOnce(() =>
+          Promise.resolve([
+            { id: "leg-1", status: "RECONCILED", account: { name: "Savings" } },
+          ]),
+        );
+        tagsService.findByNames.mockResolvedValue([]);
+        const repoOf =
+          mockQueryRunner.manager.getRepository.getMockImplementation();
+        mockQueryRunner.manager.getRepository.mockImplementation(
+          (entity: any) =>
+            entity === UserPreference
+              ? {
+                  findOne: jest
+                    .fn()
+                    .mockResolvedValue({ lockReconciledTransactions: true }),
+                }
+              : repoOf!(entity),
+        );
+
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            splitTags: [{ splitId: "s1", addNames: ["Trip"] }],
+          }),
+        ).rejects.toThrow(/reconcil/i);
+        mockQueryRunner.manager.getRepository.mockImplementation(repoOf!);
+      });
+
+      it("reads a transfer line's tags on its counterpart leg too", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({
+          ...splitTx,
+          splits: [
+            {
+              ...splitTx.splits[0],
+              linkedTransactionId: "leg-1",
+              tags: [],
+            },
+            splitTx.splits[1],
+          ],
+        });
+        // The batched leg lookup: one find for every line's counterpart.
+        mockQueryRunner.manager.find.mockImplementationOnce(() =>
+          Promise.resolve([{ id: "leg-1", account: { name: "Savings" } }]),
+        );
+        transactionTagsRepository.find.mockResolvedValue([
+          { transactionId: "leg-1", tagId: "t-work" },
+        ]);
+        tagsService.findByNames.mockResolvedValue([
+          { id: "t-work", name: "Work" },
+        ]);
+
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          splitTags: [{ splitId: "s1", removeNames: ["Work"] }],
+        });
+
+        // Only the leg carries Work: it is there to remove.
+        expect(preview.splitTagChanges?.[0]).toMatchObject({
+          splitId: "s1",
+          removeTagIds: ["t-work"],
+          // The card names the other account, whose transaction changes too.
+          legAccountName: "Savings",
+        });
       });
     });
 

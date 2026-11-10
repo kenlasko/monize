@@ -259,6 +259,12 @@
     "addTags": "Etiket ekle",
     "removeTags": "Etiket kaldır",
     "splitLineTags": "etiketler: {tags}",
+    "splitLineTagChanges": "Bölme satırı etiketleri",
+    "splitLineName": "{category} {amount}",
+    "splitLineNameWithMemo": "{category} {amount} ({memo})",
+    "splitLineWithLeg": "{line} ve {account} içindeki transferi",
+    "splitLineTagChange": "{line}: {changes}",
+    "splitLineTagChangeBoth": "{added}; {removed}",
     "bulkTagsAdded": "etiket ekler: {tags}",
     "bulkTagsRemoved": "etiket kaldırır: {tags}",
     "marksPaidDue": "{name} (vadesi {date})"

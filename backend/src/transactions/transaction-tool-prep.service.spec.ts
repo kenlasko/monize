@@ -682,6 +682,103 @@ describe("TransactionToolPrepService", () => {
       );
     });
 
+    describe("split line tags (splitTags)", () => {
+      const splitTagChanges = [
+        {
+          splitId: "s1",
+          categoryName: "Groceries",
+          amount: -20,
+          memo: null,
+          tagNames: ["Trip"],
+          newTagNames: ["Trip"],
+          removeTagIds: ["tag-o"],
+          removeTagNames: ["Old"],
+        },
+      ];
+
+      it("passes each line's names to previewUpdate", async () => {
+        await service.prepareUpdate(userId, {
+          transactionId: "t1",
+          splitTags: [
+            { splitId: "s1", addTagNames: ["Trip"], removeTagNames: ["Old"] },
+          ],
+        });
+        expect(transactions.previewUpdate).toHaveBeenCalledWith(
+          userId,
+          "t1",
+          expect.objectContaining({
+            splitTags: [
+              { splitId: "s1", addNames: ["Trip"], removeNames: ["Old"] },
+            ],
+          }),
+        );
+      });
+
+      it("refuses splitTags sent with a splits replacement, previewing nothing", async () => {
+        await expect(
+          service.prepareUpdate(userId, {
+            transactionId: "t1",
+            splits: [
+              { categoryName: "Dining", amount: -20 },
+              { categoryName: "Dining", amount: -10 },
+            ],
+            splitTags: [{ splitId: "s1", addTagNames: ["Trip"] }],
+          }),
+        ).rejects.toThrow(/cannot be sent with splits/);
+        expect(transactions.previewUpdate).not.toHaveBeenCalled();
+      });
+
+      it("refuses splitTags on a transfer", async () => {
+        transactions.findOne.mockResolvedValueOnce({
+          id: "t1",
+          isTransfer: true,
+          linkedTransactionId: "t2",
+        });
+        await expect(
+          service.prepareUpdate(userId, {
+            transactionId: "t1",
+            splitTags: [{ splitId: "s1", addTagNames: ["Trip"] }],
+          }),
+        ).rejects.toThrow(/not split/);
+      });
+
+      it("carries the lines' changes onto a bulk row: ids to write, names to show", async () => {
+        transactions.findOne.mockResolvedValueOnce({
+          id: "t1",
+          isTransfer: false,
+        });
+        transactions.previewUpdate.mockResolvedValueOnce({
+          ...(await transactions.previewUpdate()),
+          splitTagChanges,
+          tagsOnly: true,
+        });
+        const result = await service.prepareUpdateBulk(userId, [
+          {
+            transactionId: "t1",
+            splitTags: [{ splitId: "s1", addTagNames: ["Trip"] }],
+          },
+        ]);
+        expect(result.okRows[0]).toMatchObject({
+          splitTagChanges: [
+            { splitId: "s1", tagNames: ["Trip"], removeTagIds: ["tag-o"] },
+          ],
+          tagsOnly: true,
+        });
+        expect(result.okRows[0].splitTagChanges?.[0]).not.toHaveProperty(
+          "removeTagNames",
+        );
+        expect(result.previewRows[0].splitTagChanges).toEqual([
+          {
+            categoryName: "Groceries",
+            amount: -20,
+            tagNames: ["Trip"],
+            newTagNames: ["Trip"],
+            removeTagNames: ["Old"],
+          },
+        ]);
+      });
+    });
+
     it("previews a transfer's tag change from the edited leg", async () => {
       transactions.findOne.mockResolvedValueOnce({
         id: "t1",

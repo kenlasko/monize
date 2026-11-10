@@ -259,6 +259,12 @@
     "addTags": "[XX-Add tags-XX]",
     "removeTags": "[XX-Remove tags-XX]",
     "splitLineTags": "[XX-tags: {tags}-XX]",
+    "splitLineTagChanges": "[XX-Split line tags-XX]",
+    "splitLineName": "[XX-{category} {amount}-XX]",
+    "splitLineNameWithMemo": "[XX-{category} {amount} ({memo})-XX]",
+    "splitLineWithLeg": "[XX-{line}, and its transfer in {account}-XX]",
+    "splitLineTagChange": "[XX-{line}: {changes}-XX]",
+    "splitLineTagChangeBoth": "[XX-{added}; {removed}-XX]",
     "bulkTagsAdded": "[XX-adds tags: {tags}-XX]",
     "bulkTagsRemoved": "[XX-removes tags: {tags}-XX]",
     "marksPaidDue": "[XX-{name} (due {date})-XX]"

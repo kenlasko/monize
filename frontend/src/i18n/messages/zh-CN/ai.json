@@ -259,6 +259,12 @@
     "addTags": "添加标签",
     "removeTags": "移除标签",
     "splitLineTags": "标签：{tags}",
+    "splitLineTagChanges": "拆分行标签",
+    "splitLineName": "{category} {amount}",
+    "splitLineNameWithMemo": "{category} {amount}（{memo}）",
+    "splitLineWithLeg": "{line}，以及其在 {account} 中的转账",
+    "splitLineTagChange": "{line}：{changes}",
+    "splitLineTagChangeBoth": "{added}；{removed}",
     "bulkTagsAdded": "添加标签：{tags}",
     "bulkTagsRemoved": "移除标签：{tags}",
     "marksPaidDue": "{name}（到期日 {date}）"

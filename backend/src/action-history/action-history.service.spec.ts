@@ -20,6 +20,7 @@ import {
 import { ActionHistory } from "./entities/action-history.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { Tag } from "../tags/entities/tag.entity";
 import { BondPriceService } from "../bonds/bond-price.service";
 import { HoldingsService } from "../securities/holdings.service";
 import { requestContextStorage } from "../common/request-context";
@@ -879,6 +880,155 @@ describe("ActionHistoryService", () => {
           { opening_balance: "0", tx_sum: "0" },
         ]);
       };
+
+      describe("a split-line tag change (its exact record, splitTagPlaces)", () => {
+        // The reviewer's cases: the leg's own tags differ from the line's.
+        const tagAction = (before: unknown[], after: unknown[]) => ({
+          ...mockAction,
+          entityType: "transaction",
+          action: "update",
+          entityId: "tx-1",
+          beforeData: { accountId: "acc-1", splitTagPlaces: before },
+          afterData: { accountId: "acc-1", splitTagPlaces: after },
+        });
+        const arrangeTags = (
+          action: unknown,
+          {
+            lines = ["s2"],
+            tags = ["t-trip", "t-old"],
+            leg = {} as object,
+          } = {},
+        ) => {
+          arrange(action);
+          mockLockedRows({
+            "tx-1": { account_id: "acc-1", amount: "-100" },
+            "leg-1": { account_id: "acc-2", amount: "40", ...leg },
+          });
+          mockQueryRunner.manager.find.mockImplementation(
+            (entity: unknown, opts: any) => {
+              const ids: string[] = opts?.where?.id?._value ?? [];
+              if (entity === Tag)
+                return Promise.resolve(
+                  ids.filter((id) => tags.includes(id)).map((id) => ({ id })),
+                );
+              return Promise.resolve(
+                ids.filter((id) => lines.includes(id)).map((id) => ({ id })),
+              );
+            },
+          );
+        };
+        const sqlCalls = () =>
+          mockQueryRunner.query.mock.calls
+            .filter(([sql]: [string]) => /_tags/.test(sql))
+            .map(([sql, params]: [string, unknown[]]) => [
+              sql.startsWith("INSERT") ? "insert" : "delete",
+              sql.includes("transaction_split_tags") ? "line" : "leg",
+              ...(params as string[]),
+            ]);
+
+        it("leaves a tag the leg carried before the edit on it", async () => {
+          // Line had no Trip, the leg already did; the edit added Trip.
+          const place = { splitId: "s2", legId: "leg-1", touched: ["t-trip"] };
+          arrangeTags(
+            tagAction(
+              [{ ...place, line: [], leg: ["t-trip"] }],
+              [{ ...place, line: ["t-trip"], leg: ["t-trip"] }],
+            ),
+          );
+
+          await service.undo(userId);
+
+          expect(sqlCalls()).toEqual([
+            ["delete", "line", "s2", "t-trip"],
+            ["insert", "leg", "leg-1", "t-trip"],
+          ]);
+        });
+
+        it("puts back a tag the edit removed from the leg alone, and redoes it", async () => {
+          const place = { splitId: "s2", legId: "leg-1", touched: ["t-old"] };
+          const action = tagAction(
+            [{ ...place, line: [], leg: ["t-old"] }],
+            [{ ...place, line: [], leg: [] }],
+          );
+          arrangeTags(action);
+          await service.undo(userId);
+          expect(sqlCalls()).toContainEqual([
+            "insert",
+            "leg",
+            "leg-1",
+            "t-old",
+          ]);
+
+          mockQueryRunner.query.mockClear();
+          arrangeTags({ ...action, isUndone: true });
+          await service.redo(userId);
+          expect(sqlCalls()).toContainEqual([
+            "delete",
+            "leg",
+            "leg-1",
+            "t-old",
+          ]);
+        });
+
+        it("refuses, writing nothing, when the leg is held by the reconciled lock", async () => {
+          const place = { splitId: "s2", legId: "leg-1", touched: ["t-trip"] };
+          arrangeTags(
+            tagAction(
+              [{ ...place, line: [], leg: [] }],
+              [{ ...place, line: ["t-trip"], leg: ["t-trip"] }],
+            ),
+            { leg: { status: "RECONCILED" } },
+          );
+          const routeRepository =
+            mockQueryRunner.manager.getRepository.getMockImplementation();
+          mockQueryRunner.manager.getRepository.mockImplementation(
+            (entity: unknown) =>
+              entity === UserPreference
+                ? {
+                    findOne: jest
+                      .fn()
+                      .mockResolvedValue({ lockReconciledTransactions: true }),
+                  }
+                : routeRepository(entity),
+          );
+
+          await expect(service.undo(userId)).rejects.toBeInstanceOf(
+            ConflictException,
+          );
+          expect(sqlCalls()).toEqual([]);
+        });
+
+        it("refuses with a reason when the line or a tag is gone", async () => {
+          const place = { splitId: "s2", legId: null, touched: ["t-trip"] };
+          const action = tagAction(
+            [{ ...place, line: ["t-trip"], leg: [] }],
+            [{ ...place, line: [], leg: [] }],
+          );
+          arrangeTags(action, { lines: [] });
+          await expect(service.undo(userId)).rejects.toThrow(
+            /split line this change tagged/,
+          );
+
+          arrangeTags(action, { tags: [] });
+          await expect(service.undo(userId)).rejects.toThrow(
+            /has been deleted since/,
+          );
+          expect(sqlCalls()).toEqual([]);
+        });
+      });
+
+      it("leaves line tags alone for an entry whose snapshots did not record them", async () => {
+        arrange(splitAction(transferSplits("leg-1"), transferSplits("leg-1")));
+        mockQueryRunner.manager.find.mockClear();
+
+        await service.undo(userId);
+
+        expect(
+          mockQueryRunner.query.mock.calls.some(([sql]: [string]) =>
+            sql.includes("transaction_split_tags"),
+          ),
+        ).toBe(false);
+      });
 
       it("leaves the split rows alone when the edit resent the same lines", async () => {
         // The re-created lines carry new ids and new counterpart ids.

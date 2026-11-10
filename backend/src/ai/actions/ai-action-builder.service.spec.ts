@@ -678,6 +678,57 @@ describe("AiActionBuilderService", () => {
     expect(signing.sign).toHaveBeenLastCalledWith(action.descriptor);
   });
 
+  it("signs the split lines' tag changes by id and shows them by name", () => {
+    const preview: UpdateTransactionPreview = {
+      transactionId: "t1",
+      accountId: "a1",
+      accountName: "Checking",
+      amount: -75,
+      transactionDate: "2025-04-01",
+      payeeId: null,
+      payeeName: null,
+      payeeMatched: false,
+      payeeWillBeCreated: false,
+      categoryId: null,
+      categoryName: null,
+      description: null,
+      currencyCode: "USD",
+      isReconciled: false,
+      splitTagChanges: [
+        {
+          splitId: "s1",
+          categoryName: "Groceries",
+          amount: -50,
+          memo: null,
+          tagNames: ["Trip"],
+          newTagNames: ["Trip"],
+          removeTagIds: ["tag-o"],
+          removeTagNames: ["Old"],
+        },
+      ],
+      tagsOnly: true,
+    };
+
+    const action = builder.buildUpdateTransaction("u1", preview);
+
+    expect(action.descriptor).toMatchObject({
+      splitTagChanges: [
+        { splitId: "s1", tagNames: ["Trip"], removeTagIds: ["tag-o"] },
+      ],
+      tagsOnly: true,
+    });
+    expect(action.preview.splitTagChanges).toEqual([
+      {
+        categoryName: "Groceries",
+        amount: -50,
+        tagNames: ["Trip"],
+        newTagNames: ["Trip"],
+        removeTagNames: ["Old"],
+      },
+    ]);
+    expect(signing.sign).toHaveBeenLastCalledWith(action.descriptor);
+  });
+
   it("signs the tag names an update adds, and shows which of them are new", () => {
     const preview: UpdateTransactionPreview = {
       transactionId: "t1",

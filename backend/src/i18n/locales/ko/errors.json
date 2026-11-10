@@ -98,6 +98,8 @@
     "undoNotSupportedForEntityType": "엔터티 유형에 대한 실행 취소가 지원되지 않습니다: {{ entityType }}",
     "unsupportedTransactionAction": "지원되지 않는 거래 작업입니다: {{ action }}",
     "undoTransactionGone": "실행 취소할 수 없습니다: 거래가 더 이상 존재하지 않습니다",
+    "undoSplitLineGone": "실행 취소할 수 없습니다: 이 변경으로 태그가 바뀐 분할 항목이 더 이상 거래에 없습니다",
+    "undoTagGone": "실행 취소할 수 없습니다: 이 변경에 관련된 태그가 그 후 삭제되었습니다",
     "redoCreateWithLegs": "이 거래는 다른 계좌에 항목을 만들었으므로 다시 실행할 수 없습니다. 대신 거래를 다시 만드세요",
     "undoAccountGone": "실행 취소할 수 없습니다: 계정이 더 이상 존재하지 않습니다",
     "unsupportedTransferAction": "지원되지 않는 이체 작업입니다: {{ action }}",
@@ -758,7 +760,11 @@
     "repeatedInBatch": "이 요청의 다른 항목이 이미 이 태그를 지정하고 있습니다.",
     "nameRequired": "태그에는 이름이 필요합니다.",
     "invalidColor": "\"{{ color }}\"은(는) 색상이 아닙니다. #RRGGBB 형식(예: #FF5733)을 사용하세요.",
-    "nothingToChange": "변경할 내용이 없습니다. 이 거래에는 추가할 태그가 모두 있고 제거할 태그는 없습니다. 분할 항목의 태그는 이 편집으로 변경되지 않습니다."
+    "nothingToChange": "변경할 내용이 없습니다. 이 거래에는 추가할 태그가 모두 있고 제거할 태그는 없습니다. 분할 항목의 태그는 splitTags로만 변경됩니다.",
+    "splitTagsNotSplit": "splitTags는 분할 거래 항목의 태그를 변경하지만 이 거래는 분할되어 있지 않습니다. 거래 자체의 태그에는 addTagNames와 removeTagNames를 사용하세요.",
+    "splitTagsRepeated": "splitId {{ splitId }}이(가) splitTags에 두 번 이상 있습니다. 항목마다 하나만 지정하세요.",
+    "splitTagsWithSplits": "splitTags는 splits와 함께 보낼 수 없습니다. 교체된 항목은 splitId를 지정하면 태그를 유지합니다. 항목의 태그는 별도의 편집으로 변경하세요.",
+    "splitLineGone": "분할 항목 {{ splitId }}이(가) 더 이상 이 거래에 없습니다. 이 변경이 제안된 후 분할 항목이 바뀌었습니다. 거래를 다시 읽고 태그 변경을 새로 제안하세요."
   },
   "transactionRules": {
     "notFound": "ID가 {{ id }}인 거래 규칙을 찾을 수 없습니다",

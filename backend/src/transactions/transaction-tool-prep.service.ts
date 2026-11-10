@@ -41,6 +41,8 @@ import { tr } from "../i18n/translate";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { carrySplitTags } from "./split-tag-carry.util";
 import {
+  splitTagChangeDisplayFields,
+  splitTagChangeWriteFields,
   tagChangeDisplayFields,
   tagChangeFields,
   tagChangeWriteFields,
@@ -111,6 +113,18 @@ export interface UpdateRowInput {
    * user has no tag for is refused. On a transfer, from both legs.
    */
   removeTagNames?: string[];
+  /**
+   * Tag changes on existing split lines of a split transaction, by the
+   * `splitId` a read tool returned: names to add (created at confirm when
+   * missing) and remove on that line only; the line's amount, category and
+   * other tags stay. Not with `splits` (a replaced line keeps its tags by its
+   * `splitId`), and not on a transfer.
+   */
+  splitTags?: {
+    splitId: string;
+    addTagNames?: string[];
+    removeTagNames?: string[];
+  }[];
   /**
    * The reference number ("Ref #") to set. Set by the review queue from an
    * email receipt's order number; the chat and MCP tools do not send it.
@@ -538,10 +552,26 @@ export class TransactionToolPrepService {
       item.transactionId,
     );
 
+    if (item.splitTags?.length && item.splits) {
+      throw new BadRequestException(
+        tr(
+          "errors.tags.splitTagsWithSplits",
+          "splitTags cannot be sent with splits. A replaced line keeps its tags when it names its splitId; change the lines' tags in a separate edit.",
+        ),
+      );
+    }
     if (this.transferService.isTransfer(existing)) {
       if (item.splits) {
         throw new BadRequestException(
           "A transfer cannot be converted into a split transaction.",
+        );
+      }
+      if (item.splitTags?.length) {
+        throw new BadRequestException(
+          tr(
+            "errors.tags.splitTagsNotSplit",
+            "splitTags changes the tags on a split transaction's lines, and this transaction is not split. Use addTagNames and removeTagNames for its own tags.",
+          ),
         );
       }
       await this.assertNotCrossOwnerTransfer(userId, existing);
@@ -593,7 +623,7 @@ export class TransactionToolPrepService {
         throw new BadRequestException(
           tr(
             "errors.tags.nothingToChange",
-            "Nothing to change: the transaction already carries every tag to add and none of the tags to remove. Tags on split lines are not changed by this edit.",
+            "Nothing to change: the transaction already carries every tag to add and none of the tags to remove. Tags on split lines change only through splitTags.",
           ),
         );
       }
@@ -630,6 +660,11 @@ export class TransactionToolPrepService {
         splitsAccompany: item.splits !== undefined,
         tagNames: item.tagNames,
         removeTagNames: item.removeTagNames,
+        splitTags: item.splitTags?.map((line) => ({
+          splitId: line.splitId,
+          addNames: line.addTagNames,
+          removeNames: line.removeTagNames,
+        })),
         referenceNumber: item.referenceNumber,
       },
     );
@@ -783,6 +818,7 @@ export class TransactionToolPrepService {
           currencyCode: preview.currencyCode,
           ...(splits ? { splits: splits.map(toSplitRowDescriptor) } : {}),
           ...tagChangeWriteFields(preview),
+          ...splitTagChangeWriteFields(preview),
           ...(preview.tagsOnly ? { tagsOnly: true as const } : {}),
         });
         okIndex.push(i);
@@ -801,6 +837,7 @@ export class TransactionToolPrepService {
           isReconciled: preview.isReconciled,
           ...(splits ? { splits: splits.map(toSplitPreview) } : {}),
           ...tagChangeDisplayFields(preview),
+          ...splitTagChangeDisplayFields(preview),
         });
       } catch (err) {
         const reason = this.skipReason(err);

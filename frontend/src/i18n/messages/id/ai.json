@@ -259,6 +259,12 @@
     "addTags": "Tambahkan tag",
     "removeTags": "Hapus tag",
     "splitLineTags": "tag: {tags}",
+    "splitLineTagChanges": "Tag baris pemisahan",
+    "splitLineName": "{category} {amount}",
+    "splitLineNameWithMemo": "{category} {amount} ({memo})",
+    "splitLineWithLeg": "{line}, dan transfernya di {account}",
+    "splitLineTagChange": "{line}: {changes}",
+    "splitLineTagChangeBoth": "{added}; {removed}",
     "bulkTagsAdded": "menambahkan tag: {tags}",
     "bulkTagsRemoved": "menghapus tag: {tags}",
     "marksPaidDue": "{name} (jatuh tempo {date})"

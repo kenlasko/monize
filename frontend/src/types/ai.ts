@@ -315,6 +315,22 @@ export interface PendingActionSplit {
   tagNames?: string[];
 }
 
+/**
+ * The tag change an edit makes on one existing split line: the line, named by
+ * its category, amount and memo, and the tags it gains (new ones among them)
+ * and loses.
+ */
+export interface PendingActionSplitTagChange {
+  categoryName: string | null;
+  amount: number;
+  memo?: string | null;
+  /** A transfer line: the account whose counterpart transaction changes too. */
+  legAccountName?: string;
+  tagNames?: string[];
+  newTagNames?: string[];
+  removeTagNames?: string[];
+}
+
 /** One chat file a create/update card will save on the transaction on approval. */
 export interface PendingActionAttachment {
   filename: string;
@@ -353,6 +369,8 @@ export interface PendingActionPreview {
   newTagNames?: string[];
   /** update_transaction / update_transfer: tag names the approval removes (the others stay). */
   removeTagNames?: string[];
+  /** update_transaction: the tag changes the approval makes on existing split lines. */
+  splitTagChanges?: PendingActionSplitTagChange[];
   /** update_transaction: the reference number ("Ref #") the approval sets; absent when it is left as it is. */
   referenceNumber?: string;
   name?: string | null;
@@ -555,6 +573,8 @@ export interface PendingActionPreviewRow {
   tagNames?: string[];
   newTagNames?: string[];
   removeTagNames?: string[];
+  /** Bulk update: the tag changes the row makes on existing split lines. */
+  splitTagChanges?: PendingActionSplitTagChange[];
   /** True when this bulk update/delete row targets a reconciled transaction. */
   isReconciled?: boolean;
   /**

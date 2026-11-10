@@ -24,6 +24,7 @@ import {
 } from "../../payees/payee-tool-prep.service";
 import { AiActionBuilderService } from "../actions/ai-action-builder.service";
 import {
+  AiActionSplitTagChangePreview,
   PendingAiAction,
   resolveApprovalMode,
 } from "../actions/ai-action.types";
@@ -200,14 +201,23 @@ function contactSummary(preview: {
 function tagSummarySuffix(change: {
   tagNames?: string[];
   removeTagNames?: string[];
+  splitTagChanges?: readonly AiActionSplitTagChangePreview[];
 }): string {
-  return (
-    (change.tagNames?.length
-      ? `, adding the tag${change.tagNames.length === 1 ? "" : "s"} ${change.tagNames.map((n) => `"${n}"`).join(", ")}`
+  const clause = (c: { tagNames?: string[]; removeTagNames?: string[] }) =>
+    (c.tagNames?.length
+      ? `, adding the tag${c.tagNames.length === 1 ? "" : "s"} ${c.tagNames.map((n) => `"${n}"`).join(", ")}`
       : "") +
-    (change.removeTagNames?.length
-      ? `, removing the tag${change.removeTagNames.length === 1 ? "" : "s"} ${change.removeTagNames.map((n) => `"${n}"`).join(", ")}`
-      : "")
+    (c.removeTagNames?.length
+      ? `, removing the tag${c.removeTagNames.length === 1 ? "" : "s"} ${c.removeTagNames.map((n) => `"${n}"`).join(", ")}`
+      : "");
+  return (
+    clause(change) +
+    (change.splitTagChanges ?? [])
+      .map(
+        (line) =>
+          `; on the split line ${line.categoryName ?? "(no category)"} ${line.amount}${line.legAccountName ? ` and its transfer in ${line.legAccountName}` : ""}${clause(line)}`,
+      )
+      .join("")
   );
 }
 
@@ -809,6 +819,7 @@ export class ToolExecutorService {
       splits: item.splits as SplitLineInput[] | undefined,
       tagNames: item.addTagNames as string[] | undefined,
       removeTagNames: item.removeTagNames as string[] | undefined,
+      splitTags: item.splitTags as UpdateRowInput["splitTags"],
     };
   }
 

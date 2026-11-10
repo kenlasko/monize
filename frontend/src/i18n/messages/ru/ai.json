@@ -259,6 +259,12 @@
     "addTags": "Добавить теги",
     "removeTags": "Удалить теги",
     "splitLineTags": "теги: {tags}",
+    "splitLineTagChanges": "Теги строк разделения",
+    "splitLineName": "{category} {amount}",
+    "splitLineNameWithMemo": "{category} {amount} ({memo})",
+    "splitLineWithLeg": "{line} и её перевод в {account}",
+    "splitLineTagChange": "{line}: {changes}",
+    "splitLineTagChangeBoth": "{added}; {removed}",
     "bulkTagsAdded": "добавляет теги: {tags}",
     "bulkTagsRemoved": "удаляет теги: {tags}",
     "marksPaidDue": "{name} (срок {date})"

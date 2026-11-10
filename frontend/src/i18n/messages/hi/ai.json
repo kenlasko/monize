@@ -259,6 +259,12 @@
     "addTags": "टैग जोड़ें",
     "removeTags": "टैग हटाएं",
     "splitLineTags": "टैग: {tags}",
+    "splitLineTagChanges": "विभाजन पंक्ति के टैग",
+    "splitLineName": "{category} {amount}",
+    "splitLineNameWithMemo": "{category} {amount} ({memo})",
+    "splitLineWithLeg": "{line}, और {account} में उसका ट्रांसफ़र",
+    "splitLineTagChange": "{line}: {changes}",
+    "splitLineTagChangeBoth": "{added}; {removed}",
     "bulkTagsAdded": "टैग जोड़ता है: {tags}",
     "bulkTagsRemoved": "टैग हटाता है: {tags}",
     "marksPaidDue": "{name} (देय {date})"

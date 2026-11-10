@@ -98,6 +98,8 @@
     "undoNotSupportedForEntityType": "[XX-Undo not supported for entity type: {{ entityType }}-XX]",
     "unsupportedTransactionAction": "[XX-Unsupported transaction action: {{ action }}-XX]",
     "undoTransactionGone": "[XX-Cannot undo: transaction no longer exists-XX]",
+    "undoSplitLineGone": "[XX-Cannot undo: a split line this change tagged is no longer on the transaction-XX]",
+    "undoTagGone": "[XX-Cannot undo: a tag this change involved has been deleted since-XX]",
     "redoCreateWithLegs": "[XX-This transaction created entries in other accounts, so it cannot be redone. Create it again instead-XX]",
     "undoAccountGone": "[XX-Cannot undo: the account no longer exists-XX]",
     "unsupportedTransferAction": "[XX-Unsupported transfer action: {{ action }}-XX]",
@@ -758,7 +760,11 @@
     "repeatedInBatch": "[XX-Another item in this request already names this tag.-XX]",
     "nameRequired": "[XX-A tag needs a name.-XX]",
     "invalidColor": "[XX-\"{{ color }}\" is not a colour: use #RRGGBB, for example #FF5733.-XX]",
-    "nothingToChange": "[XX-Nothing to change: the transaction already carries every tag to add and none of the tags to remove. Tags on split lines are not changed by this edit.-XX]"
+    "nothingToChange": "[XX-Nothing to change: the transaction already carries every tag to add and none of the tags to remove. Tags on split lines change only through splitTags.-XX]",
+    "splitTagsNotSplit": "[XX-splitTags changes the tags on a split transaction's lines, and this transaction is not split. Use addTagNames and removeTagNames for its own tags.-XX]",
+    "splitTagsRepeated": "[XX-splitId {{ splitId }} appears more than once in splitTags. Give each line one entry.-XX]",
+    "splitTagsWithSplits": "[XX-splitTags cannot be sent with splits. A replaced line keeps its tags when it names its splitId; change the lines' tags in a separate edit.-XX]",
+    "splitLineGone": "[XX-Split line {{ splitId }} is no longer on this transaction: its split lines changed after this change was proposed. Read the transaction again and propose the tag change anew.-XX]"
   },
   "transactionRules": {
     "notFound": "[XX-Transaction rule with ID {{ id }} not found-XX]",

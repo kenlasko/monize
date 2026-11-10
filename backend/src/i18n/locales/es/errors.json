@@ -98,6 +98,8 @@
     "undoNotSupportedForEntityType": "Deshacer no es compatible con el tipo de entidad: {{ entityType }}",
     "unsupportedTransactionAction": "Acción de transacción no admitida: {{ action }}",
     "undoTransactionGone": "No se puede deshacer: la transacción ya no existe",
+    "undoSplitLineGone": "No se puede deshacer: una línea de división cuyas etiquetas cambió este cambio ya no está en la transacción",
+    "undoTagGone": "No se puede deshacer: una etiqueta de este cambio se ha eliminado desde entonces",
     "redoCreateWithLegs": "Esta transacción creó movimientos en otras cuentas, por lo que no se puede rehacer. Créela de nuevo",
     "undoAccountGone": "No se puede deshacer: la cuenta ya no existe",
     "unsupportedTransferAction": "Acción de transferencia no admitida: {{ action }}",
@@ -758,7 +760,11 @@
     "repeatedInBatch": "Otro elemento de esta solicitud ya nombra esta etiqueta.",
     "nameRequired": "Una etiqueta necesita un nombre.",
     "invalidColor": "\"{{ color }}\" no es un color: usa #RRGGBB, por ejemplo #FF5733.",
-    "nothingToChange": "Nada que cambiar: la transacción ya tiene todas las etiquetas que añadir y ninguna de las que quitar. Esta edición no cambia las etiquetas de las líneas de división."
+    "nothingToChange": "Nada que cambiar: la transacción ya tiene todas las etiquetas que añadir y ninguna de las que quitar. Las etiquetas de las líneas de división solo cambian con splitTags.",
+    "splitTagsNotSplit": "splitTags cambia las etiquetas de las líneas de una transacción dividida, y esta transacción no está dividida. Usa addTagNames y removeTagNames para sus propias etiquetas.",
+    "splitTagsRepeated": "splitId {{ splitId }} aparece más de una vez en splitTags. Da a cada línea una sola entrada.",
+    "splitTagsWithSplits": "splitTags no se puede enviar junto con splits. Una línea reemplazada conserva sus etiquetas cuando indica su splitId; cambia las etiquetas de las líneas en una edición aparte.",
+    "splitLineGone": "La línea de división {{ splitId }} ya no está en esta transacción: sus líneas de división cambiaron después de proponerse este cambio. Vuelve a leer la transacción y propón de nuevo el cambio de etiquetas."
   },
   "transactionRules": {
     "notFound": "No se encontró la regla de transacciones con ID {{ id }}",

@@ -98,6 +98,8 @@
     "undoNotSupportedForEntityType": "Annullamento non supportato per il tipo di entità: {{ entityType }}",
     "unsupportedTransactionAction": "Azione transazione non supportata: {{ action }}",
     "undoTransactionGone": "Impossibile annullare: la transazione non esiste più",
+    "undoSplitLineGone": "Impossibile annullare: una riga di suddivisione di cui questa modifica ha cambiato i tag non è più nella transazione",
+    "undoTagGone": "Impossibile annullare: un tag di questa modifica è stato eliminato nel frattempo",
     "redoCreateWithLegs": "Questa transazione ha creato voci in altri conti, quindi non può essere ripristinata. Creala di nuovo",
     "undoAccountGone": "Impossibile annullare: il conto non esiste più",
     "unsupportedTransferAction": "Azione trasferimento non supportata: {{ action }}",
@@ -758,7 +760,11 @@
     "repeatedInBatch": "Un altro elemento di questa richiesta indica già questo tag.",
     "nameRequired": "Un tag deve avere un nome.",
     "invalidColor": "\"{{ color }}\" non è un colore: usa #RRGGBB, ad esempio #FF5733.",
-    "nothingToChange": "Niente da modificare: la transazione ha già tutti i tag da aggiungere e nessuno di quelli da rimuovere. Questa modifica non cambia i tag delle righe di suddivisione."
+    "nothingToChange": "Niente da modificare: la transazione ha già tutti i tag da aggiungere e nessuno di quelli da rimuovere. I tag delle righe di suddivisione si modificano solo con splitTags.",
+    "splitTagsNotSplit": "splitTags modifica i tag delle righe di una transazione suddivisa, e questa transazione non è suddivisa. Usa addTagNames e removeTagNames per i suoi tag.",
+    "splitTagsRepeated": "splitId {{ splitId }} compare più di una volta in splitTags. Indica una sola voce per ogni riga.",
+    "splitTagsWithSplits": "splitTags non può essere inviato insieme a splits. Una riga sostituita mantiene i suoi tag quando indica il suo splitId; modifica i tag delle righe in una modifica separata.",
+    "splitLineGone": "La riga di suddivisione {{ splitId }} non è più in questa transazione: le sue righe di suddivisione sono cambiate dopo la proposta di questa modifica. Rileggi la transazione e proponi di nuovo la modifica dei tag."
   },
   "transactionRules": {
     "notFound": "Regola di transazione con ID {{ id }} non trovata",

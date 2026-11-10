@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { splitTagChangeText } from '@/components/ai/split-tag-change-text';
 import { Button } from '@/components/ui/Button';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { PendingAction, PendingActionPreviewRow } from '@/types/ai';
@@ -325,6 +326,12 @@ export function BulkConfirmationCard({
         }),
       );
     }
+    // The tags the row changes on existing split lines, line by line.
+    row.splitTagChanges?.forEach((line) => {
+      parts.push(
+        splitTagChangeText(line, t, (amount) => formatCurrency(amount, row.currencyCode)),
+      );
+    });
     return { primary, secondary: parts.join(' · ') };
   }
 

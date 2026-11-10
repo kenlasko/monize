@@ -98,6 +98,8 @@
     "undoNotSupportedForEntityType": "Annulation non prise en charge pour le type d'entité : {{ entityType }}",
     "unsupportedTransactionAction": "Action de transaction non prise en charge : {{ action }}",
     "undoTransactionGone": "Impossible d'annuler : la transaction n'existe plus",
+    "undoSplitLineGone": "Impossible d'annuler : une ligne de ventilation dont cette modification a changé les étiquettes n'est plus sur la transaction",
+    "undoTagGone": "Impossible d'annuler : une étiquette de cette modification a été supprimée depuis",
     "redoCreateWithLegs": "Cette transaction a créé des écritures dans d'autres comptes et ne peut pas être rétablie. Créez-la plutôt à nouveau",
     "undoAccountGone": "Impossible d'annuler : le compte n'existe plus",
     "unsupportedTransferAction": "Action de virement non prise en charge : {{ action }}",
@@ -758,7 +760,11 @@
     "repeatedInBatch": "Un autre élément de cette demande nomme déjà cette étiquette.",
     "nameRequired": "Une étiquette doit avoir un nom.",
     "invalidColor": "« {{ color }} » n'est pas une couleur : utilisez #RRGGBB, par exemple #FF5733.",
-    "nothingToChange": "Rien à modifier : l'opération porte déjà toutes les étiquettes à ajouter et aucune de celles à retirer. Les étiquettes des lignes de ventilation ne sont pas modifiées par cette édition."
+    "nothingToChange": "Rien à modifier : l'opération porte déjà toutes les étiquettes à ajouter et aucune de celles à retirer. Les étiquettes des lignes de ventilation ne changent que par splitTags.",
+    "splitTagsNotSplit": "splitTags modifie les étiquettes des lignes d'une opération ventilée, et cette opération n'est pas ventilée. Utilisez addTagNames et removeTagNames pour ses propres étiquettes.",
+    "splitTagsRepeated": "splitId {{ splitId }} apparaît plus d'une fois dans splitTags. Donnez une seule entrée à chaque ligne.",
+    "splitTagsWithSplits": "splitTags ne peut pas être envoyé avec splits. Une ligne remplacée garde ses étiquettes lorsqu'elle indique son splitId ; modifiez les étiquettes des lignes dans une édition distincte.",
+    "splitLineGone": "La ligne de ventilation {{ splitId }} n'est plus sur cette opération : ses lignes de ventilation ont changé après la proposition de cette modification. Relisez l'opération et proposez à nouveau la modification des étiquettes."
   },
   "transactionRules": {
     "notFound": "Règle de transaction avec l'ID {{ id }} introuvable",

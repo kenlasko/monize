@@ -259,6 +259,12 @@
     "addTags": "Tags toevoegen",
     "removeTags": "Tags verwijderen",
     "splitLineTags": "tags: {tags}",
+    "splitLineTagChanges": "Tags van splitsregels",
+    "splitLineName": "{category} {amount}",
+    "splitLineNameWithMemo": "{category} {amount} ({memo})",
+    "splitLineWithLeg": "{line} en de overboeking in {account}",
+    "splitLineTagChange": "{line}: {changes}",
+    "splitLineTagChangeBoth": "{added}; {removed}",
     "bulkTagsAdded": "voegt tags toe: {tags}",
     "bulkTagsRemoved": "verwijdert tags: {tags}",
     "marksPaidDue": "{name} (vervalt op {date})"

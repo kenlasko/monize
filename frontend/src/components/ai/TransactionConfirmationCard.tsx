@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { PendingAction } from '@/types/ai';
+import { splitTagChangeText } from '@/components/ai/split-tag-change-text';
 import { formatPhoneForDisplay } from '@/lib/phone-number';
 import { RuleEffectsLines } from '@/components/ai/RuleEffectsLines';
 
@@ -101,6 +102,16 @@ export function TransactionConfirmationCard({
         label: t('confirmAction.removeTags'),
         value: preview.removeTagNames.join(', '),
       });
+    // The tags an edit changes on existing split lines, one row per line; the
+    // lines' amounts, categories and other tags stay.
+    preview.splitTagChanges?.forEach((line, i) => {
+      rows.push({
+        label: i === 0 ? t('confirmAction.splitLineTagChanges') : '',
+        value: splitTagChangeText(line, t, (amount) =>
+          formatCurrency(amount, preview.currencyCode),
+        ),
+      });
+    });
   };
 
   if (isCashTxType) {
