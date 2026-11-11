@@ -190,8 +190,13 @@ function BillsContent() {
   // wins".
   const loadGenerationRef = useRef(0);
 
-  // The mount load: the state already says loading.
-  const fetchData = useCallback(() => {
+  // Loads the page's data. The mount load shows the spinner (isLoading starts
+  // true); a refresh after a write (create, edit, delete, post, skip, an
+  // override, an undo or an AI action) leaves isLoading alone, so the rows and
+  // the forecast stay on screen and the new data swaps in when it arrives.
+  // Setting isLoading on a refresh unmounted the list and the chart and drew
+  // the whole page again for every change.
+  const refreshData = useCallback(() => {
     // Writes live in `run` so they land after the request, not during the effect.
     const run = async () => {
       const generation = ++loadGenerationRef.current;
@@ -224,18 +229,14 @@ function BillsContent() {
     return run();
   }, [t]);
 
-  const loadData = useCallback(() => {
-    setIsLoading(true);
-    return fetchData();
-  }, [fetchData]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    refreshData();
+  }, [refreshData]);
 
-  useOnUndoRedo(loadData);
+  useOnUndoRedo(refreshData);
   // Refresh on AI chat-bubble writes (the forecast depends on transactions).
-  useOnAiAction(loadData);
+  useOnAiAction(refreshData);
 
   const handleCreateNew = () => {
     // Clear any stale reconcile prefill so a manual create starts blank.
@@ -313,7 +314,7 @@ function BillsContent() {
       setCreatePrefill(null);
       clearReconcileParams();
     }
-    loadData();
+    refreshData();
   };
 
   // Open the override editor directly on a schedule's next instance, optionally
@@ -459,7 +460,7 @@ function BillsContent() {
   };
 
   const handleOverrideEditorSave = () => {
-    loadData();
+    refreshData();
   };
 
   const handlePost = (transaction: ScheduledTransaction) => {
@@ -474,7 +475,7 @@ function BillsContent() {
   };
 
   const handlePostDialogPosted = () => {
-    loadData();
+    refreshData();
   };
 
   // Auto-open the Post dialog when arriving from the dashboard widget
@@ -867,7 +868,7 @@ function BillsContent() {
                   onEdit={handleEdit}
                   onEditOccurrence={handleEditOccurrence}
                   onPost={handlePost}
-                  onRefresh={loadData}
+                  onRefresh={refreshData}
                   categoryColorMap={categoryColorMap}
                   highlightId={highlightId}
                 />

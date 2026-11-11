@@ -275,8 +275,9 @@ vi.mock('@/components/scheduled-transactions/ScheduledTransactionForm', () => ({
 }));
 
 vi.mock('@/components/scheduled-transactions/ScheduledTransactionList', () => ({
-  ScheduledTransactionList: ({ transactions, onEdit, onEditOccurrence, onPost }: any) => (
+  ScheduledTransactionList: ({ transactions, onEdit, onEditOccurrence, onPost, onRefresh }: any) => (
     <div data-testid="scheduled-transaction-list">
+      <button data-testid="list-refresh" onClick={() => onRefresh?.()}>Refresh</button>
       {transactions.map((t: any) => (
         <div key={t.id} data-testid={`st-${t.id}`}>
           <span onClick={() => onEdit(t)}>{t.name}</span>
@@ -839,6 +840,46 @@ describe('BillsPage', () => {
       await waitFor(() => {
         expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
       });
+    });
+  });
+
+  // A delete, post or skip in the list, a saved form or override, an undo and
+  // an AI write all refresh the page. The refresh used to set isLoading, which
+  // swapped the list and the forecast for the spinner and redrew the page.
+  describe('refresh after a write', () => {
+    const row = (id: string, name: string) => ({
+      id, currencyCode: 'USD', name, amount: -100, frequency: 'MONTHLY',
+      nextDueDate: '2026-12-01', isActive: true, isTransfer: false,
+      startDate: '2026-01-01', endDate: null,
+    });
+
+    it('keeps the list on screen while it refetches, then swaps the rows in place', async () => {
+      let resolveRefresh!: (value: unknown) => void;
+      mockGetAll
+        .mockResolvedValueOnce([row('st-a', 'Gym'), row('st-b', 'Rent')])
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveRefresh = resolve; }));
+
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByText('Gym')).toBeInTheDocument());
+      const list = screen.getByTestId('scheduled-transaction-list');
+
+      fireEvent.click(screen.getByTestId('list-refresh'));
+      await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(2));
+
+      // While the refetch is in flight nothing is torn down.
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.getByTestId('scheduled-transaction-list')).toBe(list);
+      expect(screen.getByText('Gym')).toBeInTheDocument();
+
+      await act(async () => {
+        resolveRefresh([row('st-b', 'Rent')]);
+        await Promise.resolve();
+      });
+
+      // The deleted row is gone and the same list element shows the rest.
+      await waitFor(() => expect(screen.queryByText('Gym')).not.toBeInTheDocument());
+      expect(screen.getByText('Rent')).toBeInTheDocument();
+      expect(screen.getByTestId('scheduled-transaction-list')).toBe(list);
     });
   });
 
