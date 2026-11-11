@@ -2,7 +2,7 @@
 
 > Companion task list: [`dashboard-edit-mode-tasks.md`](./dashboard-edit-mode-tasks.md).
 
-Status: **proposal**. It needs its own discussion with the `approved-to-build` label before any task starts. Written 2026-11-10 against `main` at `3e5dfe1e6`.
+Status: **proposal**. It needs its own discussion with the `approved-to-build` label before any task starts. Written 2026-11-10 against `main` at `3e5dfe1e6`. Built on branch `feat/dashboard-edit-mode` on 2026-11-11 with the section 13 defaults; the task list records what is still unverified.
 
 ## 1. Goal
 
@@ -222,7 +222,7 @@ All under `frontend/src/components/dashboard/` unless a path says otherwise.
 | `DashboardHeroSettingsModal.tsx` | yes | The hero section of today's dialog, saving `dashboardWidgetConfig['dashboard-hero']` only. `CustomizeDashboardModal.tsx` and its test are deleted. |
 | The Dashboard page | | Renders `DashboardGrid` from the draft while editing, otherwise from the stored layout. The gear keeps its accessible name "Customize" and its tour anchor, and enters edit mode. |
 
-The edit bar, overlay, Add dialog, reorder hook and resize grip are imported with `next/dynamic` behind `editing`.
+The edit bar, overlay (with its grip and resize grip), Add dialog, placeholder tile and hero dialog are imported with `next/dynamic` behind `editing`. The reorder hook (`useGridReorder`) is imported statically: a hook cannot be loaded with `next/dynamic` without wrapping the whole grid in a loaded component, and it is small.
 
 ### 10.1 Moving
 

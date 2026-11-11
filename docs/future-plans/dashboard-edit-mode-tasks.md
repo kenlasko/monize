@@ -26,14 +26,20 @@ No task changes stored data until a reader presses Done, and what Done stores is
 
 | ID | Task | Depends on | Deploy impact | Status |
 |---|---|---|---|---|
-| F1 | Layout model and registry sizes | none | none | Open |
-| F2 | Grid renders from the layout; the height floor moves to the grid item | F1 | neutral (40px, design 6.2) | Open |
-| F3 | Edit mode: bar, remove, move buttons, add, Done and Cancel; hero settings dialog | F2 | visible | Open |
-| F4 | Width and height choices in the overlay | F3 | visible | Open |
-| F5 | Pointer reorder by the grip, mouse and touch | F3 | visible | Open |
-| F6 | Corner resize grip | F4 | visible | Open |
+| F1 | Layout model and registry sizes | none | none | Built (3d01e4177) |
+| F2 | Grid renders from the layout; the height floor moves to the grid item | F1 | neutral (40px, design 6.2) | Built (eff82dcbb) |
+| F3 | Edit mode: bar, remove, move buttons, add, Done and Cancel; hero settings dialog | F2 | visible | Built (cb5fddd20) |
+| F4 | Width and height choices in the overlay | F3 | visible | Built (f9f161e2f) |
+| F5 | Pointer reorder by the grip, mouse and touch | F3 | visible | Built (94be4c261) |
+| F6 | Corner resize grip | F4 | visible | Built (0402fda04) |
 
 F4 and F5 are independent of each other. The feature is complete for a reader at F5; F6 is the direct-manipulation extra and can be dropped without leaving anything half-built.
+
+"Built" means implemented on branch `feat/dashboard-edit-mode` with its unit tests, lint and type-check passing; translations are commit a15fbffc9. Open on every visible task, to be recorded in the PR before merge (none could run where the work was done):
+
+- the manual browser checks each task names: WebKit row stretch at a landscape-tablet width, each widget at its `minWidth` at 1024px and 1440px, mouse and touch drag with edge scrolling, a touch on a card body still scrolling the page, Back leaving edit mode, the corner grip's outline;
+- the dashboard route's first-load size before and after (`npm run build`);
+- the dashboard screenshots (`npm run docs:screenshots` in `e2e/`) and a run of `e2e/docs-screenshots/dashboard.spec.ts`.
 
 ## F1. Layout model and registry sizes
 
