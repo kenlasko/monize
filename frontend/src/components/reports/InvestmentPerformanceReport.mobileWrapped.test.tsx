@@ -269,6 +269,17 @@ describe('InvestmentPerformanceReport mobile wrapped table', () => {
     expect(childCells[1]).toHaveTextContent('SHARES<12.3456789>');
   });
 
+  it('spreads the chart-mode switcher across its own phone line', async () => {
+    const { container } = await renderReport();
+    const group = container.querySelector('[role="group"][aria-label="Chart"]');
+    expect(group).not.toBeNull();
+    expect(group!.className).toContain('w-full');
+    expect(group!.className).toContain('sm:w-auto');
+    for (const button of Array.from(group!.querySelectorAll('button'))) {
+      expect(button.className).toContain('grow');
+    }
+  });
+
   it('keeps all eight accessible sort controls on phone and desktop', async () => {
     const { table } = await renderReport();
     const headerRows = table.querySelectorAll('thead tr');

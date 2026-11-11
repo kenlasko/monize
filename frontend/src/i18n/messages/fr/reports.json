@@ -839,7 +839,8 @@
     "twrReason": {
       "noPrice": "il manque un cours sur une partie de cette période, le rendement ne peut donc pas être calculé.",
       "displayFx": "il manque un taux de change sur une partie de cette période, le rendement ne peut donc pas être calculé.",
-      "noBaseline": "rien n'était investi sur cette période, il n'y a donc pas de rendement à mesurer."
+      "noBaseline": "rien n'était investi sur cette période, il n'y a donc pas de rendement à mesurer.",
+      "noHistory": "il n'y a pas d'historique pour cette période."
     },
     "twrAccountsLimitedNote": "Seuls les {shown} premiers comptes sur {total} sont tracés.",
     "rangeAll": "Tout",

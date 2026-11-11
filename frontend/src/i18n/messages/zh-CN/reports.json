@@ -839,7 +839,8 @@
     "twrReason": {
       "noPrice": "此期间的部分时段缺少价格，因此无法计算收益率。",
       "displayFx": "此期间的部分时段缺少汇率，因此无法计算收益率。",
-      "noBaseline": "此期间没有可用于衡量收益率的投资。"
+      "noBaseline": "此期间没有可用于衡量收益率的投资。",
+      "noHistory": "此期间没有历史记录。"
     },
     "twrAccountsLimitedNote": "共 {total} 个账户，仅绘制前 {shown} 个。",
     "rangeAll": "全部",

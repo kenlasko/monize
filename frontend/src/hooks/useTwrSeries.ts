@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { netWorthApi } from '@/lib/net-worth';
 import { createLogger } from '@/lib/logger';
 import { periodBaselineDate } from '@/components/investments/portfolio-period-result';
@@ -118,17 +118,21 @@ export function useTwrSeries({
     displayCurrency,
   ]);
 
-  if (unaskable || state?.key !== key) return { status: 'loading', series: null };
-  if (state.answer === null) return { status: 'error', series: null };
-  return groupBy === 'account'
-    ? {
-        status: 'ready',
-        groupBy: 'account',
-        series: state.answer as PortfolioTwrSeriesByAccount,
-      }
-    : {
-        status: 'ready',
-        groupBy: 'portfolio',
-        series: state.answer as PortfolioTwrSeries,
-      };
+  // One object per answer, not per render: the chart memoises its merged rows
+  // on this value, and a fresh literal each render would re-merge every point.
+  return useMemo((): UseTwrSeriesValue => {
+    if (unaskable || state?.key !== key) return { status: 'loading', series: null };
+    if (state.answer === null) return { status: 'error', series: null };
+    return groupBy === 'account'
+      ? {
+          status: 'ready',
+          groupBy: 'account',
+          series: state.answer as PortfolioTwrSeriesByAccount,
+        }
+      : {
+          status: 'ready',
+          groupBy: 'portfolio',
+          series: state.answer as PortfolioTwrSeries,
+        };
+  }, [unaskable, state, key, groupBy]);
 }

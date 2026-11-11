@@ -213,13 +213,40 @@ describe("PortfolioTwrSeriesService", () => {
       expect(result.accounts[0].points[2].returnPercent).toBe(10);
     });
 
-    it("draws a repeated or re-cased id once", async () => {
+    it("answers a requested account it may not measure as empty, without valuing it", async () => {
       const result = await service.getSeriesByAccount("u1", {
         period: "1y",
-        accountIds: ["BROK-1", "brok-1", "Brok-1"],
+        accountIds: ["brok-2"],
+        requestedAccountIds: ["brok-1", "brok-2"],
       });
-      expect(result.accounts.map((a) => a.accountId)).toEqual(["brok-1"]);
-      expect(netWorth.getDailyInvestments).toHaveBeenCalledTimes(1);
+      expect(result.accounts.map((a) => a.accountId)).toEqual([
+        "brok-1",
+        "brok-2",
+      ]);
+      expect(result.accounts[0].reasons).toEqual(["noValueSeries"]);
+      expect(result.accounts[1].complete).toBe(true);
+      expect(netWorth.getDailyInvestments.mock.calls.map((c) => c[3])).toEqual([
+        ["brok-2"],
+      ]);
+      expect(periodResult.measuredFrom.mock.calls[0][1].accountIds).toEqual([
+        "brok-2",
+      ]);
+    });
+
+    it("resolves no window at all when nothing requested is measurable", async () => {
+      const result = await service.getSeriesByAccount("u1", {
+        period: "all",
+        accountIds: [],
+        requestedAccountIds: ["brok-1"],
+      });
+      expect(result.accounts).toEqual([
+        expect.objectContaining({
+          accountId: "brok-1",
+          reasons: ["noValueSeries"],
+        }),
+      ]);
+      expect(periodResult.measuredFrom).not.toHaveBeenCalled();
+      expect(netWorth.getDailyInvestments).not.toHaveBeenCalled();
     });
 
     it("opens every account on the same day, measured once for the whole request", async () => {

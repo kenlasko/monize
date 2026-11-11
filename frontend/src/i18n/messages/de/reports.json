@@ -839,7 +839,8 @@
     "twrReason": {
       "noPrice": "für einen Teil dieses Zeitraums fehlt ein Kurs, daher lässt sich die Rendite nicht berechnen.",
       "displayFx": "für einen Teil dieses Zeitraums fehlt ein Wechselkurs, daher lässt sich die Rendite nicht berechnen.",
-      "noBaseline": "in diesem Zeitraum war nichts investiert, anhand dessen eine Rendite gemessen werden könnte."
+      "noBaseline": "in diesem Zeitraum war nichts investiert, anhand dessen eine Rendite gemessen werden könnte.",
+      "noHistory": "für diesen Zeitraum gibt es keine Historie."
     },
     "twrAccountsLimitedNote": "Es werden nur die ersten {shown} von {total} Konten dargestellt.",
     "rangeAll": "Gesamt",

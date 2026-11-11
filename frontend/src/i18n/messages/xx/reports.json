@@ -839,7 +839,8 @@
     "twrReason": {
       "noPrice": "[XX-a price is missing for part of this period, so the return cannot be worked out.-XX]",
       "displayFx": "[XX-an exchange rate is missing for part of this period, so the return cannot be worked out.-XX]",
-      "noBaseline": "[XX-nothing was invested to measure a return over in this period.-XX]"
+      "noBaseline": "[XX-nothing was invested to measure a return over in this period.-XX]",
+      "noHistory": "[XX-there is no history for this period.-XX]"
     },
     "twrAccountsLimitedNote": "[XX-Only the first {shown} of {total} accounts are drawn.-XX]",
     "rangeAll": "[XX-All Time-XX]",

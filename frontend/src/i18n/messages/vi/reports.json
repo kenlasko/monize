@@ -839,7 +839,8 @@
     "twrReason": {
       "noPrice": "thiếu giá trong một phần của kỳ này nên không thể tính lợi suất.",
       "displayFx": "thiếu tỷ giá trong một phần của kỳ này nên không thể tính lợi suất.",
-      "noBaseline": "trong kỳ này không có khoản đầu tư nào để đo lợi suất."
+      "noBaseline": "trong kỳ này không có khoản đầu tư nào để đo lợi suất.",
+      "noHistory": "không có lịch sử cho kỳ này."
     },
     "twrAccountsLimitedNote": "Chỉ vẽ {shown} tài khoản đầu tiên trong tổng số {total}.",
     "rangeAll": "Tất cả",

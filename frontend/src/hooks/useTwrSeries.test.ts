@@ -75,6 +75,14 @@ describe('useTwrSeries', () => {
     expect(netWorthApi.getInvestmentsTwrSeriesByAccount).not.toHaveBeenCalled();
   });
 
+  it('answers the same object across renders while the request is unchanged', async () => {
+    const { result, rerender } = renderHook(() => useTwrSeries({ ...base, range: '1y', groupBy: 'portfolio' }));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    const first = result.current;
+    rerender();
+    expect(result.current).toBe(first);
+  });
+
   it('dates a range with no preset, measured from the prior close', async () => {
     renderHook(() => useTwrSeries({ ...base, range: 'mtd', groupBy: 'portfolio' }));
     await waitFor(() =>

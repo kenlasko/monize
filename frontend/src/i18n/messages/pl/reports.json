@@ -839,7 +839,8 @@
     "twrReason": {
       "noPrice": "brakuje ceny w części tego okresu, więc nie można obliczyć stopy zwrotu.",
       "displayFx": "brakuje kursu walutowego w części tego okresu, więc nie można obliczyć stopy zwrotu.",
-      "noBaseline": "w tym okresie nic nie było zainwestowane, więc nie ma od czego mierzyć stopy zwrotu."
+      "noBaseline": "w tym okresie nic nie było zainwestowane, więc nie ma od czego mierzyć stopy zwrotu.",
+      "noHistory": "brak historii dla tego okresu."
     },
     "twrAccountsLimitedNote": "Narysowano tylko pierwsze {shown} z {total} kont.",
     "rangeAll": "Wszystko",

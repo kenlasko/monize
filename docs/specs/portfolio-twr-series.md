@@ -42,8 +42,9 @@ section 10.2 unchanged: `base(k) = IV(k-1) + capitalIn(k)`,
 contributes factor 1.
 
 The factors are written once, in `backend/src/common/time-series/twr-chain.util.ts`
-(`subPeriodFactor`, read through `investedDayFactors`, the one place a day's factor is chosen). The series is a second reader of that function beside
-`investedPeriodResult`, never a second implementation of the arithmetic.
+(`subPeriodFactor`, read through `investedDayFactors`, the one place a day's factor is chosen). The series reads the factors the period decision
+chained (`investedTimeWeightedDecision`, `investedPeriodResult` without the
+money-weighted solve), never a second implementation of the arithmetic.
 
 ### 2.1 Before the first invested day
 
@@ -131,7 +132,9 @@ days, and where to add it, with the same wording as the cards beside it.
   same `periodWindowQuery`. `groupBy=account` requires `accountIds` (one to 25 ids)
   and returns one series per account id named; naming none is refused, because
   it would mean every account and an unbounded cost. Each is its own scope. Ids are lower-cased and de-duplicated before the
-  count is checked, and the number of distinct accounts is bounded. A brokerage
+  count is checked, and the number of distinct accounts is bounded. An account
+  an acting delegate cannot read is answered under its own id as an empty
+  series (`noValueSeries`) and is never valued. A brokerage
   and its cash sibling resolve to one scope, so the client names the brokerage
   once and draws one line for the pair.
 - The chart: a segmented control on Investment Performance > Performance
@@ -144,7 +147,10 @@ One series is one valuation: the load `getPeriodResult` already does for the
 invested part, plus one pass over its days. `groupBy=account` is one such load
 per account, in turn (a single transaction connection is not shared across
 concurrent queries); the response is returned whole so the client makes one
-request.
+request. Within each account the value series and the invested rows are read
+together, as `getPeriodResult` reads them. The client's timeout for the request
+is one valuation's per account (`twrSeriesByAccountTimeoutMs` in
+`frontend/src/lib/net-worth.ts`), bounded by the server's own request timeout.
 
 ## 8. Test matrix
 

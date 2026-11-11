@@ -76,7 +76,6 @@ describe('buildPortfolioReturnView', () => {
     [['missingRatePairs'], 'displayFx'],
     [['incompletePrices', 'missingRatePairs'], 'noPrice'],
     [['zeroStart'], 'noBaseline'],
-    [['noValueSeries'], 'noBaseline'],
     // The account result's cause: this measure reads no cash.
     [['incompleteCash'], 'noBaseline'],
   ] as const)('ranks the cause of %j as %s', (reasons, cause) => {
@@ -85,6 +84,16 @@ describe('buildPortfolioReturnView', () => {
       'P',
     );
     expect(view.withheld[0].cause).toBe(cause);
+  });
+});
+
+describe('buildPortfolioReturnView with no history', () => {
+  it('names nothing, so the chart shows its no-history empty state', () => {
+    const view = buildPortfolioReturnView(
+      portfolio({ points: [], complete: false, reasons: ['noValueSeries'] }),
+      'Portfolio',
+    );
+    expect(view).toEqual({ rows: [], lines: [], withheld: [] });
   });
 });
 
@@ -132,6 +141,14 @@ describe('buildAccountReturnView', () => {
     );
     expect(view.rows[0].a2).toBeNull();
     expect(view.rows[1].a2).toBe(5);
+  });
+
+  it('names an account with no history as such, not as one with nothing invested', () => {
+    const view = buildAccountReturnView(
+      byAccount([account('a1'), account('a2', { points: [], complete: false, reasons: ['noValueSeries'] })]),
+      nameOf,
+    );
+    expect(view.withheld).toEqual([{ key: 'a2', label: 'Brokerage B', cause: 'noHistory' }]);
   });
 
   it('draws nothing when every account is withheld', () => {

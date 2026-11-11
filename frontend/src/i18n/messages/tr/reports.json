@@ -839,7 +839,8 @@
     "twrReason": {
       "noPrice": "bu dönemin bir bölümünde fiyat eksik, bu yüzden getiri hesaplanamıyor.",
       "displayFx": "bu dönemin bir bölümünde döviz kuru eksik, bu yüzden getiri hesaplanamıyor.",
-      "noBaseline": "bu dönemde getirinin ölçülebileceği bir yatırım yoktu."
+      "noBaseline": "bu dönemde getirinin ölçülebileceği bir yatırım yoktu.",
+      "noHistory": "bu dönem için geçmiş yok."
     },
     "twrAccountsLimitedNote": "{total} hesabın yalnızca ilk {shown} tanesi çiziliyor.",
     "rangeAll": "Tümü",

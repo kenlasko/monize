@@ -12,6 +12,7 @@ import {
 import {
   InvestedDayValue,
   investedPeriodResult,
+  investedTimeWeightedDecision,
 } from "./invested-period-result.util";
 import { investedTwrSeries } from "./invested-twr-series.util";
 
@@ -208,6 +209,16 @@ describe("investedTwrSeries", () => {
         const data = input(values, flows);
         const series = investedTwrSeries(data);
         const decision = investedPeriodResult(data);
+        // The series' own read of the decision skips the money-weighted solve
+        // and nothing else: every time-weighted figure is the card's.
+        const twrOnly = investedTimeWeightedDecision(data).decision;
+        expect(twrOnly.investmentReturnPercent).toBe(
+          decision.investmentReturnPercent,
+        );
+        expect(twrOnly.investmentPnl).toBe(decision.investmentPnl);
+        expect(twrOnly.investedComplete).toBe(decision.investedComplete);
+        expect(twrOnly.investmentMoneyWeightedReturnPercent).toBeNull();
+        expect(twrOnly.investmentMoneyWeightedTotalPercent).toBeNull();
 
         if (decision.investmentReturnPercent === null) {
           expect(series.complete).toBe(false);

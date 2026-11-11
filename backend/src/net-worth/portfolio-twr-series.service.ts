@@ -102,30 +102,38 @@ export class PortfolioTwrSeriesService {
    * at zero until its first day with capital at risk, rather than each line
    * rebasing on its own first day and the lines no longer sharing an origin.
    *
-   * Asked for named accounts only; the bound on how many is the caller's.
+   * `accountIds` are the distinct accounts to measure, and the bound on how
+   * many is the caller's. `requestedAccountIds`, when given, are every account
+   * the caller named, in order: one the caller may not read is answered as an
+   * empty series under its own id, never measured and never silently dropped.
    */
   async getSeriesByAccount(
     userId: string,
-    opts: TwrSeriesQuery & { accountIds: string[] },
+    opts: TwrSeriesQuery & {
+      accountIds: string[];
+      requestedAccountIds?: string[];
+    },
   ): Promise<PortfolioTwrSeriesByAccount> {
-    // One line per distinct account: ids differing only in case, or repeated,
-    // are one scope and one valuation.
-    const accountIds = [
-      ...new Set(opts.accountIds.map((id) => id.toLowerCase())),
-    ];
+    const measurable = new Set(opts.accountIds);
+    const answered = opts.requestedAccountIds ?? opts.accountIds;
     const currency = await this.periodResult.reportingCurrency(
       userId,
       opts.displayCurrency,
     );
     const end = opts.endDate || todayYMD();
-    const from = await this.periodResult.measuredFrom(userId, opts, end);
+    // Nothing readable: no window to resolve, and an empty scope must never
+    // reach a resolver that reads "no ids" as "every account".
+    const from =
+      measurable.size === 0
+        ? null
+        : await this.periodResult.measuredFrom(userId, opts, end);
     if (from === null || from > end) {
       const start = from ?? end;
       return {
         currency,
         startDate: start,
         endDate: end,
-        accounts: accountIds.map((accountId) => ({
+        accounts: answered.map((accountId) => ({
           accountId,
           ...this.empty(currency, start, end),
         })),
@@ -134,14 +142,16 @@ export class PortfolioTwrSeriesService {
 
     const accounts: AccountTwrSeries[] = [];
     // In turn: every read below shares the request's one connection.
-    for (const accountId of accountIds) {
-      const one = await this.measure(userId, {
-        currency,
-        from,
-        end,
-        accountIds: [accountId],
-        fetchMissing: opts.fetchMissing,
-      });
+    for (const accountId of answered) {
+      const one = measurable.has(accountId)
+        ? await this.measure(userId, {
+            currency,
+            from,
+            end,
+            accountIds: [accountId],
+            fetchMissing: opts.fetchMissing,
+          })
+        : this.empty(currency, from, end);
       accounts.push({
         accountId,
         points: one.points,
@@ -168,22 +178,21 @@ export class PortfolioTwrSeriesService {
     const scope = await this.periodResult.resolveScope(userId, accountIds);
     if (scope.length === 0) return this.empty(currency, from, end);
 
-    const series = await this.netWorth.getDailyInvestments(
-      userId,
-      from,
-      end,
-      accountIds,
-      currency,
-      { fetchMissing: args.fetchMissing },
-    );
+    // The value series and the invested rows are independent reads, asked
+    // together as `getPeriodResult` asks them.
+    const [series, investedRows] = await Promise.all([
+      this.netWorth.getDailyInvestments(
+        userId,
+        from,
+        end,
+        accountIds,
+        currency,
+        { fetchMissing: args.fetchMissing },
+      ),
+      this.periodResult.loadInvestedRows(userId, scope, from, end),
+    ]);
     if (series.length === 0) return this.empty(currency, from, end);
 
-    const investedRows = await this.periodResult.loadInvestedRows(
-      userId,
-      scope,
-      from,
-      end,
-    );
     const shareLegClose = await this.periodResult.loadShareLegClose(
       investedRows,
       from,

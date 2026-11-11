@@ -3,8 +3,9 @@
  * every day of a window, rather than only on the last one.
  *
  * Nothing is measured here that `investedPeriodResult` does not measure. The
- * window's return is decided by that function; this one asks it first and draws
- * only where it reports a figure, so the line is withheld exactly where the
+ * window's return is decided by that function (through
+ * `investedTimeWeightedDecision`, which also hands back the factors it chained);
+ * this one draws only where it reports a figure, so the line is withheld exactly where the
  * card beside it is and ends on the card's number (INV-PORTTWR-001,
  * `docs/specs/portfolio-twr-series.md`). The factors are `investedDayFactors`,
  * the one place the day's base and ending are written.
@@ -15,10 +16,8 @@ import { roundToDecimals } from "../common/round.util";
 import { PORTFOLIO_MOVE_PERCENT_DECIMALS } from "../notification-center/portfolio-movement.util";
 import {
   InvestedPeriodInput,
-  investedDayFactors,
-  investedPeriodResult,
+  investedTimeWeightedDecision,
 } from "./invested-period-result.util";
-import { EMPTY_INVESTED_FLOW_DAY } from "./invested-capital-flow.util";
 import { PeriodResultReason } from "./portfolio-period-result.util";
 
 /** One day of the series. */
@@ -60,18 +59,17 @@ const withheld = (reasons: PeriodResultReason[]): InvestedTwrSeries => ({
 export function investedTwrSeries(
   input: InvestedPeriodInput,
 ): InvestedTwrSeries {
-  const decision = investedPeriodResult(input);
-  if (decision.investmentReturnPercent === null) {
+  // The card's own decision and the factors it chained, read once: no second
+  // derivation of the factors, and no money-weighted solve the line discards.
+  const { decision, dayFactors } = investedTimeWeightedDecision(input);
+  if (decision.investmentReturnPercent === null || dayFactors === null) {
     return withheld(decision.investedReasons);
   }
 
-  const { points, startIndex, endIndex, flowsByDay } = input;
+  const { points, startIndex, endIndex } = input;
   const start = points[startIndex];
   const days = points.slice(startIndex + 1, endIndex + 1);
-  const flowDays = days.map(
-    (point) => flowsByDay.get(point.date) ?? EMPTY_INVESTED_FLOW_DAY,
-  );
-  const factors = investedDayFactors(start, days, flowDays);
+  const factors = dayFactors;
 
   const series: InvestedTwrPoint[] = [{ date: start.date, returnPercent: 0 }];
   let product = 1;

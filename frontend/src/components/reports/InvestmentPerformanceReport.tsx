@@ -45,7 +45,12 @@ import {
   type PortfolioCompleteness,
 } from '@/lib/net-worth-completeness';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
+import {
+  SEGMENTED_GROUP_CLASS,
+  SEGMENTED_TOOLBAR_GROUP_CLASS,
+  segmentClass,
+  toolbarSegmentClass,
+} from '@/components/ui/segmented-control';
 import { InvestmentPerformanceHoldingsTable } from '@/components/reports/InvestmentPerformanceHoldingsTable';
 import {
   buildPerformanceRows,
@@ -53,6 +58,7 @@ import {
   type HoldingsSortField,
 } from '@/components/reports/investment-performance-rows';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { TWR_SERIES_MAX_ACCOUNTS } from '@/lib/constants';
 
 const ACCOUNTS_STORAGE_KEY = 'monize-reports-investment-performance-accounts';
 
@@ -61,12 +67,6 @@ const ACCOUNTS_STORAGE_KEY = 'monize-reports-investment-performance-accounts';
 // falls into its error state. A portfolio of 21+ securities plots only its 20
 // largest holdings by market value, and a note says so.
 const PERFORMANCE_CHART_MAX_SECURITIES = 20;
-
-// `investments-twr-series?groupBy=account` values one scope per account, so it
-// caps the accounts it is asked for (`TWR_SERIES_MAX_ACCOUNTS` on the backend's
-// net-worth controller); a reader with more draws the first of them, and a note
-// says so.
-const TWR_CHART_MAX_ACCOUNTS = 25;
 
 /** What the Performance view's chart plots; `portfolio` is the default. */
 type PerformanceChartMode = 'portfolio' | 'account' | 'security';
@@ -317,8 +317,11 @@ export function InvestmentPerformanceReport() {
     });
     return [...new Set(asBrokerage)];
   }, [selectedAccountIds, accounts]);
+  // `investments-twr-series?groupBy=account` values one scope per account, so it
+  // caps the accounts it is asked for; a reader with more draws the first of
+  // them, and a note says so.
   const drawnReturnAccountIds = useMemo(
-    () => returnAccountIds.slice(0, TWR_CHART_MAX_ACCOUNTS),
+    () => returnAccountIds.slice(0, TWR_SERIES_MAX_ACCOUNTS),
     [returnAccountIds],
   );
   const accountNameOf = useCallback(
@@ -587,14 +590,14 @@ export function InvestmentPerformanceReport() {
               renders the server's percent-return series with its null and
               withheld handling intact. */}
           <div className="mb-3 flex justify-end">
-            <div className={SEGMENTED_GROUP_CLASS} role="group" aria-label={t('investmentPerformance.chartModeLabel')}>
+            <div className={SEGMENTED_TOOLBAR_GROUP_CLASS} role="group" aria-label={t('investmentPerformance.chartModeLabel')}>
               {PERFORMANCE_CHART_MODES.map((mode) => (
                 <button
                   key={mode}
                   type="button"
                   onClick={() => setChartMode(mode)}
                   aria-pressed={chartMode === mode}
-                  className={segmentClass(chartMode === mode)}
+                  className={toolbarSegmentClass(chartMode === mode)}
                 >
                   {t(`investmentPerformance.chartMode.${mode}` as Parameters<typeof t>[0])}
                 </button>

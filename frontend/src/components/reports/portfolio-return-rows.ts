@@ -31,7 +31,7 @@ export interface ReturnRow {
 export interface WithheldReturnLine {
   key: string;
   label: string;
-  cause: 'noPrice' | 'displayFx' | 'noBaseline';
+  cause: 'noPrice' | 'displayFx' | 'noBaseline' | 'noHistory';
 }
 
 export interface ReturnView {
@@ -40,8 +40,17 @@ export interface ReturnView {
   withheld: WithheldReturnLine[];
 }
 
+/**
+ * A scope or window with no valued day at all (`noValueSeries`): no history to
+ * chart, which is not the same as a history with nothing invested in it.
+ */
+function hasNoHistory(reasons: readonly PeriodResultReason[]): boolean {
+  return reasons.includes('noValueSeries');
+}
+
 /** `noCashBalance` is the account result's cause; this measure reads no cash. */
 function causeOf(reasons: readonly PeriodResultReason[]): WithheldReturnLine['cause'] {
+  if (hasNoHistory(reasons)) return 'noHistory';
   const cause = periodResultUnknownReason(reasons);
   return cause === 'noCashBalance' ? 'noBaseline' : cause;
 }
@@ -78,6 +87,9 @@ export function buildPortfolioReturnView(
   label: string,
 ): ReturnView {
   if (!series.complete || series.points.length === 0) {
+    // The one line has no history: the chart's own empty state says so, rather
+    // than a "Not drawn" row naming the only series there is.
+    if (hasNoHistory(series.reasons)) return { rows: [], lines: [], withheld: [] };
     return {
       rows: [],
       lines: [],

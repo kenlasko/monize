@@ -839,7 +839,8 @@
     "twrReason": {
       "noPrice": "이 기간 일부에 가격이 없어 수익률을 계산할 수 없습니다.",
       "displayFx": "이 기간 일부에 환율이 없어 수익률을 계산할 수 없습니다.",
-      "noBaseline": "이 기간에는 수익률을 측정할 투자 금액이 없었습니다."
+      "noBaseline": "이 기간에는 수익률을 측정할 투자 금액이 없었습니다.",
+      "noHistory": "이 기간의 기록이 없습니다."
     },
     "twrAccountsLimitedNote": "전체 {total}개 중 처음 {shown}개 계좌만 표시됩니다.",
     "rangeAll": "전체",

@@ -919,9 +919,52 @@ describe("NetWorthController", () => {
         period: "3m",
         endDate: undefined,
         accountIds: [UUID_A, UUID_B],
+        requestedAccountIds: [UUID_A, UUID_B],
         displayCurrency: undefined,
       });
       expect(mockTwrSeries.getSeries).not.toHaveBeenCalled();
+    });
+
+    it("groupBy=account names a delegate's unreadable accounts without measuring them", async () => {
+      delegationService.readableAccountIds.mockResolvedValue([UUID_A]);
+      await controller.getTwrSeries(
+        { user: { id: "owner-1", isActing: true, delegationId: "d-1" } },
+        undefined,
+        undefined,
+        undefined,
+        `${UUID_A},${UUID_B}`,
+        undefined,
+        "1y",
+        "account",
+      );
+      expect(mockTwrSeries.getSeriesByAccount).toHaveBeenCalledWith(
+        "owner-1",
+        expect.objectContaining({
+          accountIds: [UUID_A],
+          requestedAccountIds: [UUID_A, UUID_B],
+        }),
+      );
+    });
+
+    it("groupBy=account never answers the no-readable-account sentinel", async () => {
+      delegationService.readableAccountIds.mockResolvedValue([]);
+      await controller.getTwrSeries(
+        { user: { id: "owner-1", isActing: true, delegationId: "d-1" } },
+        undefined,
+        undefined,
+        undefined,
+        UUID_A,
+        undefined,
+        "1y",
+        "account",
+      );
+      expect(mockTwrSeries.getSeriesByAccount).toHaveBeenCalledWith(
+        "owner-1",
+        expect.objectContaining({
+          accountIds: [],
+          requestedAccountIds: [UUID_A],
+        }),
+      );
     });
 
     it("refuses an unknown groupBy", async () => {
@@ -984,12 +1027,19 @@ describe("NetWorthController", () => {
         undefined,
         undefined,
         undefined,
-        Array.from({ length: 30 }, () => id).join(","),
+        [...Array.from({ length: 30 }, () => id), id.toUpperCase()].join(","),
         undefined,
         "1y",
         "account",
       );
       expect(mockTwrSeries.getSeriesByAccount).toHaveBeenCalledTimes(1);
+      expect(mockTwrSeries.getSeriesByAccount).toHaveBeenCalledWith(
+        "user-1",
+        expect.objectContaining({
+          accountIds: [id],
+          requestedAccountIds: [id],
+        }),
+      );
     });
 
     it("refuses a malformed account id and a malformed window before reading anything", async () => {

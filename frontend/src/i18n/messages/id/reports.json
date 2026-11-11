@@ -839,7 +839,8 @@
     "twrReason": {
       "noPrice": "harga tidak tersedia untuk sebagian periode ini, sehingga imbal hasil tidak dapat dihitung.",
       "displayFx": "kurs tidak tersedia untuk sebagian periode ini, sehingga imbal hasil tidak dapat dihitung.",
-      "noBaseline": "tidak ada dana yang diinvestasikan pada periode ini untuk diukur imbal hasilnya."
+      "noBaseline": "tidak ada dana yang diinvestasikan pada periode ini untuk diukur imbal hasilnya.",
+      "noHistory": "tidak ada riwayat untuk periode ini."
     },
     "twrAccountsLimitedNote": "Hanya {shown} akun pertama dari {total} yang digambar.",
     "rangeAll": "Semua",

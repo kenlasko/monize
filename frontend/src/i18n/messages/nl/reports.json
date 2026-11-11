@@ -839,7 +839,8 @@
     "twrReason": {
       "noPrice": "voor een deel van deze periode ontbreekt een koers, dus het rendement kan niet worden berekend.",
       "displayFx": "voor een deel van deze periode ontbreekt een wisselkoers, dus het rendement kan niet worden berekend.",
-      "noBaseline": "er was in deze periode niets belegd waarover een rendement kan worden gemeten."
+      "noBaseline": "er was in deze periode niets belegd waarover een rendement kan worden gemeten.",
+      "noHistory": "er is geen historie voor deze periode."
     },
     "twrAccountsLimitedNote": "Alleen de eerste {shown} van {total} rekeningen worden getekend.",
     "rangeAll": "Alles",

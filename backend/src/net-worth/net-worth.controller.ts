@@ -44,8 +44,29 @@ const NO_READABLE_ACCOUNT = "00000000-0000-0000-0000-000000000000";
 
 /** How `investments-twr-series` groups its answer. */
 const TWR_SERIES_GROUPINGS = ["portfolio", "account"] as const;
-/** One valuation per account, so the count asked for is bounded. */
+/**
+ * One valuation per account, so the count asked for is bounded. The frontend's
+ * copy (`TWR_SERIES_MAX_ACCOUNTS` in `frontend/src/lib/constants.ts`) is held
+ * to this one by `twr-series-limits.contract.test.ts`.
+ */
 const TWR_SERIES_MAX_ACCOUNTS = 25;
+
+/** The query parameters every route that measures a window reads. */
+interface PeriodWindowParams {
+  startDate?: string;
+  endDate?: string;
+  baselineDate?: string;
+  accountIds?: string;
+  displayCurrency?: string;
+  period?: string;
+}
+
+/** The window, scope and currency those parameters name. */
+type PeriodWindow = PeriodResultWindow & {
+  endDate?: string;
+  accountIds?: string[];
+  displayCurrency?: string;
+};
 
 @ApiTags("Net Worth")
 @Controller("net-worth")
@@ -212,21 +233,7 @@ export class NetWorthController {
           { param: "endDate" },
         ),
       );
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    const ids = aIds ? aIds.split(",").filter(Boolean) : undefined;
-    if (ids) {
-      for (const id of ids) {
-        if (!uuidRegex.test(id))
-          throw new BadRequestException(
-            tr(
-              "errors.params.mustBeCsvUuids",
-              'The value of "accountIds" must be a comma-separated list of UUIDs',
-              { param: "accountIds" },
-            ),
-          );
-      }
-    }
+    const ids = this.parseAccountIds(aIds);
     const safeCurrency = curr ? curr.slice(0, 3).toUpperCase() : undefined;
     return this.netWorthService.getMonthlyInvestments(
       req.user.id,
@@ -301,21 +308,7 @@ export class NetWorthController {
           { param: "endDate" },
         ),
       );
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    const ids = aIds ? aIds.split(",").filter(Boolean) : undefined;
-    if (ids) {
-      for (const id of ids) {
-        if (!uuidRegex.test(id))
-          throw new BadRequestException(
-            tr(
-              "errors.params.mustBeCsvUuids",
-              'The value of "accountIds" must be a comma-separated list of UUIDs',
-              { param: "accountIds" },
-            ),
-          );
-      }
-    }
+    const ids = this.parseAccountIds(aIds);
     const safeCurrency = curr ? curr.slice(0, 3).toUpperCase() : undefined;
     const scopeIds = await this.scopeIds(req, ids);
     if (sample === "monthEnd") {
@@ -524,26 +517,7 @@ export class NetWorthController {
           { param: "groupBy", options: TWR_SERIES_GROUPINGS.join(", ") },
         ),
       );
-    if (grouping === "account") {
-      // One valuation per account, so the count is the caller's cost and is
-      // bounded; naming none would mean "every account", which is unbounded.
-      const named = [
-        ...new Set(
-          this.parseAccountIds(
-            assertStringParam(accountIds, "accountIds"),
-          )?.map((id) => id.toLowerCase()),
-        ),
-      ];
-      if (named.length === 0 || named.length > TWR_SERIES_MAX_ACCOUNTS)
-        throw new BadRequestException(
-          tr(
-            "errors.params.mustNameAccounts",
-            `The value of "accountIds" must name between 1 and ${TWR_SERIES_MAX_ACCOUNTS} accounts`,
-            { param: "accountIds", max: TWR_SERIES_MAX_ACCOUNTS },
-          ),
-        );
-    }
-    const window = await this.periodWindowQuery(req, {
+    const { window, namedAccountIds } = await this.periodWindowParts(req, {
       startDate,
       endDate,
       baselineDate,
@@ -551,12 +525,34 @@ export class NetWorthController {
       displayCurrency,
       period,
     });
-    return grouping === "account"
-      ? this.twrSeries.getSeriesByAccount(req.user.id, {
-          ...window,
-          accountIds: window.accountIds ?? [],
-        })
-      : this.twrSeries.getSeries(req.user.id, window);
+    if (grouping !== "account")
+      return this.twrSeries.getSeries(req.user.id, window);
+
+    // One valuation per account, so the count is the caller's cost and is
+    // bounded; naming none would mean "every account", which is unbounded.
+    // Ids differing only in case, or repeated, are one scope and one line.
+    const requested = [
+      ...new Set((namedAccountIds ?? []).map((id) => id.toLowerCase())),
+    ];
+    if (requested.length === 0 || requested.length > TWR_SERIES_MAX_ACCOUNTS)
+      throw new BadRequestException(
+        tr(
+          "errors.params.mustNameAccounts",
+          `The value of "accountIds" must name between 1 and ${TWR_SERIES_MAX_ACCOUNTS} accounts`,
+          { param: "accountIds", max: TWR_SERIES_MAX_ACCOUNTS },
+        ),
+      );
+    // An acting delegate's scope drops the accounts they cannot read (and is
+    // the no-match sentinel when none is left). Those are answered empty under
+    // the id the caller named, never measured, and never as the sentinel.
+    const readable = new Set(
+      (window.accountIds ?? []).map((id) => id.toLowerCase()),
+    );
+    return this.twrSeries.getSeriesByAccount(req.user.id, {
+      ...window,
+      accountIds: requested.filter((id) => readable.has(id)),
+      requestedAccountIds: requested,
+    });
   }
 
   /**
@@ -566,6 +562,18 @@ export class NetWorthController {
    */
   private async periodWindowQuery(
     req: { user: { isActing?: boolean; delegationId?: string } },
+    query: PeriodWindowParams,
+  ): Promise<PeriodWindow> {
+    return (await this.periodWindowParts(req, query)).window;
+  }
+
+  /**
+   * `periodWindowQuery`'s window, plus the account ids as the caller named
+   * them (checked, before a delegate's scope narrows them): the by-account
+   * series answers one entry per named id, readable or not.
+   */
+  private async periodWindowParts(
+    req: { user: { isActing?: boolean; delegationId?: string } },
     {
       startDate,
       endDate,
@@ -573,21 +581,8 @@ export class NetWorthController {
       accountIds,
       displayCurrency,
       period,
-    }: {
-      startDate?: string;
-      endDate?: string;
-      baselineDate?: string;
-      accountIds?: string;
-      displayCurrency?: string;
-      period?: string;
-    },
-  ): Promise<
-    PeriodResultWindow & {
-      endDate?: string;
-      accountIds?: string[];
-      displayCurrency?: string;
-    }
-  > {
+    }: PeriodWindowParams,
+  ): Promise<{ window: PeriodWindow; namedAccountIds?: string[] }> {
     const sd = assertStringParam(startDate, "startDate");
     const ed = assertStringParam(endDate, "endDate");
     const bd = assertStringParam(baselineDate, "baselineDate");
@@ -627,26 +622,12 @@ export class NetWorthController {
           { param: "baselineDate" },
         ),
       );
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    const ids = aIds ? aIds.split(",").filter(Boolean) : undefined;
-    if (ids) {
-      for (const id of ids) {
-        if (!uuidRegex.test(id))
-          throw new BadRequestException(
-            tr(
-              "errors.params.mustBeCsvUuids",
-              'The value of "accountIds" must be a comma-separated list of UUIDs',
-              { param: "accountIds" },
-            ),
-          );
-      }
-    }
+    const ids = this.parseAccountIds(aIds);
     const safeCurrency = curr ? curr.slice(0, 3).toUpperCase() : undefined;
     const scopeIds = await this.scopeIds(req, ids);
     // A preset names the whole window, so the dates beside it are not a second
     // opinion to reconcile: the server draws it from the preset alone.
-    return isPortfolioPeriodPreset(preset ?? "")
+    const window: PeriodWindow = isPortfolioPeriodPreset(preset ?? "")
       ? {
           period: preset as PortfolioPeriodPreset,
           endDate: ed,
@@ -660,6 +641,7 @@ export class NetWorthController {
           accountIds: scopeIds,
           displayCurrency: safeCurrency,
         };
+    return { window, namedAccountIds: ids };
   }
 
   @Get("investments-period-results")
@@ -791,21 +773,7 @@ export class NetWorthController {
           { param: "endDate" },
         ),
       );
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    const ids = aIds ? aIds.split(",").filter(Boolean) : undefined;
-    if (ids) {
-      for (const id of ids) {
-        if (!uuidRegex.test(id))
-          throw new BadRequestException(
-            tr(
-              "errors.params.mustBeCsvUuids",
-              'The value of "accountIds" must be a comma-separated list of UUIDs',
-              { param: "accountIds" },
-            ),
-          );
-      }
-    }
+    const ids = this.parseAccountIds(aIds);
     const safeCurrency = curr ? curr.slice(0, 3).toUpperCase() : undefined;
     return this.netWorthService.getInvestmentBreakdown(req.user.id, {
       granularity: gran,

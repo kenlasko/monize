@@ -839,7 +839,8 @@
     "twrReason": {
       "noPrice": "此期間的部分時段缺少價格，因此無法計算報酬率。",
       "displayFx": "此期間的部分時段缺少匯率，因此無法計算報酬率。",
-      "noBaseline": "此期間沒有可用來衡量報酬率的投資。"
+      "noBaseline": "此期間沒有可用來衡量報酬率的投資。",
+      "noHistory": "此期間沒有歷史記錄。"
     },
     "twrAccountsLimitedNote": "共 {total} 個帳戶，僅繪製前 {shown} 個。",
     "rangeAll": "全部",

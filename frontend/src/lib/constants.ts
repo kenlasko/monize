@@ -28,6 +28,14 @@ export const SECURITY_PRICE_HISTORY_LIMIT = 9999;
  */
 export const PORTFOLIO_VALUATION_TIMEOUT_MS = 120_000;
 
+/**
+ * The most accounts `investments-twr-series?groupBy=account` accepts: the
+ * backend's `TWR_SERIES_MAX_ACCOUNTS` (net-worth controller). One valuation per
+ * account, so the server bounds the count and answers 400 over it;
+ * `twr-series-limits.contract.test.ts` fails if the two drift apart.
+ */
+export const TWR_SERIES_MAX_ACCOUNTS = 25;
+
 type DateFormatOption = { value: string; label: string };
 
 /**

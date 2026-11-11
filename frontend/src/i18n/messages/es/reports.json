@@ -839,7 +839,8 @@
     "twrReason": {
       "noPrice": "falta un precio en parte de este período, así que no se puede calcular la rentabilidad.",
       "displayFx": "falta un tipo de cambio en parte de este período, así que no se puede calcular la rentabilidad.",
-      "noBaseline": "no había nada invertido sobre lo que medir una rentabilidad en este período."
+      "noBaseline": "no había nada invertido sobre lo que medir una rentabilidad en este período.",
+      "noHistory": "no hay historial para este período."
     },
     "twrAccountsLimitedNote": "Solo se representan las primeras {shown} de {total} cuentas.",
     "rangeAll": "Todo",
