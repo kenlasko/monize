@@ -18,8 +18,8 @@ import {
 } from '@/components/dashboard/dashboard-layout';
 
 /**
- * The key on the history entry edit mode pushes. Its value is the visit's own
- * token, so an entry an earlier visit left behind (section 10.3) is not taken
+ * The key on the history entry edit mode pushes. Its value is a random id of
+ * this visit (an identifier, not a secret), so an entry an earlier visit left behind (section 10.3) is not taken
  * for this visit's.
  */
 const HISTORY_MARKER = 'dashboardEdit';
@@ -70,17 +70,17 @@ function currentEntry() {
   return window.history.state as Record<string, unknown> | null;
 }
 
-function pushEditEntry(token: string) {
-  window.history.pushState({ ...window.history.state, [HISTORY_MARKER]: token }, '');
+function pushEditEntry(visitId: string) {
+  window.history.pushState({ ...window.history.state, [HISTORY_MARKER]: visitId }, '');
 }
 
 /**
  * Pop this visit's entry, and only that: a `Modal` entry above it spreads the
- * token too. Says whether it popped, so the popstate it causes is skipped.
+ * same id too. Says whether it popped, so the popstate it causes is skipped.
  */
-function popEditEntry(token: string): boolean {
+function popEditEntry(visitId: string): boolean {
   const state = currentEntry();
-  if (state?.[HISTORY_MARKER] !== token || state.modal === true) return false;
+  if (state?.[HISTORY_MARKER] !== visitId || state.modal === true) return false;
   window.history.back();
   return true;
 }
@@ -113,8 +113,8 @@ export function useDashboardLayoutDraft() {
   const [state, send] = useReducer(draftReducer, IDLE);
   const editingRef = useRef(false);
   const savingRef = useRef(false);
-  // This visit's token, carried by the history entry it pushed.
-  const tokenRef = useRef('');
+  // This visit's id, carried by the history entry it pushed.
+  const visitIdRef = useRef('');
   // Popstates our own `history.back()` will cause; they arrive asynchronously,
   // possibly after the reader has already entered edit mode again.
   const ownPopsRef = useRef(0);
@@ -128,8 +128,8 @@ export function useDashboardLayoutDraft() {
     if (editingRef.current) return;
     const prefs = usePreferencesStore.getState().preferences;
     editingRef.current = true;
-    tokenRef.current = newClientId();
-    pushEditEntry(tokenRef.current);
+    visitIdRef.current = newClientId();
+    pushEditEntry(visitIdRef.current);
     send({ type: 'enter', seed: resolveDashboardLayout(prefs?.dashboardWidgets, prefs?.dashboardWidgetConfig) });
   }, []);
 
@@ -137,7 +137,7 @@ export function useDashboardLayoutDraft() {
   const discard = useCallback(() => {
     if (!editingRef.current || savingRef.current) return;
     editingRef.current = false;
-    if (popEditEntry(tokenRef.current)) ownPopsRef.current += 1;
+    if (popEditEntry(visitIdRef.current)) ownPopsRef.current += 1;
     send({ type: 'leave' });
   }, []);
 
@@ -173,7 +173,7 @@ export function useDashboardLayoutDraft() {
         dashboardWidgetConfig: saved.dashboardWidgetConfig,
       });
       editingRef.current = false;
-      if (popEditEntry(tokenRef.current)) ownPopsRef.current += 1;
+      if (popEditEntry(visitIdRef.current)) ownPopsRef.current += 1;
       send({ type: 'leave' });
     } catch (error) {
       toast.error(getErrorMessage(error, t('customize.toasts.saveFailed')));
@@ -195,15 +195,15 @@ export function useDashboardLayoutDraft() {
       if (!editingRef.current) return;
       // Landing on this visit's entry means only a dialog above it closed.
       const landed = event.state as Record<string, unknown> | null;
-      if (landed?.[HISTORY_MARKER] === tokenRef.current) return;
+      if (landed?.[HISTORY_MARKER] === visitIdRef.current) return;
       // Mid-save, put the entry back and wait: the save leaves (and pops it)
       // when it lands, or stays in edit mode if it is refused.
       if (savingRef.current) {
-        pushEditEntry(tokenRef.current);
+        pushEditEntry(visitIdRef.current);
         return;
       }
       if (dirtyRef.current) {
-        pushEditEntry(tokenRef.current);
+        pushEditEntry(visitIdRef.current);
         send({ type: 'confirm', value: true });
         return;
       }
@@ -228,15 +228,15 @@ export function useDashboardLayoutDraft() {
       queueMicrotask(() => {
         if (lifetimeRef.current !== lifetime || !editingRef.current) return;
         editingRef.current = false;
-        const token = tokenRef.current;
+        const visitId = visitIdRef.current;
         const top = currentEntry();
         // A dialog's entry is over ours, and that Modal pops it as it unmounts
         // too. Its back() lands later, so ours is the current entry only then.
-        if (top?.[HISTORY_MARKER] === token && top.modal === true) {
-          afterModalHistoryPop(() => popEditEntry(token));
+        if (top?.[HISTORY_MARKER] === visitId && top.modal === true) {
+          afterModalHistoryPop(() => popEditEntry(visitId));
           return;
         }
-        popEditEntry(token);
+        popEditEntry(visitId);
       });
     };
   }, []);

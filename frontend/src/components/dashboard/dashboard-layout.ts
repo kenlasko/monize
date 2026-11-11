@@ -3,6 +3,7 @@ import {
   resolveDashboardWidgets,
   type DashboardWidgetId,
 } from './widget-registry';
+import { isRecord } from '@/lib/helpers/is-record';
 
 /** Width presets, narrowest first: 4, 6, 8 and 12 of the grid's 12 columns at `lg` and up. */
 export const WIDGET_WIDTHS = ['third', 'half', 'twoThirds', 'full'] as const;
@@ -69,10 +70,6 @@ const widthRank = (w: WidgetWidth) => WIDGET_WIDTHS.indexOf(w);
 
 function isOneOf<T extends string>(choices: readonly T[], value: unknown): value is T {
   return typeof value === 'string' && (choices as readonly string[]).includes(value);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /** The width presets a widget offers: its minimum and every wider one. */
