@@ -92,6 +92,7 @@ export function AddWidgetTile({ onClick, empty }: { onClick: () => void; empty: 
       <button
         type="button"
         data-testid="add-widget-tile"
+        data-edit-slot="add"
         onClick={onClick}
         className={`${WIDTH_CLASSES[DEFAULT_WIDGET_WIDTH]} flex min-h-32 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 text-sm font-medium text-gray-600 transition-colors motion-reduce:transition-none hover:border-blue-500 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-gray-600 dark:text-gray-300 dark:hover:border-blue-400 dark:hover:text-blue-400`}
       >

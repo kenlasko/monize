@@ -75,7 +75,7 @@ Click the **Customize** gear beside the greeting to put the dashboard into edit 
 
 A widget that has nothing to show yet, such as Top Movers before you have any securities, is drawn in edit mode as a tile with its name, so you can still move or remove it.
 
-Click **Done** to keep the new layout, or **Cancel** (or press **Escape**, or your browser's Back button) to put it back the way it was; if you changed anything, Monize asks before throwing the changes away. Nothing is saved until you click **Done**, and at least one widget must stay on the dashboard. Your layout is saved to your account, so it **syncs across all your devices**.
+Click **Done** to keep the new layout, or **Cancel** (or press **Escape**, or your browser's Back button) to put the layout back the way it was; if you changed anything, Monize asks before throwing the changes away. The layout is not saved until you click **Done**; the hero's settings are the exception, saved as soon as you press **Save** in **Hero Settings**, so Cancel does not undo them. At least one widget must stay on the dashboard. Your layout is saved to your account, so it **syncs across all your devices**.
 
 On a phone, edit mode works the same way: you can add, remove and move widgets, but not change their sizes.
 

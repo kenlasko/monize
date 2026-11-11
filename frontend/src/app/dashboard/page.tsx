@@ -12,9 +12,16 @@ import { GettingStarted } from '@/components/dashboard/GettingStarted';
 import {
   DashboardWidgetContext,
   delegateDashboardWidgets,
+  type DashboardWidgetId,
 } from '@/components/dashboard/widget-registry';
 import { useWidgetName } from '@/components/dashboard/widget-glyphs';
-import { defaultLayoutItem, resolveDashboardLayout } from '@/components/dashboard/dashboard-layout';
+import {
+  defaultLayoutItem,
+  layoutReducer,
+  resolveDashboardLayout,
+  type WidgetHeight,
+  type WidgetWidth,
+} from '@/components/dashboard/dashboard-layout';
 import { DashboardGrid, type DashboardGridEditing } from '@/components/dashboard/DashboardGrid';
 import { useDashboardLayoutDraft } from '@/hooks/useDashboardLayoutDraft';
 import { useGridReorder } from '@/hooks/useGridReorder';
@@ -133,8 +140,16 @@ function DashboardContent() {
   const editing = layoutDraft.editing && !isDelegateView;
   const [showAddWidget, setShowAddWidget] = useState(false);
   const [showHeroSettings, setShowHeroSettings] = useState(false);
-  // The latest move, for the grid's polite live region.
-  const [moveAnnouncement, setMoveAnnouncement] = useState('');
+  // The latest change (move, add, remove, resize), for the grid's polite live region.
+  const [announcement, setAnnouncement] = useState('');
+  const gearRef = useRef<HTMLButtonElement>(null);
+  // Leaving edit mode, by any way out, hands focus back to the gear that
+  // entered it, rather than to the page body with the bar that held it.
+  const wasEditingRef = useRef(false);
+  useEffect(() => {
+    if (wasEditingRef.current && !editing) gearRef.current?.focus();
+    wasEditingRef.current = editing;
+  }, [editing]);
 
   const brokerageMarketValues = useMemo(() => {
     const map = new Map<string, number>();
@@ -348,21 +363,21 @@ function DashboardContent() {
   const enterEditMode = () => {
     setShowAddWidget(false);
     setShowHeroSettings(false);
-    setMoveAnnouncement('');
+    setAnnouncement('');
     layoutDraft.enter();
   };
 
-  const { dispatch: dispatchLayout } = layoutDraft;
+  const { dispatch: dispatchLayout, saving } = layoutDraft;
   const widgetName = useWidgetName();
   // One move, from the overlay's buttons or the grip: dispatched, read out,
   // and focus kept on the control that moved it. A pointer drop moves no
   // focus: the grip's press never took it.
   const moveWidget = useCallback(
     (from: number, to: number, focus: 'button' | 'grip' | 'none' = 'button') => {
-      if (!draft || to < 0 || to >= draft.length || from === to) return;
+      if (!draft || saving || to < 0 || to >= draft.length || from === to) return;
       const { id } = draft[from];
       dispatchLayout({ type: 'move', from, to });
-      setMoveAnnouncement(t('edit.moved', { name: widgetName(id), position: to + 1, count: draft.length }));
+      setAnnouncement(t('edit.moved', { name: widgetName(id), position: to + 1, count: draft.length }));
       if (focus === 'none') return;
       const direction = to < from ? 'earlier' : 'later';
       requestAnimationFrame(() => {
@@ -377,10 +392,62 @@ function DashboardContent() {
         button?.focus();
       });
     },
-    [draft, dispatchLayout, t, widgetName],
+    [draft, saving, dispatchLayout, t, widgetName],
   );
 
   const gridRef = useRef<HTMLDivElement>(null);
+
+  // Focus a widget's grip once the grid has drawn the change, or the Add
+  // widget tile when there is no widget to focus.
+  const focusGrip = (id: DashboardWidgetId | undefined) => {
+    requestAnimationFrame(() => {
+      const grid = gridRef.current;
+      const item = id ? grid?.querySelector(`[data-widget-id="${id}"]`) : null;
+      const target =
+        item?.querySelector<HTMLElement>('[data-edit-slot="grip"] button') ??
+        grid?.querySelector<HTMLElement>('[data-edit-slot="add"]');
+      target?.focus();
+    });
+  };
+
+  // Each change is read out, and focus moves to what is left in place of a
+  // removed widget, or onto a widget just added.
+  const removeWidget = (id: DashboardWidgetId) => {
+    if (!draft || saving) return;
+    const index = draft.findIndex((item) => item.id === id);
+    if (index < 0) return;
+    dispatchLayout({ type: 'remove', id });
+    setAnnouncement(t('edit.removed', { name: widgetName(id) }));
+    focusGrip((draft[index + 1] ?? draft[index - 1])?.id);
+  };
+
+  const addWidget = (id: DashboardWidgetId) => {
+    if (!draft || saving || draft.some((item) => item.id === id)) return;
+    dispatchLayout({ type: 'add', id });
+    setAnnouncement(t('edit.added', { name: widgetName(id) }));
+    focusGrip(id);
+  };
+
+  const resizeWidget = (id: DashboardWidgetId, size: { width?: WidgetWidth; height?: WidgetHeight }) => {
+    if (!draft || saving) return;
+    const action = { type: 'resize', id, ...size } as const;
+    // The reducer refuses a size the widget does not offer; nothing is read out then.
+    const next = layoutReducer(draft, action);
+    const before = draft.find((item) => item.id === id);
+    const after = next.find((item) => item.id === id);
+    if (next === draft || !before || !after) return;
+    dispatchLayout(action);
+    const name = widgetName(id);
+    const width = t(`edit.widthName.${after.width}`);
+    const height = t(`edit.heightName.${after.height}`);
+    const widthChanged = after.width !== before.width;
+    const heightChanged = after.height !== before.height;
+    setAnnouncement(
+      widthChanged && heightChanged
+        ? t('edit.resizedBoth', { name, width, height })
+        : t('edit.resized', { name, size: widthChanged ? width : height }),
+    );
+  };
   const reorder = useGridReorder({
     containerRef: gridRef,
     count: draft?.length ?? 0,
@@ -397,14 +464,15 @@ function DashboardContent() {
             index={index}
             count={draft.length}
             onMove={moveWidget}
-            onRemove={(removed) => dispatchLayout({ type: 'remove', id: removed.id })}
-            onResize={(id, size) => dispatchLayout({ type: 'resize', id, ...size })}
+            onRemove={(removed) => removeWidget(removed.id)}
+            onResize={resizeWidget}
             grip={reorder.grip(index)}
           />
         ),
         placeholder: (item) => <WidgetPlaceholder item={item} />,
         trailing: <AddWidgetTile onClick={() => setShowAddWidget(true)} empty={draft.length === 0} />,
-        announcement: moveAnnouncement,
+        announcement,
+        saving,
         reorder: {
           draggingIndex: reorder.draggingIndex,
           axis: reorder.axis,
@@ -430,6 +498,7 @@ function DashboardContent() {
       titleAdornment={
         !isDelegateView ? (
           <button
+            ref={gearRef}
             type="button"
             {...tourAnchor(TOUR_ANCHORS.dashboardCustomize)}
             onClick={enterEditMode}
@@ -489,7 +558,7 @@ function DashboardContent() {
                 isOpen={showAddWidget}
                 onClose={() => setShowAddWidget(false)}
                 shownIds={draft.map((item) => item.id)}
-                onAdd={(id) => dispatchLayout({ type: 'add', id })}
+                onAdd={addWidget}
               />
               <UnsavedChangesDialog
                 isOpen={layoutDraft.confirmingLeave}

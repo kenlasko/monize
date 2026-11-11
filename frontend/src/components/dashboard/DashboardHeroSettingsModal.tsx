@@ -129,6 +129,10 @@ export function DashboardHeroSettingsModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      // Not closed mid-save (Escape, the backdrop, Back): edit mode's Done
+      // sits under this dialog, and run before the answer lands it would
+      // store the settings map without the hero's new slice.
+      onBeforeClose={() => !isSaving}
       maxWidth="2xl"
       className="p-6"
       pushHistory

@@ -102,6 +102,24 @@ describe('DashboardHeroSettingsModal', () => {
     toastError.mockRestore();
   });
 
+  it('cannot be closed by Escape or its backdrop while the save is in flight', async () => {
+    let answer!: () => void;
+    updatePreferencesMock.mockImplementationOnce(
+      (data) =>
+        new Promise((resolve) => {
+          answer = () => resolve({ dashboardWidgets: [], dashboardWidgetConfig: data.dashboardWidgetConfig });
+        }),
+    );
+    await renderModal();
+    await save();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.click(screen.getByRole('dialog').parentElement as HTMLElement);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    await act(async () => answer());
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it('closes from Cancel without saving', async () => {
     await renderModal();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));

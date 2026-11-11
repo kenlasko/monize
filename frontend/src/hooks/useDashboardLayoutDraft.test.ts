@@ -81,7 +81,17 @@ describe('useDashboardLayoutDraft', () => {
     ]);
     expect(result.current.dirty).toBe(false);
     expect(pushState).toHaveBeenCalledTimes(1);
-    expect(historyState).toMatchObject({ dashboardEdit: true });
+    expect(historyState).toMatchObject({ dashboardEdit: expect.any(String) });
+  });
+
+  it('marks each visit\'s history entry with a token of its own', () => {
+    const { result } = setup();
+    act(() => result.current.enter());
+    const first = historyState?.dashboardEdit;
+    act(() => result.current.cancel());
+    act(() => result.current.enter());
+    expect(historyState?.dashboardEdit).toEqual(expect.any(String));
+    expect(historyState?.dashboardEdit).not.toBe(first);
   });
 
   it('is dirty once the draft differs from its seed, and clean again when it matches', () => {
@@ -116,6 +126,38 @@ describe('useDashboardLayoutDraft', () => {
     act(() => result.current.discard());
     expect(result.current.editing).toBe(false);
     expect(updatePreferences).not.toHaveBeenCalled();
+  });
+
+  describe('Escape typed in a panel with an Escape of its own', () => {
+    // The AI sheet is a dialog without aria-modal; the docked help panel is complementary.
+    it.each([
+      ['the AI assistant sheet', 'dialog'],
+      ['the docked help panel', 'complementary'],
+    ])('stays in edit mode for %s', (_name, role) => {
+      const { result } = setup();
+      act(() => result.current.enter());
+      const panel = document.createElement('div');
+      panel.setAttribute('role', role);
+      const field = document.createElement('input');
+      panel.appendChild(field);
+      document.body.appendChild(panel);
+      field.focus();
+      act(() => {
+        field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      });
+      expect(result.current.editing).toBe(true);
+      expect(result.current.confirmingLeave).toBe(false);
+      panel.remove();
+    });
+
+    it('still leaves for an Escape typed on the page itself', () => {
+      const { result } = setup();
+      act(() => result.current.enter());
+      act(() => {
+        document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      });
+      expect(result.current.editing).toBe(false);
+    });
   });
 
   it('leaves on Escape, but not while a dialog is open on top', () => {
@@ -170,10 +212,23 @@ describe('useDashboardLayoutDraft', () => {
   it('ignores a Back that only closed a dialog above its own entry', () => {
     const { result } = setup();
     act(() => result.current.enter());
+    const own = { ...historyState };
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate', { state: own }));
+    });
+    expect(result.current.editing).toBe(true);
+  });
+
+  it('leaves in one Back when the entry under it is one an earlier visit left behind', () => {
+    // An earlier visit's entry, as a link's navigation leaves it (section 10.3).
+    historyState = { dashboardEdit: true };
+    const { result } = setup();
+    act(() => result.current.enter());
     act(() => {
       window.dispatchEvent(new PopStateEvent('popstate', { state: { dashboardEdit: true } }));
     });
-    expect(result.current.editing).toBe(true);
+    expect(result.current.editing).toBe(false);
+    expect(pushState).toHaveBeenCalledTimes(1);
   });
 
   it('saves once, the draft over the settings map read at save time (DASH-5, DASH-6)', async () => {
@@ -277,6 +332,29 @@ describe('useDashboardLayoutDraft', () => {
       expect(historyBack).toHaveBeenCalledTimes(1);
     });
 
+    it('refuses a layout change, and stores the draft Done was pressed on', async () => {
+      const save = pendingSave();
+      const { result } = setup();
+      act(() => result.current.enter());
+      act(() => result.current.dispatch({ type: 'remove', id: 'insights' }));
+      const pressed = result.current.draft;
+      let saving!: Promise<void>;
+      act(() => {
+        saving = result.current.save();
+      });
+      act(() => result.current.dispatch({ type: 'remove', id: 'net-worth' }));
+      act(() => result.current.dispatch({ type: 'add', id: 'favourite-reports' }));
+      expect(result.current.draft).toBe(pressed);
+      await act(async () => {
+        save.finish();
+        await saving;
+      });
+      expect(updatePreferences).toHaveBeenCalledTimes(1);
+      expect(updatePreferences.mock.calls[0][0].dashboardWidgets).toEqual(
+        DEFAULT_DASHBOARD_WIDGET_IDS.filter((id) => id !== 'insights'),
+      );
+    });
+
     it('puts its entry back on Back without asking or leaving, and the save then leaves', async () => {
       const save = pendingSave();
       const { result } = setup();
@@ -291,7 +369,7 @@ describe('useDashboardLayoutDraft', () => {
       expect(result.current.editing).toBe(true);
       expect(result.current.confirmingLeave).toBe(false);
       expect(pushState).toHaveBeenCalledTimes(2);
-      expect(historyState).toMatchObject({ dashboardEdit: true });
+      expect(historyState).toMatchObject({ dashboardEdit: expect.any(String) });
       await act(async () => {
         save.finish();
         await saving;
@@ -321,6 +399,24 @@ describe('useDashboardLayoutDraft', () => {
       unmount();
       await settle();
       expect(historyBack).not.toHaveBeenCalled();
+    });
+
+    it('pops its own entry once a dialog open over it has popped its own', async () => {
+      const { result, unmount } = setup();
+      act(() => result.current.enter());
+      const own = { ...historyState };
+      // A Modal's entry, which spreads the state under it.
+      historyState = { ...own, modal: true };
+      unmount();
+      await settle();
+      // The Modal's own unmount pops its entry; that lands as a popstate.
+      expect(historyBack).not.toHaveBeenCalled();
+      historyState = own;
+      window.dispatchEvent(new PopStateEvent('popstate', { state: own }));
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+      expect(historyBack).toHaveBeenCalledTimes(1);
     });
 
     it('does nothing when unmounted outside edit mode', async () => {

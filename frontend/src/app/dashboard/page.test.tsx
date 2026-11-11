@@ -726,8 +726,15 @@ describe('DashboardPage', () => {
       expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent(
         `Upcoming Bills & Deposits moved to position 1 of ${DEFAULT_DASHBOARD_WIDGET_IDS.length}`,
       );
+      // First now, so its earlier button is disabled: focus stays on the widget's next move button.
+      await waitFor(() => {
+        expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Move Upcoming Bills & Deposits later' }));
+      });
       await click(screen.getByRole('button', { name: 'Move Upcoming Bills & Deposits later' }));
       expect(widgetIds().slice(0, 2)).toEqual(['favourite-accounts', 'upcoming-bills']);
+      await waitFor(() => {
+        expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Move Upcoming Bills & Deposits later' }));
+      });
     });
 
     it('adds a hidden widget at the end from the Add Widget dialog', async () => {
@@ -947,7 +954,7 @@ describe('DashboardPage', () => {
       });
       const setWide = (wide: boolean) => {
         window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-          matches: wide && query.includes('min-width: 1024px'),
+          matches: wide && query.includes('min-width: 64rem'),
           media: query,
           addEventListener: vi.fn(),
           removeEventListener: vi.fn(),
@@ -961,6 +968,11 @@ describe('DashboardPage', () => {
         const widths = screen.getByRole('group', { name: 'Width of Net Worth' });
         await click(within(widths).getByRole('button', { name: 'Full width' }));
         expect(within(widths).getByRole('button', { name: 'Full width' })).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent('Net Worth is now Full width');
+        const heights = screen.getByRole('group', { name: 'Height of Net Worth' });
+        await click(within(heights).getByRole('button', { name: 'Tall height' }));
+        expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent('Net Worth is now Tall height');
+        await click(within(heights).getByRole('button', { name: 'Standard height' }));
         expect(mockUpdatePreferences).not.toHaveBeenCalled();
         await click(done());
         expect(mockUpdatePreferences).toHaveBeenCalledTimes(1);
@@ -1102,6 +1114,211 @@ describe('DashboardPage', () => {
       await enterEditMode();
       await click(screen.getByRole('button', { name: 'Hero Settings' }));
       expect(await screen.findByRole('dialog', { name: 'Dashboard hero' })).toBeInTheDocument();
+    });
+
+    const settle = () =>
+      act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      });
+
+    /** The next updatePreferences answers only when `answer` is called. */
+    function holdNextSave() {
+      let answer!: () => void;
+      mockUpdatePreferences.mockImplementationOnce(
+        (body: any) =>
+          new Promise((resolve) => {
+            answer = () => resolve({ ...prefsState.current, ...body });
+          }),
+      );
+      return () => answer();
+    }
+
+    describe('while Done is saving', () => {
+      it('takes no remove, and stores the draft Done was pressed on', async () => {
+        const answer = holdNextSave();
+        await renderLoaded();
+        await enterEditMode();
+        await click(screen.getByRole('button', { name: 'Remove Spending Insights' }));
+        await click(done());
+        const grid = screen.getByTestId('net-worth-chart').closest('[data-tour-id="dashboard-widgets"]');
+        expect(grid).toHaveAttribute('inert');
+        await click(screen.getByRole('button', { name: 'Remove Net Worth' }));
+        expect(widgetIds()).toContain('net-worth');
+        expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent('Spending Insights removed');
+        await act(async () => answer());
+        expect(mockUpdatePreferences).toHaveBeenCalledTimes(1);
+        expect(mockUpdatePreferences.mock.calls[0][0].dashboardWidgets).toEqual(
+          DEFAULT_DASHBOARD_WIDGET_IDS.filter((id) => id !== 'insights'),
+        );
+        expect(editBar()).not.toBeInTheDocument();
+      });
+
+      it('takes no widget from the Add dialog', async () => {
+        const answer = holdNextSave();
+        await renderLoaded();
+        await enterEditMode();
+        await click(screen.getByRole('button', { name: 'Remove Spending Insights' }));
+        await click(screen.getByTestId('add-widget-tile'));
+        const dialog = await screen.findByRole('dialog', { name: 'Add Widget' });
+        // The bar is under the dialog for a pointer; jsdom reaches it anyway.
+        await click(done());
+        await click(within(dialog).getByTestId('add-widget-favourite-reports'));
+        expect(widgetIds()).not.toContain('favourite-reports');
+        await act(async () => answer());
+        expect(mockUpdatePreferences.mock.calls[0][0].dashboardWidgets).toEqual(
+          DEFAULT_DASHBOARD_WIDGET_IDS.filter((id) => id !== 'insights'),
+        );
+        expect(screen.queryByTestId('favourite-reports')).not.toBeInTheDocument();
+      });
+    });
+
+    it('keeps the hero dialog open through Escape and its backdrop while it saves, so Done keeps the hero', async () => {
+      await renderLoaded();
+      await enterEditMode();
+      await click(screen.getByRole('button', { name: 'Hero Settings' }));
+      const dialog = await screen.findByRole('dialog', { name: 'Dashboard hero' });
+      const answer = holdNextSave();
+      await click(within(dialog).getByRole('button', { name: 'Save' }));
+      await act(async () => {
+        fireEvent.keyDown(within(dialog).getByRole('button', { name: 'Save' }), { key: 'Escape' });
+      });
+      expect(screen.getByRole('dialog', { name: 'Dashboard hero' })).toBeInTheDocument();
+      await click(dialog.parentElement as HTMLElement);
+      expect(screen.getByRole('dialog', { name: 'Dashboard hero' })).toBeInTheDocument();
+      expect(editBar()).toBeInTheDocument();
+      await act(async () => answer());
+      expect(screen.queryByRole('dialog', { name: 'Dashboard hero' })).not.toBeInTheDocument();
+      await click(screen.getByRole('button', { name: 'Remove Spending Insights' }));
+      await click(done());
+      expect(mockUpdatePreferences).toHaveBeenCalledTimes(2);
+      expect(mockUpdatePreferences.mock.calls[1][0].dashboardWidgetConfig).toHaveProperty('dashboard-hero');
+    });
+
+    it('closes the Add dialog on Back after it was closed and opened again, and stays in edit mode', async () => {
+      await renderLoaded();
+      await enterEditMode();
+      await click(screen.getByTestId('add-widget-tile'));
+      const first = await screen.findByRole('dialog', { name: 'Add Widget' });
+      await click(within(first).getByRole('button', { name: 'Close' }));
+      // The dialog's own entry is popped; let that land.
+      await settle();
+      await click(screen.getByTestId('add-widget-tile'));
+      await screen.findByRole('dialog', { name: 'Add Widget' });
+      await act(async () => {
+        window.history.back();
+      });
+      await settle();
+      expect(screen.queryByRole('dialog', { name: 'Add Widget' })).not.toBeInTheDocument();
+      expect(editBar()).toBeInTheDocument();
+    });
+
+    it('leaves on one Back when an earlier visit left its entry under the page', async () => {
+      // A stale entry, as a link's navigation out of edit mode leaves it.
+      window.history.replaceState({ ...window.history.state, dashboardEdit: true }, '');
+      await renderLoaded();
+      await enterEditMode();
+      await act(async () => {
+        window.history.back();
+      });
+      await settle();
+      expect(editBar()).not.toBeInTheDocument();
+      window.history.replaceState(null, '');
+    });
+
+    describe('focus and announcements', () => {
+      const gear = () => screen.getByRole('button', { name: 'Customize' });
+      const gripOf = (id: string) =>
+        document.querySelector<HTMLElement>(`[data-widget-id="${id}"] [data-edit-slot="grip"] button`);
+
+      it.each([
+        ['Cancel', async () => click(screen.getByRole('button', { name: 'Cancel' }))],
+        ['Done', async () => click(done())],
+        ['Escape', async () => act(async () => {
+          fireEvent.keyDown(document, { key: 'Escape' });
+        })],
+        ['Back', async () => act(async () => {
+          window.dispatchEvent(new PopStateEvent('popstate', { state: null }));
+        })],
+      ])('hands focus back to the gear on %s', async (_way, leave) => {
+        await renderLoaded();
+        await enterEditMode();
+        await leave();
+        expect(editBar()).not.toBeInTheDocument();
+        expect(document.activeElement).toBe(gear());
+      });
+
+      it('hands focus back to the gear on Discard, and after a saved Done', async () => {
+        await renderLoaded();
+        await enterEditMode();
+        await click(screen.getByRole('button', { name: 'Remove Net Worth' }));
+        await click(screen.getByRole('button', { name: 'Cancel' }));
+        await click(await screen.findByRole('button', { name: 'Discard' }));
+        expect(document.activeElement).toBe(gear());
+        await enterEditMode();
+        await click(screen.getByRole('button', { name: 'Remove Net Worth' }));
+        await click(done());
+        expect(mockUpdatePreferences).toHaveBeenCalledTimes(1);
+        expect(document.activeElement).toBe(gear());
+      });
+
+      it('moves focus after a remove to the next grip, then the previous one, then the Add tile, reading each out', async () => {
+        prefsState.current.dashboardWidgets = ['insights', 'net-worth', 'budget-status'];
+        await renderLoaded();
+        await enterEditMode();
+        await click(screen.getByRole('button', { name: 'Remove Net Worth' }));
+        expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent('Net Worth removed');
+        await waitFor(() => expect(document.activeElement).toBe(gripOf('budget-status')));
+        await click(screen.getByRole('button', { name: /^Remove Budget/ }));
+        await waitFor(() => expect(document.activeElement).toBe(gripOf('insights')));
+        await click(screen.getByRole('button', { name: 'Remove Spending Insights' }));
+        await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('add-widget-tile')));
+      });
+
+      it('focuses the grip of a widget just added, and reads it out', async () => {
+        await renderLoaded();
+        await enterEditMode();
+        await click(screen.getByTestId('add-widget-tile'));
+        const dialog = await screen.findByRole('dialog', { name: 'Add Widget' });
+        await click(within(dialog).getByTestId('add-widget-favourite-reports'));
+        expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent('Favourite Reports added');
+        await waitFor(() => expect(document.activeElement).toBe(gripOf('favourite-reports')));
+      });
+
+      it('starts each visit with nothing announced', async () => {
+        await renderLoaded();
+        await enterEditMode();
+        await click(screen.getByRole('button', { name: 'Move Upcoming Bills & Deposits earlier' }));
+        await click(screen.getByRole('button', { name: 'Move Upcoming Bills & Deposits later' }));
+        expect(screen.getByTestId('dashboard-edit-announcement')).not.toHaveTextContent(/^$/);
+        await click(screen.getByRole('button', { name: 'Cancel' }));
+        await enterEditMode();
+        expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent(/^$/);
+      });
+    });
+
+    it('takes the edit-mode parts away when the view switches to a delegate mid-edit (DASH-9)', async () => {
+      let view!: ReturnType<typeof render>;
+      await act(async () => {
+        view = render(<DashboardPage />);
+      });
+      await waitFor(() => {
+        expect(mockGetAccounts).toHaveBeenCalled();
+      });
+      await act(async () => {});
+      await enterEditMode();
+      authState.current.actingAsUserId = 'owner-1';
+      authState.current.delegateSections = { bills: true };
+      await act(async () => {
+        view.rerender(<DashboardPage />);
+      });
+      await waitFor(() => {
+        expect(screen.getByTestId('upcoming-bills')).toBeInTheDocument();
+      });
+      expect(editBar()).not.toBeInTheDocument();
+      expect(document.querySelector('[data-testid^="widget-edit-overlay-"]')).toBeNull();
+      expect(screen.queryByTestId('add-widget-tile')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('dashboard-edit-announcement')).not.toBeInTheDocument();
+      expect(widgetIds()).toEqual(['favourite-accounts', 'upcoming-bills']);
     });
   });
 });

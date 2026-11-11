@@ -93,4 +93,79 @@ describe('useWidgetConfig', () => {
     // Reverted to the pre-edit map.
     expect(storeState.preferences.dashboardWidgetConfig).toEqual(before);
   });
+
+  describe('an answer landing after another write to the map', () => {
+    function pendingRequest() {
+      let answer!: { resolve: (value: unknown) => void; reject: (error: unknown) => void };
+      updatePreferencesApi.mockImplementation(
+        () =>
+          new Promise((resolve, reject) => {
+            answer = { resolve, reject };
+          }),
+      );
+      return () => answer;
+    }
+
+    // The layout's Done, answered first: it stored a size for another widget.
+    function doneLandsMeanwhile() {
+      const map = storeState.preferences.dashboardWidgetConfig;
+      storeState.preferences = {
+        dashboardWidgetConfig: { ...map, other: { range: '6m', gridWidth: 'full' } },
+      };
+    }
+
+    it('adopts only its own slice on success, keeping what landed meanwhile', async () => {
+      storeState.preferences = { dashboardWidgetConfig: { other: { range: '6m' } } };
+      const answer = pendingRequest();
+      const { result } = renderHook(() => useWidgetConfig('w1', DEFAULTS));
+      let saving!: Promise<void>;
+      act(() => {
+        saving = result.current.updateConfig({ range: '1y' });
+      });
+      doneLandsMeanwhile();
+      await act(async () => {
+        // The server's map as of this request: without the size Done stored later.
+        answer().resolve({ dashboardWidgetConfig: { other: { range: '6m' }, w1: { range: '1y', accountIds: [] } } });
+        await saving;
+      });
+      expect(storeState.preferences.dashboardWidgetConfig).toEqual({
+        other: { range: '6m', gridWidth: 'full' },
+        w1: { range: '1y', accountIds: [] },
+      });
+    });
+
+    it('reverts only its own slice on failure, keeping what landed meanwhile', async () => {
+      storeState.preferences = { dashboardWidgetConfig: { other: { range: '6m' } } };
+      const answer = pendingRequest();
+      const { result } = renderHook(() => useWidgetConfig('w1', DEFAULTS));
+      let saving!: Promise<void>;
+      act(() => {
+        saving = result.current.updateConfig({ range: '1y' });
+      });
+      doneLandsMeanwhile();
+      await act(async () => {
+        answer().reject(new Error('boom'));
+        await saving;
+      });
+      // w1 had no slice before the edit, so it has none again.
+      expect(storeState.preferences.dashboardWidgetConfig).toEqual({ other: { range: '6m', gridWidth: 'full' } });
+    });
+
+    it('leaves its slice alone on failure when a newer write replaced it', async () => {
+      storeState.preferences = { dashboardWidgetConfig: { w1: { range: '3m', accountIds: [] } } };
+      const answer = pendingRequest();
+      const { result } = renderHook(() => useWidgetConfig('w1', DEFAULTS));
+      let saving!: Promise<void>;
+      act(() => {
+        saving = result.current.updateConfig({ range: '1y' });
+      });
+      const newer = { range: '5y', accountIds: [], gridWidth: 'full' };
+      storeState.preferences = { dashboardWidgetConfig: { w1: newer } };
+      await act(async () => {
+        answer().reject(new Error('boom'));
+        await saving;
+      });
+      expect(storeState.preferences.dashboardWidgetConfig.w1).toBe(newer);
+    });
+  });
 });

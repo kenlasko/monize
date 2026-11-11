@@ -21,8 +21,10 @@ export interface DashboardGridEditing {
   placeholder: (item: DashboardLayoutItem) => ReactNode;
   /** After the last widget: the Add widget tile. */
   trailing: ReactNode;
-  /** The latest move, read out by the grid's one polite live region. */
+  /** The latest change (a move, an add, a remove, a resize), read out by the grid's one polite live region. */
   announcement: string;
+  /** Done's save is in flight: the grid takes no input until it lands. */
+  saving?: boolean;
   /** A grip drag under way (`useGridReorder`): what to draw while it lasts. */
   reorder?: DashboardGridReorder;
 }
@@ -63,6 +65,7 @@ export function DashboardGrid({
       <div
         ref={ref}
         {...tourAnchor(TOUR_ANCHORS.dashboardWidgets)}
+        inert={editing?.saving || undefined}
         className="grid grid-cols-1 lg:grid-cols-12 gap-6"
       >
         {layout.map((item, index) => {

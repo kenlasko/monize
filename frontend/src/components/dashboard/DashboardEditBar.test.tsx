@@ -56,9 +56,12 @@ describe('DashboardEditBar', () => {
     expect(screen.getByText('Widget sizes apply on wider screens.')).toHaveClass('lg:hidden');
   });
 
-  it('disables Done when there is nothing to store, and every action while saving', () => {
+  it('disables only Done when there is nothing to store', () => {
     renderBar({ doneDisabled: true });
     expect(screen.getByRole('button', { name: 'Done' })).toBeDisabled();
+    for (const name of ['Add Widget', 'Hero Settings', 'Reset to default', 'Cancel']) {
+      expect(screen.getByRole('button', { name })).toBeEnabled();
+    }
   });
 
   it('holds every action while a save is in flight', () => {

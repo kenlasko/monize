@@ -354,6 +354,49 @@ describe('Modal', () => {
       );
     });
 
+    it('lets the next modal close on Back after one closed itself with no other open', () => {
+      const first = render(<Modal isOpen pushHistory onClose={vi.fn()}>First</Modal>);
+      first.rerender(<Modal isOpen={false} pushHistory onClose={vi.fn()}>First</Modal>);
+      expect(backSpy).toHaveBeenCalledTimes(1);
+      // The popstate that back() causes, arriving with no modal open to see it.
+      act(() => {
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+      first.unmount();
+
+      const onClose = vi.fn();
+      render(<Modal isOpen pushHistory onClose={onClose}>Second</Modal>);
+      act(() => {
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the parent open when a child closed by itself pops its entry', () => {
+      const parentClose = vi.fn();
+      const { rerender } = render(
+        <>
+          <Modal isOpen pushHistory onClose={parentClose}>Parent</Modal>
+          <Modal isOpen pushHistory onClose={vi.fn()}>Child</Modal>
+        </>,
+      );
+      rerender(
+        <>
+          <Modal isOpen pushHistory onClose={parentClose}>Parent</Modal>
+          <Modal isOpen={false} pushHistory onClose={vi.fn()}>Child</Modal>
+        </>,
+      );
+      act(() => {
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+      expect(parentClose).not.toHaveBeenCalled();
+      // The next Back is the reader's, and closes the parent.
+      act(() => {
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+      expect(parentClose).toHaveBeenCalledTimes(1);
+    });
+
     it('cleans up modal stack on unmount', () => {
       const { rerender } = render(
         <Modal isOpen={true} pushHistory>Content</Modal>

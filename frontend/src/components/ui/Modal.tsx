@@ -10,6 +10,25 @@ import type { DocsLink } from '@/lib/docs-links';
 // Parent modals must skip that popstate to avoid cascading closes.
 let pendingProgrammaticPops = 0;
 
+// The popstates those back() calls cause, marked by the one listener below.
+// It consumes each counted pop exactly once, whether or not a modal is still
+// open to see it: a count left with no modal listening used to swallow the
+// next modal's real Back. Marked per event rather than by a flag, because a
+// browser runs microtasks between the listeners of one dispatch.
+const programmaticPopEvents = new WeakSet<Event>();
+let programmaticPopListening = false;
+
+/** Registered with the first history entry, so it runs before every modal's own listener. */
+function listenForProgrammaticPops() {
+  if (programmaticPopListening) return;
+  programmaticPopListening = true;
+  window.addEventListener('popstate', (event) => {
+    if (pendingProgrammaticPops === 0) return;
+    pendingProgrammaticPops--;
+    programmaticPopEvents.add(event);
+  });
+}
+
 // Tracks how many modals currently need body scroll locked.
 // Only the last modal to close should restore body overflow.
 let bodyOverflowLockCount = 0;
@@ -204,6 +223,7 @@ export function Modal({
     if (!pushHistory) return;
 
     if (isOpen && !historyPushedRef.current) {
+      listenForProgrammaticPops();
       window.history.pushState({ ...window.history.state, modal: true }, '');
       historyPushedRef.current = true;
       closedByPopstateRef.current = false;
@@ -232,12 +252,9 @@ export function Modal({
   useEffect(() => {
     if (!isOpen || !pushHistory || !historyPushedRef.current) return;
 
-    const handlePopstate = () => {
+    const handlePopstate = (event: PopStateEvent) => {
       // Skip popstate events caused by programmatic modal cleanup (not user back button)
-      if (pendingProgrammaticPops > 0) {
-        pendingProgrammaticPops--;
-        return;
-      }
+      if (programmaticPopEvents.has(event)) return;
       // Another modal already handled this popstate in the same event dispatch cycle
       if (popstateConsumed) return;
       if (historyPushedRef.current) {
