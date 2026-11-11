@@ -553,6 +553,99 @@
           }
         }
       }
+    },
+    "v1_21_0": {
+      "commandPalette": {
+        "title": "Command palette",
+        "steps": {
+          "welcome": {
+            "title": "Find anything from one box",
+            "body": "The command palette searches your accounts, payees, categories, bills, securities, reports, settings, transactions and the user guide at once, from any screen. It works from the keyboard, so this tour is for a computer."
+          },
+          "openPalette": {
+            "title": "Open the palette",
+            "body": "Press **Ctrl+K** (**Cmd+K** on a Mac). The tour continues once the palette opens."
+          },
+          "searchBox": {
+            "title": "Type what you are looking for",
+            "body": "Try a payee, an account, a report such as **Net Worth**, or a setting such as **Currencies**. Results update as you type, and transactions and guide sections are searched too."
+          },
+          "results": {
+            "title": "Move and open",
+            "body": "Use the **Up** and **Down** arrow keys to move and **Enter** to open a result. **Tab** jumps to the actions, and **Ctrl+Enter** (**Cmd+Enter** on a Mac) starts a new transaction for the payee that matches best."
+          },
+          "closePalette": {
+            "title": "Close the palette",
+            "body": "Click **esc** to close it for now. Outside this tour, the **Esc** key does the same."
+          },
+          "done": {
+            "title": "One shortcut to remember",
+            "body": "Press **Ctrl+K** whenever you want to jump somewhere. Over an open dialog it searches the guide instead. On a phone, use the search in the header. Replay this tour anytime from **Settings**, under **Guided tours**."
+          }
+        }
+      },
+      "inAppHelp": {
+        "title": "Help inside the app",
+        "steps": {
+          "welcome": {
+            "title": "The user guide, beside your work",
+            "body": "The Monize user guide now opens inside the app, next to the page you are on, with screenshots in your theme. It comes with your Monize, so it works offline. This tour shows where to find it."
+          },
+          "pageHelp": {
+            "title": "Open help for this page",
+            "body": "Click the **?** beside the page title. The guide opens at the section about this page."
+          },
+          "panel": {
+            "title": "Read alongside the page",
+            "body": "The panel stays beside the page you were on. **On this page** lists the sections, and links to other guide pages open here. On a computer, drag the panel's left edge to make it wider or narrower."
+          },
+          "panelControls": {
+            "title": "Panel controls",
+            "body": "Step **Back** and **Forward** through the pages you opened, **Search** the guide, **Pin** the panel so it stays open on other pages, or open the page on monize.net. Click **Close** (the **X**) to continue."
+          },
+          "helpMenu": {
+            "title": "The Help menu",
+            "body": "The **?** in the header holds help for the current page, guide search, keyboard shortcuts, the tour for this page and What's New. You can also press **?** anywhere you are not typing to search the guide."
+          },
+          "learnMore": {
+            "title": "Learn more, where you need it",
+            "body": "Look for **Learn more** in tooltips, on empty screens and beside some error messages. Each one opens the section of the guide that explains it."
+          },
+          "done": {
+            "title": "Ask in your own words",
+            "body": "The AI assistant can also answer \"how do I...\" questions from the guide and tell you which sections it used. Replay this tour anytime from **Settings**, under **Guided tours**."
+          }
+        }
+      },
+      "dashboardEdit": {
+        "title": "Arranging the dashboard",
+        "steps": {
+          "welcome": {
+            "title": "Arrange your dashboard in place",
+            "body": "You now move, resize, add and remove widgets right on the dashboard, and nothing is saved until you say so. This tour walks through edit mode."
+          },
+          "enterEdit": {
+            "title": "Enter edit mode",
+            "body": "Click the gear beside the greeting. The tour continues once edit mode opens."
+          },
+          "editBar": {
+            "title": "The edit bar",
+            "body": "**Add Widget** lists the widgets that are not on your dashboard. **Hero Settings** chooses what the hero at the top shows, and **Reset to default** puts the standard layout back."
+          },
+          "arrange": {
+            "title": "Move, resize and remove",
+            "body": "Drag a widget by its grip (the six dots), or use its arrows. On a wide screen, **Width** and **Height** change its size, or drag its bottom-right corner. The **X** removes it, and the dashed **Add Widget** tile adds one. Go ahead and try."
+          },
+          "finish": {
+            "title": "Keep it or put it back",
+            "body": "Click **Done** to save the layout, or **Cancel** to put it back the way it was. Your layout syncs across your devices."
+          },
+          "done": {
+            "title": "Make it yours",
+            "body": "Looking for something new to add? The **Trivia** widget shows a daily fact about your money. Replay this tour anytime from **Settings**, under **Guided tours**."
+          }
+        }
+      }
     }
   },
   "emailReceipts": {

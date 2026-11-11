@@ -38,6 +38,7 @@ import { useHelpSearchStore } from '@/store/helpSearchStore';
 import { useHelpStore } from '@/store/helpStore';
 import { useHelpWidthStore } from '@/store/helpWidthStore';
 import { useTourStore } from '@/store/tourStore';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -265,6 +266,7 @@ export function HelpPanel() {
         aria-modal={modal || undefined}
         aria-label={t('title')}
         id={panelId}
+        {...tourAnchor(TOUR_ANCHORS.helpPanel)}
         className={sheetClass}
         style={docked ? { width: `var(${HELP_PANEL_WIDTH_VAR})` } : undefined}
         onFocus={() => {
@@ -283,7 +285,10 @@ export function HelpPanel() {
             onCommit={commitWidth}
           />
         )}
-        <div className="flex items-center gap-1 border-b border-gray-200 px-3 py-2 dark:border-gray-700">
+        <div
+          className="flex items-center gap-1 border-b border-gray-200 px-3 py-2 dark:border-gray-700"
+          {...tourAnchor(TOUR_ANCHORS.helpPanelToolbar)}
+        >
           <button
             type="button"
             onClick={() => back()}

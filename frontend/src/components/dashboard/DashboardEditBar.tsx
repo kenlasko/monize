@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 
 interface DashboardEditBarProps {
   onAddWidget: () => void;
@@ -39,6 +40,7 @@ export function DashboardEditBar({
       role="region"
       aria-label={t('edit.barLabel')}
       data-testid="dashboard-edit-bar"
+      {...tourAnchor(TOUR_ANCHORS.dashboardEditBar)}
       className={`${CARD_CLASS} sticky top-[calc(4rem+env(safe-area-inset-top)-var(--app-header-offset,0px))] z-20 mb-6 p-3`}
     >
       <div className="flex flex-wrap items-center gap-2">
@@ -58,7 +60,10 @@ export function DashboardEditBar({
         <p className="w-full text-xs text-gray-500 dark:text-gray-400 sm:w-auto lg:hidden">
           {t('edit.phoneNote')}
         </p>
-        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
+        <div
+          className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto"
+          {...tourAnchor(TOUR_ANCHORS.dashboardEditActions)}
+        >
           <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={onCancel} disabled={saving}>
             {tc('cancel')}
           </Button>

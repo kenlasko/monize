@@ -553,6 +553,99 @@
           }
         }
       }
+    },
+    "v1_21_0": {
+      "commandPalette": {
+        "title": "Paleta de comandos",
+        "steps": {
+          "welcome": {
+            "title": "Encuentra cualquier cosa desde un solo cuadro",
+            "body": "La paleta de comandos busca a la vez en tus cuentas, beneficiarios, categorías, facturas, valores, informes, ajustes, transacciones y la guía del usuario, desde cualquier pantalla. Funciona con el teclado, así que este recorrido es para un ordenador."
+          },
+          "openPalette": {
+            "title": "Abre la paleta",
+            "body": "Pulsa **Ctrl+K** (**Cmd+K** en un Mac). El recorrido continúa cuando se abre la paleta."
+          },
+          "searchBox": {
+            "title": "Escribe lo que buscas",
+            "body": "Prueba con un beneficiario, una cuenta, un informe como **Patrimonio neto** o un ajuste como **Divisas**. Los resultados se actualizan mientras escribes, y también se buscan transacciones y secciones de la guía."
+          },
+          "results": {
+            "title": "Muévete y abre",
+            "body": "Usa las flechas **Arriba** y **Abajo** para moverte y **Enter** para abrir un resultado. **Tab** salta a las acciones, y **Ctrl+Enter** (**Cmd+Enter** en un Mac) inicia una nueva transacción para el beneficiario que mejor coincide."
+          },
+          "closePalette": {
+            "title": "Cierra la paleta",
+            "body": "Haz clic en **esc** para cerrarla por ahora. Fuera de este recorrido, la tecla **Esc** hace lo mismo."
+          },
+          "done": {
+            "title": "Un atajo para recordar",
+            "body": "Pulsa **Ctrl+K** siempre que quieras ir a algún sitio. Sobre un cuadro de diálogo abierto, busca en la guía. En un teléfono, usa la búsqueda del encabezado. Repite este recorrido cuando quieras desde **Ajustes**, en **Recorridos guiados**."
+          }
+        }
+      },
+      "inAppHelp": {
+        "title": "Ayuda dentro de la aplicación",
+        "steps": {
+          "welcome": {
+            "title": "La guía del usuario, junto a tu trabajo",
+            "body": "La guía del usuario de Monize ahora se abre dentro de la aplicación, junto a la página en la que estás, con capturas de pantalla en tu tema. Viene incluida con tu Monize, así que funciona sin conexión. Este recorrido muestra dónde encontrarla."
+          },
+          "pageHelp": {
+            "title": "Abre la ayuda de esta página",
+            "body": "Haz clic en el **?** junto al título de la página. La guía se abre en la sección sobre esta página."
+          },
+          "panel": {
+            "title": "Lee junto a la página",
+            "body": "El panel se queda junto a la página en la que estabas. **En esta página** muestra las secciones, y los enlaces a otras páginas de la guía se abren aquí. En un ordenador, arrastra el borde izquierdo del panel para ensancharlo o estrecharlo."
+          },
+          "panelControls": {
+            "title": "Controles del panel",
+            "body": "Retrocede con **Atrás** y avanza con **Adelante** por las páginas que abriste, usa **Buscar** en la guía, usa **Fijar** para que el panel siga abierto en otras páginas, o abre la página en monize.net. Haz clic en **Cerrar** (la **X**) para continuar."
+          },
+          "helpMenu": {
+            "title": "El menú Ayuda",
+            "body": "El **?** del encabezado ofrece la ayuda de la página actual, la búsqueda en la guía, los atajos de teclado, el recorrido de esta página y las novedades. También puedes pulsar **?** en cualquier sitio donde no estés escribiendo para buscar en la guía."
+          },
+          "learnMore": {
+            "title": "Más información, donde la necesitas",
+            "body": "Busca **Más información** en los cuadros de ayuda, en las pantallas vacías y junto a algunos mensajes de error. Cada uno abre la sección de la guía que lo explica."
+          },
+          "done": {
+            "title": "Pregunta con tus propias palabras",
+            "body": "El asistente de IA también puede responder preguntas del tipo «cómo hago...» a partir de la guía e indicarte qué secciones usó. Repite este recorrido cuando quieras desde **Ajustes**, en **Recorridos guiados**."
+          }
+        }
+      },
+      "dashboardEdit": {
+        "title": "Organizar el panel",
+        "steps": {
+          "welcome": {
+            "title": "Organiza tu panel en el sitio",
+            "body": "Ahora mueves, redimensionas, añades y quitas widgets directamente en el panel, y no se guarda nada hasta que lo indiques. Este recorrido explica el modo de edición."
+          },
+          "enterEdit": {
+            "title": "Entra en el modo de edición",
+            "body": "Haz clic en el engranaje junto al saludo. El recorrido continúa cuando se abre el modo de edición."
+          },
+          "editBar": {
+            "title": "La barra de edición",
+            "body": "**Añadir widget** muestra los widgets que no están en tu panel. **Ajustes de la cabecera** elige lo que muestra la cabecera de arriba, y **Restablecer valores predeterminados** recupera el diseño estándar."
+          },
+          "arrange": {
+            "title": "Mover, redimensionar y quitar",
+            "body": "Arrastra un widget por su tirador (los seis puntos) o usa sus flechas. En una pantalla ancha, **Ancho** y **Altura** cambian su tamaño, o arrastra su esquina inferior derecha. La **X** lo quita, y el recuadro discontinuo **Añadir widget** añade uno. Anímate a probar."
+          },
+          "finish": {
+            "title": "Conservarlo o dejarlo como estaba",
+            "body": "Haz clic en **Listo** para guardar el diseño, o en **Cancelar** para dejarlo como estaba. Tu diseño se sincroniza entre tus dispositivos."
+          },
+          "done": {
+            "title": "Hazlo tuyo",
+            "body": "¿Buscas algo nuevo para añadir? El widget **Datos curiosos** muestra un dato diario sobre tu dinero. Repite este recorrido cuando quieras desde **Ajustes**, en **Recorridos guiados**."
+          }
+        }
+      }
     }
   },
   "emailReceipts": {

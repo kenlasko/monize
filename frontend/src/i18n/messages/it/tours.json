@@ -553,6 +553,99 @@
           }
         }
       }
+    },
+    "v1_21_0": {
+      "commandPalette": {
+        "title": "Palette dei comandi",
+        "steps": {
+          "welcome": {
+            "title": "Trova tutto da un solo campo",
+            "body": "La palette dei comandi cerca in una volta sola tra i tuoi conti, beneficiari, categorie, scadenze, titoli, report, impostazioni, transazioni e nella guida utente, da qualsiasi schermata. Si usa da tastiera, quindi questo tour è pensato per un computer."
+          },
+          "openPalette": {
+            "title": "Apri la palette",
+            "body": "Premi **Ctrl+K** (**Cmd+K** su Mac). Il tour continua quando la palette si apre."
+          },
+          "searchBox": {
+            "title": "Scrivi ciò che cerchi",
+            "body": "Prova con un beneficiario, un conto, un report come **Patrimonio netto** o un’impostazione come **Valute**. I risultati si aggiornano mentre scrivi, e vengono cercate anche le transazioni e le sezioni della guida."
+          },
+          "results": {
+            "title": "Spostati e apri",
+            "body": "Usa le frecce **Su** e **Giù** per spostarti e **Enter** per aprire un risultato. **Tab** passa alle azioni, e **Ctrl+Enter** (**Cmd+Enter** su Mac) avvia una nuova transazione per il beneficiario che corrisponde meglio."
+          },
+          "closePalette": {
+            "title": "Chiudi la palette",
+            "body": "Fai clic su **esc** per chiuderla per ora. Fuori da questo tour, il tasto **Esc** fa la stessa cosa."
+          },
+          "done": {
+            "title": "Una scorciatoia da ricordare",
+            "body": "Premi **Ctrl+K** ogni volta che vuoi andare da qualche parte. Sopra una finestra di dialogo aperta, cerca invece nella guida. Su un telefono, usa la ricerca nell’intestazione. Rivedi questo tour quando vuoi da **Impostazioni**, in **Tour guidati**."
+          }
+        }
+      },
+      "inAppHelp": {
+        "title": "Aiuto dentro l’app",
+        "steps": {
+          "welcome": {
+            "title": "La guida utente, accanto al tuo lavoro",
+            "body": "La guida utente di Monize ora si apre dentro l’app, accanto alla pagina in cui ti trovi, con schermate nel tuo tema. È inclusa nel tuo Monize, quindi funziona anche offline. Questo tour mostra dove trovarla."
+          },
+          "pageHelp": {
+            "title": "Apri l’aiuto per questa pagina",
+            "body": "Fai clic sul **?** accanto al titolo della pagina. La guida si apre alla sezione dedicata a questa pagina."
+          },
+          "panel": {
+            "title": "Leggi accanto alla pagina",
+            "body": "Il pannello resta accanto alla pagina in cui eri. **In questa pagina** elenca le sezioni, e i link ad altre pagine della guida si aprono qui. Su un computer, trascina il bordo sinistro del pannello per allargarlo o restringerlo."
+          },
+          "panelControls": {
+            "title": "Controlli del pannello",
+            "body": "Scorri le pagine aperte con **Indietro** e **Avanti**, usa **Cerca** nella guida, **Fissa** il pannello perché resti aperto sulle altre pagine, oppure apri la pagina su monize.net. Fai clic su **Chiudi** (la **X**) per continuare."
+          },
+          "helpMenu": {
+            "title": "Il menu Aiuto",
+            "body": "Il **?** nell’intestazione contiene l’aiuto per la pagina corrente, la ricerca nella guida, le scorciatoie da tastiera, il tour di questa pagina e le novità. Puoi anche premere **?** ovunque tu non stia scrivendo per cercare nella guida."
+          },
+          "learnMore": {
+            "title": "Scopri di più, dove ti serve",
+            "body": "Cerca **Scopri di più** nei suggerimenti, nelle schermate vuote e accanto ad alcuni messaggi di errore. Ognuno apre la sezione della guida che lo spiega."
+          },
+          "done": {
+            "title": "Chiedi con parole tue",
+            "body": "L’assistente IA può anche rispondere a domande come “come faccio a...” usando la guida e dirti quali sezioni ha usato. Rivedi questo tour quando vuoi da **Impostazioni**, in **Tour guidati**."
+          }
+        }
+      },
+      "dashboardEdit": {
+        "title": "Organizzare la dashboard",
+        "steps": {
+          "welcome": {
+            "title": "Organizza la dashboard direttamente",
+            "body": "Ora sposti, ridimensioni, aggiungi e rimuovi i widget direttamente nella dashboard, e nulla viene salvato finché non lo decidi tu. Questo tour mostra la modalità di modifica."
+          },
+          "enterEdit": {
+            "title": "Entra nella modalità di modifica",
+            "body": "Fai clic sull’ingranaggio accanto al saluto. Il tour continua quando si apre la modalità di modifica."
+          },
+          "editBar": {
+            "title": "La barra di modifica",
+            "body": "**Aggiungi widget** elenca i widget che non sono nella tua dashboard. **Impostazioni intestazione** sceglie cosa mostra l’intestazione in alto, e **Ripristina predefiniti** rimette il layout standard."
+          },
+          "arrange": {
+            "title": "Sposta, ridimensiona e rimuovi",
+            "body": "Trascina un widget dalla maniglia (i sei puntini) oppure usa le sue frecce. Su uno schermo largo, **Larghezza** e **Altezza** ne cambiano le dimensioni, oppure trascina l’angolo in basso a destra. La **X** lo rimuove, e il riquadro tratteggiato **Aggiungi widget** ne aggiunge uno. Prova pure."
+          },
+          "finish": {
+            "title": "Tienilo o rimettilo com’era",
+            "body": "Fai clic su **Fine** per salvare il layout, oppure su **Annulla** per rimetterlo com’era. Il tuo layout si sincronizza tra i tuoi dispositivi."
+          },
+          "done": {
+            "title": "Rendila tua",
+            "body": "Cerchi qualcosa di nuovo da aggiungere? Il widget **Curiosità** mostra ogni giorno un fatto sui tuoi soldi. Rivedi questo tour quando vuoi da **Impostazioni**, in **Tour guidati**."
+          }
+        }
+      }
     }
   },
   "emailReceipts": {

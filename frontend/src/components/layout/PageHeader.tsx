@@ -10,6 +10,7 @@ import {
   CollapsingTitleContext,
   useCollapsingHeaderTitle,
 } from '@/hooks/useCollapsingHeaderTitle';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 
 interface PageHeaderProps {
   /** Page title */
@@ -96,6 +97,7 @@ export function PageHeader({ title, subtitle, actions, help, compactMobileAction
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => onHelpLinkClick(e, help)}
+                {...tourAnchor(TOUR_ANCHORS.pageHelpButton)}
                 className="text-gray-400 hover:text-blue-500 transition-colors"
                 aria-label={t('pageHeader.helpAriaLabel')}
               >

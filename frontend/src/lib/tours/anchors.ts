@@ -36,6 +36,19 @@ export const TOUR_ANCHORS = {
   // Dashboard
   dashboardWidgets: 'dashboard-widgets',
   dashboardCustomize: 'dashboard-customize',
+  dashboardEditBar: 'dashboard-edit-bar',
+  dashboardEditActions: 'dashboard-edit-actions',
+
+  // In-app help: the page title's ?, the header Help menu, the help panel
+  pageHelpButton: 'page-help-button',
+  helpMenuButton: 'help-menu-button',
+  helpPanel: 'help-panel',
+  helpPanelToolbar: 'help-panel-toolbar',
+
+  // Command palette (Ctrl/Cmd+K)
+  commandPaletteInput: 'command-palette-input',
+  commandPaletteResults: 'command-palette-results',
+  commandPaletteClose: 'command-palette-close',
 
   // Accounts
   accountsAddButton: 'accounts-add-button',

@@ -7,6 +7,7 @@ import { HOVER_ROW_ON_CARD, HOVER_TOOLBAR_BUTTON } from '@/components/ui/Card';
 import { MENU_ENTER_CLASS, MENU_ORIGIN_RIGHT } from '@/components/ui/menu-motion';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import type { HelpMenuEntries } from '@/hooks/useHelpMenuEntries';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 
 const ITEM_CLASS = `flex w-full items-center gap-1.5 text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 ${HOVER_ROW_ON_CARD}`;
 
@@ -38,6 +39,7 @@ export function HelpMenu({ entries }: HelpMenuProps) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        {...tourAnchor(TOUR_ANCHORS.helpMenuButton)}
         aria-label={t('help')}
         title={t('help')}
         className={`p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 ${HOVER_TOOLBAR_BUTTON}`}
