@@ -285,6 +285,17 @@
     "saveFailed": "Het profiel kon niet worden opgeslagen",
     "conflict": "Dit profiel is elders gewijzigd sinds je het hebt geopend. Laad het opnieuw om de huidige versie te zien. Je wijzigingen hier zijn niet opgeslagen.",
     "conflictReload": "Profiel opnieuw laden",
+    "required": {
+      "heading": "Het profiel kan nog niet worden opgeslagen. Los eerst het volgende op:",
+      "item": "{field}: {problem}",
+      "nameMissing": "Voer een naam voor het profiel in.",
+      "domainsMissing": "Voer ten minste één afzenderdomein in, zoals shop.example.com.",
+      "domainsInvalid": "Geen domeinnaam: {values}. Voer domeinen in zoals shop.example.com, één per regel.",
+      "domainsTooMany": "Voer maximaal {max} afzenderdomeinen in.",
+      "subjectTooMany": "Voer maximaal {max} onderwerpwoorden in.",
+      "subjectTooLong": "Elk onderwerpwoord mag maximaal {max} tekens lang zijn.",
+      "server": "De server heeft dit veld geweigerd. De reden staat onder het formulier."
+    },
     "patterns": {
       "sourceLabel": "Bron van de regels",
       "sourceHint": "Met welke weergave van de e-mail de onderstaande patronen worden vergeleken. Tekst is het tekstdeel van de e-mail, één regel per regeleinde. HTML leest het HTML-deel: elk blok en elke tabelcel wordt een eigen regel, zodat een productnaam die de tekst over meerdere regels verdeelt heel blijft. De weergave Regels van de e-mail toont precies wat elke bron oplevert.",

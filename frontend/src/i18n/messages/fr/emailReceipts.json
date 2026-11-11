@@ -285,6 +285,17 @@
     "saveFailed": "Le profil n'a pas pu être enregistré",
     "conflict": "Ce profil a été modifié ailleurs depuis que vous l'avez ouvert. Rechargez-le pour voir la version actuelle. Vos modifications ici ne sont pas enregistrées.",
     "conflictReload": "Recharger le profil",
+    "required": {
+      "heading": "Le profil ne peut pas encore être enregistré. Corrigez d'abord ceci :",
+      "item": "{field} : {problem}",
+      "nameMissing": "Saisissez un nom pour le profil.",
+      "domainsMissing": "Saisissez au moins un domaine d'expéditeur, par exemple shop.example.com.",
+      "domainsInvalid": "Pas un nom de domaine : {values}. Saisissez des domaines comme shop.example.com, un par ligne.",
+      "domainsTooMany": "Saisissez au plus {max} domaines d'expéditeur.",
+      "subjectTooMany": "Saisissez au plus {max} mots d'objet.",
+      "subjectTooLong": "Chaque mot d'objet peut compter au plus {max} caractères.",
+      "server": "Le serveur a refusé ce champ. La raison est indiquée sous le formulaire."
+    },
     "patterns": {
       "sourceLabel": "Source des lignes",
       "sourceHint": "Avec quelle représentation de l'e-mail les motifs ci-dessous sont comparés. Texte est la partie texte de l'e-mail, une ligne par saut de ligne. HTML lit la partie HTML : chaque bloc et chaque cellule de tableau devient une ligne à part, de sorte qu'un nom de produit que le texte répartit sur plusieurs lignes reste entier. La vue Lignes de l'e-mail montre exactement ce que donne chaque source.",

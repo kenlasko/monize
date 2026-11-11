@@ -285,6 +285,17 @@
     "saveFailed": "Could not save the profile",
     "conflict": "This profile was changed elsewhere since you opened it. Reload it to see the current version. Your edits here are not saved.",
     "conflictReload": "Reload the profile",
+    "required": {
+      "heading": "The profile cannot be saved yet. Fix these first:",
+      "item": "{field}: {problem}",
+      "nameMissing": "Enter a name for the profile.",
+      "domainsMissing": "Enter at least one sender domain, such as shop.example.com.",
+      "domainsInvalid": "Not a domain name: {values}. Enter domains such as shop.example.com, one per line.",
+      "domainsTooMany": "Enter at most {max} sender domains.",
+      "subjectTooMany": "Enter at most {max} subject words.",
+      "subjectTooLong": "Each subject word can be at most {max} characters long.",
+      "server": "The server refused this field. The reason is under the form."
+    },
     "patterns": {
       "sourceLabel": "Lines source",
       "sourceHint": "Which rendering of the email the patterns below are matched against. Text is the text part of the email, one line per line break. HTML reads the HTML part: every block and every table cell becomes its own line, so a product name that the text splits over several lines stays whole. The email's Lines view shows exactly what each source gives.",
