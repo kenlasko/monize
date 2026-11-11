@@ -822,6 +822,26 @@
     "colPriceChange": "漲跌幅",
     "chartSubtitle": "所選期間內這些帳戶持有的每種證券的累計報酬率。",
     "chartLimitedNote": "僅顯示依市值排列的前 {shown} 大持倉（共持有 {total} 項）。",
+    "chartModeLabel": "圖表",
+    "chartMode": {
+      "portfolio": "投資組合",
+      "account": "依帳戶",
+      "security": "依證券"
+    },
+    "twrTitle": "報酬率走勢",
+    "twrSubtitlePortfolio": "所選期間投資組合的時間加權報酬率。存入與提領不會使曲線移動。",
+    "twrSubtitleAccounts": "所選期間各帳戶的時間加權報酬率。存入與提領不會使曲線移動。",
+    "twrPortfolioLine": "投資組合",
+    "twrError": "無法載入報酬率走勢。",
+    "twrNoData": "此期間沒有可繪製的歷史資料。",
+    "twrWithheldTitle": "未繪製",
+    "twrWithheldRow": "{label}: {reason}",
+    "twrReason": {
+      "noPrice": "此期間的部分時段缺少價格，因此無法計算報酬率。",
+      "displayFx": "此期間的部分時段缺少匯率，因此無法計算報酬率。",
+      "noBaseline": "此期間沒有可用來衡量報酬率的投資。"
+    },
+    "twrAccountsLimitedNote": "共 {total} 個帳戶，僅繪製前 {shown} 個。",
     "rangeAll": "全部",
     "unattributedIncome": "不屬於任何證券的收入",
     "pdfSecurity": "{symbol} - {name}",

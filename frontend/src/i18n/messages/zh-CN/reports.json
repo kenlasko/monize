@@ -822,6 +822,26 @@
     "colPriceChange": "涨跌幅",
     "chartSubtitle": "所选期间内这些账户持有的每种证券的累计回报率。",
     "chartLimitedNote": "仅显示按市值排列的{shown}大持仓（共持有{total}项）。",
+    "chartModeLabel": "图表",
+    "chartMode": {
+      "portfolio": "投资组合",
+      "account": "按账户",
+      "security": "按证券"
+    },
+    "twrTitle": "收益率走势",
+    "twrSubtitlePortfolio": "所选期间投资组合的时间加权收益率。存入和取出不会使曲线移动。",
+    "twrSubtitleAccounts": "所选期间各账户的时间加权收益率。存入和取出不会使曲线移动。",
+    "twrPortfolioLine": "投资组合",
+    "twrError": "无法加载收益率走势。",
+    "twrNoData": "此期间没有可绘制的历史数据。",
+    "twrWithheldTitle": "未绘制",
+    "twrWithheldRow": "{label}: {reason}",
+    "twrReason": {
+      "noPrice": "此期间的部分时段缺少价格，因此无法计算收益率。",
+      "displayFx": "此期间的部分时段缺少汇率，因此无法计算收益率。",
+      "noBaseline": "此期间没有可用于衡量收益率的投资。"
+    },
+    "twrAccountsLimitedNote": "共 {total} 个账户，仅绘制前 {shown} 个。",
     "rangeAll": "全部",
     "unattributedIncome": "不属于任何证券的收入",
     "pdfSecurity": "{symbol} - {name}",

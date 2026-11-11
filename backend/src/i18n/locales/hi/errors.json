@@ -8,6 +8,7 @@
     "mustBeCsvUuids": "\"{{ param }}\" का मान अल्पविराम से अलग किए गए UUID की सूची होना चाहिए",
     "mustBeOneOf": "\"{{ param }}\" का मान इनमें से एक होना चाहिए: {{ options }}",
     "mustBeCsvOneOf": "\"{{ param }}\" का मान अल्पविराम से अलग की गई सूची होना चाहिए, जिसका प्रत्येक आइटम इनमें से एक हो: {{ options }}",
+    "mustNameAccounts": "\"{{ param }}\" का मान 1 से {{ max }} खातों के बीच होना चाहिए",
     "isRequired": "\"{{ param }}\" का मान आवश्यक है",
     "requiredForProvider": "{{ provider }} प्रदाता के लिए \"{{ param }}\" का मान आवश्यक है",
     "isTooLong": "\"{{ param }}\" का मान बहुत लंबा है",

@@ -822,6 +822,26 @@
     "colPriceChange": "% de variação",
     "chartSubtitle": "Rentabilidade acumulada de cada título que estas contas detêm, ao longo do período selecionado.",
     "chartLimitedNote": "Apenas as {shown} maiores posições por valor de mercado são apresentadas (de {total} detidas).",
+    "chartModeLabel": "Gráfico",
+    "chartMode": {
+      "portfolio": "Carteira",
+      "account": "Por conta",
+      "security": "Por título"
+    },
+    "twrTitle": "Rentabilidade ao longo do tempo",
+    "twrSubtitlePortfolio": "Rentabilidade ponderada pelo tempo da carteira no período selecionado. Depósitos e levantamentos não movem a linha.",
+    "twrSubtitleAccounts": "Rentabilidade ponderada pelo tempo de cada conta no período selecionado. Depósitos e levantamentos não movem as linhas.",
+    "twrPortfolioLine": "Carteira",
+    "twrError": "Não foi possível carregar a rentabilidade ao longo do tempo.",
+    "twrNoData": "Não há histórico para representar neste período.",
+    "twrWithheldTitle": "Não representado",
+    "twrWithheldRow": "{label}: {reason}",
+    "twrReason": {
+      "noPrice": "falta uma cotação numa parte deste período, pelo que a rentabilidade não pode ser calculada.",
+      "displayFx": "falta uma taxa de câmbio numa parte deste período, pelo que a rentabilidade não pode ser calculada.",
+      "noBaseline": "não havia nada investido sobre o qual medir uma rentabilidade neste período."
+    },
+    "twrAccountsLimitedNote": "Só são representadas as primeiras {shown} de {total} contas.",
     "rangeAll": "Tudo",
     "unattributedIncome": "Rendimentos não associados a um título",
     "pdfSecurity": "{symbol} - {name}",

@@ -8,6 +8,7 @@
     "mustBeCsvUuids": "\"{{ param }}\" の値はカンマ区切りの UUID のリストでなければなりません",
     "mustBeOneOf": "\"{{ param }}\" の値は次のいずれかでなければなりません: {{ options }}",
     "mustBeCsvOneOf": "\"{{ param }}\" の値はカンマ区切りのリストで、各項目が次のいずれかでなければなりません: {{ options }}",
+    "mustNameAccounts": "「{{ param }}」の値には 1 件から {{ max }} 件までの口座を指定してください",
     "isRequired": "\"{{ param }}\" の値は必須です",
     "requiredForProvider": "{{ provider }} プロバイダーでは \"{{ param }}\" の値が必須です",
     "isTooLong": "\"{{ param }}\" の値が長すぎます",

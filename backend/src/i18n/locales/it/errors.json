@@ -8,6 +8,7 @@
     "mustBeCsvUuids": "Il valore di \"{{ param }}\" deve essere un elenco di UUID separati da virgole",
     "mustBeOneOf": "Il valore di \"{{ param }}\" deve essere uno dei seguenti: {{ options }}",
     "mustBeCsvOneOf": "Il valore di \"{{ param }}\" deve essere un elenco separato da virgole, ciascuna voce uno dei seguenti: {{ options }}",
+    "mustNameAccounts": "Il valore di \"{{ param }}\" deve indicare da 1 a {{ max }} conti",
     "isRequired": "È richiesto un valore per \"{{ param }}\"",
     "requiredForProvider": "È richiesto un valore per \"{{ param }}\" per il provider {{ provider }}",
     "isTooLong": "Il valore di \"{{ param }}\" è troppo lungo",

@@ -8,6 +8,7 @@
     "mustBeCsvUuids": "Значення \"{{ param }}\" має бути списком UUID, розділених комами",
     "mustBeOneOf": "Значення \"{{ param }}\" має бути одним із: {{ options }}",
     "mustBeCsvOneOf": "Значення \"{{ param }}\" має бути списком, розділеним комами, де кожен елемент — одне з: {{ options }}",
+    "mustNameAccounts": "Значення «{{ param }}» має вказувати від 1 до {{ max }} рахунків",
     "isRequired": "Потрібне значення \"{{ param }}\"",
     "requiredForProvider": "Для постачальника {{ provider }} потрібне значення \"{{ param }}\"",
     "isTooLong": "Значення \"{{ param }}\" задовге",

@@ -822,6 +822,26 @@
     "colPriceChange": "% Değişim",
     "chartSubtitle": "Seçilen dönemde bu hesapların elinde tuttuğu her menkul kıymetin kümülatif getirisi.",
     "chartLimitedNote": "Piyasa değerine göre yalnızca en büyük {shown} varlık gösterilir ({total} varlıktan).",
+    "chartModeLabel": "Grafik",
+    "chartMode": {
+      "portfolio": "Portföy",
+      "account": "Hesaba göre",
+      "security": "Menkul kıymete göre"
+    },
+    "twrTitle": "Zaman içinde getiri",
+    "twrSubtitlePortfolio": "Seçilen dönemde portföyün zaman ağırlıklı getirisi. Para yatırma ve çekme çizgiyi hareket ettirmez.",
+    "twrSubtitleAccounts": "Seçilen dönemde her hesabın zaman ağırlıklı getirisi. Para yatırma ve çekme çizgileri hareket ettirmez.",
+    "twrPortfolioLine": "Portföy",
+    "twrError": "Zaman içinde getiri yüklenemedi.",
+    "twrNoData": "Bu dönem için grafiğe dökülecek geçmiş yok.",
+    "twrWithheldTitle": "Çizilmedi",
+    "twrWithheldRow": "{label}: {reason}",
+    "twrReason": {
+      "noPrice": "bu dönemin bir bölümünde fiyat eksik, bu yüzden getiri hesaplanamıyor.",
+      "displayFx": "bu dönemin bir bölümünde döviz kuru eksik, bu yüzden getiri hesaplanamıyor.",
+      "noBaseline": "bu dönemde getirinin ölçülebileceği bir yatırım yoktu."
+    },
+    "twrAccountsLimitedNote": "{total} hesabın yalnızca ilk {shown} tanesi çiziliyor.",
     "rangeAll": "Tümü",
     "unattributedIncome": "Bir menkul kıymete bağlı olmayan gelir",
     "pdfSecurity": "{symbol} - {name}",

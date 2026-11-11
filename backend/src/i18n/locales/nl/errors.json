@@ -8,6 +8,7 @@
     "mustBeCsvUuids": "De waarde van \"{{ param }}\" moet een door komma's gescheiden lijst van UUID's zijn",
     "mustBeOneOf": "De waarde van \"{{ param }}\" moet een van de volgende zijn: {{ options }}",
     "mustBeCsvOneOf": "De waarde van \"{{ param }}\" moet een door komma's gescheiden lijst zijn, elk item een van de volgende: {{ options }}",
+    "mustNameAccounts": "De waarde van \"{{ param }}\" moet 1 tot {{ max }} rekeningen noemen",
     "isRequired": "Een waarde voor \"{{ param }}\" is vereist",
     "requiredForProvider": "Een waarde voor \"{{ param }}\" is vereist voor de provider {{ provider }}",
     "isTooLong": "De waarde van \"{{ param }}\" is te lang",

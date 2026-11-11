@@ -822,6 +822,26 @@
     "colPriceChange": "変化率",
     "chartSubtitle": "選択した期間における、これらの口座が保有する全銘柄の累積リターン。",
     "chartLimitedNote": "市場価値上位{shown}件の保有銘柄のみを表示しています（保有{total}件中）。",
+    "chartModeLabel": "チャート",
+    "chartMode": {
+      "portfolio": "ポートフォリオ",
+      "account": "口座別",
+      "security": "銘柄別"
+    },
+    "twrTitle": "時間経過によるリターン",
+    "twrSubtitlePortfolio": "選択期間におけるポートフォリオの時間加重リターン。入金や出金では線は動きません。",
+    "twrSubtitleAccounts": "選択期間における各口座の時間加重リターン。入金や出金では線は動きません。",
+    "twrPortfolioLine": "ポートフォリオ",
+    "twrError": "時間経過によるリターンを読み込めませんでした。",
+    "twrNoData": "この期間にはグラフ化できる履歴がありません。",
+    "twrWithheldTitle": "描画されていません",
+    "twrWithheldRow": "{label}: {reason}",
+    "twrReason": {
+      "noPrice": "この期間の一部で価格がないため、リターンを計算できません。",
+      "displayFx": "この期間の一部で為替レートがないため、リターンを計算できません。",
+      "noBaseline": "この期間にはリターンを測定できる投資がありませんでした。"
+    },
+    "twrAccountsLimitedNote": "{total} 件中、最初の {shown} 件の口座のみ描画しています。",
     "rangeAll": "全期間",
     "unattributedIncome": "銘柄に紐付かない収入",
     "pdfSecurity": "{symbol} - {name}",

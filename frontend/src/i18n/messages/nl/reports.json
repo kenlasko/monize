@@ -822,6 +822,26 @@
     "colPriceChange": "% Verandering",
     "chartSubtitle": "Cumulatief rendement van elk effect dat deze rekeningen aanhouden, over de geselecteerde periode.",
     "chartLimitedNote": "Alleen de {shown} grootste posities op marktwaarde worden weergegeven (van {total} aangehouden).",
+    "chartModeLabel": "Grafiek",
+    "chartMode": {
+      "portfolio": "Portefeuille",
+      "account": "Per rekening",
+      "security": "Per effect"
+    },
+    "twrTitle": "Rendement in de tijd",
+    "twrSubtitlePortfolio": "Tijdgewogen rendement van de portefeuille over de gekozen periode. Stortingen en opnames verplaatsen de lijn niet.",
+    "twrSubtitleAccounts": "Tijdgewogen rendement van elke rekening over de gekozen periode. Stortingen en opnames verplaatsen de lijnen niet.",
+    "twrPortfolioLine": "Portefeuille",
+    "twrError": "Het rendement in de tijd kon niet worden geladen.",
+    "twrNoData": "Er is geen historie om te tonen voor deze periode.",
+    "twrWithheldTitle": "Niet getekend",
+    "twrWithheldRow": "{label}: {reason}",
+    "twrReason": {
+      "noPrice": "voor een deel van deze periode ontbreekt een koers, dus het rendement kan niet worden berekend.",
+      "displayFx": "voor een deel van deze periode ontbreekt een wisselkoers, dus het rendement kan niet worden berekend.",
+      "noBaseline": "er was in deze periode niets belegd waarover een rendement kan worden gemeten."
+    },
+    "twrAccountsLimitedNote": "Alleen de eerste {shown} van {total} rekeningen worden getekend.",
     "rangeAll": "Alles",
     "unattributedIncome": "Inkomsten zonder effect",
     "pdfSecurity": "{symbol} - {name}",

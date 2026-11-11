@@ -822,6 +822,26 @@
     "colPriceChange": "% Änderung",
     "chartSubtitle": "Kumulierte Rendite aller Wertpapiere in diesen Konten über den ausgewählten Zeitraum.",
     "chartLimitedNote": "Es werden nur die {shown} größten Bestände nach Marktwert dargestellt (von {total} gehaltenen).",
+    "chartModeLabel": "Diagramm",
+    "chartMode": {
+      "portfolio": "Portfolio",
+      "account": "Nach Konto",
+      "security": "Nach Wertpapier"
+    },
+    "twrTitle": "Rendite im Zeitverlauf",
+    "twrSubtitlePortfolio": "Zeitgewichtete Rendite des Portfolios im gewählten Zeitraum. Ein- und Auszahlungen bewegen die Linie nicht.",
+    "twrSubtitleAccounts": "Zeitgewichtete Rendite jedes Kontos im gewählten Zeitraum. Ein- und Auszahlungen bewegen die Linien nicht.",
+    "twrPortfolioLine": "Portfolio",
+    "twrError": "Die Rendite im Zeitverlauf konnte nicht geladen werden.",
+    "twrNoData": "Für diesen Zeitraum gibt es keinen Verlauf zum Darstellen.",
+    "twrWithheldTitle": "Nicht dargestellt",
+    "twrWithheldRow": "{label}: {reason}",
+    "twrReason": {
+      "noPrice": "für einen Teil dieses Zeitraums fehlt ein Kurs, daher lässt sich die Rendite nicht berechnen.",
+      "displayFx": "für einen Teil dieses Zeitraums fehlt ein Wechselkurs, daher lässt sich die Rendite nicht berechnen.",
+      "noBaseline": "in diesem Zeitraum war nichts investiert, anhand dessen eine Rendite gemessen werden könnte."
+    },
+    "twrAccountsLimitedNote": "Es werden nur die ersten {shown} von {total} Konten dargestellt.",
     "rangeAll": "Gesamt",
     "unattributedIncome": "Erträge ohne Wertpapierbezug",
     "pdfSecurity": "{symbol} - {name}",

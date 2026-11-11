@@ -8,6 +8,7 @@
     "mustBeCsvUuids": "\"{{ param }}\" 的值必須是以逗號分隔的 UUID 清單",
     "mustBeOneOf": "\"{{ param }}\" 的值必須是下列之一：{{ options }}",
     "mustBeCsvOneOf": "\"{{ param }}\" 的值必須是以逗號分隔的清單，每一項均為下列之一：{{ options }}",
+    "mustNameAccounts": "「{{ param }}」的值必須指定 1 到 {{ max }} 個帳戶",
     "isRequired": "必須提供 \"{{ param }}\" 的值",
     "requiredForProvider": "{{ provider }} 供應商需要 \"{{ param }}\" 的值",
     "isTooLong": "\"{{ param }}\" 的值過長",

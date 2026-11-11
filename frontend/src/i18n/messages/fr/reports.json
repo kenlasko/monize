@@ -822,6 +822,26 @@
     "colPriceChange": "Variation %",
     "chartSubtitle": "Rendement cumulé de chaque titre détenu par ces comptes sur la période sélectionnée.",
     "chartLimitedNote": "Seules les {shown} plus grandes positions par valeur marchande sont affichées (sur {total} détenues).",
+    "chartModeLabel": "Graphique",
+    "chartMode": {
+      "portfolio": "Portefeuille",
+      "account": "Par compte",
+      "security": "Par titre"
+    },
+    "twrTitle": "Rendement dans le temps",
+    "twrSubtitlePortfolio": "Rendement pondéré par le temps du portefeuille sur la période sélectionnée. Les dépôts et retraits ne font pas bouger la courbe.",
+    "twrSubtitleAccounts": "Rendement pondéré par le temps de chaque compte sur la période sélectionnée. Les dépôts et retraits ne font pas bouger les courbes.",
+    "twrPortfolioLine": "Portefeuille",
+    "twrError": "Impossible de charger le rendement dans le temps.",
+    "twrNoData": "Aucun historique à représenter pour cette période.",
+    "twrWithheldTitle": "Non tracé",
+    "twrWithheldRow": "{label}: {reason}",
+    "twrReason": {
+      "noPrice": "il manque un cours sur une partie de cette période, le rendement ne peut donc pas être calculé.",
+      "displayFx": "il manque un taux de change sur une partie de cette période, le rendement ne peut donc pas être calculé.",
+      "noBaseline": "rien n'était investi sur cette période, il n'y a donc pas de rendement à mesurer."
+    },
+    "twrAccountsLimitedNote": "Seuls les {shown} premiers comptes sur {total} sont tracés.",
     "rangeAll": "Tout",
     "unattributedIncome": "Revenus non liés à un titre",
     "pdfSecurity": "{symbol} - {name}",

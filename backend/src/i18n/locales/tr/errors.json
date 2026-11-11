@@ -8,6 +8,7 @@
     "mustBeCsvUuids": "\"{{ param }}\" değeri virgülle ayrılmış UUID listesi olmalıdır",
     "mustBeOneOf": "\"{{ param }}\" değeri şunlardan biri olmalıdır: {{ options }}",
     "mustBeCsvOneOf": "\"{{ param }}\" değeri virgülle ayrılmış bir liste olmalı ve her öğe şunlardan biri olmalıdır: {{ options }}",
+    "mustNameAccounts": "\"{{ param }}\" değeri 1 ile {{ max }} arasında hesap belirtmelidir",
     "isRequired": "\"{{ param }}\" değeri zorunludur",
     "requiredForProvider": "{{ provider }} sağlayıcısı için \"{{ param }}\" değeri zorunludur",
     "isTooLong": "\"{{ param }}\" değeri çok uzun",

@@ -822,6 +822,26 @@
     "colPriceChange": "% Perubahan",
     "chartSubtitle": "Imbal hasil kumulatif dari setiap efek yang dimiliki akun-akun ini selama periode yang dipilih.",
     "chartLimitedNote": "Hanya {shown} kepemilikan terbesar berdasarkan nilai pasar yang ditampilkan (dari {total} yang dimiliki).",
+    "chartModeLabel": "Grafik",
+    "chartMode": {
+      "portfolio": "Portofolio",
+      "account": "Per akun",
+      "security": "Per sekuritas"
+    },
+    "twrTitle": "Imbal hasil dari waktu ke waktu",
+    "twrSubtitlePortfolio": "Imbal hasil tertimbang waktu portofolio pada periode terpilih. Setoran dan penarikan tidak menggerakkan garis.",
+    "twrSubtitleAccounts": "Imbal hasil tertimbang waktu setiap akun pada periode terpilih. Setoran dan penarikan tidak menggerakkan garis.",
+    "twrPortfolioLine": "Portofolio",
+    "twrError": "Imbal hasil dari waktu ke waktu tidak dapat dimuat.",
+    "twrNoData": "Tidak ada riwayat untuk digrafikkan pada periode ini.",
+    "twrWithheldTitle": "Tidak digambar",
+    "twrWithheldRow": "{label}: {reason}",
+    "twrReason": {
+      "noPrice": "harga tidak tersedia untuk sebagian periode ini, sehingga imbal hasil tidak dapat dihitung.",
+      "displayFx": "kurs tidak tersedia untuk sebagian periode ini, sehingga imbal hasil tidak dapat dihitung.",
+      "noBaseline": "tidak ada dana yang diinvestasikan pada periode ini untuk diukur imbal hasilnya."
+    },
+    "twrAccountsLimitedNote": "Hanya {shown} akun pertama dari {total} yang digambar.",
     "rangeAll": "Semua",
     "unattributedIncome": "Pendapatan yang tidak terkait sekuritas",
     "pdfSecurity": "{symbol} - {name}",

@@ -822,6 +822,26 @@
     "colPriceChange": "% Thay đổi",
     "chartSubtitle": "Lợi nhuận tích lũy của mọi chứng khoán mà các tài khoản này nắm giữ trong khoảng thời gian đã chọn.",
     "chartLimitedNote": "Chỉ hiển thị {shown} vị thế lớn nhất theo giá trị thị trường (trong tổng số {total} đang nắm giữ).",
+    "chartModeLabel": "Biểu đồ",
+    "chartMode": {
+      "portfolio": "Danh mục",
+      "account": "Theo tài khoản",
+      "security": "Theo chứng khoán"
+    },
+    "twrTitle": "Lợi suất theo thời gian",
+    "twrSubtitlePortfolio": "Lợi suất có trọng số thời gian của danh mục trong kỳ đã chọn. Nạp và rút tiền không làm dịch chuyển đường.",
+    "twrSubtitleAccounts": "Lợi suất có trọng số thời gian của từng tài khoản trong kỳ đã chọn. Nạp và rút tiền không làm dịch chuyển các đường.",
+    "twrPortfolioLine": "Danh mục",
+    "twrError": "Không thể tải lợi suất theo thời gian.",
+    "twrNoData": "Không có lịch sử để vẽ biểu đồ cho kỳ này.",
+    "twrWithheldTitle": "Không được vẽ",
+    "twrWithheldRow": "{label}: {reason}",
+    "twrReason": {
+      "noPrice": "thiếu giá trong một phần của kỳ này nên không thể tính lợi suất.",
+      "displayFx": "thiếu tỷ giá trong một phần của kỳ này nên không thể tính lợi suất.",
+      "noBaseline": "trong kỳ này không có khoản đầu tư nào để đo lợi suất."
+    },
+    "twrAccountsLimitedNote": "Chỉ vẽ {shown} tài khoản đầu tiên trong tổng số {total}.",
     "rangeAll": "Tất cả",
     "unattributedIncome": "Thu nhập không gắn với chứng khoán",
     "pdfSecurity": "{symbol} - {name}",

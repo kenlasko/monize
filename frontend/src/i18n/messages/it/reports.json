@@ -822,6 +822,26 @@
     "colPriceChange": "Variazione %",
     "chartSubtitle": "Rendimento cumulato di ogni titolo detenuto da questi conti nel periodo selezionato.",
     "chartLimitedNote": "Vengono rappresentate solo le {shown} maggiori posizioni per valore di mercato (su {total} detenute).",
+    "chartModeLabel": "Grafico",
+    "chartMode": {
+      "portfolio": "Portafoglio",
+      "account": "Per conto",
+      "security": "Per titolo"
+    },
+    "twrTitle": "Rendimento nel tempo",
+    "twrSubtitlePortfolio": "Rendimento ponderato per il tempo del portafoglio nel periodo selezionato. Versamenti e prelievi non spostano la linea.",
+    "twrSubtitleAccounts": "Rendimento ponderato per il tempo di ogni conto nel periodo selezionato. Versamenti e prelievi non spostano le linee.",
+    "twrPortfolioLine": "Portafoglio",
+    "twrError": "Impossibile caricare il rendimento nel tempo.",
+    "twrNoData": "Non c'è uno storico da rappresentare per questo periodo.",
+    "twrWithheldTitle": "Non tracciato",
+    "twrWithheldRow": "{label}: {reason}",
+    "twrReason": {
+      "noPrice": "manca un prezzo per una parte di questo periodo, quindi il rendimento non può essere calcolato.",
+      "displayFx": "manca un tasso di cambio per una parte di questo periodo, quindi il rendimento non può essere calcolato.",
+      "noBaseline": "in questo periodo non c'era nulla di investito su cui misurare un rendimento."
+    },
+    "twrAccountsLimitedNote": "Sono tracciati solo i primi {shown} conti su {total}.",
     "rangeAll": "Tutto",
     "unattributedIncome": "Proventi non legati a un titolo",
     "pdfSecurity": "{symbol} - {name}",
