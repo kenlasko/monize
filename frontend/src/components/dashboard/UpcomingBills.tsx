@@ -287,7 +287,7 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
 
   if (isLoading) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:self-start`}>
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <WidgetHeading id="upcoming-bills" href="/bills" className="mb-4">
           {sectionTitle}
         </WidgetHeading>
@@ -302,7 +302,7 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
 
   if (upcomingItems.length === 0) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:self-start`}>
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         {/* The controls stay on screen: a scope that emptied the list is the
             most likely reason it is empty, and the way back out of it. */}
         <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
@@ -328,7 +328,7 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
   const hiddenCount = upcomingItems.length - visibleItems.length;
 
   return (
-    <div className={`${CARD_CLASS} p-3 sm:p-6 lg:self-start`}>
+    <div className={`${CARD_CLASS} p-3 sm:p-6`}>
       <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
         <WidgetHeading id="upcoming-bills" href="/bills">
           {sectionTitle}
