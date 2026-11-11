@@ -821,6 +821,7 @@
     "colReturn": "Imbal Hasil",
     "colPriceChange": "% Perubahan",
     "chartSubtitle": "Imbal hasil kumulatif dari setiap efek yang dimiliki akun-akun ini selama periode yang dipilih.",
+    "indexOverlayNote": "Indeks pasar digambar sebagai garis putus-putus, disetel ulang ke 0% di awal grafik.",
     "chartLimitedNote": "Hanya {shown} kepemilikan terbesar berdasarkan nilai pasar yang ditampilkan (dari {total} yang dimiliki).",
     "chartModeLabel": "Grafik",
     "chartMode": {

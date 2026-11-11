@@ -821,6 +821,7 @@
     "colReturn": "Getiri",
     "colPriceChange": "% Değişim",
     "chartSubtitle": "Seçilen dönemde bu hesapların elinde tuttuğu her menkul kıymetin kümülatif getirisi.",
+    "indexOverlayNote": "Piyasa endeksleri kesikli çizgilerle gösterilir ve grafiğin başında %0'a yeniden bazlanır.",
     "chartLimitedNote": "Piyasa değerine göre yalnızca en büyük {shown} varlık gösterilir ({total} varlıktan).",
     "chartModeLabel": "Grafik",
     "chartMode": {

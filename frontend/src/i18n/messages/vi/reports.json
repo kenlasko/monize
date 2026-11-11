@@ -821,6 +821,7 @@
     "colReturn": "Lợi nhuận",
     "colPriceChange": "% Thay đổi",
     "chartSubtitle": "Lợi nhuận tích lũy của mọi chứng khoán mà các tài khoản này nắm giữ trong khoảng thời gian đã chọn.",
+    "indexOverlayNote": "Các chỉ số thị trường được vẽ bằng nét đứt, quy về 0% tại thời điểm bắt đầu biểu đồ.",
     "chartLimitedNote": "Chỉ hiển thị {shown} vị thế lớn nhất theo giá trị thị trường (trong tổng số {total} đang nắm giữ).",
     "chartModeLabel": "Biểu đồ",
     "chartMode": {

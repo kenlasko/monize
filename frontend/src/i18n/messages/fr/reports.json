@@ -821,6 +821,7 @@
     "colReturn": "Rendement",
     "colPriceChange": "Variation %",
     "chartSubtitle": "Rendement cumulé de chaque titre détenu par ces comptes sur la période sélectionnée.",
+    "indexOverlayNote": "Les indices de marché sont tracés en pointillés, ramenés à 0 % au début du graphique.",
     "chartLimitedNote": "Seules les {shown} plus grandes positions par valeur marchande sont affichées (sur {total} détenues).",
     "chartModeLabel": "Graphique",
     "chartMode": {

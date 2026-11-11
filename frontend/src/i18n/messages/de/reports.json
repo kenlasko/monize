@@ -821,6 +821,7 @@
     "colReturn": "Rendite",
     "colPriceChange": "% Änderung",
     "chartSubtitle": "Kumulierte Rendite aller Wertpapiere in diesen Konten über den ausgewählten Zeitraum.",
+    "indexOverlayNote": "Marktindizes werden als gestrichelte Linien dargestellt und zu Beginn des Diagramms auf 0 % normiert.",
     "chartLimitedNote": "Es werden nur die {shown} größten Bestände nach Marktwert dargestellt (von {total} gehaltenen).",
     "chartModeLabel": "Diagramm",
     "chartMode": {

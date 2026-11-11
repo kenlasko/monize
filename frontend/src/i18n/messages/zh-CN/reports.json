@@ -821,6 +821,7 @@
     "colReturn": "回报率",
     "colPriceChange": "涨跌幅",
     "chartSubtitle": "所选期间内这些账户持有的每种证券的累计回报率。",
+    "indexOverlayNote": "市场指数以虚线绘制，并在图表起点归一为 0%。",
     "chartLimitedNote": "仅显示按市值排列的{shown}大持仓（共持有{total}项）。",
     "chartModeLabel": "图表",
     "chartMode": {

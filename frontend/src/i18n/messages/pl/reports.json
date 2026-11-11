@@ -821,6 +821,7 @@
     "colReturn": "Zwrot",
     "colPriceChange": "% zmiany",
     "chartSubtitle": "Skumulowany zwrot z każdego papieru wartościowego posiadanego na tych kontach w wybranym okresie.",
+    "indexOverlayNote": "Indeksy rynkowe są rysowane liniami przerywanymi, sprowadzonymi do 0% na początku wykresu.",
     "chartLimitedNote": "Wyświetlanych jest tylko {shown} największych pozycji według wartości rynkowej (z {total} posiadanych).",
     "chartModeLabel": "Wykres",
     "chartMode": {

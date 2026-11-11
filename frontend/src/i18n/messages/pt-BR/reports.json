@@ -821,6 +821,7 @@
     "colReturn": "Rentabilidade",
     "colPriceChange": "% de variação",
     "chartSubtitle": "Rentabilidade acumulada de cada título que estas contas detêm, ao longo do período selecionado.",
+    "indexOverlayNote": "Os índices de mercado são desenhados como linhas tracejadas, rebaseados a 0% no início do gráfico.",
     "chartLimitedNote": "Apenas as {shown} maiores posições por valor de mercado são exibidas (de {total} mantidas).",
     "chartModeLabel": "Gráfico",
     "chartMode": {
