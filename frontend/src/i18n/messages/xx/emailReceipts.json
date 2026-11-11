@@ -285,6 +285,17 @@
     "saveFailed": "[XX-Could not save the profile-XX]",
     "conflict": "[XX-This profile was changed elsewhere since you opened it. Reload it to see the current version. Your edits here are not saved.-XX]",
     "conflictReload": "[XX-Reload the profile-XX]",
+    "required": {
+      "heading": "[XX-The profile cannot be saved yet. Fix these first:-XX]",
+      "item": "[XX-{field}: {problem}-XX]",
+      "nameMissing": "[XX-Enter a name for the profile.-XX]",
+      "domainsMissing": "[XX-Enter at least one sender domain, such as shop.example.com.-XX]",
+      "domainsInvalid": "[XX-Not a domain name: {values}. Enter domains such as shop.example.com, one per line.-XX]",
+      "domainsTooMany": "[XX-Enter at most {max} sender domains.-XX]",
+      "subjectTooMany": "[XX-Enter at most {max} subject words.-XX]",
+      "subjectTooLong": "[XX-Each subject word can be at most {max} characters long.-XX]",
+      "server": "[XX-The server refused this field. The reason is under the form.-XX]"
+    },
     "patterns": {
       "sourceLabel": "[XX-Lines source-XX]",
       "sourceHint": "[XX-Which rendering of the email the patterns below are matched against. Text is the text part of the email, one line per line break. HTML reads the HTML part: every block and every table cell becomes its own line, so a product name that the text splits over several lines stays whole. The email's Lines view shows exactly what each source gives.-XX]",

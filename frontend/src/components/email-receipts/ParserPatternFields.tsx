@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { cn, inputBaseClasses } from '@/lib/utils';
+import { cn, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
 import type { ParserFormChange, ParserFormState } from '@/lib/receipt-parser-form';
 import { RECEIPT_LINES_SOURCES, RECEIPT_PARSER_LIMITS, type ReceiptLinesSource } from '@/types/email-receipts';
 
@@ -14,11 +14,17 @@ interface PatternAreaProps {
   value: string;
   rows?: number;
   placeholder?: string;
+  /** What is wrong with the value: the box is outlined in red and the text is shown under it. */
+  error?: string;
+  /** Outline the box in red without a text of its own, when the problem is said beside it already. */
+  invalid?: boolean;
   onChange: (value: string) => void;
 }
 
 /** A textarea holding one entry per line. Patterns and domains are code-like, so the face is monospaced. */
-export function PatternArea({ id, label, hint, value, rows = 3, placeholder, onChange }: PatternAreaProps) {
+export function PatternArea({ id, label, hint, value, rows = 3, placeholder, error, invalid, onChange }: PatternAreaProps) {
+  const errorId = `${id}-error`;
+  const flagged = invalid === true || error !== undefined;
   return (
     <div>
       <label htmlFor={id} className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -30,12 +36,20 @@ export function PatternArea({ id, label, hint, value, rows = 3, placeholder, onC
         value={value}
         spellCheck={false}
         placeholder={placeholder}
+        aria-invalid={flagged || undefined}
+        aria-describedby={error !== undefined ? errorId : undefined}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
           inputBaseClasses,
           'border px-3 py-2 font-mono text-sm',
+          flagged && inputErrorClasses,
         )}
       />
+      {error !== undefined && (
+        <p id={errorId} className="mt-1 text-sm text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
       <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{hint}</p>
     </div>
   );
