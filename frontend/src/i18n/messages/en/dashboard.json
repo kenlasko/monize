@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Customize",
-    "title": "Customize dashboard",
-    "description": "The layout below mirrors your dashboard: widgets flow left to right, two per row on large screens.",
     "moveEarlier": "Move {name} earlier",
     "moveLater": "Move {name} later",
-    "dragToReorder": "Drag widgets to rearrange them, or use the arrow buttons.",
-    "hiddenWidgets": "Hidden widgets",
-    "hide": "Hide {name}",
-    "show": "Show {name}",
     "atLeastOne": "Select at least one widget to show on the dashboard.",
     "reset": "Reset to default",
     "toasts": {
@@ -281,6 +275,19 @@
         "cagr": "CAGR"
       }
     }
+  },
+  "edit": {
+    "barLabel": "Arrange the dashboard",
+    "addWidget": "Add Widget",
+    "heroSettings": "Hero Settings",
+    "done": "Done",
+    "phoneNote": "Widget sizes apply on wider screens.",
+    "remove": "Remove {name}",
+    "moved": "{name} moved to position {position} of {count}",
+    "placeholder": "Shown on the dashboard once it has something to show.",
+    "addTitle": "Add Widget",
+    "addDescription": "A widget you add goes at the end of the dashboard. Nothing is kept until you choose Done.",
+    "addEmpty": "Every widget is already on your dashboard"
   },
   "favouriteReports": {
     "title": "Favourite Reports",

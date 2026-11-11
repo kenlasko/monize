@@ -2287,7 +2287,6 @@ describe("row hover comes from the shared pair, not a hand-picked grey", () => {
     "/src/components/categories/CategoryList.tsx",
     "/src/components/categories/detail/CategorySubcategoriesTab.tsx",
     "/src/components/currencies/CurrencyList.tsx",
-    "/src/components/dashboard/CustomizeDashboardModal.tsx",
     "/src/components/dashboard/FavouriteAccounts.tsx",
     "/src/components/dashboard/FavouriteReportsWidget.tsx",
     "/src/components/dashboard/FavouriteSecurities.tsx",

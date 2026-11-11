@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { subMonths, format } from 'date-fns';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
@@ -8,13 +9,14 @@ import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/store/authStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { GettingStarted } from '@/components/dashboard/GettingStarted';
-import { CustomizeDashboardModal } from '@/components/dashboard/CustomizeDashboardModal';
 import {
+  DASHBOARD_WIDGETS,
   DashboardWidgetContext,
   delegateDashboardWidgets,
 } from '@/components/dashboard/widget-registry';
 import { defaultLayoutItem, resolveDashboardLayout } from '@/components/dashboard/dashboard-layout';
-import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
+import { DashboardGrid, type DashboardGridEditing } from '@/components/dashboard/DashboardGrid';
+import { useDashboardLayoutDraft } from '@/hooks/useDashboardLayoutDraft';
 import { accountsApi } from '@/lib/accounts';
 import { institutionsApi } from '@/lib/institutions';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
@@ -43,6 +45,39 @@ import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { greetingPeriod } from '@/lib/greeting';
 
 const logger = createLogger('Dashboard');
+
+// Edit mode's parts load on demand, behind `editing` (and the hero dialog
+// behind its own open flag), so the dashboard's first load does not grow.
+const DashboardEditBar = dynamic(
+  () => import('@/components/dashboard/DashboardEditBar').then((m) => m.DashboardEditBar),
+  { ssr: false },
+);
+const WidgetEditOverlay = dynamic(
+  () => import('@/components/dashboard/WidgetEditOverlay').then((m) => m.WidgetEditOverlay),
+  { ssr: false },
+);
+const WidgetPlaceholder = dynamic(
+  () => import('@/components/dashboard/WidgetEditOverlay').then((m) => m.WidgetPlaceholder),
+  { ssr: false },
+);
+const AddWidgetDialog = dynamic(
+  () => import('@/components/dashboard/AddWidgetDialog').then((m) => m.AddWidgetDialog),
+  { ssr: false },
+);
+const AddWidgetTile = dynamic(
+  () => import('@/components/dashboard/AddWidgetDialog').then((m) => m.AddWidgetTile),
+  { ssr: false },
+);
+const DashboardHeroSettingsModal = dynamic(
+  () => import('@/components/dashboard/DashboardHeroSettingsModal').then((m) => m.DashboardHeroSettingsModal),
+  { ssr: false },
+);
+const UnsavedChangesDialog = dynamic(
+  () => import('@/components/ui/UnsavedChangesDialog').then((m) => m.UnsavedChangesDialog),
+  { ssr: false },
+);
+
+const WIDGET_TITLE_SECTIONS = new Map(DASHBOARD_WIDGETS.map((w) => [w.id, w.titleSection]));
 
 export default function DashboardPage() {
   return (
@@ -90,7 +125,13 @@ function DashboardContent() {
   // holds only its "invested" figure on this, and the automatic price refresh
   // waits for it so the two do not compete for the server.
   const [investmentSummaryLoading, setInvestmentSummaryLoading] = useState(false);
-  const [showCustomize, setShowCustomize] = useState(false);
+  const layoutDraft = useDashboardLayoutDraft();
+  // A delegate never enters edit mode (DASH-9).
+  const editing = layoutDraft.editing && !isDelegateView;
+  const [showAddWidget, setShowAddWidget] = useState(false);
+  const [showHeroSettings, setShowHeroSettings] = useState(false);
+  // The latest move, for the grid's polite live region.
+  const [moveAnnouncement, setMoveAnnouncement] = useState('');
 
   const brokerageMarketValues = useMemo(() => {
     const map = new Map<string, number>();
@@ -289,13 +330,64 @@ function DashboardContent() {
   // Delegates always get the fixed delegate layout at default sizes (the
   // stored preferences are the owner's); everyone else gets their own
   // configured layout, falling back to the default when they never customized.
-  const layout = useMemo(
+  const storedLayout = useMemo(
     () =>
       isDelegateView
         ? delegateDashboardWidgets(delegateSections).map((w) => defaultLayoutItem(w.id))
         : resolveDashboardLayout(dashboardWidgets, dashboardWidgetConfig),
     [isDelegateView, delegateSections, dashboardWidgets, dashboardWidgetConfig],
   );
+  // While editing, the grid is drawn from the draft; otherwise from what is stored.
+  const draft = editing ? layoutDraft.draft : null;
+  const layout = draft ?? storedLayout;
+
+  // Each visit to edit mode starts with its dialogs shut and nothing announced.
+  const enterEditMode = () => {
+    setShowAddWidget(false);
+    setShowHeroSettings(false);
+    setMoveAnnouncement('');
+    layoutDraft.enter();
+  };
+
+  const { dispatch: dispatchLayout } = layoutDraft;
+  // One move, from the overlay's buttons now and from the grip's keys later:
+  // dispatched, read out, and focus kept on the control that moved it.
+  const moveWidget = useCallback(
+    (from: number, to: number) => {
+      if (!draft || to < 0 || to >= draft.length || from === to) return;
+      const { id } = draft[from];
+      dispatchLayout({ type: 'move', from, to });
+      const section = WIDGET_TITLE_SECTIONS.get(id);
+      const name = section ? t(`${section}.title` as Parameters<typeof t>[0]) : id;
+      setMoveAnnouncement(t('edit.moved', { name, position: to + 1, count: draft.length }));
+      const direction = to < from ? 'earlier' : 'later';
+      requestAnimationFrame(() => {
+        const item = document.querySelector(`[data-widget-id="${id}"]`);
+        const button =
+          item?.querySelector<HTMLButtonElement>(`[data-edit-action="${direction}"]:not(:disabled)`) ??
+          item?.querySelector<HTMLButtonElement>('[data-edit-action]:not(:disabled)');
+        button?.focus();
+      });
+    },
+    [draft, dispatchLayout, t],
+  );
+
+  const gridEditing: DashboardGridEditing | undefined = draft
+    ? {
+        overlay: (item, index) => (
+          <WidgetEditOverlay
+            item={item}
+            index={index}
+            count={draft.length}
+            onMove={moveWidget}
+            onRemove={(removed) => dispatchLayout({ type: 'remove', id: removed.id })}
+          />
+        ),
+        placeholder: (item) => <WidgetPlaceholder item={item} />,
+        trailing: <AddWidgetTile onClick={() => setShowAddWidget(true)} empty={draft.length === 0} />,
+        announcement: moveAnnouncement,
+      }
+    : undefined;
 
   // The greeting for the part of the day, and today's date. They are the
   // page header whether or not the hero below them is on.
@@ -315,7 +407,7 @@ function DashboardContent() {
           <button
             type="button"
             {...tourAnchor(TOUR_ANCHORS.dashboardCustomize)}
-            onClick={() => setShowCustomize(true)}
+            onClick={enterEditMode}
             aria-label={t('customize.button')}
             title={t('customize.button')}
             className={`p-1.5 rounded-md text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${HOVER_TOOLBAR_BUTTON}`}
@@ -352,12 +444,40 @@ function DashboardContent() {
 
           {!isDelegateView && <GettingStarted />}
 
-          <DashboardGrid layout={layout} context={widgetContext} />
+          {draft && (
+            <DashboardEditBar
+              onAddWidget={() => setShowAddWidget(true)}
+              onHeroSettings={() => setShowHeroSettings(true)}
+              onReset={() => dispatchLayout({ type: 'reset' })}
+              onCancel={layoutDraft.cancel}
+              onDone={layoutDraft.save}
+              doneDisabled={draft.length === 0}
+              saving={layoutDraft.saving}
+            />
+          )}
 
-          {!isDelegateView && (
-            <CustomizeDashboardModal
-              isOpen={showCustomize}
-              onClose={() => setShowCustomize(false)}
+          <DashboardGrid layout={layout} context={widgetContext} editing={gridEditing} />
+
+          {draft && (
+            <>
+              <AddWidgetDialog
+                isOpen={showAddWidget}
+                onClose={() => setShowAddWidget(false)}
+                shownIds={draft.map((item) => item.id)}
+                onAdd={(id) => dispatchLayout({ type: 'add', id })}
+              />
+              <UnsavedChangesDialog
+                isOpen={layoutDraft.confirmingLeave}
+                onSave={layoutDraft.save}
+                onDiscard={layoutDraft.discard}
+                onCancel={layoutDraft.keepEditing}
+              />
+            </>
+          )}
+          {draft && showHeroSettings && (
+            <DashboardHeroSettingsModal
+              isOpen
+              onClose={() => setShowHeroSettings(false)}
               investmentAccounts={portfolioAccounts}
             />
           )}

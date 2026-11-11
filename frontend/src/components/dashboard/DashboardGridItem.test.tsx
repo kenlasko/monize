@@ -66,4 +66,26 @@ describe('DashboardGridItem', () => {
       }
     }
   });
+
+  it('places an overlay in the same cell, over the content made inert', () => {
+    render(
+      <DashboardGridItem item={itemOf()} overlay={<button type="button">controls</button>}>
+        <div data-testid="card">card</div>
+      </DashboardGridItem>,
+    );
+    const content = screen.getByTestId('card').parentElement as HTMLElement;
+    expect(content).toHaveAttribute('inert');
+    // Itself a one-cell grid, so the card still fills the item by stretch.
+    expect(content).toHaveClass('grid', "[grid-template-areas:'cell']", '*:[grid-area:cell]');
+    const item = content.parentElement as HTMLElement;
+    expect(item).toHaveAttribute('data-widget-id', 'net-worth');
+    expect(item).toContainElement(screen.getByRole('button', { name: 'controls' }));
+    expect(screen.getByRole('button', { name: 'controls' }).closest('[inert]')).toBeNull();
+    expect(content.className).not.toMatch(/(?<![\w-])(?:max-)?h-/);
+  });
+
+  it('leaves the content as it is outside edit mode', () => {
+    expect(renderItem(itemOf())).not.toHaveAttribute('inert');
+    expect(document.querySelector('[inert]')).toBeNull();
+  });
 });

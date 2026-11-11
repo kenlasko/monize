@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Sesuaikan",
-    "title": "Sesuaikan dasbor",
-    "description": "Tata letak di bawah mencerminkan dasbor Anda: widget mengalir dari kiri ke kanan, dua per baris di layar besar.",
     "moveEarlier": "Pindahkan {name} lebih awal",
     "moveLater": "Pindahkan {name} lebih akhir",
-    "dragToReorder": "Seret widget untuk menata ulang, atau gunakan tombol panah.",
-    "hiddenWidgets": "Widget tersembunyi",
-    "hide": "Sembunyikan {name}",
-    "show": "Tampilkan {name}",
     "atLeastOne": "Pilih setidaknya satu widget untuk ditampilkan di dasbor.",
     "reset": "Atur ulang ke bawaan",
     "toasts": {

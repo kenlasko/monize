@@ -3,8 +3,8 @@ import { apiFor, waitForReady } from "../readme/session";
 import { loadLookups, security } from "../readme/seed-lookup";
 import { cardOf, docShot, openDocsSession } from "./capture";
 
-// website/docs/dashboard.md: the whole dashboard, the Customize dialog, a
-// widget's settings, and one picture per widget, cropped to its card.
+// website/docs/dashboard.md: the whole dashboard, its edit mode, a widget's
+// settings, and one picture per widget, cropped to its card.
 //
 // The demo user's layout holds the default widgets only, so the opt-in ones are
 // appended to the end of it (and two securities starred for Favourite
@@ -168,14 +168,33 @@ function onScreenHero() {
   return page.locator('div:not([inert]) > section[data-testid="dashboard-hero"]');
 }
 
-/** Switch the dashboard hero's set through Customize, and wait for it. */
-async function chooseHeroSet(set: "Auto" | "Net worth" | "Portfolio value"): Promise<void> {
+/** The bar edit mode puts under the header; the Customize gear opens it. */
+function editBar() {
+  return page.getByRole("region", { name: "Arrange the dashboard" });
+}
+
+async function enterEditMode(): Promise<void> {
   await page.getByRole("button", { name: "Customize", exact: true }).click();
-  const dialog = page.getByRole("dialog");
-  await expect(dialog.getByRole("heading", { name: "Customize dashboard" })).toBeVisible();
+  await expect(editBar()).toBeVisible();
+}
+
+/** Leave edit mode having changed no widget, so Cancel asks nothing. */
+async function leaveEditMode(): Promise<void> {
+  await editBar().getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(editBar()).toHaveCount(0);
+}
+
+/** Switch the dashboard hero's set through edit mode's Hero Settings, and wait for it. */
+async function chooseHeroSet(set: "Auto" | "Net worth" | "Portfolio value"): Promise<void> {
+  await enterEditMode();
+  await editBar().getByRole("button", { name: "Hero Settings", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Dashboard hero" });
+  await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: set, exact: true }).click();
   await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(dialog).toBeHidden();
+  // The hero is saved on its own; the layout was not touched.
+  await leaveEditMode();
   await expect(page.locator(".animate-spin, .animate-pulse")).toHaveCount(0, {
     timeout: 90_000,
   });
@@ -194,21 +213,16 @@ test("dashboard-hero-portfolio", async () => {
 
 test("dashboard-customize", async () => {
   await openDashboard();
-  await page.getByRole("button", { name: "Customize", exact: true }).click();
-  const dialog = page.getByRole("dialog");
+  await enterEditMode();
+  // Every widget carries its controls once edit mode's chunk has loaded.
   await expect(
-    dialog.getByRole("heading", { name: "Customize dashboard" }),
+    page.getByRole("button", { name: "Remove Favourite Accounts", exact: true }),
   ).toBeVisible();
-  await expect(dialog.getByText("Hidden widgets")).toBeVisible();
-  // With every widget on the layout the dialog is taller than the desktop
-  // viewport; a taller window shows all of it, down to its Save button.
-  await page.setViewportSize({ width: 1600, height: 1400 });
+  await page.evaluate(() => window.scrollTo(0, 0));
   try {
-    await docShot(page, "dashboard-customize", dialog);
+    await docShot(page, "dashboard-customize");
   } finally {
-    await page.keyboard.press("Escape");
-    await expect(dialog).toHaveCount(0);
-    await page.setViewportSize({ width: 1600, height: 1000 });
+    await leaveEditMode();
   }
 });
 

@@ -221,7 +221,7 @@ Put the new screen next to its reference screen at the same width and check:
 
 ## Shared expense review and list chrome
 
-The dashboard greeting keeps its Customize action, a gear beside the title. Feature entry points belong
+The dashboard greeting keeps its Customize action, a gear beside the title, which puts the dashboard into edit mode (a sticky bar under the header, controls over each widget) rather than opening a dialog. Feature entry points belong
 in the existing app navigation, not permanent shortcuts beside that greeting.
 Shared expenses is under Tools on desktop and in the navigation drawer on a
 phone. The dashboard regression checks that removing the duplicate shortcut

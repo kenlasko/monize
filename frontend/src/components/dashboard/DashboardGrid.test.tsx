@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@/test/render';
-import { DashboardGrid } from './DashboardGrid';
+import { DashboardGrid, type DashboardGridEditing } from './DashboardGrid';
 import type { DashboardLayout } from './dashboard-layout';
 import type { DashboardWidgetContext } from './widget-registry';
 
@@ -58,5 +58,49 @@ describe('DashboardGrid', () => {
   it('renders nothing for an empty layout', () => {
     render(<DashboardGrid layout={[]} context={context()} />);
     expect(renderedIds()).toEqual([]);
+  });
+
+  describe('in edit mode', () => {
+    const editing = (over: Partial<DashboardGridEditing> = {}): DashboardGridEditing => ({
+      overlay: (item, index) => <button type="button">{`controls ${item.id} ${index}`}</button>,
+      placeholder: (item) => <div data-testid={`placeholder-${item.id}`} />,
+      trailing: <button type="button">add tile</button>,
+      announcement: '',
+      ...over,
+    });
+
+    it('draws every widget in the draft, a placeholder for one with nothing to show (DASH-8)', () => {
+      render(<DashboardGrid layout={LAYOUT} context={context({ hasSecurities: false })} editing={editing()} />);
+      expect(renderedIds()).toEqual(['insights', 'top-movers', 'net-worth']);
+      expect(screen.getByTestId('placeholder-top-movers')).toBeInTheDocument();
+      expect(screen.queryByTestId('w-top-movers')).not.toBeInTheDocument();
+    });
+
+    it('puts the overlay in each item, with its place in the draft, over inert content', () => {
+      render(<DashboardGrid layout={LAYOUT} context={context()} editing={editing()} />);
+      const controls = screen.getByRole('button', { name: 'controls net-worth 2' });
+      const item = controls.closest('[data-widget-id]') as HTMLElement;
+      expect(item).toHaveAttribute('data-widget-id', 'net-worth');
+      expect(screen.getByTestId('w-net-worth').closest('[inert]')).not.toBeNull();
+      expect(controls.closest('[inert]')).toBeNull();
+    });
+
+    it('ends the grid with the trailing tile and reads moves out in one polite region', () => {
+      render(
+        <DashboardGrid layout={LAYOUT} context={context()} editing={editing({ announcement: 'Insights moved' })} />,
+      );
+      const grid = document.querySelector('[data-tour-id="dashboard-widgets"]') as HTMLElement;
+      expect(grid.lastElementChild).toHaveTextContent('add tile');
+      const regions = screen.getAllByRole('status');
+      expect(regions).toHaveLength(1);
+      expect(regions[0]).toHaveAttribute('aria-live', 'polite');
+      expect(regions[0]).toHaveTextContent('Insights moved');
+    });
+
+    it('has no live region or tile outside edit mode', () => {
+      render(<DashboardGrid layout={LAYOUT} context={context()} />);
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      expect(screen.queryByText('add tile')).not.toBeInTheDocument();
+    });
   });
 });

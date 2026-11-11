@@ -1,0 +1,246 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act } from '@testing-library/react';
+import { renderHook } from '@/test/render';
+import { useDashboardLayoutDraft } from './useDashboardLayoutDraft';
+import { defaultDashboardLayout } from '@/components/dashboard/dashboard-layout';
+import { DEFAULT_DASHBOARD_WIDGET_IDS } from '@/components/dashboard/widget-registry';
+
+const { store, updateStorePreferences } = vi.hoisted(() => ({
+  store: {
+    preferences: {
+      dashboardWidgets: [] as string[],
+      dashboardWidgetConfig: {} as Record<string, Record<string, unknown>>,
+    },
+  },
+  updateStorePreferences: vi.fn(),
+}));
+vi.mock('@/store/preferencesStore', () => ({
+  usePreferencesStore: Object.assign(() => undefined, {
+    getState: () => ({ preferences: store.preferences, updatePreferences: updateStorePreferences }),
+  }),
+}));
+
+const updatePreferences = vi.fn();
+vi.mock('@/lib/user-settings', () => ({
+  userSettingsApi: { updatePreferences: (...args: unknown[]) => updatePreferences(...args) },
+}));
+
+const toastError = vi.hoisted(() => vi.fn());
+vi.mock('react-hot-toast', () => ({ default: { error: toastError, success: vi.fn() } }));
+
+function setup() {
+  return renderHook(() => useDashboardLayoutDraft());
+}
+
+const back = () => {
+  window.dispatchEvent(new PopStateEvent('popstate', { state: null }));
+};
+
+describe('useDashboardLayoutDraft', () => {
+  let pushState: ReturnType<typeof vi.spyOn>;
+  let historyBack: ReturnType<typeof vi.spyOn>;
+  let historyState: Record<string, unknown> | null;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    store.preferences = { dashboardWidgets: [], dashboardWidgetConfig: {} };
+    updatePreferences.mockImplementation(async (body) => body);
+    historyState = null;
+    pushState = vi.spyOn(window.history, 'pushState').mockImplementation((state) => {
+      historyState = state as Record<string, unknown>;
+    });
+    historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => {
+      historyState = null;
+    });
+    vi.spyOn(window.history, 'state', 'get').mockImplementation(() => historyState);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('starts outside edit mode with no draft', () => {
+    const { result } = setup();
+    expect(result.current.editing).toBe(false);
+    expect(result.current.draft).toBeNull();
+    expect(result.current.dirty).toBe(false);
+  });
+
+  it('enters seeded from the stored layout and pushes one history entry', () => {
+    store.preferences = {
+      dashboardWidgets: ['insights', 'net-worth'],
+      dashboardWidgetConfig: { 'net-worth': { gridWidth: 'full' } },
+    };
+    const { result } = setup();
+    act(() => result.current.enter());
+    act(() => result.current.enter());
+    expect(result.current.editing).toBe(true);
+    expect(result.current.draft).toEqual([
+      { id: 'insights', width: 'half', height: 'compact' },
+      { id: 'net-worth', width: 'full', height: 'standard' },
+    ]);
+    expect(result.current.dirty).toBe(false);
+    expect(pushState).toHaveBeenCalledTimes(1);
+    expect(historyState).toMatchObject({ dashboardEdit: true });
+  });
+
+  it('is dirty once the draft differs from its seed, and clean again when it matches', () => {
+    const { result } = setup();
+    act(() => result.current.enter());
+    act(() => result.current.dispatch({ type: 'move', from: 0, to: 1 }));
+    expect(result.current.dirty).toBe(true);
+    act(() => result.current.dispatch({ type: 'move', from: 1, to: 0 }));
+    expect(result.current.dirty).toBe(false);
+  });
+
+  it('cancels at once with an unchanged draft, popping its entry and storing nothing', () => {
+    const { result } = setup();
+    act(() => result.current.enter());
+    act(() => result.current.cancel());
+    expect(result.current.editing).toBe(false);
+    expect(historyBack).toHaveBeenCalledTimes(1);
+    expect(updatePreferences).not.toHaveBeenCalled();
+  });
+
+  it('asks before cancelling a changed draft, and discards only when told to (DASH-4)', () => {
+    const { result } = setup();
+    act(() => result.current.enter());
+    act(() => result.current.dispatch({ type: 'remove', id: 'insights' }));
+    act(() => result.current.cancel());
+    expect(result.current.editing).toBe(true);
+    expect(result.current.confirmingLeave).toBe(true);
+    act(() => result.current.keepEditing());
+    expect(result.current.confirmingLeave).toBe(false);
+    expect(result.current.draft?.some((i) => i.id === 'insights')).toBe(false);
+    act(() => result.current.cancel());
+    act(() => result.current.discard());
+    expect(result.current.editing).toBe(false);
+    expect(updatePreferences).not.toHaveBeenCalled();
+  });
+
+  it('leaves on Escape, but not while a dialog is open on top', () => {
+    const { result } = setup();
+    act(() => result.current.enter());
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    document.body.appendChild(dialog);
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+    expect(result.current.editing).toBe(true);
+    dialog.remove();
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+    expect(result.current.editing).toBe(false);
+    expect(updatePreferences).not.toHaveBeenCalled();
+  });
+
+  it('leaves on Back with an unchanged draft, without popping a second entry', () => {
+    const { result } = setup();
+    act(() => result.current.enter());
+    act(back);
+    expect(result.current.editing).toBe(false);
+    expect(historyBack).not.toHaveBeenCalled();
+    expect(updatePreferences).not.toHaveBeenCalled();
+  });
+
+  it('puts its entry back and asks on Back with a changed draft', () => {
+    const { result } = setup();
+    act(() => result.current.enter());
+    act(() => result.current.dispatch({ type: 'remove', id: 'insights' }));
+    act(back);
+    expect(result.current.editing).toBe(true);
+    expect(result.current.confirmingLeave).toBe(true);
+    expect(pushState).toHaveBeenCalledTimes(2);
+  });
+
+  it('skips the late popstate of its own history.back() when entered again at once', () => {
+    const { result } = setup();
+    act(() => result.current.enter());
+    act(() => result.current.cancel());
+    act(() => result.current.enter());
+    act(back);
+    expect(result.current.editing).toBe(true);
+    act(back);
+    expect(result.current.editing).toBe(false);
+  });
+
+  it('ignores a Back that only closed a dialog above its own entry', () => {
+    const { result } = setup();
+    act(() => result.current.enter());
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate', { state: { dashboardEdit: true } }));
+    });
+    expect(result.current.editing).toBe(true);
+  });
+
+  it('saves once, the draft over the settings map read at save time (DASH-5, DASH-6)', async () => {
+    store.preferences = { dashboardWidgets: [], dashboardWidgetConfig: { 'net-worth': { range: '2y' } } };
+    const { result } = setup();
+    act(() => result.current.enter());
+    act(() => result.current.dispatch({ type: 'remove', id: 'insights' }));
+    // A widget's gear saved a setting while the draft was open.
+    store.preferences = {
+      dashboardWidgets: [],
+      dashboardWidgetConfig: { 'net-worth': { range: '5y' }, 'expenses-pie': { months: 6 } },
+    };
+    await act(async () => {
+      await result.current.save();
+    });
+    expect(updatePreferences).toHaveBeenCalledTimes(1);
+    expect(updatePreferences).toHaveBeenCalledWith({
+      dashboardWidgets: DEFAULT_DASHBOARD_WIDGET_IDS.filter((id) => id !== 'insights'),
+      dashboardWidgetConfig: { 'net-worth': { range: '5y' }, 'expenses-pie': { months: 6 } },
+    });
+    expect(updateStorePreferences).toHaveBeenCalledWith({
+      dashboardWidgets: DEFAULT_DASHBOARD_WIDGET_IDS.filter((id) => id !== 'insights'),
+      dashboardWidgetConfig: { 'net-worth': { range: '5y' }, 'expenses-pie': { months: 6 } },
+    });
+    expect(result.current.editing).toBe(false);
+    expect(historyBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('saves a draft equal to the default layout as never customized', async () => {
+    store.preferences = { dashboardWidgets: ['insights'], dashboardWidgetConfig: {} };
+    const { result } = setup();
+    act(() => result.current.enter());
+    act(() => result.current.dispatch({ type: 'reset' }));
+    expect(result.current.draft).toEqual(defaultDashboardLayout());
+    expect(updatePreferences).not.toHaveBeenCalled();
+    await act(async () => {
+      await result.current.save();
+    });
+    expect(updatePreferences.mock.calls[0][0].dashboardWidgets).toEqual([]);
+  });
+
+  it('keeps the draft and edit mode when the save is refused', async () => {
+    updatePreferences.mockRejectedValue(new Error('nope'));
+    const { result } = setup();
+    act(() => result.current.enter());
+    act(() => result.current.dispatch({ type: 'remove', id: 'insights' }));
+    const draft = result.current.draft;
+    await act(async () => {
+      await result.current.save();
+    });
+    expect(toastError).toHaveBeenCalledWith('nope');
+    expect(result.current.editing).toBe(true);
+    expect(result.current.draft).toBe(draft);
+    expect(result.current.saving).toBe(false);
+    expect(updateStorePreferences).not.toHaveBeenCalled();
+    expect(historyBack).not.toHaveBeenCalled();
+  });
+
+  it('does not save an empty draft', async () => {
+    store.preferences = { dashboardWidgets: ['insights'], dashboardWidgetConfig: {} };
+    const { result } = setup();
+    act(() => result.current.enter());
+    act(() => result.current.dispatch({ type: 'remove', id: 'insights' }));
+    await act(async () => {
+      await result.current.save();
+    });
+    expect(updatePreferences).not.toHaveBeenCalled();
+    expect(result.current.editing).toBe(true);
+  });
+});

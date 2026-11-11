@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Tùy chỉnh",
-    "title": "Tùy chỉnh trang tổng quan",
-    "description": "Bố cục bên dưới phản ánh trang tổng quan của bạn: các tiện ích xếp từ trái sang phải, hai tiện ích mỗi hàng trên màn hình lớn.",
     "moveEarlier": "Chuyển {name} lên trước",
     "moveLater": "Chuyển {name} ra sau",
-    "dragToReorder": "Kéo các tiện ích để sắp xếp lại, hoặc dùng các nút mũi tên.",
-    "hiddenWidgets": "Tiện ích đã ẩn",
-    "hide": "Ẩn {name}",
-    "show": "Hiện {name}",
     "atLeastOne": "Chọn ít nhất một tiện ích để hiển thị trên trang tổng quan.",
     "reset": "Đặt lại mặc định",
     "toasts": {

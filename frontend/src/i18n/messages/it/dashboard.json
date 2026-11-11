@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Personalizza",
-    "title": "Personalizza il pannello",
-    "description": "Il layout qui sotto rispecchia il tuo pannello di controllo: i widget scorrono da sinistra a destra, due per riga sugli schermi grandi.",
     "moveEarlier": "Sposta {name} prima",
     "moveLater": "Sposta {name} dopo",
-    "dragToReorder": "Trascina i widget per riorganizzarli oppure usa i pulsanti freccia.",
-    "hiddenWidgets": "Widget nascosti",
-    "hide": "Nascondi {name}",
-    "show": "Mostra {name}",
     "atLeastOne": "Seleziona almeno un widget da mostrare nel pannello.",
     "reset": "Ripristina predefiniti",
     "toasts": {

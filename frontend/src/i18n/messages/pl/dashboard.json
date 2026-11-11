@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Dostosuj",
-    "title": "Dostosuj pulpit",
-    "description": "Poniższy układ odzwierciedla pulpit: widżety układają się od lewej do prawej, po dwa w wierszu na dużych ekranach.",
     "moveEarlier": "Przesuń {name} wcześniej",
     "moveLater": "Przesuń {name} później",
-    "dragToReorder": "Przeciągnij widżety, aby zmienić ich układ, lub użyj przycisków strzałek.",
-    "hiddenWidgets": "Ukryte widżety",
-    "hide": "Ukryj {name}",
-    "show": "Pokaż {name}",
     "atLeastOne": "Wybierz co najmniej jeden widżet do wyświetlenia na pulpicie.",
     "reset": "Przywróć domyślne",
     "toasts": {

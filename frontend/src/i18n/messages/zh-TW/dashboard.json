@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "自訂",
-    "title": "自訂儀表板",
-    "description": "下方版面配置與儀表板一致：小工具由左至右排列，大螢幕上每列兩個。",
     "moveEarlier": "將{name}往前移",
     "moveLater": "將{name}往後移",
-    "dragToReorder": "拖曳小工具以重新排列，或使用箭頭按鈕。",
-    "hiddenWidgets": "已隱藏的小工具",
-    "hide": "隱藏{name}",
-    "show": "顯示{name}",
     "atLeastOne": "請至少選擇一個要顯示在儀表板上的小工具。",
     "reset": "重設為預設值",
     "toasts": {

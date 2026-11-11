@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Personalizar",
-    "title": "Personalizar painel",
-    "description": "O layout abaixo reflete o seu painel: os widgets fluem da esquerda para a direita, dois por linha em telas grandes.",
     "moveEarlier": "Mover {name} para a frente",
     "moveLater": "Mover {name} para trás",
-    "dragToReorder": "Arraste os widgets para reorganizá-los, ou use os botões de seta.",
-    "hiddenWidgets": "Widgets ocultos",
-    "hide": "Ocultar {name}",
-    "show": "Mostrar {name}",
     "atLeastOne": "Selecione pelo menos um widget para mostrar no painel.",
     "reset": "Restaurar padrão",
     "toasts": {

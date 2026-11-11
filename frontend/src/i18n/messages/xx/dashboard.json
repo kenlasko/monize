@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "[XX-Customize-XX]",
-    "title": "[XX-Customize dashboard-XX]",
-    "description": "[XX-The layout below mirrors your dashboard: widgets flow left to right, two per row on large screens.-XX]",
     "moveEarlier": "[XX-Move {name} earlier-XX]",
     "moveLater": "[XX-Move {name} later-XX]",
-    "dragToReorder": "[XX-Drag widgets to rearrange them, or use the arrow buttons.-XX]",
-    "hiddenWidgets": "[XX-Hidden widgets-XX]",
-    "hide": "[XX-Hide {name}-XX]",
-    "show": "[XX-Show {name}-XX]",
     "atLeastOne": "[XX-Select at least one widget to show on the dashboard.-XX]",
     "reset": "[XX-Reset to default-XX]",
     "toasts": {
@@ -281,6 +275,19 @@
         "cagr": "[XX-CAGR-XX]"
       }
     }
+  },
+  "edit": {
+    "barLabel": "[XX-Arrange the dashboard-XX]",
+    "addWidget": "[XX-Add Widget-XX]",
+    "heroSettings": "[XX-Hero Settings-XX]",
+    "done": "[XX-Done-XX]",
+    "phoneNote": "[XX-Widget sizes apply on wider screens.-XX]",
+    "remove": "[XX-Remove {name}-XX]",
+    "moved": "[XX-{name} moved to position {position} of {count}-XX]",
+    "placeholder": "[XX-Shown on the dashboard once it has something to show.-XX]",
+    "addTitle": "[XX-Add Widget-XX]",
+    "addDescription": "[XX-A widget you add goes at the end of the dashboard. Nothing is kept until you choose Done.-XX]",
+    "addEmpty": "[XX-Every widget is already on your dashboard-XX]"
   },
   "favouriteReports": {
     "title": "[XX-Favourite Reports-XX]",

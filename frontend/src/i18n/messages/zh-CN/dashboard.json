@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "自定义",
-    "title": "自定义仪表盘",
-    "description": "下方布局与仪表盘一致：小组件从左到右排列，大屏幕上每行两个。",
     "moveEarlier": "将{name}前移",
     "moveLater": "将{name}后移",
-    "dragToReorder": "拖动小组件以重新排列，或使用箭头按钮。",
-    "hiddenWidgets": "已隐藏的小组件",
-    "hide": "隐藏{name}",
-    "show": "显示{name}",
     "atLeastOne": "请至少选择一个要在仪表盘上显示的小组件。",
     "reset": "恢复默认",
     "toasts": {

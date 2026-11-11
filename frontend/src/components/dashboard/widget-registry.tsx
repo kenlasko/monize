@@ -85,7 +85,7 @@ export type DashboardWidgetId =
   | 'warranties-expiring'
   | 'trivia';
 
-/** The kind of visualization a widget renders, shown as an icon in Customize. */
+/** The kind of visualization a widget renders, shown as an icon where the widget stands in for itself. */
 export type WidgetIconType = 'bar' | 'line' | 'pie' | 'table' | 'list';
 
 /** Everything the dashboard page loads, handed to each widget's render. */
@@ -116,7 +116,7 @@ export interface DashboardWidgetDefinition {
   id: DashboardWidgetId;
   /** Key inside the `dashboard` namespace whose `.title` names the widget. */
   titleSection: string;
-  /** Visualization kind, surfaced as an icon in the Customize dashboard modal. */
+  /** Visualization kind, surfaced as an icon in the Add widget dialog and edit mode's placeholder. */
   iconType: WidgetIconType;
   /** Part of the default layout shown to users who never customized. */
   defaultEnabled: boolean;
@@ -176,8 +176,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
       />
     ),
   },
-  // Opt-in, and listed beside Upcoming Bills so the Customize modal's hidden
-  // widgets offer the two together.
+  // Opt-in, and listed beside Upcoming Bills so the Add widget dialog offers
+  // the two together.
   {
     id: 'cash-flow-forecast',
     titleSection: 'cashFlowForecast',

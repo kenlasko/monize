@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Personalizar",
-    "title": "Personalizar el panel",
-    "description": "El diseño de abajo refleja tu panel de control: los widgets fluyen de izquierda a derecha, dos por fila en pantallas grandes.",
     "moveEarlier": "Mover {name} hacia adelante",
     "moveLater": "Mover {name} hacia atrás",
-    "dragToReorder": "Arrastra los widgets para reorganizarlos o usa los botones de flecha.",
-    "hiddenWidgets": "Widgets ocultos",
-    "hide": "Ocultar {name}",
-    "show": "Mostrar {name}",
     "atLeastOne": "Selecciona al menos un widget para mostrar en el panel.",
     "reset": "Restablecer valores predeterminados",
     "toasts": {

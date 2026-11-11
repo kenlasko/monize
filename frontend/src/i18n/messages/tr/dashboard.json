@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Özelleştir",
-    "title": "Panoyu özelleştir",
-    "description": "Aşağıdaki düzen panonuzu yansıtır: widget'lar soldan sağa akar, büyük ekranlarda her satırda iki tane bulunur.",
     "moveEarlier": "{name} öğesini öne taşı",
     "moveLater": "{name} öğesini arkaya taşı",
-    "dragToReorder": "Widget'ları sürükleyerek yeniden düzenleyin veya ok düğmelerini kullanın.",
-    "hiddenWidgets": "Gizli widget'lar",
-    "hide": "{name} gizle",
-    "show": "{name} göster",
     "atLeastOne": "Panoda göstermek için en az bir widget seçin.",
     "reset": "Varsayılana sıfırla",
     "toasts": {

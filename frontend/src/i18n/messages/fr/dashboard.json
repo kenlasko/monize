@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Personnaliser",
-    "title": "Personnaliser le tableau de bord",
-    "description": "La disposition ci-dessous reflète votre tableau de bord : les widgets s'enchaînent de gauche à droite, deux par ligne sur les grands écrans.",
     "moveEarlier": "Avancer {name}",
     "moveLater": "Reculer {name}",
-    "dragToReorder": "Faites glisser les widgets pour les réorganiser, ou utilisez les boutons fléchés.",
-    "hiddenWidgets": "Widgets masqués",
-    "hide": "Masquer {name}",
-    "show": "Afficher {name}",
     "atLeastOne": "Sélectionnez au moins un widget à afficher sur le tableau de bord.",
     "reset": "Réinitialiser par défaut",
     "toasts": {

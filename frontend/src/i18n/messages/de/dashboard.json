@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Anpassen",
-    "title": "Dashboard anpassen",
-    "description": "Das Layout unten entspricht Ihrem Dashboard: Widgets fließen von links nach rechts, auf großen Bildschirmen zwei pro Zeile.",
     "moveEarlier": "{name} nach vorne verschieben",
     "moveLater": "{name} nach hinten verschieben",
-    "dragToReorder": "Ziehen Sie Widgets, um sie neu anzuordnen, oder verwenden Sie die Pfeilschaltflächen.",
-    "hiddenWidgets": "Ausgeblendete Widgets",
-    "hide": "{name} ausblenden",
-    "show": "{name} einblenden",
     "atLeastOne": "Wählen Sie mindestens ein Widget für das Dashboard aus.",
     "reset": "Auf Standard zurücksetzen",
     "toasts": {
