@@ -3,6 +3,11 @@ import { render, screen, fireEvent, within } from '@/test/render';
 import { WidgetEditOverlay, WidgetPlaceholder } from './WidgetEditOverlay';
 import type { DashboardLayoutItem } from './dashboard-layout';
 
+const mockMatches = vi.hoisted(() => ({ wide: true }));
+vi.mock('@/hooks/useIsMobile', () => ({
+  useMediaQuery: (query: string) => (query.includes('min-width: 1024px') ? mockMatches.wide : false),
+}));
+
 const ITEM: DashboardLayoutItem = { id: 'net-worth', width: 'half', height: 'standard' };
 
 function renderOverlay(over: Partial<Parameters<typeof WidgetEditOverlay>[0]> = {}) {
@@ -83,6 +88,70 @@ describe('WidgetEditOverlay', () => {
     const overlay = screen.getByTestId('widget-edit-overlay-net-worth');
     expect(overlay.querySelector('[data-edit-slot="grip"] [aria-hidden="true"]')).not.toBeNull();
     expect(overlay.querySelector('[data-edit-slot="size"]')).toBeNull();
+  });
+});
+
+describe('WidgetEditOverlay size choices', () => {
+  const pressed = (group: HTMLElement) =>
+    within(group)
+      .getAllByRole('button')
+      .filter((b) => b.getAttribute('aria-pressed') === 'true')
+      .map((b) => b.getAttribute('aria-label'));
+
+  it('offers the widths from the widget minimum up, and all four heights', () => {
+    mockMatches.wide = true;
+    // Top Movers' minWidth is half, so it offers no third.
+    renderOverlay({ item: { id: 'top-movers', width: 'half', height: 'standard' }, onResize: vi.fn() });
+    const widths = screen.getByRole('group', { name: 'Width of Top Movers' });
+    expect(within(widths).getAllByRole('button').map((b) => b.textContent)).toEqual(['1/2', '2/3', 'Full']);
+    const heights = screen.getByRole('group', { name: 'Height of Top Movers' });
+    expect(within(heights).getAllByRole('button').map((b) => b.textContent)).toEqual(['Auto', 'S', 'M', 'L']);
+  });
+
+  it('offers a third to a widget that allows it, each preset named in words', () => {
+    mockMatches.wide = true;
+    renderOverlay({ item: { id: 'expenses-pie', width: 'third', height: 'standard' }, onResize: vi.fn() });
+    const widths = screen.getByRole('group', { name: /^Width of / });
+    expect(within(widths).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([
+      'One third width',
+      'Half width',
+      'Two thirds width',
+      'Full width',
+    ]);
+  });
+
+  it('marks the current width and height pressed', () => {
+    mockMatches.wide = true;
+    renderOverlay({ item: { id: 'net-worth', width: 'full', height: 'tall' }, onResize: vi.fn() });
+    expect(pressed(screen.getByRole('group', { name: 'Width of Net Worth' }))).toEqual(['Full width']);
+    expect(pressed(screen.getByRole('group', { name: 'Height of Net Worth' }))).toEqual(['Tall height']);
+  });
+
+  it('dispatches one resize with only the dimension pressed', () => {
+    mockMatches.wide = true;
+    const { onResize } = renderOverlay({ onResize: vi.fn() });
+    fireEvent.click(screen.getByRole('button', { name: 'Full width' }));
+    expect(onResize).toHaveBeenCalledTimes(1);
+    expect(onResize).toHaveBeenLastCalledWith('net-worth', { width: 'full' });
+    fireEvent.click(screen.getByRole('button', { name: 'Compact height' }));
+    expect(onResize).toHaveBeenCalledTimes(2);
+    expect(onResize).toHaveBeenLastCalledWith('net-worth', { height: 'compact' });
+  });
+
+  it('renders neither group below lg, and still offers move and remove', () => {
+    mockMatches.wide = false;
+    renderOverlay({ onResize: vi.fn() });
+    expect(screen.queryByRole('group', { name: 'Width of Net Worth' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Height of Net Worth' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Remove Net Worth' })).toBeInTheDocument();
+    mockMatches.wide = true;
+  });
+
+  it('lets the bar wrap so a narrow card keeps its move and remove buttons', () => {
+    mockMatches.wide = true;
+    renderOverlay({ onResize: vi.fn() });
+    expect(screen.getByRole('group', { name: 'Net Worth' })).toHaveClass('flex-wrap');
+    expect(screen.getByRole('group', { name: 'Width of Net Worth' }).parentElement).toHaveClass('flex-wrap');
   });
 });
 

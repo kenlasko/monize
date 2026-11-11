@@ -10,11 +10,25 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { Card, HOVER_TOOLBAR_BUTTON } from '@/components/ui/Card';
+import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
+import { useMediaQuery } from '@/hooks/useIsMobile';
 import { cn } from '@/lib/utils';
-import type { DashboardLayoutItem } from './dashboard-layout';
+import {
+  WIDGET_HEIGHTS,
+  widthsOfferedFor,
+  type DashboardLayoutItem,
+  type WidgetHeight,
+  type WidgetWidth,
+} from './dashboard-layout';
 import { WidgetGlyph, useWidgetName } from './widget-glyphs';
 
 const CONTROL_CLASS = `rounded-md p-1.5 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${HOVER_TOOLBAR_BUTTON}`;
+
+/** Tailwind's `lg`: the grid has columns from here up, so sizes only mean something here. */
+const WIDE_QUERY = '(min-width: 1024px)';
+
+/** Compact segments for the overlay bar, which a third-width card makes narrow. */
+const SIZE_SEGMENT_CLASS = 'px-2 py-0.5 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
 
 interface WidgetEditOverlayProps {
   item: DashboardLayoutItem;
@@ -24,6 +38,8 @@ interface WidgetEditOverlayProps {
   /** Move the item from one place to another; the page announces it. */
   onMove: (from: number, to: number) => void;
   onRemove: (item: DashboardLayoutItem) => void;
+  /** One width or height choice; the page's draft applies it and the card follows. */
+  onResize?: (id: DashboardLayoutItem['id'], size: { width?: WidgetWidth; height?: WidgetHeight }) => void;
   /** The grip (F5 puts the pointer drag handle here); a plain glyph until then. */
   grip?: ReactNode;
   /** Width and height choices (F4), between the name and the move buttons. */
@@ -42,11 +58,15 @@ export function WidgetEditOverlay({
   count,
   onMove,
   onRemove,
+  onResize,
   grip,
   sizeChoices,
 }: WidgetEditOverlayProps) {
   const t = useTranslations('dashboard');
   const name = useWidgetName()(item.id);
+  // Not rendered below lg (rather than hidden by CSS), so a phone's bar holds
+  // no control that does nothing and a screen reader never meets one.
+  const isWide = useMediaQuery(WIDE_QUERY);
 
   return (
     <div
@@ -68,7 +88,35 @@ export function WidgetEditOverlay({
         <span className="min-w-0 flex-1 truncate px-1 text-sm font-medium text-gray-900 dark:text-gray-100">
           {name}
         </span>
-        {sizeChoices && <span data-edit-slot="size">{sizeChoices}</span>}
+        {(sizeChoices || (isWide && onResize)) && (
+          <span data-edit-slot="size" className="flex flex-wrap items-center gap-1">
+            {sizeChoices}
+            {isWide && onResize && (
+              <>
+                <SizeGroup
+                  label={t('edit.widthOf', { name })}
+                  options={widthsOfferedFor(item.id).map((value) => ({
+                    value,
+                    text: t(`edit.widthShort.${value}`),
+                    name: t(`edit.widthName.${value}`),
+                  }))}
+                  current={item.width}
+                  onPick={(width) => onResize(item.id, { width })}
+                />
+                <SizeGroup
+                  label={t('edit.heightOf', { name })}
+                  options={WIDGET_HEIGHTS.map((value) => ({
+                    value,
+                    text: t(`edit.heightShort.${value}`),
+                    name: t(`edit.heightName.${value}`),
+                  }))}
+                  current={item.height}
+                  onPick={(height) => onResize(item.id, { height })}
+                />
+              </>
+            )}
+          </span>
+        )}
         <button
           type="button"
           data-edit-action="earlier"
@@ -105,6 +153,34 @@ export function WidgetEditOverlay({
           <XMarkIcon className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
+    </div>
+  );
+}
+
+interface SizeGroupProps<T extends string> {
+  label: string;
+  options: { value: T; text: string; name: string }[];
+  current: T;
+  onPick: (value: T) => void;
+}
+
+/** One pill of presets: a short visible label, the preset in words as the accessible name. */
+function SizeGroup<T extends string>({ label, options, current, onPick }: SizeGroupProps<T>) {
+  return (
+    <div role="group" aria-label={label} className={SEGMENTED_GROUP_CLASS}>
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          aria-label={o.name}
+          title={o.name}
+          aria-pressed={o.value === current}
+          onClick={() => onPick(o.value)}
+          className={cn(segmentClass(o.value === current), SIZE_SEGMENT_CLASS)}
+        >
+          {o.text}
+        </button>
+      ))}
     </div>
   );
 }

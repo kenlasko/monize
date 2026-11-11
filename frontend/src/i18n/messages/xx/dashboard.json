@@ -287,7 +287,33 @@
     "placeholder": "[XX-Shown on the dashboard once it has something to show.-XX]",
     "addTitle": "[XX-Add Widget-XX]",
     "addDescription": "[XX-A widget you add goes at the end of the dashboard. Nothing is kept until you choose Done.-XX]",
-    "addEmpty": "[XX-Every widget is already on your dashboard-XX]"
+    "addEmpty": "[XX-Every widget is already on your dashboard-XX]",
+    "widthOf": "[XX-Width of {name}-XX]",
+    "heightOf": "[XX-Height of {name}-XX]",
+    "widthShort": {
+      "third": "[XX-1/3-XX]",
+      "half": "[XX-1/2-XX]",
+      "twoThirds": "[XX-2/3-XX]",
+      "full": "[XX-Full-XX]"
+    },
+    "widthName": {
+      "third": "[XX-One third width-XX]",
+      "half": "[XX-Half width-XX]",
+      "twoThirds": "[XX-Two thirds width-XX]",
+      "full": "[XX-Full width-XX]"
+    },
+    "heightShort": {
+      "auto": "[XX-Auto-XX]",
+      "compact": "[XX-S-XX]",
+      "standard": "[XX-M-XX]",
+      "tall": "[XX-L-XX]"
+    },
+    "heightName": {
+      "auto": "[XX-Automatic height-XX]",
+      "compact": "[XX-Compact height-XX]",
+      "standard": "[XX-Standard height-XX]",
+      "tall": "[XX-Tall height-XX]"
+    }
   },
   "favouriteReports": {
     "title": "[XX-Favourite Reports-XX]",

@@ -836,6 +836,55 @@ describe('DashboardPage', () => {
       expect(widgetIds()).toEqual(expected.filter((id) => id !== 'portfolio-value'));
     });
 
+    describe('width and height choices', () => {
+      const original = window.matchMedia;
+      afterEach(() => {
+        window.matchMedia = original;
+      });
+      const setWide = (wide: boolean) => {
+        window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+          matches: wide && query.includes('min-width: 1024px'),
+          media: query,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        })) as unknown as typeof window.matchMedia;
+      };
+
+      it('stores a chosen width in that widget slice on Done, and only the changed key', async () => {
+        setWide(true);
+        await renderLoaded();
+        await enterEditMode();
+        const widths = screen.getByRole('group', { name: 'Width of Net Worth' });
+        await click(within(widths).getByRole('button', { name: 'Full width' }));
+        expect(within(widths).getByRole('button', { name: 'Full width' })).toHaveAttribute('aria-pressed', 'true');
+        expect(mockUpdatePreferences).not.toHaveBeenCalled();
+        await click(done());
+        expect(mockUpdatePreferences).toHaveBeenCalledTimes(1);
+        const config = mockUpdatePreferences.mock.calls[0][0].dashboardWidgetConfig;
+        expect(config['net-worth']).toEqual({ gridWidth: 'full' });
+        expect(Object.keys(config)).toEqual(['net-worth']);
+      });
+
+      it('stores nothing for a size pressed back to its default', async () => {
+        setWide(true);
+        await renderLoaded();
+        await enterEditMode();
+        const widths = screen.getByRole('group', { name: 'Width of Net Worth' });
+        await click(within(widths).getByRole('button', { name: 'Full width' }));
+        await click(within(widths).getByRole('button', { name: 'Half width' }));
+        await click(done());
+        expect(mockUpdatePreferences.mock.calls[0][0].dashboardWidgetConfig).toEqual({});
+      });
+
+      it('shows no size choices below lg', async () => {
+        setWide(false);
+        await renderLoaded();
+        await enterEditMode();
+        expect(screen.queryByRole('group', { name: /^Width of / })).not.toBeInTheDocument();
+        expect(screen.queryByRole('group', { name: /^Height of / })).not.toBeInTheDocument();
+      });
+    });
+
     it('stores a layout reset to the default as never customized, and only on Done', async () => {
       prefsState.current.dashboardWidgets = ['insights', 'net-worth'];
       await renderLoaded();

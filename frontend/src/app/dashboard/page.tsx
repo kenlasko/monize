@@ -381,6 +381,7 @@ function DashboardContent() {
             count={draft.length}
             onMove={moveWidget}
             onRemove={(removed) => dispatchLayout({ type: 'remove', id: removed.id })}
+            onResize={(id, size) => dispatchLayout({ type: 'resize', id, ...size })}
           />
         ),
         placeholder: (item) => <WidgetPlaceholder item={item} />,

@@ -67,6 +67,7 @@ Click the **Customize** gear beside the greeting to put the dashboard into edit 
 ![The dashboard in edit mode](images/dashboard-customize.png)
 
 - **Move a widget** -- use the arrow buttons on the widget to move it one place earlier or later. Widgets flow left to right on a large screen and stack in a single column on a phone, where the arrows point up and down
+- **Resize a widget** -- on a wide screen, each widget's bar has a **Width** and a **Height** choice. Width runs from a third of the row (for widgets narrow enough to allow it) up to the full row; height sets how tall the widget is at least, from **Auto** to **L**. The widget changes as soon as you press one. Sizes do not apply on a phone, where every widget fills the screen width, so the choices are not shown there
 - **Remove a widget** -- click the widget's **X**. It goes back to the list of widgets you can add
 - **Add a widget** -- click **Add Widget** in the bar, or the dashed tile, and choose one of the widgets that are not on the dashboard. It is added at the end
 - **Hero Settings** -- switches the [hero](#dashboard-hero) on or off and picks **Auto** or one set. **Net worth** sets how far back its chart goes; **Portfolio value** sets the accounts it covers (all of them if you choose none), the timeframe, and the return shown beside the holdings and cash. **Auto** offers the settings of both, each set's under its own **Net worth** or **Portfolio value** heading so you can tell which chart a setting belongs to. **Save** in that dialog keeps the hero's settings at once, and **Reset to default** there puts the hero back on Auto, over one year
@@ -76,7 +77,7 @@ A widget that has nothing to show yet, such as Top Movers before you have any se
 
 Click **Done** to keep the new layout, or **Cancel** (or press **Escape**, or your browser's Back button) to put it back the way it was; if you changed anything, Monize asks before throwing the changes away. Nothing is saved until you click **Done**, and at least one widget must stay on the dashboard. Your layout is saved to your account, so it **syncs across all your devices**.
 
-On a phone, edit mode works the same way: you can add, remove and move widgets.
+On a phone, edit mode works the same way: you can add, remove and move widgets, but not change their sizes.
 
 ### Per-Widget Settings
 
