@@ -276,6 +276,49 @@
       }
     }
   },
+  "edit": {
+    "barLabel": "Panoyu düzenle",
+    "addWidget": "Widget ekle",
+    "heroSettings": "Başlık ayarları",
+    "done": "Tamam",
+    "phoneNote": "Widget boyutları daha geniş ekranlarda uygulanır.",
+    "remove": "{name} öğesini kaldır",
+    "grip": "{name} öğesini taşı",
+    "gripHint": "{name} öğesini taşımak için sürükleyin veya ok tuşlarına basın",
+    "moved": "{name}, {count} içinde {position}. konuma taşındı",
+    "placeholder": "Gösterecek bir şey olduğunda panoda görünür.",
+    "addTitle": "Widget ekle",
+    "addDescription": "Eklediğiniz widget panonun sonuna yerleşir. Tamam seçeneğini seçene kadar hiçbir şey kaydedilmez.",
+    "addEmpty": "Tüm widget'lar zaten panonuzda",
+    "resize": "{name} öğesini yeniden boyutlandır",
+    "resizeHint": "{name} öğesini yeniden boyutlandırmak için sürükleyin veya ok tuşlarına basın",
+    "widthOf": "{name} genişliği",
+    "heightOf": "{name} yüksekliği",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Tam"
+    },
+    "widthName": {
+      "third": "Üçte bir genişlik",
+      "half": "Yarım genişlik",
+      "twoThirds": "Üçte iki genişlik",
+      "full": "Tam genişlik"
+    },
+    "heightShort": {
+      "auto": "Oto",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Otomatik yükseklik",
+      "compact": "Kompakt yükseklik",
+      "standard": "Standart yükseklik",
+      "tall": "Uzun yükseklik"
+    }
+  },
   "favouriteReports": {
     "title": "Favori Raporlar",
     "empty": "Henüz favori rapor yok. Burada görmek için Raporlar sayfasında raporları yıldızlayın.",

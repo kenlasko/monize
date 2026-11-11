@@ -276,6 +276,49 @@
       }
     }
   },
+  "edit": {
+    "barLabel": "Organizar el panel",
+    "addWidget": "Añadir widget",
+    "heroSettings": "Ajustes de la cabecera",
+    "done": "Listo",
+    "phoneNote": "Los tamaños de los widgets se aplican en pantallas más anchas.",
+    "remove": "Quitar {name}",
+    "grip": "Mover {name}",
+    "gripHint": "Arrastra para mover {name} o usa las teclas de flecha",
+    "moved": "{name} movido a la posición {position} de {count}",
+    "placeholder": "Se mostrará en el panel cuando tenga algo que mostrar.",
+    "addTitle": "Añadir widget",
+    "addDescription": "Un widget que añadas se coloca al final del panel. No se guarda nada hasta que elijas Listo.",
+    "addEmpty": "Todos los widgets ya están en tu panel",
+    "resize": "Cambiar el tamaño de {name}",
+    "resizeHint": "Arrastra para cambiar el tamaño de {name} o usa las teclas de flecha",
+    "widthOf": "Ancho de {name}",
+    "heightOf": "Alto de {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Completo"
+    },
+    "widthName": {
+      "third": "Un tercio de ancho",
+      "half": "Mitad de ancho",
+      "twoThirds": "Dos tercios de ancho",
+      "full": "Ancho completo"
+    },
+    "heightShort": {
+      "auto": "Auto",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Altura automática",
+      "compact": "Altura compacta",
+      "standard": "Altura estándar",
+      "tall": "Altura alta"
+    }
+  },
   "favouriteReports": {
     "title": "Informes favoritos",
     "empty": "Aún no hay informes favoritos. Marca informes con una estrella en la página de Informes para verlos aquí.",

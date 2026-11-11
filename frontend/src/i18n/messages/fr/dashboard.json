@@ -276,6 +276,49 @@
       }
     }
   },
+  "edit": {
+    "barLabel": "Organiser le tableau de bord",
+    "addWidget": "Ajouter un widget",
+    "heroSettings": "Réglages de l'en-tête",
+    "done": "Terminé",
+    "phoneNote": "Les tailles des widgets s'appliquent sur les écrans plus larges.",
+    "remove": "Retirer {name}",
+    "grip": "Déplacer {name}",
+    "gripHint": "Faites glisser pour déplacer {name}, ou utilisez les touches fléchées",
+    "moved": "{name} déplacé à la position {position} sur {count}",
+    "placeholder": "Affiché sur le tableau de bord dès qu'il y aura quelque chose à montrer.",
+    "addTitle": "Ajouter un widget",
+    "addDescription": "Un widget ajouté se place à la fin du tableau de bord. Rien n'est conservé tant que vous n'avez pas choisi Terminé.",
+    "addEmpty": "Tous les widgets sont déjà sur votre tableau de bord",
+    "resize": "Redimensionner {name}",
+    "resizeHint": "Faites glisser pour redimensionner {name}, ou utilisez les touches fléchées",
+    "widthOf": "Largeur de {name}",
+    "heightOf": "Hauteur de {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Pleine"
+    },
+    "widthName": {
+      "third": "Un tiers de la largeur",
+      "half": "Demi-largeur",
+      "twoThirds": "Deux tiers de la largeur",
+      "full": "Pleine largeur"
+    },
+    "heightShort": {
+      "auto": "Auto",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Hauteur automatique",
+      "compact": "Hauteur compacte",
+      "standard": "Hauteur standard",
+      "tall": "Hauteur élevée"
+    }
+  },
   "favouriteReports": {
     "title": "Rapports favoris",
     "empty": "Aucun rapport favori pour l’instant. Mettez des rapports en favori sur la page Rapports pour les voir ici.",

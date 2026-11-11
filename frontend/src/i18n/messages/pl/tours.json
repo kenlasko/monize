@@ -69,7 +69,7 @@
         },
         "dashboard": {
           "title": "Twój pulpit",
-          "body": "To jest Twój pulpit. Użyj przycisku **Dostosuj** w prawym górnym rogu, aby zmienić układ lub ukryć widżety, tak aby najważniejsze dla Ciebie podsumowania znalazły się na samej górze."
+          "body": "To jest Twój pulpit. Wybierz zębatkę **Dostosuj** obok powitania, aby go ułożyć: przenoś lub usuwaj widżety tam, gdzie stoją, wybierz **Dodaj widżet**, aby dodać kolejne, i **Gotowe**, aby zachować układ."
         },
         "tools": {
           "title": "Menu Narzędzia",
@@ -471,7 +471,7 @@
           },
           "dashboardWidget": {
             "title": "Sprawdź na pulpicie, co wygasa",
-            "body": "Wybierz **Dostosuj** i włącz **Gwarancje wkrótce wygasające**. Widżet pokazuje gwarancje, które wygasną najwcześniej, a jego tytuł otwiera stronę Gwarancje."
+            "body": "Wybierz **Dostosuj**, następnie **Dodaj widżet**, wskaż **Gwarancje wkrótce wygasające** i wybierz **Gotowe**. Widżet pokazuje gwarancje, które wygasną najwcześniej, a jego tytuł otwiera stronę Gwarancje."
           },
           "reminders": {
             "title": "Przypomnienia przed końcem ochrony",

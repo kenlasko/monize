@@ -276,6 +276,49 @@
       }
     }
   },
+  "edit": {
+    "barLabel": "Ułóż pulpit",
+    "addWidget": "Dodaj widżet",
+    "heroSettings": "Ustawienia nagłówka",
+    "done": "Gotowe",
+    "phoneNote": "Rozmiary widżetów obowiązują na szerszych ekranach.",
+    "remove": "Usuń {name}",
+    "grip": "Przenieś {name}",
+    "gripHint": "Przeciągnij, aby przenieść {name}, lub użyj klawiszy strzałek",
+    "moved": "{name} przeniesiono na pozycję {position} z {count}",
+    "placeholder": "Pojawi się na pulpicie, gdy będzie coś do pokazania.",
+    "addTitle": "Dodaj widżet",
+    "addDescription": "Dodany widżet trafia na koniec pulpitu. Nic nie zostanie zapisane, dopóki nie wybierzesz Gotowe.",
+    "addEmpty": "Wszystkie widżety są już na Twoim pulpicie",
+    "resize": "Zmień rozmiar: {name}",
+    "resizeHint": "Przeciągnij, aby zmienić rozmiar: {name}, lub użyj klawiszy strzałek",
+    "widthOf": "Szerokość: {name}",
+    "heightOf": "Wysokość: {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Pełna"
+    },
+    "widthName": {
+      "third": "Jedna trzecia szerokości",
+      "half": "Połowa szerokości",
+      "twoThirds": "Dwie trzecie szerokości",
+      "full": "Pełna szerokość"
+    },
+    "heightShort": {
+      "auto": "Auto",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Wysokość automatyczna",
+      "compact": "Wysokość kompaktowa",
+      "standard": "Wysokość standardowa",
+      "tall": "Wysokość duża"
+    }
+  },
   "favouriteReports": {
     "title": "Ulubione raporty",
     "empty": "Brak ulubionych raportów. Oznacz raporty gwiazdką na stronie Raporty, aby zobaczyć je tutaj.",

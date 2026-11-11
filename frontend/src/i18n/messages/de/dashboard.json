@@ -276,6 +276,49 @@
       }
     }
   },
+  "edit": {
+    "barLabel": "Dashboard anordnen",
+    "addWidget": "Widget hinzufügen",
+    "heroSettings": "Einstellungen Kopfbereich",
+    "done": "Fertig",
+    "phoneNote": "Widget-Größen gelten auf breiteren Bildschirmen.",
+    "remove": "{name} entfernen",
+    "grip": "{name} verschieben",
+    "gripHint": "Ziehen, um {name} zu verschieben, oder Pfeiltasten drücken",
+    "moved": "{name} an Position {position} von {count} verschoben",
+    "placeholder": "Wird im Dashboard angezeigt, sobald es etwas anzuzeigen gibt.",
+    "addTitle": "Widget hinzufügen",
+    "addDescription": "Ein hinzugefügtes Widget steht am Ende des Dashboards. Nichts wird gespeichert, bis Sie Fertig wählen.",
+    "addEmpty": "Alle Widgets sind bereits auf Ihrem Dashboard",
+    "resize": "Größe von {name} ändern",
+    "resizeHint": "Ziehen, um die Größe von {name} zu ändern, oder Pfeiltasten drücken",
+    "widthOf": "Breite von {name}",
+    "heightOf": "Höhe von {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Voll"
+    },
+    "widthName": {
+      "third": "Ein Drittel Breite",
+      "half": "Halbe Breite",
+      "twoThirds": "Zwei Drittel Breite",
+      "full": "Volle Breite"
+    },
+    "heightShort": {
+      "auto": "Auto",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Automatische Höhe",
+      "compact": "Kompakte Höhe",
+      "standard": "Standardhöhe",
+      "tall": "Große Höhe"
+    }
+  },
   "favouriteReports": {
     "title": "Favoritenberichte",
     "empty": "Noch keine Favoritenberichte. Markieren Sie Berichte auf der Berichteseite mit einem Stern, um sie hier zu sehen.",

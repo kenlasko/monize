@@ -276,6 +276,49 @@
       }
     }
   },
+  "edit": {
+    "barLabel": "ダッシュボードを並べ替え",
+    "addWidget": "ウィジェットを追加",
+    "heroSettings": "ヒーロー設定",
+    "done": "完了",
+    "phoneNote": "ウィジェットのサイズは幅の広い画面で適用されます。",
+    "remove": "{name}を削除",
+    "grip": "{name}を移動",
+    "gripHint": "ドラッグして{name}を移動するか、矢印キーを押します",
+    "moved": "{name}を{count}件中{position}番目に移動しました",
+    "placeholder": "表示できる内容ができると、ダッシュボードに表示されます。",
+    "addTitle": "ウィジェットを追加",
+    "addDescription": "追加したウィジェットはダッシュボードの最後に置かれます。「完了」を選ぶまで何も保存されません。",
+    "addEmpty": "すべてのウィジェットがすでにダッシュボードにあります",
+    "resize": "{name}のサイズを変更",
+    "resizeHint": "ドラッグして{name}のサイズを変更するか、矢印キーを押します",
+    "widthOf": "{name}の幅",
+    "heightOf": "{name}の高さ",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "全幅"
+    },
+    "widthName": {
+      "third": "3分の1の幅",
+      "half": "半分の幅",
+      "twoThirds": "3分の2の幅",
+      "full": "全幅"
+    },
+    "heightShort": {
+      "auto": "自動",
+      "compact": "小",
+      "standard": "中",
+      "tall": "大"
+    },
+    "heightName": {
+      "auto": "自動の高さ",
+      "compact": "コンパクトな高さ",
+      "standard": "標準の高さ",
+      "tall": "縦長の高さ"
+    }
+  },
   "favouriteReports": {
     "title": "お気に入りのレポート",
     "empty": "お気に入りのレポートがまだありません。レポートページでレポートをスターするとここに表示されます。",

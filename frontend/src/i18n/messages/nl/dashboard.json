@@ -276,6 +276,49 @@
       }
     }
   },
+  "edit": {
+    "barLabel": "Dashboard indelen",
+    "addWidget": "Widget toevoegen",
+    "heroSettings": "Instellingen dashboardkop",
+    "done": "Klaar",
+    "phoneNote": "Widgetformaten gelden op bredere schermen.",
+    "remove": "{name} verwijderen",
+    "grip": "{name} verplaatsen",
+    "gripHint": "Sleep om {name} te verplaatsen, of gebruik de pijltjestoetsen",
+    "moved": "{name} verplaatst naar positie {position} van {count}",
+    "placeholder": "Wordt op het dashboard getoond zodra er iets te tonen is.",
+    "addTitle": "Widget toevoegen",
+    "addDescription": "Een widget die u toevoegt komt aan het einde van het dashboard. Er wordt niets bewaard totdat u Klaar kiest.",
+    "addEmpty": "Alle widgets staan al op uw dashboard",
+    "resize": "Formaat van {name} wijzigen",
+    "resizeHint": "Sleep om het formaat van {name} te wijzigen, of gebruik de pijltjestoetsen",
+    "widthOf": "Breedte van {name}",
+    "heightOf": "Hoogte van {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Vol"
+    },
+    "widthName": {
+      "third": "Een derde breed",
+      "half": "Half breed",
+      "twoThirds": "Twee derde breed",
+      "full": "Volledige breedte"
+    },
+    "heightShort": {
+      "auto": "Auto",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Automatische hoogte",
+      "compact": "Compacte hoogte",
+      "standard": "Standaardhoogte",
+      "tall": "Grote hoogte"
+    }
+  },
   "favouriteReports": {
     "title": "Favoriete rapporten",
     "empty": "Nog geen favoriete rapporten. Markeer rapporten met een ster op de pagina Rapporten om ze hier te zien.",

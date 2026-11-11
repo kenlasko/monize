@@ -276,6 +276,49 @@
       }
     }
   },
+  "edit": {
+    "barLabel": "Atur dasbor",
+    "addWidget": "Tambah widget",
+    "heroSettings": "Pengaturan hero",
+    "done": "Selesai",
+    "phoneNote": "Ukuran widget berlaku di layar yang lebih lebar.",
+    "remove": "Hapus {name}",
+    "grip": "Pindahkan {name}",
+    "gripHint": "Seret untuk memindahkan {name}, atau tekan tombol panah",
+    "moved": "{name} dipindahkan ke posisi {position} dari {count}",
+    "placeholder": "Ditampilkan di dasbor setelah ada yang bisa ditampilkan.",
+    "addTitle": "Tambah widget",
+    "addDescription": "Widget yang Anda tambahkan ditempatkan di akhir dasbor. Tidak ada yang disimpan sampai Anda memilih Selesai.",
+    "addEmpty": "Semua widget sudah ada di dasbor Anda",
+    "resize": "Ubah ukuran {name}",
+    "resizeHint": "Seret untuk mengubah ukuran {name}, atau tekan tombol panah",
+    "widthOf": "Lebar {name}",
+    "heightOf": "Tinggi {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Penuh"
+    },
+    "widthName": {
+      "third": "Lebar sepertiga",
+      "half": "Lebar setengah",
+      "twoThirds": "Lebar dua pertiga",
+      "full": "Lebar penuh"
+    },
+    "heightShort": {
+      "auto": "Auto",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Tinggi otomatis",
+      "compact": "Tinggi ringkas",
+      "standard": "Tinggi standar",
+      "tall": "Tinggi besar"
+    }
+  },
   "favouriteReports": {
     "title": "Laporan Favorit",
     "empty": "Belum ada laporan favorit. Bintangi laporan di halaman Laporan untuk melihatnya di sini.",

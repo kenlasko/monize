@@ -276,6 +276,49 @@
       }
     }
   },
+  "edit": {
+    "barLabel": "대시보드 정렬",
+    "addWidget": "위젯 추가",
+    "heroSettings": "히어로 설정",
+    "done": "완료",
+    "phoneNote": "위젯 크기는 더 넓은 화면에서 적용됩니다.",
+    "remove": "{name} 제거",
+    "grip": "{name} 이동",
+    "gripHint": "{name}을(를) 이동하려면 드래그하거나 화살표 키를 누르세요",
+    "moved": "{name}을(를) {count}개 중 {position}번째 위치로 이동했습니다",
+    "placeholder": "표시할 내용이 생기면 대시보드에 나타납니다.",
+    "addTitle": "위젯 추가",
+    "addDescription": "추가한 위젯은 대시보드 맨 끝에 놓입니다. 완료를 선택하기 전에는 아무것도 저장되지 않습니다.",
+    "addEmpty": "모든 위젯이 이미 대시보드에 있습니다",
+    "resize": "{name} 크기 조정",
+    "resizeHint": "{name}의 크기를 조정하려면 드래그하거나 화살표 키를 누르세요",
+    "widthOf": "{name}의 너비",
+    "heightOf": "{name}의 높이",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "전체"
+    },
+    "widthName": {
+      "third": "3분의 1 너비",
+      "half": "절반 너비",
+      "twoThirds": "3분의 2 너비",
+      "full": "전체 너비"
+    },
+    "heightShort": {
+      "auto": "자동",
+      "compact": "소",
+      "standard": "중",
+      "tall": "대"
+    },
+    "heightName": {
+      "auto": "자동 높이",
+      "compact": "간결한 높이",
+      "standard": "표준 높이",
+      "tall": "큰 높이"
+    }
+  },
   "favouriteReports": {
     "title": "즐겨찾기 보고서",
     "empty": "즐겨찾기 보고서가 없습니다. 보고서 페이지에서 보고서에 별표를 표시하면 여기에 나타납니다.",

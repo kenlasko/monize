@@ -276,6 +276,49 @@
       }
     }
   },
+  "edit": {
+    "barLabel": "Sắp xếp bảng điều khiển",
+    "addWidget": "Thêm tiện ích",
+    "heroSettings": "Cài đặt phần đầu",
+    "done": "Xong",
+    "phoneNote": "Kích thước tiện ích áp dụng trên màn hình rộng hơn.",
+    "remove": "Xóa {name}",
+    "grip": "Di chuyển {name}",
+    "gripHint": "Kéo để di chuyển {name}, hoặc nhấn các phím mũi tên",
+    "moved": "Đã chuyển {name} đến vị trí {position} trên {count}",
+    "placeholder": "Sẽ hiển thị trên bảng điều khiển khi có nội dung để hiển thị.",
+    "addTitle": "Thêm tiện ích",
+    "addDescription": "Tiện ích bạn thêm sẽ nằm ở cuối bảng điều khiển. Sẽ không có gì được lưu cho đến khi bạn chọn Xong.",
+    "addEmpty": "Tất cả tiện ích đã có trên bảng điều khiển của bạn",
+    "resize": "Đổi kích thước {name}",
+    "resizeHint": "Kéo để đổi kích thước {name}, hoặc nhấn các phím mũi tên",
+    "widthOf": "Chiều rộng của {name}",
+    "heightOf": "Chiều cao của {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Đầy"
+    },
+    "widthName": {
+      "third": "Chiều rộng một phần ba",
+      "half": "Chiều rộng một nửa",
+      "twoThirds": "Chiều rộng hai phần ba",
+      "full": "Chiều rộng đầy đủ"
+    },
+    "heightShort": {
+      "auto": "Tự động",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Chiều cao tự động",
+      "compact": "Chiều cao gọn",
+      "standard": "Chiều cao chuẩn",
+      "tall": "Chiều cao lớn"
+    }
+  },
   "favouriteReports": {
     "title": "Báo cáo yêu thích",
     "empty": "Chưa có báo cáo yêu thích nào. Gắn sao các báo cáo trên trang Báo cáo để xem tại đây.",
