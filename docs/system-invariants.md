@@ -4749,27 +4749,38 @@ Statement           An INTEREST investment transaction may name the security it
                     null, which the update stores as no security (an omitted
                     field means unchanged), so the row becomes account-level.
 Source of truth     investment_transactions.security_id on the INTEREST row.
-Enforcement         Client only: InvestmentTransactionForm decides what an
-                    Interest entry offers and sends. The backend already accepts
-                    and stores a security on INTEREST (it is not in the list of
-                    actions that require one, and it is not refused), and a bond
-                    program's series resolver treats INTEREST as a row that names
-                    no series. The bond-only choice is a form convention, not a
-                    server rule, so an API client or an import can store interest
-                    on a non-bond security.
+Enforcement         Server: InvestmentTransactionsService.create and update
+                    refuse an INTEREST row a security that is not a bond
+                    (assertInterestSecurityIsBond). Only a security the row is
+                    being given is judged: an INTEREST row keeps the security it
+                    already carries, whatever its type, so a row stored before
+                    the rule still saves when edited. Every caller of create and
+                    update is covered (the API, the entry form, MCP, AI actions,
+                    scheduled postings). Not covered, on purpose: imports, which
+                    write rows directly and record interest on any security type
+                    (QIF IntInc/MiscInc, Money), and investment rows embedded in
+                    a split (createEmbeddedForSplit), which are rewritten when
+                    the split is saved and would otherwise strand stored rows.
+                    Client: InvestmentTransactionForm offers only bonds for
+                    Interest and sends what is described above. A bond program's
+                    series resolver treats INTEREST as a row that names no
+                    series.
 Concurrency scope   -- (single-row write)
 Retry semantics     Same as any investment transaction create or update.
 Crash semantics     Same as any investment transaction create or update.
-Failure response    -- no new refusal.
-Required tests      Present: frontend unit tests in
+Failure response    400 errors.securities.interestSecurityMustBeBond, before
+                    anything is written.
+Required tests      Present: investment-transactions.service.spec.ts (create
+                    refuses a non-bond and stores a bond or no security; update
+                    refuses a new non-bond, refuses a Dividend on a stock turned
+                    into Interest, keeps a stored non-bond, clears to null,
+                    moves to a bond) and frontend unit tests in
                     InvestmentTransactionForm.test.tsx (bond-only choice, the
                     security reaches create, no security stays undefined, an edit
                     keeps it, clearing it on an edit sends null, a Dividend on a
-                    stock changed to Interest sends null). Owed: a server-side
-                    test that INTEREST with a security is stored and reported
-                    against it, and a decision on whether the server should
-                    enforce the bond-only convention (imports write interest on
-                    any security type, as QIF IntInc/MiscInc and Money do).
+                    stock changed to Interest sends null). Owed: an integration
+                    test that INTEREST with a bond is reported against it in the
+                    per-security history and the investment reports.
 Status              partial
 ```
 

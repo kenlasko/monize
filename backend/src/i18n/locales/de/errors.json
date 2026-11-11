@@ -679,6 +679,7 @@
     "transferPairOutsidePortfolio": "Beide Seiten müssen auf Anlagekonten dieses Portfolios liegen",
     "providerCurrencyMismatch": "Preisaktualisierung für {{ symbol }} abgelehnt: {{ provider }} notiert es in {{ reported }}, aber das Wertpapier ist in {{ configured }} erfasst. Korrigieren Sie die Währung, das Symbol oder die Börse des Wertpapiers und aktualisieren Sie dann erneut.",
     "securityIdRequired": "Wertpapier-ID ist für {{ action }}-Buchungen erforderlich",
+    "interestSecurityMustBeBond": "Zinsen können nur einer Anleihe zugeordnet werden. Erträge aus anderen Wertpapieren als Dividende erfassen.",
     "exchangeRateUnavailable": "Wechselkurs für {{ from }} -> {{ to }} zum Transaktionsdatum konnte nicht ermittelt werden. Geben Sie einen expliziten exchangeRate an, damit die Buchung auf dem Geldkonto korrekt ist.",
     "splitRatioRequired": "Teilungsverhältnis (Menge) muss größer als null sein",
     "acquisitionPriceRequired": "Für {{ action }}-Transaktionen ist ein Preis pro Anteil erforderlich, der größer als null sein muss. Verwenden Sie ADD_SHARES für Anteile, deren Kosten nicht bekannt sind.",

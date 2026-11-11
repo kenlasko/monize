@@ -679,6 +679,7 @@
     "transferPairOutsidePortfolio": "Kedua sisi harus berada pada akun investasi portofolio ini",
     "providerCurrencyMismatch": "Pembaruan harga ditolak untuk {{ symbol }}: {{ provider }} mengutipnya dalam {{ reported }}, tetapi sekuritas ini tercatat dalam {{ configured }}. Perbaiki mata uang, simbol, atau bursa sekuritas ini, lalu segarkan kembali.",
     "securityIdRequired": "ID sekuritas diperlukan untuk transaksi {{ action }}",
+    "interestSecurityMustBeBond": "Bunga hanya dapat dicatat pada obligasi. Catat penghasilan dari efek lain sebagai Dividen.",
     "exchangeRateUnavailable": "Tidak dapat menentukan nilai tukar untuk {{ from }} -> {{ to }} pada tanggal transaksi. Berikan exchangeRate eksplisit agar pencatatan ke akun kas benar.",
     "splitRatioRequired": "Rasio pemecahan (kuantitas) harus lebih dari nol",
     "acquisitionPriceRequired": "Harga per lembar wajib diisi dan harus lebih besar dari nol untuk transaksi {{ action }}. Gunakan ADD_SHARES untuk saham yang diperoleh tanpa biaya yang diketahui.",

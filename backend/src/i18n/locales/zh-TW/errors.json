@@ -679,6 +679,7 @@
     "transferPairOutsidePortfolio": "兩筆記錄都必須位於本投資組合的投資帳戶中",
     "providerCurrencyMismatch": "拒絕更新 {{ symbol }} 的價格：{{ provider }} 以 {{ reported }} 報價，但該證券登記的貨幣為 {{ configured }}。請更正該證券的貨幣、代碼或交易所，然後重新整理。",
     "securityIdRequired": "{{ action }} 交易需要證券 ID",
+    "interestSecurityMustBeBond": "利息只能記錄在債券上。其他證券的收益請記錄為股息。",
     "exchangeRateUnavailable": "無法確定交易日 {{ from }} -> {{ to }} 的匯率。請提供明確的 exchangeRate，以便現金帳戶的記帳正確。",
     "splitRatioRequired": "分割比例（數量）必須大於零",
     "acquisitionPriceRequired": "{{ action }} 交易需要填寫每股價格，且必須大於零。對於成本未知的股份，請使用 ADD_SHARES。",

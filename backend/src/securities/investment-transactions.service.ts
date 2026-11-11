@@ -24,6 +24,7 @@ import {
   FilledRedemption,
 } from "./bond-redemption-fill.util";
 import { tr } from "../i18n/translate";
+import { BOND_SECURITY_TYPE } from "./bond-link.util";
 import { DataSource, EntityManager } from "typeorm";
 import { getActiveScopedManager, withScopedDb } from "../common/db/scoped-db";
 import {
@@ -1266,6 +1267,13 @@ export class InvestmentTransactionsService {
     if (createDto.securityId) {
       await this.securitiesService.findOne(userId, createDto.securityId);
     }
+
+    await this.assertInterestSecurityIsBond(
+      userId,
+      createDto.action,
+      createDto.securityId ?? null,
+      null,
+    );
 
     const suppliedInterest = roundMoney(Number(createDto.accruedInterest ?? 0));
     this.assertAccruedInterestAllowed(
@@ -4682,6 +4690,37 @@ export class InvestmentTransactionsService {
     return this.findOne(userId, id);
   }
 
+  /**
+   * INV-INTEREST-001: Interest names a bond or no security; income on any other
+   * security is a Dividend. Only a security the row is being given is judged:
+   * an Interest row keeps the security it already carries, whatever its type,
+   * so a row stored before this rule (or written by an import, which records
+   * interest on any security) still saves when edited.
+   */
+  private async assertInterestSecurityIsBond(
+    userId: string,
+    action: InvestmentAction,
+    securityId: string | null,
+    stored: Pick<InvestmentTransaction, "action" | "securityId"> | null,
+  ): Promise<void> {
+    if (action !== InvestmentAction.INTEREST || !securityId) return;
+    if (
+      stored?.action === InvestmentAction.INTEREST &&
+      stored.securityId === securityId
+    ) {
+      return;
+    }
+    const security = await this.securitiesService.findOne(userId, securityId);
+    if (security.securityType !== BOND_SECURITY_TYPE) {
+      throw new BadRequestException(
+        tr(
+          "errors.securities.interestSecurityMustBeBond",
+          "Interest can only be recorded against a bond. Record income on any other security as a Dividend.",
+        ),
+      );
+    }
+  }
+
   async update(
     userId: string,
     id: string,
@@ -4751,6 +4790,15 @@ export class InvestmentTransactionsService {
         );
       }
     }
+
+    await this.assertInterestSecurityIsBond(
+      userId,
+      updateDto.action ?? transaction.action,
+      updateDto.securityId !== undefined
+        ? updateDto.securityId
+        : transaction.securityId,
+      transaction,
+    );
 
     const beforeData = { ...transaction };
     const accountId = transaction.accountId;

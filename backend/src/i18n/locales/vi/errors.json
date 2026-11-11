@@ -679,6 +679,7 @@
     "transferPairOutsidePortfolio": "Cả hai vế phải thuộc tài khoản đầu tư của danh mục này",
     "providerCurrencyMismatch": "Từ chối cập nhật giá cho {{ symbol }}: {{ provider }} báo giá bằng {{ reported }}, nhưng chứng khoán này được ghi nhận bằng {{ configured }}. Hãy sửa đơn vị tiền tệ, mã hoặc sàn giao dịch của chứng khoán rồi làm mới lại.",
     "securityIdRequired": "ID chứng khoán là bắt buộc cho giao tác {{ action }}",
+    "interestSecurityMustBeBond": "Tiền lãi chỉ có thể ghi nhận cho trái phiếu. Hãy ghi thu nhập từ chứng khoán khác dưới dạng cổ tức.",
     "exchangeRateUnavailable": "Không thể xác định tỷ giá hối đoái cho {{ from }} -> {{ to }} vào ngày giao dịch. Hãy cung cấp exchangeRate rõ ràng để bút toán vào tài khoản tiền mặt được chính xác.",
     "splitRatioRequired": "Tỷ lệ chia (số lượng) phải lớn hơn không",
     "acquisitionPriceRequired": "Giao dịch {{ action }} yêu cầu giá mỗi cổ phiếu lớn hơn 0. Hãy dùng ADD_SHARES cho cổ phiếu có được mà không biết giá vốn.",

@@ -679,6 +679,7 @@
     "transferPairOutsidePortfolio": "두 항목 모두 이 포트폴리오의 투자 계좌에 있어야 합니다",
     "providerCurrencyMismatch": "{{ symbol }}의 가격 업데이트가 거부되었습니다. {{ provider }}는 {{ reported }} 기준으로 시세를 제공하지만 이 증권은 {{ configured }}로 등록되어 있습니다. 증권의 통화, 심볼 또는 거래소를 수정한 후 다시 새로 고치세요.",
     "securityIdRequired": "{{ action }} 거래에는 증권 ID가 필요합니다",
+    "interestSecurityMustBeBond": "이자는 채권에 대해서만 기록할 수 있습니다. 다른 증권의 수익은 배당으로 기록하세요.",
     "exchangeRateUnavailable": "거래일의 {{ from }} -> {{ to }} 환율을 확인할 수 없습니다. 현금 계좌 기록이 정확하도록 명시적인 exchangeRate를 입력하세요.",
     "splitRatioRequired": "분할 비율(수량)은 0보다 커야 합니다",
     "acquisitionPriceRequired": "{{ action }} 거래에는 0보다 큰 주당 가격이 필요합니다. 취득 원가를 알 수 없는 주식에는 ADD_SHARES를 사용하세요.",
