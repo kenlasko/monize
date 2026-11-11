@@ -1,0 +1,184 @@
+import {
+  DASHBOARD_WIDGETS,
+  resolveDashboardWidgets,
+  type DashboardWidgetId,
+} from './widget-registry';
+
+/** Width presets, narrowest first: 4, 6, 8 and 12 of the grid's 12 columns at `lg` and up. */
+export const WIDGET_WIDTHS = ['third', 'half', 'twoThirds', 'full'] as const;
+/** Height presets, shortest first. A height is a floor, never a clip. */
+export const WIDGET_HEIGHTS = ['auto', 'compact', 'standard', 'tall'] as const;
+
+export type WidgetWidth = (typeof WIDGET_WIDTHS)[number];
+export type WidgetHeight = (typeof WIDGET_HEIGHTS)[number];
+
+/** Where a widget's size is stored, inside its slice of `dashboardWidgetConfig`. */
+export const GRID_WIDTH_KEY = 'gridWidth';
+export const GRID_HEIGHT_KEY = 'gridHeight';
+
+/** Complete literal class strings so Tailwind sees every one. */
+export const WIDTH_CLASSES: Record<WidgetWidth, string> = {
+  third: 'lg:col-span-4',
+  half: 'lg:col-span-6',
+  twoThirds: 'lg:col-span-8',
+  full: 'lg:col-span-12',
+};
+
+export const HEIGHT_CLASSES: Record<WidgetHeight, string> = {
+  auto: '',
+  compact: 'lg:min-h-[390px]',
+  standard: 'lg:min-h-[540px]',
+  tall: 'lg:min-h-[720px]',
+};
+
+/** The width of a widget the reader never resized. */
+export const DEFAULT_WIDGET_WIDTH: WidgetWidth = 'half';
+
+export type DashboardLayoutItem = {
+  id: DashboardWidgetId;
+  width: WidgetWidth;
+  height: WidgetHeight;
+};
+
+export type DashboardLayout = readonly DashboardLayoutItem[];
+
+export type WidgetConfigMap = Record<string, Record<string, unknown>>;
+
+export type DashboardLayoutAction =
+  | { type: 'add'; id: DashboardWidgetId }
+  | { type: 'remove'; id: DashboardWidgetId }
+  | { type: 'move'; from: number; to: number }
+  | { type: 'resize'; id: DashboardWidgetId; width?: WidgetWidth; height?: WidgetHeight }
+  | { type: 'reset' };
+
+const definitionOf = (id: DashboardWidgetId) => DASHBOARD_WIDGETS.find((w) => w.id === id);
+
+const widthRank = (w: WidgetWidth) => WIDGET_WIDTHS.indexOf(w);
+
+function isOneOf<T extends string>(choices: readonly T[], value: unknown): value is T {
+  return typeof value === 'string' && (choices as readonly string[]).includes(value);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** The width presets a widget offers: its minimum and every wider one. */
+export function widthsOfferedFor(id: DashboardWidgetId): readonly WidgetWidth[] {
+  const min = definitionOf(id)?.minWidth ?? DEFAULT_WIDGET_WIDTH;
+  return WIDGET_WIDTHS.slice(widthRank(min));
+}
+
+function defaultItem(id: DashboardWidgetId): DashboardLayoutItem {
+  return { id, width: DEFAULT_WIDGET_WIDTH, height: definitionOf(id)?.defaultHeight ?? 'auto' };
+}
+
+/** The registry's default widgets in registry order, each at its default size. */
+export function defaultDashboardLayout(): DashboardLayout {
+  return DASHBOARD_WIDGETS.filter((w) => w.defaultEnabled).map((w) => defaultItem(w.id));
+}
+
+/**
+ * The layout read from whatever is stored. A size that is absent, not a
+ * string or not a known preset takes the widget's default, and a width
+ * narrower than the widget is legible at is raised to its minimum.
+ */
+export function resolveDashboardLayout(
+  dashboardWidgets: string[] | null | undefined,
+  dashboardWidgetConfig: WidgetConfigMap | null | undefined,
+): DashboardLayout {
+  return resolveDashboardWidgets(dashboardWidgets).map((w) => {
+    const slice: unknown = dashboardWidgetConfig?.[w.id];
+    const stored = isRecord(slice) ? slice : {};
+    const storedWidth = stored[GRID_WIDTH_KEY];
+    const storedHeight = stored[GRID_HEIGHT_KEY];
+    const width = isOneOf(WIDGET_WIDTHS, storedWidth) ? storedWidth : DEFAULT_WIDGET_WIDTH;
+    return {
+      id: w.id,
+      width: widthRank(width) < widthRank(w.minWidth) ? w.minWidth : width,
+      height: isOneOf(WIDGET_HEIGHTS, storedHeight) ? storedHeight : w.defaultHeight,
+    };
+  });
+}
+
+export function layoutsEqual(a: DashboardLayout, b: DashboardLayout): boolean {
+  return (
+    a.length === b.length &&
+    a.every((x, i) => x.id === b[i].id && x.width === b[i].width && x.height === b[i].height)
+  );
+}
+
+/**
+ * What Done writes. Only the two size keys are changed; every other key and
+ * every slice the registry does not know (the hero's included) passes through.
+ * Sizes equal to the default are stored as absent keys, and a widget that
+ * left the layout loses its size keys so it returns at its default size.
+ */
+export function serializeDashboardLayout(
+  draft: DashboardLayout,
+  configBefore: WidgetConfigMap | null | undefined,
+): { dashboardWidgets: string[]; dashboardWidgetConfig: WidgetConfigMap } {
+  const config: WidgetConfigMap = { ...(configBefore ?? {}) };
+  const inDraft = new Map(draft.map((item) => [item.id, item]));
+
+  for (const def of DASHBOARD_WIDGETS) {
+    const before: unknown = config[def.id];
+    const item = inDraft.get(def.id);
+    if (!isRecord(before) && !item) continue;
+
+    const slice: Record<string, unknown> = isRecord(before) ? { ...before } : {};
+    delete slice[GRID_WIDTH_KEY];
+    delete slice[GRID_HEIGHT_KEY];
+    if (item && item.width !== DEFAULT_WIDGET_WIDTH) slice[GRID_WIDTH_KEY] = item.width;
+    if (item && item.height !== def.defaultHeight) slice[GRID_HEIGHT_KEY] = item.height;
+
+    if (Object.keys(slice).length === 0) delete config[def.id];
+    else config[def.id] = slice;
+  }
+
+  return {
+    dashboardWidgets: layoutsEqual(draft, defaultDashboardLayout()) ? [] : draft.map((i) => i.id),
+    dashboardWidgetConfig: config,
+  };
+}
+
+/** Every transition returns the same reference when nothing changes. */
+export function layoutReducer(
+  state: DashboardLayout,
+  action: DashboardLayoutAction,
+): DashboardLayout {
+  switch (action.type) {
+    case 'add': {
+      if (!definitionOf(action.id) || state.some((i) => i.id === action.id)) return state;
+      return [...state, defaultItem(action.id)];
+    }
+    case 'remove': {
+      if (!state.some((i) => i.id === action.id)) return state;
+      return state.filter((i) => i.id !== action.id);
+    }
+    case 'move': {
+      const { from, to } = action;
+      const inRange = (n: number) => Number.isInteger(n) && n >= 0 && n < state.length;
+      if (!inRange(from) || !inRange(to) || from === to) return state;
+      const next = [...state];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    }
+    case 'resize': {
+      const index = state.findIndex((i) => i.id === action.id);
+      if (index < 0) return state;
+      const current = state[index];
+      const width = action.width ?? current.width;
+      const height = action.height ?? current.height;
+      if (!isOneOf(WIDGET_WIDTHS, width) || !isOneOf(WIDGET_HEIGHTS, height)) return state;
+      if (!widthsOfferedFor(action.id).includes(width)) return state;
+      if (width === current.width && height === current.height) return state;
+      const next = [...state];
+      next[index] = { ...current, width, height };
+      return next;
+    }
+    case 'reset':
+      return defaultDashboardLayout();
+  }
+}

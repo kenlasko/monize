@@ -16,6 +16,7 @@ import { InsightsWidget } from './InsightsWidget';
 import { BudgetStatusWidget } from './BudgetStatusWidget';
 import { FavouriteReportsWidget } from './FavouriteReportsWidget';
 import { Card } from '@/components/ui/Card';
+import type { WidgetHeight, WidgetWidth } from './dashboard-layout';
 
 /** Placeholder card while a lazy widget's chunk loads; matches WidgetCard's shell. */
 const widgetSkeleton = (minHeight = 'lg:min-h-[540px]') =>
@@ -117,6 +118,10 @@ export interface DashboardWidgetDefinition {
   iconType: WidgetIconType;
   /** Part of the default layout shown to users who never customized. */
   defaultEnabled: boolean;
+  /** The narrowest width the widget is legible at. Wider presets are always offered. */
+  minWidth: Extract<WidgetWidth, 'third' | 'half'>;
+  /** The height floor the widget has when the reader chose none. */
+  defaultHeight: WidgetHeight;
   /** Rendered for a delegate acting on behalf of the account owner. */
   delegateVisible?: (delegateSections: DelegateSectionGrants | null) => boolean;
   /** Data-driven condition; when false the widget is skipped entirely. */
@@ -137,6 +142,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'favouriteAccounts',
     iconType: 'table',
     defaultEnabled: true,
+    minWidth: 'half',
+    defaultHeight: 'auto',
     delegateVisible: () => true,
     render: (ctx) => (
       <FavouriteAccounts
@@ -155,6 +162,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'upcomingBills',
     iconType: 'table',
     defaultEnabled: true,
+    minWidth: 'half',
+    defaultHeight: 'auto',
     delegateVisible: (sections) => !!sections?.bills,
     render: (ctx) => (
       <UpcomingBills
@@ -172,6 +181,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'cashFlowForecast',
     iconType: 'line',
     defaultEnabled: false,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => (
       <CashFlowForecastWidget
         scheduledTransactions={ctx.scheduledTransactions}
@@ -185,6 +196,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'topMovers',
     iconType: 'table',
     defaultEnabled: true,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasSecurities,
     render: (ctx) => (
       <TopMovers
@@ -201,6 +214,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'favouriteSecurities',
     iconType: 'table',
     defaultEnabled: false,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasSecurities,
     render: (ctx) => (
       <FavouriteSecurities
@@ -218,6 +233,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'portfolioValue',
     iconType: 'line',
     defaultEnabled: true,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
     render: (ctx) => <PortfolioValueWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
@@ -226,6 +243,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'netWorth',
     iconType: 'line',
     defaultEnabled: true,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => <NetWorthChart isLoading={ctx.isLoading} />,
   },
   {
@@ -233,6 +252,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'assetsVsLiabilities',
     iconType: 'bar',
     defaultEnabled: true,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     render: (ctx) => <AssetsVsLiabilities data={ctx.netWorthData} isLoading={ctx.isLoading} error={ctx.netWorthFailed} />,
   },
   {
@@ -240,6 +261,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'expensesPieChart',
     iconType: 'pie',
     defaultEnabled: true,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     render: (ctx) => (
       <ExpensesPieChart accounts={ctx.accounts} isLoading={ctx.isLoading} />
     ),
@@ -249,6 +272,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'incomeExpenses',
     iconType: 'bar',
     defaultEnabled: true,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => (
       <IncomeExpensesBarChart accounts={ctx.accounts} isLoading={ctx.isLoading} />
     ),
@@ -258,6 +283,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'budgetStatus',
     iconType: 'bar',
     defaultEnabled: true,
+    minWidth: 'third',
+    defaultHeight: 'compact',
     render: (ctx) => <BudgetStatusWidget isLoading={ctx.isLoading} />,
   },
   {
@@ -265,6 +292,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'insights',
     iconType: 'list',
     defaultEnabled: true,
+    minWidth: 'third',
+    defaultHeight: 'compact',
     render: (ctx) => <InsightsWidget isLoading={ctx.isLoading} />,
   },
   // Opt-in: not part of the default layout so existing users see no change.
@@ -273,6 +302,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'favouriteReports',
     iconType: 'list',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'auto',
     render: (ctx) => <FavouriteReportsWidget isLoading={ctx.isLoading} />,
   },
   // Report-derived chart widgets: opt-in, each with its own persisted
@@ -282,6 +313,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'spendingByPayee',
     iconType: 'bar',
     defaultEnabled: false,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => <SpendingByPayeeWidget isLoading={ctx.isLoading} />,
   },
   {
@@ -289,6 +322,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'monthlySpendingTrend',
     iconType: 'line',
     defaultEnabled: false,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => <MonthlySpendingTrendWidget isLoading={ctx.isLoading} />,
   },
   {
@@ -296,6 +331,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'incomeBySource',
     iconType: 'pie',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     render: (ctx) => <IncomeBySourceWidget isLoading={ctx.isLoading} />,
   },
   {
@@ -303,6 +340,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'creditUtilizationAccounts',
     iconType: 'bar',
     defaultEnabled: false,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => <CreditUtilizationAccountsWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
   {
@@ -310,6 +349,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'creditUtilizationTotal',
     iconType: 'pie',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     render: (ctx) => <CreditUtilizationTotalWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
   {
@@ -317,6 +358,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'sectorWeightings',
     iconType: 'pie',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
     render: (ctx) => <SectorWeightingsWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
@@ -325,6 +368,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'securityTypeAllocation',
     iconType: 'pie',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
     render: (ctx) => <SecurityTypeAllocationWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
@@ -333,6 +378,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'geographicAllocation',
     iconType: 'pie',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
     render: (ctx) => <GeographicAllocationWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
@@ -341,6 +388,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'recurringExpenses',
     iconType: 'table',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     render: (ctx) => <RecurringExpensesWidget isLoading={ctx.isLoading} />,
   },
   {
@@ -348,6 +397,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'weekendVsWeekday',
     iconType: 'bar',
     defaultEnabled: false,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => <WeekendVsWeekdayWidget isLoading={ctx.isLoading} />,
   },
   {
@@ -355,6 +406,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'cashFlowSankey',
     iconType: 'bar',
     defaultEnabled: false,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => <CashFlowSankeyWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
   // Opt-in for the owner; a delegate sees it with the warranties section.
@@ -363,6 +416,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'warrantiesExpiring',
     iconType: 'list',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'compact',
     delegateVisible: (sections) => !!sections?.warranties,
     render: (ctx) => <WarrantiesExpiringWidget isLoading={ctx.isLoading} />,
   },
@@ -373,6 +428,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'trivia',
     iconType: 'list',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'compact',
     render: (ctx) => <TriviaWidget isLoading={ctx.isLoading} />,
   },
 ];

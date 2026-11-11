@@ -5,6 +5,7 @@ import {
   delegateDashboardWidgets,
   resolveDashboardWidgets,
 } from './widget-registry';
+import { WIDGET_HEIGHTS } from './dashboard-layout';
 
 describe('widget-registry', () => {
   it('default layout matches the pre-customization dashboard', () => {
@@ -41,6 +42,14 @@ describe('widget-registry', () => {
     expect(ids.indexOf('cash-flow-forecast')).toBe(ids.indexOf('upcoming-bills') + 1);
     const def = DASHBOARD_WIDGETS.find((w) => w.id === 'cash-flow-forecast')!;
     expect(def.delegateVisible).toBeUndefined();
+  });
+
+  it('every widget declares a valid minWidth and defaultHeight', () => {
+    expect(DASHBOARD_WIDGETS).toHaveLength(26);
+    for (const w of DASHBOARD_WIDGETS) {
+      expect(['third', 'half'], w.id).toContain(w.minWidth);
+      expect([...WIDGET_HEIGHTS], w.id).toContain(w.defaultHeight);
+    }
   });
 
   describe('resolveDashboardWidgets', () => {
