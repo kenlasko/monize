@@ -362,6 +362,7 @@ export const RULES: Record<string, TableRules> = {
     created_at: keep,
     updated_at: keep,
     amount_is_estimated: keep, // flag
+    custom_recurrence: keep, // weekdays, month days or MM-DD dates: structure
   },
   scheduled_transaction_splits: {
     id: keep,

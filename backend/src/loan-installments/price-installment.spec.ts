@@ -10,6 +10,7 @@ import {
   declineReason,
   InstallmentPurpose,
   paymentNewlyApplies,
+  periodicRateFor,
   priceInstallment,
   resolveInstallmentCore,
 } from "./price-installment";
@@ -1489,5 +1490,18 @@ describe("priceInstallment", () => {
       expect(identified.principalSplit?.id).toBe("split-principal");
       expect(Number(identified.principalSplit?.amount)).toBe(500);
     });
+  });
+});
+
+describe("periodicRateFor and a CUSTOM schedule", () => {
+  it("refuses the cadence rather than pricing at the monthly default", () => {
+    // A Custom rule has no periods per year; the write path refuses it on a
+    // loan payment (docs/specs/custom-recurrence.md section 5).
+    expect(() =>
+      periodicRateFor({ accountType: "LOAN" } as Account, "CUSTOM", 6),
+    ).toThrow(/CUSTOM/);
+    expect(
+      periodicRateFor({ accountType: "LOAN" } as Account, "MONTHLY", 6),
+    ).toBeCloseTo(0.005);
   });
 });

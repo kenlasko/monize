@@ -10,6 +10,7 @@ import { sanitizeHtmlString } from "../common/decorators/sanitize-html.decorator
 import { MONEY_SCALE } from "../common/round.util";
 import { tr } from "../i18n/translate";
 import { boundRestoredNotification } from "./notification-restore-bounds";
+import { withPairedCustomRecurrence } from "./restore-custom-recurrence";
 import { withResolvedMortgageTypeColumn } from "../accounts/legacy-mortgage-type.util";
 import { deleteAllUserData } from "./restore-wipe";
 import {
@@ -463,7 +464,9 @@ export class BackupRestoreDatabaseService {
           ? boundRestoredNotification(row, this.logger)
           : table === "accounts"
             ? withResolvedMortgageTypeColumn(row)
-            : { ...row };
+            : table === "scheduled_transactions"
+              ? withPairedCustomRecurrence(row)
+              : { ...row };
 
       // Override user_id to ensure data stays scoped to the restoring user
       if (userId !== null && "user_id" in filteredRow) {

@@ -23,6 +23,7 @@ import { InvestmentAction } from "../../securities/entities/investment-transacti
  * a frequency added to one and not the other compiled fine and stepped nowhere.
  */
 import type { FrequencyType } from "../../common/recurrence";
+import type { CustomRecurrence } from "../../common/custom-recurrence";
 export type { FrequencyType };
 
 const dateStringTransformer = {
@@ -141,6 +142,14 @@ export class ScheduledTransaction {
     default: "MONTHLY",
   })
   frequency: FrequencyType;
+
+  /**
+   * The rule a `CUSTOM` schedule repeats by, in its canonical form; null for
+   * every other frequency (docs/specs/custom-recurrence.md section 2). Every
+   * step of the schedule passes it with `startDate`, which anchors its periods.
+   */
+  @Column({ type: "jsonb", name: "custom_recurrence", nullable: true })
+  customRecurrence: CustomRecurrence | null;
 
   @Column({
     type: "date",

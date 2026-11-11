@@ -44,8 +44,6 @@ const BASELINE: readonly string[] = [
   "backend/src/backup/offsite/backup-offsite-dispatch.service.ts#utcDateString",
   "backend/src/backup/offsite/backup-offsite-config.ts#normalizeOffsitePrefix",
   "backend/src/backup/storage/backup-store-location.ts#normalizeStorePrefix",
-  "backend/src/bonds/domain/calendar-date.ts#daysInMonth",
-  "backend/src/common/recurrence.ts#daysInMonth",
   "backend/src/budgets/budget-alert.service.ts#isReminderReEmit",
   "backend/src/notification-center/notification-reminder.service.ts#isReminderReEmit",
   "backend/src/common/time-series/price-boundary.util.ts#addDays",

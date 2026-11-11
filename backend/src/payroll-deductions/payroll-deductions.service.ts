@@ -457,6 +457,7 @@ export class PayrollDeductionsService {
         dto.scheduledTransactionId,
       );
       await this.assertFiatBill(m, schedule);
+      this.assertFixedCadenceBill(schedule);
       const repo = m.getRepository(PayrollDeductionRule);
       const seen = new Set<string>();
       const prepared: PreparedLine[] = [];
@@ -621,6 +622,7 @@ export class PayrollDeductionsService {
         scheduledTransactionId,
       );
       await this.assertFiatBill(m, schedule);
+      this.assertFixedCadenceBill(schedule);
       if (dto.categoryId !== undefined) {
         await this.ownedCategory(m, userId, categoryId);
       }
@@ -797,6 +799,21 @@ export class PayrollDeductionsService {
         "errors.payrollDeductions.billAccountMustBeFiat",
         `A payroll deduction rule tracks a bill paid in a fiat currency; this bill's account holds the cryptocurrency ${code}. Choose a bill paid from a fiat account.`,
         { code },
+      ),
+    );
+  }
+
+  /**
+   * A rule pools deductions over pay periods of a fixed cadence, so a bill on
+   * the Custom frequency takes none (docs/specs/custom-recurrence.md section
+   * 5); the schedule's own update refuses the opposite order.
+   */
+  private assertFixedCadenceBill(schedule: ScheduledTransaction): void {
+    if (schedule.frequency !== "CUSTOM") return;
+    throw new BadRequestException(
+      tr(
+        "errors.payrollDeductions.billCustomFrequency",
+        "A payroll deduction rule needs a bill on a fixed frequency; this bill repeats on a custom schedule.",
       ),
     );
   }

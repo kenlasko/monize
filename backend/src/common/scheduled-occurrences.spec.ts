@@ -206,3 +206,42 @@ describe("expandOccurrenceSlots", () => {
     expect(found).toHaveLength(OCCURRENCE_WALK_GUARD);
   });
 });
+
+describe("expandOccurrenceSlots: CUSTOM (docs/specs/custom-recurrence.md)", () => {
+  const rule = {
+    unit: "WEEK" as const,
+    interval: 2,
+    weekdays: [2, 4],
+    weekStartsOn: 1,
+  };
+
+  it("walks the rule, its periods counted from the start date", () => {
+    const found = expandOccurrenceSlots(
+      {
+        frequency: "CUSTOM",
+        customRecurrence: rule,
+        startDate: "2026-11-11",
+        nextDueDate: "2026-11-12",
+      },
+      [],
+      { through: "2026-12-10" },
+    );
+    expect(found.map((o) => o.originalDate)).toEqual([
+      "2026-11-12",
+      "2026-11-24",
+      "2026-11-26",
+      "2026-12-08",
+      "2026-12-10",
+    ]);
+  });
+
+  it("throws on a Custom schedule without its rule rather than repeating a date", () => {
+    expect(() =>
+      expandOccurrenceSlots(
+        { frequency: "CUSTOM", nextDueDate: "2026-11-12" },
+        [],
+        { through: "2026-12-10" },
+      ),
+    ).toThrow(/CUSTOM/);
+  });
+});

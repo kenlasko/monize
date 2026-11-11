@@ -54,7 +54,7 @@ export async function advanceScheduleCursor(
     ScheduledTransaction,
     "id" | "nextDueDate" | "frequency" | "occurrencesRemaining" | "endDate"
   > &
-    Partial<Pick<ScheduledTransaction, "startDate">>,
+    Partial<Pick<ScheduledTransaction, "startDate" | "customRecurrence">>,
   consumedSlots: ReadonlySet<string>,
   options: { stampLastPosted?: boolean } = {},
 ): Promise<ScheduleCursorAdvance> {
@@ -72,6 +72,7 @@ export async function advanceScheduleCursor(
       previous,
       schedule.frequency,
       anchorDayOf(schedule.startDate, previous),
+      { rule: schedule.customRecurrence, startDate: schedule.startDate },
     );
     if (newNextDueDateStr <= previous) {
       throw new Error(

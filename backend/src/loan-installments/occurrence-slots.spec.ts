@@ -550,4 +550,15 @@ describe("occurrence slots", () => {
       ).toBe(1);
     });
   });
+
+  describe("a CUSTOM schedule (docs/specs/custom-recurrence.md section 5)", () => {
+    it("never reaches the loan calendar silently", () => {
+      // The write path refuses Custom on a loan payment; a row that got here
+      // anyway is a defect, and a one-slot calendar would hide it.
+      expect(() => dates(monthly({ frequency: "CUSTOM" }))).toThrow(/CUSTOM/);
+      expect(() => scheduleCadenceMatchesLoan("MONTHLY", "CUSTOM")).toThrow(
+        /CUSTOM/,
+      );
+    });
+  });
 });

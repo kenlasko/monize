@@ -1,5 +1,6 @@
 import {
   anchorDayOf,
+  assertFixedCadence,
   calculateNextDueDate,
   FrequencyType,
 } from "../common/recurrence";
@@ -71,6 +72,7 @@ function stepForward(
   frequency: string,
   startDate: string,
 ): string | null {
+  assertFixedCadence(frequency, "occurrenceSlotsInRange");
   const next = calculateNextDueDate(
     date,
     frequency as FrequencyType,
@@ -314,6 +316,7 @@ export function scheduleCadenceMatchesLoan(
   loanPaymentFrequency: string | null | undefined,
   scheduleFrequency: string,
 ): boolean {
+  assertFixedCadence(scheduleFrequency, "scheduleCadenceMatchesLoan");
   if (!loanPaymentFrequency) return true;
   const loanCount = periodsPerYearForStoredFrequency(loanPaymentFrequency);
   const scheduleCount = periodsPerYearForStoredFrequency(scheduleFrequency);

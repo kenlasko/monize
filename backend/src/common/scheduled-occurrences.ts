@@ -1,4 +1,5 @@
 import { addDaysYMD } from "./date-utils";
+import type { CustomRecurrence } from "./custom-recurrence";
 import {
   FrequencyType,
   anchorDayOf,
@@ -70,6 +71,8 @@ export interface OccurrenceScheduleInput {
   nextDueDate: string | Date;
   /** Anchors the day-of-month of month-based steps; absent steps from the previous slot's day. */
   startDate?: string | Date | null;
+  /** The rule of a `CUSTOM` schedule; its periods count from `startDate`. */
+  customRecurrence?: CustomRecurrence | null;
   endDate?: string | Date | null;
   occurrencesRemaining?: number | null;
 }
@@ -209,6 +212,10 @@ export function expandOccurrenceSlots<O extends OccurrenceOverrideInput>(
       slot,
       schedule.frequency,
       anchorDayOf(schedule.startDate, slot),
+      {
+        rule: schedule.customRecurrence,
+        startDate: schedule.startDate ? ensureYMD(schedule.startDate) : null,
+      },
     );
     // A stepper that fails to advance would loop until the guard; stopping here
     // keeps a malformed frequency from silently emitting the same date 2000 times.

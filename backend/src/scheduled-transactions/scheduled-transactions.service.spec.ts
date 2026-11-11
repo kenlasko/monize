@@ -6,7 +6,11 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { DataSource } from "typeorm";
-import { ScheduledTransactionsService } from "./scheduled-transactions.service";
+import {
+  ScheduledTransactionsService,
+  TRADE_SCHEDULE_WINDOW_DAYS,
+  tradeScheduleWindowDays,
+} from "./scheduled-transactions.service";
 import { ScheduledEffectiveAmountService } from "./scheduled-effective-amount.service";
 import { ScheduledOccurrenceService } from "./scheduled-occurrence.service";
 import {
@@ -10784,6 +10788,318 @@ describe("ScheduledTransactionsService", () => {
         expect(row.effectiveAmount).toBeNull();
         expect(row.effectiveAmountComplete).toBe(false);
         expect(row.amountEstimate?.status).toBe("no-history");
+      });
+    });
+  });
+
+  // ==================== custom recurrence ====================
+
+  describe("custom recurrence (docs/specs/custom-recurrence.md)", () => {
+    const MWF = {
+      unit: "WEEK" as const,
+      interval: 1,
+      weekdays: [1, 3, 5],
+      weekStartsOn: 1,
+    };
+    const customDto = {
+      accountId: "acc-1",
+      name: "Gym",
+      amount: -20,
+      currencyCode: "USD",
+      frequency: "CUSTOM" as any,
+      // A Saturday: off the Monday/Wednesday/Friday pattern.
+      nextDueDate: "2026-11-14",
+      customRecurrence: { unit: "WEEK", weekdays: [5, 1, 3] } as any,
+    };
+    let payrollRuleCount: jest.Mock;
+
+    beforeEach(() => {
+      accountsRepo.count = jest.fn().mockResolvedValue(0);
+      accountsRepo.find = jest.fn().mockResolvedValue([]);
+      payrollRuleCount = jest.fn().mockResolvedValue(0);
+      payrollRulesRepo.count = payrollRuleCount;
+    });
+
+    describe("create", () => {
+      it("stores the canonical rule and snaps the first occurrence onto it", async () => {
+        stubFindOne(makeScheduled());
+
+        await service.create(userId, customDto);
+
+        const created = scheduledRepo.create.mock.calls[0][0];
+        expect(created.customRecurrence).toEqual(MWF);
+        expect(created.startDate).toBe("2026-11-14");
+        expect(created.nextDueDate).toBe("2026-11-16");
+      });
+
+      it("refuses CUSTOM without a rule before writing", async () => {
+        await expect(
+          service.create(userId, { ...customDto, customRecurrence: undefined }),
+        ).rejects.toThrow("A custom frequency needs a recurrence rule");
+        expect(scheduledRepo.save).not.toHaveBeenCalled();
+      });
+
+      it("refuses a rule beside another frequency", async () => {
+        await expect(
+          service.create(userId, { ...customDto, frequency: "MONTHLY" as any }),
+        ).rejects.toThrow(BadRequestException);
+        expect(scheduledRepo.save).not.toHaveBeenCalled();
+      });
+
+      it("stores no rule for a fixed frequency", async () => {
+        stubFindOne(makeScheduled());
+
+        await service.create(userId, {
+          ...customDto,
+          frequency: "MONTHLY" as any,
+          customRecurrence: null,
+        });
+
+        const created = scheduledRepo.create.mock.calls[0][0];
+        expect(created.customRecurrence).toBeNull();
+        expect(created.nextDueDate).toBe("2026-11-14");
+      });
+
+      it("refuses a Custom split that transfers into a mortgage", async () => {
+        accountsRepo.find.mockResolvedValue([
+          { id: "mtg-1", accountType: "MORTGAGE" },
+        ]);
+
+        await expect(
+          service.create(userId, {
+            ...customDto,
+            amount: -1000,
+            splits: [
+              { amount: -800, transferAccountId: "mtg-1" },
+              { amount: -200, categoryId: "cat-interest" },
+            ] as any,
+          }),
+        ).rejects.toThrow(/loan or mortgage payment/);
+        expect(scheduledRepo.save).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("update", () => {
+      it("switching to CUSTOM stores the rule, snaps the cursor and prunes orphaned overrides", async () => {
+        stubFindOne(
+          makeScheduled({
+            frequency: "MONTHLY",
+            startDate: "2026-11-14",
+            nextDueDate: "2026-11-14",
+          }),
+        );
+        mockQueryRunner.manager.find.mockImplementation(
+          async (entity: unknown) =>
+            entity === ScheduledTransactionOverride
+              ? [
+                  { id: "on-pattern", originalDate: "2026-11-18" },
+                  // A Tuesday: off the new pattern.
+                  { id: "tuesday", originalDate: "2026-12-15" },
+                ]
+              : [],
+        );
+
+        await service.update(userId, stId, {
+          frequency: "CUSTOM" as any,
+          customRecurrence: MWF,
+          nextDueDate: "2026-11-14",
+          startDate: "2026-11-14",
+        });
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          ScheduledTransaction,
+          stId,
+          expect.objectContaining({
+            frequency: "CUSTOM",
+            customRecurrence: MWF,
+            nextDueDate: "2026-11-16",
+          }),
+        );
+        const deletes = mockQueryRunner.manager.delete.mock.calls.filter(
+          (call: unknown[]) => call[0] === ScheduledTransactionOverride,
+        );
+        expect(deletes).toHaveLength(1);
+        expect(deletes[0][1].id.value).toEqual(["tuesday"]);
+      });
+
+      it("leaving CUSTOM with the old rule echoed clears it", async () => {
+        stubFindOne(
+          makeScheduled({
+            frequency: "CUSTOM",
+            customRecurrence: MWF,
+            startDate: "2026-11-16",
+            nextDueDate: "2026-11-16",
+          }),
+        );
+
+        await service.update(userId, stId, {
+          frequency: "MONTHLY" as any,
+          customRecurrence: MWF,
+        });
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          ScheduledTransaction,
+          stId,
+          expect.objectContaining({
+            frequency: "MONTHLY",
+            customRecurrence: null,
+          }),
+        );
+      });
+
+      it("a resent rule and dates are not a change", async () => {
+        stubFindOne(
+          makeScheduled({
+            frequency: "CUSTOM",
+            customRecurrence: MWF,
+            startDate: "2026-11-16",
+            // Moved off the pattern by the user: left where it is.
+            nextDueDate: "2026-11-17",
+          }),
+        );
+
+        await service.update(userId, stId, {
+          name: "Gym (new)",
+          frequency: "CUSTOM" as any,
+          customRecurrence: { unit: "WEEK", weekdays: [3, 1, 5] } as any,
+          startDate: "2026-11-16",
+          nextDueDate: "2026-11-17",
+        });
+
+        const fields = mockQueryRunner.manager.update.mock.calls.find(
+          (call: unknown[]) => call[0] === ScheduledTransaction,
+        )[2];
+        expect(fields).not.toHaveProperty("customRecurrence");
+        expect(fields.nextDueDate).toBe("2026-11-17");
+        expect(mockQueryRunner.manager.find).not.toHaveBeenCalledWith(
+          ScheduledTransactionOverride,
+          expect.anything(),
+        );
+      });
+
+      it("a changed rule re-snaps a running schedule forward, never back to its start", async () => {
+        stubFindOne(
+          makeScheduled({
+            frequency: "CUSTOM",
+            customRecurrence: MWF,
+            startDate: "2025-11-03",
+            nextDueDate: "2026-11-18",
+          }),
+        );
+
+        await service.update(userId, stId, {
+          customRecurrence: { unit: "WEEK", interval: 1, weekdays: [2] },
+          nextDueDate: "2026-11-18",
+        });
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          ScheduledTransaction,
+          stId,
+          expect.objectContaining({ nextDueDate: "2026-11-24" }),
+        );
+      });
+
+      it("a start date change prunes overrides only while Custom", async () => {
+        stubFindOne(makeScheduled({ frequency: "MONTHLY" }));
+
+        await service.update(userId, stId, { startDate: "2025-01-20" });
+
+        expect(mockQueryRunner.manager.find).not.toHaveBeenCalledWith(
+          ScheduledTransactionOverride,
+          expect.anything(),
+        );
+      });
+
+      it("refuses CUSTOM on a loan payment schedule before writing", async () => {
+        stubFindOne(makeScheduled());
+        accountsRepo.count.mockResolvedValue(1);
+
+        await expect(
+          service.update(userId, stId, {
+            frequency: "CUSTOM" as any,
+            customRecurrence: MWF,
+          }),
+        ).rejects.toThrow(/loan or mortgage payment/);
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
+
+      it("refuses CUSTOM on a payroll bill before writing", async () => {
+        stubFindOne(makeScheduled());
+        payrollRuleCount.mockResolvedValue(1);
+
+        await expect(
+          service.update(userId, stId, {
+            frequency: "CUSTOM" as any,
+            customRecurrence: MWF,
+          }),
+        ).rejects.toThrow(/payroll bill/);
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
+    });
+
+    it("skip steps a Custom schedule by its rule", async () => {
+      mockQueryRunner.manager.query.mockResolvedValue([]);
+      stubFindOne(
+        makeScheduled({
+          frequency: "CUSTOM",
+          customRecurrence: MWF,
+          startDate: "2026-11-13",
+          nextDueDate: "2026-11-13",
+        }),
+      );
+
+      await service.skip(userId, stId);
+
+      const updateArg = mockQueryRunner.manager.update.mock.calls[0][2];
+      expect(updateArg.nextDueDate).toBe("2026-11-16");
+    });
+
+    it("tells the model what a Custom schedule repeats on", async () => {
+      const today = todayInTimezone("UTC") as string;
+      const rows = [
+        makeScheduled({
+          id: "s1",
+          frequency: "CUSTOM",
+          customRecurrence: MWF,
+          nextDueDate: today,
+          startDate: today,
+          account: { name: "Checking" } as any,
+        }),
+        makeScheduled({
+          id: "s2",
+          account: { name: "Checking" } as any,
+          nextDueDate: today,
+        }),
+      ];
+      scheduledRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder(rows));
+
+      const result = await service.getLlmUpcomingBillsAndDeposits(userId);
+
+      const byId = new Map(result.items.map((item) => [item.id, item]));
+      expect(byId.get("s1")?.customSchedule).toBe(
+        "every week on Mon, Wed, Fri",
+      );
+      expect(byId.get("s2")).not.toHaveProperty("customSchedule");
+    });
+
+    describe("tradeScheduleWindowDays", () => {
+      it("uses the rule's shortest gap, not a fixed cycle", () => {
+        expect(
+          tradeScheduleWindowDays("CUSTOM", {
+            unit: "WEEK",
+            interval: 1,
+            weekdays: [1, 2],
+          }),
+        ).toBe(0);
+        expect(
+          tradeScheduleWindowDays("CUSTOM", {
+            unit: "MONTH",
+            interval: 1,
+            monthDays: [1],
+          }),
+        ).toBe(TRADE_SCHEDULE_WINDOW_DAYS);
+        expect(tradeScheduleWindowDays("CUSTOM", null)).toBe(0);
+        expect(tradeScheduleWindowDays("WEEKLY")).toBe(3);
       });
     });
   });

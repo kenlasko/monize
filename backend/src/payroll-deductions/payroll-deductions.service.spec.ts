@@ -723,6 +723,31 @@ describe("PayrollDeductionsService", () => {
     });
   });
 
+  describe("a bill on the Custom frequency", () => {
+    it("is refused on create and on update before anything is written", async () => {
+      // Deductions pool over pay periods of a fixed cadence
+      // (docs/specs/custom-recurrence.md section 5).
+      scheduledRepo.findOne.mockResolvedValue({
+        ...bill([{ categoryId: EI, amount: -64 }]),
+        frequency: "CUSTOM",
+      });
+      await expect(
+        service.create(USER, {
+          scheduledTransactionId: BILL,
+          categoryId: EI,
+          yearlyMaximum: 1077.48,
+          resetDate: "2026-01-01",
+        }),
+      ).rejects.toThrow("custom schedule");
+      rulesRepo.findOne.mockResolvedValueOnce(rule());
+      await expect(
+        service.update(USER, RULE, { yearlyMaximum: 1100 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(rulesRepo.save).not.toHaveBeenCalled();
+      expect(rulesRepo.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe("remove", () => {
     it("deletes by id and owner, and reports an unknown id", async () => {
       await service.remove(USER, RULE);

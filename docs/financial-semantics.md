@@ -699,6 +699,19 @@ kept. A schedule that already drifted (at 28 Mar with a start on the 31st) stays
 on its current day; nothing is re-anchored silently. Loan payment calendars (`advancePaymentDates`,
 `advanceDate`) step from the first payment date and are not covered by this rule.
 
+The Custom frequency (`CUSTOM`) has no fixed cycle: it repeats on the weekdays,
+days of the month or dates of the year its `custom_recurrence` rule names, every
+N weeks, months or years counted from the period holding `start_date`
+(`docs/specs/custom-recurrence.md`). Every step of such a schedule passes
+`calculateNextDueDate` the rule and the start date, and a step without the rule
+throws rather than repeating the date. A changed rule or start date puts
+`next_due_date` on the pattern (the first rule date on or after it), and a
+change of frequency, of rule, or of start date while Custom deletes the future
+overrides whose slot the new pattern no longer holds, in the same transaction
+(`backend/src/scheduled-transactions/custom-recurrence-write.ts`). A loan payment and a payroll
+bill cannot be Custom, so the loan installment calendar and pricing never see it
+(`assertFixedCadence`).
+
 That constraint used to name `override_date`, and the sentence above was drawn
 from it as if the two were interchangeable -- they are not, and the conclusion
 was false in both directions. `original_date` is the occurrence's identity;
