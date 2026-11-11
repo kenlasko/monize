@@ -118,7 +118,6 @@ const RTL_IMPORT_BASELINE = new Set([
   '/src/hooks/useFormSubmitRef.test.ts',
   '/src/hooks/useHideOnScroll.test.ts',
   '/src/hooks/useHighlightTarget.test.ts',
-  '/src/hooks/useIsMobile.test.ts',
   '/src/hooks/useLoanProjection.test.tsx',
   '/src/hooks/useLocalStorage.test.ts',
   '/src/hooks/useLongPress.test.ts',
