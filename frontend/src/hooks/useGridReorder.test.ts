@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@/test/render';
-import { AUTO_SCROLL_EDGE, useGridReorder } from './useGridReorder';
+import { AUTO_SCROLL_EDGE, gapAt, useGridReorder } from './useGridReorder';
 
 const mockWide = vi.hoisted(() => ({ value: true }));
 vi.mock('@/hooks/useIsMobile', () => ({
@@ -21,6 +21,15 @@ const WIDE: Box[] = [
   { left: 648, top: 100, right: 948, bottom: 300 },
   { left: 0, top: 324, right: 300, bottom: 524 },
   { left: 324, top: 324, right: 624, bottom: 524 },
+];
+// The plan's section 8 flow at 1440px: A twoThirds; B half, C third; D third, E third.
+// Rows 1 and 2 end short, so the right of each is empty grid.
+const SECTION_8: Box[] = [
+  { left: 48, top: 100, right: 936, bottom: 400 },
+  { left: 48, top: 424, right: 708, bottom: 724 },
+  { left: 732, top: 424, right: 1164, bottom: 724 },
+  { left: 48, top: 748, right: 480, bottom: 1048 },
+  { left: 504, top: 748, right: 936, bottom: 1048 },
 ];
 // Narrow: one column of four.
 const NARROW: Box[] = [0, 1, 2, 3].map((i) => ({ left: 0, top: 100 + i * 124, right: 500, bottom: 200 + i * 124 }));
@@ -119,12 +128,66 @@ describe('useGridReorder', () => {
       // In the gutter between items 1 and 2, nearer item 2's left edge.
       drag.moveTo(640, 200);
       expect(indicators(result, 5)).toEqual([null, null, 'before', null, null]);
-      // Below row 1 where row 2 ends short: item 2 is nearest, its right half.
+      // In row 2's band, past its last item: the end of row 2, which is the end.
       drag.moveTo(900, 400);
+      expect(indicators(result, 5)).toEqual([null, null, null, null, 'after']);
+      // In the gutter between the rows, nearer row 2: the gap before item 3.
+      drag.moveTo(50, 318);
       expect(indicators(result, 5)).toEqual([null, null, null, 'before', null]);
       // Far below the grid, under item 3's left half.
       drag.moveTo(50, 700);
       expect(indicators(result, 5)).toEqual([null, null, null, 'before', null]);
+    });
+
+    describe('rows that end short (the plan, section 8)', () => {
+      it('takes the row the pointer is level with, then the gap by x within that row', () => {
+        // The empty end of row 1, level with A: after A, though C is nearer in a straight line.
+        expect(gapAt(SECTION_8, 1176, 250, 'x')).toBe(1);
+        // Past E in row 3, below C's corner: the end of the layout.
+        expect(gapAt(SECTION_8, 1150, 898, 'x')).toBe(5);
+        // Within row 2: left of B's centre, between B and C, past C.
+        expect(gapAt(SECTION_8, 300, 600, 'x')).toBe(1);
+        expect(gapAt(SECTION_8, 720, 600, 'x')).toBe(2);
+        expect(gapAt(SECTION_8, 1300, 600, 'x')).toBe(3);
+      });
+
+      it('takes the nearer row from a gutter between rows, and the end row above or below the grid', () => {
+        // The 24px gutter between rows 1 and 2, nearer row 1, then nearer row 2.
+        expect(gapAt(SECTION_8, 1176, 405, 'x')).toBe(1);
+        expect(gapAt(SECTION_8, 1176, 420, 'x')).toBe(3);
+        // Above the first row: row 1 by x.
+        expect(gapAt(SECTION_8, 20, 10, 'x')).toBe(0);
+        expect(gapAt(SECTION_8, 1300, 10, 'x')).toBe(1);
+        // Below the last row: row 3 by x.
+        expect(gapAt(SECTION_8, 20, 1400, 'x')).toBe(3);
+        expect(gapAt(SECTION_8, 600, 1400, 'x')).toBe(4);
+        expect(gapAt(SECTION_8, 1300, 1400, 'x')).toBe(5);
+      });
+
+      it('is null with no items', () => {
+        expect(gapAt([], 10, 10, 'x')).toBeNull();
+        expect(gapAt([], 10, 10, 'y')).toBeNull();
+      });
+
+      it('drops E into the empty end of row 1, right after A', () => {
+        const { result, onMove } = setup(SECTION_8);
+        const drag = press(result, 4, 720, 898);
+        drag.moveTo(1176, 250);
+        expect(indicators(result, 5)).toEqual([null, 'before', null, null, null]);
+        drag.releaseAt(1176, 250);
+        expect(onMove).toHaveBeenCalledTimes(1);
+        expect(onMove).toHaveBeenCalledWith(4, 1, 'pointer');
+      });
+
+      it('leaves E where it is when dropped past it at the end of row 3', () => {
+        const { result, onMove } = setup(SECTION_8);
+        const drag = press(result, 4, 720, 898);
+        drag.moveTo(1150, 898);
+        expect(result.current.draggingIndex).toBe(4);
+        expect(indicators(result, 5)).toEqual([null, null, null, null, null]);
+        drag.releaseAt(1150, 898);
+        expect(onMove).not.toHaveBeenCalled();
+      });
     });
 
     it('moves once on release, forward past several items, to its place after the removal', () => {
@@ -390,6 +453,87 @@ describe('useGridReorder', () => {
       const reads = readCount;
       act(() => wheel(rects, 224));
       expect(readCount).toBe(reads);
+      expect(frames).toHaveLength(0);
+    });
+  });
+
+  describe('a layout shift during a drag that is not a scroll', () => {
+    it('tests the next frame and the drop against the items as they are now, not as pressed', () => {
+      const rects = WIDE.map((r) => ({ ...r }));
+      const { result, onMove } = setup(rects);
+      const drag = press(result, 0, 150, 200);
+      drag.moveTo(140, 400);
+      // Row 2, item 3's left half: before item 3.
+      expect(indicators(result, 5)).toEqual([null, null, null, 'before', null]);
+      // A widget in row 1 finishes loading and the row grows by 224px, pushing row 2 down.
+      rects.forEach((r, i) => {
+        if (i < 3) r.bottom += 224;
+        else {
+          r.top += 224;
+          r.bottom += 224;
+        }
+      });
+      // The pointer is now over the dragged item's own left half: no line, no move.
+      drag.moveTo(141, 400);
+      expect(indicators(result, 5)).toEqual([null, null, null, null, null]);
+      drag.releaseAt(141, 400);
+      expect(onMove).not.toHaveBeenCalled();
+    });
+
+    it('re-reads on release even when no frame ran after the shift', () => {
+      const rects = WIDE.map((r) => ({ ...r }));
+      const { result, onMove } = setup(rects);
+      const drag = press(result, 0, 150, 200);
+      drag.moveTo(140, 400);
+      rects.forEach((r, i) => {
+        if (i < 3) r.bottom += 224;
+        else {
+          r.top += 224;
+          r.bottom += 224;
+        }
+      });
+      drag.releaseAt(140, 400);
+      expect(onMove).not.toHaveBeenCalled();
+    });
+
+    it('follows the flow axis when the viewport crosses lg mid-drag (a tablet turned 1024 to 768)', () => {
+      const rects = WIDE.map((r) => ({ ...r }));
+      const { result, onMove, rerender } = setup(rects);
+      const drag = press(result, 3, 150, 424);
+      drag.moveTo(500, 200);
+      expect(result.current.axis).toBe('x');
+      // The grid becomes one column: item i at top 100 + 124i, 500 wide.
+      rects.forEach((r, i) => Object.assign(r, NARROW[i] ?? { left: 0, top: 596, right: 500, bottom: 696 }));
+      mockWide.value = false;
+      rerender({ on: true });
+      flush();
+      expect(result.current.axis).toBe('y');
+      // Item 1's bottom half, on its left: the column's rule, against the items as they are now.
+      drag.moveTo(50, 300);
+      expect(indicators(result, 5)).toEqual([null, null, 'before', null, null]);
+      // Item 1's top half but its right side: the column's rule puts it before item 1,
+      // where the row rule would put it after.
+      drag.moveTo(450, 240);
+      expect(indicators(result, 5)).toEqual([null, 'before', null, null, null]);
+      drag.releaseAt(450, 240);
+      expect(onMove).toHaveBeenCalledWith(3, 1, 'pointer');
+    });
+
+    it('takes the gap again on a window resize with a still pointer, and stops listening after', () => {
+      const rects = WIDE.map((r) => ({ ...r }));
+      const { result } = setup(rects);
+      const drag = press(result, 0, 150, 200);
+      drag.moveTo(500, 200);
+      expect(indicators(result, 5)).toEqual([null, null, 'before', null, null]);
+      // A narrower window: the thirds shrink to 150px, so x 500 is past row 1's last item.
+      rects.slice(0, 3).forEach((r, i) => Object.assign(r, { left: i * 174, right: i * 174 + 150 }));
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+      flush();
+      expect(indicators(result, 5)).toEqual([null, null, null, 'before', null]);
+      drag.releaseAt(500, 200);
+      window.dispatchEvent(new Event('resize'));
       expect(frames).toHaveLength(0);
     });
   });

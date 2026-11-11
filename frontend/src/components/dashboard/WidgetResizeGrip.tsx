@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
+import { scrollStepAt } from '@/hooks/useGridReorder';
 import {
   HEIGHT_FLOORS_PX,
   WIDGET_HEIGHTS,
@@ -22,6 +23,12 @@ const COLUMNS = 12;
  * stretch, so reading a preset off a still pointer would change it.
  */
 const AXIS_SLOP = 4;
+/**
+ * An axis also has to have moved at least this fraction of the other: a
+ * drag within about 18 degrees of one axis is along that axis, so a hand's
+ * drift across it is not a choice, while a deliberate diagonal changes both.
+ */
+const AXIS_DOMINANCE = 1 / 3;
 /** The grid's `gap-6`, used when the computed style gives no number. */
 const FALLBACK_GAP = 24;
 /** Auto has no floor to draw, so its outline is this tall rather than a line. */
@@ -29,13 +36,18 @@ const AUTO_PREVIEW_HEIGHT = 64;
 
 type Size = { width?: WidgetWidth; height?: WidgetHeight };
 
-interface Drag {
+interface Box {
   left: number;
   top: number;
-  /** The item's real height at the press, drawn while the height is kept. */
+  /** The item's real height, drawn while the height is kept. */
   height: number;
   col: number;
   gap: number;
+}
+
+interface Drag extends Box {
+  item: HTMLElement;
+  grid: HTMLElement;
   /** Where the press landed. */
   x0: number;
   y0: number;
@@ -50,6 +62,18 @@ interface Target {
   box: { left: number; top: number; width: number; height: number };
 }
 
+/**
+ * The item's viewport box and the grid's column metrics, read afresh each
+ * frame: the outline is fixed to the viewport, so a scroll or a reflow under
+ * a still pointer moves the item away from where the press found it.
+ */
+function measure(item: HTMLElement, grid: HTMLElement): Box {
+  const box = item.getBoundingClientRect();
+  const gap = parseFloat(getComputedStyle(grid).columnGap) || FALLBACK_GAP;
+  const col = (grid.getBoundingClientRect().width - (COLUMNS - 1) * gap) / COLUMNS;
+  return { left: box.left, top: box.top, height: box.height, col, gap };
+}
+
 function nearest<T>(options: readonly T[], at: (o: T) => number, to: number): T {
   return options.reduce((best, o) => (Math.abs(at(o) - to) < Math.abs(at(best) - to) ? o : best));
 }
@@ -58,12 +82,15 @@ function nearest<T>(options: readonly T[], at: (o: T) => number, to: number): T 
  * The presets a pointer at (x, y) points at: the offered width whose right
  * edge (left + span columns + the gaps between them) is nearest x, and the
  * height whose floor is nearest the pointer's depth below the item's top.
- * An axis the pointer has not moved along since the press keeps `current`.
+ * An axis the pointer has not moved along since the press, or only drifted
+ * along beside a much longer move on the other, keeps `current`.
  */
 function targetAt(d: Drag, offered: readonly WidgetWidth[], current: Required<Size>): Target {
   const edge = (w: WidgetWidth) => d.left + WIDTH_SPANS[w] * d.col + (WIDTH_SPANS[w] - 1) * d.gap;
-  const movedX = Math.abs(d.x - d.x0) > AXIS_SLOP;
-  const movedY = Math.abs(d.y - d.y0) > AXIS_SLOP;
+  const dx = Math.abs(d.x - d.x0);
+  const dy = Math.abs(d.y - d.y0);
+  const movedX = dx > AXIS_SLOP && dx >= dy * AXIS_DOMINANCE;
+  const movedY = dy > AXIS_SLOP && dy >= dx * AXIS_DOMINANCE;
   const width = movedX ? nearest(offered, edge, d.x) : current.width;
   const height = movedY ? nearest(WIDGET_HEIGHTS, (h) => HEIGHT_FLOORS_PX[h], d.y - d.top) : current.height;
   return {
@@ -92,16 +119,21 @@ interface WidgetResizeGripProps {
  * changes once, on release. Escape or a cancelled pointer changes nothing.
  * The arrow keys step one preset at a time. Pointer capture keeps the drag
  * going outside the grip, as in HelpResizeHandle, and the outline updates at
- * most once per frame.
+ * most once per frame. The item is measured again on every frame and on
+ * release, and the page scrolls near the viewport's top or bottom as a grid
+ * reorder does, so a scroll mid-drag neither strands the outline nor puts
+ * the tall preset out of reach.
  */
 export function WidgetResizeGrip({ id, width, height, onResize }: WidgetResizeGripProps) {
   const t = useTranslations('dashboard');
   const name = useWidgetName()(id);
   const drag = useRef<Drag | null>(null);
   const frame = useRef<number | null>(null);
-  const [target, setTarget] = useState<Target | null>(null);
+  // The drag as of the last frame; the target is derived from it at render.
+  const [shown, setShown] = useState<Drag | null>(null);
   const offered = widthsOfferedFor(id);
   const current = { width, height };
+  const target = shown && targetAt(shown, offered, current);
 
   const cancelFrame = useCallback(() => {
     if (frame.current !== null) cancelAnimationFrame(frame.current);
@@ -112,12 +144,30 @@ export function WidgetResizeGrip({ id, width, height, onResize }: WidgetResizeGr
   const cancel = useCallback(() => {
     drag.current = null;
     cancelFrame();
-    setTarget(null);
+    setShown(null);
   }, [cancelFrame]);
+
+  const tick = useCallback(function tick() {
+    frame.current = null;
+    const d = drag.current;
+    if (!d) return;
+    const step = scrollStepAt(d.y);
+    if (step !== 0) {
+      window.scrollBy(0, step);
+      // Keep scrolling while a still pointer stays at the edge.
+      frame.current = requestAnimationFrame(tick);
+    }
+    drag.current = { ...d, ...measure(d.item, d.grid) };
+    setShown(drag.current);
+  }, []);
+
+  const schedule = useCallback(() => {
+    if (drag.current && frame.current === null) frame.current = requestAnimationFrame(tick);
+  }, [tick]);
 
   // Escape cancels the drag and only the drag: window capture runs before
   // edit mode's Escape listener, which skips a prevented event.
-  const dragging = target !== null;
+  const dragging = shown !== null;
   useEffect(() => {
     if (!dragging) return;
     const onKeyDown = (event: KeyboardEvent | globalThis.KeyboardEvent) => {
@@ -130,6 +180,18 @@ export function WidgetResizeGrip({ id, width, height, onResize }: WidgetResizeGr
     return () => window.removeEventListener('keydown', onKeyDown, true);
   }, [dragging, cancel]);
 
+  // A scroll the reader makes (wheel, trackpad) or a resized window moves the
+  // item under a still pointer: measure it again on the next frame.
+  useEffect(() => {
+    if (!dragging) return;
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    return () => {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+    };
+  }, [dragging, schedule]);
+
   const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return;
     const item = e.currentTarget.closest<HTMLElement>('[data-widget-id]');
@@ -137,41 +199,29 @@ export function WidgetResizeGrip({ id, width, height, onResize }: WidgetResizeGr
     if (!item || !grid) return;
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
-    const box = item.getBoundingClientRect();
-    const gap = parseFloat(getComputedStyle(grid).columnGap) || FALLBACK_GAP;
-    const col = (grid.getBoundingClientRect().width - (COLUMNS - 1) * gap) / COLUMNS;
     drag.current = {
-      left: box.left,
-      top: box.top,
-      height: box.height,
-      col,
-      gap,
+      ...measure(item, grid),
+      item,
+      grid,
       x0: e.clientX,
       y0: e.clientY,
       x: e.clientX,
       y: e.clientY,
     };
-    setTarget(targetAt(drag.current, offered, current));
+    setShown(drag.current);
   };
 
   const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
     const d = drag.current;
     if (!d) return;
-    d.x = e.clientX;
-    d.y = e.clientY;
-    if (frame.current !== null) return;
-    frame.current = requestAnimationFrame(() => {
-      frame.current = null;
-      if (drag.current) setTarget(targetAt(drag.current, offered, current));
-    });
+    drag.current = { ...d, x: e.clientX, y: e.clientY };
+    schedule();
   };
 
   const onPointerUp = (e: PointerEvent<HTMLButtonElement>) => {
     const d = drag.current;
     if (!d) return;
-    d.x = e.clientX;
-    d.y = e.clientY;
-    const end = targetAt(d, offered, current);
+    const end = targetAt({ ...d, ...measure(d.item, d.grid), x: e.clientX, y: e.clientY }, offered, current);
     cancel();
     const size: Size = {};
     if (end.width !== width) size.width = end.width;

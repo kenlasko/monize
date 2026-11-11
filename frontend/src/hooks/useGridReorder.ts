@@ -20,33 +20,75 @@ interface Box {
   bottom: number;
 }
 
+/** Distance from y to the band [top, bottom]: 0 inside it. */
+function bandDistance(top: number, bottom: number, y: number): number {
+  return Math.max(top - y, 0, y - bottom);
+}
+
+/**
+ * The rows of a row-flowing grid: runs of consecutive items whose vertical
+ * bands overlap, each with the band they span and the index of its first
+ * item. Flow order puts a row's items next to each other.
+ */
+function rowsOf(rects: readonly Box[]): { start: number; end: number; top: number; bottom: number }[] {
+  const rows: { start: number; end: number; top: number; bottom: number }[] = [];
+  rects.forEach((r, i) => {
+    const row = rows.at(-1);
+    if (row && r.top < row.bottom && r.bottom > row.top) {
+      rows[rows.length - 1] = { ...row, end: i + 1, top: Math.min(row.top, r.top), bottom: Math.max(row.bottom, r.bottom) };
+    } else {
+      rows.push({ start: i, end: i + 1, top: r.top, bottom: r.bottom });
+    }
+  });
+  return rows;
+}
+
 /**
  * The insertion gap for a pointer at (x, y) over item rectangles in flow
- * order: gap g is between item g-1 and item g, as in `useDragReorder`. The
- * item under the pointer, or the nearest one when the pointer is in a gutter
- * or past the grid, gives the gap before or after it by which half of it the
- * pointer is in along the flow axis. Null when there are no items.
+ * order: gap g is between item g-1 and item g, as in `useDragReorder`. Null
+ * when there are no items.
+ *
+ * In rows (axis x) the row comes first: the one whose band holds y, else the
+ * nearest. Within it the gap is before the first item whose centre is right
+ * of x, or after the row's last item. Choosing by straight-line distance
+ * instead lets a row below win in the empty end of a short row.
+ *
+ * In one column (axis y) the item under the pointer, or the nearest, gives
+ * the gap before or after it by which vertical half the pointer is in.
  */
 export function gapAt(rects: readonly Box[], x: number, y: number, axis: DragAxis): number | null {
-  let nearest = -1;
+  if (rects.length === 0) return null;
+  if (axis === 'x') {
+    const rows = rowsOf(rects);
+    const row = rows.reduce((best, r) =>
+      bandDistance(r.top, r.bottom, y) < bandDistance(best.top, best.bottom, y) ? r : best,
+    );
+    for (let i = row.start; i < row.end; i += 1) {
+      if ((rects[i].left + rects[i].right) / 2 > x) return i;
+    }
+    return row.end;
+  }
+  let nearest = 0;
   let nearestDistance = Infinity;
   rects.forEach((r, i) => {
     const dx = Math.max(r.left - x, 0, x - r.right);
-    const dy = Math.max(r.top - y, 0, y - r.bottom);
+    const dy = bandDistance(r.top, r.bottom, y);
     const distance = dx * dx + dy * dy;
     if (distance < nearestDistance) {
       nearest = i;
       nearestDistance = distance;
     }
   });
-  if (nearest < 0) return null;
   const r = rects[nearest];
-  const leading = axis === 'x' ? x < (r.left + r.right) / 2 : y < (r.top + r.bottom) / 2;
-  return leading ? nearest : nearest + 1;
+  return y < (r.top + r.bottom) / 2 ? nearest : nearest + 1;
 }
 
-/** How far to scroll this frame for a pointer at viewport height y: negative is up, 0 is not at all. */
-function scrollStepAt(y: number): number {
+/**
+ * How far to scroll this frame for a pointer at viewport height y: negative
+ * is up, 0 is not at all. Shared with the resize grip, so both drags scroll
+ * the page the same way.
+ */
+export function scrollStepAt(y: number): number {
   const height = window.innerHeight;
   const root = document.scrollingElement ?? document.documentElement;
   const step = (depth: number) =>
@@ -95,12 +137,10 @@ interface GridReorderOptions {
 
 interface Session {
   from: number;
-  axis: DragAxis;
   x0: number;
   y0: number;
   dx: number;
   dy: number;
-  rects: Box[];
   active: boolean;
   gap: number | null;
 }
@@ -114,8 +154,10 @@ interface DragState {
 /**
  * Pointer reorder over the dashboard grid's items, driven by each item's
  * `DragHandle` (design 10.1). The page never reflows during a drag: the
- * rectangles are read on press (and again after any scroll), the pointer
- * is hit-tested against them once a frame, and only a change of gap renders.
+ * rectangles are read afresh on every frame that hit-tests the pointer (a
+ * move, a scroll, a resize, a change of flow axis) and on release, so a
+ * widget loading or a row growing mid-drag is seen; only a change of gap
+ * renders.
  * The chip is moved by writing its transform directly, so following the
  * pointer re-renders nothing. Release moves once; Escape or a cancelled
  * pointer moves nothing.
@@ -123,6 +165,8 @@ interface DragState {
 export function useGridReorder({ containerRef, count, enabled, onMove }: GridReorderOptions) {
   // The grid flows in rows from lg up, in one column below.
   const axis: DragAxis = useIsLgUp() ? 'x' : 'y';
+  // Read live by the frame and the release: a rotation across lg mid-drag changes the flow.
+  const axisRef = useRef(axis);
   const [drag, setDrag] = useState<DragState | null>(null);
   const session = useRef<Session | null>(null);
   const press = useRef<{ x: number; y: number } | null>(null);
@@ -179,12 +223,12 @@ export function useGridReorder({ containerRef, count, enabled, onMove }: GridReo
       const step = scrollStepAt(y);
       if (step !== 0) {
         window.scrollBy(0, step);
-        // The items moved under a still pointer; keep scrolling while it stays at the edge.
-        s.rects = readRects(containerRef.current);
+        // Keep scrolling while a still pointer stays at the edge.
         frame.current = requestAnimationFrame(tick);
       }
       placeChip(chip.current, x, y);
-      const gap = gapAt(s.rects, x, y, s.axis);
+      // About twenty reads a frame, after any scroll, so nothing is tested against a stale layout.
+      const gap = gapAt(readRects(containerRef.current), x, y, axisRef.current);
       if (gap !== s.gap) {
         s.gap = gap;
         setDrag({ from: s.from, gap, active: true });
@@ -193,20 +237,28 @@ export function useGridReorder({ containerRef, count, enabled, onMove }: GridReo
     [containerRef],
   );
 
-  // A scroll the reader makes (wheel, trackpad) moves the items under a still
-  // pointer too: re-read them, and hit-test again on the next frame, so
-  // neither the line nor the drop is decided against where they were.
+  const schedule = useCallback(() => {
+    if (session.current?.active && frame.current === null) frame.current = requestAnimationFrame(tick);
+  }, [tick]);
+
+  // Only a real change of axis takes the gap again; `schedule` changes with the caller's ref.
+  useEffect(() => {
+    if (axisRef.current === axis) return;
+    axisRef.current = axis;
+    schedule();
+  }, [axis, schedule]);
+
+  // A scroll the reader makes (wheel, trackpad) or a resized window moves the
+  // items under a still pointer: hit-test again on the next frame.
   useEffect(() => {
     if (!dragging) return;
-    const onScroll = () => {
-      const s = session.current;
-      if (!s) return;
-      s.rects = readRects(containerRef.current);
-      if (s.active && frame.current === null) frame.current = requestAnimationFrame(tick);
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    return () => {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [dragging, containerRef, tick]);
+  }, [dragging, schedule]);
 
   const grip = (index: number): GridReorderGrip => ({
     onPress: (x, y) => {
@@ -215,17 +267,7 @@ export function useGridReorder({ containerRef, count, enabled, onMove }: GridReo
     onDragStart: () => {
       const at = press.current;
       if (!enabled || session.current || !at) return;
-      session.current = {
-        from: index,
-        axis,
-        x0: at.x,
-        y0: at.y,
-        dx: 0,
-        dy: 0,
-        rects: readRects(containerRef.current),
-        active: false,
-        gap: null,
-      };
+      session.current = { from: index, x0: at.x, y0: at.y, dx: 0, dy: 0, active: false, gap: null };
       setDrag({ from: index, gap: null, active: false });
     },
     onDragMove: (dx, dy) => {
@@ -239,12 +281,12 @@ export function useGridReorder({ containerRef, count, enabled, onMove }: GridReo
         s.active = true;
         setDrag({ from: s.from, gap: s.gap, active: true });
       }
-      if (frame.current === null) frame.current = requestAnimationFrame(tick);
+      schedule();
     },
     onDragEnd: (dx, dy) => {
       const s = session.current;
       if (!s || s.from !== index) return;
-      const gap = s.active ? gapAt(s.rects, s.x0 + dx, s.y0 + dy, s.axis) : null;
+      const gap = s.active ? gapAt(readRects(containerRef.current), s.x0 + dx, s.y0 + dy, axisRef.current) : null;
       cancel();
       if (gap === null) return;
       // The gaps either side of the dragged item leave it where it is.

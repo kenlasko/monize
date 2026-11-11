@@ -5,8 +5,13 @@ import { useCallback, useSyncExternalStore } from 'react';
 const MOBILE_QUERY = '(max-width: 639px)';
 /** Below Tailwind's `lg`: where a side panel stops fitting beside its content. */
 const BELOW_DESKTOP_QUERY = '(max-width: 1023px)';
-/** Tailwind's `lg` and up: the complement of BELOW_DESKTOP_QUERY. */
-const LG_UP_QUERY = '(min-width: 1024px)';
+/**
+ * Tailwind's `lg` and up. Written as Tailwind writes it (`--breakpoint-lg:
+ * 64rem`): a rem in a media query follows the browser's default font size, so
+ * with a larger default a px query would show the wide-only controls over a
+ * grid whose `lg:` classes have not applied yet.
+ */
+const LG_UP_QUERY = '(min-width: 64rem)';
 /** Below Tailwind's `xl`: where the header's nav links give way to the tab bar. */
 const TAB_BAR_QUERY = '(max-width: 1279px)';
 
