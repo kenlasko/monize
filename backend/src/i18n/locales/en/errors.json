@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Unsupported bulk action: {{ action }}",
     "unsupportedSimpleAction": "Unsupported action: {{ action }}",
     "unsupportedTableForReinsert": "Unsupported table for re-insert: {{ tableName }}",
-    "undoConversion": "This change converted a transaction to or from a transfer, so it cannot be undone automatically. Convert it back instead."
+    "undoConversion": "This change converted a transaction to or from a transfer, so it cannot be undone automatically. Convert it back instead.",
+    "customRecurrenceMissing": "This change cannot be undone or redone: the scheduled transaction's custom schedule rule is missing from its history"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Provide either a password or an email invite, not both.",

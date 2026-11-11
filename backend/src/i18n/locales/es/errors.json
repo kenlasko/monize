@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Acción masiva no admitida: {{ action }}",
     "unsupportedSimpleAction": "Acción no admitida: {{ action }}",
     "unsupportedTableForReinsert": "Tabla no admitida para reinserción: {{ tableName }}",
-    "undoConversion": "Este cambio convirtió una transacción en una transferencia o viceversa, por lo que no se puede deshacer automáticamente. Conviértala de nuevo en su lugar."
+    "undoConversion": "Este cambio convirtió una transacción en una transferencia o viceversa, por lo que no se puede deshacer automáticamente. Conviértala de nuevo en su lugar.",
+    "customRecurrenceMissing": "Este cambio no se puede deshacer ni rehacer: falta en su historial la regla de repetición personalizada de la transacción programada"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Proporciona una contraseña o una invitación por correo, no ambas.",

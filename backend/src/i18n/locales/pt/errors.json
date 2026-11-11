@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Ação em massa não suportada: {{ action }}",
     "unsupportedSimpleAction": "Ação não suportada: {{ action }}",
     "unsupportedTableForReinsert": "Tabela não suportada para reinserção: {{ tableName }}",
-    "undoConversion": "Esta alteração converteu uma transação em transferência ou vice-versa, por isso não pode ser anulada automaticamente. Converta-a de volta."
+    "undoConversion": "Esta alteração converteu uma transação em transferência ou vice-versa, por isso não pode ser anulada automaticamente. Converta-a de volta.",
+    "customRecurrenceMissing": "Esta alteração não pode ser anulada nem refeita: a regra de repetição personalizada da transação agendada não está no seu histórico"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Forneça uma palavra-passe ou um convite por e-mail, não ambos.",

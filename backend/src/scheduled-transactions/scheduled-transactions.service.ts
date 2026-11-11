@@ -139,7 +139,7 @@ import {
   assertCustomFrequencyAllowed,
   orphanedOverrides,
   resolveCustomRecurrence,
-  sameCustomRecurrence,
+  resolvePatternUpdate,
   snapToCustomPattern,
 } from "./custom-recurrence-write";
 import { tr } from "../i18n/translate";
@@ -2730,47 +2730,17 @@ export class ScheduledTransactionsService {
       fieldsToUpdate.tagIds = updateData.tagIds;
 
     // Custom recurrence (docs/specs/custom-recurrence.md section 5), decided
-    // against the stored row because a form resends every field: the rule is
-    // the canonical one while Custom and cleared otherwise, a changed rule or
-    // start date puts the cursor back on the pattern, and a pattern change of
-    // any kind prunes the overrides it orphans, inside the write below.
-    const effectiveFrequency = (updateData.frequency ??
-      scheduled.frequency) as FrequencyType;
-    const effectiveRule = resolveCustomRecurrence(
-      effectiveFrequency,
-      updateData.customRecurrence,
-      scheduled.customRecurrence,
+    // here against the row read before the lock so a refused rule refuses
+    // early and the estimate below reads the snapped due date, then decided
+    // again against the locked row before anything is written.
+    Object.assign(
+      fieldsToUpdate,
+      resolvePatternUpdate(updateData, scheduled).fields,
     );
-    const ruleChanged = !sameCustomRecurrence(
-      effectiveRule,
-      scheduled.customRecurrence,
+    const preLockNextDueDate = ensureYMD(
+      (fieldsToUpdate.nextDueDate as string | undefined) ??
+        scheduled.nextDueDate,
     );
-    if (ruleChanged) fieldsToUpdate.customRecurrence = effectiveRule;
-    const startChanged =
-      updateData.startDate !== undefined &&
-      ensureYMD(updateData.startDate) !== ensureYMD(scheduled.startDate);
-    // A start date anchors a Custom rule's periods; for a fixed frequency it
-    // changes no slot the form warns about, so only a Custom one prunes.
-    const patternChanged =
-      effectiveFrequency !== scheduled.frequency ||
-      ruleChanged ||
-      (startChanged && effectiveRule !== null);
-    if (effectiveRule && (ruleChanged || startChanged)) {
-      const snapped = snapToCustomPattern(
-        ensureYMD(
-          (fieldsToUpdate.nextDueDate as string | undefined) ??
-            scheduled.nextDueDate,
-        ),
-        ensureYMD(updateData.startDate ?? scheduled.startDate),
-        effectiveRule,
-      );
-      if (
-        fieldsToUpdate.nextDueDate !== undefined ||
-        snapped !== ensureYMD(scheduled.nextDueDate)
-      ) {
-        fieldsToUpdate.nextDueDate = snapped;
-      }
-    }
 
     // The estimate flag (issue #2096). Asked for explicitly, an unpriceable
     // shape is refused; carried over from the stored row, a switch to a split,
@@ -3125,11 +3095,41 @@ export class ScheduledTransactionsService {
         );
       }
 
+      // The pattern columns, decided again from the locked row: the read
+      // before the lock may predate a concurrent switch to or from Custom, and
+      // a pairing derived from it could write CUSTOM without a rule or a rule
+      // beside another frequency. The request's own due date is the base the
+      // snap starts from, never the pre-lock snap.
+      const pattern = resolvePatternUpdate(updateData, current);
+      delete fieldsToUpdate.customRecurrence;
+      delete fieldsToUpdate.nextDueDate;
+      if (updateData.nextDueDate !== undefined) {
+        fieldsToUpdate.nextDueDate = updateData.nextDueDate;
+      }
+      Object.assign(fieldsToUpdate, pattern.fields);
+      // An estimate priced for the pre-lock due date no longer describes the
+      // write when the due date moved under it.
+      if (
+        effectiveEstimated &&
+        snapshotMayMove &&
+        ensureYMD(
+          (fieldsToUpdate.nextDueDate as string | undefined) ??
+            current.nextDueDate,
+        ) !== preLockNextDueDate
+      ) {
+        throw new ConflictException(
+          tr(
+            "errors.scheduled.changedConcurrently",
+            "The scheduled transaction changed during the operation. Reload it and retry.",
+          ),
+        );
+      }
+
       // A loan payment or payroll bill keeps a fixed cadence: refused here,
       // under the row lock and before the first write. The split lines are the
       // ones the schedule will hold: the request's, none when a mode switch
       // clears them, else the stored ones.
-      if (effectiveRule) {
+      if (pattern.rule) {
         const lines = Array.isArray(splits)
           ? splits
           : clearSplitsForModeSwitch || !current.isSplit
@@ -3249,13 +3249,13 @@ export class ScheduledTransactionsService {
       // An override is keyed on its slot (`uq_sched_txn_overrides_occurrence`),
       // so one whose slot the new pattern no longer holds is reachable from no
       // surface: delete it with the change that orphaned it (section 5).
-      if (patternChanged) {
+      if (pattern.patternChanged) {
         const held = await m.find(ScheduledTransactionOverride, {
           where: { scheduledTransactionId: id },
         });
         const orphans = orphanedOverrides(
           {
-            frequency: effectiveFrequency,
+            frequency: pattern.frequency,
             nextDueDate: ensureYMD(
               (fieldsToUpdate.nextDueDate as string | undefined) ??
                 current.nextDueDate,
@@ -3264,7 +3264,8 @@ export class ScheduledTransactionsService {
               (fieldsToUpdate.startDate as string | undefined) ??
                 current.startDate,
             ),
-            customRecurrence: effectiveRule,
+            customRecurrence: pattern.rule,
+            previousNextDueDate: ensureYMD(current.nextDueDate),
           },
           held,
         );

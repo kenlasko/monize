@@ -455,6 +455,7 @@ export class PayrollDeductionsService {
         m,
         userId,
         dto.scheduledTransactionId,
+        { lock: true },
       );
       await this.assertFiatBill(m, schedule);
       this.assertFixedCadenceBill(schedule);
@@ -620,6 +621,7 @@ export class PayrollDeductionsService {
         m,
         userId,
         scheduledTransactionId,
+        { lock: true },
       );
       await this.assertFiatBill(m, schedule);
       this.assertFixedCadenceBill(schedule);
@@ -757,15 +759,35 @@ export class PayrollDeductionsService {
     return roundMoney(entered);
   }
 
+  /**
+   * The user's schedule. `lock` row-locks it first (`FOR UPDATE`, as the
+   * schedule's own update does before it decides anything): a rule write then
+   * reads the frequency the schedule will keep, so a concurrent switch to
+   * Custom and a new deduction rule cannot both commit
+   * (docs/specs/custom-recurrence.md section 5). The lock is taken on the bare
+   * row because PostgreSQL refuses `FOR UPDATE` on the nullable side of the
+   * splits join.
+   */
   private async ownedSchedule(
     m: EntityManager,
     userId: string,
     id: string,
+    { lock = false }: { lock?: boolean } = {},
   ): Promise<ScheduledTransaction> {
-    const schedule = await m.getRepository(ScheduledTransaction).findOne({
-      where: { id, userId },
-      relations: ["splits"],
-    });
+    const repo = m.getRepository(ScheduledTransaction);
+    const locked = lock
+      ? await repo.findOne({
+          where: { id, userId },
+          select: { id: true },
+          lock: { mode: "pessimistic_write" },
+        })
+      : true;
+    const schedule = locked
+      ? await repo.findOne({
+          where: { id, userId },
+          relations: ["splits"],
+        })
+      : null;
     if (!schedule) {
       throw new NotFoundException(
         tr(

@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Nicht unterstützte Sammelaktion: {{ action }}",
     "unsupportedSimpleAction": "Nicht unterstützte Aktion: {{ action }}",
     "unsupportedTableForReinsert": "Nicht unterstützte Tabelle für Wiedereinfügung: {{ tableName }}",
-    "undoConversion": "Diese Änderung hat eine Transaktion in eine Überweisung oder zurück umgewandelt und kann daher nicht automatisch rückgängig gemacht werden. Wandeln Sie sie stattdessen zurück."
+    "undoConversion": "Diese Änderung hat eine Transaktion in eine Überweisung oder zurück umgewandelt und kann daher nicht automatisch rückgängig gemacht werden. Wandeln Sie sie stattdessen zurück.",
+    "customRecurrenceMissing": "Diese Änderung kann nicht rückgängig gemacht oder wiederholt werden: Die benutzerdefinierte Wiederholungsregel der geplanten Transaktion fehlt in ihrem Verlauf"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Geben Sie entweder ein Passwort oder eine E-Mail-Einladung an, nicht beides.",

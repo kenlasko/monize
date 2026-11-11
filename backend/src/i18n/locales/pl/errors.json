@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Nieobsługiwana operacja zbiorcza: {{ action }}",
     "unsupportedSimpleAction": "Nieobsługiwana operacja: {{ action }}",
     "unsupportedTableForReinsert": "Nieobsługiwana tabela do ponownego wstawienia: {{ tableName }}",
-    "undoConversion": "Ta zmiana przekonwertowała transakcję na przelew lub z przelewu, więc nie można jej automatycznie cofnąć. Zamiast tego przekonwertuj ją z powrotem."
+    "undoConversion": "Ta zmiana przekonwertowała transakcję na przelew lub z przelewu, więc nie można jej automatycznie cofnąć. Zamiast tego przekonwertuj ją z powrotem.",
+    "customRecurrenceMissing": "Tej zmiany nie można cofnąć ani ponowić: w jej historii brakuje niestandardowej reguły powtarzania zaplanowanej transakcji"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Podaj hasło albo zaproszenie e-mail, ale nie oba naraz.",

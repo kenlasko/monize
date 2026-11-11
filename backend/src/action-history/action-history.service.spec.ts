@@ -2978,6 +2978,147 @@ describe("ActionHistoryService", () => {
       );
     });
 
+    describe("a Custom schedule (docs/specs/custom-recurrence.md section 5)", () => {
+      const rule = {
+        unit: "WEEK",
+        interval: 1,
+        weekdays: [5, 1],
+        weekStartsOn: 1,
+      };
+      const canonical = {
+        unit: "WEEK",
+        interval: 1,
+        weekdays: [1, 5],
+        weekStartsOn: 1,
+      };
+      const schedule = (frequency: string, extra: object = {}) => ({
+        id: "st-1",
+        name: "Gym",
+        userId,
+        accountId: "acc-1",
+        amount: -20,
+        frequency,
+        nextDueDate: "2026-11-13",
+        ...extra,
+      });
+
+      function insertedRow(): Record<string, unknown> {
+        const call = mockQueryRunner.query.mock.calls.find((c: unknown[]) =>
+          String(c[0]).includes('INSERT INTO "scheduled_transactions"'),
+        );
+        expect(call).toBeDefined();
+        const columns = [...String(call![0]).matchAll(/"([a-z_]+)"/g)]
+          .map((m) => m[1])
+          .filter((c) => c !== "scheduled_transactions");
+        return Object.fromEntries(
+          columns.map((c, i) => [c, (call![1] as unknown[])[i]]),
+        );
+      }
+
+      it("reinserts a deleted Custom schedule with its rule", async () => {
+        mockRepository.findOne.mockResolvedValue({
+          ...mockAction,
+          entityType: "scheduled_transaction",
+          action: "delete",
+          entityId: "st-1",
+          beforeData: schedule("CUSTOM", { customRecurrence: rule }),
+          afterData: null,
+        });
+        mockQueryRunner.query.mockResolvedValue([]);
+
+        await service.undo(userId);
+
+        const row = insertedRow();
+        expect(row.frequency).toBe("CUSTOM");
+        expect(row.custom_recurrence).toEqual(canonical);
+      });
+
+      it("redoes the create of a Custom schedule with its rule", async () => {
+        mockRepository.findOne.mockResolvedValue({
+          ...mockAction,
+          entityType: "scheduled_transaction",
+          action: "create",
+          entityId: "st-1",
+          isUndone: true,
+          beforeData: null,
+          afterData: schedule("CUSTOM", { customRecurrence: rule }),
+        });
+        mockQueryRunner.query.mockResolvedValue([]);
+
+        await service.redo(userId);
+
+        expect(insertedRow().custom_recurrence).toEqual(canonical);
+      });
+
+      it("puts the rule back with CUSTOM when an edit away from it is undone", async () => {
+        mockRepository.findOne.mockResolvedValue({
+          ...mockAction,
+          entityType: "scheduled_transaction",
+          action: "update",
+          entityId: "st-1",
+          beforeData: schedule("CUSTOM", { customRecurrence: rule }),
+          afterData: schedule("MONTHLY", { customRecurrence: null }),
+        });
+        mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+
+        await service.undo(userId);
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          expect.anything(),
+          "st-1",
+          expect.objectContaining({
+            frequency: "CUSTOM",
+            customRecurrence: canonical,
+          }),
+        );
+      });
+
+      it("clears the rule when an edit to CUSTOM is undone, even from a snapshot without the key", async () => {
+        // A snapshot recorded before the column existed has no key at all.
+        mockRepository.findOne.mockResolvedValue({
+          ...mockAction,
+          entityType: "scheduled_transaction",
+          action: "update",
+          entityId: "st-1",
+          beforeData: schedule("MONTHLY"),
+          afterData: schedule("CUSTOM", { customRecurrence: rule }),
+        });
+        mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+
+        await service.undo(userId);
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          expect.anything(),
+          "st-1",
+          expect.objectContaining({
+            frequency: "MONTHLY",
+            customRecurrence: null,
+          }),
+        );
+      });
+
+      it("refuses, writing nothing, a Custom snapshot without a walkable rule", async () => {
+        mockRepository.findOne.mockResolvedValue({
+          ...mockAction,
+          entityType: "scheduled_transaction",
+          action: "delete",
+          entityId: "st-1",
+          beforeData: schedule("CUSTOM"),
+          afterData: null,
+        });
+        mockQueryRunner.query.mockResolvedValue([]);
+
+        await expect(service.undo(userId)).rejects.toBeInstanceOf(
+          ConflictException,
+        );
+        expect(mockQueryRunner.query).not.toHaveBeenCalledWith(
+          expect.stringContaining('INSERT INTO "scheduled_transactions"'),
+          expect.anything(),
+        );
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
+    });
+
     it("should undo security update", async () => {
       const action = {
         ...mockAction,

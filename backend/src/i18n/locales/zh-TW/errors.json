@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "不支援的批次操作：{{ action }}",
     "unsupportedSimpleAction": "不支援的操作：{{ action }}",
     "unsupportedTableForReinsert": "不支援重新插入的資料表：{{ tableName }}",
-    "undoConversion": "此變更將交易轉換為轉帳或從轉帳轉換回交易，因此無法自動復原。請將其轉換回原狀。"
+    "undoConversion": "此變更將交易轉換為轉帳或從轉帳轉換回交易，因此無法自動復原。請將其轉換回原狀。",
+    "customRecurrenceMissing": "無法復原或重做此變更：排程交易的歷史記錄中缺少其自訂重複規則"
   },
   "admin": {
     "passwordOrInviteNotBoth": "請提供密碼或電子郵件邀請，不能兩者同時提供。",

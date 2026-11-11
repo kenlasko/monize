@@ -556,9 +556,12 @@ describe("occurrence slots", () => {
       // The write path refuses Custom on a loan payment; a row that got here
       // anyway is a defect, and a one-slot calendar would hide it.
       expect(() => dates(monthly({ frequency: "CUSTOM" }))).toThrow(/CUSTOM/);
-      expect(() => scheduleCadenceMatchesLoan("MONTHLY", "CUSTOM")).toThrow(
-        /CUSTOM/,
-      );
+    });
+
+    it("is a cadence mismatch, the graceful scheduleCalendar refusal, not an error", () => {
+      expect(scheduleCadenceMatchesLoan("MONTHLY", "CUSTOM")).toBe(false);
+      // Even for a loan with no stored cadence, which takes the schedule's.
+      expect(scheduleCadenceMatchesLoan(null, "CUSTOM")).toBe(false);
     });
   });
 });

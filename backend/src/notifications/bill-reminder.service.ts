@@ -135,11 +135,24 @@ export class BillReminderService {
       // nullable column (null is "due today only") and the ceiling. A raw
       // `addDaysYMD` on an unbounded value produced "NaN-NaN-NaN", and the
       // expander's text comparison read that as "every bill is due today".
-      const due = expandOccurrenceSlots(bill, bill.overrides ?? [], {
-        from: todayStr,
-        through: reminderWindowThrough(todayStr, bill.reminderDaysBefore),
-        maxOccurrences: 1,
-      });
+      //
+      // Each bill on its own: this pass spans every user, so one row that
+      // cannot be expanded is logged and passed over rather than ending the run
+      // for everybody (backend/CLAUDE.md, per-user isolation).
+      let due: readonly unknown[];
+      try {
+        due = expandOccurrenceSlots(bill, bill.overrides ?? [], {
+          from: todayStr,
+          through: reminderWindowThrough(todayStr, bill.reminderDaysBefore),
+          maxOccurrences: 1,
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Bill reminder skipped scheduled transaction ${bill.id}: ` +
+            `${error instanceof Error ? error.message : String(error)}`,
+        );
+        continue;
+      }
       if (due.length > 0) {
         const existing = billsByUser.get(bill.userId) || [];
         existing.push(bill);
@@ -172,9 +185,20 @@ export class BillReminderService {
       // reminder was sent to anybody. Wrapping the body is what makes the claim,
       // the delivery record and the release share one identity with the reads
       // between them.
-      const sent = await withUserContext(userId, () =>
-        this.deliverForUser(userId, bills, appUrl, todayStr),
-      );
+      //
+      // The claim and delivery checks run before `deliverForUser`'s own catch,
+      // so one user's failure there is caught here and the loop moves on.
+      let sent = false;
+      try {
+        sent = await withUserContext(userId, () =>
+          this.deliverForUser(userId, bills, appUrl, todayStr),
+        );
+      } catch (error) {
+        this.logger.error(
+          `Bill reminder failed for user ${userId}`,
+          error instanceof Error ? error.stack : error,
+        );
+      }
       if (sent) sentCount++;
       else skipCount++;
     }

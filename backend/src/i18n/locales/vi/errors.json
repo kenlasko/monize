@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Hành động hàng loạt không được hỗ trợ: {{ action }}",
     "unsupportedSimpleAction": "Hành động không được hỗ trợ: {{ action }}",
     "unsupportedTableForReinsert": "Bảng không được hỗ trợ để chèn lại: {{ tableName }}",
-    "undoConversion": "Thay đổi này đã chuyển đổi một giao dịch thành chuyển khoản hoặc ngược lại, nên không thể hoàn tác tự động. Hãy chuyển đổi lại."
+    "undoConversion": "Thay đổi này đã chuyển đổi một giao dịch thành chuyển khoản hoặc ngược lại, nên không thể hoàn tác tự động. Hãy chuyển đổi lại.",
+    "customRecurrenceMissing": "Không thể hoàn tác hoặc làm lại thay đổi này: lịch sử của giao dịch định kỳ không có quy tắc lặp lại tùy chỉnh"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Chỉ cung cấp mật khẩu hoặc lời mời qua email, không cả hai.",

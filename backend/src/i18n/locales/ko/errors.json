@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "지원되지 않는 일괄 작업입니다: {{ action }}",
     "unsupportedSimpleAction": "지원되지 않는 작업입니다: {{ action }}",
     "unsupportedTableForReinsert": "다시 삽입할 수 없는 테이블입니다: {{ tableName }}",
-    "undoConversion": "이 변경은 거래를 이체로 또는 이체에서 거래로 변환했으므로 자동으로 실행 취소할 수 없습니다. 대신 다시 변환하세요."
+    "undoConversion": "이 변경은 거래를 이체로 또는 이체에서 거래로 변환했으므로 자동으로 실행 취소할 수 없습니다. 대신 다시 변환하세요.",
+    "customRecurrenceMissing": "이 변경은 실행 취소하거나 다시 실행할 수 없습니다. 예약 거래의 사용자 지정 반복 규칙이 기록에 없습니다"
   },
   "admin": {
     "passwordOrInviteNotBoth": "비밀번호 또는 이메일 초대 중 하나만 제공하세요. 둘 다는 안 됩니다.",

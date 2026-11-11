@@ -1,3 +1,5 @@
+import { Logger } from "@nestjs/common";
+import { calculateNextDueDate } from "./recurrence";
 import {
   OCCURRENCE_WALK_GUARD,
   OVERDUE_CARRY_DAYS,
@@ -235,13 +237,46 @@ describe("expandOccurrenceSlots: CUSTOM (docs/specs/custom-recurrence.md)", () =
     ]);
   });
 
-  it("throws on a Custom schedule without its rule rather than repeating a date", () => {
-    expect(() =>
-      expandOccurrenceSlots(
-        { frequency: "CUSTOM", nextDueDate: "2026-11-12" },
-        [],
-        { through: "2026-12-10" },
-      ),
-    ).toThrow(/CUSTOM/);
+  describe("a Custom row whose rule is missing or invalid", () => {
+    let warn: jest.SpyInstance;
+    beforeEach(() => {
+      warn = jest.spyOn(Logger.prototype, "warn").mockImplementation();
+    });
+    afterEach(() => warn.mockRestore());
+
+    it.each([
+      ["missing", undefined],
+      ["invalid", { unit: "WEEK", interval: 1, weekdays: [] }],
+    ])(
+      "yields its cursor slot alone, as a one-time schedule, and warns (%s)",
+      (_label, customRecurrence) => {
+        // One broken row must not take a user's forecast, or the cross-user
+        // bill-reminder run, down with it.
+        const found = expandOccurrenceSlots(
+          {
+            id: "st-broken",
+            frequency: "CUSTOM",
+            customRecurrence: customRecurrence as never,
+            nextDueDate: "2026-11-12",
+          },
+          [{ originalDate: "2026-11-12", overrideDate: "2026-11-13" }],
+          { through: "2026-12-10" },
+        );
+        expect(found.map((o) => [o.originalDate, o.dueDate])).toEqual([
+          ["2026-11-12", "2026-11-13"],
+        ]);
+        expect(warn).toHaveBeenCalledTimes(1);
+        // The schedule id only: no rule, amount or payee in the log line.
+        expect(String(warn.mock.calls[0][0])).toContain("st-broken");
+      },
+    );
+
+    it("is still refused by the stepper a post or skip goes through", () => {
+      expect(() =>
+        calculateNextDueDate("2026-11-12", "CUSTOM", undefined, {
+          rule: null,
+        }),
+      ).toThrow(/CUSTOM/);
+    });
   });
 });

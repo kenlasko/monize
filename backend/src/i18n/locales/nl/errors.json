@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Niet-ondersteunde bulkactie: {{ action }}",
     "unsupportedSimpleAction": "Niet-ondersteunde actie: {{ action }}",
     "unsupportedTableForReinsert": "Niet-ondersteunde tabel voor herplaatsing: {{ tableName }}",
-    "undoConversion": "Deze wijziging heeft een transactie omgezet naar of van een overboeking en kan daarom niet automatisch ongedaan worden gemaakt. Zet hem in plaats daarvan terug."
+    "undoConversion": "Deze wijziging heeft een transactie omgezet naar of van een overboeking en kan daarom niet automatisch ongedaan worden gemaakt. Zet hem in plaats daarvan terug.",
+    "customRecurrenceMissing": "Deze wijziging kan niet ongedaan worden gemaakt of opnieuw worden uitgevoerd: de aangepaste herhalingsregel van de geplande transactie ontbreekt in de geschiedenis"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Geef een wachtwoord of een e-mailuitnodiging op, niet beide.",

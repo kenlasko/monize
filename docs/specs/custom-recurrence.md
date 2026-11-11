@@ -58,9 +58,13 @@ stepper can walk.
 ## 3. Stepping
 
 `nextCustomDate(ymd, rule, startDate)` is the first rule date **strictly after**
-`ymd`; `firstCustomDate(startDate, rule)` is the first on or after `startDate`.
+`ymd`; `customDateOnOrAfter(ymd, rule, startDate)` is `ymd` itself when it is a
+rule date, else the first one after it (the snap of section 5). Both exist in
+both layers and throw on an invalid rule.
 `calculateNextDueDate(ymd, "CUSTOM", anchorDay, custom)` dispatches to the
-former, where `custom = { rule, startDate }`.
+former, where `custom = { rule, startDate }`. In the backend, a walk over many
+slots takes `customStepper(rule, startDate)`, which normalizes the rule once
+and steps without normalizing again; `expandOccurrenceSlots` uses it.
 
 - **Periods.** The interval counts periods from the one containing `startDate`:
   the week (beginning on `weekStartsOn`), the calendar month or the calendar
@@ -77,18 +81,34 @@ former, where `custom = { rule, startDate }`.
 
 Without a rule, a `CUSTOM` step throws: a schedule that cannot step is a defect,
 and silently returning the same date would loop every walker until its guard.
+`calculateNextDueDate` and the schedule cursor keep throwing, so posting or
+skipping such a row refuses. The backend expander (`expandOccurrenceSlots`)
+does not: it yields the row's cursor slot alone, as if the schedule were
+one-time, and logs a warning naming the schedule id, so one broken row cannot
+take a user's forecast or a cross-user cron down. The bill-reminder fan-out also
+isolates each bill and each user (`docs/backend/cron-and-background-work.md`).
+The loan calendar's `scheduleCadenceMatchesLoan` answers `false` for `CUSTOM`,
+which the settlement plan reports as its `scheduleCalendar` refusal; the loan
+pricing and fee paths still throw (`assertFixedCadence`), because pricing a
+Custom row at a guessed cadence would be wrong silently.
 
 ## 4. Cadence figures
 
 - `FREQUENCY_CYCLE_DAYS.CUSTOM` and `OCCURRENCES_PER_YEAR.CUSTOM` are `0`: there
   is no fixed cycle. Callers that need a figure call the rule-aware helpers.
-- `customOccurrencesPerYear(rule)`: `weekdays.length * 365.25 / 7 / interval`,
-  `monthDays.length * 12 / interval` (a collision in February is ignored), or
-  `dates.length / interval`. `monthlyEquivalent` uses it on the bills page and
-  in the recurring-expenses report.
-- `customMinGapDays(rule)`: the shortest gap between consecutive rule dates. The
-  trade-match window (`tradeScheduleWindowDays`) uses it in place of the mean,
-  so a Monday and Tuesday schedule gets a zero-day window rather than a
+- `customOccurrencesPerYear(rule)` (both layers): distinct dates per year over
+  `interval`. A weekly rule is `weekdays.length * 365.25 / 7 / interval`
+  (weekdays cannot collide). A monthly or yearly rule counts the distinct dates
+  it produces in 2024-2027, four calendar years including a leap year, divided
+  by 4 and by `interval`: days that land on one date are one occurrence. So
+  `[31, -1]` is 12 a year, `[30, 31]` 19, `[29, 30, 31]` 30 (every year,
+  leap or not), and the dates `["02-28", "02-29"]` 1.25.
+  `monthlyEquivalent` uses it on the bills page and in the recurring-expenses
+  report.
+- `customMinGapDays(rule)` (backend only): the shortest gap between
+  consecutive rule dates, walked over four years, memoized per canonical rule.
+  The trade-match window (`tradeScheduleWindowDays`) uses it in place of the
+  mean, so a Monday and Tuesday schedule gets a zero-day window rather than a
   three-day one that would match the wrong occurrence.
 
 ## 5. Writes
@@ -100,13 +120,44 @@ and silently returning the same date would loop every walker until its guard.
   Date (it has no separate start-date field).
 - **Update.** Changing away from `CUSTOM` clears the rule. Changing the rule,
   or `start_date` while Custom, re-snaps `next_due_date` the same way: forward
-  from the current `next_due_date`, never back to the start date.
-- **Edited occurrences that no longer fit.** When the frequency, the rule or the
-  start date changes, a future override (`original_date >= next_due_date`)
-  whose `original_date` is no longer a slot of the new schedule is deleted in
-  the same transaction as the update. Overrides are keyed on the slot
+  from the current `next_due_date`, never back to the start date. The pairing,
+  the snap and the prune below are decided from the row read under the
+  update's row lock (`resolvePatternUpdate`), and whenever the request writes
+  `frequency` it writes `custom_recurrence` with it, so no interleaving of two
+  edits leaves `CUSTOM` without a rule or a rule beside another frequency.
+- **Edited occurrences that no longer fit.** The pattern changed when the
+  frequency, the rule or `start_date` changed, for any frequency: a month-based
+  step reads its day from the start date (`anchorDayOf`), so a new start can
+  orphan a month-end override. Then, in the same transaction as the update:
+  - the candidates are the overrides with
+    `original_date >= min(stored next_due_date, new next_due_date)`;
+  - a candidate is an orphan when its `original_date` is not a slot of the new
+    schedule walked from the new `next_due_date` (through the last candidate,
+    at most `OCCURRENCE_WALK_GUARD` steps), so one the new cursor left behind is
+    an orphan too;
+  - a candidate beyond a walk the guard cut short is kept: nothing proved it
+    orphaned.
+
+  Orphans are deleted. Overrides are keyed on the slot
   (`uq_sched_txn_overrides_occurrence`), so an orphan is one no surface can
-  reach. The form names them before saving.
+  reach. The form names them before saving, by the same rule.
+- **Undo and redo.** An undo or redo of a schedule's create, update or delete
+  writes `frequency` and `custom_recurrence` back as a pair
+  (`withPairedScheduleRecurrence`): a `CUSTOM` snapshot with its canonical
+  rule, any other frequency with `NULL`. A `CUSTOM` snapshot without a valid
+  rule is refused with a translated message before anything is written.
+  **Limitation:** undo does not restore overrides. An update that pruned
+  orphaned overrides, undone, puts the old pattern back without them, and
+  overrides added under the new pattern stay even where the old one no longer
+  holds their slot. This is the existing behaviour of every override prune: a
+  deleted schedule's overrides go with it (`ON DELETE CASCADE`) and its undo
+  reinserts the schedule alone, and the overrides a post or skip consumes are
+  not restored by undoing it either. A history that carries overrides is a
+  separate change.
+- **Payroll rules.** A deduction rule's create and update lock the bill row
+  (`FOR UPDATE`, the lock the schedule update takes first) before reading its
+  frequency, so a concurrent switch to `CUSTOM` and a new rule cannot both
+  commit: whichever takes the lock second sees the other and refuses.
 - **Not offered** for a loan or mortgage payment schedule or a payroll schedule;
   amortisation and deduction pooling assume a fixed cadence. The API refuses it
   there with a translated message.

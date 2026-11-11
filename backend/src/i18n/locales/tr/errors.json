@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Desteklenmeyen toplu eylem: {{ action }}",
     "unsupportedSimpleAction": "Desteklenmeyen eylem: {{ action }}",
     "unsupportedTableForReinsert": "Yeniden ekleme için desteklenmeyen tablo: {{ tableName }}",
-    "undoConversion": "Bu değişiklik bir işlemi transfere veya transferden işleme dönüştürdü, bu nedenle otomatik olarak geri alınamaz. Bunun yerine geri dönüştürün."
+    "undoConversion": "Bu değişiklik bir işlemi transfere veya transferden işleme dönüştürdü, bu nedenle otomatik olarak geri alınamaz. Bunun yerine geri dönüştürün.",
+    "customRecurrenceMissing": "Bu değişiklik geri alınamaz veya yinelenemez: planlanmış işlemin özel tekrar kuralı geçmişinde yok"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Şifre veya e-posta daveti sağlayın, ikisini birden değil.",

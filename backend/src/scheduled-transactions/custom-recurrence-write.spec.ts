@@ -7,6 +7,7 @@ import {
   assertCustomFrequencyAllowed,
   orphanedOverrides,
   resolveCustomRecurrence,
+  resolvePatternUpdate,
   sameCustomRecurrence,
   snapToCustomPattern,
 } from "./custom-recurrence-write";
@@ -127,6 +128,7 @@ describe("orphanedOverrides", () => {
       {
         frequency: "CUSTOM",
         nextDueDate: "2026-11-16",
+        previousNextDueDate: "2026-11-16",
         startDate: "2026-11-16",
         customRecurrence: MWF,
       },
@@ -146,6 +148,7 @@ describe("orphanedOverrides", () => {
       {
         frequency: "MONTHLY",
         nextDueDate: "2026-11-15",
+        previousNextDueDate: "2026-11-15",
         startDate: "2026-01-15",
         customRecurrence: null,
       },
@@ -159,6 +162,7 @@ describe("orphanedOverrides", () => {
       {
         frequency: "ONCE",
         nextDueDate: "2026-11-15",
+        previousNextDueDate: "2026-11-15",
         startDate: "2026-11-15",
         customRecurrence: null,
       },
@@ -172,6 +176,7 @@ describe("orphanedOverrides", () => {
       {
         frequency: "DAILY",
         nextDueDate: "2026-01-01",
+        previousNextDueDate: "2026-01-01",
         startDate: "2026-01-01",
         customRecurrence: null,
       },
@@ -187,12 +192,132 @@ describe("orphanedOverrides", () => {
         {
           frequency: "CUSTOM",
           nextDueDate: "2026-11-16",
+          previousNextDueDate: "2026-11-16",
           startDate: "2026-11-16",
           customRecurrence: MWF,
         },
         [override("past", "2026-11-03")],
       ),
     ).toEqual([]);
+  });
+  it("orphans a month-end override when a fixed schedule's start date moves", () => {
+    // MONTHLY anchored on the 31st steps 30 Nov -> 31 Dec; anchored on the
+    // 30th it steps to 30 Dec, so the 31 December override no longer has a slot.
+    const orphans = orphanedOverrides(
+      {
+        frequency: "MONTHLY",
+        nextDueDate: "2026-11-30",
+        startDate: "2026-01-30",
+        customRecurrence: null,
+        previousNextDueDate: "2026-11-30",
+      },
+      [override("month-end", "2026-12-31"), override("kept", "2027-01-30")],
+    );
+    expect(orphans.map((o) => o.id)).toEqual(["month-end"]);
+  });
+
+  it("orphans an override the new cursor left behind, from the earlier of the two cursors", () => {
+    // The rule change moved the cursor from Monday 16th to Friday 20th: the
+    // Wednesday 18th override is between the two cursors and no surface
+    // reaches it any more.
+    const orphans = orphanedOverrides(
+      {
+        frequency: "CUSTOM",
+        nextDueDate: "2026-11-20",
+        startDate: "2026-11-16",
+        customRecurrence: { ...MWF, weekdays: [5] },
+        previousNextDueDate: "2026-11-16",
+      },
+      [
+        override("before-both", "2026-11-13"),
+        override("between", "2026-11-18"),
+        override("fri", "2026-11-27"),
+      ],
+    );
+    expect(orphans.map((o) => o.id)).toEqual(["between"]);
+  });
+
+  it("checks from the new cursor when it moved back", () => {
+    const orphans = orphanedOverrides(
+      {
+        frequency: "CUSTOM",
+        nextDueDate: "2026-11-11",
+        startDate: "2026-11-11",
+        customRecurrence: MWF,
+        previousNextDueDate: "2026-11-20",
+      },
+      [override("tue", "2026-11-17"), override("wed", "2026-11-18")],
+    );
+    expect(orphans.map((o) => o.id)).toEqual(["tue"]);
+  });
+});
+
+describe("resolvePatternUpdate (section 5)", () => {
+  const stored = (over: Record<string, unknown> = {}) => ({
+    frequency: "MONTHLY" as const,
+    customRecurrence: null,
+    startDate: "2026-01-15",
+    nextDueDate: "2026-11-15",
+    ...over,
+  });
+
+  it("writes the rule whenever the frequency is written", () => {
+    // A form resends the frequency it loaded; the rule goes with it, so the
+    // pair is decided by this request and the row it locked, never by an
+    // earlier read.
+    expect(
+      resolvePatternUpdate({ frequency: "MONTHLY" }, stored()).fields,
+    ).toEqual({ customRecurrence: null });
+    const fromCustom = stored({
+      frequency: "CUSTOM",
+      customRecurrence: MWF,
+      nextDueDate: "2026-11-16",
+    });
+    expect(
+      resolvePatternUpdate({ frequency: "CUSTOM" }, fromCustom).fields,
+    ).toEqual({ customRecurrence: MWF });
+  });
+
+  it("clears a rule the locked row holds when the request writes another frequency", () => {
+    // The request was prepared against a MONTHLY row; a concurrent switch to
+    // CUSTOM committed before the lock. Writing MONTHLY must clear the rule.
+    const locked = stored({ frequency: "CUSTOM", customRecurrence: MWF });
+    const update = resolvePatternUpdate({ frequency: "MONTHLY" }, locked);
+    expect(update.fields.customRecurrence).toBeNull();
+    expect(update.patternChanged).toBe(true);
+  });
+
+  it("refuses CUSTOM when the locked row lost its rule", () => {
+    // Prepared against a CUSTOM row whose rule a concurrent edit cleared.
+    expect(() =>
+      resolvePatternUpdate(
+        { frequency: "CUSTOM", name: "x" } as never,
+        stored(),
+      ),
+    ).toThrow(BadRequestException);
+  });
+
+  it("writes nothing pattern-related for an edit that sends none of it", () => {
+    const update = resolvePatternUpdate({}, stored());
+    expect(update.fields).toEqual({});
+    expect(update.patternChanged).toBe(false);
+  });
+
+  it("calls a start-date change a pattern change for any frequency", () => {
+    const update = resolvePatternUpdate({ startDate: "2026-01-31" }, stored());
+    expect(update.patternChanged).toBe(true);
+    expect(update.fields).toEqual({});
+  });
+
+  it("snaps the cursor onto a new rule from the request's due date", () => {
+    const update = resolvePatternUpdate(
+      { frequency: "CUSTOM", customRecurrence: MWF, nextDueDate: "2026-11-14" },
+      stored(),
+    );
+    expect(update.fields).toEqual({
+      customRecurrence: MWF,
+      nextDueDate: "2026-11-16",
+    });
   });
 });
 

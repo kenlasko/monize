@@ -897,6 +897,61 @@ describe("BillReminderService", () => {
           expect(emailService.sendMail).toHaveBeenCalledTimes(2);
         });
 
+        it("passes over a bill it cannot expand and reminds every other user", async () => {
+          // A row the cross-user pass cannot walk (here a start date that is
+          // not a date) used to throw out of the loop and end the run for
+          // everybody.
+          const broken = makeBill({
+            id: "bill-broken",
+            userId: userId1,
+            frequency: "MONTHLY",
+            startDate: "not-a-date" as unknown as string,
+            nextDueDate: daysFromNow(1),
+            reminderDaysBefore: 3,
+          });
+          const healthy = makeBill({
+            id: "bill-healthy",
+            userId: userId2,
+            nextDueDate: daysFromNow(1),
+            reminderDaysBefore: 3,
+          });
+          scheduledTransactionsRepo.find.mockResolvedValue([broken, healthy]);
+          preferencesRepo.findOne.mockResolvedValue({
+            notificationEmail: true,
+          });
+          usersRepo.findOne.mockResolvedValue(mockUser2);
+
+          await expect(service.sendBillReminders()).resolves.toBeUndefined();
+
+          expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+          expect(emailService.sendMail.mock.calls[0][0]).toBe(
+            "user2@example.com",
+          );
+        });
+
+        it("moves on to the next user when one user's claim fails", async () => {
+          const bill1 = makeBill({
+            id: "bill-1",
+            userId: userId1,
+            nextDueDate: daysFromNow(1),
+          });
+          const bill2 = makeBill({
+            id: "bill-2",
+            userId: userId2,
+            nextDueDate: daysFromNow(1),
+          });
+          scheduledTransactionsRepo.find.mockResolvedValue([bill1, bill2]);
+          preferencesRepo.findOne.mockResolvedValue({
+            notificationEmail: true,
+          });
+          usersRepo.findOne.mockResolvedValue(mockUser2);
+          jobClaims.claimLease.mockRejectedValueOnce(new Error("lease table"));
+
+          await expect(service.sendBillReminders()).resolves.toBeUndefined();
+
+          expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+        });
+
         it("does not throw when sendMail throws an error", async () => {
           const bill = makeBill({
             userId: userId1,

@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "サポートされていない一括アクション：{{ action }}",
     "unsupportedSimpleAction": "サポートされていないアクション：{{ action }}",
     "unsupportedTableForReinsert": "再挿入のためのサポートされていないテーブル：{{ tableName }}",
-    "undoConversion": "この変更は取引を振替に、または振替から変換したため、自動的に元に戻せません。代わりに元の形に変換し直してください。"
+    "undoConversion": "この変更は取引を振替に、または振替から変換したため、自動的に元に戻せません。代わりに元の形に変換し直してください。",
+    "customRecurrenceMissing": "この変更は元に戻すこともやり直すこともできません。予定取引のカスタム繰り返しルールが履歴にありません"
   },
   "admin": {
     "passwordOrInviteNotBoth": "パスワードまたはメール招待のどちらかを指定してください。両方は指定できません。",

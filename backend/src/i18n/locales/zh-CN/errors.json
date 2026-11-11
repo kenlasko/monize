@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "不支持的批量操作：{{ action }}",
     "unsupportedSimpleAction": "不支持的操作：{{ action }}",
     "unsupportedTableForReinsert": "不支持重新插入的表：{{ tableName }}",
-    "undoConversion": "此更改将交易转换为转账或从转账转换回交易，因此无法自动撤销。请将其转换回原状。"
+    "undoConversion": "此更改将交易转换为转账或从转账转换回交易，因此无法自动撤销。请将其转换回原状。",
+    "customRecurrenceMissing": "无法撤销或重做此更改：计划交易的历史记录中缺少其自定义重复规则"
   },
   "admin": {
     "passwordOrInviteNotBoth": "请提供密码或邮件邀请之一，不能同时提供。",

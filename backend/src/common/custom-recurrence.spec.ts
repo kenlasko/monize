@@ -1,12 +1,13 @@
 import {
   CustomRecurrence,
+  customDateOnOrAfter,
   customMinGapDays,
   customOccurrencesPerYear,
-  firstCustomDate,
-  isCustomDate,
+  customStepper,
   nextCustomDate,
   normalizeCustomRecurrence,
 } from "./custom-recurrence";
+import * as ymdCalendar from "./ymd-calendar";
 
 const week = (
   weekdays: number[],
@@ -127,32 +128,63 @@ describe("nextCustomDate (docs/specs/custom-recurrence.md section 7)", () => {
   });
 });
 
-describe("firstCustomDate", () => {
-  it("is the start date itself when it is on the rule", () => {
-    expect(firstCustomDate("2026-11-13", week([1, 3, 5]))).toBe("2026-11-13");
+describe("customDateOnOrAfter", () => {
+  it("is the date itself when it is on the rule", () => {
+    expect(customDateOnOrAfter("2026-11-13", week([1, 3, 5]))).toBe(
+      "2026-11-13",
+    );
+    expect(customDateOnOrAfter("2027-02-28", month([30, 31]))).toBe(
+      "2027-02-28",
+    );
   });
 
-  it("is the first rule date after an off-pattern start", () => {
-    expect(firstCustomDate("2026-11-14", week([1, 3, 5]))).toBe("2026-11-16");
-    expect(firstCustomDate("2026-11-21", month([5, 20, -1]))).toBe(
+  it("is the first rule date after an off-pattern date", () => {
+    expect(customDateOnOrAfter("2026-11-14", week([1, 3, 5]))).toBe(
+      "2026-11-16",
+    );
+    expect(customDateOnOrAfter("2026-11-21", month([5, 20, -1]))).toBe(
       "2026-11-30",
     );
-    expect(firstCustomDate("2026-03-01", year(["02-29"]))).toBe("2027-02-28");
+    expect(customDateOnOrAfter("2026-03-01", year(["02-29"]))).toBe(
+      "2027-02-28",
+    );
+  });
+
+  it("counts the interval's periods from the start date", () => {
+    const rule = month([15], 3);
+    expect(customDateOnOrAfter("2027-02-15", rule, "2026-11-15")).toBe(
+      "2027-02-15",
+    );
+    // December is not an active month of a quarterly rule started in November.
+    expect(customDateOnOrAfter("2026-12-15", rule, "2026-11-15")).toBe(
+      "2027-02-15",
+    );
+  });
+
+  it("throws without a valid rule", () => {
+    expect(() => customDateOnOrAfter("2026-11-11", null)).toThrow(/CUSTOM/);
   });
 });
 
-describe("isCustomDate", () => {
-  it("answers for a date on and off the pattern", () => {
-    expect(isCustomDate("2026-11-16", week([1, 3, 5]))).toBe(true);
-    expect(isCustomDate("2026-11-17", week([1, 3, 5]))).toBe(false);
-    expect(isCustomDate("2027-02-28", month([30, 31]))).toBe(true);
-    expect(isCustomDate("2027-02-27", month([30, 31]))).toBe(false);
+describe("customStepper", () => {
+  it("steps like nextCustomDate, normalizing the rule once", () => {
+    const rule = week([2, 4], 2, 1);
+    const step = customStepper(rule, "2026-11-11");
+    expect(step("2026-11-12")).toBe(
+      nextCustomDate("2026-11-12", rule, "2026-11-11"),
+    );
+    expect(step("2026-11-24")).toBe("2026-11-26");
+    // An unsorted rule is canonicalized up front, so the walk sees no change.
+    const unsorted = customStepper({
+      unit: "MONTH",
+      interval: 1,
+      monthDays: [-1, 5],
+    });
+    expect(unsorted("2026-11-05")).toBe("2026-11-30");
   });
 
-  it("honours the interval from the start date's period", () => {
-    const rule = month([15], 3);
-    expect(isCustomDate("2027-02-15", rule, "2026-11-15")).toBe(true);
-    expect(isCustomDate("2026-12-15", rule, "2026-11-15")).toBe(false);
+  it("throws without a valid rule", () => {
+    expect(() => customStepper(undefined)).toThrow(/CUSTOM/);
   });
 });
 
@@ -285,9 +317,23 @@ describe("customOccurrencesPerYear", () => {
       (2 * 365.25) / 7 / 2,
     );
     expect(customOccurrencesPerYear(month([5, 20, -1]))).toBe(36);
-    // A collision in February is ignored.
-    expect(customOccurrencesPerYear(month([30, 31]))).toBe(24);
     expect(customOccurrencesPerYear(month([15], 3))).toBe(4);
+  });
+
+  it("counts distinct dates: days that land on one date are one occurrence", () => {
+    // 31 and the last day are one date in every month.
+    expect(customOccurrencesPerYear(month([31, -1]))).toBe(12);
+    // 31 days in 7 months (3 dates), 30 in 4 (29 and 30), February 1: 30 a
+    // year, the same in a leap year (all three fall on the 29th).
+    expect(customOccurrencesPerYear(month([29, 30, 31]))).toBe(30);
+    // 30 and 31 merge in February and in every 30-day month.
+    expect(customOccurrencesPerYear(month([30, 31]))).toBe(19);
+    // 28 and 29 February are one date in three years out of four.
+    expect(customOccurrencesPerYear(year(["02-28", "02-29"]))).toBe(1.25);
+    expect(customOccurrencesPerYear(month([31, -1], 2))).toBe(6);
+  });
+
+  it("keeps the remaining figures", () => {
     expect(customOccurrencesPerYear(year(["02-01", "06-01", "10-01"]))).toBe(3);
     expect(customOccurrencesPerYear(year(["06-01"], 2))).toBe(0.5);
   });
@@ -311,5 +357,20 @@ describe("customMinGapDays", () => {
 
   it("is zero without a valid rule", () => {
     expect(customMinGapDays(undefined)).toBe(0);
+  });
+
+  it("walks a rule once and answers it from memory after", () => {
+    const rule = month([3, 17], 5);
+    const parse = jest.spyOn(ymdCalendar, "parseYMD");
+    try {
+      const first = customMinGapDays(rule);
+      const walked = parse.mock.calls.length;
+      expect(walked).toBeGreaterThan(0);
+      // The same rule in another spelling is the same canonical rule.
+      expect(customMinGapDays({ ...rule, monthDays: [17, 3, 3] })).toBe(first);
+      expect(parse.mock.calls.length).toBe(walked);
+    } finally {
+      parse.mockRestore();
+    }
   });
 });

@@ -10969,7 +10969,9 @@ describe("ScheduledTransactionsService", () => {
         const fields = mockQueryRunner.manager.update.mock.calls.find(
           (call: unknown[]) => call[0] === ScheduledTransaction,
         )[2];
-        expect(fields).not.toHaveProperty("customRecurrence");
+        // The frequency is written, so its rule is written beside it (the
+        // same canonical rule), never left to whatever the row holds.
+        expect(fields.customRecurrence).toEqual(MWF);
         expect(fields.nextDueDate).toBe("2026-11-17");
         expect(mockQueryRunner.manager.find).not.toHaveBeenCalledWith(
           ScheduledTransactionOverride,
@@ -10999,15 +11001,117 @@ describe("ScheduledTransactionsService", () => {
         );
       });
 
-      it("a start date change prunes overrides only while Custom", async () => {
-        stubFindOne(makeScheduled({ frequency: "MONTHLY" }));
-
-        await service.update(userId, stId, { startDate: "2025-01-20" });
-
-        expect(mockQueryRunner.manager.find).not.toHaveBeenCalledWith(
-          ScheduledTransactionOverride,
-          expect.anything(),
+      it("a start date change prunes a fixed schedule's orphaned override too", async () => {
+        // A month-based step reads its day from the start date (anchorDayOf):
+        // anchored on the 31st, 30 Nov steps to 31 Dec; on the 30th, to 30 Dec.
+        stubFindOne(
+          makeScheduled({
+            frequency: "MONTHLY",
+            startDate: "2026-01-31",
+            nextDueDate: "2026-11-30",
+          }),
         );
+        mockQueryRunner.manager.find.mockImplementation(
+          async (entity: unknown) =>
+            entity === ScheduledTransactionOverride
+              ? [{ id: "month-end", originalDate: "2026-12-31" }]
+              : [],
+        );
+
+        await service.update(userId, stId, { startDate: "2026-01-30" });
+
+        const deletes = mockQueryRunner.manager.delete.mock.calls.filter(
+          (call: unknown[]) => call[0] === ScheduledTransactionOverride,
+        );
+        expect(deletes).toHaveLength(1);
+        expect(deletes[0][1].id.value).toEqual(["month-end"]);
+      });
+
+      describe("decided from the row read under the lock", () => {
+        // `findOne` before the transaction reads one row; the locked re-read
+        // returns another, as when a concurrent edit commits in between.
+        function readsThenLocks(
+          before: ScheduledTransaction,
+          locked: ScheduledTransaction,
+        ) {
+          stubFindOne(before);
+          mockQueryRunner.manager.findOne.mockImplementation(
+            async (_entity: unknown, options: { lock?: unknown }) =>
+              options?.lock ? locked : before,
+          );
+        }
+
+        it("clears the rule a concurrent switch to CUSTOM stored when this edit writes MONTHLY", async () => {
+          readsThenLocks(
+            makeScheduled({ frequency: "MONTHLY", nextDueDate: "2026-11-16" }),
+            makeScheduled({
+              frequency: "CUSTOM",
+              customRecurrence: MWF,
+              nextDueDate: "2026-11-16",
+            }),
+          );
+
+          await service.update(userId, stId, {
+            name: "Gym",
+            frequency: "MONTHLY" as any,
+          });
+
+          expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+            ScheduledTransaction,
+            stId,
+            expect.objectContaining({
+              frequency: "MONTHLY",
+              customRecurrence: null,
+            }),
+          );
+        });
+
+        it("refuses CUSTOM, writing nothing, when a concurrent edit cleared the rule", async () => {
+          readsThenLocks(
+            makeScheduled({
+              frequency: "CUSTOM",
+              customRecurrence: MWF,
+              nextDueDate: "2026-11-16",
+            }),
+            makeScheduled({ frequency: "MONTHLY", nextDueDate: "2026-11-16" }),
+          );
+
+          await expect(
+            service.update(userId, stId, {
+              name: "Gym",
+              frequency: "CUSTOM" as any,
+            }),
+          ).rejects.toThrow("A custom frequency needs a recurrence rule");
+          expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+        });
+
+        it("snaps from the locked cursor, never back to the one read before it", async () => {
+          // A post advanced the cursor between the read and the lock.
+          readsThenLocks(
+            makeScheduled({
+              frequency: "CUSTOM",
+              customRecurrence: MWF,
+              startDate: "2026-11-02",
+              nextDueDate: "2026-11-16",
+            }),
+            makeScheduled({
+              frequency: "CUSTOM",
+              customRecurrence: MWF,
+              startDate: "2026-11-02",
+              nextDueDate: "2026-11-23",
+            }),
+          );
+
+          await service.update(userId, stId, {
+            customRecurrence: { unit: "WEEK", interval: 1, weekdays: [2] },
+          });
+
+          expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+            ScheduledTransaction,
+            stId,
+            expect.objectContaining({ nextDueDate: "2026-11-24" }),
+          );
+        });
       });
 
       it("refuses CUSTOM on a loan payment schedule before writing", async () => {

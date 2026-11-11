@@ -1,5 +1,5 @@
 import { CustomStepContext, nextCustomDate } from "./custom-recurrence";
-import { daysInMonth, formatYMD } from "./ymd-calendar";
+import { daysInMonth, formatYMD, parseYMD } from "./ymd-calendar";
 
 export { daysInMonth };
 
@@ -55,18 +55,6 @@ export const FREQUENCY_CYCLE_DAYS: Record<FrequencyType, number> = {
 };
 
 const YMD_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-
-function parseYMD(ymd: string): { y: number; m: number; d: number } {
-  const match = YMD_PATTERN.exec(ymd);
-  if (!match) {
-    throw new Error(`Invalid YYYY-MM-DD date string: ${ymd}`);
-  }
-  return {
-    y: Number(match[1]),
-    m: Number(match[2]),
-    d: Number(match[3]),
-  };
-}
 
 function addDays(ymd: string, days: number): string {
   const { y, m, d } = parseYMD(ymd);

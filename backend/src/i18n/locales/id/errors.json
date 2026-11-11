@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Tindakan massal tidak didukung: {{ action }}",
     "unsupportedSimpleAction": "Tindakan tidak didukung: {{ action }}",
     "unsupportedTableForReinsert": "Tabel tidak didukung untuk penyisipan ulang: {{ tableName }}",
-    "undoConversion": "Perubahan ini mengonversi transaksi ke atau dari transfer, sehingga tidak dapat dibatalkan secara otomatis. Konversikan kembali saja."
+    "undoConversion": "Perubahan ini mengonversi transaksi ke atau dari transfer, sehingga tidak dapat dibatalkan secara otomatis. Konversikan kembali saja.",
+    "customRecurrenceMissing": "Perubahan ini tidak dapat dibatalkan atau diulang: aturan pengulangan kustom transaksi terjadwal tidak ada dalam riwayatnya"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Berikan kata sandi atau undangan email, tidak keduanya.",

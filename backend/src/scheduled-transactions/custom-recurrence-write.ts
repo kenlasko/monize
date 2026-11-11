@@ -2,12 +2,10 @@ import { BadRequestException } from "@nestjs/common";
 import { EntityManager, In } from "typeorm";
 import {
   CustomRecurrence,
-  isCustomDate,
-  nextCustomDate,
+  customDateOnOrAfter,
   normalizeCustomRecurrence,
 } from "../common/custom-recurrence";
 import { FrequencyType, ensureYMD } from "../common/recurrence";
-import { addDaysYMD } from "../common/date-utils";
 import {
   OCCURRENCE_WALK_GUARD,
   expandOccurrenceSlots,
@@ -92,19 +90,100 @@ export function resolveCustomRecurrence(
 
 /**
  * `nextDueDate` when it falls on the rule, else the first rule date on or after
- * it, the rule's periods still counted from `startDate` (section 5). Never
- * `firstCustomDate(startDate)`: on a schedule that has been running that is a
- * date behind the cursor, which would hand back occurrences already settled.
+ * it, the rule's periods still counted from `startDate` (section 5). Never the
+ * first rule date on or after `startDate`: on a schedule that has been running
+ * that is a date behind the cursor, which would hand back occurrences already
+ * settled.
  */
 export function snapToCustomPattern(
   nextDueDate: string,
   startDate: string,
   rule: CustomRecurrence,
 ): string {
-  const next = ensureYMD(nextDueDate);
-  const start = ensureYMD(startDate);
-  if (isCustomDate(next, rule, start)) return next;
-  return nextCustomDate(addDaysYMD(next, -1), rule, start);
+  return customDateOnOrAfter(
+    ensureYMD(nextDueDate),
+    rule,
+    ensureYMD(startDate),
+  );
+}
+
+/** The pattern columns of a stored schedule, as an update decides against them. */
+export interface PatternBasis {
+  frequency: FrequencyType;
+  customRecurrence: CustomRecurrence | null;
+  startDate: string | Date;
+  nextDueDate: string | Date;
+}
+
+/** The pattern columns an update request may carry; `undefined` is "not sent". */
+export interface PatternRequest {
+  frequency?: FrequencyType;
+  customRecurrence?: CustomRecurrence | null;
+  startDate?: string | Date;
+  nextDueDate?: string | Date;
+}
+
+export interface PatternUpdate {
+  frequency: FrequencyType;
+  /** The rule the row holds after the write: canonical while Custom, else `null`. */
+  rule: CustomRecurrence | null;
+  /**
+   * The frequency, the rule or the start date changed (section 5). A start date
+   * moves the slots of every frequency, not only Custom: a month-based step
+   * reads its day from the start date (`anchorDayOf`), so a new start can
+   * orphan a month-end override.
+   */
+  patternChanged: boolean;
+  /** Columns to write beside the request's own; a key is present only when written. */
+  fields: { customRecurrence?: CustomRecurrence | null; nextDueDate?: string };
+}
+
+/**
+ * What an update does to the pattern, decided against `stored` because a form
+ * resends every field. The caller decides it from the row it holds the lock on,
+ * so a concurrent write between its first read and the lock cannot leave a
+ * Custom row without a rule or a rule beside another frequency: whenever the
+ * frequency is written, the rule is written with it. A changed rule or start
+ * date of a Custom schedule puts the cursor back on the pattern.
+ */
+export function resolvePatternUpdate(
+  request: PatternRequest,
+  stored: PatternBasis,
+): PatternUpdate {
+  const frequency = request.frequency ?? stored.frequency;
+  const rule = resolveCustomRecurrence(
+    frequency,
+    request.customRecurrence,
+    stored.customRecurrence,
+  );
+  const ruleChanged = !sameCustomRecurrence(rule, stored.customRecurrence);
+  const startChanged =
+    request.startDate !== undefined &&
+    ensureYMD(request.startDate) !== ensureYMD(stored.startDate);
+  const fields: PatternUpdate["fields"] = {};
+  if (request.frequency !== undefined || ruleChanged) {
+    fields.customRecurrence = rule;
+  }
+  if (rule && (ruleChanged || startChanged)) {
+    const snapped = snapToCustomPattern(
+      ensureYMD(request.nextDueDate ?? stored.nextDueDate),
+      ensureYMD(request.startDate ?? stored.startDate),
+      rule,
+    );
+    if (
+      request.nextDueDate !== undefined ||
+      snapped !== ensureYMD(stored.nextDueDate)
+    ) {
+      fields.nextDueDate = snapped;
+    }
+  }
+  return {
+    frequency,
+    rule,
+    patternChanged:
+      frequency !== stored.frequency || ruleChanged || startChanged,
+    fields,
+  };
 }
 
 /** The schedule columns an orphan check expands. */
@@ -113,27 +192,34 @@ export interface OrphanCheckSchedule {
   nextDueDate: string;
   startDate: string;
   customRecurrence: CustomRecurrence | null;
+  /** The cursor the row held before the update. */
+  previousNextDueDate: string;
 }
 
 /**
- * The overrides at or after the cursor whose `originalDate` is not a slot of
- * `schedule` (section 5, "Edited occurrences that no longer fit"). Slots come
- * from the one expander, walked to the last such override and no further than
- * `OCCURRENCE_WALK_GUARD` steps; an override beyond a walk the guard cut short
- * is kept, because nothing proved it orphaned. The end date and the remaining
- * count are not consulted: this answers whether the pattern still holds the
- * slot, and an end-date edit is not a pattern change.
+ * The overrides a pattern change orphans (section 5, "Edited occurrences that
+ * no longer fit"). Candidates are the overrides on or after the earlier of the
+ * old and the new cursor; a candidate is an orphan when its `originalDate` is
+ * not a slot of the new schedule walked from the new cursor, so one the update
+ * left behind the cursor is one too. Slots come from the one expander, walked
+ * to the last candidate and no further than `OCCURRENCE_WALK_GUARD` steps; a
+ * candidate beyond a walk the guard cut short is kept, because nothing proved
+ * it orphaned. The end date and the remaining count are not consulted: this
+ * answers whether the pattern still holds the slot, and an end-date edit is
+ * not a pattern change. The frontend's warning applies the same rule.
  */
 export function orphanedOverrides<O extends { originalDate: string | Date }>(
   schedule: OrphanCheckSchedule,
   overrides: readonly O[],
 ): O[] {
   const cursor = ensureYMD(schedule.nextDueDate);
-  const future = overrides.filter(
-    (o) => ensureYMD(o.originalDate as string) >= cursor,
+  const previous = ensureYMD(schedule.previousNextDueDate);
+  const floor = previous < cursor ? previous : cursor;
+  const candidates = overrides.filter(
+    (o) => ensureYMD(o.originalDate as string) >= floor,
   );
-  if (future.length === 0) return [];
-  const through = future
+  if (candidates.length === 0) return [];
+  const through = candidates
     .map((o) => ensureYMD(o.originalDate as string))
     .reduce((last, d) => (d > last ? d : last), cursor);
   const slots = expandOccurrenceSlots(
@@ -153,7 +239,7 @@ export function orphanedOverrides<O extends { originalDate: string | Date }>(
     slots.length >= OCCURRENCE_WALK_GUARD
       ? slots[slots.length - 1].originalDate
       : through;
-  return future.filter((o) => {
+  return candidates.filter((o) => {
     const date = ensureYMD(o.originalDate as string);
     return !held.has(date) && date <= walkedThrough;
   });
