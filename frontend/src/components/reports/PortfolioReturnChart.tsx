@@ -1,5 +1,6 @@
 'use client';
 
+import { CARD_CLASS } from '@/components/ui/Card';
 import { useEffect, useImperativeHandle, useMemo, useRef, type Ref } from 'react';
 import { useTranslations } from 'next-intl';
 import {
@@ -173,7 +174,7 @@ export function PortfolioReturnChart({
   return (
     <div
       ref={chartRef}
-      className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6"
+      className={`${CARD_CLASS} px-2 py-4 sm:p-6`}
     >
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
         {t('investmentPerformance.twrTitle')}
