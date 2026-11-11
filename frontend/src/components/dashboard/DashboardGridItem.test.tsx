@@ -84,6 +84,26 @@ describe('DashboardGridItem', () => {
     expect(content.className).not.toMatch(/(?<![\w-])(?:max-)?h-/);
   });
 
+  it('dims the dragged widget further, and holds the insertion line against its own edge', () => {
+    const { rerender } = render(
+      <DashboardGridItem item={itemOf()} overlay={<span />} indicator={<span data-testid="line" />}>
+        <div data-testid="card">card</div>
+      </DashboardGridItem>,
+    );
+    const content = screen.getByTestId('widget-edit-content');
+    expect(content).toHaveClass('opacity-60');
+    const item = content.parentElement as HTMLElement;
+    expect(item).toHaveClass('relative');
+    expect(item).toContainElement(screen.getByTestId('line'));
+    rerender(
+      <DashboardGridItem item={itemOf()} overlay={<span />} dragging>
+        <div data-testid="card">card</div>
+      </DashboardGridItem>,
+    );
+    expect(screen.getByTestId('widget-edit-content')).toHaveClass('opacity-30');
+    expect(screen.getByTestId('widget-edit-content')).not.toHaveClass('opacity-60');
+  });
+
   it('leaves the content as it is outside edit mode', () => {
     expect(renderItem(itemOf())).not.toHaveAttribute('inert');
     expect(document.querySelector('[inert]')).toBeNull();

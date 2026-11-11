@@ -21,11 +21,17 @@ const ONE_CELL = "grid grid-cols-1 [grid-template-areas:'cell'] *:[grid-area:cel
 export function DashboardGridItem({
   item,
   overlay,
+  dragging = false,
+  indicator,
   children,
 }: {
   item: DashboardLayoutItem;
   /** Edit mode's controls, drawn over the widget in the same cell. */
   overlay?: ReactNode;
+  /** The widget is the one being dragged: it stays in place, dimmed further. */
+  dragging?: boolean;
+  /** Edit mode's insertion line while a widget is dragged over this one. */
+  indicator?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -35,6 +41,8 @@ export function DashboardGridItem({
         ONE_CELL,
         WIDTH_CLASSES[item.width],
         HEIGHT_CLASSES[item.height],
+        // In edit mode only: the containing block of the insertion line.
+        overlay && 'relative',
       )}
     >
       {overlay ? (
@@ -42,10 +50,15 @@ export function DashboardGridItem({
           {/* Inert while editing: a press on a chart or a link inside the
               card must not act, and Tab reaches only the overlay. Itself a
               one-cell grid, so the card still fills the item by stretch. */}
-          <div inert data-testid="widget-edit-content" className={`${ONE_CELL} opacity-60`}>
+          <div
+            inert
+            data-testid="widget-edit-content"
+            className={cn(ONE_CELL, dragging ? 'opacity-30' : 'opacity-60')}
+          >
             {children}
           </div>
           {overlay}
+          {indicator}
         </>
       ) : (
         children

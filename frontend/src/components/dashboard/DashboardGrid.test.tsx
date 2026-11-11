@@ -97,6 +97,41 @@ describe('DashboardGrid', () => {
       expect(regions[0]).toHaveTextContent('Insights moved');
     });
 
+    it('draws a drag under way: one insertion line, the dragged widget dimmed, the chip', () => {
+      render(
+        <DashboardGrid
+          layout={LAYOUT}
+          context={context()}
+          editing={editing({
+            reorder: {
+              draggingIndex: 0,
+              axis: 'x',
+              dropIndicator: (index) => (index === 2 ? 'before' : null),
+              chip: <div data-testid="chip" />,
+            },
+          })}
+        />,
+      );
+      const lines = screen.getAllByTestId('drop-indicator-before');
+      expect(lines).toHaveLength(1);
+      expect(lines[0].closest('[data-widget-id]')).toHaveAttribute('data-widget-id', 'net-worth');
+      // The line stands between items in a row.
+      expect(lines[0]).toHaveClass('w-[3px]');
+      const dimmed = Array.from(document.querySelectorAll('.opacity-30')).map((el) =>
+        el.closest('[data-widget-id]')?.getAttribute('data-widget-id'),
+      );
+      expect(dimmed).toEqual(['insights']);
+      // Fixed to the viewport, so not one of the grid's items.
+      const grid = document.querySelector('[data-tour-id="dashboard-widgets"]') as HTMLElement;
+      expect(grid).not.toContainElement(screen.getByTestId('chip'));
+    });
+
+    it('hands its element to the ref the reorder hook measures', () => {
+      const ref = { current: null as HTMLDivElement | null };
+      render(<DashboardGrid ref={ref} layout={LAYOUT} context={context()} editing={editing()} />);
+      expect(ref.current).toHaveAttribute('data-tour-id', 'dashboard-widgets');
+    });
+
     it('has no live region or tile outside edit mode', () => {
       render(<DashboardGrid layout={LAYOUT} context={context()} />);
       expect(screen.queryByRole('status')).not.toBeInTheDocument();

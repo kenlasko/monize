@@ -283,6 +283,8 @@
     "done": "[XX-Done-XX]",
     "phoneNote": "[XX-Widget sizes apply on wider screens.-XX]",
     "remove": "[XX-Remove {name}-XX]",
+    "grip": "[XX-Move {name}-XX]",
+    "gripHint": "[XX-Drag to move {name}, or press the arrow keys-XX]",
     "moved": "[XX-{name} moved to position {position} of {count}-XX]",
     "placeholder": "[XX-Shown on the dashboard once it has something to show.-XX]",
     "addTitle": "[XX-Add Widget-XX]",

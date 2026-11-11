@@ -10,8 +10,10 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { Card, HOVER_TOOLBAR_BUTTON } from '@/components/ui/Card';
+import { DragHandle } from '@/components/ui/DragHandle';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { useMediaQuery } from '@/hooks/useIsMobile';
+import type { GridReorderGrip } from '@/hooks/useGridReorder';
 import { cn } from '@/lib/utils';
 import {
   WIDGET_HEIGHTS,
@@ -40,8 +42,8 @@ interface WidgetEditOverlayProps {
   onRemove: (item: DashboardLayoutItem) => void;
   /** One width or height choice; the page's draft applies it and the card follows. */
   onResize?: (id: DashboardLayoutItem['id'], size: { width?: WidgetWidth; height?: WidgetHeight }) => void;
-  /** The grip (F5 puts the pointer drag handle here); a plain glyph until then. */
-  grip?: ReactNode;
+  /** The grip's drag and arrow-key callbacks, from the page's `useGridReorder`. */
+  grip: GridReorderGrip;
   /** Width and height choices (F4), between the name and the move buttons. */
   sizeChoices?: ReactNode;
 }
@@ -78,12 +80,25 @@ export function WidgetEditOverlay({
         aria-label={name}
         className="pointer-events-auto m-2 flex flex-wrap items-center gap-1 rounded-md border border-gray-200 bg-white/95 p-1 shadow-sm dark:border-gray-700 dark:bg-gray-800/95"
       >
-        <span data-edit-slot="grip" className="flex flex-shrink-0 items-center">
-          {grip ?? (
-            <span aria-hidden="true" className="select-none px-1 text-gray-400">
-              ⠿
-            </span>
-          )}
+        {/* The wrapper catches, before DragHandle's own handlers, where the
+            press landed (DragHandle reports offsets only) and a cancelled
+            pointer (which DragHandle reports as an ordinary end). */}
+        <span
+          data-edit-slot="grip"
+          className="flex flex-shrink-0 items-center"
+          onPointerDownCapture={(e) => grip.onPress(e.clientX, e.clientY)}
+          onPointerCancelCapture={grip.onCancel}
+        >
+          {/* DragHandle is touch-action: none, so a finger on it drags; the
+              rest of the overlay is not, so a finger on the card scrolls. */}
+          <DragHandle
+            label={t('edit.grip', { name })}
+            title={t('edit.gripHint', { name })}
+            onDragStart={grip.onDragStart}
+            onDragMove={grip.onDragMove}
+            onDragEnd={grip.onDragEnd}
+            onNudge={grip.onNudge}
+          />
         </span>
         <span className="min-w-0 flex-1 truncate px-1 text-sm font-medium text-gray-900 dark:text-gray-100">
           {name}
@@ -181,6 +196,33 @@ function SizeGroup<T extends string>({ label, options, current, onPick }: SizeGr
           {o.text}
         </button>
       ))}
+    </div>
+  );
+}
+
+/**
+ * The widget's tint glyph and name, following the pointer while its grip is
+ * dragged. Fixed to the viewport and placed by the reorder hook through
+ * `positionRef`, which writes its transform directly so following the
+ * pointer re-renders nothing.
+ */
+export function WidgetDragChip({
+  id,
+  positionRef,
+}: {
+  id: DashboardLayoutItem['id'];
+  positionRef: (el: HTMLElement | null) => void;
+}) {
+  const name = useWidgetName()(id);
+  return (
+    <div
+      ref={positionRef}
+      aria-hidden="true"
+      data-testid="widget-drag-chip"
+      className="pointer-events-none fixed left-0 top-0 z-50 flex max-w-64 items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1 text-sm font-medium text-gray-900 shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+    >
+      <WidgetGlyph id={id} />
+      <span className="truncate">{name}</span>
     </div>
   );
 }

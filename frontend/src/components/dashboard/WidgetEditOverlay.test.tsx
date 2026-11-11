@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@/test/render';
-import { WidgetEditOverlay, WidgetPlaceholder } from './WidgetEditOverlay';
+import { WidgetDragChip, WidgetEditOverlay, WidgetPlaceholder } from './WidgetEditOverlay';
 import type { DashboardLayoutItem } from './dashboard-layout';
 
 const mockMatches = vi.hoisted(() => ({ wide: true }));
@@ -10,8 +10,17 @@ vi.mock('@/hooks/useIsMobile', () => ({
 
 const ITEM: DashboardLayoutItem = { id: 'net-worth', width: 'half', height: 'standard' };
 
+const gripHandlers = () => ({
+  onPress: vi.fn(),
+  onDragStart: vi.fn(),
+  onDragMove: vi.fn(),
+  onDragEnd: vi.fn(),
+  onCancel: vi.fn(),
+  onNudge: vi.fn(),
+});
+
 function renderOverlay(over: Partial<Parameters<typeof WidgetEditOverlay>[0]> = {}) {
-  const props = { item: ITEM, index: 1, count: 3, onMove: vi.fn(), onRemove: vi.fn(), ...over };
+  const props = { item: ITEM, index: 1, count: 3, onMove: vi.fn(), onRemove: vi.fn(), grip: gripHandlers(), ...over };
   render(<WidgetEditOverlay {...props} />);
   return props;
 }
@@ -21,6 +30,7 @@ describe('WidgetEditOverlay', () => {
     renderOverlay();
     const group = screen.getByRole('group', { name: 'Net Worth' });
     expect(within(group).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Move Net Worth',
       'Move Net Worth earlier',
       'Move Net Worth later',
       'Remove Net Worth',
@@ -57,7 +67,11 @@ describe('WidgetEditOverlay', () => {
 
   it('rings focus only for the keyboard, and animates its hover only with motion allowed', () => {
     renderOverlay();
-    for (const button of screen.getAllByRole('button')) {
+    // The grip is the shared DragHandle, whose own ring is `focus:`; its press
+    // never takes focus (it prevents the default), so only the keyboard rings it.
+    const grip = screen.getByRole('button', { name: 'Move Net Worth' });
+    expect(grip.className).toContain('motion-reduce:transition-none');
+    for (const button of screen.getAllByRole('button').filter((b) => b !== grip)) {
       expect(button.className).toContain('focus-visible:ring-2');
       expect(button.className).not.toMatch(/(?<![\w-])focus:ring/);
       expect(button.className).toContain('motion-reduce:transition-none');
@@ -71,23 +85,70 @@ describe('WidgetEditOverlay', () => {
     expect(screen.getByRole('group', { name: 'Net Worth' })).toHaveClass('pointer-events-auto');
   });
 
-  it('keeps a slot for the grip and one for the size choices', () => {
-    renderOverlay({
-      grip: <button type="button">grip</button>,
-      sizeChoices: <span data-testid="sizes" />,
-    });
+  it('keeps a slot for the size choices, and none until they are given', () => {
+    renderOverlay({ sizeChoices: <span data-testid="sizes" /> });
     const overlay = screen.getByTestId('widget-edit-overlay-net-worth');
-    expect(overlay.querySelector('[data-edit-slot="grip"]')).toContainElement(
-      screen.getByRole('button', { name: 'grip' }),
-    );
     expect(overlay.querySelector('[data-edit-slot="size"]')).toContainElement(screen.getByTestId('sizes'));
   });
 
-  it('draws a plain grip glyph and no size slot until those are given', () => {
+  it('draws no size slot when there is nothing to put in it', () => {
     renderOverlay();
+    expect(screen.getByTestId('widget-edit-overlay-net-worth').querySelector('[data-edit-slot="size"]')).toBeNull();
+  });
+});
+
+describe('WidgetEditOverlay grip', () => {
+  it('is the drag handle, named for the widget, saying it drags or takes the arrow keys', () => {
+    renderOverlay();
+    const grip = screen.getByRole('button', { name: 'Move Net Worth' });
+    expect(grip.closest('[data-edit-slot="grip"]')).not.toBeNull();
+    expect(grip).toHaveAttribute('title', 'Drag to move Net Worth, or press the arrow keys');
+  });
+
+  it('alone takes touch-action none, so a finger anywhere else on the card scrolls the page', () => {
+    renderOverlay();
+    const grip = screen.getByRole('button', { name: 'Move Net Worth' });
+    expect(grip).toHaveClass('touch-none');
     const overlay = screen.getByTestId('widget-edit-overlay-net-worth');
-    expect(overlay.querySelector('[data-edit-slot="grip"] [aria-hidden="true"]')).not.toBeNull();
-    expect(overlay.querySelector('[data-edit-slot="size"]')).toBeNull();
+    expect(Array.from(overlay.querySelectorAll('.touch-none'))).toEqual([grip]);
+    expect(overlay).not.toHaveClass('touch-none');
+  });
+
+  it('reports where the press landed before the drag starts, then the offsets', () => {
+    const grip = gripHandlers();
+    const order: string[] = [];
+    grip.onPress.mockImplementation(() => order.push('press'));
+    grip.onDragStart.mockImplementation(() => order.push('start'));
+    renderOverlay({ grip });
+    const handle = screen.getByRole('button', { name: 'Move Net Worth' });
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 40, clientY: 60 });
+    expect(grip.onPress).toHaveBeenCalledWith(40, 60);
+    expect(order).toEqual(['press', 'start']);
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 90, clientY: 50 });
+    expect(grip.onDragMove).toHaveBeenLastCalledWith(50, -10);
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 100, clientY: 70 });
+    expect(grip.onDragEnd).toHaveBeenLastCalledWith(60, 10);
+    expect(grip.onCancel).not.toHaveBeenCalled();
+  });
+
+  it('reports a cancelled pointer before DragHandle reports it as an end', () => {
+    const grip = gripHandlers();
+    const order: string[] = [];
+    grip.onCancel.mockImplementation(() => order.push('cancel'));
+    grip.onDragEnd.mockImplementation(() => order.push('end'));
+    renderOverlay({ grip });
+    const handle = screen.getByRole('button', { name: 'Move Net Worth' });
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 40, clientY: 60 });
+    fireEvent.pointerCancel(handle, { pointerId: 1, clientX: 40, clientY: 60 });
+    expect(order).toEqual(['cancel', 'end']);
+  });
+
+  it('hands the arrow keys on', () => {
+    const grip = gripHandlers();
+    renderOverlay({ grip });
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Move Net Worth' }), { key: 'ArrowLeft' });
+    expect(grip.onNudge).toHaveBeenCalledTimes(1);
+    expect(grip.onNudge.mock.calls[0][0]).toBeLessThan(0);
   });
 });
 
@@ -152,6 +213,19 @@ describe('WidgetEditOverlay size choices', () => {
     renderOverlay({ onResize: vi.fn() });
     expect(screen.getByRole('group', { name: 'Net Worth' })).toHaveClass('flex-wrap');
     expect(screen.getByRole('group', { name: 'Width of Net Worth' }).parentElement).toHaveClass('flex-wrap');
+  });
+});
+
+describe('WidgetDragChip', () => {
+  it('shows the widget tint glyph and name, fixed and out of the way of the pointer and the reader', () => {
+    const positionRef = vi.fn();
+    render(<WidgetDragChip id="top-movers" positionRef={positionRef} />);
+    const chip = screen.getByTestId('widget-drag-chip');
+    expect(chip).toHaveTextContent('Top Movers');
+    expect(within(chip).getByTestId('widget-tint-top-movers')).toBeInTheDocument();
+    expect(chip).toHaveClass('fixed', 'pointer-events-none');
+    expect(chip).toHaveAttribute('aria-hidden', 'true');
+    expect(positionRef).toHaveBeenCalledWith(chip);
   });
 });
 

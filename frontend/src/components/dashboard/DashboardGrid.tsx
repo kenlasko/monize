@@ -1,7 +1,8 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
+import { DropIndicatorLine, type DragAxis, type DropPosition } from '@/hooks/useDragReorder';
 import { DashboardGridItem } from './DashboardGridItem';
 import type { DashboardLayout, DashboardLayoutItem } from './dashboard-layout';
 import { DASHBOARD_WIDGETS, type DashboardWidgetContext } from './widget-registry';
@@ -22,6 +23,19 @@ export interface DashboardGridEditing {
   trailing: ReactNode;
   /** The latest move, read out by the grid's one polite live region. */
   announcement: string;
+  /** A grip drag under way (`useGridReorder`): what to draw while it lasts. */
+  reorder?: DashboardGridReorder;
+}
+
+export interface DashboardGridReorder {
+  /** The widget being dragged, which stays in place, dimmed; null when none is. */
+  draggingIndex: number | null;
+  /** The flow direction, which decides whether the line stands or lies. */
+  axis: DragAxis;
+  /** The insertion line for one item, or null; drawn once for the whole grid. */
+  dropIndicator: (index: number) => DropPosition | null;
+  /** The chip that follows the pointer, fixed to the viewport. */
+  chip: ReactNode;
 }
 
 /**
@@ -35,14 +49,19 @@ export function DashboardGrid({
   layout,
   context,
   editing,
+  ref,
 }: {
   layout: DashboardLayout;
   context: DashboardWidgetContext;
   editing?: DashboardGridEditing;
+  /** The grid element, whose items the reorder hook measures. */
+  ref?: Ref<HTMLDivElement>;
 }) {
+  const reorder = editing?.reorder;
   return (
     <>
       <div
+        ref={ref}
         {...tourAnchor(TOUR_ANCHORS.dashboardWidgets)}
         className="grid grid-cols-1 lg:grid-cols-12 gap-6"
       >
@@ -59,13 +78,22 @@ export function DashboardGrid({
             );
           }
           return (
-            <DashboardGridItem key={item.id} item={item} overlay={editing.overlay(item, index)}>
+            <DashboardGridItem
+              key={item.id}
+              item={item}
+              overlay={editing.overlay(item, index)}
+              dragging={reorder?.draggingIndex === index}
+              indicator={
+                reorder && <DropIndicatorLine position={reorder.dropIndicator(index)} axis={reorder.axis} />
+              }
+            >
               {hasContent ? widget.render(context) : editing.placeholder(item)}
             </DashboardGridItem>
           );
         })}
         {editing?.trailing}
       </div>
+      {reorder?.chip}
       {editing && (
         <p role="status" aria-live="polite" className="sr-only" data-testid="dashboard-edit-announcement">
           {editing.announcement}

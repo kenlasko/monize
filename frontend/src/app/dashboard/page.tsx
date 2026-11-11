@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { subMonths, format } from 'date-fns';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
@@ -17,6 +17,7 @@ import {
 import { defaultLayoutItem, resolveDashboardLayout } from '@/components/dashboard/dashboard-layout';
 import { DashboardGrid, type DashboardGridEditing } from '@/components/dashboard/DashboardGrid';
 import { useDashboardLayoutDraft } from '@/hooks/useDashboardLayoutDraft';
+import { useGridReorder } from '@/hooks/useGridReorder';
 import { accountsApi } from '@/lib/accounts';
 import { institutionsApi } from '@/lib/institutions';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
@@ -58,6 +59,10 @@ const WidgetEditOverlay = dynamic(
 );
 const WidgetPlaceholder = dynamic(
   () => import('@/components/dashboard/WidgetEditOverlay').then((m) => m.WidgetPlaceholder),
+  { ssr: false },
+);
+const WidgetDragChip = dynamic(
+  () => import('@/components/dashboard/WidgetEditOverlay').then((m) => m.WidgetDragChip),
   { ssr: false },
 );
 const AddWidgetDialog = dynamic(
@@ -350,19 +355,25 @@ function DashboardContent() {
   };
 
   const { dispatch: dispatchLayout } = layoutDraft;
-  // One move, from the overlay's buttons now and from the grip's keys later:
-  // dispatched, read out, and focus kept on the control that moved it.
+  // One move, from the overlay's buttons or the grip: dispatched, read out,
+  // and focus kept on the control that moved it. A pointer drop moves no
+  // focus: the grip's press never took it.
   const moveWidget = useCallback(
-    (from: number, to: number) => {
+    (from: number, to: number, focus: 'button' | 'grip' | 'none' = 'button') => {
       if (!draft || to < 0 || to >= draft.length || from === to) return;
       const { id } = draft[from];
       dispatchLayout({ type: 'move', from, to });
       const section = WIDGET_TITLE_SECTIONS.get(id);
       const name = section ? t(`${section}.title` as Parameters<typeof t>[0]) : id;
       setMoveAnnouncement(t('edit.moved', { name, position: to + 1, count: draft.length }));
+      if (focus === 'none') return;
       const direction = to < from ? 'earlier' : 'later';
       requestAnimationFrame(() => {
         const item = document.querySelector(`[data-widget-id="${id}"]`);
+        if (focus === 'grip') {
+          item?.querySelector<HTMLButtonElement>('[data-edit-slot="grip"] button')?.focus();
+          return;
+        }
         const button =
           item?.querySelector<HTMLButtonElement>(`[data-edit-action="${direction}"]:not(:disabled)`) ??
           item?.querySelector<HTMLButtonElement>('[data-edit-action]:not(:disabled)');
@@ -371,6 +382,15 @@ function DashboardContent() {
     },
     [draft, dispatchLayout, t],
   );
+
+  const gridRef = useRef<HTMLDivElement>(null);
+  const reorder = useGridReorder({
+    containerRef: gridRef,
+    count: draft?.length ?? 0,
+    enabled: !!draft,
+    onMove: (from, to, via) => moveWidget(from, to, via === 'keyboard' ? 'grip' : 'none'),
+  });
+  const draggedItem = draft && reorder.draggingIndex !== null ? draft[reorder.draggingIndex] : undefined;
 
   const gridEditing: DashboardGridEditing | undefined = draft
     ? {
@@ -382,11 +402,18 @@ function DashboardContent() {
             onMove={moveWidget}
             onRemove={(removed) => dispatchLayout({ type: 'remove', id: removed.id })}
             onResize={(id, size) => dispatchLayout({ type: 'resize', id, ...size })}
+            grip={reorder.grip(index)}
           />
         ),
         placeholder: (item) => <WidgetPlaceholder item={item} />,
         trailing: <AddWidgetTile onClick={() => setShowAddWidget(true)} empty={draft.length === 0} />,
         announcement: moveAnnouncement,
+        reorder: {
+          draggingIndex: reorder.draggingIndex,
+          axis: reorder.axis,
+          dropIndicator: reorder.dropIndicator,
+          chip: draggedItem ? <WidgetDragChip id={draggedItem.id} positionRef={reorder.chipRef} /> : null,
+        },
       }
     : undefined;
 
@@ -457,7 +484,7 @@ function DashboardContent() {
             />
           )}
 
-          <DashboardGrid layout={layout} context={widgetContext} editing={gridEditing} />
+          <DashboardGrid ref={gridRef} layout={layout} context={widgetContext} editing={gridEditing} />
 
           {draft && (
             <>

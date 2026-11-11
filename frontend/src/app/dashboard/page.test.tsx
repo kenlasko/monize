@@ -836,6 +836,102 @@ describe('DashboardPage', () => {
       expect(widgetIds()).toEqual(expected.filter((id) => id !== 'portfolio-value'));
     });
 
+    describe('the grip', () => {
+      // One column below lg (jsdom's matchMedia matches nothing): item i spans
+      // 100 + 124i to 200 + 124i, as the hook reads it on press.
+      let rects: ReturnType<typeof vi.spyOn>;
+      beforeEach(() => {
+        rects = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+          const items = Array.from(document.querySelectorAll('[data-widget-id]'));
+          const i = items.indexOf(this);
+          const top = 100 + Math.max(i, 0) * 124;
+          return { left: 0, right: 500, top, bottom: top + 100, x: 0, y: top, width: 500, height: 100 } as DOMRect;
+        });
+      });
+      afterEach(() => rects.mockRestore());
+
+      const grip = (name: string) => screen.getByRole('button', { name: `Move ${name}` });
+
+      it('is a named drag handle, and the only part of a widget that keeps a finger from scrolling', async () => {
+        await renderLoaded();
+        await enterEditMode();
+        const handle = grip('Net Worth');
+        expect(handle).toHaveAttribute('title', 'Drag to move Net Worth, or press the arrow keys');
+        expect(handle).toHaveClass('touch-none');
+        const item = handle.closest('[data-widget-id]') as HTMLElement;
+        expect(Array.from(item.querySelectorAll('.touch-none'))).toEqual([handle]);
+        expect(item.className).not.toContain('touch-none');
+        // The move buttons from F3 stay beside it.
+        expect(screen.getByRole('button', { name: 'Move Net Worth earlier' })).toBeInTheDocument();
+      });
+
+      it('moves a widget dropped further down, once, and reads the move out', async () => {
+        await renderLoaded();
+        await enterEditMode();
+        const handle = grip('Favourite Accounts');
+        await act(async () => {
+          fireEvent.pointerDown(handle, { pointerId: 1, clientX: 10, clientY: 150 });
+          fireEvent.pointerMove(handle, { pointerId: 1, clientX: 10, clientY: 420 });
+        });
+        expect(await screen.findByTestId('widget-drag-chip')).toHaveTextContent('Favourite Accounts');
+        // The page does not reflow while dragging.
+        expect(widgetIds()).toEqual(DEFAULT_DASHBOARD_WIDGET_IDS);
+        await act(async () => {
+          // The bottom half of the third widget: after it.
+          fireEvent.pointerUp(handle, { pointerId: 1, clientX: 10, clientY: 420 });
+        });
+        const [first, second, third, ...rest] = DEFAULT_DASHBOARD_WIDGET_IDS;
+        expect(widgetIds()).toEqual([second, third, first, ...rest]);
+        expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent(
+          `Favourite Accounts moved to position 3 of ${DEFAULT_DASHBOARD_WIDGET_IDS.length}`,
+        );
+        expect(screen.queryByTestId('widget-drag-chip')).not.toBeInTheDocument();
+        expect(mockUpdatePreferences).not.toHaveBeenCalled();
+      });
+
+      it('cancels the drag on Escape and stays in edit mode', async () => {
+        await renderLoaded();
+        await enterEditMode();
+        const handle = grip('Favourite Accounts');
+        await act(async () => {
+          fireEvent.pointerDown(handle, { pointerId: 1, clientX: 10, clientY: 150 });
+          fireEvent.pointerMove(handle, { pointerId: 1, clientX: 10, clientY: 420 });
+        });
+        await screen.findByTestId('widget-drag-chip');
+        await act(async () => {
+          fireEvent.keyDown(document, { key: 'Escape' });
+        });
+        expect(screen.queryByTestId('widget-drag-chip')).not.toBeInTheDocument();
+        expect(editBar()).toBeInTheDocument();
+        await act(async () => {
+          fireEvent.pointerUp(handle, { pointerId: 1, clientX: 10, clientY: 420 });
+        });
+        expect(widgetIds()).toEqual(DEFAULT_DASHBOARD_WIDGET_IDS);
+        expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent('');
+        // The next Escape, with no drag under way, leaves edit mode as before.
+        await act(async () => {
+          fireEvent.keyDown(document, { key: 'Escape' });
+        });
+        expect(editBar()).not.toBeInTheDocument();
+      });
+
+      it('moves one place per arrow key and keeps focus on the grip', async () => {
+        await renderLoaded();
+        await enterEditMode();
+        await act(async () => {
+          fireEvent.keyDown(grip('Favourite Accounts'), { key: 'ArrowDown' });
+        });
+        const [first, second, ...rest] = DEFAULT_DASHBOARD_WIDGET_IDS;
+        expect(widgetIds()).toEqual([second, first, ...rest]);
+        expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent(
+          `Favourite Accounts moved to position 2 of ${DEFAULT_DASHBOARD_WIDGET_IDS.length}`,
+        );
+        await waitFor(() => {
+          expect(document.activeElement).toBe(grip('Favourite Accounts'));
+        });
+      });
+    });
+
     describe('width and height choices', () => {
       const original = window.matchMedia;
       afterEach(() => {

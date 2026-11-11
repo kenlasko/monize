@@ -66,7 +66,7 @@ Click the **Customize** gear beside the greeting to put the dashboard into edit 
 
 ![The dashboard in edit mode](images/dashboard-customize.png)
 
-- **Move a widget** -- use the arrow buttons on the widget to move it one place earlier or later. Widgets flow left to right on a large screen and stack in a single column on a phone, where the arrows point up and down
+- **Move a widget** -- use the arrow buttons on the widget to move it one place earlier or later. Widgets flow left to right on a large screen and stack in a single column on a phone, where the arrows point up and down. You can also drag a widget by its grip, the six dots at the left of its bar, with the mouse or a finger, or move it one place at a time with the arrow keys while the grip has focus
 - **Resize a widget** -- on a wide screen, each widget's bar has a **Width** and a **Height** choice. Width runs from a third of the row (for widgets narrow enough to allow it) up to the full row; height sets how tall the widget is at least, from **Auto** to **L**. The widget changes as soon as you press one. Sizes do not apply on a phone, where every widget fills the screen width, so the choices are not shown there
 - **Remove a widget** -- click the widget's **X**. It goes back to the list of widgets you can add
 - **Add a widget** -- click **Add Widget** in the bar, or the dashed tile, and choose one of the widgets that are not on the dashboard. It is added at the end
