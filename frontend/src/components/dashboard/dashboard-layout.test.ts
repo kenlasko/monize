@@ -94,6 +94,11 @@ describe('resolveDashboardLayout', () => {
   const sizeOf = (stored: unknown, id: DashboardWidgetId, key = 'gridWidth') =>
     resolveDashboardLayout([id], { [id]: { [key]: stored } })[0];
 
+  it('yields unique ids from a stored list that repeats one', () => {
+    const layout = resolveDashboardLayout(['net-worth', 'net-worth', 'expenses-pie'], {});
+    expect(layout.map((i) => i.id)).toEqual(['net-worth', 'expenses-pie']);
+  });
+
   // Truth table B.
   it('B: absent width resolves to half', () => {
     expect(resolveDashboardLayout(['expenses-pie'], {})[0].width).toBe('half');

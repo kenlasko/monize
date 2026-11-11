@@ -34,6 +34,7 @@ export function DashboardGridItem({
   indicator?: ReactNode;
   children: ReactNode;
 }) {
+  const editing = Boolean(overlay);
   return (
     <div
       data-widget-id={item.id}
@@ -42,27 +43,23 @@ export function DashboardGridItem({
         WIDTH_CLASSES[item.width],
         HEIGHT_CLASSES[item.height],
         // In edit mode only: the containing block of the insertion line.
-        overlay && 'relative',
+        editing && 'relative',
       )}
     >
-      {overlay ? (
-        <>
-          {/* Inert while editing: a press on a chart or a link inside the
-              card must not act, and Tab reaches only the overlay. Itself a
-              one-cell grid, so the card still fills the item by stretch. */}
-          <div
-            inert
-            data-testid="widget-edit-content"
-            className={cn(ONE_CELL, dragging ? 'opacity-30' : 'opacity-60')}
-          >
-            {children}
-          </div>
-          {overlay}
-          {indicator}
-        </>
-      ) : (
-        children
-      )}
+      {/* The same wrapper in both modes, so entering or leaving edit mode
+          keeps the widget mounted (a remount would refetch, reset Trivia and
+          lose chart state). While editing it is inert: a press on a chart or
+          a link inside the card must not act, and Tab reaches only the
+          overlay. Itself a one-cell grid, so the card still fills the item. */}
+      <div
+        inert={editing || undefined}
+        data-testid={editing ? 'widget-edit-content' : undefined}
+        className={cn(ONE_CELL, editing && (dragging ? 'opacity-30' : 'opacity-60'))}
+      >
+        {children}
+      </div>
+      {overlay}
+      {indicator}
     </div>
   );
 }

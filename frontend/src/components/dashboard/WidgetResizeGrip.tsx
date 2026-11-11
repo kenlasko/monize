@@ -276,7 +276,7 @@ export function WidgetResizeGrip({ id, width, height, onResize }: WidgetResizeGr
         onLostPointerCapture={cancel}
         onKeyDown={onKeyDown}
         className={cn(
-          'pointer-events-auto absolute bottom-1 right-1 flex h-5 w-5 cursor-nwse-resize touch-none select-none items-end justify-end rounded-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+          'pointer-events-auto absolute bottom-0.5 right-0.5 flex h-6 w-6 cursor-nwse-resize touch-none select-none items-end justify-end rounded-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
           'transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
         )}
       >

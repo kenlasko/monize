@@ -611,7 +611,7 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('net-worth-chart')).toBeInTheDocument();
     });
-    const itemOf = (testId: string) => screen.getByTestId(testId).parentElement as HTMLElement;
+    const itemOf = (testId: string) => screen.getByTestId(testId).closest('[data-widget-id]') as HTMLElement;
     // Net Worth's floor was 500px on its card; it is the standard 540px on the item.
     expect(itemOf('net-worth-chart')).toHaveAttribute('data-widget-id', 'net-worth');
     expect(itemOf('net-worth-chart')).toHaveClass('lg:col-span-6', 'lg:min-h-[540px]');
@@ -630,7 +630,7 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('insights-widget')).toBeInTheDocument();
     });
-    const itemOf = (testId: string) => screen.getByTestId(testId).parentElement as HTMLElement;
+    const itemOf = (testId: string) => screen.getByTestId(testId).closest('[data-widget-id]') as HTMLElement;
     expect(itemOf('net-worth-chart')).toHaveClass('lg:col-span-12', 'lg:min-h-[720px]');
     // An unknown preset falls back to the default size.
     expect(itemOf('insights-widget')).toHaveClass('lg:col-span-6', 'lg:min-h-[390px]');
@@ -648,7 +648,7 @@ describe('DashboardPage', () => {
       el.getAttribute('data-widget-id'),
     );
     expect(ids).toEqual(['favourite-accounts', 'upcoming-bills']);
-    const accounts = screen.getByTestId('favourite-accounts').parentElement as HTMLElement;
+    const accounts = screen.getByTestId('favourite-accounts').closest('[data-widget-id]') as HTMLElement;
     expect(accounts).toHaveClass('lg:col-span-6');
     expect(accounts.parentElement).toHaveAttribute('data-tour-id', 'dashboard-widgets');
   });
@@ -756,6 +756,15 @@ describe('DashboardPage', () => {
       await enterEditMode();
       await click(within(editBar()!).getByRole('button', { name: 'Add Widget' }));
       expect(await screen.findByRole('dialog', { name: 'Add Widget' })).toBeInTheDocument();
+    });
+
+    it('keeps the same widget elements through enter and leave, never remounting them', async () => {
+      await renderLoaded();
+      const chart = screen.getByTestId('net-worth-chart');
+      await enterEditMode();
+      expect(screen.getByTestId('net-worth-chart')).toBe(chart);
+      await click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(screen.getByTestId('net-worth-chart')).toBe(chart);
     });
 
     it('leaves at once on Cancel with nothing changed, storing nothing (DASH-4)', async () => {
@@ -966,13 +975,13 @@ describe('DashboardPage', () => {
         await renderLoaded();
         await enterEditMode();
         const widths = screen.getByRole('group', { name: 'Width of Net Worth' });
-        await click(within(widths).getByRole('button', { name: 'Full width' }));
-        expect(within(widths).getByRole('button', { name: 'Full width' })).toHaveAttribute('aria-pressed', 'true');
+        await click(within(widths).getByRole('button', { name: 'Full, Full width' }));
+        expect(within(widths).getByRole('button', { name: 'Full, Full width' })).toHaveAttribute('aria-pressed', 'true');
         expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent('Net Worth is now Full width');
         const heights = screen.getByRole('group', { name: 'Height of Net Worth' });
-        await click(within(heights).getByRole('button', { name: 'Tall height' }));
+        await click(within(heights).getByRole('button', { name: 'L, Tall height' }));
         expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent('Net Worth is now Tall height');
-        await click(within(heights).getByRole('button', { name: 'Standard height' }));
+        await click(within(heights).getByRole('button', { name: 'M, Standard height' }));
         expect(mockUpdatePreferences).not.toHaveBeenCalled();
         await click(done());
         expect(mockUpdatePreferences).toHaveBeenCalledTimes(1);
@@ -986,8 +995,8 @@ describe('DashboardPage', () => {
         await renderLoaded();
         await enterEditMode();
         const widths = screen.getByRole('group', { name: 'Width of Net Worth' });
-        await click(within(widths).getByRole('button', { name: 'Full width' }));
-        await click(within(widths).getByRole('button', { name: 'Half width' }));
+        await click(within(widths).getByRole('button', { name: 'Full, Full width' }));
+        await click(within(widths).getByRole('button', { name: '1/2, Half width' }));
         await click(done());
         expect(mockUpdatePreferences).not.toHaveBeenCalled();
         expect(editBar()).not.toBeInTheDocument();
@@ -998,7 +1007,7 @@ describe('DashboardPage', () => {
         await renderLoaded();
         await enterEditMode();
         const widths = screen.getByRole('group', { name: 'Width of Net Worth' });
-        await click(within(widths).getByRole('button', { name: 'Full width' }));
+        await click(within(widths).getByRole('button', { name: 'Full, Full width' }));
         await click(done());
         expect(mockUpdatePreferences).toHaveBeenCalledWith({
           dashboardWidgets: [],

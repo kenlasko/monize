@@ -296,6 +296,9 @@
     "addEmpty": "[XX-Every widget is already on your dashboard-XX]",
     "resize": "[XX-Resize {name}-XX]",
     "resizeHint": "[XX-Drag to resize {name}, or press the arrow keys-XX]",
+    "widthLabel": "[XX-Width-XX]",
+    "heightLabel": "[XX-Height-XX]",
+    "presetName": "[XX-{short}, {name}-XX]",
     "widthOf": "[XX-Width of {name}-XX]",
     "heightOf": "[XX-Height of {name}-XX]",
     "widthShort": {

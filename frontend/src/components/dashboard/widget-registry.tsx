@@ -444,13 +444,17 @@ export const DEFAULT_DASHBOARD_WIDGET_IDS: DashboardWidgetId[] = DASHBOARD_WIDGE
  * Resolve the stored `dashboardWidgets` preference into the ordered list of
  * widget definitions to render. An empty/missing preference means the user
  * never customized and gets the default layout; unknown ids (e.g. from a
- * newer/older app version) are silently dropped.
+ * newer/older app version) are silently dropped, and so is a repeated id (the
+ * first wins): a duplicate would give React two keys and split a resize
+ * between two copies of one widget.
  */
 export function resolveDashboardWidgets(
   preferredIds: string[] | null | undefined,
 ): DashboardWidgetDefinition[] {
   const byId = new Map(DASHBOARD_WIDGETS.map((w) => [w.id, w]));
-  const known = (preferredIds ?? []).filter((id): id is DashboardWidgetId => byId.has(id as DashboardWidgetId));
+  const known = [...new Set(preferredIds ?? [])].filter((id): id is DashboardWidgetId =>
+    byId.has(id as DashboardWidgetId),
+  );
   if (known.length === 0) {
     return DASHBOARD_WIDGETS.filter((w) => w.defaultEnabled);
   }

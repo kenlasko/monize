@@ -295,8 +295,11 @@
     "addDescription": "A widget you add goes at the end of the dashboard. Nothing is kept until you choose Done.",
     "addEmpty": "Every widget is already on your dashboard",
     "resize": "Resize {name}",
-  "resizeHint": "Drag to resize {name}, or press the arrow keys",
-  "widthOf": "Width of {name}",
+    "resizeHint": "Drag to resize {name}, or press the arrow keys",
+    "widthLabel": "Width",
+    "heightLabel": "Height",
+    "presetName": "{short}, {name}",
+    "widthOf": "Width of {name}",
     "heightOf": "Height of {name}",
     "widthShort": {
       "third": "1/3",

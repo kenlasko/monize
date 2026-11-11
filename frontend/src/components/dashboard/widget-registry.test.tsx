@@ -70,6 +70,12 @@ describe('widget-registry', () => {
       expect(resolved.map((w) => w.id)).toEqual(['insights', 'favourite-reports', 'net-worth']);
     });
 
+    it('drops repeated stored ids, keeping the first', () => {
+      expect(
+        resolveDashboardWidgets(['net-worth', 'net-worth', 'expenses-pie', 'net-worth']).map((w) => w.id),
+      ).toEqual(['net-worth', 'expenses-pie']);
+    });
+
     it('drops unknown ids and falls back to the default when none survive', () => {
       expect(
         resolveDashboardWidgets(['unknown-widget', 'net-worth']).map((w) => w.id),

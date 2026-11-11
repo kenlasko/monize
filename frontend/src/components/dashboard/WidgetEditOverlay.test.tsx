@@ -188,27 +188,41 @@ describe('WidgetEditOverlay size choices', () => {
     renderOverlay({ item: { id: 'expenses-pie', width: 'third', height: 'standard' }, onResize: vi.fn() });
     const widths = screen.getByRole('group', { name: /^Width of / });
     expect(within(widths).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([
-      'One third width',
-      'Half width',
-      'Two thirds width',
-      'Full width',
+      '1/3, One third width',
+      '1/2, Half width',
+      '2/3, Two thirds width',
+      'Full, Full width',
     ]);
+  });
+
+  it('names every preset starting with its visible text (WCAG 2.5.3), under a visible caption', () => {
+    mockMatches.wide = true;
+    renderOverlay({ item: { id: 'expenses-pie', width: 'third', height: 'standard' }, onResize: vi.fn() });
+    for (const group of screen.getAllByRole('group', { name: /^(Width|Height) of / })) {
+      for (const b of within(group).getAllByRole('button')) {
+        expect((b.getAttribute('aria-label') ?? '').startsWith(b.textContent ?? '')).toBe(true);
+        // Tall enough to hit (WCAG 2.5.8): text-xs line (16px) + py-1 (8px).
+        expect(b).toHaveClass('py-1');
+      }
+    }
+    expect(screen.getByText('Width')).toBeVisible();
+    expect(screen.getByText('Height')).toBeVisible();
   });
 
   it('marks the current width and height pressed', () => {
     mockMatches.wide = true;
     renderOverlay({ item: { id: 'net-worth', width: 'full', height: 'tall' }, onResize: vi.fn() });
-    expect(pressed(screen.getByRole('group', { name: 'Width of Net Worth' }))).toEqual(['Full width']);
-    expect(pressed(screen.getByRole('group', { name: 'Height of Net Worth' }))).toEqual(['Tall height']);
+    expect(pressed(screen.getByRole('group', { name: 'Width of Net Worth' }))).toEqual(['Full, Full width']);
+    expect(pressed(screen.getByRole('group', { name: 'Height of Net Worth' }))).toEqual(['L, Tall height']);
   });
 
   it('dispatches one resize with only the dimension pressed', () => {
     mockMatches.wide = true;
     const { onResize } = renderOverlay({ onResize: vi.fn() });
-    fireEvent.click(screen.getByRole('button', { name: 'Full width' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Full, Full width' }));
     expect(onResize).toHaveBeenCalledTimes(1);
     expect(onResize).toHaveBeenLastCalledWith('net-worth', { width: 'full' });
-    fireEvent.click(screen.getByRole('button', { name: 'Compact height' }));
+    fireEvent.click(screen.getByRole('button', { name: 'S, Compact height' }));
     expect(onResize).toHaveBeenCalledTimes(2);
     expect(onResize).toHaveBeenLastCalledWith('net-worth', { height: 'compact' });
   });
@@ -226,7 +240,7 @@ describe('WidgetEditOverlay size choices', () => {
     mockMatches.wide = true;
     renderOverlay({ onResize: vi.fn() });
     expect(screen.getByRole('group', { name: 'Net Worth' })).toHaveClass('flex-wrap');
-    expect(screen.getByRole('group', { name: 'Width of Net Worth' }).parentElement).toHaveClass('flex-wrap');
+    expect(screen.getByRole('group', { name: 'Width of Net Worth' }).parentElement?.parentElement).toHaveClass('flex-wrap');
   });
 });
 

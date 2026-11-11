@@ -102,7 +102,7 @@ Rules, all in one new pure module, `frontend/src/components/dashboard/dashboard-
 
 The server never reads the size keys and does not validate their values; the client resolves defensively, as `resolveDashboardHeroConfig` does. An older client (a cached tab) ignores the keys, and its settings writes keep them, because `useWidgetConfig` and the old dialog both spread the stored slice.
 
-Support backups blank `dashboard_widget_config` (it can hold account ids), so a support backup carries the order and not the sizes. That is acceptable: sizes are presentation.
+A support backup keeps `dashboard_widget_config` (`support-backup-rules.ts` marks the column `keep`), so the sizes travel with it. Only the scoped path, where accounts are excluded, empties the column (`support-backup-scope.ts`, because the map can hold account ids), and there a backup carries the order and not the sizes. That is acceptable: sizes are presentation.
 
 ### 6.2 Size declaration in the registry
 

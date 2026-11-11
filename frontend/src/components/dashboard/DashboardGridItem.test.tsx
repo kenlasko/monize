@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { useEffect, type ReactNode } from 'react';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@/test/render';
 import { DashboardGridItem } from './DashboardGridItem';
 import { WIDGET_HEIGHTS, WIDGET_WIDTHS, type DashboardLayoutItem } from './dashboard-layout';
@@ -16,7 +17,8 @@ function renderItem(item: DashboardLayoutItem) {
       <div data-testid="card">card</div>
     </DashboardGridItem>,
   );
-  return screen.getByTestId('card').parentElement as HTMLElement;
+  // The card sits in the content wrapper, itself the item's child.
+  return screen.getByTestId('card').closest('[data-widget-id]') as HTMLElement;
 }
 
 describe('DashboardGridItem', () => {
@@ -58,7 +60,7 @@ describe('DashboardGridItem', () => {
             <div data-testid="pinned-card" />
           </DashboardGridItem>,
         );
-        const item = screen.getByTestId('pinned-card').parentElement as HTMLElement;
+        const item = screen.getByTestId('pinned-card').closest('[data-widget-id]') as HTMLElement;
         expect(item.className).not.toMatch(/(?<![\w-])(?:max-)?h-/);
         expect(item.style.height).toBe('');
         expect(item.style.maxHeight).toBe('');
@@ -75,6 +77,7 @@ describe('DashboardGridItem', () => {
     );
     const content = screen.getByTestId('card').parentElement as HTMLElement;
     expect(content).toHaveAttribute('inert');
+    expect(content).toBe(screen.getByTestId('widget-edit-content'));
     // Itself a one-cell grid, so the card still fills the item by stretch.
     expect(content).toHaveClass('grid', "[grid-template-areas:'cell']", '*:[grid-area:cell]');
     const item = content.parentElement as HTMLElement;
@@ -107,5 +110,32 @@ describe('DashboardGridItem', () => {
   it('leaves the content as it is outside edit mode', () => {
     expect(renderItem(itemOf())).not.toHaveAttribute('inert');
     expect(document.querySelector('[inert]')).toBeNull();
+  });
+
+  it('keeps the content mounted across view -> edit -> view', () => {
+    const mounts = vi.fn();
+    const unmounts = vi.fn();
+    function Probe() {
+      useEffect(() => {
+        mounts();
+        return unmounts;
+      }, []);
+      return <div data-testid="card">card</div>;
+    }
+    const view = (overlay?: ReactNode) => (
+      <DashboardGridItem item={itemOf()} overlay={overlay}>
+        <Probe />
+      </DashboardGridItem>
+    );
+    const { rerender } = render(view());
+    const card = screen.getByTestId('card');
+    rerender(view(<span />));
+    expect(screen.getByTestId('widget-edit-content')).toHaveAttribute('inert');
+    rerender(view());
+    expect(screen.getByTestId('card')).toBe(card);
+    expect(mounts).toHaveBeenCalledTimes(1);
+    expect(unmounts).not.toHaveBeenCalled();
+    expect(document.querySelector('[inert]')).toBeNull();
+    expect(screen.queryByTestId('widget-edit-content')).toBeNull();
   });
 });

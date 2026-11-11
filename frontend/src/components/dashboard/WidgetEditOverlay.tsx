@@ -28,7 +28,7 @@ import { WidgetResizeGrip } from './WidgetResizeGrip';
 const CONTROL_CLASS = `rounded-md p-1.5 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${HOVER_TOOLBAR_BUTTON}`;
 
 /** Compact segments for the overlay bar, which a third-width card makes narrow. */
-const SIZE_SEGMENT_CLASS = 'px-2 py-0.5 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+const SIZE_SEGMENT_CLASS = 'px-2 py-1 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
 
 interface WidgetEditOverlayProps {
   item: DashboardLayoutItem;
@@ -108,21 +108,31 @@ export function WidgetEditOverlay({
             {isWide && onResize && (
               <>
                 <SizeGroup
+                  caption={t('edit.widthLabel')}
                   label={t('edit.widthOf', { name })}
                   options={widthsOfferedFor(item.id).map((value) => ({
                     value,
                     text: t(`edit.widthShort.${value}`),
-                    name: t(`edit.widthName.${value}`),
+                    name: t('edit.presetName', {
+                      short: t(`edit.widthShort.${value}`),
+                      name: t(`edit.widthName.${value}`),
+                    }),
+                    title: t(`edit.widthName.${value}`),
                   }))}
                   current={item.width}
                   onPick={(width) => onResize(item.id, { width })}
                 />
                 <SizeGroup
+                  caption={t('edit.heightLabel')}
                   label={t('edit.heightOf', { name })}
                   options={WIDGET_HEIGHTS.map((value) => ({
                     value,
                     text: t(`edit.heightShort.${value}`),
-                    name: t(`edit.heightName.${value}`),
+                    name: t('edit.presetName', {
+                      short: t(`edit.heightShort.${value}`),
+                      name: t(`edit.heightName.${value}`),
+                    }),
+                    title: t(`edit.heightName.${value}`),
                   }))}
                   current={item.height}
                   onPick={(height) => onResize(item.id, { height })}
@@ -175,29 +185,39 @@ export function WidgetEditOverlay({
 }
 
 interface SizeGroupProps<T extends string> {
+  /** The visible word before the pill ("Width", "Height"). */
+  caption: string;
   label: string;
-  options: { value: T; text: string; name: string }[];
+  options: { value: T; text: string; name: string; title: string }[];
   current: T;
   onPick: (value: T) => void;
 }
 
-/** One pill of presets: a short visible label, the preset in words as the accessible name. */
-function SizeGroup<T extends string>({ label, options, current, onPick }: SizeGroupProps<T>) {
+/**
+ * One pill of presets with a visible caption. Each button's accessible name
+ * begins with its visible text (WCAG 2.5.3), the preset in words following.
+ */
+function SizeGroup<T extends string>({ caption, label, options, current, onPick }: SizeGroupProps<T>) {
   return (
-    <div role="group" aria-label={label} className={SEGMENTED_GROUP_CLASS}>
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          aria-label={o.name}
-          title={o.name}
-          aria-pressed={o.value === current}
-          onClick={() => onPick(o.value)}
-          className={cn(segmentClass(o.value === current), SIZE_SEGMENT_CLASS)}
-        >
-          {o.text}
-        </button>
-      ))}
+    <div className="flex items-center gap-1">
+      <span aria-hidden="true" className="text-xs text-gray-500 dark:text-gray-400">
+        {caption}
+      </span>
+      <div role="group" aria-label={label} className={SEGMENTED_GROUP_CLASS}>
+        {options.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            aria-label={o.name}
+            title={o.title}
+            aria-pressed={o.value === current}
+            onClick={() => onPick(o.value)}
+            className={cn(segmentClass(o.value === current), SIZE_SEGMENT_CLASS)}
+          >
+            {o.text}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -240,13 +260,17 @@ export function WidgetPlaceholder({ item }: { item: DashboardLayoutItem }) {
     <Card
       padding="md"
       data-testid={`widget-placeholder-${item.id}`}
-      className="flex min-h-40 flex-col items-center justify-center gap-2 pt-14 text-center"
+      className="flex flex-col pt-14 text-center"
     >
-      <span className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
-        <WidgetGlyph id={item.id} />
-        {name}
-      </span>
-      <span className="text-xs text-gray-500 dark:text-gray-400">{t('edit.placeholder')}</span>
+      {/* The tile's height on a phone, where the grid item has no floor; on
+          the content, not the card, so the card still fills its item. */}
+      <div className="flex min-h-26 flex-1 flex-col items-center justify-center gap-2">
+        <span className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+          <WidgetGlyph id={item.id} />
+          {name}
+        </span>
+        <span className="text-xs text-gray-500 dark:text-gray-400">{t('edit.placeholder')}</span>
+      </div>
     </Card>
   );
 }

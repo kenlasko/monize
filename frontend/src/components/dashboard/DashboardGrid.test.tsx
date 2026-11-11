@@ -42,10 +42,10 @@ describe('DashboardGrid', () => {
   it('renders the widgets in layout order, each in its own item at its own size', () => {
     render(<DashboardGrid layout={LAYOUT} context={context()} />);
     expect(renderedIds()).toEqual(['insights', 'top-movers', 'net-worth']);
-    const netWorth = screen.getByTestId('w-net-worth').parentElement as HTMLElement;
+    const netWorth = screen.getByTestId('w-net-worth').closest('[data-widget-id]') as HTMLElement;
     expect(netWorth).toHaveAttribute('data-widget-id', 'net-worth');
     expect(netWorth).toHaveClass('lg:col-span-12', 'lg:min-h-[720px]');
-    const insights = screen.getByTestId('w-insights').parentElement as HTMLElement;
+    const insights = screen.getByTestId('w-insights').closest('[data-widget-id]') as HTMLElement;
     expect(insights).toHaveClass('lg:col-span-4', 'lg:min-h-[390px]');
   });
 

@@ -114,9 +114,16 @@ export function DashboardHeroSettingsModal({
       const saved = await userSettingsApi.updatePreferences({
         dashboardWidgetConfig: { ...allBefore, [DASHBOARD_HERO_WIDGET_ID]: { ...hero } },
       });
-      usePreferencesStore.getState().updatePreferences({
-        dashboardWidgetConfig: saved.dashboardWidgetConfig,
-      });
+      // Only the hero's slice, into the map as it is now: edit mode's Done or
+      // a widget's own save may have stored a newer map while this answered.
+      const store = usePreferencesStore.getState();
+      const mapNow = store.preferences?.dashboardWidgetConfig ?? {};
+      const slice = saved.dashboardWidgetConfig?.[DASHBOARD_HERO_WIDGET_ID];
+      if (slice !== undefined) {
+        store.updatePreferences({
+          dashboardWidgetConfig: { ...mapNow, [DASHBOARD_HERO_WIDGET_ID]: slice },
+        });
+      }
       onClose();
     } catch (error) {
       toast.error(getErrorMessage(error, t('customize.toasts.saveFailed')));

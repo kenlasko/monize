@@ -3123,8 +3123,24 @@ describe("a dashboard card stretches to its row, never `h-full`", () => {
    * `minHeight` prop, the lazy skeleton's argument): `min-h-[` alone is not a
    * card (a chart's inner `flex-1 min-h-[260px]` is content, not a floor).
    */
-  const CARD_SURFACE = /CARD_CLASS|<(?:Widget)?Card\b|bg-white dark:bg-gray-800|[mM]inHeight|[sS]keleton\(/;
-  const OWN_FLOOR = /(?<![\w-])lg:min-h-/;
+  const CARD_SURFACE = /CARD_CLASS|<(?:Widget)?Card\b|bg-white dark:bg-gray-800|(?<![A-Za-z])[mM]inHeight|[sS]keleton\(/;
+  /**
+   * A min-height on a card at any breakpoint, or none: `lg:` (the grid item's
+   * floor from there up), `md:`, `xl:` and the rest, and the unprefixed
+   * `min-h-[...]`. `min-h-0` / `min-h-auto` / `min-h-full` are not floors.
+   */
+  const OWN_FLOOR = /(?<![\w-])(?:(?:sm|md|lg|xl|2xl):)?min-h-(?!0(?![\w-])|auto(?![\w-])|full(?![\w-]))/;
+  /**
+   * A self-alignment on a card root: `self-start` and friends stop the card
+   * filling its grid slot by stretch (and the row's height with it).
+   */
+  const OWN_ALIGN = /(?<![\w-])(?:\w+:)?self-(?:start|center|end)(?![\w-])/;
+  /**
+   * A local that holds a card's class list (\`const cardClass = `${CARD_CLASS}
+   * ...`\`), possibly over several lines. Its statement is a card shell, and
+   * so is every line that names it.
+   */
+  const CARD_CONST = /\bconst\s+(\w+)\s*=\s*([`'"])\s*\$\{CARD_CLASS\}[\s\S]*?\2\s*;?/g;
   /**
    * A `<Card>` or `<WidgetCard>` opening tag, whose class list is usually on
    * a later line than the tag name; `=>` inside an attribute is not its end.
@@ -3163,20 +3179,40 @@ describe("a dashboard card stretches to its row, never `h-full`", () => {
     return [...new Set(offenders)];
   }
 
-  function widgetCardsWithTheirOwnFloor(): string[] {
+  /** Lines of a source that are, or belong to, a card shell, with their text. */
+  function cardShellLines(source: string): { line: number; text: string }[] {
+    const lines = source.split("\n");
+    const shell = new Set<number>();
+    lines.forEach((l, i) => {
+      if (CARD_SURFACE.test(l)) shell.add(i);
+    });
+    for (const m of source.matchAll(CARD_CONST)) {
+      const start = source.slice(0, m.index).split("\n").length - 1;
+      const end = start + m[0].split("\n").length - 1;
+      for (let i = start; i <= end; i++) shell.add(i);
+      const uses = new RegExp(`(?<![\\w$])${m[1]}(?![\\w$])`);
+      lines.forEach((l, i) => {
+        if (uses.test(l)) shell.add(i);
+      });
+    }
+    return [...shell].sort((x, y) => x - y).map((i) => ({ line: i + 1, text: lines[i] }));
+  }
+
+  function cardShellsMatching(pattern: RegExp): string[] {
     const offenders: string[] = [];
     for (const [path, source] of dashboardSources()) {
-      source.split("\n").forEach((line, i) => {
-        if (CARD_SURFACE.test(line) && OWN_FLOOR.test(line)) {
-          offenders.push(`${path}:${i + 1}`);
-        }
-      });
+      for (const { line, text } of cardShellLines(source)) {
+        if (pattern.test(text)) offenders.push(`${path}:${line}`);
+      }
       for (const { line, tag } of cardTags(source)) {
-        if (OWN_FLOOR.test(tag)) offenders.push(`${path}:${line}`);
+        if (pattern.test(tag)) offenders.push(`${path}:${line}`);
       }
     }
     return [...new Set(offenders)];
   }
+
+  const widgetCardsWithTheirOwnFloor = () => cardShellsMatching(OWN_FLOOR);
+  const widgetCardsAligningThemselves = () => cardShellsMatching(OWN_ALIGN);
 
   it("has no widget card shell setting h-full", () => {
     expect(
@@ -3185,10 +3221,17 @@ describe("a dashboard card stretches to its row, never `h-full`", () => {
     ).toEqual([]);
   });
 
-  it("has no widget card carrying its own lg: floor", () => {
+  it("has no widget card aligning itself out of its slot", () => {
+    expect(
+      widgetCardsAligningThemselves(),
+      "Delete `self-start` / `self-center` / `self-end` from the card: the grid stretches it to fill its slot, and a self-alignment shrinks it to its content so it no longer fills the row.",
+    ).toEqual([]);
+  });
+
+  it("has no widget card carrying its own min-height floor", () => {
     expect(
       widgetCardsWithTheirOwnFloor(),
-      "Delete the card's `lg:min-h-`: from `lg` up the floor is the grid item's (`DashboardGridItem`, from the widget's `defaultHeight` in widget-registry.tsx and `HEIGHT_CLASSES` in dashboard-layout.ts). A floor a widget needs below `lg` goes on its content area, not its card.",
+      "Delete the card's `min-h-` (at any breakpoint, or none): from `lg` up the floor is the grid item's (`DashboardGridItem`, from the widget's `defaultHeight` in widget-registry.tsx and `HEIGHT_CLASSES` in dashboard-layout.ts). A floor a widget needs below `lg` goes on its content area, not its card.",
     ).toEqual([]);
   });
 
@@ -3230,14 +3273,51 @@ describe("a dashboard card stretches to its row, never `h-full`", () => {
   });
 
   it("catches a planted card floor and a pinned item, and passes their legitimate neighbours", () => {
+    const shellLines = (src: string) => cardShellLines(src).map((l) => l.line);
     const floored = (line: string) => CARD_SURFACE.test(line) && OWN_FLOOR.test(line);
     expect(floored("<div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>")).toBe(true);
     expect(floored('<Card padding="md" className="lg:min-h-[540px]" />')).toBe(true);
     expect(floored('      minHeightClass="lg:min-h-[500px]"')).toBe(true);
     expect(floored("loading: widgetSkeleton('lg:min-h-[390px]') });")).toBe(true);
-    // A chart's inner floor and the layout's own class map are not a card.
+    // Any other breakpoint prefix, or none, is a floor too.
+    expect(floored("<div className={`${CARD_CLASS} xl:min-h-[390px]`}>")).toBe(true);
+    expect(floored("<div className={`${CARD_CLASS} md:min-h-[390px]`}>")).toBe(true);
+    expect(floored("<div className={`${CARD_CLASS} min-h-[390px]`}>")).toBe(true);
+    expect(floored('<Card className="min-h-40" />')).toBe(true);
+    // A chart's inner floor, the layout's own class map, a card that only
+    // lets itself shrink, and the content area's floor are not a card's floor.
     expect(floored('<div className="flex-1 min-h-[260px]">')).toBe(false);
     expect(floored("  standard: 'lg:min-h-[540px]',")).toBe(false);
+    expect(floored("<div className={`${CARD_CLASS} min-h-0 flex-col`}>")).toBe(false);
+    expect(OWN_FLOOR.test("lg:min-h-auto")).toBe(false);
+
+    // A card class held in a local is a shell, on its line and where it is used.
+    const held = [
+      "const cardClass = `${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`;",
+      "<div className={cardClass}>",
+    ].join("\n");
+    expect(shellLines(held)).toEqual([1, 2]);
+    const heldOverLines = [
+      "const cardClass = `",
+      "  ${CARD_CLASS}",
+      "`;",
+    ].join("\n");
+    expect(shellLines(heldOverLines)).toEqual([1, 2, 3]);
+    const heldStart = "const cardClass = `${CARD_CLASS} p-3\n  md:min-h-[390px]`;\nconst other = 1;";
+    expect(shellLines(heldStart)).toEqual([1, 2]);
+    // A calendar day cell's floor is not a card's.
+    expect(CARD_SURFACE.test('dayMinHeightClass="min-h-[64px]"')).toBe(false);
+    expect(shellLines("const cardClass = `${CARD_CLASS} p-3`;\n<div className={`${cardClass} self-start`}>")).toEqual([1, 2]);
+    // TriviaWidget's body box: a floor on the content area, not a card.
+    expect(
+      shellLines("const BODY = 'flex flex-1 flex-col min-h-[calc(390px_-_1.5rem)] lg:min-h-auto';"),
+    ).toEqual([]);
+
+    expect(OWN_ALIGN.test("<div className={`${CARD_CLASS} self-start p-3`}>")).toBe(true);
+    expect(OWN_ALIGN.test('<Card className="lg:self-center" />')).toBe(true);
+    expect(OWN_ALIGN.test('<Card className="self-end" />')).toBe(true);
+    expect(OWN_ALIGN.test('<button className="self-start p-1.5">')).toBe(true);
+    expect(OWN_ALIGN.test('<div className="items-start justify-self-start">')).toBe(false);
 
     const tag = cardTags(
       '<WidgetCard\n  title={t("x")}\n  onOpen={() => go()}\n  className="lg:min-h-[500px] h-full"\n>',

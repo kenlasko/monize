@@ -90,6 +90,33 @@ describe('DashboardHeroSettingsModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('adopts only the hero slice of the answer, so a map change landing meanwhile survives', async () => {
+    prefsState.current = { dashboardWidgets: ['net-worth'], dashboardWidgetConfig: { 'net-worth': { gridWidth: 'half' } } };
+    let answer!: () => void;
+    updatePreferencesMock.mockImplementationOnce(
+      (data) =>
+        new Promise((resolve) => {
+          // The server answers with the map this save started from.
+          answer = () => resolve({ dashboardWidgets: [], dashboardWidgetConfig: data.dashboardWidgetConfig });
+        }),
+    );
+    await renderModal();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '10Y' }));
+    });
+    await save();
+    // Edit mode's Done stores new sizes while the save is in flight.
+    prefsState.current = { ...prefsState.current, dashboardWidgetConfig: { 'net-worth': { gridWidth: 'full' } } };
+    await act(async () => answer());
+    expect(updateStorePreferencesMock).toHaveBeenCalledTimes(1);
+    expect(updateStorePreferencesMock).toHaveBeenCalledWith({
+      dashboardWidgetConfig: {
+        'net-worth': { gridWidth: 'full' },
+        'dashboard-hero': { ...DASHBOARD_HERO_DEFAULT, range: '10y' },
+      },
+    });
+  });
+
   it('shows an error toast and stays open when saving fails', async () => {
     const toast = (await import('react-hot-toast')).default;
     const toastError = vi.spyOn(toast, 'error');
