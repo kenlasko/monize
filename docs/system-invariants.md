@@ -118,6 +118,7 @@ implied.
 | INV-BOND-005 | A linked security's automatic price comes only from the bond engine, and only for series priced by their terms; the engine replaces every non-manual row and never a manual one | enforced |
 | INV-BOND-006 | Bond terms enter the catalog only from an adapter's fetch of its official source or an administrator's manual entry on the adapter's template; a person who is not an administrator supplies only a country and a series code | enforced |
 | INV-BOND-007 | A program-linked security's acquisitions with a date of their own are inferred, TRANSFER_IN and ADD_SHARES name their series, a removal the account cannot cover is refused at write time, and an import may store NULL which the lots name | enforced |
+| INV-INTEREST-001 | Interest paid on a bond is stored on that bond, and interest with no security stays account-level | partial |
 | INV-BOND-008 | No country's bond data (series, terms version, benchmark observation) is fetched or stored without a person's action | enforced |
 | INV-BOND-009 | A bond redemption's cash splits into returned principal and interest, never into a capital gain | enforced |
 | INV-BOND-010 | A bond-linked holding's current value is its own account's lots' value, never quantity times the security's blended price | partial |
@@ -4727,6 +4728,60 @@ Enforcement         backend/src/bonds/no-automatic-bonds.guard.spec.ts (every
                     backend/test/integration/no-automatic-bonds.integration.spec.ts
                     (real database, a fetch that throws if called).
 Status              enforced
+```
+
+### INV-INTEREST-001 -- interest paid on a bond is stored on that bond
+
+```text
+Statement           An INTEREST investment transaction may name the security it
+                    was paid on, as Microsoft Money does for a bond's coupon.
+                    When the entry form is given one, the transaction stores it
+                    (investment_transactions.security_id) and the per-security
+                    history and the investment reports attribute the interest to
+                    that security. Interest entered with no security stays an
+                    account-level row, exactly as before. The form offers only
+                    bonds for Interest (securityType BOND): income on any other
+                    security is a Dividend. Editing an existing Interest row
+                    keeps the security it carries, even when that security is not
+                    a bond; a row saved as another action (a Dividend on a stock)
+                    that is changed to Interest does not keep a non-bond security.
+                    Emptying the security on an existing row sends securityId
+                    null, which the update stores as no security (an omitted
+                    field means unchanged), so the row becomes account-level.
+Source of truth     investment_transactions.security_id on the INTEREST row.
+Enforcement         Server: InvestmentTransactionsService.create and update
+                    refuse an INTEREST row a security that is not a bond
+                    (assertInterestSecurityIsBond). Only a security the row is
+                    being given is judged: an INTEREST row keeps the security it
+                    already carries, whatever its type, so a row stored before
+                    the rule still saves when edited. Every caller of create and
+                    update is covered (the API, the entry form, MCP, AI actions,
+                    scheduled postings). Not covered, on purpose: imports, which
+                    write rows directly and record interest on any security type
+                    (QIF IntInc/MiscInc, Money), and investment rows embedded in
+                    a split (createEmbeddedForSplit), which are rewritten when
+                    the split is saved and would otherwise strand stored rows.
+                    Client: InvestmentTransactionForm offers only bonds for
+                    Interest and sends what is described above. A bond program's
+                    series resolver treats INTEREST as a row that names no
+                    series.
+Concurrency scope   -- (single-row write)
+Retry semantics     Same as any investment transaction create or update.
+Crash semantics     Same as any investment transaction create or update.
+Failure response    400 errors.securities.interestSecurityMustBeBond, before
+                    anything is written.
+Required tests      Present: investment-transactions.service.spec.ts (create
+                    refuses a non-bond and stores a bond or no security; update
+                    refuses a new non-bond, refuses a Dividend on a stock turned
+                    into Interest, keeps a stored non-bond, clears to null,
+                    moves to a bond) and frontend unit tests in
+                    InvestmentTransactionForm.test.tsx (bond-only choice, the
+                    security reaches create, no security stays undefined, an edit
+                    keeps it, clearing it on an edit sends null, a Dividend on a
+                    stock changed to Interest sends null). Owed: an integration
+                    test that INTEREST with a bond is reported against it in the
+                    per-security history and the investment reports.
+Status              partial
 ```
 
 ### INV-BOND-007 -- a program-linked security's rows name a series of its program, or the ledger says which does not

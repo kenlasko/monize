@@ -679,6 +679,7 @@
     "transferPairOutsidePortfolio": "両方の明細がこのポートフォリオの投資口座にある必要があります",
     "providerCurrencyMismatch": "{{ symbol }} の価格更新を拒否しました。{{ provider }} は {{ reported }} 建てで提供していますが、この有価証券は {{ configured }} で登録されています。有価証券の通貨、シンボル、取引所を修正してから再度更新してください。",
     "securityIdRequired": "{{ action }} 取引には有価証券IDが必要です",
+    "interestSecurityMustBeBond": "利息は債券に対してのみ記録できます。その他の有価証券の収益は配当として記録してください。",
     "exchangeRateUnavailable": "取引日における {{ from }} -> {{ to }} の為替レートを特定できませんでした。現金口座への計上が正しくなるよう、明示的な exchangeRate を指定してください。",
     "splitRatioRequired": "株式分割比率（数量）はゼロより大きくなければなりません",
     "acquisitionPriceRequired": "{{ action }} 取引には 0 より大きい 1 株あたりの価格が必要です。取得原価が不明な株式には ADD_SHARES を使用してください。",

@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "Sem títulos detidos nesta conta",
     "selectFromAccountFirst": "Selecione primeiro a conta de origem",
     "selectOrCreateSecurity": "Selecionar ou criar título...",
+    "selectBondOptional": "Selecione o título (opcional)...",
     "quantityShares": "Quantidade (Ações)",
     "pricePerShare": "Preço por Ação",
     "commissionFees": "Comissão / Encargos",

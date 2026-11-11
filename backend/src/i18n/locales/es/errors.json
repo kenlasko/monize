@@ -679,6 +679,7 @@
     "transferPairOutsidePortfolio": "Ambas partes deben estar en cuentas de inversión de esta cartera",
     "providerCurrencyMismatch": "Actualización de precio rechazada para {{ symbol }}: {{ provider }} lo cotiza en {{ reported }}, pero el valor está registrado en {{ configured }}. Corrige la moneda, el símbolo o el mercado del valor y vuelve a actualizar.",
     "securityIdRequired": "El ID del valor es obligatorio para las transacciones de {{ action }}",
+    "interestSecurityMustBeBond": "El interés solo puede asignarse a un bono. Registre los ingresos de cualquier otro valor como dividendo.",
     "exchangeRateUnavailable": "No se pudo determinar un tipo de cambio para {{ from }} -> {{ to }} en la fecha de la transacción. Indica un exchangeRate explícito para que el asiento en la cuenta de efectivo sea correcto.",
     "splitRatioRequired": "El ratio de división (cantidad) debe ser mayor que cero",
     "acquisitionPriceRequired": "Se requiere un precio por acción mayor que cero para las transacciones {{ action }}. Utilice ADD_SHARES para las acciones adquiridas sin un coste conocido.",

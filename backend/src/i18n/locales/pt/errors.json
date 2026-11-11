@@ -679,6 +679,7 @@
     "transferPairOutsidePortfolio": "Ambas as pernas têm de estar em contas de investimento desta carteira",
     "providerCurrencyMismatch": "Atualização de preço recusada para {{ symbol }}: o {{ provider }} cota-o em {{ reported }}, mas o título está registado em {{ configured }}. Corrija a moeda, o símbolo ou a bolsa do título e atualize novamente.",
     "securityIdRequired": "O ID do título é obrigatório para transações de {{ action }}",
+    "interestSecurityMustBeBond": "Os juros só podem ser registados numa obrigação. Registe os rendimentos de qualquer outro título como dividendo.",
     "exchangeRateUnavailable": "Não foi possível determinar uma taxa de câmbio para {{ from }} -> {{ to }} na data da transação. Forneça um exchangeRate explícito para que o lançamento na conta de caixa fique correto.",
     "splitRatioRequired": "O rácio de desdobramento (quantidade) deve ser maior que zero",
     "acquisitionPriceRequired": "É necessário um preço por unidade superior a zero para transações {{ action }}. Utilize ADD_SHARES para participações adquiridas sem um custo conhecido.",

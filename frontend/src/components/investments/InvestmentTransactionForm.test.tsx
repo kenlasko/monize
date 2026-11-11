@@ -2881,4 +2881,177 @@ describe('InvestmentTransactionForm - extra coverage', () => {
       expect(Number(totalInput.value)).toBeCloseTo(46.6557, 4);
     });
   });
+
+  describe('Interest on a bond (issue #2112)', () => {
+    const securitiesWithBond = [
+      { id: 'sec-1', symbol: 'AAPL', name: 'Apple Inc.', securityType: 'STOCK', currencyCode: 'USD' },
+      { id: 'sec-bond', symbol: 'BND1', name: 'Example Bond 2030', securityType: 'BOND', currencyCode: 'CAD' },
+    ] as any[];
+
+    async function openInterest() {
+      vi.mocked(investmentsApi.getSecurities).mockResolvedValue(securitiesWithBond);
+      render(<InvestmentTransactionForm accounts={accounts} />);
+      await waitFor(() => {
+        expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Brokerage Account'), { target: { value: 'a1' } });
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Transaction Type'), { target: { value: 'INTEREST' } });
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText(/Amount/), { target: { value: '12.5' } });
+      });
+    }
+
+    it('offers only bonds for Interest', async () => {
+      await openInterest();
+      const input = await screen.findByLabelText('Security');
+      await act(async () => {
+        fireEvent.click(input);
+      });
+      expect(await screen.findByText(/^BND1 - /)).toBeInTheDocument();
+      expect(screen.queryByText(/^AAPL - /)).not.toBeInTheDocument();
+    });
+
+    it('sends the bond with the interest', async () => {
+      await openInterest();
+      await chooseComboboxOption('Security', 'BND1 - ');
+      await act(async () => {
+        fireEvent.click(screen.getByText('Create Transaction'));
+      });
+      await waitFor(() => {
+        expect(investmentsApi.createTransaction).toHaveBeenCalled();
+      });
+      const payload = vi.mocked(investmentsApi.createTransaction).mock.calls[0][0] as any;
+      expect(payload.action).toBe('INTEREST');
+      expect(payload.securityId).toBe('sec-bond');
+    });
+
+    it('keeps interest without a security at account level', async () => {
+      await openInterest();
+      await act(async () => {
+        fireEvent.click(screen.getByText('Create Transaction'));
+      });
+      await waitFor(() => {
+        expect(investmentsApi.createTransaction).toHaveBeenCalled();
+      });
+      const payload = vi.mocked(investmentsApi.createTransaction).mock.calls[0][0] as any;
+      expect(payload.action).toBe('INTEREST');
+      expect(payload.securityId).toBeUndefined();
+    });
+
+    it('drops a stock picked under another action when switched to Interest', async () => {
+      vi.mocked(investmentsApi.getSecurities).mockResolvedValue(securitiesWithBond);
+      render(<InvestmentTransactionForm accounts={accounts} />);
+      await waitFor(() => {
+        expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Brokerage Account'), { target: { value: 'a1' } });
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Transaction Type'), { target: { value: 'DIVIDEND' } });
+      });
+      await chooseComboboxOption('Security', 'AAPL - ');
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Transaction Type'), { target: { value: 'INTEREST' } });
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText(/Amount/), { target: { value: '5' } });
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Create Transaction'));
+      });
+      await waitFor(() => {
+        expect(investmentsApi.createTransaction).toHaveBeenCalled();
+      });
+      const payload = vi.mocked(investmentsApi.createTransaction).mock.calls[0][0] as any;
+      expect(payload.action).toBe('INTEREST');
+      expect(payload.securityId).toBeUndefined();
+    });
+
+    it('keeps the bond when an existing interest row is edited', async () => {
+      vi.mocked(investmentsApi.getSecurities).mockResolvedValue(securitiesWithBond);
+      const transaction = {
+        id: 't9', accountId: 'a1', action: 'INTEREST' as const, transactionDate: '2024-06-15',
+        quantity: null, price: null, commission: 0, totalAmount: 30, description: 'Coupon',
+        securityId: 'sec-bond',
+      } as any;
+      render(<InvestmentTransactionForm accounts={accounts} transaction={transaction} />);
+      await waitFor(() => {
+        expect(screen.getByText('Update Transaction')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Update Transaction'));
+      });
+      await waitFor(() => {
+        expect(investmentsApi.updateTransaction).toHaveBeenCalled();
+      });
+      const payload = vi.mocked(investmentsApi.updateTransaction).mock.calls[0][1] as any;
+      expect(payload.securityId).toBe('sec-bond');
+    });
+
+    // An omitted securityId means "unchanged" to the server, so clearing the
+    // field has to be sent as null or the bond stays on the row.
+    it('sends null when the bond is cleared from an existing interest row', async () => {
+      vi.mocked(investmentsApi.getSecurities).mockResolvedValue(securitiesWithBond);
+      const transaction = {
+        id: 't9', accountId: 'a1', action: 'INTEREST' as const, transactionDate: '2024-06-15',
+        quantity: null, price: null, commission: 0, totalAmount: 30, description: 'Coupon',
+        securityId: 'sec-bond',
+      } as any;
+      render(<InvestmentTransactionForm accounts={accounts} transaction={transaction} />);
+      await waitFor(() => {
+        expect(screen.getByText('Update Transaction')).toBeInTheDocument();
+      });
+      const input = await screen.findByLabelText('Security');
+      await waitFor(() => {
+        expect((input as HTMLInputElement).value).toMatch(/^BND1 - /);
+      });
+      // The field's clear button, as a person empties it.
+      const clear = input.parentElement!.querySelector('button[type="button"]')!;
+      await act(async () => {
+        fireEvent.mouseDown(clear);
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Update Transaction'));
+      });
+      await waitFor(() => {
+        expect(investmentsApi.updateTransaction).toHaveBeenCalled();
+      });
+      const payload = vi.mocked(investmentsApi.updateTransaction).mock.calls[0][1] as any;
+      expect(payload.action).toBe('INTEREST');
+      expect(payload.securityId).toBeNull();
+    });
+
+    it('sends null when an edited dividend on a stock becomes interest', async () => {
+      vi.mocked(investmentsApi.getSecurities).mockResolvedValue(securitiesWithBond);
+      const transaction = {
+        id: 't10', accountId: 'a1', action: 'DIVIDEND' as const, transactionDate: '2024-06-15',
+        quantity: null, price: null, commission: 0, totalAmount: 8, description: 'Dividend',
+        securityId: 'sec-1',
+      } as any;
+      render(<InvestmentTransactionForm accounts={accounts} transaction={transaction} />);
+      await waitFor(() => {
+        expect(screen.getByText('Update Transaction')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Transaction Type'), { target: { value: 'INTEREST' } });
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText(/Amount/), { target: { value: '8' } });
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Update Transaction'));
+      });
+      await waitFor(() => {
+        expect(investmentsApi.updateTransaction).toHaveBeenCalled();
+      });
+      const payload = vi.mocked(investmentsApi.updateTransaction).mock.calls[0][1] as any;
+      expect(payload.action).toBe('INTEREST');
+      expect(payload.securityId).toBeNull();
+    });
+  });
 });

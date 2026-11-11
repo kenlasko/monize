@@ -274,6 +274,7 @@
     "noSecuritiesHeld": "[XX-No securities held in this account-XX]",
     "selectFromAccountFirst": "[XX-Select the From account first-XX]",
     "selectOrCreateSecurity": "[XX-Select or create security...-XX]",
+    "selectBondOptional": "[XX-Select the bond (optional)...-XX]",
     "quantityShares": "[XX-Quantity (Shares)-XX]",
     "pricePerShare": "[XX-Price per Share-XX]",
     "commissionFees": "[XX-Commission / Fees-XX]",

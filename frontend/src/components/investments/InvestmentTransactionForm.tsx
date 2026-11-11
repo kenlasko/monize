@@ -197,6 +197,11 @@ const actionIn = (action: InvestmentAction, list: InvestmentAction[]): boolean =
 
 const securityRequiredActions: InvestmentAction[] = ['BUY', 'SELL', 'DIVIDEND', 'CAPITAL_GAIN', 'RETURN_OF_CAPITAL', 'SPLIT', 'REINVEST', 'ADD_SHARES', 'REMOVE_SHARES'];
 
+// Interest may name the security it was paid on, as Microsoft Money does for a
+// bond's coupon. It is optional: interest without one stays a plain account-level
+// row. Only bonds are offered for it; every other security's income is a Dividend.
+const interestSecurityActions: InvestmentAction[] = ['INTEREST'];
+
 // Actions that require quantity and price
 const quantityPriceActions: InvestmentAction[] = ['BUY', 'SELL', 'REINVEST'];
 
@@ -1247,7 +1252,9 @@ function InvestmentTransactionFormFields({
         transactionDate: data.transactionDate,
         securityId: actionIn(action, securityRequiredActions) || isUnpairedTransferIn
           ? data.securityId
-          : undefined,
+          : actionIn(action, interestSecurityActions) && data.securityId
+            ? data.securityId
+            : undefined,
         fundingAccountId:
           (actionIn(action, fundingAccountActions) ||
             actionIn(action, cashDestinationActions)) &&
@@ -1294,7 +1301,17 @@ function InvestmentTransactionFormFields({
       };
 
       if (transaction) {
-        await investmentsApi.updateTransaction(transaction.id, payload);
+        // An omitted securityId means "unchanged" to the server, so emptying the
+        // field on an Interest row that had a security has to say so with null,
+        // or the bond would stay on the row (INV-INTEREST-001).
+        const clearsInterestSecurity =
+          actionIn(action, interestSecurityActions) &&
+          !data.securityId &&
+          !!originalSecurityId;
+        await investmentsApi.updateTransaction(
+          transaction.id,
+          clearsInterestSecurity ? { ...payload, securityId: null } : payload,
+        );
         toast.success(t('transactionForm.toastUpdated'));
         onSuccess?.();
       } else {
@@ -1321,6 +1338,21 @@ function InvestmentTransactionFormFields({
   useFormSubmitRef(submitRef, handleSubmit, onSubmit);
 
   const needsSecurity = actionIn(watchedAction, securityRequiredActions);
+  const offersInterestSecurity = actionIn(watchedAction, interestSecurityActions);
+
+  // Interest offers bonds only. A security picked under another action (a
+  // Dividend on a stock) must not ride along when the type is switched to
+  // Interest, whether picked now or saved on the row as that other action. An
+  // Interest row's own saved security is the exception, so editing it keeps it.
+  const storedInterestSecurityId =
+    transaction?.action === 'INTEREST' ? originalSecurityId : undefined;
+  useEffect(() => {
+    if (!offersInterestSecurity || !watchedSecurityId || !securitiesLoaded) return;
+    const picked = securities.find((s) => s.id === watchedSecurityId);
+    if (!picked || picked.securityType === 'BOND') return;
+    if (watchedSecurityId === storedInterestSecurityId) return;
+    setValue('securityId', '', { shouldDirty: true });
+  }, [offersInterestSecurity, watchedSecurityId, securities, securitiesLoaded, storedInterestSecurityId, setValue]);
   const needsQuantityPrice = actionIn(watchedAction, quantityPriceActions);
   const isQuantityOnly = actionIn(watchedAction, quantityOnlyActions);
   const isAmountOnly = actionIn(watchedAction, amountOnlyActions);
@@ -1469,7 +1501,7 @@ function InvestmentTransactionFormFields({
           as the cash form's Payee and Category: type to filter, or "+ Create"
           a security that does not exist yet. A transfer can only move a
           security the source account holds, so it offers no Create. */}
-      {(needsSecurity || transferMode || isUnpairedTransferIn) && (
+      {(needsSecurity || offersInterestSecurity || transferMode || isUnpairedTransferIn) && (
         <Combobox
           label={t('transactionForm.security')}
           aria-label={t('transactionForm.security')}
@@ -1482,15 +1514,24 @@ function InvestmentTransactionFormFields({
                 : t('transactionForm.selectFromAccountFirst')
               : transferMode
                 ? t('transactionForm.selectSecurity')
-                : t('transactionForm.selectOrCreateSecurity')
+                : offersInterestSecurity
+                  ? t('transactionForm.selectBondOptional')
+                  : t('transactionForm.selectOrCreateSecurity')
           }
           options={
             isTransfer
               ? transferSecurityOptions
-              : securities.map((s) => ({
-                  value: s.id,
-                  label: securityOptionLabel(s),
-                }))
+              : securities
+                  .filter(
+                    (s) =>
+                      !offersInterestSecurity ||
+                      s.securityType === 'BOND' ||
+                      s.id === watchedSecurityId,
+                  )
+                  .map((s) => ({
+                    value: s.id,
+                    label: securityOptionLabel(s),
+                  }))
           }
           value={watchedSecurityId || ''}
           initialDisplayValue={transaction?.security ? securityOptionLabel(transaction.security) : ''}
@@ -1498,11 +1539,11 @@ function InvestmentTransactionFormFields({
             setValue('securityId', securityId, { shouldDirty: true, shouldValidate: true })
           }
           onCreateNew={
-            transferMode
+            transferMode || offersInterestSecurity
               ? undefined
               : (text) => setNewSecurityDefaults(securityDefaultsFromTypedText(text))
           }
-          allowCustomValue={!transferMode}
+          allowCustomValue={!transferMode && !offersInterestSecurity}
           valueIsId
           usePortal
           error={errors.securityId?.message}

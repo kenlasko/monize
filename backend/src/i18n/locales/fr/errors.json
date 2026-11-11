@@ -679,6 +679,7 @@
     "transferPairOutsidePortfolio": "Les deux volets doivent être sur des comptes de placement de ce portefeuille",
     "providerCurrencyMismatch": "Mise à jour du prix refusée pour {{ symbol }} : {{ provider }} le cote en {{ reported }}, mais le titre est enregistré en {{ configured }}. Corrigez la devise, le symbole ou la place boursière du titre, puis actualisez.",
     "securityIdRequired": "L'ID de titre est requis pour les transactions {{ action }}",
+    "interestSecurityMustBeBond": "Les intérêts ne peuvent être rattachés qu'à une obligation. Enregistrez les revenus de tout autre titre comme dividende.",
     "exchangeRateUnavailable": "Impossible de déterminer un taux de change pour {{ from }} -> {{ to }} à la date de la transaction. Fournissez un exchangeRate explicite afin que l'écriture sur le compte d'espèces soit correcte.",
     "splitRatioRequired": "Le ratio de fractionnement (quantité) doit être supérieur à zéro",
     "acquisitionPriceRequired": "Un prix par part supérieur à zéro est requis pour les transactions {{ action }}. Utilisez ADD_SHARES pour les parts acquises sans coût connu.",

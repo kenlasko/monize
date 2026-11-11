@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "이 계정에 보유 중인 유가증권이 없습니다",
     "selectFromAccountFirst": "먼저 출금 계정을 선택하세요",
     "selectOrCreateSecurity": "유가증권 선택 또는 생성...",
+    "selectBondOptional": "채권 선택(선택 사항)...",
     "quantityShares": "수량 (주식수)",
     "pricePerShare": "주당 가격",
     "commissionFees": "수수료 / 거래비용",

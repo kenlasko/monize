@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "На цьому рахунку немає цінних паперів",
     "selectFromAccountFirst": "Спочатку оберіть рахунок відправника",
     "selectOrCreateSecurity": "Оберіть або створіть цінний папір...",
+    "selectBondOptional": "Виберіть облігацію (необов’язково)...",
     "quantityShares": "Кількість (акцій)",
     "pricePerShare": "Ціна за акцію",
     "commissionFees": "Комісія / Збори",

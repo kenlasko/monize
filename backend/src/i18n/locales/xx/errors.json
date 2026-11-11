@@ -679,6 +679,7 @@
     "transferPairOutsidePortfolio": "[XX-Both legs must be on investment accounts of this portfolio-XX]",
     "providerCurrencyMismatch": "[XX-Price update refused for {{ symbol }}: {{ provider }} quotes it in {{ reported }}, but the security is recorded in {{ configured }}. Correct the security's currency, symbol or exchange, then refresh.-XX]",
     "securityIdRequired": "[XX-Security ID is required for {{ action }} transactions-XX]",
+    "interestSecurityMustBeBond": "[XX-Interest can only be recorded against a bond. Record income on any other security as a Dividend.-XX]",
     "exchangeRateUnavailable": "[XX-Could not determine an exchange rate for {{ from }} -> {{ to }} on the transaction date. Supply an explicit exchangeRate so the cash posting is correct.-XX]",
     "splitRatioRequired": "[XX-Split ratio (quantity) must be greater than zero-XX]",
     "acquisitionPriceRequired": "[XX-Price per share is required and must be greater than zero for {{ action }} transactions. Use ADD_SHARES for shares acquired without a known cost.-XX]",

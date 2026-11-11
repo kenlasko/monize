@@ -522,6 +522,59 @@ describe("InvestmentTransactionsService", () => {
       );
     });
 
+    /**
+     * Invariant: INV-INTEREST-001 -- Interest names a bond or no security.
+     * Minimal mutation: delete the `assertInterestSecurityIsBond` call in
+     * `create`.
+     * Test that fails under it: the first one below -- interest is stored
+     * against a stock, where the form would have offered only bonds.
+     */
+    it("refuses INTEREST against a security that is not a bond", async () => {
+      await expect(
+        service.create(userId, {
+          accountId,
+          securityId,
+          action: InvestmentAction.INTEREST,
+          transactionDate: "2025-01-15",
+          price: 12.5,
+        }),
+      ).rejects.toThrow(/only be recorded against a bond/);
+      expect(investmentTransactionsRepository.create).not.toHaveBeenCalled();
+    });
+
+    it("stores INTEREST against a bond", async () => {
+      securitiesService.findOne.mockResolvedValue({
+        ...mockSecurity,
+        securityType: "BOND",
+      });
+      await service.create(userId, {
+        accountId,
+        securityId,
+        action: InvestmentAction.INTEREST,
+        transactionDate: "2025-01-15",
+        price: 12.5,
+      });
+      expect(investmentTransactionsRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: InvestmentAction.INTEREST,
+          securityId,
+        }),
+      );
+    });
+
+    it("stores INTEREST with no security at account level", async () => {
+      await service.create(userId, {
+        accountId,
+        action: InvestmentAction.INTEREST,
+        transactionDate: "2025-01-15",
+        price: 12.5,
+      });
+      expect(investmentTransactionsRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ action: InvestmentAction.INTEREST }),
+      );
+      expect(securitiesService.findOne).not.toHaveBeenCalled();
+    });
+
     it("creates a BUY transaction with correct total amount", async () => {
       const result = await service.create(userId, createBuyDto);
 
@@ -2027,6 +2080,84 @@ describe("InvestmentTransactionsService", () => {
           action: InvestmentAction.BUY,
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    /**
+     * Invariant: INV-INTEREST-001 on edit -- a security the row is being given
+     * must be a bond, while an Interest row keeps the security it already
+     * carries (an import may store interest on any security).
+     * Minimal mutation: delete the `assertInterestSecurityIsBond` call in
+     * `update`, or drop its stored-row exemption.
+     * Tests that fail under it: the first two below for the deletion, the
+     * third for the exemption.
+     */
+    describe("interest on a bond (INV-INTEREST-001)", () => {
+      const storedInterest = {
+        ...mockBuyTransaction,
+        action: InvestmentAction.INTEREST,
+        quantity: null,
+        price: 30,
+        commission: 0,
+        totalAmount: 30,
+      };
+
+      it("refuses to give an Interest row a security that is not a bond", async () => {
+        investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({ ...storedInterest, securityId: null }),
+        );
+        await expect(
+          service.update(userId, transactionId, { securityId }),
+        ).rejects.toThrow(/only be recorded against a bond/);
+      });
+
+      it("refuses to turn a Dividend on a stock into Interest that keeps the stock", async () => {
+        investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            ...storedInterest,
+            action: InvestmentAction.DIVIDEND,
+          }),
+        );
+        await expect(
+          service.update(userId, transactionId, {
+            action: InvestmentAction.INTEREST,
+          }),
+        ).rejects.toThrow(/only be recorded against a bond/);
+      });
+
+      it("still saves an Interest row that already carries a non-bond security", async () => {
+        investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder(storedInterest),
+        );
+        await expect(
+          service.update(userId, transactionId, {
+            action: InvestmentAction.INTEREST,
+            securityId,
+            description: "Coupon",
+          }),
+        ).resolves.toBeDefined();
+      });
+
+      it("lets an Interest row drop its security", async () => {
+        investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder(storedInterest),
+        );
+        await expect(
+          service.update(userId, transactionId, { securityId: null } as any),
+        ).resolves.toBeDefined();
+      });
+
+      it("lets an Interest row move to a bond", async () => {
+        investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({ ...storedInterest, securityId: null }),
+        );
+        securitiesService.findOne.mockResolvedValue({
+          ...mockSecurity,
+          securityType: "BOND",
+        });
+        await expect(
+          service.update(userId, transactionId, { securityId }),
+        ).resolves.toBeDefined();
+      });
     });
 
     it("still allows an unrelated edit on a row that has no price", async () => {

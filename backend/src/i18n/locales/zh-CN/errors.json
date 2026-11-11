@@ -679,6 +679,7 @@
     "transferPairOutsidePortfolio": "两条记录都必须位于本投资组合的投资账户中",
     "providerCurrencyMismatch": "拒绝更新 {{ symbol }} 的价格：{{ provider }} 以 {{ reported }} 报价，但该证券登记的货币是 {{ configured }}。请更正该证券的货币、代码或交易所，然后重新刷新。",
     "securityIdRequired": "{{ action }} 交易需要证券 ID",
+    "interestSecurityMustBeBond": "利息只能记录在债券上。其他证券的收益请记录为股息。",
     "exchangeRateUnavailable": "无法确定交易日 {{ from }} -> {{ to }} 的汇率。请提供明确的 exchangeRate，以便现金账户的记账正确。",
     "splitRatioRequired": "拆股比例（数量）必须大于零",
     "acquisitionPriceRequired": "{{ action }} 交易需要填写每股价格，且必须大于零。对于成本未知的股份，请使用 ADD_SHARES。",

@@ -545,8 +545,10 @@ export const investmentsApi = {
   updateTransaction: async (
     id: string,
     // destinationAccountId is only used when editing a security-transfer leg,
-    // to reroute the paired leg's account.
-    data: Partial<CreateInvestmentTransactionData> & {
+    // to reroute the paired leg's account. securityId null clears the row's
+    // security; omitted, it is left as it is.
+    data: Omit<Partial<CreateInvestmentTransactionData>, 'securityId'> & {
+      securityId?: string | null;
       destinationAccountId?: string;
     },
   ): Promise<InvestmentTransaction> => {

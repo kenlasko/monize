@@ -679,6 +679,7 @@
     "transferPairOutsidePortfolio": "Beide zijden moeten op beleggingsrekeningen van deze portefeuille staan",
     "providerCurrencyMismatch": "Prijsupdate geweigerd voor {{ symbol }}: {{ provider }} noteert het in {{ reported }}, maar het waardepapier staat geregistreerd in {{ configured }}. Corrigeer de valuta, het symbool of de beurs van het waardepapier en ververs opnieuw.",
     "securityIdRequired": "Waardepapier-ID is vereist voor {{ action }}-transacties",
+    "interestSecurityMustBeBond": "Rente kan alleen op een obligatie worden geboekt. Boek inkomsten uit andere effecten als dividend.",
     "exchangeRateUnavailable": "Kon geen wisselkoers bepalen voor {{ from }} -> {{ to }} op de transactiedatum. Geef een expliciete exchangeRate op zodat de boeking op de geldrekening correct is.",
     "splitRatioRequired": "Splitsingsverhouding (hoeveelheid) moet groter zijn dan nul",
     "acquisitionPriceRequired": "Voor {{ action }}-transacties is een prijs per aandeel groter dan nul vereist. Gebruik ADD_SHARES voor aandelen die zonder bekende kostprijs zijn verworven.",

@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "この口座に保有している有価証券がありません",
     "selectFromAccountFirst": "最初に出金口座を選択してください",
     "selectOrCreateSecurity": "有価証券を選択または作成...",
+    "selectBondOptional": "債券を選択（任意）...",
     "quantityShares": "数量（株数）",
     "pricePerShare": "1株あたりの価格",
     "commissionFees": "手数料 / 費用",
