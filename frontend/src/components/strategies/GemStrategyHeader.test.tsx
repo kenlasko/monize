@@ -137,14 +137,17 @@ describe("GemStrategyHeader", () => {
       expect(push).toHaveBeenCalledWith("/reports/savings-rate");
     });
 
-    it("does not offer this report as a destination", async () => {
+    it("opens on this report, marked as current, without navigating to it", async () => {
       await renderHeader();
       await act(async () => {
         fireEvent.click(
           screen.getByRole("button", { name: "Switch to another report" }),
         );
       });
-      expect(screen.queryByRole("menuitem", { name: /^GEM Strategy/ })).toBeNull();
+      const current = screen.getByRole("menuitem", { name: /^GEM Strategy/ });
+      expect(current).toHaveAttribute("aria-current", "true");
+      fireEvent.click(current);
+      expect(push).not.toHaveBeenCalled();
     });
 
     it("names the scenario control, so the second caret is not a mystery", async () => {

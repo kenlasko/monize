@@ -116,6 +116,67 @@ describe('EntitySwitcher', () => {
     expect(screen.getByRole('menuitem', { name: /Thing number 3/ })).toBeInTheDocument();
   });
 
+  describe('showCurrent', () => {
+    function openShowingCurrent(items: EntitySwitcherItem[], currentId: string) {
+      const onSelect = vi.fn();
+      render(
+        <EntitySwitcher
+          currentId={currentId}
+          items={items}
+          onSelect={onSelect}
+          showCurrent
+          {...LABELS}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: LABELS.triggerLabel }));
+      return { onSelect };
+    }
+
+    it('lists the current one too, marked as current', () => {
+      openShowingCurrent(two, 'item-1');
+      expect(screen.getByRole('menuitem', { name: /Alpha/ })).toHaveAttribute(
+        'aria-current',
+        'true',
+      );
+      expect(screen.getByRole('menuitem', { name: /Beta/ })).not.toHaveAttribute(
+        'aria-current',
+      );
+    });
+
+    it('only closes when the current one is picked', () => {
+      const { onSelect } = openShowingCurrent(two, 'item-1');
+      fireEvent.click(screen.getByRole('menuitem', { name: /Alpha/ }));
+      expect(onSelect).not.toHaveBeenCalled();
+      expect(screen.queryByRole('menu')).toBeNull();
+    });
+
+    it('opens scrolled so the current row is centred in the list', () => {
+      // jsdom has no layout, so give the list and the row the geometry a
+      // browser would: a 100px-tall list whose current row sits 400px down.
+      const offsetTop = vi
+        .spyOn(HTMLElement.prototype, 'offsetTop', 'get')
+        .mockImplementation(function (this: HTMLElement) {
+          return this.getAttribute('aria-current') === 'true' ? 400 : 0;
+        });
+      const offsetHeight = vi
+        .spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
+        .mockReturnValue(20);
+      const clientHeight = vi
+        .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+        .mockReturnValue(100);
+      try {
+        openShowingCurrent(many(30), 'item-20');
+        const list = screen.getByRole('menu').lastElementChild as HTMLElement;
+        // 400 - (100 - 20) / 2
+        expect(list.scrollTop).toBe(360);
+      } finally {
+        offsetTop.mockRestore();
+        offsetHeight.mockRestore();
+        clientHeight.mockRestore();
+      }
+    });
+  });
+
   describe('grouped items', () => {
     /** Two sections, deliberately interleaved in the input array. */
     const grouped: EntitySwitcherItem[] = [

@@ -88,15 +88,30 @@ describe('ReportSwitcher', () => {
     ).toBeInTheDocument();
   });
 
-  it('does not offer the report already on screen', async () => {
-    // Starred, so it would otherwise sit in Favourites as well as under Tax.
+  it('lists the report on screen, highlighted, under its own category', async () => {
+    await openSwitcher('investment-performance');
+    const investment = screen.getByRole('group', { name: 'Investment' });
+    const current = within(investment).getByRole('menuitem', {
+      name: /Investment Performance/,
+    });
+    expect(current).toHaveAttribute('aria-current', 'true');
+    // Picking it again only closes the menu.
+    fireEvent.click(current);
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('files a starred current report beside its siblings, not in Favourites', async () => {
+    // Shown in Favourites, the menu would open at the top, away from the other
+    // Tax reports the reader is likely switching to.
     setFavouriteReportIds(['tax-summary']);
     await openSwitcher();
-    expect(screen.queryByRole('menuitem', { name: /^Tax Summary/ })).toBeNull();
-    // ...and a section it was the only report of is gone with it.
+    // It was the only favourite, so there is no Favourites section.
     expect(screen.queryByRole('group', { name: 'Favourites' })).toBeNull();
-    // A section with another report keeps that one.
     const tax = screen.getByRole('group', { name: 'Tax' });
+    expect(
+      within(tax).getByRole('menuitem', { name: /^Tax Summary/ }),
+    ).toHaveAttribute('aria-current', 'true');
     expect(
       within(tax).getByRole('menuitem', { name: /Payroll Deductions/ }),
     ).toBeInTheDocument();
