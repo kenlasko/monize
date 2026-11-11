@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "自訂",
-    "title": "自訂儀表板",
-    "description": "下方版面配置與儀表板一致：小工具由左至右排列，大螢幕上每列兩個。",
     "moveEarlier": "將{name}往前移",
     "moveLater": "將{name}往後移",
-    "dragToReorder": "拖曳小工具以重新排列，或使用箭頭按鈕。",
-    "hiddenWidgets": "已隱藏的小工具",
-    "hide": "隱藏{name}",
-    "show": "顯示{name}",
     "atLeastOne": "請至少選擇一個要顯示在儀表板上的小工具。",
     "reset": "重設為預設值",
     "toasts": {
@@ -280,6 +274,60 @@
         "mwr": "MWR",
         "cagr": "CAGR"
       }
+    }
+  },
+  "edit": {
+    "barLabel": "排列儀表板",
+    "addWidget": "新增小工具",
+    "heroSettings": "概覽區設定",
+    "done": "完成",
+    "phoneNote": "小工具尺寸適用於較寬的螢幕。",
+    "remove": "移除{name}",
+    "grip": "移動{name}",
+    "gripHint": "拖曳以移動{name}，或按方向鍵",
+    "moved": "{name}已移至第 {position} 位，共 {count} 個",
+    "removed": "已移除{name}",
+    "added": "已新增{name}",
+    "resized": "{name}現在是{size}",
+    "resizedBoth": "{name}現在是{width}和{height}",
+    "twoChanges": "{first}。{second}",
+    "placeholder": "有內容可顯示時，就會顯示在儀表板上。",
+    "addTitle": "新增小工具",
+    "addDescription": "新增的小工具會放在儀表板最後。選擇「完成」之前不會儲存任何變更。",
+    "addEmpty": "所有小工具都已在您的儀表板上",
+    "addToSpace": "新增小工具到此空位（{width}）",
+    "addSlotDescription": "僅列出能放入此空位的小工具，所選的小工具會填滿它。選擇「完成」之前不會儲存任何變更。",
+    "addSlotEmpty": "沒有能放入此空位的隱藏小工具。可將小工具拖到此處移入。",
+    "resize": "調整{name}大小",
+    "resizeHint": "拖曳以調整{name}大小，或按方向鍵",
+    "widthLabel": "寬度",
+    "heightLabel": "高度",
+    "presetName": "{short}，{name}",
+    "widthOf": "{name}的寬度",
+    "heightOf": "{name}的高度",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "整寬"
+    },
+    "widthName": {
+      "third": "三分之一寬度",
+      "half": "一半寬度",
+      "twoThirds": "三分之二寬度",
+      "full": "完整寬度"
+    },
+    "heightShort": {
+      "auto": "自動",
+      "compact": "小",
+      "standard": "中",
+      "tall": "大"
+    },
+    "heightName": {
+      "auto": "自動高度",
+      "compact": "精簡高度",
+      "standard": "標準高度",
+      "tall": "加高"
     }
   },
   "favouriteReports": {

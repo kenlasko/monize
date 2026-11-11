@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Customize",
-    "title": "Customize dashboard",
-    "description": "The layout below mirrors your dashboard: widgets flow left to right, two per row on large screens.",
     "moveEarlier": "Move {name} earlier",
     "moveLater": "Move {name} later",
-    "dragToReorder": "Drag widgets to rearrange them, or use the arrow buttons.",
-    "hiddenWidgets": "Hidden widgets",
-    "hide": "Hide {name}",
-    "show": "Show {name}",
     "atLeastOne": "Select at least one widget to show on the dashboard.",
     "reset": "Reset to default",
     "toasts": {
@@ -280,6 +274,60 @@
         "mwr": "MWR",
         "cagr": "CAGR"
       }
+    }
+  },
+  "edit": {
+    "barLabel": "Arrange the dashboard",
+    "addWidget": "Add Widget",
+    "heroSettings": "Hero Settings",
+    "done": "Done",
+    "phoneNote": "Widget sizes apply on wider screens.",
+    "remove": "Remove {name}",
+    "grip": "Move {name}",
+    "gripHint": "Drag to move {name}, or press the arrow keys",
+    "moved": "{name} moved to position {position} of {count}",
+    "removed": "{name} removed",
+    "added": "{name} added",
+    "resized": "{name} is now {size}",
+    "resizedBoth": "{name} is now {width} and {height}",
+    "twoChanges": "{first}. {second}",
+    "placeholder": "Shown on the dashboard once it has something to show.",
+    "addTitle": "Add Widget",
+    "addDescription": "A widget you add goes at the end of the dashboard. Nothing is kept until you choose Done.",
+    "addEmpty": "Every widget is already on your dashboard",
+    "addToSpace": "Add Widget to this space ({width})",
+    "addSlotDescription": "Only the widgets that fit this space are listed, and the one you choose fills it. Nothing is kept until you choose Done.",
+    "addSlotEmpty": "No hidden widget fits this space. Drag a widget here to move it in.",
+    "resize": "Resize {name}",
+    "resizeHint": "Drag to resize {name}, or press the arrow keys",
+    "widthLabel": "Width",
+    "heightLabel": "Height",
+    "presetName": "{short}, {name}",
+    "widthOf": "Width of {name}",
+    "heightOf": "Height of {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Full"
+    },
+    "widthName": {
+      "third": "One third width",
+      "half": "Half width",
+      "twoThirds": "Two thirds width",
+      "full": "Full width"
+    },
+    "heightShort": {
+      "auto": "Auto",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Automatic height",
+      "compact": "Compact height",
+      "standard": "Standard height",
+      "tall": "Tall height"
     }
   },
   "favouriteReports": {

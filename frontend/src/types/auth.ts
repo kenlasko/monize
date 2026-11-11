@@ -324,7 +324,11 @@ export interface UpdatePreferencesData {
   budgetDigestDay?: 'MONDAY' | 'FRIDAY';
   favouriteReportIds?: string[];
   dashboardWidgets?: string[];
-  dashboardWidgetConfig?: Record<string, Record<string, unknown>>;
+  /**
+   * Merged by widget id on the server: a slice sent replaces that widget's
+   * slice, `null` removes it, and a slice not sent is kept.
+   */
+  dashboardWidgetConfig?: Record<string, Record<string, unknown> | null>;
   hiddenTableColumns?: HiddenTableColumns;
   viewDefaults?: ViewDefaults;
   showCreatedAt?: boolean;

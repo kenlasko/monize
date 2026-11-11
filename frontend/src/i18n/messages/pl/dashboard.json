@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Dostosuj",
-    "title": "Dostosuj pulpit",
-    "description": "Poniższy układ odzwierciedla pulpit: widżety układają się od lewej do prawej, po dwa w wierszu na dużych ekranach.",
     "moveEarlier": "Przesuń {name} wcześniej",
     "moveLater": "Przesuń {name} później",
-    "dragToReorder": "Przeciągnij widżety, aby zmienić ich układ, lub użyj przycisków strzałek.",
-    "hiddenWidgets": "Ukryte widżety",
-    "hide": "Ukryj {name}",
-    "show": "Pokaż {name}",
     "atLeastOne": "Wybierz co najmniej jeden widżet do wyświetlenia na pulpicie.",
     "reset": "Przywróć domyślne",
     "toasts": {
@@ -280,6 +274,60 @@
         "mwr": "MWR",
         "cagr": "CAGR"
       }
+    }
+  },
+  "edit": {
+    "barLabel": "Ułóż pulpit",
+    "addWidget": "Dodaj widżet",
+    "heroSettings": "Ustawienia nagłówka",
+    "done": "Gotowe",
+    "phoneNote": "Rozmiary widżetów obowiązują na szerszych ekranach.",
+    "remove": "Usuń {name}",
+    "grip": "Przenieś {name}",
+    "gripHint": "Przeciągnij, aby przenieść {name}, lub użyj klawiszy strzałek",
+    "moved": "{name} przeniesiono na pozycję {position} z {count}",
+    "removed": "Usunięto {name}",
+    "added": "Dodano {name}",
+    "resized": "{name}: nowy rozmiar to {size}",
+    "resizedBoth": "{name}: nowy rozmiar to {width} i {height}",
+    "twoChanges": "{first}. {second}",
+    "placeholder": "Pojawi się na pulpicie, gdy będzie coś do pokazania.",
+    "addTitle": "Dodaj widżet",
+    "addDescription": "Dodany widżet trafia na koniec pulpitu. Nic nie zostanie zapisane, dopóki nie wybierzesz Gotowe.",
+    "addEmpty": "Wszystkie widżety są już na Twoim pulpicie",
+    "addToSpace": "Dodaj widżet do tego miejsca ({width})",
+    "addSlotDescription": "Wyświetlane są tylko widżety, które mieszczą się w tym miejscu, a wybrany wypełni je. Nic nie zostanie zapisane, dopóki nie wybierzesz Gotowe.",
+    "addSlotEmpty": "Żaden ukryty widżet nie mieści się w tym miejscu. Przeciągnij tu widżet, aby go przenieść.",
+    "resize": "Zmień rozmiar: {name}",
+    "resizeHint": "Przeciągnij, aby zmienić rozmiar: {name}, lub użyj klawiszy strzałek",
+    "widthLabel": "Szerokość",
+    "heightLabel": "Wysokość",
+    "presetName": "{short}, {name}",
+    "widthOf": "Szerokość: {name}",
+    "heightOf": "Wysokość: {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Pełna"
+    },
+    "widthName": {
+      "third": "Jedna trzecia szerokości",
+      "half": "Połowa szerokości",
+      "twoThirds": "Dwie trzecie szerokości",
+      "full": "Pełna szerokość"
+    },
+    "heightShort": {
+      "auto": "Auto",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Wysokość automatyczna",
+      "compact": "Wysokość kompaktowa",
+      "standard": "Wysokość standardowa",
+      "tall": "Wysokość duża"
     }
   },
   "favouriteReports": {

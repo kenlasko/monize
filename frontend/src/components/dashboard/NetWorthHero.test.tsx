@@ -127,7 +127,7 @@ describe('NetWorthHero', () => {
     await renderHero();
     const hero = screen.getByTestId('dashboard-hero');
     expect(within(hero).getByTestId('dashboard-hero-chart')).toBeInTheDocument();
-    // The window is chosen in Customize Dashboard, not over the chart.
+    // The window is chosen in Hero Settings, not over the chart.
     expect(within(hero).queryByRole('group')).not.toBeInTheDocument();
   });
 
@@ -143,7 +143,7 @@ describe('NetWorthHero', () => {
     expect(chartState.margin?.top).toBe(12);
   });
 
-  it('loads the window chosen in Customize Dashboard', async () => {
+  it('loads the window chosen in Hero Settings', async () => {
     configState.current = { ...DASHBOARD_HERO_DEFAULT, range: '5y' };
     await renderHero();
     const { startDate } = getMonthly.mock.calls[0][0] as { startDate?: string };

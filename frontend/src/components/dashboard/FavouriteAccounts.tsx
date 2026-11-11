@@ -174,7 +174,7 @@ export function FavouriteAccounts({ accounts, brokerageMarketValues, unpricedHol
 
   if (isLoading) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:self-start`}>
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <WidgetHeading id="favourite-accounts" href="/accounts" className="mb-4">
           {t('favouriteAccounts.title')}
         </WidgetHeading>
@@ -189,7 +189,7 @@ export function FavouriteAccounts({ accounts, brokerageMarketValues, unpricedHol
 
   if (favouriteAccounts.length === 0) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:self-start`}>
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <WidgetHeading id="favourite-accounts" href="/accounts" className="mb-4">
           {t('favouriteAccounts.title')}
         </WidgetHeading>
@@ -201,7 +201,7 @@ export function FavouriteAccounts({ accounts, brokerageMarketValues, unpricedHol
   }
 
   return (
-    <div className={`${CARD_CLASS} p-3 sm:p-6 lg:self-start`}>
+    <div className={`${CARD_CLASS} p-3 sm:p-6`}>
       <div className="flex items-center justify-between mb-4">
         <WidgetHeading id="favourite-accounts" href="/accounts">
           {t('favouriteAccounts.title')}

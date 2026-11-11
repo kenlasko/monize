@@ -60,8 +60,7 @@ interface LookupSourceOrderProps {
  * longer exists) and every reader would have to defend against them.
  *
  * Drag comes from `useDragReorder`, the same hook the Favourite Accounts widget
- * and the dashboard customize dialog use, so a list reorders the same way
- * everywhere. The up/down buttons are not a lesser alternative to it: dragging
+ * and the column chooser use, so a list reorders the same way everywhere. The up/down buttons are not a lesser alternative to it: dragging
  * is unavailable to a keyboard and unreliable on a touch screen, and
  * `FavouriteAccounts` offers both for that reason.
  */

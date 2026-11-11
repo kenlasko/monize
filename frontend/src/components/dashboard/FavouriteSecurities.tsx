@@ -66,7 +66,7 @@ export function FavouriteSecurities({ securities, isLoading, onRefresh, isRefres
 
   if (isLoading) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <div className="flex items-center justify-between mb-4">
           <WidgetHeading id="favourite-securities">
             {t('favouriteSecurities.title')}
@@ -87,7 +87,7 @@ export function FavouriteSecurities({ securities, isLoading, onRefresh, isRefres
 
   if (securities.length === 0) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <WidgetHeading id="favourite-securities" className="mb-4">
           {t('favouriteSecurities.title')}
         </WidgetHeading>
@@ -108,7 +108,7 @@ export function FavouriteSecurities({ securities, isLoading, onRefresh, isRefres
   }
 
   return (
-    <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
+    <div className={`${CARD_CLASS} p-3 sm:p-6`}>
       <div className="flex items-center justify-between mb-4">
         <WidgetHeading id="favourite-securities" href="/securities">
           {t('favouriteSecurities.title')}

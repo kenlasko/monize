@@ -6,8 +6,8 @@ export type DropPosition = 'before' | 'after';
 export type DragAxis = 'x' | 'y';
 
 /**
- * Shared state for HTML5 drag-to-reorder lists (dashboard customize dialog,
- * Favourite Accounts widget, investment report column chooser).
+ * Shared state for HTML5 drag-to-reorder lists (Favourite Accounts widget,
+ * investment report column chooser).
  *
  * Rows spread `rowProps(index)`. While dragging, the hook tracks the
  * insertion gap under the pointer (gap g = "between item g-1 and item g",

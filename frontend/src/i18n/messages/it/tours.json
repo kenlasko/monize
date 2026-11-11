@@ -69,7 +69,7 @@
         },
         "dashboard": {
           "title": "La tua dashboard",
-          "body": "Questa è la tua dashboard. Usa il pulsante **Personalizza** in alto a destra per riorganizzare o nascondere i widget, così i riepiloghi che ti interessano di più restano sempre in cima."
+          "body": "Questa è la tua dashboard. Scegli l'ingranaggio **Personalizza** accanto al saluto per organizzarla: sposta o rimuovi i widget dove si trovano, scegli **Aggiungi widget** per aggiungerne altri e **Fine** per mantenere il layout."
         },
         "tools": {
           "title": "Il menu Strumenti",
@@ -471,7 +471,7 @@
           },
           "dashboardWidget": {
             "title": "Guarda cosa scade nel pannello di controllo",
-            "body": "Scegli **Personalizza** e attiva **Garanzie in scadenza**. Elenca le prossime garanzie in scadenza, e il suo titolo apre la pagina Garanzie."
+            "body": "Scegli **Personalizza**, poi **Aggiungi widget**, seleziona **Garanzie in scadenza** e scegli **Fine**. Elenca le prossime garanzie in scadenza, e il suo titolo apre la pagina Garanzie."
           },
           "reminders": {
             "title": "Promemoria prima della fine della copertura",

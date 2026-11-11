@@ -44,8 +44,6 @@ interface WidgetCardProps {
   configTitle?: string;
   /** Card body (chart, skeleton, or empty state). */
   children: ReactNode;
-  /** Tailwind min-height for the card. Charts default to a tall card. */
-  minHeightClass?: string;
   className?: string;
 }
 
@@ -65,7 +63,6 @@ export function WidgetCard({
   configControls,
   configTitle,
   children,
-  minHeightClass = 'lg:min-h-[540px]',
   className = '',
 }: WidgetCardProps) {
   const t = useTranslations('dashboard');
@@ -83,13 +80,14 @@ export function WidgetCard({
   return (
     <Card
       padding="md"
-      // The card fills its row through the grid's own stretch, and never
-      // through `h-full`: `height: 100%` on an item of an auto-sized row is a
-      // percentage of a track the item is itself supposed to size, and WebKit
-      // sizes that row without the item's own content in it. The card then
+      // The card fills its grid item through the grid's own stretch, and
+      // never through `h-full`: `height: 100%` in an auto-sized row is a
+      // percentage of a track the card is itself supposed to size, and WebKit
+      // sizes that row without the card's own content in it. The card then
       // keeps the height its neighbour set while its own content -- the pie
-      // chart's opened Other list -- spills out of the box (issue #1382).
-      className={`${minHeightClass} flex flex-col ${className}`}
+      // chart's opened Other list -- spills out of the box (issue #1382). Its
+      // height floor is the grid item's (`DashboardGridItem`), not its own.
+      className={`flex flex-col ${className}`}
     >
       {/* The header wraps rather than squeezing the title: a widget whose
           header-right carries a figure, a range and a button needs more width

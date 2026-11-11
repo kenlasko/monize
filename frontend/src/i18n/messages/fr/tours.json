@@ -69,7 +69,7 @@
         },
         "dashboard": {
           "title": "Votre tableau de bord",
-          "body": "Voici votre tableau de bord. Utilisez le bouton **Personnaliser** en haut à droite pour réorganiser ou masquer les widgets, afin que les résumés qui vous intéressent restent bien en haut."
+          "body": "Voici votre tableau de bord. Choisissez l'engrenage **Personnaliser** à côté du message d'accueil pour l'organiser : déplacez ou retirez les widgets là où ils se trouvent, choisissez **Ajouter un widget** pour en ajouter et **Terminé** pour conserver la disposition."
         },
         "tools": {
           "title": "Le menu Outils",
@@ -471,7 +471,7 @@
           },
           "dashboardWidget": {
             "title": "Voir ce qui expire sur le tableau de bord",
-            "body": "Choisissez **Personnaliser** et activez **Garanties bientôt expirées**. Le widget liste les prochaines garanties à expirer, et son titre ouvre la page Garanties."
+            "body": "Choisissez **Personnaliser**, puis **Ajouter un widget**, sélectionnez **Garanties bientôt expirées** et choisissez **Terminé**. Le widget liste les prochaines garanties à expirer, et son titre ouvre la page Garanties."
           },
           "reminders": {
             "title": "Des rappels avant la fin de la couverture",

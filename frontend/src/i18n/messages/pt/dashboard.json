@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Personalizar",
-    "title": "Personalizar painel",
-    "description": "A disposição abaixo reflete o seu painel: os widgets fluem da esquerda para a direita, dois por linha em ecrãs grandes.",
     "moveEarlier": "Mover {name} para a frente",
     "moveLater": "Mover {name} para trás",
-    "dragToReorder": "Arraste os widgets para os reorganizar, ou use os botões de seta.",
-    "hiddenWidgets": "Widgets ocultos",
-    "hide": "Ocultar {name}",
-    "show": "Mostrar {name}",
     "atLeastOne": "Selecione pelo menos um widget para mostrar no painel.",
     "reset": "Repor predefinições",
     "toasts": {
@@ -280,6 +274,60 @@
         "mwr": "MWR",
         "cagr": "CAGR"
       }
+    }
+  },
+  "edit": {
+    "barLabel": "Organizar o painel",
+    "addWidget": "Adicionar widget",
+    "heroSettings": "Definições do destaque",
+    "done": "Concluído",
+    "phoneNote": "Os tamanhos dos widgets aplicam-se em ecrãs mais largos.",
+    "remove": "Remover {name}",
+    "grip": "Mover {name}",
+    "gripHint": "Arraste para mover {name} ou prima as teclas de seta",
+    "moved": "{name} movido para a posição {position} de {count}",
+    "removed": "{name} removido",
+    "added": "{name} adicionado",
+    "resized": "{name} agora tem {size}",
+    "resizedBoth": "{name} agora tem {width} e {height}",
+    "twoChanges": "{first}. {second}",
+    "placeholder": "Aparece no painel assim que tiver algo para mostrar.",
+    "addTitle": "Adicionar widget",
+    "addDescription": "Um widget que adicionar fica no fim do painel. Nada é guardado até escolher Concluído.",
+    "addEmpty": "Todos os widgets já estão no seu painel",
+    "addToSpace": "Adicionar widget a este espaço ({width})",
+    "addSlotDescription": "Só são listados os widgets que cabem neste espaço, e o que escolher preenche-o. Nada é guardado até escolher Concluído.",
+    "addSlotEmpty": "Nenhum widget oculto cabe neste espaço. Arraste um widget para aqui para o mover.",
+    "resize": "Redimensionar {name}",
+    "resizeHint": "Arraste para redimensionar {name} ou prima as teclas de seta",
+    "widthLabel": "Largura",
+    "heightLabel": "Altura",
+    "presetName": "{short}, {name}",
+    "widthOf": "Largura de {name}",
+    "heightOf": "Altura de {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Total"
+    },
+    "widthName": {
+      "third": "Um terço de largura",
+      "half": "Meia largura",
+      "twoThirds": "Dois terços de largura",
+      "full": "Largura total"
+    },
+    "heightShort": {
+      "auto": "Auto",
+      "compact": "P",
+      "standard": "M",
+      "tall": "G"
+    },
+    "heightName": {
+      "auto": "Altura automática",
+      "compact": "Altura compacta",
+      "standard": "Altura padrão",
+      "tall": "Altura elevada"
     }
   },
   "favouriteReports": {

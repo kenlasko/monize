@@ -69,7 +69,7 @@
         },
         "dashboard": {
           "title": "Bảng điều khiển của bạn",
-          "body": "Đây là bảng điều khiển của bạn. Dùng nút **Tùy chỉnh** ở góc trên bên phải để sắp xếp lại hoặc ẩn các tiện ích, giúp những tóm tắt bạn quan tâm nằm ngay ở trên cùng."
+          "body": "Đây là bảng điều khiển của bạn. Chọn biểu tượng bánh răng **Tùy chỉnh** cạnh lời chào để sắp xếp: di chuyển hoặc xóa tiện ích ngay tại chỗ, chọn **Thêm tiện ích** để thêm nữa, và **Xong** để giữ bố cục."
         },
         "tools": {
           "title": "Menu Công cụ",
@@ -471,7 +471,7 @@
           },
           "dashboardWidget": {
             "title": "Xem bảo hành sắp hết hạn trên trang Tổng quan",
-            "body": "Chọn **Tùy chỉnh** và bật **Bảo hành sắp hết hạn**. Tiện ích này liệt kê các bảo hành sắp hết hạn tiếp theo, và tiêu đề của nó mở trang Bảo hành."
+            "body": "Chọn **Tùy chỉnh**, rồi **Thêm tiện ích**, chọn **Bảo hành sắp hết hạn** và chọn **Xong**. Tiện ích này liệt kê các bảo hành sắp hết hạn tiếp theo, và tiêu đề của nó mở trang Bảo hành."
           },
           "reminders": {
             "title": "Nhắc nhở trước khi hết bảo hành",

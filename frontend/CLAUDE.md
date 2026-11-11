@@ -70,7 +70,7 @@ npm run docs:build         # Regenerate the user docs (website/docs/) from their
 | Switcher in a dashboard widget header | `WidgetSegmentedControl` (`components/dashboard/`), an `icon` option where two must share the line | a toolbar pill beside it, or a wrapping second row |
 | A dashboard widget's breakdown of the ledger | the report's own endpoint through `builtInReportsApi` | summing transactions in the widget |
 | Report refresh / export buttons | `ReportToolbarActions`, last child of the toolbar row | rendering `ExportDropdown` or `RefreshPricesButton` in a report |
-| A dashboard card filling its grid row | the grid's own `stretch` plus the card's min-height | `h-full` on a widget's outermost element |
+| A dashboard card filling its grid row | the grid's own `stretch`; the floor is `DashboardGridItem`'s | `h-full`, or a `lg:min-h-` on the card |
 | Toolbar row on a phone | `flex-wrap`, `w-full sm:w-auto`, `sm:ml-auto`, a button's height from `items-stretch` + `LabelSpacer` | an unwrapped row, a bare `ml-auto`, a hand-matched padding |
 | A control alone on its phone line (list filter, lone button) | `w-full sm:w-auto`; a list toolbar's filter is `SEGMENTED_TOOLBAR_GROUP_CLASS` + `toolbarSegmentClass` | a pill or button keeping its desktop width on its own line |
 | A register's running balance | `walkRunningBalances` (`lib/running-balance.ts`) over the response's `startingBalance` | a second walk in a component, or a balance drawn under a sort other than date |

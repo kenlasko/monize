@@ -66,6 +66,7 @@ import {
   isUniqueViolation,
   normalizeEmail,
 } from "./email-change.util";
+import { mergeWidgetConfig } from "./widget-config-merge";
 
 @Injectable()
 export class UsersService {
@@ -307,13 +308,6 @@ export class UsersService {
     if (dto.dashboardWidgets !== undefined) {
       patch.dashboardWidgets = dto.dashboardWidgets;
     }
-    if (dto.dashboardWidgetConfig !== undefined) {
-      // A free-form JSONB map: `QueryDeepPartialEntity` treats a bare
-      // `Record<string, unknown>` as a possible nested-entity patch, so say
-      // plainly that this value is the column's whole contents.
-      patch.dashboardWidgetConfig =
-        dto.dashboardWidgetConfig as UserPreference["dashboardWidgetConfig"];
-    }
     if (dto.showCreatedAt !== undefined) {
       patch.showCreatedAt = dto.showCreatedAt;
     }
@@ -357,22 +351,36 @@ export class UsersService {
         // both land.
         const merges =
           dto.viewDefaults !== undefined ||
-          dto.hiddenTableColumns !== undefined;
+          dto.hiddenTableColumns !== undefined ||
+          dto.dashboardWidgetConfig !== undefined;
         const before = await repo.findOne({
           where: { userId },
           ...(merges && {
             lock: { mode: "pessimistic_write" as const },
           }),
         });
+        if (dto.dashboardWidgetConfig !== undefined) {
+          // Merged by widget id: each slice sent replaces that widget's whole
+          // slice, a null slice removes it, and a slice not sent is kept. A
+          // widget's settings save then cannot drop the sizes the dashboard's
+          // edit mode stored in other slices, nor the reverse. Within a slice
+          // the value replaces, so leaving a key out still clears it.
+          patch.dashboardWidgetConfig = mergeWidgetConfig(
+            before?.dashboardWidgetConfig,
+            dto.dashboardWidgetConfig,
+          );
+        }
         if (dto.viewDefaults !== undefined) {
-          // A JSONB map, cast for the same reason as dashboardWidgetConfig above.
+          // A JSONB map: `QueryDeepPartialEntity` treats a bare
+          // `Record<string, unknown>` as a possible nested-entity patch, so say
+          // plainly that this value is the column's whole contents.
           patch.viewDefaults = {
             ...(before?.viewDefaults ?? {}),
             ...dto.viewDefaults,
           } as UserPreference["viewDefaults"];
         }
         if (dto.hiddenTableColumns !== undefined) {
-          // A JSONB map, cast for the same reason as dashboardWidgetConfig above.
+          // A JSONB map, cast for the same reason as viewDefaults above.
           patch.hiddenTableColumns = {
             ...(before?.hiddenTableColumns ?? {}),
             ...dto.hiddenTableColumns,

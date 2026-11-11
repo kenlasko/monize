@@ -5,6 +5,13 @@ import { useCallback, useSyncExternalStore } from 'react';
 const MOBILE_QUERY = '(max-width: 639px)';
 /** Below Tailwind's `lg`: where a side panel stops fitting beside its content. */
 const BELOW_DESKTOP_QUERY = '(max-width: 1023px)';
+/**
+ * Tailwind's `lg` and up. Written as Tailwind writes it (`--breakpoint-lg:
+ * 64rem`): a rem in a media query follows the browser's default font size, so
+ * with a larger default a px query would show the wide-only controls over a
+ * grid whose `lg:` classes have not applied yet.
+ */
+const LG_UP_QUERY = '(min-width: 64rem)';
 /** Below Tailwind's `xl`: where the header's nav links give way to the tab bar. */
 const TAB_BAR_QUERY = '(max-width: 1279px)';
 
@@ -45,6 +52,15 @@ export function useIsMobile(): boolean {
  */
 export function useIsBelowDesktop(): boolean {
   return useMediaQuery(BELOW_DESKTOP_QUERY);
+}
+
+/**
+ * Whether the viewport is at least `lg`, asked of its own query rather than
+ * as `!useIsBelowDesktop()`: the server snapshot is `false` for both, and a
+ * wide-only control must not render before the client has measured.
+ */
+export function useIsLgUp(): boolean {
+  return useMediaQuery(LG_UP_QUERY);
 }
 
 /** Whether the bottom tab bar is the app's navigation at this width. */

@@ -1,6 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ComponentType, type SVGProps } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentType,
+  type HTMLAttributes,
+  type SVGProps,
+} from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import {
@@ -32,7 +39,23 @@ const PLACEHOLDER = /\{([A-Za-z]+)\}/g;
  * box rather than growing the card, so a long fact never moves the widgets
  * around it. The grid can still stretch it to its row.
  */
-const TRIVIA_CARD_CLASS = `${CARD_CLASS} flex flex-col p-3 sm:p-6 min-h-[390px]`;
+const TRIVIA_CARD_CLASS = `${CARD_CLASS} flex flex-col p-3 sm:p-6`;
+
+/**
+ * From `lg` up the grid item carries the card's floor; below it the grid has
+ * no floor, and the card keeps its 390px on a phone by this box: 390px less
+ * the card's padding and its 1px border, top and bottom.
+ */
+const TRIVIA_BODY_CLASS =
+  'flex flex-1 flex-col min-h-[calc(390px_-_1.5rem_-_2px)] sm:min-h-[calc(390px_-_3rem_-_2px)] lg:min-h-auto';
+
+function TriviaCard({ children, ...rest }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={TRIVIA_CARD_CLASS} {...rest}>
+      <div className={TRIVIA_BODY_CLASS}>{children}</div>
+    </div>
+  );
+}
 
 interface TopicLook {
   icon: ComponentType<SVGProps<SVGSVGElement>>;
@@ -176,7 +199,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
 
   if (!enabled) {
     return (
-      <div className={TRIVIA_CARD_CLASS}>
+      <TriviaCard>
         {heading}
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {t.rich('trivia.off', {
@@ -187,25 +210,25 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
             ),
           })}
         </p>
-      </div>
+      </TriviaCard>
     );
   }
 
   if (parentLoading || trivia === null) {
     return (
-      <div className={TRIVIA_CARD_CLASS} aria-busy="true">
+      <TriviaCard aria-busy="true">
         {heading}
         <div className="flex-1 w-full rounded-xl animate-pulse skeleton-shimmer bg-gray-200 dark:bg-gray-700" />
-      </div>
+      </TriviaCard>
     );
   }
 
   if (count === 0) {
     return (
-      <div className={TRIVIA_CARD_CLASS}>
+      <TriviaCard>
         {heading}
         <p className="text-sm text-gray-500 dark:text-gray-400">{t('trivia.empty')}</p>
-      </div>
+      </TriviaCard>
     );
   }
 
@@ -224,8 +247,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
         );
 
   return (
-    <div
-      className={TRIVIA_CARD_CLASS}
+    <TriviaCard
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -320,6 +342,6 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
           </button>
         </div>
       )}
-    </div>
+    </TriviaCard>
   );
 }

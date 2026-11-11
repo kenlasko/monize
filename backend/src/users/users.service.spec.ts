@@ -949,6 +949,60 @@ describe("UsersService", () => {
       });
     });
 
+    it("merges dashboardWidgetConfig by widget id, keeping slices it was not sent", async () => {
+      // The dashboard's edit mode stored a size; a widget's own settings save,
+      // sending only its slice, must not drop it.
+      preferencesRow.seed({
+        ...mockPreferences,
+        dashboardWidgetConfig: {
+          "net-worth": { gridWidth: "full" },
+          "spending-by-payee": { range: "3m", displayName: "Payees" },
+        },
+      });
+
+      await service.updatePreferences("user-1", {
+        dashboardWidgetConfig: { "spending-by-payee": { range: "6m" } },
+      });
+
+      // The sent slice replaces its stored one whole: the key it left out is
+      // cleared, which is how a widget removes a custom name.
+      expect(preferencesRow.row()!.dashboardWidgetConfig).toEqual({
+        "net-worth": { gridWidth: "full" },
+        "spending-by-payee": { range: "6m" },
+      });
+    });
+
+    it("removes a dashboardWidgetConfig slice sent as null", async () => {
+      preferencesRow.seed({
+        ...mockPreferences,
+        dashboardWidgetConfig: {
+          "net-worth": { gridWidth: "full" },
+          "top-movers": { gridHeight: "tall" },
+        },
+      });
+
+      await service.updatePreferences("user-1", {
+        dashboardWidgetConfig: { "net-worth": null },
+      });
+
+      expect(preferencesRow.row()!.dashboardWidgetConfig).toEqual({
+        "top-movers": { gridHeight: "tall" },
+      });
+    });
+
+    it("leaves dashboardWidgetConfig untouched when not provided", async () => {
+      preferencesRow.seed({
+        ...mockPreferences,
+        dashboardWidgetConfig: { "net-worth": { gridWidth: "full" } },
+      });
+
+      await service.updatePreferences("user-1", { timeFormat: "24h" });
+
+      expect(preferencesRow.row()!.dashboardWidgetConfig).toEqual({
+        "net-worth": { gridWidth: "full" },
+      });
+    });
+
     it("updates hiddenTableColumns", async () => {
       preferencesRow.seed(mockPreferences);
 

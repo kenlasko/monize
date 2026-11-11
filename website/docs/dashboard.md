@@ -2,7 +2,7 @@
 
 The Dashboard is your financial command center -- a single-page overview of your accounts, spending, income, net worth, investments, and upcoming bills.
 
-Use the **Customize** gear beside the greeting to change the dashboard. Open features such as [Shared Expenses](shared-expenses.md) from **Tools**, or from the navigation menu on a phone.
+Use the **Customize** gear beside the greeting to arrange the dashboard in [edit mode](#customizing-your-dashboard). Open features such as [Shared Expenses](shared-expenses.md) from **Tools**, or from the navigation menu on a phone.
 
 ![The dashboard greeting and its Customize gear](images/dashboard-header.png)
 
@@ -33,7 +33,7 @@ Many more widgets are available but hidden by default; see [Optional Widgets](#o
 
 ### Dashboard Hero
 
-Above the widgets, under the greeting, the dashboard hero sums up where you stand. It has two sets, chosen in [Customize](#customizing-your-dashboard). On **Auto**, the default, it slides from one to the other every minute if you have investments, and otherwise stays on net worth. Choose **Net worth** or **Portfolio value** instead to keep it on one set. Whichever you choose, the two dots after the greeting's gear and help icons switch to the other set at any time; on Auto, that set then stays for a full minute.
+Above the widgets, under the greeting, the dashboard hero sums up where you stand. It has two sets, chosen in **Hero Settings** in [edit mode](#customizing-your-dashboard). On **Auto**, the default, it slides from one to the other every minute if you have investments, and otherwise stays on net worth. Choose **Net worth** or **Portfolio value** instead to keep it on one set. Whichever you choose, the two dots after the greeting's gear and help icons switch to the other set at any time; on Auto, that set then stays for a full minute.
 
 **Net worth**:
 
@@ -62,17 +62,23 @@ The hero is on by default. With it off, the dashboard opens with just the greeti
 
 ## Customizing Your Dashboard
 
-Click the **Customize** gear beside the greeting to tailor which widgets appear and in what order. The **Customize dashboard** dialog mirrors your dashboard: widgets flow left to right, two per row on large screens.
+Click the **Customize** gear beside the greeting to put the dashboard into edit mode. A bar appears under the header, each widget dims and shows its controls along its top, and a dashed **Add Widget** tile ends the grid. The widgets themselves do not respond to clicks while you arrange them.
 
-![The Customize dashboard dialog, with the hidden widgets below the layout](images/dashboard-customize.png)
+![The dashboard in edit mode](images/dashboard-customize.png)
 
-- **Show or hide widgets** -- click a widget's **X** to hide it, or add one back later
-- **Reorder widgets** -- drag a widget tile to a new position, or use the arrow buttons (the arrow buttons also work on a phone, where widgets stack in a single column)
-- **Add opt-in widgets** -- hidden widgets appear in a **Hidden widgets** tray beneath the layout; click one to add it to your dashboard
-- **Dashboard hero** -- the section at the top of the dialog switches the [hero](#dashboard-hero) on or off and picks **Auto** or one set. **Net worth** sets how far back its chart goes; **Portfolio value** sets the accounts it covers (all of them if you choose none), the timeframe, and the return shown beside the holdings and cash. **Auto** offers the settings of both, each set's under its own **Net worth** or **Portfolio value** heading so you can tell which chart a setting belongs to
-- **Reset to default** -- restore the standard layout at any time, with the hero on Auto, over one year
+- **Move a widget** -- use the arrow buttons on the widget to move it one place earlier or later. Widgets flow left to right on a large screen and stack in a single column on a phone, where the arrows point up and down. You can also drag a widget by its grip, the six dots at the left of its bar, with the mouse or a finger, or move it one place at a time with the arrow keys while the grip has focus
+- **Resize a widget** -- on a wide screen, each widget's bar has a **Width** and a **Height** choice. Width runs from a third of the row (for widgets narrow enough to allow it) up to the full row; height sets how tall the widget is at least, from **Auto** to **L**. The widget changes as soon as you press one. Sizes do not apply on a phone, where every widget fills the screen width, so the choices are not shown there. On a wide screen you can also resize a widget by dragging its bottom-right corner, which snaps to the same sizes
+- **Remove a widget** -- click the widget's **X**. It goes back to the list of widgets you can add
+- **Add a widget** -- click **Add Widget** in the bar, or the dashed tile, and choose one of the widgets that are not on the dashboard. It is added at the end
+- **Fill a short row** -- on a wide screen, where a row ends with empty space of a third of the row or more, edit mode shows a dashed **Add Widget** space there. Clicking it lists only the hidden widgets that fit that space, and the one you choose fills it exactly. You can also drag a widget by its grip onto the space: it moves there and, if it is wider than the space, narrows to fit. A widget that cannot be that narrow is not taken by the space
+- **Hero Settings** -- switches the [hero](#dashboard-hero) on or off and picks **Auto** or one set. **Net worth** sets how far back its chart goes; **Portfolio value** sets the accounts it covers (all of them if you choose none), the timeframe, and the return shown beside the holdings and cash. **Auto** offers the settings of both, each set's under its own **Net worth** or **Portfolio value** heading so you can tell which chart a setting belongs to. **Save** in that dialog keeps the hero's settings at once, and **Reset to default** there puts the hero back on Auto, over one year
+- **Reset to default** -- in the bar, puts the standard layout back
 
-Click **Save** to apply your changes. At least one widget must stay on the dashboard. Your layout is saved to your account, so it **syncs across all your devices**.
+A widget that has nothing to show yet, such as Top Movers before you have any securities, is drawn in edit mode as a tile with its name, so you can still move or remove it.
+
+Click **Done** to keep the new layout, or **Cancel** (or press **Escape**, or your browser's Back button) to put the layout back the way it was; if you changed anything, Monize asks before throwing the changes away. The layout is not saved until you click **Done**; the hero's settings are the exception, saved as soon as you press **Save** in **Hero Settings**, so Cancel does not undo them. At least one widget must stay on the dashboard. Your layout is saved to your account, so it **syncs across all your devices**.
+
+On a phone, edit mode works the same way: you can add, remove and move widgets, but not change their sizes.
 
 ### Per-Widget Settings
 
@@ -89,7 +95,7 @@ The chosen timeframe is shown beside the gear. These per-widget settings also pe
 
 ### Optional Widgets
 
-The widgets below are hidden by default and can be added from the **Customize** dialog. Most are derived from a report and carry their own gear settings.
+The widgets below are hidden by default and can be added with **Add Widget** in [edit mode](#customizing-your-dashboard). Most are derived from a report and carry their own gear settings.
 
 | Widget | Shows | Availability |
 |--------|-------|--------------|
@@ -114,7 +120,7 @@ The widgets below are hidden by default and can be added from the **Customize** 
 > The investment widgets (Top Movers, Portfolio Value, Sector Allocation, Security Type Allocation, and Geographic Allocation) only appear when you have investment holdings, and Favourite Securities only when you have securities.
 
 > [!NOTE]
-> **Delegates:** If you're viewing an account you've been granted access to, the dashboard has no hero and is limited to the Favourite Accounts widget, plus Upcoming Bills and the expiring-warranties widget if those sections were granted. The **Customize** gear is hidden for delegates. See [Shared Access](shared-access.md).
+> **Delegates:** If you're viewing an account you've been granted access to, the dashboard has no hero and is limited to the Favourite Accounts widget, plus Upcoming Bills and the expiring-warranties widget if those sections were granted. The **Customize** gear is hidden for delegates, so a delegate cannot arrange the owner's dashboard. See [Shared Access](shared-access.md).
 
 ---
 

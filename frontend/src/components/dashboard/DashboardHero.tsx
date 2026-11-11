@@ -37,7 +37,7 @@ interface DashboardHeroProps {
 }
 
 /**
- * The dashboard's opening figures, in the set chosen in Customize Dashboard:
+ * The dashboard's opening figures, in the set chosen in Hero Settings:
  * net worth (`NetWorthHero`), the portfolio (`PortfolioHero`), or Auto, which
  * alternates between them. Both sit side by side on a track, and the one not
  * showing is inert. Switched off, the page keeps its greeting and date and

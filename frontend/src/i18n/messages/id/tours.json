@@ -69,7 +69,7 @@
         },
         "dashboard": {
           "title": "Dasbor Anda",
-          "body": "Ini adalah dasbor Anda. Gunakan tombol **Sesuaikan** di kanan atas untuk mengatur ulang atau menyembunyikan widget agar ringkasan yang penting bagi Anda berada tepat di bagian atas."
+          "body": "Ini adalah dasbor Anda. Pilih ikon roda gigi **Sesuaikan** di samping sapaan untuk mengaturnya: pindahkan atau hapus widget di tempatnya, pilih **Tambah widget** untuk menambah, dan **Selesai** untuk menyimpan tata letak."
         },
         "tools": {
           "title": "Menu Alat",
@@ -471,7 +471,7 @@
           },
           "dashboardWidget": {
             "title": "Lihat yang segera berakhir di dasbor",
-            "body": "Pilih **Sesuaikan** dan aktifkan **Garansi yang segera berakhir**. Widget ini menampilkan garansi berikutnya yang akan berakhir, dan judulnya membuka halaman Garansi."
+            "body": "Pilih **Sesuaikan**, lalu **Tambah widget**, pilih **Garansi yang segera berakhir** dan pilih **Selesai**. Widget ini menampilkan garansi berikutnya yang akan berakhir, dan judulnya membuka halaman Garansi."
           },
           "reminders": {
             "title": "Pengingat sebelum perlindungan berakhir",

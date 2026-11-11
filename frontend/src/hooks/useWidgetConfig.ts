@@ -12,9 +12,10 @@ export interface UseWidgetConfigResult<T> {
   /** The widget's settings: stored values merged over the defaults. */
   config: T;
   /**
-   * Merge a partial update into this widget's settings and persist the whole
-   * `dashboardWidgetConfig` map to the backend so it follows the user across
-   * devices. Optimistic: the store updates immediately and reverts on failure.
+   * Merge a partial update into this widget's settings and persist them to the
+   * backend so they follow the user across devices. Optimistic: the store
+   * updates immediately, and only this widget's slice is adopted or reverted
+   * when the request answers.
    */
   updateConfig: (patch: Partial<T>) => Promise<void>;
 }
@@ -49,9 +50,10 @@ export function useWidgetConfig<T extends object>(
       // each other.
       const state = usePreferencesStore.getState();
       const allBefore = state.preferences?.dashboardWidgetConfig ?? {};
+      const sliceBefore = allBefore[widgetId];
       const nextWidget = {
         ...defaults,
-        ...(allBefore[widgetId] as Partial<T> | undefined),
+        ...(sliceBefore as Partial<T> | undefined),
         ...patch,
       } as Record<string, unknown>;
       const nextAll = { ...allBefore, [widgetId]: nextWidget };
@@ -59,19 +61,30 @@ export function useWidgetConfig<T extends object>(
       // Optimistic update so the chart re-renders immediately.
       state.updatePreferences({ dashboardWidgetConfig: nextAll });
 
+      // The answer lands into the map as it is then, not the map this edit
+      // started from: another write (the layout's Done, another widget) may
+      // have landed meanwhile. Only this widget's slice is touched, and only
+      // while it still holds this edit, so a newer write to it is kept.
+      const settleSlice = (slice: Record<string, unknown> | undefined) => {
+        const store = usePreferencesStore.getState();
+        const mapNow = store.preferences?.dashboardWidgetConfig ?? {};
+        if (mapNow[widgetId] !== nextWidget) return;
+        const { [widgetId]: _ours, ...others } = mapNow;
+        store.updatePreferences({
+          dashboardWidgetConfig: slice === undefined ? others : { ...others, [widgetId]: slice },
+        });
+      };
+
       try {
+        // Only this widget's slice: the server merges by widget id, so a
+        // slice another screen stored after this map was read is kept.
         const saved = await userSettingsApi.updatePreferences({
-          dashboardWidgetConfig: nextAll,
+          dashboardWidgetConfig: { [widgetId]: nextWidget },
         });
-        usePreferencesStore.getState().updatePreferences({
-          dashboardWidgetConfig: saved.dashboardWidgetConfig,
-        });
+        settleSlice(saved.dashboardWidgetConfig?.[widgetId] ?? nextWidget);
       } catch (error) {
         logger.error('Failed to save widget config:', error);
-        // Revert to the pre-edit map.
-        usePreferencesStore.getState().updatePreferences({
-          dashboardWidgetConfig: allBefore,
-        });
+        settleSlice(sliceBefore);
         toast.error(getErrorMessage(error, t('widgets.configSaveFailed')));
       }
     },

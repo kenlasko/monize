@@ -47,7 +47,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
 
   if (isLoading || parentLoading) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`}>
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <WidgetHeading id="budget-status" href="/budgets" className="mb-4">
           {sectionTitle}
         </WidgetHeading>
@@ -62,7 +62,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
 
   if (hasError || !summary) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`}>
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <WidgetHeading id="budget-status" href="/budgets" className="mb-4">
           {sectionTitle}
         </WidgetHeading>
@@ -80,7 +80,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
   }
 
   return (
-    <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`}>
+    <div className={`${CARD_CLASS} p-3 sm:p-6`}>
       <div className="flex items-center justify-between mb-3">
         <WidgetHeading id="budget-status" href={`/budgets/${summary.budgetId}`}>
           {sectionTitle}

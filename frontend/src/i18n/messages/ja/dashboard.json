@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "カスタマイズ",
-    "title": "ダッシュボードのカスタマイズ",
-    "description": "以下のレイアウトはダッシュボードと同じ配置です。ウィジェットは左から右へ並び、大きい画面では1行に2つ表示されます。",
     "moveEarlier": "{name}を前へ移動",
     "moveLater": "{name}を後ろへ移動",
-    "dragToReorder": "ウィジェットをドラッグして並べ替えるか、矢印ボタンを使用してください。",
-    "hiddenWidgets": "非表示のウィジェット",
-    "hide": "{name}を非表示にする",
-    "show": "{name}を表示する",
     "atLeastOne": "ダッシュボードに表示するウィジェットを少なくとも1つ選択してください。",
     "reset": "デフォルトに戻す",
     "toasts": {
@@ -280,6 +274,60 @@
         "mwr": "MWR",
         "cagr": "CAGR"
       }
+    }
+  },
+  "edit": {
+    "barLabel": "ダッシュボードを並べ替え",
+    "addWidget": "ウィジェットを追加",
+    "heroSettings": "ヒーロー設定",
+    "done": "完了",
+    "phoneNote": "ウィジェットのサイズは幅の広い画面で適用されます。",
+    "remove": "{name}を削除",
+    "grip": "{name}を移動",
+    "gripHint": "ドラッグして{name}を移動するか、矢印キーを押します",
+    "moved": "{name}を{count}件中{position}番目に移動しました",
+    "removed": "{name}を削除しました",
+    "added": "{name}を追加しました",
+    "resized": "{name}は{size}になりました",
+    "resizedBoth": "{name}は{width}、{height}になりました",
+    "twoChanges": "{first}。{second}",
+    "placeholder": "表示できる内容ができると、ダッシュボードに表示されます。",
+    "addTitle": "ウィジェットを追加",
+    "addDescription": "追加したウィジェットはダッシュボードの最後に置かれます。「完了」を選ぶまで何も保存されません。",
+    "addEmpty": "すべてのウィジェットがすでにダッシュボードにあります",
+    "addToSpace": "このスペース（{width}）にウィジェットを追加",
+    "addSlotDescription": "このスペースに収まるウィジェットだけが表示され、選んだウィジェットがスペースを埋めます。「完了」を選ぶまで何も保存されません。",
+    "addSlotEmpty": "このスペースに収まる非表示のウィジェットはありません。ウィジェットをここにドラッグして移動できます。",
+    "resize": "{name}のサイズを変更",
+    "resizeHint": "ドラッグして{name}のサイズを変更するか、矢印キーを押します",
+    "widthLabel": "幅",
+    "heightLabel": "高さ",
+    "presetName": "{short}、{name}",
+    "widthOf": "{name}の幅",
+    "heightOf": "{name}の高さ",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "全幅"
+    },
+    "widthName": {
+      "third": "3分の1の幅",
+      "half": "半分の幅",
+      "twoThirds": "3分の2の幅",
+      "full": "全幅"
+    },
+    "heightShort": {
+      "auto": "自動",
+      "compact": "小",
+      "standard": "中",
+      "tall": "大"
+    },
+    "heightName": {
+      "auto": "自動の高さ",
+      "compact": "コンパクトな高さ",
+      "standard": "標準の高さ",
+      "tall": "縦長の高さ"
     }
   },
   "favouriteReports": {

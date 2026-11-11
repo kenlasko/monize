@@ -69,7 +69,7 @@
         },
         "dashboard": {
           "title": "Uw dashboard",
-          "body": "Dit is uw dashboard. Gebruik de knop **Aanpassen** rechtsboven om widgets te herschikken of te verbergen, zodat de overzichten die voor u belangrijk zijn bovenaan staan."
+          "body": "Dit is uw dashboard. Kies het tandwiel **Aanpassen** naast de begroeting om het in te delen: verplaats of verwijder widgets waar ze staan, kies **Widget toevoegen** voor meer en **Klaar** om de indeling te bewaren."
         },
         "tools": {
           "title": "Het menu Hulpmiddelen",
@@ -471,7 +471,7 @@
           },
           "dashboardWidget": {
             "title": "Zie op het dashboard wat er verloopt",
-            "body": "Kies **Aanpassen** en zet **Garanties die binnenkort verlopen** aan. Het toont de garanties die als eerste verlopen, en de titel opent de pagina Garanties."
+            "body": "Kies **Aanpassen**, dan **Widget toevoegen**, kies **Garanties die binnenkort verlopen** en kies **Klaar**. Het toont de garanties die als eerste verlopen, en de titel opent de pagina Garanties."
           },
           "reminders": {
             "title": "Herinneringen voordat de dekking afloopt",

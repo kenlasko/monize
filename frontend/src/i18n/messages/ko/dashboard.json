@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "사용자 지정",
-    "title": "대시보드 사용자 지정",
-    "description": "아래 레이아웃은 대시보드와 동일합니다. 위젯은 왼쪽에서 오른쪽으로 배치되며, 큰 화면에서는 한 줄에 두 개씩 표시됩니다.",
     "moveEarlier": "{name} 앞으로 이동",
     "moveLater": "{name} 뒤로 이동",
-    "dragToReorder": "위젯을 드래그하여 재배치하거나 화살표 버튼을 사용하세요.",
-    "hiddenWidgets": "숨겨진 위젯",
-    "hide": "{name} 숨기기",
-    "show": "{name} 표시",
     "atLeastOne": "대시보드에 표시할 위젯을 하나 이상 선택하세요.",
     "reset": "기본값으로 재설정",
     "toasts": {
@@ -280,6 +274,60 @@
         "mwr": "MWR",
         "cagr": "CAGR"
       }
+    }
+  },
+  "edit": {
+    "barLabel": "대시보드 정렬",
+    "addWidget": "위젯 추가",
+    "heroSettings": "히어로 설정",
+    "done": "완료",
+    "phoneNote": "위젯 크기는 더 넓은 화면에서 적용됩니다.",
+    "remove": "{name} 제거",
+    "grip": "{name} 이동",
+    "gripHint": "{name}을(를) 이동하려면 드래그하거나 화살표 키를 누르세요",
+    "moved": "{name}을(를) {count}개 중 {position}번째 위치로 이동했습니다",
+    "removed": "{name}을(를) 제거했습니다",
+    "added": "{name}을(를) 추가했습니다",
+    "resized": "{name}의 크기가 {size}(으)로 바뀌었습니다",
+    "resizedBoth": "{name}의 크기가 {width}, {height}(으)로 바뀌었습니다",
+    "twoChanges": "{first}. {second}",
+    "placeholder": "표시할 내용이 생기면 대시보드에 나타납니다.",
+    "addTitle": "위젯 추가",
+    "addDescription": "추가한 위젯은 대시보드 맨 끝에 놓입니다. 완료를 선택하기 전에는 아무것도 저장되지 않습니다.",
+    "addEmpty": "모든 위젯이 이미 대시보드에 있습니다",
+    "addToSpace": "이 공간에 위젯 추가({width})",
+    "addSlotDescription": "이 공간에 들어가는 위젯만 표시되며, 선택한 위젯이 공간을 채웁니다. 완료를 선택하기 전에는 아무것도 저장되지 않습니다.",
+    "addSlotEmpty": "이 공간에 들어가는 숨겨진 위젯이 없습니다. 위젯을 여기로 드래그하여 옮길 수 있습니다.",
+    "resize": "{name} 크기 조정",
+    "resizeHint": "{name}의 크기를 조정하려면 드래그하거나 화살표 키를 누르세요",
+    "widthLabel": "너비",
+    "heightLabel": "높이",
+    "presetName": "{short}, {name}",
+    "widthOf": "{name}의 너비",
+    "heightOf": "{name}의 높이",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "전체"
+    },
+    "widthName": {
+      "third": "3분의 1 너비",
+      "half": "절반 너비",
+      "twoThirds": "3분의 2 너비",
+      "full": "전체 너비"
+    },
+    "heightShort": {
+      "auto": "자동",
+      "compact": "소",
+      "standard": "중",
+      "tall": "대"
+    },
+    "heightName": {
+      "auto": "자동 높이",
+      "compact": "간결한 높이",
+      "standard": "표준 높이",
+      "tall": "큰 높이"
     }
   },
   "favouriteReports": {

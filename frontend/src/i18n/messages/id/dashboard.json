@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Sesuaikan",
-    "title": "Sesuaikan dasbor",
-    "description": "Tata letak di bawah mencerminkan dasbor Anda: widget mengalir dari kiri ke kanan, dua per baris di layar besar.",
     "moveEarlier": "Pindahkan {name} lebih awal",
     "moveLater": "Pindahkan {name} lebih akhir",
-    "dragToReorder": "Seret widget untuk menata ulang, atau gunakan tombol panah.",
-    "hiddenWidgets": "Widget tersembunyi",
-    "hide": "Sembunyikan {name}",
-    "show": "Tampilkan {name}",
     "atLeastOne": "Pilih setidaknya satu widget untuk ditampilkan di dasbor.",
     "reset": "Atur ulang ke bawaan",
     "toasts": {
@@ -280,6 +274,60 @@
         "mwr": "MWR",
         "cagr": "CAGR"
       }
+    }
+  },
+  "edit": {
+    "barLabel": "Atur dasbor",
+    "addWidget": "Tambah widget",
+    "heroSettings": "Pengaturan hero",
+    "done": "Selesai",
+    "phoneNote": "Ukuran widget berlaku di layar yang lebih lebar.",
+    "remove": "Hapus {name}",
+    "grip": "Pindahkan {name}",
+    "gripHint": "Seret untuk memindahkan {name}, atau tekan tombol panah",
+    "moved": "{name} dipindahkan ke posisi {position} dari {count}",
+    "removed": "{name} dihapus",
+    "added": "{name} ditambahkan",
+    "resized": "{name} sekarang {size}",
+    "resizedBoth": "{name} sekarang {width} dan {height}",
+    "twoChanges": "{first}. {second}",
+    "placeholder": "Ditampilkan di dasbor setelah ada yang bisa ditampilkan.",
+    "addTitle": "Tambah widget",
+    "addDescription": "Widget yang Anda tambahkan ditempatkan di akhir dasbor. Tidak ada yang disimpan sampai Anda memilih Selesai.",
+    "addEmpty": "Semua widget sudah ada di dasbor Anda",
+    "addToSpace": "Tambah widget ke ruang ini ({width})",
+    "addSlotDescription": "Hanya widget yang muat di ruang ini yang tercantum, dan widget yang Anda pilih akan mengisinya. Tidak ada yang disimpan sampai Anda memilih Selesai.",
+    "addSlotEmpty": "Tidak ada widget tersembunyi yang muat di ruang ini. Seret widget ke sini untuk memindahkannya.",
+    "resize": "Ubah ukuran {name}",
+    "resizeHint": "Seret untuk mengubah ukuran {name}, atau tekan tombol panah",
+    "widthLabel": "Lebar",
+    "heightLabel": "Tinggi",
+    "presetName": "{short}, {name}",
+    "widthOf": "Lebar {name}",
+    "heightOf": "Tinggi {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Penuh"
+    },
+    "widthName": {
+      "third": "Lebar sepertiga",
+      "half": "Lebar setengah",
+      "twoThirds": "Lebar dua pertiga",
+      "full": "Lebar penuh"
+    },
+    "heightShort": {
+      "auto": "Auto",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Tinggi otomatis",
+      "compact": "Tinggi ringkas",
+      "standard": "Tinggi standar",
+      "tall": "Tinggi besar"
     }
   },
   "favouriteReports": {

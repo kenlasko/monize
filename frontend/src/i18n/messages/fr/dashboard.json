@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Personnaliser",
-    "title": "Personnaliser le tableau de bord",
-    "description": "La disposition ci-dessous reflète votre tableau de bord : les widgets s'enchaînent de gauche à droite, deux par ligne sur les grands écrans.",
     "moveEarlier": "Avancer {name}",
     "moveLater": "Reculer {name}",
-    "dragToReorder": "Faites glisser les widgets pour les réorganiser, ou utilisez les boutons fléchés.",
-    "hiddenWidgets": "Widgets masqués",
-    "hide": "Masquer {name}",
-    "show": "Afficher {name}",
     "atLeastOne": "Sélectionnez au moins un widget à afficher sur le tableau de bord.",
     "reset": "Réinitialiser par défaut",
     "toasts": {
@@ -280,6 +274,60 @@
         "mwr": "MWR",
         "cagr": "TCAC"
       }
+    }
+  },
+  "edit": {
+    "barLabel": "Organiser le tableau de bord",
+    "addWidget": "Ajouter un widget",
+    "heroSettings": "Réglages de l'en-tête",
+    "done": "Terminé",
+    "phoneNote": "Les tailles des widgets s'appliquent sur les écrans plus larges.",
+    "remove": "Retirer {name}",
+    "grip": "Déplacer {name}",
+    "gripHint": "Faites glisser pour déplacer {name}, ou utilisez les touches fléchées",
+    "moved": "{name} déplacé à la position {position} sur {count}",
+    "removed": "{name} retiré",
+    "added": "{name} ajouté",
+    "resized": "{name} est maintenant {size}",
+    "resizedBoth": "{name} est maintenant {width} et {height}",
+    "twoChanges": "{first}. {second}",
+    "placeholder": "Affiché sur le tableau de bord dès qu'il y aura quelque chose à montrer.",
+    "addTitle": "Ajouter un widget",
+    "addDescription": "Un widget ajouté se place à la fin du tableau de bord. Rien n'est conservé tant que vous n'avez pas choisi Terminé.",
+    "addEmpty": "Tous les widgets sont déjà sur votre tableau de bord",
+    "addToSpace": "Ajouter un widget à cet espace ({width})",
+    "addSlotDescription": "Seuls les widgets qui tiennent dans cet espace sont listés, et celui que vous choisissez le remplit. Rien n'est conservé tant que vous n'avez pas choisi Terminé.",
+    "addSlotEmpty": "Aucun widget masqué ne tient dans cet espace. Faites glisser un widget ici pour l'y déplacer.",
+    "resize": "Redimensionner {name}",
+    "resizeHint": "Faites glisser pour redimensionner {name}, ou utilisez les touches fléchées",
+    "widthLabel": "Largeur",
+    "heightLabel": "Hauteur",
+    "presetName": "{short}, {name}",
+    "widthOf": "Largeur de {name}",
+    "heightOf": "Hauteur de {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Pleine"
+    },
+    "widthName": {
+      "third": "Un tiers de la largeur",
+      "half": "Demi-largeur",
+      "twoThirds": "Deux tiers de la largeur",
+      "full": "Pleine largeur"
+    },
+    "heightShort": {
+      "auto": "Auto",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Hauteur automatique",
+      "compact": "Hauteur compacte",
+      "standard": "Hauteur standard",
+      "tall": "Hauteur élevée"
     }
   },
   "favouriteReports": {

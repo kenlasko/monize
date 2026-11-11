@@ -231,7 +231,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
 
   if (isLoading) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <div className="flex items-center justify-between mb-4">
           <WidgetHeading id="top-movers" href="/investments">
             {t('topMovers.title')}
@@ -252,7 +252,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
 
   if (movers.length === 0) {
     return (
-      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <div className="flex items-center justify-between mb-4">
           <WidgetHeading id="top-movers" href="/investments">
             {t('topMovers.title')}
@@ -298,7 +298,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
   const session = sessions.size === 1 ? [...sessions][0] : null;
 
   return (
-    <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
+    <div className={`${CARD_CLASS} p-3 sm:p-6`}>
       <div className="flex items-center justify-between mb-4">
         <WidgetHeading id="top-movers" href="/investments">
           {t('topMovers.title')}

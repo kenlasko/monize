@@ -69,7 +69,7 @@
         },
         "dashboard": {
           "title": "Ihr Dashboard",
-          "body": "Das ist Ihr Dashboard. Nutzen Sie die Schaltfläche **Anpassen** oben rechts, um Widgets neu anzuordnen oder auszublenden, damit die für Sie wichtigen Übersichten ganz oben stehen."
+          "body": "Das ist Ihr Dashboard. Wählen Sie das Zahnrad **Anpassen** neben der Begrüßung, um es anzuordnen: Verschieben oder entfernen Sie Widgets direkt dort, wo sie stehen, wählen Sie **Widget hinzufügen** für weitere und **Fertig**, um das Layout zu übernehmen."
         },
         "tools": {
           "title": "Das Menü Tools",
@@ -471,7 +471,7 @@
           },
           "dashboardWidget": {
             "title": "Ablaufende Garantien im Dashboard sehen",
-            "body": "Wählen Sie **Anpassen** und schalten Sie **Bald ablaufende Garantien** ein. Das Widget listet die nächsten ablaufenden Garantien auf, und sein Titel öffnet die Seite Garantien."
+            "body": "Wählen Sie **Anpassen**, dann **Widget hinzufügen**, wählen Sie **Bald ablaufende Garantien** und anschließend **Fertig**. Das Widget listet die nächsten ablaufenden Garantien auf, und sein Titel öffnet die Seite Garantien."
           },
           "reminders": {
             "title": "Erinnerungen vor Ablauf des Schutzes",
