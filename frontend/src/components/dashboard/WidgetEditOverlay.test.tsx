@@ -26,6 +26,20 @@ function renderOverlay(over: Partial<Parameters<typeof WidgetEditOverlay>[0]> = 
 }
 
 describe('WidgetEditOverlay', () => {
+  it('places the corner resize grip on a wide screen only', () => {
+    const { unmount } = render(
+      <WidgetEditOverlay item={ITEM} index={0} count={1} onMove={vi.fn()} onRemove={vi.fn()} onResize={vi.fn()} grip={gripHandlers()} />,
+    );
+    expect(screen.getByRole('button', { name: 'Resize Net Worth' })).toBeInTheDocument();
+    unmount();
+    mockMatches.wide = false;
+    render(
+      <WidgetEditOverlay item={ITEM} index={0} count={1} onMove={vi.fn()} onRemove={vi.fn()} onResize={vi.fn()} grip={gripHandlers()} />,
+    );
+    expect(screen.queryByRole('button', { name: 'Resize Net Worth' })).not.toBeInTheDocument();
+    mockMatches.wide = true;
+  });
+
   it('groups its controls under the widget name, each control named for the widget', () => {
     renderOverlay();
     const group = screen.getByRole('group', { name: 'Net Worth' });

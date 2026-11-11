@@ -290,6 +290,8 @@
     "addTitle": "[XX-Add Widget-XX]",
     "addDescription": "[XX-A widget you add goes at the end of the dashboard. Nothing is kept until you choose Done.-XX]",
     "addEmpty": "[XX-Every widget is already on your dashboard-XX]",
+    "resize": "[XX-Resize {name}-XX]",
+    "resizeHint": "[XX-Drag to resize {name}, or press the arrow keys-XX]",
     "widthOf": "[XX-Width of {name}-XX]",
     "heightOf": "[XX-Height of {name}-XX]",
     "widthShort": {
