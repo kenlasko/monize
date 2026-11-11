@@ -341,7 +341,53 @@
     "EVERY4MONTHS": "Elke 4 maanden",
     "SEMIANNUAL": "Twee keer per jaar",
     "YEARLY": "Jaarlijks",
-    "EVERY2YEARS": "Elke 2 jaar"
+    "EVERY2YEARS": "Elke 2 jaar",
+    "CUSTOM": "Aangepast"
+  },
+  "customRecurrence": {
+    "title": "Herhaalt",
+    "unitLabel": "Herhalen per",
+    "units": {
+      "WEEK": "Wekelijks",
+      "MONTH": "Maandelijks",
+      "YEAR": "Jaarlijks"
+    },
+    "every": "Elke",
+    "intervalLabel": "Herhaal elke",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, one {week op} other {weken op}}",
+      "MONTH": "{interval, plural, one {maand op} other {maanden op}}",
+      "YEAR": "{interval, plural, one {jaar op} other {jaar op}}"
+    },
+    "weekdaysLabel": "Dagen van de week",
+    "monthDaysLabel": "Dagen van de maand",
+    "lastDayChip": "Laatste dag",
+    "lastDay": "laatste dag",
+    "dayOfMonth": "{day, selectordinal, other {#e}}",
+    "monthHint": "Een dag na het einde van een korte maand valt op de laatste dag ervan, en twee dagen die op dezelfde datum vallen worden maar één keer geboekt.",
+    "datesLabel": "Datums van het jaar",
+    "monthLabel": "Maand",
+    "dayLabel": "Dag",
+    "addDate": "Datum toevoegen",
+    "removeDate": "{date} verwijderen",
+    "yearHint": "29 februari valt op 28 februari in jaren zonder deze dag.",
+    "summary": {
+      "WEEK": "{interval, plural, one {Elke week op {days}} other {Elke # weken op {days}}}",
+      "MONTH": "{interval, plural, one {Elke maand op de {days}} other {Elke # maanden op de {days}}}",
+      "YEAR": "{interval, plural, one {Elk jaar op {days}} other {Elke # jaar op {days}}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "Kies minstens één dag van de week.",
+        "MONTH": "Kies minstens één dag van de maand.",
+        "YEAR": "Voeg minstens één datum toe."
+      },
+      "interval": "Voer een getal van 1 tot 12 in.",
+      "invalid": "Dit patroon kan niet worden opgeslagen. Kies de dagen opnieuw."
+    },
+    "firstOccurrence": "Eerste herhaling: {date}",
+    "nextOccurrence": "Volgende herhaling: {date}",
+    "orphanWarning": "{count, plural, one {# bewerkte herhaling ({dates}) valt niet meer binnen dit patroon en wordt verwijderd wanneer je opslaat.} other {# bewerkte herhalingen ({dates}) vallen niet meer binnen dit patroon en worden verwijderd wanneer je opslaat.}}"
   },
   "validation": {
     "nameRequired": "Naam is verplicht",

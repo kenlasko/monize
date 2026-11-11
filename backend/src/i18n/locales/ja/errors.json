@@ -312,7 +312,8 @@
     "offsiteEncryptionKeyRequired": "ENCRYPTION_KEY が設定されていないため、このサーバーは S3 の認証情報を保存できません。管理者に設定を依頼するか、このデプロイのバケットを使用してください。",
     "offsiteEmailAddressRequired": "バックアップの送信先となるメールアドレスを入力してください。",
     "manualRunFailed": "バックアップを 1 件も書き込めませんでした。{{ count }} 件のアカウントが失敗しました。最初のエラー: {{ reason }}",
-    "manualRunInProgress": "このデプロイでは全アカウントのバックアップがすでに実行中です。完了を待ってからもう一度お試しください。"
+    "manualRunInProgress": "このデプロイでは全アカウントのバックアップがすでに実行中です。完了を待ってからもう一度お試しください。",
+    "invalidCustomRecurrence": "バックアップ内のスケジュール取引が無効です：カスタムの頻度には有効な繰り返しルールが必要です"
   },
   "budgets": {
     "notFound": "ID {{ id }} の予算が見つかりません",
@@ -327,7 +328,8 @@
     "billAccountMustBeFiat": "給与控除ルールは法定通貨で支払う請求を対象にします。この請求の口座は暗号資産 {{ code }} を保有しています。法定通貨の口座から支払う請求を選択してください。",
     "notFound": "給与控除ルール {{ id }} が見つかりません",
     "duplicate": "この請求にはそのカテゴリのルールが既にあります",
-    "expectedRequired": "この請求にはこのカテゴリの行がありません。給与ごとの予定額を入力してください"
+    "expectedRequired": "この請求にはこのカテゴリの行がありません。給与ごとの予定額を入力してください",
+    "billCustomFrequency": "給与控除ルールには固定の頻度の請求が必要です。この請求はカスタムのスケジュールで繰り返されます。"
   },
   "categories": {
     "notFound": "ID {{ id }} のカテゴリが見つかりません",
@@ -611,7 +613,12 @@
     "estimateNoAutoPost": "見積もり金額の予定取引は自動で記帳できません",
     "estimateRequiresPayeeAndCategory": "見積もり金額には、支払い履歴を照合するための支払先とカテゴリが必要です",
     "estimateUnknown": "この回の見積もり金額は不明です。記帳するには金額を入力してください。",
-    "estimateBasisOwnerOnly": "金額が見積もりの請求の支払先やカテゴリを変更できるのは所有者だけです"
+    "estimateBasisOwnerOnly": "金額が見積もりの請求の支払先やカテゴリを変更できるのは所有者だけです",
+    "customRecurrenceRequired": "カスタムの頻度には繰り返しルールが必要です",
+    "customRecurrenceOnlyForCustom": "繰り返しルールは、頻度がカスタムの場合にのみ設定できます",
+    "customRecurrenceInvalid": "カスタムの繰り返しルールが無効です",
+    "customNotForLoan": "ローンまたは住宅ローンの返済にはカスタムの頻度を使用できません。固定の頻度を選択してください",
+    "customNotForPayroll": "控除上限のある給与の請求にはカスタムの頻度を使用できません。固定の頻度を選択してください"
   },
   "bonds": {
     "securityNotLinked": "証券 {{ securityId }} が見つからないか、債券プログラムにリンクされていません",

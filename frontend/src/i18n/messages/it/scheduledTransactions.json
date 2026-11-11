@@ -341,7 +341,53 @@
     "EVERY4MONTHS": "Ogni 4 mesi",
     "SEMIANNUAL": "Due volte all'anno",
     "YEARLY": "Annuale",
-    "EVERY2YEARS": "Ogni 2 anni"
+    "EVERY2YEARS": "Ogni 2 anni",
+    "CUSTOM": "Personalizzata"
+  },
+  "customRecurrence": {
+    "title": "Si ripete",
+    "unitLabel": "Ripeti per",
+    "units": {
+      "WEEK": "Settimanale",
+      "MONTH": "Mensile",
+      "YEAR": "Annuale"
+    },
+    "every": "Ogni",
+    "intervalLabel": "Ripeti ogni",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, one {settimana il} other {settimane il}}",
+      "MONTH": "{interval, plural, one {mese il} other {mesi il}}",
+      "YEAR": "{interval, plural, one {anno il} other {anni il}}"
+    },
+    "weekdaysLabel": "Giorni della settimana",
+    "monthDaysLabel": "Giorni del mese",
+    "lastDayChip": "Ultimo giorno",
+    "lastDay": "ultimo giorno",
+    "dayOfMonth": "{day, selectordinal, other {#}}",
+    "monthHint": "Un giorno oltre la fine di un mese breve cade nell'ultimo giorno del mese, e due giorni che cadono nella stessa data vengono registrati una sola volta.",
+    "datesLabel": "Date dell'anno",
+    "monthLabel": "Mese",
+    "dayLabel": "Giorno",
+    "addDate": "Aggiungi data",
+    "removeDate": "Rimuovi {date}",
+    "yearHint": "Il 29 febbraio cade il 28 febbraio negli anni che non lo hanno.",
+    "summary": {
+      "WEEK": "{interval, plural, one {Ogni settimana il {days}} other {Ogni # settimane il {days}}}",
+      "MONTH": "{interval, plural, one {Ogni mese il {days}} other {Ogni # mesi il {days}}}",
+      "YEAR": "{interval, plural, one {Ogni anno il {days}} other {Ogni # anni il {days}}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "Scegli almeno un giorno della settimana.",
+        "MONTH": "Scegli almeno un giorno del mese.",
+        "YEAR": "Aggiungi almeno una data."
+      },
+      "interval": "Inserisci un numero da 1 a 12.",
+      "invalid": "Questo schema non può essere salvato. Scegli di nuovo i giorni."
+    },
+    "firstOccurrence": "Prima occorrenza: {date}",
+    "nextOccurrence": "Prossima occorrenza: {date}",
+    "orphanWarning": "{count, plural, one {# occorrenza modificata ({dates}) non rientra più in questo schema e verrà rimossa al salvataggio.} other {# occorrenze modificate ({dates}) non rientrano più in questo schema e verranno rimosse al salvataggio.}}"
   },
   "validation": {
     "nameRequired": "Il nome è obbligatorio",

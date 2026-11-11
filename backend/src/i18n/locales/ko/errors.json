@@ -312,7 +312,8 @@
     "offsiteEncryptionKeyRequired": "ENCRYPTION_KEY가 설정되지 않아 이 서버는 S3 자격 증명을 저장할 수 없습니다. 관리자에게 설정을 요청하거나 이 배포의 버킷을 사용하세요.",
     "offsiteEmailAddressRequired": "백업을 보낼 이메일 주소를 입력하세요.",
     "manualRunFailed": "백업을 하나도 기록하지 못했습니다. {{ count }}개 계정이 실패했습니다. 첫 번째 오류: {{ reason }}",
-    "manualRunInProgress": "이 배포에서 모든 계정의 백업이 이미 실행 중입니다. 완료될 때까지 기다린 후 다시 시도하십시오."
+    "manualRunInProgress": "이 배포에서 모든 계정의 백업이 이미 실행 중입니다. 완료될 때까지 기다린 후 다시 시도하십시오.",
+    "invalidCustomRecurrence": "백업의 예약 거래가 올바르지 않습니다: 사용자 지정 빈도에는 올바른 반복 규칙이 필요합니다"
   },
   "budgets": {
     "notFound": "ID가 {{ id }}인 예산을 찾을 수 없습니다",
@@ -327,7 +328,8 @@
     "billAccountMustBeFiat": "급여 공제 규칙은 법정 통화로 지불하는 청구서를 추적합니다. 이 청구서의 계정은 암호화폐 {{ code }}을(를) 보유하고 있습니다. 법정 통화 계정에서 지불하는 청구서를 선택하세요.",
     "notFound": "급여 공제 규칙 {{ id }}을(를) 찾을 수 없습니다",
     "duplicate": "이 청구에는 해당 카테고리의 규칙이 이미 있습니다",
-    "expectedRequired": "청구에 이 카테고리의 항목이 없습니다. 급여당 예상 금액을 입력하세요"
+    "expectedRequired": "청구에 이 카테고리의 항목이 없습니다. 급여당 예상 금액을 입력하세요",
+    "billCustomFrequency": "급여 공제 규칙에는 고정 빈도의 청구서가 필요합니다. 이 청구서는 사용자 지정 일정에 따라 반복됩니다."
   },
   "categories": {
     "notFound": "ID가 {{ id }}인 카테고리를 찾을 수 없습니다",
@@ -611,7 +613,12 @@
     "estimateNoAutoPost": "예상 금액이 있는 예약 거래는 자동으로 게시할 수 없습니다",
     "estimateRequiresPayeeAndCategory": "예상 금액에는 결제 내역을 맞춰 볼 수취인과 카테고리가 필요합니다",
     "estimateUnknown": "이 회차의 예상 금액을 알 수 없습니다. 게시하려면 금액을 입력하세요.",
-    "estimateBasisOwnerOnly": "예상 금액인 청구서의 수취인이나 카테고리는 소유자만 변경할 수 있습니다"
+    "estimateBasisOwnerOnly": "예상 금액인 청구서의 수취인이나 카테고리는 소유자만 변경할 수 있습니다",
+    "customRecurrenceRequired": "사용자 지정 빈도에는 반복 규칙이 필요합니다",
+    "customRecurrenceOnlyForCustom": "반복 규칙은 빈도가 사용자 지정일 때만 설정할 수 있습니다",
+    "customRecurrenceInvalid": "사용자 지정 반복 규칙이 올바르지 않습니다",
+    "customNotForLoan": "대출 또는 모기지 상환은 사용자 지정 빈도를 사용할 수 없습니다. 고정 빈도를 선택하세요",
+    "customNotForPayroll": "공제 한도가 있는 급여 청구서는 사용자 지정 빈도를 사용할 수 없습니다. 고정 빈도를 선택하세요"
   },
   "bonds": {
     "securityNotLinked": "증권 {{ securityId }}을(를) 찾을 수 없거나 채권 프로그램에 연결되어 있지 않습니다",

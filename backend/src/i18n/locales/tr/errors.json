@@ -312,7 +312,8 @@
     "offsiteEncryptionKeyRequired": "ENCRYPTION_KEY ayarlanmadığı için bu sunucu S3 kimlik bilgilerini saklayamıyor. Bir yöneticiden bunu yapılandırmasını isteyin veya kurulumun bucket'ını kullanın.",
     "offsiteEmailAddressRequired": "Yedeklerinizin gönderileceği e-posta adresini girin.",
     "manualRunFailed": "Hiçbir yedek yazılamadı: {{ count }} hesap başarısız oldu. İlk hata: {{ reason }}",
-    "manualRunInProgress": "Bu kurulumda tüm hesapların yedeği zaten alınıyor. Bitmesini bekleyip yeniden deneyin."
+    "manualRunInProgress": "Bu kurulumda tüm hesapların yedeği zaten alınıyor. Bitmesini bekleyip yeniden deneyin.",
+    "invalidCustomRecurrence": "Yedekteki zamanlanmış işlem geçersiz: özel sıklık için geçerli bir tekrar kuralı gerekir"
   },
   "budgets": {
     "notFound": "{{ id }} kimliğine sahip bütçe bulunamadı",
@@ -327,7 +328,8 @@
     "billAccountMustBeFiat": "Bordro kesinti kuralı, fiat para biriminde ödenen bir faturayı izler; bu faturanın hesabı {{ code }} kripto parasını tutuyor. Fiat bir hesaptan ödenen bir fatura seçin.",
     "notFound": "Bordro kesinti kuralı {{ id }} bulunamadı",
     "duplicate": "Bu faturada o kategori için zaten bir kural var",
-    "expectedRequired": "Faturada bu kategori için satır yok; maaş başına beklenen tutarı girin"
+    "expectedRequired": "Faturada bu kategori için satır yok; maaş başına beklenen tutarı girin",
+    "billCustomFrequency": "Bordro kesinti kuralı için sabit sıklıkta bir fatura gerekir; bu fatura özel bir takvime göre tekrarlanıyor."
   },
   "categories": {
     "notFound": "{{ id }} kimliğine sahip kategori bulunamadı",
@@ -611,7 +613,12 @@
     "estimateNoAutoPost": "Tahmini tutarlı planlı bir işlem otomatik olarak kaydedilemez",
     "estimateRequiresPayeeAndCategory": "Tahmini tutar, ödeme geçmişinin eşleştirileceği bir alıcı ve kategori gerektirir",
     "estimateUnknown": "Bu tekrarın tahmini tutarı bilinmiyor. Kaydetmek için tutarı girin.",
-    "estimateBasisOwnerOnly": "Tutarı tahmini olan bir faturanın alıcısını veya kategorisini yalnızca sahibi değiştirebilir"
+    "estimateBasisOwnerOnly": "Tutarı tahmini olan bir faturanın alıcısını veya kategorisini yalnızca sahibi değiştirebilir",
+    "customRecurrenceRequired": "Özel bir sıklık için tekrar kuralı gerekir",
+    "customRecurrenceOnlyForCustom": "Tekrar kuralı yalnızca sıklık Özel olduğunda ayarlanabilir",
+    "customRecurrenceInvalid": "Özel tekrar kuralı geçerli değil",
+    "customNotForLoan": "Bir kredi veya konut kredisi ödemesi özel sıklık kullanamaz; sabit bir sıklık seçin",
+    "customNotForPayroll": "Kesinti sınırı olan bir bordro faturası özel sıklık kullanamaz; sabit bir sıklık seçin"
   },
   "bonds": {
     "securityNotLinked": "{{ securityId }} menkul kıymeti bulunamadı veya bir tahvil programına bağlı değil",

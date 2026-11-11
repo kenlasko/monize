@@ -341,7 +341,53 @@
     "EVERY4MONTHS": "每四个月",
     "SEMIANNUAL": "每年两次",
     "YEARLY": "每年",
-    "EVERY2YEARS": "每两年"
+    "EVERY2YEARS": "每两年",
+    "CUSTOM": "自定义"
+  },
+  "customRecurrence": {
+    "title": "重复",
+    "unitLabel": "重复方式",
+    "units": {
+      "WEEK": "每周",
+      "MONTH": "每月",
+      "YEAR": "每年"
+    },
+    "every": "每",
+    "intervalLabel": "重复间隔",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, other {周，星期：}}",
+      "MONTH": "{interval, plural, other {个月，日期：}}",
+      "YEAR": "{interval, plural, other {年，日期：}}"
+    },
+    "weekdaysLabel": "星期",
+    "monthDaysLabel": "每月日期",
+    "lastDayChip": "最后一天",
+    "lastDay": "最后一天",
+    "dayOfMonth": "{day, selectordinal, other {#日}}",
+    "monthHint": "超出短月月末的日期会顺延到该月最后一天，落在同一日期的两天只会入账一次。",
+    "datesLabel": "每年日期",
+    "monthLabel": "月",
+    "dayLabel": "日",
+    "addDate": "添加日期",
+    "removeDate": "移除 {date}",
+    "yearHint": "没有 2 月 29 日的年份，该日会改到 2 月 28 日。",
+    "summary": {
+      "WEEK": "{interval, plural, other {每 # 周，{days}}}",
+      "MONTH": "{interval, plural, other {每 # 个月，{days}}}",
+      "YEAR": "{interval, plural, other {每 # 年，{days}}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "请至少选择一个星期。",
+        "MONTH": "请至少选择一个日期。",
+        "YEAR": "请至少添加一个日期。"
+      },
+      "interval": "请输入 1 到 12 之间的数字。",
+      "invalid": "无法保存此规律。请重新选择日期。"
+    },
+    "firstOccurrence": "首次发生：{date}",
+    "nextOccurrence": "下次发生：{date}",
+    "orphanWarning": "{count, plural, other {已编辑的 # 次发生（{dates}）不再符合此规律，保存时将被移除。}}"
   },
   "validation": {
     "nameRequired": "名称为必填项",

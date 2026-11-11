@@ -312,7 +312,8 @@
     "offsiteEncryptionKeyRequired": "This server cannot store S3 credentials because ENCRYPTION_KEY is not set. Ask an administrator to configure it, or use the deployment's bucket.",
     "offsiteEmailAddressRequired": "Enter the address your backups should be emailed to.",
     "manualRunFailed": "No backup could be written: {{ count }} account(s) failed. First error: {{ reason }}",
-    "manualRunInProgress": "A backup of every account is already running on this deployment. Wait for it to finish and try again."
+    "manualRunInProgress": "A backup of every account is already running on this deployment. Wait for it to finish and try again.",
+    "invalidCustomRecurrence": "Invalid backup scheduled transaction: a custom frequency needs a valid recurrence rule"
   },
   "budgets": {
     "notFound": "Budget with ID {{ id }} not found",
@@ -327,7 +328,8 @@
     "billAccountMustBeFiat": "A payroll deduction rule tracks a bill paid in a fiat currency; this bill's account holds the cryptocurrency {{ code }}. Choose a bill paid from a fiat account.",
     "notFound": "Payroll deduction rule {{ id }} not found",
     "duplicate": "This bill already has a rule for that category",
-    "expectedRequired": "The bill has no line for this category; enter the amount expected per paycheque"
+    "expectedRequired": "The bill has no line for this category; enter the amount expected per paycheque",
+    "billCustomFrequency": "A payroll deduction rule needs a bill on a fixed frequency; this bill repeats on a custom schedule."
   },
   "categories": {
     "notFound": "Category with ID {{ id }} not found",
@@ -611,7 +613,12 @@
     "estimateNoAutoPost": "A scheduled transaction with an estimated amount cannot be posted automatically",
     "estimateRequiresPayeeAndCategory": "An estimated amount needs a payee and a category to match the payment history on",
     "estimateUnknown": "The estimated amount of this occurrence is unknown. Enter the amount to post it.",
-    "estimateBasisOwnerOnly": "Only the owner can change the payee or category of a bill whose amount is estimated"
+    "estimateBasisOwnerOnly": "Only the owner can change the payee or category of a bill whose amount is estimated",
+    "customRecurrenceRequired": "A custom frequency needs a recurrence rule",
+    "customRecurrenceOnlyForCustom": "A recurrence rule can only be set when the frequency is Custom",
+    "customRecurrenceInvalid": "The custom recurrence rule is not valid",
+    "customNotForLoan": "A loan or mortgage payment cannot use a custom frequency; choose a fixed frequency",
+    "customNotForPayroll": "A payroll bill with deduction limits cannot use a custom frequency; choose a fixed frequency"
   },
   "bonds": {
     "securityNotLinked": "Security {{ securityId }} not found or not linked to a bond program",

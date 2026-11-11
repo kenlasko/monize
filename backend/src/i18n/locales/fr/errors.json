@@ -312,7 +312,8 @@
     "offsiteEncryptionKeyRequired": "Ce serveur ne peut pas stocker d'identifiants S3 car ENCRYPTION_KEY n'est pas défini. Demandez à un administrateur de le configurer, ou utilisez le bucket de l'installation.",
     "offsiteEmailAddressRequired": "Indiquez l'adresse à laquelle vos sauvegardes doivent être envoyées.",
     "manualRunFailed": "Aucune sauvegarde n'a pu être écrite : {{ count }} comptes ont échoué. Première erreur : {{ reason }}",
-    "manualRunInProgress": "Une sauvegarde de tous les comptes est déjà en cours sur ce déploiement. Attendez qu'elle se termine et réessayez."
+    "manualRunInProgress": "Une sauvegarde de tous les comptes est déjà en cours sur ce déploiement. Attendez qu'elle se termine et réessayez.",
+    "invalidCustomRecurrence": "Transaction récurrente de la sauvegarde non valide : une fréquence personnalisée nécessite une règle de répétition valide"
   },
   "budgets": {
     "notFound": "Budget avec l'ID {{ id }} introuvable",
@@ -327,7 +328,8 @@
     "billAccountMustBeFiat": "Une règle de retenue salariale suit une facture payée dans une devise fiduciaire ; le compte de cette facture contient la cryptomonnaie {{ code }}. Choisissez une facture payée depuis un compte en devise fiduciaire.",
     "notFound": "Règle de retenue salariale {{ id }} introuvable",
     "duplicate": "Cette facture a déjà une règle pour cette catégorie",
-    "expectedRequired": "La facture n'a pas de ligne pour cette catégorie ; saisissez le montant attendu par paie"
+    "expectedRequired": "La facture n'a pas de ligne pour cette catégorie ; saisissez le montant attendu par paie",
+    "billCustomFrequency": "Une règle de retenue salariale nécessite une facture à fréquence fixe ; cette facture se répète selon un calendrier personnalisé."
   },
   "categories": {
     "notFound": "Catégorie avec l'ID {{ id }} introuvable",
@@ -611,7 +613,12 @@
     "estimateNoAutoPost": "Une opération planifiée dont le montant est estimé ne peut pas être enregistrée automatiquement",
     "estimateRequiresPayeeAndCategory": "Un montant estimé a besoin d'un bénéficiaire et d'une catégorie pour retrouver l'historique des paiements",
     "estimateUnknown": "Le montant estimé de cette occurrence est inconnu. Saisissez le montant pour l'enregistrer.",
-    "estimateBasisOwnerOnly": "Seul le propriétaire peut modifier le bénéficiaire ou la catégorie d'une facture dont le montant est estimé"
+    "estimateBasisOwnerOnly": "Seul le propriétaire peut modifier le bénéficiaire ou la catégorie d'une facture dont le montant est estimé",
+    "customRecurrenceRequired": "Une fréquence personnalisée nécessite une règle de répétition",
+    "customRecurrenceOnlyForCustom": "Une règle de répétition ne peut être définie que lorsque la fréquence est Personnalisée",
+    "customRecurrenceInvalid": "La règle de répétition personnalisée n'est pas valide",
+    "customNotForLoan": "Un paiement de prêt ou de prêt hypothécaire ne peut pas utiliser une fréquence personnalisée ; choisissez une fréquence fixe",
+    "customNotForPayroll": "Une facture de paie avec des limites de retenue ne peut pas utiliser une fréquence personnalisée ; choisissez une fréquence fixe"
   },
   "bonds": {
     "securityNotLinked": "Titre {{ securityId }} introuvable ou non lié à un programme obligataire",

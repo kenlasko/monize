@@ -341,7 +341,53 @@
     "EVERY4MONTHS": "Cada 4 meses",
     "SEMIANNUAL": "Dos veces al año",
     "YEARLY": "Anual",
-    "EVERY2YEARS": "Cada 2 años"
+    "EVERY2YEARS": "Cada 2 años",
+    "CUSTOM": "Personalizada"
+  },
+  "customRecurrence": {
+    "title": "Se repite",
+    "unitLabel": "Repetir por",
+    "units": {
+      "WEEK": "Semanal",
+      "MONTH": "Mensual",
+      "YEAR": "Anual"
+    },
+    "every": "Cada",
+    "intervalLabel": "Repetir cada",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, one {semana en} other {semanas en}}",
+      "MONTH": "{interval, plural, one {mes el día} other {meses el día}}",
+      "YEAR": "{interval, plural, one {año en} other {años en}}"
+    },
+    "weekdaysLabel": "Días de la semana",
+    "monthDaysLabel": "Días del mes",
+    "lastDayChip": "Último día",
+    "lastDay": "último día",
+    "dayOfMonth": "{day, selectordinal, other {#}}",
+    "monthHint": "Un día posterior al final de un mes corto se traslada a su último día, y dos días que coinciden en la misma fecha se registran una sola vez.",
+    "datesLabel": "Fechas del año",
+    "monthLabel": "Mes",
+    "dayLabel": "Día",
+    "addDate": "Añadir fecha",
+    "removeDate": "Quitar {date}",
+    "yearHint": "El 29 de febrero pasa al 28 de febrero en los años que no lo tienen.",
+    "summary": {
+      "WEEK": "{interval, plural, one {Cada semana en {days}} other {Cada # semanas en {days}}}",
+      "MONTH": "{interval, plural, one {Cada mes el día {days}} other {Cada # meses el día {days}}}",
+      "YEAR": "{interval, plural, one {Cada año en {days}} other {Cada # años en {days}}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "Elige al menos un día de la semana.",
+        "MONTH": "Elige al menos un día del mes.",
+        "YEAR": "Añade al menos una fecha."
+      },
+      "interval": "Introduce un número del 1 al 12.",
+      "invalid": "Este patrón no se puede guardar. Vuelve a elegir los días."
+    },
+    "firstOccurrence": "Primera ocurrencia: {date}",
+    "nextOccurrence": "Próxima ocurrencia: {date}",
+    "orphanWarning": "{count, plural, one {# ocurrencia editada ({dates}) ya no coincide con este patrón y se eliminará al guardar.} other {# ocurrencias editadas ({dates}) ya no coinciden con este patrón y se eliminarán al guardar.}}"
   },
   "validation": {
     "nameRequired": "El nombre es obligatorio",

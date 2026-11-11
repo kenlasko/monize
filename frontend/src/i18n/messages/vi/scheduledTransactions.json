@@ -341,7 +341,53 @@
     "EVERY4MONTHS": "Mỗi 4 tháng",
     "SEMIANNUAL": "Hai lần một năm",
     "YEARLY": "Hàng năm",
-    "EVERY2YEARS": "Mỗi 2 năm"
+    "EVERY2YEARS": "Mỗi 2 năm",
+    "CUSTOM": "Tùy chỉnh"
+  },
+  "customRecurrence": {
+    "title": "Lặp lại",
+    "unitLabel": "Lặp lại theo",
+    "units": {
+      "WEEK": "Hàng tuần",
+      "MONTH": "Hàng tháng",
+      "YEAR": "Hàng năm"
+    },
+    "every": "Mỗi",
+    "intervalLabel": "Lặp lại mỗi",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, other {tuần vào}}",
+      "MONTH": "{interval, plural, other {tháng vào ngày}}",
+      "YEAR": "{interval, plural, other {năm vào}}"
+    },
+    "weekdaysLabel": "Các ngày trong tuần",
+    "monthDaysLabel": "Các ngày trong tháng",
+    "lastDayChip": "Ngày cuối",
+    "lastDay": "ngày cuối",
+    "dayOfMonth": "{day, selectordinal, other {#}}",
+    "monthHint": "Ngày vượt quá cuối của tháng ngắn sẽ rơi vào ngày cuối tháng đó, và hai ngày trùng cùng một ngày chỉ được ghi một lần.",
+    "datesLabel": "Các ngày trong năm",
+    "monthLabel": "Tháng",
+    "dayLabel": "Ngày",
+    "addDate": "Thêm ngày",
+    "removeDate": "Xóa {date}",
+    "yearHint": "Ngày 29 tháng 2 rơi vào ngày 28 tháng 2 ở những năm không có ngày này.",
+    "summary": {
+      "WEEK": "{interval, plural, other {Mỗi # tuần vào {days}}}",
+      "MONTH": "{interval, plural, other {Mỗi # tháng vào ngày {days}}}",
+      "YEAR": "{interval, plural, other {Mỗi # năm vào {days}}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "Chọn ít nhất một ngày trong tuần.",
+        "MONTH": "Chọn ít nhất một ngày trong tháng.",
+        "YEAR": "Thêm ít nhất một ngày."
+      },
+      "interval": "Nhập một số từ 1 đến 12.",
+      "invalid": "Không thể lưu mẫu này. Hãy chọn lại các ngày."
+    },
+    "firstOccurrence": "Lần xuất hiện đầu tiên: {date}",
+    "nextOccurrence": "Lần xuất hiện tiếp theo: {date}",
+    "orphanWarning": "{count, plural, other {# lần xuất hiện đã sửa ({dates}) không còn khớp với mẫu này và sẽ bị xóa khi bạn lưu.}}"
   },
   "validation": {
     "nameRequired": "Tên là bắt buộc",

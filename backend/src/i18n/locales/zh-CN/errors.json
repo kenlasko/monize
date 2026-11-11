@@ -312,7 +312,8 @@
     "offsiteEncryptionKeyRequired": "由于未设置 ENCRYPTION_KEY，此服务器无法保存 S3 凭据。请让管理员进行配置，或使用此部署的存储桶。",
     "offsiteEmailAddressRequired": "请输入备份要发送到的邮箱地址。",
     "manualRunFailed": "没有写入任何备份：{{ count }} 个账户失败。首个错误：{{ reason }}",
-    "manualRunInProgress": "本部署已有一个针对所有账户的备份正在运行。请等待其完成后再试。"
+    "manualRunInProgress": "本部署已有一个针对所有账户的备份正在运行。请等待其完成后再试。",
+    "invalidCustomRecurrence": "备份中的计划交易无效：自定义频率需要有效的重复规则"
   },
   "budgets": {
     "notFound": "未找到 ID 为 {{ id }} 的预算",
@@ -327,7 +328,8 @@
     "billAccountMustBeFiat": "工资扣款规则跟踪以法定货币支付的账单；此账单的账户持有加密货币 {{ code }}。请选择从法定货币账户支付的账单。",
     "notFound": "未找到工资扣款规则 {{ id }}",
     "duplicate": "此账单已有该类别的规则",
-    "expectedRequired": "账单中没有此类别的行；请输入每次发薪的预期金额"
+    "expectedRequired": "账单中没有此类别的行；请输入每次发薪的预期金额",
+    "billCustomFrequency": "工资扣款规则需要固定频率的账单；此账单按自定义计划重复。"
   },
   "categories": {
     "notFound": "未找到 ID 为 {{ id }} 的分类",
@@ -611,7 +613,12 @@
     "estimateNoAutoPost": "金额为估算值的计划交易不能自动入账",
     "estimateRequiresPayeeAndCategory": "估算金额需要收款方和类别，以便匹配付款记录",
     "estimateUnknown": "此次发生的估算金额未知。请输入金额后再入账。",
-    "estimateBasisOwnerOnly": "只有所有者可以更改金额为估算值的账单的收款方或类别"
+    "estimateBasisOwnerOnly": "只有所有者可以更改金额为估算值的账单的收款方或类别",
+    "customRecurrenceRequired": "自定义频率需要重复规则",
+    "customRecurrenceOnlyForCustom": "只有在频率为自定义时才能设置重复规则",
+    "customRecurrenceInvalid": "自定义重复规则无效",
+    "customNotForLoan": "贷款或抵押贷款还款不能使用自定义频率；请选择固定频率",
+    "customNotForPayroll": "带有扣款上限的工资账单不能使用自定义频率；请选择固定频率"
   },
   "bonds": {
     "securityNotLinked": "未找到证券 {{ securityId }}，或该证券未关联到债券计划",

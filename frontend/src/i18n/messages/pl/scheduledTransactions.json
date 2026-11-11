@@ -341,7 +341,53 @@
     "EVERY4MONTHS": "Co 4 miesiące",
     "SEMIANNUAL": "Dwa razy w roku",
     "YEARLY": "Co rok",
-    "EVERY2YEARS": "Co 2 lata"
+    "EVERY2YEARS": "Co 2 lata",
+    "CUSTOM": "Niestandardowy"
+  },
+  "customRecurrence": {
+    "title": "Powtarzanie",
+    "unitLabel": "Powtarzaj według",
+    "units": {
+      "WEEK": "Co tydzień",
+      "MONTH": "Co miesiąc",
+      "YEAR": "Co rok"
+    },
+    "every": "Co",
+    "intervalLabel": "Powtarzaj co",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, one {tydzień w dni} few {tygodnie w dni} many {tygodni w dni} other {tygodnia w dni}}",
+      "MONTH": "{interval, plural, one {miesiąc w dni} few {miesiące w dni} many {miesięcy w dni} other {miesiąca w dni}}",
+      "YEAR": "{interval, plural, one {rok w dni} few {lata w dni} many {lat w dni} other {roku w dni}}"
+    },
+    "weekdaysLabel": "Dni tygodnia",
+    "monthDaysLabel": "Dni miesiąca",
+    "lastDayChip": "Ostatni dzień",
+    "lastDay": "ostatni dzień",
+    "dayOfMonth": "{day, selectordinal, other {#}}",
+    "monthHint": "Dzień wykraczający poza koniec krótszego miesiąca przypada na jego ostatni dzień, a dwa dni wypadające tego samego dnia są księgowane tylko raz.",
+    "datesLabel": "Daty w roku",
+    "monthLabel": "Miesiąc",
+    "dayLabel": "Dzień",
+    "addDate": "Dodaj datę",
+    "removeDate": "Usuń {date}",
+    "yearHint": "29 lutego w latach, które go nie mają, przypada 28 lutego.",
+    "summary": {
+      "WEEK": "{interval, plural, one {Co tydzień, dni: {days}} other {Co # tyg., dni: {days}}}",
+      "MONTH": "{interval, plural, one {Co miesiąc, dni: {days}} other {Co # mies., dni: {days}}}",
+      "YEAR": "{interval, plural, one {Co rok, daty: {days}} other {Co # lat, daty: {days}}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "Wybierz co najmniej jeden dzień tygodnia.",
+        "MONTH": "Wybierz co najmniej jeden dzień miesiąca.",
+        "YEAR": "Dodaj co najmniej jedną datę."
+      },
+      "interval": "Wpisz liczbę od 1 do 12.",
+      "invalid": "Nie można zapisać tego wzorca. Wybierz dni ponownie."
+    },
+    "firstOccurrence": "Pierwsze wystąpienie: {date}",
+    "nextOccurrence": "Następne wystąpienie: {date}",
+    "orphanWarning": "{count, plural, one {# edytowane wystąpienie ({dates}) nie pasuje już do tego wzorca i zostanie usunięte po zapisaniu.} few {# edytowane wystąpienia ({dates}) nie pasują już do tego wzorca i zostaną usunięte po zapisaniu.} many {# edytowanych wystąpień ({dates}) nie pasuje już do tego wzorca i zostanie usuniętych po zapisaniu.} other {# edytowanego wystąpienia ({dates}) nie pasuje już do tego wzorca i zostanie usuniętych po zapisaniu.}}"
   },
   "validation": {
     "nameRequired": "Nazwa jest wymagana",

@@ -312,7 +312,8 @@
     "offsiteEncryptionKeyRequired": "Este servidor no puede almacenar credenciales de S3 porque ENCRYPTION_KEY no está configurada. Pida a un administrador que la configure o use el bucket de la instalación.",
     "offsiteEmailAddressRequired": "Indique la dirección a la que se deben enviar sus copias de seguridad.",
     "manualRunFailed": "No se pudo escribir ninguna copia de seguridad: fallaron {{ count }} cuentas. Primer error: {{ reason }}",
-    "manualRunInProgress": "Ya se está ejecutando una copia de seguridad de todas las cuentas en este despliegue. Espere a que termine e inténtelo de nuevo."
+    "manualRunInProgress": "Ya se está ejecutando una copia de seguridad de todas las cuentas en este despliegue. Espere a que termine e inténtelo de nuevo.",
+    "invalidCustomRecurrence": "Transacción planificada de la copia de seguridad no válida: una frecuencia personalizada necesita una regla de repetición válida"
   },
   "budgets": {
     "notFound": "Presupuesto con ID {{ id }} no encontrado",
@@ -327,7 +328,8 @@
     "billAccountMustBeFiat": "Una regla de deducción de nómina hace seguimiento de una factura pagada en una moneda fiduciaria; la cuenta de esta factura contiene la criptomoneda {{ code }}. Elige una factura pagada desde una cuenta en moneda fiduciaria.",
     "notFound": "Regla de deducción de nómina {{ id }} no encontrada",
     "duplicate": "Esta factura ya tiene una regla para esa categoría",
-    "expectedRequired": "La factura no tiene una línea para esta categoría; introduzca el importe previsto por nómina"
+    "expectedRequired": "La factura no tiene una línea para esta categoría; introduzca el importe previsto por nómina",
+    "billCustomFrequency": "Una regla de deducción de nómina necesita una factura con frecuencia fija; esta factura se repite según un calendario personalizado."
   },
   "categories": {
     "notFound": "Categoría con ID {{ id }} no encontrada",
@@ -611,7 +613,12 @@
     "estimateNoAutoPost": "Una transacción programada con un importe estimado no se puede registrar automáticamente",
     "estimateRequiresPayeeAndCategory": "Un importe estimado necesita un beneficiario y una categoría con los que buscar el historial de pagos",
     "estimateUnknown": "Se desconoce el importe estimado de esta ocurrencia. Introduzca el importe para registrarla.",
-    "estimateBasisOwnerOnly": "Solo el propietario puede cambiar el beneficiario o la categoría de una factura con importe estimado"
+    "estimateBasisOwnerOnly": "Solo el propietario puede cambiar el beneficiario o la categoría de una factura con importe estimado",
+    "customRecurrenceRequired": "Una frecuencia personalizada necesita una regla de repetición",
+    "customRecurrenceOnlyForCustom": "Una regla de repetición solo se puede establecer cuando la frecuencia es Personalizada",
+    "customRecurrenceInvalid": "La regla de repetición personalizada no es válida",
+    "customNotForLoan": "El pago de un préstamo o una hipoteca no puede usar una frecuencia personalizada; elige una frecuencia fija",
+    "customNotForPayroll": "Una factura de nómina con límites de deducción no puede usar una frecuencia personalizada; elige una frecuencia fija"
   },
   "bonds": {
     "securityNotLinked": "Valor {{ securityId }} no encontrado o no vinculado a un programa de bonos",

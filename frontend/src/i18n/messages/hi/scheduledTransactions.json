@@ -341,7 +341,53 @@
     "EVERY4MONTHS": "हर 4 महीने",
     "SEMIANNUAL": "साल में दो बार",
     "YEARLY": "वार्षिक",
-    "EVERY2YEARS": "हर 2 साल"
+    "EVERY2YEARS": "हर 2 साल",
+    "CUSTOM": "कस्टम"
+  },
+  "customRecurrence": {
+    "title": "दोहराव",
+    "unitLabel": "इसके आधार पर दोहराएँ",
+    "units": {
+      "WEEK": "साप्ताहिक",
+      "MONTH": "मासिक",
+      "YEAR": "वार्षिक"
+    },
+    "every": "हर",
+    "intervalLabel": "दोहराएँ हर",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, one {सप्ताह में} other {सप्ताह में}}",
+      "MONTH": "{interval, plural, one {महीने में} other {महीने में}}",
+      "YEAR": "{interval, plural, one {वर्ष में} other {वर्ष में}}"
+    },
+    "weekdaysLabel": "सप्ताह के दिन",
+    "monthDaysLabel": "महीने के दिन",
+    "lastDayChip": "अंतिम दिन",
+    "lastDay": "अंतिम दिन",
+    "dayOfMonth": "{day, selectordinal, other {#}}",
+    "monthHint": "छोटे महीने के अंत से आगे का दिन उसके अंतिम दिन पर आता है, और एक ही तिथि पर पड़ने वाले दो दिन केवल एक बार पोस्ट होते हैं।",
+    "datesLabel": "वर्ष की तिथियाँ",
+    "monthLabel": "महीना",
+    "dayLabel": "दिन",
+    "addDate": "तिथि जोड़ें",
+    "removeDate": "{date} हटाएँ",
+    "yearHint": "जिन वर्षों में 29 फ़रवरी नहीं होती, उनमें यह 28 फ़रवरी पर आती है।",
+    "summary": {
+      "WEEK": "{interval, plural, one {हर सप्ताह {days} को} other {हर # सप्ताह में {days} को}}",
+      "MONTH": "{interval, plural, one {हर महीने {days} तारीख को} other {हर # महीने में {days} तारीख को}}",
+      "YEAR": "{interval, plural, one {हर वर्ष {days} को} other {हर # वर्ष में {days} को}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "सप्ताह का कम से कम एक दिन चुनें।",
+        "MONTH": "महीने का कम से कम एक दिन चुनें।",
+        "YEAR": "कम से कम एक तिथि जोड़ें।"
+      },
+      "interval": "1 से 12 के बीच की संख्या दर्ज करें।",
+      "invalid": "यह पैटर्न सहेजा नहीं जा सकता। दिन फिर से चुनें।"
+    },
+    "firstOccurrence": "पहली घटना: {date}",
+    "nextOccurrence": "अगली घटना: {date}",
+    "orphanWarning": "{count, plural, one {# संपादित घटना ({dates}) अब इस पैटर्न पर नहीं आती और सहेजने पर हटा दी जाएगी।} other {# संपादित घटनाएँ ({dates}) अब इस पैटर्न पर नहीं आतीं और सहेजने पर हटा दी जाएँगी।}}"
   },
   "validation": {
     "nameRequired": "नाम आवश्यक है",

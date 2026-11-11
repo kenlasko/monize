@@ -312,7 +312,8 @@
     "offsiteEncryptionKeyRequired": "由於未設定 ENCRYPTION_KEY，此伺服器無法儲存 S3 認證資訊。請要求管理員進行設定，或使用此部署的儲存貯體。",
     "offsiteEmailAddressRequired": "請輸入備份要寄送到的電子郵件地址。",
     "manualRunFailed": "未寫入任何備份：{{ count }} 個帳戶失敗。第一個錯誤：{{ reason }}",
-    "manualRunInProgress": "本部署已有一個針對所有帳戶的備份正在執行。請等待完成後再試。"
+    "manualRunInProgress": "本部署已有一個針對所有帳戶的備份正在執行。請等待完成後再試。",
+    "invalidCustomRecurrence": "備份中的定期交易無效：自訂頻率需要有效的重複規則"
   },
   "budgets": {
     "notFound": "找不到 ID 為 {{ id }} 的預算",
@@ -327,7 +328,8 @@
     "billAccountMustBeFiat": "薪資扣款規則會追蹤以法定貨幣支付的帳單；此帳單的科目持有加密貨幣 {{ code }}。請選擇從法定貨幣科目支付的帳單。",
     "notFound": "找不到薪資扣款規則 {{ id }}",
     "duplicate": "此帳單已有該類別的規則",
-    "expectedRequired": "帳單中沒有此類別的項目；請輸入每次發薪的預期金額"
+    "expectedRequired": "帳單中沒有此類別的項目；請輸入每次發薪的預期金額",
+    "billCustomFrequency": "薪資扣款規則需要固定頻率的帳單；此帳單依自訂排程重複。"
   },
   "categories": {
     "notFound": "找不到 ID 為 {{ id }} 的類別",
@@ -611,7 +613,12 @@
     "estimateNoAutoPost": "金額為估算值的排程交易不能自動入帳",
     "estimateRequiresPayeeAndCategory": "估算金額需要收款對象和類別，以便比對付款紀錄",
     "estimateUnknown": "此次發生的估算金額未知。請輸入金額後再入帳。",
-    "estimateBasisOwnerOnly": "只有擁有者可以變更金額為估算值的帳單的收款對象或類別"
+    "estimateBasisOwnerOnly": "只有擁有者可以變更金額為估算值的帳單的收款對象或類別",
+    "customRecurrenceRequired": "自訂頻率需要重複規則",
+    "customRecurrenceOnlyForCustom": "只有在頻率為自訂時才能設定重複規則",
+    "customRecurrenceInvalid": "自訂重複規則無效",
+    "customNotForLoan": "貸款或房貸還款不能使用自訂頻率；請選擇固定頻率",
+    "customNotForPayroll": "設有扣款上限的薪資帳單不能使用自訂頻率；請選擇固定頻率"
   },
   "bonds": {
     "securityNotLinked": "找不到證券 {{ securityId }}，或該證券未連結到債券計畫",

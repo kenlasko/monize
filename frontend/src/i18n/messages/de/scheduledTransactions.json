@@ -341,7 +341,53 @@
     "EVERY4MONTHS": "Alle 4 Monate",
     "SEMIANNUAL": "Zweimal im Jahr",
     "YEARLY": "Jährlich",
-    "EVERY2YEARS": "Alle 2 Jahre"
+    "EVERY2YEARS": "Alle 2 Jahre",
+    "CUSTOM": "Benutzerdefiniert"
+  },
+  "customRecurrence": {
+    "title": "Wiederholung",
+    "unitLabel": "Wiederholen nach",
+    "units": {
+      "WEEK": "Wöchentlich",
+      "MONTH": "Monatlich",
+      "YEAR": "Jährlich"
+    },
+    "every": "Alle",
+    "intervalLabel": "Wiederholen alle",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, one {Woche am} other {Wochen am}}",
+      "MONTH": "{interval, plural, one {Monat am} other {Monate am}}",
+      "YEAR": "{interval, plural, one {Jahr am} other {Jahre am}}"
+    },
+    "weekdaysLabel": "Wochentage",
+    "monthDaysLabel": "Tage des Monats",
+    "lastDayChip": "Letzter Tag",
+    "lastDay": "letzter Tag",
+    "dayOfMonth": "{day, selectordinal, other {#.}}",
+    "monthHint": "Ein Tag nach dem Ende eines kurzen Monats fällt auf dessen letzten Tag, und zwei Tage, die auf dasselbe Datum fallen, werden nur einmal gebucht.",
+    "datesLabel": "Tage des Jahres",
+    "monthLabel": "Monat",
+    "dayLabel": "Tag",
+    "addDate": "Datum hinzufügen",
+    "removeDate": "{date} entfernen",
+    "yearHint": "Der 29. Februar fällt in Jahren ohne diesen Tag auf den 28. Februar.",
+    "summary": {
+      "WEEK": "{interval, plural, one {Jede Woche am {days}} other {Alle # Wochen am {days}}}",
+      "MONTH": "{interval, plural, one {Jeden Monat am {days}} other {Alle # Monate am {days}}}",
+      "YEAR": "{interval, plural, one {Jedes Jahr am {days}} other {Alle # Jahre am {days}}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "Wähle mindestens einen Wochentag aus.",
+        "MONTH": "Wähle mindestens einen Tag des Monats aus.",
+        "YEAR": "Füge mindestens ein Datum hinzu."
+      },
+      "interval": "Gib eine Zahl von 1 bis 12 ein.",
+      "invalid": "Dieses Muster kann nicht gespeichert werden. Wähle die Tage erneut aus."
+    },
+    "firstOccurrence": "Erste Ausführung: {date}",
+    "nextOccurrence": "Nächste Ausführung: {date}",
+    "orphanWarning": "{count, plural, one {# bearbeitete Ausführung ({dates}) fällt nicht mehr auf dieses Muster und wird beim Speichern entfernt.} other {# bearbeitete Ausführungen ({dates}) fallen nicht mehr auf dieses Muster und werden beim Speichern entfernt.}}"
   },
   "validation": {
     "nameRequired": "Name ist erforderlich",

@@ -341,7 +341,53 @@
     "EVERY4MONTHS": "Setiap 4 Bulan",
     "SEMIANNUAL": "Dua Kali Setahun",
     "YEARLY": "Tahunan",
-    "EVERY2YEARS": "Setiap 2 Tahun"
+    "EVERY2YEARS": "Setiap 2 Tahun",
+    "CUSTOM": "Kustom"
+  },
+  "customRecurrence": {
+    "title": "Berulang",
+    "unitLabel": "Ulangi menurut",
+    "units": {
+      "WEEK": "Mingguan",
+      "MONTH": "Bulanan",
+      "YEAR": "Tahunan"
+    },
+    "every": "Setiap",
+    "intervalLabel": "Ulangi setiap",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, other {minggu pada}}",
+      "MONTH": "{interval, plural, other {bulan pada tanggal}}",
+      "YEAR": "{interval, plural, other {tahun pada}}"
+    },
+    "weekdaysLabel": "Hari dalam seminggu",
+    "monthDaysLabel": "Tanggal dalam sebulan",
+    "lastDayChip": "Hari terakhir",
+    "lastDay": "hari terakhir",
+    "dayOfMonth": "{day, selectordinal, other {#}}",
+    "monthHint": "Tanggal yang melewati akhir bulan pendek jatuh pada hari terakhirnya, dan dua tanggal yang jatuh pada hari yang sama hanya diposting sekali.",
+    "datesLabel": "Tanggal dalam setahun",
+    "monthLabel": "Bulan",
+    "dayLabel": "Tanggal",
+    "addDate": "Tambah tanggal",
+    "removeDate": "Hapus {date}",
+    "yearHint": "Tanggal 29 Februari jatuh pada 28 Februari di tahun yang tidak memilikinya.",
+    "summary": {
+      "WEEK": "{interval, plural, other {Setiap # minggu pada {days}}}",
+      "MONTH": "{interval, plural, other {Setiap # bulan pada tanggal {days}}}",
+      "YEAR": "{interval, plural, other {Setiap # tahun pada {days}}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "Pilih setidaknya satu hari dalam seminggu.",
+        "MONTH": "Pilih setidaknya satu tanggal dalam sebulan.",
+        "YEAR": "Tambahkan setidaknya satu tanggal."
+      },
+      "interval": "Masukkan angka dari 1 sampai 12.",
+      "invalid": "Pola ini tidak dapat disimpan. Pilih harinya lagi."
+    },
+    "firstOccurrence": "Kemunculan pertama: {date}",
+    "nextOccurrence": "Kemunculan berikutnya: {date}",
+    "orphanWarning": "{count, plural, other {# kemunculan yang diedit ({dates}) tidak lagi sesuai dengan pola ini dan akan dihapus saat Anda menyimpan.}}"
   },
   "validation": {
     "nameRequired": "Nama wajib diisi",

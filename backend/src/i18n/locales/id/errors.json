@@ -312,7 +312,8 @@
     "offsiteEncryptionKeyRequired": "Server ini tidak dapat menyimpan kredensial S3 karena ENCRYPTION_KEY belum disetel. Minta administrator mengonfigurasinya, atau gunakan bucket milik deployment ini.",
     "offsiteEmailAddressRequired": "Masukkan alamat tujuan pengiriman cadangan Anda.",
     "manualRunFailed": "Tidak ada cadangan yang dapat ditulis: {{ count }} akun gagal. Kesalahan pertama: {{ reason }}",
-    "manualRunInProgress": "Pencadangan semua akun sudah berjalan pada deployment ini. Tunggu hingga selesai lalu coba lagi."
+    "manualRunInProgress": "Pencadangan semua akun sudah berjalan pada deployment ini. Tunggu hingga selesai lalu coba lagi.",
+    "invalidCustomRecurrence": "Transaksi terjadwal cadangan tidak valid: frekuensi kustom memerlukan aturan pengulangan yang valid"
   },
   "budgets": {
     "notFound": "Anggaran dengan ID {{ id }} tidak ditemukan",
@@ -327,7 +328,8 @@
     "billAccountMustBeFiat": "Aturan potongan gaji melacak tagihan yang dibayar dalam mata uang fiat; akun tagihan ini menyimpan mata uang kripto {{ code }}. Pilih tagihan yang dibayar dari akun fiat.",
     "notFound": "Aturan potongan gaji {{ id }} tidak ditemukan",
     "duplicate": "Tagihan ini sudah memiliki aturan untuk kategori tersebut",
-    "expectedRequired": "Tagihan tidak memiliki baris untuk kategori ini; masukkan jumlah yang diharapkan per gaji"
+    "expectedRequired": "Tagihan tidak memiliki baris untuk kategori ini; masukkan jumlah yang diharapkan per gaji",
+    "billCustomFrequency": "Aturan potongan gaji memerlukan tagihan dengan frekuensi tetap; tagihan ini berulang menurut jadwal kustom."
   },
   "categories": {
     "notFound": "Kategori dengan ID {{ id }} tidak ditemukan",
@@ -611,7 +613,12 @@
     "estimateNoAutoPost": "Transaksi terjadwal dengan jumlah perkiraan tidak dapat diposting secara otomatis",
     "estimateRequiresPayeeAndCategory": "Jumlah perkiraan memerlukan penerima dan kategori untuk mencocokkan riwayat pembayaran",
     "estimateUnknown": "Jumlah perkiraan untuk kejadian ini tidak diketahui. Masukkan jumlahnya untuk mempostingnya.",
-    "estimateBasisOwnerOnly": "Hanya pemilik yang dapat mengubah penerima atau kategori tagihan yang jumlahnya diperkirakan"
+    "estimateBasisOwnerOnly": "Hanya pemilik yang dapat mengubah penerima atau kategori tagihan yang jumlahnya diperkirakan",
+    "customRecurrenceRequired": "Frekuensi kustom memerlukan aturan pengulangan",
+    "customRecurrenceOnlyForCustom": "Aturan pengulangan hanya dapat diatur jika frekuensinya Kustom",
+    "customRecurrenceInvalid": "Aturan pengulangan kustom tidak valid",
+    "customNotForLoan": "Pembayaran pinjaman atau hipotek tidak dapat menggunakan frekuensi kustom; pilih frekuensi tetap",
+    "customNotForPayroll": "Tagihan gaji dengan batas potongan tidak dapat menggunakan frekuensi kustom; pilih frekuensi tetap"
   },
   "bonds": {
     "securityNotLinked": "Sekuritas {{ securityId }} tidak ditemukan atau tidak ditautkan ke program obligasi",
