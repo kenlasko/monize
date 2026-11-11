@@ -1,4 +1,5 @@
 import { FrequencyType } from '@/types/scheduled-transaction';
+import { CustomRecurrence, CustomStepContext, customOccurrencesPerYear, nextCustomDate } from './custom-recurrence';
 
 /**
  * The one place the frontend knows how a recurrence frequency steps forward.
@@ -50,8 +51,16 @@ function addDays(date: Date, days: number): Date {
  * `anchorDay` is the day-of-month of the schedule's `startDate`: month-based
  * steps clamp to the month length but return to it afterwards (Jan 31, Feb 28,
  * Mar 31), as `calculateNextDueDate` does. Absent, the previous date's day is kept.
+ *
+ * `CUSTOM` steps by `custom.rule` (docs/specs/custom-recurrence.md) and throws
+ * without a valid one, as the backend does.
  */
-export function advanceByFrequency(date: Date, frequency: FrequencyType, anchorDay?: number): Date {
+export function advanceByFrequency(
+  date: Date,
+  frequency: FrequencyType,
+  anchorDay?: number,
+  custom?: CustomStepContext,
+): Date {
   switch (frequency) {
     case 'DAILY':
       return addDays(date, 1);
@@ -85,9 +94,21 @@ export function advanceByFrequency(date: Date, frequency: FrequencyType, anchorD
       return addMonthsClamped(date, 12, anchorDay);
     case 'EVERY2YEARS':
       return addMonthsClamped(date, 24, anchorDay);
+    case 'CUSTOM': {
+      const next = nextCustomDate(localYmd(date), custom?.rule, custom?.startDate?.slice(0, 10) ?? null);
+      const [y, m, d] = next.split('-').map(Number);
+      return new Date(y, m - 1, d, date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds());
+    }
     case 'ONCE':
       return new Date(date.getTime());
   }
+}
+
+/** `YYYY-MM-DD` of a local-time Date, the form the custom stepper works in. */
+export function localYmd(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 /**
@@ -100,6 +121,25 @@ export function anchorDayOf(startDate: string | null | undefined, current: Date)
   const s = Number(startDate.slice(8, 10));
   const d = current.getDate();
   return d === Math.min(s, daysInMonth(current.getFullYear(), current.getMonth())) ? s : d;
+}
+
+/** The fields of a schedule its stepping reads. */
+export interface SteppableSchedule {
+  frequency: FrequencyType;
+  startDate?: string | null;
+  customRecurrence?: CustomRecurrence | null;
+}
+
+/**
+ * The schedule's next slot after `current`: `advanceByFrequency` with the
+ * anchor day and the Custom rule taken from the schedule itself, so a walker
+ * cannot forget either.
+ */
+export function advanceSchedule(current: Date, schedule: SteppableSchedule): Date {
+  return advanceByFrequency(current, schedule.frequency, anchorDayOf(schedule.startDate, current), {
+    rule: schedule.customRecurrence,
+    startDate: schedule.startDate,
+  });
 }
 
 /** True when a frequency produces at most one occurrence. */
@@ -125,13 +165,20 @@ const OCCURRENCES_PER_YEAR: Record<FrequencyType, number> = {
   SEMIANNUAL: 2,
   YEARLY: 1,
   EVERY2YEARS: 0.5,
+  // No fixed cycle; `monthlyEquivalent` reads the rule instead.
+  CUSTOM: 0,
 };
 
 /**
  * `amount` restated as a monthly figure, for summing schedules of mixed
  * frequencies into one "per month" total.
  */
-export function monthlyEquivalent(amount: number, frequency: FrequencyType): number {
-  const perYear = OCCURRENCES_PER_YEAR[frequency] ?? 0;
+export function monthlyEquivalent(
+  amount: number,
+  frequency: FrequencyType,
+  customRecurrence?: CustomRecurrence | null,
+): number {
+  const perYear =
+    frequency === 'CUSTOM' ? customOccurrencesPerYear(customRecurrence) : (OCCURRENCES_PER_YEAR[frequency] ?? 0);
   return (amount * perYear) / 12;
 }

@@ -6,7 +6,6 @@ import { HelpLink } from '@/components/help/HelpLink';
 import {
   ScheduledTransaction,
   ScheduledTransactionOverride,
-  FrequencyType,
   LoanOccurrence,
   LoanOccurrencesProjection,
   SelectedLoanOccurrence,
@@ -14,7 +13,7 @@ import {
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { parseLocalDate } from '@/lib/utils';
-import { advanceByFrequency, anchorDayOf, isOneTime } from '@/lib/frequency';
+import { advanceSchedule, isOneTime, SteppableSchedule } from '@/lib/frequency';
 import { Modal } from '@/components/ui/Modal';
 import { LOAN_OCCURRENCES_MAX_COUNT, scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { isLoanBillCandidate } from '@/lib/loan-occurrence';
@@ -49,9 +48,8 @@ type LoanAmountsState =
 
 function calculateNextDates(
   startDate: string,
-  frequency: FrequencyType,
+  schedule: SteppableSchedule,
   count: number,
-  startAnchor?: string | null,
 ): string[] {
   const dates: string[] = [];
   let currentDate = parseLocalDate(startDate);
@@ -64,8 +62,8 @@ function calculateNextDates(
     dates.push(`${year}-${month}-${day}`);
 
     // One-time schedules have no next occurrence.
-    if (isOneTime(frequency)) return dates;
-    currentDate = advanceByFrequency(currentDate, frequency, anchorDayOf(startAnchor, currentDate));
+    if (isOneTime(schedule.frequency)) return dates;
+    currentDate = advanceSchedule(currentDate, schedule);
   }
 
   return dates;
@@ -107,11 +105,20 @@ export function OccurrenceDatePicker({
     const count = scheduledTransaction.occurrencesRemaining ?? 5;
     return calculateNextDates(
       scheduledTransaction.nextDueDate,
-      scheduledTransaction.frequency,
+      {
+        frequency: scheduledTransaction.frequency,
+        startDate: scheduledTransaction.startDate,
+        customRecurrence: scheduledTransaction.customRecurrence,
+      },
       count,
-      scheduledTransaction.startDate,
     );
-  }, [scheduledTransaction.nextDueDate, scheduledTransaction.startDate, scheduledTransaction.frequency, scheduledTransaction.occurrencesRemaining]);
+  }, [
+    scheduledTransaction.nextDueDate,
+    scheduledTransaction.startDate,
+    scheduledTransaction.frequency,
+    scheduledTransaction.customRecurrence,
+    scheduledTransaction.occurrencesRemaining,
+  ]);
 
   // Build the final list of dates to display:
   // - For each calculated date, if it has an override, show the override date instead

@@ -72,6 +72,11 @@ import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
 import { FormActions } from '@/components/ui/FormActions';
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { CustomRecurrence, normalizeCustomRecurrence } from '@/lib/custom-recurrence';
+import { customRecurrenceErrorKey } from '@/lib/custom-recurrence-edit';
+import { CustomRecurrenceEditor } from './CustomRecurrenceEditor';
+import { useCustomRecurrenceField } from './useCustomRecurrenceField';
 
 const logger = createLogger('ScheduledTxForm');
 
@@ -107,6 +112,9 @@ const buildScheduledTransactionSchema = (t: (key: string) => string) => z.object
   description: optionalString,
   referenceNumber: optionalString,
   frequency: z.enum(FREQUENCY_VALUES),
+  // The Custom rule (docs/specs/custom-recurrence.md); checked below, and sent
+  // only while the frequency is Custom.
+  customRecurrence: z.custom<CustomRecurrence | null>().nullable().optional(),
   nextDueDate: z.string().min(1, t('validation.dueDateRequired')),
   endDate: optionalString,
   occurrencesRemaining: optionalNumber,
@@ -125,6 +133,10 @@ const buildScheduledTransactionSchema = (t: (key: string) => string) => z.object
       message: `Must be ${MAX_REMINDER_DAYS_BEFORE} days or fewer`,
     })
     .default(3),
+}).superRefine((data, ctx) => {
+  if (data.frequency !== 'CUSTOM') return;
+  const errorKey = customRecurrenceErrorKey(data.customRecurrence);
+  if (errorKey) ctx.addIssue({ code: 'custom', path: ['customRecurrence'], message: t(errorKey) });
 });
 
 type ScheduledTransactionFormData = z.infer<ReturnType<typeof buildScheduledTransactionSchema>>;
@@ -142,6 +154,12 @@ interface ScheduledTransactionFormProps {
   onCancel?: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
   submitRef?: MutableRefObject<(() => void) | null>;
+}
+
+/** The rule as the API stores it, from a form value the schema has already checked. */
+function canonicalCustomRecurrence(rule: CustomRecurrence | null | undefined): CustomRecurrence | null {
+  const result = normalizeCustomRecurrence(rule);
+  return result.ok ? result.rule : null;
 }
 
 // Determine if an existing scheduled transaction is a transfer
@@ -300,6 +318,7 @@ export function ScheduledTransactionForm({
           description: scheduledTransaction.description || '',
           referenceNumber: scheduledTransaction.referenceNumber || '',
           frequency: scheduledTransaction.frequency,
+          customRecurrence: scheduledTransaction.customRecurrence ?? null,
           nextDueDate: scheduledTransaction.nextDueDate.split('T')[0],
           endDate: scheduledTransaction.endDate?.split('T')[0] || '',
           occurrencesRemaining: scheduledTransaction.occurrencesRemaining ?? undefined,
@@ -348,6 +367,7 @@ export function ScheduledTransactionForm({
   const watchedNextDueDate = useWatch({ control, name: 'nextDueDate' });
   const watchedAutoPost = useWatch({ control, name: 'autoPost' });
   const watchedEstimate = useWatch({ control, name: 'amountIsEstimated' });
+  const watchedCustomRecurrence = useWatch({ control, name: 'customRecurrence' });
 
   // Auto-set currencyCode from the selected account
   useEffect(() => {
@@ -1213,6 +1233,8 @@ export function ScheduledTransactionForm({
         endDate: useEndDate ? data.endDate : undefined,
         occurrencesRemaining: useOccurrences ? data.occurrencesRemaining : undefined,
         tagIds: selectedTagIds.length > 0 ? selectedTagIds : [],
+        // The canonical rule while Custom; null otherwise, which clears it.
+        customRecurrence: data.frequency === 'CUSTOM' ? canonicalCustomRecurrence(data.customRecurrence) : null,
         // Only a single-category, account-currency schedule estimates; the
         // server replaces the amount with the next occurrence's estimate.
         amountIsEstimated: estimating,
@@ -1337,10 +1359,50 @@ export function ScheduledTransactionForm({
   };
   useFormSubmitRef(submitRef, handleSubmit, onSubmit);
 
-  const frequencyOptions = FREQUENCY_VALUES.map((value) => ({
-    value,
-    label: t(`frequency.${value}`),
-  }));
+  const customRecurrence = useCustomRecurrenceField({
+    scheduledTransaction,
+    accounts,
+    frequency: watchedFrequency,
+    nextDueDate: watchedNextDueDate,
+    rule: watchedCustomRecurrence,
+    setRule: (rule) => setValue('customRecurrence', rule, { shouldDirty: true, shouldValidate: true }),
+  });
+  const frequencyOptions = customRecurrence.frequencyOptions;
+  const frequencyField = register('frequency', {
+    onChange: (e) => customRecurrence.onFrequencyChange(e.target.value),
+  });
+
+  // The due date, and while Custom the date the pattern posts first.
+  const renderNextDueDate = () => (
+    <div>
+      <DateInput
+        label={t('form.nextDueDateLabel')}
+        error={errors.nextDueDate?.message}
+        onDateChange={(date) => setValue('nextDueDate', date, { shouldDirty: true, shouldValidate: true })}
+        {...register('nextDueDate')}
+      />
+      {customRecurrence.occurrenceCaption && (
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{customRecurrence.occurrenceCaption}</p>
+      )}
+    </div>
+  );
+
+  // The Custom editor under the frequency, and the edited occurrences a new
+  // pattern would delete (docs/specs/custom-recurrence.md section 5).
+  const renderCustomRecurrence = () => (
+    <>
+      {customRecurrence.editorProps && <CustomRecurrenceEditor {...customRecurrence.editorProps} />}
+      {customRecurrence.editorProps && !watchedCustomRecurrence && errors.customRecurrence?.message && (
+        <p className="text-sm text-red-600 dark:text-red-400">{errors.customRecurrence.message}</p>
+      )}
+      {customRecurrence.orphanWarning && (
+        <p role="status" className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400">
+          <ExclamationTriangleIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
+          <span>{customRecurrence.orphanWarning}</span>
+        </p>
+      )}
+    </>
+  );
 
   // Conversion caption under the Amount field while entering another currency.
   // It says what the account will be charged today and at what rate, and is
@@ -1580,12 +1642,7 @@ export function ScheduledTransactionForm({
               ]}
               {...register('accountId')}
             />
-            <DateInput
-              label={t('form.nextDueDateLabel')}
-              error={errors.nextDueDate?.message}
-              onDateChange={(date) => setValue('nextDueDate', date, { shouldDirty: true, shouldValidate: true })}
-              {...register('nextDueDate')}
-            />
+            {renderNextDueDate()}
           </div>
 
           {/* Row 3: Payee, Category + Split Transaction button */}
@@ -1734,7 +1791,7 @@ export function ScheduledTransactionForm({
               error={errors.frequency?.message}
               value={watchedFrequency || 'MONTHLY'}
               options={frequencyOptions}
-              {...register('frequency')}
+              {...frequencyField}
             />
             <Controller
               name="reminderDaysBefore"
@@ -1755,6 +1812,7 @@ export function ScheduledTransactionForm({
               )}
             />
           </div>
+          {renderCustomRecurrence()}
 
           {/* Tags */}
           {renderTags()}
@@ -1794,12 +1852,7 @@ export function ScheduledTransactionForm({
               ]}
               {...register('accountId')}
             />
-            <DateInput
-              label={t('form.nextDueDateLabel')}
-              error={errors.nextDueDate?.message}
-              onDateChange={(date) => setValue('nextDueDate', date, { shouldDirty: true, shouldValidate: true })}
-              {...register('nextDueDate')}
-            />
+            {renderNextDueDate()}
           </div>
 
           {/* Row 3: Payee, Total Amount */}
@@ -1890,7 +1943,7 @@ export function ScheduledTransactionForm({
               error={errors.frequency?.message}
               value={watchedFrequency || 'MONTHLY'}
               options={frequencyOptions}
-              {...register('frequency')}
+              {...frequencyField}
             />
             <Controller
               name="reminderDaysBefore"
@@ -1911,6 +1964,7 @@ export function ScheduledTransactionForm({
               )}
             />
           </div>
+          {renderCustomRecurrence()}
 
           {/* ==================== Transfer Tab ==================== */}
           {renderEndCondition('Split')}
@@ -1934,12 +1988,7 @@ export function ScheduledTransactionForm({
 
           {/* Row 2: Next Due Date */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <DateInput
-              label={t('form.nextDueDateLabel')}
-              error={errors.nextDueDate?.message}
-              onDateChange={(date) => setValue('nextDueDate', date, { shouldDirty: true, shouldValidate: true })}
-              {...register('nextDueDate')}
-            />
+            {renderNextDueDate()}
           </div>
 
           {/* Row 3: From Account, To Account */}
@@ -2028,7 +2077,7 @@ export function ScheduledTransactionForm({
               error={errors.frequency?.message}
               value={watchedFrequency || 'MONTHLY'}
               options={frequencyOptions}
-              {...register('frequency')}
+              {...frequencyField}
             />
             <Controller
               name="reminderDaysBefore"
@@ -2049,6 +2098,7 @@ export function ScheduledTransactionForm({
               )}
             />
           </div>
+          {renderCustomRecurrence()}
 
           {/* Tags */}
           {renderTags()}
@@ -2088,12 +2138,7 @@ export function ScheduledTransactionForm({
               ]}
               {...register('accountId')}
             />
-            <DateInput
-              label={t('form.nextDueDateLabel')}
-              error={errors.nextDueDate?.message}
-              onDateChange={(date) => setValue('nextDueDate', date, { shouldDirty: true, shouldValidate: true })}
-              {...register('nextDueDate')}
-            />
+            {renderNextDueDate()}
           </div>
 
           {/* Row 3: Action, Security (Security when required) */}
@@ -2230,7 +2275,7 @@ export function ScheduledTransactionForm({
               error={errors.frequency?.message}
               value={watchedFrequency || 'MONTHLY'}
               options={frequencyOptions}
-              {...register('frequency')}
+              {...frequencyField}
             />
             <Controller
               name="reminderDaysBefore"
@@ -2251,6 +2296,7 @@ export function ScheduledTransactionForm({
               )}
             />
           </div>
+          {renderCustomRecurrence()}
 
           {/* Tags */}
           {renderTags()}

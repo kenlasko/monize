@@ -2,6 +2,7 @@
 
 import { useState, memo, type JSX, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
+import { useFrequencyLabel } from './useFrequencyLabel';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useLocalizedAmount } from '@/hooks/useLocalizedAmount';
@@ -217,6 +218,7 @@ function ScheduledScheduleDetails({
   stackedLines: string;
 }) {
   const t = useTranslations('scheduledTransactions');
+  const frequencyLabel = useFrequencyLabel();
   return (
     <div className={stackedLines}>
       <div className="text-sm text-gray-900 dark:text-gray-100">
@@ -251,7 +253,7 @@ function ScheduledScheduleDetails({
         )}
       </div>
       <div className="text-xs text-gray-500 dark:text-gray-400">
-        {t(`frequency.${transaction.frequency}`)}
+        {frequencyLabel(transaction)}
         {transaction.occurrencesRemaining !== null && (
           <span className="ml-1">{'\u00b7'} {t('list.occurrencesRemaining', { count: transaction.occurrencesRemaining })}</span>
         )}
@@ -446,6 +448,7 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
 }: ScheduledTransactionRowProps) {
   const rowRef = useScrollIntoViewWhen<HTMLTableRowElement>(!!isHighlighted);
   const t = useTranslations('scheduledTransactions');
+  const frequencyLabel = useFrequencyLabel();
   const categoryColor = transaction.category
     ? (categoryColorMap?.get(transaction.category.id) ?? transaction.category.color)
     : null;
@@ -646,7 +649,7 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
         <div className="sm:hidden mt-0.5">
           <div className="text-xs text-gray-500 dark:text-gray-400">
             {effectiveDueDate ? formatDate(effectiveDueDate) : '\u2014'}
-            {' \u00b7 '}{t(`frequency.${transaction.frequency}`)}
+            {' \u00b7 '}{frequencyLabel(transaction)}
           </div>
           {dueDateStatus && (
             <span className={`inline-flex text-xs font-medium rounded-full px-1.5 py-0.5 mt-0.5 ${dueDateStatus.className}`}>
@@ -721,6 +724,7 @@ export function ScheduledTransactionList({
   highlightId,
 }: ScheduledTransactionListProps) {
   const t = useTranslations('scheduledTransactions');
+  const frequencyLabel = useFrequencyLabel();
   const { formatDate } = useDateFormat();
   const formatAmount = useScheduledAmountFormatter();
   const getDueDateStatus = useDueDateStatus();
@@ -848,7 +852,7 @@ export function ScheduledTransactionList({
         isOpen={!!contextTransaction}
         title={contextTransaction?.name ?? ''}
         subtitle={contextTransaction
-          ? `${t(`frequency.${contextTransaction.frequency}`)}${!contextTransaction.isActive ? t('list.inactiveSuffix') : ''}`
+          ? `${frequencyLabel(contextTransaction)}${!contextTransaction.isActive ? t('list.inactiveSuffix') : ''}`
           : undefined}
         actions={contextTransaction
           ? buildScheduledActions(

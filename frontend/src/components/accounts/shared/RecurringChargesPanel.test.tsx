@@ -103,6 +103,17 @@ describe('RecurringChargesPanel', () => {
     expect(screen.getByText(/Next due 2026-07-01/)).toBeInTheDocument();
   });
 
+  it('describes a Custom schedule by its rule', async () => {
+    mockGetScheduled.mockResolvedValue([
+      schedule({
+        frequency: 'CUSTOM',
+        customRecurrence: { unit: 'MONTH', interval: 1, monthDays: [1, 15] },
+      }),
+    ]);
+    await renderPanel();
+    await waitFor(() => expect(screen.getByText(/Every month on the 1st and 15th/)).toBeInTheDocument());
+  });
+
   it('colours scheduled bills by kind (income green, transfer blue)', async () => {
     mockGetScheduled.mockResolvedValue([
       schedule({ id: 'inc', payeeName: 'Payroll', payeeId: 'pay-job', amount: 2500 }),

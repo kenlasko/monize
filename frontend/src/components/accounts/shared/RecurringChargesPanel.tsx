@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
+import { useFrequencyLabel } from '@/components/scheduled-transactions/useFrequencyLabel';
 import { format, subMonths } from 'date-fns';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import { transactionsApi } from '@/lib/transactions';
@@ -109,7 +110,7 @@ function toTemplate(
  */
 export function RecurringChargesPanel({ accountId, currencyCode }: RecurringChargesPanelProps) {
   const t = useTranslations('accountDetail');
-  const tf = useTranslations('scheduledTransactions');
+  const frequencyLabel = useFrequencyLabel();
   const { formatCurrency } = useNumberFormat();
   const { formatDate } = useDateFormat();
 
@@ -223,7 +224,7 @@ export function RecurringChargesPanel({ accountId, currencyCode }: RecurringChar
                           {s.payeeName || s.name}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {tf(`frequency.${s.frequency}` as 'frequency.MONTHLY')}
+                          {frequencyLabel(s)}
                           {' · '}
                           {/* The date the occurrence actually falls on, which is
                               what the list is already sorted by. `nextDueDate` is

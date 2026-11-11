@@ -1368,6 +1368,22 @@ describe('BillsPage', () => {
       expect(screen.getByTestId('summary-Active Bills')).toHaveTextContent('0');
     });
 
+    it('spreads a CUSTOM schedule by its rule: two days a month, every month', async () => {
+      mockGetAll.mockResolvedValue([
+        {
+          id: 'st-a', currencyCode: 'USD', name: 'Twice-monthly Bill', amount: -100,
+          frequency: 'CUSTOM', customRecurrence: { unit: 'MONTH', interval: 1, monthDays: [1, 15] },
+          nextDueDate: '2026-03-01', startDate: '2026-03-01', isActive: true, isTransfer: false,
+        },
+      ]);
+      render(<BillsPage />);
+      await waitFor(() => {
+        // 2 days x 12 months / 12 = twice the amount; read as WEEKLY above is.
+        const text = screen.getByTestId('summary-Monthly Net').textContent || '';
+        expect(parseFloat(text.replace(/[^\d.]/g, ''))).toBeCloseTo(200, 2);
+      });
+    });
+
     it('normalizes WEEKLY frequency to monthly', async () => {
       mockGetAll.mockResolvedValue([
         { id: 'st-a', currencyCode: 'USD', name: 'Weekly Bill', amount: -100, frequency: 'WEEKLY', nextDueDate: '2026-03-01', isActive: true, isTransfer: false },

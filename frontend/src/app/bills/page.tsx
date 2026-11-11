@@ -622,7 +622,7 @@ function BillsContent() {
         if (effective === null) amountsResolved = false;
         else
           billComponents.push({
-            monthly: monthlyEquivalent(Math.abs(amount), t.frequency),
+            monthly: monthlyEquivalent(Math.abs(amount), t.frequency, t.customRecurrence),
             currencyCode: effectiveAmount.currencyCode,
           });
       } else if (kind === 'deposit') {
@@ -630,7 +630,7 @@ function BillsContent() {
         if (effective === null) amountsResolved = false;
         else
           depositComponents.push({
-            monthly: monthlyEquivalent(amount, t.frequency),
+            monthly: monthlyEquivalent(amount, t.frequency, t.customRecurrence),
             currencyCode: effectiveAmount.currencyCode,
           });
       }

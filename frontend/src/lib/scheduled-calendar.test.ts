@@ -36,6 +36,21 @@ describe('occurrencesInWindow', () => {
     ]);
   });
 
+  it('walks a Custom schedule by its rule, its periods counted from the start date', () => {
+    // Every other week on Tuesday and Thursday, from the week of Wed 4 March.
+    const dates = occurrencesInWindow(
+      schedule({
+        frequency: 'CUSTOM',
+        nextDueDate: '2026-03-05',
+        startDate: '2026-03-04',
+        customRecurrence: { unit: 'WEEK', interval: 2, weekdays: [2, 4], weekStartsOn: 1 },
+      }),
+      new Date(2026, 2, 1),
+      new Date(2026, 2, 31),
+    );
+    expect(dates.map(iso)).toEqual(['2026-03-05', '2026-03-17', '2026-03-19', '2026-03-31']);
+  });
+
   it('stops after the single date of a one-time schedule', () => {
     const dates = occurrencesInWindow(
       schedule({ frequency: 'ONCE' }),

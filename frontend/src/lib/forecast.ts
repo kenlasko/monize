@@ -2,7 +2,7 @@ import { anniversaryInYear } from '@/lib/payroll-period';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
-import { advanceByFrequency, anchorDayOf } from '@/lib/frequency';
+import { advanceSchedule } from '@/lib/frequency';
 import {
   estimatedOccurrenceAmount,
   occurrenceFollowsEstimate,
@@ -666,7 +666,7 @@ function generateOccurrences(
     }
 
     // Calculate next date based on frequency
-    currentDate = advanceByFrequency(currentDate, transaction.frequency, anchorDayOf(transaction.startDate, currentDate));
+    currentDate = advanceSchedule(currentDate, transaction);
   }
 
   return occurrences;
