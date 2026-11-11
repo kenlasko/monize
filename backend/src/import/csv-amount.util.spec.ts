@@ -1,4 +1,8 @@
-import { isBlankCsvAmount, parseCsvAmount } from "./csv-amount.util";
+import {
+  isBlankCsvAmount,
+  MAX_CSV_AMOUNT_LENGTH,
+  parseCsvAmount,
+} from "./csv-amount.util";
 
 describe("parseCsvAmount", () => {
   it.each([
@@ -108,5 +112,24 @@ describe("parseCsvAmount", () => {
   it("does not treat a value as blank", () => {
     expect(isBlankCsvAmount("0")).toBe(false);
     expect(isBlankCsvAmount("x")).toBe(false);
+  });
+});
+
+describe("parseCsvAmount on fields built to hurt a backtracking matcher", () => {
+  it("reads a field at the length limit and refuses one past it", () => {
+    const atLimit = "1".padStart(MAX_CSV_AMOUNT_LENGTH, "0");
+    expect(parseCsvAmount(atLimit)).toBe(1);
+    expect(parseCsvAmount("0" + atLimit)).toBeNull();
+  });
+
+  it("stays fast on long letter, separator and parenthesis runs", () => {
+    const cells = [
+      "1" + "a".repeat(200_000) + "1",
+      "1" + ",".repeat(200_000) + "1",
+      "(".repeat(100_000) + "1" + ")".repeat(100_000),
+    ];
+    const started = Date.now();
+    for (const cell of cells) expect(parseCsvAmount(cell)).toBeNull();
+    expect(Date.now() - started).toBeLessThan(500);
   });
 });

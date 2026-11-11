@@ -1,6 +1,13 @@
 import { normalizeAmountSeparators } from "./amount-separators.util";
 
 /**
+ * The longest amount field read. A real amount with a currency, a sign and
+ * grouping ("CHF -1'234'567'890.12345678 DR") is well under it; a longer field
+ * is unreadable, reported like any other unreadable amount.
+ */
+export const MAX_CSV_AMOUNT_LENGTH = 64;
+
+/**
  * Characters a bank writes for a minus sign besides the ASCII hyphen: the
  * Unicode minus sign (U+2212), the figure dash and the en dash, and the small
  * and full-width hyphen-minus forms.
@@ -82,7 +89,14 @@ export function parseCsvAmount(value: string): number | null {
   if (isBlankCsvAmount(value)) {
     return null;
   }
-  let rest = value.trim().replace(MINUS_SIGNS, "-");
+  const field = value.trim();
+  // Before any regex: TRAILING_CURRENCY, STRAY_SEPARATOR and the peeling loop
+  // are each quadratic in the field's length, so a crafted cell could stall
+  // the event loop for every user.
+  if (field.length > MAX_CSV_AMOUNT_LENGTH) {
+    return null;
+  }
+  let rest = field.replace(MINUS_SIGNS, "-");
   let negative = false;
   let signs = 0;
   let marker: "DR" | "CR" | null = null;

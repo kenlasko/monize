@@ -766,6 +766,10 @@ function resolveYear(raw: string): string {
  * Supported tokens: YYYY, YY, MMM (or MMMM: a month's name or abbreviation in
  * any app language, `monthFromName`), MM, DD (case-sensitive).
  * Any other characters in the pattern are treated as literal separators.
+ *
+ * A pattern with more than one month-name token reads no date: a date has one
+ * month, and two adjacent unbounded letter groups backtrack polynomially on a
+ * long run of letters, which would stall the event loop for every user.
  */
 function parseDateCustom(dateStr: string, format: string): string | null {
   // Build a regex from the format pattern
@@ -782,6 +786,7 @@ function parseDateCustom(dateStr: string, format: string): string | null {
       groups.push("year2");
       i += 2;
     } else if (format.substring(i, i + 3) === "MMM") {
+      if (groups.includes("monthName")) return null;
       // An optional abbreviation mark ("janv.", "जन॰") belongs to the name.
       regex += `(${MONTH_NAME_PATTERN}[.\\u0970]?)`;
       groups.push("monthName");
@@ -849,13 +854,24 @@ function stripTime(dateStr: string): string {
     return isoMatch[1];
   }
   // Remove time after space (e.g., "01/15/2026 14:30:00", "01/15/2026 2:30 PM"
-  // or "Jan 15, 2026 2:30 PM")
-  const spaceMatch = dateStr.match(/^(.+?)\s+\d{1,2}:\d{2}/);
-  if (spaceMatch) {
-    return spaceMatch[1];
+  // or "Jan 15, 2026 2:30 PM"). The lookbehind starts a match only at the
+  // first character of a whitespace run, so each run is tried once (linear);
+  // `^(.+?)\s+` retried every position inside a run (quadratic).
+  const timeMatch = SPACE_BEFORE_TIME.exec(dateStr);
+  if (timeMatch && timeMatch.index > 0) {
+    return dateStr.slice(0, timeMatch.index);
   }
   return dateStr;
 }
+
+const SPACE_BEFORE_TIME = /(?<!\s)\s+\d{1,2}:\d{2}/;
+
+/**
+ * The longest date field read. The longest real date ("15 September 2026
+ * 23:59:59 PM") is well under it; a longer field is unreadable before any
+ * regex runs, so a crafted cell cannot buy backtracking time.
+ */
+export const MAX_CSV_DATE_LENGTH = 64;
 
 /**
  * Parse a date string using the specified format and return YYYY-MM-DD.
@@ -865,7 +881,9 @@ function stripTime(dateStr: string): string {
  * Returns null if the date cannot be parsed or is invalid.
  */
 function parseCsvDate(dateStr: string, format: string): string | null {
-  const trimmed = stripTime(dateStr.trim());
+  const field = dateStr.trim();
+  if (field.length > MAX_CSV_DATE_LENGTH) return null;
+  const trimmed = stripTime(field);
   if (!trimmed) {
     return null;
   }
@@ -1282,10 +1300,14 @@ export function detectCsvDateFormat(values: readonly string[]): string | null {
   let scanned = 0;
   for (const value of values) {
     if (!value || !/\d/.test(value)) continue;
-    const trimmed = stripTime(value.trim());
-    DETECTABLE_DATE_FORMATS.forEach((format, i) => {
-      if (parseStrippedCsvDate(trimmed, format) !== null) counts[i]++;
-    });
+    const field = value.trim();
+    // An over-long field reads under no format, and is still counted scanned.
+    if (field.length <= MAX_CSV_DATE_LENGTH) {
+      const trimmed = stripTime(field);
+      DETECTABLE_DATE_FORMATS.forEach((format, i) => {
+        if (parseStrippedCsvDate(trimmed, format) !== null) counts[i]++;
+      });
+    }
     scanned++;
     if (
       scanned >= NOT_A_DATE_COLUMN_AFTER &&
