@@ -11,7 +11,7 @@ import { REPORT_CATEGORIES } from '@/components/reports/report-definitions';
 import { useReportCatalog } from '@/components/reports/useReportCatalog';
 
 interface ReportSwitcherProps {
-  /** The report on screen; it is not offered as a destination. */
+  /** The report on screen; the menu opens on it, highlighted. */
   currentId: string;
 }
 
@@ -28,6 +28,13 @@ interface ReportSwitcherProps {
  * from the reactive preference, saved reports from their own flag), toggling a
  * star reorders the menu without a reload. A favourite is shown once, at the
  * top; its category section keeps only the remaining reports.
+ *
+ * The report on screen is listed too, highlighted, and the menu opens scrolled
+ * to it: on Investment Performance the other Investment reports are what the
+ * reader is most likely after, and they sit right beside it. For that reason
+ * the current report is always filed under its own category, even when it is
+ * starred -- shown in Favourites it would open the menu at the top, away from
+ * its siblings.
  *
  * Picking a report navigates, and the route is built here rather than by each
  * caller: an id in this menu *is* a path under `/reports/`, and two call sites
@@ -61,21 +68,32 @@ export function ReportSwitcher({ currentId }: ReportSwitcherProps) {
     // so the top section reads in the same order as the rest of the menu.
     const favourites = REPORT_CATEGORIES.flatMap((category) =>
       reports
-        .filter((report) => report.category === category && report.isFavourite)
+        .filter(
+          (report) =>
+            report.category === category &&
+            report.isFavourite &&
+            report.id !== currentId,
+        )
         .map((report) => toItem(report, favouritesLabel)),
     );
-    // The remaining (non-favourite) reports, filed under their own section.
+    // The remaining (non-favourite) reports, plus the current one, filed under
+    // their own section.
     const rest = REPORT_CATEGORIES.flatMap((category) =>
       reports
-        .filter((report) => report.category === category && !report.isFavourite)
+        .filter(
+          (report) =>
+            report.category === category &&
+            (!report.isFavourite || report.id === currentId),
+        )
         .map((report) => toItem(report, label(category))),
     );
     return [...favourites, ...rest];
-  }, [reports, t]);
+  }, [reports, t, currentId]);
 
   return (
     <EntitySwitcher
       currentId={currentId}
+      showCurrent
       items={items}
       onSelect={(id) => router.push(`/reports/${id}`)}
       triggerLabel={t('detailHeader.switchReport')}

@@ -1,6 +1,14 @@
 'use client';
 
-import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  Fragment,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -27,8 +35,18 @@ export interface EntitySwitcherItem {
 }
 
 interface EntitySwitcherProps {
-  /** The entity currently on screen; it is not offered as a destination. */
+  /**
+   * The entity currently on screen. It is not offered as a destination unless
+   * `showCurrent` is set.
+   */
   currentId: string;
+  /**
+   * List the current entity too, highlighted, and open the menu scrolled to it
+   * -- for a long sectioned list where where-you-are is how you find what is
+   * next to it (the reports switcher: on Investment Performance, the other
+   * Investment reports are the ones beside it). Picking it just closes the menu.
+   */
+  showCurrent?: boolean;
   /** Entities to switch between. Empty until the list has loaded. */
   items: readonly EntitySwitcherItem[];
   onSelect: (id: string) => void;
@@ -141,6 +159,7 @@ export function EntitySwitcher({
   filterPlaceholder,
   noMatchesLabel,
   secondaryAlign = 'end',
+  showCurrent = false,
 }: EntitySwitcherProps) {
   const [placement, setPlacement] = useState<MenuPlacement | null>(null);
   const [query, setQuery] = useState('');
@@ -148,6 +167,8 @@ export function EntitySwitcher({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const currentRowRef = useRef<HTMLButtonElement>(null);
   const isOpen = placement !== null;
 
   const open = () => {
@@ -203,20 +224,39 @@ export function EntitySwitcher({
     if (isOpen && !isTouchDevice()) filterRef.current?.focus({ preventScroll: true });
   }, [isOpen]);
 
+  // Open on the current row, centred in the list, so its neighbours are what
+  // the reader sees first. Set directly on the list's own scroll position
+  // rather than with `scrollIntoView`, which would also scroll the page -- and
+  // a page scroll re-measures the caret. Only on opening: typing in the filter
+  // should not keep yanking the list back.
+  useLayoutEffect(() => {
+    if (!isOpen || !showCurrent) return;
+    const list = listRef.current;
+    const row = currentRowRef.current;
+    if (!list || !row) return;
+    list.scrollTop = Math.max(
+      0,
+      row.offsetTop - list.offsetTop - (list.clientHeight - row.offsetHeight) / 2,
+    );
+  }, [isOpen, showCurrent]);
+
   const others = useMemo(
     () => items.filter((item) => item.id !== currentId),
     [items, currentId],
   );
 
-  const showFilter = others.length > FILTER_THRESHOLD;
+  /** What the menu lists: the others, plus the current one when it is shown. */
+  const listed = showCurrent ? items : others;
+
+  const showFilter = listed.length > FILTER_THRESHOLD;
 
   const matches = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return others;
-    return others.filter((item) =>
+    if (!needle) return listed;
+    return listed.filter((item) =>
       (item.searchText ?? item.primary).toLowerCase().includes(needle),
     );
-  }, [others, query]);
+  }, [listed, query]);
 
   /**
    * The matches split into sections, in first-appearance order. Built from the
@@ -237,35 +277,49 @@ export function EntitySwitcher({
   // Nothing to switch to: the caret would open an empty list.
   if (others.length === 0) return null;
 
-  const renderItem = (item: EntitySwitcherItem) => (
-    <button
-      key={item.id}
-      type="button"
-      role="menuitem"
-      onClick={() => {
-        close();
-        onSelect(item.id);
-      }}
-      className="flex w-full items-baseline gap-2 px-3 py-1.5 text-left transition-colors motion-reduce:transition-none hover:bg-gray-50 dark:hover:bg-gray-700"
-    >
-      <span
-        className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${
-          secondaryAlign === 'inline' ? 'shrink-0' : 'min-w-0 truncate'
+  const renderItem = (item: EntitySwitcherItem) => {
+    const isCurrent = item.id === currentId;
+    return (
+      <button
+        key={item.id}
+        ref={isCurrent ? currentRowRef : undefined}
+        type="button"
+        role="menuitem"
+        aria-current={isCurrent ? 'true' : undefined}
+        onClick={() => {
+          close();
+          // Already here: picking it again only dismisses the menu.
+          if (!isCurrent) onSelect(item.id);
+        }}
+        className={`flex w-full items-baseline gap-2 px-3 py-1.5 text-left transition-colors motion-reduce:transition-none ${
+          isCurrent
+            ? 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50'
+            : 'hover:bg-gray-50 dark:hover:bg-gray-700'
         }`}
       >
-        {item.primary}
-      </span>
-      {item.secondary != null && item.secondary !== '' && (
         <span
-          className={`text-xs text-gray-500 dark:text-gray-400 ${
-            secondaryAlign === 'inline' ? 'truncate' : 'ml-auto shrink-0'
+          className={`text-sm ${
+            isCurrent
+              ? 'font-semibold text-blue-700 dark:text-blue-300'
+              : 'font-medium text-gray-900 dark:text-gray-100'
+          } ${
+            secondaryAlign === 'inline' ? 'shrink-0' : 'min-w-0 truncate'
           }`}
         >
-          {item.secondary}
+          {item.primary}
         </span>
-      )}
-    </button>
-  );
+        {item.secondary != null && item.secondary !== '' && (
+          <span
+            className={`text-xs text-gray-500 dark:text-gray-400 ${
+              secondaryAlign === 'inline' ? 'truncate' : 'ml-auto shrink-0'
+            }`}
+          >
+            {item.secondary}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div ref={containerRef} className="relative inline-block">
@@ -321,7 +375,7 @@ export function EntitySwitcher({
               />
             </div>
           )}
-          <div className="min-h-0 flex-1 overflow-y-auto py-1">
+          <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto py-1">
             {matches.length === 0 ? (
               <p className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                 {noMatchesLabel}
