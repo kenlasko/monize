@@ -4,7 +4,7 @@ import { AUTO_SCROLL_EDGE, useGridReorder } from './useGridReorder';
 
 const mockWide = vi.hoisted(() => ({ value: true }));
 vi.mock('@/hooks/useIsMobile', () => ({
-  useMediaQuery: (query: string) => (query.includes('min-width: 1024px') ? mockWide.value : false),
+  useIsLgUp: () => mockWide.value,
 }));
 
 interface Box {
@@ -354,6 +354,42 @@ describe('useGridReorder', () => {
       setScroll(3000 - window.innerHeight, 3000);
       drag.moveTo(150, window.innerHeight - 10);
       expect(scrollBy).not.toHaveBeenCalled();
+      expect(frames).toHaveLength(0);
+    });
+  });
+
+  describe('a scroll the reader makes during a drag (wheel, trackpad)', () => {
+    const wheel = (rects: Box[], dy: number) => {
+      for (const r of rects) {
+        r.top -= dy;
+        r.bottom -= dy;
+      }
+      window.dispatchEvent(new Event('scroll'));
+    };
+
+    it('re-reads the items and tests the next frame and the drop against where they are now', () => {
+      const rects = WIDE.map((r) => ({ ...r }));
+      const { result, onMove } = setup(rects);
+      const drag = press(result, 0, 150, 200);
+      drag.moveTo(500, 200);
+      expect(indicators(result, 5)).toEqual([null, null, 'before', null, null]);
+      // Row 2 scrolls up under the still pointer: it is now over item 4's right half.
+      act(() => wheel(rects, 224));
+      flush();
+      expect(indicators(result, 5)).toEqual([null, null, null, null, 'after']);
+      drag.releaseAt(500, 200);
+      expect(onMove).toHaveBeenCalledWith(0, 4, 'pointer');
+    });
+
+    it('stops listening once the drag ends', () => {
+      const rects = WIDE.map((r) => ({ ...r }));
+      const { result } = setup(rects);
+      const drag = press(result, 0, 150, 200);
+      drag.moveTo(500, 200);
+      drag.releaseAt(500, 200);
+      const reads = readCount;
+      act(() => wheel(rects, 224));
+      expect(readCount).toBe(reads);
       expect(frames).toHaveLength(0);
     });
   });

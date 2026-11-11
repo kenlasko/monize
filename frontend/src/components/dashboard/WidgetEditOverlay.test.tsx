@@ -5,7 +5,7 @@ import type { DashboardLayoutItem } from './dashboard-layout';
 
 const mockMatches = vi.hoisted(() => ({ wide: true }));
 vi.mock('@/hooks/useIsMobile', () => ({
-  useMediaQuery: (query: string) => (query.includes('min-width: 1024px') ? mockMatches.wide : false),
+  useIsLgUp: () => mockMatches.wide,
 }));
 
 const ITEM: DashboardLayoutItem = { id: 'net-worth', width: 'half', height: 'standard' };

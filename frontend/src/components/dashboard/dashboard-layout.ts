@@ -16,7 +16,15 @@ export type WidgetHeight = (typeof WIDGET_HEIGHTS)[number];
 export const GRID_WIDTH_KEY = 'gridWidth';
 export const GRID_HEIGHT_KEY = 'gridHeight';
 
-/** Complete literal class strings so Tailwind sees every one. */
+/** Columns each width preset spans of the grid's 12 at `lg` and up. */
+export const WIDTH_SPANS: Record<WidgetWidth, number> = { third: 4, half: 6, twoThirds: 8, full: 12 };
+/** Each height preset's floor in px at `lg` and up; auto has none. */
+export const HEIGHT_FLOORS_PX: Record<WidgetHeight, number> = { auto: 0, compact: 390, standard: 540, tall: 720 };
+
+/**
+ * Complete literal class strings so Tailwind sees every one; they cannot be
+ * built from the numbers above. A test holds the two in step.
+ */
 export const WIDTH_CLASSES: Record<WidgetWidth, string> = {
   third: 'lg:col-span-4',
   half: 'lg:col-span-6',
@@ -114,6 +122,9 @@ export function layoutsEqual(a: DashboardLayout, b: DashboardLayout): boolean {
  * every slice the registry does not know (the hero's included) passes through.
  * Sizes equal to the default are stored as absent keys, and a widget that
  * left the layout loses its size keys so it returns at its default size.
+ * The default widgets in the default order store `[]` whatever their sizes,
+ * so the reader keeps following later default-layout changes (DASH-1);
+ * `resolveDashboardLayout` reads the sizes from the map with `[]` ids.
  */
 export function serializeDashboardLayout(
   draft: DashboardLayout,
@@ -137,10 +148,10 @@ export function serializeDashboardLayout(
     else config[def.id] = slice;
   }
 
-  return {
-    dashboardWidgets: layoutsEqual(draft, defaultDashboardLayout()) ? [] : draft.map((i) => i.id),
-    dashboardWidgetConfig: config,
-  };
+  const ids = draft.map((i) => i.id);
+  const defaultIds = defaultDashboardLayout().map((i) => i.id);
+  const isDefaultOrder = ids.length === defaultIds.length && ids.every((id, i) => id === defaultIds[i]);
+  return { dashboardWidgets: isDefaultOrder ? [] : ids, dashboardWidgetConfig: config };
 }
 
 /** Every transition returns the same reference when nothing changes. */

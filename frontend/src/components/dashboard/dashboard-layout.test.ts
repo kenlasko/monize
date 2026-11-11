@@ -3,9 +3,11 @@ import {
   GRID_HEIGHT_KEY,
   GRID_WIDTH_KEY,
   HEIGHT_CLASSES,
+  HEIGHT_FLOORS_PX,
   WIDGET_HEIGHTS,
   WIDGET_WIDTHS,
   WIDTH_CLASSES,
+  WIDTH_SPANS,
   defaultDashboardLayout,
   layoutReducer,
   layoutsEqual,
@@ -56,6 +58,17 @@ describe('presets and class maps', () => {
       standard: 'lg:min-h-[540px]',
       tall: 'lg:min-h-[720px]',
     });
+  });
+
+  it('keeps each class string in step with the number the resize grip uses', () => {
+    expect(WIDTH_SPANS).toEqual({ third: 4, half: 6, twoThirds: 8, full: 12 });
+    expect(HEIGHT_FLOORS_PX).toEqual({ auto: 0, compact: 390, standard: 540, tall: 720 });
+    for (const w of WIDGET_WIDTHS) {
+      expect(WIDTH_CLASSES[w]).toBe(`lg:col-span-${WIDTH_SPANS[w]}`);
+    }
+    for (const h of WIDGET_HEIGHTS) {
+      expect(HEIGHT_CLASSES[h]).toBe(HEIGHT_FLOORS_PX[h] === 0 ? '' : `lg:min-h-[${HEIGHT_FLOORS_PX[h]}px]`);
+    }
   });
 });
 
@@ -167,13 +180,16 @@ describe('serializeDashboardLayout', () => {
     expect(out.dashboardWidgetConfig).toEqual({ 'net-worth': { range: '2y' } });
   });
 
-  it('A row 2: default order, a non-default size stores the ids and only the differing key', () => {
+  it('A row 2: default order, a non-default size stores [] and only the differing key', () => {
     const draft = defaultDashboardLayout().map((i) =>
       i.id === 'insights' ? { ...i, width: 'full' as const } : i,
     );
     const out = serializeDashboardLayout(draft, {});
-    expect(out.dashboardWidgets).toEqual(DEFAULT_DASHBOARD_WIDGET_IDS);
+    // [] keeps the reader following later default-layout changes (DASH-1);
+    // the size is read back from the settings map with the default ids.
+    expect(out.dashboardWidgets).toEqual([]);
     expect(out.dashboardWidgetConfig).toEqual({ insights: { gridWidth: 'full' } });
+    expect(resolveDashboardLayout(out.dashboardWidgets, out.dashboardWidgetConfig)).toEqual(draft);
   });
 
   it('A row 3: different order, default sizes stores the ids and no size keys', () => {

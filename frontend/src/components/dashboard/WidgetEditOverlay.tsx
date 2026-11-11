@@ -12,7 +12,7 @@ import {
 import { Card, HOVER_TOOLBAR_BUTTON } from '@/components/ui/Card';
 import { DragHandle } from '@/components/ui/DragHandle';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
-import { useMediaQuery } from '@/hooks/useIsMobile';
+import { useIsLgUp } from '@/hooks/useIsMobile';
 import type { GridReorderGrip } from '@/hooks/useGridReorder';
 import { cn } from '@/lib/utils';
 import {
@@ -26,9 +26,6 @@ import { WidgetGlyph, useWidgetName } from './widget-glyphs';
 import { WidgetResizeGrip } from './WidgetResizeGrip';
 
 const CONTROL_CLASS = `rounded-md p-1.5 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${HOVER_TOOLBAR_BUTTON}`;
-
-/** Tailwind's `lg`: the grid has columns from here up, so sizes only mean something here. */
-const WIDE_QUERY = '(min-width: 1024px)';
 
 /** Compact segments for the overlay bar, which a third-width card makes narrow. */
 const SIZE_SEGMENT_CLASS = 'px-2 py-0.5 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
@@ -67,9 +64,10 @@ export function WidgetEditOverlay({
 }: WidgetEditOverlayProps) {
   const t = useTranslations('dashboard');
   const name = useWidgetName()(item.id);
-  // Not rendered below lg (rather than hidden by CSS), so a phone's bar holds
-  // no control that does nothing and a screen reader never meets one.
-  const isWide = useMediaQuery(WIDE_QUERY);
+  // The grid has columns from lg up, so sizes only mean something there. Not
+  // rendered below lg (rather than hidden by CSS), so a phone's bar holds no
+  // control that does nothing and a screen reader never meets one.
+  const isWide = useIsLgUp();
 
   return (
     <div

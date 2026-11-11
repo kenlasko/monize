@@ -10,10 +10,10 @@ import { useAuthStore } from '@/store/authStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { GettingStarted } from '@/components/dashboard/GettingStarted';
 import {
-  DASHBOARD_WIDGETS,
   DashboardWidgetContext,
   delegateDashboardWidgets,
 } from '@/components/dashboard/widget-registry';
+import { useWidgetName } from '@/components/dashboard/widget-glyphs';
 import { defaultLayoutItem, resolveDashboardLayout } from '@/components/dashboard/dashboard-layout';
 import { DashboardGrid, type DashboardGridEditing } from '@/components/dashboard/DashboardGrid';
 import { useDashboardLayoutDraft } from '@/hooks/useDashboardLayoutDraft';
@@ -81,8 +81,6 @@ const UnsavedChangesDialog = dynamic(
   () => import('@/components/ui/UnsavedChangesDialog').then((m) => m.UnsavedChangesDialog),
   { ssr: false },
 );
-
-const WIDGET_TITLE_SECTIONS = new Map(DASHBOARD_WIDGETS.map((w) => [w.id, w.titleSection]));
 
 export default function DashboardPage() {
   return (
@@ -355,6 +353,7 @@ function DashboardContent() {
   };
 
   const { dispatch: dispatchLayout } = layoutDraft;
+  const widgetName = useWidgetName();
   // One move, from the overlay's buttons or the grip: dispatched, read out,
   // and focus kept on the control that moved it. A pointer drop moves no
   // focus: the grip's press never took it.
@@ -363,9 +362,7 @@ function DashboardContent() {
       if (!draft || to < 0 || to >= draft.length || from === to) return;
       const { id } = draft[from];
       dispatchLayout({ type: 'move', from, to });
-      const section = WIDGET_TITLE_SECTIONS.get(id);
-      const name = section ? t(`${section}.title` as Parameters<typeof t>[0]) : id;
-      setMoveAnnouncement(t('edit.moved', { name, position: to + 1, count: draft.length }));
+      setMoveAnnouncement(t('edit.moved', { name: widgetName(id), position: to + 1, count: draft.length }));
       if (focus === 'none') return;
       const direction = to < from ? 'earlier' : 'later';
       requestAnimationFrame(() => {
@@ -380,7 +377,7 @@ function DashboardContent() {
         button?.focus();
       });
     },
-    [draft, dispatchLayout, t],
+    [draft, dispatchLayout, t, widgetName],
   );
 
   const gridRef = useRef<HTMLDivElement>(null);
@@ -497,6 +494,8 @@ function DashboardContent() {
               <UnsavedChangesDialog
                 isOpen={layoutDraft.confirmingLeave}
                 onSave={layoutDraft.save}
+                // Save of an empty draft would do nothing; say why instead.
+                saveDisabledReason={draft.length === 0 ? t('customize.atLeastOne') : undefined}
                 onDiscard={layoutDraft.discard}
                 onCancel={layoutDraft.keepEditing}
               />

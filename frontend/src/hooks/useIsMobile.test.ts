@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useIsMobile } from './useIsMobile';
+import { renderHook, act } from '@/test/render';
+import { useIsLgUp, useIsMobile } from './useIsMobile';
 
 describe('useIsMobile', () => {
   it('returns false when matchMedia does not match', () => {
@@ -36,5 +36,25 @@ describe('useIsMobile', () => {
     expect(removeSpy).toHaveBeenCalled();
 
     (window as any).matchMedia = original;
+  });
+});
+
+describe('useIsLgUp', () => {
+  it('asks for lg and up, and is false where nothing matches', () => {
+    const original = window.matchMedia;
+    const matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(min-width: 1024px)',
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    (window as any).matchMedia = matchMedia;
+    try {
+      expect(renderHook(() => useIsLgUp()).result.current).toBe(true);
+      expect(matchMedia).toHaveBeenCalledWith('(min-width: 1024px)');
+    } finally {
+      (window as any).matchMedia = original;
+    }
+    expect(renderHook(() => useIsLgUp()).result.current).toBe(false);
   });
 });

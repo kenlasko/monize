@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type Poin
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import {
+  HEIGHT_FLOORS_PX,
   WIDGET_HEIGHTS,
+  WIDTH_SPANS,
   widthsOfferedFor,
   type DashboardLayoutItem,
   type WidgetHeight,
@@ -12,11 +14,14 @@ import {
 } from './dashboard-layout';
 import { useWidgetName } from './widget-glyphs';
 
-/** Columns each width preset spans of the grid's 12 (WIDTH_CLASSES). */
-const SPANS: Record<WidgetWidth, number> = { third: 4, half: 6, twoThirds: 8, full: 12 };
-/** Each height preset's floor in px (HEIGHT_CLASSES); auto has none. */
-const FLOORS: Record<WidgetHeight, number> = { auto: 0, compact: 390, standard: 540, tall: 720 };
 const COLUMNS = 12;
+/**
+ * Pointer travel along one axis, in px, that it takes to change that axis
+ * (DragHandle's CLICK_SLOP, which it does not export). Below it the axis keeps
+ * its preset: the item's real height comes from its content and its row's
+ * stretch, so reading a preset off a still pointer would change it.
+ */
+const AXIS_SLOP = 4;
 /** The grid's `gap-6`, used when the computed style gives no number. */
 const FALLBACK_GAP = 24;
 /** Auto has no floor to draw, so its outline is this tall rather than a line. */
@@ -27,8 +32,13 @@ type Size = { width?: WidgetWidth; height?: WidgetHeight };
 interface Drag {
   left: number;
   top: number;
+  /** The item's real height at the press, drawn while the height is kept. */
+  height: number;
   col: number;
   gap: number;
+  /** Where the press landed. */
+  x0: number;
+  y0: number;
   x: number;
   y: number;
 }
@@ -48,11 +58,14 @@ function nearest<T>(options: readonly T[], at: (o: T) => number, to: number): T 
  * The presets a pointer at (x, y) points at: the offered width whose right
  * edge (left + span columns + the gaps between them) is nearest x, and the
  * height whose floor is nearest the pointer's depth below the item's top.
+ * An axis the pointer has not moved along since the press keeps `current`.
  */
-function targetAt(d: Drag, offered: readonly WidgetWidth[]): Target {
-  const edge = (w: WidgetWidth) => d.left + SPANS[w] * d.col + (SPANS[w] - 1) * d.gap;
-  const width = nearest(offered, edge, d.x);
-  const height = nearest(WIDGET_HEIGHTS, (h) => FLOORS[h], d.y - d.top);
+function targetAt(d: Drag, offered: readonly WidgetWidth[], current: Required<Size>): Target {
+  const edge = (w: WidgetWidth) => d.left + WIDTH_SPANS[w] * d.col + (WIDTH_SPANS[w] - 1) * d.gap;
+  const movedX = Math.abs(d.x - d.x0) > AXIS_SLOP;
+  const movedY = Math.abs(d.y - d.y0) > AXIS_SLOP;
+  const width = movedX ? nearest(offered, edge, d.x) : current.width;
+  const height = movedY ? nearest(WIDGET_HEIGHTS, (h) => HEIGHT_FLOORS_PX[h], d.y - d.top) : current.height;
   return {
     width,
     height,
@@ -60,7 +73,7 @@ function targetAt(d: Drag, offered: readonly WidgetWidth[]): Target {
       left: d.left,
       top: d.top,
       width: edge(width) - d.left,
-      height: FLOORS[height] || AUTO_PREVIEW_HEIGHT,
+      height: movedY ? HEIGHT_FLOORS_PX[height] || AUTO_PREVIEW_HEIGHT : d.height,
     },
   };
 }
@@ -88,6 +101,7 @@ export function WidgetResizeGrip({ id, width, height, onResize }: WidgetResizeGr
   const frame = useRef<number | null>(null);
   const [target, setTarget] = useState<Target | null>(null);
   const offered = widthsOfferedFor(id);
+  const current = { width, height };
 
   const cancelFrame = useCallback(() => {
     if (frame.current !== null) cancelAnimationFrame(frame.current);
@@ -126,8 +140,18 @@ export function WidgetResizeGrip({ id, width, height, onResize }: WidgetResizeGr
     const box = item.getBoundingClientRect();
     const gap = parseFloat(getComputedStyle(grid).columnGap) || FALLBACK_GAP;
     const col = (grid.getBoundingClientRect().width - (COLUMNS - 1) * gap) / COLUMNS;
-    drag.current = { left: box.left, top: box.top, col, gap, x: e.clientX, y: e.clientY };
-    setTarget(targetAt(drag.current, offered));
+    drag.current = {
+      left: box.left,
+      top: box.top,
+      height: box.height,
+      col,
+      gap,
+      x0: e.clientX,
+      y0: e.clientY,
+      x: e.clientX,
+      y: e.clientY,
+    };
+    setTarget(targetAt(drag.current, offered, current));
   };
 
   const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
@@ -138,7 +162,7 @@ export function WidgetResizeGrip({ id, width, height, onResize }: WidgetResizeGr
     if (frame.current !== null) return;
     frame.current = requestAnimationFrame(() => {
       frame.current = null;
-      if (drag.current) setTarget(targetAt(drag.current, offered));
+      if (drag.current) setTarget(targetAt(drag.current, offered, current));
     });
   };
 
@@ -147,7 +171,7 @@ export function WidgetResizeGrip({ id, width, height, onResize }: WidgetResizeGr
     if (!d) return;
     d.x = e.clientX;
     d.y = e.clientY;
-    const end = targetAt(d, offered);
+    const end = targetAt(d, offered, current);
     cancel();
     const size: Size = {};
     if (end.width !== width) size.width = end.width;

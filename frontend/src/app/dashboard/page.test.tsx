@@ -819,6 +819,14 @@ describe('DashboardPage', () => {
       expect(mockUpdatePreferences).not.toHaveBeenCalled();
     });
 
+    it('leaves on Done with nothing changed, sending no request', async () => {
+      await renderLoaded();
+      await enterEditMode();
+      await click(done());
+      expect(mockUpdatePreferences).not.toHaveBeenCalled();
+      expect(editBar()).not.toBeInTheDocument();
+    });
+
     it('sends one request on Done, with the new order, and leaves (DASH-5)', async () => {
       await renderLoaded();
       await enterEditMode();
@@ -961,7 +969,7 @@ describe('DashboardPage', () => {
         expect(Object.keys(config)).toEqual(['net-worth']);
       });
 
-      it('stores nothing for a size pressed back to its default', async () => {
+      it('sends no request for a size pressed back to its default, and leaves', async () => {
         setWide(true);
         await renderLoaded();
         await enterEditMode();
@@ -969,7 +977,21 @@ describe('DashboardPage', () => {
         await click(within(widths).getByRole('button', { name: 'Full width' }));
         await click(within(widths).getByRole('button', { name: 'Half width' }));
         await click(done());
-        expect(mockUpdatePreferences.mock.calls[0][0].dashboardWidgetConfig).toEqual({});
+        expect(mockUpdatePreferences).not.toHaveBeenCalled();
+        expect(editBar()).not.toBeInTheDocument();
+      });
+
+      it('stores only a resize as never customized, keeping the size (DASH-1)', async () => {
+        setWide(true);
+        await renderLoaded();
+        await enterEditMode();
+        const widths = screen.getByRole('group', { name: 'Width of Net Worth' });
+        await click(within(widths).getByRole('button', { name: 'Full width' }));
+        await click(done());
+        expect(mockUpdatePreferences).toHaveBeenCalledWith({
+          dashboardWidgets: [],
+          dashboardWidgetConfig: { 'net-worth': { gridWidth: 'full' } },
+        });
       });
 
       it('shows no size choices below lg', async () => {
@@ -1027,6 +1049,19 @@ describe('DashboardPage', () => {
       expect(widgetIds()).not.toContain('net-worth');
       expect(done()).not.toBeDisabled();
       toastError.mockRestore();
+    });
+
+    it('disables the discard prompt Save and says why when no widget is left', async () => {
+      prefsState.current.dashboardWidgets = ['insights'];
+      await renderLoaded();
+      await enterEditMode();
+      await click(screen.getByRole('button', { name: 'Remove Spending Insights' }));
+      await click(screen.getByRole('button', { name: 'Cancel' }));
+      const prompt = await screen.findByRole('dialog');
+      expect(within(prompt).getByRole('button', { name: 'Save' })).toBeDisabled();
+      expect(within(prompt).getByText('Select at least one widget to show on the dashboard.')).toBeInTheDocument();
+      expect(within(prompt).getByRole('button', { name: 'Discard' })).toBeEnabled();
+      expect(mockUpdatePreferences).not.toHaveBeenCalled();
     });
 
     it('disables Done and says why when no widget is left', async () => {

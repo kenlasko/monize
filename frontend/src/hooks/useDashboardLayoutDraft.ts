@@ -82,7 +82,8 @@ function dialogIsOpen() {
  * draft from the stored layout and pushes a history entry, as a `Modal` with
  * `pushHistory` does, so Back on a phone leaves edit mode rather than the page.
  * Cancel, Escape and Back leave without saving; with a changed draft they ask
- * first (`confirmingLeave`).
+ * first (`confirmingLeave`). Done with nothing changed leaves as a discard
+ * does. While a save is in flight nothing else leaves: the save does.
  */
 export function useDashboardLayoutDraft() {
   const t = useTranslations('dashboard');
@@ -106,9 +107,9 @@ export function useDashboardLayoutDraft() {
     send({ type: 'enter', seed: resolveDashboardLayout(prefs?.dashboardWidgets, prefs?.dashboardWidgetConfig) });
   }, []);
 
-  /** Leave edit mode, storing nothing. */
+  /** Leave edit mode, storing nothing. Not mid-save: the save leaves when it lands. */
   const discard = useCallback(() => {
-    if (!editingRef.current) return;
+    if (!editingRef.current || savingRef.current) return;
     editingRef.current = false;
     if (popEditEntry()) ownPopsRef.current += 1;
     send({ type: 'leave' });
@@ -125,9 +126,15 @@ export function useDashboardLayoutDraft() {
 
   const dispatch = useCallback((action: DashboardLayoutAction) => send({ type: 'layout', action }), []);
 
-  const draft = state.draft;
+  const { seed, draft } = state;
   const save = useCallback(async () => {
-    if (!editingRef.current || savingRef.current || !draft || draft.length === 0) return;
+    if (!editingRef.current || savingRef.current || !draft) return;
+    // Done with nothing changed is a discard: no request to store what is stored.
+    if (!seed || layoutsEqual(seed, draft)) {
+      discard();
+      return;
+    }
+    if (draft.length === 0) return;
     savingRef.current = true;
     send({ type: 'saving', value: true });
     try {
@@ -149,7 +156,7 @@ export function useDashboardLayoutDraft() {
     } finally {
       savingRef.current = false;
     }
-  }, [draft, t]);
+  }, [seed, draft, discard, t]);
 
   // Back: the entry edit mode pushed is gone. A changed draft puts the entry
   // back and asks, as `Modal` re-pushes when `onBeforeClose` refuses.
@@ -162,6 +169,12 @@ export function useDashboardLayoutDraft() {
       if (!editingRef.current) return;
       const landed = event.state as Record<string, unknown> | null;
       if (landed?.[HISTORY_MARKER] === true) return;
+      // Mid-save, put the entry back and wait: the save leaves (and pops it)
+      // when it lands, or stays in edit mode if it is refused.
+      if (savingRef.current) {
+        pushEditEntry();
+        return;
+      }
       if (dirtyRef.current) {
         pushEditEntry();
         send({ type: 'confirm', value: true });
@@ -172,6 +185,25 @@ export function useDashboardLayoutDraft() {
     };
     window.addEventListener('popstate', onPopstate);
     return () => window.removeEventListener('popstate', onPopstate);
+  }, []);
+
+  // Unmounted while editing: pop edit mode's entry, as a `Modal` with
+  // `pushHistory` does on unmount, but only while it is still the current
+  // entry. After a link's navigation the router has already pushed the next
+  // page's entry over it, and a back() would undo that navigation, so the
+  // stale entry is left. Deferred so a Strict Mode replay, which mounts again
+  // at once, pops nothing.
+  const lifetimeRef = useRef<symbol | null>(null);
+  useEffect(() => {
+    const lifetime = Symbol();
+    lifetimeRef.current = lifetime;
+    return () => {
+      queueMicrotask(() => {
+        if (lifetimeRef.current !== lifetime || !editingRef.current) return;
+        editingRef.current = false;
+        popEditEntry();
+      });
+    };
   }, []);
 
   // Escape leaves, unless a dialog on top is the one Escape is closing.

@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useCallback, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { DASHBOARD_WIDGETS, type DashboardWidgetId, type WidgetIconType } from './widget-registry';
 import { widgetTintClass } from './widget-meta';
@@ -94,11 +94,14 @@ export function WidgetGlyph({ id }: { id: DashboardWidgetId }) {
   );
 }
 
-/** A widget's display name, from its registry title section. */
+/** A widget's display name, from its registry title section. Stable while the locale is. */
 export function useWidgetName(): (id: DashboardWidgetId) => string {
   const t = useTranslations('dashboard');
-  return (id) => {
-    const section = DEFINITIONS.get(id)?.titleSection;
-    return section ? t(`${section}.title` as Parameters<typeof t>[0]) : id;
-  };
+  return useCallback(
+    (id: DashboardWidgetId) => {
+      const section = DEFINITIONS.get(id)?.titleSection;
+      return section ? t(`${section}.title` as Parameters<typeof t>[0]) : id;
+    },
+    [t],
+  );
 }

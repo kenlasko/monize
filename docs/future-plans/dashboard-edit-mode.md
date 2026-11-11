@@ -61,7 +61,7 @@ Plan-local ids. None is a financial invariant, so none is added to `docs/system-
 
 | ID | Statement | Mechanism |
 |---|---|---|
-| DASH-1 | A reader who never customized sees the default layout, and follows later changes to it. | `serializeDashboardLayout` stores `dashboardWidgets: []` and no size keys when the draft equals the default layout. Unit-tested truth table (section 7). |
+| DASH-1 | A reader who never customized sees the default layout, and follows later changes to it. | `serializeDashboardLayout` stores `dashboardWidgets: []` whenever the draft's ids, in order, are the default layout's, whatever their sizes; a size that differs from its default is stored as its own key in `dashboardWidgetConfig`, which `resolveDashboardLayout` reads with `[]` ids, so a reader who only resized still follows later changes to the default order and membership. Unit-tested truth table (section 7). |
 | DASH-2 | A stored layout from before this feature renders as it did. | A widget with no stored size resolves to its default size; `resolveDashboardLayout` is the only reader. The one accepted difference is in section 6.2. |
 | DASH-3 | Screen order, DOM order and stored order are the same order. | The grid uses row flow without `dense`; items render in draft order. A row may therefore end short when the next widget does not fit; that gap is honest, and tab order follows what the eye sees. |
 | DASH-4 | Leaving edit mode by Cancel, Escape or the browser's Back stores nothing. | The draft lives in a reducer inside the page. The only `userSettingsApi.updatePreferences` call for layout is in the Done handler. Component test asserts no call on each exit. |
@@ -97,7 +97,7 @@ Rules, all in one new pure module, `frontend/src/components/dashboard/dashboard-
   - A widget not in the draft has its two size keys removed, so a widget added back later arrives at its default size. Its other settings are kept.
   - A slice left with no keys is omitted from the map.
   - Every other key of every slice, and every slice of an id the registry does not know, is passed through untouched.
-  - When the draft is the default layout, `dashboardWidgets` is `[]`.
+  - When the draft's ids, in order, are the default layout's, `dashboardWidgets` is `[]`, whatever the sizes; the sizes are in the map.
 - `layoutReducer(draft, action)` with `add`, `remove`, `move`, `resize` and `reset`. It never mutates.
 
 The server never reads the size keys and does not validate their values; the client resolves defensively, as `resolveDashboardHeroConfig` does. An older client (a cached tab) ignores the keys, and its settings writes keep them, because `useWidgetConfig` and the old dialog both spread the stored slice.
@@ -149,7 +149,7 @@ The widgets' own floors are deleted in the same task: `minHeightClass` on `Widge
 | Draft order | Any size differs from its default | `dashboardWidgets` | Size keys |
 |---|---|---|---|
 | equals default | no | `[]` | none |
-| equals default | yes | the ids | only the differing ones |
+| equals default | yes | `[]` | only the differing ones |
 | differs | no | the ids | none |
 | differs | yes | the ids | only the differing ones |
 | empty | n/a | Done is disabled | n/a |
@@ -231,7 +231,7 @@ The edit bar, overlay (with its grip and resize grip), Add dialog, placeholder t
 - on press, it records the pointer position and each item's rectangle (`[data-widget-id]`);
 - on move, it finds the item under the pointer and takes the gap before it or after it by which half of the item the pointer is in, in flow direction (horizontal at `lg` and up, vertical below). This is `useDragReorder`'s gap model, so a gap that would not move the card shows no line;
 - the gap is drawn with `DropIndicatorLine`; a chip with the widget's tint and name follows the pointer; the dragged card stays where it is, dimmed;
-- within 80px of the top or bottom of the viewport the page scrolls, one step per animation frame, and the rectangles are re-read;
+- within 80px of the top or bottom of the viewport the page scrolls, one step per animation frame, and the rectangles are re-read; a scroll the reader makes during the drag (wheel, trackpad) re-reads them too, and the gap is taken again on the next frame;
 - on release it dispatches one `move`. Escape or a cancelled pointer dispatches nothing;
 - arrow keys on the grip dispatch `move` by one place (Left and Up earlier, Right and Down later). Each move is announced through a polite live region: "{name} moved to position {n} of {count}";
 - the grip has `touch-action: none`; nothing else in the overlay does.
@@ -241,11 +241,11 @@ The edit bar, overlay (with its grip and resize grip), Add dialog, placeholder t
 Two ways, the first sufficient on its own:
 
 - **Choices in the overlay.** Width: the presets from the widget's `minWidth` up. Height: the four presets. One press dispatches `resize`. These are the accessible path.
-- **The corner grip** (`lg` and up). Dragging it previews an outline at the nearest width preset for the pointer's x and the nearest height preset for its y, and dispatches one `resize` on release. Arrow keys on it step the width (Left, Right) and height (Up, Down) by one preset.
+- **The corner grip** (`lg` and up). Dragging it previews an outline at the nearest width preset for the pointer's x and the nearest height preset for its y, and dispatches one `resize` on release. An axis the pointer has not moved along by more than 4px keeps its preset, because an item's real height comes from its content and its row, not its preset. Arrow keys on it step the width (Left, Right) and height (Up, Down) by one preset.
 
 ### 10.3 Leaving edit mode
 
-Done saves and leaves. Cancel, Escape and Back leave without saving; when the draft differs from the layout it was seeded from, `UnsavedChangesDialog` asks first. Edit mode pushes a history entry on entry, as a `Modal` with `pushHistory` does, so Back on a phone leaves edit mode and not the dashboard.
+Done saves and leaves; with nothing changed it leaves without a request. While the save is in flight, Back puts edit mode's entry back and nothing else leaves; the save leaves when it lands. Cancel, Escape and Back leave without saving; when the draft differs from the layout it was seeded from, `UnsavedChangesDialog` asks first. Edit mode pushes a history entry on entry, as a `Modal` with `pushHistory` does, so Back on a phone leaves edit mode and not the dashboard. Unmounted while editing, it pops that entry only while it is still the current one, as `Modal` does on unmount; after a link's navigation the next page's entry is already over it, a `history.back()` would undo the navigation, and the stale entry is left (one extra Back on return).
 
 ## 11. Test matrix
 

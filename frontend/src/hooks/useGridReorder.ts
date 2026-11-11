@@ -1,11 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import { useMediaQuery } from '@/hooks/useIsMobile';
+import { useIsLgUp } from '@/hooks/useIsMobile';
 import type { DragAxis, DropPosition } from '@/hooks/useDragReorder';
 
-/** Tailwind's `lg`: the grid flows in rows from here up, in one column below. */
-const WIDE_QUERY = '(min-width: 1024px)';
 /** Distance from the viewport's top or bottom edge within which a drag scrolls the page. */
 export const AUTO_SCROLL_EDGE = 80;
 /** The most the page scrolls in one frame, reached at the very edge. */
@@ -116,14 +114,15 @@ interface DragState {
 /**
  * Pointer reorder over the dashboard grid's items, driven by each item's
  * `DragHandle` (design 10.1). The page never reflows during a drag: the
- * rectangles are read on press (and again after an auto-scroll), the pointer
+ * rectangles are read on press (and again after any scroll), the pointer
  * is hit-tested against them once a frame, and only a change of gap renders.
  * The chip is moved by writing its transform directly, so following the
  * pointer re-renders nothing. Release moves once; Escape or a cancelled
  * pointer moves nothing.
  */
 export function useGridReorder({ containerRef, count, enabled, onMove }: GridReorderOptions) {
-  const axis: DragAxis = useMediaQuery(WIDE_QUERY) ? 'x' : 'y';
+  // The grid flows in rows from lg up, in one column below.
+  const axis: DragAxis = useIsLgUp() ? 'x' : 'y';
   const [drag, setDrag] = useState<DragState | null>(null);
   const session = useRef<Session | null>(null);
   const press = useRef<{ x: number; y: number } | null>(null);
@@ -170,26 +169,44 @@ export function useGridReorder({ containerRef, count, enabled, onMove }: GridReo
     return () => window.removeEventListener('keydown', onKeyDown, true);
   }, [dragging, cancel]);
 
-  function tick() {
-    frame.current = null;
-    const s = session.current;
-    if (!s) return;
-    const x = s.x0 + s.dx;
-    const y = s.y0 + s.dy;
-    const step = scrollStepAt(y);
-    if (step !== 0) {
-      window.scrollBy(0, step);
-      // The items moved under a still pointer; keep scrolling while it stays at the edge.
+  const tick = useCallback(
+    function tick() {
+      frame.current = null;
+      const s = session.current;
+      if (!s) return;
+      const x = s.x0 + s.dx;
+      const y = s.y0 + s.dy;
+      const step = scrollStepAt(y);
+      if (step !== 0) {
+        window.scrollBy(0, step);
+        // The items moved under a still pointer; keep scrolling while it stays at the edge.
+        s.rects = readRects(containerRef.current);
+        frame.current = requestAnimationFrame(tick);
+      }
+      placeChip(chip.current, x, y);
+      const gap = gapAt(s.rects, x, y, s.axis);
+      if (gap !== s.gap) {
+        s.gap = gap;
+        setDrag({ from: s.from, gap, active: true });
+      }
+    },
+    [containerRef],
+  );
+
+  // A scroll the reader makes (wheel, trackpad) moves the items under a still
+  // pointer too: re-read them, and hit-test again on the next frame, so
+  // neither the line nor the drop is decided against where they were.
+  useEffect(() => {
+    if (!dragging) return;
+    const onScroll = () => {
+      const s = session.current;
+      if (!s) return;
       s.rects = readRects(containerRef.current);
-      frame.current = requestAnimationFrame(tick);
-    }
-    placeChip(chip.current, x, y);
-    const gap = gapAt(s.rects, x, y, s.axis);
-    if (gap !== s.gap) {
-      s.gap = gap;
-      setDrag({ from: s.from, gap, active: true });
-    }
-  }
+      if (s.active && frame.current === null) frame.current = requestAnimationFrame(tick);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [dragging, containerRef, tick]);
 
   const grip = (index: number): GridReorderGrip => ({
     onPress: (x, y) => {

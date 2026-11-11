@@ -15,7 +15,13 @@ function box(left: number, top: number, width: number, height: number) {
   return { left, top, width, height, right: left + width, bottom: top + height, x: left, y: top, toJSON: () => ({}) };
 }
 
-function mount(id: 'net-worth' | 'favourite-accounts', width: WidgetWidth, height: WidgetHeight) {
+function mount(
+  id: 'net-worth' | 'favourite-accounts',
+  width: WidgetWidth,
+  height: WidgetHeight,
+  // The item's real height: content and its row's stretch, not its preset.
+  itemHeight = 540,
+) {
   const onResize = vi.fn();
   const { container } = render(
     <div data-testid="grid">
@@ -26,7 +32,7 @@ function mount(id: 'net-worth' | 'favourite-accounts', width: WidgetWidth, heigh
     </div>,
   );
   screen.getByTestId('grid').getBoundingClientRect = () => box(0, 0, GRID_WIDTH, 2000);
-  screen.getByTestId('item').getBoundingClientRect = () => box(0, ITEM_TOP, 576, 540);
+  screen.getByTestId('item').getBoundingClientRect = () => box(0, ITEM_TOP, 576, itemHeight);
   return { onResize, container };
 }
 
@@ -106,6 +112,35 @@ describe('WidgetResizeGrip', () => {
     moveTo(900, ITEM_TOP + 700);
     release(576, ITEM_TOP + 540);
     expect(onResize).not.toHaveBeenCalled();
+  });
+
+  describe('an axis the pointer did not move along keeps its preset', () => {
+    // An auto-height Favourite Accounts stretched to 540px by its row's neighbour.
+    it('a press and release with no movement sends nothing on a stretched item', () => {
+      const { onResize } = mount('favourite-accounts', 'half', 'auto', 540);
+      press();
+      release(576, ITEM_TOP + 540);
+      expect(onResize).not.toHaveBeenCalled();
+    });
+
+    it('a horizontal-only drag changes only the width', () => {
+      const { onResize } = mount('favourite-accounts', 'half', 'auto', 540);
+      press();
+      moveTo(1100, ITEM_TOP + 542);
+      // The outline keeps the item's real height on the axis that did not move.
+      expect(screen.getByTestId('widget-resize-preview')).toHaveStyle({ width: '1176px', height: '540px' });
+      release(1100, ITEM_TOP + 542);
+      expect(onResize).toHaveBeenCalledTimes(1);
+      expect(onResize).toHaveBeenCalledWith('favourite-accounts', { width: 'full' });
+    });
+
+    it('a vertical drag still snaps the height, leaving the width', () => {
+      const { onResize } = mount('favourite-accounts', 'half', 'auto', 540);
+      press();
+      release(578, ITEM_TOP + 720);
+      expect(onResize).toHaveBeenCalledTimes(1);
+      expect(onResize).toHaveBeenCalledWith('favourite-accounts', { height: 'tall' });
+    });
   });
 
   it('shows a dashed outline at the target size while dragging, leaving the card alone', () => {

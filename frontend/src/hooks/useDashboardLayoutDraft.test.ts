@@ -232,6 +232,105 @@ describe('useDashboardLayoutDraft', () => {
     expect(historyBack).not.toHaveBeenCalled();
   });
 
+  it('leaves on Done with nothing changed, like a discard, sending no request', async () => {
+    const { result } = setup();
+    act(() => result.current.enter());
+    await act(async () => {
+      await result.current.save();
+    });
+    expect(updatePreferences).not.toHaveBeenCalled();
+    expect(updateStorePreferences).not.toHaveBeenCalled();
+    expect(result.current.editing).toBe(false);
+    expect(historyBack).toHaveBeenCalledTimes(1);
+  });
+
+  describe('while a save is in flight', () => {
+    function pendingSave() {
+      let finish!: () => void;
+      updatePreferences.mockImplementation(
+        (body) =>
+          new Promise((resolve) => {
+            finish = () => resolve(body);
+          }),
+      );
+      return { finish: () => finish() };
+    }
+
+    it('ignores a discard, and the save then leaves as usual', async () => {
+      const save = pendingSave();
+      const { result } = setup();
+      act(() => result.current.enter());
+      act(() => result.current.dispatch({ type: 'remove', id: 'insights' }));
+      let saving!: Promise<void>;
+      act(() => {
+        saving = result.current.save();
+      });
+      act(() => result.current.discard());
+      expect(result.current.editing).toBe(true);
+      expect(historyBack).not.toHaveBeenCalled();
+      await act(async () => {
+        save.finish();
+        await saving;
+      });
+      expect(updatePreferences).toHaveBeenCalledTimes(1);
+      expect(result.current.editing).toBe(false);
+      expect(historyBack).toHaveBeenCalledTimes(1);
+    });
+
+    it('puts its entry back on Back without asking or leaving, and the save then leaves', async () => {
+      const save = pendingSave();
+      const { result } = setup();
+      act(() => result.current.enter());
+      act(() => result.current.dispatch({ type: 'remove', id: 'insights' }));
+      let saving!: Promise<void>;
+      act(() => {
+        saving = result.current.save();
+      });
+      historyState = null;
+      act(back);
+      expect(result.current.editing).toBe(true);
+      expect(result.current.confirmingLeave).toBe(false);
+      expect(pushState).toHaveBeenCalledTimes(2);
+      expect(historyState).toMatchObject({ dashboardEdit: true });
+      await act(async () => {
+        save.finish();
+        await saving;
+      });
+      expect(result.current.editing).toBe(false);
+      expect(result.current.confirmingLeave).toBe(false);
+      expect(historyBack).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('unmounted while editing', () => {
+    const settle = () => act(async () => {});
+
+    it('pops its own entry when that entry is still the current one', async () => {
+      const { result, unmount } = setup();
+      act(() => result.current.enter());
+      unmount();
+      await settle();
+      expect(historyBack).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves history alone once a navigation pushed a new entry over it', async () => {
+      const { result, unmount } = setup();
+      act(() => result.current.enter());
+      // The router's entry for the next page, which does not carry the marker.
+      historyState = { __NA: true };
+      unmount();
+      await settle();
+      expect(historyBack).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when unmounted outside edit mode', async () => {
+      const { unmount } = setup();
+      unmount();
+      await settle();
+      expect(historyBack).not.toHaveBeenCalled();
+    });
+  });
+
   it('does not save an empty draft', async () => {
     store.preferences = { dashboardWidgets: ['insights'], dashboardWidgetConfig: {} };
     const { result } = setup();

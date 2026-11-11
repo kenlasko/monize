@@ -45,6 +45,27 @@ describe('UnsavedChangesDialog', () => {
     expect(onSave).toHaveBeenCalledTimes(1);
   });
 
+  it('enables Save and shows no reason by default', () => {
+    render(<UnsavedChangesDialog {...defaultProps} />);
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+    expect(screen.queryByTestId('unsaved-changes-save-blocked')).not.toBeInTheDocument();
+  });
+
+  it('disables Save and says why when given a reason it cannot be saved', () => {
+    const onSave = vi.fn();
+    render(
+      <UnsavedChangesDialog {...defaultProps} onSave={onSave} saveDisabledReason="Pick at least one." />,
+    );
+    const save = screen.getByRole('button', { name: 'Save' });
+    expect(save).toBeDisabled();
+    fireEvent.click(save);
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByTestId('unsaved-changes-save-blocked')).toHaveTextContent('Pick at least one.');
+    // Discard and Cancel still work.
+    expect(screen.getByRole('button', { name: 'Discard' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
+  });
+
   it('calls onDiscard when Discard is clicked', () => {
     const onDiscard = vi.fn();
     render(<UnsavedChangesDialog {...defaultProps} onDiscard={onDiscard} />);
