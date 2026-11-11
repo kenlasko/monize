@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "Nessun titolo detenuto in questo conto",
     "selectFromAccountFirst": "Seleziona prima il conto di origine",
     "selectOrCreateSecurity": "Seleziona o crea titolo...",
+    "selectBondOptional": "Seleziona l'obbligazione (facoltativo)...",
     "quantityShares": "Quantità (azioni)",
     "pricePerShare": "Prezzo per azione",
     "commissionFees": "Commissione / Spese",

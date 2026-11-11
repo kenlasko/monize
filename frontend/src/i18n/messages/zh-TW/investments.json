@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "此科目中無持有證券",
     "selectFromAccountFirst": "請先選擇來源科目",
     "selectOrCreateSecurity": "選擇或建立證券...",
+    "selectBondOptional": "選擇債券（選填）...",
     "quantityShares": "數量（股數）",
     "pricePerShare": "每股價格",
     "commissionFees": "手續費",

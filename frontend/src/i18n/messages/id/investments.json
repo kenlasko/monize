@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "Tidak ada sekuritas yang dimiliki di akun ini",
     "selectFromAccountFirst": "Pilih akun Dari terlebih dahulu",
     "selectOrCreateSecurity": "Pilih atau buat sekuritas...",
+    "selectBondOptional": "Pilih obligasi (opsional)...",
     "quantityShares": "Kuantitas (Lembar)",
     "pricePerShare": "Harga per Lembar",
     "commissionFees": "Komisi / Biaya",

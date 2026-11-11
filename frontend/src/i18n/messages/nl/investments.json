@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "Geen waardepapieren aangehouden in deze rekening",
     "selectFromAccountFirst": "Selecteer eerst de bronrekening",
     "selectOrCreateSecurity": "Selecteer of maak waardepapier...",
+    "selectBondOptional": "Selecteer de obligatie (optioneel)...",
     "quantityShares": "Aantal (aandelen)",
     "pricePerShare": "Koers per aandeel",
     "commissionFees": "Commissie / kosten",

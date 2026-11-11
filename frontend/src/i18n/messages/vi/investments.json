@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "Không có chứng khoán nào trong tài khoản này",
     "selectFromAccountFirst": "Chọn tài khoản nguồn trước",
     "selectOrCreateSecurity": "Chọn hoặc tạo chứng khoán...",
+    "selectBondOptional": "Chọn trái phiếu (không bắt buộc)...",
     "quantityShares": "Số lượng (Cổ phiếu)",
     "pricePerShare": "Giá mỗi cổ phiếu",
     "commissionFees": "Hoa hồng / Phí",

@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "此账户无持有证券",
     "selectFromAccountFirst": "请先选择来源账户",
     "selectOrCreateSecurity": "选择或创建证券...",
+    "selectBondOptional": "选择债券（可选）...",
     "quantityShares": "数量（股数）",
     "pricePerShare": "每股价格",
     "commissionFees": "佣金/费用",

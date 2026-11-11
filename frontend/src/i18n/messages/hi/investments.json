@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "इस खाते में कोई प्रतिभूति नहीं",
     "selectFromAccountFirst": "पहले स्रोत खाता चुनें",
     "selectOrCreateSecurity": "प्रतिभूति चुनें या बनाएँ...",
+    "selectBondOptional": "बॉन्ड चुनें (वैकल्पिक)...",
     "quantityShares": "मात्रा (शेयर)",
     "pricePerShare": "प्रति शेयर मूल्य",
     "commissionFees": "कमीशन / शुल्क",

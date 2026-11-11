@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "Keine Wertpapiere in diesem Konto gehalten",
     "selectFromAccountFirst": "Zuerst das Quellkonto auswählen",
     "selectOrCreateSecurity": "Wertpapier auswählen oder anlegen...",
+    "selectBondOptional": "Anleihe auswählen (optional)...",
     "quantityShares": "Menge (Anteile)",
     "pricePerShare": "Preis pro Anteil",
     "commissionFees": "Provision / Gebühren",

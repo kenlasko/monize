@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "Brak papierów wartościowych na tym koncie",
     "selectFromAccountFirst": "Najpierw wybierz konto źródłowe",
     "selectOrCreateSecurity": "Wybierz lub utwórz papier wartościowy...",
+    "selectBondOptional": "Wybierz obligację (opcjonalnie)...",
     "quantityShares": "Ilość (udziały)",
     "pricePerShare": "Cena za udział",
     "commissionFees": "Prowizja / Opłaty",

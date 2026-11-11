@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "На этом счёте нет ценных бумаг",
     "selectFromAccountFirst": "Сначала выберите счёт источника",
     "selectOrCreateSecurity": "Выберите или создайте ценную бумагу...",
+    "selectBondOptional": "Выберите облигацию (необязательно)...",
     "quantityShares": "Количество (акции)",
     "pricePerShare": "Цена за акцию",
     "commissionFees": "Комиссия / Сборы",

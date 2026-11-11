@@ -241,6 +241,7 @@
     "noSecuritiesHeld": "Bu hesapta menkul kıymet yok",
     "selectFromAccountFirst": "Önce Kaynak hesabı seçin",
     "selectOrCreateSecurity": "Menkul kıymet seçin veya oluşturun...",
+    "selectBondOptional": "Tahvili seçin (isteğe bağlı)...",
     "quantityShares": "Miktar (Hisse)",
     "pricePerShare": "Hisse Başı Fiyat",
     "commissionFees": "Komisyon / Ücretler",
