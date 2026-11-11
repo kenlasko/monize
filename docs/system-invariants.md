@@ -89,6 +89,7 @@ implied.
 | INV-PORTRESULT-001 | A period change is not a return: value change, external flows and investment result are three figures | enforced |
 | INV-PORTRESULT-002 | Cash is not an investment: the invested part's P&L and TWR exclude deposits, withdrawals and idle cash | enforced |
 | INV-PORTCHART-001 | A portfolio chart opens and closes on the closes its figures are measured between | enforced |
+| INV-PORTTWR-001 | The portfolio's time-weighted return series ends on the period result's figure and is withheld where that figure is | enforced |
 | INV-INTRADAY-001 | An intraday bar is valued at its own day's positions, and a finished session closes on the daily series' figure | enforced |
 | INV-REPORT-001 | A report's account scope is investment linkage, not account type | enforced |
 | INV-REPORT-002 | A chart's down-sampling never reaches a count, a total or an export | enforced |
@@ -2445,6 +2446,41 @@ The figures and the line were each right on their own and wrong together: the
 figures were measured from the period's own start, and a long range's line
 opened on the end of the starting month. A reader subtracting the first point
 from the last got a number that matched nothing on the page.
+
+### INV-PORTTWR-001 -- the time-weighted return line ends where the card ends
+
+```text
+Statement           For one scope, currency and window, the series of the
+                    invested part's time-weighted return opens at 0 on the
+                    window's first close and its last point equals the period
+                    result's investmentReturnPercent. It is drawn only where
+                    that figure is reported: a day whose invested value is a
+                    subtotal, or a capital or income row that did not convert,
+                    withholds the whole series with the period result's own
+                    reasons, never a chain restarted past the gap. Deposits,
+                    withdrawals and idle cash move no point. Each account of a
+                    per-account request is its own scope over the same window,
+                    not a slice of the combined series.
+Source of truth     investedDayFactors and investedPeriodResult
+                    (backend/src/net-worth/invested-period-result.util.ts):
+                    the one place a day's base and ending are written, read
+                    by the card's chain and by the series alike.
+Enforcement         investedTwrSeries asks investedPeriodResult first and
+                    draws only where it reports a figure
+                    (backend/src/net-worth/invested-twr-series.util.ts), served
+                    by PortfolioTwrSeriesService behind
+                    GET /net-worth/investments-twr-series. The util spec holds
+                    the last point equal to the decision's return over
+                    generated value and flow paths and the withheld cases equal
+                    to the decision's reasons; the service spec holds the
+                    per-account scoping and the shared opening day.
+                    docs/specs/portfolio-twr-series.md.
+Status              enforced.
+```
+
+The card and a line drawn beside it each chain daily factors; two spellings of
+the factor are two returns wearing one caption (#1392), so the series reads the
+factors from the function the card reads.
 
 ### INV-INTRADAY-001 -- an intraday bar holds what its own day held
 
