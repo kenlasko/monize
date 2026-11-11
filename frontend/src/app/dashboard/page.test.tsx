@@ -1166,7 +1166,7 @@ describe('DashboardPage', () => {
       expect(mockUpdatePreferences.mock.calls[0][0].dashboardWidgets).toEqual([]);
     });
 
-    it('keeps every other widget setting at Done, read from the store at that moment (DASH-6)', async () => {
+    it('sends no other widget setting at Done, so one saved meanwhile is kept (DASH-6)', async () => {
       prefsState.current.dashboardWidgetConfig = { 'net-worth': { range: '2y' } };
       await renderLoaded();
       await enterEditMode();
@@ -1181,11 +1181,9 @@ describe('DashboardPage', () => {
         },
       };
       await click(done());
-      expect(mockUpdatePreferences.mock.calls[0][0].dashboardWidgetConfig).toEqual({
-        'net-worth': { range: '5y' },
-        'expenses-pie': { months: 6 },
-        'dashboard-hero': { enabled: false },
-      });
+      // The server merges by widget id, so a slice Done does not send is the
+      // one stored; no size changed here, so Done sends none.
+      expect(mockUpdatePreferences.mock.calls[0][0].dashboardWidgetConfig).toEqual({});
     });
 
     it('keeps edit mode and the draft when Done is refused', async () => {
@@ -1330,7 +1328,8 @@ describe('DashboardPage', () => {
       await click(screen.getByRole('button', { name: 'Remove Spending Insights' }));
       await click(done());
       expect(mockUpdatePreferences).toHaveBeenCalledTimes(2);
-      expect(mockUpdatePreferences.mock.calls[1][0].dashboardWidgetConfig).toHaveProperty('dashboard-hero');
+      // Done never sends the hero's slice, so the server keeps the one just saved.
+      expect(mockUpdatePreferences.mock.calls[1][0].dashboardWidgetConfig).not.toHaveProperty('dashboard-hero');
     });
 
     it('closes the Add dialog on Back after it was closed and opened again, and stays in edit mode', async () => {

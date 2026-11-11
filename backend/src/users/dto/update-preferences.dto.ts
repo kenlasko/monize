@@ -242,7 +242,7 @@ export class UpdatePreferencesDto {
 
   @ApiPropertyOptional({
     description:
-      "Per-widget dashboard settings (timeframe, account selection, chart type) keyed by widget id",
+      "Per-widget dashboard settings (timeframe, account selection, chart type) keyed by widget id, merged into the stored map by widget id: a slice sent replaces that widget's slice, null removes it, and a slice not sent is kept",
     example: {
       "spending-by-payee": { range: "3m" },
       "income-by-source": { range: "1y", chartType: "pie" },

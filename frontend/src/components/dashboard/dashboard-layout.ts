@@ -53,6 +53,13 @@ export type DashboardLayout = readonly DashboardLayoutItem[];
 
 export type WidgetConfigMap = Record<string, Record<string, unknown>>;
 
+/**
+ * A `dashboardWidgetConfig` save: the server merges it by widget id, so each
+ * slice sent replaces that widget's slice, `null` removes it, and a slice not
+ * sent is kept.
+ */
+export type WidgetConfigPatch = Record<string, Record<string, unknown> | null>;
+
 export type DashboardLayoutAction =
   | { type: 'add'; id: DashboardWidgetId }
   | { type: 'remove'; id: DashboardWidgetId }
@@ -174,10 +181,12 @@ export function layoutsEqual(a: DashboardLayout, b: DashboardLayout): boolean {
 }
 
 /**
- * What Done writes. Only the two size keys are changed; every other key and
- * every slice the registry does not know (the hero's included) passes through.
+ * What Done writes. Only the two size keys are changed, and only the slices
+ * whose sizes changed are sent (the server merges by widget id), each carrying
+ * its other keys from `configBefore`; a slice left empty is sent as `null`.
  * Sizes equal to the default are stored as absent keys, and a widget that
  * left the layout loses its size keys so it returns at its default size.
+ * Slices the registry does not know (the hero's included) are never sent.
  * The default widgets in the default order store `[]` whatever their sizes,
  * so the reader keeps following later default-layout changes (DASH-1);
  * `resolveDashboardLayout` reads the sizes from the map with `[]` ids.
@@ -185,12 +194,12 @@ export function layoutsEqual(a: DashboardLayout, b: DashboardLayout): boolean {
 export function serializeDashboardLayout(
   draft: DashboardLayout,
   configBefore: WidgetConfigMap | null | undefined,
-): { dashboardWidgets: string[]; dashboardWidgetConfig: WidgetConfigMap } {
-  const config: WidgetConfigMap = { ...(configBefore ?? {}) };
+): { dashboardWidgets: string[]; dashboardWidgetConfig: WidgetConfigPatch } {
+  const config: WidgetConfigPatch = {};
   const inDraft = new Map(draft.map((item) => [item.id, item]));
 
   for (const def of DASHBOARD_WIDGETS) {
-    const before: unknown = config[def.id];
+    const before: unknown = configBefore?.[def.id];
     const item = inDraft.get(def.id);
     if (!isRecord(before) && !item) continue;
 
@@ -200,8 +209,11 @@ export function serializeDashboardLayout(
     if (item && item.width !== DEFAULT_WIDGET_WIDTH) slice[GRID_WIDTH_KEY] = item.width;
     if (item && item.height !== def.defaultHeight) slice[GRID_HEIGHT_KEY] = item.height;
 
-    if (Object.keys(slice).length === 0) delete config[def.id];
-    else config[def.id] = slice;
+    const stored = isRecord(before) ? before : {};
+    const unchanged =
+      stored[GRID_WIDTH_KEY] === slice[GRID_WIDTH_KEY] && stored[GRID_HEIGHT_KEY] === slice[GRID_HEIGHT_KEY];
+    if (unchanged) continue;
+    config[def.id] = Object.keys(slice).length === 0 ? null : slice;
   }
 
   const ids = draft.map((i) => i.id);

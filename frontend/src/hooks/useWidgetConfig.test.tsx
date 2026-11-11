@@ -69,11 +69,10 @@ describe('useWidgetConfig', () => {
       await result.current.updateConfig({ range: '1y' });
     });
 
+    // Only its own slice: the server merges by widget id, so a slice another
+    // screen stored after this map was read is not overwritten.
     expect(updatePreferencesApi).toHaveBeenCalledWith({
-      dashboardWidgetConfig: {
-        other: { range: '6m' },
-        w1: { range: '1y', accountIds: [] },
-      },
+      dashboardWidgetConfig: { w1: { range: '1y', accountIds: [] } },
     });
     // Store retains the other widget's config.
     expect(storeState.preferences.dashboardWidgetConfig.other).toEqual({ range: '6m' });

@@ -66,7 +66,7 @@ Plan-local ids. None is a financial invariant, so none is added to `docs/system-
 | DASH-3 | Screen order, DOM order and stored order are the same order. | The grid uses row flow without `dense`; items render in draft order. A row may therefore end short when the next widget does not fit; that gap is honest, and tab order follows what the eye sees. |
 | DASH-4 | Leaving edit mode by Cancel, Escape or the browser's Back stores nothing. | The draft lives in a reducer inside the page. The only `userSettingsApi.updatePreferences` call for layout is in the Done handler. Component test asserts no call on each exit. |
 | DASH-5 | Done is one write. | One `updatePreferences({ dashboardWidgets, dashboardWidgetConfig })` request, which the server applies in one `withScopedDb` transaction (`UsersService`). A refused request leaves edit mode open with the draft intact and shows a toast. |
-| DASH-6 | Saving a layout never loses a widget's settings. | The Done handler reads the settings map from the store at that moment (`usePreferencesStore.getState()`), and changes only the `gridWidth` and `gridHeight` keys. Unit test with a populated map. |
+| DASH-6 | Saving a layout never loses a widget's settings. | The server merges a `dashboardWidgetConfig` save by widget id (`mergeWidgetConfig`, `backend/src/users/widget-config-merge.ts`, under the preferences row lock): a slice sent replaces that slice, `null` removes it, a slice not sent is kept. Done sends only the slices whose sizes changed, each built over the map read from the store at that moment (`usePreferencesStore.getState()`) with only `gridWidth` and `gridHeight` changed; a widget's own save and the hero dialog send only their own slice. Unit tests on both layers. |
 | DASH-7 | A height never hides content. | The floor is a `min-height` on the grid item. Nothing sets `height`, `max-height` or `h-full` on the item or the card; the guard in `ui-conventions.test.ts` is extended to the item. |
 | DASH-8 | In edit mode every widget in the draft is on screen. | A widget whose `shouldRender` is false is drawn as a placeholder tile with its name, so it can still be moved or removed. |
 | DASH-9 | A delegate never enters edit mode. | The gear is not rendered for a delegate (as today) and the edit-mode components are not mounted when `isDelegateView`. |
@@ -95,8 +95,8 @@ Rules, all in one new pure module, `frontend/src/components/dashboard/dashboard-
 - `serializeDashboardLayout(draft, configBefore)` returns `{ dashboardWidgets, dashboardWidgetConfig }`.
   - A size equal to the widget's default is stored as an absent key.
   - A widget not in the draft has its two size keys removed, so a widget added back later arrives at its default size. Its other settings are kept.
-  - A slice left with no keys is omitted from the map.
-  - Every other key of every slice, and every slice of an id the registry does not know, is passed through untouched.
+  - Only slices whose size keys changed are sent; a slice left with no keys is sent as `null`, which the server's merge removes.
+  - Every other key of a sent slice is kept; a slice of an id the registry does not know (the hero's included) is never sent.
   - When the draft's ids, in order, are the default layout's, `dashboardWidgets` is `[]`, whatever the sizes; the sizes are in the map.
 - `layoutReducer(draft, action)` with `add`, `remove`, `move`, `resize` and `reset`. It never mutates.
 

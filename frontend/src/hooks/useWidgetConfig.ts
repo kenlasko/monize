@@ -76,8 +76,10 @@ export function useWidgetConfig<T extends object>(
       };
 
       try {
+        // Only this widget's slice: the server merges by widget id, so a
+        // slice another screen stored after this map was read is kept.
         const saved = await userSettingsApi.updatePreferences({
-          dashboardWidgetConfig: nextAll,
+          dashboardWidgetConfig: { [widgetId]: nextWidget },
         });
         settleSlice(saved.dashboardWidgetConfig?.[widgetId] ?? nextWidget);
       } catch (error) {

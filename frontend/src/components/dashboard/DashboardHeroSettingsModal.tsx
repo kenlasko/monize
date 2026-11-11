@@ -83,8 +83,8 @@ function HeroSetGroup({
 /**
  * The dashboard hero's settings. The hero is not in the layout (DASH-10), so
  * it is set here, from edit mode's Hero settings, and saved on its own: only
- * `dashboardWidgetConfig['dashboard-hero']` changes, merged into the map read
- * at save time, and `dashboardWidgets` is never sent.
+ * `dashboardWidgetConfig['dashboard-hero']` is sent, which the server merges
+ * into the stored map by widget id, and `dashboardWidgets` is never sent.
  */
 export function DashboardHeroSettingsModal({
   isOpen,
@@ -110,9 +110,9 @@ export function DashboardHeroSettingsModal({
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const allBefore = usePreferencesStore.getState().preferences?.dashboardWidgetConfig ?? {};
+      // The hero's slice alone; the server merges by widget id.
       const saved = await userSettingsApi.updatePreferences({
-        dashboardWidgetConfig: { ...allBefore, [DASHBOARD_HERO_WIDGET_ID]: { ...hero } },
+        dashboardWidgetConfig: { [DASHBOARD_HERO_WIDGET_ID]: { ...hero } },
       });
       // Only the hero's slice, into the map as it is now: edit mode's Done or
       // a widget's own save may have stored a newer map while this answered.

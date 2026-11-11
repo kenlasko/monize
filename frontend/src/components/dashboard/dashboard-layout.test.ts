@@ -18,6 +18,7 @@ import {
   widthsOfferedFor,
   type DashboardLayout,
   type WidgetConfigMap,
+  type WidgetConfigPatch,
 } from './dashboard-layout';
 import {
   DASHBOARD_WIDGETS,
@@ -174,6 +175,13 @@ describe('resolveDashboardLayout', () => {
   });
 });
 
+/** The server's merge of a save (`backend/src/users/widget-config-merge.ts`). */
+function mergedOnServer(stored: WidgetConfigMap, sent: WidgetConfigPatch): WidgetConfigMap {
+  return Object.fromEntries(
+    Object.entries({ ...stored, ...sent }).filter(([, slice]) => slice !== null),
+  ) as WidgetConfigMap;
+}
+
 describe('serializeDashboardLayout', () => {
   const nonDefault = (id: DashboardWidgetId) =>
     ({ ...item(id), width: 'full' }) as DashboardLayout[number];
@@ -196,7 +204,7 @@ describe('serializeDashboardLayout', () => {
     // the size is read back from the settings map with the default ids.
     expect(out.dashboardWidgets).toEqual([]);
     expect(out.dashboardWidgetConfig).toEqual({ insights: { gridWidth: 'full' } });
-    expect(resolveDashboardLayout(out.dashboardWidgets, out.dashboardWidgetConfig)).toEqual(draft);
+    expect(resolveDashboardLayout(out.dashboardWidgets, mergedOnServer({}, out.dashboardWidgetConfig))).toEqual(draft);
   });
 
   it('A row 3: different order, default sizes stores the ids and no size keys', () => {
@@ -227,7 +235,8 @@ describe('serializeDashboardLayout', () => {
       [item('insights', 'half', 'compact'), item('net-worth', 'half', 'tall')],
       { insights: { gridWidth: 'full', gridHeight: 'tall' } },
     );
-    expect(out.dashboardWidgetConfig).toEqual({ 'net-worth': { gridHeight: 'tall' } });
+    // Insights went back to its defaults, so its emptied slice is sent as null.
+    expect(out.dashboardWidgetConfig).toEqual({ insights: null, 'net-worth': { gridHeight: 'tall' } });
   });
 
   it('a removed widget loses only its size keys', () => {
@@ -238,14 +247,25 @@ describe('serializeDashboardLayout', () => {
     expect(out.dashboardWidgetConfig['net-worth']).toEqual({ range: '2y' });
   });
 
-  it('an emptied slice is omitted', () => {
+  it('an emptied slice is sent as null, so the server removes it', () => {
     const out = serializeDashboardLayout([item('insights')], {
       'net-worth': { gridWidth: 'full', gridHeight: 'tall' },
+    });
+    expect(out.dashboardWidgetConfig).toEqual({ 'net-worth': null });
+  });
+
+  it('sends only the slices whose sizes changed', () => {
+    // The server merges by widget id, so a slice sent unchanged could only
+    // overwrite a newer save of it from another screen.
+    const out = serializeDashboardLayout([item('insights'), item('net-worth', 'half', 'tall')], {
+      insights: { limit: 5 },
+      'net-worth': { range: '2y', gridHeight: 'tall' },
+      'expenses-pie': { months: 6 },
     });
     expect(out.dashboardWidgetConfig).toEqual({});
   });
 
-  it('passes through other keys, unknown slices and the hero slice untouched', () => {
+  it('keeps other keys in a sent slice and never sends unknown slices or the hero slice', () => {
     const hero = { enabled: true, set: 'auto', portfolioAccountIds: ['a', 'b'] };
     const before = deepFreeze({
       'dashboard-hero': hero,
@@ -253,9 +273,7 @@ describe('serializeDashboardLayout', () => {
       insights: { limit: 5, gridWidth: 'third' },
     });
     const out = serializeDashboardLayout([nonDefault('insights')], before);
-    expect(out.dashboardWidgetConfig['dashboard-hero']).toBe(hero);
-    expect(out.dashboardWidgetConfig['future-widget']).toEqual({ gridWidth: 'full', x: 1 });
-    expect(out.dashboardWidgetConfig.insights).toEqual({ limit: 5, gridWidth: 'full' });
+    expect(out.dashboardWidgetConfig).toEqual({ insights: { limit: 5, gridWidth: 'full' } });
   });
 
   it('does not mutate the draft or the settings it was given', () => {
@@ -278,7 +296,7 @@ describe('serializeDashboardLayout', () => {
     ];
     const out = serializeDashboardLayout(draft, {});
     expect(
-      resolveDashboardLayout(out.dashboardWidgets, out.dashboardWidgetConfig),
+      resolveDashboardLayout(out.dashboardWidgets, mergedOnServer({}, out.dashboardWidgetConfig)),
     ).toEqual(draft);
   });
 

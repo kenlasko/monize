@@ -63,7 +63,7 @@ describe('DashboardHeroSettingsModal', () => {
     );
   });
 
-  it('saves only the hero slice, merged into the map read at save time, and never the layout', async () => {
+  it('sends only the hero slice, settles it into the map read at answer time, and never the layout', async () => {
     prefsState.current = {
       dashboardWidgets: ['insights', 'net-worth'],
       dashboardWidgetConfig: { 'net-worth': { range: '5y', gridWidth: 'full' } },
@@ -82,11 +82,15 @@ describe('DashboardHeroSettingsModal', () => {
     const sent = updatePreferencesMock.mock.calls[0][0];
     expect(Object.keys(sent)).toEqual(['dashboardWidgetConfig']);
     expect(sent.dashboardWidgetConfig).toEqual({
-      'net-worth': { range: '2y', gridWidth: 'full' },
-      insights: { gridHeight: 'tall' },
       'dashboard-hero': { ...DASHBOARD_HERO_DEFAULT, range: '10y' },
     });
-    expect(updateStorePreferencesMock).toHaveBeenCalledWith({ dashboardWidgetConfig: sent.dashboardWidgetConfig });
+    expect(updateStorePreferencesMock).toHaveBeenCalledWith({
+      dashboardWidgetConfig: {
+        'net-worth': { range: '2y', gridWidth: 'full' },
+        insights: { gridHeight: 'tall' },
+        'dashboard-hero': { ...DASHBOARD_HERO_DEFAULT, range: '10y' },
+      },
+    });
     expect(onClose).toHaveBeenCalled();
   });
 

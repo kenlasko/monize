@@ -236,22 +236,29 @@ describe('useDashboardLayoutDraft', () => {
     const { result } = setup();
     act(() => result.current.enter());
     act(() => result.current.dispatch({ type: 'remove', id: 'insights' }));
+    act(() => result.current.dispatch({ type: 'resize', id: 'net-worth', width: 'full' }));
     // A widget's gear saved a setting while the draft was open.
     store.preferences = {
       dashboardWidgets: [],
       dashboardWidgetConfig: { 'net-worth': { range: '5y' }, 'expenses-pie': { months: 6 } },
     };
+    updatePreferences.mockResolvedValueOnce({
+      dashboardWidgets: DEFAULT_DASHBOARD_WIDGET_IDS.filter((id) => id !== 'insights'),
+      dashboardWidgetConfig: { 'net-worth': { range: '5y', gridWidth: 'full' }, 'expenses-pie': { months: 6 } },
+    });
     await act(async () => {
       await result.current.save();
     });
     expect(updatePreferences).toHaveBeenCalledTimes(1);
+    // Only the resized slice, over the setting read at save time; the server
+    // merges it by widget id and answers with the whole map.
     expect(updatePreferences).toHaveBeenCalledWith({
       dashboardWidgets: DEFAULT_DASHBOARD_WIDGET_IDS.filter((id) => id !== 'insights'),
-      dashboardWidgetConfig: { 'net-worth': { range: '5y' }, 'expenses-pie': { months: 6 } },
+      dashboardWidgetConfig: { 'net-worth': { range: '5y', gridWidth: 'full' } },
     });
     expect(updateStorePreferences).toHaveBeenCalledWith({
       dashboardWidgets: DEFAULT_DASHBOARD_WIDGET_IDS.filter((id) => id !== 'insights'),
-      dashboardWidgetConfig: { 'net-worth': { range: '5y' }, 'expenses-pie': { months: 6 } },
+      dashboardWidgetConfig: { 'net-worth': { range: '5y', gridWidth: 'full' }, 'expenses-pie': { months: 6 } },
     });
     expect(result.current.editing).toBe(false);
     expect(historyBack).toHaveBeenCalledTimes(1);
