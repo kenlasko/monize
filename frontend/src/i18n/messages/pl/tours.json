@@ -553,6 +553,99 @@
           }
         }
       }
+    },
+    "v1_21_0": {
+      "commandPalette": {
+        "title": "Paleta poleceń",
+        "steps": {
+          "welcome": {
+            "title": "Znajdź wszystko w jednym polu",
+            "body": "Paleta poleceń przeszukuje jednocześnie Twoje konta, odbiorców, kategorie, rachunki, papiery wartościowe, raporty, ustawienia, transakcje i przewodnik użytkownika, z dowolnego ekranu. Działa z klawiatury, więc ten przewodnik jest przeznaczony dla komputera."
+          },
+          "openPalette": {
+            "title": "Otwórz paletę",
+            "body": "Naciśnij **Ctrl+K** (**Cmd+K** na Macu). Przewodnik będzie kontynuowany po otwarciu palety."
+          },
+          "searchBox": {
+            "title": "Wpisz, czego szukasz",
+            "body": "Spróbuj wpisać odbiorcę, konto, raport taki jak **Wartość netto** albo ustawienie takie jak **Waluty**. Wyniki aktualizują się w trakcie pisania, a przeszukiwane są też transakcje i sekcje przewodnika."
+          },
+          "results": {
+            "title": "Poruszaj się i otwieraj",
+            "body": "Strzałkami **w górę** i **w dół** przechodzisz po wynikach, a klawiszem **Enter** otwierasz wynik. **Tab** przeskakuje do akcji, a **Ctrl+Enter** (**Cmd+Enter** na Macu) rozpoczyna nową transakcję dla najlepiej pasującego odbiorcy."
+          },
+          "closePalette": {
+            "title": "Zamknij paletę",
+            "body": "Kliknij **esc**, aby na razie ją zamknąć. Poza tym przewodnikiem klawisz **Esc** robi to samo."
+          },
+          "done": {
+            "title": "Jeden skrót do zapamiętania",
+            "body": "Naciśnij **Ctrl+K**, kiedy chcesz gdzieś przejść. Nad otwartym oknem dialogowym przeszukuje zamiast tego przewodnik użytkownika. Na telefonie użyj wyszukiwania w nagłówku. Odtwórz ten przewodnik ponownie w dowolnej chwili w **Ustawieniach**, w sekcji **Przewodniki po aplikacji**."
+          }
+        }
+      },
+      "inAppHelp": {
+        "title": "Pomoc w aplikacji",
+        "steps": {
+          "welcome": {
+            "title": "Przewodnik użytkownika obok Twojej pracy",
+            "body": "Przewodnik użytkownika Monize otwiera się teraz w aplikacji, obok strony, na której jesteś, ze zrzutami ekranu w Twoim motywie. Jest częścią Twojego Monize, więc działa offline. Ten przewodnik pokazuje, gdzie go znaleźć."
+          },
+          "pageHelp": {
+            "title": "Otwórz pomoc dla tej strony",
+            "body": "Kliknij **?** obok tytułu strony. Przewodnik otworzy się w sekcji o tej stronie."
+          },
+          "panel": {
+            "title": "Czytaj obok strony",
+            "body": "Panel zostaje obok strony, na której byłeś. **Na tej stronie** wyświetla sekcje, a linki do innych stron przewodnika otwierają się tutaj. Na komputerze przeciągnij lewą krawędź panelu, aby go poszerzyć lub zwęzić."
+          },
+          "panelControls": {
+            "title": "Sterowanie panelem",
+            "body": "Przechodź po otwartych stronach przyciskami **Wstecz** i **Dalej**, **Przeszukuj** przewodnik, **Przypnij** panel, aby pozostał otwarty na innych stronach, albo otwórz stronę na monize.net. Kliknij **Zamknij** (**X**), aby kontynuować."
+          },
+          "helpMenu": {
+            "title": "Menu Pomoc",
+            "body": "**?** w nagłówku zawiera pomoc dla bieżącej strony, wyszukiwanie w przewodniku, skróty klawiszowe, przewodnik po tej stronie i nowości. Możesz też nacisnąć **?** w dowolnym miejscu, w którym nie piszesz, aby przeszukać przewodnik."
+          },
+          "learnMore": {
+            "title": "Dowiedz się więcej, tam gdzie trzeba",
+            "body": "Szukaj **Dowiedz się więcej** w podpowiedziach, na pustych ekranach i obok niektórych komunikatów o błędach. Każdy z nich otwiera sekcję przewodnika, która to wyjaśnia."
+          },
+          "done": {
+            "title": "Pytaj własnymi słowami",
+            "body": "Asystent AI może też odpowiadać na pytania w rodzaju „jak mam...” na podstawie przewodnika i podać, z których sekcji skorzystał. Odtwórz ten przewodnik ponownie w dowolnej chwili w **Ustawieniach**, w sekcji **Przewodniki po aplikacji**."
+          }
+        }
+      },
+      "dashboardEdit": {
+        "title": "Układanie pulpitu",
+        "steps": {
+          "welcome": {
+            "title": "Układaj pulpit na miejscu",
+            "body": "Widżety przesuwasz, zmieniasz im rozmiar, dodajesz i usuwasz teraz bezpośrednio na pulpicie, a nic nie jest zapisywane, dopóki tego nie zdecydujesz. Ten przewodnik omawia tryb edycji."
+          },
+          "enterEdit": {
+            "title": "Wejdź w tryb edycji",
+            "body": "Kliknij koło zębate obok powitania. Przewodnik będzie kontynuowany po otwarciu trybu edycji."
+          },
+          "editBar": {
+            "title": "Pasek edycji",
+            "body": "**Dodaj widżet** wyświetla widżety, których nie ma na Twoim pulpicie. **Ustawienia nagłówka** wybierają, co pokazuje nagłówek u góry, a **Przywróć domyślne** przywraca standardowy układ."
+          },
+          "arrange": {
+            "title": "Przesuwanie, zmiana rozmiaru i usuwanie",
+            "body": "Przeciągnij widżet za uchwyt (sześć kropek) albo użyj jego strzałek. Na szerokim ekranie **Szerokość** i **Wysokość** zmieniają jego rozmiar, albo przeciągnij jego prawy dolny róg. **X** go usuwa, a kafelek z przerywaną ramką **Dodaj widżet** dodaje nowy. Śmiało, wypróbuj."
+          },
+          "finish": {
+            "title": "Zachowaj albo cofnij",
+            "body": "Kliknij **Gotowe**, aby zapisać układ, albo **Anuluj**, aby przywrócić go do poprzedniego stanu. Twój układ synchronizuje się między Twoimi urządzeniami."
+          },
+          "done": {
+            "title": "Dostosuj do siebie",
+            "body": "Szukasz czegoś nowego do dodania? Widżet **Ciekawostki** pokazuje codzienny fakt o Twoich pieniądzach. Odtwórz ten przewodnik ponownie w dowolnej chwili w **Ustawieniach**, w sekcji **Przewodniki po aplikacji**."
+          }
+        }
+      }
     }
   },
   "emailReceipts": {

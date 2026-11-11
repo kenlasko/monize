@@ -553,6 +553,99 @@
           }
         }
       }
+    },
+    "v1_21_0": {
+      "commandPalette": {
+        "title": "Befehlspalette",
+        "steps": {
+          "welcome": {
+            "title": "Alles in einem Feld finden",
+            "body": "Die Befehlspalette durchsucht von jedem Bildschirm aus Ihre Konten, Zahlungsempfänger, Kategorien, Rechnungen, Wertpapiere, Berichte, Einstellungen, Buchungen und die Anleitung auf einmal. Sie lässt sich per Tastatur bedienen, deshalb ist diese Tour für einen Computer gedacht."
+          },
+          "openPalette": {
+            "title": "Die Palette öffnen",
+            "body": "Drücken Sie **Ctrl+K** (auf einem Mac **Cmd+K**). Die Tour geht weiter, sobald sich die Palette öffnet."
+          },
+          "searchBox": {
+            "title": "Geben Sie ein, was Sie suchen",
+            "body": "Probieren Sie einen Zahlungsempfänger, ein Konto, einen Bericht wie **Reinvermögen** oder eine Einstellung wie **Währungen**. Die Ergebnisse aktualisieren sich beim Tippen, und auch Buchungen und Abschnitte der Anleitung werden durchsucht."
+          },
+          "results": {
+            "title": "Bewegen und öffnen",
+            "body": "Mit den Pfeiltasten **Auf** und **Ab** bewegen Sie sich, mit **Enter** öffnen Sie ein Ergebnis. **Tab** springt zu den Aktionen, und **Ctrl+Enter** (auf einem Mac **Cmd+Enter**) startet eine neue Buchung für den am besten passenden Zahlungsempfänger."
+          },
+          "closePalette": {
+            "title": "Die Palette schließen",
+            "body": "Klicken Sie auf **esc**, um sie vorerst zu schließen. Außerhalb dieser Tour erledigt die Taste **Esc** dasselbe."
+          },
+          "done": {
+            "title": "Eine Tastenkombination zum Merken",
+            "body": "Drücken Sie **Ctrl+K**, wann immer Sie irgendwohin springen möchten. Über einem geöffneten Dialog durchsucht sie stattdessen die Anleitung. Auf dem Smartphone nutzen Sie die Suche in der Kopfzeile. Sie können diese Tour jederzeit unter **Einstellungen** im Bereich **Geführte Touren** wiederholen."
+          }
+        }
+      },
+      "inAppHelp": {
+        "title": "Hilfe in der App",
+        "steps": {
+          "welcome": {
+            "title": "Die Anleitung, direkt neben Ihrer Arbeit",
+            "body": "Die Monize-Anleitung öffnet sich jetzt in der App, neben der Seite, auf der Sie sind, mit Screenshots in Ihrem Design. Sie gehört zu Ihrer Monize-Installation und funktioniert deshalb auch offline. Diese Tour zeigt, wo Sie sie finden."
+          },
+          "pageHelp": {
+            "title": "Hilfe zu dieser Seite öffnen",
+            "body": "Klicken Sie auf das **?** neben dem Seitentitel. Die Anleitung öffnet sich beim Abschnitt zu dieser Seite."
+          },
+          "panel": {
+            "title": "Neben der Seite lesen",
+            "body": "Das Fenster bleibt neben der Seite, auf der Sie waren. **Auf dieser Seite** listet die Abschnitte auf, und Links zu anderen Seiten der Anleitung öffnen sich hier. Am Computer ziehen Sie den linken Rand des Fensters, um es breiter oder schmaler zu machen."
+          },
+          "panelControls": {
+            "title": "Steuerung des Fensters",
+            "body": "Gehen Sie mit **Zurück** und **Vor** durch die geöffneten Seiten, **Suchen** Sie in der Anleitung, **Heften** Sie das Fenster an, damit es auf anderen Seiten geöffnet bleibt, oder öffnen Sie die Seite auf monize.net. Klicken Sie auf **Schließen** (das **X**), um fortzufahren."
+          },
+          "helpMenu": {
+            "title": "Das Hilfemenü",
+            "body": "Das **?** in der Kopfzeile bietet Hilfe zur aktuellen Seite, die Suche in der Anleitung, Tastenkombinationen, die Tour zu dieser Seite und Neuigkeiten. Sie können auch überall, wo Sie nicht tippen, **?** drücken, um die Anleitung zu durchsuchen."
+          },
+          "learnMore": {
+            "title": "Mehr erfahren, wo Sie es brauchen",
+            "body": "Achten Sie auf **Mehr erfahren** in Tooltips, auf leeren Bildschirmen und neben manchen Fehlermeldungen. Jeder dieser Links öffnet den Abschnitt der Anleitung, der es erklärt."
+          },
+          "done": {
+            "title": "Fragen Sie in Ihren eigenen Worten",
+            "body": "Der KI-Assistent beantwortet auch Fragen wie „Wie mache ich ...“ anhand der Anleitung und sagt Ihnen, welche Abschnitte er verwendet hat. Sie können diese Tour jederzeit unter **Einstellungen** im Bereich **Geführte Touren** wiederholen."
+          }
+        }
+      },
+      "dashboardEdit": {
+        "title": "Das Dashboard anordnen",
+        "steps": {
+          "welcome": {
+            "title": "Ordnen Sie Ihr Dashboard direkt an",
+            "body": "Sie verschieben, ändern, ergänzen und entfernen Widgets jetzt direkt auf dem Dashboard, und nichts wird gespeichert, bevor Sie es sagen. Diese Tour führt durch den Bearbeitungsmodus."
+          },
+          "enterEdit": {
+            "title": "Den Bearbeitungsmodus starten",
+            "body": "Klicken Sie auf das Zahnrad neben der Begrüßung. Die Tour geht weiter, sobald sich der Bearbeitungsmodus öffnet."
+          },
+          "editBar": {
+            "title": "Die Bearbeitungsleiste",
+            "body": "**Widget hinzufügen** listet die Widgets auf, die nicht auf Ihrem Dashboard sind. **Einstellungen Kopfbereich** legt fest, was der Kopfbereich oben zeigt, und **Auf Standard zurücksetzen** stellt das Standardlayout wieder her."
+          },
+          "arrange": {
+            "title": "Verschieben, Größe ändern und entfernen",
+            "body": "Ziehen Sie ein Widget am Griff (die sechs Punkte) oder nutzen Sie seine Pfeile. Auf einem breiten Bildschirm ändern **Breite** und **Höhe** die Größe, oder ziehen Sie die untere rechte Ecke. Mit dem **X** entfernen Sie es, und die gestrichelte Kachel **Widget hinzufügen** fügt eines hinzu. Probieren Sie es aus."
+          },
+          "finish": {
+            "title": "Behalten oder zurücksetzen",
+            "body": "Klicken Sie auf **Fertig**, um das Layout zu speichern, oder auf **Abbrechen**, um den vorherigen Zustand wiederherzustellen. Ihr Layout wird auf Ihren Geräten synchronisiert."
+          },
+          "done": {
+            "title": "Machen Sie es zu Ihrem",
+            "body": "Suchen Sie etwas Neues zum Hinzufügen? Das Widget **Wissenswertes** zeigt täglich einen Fakt über Ihr Geld. Sie können diese Tour jederzeit unter **Einstellungen** im Bereich **Geführte Touren** wiederholen."
+          }
+        }
+      }
     }
   },
   "emailReceipts": {

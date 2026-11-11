@@ -553,6 +553,99 @@
           }
         }
       }
+    },
+    "v1_21_0": {
+      "commandPalette": {
+        "title": "Komut paleti",
+        "steps": {
+          "welcome": {
+            "title": "Her şeyi tek kutudan bulun",
+            "body": "Komut paleti, herhangi bir ekrandan hesaplarınızı, alıcıları, kategorileri, faturaları, menkul kıymetleri, raporları, ayarları, işlemleri ve kullanım kılavuzunu aynı anda arar. Klavyeyle çalışır, bu yüzden bu tur bir bilgisayar içindir."
+          },
+          "openPalette": {
+            "title": "Paleti açın",
+            "body": "**Ctrl+K** tuşlarına basın (Mac'te **Cmd+K**). Palet açılınca tur devam eder."
+          },
+          "searchBox": {
+            "title": "Aradığınızı yazın",
+            "body": "Bir alıcı, bir hesap, **Net Değer** gibi bir rapor ya da **Para Birimleri** gibi bir ayar deneyin. Sonuçlar yazdıkça güncellenir; işlemler ve kılavuz bölümleri de aranır."
+          },
+          "results": {
+            "title": "Gezinin ve açın",
+            "body": "Gezinmek için **Yukarı** ve **Aşağı** ok tuşlarını, bir sonucu açmak için **Enter** tuşunu kullanın. **Tab** eylemlere atlar, **Ctrl+Enter** (Mac'te **Cmd+Enter**) ise en iyi eşleşen alıcı için yeni bir işlem başlatır."
+          },
+          "closePalette": {
+            "title": "Paleti kapatın",
+            "body": "Şimdilik kapatmak için **esc** düğmesine tıklayın. Bu turun dışında **Esc** tuşu da aynı işi yapar."
+          },
+          "done": {
+            "title": "Hatırlanması gereken tek kısayol",
+            "body": "Bir yere atlamak istediğinizde **Ctrl+K** tuşlarına basın. Açık bir iletişim kutusunun üzerindeyken bunun yerine kılavuzda arar. Telefonda üst bilgideki aramayı kullanın. Bu turu istediğiniz zaman **Ayarlar** altındaki **Rehberli Turlar** bölümünden yeniden oynatabilirsiniz."
+          }
+        }
+      },
+      "inAppHelp": {
+        "title": "Uygulama içinde yardım",
+        "steps": {
+          "welcome": {
+            "title": "Kullanım kılavuzu, işinizin yanında",
+            "body": "Monize kullanım kılavuzu artık uygulamanın içinde, bulunduğunuz sayfanın yanında, temanızdaki ekran görüntüleriyle açılıyor. Monize ile birlikte geldiği için çevrimdışı da çalışır. Bu tur nerede bulacağınızı gösterir."
+          },
+          "pageHelp": {
+            "title": "Bu sayfanın yardımını açın",
+            "body": "Sayfa başlığının yanındaki **?** simgesine tıklayın. Kılavuz, bu sayfayı anlatan bölümde açılır."
+          },
+          "panel": {
+            "title": "Sayfayla birlikte okuyun",
+            "body": "Panel, bulunduğunuz sayfanın yanında kalır. **Bu sayfada** bölümleri listeler, kılavuzun diğer sayfalarına giden bağlantılar burada açılır. Bilgisayarda, paneli genişletmek veya daraltmak için sol kenarını sürükleyin."
+          },
+          "panelControls": {
+            "title": "Panel kontrolleri",
+            "body": "Açtığınız sayfalar arasında **Geri** ve **İleri** ile gezinin, kılavuzda **Ara** işlevini kullanın, panelin diğer sayfalarda da açık kalması için **Sabitle** düğmesini kullanın ya da sayfayı monize.net'te açın. Devam etmek için **Kapat** düğmesine (**X**) tıklayın."
+          },
+          "helpMenu": {
+            "title": "Yardım menüsü",
+            "body": "Üst bilgideki **?** simgesi, geçerli sayfanın yardımını, kılavuzda aramayı, klavye kısayollarını, bu sayfanın turunu ve Yenilikler'i içerir. Yazı yazmadığınız her yerde **?** tuşuna basarak da kılavuzda arama yapabilirsiniz."
+          },
+          "learnMore": {
+            "title": "Daha fazla bilgi, ihtiyaç duyduğunuz yerde",
+            "body": "İpuçlarında, boş ekranlarda ve bazı hata iletilerinin yanında **Daha fazla bilgi** bağlantısını arayın. Her biri, konuyu açıklayan kılavuz bölümünü açar."
+          },
+          "done": {
+            "title": "Kendi sözlerinizle sorun",
+            "body": "Yapay zekâ asistanı, kılavuzdan yola çıkarak \"nasıl yapılır...\" gibi soruları da yanıtlayabilir ve hangi bölümleri kullandığını söyler. Bu turu istediğiniz zaman **Ayarlar** altındaki **Rehberli Turlar** bölümünden yeniden oynatabilirsiniz."
+          }
+        }
+      },
+      "dashboardEdit": {
+        "title": "Panoyu düzenleme",
+        "steps": {
+          "welcome": {
+            "title": "Panonuzu yerinde düzenleyin",
+            "body": "Artık widget'ları doğrudan panoda taşıyor, yeniden boyutlandırıyor, ekliyor ve kaldırıyorsunuz; siz söylemeden hiçbir şey kaydedilmez. Bu tur düzenleme modunu adım adım anlatır."
+          },
+          "enterEdit": {
+            "title": "Düzenleme moduna girin",
+            "body": "Karşılama mesajının yanındaki dişli simgesine tıklayın. Düzenleme modu açılınca tur devam eder."
+          },
+          "editBar": {
+            "title": "Düzenleme çubuğu",
+            "body": "**Widget ekle**, panonuzda olmayan widget'ları listeler. **Başlık ayarları** üstteki başlık alanının ne göstereceğini seçer, **Varsayılana sıfırla** ise standart düzeni geri getirir."
+          },
+          "arrange": {
+            "title": "Taşıma, yeniden boyutlandırma ve kaldırma",
+            "body": "Bir widget'ı tutamacından (altı nokta) sürükleyin veya oklarını kullanın. Geniş bir ekranda **Genişlik** ve **Yükseklik** boyutunu değiştirir ya da sağ alt köşesini sürükleyin. **X** onu kaldırır, kesik çizgili **Widget ekle** kutusu ise yenisini ekler. Hadi deneyin."
+          },
+          "finish": {
+            "title": "Kalsın ya da eski haline dönsün",
+            "body": "Düzeni kaydetmek için **Tamam**'a, eski haline döndürmek için **İptal**'e tıklayın. Düzeniniz cihazlarınız arasında eşitlenir."
+          },
+          "done": {
+            "title": "Kendinize göre yapın",
+            "body": "Eklemek için yeni bir şey mi arıyorsunuz? **Bilgi notları** widget'ı, paranızla ilgili günlük bir bilgi gösterir. Bu turu istediğiniz zaman **Ayarlar** altındaki **Rehberli Turlar** bölümünden yeniden oynatabilirsiniz."
+          }
+        }
+      }
     }
   },
   "emailReceipts": {

@@ -553,6 +553,99 @@
           }
         }
       }
+    },
+    "v1_21_0": {
+      "commandPalette": {
+        "title": "Bảng lệnh",
+        "steps": {
+          "welcome": {
+            "title": "Tìm mọi thứ từ một ô duy nhất",
+            "body": "Bảng lệnh tìm cùng lúc trong tài khoản, người nhận, danh mục, hóa đơn, chứng khoán, báo cáo, cài đặt, giao dịch của bạn và cả hướng dẫn sử dụng, từ bất kỳ màn hình nào. Bảng lệnh hoạt động bằng bàn phím, nên tour này dành cho máy tính."
+          },
+          "openPalette": {
+            "title": "Mở bảng lệnh",
+            "body": "Nhấn **Ctrl+K** (**Cmd+K** trên máy Mac). Tour sẽ tiếp tục khi bảng lệnh mở ra."
+          },
+          "searchBox": {
+            "title": "Nhập nội dung bạn cần tìm",
+            "body": "Hãy thử một người nhận, một tài khoản, một báo cáo như **Giá trị ròng** hoặc một cài đặt như **Tiền tệ**. Kết quả cập nhật khi bạn gõ, và các giao dịch cùng các mục của hướng dẫn cũng được tìm."
+          },
+          "results": {
+            "title": "Di chuyển và mở",
+            "body": "Dùng phím mũi tên **Lên** và **Xuống** để di chuyển và **Enter** để mở một kết quả. **Tab** nhảy tới các thao tác, còn **Ctrl+Enter** (**Cmd+Enter** trên máy Mac) bắt đầu một giao dịch mới cho người nhận khớp nhất."
+          },
+          "closePalette": {
+            "title": "Đóng bảng lệnh",
+            "body": "Nhấp **esc** để đóng bảng lệnh lúc này. Ngoài tour này, phím **Esc** cũng làm như vậy."
+          },
+          "done": {
+            "title": "Một phím tắt cần nhớ",
+            "body": "Nhấn **Ctrl+K** bất cứ khi nào bạn muốn chuyển đến đâu đó. Khi đang mở một hộp thoại, phím này sẽ tìm trong hướng dẫn. Trên điện thoại, hãy dùng ô tìm kiếm ở phần đầu trang. Bạn có thể xem lại tour này bất cứ lúc nào từ **Cài đặt**, trong mục **Hướng dẫn sử dụng**."
+          }
+        }
+      },
+      "inAppHelp": {
+        "title": "Trợ giúp ngay trong ứng dụng",
+        "steps": {
+          "welcome": {
+            "title": "Hướng dẫn sử dụng, ngay cạnh công việc của bạn",
+            "body": "Hướng dẫn sử dụng Monize giờ mở ngay trong ứng dụng, bên cạnh trang bạn đang xem, kèm ảnh chụp màn hình theo giao diện của bạn. Hướng dẫn đi kèm với Monize của bạn nên dùng được khi không có mạng. Tour này chỉ cho bạn nơi tìm thấy nó."
+          },
+          "pageHelp": {
+            "title": "Mở trợ giúp cho trang này",
+            "body": "Nhấp vào **?** bên cạnh tiêu đề trang. Hướng dẫn mở ra ở mục nói về trang này."
+          },
+          "panel": {
+            "title": "Đọc song song với trang",
+            "body": "Bảng này nằm cạnh trang bạn đang xem. **Trên trang này** liệt kê các mục, và các liên kết đến những trang khác của hướng dẫn sẽ mở tại đây. Trên máy tính, hãy kéo mép trái của bảng để làm rộng hoặc hẹp hơn."
+          },
+          "panelControls": {
+            "title": "Các nút điều khiển của bảng",
+            "body": "Dùng **Quay lại** và **Tiến tới** để chuyển qua các trang đã mở, **Tìm kiếm** trong hướng dẫn, **Ghim** bảng để bảng luôn mở trên các trang khác, hoặc mở trang trên monize.net. Nhấp **Đóng** (nút **X**) để tiếp tục."
+          },
+          "helpMenu": {
+            "title": "Menu Trợ giúp",
+            "body": "Dấu **?** ở phần đầu trang chứa trợ giúp cho trang hiện tại, tìm kiếm trong hướng dẫn, phím tắt, tour của trang này và mục Có gì mới. Bạn cũng có thể nhấn **?** ở bất kỳ nơi nào bạn không đang gõ để tìm trong hướng dẫn."
+          },
+          "learnMore": {
+            "title": "Tìm hiểu thêm, ngay khi bạn cần",
+            "body": "Hãy tìm **Tìm hiểu thêm** trong các chú giải, trên các màn hình trống và bên cạnh một số thông báo lỗi. Mỗi liên kết mở ra mục của hướng dẫn giải thích vấn đề đó."
+          },
+          "done": {
+            "title": "Hỏi bằng lời của bạn",
+            "body": "Trợ lý AI cũng có thể trả lời các câu hỏi dạng \"làm thế nào để...\" dựa trên hướng dẫn và cho bạn biết nó đã dùng những mục nào. Bạn có thể xem lại tour này bất cứ lúc nào từ **Cài đặt**, trong mục **Hướng dẫn sử dụng**."
+          }
+        }
+      },
+      "dashboardEdit": {
+        "title": "Sắp xếp bảng điều khiển",
+        "steps": {
+          "welcome": {
+            "title": "Sắp xếp bảng điều khiển ngay tại chỗ",
+            "body": "Giờ bạn di chuyển, đổi kích thước, thêm và xóa tiện ích ngay trên bảng điều khiển, và không có gì được lưu cho đến khi bạn đồng ý. Tour này hướng dẫn chế độ chỉnh sửa."
+          },
+          "enterEdit": {
+            "title": "Vào chế độ chỉnh sửa",
+            "body": "Nhấp vào biểu tượng bánh răng bên cạnh lời chào. Tour sẽ tiếp tục khi chế độ chỉnh sửa mở ra."
+          },
+          "editBar": {
+            "title": "Thanh chỉnh sửa",
+            "body": "**Thêm tiện ích** liệt kê các tiện ích chưa có trên bảng điều khiển của bạn. **Cài đặt phần đầu** chọn nội dung phần đầu ở trên cùng hiển thị, và **Đặt lại mặc định** khôi phục bố cục tiêu chuẩn."
+          },
+          "arrange": {
+            "title": "Di chuyển, đổi kích thước và xóa",
+            "body": "Kéo một tiện ích bằng tay nắm (sáu dấu chấm) hoặc dùng các mũi tên của nó. Trên màn hình rộng, **Chiều rộng** và **Chiều cao** thay đổi kích thước của tiện ích, hoặc kéo góc dưới bên phải của nó. Nút **X** xóa tiện ích, còn ô viền nét đứt **Thêm tiện ích** sẽ thêm một tiện ích. Cứ thử xem."
+          },
+          "finish": {
+            "title": "Giữ lại hoặc hoàn tác",
+            "body": "Nhấp **Xong** để lưu bố cục, hoặc **Hủy** để trả về như cũ. Bố cục của bạn được đồng bộ trên các thiết bị của bạn."
+          },
+          "done": {
+            "title": "Biến nó thành của bạn",
+            "body": "Đang tìm thứ gì mới để thêm? Tiện ích **Thông tin thú vị** hiển thị mỗi ngày một sự thật về tiền của bạn. Bạn có thể xem lại tour này bất cứ lúc nào từ **Cài đặt**, trong mục **Hướng dẫn sử dụng**."
+          }
+        }
+      }
     }
   },
   "emailReceipts": {

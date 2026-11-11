@@ -553,6 +553,99 @@
           }
         }
       }
+    },
+    "v1_21_0": {
+      "commandPalette": {
+        "title": "Opdrachtenpalet",
+        "steps": {
+          "welcome": {
+            "title": "Vind alles vanuit één vak",
+            "body": "Het opdrachtenpalet doorzoekt in één keer je rekeningen, begunstigden, categorieën, rekeningen om te betalen, effecten, rapporten, instellingen, transacties en de gebruikershandleiding, vanaf elk scherm. Het werkt met het toetsenbord, dus deze rondleiding is voor een computer."
+          },
+          "openPalette": {
+            "title": "Open het palet",
+            "body": "Druk op **Ctrl+K** (**Cmd+K** op een Mac). De rondleiding gaat verder zodra het palet opent."
+          },
+          "searchBox": {
+            "title": "Typ wat je zoekt",
+            "body": "Probeer een begunstigde, een rekening, een rapport zoals **Nettowaarde** of een instelling zoals **Valuta's**. De resultaten worden bijgewerkt terwijl je typt, en ook transacties en onderdelen van de handleiding worden doorzocht."
+          },
+          "results": {
+            "title": "Navigeer en open",
+            "body": "Gebruik de pijltjestoetsen **Omhoog** en **Omlaag** om te navigeren en **Enter** om een resultaat te openen. **Tab** springt naar de acties, en **Ctrl+Enter** (**Cmd+Enter** op een Mac) start een nieuwe transactie voor de best passende begunstigde."
+          },
+          "closePalette": {
+            "title": "Sluit het palet",
+            "body": "Klik op **esc** om het nu te sluiten. Buiten deze rondleiding doet de toets **Esc** hetzelfde."
+          },
+          "done": {
+            "title": "Eén sneltoets om te onthouden",
+            "body": "Druk op **Ctrl+K** wanneer je ergens naartoe wilt springen. Boven een geopend dialoogvenster doorzoekt het in plaats daarvan de handleiding. Gebruik op een telefoon de zoekfunctie in de koptekst. Speel deze rondleiding op elk moment opnieuw af via **Instellingen**, onder **Begeleide rondleidingen**."
+          }
+        }
+      },
+      "inAppHelp": {
+        "title": "Help in de app",
+        "steps": {
+          "welcome": {
+            "title": "De gebruikershandleiding, naast je werk",
+            "body": "De Monize-gebruikershandleiding opent nu in de app, naast de pagina waarop je zit, met schermafbeeldingen in jouw thema. Hij wordt meegeleverd met je Monize en werkt dus offline. Deze rondleiding laat zien waar je hem vindt."
+          },
+          "pageHelp": {
+            "title": "Open de help voor deze pagina",
+            "body": "Klik op het **?** naast de paginatitel. De handleiding opent bij het onderdeel over deze pagina."
+          },
+          "panel": {
+            "title": "Lees naast de pagina",
+            "body": "Het paneel blijft naast de pagina waarop je zat. **Op deze pagina** toont de onderdelen, en koppelingen naar andere pagina's van de handleiding openen hier. Sleep op een computer de linkerrand van het paneel om het breder of smaller te maken."
+          },
+          "panelControls": {
+            "title": "Bediening van het paneel",
+            "body": "Ga met **Terug** en **Vooruit** door de pagina's die je opende, gebruik **Zoeken** in de handleiding, zet het paneel vast met **Vastzetten** zodat het open blijft op andere pagina's, of open de pagina op monize.net. Klik op **Sluiten** (de **X**) om verder te gaan."
+          },
+          "helpMenu": {
+            "title": "Het Help-menu",
+            "body": "De **?** in de koptekst bevat help voor de huidige pagina, zoeken in de handleiding, sneltoetsen, de rondleiding voor deze pagina en Wat is er nieuw. Je kunt ook overal waar je niet typt op **?** drukken om de handleiding te doorzoeken."
+          },
+          "learnMore": {
+            "title": "Meer informatie, waar je het nodig hebt",
+            "body": "Zoek naar **Meer informatie** in tooltips, op lege schermen en naast sommige foutmeldingen. Elk opent het onderdeel van de handleiding dat het uitlegt."
+          },
+          "done": {
+            "title": "Vraag het in je eigen woorden",
+            "body": "De AI-assistent kan ook vragen als “hoe doe ik...” beantwoorden aan de hand van de handleiding en vertellen welke onderdelen hij gebruikte. Speel deze rondleiding op elk moment opnieuw af via **Instellingen**, onder **Begeleide rondleidingen**."
+          }
+        }
+      },
+      "dashboardEdit": {
+        "title": "Het dashboard indelen",
+        "steps": {
+          "welcome": {
+            "title": "Deel je dashboard ter plekke in",
+            "body": "Je verplaatst, vergroot of verkleint, voegt toe en verwijdert widgets nu direct op het dashboard, en er wordt niets opgeslagen tot jij dat aangeeft. Deze rondleiding loopt door de bewerkmodus."
+          },
+          "enterEdit": {
+            "title": "Open de bewerkmodus",
+            "body": "Klik op het tandwiel naast de begroeting. De rondleiding gaat verder zodra de bewerkmodus opent."
+          },
+          "editBar": {
+            "title": "De bewerkbalk",
+            "body": "**Widget toevoegen** toont de widgets die niet op je dashboard staan. **Instellingen dashboardkop** bepaalt wat de kop bovenaan toont, en **Standaardinstellingen herstellen** zet de standaardindeling terug."
+          },
+          "arrange": {
+            "title": "Verplaatsen, formaat wijzigen en verwijderen",
+            "body": "Sleep een widget aan zijn greep (de zes puntjes) of gebruik zijn pijltjes. Op een breed scherm wijzigen **Breedte** en **Hoogte** het formaat, of sleep de hoek rechtsonder. Met de **X** verwijder je hem, en de gestippelde tegel **Widget toevoegen** voegt er een toe. Probeer het gerust."
+          },
+          "finish": {
+            "title": "Bewaren of terugzetten",
+            "body": "Klik op **Klaar** om de indeling op te slaan, of op **Annuleren** om alles terug te zetten zoals het was. Je indeling wordt gesynchroniseerd tussen je apparaten."
+          },
+          "done": {
+            "title": "Maak het van jou",
+            "body": "Zoek je iets nieuws om toe te voegen? De widget **Weetjes** toont elke dag een feit over je geld. Speel deze rondleiding op elk moment opnieuw af via **Instellingen**, onder **Begeleide rondleidingen**."
+          }
+        }
+      }
     }
   },
   "emailReceipts": {

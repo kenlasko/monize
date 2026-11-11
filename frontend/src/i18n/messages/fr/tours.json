@@ -553,6 +553,99 @@
           }
         }
       }
+    },
+    "v1_21_0": {
+      "commandPalette": {
+        "title": "Palette de commandes",
+        "steps": {
+          "welcome": {
+            "title": "Tout trouver depuis un seul champ",
+            "body": "La palette de commandes recherche en une fois dans vos comptes, bénéficiaires, catégories, factures, titres, rapports, paramètres, transactions et dans le guide de l'utilisateur, depuis n'importe quel écran. Elle se pilote au clavier, cette visite est donc destinée à un ordinateur."
+          },
+          "openPalette": {
+            "title": "Ouvrir la palette",
+            "body": "Appuyez sur **Ctrl+K** (**Cmd+K** sur un Mac). La visite continue dès que la palette s'ouvre."
+          },
+          "searchBox": {
+            "title": "Saisissez ce que vous cherchez",
+            "body": "Essayez un bénéficiaire, un compte, un rapport comme **Valeur nette** ou un paramètre comme **Devises**. Les résultats se mettent à jour pendant la saisie, et les transactions ainsi que les sections du guide sont aussi recherchées."
+          },
+          "results": {
+            "title": "Se déplacer et ouvrir",
+            "body": "Utilisez les flèches **Haut** et **Bas** pour vous déplacer et **Enter** pour ouvrir un résultat. **Tab** passe aux actions, et **Ctrl+Enter** (**Cmd+Enter** sur un Mac) lance une nouvelle transaction pour le bénéficiaire le plus proche."
+          },
+          "closePalette": {
+            "title": "Fermer la palette",
+            "body": "Cliquez sur **esc** pour la fermer pour l'instant. En dehors de cette visite, la touche **Esc** fait la même chose."
+          },
+          "done": {
+            "title": "Un raccourci à retenir",
+            "body": "Appuyez sur **Ctrl+K** chaque fois que vous voulez aller quelque part. Au-dessus d'une boîte de dialogue ouverte, elle recherche plutôt dans le guide. Sur un téléphone, utilisez la recherche de l'en-tête. Rejouez cette visite à tout moment depuis **Paramètres**, dans **Visites guidées**."
+          }
+        }
+      },
+      "inAppHelp": {
+        "title": "L'aide dans l'application",
+        "steps": {
+          "welcome": {
+            "title": "Le guide de l'utilisateur, à côté de votre travail",
+            "body": "Le guide de l'utilisateur de Monize s'ouvre désormais dans l'application, à côté de la page où vous êtes, avec des captures d'écran dans votre thème. Il est fourni avec votre Monize et fonctionne donc hors ligne. Cette visite montre où le trouver."
+          },
+          "pageHelp": {
+            "title": "Ouvrir l'aide de cette page",
+            "body": "Cliquez sur le **?** à côté du titre de la page. Le guide s'ouvre à la section consacrée à cette page."
+          },
+          "panel": {
+            "title": "Lire à côté de la page",
+            "body": "Le panneau reste à côté de la page où vous étiez. **Sur cette page** liste les sections, et les liens vers d'autres pages du guide s'ouvrent ici. Sur un ordinateur, faites glisser le bord gauche du panneau pour l'élargir ou le rétrécir."
+          },
+          "panelControls": {
+            "title": "Commandes du panneau",
+            "body": "Avec **Retour** et **Avancer**, parcourez les pages ouvertes, utilisez **Rechercher** dans le guide, **Épinglez** le panneau pour qu'il reste ouvert sur d'autres pages, ou ouvrez la page sur monize.net. Cliquez sur **Fermer** (le **X**) pour continuer."
+          },
+          "helpMenu": {
+            "title": "Le menu Aide",
+            "body": "Le **?** de l'en-tête donne accès à l'aide de la page actuelle, à la recherche dans le guide, aux raccourcis clavier, à la visite de cette page et aux nouveautés. Vous pouvez aussi appuyer sur **?** partout où vous ne saisissez pas de texte pour rechercher dans le guide."
+          },
+          "learnMore": {
+            "title": "En savoir plus, là où vous en avez besoin",
+            "body": "Repérez **En savoir plus** dans les infobulles, sur les écrans vides et à côté de certains messages d'erreur. Chacun ouvre la section du guide qui l'explique."
+          },
+          "done": {
+            "title": "Posez vos questions avec vos mots",
+            "body": "L'assistant IA peut aussi répondre à des questions du type « comment faire... » à partir du guide et vous dire quelles sections il a utilisées. Rejouez cette visite à tout moment depuis **Paramètres**, dans **Visites guidées**."
+          }
+        }
+      },
+      "dashboardEdit": {
+        "title": "Organiser le tableau de bord",
+        "steps": {
+          "welcome": {
+            "title": "Organisez votre tableau de bord directement",
+            "body": "Vous déplacez, redimensionnez, ajoutez et retirez désormais des widgets directement sur le tableau de bord, et rien n'est enregistré tant que vous ne le décidez pas. Cette visite présente le mode édition."
+          },
+          "enterEdit": {
+            "title": "Entrer en mode édition",
+            "body": "Cliquez sur l'engrenage à côté du message d'accueil. La visite continue dès que le mode édition s'ouvre."
+          },
+          "editBar": {
+            "title": "La barre d'édition",
+            "body": "**Ajouter un widget** liste les widgets qui ne sont pas sur votre tableau de bord. **Réglages de l'en-tête** choisit ce que montre l'en-tête en haut, et **Réinitialiser par défaut** rétablit la disposition standard."
+          },
+          "arrange": {
+            "title": "Déplacer, redimensionner et retirer",
+            "body": "Faites glisser un widget par sa poignée (les six points) ou utilisez ses flèches. Sur un grand écran, **Largeur** et **Hauteur** modifient sa taille, ou faites glisser son coin inférieur droit. Le **X** le retire, et la tuile en pointillés **Ajouter un widget** en ajoute un. À vous d'essayer."
+          },
+          "finish": {
+            "title": "Le garder ou le remettre comme avant",
+            "body": "Cliquez sur **Terminé** pour enregistrer la disposition, ou sur **Annuler** pour la remettre comme avant. Votre disposition se synchronise sur vos appareils."
+          },
+          "done": {
+            "title": "Faites-en le vôtre",
+            "body": "Vous cherchez quelque chose de nouveau à ajouter ? Le widget **Anecdotes** affiche chaque jour un fait sur votre argent. Rejouez cette visite à tout moment depuis **Paramètres**, dans **Visites guidées**."
+          }
+        }
+      }
     }
   },
   "emailReceipts": {

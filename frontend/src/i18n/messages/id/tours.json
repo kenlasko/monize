@@ -553,6 +553,99 @@
           }
         }
       }
+    },
+    "v1_21_0": {
+      "commandPalette": {
+        "title": "Palet perintah",
+        "steps": {
+          "welcome": {
+            "title": "Temukan apa saja dari satu kotak",
+            "body": "Palet perintah mencari sekaligus di akun, penerima, kategori, tagihan, sekuritas, laporan, pengaturan, transaksi, dan panduan pengguna Anda, dari layar mana pun. Palet ini bekerja lewat papan ketik, jadi tur ini untuk komputer."
+          },
+          "openPalette": {
+            "title": "Buka palet",
+            "body": "Tekan **Ctrl+K** (**Cmd+K** di Mac). Tur berlanjut setelah palet terbuka."
+          },
+          "searchBox": {
+            "title": "Ketik yang Anda cari",
+            "body": "Coba penerima, akun, laporan seperti **Nilai Bersih**, atau pengaturan seperti **Mata Uang**. Hasil diperbarui saat Anda mengetik, dan transaksi serta bagian panduan juga dicari."
+          },
+          "results": {
+            "title": "Bergerak dan buka",
+            "body": "Gunakan tombol panah **Atas** dan **Bawah** untuk bergerak dan **Enter** untuk membuka hasil. **Tab** melompat ke tindakan, dan **Ctrl+Enter** (**Cmd+Enter** di Mac) memulai transaksi baru untuk penerima yang paling cocok."
+          },
+          "closePalette": {
+            "title": "Tutup palet",
+            "body": "Klik **esc** untuk menutupnya untuk sementara. Di luar tur ini, tombol **Esc** melakukan hal yang sama."
+          },
+          "done": {
+            "title": "Satu pintasan untuk diingat",
+            "body": "Tekan **Ctrl+K** kapan pun Anda ingin melompat ke suatu tempat. Di atas dialog yang terbuka, pintasan ini mencari di panduan. Di ponsel, gunakan pencarian di header. Putar ulang tur ini kapan saja dari **Pengaturan**, di bagian **Tur Berpandu**."
+          }
+        }
+      },
+      "inAppHelp": {
+        "title": "Bantuan di dalam aplikasi",
+        "steps": {
+          "welcome": {
+            "title": "Panduan pengguna, di samping pekerjaan Anda",
+            "body": "Panduan pengguna Monize kini terbuka di dalam aplikasi, di samping halaman yang sedang Anda buka, lengkap dengan tangkapan layar sesuai tema Anda. Panduan ini ikut dalam Monize Anda, sehingga bisa dibuka secara offline. Tur ini menunjukkan tempat menemukannya."
+          },
+          "pageHelp": {
+            "title": "Buka bantuan untuk halaman ini",
+            "body": "Klik **?** di samping judul halaman. Panduan terbuka di bagian yang membahas halaman ini."
+          },
+          "panel": {
+            "title": "Baca berdampingan dengan halaman",
+            "body": "Panel tetap berada di samping halaman yang tadi Anda buka. **Di halaman ini** mencantumkan bagian-bagiannya, dan tautan ke halaman panduan lain terbuka di sini. Di komputer, seret tepi kiri panel untuk melebarkan atau menyempitkannya."
+          },
+          "panelControls": {
+            "title": "Kontrol panel",
+            "body": "Pindah **Kembali** dan **Maju** di antara halaman yang Anda buka, **Cari** di panduan, **Sematkan** panel agar tetap terbuka di halaman lain, atau buka halaman di monize.net. Klik **Tutup** (**X**) untuk melanjutkan."
+          },
+          "helpMenu": {
+            "title": "Menu Bantuan",
+            "body": "Tanda **?** di header berisi bantuan untuk halaman saat ini, pencarian panduan, pintasan papan ketik, tur untuk halaman ini, dan Yang Baru. Anda juga bisa menekan **?** di mana pun Anda tidak sedang mengetik untuk mencari di panduan."
+          },
+          "learnMore": {
+            "title": "Pelajari lebih lanjut, di mana pun Anda perlu",
+            "body": "Cari **Pelajari lebih lanjut** di tooltip, di layar kosong, dan di samping beberapa pesan kesalahan. Masing-masing membuka bagian panduan yang menjelaskannya."
+          },
+          "done": {
+            "title": "Bertanya dengan kata-kata Anda sendiri",
+            "body": "Asisten AI juga dapat menjawab pertanyaan seperti \"bagaimana cara...\" dari panduan dan memberi tahu bagian mana yang ia gunakan. Putar ulang tur ini kapan saja dari **Pengaturan**, di bagian **Tur Berpandu**."
+          }
+        }
+      },
+      "dashboardEdit": {
+        "title": "Menata dasbor",
+        "steps": {
+          "welcome": {
+            "title": "Tata dasbor Anda langsung di tempat",
+            "body": "Kini Anda memindahkan, mengubah ukuran, menambah, dan menghapus widget langsung di dasbor, dan tidak ada yang disimpan sebelum Anda menyetujuinya. Tur ini memandu Anda melalui mode edit."
+          },
+          "enterEdit": {
+            "title": "Masuk ke mode edit",
+            "body": "Klik ikon roda gigi di samping sapaan. Tur berlanjut setelah mode edit terbuka."
+          },
+          "editBar": {
+            "title": "Bilah edit",
+            "body": "**Tambah widget** mencantumkan widget yang belum ada di dasbor Anda. **Pengaturan hero** memilih apa yang ditampilkan hero di bagian atas, dan **Atur ulang ke bawaan** mengembalikan tata letak standar."
+          },
+          "arrange": {
+            "title": "Pindahkan, ubah ukuran, dan hapus",
+            "body": "Seret widget pada gagangnya (enam titik), atau gunakan tanda panahnya. Di layar lebar, **Lebar** dan **Tinggi** mengubah ukurannya, atau seret sudut kanan bawahnya. **X** menghapusnya, dan kotak putus-putus **Tambah widget** menambahkan satu. Silakan coba."
+          },
+          "finish": {
+            "title": "Simpan atau kembalikan",
+            "body": "Klik **Selesai** untuk menyimpan tata letak, atau **Batal** untuk mengembalikannya seperti semula. Tata letak Anda disinkronkan di semua perangkat Anda."
+          },
+          "done": {
+            "title": "Jadikan milik Anda",
+            "body": "Mencari sesuatu yang baru untuk ditambahkan? Widget **Trivia** menampilkan fakta harian tentang uang Anda. Putar ulang tur ini kapan saja dari **Pengaturan**, di bagian **Tur Berpandu**."
+          }
+        }
+      }
     }
   },
   "emailReceipts": {
