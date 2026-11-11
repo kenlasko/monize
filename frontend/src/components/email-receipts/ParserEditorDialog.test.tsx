@@ -90,8 +90,10 @@ async function save() {
   await act(async () => {});
 }
 
-function axiosError(status: number, message: string) {
-  return new AxiosError(message, String(status), undefined, undefined, { status, data: { message } } as never);
+function axiosError(status: number, message: string | string[]) {
+  // A DTO refusal answers `message` as a list; the error's own text is always a string.
+  const text = Array.isArray(message) ? message.join('. ') : message;
+  return new AxiosError(text, String(status), undefined, undefined, { status, data: { message } } as never);
 }
 
 describe('ParserEditorDialog', () => {
@@ -531,6 +533,17 @@ describe('ParserEditorDialog', () => {
       await renderEditor();
       await fillAndSave();
       expect(screen.getByRole('alert')).toHaveTextContent('At most 200 profiles can be saved. Delete one first.');
+    });
+
+    it('shows a DTO refusal, whose message is a list, instead of failing silently', async () => {
+      api.create.mockRejectedValue(
+        axiosError(400, ['each value of fromDomains must be a host name such as shop.example.com']),
+      );
+      await renderEditor();
+      await fillAndSave();
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'each value of fromDomains must be a host name such as shop.example.com',
+      );
     });
 
     it('clears the refusal when the next save starts', async () => {

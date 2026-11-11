@@ -87,6 +87,32 @@ describe('getErrorMessage', () => {
     expect(getErrorMessage(error, 'Fallback')).toBe('Validation failed');
   });
 
+  it('joins a DTO refusal whose message is a list into one string', () => {
+    const error = new AxiosError('Bad Request', '400', undefined, undefined, {
+      status: 400,
+      data: { message: ['name must be shorter', 'each value of fromDomains must be a host name'] },
+      statusText: 'Bad Request',
+      headers: {},
+      config: { headers: new AxiosHeaders() },
+    });
+
+    expect(getErrorMessage(error, 'Fallback')).toBe('name must be shorter. each value of fromDomains must be a host name');
+  });
+
+  it('returns fallback when the message is an empty list or not text', () => {
+    const withMessage = (message: unknown) =>
+      new AxiosError('Bad Request', '400', undefined, undefined, {
+        status: 400,
+        data: { message },
+        statusText: 'Bad Request',
+        headers: {},
+        config: { headers: new AxiosHeaders() },
+      });
+
+    expect(getErrorMessage(withMessage([]), 'Fallback')).toBe('Fallback');
+    expect(getErrorMessage(withMessage({ nested: true }), 'Fallback')).toBe('Fallback');
+  });
+
   it('returns fallback when AxiosError has no message in response', () => {
     const error = new AxiosError('Server Error', '500', undefined, undefined, {
       status: 500,

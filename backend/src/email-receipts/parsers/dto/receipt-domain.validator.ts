@@ -10,14 +10,15 @@ const HOSTNAME =
 const MAX_DOMAIN_LENGTH = 253;
 
 /**
- * What a person typed for a sender domain, as stored: trimmed, lower-case, a
- * leading `@` (from pasting an address's domain part) and a trailing dot
- * removed. A value that is not a string is returned unchanged for the
- * validator to refuse.
+ * What a person typed for a sender domain, as stored: trimmed, lower-case,
+ * everything up to the last `@` dropped (a pasted sender address such as
+ * `notifications@shop.example.com`, or just its `@shop.example.com` part) and a
+ * trailing dot removed. A value that is not a string is returned unchanged for
+ * the validator to refuse.
  */
 export function normalizeReceiptDomain(raw: unknown): unknown {
   return typeof raw === "string"
-    ? raw.trim().toLowerCase().replace(/^@+/, "").replace(/\.+$/, "")
+    ? raw.trim().toLowerCase().replace(/^.*@/, "").replace(/\.+$/, "")
     : raw;
 }
 
