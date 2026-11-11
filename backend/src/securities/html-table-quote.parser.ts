@@ -104,14 +104,25 @@ function parseTable(
   }
   if (headerRow < 0) return null;
 
-  const dataRows = rows
-    .slice(headerRow + 1)
-    .map((row) => expandedCells(row).map((cell) => cellCandidates(cell)));
+  // Only the mapped columns are read: candidates built for every expanded
+  // column of every row were an array per column, millions on a page of
+  // wide colspans, when a quote needs at most six of them.
+  const mappedFields = Object.keys(columns) as QuoteTableField[];
+  const bodyRows = rows.slice(headerRow + 1);
+  const dataRows = bodyRows.map((row) => {
+    const picked: Partial<Record<QuoteTableField, string[]>> = {};
+    for (const field of mappedFields) {
+      const index = columns[field];
+      const cell = index === undefined ? undefined : cellAtColumn(row, index);
+      if (cell) picked[field] = cellCandidates(cell);
+    }
+    return picked;
+  });
 
-  const pick = (row: string[][], field: QuoteTableField): string[] => {
-    const index = columns[field];
-    return index === undefined ? [] : (row[index] ?? []);
-  };
+  const pick = (
+    row: Partial<Record<QuoteTableField, string[]>>,
+    field: QuoteTableField,
+  ): string[] => row[field] ?? [];
 
   const priceSamples = dataRows.flatMap((row) =>
     (["close", "open", "high", "low"] as const).map(
@@ -141,8 +152,8 @@ function parseTable(
   let skippedRows = 0;
   let currencyCode: string | null = null;
 
-  for (const row of dataRows) {
-    if (row.length === 0) continue;
+  for (const [i, row] of dataRows.entries()) {
+    if (bodyRows[i].length === 0) continue;
     const date = firstParsed(pick(row, "date"), (s) =>
       parseDate(s, dayFirst, now),
     );
@@ -188,6 +199,16 @@ function parseTable(
     tableIndex,
     skippedRows,
   };
+}
+
+/** The cell covering expanded column `index` (`expandedCells(row)[index]`). */
+function cellAtColumn(row: PageCell[], index: number): PageCell | undefined {
+  let start = 0;
+  for (const cell of row) {
+    if (index < start + cell.span) return cell;
+    start += cell.span;
+  }
+  return undefined;
 }
 
 /** A row's cells, each repeated `colspan` times so indexes line up. */

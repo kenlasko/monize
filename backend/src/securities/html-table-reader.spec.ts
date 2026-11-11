@@ -1,4 +1,4 @@
-import { readPageTables } from "./html-table-reader";
+import { MAX_ITEMS_PER_PAGE, readPageTables } from "./html-table-reader";
 
 describe("readPageTables", () => {
   it("reads each table's own rows and cells, a nested table apart", () => {
@@ -36,6 +36,14 @@ describe("readPageTables", () => {
       `<table>${"<tr>".repeat(1_000_000)}</table>`,
     );
     expect(table.rows.length).toBeLessThanOrEqual(300_000);
+  });
+
+  it("counts a cell once per column it spans against MAX_ITEMS_PER_PAGE", () => {
+    const [table] = readPageTables(
+      `<table><tr>${"<td colspan=20>".repeat(MAX_ITEMS_PER_PAGE)}</table>`,
+    );
+    const columns = table.rows.flat().reduce((sum, cell) => sum + cell.span, 0);
+    expect(columns).toBeLessThanOrEqual(MAX_ITEMS_PER_PAGE);
   });
 
   it("reads at most 200 tables, and skips the content of the rest", () => {

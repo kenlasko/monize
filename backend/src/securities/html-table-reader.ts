@@ -46,11 +46,12 @@ export const MAX_TABLES = 200;
 /** Tables open inside one another at once; deeper ones are skipped whole. */
 const MAX_OPEN_TABLES = 32;
 /**
- * Rows and cells kept per page, counted together: a 40-year daily history with
- * ten columns is ~110,000. Past it, further rows and cells are dropped, so a
- * page of nothing but `<tr>` cannot build a million empty rows.
+ * Rows and cells kept per page, counted together, a cell once per column it
+ * spans: a 40-year daily history with ten columns is ~110,000. Past it, further
+ * rows and cells are dropped, so a page of nothing but `<tr>` cannot build a
+ * million empty rows, nor one of `<td colspan=20>` six million cells.
  */
-const MAX_ITEMS_PER_PAGE = 300_000;
+export const MAX_ITEMS_PER_PAGE = 300_000;
 /** Characters kept per cell; a price or a date is a few dozen. */
 const MAX_CELL_TEXT = 512;
 /** Child texts kept per cell. */
@@ -179,7 +180,13 @@ export function readPageTables(html: string): PageTable[] {
     }
     if (name === "td" || name === "th") {
       closeCell(current);
-      if (itemsKept >= MAX_ITEMS_PER_PAGE) return;
+      // A cell counts once per column it spans: the parser expands it to that
+      // many columns, so counting it once let 300,000 `<td colspan=20>` grow
+      // into six million parsed cells (a few MB of HTML, past the pod's memory).
+      if (itemsKept + colspan > MAX_ITEMS_PER_PAGE) {
+        itemsKept = MAX_ITEMS_PER_PAGE;
+        return;
+      }
       if (!current.row) {
         current.row = [];
         current.table.rows.push(current.row);
@@ -188,7 +195,7 @@ export function readPageTables(html: string): PageTable[] {
       const cell: PageCell = { text: "", parts: [], span: colspan };
       current.row.push(cell);
       current.cell = { cell, depth: 0, part: "" };
-      itemsKept++;
+      itemsKept += colspan;
       return;
     }
     if (current.cell && !VOID_TAGS.has(name)) {
