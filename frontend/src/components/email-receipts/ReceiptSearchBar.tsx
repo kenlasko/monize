@@ -32,7 +32,7 @@ export function ReceiptSearchBar({ input, onChange, onClear, canClear, rangeBack
   return (
     <div role="search" aria-label={t('label')} className="flex flex-wrap items-start gap-x-3 gap-y-3">
       {/* No label above the search: the placeholder says what is searched. The spacer only lines it up with the labelled fields beside it. */}
-      <div className="flex w-full flex-col sm:w-72">
+      <div className="flex w-full flex-col sm:w-96">
         <div className="hidden sm:block">
           <LabelSpacer />
         </div>
@@ -58,7 +58,7 @@ export function ReceiptSearchBar({ input, onChange, onClear, canClear, rangeBack
           }}
         />
       </div>
-      <div className="w-full sm:w-40">
+      <div className="w-full sm:w-48">
         <DateInput
           id="receipt-search-from"
           label={t('from')}
@@ -66,7 +66,7 @@ export function ReceiptSearchBar({ input, onChange, onClear, canClear, rangeBack
           onDateChange={(dateFrom) => onChange({ dateFrom })}
         />
       </div>
-      <div className="w-full sm:w-40">
+      <div className="w-full sm:w-48">
         <DateInput
           id="receipt-search-to"
           label={t('to')}
