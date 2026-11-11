@@ -93,8 +93,30 @@ The **Funding Account** -- not the brokerage named in **Investment Account** -- 
 | **Twice a Year** | Every six months |
 | **Yearly** | Once per year |
 | **Every 2 Years** | Every other year |
+| **Custom** | A pattern you define, such as every Monday, Wednesday and Friday (see [Custom Schedules](#custom-schedules)) |
 
 A monthly schedule on the 31st falls on the last day of shorter months.
+
+### Custom Schedules
+
+Choose **Custom** as the **Frequency** when none of the fixed options fits, for example a bill due every Monday, Wednesday and Friday, or on the 1st and 15th and the last day of each month. A **Repeats** panel appears with three units:
+
+| Unit | What you pick | Example |
+|------|---------------|---------|
+| **Weekly** | Days of the week (Mon to Sun) | Every week on Mon, Wed and Fri |
+| **Monthly** | Days of the month (1 to 31, or **Last day**) | Every 2 months on the 1st, 15th and last day |
+| **Yearly** | **Dates of the year**: choose a **Month** and **Day**, then click **Add date** | Every year on 1 March and 15 September |
+
+Use **Repeat every** to space the pattern out: every 1 to 12 weeks, months or years. Below the panel, a summary (for example "Every week on Mon, Wed and Fri") shows what you set, and **First occurrence** under **Next Due Date** shows when it first falls due.
+
+- A day past the end of a short month falls on that month's last day, so day 31 lands on 30 April and 28 February.
+- If two days land on the same date, the transaction posts once.
+- 29 February falls on 28 February in years without one.
+
+Every occurrence of a custom schedule can be edited, skipped, moved or posted like any other bill (see [Overriding Individual Occurrences](#overriding-individual-occurrences)). If you change the pattern and some occurrences you edited no longer fall on it, Monize warns you before you save and deletes those edited occurrences when you do.
+
+> [!NOTE]
+> Custom is not available for loan or mortgage payment schedules, or for payroll schedules with deduction limits. Choose a fixed frequency for those.
 
 ---
 
