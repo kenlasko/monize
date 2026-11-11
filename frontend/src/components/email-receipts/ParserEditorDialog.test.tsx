@@ -91,7 +91,9 @@ async function save() {
 }
 
 function axiosError(status: number, message: string | string[]) {
-  return new AxiosError(message, String(status), undefined, undefined, { status, data: { message } } as never);
+  // A DTO refusal answers `message` as a list; the error's own text is always a string.
+  const text = Array.isArray(message) ? message.join('. ') : message;
+  return new AxiosError(text, String(status), undefined, undefined, { status, data: { message } } as never);
 }
 
 describe('ParserEditorDialog', () => {
