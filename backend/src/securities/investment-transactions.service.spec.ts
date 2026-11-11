@@ -2160,6 +2160,76 @@ describe("InvestmentTransactionsService", () => {
       });
     });
 
+    /**
+     * Invariant: an edit moves a row only onto the caller's own security and
+     * account, as `create` checks (the M4 audit finding).
+     * Canonical adversarial input: another user's UUID on a row with no cash
+     * leg, where nothing else on the path looks the id up.
+     * Minimal mutation: delete the ownership lookups in `update`.
+     * Tests that fail under it: the first two below.
+     */
+    describe("ids from another user", () => {
+      const foreignSecurityId = "sec-of-another-user";
+      const foreignAccountId = "account-of-another-user";
+      const reinvest = {
+        ...mockBuyTransaction,
+        action: InvestmentAction.REINVEST,
+        fundingAccountId: null,
+      };
+
+      beforeEach(() => {
+        securitiesService.findOne.mockImplementation(
+          (_uid: string, sid: string) =>
+            sid === foreignSecurityId
+              ? Promise.reject(new NotFoundException("Security not found"))
+              : Promise.resolve(mockSecurity),
+        );
+        investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder(reinvest),
+        );
+      });
+
+      it("refuses another user's security on a row with no cash leg, writing nothing", async () => {
+        await expect(
+          service.update(userId, transactionId, {
+            securityId: foreignSecurityId,
+            exchangeRate: 1,
+          }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+        expect(securitiesService.findOne).toHaveBeenCalledWith(
+          userId,
+          foreignSecurityId,
+        );
+        expect(investmentTransactionsRepository.save).not.toHaveBeenCalled();
+        expect(
+          holdingsService.rebuildScopesFromTransactions,
+        ).not.toHaveBeenCalled();
+      });
+
+      it("refuses another user's account, writing nothing", async () => {
+        await expect(
+          service.update(userId, transactionId, {
+            accountId: foreignAccountId,
+          }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+        expect(accountsService.findOne).toHaveBeenCalledWith(
+          userId,
+          foreignAccountId,
+        );
+        expect(investmentTransactionsRepository.save).not.toHaveBeenCalled();
+      });
+
+      it("does not look up a security or account the request resends unchanged", async () => {
+        await service.update(userId, transactionId, {
+          securityId: reinvest.securityId as string,
+          accountId: reinvest.accountId,
+          description: "renamed",
+        });
+        expect(securitiesService.findOne).not.toHaveBeenCalled();
+        expect(investmentTransactionsRepository.save).toHaveBeenCalled();
+      });
+    });
+
     it("still allows an unrelated edit on a row that has no price", async () => {
       // Rows written before the rule existed must stay correctable. Refusing
       // every edit would strand them with no way to fix anything at all, and

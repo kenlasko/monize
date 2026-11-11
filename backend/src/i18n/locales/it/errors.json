@@ -373,6 +373,7 @@
     "kindInUse": "Il tipo di \"{{ code }}\" non può essere modificato finché conti, transazioni, titoli o altri record lo usano",
     "decimalPlacesInUse": "I decimali di \"{{ code }}\" non possono scendere sotto {{ places }} finché conti, transazioni o altri record contengono importi con altrettanti decimali",
     "quoteSymbolInUse": "La moneta nel simbolo di prezzo di \"{{ code }}\" non può essere modificata finché conti, transazioni, titoli o altri record lo usano; si può modificare solo la sua valuta fiat",
+    "firstQuoteSymbolInUse": "Non è possibile aggiungere un simbolo di prezzo a \"{{ code }}\" finché altri utenti lo detengono; stabilirebbe il prezzo delle loro posizioni",
     "kindConflict": "La valuta \"{{ code }}\" esiste già come valuta {{ kind }} e non può essere aggiunta come {{ requestedKind }}"
   },
   "delegation": {

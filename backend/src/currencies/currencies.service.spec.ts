@@ -1783,10 +1783,26 @@ describe("CurrenciesService", () => {
       expect(globalCheck()).toHaveLength(0);
     });
 
-    it("sets a first price symbol on a referenced coin that had none", async () => {
+    /** `currency_code_used_by_other_users` answers `others`; the rest as `references`. */
+    function usedByOthers(others: boolean, data = true): void {
+      mockDataSource.query.mockImplementation(async (sql: string) =>
+        sql.includes("currency_code_used_by_other_users")
+          ? [{ inUse: others }]
+          : sql.includes("currency_code_referenced_by_data") ||
+              sql.includes("currency_code_in_use_globally")
+            ? [{ inUse: data }]
+            : [],
+      );
+    }
+    const othersCheck = () =>
+      mockDataSource.query.mock.calls.filter(([sql]) =>
+        String(sql).includes("currency_code_used_by_other_users"),
+      );
+
+    it("sets a first price symbol on a referenced coin only its creator uses", async () => {
       mockCurrencyRepo.findOne!.mockResolvedValue(coin({ quoteSymbol: null }));
       mockCurrencyRepo.save!.mockImplementation(async (row) => row);
-      references(true);
+      usedByOthers(false);
 
       const view = await service.update(userId, "BTC", {
         quoteSymbol: "BTC-EUR",
@@ -1794,6 +1810,45 @@ describe("CurrenciesService", () => {
 
       expect(view.quoteSymbol).toBe("BTC-EUR");
       expect(globalCheck()).toHaveLength(0);
+      expect(othersCheck()).toHaveLength(1);
+      expect(othersCheck()[0][1]).toEqual(["BTC", userId]);
+    });
+
+    it("refuses a first price symbol on a coin another user holds, locking first and writing nothing", async () => {
+      // currencies is shared and only the creator edits it: a first symbol
+      // would set the price of every other holder's wallet (M3).
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin({ quoteSymbol: null }));
+      usedByOthers(true);
+
+      await expect(
+        service.update(userId, "BTC", { quoteSymbol: "ETH-USD" }),
+      ).rejects.toThrow(ConflictException);
+      await expect(
+        service.update(userId, "BTC", { quoteSymbol: "ETH-USD" }),
+      ).rejects.toThrow(/cannot be added to "BTC" while other users hold it/);
+      expect(mockCurrencyRepo.save).not.toHaveBeenCalled();
+      expect(
+        mockDataSource.query.mock.calls.filter(([sql]) =>
+          String(sql).includes("DELETE FROM exchange_rate_coverage"),
+        ),
+      ).toHaveLength(0);
+      const sqls = mockDataSource.query.mock.calls.map(([sql]) => String(sql));
+      const lock = sqls.findIndex((sql) => sql.includes("FOR UPDATE"));
+      const check = sqls.findIndex((sql) =>
+        sql.includes("currency_code_used_by_other_users"),
+      );
+      expect(lock).toBeGreaterThanOrEqual(0);
+      expect(lock).toBeLessThan(check);
+    });
+
+    it("does not ask about other users when the request leaves the symbol alone", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin({ quoteSymbol: null }));
+      mockCurrencyRepo.save!.mockImplementation(async (row) => row);
+      usedByOthers(true);
+
+      await service.update(userId, "BTC", { name: "Bitcoin" });
+
+      expect(othersCheck()).toHaveLength(0);
     });
 
     /**

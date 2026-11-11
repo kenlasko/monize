@@ -429,6 +429,28 @@ describe("hostile pages", () => {
     expect(ms).toBeLessThan(2000);
   });
 
+  it("bounds a 5 MB page of wide colspans in memory and time", () => {
+    // 300,000 cells of colspan 20 once expanded to six million parsed cells,
+    // past the backend pod's memory limit.
+    const html =
+      "<table><tr><th>Date<th>Close<tr>" + "<td colspan=20>".repeat(299_000);
+    const heapBefore = process.memoryUsage().heapUsed;
+    const { result, ms } = timed(html);
+    const grown = process.memoryUsage().heapUsed - heapBefore;
+    expect(result?.prices ?? []).toEqual([]);
+    expect(ms).toBeLessThan(2000);
+    expect(grown).toBeLessThan(150 * 1024 * 1024);
+  });
+
+  it("reads only the mapped columns of a wide row", () => {
+    const result = parseQuoteTable(
+      "<table><tr><th>Date</th><th>Close</th><th colspan=20>Notes</th></tr>" +
+        "<tr><td>2026-11-02</td><td>5.10</td><td colspan=20>x</td></tr></table>",
+      NOW,
+    );
+    expect(result?.prices.map((p) => p.close)).toEqual([5.1]);
+  });
+
   it("still reads a long table of unclosed cells and rows", () => {
     const rows = Array.from(
       { length: 3000 },

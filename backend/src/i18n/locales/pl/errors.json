@@ -373,6 +373,7 @@
     "kindInUse": "Rodzaju \"{{ code }}\" nie można zmienić, dopóki używają go konta, transakcje, papiery wartościowe lub inne rekordy",
     "decimalPlacesInUse": "Liczby miejsc dziesiętnych \"{{ code }}\" nie można zmniejszyć poniżej {{ places }}, dopóki konta, transakcje lub inne rekordy zawierają kwoty z tyloma miejscami dziesiętnymi",
     "quoteSymbolInUse": "Monety w symbolu ceny \"{{ code }}\" nie można zmienić, dopóki używają go konta, transakcje, papiery wartościowe lub inne rekordy; można zmienić tylko jego walutę fiducjarną",
+    "firstQuoteSymbolInUse": "Nie można dodać symbolu ceny do \"{{ code }}\", dopóki posiadają go inni użytkownicy; ustaliłby on cenę ich aktywów",
     "kindConflict": "Waluta \"{{ code }}\" już istnieje jako waluta {{ kind }} i nie można jej dodać jako {{ requestedKind }}"
   },
   "delegation": {

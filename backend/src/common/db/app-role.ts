@@ -211,6 +211,11 @@ BEGIN
     IF to_regprocedure('public.currency_min_decimal_places_in_use(varchar)') IS NOT NULL THEN
       EXECUTE format('GRANT EXECUTE ON FUNCTION public.currency_min_decimal_places_in_use(varchar) TO %I', role_name);
     END IF;
+    -- currency_code_used_by_other_users (the first-price-symbol gate) has the
+    -- same shape and needs the same grant under the same guard.
+    IF to_regprocedure('public.currency_code_used_by_other_users(varchar,uuid)') IS NOT NULL THEN
+      EXECUTE format('GRANT EXECUTE ON FUNCTION public.currency_code_used_by_other_users(varchar,uuid) TO %I', role_name);
+    END IF;
   END IF;
 EXCEPTION WHEN insufficient_privilege THEN
   RAISE WARNING 'Insufficient privilege to grant DML to role %; grant it manually or via the DB owner.', role_name;

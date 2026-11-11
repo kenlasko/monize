@@ -1883,7 +1883,15 @@ Enforcement         Service-level, no trigger. assertAccountCurrencyKind /
                     20261105195749) reports a reference; that function covers
                     every foreign key to currencies(code) except
                     user_currency_preferences, held by
-                    currency-references.spec.ts.
+                    currency-references.spec.ts. A first price symbol on a
+                    CRYPTO code that had none is refused
+                    firstQuoteSymbolInUse, under the same FOR UPDATE, while
+                    currency_code_used_by_other_users (migration
+                    20261111133530) reports that another user activates the
+                    code or holds data in it: currencies is shared and only
+                    its creator edits it, so the first ticker would set every
+                    other holder's price (currencies.service.spec.ts,
+                    currency-references.spec.ts).
 Concurrency scope   The account or security row and the currency row. The
                     account and security writers read the kind FOR KEY SHARE
                     (assertAccountCurrencyKindIn,
@@ -1896,8 +1904,8 @@ Concurrency scope   The account or security row and the currency row. The
 Retry semantics     A refusal writes nothing; a retry is refused the same way.
 Crash semantics     Nothing commits before the check.
 Failure response    400 accountCurrencyKindMismatch (accounts),
-                    400 currencyMustBeFiat (securities), 409 kindInUse
-                    (currencies), before any write.
+                    400 currencyMustBeFiat (securities), 409 kindInUse or
+                    firstQuoteSymbolInUse (currencies), before any write.
 Required tests      account-currency-kind.util.spec.ts;
                     security-currency-kind.util.spec.ts;
                     action-history.service.spec.ts ("undo and redo hold the

@@ -200,7 +200,8 @@ account carry a currency and a balance the rest of Monize already understands.
 | update `kind` on a code any account, transaction or security references | refused `kindInUse` | INV-CRYPTO-001 |
 | update `quote_symbol` on a referenced CRYPTO code, fiat leg only (`BTC-EUR` to `BTC-CAD`) | accepted | the provider prices against whichever fiat the pair names; the next refresh fetches the new pair |
 | update `quote_symbol` on a referenced CRYPTO code, coin ticker (`BTC-EUR` to `ETH-EUR`, or to no symbol) | refused `quoteSymbolInUse` | `currencies` is shared: a new ticker would revalue every other user's wallet at another coin's price; held like a kind change, under the same `FOR UPDATE` |
-| set `quote_symbol` on a CRYPTO code that had none | accepted | pricing an unpriced coin re-points nothing |
+| set `quote_symbol` on a CRYPTO code that had none, used only by its creator | accepted | pricing a coin only its creator holds sets no one else's price |
+| set `quote_symbol` on a CRYPTO code that had none, which another user activates or holds data in | refused `firstQuoteSymbolInUse` | `currencies` is shared and only the creator edits it: the first ticker decides the price of every holder's wallet, and nothing ties it to the code, so the creator could point another user's coin at any price (`currency_code_used_by_other_users`, under the same `FOR UPDATE`) |
 
 ## 6. Numerical examples
 

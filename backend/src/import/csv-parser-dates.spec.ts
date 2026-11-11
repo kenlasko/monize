@@ -1,5 +1,6 @@
 import {
   detectCsvDateFormat,
+  MAX_CSV_DATE_LENGTH,
   parseCsv,
   parseCsvHeaders,
   CsvColumnMappingConfig,
@@ -243,5 +244,43 @@ describe("CSV month-name dates", () => {
       null,
     ]);
     expect(datesOf(["AUGUST 3, 2026"], "MMM DD, YYYY")).toEqual(["2026-08-03"]);
+  });
+});
+
+describe("CSV dates that would stall a backtracking matcher", () => {
+  it("reads no date under a pattern with two month-name tokens", () => {
+    expect(datesOf(["15 Jan Feb 2026"], "DD MMM MMM YYYY")).toEqual([null]);
+    expect(datesOf(["JanFeb 15, 2026"], "MMMMMMM DD, YYYY")).toEqual([null]);
+  });
+
+  it("stays fast on letter runs under a pattern of adjacent month names", () => {
+    const cells = Array.from({ length: 20 }, () => "a".repeat(200) + "1");
+    const started = Date.now();
+    expect(datesOf(cells, "MMMMMMMMMMMMMMMMMMMM")).toEqual(
+      cells.map(() => null),
+    );
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  it("reads no date from a field longer than MAX_CSV_DATE_LENGTH", () => {
+    const padded = "Jan 15, 2026" + " ".repeat(MAX_CSV_DATE_LENGTH) + "x";
+    expect(datesOf([padded], "MMM DD, YYYY")).toEqual([null]);
+  });
+
+  it("strips a time in linear time on a long whitespace run", () => {
+    const cell = "1" + " ".repeat(200_000) + "x";
+    const started = Date.now();
+    expect(detectCsvDateFormat([cell])).toBeNull();
+    expect(datesOf([cell], "MM/DD/YYYY")).toEqual([null]);
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  it("still strips the time after a date that contains spaces", () => {
+    expect(datesOf(["Dec 31, 2026   2:30 PM"], "MMM DD, YYYY")).toEqual([
+      "2026-12-31",
+    ]);
+    expect(datesOf(["12/31/2026\t14:30:00"], "MM/DD/YYYY")).toEqual([
+      "2026-12-31",
+    ]);
   });
 });

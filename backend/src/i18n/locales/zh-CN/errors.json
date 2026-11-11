@@ -373,6 +373,7 @@
     "kindInUse": "只要仍有账户、交易、证券或其他记录在使用，就无法更改\"{{ code }}\"的类型",
     "decimalPlacesInUse": "只要仍有账户、交易或其他记录包含这么多位小数的金额，就无法将\"{{ code }}\"的小数位数降到{{ places }}以下",
     "quoteSymbolInUse": "只要仍有账户、交易、证券或其他记录在使用，就无法更改\"{{ code }}\"价格符号中的币种；只能更改其中的法定货币",
+    "firstQuoteSymbolInUse": "其他用户持有\"{{ code }}\"时无法为其添加价格符号；这会决定他们持仓的价格",
     "kindConflict": "货币\"{{ code }}\"已作为 {{ kind }} 货币存在，无法添加为 {{ requestedKind }}"
   },
   "delegation": {
