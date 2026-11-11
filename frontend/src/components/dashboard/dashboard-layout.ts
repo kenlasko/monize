@@ -69,13 +69,14 @@ export function widthsOfferedFor(id: DashboardWidgetId): readonly WidgetWidth[] 
   return WIDGET_WIDTHS.slice(widthRank(min));
 }
 
-function defaultItem(id: DashboardWidgetId): DashboardLayoutItem {
+/** A widget at its default size: the width every widget starts at, and its own height floor. */
+export function defaultLayoutItem(id: DashboardWidgetId): DashboardLayoutItem {
   return { id, width: DEFAULT_WIDGET_WIDTH, height: definitionOf(id)?.defaultHeight ?? 'auto' };
 }
 
 /** The registry's default widgets in registry order, each at its default size. */
 export function defaultDashboardLayout(): DashboardLayout {
-  return DASHBOARD_WIDGETS.filter((w) => w.defaultEnabled).map((w) => defaultItem(w.id));
+  return DASHBOARD_WIDGETS.filter((w) => w.defaultEnabled).map((w) => defaultLayoutItem(w.id));
 }
 
 /**
@@ -150,7 +151,7 @@ export function layoutReducer(
   switch (action.type) {
     case 'add': {
       if (!definitionOf(action.id) || state.some((i) => i.id === action.id)) return state;
-      return [...state, defaultItem(action.id)];
+      return [...state, defaultLayoutItem(action.id)];
     }
     case 'remove': {
       if (!state.some((i) => i.id === action.id)) return state;

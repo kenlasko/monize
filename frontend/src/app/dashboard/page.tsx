@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { subMonths, format } from 'date-fns';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
@@ -12,8 +12,9 @@ import { CustomizeDashboardModal } from '@/components/dashboard/CustomizeDashboa
 import {
   DashboardWidgetContext,
   delegateDashboardWidgets,
-  resolveDashboardWidgets,
 } from '@/components/dashboard/widget-registry';
+import { defaultLayoutItem, resolveDashboardLayout } from '@/components/dashboard/dashboard-layout';
+import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
 import { accountsApi } from '@/lib/accounts';
 import { institutionsApi } from '@/lib/institutions';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
@@ -64,6 +65,7 @@ function DashboardContent() {
   // path), so wait until the store has hydrated before firing.
   const authHydrated = useAuthStore((s) => s._hasHydrated);
   const dashboardWidgets = usePreferencesStore((s) => s.preferences?.dashboardWidgets);
+  const dashboardWidgetConfig = usePreferencesStore((s) => s.preferences?.dashboardWidgetConfig);
   const timezonePref = usePreferencesStore((s) => s.preferences?.timezone);
   const today = useFinancialToday();
   const formatChartDate = useChartDateFormat();
@@ -284,15 +286,15 @@ function DashboardContent() {
     onAccountsChanged: loadDashboardData,
   };
 
-  // Delegates always get the fixed delegate layout (the stored preference is
-  // the owner's); everyone else gets their own configured layout, falling
-  // back to the default when they never customized.
-  const visibleWidgets = useMemo(
+  // Delegates always get the fixed delegate layout at default sizes (the
+  // stored preferences are the owner's); everyone else gets their own
+  // configured layout, falling back to the default when they never customized.
+  const layout = useMemo(
     () =>
       isDelegateView
-        ? delegateDashboardWidgets(delegateSections)
-        : resolveDashboardWidgets(dashboardWidgets),
-    [isDelegateView, delegateSections, dashboardWidgets],
+        ? delegateDashboardWidgets(delegateSections).map((w) => defaultLayoutItem(w.id))
+        : resolveDashboardLayout(dashboardWidgets, dashboardWidgetConfig),
+    [isDelegateView, delegateSections, dashboardWidgets, dashboardWidgetConfig],
   );
 
   // The greeting for the part of the day, and today's date. They are the
@@ -350,17 +352,7 @@ function DashboardContent() {
 
           {!isDelegateView && <GettingStarted />}
 
-          {/* Widget grid: consecutive visible widgets pair up into rows */}
-          <div
-            {...tourAnchor(TOUR_ANCHORS.dashboardWidgets)}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-          >
-            {visibleWidgets
-              .filter((w) => !w.shouldRender || w.shouldRender(widgetContext))
-              .map((w) => (
-                <Fragment key={w.id}>{w.render(widgetContext)}</Fragment>
-              ))}
-          </div>
+          <DashboardGrid layout={layout} context={widgetContext} />
 
           {!isDelegateView && (
             <CustomizeDashboardModal

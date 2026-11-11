@@ -590,6 +590,53 @@ describe('DashboardPage', () => {
     expect(screen.queryByTestId('favourite-accounts')).not.toBeInTheDocument();
   });
 
+  it('draws each widget in a grid item at its default size, the floor on the item', async () => {
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('net-worth-chart')).toBeInTheDocument();
+    });
+    const itemOf = (testId: string) => screen.getByTestId(testId).parentElement as HTMLElement;
+    // Net Worth's floor was 500px on its card; it is the standard 540px on the item.
+    expect(itemOf('net-worth-chart')).toHaveAttribute('data-widget-id', 'net-worth');
+    expect(itemOf('net-worth-chart')).toHaveClass('lg:col-span-6', 'lg:min-h-[540px]');
+    expect(itemOf('budget-status')).toHaveClass('lg:col-span-6', 'lg:min-h-[390px]');
+    expect(itemOf('favourite-accounts').className).not.toMatch(/min-h-/);
+    expect(itemOf('favourite-accounts').parentElement).toHaveClass('lg:grid-cols-12');
+  });
+
+  it('draws a widget at the size stored in its settings', async () => {
+    prefsState.current.dashboardWidgets = ['net-worth', 'insights'];
+    prefsState.current.dashboardWidgetConfig = {
+      'net-worth': { range: '2y', gridWidth: 'full', gridHeight: 'tall' },
+      insights: { gridWidth: 'huge' },
+    };
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('insights-widget')).toBeInTheDocument();
+    });
+    const itemOf = (testId: string) => screen.getByTestId(testId).parentElement as HTMLElement;
+    expect(itemOf('net-worth-chart')).toHaveClass('lg:col-span-12', 'lg:min-h-[720px]');
+    // An unknown preset falls back to the default size.
+    expect(itemOf('insights-widget')).toHaveClass('lg:col-span-6', 'lg:min-h-[390px]');
+  });
+
+  it('draws a delegate through the same grid at default sizes, ignoring the owner\'s sizes', async () => {
+    authState.current.actingAsUserId = 'owner-1';
+    authState.current.delegateSections = { bills: true };
+    prefsState.current.dashboardWidgetConfig = { 'favourite-accounts': { gridWidth: 'full' } };
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('upcoming-bills')).toBeInTheDocument();
+    });
+    const ids = Array.from(document.querySelectorAll('[data-widget-id]')).map((el) =>
+      el.getAttribute('data-widget-id'),
+    );
+    expect(ids).toEqual(['favourite-accounts', 'upcoming-bills']);
+    const accounts = screen.getByTestId('favourite-accounts').parentElement as HTMLElement;
+    expect(accounts).toHaveClass('lg:col-span-6');
+    expect(accounts.parentElement).toHaveAttribute('data-tour-id', 'dashboard-widgets');
+  });
+
   it('does not render the Favourite Reports widget in the default layout', async () => {
     render(<DashboardPage />);
     await waitFor(() => {

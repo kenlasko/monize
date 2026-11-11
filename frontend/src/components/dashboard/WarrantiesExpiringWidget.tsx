@@ -55,7 +55,7 @@ export function WarrantiesExpiringWidget({ isLoading: parentLoading }: Warrantie
       {t('warrantiesExpiring.title')}
     </WidgetHeading>
   );
-  const cardClass = `${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`;
+  const cardClass = `${CARD_CLASS} p-3 sm:p-6`;
 
   if (parentLoading || (warranties === null && !hasError)) {
     return (

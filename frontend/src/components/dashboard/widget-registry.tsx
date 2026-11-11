@@ -18,42 +18,44 @@ import { FavouriteReportsWidget } from './FavouriteReportsWidget';
 import { Card } from '@/components/ui/Card';
 import type { WidgetHeight, WidgetWidth } from './dashboard-layout';
 
-/** Placeholder card while a lazy widget's chunk loads; matches WidgetCard's shell. */
-const widgetSkeleton = (minHeight = 'lg:min-h-[540px]') =>
-  function WidgetSkeleton() {
-    return <Card padding="md" className={minHeight} />;
-  };
-const WarrantiesExpiringWidget = dynamic(() => import('./WarrantiesExpiringWidget').then(m => m.WarrantiesExpiringWidget), { ssr: false, loading: widgetSkeleton('lg:min-h-[390px]') });
+/**
+ * Placeholder card while a lazy widget's chunk loads; matches WidgetCard's
+ * shell. It takes its height from the grid item's floor, as the card does.
+ */
+function WidgetSkeleton() {
+  return <Card padding="md" />;
+}
+const WarrantiesExpiringWidget = dynamic(() => import('./WarrantiesExpiringWidget').then(m => m.WarrantiesExpiringWidget), { ssr: false, loading: WidgetSkeleton });
 const ExpensesPieChart = dynamic(() => import('./ExpensesPieChart').then(m => m.ExpensesPieChart), {
   ssr: false,
-  loading: widgetSkeleton(),
+  loading: WidgetSkeleton,
 });
 const IncomeExpensesBarChart = dynamic(() => import('./IncomeExpensesBarChart').then(m => m.IncomeExpensesBarChart), {
   ssr: false,
-  loading: widgetSkeleton(),
+  loading: WidgetSkeleton,
 });
 const NetWorthChart = dynamic(() => import('./NetWorthChart').then(m => m.NetWorthChart), {
   ssr: false,
-  loading: widgetSkeleton('lg:min-h-[500px]'),
+  loading: WidgetSkeleton,
 });
 const AssetsVsLiabilities = dynamic(() => import('./AssetsVsLiabilities').then(m => m.AssetsVsLiabilities), {
   ssr: false,
-  loading: widgetSkeleton('lg:min-h-[500px]'),
+  loading: WidgetSkeleton,
 });
-const PortfolioValueWidget = dynamic(() => import('./PortfolioValueWidget').then(m => m.PortfolioValueWidget), { ssr: false, loading: widgetSkeleton() });
-const SpendingByPayeeWidget = dynamic(() => import('./SpendingByPayeeWidget').then(m => m.SpendingByPayeeWidget), { ssr: false, loading: widgetSkeleton() });
-const MonthlySpendingTrendWidget = dynamic(() => import('./MonthlySpendingTrendWidget').then(m => m.MonthlySpendingTrendWidget), { ssr: false, loading: widgetSkeleton() });
-const CashFlowSankeyWidget = dynamic(() => import('./CashFlowSankeyWidget').then(m => m.CashFlowSankeyWidget), { ssr: false, loading: widgetSkeleton() });
-const IncomeBySourceWidget = dynamic(() => import('./IncomeBySourceWidget').then(m => m.IncomeBySourceWidget), { ssr: false, loading: widgetSkeleton() });
-const CreditUtilizationAccountsWidget = dynamic(() => import('./CreditUtilizationAccountsWidget').then(m => m.CreditUtilizationAccountsWidget), { ssr: false, loading: widgetSkeleton() });
-const CreditUtilizationTotalWidget = dynamic(() => import('./CreditUtilizationTotalWidget').then(m => m.CreditUtilizationTotalWidget), { ssr: false, loading: widgetSkeleton() });
-const SectorWeightingsWidget = dynamic(() => import('./SectorWeightingsWidget').then(m => m.SectorWeightingsWidget), { ssr: false, loading: widgetSkeleton() });
-const SecurityTypeAllocationWidget = dynamic(() => import('./SecurityTypeAllocationWidget').then(m => m.SecurityTypeAllocationWidget), { ssr: false, loading: widgetSkeleton() });
-const GeographicAllocationWidget = dynamic(() => import('./GeographicAllocationWidget').then(m => m.GeographicAllocationWidget), { ssr: false, loading: widgetSkeleton() });
-const RecurringExpensesWidget = dynamic(() => import('./RecurringExpensesWidget').then(m => m.RecurringExpensesWidget), { ssr: false, loading: widgetSkeleton() });
-const CashFlowForecastWidget = dynamic(() => import('./CashFlowForecastWidget').then(m => m.CashFlowForecastWidget), { ssr: false, loading: widgetSkeleton() });
-const TriviaWidget = dynamic(() => import('./TriviaWidget').then(m => m.TriviaWidget), { ssr: false, loading: widgetSkeleton() });
-const WeekendVsWeekdayWidget = dynamic(() => import('./WeekendVsWeekdayWidget').then(m => m.WeekendVsWeekdayWidget), { ssr: false, loading: widgetSkeleton() });
+const PortfolioValueWidget = dynamic(() => import('./PortfolioValueWidget').then(m => m.PortfolioValueWidget), { ssr: false, loading: WidgetSkeleton });
+const SpendingByPayeeWidget = dynamic(() => import('./SpendingByPayeeWidget').then(m => m.SpendingByPayeeWidget), { ssr: false, loading: WidgetSkeleton });
+const MonthlySpendingTrendWidget = dynamic(() => import('./MonthlySpendingTrendWidget').then(m => m.MonthlySpendingTrendWidget), { ssr: false, loading: WidgetSkeleton });
+const CashFlowSankeyWidget = dynamic(() => import('./CashFlowSankeyWidget').then(m => m.CashFlowSankeyWidget), { ssr: false, loading: WidgetSkeleton });
+const IncomeBySourceWidget = dynamic(() => import('./IncomeBySourceWidget').then(m => m.IncomeBySourceWidget), { ssr: false, loading: WidgetSkeleton });
+const CreditUtilizationAccountsWidget = dynamic(() => import('./CreditUtilizationAccountsWidget').then(m => m.CreditUtilizationAccountsWidget), { ssr: false, loading: WidgetSkeleton });
+const CreditUtilizationTotalWidget = dynamic(() => import('./CreditUtilizationTotalWidget').then(m => m.CreditUtilizationTotalWidget), { ssr: false, loading: WidgetSkeleton });
+const SectorWeightingsWidget = dynamic(() => import('./SectorWeightingsWidget').then(m => m.SectorWeightingsWidget), { ssr: false, loading: WidgetSkeleton });
+const SecurityTypeAllocationWidget = dynamic(() => import('./SecurityTypeAllocationWidget').then(m => m.SecurityTypeAllocationWidget), { ssr: false, loading: WidgetSkeleton });
+const GeographicAllocationWidget = dynamic(() => import('./GeographicAllocationWidget').then(m => m.GeographicAllocationWidget), { ssr: false, loading: WidgetSkeleton });
+const RecurringExpensesWidget = dynamic(() => import('./RecurringExpensesWidget').then(m => m.RecurringExpensesWidget), { ssr: false, loading: WidgetSkeleton });
+const CashFlowForecastWidget = dynamic(() => import('./CashFlowForecastWidget').then(m => m.CashFlowForecastWidget), { ssr: false, loading: WidgetSkeleton });
+const TriviaWidget = dynamic(() => import('./TriviaWidget').then(m => m.TriviaWidget), { ssr: false, loading: WidgetSkeleton });
+const WeekendVsWeekdayWidget = dynamic(() => import('./WeekendVsWeekdayWidget').then(m => m.WeekendVsWeekdayWidget), { ssr: false, loading: WidgetSkeleton });
 
 export type DashboardWidgetId =
   | 'favourite-accounts'
@@ -133,8 +135,8 @@ const upcomingBillsMaxItems = (accounts: Account[]) =>
   accounts.filter((a) => a.isFavourite && !a.isClosed).length + 2;
 
 /**
- * All dashboard widgets in default display order. The dashboard renders a
- * two-column grid, so consecutive visible widgets pair up into rows.
+ * All dashboard widgets in default display order. Each starts half the grid
+ * wide, so in the default layout consecutive visible widgets pair up into rows.
  */
 export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
