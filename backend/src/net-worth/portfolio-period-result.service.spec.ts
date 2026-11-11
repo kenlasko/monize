@@ -1175,7 +1175,7 @@ describe("PortfolioPeriodResultService", () => {
       const line = await series.getSeries("user-1", window);
       expect(card.investmentReturnPercent).toBe(1.25);
       expect(line.complete).toBe(true);
-      expect(line.points.at(-1)?.returnPercent).toBe(
+      expect(line.points[line.points.length - 1]?.returnPercent).toBe(
         card.investmentReturnPercent,
       );
     });
