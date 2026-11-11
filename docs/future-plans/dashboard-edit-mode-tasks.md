@@ -32,6 +32,7 @@ No task changes stored data until a reader presses Done, and what Done stores is
 | F4 | Width and height choices in the overlay | F3 | visible | Built (f9f161e2f) |
 | F5 | Pointer reorder by the grip, mouse and touch | F3 | visible | Built (94be4c261) |
 | F6 | Corner resize grip | F4 | visible | Built (0402fda04) |
+| F7 | Gap slots | F6 | visible | Built (pending commit) |
 
 F4 and F5 are independent of each other. The feature is complete for a reader at F5; F6 is the direct-manipulation extra and can be dropped without leaving anything half-built.
 

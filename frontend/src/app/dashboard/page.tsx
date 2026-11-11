@@ -17,8 +17,11 @@ import {
 import { useWidgetName } from '@/components/dashboard/widget-glyphs';
 import {
   defaultLayoutItem,
+  fitsWidth,
   layoutReducer,
+  moveIntoGap,
   resolveDashboardLayout,
+  type RowGap,
   type WidgetHeight,
   type WidgetWidth,
 } from '@/components/dashboard/dashboard-layout';
@@ -80,6 +83,10 @@ const AddWidgetTile = dynamic(
   () => import('@/components/dashboard/AddWidgetDialog').then((m) => m.AddWidgetTile),
   { ssr: false },
 );
+const AddWidgetSlot = dynamic(
+  () => import('@/components/dashboard/AddWidgetDialog').then((m) => m.AddWidgetSlot),
+  { ssr: false },
+);
 const DashboardHeroSettingsModal = dynamic(
   () => import('@/components/dashboard/DashboardHeroSettingsModal').then((m) => m.DashboardHeroSettingsModal),
   { ssr: false },
@@ -139,6 +146,8 @@ function DashboardContent() {
   // A delegate never enters edit mode (DASH-9).
   const editing = layoutDraft.editing && !isDelegateView;
   const [showAddWidget, setShowAddWidget] = useState(false);
+  // The row gap the Add dialog was opened from; null from the end tile or the bar.
+  const [addGap, setAddGap] = useState<RowGap | null>(null);
   const [showHeroSettings, setShowHeroSettings] = useState(false);
   // The latest change (move, add, remove, resize), for the grid's polite live region.
   const [announcement, setAnnouncement] = useState('');
@@ -362,6 +371,7 @@ function DashboardContent() {
   // Each visit to edit mode starts with its dialogs shut and nothing announced.
   const enterEditMode = () => {
     setShowAddWidget(false);
+    setAddGap(null);
     setShowHeroSettings(false);
     setAnnouncement('');
     layoutDraft.enter();
@@ -428,6 +438,37 @@ function DashboardContent() {
     focusGrip(id);
   };
 
+  // From a gap slot: the widget goes at the slot's place, filling its space.
+  const insertWidget = (id: DashboardWidgetId, gap: RowGap) => {
+    if (!draft || saving || draft.some((item) => item.id === id)) return;
+    const action = { type: 'insert', id, index: gap.index, width: gap.width } as const;
+    if (layoutReducer(draft, action) === draft) return;
+    dispatchLayout(action);
+    setAnnouncement(t('edit.added', { name: widgetName(id) }));
+    focusGrip(id);
+  };
+
+  const openAddWidget = (gap: RowGap | null) => {
+    setAddGap(gap);
+    setShowAddWidget(true);
+  };
+
+  // A grip dropped on a gap slot: moved there, narrowed to the gap when
+  // wider. A drop that also narrowed reads out both changes.
+  const dropInGap = (from: number, gapIndex: number, width: WidgetWidth) => {
+    if (!draft || saving) return;
+    const action = moveIntoGap(draft, from, gapIndex, width);
+    if (!action || layoutReducer(draft, action) === draft) return;
+    const before = draft[from];
+    dispatchLayout(action);
+    const name = widgetName(before.id);
+    const moved =
+      action.to !== from ? t('edit.moved', { name, position: action.to + 1, count: draft.length }) : null;
+    const resized =
+      action.width !== before.width ? t('edit.resized', { name, size: t(`edit.widthName.${action.width}`) }) : null;
+    setAnnouncement(moved && resized ? t('edit.twoChanges', { first: moved, second: resized }) : (moved ?? resized ?? ''));
+  };
+
   const resizeWidget = (id: DashboardWidgetId, size: { width?: WidgetWidth; height?: WidgetHeight }) => {
     if (!draft || saving) return;
     const action = { type: 'resize', id, ...size } as const;
@@ -453,6 +494,8 @@ function DashboardContent() {
     count: draft?.length ?? 0,
     enabled: !!draft,
     onMove: (from, to, via) => moveWidget(from, to, via === 'keyboard' ? 'grip' : 'none'),
+    fitsSlot: (from, width) => !!draft?.[from] && fitsWidth(draft[from].id, width),
+    onSlotDrop: dropInGap,
   });
   const draggedItem = draft && reorder.draggingIndex !== null ? draft[reorder.draggingIndex] : undefined;
 
@@ -470,7 +513,10 @@ function DashboardContent() {
           />
         ),
         placeholder: (item) => <WidgetPlaceholder item={item} />,
-        trailing: <AddWidgetTile onClick={() => setShowAddWidget(true)} empty={draft.length === 0} />,
+        trailing: <AddWidgetTile onClick={() => openAddWidget(null)} empty={draft.length === 0} />,
+        gapSlot: (gap) => (
+          <AddWidgetSlot gap={gap} highlighted={reorder.slotTarget === gap.index} onClick={openAddWidget} />
+        ),
         announcement,
         saving,
         reorder: {
@@ -540,7 +586,7 @@ function DashboardContent() {
 
           {draft && (
             <DashboardEditBar
-              onAddWidget={() => setShowAddWidget(true)}
+              onAddWidget={() => openAddWidget(null)}
               onHeroSettings={() => setShowHeroSettings(true)}
               onReset={() => dispatchLayout({ type: 'reset' })}
               onCancel={layoutDraft.cancel}
@@ -558,7 +604,8 @@ function DashboardContent() {
                 isOpen={showAddWidget}
                 onClose={() => setShowAddWidget(false)}
                 shownIds={draft.map((item) => item.id)}
-                onAdd={addWidget}
+                fitWidth={addGap?.width}
+                onAdd={(id) => (addGap ? insertWidget(id, addGap) : addWidget(id))}
               />
               <UnsavedChangesDialog
                 isOpen={layoutDraft.confirmingLeave}

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { useIsLgUp } from '@/hooks/useIsMobile';
 import type { DragAxis, DropPosition } from '@/hooks/useDragReorder';
+import { WIDGET_WIDTHS, type WidgetWidth } from '@/components/dashboard/dashboard-layout';
 
 /** Distance from the viewport's top or bottom edge within which a drag scrolls the page. */
 export const AUTO_SCROLL_EDGE = 80;
@@ -107,6 +108,25 @@ function readRects(container: HTMLElement | null): Box[] {
   );
 }
 
+/** A row's empty end drawn as a slot (`data-gap-index`, `data-gap-width`), and where it is. */
+interface SlotBox {
+  index: number;
+  width: WidgetWidth;
+  box: Box;
+}
+
+function readSlots(container: HTMLElement | null): SlotBox[] {
+  if (!container) return [];
+  return Array.from(container.querySelectorAll<HTMLElement>(':scope > [data-gap-index]')).flatMap((el) => {
+    const index = Number(el.dataset.gapIndex);
+    const width = el.dataset.gapWidth as WidgetWidth;
+    if (!Number.isInteger(index) || !WIDGET_WIDTHS.includes(width)) return [];
+    return [{ index, width, box: el.getBoundingClientRect() }];
+  });
+}
+
+const contains = (b: Box, x: number, y: number) => x >= b.left && x <= b.right && y >= b.top && y <= b.bottom;
+
 function placeChip(chip: HTMLElement | null, x: number, y: number) {
   if (chip) chip.style.transform = `translate3d(${x + CHIP_OFFSET}px, ${y + CHIP_OFFSET}px, 0)`;
 }
@@ -133,6 +153,10 @@ interface GridReorderOptions {
   enabled: boolean;
   /** One move per drop or per arrow key; `via` lets the caller decide where focus goes. */
   onMove: (from: number, to: number, via: GridReorderVia) => void;
+  /** Whether the widget at `from` can be as narrow as a slot of `width`. Without it no slot is a target. */
+  fitsSlot?: (from: number, width: WidgetWidth) => boolean;
+  /** A drop on a slot that takes the widget: the gap before `layout[gapIndex]`, `width` wide. */
+  onSlotDrop?: (from: number, gapIndex: number, width: WidgetWidth) => void;
 }
 
 interface Session {
@@ -143,11 +167,14 @@ interface Session {
   dy: number;
   active: boolean;
   gap: number | null;
+  slot: number | null;
 }
 
 interface DragState {
   from: number;
   gap: number | null;
+  /** The gap index of the slot under the pointer that takes the widget; it replaces the line. */
+  slot: number | null;
   active: boolean;
 }
 
@@ -162,7 +189,7 @@ interface DragState {
  * pointer re-renders nothing. Release moves once; Escape or a cancelled
  * pointer moves nothing.
  */
-export function useGridReorder({ containerRef, count, enabled, onMove }: GridReorderOptions) {
+export function useGridReorder({ containerRef, count, enabled, onMove, fitsSlot, onSlotDrop }: GridReorderOptions) {
   // The grid flows in rows from lg up, in one column below.
   const axis: DragAxis = useIsLgUp() ? 'x' : 'y';
   // Read live by the frame and the release: a rotation across lg mid-drag changes the flow.
@@ -172,6 +199,30 @@ export function useGridReorder({ containerRef, count, enabled, onMove }: GridReo
   const press = useRef<{ x: number; y: number } | null>(null);
   const frame = useRef<number | null>(null);
   const chip = useRef<HTMLElement | null>(null);
+  // Read by the frame, which is not re-created per render.
+  const fitsSlotRef = useRef(fitsSlot);
+  useEffect(() => {
+    fitsSlotRef.current = fitsSlot;
+  });
+
+  /**
+   * The slot under (x, y) that takes the widget at `from`, if any. Slots come
+   * first: a slot the widget cannot be that narrow for is not a target, and
+   * the row-band test below decides as if it were empty grid. The end of the
+   * dragged widget's own row is never one: moving there changes nothing.
+   */
+  const slotAt = useCallback(
+    (from: number, x: number, y: number): SlotBox | null => {
+      const fits = fitsSlotRef.current;
+      if (!fits || axisRef.current !== 'x') return null;
+      return (
+        readSlots(containerRef.current).find(
+          (s) => s.index !== from + 1 && contains(s.box, x, y) && fits(from, s.width),
+        ) ?? null
+      );
+    },
+    [containerRef],
+  );
 
   // Leaving edit mode mid-drag drops the drag's state during render, and its
   // listener and frame in the effect below.
@@ -228,13 +279,15 @@ export function useGridReorder({ containerRef, count, enabled, onMove }: GridReo
       }
       placeChip(chip.current, x, y);
       // About twenty reads a frame, after any scroll, so nothing is tested against a stale layout.
-      const gap = gapAt(readRects(containerRef.current), x, y, axisRef.current);
-      if (gap !== s.gap) {
+      const slot = slotAt(s.from, x, y)?.index ?? null;
+      const gap = slot === null ? gapAt(readRects(containerRef.current), x, y, axisRef.current) : null;
+      if (gap !== s.gap || slot !== s.slot) {
         s.gap = gap;
-        setDrag({ from: s.from, gap, active: true });
+        s.slot = slot;
+        setDrag({ from: s.from, gap, slot, active: true });
       }
     },
-    [containerRef],
+    [containerRef, slotAt],
   );
 
   const schedule = useCallback(() => {
@@ -267,8 +320,8 @@ export function useGridReorder({ containerRef, count, enabled, onMove }: GridReo
     onDragStart: () => {
       const at = press.current;
       if (!enabled || session.current || !at) return;
-      session.current = { from: index, x0: at.x, y0: at.y, dx: 0, dy: 0, active: false, gap: null };
-      setDrag({ from: index, gap: null, active: false });
+      session.current = { from: index, x0: at.x, y0: at.y, dx: 0, dy: 0, active: false, gap: null, slot: null };
+      setDrag({ from: index, gap: null, slot: null, active: false });
     },
     onDragMove: (dx, dy) => {
       const s = session.current;
@@ -279,15 +332,22 @@ export function useGridReorder({ containerRef, count, enabled, onMove }: GridReo
         // A press that has not travelled yet is still a click: no chip, no dimming.
         if (Math.abs(dx) + Math.abs(dy) < DRAG_SLOP) return;
         s.active = true;
-        setDrag({ from: s.from, gap: s.gap, active: true });
+        setDrag({ from: s.from, gap: s.gap, slot: s.slot, active: true });
       }
       schedule();
     },
     onDragEnd: (dx, dy) => {
       const s = session.current;
       if (!s || s.from !== index) return;
-      const gap = s.active ? gapAt(readRects(containerRef.current), s.x0 + dx, s.y0 + dy, axisRef.current) : null;
+      const x = s.x0 + dx;
+      const y = s.y0 + dy;
+      const slot = s.active ? slotAt(s.from, x, y) : null;
+      const gap = s.active && !slot ? gapAt(readRects(containerRef.current), x, y, axisRef.current) : null;
       cancel();
+      if (slot) {
+        onSlotDrop?.(s.from, slot.index, slot.width);
+        return;
+      }
       if (gap === null) return;
       // The gaps either side of the dragged item leave it where it is.
       const to = gap > s.from ? gap - 1 : gap;
@@ -319,7 +379,15 @@ export function useGridReorder({ containerRef, count, enabled, onMove }: GridReo
     if (el && s) placeChip(el, s.x0 + s.dx, s.y0 + s.dy);
   }, []);
 
-  return { axis, draggingIndex: active ? active.from : null, dropIndicator, chipRef, grip };
+  return {
+    axis,
+    draggingIndex: active ? active.from : null,
+    /** The gap index of the slot that would take the dragged widget, to highlight; null when none. */
+    slotTarget: active ? active.slot : null,
+    dropIndicator,
+    chipRef,
+    grip,
+  };
 }
 
 export type GridReorder = ReturnType<typeof useGridReorder>;

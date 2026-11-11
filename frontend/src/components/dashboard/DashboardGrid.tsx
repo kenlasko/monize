@@ -1,10 +1,11 @@
 'use client';
 
-import type { ReactNode, Ref } from 'react';
+import { Fragment, type ReactNode, type Ref } from 'react';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { DropIndicatorLine, type DragAxis, type DropPosition } from '@/hooks/useDragReorder';
+import { useIsLgUp } from '@/hooks/useIsMobile';
 import { DashboardGridItem } from './DashboardGridItem';
-import type { DashboardLayout, DashboardLayoutItem } from './dashboard-layout';
+import { rowGaps, type DashboardLayout, type DashboardLayoutItem, type RowGap } from './dashboard-layout';
 import { DASHBOARD_WIDGETS, type DashboardWidgetContext } from './widget-registry';
 
 const DEFINITIONS = new Map(DASHBOARD_WIDGETS.map((w) => [w.id, w]));
@@ -21,6 +22,12 @@ export interface DashboardGridEditing {
   placeholder: (item: DashboardLayoutItem) => ReactNode;
   /** After the last widget: the Add widget tile. */
   trailing: ReactNode;
+  /**
+   * The slot for a row's empty end, a third or wider, from `lg` up (one
+   * column below has none). Drawn before `layout[gap.index]`, or after the
+   * last widget, at exactly the gap's span.
+   */
+  gapSlot?: (gap: RowGap) => ReactNode;
   /** The latest change (a move, an add, a remove, a resize), read out by the grid's one polite live region. */
   announcement: string;
   /** Done's save is in flight: the grid takes no input until it lands. */
@@ -60,6 +67,19 @@ export function DashboardGrid({
   ref?: Ref<HTMLDivElement>;
 }) {
   const reorder = editing?.reorder;
+  const isLgUp = useIsLgUp();
+  const gapSlot = editing && isLgUp ? editing.gapSlot : undefined;
+  const gaps = gapSlot ? rowGaps(layout) : [];
+  // Flat, keyed children: a slot beside a widget never changes the widget's
+  // element, so entering edit mode keeps every widget mounted.
+  const slotsAt = (index: number) =>
+    gapSlot
+      ? gaps
+          .filter((g) => g.index === index)
+          .map((g) => (
+            <Fragment key={`gap-${g.index}`}>{gapSlot(g)}</Fragment>
+          ))
+      : [];
   return (
     <>
       <div
@@ -68,19 +88,20 @@ export function DashboardGrid({
         inert={editing?.saving || undefined}
         className="grid grid-cols-1 lg:grid-cols-12 gap-6"
       >
-        {layout.map((item, index) => {
+        {layout.flatMap((item, index) => {
           const widget = DEFINITIONS.get(item.id);
-          if (!widget) return null;
+          if (!widget) return [];
           const hasContent = !widget.shouldRender || widget.shouldRender(context);
           if (!editing) {
-            if (!hasContent) return null;
-            return (
+            if (!hasContent) return [];
+            return [
               <DashboardGridItem key={item.id} item={item}>
                 {widget.render(context)}
-              </DashboardGridItem>
-            );
+              </DashboardGridItem>,
+            ];
           }
-          return (
+          return [
+            ...slotsAt(index),
             <DashboardGridItem
               key={item.id}
               item={item}
@@ -91,9 +112,10 @@ export function DashboardGrid({
               }
             >
               {hasContent ? widget.render(context) : editing.placeholder(item)}
-            </DashboardGridItem>
-          );
+            </DashboardGridItem>,
+          ];
         })}
+        {slotsAt(layout.length)}
         {editing?.trailing}
       </div>
       {reorder?.chip}

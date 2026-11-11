@@ -1024,6 +1024,136 @@ describe('DashboardPage', () => {
       });
     });
 
+    describe('gap slots, from lg up', () => {
+      const original = window.matchMedia;
+      let rects: ReturnType<typeof vi.spyOn>;
+      // Net Worth two thirds wide ends row 1 a third short; the next two are half wide.
+      const storeLayout = (third: string) => {
+        prefsState.current.dashboardWidgets = ['net-worth', 'insights', third];
+        prefsState.current.dashboardWidgetConfig = { 'net-worth': { gridWidth: 'twoThirds' } };
+      };
+      // Row 1: Net Worth, then the slot; row 2: the other two.
+      const BOXES: Record<string, [number, number, number, number]> = {
+        'net-worth': [0, 100, 888, 400],
+        'gap-1': [912, 100, 1344, 400],
+        insights: [0, 424, 660, 724],
+        third: [684, 424, 1344, 724],
+      };
+      beforeEach(() => {
+        window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+          matches: query.includes('min-width: 64rem'),
+          media: query,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        })) as unknown as typeof window.matchMedia;
+        rects = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+          const id = this.getAttribute('data-widget-id');
+          const gap = this.getAttribute('data-gap-index');
+          const key = gap !== null ? `gap-${gap}` : id && BOXES[id] ? id : id ? 'third' : null;
+          const [left, top, right, bottom] = key ? BOXES[key] : [0, 0, 0, 0];
+          return { left, top, right, bottom, x: left, y: top, width: right - left, height: bottom - top } as DOMRect;
+        });
+      });
+      afterEach(() => {
+        window.matchMedia = original;
+        rects.mockRestore();
+      });
+
+      const slot = () => screen.getByRole('button', { name: 'Add Widget to this space (One third width)' });
+
+      it('draws a slot in the short row only, and adds a widget that fits there at the gap width', async () => {
+        storeLayout('favourite-accounts');
+        await renderLoaded();
+        await enterEditMode();
+        await waitFor(() => expect(slot()).toHaveAttribute('data-gap-index', '1'));
+        expect(document.querySelectorAll('[data-gap-index]')).toHaveLength(1);
+        await click(slot());
+        const dialog = await screen.findByRole('dialog', { name: 'Add Widget' });
+        // At least half wide: hidden, but it does not fit a third.
+        expect(within(dialog).queryByTestId('add-widget-income-expenses')).not.toBeInTheDocument();
+        await click(within(dialog).getByTestId('add-widget-budget-status'));
+        expect(widgetIds()).toEqual(['net-worth', 'budget-status', 'insights', 'favourite-accounts']);
+        expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent('Budget Status added');
+        // The row is full now: no slot.
+        expect(document.querySelector('[data-gap-index]')).toBeNull();
+        await click(done());
+        expect(mockUpdatePreferences).toHaveBeenCalledTimes(1);
+        const body = mockUpdatePreferences.mock.calls[0][0];
+        expect(body.dashboardWidgets).toEqual(['net-worth', 'budget-status', 'insights', 'favourite-accounts']);
+        expect(body.dashboardWidgetConfig['budget-status']).toEqual({ gridWidth: 'third' });
+      });
+
+      it('keeps the end tile listing every hidden widget, added at the end at default size', async () => {
+        storeLayout('favourite-accounts');
+        await renderLoaded();
+        await enterEditMode();
+        await click(screen.getByTestId('add-widget-tile'));
+        const dialog = await screen.findByRole('dialog', { name: 'Add Widget' });
+        await click(within(dialog).getByTestId('add-widget-income-expenses'));
+        expect(widgetIds().at(-1)).toBe('income-expenses');
+      });
+
+      async function dragOntoSlot(name: string) {
+        const handle = screen.getByRole('button', { name: `Move ${name}` });
+        await act(async () => {
+          fireEvent.pointerDown(handle, { pointerId: 1, clientX: 1000, clientY: 600 });
+          fireEvent.pointerMove(handle, { pointerId: 1, clientX: 1100, clientY: 250 });
+        });
+        await screen.findByTestId('widget-drag-chip');
+        return {
+          release: () =>
+            act(async () => {
+              fireEvent.pointerUp(handle, { pointerId: 1, clientX: 1100, clientY: 250 });
+            }),
+        };
+      }
+
+      it('takes a dragged widget that can be a third, moving it there narrowed, and reads out both', async () => {
+        storeLayout('favourite-accounts');
+        await renderLoaded();
+        await enterEditMode();
+        const drag = await dragOntoSlot('Favourite Accounts');
+        await waitFor(() => expect(slot()).toHaveAttribute('data-drop-target', 'true'));
+        await drag.release();
+        expect(widgetIds()).toEqual(['net-worth', 'favourite-accounts', 'insights']);
+        expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent(
+          'Favourite Accounts moved to position 2 of 3. Favourite Accounts is now One third width',
+        );
+        await click(done());
+        const body = mockUpdatePreferences.mock.calls[0][0];
+        expect(body.dashboardWidgets).toEqual(['net-worth', 'favourite-accounts', 'insights']);
+        expect(body.dashboardWidgetConfig['favourite-accounts']).toEqual({ gridWidth: 'third' });
+      });
+
+      it('does not take a widget at least half wide: it moves by the row rule, at its own width', async () => {
+        storeLayout('income-expenses');
+        await renderLoaded();
+        await enterEditMode();
+        const drag = await dragOntoSlot('Income vs Expenses');
+        // Give the frame its chance to mark the slot; it must not.
+        await act(async () => {
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+        });
+        expect(slot()).not.toHaveAttribute('data-drop-target');
+        await drag.release();
+        expect(widgetIds()).toEqual(['net-worth', 'income-expenses', 'insights']);
+        expect(screen.getByTestId('dashboard-edit-announcement')).toHaveTextContent(
+          'Income vs Expenses moved to position 2 of 3',
+        );
+        await click(done());
+        const body = mockUpdatePreferences.mock.calls[0][0];
+        expect(body.dashboardWidgetConfig['income-expenses']).toBeUndefined();
+      });
+
+      it('draws no slot below lg', async () => {
+        window.matchMedia = original;
+        storeLayout('favourite-accounts');
+        await renderLoaded();
+        await enterEditMode();
+        expect(document.querySelector('[data-gap-index]')).toBeNull();
+      });
+    });
+
     it('stores a layout reset to the default as never customized, and only on Done', async () => {
       prefsState.current.dashboardWidgets = ['insights', 'net-worth'];
       await renderLoaded();

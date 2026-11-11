@@ -1,13 +1,17 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen } from '@/test/render';
 import { DashboardGrid, type DashboardGridEditing } from './DashboardGrid';
-import type { DashboardLayout } from './dashboard-layout';
+import type { DashboardLayout, RowGap } from './dashboard-layout';
 import type { DashboardWidgetContext } from './widget-registry';
+
+const mockWide = vi.hoisted(() => ({ value: false }));
+vi.mock('@/hooks/useIsMobile', () => ({ useIsLgUp: () => mockWide.value }));
 
 // A small registry so the grid's own rules are tested, not the real widgets.
 vi.mock('./widget-registry', () => ({
   DASHBOARD_WIDGETS: [
     { id: 'net-worth', render: () => <div data-testid="w-net-worth" /> },
+    { id: 'trivia', render: () => <div data-testid="w-trivia" /> },
     { id: 'insights', render: () => <div data-testid="w-insights" /> },
     {
       id: 'top-movers',
@@ -136,6 +140,67 @@ describe('DashboardGrid', () => {
       render(<DashboardGrid layout={LAYOUT} context={context()} />);
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
       expect(screen.queryByText('add tile')).not.toBeInTheDocument();
+    });
+
+    describe('gap slots', () => {
+      // Row 1 (8 of 12) ends a third short, row 2 (10 of 12) two columns short, row 3 (4 of 12) two thirds short.
+      const SECTION_8: DashboardLayout = [
+        { id: 'net-worth', width: 'twoThirds', height: 'auto' },
+        { id: 'top-movers', width: 'half', height: 'auto' },
+        { id: 'insights', width: 'third', height: 'auto' },
+        { id: 'trivia', width: 'third', height: 'auto' },
+      ];
+      const withSlots = () =>
+        editing({
+          gapSlot: (gap: RowGap) => (
+            <button type="button" data-gap-index={gap.index} data-span={gap.span}>{`slot ${gap.width}`}</button>
+          ),
+        });
+      // The grid's children in order, a widget by its id and a slot by its index and span.
+      const children = () =>
+        Array.from(document.querySelector('[data-tour-id="dashboard-widgets"]')!.children).map((el) =>
+          el.hasAttribute('data-gap-index')
+            ? `slot@${el.getAttribute('data-gap-index')}:${el.getAttribute('data-span')}`
+            : (el.getAttribute('data-widget-id') ?? el.textContent),
+        );
+
+      afterEach(() => {
+        mockWide.value = false;
+      });
+
+      it('draws one at each short row end of a third or more, from lg up, at its place and span', () => {
+        mockWide.value = true;
+        render(<DashboardGrid layout={SECTION_8} context={context()} editing={withSlots()} />);
+        expect(children()).toEqual([
+          'net-worth',
+          'slot@1:4',
+          'top-movers',
+          'insights',
+          'trivia',
+          'slot@4:8',
+          'add tile',
+        ]);
+      });
+
+      it('draws none below lg, where the grid is one column', () => {
+        render(<DashboardGrid layout={SECTION_8} context={context()} editing={withSlots()} />);
+        expect(document.querySelector('[data-gap-index]')).toBeNull();
+      });
+
+      it('draws none outside edit mode', () => {
+        mockWide.value = true;
+        render(<DashboardGrid layout={SECTION_8} context={context()} />);
+        expect(document.querySelector('[data-gap-index]')).toBeNull();
+      });
+
+      it('keeps each widget element when its slots come and go', () => {
+        mockWide.value = true;
+        const { rerender } = render(<DashboardGrid layout={SECTION_8} context={context()} />);
+        const before = document.querySelector('[data-widget-id="top-movers"]');
+        rerender(<DashboardGrid layout={SECTION_8} context={context()} editing={withSlots()} />);
+        expect(document.querySelector('[data-gap-index="1"]')).not.toBeNull();
+        expect(document.querySelector('[data-widget-id="top-movers"]')).toBe(before);
+      });
     });
   });
 });

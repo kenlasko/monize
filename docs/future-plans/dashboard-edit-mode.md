@@ -252,6 +252,21 @@ Done saves and leaves; with nothing changed it leaves without a request. While t
 - **Focus.** Every way out (Done, Cancel, Discard, Escape, Back) puts focus back on the Customize gear. After a remove, focus goes to the next widget's grip, else the previous one's, else the Add widget tile; after an add, to the new widget's grip. Remove, add and resize are announced through the grid's one polite live region, which is cleared on each entry.
 - **Saving gate.** While Done's save is in flight the draft takes no layout change (the reducer refuses it), the grid is `inert`, and the bar's actions are disabled, so nothing is edited that the landing save would drop. Hero settings cannot be closed while their own save is in flight, so Done, which is under that dialog, never reads the settings map before the hero's answer lands.
 
+### 10.4 Gap slots
+
+Decided with Ken on 2026-11-11. In edit mode only, from `lg` up, every row of the draft that ends with empty space of a third or more shows a dashed **Add Widget** slot of exactly that space, in that row. Below `lg` (one column) there are none, and the everyday dashboard leaves the space empty.
+
+- **Where the gaps are.** `rowGaps` in `dashboard-layout.ts` walks the draft as row flow without `dense` places it: an item that does not fit in the rest of its row starts the next one, so that row ends short; the last row's trailing space counts too. A gap can only be 4, 6 or 8 columns; a 2-column remainder gets no slot. Each gap carries the insertion index (the slot sits before that widget, or at the end) and the preset whose span equals it (`third`, `half`, `twoThirds`). A slot of exactly the leftover span fills its row, so drawing it moves no widget; a unit test places the grid's children with and without the slots and compares every widget's row and column.
+- **Adding from a slot.** The Add dialog lists only the hidden widgets whose `minWidth` is no wider than the gap, and the one chosen is inserted at the slot's index (`insert` in `layoutReducer`) at the gap's width and its default height, so it fills the gap. When none fits, the dialog says so and points at dragging. The end-of-grid Add tile stays and still lists every hidden widget, added at the end at its default size.
+- **Dragging onto a slot.** `useGridReorder` tests the slots (`data-gap-index`, `data-gap-width`) before its row-band test. A slot is a target when the dragged widget can be that narrow; it then highlights and no insertion line shows. The drop is one `moveTo` (`moveIntoGap`): the widget goes to the slot's position and, when wider than the gap, narrows to it; a narrower one keeps its width. A drop that moved and narrowed reads out both changes through the grid's one live region. Slots stay put during a drag because nothing reflows until the drop; the move then reflows and the slots are recomputed from the new draft. The end of the dragged widget's own row is never a target, since moving there changes nothing.
+- **Keyboard.** A slot is a button named "Add Widget to this space ({width})"; the grip's arrow keys keep their one-place moves, and there is no keyboard drop on a slot.
+- **Saving gate.** Slots are inside the grid, which is `inert` while Done saves, and the page's insert and drop handlers refuse while saving, as the others do.
+
+Two judgement calls:
+
+1. **A slot is drawn for every gap of a third or more**, not only where a hidden widget fits or a placed one could be dragged in. With today's registry that condition is always true (every widget can be half wide and 16 can be a third, so another placed or hidden widget always fits), so a gate would be code no layout can reach. When no hidden widget fits, the slot's dialog says so and suggests dragging one in.
+2. **A widget whose minimum is wider than the gap is not a target.** The slot does not highlight, and the normal row-band hit test decides as if the slot were empty grid, so the drop is an ordinary move at the widget's own width. Refusing the drop outright would make the same pointer position mean nothing over a slot and something next to it.
+
 ## 11. Test matrix
 
 | Subject | Kind | Cases |

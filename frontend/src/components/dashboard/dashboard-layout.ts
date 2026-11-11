@@ -56,6 +56,10 @@ export type DashboardLayoutAction =
   | { type: 'add'; id: DashboardWidgetId }
   | { type: 'remove'; id: DashboardWidgetId }
   | { type: 'move'; from: number; to: number }
+  /** Put a hidden widget at `index`, at `width`: added from a row's gap slot. */
+  | { type: 'insert'; id: DashboardWidgetId; index: number; width: WidgetWidth }
+  /** A move that may also narrow the widget: a drop on a row's gap slot. */
+  | { type: 'moveTo'; from: number; to: number; width?: WidgetWidth }
   | { type: 'resize'; id: DashboardWidgetId; width?: WidgetWidth; height?: WidgetHeight }
   | { type: 'reset' };
 
@@ -75,6 +79,61 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function widthsOfferedFor(id: DashboardWidgetId): readonly WidgetWidth[] {
   const min = definitionOf(id)?.minWidth ?? DEFAULT_WIDGET_WIDTH;
   return WIDGET_WIDTHS.slice(widthRank(min));
+}
+
+/** Whether a widget can be as narrow as `width` (its minimum is no wider). */
+export function fitsWidth(id: DashboardWidgetId, width: WidgetWidth): boolean {
+  return widthsOfferedFor(id).includes(width);
+}
+
+/** The width presets a row's empty end can have: 2 columns is narrower than any widget. */
+const GAP_WIDTHS: Partial<Record<number, WidgetWidth>> = { 4: 'third', 6: 'half', 8: 'twoThirds' };
+
+export type RowGap = { index: number; span: 4 | 6 | 8; width: WidgetWidth };
+
+/**
+ * The empty ends of the layout's rows at `lg` and up, a third or wider, as
+ * CSS row flow without `dense` places the items: an item that does not fit
+ * in the rest of its row starts the next one, so the row ends short. `index`
+ * is where a widget put into that space goes: before `layout[index]`, or at
+ * the end. A slot of exactly the gap's span fills its row, so drawing one
+ * moves no widget.
+ */
+export function rowGaps(layout: DashboardLayout): RowGap[] {
+  const gaps: RowGap[] = [];
+  let used = 0;
+  const close = (index: number) => {
+    const span = 12 - used;
+    const width = GAP_WIDTHS[span];
+    if (used > 0 && width) gaps.push({ index, span: span as RowGap['span'], width });
+    used = 0;
+  };
+  layout.forEach((item, i) => {
+    const span = WIDTH_SPANS[item.width];
+    if (used + span > 12) close(i);
+    used += span;
+    if (used === 12) used = 0;
+  });
+  close(layout.length);
+  return gaps;
+}
+
+/**
+ * The `moveTo` for a drop of `layout[from]` on the gap before `layout[gapIndex]`
+ * (or at the end), or null when the gap cannot take it: its minimum is wider,
+ * or the gap is the end of its own row. A wider widget narrows to the gap; a
+ * narrower one keeps its width.
+ */
+export function moveIntoGap(
+  layout: DashboardLayout,
+  from: number,
+  gapIndex: number,
+  gapWidth: WidgetWidth,
+): Extract<DashboardLayoutAction, { type: 'moveTo' }> | null {
+  const item = layout[from];
+  if (!item || gapIndex === from + 1 || !fitsWidth(item.id, gapWidth)) return null;
+  const width = widthRank(item.width) > widthRank(gapWidth) ? gapWidth : item.width;
+  return { type: 'moveTo', from, to: gapIndex > from ? gapIndex - 1 : gapIndex, width };
 }
 
 /** A widget at its default size: the width every widget starts at, and its own height floor. */
@@ -175,6 +234,27 @@ export function layoutReducer(
       const next = [...state];
       const [moved] = next.splice(from, 1);
       next.splice(to, 0, moved);
+      return next;
+    }
+    case 'insert': {
+      const { id, index, width } = action;
+      if (!definitionOf(id) || state.some((i) => i.id === id)) return state;
+      if (!Number.isInteger(index) || index < 0 || index > state.length || !fitsWidth(id, width)) return state;
+      const next = [...state];
+      next.splice(index, 0, { ...defaultLayoutItem(id), width });
+      return next;
+    }
+    case 'moveTo': {
+      const { from, to } = action;
+      const inRange = (n: number) => Number.isInteger(n) && n >= 0 && n < state.length;
+      if (!inRange(from) || !inRange(to)) return state;
+      const moved = state[from];
+      const width = action.width ?? moved.width;
+      if (!fitsWidth(moved.id, width)) return state;
+      if (from === to && width === moved.width) return state;
+      const next = [...state];
+      next.splice(from, 1);
+      next.splice(to, 0, width === moved.width ? moved : { ...moved, width });
       return next;
     }
     case 'resize': {

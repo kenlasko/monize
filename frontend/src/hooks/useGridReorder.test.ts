@@ -561,4 +561,96 @@ describe('useGridReorder', () => {
       expect(onMove).not.toHaveBeenCalled();
     });
   });
+
+  describe('gap slots (the empty ends of short rows, from lg up)', () => {
+    // SECTION_8's two slots: the third after A (gap 1) and the third after E (gap 5).
+    const SLOTS = [
+      { index: 1, width: 'third', box: { left: 960, top: 100, right: 1392, bottom: 400 } },
+      { index: 5, width: 'third', box: { left: 960, top: 748, right: 1392, bottom: 1048 } },
+    ];
+    // A and B are at least half wide; C, D and E can be a third.
+    const MIN_THIRD = [false, false, true, true, true];
+
+    function setupWithSlots(withFits = true) {
+      mountGrid(SECTION_8);
+      SLOTS.forEach(({ index, width, box }) => {
+        const el = document.createElement('button');
+        el.dataset.gapIndex = String(index);
+        el.dataset.gapWidth = width;
+        el.getBoundingClientRect = () =>
+          ({ ...box, x: box.left, y: box.top, width: box.right - box.left, height: box.bottom - box.top }) as DOMRect;
+        container.appendChild(el);
+      });
+      const onMove = vi.fn();
+      const onSlotDrop = vi.fn();
+      const fitsSlot = vi.fn((from: number, width: string) => width !== 'third' || MIN_THIRD[from]);
+      const hook = renderHook(() =>
+        useGridReorder({
+          containerRef: { current: container },
+          count: SECTION_8.length,
+          enabled: true,
+          onMove,
+          fitsSlot: withFits ? fitsSlot : undefined,
+          onSlotDrop,
+        }),
+      );
+      return { ...hook, onMove, onSlotDrop, fitsSlot };
+    }
+
+    it('targets a slot the dragged widget can be that narrow for, with no line, and drops into it', () => {
+      const { result, onMove, onSlotDrop } = setupWithSlots();
+      // D, from row 3, onto the third left after A.
+      const drag = press(result, 3, 264, 898);
+      drag.moveTo(1176, 250);
+      expect(result.current.slotTarget).toBe(1);
+      expect(indicators(result, 5)).toEqual([null, null, null, null, null]);
+      drag.releaseAt(1176, 250);
+      expect(onSlotDrop).toHaveBeenCalledTimes(1);
+      expect(onSlotDrop).toHaveBeenCalledWith(3, 1, 'third');
+      expect(onMove).not.toHaveBeenCalled();
+      expect(result.current.slotTarget).toBeNull();
+    });
+
+    it('lets go of the slot when the pointer leaves it', () => {
+      const { result } = setupWithSlots();
+      const drag = press(result, 3, 264, 898);
+      drag.moveTo(1176, 250);
+      expect(result.current.slotTarget).toBe(1);
+      drag.moveTo(720, 600);
+      expect(result.current.slotTarget).toBeNull();
+      expect(indicators(result, 5)).toEqual([null, null, 'before', null, null]);
+    });
+
+    it('does not target a slot narrower than the widget can be: the row-band rule decides', () => {
+      const { result, onMove, onSlotDrop } = setupWithSlots();
+      // B (at least half) over the third after E: the end of row 3, at B's own width.
+      const drag = press(result, 1, 300, 600);
+      drag.moveTo(1176, 898);
+      expect(result.current.slotTarget).toBeNull();
+      expect(indicators(result, 5)).toEqual([null, null, null, null, 'after']);
+      drag.releaseAt(1176, 898);
+      expect(onSlotDrop).not.toHaveBeenCalled();
+      expect(onMove).toHaveBeenCalledWith(1, 4, 'pointer');
+    });
+
+    it('does not target the end of the dragged widget\'s own row', () => {
+      const { result, onMove, onSlotDrop } = setupWithSlots();
+      const drag = press(result, 4, 720, 898);
+      drag.moveTo(1176, 898);
+      expect(result.current.slotTarget).toBeNull();
+      drag.releaseAt(1176, 898);
+      expect(onSlotDrop).not.toHaveBeenCalled();
+      expect(onMove).not.toHaveBeenCalled();
+    });
+
+    it('treats slots as empty grid when the caller says nothing about fit', () => {
+      const { result, onMove, onSlotDrop } = setupWithSlots(false);
+      const drag = press(result, 3, 264, 898);
+      drag.moveTo(1176, 250);
+      expect(result.current.slotTarget).toBeNull();
+      drag.releaseAt(1176, 250);
+      expect(onSlotDrop).not.toHaveBeenCalled();
+      expect(onMove).toHaveBeenCalledWith(3, 1, 'pointer');
+    });
+  });
 });
