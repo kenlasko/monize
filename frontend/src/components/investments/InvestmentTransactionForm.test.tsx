@@ -2992,5 +2992,66 @@ describe('InvestmentTransactionForm - extra coverage', () => {
       const payload = vi.mocked(investmentsApi.updateTransaction).mock.calls[0][1] as any;
       expect(payload.securityId).toBe('sec-bond');
     });
+
+    // An omitted securityId means "unchanged" to the server, so clearing the
+    // field has to be sent as null or the bond stays on the row.
+    it('sends null when the bond is cleared from an existing interest row', async () => {
+      vi.mocked(investmentsApi.getSecurities).mockResolvedValue(securitiesWithBond);
+      const transaction = {
+        id: 't9', accountId: 'a1', action: 'INTEREST' as const, transactionDate: '2024-06-15',
+        quantity: null, price: null, commission: 0, totalAmount: 30, description: 'Coupon',
+        securityId: 'sec-bond',
+      } as any;
+      render(<InvestmentTransactionForm accounts={accounts} transaction={transaction} />);
+      await waitFor(() => {
+        expect(screen.getByText('Update Transaction')).toBeInTheDocument();
+      });
+      const input = await screen.findByLabelText('Security');
+      await waitFor(() => {
+        expect((input as HTMLInputElement).value).toMatch(/^BND1 - /);
+      });
+      // The field's clear button, as a person empties it.
+      const clear = input.parentElement!.querySelector('button[type="button"]')!;
+      await act(async () => {
+        fireEvent.mouseDown(clear);
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Update Transaction'));
+      });
+      await waitFor(() => {
+        expect(investmentsApi.updateTransaction).toHaveBeenCalled();
+      });
+      const payload = vi.mocked(investmentsApi.updateTransaction).mock.calls[0][1] as any;
+      expect(payload.action).toBe('INTEREST');
+      expect(payload.securityId).toBeNull();
+    });
+
+    it('sends null when an edited dividend on a stock becomes interest', async () => {
+      vi.mocked(investmentsApi.getSecurities).mockResolvedValue(securitiesWithBond);
+      const transaction = {
+        id: 't10', accountId: 'a1', action: 'DIVIDEND' as const, transactionDate: '2024-06-15',
+        quantity: null, price: null, commission: 0, totalAmount: 8, description: 'Dividend',
+        securityId: 'sec-1',
+      } as any;
+      render(<InvestmentTransactionForm accounts={accounts} transaction={transaction} />);
+      await waitFor(() => {
+        expect(screen.getByText('Update Transaction')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Transaction Type'), { target: { value: 'INTEREST' } });
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText(/Amount/), { target: { value: '8' } });
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Update Transaction'));
+      });
+      await waitFor(() => {
+        expect(investmentsApi.updateTransaction).toHaveBeenCalled();
+      });
+      const payload = vi.mocked(investmentsApi.updateTransaction).mock.calls[0][1] as any;
+      expect(payload.action).toBe('INTEREST');
+      expect(payload.securityId).toBeNull();
+    });
   });
 });

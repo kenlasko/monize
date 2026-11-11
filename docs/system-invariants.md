@@ -4743,7 +4743,11 @@ Statement           An INTEREST investment transaction may name the security it
                     bonds for Interest (securityType BOND): income on any other
                     security is a Dividend. Editing an existing Interest row
                     keeps the security it carries, even when that security is not
-                    a bond.
+                    a bond; a row saved as another action (a Dividend on a stock)
+                    that is changed to Interest does not keep a non-bond security.
+                    Emptying the security on an existing row sends securityId
+                    null, which the update stores as no security (an omitted
+                    field means unchanged), so the row becomes account-level.
 Source of truth     investment_transactions.security_id on the INTEREST row.
 Enforcement         Client only: InvestmentTransactionForm decides what an
                     Interest entry offers and sends. The backend already accepts
@@ -4760,10 +4764,12 @@ Failure response    -- no new refusal.
 Required tests      Present: frontend unit tests in
                     InvestmentTransactionForm.test.tsx (bond-only choice, the
                     security reaches create, no security stays undefined, an edit
-                    keeps it). Owed: a server-side test that INTEREST with a
-                    security is stored and reported against it, and a decision
-                    on whether the server should enforce the bond-only
-                    convention.
+                    keeps it, clearing it on an edit sends null, a Dividend on a
+                    stock changed to Interest sends null). Owed: a server-side
+                    test that INTEREST with a security is stored and reported
+                    against it, and a decision on whether the server should
+                    enforce the bond-only convention (imports write interest on
+                    any security type, as QIF IntInc/MiscInc and Money do).
 Status              partial
 ```
 

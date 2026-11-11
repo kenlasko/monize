@@ -1301,7 +1301,17 @@ function InvestmentTransactionFormFields({
       };
 
       if (transaction) {
-        await investmentsApi.updateTransaction(transaction.id, payload);
+        // An omitted securityId means "unchanged" to the server, so emptying the
+        // field on an Interest row that had a security has to say so with null,
+        // or the bond would stay on the row (INV-INTEREST-001).
+        const clearsInterestSecurity =
+          actionIn(action, interestSecurityActions) &&
+          !data.securityId &&
+          !!originalSecurityId;
+        await investmentsApi.updateTransaction(
+          transaction.id,
+          clearsInterestSecurity ? { ...payload, securityId: null } : payload,
+        );
         toast.success(t('transactionForm.toastUpdated'));
         onSuccess?.();
       } else {
@@ -1332,14 +1342,17 @@ function InvestmentTransactionFormFields({
 
   // Interest offers bonds only. A security picked under another action (a
   // Dividend on a stock) must not ride along when the type is switched to
-  // Interest; the row's own saved security is the exception, so an edit keeps it.
+  // Interest, whether picked now or saved on the row as that other action. An
+  // Interest row's own saved security is the exception, so editing it keeps it.
+  const storedInterestSecurityId =
+    transaction?.action === 'INTEREST' ? originalSecurityId : undefined;
   useEffect(() => {
     if (!offersInterestSecurity || !watchedSecurityId || !securitiesLoaded) return;
     const picked = securities.find((s) => s.id === watchedSecurityId);
     if (!picked || picked.securityType === 'BOND') return;
-    if (watchedSecurityId === originalSecurityId) return;
+    if (watchedSecurityId === storedInterestSecurityId) return;
     setValue('securityId', '', { shouldDirty: true });
-  }, [offersInterestSecurity, watchedSecurityId, securities, securitiesLoaded, originalSecurityId, setValue]);
+  }, [offersInterestSecurity, watchedSecurityId, securities, securitiesLoaded, storedInterestSecurityId, setValue]);
   const needsQuantityPrice = actionIn(watchedAction, quantityPriceActions);
   const isQuantityOnly = actionIn(watchedAction, quantityOnlyActions);
   const isAmountOnly = actionIn(watchedAction, amountOnlyActions);
