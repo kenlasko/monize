@@ -344,13 +344,18 @@ describe("EmailReceiptsController", () => {
       expect(dto.domain).toBe("shop.example.com");
     });
 
+    it("keeps only the domain of a sender address", async () => {
+      const { dto, errors } = await check({ domain: "orders@B.Example.com" });
+      expect(errors).toHaveLength(0);
+      expect(dto.domain).toBe("b.example.com");
+    });
+
     it.each([
       "not a domain",
       "nodots",
       "a%.example.com",
       "a_b.example.com",
       "shop.example.com/path",
-      "a@b.example.com",
       "x".repeat(250) + ".com",
       "",
       5,
@@ -514,6 +519,7 @@ describe("EmailReceiptsController", () => {
     it.each([
       {},
       { domain: "Shop.Example.com" },
+      { domain: "orders@shop.example.com" },
       { statuses: ["pending", "no_parser", "parse_failed"] },
       {
         statuses: [
@@ -543,7 +549,6 @@ describe("EmailReceiptsController", () => {
       { statuses: "pending" },
       { statuses: [].concat(Array(7).fill("pending") as never) },
       { domain: "not a domain" },
-      { domain: "has@sign.example.com" },
       { since: "yesterday" },
       { since: 5 },
       { userId: "x" },

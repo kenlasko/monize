@@ -285,6 +285,17 @@
     "saveFailed": "無法儲存解析器",
     "conflict": "自您開啟以來，此解析器已在別處被修改。請重新載入以檢視目前版本。您在此所做的修改尚未儲存。",
     "conflictReload": "重新載入解析器",
+    "required": {
+      "heading": "設定檔還無法儲存。請先修正以下問題：",
+      "item": "{field}：{problem}",
+      "nameMissing": "請輸入設定檔的名稱。",
+      "domainsMissing": "請至少輸入一個寄件者網域，例如 shop.example.com。",
+      "domainsInvalid": "不是網域名稱：{values}。請輸入 shop.example.com 這類網域，每行一個。",
+      "domainsTooMany": "最多輸入 {max} 個寄件者網域。",
+      "subjectTooMany": "最多輸入 {max} 個主旨字詞。",
+      "subjectTooLong": "每個主旨字詞最多 {max} 個字元。",
+      "server": "伺服器拒絕了此欄位。原因顯示在表單下方。"
+    },
     "patterns": {
       "sourceLabel": "行來源",
       "sourceHint": "下方模式與郵件的哪種呈現形式比對。「文字」是郵件的文字部分，每個換行一行。「HTML」讀取郵件的 HTML 部分：每個區塊和每個表格儲存格各成一行，因此文字拆成多行的商品名稱仍保持完整。郵件的「行」檢視會準確顯示各來源給出的內容。",

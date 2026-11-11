@@ -64,6 +64,10 @@ async function renderEditor(props: Partial<Parameters<typeof ParserEditorDialog>
     );
   });
   await act(async () => {});
+  // Modal focuses its first control on the next frame; let that happen before the test moves focus.
+  await act(async () => {
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
 }
 
 async function type(label: string, value: string) {
@@ -90,8 +94,10 @@ async function save() {
   await act(async () => {});
 }
 
-function axiosError(status: number, message: string) {
-  return new AxiosError(message, String(status), undefined, undefined, { status, data: { message } } as never);
+function axiosError(status: number, message: string | string[]) {
+  // A DTO refusal answers `message` as a list; the error's own text is always a string.
+  const text = Array.isArray(message) ? message.join('. ') : message;
+  return new AxiosError(text, String(status), undefined, undefined, { status, data: { message } } as never);
 }
 
 describe('ParserEditorDialog', () => {
@@ -101,15 +107,72 @@ describe('ParserEditorDialog', () => {
   });
 
   describe('a new profile', () => {
-    it('is titled as new and cannot be saved without a name and a sender domain', async () => {
+    it('is titled as new and keeps Save pressable without a name and a sender domain', async () => {
       await renderEditor();
       expect(screen.getByRole('dialog', { name: 'New profile' })).toBeInTheDocument();
-      const saveButton = screen.getByRole('button', { name: 'Save profile' });
-      expect(saveButton).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Save profile' })).toBeEnabled();
+      // Nothing is flagged before Save is pressed.
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Name')).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('says what is missing when Save is pressed, flags each field in red and goes to the first', async () => {
+      await renderEditor();
+      await save();
+      expect(api.create).not.toHaveBeenCalled();
+      const alert = screen.getByRole('alert');
+      expect(alert).toHaveTextContent('The profile cannot be saved yet. Fix these first:');
+      expect(alert).toHaveTextContent('Name: Enter a name for the profile.');
+      expect(alert).toHaveTextContent('Sender domains: Enter at least one sender domain, such as shop.example.com.');
+
+      const name = screen.getByLabelText('Name');
+      const domains = screen.getByLabelText('Sender domains');
+      expect(name).toHaveAttribute('aria-invalid', 'true');
+      expect(name.className).toContain('border-red-300');
+      expect(domains).toHaveAttribute('aria-invalid', 'true');
+      expect(domains.className).toContain('border-red-300');
+      expect(document.activeElement).toBe(name);
+
+      // Each problem clears as its field is fixed; the summary's entry takes the reader to its field.
       await type('Name', 'Allegro');
-      expect(saveButton).toBeDisabled();
+      expect(name).not.toHaveAttribute('aria-invalid');
+      expect(alert).not.toHaveTextContent('Name: Enter a name');
+      await act(async () => {
+        fireEvent.click(within(alert).getByRole('button', { name: /Sender domains:/ }));
+      });
+      expect(document.activeElement).toBe(domains);
       await type('Sender domains', 'allegro.pl');
-      expect(saveButton).toBeEnabled();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('names a sender domain that is not one before asking the server, and goes to it', async () => {
+      await renderEditor();
+      await type('Name', 'Allegro');
+      await type('Sender domains', 'allegro.pl\nnot a domain');
+      await save();
+      expect(api.create).not.toHaveBeenCalled();
+      expect(screen.getByRole('alert')).toHaveTextContent('Sender domains: Not a domain name: not, a, domain.');
+      expect(document.activeElement).toBe(screen.getByLabelText('Sender domains'));
+    });
+
+    it('accepts a pasted sender address and a trailing dot, as the server does', async () => {
+      api.create.mockResolvedValue(makeParser());
+      await renderEditor();
+      await type('Name', 'Allegro');
+      await type('Sender domains', 'orders@Allegro.PL.');
+      await save();
+      expect(api.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('refuses more subject words than the server takes', async () => {
+      await renderEditor();
+      await type('Name', 'Allegro');
+      await type('Sender domains', 'allegro.pl');
+      await type('Subject contains', Array.from({ length: 11 }, (_, i) => `word${i}`).join('\n'));
+      await save();
+      expect(api.create).not.toHaveBeenCalled();
+      expect(screen.getByRole('alert')).toHaveTextContent('Subject contains: Enter at most 10 subject words.');
+      expect(document.activeElement).toBe(screen.getByLabelText('Subject contains'));
     });
 
     it('builds the definition from every field and creates the profile', async () => {
@@ -466,9 +529,17 @@ describe('ParserEditorDialog', () => {
       expect(screen.getByText(/The JSON is not valid yet, so the form cannot be shown/)).toBeInTheDocument();
       expect(screen.getByText('The JSON is not valid, so there is nothing to test yet.')).toBeInTheDocument();
       expect(mode('Form')).toBeDisabled();
-      expect(screen.getByRole('button', { name: 'Save profile' })).toBeDisabled();
+      await save();
+      expect(api.update).not.toHaveBeenCalled();
+      const box = screen.getByLabelText('Profile definition (JSON)');
+      expect(box).toHaveAttribute('aria-invalid', 'true');
+      expect(document.activeElement).toBe(box);
+      expect(screen.getByText(/The profile cannot be saved yet/).closest('[role="alert"]')).toHaveTextContent(
+        'Profile definition (JSON): This is not valid JSON',
+      );
       await type('Profile definition (JSON)', '[1]');
-      expect(screen.getByRole('button', { name: 'Save profile' })).toBeDisabled();
+      await save();
+      expect(api.update).not.toHaveBeenCalled();
     });
 
     it('tests the JSON as it is now, not the form', async () => {
@@ -531,6 +602,29 @@ describe('ParserEditorDialog', () => {
       await renderEditor();
       await fillAndSave();
       expect(screen.getByRole('alert')).toHaveTextContent('At most 200 profiles can be saved. Delete one first.');
+    });
+
+    it('shows a DTO refusal, whose message is a list, instead of failing silently', async () => {
+      api.create.mockRejectedValue(
+        axiosError(400, ['each value of fromDomains must be a host name such as shop.example.com']),
+      );
+      await renderEditor();
+      await fillAndSave();
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'each value of fromDomains must be a host name such as shop.example.com',
+      );
+      // The field the refusal names is flagged and focused.
+      const domains = screen.getByLabelText('Sender domains');
+      expect(domains).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByText('The server refused this field. The reason is under the form.')).toBeInTheDocument();
+      expect(document.activeElement).toBe(domains);
+    });
+
+    it('does not take a definition problem about a name for the profile name', async () => {
+      api.create.mockRejectedValue(axiosError(400, 'The profile definition is not valid: items.single.name: empty'));
+      await renderEditor();
+      await fillAndSave();
+      expect(screen.getByLabelText('Name')).not.toHaveAttribute('aria-invalid');
     });
 
     it('clears the refusal when the next save starts', async () => {
@@ -729,5 +823,73 @@ describe('ParserEditorDialog', () => {
     });
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(api.create).not.toHaveBeenCalled();
+  });
+
+  describe('closing with unsaved edits', () => {
+    const backdrop = () => document.querySelector('.backdrop-blur-sm') as HTMLElement;
+    // UnsavedChangesDialog draws its own heading, so the dialog is found by it.
+    const unsavedPrompt = () => screen.queryByText('Unsaved Changes')?.closest('[role="dialog"]') ?? null;
+
+    it('asks before Cancel drops them, and stays open when asked to', async () => {
+      await renderEditor();
+      await type('Name', 'Allegro');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      });
+      expect(onClose).not.toHaveBeenCalled();
+      const prompt = unsavedPrompt() as HTMLElement;
+      expect(prompt).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(within(prompt).getByRole('button', { name: 'Cancel' }));
+      });
+      expect(unsavedPrompt()).toBeNull();
+      expect(onClose).not.toHaveBeenCalled();
+      expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('Allegro');
+    });
+
+    it('asks before a click outside the dialog drops them, and closes on Discard', async () => {
+      await renderEditor({ parser: makeParser() });
+      await type('Sender domains', 'other.example.com');
+      await act(async () => {
+        fireEvent.click(backdrop());
+      });
+      expect(onClose).not.toHaveBeenCalled();
+      const prompt = unsavedPrompt() as HTMLElement;
+      expect(prompt).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(within(prompt).getByRole('button', { name: 'Discard' }));
+      });
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(api.update).not.toHaveBeenCalled();
+    });
+
+    it('saves from the prompt, and shows what is missing instead when the profile cannot be saved', async () => {
+      await renderEditor();
+      await type('Name', 'Allegro');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      });
+      await act(async () => {
+        fireEvent.click(within(unsavedPrompt() as HTMLElement).getByRole('button', { name: 'Save' }));
+      });
+      await act(async () => {});
+      expect(api.create).not.toHaveBeenCalled();
+      expect(screen.getByText(/The profile cannot be saved yet/)).toBeInTheDocument();
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('closes at once after a mode switch or an edit put back, which changes nothing', async () => {
+      await renderEditor();
+      await type('Name', 'Allegro');
+      await type('Name', '');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'JSON' }));
+      });
+      await act(async () => {
+        fireEvent.click(backdrop());
+      });
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(unsavedPrompt()).toBeNull();
+    });
   });
 });

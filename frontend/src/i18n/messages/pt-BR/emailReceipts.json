@@ -285,6 +285,17 @@
     "saveFailed": "Não foi possível salvar o analisador",
     "conflict": "Este analisador foi alterado em outro lugar desde que você o abriu. Recarregue-o para ver a versão atual. Suas edições aqui não são salvas.",
     "conflictReload": "Recarregar o analisador",
+    "required": {
+      "heading": "Ainda não é possível salvar o perfil. Corrija primeiro o seguinte:",
+      "item": "{field}: {problem}",
+      "nameMissing": "Digite um nome para o perfil.",
+      "domainsMissing": "Digite pelo menos um domínio de remetente, como shop.example.com.",
+      "domainsInvalid": "Não é um nome de domínio: {values}. Digite domínios como shop.example.com, um por linha.",
+      "domainsTooMany": "Digite no máximo {max} domínios de remetente.",
+      "subjectTooMany": "Digite no máximo {max} palavras do assunto.",
+      "subjectTooLong": "Cada palavra do assunto pode ter no máximo {max} caracteres.",
+      "server": "O servidor recusou este campo. O motivo está abaixo do formulário."
+    },
     "patterns": {
       "sourceLabel": "Origem das linhas",
       "sourceHint": "Com qual representação do e-mail os padrões abaixo são comparados. Texto é a parte de texto do e-mail, uma linha por quebra de linha. HTML lê a parte HTML: cada bloco e cada célula de tabela vira uma linha própria, de modo que o nome de um produto que o texto divide em várias linhas permanece inteiro. A visualização Linhas do e-mail mostra exatamente o que cada origem fornece.",

@@ -124,6 +124,8 @@ The **Profiles** tab lists every profile with its **Status** (**Draft** or **App
 
 **Form** and **JSON** at the top switch between the form and the profile's JSON definition (a definition that uses something the form cannot show opens as JSON). The test panel runs the profile, as it is in the editor, over a stored email you choose: what it read, line by line, and which transaction it would match.
 
+**Save profile** can be pressed at any time. When something is missing or wrong (no name, no sender domain, an entry that is not a domain name, too many subject words, JSON that does not parse), the editor lists it above the buttons, outlines each field in red and moves to the first one; click an entry in the list to go to its field. Each one clears as it is fixed. A refusal from the server is shown under the form, and the field it names is outlined too. Closing the editor with unsaved changes (**Cancel**, a click outside it, Escape or Back) asks first: **Discard** them, **Save** them, or **Cancel** to keep editing.
+
 ![The profile editor for Best Buy's order confirmations: the sender domain, the patterns for the order number, the total and the items, and the default category](images/email-receipts-profile-editor.png)
 
 #### Linked Profiles (Buy Now, Pay Later)

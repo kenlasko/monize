@@ -47,6 +47,13 @@ describe('splitting', () => {
       'third.example',
     ]);
   });
+
+  it('keeps only the domain of a pasted sender address', () => {
+    expect(splitDomains('notifications@o.wealthsimple.com, orders@shop.example.com')).toEqual([
+      'o.wealthsimple.com',
+      'shop.example.com',
+    ]);
+  });
 });
 
 describe('buildParserDefinition', () => {

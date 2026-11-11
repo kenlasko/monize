@@ -285,6 +285,17 @@
     "saveFailed": "Ayrıştırıcı kaydedilemedi",
     "conflict": "Bu ayrıştırıcı, siz açtıktan sonra başka bir yerde değiştirildi. Güncel sürümü görmek için yeniden yükleyin. Buradaki düzenlemeleriniz kaydedilmedi.",
     "conflictReload": "Ayrıştırıcıyı yeniden yükle",
+    "required": {
+      "heading": "Profil henüz kaydedilemiyor. Önce şunları düzeltin:",
+      "item": "{field}: {problem}",
+      "nameMissing": "Profil için bir ad girin.",
+      "domainsMissing": "En az bir gönderen alan adı girin, örneğin shop.example.com.",
+      "domainsInvalid": "Alan adı değil: {values}. shop.example.com gibi alan adlarını her satıra bir tane girin.",
+      "domainsTooMany": "En fazla {max} gönderen alan adı girin.",
+      "subjectTooMany": "En fazla {max} konu kelimesi girin.",
+      "subjectTooLong": "Her konu kelimesi en fazla {max} karakter olabilir.",
+      "server": "Sunucu bu alanı reddetti. Nedeni formun altında."
+    },
     "patterns": {
       "sourceLabel": "Satır kaynağı",
       "sourceHint": "Aşağıdaki desenlerin e-postanın hangi görünümüyle eşleştirileceği. Metin, e-postanın metin kısmıdır ve her satır sonu yeni bir satır olur. HTML, e-postanın HTML kısmını okur: her blok ve her tablo hücresi kendi satırı olur, böylece metnin birkaç satıra böldüğü bir ürün adı bütün kalır. E-postanın Satırlar görünümü, her kaynağın tam olarak ne verdiğini gösterir.",

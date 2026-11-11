@@ -285,6 +285,17 @@
     "saveFailed": "Profil tidak dapat disimpan",
     "conflict": "Profil ini diubah di tempat lain sejak Anda membukanya. Muat ulang untuk melihat versi saat ini. Perubahan Anda di sini tidak tersimpan.",
     "conflictReload": "Muat ulang profil",
+    "required": {
+      "heading": "Profil belum dapat disimpan. Perbaiki ini terlebih dahulu:",
+      "item": "{field}: {problem}",
+      "nameMissing": "Masukkan nama untuk profil.",
+      "domainsMissing": "Masukkan setidaknya satu domain pengirim, misalnya shop.example.com.",
+      "domainsInvalid": "Bukan nama domain: {values}. Masukkan domain seperti shop.example.com, satu per baris.",
+      "domainsTooMany": "Masukkan paling banyak {max} domain pengirim.",
+      "subjectTooMany": "Masukkan paling banyak {max} kata subjek.",
+      "subjectTooLong": "Setiap kata subjek paling panjang {max} karakter.",
+      "server": "Server menolak kolom ini. Alasannya ada di bawah formulir."
+    },
     "patterns": {
       "sourceLabel": "Sumber baris",
       "sourceHint": "Tampilan surel mana yang dicocokkan dengan pola di bawah. Teks adalah bagian teks surel, satu baris untuk setiap pergantian baris. HTML membaca bagian HTML: setiap blok dan setiap sel tabel menjadi barisnya sendiri, sehingga nama produk yang dipecah teks menjadi beberapa baris tetap utuh. Tampilan Baris pada surel menunjukkan persis apa yang dihasilkan tiap sumber.",
