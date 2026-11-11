@@ -8,6 +8,7 @@
     "mustBeCsvUuids": "The value of \"{{ param }}\" must be a comma-separated list of UUIDs",
     "mustBeOneOf": "The value of \"{{ param }}\" must be one of: {{ options }}",
     "mustBeCsvOneOf": "The value of \"{{ param }}\" must be a comma-separated list, each one of: {{ options }}",
+    "mustNameAccounts": "The value of \"{{ param }}\" must name between 1 and {{ max }} accounts",
     "isRequired": "A value for \"{{ param }}\" is required",
     "requiredForProvider": "A value for \"{{ param }}\" is required for the {{ provider }} provider",
     "isTooLong": "The value of \"{{ param }}\" is too long",

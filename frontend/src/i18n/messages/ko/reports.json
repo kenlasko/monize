@@ -822,6 +822,27 @@
     "colPriceChange": "변동률",
     "chartSubtitle": "선택한 기간 동안 이 계정들이 보유한 모든 증권의 누적 수익률입니다.",
     "chartLimitedNote": "시장 가치 기준 상위 {shown}개 보유 항목만 표시됩니다(보유 {total}개 중).",
+    "chartModeLabel": "차트",
+    "chartMode": {
+      "portfolio": "포트폴리오",
+      "account": "계좌별",
+      "security": "종목별"
+    },
+    "twrTitle": "시간에 따른 수익률",
+    "twrSubtitlePortfolio": "선택한 기간 동안의 포트폴리오 시간가중수익률입니다. 입금과 출금은 선을 움직이지 않습니다.",
+    "twrSubtitleAccounts": "선택한 기간 동안의 각 계좌 시간가중수익률입니다. 입금과 출금은 선을 움직이지 않습니다.",
+    "twrPortfolioLine": "포트폴리오",
+    "twrError": "시간에 따른 수익률을 불러올 수 없습니다.",
+    "twrNoData": "이 기간에는 차트로 표시할 내역이 없습니다.",
+    "twrWithheldTitle": "표시되지 않음",
+    "twrWithheldRow": "{label}: {reason}",
+    "twrReason": {
+      "noPrice": "이 기간 일부에 가격이 없어 수익률을 계산할 수 없습니다.",
+      "displayFx": "이 기간 일부에 환율이 없어 수익률을 계산할 수 없습니다.",
+      "noBaseline": "이 기간에는 수익률을 측정할 투자 금액이 없었습니다.",
+      "noHistory": "이 기간의 기록이 없습니다."
+    },
+    "twrAccountsLimitedNote": "전체 {total}개 중 처음 {shown}개 계좌만 표시됩니다.",
     "rangeAll": "전체",
     "unattributedIncome": "증권과 연결되지 않은 수익",
     "pdfSecurity": "{symbol} - {name}",

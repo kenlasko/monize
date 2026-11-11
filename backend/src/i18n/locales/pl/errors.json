@@ -8,6 +8,7 @@
     "mustBeCsvUuids": "Wartość \"{{ param }}\" musi być listą UUID rozdzielonych przecinkami",
     "mustBeOneOf": "Wartość \"{{ param }}\" musi być jedną z: {{ options }}",
     "mustBeCsvOneOf": "Wartość \"{{ param }}\" musi być listą rozdzieloną przecinkami, a każdy element jedną z: {{ options }}",
+    "mustNameAccounts": "Wartość \"{{ param }}\" musi wskazywać od 1 do {{ max }} kont",
     "isRequired": "Wymagana jest wartość \"{{ param }}\"",
     "requiredForProvider": "Dostawca {{ provider }} wymaga wartości \"{{ param }}\"",
     "isTooLong": "Wartość \"{{ param }}\" jest za długa",

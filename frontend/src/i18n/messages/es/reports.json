@@ -822,6 +822,27 @@
     "colPriceChange": "% de cambio",
     "chartSubtitle": "Retorno acumulado de cada valor que poseen estas cuentas durante el período seleccionado.",
     "chartLimitedNote": "Solo se representan las {shown} posiciones más grandes por valor de mercado (de {total} en cartera).",
+    "chartModeLabel": "Gráfico",
+    "chartMode": {
+      "portfolio": "Cartera",
+      "account": "Por cuenta",
+      "security": "Por valor"
+    },
+    "twrTitle": "Rentabilidad a lo largo del tiempo",
+    "twrSubtitlePortfolio": "Rentabilidad ponderada por tiempo de la cartera durante el período seleccionado. Los ingresos y retiradas no mueven la línea.",
+    "twrSubtitleAccounts": "Rentabilidad ponderada por tiempo de cada cuenta durante el período seleccionado. Los ingresos y retiradas no mueven las líneas.",
+    "twrPortfolioLine": "Cartera",
+    "twrError": "No se pudo cargar la rentabilidad a lo largo del tiempo.",
+    "twrNoData": "No hay histórico que representar en este período.",
+    "twrWithheldTitle": "No representado",
+    "twrWithheldRow": "{label}: {reason}",
+    "twrReason": {
+      "noPrice": "falta un precio en parte de este período, así que no se puede calcular la rentabilidad.",
+      "displayFx": "falta un tipo de cambio en parte de este período, así que no se puede calcular la rentabilidad.",
+      "noBaseline": "no había nada invertido sobre lo que medir una rentabilidad en este período.",
+      "noHistory": "no hay historial para este período."
+    },
+    "twrAccountsLimitedNote": "Solo se representan las primeras {shown} de {total} cuentas.",
     "rangeAll": "Todo",
     "unattributedIncome": "Ingresos no vinculados a un valor",
     "pdfSecurity": "{symbol} - {name}",

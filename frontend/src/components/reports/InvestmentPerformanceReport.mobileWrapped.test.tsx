@@ -98,6 +98,18 @@ vi.mock('@/lib/net-worth', () => ({
   },
 }));
 
+// The return chart owns its own fetch (`useTwrSeries`) and is covered by
+// `PortfolioReturnChart.test.tsx`; here it is a stub that records the props it
+// was handed. The report opens on it, so the tests of the by-security chart
+// choose "By security" first.
+const mockReturnChartProps = vi.fn();
+vi.mock('@/components/reports/PortfolioReturnChart', () => ({
+  PortfolioReturnChart: (props: Record<string, unknown>) => {
+    mockReturnChartProps(props);
+    return <div data-testid="return-chart" data-group-by={String(props.groupBy)} />;
+  },
+}));
+
 // The Performance view's historical chart owns its own fetch and recharts tree;
 // stub it so this suite stays about the wrapped holdings table.
 vi.mock('@/components/reports/SecurityComparisonChart', () => ({
@@ -255,6 +267,17 @@ describe('InvestmentPerformanceReport mobile wrapped table', () => {
     ]);
     expect(childCells[0]).toHaveTextContent('First account');
     expect(childCells[1]).toHaveTextContent('SHARES<12.3456789>');
+  });
+
+  it('spreads the chart-mode switcher across its own phone line', async () => {
+    const { container } = await renderReport();
+    const group = container.querySelector('[role="group"][aria-label="Chart"]');
+    expect(group).not.toBeNull();
+    expect(group!.className).toContain('w-full');
+    expect(group!.className).toContain('sm:w-auto');
+    for (const button of Array.from(group!.querySelectorAll('button'))) {
+      expect(button.className).toContain('grow');
+    }
   });
 
   it('keeps all eight accessible sort controls on phone and desktop', async () => {

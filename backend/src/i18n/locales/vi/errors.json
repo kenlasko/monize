@@ -8,6 +8,7 @@
     "mustBeCsvUuids": "Giá trị của \"{{ param }}\" phải là danh sách UUID phân cách bằng dấu phẩy",
     "mustBeOneOf": "Giá trị của \"{{ param }}\" phải là một trong: {{ options }}",
     "mustBeCsvOneOf": "Giá trị của \"{{ param }}\" phải là danh sách phân cách bằng dấu phẩy, mỗi mục là một trong: {{ options }}",
+    "mustNameAccounts": "Giá trị của \"{{ param }}\" phải chỉ định từ 1 đến {{ max }} tài khoản",
     "isRequired": "Cần có giá trị cho \"{{ param }}\"",
     "requiredForProvider": "Nhà cung cấp {{ provider }} yêu cầu giá trị cho \"{{ param }}\"",
     "isTooLong": "Giá trị của \"{{ param }}\" quá dài",

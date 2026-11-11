@@ -8,6 +8,7 @@
     "mustBeCsvUuids": "\"{{ param }}\" 값은 쉼표로 구분된 UUID 목록이어야 합니다",
     "mustBeOneOf": "\"{{ param }}\" 값은 다음 중 하나여야 합니다: {{ options }}",
     "mustBeCsvOneOf": "\"{{ param }}\" 값은 쉼표로 구분된 목록이어야 하며 각 항목은 다음 중 하나여야 합니다: {{ options }}",
+    "mustNameAccounts": "\"{{ param }}\" 값은 1개에서 {{ max }}개 사이의 계좌를 지정해야 합니다",
     "isRequired": "\"{{ param }}\" 값은 필수입니다",
     "requiredForProvider": "{{ provider }} 제공자에는 \"{{ param }}\" 값이 필요합니다",
     "isTooLong": "\"{{ param }}\" 값이 너무 깁니다",

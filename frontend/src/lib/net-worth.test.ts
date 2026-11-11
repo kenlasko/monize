@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import apiClient from './api';
-import { netWorthApi } from './net-worth';
+import { netWorthApi, twrSeriesByAccountTimeoutMs } from './net-worth';
 import { PORTFOLIO_VALUATION_TIMEOUT_MS } from './constants';
 
 vi.mock('./api', () => ({
@@ -128,5 +128,20 @@ describe('netWorthApi', () => {
       timeout: PORTFOLIO_VALUATION_TIMEOUT_MS,
     });
     expect(result.granularity).toBe('monthly');
+  });
+
+  it('getInvestmentsTwrSeriesByAccount waits about one valuation per distinct account', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { accounts: [] } });
+    await netWorthApi.getInvestmentsTwrSeriesByAccount({ period: '1y', accountIds: 'a1,a2,a2' });
+    expect(apiClient.get).toHaveBeenCalledWith('/net-worth/investments-twr-series', {
+      params: { period: '1y', accountIds: 'a1,a2,a2', groupBy: 'account' },
+      timeout: PORTFOLIO_VALUATION_TIMEOUT_MS * 2,
+    });
+  });
+
+  it('twrSeriesByAccountTimeoutMs is never under one valuation nor over the server timeout', () => {
+    expect(twrSeriesByAccountTimeoutMs(0)).toBe(PORTFOLIO_VALUATION_TIMEOUT_MS);
+    expect(twrSeriesByAccountTimeoutMs(3)).toBe(PORTFOLIO_VALUATION_TIMEOUT_MS * 3);
+    expect(twrSeriesByAccountTimeoutMs(25)).toBe(600_000);
   });
 });

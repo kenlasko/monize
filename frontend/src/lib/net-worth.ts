@@ -8,8 +8,25 @@ import {
   InvestmentBreakdownGranularity,
   PortfolioPeriodResult,
   PortfolioPeriodResults,
+  PortfolioTwrSeries,
+  PortfolioTwrSeriesByAccount,
   SecurityPeriodResults,
 } from '@/types/net-worth';
+
+/**
+ * The server's own request timeout (`server.requestTimeout` in the backend's
+ * `main.ts`): waiting longer than this on the client waits for nothing.
+ */
+const SERVER_REQUEST_TIMEOUT_MS = 600_000;
+
+/**
+ * The by-account series values each account as its own scope, one after
+ * another, so its cost is roughly one valuation per account rather than one
+ * for the request. Bounded by the server's own timeout.
+ */
+export function twrSeriesByAccountTimeoutMs(accountCount: number): number {
+  return Math.min(PORTFOLIO_VALUATION_TIMEOUT_MS * Math.max(1, accountCount), SERVER_REQUEST_TIMEOUT_MS);
+}
 
 export const netWorthApi = {
   getMonthly: async (params?: {
@@ -103,6 +120,48 @@ export const netWorthApi = {
     const response = await apiClient.get<SecurityPeriodResults>(
       '/net-worth/investments-period-result/securities',
       { params, timeout: PORTFOLIO_VALUATION_TIMEOUT_MS },
+    );
+    return response.data;
+  },
+
+  /**
+   * The invested part's time-weighted return, day by day, for the same window
+   * named the same way as `getInvestmentsPeriodResult`: its last point is that
+   * route's return (`docs/specs/portfolio-twr-series.md`).
+   */
+  getInvestmentsTwrSeries: async (params: {
+    period?: string;
+    startDate?: string;
+    endDate?: string;
+    baselineDate?: string;
+    accountIds?: string;
+    displayCurrency?: string;
+  }): Promise<PortfolioTwrSeries> => {
+    const response = await apiClient.get<PortfolioTwrSeries>(
+      '/net-worth/investments-twr-series',
+      { params, timeout: PORTFOLIO_VALUATION_TIMEOUT_MS },
+    );
+    return response.data;
+  },
+
+  /**
+   * One series per account named in `accountIds` (required, at most
+   * `TWR_SERIES_MAX_ACCOUNTS`), each its own scope over the same window.
+   */
+  getInvestmentsTwrSeriesByAccount: async (params: {
+    period?: string;
+    startDate?: string;
+    endDate?: string;
+    baselineDate?: string;
+    accountIds: string;
+    displayCurrency?: string;
+  }): Promise<PortfolioTwrSeriesByAccount> => {
+    const response = await apiClient.get<PortfolioTwrSeriesByAccount>(
+      '/net-worth/investments-twr-series',
+      {
+        params: { ...params, groupBy: 'account' },
+        timeout: twrSeriesByAccountTimeoutMs(new Set(params.accountIds.split(',').filter(Boolean)).size),
+      },
     );
     return response.data;
   },

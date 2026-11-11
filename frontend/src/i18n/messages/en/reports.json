@@ -822,6 +822,27 @@
     "colPriceChange": "% Change",
     "chartSubtitle": "Cumulative return of every security these accounts hold, over the selected period.",
     "chartLimitedNote": "Only the {shown} largest holdings by market value are plotted (of {total} held).",
+    "chartModeLabel": "Chart",
+    "chartMode": {
+      "portfolio": "Portfolio",
+      "account": "By account",
+      "security": "By security"
+    },
+    "twrTitle": "Return over time",
+    "twrSubtitlePortfolio": "Time-weighted return of the portfolio over the selected period. Deposits and withdrawals do not move the line.",
+    "twrSubtitleAccounts": "Time-weighted return of each account over the selected period. Deposits and withdrawals do not move the lines.",
+    "twrPortfolioLine": "Portfolio",
+    "twrError": "The return over time could not be loaded.",
+    "twrNoData": "There is no history to chart for this period.",
+    "twrWithheldTitle": "Not drawn",
+    "twrWithheldRow": "{label}: {reason}",
+    "twrReason": {
+      "noPrice": "a price is missing for part of this period, so the return cannot be worked out.",
+      "displayFx": "an exchange rate is missing for part of this period, so the return cannot be worked out.",
+      "noBaseline": "nothing was invested to measure a return over in this period.",
+      "noHistory": "there is no history for this period."
+    },
+    "twrAccountsLimitedNote": "Only the first {shown} of {total} accounts are drawn.",
     "rangeAll": "All Time",
     "unattributedIncome": "Income not tied to a security",
     "pdfSecurity": "{symbol} - {name}",

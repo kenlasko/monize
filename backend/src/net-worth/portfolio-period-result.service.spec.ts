@@ -6,6 +6,7 @@ import { UserPreference } from "../users/entities/user-preference.entity";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { NetWorthService } from "./net-worth.service";
 import { PortfolioPeriodResultService } from "./portfolio-period-result.service";
+import { PortfolioTwrSeriesService } from "./portfolio-twr-series.service";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -1126,6 +1127,70 @@ describe("PortfolioPeriodResultService", () => {
         "2026-01-02",
         "2026-09-17",
       );
+    });
+  });
+
+  describe("INV-PORTTWR-001: the return series ends on this card's figure", () => {
+    const window = { startDate: "2026-01-02", endDate: "2026-09-17" };
+    let series: PortfolioTwrSeriesService;
+    beforeEach(() => {
+      // The REAL period-result service, not a stub: the loaders are the ones
+      // both read, and a change to either is caught here.
+      series = new PortfolioTwrSeriesService(netWorth as never, service);
+    });
+
+    it("reads the invested rows and the share-leg closes through the shared loaders", async () => {
+      netWorth.getDailyInvestments.mockResolvedValue(flatSeries());
+      const rows = jest.spyOn(service, "loadInvestedRows");
+      const closes = jest.spyOn(service, "loadShareLegClose");
+      await service.getPeriodResult("user-1", window);
+      await series.getSeries("user-1", window);
+      expect(rows).toHaveBeenCalledTimes(2);
+      expect(closes).toHaveBeenCalledTimes(2);
+    });
+
+    it("ends on investmentReturnPercent for a buy and a dividend", async () => {
+      netWorth.getDailyInvestments.mockResolvedValue([
+        point("2026-01-02", 10_000, { securitiesValue: 0 }),
+        point("2026-06-01", 10_000, { securitiesValue: 8_000 }),
+        point("2026-09-17", 10_100, { securitiesValue: 8_000 }),
+      ]);
+      investedRows = [
+        {
+          date: "2026-06-01",
+          currency: "CAD",
+          action: "BUY",
+          total: "8000",
+          gross: "8000",
+        },
+        {
+          date: "2026-09-17",
+          currency: "CAD",
+          action: "DIVIDEND",
+          total: "100",
+          gross: "100",
+        },
+      ];
+      const card = await service.getPeriodResult("user-1", window);
+      const line = await series.getSeries("user-1", window);
+      expect(card.investmentReturnPercent).toBe(1.25);
+      expect(line.complete).toBe(true);
+      expect(line.points[line.points.length - 1]?.returnPercent).toBe(
+        card.investmentReturnPercent,
+      );
+    });
+
+    it("withholds the line exactly when the card withholds the figure", async () => {
+      netWorth.getDailyInvestments.mockResolvedValue([
+        point("2026-01-02", 10_000),
+        point("2026-06-01", 10_000, { pricesComplete: false }),
+        point("2026-09-17", 10_100),
+      ]);
+      const card = await service.getPeriodResult("user-1", window);
+      const line = await series.getSeries("user-1", window);
+      expect(card.investmentReturnPercent).toBeNull();
+      expect(line.points).toEqual([]);
+      expect(line.complete).toBe(false);
     });
   });
 });

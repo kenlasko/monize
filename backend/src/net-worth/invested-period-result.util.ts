@@ -173,6 +173,35 @@ function pointComplete(point: InvestedDayValue): boolean {
 }
 
 /**
+ * Each day's growth factor of the invested part, in day order: `null` for a
+ * day with no capital at risk (the chain treats it as factor 1).
+ *
+ * A purchase is funded at the START of the day and a disposal or distribution
+ * leaves at the END of it (section 10.2), so `base = IV(d-1) + capitalIn(d)` and
+ * `ending = IV(d) + capitalOut(d) + I(d)`. The one place that derivation is
+ * written: `investedPeriodResult` chains these into the window's return and
+ * `investedTwrSeries` into its running value, so the line and the card beside
+ * it cannot read different factors (INV-PORTTWR-001).
+ *
+ * `days` are the days AFTER `start`, and `flowDays[i]` is `days[i]`'s flow.
+ */
+export function investedDayFactors(
+  start: InvestedDayValue,
+  days: readonly InvestedDayValue[],
+  flowDays: readonly InvestedFlowDay[],
+): Array<number | null> {
+  return days.map((day, i) => {
+    const previous =
+      i === 0 ? start.securitiesValue : days[i - 1].securitiesValue;
+    const flow = flowDays[i];
+    return subPeriodFactor(
+      previous + flow.capitalIn,
+      day.securitiesValue + flow.capitalOut + flow.income,
+    );
+  });
+}
+
+/**
  * The invested part's result for one window of one series.
  *
  * The guards run in the order of the truth table in section 10.4:
@@ -190,7 +219,46 @@ function pointComplete(point: InvestedDayValue): boolean {
 export function investedPeriodResult(
   input: InvestedPeriodInput,
 ): InvestedPeriodDecision {
+  return decideInvestedPeriod(input, true).decision;
+}
+
+/**
+ * The same decision without the money-weighted pair, plus the day factors it
+ * chained: what `investedTwrSeries` needs to draw the line the card's
+ * time-weighted return ends on, without solving an XIRR it discards or
+ * deriving the factors a second time. `dayFactors` is null wherever the
+ * decision withholds the return before chaining. The MWR figures are null and
+ * carry no reason of their own, so only the TWR fields are meaningful here.
+ */
+export function investedTimeWeightedDecision(input: InvestedPeriodInput): {
+  decision: InvestedPeriodDecision;
+  dayFactors: Array<number | null> | null;
+} {
+  return decideInvestedPeriod(input, false);
+}
+
+/** Where a caller does not want the money-weighted pair at all. */
+const NO_MONEY_WEIGHTED: ReturnType<typeof moneyWeightedFigures> = {
+  figures: {
+    investmentMoneyWeightedReturnPercent: null,
+    investmentMoneyWeightedTotalPercent: null,
+    investmentMoneyWeightedMethod: "xirr",
+  },
+  reason: null,
+};
+
+function decideInvestedPeriod(
+  input: InvestedPeriodInput,
+  withMoneyWeighted: boolean,
+): {
+  decision: InvestedPeriodDecision;
+  dayFactors: Array<number | null> | null;
+} {
   const { points, startIndex, endIndex, flowsByDay } = input;
+  const withheldOnly = (decision: InvestedPeriodDecision) => ({
+    decision,
+    dayFactors: null,
+  });
 
   if (
     points.length === 0 ||
@@ -198,13 +266,13 @@ export function investedPeriodResult(
     endIndex < startIndex ||
     endIndex >= points.length
   ) {
-    return {
+    return withheldOnly({
       ...WITHHELD,
       investedValueChange: null,
       investmentCapitalFlows: null,
       investmentIncome: null,
       investedReasons: ["noValueSeries"],
-    };
+    });
   }
 
   const start = points[startIndex];
@@ -286,7 +354,7 @@ export function investedPeriodResult(
     investedReasons: [...reasons],
   });
 
-  if (reasons.size > 0) return withheld();
+  if (reasons.size > 0) return withheldOnly(withheld());
 
   const pnl = roundMoney(
     (Math.round(end.securitiesValue * 10000) -
@@ -301,15 +369,10 @@ export function investedPeriodResult(
   // a loss. Section 10.2 derives the split convention: a single start-of-day
   // convention makes a profitable full sale's base negative and drops the day
   // that realised the whole gain out of the chain.
+  const dayFactors = investedDayFactors(start, days, flowDays);
   const factors: number[] = [];
   let anyBase = false;
-  for (let i = 0; i < days.length; i++) {
-    const previous =
-      i === 0 ? start.securitiesValue : days[i - 1].securitiesValue;
-    const flow = flowDays[i];
-    const base = previous + flow.capitalIn;
-    const ending = days[i].securitiesValue + flow.capitalOut + flow.income;
-    const factor = subPeriodFactor(base, ending);
+  for (const factor of dayFactors) {
     if (factor === null) continue;
     anyBase = true;
     factors.push(factor);
@@ -321,19 +384,26 @@ export function investedPeriodResult(
   // the same `IV`, the same `K` and the same `I`: anything that makes a chained
   // factor a return on a portfolio nobody owns does the same to a discounted
   // flow.
-  const moneyWeighted = moneyWeightedFigures(start, end, days, flowDays);
+  const moneyWeighted = withMoneyWeighted
+    ? moneyWeightedFigures(start, end, days, flowDays)
+    : NO_MONEY_WEIGHTED;
   // Its own cause, and only where the rest of the decision is reportable: a
   // window already withholding the P&L and the TWR has causes of its own, and
   // "the rate is undefined too" adds nothing to them (section 11.5).
   const withMwrReason = (): PeriodResultReason[] =>
     moneyWeighted.reason ? [...reasons, moneyWeighted.reason] : [...reasons];
 
+  const measured = (decision: InvestedPeriodDecision) => ({
+    decision,
+    dayFactors,
+  });
+
   if (!anyBase) {
     // No day of the window had capital at risk. Nothing invested and nothing
     // earned is a KNOWN zero (the spec's case 1); a result with no invested
     // capital behind it has no ratio at all.
     if (pnl === 0) {
-      return {
+      return measured({
         investedValueStart: start.securitiesValue,
         investedValueEnd: end.securitiesValue,
         investedValueChange,
@@ -345,10 +415,10 @@ export function investedPeriodResult(
         ...moneyWeighted.figures,
         investedComplete: true,
         investedReasons: withMwrReason(),
-      };
+      });
     }
     reasons.add("zeroStart");
-    return {
+    return measured({
       ...WITHHELD,
       investedValueStart: start.securitiesValue,
       investedValueEnd: end.securitiesValue,
@@ -357,13 +427,13 @@ export function investedPeriodResult(
       investmentIncome,
       investmentPnl: pnl,
       investedReasons: [...reasons],
-    };
+    });
   }
 
   const percent = chainTwrPercent(factors);
   if (percent === null) {
     reasons.add("zeroStart");
-    return {
+    return measured({
       ...WITHHELD,
       investedValueStart: start.securitiesValue,
       investedValueEnd: end.securitiesValue,
@@ -372,10 +442,10 @@ export function investedPeriodResult(
       investmentIncome,
       investmentPnl: pnl,
       investedReasons: [...reasons],
-    };
+    });
   }
 
-  return {
+  return measured({
     investedValueStart: start.securitiesValue,
     investedValueEnd: end.securitiesValue,
     investedValueChange,
@@ -392,7 +462,7 @@ export function investedPeriodResult(
     ...moneyWeighted.figures,
     investedComplete: true,
     investedReasons: withMwrReason(),
-  };
+  });
 }
 
 /**

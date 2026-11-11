@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   Tooltip,
@@ -19,6 +19,7 @@ import { gainLossColor } from '@/lib/format';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
 import { SecurityComparisonChart, SecurityComparisonChartHandle } from '@/components/reports/SecurityComparisonChart';
+import { PortfolioReturnChart } from '@/components/reports/PortfolioReturnChart';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { useDateRange } from '@/hooks/useDateRange';
 import { usePortfolioRangeWindow } from '@/hooks/usePortfolioRangeWindow';
@@ -44,7 +45,12 @@ import {
   type PortfolioCompleteness,
 } from '@/lib/net-worth-completeness';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
+import {
+  SEGMENTED_GROUP_CLASS,
+  SEGMENTED_TOOLBAR_GROUP_CLASS,
+  segmentClass,
+  toolbarSegmentClass,
+} from '@/components/ui/segmented-control';
 import { InvestmentPerformanceHoldingsTable } from '@/components/reports/InvestmentPerformanceHoldingsTable';
 import {
   buildPerformanceRows,
@@ -52,6 +58,7 @@ import {
   type HoldingsSortField,
 } from '@/components/reports/investment-performance-rows';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { TWR_SERIES_MAX_ACCOUNTS } from '@/lib/constants';
 
 const ACCOUNTS_STORAGE_KEY = 'monize-reports-investment-performance-accounts';
 
@@ -60,6 +67,10 @@ const ACCOUNTS_STORAGE_KEY = 'monize-reports-investment-performance-accounts';
 // falls into its error state. A portfolio of 21+ securities plots only its 20
 // largest holdings by market value, and a note says so.
 const PERFORMANCE_CHART_MAX_SECURITIES = 20;
+
+/** What the Performance view's chart plots; `portfolio` is the default. */
+type PerformanceChartMode = 'portfolio' | 'account' | 'security';
+const PERFORMANCE_CHART_MODES: readonly PerformanceChartMode[] = ['portfolio', 'account', 'security'];
 
 interface AllocationTooltipProps {
   active?: boolean;
@@ -107,6 +118,7 @@ export function InvestmentPerformanceReport() {
     usePersistedAccountFilter(ACCOUNTS_STORAGE_KEY);
   const [reloadKey, setReloadKey] = useState(0);
   const [viewType, setViewType] = useState<'performance' | 'allocation'>('performance');
+  const [chartMode, setChartMode] = useState<PerformanceChartMode>('portfolio');
   // The report's window, persisted like the other report ranges. It governs
   // the chart, the Gain/Loss and Return cards and the table's period columns,
   // so it is shown in both views. The ranges and the days each one opens on
@@ -289,6 +301,33 @@ export function InvestmentPerformanceReport() {
     accounts.forEach((a) => map.set(a.id, mainAccountName(a.name)));
     return map;
   }, [accounts, mainAccountName]);
+
+  // The accounts the by-account chart draws one line each: the ones the filter
+  // names, or every investment account when it names none.
+  // A brokerage and its cash sibling are one scope on the server, so a sibling
+  // is drawn as its brokerage, once.
+  const returnAccountIds = useMemo(() => {
+    const byId = new Map(accounts.map((a) => [a.id, a]));
+    const named = selectedAccountIds.length > 0 ? selectedAccountIds : accounts.map((a) => a.id);
+    const asBrokerage = named.map((id) => {
+      const account = byId.get(id);
+      return account?.accountSubType === 'INVESTMENT_CASH' && account.linkedAccountId
+        ? account.linkedAccountId
+        : id;
+    });
+    return [...new Set(asBrokerage)];
+  }, [selectedAccountIds, accounts]);
+  // `investments-twr-series?groupBy=account` values one scope per account, so it
+  // caps the accounts it is asked for; a reader with more draws the first of
+  // them, and a note says so.
+  const drawnReturnAccountIds = useMemo(
+    () => returnAccountIds.slice(0, TWR_SERIES_MAX_ACCOUNTS),
+    [returnAccountIds],
+  );
+  const accountNameOf = useCallback(
+    (accountId: string) => accountNameById.get(accountId) ?? accountId,
+    [accountNameById],
+  );
 
   // Today's holdings beside the window's figures, plus every position the
   // window measured that has since been sold.
@@ -542,30 +581,76 @@ export function InvestmentPerformanceReport() {
       <div ref={chartRef}>
       {viewType === 'performance' ? (
         <>
-          {/* Historical performance: one cumulative-return line per held
-              security over the selected window. Replaces the point-in-time
-              holdings donut, which now lives under Allocation; the composition
-              question and the "how have these performed" question are answered
-              on their own tabs. The chart owns its own fetch, keyed on the held
-              securities and the window, and renders the server's percent-return
-              series with its null/exclusion handling intact. */}
-          <SecurityComparisonChart
-            securityIds={performanceSecurityIds}
-            indexCodes={[]}
-            startDate={chartStart}
-            endDate={perfWindow.end}
-            subtitle={t('investmentPerformance.chartSubtitle')}
-            reloadKey={reloadKey}
-            exportRef={comparisonExportRef}
-            onExportableChange={setComparisonExportable}
-          />
-          {isPerformanceChartCapped && (
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              {t('investmentPerformance.chartLimitedNote', {
-                shown: performanceSecurityIds.length,
-                total: heldSecurityIds.length,
-              })}
-            </p>
+          {/* Historical performance over the selected window. Portfolio is the
+              invested part's time-weighted return as one line, unaffected by
+              deposits and withdrawals; By account draws one such line per
+              account; By security is one cumulative-return line per held
+              security. The composition question lives under Allocation. Each
+              chart owns its own fetch, keyed on its scope and the window, and
+              renders the server's percent-return series with its null and
+              withheld handling intact. */}
+          <div className="mb-3 flex justify-end">
+            <div className={SEGMENTED_TOOLBAR_GROUP_CLASS} role="group" aria-label={t('investmentPerformance.chartModeLabel')}>
+              {PERFORMANCE_CHART_MODES.map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setChartMode(mode)}
+                  aria-pressed={chartMode === mode}
+                  className={toolbarSegmentClass(chartMode === mode)}
+                >
+                  {t(`investmentPerformance.chartMode.${mode}` as Parameters<typeof t>[0])}
+                </button>
+              ))}
+            </div>
+          </div>
+          {chartMode === 'security' ? (
+            <>
+              <SecurityComparisonChart
+                securityIds={performanceSecurityIds}
+                indexCodes={[]}
+                startDate={chartStart}
+                endDate={perfWindow.end}
+                subtitle={t('investmentPerformance.chartSubtitle')}
+                reloadKey={reloadKey}
+                exportRef={comparisonExportRef}
+                onExportableChange={setComparisonExportable}
+              />
+              {isPerformanceChartCapped && (
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  {t('investmentPerformance.chartLimitedNote', {
+                    shown: performanceSecurityIds.length,
+                    total: heldSecurityIds.length,
+                  })}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <PortfolioReturnChart
+                groupBy={chartMode}
+                range={perfRange}
+                startDate={perfWindow.start}
+                periodStartDate={perfWindow.periodStart}
+                endDate={perfWindow.end}
+                accountIds={periodRequest.accountIds}
+                accountIdList={drawnReturnAccountIds}
+                accountName={accountNameOf}
+                displayCurrency={periodRequest.displayCurrency}
+                reloadKey={reloadKey}
+                skip={periodRequest.skip}
+                exportRef={comparisonExportRef}
+                onExportableChange={setComparisonExportable}
+              />
+              {chartMode === 'account' && returnAccountIds.length > drawnReturnAccountIds.length && (
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  {t('investmentPerformance.twrAccountsLimitedNote', {
+                    shown: drawnReturnAccountIds.length,
+                    total: returnAccountIds.length,
+                  })}
+                </p>
+              )}
+            </>
           )}
 
           <InvestmentPerformanceHoldingsTable

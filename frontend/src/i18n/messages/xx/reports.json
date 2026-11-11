@@ -822,6 +822,27 @@
     "colPriceChange": "[XX-% Change-XX]",
     "chartSubtitle": "[XX-Cumulative return of every security these accounts hold, over the selected period.-XX]",
     "chartLimitedNote": "[XX-Only the {shown} largest holdings by market value are plotted (of {total} held).-XX]",
+    "chartModeLabel": "[XX-Chart-XX]",
+    "chartMode": {
+      "portfolio": "[XX-Portfolio-XX]",
+      "account": "[XX-By account-XX]",
+      "security": "[XX-By security-XX]"
+    },
+    "twrTitle": "[XX-Return over time-XX]",
+    "twrSubtitlePortfolio": "[XX-Time-weighted return of the portfolio over the selected period. Deposits and withdrawals do not move the line.-XX]",
+    "twrSubtitleAccounts": "[XX-Time-weighted return of each account over the selected period. Deposits and withdrawals do not move the lines.-XX]",
+    "twrPortfolioLine": "[XX-Portfolio-XX]",
+    "twrError": "[XX-The return over time could not be loaded.-XX]",
+    "twrNoData": "[XX-There is no history to chart for this period.-XX]",
+    "twrWithheldTitle": "[XX-Not drawn-XX]",
+    "twrWithheldRow": "[XX-{label}: {reason}-XX]",
+    "twrReason": {
+      "noPrice": "[XX-a price is missing for part of this period, so the return cannot be worked out.-XX]",
+      "displayFx": "[XX-an exchange rate is missing for part of this period, so the return cannot be worked out.-XX]",
+      "noBaseline": "[XX-nothing was invested to measure a return over in this period.-XX]",
+      "noHistory": "[XX-there is no history for this period.-XX]"
+    },
+    "twrAccountsLimitedNote": "[XX-Only the first {shown} of {total} accounts are drawn.-XX]",
     "rangeAll": "[XX-All Time-XX]",
     "unattributedIncome": "[XX-Income not tied to a security-XX]",
     "pdfSecurity": "[XX-{symbol} - {name}-XX]",

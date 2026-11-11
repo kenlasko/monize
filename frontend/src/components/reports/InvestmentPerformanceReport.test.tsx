@@ -115,6 +115,18 @@ function securityResults(rows: ReturnType<typeof periodRow>[], unattributedPnl: 
   };
 }
 
+// The return chart owns its own fetch (`useTwrSeries`) and is covered by
+// `PortfolioReturnChart.test.tsx`; here it is a stub that records the props it
+// was handed. The report opens on it, so the tests of the by-security chart
+// choose "By security" first.
+const mockReturnChartProps = vi.fn();
+vi.mock('@/components/reports/PortfolioReturnChart', () => ({
+  PortfolioReturnChart: (props: Record<string, unknown>) => {
+    mockReturnChartProps(props);
+    return <div data-testid="return-chart" data-group-by={String(props.groupBy)} />;
+  },
+}));
+
 // The Performance view now draws the historical percent-return comparison chart
 // (one line per held security) instead of a holdings donut. It owns its own
 // fetch, so it is stubbed here; the report's job is only to feed it the held
@@ -228,6 +240,13 @@ const fullPortfolio = {
   totalGainLossPercent: 7.54,
 };
 
+async function showBySecurity() {
+  const button = await screen.findByRole('button', { name: 'By security' });
+  await act(async () => {
+    fireEvent.click(button);
+  });
+}
+
 describe('InvestmentPerformanceReport', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -327,6 +346,7 @@ describe('InvestmentPerformanceReport', () => {
     mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
     mockGetInvestmentAccounts.mockResolvedValue([]);
     render(<InvestmentPerformanceReport />);
+    await showBySecurity();
     const chart = await screen.findByTestId('performance-chart');
     // sec-vfv is held in two accounts but is one line, not two; a zero-quantity
     // holding (sec-xic) still has a return history worth plotting.
@@ -428,6 +448,117 @@ describe('InvestmentPerformanceReport', () => {
       ).toBe(JSON.stringify(['acc-1']));
     });
   });
+  describe('the chart modes', () => {
+    const account = (id: string, name: string) => ({
+      id,
+      name,
+      currencyCode: 'CAD',
+      accountSubType: 'INVESTMENT_BROKERAGE',
+    });
+
+    const lastReturnChartProps = () =>
+      mockReturnChartProps.mock.calls[mockReturnChartProps.mock.calls.length - 1][0] as Record<
+        string,
+        unknown
+      >;
+
+    beforeEach(() => {
+      mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([
+        account('acc-1', 'TFSA'),
+        account('acc-2', 'RRSP'),
+      ]);
+    });
+
+    it('opens on the portfolio line, over the window the cards are measured over', async () => {
+      render(<InvestmentPerformanceReport />);
+      const chart = await screen.findByTestId('return-chart');
+      expect(chart.getAttribute('data-group-by')).toBe('portfolio');
+      expect(screen.queryByTestId('performance-chart')).not.toBeInTheDocument();
+      const props = lastReturnChartProps();
+      expect(props.range).toBe('1y');
+      expect(props.startDate).toBeTruthy();
+      expect(props.periodStartDate).toBeTruthy();
+      expect(props.endDate).toBeTruthy();
+      expect(
+        screen.getByRole('button', { name: 'Portfolio', pressed: true }),
+      ).toBeInTheDocument();
+    });
+
+    it('draws a brokerage and its cash sibling as one account', async () => {
+      mockGetInvestmentAccounts.mockResolvedValue([
+        { id: 'acc-1', name: 'TFSA - Brokerage', currencyCode: 'CAD', accountSubType: 'INVESTMENT_BROKERAGE', linkedAccountId: 'acc-2' },
+        { id: 'acc-2', name: 'TFSA - Cash', currencyCode: 'CAD', accountSubType: 'INVESTMENT_CASH', linkedAccountId: 'acc-1' },
+        { id: 'acc-3', name: 'RRSP', currencyCode: 'USD', accountSubType: 'INVESTMENT_BROKERAGE', linkedAccountId: null },
+      ]);
+      render(<InvestmentPerformanceReport />);
+      const button = await screen.findByRole('button', { name: 'By account' });
+      await act(async () => {
+        fireEvent.click(button);
+      });
+      await screen.findByTestId('return-chart');
+      expect(lastReturnChartProps().accountIdList).toEqual(['acc-1', 'acc-3']);
+    });
+
+    it('draws one line per investment account when none is filtered', async () => {
+      render(<InvestmentPerformanceReport />);
+      const button = await screen.findByRole('button', { name: 'By account' });
+      await act(async () => {
+        fireEvent.click(button);
+      });
+      expect((await screen.findByTestId('return-chart')).getAttribute('data-group-by')).toBe(
+        'account',
+      );
+      const props = lastReturnChartProps();
+      expect(props.accountIdList).toEqual(['acc-1', 'acc-2']);
+      expect((props.accountName as (id: string) => string)('acc-2')).toBe('RRSP');
+    });
+
+    it('draws only the filtered accounts when the filter names some', async () => {
+      window.localStorage.setItem(
+        'monize-reports-investment-performance-accounts',
+        JSON.stringify(['acc-2']),
+      );
+      render(<InvestmentPerformanceReport />);
+      const button = await screen.findByRole('button', { name: 'By account' });
+      await act(async () => {
+        fireEvent.click(button);
+      });
+      expect(lastReturnChartProps().accountIdList).toEqual(['acc-2']);
+      // And the portfolio grouping reads the same filter, as the cards do.
+      expect(lastReturnChartProps().accountIds).toBe('acc-2');
+    });
+
+    it('draws the first 25 accounts and says so', async () => {
+      const many = Array.from({ length: 27 }, (_, i) => account(`acc-${i + 1}`, `Account ${i + 1}`));
+      mockGetInvestmentAccounts.mockResolvedValue(many);
+      render(<InvestmentPerformanceReport />);
+      const button = await screen.findByRole('button', { name: 'By account' });
+      await act(async () => {
+        fireEvent.click(button);
+      });
+      expect((lastReturnChartProps().accountIdList as string[]).length).toBe(25);
+      expect(screen.getByText('Only the first 25 of 27 accounts are drawn.')).toBeInTheDocument();
+    });
+
+    it('By security is the per-security chart, and Portfolio brings the line back', async () => {
+      render(<InvestmentPerformanceReport />);
+      await showBySecurity();
+      expect(await screen.findByTestId('performance-chart')).toBeInTheDocument();
+      expect(screen.queryByTestId('return-chart')).not.toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Portfolio' }));
+      });
+      expect(await screen.findByTestId('return-chart')).toBeInTheDocument();
+      expect(screen.queryByTestId('performance-chart')).not.toBeInTheDocument();
+    });
+
+    it('keeps the holdings table under every chart', async () => {
+      render(<InvestmentPerformanceReport />);
+      expect((await screen.findAllByText('Vanguard S&P 500')).length).toBeGreaterThan(0);
+    });
+  });
+
   describe('the window figures', () => {
     it('shows each security\'s gain, return and % Change for the window', async () => {
       mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);

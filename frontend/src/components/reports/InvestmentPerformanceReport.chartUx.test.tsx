@@ -37,6 +37,18 @@ vi.mock('@/lib/investments', () => ({
   },
 }));
 
+// The return chart owns its own fetch (`useTwrSeries`) and is covered by
+// `PortfolioReturnChart.test.tsx`; here it is a stub that records the props it
+// was handed. The report opens on it, so the tests of the by-security chart
+// choose "By security" first.
+const mockReturnChartProps = vi.fn();
+vi.mock('@/components/reports/PortfolioReturnChart', () => ({
+  PortfolioReturnChart: (props: Record<string, unknown>) => {
+    mockReturnChartProps(props);
+    return <div data-testid="return-chart" data-group-by={String(props.groupBy)} />;
+  },
+}));
+
 // The comparison chart owns its own fetch, colours and PDF export. The stub
 // captures the props it received and forwards an imperative export handle
 // through `exportRef`, so the report's delegation to it is observable.
@@ -171,6 +183,13 @@ function portfolioOf(holdings: ReturnType<typeof holding>[]) {
   };
 }
 
+async function showBySecurity() {
+  const button = await screen.findByRole('button', { name: 'By security' });
+  await act(async () => {
+    fireEvent.click(button);
+  });
+}
+
 describe('InvestmentPerformanceReport chart UX', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -197,6 +216,7 @@ describe('InvestmentPerformanceReport chart UX', () => {
     mockGetPortfolioSummary.mockResolvedValue(portfolioOf(seeds.map(holding)));
 
     render(<InvestmentPerformanceReport />);
+    await showBySecurity();
     const chart = await screen.findByTestId('performance-chart');
 
     const ids = (chart.getAttribute('data-security-ids') ?? '').split(',');
@@ -225,6 +245,7 @@ describe('InvestmentPerformanceReport chart UX', () => {
     mockGetPortfolioSummary.mockResolvedValue(portfolioOf(seeds.map(holding)));
 
     render(<InvestmentPerformanceReport />);
+    await showBySecurity();
     const chart = await screen.findByTestId('performance-chart');
 
     const ids = (chart.getAttribute('data-security-ids') ?? '').split(',');
@@ -244,6 +265,7 @@ describe('InvestmentPerformanceReport chart UX', () => {
     mockGetPortfolioSummary.mockResolvedValue(portfolioOf(holdings));
 
     render(<InvestmentPerformanceReport />);
+    await showBySecurity();
     const chart = await screen.findByTestId('performance-chart');
     expect(chart.getAttribute('data-security-ids')).toBe('sec-a,sec-b');
   });
@@ -253,6 +275,7 @@ describe('InvestmentPerformanceReport chart UX', () => {
       portfolioOf([holding({ securityId: 'sec-a', marketValue: 100 })]),
     );
     render(<InvestmentPerformanceReport />);
+    await showBySecurity();
     const chart = await screen.findByTestId('performance-chart');
     const subtitle = chart.getAttribute('data-subtitle') ?? '';
     expect(subtitle).toMatch(/these accounts hold/i);
@@ -266,6 +289,7 @@ describe('InvestmentPerformanceReport chart UX', () => {
       portfolioOf([holding({ securityId: 'sec-a', marketValue: 100 })]),
     );
     render(<InvestmentPerformanceReport />);
+    await showBySecurity();
     await screen.findByTestId('performance-chart');
 
     await act(async () => {
@@ -283,6 +307,7 @@ describe('InvestmentPerformanceReport chart UX', () => {
       portfolioOf([holding({ securityId: 'sec-a', marketValue: 100 })]),
     );
     render(<InvestmentPerformanceReport />);
+    await showBySecurity();
     await screen.findByTestId('performance-chart');
 
     await act(async () => {
@@ -345,6 +370,7 @@ describe('InvestmentPerformanceReport chart UX', () => {
       portfolioOf([holding({ securityId: 'sec-a', marketValue: 100 })]),
     );
     render(<InvestmentPerformanceReport />);
+    await showBySecurity();
     const chart = await screen.findByTestId('performance-chart');
     expect(chart.getAttribute('data-start')).toBe(expected());
     expect(chart.getAttribute('data-end')).toBe(format(new Date(), 'yyyy-MM-dd'));

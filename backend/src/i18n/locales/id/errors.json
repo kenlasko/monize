@@ -8,6 +8,7 @@
     "mustBeCsvUuids": "Nilai \"{{ param }}\" harus berupa daftar UUID yang dipisahkan koma",
     "mustBeOneOf": "Nilai \"{{ param }}\" harus salah satu dari: {{ options }}",
     "mustBeCsvOneOf": "Nilai \"{{ param }}\" harus berupa daftar yang dipisahkan koma, setiap entri salah satu dari: {{ options }}",
+    "mustNameAccounts": "Nilai \"{{ param }}\" harus menyebutkan 1 sampai {{ max }} akun",
     "isRequired": "Nilai \"{{ param }}\" wajib diisi",
     "requiredForProvider": "Penyedia {{ provider }} memerlukan nilai \"{{ param }}\"",
     "isTooLong": "Nilai \"{{ param }}\" terlalu panjang",
