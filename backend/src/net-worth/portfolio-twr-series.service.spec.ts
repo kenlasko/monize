@@ -124,6 +124,17 @@ describe("PortfolioTwrSeriesService", () => {
       ]);
     });
 
+    it("reads the invested rows and closes through the period result's loaders", async () => {
+      await service.getSeries("u1", { period: "1y", accountIds: ["brok-1"] });
+      expect(periodResult.loadInvestedRows).toHaveBeenCalledWith(
+        "u1",
+        [BROKERAGE("brok-1")],
+        DATES[0],
+        DATES[2],
+      );
+      expect(periodResult.loadShareLegClose).toHaveBeenCalledTimes(1);
+    });
+
     it("INV-PORTTWR-001: ends on the figure the period result reports for the same inputs", async () => {
       const result = await service.getSeries("u1", { period: "1y" });
       const decision = investedPeriodResult({
