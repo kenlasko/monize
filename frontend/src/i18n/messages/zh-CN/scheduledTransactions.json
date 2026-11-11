@@ -387,7 +387,10 @@
     },
     "firstOccurrence": "首次发生：{date}",
     "nextOccurrence": "下次发生：{date}",
-    "orphanWarning": "{count, plural, other {已编辑的 # 次发生（{dates}）不再符合此规律，保存时将被移除。}}"
+    "nextOccurrenceOffPattern": "下次发生：{date}。此日期不在规律内；之后的发生仍按规律进行。",
+    "orphanWarning": "{count, plural, other {已编辑的 # 次发生（{dates}）不再符合此规律，保存时将被移除。}}",
+    "notForLoan": "贷款或抵押贷款还款不能使用自定义频率；请选择固定频率。",
+    "notForPayroll": "带有扣款上限的工资账单不能使用自定义频率；请选择固定频率。"
   },
   "validation": {
     "nameRequired": "名称为必填项",

@@ -1,10 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   CustomRecurrence,
-  customMinGapDays,
+  customDateOnOrAfter,
   customOccurrencesPerYear,
-  firstCustomDate,
-  isCustomDate,
   nextCustomDate,
   normalizeCustomRecurrence,
 } from './custom-recurrence';
@@ -59,21 +57,22 @@ describe('nextCustomDate: the spec section 7 matrix', () => {
   });
 });
 
-describe('firstCustomDate and isCustomDate', () => {
-  it('answers the start date itself when it is on the pattern', () => {
-    expect(firstCustomDate('2026-11-11', week(1, [3]))).toBe('2026-11-11');
+describe('customDateOnOrAfter', () => {
+  it('answers the date itself when it is on the pattern, else the next rule date', () => {
+    expect(customDateOnOrAfter('2026-11-11', week(1, [3]))).toBe('2026-11-11');
+    expect(customDateOnOrAfter('2026-11-12', week(1, [1, 3, 5]))).toBe('2026-11-13');
+    expect(customDateOnOrAfter('2026-11-21', month(1, [5, 20]))).toBe('2026-12-05');
   });
 
-  it('answers the first rule date after an off-pattern start', () => {
-    expect(firstCustomDate('2026-11-12', week(1, [1, 3, 5]))).toBe('2026-11-13');
-    expect(firstCustomDate('2026-11-21', month(1, [5, 20]))).toBe('2026-12-05');
+  it('counts the interval from the start date, not the date asked about', () => {
+    const everyOtherTue = week(2, [2]);
+    expect(customDateOnOrAfter('2026-11-12', everyOtherTue, '2026-11-11')).toBe('2026-11-24');
+    expect(customDateOnOrAfter('2026-11-12', everyOtherTue, '2026-11-18')).toBe('2026-11-17');
+    expect(customDateOnOrAfter('2026-11-24', week(2, [2, 4]), '2026-11-11')).toBe('2026-11-24');
   });
 
-  it('tells a slot from a day that is not one, counting periods from the start', () => {
-    const rule = week(2, [2, 4], 1);
-    expect(isCustomDate('2026-11-24', rule, '2026-11-11')).toBe(true);
-    expect(isCustomDate('2026-11-17', rule, '2026-11-11')).toBe(false);
-    expect(isCustomDate('2026-11-18', rule, '2026-11-11')).toBe(false);
+  it('throws without a valid rule, like the stepper', () => {
+    expect(() => customDateOnOrAfter('2026-11-11', null)).toThrow(/CUSTOM/);
   });
 });
 
@@ -136,10 +135,14 @@ describe('cadence figures', () => {
     expect(customOccurrencesPerYear(null)).toBe(0);
   });
 
-  it('finds the shortest gap between consecutive dates', () => {
-    expect(customMinGapDays(week(1, [1, 2]))).toBe(1);
-    expect(customMinGapDays(month(1, [30, 31]))).toBe(1);
-    expect(customMinGapDays(year(1, ['06-01']))).toBeGreaterThanOrEqual(365);
-    expect(customMinGapDays(null)).toBe(0);
+  it('counts days that land on one date as one occurrence', () => {
+    // The 31st and the last day are one date in every month.
+    expect(customOccurrencesPerYear(month(1, [31, -1]))).toBe(12);
+    // 29, 30 and 31: one date in February, two in a 30-day month, three in a
+    // 31-day month, so 1 + 4 * 2 + 7 * 3 a year, leap year or not.
+    expect(customOccurrencesPerYear(month(1, [29, 30, 31]))).toBe(30);
+    expect(customOccurrencesPerYear(month(3, [31, -1]))).toBe(4);
+    // 28 and 29 February are one date in three years of four.
+    expect(customOccurrencesPerYear(year(1, ['02-28', '02-29']))).toBe(1.25);
   });
 });

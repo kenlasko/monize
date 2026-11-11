@@ -387,7 +387,10 @@
     },
     "firstOccurrence": "初回の発生：{date}",
     "nextOccurrence": "次回の発生：{date}",
-    "orphanWarning": "{count, plural, other {編集済みの発生#件（{dates}）はこのパターンに該当しなくなったため、保存時に削除されます。}}"
+    "nextOccurrenceOffPattern": "次回の発生：{date}。この日付はパターン外です。以降の発生はパターンに従います。",
+    "orphanWarning": "{count, plural, other {編集済みの発生#件（{dates}）はこのパターンに該当しなくなったため、保存時に削除されます。}}",
+    "notForLoan": "ローンまたは住宅ローンの返済にはカスタムの頻度を使用できません。固定の頻度を選択してください。",
+    "notForPayroll": "控除上限のある給与の請求にはカスタムの頻度を使用できません。固定の頻度を選択してください。"
   },
   "validation": {
     "nameRequired": "名前は必須です",

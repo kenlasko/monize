@@ -387,7 +387,10 @@
     },
     "firstOccurrence": "Première occurrence : {date}",
     "nextOccurrence": "Prochaine occurrence : {date}",
-    "orphanWarning": "{count, plural, one {# occurrence modifiée ({dates}) ne correspond plus à ce motif et sera supprimée à l'enregistrement.} other {# occurrences modifiées ({dates}) ne correspondent plus à ce motif et seront supprimées à l'enregistrement.}}"
+    "nextOccurrenceOffPattern": "Prochaine occurrence : {date}. Cette date est hors du modèle ; les occurrences suivantes le respectent.",
+    "orphanWarning": "{count, plural, one {# occurrence modifiée ({dates}) ne correspond plus à ce motif et sera supprimée à l'enregistrement.} other {# occurrences modifiées ({dates}) ne correspondent plus à ce motif et seront supprimées à l'enregistrement.}}",
+    "notForLoan": "Un paiement de prêt ou de prêt hypothécaire ne peut pas utiliser une fréquence personnalisée ; choisissez une fréquence fixe.",
+    "notForPayroll": "Une facture de paie avec des limites de retenue ne peut pas utiliser une fréquence personnalisée ; choisissez une fréquence fixe."
   },
   "validation": {
     "nameRequired": "Le nom est requis",

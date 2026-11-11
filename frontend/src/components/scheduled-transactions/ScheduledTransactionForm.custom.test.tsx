@@ -237,6 +237,31 @@ describe('ScheduledTransactionForm: the Custom frequency', () => {
     expect(screen.getByText('First occurrence: 2026-11-13')).toBeInTheDocument();
   });
 
+  it('shows the due date the server stores: as typed while the rule is unchanged, even off the pattern', async () => {
+    await renderForm({ ...monthly, frequency: 'CUSTOM', customRecurrence: monWedFri, nextDueDate: '2026-11-13' });
+    // Thursday 12 November is no Mon/Wed/Fri; the server keeps it as typed.
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Next Due Date'), { target: { value: '2026-11-12' } });
+      fireEvent.blur(screen.getByLabelText('Next Due Date'));
+    });
+    expect(
+      screen.getByText('Next occurrence: 2026-11-12. This date is off the pattern; later occurrences follow it.'),
+    ).toBeInTheDocument();
+
+    // A rule change re-snaps it onto the pattern, as the server does.
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Thursday' }));
+    });
+    expect(screen.getByText('Next occurrence: 2026-11-12')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Thursday' }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Monday' }));
+    });
+    expect(screen.getByText('Next occurrence: 2026-11-13')).toBeInTheDocument();
+  });
+
   it('warns, before the save, of edited occurrences the new pattern no longer reaches', async () => {
     await renderForm({
       ...monthly,
@@ -287,6 +312,35 @@ describe('ScheduledTransactionForm: the Custom frequency', () => {
     ] as never);
     await renderForm(monthly);
     expect(frequencyValues()).not.toContain('CUSTOM');
+  });
+
+  describe('a split with a leg into a loan', () => {
+    const loan = { ...main, id: '55555555-5555-4555-8555-555555555555', name: 'Mortgage', accountType: 'MORTGAGE' };
+    const splitIntoLoan = {
+      ...monthly,
+      isSplit: true,
+      splits: [
+        { id: 's1', categoryId: null, transferAccountId: loan.id, amount: -1000, memo: '' },
+        { id: 's2', categoryId: null, transferAccountId: null, amount: -200, memo: '' },
+      ],
+    };
+
+    beforeEach(() => {
+      vi.mocked(accountsApi.getAll).mockResolvedValue([main, loan] as never);
+    });
+
+    it('does not offer Custom, which the server refuses there', async () => {
+      await renderForm(splitIntoLoan);
+      expect(frequencyValues()).not.toContain('CUSTOM');
+    });
+
+    it('keeps Custom on a schedule already Custom, saying why it cannot stay', async () => {
+      await renderForm({ ...splitIntoLoan, frequency: 'CUSTOM', customRecurrence: monWedFri });
+      expect(frequencyValues()).toContain('CUSTOM');
+      expect(
+        screen.getByText('A loan or mortgage payment cannot use a custom frequency; choose a fixed frequency.'),
+      ).toBeInTheDocument();
+    });
   });
 
   it('does not offer Custom for a payroll schedule with deduction rules', async () => {

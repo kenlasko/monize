@@ -387,7 +387,10 @@
     },
     "firstOccurrence": "İlk tekrar: {date}",
     "nextOccurrence": "Sonraki tekrar: {date}",
-    "orphanWarning": "{count, plural, one {Düzenlenen # tekrar ({dates}) artık bu desene uymuyor ve kaydettiğinizde kaldırılacak.} other {Düzenlenen # tekrar ({dates}) artık bu desene uymuyor ve kaydettiğinizde kaldırılacak.}}"
+    "nextOccurrenceOffPattern": "Sonraki tekrar: {date}. Bu tarih desenin dışında; sonraki tekrarlar desene uyar.",
+    "orphanWarning": "{count, plural, one {Düzenlenen # tekrar ({dates}) artık bu desene uymuyor ve kaydettiğinizde kaldırılacak.} other {Düzenlenen # tekrar ({dates}) artık bu desene uymuyor ve kaydettiğinizde kaldırılacak.}}",
+    "notForLoan": "Bir kredi veya konut kredisi ödemesi özel sıklık kullanamaz; sabit bir sıklık seçin.",
+    "notForPayroll": "Kesinti sınırı olan bir bordro faturası özel sıklık kullanamaz; sabit bir sıklık seçin."
   },
   "validation": {
     "nameRequired": "Ad zorunludur",

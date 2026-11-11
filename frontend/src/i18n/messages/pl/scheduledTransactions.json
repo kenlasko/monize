@@ -387,7 +387,10 @@
     },
     "firstOccurrence": "Pierwsze wystąpienie: {date}",
     "nextOccurrence": "Następne wystąpienie: {date}",
-    "orphanWarning": "{count, plural, one {# edytowane wystąpienie ({dates}) nie pasuje już do tego wzorca i zostanie usunięte po zapisaniu.} few {# edytowane wystąpienia ({dates}) nie pasują już do tego wzorca i zostaną usunięte po zapisaniu.} many {# edytowanych wystąpień ({dates}) nie pasuje już do tego wzorca i zostanie usuniętych po zapisaniu.} other {# edytowanego wystąpienia ({dates}) nie pasuje już do tego wzorca i zostanie usuniętych po zapisaniu.}}"
+    "nextOccurrenceOffPattern": "Następne wystąpienie: {date}. Ta data jest poza wzorcem; kolejne wystąpienia są zgodne z wzorcem.",
+    "orphanWarning": "{count, plural, one {# edytowane wystąpienie ({dates}) nie pasuje już do tego wzorca i zostanie usunięte po zapisaniu.} few {# edytowane wystąpienia ({dates}) nie pasują już do tego wzorca i zostaną usunięte po zapisaniu.} many {# edytowanych wystąpień ({dates}) nie pasuje już do tego wzorca i zostanie usuniętych po zapisaniu.} other {# edytowanego wystąpienia ({dates}) nie pasuje już do tego wzorca i zostanie usuniętych po zapisaniu.}}",
+    "notForLoan": "Płatność raty kredytu lub kredytu hipotecznego nie może używać niestandardowej częstotliwości; wybierz stałą częstotliwość.",
+    "notForPayroll": "Rachunek płacowy z limitami potrąceń nie może używać niestandardowej częstotliwości; wybierz stałą częstotliwość."
   },
   "validation": {
     "nameRequired": "Nazwa jest wymagana",

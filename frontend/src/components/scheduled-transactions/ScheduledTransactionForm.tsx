@@ -1362,6 +1362,8 @@ export function ScheduledTransactionForm({
   const customRecurrence = useCustomRecurrenceField({
     scheduledTransaction,
     accounts,
+    splitTransferAccountIds:
+      mode === 'split' ? splits.map((split) => (split.splitType === 'transfer' ? split.transferAccountId : null)) : [],
     frequency: watchedFrequency,
     nextDueDate: watchedNextDueDate,
     rule: watchedCustomRecurrence,
@@ -1394,6 +1396,9 @@ export function ScheduledTransactionForm({
       {customRecurrence.editorProps && <CustomRecurrenceEditor {...customRecurrence.editorProps} />}
       {customRecurrence.editorProps && !watchedCustomRecurrence && errors.customRecurrence?.message && (
         <p className="text-sm text-red-600 dark:text-red-400">{errors.customRecurrence.message}</p>
+      )}
+      {customRecurrence.customRefusal && (
+        <p className="text-sm text-red-600 dark:text-red-400">{customRecurrence.customRefusal}</p>
       )}
       {customRecurrence.orphanWarning && (
         <p role="status" className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400">

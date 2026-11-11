@@ -387,7 +387,10 @@
     },
     "firstOccurrence": "Erste Ausführung: {date}",
     "nextOccurrence": "Nächste Ausführung: {date}",
-    "orphanWarning": "{count, plural, one {# bearbeitete Ausführung ({dates}) fällt nicht mehr auf dieses Muster und wird beim Speichern entfernt.} other {# bearbeitete Ausführungen ({dates}) fallen nicht mehr auf dieses Muster und werden beim Speichern entfernt.}}"
+    "nextOccurrenceOffPattern": "Nächste Ausführung: {date}. Dieses Datum liegt außerhalb des Musters; spätere Ausführungen folgen ihm.",
+    "orphanWarning": "{count, plural, one {# bearbeitete Ausführung ({dates}) fällt nicht mehr auf dieses Muster und wird beim Speichern entfernt.} other {# bearbeitete Ausführungen ({dates}) fallen nicht mehr auf dieses Muster und werden beim Speichern entfernt.}}",
+    "notForLoan": "Eine Darlehens- oder Hypothekenzahlung kann keine benutzerdefinierte Häufigkeit verwenden; wähle eine feste Häufigkeit.",
+    "notForPayroll": "Eine Lohn-Rechnung mit Abzugslimits kann keine benutzerdefinierte Häufigkeit verwenden; wähle eine feste Häufigkeit."
   },
   "validation": {
     "nameRequired": "Name ist erforderlich",

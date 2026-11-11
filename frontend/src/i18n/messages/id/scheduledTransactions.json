@@ -387,7 +387,10 @@
     },
     "firstOccurrence": "Kemunculan pertama: {date}",
     "nextOccurrence": "Kemunculan berikutnya: {date}",
-    "orphanWarning": "{count, plural, other {# kemunculan yang diedit ({dates}) tidak lagi sesuai dengan pola ini dan akan dihapus saat Anda menyimpan.}}"
+    "nextOccurrenceOffPattern": "Kemunculan berikutnya: {date}. Tanggal ini di luar pola; kemunculan berikutnya mengikuti pola.",
+    "orphanWarning": "{count, plural, other {# kemunculan yang diedit ({dates}) tidak lagi sesuai dengan pola ini dan akan dihapus saat Anda menyimpan.}}",
+    "notForLoan": "Pembayaran pinjaman atau hipotek tidak dapat menggunakan frekuensi kustom; pilih frekuensi tetap.",
+    "notForPayroll": "Tagihan gaji dengan batas potongan tidak dapat menggunakan frekuensi kustom; pilih frekuensi tetap."
   },
   "validation": {
     "nameRequired": "Nama wajib diisi",

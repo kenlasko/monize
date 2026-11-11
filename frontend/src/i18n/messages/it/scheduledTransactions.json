@@ -387,7 +387,10 @@
     },
     "firstOccurrence": "Prima occorrenza: {date}",
     "nextOccurrence": "Prossima occorrenza: {date}",
-    "orphanWarning": "{count, plural, one {# occorrenza modificata ({dates}) non rientra più in questo schema e verrà rimossa al salvataggio.} other {# occorrenze modificate ({dates}) non rientrano più in questo schema e verranno rimosse al salvataggio.}}"
+    "nextOccurrenceOffPattern": "Prossima occorrenza: {date}. Questa data è fuori dallo schema; le occorrenze successive lo seguono.",
+    "orphanWarning": "{count, plural, one {# occorrenza modificata ({dates}) non rientra più in questo schema e verrà rimossa al salvataggio.} other {# occorrenze modificate ({dates}) non rientrano più in questo schema e verranno rimosse al salvataggio.}}",
+    "notForLoan": "Il pagamento di un prestito o di un mutuo non può usare una frequenza personalizzata; scegli una frequenza fissa.",
+    "notForPayroll": "Una fattura dello stipendio con limiti di trattenuta non può usare una frequenza personalizzata; scegli una frequenza fissa."
   },
   "validation": {
     "nameRequired": "Il nome è obbligatorio",

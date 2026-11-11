@@ -51,6 +51,15 @@ describe('occurrencesInWindow', () => {
     expect(dates.map(iso)).toEqual(['2026-03-05', '2026-03-17', '2026-03-19', '2026-03-31']);
   });
 
+  it('shows a Custom row whose rule is missing on its due date only, instead of throwing', () => {
+    const dates = occurrencesInWindow(
+      schedule({ frequency: 'CUSTOM', nextDueDate: '2026-03-05', startDate: '2026-03-04', customRecurrence: null }),
+      new Date(2026, 2, 1),
+      new Date(2026, 2, 31),
+    );
+    expect(dates.map(iso)).toEqual(['2026-03-05']);
+  });
+
   it('stops after the single date of a one-time schedule', () => {
     const dates = occurrencesInWindow(
       schedule({ frequency: 'ONCE' }),

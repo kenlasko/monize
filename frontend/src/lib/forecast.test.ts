@@ -236,6 +236,21 @@ describe('buildForecast', () => {
       expect(balanceOn('2025-01-24')).toBe(1700);
       expect(balanceOn('2025-01-27')).toBe(1600);
     });
+
+    it('places a Custom row whose rule is missing once, at its due date, instead of throwing', () => {
+      const accounts = [makeAccount({ currentBalance: 2000 })];
+      const transactions = [makeScheduled({
+        nextDueDate: '2025-01-17',
+        startDate: '2025-01-17',
+        amount: -100,
+        frequency: 'CUSTOM',
+        customRecurrence: null,
+      })];
+      const result = forecastPoints(accounts, transactions, 'month', 'all');
+      const balanceOn = (date: string) => result.find(dp => dp.date === date)?.balance;
+      expect(balanceOn('2025-01-17')).toBe(1900);
+      expect(balanceOn('2025-02-10')).toBe(1900);
+    });
   });
 
   // --- BIWEEKLY frequency ---

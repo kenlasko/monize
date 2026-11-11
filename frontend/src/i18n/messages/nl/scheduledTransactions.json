@@ -387,7 +387,10 @@
     },
     "firstOccurrence": "Eerste herhaling: {date}",
     "nextOccurrence": "Volgende herhaling: {date}",
-    "orphanWarning": "{count, plural, one {# bewerkte herhaling ({dates}) valt niet meer binnen dit patroon en wordt verwijderd wanneer je opslaat.} other {# bewerkte herhalingen ({dates}) vallen niet meer binnen dit patroon en worden verwijderd wanneer je opslaat.}}"
+    "nextOccurrenceOffPattern": "Volgende herhaling: {date}. Deze datum valt buiten het patroon; latere herhalingen volgen het.",
+    "orphanWarning": "{count, plural, one {# bewerkte herhaling ({dates}) valt niet meer binnen dit patroon en wordt verwijderd wanneer je opslaat.} other {# bewerkte herhalingen ({dates}) vallen niet meer binnen dit patroon en worden verwijderd wanneer je opslaat.}}",
+    "notForLoan": "Een lening- of hypotheekbetaling kan geen aangepaste frequentie gebruiken; kies een vaste frequentie.",
+    "notForPayroll": "Een loonbetaling met inhoudingslimieten kan geen aangepaste frequentie gebruiken; kies een vaste frequentie."
   },
   "validation": {
     "nameRequired": "Naam is verplicht",

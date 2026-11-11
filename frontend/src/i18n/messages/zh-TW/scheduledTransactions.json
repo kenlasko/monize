@@ -387,7 +387,10 @@
     },
     "firstOccurrence": "首次付款：{date}",
     "nextOccurrence": "下次付款：{date}",
-    "orphanWarning": "{count, plural, other {已編輯的 # 筆付款（{dates}）不再符合此規律，儲存時將被移除。}}"
+    "nextOccurrenceOffPattern": "下次付款：{date}。此日期不在規律內；之後的付款仍依規律進行。",
+    "orphanWarning": "{count, plural, other {已編輯的 # 筆付款（{dates}）不再符合此規律，儲存時將被移除。}}",
+    "notForLoan": "貸款或房貸還款不能使用自訂頻率；請選擇固定頻率。",
+    "notForPayroll": "設有扣款上限的薪資帳單不能使用自訂頻率；請選擇固定頻率。"
   },
   "validation": {
     "nameRequired": "名稱為必填",

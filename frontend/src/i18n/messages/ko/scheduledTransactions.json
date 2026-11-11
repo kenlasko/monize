@@ -387,7 +387,10 @@
     },
     "firstOccurrence": "첫 번째 발생: {date}",
     "nextOccurrence": "다음 발생: {date}",
-    "orphanWarning": "{count, plural, other {수정된 발생 #건({dates})이 더 이상 이 패턴에 해당하지 않아 저장 시 삭제됩니다.}}"
+    "nextOccurrenceOffPattern": "다음 발생: {date}. 이 날짜는 패턴에서 벗어나 있으며, 이후 발생은 패턴을 따릅니다.",
+    "orphanWarning": "{count, plural, other {수정된 발생 #건({dates})이 더 이상 이 패턴에 해당하지 않아 저장 시 삭제됩니다.}}",
+    "notForLoan": "대출 또는 모기지 상환은 사용자 지정 빈도를 사용할 수 없습니다. 고정 빈도를 선택하세요.",
+    "notForPayroll": "공제 한도가 있는 급여 청구서는 사용자 지정 빈도를 사용할 수 없습니다. 고정 빈도를 선택하세요."
   },
   "validation": {
     "nameRequired": "이름은 필수입니다",

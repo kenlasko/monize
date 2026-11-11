@@ -139,6 +139,19 @@ describe('OccurrenceDatePicker', () => {
     expect(screen.queryByText('2025-05-31')).not.toBeInTheDocument();
   });
 
+  it('lists only the due date of a Custom schedule whose rule is missing, instead of throwing', () => {
+    const broken = {
+      ...scheduledTransaction,
+      frequency: 'CUSTOM' as const,
+      startDate: '2025-03-01',
+      customRecurrence: null,
+    };
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={broken} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText(scheduledTransaction.nextDueDate)).toBeInTheDocument();
+  });
+
   it('renders dates for biweekly frequency', () => {
     const biweeklyTransaction = {
       ...scheduledTransaction,

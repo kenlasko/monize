@@ -387,7 +387,10 @@
     },
     "firstOccurrence": "Primeira ocorrência: {date}",
     "nextOccurrence": "Próxima ocorrência: {date}",
-    "orphanWarning": "{count, plural, one {# ocorrência editada ({dates}) não se enquadra mais neste padrão e será removida ao salvar.} other {# ocorrências editadas ({dates}) não se enquadram mais neste padrão e serão removidas ao salvar.}}"
+    "nextOccurrenceOffPattern": "Próxima ocorrência: {date}. Esta data está fora do padrão; as ocorrências seguintes o seguem.",
+    "orphanWarning": "{count, plural, one {# ocorrência editada ({dates}) não se enquadra mais neste padrão e será removida ao salvar.} other {# ocorrências editadas ({dates}) não se enquadram mais neste padrão e serão removidas ao salvar.}}",
+    "notForLoan": "O pagamento de um empréstimo ou financiamento imobiliário não pode usar uma frequência personalizada; escolha uma frequência fixa.",
+    "notForPayroll": "Uma conta a pagar de salário com limites de dedução não pode usar uma frequência personalizada; escolha uma frequência fixa."
   },
   "validation": {
     "nameRequired": "O nome é obrigatório",

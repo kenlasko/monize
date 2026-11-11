@@ -387,7 +387,10 @@
     },
     "firstOccurrence": "[XX-First occurrence: {date}-XX]",
     "nextOccurrence": "[XX-Next occurrence: {date}-XX]",
-    "orphanWarning": "[XX-{count, plural, one {# edited occurrence ({dates}) no longer falls on this pattern and will be removed when you save.} other {# edited occurrences ({dates}) no longer fall on this pattern and will be removed when you save.}}-XX]"
+    "nextOccurrenceOffPattern": "[XX-Next occurrence: {date}. This date is off the pattern; later occurrences follow it.-XX]",
+    "orphanWarning": "[XX-{count, plural, one {# edited occurrence ({dates}) no longer falls on this pattern and will be removed when you save.} other {# edited occurrences ({dates}) no longer fall on this pattern and will be removed when you save.}}-XX]",
+    "notForLoan": "[XX-A loan or mortgage payment cannot use a custom frequency; choose a fixed frequency.-XX]",
+    "notForPayroll": "[XX-A payroll bill with deduction limits cannot use a custom frequency; choose a fixed frequency.-XX]"
   },
   "validation": {
     "nameRequired": "[XX-Name is required-XX]",

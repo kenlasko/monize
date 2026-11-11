@@ -72,7 +72,7 @@ export function occurrencesInWindow(
     if (effectiveDate >= start && effectiveDate <= end) {
       occurrences.push(new Date(effectiveDate));
     }
-    if (isOneTime(st.frequency)) return occurrences;
+    if (isOneTime(st)) return occurrences;
     nextDate = advanceSchedule(nextDate, st);
     count++;
   }

@@ -1384,6 +1384,22 @@ describe('BillsPage', () => {
       });
     });
 
+    it('counts the 31st and the last day of the month as one occurrence', async () => {
+      mockGetAll.mockResolvedValue([
+        {
+          id: 'st-a', currencyCode: 'USD', name: 'Month-end Bill', amount: -100,
+          frequency: 'CUSTOM', customRecurrence: { unit: 'MONTH', interval: 1, monthDays: [31, -1] },
+          nextDueDate: '2026-03-31', startDate: '2026-03-31', isActive: true, isTransfer: false,
+        },
+      ]);
+      render(<BillsPage />);
+      await waitFor(() => {
+        // One date a month, so the monthly figure is the amount itself, not twice it.
+        const text = screen.getByTestId('summary-Monthly Net').textContent || '';
+        expect(parseFloat(text.replace(/[^\d.]/g, ''))).toBeCloseTo(100, 2);
+      });
+    });
+
     it('normalizes WEEKLY frequency to monthly', async () => {
       mockGetAll.mockResolvedValue([
         { id: 'st-a', currencyCode: 'USD', name: 'Weekly Bill', amount: -100, frequency: 'WEEKLY', nextDueDate: '2026-03-01', isActive: true, isTransfer: false },

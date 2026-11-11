@@ -1,5 +1,11 @@
 import { FrequencyType } from '@/types/scheduled-transaction';
-import { CustomRecurrence, CustomStepContext, customOccurrencesPerYear, nextCustomDate } from './custom-recurrence';
+import {
+  CustomRecurrence,
+  CustomStepContext,
+  customOccurrencesPerYear,
+  nextCustomDate,
+  normalizeCustomRecurrence,
+} from './custom-recurrence';
 
 /**
  * The one place the frontend knows how a recurrence frequency steps forward.
@@ -133,7 +139,8 @@ export interface SteppableSchedule {
 /**
  * The schedule's next slot after `current`: `advanceByFrequency` with the
  * anchor day and the Custom rule taken from the schedule itself, so a walker
- * cannot forget either.
+ * cannot forget either. Ask `isOneTime(schedule)` first: a Custom schedule
+ * without a valid rule cannot step and throws here.
  */
 export function advanceSchedule(current: Date, schedule: SteppableSchedule): Date {
   return advanceByFrequency(current, schedule.frequency, anchorDayOf(schedule.startDate, current), {
@@ -142,9 +149,16 @@ export function advanceSchedule(current: Date, schedule: SteppableSchedule): Dat
   });
 }
 
-/** True when a frequency produces at most one occurrence. */
-export function isOneTime(frequency: FrequencyType): boolean {
-  return frequency === 'ONCE';
+/**
+ * True when a schedule produces at most one occurrence, its cursor: a `ONCE`
+ * schedule, or a `CUSTOM` one whose rule is missing or invalid (a row from an
+ * older release or a bad restore), which cannot step. Every walker asks this
+ * before `advanceSchedule`, so a broken row shows its one occurrence instead
+ * of throwing out of the page, as the backend's expander treats it.
+ */
+export function isOneTime(schedule: SteppableSchedule): boolean {
+  if (schedule.frequency === 'ONCE') return true;
+  return schedule.frequency === 'CUSTOM' && !normalizeCustomRecurrence(schedule.customRecurrence).ok;
 }
 
 /**

@@ -387,7 +387,10 @@
     },
     "firstOccurrence": "Primera ocurrencia: {date}",
     "nextOccurrence": "Próxima ocurrencia: {date}",
-    "orphanWarning": "{count, plural, one {# ocurrencia editada ({dates}) ya no coincide con este patrón y se eliminará al guardar.} other {# ocurrencias editadas ({dates}) ya no coinciden con este patrón y se eliminarán al guardar.}}"
+    "nextOccurrenceOffPattern": "Próxima ocurrencia: {date}. Esta fecha está fuera del patrón; las ocurrencias posteriores lo siguen.",
+    "orphanWarning": "{count, plural, one {# ocurrencia editada ({dates}) ya no coincide con este patrón y se eliminará al guardar.} other {# ocurrencias editadas ({dates}) ya no coinciden con este patrón y se eliminarán al guardar.}}",
+    "notForLoan": "El pago de un préstamo o una hipoteca no puede usar una frecuencia personalizada; elige una frecuencia fija.",
+    "notForPayroll": "Una factura de nómina con límites de deducción no puede usar una frecuencia personalizada; elige una frecuencia fija."
   },
   "validation": {
     "nameRequired": "El nombre es obligatorio",

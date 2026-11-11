@@ -8,28 +8,20 @@
 import {
   CustomRecurrence,
   CustomRecurrenceUnit,
-  nextCustomDate,
+  customDateOnOrAfter,
   normalizeCustomRecurrence,
 } from './custom-recurrence';
-import { advanceSchedule, isOneTime, localYmd, SteppableSchedule } from './frequency';
+import { dayOfWeek } from './calendar-month';
+import { advanceSchedule, isOneTime, localYmd } from './frequency';
 import { parseLocalDate } from './utils';
+import type { FrequencyType } from '@/types/scheduled-transaction';
 
-const MS_PER_DAY = 86_400_000;
-/** Ten years of daily slots: more than any override list reaches. */
-const MAX_SLOTS = 3700;
-
-function dayBefore(ymd: string): string {
-  const [y, m, d] = ymd.split('-').map(Number);
-  const prev = new Date(Date.UTC(y, m - 1, d) - MS_PER_DAY);
-  return prev.toISOString().slice(0, 10);
-}
-
-/** ISO weekday (1 = Monday ... 7 = Sunday) of a `YYYY-MM-DD`. */
-function isoWeekdayOf(ymd: string): number {
-  const [y, m, d] = ymd.split('-').map(Number);
-  const js = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
-  return js === 0 ? 7 : js;
-}
+/**
+ * The server's `OCCURRENCE_WALK_GUARD` (`backend/src/common/scheduled-occurrences.ts`):
+ * how many slots its orphan check walks before it stops and keeps whatever lies
+ * beyond, so the form names exactly the overrides that save deletes.
+ */
+const OCCURRENCE_WALK_GUARD = 2000;
 
 /**
  * The rule a unit starts from when the user first picks it: the start date's
@@ -42,7 +34,7 @@ export function defaultCustomRecurrence(
 ): CustomRecurrence {
   const ymd = startDate.slice(0, 10);
   if (unit === 'WEEK') {
-    return { unit, interval: 1, weekdays: [isoWeekdayOf(ymd)], weekStartsOn };
+    return { unit, interval: 1, weekdays: [dayOfWeek(ymd) || 7], weekStartsOn };
   }
   if (unit === 'MONTH') {
     return { unit, interval: 1, monthDays: [Number(ymd.slice(8, 10))] };
@@ -55,58 +47,122 @@ function isYmd(ymd: string | null | undefined): ymd is string {
   return !!ymd && /^\d{4}-\d{2}-\d{2}$/.test(ymd.slice(0, 10)) && !Number.isNaN(Date.parse(ymd.slice(0, 10)));
 }
 
+/** The schedule as stored, before the edit: what the server compares the save against. */
+export interface StoredSchedule {
+  frequency: FrequencyType;
+  nextDueDate: string;
+  startDate?: string | null;
+  customRecurrence?: CustomRecurrence | null;
+}
+
+/** The schedule as the form holds it. */
+export interface EditedSchedule {
+  frequency: FrequencyType;
+  /** The due date as typed. */
+  nextDueDate: string | null | undefined;
+  customRecurrence?: CustomRecurrence | null;
+}
+
 /**
- * The first rule date on or after `fromDate`, its periods counted from
- * `periodStart` (the schedule's start date; a new schedule's is the date being
- * typed). `null` while the rule or the date is incomplete.
+ * True when a Custom save re-snaps the due date onto the pattern: on a create,
+ * and on an update that changes the rule (a schedule moving to Custom has had
+ * none). The form has no start-date field, so the server's third trigger, a
+ * changed start date, cannot arise from it.
  */
-export function customDateOnOrAfter(
-  fromDate: string | null | undefined,
+function snapsOnSave(edited: EditedSchedule, stored: StoredSchedule | undefined): boolean {
+  return (
+    !stored ||
+    stored.frequency !== 'CUSTOM' ||
+    !sameCustomRecurrence(edited.customRecurrence, stored.customRecurrence)
+  );
+}
+
+/**
+ * The `next_due_date` the server stores for this save (spec section 5): the
+ * first rule date on or after the typed date when the save snaps, its periods
+ * counted from the stored start date (a new schedule's is the typed date),
+ * else the typed date as it is, even off the pattern. `null` while the date
+ * or the rule is incomplete, since the form refuses that save.
+ */
+export function savedNextDueDate(edited: EditedSchedule, stored?: StoredSchedule): string | null {
+  if (!isYmd(edited.nextDueDate)) return null;
+  const typed = edited.nextDueDate.slice(0, 10);
+  if (edited.frequency !== 'CUSTOM') return typed;
+  if (!normalizeCustomRecurrence(edited.customRecurrence).ok) return null;
+  if (!snapsOnSave(edited, stored)) return typed;
+  const periodStart = isYmd(stored?.startDate) ? stored.startDate.slice(0, 10) : typed;
+  return customDateOnOrAfter(typed, edited.customRecurrence, periodStart);
+}
+
+/**
+ * True when `ymd` is one of the rule's dates, periods counted from the stored
+ * start date (a new schedule's is `ymd`). `false` for an incomplete rule.
+ */
+export function isOnCustomPattern(
+  ymd: string,
   rule: CustomRecurrence | null | undefined,
   periodStart?: string | null,
-): string | null {
-  if (!isYmd(fromDate) || !normalizeCustomRecurrence(rule).ok) return null;
-  const from = fromDate.slice(0, 10);
-  const anchor = isYmd(periodStart) ? periodStart.slice(0, 10) : from;
-  return nextCustomDate(dayBefore(from), rule, anchor);
-}
-
-export interface OrphanCheckSchedule extends SteppableSchedule {
-  /** The first slot the schedule will post, as the form holds it. */
-  nextDueDate: string;
+): boolean {
+  if (!normalizeCustomRecurrence(rule).ok) return false;
+  return customDateOnOrAfter(ymd, rule, isYmd(periodStart) ? periodStart.slice(0, 10) : ymd) === ymd;
 }
 
 /**
- * The `originalDate`s of `overrides` that are not a slot of `schedule`, in
- * date order: the edited occurrences a save deletes (spec section 5). Empty
- * while the schedule cannot be walked (an incomplete rule or date), since the
- * form refuses that save anyway.
+ * True when the save changes the pattern, which is what makes the server
+ * delete orphaned overrides: the frequency, or a Custom schedule's rule.
+ */
+function patternChanges(edited: EditedSchedule, stored: StoredSchedule): boolean {
+  return (
+    edited.frequency !== stored.frequency ||
+    (edited.frequency === 'CUSTOM' && !sameCustomRecurrence(edited.customRecurrence, stored.customRecurrence))
+  );
+}
+
+/**
+ * The `originalDate`s, in date order, of the overrides the server deletes on
+ * this save (spec section 5): only when the pattern changes; of the overrides
+ * dated on or after the earlier of the stored and the saved due date, each one
+ * that is not a slot of the new schedule walked from the saved due date. The
+ * walk stops after `OCCURRENCE_WALK_GUARD` slots, as the server's does, and an
+ * override beyond it is kept, not named. Empty while the edit is incomplete.
+ *
+ * `overrides` must hold every override from that earlier date on. A schedule's
+ * `futureOverrides` starts at its stored due date, so it falls short only when
+ * the edit moves the due date earlier.
  */
 export function orphanedOverrideDates(
-  schedule: OrphanCheckSchedule,
+  edited: EditedSchedule,
+  stored: StoredSchedule,
   overrides: readonly { originalDate: string }[],
 ): string[] {
-  const dates = [...new Set(overrides.map((o) => o.originalDate.slice(0, 10)))].sort();
-  if (dates.length === 0 || !isYmd(schedule.nextDueDate)) return [];
+  if (!patternChanges(edited, stored)) return [];
+  const cursor = savedNextDueDate(edited, stored);
+  if (!cursor || !isYmd(stored.nextDueDate)) return [];
+  const storedCursor = stored.nextDueDate.slice(0, 10);
+  const from = storedCursor < cursor ? storedCursor : cursor;
+  const candidates = [...new Set(overrides.map((o) => o.originalDate.slice(0, 10)))]
+    .filter((d) => d >= from)
+    .sort();
+  if (candidates.length === 0) return [];
 
-  let first = schedule.nextDueDate.slice(0, 10);
-  if (schedule.frequency === 'CUSTOM') {
-    const snapped = customDateOnOrAfter(first, schedule.customRecurrence, schedule.startDate ?? first);
-    if (!snapped) return [];
-    first = snapped;
+  const through = candidates[candidates.length - 1];
+  const schedule = {
+    frequency: edited.frequency,
+    startDate: stored.startDate,
+    customRecurrence: edited.frequency === 'CUSTOM' ? edited.customRecurrence : null,
+  };
+  const slots: string[] = [];
+  let slot = cursor;
+  while (slot <= through && slots.length < OCCURRENCE_WALK_GUARD) {
+    slots.push(slot);
+    if (isOneTime(schedule)) break;
+    const next = localYmd(advanceSchedule(parseLocalDate(slot), schedule));
+    if (next <= slot) break;
+    slot = next;
   }
-
-  const last = dates[dates.length - 1];
-  const slots = new Set<string>();
-  let cursor = parseLocalDate(first);
-  for (let i = 0; i < MAX_SLOTS; i++) {
-    const key = localYmd(cursor);
-    if (key > last) break;
-    slots.add(key);
-    if (isOneTime(schedule.frequency)) break;
-    cursor = advanceSchedule(cursor, schedule);
-  }
-  return dates.filter((d) => !slots.has(d));
+  const held = new Set(slots);
+  const walkedThrough = slots.length >= OCCURRENCE_WALK_GUARD ? slots[slots.length - 1] : through;
+  return candidates.filter((d) => !held.has(d) && d <= walkedThrough);
 }
 
 /**

@@ -62,7 +62,7 @@ function calculateNextDates(
     dates.push(`${year}-${month}-${day}`);
 
     // One-time schedules have no next occurrence.
-    if (isOneTime(schedule.frequency)) return dates;
+    if (isOneTime(schedule)) return dates;
     currentDate = advanceSchedule(currentDate, schedule);
   }
 

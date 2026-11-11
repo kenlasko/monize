@@ -95,8 +95,15 @@ describe('advanceByFrequency', () => {
 
   it('returns an equal date for ONCE, so callers must stop themselves', () => {
     expect(step('2026-05-10', 'ONCE')).toBe('2026-05-10');
-    expect(isOneTime('ONCE')).toBe(true);
-    expect(isOneTime('MONTHLY')).toBe(false);
+    expect(isOneTime({ frequency: 'ONCE' })).toBe(true);
+    expect(isOneTime({ frequency: 'MONTHLY' })).toBe(false);
+  });
+
+  it('treats a Custom schedule whose rule cannot step as one-time, so no walker throws', () => {
+    expect(isOneTime({ frequency: 'CUSTOM', customRecurrence: MON_WED_FRI })).toBe(false);
+    expect(isOneTime({ frequency: 'CUSTOM', customRecurrence: null })).toBe(true);
+    expect(isOneTime({ frequency: 'CUSTOM' })).toBe(true);
+    expect(isOneTime({ frequency: 'CUSTOM', customRecurrence: { unit: 'WEEK', interval: 1, weekdays: [] } })).toBe(true);
   });
 
   describe('month-end clamping', () => {
