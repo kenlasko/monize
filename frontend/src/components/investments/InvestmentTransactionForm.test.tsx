@@ -2942,6 +2942,36 @@ describe('InvestmentTransactionForm - extra coverage', () => {
       expect(payload.securityId).toBeUndefined();
     });
 
+    it('drops a stock picked under another action when switched to Interest', async () => {
+      vi.mocked(investmentsApi.getSecurities).mockResolvedValue(securitiesWithBond);
+      render(<InvestmentTransactionForm accounts={accounts} />);
+      await waitFor(() => {
+        expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Brokerage Account'), { target: { value: 'a1' } });
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Transaction Type'), { target: { value: 'DIVIDEND' } });
+      });
+      await chooseComboboxOption('Security', 'AAPL - ');
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Transaction Type'), { target: { value: 'INTEREST' } });
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText(/Amount/), { target: { value: '5' } });
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Create Transaction'));
+      });
+      await waitFor(() => {
+        expect(investmentsApi.createTransaction).toHaveBeenCalled();
+      });
+      const payload = vi.mocked(investmentsApi.createTransaction).mock.calls[0][0] as any;
+      expect(payload.action).toBe('INTEREST');
+      expect(payload.securityId).toBeUndefined();
+    });
+
     it('keeps the bond when an existing interest row is edited', async () => {
       vi.mocked(investmentsApi.getSecurities).mockResolvedValue(securitiesWithBond);
       const transaction = {

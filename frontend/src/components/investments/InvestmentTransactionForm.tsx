@@ -1329,6 +1329,17 @@ function InvestmentTransactionFormFields({
 
   const needsSecurity = actionIn(watchedAction, securityRequiredActions);
   const offersInterestSecurity = actionIn(watchedAction, interestSecurityActions);
+
+  // Interest offers bonds only. A security picked under another action (a
+  // Dividend on a stock) must not ride along when the type is switched to
+  // Interest; the row's own saved security is the exception, so an edit keeps it.
+  useEffect(() => {
+    if (!offersInterestSecurity || !watchedSecurityId || !securitiesLoaded) return;
+    const picked = securities.find((s) => s.id === watchedSecurityId);
+    if (!picked || picked.securityType === 'BOND') return;
+    if (watchedSecurityId === originalSecurityId) return;
+    setValue('securityId', '', { shouldDirty: true });
+  }, [offersInterestSecurity, watchedSecurityId, securities, securitiesLoaded, originalSecurityId, setValue]);
   const needsQuantityPrice = actionIn(watchedAction, quantityPriceActions);
   const isQuantityOnly = actionIn(watchedAction, quantityOnlyActions);
   const isAmountOnly = actionIn(watchedAction, amountOnlyActions);
@@ -1501,7 +1512,6 @@ function InvestmentTransactionFormFields({
                   .filter(
                     (s) =>
                       !offersInterestSecurity ||
-                      needsSecurity ||
                       s.securityType === 'BOND' ||
                       s.id === watchedSecurityId,
                   )
