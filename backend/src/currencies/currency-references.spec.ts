@@ -101,6 +101,10 @@ const minPlacesBody = functionBody(
   uncommented,
   "currency_min_decimal_places_in_use",
 );
+const othersBody = functionBody(
+  uncommented,
+  "currency_code_used_by_other_users",
+);
 
 /** Whether a function body reads `table` and compares `column` with `p_code`. */
 const consults = (fnBody: string, table: string, column: string): boolean =>
@@ -202,6 +206,79 @@ describe("currency global liveness", () => {
         "utf8",
       );
       expect(currenciesService).toContain("currency_code_referenced_by_data");
+    });
+  });
+
+  /**
+   * The first-price-symbol gate (M3): a coin's creator may price a coin only
+   * they use. It must see every owned use of the code by another user --
+   * activations included, since an adopter holds the coin before any account
+   * -- and no global reference data, which is nobody's use.
+   */
+  describe("currency_code_used_by_other_users", () => {
+    const columnsOf = (fnBody: string) =>
+      references
+        .filter(({ table, column }) => consults(fnBody, table, column))
+        .map(({ table, column }) => `${table}.${column}`)
+        .sort();
+
+    it("consults every reference but global reference data, activations included", () => {
+      // Tables with no owner of any kind: rates, coverage, the bond catalog.
+      // The shared tables have none of their own but belong to a group's
+      // owner and members, so they stay in.
+      const global = new Set(
+        tablesWithoutUserId([...new Set(references.map((r) => r.table))]),
+      );
+      global.delete("shared_groups");
+      global.delete("shared_entries");
+      expect(columnsOf(othersBody)).toEqual(
+        references
+          .filter(({ table }) => !global.has(table))
+          .map(({ table, column }) => `${table}.${column}`)
+          .sort(),
+      );
+      expect(columnsOf(othersBody)).toContain(
+        "user_currency_preferences.currency_code",
+      );
+    });
+
+    it("excludes the caller on every owned table it reads", () => {
+      const ownedTables = [
+        ...new Set(
+          references
+            .filter(({ table, column }) => consults(othersBody, table, column))
+            .map(({ table }) => table),
+        ),
+      ].filter((table) => !tablesWithoutUserId([table]).length);
+      for (const table of ownedTables) {
+        const branch = new RegExp(
+          `FROM\\s+${table}\\b[\\s\\S]*?(?=UNION ALL|\\)\\s*$)`,
+        ).exec(othersBody)?.[0];
+        expect([table, branch]).toEqual([
+          table,
+          expect.stringMatching(/user_id\s*<>\s*p_user_id/),
+        ]);
+      }
+    });
+
+    it("is SECURITY DEFINER with a pinned search_path, not executable by PUBLIC", () => {
+      const definition =
+        /CREATE OR REPLACE FUNCTION currency_code_used_by_other_users\([\s\S]*?\nAS \$\$/.exec(
+          uncommented,
+        )![0];
+      expect(definition).toMatch(/SECURITY DEFINER/);
+      expect(definition).toMatch(/SET search_path = public, pg_temp/);
+      expect(uncommented).toMatch(
+        /REVOKE ALL ON FUNCTION currency_code_used_by_other_users\(VARCHAR, uuid\) FROM PUBLIC;/,
+      );
+    });
+
+    it("is what the first-price-symbol gate asks", () => {
+      const currenciesService = readFileSync(
+        join(__dirname, "currencies.service.ts"),
+        "utf8",
+      );
+      expect(currenciesService).toContain("currency_code_used_by_other_users");
     });
   });
 
@@ -480,6 +557,11 @@ describe("currency global liveness", () => {
       // Its sibling without activations, for the currency kind-change gate
       // (INV-CRYPTO-001); same shape, one VARCHAR in, one boolean out.
       "currency_code_referenced_by_data",
+      // Whether any user other than the caller activates or holds a code, for
+      // the first-price-symbol gate (INV-CRYPTO-001, the M3 audit finding);
+      // one VARCHAR and one uuid in, one boolean out, evaluated across every
+      // tenant so a coin's creator cannot price other users' holdings.
+      "currency_code_used_by_other_users",
       // The fewest decimal places every user's stored amounts in a currency fit,
       // for the decimal-places lowering gate (INV-MONEY-001); one VARCHAR in,
       // one smallint out, evaluated across every tenant.

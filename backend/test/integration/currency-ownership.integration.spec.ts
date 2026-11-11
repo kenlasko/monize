@@ -261,4 +261,56 @@ describe("currency ownership (integration)", () => {
       created_by_user_id: null,
     });
   });
+
+  /**
+   * M3: `currencies` is shared and only a coin's creator edits it, so the
+   * coin's first price symbol decides the price of every holder's wallet.
+   * Refused once another user holds the code, through the real
+   * `currency_code_used_by_other_users`.
+   */
+  describe("a coin's first price symbol", () => {
+    const symbolOf = async (code: string) =>
+      (
+        await dataSource.query(
+          `SELECT quote_symbol FROM currencies WHERE code = $1`,
+          [code],
+        )
+      )[0]?.quote_symbol ?? null;
+
+    const addCoin = (userId: string, code: string) =>
+      withUserContext(userId, () =>
+        currencies.create(userId, {
+          code,
+          name: "Some Coin",
+          symbol: code,
+          kind: "CRYPTO",
+        }),
+      );
+
+    it("is set by the creator of a coin nobody else holds", async () => {
+      const a = await newUser();
+      await addCoin(a.id, "SOY");
+
+      await withUserContext(a.id, () =>
+        currencies.update(a.id, "SOY", { quoteSymbol: "SOL-USD" }),
+      );
+
+      expect(await symbolOf("SOY")).toBe("SOL-USD");
+    });
+
+    it("is refused once another user holds the coin, and nothing is written", async () => {
+      const a = await newUser();
+      const b = await newUser();
+      await addCoin(a.id, "SOX");
+      await addCoin(b.id, "SOX");
+
+      await expect(
+        withUserContext(a.id, () =>
+          currencies.update(a.id, "SOX", { quoteSymbol: "BTC-USD" }),
+        ),
+      ).rejects.toThrow(/while other users hold it/);
+
+      expect(await symbolOf("SOX")).toBeNull();
+    });
+  });
 });

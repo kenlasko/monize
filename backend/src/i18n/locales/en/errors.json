@@ -373,6 +373,7 @@
     "kindInUse": "The kind of \"{{ code }}\" cannot change while accounts, transactions, securities or other records use it",
     "decimalPlacesInUse": "The decimal places of \"{{ code }}\" cannot be lowered below {{ places }} while accounts, transactions or other records hold amounts with that many places",
     "quoteSymbolInUse": "The coin in the price symbol of \"{{ code }}\" cannot change while accounts, transactions, securities or other records use it; only its fiat side can",
+    "firstQuoteSymbolInUse": "A price symbol cannot be added to \"{{ code }}\" while other users hold it; it would set the price of their holdings",
     "kindConflict": "Currency \"{{ code }}\" already exists as a {{ kind }} currency and cannot be added as {{ requestedKind }}"
   },
   "delegation": {

@@ -106,6 +106,13 @@ export const REQUIRED_DB_FUNCTIONS: readonly RequiredDbFunction[] = [
       "the currency decimal-places lowering gate, which must see every user's amounts (INV-MONEY-001)",
   },
   {
+    name: "currency_code_used_by_other_users",
+    identity: "public.currency_code_used_by_other_users(varchar,uuid)",
+    migration: "20261111133530_currency_code_used_by_other_users.sql",
+    usedBy:
+      "the currency first-price-symbol gate, which must see every other user's use of a shared coin (INV-CRYPTO-001)",
+  },
+  {
     name: "currency_codes_referenced_by_user_data",
     identity: "public.currency_codes_referenced_by_user_data(uuid)",
     migration: "137_currency_codes_referenced_by_user.sql",

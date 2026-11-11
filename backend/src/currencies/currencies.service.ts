@@ -558,6 +558,7 @@ export class CurrenciesService implements OnApplicationBootstrap {
     }
     const { updates: kindUpdates, repriced } = await this.kindUpdates(
       manager,
+      userId,
       currency,
       kind,
       quoteSymbol,
@@ -657,8 +658,14 @@ export class CurrenciesService implements OnApplicationBootstrap {
    * another coin's price. Refused `quoteSymbolInUse` once data references the
    * code. A new fiat leg alone (`BTC-EUR` to `BTC-CAD`) is allowed on a
    * referenced coin, because the provider prices against whichever fiat the
-   * pair names, not the one in the symbol; so is a first symbol on a coin that
-   * had none.
+   * pair names, not the one in the symbol.
+   *
+   * A first symbol on a CRYPTO coin that had none is refused
+   * `firstQuoteSymbolInUse` once another user activates the code or holds data
+   * in it (`currency_code_used_by_other_users`): it decides the price every
+   * holder's wallet is valued at, and only the creator may edit the row, so
+   * the creator could otherwise point another user's coin at any ticker. The
+   * creator may still price a coin only they use.
    *
    * `repriced` is whether the coin the code is priced through changed: a
    * CRYPTO row's coin ticker first set or changed, including a first symbol
@@ -672,6 +679,7 @@ export class CurrenciesService implements OnApplicationBootstrap {
    */
   private async kindUpdates(
     manager: EntityManager,
+    userId: string,
     currency: Currency,
     requestedKind: CurrencyKind | undefined,
     requestedQuoteSymbol: string | null | undefined,
@@ -695,16 +703,32 @@ export class CurrenciesService implements OnApplicationBootstrap {
       symbol === null ? null : quoteSymbolCoinTicker(symbol);
     const coinTickerChanged =
       kind === "CRYPTO" && tickerOf(quoteSymbol) !== tickerOf(currentSymbol);
-    // Held like a kind change only when a ticker was there to change: a first
-    // symbol on a coin that had none is allowed on a referenced coin.
+    // Held like a kind change when a ticker was there to change; a first
+    // symbol on a coin that had none is held only against other users' use.
     const tickerChanged =
       !kindChanged && currentSymbol !== null && coinTickerChanged;
+    const firstTicker =
+      !kindChanged && currentSymbol === null && coinTickerChanged;
 
-    if (kindChanged || tickerChanged) {
+    if (kindChanged || tickerChanged || firstTicker) {
       await manager.query(
         "SELECT 1 FROM currencies WHERE code = $1 FOR UPDATE",
         [currency.code],
       );
+    }
+    if (
+      firstTicker &&
+      (await this.isUsedByOtherUsers(manager, currency.code, userId))
+    ) {
+      throw new ConflictException(
+        tr(
+          "errors.currencies.firstQuoteSymbolInUse",
+          `A price symbol cannot be added to "${currency.code}" while other users hold it; it would set the price of their holdings`,
+          { code: currency.code },
+        ),
+      );
+    }
+    if (kindChanged || tickerChanged) {
       if (await this.isReferencedByData(manager, currency.code)) {
         throw new ConflictException(
           kindChanged
@@ -1020,6 +1044,23 @@ export class CurrenciesService implements OnApplicationBootstrap {
     const result = await manager.query(
       `SELECT currency_code_referenced_by_data($1) AS "inUse"`,
       [code.toUpperCase()],
+    );
+    return result[0]?.inUse === true;
+  }
+
+  /**
+   * Whether any user other than `userId` activates the code or holds data in
+   * it, including rows this tenant cannot see: `currency_code_used_by_other_users`,
+   * SECURITY DEFINER and run in this transaction after the caller's row lock.
+   */
+  private async isUsedByOtherUsers(
+    manager: EntityManager,
+    code: string,
+    userId: string,
+  ): Promise<boolean> {
+    const result = await manager.query(
+      `SELECT currency_code_used_by_other_users($1, $2) AS "inUse"`,
+      [code.toUpperCase(), userId],
     );
     return result[0]?.inUse === true;
   }
