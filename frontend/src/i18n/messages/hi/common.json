@@ -10,6 +10,8 @@
     "versionLabel": "संस्करण {version}",
     "expandAll": "सभी विस्तृत करें",
     "collapseAll": "सभी संक्षिप्त करें",
+    "changeCount": "{count, plural, one {# बदलाव} other {# बदलाव}}",
+    "otherSections": "सुधार और विवरण",
     "viewFullNotes": "पूरे रिलीज़ नोट्स देखें",
     "dontShowAgain": "इसे दोबारा न दिखाएं",
     "showNextLogin": "अगली बार साइन इन करने पर दिखाएं",

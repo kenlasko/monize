@@ -10,6 +10,8 @@
     "versionLabel": "版本 {version}",
     "expandAll": "全部展開",
     "collapseAll": "全部收合",
+    "changeCount": "{count, plural, other {# 項變更}}",
+    "otherSections": "修正與詳細資訊",
     "viewFullNotes": "查看完整版本說明",
     "dontShowAgain": "不再顯示",
     "showNextLogin": "下次登入時顯示",

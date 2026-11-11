@@ -10,6 +10,8 @@
     "versionLabel": "Versi {version}",
     "expandAll": "Perluas semua",
     "collapseAll": "Ciutkan semua",
+    "changeCount": "{count, plural, other {# perubahan}}",
+    "otherSections": "Perbaikan dan detail",
     "viewFullNotes": "Lihat catatan rilis lengkap",
     "dontShowAgain": "Jangan tampilkan lagi",
     "showNextLogin": "Tampilkan saat masuk berikutnya",

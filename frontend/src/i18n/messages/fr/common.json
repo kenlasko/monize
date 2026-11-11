@@ -10,6 +10,8 @@
     "versionLabel": "Version {version}",
     "expandAll": "Tout développer",
     "collapseAll": "Tout réduire",
+    "changeCount": "{count, plural, one {# modification} other {# modifications}}",
+    "otherSections": "Corrections et détails",
     "viewFullNotes": "Voir les notes de version complètes",
     "dontShowAgain": "Ne plus afficher",
     "showNextLogin": "Afficher à la prochaine connexion",

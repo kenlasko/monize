@@ -10,6 +10,8 @@
     "versionLabel": "Phiên bản {version}",
     "expandAll": "Mở rộng tất cả",
     "collapseAll": "Thu gọn tất cả",
+    "changeCount": "{count, plural, other {# thay đổi}}",
+    "otherSections": "Bản sửa lỗi và chi tiết",
     "viewFullNotes": "Xem ghi chú phát hành đầy đủ",
     "dontShowAgain": "Không hiển thị lại",
     "showNextLogin": "Hiển thị ở lần đăng nhập tiếp theo",
