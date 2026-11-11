@@ -405,6 +405,47 @@ export interface SecurityPeriodResult {
   investedReasons: PeriodResultReason[];
 }
 
+/** One day of the time-weighted return series. */
+export interface TwrSeriesPoint {
+  date: string;
+  /** Cumulative time-weighted return from the window's opening close, in percent. */
+  returnPercent: number;
+}
+
+/**
+ * What GET /net-worth/investments-twr-series answers: the running value of the
+ * invested part's time-weighted return, whose last point is the period
+ * result's `investmentReturnPercent` (INV-PORTTWR-001,
+ * `docs/specs/portfolio-twr-series.md`). Withheld means `points` is empty and
+ * `reasons` names why, never a partial line.
+ */
+export interface PortfolioTwrSeries {
+  currency: string;
+  startDate: string;
+  endDate: string;
+  points: TwrSeriesPoint[];
+  complete: boolean;
+  reasons: PeriodResultReason[];
+  incompleteRanges: IncompleteDataRanges;
+}
+
+/** One account's series, in `groupBy=account` mode. */
+export interface AccountTwrSeries {
+  accountId: string;
+  points: TwrSeriesPoint[];
+  complete: boolean;
+  reasons: PeriodResultReason[];
+  incompleteRanges: IncompleteDataRanges;
+}
+
+/** What GET /net-worth/investments-twr-series?groupBy=account answers. */
+export interface PortfolioTwrSeriesByAccount {
+  currency: string;
+  startDate: string;
+  endDate: string;
+  accounts: AccountTwrSeries[];
+}
+
 /** What GET /net-worth/investments-period-result/securities answers. */
 export interface SecurityPeriodResults {
   /** The currency every money figure is in. */

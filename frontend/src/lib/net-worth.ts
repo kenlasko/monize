@@ -8,6 +8,8 @@ import {
   InvestmentBreakdownGranularity,
   PortfolioPeriodResult,
   PortfolioPeriodResults,
+  PortfolioTwrSeries,
+  PortfolioTwrSeriesByAccount,
   SecurityPeriodResults,
 } from '@/types/net-worth';
 
@@ -103,6 +105,48 @@ export const netWorthApi = {
     const response = await apiClient.get<SecurityPeriodResults>(
       '/net-worth/investments-period-result/securities',
       { params, timeout: PORTFOLIO_VALUATION_TIMEOUT_MS },
+    );
+    return response.data;
+  },
+
+  /**
+   * The invested part's time-weighted return, day by day, for the same window
+   * named the same way as `getInvestmentsPeriodResult`: its last point is that
+   * route's return (`docs/specs/portfolio-twr-series.md`).
+   */
+  getInvestmentsTwrSeries: async (params: {
+    period?: string;
+    startDate?: string;
+    endDate?: string;
+    baselineDate?: string;
+    accountIds?: string;
+    displayCurrency?: string;
+  }): Promise<PortfolioTwrSeries> => {
+    const response = await apiClient.get<PortfolioTwrSeries>(
+      '/net-worth/investments-twr-series',
+      { params, timeout: PORTFOLIO_VALUATION_TIMEOUT_MS },
+    );
+    return response.data;
+  },
+
+  /**
+   * One series per account named in `accountIds` (required, at most 25), each
+   * its own scope over the same window.
+   */
+  getInvestmentsTwrSeriesByAccount: async (params: {
+    period?: string;
+    startDate?: string;
+    endDate?: string;
+    baselineDate?: string;
+    accountIds: string;
+    displayCurrency?: string;
+  }): Promise<PortfolioTwrSeriesByAccount> => {
+    const response = await apiClient.get<PortfolioTwrSeriesByAccount>(
+      '/net-worth/investments-twr-series',
+      {
+        params: { ...params, groupBy: 'account' },
+        timeout: PORTFOLIO_VALUATION_TIMEOUT_MS,
+      },
     );
     return response.data;
   },

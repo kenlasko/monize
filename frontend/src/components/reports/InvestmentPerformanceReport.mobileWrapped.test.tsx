@@ -98,6 +98,18 @@ vi.mock('@/lib/net-worth', () => ({
   },
 }));
 
+// The return chart owns its own fetch (`useTwrSeries`) and is covered by
+// `PortfolioReturnChart.test.tsx`; here it is a stub that records the props it
+// was handed. The report opens on it, so the tests of the by-security chart
+// choose "By security" first.
+const mockReturnChartProps = vi.fn();
+vi.mock('@/components/reports/PortfolioReturnChart', () => ({
+  PortfolioReturnChart: (props: Record<string, unknown>) => {
+    mockReturnChartProps(props);
+    return <div data-testid="return-chart" data-group-by={String(props.groupBy)} />;
+  },
+}));
+
 // The Performance view's historical chart owns its own fetch and recharts tree;
 // stub it so this suite stays about the wrapped holdings table.
 vi.mock('@/components/reports/SecurityComparisonChart', () => ({
