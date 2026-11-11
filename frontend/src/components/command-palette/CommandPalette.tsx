@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { COMMAND_GROUPS, commandTerms, highlightFolded } from '@/lib/command-palette';
 import { useCommandPaletteStore } from '@/store/commandPaletteStore';
 import { useCommandItems, type CommandItem } from './useCommandItems';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 
 const KBD_CLASS =
   'inline-flex min-w-5 items-center justify-center rounded border border-gray-300 px-1.5 py-0.5 font-sans text-[11px] leading-none text-gray-500 dark:border-gray-600 dark:text-gray-400';
@@ -150,16 +151,30 @@ export function CommandPalette() {
               listRef.current?.scrollTo?.({ top: 0 });
             }}
             onKeyDown={onKeyDown}
+            {...tourAnchor(TOUR_ANCHORS.commandPaletteInput)}
             // The `!`s: the unlayered form rules in globals.css outrank a plain utility.
             className="w-full border-0! bg-transparent! py-4! pl-12! pr-3! text-base! text-gray-900 shadow-none! outline-none! ring-0! dark:text-gray-100 [&::-webkit-search-cancel-button]:hidden"
           />
         </div>
-        <button type="button" onClick={close} className={KBD_CLASS} aria-label={t('close')}>
+        <button
+          type="button"
+          onClick={close}
+          className={KBD_CLASS}
+          aria-label={t('close')}
+          {...tourAnchor(TOUR_ANCHORS.commandPaletteClose)}
+        >
           esc
         </button>
       </div>
 
-      <div ref={listRef} id={listId} role="listbox" aria-label={t('title')} className="min-h-0 flex-1 overflow-y-auto p-2">
+      <div
+        ref={listRef}
+        id={listId}
+        role="listbox"
+        aria-label={t('title')}
+        className="min-h-0 flex-1 overflow-y-auto p-2"
+        {...tourAnchor(TOUR_ANCHORS.commandPaletteResults)}
+      >
         {COMMAND_GROUPS.map((group) => {
           const rows = items.filter((item) => item.group === group);
           if (rows.length === 0) return null;

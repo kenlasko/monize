@@ -6,6 +6,7 @@ import { RELEASE_1_14_TOURS } from './definitions/release-1.14.0';
 import { RELEASE_1_16_TOURS } from './definitions/release-1.16.0';
 import { RELEASE_1_17_TOURS } from './definitions/release-1.17.0';
 import { RELEASE_1_20_TOURS } from './definitions/release-1.20.0';
+import { RELEASE_1_21_TOURS } from './definitions/release-1.21.0';
 
 export { INTRO_TOUR } from './definitions/intro';
 
@@ -18,6 +19,7 @@ export const ALL_TOURS: readonly TourDefinition[] = [
   ...RELEASE_1_16_TOURS,
   ...RELEASE_1_17_TOURS,
   ...RELEASE_1_20_TOURS,
+  ...RELEASE_1_21_TOURS,
 ];
 
 /** Look up a tour by its persistence id. */
