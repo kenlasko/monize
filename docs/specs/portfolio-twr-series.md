@@ -42,7 +42,7 @@ section 10.2 unchanged: `base(k) = IV(k-1) + capitalIn(k)`,
 contributes factor 1.
 
 The factors are written once, in `backend/src/common/time-series/twr-chain.util.ts`
-(`subPeriodFactor`). The series is a second reader of that function beside
+(`subPeriodFactor`, read through `investedDayFactors`, the one place a day's factor is chosen). The series is a second reader of that function beside
 `investedPeriodResult`, never a second implementation of the arithmetic.
 
 ### 2.1 Before the first invested day
@@ -128,9 +128,9 @@ days, and where to add it, with the same wording as the cards beside it.
 - `GET /net-worth/investments-twr-series`: the window, scope and currency
   parameters of `investments-period-result` (`period` or `startDate` /
   `baselineDate`, `endDate`, `accountIds`, `displayCurrency`), validated by the
-  same `periodWindowQuery`. `groupBy=account` returns one series per account id
-  named in `accountIds`, or per investment account of the user when none is
-  named; each is its own scope. Ids are lower-cased and de-duplicated before the
+  same `periodWindowQuery`. `groupBy=account` requires `accountIds` (one to 25 ids)
+  and returns one series per account id named; naming none is refused, because
+  it would mean every account and an unbounded cost. Each is its own scope. Ids are lower-cased and de-duplicated before the
   count is checked, and the number of distinct accounts is bounded. A brokerage
   and its cash sibling resolve to one scope, so the client names the brokerage
   once and draws one line for the pair.
