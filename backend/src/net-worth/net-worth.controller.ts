@@ -527,14 +527,14 @@ export class NetWorthController {
     if (grouping === "account") {
       // One valuation per account, so the count is the caller's cost and is
       // bounded; naming none would mean "every account", which is unbounded.
-      const named = this.parseAccountIds(
-        assertStringParam(accountIds, "accountIds"),
-      );
-      if (
-        !named ||
-        named.length === 0 ||
-        named.length > TWR_SERIES_MAX_ACCOUNTS
-      )
+      const named = [
+        ...new Set(
+          this.parseAccountIds(
+            assertStringParam(accountIds, "accountIds"),
+          )?.map((id) => id.toLowerCase()),
+        ),
+      ];
+      if (named.length === 0 || named.length > TWR_SERIES_MAX_ACCOUNTS)
         throw new BadRequestException(
           tr(
             "errors.params.mustNameAccounts",

@@ -304,10 +304,19 @@ export function InvestmentPerformanceReport() {
 
   // The accounts the by-account chart draws one line each: the ones the filter
   // names, or every investment account when it names none.
-  const returnAccountIds = useMemo(
-    () => (selectedAccountIds.length > 0 ? selectedAccountIds : accounts.map((a) => a.id)),
-    [selectedAccountIds, accounts],
-  );
+  // A brokerage and its cash sibling are one scope on the server, so a sibling
+  // is drawn as its brokerage, once.
+  const returnAccountIds = useMemo(() => {
+    const byId = new Map(accounts.map((a) => [a.id, a]));
+    const named = selectedAccountIds.length > 0 ? selectedAccountIds : accounts.map((a) => a.id);
+    const asBrokerage = named.map((id) => {
+      const account = byId.get(id);
+      return account?.accountSubType === 'INVESTMENT_CASH' && account.linkedAccountId
+        ? account.linkedAccountId
+        : id;
+    });
+    return [...new Set(asBrokerage)];
+  }, [selectedAccountIds, accounts]);
   const drawnReturnAccountIds = useMemo(
     () => returnAccountIds.slice(0, TWR_CHART_MAX_ACCOUNTS),
     [returnAccountIds],

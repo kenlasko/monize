@@ -110,12 +110,6 @@ export function PortfolioReturnChart({
     skip,
   });
 
-  const exportable = result.status === 'ready';
-  useEffect(() => {
-    onExportableChange?.(exportable);
-    return () => onExportableChange?.(false);
-  }, [exportable, onExportableChange]);
-
   const portfolioLabel = t('investmentPerformance.twrPortfolioLine');
   const view = useMemo<ReturnView>(() => {
     if (result.status !== 'ready') return EMPTY_VIEW;
@@ -125,6 +119,13 @@ export function PortfolioReturnChart({
   }, [result, accountName, portfolioLabel]);
 
   const { rows, lines, withheld } = view;
+
+  // Only a chart with a line in it is worth exporting.
+  const exportable = result.status === 'ready' && lines.length > 0;
+  useEffect(() => {
+    onExportableChange?.(exportable);
+    return () => onExportableChange?.(false);
+  }, [exportable, onExportableChange]);
   const labelByKey = useMemo(() => new Map(lines.map((l) => [l.key, l.label])), [lines]);
 
   const xAxis = useMemo(() => {
@@ -186,7 +187,9 @@ export function PortfolioReturnChart({
       ) : result.status === 'loading' ? (
         <Skeleton className="h-80 w-full" />
       ) : lines.length === 0 ? (
-        <EmptyState title={t('investmentPerformance.twrNoData')} />
+        // Nothing drawn because every series was withheld: the "Not drawn" list
+        // below says why, so do not also claim there is no history.
+        withheld.length === 0 && <EmptyState title={t('investmentPerformance.twrNoData')} />
       ) : (
         <div className="h-96">
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>

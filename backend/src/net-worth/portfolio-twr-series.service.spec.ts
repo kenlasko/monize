@@ -51,6 +51,8 @@ describe("PortfolioTwrSeriesService", () => {
     measuredFrom: jest.Mock;
     resolveScope: jest.Mock;
     foldFlows: jest.Mock;
+    loadInvestedRows: jest.Mock;
+    loadShareLegClose: jest.Mock;
   };
   let netWorth: {
     getDailyInvestments: jest.Mock;
@@ -74,6 +76,8 @@ describe("PortfolioTwrSeriesService", () => {
       resolveScope: jest.fn(async (_userId: string, ids?: string[]) =>
         (ids ?? ["brok-1"]).map(BROKERAGE),
       ),
+      loadInvestedRows: jest.fn(async () => []),
+      loadShareLegClose: jest.fn(async () => jest.fn()),
       foldFlows: jest.fn(async () => ({
         flow: { gaps: [] },
         invested: { byDay, gaps: [] },
@@ -196,6 +200,15 @@ describe("PortfolioTwrSeriesService", () => {
         ["brok-2"],
       ]);
       expect(result.accounts[0].points[2].returnPercent).toBe(10);
+    });
+
+    it("draws a repeated or re-cased id once", async () => {
+      const result = await service.getSeriesByAccount("u1", {
+        period: "1y",
+        accountIds: ["BROK-1", "brok-1", "Brok-1"],
+      });
+      expect(result.accounts.map((a) => a.accountId)).toEqual(["brok-1"]);
+      expect(netWorth.getDailyInvestments).toHaveBeenCalledTimes(1);
     });
 
     it("opens every account on the same day, measured once for the whole request", async () => {

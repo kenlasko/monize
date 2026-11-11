@@ -203,7 +203,10 @@ describe('PortfolioReturnChart', () => {
     });
     renderChart();
     expect(screen.queryByTestId('line-chart')).not.toBeInTheDocument();
-    expect(screen.getByText('There is no history to chart for this period.')).toBeInTheDocument();
+    // The "Not drawn" list gives the reason; it is not also "no history".
+    expect(
+      screen.queryByText('There is no history to chart for this period.'),
+    ).not.toBeInTheDocument();
     expect(screen.getByText('Not drawn')).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -244,6 +247,17 @@ describe('PortfolioReturnChart', () => {
       renderChart({ onExportableChange });
       expect(onExportableChange).toHaveBeenLastCalledWith(true);
       unmount();
+    });
+
+    it('is not exportable when every series was withheld', () => {
+      const onExportableChange = vi.fn();
+      mockUseTwrSeries.mockReturnValue({
+        status: 'ready',
+        groupBy: 'portfolio',
+        series: portfolioSeries({ points: [], complete: false, reasons: ['incompletePrices'] }),
+      });
+      renderChart({ onExportableChange });
+      expect(onExportableChange).toHaveBeenLastCalledWith(false);
     });
 
     it('hands the PDF the title, the subtitle and the legend of the lines it drew', async () => {

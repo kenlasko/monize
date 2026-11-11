@@ -1,7 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { DataSource } from "typeorm";
 
-import { withScopedDb } from "../common/db/scoped-db";
 import { todayYMD } from "../common/date-utils";
 import {
   EMPTY_INCOMPLETE_RANGES,
@@ -9,11 +7,6 @@ import {
   foldIncompleteData,
   withFlowUnpricedSecurities,
 } from "./incomplete-data-ranges.util";
-import {
-  loadInvestedCapitalFlowRows,
-  shareLegCloseFrom,
-  shareLegSecurityIds,
-} from "./invested-capital-flow.util";
 import {
   InvestedTwrSeries,
   investedTwrSeries,
@@ -76,7 +69,6 @@ export interface PortfolioTwrSeriesByAccount {
 @Injectable()
 export class PortfolioTwrSeriesService {
   constructor(
-    private readonly dataSource: DataSource,
     private readonly netWorth: NetWorthService,
     private readonly periodResult: PortfolioPeriodResultService,
   ) {}
@@ -116,6 +108,11 @@ export class PortfolioTwrSeriesService {
     userId: string,
     opts: TwrSeriesQuery & { accountIds: string[] },
   ): Promise<PortfolioTwrSeriesByAccount> {
+    // One line per distinct account: ids differing only in case, or repeated,
+    // are one scope and one valuation.
+    const accountIds = [
+      ...new Set(opts.accountIds.map((id) => id.toLowerCase())),
+    ];
     const currency = await this.periodResult.reportingCurrency(
       userId,
       opts.displayCurrency,
@@ -128,7 +125,7 @@ export class PortfolioTwrSeriesService {
         currency,
         startDate: start,
         endDate: end,
-        accounts: opts.accountIds.map((accountId) => ({
+        accounts: accountIds.map((accountId) => ({
           accountId,
           ...this.empty(currency, start, end),
         })),
@@ -137,7 +134,7 @@ export class PortfolioTwrSeriesService {
 
     const accounts: AccountTwrSeries[] = [];
     // In turn: every read below shares the request's one connection.
-    for (const accountId of opts.accountIds) {
+    for (const accountId of accountIds) {
       const one = await this.measure(userId, {
         currency,
         from,
@@ -171,9 +168,6 @@ export class PortfolioTwrSeriesService {
     const scope = await this.periodResult.resolveScope(userId, accountIds);
     if (scope.length === 0) return this.empty(currency, from, end);
 
-    const query = (sql: string, params: unknown[]) =>
-      withScopedDb(this.dataSource, (m) => m.query(sql, params));
-
     const series = await this.netWorth.getDailyInvestments(
       userId,
       from,
@@ -184,20 +178,16 @@ export class PortfolioTwrSeriesService {
     );
     if (series.length === 0) return this.empty(currency, from, end);
 
-    const investedRows = await loadInvestedCapitalFlowRows(query, {
+    const investedRows = await this.periodResult.loadInvestedRows(
       userId,
-      afterDate: from,
-      throughDate: end,
-      accountIds: scope.map((row) => row.id),
-    });
-    // The closes a share-moving leg is valued at: the series the value chart
-    // was built from, so `IV` and `K` move by one number for one day's shares.
-    const shareLegClose = shareLegCloseFrom(
-      await this.netWorth.loadValuationSeries(
-        shareLegSecurityIds(investedRows),
-        from,
-        end,
-      ),
+      scope,
+      from,
+      end,
+    );
+    const shareLegClose = await this.periodResult.loadShareLegClose(
+      investedRows,
+      from,
+      end,
     );
     // The invested part only: the account-level cash flows are not read by this
     // measure, so none are loaded.

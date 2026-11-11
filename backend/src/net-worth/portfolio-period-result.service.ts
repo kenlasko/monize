@@ -311,16 +311,7 @@ export class PortfolioPeriodResultService {
         // The invested part's own capital and income, over the same window and
         // the whole scope: investment rows live on the brokerage sleeves, which
         // the cash boundary above deliberately excludes.
-        loadInvestedCapitalFlowRows(
-          (sql, params) =>
-            withScopedDb(this.dataSource, (m) => m.query(sql, params)),
-          {
-            userId,
-            afterDate: from,
-            throughDate: end,
-            accountIds: scope.map((row) => row.id),
-          },
-        ),
+        this.loadInvestedRows(userId, scope, from, end),
         this.countUnmeasuredFlows(userId, from, end, {
           scope: scope.map((row) => row.id),
           cashScope,
@@ -340,13 +331,7 @@ export class PortfolioPeriodResultService {
     // The closes a share-moving leg is valued at: the SAME series the value
     // chart was built from, so `IV` and `K` move by one number for one day's
     // shares. Asked only where such a leg exists, which is the uncommon case.
-    const shareLegClose = shareLegCloseFrom(
-      await this.netWorth.loadValuationSeries(
-        shareLegSecurityIds(investedRows),
-        from,
-        end,
-      ),
-    );
+    const shareLegClose = await this.loadShareLegClose(investedRows, from, end);
 
     const { flow, invested } = await this.foldFlows(
       flowRows,
@@ -547,6 +532,49 @@ export class PortfolioPeriodResultService {
       incompleteRanges: EMPTY_INCOMPLETE_RANGES,
       ...NO_INVESTED_PERIOD,
     };
+  }
+
+  /**
+   * The invested part's own capital and income rows over `(from, end]` for the
+   * whole scope. ONE loader for the period card and the return series
+   * (`portfolio-twr-series.service.ts`), so a change to what is read here moves
+   * both and INV-PORTTWR-001 cannot drift.
+   */
+  loadInvestedRows(
+    userId: string,
+    scope: { id: string }[],
+    from: string,
+    end: string,
+  ): Promise<InvestedFlowRow[]> {
+    return loadInvestedCapitalFlowRows(
+      (sql, params) =>
+        withScopedDb(this.dataSource, (m) => m.query(sql, params)),
+      {
+        userId,
+        afterDate: from,
+        throughDate: end,
+        accountIds: scope.map((row) => row.id),
+      },
+    );
+  }
+
+  /**
+   * The closes a share-moving leg is valued at: the SAME series the value chart
+   * was built from, so `IV` and `K` move by one number for one day's shares.
+   * Shared with the return series for the same reason as `loadInvestedRows`.
+   */
+  async loadShareLegClose(
+    investedRows: InvestedFlowRow[],
+    from: string,
+    end: string,
+  ): Promise<ShareLegClose> {
+    return shareLegCloseFrom(
+      await this.netWorth.loadValuationSeries(
+        shareLegSecurityIds(investedRows),
+        from,
+        end,
+      ),
+    );
   }
 
   /**

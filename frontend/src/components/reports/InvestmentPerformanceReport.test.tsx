@@ -485,6 +485,21 @@ describe('InvestmentPerformanceReport', () => {
       ).toBeInTheDocument();
     });
 
+    it('draws a brokerage and its cash sibling as one account', async () => {
+      mockGetInvestmentAccounts.mockResolvedValue([
+        { id: 'acc-1', name: 'TFSA - Brokerage', currencyCode: 'CAD', accountSubType: 'INVESTMENT_BROKERAGE', linkedAccountId: 'acc-2' },
+        { id: 'acc-2', name: 'TFSA - Cash', currencyCode: 'CAD', accountSubType: 'INVESTMENT_CASH', linkedAccountId: 'acc-1' },
+        { id: 'acc-3', name: 'RRSP', currencyCode: 'USD', accountSubType: 'INVESTMENT_BROKERAGE', linkedAccountId: null },
+      ]);
+      render(<InvestmentPerformanceReport />);
+      const button = await screen.findByRole('button', { name: 'By account' });
+      await act(async () => {
+        fireEvent.click(button);
+      });
+      await screen.findByTestId('return-chart');
+      expect(lastReturnChartProps().accountIdList).toEqual(['acc-1', 'acc-3']);
+    });
+
     it('draws one line per investment account when none is filtered', async () => {
       render(<InvestmentPerformanceReport />);
       const button = await screen.findByRole('button', { name: 'By account' });

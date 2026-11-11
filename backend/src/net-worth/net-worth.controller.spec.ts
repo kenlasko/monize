@@ -977,6 +977,21 @@ describe("NetWorthController", () => {
       expect(mockTwrSeries.getSeriesByAccount).not.toHaveBeenCalled();
     });
 
+    it("groupBy=account counts distinct accounts: a repeated id is one", async () => {
+      const id = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c00";
+      await controller.getTwrSeries(
+        mockReq,
+        undefined,
+        undefined,
+        undefined,
+        Array.from({ length: 30 }, () => id).join(","),
+        undefined,
+        "1y",
+        "account",
+      );
+      expect(mockTwrSeries.getSeriesByAccount).toHaveBeenCalledTimes(1);
+    });
+
     it("refuses a malformed account id and a malformed window before reading anything", async () => {
       await expect(
         controller.getTwrSeries(

@@ -119,17 +119,21 @@ days, and where to add it, with the same wording as the cards beside it.
 - `backend/src/net-worth/invested-twr-series.util.ts`: a pure function over the
   same `InvestedDayValue` points and `InvestedFlowDay` map `investedPeriodResult`
   reads. No I/O.
-- `PortfolioPeriodResultService.getTwrSeries`: loads exactly what
-  `getPeriodResult` loads for the invested part (the daily investment series,
-  the invested capital and income rows, the share-leg closes, one rate index)
-  and calls the util. It does not load the account-level cash flows, which the
-  invested measure does not read.
+- `PortfolioTwrSeriesService`: reads the invested part through the SAME loaders
+  `getPeriodResult` uses (`PortfolioPeriodResultService.loadInvestedRows`,
+  `loadShareLegClose`, `foldFlows`, and the daily investment series), so a
+  change to what is read moves the card and the line together, and
+  INV-PORTTWR-001 cannot drift. It calls the util and does not load the
+  account-level cash flows, which the invested measure does not read.
 - `GET /net-worth/investments-twr-series`: the window, scope and currency
   parameters of `investments-period-result` (`period` or `startDate` /
   `baselineDate`, `endDate`, `accountIds`, `displayCurrency`), validated by the
   same `periodWindowQuery`. `groupBy=account` returns one series per account id
   named in `accountIds`, or per investment account of the user when none is
-  named; each is its own scope. The number of accounts is bounded.
+  named; each is its own scope. Ids are lower-cased and de-duplicated before the
+  count is checked, and the number of distinct accounts is bounded. A brokerage
+  and its cash sibling resolve to one scope, so the client names the brokerage
+  once and draws one line for the pair.
 - The chart: a segmented control on Investment Performance > Performance
   (`Portfolio`, `By account`, `By security`). `By security` is the existing
   chart unchanged.
