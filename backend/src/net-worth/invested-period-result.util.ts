@@ -173,6 +173,35 @@ function pointComplete(point: InvestedDayValue): boolean {
 }
 
 /**
+ * Each day's growth factor of the invested part, in day order: `null` for a
+ * day with no capital at risk (the chain treats it as factor 1).
+ *
+ * A purchase is funded at the START of the day and a disposal or distribution
+ * leaves at the END of it (section 10.2), so `base = IV(d-1) + capitalIn(d)` and
+ * `ending = IV(d) + capitalOut(d) + I(d)`. The one place that derivation is
+ * written: `investedPeriodResult` chains these into the window's return and
+ * `investedTwrSeries` into its running value, so the line and the card beside
+ * it cannot read different factors (INV-PORTTWR-001).
+ *
+ * `days` are the days AFTER `start`, and `flowDays[i]` is `days[i]`'s flow.
+ */
+export function investedDayFactors(
+  start: InvestedDayValue,
+  days: readonly InvestedDayValue[],
+  flowDays: readonly InvestedFlowDay[],
+): Array<number | null> {
+  return days.map((day, i) => {
+    const previous =
+      i === 0 ? start.securitiesValue : days[i - 1].securitiesValue;
+    const flow = flowDays[i];
+    return subPeriodFactor(
+      previous + flow.capitalIn,
+      day.securitiesValue + flow.capitalOut + flow.income,
+    );
+  });
+}
+
+/**
  * The invested part's result for one window of one series.
  *
  * The guards run in the order of the truth table in section 10.4:
@@ -303,13 +332,7 @@ export function investedPeriodResult(
   // that realised the whole gain out of the chain.
   const factors: number[] = [];
   let anyBase = false;
-  for (let i = 0; i < days.length; i++) {
-    const previous =
-      i === 0 ? start.securitiesValue : days[i - 1].securitiesValue;
-    const flow = flowDays[i];
-    const base = previous + flow.capitalIn;
-    const ending = days[i].securitiesValue + flow.capitalOut + flow.income;
-    const factor = subPeriodFactor(base, ending);
+  for (const factor of investedDayFactors(start, days, flowDays)) {
     if (factor === null) continue;
     anyBase = true;
     factors.push(factor);

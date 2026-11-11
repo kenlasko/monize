@@ -11,6 +11,7 @@ import { NetWorthService } from "./net-worth.service";
 import { PortfolioPeriodResultService } from "./portfolio-period-result.service";
 import { PortfolioPeriodResultsBatchService } from "./portfolio-period-results-batch.service";
 import { SecurityPeriodResultsService } from "./security-period-results.service";
+import { PortfolioTwrSeriesService } from "./portfolio-twr-series.service";
 import { NetWorthController } from "./net-worth.controller";
 import { DelegationModule } from "../delegation/delegation.module";
 import { NotificationsModule } from "../notifications/notifications.module";
@@ -44,6 +45,7 @@ import { CurrenciesModule } from "../currencies/currencies.module";
     PortfolioPeriodResultService,
     PortfolioPeriodResultsBatchService,
     SecurityPeriodResultsService,
+    PortfolioTwrSeriesService,
   ],
   controllers: [NetWorthController],
   exports: [

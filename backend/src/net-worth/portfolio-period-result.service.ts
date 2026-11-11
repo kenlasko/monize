@@ -561,8 +561,12 @@ export class PortfolioPeriodResultService {
    * on a successful fill the index is re-read from the database and the fold
    * re-run. Nothing is invented -- what the provider does not carry stays in
    * `missingPairs` and still withholds the result.
+   *
+   * Public because the time-weighted return series folds the same rows through
+   * the same index (`portfolio-twr-series.service.ts`): one fold, so the line
+   * and the card cannot convert a day at different rates.
    */
-  private foldFlows(
+  foldFlows(
     rows: FlowSubtotalRow[],
     investedRows: InvestedFlowRow[],
     currency: string,

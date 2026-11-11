@@ -24,6 +24,7 @@ import {
 } from "./portfolio-period-result.service";
 import { PortfolioPeriodResultsBatchService } from "./portfolio-period-results-batch.service";
 import { SecurityPeriodResultsService } from "./security-period-results.service";
+import { PortfolioTwrSeriesService } from "./portfolio-twr-series.service";
 import {
   PORTFOLIO_PERIOD_PRESETS,
   PortfolioPeriodPreset,
@@ -41,6 +42,11 @@ import { JointAccountsService } from "../delegation/joint-accounts.service";
 // (instead of passing undefined, which the service treats as "all").
 const NO_READABLE_ACCOUNT = "00000000-0000-0000-0000-000000000000";
 
+/** How `investments-twr-series` groups its answer. */
+const TWR_SERIES_GROUPINGS = ["portfolio", "account"] as const;
+/** One valuation per account, so the count asked for is bounded. */
+const TWR_SERIES_MAX_ACCOUNTS = 25;
+
 @ApiTags("Net Worth")
 @Controller("net-worth")
 @UseGuards(AuthGuard("jwt"))
@@ -51,6 +57,7 @@ export class NetWorthController {
     private readonly periodResult: PortfolioPeriodResultService,
     private readonly periodResults: PortfolioPeriodResultsBatchService,
     private readonly securityPeriodResults: SecurityPeriodResultsService,
+    private readonly twrSeries: PortfolioTwrSeriesService,
     private readonly delegationService: DelegationService,
     private readonly jointAccounts: JointAccountsService,
   ) {}
@@ -450,6 +457,106 @@ export class NetWorthController {
         period,
       }),
     );
+  }
+
+  @Get("investments-twr-series")
+  @AllowDelegate()
+  @DelegateRequiresSection("investments")
+  @ApiOperation({
+    summary: "The portfolio's time-weighted return, day by day",
+    description:
+      "The running value of the invested part's time-weighted return over the same window, series, flows and rates as investments-period-result: points[0] is 0 on the window's opening close and the last point equals that route's investmentReturnPercent. Cash, deposits and withdrawals move no point. The series is withheld (points empty, complete false, reasons named) wherever that route withholds its figure. groupBy=account returns one series per account in accountIds, each its own scope over the same window; see docs/specs/portfolio-twr-series.md.",
+  })
+  @ApiQuery({
+    name: "period",
+    required: false,
+    description: `A preset the server resolves the window for (${PORTFOLIO_PERIOD_PRESETS.join(", ")}). Supplying it replaces startDate and baselineDate, which are then ignored.`,
+  })
+  @ApiQuery({
+    name: "startDate",
+    required: false,
+    description: "Required unless period is given.",
+    example: "2026-01-02",
+  })
+  @ApiQuery({ name: "endDate", required: false, example: "2026-09-17" })
+  @ApiQuery({
+    name: "baselineDate",
+    required: false,
+    description:
+      "The close the series opens on, when that is earlier than startDate.",
+  })
+  @ApiQuery({
+    name: "accountIds",
+    required: false,
+    description:
+      "Comma-separated account IDs (will include linked pairs). Required, at most " +
+      `${TWR_SERIES_MAX_ACCOUNTS}, with groupBy=account.`,
+  })
+  @ApiQuery({
+    name: "groupBy",
+    required: false,
+    description: `One of ${TWR_SERIES_GROUPINGS.join(", ")}; portfolio when omitted.`,
+  })
+  @ApiQuery({
+    name: "displayCurrency",
+    required: false,
+    description:
+      "Currency code to display values in (defaults to user preference)",
+  })
+  @ApiResponse({ status: 200, description: "The time-weighted return series" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  async getTwrSeries(
+    @Request() req,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("baselineDate") baselineDate?: string,
+    @Query("accountIds") accountIds?: string,
+    @Query("displayCurrency") displayCurrency?: string,
+    @Query("period") period?: string,
+    @Query("groupBy") groupBy?: string,
+  ) {
+    const grouping = assertStringParam(groupBy, "groupBy") || "portfolio";
+    if (!(TWR_SERIES_GROUPINGS as readonly string[]).includes(grouping))
+      throw new BadRequestException(
+        tr(
+          "errors.params.mustBeOneOf",
+          `The value of "groupBy" must be one of: ${TWR_SERIES_GROUPINGS.join(", ")}`,
+          { param: "groupBy", options: TWR_SERIES_GROUPINGS.join(", ") },
+        ),
+      );
+    if (grouping === "account") {
+      // One valuation per account, so the count is the caller's cost and is
+      // bounded; naming none would mean "every account", which is unbounded.
+      const named = this.parseAccountIds(
+        assertStringParam(accountIds, "accountIds"),
+      );
+      if (
+        !named ||
+        named.length === 0 ||
+        named.length > TWR_SERIES_MAX_ACCOUNTS
+      )
+        throw new BadRequestException(
+          tr(
+            "errors.params.mustNameAccounts",
+            `The value of "accountIds" must name between 1 and ${TWR_SERIES_MAX_ACCOUNTS} accounts`,
+            { param: "accountIds", max: TWR_SERIES_MAX_ACCOUNTS },
+          ),
+        );
+    }
+    const window = await this.periodWindowQuery(req, {
+      startDate,
+      endDate,
+      baselineDate,
+      accountIds,
+      displayCurrency,
+      period,
+    });
+    return grouping === "account"
+      ? this.twrSeries.getSeriesByAccount(req.user.id, {
+          ...window,
+          accountIds: window.accountIds ?? [],
+        })
+      : this.twrSeries.getSeries(req.user.id, window);
   }
 
   /**

@@ -5,6 +5,7 @@ import { NetWorthService } from "./net-worth.service";
 import { PortfolioPeriodResultService } from "./portfolio-period-result.service";
 import { PortfolioPeriodResultsBatchService } from "./portfolio-period-results-batch.service";
 import { SecurityPeriodResultsService } from "./security-period-results.service";
+import { PortfolioTwrSeriesService } from "./portfolio-twr-series.service";
 import { DelegationService } from "../delegation/delegation.service";
 import { JointAccountsService } from "../delegation/joint-accounts.service";
 
@@ -19,6 +20,9 @@ describe("NetWorthController", () => {
   >;
   let mockSecurityPeriodResults: Partial<
     Record<keyof SecurityPeriodResultsService, jest.Mock>
+  >;
+  let mockTwrSeries: Partial<
+    Record<keyof PortfolioTwrSeriesService, jest.Mock>
   >;
   let delegationService: Record<string, jest.Mock>;
   let jointAccounts: Record<string, jest.Mock>;
@@ -39,6 +43,7 @@ describe("NetWorthController", () => {
     mockPeriodResult = { getPeriodResult: jest.fn() };
     mockPeriodResults = { getPeriodResults: jest.fn() };
     mockSecurityPeriodResults = { getSecurityPeriodResults: jest.fn() };
+    mockTwrSeries = { getSeries: jest.fn(), getSeriesByAccount: jest.fn() };
     delegationService = {
       readableAccountIds: jest.fn().mockResolvedValue([]),
     };
@@ -66,6 +71,7 @@ describe("NetWorthController", () => {
           provide: SecurityPeriodResultsService,
           useValue: mockSecurityPeriodResults,
         },
+        { provide: PortfolioTwrSeriesService, useValue: mockTwrSeries },
         { provide: DelegationService, useValue: delegationService },
         { provide: JointAccountsService, useValue: jointAccounts },
       ],
@@ -847,6 +853,167 @@ describe("NetWorthController", () => {
       await expect(
         controller.getDailyInvestments(mockReq, undefined, "bad-date"),
       ).rejects.toThrow(/endDate/);
+    });
+  });
+  describe("getTwrSeries()", () => {
+    it("answers the portfolio series for a named window, as the period route resolves it", async () => {
+      mockTwrSeries.getSeries!.mockReturnValue("series");
+
+      const result = await controller.getTwrSeries(
+        mockReq,
+        undefined,
+        undefined,
+        undefined,
+        UUID_A,
+        "cad",
+        "1y",
+      );
+
+      expect(result).toBe("series");
+      expect(mockTwrSeries.getSeries).toHaveBeenCalledWith("user-1", {
+        period: "1y",
+        endDate: undefined,
+        accountIds: [UUID_A],
+        displayCurrency: "CAD",
+      });
+      expect(mockTwrSeries.getSeriesByAccount).not.toHaveBeenCalled();
+    });
+
+    it("groupBy=portfolio is the default and may be named", async () => {
+      mockTwrSeries.getSeries!.mockReturnValue("series");
+      await controller.getTwrSeries(
+        mockReq,
+        "2026-01-02",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        "portfolio",
+      );
+      expect(mockTwrSeries.getSeries).toHaveBeenCalledWith("user-1", {
+        startDate: "2026-01-02",
+        endDate: undefined,
+        baselineDate: undefined,
+        accountIds: undefined,
+        displayCurrency: undefined,
+      });
+    });
+
+    it("groupBy=account answers one series per named account", async () => {
+      mockTwrSeries.getSeriesByAccount!.mockReturnValue("by-account");
+
+      const result = await controller.getTwrSeries(
+        mockReq,
+        undefined,
+        undefined,
+        undefined,
+        `${UUID_A},${UUID_B}`,
+        undefined,
+        "3m",
+        "account",
+      );
+
+      expect(result).toBe("by-account");
+      expect(mockTwrSeries.getSeriesByAccount).toHaveBeenCalledWith("user-1", {
+        period: "3m",
+        endDate: undefined,
+        accountIds: [UUID_A, UUID_B],
+        displayCurrency: undefined,
+      });
+      expect(mockTwrSeries.getSeries).not.toHaveBeenCalled();
+    });
+
+    it("refuses an unknown groupBy", async () => {
+      await expect(
+        controller.getTwrSeries(
+          mockReq,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "1y",
+          "security",
+        ),
+      ).rejects.toThrow(/groupBy/);
+      expect(mockTwrSeries.getSeries).not.toHaveBeenCalled();
+    });
+
+    it("groupBy=account needs at least one account: naming none would mean every account", async () => {
+      await expect(
+        controller.getTwrSeries(
+          mockReq,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "1y",
+          "account",
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(mockTwrSeries.getSeriesByAccount).not.toHaveBeenCalled();
+    });
+
+    it("groupBy=account is bounded, one valuation per account", async () => {
+      const ids = Array.from(
+        { length: 26 },
+        (_, i) =>
+          `a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c${String(i).padStart(2, "0")}`,
+      );
+      await expect(
+        controller.getTwrSeries(
+          mockReq,
+          undefined,
+          undefined,
+          undefined,
+          ids.join(","),
+          undefined,
+          "1y",
+          "account",
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(mockTwrSeries.getSeriesByAccount).not.toHaveBeenCalled();
+    });
+
+    it("refuses a malformed account id and a malformed window before reading anything", async () => {
+      await expect(
+        controller.getTwrSeries(
+          mockReq,
+          undefined,
+          undefined,
+          undefined,
+          "not-a-uuid",
+          undefined,
+          "1y",
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        controller.getTwrSeries(mockReq, undefined, undefined, undefined),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(mockTwrSeries.getSeries).not.toHaveBeenCalled();
+    });
+
+    it("limits an acting delegate to the accounts they may read", async () => {
+      delegationService.readableAccountIds.mockResolvedValue([UUID_A]);
+      mockTwrSeries.getSeriesByAccount!.mockReturnValue("ok");
+
+      await controller.getTwrSeries(
+        { user: { id: "owner-1", isActing: true, delegationId: "d-1" } },
+        undefined,
+        undefined,
+        undefined,
+        `${UUID_A},${UUID_B}`,
+        undefined,
+        "1y",
+        "account",
+      );
+
+      expect(mockTwrSeries.getSeriesByAccount).toHaveBeenCalledWith(
+        "owner-1",
+        expect.objectContaining({ accountIds: [UUID_A] }),
+      );
     });
   });
 });
