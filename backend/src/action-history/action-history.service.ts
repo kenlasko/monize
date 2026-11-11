@@ -18,6 +18,7 @@ import { beginBondWriteGuard } from "../bonds/bond-write-guard";
 import { findBondLinkProblem } from "../securities/bond-link.util";
 import { ActionHistory } from "./entities/action-history.entity";
 import { assertUndoCurrencyKind } from "./undo-currency-kind";
+import { withPairedScheduleRecurrence } from "./undo-custom-recurrence";
 import {
   RULE_RUN_ENTITY_TYPE,
   assertRuleRunRedoable,
@@ -447,6 +448,9 @@ const ALLOWED_COLUMNS: Record<string, Set<string>> = {
     "currency_code",
     "description",
     "frequency",
+    // Replayed with `frequency`, paired by `withPairedScheduleRecurrence`: a
+    // Custom schedule written back without its rule cannot step.
+    "custom_recurrence",
     "next_due_date",
     "start_date",
     "end_date",
@@ -2331,9 +2335,15 @@ export class ActionHistoryService {
     tableName: string,
     snapshot: Record<string, any>,
   ): Record<string, any> {
-    return tableName === "accounts"
-      ? withResolvedMortgageTypeProperty(snapshot)
-      : { ...snapshot };
+    if (tableName === "accounts") {
+      return withResolvedMortgageTypeProperty(snapshot);
+    }
+    // A schedule's frequency and its Custom rule are written back as a pair,
+    // or not at all (docs/specs/custom-recurrence.md section 5).
+    if (tableName === "scheduled_transactions") {
+      return withPairedScheduleRecurrence(snapshot);
+    }
+    return { ...snapshot };
   }
 
   /**

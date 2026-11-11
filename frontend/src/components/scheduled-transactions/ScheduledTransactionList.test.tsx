@@ -400,6 +400,26 @@ describe('ScheduledTransactionList', () => {
     expect(screen.getByText('Weekly')).toBeInTheDocument();
   });
 
+  it('describes a Custom schedule by its rule rather than the word Custom', () => {
+    const transactions = [
+      createTransaction({
+        frequency: 'CUSTOM',
+        customRecurrence: { unit: 'WEEK', interval: 1, weekdays: [1, 3, 5], weekStartsOn: 1 },
+      }),
+    ];
+    render(<ScheduledTransactionList transactions={transactions} />);
+    // The desktop schedule cell and the phone line under the name.
+    expect(screen.getAllByText(/Every week on Mon, Wed, and Fri/).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Custom')).not.toBeInTheDocument();
+  });
+
+  it('falls back to the word Custom for a Custom schedule without a usable rule', () => {
+    const transactions = [createTransaction({ frequency: 'CUSTOM', customRecurrence: null })];
+    render(<ScheduledTransactionList transactions={transactions} />);
+    expect(screen.getAllByText(/Custom/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/frequency\.CUSTOM/)).not.toBeInTheDocument();
+  });
+
   it('displays occurrences remaining count', () => {
     const transactions = [createTransaction({ occurrencesRemaining: 5 })];
     render(<ScheduledTransactionList transactions={transactions} />);

@@ -2,6 +2,7 @@ import {
   FREQUENCY_CYCLE_DAYS,
   FrequencyType,
   anchorDayOf,
+  assertFixedCadence,
   calculateNextDueDate,
   ensureYMD,
 } from "./recurrence";
@@ -308,7 +309,10 @@ describe("calculateNextDueDate", () => {
     for (const frequency of Object.keys(
       FREQUENCY_CYCLE_DAYS,
     ) as FrequencyType[]) {
-      const next = calculateNextDueDate("2026-05-10", frequency);
+      // CUSTOM steps only with its rule (it throws without one, below).
+      const next = calculateNextDueDate("2026-05-10", frequency, undefined, {
+        rule: { unit: "WEEK", interval: 1, weekdays: [1], weekStartsOn: 1 },
+      });
       if (frequency === "ONCE") {
         expect(next).toBe("2026-05-10");
       } else {
@@ -327,7 +331,8 @@ describe("FREQUENCY_CYCLE_DAYS", () => {
     // years the stepping and the table have to agree to within a day, which is
     // enough to separate every pair in the list -- the closest is 28 vs 30.44.
     for (const [frequency, cycle] of Object.entries(FREQUENCY_CYCLE_DAYS)) {
-      if (frequency === "ONCE") continue;
+      // No fixed cycle: ONCE never steps, CUSTOM steps by its rule.
+      if (frequency === "ONCE" || frequency === "CUSTOM") continue;
       const steps = Math.max(4, Math.ceil((4 * 365.25) / cycle));
       let date = "2024-01-15";
       for (let i = 0; i < steps; i++) {
@@ -342,6 +347,62 @@ describe("FREQUENCY_CYCLE_DAYS", () => {
 
   it("gives ONCE no cycle, so nothing can match a gap to it", () => {
     expect(FREQUENCY_CYCLE_DAYS.ONCE).toBe(0);
+  });
+
+  it("gives CUSTOM no cycle: the rule-aware helpers answer for it", () => {
+    expect(FREQUENCY_CYCLE_DAYS.CUSTOM).toBe(0);
+  });
+});
+
+describe("CUSTOM (docs/specs/custom-recurrence.md section 3)", () => {
+  const rule = {
+    unit: "WEEK" as const,
+    interval: 2,
+    weekdays: [2, 4],
+    weekStartsOn: 1,
+  };
+
+  it("dispatches to the rule, its periods counted from the start date", () => {
+    expect(
+      calculateNextDueDate("2026-11-12", "CUSTOM", undefined, {
+        rule,
+        startDate: "2026-11-11",
+      }),
+    ).toBe("2026-11-24");
+  });
+
+  it("accepts a start date with a time component", () => {
+    expect(
+      calculateNextDueDate("2026-11-12", "CUSTOM", undefined, {
+        rule,
+        startDate: "2026-11-11T00:00:00.000Z",
+      }),
+    ).toBe("2026-11-24");
+  });
+
+  it("ignores the anchor day", () => {
+    expect(
+      calculateNextDueDate("2026-11-20", "CUSTOM", 3, {
+        rule: { unit: "MONTH", interval: 1, monthDays: [5, 20, -1] },
+      }),
+    ).toBe("2026-11-30");
+  });
+
+  it("throws without a rule, rather than returning the same date", () => {
+    expect(() => calculateNextDueDate("2026-11-12", "CUSTOM")).toThrow(
+      /CUSTOM/,
+    );
+    expect(() =>
+      calculateNextDueDate("2026-11-12", "CUSTOM", undefined, { rule: null }),
+    ).toThrow(/CUSTOM/);
+  });
+});
+
+describe("assertFixedCadence", () => {
+  it("refuses CUSTOM and passes every fixed cadence", () => {
+    expect(() => assertFixedCadence("CUSTOM", "here")).toThrow(/here/);
+    expect(() => assertFixedCadence("MONTHLY", "here")).not.toThrow();
+    expect(() => assertFixedCadence(null, "here")).not.toThrow();
   });
 });
 

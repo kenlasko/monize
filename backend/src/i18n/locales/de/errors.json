@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Nicht unterstützte Sammelaktion: {{ action }}",
     "unsupportedSimpleAction": "Nicht unterstützte Aktion: {{ action }}",
     "unsupportedTableForReinsert": "Nicht unterstützte Tabelle für Wiedereinfügung: {{ tableName }}",
-    "undoConversion": "Diese Änderung hat eine Transaktion in eine Überweisung oder zurück umgewandelt und kann daher nicht automatisch rückgängig gemacht werden. Wandeln Sie sie stattdessen zurück."
+    "undoConversion": "Diese Änderung hat eine Transaktion in eine Überweisung oder zurück umgewandelt und kann daher nicht automatisch rückgängig gemacht werden. Wandeln Sie sie stattdessen zurück.",
+    "customRecurrenceMissing": "Diese Änderung kann nicht rückgängig gemacht oder wiederholt werden: Die benutzerdefinierte Wiederholungsregel der geplanten Transaktion fehlt in ihrem Verlauf"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Geben Sie entweder ein Passwort oder eine E-Mail-Einladung an, nicht beides.",
@@ -312,7 +313,8 @@
     "offsiteEncryptionKeyRequired": "Dieser Server kann keine S3-Zugangsdaten speichern, weil ENCRYPTION_KEY nicht gesetzt ist. Bitten Sie einen Administrator, ihn zu konfigurieren, oder verwenden Sie den Bucket dieser Installation.",
     "offsiteEmailAddressRequired": "Geben Sie die Adresse an, an die Ihre Backups gesendet werden sollen.",
     "manualRunFailed": "Es konnte keine Sicherung geschrieben werden: {{ count }} Konten sind fehlgeschlagen. Erster Fehler: {{ reason }}",
-    "manualRunInProgress": "Auf dieser Installation läuft bereits eine Sicherung aller Konten. Warten Sie, bis sie abgeschlossen ist, und versuchen Sie es erneut."
+    "manualRunInProgress": "Auf dieser Installation läuft bereits eine Sicherung aller Konten. Warten Sie, bis sie abgeschlossen ist, und versuchen Sie es erneut.",
+    "invalidCustomRecurrence": "Ungültige terminierte Buchung in der Sicherung: Eine benutzerdefinierte Häufigkeit erfordert eine gültige Wiederholungsregel"
   },
   "budgets": {
     "notFound": "Budget mit ID {{ id }} nicht gefunden",
@@ -327,7 +329,8 @@
     "billAccountMustBeFiat": "Eine Lohnabzugsregel erfasst eine Rechnung, die in einer Fiat-Währung bezahlt wird; das Konto dieser Rechnung enthält die Kryptowährung {{ code }}. Wählen Sie eine Rechnung, die von einem Fiat-Konto bezahlt wird.",
     "notFound": "Lohnabzugsregel {{ id }} nicht gefunden",
     "duplicate": "Diese Buchung hat bereits eine Regel für diese Kategorie",
-    "expectedRequired": "Die Buchung hat keine Zeile für diese Kategorie; geben Sie den erwarteten Betrag pro Gehaltsabrechnung ein"
+    "expectedRequired": "Die Buchung hat keine Zeile für diese Kategorie; geben Sie den erwarteten Betrag pro Gehaltsabrechnung ein",
+    "billCustomFrequency": "Eine Lohnabzugsregel erfordert eine Rechnung mit fester Häufigkeit; diese Rechnung wiederholt sich nach einem benutzerdefinierten Zeitplan."
   },
   "categories": {
     "notFound": "Kategorie mit ID {{ id }} nicht gefunden",
@@ -611,7 +614,12 @@
     "estimateNoAutoPost": "Eine geplante Buchung mit geschätztem Betrag kann nicht automatisch gebucht werden",
     "estimateRequiresPayeeAndCategory": "Ein geschätzter Betrag braucht einen Zahlungsempfänger und eine Kategorie, um den Zahlungsverlauf abzugleichen",
     "estimateUnknown": "Der geschätzte Betrag dieses Termins ist unbekannt. Geben Sie den Betrag ein, um ihn zu buchen.",
-    "estimateBasisOwnerOnly": "Nur der Eigentümer kann Zahlungsempfänger oder Kategorie einer Rechnung mit geschätztem Betrag ändern"
+    "estimateBasisOwnerOnly": "Nur der Eigentümer kann Zahlungsempfänger oder Kategorie einer Rechnung mit geschätztem Betrag ändern",
+    "customRecurrenceRequired": "Eine benutzerdefinierte Häufigkeit erfordert eine Wiederholungsregel",
+    "customRecurrenceOnlyForCustom": "Eine Wiederholungsregel kann nur gesetzt werden, wenn die Häufigkeit Benutzerdefiniert ist",
+    "customRecurrenceInvalid": "Die benutzerdefinierte Wiederholungsregel ist ungültig",
+    "customNotForLoan": "Eine Darlehens- oder Hypothekenzahlung kann keine benutzerdefinierte Häufigkeit verwenden; wählen Sie eine feste Häufigkeit",
+    "customNotForPayroll": "Eine Lohn-Rechnung mit Abzugslimits kann keine benutzerdefinierte Häufigkeit verwenden; wählen Sie eine feste Häufigkeit"
   },
   "bonds": {
     "securityNotLinked": "Wertpapier {{ securityId }} nicht gefunden oder nicht mit einem Anleiheprogramm verknüpft",

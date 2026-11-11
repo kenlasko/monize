@@ -44,6 +44,7 @@ import {
 } from "./backup-password.util";
 import { restoreProcessingGate } from "./restore-processing-gate";
 import { validateRestoredNotifications } from "./notification-restore-bounds";
+import { validateRestoredSchedules } from "./restore-custom-recurrence";
 import { RESTORE_PLAN } from "./restore-plan";
 import {
   remapRestoreRow,
@@ -205,6 +206,7 @@ export class BackupRestoreService {
         }
 
         validateRestoredNotifications(rawData.notifications);
+        validateRestoredSchedules(rawData.scheduled_transactions);
 
         // Every primary key and reference in canonical UUID form, and every
         // reference naming a row of the same file -- refused here, before the

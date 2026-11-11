@@ -723,6 +723,78 @@ describe("PayrollDeductionsService", () => {
     });
   });
 
+  describe("a bill on the Custom frequency", () => {
+    it("is refused on create and on update before anything is written", async () => {
+      // Deductions pool over pay periods of a fixed cadence
+      // (docs/specs/custom-recurrence.md section 5).
+      scheduledRepo.findOne.mockResolvedValue({
+        ...bill([{ categoryId: EI, amount: -64 }]),
+        frequency: "CUSTOM",
+      });
+      await expect(
+        service.create(USER, {
+          scheduledTransactionId: BILL,
+          categoryId: EI,
+          yearlyMaximum: 1077.48,
+          resetDate: "2026-01-01",
+        }),
+      ).rejects.toThrow("custom schedule");
+      rulesRepo.findOne.mockResolvedValueOnce(rule());
+      await expect(
+        service.update(USER, RULE, { yearlyMaximum: 1100 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(rulesRepo.save).not.toHaveBeenCalled();
+      expect(rulesRepo.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("the bill's row lock", () => {
+    it("locks the bill FOR UPDATE before a rule write reads its frequency", async () => {
+      // Without it a concurrent switch of the bill to Custom (which the
+      // schedule update decides under that same lock) and a new rule could
+      // both commit (docs/specs/custom-recurrence.md section 5).
+      scheduledRepo.findOne.mockResolvedValue({
+        ...bill([{ categoryId: EI, amount: -64 }]),
+        frequency: "CUSTOM",
+      });
+      await expect(
+        service.create(USER, {
+          scheduledTransactionId: BILL,
+          categoryId: EI,
+          yearlyMaximum: 1077.48,
+          resetDate: "2026-01-01",
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(scheduledRepo.findOne.mock.calls[0][0]).toEqual(
+        expect.objectContaining({
+          where: { id: BILL, userId: USER },
+          lock: { mode: "pessimistic_write" },
+        }),
+      );
+
+      scheduledRepo.findOne.mockClear();
+      rulesRepo.findOne.mockResolvedValueOnce(rule());
+      await expect(
+        service.update(USER, RULE, { yearlyMaximum: 1100 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(scheduledRepo.findOne.mock.calls[0][0]).toEqual(
+        expect.objectContaining({ lock: { mode: "pessimistic_write" } }),
+      );
+    });
+
+    it("reads a suggestion without locking", async () => {
+      scheduledRepo.findOne.mockResolvedValue(
+        bill([{ categoryId: EI, amount: -64 }]),
+      );
+      await service
+        .suggestExpected(USER, BILL, EI, "2026-01-01")
+        .catch(() => undefined);
+      for (const [options] of scheduledRepo.findOne.mock.calls) {
+        expect(options.lock).toBeUndefined();
+      }
+    });
+  });
+
   describe("remove", () => {
     it("deletes by id and owner, and reports an unknown id", async () => {
       await service.remove(USER, RULE);

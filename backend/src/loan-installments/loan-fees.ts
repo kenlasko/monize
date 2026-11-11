@@ -1,4 +1,5 @@
 import { roundToDecimals } from "../common/round.util";
+import { assertFixedCadence } from "../common/recurrence";
 import { currencyMinorUnitDecimals } from "../common/currency-minor-unit.util";
 import {
   DEFAULT_PERIODS_PER_YEAR,
@@ -166,6 +167,7 @@ export function loanFeeFactsFor(
   debt: number,
   frequency: string | null | undefined,
 ): LoanFeeFacts {
+  assertFixedCadence(frequency, "loanFeeFactsFor");
   return {
     debt,
     originalPrincipal: originalPrincipalOf(account),

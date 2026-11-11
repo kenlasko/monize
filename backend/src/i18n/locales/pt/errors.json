@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Ação em massa não suportada: {{ action }}",
     "unsupportedSimpleAction": "Ação não suportada: {{ action }}",
     "unsupportedTableForReinsert": "Tabela não suportada para reinserção: {{ tableName }}",
-    "undoConversion": "Esta alteração converteu uma transação em transferência ou vice-versa, por isso não pode ser anulada automaticamente. Converta-a de volta."
+    "undoConversion": "Esta alteração converteu uma transação em transferência ou vice-versa, por isso não pode ser anulada automaticamente. Converta-a de volta.",
+    "customRecurrenceMissing": "Esta alteração não pode ser anulada nem refeita: a regra de repetição personalizada da transação agendada não está no seu histórico"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Forneça uma palavra-passe ou um convite por e-mail, não ambos.",
@@ -312,7 +313,8 @@
     "offsiteEncryptionKeyRequired": "Este servidor não pode guardar credenciais de S3 porque ENCRYPTION_KEY não está definida. Peça a um administrador que a configure ou utilize o bucket desta instalação.",
     "offsiteEmailAddressRequired": "Indique o endereço para o qual as suas cópias de segurança devem ser enviadas.",
     "manualRunFailed": "Não foi possível escrever nenhuma cópia de segurança: {{ count }} contas falharam. Primeiro erro: {{ reason }}",
-    "manualRunInProgress": "Já está a decorrer uma cópia de segurança de todas as contas nesta instalação. Aguarde que termine e tente novamente."
+    "manualRunInProgress": "Já está a decorrer uma cópia de segurança de todas as contas nesta instalação. Aguarde que termine e tente novamente.",
+    "invalidCustomRecurrence": "Transação agendada da cópia de segurança inválida: uma frequência personalizada requer uma regra de repetição válida"
   },
   "budgets": {
     "notFound": "Orçamento com ID {{ id }} não encontrado",
@@ -327,7 +329,8 @@
     "billAccountMustBeFiat": "Uma regra de dedução salarial acompanha uma conta a pagar paga numa moeda fiduciária; a conta desta fatura contém a criptomoeda {{ code }}. Escolha uma conta a pagar paga a partir de uma conta em moeda fiduciária.",
     "notFound": "Regra de dedução salarial {{ id }} não encontrada",
     "duplicate": "Esta fatura já tem uma regra para essa categoria",
-    "expectedRequired": "A fatura não tem uma linha para esta categoria; introduza o montante previsto por salário"
+    "expectedRequired": "A fatura não tem uma linha para esta categoria; introduza o montante previsto por salário",
+    "billCustomFrequency": "Uma regra de dedução salarial requer uma conta a pagar com frequência fixa; esta conta repete-se segundo um calendário personalizado."
   },
   "categories": {
     "notFound": "Categoria com ID {{ id }} não encontrada",
@@ -611,7 +614,12 @@
     "estimateNoAutoPost": "Uma transação agendada com um montante estimado não pode ser lançada automaticamente",
     "estimateRequiresPayeeAndCategory": "Um montante estimado precisa de um beneficiário e de uma categoria para corresponder ao histórico de pagamentos",
     "estimateUnknown": "O montante estimado desta ocorrência é desconhecido. Introduza o montante para a lançar.",
-    "estimateBasisOwnerOnly": "Só o proprietário pode alterar o beneficiário ou a categoria de uma fatura com montante estimado"
+    "estimateBasisOwnerOnly": "Só o proprietário pode alterar o beneficiário ou a categoria de uma fatura com montante estimado",
+    "customRecurrenceRequired": "Uma frequência personalizada requer uma regra de repetição",
+    "customRecurrenceOnlyForCustom": "Só é possível definir uma regra de repetição quando a frequência é Personalizada",
+    "customRecurrenceInvalid": "A regra de repetição personalizada não é válida",
+    "customNotForLoan": "O pagamento de um empréstimo ou crédito à habitação não pode usar uma frequência personalizada; escolha uma frequência fixa",
+    "customNotForPayroll": "Uma conta a pagar de salário com limites de dedução não pode usar uma frequência personalizada; escolha uma frequência fixa"
   },
   "bonds": {
     "securityNotLinked": "Valor mobiliário {{ securityId }} não encontrado ou não ligado a um programa de obrigações",

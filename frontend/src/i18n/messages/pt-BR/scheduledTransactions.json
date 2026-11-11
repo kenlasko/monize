@@ -341,7 +341,56 @@
     "EVERY4MONTHS": "A cada 4 Meses",
     "SEMIANNUAL": "Duas Vezes por Ano",
     "YEARLY": "Anual",
-    "EVERY2YEARS": "A cada 2 Anos"
+    "EVERY2YEARS": "A cada 2 Anos",
+    "CUSTOM": "Personalizada"
+  },
+  "customRecurrence": {
+    "title": "Repete",
+    "unitLabel": "Repetir por",
+    "units": {
+      "WEEK": "Semanal",
+      "MONTH": "Mensal",
+      "YEAR": "Anual"
+    },
+    "every": "A cada",
+    "intervalLabel": "Repetir a cada",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, one {semana em} other {semanas em}}",
+      "MONTH": "{interval, plural, one {mês no dia} other {meses no dia}}",
+      "YEAR": "{interval, plural, one {ano em} other {anos em}}"
+    },
+    "weekdaysLabel": "Dias da semana",
+    "monthDaysLabel": "Dias do mês",
+    "lastDayChip": "Último dia",
+    "lastDay": "último dia",
+    "dayOfMonth": "{day, selectordinal, other {#}}",
+    "monthHint": "Um dia além do fim de um mês curto cai no último dia dele, e dois dias que caem na mesma data são lançados uma só vez.",
+    "datesLabel": "Datas do ano",
+    "monthLabel": "Mês",
+    "dayLabel": "Dia",
+    "addDate": "Adicionar data",
+    "removeDate": "Remover {date}",
+    "yearHint": "29 de fevereiro cai em 28 de fevereiro nos anos que não o têm.",
+    "summary": {
+      "WEEK": "{interval, plural, one {Toda semana em {days}} other {A cada # semanas em {days}}}",
+      "MONTH": "{interval, plural, one {Todo mês no dia {days}} other {A cada # meses no dia {days}}}",
+      "YEAR": "{interval, plural, one {Todo ano em {days}} other {A cada # anos em {days}}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "Escolha pelo menos um dia da semana.",
+        "MONTH": "Escolha pelo menos um dia do mês.",
+        "YEAR": "Adicione pelo menos uma data."
+      },
+      "interval": "Informe um número de 1 a 12.",
+      "invalid": "Este padrão não pode ser salvo. Escolha os dias novamente."
+    },
+    "firstOccurrence": "Primeira ocorrência: {date}",
+    "nextOccurrence": "Próxima ocorrência: {date}",
+    "nextOccurrenceOffPattern": "Próxima ocorrência: {date}. Esta data está fora do padrão; as ocorrências seguintes o seguem.",
+    "orphanWarning": "{count, plural, one {# ocorrência editada ({dates}) não se enquadra mais neste padrão e será removida ao salvar.} other {# ocorrências editadas ({dates}) não se enquadram mais neste padrão e serão removidas ao salvar.}}",
+    "notForLoan": "O pagamento de um empréstimo ou financiamento imobiliário não pode usar uma frequência personalizada; escolha uma frequência fixa.",
+    "notForPayroll": "Uma conta a pagar de salário com limites de dedução não pode usar uma frequência personalizada; escolha uma frequência fixa."
   },
   "validation": {
     "nameRequired": "O nome é obrigatório",

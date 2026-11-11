@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Nieobsługiwana operacja zbiorcza: {{ action }}",
     "unsupportedSimpleAction": "Nieobsługiwana operacja: {{ action }}",
     "unsupportedTableForReinsert": "Nieobsługiwana tabela do ponownego wstawienia: {{ tableName }}",
-    "undoConversion": "Ta zmiana przekonwertowała transakcję na przelew lub z przelewu, więc nie można jej automatycznie cofnąć. Zamiast tego przekonwertuj ją z powrotem."
+    "undoConversion": "Ta zmiana przekonwertowała transakcję na przelew lub z przelewu, więc nie można jej automatycznie cofnąć. Zamiast tego przekonwertuj ją z powrotem.",
+    "customRecurrenceMissing": "Tej zmiany nie można cofnąć ani ponowić: w jej historii brakuje niestandardowej reguły powtarzania zaplanowanej transakcji"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Podaj hasło albo zaproszenie e-mail, ale nie oba naraz.",
@@ -312,7 +313,8 @@
     "offsiteEncryptionKeyRequired": "Ten serwer nie może przechowywać poświadczeń S3, ponieważ nie ustawiono ENCRYPTION_KEY. Poproś administratora o jego skonfigurowanie albo użyj bucketu tej instalacji.",
     "offsiteEmailAddressRequired": "Podaj adres, na który mają być wysyłane Twoje kopie zapasowe.",
     "manualRunFailed": "Nie udało się zapisać żadnej kopii zapasowej: {{ count }} kont zakończyło się błędem. Pierwszy błąd: {{ reason }}",
-    "manualRunInProgress": "Na tym wdrożeniu trwa już tworzenie kopii zapasowej wszystkich kont. Poczekaj na jej zakończenie i spróbuj ponownie."
+    "manualRunInProgress": "Na tym wdrożeniu trwa już tworzenie kopii zapasowej wszystkich kont. Poczekaj na jej zakończenie i spróbuj ponownie.",
+    "invalidCustomRecurrence": "Nieprawidłowa zaplanowana transakcja w kopii zapasowej: niestandardowa częstotliwość wymaga prawidłowej reguły powtarzania"
   },
   "budgets": {
     "notFound": "Nie znaleziono budżetu o ID {{ id }}",
@@ -327,7 +329,8 @@
     "billAccountMustBeFiat": "Reguła potrącenia z wynagrodzenia śledzi rachunek opłacany w walucie fiducjarnej; konto tego rachunku zawiera kryptowalutę {{ code }}. Wybierz rachunek opłacany z konta w walucie fiducjarnej.",
     "notFound": "Nie znaleziono reguły potrącenia z wynagrodzenia {{ id }}",
     "duplicate": "Ten rachunek ma już regułę dla tej kategorii",
-    "expectedRequired": "Rachunek nie ma pozycji dla tej kategorii; wpisz oczekiwaną kwotę na wypłatę"
+    "expectedRequired": "Rachunek nie ma pozycji dla tej kategorii; wpisz oczekiwaną kwotę na wypłatę",
+    "billCustomFrequency": "Reguła potrącenia z wynagrodzenia wymaga rachunku o stałej częstotliwości; ten rachunek powtarza się według niestandardowego harmonogramu."
   },
   "categories": {
     "notFound": "Nie znaleziono kategorii o ID {{ id }}",
@@ -611,7 +614,12 @@
     "estimateNoAutoPost": "Zaplanowanej transakcji z szacowaną kwotą nie można zaksięgować automatycznie",
     "estimateRequiresPayeeAndCategory": "Szacowana kwota wymaga odbiorcy i kategorii, aby dopasować historię płatności",
     "estimateUnknown": "Szacowana kwota tego wystąpienia jest nieznana. Wprowadź kwotę, aby je zaksięgować.",
-    "estimateBasisOwnerOnly": "Tylko właściciel może zmienić odbiorcę lub kategorię rachunku z szacowaną kwotą"
+    "estimateBasisOwnerOnly": "Tylko właściciel może zmienić odbiorcę lub kategorię rachunku z szacowaną kwotą",
+    "customRecurrenceRequired": "Niestandardowa częstotliwość wymaga reguły powtarzania",
+    "customRecurrenceOnlyForCustom": "Regułę powtarzania można ustawić tylko wtedy, gdy częstotliwość jest Niestandardowa",
+    "customRecurrenceInvalid": "Niestandardowa reguła powtarzania jest nieprawidłowa",
+    "customNotForLoan": "Płatność raty kredytu lub kredytu hipotecznego nie może używać niestandardowej częstotliwości; wybierz stałą częstotliwość",
+    "customNotForPayroll": "Rachunek płacowy z limitami potrąceń nie może używać niestandardowej częstotliwości; wybierz stałą częstotliwość"
   },
   "bonds": {
     "securityNotLinked": "Nie znaleziono papieru wartościowego {{ securityId }} albo nie jest on powiązany z programem obligacji",

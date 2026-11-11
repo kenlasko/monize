@@ -341,7 +341,56 @@
     "EVERY4MONTHS": "[XX-Every 4 Months-XX]",
     "SEMIANNUAL": "[XX-Twice a Year-XX]",
     "YEARLY": "[XX-Yearly-XX]",
-    "EVERY2YEARS": "[XX-Every 2 Years-XX]"
+    "EVERY2YEARS": "[XX-Every 2 Years-XX]",
+    "CUSTOM": "[XX-Custom-XX]"
+  },
+  "customRecurrence": {
+    "title": "[XX-Repeats-XX]",
+    "unitLabel": "[XX-Repeat by-XX]",
+    "units": {
+      "WEEK": "[XX-Weekly-XX]",
+      "MONTH": "[XX-Monthly-XX]",
+      "YEAR": "[XX-Yearly-XX]"
+    },
+    "every": "[XX-Every-XX]",
+    "intervalLabel": "[XX-Repeat every-XX]",
+    "unitSuffix": {
+      "WEEK": "[XX-{interval, plural, one {week on} other {weeks on}}-XX]",
+      "MONTH": "[XX-{interval, plural, one {month on} other {months on}}-XX]",
+      "YEAR": "[XX-{interval, plural, one {year on} other {years on}}-XX]"
+    },
+    "weekdaysLabel": "[XX-Days of the week-XX]",
+    "monthDaysLabel": "[XX-Days of the month-XX]",
+    "lastDayChip": "[XX-Last day-XX]",
+    "lastDay": "[XX-last day-XX]",
+    "dayOfMonth": "[XX-{day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}-XX]",
+    "monthHint": "[XX-A day past the end of a short month falls on its last day, and two days that land on the same date post once.-XX]",
+    "datesLabel": "[XX-Dates of the year-XX]",
+    "monthLabel": "[XX-Month-XX]",
+    "dayLabel": "[XX-Day-XX]",
+    "addDate": "[XX-Add date-XX]",
+    "removeDate": "[XX-Remove {date}-XX]",
+    "yearHint": "[XX-29 February falls on 28 February in years without one.-XX]",
+    "summary": {
+      "WEEK": "[XX-{interval, plural, one {Every week on {days}} other {Every # weeks on {days}}}-XX]",
+      "MONTH": "[XX-{interval, plural, one {Every month on the {days}} other {Every # months on the {days}}}-XX]",
+      "YEAR": "[XX-{interval, plural, one {Every year on {days}} other {Every # years on {days}}}-XX]"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "[XX-Pick at least one day of the week.-XX]",
+        "MONTH": "[XX-Pick at least one day of the month.-XX]",
+        "YEAR": "[XX-Add at least one date.-XX]"
+      },
+      "interval": "[XX-Enter a number from 1 to 12.-XX]",
+      "invalid": "[XX-This pattern cannot be saved. Pick the days again.-XX]"
+    },
+    "firstOccurrence": "[XX-First occurrence: {date}-XX]",
+    "nextOccurrence": "[XX-Next occurrence: {date}-XX]",
+    "nextOccurrenceOffPattern": "[XX-Next occurrence: {date}. This date is off the pattern; later occurrences follow it.-XX]",
+    "orphanWarning": "[XX-{count, plural, one {# edited occurrence ({dates}) no longer falls on this pattern and will be removed when you save.} other {# edited occurrences ({dates}) no longer fall on this pattern and will be removed when you save.}}-XX]",
+    "notForLoan": "[XX-A loan or mortgage payment cannot use a custom frequency; choose a fixed frequency.-XX]",
+    "notForPayroll": "[XX-A payroll bill with deduction limits cannot use a custom frequency; choose a fixed frequency.-XX]"
   },
   "validation": {
     "nameRequired": "[XX-Name is required-XX]",

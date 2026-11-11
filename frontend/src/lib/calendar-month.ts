@@ -69,7 +69,8 @@ function pad2(value: number): string {
   return String(value).padStart(2, '0');
 }
 
-function toDateString(year: number, month: number, day: number): string {
+/** `YYYY-MM-DD` of a civil year, month (1-12) and day. */
+export function formatYmd(year: number, month: number, day: number): string {
   return `${String(year).padStart(4, '0')}-${pad2(month)}-${pad2(day)}`;
 }
 
@@ -122,7 +123,7 @@ function previousDay(year: number, month: number, day: number): [number, number,
 export function monthGridDays(month: string, weekStartsOn: WeekStart): string[] {
   const [year, monthNumber] = requireMonth(month, 'month');
 
-  const leading = (dayOfWeek(toDateString(year, monthNumber, 1)) - weekStartsOn + 7) % 7;
+  const leading = (dayOfWeek(formatYmd(year, monthNumber, 1)) - weekStartsOn + 7) % 7;
   const length = leading + daysInMonth(year, monthNumber);
   const total = Math.ceil(length / 7) * 7;
 
@@ -131,7 +132,7 @@ export function monthGridDays(month: string, weekStartsOn: WeekStart): string[] 
 
   const days: string[] = [];
   for (let index = 0; index < total; index++) {
-    days.push(toDateString(...cursor));
+    days.push(formatYmd(...cursor));
     cursor = nextDay(...cursor);
   }
   return days;
@@ -150,7 +151,7 @@ export function shiftDate(date: string, delta: number): string {
   for (let step = 0; step < Math.abs(delta); step++) {
     cursor = delta > 0 ? nextDay(...cursor) : previousDay(...cursor);
   }
-  return toDateString(...cursor);
+  return formatYmd(...cursor);
 }
 
 /**

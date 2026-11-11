@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Hành động hàng loạt không được hỗ trợ: {{ action }}",
     "unsupportedSimpleAction": "Hành động không được hỗ trợ: {{ action }}",
     "unsupportedTableForReinsert": "Bảng không được hỗ trợ để chèn lại: {{ tableName }}",
-    "undoConversion": "Thay đổi này đã chuyển đổi một giao dịch thành chuyển khoản hoặc ngược lại, nên không thể hoàn tác tự động. Hãy chuyển đổi lại."
+    "undoConversion": "Thay đổi này đã chuyển đổi một giao dịch thành chuyển khoản hoặc ngược lại, nên không thể hoàn tác tự động. Hãy chuyển đổi lại.",
+    "customRecurrenceMissing": "Không thể hoàn tác hoặc làm lại thay đổi này: lịch sử của giao dịch định kỳ không có quy tắc lặp lại tùy chỉnh"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Chỉ cung cấp mật khẩu hoặc lời mời qua email, không cả hai.",
@@ -312,7 +313,8 @@
     "offsiteEncryptionKeyRequired": "Máy chủ này không thể lưu thông tin xác thực S3 vì ENCRYPTION_KEY chưa được đặt. Hãy đề nghị quản trị viên cấu hình nó, hoặc dùng bucket của bản triển khai này.",
     "offsiteEmailAddressRequired": "Hãy nhập địa chỉ mà các bản sao lưu của bạn sẽ được gửi tới.",
     "manualRunFailed": "Không ghi được bản sao lưu nào: {{ count }} tài khoản thất bại. Lỗi đầu tiên: {{ reason }}",
-    "manualRunInProgress": "Bản sao lưu mọi tài khoản đang chạy trên bản triển khai này. Hãy đợi hoàn tất rồi thử lại."
+    "manualRunInProgress": "Bản sao lưu mọi tài khoản đang chạy trên bản triển khai này. Hãy đợi hoàn tất rồi thử lại.",
+    "invalidCustomRecurrence": "Giao tác theo lịch trong bản sao lưu không hợp lệ: tần suất tùy chỉnh cần có quy tắc lặp lại hợp lệ"
   },
   "budgets": {
     "notFound": "Không tìm thấy ngân sách với ID {{ id }}",
@@ -327,7 +329,8 @@
     "billAccountMustBeFiat": "Quy tắc khấu trừ lương theo dõi một hóa đơn được thanh toán bằng tiền pháp định; tài khoản của hóa đơn này giữ tiền mã hóa {{ code }}. Hãy chọn một hóa đơn được thanh toán từ tài khoản tiền pháp định.",
     "notFound": "Không tìm thấy quy tắc khấu trừ lương {{ id }}",
     "duplicate": "Hóa đơn này đã có quy tắc cho danh mục đó",
-    "expectedRequired": "Hóa đơn không có dòng cho danh mục này; hãy nhập số tiền dự kiến mỗi kỳ lương"
+    "expectedRequired": "Hóa đơn không có dòng cho danh mục này; hãy nhập số tiền dự kiến mỗi kỳ lương",
+    "billCustomFrequency": "Quy tắc khấu trừ lương cần một hóa đơn có tần suất cố định; hóa đơn này lặp lại theo lịch tùy chỉnh."
   },
   "categories": {
     "notFound": "Không tìm thấy danh mục với ID {{ id }}",
@@ -611,7 +614,12 @@
     "estimateNoAutoPost": "Giao dịch định kỳ có số tiền ước tính không thể được ghi tự động",
     "estimateRequiresPayeeAndCategory": "Số tiền ước tính cần có người nhận và danh mục để đối chiếu lịch sử thanh toán",
     "estimateUnknown": "Không biết số tiền ước tính của lần này. Hãy nhập số tiền để ghi.",
-    "estimateBasisOwnerOnly": "Chỉ chủ sở hữu mới có thể đổi người nhận hoặc danh mục của hóa đơn có số tiền ước tính"
+    "estimateBasisOwnerOnly": "Chỉ chủ sở hữu mới có thể đổi người nhận hoặc danh mục của hóa đơn có số tiền ước tính",
+    "customRecurrenceRequired": "Tần suất tùy chỉnh cần có quy tắc lặp lại",
+    "customRecurrenceOnlyForCustom": "Chỉ có thể đặt quy tắc lặp lại khi tần suất là Tùy chỉnh",
+    "customRecurrenceInvalid": "Quy tắc lặp lại tùy chỉnh không hợp lệ",
+    "customNotForLoan": "Khoản thanh toán khoản vay hoặc thế chấp không thể dùng tần suất tùy chỉnh; hãy chọn tần suất cố định",
+    "customNotForPayroll": "Hóa đơn lương có giới hạn khấu trừ không thể dùng tần suất tùy chỉnh; hãy chọn tần suất cố định"
   },
   "bonds": {
     "securityNotLinked": "Không tìm thấy chứng khoán {{ securityId }} hoặc chứng khoán chưa liên kết với chương trình trái phiếu",

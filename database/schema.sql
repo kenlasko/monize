@@ -1110,7 +1110,7 @@ CREATE TABLE scheduled_transactions (
     reference_number VARCHAR(100), -- copied to each posted occurrence unless the post supplies one
     -- 'ONCE', 'DAILY', 'WEEKLY', 'BIWEEKLY', 'EVERY4WEEKS', 'SEMIMONTHLY',
     -- 'MONTHLY', 'EVERY2MONTHS', 'QUARTERLY', 'EVERY4MONTHS', 'SEMIANNUAL',
-    -- 'YEARLY', 'EVERY2YEARS'
+    -- 'YEARLY', 'EVERY2YEARS', 'CUSTOM'
     -- (backend/src/scheduled-transactions/dto: FrequencyType)
     frequency VARCHAR(20) NOT NULL,
     next_due_date DATE NOT NULL,
@@ -1152,6 +1152,11 @@ CREATE TABLE scheduled_transactions (
     -- (docs/specs/scheduled-amount-estimate.md). Plain schedules only, never
     -- auto-posted; `amount` is the snapshot for the next occurrence.
     amount_is_estimated BOOLEAN NOT NULL DEFAULT false,
+    -- The rule a 'CUSTOM' schedule repeats by, in its canonical form
+    -- (CustomRecurrence, backend/src/common/custom-recurrence.ts;
+    -- docs/specs/custom-recurrence.md); NULL for every other frequency. The
+    -- service enforces the pairing; the CHECK waits for a contract migration.
+    custom_recurrence JSONB,
     CONSTRAINT chk_scheduled_transactions_kind_exclusive CHECK (
         NOT (is_transfer = TRUE AND is_investment = TRUE)
     ),

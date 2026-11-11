@@ -122,6 +122,36 @@ describe('OccurrenceDatePicker', () => {
     expect(screen.getByText('2025-03-29')).toBeInTheDocument();
   });
 
+  it('renders the rule dates of a Custom schedule', () => {
+    // The 1st and the last day of each month; 1 March 2025 is the start.
+    const custom = {
+      ...scheduledTransaction,
+      frequency: 'CUSTOM' as const,
+      startDate: '2025-03-01',
+      customRecurrence: { unit: 'MONTH', interval: 1, monthDays: [1, -1] },
+    };
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={custom} onSelect={onSelect} onClose={onClose} />
+    );
+    for (const date of ['2025-03-01', '2025-03-31', '2025-04-01', '2025-04-30', '2025-05-01']) {
+      expect(screen.getByText(date)).toBeInTheDocument();
+    }
+    expect(screen.queryByText('2025-05-31')).not.toBeInTheDocument();
+  });
+
+  it('lists only the due date of a Custom schedule whose rule is missing, instead of throwing', () => {
+    const broken = {
+      ...scheduledTransaction,
+      frequency: 'CUSTOM' as const,
+      startDate: '2025-03-01',
+      customRecurrence: null,
+    };
+    render(
+      <OccurrenceDatePicker isOpen={true} scheduledTransaction={broken} onSelect={onSelect} onClose={onClose} />
+    );
+    expect(screen.getByText(scheduledTransaction.nextDueDate)).toBeInTheDocument();
+  });
+
   it('renders dates for biweekly frequency', () => {
     const biweeklyTransaction = {
       ...scheduledTransaction,

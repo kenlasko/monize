@@ -341,7 +341,56 @@
     "EVERY4MONTHS": "Tous les 4 mois",
     "SEMIANNUAL": "Deux fois par an",
     "YEARLY": "Annuel",
-    "EVERY2YEARS": "Tous les 2 ans"
+    "EVERY2YEARS": "Tous les 2 ans",
+    "CUSTOM": "Personnalisée"
+  },
+  "customRecurrence": {
+    "title": "Se répète",
+    "unitLabel": "Répéter par",
+    "units": {
+      "WEEK": "Hebdomadaire",
+      "MONTH": "Mensuelle",
+      "YEAR": "Annuelle"
+    },
+    "every": "Tous les",
+    "intervalLabel": "Répéter tous les",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, one {semaine le} other {semaines le}}",
+      "MONTH": "{interval, plural, one {mois le} other {mois le}}",
+      "YEAR": "{interval, plural, one {an le} other {ans le}}"
+    },
+    "weekdaysLabel": "Jours de la semaine",
+    "monthDaysLabel": "Jours du mois",
+    "lastDayChip": "Dernier jour",
+    "lastDay": "dernier jour",
+    "dayOfMonth": "{day, selectordinal, one {#er} other {#}}",
+    "monthHint": "Un jour situé après la fin d'un mois court tombe sur son dernier jour, et deux jours qui tombent à la même date ne sont comptabilisés qu'une fois.",
+    "datesLabel": "Dates de l'année",
+    "monthLabel": "Mois",
+    "dayLabel": "Jour",
+    "addDate": "Ajouter une date",
+    "removeDate": "Supprimer {date}",
+    "yearHint": "Le 29 février tombe le 28 février les années qui n'en ont pas.",
+    "summary": {
+      "WEEK": "{interval, plural, one {Chaque semaine le {days}} other {Toutes les # semaines le {days}}}",
+      "MONTH": "{interval, plural, one {Chaque mois le {days}} other {Tous les # mois le {days}}}",
+      "YEAR": "{interval, plural, one {Chaque année le {days}} other {Tous les # ans le {days}}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "Choisissez au moins un jour de la semaine.",
+        "MONTH": "Choisissez au moins un jour du mois.",
+        "YEAR": "Ajoutez au moins une date."
+      },
+      "interval": "Saisissez un nombre de 1 à 12.",
+      "invalid": "Ce motif ne peut pas être enregistré. Choisissez à nouveau les jours."
+    },
+    "firstOccurrence": "Première occurrence : {date}",
+    "nextOccurrence": "Prochaine occurrence : {date}",
+    "nextOccurrenceOffPattern": "Prochaine occurrence : {date}. Cette date est hors du modèle ; les occurrences suivantes le respectent.",
+    "orphanWarning": "{count, plural, one {# occurrence modifiée ({dates}) ne correspond plus à ce motif et sera supprimée à l'enregistrement.} other {# occurrences modifiées ({dates}) ne correspondent plus à ce motif et seront supprimées à l'enregistrement.}}",
+    "notForLoan": "Un paiement de prêt ou de prêt hypothécaire ne peut pas utiliser une fréquence personnalisée ; choisissez une fréquence fixe.",
+    "notForPayroll": "Une facture de paie avec des limites de retenue ne peut pas utiliser une fréquence personnalisée ; choisissez une fréquence fixe."
   },
   "validation": {
     "nameRequired": "Le nom est requis",

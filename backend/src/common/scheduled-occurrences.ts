@@ -1,4 +1,10 @@
+import { Logger } from "@nestjs/common";
 import { addDaysYMD } from "./date-utils";
+import {
+  CustomRecurrence,
+  customStepper,
+  normalizeCustomRecurrence,
+} from "./custom-recurrence";
 import {
   FrequencyType,
   anchorDayOf,
@@ -13,6 +19,8 @@ import {
  * already caught by the monotonicity check) rather than a product limit.
  */
 export const OCCURRENCE_WALK_GUARD = 2000;
+
+const logger = new Logger("ScheduledOccurrences");
 
 /**
  * How many days before today an occurrence that was neither posted nor skipped
@@ -66,10 +74,14 @@ export interface OccurrenceOverrideInput {
 }
 
 export interface OccurrenceScheduleInput {
+  /** Names the schedule in a warning about a rule it cannot walk. */
+  id?: string;
   frequency: FrequencyType;
   nextDueDate: string | Date;
   /** Anchors the day-of-month of month-based steps; absent steps from the previous slot's day. */
   startDate?: string | Date | null;
+  /** The rule of a `CUSTOM` schedule; its periods count from `startDate`. */
+  customRecurrence?: CustomRecurrence | null;
   endDate?: string | Date | null;
   occurrencesRemaining?: number | null;
 }
@@ -181,6 +193,7 @@ export function expandOccurrenceSlots<O extends OccurrenceOverrideInput>(
   let remaining = schedule.occurrencesRemaining ?? Number.POSITIVE_INFINITY;
   let slot = ensureYMD(schedule.nextDueDate);
   let guard = 0;
+  const step = stepperFor(schedule);
 
   while (
     slot <= walkThrough &&
@@ -204,12 +217,8 @@ export function expandOccurrenceSlots<O extends OccurrenceOverrideInput>(
       });
     }
     remaining -= 1;
-    if (schedule.frequency === "ONCE") break;
-    const next = calculateNextDueDate(
-      slot,
-      schedule.frequency,
-      anchorDayOf(schedule.startDate, slot),
-    );
+    if (step === null) break;
+    const next = step(slot);
     // A stepper that fails to advance would loop until the guard; stopping here
     // keeps a malformed frequency from silently emitting the same date 2000 times.
     if (next <= slot) break;
@@ -254,4 +263,38 @@ export function expandOccurrenceSlots<O extends OccurrenceOverrideInput>(
   return window.maxOccurrences === undefined
     ? ordered
     : ordered.slice(0, window.maxOccurrences);
+}
+
+/**
+ * How one schedule steps from a slot to the next, or `null` when it has no
+ * next slot. A Custom rule is normalized once for the whole walk. A Custom row
+ * whose rule is missing or invalid -- a defect the write path refuses, so only
+ * a row written past it -- yields its cursor slot alone, as a one-time
+ * schedule would, with a warning: one broken row must not take a whole user's
+ * forecast, or a cross-user cron, down with it. Posting or skipping that row
+ * still refuses (`calculateNextDueDate` throws), so it is never settled on a
+ * guess.
+ */
+function stepperFor(
+  schedule: OccurrenceScheduleInput,
+): ((slot: string) => string) | null {
+  if (schedule.frequency === "ONCE") return null;
+  const startDate = schedule.startDate ? ensureYMD(schedule.startDate) : null;
+  if (schedule.frequency === "CUSTOM") {
+    const result = normalizeCustomRecurrence(schedule.customRecurrence);
+    if (!result.ok) {
+      logger.warn(
+        `Scheduled transaction ${schedule.id ?? "(unknown)"} is CUSTOM without a valid recurrence rule (${result.error}); expanding its next occurrence only`,
+      );
+      return null;
+    }
+    return customStepper(result.rule, startDate);
+  }
+  const frequency = schedule.frequency;
+  return (slot) =>
+    calculateNextDueDate(
+      slot,
+      frequency,
+      anchorDayOf(schedule.startDate, slot),
+    );
 }

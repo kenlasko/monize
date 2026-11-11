@@ -1,3 +1,8 @@
+import { CustomStepContext, nextCustomDate } from "./custom-recurrence";
+import { daysInMonth, formatYMD, parseYMD } from "./ymd-calendar";
+
+export { daysInMonth };
+
 export type FrequencyType =
   | "ONCE"
   | "DAILY"
@@ -11,7 +16,8 @@ export type FrequencyType =
   | "EVERY4MONTHS"
   | "SEMIANNUAL"
   | "YEARLY"
-  | "EVERY2YEARS";
+  | "EVERY2YEARS"
+  | "CUSTOM";
 
 /**
  * Mean length of one cycle of each frequency, in days. `ONCE` is 0 -- it has no
@@ -43,30 +49,12 @@ export const FREQUENCY_CYCLE_DAYS: Record<FrequencyType, number> = {
   SEMIANNUAL: 365.25 / 2,
   YEARLY: 365.25,
   EVERY2YEARS: 365.25 * 2,
+  // No fixed cycle: `customOccurrencesPerYear` / `customMinGapDays` answer
+  // from the rule (docs/specs/custom-recurrence.md section 4).
+  CUSTOM: 0,
 };
 
 const YMD_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-
-function parseYMD(ymd: string): { y: number; m: number; d: number } {
-  const match = YMD_PATTERN.exec(ymd);
-  if (!match) {
-    throw new Error(`Invalid YYYY-MM-DD date string: ${ymd}`);
-  }
-  return {
-    y: Number(match[1]),
-    m: Number(match[2]),
-    d: Number(match[3]),
-  };
-}
-
-function formatYMD(y: number, m: number, d: number): string {
-  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-}
-
-/** The days in `month` (1-12) of `year`. */
-export function daysInMonth(year: number, month: number): number {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
-}
 
 function addDays(ymd: string, days: number): string {
   const { y, m, d } = parseYMD(ymd);
@@ -119,11 +107,15 @@ function addYearsClamped(
  * `start_date`: a month-based step clamps to the month length but returns to
  * the anchor day afterwards (31 Jan -> 28 Feb -> 31 Mar). Without it the step
  * keeps the previous date's day, which drifts after a short month.
+ *
+ * `CUSTOM` steps by `custom.rule`, its periods counted from `custom.startDate`,
+ * and throws without a valid rule (docs/specs/custom-recurrence.md section 3).
  */
 export function calculateNextDueDate(
   ymd: string,
   frequency: FrequencyType,
   anchorDay?: number,
+  custom?: CustomStepContext,
 ): string {
   switch (frequency) {
     case "ONCE":
@@ -160,8 +152,32 @@ export function calculateNextDueDate(
       return addYearsClamped(ymd, 1, anchorDay);
     case "EVERY2YEARS":
       return addYearsClamped(ymd, 2, anchorDay);
+    case "CUSTOM":
+      return nextCustomDate(
+        ymd,
+        custom?.rule,
+        custom?.startDate ? ensureYMD(custom.startDate) : null,
+      );
     default:
       return ymd;
+  }
+}
+
+/**
+ * Throw when a `CUSTOM` schedule reaches code that assumes a fixed cadence: the
+ * loan-installment calendar, its pricing and its fees count periods per year
+ * and step without a rule. The write path refuses Custom on a loan payment
+ * (docs/specs/custom-recurrence.md section 5), so reaching this is a defect,
+ * and an error beats a silent monthly default or a calendar of one slot.
+ */
+export function assertFixedCadence(
+  frequency: string | null | undefined,
+  where: string,
+): void {
+  if (frequency === "CUSTOM") {
+    throw new Error(
+      `${where}: a CUSTOM schedule has no fixed cadence and is never a loan installment schedule`,
+    );
   }
 }
 

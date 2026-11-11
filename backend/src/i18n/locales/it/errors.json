@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Azione collettiva non supportata: {{ action }}",
     "unsupportedSimpleAction": "Azione non supportata: {{ action }}",
     "unsupportedTableForReinsert": "Tabella non supportata per il reinserimento: {{ tableName }}",
-    "undoConversion": "Questa modifica ha convertito una transazione in trasferimento o viceversa, quindi non può essere annullata automaticamente. Riconvertila invece."
+    "undoConversion": "Questa modifica ha convertito una transazione in trasferimento o viceversa, quindi non può essere annullata automaticamente. Riconvertila invece.",
+    "customRecurrenceMissing": "Questa modifica non può essere annullata né ripetuta: la regola di ripetizione personalizzata della transazione pianificata manca dalla sua cronologia"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Fornisci una password o un invito via email, non entrambi.",
@@ -312,7 +313,8 @@
     "offsiteEncryptionKeyRequired": "Questo server non può memorizzare credenziali S3 perché ENCRYPTION_KEY non è impostata. Chiedi a un amministratore di configurarla oppure usa il bucket dell'installazione.",
     "offsiteEmailAddressRequired": "Indica l'indirizzo a cui inviare i tuoi backup.",
     "manualRunFailed": "Non è stato possibile scrivere alcun backup: {{ count }} account non sono riusciti. Primo errore: {{ reason }}",
-    "manualRunInProgress": "Un backup di tutti gli account è già in corso su questo deployment. Attendi che finisca e riprova."
+    "manualRunInProgress": "Un backup di tutti gli account è già in corso su questo deployment. Attendi che finisca e riprova.",
+    "invalidCustomRecurrence": "Transazione pianificata del backup non valida: una frequenza personalizzata richiede una regola di ripetizione valida"
   },
   "budgets": {
     "notFound": "Budget con ID {{ id }} non trovato",
@@ -327,7 +329,8 @@
     "billAccountMustBeFiat": "Una regola di trattenuta sullo stipendio tiene traccia di una fattura pagata in una valuta fiat; il conto di questa fattura contiene la criptovaluta {{ code }}. Scegli una fattura pagata da un conto in valuta fiat.",
     "notFound": "Regola di trattenuta sullo stipendio {{ id }} non trovata",
     "duplicate": "Questa fattura ha già una regola per quella categoria",
-    "expectedRequired": "La fattura non ha una riga per questa categoria; inserisci l'importo previsto per busta paga"
+    "expectedRequired": "La fattura non ha una riga per questa categoria; inserisci l'importo previsto per busta paga",
+    "billCustomFrequency": "Una regola di trattenuta sullo stipendio richiede una fattura con frequenza fissa; questa fattura si ripete secondo una pianificazione personalizzata."
   },
   "categories": {
     "notFound": "Categoria con ID {{ id }} non trovata",
@@ -611,7 +614,12 @@
     "estimateNoAutoPost": "Una transazione pianificata con un importo stimato non può essere registrata automaticamente",
     "estimateRequiresPayeeAndCategory": "Un importo stimato richiede un beneficiario e una categoria su cui confrontare lo storico dei pagamenti",
     "estimateUnknown": "L'importo stimato di questa occorrenza è sconosciuto. Inserisci l'importo per registrarla.",
-    "estimateBasisOwnerOnly": "Solo il proprietario può cambiare il beneficiario o la categoria di una bolletta con importo stimato"
+    "estimateBasisOwnerOnly": "Solo il proprietario può cambiare il beneficiario o la categoria di una bolletta con importo stimato",
+    "customRecurrenceRequired": "Una frequenza personalizzata richiede una regola di ripetizione",
+    "customRecurrenceOnlyForCustom": "Una regola di ripetizione può essere impostata solo quando la frequenza è Personalizzata",
+    "customRecurrenceInvalid": "La regola di ripetizione personalizzata non è valida",
+    "customNotForLoan": "Il pagamento di un prestito o di un mutuo non può usare una frequenza personalizzata; scegli una frequenza fissa",
+    "customNotForPayroll": "Una fattura dello stipendio con limiti di trattenuta non può usare una frequenza personalizzata; scegli una frequenza fissa"
   },
   "bonds": {
     "securityNotLinked": "Titolo {{ securityId }} non trovato o non collegato a un programma obbligazionario",

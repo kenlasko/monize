@@ -341,7 +341,56 @@
     "EVERY4MONTHS": "Every 4 Months",
     "SEMIANNUAL": "Twice a Year",
     "YEARLY": "Yearly",
-    "EVERY2YEARS": "Every 2 Years"
+    "EVERY2YEARS": "Every 2 Years",
+    "CUSTOM": "Custom"
+  },
+  "customRecurrence": {
+    "title": "Repeats",
+    "unitLabel": "Repeat by",
+    "units": {
+      "WEEK": "Weekly",
+      "MONTH": "Monthly",
+      "YEAR": "Yearly"
+    },
+    "every": "Every",
+    "intervalLabel": "Repeat every",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, one {week on} other {weeks on}}",
+      "MONTH": "{interval, plural, one {month on} other {months on}}",
+      "YEAR": "{interval, plural, one {year on} other {years on}}"
+    },
+    "weekdaysLabel": "Days of the week",
+    "monthDaysLabel": "Days of the month",
+    "lastDayChip": "Last day",
+    "lastDay": "last day",
+    "dayOfMonth": "{day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+    "monthHint": "A day past the end of a short month falls on its last day, and two days that land on the same date post once.",
+    "datesLabel": "Dates of the year",
+    "monthLabel": "Month",
+    "dayLabel": "Day",
+    "addDate": "Add date",
+    "removeDate": "Remove {date}",
+    "yearHint": "29 February falls on 28 February in years without one.",
+    "summary": {
+      "WEEK": "{interval, plural, one {Every week on {days}} other {Every # weeks on {days}}}",
+      "MONTH": "{interval, plural, one {Every month on the {days}} other {Every # months on the {days}}}",
+      "YEAR": "{interval, plural, one {Every year on {days}} other {Every # years on {days}}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "Pick at least one day of the week.",
+        "MONTH": "Pick at least one day of the month.",
+        "YEAR": "Add at least one date."
+      },
+      "interval": "Enter a number from 1 to 12.",
+      "invalid": "This pattern cannot be saved. Pick the days again."
+    },
+    "firstOccurrence": "First occurrence: {date}",
+    "nextOccurrence": "Next occurrence: {date}",
+    "nextOccurrenceOffPattern": "Next occurrence: {date}. This date is off the pattern; later occurrences follow it.",
+    "orphanWarning": "{count, plural, one {# edited occurrence ({dates}) no longer falls on this pattern and will be removed when you save.} other {# edited occurrences ({dates}) no longer fall on this pattern and will be removed when you save.}}",
+    "notForLoan": "A loan or mortgage payment cannot use a custom frequency; choose a fixed frequency.",
+    "notForPayroll": "A payroll bill with deduction limits cannot use a custom frequency; choose a fixed frequency."
   },
   "validation": {
     "nameRequired": "Name is required",

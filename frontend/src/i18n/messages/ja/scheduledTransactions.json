@@ -341,7 +341,56 @@
     "EVERY4MONTHS": "4か月ごと",
     "SEMIANNUAL": "年2回",
     "YEARLY": "毎年",
-    "EVERY2YEARS": "2年ごと"
+    "EVERY2YEARS": "2年ごと",
+    "CUSTOM": "カスタム"
+  },
+  "customRecurrence": {
+    "title": "繰り返し",
+    "unitLabel": "繰り返す単位",
+    "units": {
+      "WEEK": "毎週",
+      "MONTH": "毎月",
+      "YEAR": "毎年"
+    },
+    "every": "毎",
+    "intervalLabel": "繰り返す間隔",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, other {週ごと、曜日は}}",
+      "MONTH": "{interval, plural, other {か月ごと、日付は}}",
+      "YEAR": "{interval, plural, other {年ごと、日付は}}"
+    },
+    "weekdaysLabel": "曜日",
+    "monthDaysLabel": "日付",
+    "lastDayChip": "月末",
+    "lastDay": "月末",
+    "dayOfMonth": "{day, selectordinal, other {#日}}",
+    "monthHint": "短い月の末日を超える日は月末に振り替えられ、同じ日付になる2つの日は1回だけ計上されます。",
+    "datesLabel": "1年の日付",
+    "monthLabel": "月",
+    "dayLabel": "日",
+    "addDate": "日付を追加",
+    "removeDate": "{date}を削除",
+    "yearHint": "2月29日は、その日がない年には2月28日になります。",
+    "summary": {
+      "WEEK": "{interval, plural, other {#週ごとの{days}}}",
+      "MONTH": "{interval, plural, other {#か月ごとの{days}}}",
+      "YEAR": "{interval, plural, other {#年ごとの{days}}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "曜日を1つ以上選択してください。",
+        "MONTH": "日付を1つ以上選択してください。",
+        "YEAR": "日付を1つ以上追加してください。"
+      },
+      "interval": "1から12の数値を入力してください。",
+      "invalid": "このパターンは保存できません。日付を選び直してください。"
+    },
+    "firstOccurrence": "初回の発生：{date}",
+    "nextOccurrence": "次回の発生：{date}",
+    "nextOccurrenceOffPattern": "次回の発生：{date}。この日付はパターン外です。以降の発生はパターンに従います。",
+    "orphanWarning": "{count, plural, other {編集済みの発生#件（{dates}）はこのパターンに該当しなくなったため、保存時に削除されます。}}",
+    "notForLoan": "ローンまたは住宅ローンの返済にはカスタムの頻度を使用できません。固定の頻度を選択してください。",
+    "notForPayroll": "控除上限のある給与の請求にはカスタムの頻度を使用できません。固定の頻度を選択してください。"
   },
   "validation": {
     "nameRequired": "名前は必須です",

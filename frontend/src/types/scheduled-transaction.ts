@@ -5,6 +5,7 @@ import { Tag } from './tag';
 import { InvestmentAction, Security } from './investment';
 import { SplitKind, InvestmentSplitDetails } from './transaction';
 import type { ScheduledPayrollDeduction } from './payroll-deduction';
+import type { CustomRecurrence } from '@/lib/custom-recurrence';
 
 /**
  * Every frequency a scheduled transaction can have, ordered shortest period
@@ -29,6 +30,7 @@ export const FREQUENCY_VALUES = [
   'SEMIANNUAL',
   'YEARLY',
   'EVERY2YEARS',
+  'CUSTOM',
 ] as const;
 
 export type FrequencyType = (typeof FREQUENCY_VALUES)[number];
@@ -117,6 +119,8 @@ export interface ScheduledTransaction {
   description: string | null;
   referenceNumber: string | null;
   frequency: FrequencyType;
+  /** The rule when `frequency` is `CUSTOM`, else null (docs/specs/custom-recurrence.md). */
+  customRecurrence?: CustomRecurrence | null;
   nextDueDate: string;
   startDate: string;
   endDate: string | null;
@@ -240,6 +244,8 @@ export interface CreateScheduledTransactionData {
   description?: string | null;
   referenceNumber?: string | null;
   frequency: FrequencyType;
+  /** Required when `frequency` is `CUSTOM`; null clears it. */
+  customRecurrence?: CustomRecurrence | null;
   nextDueDate: string;
   startDate?: string;
   endDate?: string;

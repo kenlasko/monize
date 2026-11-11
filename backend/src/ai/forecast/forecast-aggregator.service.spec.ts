@@ -402,6 +402,43 @@ describe("ForecastAggregatorService", () => {
       expect(result.scheduledTransactions[1].isIncome).toBe(false);
     });
 
+    it("spells out a Custom schedule's rule instead of the bare word", async () => {
+      mockScheduledTransactionRepo.find.mockResolvedValue([
+        {
+          id: "st-gym",
+          name: "Gym",
+          amount: -20,
+          frequency: "CUSTOM",
+          customRecurrence: {
+            unit: "WEEK",
+            interval: 1,
+            weekdays: [1, 3, 5],
+            weekStartsOn: 1,
+          },
+          startDate: "2026-03-02",
+          nextDueDate: new Date("2026-03-02"),
+          category: { name: "Fitness", isIncome: false },
+          isTransfer: false,
+        },
+        {
+          id: "st-rent",
+          name: "Rent",
+          amount: -1500,
+          frequency: "MONTHLY",
+          nextDueDate: new Date("2026-03-03"),
+          category: { name: "Housing", isIncome: false },
+          isTransfer: false,
+        },
+      ]);
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      expect(result.scheduledTransactions.map((s) => s.frequency)).toEqual([
+        "custom: every week on Mon, Wed, Fri",
+        "MONTHLY",
+      ]);
+    });
+
     it("quotes the next occurrence's own date and amount, override included", async () => {
       mockScheduledTransactionRepo.find.mockResolvedValue([
         {

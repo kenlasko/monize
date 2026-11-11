@@ -11,7 +11,7 @@ import {
 } from 'date-fns';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { parseLocalDate } from '@/lib/utils';
-import { advanceByFrequency, anchorDayOf, isOneTime } from '@/lib/frequency';
+import { advanceSchedule, isOneTime } from '@/lib/frequency';
 
 /**
  * Laying scheduled occurrences out on a month grid.
@@ -72,8 +72,8 @@ export function occurrencesInWindow(
     if (effectiveDate >= start && effectiveDate <= end) {
       occurrences.push(new Date(effectiveDate));
     }
-    if (isOneTime(st.frequency)) return occurrences;
-    nextDate = advanceByFrequency(nextDate, st.frequency, anchorDayOf(st.startDate, nextDate));
+    if (isOneTime(st)) return occurrences;
+    nextDate = advanceSchedule(nextDate, st);
     count++;
   }
   return occurrences;

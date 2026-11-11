@@ -1,5 +1,6 @@
 import {
   anchorDayOf,
+  assertFixedCadence,
   calculateNextDueDate,
   FrequencyType,
 } from "../common/recurrence";
@@ -71,6 +72,7 @@ function stepForward(
   frequency: string,
   startDate: string,
 ): string | null {
+  assertFixedCadence(frequency, "occurrenceSlotsInRange");
   const next = calculateNextDueDate(
     date,
     frequency as FrequencyType,
@@ -309,11 +311,15 @@ export function selectOccurrenceSlot(
  * `periodsPerYearForStoredFrequency` gives the two a different count. A loan
  * with no stored cadence takes the schedule's; an unknown count on either
  * side is not a mismatch here (the cadence refusal names `paymentFrequency`).
+ * A `CUSTOM` schedule has no fixed cadence, so it never matches: the caller's
+ * `scheduleCalendar` refusal names it instead of an error taking the plan down
+ * (docs/specs/custom-recurrence.md section 5).
  */
 export function scheduleCadenceMatchesLoan(
   loanPaymentFrequency: string | null | undefined,
   scheduleFrequency: string,
 ): boolean {
+  if (scheduleFrequency === "CUSTOM") return false;
   if (!loanPaymentFrequency) return true;
   const loanCount = periodsPerYearForStoredFrequency(loanPaymentFrequency);
   const scheduleCount = periodsPerYearForStoredFrequency(scheduleFrequency);

@@ -341,7 +341,56 @@
     "EVERY4MONTHS": "Her 4 Ayda Bir",
     "SEMIANNUAL": "Yılda İki Kez",
     "YEARLY": "Yıllık",
-    "EVERY2YEARS": "Her 2 Yılda Bir"
+    "EVERY2YEARS": "Her 2 Yılda Bir",
+    "CUSTOM": "Özel"
+  },
+  "customRecurrence": {
+    "title": "Tekrar",
+    "unitLabel": "Tekrar türü",
+    "units": {
+      "WEEK": "Haftalık",
+      "MONTH": "Aylık",
+      "YEAR": "Yıllık"
+    },
+    "every": "Her",
+    "intervalLabel": "Her şu sürede tekrarla",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, one {hafta, günler:} other {hafta, günler:}}",
+      "MONTH": "{interval, plural, one {ay, günler:} other {ay, günler:}}",
+      "YEAR": "{interval, plural, one {yıl, tarihler:} other {yıl, tarihler:}}"
+    },
+    "weekdaysLabel": "Haftanın günleri",
+    "monthDaysLabel": "Ayın günleri",
+    "lastDayChip": "Son gün",
+    "lastDay": "son gün",
+    "dayOfMonth": "{day, selectordinal, other {#.}}",
+    "monthHint": "Kısa bir ayın sonunu aşan gün, o ayın son gününe denk gelir ve aynı tarihe düşen iki gün yalnızca bir kez işlenir.",
+    "datesLabel": "Yılın tarihleri",
+    "monthLabel": "Ay",
+    "dayLabel": "Gün",
+    "addDate": "Tarih ekle",
+    "removeDate": "{date} tarihini kaldır",
+    "yearHint": "29 Şubat, bu günün olmadığı yıllarda 28 Şubat'a denk gelir.",
+    "summary": {
+      "WEEK": "{interval, plural, one {Her hafta: {days}} other {Her # haftada bir: {days}}}",
+      "MONTH": "{interval, plural, one {Her ay: {days}} other {Her # ayda bir: {days}}}",
+      "YEAR": "{interval, plural, one {Her yıl: {days}} other {Her # yılda bir: {days}}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "Haftanın en az bir gününü seçin.",
+        "MONTH": "Ayın en az bir gününü seçin.",
+        "YEAR": "En az bir tarih ekleyin."
+      },
+      "interval": "1 ile 12 arasında bir sayı girin.",
+      "invalid": "Bu desen kaydedilemiyor. Günleri yeniden seçin."
+    },
+    "firstOccurrence": "İlk tekrar: {date}",
+    "nextOccurrence": "Sonraki tekrar: {date}",
+    "nextOccurrenceOffPattern": "Sonraki tekrar: {date}. Bu tarih desenin dışında; sonraki tekrarlar desene uyar.",
+    "orphanWarning": "{count, plural, one {Düzenlenen # tekrar ({dates}) artık bu desene uymuyor ve kaydettiğinizde kaldırılacak.} other {Düzenlenen # tekrar ({dates}) artık bu desene uymuyor ve kaydettiğinizde kaldırılacak.}}",
+    "notForLoan": "Bir kredi veya konut kredisi ödemesi özel sıklık kullanamaz; sabit bir sıklık seçin.",
+    "notForPayroll": "Kesinti sınırı olan bir bordro faturası özel sıklık kullanamaz; sabit bir sıklık seçin."
   },
   "validation": {
     "nameRequired": "Ad zorunludur",

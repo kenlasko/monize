@@ -1,5 +1,6 @@
 import type { ScheduleAmountEstimateStatus } from "../../scheduled-transactions/scheduled-amount-estimate.service";
 import { Injectable, Inject, Logger, forwardRef } from "@nestjs/common";
+import { describeFrequencyForModel } from "../../common/custom-recurrence-describe";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
 import {
@@ -479,7 +480,9 @@ export class ForecastAggregatorService {
         amountComplete: occurrence.amount !== null,
         amountEstimated: occurrence.estimated,
         estimateStatus: occurrence.estimateStatus,
-        frequency: st.frequency,
+        // A Custom schedule is spelled out ("custom: every week on Mon,
+        // Wed"): the bare word says nothing about how often it falls due.
+        frequency: describeFrequencyForModel(st.frequency, st.customRecurrence),
         nextDueDate: occurrence.dueDate,
         categoryName: st.category?.name || null,
         isIncome,

@@ -130,6 +130,18 @@ import {
   memoizedRateResolver,
 } from "../common/converting-total";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
+import {
+  CustomRecurrence,
+  customMinGapDays,
+} from "../common/custom-recurrence";
+import { describeCustomRecurrenceForModel } from "../common/custom-recurrence-describe";
+import {
+  assertCustomFrequencyAllowed,
+  orphanedOverrides,
+  resolveCustomRecurrence,
+  resolvePatternUpdate,
+  snapToCustomPattern,
+} from "./custom-recurrence-write";
 import { tr } from "../i18n/translate";
 import {
   programOfSecurity,
@@ -182,6 +194,11 @@ export interface LlmScheduledItem {
    */
   currency: string;
   frequency: FrequencyType;
+  /**
+   * A `CUSTOM` schedule's rule in plain English ("every week on Mon, Wed");
+   * absent for every other frequency, whose word already says it.
+   */
+  customSchedule?: string;
   nextDueDate: string;
   daysUntilDue: number;
   isActive: boolean;
@@ -540,7 +557,22 @@ export const TRADE_SCHEDULE_WINDOW_DAYS = 7;
  * take for the one that trade paid). A daily schedule matches its own day only;
  * a one-time one has no next occurrence and keeps the full window.
  */
-export function tradeScheduleWindowDays(frequency: FrequencyType): number {
+export function tradeScheduleWindowDays(
+  frequency: FrequencyType,
+  customRecurrence?: CustomRecurrence | null,
+): number {
+  // A Custom rule has no fixed cycle; its shortest gap is what the next
+  // occurrence can be as close as, so a Monday-and-Tuesday schedule matches
+  // its own day only (docs/specs/custom-recurrence.md section 4). Without a
+  // rule nothing is known about the spacing: the narrowest window.
+  if (frequency === "CUSTOM") {
+    const gap = customMinGapDays(customRecurrence);
+    if (!gap) return 0;
+    return Math.max(
+      0,
+      Math.min(TRADE_SCHEDULE_WINDOW_DAYS, Math.floor((gap - 1) / 2)),
+    );
+  }
   const cycle = FREQUENCY_CYCLE_DAYS[frequency];
   if (!cycle) return TRADE_SCHEDULE_WINDOW_DAYS;
   return Math.max(
@@ -1049,6 +1081,22 @@ export class ScheduledTransactionsService {
     } = createDto;
     const hasSplits = !isInvestment && splits && splits.length > 0;
 
+    // A Custom schedule stores its rule in canonical form and starts on the
+    // pattern; any other frequency stores none (docs/specs/custom-recurrence.md
+    // section 5). Decided before the estimate below reads the due date.
+    const customRecurrence = resolveCustomRecurrence(
+      createDto.frequency,
+      createDto.customRecurrence,
+    );
+    const startDate = transactionData.startDate || transactionData.nextDueDate;
+    const nextDueDate = customRecurrence
+      ? snapToCustomPattern(
+          transactionData.nextDueDate,
+          startDate,
+          customRecurrence,
+        )
+      : transactionData.nextDueDate;
+
     // The schedule's own currency is its account's; a foreign entry is the
     // `originalCurrencyCode` trio below. Refused before any write, as a
     // posting would refuse it at every due date (A26-S15-10).
@@ -1085,7 +1133,7 @@ export class ScheduledTransactionsService {
             categoryId: createDto.categoryId ?? null,
             currencyCode: account.currencyCode,
           },
-          createDto.nextDueDate,
+          nextDueDate,
         )) ?? createDto.amount)
       : createDto.amount;
 
@@ -1124,13 +1172,24 @@ export class ScheduledTransactionsService {
       if (hasSplits && !isTransfer) {
         this.validateSplits(splits, createDto.amount, moneyDecimals);
       }
+      if (customRecurrence) {
+        await assertCustomFrequencyAllowed(m, userId, {
+          id: null,
+          splitTransferAccountIds:
+            hasSplits && !isTransfer
+              ? splits.map((split) => split.transferAccountId)
+              : [],
+        });
+      }
       const repo = m.getRepository(ScheduledTransaction);
       const scheduledTransaction = repo.create({
         ...transactionData,
         amount: scheduleAmount,
         amountIsEstimated: createDto.amountIsEstimated === true,
         userId,
-        startDate: transactionData.startDate || transactionData.nextDueDate,
+        customRecurrence,
+        nextDueDate,
+        startDate,
         totalOccurrences: transactionData.occurrencesRemaining,
         // A transfer may carry an optional spending category (see #743): it is
         // stored on the schedule and applied to both legs when posted, surfacing
@@ -2670,6 +2729,19 @@ export class ScheduledTransactionsService {
     if (updateData.tagIds !== undefined)
       fieldsToUpdate.tagIds = updateData.tagIds;
 
+    // Custom recurrence (docs/specs/custom-recurrence.md section 5), decided
+    // here against the row read before the lock so a refused rule refuses
+    // early and the estimate below reads the snapped due date, then decided
+    // again against the locked row before anything is written.
+    Object.assign(
+      fieldsToUpdate,
+      resolvePatternUpdate(updateData, scheduled).fields,
+    );
+    const preLockNextDueDate = ensureYMD(
+      (fieldsToUpdate.nextDueDate as string | undefined) ??
+        scheduled.nextDueDate,
+    );
+
     // The estimate flag (issue #2096). Asked for explicitly, an unpriceable
     // shape is refused; carried over from the stored row, a switch to a split,
     // transfer, investment or foreign-currency amount drops it -- as that
@@ -3023,6 +3095,54 @@ export class ScheduledTransactionsService {
         );
       }
 
+      // The pattern columns, decided again from the locked row: the read
+      // before the lock may predate a concurrent switch to or from Custom, and
+      // a pairing derived from it could write CUSTOM without a rule or a rule
+      // beside another frequency. The request's own due date is the base the
+      // snap starts from, never the pre-lock snap.
+      const pattern = resolvePatternUpdate(updateData, current);
+      delete fieldsToUpdate.customRecurrence;
+      delete fieldsToUpdate.nextDueDate;
+      if (updateData.nextDueDate !== undefined) {
+        fieldsToUpdate.nextDueDate = updateData.nextDueDate;
+      }
+      Object.assign(fieldsToUpdate, pattern.fields);
+      // An estimate priced for the pre-lock due date no longer describes the
+      // write when the due date moved under it.
+      if (
+        effectiveEstimated &&
+        snapshotMayMove &&
+        ensureYMD(
+          (fieldsToUpdate.nextDueDate as string | undefined) ??
+            current.nextDueDate,
+        ) !== preLockNextDueDate
+      ) {
+        throw new ConflictException(
+          tr(
+            "errors.scheduled.changedConcurrently",
+            "The scheduled transaction changed during the operation. Reload it and retry.",
+          ),
+        );
+      }
+
+      // A loan payment or payroll bill keeps a fixed cadence: refused here,
+      // under the row lock and before the first write. The split lines are the
+      // ones the schedule will hold: the request's, none when a mode switch
+      // clears them, else the stored ones.
+      if (pattern.rule) {
+        const lines = Array.isArray(splits)
+          ? splits
+          : clearSplitsForModeSwitch || !current.isSplit
+            ? []
+            : await m.find(ScheduledTransactionSplit, {
+                where: { scheduledTransactionId: id },
+              });
+        await assertCustomFrequencyAllowed(m, userId, {
+          id,
+          splitTransferAccountIds: lines.map((line) => line.transferAccountId),
+        });
+      }
+
       // The amounts the schedule will hold, not the fields the request sent:
       // a schedule moved to an account in another currency carries its stored
       // amount, its stored split lines (when none are resent and none are
@@ -3124,6 +3244,36 @@ export class ScheduledTransactionsService {
 
       if (Object.keys(fieldsToUpdate).length > 0) {
         await m.update(ScheduledTransaction, id, fieldsToUpdate);
+      }
+
+      // An override is keyed on its slot (`uq_sched_txn_overrides_occurrence`),
+      // so one whose slot the new pattern no longer holds is reachable from no
+      // surface: delete it with the change that orphaned it (section 5).
+      if (pattern.patternChanged) {
+        const held = await m.find(ScheduledTransactionOverride, {
+          where: { scheduledTransactionId: id },
+        });
+        const orphans = orphanedOverrides(
+          {
+            frequency: pattern.frequency,
+            nextDueDate: ensureYMD(
+              (fieldsToUpdate.nextDueDate as string | undefined) ??
+                current.nextDueDate,
+            ),
+            startDate: ensureYMD(
+              (fieldsToUpdate.startDate as string | undefined) ??
+                current.startDate,
+            ),
+            customRecurrence: pattern.rule,
+            previousNextDueDate: ensureYMD(current.nextDueDate),
+          },
+          held,
+        );
+        if (orphans.length > 0) {
+          await m.delete(ScheduledTransactionOverride, {
+            id: In(orphans.map((o) => o.id)),
+          });
+        }
       }
 
       // A user edit of a loan payment schedule is a reconfiguration, so it has
@@ -3275,7 +3425,12 @@ export class ScheduledTransactionsService {
       }
       assertScheduleHasOccurrence(current);
 
-      if (calcNextDueDate(nextDueDateStr, current.frequency) > nextDueDateStr) {
+      if (
+        calcNextDueDate(nextDueDateStr, current.frequency, undefined, {
+          rule: current.customRecurrence,
+          startDate: current.startDate,
+        }) > nextDueDateStr
+      ) {
         // Step past this slot and every slot a settlement rule claimed at or
         // after it. A skip posts nothing, so `last_posted_date` stays.
         await advanceScheduleCursor(
@@ -3511,7 +3666,7 @@ export class ScheduledTransactionsService {
     const due = rows.filter(
       (row) =>
         Math.abs(daysBetweenYMD(trade.date, ensureYMD(row.nextDueDate))) <=
-        tradeScheduleWindowDays(row.frequency),
+        tradeScheduleWindowDays(row.frequency, row.customRecurrence),
     );
     if (due.length !== 1) return null;
     const [row] = due;
@@ -4906,15 +5061,6 @@ export class ScheduledTransactionsService {
     return created.id;
   }
 
-  private calculateNextDueDate(
-    currentDate: Date | string,
-    frequency: FrequencyType,
-  ): Date {
-    const ymd = ensureYMD(currentDate);
-    const next = calcNextDueDate(ymd, frequency);
-    return new Date(`${next}T00:00:00.000Z`);
-  }
-
   // Delegated override methods
 
   /**
@@ -5184,6 +5330,13 @@ function toLlmScheduledItem(
     estimateStatus: occurrence.estimateStatus,
     currency: occurrence.currencyCode,
     frequency: row.frequency,
+    ...(row.frequency === "CUSTOM"
+      ? {
+          customSchedule: describeCustomRecurrenceForModel(
+            row.customRecurrence,
+          ),
+        }
+      : {}),
     nextDueDate: occurrence.dueDate,
     daysUntilDue: daysBetweenYMD(todayYMDStr, occurrence.dueDate),
     isActive: row.isActive,

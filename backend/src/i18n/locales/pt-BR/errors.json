@@ -110,7 +110,8 @@
     "unsupportedBulkAction": "Ação em massa não suportada: {{ action }}",
     "unsupportedSimpleAction": "Ação não suportada: {{ action }}",
     "unsupportedTableForReinsert": "Tabela não suportada para reinserção: {{ tableName }}",
-    "undoConversion": "Esta alteração converteu uma transação em transferência ou vice-versa, então não pode ser desfeita automaticamente. Converta-a de volta."
+    "undoConversion": "Esta alteração converteu uma transação em transferência ou vice-versa, então não pode ser desfeita automaticamente. Converta-a de volta.",
+    "customRecurrenceMissing": "Esta alteração não pode ser desfeita nem refeita: a regra de repetição personalizada da transação agendada não está no histórico"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Forneça uma senha ou um convite por e-mail, não ambos.",
@@ -312,7 +313,8 @@
     "offsiteEncryptionKeyRequired": "Este servidor não pode armazenar credenciais do S3 porque ENCRYPTION_KEY não está definida. Peça a um administrador que a configure ou use o bucket desta instalação.",
     "offsiteEmailAddressRequired": "Informe o endereço para o qual os seus backups devem ser enviados.",
     "manualRunFailed": "Não foi possível gravar nenhum backup: {{ count }} contas falharam. Primeiro erro: {{ reason }}",
-    "manualRunInProgress": "Já está em andamento um backup de todas as contas nesta implantação. Aguarde a conclusão e tente novamente."
+    "manualRunInProgress": "Já está em andamento um backup de todas as contas nesta implantação. Aguarde a conclusão e tente novamente.",
+    "invalidCustomRecurrence": "Transação agendada do backup inválida: uma frequência personalizada exige uma regra de repetição válida"
   },
   "budgets": {
     "notFound": "Orçamento com ID {{ id }} não encontrado",
@@ -327,7 +329,8 @@
     "billAccountMustBeFiat": "Uma regra de dedução salarial acompanha uma conta a pagar paga em uma moeda fiduciária; a conta desta fatura contém a criptomoeda {{ code }}. Escolha uma conta a pagar paga a partir de uma conta em moeda fiduciária.",
     "notFound": "Regra de dedução salarial {{ id }} não encontrada",
     "duplicate": "Esta fatura já tem uma regra para essa categoria",
-    "expectedRequired": "A fatura não tem uma linha para esta categoria; informe o montante previsto por salário"
+    "expectedRequired": "A fatura não tem uma linha para esta categoria; informe o montante previsto por salário",
+    "billCustomFrequency": "Uma regra de dedução salarial exige uma conta a pagar com frequência fixa; esta conta se repete em um cronograma personalizado."
   },
   "categories": {
     "notFound": "Categoria com ID {{ id }} não encontrada",
@@ -611,7 +614,12 @@
     "estimateNoAutoPost": "Uma transação agendada com um valor estimado não pode ser lançada automaticamente",
     "estimateRequiresPayeeAndCategory": "Um valor estimado precisa de um favorecido e de uma categoria para corresponder ao histórico de pagamentos",
     "estimateUnknown": "O valor estimado desta ocorrência é desconhecido. Informe o valor para lançá-la.",
-    "estimateBasisOwnerOnly": "Somente o proprietário pode alterar o favorecido ou a categoria de uma conta com valor estimado"
+    "estimateBasisOwnerOnly": "Somente o proprietário pode alterar o favorecido ou a categoria de uma conta com valor estimado",
+    "customRecurrenceRequired": "Uma frequência personalizada exige uma regra de repetição",
+    "customRecurrenceOnlyForCustom": "Uma regra de repetição só pode ser definida quando a frequência é Personalizada",
+    "customRecurrenceInvalid": "A regra de repetição personalizada não é válida",
+    "customNotForLoan": "O pagamento de um empréstimo ou financiamento imobiliário não pode usar uma frequência personalizada; escolha uma frequência fixa",
+    "customNotForPayroll": "Uma conta a pagar de salário com limites de dedução não pode usar uma frequência personalizada; escolha uma frequência fixa"
   },
   "bonds": {
     "securityNotLinked": "Ativo {{ securityId }} não encontrado ou não vinculado a um programa de títulos",

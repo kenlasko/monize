@@ -341,7 +341,56 @@
     "EVERY4MONTHS": "4개월마다",
     "SEMIANNUAL": "연 2회",
     "YEARLY": "매년",
-    "EVERY2YEARS": "2년마다"
+    "EVERY2YEARS": "2년마다",
+    "CUSTOM": "사용자 지정"
+  },
+  "customRecurrence": {
+    "title": "반복",
+    "unitLabel": "반복 단위",
+    "units": {
+      "WEEK": "매주",
+      "MONTH": "매월",
+      "YEAR": "매년"
+    },
+    "every": "매",
+    "intervalLabel": "반복 간격",
+    "unitSuffix": {
+      "WEEK": "{interval, plural, other {주마다, 요일:}}",
+      "MONTH": "{interval, plural, other {개월마다, 날짜:}}",
+      "YEAR": "{interval, plural, other {년마다, 날짜:}}"
+    },
+    "weekdaysLabel": "요일",
+    "monthDaysLabel": "날짜",
+    "lastDayChip": "마지막 날",
+    "lastDay": "마지막 날",
+    "dayOfMonth": "{day, selectordinal, other {#일}}",
+    "monthHint": "짧은 달의 끝을 넘어가는 날짜는 그 달의 마지막 날로 처리되며, 같은 날짜에 겹치는 두 날은 한 번만 등록됩니다.",
+    "datesLabel": "연중 날짜",
+    "monthLabel": "월",
+    "dayLabel": "일",
+    "addDate": "날짜 추가",
+    "removeDate": "{date} 제거",
+    "yearHint": "2월 29일은 해당 날짜가 없는 해에는 2월 28일로 처리됩니다.",
+    "summary": {
+      "WEEK": "{interval, plural, other {# 주마다 {days}}}",
+      "MONTH": "{interval, plural, other {# 개월마다 {days}}}",
+      "YEAR": "{interval, plural, other {# 년마다 {days}}}"
+    },
+    "errors": {
+      "noDays": {
+        "WEEK": "요일을 하나 이상 선택하세요.",
+        "MONTH": "날짜를 하나 이상 선택하세요.",
+        "YEAR": "날짜를 하나 이상 추가하세요."
+      },
+      "interval": "1에서 12 사이의 숫자를 입력하세요.",
+      "invalid": "이 패턴은 저장할 수 없습니다. 날짜를 다시 선택하세요."
+    },
+    "firstOccurrence": "첫 번째 발생: {date}",
+    "nextOccurrence": "다음 발생: {date}",
+    "nextOccurrenceOffPattern": "다음 발생: {date}. 이 날짜는 패턴에서 벗어나 있으며, 이후 발생은 패턴을 따릅니다.",
+    "orphanWarning": "{count, plural, other {수정된 발생 #건({dates})이 더 이상 이 패턴에 해당하지 않아 저장 시 삭제됩니다.}}",
+    "notForLoan": "대출 또는 모기지 상환은 사용자 지정 빈도를 사용할 수 없습니다. 고정 빈도를 선택하세요.",
+    "notForPayroll": "공제 한도가 있는 급여 청구서는 사용자 지정 빈도를 사용할 수 없습니다. 고정 빈도를 선택하세요."
   },
   "validation": {
     "nameRequired": "이름은 필수입니다",

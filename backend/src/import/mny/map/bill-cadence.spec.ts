@@ -74,6 +74,13 @@ describe("cadenceForGap", () => {
     },
   );
 
+  it("never answers CUSTOM, whose rule has no fixed cycle", () => {
+    expect(CADENCE_DAYS.CUSTOM).toBe(0);
+    for (const days of [0.5, 1, 3, 7, 10, 45, 400, 10_000]) {
+      expect(cadenceForGap(days)).not.toBe(FrequencyType.CUSTOM);
+    }
+  });
+
   it("never answers ONCE, which has no spacing", () => {
     expect(CADENCE_DAYS.ONCE).toBe(0);
     for (const days of [0.5, 1, 7, 400, 10_000]) {

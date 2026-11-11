@@ -244,6 +244,28 @@ describe("advanceScheduleCursor", () => {
     },
   );
 
+  it("steps a CUSTOM schedule by its rule, past a claimed slot", async () => {
+    // Monday/Wednesday/Friday, started Monday 2025-02-10: from Friday the
+    // 14th, Monday the 17th is claimed, so the cursor lands on Wednesday.
+    const result = await advanceScheduleCursor(
+      m(),
+      schedule({
+        frequency: "CUSTOM",
+        nextDueDate: "2025-02-14",
+        startDate: "2025-02-10",
+        customRecurrence: {
+          unit: "WEEK",
+          interval: 1,
+          weekdays: [1, 3, 5],
+          weekStartsOn: 1,
+        },
+      }),
+      new Set(["2025-02-14", "2025-02-17"]),
+    );
+    expect(result.nextDueDate).toBe("2025-02-19");
+    expect(result.slotsConsumed).toBe(2);
+  });
+
   it("keeps a schedule active when the next slot is on or before its end date", async () => {
     const result = await advanceScheduleCursor(
       m(),

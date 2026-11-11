@@ -455,8 +455,10 @@ export class PayrollDeductionsService {
         m,
         userId,
         dto.scheduledTransactionId,
+        { lock: true },
       );
       await this.assertFiatBill(m, schedule);
+      this.assertFixedCadenceBill(schedule);
       const repo = m.getRepository(PayrollDeductionRule);
       const seen = new Set<string>();
       const prepared: PreparedLine[] = [];
@@ -619,8 +621,10 @@ export class PayrollDeductionsService {
         m,
         userId,
         scheduledTransactionId,
+        { lock: true },
       );
       await this.assertFiatBill(m, schedule);
+      this.assertFixedCadenceBill(schedule);
       if (dto.categoryId !== undefined) {
         await this.ownedCategory(m, userId, categoryId);
       }
@@ -755,15 +759,35 @@ export class PayrollDeductionsService {
     return roundMoney(entered);
   }
 
+  /**
+   * The user's schedule. `lock` row-locks it first (`FOR UPDATE`, as the
+   * schedule's own update does before it decides anything): a rule write then
+   * reads the frequency the schedule will keep, so a concurrent switch to
+   * Custom and a new deduction rule cannot both commit
+   * (docs/specs/custom-recurrence.md section 5). The lock is taken on the bare
+   * row because PostgreSQL refuses `FOR UPDATE` on the nullable side of the
+   * splits join.
+   */
   private async ownedSchedule(
     m: EntityManager,
     userId: string,
     id: string,
+    { lock = false }: { lock?: boolean } = {},
   ): Promise<ScheduledTransaction> {
-    const schedule = await m.getRepository(ScheduledTransaction).findOne({
-      where: { id, userId },
-      relations: ["splits"],
-    });
+    const repo = m.getRepository(ScheduledTransaction);
+    const locked = lock
+      ? await repo.findOne({
+          where: { id, userId },
+          select: { id: true },
+          lock: { mode: "pessimistic_write" },
+        })
+      : true;
+    const schedule = locked
+      ? await repo.findOne({
+          where: { id, userId },
+          relations: ["splits"],
+        })
+      : null;
     if (!schedule) {
       throw new NotFoundException(
         tr(
@@ -797,6 +821,21 @@ export class PayrollDeductionsService {
         "errors.payrollDeductions.billAccountMustBeFiat",
         `A payroll deduction rule tracks a bill paid in a fiat currency; this bill's account holds the cryptocurrency ${code}. Choose a bill paid from a fiat account.`,
         { code },
+      ),
+    );
+  }
+
+  /**
+   * A rule pools deductions over pay periods of a fixed cadence, so a bill on
+   * the Custom frequency takes none (docs/specs/custom-recurrence.md section
+   * 5); the schedule's own update refuses the opposite order.
+   */
+  private assertFixedCadenceBill(schedule: ScheduledTransaction): void {
+    if (schedule.frequency !== "CUSTOM") return;
+    throw new BadRequestException(
+      tr(
+        "errors.payrollDeductions.billCustomFrequency",
+        "A payroll deduction rule needs a bill on a fixed frequency; this bill repeats on a custom schedule.",
       ),
     );
   }

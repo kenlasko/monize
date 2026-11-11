@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { advanceByFrequency, anchorDayOf, isOneTime, monthlyEquivalent } from './frequency';
+import { advanceByFrequency, advanceSchedule, anchorDayOf, isOneTime, monthlyEquivalent } from './frequency';
 import { FREQUENCY_VALUES, FrequencyType } from '@/types/scheduled-transaction';
+import type { CustomRecurrence, CustomStepContext } from './custom-recurrence';
 
 /** `YYYY-MM-DD` for a local-time Date, matching how the callers key dates. */
 function ymd(date: Date): string {
@@ -14,7 +15,12 @@ const from = (iso: string) => {
   return new Date(y, m - 1, d);
 };
 
-const step = (iso: string, frequency: FrequencyType) => ymd(advanceByFrequency(from(iso), frequency));
+/** Mon, Wed, Fri every week: the rule a CUSTOM step needs to step at all. */
+const MON_WED_FRI: CustomRecurrence = { unit: 'WEEK', interval: 1, weekdays: [1, 3, 5], weekStartsOn: 1 };
+const CUSTOM_CONTEXT: CustomStepContext = { rule: MON_WED_FRI, startDate: '2026-05-10' };
+
+const step = (iso: string, frequency: FrequencyType) =>
+  ymd(advanceByFrequency(from(iso), frequency, undefined, frequency === 'CUSTOM' ? CUSTOM_CONTEXT : undefined));
 
 describe('advanceByFrequency', () => {
   it.each([
@@ -38,7 +44,8 @@ describe('advanceByFrequency', () => {
     // forecast that projects one occurrence over and over -- the SEMIMONTHLY
     // defect this module was extracted to fix.
     for (const frequency of FREQUENCY_VALUES) {
-      expect(() => advanceByFrequency(from('2026-05-10'), frequency)).not.toThrow();
+      const custom = frequency === 'CUSTOM' ? CUSTOM_CONTEXT : undefined;
+      expect(() => advanceByFrequency(from('2026-05-10'), frequency, undefined, custom)).not.toThrow();
       const stepped = step('2026-05-10', frequency);
       if (frequency === 'ONCE') {
         expect(stepped).toBe('2026-05-10');
@@ -46,6 +53,38 @@ describe('advanceByFrequency', () => {
         expect(stepped > '2026-05-10').toBe(true);
       }
     }
+  });
+
+  describe('CUSTOM', () => {
+    it('steps to the next rule date: Sunday 10 May 2026 to Monday the 11th, then Wednesday', () => {
+      expect(step('2026-05-10', 'CUSTOM')).toBe('2026-05-11');
+      expect(step('2026-05-11', 'CUSTOM')).toBe('2026-05-13');
+    });
+
+    it('throws without a rule, rather than repeating one date', () => {
+      expect(() => advanceByFrequency(from('2026-05-10'), 'CUSTOM')).toThrow(/CUSTOM/);
+    });
+
+    it('keeps the time of day of the input', () => {
+      const next = advanceByFrequency(new Date(2026, 4, 10, 9, 30), 'CUSTOM', undefined, CUSTOM_CONTEXT);
+      expect([next.getHours(), next.getMinutes()]).toEqual([9, 30]);
+    });
+  });
+
+  describe('advanceSchedule', () => {
+    it('reads the anchor day from the start date', () => {
+      const next = advanceSchedule(from('2027-02-28'), { frequency: 'MONTHLY', startDate: '2027-01-31' });
+      expect(ymd(next)).toBe('2027-03-31');
+    });
+
+    it('reads the rule and the period anchor from the schedule', () => {
+      const schedule = {
+        frequency: 'CUSTOM' as const,
+        startDate: '2026-11-11',
+        customRecurrence: { unit: 'WEEK' as const, interval: 2, weekdays: [2, 4], weekStartsOn: 1 },
+      };
+      expect(ymd(advanceSchedule(from('2026-11-12'), schedule))).toBe('2026-11-24');
+    });
   });
 
   it('never mutates the input date', () => {
@@ -56,8 +95,15 @@ describe('advanceByFrequency', () => {
 
   it('returns an equal date for ONCE, so callers must stop themselves', () => {
     expect(step('2026-05-10', 'ONCE')).toBe('2026-05-10');
-    expect(isOneTime('ONCE')).toBe(true);
-    expect(isOneTime('MONTHLY')).toBe(false);
+    expect(isOneTime({ frequency: 'ONCE' })).toBe(true);
+    expect(isOneTime({ frequency: 'MONTHLY' })).toBe(false);
+  });
+
+  it('treats a Custom schedule whose rule cannot step as one-time, so no walker throws', () => {
+    expect(isOneTime({ frequency: 'CUSTOM', customRecurrence: MON_WED_FRI })).toBe(false);
+    expect(isOneTime({ frequency: 'CUSTOM', customRecurrence: null })).toBe(true);
+    expect(isOneTime({ frequency: 'CUSTOM' })).toBe(true);
+    expect(isOneTime({ frequency: 'CUSTOM', customRecurrence: { unit: 'WEEK', interval: 1, weekdays: [] } })).toBe(true);
   });
 
   describe('month-end clamping', () => {
@@ -161,6 +207,15 @@ describe('monthlyEquivalent', () => {
     expect(monthlyEquivalent(amount, frequency)).toBeCloseTo(expected, 6);
   });
 
+  it('spreads a CUSTOM amount by the rule: three weekdays a week, or two days a month every 2 months', () => {
+    expect(monthlyEquivalent(100, 'CUSTOM', MON_WED_FRI)).toBeCloseTo((100 * 3 * 365.25) / 7 / 12, 6);
+    expect(monthlyEquivalent(100, 'CUSTOM', { unit: 'MONTH', interval: 2, monthDays: [1, 15] })).toBeCloseTo(100, 6);
+  });
+
+  it('counts a CUSTOM amount with no rule as no recurring cost, rather than guessing', () => {
+    expect(monthlyEquivalent(100, 'CUSTOM', null)).toBe(0);
+  });
+
   it('treats a one-time entry as no recurring monthly cost', () => {
     expect(monthlyEquivalent(500, 'ONCE')).toBe(0);
   });
@@ -174,7 +229,8 @@ describe('monthlyEquivalent', () => {
   it('covers every frequency, so a new one cannot silently count as zero', () => {
     for (const frequency of FREQUENCY_VALUES) {
       if (frequency === 'ONCE') continue;
-      expect(monthlyEquivalent(100, frequency)).toBeGreaterThan(0);
+      const rule = frequency === 'CUSTOM' ? MON_WED_FRI : undefined;
+      expect(monthlyEquivalent(100, frequency, rule)).toBeGreaterThan(0);
     }
   });
 });

@@ -2,7 +2,7 @@ import { anniversaryInYear } from '@/lib/payroll-period';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
-import { advanceByFrequency, anchorDayOf } from '@/lib/frequency';
+import { advanceSchedule, isOneTime } from '@/lib/frequency';
 import {
   estimatedOccurrenceAmount,
   occurrenceFollowsEstimate,
@@ -608,8 +608,9 @@ function generateOccurrences(
     ...(resolved.estimated && { estimated: true }),
   });
 
-  // For ONCE frequency, just check if it's in range
-  if (transaction.frequency === 'ONCE') {
+  // A one-time schedule (ONCE, or a Custom row without a rule that can step):
+  // just check whether its one date is in range.
+  if (isOneTime(transaction)) {
     const slotKey = formatDateKey(currentDate);
     const override = overrideMap.get(slotKey);
     const effectiveDate = override?.overrideDate ? parseLocalDate(override.overrideDate) : currentDate;
@@ -666,7 +667,7 @@ function generateOccurrences(
     }
 
     // Calculate next date based on frequency
-    currentDate = advanceByFrequency(currentDate, transaction.frequency, anchorDayOf(transaction.startDate, currentDate));
+    currentDate = advanceSchedule(currentDate, transaction);
   }
 
   return occurrences;

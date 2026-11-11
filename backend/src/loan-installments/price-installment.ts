@@ -12,6 +12,7 @@ import {
   nonAnnuityInstallment,
 } from "../accounts/mortgage-installment.util";
 import { roundMoney } from "../common/round.util";
+import { assertFixedCadence } from "../common/recurrence";
 import {
   allocateLoanPayment,
   LoanPaymentAllocation,
@@ -569,6 +570,7 @@ export function periodicRateFor(
   frequency: string,
   interestRate: number,
 ): number {
+  assertFixedCadence(frequency, "periodicRateFor");
   const periodsPerYear =
     periodsPerYearForStoredFrequency(frequency) ?? DEFAULT_PERIODS_PER_YEAR;
 

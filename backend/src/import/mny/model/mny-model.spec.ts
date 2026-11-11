@@ -523,9 +523,25 @@ describe("mapFrequency", () => {
     // EVERY2YEARS were added for the last two picker entries that had no type.
     // A frequency added here without a Money cadence, or a cadence that starts
     // sharing a type with another, shows up as a duplicate or a gap.
+    // CUSTOM is the one Monize frequency Money has no cadence for: a rule of
+    // chosen days has no fixed cycle (`FREQUENCY_CYCLE_DAYS.CUSTOM` is 0), so
+    // no `(frq, cFrqInst)` pair can name it.
     expect(MONEY_CADENCES.map((row) => row[3]).sort()).toEqual(
-      Object.keys(FREQUENCY_CYCLE_DAYS).sort(),
+      Object.keys(FREQUENCY_CYCLE_DAYS)
+        .filter((frequency) => frequency !== FrequencyType.CUSTOM)
+        .sort(),
     );
+  });
+
+  it("never maps a Money cadence to CUSTOM, which has no cycle", () => {
+    expect(FREQUENCY_CYCLE_DAYS.CUSTOM).toBe(0);
+    for (const unit of Object.values(MNY_FREQUENCY)) {
+      for (const rate of [0.25, 0.5, 1, 2, 3, 4, 52, 365]) {
+        expect(mapFrequency(unit, rate)?.frequency).not.toBe(
+          FrequencyType.CUSTOM,
+        );
+      }
+    }
   });
 
   it("reads cFrqInst as a rate, not as an interval (twice a month)", () => {

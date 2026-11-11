@@ -3,6 +3,7 @@ import { EntityManager } from "typeorm";
 import { returnedRows } from "../common/db/query-result";
 import { todayYMD } from "../common/date-utils";
 import {
+  assertFixedCadence,
   calculateNextDueDate,
   ensureYMD,
   FrequencyType,
@@ -154,6 +155,7 @@ async function advanceClaimedCursor(
     where: { scheduledTransactionId: schedule.id },
   });
 
+  assertFixedCadence(schedule.frequency, "claimLoanOccurrence");
   const steps =
     calculateNextDueDate(
       before.nextDueDate,

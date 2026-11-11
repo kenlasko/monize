@@ -24,6 +24,8 @@ import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
 import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 import { IsFxRate } from "../../common/validators/is-fx-rate.validator";
 import { IsShareQuantity } from "../../common/validators/is-share-quantity.validator";
+import { IsCustomRecurrence } from "../../common/validators/is-custom-recurrence.validator";
+import type { CustomRecurrence } from "../../common/custom-recurrence";
 
 export enum FrequencyType {
   ONCE = "ONCE",
@@ -39,6 +41,8 @@ export enum FrequencyType {
   SEMIANNUAL = "SEMIANNUAL",
   YEARLY = "YEARLY",
   EVERY2YEARS = "EVERY2YEARS",
+  /** Repeats by `customRecurrence` (docs/specs/custom-recurrence.md). */
+  CUSTOM = "CUSTOM",
 }
 
 export class CreateScheduledTransactionDto {
@@ -106,6 +110,15 @@ export class CreateScheduledTransactionDto {
 
   @IsEnum(FrequencyType)
   frequency: FrequencyType;
+
+  /**
+   * The rule a `CUSTOM` schedule repeats by: required with that frequency and
+   * refused with any other (docs/specs/custom-recurrence.md section 5). `null`
+   * clears it. Validated and canonicalized by `normalizeCustomRecurrence`.
+   */
+  @IsOptional()
+  @IsCustomRecurrence()
+  customRecurrence?: CustomRecurrence | null;
 
   @IsDateString()
   nextDueDate: string;
