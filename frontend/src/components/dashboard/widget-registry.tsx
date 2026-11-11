@@ -144,7 +144,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'favouriteAccounts',
     iconType: 'table',
     defaultEnabled: true,
-    minWidth: 'half',
+    minWidth: 'third',
     defaultHeight: 'auto',
     delegateVisible: () => true,
     render: (ctx) => (
@@ -164,7 +164,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'upcomingBills',
     iconType: 'table',
     defaultEnabled: true,
-    minWidth: 'half',
+    minWidth: 'third',
     defaultHeight: 'auto',
     delegateVisible: (sections) => !!sections?.bills,
     render: (ctx) => (

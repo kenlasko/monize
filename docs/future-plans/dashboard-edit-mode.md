@@ -119,8 +119,7 @@ Every height preset is offered for every widget (DASH-7 makes any of them safe).
 
 | Widgets | `minWidth` | `defaultHeight` | Today |
 |---|---|---|---|
-| `favourite-accounts`, `upcoming-bills` | `half` | `auto` | no floor |
-| `favourite-reports` | `third` | `auto` | no floor |
+| `favourite-accounts`, `upcoming-bills`, `favourite-reports` | `third` | `auto` | no floor |
 | `budget-status`, `insights`, `warranties-expiring`, `trivia` | `third` | `compact` | 390px |
 | `top-movers`, `favourite-securities` | `half` | `standard` | 500px |
 | `net-worth` | `half` | `standard` | 500px |
