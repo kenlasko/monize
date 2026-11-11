@@ -33,13 +33,16 @@ describe('TourOfferList', () => {
       screen.getByText('Foreign currency transactions'),
     ).toBeInTheDocument();
     expect(screen.getByText("What's New digest")).toBeInTheDocument();
-    expect(screen.getAllByText('Show me')).toHaveLength(3);
+    // One chip per tour, named by the tour.
+    expect(screen.getAllByRole('button')).toHaveLength(3);
   });
 
   it('starts a tour and steps the modal aside on click', () => {
     const onStartTour = vi.fn();
     render(<TourOfferList currentVersion="1.13.0" onStartTour={onStartTour} />);
-    fireEvent.click(screen.getAllByText('Show me')[0]);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'New here? Take the introduction tour' }),
+    );
     expect(onStartTour).toHaveBeenCalled();
     expect(useTourStore.getState().active?.tour.id).toBe('intro/basics');
   });
@@ -55,7 +58,9 @@ describe('TourOfferList', () => {
     expect(
       screen.queryByText('New here? Take the introduction tour'),
     ).toBeNull();
-    expect(screen.getByText('Viewed')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Foreign currency transactions\s*Viewed/ }),
+    ).toBeInTheDocument();
   });
 
   it('renders nothing when there is nothing to offer', () => {

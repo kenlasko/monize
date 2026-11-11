@@ -1,6 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { CheckIcon, PlayIcon } from '@heroicons/react/24/solid';
+import { Badge } from '@/components/ui/Badge';
 import { useTourStore } from '@/store/tourStore';
 import { getReleaseTours, INTRO_TOUR } from '@/lib/tours/registry';
 import { isTourOfferable } from '@/lib/tours/requirements';
@@ -18,7 +20,8 @@ interface TourOfferListProps {
 }
 
 /**
- * The "Take a quick tour" rows inside the What's New modal. Offers the current
+ * The "Take a quick tour" chips inside the What's New modal, one per tour,
+ * with the tour's area as the chip's tooltip and a tick once it was viewed. Offers the current
  * release's tours plus, for users who never took it, the introduction tour --
  * most existing users have dismissed the Getting Started card, so this row is
  * their only other path to it. Completed tours stay restartable ("Viewed").
@@ -59,14 +62,11 @@ export function TourOfferList({
   };
 
   return (
-    <div className="mb-4 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-        {t('offer.heading')}
-      </h3>
-      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-        {t('offer.subheading')}
-      </p>
-      <ul className="mt-3 space-y-2">
+    <div className="mb-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="mr-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
+          {t('offer.heading')}
+        </h3>
         {rows.map((tour) => {
           const isIntro = tour.id === INTRO_TOUR.id;
           const completed = progress[tour.id]?.status === 'completed';
@@ -76,30 +76,28 @@ export function TourOfferList({
           const subtitle = isIntro
             ? t('offer.introSubtitle')
             : t(`areas.${tour.area}`);
+          const Icon = completed ? CheckIcon : PlayIcon;
           return (
-            <li
+            <Badge
               key={tour.id}
-              className="flex items-center justify-between gap-3"
+              as="button"
+              type="button"
+              size="md"
+              variant={completed ? 'gray' : 'blue'}
+              title={subtitle}
+              onClick={() => handleStart(tour)}
+              className="max-w-full hover:brightness-95 dark:hover:brightness-125 transition motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">
-                  {title}
-                </p>
-                <p className="truncate text-xs text-gray-500 dark:text-gray-400">
-                  {subtitle}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleStart(tour)}
-                className="flex-shrink-0 text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
-              >
-                {completed ? t('offer.viewed') : t('offer.showMe')}
-              </button>
-            </li>
+              <Icon aria-hidden className="h-3.5 w-3.5 flex-shrink-0" />
+              <span className="truncate">{title}</span>
+              {completed && <span className="sr-only">{t('offer.viewed')}</span>}
+            </Badge>
           );
         })}
-      </ul>
+      </div>
+      <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+        {t('offer.subheading')}
+      </p>
     </div>
   );
 }

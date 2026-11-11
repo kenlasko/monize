@@ -354,7 +354,9 @@ describe('WhatsNewHost', () => {
 
     // The tour needs the page to itself, so the dialog gets out of the way.
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Show me' }));
+      fireEvent.click(screen.getByRole('button', {
+          name: 'New here? Take the introduction tour',
+        }));
     });
     expect(useTourStore.getState().active).not.toBeNull();
     expect(useWhatsNewStore.getState().isOpen).toBe(false);
@@ -380,7 +382,9 @@ describe('WhatsNewHost', () => {
       expect(screen.getByText('Intro paragraph.')).toBeInTheDocument(),
     );
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Show me' }));
+      fireEvent.click(screen.getByRole('button', {
+          name: 'New here? Take the introduction tour',
+        }));
     });
 
     // Escape, End tour, and a browser Back out of the tour all land here. The

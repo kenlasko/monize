@@ -33,6 +33,7 @@ import {
 // registry (which imports the widgets, which import WidgetCard, which
 // imports this file).
 import type { DashboardWidgetId } from './widget-registry';
+import { TINT_CLASS } from '@/lib/tint-class';
 
 type WidgetIconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -119,11 +120,6 @@ const DOMAIN_TOKEN: Record<WidgetDomain, string> = {
   bills: '[--widget-tint:var(--chart-3)]',
   insights: '[--widget-tint:var(--chart-7)]',
 };
-
-// The tokens are pitched for a line on a card, so on a light tile the glyph is
-// darkened: amber at full strength would be barely visible on its own wash.
-const TINT_CLASS =
-  'bg-[color-mix(in_srgb,var(--widget-tint)_14%,transparent)] text-[color-mix(in_srgb,var(--widget-tint)_75%,black)] dark:bg-[color-mix(in_srgb,var(--widget-tint)_20%,transparent)] dark:text-[var(--widget-tint)]';
 
 /** The wash and glyph colour of a widget's domain, for anything standing in for it. */
 export function widgetTintClass(id: DashboardWidgetId): string {
