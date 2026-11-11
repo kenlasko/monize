@@ -121,7 +121,8 @@ Every height preset is offered for every widget (DASH-7 makes any of them safe).
 |---|---|---|---|
 | `favourite-accounts`, `upcoming-bills`, `favourite-reports` | `third` | `auto` | no floor |
 | `budget-status`, `insights`, `warranties-expiring`, `trivia` | `third` | `compact` | 390px |
-| `top-movers`, `favourite-securities` | `half` | `standard` | 500px |
+| `top-movers` | `third` | `standard` | 500px |
+| `favourite-securities` | `half` | `standard` | 500px |
 | `net-worth` | `half` | `standard` | 500px |
 | `assets-liabilities` | `third` | `standard` | 500px |
 | `expenses-pie`, `income-by-source`, `credit-utilization-total`, `sector-weightings`, `security-type-allocation`, `geographic-allocation`, `recurring-expenses` | `third` | `standard` | 540px |

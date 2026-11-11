@@ -175,11 +175,11 @@ describe('WidgetEditOverlay size choices', () => {
 
   it('offers the widths from the widget minimum up, and all four heights', () => {
     mockMatches.wide = true;
-    // Top Movers' minWidth is half, so it offers no third.
-    renderOverlay({ item: { id: 'top-movers', width: 'half', height: 'standard' }, onResize: vi.fn() });
-    const widths = screen.getByRole('group', { name: 'Width of Top Movers' });
+    // Net Worth's minWidth is half, so it offers no third.
+    renderOverlay({ item: { id: 'net-worth', width: 'half', height: 'standard' }, onResize: vi.fn() });
+    const widths = screen.getByRole('group', { name: 'Width of Net Worth' });
     expect(within(widths).getAllByRole('button').map((b) => b.textContent)).toEqual(['1/2', '2/3', 'Full']);
-    const heights = screen.getByRole('group', { name: 'Height of Top Movers' });
+    const heights = screen.getByRole('group', { name: 'Height of Net Worth' });
     expect(within(heights).getAllByRole('button').map((b) => b.textContent)).toEqual(['Auto', 'S', 'M', 'L']);
   });
 

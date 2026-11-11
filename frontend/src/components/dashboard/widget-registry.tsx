@@ -198,7 +198,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'topMovers',
     iconType: 'table',
     defaultEnabled: true,
-    minWidth: 'half',
+    minWidth: 'third',
     defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasSecurities,
     render: (ctx) => (
