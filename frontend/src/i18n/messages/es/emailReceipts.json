@@ -285,6 +285,17 @@
     "saveFailed": "No se pudo guardar el perfil",
     "conflict": "Este perfil se cambió en otro lugar desde que lo abriste. Vuelve a cargarlo para ver la versión actual. Tus ediciones aquí no se han guardado.",
     "conflictReload": "Volver a cargar el perfil",
+    "required": {
+      "heading": "El perfil todavía no se puede guardar. Corrija primero lo siguiente:",
+      "item": "{field}: {problem}",
+      "nameMissing": "Escriba un nombre para el perfil.",
+      "domainsMissing": "Escriba al menos un dominio remitente, como shop.example.com.",
+      "domainsInvalid": "No es un nombre de dominio: {values}. Escriba dominios como shop.example.com, uno por línea.",
+      "domainsTooMany": "Escriba como máximo {max} dominios remitentes.",
+      "subjectTooMany": "Escriba como máximo {max} palabras del asunto.",
+      "subjectTooLong": "Cada palabra del asunto puede tener como máximo {max} caracteres.",
+      "server": "El servidor rechazó este campo. El motivo aparece debajo del formulario."
+    },
     "patterns": {
       "sourceLabel": "Origen de las líneas",
       "sourceHint": "Con qué representación del correo se comparan los patrones siguientes. Texto es la parte de texto del correo, una línea por salto de línea. HTML lee la parte HTML: cada bloque y cada celda de una tabla se convierte en su propia línea, de modo que el nombre de un producto que el texto reparte en varias líneas queda entero. La vista Líneas del correo muestra exactamente lo que da cada origen.",

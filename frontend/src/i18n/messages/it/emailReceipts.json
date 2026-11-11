@@ -285,6 +285,17 @@
     "saveFailed": "Impossibile salvare il profilo",
     "conflict": "Questo profilo è stato modificato altrove da quando l'hai aperto. Ricaricalo per vedere la versione attuale. Le tue modifiche qui non sono salvate.",
     "conflictReload": "Ricarica il profilo",
+    "required": {
+      "heading": "Il profilo non può ancora essere salvato. Correggi prima questi punti:",
+      "item": "{field}: {problem}",
+      "nameMissing": "Inserisci un nome per il profilo.",
+      "domainsMissing": "Inserisci almeno un dominio mittente, ad esempio shop.example.com.",
+      "domainsInvalid": "Non è un nome di dominio: {values}. Inserisci domini come shop.example.com, uno per riga.",
+      "domainsTooMany": "Inserisci al massimo {max} domini mittente.",
+      "subjectTooMany": "Inserisci al massimo {max} parole dell'oggetto.",
+      "subjectTooLong": "Ogni parola dell'oggetto può avere al massimo {max} caratteri.",
+      "server": "Il server ha rifiutato questo campo. Il motivo è sotto il modulo."
+    },
     "patterns": {
       "sourceLabel": "Origine delle righe",
       "sourceHint": "Con quale rappresentazione dell'email vengono confrontati i modelli seguenti. Testo è la parte di testo dell'email, una riga per ogni a capo. HTML legge la parte HTML: ogni blocco e ogni cella di tabella diventa una riga a sé, così il nome di un prodotto che il testo divide su più righe resta intero. La vista Righe dell'email mostra esattamente ciò che fornisce ogni origine.",

@@ -285,6 +285,17 @@
     "saveFailed": "无法保存解析器",
     "conflict": "自您打开以来，此解析器已在别处被修改。请重新加载以查看当前版本。您在此所做的修改尚未保存。",
     "conflictReload": "重新加载解析器",
+    "required": {
+      "heading": "配置文件还不能保存。请先修正以下问题：",
+      "item": "{field}：{problem}",
+      "nameMissing": "请输入配置文件的名称。",
+      "domainsMissing": "请至少输入一个发件人域名，例如 shop.example.com。",
+      "domainsInvalid": "不是域名：{values}。请输入 shop.example.com 这样的域名，每行一个。",
+      "domainsTooMany": "最多输入 {max} 个发件人域名。",
+      "subjectTooMany": "最多输入 {max} 个主题词。",
+      "subjectTooLong": "每个主题词最多 {max} 个字符。",
+      "server": "服务器拒绝了此字段。原因显示在表单下方。"
+    },
     "patterns": {
       "sourceLabel": "行来源",
       "sourceHint": "下方模式与邮件的哪种呈现形式匹配。“文本”是邮件的文本部分，每个换行一行。“HTML”读取邮件的 HTML 部分：每个块和每个表格单元格各成一行，因此文本拆成多行的商品名称仍保持完整。邮件的“行”视图会准确显示各来源给出的内容。",

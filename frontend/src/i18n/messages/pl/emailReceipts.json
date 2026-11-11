@@ -285,6 +285,17 @@
     "saveFailed": "Nie udało się zapisać parsera",
     "conflict": "Ten parser został zmieniony w innym miejscu od chwili jego otwarcia. Wczytaj go ponownie, aby zobaczyć aktualną wersję. Twoje zmiany tutaj nie są zapisane.",
     "conflictReload": "Wczytaj parser ponownie",
+    "required": {
+      "heading": "Profilu nie można jeszcze zapisać. Najpierw popraw:",
+      "item": "{field}: {problem}",
+      "nameMissing": "Wpisz nazwę profilu.",
+      "domainsMissing": "Wpisz co najmniej jedną domenę nadawcy, np. shop.example.com.",
+      "domainsInvalid": "To nie jest nazwa domeny: {values}. Wpisz domeny takie jak shop.example.com, po jednej w wierszu.",
+      "domainsTooMany": "Wpisz najwyżej {max} domen nadawcy.",
+      "subjectTooMany": "Wpisz najwyżej {max} słów tematu.",
+      "subjectTooLong": "Każde słowo tematu może mieć najwyżej {max} znaków.",
+      "server": "Serwer odrzucił to pole. Powód jest pod formularzem."
+    },
     "patterns": {
       "sourceLabel": "Źródło wierszy",
       "sourceHint": "Z którą postacią wiadomości porównywane są poniższe wzorce. Tekst to część tekstowa wiadomości, jeden wiersz na każde złamanie wiersza. HTML odczytuje część HTML: każdy blok i każda komórka tabeli staje się osobnym wierszem, dzięki czemu nazwa produktu, którą tekst rozbija na kilka wierszy, pozostaje w całości. Widok Wiersze wiadomości pokazuje dokładnie, co daje każde źródło.",

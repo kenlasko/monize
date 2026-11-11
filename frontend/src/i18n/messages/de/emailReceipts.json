@@ -285,6 +285,17 @@
     "saveFailed": "Das Profil konnte nicht gespeichert werden",
     "conflict": "Dieses Profil wurde an anderer Stelle geändert, seit du es geöffnet hast. Lade es neu, um die aktuelle Version zu sehen. Deine Änderungen hier sind nicht gespeichert.",
     "conflictReload": "Profil neu laden",
+    "required": {
+      "heading": "Das Profil kann noch nicht gespeichert werden. Beheben Sie zuerst Folgendes:",
+      "item": "{field}: {problem}",
+      "nameMissing": "Geben Sie einen Namen für das Profil ein.",
+      "domainsMissing": "Geben Sie mindestens eine Absenderdomain ein, z. B. shop.example.com.",
+      "domainsInvalid": "Kein Domainname: {values}. Geben Sie Domains wie shop.example.com ein, eine pro Zeile.",
+      "domainsTooMany": "Geben Sie höchstens {max} Absenderdomains ein.",
+      "subjectTooMany": "Geben Sie höchstens {max} Betreffwörter ein.",
+      "subjectTooLong": "Jedes Betreffwort darf höchstens {max} Zeichen lang sein.",
+      "server": "Der Server hat dieses Feld abgelehnt. Der Grund steht unter dem Formular."
+    },
     "patterns": {
       "sourceLabel": "Zeilenquelle",
       "sourceHint": "Mit welcher Darstellung der E-Mail die folgenden Muster verglichen werden. Text ist der Textteil der E-Mail, eine Zeile pro Zeilenumbruch. HTML liest den HTML-Teil: Jeder Block und jede Tabellenzelle wird zu einer eigenen Zeile, sodass ein Produktname, den der Text auf mehrere Zeilen verteilt, zusammenbleibt. Die Ansicht „Zeilen“ der E-Mail zeigt genau, was jede Quelle liefert.",

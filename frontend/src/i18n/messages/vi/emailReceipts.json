@@ -285,6 +285,17 @@
     "saveFailed": "Không thể lưu trình phân tích",
     "conflict": "Trình phân tích này đã được thay đổi ở nơi khác kể từ khi bạn mở. Hãy tải lại để xem phiên bản hiện tại. Các chỉnh sửa của bạn ở đây chưa được lưu.",
     "conflictReload": "Tải lại trình phân tích",
+    "required": {
+      "heading": "Chưa thể lưu hồ sơ. Hãy sửa những mục sau trước:",
+      "item": "{field}: {problem}",
+      "nameMissing": "Nhập tên cho hồ sơ.",
+      "domainsMissing": "Nhập ít nhất một tên miền người gửi, chẳng hạn shop.example.com.",
+      "domainsInvalid": "Không phải tên miền: {values}. Nhập các tên miền như shop.example.com, mỗi dòng một tên.",
+      "domainsTooMany": "Nhập tối đa {max} tên miền người gửi.",
+      "subjectTooMany": "Nhập tối đa {max} từ tiêu đề.",
+      "subjectTooLong": "Mỗi từ tiêu đề dài tối đa {max} ký tự.",
+      "server": "Máy chủ đã từ chối trường này. Lý do nằm bên dưới biểu mẫu."
+    },
     "patterns": {
       "sourceLabel": "Nguồn dòng",
       "sourceHint": "Các mẫu bên dưới được so khớp với dạng hiển thị nào của email. Văn bản là phần văn bản của email, mỗi lần xuống dòng là một dòng. HTML đọc phần HTML: mỗi khối và mỗi ô trong bảng trở thành một dòng riêng, nên tên sản phẩm mà phần văn bản tách thành nhiều dòng vẫn được giữ nguyên. Chế độ xem Dòng của email cho thấy chính xác mỗi nguồn trả về gì.",
