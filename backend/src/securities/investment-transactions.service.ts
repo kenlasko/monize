@@ -4902,6 +4902,25 @@ export class InvestmentTransactionsService {
       // is refused before anything is written (A26-H04).
       await lockUnchangedInvestmentRow(manager, userId, transaction);
 
+      // The security and account the row is moved to are the caller's, as
+      // `create` checks: a foreign id satisfies the foreign key (which RLS
+      // does not filter), and on a row with no cash leg (REINVEST, share-only
+      // actions, an embedded line) nothing else looks it up, so another
+      // user's security or account would be stored, joined back into the
+      // response and rebuilt into a holding. Refused before anything is written.
+      if (
+        updateDto.securityId &&
+        updateDto.securityId !== transaction.securityId
+      ) {
+        await this.securitiesService.findOne(userId, updateDto.securityId);
+      }
+      if (
+        updateDto.accountId &&
+        updateDto.accountId !== transaction.accountId
+      ) {
+        await this.accountsService.findOne(userId, updateDto.accountId);
+      }
+
       const bondGuard = await beginBondWriteGuard(manager, userId, [
         oldSecurityId,
         updateDto.securityId,
