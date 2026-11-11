@@ -5,6 +5,7 @@ import {
   delegateDashboardWidgets,
   resolveDashboardWidgets,
 } from './widget-registry';
+import { WIDGET_HEIGHTS } from './dashboard-layout';
 
 describe('widget-registry', () => {
   it('default layout matches the pre-customization dashboard', () => {
@@ -43,6 +44,14 @@ describe('widget-registry', () => {
     expect(def.delegateVisible).toBeUndefined();
   });
 
+  it('every widget declares a valid minWidth and defaultHeight', () => {
+    expect(DASHBOARD_WIDGETS).toHaveLength(26);
+    for (const w of DASHBOARD_WIDGETS) {
+      expect(['third', 'half'], w.id).toContain(w.minWidth);
+      expect([...WIDGET_HEIGHTS], w.id).toContain(w.defaultHeight);
+    }
+  });
+
   describe('resolveDashboardWidgets', () => {
     it('returns the default layout for an empty or missing preference', () => {
       expect(resolveDashboardWidgets(undefined).map((w) => w.id)).toEqual(
@@ -59,6 +68,12 @@ describe('widget-registry', () => {
     it('returns the stored widgets in stored order', () => {
       const resolved = resolveDashboardWidgets(['insights', 'favourite-reports', 'net-worth']);
       expect(resolved.map((w) => w.id)).toEqual(['insights', 'favourite-reports', 'net-worth']);
+    });
+
+    it('drops repeated stored ids, keeping the first', () => {
+      expect(
+        resolveDashboardWidgets(['net-worth', 'net-worth', 'expenses-pie', 'net-worth']).map((w) => w.id),
+      ).toEqual(['net-worth', 'expenses-pie']);
     });
 
     it('drops unknown ids and falls back to the default when none survive', () => {

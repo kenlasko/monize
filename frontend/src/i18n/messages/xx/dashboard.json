@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "[XX-Customize-XX]",
-    "title": "[XX-Customize dashboard-XX]",
-    "description": "[XX-The layout below mirrors your dashboard: widgets flow left to right, two per row on large screens.-XX]",
     "moveEarlier": "[XX-Move {name} earlier-XX]",
     "moveLater": "[XX-Move {name} later-XX]",
-    "dragToReorder": "[XX-Drag widgets to rearrange them, or use the arrow buttons.-XX]",
-    "hiddenWidgets": "[XX-Hidden widgets-XX]",
-    "hide": "[XX-Hide {name}-XX]",
-    "show": "[XX-Show {name}-XX]",
     "atLeastOne": "[XX-Select at least one widget to show on the dashboard.-XX]",
     "reset": "[XX-Reset to default-XX]",
     "toasts": {
@@ -280,6 +274,60 @@
         "mwr": "[XX-MWR-XX]",
         "cagr": "[XX-CAGR-XX]"
       }
+    }
+  },
+  "edit": {
+    "barLabel": "[XX-Arrange the dashboard-XX]",
+    "addWidget": "[XX-Add Widget-XX]",
+    "heroSettings": "[XX-Hero Settings-XX]",
+    "done": "[XX-Done-XX]",
+    "phoneNote": "[XX-Widget sizes apply on wider screens.-XX]",
+    "remove": "[XX-Remove {name}-XX]",
+    "grip": "[XX-Move {name}-XX]",
+    "gripHint": "[XX-Drag to move {name}, or press the arrow keys-XX]",
+    "moved": "[XX-{name} moved to position {position} of {count}-XX]",
+    "removed": "[XX-{name} removed-XX]",
+    "added": "[XX-{name} added-XX]",
+    "resized": "[XX-{name} is now {size}-XX]",
+    "resizedBoth": "[XX-{name} is now {width} and {height}-XX]",
+    "twoChanges": "[XX-{first}. {second}-XX]",
+    "placeholder": "[XX-Shown on the dashboard once it has something to show.-XX]",
+    "addTitle": "[XX-Add Widget-XX]",
+    "addDescription": "[XX-A widget you add goes at the end of the dashboard. Nothing is kept until you choose Done.-XX]",
+    "addEmpty": "[XX-Every widget is already on your dashboard-XX]",
+    "addToSpace": "[XX-Add Widget to this space ({width})-XX]",
+    "addSlotDescription": "[XX-Only the widgets that fit this space are listed, and the one you choose fills it. Nothing is kept until you choose Done.-XX]",
+    "addSlotEmpty": "[XX-No hidden widget fits this space. Drag a widget here to move it in.-XX]",
+    "resize": "[XX-Resize {name}-XX]",
+    "resizeHint": "[XX-Drag to resize {name}, or press the arrow keys-XX]",
+    "widthLabel": "[XX-Width-XX]",
+    "heightLabel": "[XX-Height-XX]",
+    "presetName": "[XX-{short}, {name}-XX]",
+    "widthOf": "[XX-Width of {name}-XX]",
+    "heightOf": "[XX-Height of {name}-XX]",
+    "widthShort": {
+      "third": "[XX-1/3-XX]",
+      "half": "[XX-1/2-XX]",
+      "twoThirds": "[XX-2/3-XX]",
+      "full": "[XX-Full-XX]"
+    },
+    "widthName": {
+      "third": "[XX-One third width-XX]",
+      "half": "[XX-Half width-XX]",
+      "twoThirds": "[XX-Two thirds width-XX]",
+      "full": "[XX-Full width-XX]"
+    },
+    "heightShort": {
+      "auto": "[XX-Auto-XX]",
+      "compact": "[XX-S-XX]",
+      "standard": "[XX-M-XX]",
+      "tall": "[XX-L-XX]"
+    },
+    "heightName": {
+      "auto": "[XX-Automatic height-XX]",
+      "compact": "[XX-Compact height-XX]",
+      "standard": "[XX-Standard height-XX]",
+      "tall": "[XX-Tall height-XX]"
     }
   },
   "favouriteReports": {

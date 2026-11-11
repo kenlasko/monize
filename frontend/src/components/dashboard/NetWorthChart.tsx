@@ -216,7 +216,6 @@ export function NetWorthChart({ isLoading }: NetWorthChartProps) {
       }
       configControls={configControls}
       configTitle={t('netWorth.title')}
-      minHeightClass="lg:min-h-[500px]"
     >
       {loading ? (
         <div className="animate-pulse skeleton-shimmer space-y-3">

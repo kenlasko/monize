@@ -118,7 +118,6 @@ export function AssetsVsLiabilities({ data, isLoading, error = false }: AssetsVs
       }
       configControls={configControls}
       configTitle={t('assetsVsLiabilities.title')}
-      minHeightClass="lg:min-h-[500px]"
     >
       {isLoading ? (
         <div className="h-64 flex items-center justify-center">

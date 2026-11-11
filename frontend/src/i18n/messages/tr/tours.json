@@ -69,7 +69,7 @@
         },
         "dashboard": {
           "title": "Panonuz",
-          "body": "Bu sizin panonuz. Önem verdiğiniz özetlerin en üstte yer alması için widget'ları yeniden düzenlemek veya gizlemek üzere sağ üstteki **Özelleştir** düğmesini kullanın."
+          "body": "Bu sizin panonuz. Düzenlemek için karşılama mesajının yanındaki **Özelleştir** dişlisini seçin: widget'ları bulundukları yerde taşıyın veya kaldırın, daha fazlası için **Widget ekle**’yi, düzeni korumak için **Tamam**’ı seçin."
         },
         "tools": {
           "title": "Araçlar menüsü",
@@ -471,7 +471,7 @@
           },
           "dashboardWidget": {
             "title": "Süresi dolacakları panoda görün",
-            "body": "**Özelleştir**’i seçin ve **Süresi yakında dolacak garantiler**’i açın. Süresi ilk dolacak garantileri listeler ve başlığı Garantiler sayfasını açar."
+            "body": "**Özelleştir**’i, ardından **Widget ekle**’yi seçin, **Süresi yakında dolacak garantiler**’i işaretleyin ve **Tamam**’ı seçin. Süresi ilk dolacak garantileri listeler ve başlığı Garantiler sayfasını açar."
           },
           "reminders": {
             "title": "Kapsam bitmeden önce hatırlatıcılar",

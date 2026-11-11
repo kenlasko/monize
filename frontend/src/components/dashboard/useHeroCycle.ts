@@ -51,7 +51,7 @@ export function useHeroCycle({ choice, hasInvestments, settled }: UseHeroCycleOp
   const [animate, setAnimate] = useState(false);
   const [preloaded, setPreloaded] = useState(false);
 
-  // A change in Customize starts again from what was chosen.
+  // A change in the hero settings dialog starts again from what was chosen.
   const [prevChoice, setPrevChoice] = useState(choice);
   if (prevChoice !== choice) {
     setPrevChoice(choice);

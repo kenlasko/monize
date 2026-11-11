@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Tùy chỉnh",
-    "title": "Tùy chỉnh trang tổng quan",
-    "description": "Bố cục bên dưới phản ánh trang tổng quan của bạn: các tiện ích xếp từ trái sang phải, hai tiện ích mỗi hàng trên màn hình lớn.",
     "moveEarlier": "Chuyển {name} lên trước",
     "moveLater": "Chuyển {name} ra sau",
-    "dragToReorder": "Kéo các tiện ích để sắp xếp lại, hoặc dùng các nút mũi tên.",
-    "hiddenWidgets": "Tiện ích đã ẩn",
-    "hide": "Ẩn {name}",
-    "show": "Hiện {name}",
     "atLeastOne": "Chọn ít nhất một tiện ích để hiển thị trên trang tổng quan.",
     "reset": "Đặt lại mặc định",
     "toasts": {
@@ -280,6 +274,60 @@
         "mwr": "MWR",
         "cagr": "CAGR"
       }
+    }
+  },
+  "edit": {
+    "barLabel": "Sắp xếp bảng điều khiển",
+    "addWidget": "Thêm tiện ích",
+    "heroSettings": "Cài đặt phần đầu",
+    "done": "Xong",
+    "phoneNote": "Kích thước tiện ích áp dụng trên màn hình rộng hơn.",
+    "remove": "Xóa {name}",
+    "grip": "Di chuyển {name}",
+    "gripHint": "Kéo để di chuyển {name}, hoặc nhấn các phím mũi tên",
+    "moved": "Đã chuyển {name} đến vị trí {position} trên {count}",
+    "removed": "Đã xóa {name}",
+    "added": "Đã thêm {name}",
+    "resized": "{name} hiện là {size}",
+    "resizedBoth": "{name} hiện là {width} và {height}",
+    "twoChanges": "{first}. {second}",
+    "placeholder": "Sẽ hiển thị trên bảng điều khiển khi có nội dung để hiển thị.",
+    "addTitle": "Thêm tiện ích",
+    "addDescription": "Tiện ích bạn thêm sẽ nằm ở cuối bảng điều khiển. Sẽ không có gì được lưu cho đến khi bạn chọn Xong.",
+    "addEmpty": "Tất cả tiện ích đã có trên bảng điều khiển của bạn",
+    "addToSpace": "Thêm tiện ích vào khoảng trống này ({width})",
+    "addSlotDescription": "Chỉ liệt kê các tiện ích vừa với khoảng trống này, và tiện ích bạn chọn sẽ lấp đầy nó. Sẽ không có gì được lưu cho đến khi bạn chọn Xong.",
+    "addSlotEmpty": "Không có tiện ích ẩn nào vừa với khoảng trống này. Hãy kéo một tiện ích vào đây để di chuyển nó.",
+    "resize": "Đổi kích thước {name}",
+    "resizeHint": "Kéo để đổi kích thước {name}, hoặc nhấn các phím mũi tên",
+    "widthLabel": "Chiều rộng",
+    "heightLabel": "Chiều cao",
+    "presetName": "{short}, {name}",
+    "widthOf": "Chiều rộng của {name}",
+    "heightOf": "Chiều cao của {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Đầy"
+    },
+    "widthName": {
+      "third": "Chiều rộng một phần ba",
+      "half": "Chiều rộng một nửa",
+      "twoThirds": "Chiều rộng hai phần ba",
+      "full": "Chiều rộng đầy đủ"
+    },
+    "heightShort": {
+      "auto": "Tự động",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Chiều cao tự động",
+      "compact": "Chiều cao gọn",
+      "standard": "Chiều cao chuẩn",
+      "tall": "Chiều cao lớn"
     }
   },
   "favouriteReports": {

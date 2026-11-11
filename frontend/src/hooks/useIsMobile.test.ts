@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useIsMobile } from './useIsMobile';
+import { renderHook, act } from '@/test/render';
+import { useIsLgUp, useIsMobile } from './useIsMobile';
 
 describe('useIsMobile', () => {
   it('returns false when matchMedia does not match', () => {
@@ -36,5 +36,27 @@ describe('useIsMobile', () => {
     expect(removeSpy).toHaveBeenCalled();
 
     (window as any).matchMedia = original;
+  });
+});
+
+describe('useIsLgUp', () => {
+  // Tailwind v4's lg is 64rem, and a rem in a media query follows the browser's
+  // default font size, so a px query would disagree with the grid's lg classes.
+  it('asks for lg and up in rem, as Tailwind does, and is false where nothing matches', () => {
+    const original = window.matchMedia;
+    const matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(min-width: 64rem)',
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    (window as any).matchMedia = matchMedia;
+    try {
+      expect(renderHook(() => useIsLgUp()).result.current).toBe(true);
+      expect(matchMedia).toHaveBeenCalledWith('(min-width: 64rem)');
+    } finally {
+      (window as any).matchMedia = original;
+    }
+    expect(renderHook(() => useIsLgUp()).result.current).toBe(false);
   });
 });

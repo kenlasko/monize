@@ -16,43 +16,46 @@ import { InsightsWidget } from './InsightsWidget';
 import { BudgetStatusWidget } from './BudgetStatusWidget';
 import { FavouriteReportsWidget } from './FavouriteReportsWidget';
 import { Card } from '@/components/ui/Card';
+import type { WidgetHeight, WidgetWidth } from './dashboard-layout';
 
-/** Placeholder card while a lazy widget's chunk loads; matches WidgetCard's shell. */
-const widgetSkeleton = (minHeight = 'lg:min-h-[540px]') =>
-  function WidgetSkeleton() {
-    return <Card padding="md" className={minHeight} />;
-  };
-const WarrantiesExpiringWidget = dynamic(() => import('./WarrantiesExpiringWidget').then(m => m.WarrantiesExpiringWidget), { ssr: false, loading: widgetSkeleton('lg:min-h-[390px]') });
+/**
+ * Placeholder card while a lazy widget's chunk loads; matches WidgetCard's
+ * shell. It takes its height from the grid item's floor, as the card does.
+ */
+function WidgetSkeleton() {
+  return <Card padding="md" />;
+}
+const WarrantiesExpiringWidget = dynamic(() => import('./WarrantiesExpiringWidget').then(m => m.WarrantiesExpiringWidget), { ssr: false, loading: WidgetSkeleton });
 const ExpensesPieChart = dynamic(() => import('./ExpensesPieChart').then(m => m.ExpensesPieChart), {
   ssr: false,
-  loading: widgetSkeleton(),
+  loading: WidgetSkeleton,
 });
 const IncomeExpensesBarChart = dynamic(() => import('./IncomeExpensesBarChart').then(m => m.IncomeExpensesBarChart), {
   ssr: false,
-  loading: widgetSkeleton(),
+  loading: WidgetSkeleton,
 });
 const NetWorthChart = dynamic(() => import('./NetWorthChart').then(m => m.NetWorthChart), {
   ssr: false,
-  loading: widgetSkeleton('lg:min-h-[500px]'),
+  loading: WidgetSkeleton,
 });
 const AssetsVsLiabilities = dynamic(() => import('./AssetsVsLiabilities').then(m => m.AssetsVsLiabilities), {
   ssr: false,
-  loading: widgetSkeleton('lg:min-h-[500px]'),
+  loading: WidgetSkeleton,
 });
-const PortfolioValueWidget = dynamic(() => import('./PortfolioValueWidget').then(m => m.PortfolioValueWidget), { ssr: false, loading: widgetSkeleton() });
-const SpendingByPayeeWidget = dynamic(() => import('./SpendingByPayeeWidget').then(m => m.SpendingByPayeeWidget), { ssr: false, loading: widgetSkeleton() });
-const MonthlySpendingTrendWidget = dynamic(() => import('./MonthlySpendingTrendWidget').then(m => m.MonthlySpendingTrendWidget), { ssr: false, loading: widgetSkeleton() });
-const CashFlowSankeyWidget = dynamic(() => import('./CashFlowSankeyWidget').then(m => m.CashFlowSankeyWidget), { ssr: false, loading: widgetSkeleton() });
-const IncomeBySourceWidget = dynamic(() => import('./IncomeBySourceWidget').then(m => m.IncomeBySourceWidget), { ssr: false, loading: widgetSkeleton() });
-const CreditUtilizationAccountsWidget = dynamic(() => import('./CreditUtilizationAccountsWidget').then(m => m.CreditUtilizationAccountsWidget), { ssr: false, loading: widgetSkeleton() });
-const CreditUtilizationTotalWidget = dynamic(() => import('./CreditUtilizationTotalWidget').then(m => m.CreditUtilizationTotalWidget), { ssr: false, loading: widgetSkeleton() });
-const SectorWeightingsWidget = dynamic(() => import('./SectorWeightingsWidget').then(m => m.SectorWeightingsWidget), { ssr: false, loading: widgetSkeleton() });
-const SecurityTypeAllocationWidget = dynamic(() => import('./SecurityTypeAllocationWidget').then(m => m.SecurityTypeAllocationWidget), { ssr: false, loading: widgetSkeleton() });
-const GeographicAllocationWidget = dynamic(() => import('./GeographicAllocationWidget').then(m => m.GeographicAllocationWidget), { ssr: false, loading: widgetSkeleton() });
-const RecurringExpensesWidget = dynamic(() => import('./RecurringExpensesWidget').then(m => m.RecurringExpensesWidget), { ssr: false, loading: widgetSkeleton() });
-const CashFlowForecastWidget = dynamic(() => import('./CashFlowForecastWidget').then(m => m.CashFlowForecastWidget), { ssr: false, loading: widgetSkeleton() });
-const TriviaWidget = dynamic(() => import('./TriviaWidget').then(m => m.TriviaWidget), { ssr: false, loading: widgetSkeleton() });
-const WeekendVsWeekdayWidget = dynamic(() => import('./WeekendVsWeekdayWidget').then(m => m.WeekendVsWeekdayWidget), { ssr: false, loading: widgetSkeleton() });
+const PortfolioValueWidget = dynamic(() => import('./PortfolioValueWidget').then(m => m.PortfolioValueWidget), { ssr: false, loading: WidgetSkeleton });
+const SpendingByPayeeWidget = dynamic(() => import('./SpendingByPayeeWidget').then(m => m.SpendingByPayeeWidget), { ssr: false, loading: WidgetSkeleton });
+const MonthlySpendingTrendWidget = dynamic(() => import('./MonthlySpendingTrendWidget').then(m => m.MonthlySpendingTrendWidget), { ssr: false, loading: WidgetSkeleton });
+const CashFlowSankeyWidget = dynamic(() => import('./CashFlowSankeyWidget').then(m => m.CashFlowSankeyWidget), { ssr: false, loading: WidgetSkeleton });
+const IncomeBySourceWidget = dynamic(() => import('./IncomeBySourceWidget').then(m => m.IncomeBySourceWidget), { ssr: false, loading: WidgetSkeleton });
+const CreditUtilizationAccountsWidget = dynamic(() => import('./CreditUtilizationAccountsWidget').then(m => m.CreditUtilizationAccountsWidget), { ssr: false, loading: WidgetSkeleton });
+const CreditUtilizationTotalWidget = dynamic(() => import('./CreditUtilizationTotalWidget').then(m => m.CreditUtilizationTotalWidget), { ssr: false, loading: WidgetSkeleton });
+const SectorWeightingsWidget = dynamic(() => import('./SectorWeightingsWidget').then(m => m.SectorWeightingsWidget), { ssr: false, loading: WidgetSkeleton });
+const SecurityTypeAllocationWidget = dynamic(() => import('./SecurityTypeAllocationWidget').then(m => m.SecurityTypeAllocationWidget), { ssr: false, loading: WidgetSkeleton });
+const GeographicAllocationWidget = dynamic(() => import('./GeographicAllocationWidget').then(m => m.GeographicAllocationWidget), { ssr: false, loading: WidgetSkeleton });
+const RecurringExpensesWidget = dynamic(() => import('./RecurringExpensesWidget').then(m => m.RecurringExpensesWidget), { ssr: false, loading: WidgetSkeleton });
+const CashFlowForecastWidget = dynamic(() => import('./CashFlowForecastWidget').then(m => m.CashFlowForecastWidget), { ssr: false, loading: WidgetSkeleton });
+const TriviaWidget = dynamic(() => import('./TriviaWidget').then(m => m.TriviaWidget), { ssr: false, loading: WidgetSkeleton });
+const WeekendVsWeekdayWidget = dynamic(() => import('./WeekendVsWeekdayWidget').then(m => m.WeekendVsWeekdayWidget), { ssr: false, loading: WidgetSkeleton });
 
 export type DashboardWidgetId =
   | 'favourite-accounts'
@@ -82,7 +85,7 @@ export type DashboardWidgetId =
   | 'warranties-expiring'
   | 'trivia';
 
-/** The kind of visualization a widget renders, shown as an icon in Customize. */
+/** The kind of visualization a widget renders, shown as an icon where the widget stands in for itself. */
 export type WidgetIconType = 'bar' | 'line' | 'pie' | 'table' | 'list';
 
 /** Everything the dashboard page loads, handed to each widget's render. */
@@ -113,10 +116,14 @@ export interface DashboardWidgetDefinition {
   id: DashboardWidgetId;
   /** Key inside the `dashboard` namespace whose `.title` names the widget. */
   titleSection: string;
-  /** Visualization kind, surfaced as an icon in the Customize dashboard modal. */
+  /** Visualization kind, surfaced as an icon in the Add widget dialog and edit mode's placeholder. */
   iconType: WidgetIconType;
   /** Part of the default layout shown to users who never customized. */
   defaultEnabled: boolean;
+  /** The narrowest width the widget is legible at. Wider presets are always offered. */
+  minWidth: Extract<WidgetWidth, 'third' | 'half'>;
+  /** The height floor the widget has when the reader chose none. */
+  defaultHeight: WidgetHeight;
   /** Rendered for a delegate acting on behalf of the account owner. */
   delegateVisible?: (delegateSections: DelegateSectionGrants | null) => boolean;
   /** Data-driven condition; when false the widget is skipped entirely. */
@@ -128,8 +135,8 @@ const upcomingBillsMaxItems = (accounts: Account[]) =>
   accounts.filter((a) => a.isFavourite && !a.isClosed).length + 2;
 
 /**
- * All dashboard widgets in default display order. The dashboard renders a
- * two-column grid, so consecutive visible widgets pair up into rows.
+ * All dashboard widgets in default display order. Each starts half the grid
+ * wide, so in the default layout consecutive visible widgets pair up into rows.
  */
 export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
@@ -137,6 +144,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'favouriteAccounts',
     iconType: 'table',
     defaultEnabled: true,
+    minWidth: 'third',
+    defaultHeight: 'auto',
     delegateVisible: () => true,
     render: (ctx) => (
       <FavouriteAccounts
@@ -155,6 +164,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'upcomingBills',
     iconType: 'table',
     defaultEnabled: true,
+    minWidth: 'third',
+    defaultHeight: 'auto',
     delegateVisible: (sections) => !!sections?.bills,
     render: (ctx) => (
       <UpcomingBills
@@ -165,13 +176,15 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
       />
     ),
   },
-  // Opt-in, and listed beside Upcoming Bills so the Customize modal's hidden
-  // widgets offer the two together.
+  // Opt-in, and listed beside Upcoming Bills so the Add widget dialog offers
+  // the two together.
   {
     id: 'cash-flow-forecast',
     titleSection: 'cashFlowForecast',
     iconType: 'line',
     defaultEnabled: false,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => (
       <CashFlowForecastWidget
         scheduledTransactions={ctx.scheduledTransactions}
@@ -185,6 +198,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'topMovers',
     iconType: 'table',
     defaultEnabled: true,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasSecurities,
     render: (ctx) => (
       <TopMovers
@@ -201,6 +216,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'favouriteSecurities',
     iconType: 'table',
     defaultEnabled: false,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasSecurities,
     render: (ctx) => (
       <FavouriteSecurities
@@ -218,6 +235,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'portfolioValue',
     iconType: 'line',
     defaultEnabled: true,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
     render: (ctx) => <PortfolioValueWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
@@ -226,6 +245,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'netWorth',
     iconType: 'line',
     defaultEnabled: true,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => <NetWorthChart isLoading={ctx.isLoading} />,
   },
   {
@@ -233,6 +254,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'assetsVsLiabilities',
     iconType: 'bar',
     defaultEnabled: true,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     render: (ctx) => <AssetsVsLiabilities data={ctx.netWorthData} isLoading={ctx.isLoading} error={ctx.netWorthFailed} />,
   },
   {
@@ -240,6 +263,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'expensesPieChart',
     iconType: 'pie',
     defaultEnabled: true,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     render: (ctx) => (
       <ExpensesPieChart accounts={ctx.accounts} isLoading={ctx.isLoading} />
     ),
@@ -249,6 +274,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'incomeExpenses',
     iconType: 'bar',
     defaultEnabled: true,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => (
       <IncomeExpensesBarChart accounts={ctx.accounts} isLoading={ctx.isLoading} />
     ),
@@ -258,6 +285,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'budgetStatus',
     iconType: 'bar',
     defaultEnabled: true,
+    minWidth: 'third',
+    defaultHeight: 'compact',
     render: (ctx) => <BudgetStatusWidget isLoading={ctx.isLoading} />,
   },
   {
@@ -265,6 +294,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'insights',
     iconType: 'list',
     defaultEnabled: true,
+    minWidth: 'third',
+    defaultHeight: 'compact',
     render: (ctx) => <InsightsWidget isLoading={ctx.isLoading} />,
   },
   // Opt-in: not part of the default layout so existing users see no change.
@@ -273,6 +304,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'favouriteReports',
     iconType: 'list',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'auto',
     render: (ctx) => <FavouriteReportsWidget isLoading={ctx.isLoading} />,
   },
   // Report-derived chart widgets: opt-in, each with its own persisted
@@ -282,6 +315,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'spendingByPayee',
     iconType: 'bar',
     defaultEnabled: false,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => <SpendingByPayeeWidget isLoading={ctx.isLoading} />,
   },
   {
@@ -289,6 +324,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'monthlySpendingTrend',
     iconType: 'line',
     defaultEnabled: false,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => <MonthlySpendingTrendWidget isLoading={ctx.isLoading} />,
   },
   {
@@ -296,6 +333,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'incomeBySource',
     iconType: 'pie',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     render: (ctx) => <IncomeBySourceWidget isLoading={ctx.isLoading} />,
   },
   {
@@ -303,6 +342,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'creditUtilizationAccounts',
     iconType: 'bar',
     defaultEnabled: false,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => <CreditUtilizationAccountsWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
   {
@@ -310,6 +351,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'creditUtilizationTotal',
     iconType: 'pie',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     render: (ctx) => <CreditUtilizationTotalWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
   {
@@ -317,6 +360,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'sectorWeightings',
     iconType: 'pie',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
     render: (ctx) => <SectorWeightingsWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
@@ -325,6 +370,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'securityTypeAllocation',
     iconType: 'pie',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
     render: (ctx) => <SecurityTypeAllocationWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
@@ -333,6 +380,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'geographicAllocation',
     iconType: 'pie',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
     render: (ctx) => <GeographicAllocationWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
@@ -341,6 +390,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'recurringExpenses',
     iconType: 'table',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'standard',
     render: (ctx) => <RecurringExpensesWidget isLoading={ctx.isLoading} />,
   },
   {
@@ -348,6 +399,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'weekendVsWeekday',
     iconType: 'bar',
     defaultEnabled: false,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => <WeekendVsWeekdayWidget isLoading={ctx.isLoading} />,
   },
   {
@@ -355,6 +408,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'cashFlowSankey',
     iconType: 'bar',
     defaultEnabled: false,
+    minWidth: 'half',
+    defaultHeight: 'standard',
     render: (ctx) => <CashFlowSankeyWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
   // Opt-in for the owner; a delegate sees it with the warranties section.
@@ -363,6 +418,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'warrantiesExpiring',
     iconType: 'list',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'compact',
     delegateVisible: (sections) => !!sections?.warranties,
     render: (ctx) => <WarrantiesExpiringWidget isLoading={ctx.isLoading} />,
   },
@@ -373,6 +430,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'trivia',
     iconType: 'list',
     defaultEnabled: false,
+    minWidth: 'third',
+    defaultHeight: 'compact',
     render: (ctx) => <TriviaWidget isLoading={ctx.isLoading} />,
   },
 ];
@@ -385,13 +444,17 @@ export const DEFAULT_DASHBOARD_WIDGET_IDS: DashboardWidgetId[] = DASHBOARD_WIDGE
  * Resolve the stored `dashboardWidgets` preference into the ordered list of
  * widget definitions to render. An empty/missing preference means the user
  * never customized and gets the default layout; unknown ids (e.g. from a
- * newer/older app version) are silently dropped.
+ * newer/older app version) are silently dropped, and so is a repeated id (the
+ * first wins): a duplicate would give React two keys and split a resize
+ * between two copies of one widget.
  */
 export function resolveDashboardWidgets(
   preferredIds: string[] | null | undefined,
 ): DashboardWidgetDefinition[] {
   const byId = new Map(DASHBOARD_WIDGETS.map((w) => [w.id, w]));
-  const known = (preferredIds ?? []).filter((id): id is DashboardWidgetId => byId.has(id as DashboardWidgetId));
+  const known = [...new Set(preferredIds ?? [])].filter((id): id is DashboardWidgetId =>
+    byId.has(id as DashboardWidgetId),
+  );
   if (known.length === 0) {
     return DASHBOARD_WIDGETS.filter((w) => w.defaultEnabled);
   }

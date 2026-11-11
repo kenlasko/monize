@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Personalizza",
-    "title": "Personalizza il pannello",
-    "description": "Il layout qui sotto rispecchia il tuo pannello di controllo: i widget scorrono da sinistra a destra, due per riga sugli schermi grandi.",
     "moveEarlier": "Sposta {name} prima",
     "moveLater": "Sposta {name} dopo",
-    "dragToReorder": "Trascina i widget per riorganizzarli oppure usa i pulsanti freccia.",
-    "hiddenWidgets": "Widget nascosti",
-    "hide": "Nascondi {name}",
-    "show": "Mostra {name}",
     "atLeastOne": "Seleziona almeno un widget da mostrare nel pannello.",
     "reset": "Ripristina predefiniti",
     "toasts": {
@@ -280,6 +274,60 @@
         "mwr": "MWR",
         "cagr": "CAGR"
       }
+    }
+  },
+  "edit": {
+    "barLabel": "Organizza la dashboard",
+    "addWidget": "Aggiungi widget",
+    "heroSettings": "Impostazioni intestazione",
+    "done": "Fine",
+    "phoneNote": "Le dimensioni dei widget si applicano sugli schermi più larghi.",
+    "remove": "Rimuovi {name}",
+    "grip": "Sposta {name}",
+    "gripHint": "Trascina per spostare {name} o usa i tasti freccia",
+    "moved": "{name} spostato alla posizione {position} di {count}",
+    "removed": "{name} rimosso",
+    "added": "{name} aggiunto",
+    "resized": "{name} ora è {size}",
+    "resizedBoth": "{name} ora è {width} e {height}",
+    "twoChanges": "{first}. {second}",
+    "placeholder": "Viene mostrato nella dashboard quando ha qualcosa da mostrare.",
+    "addTitle": "Aggiungi widget",
+    "addDescription": "Un widget aggiunto va in fondo alla dashboard. Non viene salvato nulla finché non scegli Fine.",
+    "addEmpty": "Tutti i widget sono già nella tua dashboard",
+    "addToSpace": "Aggiungi widget a questo spazio ({width})",
+    "addSlotDescription": "Sono elencati solo i widget che entrano in questo spazio, e quello che scegli lo riempie. Non viene salvato nulla finché non scegli Fine.",
+    "addSlotEmpty": "Nessun widget nascosto entra in questo spazio. Trascina un widget qui per spostarlo.",
+    "resize": "Ridimensiona {name}",
+    "resizeHint": "Trascina per ridimensionare {name} o usa i tasti freccia",
+    "widthLabel": "Larghezza",
+    "heightLabel": "Altezza",
+    "presetName": "{short}, {name}",
+    "widthOf": "Larghezza di {name}",
+    "heightOf": "Altezza di {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Intera"
+    },
+    "widthName": {
+      "third": "Un terzo della larghezza",
+      "half": "Metà larghezza",
+      "twoThirds": "Due terzi della larghezza",
+      "full": "Larghezza intera"
+    },
+    "heightShort": {
+      "auto": "Auto",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Altezza automatica",
+      "compact": "Altezza compatta",
+      "standard": "Altezza standard",
+      "tall": "Altezza elevata"
     }
   },
   "favouriteReports": {

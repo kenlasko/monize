@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Personalizar",
-    "title": "Personalizar el panel",
-    "description": "El diseño de abajo refleja tu panel de control: los widgets fluyen de izquierda a derecha, dos por fila en pantallas grandes.",
     "moveEarlier": "Mover {name} hacia adelante",
     "moveLater": "Mover {name} hacia atrás",
-    "dragToReorder": "Arrastra los widgets para reorganizarlos o usa los botones de flecha.",
-    "hiddenWidgets": "Widgets ocultos",
-    "hide": "Ocultar {name}",
-    "show": "Mostrar {name}",
     "atLeastOne": "Selecciona al menos un widget para mostrar en el panel.",
     "reset": "Restablecer valores predeterminados",
     "toasts": {
@@ -280,6 +274,60 @@
         "mwr": "MWR",
         "cagr": "CAGR"
       }
+    }
+  },
+  "edit": {
+    "barLabel": "Organizar el panel",
+    "addWidget": "Añadir widget",
+    "heroSettings": "Ajustes de la cabecera",
+    "done": "Listo",
+    "phoneNote": "Los tamaños de los widgets se aplican en pantallas más anchas.",
+    "remove": "Quitar {name}",
+    "grip": "Mover {name}",
+    "gripHint": "Arrastra para mover {name} o usa las teclas de flecha",
+    "moved": "{name} movido a la posición {position} de {count}",
+    "removed": "{name} quitado",
+    "added": "{name} añadido",
+    "resized": "{name} ahora es {size}",
+    "resizedBoth": "{name} ahora es {width} y {height}",
+    "twoChanges": "{first}. {second}",
+    "placeholder": "Se mostrará en el panel cuando tenga algo que mostrar.",
+    "addTitle": "Añadir widget",
+    "addDescription": "Un widget que añadas se coloca al final del panel. No se guarda nada hasta que elijas Listo.",
+    "addEmpty": "Todos los widgets ya están en tu panel",
+    "addToSpace": "Añadir widget a este espacio ({width})",
+    "addSlotDescription": "Solo se muestran los widgets que caben en este espacio, y el que elijas lo llena. No se guarda nada hasta que elijas Listo.",
+    "addSlotEmpty": "Ningún widget oculto cabe en este espacio. Arrastra un widget hasta aquí para moverlo.",
+    "resize": "Cambiar el tamaño de {name}",
+    "resizeHint": "Arrastra para cambiar el tamaño de {name} o usa las teclas de flecha",
+    "widthLabel": "Ancho",
+    "heightLabel": "Altura",
+    "presetName": "{short}, {name}",
+    "widthOf": "Ancho de {name}",
+    "heightOf": "Alto de {name}",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Completo"
+    },
+    "widthName": {
+      "third": "Un tercio de ancho",
+      "half": "Mitad de ancho",
+      "twoThirds": "Dos tercios de ancho",
+      "full": "Ancho completo"
+    },
+    "heightShort": {
+      "auto": "Auto",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Altura automática",
+      "compact": "Altura compacta",
+      "standard": "Altura estándar",
+      "tall": "Altura alta"
     }
   },
   "favouriteReports": {

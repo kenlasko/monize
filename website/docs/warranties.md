@@ -121,7 +121,7 @@ How a reminder reaches you is set on the **Warranty reminders** row of **How to 
 
 ## Dashboard Widget
 
-**Warranties expiring soon** is an optional widget. Add it from the dashboard's **Customize** dialog (see [Dashboard](dashboard.md#customizing-your-dashboard)). It shows up to five warranties expiring within 30 days, soonest first, and its title opens the Warranties page.
+**Warranties expiring soon** is an optional widget. Add it from the dashboard: click the **Customize** gear, then **Add Widget**, choose it and click **Done** (see [Dashboard](dashboard.md#customizing-your-dashboard)). It shows up to five warranties expiring within 30 days, soonest first, and its title opens the Warranties page.
 
 ---
 

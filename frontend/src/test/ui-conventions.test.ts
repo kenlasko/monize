@@ -2287,7 +2287,6 @@ describe("row hover comes from the shared pair, not a hand-picked grey", () => {
     "/src/components/categories/CategoryList.tsx",
     "/src/components/categories/detail/CategorySubcategoriesTab.tsx",
     "/src/components/currencies/CurrencyList.tsx",
-    "/src/components/dashboard/CustomizeDashboardModal.tsx",
     "/src/components/dashboard/FavouriteAccounts.tsx",
     "/src/components/dashboard/FavouriteReportsWidget.tsx",
     "/src/components/dashboard/FavouriteSecurities.tsx",
@@ -3107,32 +3106,146 @@ describe("a dashboard card stretches to its row, never `h-full`", () => {
    *
    * `align-items: stretch` is the grid's default, so the card fills its row
    * with `h-full` deleted rather than in spite of it. The scan keys on the card
-   * shell specifically -- a class list that carries the card surface, the
-   * widget min-height, or WidgetCard's `minHeightClass` -- so an `h-full` on
+   * shell specifically -- a class list that carries the card surface or a
+   * min-height, or a `<Card>` / `<WidgetCard>` tag -- so an `h-full` on
    * something inside a widget, which is not a grid item, is not the subject.
+   *
+   * The card is now the child of `DashboardGridItem`, a one-cell grid that
+   * stretches it the same way, and the item carries the height floor from the
+   * layout. So the item is held to the same rule (no height of any kind), and
+   * a card that brings its own `lg:min-h-` is a second floor that the
+   * reader's height preset cannot lower.
    */
   const CARD_SHELL = /CARD_CLASS|minHeightClass|min-h-\[/;
   const FULL_HEIGHT = /(?<![\w:-])h-full\b/;
+  /**
+   * The card surface itself, for the floor rule, or a floor handed to one (a
+   * `minHeight` prop, the lazy skeleton's argument): `min-h-[` alone is not a
+   * card (a chart's inner `flex-1 min-h-[260px]` is content, not a floor).
+   */
+  const CARD_SURFACE = /CARD_CLASS|<(?:Widget)?Card\b|bg-white dark:bg-gray-800|(?<![A-Za-z])[mM]inHeight|[sS]keleton\(/;
+  /**
+   * A min-height on a card at any breakpoint, or none: `lg:` (the grid item's
+   * floor from there up), `md:`, `xl:` and the rest, and the unprefixed
+   * `min-h-[...]`. `min-h-0` / `min-h-auto` / `min-h-full` are not floors.
+   */
+  const OWN_FLOOR = /(?<![\w-])(?:(?:sm|md|lg|xl|2xl):)?min-h-(?!0(?![\w-])|auto(?![\w-])|full(?![\w-]))/;
+  /**
+   * A self-alignment on a card root: `self-start` and friends stop the card
+   * filling its grid slot by stretch (and the row's height with it).
+   */
+  const OWN_ALIGN = /(?<![\w-])(?:\w+:)?self-(?:start|center|end)(?![\w-])/;
+  /**
+   * A local that holds a card's class list (\`const cardClass = `${CARD_CLASS}
+   * ...`\`), possibly over several lines. Its statement is a card shell, and
+   * so is every line that names it.
+   */
+  const CARD_CONST = /\bconst\s+(\w+)\s*=\s*([`'"])\s*\$\{CARD_CLASS\}[\s\S]*?\2\s*;?/g;
+  /**
+   * A `<Card>` or `<WidgetCard>` opening tag, whose class list is usually on
+   * a later line than the tag name; `=>` inside an attribute is not its end.
+   */
+  const CARD_TAG = /<(?:Widget)?Card\b(?:=>|[^>])*>/g;
+  const GRID_ITEM = "/src/components/dashboard/DashboardGridItem.tsx";
+  /** A height, max-height or `h-full` in any form: utility, arbitrary property or style. */
+  const ITEM_HEIGHT =
+    /(?<![\w-])(?:max-)?h-[\w[\]./%()-]+|\[(?:max-)?height:|style=\{\{[^}]*\b(?:height|maxHeight)\b/;
+
+  function dashboardSources(): [string, string][] {
+    return productionSources()
+      .filter(([path]) => path.startsWith("/src/components/dashboard/"))
+      .map(([path, content]) => [path, withoutComments(content)]);
+  }
+
+  function cardTags(source: string): { line: number; tag: string }[] {
+    return [...source.matchAll(CARD_TAG)].map((m) => ({
+      line: source.slice(0, m.index).split("\n").length,
+      tag: m[0],
+    }));
+  }
 
   function widgetShellsPinningTheirHeight(): string[] {
     const offenders: string[] = [];
-    for (const [path, content] of productionSources()) {
-      if (!path.startsWith("/src/components/dashboard/")) continue;
-      withoutComments(content)
-        .split("\n")
-        .forEach((line, i) => {
-          if (CARD_SHELL.test(line) && FULL_HEIGHT.test(line)) {
-            offenders.push(`${path}:${i + 1}`);
-          }
-        });
+    for (const [path, source] of dashboardSources()) {
+      source.split("\n").forEach((line, i) => {
+        if (CARD_SHELL.test(line) && FULL_HEIGHT.test(line)) {
+          offenders.push(`${path}:${i + 1}`);
+        }
+      });
+      for (const { line, tag } of cardTags(source)) {
+        if (FULL_HEIGHT.test(tag)) offenders.push(`${path}:${line}`);
+      }
     }
-    return offenders;
+    return [...new Set(offenders)];
   }
+
+  /** Lines of a source that are, or belong to, a card shell, with their text. */
+  function cardShellLines(source: string): { line: number; text: string }[] {
+    const lines = source.split("\n");
+    const shell = new Set<number>();
+    lines.forEach((l, i) => {
+      if (CARD_SURFACE.test(l)) shell.add(i);
+    });
+    for (const m of source.matchAll(CARD_CONST)) {
+      const start = source.slice(0, m.index).split("\n").length - 1;
+      const end = start + m[0].split("\n").length - 1;
+      for (let i = start; i <= end; i++) shell.add(i);
+      const uses = new RegExp(`(?<![\\w$])${m[1]}(?![\\w$])`);
+      lines.forEach((l, i) => {
+        if (uses.test(l)) shell.add(i);
+      });
+    }
+    return [...shell].sort((x, y) => x - y).map((i) => ({ line: i + 1, text: lines[i] }));
+  }
+
+  function cardShellsMatching(pattern: RegExp): string[] {
+    const offenders: string[] = [];
+    for (const [path, source] of dashboardSources()) {
+      for (const { line, text } of cardShellLines(source)) {
+        if (pattern.test(text)) offenders.push(`${path}:${line}`);
+      }
+      for (const { line, tag } of cardTags(source)) {
+        if (pattern.test(tag)) offenders.push(`${path}:${line}`);
+      }
+    }
+    return [...new Set(offenders)];
+  }
+
+  const widgetCardsWithTheirOwnFloor = () => cardShellsMatching(OWN_FLOOR);
+  const widgetCardsAligningThemselves = () => cardShellsMatching(OWN_ALIGN);
 
   it("has no widget card shell setting h-full", () => {
     expect(
       widgetShellsPinningTheirHeight(),
       "Delete `h-full`: the grid stretches the card to its row already, and a percentage height there is read from the neighbouring widget on WebKit.",
+    ).toEqual([]);
+  });
+
+  it("has no widget card aligning itself out of its slot", () => {
+    expect(
+      widgetCardsAligningThemselves(),
+      "Delete `self-start` / `self-center` / `self-end` from the card: the grid stretches it to fill its slot, and a self-alignment shrinks it to its content so it no longer fills the row.",
+    ).toEqual([]);
+  });
+
+  it("has no widget card carrying its own min-height floor", () => {
+    expect(
+      widgetCardsWithTheirOwnFloor(),
+      "Delete the card's `min-h-` (at any breakpoint, or none): from `lg` up the floor is the grid item's (`DashboardGridItem`, from the widget's `defaultHeight` in widget-registry.tsx and `HEIGHT_CLASSES` in dashboard-layout.ts). A floor a widget needs below `lg` goes on its content area, not its card.",
+    ).toEqual([]);
+  });
+
+  it("keeps height off the grid item, whose floor is the layout's min-height", () => {
+    const source = withoutComments(sources[GRID_ITEM] ?? "");
+    expect(source.length, `${GRID_ITEM} was not found`).toBeGreaterThan(0);
+    expect(source).toContain("HEIGHT_CLASSES");
+    const pinned = source
+      .split("\n")
+      .map((line, i) => (ITEM_HEIGHT.test(line) ? `${GRID_ITEM}:${i + 1}` : null))
+      .filter((hit): hit is string => hit !== null);
+    expect(
+      pinned,
+      "Remove the height from DashboardGridItem: its floor is the min-height from `HEIGHT_CLASSES` and the card fills it by grid stretch; a height, max-height or `h-full` there clips content or is read from the neighbouring widget on WebKit (DASH-7).",
     ).toEqual([]);
   });
 
@@ -3157,6 +3270,75 @@ describe("a dashboard card stretches to its row, never `h-full`", () => {
     expect(
       FULL_HEIGHT.test(withoutComments("// the shell used to carry h-full")),
     ).toBe(false);
+  });
+
+  it("catches a planted card floor and a pinned item, and passes their legitimate neighbours", () => {
+    const shellLines = (src: string) => cardShellLines(src).map((l) => l.line);
+    const floored = (line: string) => CARD_SURFACE.test(line) && OWN_FLOOR.test(line);
+    expect(floored("<div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>")).toBe(true);
+    expect(floored('<Card padding="md" className="lg:min-h-[540px]" />')).toBe(true);
+    expect(floored('      minHeightClass="lg:min-h-[500px]"')).toBe(true);
+    expect(floored("loading: widgetSkeleton('lg:min-h-[390px]') });")).toBe(true);
+    // Any other breakpoint prefix, or none, is a floor too.
+    expect(floored("<div className={`${CARD_CLASS} xl:min-h-[390px]`}>")).toBe(true);
+    expect(floored("<div className={`${CARD_CLASS} md:min-h-[390px]`}>")).toBe(true);
+    expect(floored("<div className={`${CARD_CLASS} min-h-[390px]`}>")).toBe(true);
+    expect(floored('<Card className="min-h-40" />')).toBe(true);
+    // A chart's inner floor, the layout's own class map, a card that only
+    // lets itself shrink, and the content area's floor are not a card's floor.
+    expect(floored('<div className="flex-1 min-h-[260px]">')).toBe(false);
+    expect(floored("  standard: 'lg:min-h-[540px]',")).toBe(false);
+    expect(floored("<div className={`${CARD_CLASS} min-h-0 flex-col`}>")).toBe(false);
+    expect(OWN_FLOOR.test("lg:min-h-auto")).toBe(false);
+
+    // A card class held in a local is a shell, on its line and where it is used.
+    const held = [
+      "const cardClass = `${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`;",
+      "<div className={cardClass}>",
+    ].join("\n");
+    expect(shellLines(held)).toEqual([1, 2]);
+    const heldOverLines = [
+      "const cardClass = `",
+      "  ${CARD_CLASS}",
+      "`;",
+    ].join("\n");
+    expect(shellLines(heldOverLines)).toEqual([1, 2, 3]);
+    const heldStart = "const cardClass = `${CARD_CLASS} p-3\n  md:min-h-[390px]`;\nconst other = 1;";
+    expect(shellLines(heldStart)).toEqual([1, 2]);
+    // A calendar day cell's floor is not a card's.
+    expect(CARD_SURFACE.test('dayMinHeightClass="min-h-[64px]"')).toBe(false);
+    expect(shellLines("const cardClass = `${CARD_CLASS} p-3`;\n<div className={`${cardClass} self-start`}>")).toEqual([1, 2]);
+    // TriviaWidget's body box: a floor on the content area, not a card.
+    expect(
+      shellLines("const BODY = 'flex flex-1 flex-col min-h-[calc(390px_-_1.5rem)] lg:min-h-auto';"),
+    ).toEqual([]);
+
+    expect(OWN_ALIGN.test("<div className={`${CARD_CLASS} self-start p-3`}>")).toBe(true);
+    expect(OWN_ALIGN.test('<Card className="lg:self-center" />')).toBe(true);
+    expect(OWN_ALIGN.test('<Card className="self-end" />')).toBe(true);
+    expect(OWN_ALIGN.test('<button className="self-start p-1.5">')).toBe(true);
+    expect(OWN_ALIGN.test('<div className="items-start justify-self-start">')).toBe(false);
+
+    const tag = cardTags(
+      '<WidgetCard\n  title={t("x")}\n  onOpen={() => go()}\n  className="lg:min-h-[500px] h-full"\n>',
+    );
+    expect(tag).toHaveLength(1);
+    expect(tag[0].line).toBe(1);
+    expect(OWN_FLOOR.test(tag[0].tag) && FULL_HEIGHT.test(tag[0].tag)).toBe(true);
+    expect(cardTags("<CardHeader className=\"h-full\">")).toEqual([]);
+
+    for (const pinned of [
+      'className="grid h-full"',
+      'className="lg:h-[540px]"',
+      'className="max-h-96"',
+      'className="[height:540px]"',
+      "style={{ maxHeight: 9 }}",
+    ]) {
+      expect(ITEM_HEIGHT.test(pinned), pinned).toBe(true);
+    }
+    for (const fine of ["lg:min-h-[540px]", "grid grid-cols-1 [grid-template-areas:'cell'] *:[grid-area:cell]", "HEIGHT_CLASSES[item.height]"]) {
+      expect(ITEM_HEIGHT.test(fine), fine).toBe(false);
+    }
   });
 });
 

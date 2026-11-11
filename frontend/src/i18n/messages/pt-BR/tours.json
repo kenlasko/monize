@@ -69,7 +69,7 @@
         },
         "dashboard": {
           "title": "Seu painel",
-          "body": "Este é o seu painel. Use o botão **Personalizar** no canto superior direito para reorganizar ou ocultar os widgets, deixando os resumos que mais importam bem no topo."
+          "body": "Este é o seu painel. Escolha a engrenagem **Personalizar** ao lado da saudação para organizá-lo: mova ou remova widgets onde estão, escolha **Adicionar widget** para incluir mais e **Concluído** para manter o layout."
         },
         "tools": {
           "title": "O menu Ferramentas",
@@ -471,7 +471,7 @@
           },
           "dashboardWidget": {
             "title": "Veja no painel o que está expirando",
-            "body": "Escolha **Personalizar** e ative **Garantias expirando em breve**. Ele lista as próximas garantias a expirar, e o título abre a página Garantias."
+            "body": "Escolha **Personalizar**, depois **Adicionar widget**, selecione **Garantias expirando em breve** e escolha **Concluído**. Ele lista as próximas garantias a expirar, e o título abre a página Garantias."
           },
           "reminders": {
             "title": "Lembretes antes do fim da cobertura",

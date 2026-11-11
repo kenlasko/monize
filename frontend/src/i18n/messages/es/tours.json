@@ -69,7 +69,7 @@
         },
         "dashboard": {
           "title": "Tu panel",
-          "body": "Este es tu panel. Usa el botón **Personalizar** en la esquina superior derecha para reorganizar u ocultar widgets, de modo que los resúmenes que te interesan queden arriba."
+          "body": "Este es tu panel. Elige el engranaje **Personalizar** junto al saludo para organizarlo: mueve o quita widgets donde están, elige **Añadir widget** para tener más y **Listo** para conservar el diseño."
         },
         "tools": {
           "title": "El menú Herramientas",
@@ -471,7 +471,7 @@
           },
           "dashboardWidget": {
             "title": "Mira qué vence en el panel de control",
-            "body": "Elige **Personalizar** y activa **Garantías que vencen pronto**. Muestra las próximas garantías en vencer, y su título abre la página Garantías."
+            "body": "Elige **Personalizar**, luego **Añadir widget**, selecciona **Garantías que vencen pronto** y elige **Listo**. Muestra las próximas garantías en vencer, y su título abre la página Garantías."
           },
           "reminders": {
             "title": "Recordatorios antes de que termine la cobertura",

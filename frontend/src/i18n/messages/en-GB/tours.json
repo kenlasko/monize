@@ -3,7 +3,18 @@
     "basics": {
       "steps": {
         "dashboard": {
-          "body": "This is your dashboard. Use the **Customise** button in the top-right to rearrange or hide widgets so the summaries you care about sit right at the top."
+          "body": "This is your dashboard. Choose the **Customise** gear beside the greeting to arrange it: move or remove widgets where they stand, choose **Add Widget** for more, and **Done** to keep the layout."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_20_0": {
+      "warranties": {
+        "steps": {
+          "dashboardWidget": {
+            "body": "Choose **Customise**, then **Add Widget**, pick **Warranties expiring soon** and choose **Done**. It lists the next warranties to expire, and its title opens the Warranties page."
+          }
         }
       }
     }

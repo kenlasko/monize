@@ -69,7 +69,7 @@
         },
         "dashboard": {
           "title": "Your dashboard",
-          "body": "This is your dashboard. Use the **Customize** button in the top-right to rearrange or hide widgets so the summaries you care about sit right at the top."
+          "body": "This is your dashboard. Choose the **Customize** gear beside the greeting to arrange it: move or remove widgets where they stand, choose **Add Widget** for more, and **Done** to keep the layout."
         },
         "tools": {
           "title": "The Tools menu",
@@ -471,7 +471,7 @@
           },
           "dashboardWidget": {
             "title": "See what is expiring on the dashboard",
-            "body": "Choose **Customize** and turn on **Warranties expiring soon**. It lists the next warranties to expire, and its title opens the Warranties page."
+            "body": "Choose **Customize**, then **Add Widget**, pick **Warranties expiring soon** and choose **Done**. It lists the next warranties to expire, and its title opens the Warranties page."
           },
           "reminders": {
             "title": "Reminders before coverage ends",

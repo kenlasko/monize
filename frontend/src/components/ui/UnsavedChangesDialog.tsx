@@ -10,6 +10,8 @@ interface UnsavedChangesDialogProps {
   onSave: () => void;
   onDiscard: () => void;
   onCancel: () => void;
+  /** When set, Save is disabled and this says why; Discard and Cancel still work. */
+  saveDisabledReason?: string;
 }
 
 export function UnsavedChangesDialog({
@@ -17,6 +19,7 @@ export function UnsavedChangesDialog({
   onSave,
   onDiscard,
   onCancel,
+  saveDisabledReason,
 }: UnsavedChangesDialogProps) {
   const t = useTranslations('common');
   return (
@@ -32,6 +35,14 @@ export function UnsavedChangesDialog({
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             {t('unsavedChanges.message')}
           </p>
+          {saveDisabledReason && (
+            <p
+              data-testid="unsaved-changes-save-blocked"
+              className="mt-2 text-sm text-amber-700 dark:text-amber-400"
+            >
+              {saveDisabledReason}
+            </p>
+          )}
         </div>
       </div>
       <div className="mt-6 flex flex-wrap justify-end gap-3">
@@ -41,7 +52,7 @@ export function UnsavedChangesDialog({
         <Button variant="outline" onClick={onCancel}>
           {t('cancel')}
         </Button>
-        <Button variant="primary" onClick={onSave}>
+        <Button variant="primary" onClick={onSave} disabled={!!saveDisabledReason}>
           {t('save')}
         </Button>
       </div>

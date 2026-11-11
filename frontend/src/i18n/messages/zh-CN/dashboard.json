@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "自定义",
-    "title": "自定义仪表盘",
-    "description": "下方布局与仪表盘一致：小组件从左到右排列，大屏幕上每行两个。",
     "moveEarlier": "将{name}前移",
     "moveLater": "将{name}后移",
-    "dragToReorder": "拖动小组件以重新排列，或使用箭头按钮。",
-    "hiddenWidgets": "已隐藏的小组件",
-    "hide": "隐藏{name}",
-    "show": "显示{name}",
     "atLeastOne": "请至少选择一个要在仪表盘上显示的小组件。",
     "reset": "恢复默认",
     "toasts": {
@@ -280,6 +274,60 @@
         "mwr": "MWR",
         "cagr": "年复合增长率"
       }
+    }
+  },
+  "edit": {
+    "barLabel": "排列仪表板",
+    "addWidget": "添加小组件",
+    "heroSettings": "概览区设置",
+    "done": "完成",
+    "phoneNote": "小组件尺寸适用于较宽的屏幕。",
+    "remove": "移除{name}",
+    "grip": "移动{name}",
+    "gripHint": "拖动以移动{name}，或按方向键",
+    "moved": "{name}已移至第 {position} 位，共 {count} 个",
+    "removed": "已移除{name}",
+    "added": "已添加{name}",
+    "resized": "{name}现在是{size}",
+    "resizedBoth": "{name}现在是{width}和{height}",
+    "twoChanges": "{first}。{second}",
+    "placeholder": "有内容可显示时，将显示在仪表板上。",
+    "addTitle": "添加小组件",
+    "addDescription": "添加的小组件会放在仪表板末尾。选择“完成”之前不会保存任何更改。",
+    "addEmpty": "所有小组件都已在您的仪表板上",
+    "addToSpace": "添加小组件到此空位（{width}）",
+    "addSlotDescription": "仅列出能放入此空位的小组件，所选的小组件会填满它。选择“完成”之前不会保存任何更改。",
+    "addSlotEmpty": "没有能放入此空位的隐藏小组件。可将小组件拖到此处移入。",
+    "resize": "调整{name}大小",
+    "resizeHint": "拖动以调整{name}大小，或按方向键",
+    "widthLabel": "宽度",
+    "heightLabel": "高度",
+    "presetName": "{short}，{name}",
+    "widthOf": "{name}的宽度",
+    "heightOf": "{name}的高度",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "整宽"
+    },
+    "widthName": {
+      "third": "三分之一宽度",
+      "half": "一半宽度",
+      "twoThirds": "三分之二宽度",
+      "full": "完整宽度"
+    },
+    "heightShort": {
+      "auto": "自动",
+      "compact": "小",
+      "standard": "中",
+      "tall": "大"
+    },
+    "heightName": {
+      "auto": "自动高度",
+      "compact": "紧凑高度",
+      "standard": "标准高度",
+      "tall": "加高"
     }
   },
   "favouriteReports": {

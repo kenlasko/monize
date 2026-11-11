@@ -249,14 +249,8 @@
   },
   "customize": {
     "button": "Özelleştir",
-    "title": "Panoyu özelleştir",
-    "description": "Aşağıdaki düzen panonuzu yansıtır: widget'lar soldan sağa akar, büyük ekranlarda her satırda iki tane bulunur.",
     "moveEarlier": "{name} öğesini öne taşı",
     "moveLater": "{name} öğesini arkaya taşı",
-    "dragToReorder": "Widget'ları sürükleyerek yeniden düzenleyin veya ok düğmelerini kullanın.",
-    "hiddenWidgets": "Gizli widget'lar",
-    "hide": "{name} gizle",
-    "show": "{name} göster",
     "atLeastOne": "Panoda göstermek için en az bir widget seçin.",
     "reset": "Varsayılana sıfırla",
     "toasts": {
@@ -280,6 +274,60 @@
         "mwr": "MWR",
         "cagr": "BYOB"
       }
+    }
+  },
+  "edit": {
+    "barLabel": "Panoyu düzenle",
+    "addWidget": "Widget ekle",
+    "heroSettings": "Başlık ayarları",
+    "done": "Tamam",
+    "phoneNote": "Widget boyutları daha geniş ekranlarda uygulanır.",
+    "remove": "{name} öğesini kaldır",
+    "grip": "{name} öğesini taşı",
+    "gripHint": "{name} öğesini taşımak için sürükleyin veya ok tuşlarına basın",
+    "moved": "{name}, {count} içinde {position}. konuma taşındı",
+    "removed": "{name} kaldırıldı",
+    "added": "{name} eklendi",
+    "resized": "{name} artık {size}",
+    "resizedBoth": "{name} artık {width} ve {height}",
+    "twoChanges": "{first}. {second}",
+    "placeholder": "Gösterecek bir şey olduğunda panoda görünür.",
+    "addTitle": "Widget ekle",
+    "addDescription": "Eklediğiniz widget panonun sonuna yerleşir. Tamam seçeneğini seçene kadar hiçbir şey kaydedilmez.",
+    "addEmpty": "Tüm widget'lar zaten panonuzda",
+    "addToSpace": "Widget ekle: bu alan ({width})",
+    "addSlotDescription": "Yalnızca bu alana sığan widget'lar listelenir ve seçtiğiniz widget alanı doldurur. Tamam seçeneğini seçene kadar hiçbir şey kaydedilmez.",
+    "addSlotEmpty": "Bu alana sığan gizli widget yok. Taşımak için bir widget'ı buraya sürükleyin.",
+    "resize": "{name} öğesini yeniden boyutlandır",
+    "resizeHint": "{name} öğesini yeniden boyutlandırmak için sürükleyin veya ok tuşlarına basın",
+    "widthLabel": "Genişlik",
+    "heightLabel": "Yükseklik",
+    "presetName": "{short}, {name}",
+    "widthOf": "{name} genişliği",
+    "heightOf": "{name} yüksekliği",
+    "widthShort": {
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "full": "Tam"
+    },
+    "widthName": {
+      "third": "Üçte bir genişlik",
+      "half": "Yarım genişlik",
+      "twoThirds": "Üçte iki genişlik",
+      "full": "Tam genişlik"
+    },
+    "heightShort": {
+      "auto": "Oto",
+      "compact": "S",
+      "standard": "M",
+      "tall": "L"
+    },
+    "heightName": {
+      "auto": "Otomatik yükseklik",
+      "compact": "Kompakt yükseklik",
+      "standard": "Standart yükseklik",
+      "tall": "Uzun yükseklik"
     }
   },
   "favouriteReports": {

@@ -1,6 +1,7 @@
 'use client';
 
-import { Fragment, useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { subMonths, format } from 'date-fns';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
@@ -8,12 +9,25 @@ import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/store/authStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { GettingStarted } from '@/components/dashboard/GettingStarted';
-import { CustomizeDashboardModal } from '@/components/dashboard/CustomizeDashboardModal';
 import {
   DashboardWidgetContext,
   delegateDashboardWidgets,
-  resolveDashboardWidgets,
+  type DashboardWidgetId,
 } from '@/components/dashboard/widget-registry';
+import { useWidgetName } from '@/components/dashboard/widget-glyphs';
+import {
+  defaultLayoutItem,
+  fitsWidth,
+  layoutReducer,
+  moveIntoGap,
+  resolveDashboardLayout,
+  type RowGap,
+  type WidgetHeight,
+  type WidgetWidth,
+} from '@/components/dashboard/dashboard-layout';
+import { DashboardGrid, type DashboardGridEditing } from '@/components/dashboard/DashboardGrid';
+import { useDashboardLayoutDraft } from '@/hooks/useDashboardLayoutDraft';
+import { useGridReorder } from '@/hooks/useGridReorder';
 import { accountsApi } from '@/lib/accounts';
 import { institutionsApi } from '@/lib/institutions';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
@@ -43,6 +57,45 @@ import { greetingPeriod } from '@/lib/greeting';
 
 const logger = createLogger('Dashboard');
 
+// Edit mode's parts load on demand, behind `editing` (and the hero dialog
+// behind its own open flag), so the dashboard's first load does not grow.
+const DashboardEditBar = dynamic(
+  () => import('@/components/dashboard/DashboardEditBar').then((m) => m.DashboardEditBar),
+  { ssr: false },
+);
+const WidgetEditOverlay = dynamic(
+  () => import('@/components/dashboard/WidgetEditOverlay').then((m) => m.WidgetEditOverlay),
+  { ssr: false },
+);
+const WidgetPlaceholder = dynamic(
+  () => import('@/components/dashboard/WidgetEditOverlay').then((m) => m.WidgetPlaceholder),
+  { ssr: false },
+);
+const WidgetDragChip = dynamic(
+  () => import('@/components/dashboard/WidgetEditOverlay').then((m) => m.WidgetDragChip),
+  { ssr: false },
+);
+const AddWidgetDialog = dynamic(
+  () => import('@/components/dashboard/AddWidgetDialog').then((m) => m.AddWidgetDialog),
+  { ssr: false },
+);
+const AddWidgetTile = dynamic(
+  () => import('@/components/dashboard/AddWidgetDialog').then((m) => m.AddWidgetTile),
+  { ssr: false },
+);
+const AddWidgetSlot = dynamic(
+  () => import('@/components/dashboard/AddWidgetDialog').then((m) => m.AddWidgetSlot),
+  { ssr: false },
+);
+const DashboardHeroSettingsModal = dynamic(
+  () => import('@/components/dashboard/DashboardHeroSettingsModal').then((m) => m.DashboardHeroSettingsModal),
+  { ssr: false },
+);
+const UnsavedChangesDialog = dynamic(
+  () => import('@/components/ui/UnsavedChangesDialog').then((m) => m.UnsavedChangesDialog),
+  { ssr: false },
+);
+
 export default function DashboardPage() {
   return (
     <ProtectedRoute>
@@ -64,6 +117,7 @@ function DashboardContent() {
   // path), so wait until the store has hydrated before firing.
   const authHydrated = useAuthStore((s) => s._hasHydrated);
   const dashboardWidgets = usePreferencesStore((s) => s.preferences?.dashboardWidgets);
+  const dashboardWidgetConfig = usePreferencesStore((s) => s.preferences?.dashboardWidgetConfig);
   const timezonePref = usePreferencesStore((s) => s.preferences?.timezone);
   const today = useFinancialToday();
   const formatChartDate = useChartDateFormat();
@@ -88,7 +142,23 @@ function DashboardContent() {
   // holds only its "invested" figure on this, and the automatic price refresh
   // waits for it so the two do not compete for the server.
   const [investmentSummaryLoading, setInvestmentSummaryLoading] = useState(false);
-  const [showCustomize, setShowCustomize] = useState(false);
+  const layoutDraft = useDashboardLayoutDraft();
+  // A delegate never enters edit mode (DASH-9).
+  const editing = layoutDraft.editing && !isDelegateView;
+  const [showAddWidget, setShowAddWidget] = useState(false);
+  // The row gap the Add dialog was opened from; null from the end tile or the bar.
+  const [addGap, setAddGap] = useState<RowGap | null>(null);
+  const [showHeroSettings, setShowHeroSettings] = useState(false);
+  // The latest change (move, add, remove, resize), for the grid's polite live region.
+  const [announcement, setAnnouncement] = useState('');
+  const gearRef = useRef<HTMLButtonElement>(null);
+  // Leaving edit mode, by any way out, hands focus back to the gear that
+  // entered it, rather than to the page body with the bar that held it.
+  const wasEditingRef = useRef(false);
+  useEffect(() => {
+    if (wasEditingRef.current && !editing) gearRef.current?.focus();
+    wasEditingRef.current = editing;
+  }, [editing]);
 
   const brokerageMarketValues = useMemo(() => {
     const map = new Map<string, number>();
@@ -284,16 +354,179 @@ function DashboardContent() {
     onAccountsChanged: loadDashboardData,
   };
 
-  // Delegates always get the fixed delegate layout (the stored preference is
-  // the owner's); everyone else gets their own configured layout, falling
-  // back to the default when they never customized.
-  const visibleWidgets = useMemo(
+  // Delegates always get the fixed delegate layout at default sizes (the
+  // stored preferences are the owner's); everyone else gets their own
+  // configured layout, falling back to the default when they never customized.
+  const storedLayout = useMemo(
     () =>
       isDelegateView
-        ? delegateDashboardWidgets(delegateSections)
-        : resolveDashboardWidgets(dashboardWidgets),
-    [isDelegateView, delegateSections, dashboardWidgets],
+        ? delegateDashboardWidgets(delegateSections).map((w) => defaultLayoutItem(w.id))
+        : resolveDashboardLayout(dashboardWidgets, dashboardWidgetConfig),
+    [isDelegateView, delegateSections, dashboardWidgets, dashboardWidgetConfig],
   );
+  // While editing, the grid is drawn from the draft; otherwise from what is stored.
+  const draft = editing ? layoutDraft.draft : null;
+  const layout = draft ?? storedLayout;
+
+  // Each visit to edit mode starts with its dialogs shut and nothing announced.
+  const enterEditMode = () => {
+    setShowAddWidget(false);
+    setAddGap(null);
+    setShowHeroSettings(false);
+    setAnnouncement('');
+    layoutDraft.enter();
+  };
+
+  const { dispatch: dispatchLayout, saving } = layoutDraft;
+  const widgetName = useWidgetName();
+  // One move, from the overlay's buttons or the grip: dispatched, read out,
+  // and focus kept on the control that moved it. A pointer drop moves no
+  // focus: the grip's press never took it.
+  const moveWidget = useCallback(
+    (from: number, to: number, focus: 'button' | 'grip' | 'none' = 'button') => {
+      if (!draft || saving || to < 0 || to >= draft.length || from === to) return;
+      const { id } = draft[from];
+      dispatchLayout({ type: 'move', from, to });
+      setAnnouncement(t('edit.moved', { name: widgetName(id), position: to + 1, count: draft.length }));
+      if (focus === 'none') return;
+      const direction = to < from ? 'earlier' : 'later';
+      requestAnimationFrame(() => {
+        const item = document.querySelector(`[data-widget-id="${id}"]`);
+        if (focus === 'grip') {
+          item?.querySelector<HTMLButtonElement>('[data-edit-slot="grip"] button')?.focus();
+          return;
+        }
+        const button =
+          item?.querySelector<HTMLButtonElement>(`[data-edit-action="${direction}"]:not(:disabled)`) ??
+          item?.querySelector<HTMLButtonElement>('[data-edit-action]:not(:disabled)');
+        button?.focus();
+      });
+    },
+    [draft, saving, dispatchLayout, t, widgetName],
+  );
+
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // Focus a widget's grip once the grid has drawn the change, or the Add
+  // widget tile when there is no widget to focus.
+  const focusGrip = (id: DashboardWidgetId | undefined) => {
+    requestAnimationFrame(() => {
+      const grid = gridRef.current;
+      const item = id ? grid?.querySelector(`[data-widget-id="${id}"]`) : null;
+      const target =
+        item?.querySelector<HTMLElement>('[data-edit-slot="grip"] button') ??
+        grid?.querySelector<HTMLElement>('[data-edit-slot="add"]');
+      target?.focus();
+    });
+  };
+
+  // Each change is read out, and focus moves to what is left in place of a
+  // removed widget, or onto a widget just added.
+  const removeWidget = (id: DashboardWidgetId) => {
+    if (!draft || saving) return;
+    const index = draft.findIndex((item) => item.id === id);
+    if (index < 0) return;
+    dispatchLayout({ type: 'remove', id });
+    setAnnouncement(t('edit.removed', { name: widgetName(id) }));
+    focusGrip((draft[index + 1] ?? draft[index - 1])?.id);
+  };
+
+  const addWidget = (id: DashboardWidgetId) => {
+    if (!draft || saving || draft.some((item) => item.id === id)) return;
+    dispatchLayout({ type: 'add', id });
+    setAnnouncement(t('edit.added', { name: widgetName(id) }));
+    focusGrip(id);
+  };
+
+  // From a gap slot: the widget goes at the slot's place, filling its space.
+  const insertWidget = (id: DashboardWidgetId, gap: RowGap) => {
+    if (!draft || saving || draft.some((item) => item.id === id)) return;
+    const action = { type: 'insert', id, index: gap.index, width: gap.width } as const;
+    if (layoutReducer(draft, action) === draft) return;
+    dispatchLayout(action);
+    setAnnouncement(t('edit.added', { name: widgetName(id) }));
+    focusGrip(id);
+  };
+
+  const openAddWidget = (gap: RowGap | null) => {
+    setAddGap(gap);
+    setShowAddWidget(true);
+  };
+
+  // A grip dropped on a gap slot: moved there, narrowed to the gap when
+  // wider. A drop that also narrowed reads out both changes.
+  const dropInGap = (from: number, gapIndex: number, width: WidgetWidth) => {
+    if (!draft || saving) return;
+    const action = moveIntoGap(draft, from, gapIndex, width);
+    if (!action || layoutReducer(draft, action) === draft) return;
+    const before = draft[from];
+    dispatchLayout(action);
+    const name = widgetName(before.id);
+    const moved =
+      action.to !== from ? t('edit.moved', { name, position: action.to + 1, count: draft.length }) : null;
+    const resized =
+      action.width !== before.width ? t('edit.resized', { name, size: t(`edit.widthName.${action.width}`) }) : null;
+    setAnnouncement(moved && resized ? t('edit.twoChanges', { first: moved, second: resized }) : (moved ?? resized ?? ''));
+  };
+
+  const resizeWidget = (id: DashboardWidgetId, size: { width?: WidgetWidth; height?: WidgetHeight }) => {
+    if (!draft || saving) return;
+    const action = { type: 'resize', id, ...size } as const;
+    // The reducer refuses a size the widget does not offer; nothing is read out then.
+    const next = layoutReducer(draft, action);
+    const before = draft.find((item) => item.id === id);
+    const after = next.find((item) => item.id === id);
+    if (next === draft || !before || !after) return;
+    dispatchLayout(action);
+    const name = widgetName(id);
+    const width = t(`edit.widthName.${after.width}`);
+    const height = t(`edit.heightName.${after.height}`);
+    const widthChanged = after.width !== before.width;
+    const heightChanged = after.height !== before.height;
+    setAnnouncement(
+      widthChanged && heightChanged
+        ? t('edit.resizedBoth', { name, width, height })
+        : t('edit.resized', { name, size: widthChanged ? width : height }),
+    );
+  };
+  const reorder = useGridReorder({
+    containerRef: gridRef,
+    count: draft?.length ?? 0,
+    enabled: !!draft,
+    onMove: (from, to, via) => moveWidget(from, to, via === 'keyboard' ? 'grip' : 'none'),
+    fitsSlot: (from, width) => !!draft?.[from] && fitsWidth(draft[from].id, width),
+    onSlotDrop: dropInGap,
+  });
+  const draggedItem = draft && reorder.draggingIndex !== null ? draft[reorder.draggingIndex] : undefined;
+
+  const gridEditing: DashboardGridEditing | undefined = draft
+    ? {
+        overlay: (item, index) => (
+          <WidgetEditOverlay
+            item={item}
+            index={index}
+            count={draft.length}
+            onMove={moveWidget}
+            onRemove={(removed) => removeWidget(removed.id)}
+            onResize={resizeWidget}
+            grip={reorder.grip(index)}
+          />
+        ),
+        placeholder: (item) => <WidgetPlaceholder item={item} />,
+        trailing: <AddWidgetTile onClick={() => openAddWidget(null)} empty={draft.length === 0} />,
+        gapSlot: (gap) => (
+          <AddWidgetSlot gap={gap} highlighted={reorder.slotTarget === gap.index} onClick={openAddWidget} />
+        ),
+        announcement,
+        saving,
+        reorder: {
+          draggingIndex: reorder.draggingIndex,
+          axis: reorder.axis,
+          dropIndicator: reorder.dropIndicator,
+          chip: draggedItem ? <WidgetDragChip id={draggedItem.id} positionRef={reorder.chipRef} /> : null,
+        },
+      }
+    : undefined;
 
   // The greeting for the part of the day, and today's date. They are the
   // page header whether or not the hero below them is on.
@@ -311,9 +544,10 @@ function DashboardContent() {
       titleAdornment={
         !isDelegateView ? (
           <button
+            ref={gearRef}
             type="button"
             {...tourAnchor(TOUR_ANCHORS.dashboardCustomize)}
-            onClick={() => setShowCustomize(true)}
+            onClick={enterEditMode}
             aria-label={t('customize.button')}
             title={t('customize.button')}
             className={`p-1.5 rounded-md text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${HOVER_TOOLBAR_BUTTON}`}
@@ -350,22 +584,43 @@ function DashboardContent() {
 
           {!isDelegateView && <GettingStarted />}
 
-          {/* Widget grid: consecutive visible widgets pair up into rows */}
-          <div
-            {...tourAnchor(TOUR_ANCHORS.dashboardWidgets)}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-          >
-            {visibleWidgets
-              .filter((w) => !w.shouldRender || w.shouldRender(widgetContext))
-              .map((w) => (
-                <Fragment key={w.id}>{w.render(widgetContext)}</Fragment>
-              ))}
-          </div>
+          {draft && (
+            <DashboardEditBar
+              onAddWidget={() => openAddWidget(null)}
+              onHeroSettings={() => setShowHeroSettings(true)}
+              onReset={() => dispatchLayout({ type: 'reset' })}
+              onCancel={layoutDraft.cancel}
+              onDone={layoutDraft.save}
+              doneDisabled={draft.length === 0}
+              saving={layoutDraft.saving}
+            />
+          )}
 
-          {!isDelegateView && (
-            <CustomizeDashboardModal
-              isOpen={showCustomize}
-              onClose={() => setShowCustomize(false)}
+          <DashboardGrid ref={gridRef} layout={layout} context={widgetContext} editing={gridEditing} />
+
+          {draft && (
+            <>
+              <AddWidgetDialog
+                isOpen={showAddWidget}
+                onClose={() => setShowAddWidget(false)}
+                shownIds={draft.map((item) => item.id)}
+                fitWidth={addGap?.width}
+                onAdd={(id) => (addGap ? insertWidget(id, addGap) : addWidget(id))}
+              />
+              <UnsavedChangesDialog
+                isOpen={layoutDraft.confirmingLeave}
+                onSave={layoutDraft.save}
+                // Save of an empty draft would do nothing; say why instead.
+                saveDisabledReason={draft.length === 0 ? t('customize.atLeastOne') : undefined}
+                onDiscard={layoutDraft.discard}
+                onCancel={layoutDraft.keepEditing}
+              />
+            </>
+          )}
+          {draft && showHeroSettings && (
+            <DashboardHeroSettingsModal
+              isOpen
+              onClose={() => setShowHeroSettings(false)}
               investmentAccounts={portfolioAccounts}
             />
           )}
