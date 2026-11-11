@@ -56,6 +56,7 @@ vi.mock('@/lib/investments', () => ({
   investmentsApi: {
     getPortfolioSummary: (...args: unknown[]) => mockGetPortfolioSummary(...args),
     getInvestmentAccounts: (...args: unknown[]) => mockGetInvestmentAccounts(...args),
+    getMarketIndexes: () => Promise.resolve([]),
   },
 }));
 

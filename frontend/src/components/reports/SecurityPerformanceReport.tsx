@@ -46,6 +46,7 @@ import { renderChartFlagDot, ChartFlagShadowFilter } from '@/components/investme
 import { buildTimeAxisTicks } from '@/lib/chart-time-axis';
 import { SecurityComparisonChart, SecurityComparisonChartHandle } from '@/components/reports/SecurityComparisonChart';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
+import { useMarketIndexPicker } from '@/hooks/useMarketIndexPicker';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { useDateRange } from '@/hooks/useDateRange';
 import { CHART_RANGES } from '@/lib/security-detail';
@@ -57,16 +58,6 @@ import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 import { ChartAreaGradient } from '@/components/ui/ChartAreaGradient';
 
 const MAX_PAGES = 50;
-
-/** Regions in the order the index picker groups them. */
-const INDEX_REGIONS = ['NORTH_AMERICA', 'EUROPE', 'ASIA_PACIFIC'] as const;
-
-/**
- * Marks a picker row as a region heading rather than an index. `MultiSelect`
- * puts a group's own value into the selection once every child is chosen, so
- * the two have to be told apart before the selection reaches the API.
- */
-const INDEX_GROUP_PREFIX = 'region:';
 
 type TradeSortField = 'date' | 'account' | 'action' | 'shares' | 'price' | 'total';
 type DividendSortField = 'date' | 'account' | 'type' | 'amount';
@@ -129,7 +120,6 @@ function sumDividends(rows: InvestmentTransaction[]): number {
 export function SecurityPerformanceReport() {
   const t = useTranslations('reports');
   const tc = useTranslations('common');
-  const ti = useTranslations('marketIndexes');
   const formatChartDate = useChartDateFormat();
   // Both history tables print a calendar date and a share count, so both go
   // through the preference seams -- `formatDate` for the date's arrangement and
@@ -151,11 +141,6 @@ export function SecurityPerformanceReport() {
   // the single-security deep dive (stats, tabs, PDF); two or more switch to the
   // performance-comparison chart. Empty shows the initial prompt.
   const [selectedSecurityIds, setSelectedSecurityIds] = useState<string[]>([]);
-  // Benchmarks overlaid on the chart. Selecting one switches to the
-  // percent-return comparison: an index level and a share price cannot share a
-  // currency axis, and giving each its own invites the reader to compare two
-  // independently-scaled lines.
-  const [selectedIndexCodes, setSelectedIndexCodes] = useState<string[]>([]);
   const [viewType, setViewType] = useState<'chart' | 'transactions' | 'dividends'>('chart');
   // The chart's window. Persisted per user, like the security detail page's.
   const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange } =
@@ -169,23 +154,6 @@ export function SecurityPerformanceReport() {
   // Whether the comparison chart (which owns its own request) holds the
   // current selection's answer; it reports it, the toolbar below reads it.
   const [comparisonExportable, setComparisonExportable] = useState(false);
-  // The region rows in the index picker are grouping, not instruments:
-  // `MultiSelect` adds a group's own value to the selection once all its
-  // children are chosen, and sending `region:EUROPE` to the API would be
-  // rejected as an unknown index code. The prefix is this component's own
-  // construction (see `indexOptions`), so stripping it here needs no catalog.
-  const activeIndexCodes = useMemo(
-    () => selectedIndexCodes.filter((code) => !code.startsWith(INDEX_GROUP_PREFIX)),
-    [selectedIndexCodes],
-  );
-  const hasIndexOverlay = activeIndexCodes.length > 0;
-  // Two or more instruments on one chart, or one measured against a benchmark:
-  // either way the honest axis is percent return rebased to the window start.
-  const isComparison = selectedSecurityIds.length + activeIndexCodes.length > 1;
-  const isSingle = selectedSecurityIds.length === 1 && !hasIndexOverlay;
-  // The single selected security's id (empty in the prompt/comparison modes),
-  // which drives the per-security detail fetch and panels below.
-  const selectedSecurityId = isSingle ? selectedSecurityIds[0] : '';
   // Avg-cost bubble the user has temporarily dismissed, keyed by value (mirrors
   // the high/low flag bubbles) so it re-shows when a different security's avg
   // cost differs.
@@ -227,6 +195,20 @@ export function SecurityPerformanceReport() {
     () => baseData?.marketIndexes ?? [],
     [baseData],
   );
+  // Benchmarks overlaid on the chart. Selecting one switches to the
+  // percent-return comparison: an index level and a share price cannot share a
+  // currency axis, and giving each its own invites the reader to compare two
+  // independently-scaled lines.
+  const { indexOptions, selectedIndexCodes, setSelectedIndexCodes, activeIndexCodes } =
+    useMarketIndexPicker(marketIndexes);
+  const hasIndexOverlay = activeIndexCodes.length > 0;
+  // Two or more instruments on one chart, or one measured against a benchmark:
+  // either way the honest axis is percent return rebased to the window start.
+  const isComparison = selectedSecurityIds.length + activeIndexCodes.length > 1;
+  const isSingle = selectedSecurityIds.length === 1 && !hasIndexOverlay;
+  // The single selected security's id (empty in the prompt/comparison modes),
+  // which drives the per-security detail fetch and panels below.
+  const selectedSecurityId = isSingle ? selectedSecurityIds[0] : '';
 
   const selectedSecurity = securities.find((s) => s.id === selectedSecurityId);
 
@@ -239,46 +221,6 @@ export function SecurityPerformanceReport() {
         .sort((a, b) => a.symbol.localeCompare(b.symbol))
         .map((sec) => ({ value: sec.id, label: `${sec.symbol} - ${sec.name}` })),
     [securities],
-  );
-
-  /** An index's localized name, falling back to what the catalog called it. */
-  const indexLabel = (index: MarketIndex) => {
-    const key = `names.${index.code}` as Parameters<typeof ti>[0];
-    const localized = ti(key);
-    return localized === key ? index.defaultName : localized;
-  };
-
-  /**
-   * Benchmarks, grouped by region.
-   *
-   * **Every catalog entry is offered, including one we hold no prices for yet.**
-   * Hiding those looked like courtesy and was a deadlock: an index's history is
-   * fetched when it is first selected, so filtering on stored coverage meant a
-   * fresh deployment showed an empty picker and nothing could ever fill it. The
-   * comparison already answers an unpriced benchmark honestly -- it comes back
-   * in `excluded` with a reason -- which is the right place for that to be
-   * handled.
-   */
-  const indexOptions = useMemo<MultiSelectOption[]>(
-    () =>
-      INDEX_REGIONS.flatMap((region) => {
-        const inRegion = marketIndexes
-          .filter((index) => index.region === region)
-          .sort((a, b) => a.defaultName.localeCompare(b.defaultName));
-        if (inRegion.length === 0) return [];
-        return [
-          {
-            value: `${INDEX_GROUP_PREFIX}${region}`,
-            label: t(`securityPerformance.indexRegions.${region}` as Parameters<typeof t>[0]),
-            children: inRegion.map((index) => ({
-              value: index.code,
-              label: indexLabel(index),
-            })),
-          },
-        ];
-      }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [marketIndexes, t, ti],
   );
 
   const accountNameById = useMemo(() => {

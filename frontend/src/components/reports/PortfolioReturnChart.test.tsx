@@ -19,16 +19,22 @@ vi.mock('recharts', () => ({
     name,
     strokeWidth,
     connectNulls,
+    strokeDasharray,
+    data,
   }: {
     name?: string;
     strokeWidth?: number;
     connectNulls?: boolean;
+    strokeDasharray?: string;
+    data?: unknown[];
   }) => (
     <div
       data-testid="line"
       data-name={name}
       data-width={strokeWidth}
       data-connect-nulls={String(connectNulls)}
+      data-dash={strokeDasharray ?? ''}
+      data-points={data ? String(data.length) : ''}
     />
   ),
   XAxis: () => null,
@@ -42,6 +48,13 @@ vi.mock('recharts', () => ({
 const mockUseTwrSeries = vi.fn<(options: Record<string, unknown>) => UseTwrSeriesValue>();
 vi.mock('@/hooks/useTwrSeries', () => ({
   useTwrSeries: (options: Record<string, unknown>) => mockUseTwrSeries(options),
+}));
+
+const mockGetPerformanceComparison = vi.fn();
+vi.mock('@/lib/investments', () => ({
+  investmentsApi: {
+    getPerformanceComparison: (...args: unknown[]) => mockGetPerformanceComparison(...args),
+  },
 }));
 
 const mockExportToPdf = vi.fn();
@@ -283,6 +296,138 @@ describe('PortfolioReturnChart', () => {
         await ref.current?.exportPdf();
       });
       expect(mockExportToPdf).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('market index overlay', () => {
+    const indexComparison = (overrides: Record<string, unknown> = {}) => ({
+      window: { start: '2026-09-15', end: '2026-09-17' },
+      sampling: 'day',
+      series: [
+        {
+          key: 'idx:SP500',
+          kind: 'INDEX',
+          id: 'SP500',
+          label: 'SP500',
+          name: 'S&P 500 (server)',
+          currencyCode: 'USD',
+          basis: 'close',
+        },
+      ],
+      points: [
+        { date: '2026-09-15', values: { 'idx:SP500': 0 } },
+        { date: '2026-09-16', values: { 'idx:SP500': 1.2 } },
+      ],
+      totals: { 'idx:SP500': 1.2 },
+      gaps: [],
+      excluded: [],
+      status: 'complete',
+      ...overrides,
+    });
+
+    it('asks nothing when no index is chosen', () => {
+      renderChart();
+      expect(mockGetPerformanceComparison).not.toHaveBeenCalled();
+    });
+
+    it('rebases the indexes on the day the drawn series starts', async () => {
+      mockGetPerformanceComparison.mockResolvedValue(indexComparison());
+      await act(async () => {
+        renderChart({ indexCodes: ['SP500'] });
+      });
+      expect(mockGetPerformanceComparison).toHaveBeenCalledWith({
+        indexCodes: ['SP500'],
+        startDate: '2026-09-15',
+        endDate: '2026-09-17',
+      });
+    });
+
+    it('draws each index as a dashed line beside the portfolio, with a legend', async () => {
+      mockGetPerformanceComparison.mockResolvedValue(indexComparison());
+      await act(async () => {
+        renderChart({ indexCodes: ['SP500'] });
+      });
+      const lines = screen.getAllByTestId('line');
+      expect(lines).toHaveLength(2);
+      expect(lines[0].getAttribute('data-name')).toBe('Portfolio');
+      expect(lines[0].getAttribute('data-dash')).toBe('');
+      expect(lines[1].getAttribute('data-name')).toBe('S&P 500');
+      expect(lines[1].getAttribute('data-dash')).toBe('5 3');
+      expect(screen.getByTestId('legend')).toBeInTheDocument();
+    });
+
+    it('draws an index from its own points, never bridging its gaps', async () => {
+      mockGetPerformanceComparison.mockResolvedValue(indexComparison());
+      await act(async () => {
+        renderChart({ indexCodes: ['SP500'] });
+      });
+      const indexLine = screen.getAllByTestId('line')[1];
+      expect(indexLine.getAttribute('data-connect-nulls')).toBe('false');
+      expect(indexLine.getAttribute('data-points')).toBe('2');
+    });
+
+    it('names an index the server refused, with its reason', async () => {
+      mockGetPerformanceComparison.mockResolvedValue(
+        indexComparison({
+          series: [],
+          points: [],
+          excluded: [
+            { key: 'idx:SP500', kind: 'INDEX', id: 'SP500', label: 'SP500', reason: 'NO_PRICE_HISTORY' },
+          ],
+          status: 'incomplete',
+        }),
+      );
+      await act(async () => {
+        renderChart({ indexCodes: ['SP500'] });
+      });
+      expect(screen.getByText('Not shown on this chart')).toBeInTheDocument();
+      expect(screen.getByText(/S&P 500/)).toBeInTheDocument();
+      // The portfolio is still drawn.
+      expect(screen.getAllByTestId('line')).toHaveLength(1);
+    });
+
+    it('says a failed index request failed, keeps the portfolio line, and retries', async () => {
+      mockGetPerformanceComparison.mockRejectedValueOnce(new Error('boom'));
+      await act(async () => {
+        renderChart({ indexCodes: ['SP500'] });
+      });
+      expect(screen.getByText('Could not load price history. Please try again.')).toBeInTheDocument();
+      expect(screen.getAllByTestId('line')).toHaveLength(1);
+
+      mockGetPerformanceComparison.mockResolvedValue(indexComparison());
+      await act(async () => {
+        screen.getByRole('button', { name: /try again|retry/i }).click();
+      });
+      expect(mockGetPerformanceComparison).toHaveBeenCalledTimes(2);
+      expect(screen.getAllByTestId('line')).toHaveLength(2);
+    });
+
+    it('is not exportable until the indexes answer, then exports their legend', async () => {
+      let resolve: (value: unknown) => void = () => {};
+      mockGetPerformanceComparison.mockReturnValue(new Promise((r) => (resolve = r)));
+      const onExportableChange = vi.fn();
+      const exportRef = createRef<SecurityComparisonChartHandle>();
+      await act(async () => {
+        renderChart({ indexCodes: ['SP500'], onExportableChange, exportRef });
+      });
+      expect(onExportableChange).toHaveBeenLastCalledWith(false);
+
+      await act(async () => {
+        resolve(indexComparison());
+      });
+      expect(onExportableChange).toHaveBeenLastCalledWith(true);
+
+      await act(async () => {
+        await exportRef.current?.exportPdf();
+      });
+      expect(mockExportToPdf).toHaveBeenCalledWith(
+        expect.objectContaining({
+          chartLegend: [
+            expect.objectContaining({ label: 'Portfolio' }),
+            expect.objectContaining({ label: 'S&P 500 (index)' }),
+          ],
+        }),
+      );
     });
   });
 });

@@ -33,8 +33,31 @@ import {
   type ReturnView,
 } from './portfolio-return-rows';
 import type { SecurityComparisonChartHandle } from './SecurityComparisonChart';
+import { overlayIndexLines } from './index-overlay-lines';
+import { useIndexComparison } from '@/hooks/useIndexComparison';
+import type { PortfolioTwrSeries, PortfolioTwrSeriesByAccount } from '@/types/net-worth';
 
 const EMPTY_VIEW: ReturnView = { rows: [], lines: [], withheld: [] };
+const NO_INDEXES: readonly string[] = [];
+
+/**
+ * The day the drawn series start from, which is the day they read 0%. The
+ * overlaid indexes are rebased on that same day, so every line leaves the axis
+ * together and the comparison is like for like. Read off the answer rather
+ * than rederived from the range, so the two can never disagree.
+ */
+function seriesStartDate(
+  series: PortfolioTwrSeries | PortfolioTwrSeriesByAccount,
+): string | null {
+  if ('accounts' in series) {
+    const dates = series.accounts
+      .filter((entry) => entry.complete && entry.points.length > 0)
+      .map((entry) => entry.points[0].date)
+      .sort();
+    return dates[0] ?? null;
+  }
+  return series.complete ? (series.points[0]?.date ?? null) : null;
+}
 
 interface PortfolioReturnChartProps {
   /**
@@ -64,6 +87,8 @@ interface PortfolioReturnChartProps {
   exportRef?: Ref<SecurityComparisonChartHandle>;
   /** Told whether the line on screen is the current request's answer. */
   onExportableChange?: (exportable: boolean) => void;
+  /** Codes of the market indexes overlaid as dashed benchmark lines. */
+  indexCodes?: readonly string[];
 }
 
 /**
@@ -91,8 +116,10 @@ export function PortfolioReturnChart({
   skip = false,
   exportRef,
   onExportableChange,
+  indexCodes = NO_INDEXES,
 }: PortfolioReturnChartProps) {
   const t = useTranslations('reports');
+  const ti = useTranslations('marketIndexes');
   const formatChartDate = useChartDateFormat();
   const { formatSignedPercent } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
@@ -120,8 +147,28 @@ export function PortfolioReturnChart({
 
   const { rows, lines, withheld } = view;
 
-  // Only a chart with a line in it is worth exporting.
-  const exportable = result.status === 'ready' && lines.length > 0;
+  // The benchmarks, asked only once the series they are measured beside has
+  // answered, rebased on the day it starts.
+  const indexStart = result.status === 'ready' ? seriesStartDate(result.series) : null;
+  const indexes = useIndexComparison({ indexCodes, startDate: indexStart, endDate, reloadKey });
+  const indexesLoading = indexes.status === 'loading';
+  const indexesSettled = indexes.status === 'idle' || indexes.status === 'ready';
+  const comparison = indexes.comparison;
+
+  const indexLines = useMemo(() => overlayIndexLines(comparison), [comparison]);
+  const indexKeys = useMemo(() => new Set(indexLines.map((line) => line.key)), [indexLines]);
+  const excludedIndexes = comparison?.excluded ?? [];
+
+  /** An index's localized name, falling back to what the server called it. */
+  const indexName = (code: string, fallback: string) => {
+    const key = `names.${code}` as Parameters<typeof ti>[0];
+    const localized = ti(key);
+    return localized === key ? fallback : localized;
+  };
+
+  // Only a chart with a line in it is worth exporting, and only once the
+  // benchmarks it was asked to carry have answered.
+  const exportable = result.status === 'ready' && lines.length > 0 && indexesSettled;
   useEffect(() => {
     onExportableChange?.(exportable);
     return () => onExportableChange?.(false);
@@ -161,15 +208,24 @@ export function PortfolioReturnChart({
           title: t('investmentPerformance.twrTitle'),
           description: subtitle,
           chartContainer: chartRef.current,
-          chartLegend: lines.map((line) => ({
-            color: resolvePdfColor(line.color),
-            label: line.label,
-          })),
+          chartLegend: [
+            ...lines.map((line) => ({
+              color: resolvePdfColor(line.color),
+              label: line.label,
+            })),
+            ...indexLines.map((line) => ({
+              color: resolvePdfColor(line.color),
+              label: t('securityPerformance.comparisonIndexLegend', {
+                name: indexName(line.code, line.name),
+              }),
+            })),
+          ],
           filename: 'portfolio-return',
         });
       },
     }),
-    [exportable, lines, subtitle, t],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [exportable, lines, indexLines, subtitle, t, ti],
   );
 
   return (
@@ -184,7 +240,7 @@ export function PortfolioReturnChart({
 
       {result.status === 'error' ? (
         <ReportError message={t('investmentPerformance.twrError')} />
-      ) : result.status === 'loading' ? (
+      ) : result.status === 'loading' || (lines.length > 0 && indexesLoading) ? (
         <Skeleton className="h-80 w-full" />
       ) : lines.length === 0 ? (
         // Nothing drawn because every series was withheld: the "Not drawn" list
@@ -217,13 +273,24 @@ export function PortfolioReturnChart({
                   if (!active || !payload?.length) return null;
                   const ts = (payload[0].payload as ReturnRow).ts;
                   const items = payload
-                    .filter((p) => typeof p.value === 'number')
+                    // An index is drawn from its own points, so Recharts'
+                    // entry for it may be another date's; it is read below
+                    // from the hovered date instead.
+                    .filter((p) => typeof p.value === 'number' && !indexKeys.has(String(p.dataKey)))
                     .map((p) => ({
                       id: String(p.dataKey),
                       label: labelByKey.get(String(p.dataKey)) ?? '',
                       value: p.value as number,
                       color: p.color as string,
                     }))
+                    .concat(
+                      indexLines.flatMap((line) => {
+                        const value = line.valueAt.get(ts);
+                        return typeof value === 'number'
+                          ? [{ id: line.key, label: indexName(line.code, line.name), value, color: line.color }]
+                          : [];
+                      }),
+                    )
                     .sort((a, b) => b.value - a.value);
                   return (
                     <div className={`${CHART_TOOLTIP_CLASS} max-h-64 overflow-y-auto`}>
@@ -242,7 +309,7 @@ export function PortfolioReturnChart({
                   );
                 }}
               />
-              {lines.length > 1 && <Legend />}
+              {lines.length + indexLines.length > 1 && <Legend />}
               {lines.map((line) => (
                 <Line
                   activeDot={ChartActiveDot}
@@ -255,6 +322,27 @@ export function PortfolioReturnChart({
                   dot={false}
                   // A gap stays a gap: bridging it draws a segment through a
                   // stretch nobody measured, indistinguishable from data.
+                  connectNulls={false}
+                  isAnimationActive={false}
+                />
+              ))}
+              {/* Benchmarks are dashed: a yardstick, not one of the holdings.
+                  Each is drawn from its own sampled dates (`overlayIndexLines`)
+                  with the server's nulls kept, so a gap stays a gap. No hover
+                  dot: Recharts would place it by array position on a date the
+                  index was not sampled. */}
+              {indexLines.map((line) => (
+                <Line
+                  key={line.key}
+                  data={line.points}
+                  type="monotone"
+                  dataKey={line.key}
+                  name={indexName(line.code, line.name)}
+                  stroke={line.color}
+                  strokeWidth={2}
+                  strokeDasharray="5 3"
+                  dot={false}
+                  activeDot={false}
                   connectNulls={false}
                   isAnimationActive={false}
                 />
@@ -287,6 +375,40 @@ export function PortfolioReturnChart({
             ))}
           </ul>
         </div>
+      )}
+
+      {indexes.status === 'error' && lines.length > 0 && (
+        <div className="mt-4">
+          <ReportError message={t('securityPerformance.comparisonError')} onRetry={indexes.retry} />
+        </div>
+      )}
+
+      {/* A benchmark the server refused is named with its reason, never
+          quietly absent: dropping it reads as the chart asked for. */}
+      {excludedIndexes.length > 0 && lines.length > 0 && (
+        <div className="mt-4 rounded-md bg-gray-50 dark:bg-gray-900/40 p-3">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {t('securityPerformance.comparisonExcludedTitle')}
+          </p>
+          <ul className="mt-1 space-y-1">
+            {excludedIndexes.map((entry) => (
+              <li key={entry.key} className="text-sm text-gray-500 dark:text-gray-400">
+                {t('securityPerformance.comparisonExcludedRow', {
+                  label: indexName(entry.id, entry.label),
+                  reason: t(
+                    `securityPerformance.comparisonExcluded.${entry.reason}` as Parameters<typeof t>[0],
+                  ),
+                })}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {comparison?.status === 'incomplete' && indexLines.length > 0 && (
+        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          {t('securityPerformance.comparisonIncomplete')}
+        </p>
       )}
     </div>
   );
