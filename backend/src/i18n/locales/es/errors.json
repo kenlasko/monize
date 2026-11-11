@@ -373,6 +373,7 @@
     "kindInUse": "El tipo de \"{{ code }}\" no se puede cambiar mientras lo usen cuentas, transacciones, valores u otros registros",
     "decimalPlacesInUse": "Los decimales de \"{{ code }}\" no se pueden reducir por debajo de {{ places }} mientras cuentas, transacciones u otros registros contengan importes con tantos decimales",
     "quoteSymbolInUse": "La criptomoneda del símbolo de precio de \"{{ code }}\" no se puede cambiar mientras lo usen cuentas, transacciones, valores u otros registros; solo se puede cambiar su moneda fiduciaria",
+    "firstQuoteSymbolInUse": "No se puede añadir un símbolo de precio a \"{{ code }}\" mientras otros usuarios lo tengan; fijaría el precio de sus tenencias",
     "kindConflict": "La divisa \"{{ code }}\" ya existe como divisa {{ kind }} y no se puede añadir como {{ requestedKind }}"
   },
   "delegation": {

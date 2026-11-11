@@ -373,6 +373,7 @@
     "kindInUse": "Jenis \"{{ code }}\" tidak dapat diubah selama akun, transaksi, sekuritas, atau catatan lain masih menggunakannya",
     "decimalPlacesInUse": "Angka desimal \"{{ code }}\" tidak dapat diturunkan di bawah {{ places }} selama akun, transaksi, atau catatan lain menyimpan jumlah dengan sebanyak itu angka desimal",
     "quoteSymbolInUse": "Koin dalam simbol harga \"{{ code }}\" tidak dapat diubah selama akun, transaksi, sekuritas, atau catatan lain masih menggunakannya; hanya mata uang fiatnya yang dapat diubah",
+    "firstQuoteSymbolInUse": "Simbol harga tidak dapat ditambahkan ke \"{{ code }}\" selama pengguna lain memilikinya; simbol itu akan menentukan harga kepemilikan mereka",
     "kindConflict": "Mata uang \"{{ code }}\" sudah ada sebagai mata uang {{ kind }} dan tidak dapat ditambahkan sebagai {{ requestedKind }}"
   },
   "delegation": {

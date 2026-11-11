@@ -373,6 +373,7 @@
     "kindInUse": "Die Art von „{{ code }}“ kann nicht geändert werden, solange Konten, Buchungen, Wertpapiere oder andere Einträge sie verwenden",
     "decimalPlacesInUse": "Die Nachkommastellen von „{{ code }}“ können nicht unter {{ places }} gesenkt werden, solange Konten, Buchungen oder andere Einträge Beträge mit so vielen Nachkommastellen enthalten",
     "quoteSymbolInUse": "Der Coin im Kurssymbol von „{{ code }}“ kann nicht geändert werden, solange Konten, Buchungen, Wertpapiere oder andere Einträge ihn verwenden; nur die Fiat-Währung darin kann geändert werden",
+    "firstQuoteSymbolInUse": "Zu „{{ code }}“ kann kein Kurssymbol hinzugefügt werden, solange andere Benutzer es halten; es würde den Kurs ihrer Bestände festlegen",
     "kindConflict": "Währung \"{{ code }}\" existiert bereits als {{ kind }}-Währung und kann nicht als {{ requestedKind }} hinzugefügt werden"
   },
   "delegation": {

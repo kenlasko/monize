@@ -373,6 +373,7 @@
     "kindInUse": "Không thể đổi loại của \"{{ code }}\" khi còn tài khoản, giao dịch, chứng khoán hoặc hồ sơ khác đang sử dụng",
     "decimalPlacesInUse": "Không thể giảm số chữ số thập phân của \"{{ code }}\" xuống dưới {{ places }} khi tài khoản, giao dịch hoặc hồ sơ khác còn chứa số tiền có chừng đó chữ số thập phân",
     "quoteSymbolInUse": "Không thể đổi đồng coin trong ký hiệu giá của \"{{ code }}\" khi còn tài khoản, giao dịch, chứng khoán hoặc hồ sơ khác đang sử dụng; chỉ có thể đổi phần tiền pháp định",
+    "firstQuoteSymbolInUse": "Không thể thêm ký hiệu giá cho \"{{ code }}\" khi người dùng khác đang nắm giữ; ký hiệu đó sẽ quyết định giá tài sản của họ",
     "kindConflict": "Tiền tệ \"{{ code }}\" đã tồn tại dưới dạng tiền tệ {{ kind }} và không thể thêm dưới dạng {{ requestedKind }}"
   },
   "delegation": {

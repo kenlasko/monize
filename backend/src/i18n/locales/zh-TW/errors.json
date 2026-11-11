@@ -373,6 +373,7 @@
     "kindInUse": "只要仍有科目、交易、證券或其他記錄在使用，就無法變更「{{ code }}」的類型",
     "decimalPlacesInUse": "只要仍有科目、交易或其他記錄包含這麼多位小數的金額，就無法將「{{ code }}」的小數位數降到{{ places }}以下",
     "quoteSymbolInUse": "只要仍有科目、交易、證券或其他記錄在使用，就無法變更「{{ code }}」價格符號中的幣種；只能變更其中的法定貨幣",
+    "firstQuoteSymbolInUse": "其他使用者持有「{{ code }}」時無法為其新增價格符號；這會決定他們持倉的價格",
     "kindConflict": "貨幣「{{ code }}」已作為 {{ kind }} 貨幣存在，無法新增為 {{ requestedKind }}"
   },
   "delegation": {

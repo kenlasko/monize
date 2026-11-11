@@ -373,6 +373,7 @@
     "kindInUse": "O tipo de \"{{ code }}\" não pode ser alterado enquanto contas, transações, títulos ou outros registos o usarem",
     "decimalPlacesInUse": "As casas decimais de \"{{ code }}\" não podem ser reduzidas abaixo de {{ places }} enquanto contas, transações ou outros registos contiverem montantes com tantas casas decimais",
     "quoteSymbolInUse": "A moeda do símbolo de preço de \"{{ code }}\" não pode ser alterada enquanto contas, transações, títulos ou outros registos o usarem; só a sua moeda fiduciária pode ser alterada",
+    "firstQuoteSymbolInUse": "Não é possível adicionar um símbolo de preço a \"{{ code }}\" enquanto outros utilizadores o detiverem; definiria o preço das posições deles",
     "kindConflict": "A moeda \"{{ code }}\" já existe como moeda {{ kind }} e não pode ser adicionada como {{ requestedKind }}"
   },
   "delegation": {

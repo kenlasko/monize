@@ -373,6 +373,7 @@
     "kindInUse": "Le type de « {{ code }} » ne peut pas être modifié tant que des comptes, des transactions, des titres ou d'autres enregistrements l'utilisent",
     "decimalPlacesInUse": "Les décimales de « {{ code }} » ne peuvent pas descendre sous {{ places }} tant que des comptes, des transactions ou d'autres enregistrements contiennent des montants avec autant de décimales",
     "quoteSymbolInUse": "La cryptomonnaie du symbole de cours de « {{ code }} » ne peut pas être modifiée tant que des comptes, des transactions, des titres ou d'autres enregistrements l'utilisent ; seule sa devise fiduciaire peut l'être",
+    "firstQuoteSymbolInUse": "Impossible d'ajouter un symbole de cours à « {{ code }} » tant que d'autres utilisateurs le détiennent ; il fixerait le cours de leurs avoirs",
     "kindConflict": "La devise « {{ code }} » existe déjà comme devise {{ kind }} et ne peut pas être ajoutée comme {{ requestedKind }}"
   },
   "delegation": {

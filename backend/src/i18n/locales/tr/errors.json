@@ -373,6 +373,7 @@
     "kindInUse": "Hesaplar, işlemler, menkul kıymetler veya diğer kayıtlar kullandığı sürece \"{{ code }}\" para biriminin türü değiştirilemez",
     "decimalPlacesInUse": "Hesaplar, işlemler veya diğer kayıtlar bu kadar ondalık basamaklı tutarlar içerdiği sürece \"{{ code }}\" para biriminin ondalık basamakları {{ places }} değerinin altına düşürülemez",
     "quoteSymbolInUse": "Hesaplar, işlemler, menkul kıymetler veya diğer kayıtlar kullandığı sürece \"{{ code }}\" fiyat sembolündeki coin değiştirilemez; yalnızca fiat para birimi değiştirilebilir",
+    "firstQuoteSymbolInUse": "Başka kullanıcılar \"{{ code }}\" tuttuğu sürece fiyat sembolü eklenemez; bu, onların varlıklarının fiyatını belirlerdi",
     "kindConflict": "\"{{ code }}\" para birimi zaten {{ kind }} para birimi olarak mevcut ve {{ requestedKind }} olarak eklenemez"
   },
   "delegation": {

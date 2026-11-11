@@ -373,6 +373,7 @@
     "kindInUse": "De soort van \"{{ code }}\" kan niet worden gewijzigd zolang rekeningen, transacties, waardepapieren of andere records hem gebruiken",
     "decimalPlacesInUse": "Het aantal decimalen van \"{{ code }}\" kan niet onder {{ places }} worden gebracht zolang rekeningen, transacties of andere records bedragen met zoveel decimalen bevatten",
     "quoteSymbolInUse": "De coin in het koerssymbool van \"{{ code }}\" kan niet worden gewijzigd zolang rekeningen, transacties, waardepapieren of andere records hem gebruiken; alleen de fiatvaluta erin kan worden gewijzigd",
+    "firstQuoteSymbolInUse": "Aan \"{{ code }}\" kan geen koerssymbool worden toegevoegd zolang andere gebruikers hem bezitten; het zou de koers van hun bezit bepalen",
     "kindConflict": "Valuta \"{{ code }}\" bestaat al als {{ kind }}-valuta en kan niet als {{ requestedKind }} worden toegevoegd"
   },
   "delegation": {
