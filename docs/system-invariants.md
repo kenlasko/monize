@@ -2465,8 +2465,10 @@ Source of truth     investedDayFactors and investedPeriodResult
                     (backend/src/net-worth/invested-period-result.util.ts):
                     the one place a day's base and ending are written, read
                     by the card's chain and by the series alike.
-Enforcement         investedTwrSeries asks investedPeriodResult first and
-                    draws only where it reports a figure
+Enforcement         investedTwrSeries reads the same decision, through
+                    investedTimeWeightedDecision (investedPeriodResult without
+                    the money-weighted solve, plus the factors it chained),
+                    and draws only where it reports a figure
                     (backend/src/net-worth/invested-twr-series.util.ts), served
                     by PortfolioTwrSeriesService behind
                     GET /net-worth/investments-twr-series. The util spec holds
