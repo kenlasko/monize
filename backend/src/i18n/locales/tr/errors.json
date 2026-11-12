@@ -870,7 +870,8 @@
     "transferCounterpartChanged": "Düzenleme sırasında bu transferin diğer tarafı değişti. Yeniden yükleyip tekrar deneyin.",
     "splitTransferTargetAmountRequiresTransfer": "Yalnızca bölmedeki bir transfer alınan tutar taşıyabilir",
     "splitIdNotOnTransaction": "splitId {{ splitId }} bu işlemin bir bölme satırı değil. İşlemin bölme satırlarını yeniden okuyun ve splitId değerlerini kullanın.",
-    "splitIdRepeated": "splitId {{ splitId }} birden fazla satırda belirtilmiş. Mevcut her satır yalnızca bir kez sürdürülebilir."
+    "splitIdRepeated": "splitId {{ splitId }} birden fazla satırda belirtilmiş. Mevcut her satır yalnızca bir kez sürdürülebilir.",
+    "splitTagCarryAmbiguous": "Yeniden gönderilen her satırın hangi mevcut bölme satırını devam ettirdiği belirsiz ve satırların etiketleri var. Yeniden gönderilen her satıra, işlemin bölme satırları okunduğu haliyle, devam ettirdiği satırın splitId değerini verin."
   },
   "users": {
     "userNotFound": "Kullanıcı bulunamadı",

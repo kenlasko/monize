@@ -870,7 +870,8 @@
     "transferCounterpartChanged": "Sisi lain transfer ini berubah saat Anda mengedit. Muat ulang dan coba lagi.",
     "splitTransferTargetAmountRequiresTransfer": "Hanya transfer dalam pemisahan yang dapat memiliki jumlah diterima",
     "splitIdNotOnTransaction": "splitId {{ splitId }} bukan baris pemisahan transaksi ini. Baca ulang baris pemisahan transaksi dan gunakan nilai splitId-nya.",
-    "splitIdRepeated": "splitId {{ splitId }} disebut oleh lebih dari satu baris. Setiap baris yang ada hanya dapat dilanjutkan sekali."
+    "splitIdRepeated": "splitId {{ splitId }} disebut oleh lebih dari satu baris. Setiap baris yang ada hanya dapat dilanjutkan sekali.",
+    "splitTagCarryAmbiguous": "Tidak jelas baris pemisahan yang ada mana yang dilanjutkan oleh setiap baris yang dikirim ulang, dan baris-baris itu memiliki tag. Berikan setiap baris yang dikirim ulang splitId dari baris yang dilanjutkannya, sebagaimana baris pemisahan transaksi dibaca."
   },
   "users": {
     "userNotFound": "Pengguna tidak ditemukan",

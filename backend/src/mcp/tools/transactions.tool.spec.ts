@@ -160,6 +160,7 @@ describe("McpTransactionsTools", () => {
       prepareCreateTransferSingle: jest.fn(),
       prepareUpdate: jest.fn(),
       prepareUpdateBulk: jest.fn(),
+      prepareUpdateEach: jest.fn(),
       prepareDelete: jest.fn(),
       prepareDeleteBulk: jest.fn(),
       transferToBatchRow: jest.fn((p) => p),
@@ -1498,24 +1499,67 @@ describe("McpTransactionsTools", () => {
       expect(parsed.ids).toEqual(["t1"]);
     });
 
-    it("dry-run previews update rows without writing", async () => {
-      prepService.prepareUpdateBulk.mockResolvedValue({
-        okRows: [{ transactionId: "t1" }],
+    describe("dry-run update previews the path the save takes", () => {
+      const prepared = {
+        okRows: [],
         previewRows: [{ status: "ok" }],
-        okIndex: [0],
+        okIndex: [],
         skipped: [],
+      };
+      const update = (count: number, approvalMode?: "individual" | "bulk") =>
+        handlers["manage_transactions"](
+          {
+            operation: "update",
+            items: Array.from({ length: count }, (_, n) => ({
+              transactionId: `t${n + 1}`,
+              addTagNames: ["QA-Test"],
+            })),
+            dryRun: true,
+            ...(approvalMode ? { approvalMode } : {}),
+          },
+          ctx,
+        );
+
+      beforeEach(() => {
+        prepService.prepareUpdateEach.mockResolvedValue(prepared);
+        prepService.prepareUpdateBulk.mockResolvedValue(prepared);
       });
-      const result = await handlers["manage_transactions"](
-        {
-          operation: "update",
-          items: [{ transactionId: "t1", amount: -5 }],
-          dryRun: true,
-        },
-        ctx,
-      );
-      expect(transactionsService.update).not.toHaveBeenCalled();
-      const parsed = result.structuredContent as any;
-      expect(parsed.dryRun).toBe(true);
+
+      it("previews a single item as its own card, as a single save does", async () => {
+        // A single transfer edit saves through its own card; the bulk preview
+        // skipped it as "Transfers can't be edited in a bulk update".
+        const result = await update(1);
+        expect(prepService.prepareUpdateEach).toHaveBeenCalledWith("u1", [
+          expect.objectContaining({
+            transactionId: "t1",
+            tagNames: ["QA-Test"],
+          }),
+        ]);
+        expect(prepService.prepareUpdateBulk).not.toHaveBeenCalled();
+        expect(transactionsService.update).not.toHaveBeenCalled();
+        expect(transactionsService.updateTransfer).not.toHaveBeenCalled();
+        const parsed = result.structuredContent as any;
+        expect(parsed.dryRun).toBe(true);
+        expect(parsed.previews).toEqual(prepared.previewRows);
+      });
+
+      it("previews individual approval one card per row", async () => {
+        await update(6, "individual");
+        expect(prepService.prepareUpdateEach).toHaveBeenCalledTimes(1);
+        expect(prepService.prepareUpdateBulk).not.toHaveBeenCalled();
+      });
+
+      it("previews small requests individually, as resolveApprovalMode saves them", async () => {
+        await update(2);
+        expect(prepService.prepareUpdateEach).toHaveBeenCalledTimes(1);
+        expect(prepService.prepareUpdateBulk).not.toHaveBeenCalled();
+      });
+
+      it("previews a bulk card through the bulk preparer", async () => {
+        await update(6);
+        expect(prepService.prepareUpdateBulk).toHaveBeenCalledTimes(1);
+        expect(prepService.prepareUpdateEach).not.toHaveBeenCalled();
+      });
     });
 
     it("dry-run previews delete rows without writing", async () => {
