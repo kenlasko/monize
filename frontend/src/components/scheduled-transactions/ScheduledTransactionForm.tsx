@@ -28,7 +28,8 @@ import { useAmountEstimateText } from './useAmountEstimateText';
 import { useAuthStore } from '@/store/authStore';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 import { investmentsApi } from '@/lib/investments';
-import { getLocalDateString } from '@/lib/utils';
+import { getLocalDateString, parseLocalDate } from '@/lib/utils';
+import { advanceByFrequency } from '@/lib/frequency';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
 import { createCategoryFromInput } from '@/lib/category-create';
@@ -341,7 +342,12 @@ export function ScheduledTransactionForm({
             description: templateTransaction.description || '',
             referenceNumber: '',
             frequency: 'MONTHLY' as FrequencyType,
-            nextDueDate: getLocalDateString(),
+            // The schedule's first occurrence is one month after the transaction
+            // it was created from, not today -- the user is scheduling its
+            // recurrence going forward, not re-dating the transaction itself.
+            nextDueDate: templateTransaction.transactionDate
+              ? getLocalDateString(advanceByFrequency(parseLocalDate(templateTransaction.transactionDate), 'MONTHLY'))
+              : getLocalDateString(),
             isActive: true,
             autoPost: false,
             reminderDaysBefore: 3,
