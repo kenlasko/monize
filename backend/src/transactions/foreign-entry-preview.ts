@@ -38,11 +38,7 @@ export interface ForeignEntryFields {
  * The foreign-entry fields a signed descriptor carries and a commit writes:
  * `ForeignEntryFields` without the display-only rate source.
  */
-export interface ForeignEntryWrite {
-  originalAmount?: number | null;
-  originalCurrencyCode?: string | null;
-  exchangeRate?: number;
-}
+export type ForeignEntryWrite = Omit<ForeignEntryFields, "exchangeRateSource">;
 
 /**
  * The signed (and committed) half of a preview's foreign entry, or nothing
@@ -92,7 +88,12 @@ export interface PreviewForeignEntryArgs {
   /** The date a market rate is looked up for. */
   date: string;
   request: ForeignEntryPreviewRequest;
-  /** Edit only: the row's own entry, which the request's fields override. */
+  /**
+   * Edit only: the row's own entry, which the request's fields override. Its
+   * amount is what the account was charged, so it stays the fact unless the
+   * edit moves it or gives a new rate (which then computes it); the market
+   * rate is never consulted for an existing row.
+   */
   stored?: StoredForeignEntry;
 }
 
@@ -220,26 +221,44 @@ export async function previewForeignEntry(
     "originalAmount",
   );
 
+  // A value difference, not a field being present: a figure resent as the row
+  // holds it is not given. On an edit the row's amount is the default, so a
+  // changed original amount or currency re-derives the rate from what the
+  // account was charged rather than converting over it.
+  let amount = args.amount;
+  let exchangeRate = request.exchangeRate;
+  if (stored !== undefined) {
+    if (
+      exchangeRate !== undefined &&
+      storedCode === code &&
+      roundFxRate(Number(exchangeRate)) ===
+        roundFxRate(Number(stored.exchangeRate))
+    ) {
+      exchangeRate = undefined;
+    }
+    const amountMoved =
+      amount !== undefined &&
+      roundMoney(amount, moneyDecimals) !==
+        roundMoney(stored.amount, moneyDecimals);
+    if (
+      !amountMoved &&
+      exchangeRate === undefined &&
+      storedCode === code &&
+      Number(stored.originalAmount) === originalAmount
+    ) {
+      return { amount: stored.amount, fields: null, places };
+    }
+    if (!amountMoved)
+      amount = exchangeRate === undefined ? stored.amount : undefined;
+  }
+
   const resolved = await resolveForeignEntry(
     {
-      amount: args.amount,
+      amount,
       originalAmount,
       originalCurrencyCode: code,
-      exchangeRate: request.exchangeRate,
+      exchangeRate,
       fallbackRate: async () => {
-        // An edit that changed neither figure keeps the row's own rate for its
-        // own currency; otherwise the market rate for the date.
-        if (
-          storedCode === code &&
-          stored !== undefined &&
-          stored.exchangeRate > 0
-        ) {
-          return {
-            rate: stored.exchangeRate,
-            source: "stored" as const,
-            date: args.date,
-          };
-        }
         const rate = request.lookupRate
           ? await request.lookupRate(code, accountCode, args.date)
           : null;

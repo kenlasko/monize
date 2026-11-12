@@ -10,17 +10,32 @@ import { MAX_STORED_RATE } from "../currencies/canonical-rate.util";
  * - `supplied`: the caller gave it;
  * - `derived`: worked out from the original amount and the account-currency
  *   amount the caller gave (what the account was actually charged);
- * - `market`: the stored market rate for the date, neither figure given;
- * - `stored`: an edit that changed neither figure keeps the row's own rate.
+ * - `market`: the stored market rate for the date, neither figure given.
  */
-export type ForeignEntryRateSource =
-  "supplied" | "derived" | "market" | "stored";
+export type ForeignEntryRateSource = "supplied" | "derived" | "market";
 
 /** The foreign-currency figures a tool caller sends (any subset). */
 export interface ForeignEntryRequest {
   originalAmount?: number;
   originalCurrencyCode?: string;
   exchangeRate?: number;
+}
+
+/**
+ * A tool item's foreign-currency figures, as the adapters of both surfaces
+ * hand them to the shared prep (`TransactionToolPrepService`): picked once, so
+ * a field added here reaches every create and edit row.
+ */
+export function pickForeignEntryRequest(item: {
+  originalAmount?: unknown;
+  originalCurrencyCode?: unknown;
+  exchangeRate?: unknown;
+}): ForeignEntryRequest {
+  return {
+    originalAmount: item.originalAmount as number | undefined,
+    originalCurrencyCode: item.originalCurrencyCode as string | undefined,
+    exchangeRate: item.exchangeRate as number | undefined,
+  };
 }
 
 /** The account a foreign entry is converted into. */
@@ -45,12 +60,12 @@ export interface ResolveForeignEntryInput {
   exchangeRate?: number;
   /**
    * The rate to use when the caller gave neither `amount` nor `exchangeRate`
-   * (or an original amount of zero, which no rate can be derived from).
+   * (or both amounts are zero, which no rate can be derived from).
    * Called only then, so a provider lookup is never made for nothing.
    */
   fallbackRate: () => Promise<{
     rate: number | null;
-    source: "market" | "stored";
+    source: "market";
     date: string;
   }>;
 }
@@ -92,7 +107,7 @@ export function fxBaseFromCharged(
  * | given  | given        | both kept, when the rate converts to the amount within one unit of the account currency; refused otherwise |
  * | given  | -            | rate derived from the two amounts (fee backed out)         |
  * | -      | given        | amount = originalAmount x rate, with the account's fee     |
- * | -      | -            | `fallbackRate` (market or the row's own), amount from it   |
+ * | -      | -            | `fallbackRate` (the market rate), amount from it           |
  *
  * The amount the account was charged is the fact: it is never replaced by a
  * conversion. The commit re-validates the result through `normalizeFxEntry`.
@@ -125,7 +140,7 @@ export async function resolveForeignEntry(
   if (input.exchangeRate !== undefined) {
     rate = roundFxRate(Number(input.exchangeRate));
     source = "supplied";
-  } else if (amount !== undefined && originalAmount !== 0) {
+  } else if (amount !== undefined && !(amount === 0 && originalAmount === 0)) {
     const base = fxBaseFromCharged(amount, fxFeePercent, moneyDecimals);
     const derived = roundFxRate(base / originalAmount);
     // The exchange_rate column holds a positive rate below 1e10 at ten

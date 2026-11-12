@@ -1391,6 +1391,22 @@ describe("TransactionToolPrepService", () => {
       });
     });
 
+    it("leaves the unvalidated figures off a row that failed", async () => {
+      transactions.previewCreate.mockRejectedValueOnce(
+        new NotFoundException('Currency "US$" not found'),
+      );
+      const result = await service.prepareCreate(userId, [
+        {
+          accountName: "Checking",
+          date: "2026-01-15",
+          originalAmount: -10,
+          originalCurrencyCode: "US$",
+        },
+      ]);
+      expect(result.previewRows[0].status).toBe("error");
+      expect(result.previewRows[0]).not.toHaveProperty("originalCurrencyCode");
+    });
+
     it("passes no entry for a row that names none", async () => {
       await service.prepareCreate(userId, [
         { accountName: "Checking", amount: -10, date: "2026-01-15" },
@@ -1486,7 +1502,7 @@ describe("TransactionToolPrepService", () => {
         originalAmount: -120,
         originalCurrencyCode: "EUR",
         exchangeRate: 1.1,
-        exchangeRateSource: "stored",
+        exchangeRateSource: "derived",
       });
       const result = await service.prepareUpdateBulk(userId, [
         { transactionId: "t1", originalAmount: -120 },
@@ -1502,7 +1518,7 @@ describe("TransactionToolPrepService", () => {
       });
       expect(result.okRows[0]).not.toHaveProperty("exchangeRateSource");
       expect(result.previewRows[0]).toMatchObject({
-        exchangeRateSource: "stored",
+        exchangeRateSource: "derived",
       });
     });
   });

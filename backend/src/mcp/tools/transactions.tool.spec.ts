@@ -1288,6 +1288,14 @@ describe("McpTransactionsTools", () => {
               originalCurrencyCode: "EUR",
               exchangeRate: "1.1",
             },
+            // A coin into a fiat with small units: IDR per BTC.
+            {
+              accountName: "Rupiah",
+              date: "2025-01-15",
+              originalAmount: -0.01,
+              originalCurrencyCode: "BTC",
+              exchangeRate: 1_500_000_000,
+            },
           ],
         });
         expect(parsed.success).toBe(true);

@@ -80,7 +80,6 @@
     "fxRateSupplied": "[XX-1 {from} = {rate} {to}, as given-XX]",
     "fxRateDerived": "[XX-1 {from} = {rate} {to}, derived from the two amounts-XX]",
     "fxRateMarket": "[XX-1 {from} = {rate} {to}, the market rate for the date-XX]",
-    "fxRateStored": "[XX-1 {from} = {rate} {to}, the transaction's own rate-XX]",
     "fxPaidBulk": "[XX-paid {paid}-XX]",
     "fxPaidAtBulk": "[XX-paid {paid} at {rate}-XX]",
     "fxClearedBulk": "[XX-foreign currency removed-XX]",

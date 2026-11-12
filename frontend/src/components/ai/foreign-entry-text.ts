@@ -6,8 +6,8 @@ type AiTranslator = ReturnType<typeof useTranslations<'ai'>>;
 /**
  * A create or edit card's foreign-currency entry as both confirmation cards
  * say it: what was paid in the other currency, and the rate with where it came
- * from (as given, derived from the two amounts, the market rate for the date,
- * or the transaction's own), so the approver sees which one the commit uses.
+ * from (as given, derived from the two amounts, or the market rate for the
+ * date), so the approver sees which one the commit uses.
  * `null` when the card carries no entry; `cleared` when the edit removes one.
  */
 export function foreignEntryText(
@@ -34,8 +34,6 @@ export function foreignEntryText(
       ? t('confirmAction.fxRateDerived', values)
       : entry.exchangeRateSource === 'market'
         ? t('confirmAction.fxRateMarket', values)
-        : entry.exchangeRateSource === 'stored'
-          ? t('confirmAction.fxRateStored', values)
-          : t('confirmAction.fxRateSupplied', values);
+        : t('confirmAction.fxRateSupplied', values);
   return { paid, rate };
 }

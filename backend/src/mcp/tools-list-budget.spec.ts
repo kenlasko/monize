@@ -141,15 +141,16 @@ import { McpServerService } from "./mcp-server.service";
 // Raised, by the measured bytes as for #2094 (issue #2132, foreign-currency
 // entries): `manage_transactions` takes `originalAmount` and
 // `originalCurrencyCode` on a non-transfer create or update, and
-// `exchangeRate`'s description now covers them too; no description sentence
-// was added. 6,626 -> 7,020 bytes measured (+394); cap 6,634 -> 7,028.
-// `list_transactions` no longer calls those fields read-only (-10 bytes). Total
-// 68,982 -> 69,366 (69,350 measured, the margin kept).
+// `exchangeRate`'s description now covers them too, its ceiling raised to what
+// the NUMERIC(20,10) column holds; no description sentence was added. 6,626 ->
+// 7,023 bytes measured (+397); cap 6,634 -> 7,031. `list_transactions` no
+// longer calls those fields read-only (-10 bytes). Total 68,982 -> 69,369
+// (69,353 measured, the margin kept).
 const TOOL_BYTE_BUDGET: Record<string, number> = {
   list_accounts: 2360,
   list_transactions: 3550,
   compare_periods: 1900,
-  manage_transactions: 7028,
+  manage_transactions: 7031,
   list_categories: 1200,
   list_payees: 2010,
   manage_payees: 2860,
@@ -177,7 +178,7 @@ const TOOL_BYTE_BUDGET: Record<string, number> = {
   report_progress: 1140,
 };
 
-const TOTAL_BYTE_BUDGET = 69_366;
+const TOTAL_BYTE_BUDGET = 69_369;
 const INSTRUCTIONS_BYTE_BUDGET = 2_600;
 
 /**

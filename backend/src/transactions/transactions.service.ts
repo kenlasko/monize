@@ -1248,6 +1248,7 @@ export class TransactionsService {
       input.amount !== undefined && input.amount !== Number(existing.amount);
     let amount = input.amount ?? Number(existing.amount);
     let foreignEntry: ForeignEntryFields | null = null;
+    let foreignEntryPlaces: ReadonlyMap<string, number> | null = null;
     if (fxRequested || (amountMoves && existing.originalCurrencyCode)) {
       // Outside any transaction, as in previewCreate.
       const fx = await previewForeignEntry(this.currencyPlacesLoader(), {
@@ -1275,6 +1276,7 @@ export class TransactionsService {
       // Always set on an edit: the row's own amount when nothing moved it.
       if (fx.amount !== undefined) amount = fx.amount;
       foreignEntry = fx.fields;
+      foreignEntryPlaces = fx.places;
       // A rate or original amount that moves a split parent's amount needs
       // its lines resent, exactly as a typed amount does.
       if (
@@ -1310,18 +1312,18 @@ export class TransactionsService {
       referenceChanges ||
       input.splitsAccompany === true;
 
-    if (input.amount !== undefined) {
-      const newAmount = input.amount;
-      await withScopedDb(this.dataSource, async (m) => {
-        const places = await loadCurrencyPlacesForRead(m, [
-          existing.currencyCode,
-        ]);
-        assertAmountPrecision(
-          newAmount,
-          precisionCurrencyFor(places, existing.currencyCode),
-          "amount",
-        );
-      });
+    // The amount the row will hold, typed or worked out by the entry (the
+    // account's own currency standing in an original amount for it), at the
+    // places the commit holds it to.
+    if (input.amount !== undefined || amount !== Number(existing.amount)) {
+      const places =
+        foreignEntryPlaces ??
+        (await this.currencyPlacesLoader()([existing.currencyCode]));
+      assertAmountPrecision(
+        amount,
+        precisionCurrencyFor(places, existing.currencyCode),
+        "amount",
+      );
     }
     const transactionDate = input.transactionDate ?? existing.transactionDate;
     const description =

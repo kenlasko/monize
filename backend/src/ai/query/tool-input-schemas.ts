@@ -672,8 +672,10 @@ const manageTransactionItemSchema = z
     categoryName: z.string().max(100).optional(),
     description: z.string().max(TRANSACTION_NOTE_MAX_LENGTH).optional(),
     createPayeeIfMissing: booleanArg().optional(),
+    // Up to what the NUMERIC(20,10) column holds: a coin's rate into a fiat
+    // with small units (IDR per BTC) is in the billions.
     exchangeRate: numberArg(
-      z.number().finite().min(0).max(1_000_000),
+      z.number().finite().min(0).max(9_999_999_999),
     ).optional(),
     toAmount: amountSchema.optional(),
     // non-transfer: entered in another currency (amount, exchangeRate, both or

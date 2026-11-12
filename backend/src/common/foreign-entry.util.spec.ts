@@ -154,6 +154,12 @@ describe("resolveForeignEntry", () => {
         usd,
       ),
     ).rejects.toThrow(/-0.0001 XBT charged as -1000000 USD implies/);
+    // Something charged for nothing paid, and no rate asked for.
+    const zero = input({ originalAmount: 0, amount: -5 });
+    await expect(resolveForeignEntry(zero, usd)).rejects.toThrow(
+      /0 EUR charged as -5 USD implies/,
+    );
+    expect(zero.fallbackRate).not.toHaveBeenCalled();
     // Nothing charged for something paid has no positive rate.
     await expect(
       resolveForeignEntry(input({ amount: 0 }), usd),

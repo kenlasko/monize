@@ -231,7 +231,7 @@ describe("previewForeignEntry", () => {
   });
 
   describe("an edit of a row entered in another currency", () => {
-    it("keeps the row's rate when only the original amount changes", async () => {
+    it("derives the rate from the amount charged when only the original amount changes", async () => {
       const lookupRate = jest.fn();
       await expect(
         previewForeignEntry(
@@ -242,15 +242,45 @@ describe("previewForeignEntry", () => {
           }),
         ),
       ).resolves.toMatchObject({
-        amount: -132,
+        amount: -110,
         fields: {
           originalAmount: -120,
           originalCurrencyCode: "EUR",
-          exchangeRate: 1.1,
-          exchangeRateSource: "stored",
+          exchangeRate: 0.9166666667,
+          exchangeRateSource: "derived",
         },
       });
       expect(lookupRate).not.toHaveBeenCalled();
+    });
+
+    it("changes nothing when a figure is resent as the row holds it", async () => {
+      // A rate derived again from the same amounts can differ in its tenth
+      // place; resent figures are not a change, so nothing is re-derived.
+      await expect(
+        previewForeignEntry(
+          manager(),
+          args({
+            request: { originalCurrencyCode: "eur", originalAmount: -100 },
+            stored: { ...storedEur, exchangeRate: 1.0999999999 },
+          }),
+        ),
+      ).resolves.toMatchObject({ amount: -110, fields: null });
+    });
+
+    it("computes the amount from a new rate, a resent amount not standing against it", async () => {
+      await expect(
+        previewForeignEntry(
+          manager(),
+          args({
+            amount: -110,
+            request: { exchangeRate: 1.2 },
+            stored: storedEur,
+          }),
+        ),
+      ).resolves.toMatchObject({
+        amount: -120,
+        fields: { exchangeRate: 1.2, exchangeRateSource: "supplied" },
+      });
     });
 
     it("re-derives the rate when only the amount charged changes", async () => {
@@ -283,8 +313,8 @@ describe("previewForeignEntry", () => {
       expect(lookupRate).not.toHaveBeenCalled();
     });
 
-    it("takes the market rate when the currency changes with its amount", async () => {
-      const lookupRate = jest.fn().mockResolvedValue(1.3);
+    it("derives the rate from the amount charged when the currency changes with its amount", async () => {
+      const lookupRate = jest.fn();
       await expect(
         previewForeignEntry(
           manager(),
@@ -298,10 +328,14 @@ describe("previewForeignEntry", () => {
           }),
         ),
       ).resolves.toMatchObject({
-        amount: -130,
-        fields: { originalCurrencyCode: "GBP", exchangeRateSource: "market" },
+        amount: -110,
+        fields: {
+          originalCurrencyCode: "GBP",
+          exchangeRate: 1.1,
+          exchangeRateSource: "derived",
+        },
       });
-      expect(lookupRate).toHaveBeenCalledWith("GBP", "USD", "2026-11-01");
+      expect(lookupRate).not.toHaveBeenCalled();
     });
 
     it("changes nothing when the figures resolve to the row's own", async () => {

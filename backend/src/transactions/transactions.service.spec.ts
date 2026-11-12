@@ -10594,18 +10594,32 @@ describe("TransactionsService", () => {
         expect(preview.exchangeRate).toBeUndefined();
       });
 
-      it("keeps the row's rate when only the original amount changes, moving the amount", async () => {
+      it("derives the rate from the amount charged when only the original amount changes", async () => {
         transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
         const preview = await service.previewUpdate("user-1", "tx-1", {
           foreignEntry: { originalAmount: -120 },
         });
+        // The account was charged 110 USD; that stays, the rate moves.
         expect(preview).toMatchObject({
-          amount: -132,
+          amount: -110,
           originalAmount: -120,
-          exchangeRate: 1.1,
-          exchangeRateSource: "stored",
+          exchangeRate: 0.9166666667,
+          exchangeRateSource: "derived",
         });
         expect(preview.tagsOnly).toBeUndefined();
+      });
+
+      it("computes the amount from a new rate, the resent amount not standing against it", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          amount: -110,
+          foreignEntry: { exchangeRate: 1.2 },
+        });
+        expect(preview).toMatchObject({
+          amount: -120,
+          exchangeRate: 1.2,
+          exchangeRateSource: "supplied",
+        });
       });
 
       it("clears the entry when the account's own currency is named", async () => {
@@ -10621,7 +10635,7 @@ describe("TransactionsService", () => {
         });
       });
 
-      it("adds an entry to an ordinary row at the market rate when no figure is given", async () => {
+      it("adds an entry to an ordinary row, deriving the rate from the amount it was charged", async () => {
         transactionsRepository.findOne.mockResolvedValueOnce({ ...baseTx });
         const lookupRate = jest.fn().mockResolvedValue(1.1);
         const preview = await service.previewUpdate("user-1", "tx-1", {
@@ -10631,11 +10645,13 @@ describe("TransactionsService", () => {
             lookupRate,
           },
         });
-        expect(lookupRate).toHaveBeenCalledWith("EUR", "USD", "2026-01-15");
+        // An existing row's amount is a fact; no market rate converts over it.
+        expect(lookupRate).not.toHaveBeenCalled();
         expect(preview).toMatchObject({
-          amount: -11,
+          amount: -12.5,
           originalCurrencyCode: "EUR",
-          exchangeRateSource: "market",
+          exchangeRate: 1.25,
+          exchangeRateSource: "derived",
         });
       });
 
@@ -10653,6 +10669,18 @@ describe("TransactionsService", () => {
         expect(preview).not.toHaveProperty("tagsOnly");
       });
 
+      it("holds an amount the entry stands in to the account currency's places", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            foreignEntry: {
+              originalCurrencyCode: "USD",
+              originalAmount: -12.123456,
+            },
+          }),
+        ).rejects.toThrow(/more decimal places than USD carries/);
+      });
+
       it("refuses an entry change that moves a split parent's amount without its lines", async () => {
         transactionsRepository.findOne.mockResolvedValueOnce({
           ...foreignTx,
@@ -10660,7 +10688,7 @@ describe("TransactionsService", () => {
         });
         await expect(
           service.previewUpdate("user-1", "tx-1", {
-            foreignEntry: { originalAmount: -120 },
+            foreignEntry: { exchangeRate: 1.2 },
           }),
         ).rejects.toThrow(/sum of its split lines/);
       });

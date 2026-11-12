@@ -88,7 +88,10 @@ import {
   itemsArray,
 } from "./schema-fragments";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
-import { ForeignEntryRateSource } from "../../common/foreign-entry.util";
+import {
+  ForeignEntryRateSource,
+  pickForeignEntryRequest,
+} from "../../common/foreign-entry.util";
 import {
   ForeignEntryFields,
   foreignEntryDisplayFields,
@@ -142,7 +145,6 @@ const RATE_SOURCE_NOTE: Record<ForeignEntryRateSource, string> = {
   supplied: "rate as given",
   derived: "rate derived from the two amounts",
   market: "market rate for the date",
-  stored: "the transaction's own rate",
 };
 
 /** The foreign-currency entry a create or edit sets, as a confirmation line. */
@@ -508,7 +510,7 @@ export class McpTransactionsTools {
                 .describe(
                   "An unmatched payee name creates a payee (default) or stays free text.",
                 ),
-              exchangeRate: numberArg(z.number().min(0).max(1_000_000))
+              exchangeRate: numberArg(z.number().min(0).max(9_999_999_999))
                 .optional()
                 .describe(
                   "Rate for a cross-currency transfer (create) or originalCurrencyCode.",
@@ -840,9 +842,7 @@ export class McpTransactionsTools {
       description: item.description,
       createPayeeIfMissing: item.createPayeeIfMissing,
       splits: item.splits,
-      originalAmount: item.originalAmount,
-      originalCurrencyCode: item.originalCurrencyCode,
-      exchangeRate: item.exchangeRate,
+      ...pickForeignEntryRequest(item),
     };
   }
 
@@ -903,9 +903,7 @@ export class McpTransactionsTools {
       tagNames: item.addTagNames,
       removeTagNames: item.removeTagNames,
       splitTags: item.splitTags,
-      originalAmount: item.originalAmount,
-      originalCurrencyCode: item.originalCurrencyCode,
-      exchangeRate: item.exchangeRate,
+      ...pickForeignEntryRequest(item),
     };
   }
 

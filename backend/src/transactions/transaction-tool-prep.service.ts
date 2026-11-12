@@ -378,12 +378,8 @@ export class TransactionToolPrepService {
         payeeName: row.payeeName ?? null,
         categoryName: row.categoryName ?? null,
         description: row.description ?? null,
-        ...(row.originalCurrencyCode !== undefined
-          ? {
-              originalAmount: row.originalAmount ?? null,
-              originalCurrencyCode: row.originalCurrencyCode,
-            }
-          : {}),
+        // No foreign-entry figures on a row that failed: its currency code is
+        // unvalidated, and the card formats the code it is given.
       };
 
       const account = await this.accountsService.resolveByName(

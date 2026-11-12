@@ -339,7 +339,7 @@ export interface PendingActionAttachment {
 }
 
 /** Where a foreign-currency entry's exchange rate came from (the card says which). */
-export type ForeignEntryRateSource = 'supplied' | 'derived' | 'market' | 'stored';
+export type ForeignEntryRateSource = 'supplied' | 'derived' | 'market';
 
 /**
  * A cash create or edit card's foreign-currency entry: present only when the
