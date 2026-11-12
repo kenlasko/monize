@@ -556,6 +556,79 @@ describe("latest exchange rates and the readers that take them (integration)", (
     expect(usage.totalEstimatedCostInReportingCurrency).toBeNull();
   });
 
+  it("states a sale's gain alike in Realized Gains and the capital-gain entries (issue #2130)", async () => {
+    await dataSource.manager.save(
+      dataSource.manager.create(UserPreference, {
+        userId,
+        defaultCurrency: "CAD",
+      }),
+    );
+    const past = addDaysYMD(today, -60);
+    const sold = addDaysYMD(today, -10);
+    // 1.25 CAD per USD around the purchase; 1.40 from the sale on.
+    await insertRate("CAD", "USD", addDaysYMD(past, -2), "0.8000000000");
+    await insertRate("CAD", "USD", addDaysYMD(sold, -1), "0.7142857143");
+    const brokerage = await createTestAccount(dataSource, userId, {
+      name: "US Brokerage",
+      currencyCode: "USD",
+    });
+    await dataSource.manager.update(Account, brokerage.id, {
+      accountType: AccountType.INVESTMENT,
+      accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+    });
+    const funding = await createTestAccount(dataSource, userId, {
+      name: "US Chequing",
+      currencyCode: "USD",
+      openingBalance: 10000,
+      currentBalance: 10000,
+    });
+    const security = await withUserContext(userId, () =>
+      module.get(SecuritiesService).create(userId, {
+        symbol: "MSFT",
+        name: "Microsoft",
+        securityType: "STOCK" as any,
+        currencyCode: "USD",
+      } as any),
+    );
+    for (const [action, transactionDate, price] of [
+      [InvestmentAction.BUY, past, 100],
+      [InvestmentAction.SELL, sold, 110],
+    ] as const) {
+      await withUserContext(userId, () =>
+        investments.create(userId, {
+          accountId: brokerage.id,
+          action,
+          transactionDate,
+          securityId: security.id,
+          fundingAccountId: funding.id,
+          quantity: 10,
+          price,
+          commission: 0,
+        }),
+      );
+    }
+
+    const [realized, gains] = await withUserContext(
+      userId,
+      async () =>
+        [
+          await investments.getRealizedGains(userId),
+          await investments.getCapitalGainsByMonth(userId, {
+            startDate: addDaysYMD(past, -1),
+            endDate: today,
+          }),
+        ] as const,
+    );
+
+    // 1,100 USD at 1.40 less 1,000 USD at 1.25: 290 CAD, in both reports.
+    expect(realized).toHaveLength(1);
+    expect(realized[0].inReportingCurrency.realizedGain).toBe(290);
+    const realizedInEntries = gains
+      .map((entry) => entry.inReportingCurrency.realizedGain)
+      .filter((gain) => gain !== 0);
+    expect(realizedInEntries).toEqual([290]);
+  });
+
   it("rejects a back-dated cross-currency trade when only today's rate is stored", async () => {
     await insertRate("CAD", "USD", today, "0.7142857143");
     const cash = await createTestAccount(dataSource, userId, {

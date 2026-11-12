@@ -735,7 +735,10 @@ describe("PortfolioCalculationService.calculateCapitalGainsByMonth", () => {
   let service: PortfolioCalculationService;
   let txRepo: { find: jest.Mock };
   let priceRepo: { query: jest.Mock };
-  let exchangeRateService: { resolveStoredRate: jest.Mock };
+  let exchangeRateService: {
+    resolveStoredRate: jest.Mock;
+    getRateIndex: jest.Mock;
+  };
 
   const userId = "user-1";
   const accountId = "acct-1";
@@ -785,7 +788,11 @@ describe("PortfolioCalculationService.calculateCapitalGainsByMonth", () => {
   beforeEach(() => {
     txRepo = { find: jest.fn() };
     priceRepo = { query: jest.fn().mockResolvedValue([]) };
-    exchangeRateService = { resolveStoredRate: storedRateDouble() };
+    exchangeRateService = {
+      resolveStoredRate: storedRateDouble(),
+      // The reporting-currency replay's bulk read: no stored history.
+      getRateIndex: jest.fn().mockResolvedValue(new Map()),
+    };
     service = buildService(
       [[InvestmentTransaction, txRepo as never]],
       exchangeRateService,
@@ -1689,7 +1696,10 @@ describe("PortfolioCalculationService.calculateCapitalGainsByDay", () => {
   let service: PortfolioCalculationService;
   let txRepo: { find: jest.Mock };
   let priceRepo: { query: jest.Mock };
-  let exchangeRateService: { resolveStoredRate: jest.Mock };
+  let exchangeRateService: {
+    resolveStoredRate: jest.Mock;
+    getRateIndex: jest.Mock;
+  };
 
   const userId = "user-1";
   const accountId = "acct-1";
@@ -1737,7 +1747,11 @@ describe("PortfolioCalculationService.calculateCapitalGainsByDay", () => {
   beforeEach(() => {
     txRepo = { find: jest.fn() };
     priceRepo = { query: jest.fn().mockResolvedValue([]) };
-    exchangeRateService = { resolveStoredRate: storedRateDouble() };
+    exchangeRateService = {
+      resolveStoredRate: storedRateDouble(),
+      // The reporting-currency replay's bulk read: no stored history.
+      getRateIndex: jest.fn().mockResolvedValue(new Map()),
+    };
     service = buildService(
       [[InvestmentTransaction, txRepo as never]],
       exchangeRateService,
@@ -2451,6 +2465,88 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
         "2024-02-10",
         "2024-02-10",
       );
+    });
+
+    it("states a sale's gain alike in Realized Gains and the capital-gains fold (issue #2130)", async () => {
+      // The same USD account read in CAD. The capital-gain entry used to
+      // convert February's account-currency figures at the month's rate
+      // (100 USD x 1.40 = 140), while Realized Gains replays the sale against
+      // the buy's own rate (1,540 - 1,350 = 190).
+      const { service } = build(
+        [
+          usdBuy({
+            accountCurrency: "USD",
+            exchangeRate: 1.35,
+            fundingAccountId: cadChequing,
+          }),
+          cadSell({ accountCurrency: "USD", exchangeRate: 1 }),
+        ],
+        {
+          accountCurrency: "USD",
+          reportingCurrency: "CAD",
+          rates: { "USD->CAD": 1.4 },
+          prices: [{ date: "2024-01-31", price: 105 }],
+        },
+      );
+
+      const [sale] = await service.calculateRealizedGains(userId);
+      const entries = await service.calculateCapitalGainsByMonth(userId, {
+        startDate: "2024-02-01",
+        endDate: "2024-02-29",
+      });
+
+      expect(entries).toHaveLength(1);
+      const [feb] = entries;
+      expect(feb).toMatchObject({
+        startValue: 1050,
+        sells: 1100,
+        realizedGain: 100,
+        totalCapitalGain: 50,
+        unrealizedGain: -50,
+      });
+      // The fold in CAD: 10 x 105 at 1.40 opens the month, the sale brings in
+      // 1,540, and the gain is Realized Gains' own.
+      expect(feb.inReportingCurrency).toEqual({
+        currency: "CAD",
+        startValue: 1470,
+        endValue: 0,
+        realizedGain: 190,
+        realizedGainKnownSubtotal: 190,
+        totalCapitalGain: 70,
+        unrealizedGain: -120,
+        missingRatePairs: [],
+      });
+      expect(feb.inReportingCurrency.realizedGain).toBe(
+        sale.inReportingCurrency.realizedGain,
+      );
+    });
+
+    it("names the pair a capital-gain entry lacks in the reporting currency", async () => {
+      const { service } = build(
+        [
+          usdBuy({ accountCurrency: "USD" }),
+          cadSell({ accountCurrency: "USD", exchangeRate: 1 }),
+        ],
+        {
+          accountCurrency: "USD",
+          reportingCurrency: "CAD",
+          prices: [{ date: "2024-01-31", price: 105 }],
+        },
+      );
+
+      const [feb] = await service.calculateCapitalGainsByMonth(userId, {
+        startDate: "2024-02-01",
+        endDate: "2024-02-29",
+      });
+
+      // Known in USD, unknown in CAD for want of USD->CAD.
+      expect(feb.realizedGain).toBe(100);
+      expect(feb.inReportingCurrency).toMatchObject({
+        startValue: null,
+        realizedGain: null,
+        totalCapitalGain: null,
+        missingRatePairs: ["USD->CAD"],
+      });
     });
   });
 

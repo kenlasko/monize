@@ -47,10 +47,10 @@ import {
   orderTransferOutBeforeIn,
 } from "./investment-replay.util";
 import { stripBrokerageSuffix } from "../accounts/account-name.util";
+import { disposalInReporting } from "./disposal-in-reporting";
 import {
   ReplayedBasisGap,
   ReplayResult,
-  ReplayStep,
   replayPositionBasis,
   SettlementCurrencies,
 } from "./position-basis-replay";
@@ -233,7 +233,50 @@ export interface CapitalGainEntry {
   realizedGainKnownSubtotal: number | null;
   unrealizedGain: number | null;
   totalCapitalGain: number | null;
+  /**
+   * The same entry folded in the reader's reporting currency (issue #2130):
+   * each boundary value at its own date's rate, each acquisition and sale from
+   * the reporting-currency replay (its own rate or the market rate on its
+   * date), and the realized gain the sum of the period's sales as Realized
+   * Gains states each one (`disposalInReporting`).
+   */
+  inReportingCurrency: CapitalGainFiguresInReporting & { currency: string };
 }
+
+/** A capital-gain entry's money figures, in the reporting currency. */
+export interface CapitalGainFiguresInReporting {
+  startValue: number | null;
+  endValue: number | null;
+  realizedGain: number | null;
+  /** The realized gains that are known, whether or not the rest are. */
+  realizedGainKnownSubtotal: number | null;
+  unrealizedGain: number | null;
+  totalCapitalGain: number | null;
+  /** `"USD->CAD"` for each rate a figure is unknown for want of. */
+  missingRatePairs: string[];
+}
+
+/** One currency's running flows of a period of the capital-gains fold. */
+interface PeriodFlows {
+  buys: number;
+  sells: number;
+  realized: number;
+  /** What the period's disposals realized on a known basis. */
+  knownRealized: number;
+  /** Every flow stated its amount, and no share moved without one. */
+  flowsComplete: boolean;
+  /** No disposal drew on an unknown basis or lacked a rate. */
+  realizedKnown: boolean;
+}
+
+const emptyFlows = (): PeriodFlows => ({
+  buys: 0,
+  sells: 0,
+  realized: 0,
+  knownRealized: 0,
+  flowsComplete: true,
+  realizedKnown: true,
+});
 
 /**
  * Add `days` to a YYYY-MM-DD date string and return a new YYYY-MM-DD string.
@@ -1294,12 +1337,6 @@ export class PortfolioCalculationService {
       }
 
       const known = disposal.gap === null && disposal.proceeds !== null;
-      const reported = inReporting.steps.get(tx)?.disposal;
-      const reportedKnown =
-        known &&
-        reported !== undefined &&
-        reported.gap === null &&
-        reported.proceeds !== null;
       results.push({
         transactionId: tx.id,
         transactionDate: tx.transactionDate,
@@ -1326,8 +1363,7 @@ export class PortfolioCalculationService {
           tx,
           fetched,
           reporting,
-          reported,
-          reportedKnown,
+          disposalInReporting(disposal, inReporting.steps.get(tx)?.disposal),
           inReporting.unresolved,
         ),
       });
@@ -1337,27 +1373,18 @@ export class PortfolioCalculationService {
   }
 
   /**
-   * One sale's figures in the reporting currency. The gain is the difference
-   * of the two rounded figures, so `proceeds - costBasis` is the gain to the
-   * last place; a figure null for want of a rate names the pairs this
-   * position could not resolve on its own dates.
+   * One sale's figures in the reporting currency (`disposalInReporting`); a
+   * figure null for want of a rate names the pairs this position could not
+   * resolve on its own dates.
    */
   private realizedInReporting(
     tx: InvestmentTransaction,
     history: readonly InvestmentTransaction[],
     currency: string,
-    reported: ReplayStep["disposal"] | undefined,
-    known: boolean,
+    figures: ReturnType<typeof disposalInReporting>,
     unresolved: readonly UnresolvedReplayRate[],
   ): RealizedGainEntry["inReportingCurrency"] {
-    const proceeds =
-      reported?.proceeds != null ? roundMoney(reported.proceeds) : null;
-    const costBasis =
-      known && reported ? roundMoney(reported.basisRelieved) : null;
-    const realizedGain =
-      known && proceeds !== null && costBasis !== null
-        ? roundMoney(proceeds - costBasis)
-        : null;
+    const { proceeds, costBasis, realizedGain } = figures;
     const position = `${tx.accountId}:${tx.securityId}`;
     const dates = new Set(
       history
@@ -1562,6 +1589,15 @@ export class PortfolioCalculationService {
     // from its source whichever group is read first, and the groups below read
     // each row's outcome from it instead of folding a basis of their own.
     const { steps } = await this.replayWithRates(userId, fetched);
+    // The same history with every position in the reporting currency, under
+    // the rule calculateRealizedGains replays it by, so a period's realized
+    // gain there is the sum of Realized Gains' figures for its sales.
+    const reporting = await resolveUserDefaultCurrency(this.dataSource, userId);
+    const inReporting = fetched.some(
+      (tx) => (tx.account?.currencyCode ?? reporting) !== reporting,
+    )
+      ? await this.replayWithRates(userId, fetched, reporting)
+      : { steps, unresolved: [] as UnresolvedReplayRate[] };
     const requestedAccounts =
       accountIds && accountIds.length > 0 ? new Set(accountIds) : null;
     const transactions = fetched.filter(
@@ -1697,34 +1733,58 @@ export class PortfolioCalculationService {
         // position with no price on a boundary makes that boundary unknown, and
         // an unconvertible currency does the same -- the rate is 1 only when the
         // two currencies are the same.
+        const startPrice = this.lookupPrice(
+          group.securityId,
+          priceLookupStart,
+          allPrices,
+        );
         const startValue = await boundaryValue(
           startQuantity,
-          this.lookupPrice(group.securityId, priceLookupStart, allPrices),
+          startPrice,
           priceLookupStart,
           group.securityCurrencyCode,
           group.accountCurrencyCode,
         );
+        const startValueRep = await boundaryValue(
+          startQuantity,
+          startPrice,
+          priceLookupStart,
+          group.securityCurrencyCode,
+          reporting,
+        );
 
-        let buys = 0;
-        let sells = 0;
-        let realizedGain = 0;
-        // What a period's disposals realized on a known basis; with an unknown
-        // one among them it is the known part of a figure that is not known.
-        let knownRealized = 0;
-        // The period's `buys` and `sells` (and so its total gain) are complete
-        // only when every flow could state its amount in the account's currency
-        // and no share arrived or left with no cost or proceeds; its realized
-        // gain only when no disposal drew on an unknown basis.
-        let flowsComplete = true;
-        let realizedKnown = true;
-        const addAcquired = (cost: number | null | undefined) => {
-          if (cost === null || cost === undefined) flowsComplete = false;
-          else buys += cost;
+        // The period's flows in the account's currency, and the same flows in
+        // the reporting currency. `buys` and `sells` (and so the total gain)
+        // are complete only when every flow could state its amount and no share
+        // arrived or left with no cost or proceeds; the realized gain only when
+        // no disposal drew on an unknown basis.
+        const flows = emptyFlows();
+        const flowsRep = emptyFlows();
+        // The rates the reporting figures lack, named for the reader.
+        const missingRep = new Set<string>();
+        const lacksReplayRate = (tx: InvestmentTransaction) => {
+          const onItsDate = inReporting.unresolved.filter(
+            (rate) => rate.onDate === String(tx.transactionDate).slice(0, 10),
+          );
+          if (onItsDate.length === 0) {
+            missingRep.add(`${group.accountCurrencyCode ?? "?"}->${reporting}`);
+          }
+          for (const rate of onItsDate) {
+            missingRep.add(`${rate.from}->${rate.to}`);
+          }
+        };
+        const addAcquired = (
+          into: PeriodFlows,
+          cost: number | null | undefined,
+        ) => {
+          if (cost === null || cost === undefined) into.flowsComplete = false;
+          else into.buys += cost;
         };
 
         while (txIdx < txs.length && txs[txIdx].transactionDate <= periodEnd) {
           const tx = txs[txIdx];
           const step = steps.get(tx);
+          const stepRep = inReporting.steps.get(tx);
           txIdx++;
           if (!step) continue;
           quantity = step.quantity;
@@ -1735,7 +1795,11 @@ export class PortfolioCalculationService {
               // Commission included: it is money the period spent acquiring,
               // so leaving it out of `buys` also inflated the period's
               // capital gain by the same amount it understated the basis.
-              addAcquired(step.acquired);
+              addAcquired(flows, step.acquired);
+              addAcquired(flowsRep, stepRep?.acquired);
+              if (step.acquired != null && stepRep?.acquired == null) {
+                lacksReplayRate(tx);
+              }
               break;
             // A transfer is not a realised event: the leg is a flow at the
             // market value on its date, so the move changes neither account's
@@ -1749,21 +1813,31 @@ export class PortfolioCalculationService {
                 tx.transactionDate,
                 allPrices,
               );
-              const fx = await fxRate(
-                group.securityCurrencyCode,
-                group.accountCurrencyCode,
-                tx.transactionDate,
-              );
-              if (price === null || fx === null) {
-                flowsComplete = false;
-                break;
+              const inbound =
+                baseInvestmentAction(tx.action) ===
+                InvestmentAction.TRANSFER_IN;
+              const units = Math.abs(Number(tx.quantity) || 0);
+              for (const [into, target] of [
+                [flows, group.accountCurrencyCode],
+                [flowsRep, reporting],
+              ] as const) {
+                const fx = await fxRate(
+                  group.securityCurrencyCode,
+                  target,
+                  tx.transactionDate,
+                );
+                if (price === null || fx === null) {
+                  into.flowsComplete = false;
+                  if (price !== null && into === flowsRep) {
+                    missingRep.add(
+                      `${group.securityCurrencyCode ?? "?"}->${reporting}`,
+                    );
+                  }
+                  continue;
+                }
+                if (inbound) into.buys += units * price * fx;
+                else into.sells += units * price * fx;
               }
-              const value = Math.abs(Number(tx.quantity) || 0) * price * fx;
-              if (
-                baseInvestmentAction(tx.action) === InvestmentAction.TRANSFER_IN
-              )
-                buys += value;
-              else sells += value;
               break;
             }
             case InvestmentAction.SELL:
@@ -1773,13 +1847,39 @@ export class PortfolioCalculationService {
               // what exceeds the basis is realized.
               const disposal = step.disposal;
               if (!disposal) break;
-              if (disposal.proceeds === null) flowsComplete = false;
-              else sells += disposal.proceeds;
+              if (disposal.proceeds === null) flows.flowsComplete = false;
+              else flows.sells += disposal.proceeds;
               if (disposal.realizedGain === null) {
-                realizedKnown = false;
+                flows.realizedKnown = false;
               } else {
-                realizedGain += disposal.realizedGain;
-                knownRealized += disposal.realizedGain;
+                flows.realized += disposal.realizedGain;
+                flows.knownRealized += disposal.realizedGain;
+              }
+
+              const reported = stepRep?.disposal;
+              if (reported?.proceeds == null) {
+                flowsRep.flowsComplete = false;
+                if (disposal.proceeds !== null) lacksReplayRate(tx);
+              } else {
+                flowsRep.sells += reported.proceeds;
+              }
+              // The sale's gain as Realized Gains states it; a return of
+              // capital the basis absorbed realized nothing, and is not one of
+              // its rows.
+              const absorbedReturn =
+                baseInvestmentAction(tx.action) ===
+                  InvestmentAction.RETURN_OF_CAPITAL &&
+                disposal.proceeds !== null &&
+                disposal.proceeds - disposal.basisRelieved <= 0;
+              const gain = absorbedReturn
+                ? 0
+                : disposalInReporting(disposal, reported).realizedGain;
+              if (gain === null) {
+                flowsRep.realizedKnown = false;
+                if (disposal.realizedGain !== null) lacksReplayRate(tx);
+              } else {
+                flowsRep.realized += gain;
+                flowsRep.knownRealized += gain;
               }
               break;
             }
@@ -1787,7 +1887,10 @@ export class PortfolioCalculationService {
             case InvestmentAction.REMOVE_SHARES:
               // Shares that arrived or left with no cost or proceeds: the value
               // change is not a gain.
-              if ((Number(tx.quantity) || 0) !== 0) flowsComplete = false;
+              if ((Number(tx.quantity) || 0) !== 0) {
+                flows.flowsComplete = false;
+                flowsRep.flowsComplete = false;
+              }
               break;
             default:
               break;
@@ -1795,32 +1898,62 @@ export class PortfolioCalculationService {
         }
 
         const endQuantity = quantity;
+        const endPrice = this.lookupPrice(
+          group.securityId,
+          periodEnd,
+          allPrices,
+        );
         const endValue = await boundaryValue(
           endQuantity,
-          this.lookupPrice(group.securityId, periodEnd, allPrices),
+          endPrice,
           periodEnd,
           group.securityCurrencyCode,
           group.accountCurrencyCode,
         );
+        const endValueRep = await boundaryValue(
+          endQuantity,
+          endPrice,
+          periodEnd,
+          group.securityCurrencyCode,
+          reporting,
+        );
+        for (const [value, price] of [
+          [startValueRep, startPrice],
+          [endValueRep, endPrice],
+        ] as const) {
+          // Priced, and still unknown: the security's pair has no rate.
+          if (value === null && price !== null) {
+            missingRep.add(
+              `${group.securityCurrencyCode ?? "?"}->${reporting}`,
+            );
+          }
+        }
 
         // Unknown boundary values -- or an incomplete `buys` -- make the
         // capital gain unknown rather than equal to the known cash movements.
-        const totalCapitalGain =
-          startValue === null || endValue === null || !flowsComplete
-            ? null
-            : endValue - startValue + sells - buys;
-        const periodRealizedGain = realizedKnown ? realizedGain : null;
-        const unrealizedGain =
-          totalCapitalGain === null || periodRealizedGain === null
-            ? null
-            : totalCapitalGain - periodRealizedGain;
+        const gains = (
+          start: number | null,
+          end: number | null,
+          period: PeriodFlows,
+        ) => {
+          const total =
+            start === null || end === null || !period.flowsComplete
+              ? null
+              : end - start + period.sells - period.buys;
+          const realized = period.realizedKnown ? period.realized : null;
+          const unrealized =
+            total === null || realized === null ? null : total - realized;
+          return { total, realized, unrealized };
+        };
+        const account = gains(startValue, endValue, flows);
+        const inRep = gains(startValueRep, endValueRep, flowsRep);
 
         const hasActivity =
-          buys !== 0 ||
-          sells !== 0 ||
-          realizedGain !== 0 ||
-          !flowsComplete ||
-          !realizedKnown ||
+          flows.buys !== 0 ||
+          flows.sells !== 0 ||
+          flows.realized !== 0 ||
+          !flows.flowsComplete ||
+          !flows.realizedKnown ||
           startQuantity !== 0 ||
           endQuantity !== 0;
         if (!hasActivity) continue;
@@ -1843,15 +1976,25 @@ export class PortfolioCalculationService {
           endQuantity,
           startValue: roundOrNull(startValue),
           endValue: roundOrNull(endValue),
-          buys: round(buys),
-          sells: round(sells),
-          realizedGain: roundOrNull(periodRealizedGain),
-          realizedGainComplete: realizedKnown,
-          realizedGainKnownSubtotal: realizedKnown
+          buys: round(flows.buys),
+          sells: round(flows.sells),
+          realizedGain: roundOrNull(account.realized),
+          realizedGainComplete: flows.realizedKnown,
+          realizedGainKnownSubtotal: flows.realizedKnown
             ? null
-            : round(knownRealized),
-          unrealizedGain: roundOrNull(unrealizedGain),
-          totalCapitalGain: roundOrNull(totalCapitalGain),
+            : round(flows.knownRealized),
+          unrealizedGain: roundOrNull(account.unrealized),
+          totalCapitalGain: roundOrNull(account.total),
+          inReportingCurrency: {
+            currency: reporting,
+            startValue: roundOrNull(startValueRep),
+            endValue: roundOrNull(endValueRep),
+            realizedGain: roundOrNull(inRep.realized),
+            realizedGainKnownSubtotal: round(flowsRep.knownRealized),
+            unrealizedGain: roundOrNull(inRep.unrealized),
+            totalCapitalGain: roundOrNull(inRep.total),
+            missingRatePairs: [...missingRep].sort(),
+          },
         });
       }
     }

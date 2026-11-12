@@ -359,6 +359,7 @@ describe("InvestmentTransactionsService", () => {
     portfolioCalculationService = {
       calculateRealizedGains: jest.fn().mockResolvedValue([]),
       calculateCapitalGainsByMonth: jest.fn().mockResolvedValue([]),
+      calculateCapitalGainsByDay: jest.fn().mockResolvedValue([]),
     };
 
     // The embedded-row status pass reads the parent's splits; default "this
@@ -4368,6 +4369,10 @@ describe("InvestmentTransactionsService", () => {
   });
 
   describe("getLlmCapitalGains", () => {
+    /**
+     * A fold entry. Its reporting-currency figures are its own (a CAD entry
+     * read in CAD) unless `inReporting` names others, as the fold states them.
+     */
     const makeEntry = (
       overrides: Partial<{
         month: string;
@@ -4379,40 +4384,62 @@ describe("InvestmentTransactionsService", () => {
         securityName: string | null;
         startValue: number;
         endValue: number;
-        realizedGain: number;
+        realizedGain: number | null;
+        realizedGainComplete: boolean;
+        realizedGainKnownSubtotal: number | null;
         unrealizedGain: number;
         totalCapitalGain: number;
       }>,
-    ) => ({
-      month: "2024-06",
-      accountId: "acc-1",
-      accountName: "TFSA",
-      accountCurrencyCode: "CAD",
-      securityId: "sec-1",
-      symbol: "AAA",
-      securityName: "Alpha",
-      securityCurrencyCode: "CAD",
-      startQuantity: 10,
-      endQuantity: 10,
-      startValue: 1000,
-      endValue: 1100,
-      buys: 0,
-      sells: 0,
-      realizedGain: 0,
-      unrealizedGain: 100,
-      totalCapitalGain: 100,
-      ...overrides,
-    });
+      inReporting: Record<string, unknown> = {},
+    ) => {
+      const entry = {
+        month: "2024-06",
+        accountId: "acc-1",
+        accountName: "TFSA",
+        accountCurrencyCode: "CAD",
+        securityId: "sec-1",
+        symbol: "AAA",
+        securityName: "Alpha",
+        securityCurrencyCode: "CAD",
+        startQuantity: 10,
+        endQuantity: 10,
+        startValue: 1000,
+        endValue: 1100,
+        buys: 0,
+        sells: 0,
+        realizedGain: 0 as number | null,
+        realizedGainComplete: true,
+        realizedGainKnownSubtotal: null as number | null,
+        unrealizedGain: 100,
+        totalCapitalGain: 100,
+        ...overrides,
+      };
+      return {
+        ...entry,
+        inReportingCurrency: {
+          currency: "CAD",
+          startValue: entry.startValue,
+          endValue: entry.endValue,
+          realizedGain: entry.realizedGain,
+          realizedGainKnownSubtotal:
+            entry.realizedGain ?? entry.realizedGainKnownSubtotal ?? 0,
+          unrealizedGain: entry.unrealizedGain,
+          totalCapitalGain: entry.totalCapitalGain,
+          missingRatePairs: [] as string[],
+          ...inReporting,
+        },
+      };
+    };
 
     it("names the known part when a month's realized gain rests on an unknown basis", async () => {
       const raw = [
         makeEntry({ month: "2024-06", realizedGain: 40 }),
-        {
-          ...makeEntry({ month: "2024-07" }),
+        makeEntry({
+          month: "2024-07",
           realizedGain: null,
           realizedGainComplete: false,
           realizedGainKnownSubtotal: 15,
-        },
+        }),
       ];
       (
         portfolioCalculationService.calculateCapitalGainsByMonth as jest.Mock
@@ -4550,24 +4577,7 @@ describe("InvestmentTransactionsService", () => {
       expect(result.entries[1].totalCapitalGain).toBe(-50);
     });
 
-    // The rate as it stood when June opened and when it closed: the opening
-    // mark converts at the first, every other figure at the second.
-    const usdToCad = (rate: number) => [
-      {
-        from_currency: "USD",
-        to_currency: "CAD",
-        rate,
-        rate_date: "2024-05-31",
-      },
-      {
-        from_currency: "USD",
-        to_currency: "CAD",
-        rate,
-        rate_date: "2024-06-28",
-      },
-    ];
-
-    it("converts a mixed-currency month into the default currency instead of adding CAD to USD", async () => {
+    it("sums each entry's reporting-currency figures, never adding CAD to USD", async () => {
       (
         portfolioCalculationService.calculateCapitalGainsByMonth as jest.Mock
       ).mockResolvedValue([
@@ -4576,15 +4586,18 @@ describe("InvestmentTransactionsService", () => {
           totalCapitalGain: 100,
           unrealizedGain: 100,
         }),
-        makeEntry({
-          accountCurrencyCode: "USD",
-          totalCapitalGain: 50,
-          unrealizedGain: 50,
-          symbol: "USS",
-          securityId: "sec-us",
-        }),
+        // 50 USD, which the fold states as 75 CAD.
+        makeEntry(
+          {
+            accountCurrencyCode: "USD",
+            totalCapitalGain: 50,
+            unrealizedGain: 50,
+            symbol: "USS",
+            securityId: "sec-us",
+          },
+          { totalCapitalGain: 75, unrealizedGain: 75 },
+        ),
       ]);
-      mockQueryRunner.manager.query.mockResolvedValue(usdToCad(1.5));
 
       const result = await service.getLlmCapitalGains(userId, {
         startDate: "2024-06-01",
@@ -4593,7 +4606,7 @@ describe("InvestmentTransactionsService", () => {
 
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].currency).toBe("CAD");
-      expect(result.totals.totalCapitalGain).toBe(175); // 100 + 50 * 1.5
+      expect(result.totals.totalCapitalGain).toBe(175);
       expect(result.totals.fxComplete).toBe(true);
       expect(result.totals.missingRatePairs).toEqual([]);
     });
@@ -4603,14 +4616,22 @@ describe("InvestmentTransactionsService", () => {
         portfolioCalculationService.calculateCapitalGainsByMonth as jest.Mock
       ).mockResolvedValue([
         makeEntry({ accountCurrencyCode: "CAD", totalCapitalGain: 100 }),
-        makeEntry({
-          accountCurrencyCode: "USD",
-          totalCapitalGain: 50,
-          symbol: "USS",
-          securityId: "sec-us",
-        }),
+        makeEntry(
+          {
+            accountCurrencyCode: "USD",
+            totalCapitalGain: 50,
+            symbol: "USS",
+            securityId: "sec-us",
+          },
+          {
+            startValue: null,
+            endValue: null,
+            unrealizedGain: null,
+            totalCapitalGain: null,
+            missingRatePairs: ["USD->CAD"],
+          },
+        ),
       ]);
-      mockQueryRunner.manager.query.mockResolvedValue([]);
 
       const result = await service.getLlmCapitalGains(userId, {
         startDate: "2024-06-01",
@@ -4624,54 +4645,55 @@ describe("InvestmentTransactionsService", () => {
       expect(result.entries[0].totalCapitalGain).toBeNull();
     });
 
-    it("gives each report entry its figures in the reporting currency at its own period's rate (issue #2106)", async () => {
-      (
-        portfolioCalculationService.calculateCapitalGainsByMonth as jest.Mock
-      ).mockResolvedValue([
-        makeEntry({ accountCurrencyCode: "CAD", totalCapitalGain: 100 }),
-        makeEntry({
+    it("gives each report entry the fold's own reporting-currency figures (issue #2130)", async () => {
+      const usd = makeEntry(
+        {
           accountCurrencyCode: "USD",
           totalCapitalGain: 50,
-          unrealizedGain: 50,
-          startValue: 1000,
-          endValue: 1050,
+          realizedGain: 100,
           symbol: "USS",
           securityId: "sec-us",
-        }),
-      ]);
-      mockQueryRunner.manager.query.mockResolvedValue(usdToCad(1.5));
+        },
+        { totalCapitalGain: 70, realizedGain: 190 },
+      );
+      (
+        portfolioCalculationService.calculateCapitalGainsByMonth as jest.Mock
+      ).mockResolvedValue([usd]);
+      (
+        portfolioCalculationService.calculateCapitalGainsByDay as jest.Mock
+      ).mockResolvedValue([usd]);
 
-      const entries = await service.getCapitalGainsByMonth(userId, {
-        startDate: "2024-06-01",
-        endDate: "2024-06-30",
-      });
+      const opts = { startDate: "2024-06-01", endDate: "2024-06-30" };
+      const [byMonth] = await service.getCapitalGainsByMonth(userId, opts);
+      const [byDay] = await service.getCapitalGainsByDay(userId, opts);
 
-      expect(entries[0].inReportingCurrency).toMatchObject({
-        currency: "CAD",
-        totalCapitalGain: 100,
-      });
-      // The USD entry at June's month-end rate, 1.5.
-      expect(entries[1].totalCapitalGain).toBe(50);
-      expect(entries[1].inReportingCurrency).toMatchObject({
-        currency: "CAD",
-        totalCapitalGain: 75,
-        startValue: 1500,
-        endValue: 1575,
-      });
+      // The sale's gain as Realized Gains states it, never 100 USD at the
+      // period's rate.
+      for (const entry of [byMonth, byDay]) {
+        expect(entry.inReportingCurrency).toMatchObject({
+          currency: "CAD",
+          realizedGain: 190,
+          totalCapitalGain: 70,
+        });
+      }
+      // No conversion of its own: no rate history is read here.
+      expect(mockQueryRunner.manager.query).not.toHaveBeenCalled();
     });
 
-    it("names the pair a report entry lacks for its period (issue #2106)", async () => {
+    it("passes the pair a report entry lacks through to the reader", async () => {
       (
         portfolioCalculationService.calculateCapitalGainsByMonth as jest.Mock
       ).mockResolvedValue([
-        makeEntry({
-          accountCurrencyCode: "USD",
-          totalCapitalGain: 50,
-          symbol: "USS",
-          securityId: "sec-us",
-        }),
+        makeEntry(
+          {
+            accountCurrencyCode: "USD",
+            totalCapitalGain: 50,
+            symbol: "USS",
+            securityId: "sec-us",
+          },
+          { totalCapitalGain: null, missingRatePairs: ["USD->CAD"] },
+        ),
       ]);
-      mockQueryRunner.manager.query.mockResolvedValue([]);
 
       const [entry] = await service.getCapitalGainsByMonth(userId, {
         startDate: "2024-06-01",

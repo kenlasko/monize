@@ -1488,7 +1488,9 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     the category and payee detail account panels, the
                     foreign-fee summary's `convertedFeeTotal`, the daily
                     balances' `convertedBalance`, the capital-gain entries'
-                    `inReportingCurrency` (each period at its own end), the
+                    `inReportingCurrency` (the fold run in the reporting
+                    currency: each boundary at its date's rate, each flow at
+                    its own), the
                     realized gains' `inReportingCurrency` and the AI usage
                     costs; the intraday chart prices only the latest session at
                     the live spot. A holding's cost and total net invested in
@@ -1497,14 +1499,17 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     (position-basis-replay.ts), computeNetInvestmentFlowsInReporting
                     each flow at its own; a holding with no usable history
                     still falls back to today's rate, having no dates.
-                    Known gap: a capital-gain entry's `inReportingCurrency`
-                    converts the account-currency period figures at the
-                    period's rates, while Realized Gains' `inReportingCurrency`
-                    replays each sale against each purchase's own rate, so the
-                    two state a sale's realized gain in the reporting currency
-                    differently by the currency's move since purchase. One
-                    answer needs the capital-gains fold run in the reporting
-                    currency, a follow-up for the maintainer to schedule.
+                    A capital-gain entry's `inReportingCurrency` comes from
+                    the capital-gains fold itself, kept in the reporting
+                    currency in the same pass over calculateRealizedGains'
+                    reporting replay, and its realized gain sums each sale's
+                    disposalInReporting figure (securities/disposal-in-reporting.ts),
+                    the rule Realized Gains lists, so the two state a sale's
+                    gain alike (issue #2130; portfolio-calculation.service.spec.ts
+                    and fx-latest-rates.integration.spec.ts "alike in Realized
+                    Gains and the capital-gain entries": 1,100 USD at 1.40 less
+                    1,000 USD at 1.25 is 290 CAD in both, where converting the
+                    period's 100 USD at its rate read 140).
 Known gap           Convert before summing (A26-H12) is closed on three paths:
                     the custom report engine (reports/reports.service.ts,
                     each row converted at its own date, FxAggregate, `summary.total` null
