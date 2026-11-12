@@ -28,6 +28,13 @@ import { Transaction } from "../transactions/entities/transaction.entity";
  * A cell also remembers which "units" fed it, so a group's count is the number
  * of distinct units across its kept cells: a transaction counts once per group
  * (a line once per category, when grouped by category).
+ *
+ * A money figure leaves a cell's currency part out whole when any of its lines
+ * has no rate (issue #2130), the rule the built-in reports apply through
+ * `wholeGroups` to their (group, category, currency) aggregates: keeping the
+ * lines that converted would report a category whose debit is in and whose
+ * refund, struck on a day with no rate, is out. The cell's other currencies
+ * still net.
  */
 
 /** One line of a row, before conversion. */
@@ -40,6 +47,8 @@ export interface NetLine {
   amount: number;
   /** What a group counts: the row, or the line when grouped by category. */
   unit: string;
+  /** The row's currency, which `amount` is in. */
+  currency: string;
 }
 
 /**
@@ -63,6 +72,7 @@ export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
         category,
         amount: Number(split.amount),
         unit: unitOf(index),
+        currency: tx.currencyCode,
       };
     });
   }
@@ -74,14 +84,21 @@ export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
       category,
       amount: Number(tx.amount),
       unit: unitOf(0),
+      currency: tx.currencyCode,
     },
   ];
 }
 
-interface Cell {
+/** The lines of one currency in a cell. */
+interface CellPart {
   agg: FxAggregate;
   units: Set<string>;
+  /** A line of this part had no rate. */
+  unconverted: boolean;
 }
+
+/** One cell's parts, by the currency their lines are in. */
+type Cell = Map<string, CellPart>;
 
 /** A report's cells for one execution; built per call, never shared. */
 export interface NetCells {
@@ -106,7 +123,6 @@ export function createNetCells(
     line: NetLine,
     converted: number | null,
   ): void => {
-    if (converted === null && !keepsUnconverted) return;
     let cells = groups.get(group);
     if (!cells) {
       cells = new Map();
@@ -114,11 +130,17 @@ export function createNetCells(
     }
     let cell = cells.get(line.cell);
     if (!cell) {
-      cell = { agg: new FxAggregate(), units: new Set() };
+      cell = new Map();
       cells.set(line.cell, cell);
     }
-    if (converted !== null) cell.agg.addConverted(converted);
-    cell.units.add(line.unit);
+    let part = cell.get(line.currency);
+    if (!part) {
+      part = { agg: new FxAggregate(), units: new Set(), unconverted: false };
+      cell.set(line.currency, part);
+    }
+    if (converted === null) part.unconverted = true;
+    else part.agg.addConverted(converted);
+    part.units.add(line.unit);
   };
 
   const settle = (): Map<string, { agg: FxAggregate; count: number }> => {
@@ -128,7 +150,15 @@ export function createNetCells(
       const units = new Set<string>();
       let kept = false;
       for (const cell of cells.values()) {
-        const net = cell.agg.knownSubtotal;
+        // The count metric keeps every line; a money figure keeps only the
+        // parts whose every line converted.
+        const parts = [...cell.values()].filter(
+          (part) => keepsUnconverted || !part.unconverted,
+        );
+        if (parts.length === 0) continue;
+        const sum = new FxAggregate();
+        for (const part of parts) sum.merge(part.agg);
+        const net = sum.knownSubtotal;
         let value: number;
         if (direction === DirectionFilter.EXPENSES_ONLY) {
           value = -net;
@@ -141,7 +171,9 @@ export function createNetCells(
         }
         kept = true;
         agg.addConverted(value);
-        for (const unit of cell.units) units.add(unit);
+        for (const part of parts) {
+          for (const unit of part.units) units.add(unit);
+        }
       }
       if (kept) settled.set(group, { agg, count: units.size });
     }

@@ -6,6 +6,7 @@ const tx = (overrides: Record<string, unknown>): Transaction =>
   ({
     id: "tx-1",
     amount: -100,
+    currencyCode: "CAD",
     categoryId: "cat-1",
     isSplit: false,
     isTransfer: false,
@@ -16,7 +17,13 @@ const tx = (overrides: Record<string, unknown>): Transaction =>
 describe("netLinesOf", () => {
   it("is the row itself for a plain row", () => {
     expect(netLinesOf(tx({}), false)).toEqual([
-      { cell: "cat-1", category: "cat-1", amount: -100, unit: "tx-1" },
+      {
+        cell: "cat-1",
+        category: "cat-1",
+        amount: -100,
+        unit: "tx-1",
+        currency: "CAD",
+      },
     ]);
   });
 
@@ -59,11 +66,12 @@ describe("netLinesOf", () => {
 });
 
 describe("NetCells", () => {
-  const line = (cell: string, unit: string, amount = 0) => ({
+  const line = (cell: string, unit: string, amount = 0, currency = "CAD") => ({
     cell,
     category: cell,
     amount,
     unit,
+    currency,
   });
 
   it("nets a refund inside one category for EXPENSES_ONLY", () => {
@@ -114,5 +122,26 @@ describe("NetCells", () => {
     const count = createNetCells(DirectionFilter.BOTH, true);
     count.add("g", line("a", "x"), null);
     expect(count.settle().get("g")!.count).toBe(1);
+  });
+
+  it("leaves a currency part out whole when one of its lines has no rate (issue #2130)", () => {
+    const cells = createNetCells(DirectionFilter.EXPENSES_ONLY, false);
+    // Food in USD: a -100 debit that converted and a +30 refund struck on a
+    // day with no rate. Keeping the debit alone would report -100, not -70.
+    cells.add("g", line("food", "a", 0, "USD"), -125);
+    cells.add("g", line("food", "b", 0, "USD"), null);
+    // Food's CAD part and another category still net and count.
+    cells.add("g", line("food", "c", 0, "CAD"), -20);
+    cells.add("g", line("rent", "d", 0, "USD"), -1000);
+    const settled = cells.settle().get("g")!;
+    expect(settled.agg.knownSubtotal).toBe(1020);
+    expect(settled.count).toBe(2);
+  });
+
+  it("keeps a whole part's lines for the count metric", () => {
+    const cells = createNetCells(DirectionFilter.BOTH, true);
+    cells.add("g", line("food", "a", 0, "USD"), -125);
+    cells.add("g", line("food", "b", 0, "USD"), null);
+    expect(cells.settle().get("g")!.count).toBe(2);
   });
 });

@@ -1458,10 +1458,12 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     (and a group with a day no rate reaches is left out whole,
                     wholeGroups, counted once in excludedCount -- the tax
                     summary's categories too; Bill Payment History converts
-                    each payment alone and nets nothing, and the custom report
-                    engine's cells, which net by group, still keep the rows of
-                    a group that converted while `summary.total` is withheld,
-                    a known gap);
+                    each payment alone and nets nothing; the custom report
+                    engine converts row by row and its cells leave a
+                    (group, category, currency) part with a row no rate
+                    reaches out whole, rows that converted included
+                    (reports/report-net-cells.ts, issue #2130), its
+                    excludedCount still counting the rows without a rate);
                     buildConverter takes the row's own rate where it reaches
                     the reporting currency (INV-FX-002), else convertAtDate over
                     one ExchangeRateService.getRateIndex load for the span the
