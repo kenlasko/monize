@@ -471,8 +471,9 @@ export class TransactionAnalyticsService {
     jointAccountIds?: string[],
     /**
      * Add `converted`, the buckets in the reporting currency at each row's own
-     * rate or date. Opt-in: it is a second read, and only the summary
-     * endpoint's readers (the category and payee pages and widgets) use it.
+     * rate or date. Opt-in: it splits each foreign bucket of the one read by
+     * day and own rate, and only the summary endpoint's readers (the category
+     * and payee pages and widgets) use it.
      */
     options: { inReportingCurrency?: boolean } = {},
   ): Promise<{
@@ -508,6 +509,9 @@ export class TransactionAnalyticsService {
         tagIds,
         jointAccountIds,
       };
+      const reporting = options.inReportingCurrency
+        ? await resolveUserDefaultCurrency(this.dataSource, userId)
+        : undefined;
       const queryBuilder = await this.createFilteredAnalyticsQuery(
         m,
         userId,
@@ -540,8 +544,11 @@ export class TransactionAnalyticsService {
           "lastDate",
         )
         .groupBy("transaction.currencyCode");
+      // Converting splits each foreign bucket by day and own rate in this same
+      // read, so the conversion needs no second pass over the filtered rows.
+      if (reporting) splitByRateBasis(queryBuilder, reporting);
 
-      const rows = await queryBuilder.getRawMany();
+      const rows: RawGroupRow[] = await queryBuilder.getRawMany();
 
       let totalIncome = 0;
       let totalExpenses = 0;
@@ -558,13 +565,27 @@ export class TransactionAnalyticsService {
         }
       > = {};
 
-      for (const row of rows) {
-        const income = Number(row.totalIncome) || 0;
-        const expenses = Number(row.totalExpenses) || 0;
-        const count = Number(row.transactionCount) || 0;
+      for (const bucket of foldRateParts(
+        rows,
+        (row) => row.currencyCode ?? "",
+        ["totalIncome", "totalExpenses"],
+        "transactionCount",
+      )) {
+        const income = bucket.sums.totalIncome;
+        const expenses = bucket.sums.totalExpenses;
         totalIncome += income;
         totalExpenses += expenses;
-        transactionCount += count;
+        transactionCount += bucket.count;
+        if (bucket.first.currencyCode) {
+          byCurrency[bucket.first.currencyCode] = {
+            totalIncome: income,
+            totalExpenses: expenses,
+            netCashFlow: income - expenses,
+            transactionCount: bucket.count,
+          };
+        }
+      }
+      for (const row of rows) {
         // ISO date strings compare correctly as strings, so the min/max
         // across per-currency rows reduces with a plain comparison.
         if (
@@ -579,18 +600,10 @@ export class TransactionAnalyticsService {
         ) {
           lastTransactionDate = row.lastDate;
         }
-        if (row.currencyCode) {
-          byCurrency[row.currencyCode] = {
-            totalIncome: income,
-            totalExpenses: expenses,
-            netCashFlow: income - expenses,
-            transactionCount: count,
-          };
-        }
       }
 
-      const converted = options.inReportingCurrency
-        ? await this.summaryInReportingCurrency(m, userId, filters, byCurrency)
+      const converted = reporting
+        ? await this.summaryInReportingCurrency(m, rows, byCurrency, reporting)
         : undefined;
 
       return {
@@ -614,24 +627,20 @@ export class TransactionAnalyticsService {
    */
   private async summaryInReportingCurrency(
     m: EntityManager,
-    userId: string,
-    filters: AnalyticsReadFilters,
+    parts: readonly RawGroupRow[],
     byCurrency: Record<
       string,
       { totalIncome: number; totalExpenses: number; transactionCount: number }
     >,
+    reporting: string,
   ): Promise<SummaryInReportingCurrency> {
-    const reporting = await resolveUserDefaultCurrency(this.dataSource, userId);
-    const amountExpr = "COALESCE(splits.amount, transaction.amount)";
-    const foreign = Object.keys(byCurrency).some((code) => code !== reporting)
-      ? await this.datedForeignTotals(m, userId, filters, reporting, () => ({
-          keyExpr: "transaction.currencyCode",
-          sums: {
-            income: `SUM(CASE WHEN ${amountExpr} > 0 THEN ${amountExpr} ELSE 0 END)`,
-            expenses: `SUM(CASE WHEN ${amountExpr} < 0 THEN ABS(${amountExpr}) ELSE 0 END)`,
-          },
-        }))
-      : new Map<string, Record<string, number | null>>();
+    const foreign = await this.convertForeignParts(
+      m,
+      parts,
+      reporting,
+      (row) => row.currencyCode,
+      ["totalIncome", "totalExpenses"],
+    );
 
     const incomeParts: number[] = [];
     const expenseParts: number[] = [];
@@ -639,10 +648,17 @@ export class TransactionAnalyticsService {
     let excludedTransactionCount = 0;
     const missing: string[] = [];
     for (const [code, bucket] of Object.entries(byCurrency)) {
-      const parts =
+      const converted =
         code === reporting
-          ? { income: bucket.totalIncome, expenses: bucket.totalExpenses }
-          : (foreign.get(`${code}|${code}`) ?? { income: 0, expenses: 0 });
+          ? {
+              totalIncome: bucket.totalIncome,
+              totalExpenses: bucket.totalExpenses,
+            }
+          : (foreign.get(code) ?? { totalIncome: 0, totalExpenses: 0 });
+      const parts = {
+        income: converted.totalIncome,
+        expenses: converted.totalExpenses,
+      };
       if (parts.income === null || parts.expenses === null) {
         missing.push(code);
         excludedTransactionCount += bucket.transactionCount;
@@ -671,55 +687,34 @@ export class TransactionAnalyticsService {
   }
 
   /**
-   * The reporting-currency figures of every foreign (key, currency) a filtered
-   * analytics read covers, keyed `"<key>|<currency>"` (an absent key is `""`).
-   *
-   * Grouped by day and by the row's own rate, so each part converts at the rate
-   * it settled at where that reaches the reporting currency (INV-FX-002), else
-   * at the market rate on its own date (INV-FX-001); a figure is `null` while
-   * any of its parts has no admissible rate. `shape` adds the joins and
-   * predicates the read's key needs and names the key and the sums.
+   * The reporting-currency figures of the foreign parts of a read split by
+   * {@link splitByRateBasis}, keyed by `keyOf`: each part at the rate it
+   * settled at where that reaches the reporting currency (INV-FX-002), else at
+   * the market rate on its own date (INV-FX-001). A figure is `null` while any
+   * of its parts has no admissible rate. The parts come from the caller's own
+   * read; only the rate history is loaded here, and only when a part needs it.
    */
-  private async datedForeignTotals(
+  private convertForeignParts(
     m: EntityManager,
-    userId: string,
-    filters: AnalyticsReadFilters,
+    parts: readonly RawGroupRow[],
     reporting: string,
-    shape: (qb: SelectQueryBuilder<Transaction>) => {
-      keyExpr: string;
-      sums: Record<string, string>;
-    },
+    keyOf: (row: RawGroupRow) => string,
+    sumNames: readonly string[],
   ): Promise<Map<string, Record<string, number | null>>> {
-    const qb = await this.createFilteredAnalyticsQuery(m, userId, filters);
-    const { keyExpr, sums } = shape(qb);
-    const sumAliases = Object.keys(sums);
-    qb.andWhere("transaction.currencyCode <> :fxReportingCurrency", {
-      fxReportingCurrency: reporting,
-    })
-      .select(keyExpr, "key")
-      .addSelect("transaction.currencyCode", "currencyCode")
-      .addSelect(DAY_TX_SQL, "txDate")
-      .addSelect("transaction.originalCurrencyCode", "originalCurrencyCode")
-      .addSelect("transaction.exchangeRate", "exchangeRate");
-    for (const alias of sumAliases) qb.addSelect(sums[alias], alias);
-    qb.groupBy(keyExpr)
-      .addGroupBy("transaction.currencyCode")
-      .addGroupBy(DAY_TX_SQL)
-      .addGroupBy("transaction.originalCurrencyCode")
-      .addGroupBy("transaction.exchangeRate");
-    const rows: RawGroupRow[] = await qb.getRawMany();
     return convertDatedRows(
       (sql, params) => m.query(sql, params),
-      rows.map((row) => ({
-        key: `${row.key ?? ""}|${row.currencyCode}`,
-        currencyCode: row.currencyCode,
-        txDate: row.txDate,
-        originalCurrencyCode: row.originalCurrencyCode,
-        exchangeRate: row.exchangeRate,
-        amounts: Object.fromEntries(
-          sumAliases.map((alias) => [alias, Number(row[alias]) || 0]),
-        ),
-      })),
+      parts
+        .filter((row) => row.currencyCode !== reporting)
+        .map((row) => ({
+          key: keyOf(row),
+          currencyCode: row.currencyCode,
+          txDate: row.fx_day,
+          originalCurrencyCode: row.fx_original_currency,
+          exchangeRate: row.fx_exchange_rate,
+          amounts: Object.fromEntries(
+            sumNames.map((name) => [name, Number(row[name]) || 0]),
+          ),
+        })),
       reporting,
       this.logger,
     );
@@ -1058,91 +1053,96 @@ export class TransactionAnalyticsService {
       queryBuilder
         .addSelect("transaction.currencyCode", "currencyCode")
         .addSelect(`SUM(${amountExpr})`, "total")
+        .addSelect(`SUM(ABS(${amountExpr}))`, "magnitude")
         .addSelect("COUNT(DISTINCT transaction.id)", "count")
-        .addGroupBy("transaction.currencyCode")
-        .orderBy(`SUM(ABS(${amountExpr}))`, "DESC")
-        .limit(Math.min(Math.max(limit ?? 100, 1), 500));
-
-      const rows = await queryBuilder.getRawMany();
-
-      // Per-currency rows, each rounded at its currency's precision.
-      const places = await loadCurrencyPlacesForRead(
-        m,
-        rows.map((row) => row.currencyCode),
-      );
-      const native = rows.map((row) => ({
-        id: (row.id ?? null) as string | null,
-        name: (row.name ?? null) as string | null,
-        currencyCode: row.currencyCode as string,
-        total: roundMoney(
-          Number(row.total) || 0,
-          moneyDecimalsForCode(places, row.currencyCode),
-        ),
-        count: Number(row.count) || 0,
-      }));
-      return this.withConvertedTotals<(typeof native)[number]>(
-        m,
+        .addGroupBy("transaction.currencyCode");
+      const reporting = await resolveUserDefaultCurrency(
+        this.dataSource,
         userId,
-        filters,
-        native,
-        (qb) => {
-          if (groupBy === "category") {
-            qb.andWhere(categorizedOrNotTransfer());
-            return {
-              keyExpr: categoryIdExpr,
-              sums: { total: `SUM(${amountExpr})` },
-            };
-          }
-          // A payee row is keyed by id AND name, as the read above groups it:
-          // free-text payees share a null id, and keying on the id alone gave
-          // every one of them the converted total of them all.
-          qb.leftJoin("transaction.payee", "groupPayee");
-          return {
-            keyExpr: PAYEE_GROUP_KEY_SQL,
-            sums: { total: `SUM(${amountExpr})` },
-          };
-        },
-        groupBy === "payee" ? payeeGroupKey : undefined,
+      );
+      splitByRateBasis(queryBuilder, reporting);
+      const parts: RawGroupRow[] = await queryBuilder.getRawMany();
+
+      // A row is keyed by id AND name, as the read groups it: free-text payees
+      // share a null id, and keying on the id alone gave every one of them the
+      // converted total of them all.
+      return this.groupsWithConvertedTotals(
+        m,
+        parts,
+        reporting,
+        (row) => `${row.id ?? ""}#${row.name ?? ""}|${row.currencyCode}`,
+        (row) => ({
+          id: (row.id ?? null) as string | null,
+          name: (row.name ?? null) as string | null,
+        }),
+        limit,
       );
     });
   }
 
   /**
-   * Per-(key, currency) rows with each one's figure in the reader's reporting
-   * currency beside it, at each underlying row's own rate or the market rate on
-   * its own date (issue #2106): a surface that sums several currencies reads
+   * Fold the parts of a grouped read split by {@link splitByRateBasis} into one
+   * row per (`keyOf`, currency), largest first by `magnitude` and at most
+   * `limit` of them, each with its figure in the reader's reporting currency
+   * beside it at each underlying row's own rate or the market rate on its own
+   * date (issue #2106): a surface that sums several currencies reads
    * `convertedTotal` rather than converting a lifetime total at today's rate.
    * `null` is a row with a part no admissible rate reaches.
    */
-  private async withConvertedTotals<
-    T extends { id: string | null; currencyCode: string; total: number },
-  >(
+  private async groupsWithConvertedTotals<L extends object>(
     m: EntityManager,
-    userId: string,
-    filters: AnalyticsReadFilters,
-    rows: T[],
-    shape: (qb: SelectQueryBuilder<Transaction>) => {
-      keyExpr: string;
-      sums: Record<string, string>;
-    },
-    /** The key `shape`'s `keyExpr` yields for a row; its id by default. */
-    keyOf: (row: T) => string = (row) => row.id ?? "",
+    parts: readonly RawGroupRow[],
+    reporting: string,
+    keyOf: (row: RawGroupRow) => string,
+    labelOf: (row: RawGroupRow) => L,
+    limit: number | undefined,
   ): Promise<
-    Array<T & { convertedCurrency: string; convertedTotal: number | null }>
+    Array<
+      L & {
+        currencyCode: string;
+        total: number;
+        count: number;
+        convertedCurrency: string;
+        convertedTotal: number | null;
+      }
+    >
   > {
-    if (rows.length === 0) return [];
-    const reporting = await resolveUserDefaultCurrency(this.dataSource, userId);
-    const foreign = rows.some((row) => row.currencyCode !== reporting)
-      ? await this.datedForeignTotals(m, userId, filters, reporting, shape)
-      : new Map<string, Record<string, number | null>>();
-    return rows.map((row) => ({
-      ...row,
-      convertedCurrency: reporting,
-      convertedTotal:
-        row.currencyCode === reporting
-          ? row.total
-          : (foreign.get(`${keyOf(row)}|${row.currencyCode}`)?.total ?? null),
-    }));
+    const groups = foldRateParts(parts, keyOf, ["total", "magnitude"], "count")
+      .sort((a, b) => b.sums.magnitude - a.sums.magnitude)
+      .slice(0, Math.min(Math.max(limit ?? 100, 1), 500));
+    if (groups.length === 0) return [];
+    // Only the parts of the groups shown are converted.
+    const shown = new Set(groups.map((g) => g.key));
+    const foreign = await this.convertForeignParts(
+      m,
+      parts.filter((row) => shown.has(keyOf(row))),
+      reporting,
+      keyOf,
+      ["total"],
+    );
+    // Per-currency rows, each rounded at its currency's precision.
+    const places = await loadCurrencyPlacesForRead(
+      m,
+      groups.map((g) => g.first.currencyCode),
+    );
+    return groups.map((g) => {
+      const currencyCode = g.first.currencyCode as string;
+      const total = roundMoney(
+        g.sums.total,
+        moneyDecimalsForCode(places, currencyCode),
+      );
+      return {
+        ...labelOf(g.first),
+        currencyCode,
+        total,
+        count: g.count,
+        convertedCurrency: reporting,
+        convertedTotal:
+          currencyCode === reporting
+            ? total
+            : (foreign.get(g.key)?.total ?? null),
+      };
+    });
   }
 
   /**
@@ -1194,52 +1194,39 @@ export class TransactionAnalyticsService {
       const amountExpr = "COALESCE(splits.amount, transaction.amount)";
       const valueExpr =
         "TRIM(SUBSTRING(brkTag.name FROM POSITION(':' IN brkTag.name) + 1))";
-      const keyedByTagValue = (qb: SelectQueryBuilder<Transaction>) =>
-        qb
-          .innerJoin("transaction.tags", "brkTag")
-          .andWhere("POSITION(':' IN brkTag.name) > 1")
-          .andWhere(
-            "LOWER(TRIM(SPLIT_PART(brkTag.name, ':', 1))) = LOWER(:brkKey)",
-            {
-              brkKey: key.trim(),
-            },
-          )
-          .andWhere(`${valueExpr} <> ''`);
-
-      keyedByTagValue(queryBuilder)
+      queryBuilder
+        .innerJoin("transaction.tags", "brkTag")
+        .andWhere("POSITION(':' IN brkTag.name) > 1")
+        .andWhere(
+          "LOWER(TRIM(SPLIT_PART(brkTag.name, ':', 1))) = LOWER(:brkKey)",
+          {
+            brkKey: key.trim(),
+          },
+        )
+        .andWhere(`${valueExpr} <> ''`)
         .select(valueExpr, "value")
         .addSelect("transaction.currencyCode", "currencyCode")
         .addSelect(`SUM(ABS(${amountExpr}))`, "total")
+        // The total is a magnitude already; the fold ranks by this name.
+        .addSelect(`SUM(ABS(${amountExpr}))`, "magnitude")
         .addSelect("COUNT(DISTINCT transaction.id)", "count")
         .groupBy(valueExpr)
-        .addGroupBy("transaction.currencyCode")
-        .orderBy(`SUM(ABS(${amountExpr}))`, "DESC")
-        .limit(Math.min(Math.max(limit ?? 100, 1), 500));
-
-      const rows = await queryBuilder.getRawMany();
-
-      // Per-currency rows, each rounded at its currency's precision.
-      const places = await loadCurrencyPlacesForRead(
-        m,
-        rows.map((row) => row.currencyCode),
+        .addGroupBy("transaction.currencyCode");
+      const reporting = await resolveUserDefaultCurrency(
+        this.dataSource,
+        userId,
       );
-      const native = rows.map((row) => ({
-        id: row.value as string,
-        name: row.value as string,
-        currencyCode: row.currencyCode as string,
-        total: roundMoney(
-          Number(row.total) || 0,
-          moneyDecimalsForCode(places, row.currencyCode),
-        ),
-        count: Number(row.count) || 0,
-      }));
-      return this.withConvertedTotals(m, userId, filters, native, (qb) => {
-        keyedByTagValue(qb);
-        return {
-          keyExpr: valueExpr,
-          sums: { total: `SUM(ABS(${amountExpr}))` },
-        };
-      });
+      splitByRateBasis(queryBuilder, reporting);
+      const parts: RawGroupRow[] = await queryBuilder.getRawMany();
+
+      return this.groupsWithConvertedTotals(
+        m,
+        parts,
+        reporting,
+        (row) => `${row.value}|${row.currencyCode}`,
+        (row) => ({ id: row.value as string, name: row.value as string }),
+        limit,
+      );
     });
   }
 
@@ -2510,13 +2497,86 @@ const DAY_TX_SQL = "TO_CHAR(transaction.transactionDate, 'YYYY-MM-DD')";
 type RawGroupRow = Record<string, any>;
 
 /**
- * A payee group's key in SQL and in TypeScript, the two halves of one rule: the
- * payee id and the name the group reads, so free-text payees stay apart.
+ * Split a grouped `transaction`-alias read, for every row outside `reporting`,
+ * by the day it was struck on and the rate it settled at (`fx_day`,
+ * `fx_original_currency`, `fx_exchange_rate`), so the one read yields both the
+ * per-currency figures ({@link foldRateParts}) and the parts their
+ * reporting-currency conversion needs (`convertForeignParts`: each part at its
+ * own rate, INV-FX-002, or the market rate on its date, INV-FX-001). A
+ * reporting-currency row needs no rate and stays one part, so a single-currency
+ * read keeps its row count. Before issue #2130 the conversion re-ran the whole
+ * filtered read.
  */
-const PAYEE_GROUP_KEY_SQL =
-  "CONCAT(COALESCE(CAST(transaction.payeeId AS text), ''), '#', COALESCE(groupPayee.name, transaction.payeeName, ''))";
-const payeeGroupKey = (row: { id: string | null; name: string | null }) =>
-  `${row.id ?? ""}#${row.name ?? ""}`;
+function splitByRateBasis(
+  qb: SelectQueryBuilder<Transaction>,
+  reporting: string,
+): void {
+  const foreign = "transaction.currencyCode <> :fxReportingCurrency";
+  qb.setParameter("fxReportingCurrency", reporting)
+    .addSelect(`CASE WHEN ${foreign} THEN ${DAY_TX_SQL} END`, "fx_day")
+    .addSelect(
+      `CASE WHEN ${foreign} THEN transaction.originalCurrencyCode END`,
+      "fx_original_currency",
+    )
+    .addSelect(
+      `CASE WHEN ${foreign} THEN transaction.exchangeRate END`,
+      "fx_exchange_rate",
+    )
+    // The output columns' names: lower case, so the unquoted names match.
+    .addGroupBy("fx_day")
+    .addGroupBy("fx_original_currency")
+    .addGroupBy("fx_exchange_rate");
+}
+
+/** One group of a read folded back from its {@link splitByRateBasis} parts. */
+interface FoldedParts {
+  key: string;
+  /** The first part, standing for the group's label columns. */
+  first: RawGroupRow;
+  /** Each `sumNames` figure in the group's own currency, summed exactly. */
+  sums: Record<string, number>;
+  count: number;
+}
+
+/**
+ * Fold the parts of a read split by {@link splitByRateBasis} back into one
+ * entry per `keyOf`, in first-seen order: each `sumNames` figure summed at the
+ * column scale (`sumMoney`, the SQL `SUM` it replaces) and `countName` added.
+ * A transaction lies in exactly one part of a group (its day and rate are its
+ * own), so the parts' distinct counts add up to the group's.
+ */
+function foldRateParts(
+  rows: readonly RawGroupRow[],
+  keyOf: (row: RawGroupRow) => string,
+  sumNames: readonly string[],
+  countName: string,
+): FoldedParts[] {
+  const groups = new Map<
+    string,
+    { first: RawGroupRow; values: Record<string, number[]>; count: number }
+  >();
+  for (const row of rows) {
+    const key = keyOf(row);
+    const group = groups.get(key) ?? {
+      first: row,
+      values: Object.fromEntries(sumNames.map((name) => [name, []])),
+      count: 0,
+    };
+    for (const name of sumNames) {
+      group.values[name] = [...group.values[name], Number(row[name]) || 0];
+    }
+    group.count += Number(row[countName]) || 0;
+    groups.set(key, group);
+  }
+  return [...groups.entries()].map(([key, group]) => ({
+    key,
+    first: group.first,
+    sums: Object.fromEntries(
+      sumNames.map((name) => [name, sumMoney(group.values[name], MONEY_SCALE)]),
+    ),
+    count: group.count,
+  }));
+}
 
 /** The transaction-list filter surface every analytics read applies. */
 interface AnalyticsReadFilters {

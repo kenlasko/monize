@@ -1477,7 +1477,10 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     amounts with the client's latest-rate map onto a server
                     figure converted at each row's own rate or date
                     (convertDatedRows in report-currency.service.ts for the
-                    dated fold): the transaction summary's `converted`, the
+                    dated fold; the transaction summary, grouped totals and
+                    tag-key breakdown split their one read by day and own rate,
+                    splitByRateBasis, rather than reading the filtered rows a
+                    second time, issue #2130): the transaction summary's `converted`, the
                     grouped totals' and tag-key breakdown's `convertedTotal`,
                     the category and payee detail account panels, the
                     foreign-fee summary's `convertedFeeTotal`, the daily
@@ -1635,7 +1638,10 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     transaction-analytics.service.spec.ts "a row carrying its own
                     rate": EUR 100 charged as USD 125 reads EUR 100 in the
                     assistant's totals and breakdown, the report rule's figure,
-                    not the market's EUR 106.38.
+                    not the market's EUR 106.38; fx-latest-rates.integration.spec.ts
+                    "alike in the reports and the assistant" holds Spending by
+                    Category, list_transactions, the transaction summary and the
+                    grouped totals to one EUR 150 on PostgreSQL.
 Status              enforced
 ```
 

@@ -342,6 +342,116 @@ describe("latest exchange rates and the readers that take them (integration)", (
     expect(payeeDetail.accounts.map((r) => r.convertedTotal)).toEqual([-2650]);
   });
 
+  it("converts a row at its own rate alike in the reports and the assistant (issue #2130)", async () => {
+    await dataSource.manager.save(
+      dataSource.manager.create(UserPreference, {
+        userId,
+        defaultCurrency: "EUR",
+      }),
+    );
+    const usCard = await createTestAccount(dataSource, userId, {
+      name: "US Card",
+      currencyCode: "USD",
+    });
+    const euChequing = await createTestAccount(dataSource, userId, {
+      name: "EU Chequing",
+      currencyCode: "EUR",
+    });
+    const category = await createTestCategory(dataSource, userId, {
+      name: "Travel",
+    });
+    const day = addDaysYMD(today, -30);
+    // EUR 100 charged as USD 125 (1 EUR = 1.25 USD) on a day the market said
+    // 1.175, beside EUR 50 already in the reporting currency.
+    for (const row of [
+      {
+        accountId: usCard.id,
+        amount: -125,
+        currencyCode: "USD",
+        originalCurrencyCode: "EUR",
+        originalAmount: -100,
+        exchangeRate: 1.25,
+      },
+      { accountId: euChequing.id, amount: -50, currencyCode: "EUR" },
+    ]) {
+      await dataSource.manager.save(
+        dataSource.manager.create(Transaction, {
+          userId,
+          transactionDate: day,
+          payeeName: "Hotel",
+          categoryId: category.id,
+          status: TransactionStatus.UNRECONCILED,
+          isTransfer: false,
+          isSplit: false,
+          ...row,
+        } as Partial<Transaction>),
+      );
+    }
+    await insertRate("EUR", "USD", addDaysYMD(day, -1), "1.1750000000");
+
+    const analytics = new TransactionAnalyticsService(dataSource);
+    const window = { startDate: addDaysYMD(today, -60), endDate: today };
+    const [report, assistant, summary, grouped] = await withUserContext(
+      userId,
+      async () =>
+        [
+          await spending.getSpendingByCategory(
+            userId,
+            window.startDate,
+            window.endDate,
+          ),
+          await analytics.getLlmListTransactions(userId, {
+            ...window,
+            groupBy: "category",
+            direction: "expenses",
+          }),
+          await analytics.getSummary(
+            userId,
+            undefined,
+            window.startDate,
+            window.endDate,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            { inReportingCurrency: true },
+          ),
+          await analytics.getGroupedTotals(userId, {
+            groupBy: "category",
+            ...window,
+          }),
+        ] as const,
+    );
+
+    // EUR 100 at its own rate plus EUR 50; the market rate read EUR 156.38.
+    expect(report.totalSpending).toBe(150);
+    expect(assistant.totalExpenses).toBe(150);
+    expect(assistant.fxComplete).toBe(true);
+    expect(assistant.breakdown).toEqual([
+      expect.objectContaining({ categoryId: category.id, total: 150 }),
+    ]);
+    expect(summary.converted).toMatchObject({
+      currency: "EUR",
+      totalExpenses: 150,
+      missingCurrencies: [],
+    });
+    expect(summary.byCurrency).toEqual({
+      EUR: expect.objectContaining({ totalExpenses: 50, transactionCount: 1 }),
+      USD: expect.objectContaining({ totalExpenses: 125, transactionCount: 1 }),
+    });
+    expect(
+      grouped.map((r) => [r.currencyCode, r.total, r.convertedTotal]).sort(),
+    ).toEqual([
+      ["EUR", -50, -50],
+      ["USD", -125, -100],
+    ]);
+  });
+
   it("states a foreign brokerage's history at each row's own date (issue #2106)", async () => {
     await dataSource.manager.save(
       dataSource.manager.create(UserPreference, {
