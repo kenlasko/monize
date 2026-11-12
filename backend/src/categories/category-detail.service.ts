@@ -9,7 +9,7 @@ import {
 import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
 import { restrictToAccountScope } from "../delegation/delegate-account-scope.util";
 import { Account } from "../accounts/entities/account.entity";
-import { withAccountTotalsInReportingCurrency } from "../built-in-reports/account-breakdown-fx";
+import { readAccountTotalsInReportingCurrency } from "../built-in-reports/account-breakdown-fx";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { Category } from "./entities/category.entity";
@@ -212,64 +212,17 @@ export class CategoryDetailService {
     subtreeIds: string[],
     accountScope: readonly string[] | undefined,
   ): Promise<CategoryAccountBreakdownRow[]> {
-    const rows = await this.subtreeTransactionQuery(
+    return readAccountTotalsInReportingCurrency(
       m,
       userId,
-      subtreeIds,
-      accountScope,
-    )
-      .innerJoin(Account, "account", "account.id = t.account_id")
-      .select("account.id", "accountId")
-      .addSelect("account.name", "accountName")
-      .addSelect("account.account_type", "accountType")
-      .addSelect("account.currency_code", "currencyCode")
-      .addSelect("COUNT(DISTINCT t.id)", "transactionCount")
-      .addSelect("SUM(COALESCE(split.amount, t.amount))", "total")
-      .addSelect(dateText("MAX(t.transaction_date)"), "lastTransactionDate")
-      .groupBy("account.id")
-      .addGroupBy("account.name")
-      .addGroupBy("account.account_type")
-      .addGroupBy("account.currency_code")
-      .orderBy("COUNT(DISTINCT t.id)", "DESC")
-      .getRawMany<{
-        accountId: string;
-        accountName: string;
-        accountType: string;
-        currencyCode: string;
-        transactionCount: string;
-        total: string;
-        lastTransactionDate: string | null;
-      }>();
-
-    // Each total is in its account's currency, rounded at its precision.
-    const places = await loadCurrencyPlacesForRead(
-      m,
-      rows.map((row) => row.currencyCode),
-    );
-    const native = rows.map((row) => ({
-      accountId: row.accountId,
-      accountName: row.accountName,
-      accountType: row.accountType,
-      currencyCode: row.currencyCode,
-      transactionCount: parseInt(row.transactionCount, 10),
-      total: roundMoney(
-        Number(row.total),
-        moneyDecimalsForCode(places, row.currencyCode),
-      ),
-      lastTransactionDate: row.lastTransactionDate ?? null,
-    }));
-    return withAccountTotalsInReportingCurrency(
-      m,
-      userId,
-      native,
-      () =>
-        this.subtreeTransactionQuery(
-          m,
-          userId,
-          subtreeIds,
-          accountScope,
-        ).innerJoin(Account, "account", "account.id = t.account_id"),
+      this.subtreeTransactionQuery(
+        m,
+        userId,
+        subtreeIds,
+        accountScope,
+      ).innerJoin(Account, "account", "account.id = t.account_id"),
       "COALESCE(split.amount, t.amount)",
+      "COUNT(DISTINCT t.id)",
     );
   }
 

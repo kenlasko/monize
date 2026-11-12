@@ -391,7 +391,7 @@ describe("latest exchange rates and the readers that take them (integration)", (
 
     const analytics = new TransactionAnalyticsService(dataSource);
     const window = { startDate: addDaysYMD(today, -60), endDate: today };
-    const [report, assistant, summary, grouped] = await withUserContext(
+    const [report, assistant, summary, grouped, detail] = await withUserContext(
       userId,
       async () =>
         [
@@ -425,6 +425,9 @@ describe("latest exchange rates and the readers that take them (integration)", (
             groupBy: "category",
             ...window,
           }),
+          await new CategoryDetailService(dataSource, {
+            findOne: async () => category,
+          } as never).getDetail(userId, category.id),
         ] as const,
     );
 
@@ -446,6 +449,15 @@ describe("latest exchange rates and the readers that take them (integration)", (
     });
     expect(
       grouped.map((r) => [r.currencyCode, r.total, r.convertedTotal]).sort(),
+    ).toEqual([
+      ["EUR", -50, -50],
+      ["USD", -125, -100],
+    ]);
+    // The detail page's account panel, from its one read.
+    expect(
+      detail.accounts
+        .map((r) => [r.currencyCode, r.total, r.convertedTotal])
+        .sort(),
     ).toEqual([
       ["EUR", -50, -50],
       ["USD", -125, -100],

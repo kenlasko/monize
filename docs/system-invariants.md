@@ -1477,10 +1477,11 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     amounts with the client's latest-rate map onto a server
                     figure converted at each row's own rate or date
                     (convertDatedRows in report-currency.service.ts for the
-                    dated fold; the transaction summary, grouped totals and
-                    tag-key breakdown split their one read by day and own rate,
-                    splitByRateBasis, rather than reading the filtered rows a
-                    second time, issue #2130): the transaction summary's `converted`, the
+                    dated fold; the transaction summary, grouped totals,
+                    tag-key breakdown and the category and payee detail account
+                    panels split their one read by day and own rate
+                    (built-in-reports/rate-basis-parts.ts) rather than reading
+                    the rows a second time, issue #2130): the transaction summary's `converted`, the
                     grouped totals' and tag-key breakdown's `convertedTotal`,
                     the category and payee detail account panels, the
                     foreign-fee summary's `convertedFeeTotal`, the daily
