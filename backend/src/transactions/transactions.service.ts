@@ -1270,7 +1270,8 @@ export class TransactionsService {
           },
         }),
       );
-      amount = fx.amount ?? amount;
+      // Always set on an edit: the row's own amount when nothing moved it.
+      if (fx.amount !== undefined) amount = fx.amount;
       foreignEntry = fx.fields;
       // A rate or original amount that moves a split parent's amount needs
       // its lines resent, exactly as a typed amount does.

@@ -57,10 +57,14 @@ export function foreignEntryWriteFields(
   src: ForeignEntryWrite,
 ): ForeignEntryWrite {
   if (src.originalCurrencyCode === undefined) return {};
+  // `previewForeignEntry` always sets the rate beside the code; an absent one
+  // stays absent (the commit then keeps the row's own), never a guessed 1.
   return {
     originalAmount: src.originalAmount ?? null,
     originalCurrencyCode: src.originalCurrencyCode,
-    exchangeRate: src.exchangeRate ?? 1,
+    ...(src.exchangeRate === undefined
+      ? {}
+      : { exchangeRate: src.exchangeRate }),
   };
 }
 
@@ -111,9 +115,10 @@ function requiresOther(param: string, other: string): BadRequestException {
  * `TransactionsService.previewCreate` / `previewUpdate`: name checks, the
  * original currency's existence and precision, then `resolveForeignEntry`,
  * then the commit's own `normalizeFxEntry` so the preview refuses what the
- * commit would. Returns the amount the row will store (`undefined` when the
- * caller gave none and no entry supplied one) and the fields to carry, or
- * `null` when the entry does not change.
+ * commit would. Returns the amount the row will store (on an edit, the
+ * row's own when nothing moves it; `undefined` on a create that gave none and
+ * names no entry) and the fields to carry, or `null` when the entry does not
+ * change.
  */
 export async function previewForeignEntry(
   manager: EntityManager,
@@ -133,7 +138,7 @@ export async function previewForeignEntry(
       throw requiresOther("originalAmount", "originalCurrencyCode");
     if (request.exchangeRate !== undefined)
       throw requiresOther("exchangeRate", "originalCurrencyCode");
-    return { amount: args.amount, fields: null };
+    return { amount: args.amount ?? stored?.amount, fields: null };
   }
   const places = await loadCurrencyPlacesForRead(manager, [accountCode, code]);
   if (!places.has(code)) {
