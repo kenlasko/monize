@@ -54,6 +54,7 @@ describe("PayeeDetailService", () => {
       addGroupBy: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       addOrderBy: jest.fn().mockReturnThis(),
+      setParameter: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue(undefined),
       getRawMany: jest.fn().mockResolvedValue([]),
@@ -69,8 +70,6 @@ describe("PayeeDetailService", () => {
   function given(options: {
     stats?: { count: string; first: string | null; last: string | null };
     accountRows?: Record<string, unknown>[];
-    /** The foreign accounts' rows by day, read only when one is foreign. */
-    datedAccountRows?: Record<string, unknown>[];
     largestRow?: Record<string, unknown>;
     uncategorizedCount?: number;
     aliasCount?: number;
@@ -87,13 +86,6 @@ describe("PayeeDetailService", () => {
           getRawMany: jest.fn().mockResolvedValue(options.accountRows ?? []),
         }),
       );
-    if (options.datedAccountRows) {
-      txManager.createQueryBuilder.mockImplementationOnce(() =>
-        queryBuilder({
-          getRawMany: jest.fn().mockResolvedValue(options.datedAccountRows),
-        }),
-      );
-    }
     txManager.createQueryBuilder.mockImplementationOnce(() =>
       queryBuilder({
         getRawOne: jest.fn().mockResolvedValue(options.largestRow),
@@ -250,6 +242,7 @@ describe("PayeeDetailService", () => {
     ]);
     given({
       accountRows: [
+        // A foreign account's rows come split by day and own rate.
         {
           accountId: "acct-btc",
           accountName: "Wallet",
@@ -258,6 +251,9 @@ describe("PayeeDetailService", () => {
           transactionCount: "2",
           total: "-0.00045710",
           lastTransactionDate: "2026-06-30",
+          fx_day: "2026-06-30",
+          fx_original_currency: null,
+          fx_exchange_rate: "1",
         },
         {
           accountId: "acct-1",
@@ -267,16 +263,6 @@ describe("PayeeDetailService", () => {
           transactionCount: "1",
           total: "-12.34567",
           lastTransactionDate: "2026-06-30",
-        },
-      ],
-      datedAccountRows: [
-        {
-          accountId: "acct-btc",
-          currencyCode: "BTC",
-          txDate: "2026-06-30",
-          originalCurrencyCode: null,
-          exchangeRate: "1",
-          total: "-0.00045710",
         },
       ],
       largestRow: {
@@ -299,6 +285,87 @@ describe("PayeeDetailService", () => {
       -45.71, -12.3457,
     ]);
     expect(detail.largestTransaction?.amount).toBe(-0.0004321);
+  });
+
+  it("folds a foreign account's day parts back into one row from the one read (issue #2130)", async () => {
+    txManager.query.mockResolvedValue([
+      {
+        from_currency: "CAD",
+        to_currency: "USD",
+        rate: "0.8",
+        rate_date: "2026-01-10",
+      },
+      {
+        from_currency: "CAD",
+        to_currency: "USD",
+        rate: "0.7142857143",
+        rate_date: "2026-06-10",
+      },
+    ]);
+    const part = (
+      day: string,
+      count: string,
+      total: string,
+      own?: { currency: string; rate: string },
+    ) => ({
+      accountId: "acct-us",
+      accountName: "US Card",
+      accountType: "CREDIT_CARD",
+      currencyCode: "USD",
+      transactionCount: count,
+      total,
+      lastTransactionDate: day,
+      fx_day: day,
+      fx_original_currency: own?.currency ?? null,
+      fx_exchange_rate: own?.rate ?? "1",
+    });
+    given({
+      accountRows: [
+        {
+          accountId: "acct-1",
+          accountName: "Chequing",
+          accountType: "CHEQUING",
+          currencyCode: "CAD",
+          transactionCount: "2",
+          total: "-10",
+          lastTransactionDate: "2026-03-01",
+          fx_day: null,
+          fx_original_currency: null,
+          fx_exchange_rate: null,
+        },
+        part("2026-01-12", "1", "-100"),
+        part("2026-06-12", "1", "-100"),
+        // Settled into CAD at its own 1.30 (0.7692307692 USD per CAD).
+        part("2026-06-12", "1", "-100", {
+          currency: "CAD",
+          rate: "0.7692307692",
+        }),
+      ],
+    });
+
+    const detail = await service.getDetail(USER_ID, PAYEE_ID);
+
+    // 100 at 1.25, 100 at 1.40 and 100 at its own 1.30; most rows first.
+    expect(detail.accounts).toEqual([
+      {
+        accountId: "acct-us",
+        accountName: "US Card",
+        accountType: "CREDIT_CARD",
+        currencyCode: "USD",
+        transactionCount: 3,
+        total: -300,
+        lastTransactionDate: "2026-06-12",
+        convertedCurrency: "CAD",
+        convertedTotal: -395,
+      },
+      expect.objectContaining({
+        accountId: "acct-1",
+        transactionCount: 2,
+        convertedTotal: -10,
+      }),
+    ]);
+    // Stats, breakdown and largest transaction: no second breakdown read.
+    expect(txManager.createQueryBuilder).toHaveBeenCalledTimes(3);
   });
 
   it("maps the largest transaction and defaults its description to null", async () => {

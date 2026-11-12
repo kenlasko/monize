@@ -7,7 +7,7 @@ import {
   moneyDecimalsForCode,
 } from "../common/currency-places.util";
 import { Account } from "../accounts/entities/account.entity";
-import { withAccountTotalsInReportingCurrency } from "../built-in-reports/account-breakdown-fx";
+import { readAccountTotalsInReportingCurrency } from "../built-in-reports/account-breakdown-fx";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { PayeeAlias } from "./entities/payee-alias.entity";
 import { PayeesService } from "./payees.service";
@@ -157,8 +157,10 @@ export class PayeeDetailService {
     accountScope: readonly string[] | undefined,
   ): Promise<PayeeAccountBreakdownRow[]> {
     // The payee's real transactions in the caller's scope, joined to their
-    // account; each read below adds its own select.
-    const payeeRows = () =>
+    // account; the breakdown adds its own select.
+    return readAccountTotalsInReportingCurrency(
+      m,
+      userId,
       restrictToAccountScope(
         realTransactionScope(
           m
@@ -169,53 +171,9 @@ export class PayeeDetailService {
         ),
         "t.account_id",
         accountScope,
-      );
-    const rows = await payeeRows()
-      .select("account.id", "accountId")
-      .addSelect("account.name", "accountName")
-      .addSelect("account.account_type", "accountType")
-      .addSelect("account.currency_code", "currencyCode")
-      .addSelect("COUNT(*)", "transactionCount")
-      .addSelect("SUM(t.amount)", "total")
-      .addSelect(dateText("MAX(t.transaction_date)"), "lastTransactionDate")
-      .groupBy("account.id")
-      .addGroupBy("account.name")
-      .addGroupBy("account.account_type")
-      .addGroupBy("account.currency_code")
-      .orderBy("COUNT(*)", "DESC")
-      .getRawMany<{
-        accountId: string;
-        accountName: string;
-        accountType: string;
-        currencyCode: string;
-        transactionCount: string;
-        total: string;
-        lastTransactionDate: string | null;
-      }>();
-
-    // Each total is in its account's currency, rounded at its precision.
-    const places = await loadCurrencyPlacesForRead(
-      m,
-      rows.map((row) => row.currencyCode),
-    );
-    const native = rows.map((row) => ({
-      accountId: row.accountId,
-      accountName: row.accountName,
-      accountType: row.accountType,
-      currencyCode: row.currencyCode,
-      transactionCount: parseInt(row.transactionCount, 10),
-      total: roundMoney(
-        Number(row.total),
-        moneyDecimalsForCode(places, row.currencyCode),
       ),
-      lastTransactionDate: row.lastTransactionDate ?? null,
-    }));
-    return withAccountTotalsInReportingCurrency(
-      m,
-      userId,
-      native,
-      payeeRows,
       "t.amount",
+      "COUNT(*)",
     );
   }
 

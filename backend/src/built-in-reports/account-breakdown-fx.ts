@@ -2,82 +2,123 @@ import { EntityManager, SelectQueryBuilder } from "typeorm";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { preferredCurrency } from "../common/default-currency.util";
-import { convertDatedRows } from "./report-currency.service";
+import { roundMoney } from "../common/round.util";
+import {
+  loadCurrencyPlacesForRead,
+  moneyDecimalsForCode,
+} from "../common/currency-places.util";
+import {
+  convertRateParts,
+  foldRateParts,
+  splitByRateBasis,
+} from "./rate-basis-parts";
 
-const TX_DAY = "TO_CHAR(t.transaction_date, 'YYYY-MM-DD')";
+/** One account's row of a detail page's per-account breakdown. */
+export interface AccountTotalsRow {
+  accountId: string;
+  accountName: string;
+  accountType: string;
+  currencyCode: string;
+  transactionCount: number;
+  /** In the account's currency, rounded at its precision. */
+  total: number;
+  lastTransactionDate: string | null;
+  /** The reader's reporting currency, which `convertedTotal` is in. */
+  convertedCurrency: string;
+  /** `total` at each part's own rate or date; null without one. */
+  convertedTotal: number | null;
+}
 
 /**
- * Per-account totals with each one's figure in the reader's reporting currency
- * beside it, for a detail page that ranks accounts of several currencies.
+ * The per-account totals of `scope`, most transactions first, with each one's
+ * figure in the reader's reporting currency beside it, for a detail page that
+ * ranks accounts of several currencies.
  *
- * `datedRows` builds a fresh query over the same transactions the breakdown
- * summed, aliased `t` and joined to `account`, with no select of its own; the
- * foreign accounts' rows are re-read from it by day and own rate, so each part
+ * `scope` is a query over the page's transactions, aliased `t` and joined to
+ * `account`, with no select of its own. The one read splits a foreign
+ * account's rows by day and own rate ({@link splitByRateBasis}), so each part
  * converts at the rate it settled at or the market rate on its own date rather
- * than the whole lifetime total at today's rate (issue #2106).
- * `convertedTotal` is `null` while a part has no admissible rate. The
- * reporting currency is read on `m`, inside the caller's transaction.
+ * than the whole lifetime total at today's rate (issue #2106), and the native
+ * totals fold the parts back together; the rows are not read a second time
+ * (issue #2130). `countExpr` counts the scope's transactions; `convertedTotal`
+ * is `null` while a part has no admissible rate. The reporting currency is
+ * read on `m`, inside the caller's transaction.
  */
-export async function withAccountTotalsInReportingCurrency<
-  T extends { accountId: string; currencyCode: string; total: number },
->(
+export async function readAccountTotalsInReportingCurrency(
   m: EntityManager,
   userId: string,
-  rows: T[],
-  datedRows: () => SelectQueryBuilder<Transaction>,
+  scope: SelectQueryBuilder<Transaction>,
   amountExpr: string,
-): Promise<
-  Array<T & { convertedCurrency: string; convertedTotal: number | null }>
-> {
-  if (rows.length === 0) return [];
+  countExpr: string,
+): Promise<AccountTotalsRow[]> {
   const reportingCurrency = preferredCurrency(
     await m.getRepository(UserPreference).findOne({ where: { userId } }),
   );
-  const converted = rows.some((row) => row.currencyCode !== reportingCurrency)
-    ? await convertDatedRows(
-        (sql, params) => m.query(sql, params),
-        (
-          await datedRows()
-            .andWhere("account.currency_code <> :fxReportingCurrency", {
-              fxReportingCurrency: reportingCurrency,
-            })
-            .select("account.id", "accountId")
-            .addSelect("account.currency_code", "currencyCode")
-            .addSelect(TX_DAY, "txDate")
-            .addSelect("t.original_currency_code", "originalCurrencyCode")
-            .addSelect("t.exchange_rate", "exchangeRate")
-            .addSelect(`SUM(${amountExpr})`, "total")
-            .groupBy("account.id")
-            .addGroupBy("account.currency_code")
-            .addGroupBy(TX_DAY)
-            .addGroupBy("t.original_currency_code")
-            .addGroupBy("t.exchange_rate")
-            .getRawMany<{
-              accountId: string;
-              currencyCode: string;
-              txDate: string;
-              originalCurrencyCode: string | null;
-              exchangeRate: string | null;
-              total: string;
-            }>()
-        ).map((row) => ({
-          key: row.accountId,
-          currencyCode: row.currencyCode,
-          txDate: row.txDate,
-          originalCurrencyCode: row.originalCurrencyCode,
-          exchangeRate: row.exchangeRate,
-          amounts: { total: Number(row.total) || 0 },
-        })),
-        reportingCurrency,
-      )
-    : new Map<string, Record<string, number | null>>();
+  scope
+    .select("account.id", "accountId")
+    .addSelect("account.name", "accountName")
+    .addSelect("account.account_type", "accountType")
+    .addSelect("account.currency_code", "currencyCode")
+    .addSelect(countExpr, "transactionCount")
+    .addSelect(`SUM(${amountExpr})`, "total")
+    // Formatted in Postgres so the day never shifts through a time zone.
+    .addSelect(
+      "TO_CHAR(MAX(t.transaction_date), 'YYYY-MM-DD')",
+      "lastTransactionDate",
+    )
+    .groupBy("account.id")
+    .addGroupBy("account.name")
+    .addGroupBy("account.account_type")
+    .addGroupBy("account.currency_code");
+  splitByRateBasis(
+    scope,
+    {
+      currency: "account.currency_code",
+      date: "t.transaction_date",
+      originalCurrency: "t.original_currency_code",
+      exchangeRate: "t.exchange_rate",
+    },
+    reportingCurrency,
+  );
+  const parts = await scope.getRawMany();
+  if (parts.length === 0) return [];
 
-  return rows.map((row) => ({
-    ...row,
-    convertedCurrency: reportingCurrency,
-    convertedTotal:
-      row.currencyCode === reportingCurrency
-        ? row.total
-        : (converted.get(row.accountId)?.total ?? null),
-  }));
+  const keyOf = (row: Record<string, any>) => String(row.accountId);
+  const accounts = foldRateParts(parts, keyOf, {
+    sums: ["total"],
+    count: "transactionCount",
+    latest: "lastTransactionDate",
+  }).sort((a, b) => b.count - a.count);
+  const converted = await convertRateParts(
+    (sql, params) => m.query(sql, params),
+    parts,
+    reportingCurrency,
+    keyOf,
+    { sums: ["total"], currency: "currencyCode" },
+  );
+  const places = await loadCurrencyPlacesForRead(
+    m,
+    accounts.map((account) => account.first.currencyCode),
+  );
+  return accounts.map((account) => {
+    const currencyCode = String(account.first.currencyCode);
+    const total = roundMoney(
+      account.sums.total,
+      moneyDecimalsForCode(places, currencyCode),
+    );
+    return {
+      accountId: account.key,
+      accountName: account.first.accountName,
+      accountType: account.first.accountType,
+      currencyCode,
+      transactionCount: account.count,
+      total,
+      lastTransactionDate: account.latest,
+      convertedCurrency: reportingCurrency,
+      convertedTotal:
+        currencyCode === reportingCurrency
+          ? total
+          : (converted.get(account.key)?.total ?? null),
+    };
+  });
 }

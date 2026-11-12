@@ -175,6 +175,7 @@ describe("queryCategorySpending", () => {
       groupBy: jest.fn().mockReturnThis(),
       addGroupBy: jest.fn().mockReturnThis(),
       innerJoin: jest.fn().mockReturnThis(),
+      setParameter: jest.fn().mockReturnThis(),
       getRawMany: jest.fn().mockResolvedValue(rows),
     };
     return qb;
@@ -285,6 +286,56 @@ describe("queryCategorySpending", () => {
     );
 
     expect(result.spendingMap.get("cat-1")).toBe(-75);
+  });
+
+  it("converts a row at its own rate into the budget's currency (INV-FX-002)", async () => {
+    // USD 125 settled at 1.25 USD per CAD, on a day the market said 1.30:
+    // CAD 100, the figure the reports and the assistant state for it.
+    const directQb = makeQbReturning([
+      {
+        key: "cat-1",
+        currencyCode: "USD",
+        txDate: "2026-01-10",
+        total: "-125",
+        fx_original_currency: "CAD",
+        fx_exchange_rate: "1.25000000",
+      },
+    ]);
+    const manager = makeManager([
+      {
+        from_currency: "CAD",
+        to_currency: "USD",
+        rate: "1.3",
+        rate_date: "2026-01-09",
+      },
+    ]);
+    const txRepo: any = {
+      manager,
+      createQueryBuilder: jest.fn().mockReturnValue(directQb),
+    };
+    const splitRepo: any = {
+      createQueryBuilder: jest
+        .fn()
+        .mockImplementation(() => makeQbReturning([])),
+    };
+
+    const result = await queryCategorySpending(
+      txRepo,
+      splitRepo,
+      "user-1",
+      [makeBudgetCategory({ categoryId: "cat-1" })],
+      "2026-01-01",
+      "2026-01-31",
+    );
+
+    expect(result.spendingMap.get("cat-1")).toBe(-100);
+    expect(directQb.addGroupBy).toHaveBeenCalledWith("fx_exchange_rate");
+    expect(directQb.setParameter).toHaveBeenCalledWith(
+      "fxReportingCurrency",
+      "CAD",
+    );
+    // Its own rate reaches CAD, so no rate history is read.
+    expect(manager.query).toHaveBeenCalledTimes(1);
   });
 
   it("aggregates transfer spending separately for transfer budgets", async () => {

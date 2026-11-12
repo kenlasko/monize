@@ -161,6 +161,17 @@ export class ReportsService {
     return metric === MetricType.COUNT;
   }
 
+  /**
+   * Counts a row (or split line) that converted but was left out with a part
+   * that holds one with no rate (issue #2130), once however many groups it
+   * sits in, so `excludedCount` is every row the figures leave out.
+   */
+  private leftOutWithItsPart(
+    conv: RowConverter,
+  ): (currency: string, unit: string) => void {
+    return (currency, unit) => conv.gaps.record(currency, `left-out:${unit}`);
+  }
+
   async create(
     userId: string,
     dto: CreateCustomReportDto,
@@ -1045,6 +1056,7 @@ export class ReportsService {
     const cells = createNetCells(
       config.direction,
       this.keepsUnconverted(metric),
+      this.leftOutWithItsPart(conv),
     );
     for (const tx of transactions) {
       for (const line of netLinesOf(tx, false)) {
@@ -1080,6 +1092,7 @@ export class ReportsService {
     const cells = createNetCells(
       config.direction,
       this.keepsUnconverted(metric),
+      this.leftOutWithItsPart(conv),
     );
     // An embedded investment line carries no category by definition, so
     // `netLinesOf` leaves it out: counting it here filed a securities purchase
@@ -1136,6 +1149,7 @@ export class ReportsService {
     const cells = createNetCells(
       config.direction,
       this.keepsUnconverted(metric),
+      this.leftOutWithItsPart(conv),
     );
     const payeeNames = new Map<string, string>();
 
@@ -1189,6 +1203,7 @@ export class ReportsService {
     const cells = createNetCells(
       config.direction,
       this.keepsUnconverted(metric),
+      this.leftOutWithItsPart(conv),
     );
     const tagInfo = new Map<string, { tagName: string; color?: string }>();
 
@@ -1264,6 +1279,7 @@ export class ReportsService {
     const cells = createNetCells(
       config.direction,
       this.keepsUnconverted(metric),
+      this.leftOutWithItsPart(conv),
     );
     const labels = new Map<string, string>();
 

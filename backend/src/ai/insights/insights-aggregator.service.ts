@@ -10,10 +10,15 @@ import { Category } from "../../categories/entities/category.entity";
 import { FxAggregate } from "../../common/fx-aggregate";
 import { roundMoney } from "../../common/round.util";
 import { isNetSpending } from "../../built-in-reports/spending-reports.service";
+import { buildRateIndex } from "../../common/time-series/rate-index.util";
 import {
-  buildRateIndex,
-  convertAtDate,
-} from "../../common/time-series/rate-index.util";
+  convertRateBasis,
+  toOwnRate,
+} from "../../built-in-reports/report-currency.service";
+import {
+  partRateBasis,
+  splitByRateBasis,
+} from "../../built-in-reports/rate-basis-parts";
 
 export interface CategorySpending {
   categoryName: string;
@@ -62,6 +67,10 @@ interface SpendingRow {
   currencyCode: string;
   net: string;
   txnCount: string;
+  /** A foreign part's day and own rate (`splitByRateBasis`); null otherwise. */
+  fx_day: string | null;
+  fx_original_currency: string | null;
+  fx_exchange_rate: string | null;
 }
 
 /** First day of the month `delta` months from `ymd`'s month; pure string arithmetic. */
@@ -163,7 +172,9 @@ export class InsightsAggregatorService {
    * its own category, so the category and amount come from the split when the
    * row has one (the parent's `amount` is the sum of its lines). Spending is
    * the debits net of the credits filed against the category, converted into
-   * `currency` at the rate for the row's month; a category that nets to a
+   * `currency` at each row's own settled rate where it reaches `currency`
+   * (INV-FX-002), else at the market rate on the row's own date (INV-FX-001),
+   * never at its month's last day (issue #2130); a category that nets to a
    * credit over the window is income, not spending, and is left out.
    */
   private async getSpending(
@@ -178,39 +189,63 @@ export class InsightsAggregatorService {
     monthlySpending: MonthlySpending[];
     missingRatePairs: string[];
   }> {
-    const rows: SpendingRow[] = await withScopedDb(this.dataSource, (manager) =>
-      manager
-        .getRepository(Transaction)
-        .createQueryBuilder("t")
-        .leftJoin("t.splits", "ts")
-        .innerJoin(
-          Category,
-          "cat",
-          "cat.id = COALESCE(ts.categoryId, t.categoryId)",
-        )
-        .select("TO_CHAR(t.transactionDate, 'YYYY-MM')", "month")
-        .addSelect("cat.id", "categoryId")
-        .addSelect("cat.name", "categoryName")
-        .addSelect("t.currencyCode", "currencyCode")
-        .addSelect("SUM(-COALESCE(ts.amount, t.amount))", "net")
-        .addSelect("COUNT(DISTINCT t.id)", "txnCount")
-        .where("t.userId = :userId", { userId })
-        .andWhere("t.transactionDate >= :startDate", { startDate })
-        .andWhere("t.transactionDate <= :endDate", { endDate })
-        .andWhere("COALESCE(ts.amount, t.amount) <> 0")
-        .andWhere("t.status != 'VOID'")
-        .andWhere("t.isTransfer = false")
-        .andWhere("t.parentTransactionId IS NULL")
-        .andWhere("(ts.transferAccountId IS NULL OR ts.id IS NULL)")
-        .groupBy("TO_CHAR(t.transactionDate, 'YYYY-MM')")
-        .addGroupBy("cat.id")
-        .addGroupBy("cat.name")
-        .addGroupBy("t.currencyCode")
-        .getRawMany(),
+    const rows: SpendingRow[] = await withScopedDb(
+      this.dataSource,
+      (manager) => {
+        const qb = manager
+          .getRepository(Transaction)
+          .createQueryBuilder("t")
+          .leftJoin("t.splits", "ts")
+          .innerJoin(
+            Category,
+            "cat",
+            "cat.id = COALESCE(ts.categoryId, t.categoryId)",
+          )
+          .select("TO_CHAR(t.transactionDate, 'YYYY-MM')", "month")
+          .addSelect("cat.id", "categoryId")
+          .addSelect("cat.name", "categoryName")
+          .addSelect("t.currencyCode", "currencyCode")
+          .addSelect("SUM(-COALESCE(ts.amount, t.amount))", "net")
+          .addSelect("COUNT(DISTINCT t.id)", "txnCount")
+          .where("t.userId = :userId", { userId })
+          .andWhere("t.transactionDate >= :startDate", { startDate })
+          .andWhere("t.transactionDate <= :endDate", { endDate })
+          .andWhere("COALESCE(ts.amount, t.amount) <> 0")
+          .andWhere("t.status != 'VOID'")
+          .andWhere("t.isTransfer = false")
+          .andWhere("t.parentTransactionId IS NULL")
+          .andWhere("(ts.transferAccountId IS NULL OR ts.id IS NULL)")
+          .groupBy("TO_CHAR(t.transactionDate, 'YYYY-MM')")
+          .addGroupBy("cat.id")
+          .addGroupBy("cat.name")
+          .addGroupBy("t.currencyCode");
+        // A foreign row splits by its day and the rate it settled at, so each
+        // part converts as the reports convert it.
+        splitByRateBasis(
+          qb,
+          {
+            currency: "t.currencyCode",
+            date: "t.transactionDate",
+            originalCurrency: "t.originalCurrencyCode",
+            exchangeRate: "t.exchangeRate",
+          },
+          currency,
+        );
+        return qb.getRawMany();
+      },
     );
 
+    const basisOf = (r: SpendingRow) =>
+      partRateBasis(r, r.currencyCode, r.fx_day, currency);
+    // Only a part the market rate converts needs the history.
     const foreign = new Set(
-      rows.map((r) => r.currencyCode).filter((c) => c !== currency),
+      rows
+        .filter(
+          (r) =>
+            r.currencyCode !== currency &&
+            toOwnRate(basisOf(r).own_rate) === null,
+        )
+        .map((r) => r.currencyCode),
     );
     const rateIndex =
       foreign.size === 0
@@ -247,12 +282,8 @@ export class InsightsAggregatorService {
       if (r.currencyCode === currency || net === 0) {
         agg.addConverted(net);
       } else {
-        const [y, m] = r.month.split("-").map(Number);
-        const monthEnd = new Date(Date.UTC(y, m, 0))
-          .toISOString()
-          .substring(0, 10);
         agg.add(
-          convertAtDate(net, r.currencyCode, currency, monthEnd, rateIndex),
+          convertRateBasis(net, basisOf(r), currency, rateIndex),
           r.currencyCode,
           currency,
         );
