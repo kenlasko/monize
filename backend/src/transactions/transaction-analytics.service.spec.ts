@@ -1738,6 +1738,41 @@ describe("TransactionAnalyticsService", () => {
       ]);
     });
 
+    it("converts a part at its own rate, reading no rate history (INV-FX-002)", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "EUR",
+      });
+      // USD 125 settled at 1.25 USD per EUR: EUR 100, whatever the market said.
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          month: "2025-12",
+          currencyCode: "EUR",
+          txDate: "2025-12-02",
+          total: "-50",
+          count: "1",
+        },
+        {
+          month: "2025-12",
+          currencyCode: "USD",
+          txDate: "2025-12-31",
+          fx_original_currency: "EUR",
+          fx_exchange_rate: "1.25000000",
+          total: "-125",
+          count: "1",
+        },
+      ]);
+
+      const result = await service.getMonthlyTotals(userId);
+
+      expect(result).toEqual([
+        { month: "2025-12", currency: "EUR", total: -150, count: 2 },
+      ]);
+      expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith(
+        "fx_exchange_rate",
+      );
+      expect(managerMock.query).not.toHaveBeenCalled();
+    });
+
     it("leaves voided rows out of the monthly totals", async () => {
       await service.getMonthlyTotals(userId);
 
@@ -2960,6 +2995,41 @@ describe("TransactionAnalyticsService", () => {
       expect(result.missingRatePairs).toEqual([]);
       expect(result.comparison[0].label).toBe("Food");
       expect(result.comparison[0].change).toBe(50);
+    });
+
+    it("converts a part at its own rate, reading no rate history (INV-FX-002)", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "EUR",
+      });
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          // USD 125 settled at 1.25 USD per EUR: EUR 100.
+          row({
+            categoryId: "cat-food",
+            total: "125",
+            count: "1",
+            fx_original_currency: "EUR",
+            fx_exchange_rate: "1.25000000",
+          }),
+        ])
+        .mockResolvedValueOnce([
+          row({
+            currencyCode: "EUR",
+            categoryId: "cat-food",
+            total: "150",
+            count: "1",
+          }),
+        ]);
+
+      const result = await service.getLlmPeriodComparison(userId, periods);
+
+      expect(result.period1.total).toBe(100);
+      expect(result.period2.total).toBe(150);
+      expect(result.fxComplete).toBe(true);
+      expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith(
+        "fx_exchange_rate",
+      );
+      expect(managerMock.query).not.toHaveBeenCalled();
     });
 
     it("converts each part at the rate for its own date into the default currency", async () => {
