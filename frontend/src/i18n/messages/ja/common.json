@@ -10,6 +10,8 @@
     "versionLabel": "バージョン {version}",
     "expandAll": "すべて展開",
     "collapseAll": "すべて折りたたむ",
+    "changeCount": "{count, plural, other {# 件の変更}}",
+    "otherSections": "修正と詳細",
     "viewFullNotes": "リリースノート全体を表示",
     "dontShowAgain": "今後表示しない",
     "showNextLogin": "次回ログイン時に表示",

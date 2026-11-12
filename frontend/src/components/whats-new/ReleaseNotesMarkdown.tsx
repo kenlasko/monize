@@ -7,6 +7,8 @@ import { onGuideLinkClick, useHelpPrefetch } from '@/lib/help-open';
 
 interface ReleaseNotesMarkdownProps {
   content: string;
+  /** `lead` sets the release's intro a size up, as the dialog's opening line. */
+  size?: 'body' | 'lead';
 }
 
 /**
@@ -20,12 +22,17 @@ interface ReleaseNotesMarkdownProps {
  * feature's page) opens the help panel there on a plain click instead of
  * monize.net; a modified click still goes to the website (`onGuideLinkClick`).
  */
-export function ReleaseNotesMarkdown({ content }: ReleaseNotesMarkdownProps) {
+export function ReleaseNotesMarkdown({
+  content,
+  size = 'body',
+}: ReleaseNotesMarkdownProps) {
   useHelpPrefetch();
   if (!content) return null;
 
   return (
-    <div className="text-sm text-gray-700 dark:text-gray-300">
+    <div
+      className={`${size === 'lead' ? 'text-base' : 'text-sm'} text-gray-700 dark:text-gray-300`}
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkIssueLinks]}
         components={{

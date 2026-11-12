@@ -10,6 +10,8 @@
     "versionLabel": "Версия {version}",
     "expandAll": "Развернуть все",
     "collapseAll": "Свернуть все",
+    "changeCount": "{count, plural, one {# изменение} few {# изменения} many {# изменений} other {# изменения}}",
+    "otherSections": "Исправления и подробности",
     "viewFullNotes": "Показать все примечания к выпуску",
     "dontShowAgain": "Больше не показывать",
     "showNextLogin": "Показать при следующем входе",

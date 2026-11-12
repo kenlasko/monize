@@ -10,6 +10,8 @@
     "versionLabel": "版本 {version}",
     "expandAll": "全部展开",
     "collapseAll": "全部收起",
+    "changeCount": "{count, plural, other {# 项更改}}",
+    "otherSections": "修复与详情",
     "viewFullNotes": "查看完整版本说明",
     "dontShowAgain": "不再显示",
     "showNextLogin": "下次登录时显示",

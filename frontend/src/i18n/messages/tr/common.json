@@ -10,6 +10,8 @@
     "versionLabel": "Sürüm {version}",
     "expandAll": "Tümünü genişlet",
     "collapseAll": "Tümünü daralt",
+    "changeCount": "{count, plural, other {# değişiklik}}",
+    "otherSections": "Düzeltmeler ve ayrıntılar",
     "viewFullNotes": "Tüm sürüm notlarını görüntüle",
     "dontShowAgain": "Bir daha gösterme",
     "showNextLogin": "Sonraki girişte göster",

@@ -10,6 +10,8 @@
     "versionLabel": "버전 {version}",
     "expandAll": "모두 펼치기",
     "collapseAll": "모두 접기",
+    "changeCount": "{count, plural, other {변경 #개}}",
+    "otherSections": "수정 사항 및 세부 정보",
     "viewFullNotes": "전체 릴리스 노트 보기",
     "dontShowAgain": "다시 표시하지 않기",
     "showNextLogin": "다음 로그인 시 표시",

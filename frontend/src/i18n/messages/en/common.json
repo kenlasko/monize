@@ -10,6 +10,8 @@
     "versionLabel": "Version {version}",
     "expandAll": "Expand all",
     "collapseAll": "Collapse all",
+    "changeCount": "{count, plural, one {# change} other {# changes}}",
+    "otherSections": "Fixes and details",
     "viewFullNotes": "View full release notes",
     "dontShowAgain": "Don't show this again",
     "showNextLogin": "Show at next login",

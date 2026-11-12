@@ -10,6 +10,8 @@
     "versionLabel": "Versie {version}",
     "expandAll": "Alles uitklappen",
     "collapseAll": "Alles inklappen",
+    "changeCount": "{count, plural, one {# wijziging} other {# wijzigingen}}",
+    "otherSections": "Oplossingen en details",
     "viewFullNotes": "Volledige release-opmerkingen bekijken",
     "dontShowAgain": "Niet meer weergeven",
     "showNextLogin": "Weergeven bij volgende aanmelding",

@@ -10,6 +10,8 @@
     "versionLabel": "Версія {version}",
     "expandAll": "Розгорнути все",
     "collapseAll": "Згорнути все",
+    "changeCount": "{count, plural, one {# зміна} few {# зміни} many {# змін} other {# зміни}}",
+    "otherSections": "Виправлення та подробиці",
     "viewFullNotes": "Переглянути всі нотатки до версії",
     "dontShowAgain": "Більше не показувати",
     "showNextLogin": "Показати під час наступного входу",

@@ -18,6 +18,7 @@ const NOTES: ReleaseNotes = {
       body: 'Loan section lead.',
       children: [{ heading: 'Goal seek', body: 'Goal seek detail.', children: [] }],
     },
+    { heading: 'Reports', body: '- **One:** a.\n- **Two:** b.\n  - nested detail', children: [] },
     { heading: 'Bug Fixes', body: 'Fixed a thing.', children: [] },
   ],
   releaseUrl: 'https://github.com/kenlasko/monize/releases/tag/v1.12.1',
@@ -62,16 +63,58 @@ describe('WhatsNewModal', () => {
     renderModal();
 
     expect(screen.getByText("What's New")).toBeInTheDocument();
-    expect(screen.getByText('Version 1.12.1')).toBeInTheDocument();
+    // Once in the title's badge (hidden from the dialog's name) and once for
+    // screen readers at the top of the body.
+    expect(screen.getAllByText('Version 1.12.1')).toHaveLength(2);
     expect(screen.getByText('Big release intro paragraph.')).toBeInTheDocument();
-    // Sections are expanded by default: headings, section bodies and subheading
-    // titles are visible.
+    // The first feature section is expanded by default: its body and its
+    // subheading titles are visible.
     expect(screen.getByText('Loans')).toBeInTheDocument();
     expect(screen.getByText('Loan section lead.')).toBeInTheDocument();
     expect(screen.getByText('Goal seek')).toBeInTheDocument();
     expect(screen.getByText('Bug Fixes')).toBeInTheDocument();
     // Subsection detail is collapsed by default.
     expect(screen.queryByText('Goal seek detail.')).not.toBeInTheDocument();
+  });
+
+  it('opens only the first feature section and leads with the features', () => {
+    renderModal();
+
+    // Reports is a feature, but not the first: collapsed.
+    expect(screen.getByRole('button', { name: /Reports/ })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    // Bug Fixes sits after the features under its own heading, collapsed.
+    const group = screen.getByRole('heading', { name: 'Fixes and details' });
+    const fixes = screen.getByRole('button', { name: 'Bug Fixes' });
+    expect(fixes).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      group.compareDocumentPosition(fixes) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.queryByText('Fixed a thing.')).not.toBeInTheDocument();
+  });
+
+  it('counts each feature section\'s top-level changes and subsections', () => {
+    renderModal();
+
+    // Loans: no bullets, one subsection. Reports: two bullets, the nested one
+    // is detail of the second.
+    expect(screen.getByText('1 change')).toBeInTheDocument();
+    expect(screen.getByText('2 changes')).toBeInTheDocument();
+  });
+
+  it('leaves out the group heading when a release has only maintenance sections', () => {
+    renderModal({
+      notes: {
+        ...NOTES,
+        sections: [{ heading: 'Fixes', body: 'Fixed a thing.', children: [] }],
+      },
+    });
+
+    expect(screen.queryByText('Fixes and details')).toBeNull();
+    // With no feature to lead, the first section opens instead.
+    expect(screen.getByText('Fixed a thing.')).toBeInTheDocument();
   });
 
   it('reveals a subheading detail when clicked', () => {
