@@ -870,7 +870,8 @@
     "transferCounterpartChanged": "Druga strona tego przelewu zmieniła się podczas edycji. Odśwież i spróbuj ponownie.",
     "splitTransferTargetAmountRequiresTransfer": "Tylko przelew w podziale może mieć kwotę otrzymaną",
     "splitIdNotOnTransaction": "splitId {{ splitId }} nie jest linią podziału tej transakcji. Odczytaj ponownie linie podziału transakcji i użyj ich wartości splitId.",
-    "splitIdRepeated": "splitId {{ splitId }} jest wskazany przez więcej niż jedną linię. Każdą istniejącą linię można kontynuować tylko raz."
+    "splitIdRepeated": "splitId {{ splitId }} jest wskazany przez więcej niż jedną linię. Każdą istniejącą linię można kontynuować tylko raz.",
+    "splitTagCarryAmbiguous": "Więcej niż jeden istniejący wiersz podziału pasuje do ponownie wysłanego wiersza, a mają różne tagi, więc nie wiadomo, który wiersz zachowa które tagi. Podaj w każdym ponownie wysłanym wierszu splitId wiersza, który kontynuuje, tak jak odczytano wiersze podziału transakcji."
   },
   "users": {
     "userNotFound": "Nie znaleziono użytkownika",

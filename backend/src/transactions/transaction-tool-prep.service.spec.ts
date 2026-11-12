@@ -643,6 +643,70 @@ describe("TransactionToolPrepService", () => {
         ).rejects.toThrow(/not a split line of this transaction/);
       });
 
+      describe("two lines of the same category and amount", () => {
+        const gifts = {
+          ...splitTx,
+          splits: [
+            {
+              id: "a",
+              categoryId: "c1",
+              amount: "-25.0000",
+              memo: "Gift A",
+              tags: [{ id: "tag-1", name: "Tag 1" }],
+            },
+            {
+              id: "b",
+              categoryId: "c1",
+              amount: "-25.0000",
+              memo: "Gift B",
+              tags: [{ id: "tag-2", name: "Tag2" }],
+            },
+          ],
+        };
+
+        it.each([
+          [
+            ["Gift A", "Gift B"],
+            ["tag-1", "tag-2"],
+          ],
+          [
+            ["Gift B", "Gift A"],
+            ["tag-2", "tag-1"],
+          ],
+        ])(
+          "keeps each line's tags by its memo, resent as %j",
+          async (memos, tagIds) => {
+            transactions.findOne.mockResolvedValueOnce(gifts);
+            const result = await service.prepareUpdate(userId, {
+              transactionId: "t1",
+              splits: memos.map((memo) => ({
+                categoryName: "Gifts",
+                amount: -25,
+                memo,
+              })),
+            });
+            if (result.kind !== "standard")
+              throw new Error("expected standard");
+            expect(result.splits?.map((line) => line.tagIds)).toEqual(
+              tagIds.map((id) => [id]),
+            );
+          },
+        );
+
+        it("refuses rather than guesses when the memos changed", async () => {
+          transactions.findOne.mockResolvedValueOnce(gifts);
+          await expect(
+            service.prepareUpdate(userId, {
+              transactionId: "t1",
+              splits: [
+                { categoryName: "Gifts", amount: -25, memo: "Gift C" },
+                { categoryName: "Gifts", amount: -25, memo: "Gift D" },
+              ],
+            }),
+          ).rejects.toThrow(/splitId of the line it continues/);
+        });
+      });
+
       it("carries the tags onto a bulk row's lines too", async () => {
         transactions.findOne.mockResolvedValueOnce(splitTx);
         const result = await service.prepareUpdateBulk(userId, [

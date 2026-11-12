@@ -870,7 +870,8 @@
     "transferCounterpartChanged": "La otra parte de esta transferencia cambió mientras editaba. Recargue e inténtelo de nuevo.",
     "splitTransferTargetAmountRequiresTransfer": "Solo una transferencia dentro de una división puede llevar una cantidad recibida",
     "splitIdNotOnTransaction": "splitId {{ splitId }} no es una línea de división de esta transacción. Vuelve a leer las líneas de división de la transacción y usa sus valores de splitId.",
-    "splitIdRepeated": "splitId {{ splitId }} aparece en más de una línea. Cada línea existente solo se puede continuar una vez."
+    "splitIdRepeated": "splitId {{ splitId }} aparece en más de una línea. Cada línea existente solo se puede continuar una vez.",
+    "splitTagCarryAmbiguous": "Más de una línea de división existente coincide con una línea reenviada y tienen etiquetas distintas, así que no está claro qué línea conserva qué etiquetas. Indique en cada línea reenviada el splitId de la línea que continúa, tal como se leyeron las líneas de división de la transacción."
   },
   "users": {
     "userNotFound": "Usuario no encontrado",

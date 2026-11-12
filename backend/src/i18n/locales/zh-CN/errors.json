@@ -870,7 +870,8 @@
     "transferCounterpartChanged": "编辑期间此转账的另一方已更改。请重新加载后重试。",
     "splitTransferTargetAmountRequiresTransfer": "只有拆分中的转账才能带有收到金额",
     "splitIdNotOnTransaction": "splitId {{ splitId }} 不是此交易的拆分行。请重新读取该交易的拆分行并使用其 splitId 值。",
-    "splitIdRepeated": "splitId {{ splitId }} 被多行指定。每个现有行只能被延续一次。"
+    "splitIdRepeated": "splitId {{ splitId }} 被多行指定。每个现有行只能被延续一次。",
+    "splitTagCarryAmbiguous": "有多个现有拆分行与重新发送的某一行匹配，且它们的标签不同，因此无法确定哪一行保留哪些标签。请按读取到的交易拆分行，为每个重新发送的行提供其所延续行的 splitId。"
   },
   "users": {
     "userNotFound": "未找到用户",

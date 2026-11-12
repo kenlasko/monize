@@ -509,7 +509,9 @@ export class McpTransactionsTools {
                       .describe("Memo for this line."),
                     splitId: uuidString()
                       .optional()
-                      .describe("update: keeps this existing line's tags."),
+                      .describe(
+                        "update: keeps this existing line's tags. Needed when lines are alike but tagged differently.",
+                      ),
                   }),
                 )
                 .max(50)

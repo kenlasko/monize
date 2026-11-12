@@ -56,7 +56,8 @@ export interface SplitLineInput {
   /**
    * Update only: the existing line this one continues (a read tool's
    * `splitId`), whose tags it keeps. Without it a line keeps the tags of an
-   * existing line of the same category (`carrySplitTags`).
+   * existing line of the same category, and amount and memo where they tell
+   * lines apart; an ambiguous match is refused (`carrySplitTags`).
    */
   splitId?: string;
   /** `"ai"` marks a category the AI chose, on the confirmation card only. */
@@ -705,11 +706,13 @@ export class TransactionToolPrepService {
         id: line.id,
         categoryId: line.categoryId,
         amount: line.amount,
+        memo: line.memo,
         tags: line.tags,
       })),
       resolved.map((line, i) => ({
         categoryId: line.categoryId,
         amount: line.amount,
+        memo: line.memo,
         ...(inputs[i]?.splitId ? { splitId: inputs[i].splitId } : {}),
       })),
     );

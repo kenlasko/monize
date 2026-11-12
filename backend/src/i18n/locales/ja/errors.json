@@ -870,7 +870,8 @@
     "transferCounterpartChanged": "編集中にこの振替の相手側が変更されました。再読み込みしてもう一度お試しください。",
     "splitTransferTargetAmountRequiresTransfer": "受取金額を指定できるのは分割内の振替のみです",
     "splitIdNotOnTransaction": "splitId {{ splitId }} はこの取引の分割行ではありません。取引の分割行を読み直し、その splitId の値を使ってください。",
-    "splitIdRepeated": "splitId {{ splitId }} が複数の行で指定されています。既存の各行を引き継げるのは一度だけです。"
+    "splitIdRepeated": "splitId {{ splitId }} が複数の行で指定されています。既存の各行を引き継げるのは一度だけです。",
+    "splitTagCarryAmbiguous": "再送された行に一致する既存の分割行が複数あり、それぞれのタグが異なるため、どの行がどのタグを引き継ぐか判断できません。取引の分割行を読み取ったときの splitId を、再送する各行に、その行が引き継ぐ行のものとして指定してください。"
   },
   "users": {
     "userNotFound": "ユーザーが見つかりません",

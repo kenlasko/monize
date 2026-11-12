@@ -870,7 +870,8 @@
     "transferCounterpartChanged": "L'altro lato di questo trasferimento è cambiato durante la modifica. Ricarica e riprova.",
     "splitTransferTargetAmountRequiresTransfer": "Solo un trasferimento in una suddivisione può avere un importo ricevuto",
     "splitIdNotOnTransaction": "splitId {{ splitId }} non è una riga di suddivisione di questa transazione. Rileggi le righe di suddivisione della transazione e usa i loro valori splitId.",
-    "splitIdRepeated": "splitId {{ splitId }} è indicato da più di una riga. Ogni riga esistente può essere ripresa una sola volta."
+    "splitIdRepeated": "splitId {{ splitId }} è indicato da più di una riga. Ogni riga esistente può essere ripresa una sola volta.",
+    "splitTagCarryAmbiguous": "Più di una riga di suddivisione esistente corrisponde a una riga reinviata e hanno tag diversi, quindi non è chiaro quale riga mantenga quali tag. Indica per ogni riga reinviata lo splitId della riga che prosegue, come sono state lette le righe di suddivisione della transazione."
   },
   "users": {
     "userNotFound": "Utente non trovato",

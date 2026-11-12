@@ -36,14 +36,125 @@ describe("carrySplitTags", () => {
 
   it("keeps a line's tags through an amount change in the same category", () => {
     expect(
-      carrySplitTags(existing, [
-        { categoryId: "home", amount: -25 },
-        { categoryId: "food", amount: -25 },
-      ]),
+      carrySplitTags(
+        existing.filter((line) => line.id !== "s3"),
+        [
+          { categoryId: "home", amount: -25 },
+          { categoryId: "food", amount: -25 },
+        ],
+      ),
     ).toEqual([
       { tagIds: ["t2", "t3"], tagNames: ["Tag t2", "Tag t3"] },
       { tagIds: ["t1"], tagNames: ["Tag t1"] },
     ]);
+  });
+
+  it("refuses to guess which same-category line a changed line continues", () => {
+    // food -30 carries t1 and food -10 carries none: either could be the -25.
+    expect(() =>
+      carrySplitTags(existing, [
+        { categoryId: "home", amount: -20 },
+        { categoryId: "food", amount: -25 },
+        { categoryId: "food", amount: -15 },
+      ]),
+    ).toThrow(BadRequestException);
+  });
+
+  describe("lines of the same category and amount", () => {
+    const gifts: ExistingSplitLine[] = [
+      {
+        id: "a",
+        categoryId: "gifts",
+        amount: -25,
+        memo: "Gift A",
+        tags: [tag("t1")],
+      },
+      {
+        id: "b",
+        categoryId: "gifts",
+        amount: -25,
+        memo: "Gift B",
+        tags: [tag("t2")],
+      },
+    ];
+
+    it("tells them apart by memo, in either order", () => {
+      expect(
+        carrySplitTags(gifts, [
+          { categoryId: "gifts", amount: -25, memo: "Gift A" },
+          { categoryId: "gifts", amount: -25, memo: "Gift B" },
+        ]),
+      ).toEqual([
+        { tagIds: ["t1"], tagNames: ["Tag t1"] },
+        { tagIds: ["t2"], tagNames: ["Tag t2"] },
+      ]);
+      expect(
+        carrySplitTags(gifts, [
+          { categoryId: "gifts", amount: -25, memo: "Gift B" },
+          { categoryId: "gifts", amount: -25, memo: "Gift A" },
+        ]),
+      ).toEqual([
+        { tagIds: ["t2"], tagNames: ["Tag t2"] },
+        { tagIds: ["t1"], tagNames: ["Tag t1"] },
+      ]);
+    });
+
+    it("refuses when nothing tells them apart and their tags differ", () => {
+      expect(() =>
+        carrySplitTags(gifts, [
+          { categoryId: "gifts", amount: -25, memo: "Gift C" },
+          { categoryId: "gifts", amount: -25, memo: "Gift D" },
+        ]),
+      ).toThrow(BadRequestException);
+    });
+
+    it("keeps every set of tags on lines resent identical to each other", () => {
+      // Either pairing leaves the same two lines, so there is nothing to guess.
+      expect(
+        carrySplitTags(gifts, [
+          { categoryId: "gifts", amount: -25 },
+          { categoryId: "gifts", amount: -25 },
+        ]),
+      ).toEqual([
+        { tagIds: ["t1"], tagNames: ["Tag t1"] },
+        { tagIds: ["t2"], tagNames: ["Tag t2"] },
+      ]);
+    });
+
+    it("follows named splitIds where nothing else tells them apart", () => {
+      expect(
+        carrySplitTags(gifts, [
+          { categoryId: "gifts", amount: -25, splitId: "b" },
+          { categoryId: "gifts", amount: -25, splitId: "a" },
+        ]),
+      ).toEqual([
+        { tagIds: ["t2"], tagNames: ["Tag t2"] },
+        { tagIds: ["t1"], tagNames: ["Tag t1"] },
+      ]);
+    });
+
+    it("pairs them in order when they carry the same tags", () => {
+      const same = gifts.map((line) => ({ ...line, tags: [tag("t1")] }));
+      expect(
+        carrySplitTags(same, [
+          { categoryId: "gifts", amount: -25, memo: "Gift C" },
+          { categoryId: "gifts", amount: -25, memo: "Gift D" },
+        ]),
+      ).toEqual([
+        { tagIds: ["t1"], tagNames: ["Tag t1"] },
+        { tagIds: ["t1"], tagNames: ["Tag t1"] },
+      ]);
+    });
+
+    it("never refuses lines that carry no tags", () => {
+      const untagged = gifts.map((line) => ({ ...line, tags: [] }));
+      expect(
+        carrySplitTags(untagged, [
+          { categoryId: "gifts", amount: -20 },
+          { categoryId: "gifts", amount: -30 },
+        ]),
+      ).toEqual([null, null]);
+    });
   });
 
   it("follows a named splitId across a category change", () => {
