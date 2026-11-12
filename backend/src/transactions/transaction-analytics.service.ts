@@ -45,11 +45,14 @@ import { FxAggregate } from "../common/fx-aggregate";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import {
   buildRateIndex,
-  convertAtDate,
   RateIndex,
 } from "../common/time-series/rate-index.util";
 import { isNetSpending } from "../built-in-reports/spending-reports.service";
-import { convertDatedRows } from "../built-in-reports/report-currency.service";
+import {
+  convertDatedRows,
+  convertRateBasis,
+  transactionRateBasis,
+} from "../built-in-reports/report-currency.service";
 
 /**
  * The ordinary-cash amount of one transaction, for the recurring-charge
@@ -1301,6 +1304,7 @@ export class TransactionAnalyticsService {
         .addGroupBy("transaction.currencyCode")
         .addGroupBy(DAY_TX_SQL)
         .orderBy("month", "ASC");
+      byOwnRate(queryBuilder, "transaction");
 
       const rows = await queryBuilder.getRawMany();
       if (rows.length === 0) return [];
@@ -1691,10 +1695,12 @@ export class TransactionAnalyticsService {
   /**
    * Income and expense totals over the same rows (the same filtered query, so
    * the same filters) as {@link getSummary}, each row converted into the user's
-   * default currency at the rate for its own transaction date.
+   * default currency at the rate it settled at where that reaches the default
+   * currency (INV-FX-002), else at the market rate for its own transaction date.
    *
-   * Grouped by currency and day so a foreign row is priced on its date and the
-   * rates load once for the window (`buildRateIndex`), inside this transaction.
+   * Grouped by currency, day and own rate ({@link byOwnRate}) so a foreign row is
+   * priced as the reports price it and the market rates load once for the window
+   * (`buildRateIndex`), inside this transaction.
    * Same currency and zero need no rate; a row whose pair has no admissible rate
    * is recorded in the aggregate, never folded in at 1:1.
    */
@@ -1739,6 +1745,7 @@ export class TransactionAnalyticsService {
         )
         .groupBy("transaction.currencyCode")
         .addGroupBy(dayExpr);
+      byOwnRate(qb, "transaction");
 
       const rows = await qb.getRawMany();
       const rates = await this.loadRateIndex(
@@ -1958,11 +1965,14 @@ export class TransactionAnalyticsService {
       // Every group is also split by currency and day, so each part can be
       // converted at its own date before it is added to its group.
       const byCurrencyAndDay = () =>
-        qb
-          .addSelect("t.currencyCode", "currencyCode")
-          .addSelect(DAY_SQL, "txDate")
-          .addGroupBy("t.currencyCode")
-          .addGroupBy(DAY_SQL);
+        byOwnRate(
+          qb
+            .addSelect("t.currencyCode", "currencyCode")
+            .addSelect(DAY_SQL, "txDate")
+            .addGroupBy("t.currencyCode")
+            .addGroupBy(DAY_SQL),
+          "t",
+        );
       const fx = new FxAggregate();
       const finish = (groups: FoldedGroup[]) => {
         for (const g of groups) fx.merge(g.agg);
@@ -2306,6 +2316,7 @@ export class TransactionAnalyticsService {
         .addSelect(DAY_SQL, "txDate")
         .addGroupBy("t.currencyCode")
         .addGroupBy(DAY_SQL);
+      byOwnRate(qb, "t");
 
       const rows = await qb.getRawMany();
       const rates = await this.loadRateIndex(
@@ -2589,7 +2600,8 @@ interface ComparisonPeriodData {
 /**
  * Add one dated amount of `row.currencyCode` to `agg` in the reporting
  * currency. Zero needs no rate and the same currency needs none; anything else
- * is converted at the rate for its date or recorded as a gap.
+ * is converted at its own settled rate or the rate for its date, or recorded
+ * as a gap. A query feeding it adds {@link byOwnRate}.
  */
 function addDatedAmount(
   agg: FxAggregate,
@@ -2604,18 +2616,39 @@ function addDatedAmount(
     agg.addConverted(amount);
     return;
   }
+  // The row's own settled rate where it reaches the reporting currency
+  // (INV-FX-002), else the market rate on its date: the reports' rule.
+  const basis = transactionRateBasis(
+    {
+      currencyCode: row.currencyCode,
+      transactionDate: row.txDate,
+      originalCurrencyCode: row.originalCurrencyCode,
+      exchangeRate: row.exchangeRate,
+    },
+    reporting,
+  );
   agg.add(
-    convertAtDate(
-      amount,
-      row.currencyCode,
-      reporting,
-      row.txDate,
-      rates,
-      logger,
-    ),
+    convertRateBasis(amount, basis, reporting, rates, logger),
     row.currencyCode,
     reporting,
   );
+}
+
+/**
+ * Select and group by the columns a part needs to convert at the rate it
+ * settled at (`originalCurrencyCode`, `exchangeRate`), so {@link addDatedAmount}
+ * reads each part's own rate the way the reports do (INV-FX-002); `alias` is the
+ * query's transaction alias.
+ */
+function byOwnRate(
+  qb: SelectQueryBuilder<Transaction>,
+  alias: string,
+): SelectQueryBuilder<Transaction> {
+  return qb
+    .addSelect(`${alias}.originalCurrencyCode`, "originalCurrencyCode")
+    .addSelect(`${alias}.exchangeRate`, "exchangeRate")
+    .addGroupBy(`${alias}.originalCurrencyCode`)
+    .addGroupBy(`${alias}.exchangeRate`);
 }
 
 /**

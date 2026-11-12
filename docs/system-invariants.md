@@ -1612,7 +1612,14 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     built-in-reports/report-currency.service.ts), and anything
                     else takes the market rate on its own date (issue #2106).
                     Like the Sankey, these reports do not yet say which of the
-                    two rates answered.
+                    two rates answered. The assistant's and the MCP tools'
+                    transaction analytics (TransactionAnalyticsService: the
+                    list/query totals, grouped breakdowns, period comparisons
+                    and monthly totals) group each part by its own rate
+                    (byOwnRate) and convert it through the same
+                    transactionRateBasis / convertRateBasis rule, so the
+                    assistant's total for a sale agrees with Spending by
+                    Category's (issue #2130).
 Test                investment-transaction-summary.service.spec.ts: a sale of
                     820.91 USD settled at 3.7287 reads 3,060.9271 PLN and asks
                     for no market rate; a row without a rate is converted at the
@@ -1625,6 +1632,10 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     converts 1,350 CAD to 1,000 USD and loads no rate history;
                     spending-reports.service.spec.ts and reports.service.spec.ts
                     the same through a report.
+                    transaction-analytics.service.spec.ts "a row carrying its own
+                    rate": EUR 100 charged as USD 125 reads EUR 100 in the
+                    assistant's totals and breakdown, the report rule's figure,
+                    not the market's EUR 106.38.
 Status              enforced
 ```
 

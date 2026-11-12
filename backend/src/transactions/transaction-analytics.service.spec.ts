@@ -13,6 +13,10 @@ import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import { Currency } from "../currencies/entities/currency.entity";
 import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 import { Account } from "../accounts/entities/account.entity";
+import {
+  convertRateBasis,
+  transactionRateBasis,
+} from "../built-in-reports/report-currency.service";
 
 /**
  * The condition and parameters the search helper adds for `raw`, at the
@@ -3251,6 +3255,102 @@ describe("TransactionAnalyticsService", () => {
           count: 6,
         },
       ]);
+    });
+
+    describe("a row carrying its own rate (INV-FX-002)", () => {
+      // EUR 100 charged to a USD card as USD 125 (1 EUR = 1.25 USD) on a day
+      // the market said 1.175: the row's own rate converts it, as Spending by
+      // Category does, not the market's EUR 106.383 (discussion #2105).
+      const ownRateRow = {
+        currencyCode: "USD",
+        txDate: "2025-12-31",
+        originalCurrencyCode: "EUR",
+        exchangeRate: "1.25000000",
+      };
+      const reportRule = () =>
+        convertRateBasis(
+          125,
+          transactionRateBasis(
+            {
+              currencyCode: "USD",
+              transactionDate: "2025-12-31",
+              originalCurrencyCode: "EUR",
+              exchangeRate: "1.25000000",
+            },
+            "EUR",
+          ),
+          "EUR",
+          new Map(),
+        );
+
+      beforeEach(() => {
+        userPreferenceRepository.findOne.mockResolvedValue({
+          defaultCurrency: "EUR",
+        });
+        managerMock.query.mockResolvedValue([
+          storedRate("EUR", "USD", 1.175, "2025-12-31"),
+        ]);
+      });
+
+      it("converts the totals at the row's own rate, the reports' figure", async () => {
+        mockQueryBuilder.getRawMany.mockResolvedValue([
+          { ...ownRateRow, totalIncome: "0", totalExpenses: "125" },
+        ]);
+
+        const result = await service.getLlmListTransactions(userId, {
+          startDate: "2025-12-01",
+          endDate: "2025-12-31",
+        });
+
+        expect(result.fxComplete).toBe(true);
+        expect(result.totalExpenses).toBe(100);
+        expect(result.totalExpenses).toBe(reportRule());
+        // Each part is grouped by the rate it settled at.
+        expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith(
+          "transaction.exchangeRate",
+        );
+        expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith(
+          "transaction.originalCurrencyCode",
+        );
+      });
+
+      it("converts a breakdown row at its own rate", async () => {
+        mockQueryBuilder.getRawMany.mockResolvedValue([
+          { ...ownRateRow, categoryId: "cat-travel", total: "125", count: "1" },
+        ]);
+
+        const result = await service.getLlmQueryTransactions(userId, {
+          startDate: "2025-12-01",
+          endDate: "2025-12-31",
+          groupBy: "category",
+          direction: "expenses",
+        });
+
+        expect(result.breakdown).toEqual([
+          expect.objectContaining({ categoryId: "cat-travel", total: 100 }),
+        ]);
+        expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith(
+          "t.exchangeRate",
+        );
+      });
+
+      it("falls back to the market rate for a stored 1 across two currencies", async () => {
+        mockQueryBuilder.getRawMany.mockResolvedValue([
+          {
+            ...ownRateRow,
+            exchangeRate: "1.00000000",
+            totalIncome: "0",
+            totalExpenses: "117.5",
+          },
+        ]);
+
+        const result = await service.getLlmListTransactions(userId, {
+          startDate: "2025-12-01",
+          endDate: "2025-12-31",
+        });
+
+        expect(result.totalExpenses).toBe(100);
+      });
     });
 
     it("needs no rate for a zero amount", async () => {
