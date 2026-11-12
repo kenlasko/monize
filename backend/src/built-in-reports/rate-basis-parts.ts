@@ -90,11 +90,26 @@ export function partRateBasis(
 }
 
 /**
+ * Order two group keys by Unicode code point, the byte order of their UTF-8
+ * that `COLLATE "C"` sorts by. A plain `<` compares UTF-16 code units, which
+ * puts a character beyond U+FFFF before one from U+E000 to U+FFFF.
+ */
+export function compareGroupKeys(a: string, b: string): number {
+  const left = [...a];
+  const right = [...b];
+  for (let i = 0; i < Math.min(left.length, right.length); i++) {
+    const diff = left[i].codePointAt(0)! - right[i].codePointAt(0)!;
+    if (diff !== 0) return diff;
+  }
+  return left.length - right.length;
+}
+
+/**
  * The parts of a read split by {@link splitByRateBasis}, only those of its
  * `limit` largest groups: `groupKeySql` names a part's group (selected as
  * `group_key`) and a group ranks by the sum of its parts' `magnitude` column,
- * largest first and then by key (byte order, `COLLATE "C"`, the order a
- * JavaScript sort of the keys gives), as the unsplit read's `ORDER BY ...
+ * largest first and then by key (byte order, `COLLATE "C"`, which
+ * {@link compareGroupKeys} reproduces), as the unsplit read's `ORDER BY ...
  * LIMIT` ranked them. The bound stays in PostgreSQL, so a person with
  * thousands of groups is not read whole to show a hundred.
  */

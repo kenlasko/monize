@@ -1,5 +1,6 @@
 import { SelectQueryBuilder } from "typeorm";
 import {
+  compareGroupKeys,
   convertRateParts,
   foldRateParts,
   partRateBasis,
@@ -128,6 +129,20 @@ describe("rate-basis-parts", () => {
       );
       expect(sql).toContain("LIMIT $2");
       expect(params).toEqual(["user-1", 100]);
+    });
+  });
+
+  describe("compareGroupKeys", () => {
+    it('orders by code point, as COLLATE "C" does', () => {
+      // U+1F600 is past U+FFFD in code points, though its UTF-16 lead
+      // surrogate (U+D83D) sorts before it.
+      const emoji = "\u{1F600}";
+      const replacement = "\uFFFD";
+      expect(emoji < replacement).toBe(true);
+      expect(compareGroupKeys(emoji, replacement)).toBeGreaterThan(0);
+      expect(compareGroupKeys("Banana", "apple")).toBeLessThan(0);
+      expect(compareGroupKeys("a", "ab")).toBeLessThan(0);
+      expect(compareGroupKeys("same", "same")).toBe(0);
     });
   });
 

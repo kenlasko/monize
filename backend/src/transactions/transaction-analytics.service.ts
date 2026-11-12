@@ -54,6 +54,7 @@ import {
   toOwnRate,
 } from "../built-in-reports/report-currency.service";
 import {
+  compareGroupKeys,
   convertRateParts,
   foldRateParts,
   partRateBasis,
@@ -1094,8 +1095,7 @@ export class TransactionAnalyticsService {
     const sums = magnitude === "total" ? ["total"] : ["total", magnitude];
     const groups = foldRateParts(parts, keyOf, { sums, count: "count" }).sort(
       (a, b) =>
-        b.sums[magnitude] - a.sums[magnitude] ||
-        (a.key < b.key ? -1 : a.key > b.key ? 1 : 0),
+        b.sums[magnitude] - a.sums[magnitude] || compareGroupKeys(a.key, b.key),
     );
     if (groups.length === 0) return [];
     const foreign = await convertRateParts(
