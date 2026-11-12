@@ -1706,6 +1706,31 @@ export class PortfolioCalculationService {
       return resolved.rate;
     };
 
+    // Every reporting-currency boundary and transfer asks for its own date's
+    // rate into one currency, so that history is loaded once for the window
+    // (the reporting replay's rule) rather than looked up a day at a time.
+    const securityCurrencies = new Set(
+      [...groups.values()]
+        .map((group) => group.securityCurrencyCode)
+        .filter((code): code is string => !!code && code !== reporting),
+    );
+    const reportingIndex =
+      securityCurrencies.size === 0
+        ? null
+        : await this.exchangeRateService.getRateIndex(
+            securityCurrencies,
+            reporting,
+            periods[0].priceLookupStart,
+            periods[periods.length - 1].periodEnd,
+          );
+    const fxRateRep = async (
+      from: string | null,
+      onDate: string,
+    ): Promise<number | null> =>
+      reportingIndex === null || !from || from === reporting
+        ? fxRate(from, reporting, onDate)
+        : resolveIndexedRate(reportingIndex, from, reporting, onDate).rate;
+
     // A boundary's market value in the account's currency. A zero position is
     // worth zero on any date and needs no rate; a held position with no accepted
     // price on or before the boundary is UNKNOWN (`null`), never zero; otherwise
@@ -1716,15 +1741,15 @@ export class PortfolioCalculationService {
       rawPrice: number | null,
       onDate: string,
       securityCurrencyCode: string | null,
+      /** The account's currency (`reporting` for the reporting fold). */
       accountCurrencyCode: string | null,
+      inReportingFold = false,
     ): Promise<number | null> => {
       if (Math.abs(quantity) < COST_BASIS_QUANTITY_TOLERANCE) return 0;
       if (rawPrice === null) return null;
-      const fx = await fxRate(
-        securityCurrencyCode,
-        accountCurrencyCode,
-        onDate,
-      );
+      const fx = inReportingFold
+        ? await fxRateRep(securityCurrencyCode, onDate)
+        : await fxRate(securityCurrencyCode, accountCurrencyCode, onDate);
       return fx === null ? null : quantity * rawPrice * fx;
     };
 
@@ -1732,6 +1757,8 @@ export class PortfolioCalculationService {
 
     for (const group of groups.values()) {
       const txs = group.txs;
+      // The pairs this position lacks on its own dates, read once when needed.
+      let missingPairsOfPosition: string[] | undefined;
       let quantity = 0;
       let txIdx = 0;
 
@@ -1770,6 +1797,7 @@ export class PortfolioCalculationService {
           priceLookupStart,
           group.securityCurrencyCode,
           reporting,
+          true,
         );
 
         // The period's flows in the account's currency, and the same flows in
@@ -1784,11 +1812,12 @@ export class PortfolioCalculationService {
         // A figure the reporting replay could not state: the pairs this
         // position lacks on its own dates, as Realized Gains names them.
         const lacksReplayRate = () => {
-          const pairs = positionMissingPairs(
+          missingPairsOfPosition ??= positionMissingPairs(
             `${group.accountId}:${group.securityId}`,
             fetched,
             inReporting.unresolved,
           );
+          const pairs = missingPairsOfPosition;
           if (pairs.length === 0) {
             missingRep.add(`${group.accountCurrencyCode ?? "?"}->${reporting}`);
           }
@@ -1842,11 +1871,17 @@ export class PortfolioCalculationService {
                 [flows, group.accountCurrencyCode],
                 [flowsRep, reporting],
               ] as const) {
-                const fx = await fxRate(
-                  group.securityCurrencyCode,
-                  target,
-                  tx.transactionDate,
-                );
+                const fx =
+                  into === flowsRep
+                    ? await fxRateRep(
+                        group.securityCurrencyCode,
+                        tx.transactionDate,
+                      )
+                    : await fxRate(
+                        group.securityCurrencyCode,
+                        target,
+                        tx.transactionDate,
+                      );
                 if (price === null || fx === null) {
                   into.flowsComplete = false;
                   if (price !== null && into === flowsRep) {
@@ -1937,6 +1972,7 @@ export class PortfolioCalculationService {
           periodEnd,
           group.securityCurrencyCode,
           reporting,
+          true,
         );
         for (const [value, price] of [
           [startValueRep, startPrice],
@@ -2006,30 +2042,16 @@ export class PortfolioCalculationService {
             : round(flows.knownRealized),
           unrealizedGain: roundOrNull(account.unrealized),
           totalCapitalGain: roundOrNull(account.total),
-          // An account kept in the reporting currency states its own figures;
-          // any other, the fold's in the reporting currency.
-          inReportingCurrency:
-            group.accountCurrencyCode === reporting
-              ? {
-                  currency: reporting,
-                  startValue: roundOrNull(startValue),
-                  endValue: roundOrNull(endValue),
-                  realizedGain: roundOrNull(account.realized),
-                  realizedGainKnownSubtotal: round(flows.knownRealized),
-                  unrealizedGain: roundOrNull(account.unrealized),
-                  totalCapitalGain: roundOrNull(account.total),
-                  missingRatePairs: [],
-                }
-              : {
-                  currency: reporting,
-                  startValue: roundOrNull(startValueRep),
-                  endValue: roundOrNull(endValueRep),
-                  realizedGain: roundOrNull(inRep.realized),
-                  realizedGainKnownSubtotal: round(flowsRep.knownRealized),
-                  unrealizedGain: roundOrNull(inRep.unrealized),
-                  totalCapitalGain: roundOrNull(inRep.total),
-                  missingRatePairs: [...missingRep].sort(),
-                },
+          inReportingCurrency: {
+            currency: reporting,
+            startValue: roundOrNull(startValueRep),
+            endValue: roundOrNull(endValueRep),
+            realizedGain: roundOrNull(inRep.realized),
+            realizedGainKnownSubtotal: round(flowsRep.knownRealized),
+            unrealizedGain: roundOrNull(inRep.unrealized),
+            totalCapitalGain: roundOrNull(inRep.total),
+            missingRatePairs: [...missingRep].sort(),
+          },
         });
       }
     }
@@ -2239,8 +2261,16 @@ export class PortfolioCalculationService {
         (h) => [`${h.accountId}:${h.securityId}`, Number(h.quantity)] as const,
       ),
     );
-    // One read of the history for both replays below.
-    const history = await this.holdingsHistory(userId, holdingsAccountIds);
+    // One read of the history for both replays below; the security and
+    // account it carries only matter to the reporting-currency one.
+    const anyForeignAccount = [...currencyByAccount.values()].some(
+      (code) => code !== defaultCurrency,
+    );
+    const history = await this.holdingsHistory(
+      userId,
+      holdingsAccountIds,
+      anyForeignAccount,
+    );
     const historicalCostBasis = await this.knownCostBasesIn(
       userId,
       holdingsAccountIds,
@@ -2250,9 +2280,7 @@ export class PortfolioCalculationService {
     );
     // The same histories in the reporting currency, at each purchase's date,
     // for the accounts kept in another currency.
-    const historicalCostBasisDefault = [...currencyByAccount.values()].some(
-      (code) => code !== defaultCurrency,
-    )
+    const historicalCostBasisDefault = anyForeignAccount
       ? await this.historicalCostBasesInReporting(
           userId,
           history,

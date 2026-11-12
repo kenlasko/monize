@@ -453,6 +453,17 @@ describe("latest exchange rates and the readers that take them (integration)", (
       ["EUR", -50, -50],
       ["USD", -125, -100],
     ]);
+    // The bound stays in the read: the largest group only, its parts whole.
+    const top = await withUserContext(userId, () =>
+      analytics.getGroupedTotals(userId, {
+        groupBy: "category",
+        ...window,
+        limit: 1,
+      }),
+    );
+    expect(top.map((r) => [r.currencyCode, r.total, r.convertedTotal])).toEqual(
+      [["USD", -125, -100]],
+    );
     // The detail page's account panel, from its one read.
     expect(
       detail.accounts

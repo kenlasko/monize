@@ -85,6 +85,7 @@ describe("TransactionAnalyticsService", () => {
       setParameters: jest.fn().mockReturnValue(mockQueryBuilder),
       distinct: jest.fn().mockReturnValue(mockQueryBuilder),
       getRawMany: jest.fn().mockResolvedValue([]),
+      getQueryAndParameters: jest.fn().mockReturnValue(["SELECT grouped", []]),
     });
 
     transactionsRepository = {
@@ -3363,14 +3364,14 @@ describe("TransactionAnalyticsService", () => {
         expect(result.totalExpenses).toBe(reportRule());
         // Each foreign part is grouped by the rate it settled at.
         expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
-          "CASE WHEN transaction.currencyCode <> :fxOwnRateCurrency THEN transaction.exchangeRate END",
+          "CASE WHEN transaction.currencyCode <> :fxReportingCurrency THEN transaction.exchangeRate END",
           "fx_exchange_rate",
         );
         expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith(
           "fx_exchange_rate",
         );
         expect(mockQueryBuilder.setParameter).toHaveBeenCalledWith(
-          "fxOwnRateCurrency",
+          "fxReportingCurrency",
           "EUR",
         );
         // Its own rate reaches EUR, so no market history is read.
@@ -3393,7 +3394,7 @@ describe("TransactionAnalyticsService", () => {
           expect.objectContaining({ categoryId: "cat-travel", total: 100 }),
         ]);
         expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
-          "CASE WHEN t.currencyCode <> :fxOwnRateCurrency THEN t.originalCurrencyCode END",
+          "CASE WHEN t.currencyCode <> :fxReportingCurrency THEN t.originalCurrencyCode END",
           "fx_original_currency",
         );
       });
@@ -3646,6 +3647,53 @@ describe("TransactionAnalyticsService", () => {
   });
 
   describe("getGroupedTotals", () => {
+    /**
+     * `readTopGroupParts` runs the grouped read as SQL of its own on the
+     * manager. Serve it from the query builder's mocked rows, each keyed as the
+     * read keys its group and bounded to the largest `limit` groups as the SQL
+     * bounds them; every other `query` is the rate history in `rates`.
+     */
+    let rates: unknown[] = [];
+    const givenRates = (rows: unknown[]) => {
+      rates = rows;
+    };
+    const routeGroupedRead = () => {
+      rates = [];
+      managerMock.query.mockImplementation(
+        async (sql: string, params: unknown[] = []) => {
+          if (!sql.includes("WITH parts")) return rates;
+          const magnitude = /SUM\(parts\."(\w+)"\)/.exec(sql)?.[1] ?? "total";
+          const limit = params[params.length - 1] as number;
+          const rows = (
+            (await mockQueryBuilder.getRawMany()) as Record<string, any>[]
+          ).map((row) => ({
+            ...row,
+            group_key:
+              "value" in row
+                ? `${row.value}|${row.currencyCode}`
+                : `${row.id ?? ""}#${row.name ?? ""}|${row.currencyCode}`,
+          }));
+          const sizes = new Map<string, number>();
+          for (const row of rows) {
+            sizes.set(
+              row.group_key,
+              (sizes.get(row.group_key) ?? 0) +
+                Math.abs(Number(row[magnitude])),
+            );
+          }
+          const kept = new Set(
+            [...sizes.entries()]
+              .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
+              .slice(0, limit)
+              .map(([key]) => key),
+          );
+          return rows.filter((row) => kept.has(row.group_key));
+        },
+      );
+    };
+
+    beforeEach(routeGroupedRead);
+
     it("widens the ownership predicate by the authorized joint ids", async () => {
       await service.getGroupedTotals(userId, {
         groupBy: "payee",
@@ -3668,6 +3716,7 @@ describe("TransactionAnalyticsService", () => {
           name: "Groceries",
           currencyCode: "CAD",
           total: "-450.7512",
+          magnitude: "450.7512",
           count: "12",
         },
         {
@@ -3675,6 +3724,7 @@ describe("TransactionAnalyticsService", () => {
           name: null,
           currencyCode: "CAD",
           total: "-25.25",
+          magnitude: "25.25",
           count: "2",
         },
       ]);
@@ -3744,9 +3794,7 @@ describe("TransactionAnalyticsService", () => {
         part("Cafe A", "-10"),
         part("Shop B", "-90"),
       ]);
-      managerMock.query.mockResolvedValue([
-        storedRate("USD", "CAD", 1.25, "2026-01-10"),
-      ]);
+      givenRates([storedRate("USD", "CAD", 1.25, "2026-01-10")]);
 
       const result = await service.getGroupedTotals(userId, {
         groupBy: "payee",
@@ -3789,7 +3837,7 @@ describe("TransactionAnalyticsService", () => {
         part("cat-1", "2026-06-12", "-100"),
         part(null, "2026-01-12", "-10"),
       ]);
-      managerMock.query.mockResolvedValue([
+      givenRates([
         storedRate("USD", "CAD", 1.25, "2026-01-10"),
         storedRate("USD", "CAD", 1.4, "2026-06-10"),
       ]);
@@ -3856,9 +3904,7 @@ describe("TransactionAnalyticsService", () => {
           count: "1",
         },
       ]);
-      managerMock.query.mockResolvedValue([
-        storedRate("USD", "CAD", 1.25, "2026-01-10"),
-      ]);
+      givenRates([storedRate("USD", "CAD", 1.25, "2026-01-10")]);
 
       const result = await service.getGroupedTotals(userId, {
         groupBy: "category",
@@ -4009,6 +4055,53 @@ describe("TransactionAnalyticsService", () => {
   });
 
   describe("getTransactionBreakdownByTagKey", () => {
+    /**
+     * `readTopGroupParts` runs the grouped read as SQL of its own on the
+     * manager. Serve it from the query builder's mocked rows, each keyed as the
+     * read keys its group and bounded to the largest `limit` groups as the SQL
+     * bounds them; every other `query` is the rate history in `rates`.
+     */
+    let rates: unknown[] = [];
+    const givenRates = (rows: unknown[]) => {
+      rates = rows;
+    };
+    const routeGroupedRead = () => {
+      rates = [];
+      managerMock.query.mockImplementation(
+        async (sql: string, params: unknown[] = []) => {
+          if (!sql.includes("WITH parts")) return rates;
+          const magnitude = /SUM\(parts\."(\w+)"\)/.exec(sql)?.[1] ?? "total";
+          const limit = params[params.length - 1] as number;
+          const rows = (
+            (await mockQueryBuilder.getRawMany()) as Record<string, any>[]
+          ).map((row) => ({
+            ...row,
+            group_key:
+              "value" in row
+                ? `${row.value}|${row.currencyCode}`
+                : `${row.id ?? ""}#${row.name ?? ""}|${row.currencyCode}`,
+          }));
+          const sizes = new Map<string, number>();
+          for (const row of rows) {
+            sizes.set(
+              row.group_key,
+              (sizes.get(row.group_key) ?? 0) +
+                Math.abs(Number(row[magnitude])),
+            );
+          }
+          const kept = new Set(
+            [...sizes.entries()]
+              .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
+              .slice(0, limit)
+              .map(([key]) => key),
+          );
+          return rows.filter((row) => kept.has(row.group_key));
+        },
+      );
+    };
+
+    beforeEach(routeGroupedRead);
+
     it("maps per-currency rows keyed by the parsed tag value", async () => {
       userPreferenceRepository.findOne.mockResolvedValue({
         defaultCurrency: "CAD",
@@ -4084,7 +4177,7 @@ describe("TransactionAnalyticsService", () => {
         part("2026-01-12", "100"),
         part("2026-06-12", "100"),
       ]);
-      managerMock.query.mockResolvedValue([
+      givenRates([
         storedRate("USD", "CAD", 1.25, "2026-01-10"),
         storedRate("USD", "CAD", 1.4, "2026-06-10"),
       ]);

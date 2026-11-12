@@ -1,10 +1,14 @@
-import { ObjectLiteral, SelectQueryBuilder } from "typeorm";
+import { EntityManager, ObjectLiteral, SelectQueryBuilder } from "typeorm";
 import { MONEY_SCALE, sumMoney } from "../common/round.util";
 import {
   RateIndexLogger,
   RateIndexQuery,
 } from "../common/time-series/rate-index.util";
-import { convertDatedRows } from "./report-currency.service";
+import {
+  convertDatedRows,
+  RawRateBasis,
+  transactionRateBasis,
+} from "./report-currency.service";
 
 /** A raw row of a read split by {@link splitByRateBasis}. */
 export type RatePartRow = Record<string, any>;
@@ -32,30 +36,87 @@ export interface RateBasisColumns {
  * the market rate on its date, INV-FX-001). A reporting-currency row needs no
  * rate and stays one part, so a single-currency read keeps its row count.
  * Before issue #2130 each such conversion re-ran the whole filtered read.
+ *
+ * `byDay: false` adds only the own-rate columns, for a read that already
+ * splits every row by its day.
  */
 export function splitByRateBasis<T extends ObjectLiteral>(
   qb: SelectQueryBuilder<T>,
-  columns: RateBasisColumns,
+  columns: Omit<RateBasisColumns, "date"> & { date?: string },
   reporting: string,
+  { byDay = true }: { byDay?: boolean } = {},
 ): void {
   const foreign = `${columns.currency} <> :fxReportingCurrency`;
-  qb.setParameter("fxReportingCurrency", reporting)
-    .addSelect(
+  qb.setParameter("fxReportingCurrency", reporting);
+  if (byDay && columns.date) {
+    qb.addSelect(
       `CASE WHEN ${foreign} THEN TO_CHAR(${columns.date}, 'YYYY-MM-DD') END`,
       "fx_day",
-    )
-    .addSelect(
-      `CASE WHEN ${foreign} THEN ${columns.originalCurrency} END`,
-      "fx_original_currency",
-    )
+    ).addGroupBy("fx_day");
+  }
+  qb.addSelect(
+    `CASE WHEN ${foreign} THEN ${columns.originalCurrency} END`,
+    "fx_original_currency",
+  )
     .addSelect(
       `CASE WHEN ${foreign} THEN ${columns.exchangeRate} END`,
       "fx_exchange_rate",
     )
     // The output columns' names: lower case, so the unquoted names match.
-    .addGroupBy("fx_day")
     .addGroupBy("fx_original_currency")
     .addGroupBy("fx_exchange_rate");
+}
+
+/**
+ * A part's {@link RawRateBasis} from the columns {@link splitByRateBasis}
+ * selected: its currency, its day and the rate it settled at, under the rule
+ * the reports apply (`transactionRateBasis`).
+ */
+export function partRateBasis(
+  row: RatePartRow,
+  currency: string,
+  day: string | null | undefined,
+  reporting: string,
+): RawRateBasis {
+  return transactionRateBasis(
+    {
+      currencyCode: currency,
+      transactionDate: day ?? "",
+      originalCurrencyCode: row.fx_original_currency,
+      exchangeRate: row.fx_exchange_rate,
+    },
+    reporting,
+  );
+}
+
+/**
+ * The parts of a read split by {@link splitByRateBasis}, only those of its
+ * `limit` largest groups: `groupKeySql` names a part's group (selected as
+ * `group_key`) and a group ranks by the sum of its parts' `magnitude` column,
+ * largest first and then by key, the order the unsplit read's
+ * `ORDER BY ... LIMIT` gave. The bound stays in PostgreSQL, so a person with
+ * thousands of groups is not read whole to show a hundred.
+ */
+export async function readTopGroupParts<T extends ObjectLiteral>(
+  m: EntityManager,
+  qb: SelectQueryBuilder<T>,
+  groupKeySql: string,
+  magnitude: string,
+  limit: number,
+): Promise<RatePartRow[]> {
+  qb.addSelect(groupKeySql, "group_key");
+  const [sql, params] = qb.getQueryAndParameters();
+  return m.query(
+    `WITH parts AS (${sql})
+     SELECT parts.* FROM parts
+     WHERE parts.group_key IN (
+       SELECT group_key FROM parts
+       GROUP BY group_key
+       ORDER BY SUM(parts."${magnitude}") DESC, group_key
+       LIMIT $${params.length + 1}
+     )`,
+    [...params, limit],
+  );
 }
 
 /** One group of a read folded back from its {@link splitByRateBasis} parts. */

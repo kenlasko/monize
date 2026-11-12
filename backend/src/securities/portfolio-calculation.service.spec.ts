@@ -2483,7 +2483,7 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
       // convert February's account-currency figures at the month's rate
       // (100 USD x 1.40 = 140), while Realized Gains replays the sale against
       // the buy's own rate (1,540 - 1,350 = 190).
-      const { service } = build(
+      const { service, getRateIndex } = build(
         [
           usdBuy({
             accountCurrency: "USD",
@@ -2529,6 +2529,13 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
       });
       expect(feb.inReportingCurrency.realizedGain).toBe(
         sale.inReportingCurrency.realizedGain,
+      );
+      // The reporting boundaries' rates load in one read for the window.
+      expect(getRateIndex).toHaveBeenCalledWith(
+        new Set(["USD"]),
+        "CAD",
+        "2024-01-31",
+        "2024-02-29",
       );
     });
 

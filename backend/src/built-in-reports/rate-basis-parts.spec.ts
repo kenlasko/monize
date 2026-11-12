@@ -2,6 +2,8 @@ import { SelectQueryBuilder } from "typeorm";
 import {
   convertRateParts,
   foldRateParts,
+  partRateBasis,
+  readTopGroupParts,
   splitByRateBasis,
 } from "./rate-basis-parts";
 
@@ -48,6 +50,82 @@ describe("rate-basis-parts", () => {
         "fx_original_currency",
         "fx_exchange_rate",
       ]);
+    });
+  });
+
+  describe("splitByRateBasis without the day", () => {
+    it("adds only the own-rate columns", () => {
+      const qb = {
+        setParameter: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        addGroupBy: jest.fn().mockReturnThis(),
+      };
+
+      splitByRateBasis(
+        qb as unknown as SelectQueryBuilder<object>,
+        {
+          currency: "t.currencyCode",
+          originalCurrency: "t.originalCurrencyCode",
+          exchangeRate: "t.exchangeRate",
+        },
+        "CAD",
+        { byDay: false },
+      );
+
+      expect(qb.addGroupBy.mock.calls.map((c) => c[0])).toEqual([
+        "fx_original_currency",
+        "fx_exchange_rate",
+      ]);
+    });
+  });
+
+  describe("partRateBasis", () => {
+    it("reads a part's own rate into the reporting currency, and none for a stored 1", () => {
+      expect(
+        partRateBasis(
+          { fx_original_currency: "CAD", fx_exchange_rate: "0.8" },
+          "USD",
+          "2026-01-12",
+          "CAD",
+        ),
+      ).toEqual({ currency_code: "USD", tx_date: "2026-01-12", own_rate: 0.8 });
+      expect(
+        partRateBasis(
+          { fx_original_currency: "CAD", fx_exchange_rate: "1" },
+          "USD",
+          "2026-01-12",
+          "CAD",
+        ).own_rate,
+      ).toBeNull();
+      expect(partRateBasis({}, "CAD", null, "CAD").tx_date).toBeNull();
+    });
+  });
+
+  describe("readTopGroupParts", () => {
+    it("bounds the groups in SQL, ranked by their parts' magnitude then key", async () => {
+      const qb = {
+        addSelect: jest.fn().mockReturnThis(),
+        getQueryAndParameters: jest
+          .fn()
+          .mockReturnValue(["SELECT inner WHERE a = $1", ["user-1"]]),
+      };
+      const m = { query: jest.fn().mockResolvedValue([{ group_key: "k" }]) };
+
+      const parts = await readTopGroupParts(
+        m as never,
+        qb as unknown as SelectQueryBuilder<object>,
+        "CONCAT(a, b)",
+        "magnitude",
+        100,
+      );
+
+      expect(parts).toEqual([{ group_key: "k" }]);
+      expect(qb.addSelect).toHaveBeenCalledWith("CONCAT(a, b)", "group_key");
+      const [sql, params] = m.query.mock.calls[0];
+      expect(sql).toContain("WITH parts AS (SELECT inner WHERE a = $1)");
+      expect(sql).toContain('ORDER BY SUM(parts."magnitude") DESC, group_key');
+      expect(sql).toContain("LIMIT $2");
+      expect(params).toEqual(["user-1", 100]);
     });
   });
 
