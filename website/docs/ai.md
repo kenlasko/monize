@@ -154,6 +154,8 @@ Beyond answering questions, the assistant can make changes on your behalf -- cre
 
 Adding or removing tags on a transaction keeps every other tag it carries and changes nothing else on it; on a transfer both sides change. A name you have no tag for yet is created when you approve the card, and the card marks it as new. When the assistant rewrites a split transaction's lines, each line keeps the tags of the line it replaces. The assistant can also add or remove tags on a single line of a split transaction without touching its amounts or categories. When that line is a transfer to another account, the matching transaction in that account gets the same change, and the card names that account. Undo puts back exactly the tags the change touched, on the line and in the other account.
 
+The assistant can also record a purchase paid in another currency, the way the transaction form does. Tell it what you paid (say EUR 100) and, if you know it, what your account was charged (USD 110) or the exchange rate. Given the amount charged, it works out the rate; given a rate, it works out the amount, including the account's foreign transaction fee if it has one; given neither, it uses the market rate for the date. If the amount charged and the rate disagree, it tells you rather than changing either figure. The card shows what you paid and the rate, and says where the rate came from. The same works when editing a transaction, and asking for it to be recorded in the account's own currency removes the foreign amount. Transfers between accounts in different currencies take an exchange rate or the amount received instead.
+
 Nothing is saved until you approve it. Each proposed change is presented as an on-screen confirmation card showing exactly what would be written, which you **Approve** or **Cancel**:
 
 - **1-5 items** -- each item gets its own confirmation card.
@@ -345,7 +347,7 @@ External AI clients can use the following tools through MCP. Read tools require 
 | `generate_report` | Run a built-in report (spending by category/payee, income vs. expenses, trends, anomalies, month comparison, net-worth history) | read |
 | `lookup_securities` | Look up securities by name or symbol | read |
 | `search_help` | Search this guide; returns the matching sections with their links | read |
-| `manage_transactions` | Create, update, or delete transactions, and add or remove their tags | **write** |
+| `manage_transactions` | Create, update, or delete transactions (including ones paid in another currency), and add or remove their tags | **write** |
 | `manage_payees` | Create, update, or delete payees | **write** |
 | `manage_tags` | Create, rename, recolour, or delete tags | **write** |
 | `manage_securities` | Create, update, or delete securities | **write** |

@@ -200,6 +200,28 @@ same shapes:
 | A foreign pair with no `exchangeRate`, or one `<= 0` | Rejected, `fxRateRequired` |
 | `originalAmount` and `amount` with opposite signs | Rejected, `fxSignMismatch` |
 
+**Entry from a tool.** `manage_transactions` (MCP and the AI Assistant) takes
+`originalAmount` and `originalCurrencyCode` with any subset of `amount` (what
+the account was charged) and `exchangeRate`. `resolveForeignEntry`
+(`backend/src/common/foreign-entry.util.ts`), behind `previewForeignEntry`
+(`backend/src/transactions/foreign-entry-preview.ts`), works the entry out the
+way the transaction form does, then runs `normalizeFxEntry` so the preview
+refuses what the commit would:
+
+| `amount` | `exchangeRate` | Result |
+| --- | --- | --- |
+| given | given | Both kept when the rate converts (fee included) to the amount within one unit of the account currency's `decimal_places`; refused otherwise, rewriting neither |
+| given | - | Rate derived from the two amounts, the fee backed out (`fxBaseFromCharged`) |
+| - | given | Amount from `applyFxConversion` |
+| - | - | The market rate for the date (an edit keeps the row's own rate for its own currency), refused naming the pair and date when none exists |
+
+The amount charged is the fact: a conversion never replaces it. On an edit the
+row's own figures fill in what the caller omits, a moved amount on a foreign
+row derives the rate again rather than leaving it stale, and the account's own
+currency as `originalCurrencyCode` clears the entry. The card says where the
+rate came from (`exchangeRateSource`: supplied, derived, market or stored;
+display only, never signed), INV-FX-002. A transfer refuses the two fields.
+
 ### A missing rate is not a rate of 1
 
 ```text
