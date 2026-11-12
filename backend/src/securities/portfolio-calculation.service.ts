@@ -928,30 +928,22 @@ export class PortfolioCalculationService {
    * surplus of 30 units in one account cancel a shortfall of 30 in another and
    * report both bases as reconciled.
    *
+   * `history` is the accounts' history as {@link holdingsHistory} reads it,
+   * for a caller that replays it more than once; it is read here otherwise.
+   *
    * @returns Map keyed by `${accountId}:${securityId}` -> the replayed lot,
    *          each carrying the currency its basis is denominated in.
    */
   async calculateCostBasisLotsInAccountCurrency(
     userId: string,
     holdingsAccountIds: string[],
+    history?: readonly InvestmentTransaction[],
   ): Promise<Map<string, ReplayedLot>> {
     const result = new Map<string, ReplayedLot>();
     if (holdingsAccountIds.length === 0) return result;
 
-    const today = formatDateYMDLocal(new Date());
-
-    const transactions = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(InvestmentTransaction).find({
-        where: {
-          userId,
-          accountId: In(holdingsAccountIds),
-          transactionDate: LessThanOrEqual(today),
-          // Rows as effects: a VOID transaction moved no shares and no cost.
-          status: NON_VOID_INVESTMENT_STATUS,
-        },
-        order: INVESTMENT_REPLAY_ORDER,
-      }),
-    );
+    const transactions =
+      history ?? (await this.holdingsHistory(userId, holdingsAccountIds));
 
     // No history, no lots, and so nothing to denominate. Returning before the
     // account read keeps the common empty case at one query.
@@ -986,6 +978,32 @@ export class PortfolioCalculationService {
     }
 
     return result;
+  }
+
+  /**
+   * The holdings accounts' investment history up to today, in replay order:
+   * rows as effects, so a VOID transaction (which moved no shares and no cost)
+   * is left out. Read with each row's security and account, which the
+   * reporting-currency replay needs and the account-currency replay ignores, so
+   * one read serves both (issue #2130).
+   */
+  private holdingsHistory(
+    userId: string,
+    holdingsAccountIds: string[],
+  ): Promise<InvestmentTransaction[]> {
+    if (holdingsAccountIds.length === 0) return Promise.resolve([]);
+    return withScopedDb(this.dataSource, (m) =>
+      m.getRepository(InvestmentTransaction).find({
+        where: {
+          userId,
+          accountId: In(holdingsAccountIds),
+          transactionDate: LessThanOrEqual(formatDateYMDLocal(new Date())),
+          status: NON_VOID_INVESTMENT_STATUS,
+        },
+        relations: ["security", "account"],
+        order: INVESTMENT_REPLAY_ORDER,
+      }),
+    );
   }
 
   /**
@@ -1096,6 +1114,7 @@ export class PortfolioCalculationService {
   private async knownCostBasesIn(
     userId: string,
     holdingsAccountIds: string[],
+    history: readonly InvestmentTransaction[],
     currencyByAccount: Map<string, string>,
     /** Units actually held, keyed `${accountId}:${securityId}`. */
     quantityByKey: Map<string, number>,
@@ -1103,6 +1122,7 @@ export class PortfolioCalculationService {
     const lots = await this.calculateCostBasisLotsInAccountCurrency(
       userId,
       holdingsAccountIds,
+      history,
     );
     const usable = new Map<string, number>();
     for (const [key, lot] of lots) {
@@ -1134,26 +1154,13 @@ export class PortfolioCalculationService {
    */
   private async historicalCostBasesInReporting(
     userId: string,
-    holdingsAccountIds: string[],
+    /** The holdings accounts' history, {@link holdingsHistory}'s read. */
+    transactions: readonly InvestmentTransaction[],
     reportingCurrency: string,
     /** Units actually held, keyed `${accountId}:${securityId}`. */
     quantityByKey: Map<string, number>,
   ): Promise<Map<string, DatedReportingCost>> {
     const usable = new Map<string, DatedReportingCost>();
-    if (holdingsAccountIds.length === 0) return usable;
-    const transactions = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(InvestmentTransaction).find({
-        where: {
-          userId,
-          accountId: In(holdingsAccountIds),
-          transactionDate: LessThanOrEqual(formatDateYMDLocal(new Date())),
-          // Rows as effects: a VOID transaction moved no shares and no cost.
-          status: NON_VOID_INVESTMENT_STATUS,
-        },
-        relations: ["security", "account"],
-        order: INVESTMENT_REPLAY_ORDER,
-      }),
-    );
     if (transactions.length === 0) return usable;
     const { positions, unresolved } = await this.replayWithRates(
       userId,
@@ -2054,9 +2061,12 @@ export class PortfolioCalculationService {
         (h) => [`${h.accountId}:${h.securityId}`, Number(h.quantity)] as const,
       ),
     );
+    // One read of the history for both replays below.
+    const history = await this.holdingsHistory(userId, holdingsAccountIds);
     const historicalCostBasis = await this.knownCostBasesIn(
       userId,
       holdingsAccountIds,
+      history,
       currencyByAccount,
       quantityByKey,
     );
@@ -2067,7 +2077,7 @@ export class PortfolioCalculationService {
     )
       ? await this.historicalCostBasesInReporting(
           userId,
-          holdingsAccountIds,
+          history,
           defaultCurrency,
           quantityByKey,
         )

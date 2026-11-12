@@ -4421,6 +4421,66 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues", () => {
     expect(result.holdingsWithValues[0].marketValueDefaultCurrency).toBe(400);
   });
 
+  it("reads the history once for both the account and the reporting cost (issue #2130)", async () => {
+    const holdingRepo = { find: jest.fn().mockResolvedValue([holdingRow]) };
+    const buy = {
+      id: "buy",
+      userId,
+      accountId: "acct-1",
+      securityId: "sec-a",
+      action: InvestmentAction.BUY,
+      transactionDate: "2024-01-10",
+      quantity: 10,
+      price: 90,
+      commission: 0,
+      totalAmount: 900,
+      exchangeRate: 1,
+      account: { id: "acct-1", currencyCode: "PLN" },
+      security: { id: "sec-a", currencyCode: "PLN" },
+    } as unknown as InvestmentTransaction;
+    const txRepo = { find: jest.fn().mockResolvedValue([buy]) };
+    const accountRepo = {
+      find: jest
+        .fn()
+        .mockResolvedValue([{ id: "acct-1", currencyCode: "PLN" }]),
+    };
+    const getRateIndex = jest.fn(async () =>
+      rateIndexOf([
+        {
+          fromCurrency: "PLN",
+          toCurrency: "CAD",
+          rate: 0.3,
+          rateDate: "2024-01-10",
+        },
+      ]),
+    );
+    const service = buildService(
+      [
+        [Holding, holdingRepo],
+        [InvestmentTransaction, txRepo],
+        [Account, accountRepo],
+      ],
+      { resolveStoredRate: storedRateDouble(), getRateIndex },
+    );
+
+    const result = await service.calculateHoldingsWithValues(
+      userId,
+      ["acct-1"],
+      "CAD",
+      new Map(),
+      async () => new Map([["sec-a", 100]]),
+    );
+
+    // The account-currency lots and the dated reporting-currency replay both
+    // read the one history.
+    expect(result.holdingsWithValues[0].costBasisAccountCurrency).toBe(900);
+    expect(result.totalCostBasis).toBe(270);
+    expect(txRepo.find).toHaveBeenCalledTimes(1);
+    expect(txRepo.find).toHaveBeenCalledWith(
+      expect.objectContaining({ relations: ["security", "account"] }),
+    );
+  });
+
   it("withholds a cost with no rate on its purchase date and names that pair (issue #2106)", async () => {
     const holdingRepo = { find: jest.fn().mockResolvedValue([holdingRow]) };
     const buy = {
