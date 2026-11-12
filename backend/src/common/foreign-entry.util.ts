@@ -179,13 +179,23 @@ export async function resolveForeignEntry(
       exchangeRate: derived,
       exchangeRateSource: "derived",
     };
+  } else if (originalAmount === 0 && (amount === undefined || amount === 0)) {
+    // Zero moves nothing and needs no rate: no lookup, and no entry to keep.
+    throw new BadRequestException(
+      tr(
+        "errors.transactions.fxZeroEntry",
+        "Nothing to convert: originalAmount and amount are both zero. Leave out originalAmount and originalCurrencyCode to record a zero amount.",
+      ),
+    );
   } else {
     const fallback = await input.fallbackRate();
+    // `null` is either no stored rate or a provider that did not answer; the
+    // lookup cannot tell them apart, so the message names both.
     if (fallback.rate === null || !(fallback.rate > 0)) {
       throw new BadRequestException(
         tr(
           "errors.transactions.fxEntryRateUnavailable",
-          `No ${originalCurrencyCode} to ${currency} exchange rate is available for ${fallback.date}. Give the amount in ${currency} that the account was charged, or the exchangeRate.`,
+          `No ${originalCurrencyCode} to ${currency} exchange rate could be found for ${fallback.date}: none is stored, or the rate provider did not answer. Give the amount in ${currency} that the account was charged, or the exchangeRate.`,
           { from: originalCurrencyCode, to: currency, date: fallback.date },
         ),
       );

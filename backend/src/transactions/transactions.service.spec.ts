@@ -10609,17 +10609,31 @@ describe("TransactionsService", () => {
         expect(preview.tagsOnly).toBeUndefined();
       });
 
-      it("computes the amount from a new rate, the resent amount not standing against it", async () => {
+      it("refuses a new rate beside the amount sent when the two disagree", async () => {
         transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
-        const preview = await service.previewUpdate("user-1", "tx-1", {
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            amount: -110,
+            foreignEntry: { exchangeRate: 1.2 },
+          }),
+        ).rejects.toThrow(/converts to -120 USD.*not -110 USD/);
+      });
+
+      it("refuses an entry on an ordinary row whose rate disagrees with the amount it was charged", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({
+          ...baseTx,
           amount: -110,
-          foreignEntry: { exchangeRate: 1.2 },
         });
-        expect(preview).toMatchObject({
-          amount: -120,
-          exchangeRate: 1.2,
-          exchangeRateSource: "supplied",
-        });
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            amount: -110,
+            foreignEntry: {
+              originalAmount: -100,
+              originalCurrencyCode: "EUR",
+              exchangeRate: 1.05,
+            },
+          }),
+        ).rejects.toThrow(/converts to -105 USD.*not -110 USD/);
       });
 
       it("clears the entry when the account's own currency is named", async () => {

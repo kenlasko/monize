@@ -137,8 +137,9 @@ describe("resolveForeignEntry", () => {
       }),
       usd,
     );
+    // The lookup's null may be a provider that did not answer: said so.
     await expect(result).rejects.toThrow(
-      /No EUR to USD exchange rate is available for 2026-11-01/,
+      /No EUR to USD exchange rate could be found for 2026-11-01: none is stored, or the rate provider did not answer/,
     );
   });
 
@@ -172,13 +173,14 @@ describe("resolveForeignEntry", () => {
     ).rejects.toThrow(/same sign/);
   });
 
-  it("takes the fallback rate for a zero original amount, which no rate derives from", async () => {
-    const req = input({ originalAmount: 0, amount: 0 });
-    await expect(resolveForeignEntry(req, usd)).resolves.toMatchObject({
-      amount: 0,
-      exchangeRate: 1.05,
-      exchangeRateSource: "market",
-    });
+  it("refuses a zero entry without looking a rate up, since zero needs none", async () => {
+    for (const amount of [0, undefined]) {
+      const req = input({ originalAmount: 0, amount });
+      await expect(resolveForeignEntry(req, usd)).rejects.toThrow(
+        /Nothing to convert/,
+      );
+      expect(req.fallbackRate).not.toHaveBeenCalled();
+    }
   });
 });
 

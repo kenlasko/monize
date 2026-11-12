@@ -311,7 +311,8 @@ describe("previewForeignEntry", () => {
       });
     });
 
-    it("computes the amount from a new rate, a resent amount not standing against it", async () => {
+    it("refuses a new rate that disagrees with the amount sent, even the row's own", async () => {
+      // The amount charged is never rewritten from a rate beside it.
       await expect(
         previewForeignEntry(
           manager(),
@@ -321,10 +322,41 @@ describe("previewForeignEntry", () => {
             stored: storedEur,
           }),
         ),
+      ).rejects.toThrow(/converts to -120 USD.*not -110 USD/);
+    });
+
+    it("computes the amount from a new rate when no amount is sent", async () => {
+      await expect(
+        previewForeignEntry(
+          manager(),
+          args({ request: { exchangeRate: 1.2 }, stored: storedEur }),
+        ),
       ).resolves.toMatchObject({
         amount: -120,
         fields: { exchangeRate: 1.2, exchangeRateSource: "supplied" },
       });
+    });
+
+    it("refuses turning an ordinary row into an entry whose rate disagrees with its amount", async () => {
+      await expect(
+        previewForeignEntry(
+          manager(),
+          args({
+            amount: -110,
+            request: {
+              originalAmount: -100,
+              originalCurrencyCode: "EUR",
+              exchangeRate: 1.05,
+            },
+            stored: {
+              amount: -110,
+              originalAmount: null,
+              originalCurrencyCode: null,
+              exchangeRate: 1,
+            },
+          }),
+        ),
+      ).rejects.toThrow(/converts to -105 USD.*not -110 USD/);
     });
 
     it("re-derives the rate when only the amount charged changes", async () => {

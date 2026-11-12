@@ -213,13 +213,15 @@ refuses what the commit would:
 | given | given | Both kept when the rate converts (fee included) to the amount within one unit of the account currency's `decimal_places`; refused otherwise, rewriting neither |
 | given | - | Rate derived from the two amounts, the fee backed out (`fxBaseFromCharged`) |
 | - | given | Amount from `applyFxConversion` |
-| - | - | The market rate for the date (a create only), refused naming the pair and date when none exists |
+| - | - | The market rate for the date (a create only), refused naming the pair and date when none exists, or might be unreachable; both amounts zero is refused with no lookup (zero needs no rate) |
 
 The amount charged is the fact: a conversion never replaces it. On an edit the
 row's own figures fill in what the caller omits, the row's amount included, so
 a changed original amount or currency derives the rate again from what the
-account was charged, and only a new rate (with no new amount) computes a new
-amount; a figure resent as the row holds it is no change. A moved amount on a
+account was charged, and only a new rate with no amount sent computes a new
+amount; an amount sent beside a new rate is held to it like a create's (moved or
+not, it is never rewritten from the rate), and a figure resent as the row holds
+it is no change. A moved amount on a
 foreign row derives the rate again rather than leaving it stale, a different currency
 needs its own `originalAmount` (the row's is in the old one), and the account's
 own currency as `originalCurrencyCode` clears the entry (refusing a rate, or an

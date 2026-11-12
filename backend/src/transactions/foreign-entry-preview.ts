@@ -250,9 +250,11 @@ export async function previewForeignEntry(
     // A new amount beside the row's own rate resent: the amount is the
     // change, and the rate is derived from it rather than refused against it.
     if (amountMoved && rateResent) exchangeRate = undefined;
-    // An amount not moved is not given: a rate sent (even the row's own,
+    // An amount the caller sent stays given, moved or not: beside a new rate
+    // the two must agree, never the amount charged rewritten from the rate.
+    // Only an amount not sent defaults: a rate sent (even the row's own,
     // beside a new original amount) computes it; otherwise the row's stands.
-    if (!amountMoved)
+    if (amount === undefined)
       amount = exchangeRate === undefined ? stored.amount : undefined;
   }
 
