@@ -821,6 +821,7 @@
     "colReturn": "リターン",
     "colPriceChange": "変化率",
     "chartSubtitle": "選択した期間における、これらの口座が保有する全銘柄の累積リターン。",
+    "indexOverlayNote": "市場指数は破線で表示され、チャートの開始時点で0%に基準化されます。",
     "chartLimitedNote": "市場価値上位{shown}件の保有銘柄のみを表示しています（保有{total}件中）。",
     "chartModeLabel": "チャート",
     "chartMode": {

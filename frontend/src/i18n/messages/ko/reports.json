@@ -821,6 +821,7 @@
     "colReturn": "수익률",
     "colPriceChange": "변동률",
     "chartSubtitle": "선택한 기간 동안 이 계정들이 보유한 모든 증권의 누적 수익률입니다.",
+    "indexOverlayNote": "시장 지수는 점선으로 표시되며, 차트 시작 시점에 0%로 기준화됩니다.",
     "chartLimitedNote": "시장 가치 기준 상위 {shown}개 보유 항목만 표시됩니다(보유 {total}개 중).",
     "chartModeLabel": "차트",
     "chartMode": {

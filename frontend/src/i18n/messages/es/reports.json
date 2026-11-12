@@ -821,6 +821,7 @@
     "colReturn": "Retorno",
     "colPriceChange": "% de cambio",
     "chartSubtitle": "Retorno acumulado de cada valor que poseen estas cuentas durante el período seleccionado.",
+    "indexOverlayNote": "Los índices de mercado se dibujan como líneas discontinuas, rebasadas al 0 % al inicio del gráfico.",
     "chartLimitedNote": "Solo se representan las {shown} posiciones más grandes por valor de mercado (de {total} en cartera).",
     "chartModeLabel": "Gráfico",
     "chartMode": {

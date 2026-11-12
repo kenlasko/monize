@@ -821,6 +821,7 @@
     "colReturn": "Rendimento",
     "colPriceChange": "Variazione %",
     "chartSubtitle": "Rendimento cumulato di ogni titolo detenuto da questi conti nel periodo selezionato.",
+    "indexOverlayNote": "Gli indici di mercato sono tracciati con linee tratteggiate, ribasati allo 0% all'inizio del grafico.",
     "chartLimitedNote": "Vengono rappresentate solo le {shown} maggiori posizioni per valore di mercato (su {total} detenute).",
     "chartModeLabel": "Grafico",
     "chartMode": {

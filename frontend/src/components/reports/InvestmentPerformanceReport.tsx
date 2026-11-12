@@ -10,7 +10,9 @@ import {
   Cell,
 } from 'recharts';
 import { investmentsApi } from '@/lib/investments';
-import { PortfolioSummary } from '@/types/investment';
+import { MarketIndex, PortfolioSummary } from '@/types/investment';
+import { MultiSelect } from '@/components/ui/MultiSelect';
+import { useMarketIndexPicker } from '@/hooks/useMarketIndexPicker';
 import { Account } from '@/types/account';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
@@ -166,6 +168,18 @@ export function InvestmentPerformanceReport() {
     },
     [selectedAccountIds, reloadKey],
   );
+
+  // The benchmark catalog, loaded on its own: it only feeds the optional index
+  // picker, so a failure hides that control instead of failing the report.
+  const { data: indexCatalog, error: indexCatalogError } = useReportData(
+    () => investmentsApi.getMarketIndexes(),
+    [],
+  );
+  const marketIndexes = useMemo<MarketIndex[]>(() => indexCatalog ?? [], [indexCatalog]);
+  // Benchmarks overlaid on whichever chart the Performance view shows, the
+  // same picker and dashed lines as the Security Performance report.
+  const { indexOptions, selectedIndexCodes, setSelectedIndexCodes, activeIndexCodes } =
+    useMarketIndexPicker(marketIndexes);
 
   const portfolio = useMemo<PortfolioSummary | null>(
     () => response?.portfolio ?? null,
@@ -531,6 +545,18 @@ export function InvestmentPerformanceReport() {
               value={selectedAccountIds}
               onChange={setSelectedAccountIds}
             />
+            {viewType === 'performance' && !indexCatalogError && indexOptions.length > 0 && (
+              <div className="w-full sm:w-auto sm:min-w-[250px]">
+                <MultiSelect
+                  ariaLabel={t('securityPerformance.selectIndexesPlaceholder')}
+                  options={indexOptions}
+                  value={selectedIndexCodes}
+                  onChange={setSelectedIndexCodes}
+                  placeholder={t('securityPerformance.selectIndexesPlaceholder')}
+                  sizeToLongestOption
+                />
+              </div>
+            )}
           </div>
           <div className={SEGMENTED_GROUP_CLASS} role="group" aria-label={t('reportPage.viewLabel')}>
             <button
@@ -608,7 +634,7 @@ export function InvestmentPerformanceReport() {
             <>
               <SecurityComparisonChart
                 securityIds={performanceSecurityIds}
-                indexCodes={[]}
+                indexCodes={activeIndexCodes}
                 startDate={chartStart}
                 endDate={perfWindow.end}
                 subtitle={t('investmentPerformance.chartSubtitle')}
@@ -641,6 +667,7 @@ export function InvestmentPerformanceReport() {
                 skip={periodRequest.skip}
                 exportRef={comparisonExportRef}
                 onExportableChange={setComparisonExportable}
+                indexCodes={activeIndexCodes}
               />
               {chartMode === 'account' && returnAccountIds.length > drawnReturnAccountIds.length && (
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -651,6 +678,12 @@ export function InvestmentPerformanceReport() {
                 </p>
               )}
             </>
+          )}
+
+          {activeIndexCodes.length > 0 && (
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              {t('investmentPerformance.indexOverlayNote')}
+            </p>
           )}
 
           <InvestmentPerformanceHoldingsTable

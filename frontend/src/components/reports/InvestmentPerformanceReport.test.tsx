@@ -49,13 +49,27 @@ vi.mock('recharts', () => ({
 
 const mockGetPortfolioSummary = vi.fn();
 const mockGetInvestmentAccounts = vi.fn();
+const mockGetMarketIndexes = vi.fn();
 
 vi.mock('@/lib/investments', () => ({
   investmentsApi: {
     getPortfolioSummary: (...args: any[]) => mockGetPortfolioSummary(...args),
     getInvestmentAccounts: (...args: any[]) => mockGetInvestmentAccounts(...args),
+    getMarketIndexes: (...args: any[]) => mockGetMarketIndexes(...args),
   },
 }));
+
+const MARKET_INDEXES = [
+  {
+    code: 'SP500',
+    yahooSymbol: '^GSPC',
+    defaultName: 'S&P 500',
+    currencyCode: 'USD',
+    region: 'NORTH_AMERICA',
+    exchanges: ['NYSE'],
+    coverage: { earliestDate: '2000-01-03', latestDate: '2026-08-05' },
+  },
+];
 
 // The window's figures: the portfolio's for the cards, split by security for
 // the rows (docs/specs/investment-performance-report-period.md).
@@ -250,6 +264,7 @@ async function showBySecurity() {
 describe('InvestmentPerformanceReport', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetMarketIndexes.mockResolvedValue(MARKET_INDEXES);
     mockPeriodResult.mockResolvedValue(PERIOD);
     mockSecurityPeriodResults.mockResolvedValue(
       securityResults([
@@ -262,6 +277,7 @@ describe('InvestmentPerformanceReport', () => {
   it('shows loading state initially', () => {
     mockGetPortfolioSummary.mockReturnValue(new Promise(() => {}));
     mockGetInvestmentAccounts.mockReturnValue(new Promise(() => {}));
+    mockGetMarketIndexes.mockReturnValue(new Promise(() => {}));
     render(<InvestmentPerformanceReport />);
     expect(document.querySelector('.animate-pulse')).toBeTruthy();
   });
@@ -850,6 +866,72 @@ describe('InvestmentPerformanceReport', () => {
       await screen.findByTestId('period-gain-card');
 
       expect(screen.queryByTestId('partial-total')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('market index overlay', () => {
+    const ACCOUNTS = [
+      { id: 'acc-1', name: 'TFSA', currencyCode: 'CAD', accountSubType: 'INVESTMENT_BROKERAGE' },
+    ];
+
+    async function addIndex(name: string) {
+      await act(async () => {
+        fireEvent.click(await screen.findByRole('button', { name: 'Add a market index...' }));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText(name));
+      });
+    }
+
+    it('hands the chosen indexes to the return chart', async () => {
+      mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue(ACCOUNTS);
+      render(<InvestmentPerformanceReport />);
+      await screen.findByTestId('return-chart');
+      expect(mockReturnChartProps).toHaveBeenLastCalledWith(
+        expect.objectContaining({ indexCodes: [] }),
+      );
+      expect(screen.queryByText(/Market indexes are drawn as dashed lines/)).not.toBeInTheDocument();
+
+      await addIndex('S&P 500');
+
+      expect(mockReturnChartProps).toHaveBeenLastCalledWith(
+        expect.objectContaining({ indexCodes: ['SP500'] }),
+      );
+      expect(screen.getByText(/Market indexes are drawn as dashed lines/)).toBeInTheDocument();
+    });
+
+    it('hands the chosen indexes to the by-security chart, without the region row', async () => {
+      mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue(ACCOUNTS);
+      render(<InvestmentPerformanceReport />);
+      await showBySecurity();
+      // Choosing the only index in a region also puts the region's own value in
+      // the selection; it must never reach the API as an index code.
+      await addIndex('S&P 500');
+      expect(mockPerfChartProps).toHaveBeenLastCalledWith(
+        expect.objectContaining({ indexCodes: ['SP500'] }),
+      );
+    });
+
+    it('hides the picker when the index catalog fails, and still renders the report', async () => {
+      mockGetMarketIndexes.mockRejectedValue(new Error('boom'));
+      mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue(ACCOUNTS);
+      render(<InvestmentPerformanceReport />);
+      await screen.findByTestId('return-chart');
+      expect(screen.queryByRole('button', { name: 'Add a market index...' })).not.toBeInTheDocument();
+    });
+
+    it('hides the picker in the allocation view', async () => {
+      mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue(ACCOUNTS);
+      render(<InvestmentPerformanceReport />);
+      await screen.findByRole('button', { name: 'Add a market index...' });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Allocation' }));
+      });
+      expect(screen.queryByRole('button', { name: 'Add a market index...' })).not.toBeInTheDocument();
     });
   });
 });

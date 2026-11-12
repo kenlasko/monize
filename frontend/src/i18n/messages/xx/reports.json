@@ -821,6 +821,7 @@
     "colReturn": "[XX-Return-XX]",
     "colPriceChange": "[XX-% Change-XX]",
     "chartSubtitle": "[XX-Cumulative return of every security these accounts hold, over the selected period.-XX]",
+    "indexOverlayNote": "[XX-Market indexes are drawn as dashed lines, rebased to 0% at the start of the chart.-XX]",
     "chartLimitedNote": "[XX-Only the {shown} largest holdings by market value are plotted (of {total} held).-XX]",
     "chartModeLabel": "[XX-Chart-XX]",
     "chartMode": {

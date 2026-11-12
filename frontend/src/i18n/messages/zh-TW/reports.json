@@ -821,6 +821,7 @@
     "colReturn": "報酬率",
     "colPriceChange": "漲跌幅",
     "chartSubtitle": "所選期間內這些帳戶持有的每種證券的累計報酬率。",
+    "indexOverlayNote": "市場指數以虛線繪製，並在圖表起點歸一為 0%。",
     "chartLimitedNote": "僅顯示依市值排列的前 {shown} 大持倉（共持有 {total} 項）。",
     "chartModeLabel": "圖表",
     "chartMode": {

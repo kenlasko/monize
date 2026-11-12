@@ -821,6 +821,7 @@
     "colReturn": "Rendement",
     "colPriceChange": "% Verandering",
     "chartSubtitle": "Cumulatief rendement van elk effect dat deze rekeningen aanhouden, over de geselecteerde periode.",
+    "indexOverlayNote": "Marktindexen worden als stippellijnen getekend, herleid naar 0% aan het begin van de grafiek.",
     "chartLimitedNote": "Alleen de {shown} grootste posities op marktwaarde worden weergegeven (van {total} aangehouden).",
     "chartModeLabel": "Grafiek",
     "chartMode": {
