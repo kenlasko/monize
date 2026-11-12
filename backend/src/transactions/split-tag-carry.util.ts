@@ -72,8 +72,9 @@ const sameLine = (a: ReplacementSplitLine, b: ReplacementSplitLine): boolean =>
  *
  * Within a step, the unnamed lines and the unclaimed lines that share a key
  * are paired in order only when the pairing cannot change which tags end up
- * where: the candidates all carry the same tags and each line gets one, or
- * the lines are indistinguishable and every candidate is continued. Otherwise
+ * where: the candidates carry no tags, or all carry the same tags and each
+ * line gets one, or the lines are indistinguishable and every candidate is
+ * continued. Otherwise
  * which line continues which is a guess (two "Gifts -25" lines with different
  * memos and different tags, resent with new memos), and the request is
  * refused until each line names its `splitId`.
@@ -132,14 +133,16 @@ export function carrySplitTags(
       const sameTags = new Set(candidates.map(tagSet)).size === 1;
       const lines = indexes.map((index) => replacement[index]);
       const indistinguishable = lines.every((l) => sameLine(l, lines[0]));
+      const untagged = candidates.every((c) => (c.tags ?? []).length === 0);
       const determined =
+        untagged ||
         (sameTags && indexes.length <= candidates.length) ||
         (indistinguishable && candidates.length <= indexes.length);
       if (!determined) {
         throw new BadRequestException(
           tr(
             "errors.transactions.splitTagCarryAmbiguous",
-            "More than one existing split line matches a resent line and they carry different tags, so which line keeps which tags is ambiguous. Give each resent line the splitId of the line it continues, as the transaction's split lines were read.",
+            "Which existing split line each resent line continues is ambiguous, and the lines carry tags. Give each resent line the splitId of the line it continues, as the transaction's split lines were read.",
           ),
         );
       }

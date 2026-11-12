@@ -60,6 +60,38 @@ describe("carrySplitTags", () => {
     ).toThrow(BadRequestException);
   });
 
+  it("splits an untagged line in two without asking which continues it", () => {
+    expect(
+      carrySplitTags(
+        [
+          { id: "s1", categoryId: "food", amount: -30, tags: [] },
+          { id: "s2", categoryId: "home", amount: -20, tags: [] },
+        ],
+        [
+          { categoryId: "food", amount: -10 },
+          { categoryId: "food", amount: -20 },
+          { categoryId: "home", amount: -20 },
+        ],
+      ),
+    ).toEqual([null, null, null]);
+  });
+
+  it("refuses to guess which of two new lines continues a tagged line", () => {
+    expect(() =>
+      carrySplitTags(
+        [
+          { id: "s1", categoryId: "food", amount: -30, tags: [tag("t1")] },
+          { id: "s2", categoryId: "home", amount: -20, tags: [] },
+        ],
+        [
+          { categoryId: "food", amount: -10 },
+          { categoryId: "food", amount: -20 },
+          { categoryId: "home", amount: -20 },
+        ],
+      ),
+    ).toThrow(BadRequestException);
+  });
+
   describe("lines of the same category and amount", () => {
     const gifts: ExistingSplitLine[] = [
       {

@@ -871,7 +871,7 @@
     "splitTransferTargetAmountRequiresTransfer": "Chỉ giao dịch chuyển khoản trong phần tách mới có thể có số tiền nhận",
     "splitIdNotOnTransaction": "splitId {{ splitId }} không phải là dòng chia của giao dịch này. Hãy đọc lại các dòng chia của giao dịch và dùng giá trị splitId của chúng.",
     "splitIdRepeated": "splitId {{ splitId }} được nêu ở nhiều hơn một dòng. Mỗi dòng hiện có chỉ được tiếp nối một lần.",
-    "splitTagCarryAmbiguous": "Có nhiều dòng chia hiện có khớp với một dòng được gửi lại và chúng mang thẻ khác nhau, nên không rõ dòng nào giữ thẻ nào. Hãy ghi cho mỗi dòng gửi lại splitId của dòng mà nó tiếp nối, như khi các dòng chia của giao dịch được đọc."
+    "splitTagCarryAmbiguous": "Không rõ mỗi dòng gửi lại tiếp nối dòng chia hiện có nào, và các dòng đó mang thẻ. Hãy ghi cho mỗi dòng gửi lại splitId của dòng mà nó tiếp nối, như khi các dòng chia của giao dịch được đọc."
   },
   "users": {
     "userNotFound": "Không tìm thấy người dùng",

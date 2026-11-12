@@ -871,7 +871,7 @@
     "splitTransferTargetAmountRequiresTransfer": "Seul un virement d'une répartition peut porter un montant reçu",
     "splitIdNotOnTransaction": "splitId {{ splitId }} n'est pas une ligne de ventilation de cette opération. Relisez les lignes de ventilation de l'opération et utilisez leurs valeurs splitId.",
     "splitIdRepeated": "splitId {{ splitId }} est indiqué par plusieurs lignes. Chaque ligne existante ne peut être reprise qu'une fois.",
-    "splitTagCarryAmbiguous": "Plusieurs lignes de ventilation existantes correspondent à une ligne renvoyée et portent des étiquettes différentes : on ne peut pas savoir quelle ligne conserve quelles étiquettes. Indiquez pour chaque ligne renvoyée le splitId de la ligne qu'elle prolonge, tel que les lignes de ventilation de la transaction ont été lues."
+    "splitTagCarryAmbiguous": "On ne peut pas savoir quelle ligne de ventilation existante chaque ligne renvoyée prolonge, et les lignes portent des étiquettes. Indiquez pour chaque ligne renvoyée le splitId de la ligne qu'elle prolonge, tel que les lignes de ventilation de la transaction ont été lues."
   },
   "users": {
     "userNotFound": "Utilisateur introuvable",

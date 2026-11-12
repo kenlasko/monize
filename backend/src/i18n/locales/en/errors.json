@@ -871,7 +871,7 @@
     "splitTransferTargetAmountRequiresTransfer": "Only a transfer split can carry a received amount",
     "splitIdNotOnTransaction": "splitId {{ splitId }} is not a split line of this transaction. Read the transaction's split lines again and use their splitId values.",
     "splitIdRepeated": "splitId {{ splitId }} is named by more than one line. Each existing line can be continued once.",
-    "splitTagCarryAmbiguous": "More than one existing split line matches a resent line and they carry different tags, so which line keeps which tags is ambiguous. Give each resent line the splitId of the line it continues, as the transaction's split lines were read."
+    "splitTagCarryAmbiguous": "Which existing split line each resent line continues is ambiguous, and the lines carry tags. Give each resent line the splitId of the line it continues, as the transaction's split lines were read."
   },
   "users": {
     "userNotFound": "User not found",

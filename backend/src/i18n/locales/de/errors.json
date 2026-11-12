@@ -871,7 +871,7 @@
     "splitTransferTargetAmountRequiresTransfer": "Nur eine Überweisung in einer Aufteilung kann einen erhaltenen Betrag haben",
     "splitIdNotOnTransaction": "splitId {{ splitId }} ist keine Aufteilungszeile dieser Buchung. Lesen Sie die Aufteilungszeilen der Buchung erneut und verwenden Sie deren splitId-Werte.",
     "splitIdRepeated": "splitId {{ splitId }} wird von mehr als einer Zeile genannt. Jede bestehende Zeile kann nur einmal fortgeführt werden.",
-    "splitTagCarryAmbiguous": "Mehr als eine bestehende Aufteilungszeile passt zu einer erneut gesendeten Zeile, und sie tragen unterschiedliche Tags, daher ist unklar, welche Zeile welche Tags behält. Geben Sie jeder erneut gesendeten Zeile die splitId der Zeile, die sie fortführt, wie die Aufteilungszeilen der Buchung gelesen wurden."
+    "splitTagCarryAmbiguous": "Es ist unklar, welche bestehende Aufteilungszeile jede erneut gesendete Zeile fortführt, und die Zeilen tragen Tags. Geben Sie jeder erneut gesendeten Zeile die splitId der Zeile, die sie fortführt, wie die Aufteilungszeilen der Buchung gelesen wurden."
   },
   "users": {
     "userNotFound": "Benutzer nicht gefunden",

@@ -871,7 +871,7 @@
     "splitTransferTargetAmountRequiresTransfer": "只有拆分中的轉帳才能帶有收到金額",
     "splitIdNotOnTransaction": "splitId {{ splitId }} 不是此交易的拆分行。請重新讀取該交易的拆分行並使用其 splitId 值。",
     "splitIdRepeated": "splitId {{ splitId }} 被多行指定。每個現有行只能被延續一次。",
-    "splitTagCarryAmbiguous": "有多個現有拆分列與重新傳送的某一列相符，且它們的標籤不同，因此無法確定哪一列保留哪些標籤。請依讀取到的交易拆分列，為每個重新傳送的列提供其所延續列的 splitId。"
+    "splitTagCarryAmbiguous": "無法確定每個重新傳送的列延續的是哪一個現有拆分列，且這些列帶有標籤。請依讀取到的交易拆分列，為每個重新傳送的列提供其所延續列的 splitId。"
   },
   "users": {
     "userNotFound": "找不到使用者",

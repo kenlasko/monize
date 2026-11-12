@@ -871,7 +871,7 @@
     "splitTransferTargetAmountRequiresTransfer": "Yalnızca bölmedeki bir transfer alınan tutar taşıyabilir",
     "splitIdNotOnTransaction": "splitId {{ splitId }} bu işlemin bir bölme satırı değil. İşlemin bölme satırlarını yeniden okuyun ve splitId değerlerini kullanın.",
     "splitIdRepeated": "splitId {{ splitId }} birden fazla satırda belirtilmiş. Mevcut her satır yalnızca bir kez sürdürülebilir.",
-    "splitTagCarryAmbiguous": "Yeniden gönderilen bir satırla birden fazla mevcut bölme satırı eşleşiyor ve etiketleri farklı, bu yüzden hangi satırın hangi etiketleri koruyacağı belirsiz. Yeniden gönderilen her satıra, işlemin bölme satırları okunduğu haliyle, devam ettirdiği satırın splitId değerini verin."
+    "splitTagCarryAmbiguous": "Yeniden gönderilen her satırın hangi mevcut bölme satırını devam ettirdiği belirsiz ve satırların etiketleri var. Yeniden gönderilen her satıra, işlemin bölme satırları okunduğu haliyle, devam ettirdiği satırın splitId değerini verin."
   },
   "users": {
     "userNotFound": "Kullanıcı bulunamadı",
