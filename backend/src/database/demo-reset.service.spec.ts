@@ -1,3 +1,4 @@
+import { DEMO_CLEAR_TABLES } from "./demo-clear";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { DemoResetService } from "./demo-reset.service";
@@ -151,19 +152,35 @@ describe("DemoResetService", () => {
         .filter((call: string[]) => call[0].includes("DELETE FROM"))
         .map((call: string[]) => call[0]);
 
-      // Should delete 18 tables in FK-safe order
-      expect(deleteCalls.length).toBe(18);
-
-      // First deletes should be the leaf dependencies
-      expect(deleteCalls[0]).toContain("investment_transactions");
-      expect(deleteCalls[1]).toContain("holdings");
-      expect(deleteCalls[2]).toContain("security_prices");
-      expect(deleteCalls[3]).toContain("securities");
-
-      // Institutions are removed after accounts (FK-safe).
-      expect(deleteCalls).toContain(
-        "DELETE FROM institutions WHERE user_id = $1",
+      // Every table on the shared clear list is wiped, in its order: the
+      // reset and the first seed share one list, so neither can leave a
+      // feature's rows behind.
+      const tables = deleteCalls
+        .map((sql: string) => /DELETE FROM (\w+)/.exec(sql)![1])
+        .filter((t: string) => DEMO_CLEAR_TABLES.some(([name]) => name === t));
+      // The shared-expense detach runs first and deletes the bridge rows itself.
+      expect(tables.slice(-DEMO_CLEAR_TABLES.length)).toEqual(
+        DEMO_CLEAR_TABLES.map(([name]) => name),
       );
+      expect(tables).toEqual(
+        expect.arrayContaining([
+          "warranties",
+          "scheduled_transactions",
+          "shared_groups",
+          "custom_reports",
+        ]),
+      );
+
+      // Non-cascading children go before their parents.
+      const at = (t: string) =>
+        deleteCalls.findIndex((sql: string) =>
+          sql.includes(`DELETE FROM ${t} `),
+        );
+      expect(at("holdings")).toBeLessThan(at("securities"));
+      expect(at("security_prices")).toBeLessThan(at("securities"));
+
+      // The reset-done claim is never part of the wipe.
+      expect(tables).not.toContain("job_claims");
 
       // Last deletes should be the root tables
       expect(deleteCalls[deleteCalls.length - 1]).toContain("user_preferences");

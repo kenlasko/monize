@@ -5,6 +5,7 @@ import {
   periodsPerYearForStoredFrequency,
 } from "../../accounts/payment-frequency.util";
 import { roundToDecimals } from "../../common/round.util";
+import { payrollPaycheque, type PayrollYearToDate } from "./payroll";
 
 export interface DemoTransaction {
   accountKey: string;
@@ -87,6 +88,8 @@ export function generateTransactions(referenceDate: Date): DemoTransaction[] {
     mortgage.mortgageType!,
   );
   let mortgageDebt = Math.abs(mortgage.openingBalance);
+  // Payroll deductions collected so far in each calendar year.
+  const payrollYearToDate = new Map<number, PayrollYearToDate>();
 
   const startYear = startDate.getFullYear();
   const startMonth = startDate.getMonth();
@@ -108,28 +111,27 @@ export function generateTransactions(referenceDate: Date): DemoTransaction[] {
         ? { status: "UNRECONCILED" }
         : { status: "CLEARED" };
 
-    // === SALARY (biweekly: 15th and last day) ===
-    const salary15 = getMonthDate(year, month, 15);
-    if (salary15 <= referenceDate) {
+    // === SALARY (biweekly: 15th and 28th) ===
+    // Posted as a payslip: a gross salary line and the payroll deductions,
+    // CPP and EI stopping at their yearly maximums. The deposit is the net.
+    for (const payDay of [15, 28]) {
+      const payDate = getMonthDate(year, month, payDay);
+      if (payDate > referenceDate) continue;
+      let ytd = payrollYearToDate.get(year);
+      if (!ytd) {
+        ytd = new Map();
+        payrollYearToDate.set(year, ytd);
+      }
+      const { net, splits } = payrollPaycheque(ytd);
       transactions.push({
         accountKey: "chequing",
-        date: formatDate(salary15),
+        date: formatDate(payDate),
         payeeName: "Maple Leaf Technologies",
         categoryPath: "Salary",
-        amount: 2250.0,
+        amount: net,
         description: "Biweekly salary deposit",
-        ...clearedStatus,
-      });
-    }
-    const salaryEnd = getMonthDate(year, month, 28);
-    if (salaryEnd <= referenceDate) {
-      transactions.push({
-        accountKey: "chequing",
-        date: formatDate(salaryEnd),
-        payeeName: "Maple Leaf Technologies",
-        categoryPath: "Salary",
-        amount: 2250.0,
-        description: "Biweekly salary deposit",
+        isSplit: true,
+        splits,
         ...clearedStatus,
       });
     }
