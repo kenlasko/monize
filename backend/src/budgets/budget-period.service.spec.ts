@@ -130,6 +130,7 @@ describe("BudgetPeriodService", () => {
     addSelect: jest.fn().mockReturnThis(),
     groupBy: jest.fn().mockReturnThis(),
     addGroupBy: jest.fn().mockReturnThis(),
+    setParameter: jest.fn().mockReturnThis(),
     getMany: jest.fn().mockResolvedValue([]),
     getRawMany: jest.fn().mockResolvedValue([]),
     ...overrides,

@@ -203,6 +203,7 @@ describe("BudgetAlertService", () => {
     innerJoin: jest.fn().mockReturnThis(),
     groupBy: jest.fn().mockReturnThis(),
     addGroupBy: jest.fn().mockReturnThis(),
+    setParameter: jest.fn().mockReturnThis(),
     getRawMany: jest.fn().mockResolvedValue([]),
   };
 
@@ -1201,6 +1202,7 @@ describe("BudgetAlertService", () => {
             innerJoin: jest.fn().mockReturnThis(),
             groupBy: jest.fn().mockReturnThis(),
             addGroupBy: jest.fn().mockReturnThis(),
+            setParameter: jest.fn().mockReturnThis(),
             getRawMany: jest.fn().mockResolvedValue([]),
           };
           transactionsRepository.createQueryBuilder.mockReturnValue(qb);
@@ -1269,6 +1271,7 @@ describe("BudgetAlertService", () => {
         innerJoin: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
         addGroupBy: jest.fn().mockReturnThis(),
+        setParameter: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue([spendingRow("cat-1", "-550")]),
       };
 
@@ -1315,6 +1318,7 @@ describe("BudgetAlertService", () => {
         innerJoin: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
         addGroupBy: jest.fn().mockReturnThis(),
+        setParameter: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue([spendingRow("cat-1", "-600")]),
       };
 
@@ -1360,6 +1364,7 @@ describe("BudgetAlertService", () => {
         innerJoin: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
         addGroupBy: jest.fn().mockReturnThis(),
+        setParameter: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue([spendingRow("cat-1", "-600")]),
       };
 
@@ -1400,6 +1405,7 @@ describe("BudgetAlertService", () => {
         innerJoin: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
         addGroupBy: jest.fn().mockReturnThis(),
+        setParameter: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue([spendingRow("cat-1", "-600")]),
       };
 
@@ -1453,6 +1459,7 @@ describe("BudgetAlertService", () => {
         innerJoin: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
         addGroupBy: jest.fn().mockReturnThis(),
+        setParameter: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue([spendingRow("cat-1", "-600")]),
       };
 

@@ -40,6 +40,7 @@ import { PayeeDetailService } from "@/payees/payee-detail.service";
 import { Tag } from "@/tags/entities/tag.entity";
 import { PortfolioService } from "@/securities/portfolio.service";
 import { AiUsageService } from "@/ai/ai-usage.service";
+import { InsightsAggregatorService } from "@/ai/insights/insights-aggregator.service";
 
 /**
  * INV-FX-001 and INV-FX-003 against a real PostgreSQL database: "the rate for a
@@ -464,6 +465,17 @@ describe("latest exchange rates and the readers that take them (integration)", (
     expect(top.map((r) => [r.currencyCode, r.total, r.convertedTotal])).toEqual(
       [["USD", -125, -100]],
     );
+    // The assistant's spending insights read the same EUR 150.
+    const insights = await withUserContext(userId, () =>
+      new InsightsAggregatorService(dataSource, analytics).computeAggregates(
+        userId,
+        "EUR",
+      ),
+    );
+    expect(insights.fxComplete).toBe(true);
+    expect(
+      insights.monthlySpending.reduce((sum, month) => sum + month.total, 0),
+    ).toBe(150);
     // The detail page's account panel, from its one read.
     expect(
       detail.accounts

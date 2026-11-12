@@ -3,10 +3,15 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { BudgetCategory } from "./entities/budget-category.entity";
 import { FxAggregate } from "../common/fx-aggregate";
+import { buildRateIndex } from "../common/time-series/rate-index.util";
 import {
-  buildRateIndex,
-  convertAtDate,
-} from "../common/time-series/rate-index.util";
+  convertRateBasis,
+  toOwnRate,
+} from "../built-in-reports/report-currency.service";
+import {
+  partRateBasis,
+  splitByRateBasis,
+} from "../built-in-reports/rate-basis-parts";
 
 /**
  * A transfer a budget (or a transfer analysis) counts arrives in one of two
@@ -153,7 +158,21 @@ interface SpendingRow {
   currencyCode: string;
   txDate: string;
   total: string | null;
+  /** The row's own rate columns (`splitByRateBasis`). */
+  fx_original_currency?: string | null;
+  fx_exchange_rate?: string | null;
 }
+
+/**
+ * The own-rate columns of a read's `t` alias. A transfer read takes the
+ * magnitude of each group's sum, which the split leaves whole: it reads only
+ * outgoing legs (`amount < 0`), so every part of a group has one sign.
+ */
+const OWN_RATE_COLUMNS = {
+  currency: "t.currency_code",
+  originalCurrency: "t.original_currency_code",
+  exchangeRate: "t.exchange_rate",
+};
 
 /**
  * Queries transaction and split spending for budget categories within a period,
@@ -262,11 +281,12 @@ export async function queryCategorySpendingBuckets(
       .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
       .andWhere("t.status != :void", { void: "VOID" })
       .andWhere("t.is_split = false");
-    const directRows = await excludeBudgetAccounts(directQb, excludedAccountIds)
+    excludeBudgetAccounts(directQb, excludedAccountIds)
       .groupBy("t.category_id")
       .addGroupBy("t.currency_code")
-      .addGroupBy("t.transaction_date")
-      .getRawMany();
+      .addGroupBy("t.transaction_date");
+    splitByRateBasis(directQb, OWN_RATE_COLUMNS, currency, { byDay: false });
+    const directRows = await directQb.getRawMany();
     categoryRows.push(...directRows);
 
     const splitQb = splitsRepository
@@ -281,11 +301,12 @@ export async function queryCategorySpendingBuckets(
       .andWhere("t.transaction_date >= :periodStart", { periodStart })
       .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
       .andWhere("t.status != :void", { void: "VOID" });
-    const splitRows = await excludeBudgetAccounts(splitQb, excludedAccountIds)
+    excludeBudgetAccounts(splitQb, excludedAccountIds)
       .groupBy("s.category_id")
       .addGroupBy("t.currency_code")
-      .addGroupBy("t.transaction_date")
-      .getRawMany();
+      .addGroupBy("t.transaction_date");
+    splitByRateBasis(splitQb, OWN_RATE_COLUMNS, currency, { byDay: false });
+    const splitRows = await splitQb.getRawMany();
     categoryRows.push(...splitRows);
   }
 
@@ -300,33 +321,40 @@ export async function queryCategorySpendingBuckets(
       excludedAccountIds,
     };
 
-    transferRows.push(
-      ...(await outgoingParentTransfers(transactionsRepository, window)
-        .select(PARENT_TRANSFER_DESTINATION, "key")
-        .addSelect("t.currency_code", "currencyCode")
-        .addSelect(dateExpr, "txDate")
-        .addSelect(`COALESCE(ABS(SUM(${PARENT_TRANSFER_AMOUNT})), 0)`, "total")
-        .groupBy(PARENT_TRANSFER_DESTINATION)
-        .addGroupBy("t.currency_code")
-        .addGroupBy("t.transaction_date")
-        .getRawMany()),
-    );
-    transferRows.push(
-      ...(await outgoingSplitTransfers(splitsRepository, window)
-        .select(SPLIT_TRANSFER_DESTINATION, "key")
-        .addSelect("t.currency_code", "currencyCode")
-        .addSelect(dateExpr, "txDate")
-        .addSelect(`COALESCE(ABS(SUM(${SPLIT_TRANSFER_AMOUNT})), 0)`, "total")
-        .groupBy(SPLIT_TRANSFER_DESTINATION)
-        .addGroupBy("t.currency_code")
-        .addGroupBy("t.transaction_date")
-        .getRawMany()),
-    );
+    const parentQb = outgoingParentTransfers(transactionsRepository, window)
+      .select(PARENT_TRANSFER_DESTINATION, "key")
+      .addSelect("t.currency_code", "currencyCode")
+      .addSelect(dateExpr, "txDate")
+      .addSelect(`COALESCE(ABS(SUM(${PARENT_TRANSFER_AMOUNT})), 0)`, "total")
+      .groupBy(PARENT_TRANSFER_DESTINATION)
+      .addGroupBy("t.currency_code")
+      .addGroupBy("t.transaction_date");
+    splitByRateBasis(parentQb, OWN_RATE_COLUMNS, currency, { byDay: false });
+    transferRows.push(...(await parentQb.getRawMany()));
+    const splitTransferQb = outgoingSplitTransfers(splitsRepository, window)
+      .select(SPLIT_TRANSFER_DESTINATION, "key")
+      .addSelect("t.currency_code", "currencyCode")
+      .addSelect(dateExpr, "txDate")
+      .addSelect(`COALESCE(ABS(SUM(${SPLIT_TRANSFER_AMOUNT})), 0)`, "total")
+      .groupBy(SPLIT_TRANSFER_DESTINATION)
+      .addGroupBy("t.currency_code")
+      .addGroupBy("t.transaction_date");
+    splitByRateBasis(splitTransferQb, OWN_RATE_COLUMNS, currency, {
+      byDay: false,
+    });
+    transferRows.push(...(await splitTransferQb.getRawMany()));
   }
 
+  // A row the market rate converts needs the history; one that settled into
+  // the budget's currency at its own rate does not.
+  const basisOf = (row: SpendingRow) =>
+    partRateBasis(row, row.currencyCode, row.txDate, currency);
   const foreignCurrencies = new Set<string>();
   for (const row of [...categoryRows, ...transferRows]) {
-    if (row.currencyCode !== currency) foreignCurrencies.add(row.currencyCode);
+    if (row.currencyCode === currency) continue;
+    if (toOwnRate(basisOf(row).own_rate) === null) {
+      foreignCurrencies.add(row.currencyCode);
+    }
   }
   const rateIndex = await buildRateIndex(
     (sql, params) => manager.query(sql, params),
@@ -354,11 +382,12 @@ export async function queryCategorySpendingBuckets(
         agg.addConverted(amount);
         continue;
       }
-      const converted = convertAtDate(
+      // Its own settled rate where it reaches the budget's currency
+      // (INV-FX-002), else the market rate on its date: the reports' rule.
+      const converted = convertRateBasis(
         amount,
-        row.currencyCode,
+        basisOf(row),
         currency,
-        row.txDate,
         rateIndex,
       );
       agg.add(converted, row.currencyCode, currency);

@@ -215,6 +215,34 @@ describe("budget actuals across currencies (integration)", () => {
     expect(spending.incompleteCategoryIds.size).toBe(0);
   });
 
+  it("converts a row at its own rate, as the reports do (INV-FX-002, issue #2130)", async () => {
+    await insertTransaction({ categoryId: groceriesId, amount: -200 });
+    // JPY 10,000 that settled from CAD 80 (125 JPY per CAD), on a day the
+    // market said 111.11: CAD 80, not 90.
+    await insertTransaction({
+      accountId: jpyAccountId,
+      currencyCode: "JPY",
+      categoryId: groceriesId,
+      amount: -10000,
+      originalCurrencyCode: "CAD",
+      originalAmount: -80,
+      exchangeRate: 125,
+    });
+    // A second JPY row on the same day with no rate of its own: the market's.
+    await insertTransaction({
+      accountId: jpyAccountId,
+      currencyCode: "JPY",
+      categoryId: groceriesId,
+      amount: -10000,
+    });
+    await insertRate();
+
+    const spending = await runQuery();
+
+    expect(resolveCategorySpentOrNull(groceriesLine, spending)).toBe(370);
+    expect(spending.missingRatePairs).toEqual([]);
+  });
+
   it("shows the converted figure on the budget summary", async () => {
     await insertCadAndJpyGroceries();
     await insertRate();

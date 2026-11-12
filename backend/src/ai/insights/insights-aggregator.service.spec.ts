@@ -178,8 +178,18 @@ describe("InsightsAggregatorService", () => {
     it("converts each currency into the reporting currency and names a missing pair", async () => {
       withRows([
         row({ month: "2026-01", net: "100" }),
-        row({ month: "2026-01", net: "50", currencyCode: "EUR" }),
-        row({ month: "2026-01", net: "70", currencyCode: "GBP" }),
+        row({
+          month: "2026-01",
+          net: "50",
+          currencyCode: "EUR",
+          fx_day: "2026-01-25",
+        }),
+        row({
+          month: "2026-01",
+          net: "70",
+          currencyCode: "GBP",
+          fx_day: "2026-01-25",
+        }),
       ]);
       managerQuery.mockImplementation(async (sql: string) =>
         /exchange_rates/.test(sql)
@@ -201,6 +211,67 @@ describe("InsightsAggregatorService", () => {
       expect(result.monthlySpending[0].total).toBe(200);
       expect(result.fxComplete).toBe(false);
       expect(result.missingRatePairs).toEqual(["GBP->USD"]);
+    });
+
+    describe("each row at its own rate or on its own date (issue #2130)", () => {
+      const eurRate = (date: string) =>
+        managerQuery.mockImplementation(async (sql: string) =>
+          /exchange_rates/.test(sql)
+            ? [
+                {
+                  from_currency: "EUR",
+                  to_currency: "USD",
+                  rate: "2",
+                  rate_date: date,
+                },
+              ]
+            : [],
+        );
+
+      it("converts a row at the rate it settled at, reading no history", async () => {
+        // EUR 50 settled into USD at 1.25 EUR per USD: USD 40, not 100.
+        const qb = withRows([
+          row({
+            month: "2026-01",
+            net: "50",
+            currencyCode: "EUR",
+            fx_day: "2026-01-25",
+            fx_original_currency: "USD",
+            fx_exchange_rate: "1.25",
+          }),
+        ]);
+        eurRate("2026-01-20");
+
+        const result = await service.computeAggregates(userId, "USD");
+
+        expect(result.monthlySpending[0].total).toBe(40);
+        expect(result.fxComplete).toBe(true);
+        expect(qb.addGroupBy).toHaveBeenCalledWith("fx_exchange_rate");
+        expect(
+          managerQuery.mock.calls.some(([sql]) =>
+            /exchange_rates/.test(String(sql)),
+          ),
+        ).toBe(false);
+      });
+
+      it("never prices a row at a rate struck after its own date", async () => {
+        // The only rate is dated after the row: at the month's last day it
+        // used to convert; on the row's own date there is none.
+        withRows([
+          row({
+            month: "2026-01",
+            net: "50",
+            currencyCode: "EUR",
+            fx_day: "2026-01-05",
+          }),
+        ]);
+        eurRate("2026-01-20");
+
+        const result = await service.computeAggregates(userId, "USD");
+
+        expect(result.fxComplete).toBe(false);
+        expect(result.missingRatePairs).toEqual(["EUR->USD"]);
+      });
     });
 
     it("includes recurring charges from the shared analytics service", async () => {

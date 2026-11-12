@@ -1630,7 +1630,12 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     (byOwnRate) and convert it through the same
                     transactionRateBasis / convertRateBasis rule, so the
                     assistant's total for a sale agrees with Spending by
-                    Category's (issue #2130).
+                    Category's (issue #2130). Budget actuals
+                    (budgets/budget-spending.util.ts queryCategorySpending,
+                    category and outgoing-transfer lines) and the assistant's
+                    spending insights (ai/insights/insights-aggregator.service.ts,
+                    each part on its own date, no longer at its month's last
+                    day) read the same columns through the same rule.
 Test                investment-transaction-summary.service.spec.ts: a sale of
                     820.91 USD settled at 3.7287 reads 3,060.9271 PLN and asks
                     for no market rate; a row without a rate is converted at the
@@ -1649,7 +1654,10 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     not the market's EUR 106.38; fx-latest-rates.integration.spec.ts
                     "alike in the reports and the assistant" holds Spending by
                     Category, list_transactions, the transaction summary and the
-                    grouped totals to one EUR 150 on PostgreSQL.
+                    grouped totals, the category detail panel and the spending
+                    insights to one EUR 150 on PostgreSQL;
+                    budget-multi-currency-actuals.integration.spec.ts converts a
+                    JPY row at its own 125 per CAD beside one at the market rate.
 Status              enforced
 ```
 
