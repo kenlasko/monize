@@ -8,6 +8,7 @@ import * as bcrypt from "bcryptjs";
 
 import { DemoModeService } from "../common/demo-mode.service";
 import { DemoSeedService } from "./demo-seed.service";
+import { clearDemoUserData } from "./demo-clear";
 import { INTRADAY_TEMPLATES } from "./demo-seed-data/intraday-templates";
 import { withSystemContext } from "../common/db/with-context";
 import { DEMO_USER_EMAIL, DEMO_USER_PASSWORD } from "./demo-credentials";
@@ -101,74 +102,10 @@ export class DemoResetService {
       await withScopedDb(this.dataSource, async (manager) => {
         const userId: string = demoUserId;
 
-        // 1. Delete all user data in FK-safe order
-        await manager.query(
-          "DELETE FROM investment_transactions WHERE user_id = $1",
-          [userId],
-        );
-        await manager.query(
-          `DELETE FROM holdings WHERE account_id IN
-         (SELECT id FROM accounts WHERE user_id = $1)`,
-          [userId],
-        );
-        await manager.query(
-          `DELETE FROM security_prices WHERE security_id IN
-         (SELECT id FROM securities WHERE user_id = $1)`,
-          [userId],
-        );
-        await manager.query("DELETE FROM securities WHERE user_id = $1", [
-          userId,
-        ]);
-        await manager.query(
-          `DELETE FROM transaction_splits WHERE transaction_id IN
-         (SELECT id FROM transactions WHERE user_id = $1)`,
-          [userId],
-        );
-        await manager.query("DELETE FROM transactions WHERE user_id = $1", [
-          userId,
-        ]);
-        await manager.query(
-          `DELETE FROM scheduled_transaction_overrides WHERE scheduled_transaction_id IN
-         (SELECT id FROM scheduled_transactions WHERE user_id = $1)`,
-          [userId],
-        );
-        await manager.query(
-          `DELETE FROM scheduled_transaction_splits WHERE scheduled_transaction_id IN
-         (SELECT id FROM scheduled_transactions WHERE user_id = $1)`,
-          [userId],
-        );
-        await manager.query(
-          "DELETE FROM scheduled_transactions WHERE user_id = $1",
-          [userId],
-        );
-        await manager.query(
-          "DELETE FROM monthly_account_balances WHERE user_id = $1",
-          [userId],
-        );
-        await manager.query("DELETE FROM custom_reports WHERE user_id = $1", [
-          userId,
-        ]);
-        await manager.query("DELETE FROM payees WHERE user_id = $1", [userId]);
-        await manager.query("DELETE FROM accounts WHERE user_id = $1", [
-          userId,
-        ]);
-        // Institutions are referenced by accounts (institution_id FK); delete
-        // after accounts so the re-seed recreates them without duplicates.
-        await manager.query("DELETE FROM institutions WHERE user_id = $1", [
-          userId,
-        ]);
-        await manager.query("DELETE FROM categories WHERE user_id = $1", [
-          userId,
-        ]);
-        await manager.query("DELETE FROM refresh_tokens WHERE user_id = $1", [
-          userId,
-        ]);
-        await manager.query("DELETE FROM trusted_devices WHERE user_id = $1", [
-          userId,
-        ]);
-        await manager.query("DELETE FROM user_preferences WHERE user_id = $1", [
-          userId,
-        ]);
+        // 1. Delete everything the demo user owns, in FK-safe order. The
+        // list lives beside a guard test over database/schema.sql, so a table
+        // a later feature adds cannot survive the reset unnoticed.
+        await clearDemoUserData(manager, userId);
 
         // 2. Reset user record
         const hashedPassword = await bcrypt.hash(DEMO_USER_PASSWORD, 10);

@@ -1,3 +1,15 @@
+import {
+  DEMO_GROSS_SALARY,
+  DEMO_REGULAR_NET_PAY,
+  demoPayrollDeductions,
+} from "./payroll";
+
+export interface DemoScheduledTransactionSplit {
+  categoryPath: string;
+  amount: number;
+  memo: string;
+}
+
 export interface DemoScheduledTransaction {
   name: string;
   accountKey: string;
@@ -9,6 +21,8 @@ export interface DemoScheduledTransaction {
   autoPost: boolean;
   isTransfer?: boolean;
   transferAccountKey?: string;
+  /** A payslip: the lines that add up to `amount`. */
+  splits?: DemoScheduledTransactionSplit[];
 }
 
 export const demoScheduledTransactions: DemoScheduledTransaction[] = [
@@ -17,10 +31,23 @@ export const demoScheduledTransactions: DemoScheduledTransaction[] = [
     accountKey: "chequing",
     payeeName: "Maple Leaf Technologies",
     categoryPath: "Salary",
-    amount: 2250.0,
+    amount: DEMO_REGULAR_NET_PAY,
     frequency: "BIWEEKLY",
     dueDayOfMonth: 15,
     autoPost: true,
+    // The bill the Payroll Deductions rules (below) are attached to.
+    splits: [
+      {
+        categoryPath: "Salary",
+        amount: DEMO_GROSS_SALARY,
+        memo: "Gross salary",
+      },
+      ...demoPayrollDeductions.map((d) => ({
+        categoryPath: d.categoryPath,
+        amount: -d.perPaycheque,
+        memo: d.memo,
+      })),
+    ],
   },
   {
     name: "Mortgage Payment",
@@ -115,3 +142,6 @@ export const demoScheduledTransactions: DemoScheduledTransaction[] = [
     autoPost: true,
   },
 ];
+
+/** The scheduled bill the payroll deduction rules belong to. */
+export const DEMO_PAYROLL_BILL_NAME = "Salary";

@@ -1,3 +1,4 @@
+import { DEMO_CLEAR_TABLES } from "./demo-clear";
 import { Logger } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
@@ -120,9 +121,17 @@ describe("DemoSeedService", () => {
         .filter((call: string[]) => call[0].includes("DELETE FROM"))
         .map((call: string[]) => call[0]);
 
-      // Should delete in dependency order
-      expect(deleteCalls.length).toBeGreaterThanOrEqual(14);
-      expect(deleteCalls[0]).toContain("investment_transactions");
+      // The shared clear list runs: a table that a later feature owns is
+      // wiped too, and the preferences row (the seed's last write target) is
+      // the last to go.
+      expect(deleteCalls.length).toBeGreaterThanOrEqual(
+        DEMO_CLEAR_TABLES.length,
+      );
+      for (const [table] of DEMO_CLEAR_TABLES) {
+        expect(
+          deleteCalls.some((sql: string) => sql.includes(`FROM ${table} `)),
+        ).toBe(true);
+      }
       expect(deleteCalls[deleteCalls.length - 1]).toContain("user_preferences");
     });
   });
