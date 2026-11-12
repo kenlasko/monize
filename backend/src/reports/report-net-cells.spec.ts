@@ -145,6 +145,27 @@ describe("NetCells", () => {
     expect(leftOut).toEqual(["USD:a"]);
   });
 
+  it("counts a converted row left out only where no group kept it", () => {
+    const leftOut: string[] = [];
+    const cells = createNetCells(
+      DirectionFilter.EXPENSES_ONLY,
+      false,
+      (currency, unit) => leftOut.push(`${currency}:${unit}`),
+    );
+    // Row "a" sits under two tags: tag A also holds "b", which has no rate,
+    // so A's USD part leaves; tag B keeps "a". Row "c" is only under A.
+    cells.add("A", line("food", "a", 0, "USD"), -10);
+    cells.add("A", line("food", "b", 0, "USD"), null);
+    cells.add("A", line("food", "c", 0, "USD"), -5);
+    cells.add("B", line("food", "a", 0, "USD"), -10);
+
+    const settled = cells.settle();
+
+    expect(settled.has("A")).toBe(false);
+    expect(settled.get("B")!.agg.knownSubtotal).toBe(10);
+    expect(leftOut).toEqual(["USD:c"]);
+  });
+
   it("keeps a whole part's lines for the count metric", () => {
     const cells = createNetCells(DirectionFilter.BOTH, true);
     cells.add("g", line("food", "a", 0, "USD"), -125);

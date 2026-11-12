@@ -113,9 +113,10 @@ export interface NetCells {
 /**
  * @param keepsUnconverted whether a line with no rate still counts (the count
  *   metric); every money figure leaves it out of the sum and the count alike.
- * @param onLeftOut told of each unit whose line converted and was left out
- *   with its part all the same, so the report counts it among what it left
- *   out; a line with no rate was already counted when it failed to convert.
+ * @param onLeftOut told, once, of each unit whose line converted but which no
+ *   part kept, because every part it sits in holds a line with no rate, so the
+ *   report counts it among what it left out; a line with no rate was already
+ *   counted when it failed to convert.
  */
 export function createNetCells(
   direction: DirectionFilter,
@@ -159,6 +160,11 @@ export function createNetCells(
 
   const settle = (): Map<string, { agg: FxAggregate; count: number }> => {
     const settled = new Map<string, { agg: FxAggregate; count: number }>();
+    // Units a part kept, and the converted units a part left out for want of
+    // a rate elsewhere in it: a unit is left out only where no part kept it
+    // (a row under two tags may leave one group and stay in the other).
+    const keptUnits = new Set<string>();
+    const leftOut = new Map<string, string>();
     for (const [group, cells] of groups) {
       const agg = new FxAggregate();
       const units = new Set<string>();
@@ -167,8 +173,11 @@ export function createNetCells(
         // The count metric keeps every line; a money figure keeps only the
         // parts whose every line converted.
         const parts = [...cell.entries()].flatMap(([currency, part]) => {
-          if (keepsUnconverted || !part.unconverted) return [part];
-          for (const unit of part.convertedUnits) onLeftOut(currency, unit);
+          if (keepsUnconverted || !part.unconverted) {
+            for (const unit of part.units) keptUnits.add(unit);
+            return [part];
+          }
+          for (const unit of part.convertedUnits) leftOut.set(unit, currency);
           return [];
         });
         if (parts.length === 0) continue;
@@ -192,6 +201,9 @@ export function createNetCells(
         }
       }
       if (kept) settled.set(group, { agg, count: units.size });
+    }
+    for (const [unit, currency] of leftOut) {
+      if (!keptUnits.has(unit)) onLeftOut(currency, unit);
     }
     return settled;
   };
