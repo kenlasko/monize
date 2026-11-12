@@ -2,6 +2,7 @@ import { BadRequestException } from "@nestjs/common";
 import { applyFxConversion, roundFxRate } from "./fx-entry.util";
 import { roundMoney } from "./round.util";
 import { tr } from "../i18n/translate";
+import { MAX_STORED_RATE } from "../currencies/canonical-rate.util";
 
 /**
  * Where the exchange rate of a foreign-currency entry came from, so the
@@ -127,8 +128,23 @@ export async function resolveForeignEntry(
   } else if (amount !== undefined && originalAmount !== 0) {
     const base = fxBaseFromCharged(amount, fxFeePercent, moneyDecimals);
     const derived = roundFxRate(base / originalAmount);
-    // An amount of zero against a non-zero original has no positive rate:
-    // `normalizeFxEntry`'s refusal names it.
+    // The exchange_rate column holds a positive rate below 1e10 at ten
+    // places; amounts implying anything else (an amount of zero against a
+    // non-zero original included) are refused naming both, never written.
+    if (!(derived > 0) || derived >= MAX_STORED_RATE) {
+      throw new BadRequestException(
+        tr(
+          "errors.transactions.fxDerivedRateOutOfRange",
+          `${originalAmount} ${originalCurrencyCode} charged as ${amount} ${currency} implies an exchange rate that cannot be stored. Check both amounts, or give the exchangeRate.`,
+          {
+            original: originalAmount,
+            originalCurrency: originalCurrencyCode,
+            amount,
+            currency,
+          },
+        ),
+      );
+    }
     return {
       amount,
       originalAmount,

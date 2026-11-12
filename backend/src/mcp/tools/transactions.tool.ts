@@ -285,7 +285,7 @@ export class McpTransactionsTools {
             .optional()
             .default(false)
             .describe(
-              "A foreign-currency row carries read-only originalAmount, originalCurrencyCode and exchangeRate beside the account-currency amount.",
+              "A foreign-currency row carries originalAmount, originalCurrencyCode and exchangeRate beside the account-currency amount.",
             ),
           limit: numberArg(z.number().int().min(1).max(100))
             .optional()

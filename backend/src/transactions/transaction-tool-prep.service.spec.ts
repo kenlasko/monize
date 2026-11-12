@@ -1451,6 +1451,18 @@ describe("TransactionToolPrepService", () => {
           originalAmount: 90,
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
+      // A rate on a transfer edit would be dropped: the edit takes none.
+      transactions.findOne.mockResolvedValueOnce({
+        id: "t1",
+        isTransfer: true,
+        linkedTransactionId: null,
+      });
+      await expect(
+        service.prepareUpdate(userId, {
+          transactionId: "t1",
+          exchangeRate: 0.92,
+        }),
+      ).rejects.toThrow(/exchange rate cannot be changed here/);
       expect(transfer.previewCreateTransfer).not.toHaveBeenCalled();
       expect(transfer.previewUpdateTransfer).not.toHaveBeenCalled();
     });

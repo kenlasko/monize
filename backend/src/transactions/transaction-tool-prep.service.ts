@@ -644,6 +644,16 @@ export class TransactionToolPrepService {
     }
     if (this.transferService.isTransfer(existing)) {
       this.assertNoForeignEntryOnTransfer(item);
+      // The transfer edit takes no rate, so one sent would be dropped while the
+      // model reports it changed.
+      if (item.exchangeRate !== undefined) {
+        throw new BadRequestException(
+          tr(
+            "errors.transactions.transferRateNotEditable",
+            "A transfer's exchange rate cannot be changed here. Edit the transfer from the Transactions screen to change its rate.",
+          ),
+        );
+      }
       if (item.splits) {
         throw new BadRequestException(
           "A transfer cannot be converted into a split transaction.",

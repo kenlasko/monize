@@ -1,7 +1,9 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
+import { loadCurrencyPlacesForRead } from "../common/currency-places.util";
 import {
+  CurrencyPlacesLoader,
   PreviewForeignEntryArgs,
   StoredForeignEntry,
   foreignEntryDisplayFields,
@@ -10,9 +12,10 @@ import {
 } from "./foreign-entry-preview";
 
 /** `currencies.decimal_places` as `loadCurrencyPlacesForRead` reads them. */
-function manager(): EntityManager {
+function manager(): CurrencyPlacesLoader {
   const currencies = currencyPlacesRepoMock({ USD: 2, EUR: 2, GBP: 2 });
-  return { getRepository: () => currencies } as unknown as EntityManager;
+  const m = { getRepository: () => currencies } as unknown as EntityManager;
+  return (codes) => loadCurrencyPlacesForRead(m, codes);
 }
 
 const usdAccount = { currencyCode: "USD", fxFeePercent: null };
@@ -41,7 +44,7 @@ describe("previewForeignEntry", () => {
   it("carries nothing when the row names no foreign entry", async () => {
     await expect(
       previewForeignEntry(manager(), args({ amount: -10 })),
-    ).resolves.toEqual({ amount: -10, fields: null });
+    ).resolves.toEqual({ amount: -10, fields: null, places: null });
   });
 
   it("refuses an original amount or a rate without a currency", async () => {
@@ -93,7 +96,7 @@ describe("previewForeignEntry", () => {
           request: { originalAmount: -100, originalCurrencyCode: "eur" },
         }),
       ),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       amount: -110,
       fields: {
         originalAmount: -100,
@@ -175,7 +178,7 @@ describe("previewForeignEntry", () => {
             request: { originalAmount: -100, originalCurrencyCode: "USD" },
           }),
         ),
-      ).resolves.toEqual({ amount: -100, fields: null });
+      ).resolves.toMatchObject({ amount: -100, fields: null });
     });
 
     it("refuses two different amounts in the one currency", async () => {
@@ -187,7 +190,24 @@ describe("previewForeignEntry", () => {
             request: { originalAmount: -100, originalCurrencyCode: "USD" },
           }),
         ),
-      ).rejects.toThrow(/not -110 USD/);
+      ).rejects.toThrow(
+        /originalAmount \(-100\) and amount \(-110\) must be the same/,
+      );
+    });
+
+    it("refuses a rate, which the account's own currency does not take", async () => {
+      await expect(
+        previewForeignEntry(
+          manager(),
+          args({
+            request: {
+              originalAmount: -100,
+              originalCurrencyCode: "USD",
+              exchangeRate: 1.1,
+            },
+          }),
+        ),
+      ).rejects.toThrow(/takes no exchangeRate/);
     });
 
     it("clears a stored entry, the row keeping the amount it was charged", async () => {
@@ -199,7 +219,7 @@ describe("previewForeignEntry", () => {
             stored: storedEur,
           }),
         ),
-      ).resolves.toEqual({
+      ).resolves.toMatchObject({
         amount: -110,
         fields: {
           originalAmount: null,
@@ -221,7 +241,7 @@ describe("previewForeignEntry", () => {
             stored: storedEur,
           }),
         ),
-      ).resolves.toEqual({
+      ).resolves.toMatchObject({
         amount: -132,
         fields: {
           originalAmount: -120,
@@ -245,13 +265,35 @@ describe("previewForeignEntry", () => {
       });
     });
 
-    it("takes the market rate when the currency changes", async () => {
-      const lookupRate = jest.fn().mockResolvedValue(1.3);
+    it("refuses a currency change without the amount in that currency", async () => {
+      // The row's -100 is euros; read as pounds it would move the balance by
+      // a conversion nobody entered.
+      const lookupRate = jest.fn();
       await expect(
         previewForeignEntry(
           manager(),
           args({
             request: { originalCurrencyCode: "GBP", lookupRate },
+            stored: storedEur,
+          }),
+        ),
+      ).rejects.toThrow(
+        /"originalCurrencyCode" requires one for "originalAmount"/,
+      );
+      expect(lookupRate).not.toHaveBeenCalled();
+    });
+
+    it("takes the market rate when the currency changes with its amount", async () => {
+      const lookupRate = jest.fn().mockResolvedValue(1.3);
+      await expect(
+        previewForeignEntry(
+          manager(),
+          args({
+            request: {
+              originalAmount: -100,
+              originalCurrencyCode: "GBP",
+              lookupRate,
+            },
             stored: storedEur,
           }),
         ),
@@ -272,7 +314,7 @@ describe("previewForeignEntry", () => {
             stored: storedEur,
           }),
         ),
-      ).resolves.toEqual({ amount: -110, fields: null });
+      ).resolves.toMatchObject({ amount: -110, fields: null });
     });
   });
 });

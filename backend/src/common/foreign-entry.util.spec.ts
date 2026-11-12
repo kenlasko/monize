@@ -142,6 +142,24 @@ describe("resolveForeignEntry", () => {
     );
   });
 
+  it("refuses amounts that imply a rate the column cannot store, naming both", async () => {
+    // 1,000,000 USD for 0.0001 of a coin is a rate of 1e10.
+    await expect(
+      resolveForeignEntry(
+        input({
+          originalAmount: -0.0001,
+          originalCurrencyCode: "XBT",
+          amount: -1000000,
+        }),
+        usd,
+      ),
+    ).rejects.toThrow(/-0.0001 XBT charged as -1000000 USD implies/);
+    // Nothing charged for something paid has no positive rate.
+    await expect(
+      resolveForeignEntry(input({ amount: 0 }), usd),
+    ).rejects.toThrow(/cannot be stored/);
+  });
+
   it("refuses an amount whose sign differs from the original amount's", async () => {
     await expect(
       resolveForeignEntry(input({ amount: 110 }), usd),

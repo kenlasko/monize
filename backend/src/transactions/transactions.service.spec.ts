@@ -10639,6 +10639,20 @@ describe("TransactionsService", () => {
         });
       });
 
+      it("is not tag-only when the entry moves the amount, so the commit writes it", async () => {
+        // The account's own currency with an original amount: an ordinary
+        // entry whose amount moves, though no entry field is carried.
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...baseTx });
+        tagsService.findByNames.mockResolvedValue([]);
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          foreignEntry: { originalCurrencyCode: "USD", originalAmount: -60 },
+          tagNames: ["Travel"],
+        });
+        expect(preview.amount).toBe(-60);
+        expect(preview.originalCurrencyCode).toBeUndefined();
+        expect(preview).not.toHaveProperty("tagsOnly");
+      });
+
       it("refuses an entry change that moves a split parent's amount without its lines", async () => {
         transactionsRepository.findOne.mockResolvedValueOnce({
           ...foreignTx,

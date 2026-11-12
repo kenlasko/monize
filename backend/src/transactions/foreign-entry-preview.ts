@@ -1,10 +1,6 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
-import { EntityManager } from "typeorm";
 import { assertAmountPrecision } from "../common/amount-precision.util";
-import {
-  loadCurrencyPlacesForRead,
-  precisionCurrencyFor,
-} from "../common/currency-places.util";
+import { precisionCurrencyFor } from "../common/currency-places.util";
 import {
   ForeignEntryRateSource,
   ForeignEntryRequest,
@@ -110,6 +106,11 @@ function requiresOther(param: string, other: string): BadRequestException {
   );
 }
 
+/** `currencies.decimal_places` of `codes`, read outside any open transaction. */
+export type CurrencyPlacesLoader = (
+  codes: readonly string[],
+) => Promise<ReadonlyMap<string, number>>;
+
 /**
  * Resolve a tool caller's foreign-currency figures against the account, for
  * `TransactionsService.previewCreate` / `previewUpdate`: name checks, the
@@ -117,19 +118,27 @@ function requiresOther(param: string, other: string): BadRequestException {
  * then the commit's own `normalizeFxEntry` so the preview refuses what the
  * commit would. Returns the amount the row will store (on an edit, the
  * row's own when nothing moves it; `undefined` on a create that gave none and
- * names no entry) and the fields to carry, or `null` when the entry does not
- * change.
+ * names no entry), the fields to carry (`null` when the entry does not
+ * change) and the places it loaded, account currency included.
+ *
+ * Called outside any database transaction: the market-rate lookup may ask a
+ * provider over HTTP and store what it answers, which must neither hold a
+ * transaction open nor abort the caller's.
  */
 export async function previewForeignEntry(
-  manager: EntityManager,
+  loadPlaces: CurrencyPlacesLoader,
   args: PreviewForeignEntryArgs,
-): Promise<{ amount: number | undefined; fields: ForeignEntryFields | null }> {
+): Promise<{
+  amount: number | undefined;
+  fields: ForeignEntryFields | null;
+  places: ReadonlyMap<string, number> | null;
+}> {
   const { request, stored } = args;
   const accountCode = args.account.currencyCode.toUpperCase();
   const code =
     request.originalCurrencyCode !== undefined
       ? request.originalCurrencyCode.toUpperCase()
-      : (stored?.originalCurrencyCode ?? null);
+      : (stored?.originalCurrencyCode?.toUpperCase() ?? null);
   const originalAmount =
     request.originalAmount ?? stored?.originalAmount ?? undefined;
 
@@ -138,9 +147,13 @@ export async function previewForeignEntry(
       throw requiresOther("originalAmount", "originalCurrencyCode");
     if (request.exchangeRate !== undefined)
       throw requiresOther("exchangeRate", "originalCurrencyCode");
-    return { amount: args.amount ?? stored?.amount, fields: null };
+    return {
+      amount: args.amount ?? stored?.amount,
+      fields: null,
+      places: null,
+    };
   }
-  const places = await loadCurrencyPlacesForRead(manager, [accountCode, code]);
+  const places = await loadPlaces([accountCode, code]);
   if (!places.has(code)) {
     throw new NotFoundException(
       tr("errors.currencies.notFound", `Currency "${code}" not found`, {
@@ -154,6 +167,15 @@ export async function previewForeignEntry(
   // The account's own currency: an ordinary entry after all, as
   // `normalizeFxEntry` treats it. A stored foreign entry is cleared.
   if (code === accountCode) {
+    if (request.exchangeRate !== undefined) {
+      throw new BadRequestException(
+        tr(
+          "errors.transactions.fxSameCurrencyRate",
+          `${code} is the account's own currency, which takes no exchangeRate. Leave out exchangeRate, or give the currency that was actually paid in.`,
+          { currency: code },
+        ),
+      );
+    }
     const given = request.originalAmount;
     if (
       given !== undefined &&
@@ -163,16 +185,9 @@ export async function previewForeignEntry(
     ) {
       throw new BadRequestException(
         tr(
-          "errors.transactions.fxAmountsConflict",
-          `${given} ${code} at an exchange rate of 1 converts to ${given} ${accountCode} (after any foreign transaction fee on the account), not ${args.amount} ${accountCode}. Leave out exchangeRate to derive the rate from the two amounts, or leave out amount to compute it from the rate.`,
-          {
-            original: given,
-            originalCurrency: code,
-            rate: 1,
-            converted: given,
-            amount: args.amount,
-            currency: accountCode,
-          },
+          "errors.transactions.fxSameCurrencyAmounts",
+          `${code} is the account's own currency, so originalAmount (${given}) and amount (${args.amount}) must be the same. Leave out originalAmount, or give the currency that was actually paid in.`,
+          { currency: code, original: given, amount: args.amount },
         ),
       );
     }
@@ -182,9 +197,21 @@ export async function previewForeignEntry(
       fields: stored?.originalCurrencyCode
         ? { originalAmount: null, originalCurrencyCode: null, exchangeRate: 1 }
         : null,
+      places,
     };
   }
 
+  // A different currency is a different original amount: the row's own is in
+  // the currency it replaces, and reading it as the new one would move the
+  // balance by a conversion nobody entered.
+  const storedCode = stored?.originalCurrencyCode?.toUpperCase() ?? null;
+  if (
+    storedCode !== null &&
+    storedCode !== code &&
+    request.originalAmount === undefined
+  ) {
+    throw requiresOther("originalCurrencyCode", "originalAmount");
+  }
   if (originalAmount === undefined || originalAmount === null)
     throw requiresOther("originalCurrencyCode", "originalAmount");
   assertAmountPrecision(
@@ -203,7 +230,8 @@ export async function previewForeignEntry(
         // An edit that changed neither figure keeps the row's own rate for its
         // own currency; otherwise the market rate for the date.
         if (
-          stored?.originalCurrencyCode?.toUpperCase() === code &&
+          storedCode === code &&
+          stored !== undefined &&
           stored.exchangeRate > 0
         ) {
           return {
@@ -240,7 +268,7 @@ export async function previewForeignEntry(
   // the row's own entry changes nothing.
   const unchanged =
     stored !== undefined &&
-    stored.originalCurrencyCode?.toUpperCase() === code &&
+    storedCode === code &&
     Number(stored.originalAmount) === resolved.originalAmount &&
     roundFxRate(Number(stored.exchangeRate)) === resolved.exchangeRate &&
     roundMoney(stored.amount, moneyDecimals) ===
@@ -255,5 +283,6 @@ export async function previewForeignEntry(
           exchangeRate: resolved.exchangeRate,
           exchangeRateSource: resolved.exchangeRateSource,
         },
+    places,
   };
 }

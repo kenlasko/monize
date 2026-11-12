@@ -142,8 +142,9 @@ import { McpServerService } from "./mcp-server.service";
 // entries): `manage_transactions` takes `originalAmount` and
 // `originalCurrencyCode` on a non-transfer create or update, and
 // `exchangeRate`'s description now covers them too; no description sentence
-// was added. 6,626 -> 7,020 bytes measured (+394); cap 6,634 -> 7,028; total
-// 68,982 -> 69,376 (69,360 measured, the margin kept).
+// was added. 6,626 -> 7,020 bytes measured (+394); cap 6,634 -> 7,028.
+// `list_transactions` no longer calls those fields read-only (-10 bytes). Total
+// 68,982 -> 69,366 (69,350 measured, the margin kept).
 const TOOL_BYTE_BUDGET: Record<string, number> = {
   list_accounts: 2360,
   list_transactions: 3550,
@@ -176,7 +177,7 @@ const TOOL_BYTE_BUDGET: Record<string, number> = {
   report_progress: 1140,
 };
 
-const TOTAL_BYTE_BUDGET = 69_376;
+const TOTAL_BYTE_BUDGET = 69_366;
 const INSTRUCTIONS_BYTE_BUDGET = 2_600;
 
 /**

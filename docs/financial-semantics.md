@@ -217,8 +217,12 @@ refuses what the commit would:
 
 The amount charged is the fact: a conversion never replaces it. On an edit the
 row's own figures fill in what the caller omits, a moved amount on a foreign
-row derives the rate again rather than leaving it stale, and the account's own
-currency as `originalCurrencyCode` clears the entry. The card says where the
+row derives the rate again rather than leaving it stale, a different currency
+needs its own `originalAmount` (the row's is in the old one), and the account's
+own currency as `originalCurrencyCode` clears the entry (refusing a rate, or an
+original amount that differs from the amount). A derived rate the
+`NUMERIC(20,10)` column cannot hold is refused naming both amounts. The lookup
+runs outside any transaction, since it may ask a provider. The card says where the
 rate came from (`exchangeRateSource`: supplied, derived, market or stored;
 display only, never signed), INV-FX-002. A transfer refuses the two fields.
 
