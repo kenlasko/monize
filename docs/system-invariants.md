@@ -1463,7 +1463,7 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     (group, category, currency) part with a row no rate
                     reaches out whole, rows that converted included
                     (reports/report-net-cells.ts, issue #2130), its
-                    excludedCount still counting the rows without a rate);
+                    excludedCount counting those rows too);
                     buildConverter takes the row's own rate where it reaches
                     the reporting currency (INV-FX-002), else convertAtDate over
                     one ExchangeRateService.getRateIndex load for the span the

@@ -123,7 +123,9 @@ describe("rate-basis-parts", () => {
       expect(qb.addSelect).toHaveBeenCalledWith("CONCAT(a, b)", "group_key");
       const [sql, params] = m.query.mock.calls[0];
       expect(sql).toContain("WITH parts AS (SELECT inner WHERE a = $1)");
-      expect(sql).toContain('ORDER BY SUM(parts."magnitude") DESC, group_key');
+      expect(sql).toContain(
+        'ORDER BY SUM(parts."magnitude") DESC, group_key COLLATE "C"',
+      );
       expect(sql).toContain("LIMIT $2");
       expect(params).toEqual(["user-1", 100]);
     });

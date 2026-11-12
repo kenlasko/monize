@@ -125,7 +125,12 @@ describe("NetCells", () => {
   });
 
   it("leaves a currency part out whole when one of its lines has no rate (issue #2130)", () => {
-    const cells = createNetCells(DirectionFilter.EXPENSES_ONLY, false);
+    const leftOut: string[] = [];
+    const cells = createNetCells(
+      DirectionFilter.EXPENSES_ONLY,
+      false,
+      (currency, unit) => leftOut.push(`${currency}:${unit}`),
+    );
     // Food in USD: a -100 debit that converted and a +30 refund struck on a
     // day with no rate. Keeping the debit alone would report -100, not -70.
     cells.add("g", line("food", "a", 0, "USD"), -125);
@@ -136,6 +141,8 @@ describe("NetCells", () => {
     const settled = cells.settle().get("g")!;
     expect(settled.agg.knownSubtotal).toBe(1020);
     expect(settled.count).toBe(2);
+    // The debit that converted is told of; the refund was counted already.
+    expect(leftOut).toEqual(["USD:a"]);
   });
 
   it("keeps a whole part's lines for the count metric", () => {

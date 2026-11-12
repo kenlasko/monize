@@ -83,9 +83,10 @@ export interface ReportResult {
    */
   missingCurrencies: string[];
   /**
-   * How many rows (or split lines) had no rate. Each takes the rest of its
-   * group's category part in its currency out with it, so a refund struck on a
-   * day with no rate never leaves its debit standing alone.
+   * How many rows (or split lines) were left out for want of a rate: those
+   * with none, and those of the same currency in the same group and category
+   * that left with them, so a refund struck on a day with no rate never leaves
+   * its debit standing alone.
    */
   excludedCount: number;
   /**

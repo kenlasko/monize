@@ -93,6 +93,8 @@ export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
 interface CellPart {
   agg: FxAggregate;
   units: Set<string>;
+  /** The units of the lines that converted. */
+  convertedUnits: Set<string>;
   /** A line of this part had no rate. */
   unconverted: boolean;
 }
@@ -111,10 +113,14 @@ export interface NetCells {
 /**
  * @param keepsUnconverted whether a line with no rate still counts (the count
  *   metric); every money figure leaves it out of the sum and the count alike.
+ * @param onLeftOut told of each unit whose line converted and was left out
+ *   with its part all the same, so the report counts it among what it left
+ *   out; a line with no rate was already counted when it failed to convert.
  */
 export function createNetCells(
   direction: DirectionFilter,
   keepsUnconverted: boolean,
+  onLeftOut: (currency: string, unit: string) => void = () => undefined,
 ): NetCells {
   const groups = new Map<string, Map<string, Cell>>();
 
@@ -135,11 +141,19 @@ export function createNetCells(
     }
     let part = cell.get(line.currency);
     if (!part) {
-      part = { agg: new FxAggregate(), units: new Set(), unconverted: false };
+      part = {
+        agg: new FxAggregate(),
+        units: new Set(),
+        convertedUnits: new Set(),
+        unconverted: false,
+      };
       cell.set(line.currency, part);
     }
     if (converted === null) part.unconverted = true;
-    else part.agg.addConverted(converted);
+    else {
+      part.agg.addConverted(converted);
+      part.convertedUnits.add(line.unit);
+    }
     part.units.add(line.unit);
   };
 
@@ -152,9 +166,11 @@ export function createNetCells(
       for (const cell of cells.values()) {
         // The count metric keeps every line; a money figure keeps only the
         // parts whose every line converted.
-        const parts = [...cell.values()].filter(
-          (part) => keepsUnconverted || !part.unconverted,
-        );
+        const parts = [...cell.entries()].flatMap(([currency, part]) => {
+          if (keepsUnconverted || !part.unconverted) return [part];
+          for (const unit of part.convertedUnits) onLeftOut(currency, unit);
+          return [];
+        });
         if (parts.length === 0) continue;
         const sum = new FxAggregate();
         for (const part of parts) sum.merge(part.agg);

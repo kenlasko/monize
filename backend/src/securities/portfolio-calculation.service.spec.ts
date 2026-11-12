@@ -2539,6 +2539,47 @@ describe("one replay behind realized gains, lots and the capital-gains periods (
       );
     });
 
+    it("keeps a return of capital on a basis of unknown cost unknown in the reporting currency too", async () => {
+      // Priced shares, then shares with no cost (a gap in the basis), then a
+      // return of capital the basis absorbs: unknown in USD, so unknown in CAD.
+      const usd = { accountCurrency: "USD", securityCurrency: "USD" };
+      const { service } = build(
+        [
+          makeTx({
+            id: "buy",
+            transactionDate: "2024-01-10",
+            quantity: 10,
+            price: 100,
+            totalAmount: 1000,
+            ...usd,
+          }),
+          addUnpriced({ transactionDate: "2024-01-12", quantity: 5, ...usd }),
+          makeTx({
+            id: "roc",
+            action: InvestmentAction.RETURN_OF_CAPITAL,
+            transactionDate: "2024-02-10",
+            quantity: null as never,
+            price: null as never,
+            totalAmount: 100,
+            ...usd,
+          }),
+        ],
+        {
+          accountCurrency: "USD",
+          reportingCurrency: "CAD",
+          rates: { "USD->CAD": 1.4 },
+        },
+      );
+
+      const [feb] = await service.calculateCapitalGainsByMonth(userId, {
+        startDate: "2024-02-01",
+        endDate: "2024-02-29",
+      });
+
+      expect(feb.realizedGain).toBeNull();
+      expect(feb.inReportingCurrency.realizedGain).toBeNull();
+    });
+
     it("names the pair a capital-gain entry lacks in the reporting currency", async () => {
       const { service } = build(
         [

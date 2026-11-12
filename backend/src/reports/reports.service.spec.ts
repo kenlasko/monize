@@ -2180,7 +2180,8 @@ describe("ReportsService", () => {
           expect(result.summary.total).toBeNull();
           expect(result.summary.knownTotal).toBe(200);
           expect(result.missingCurrencies).toEqual(["JPY"]);
-          expect(result.excludedCount).toBe(1);
+          // The refund with no rate, and the debit that left with it.
+          expect(result.excludedCount).toBe(2);
         });
 
         it("leaves a zero amount in without a rate", async () => {

@@ -93,8 +93,9 @@ export function partRateBasis(
  * The parts of a read split by {@link splitByRateBasis}, only those of its
  * `limit` largest groups: `groupKeySql` names a part's group (selected as
  * `group_key`) and a group ranks by the sum of its parts' `magnitude` column,
- * largest first and then by key, the order the unsplit read's
- * `ORDER BY ... LIMIT` gave. The bound stays in PostgreSQL, so a person with
+ * largest first and then by key (byte order, `COLLATE "C"`, the order a
+ * JavaScript sort of the keys gives), as the unsplit read's `ORDER BY ...
+ * LIMIT` ranked them. The bound stays in PostgreSQL, so a person with
  * thousands of groups is not read whole to show a hundred.
  */
 export async function readTopGroupParts<T extends ObjectLiteral>(
@@ -112,7 +113,7 @@ export async function readTopGroupParts<T extends ObjectLiteral>(
      WHERE parts.group_key IN (
        SELECT group_key FROM parts
        GROUP BY group_key
-       ORDER BY SUM(parts."${magnitude}") DESC, group_key
+       ORDER BY SUM(parts."${magnitude}") DESC, group_key COLLATE "C"
        LIMIT $${params.length + 1}
      )`,
     [...params, limit],

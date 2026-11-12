@@ -1339,6 +1339,20 @@ export class PortfolioCalculationService {
     const requestedAccounts =
       accountIds && accountIds.length > 0 ? new Set(accountIds) : null;
     const results: RealizedGainEntry[] = [];
+    // The pairs each position lacks on its own dates, worked out once a
+    // position needs them rather than once per sale.
+    const pairsByPosition = new Map<string, string[]>();
+    const missingPairsOf = (position: string): string[] => {
+      const known = pairsByPosition.get(position);
+      if (known) return known;
+      const pairs = positionMissingPairs(
+        position,
+        fetched,
+        inReporting.unresolved,
+      );
+      pairsByPosition.set(position, pairs);
+      return pairs;
+    };
 
     for (const tx of orderTransferOutBeforeIn(fetched)) {
       const disposal = steps.get(tx)?.disposal;
@@ -1387,11 +1401,9 @@ export class PortfolioCalculationService {
             : null,
         basisGap: disposal.gap,
         inReportingCurrency: this.realizedInReporting(
-          tx,
-          fetched,
           reporting,
           disposalInReporting(disposal, inReporting.steps.get(tx)?.disposal),
-          inReporting.unresolved,
+          () => missingPairsOf(`${tx.accountId}:${tx.securityId}`),
         ),
       });
     }
@@ -1405,21 +1417,14 @@ export class PortfolioCalculationService {
    * resolve on its own dates.
    */
   private realizedInReporting(
-    tx: InvestmentTransaction,
-    history: readonly InvestmentTransaction[],
     currency: string,
     figures: ReturnType<typeof disposalInReporting>,
-    unresolved: readonly UnresolvedReplayRate[],
+    /** The pairs the sale's position lacks on its own dates. */
+    missingPairs: () => string[],
   ): RealizedGainEntry["inReportingCurrency"] {
     const { proceeds, costBasis, realizedGain } = figures;
     const missingRatePairs =
-      proceeds === null || realizedGain === null
-        ? positionMissingPairs(
-            `${tx.accountId}:${tx.securityId}`,
-            history,
-            unresolved,
-          )
-        : [];
+      proceeds === null || realizedGain === null ? missingPairs() : [];
     return { currency, proceeds, costBasis, realizedGain, missingRatePairs };
   }
 
@@ -1927,9 +1932,14 @@ export class PortfolioCalculationService {
                   InvestmentAction.RETURN_OF_CAPITAL &&
                 disposal.proceeds !== null &&
                 disposal.proceeds - disposal.basisRelieved <= 0;
-              const gain = absorbedReturn
-                ? 0
-                : disposalInReporting(disposal, reported).realizedGain;
+              // Unknown where the account's own gain is: a basis gap is
+              // a gap in every currency.
+              const gain =
+                disposal.realizedGain === null
+                  ? null
+                  : absorbedReturn
+                    ? 0
+                    : disposalInReporting(disposal, reported).realizedGain;
               if (gain === null) {
                 flowsRep.realizedKnown = false;
                 if (disposal.realizedGain !== null) lacksReplayRate();
