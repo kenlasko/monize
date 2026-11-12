@@ -3320,8 +3320,8 @@ describe("TransactionAnalyticsService", () => {
       const ownRateRow = {
         currencyCode: "USD",
         txDate: "2025-12-31",
-        originalCurrencyCode: "EUR",
-        exchangeRate: "1.25000000",
+        fx_original_currency: "EUR",
+        fx_exchange_rate: "1.25000000",
       };
       const reportRule = () =>
         convertRateBasis(
@@ -3361,13 +3361,20 @@ describe("TransactionAnalyticsService", () => {
         expect(result.fxComplete).toBe(true);
         expect(result.totalExpenses).toBe(100);
         expect(result.totalExpenses).toBe(reportRule());
-        // Each part is grouped by the rate it settled at.
-        expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith(
-          "transaction.exchangeRate",
+        // Each foreign part is grouped by the rate it settled at.
+        expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+          "CASE WHEN transaction.currencyCode <> :fxOwnRateCurrency THEN transaction.exchangeRate END",
+          "fx_exchange_rate",
         );
         expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith(
-          "transaction.originalCurrencyCode",
+          "fx_exchange_rate",
         );
+        expect(mockQueryBuilder.setParameter).toHaveBeenCalledWith(
+          "fxOwnRateCurrency",
+          "EUR",
+        );
+        // Its own rate reaches EUR, so no market history is read.
+        expect(managerMock.query).not.toHaveBeenCalled();
       });
 
       it("converts a breakdown row at its own rate", async () => {
@@ -3385,8 +3392,9 @@ describe("TransactionAnalyticsService", () => {
         expect(result.breakdown).toEqual([
           expect.objectContaining({ categoryId: "cat-travel", total: 100 }),
         ]);
-        expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith(
-          "t.exchangeRate",
+        expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+          "CASE WHEN t.currencyCode <> :fxOwnRateCurrency THEN t.originalCurrencyCode END",
+          "fx_original_currency",
         );
       });
 
@@ -3394,7 +3402,7 @@ describe("TransactionAnalyticsService", () => {
         mockQueryBuilder.getRawMany.mockResolvedValue([
           {
             ...ownRateRow,
-            exchangeRate: "1.00000000",
+            fx_exchange_rate: "1.00000000",
             totalIncome: "0",
             totalExpenses: "117.5",
           },

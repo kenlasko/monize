@@ -51,6 +51,7 @@ import { isNetSpending } from "../built-in-reports/spending-reports.service";
 import {
   convertDatedRows,
   convertRateBasis,
+  toOwnRate,
   transactionRateBasis,
 } from "../built-in-reports/report-currency.service";
 import {
@@ -1271,7 +1272,11 @@ export class TransactionAnalyticsService {
         .addGroupBy("transaction.currencyCode")
         .addGroupBy(DAY_TX_SQL)
         .orderBy("month", "ASC");
-      byOwnRate(queryBuilder, "transaction");
+      const defaultCurrency = await resolveUserDefaultCurrency(
+        this.dataSource,
+        userId,
+      );
+      byOwnRate(queryBuilder, "transaction", defaultCurrency);
 
       const rows = await queryBuilder.getRawMany();
       if (rows.length === 0) return [];
@@ -1279,10 +1284,7 @@ export class TransactionAnalyticsService {
       // One currency across every row needs no conversion, so the totals stay
       // exact in that currency; otherwise they convert to the default.
       const codes = new Set(rows.map((r) => r.currencyCode as string));
-      const reporting =
-        codes.size === 1
-          ? [...codes][0]
-          : await resolveUserDefaultCurrency(this.dataSource, userId);
+      const reporting = codes.size === 1 ? [...codes][0] : defaultCurrency;
       const days = rows.map((r) => r.txDate as string).sort();
       const rates = await this.loadRateIndex(
         m,
@@ -1712,7 +1714,7 @@ export class TransactionAnalyticsService {
         )
         .groupBy("transaction.currencyCode")
         .addGroupBy(dayExpr);
-      byOwnRate(qb, "transaction");
+      byOwnRate(qb, "transaction", reporting);
 
       const rows = await qb.getRawMany();
       const rates = await this.loadRateIndex(
@@ -1798,16 +1800,26 @@ export class TransactionAnalyticsService {
   /** Every stored rate the rows' foreign currencies can need, loaded once. */
   private loadRateIndex(
     m: EntityManager,
-    rows: Array<{ currencyCode?: string }>,
+    rows: RawGroupRow[],
     reporting: string,
     startDate: string,
     endDate: string,
   ): Promise<RateIndex> {
+    // Only a part the market rate converts needs the history: not one in the
+    // reporting currency, nor one that settled into it at its own rate.
     const foreign = new Set<string>();
     for (const row of rows) {
-      if (row.currencyCode && row.currencyCode !== reporting) {
-        foreign.add(row.currencyCode);
-      }
+      if (!row.currencyCode || row.currencyCode === reporting) continue;
+      const basis = transactionRateBasis(
+        {
+          currencyCode: row.currencyCode,
+          transactionDate: row.txDate ?? startDate,
+          originalCurrencyCode: row.fx_original_currency,
+          exchangeRate: row.fx_exchange_rate,
+        },
+        reporting,
+      );
+      if (toOwnRate(basis.own_rate) === null) foreign.add(row.currencyCode);
     }
     return buildRateIndex(
       (sql, params) => m.query(sql, params),
@@ -1939,6 +1951,7 @@ export class TransactionAnalyticsService {
             .addGroupBy("t.currencyCode")
             .addGroupBy(DAY_SQL),
           "t",
+          reporting,
         );
       const fx = new FxAggregate();
       const finish = (groups: FoldedGroup[]) => {
@@ -2283,7 +2296,7 @@ export class TransactionAnalyticsService {
         .addSelect(DAY_SQL, "txDate")
         .addGroupBy("t.currencyCode")
         .addGroupBy(DAY_SQL);
-      byOwnRate(qb, "t");
+      byOwnRate(qb, "t", reporting);
 
       const rows = await qb.getRawMany();
       const rates = await this.loadRateIndex(
@@ -2588,8 +2601,8 @@ function addDatedAmount(
     {
       currencyCode: row.currencyCode,
       transactionDate: row.txDate,
-      originalCurrencyCode: row.originalCurrencyCode,
-      exchangeRate: row.exchangeRate,
+      originalCurrencyCode: row.fx_original_currency,
+      exchangeRate: row.fx_exchange_rate,
     },
     reporting,
   );
@@ -2601,20 +2614,33 @@ function addDatedAmount(
 }
 
 /**
- * Select and group by the columns a part needs to convert at the rate it
- * settled at (`originalCurrencyCode`, `exchangeRate`), so {@link addDatedAmount}
- * reads each part's own rate the way the reports do (INV-FX-002); `alias` is the
- * query's transaction alias.
+ * Select and group by the columns a part outside `reporting` needs to convert
+ * at the rate it settled at (`fx_original_currency`, `fx_exchange_rate`), so
+ * {@link addDatedAmount} reads each part's own rate the way the reports do
+ * (INV-FX-002); `alias` is the query's transaction alias.
  */
 function byOwnRate(
   qb: SelectQueryBuilder<Transaction>,
   alias: string,
+  reporting: string,
 ): SelectQueryBuilder<Transaction> {
-  return qb
-    .addSelect(`${alias}.originalCurrencyCode`, "originalCurrencyCode")
-    .addSelect(`${alias}.exchangeRate`, "exchangeRate")
-    .addGroupBy(`${alias}.originalCurrencyCode`)
-    .addGroupBy(`${alias}.exchangeRate`);
+  // A row already in the reporting currency needs no rate, so it is not split.
+  const foreign = `${alias}.currencyCode <> :fxOwnRateCurrency`;
+  return (
+    qb
+      .setParameter("fxOwnRateCurrency", reporting)
+      .addSelect(
+        `CASE WHEN ${foreign} THEN ${alias}.originalCurrencyCode END`,
+        "fx_original_currency",
+      )
+      .addSelect(
+        `CASE WHEN ${foreign} THEN ${alias}.exchangeRate END`,
+        "fx_exchange_rate",
+      )
+      // The output columns' names: lower case, so the unquoted names match.
+      .addGroupBy("fx_original_currency")
+      .addGroupBy("fx_exchange_rate")
+  );
 }
 
 /**

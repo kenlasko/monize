@@ -104,8 +104,9 @@ export function foldRateParts(
       count: 0,
       latest: null,
     };
+    // The arrays are this fold's own, so appending in place keeps it linear.
     for (const name of names.sums) {
-      group.values[name] = [...group.values[name], Number(row[name]) || 0];
+      group.values[name].push(Number(row[name]) || 0);
     }
     group.count += Number(row[names.count]) || 0;
     const latest: string | null = names.latest

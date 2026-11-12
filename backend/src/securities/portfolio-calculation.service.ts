@@ -296,6 +296,30 @@ function addDaysIso(iso: string, days: number): string {
  */
 const COST_BASIS_QUANTITY_TOLERANCE = 0.0001;
 
+/**
+ * The pairs a replay could not resolve on one of a position's own dates, keyed
+ * `${accountId}:${securityId}`: what a figure of that position lacks, named
+ * the same way by Realized Gains and the capital-gains fold.
+ */
+function positionMissingPairs(
+  position: string,
+  history: readonly InvestmentTransaction[],
+  unresolved: readonly UnresolvedReplayRate[],
+): string[] {
+  const dates = new Set(
+    history
+      .filter((row) => `${row.accountId}:${row.securityId}` === position)
+      .map((row) => String(row.transactionDate).slice(0, 10)),
+  );
+  return [
+    ...new Set(
+      unresolved
+        .filter((rate) => dates.has(rate.onDate))
+        .map((rate) => `${rate.from}->${rate.to}`),
+    ),
+  ];
+}
+
 /** A replay rate lookup that found no admissible rate. */
 interface UnresolvedReplayRate {
   from: string;
@@ -986,7 +1010,8 @@ export class PortfolioCalculationService {
     if (holdingsAccountIds.length === 0) return result;
 
     const transactions =
-      history ?? (await this.holdingsHistory(userId, holdingsAccountIds));
+      history ??
+      (await this.holdingsHistory(userId, holdingsAccountIds, false));
 
     // No history, no lots, and so nothing to denominate. Returning before the
     // account read keeps the common empty case at one query.
@@ -1033,6 +1058,8 @@ export class PortfolioCalculationService {
   private holdingsHistory(
     userId: string,
     holdingsAccountIds: string[],
+    /** False for a caller that replays in the account's currency alone. */
+    withRelations = true,
   ): Promise<InvestmentTransaction[]> {
     if (holdingsAccountIds.length === 0) return Promise.resolve([]);
     return withScopedDb(this.dataSource, (m) =>
@@ -1043,7 +1070,7 @@ export class PortfolioCalculationService {
           transactionDate: LessThanOrEqual(formatDateYMDLocal(new Date())),
           status: NON_VOID_INVESTMENT_STATUS,
         },
-        relations: ["security", "account"],
+        ...(withRelations && { relations: ["security", "account"] }),
         order: INVESTMENT_REPLAY_ORDER,
       }),
     );
@@ -1385,21 +1412,13 @@ export class PortfolioCalculationService {
     unresolved: readonly UnresolvedReplayRate[],
   ): RealizedGainEntry["inReportingCurrency"] {
     const { proceeds, costBasis, realizedGain } = figures;
-    const position = `${tx.accountId}:${tx.securityId}`;
-    const dates = new Set(
-      history
-        .filter((row) => `${row.accountId}:${row.securityId}` === position)
-        .map((row) => String(row.transactionDate).slice(0, 10)),
-    );
     const missingRatePairs =
       proceeds === null || realizedGain === null
-        ? [
-            ...new Set(
-              unresolved
-                .filter((rate) => dates.has(rate.onDate))
-                .map((rate) => `${rate.from}->${rate.to}`),
-            ),
-          ]
+        ? positionMissingPairs(
+            `${tx.accountId}:${tx.securityId}`,
+            history,
+            unresolved,
+          )
         : [];
     return { currency, proceeds, costBasis, realizedGain, missingRatePairs };
   }
@@ -1762,16 +1781,18 @@ export class PortfolioCalculationService {
         const flowsRep = emptyFlows();
         // The rates the reporting figures lack, named for the reader.
         const missingRep = new Set<string>();
-        const lacksReplayRate = (tx: InvestmentTransaction) => {
-          const onItsDate = inReporting.unresolved.filter(
-            (rate) => rate.onDate === String(tx.transactionDate).slice(0, 10),
+        // A figure the reporting replay could not state: the pairs this
+        // position lacks on its own dates, as Realized Gains names them.
+        const lacksReplayRate = () => {
+          const pairs = positionMissingPairs(
+            `${group.accountId}:${group.securityId}`,
+            fetched,
+            inReporting.unresolved,
           );
-          if (onItsDate.length === 0) {
+          if (pairs.length === 0) {
             missingRep.add(`${group.accountCurrencyCode ?? "?"}->${reporting}`);
           }
-          for (const rate of onItsDate) {
-            missingRep.add(`${rate.from}->${rate.to}`);
-          }
+          for (const pair of pairs) missingRep.add(pair);
         };
         const addAcquired = (
           into: PeriodFlows,
@@ -1798,7 +1819,7 @@ export class PortfolioCalculationService {
               addAcquired(flows, step.acquired);
               addAcquired(flowsRep, stepRep?.acquired);
               if (step.acquired != null && stepRep?.acquired == null) {
-                lacksReplayRate(tx);
+                lacksReplayRate();
               }
               break;
             // A transfer is not a realised event: the leg is a flow at the
@@ -1859,7 +1880,7 @@ export class PortfolioCalculationService {
               const reported = stepRep?.disposal;
               if (reported?.proceeds == null) {
                 flowsRep.flowsComplete = false;
-                if (disposal.proceeds !== null) lacksReplayRate(tx);
+                if (disposal.proceeds !== null) lacksReplayRate();
               } else {
                 flowsRep.sells += reported.proceeds;
               }
@@ -1876,7 +1897,7 @@ export class PortfolioCalculationService {
                 : disposalInReporting(disposal, reported).realizedGain;
               if (gain === null) {
                 flowsRep.realizedKnown = false;
-                if (disposal.realizedGain !== null) lacksReplayRate(tx);
+                if (disposal.realizedGain !== null) lacksReplayRate();
               } else {
                 flowsRep.realized += gain;
                 flowsRep.knownRealized += gain;
@@ -1985,16 +2006,30 @@ export class PortfolioCalculationService {
             : round(flows.knownRealized),
           unrealizedGain: roundOrNull(account.unrealized),
           totalCapitalGain: roundOrNull(account.total),
-          inReportingCurrency: {
-            currency: reporting,
-            startValue: roundOrNull(startValueRep),
-            endValue: roundOrNull(endValueRep),
-            realizedGain: roundOrNull(inRep.realized),
-            realizedGainKnownSubtotal: round(flowsRep.knownRealized),
-            unrealizedGain: roundOrNull(inRep.unrealized),
-            totalCapitalGain: roundOrNull(inRep.total),
-            missingRatePairs: [...missingRep].sort(),
-          },
+          // An account kept in the reporting currency states its own figures;
+          // any other, the fold's in the reporting currency.
+          inReportingCurrency:
+            group.accountCurrencyCode === reporting
+              ? {
+                  currency: reporting,
+                  startValue: roundOrNull(startValue),
+                  endValue: roundOrNull(endValue),
+                  realizedGain: roundOrNull(account.realized),
+                  realizedGainKnownSubtotal: round(flows.knownRealized),
+                  unrealizedGain: roundOrNull(account.unrealized),
+                  totalCapitalGain: roundOrNull(account.total),
+                  missingRatePairs: [],
+                }
+              : {
+                  currency: reporting,
+                  startValue: roundOrNull(startValueRep),
+                  endValue: roundOrNull(endValueRep),
+                  realizedGain: roundOrNull(inRep.realized),
+                  realizedGainKnownSubtotal: round(flowsRep.knownRealized),
+                  unrealizedGain: roundOrNull(inRep.unrealized),
+                  totalCapitalGain: roundOrNull(inRep.total),
+                  missingRatePairs: [...missingRep].sort(),
+                },
         });
       }
     }

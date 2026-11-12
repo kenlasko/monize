@@ -1212,6 +1212,17 @@ describe("PortfolioCalculationService.calculateCapitalGainsByMonth", () => {
     expect(result[0].totalCapitalGain).toBe(500);
     expect(result[0].startValue).toBe(5000);
     expect(result[0].endValue).toBe(5500);
+    // An account in the reporting currency states its own figures there.
+    expect(result[0].inReportingCurrency).toEqual({
+      currency: "CAD",
+      startValue: 5000,
+      endValue: 5500,
+      realizedGain: 0,
+      realizedGainKnownSubtotal: 0,
+      unrealizedGain: 500,
+      totalCapitalGain: 500,
+      missingRatePairs: [],
+    });
   });
 
   it("values each boundary at that boundary's own accepted FX, not today's (P5)", async () => {
