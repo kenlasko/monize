@@ -7,6 +7,8 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { PendingAction } from '@/types/ai';
 import { splitTagChangeText } from '@/components/ai/split-tag-change-text';
+import { foreignEntryText } from '@/components/ai/foreign-entry-text';
+import { FX_RATE_DISPLAY_DECIMALS } from '@/lib/format';
 import { formatPhoneForDisplay } from '@/lib/phone-number';
 import { RuleEffectsLines } from '@/components/ai/RuleEffectsLines';
 
@@ -36,7 +38,7 @@ export function TransactionConfirmationCard({
   cancelLabel,
 }: TransactionConfirmationCardProps) {
   const t = useTranslations('ai');
-  const { formatCurrency, formatCurrencyPrecise, formatQuantity, formatBytes } =
+  const { formatCurrency, formatCurrencyPrecise, formatQuantity, formatBytes, formatNumber } =
     useNumberFormat();
   const { formatDate } = useDateFormat();
   const { preview, type, status } = action;
@@ -122,6 +124,22 @@ export function TransactionConfirmationCard({
         label: t('confirmAction.amount'),
         value: formatCurrency(preview.amount, preview.currencyCode),
       });
+    // Entered in another currency: what was paid, and the rate the commit
+    // uses with where it came from.
+    const foreignEntry = foreignEntryText(preview, preview.currencyCode, t, {
+      currency: formatCurrency,
+      rate: (rate) => formatNumber(rate, FX_RATE_DISPLAY_DECIMALS),
+    });
+    if (foreignEntry && 'cleared' in foreignEntry)
+      rows.push({
+        label: t('confirmAction.fxPaid'),
+        value: t('confirmAction.fxCleared'),
+      });
+    else if (foreignEntry) {
+      rows.push({ label: t('confirmAction.fxPaid'), value: foreignEntry.paid });
+      if (foreignEntry.rate)
+        rows.push({ label: t('confirmAction.fxRate'), value: foreignEntry.rate });
+    }
     if (preview.transactionDate)
       rows.push({ label: t('confirmAction.date'), value: preview.transactionDate });
     rows.push({

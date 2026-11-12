@@ -40,6 +40,81 @@ describe('TransactionConfirmationCard', () => {
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
 
+  it('shows what was paid in the other currency and where the rate came from', () => {
+    render(
+      <TransactionConfirmationCard
+        action={makeAction({
+          preview: {
+            ...makeAction().preview,
+            amount: -110,
+            originalAmount: -100,
+            originalCurrencyCode: 'EUR',
+            exchangeRate: 1.1,
+            exchangeRateSource: 'derived',
+          },
+        })}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Paid')).toBeInTheDocument();
+    expect(screen.getByText('Exchange rate')).toBeInTheDocument();
+    expect(
+      screen.getByText('1 EUR = 1.100000 USD, derived from the two amounts'),
+    ).toBeInTheDocument();
+  });
+
+  it('names the market rate, and says when an edit removes the entry', () => {
+    const { unmount } = render(
+      <TransactionConfirmationCard
+        action={makeAction({
+          preview: {
+            ...makeAction().preview,
+            originalAmount: -100,
+            originalCurrencyCode: 'EUR',
+            exchangeRate: 1.0987,
+            exchangeRateSource: 'market',
+          },
+        })}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/the market rate for the date/)).toBeInTheDocument();
+    unmount();
+    render(
+      <TransactionConfirmationCard
+        action={makeAction({
+          type: 'update_transaction',
+          preview: {
+            ...makeAction().preview,
+            originalAmount: null,
+            originalCurrencyCode: null,
+            exchangeRate: 1,
+          },
+        })}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByText("Removed: entered in the account's currency"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Exchange rate')).not.toBeInTheDocument();
+  });
+
+  it('shows no foreign-currency rows for an ordinary entry', () => {
+    render(
+      <TransactionConfirmationCard
+        action={makeAction()}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText('Paid')).not.toBeInTheDocument();
+    expect(screen.queryByText('Exchange rate')).not.toBeInTheDocument();
+  });
+
   it('renders split lines in place of the single category for a split transaction', () => {
     render(
       <TransactionConfirmationCard
