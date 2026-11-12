@@ -41,7 +41,10 @@ import { tr } from "../i18n/translate";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { resolveFxRateOrNull } from "../common/fx-entry.util";
-import { ForeignEntryRequest } from "../common/foreign-entry.util";
+import {
+  ForeignEntryRequest,
+  hasForeignEntryRequest,
+} from "../common/foreign-entry.util";
 import {
   ForeignEntryPreviewRequest,
   foreignEntryDisplayFields,
@@ -231,13 +234,7 @@ export class TransactionToolPrepService {
   private foreignEntryOf(
     row: ForeignEntryRequest,
   ): ForeignEntryPreviewRequest | undefined {
-    if (
-      row.originalAmount === undefined &&
-      row.originalCurrencyCode === undefined &&
-      row.exchangeRate === undefined
-    ) {
-      return undefined;
-    }
+    if (!hasForeignEntryRequest(row)) return undefined;
     return {
       originalAmount: row.originalAmount,
       originalCurrencyCode: row.originalCurrencyCode,

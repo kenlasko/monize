@@ -210,6 +210,19 @@ describe("previewForeignEntry", () => {
       ).rejects.toThrow(/takes no exchangeRate/);
     });
 
+    it("refuses clearing an entry with an original amount other than the amount charged", async () => {
+      // Resending the row's euros as dollars would move the balance by 10.
+      await expect(
+        previewForeignEntry(
+          manager(),
+          args({
+            request: { originalCurrencyCode: "USD", originalAmount: -100 },
+            stored: storedEur,
+          }),
+        ),
+      ).rejects.toThrow(/originalAmount \(-100\) and amount \(-110\)/);
+    });
+
     it("clears a stored entry, the row keeping the amount it was charged", async () => {
       await expect(
         previewForeignEntry(
@@ -265,6 +278,37 @@ describe("previewForeignEntry", () => {
           }),
         ),
       ).resolves.toMatchObject({ amount: -110, fields: null });
+    });
+
+    it("computes the amount from the rate sent beside a new original amount, even the row's own", async () => {
+      await expect(
+        previewForeignEntry(
+          manager(),
+          args({
+            request: { originalAmount: -120, exchangeRate: 1.1 },
+            stored: storedEur,
+          }),
+        ),
+      ).resolves.toMatchObject({
+        amount: -132,
+        fields: { exchangeRate: 1.1, exchangeRateSource: "supplied" },
+      });
+    });
+
+    it("derives the rate from a new amount beside the row's own rate resent", async () => {
+      await expect(
+        previewForeignEntry(
+          manager(),
+          args({
+            amount: -112,
+            request: { exchangeRate: 1.1 },
+            stored: storedEur,
+          }),
+        ),
+      ).resolves.toMatchObject({
+        amount: -112,
+        fields: { exchangeRate: 1.12, exchangeRateSource: "derived" },
+      });
     });
 
     it("computes the amount from a new rate, a resent amount not standing against it", async () => {

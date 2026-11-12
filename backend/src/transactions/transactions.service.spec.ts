@@ -10656,26 +10656,43 @@ describe("TransactionsService", () => {
       });
 
       it("is not tag-only when the entry moves the amount, so the commit writes it", async () => {
-        // The account's own currency with an original amount: an ordinary
-        // entry whose amount moves, though no entry field is carried.
-        transactionsRepository.findOne.mockResolvedValueOnce({ ...baseTx });
+        // A new rate and no amount: the entry computes a new amount, though
+        // the caller typed none.
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
         tagsService.findByNames.mockResolvedValue([]);
         const preview = await service.previewUpdate("user-1", "tx-1", {
-          foreignEntry: { originalCurrencyCode: "USD", originalAmount: -60 },
+          foreignEntry: { exchangeRate: 1.2 },
           tagNames: ["Travel"],
         });
-        expect(preview.amount).toBe(-60);
-        expect(preview.originalCurrencyCode).toBeUndefined();
+        expect(preview.amount).toBe(-120);
         expect(preview).not.toHaveProperty("tagsOnly");
       });
 
+      it("never moves an ordinary row's amount through an original amount in its own currency", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...baseTx });
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            foreignEntry: { originalCurrencyCode: "USD", originalAmount: -60 },
+          }),
+        ).rejects.toThrow(/originalAmount \(-60\) and amount \(-12.5\)/);
+      });
+
+      it("refuses an over-precise typed amount rather than reading it as unmoved", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
+        await expect(
+          service.previewUpdate("user-1", "tx-1", { amount: -110.00004 }),
+        ).rejects.toThrow(/more decimal places than USD carries/);
+      });
+
       it("holds an amount the entry stands in to the account currency's places", async () => {
+        // Equal to the amount charged at money precision, but with a fifth
+        // place: refused, never written as the row's amount.
         transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
         await expect(
           service.previewUpdate("user-1", "tx-1", {
             foreignEntry: {
               originalCurrencyCode: "USD",
-              originalAmount: -12.123456,
+              originalAmount: -110.00004,
             },
           }),
         ).rejects.toThrow(/more decimal places than USD carries/);

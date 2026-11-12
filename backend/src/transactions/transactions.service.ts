@@ -146,6 +146,7 @@ import {
 import { assertReconciledRowsMutable } from "./reconciled-lock.util";
 import { moneyDecimalsFor, roundMoney } from "../common/round.util";
 import { assertAmountPrecision } from "../common/amount-precision.util";
+import { hasForeignEntryRequest } from "../common/foreign-entry.util";
 import {
   CurrencyPlacesLoader,
   ForeignEntryFields,
@@ -1210,9 +1211,7 @@ export class TransactionsService {
       splitTagChanges.length > 0;
     const fxRequested =
       input.foreignEntry !== undefined &&
-      (input.foreignEntry.originalAmount !== undefined ||
-        input.foreignEntry.originalCurrencyCode !== undefined ||
-        input.foreignEntry.exchangeRate !== undefined);
+      hasForeignEntryRequest(input.foreignEntry);
     const hasFieldChange =
       fxRequested ||
       input.amount !== undefined ||
@@ -1312,18 +1311,22 @@ export class TransactionsService {
       referenceChanges ||
       input.splitsAccompany === true;
 
-    // The amount the row will hold, typed or worked out by the entry (the
-    // account's own currency standing in an original amount for it), at the
-    // places the commit holds it to.
+    // The amount typed, and the amount the row will hold (worked out by the
+    // entry, or the account's own currency standing an original amount in for
+    // it), at the places the commit holds it to. The typed one first: an
+    // entry compares amounts at money precision, so an over-precise one could
+    // otherwise read as unmoved and be dropped rather than refused.
     if (input.amount !== undefined || amount !== Number(existing.amount)) {
       const places =
         foreignEntryPlaces ??
         (await this.currencyPlacesLoader()([existing.currencyCode]));
-      assertAmountPrecision(
-        amount,
-        precisionCurrencyFor(places, existing.currencyCode),
-        "amount",
+      const accountCurrency = precisionCurrencyFor(
+        places,
+        existing.currencyCode,
       );
+      if (input.amount !== undefined)
+        assertAmountPrecision(input.amount, accountCurrency, "amount");
+      assertAmountPrecision(amount, accountCurrency, "amount");
     }
     const transactionDate = input.transactionDate ?? existing.transactionDate;
     const description =

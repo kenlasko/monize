@@ -178,17 +178,19 @@ export async function previewForeignEntry(
       );
     }
     const given = request.originalAmount;
+    // On an edit the row's own amount stands in for one not sent: clearing an
+    // entry never turns its original amount into the amount charged.
+    const charged = args.amount ?? stored?.amount;
     if (
       given !== undefined &&
-      args.amount !== undefined &&
-      roundMoney(args.amount, moneyDecimals) !==
-        roundMoney(given, moneyDecimals)
+      charged !== undefined &&
+      roundMoney(charged, moneyDecimals) !== roundMoney(given, moneyDecimals)
     ) {
       throw new BadRequestException(
         tr(
           "errors.transactions.fxSameCurrencyAmounts",
-          `${code} is the account's own currency, so originalAmount (${given}) and amount (${args.amount}) must be the same. Leave out originalAmount, or give the currency that was actually paid in.`,
-          { currency: code, original: given, amount: args.amount },
+          `${code} is the account's own currency, so originalAmount (${given}) and amount (${charged}) must be the same. Leave out originalAmount, or give the currency that was actually paid in.`,
+          { currency: code, original: given, amount: charged },
         ),
       );
     }
@@ -228,26 +230,28 @@ export async function previewForeignEntry(
   let amount = args.amount;
   let exchangeRate = request.exchangeRate;
   if (stored !== undefined) {
-    if (
+    const rateResent =
       exchangeRate !== undefined &&
       storedCode === code &&
       roundFxRate(Number(exchangeRate)) ===
-        roundFxRate(Number(stored.exchangeRate))
-    ) {
-      exchangeRate = undefined;
-    }
+        roundFxRate(Number(stored.exchangeRate));
     const amountMoved =
       amount !== undefined &&
       roundMoney(amount, moneyDecimals) !==
         roundMoney(stored.amount, moneyDecimals);
     if (
       !amountMoved &&
-      exchangeRate === undefined &&
+      (exchangeRate === undefined || rateResent) &&
       storedCode === code &&
       Number(stored.originalAmount) === originalAmount
     ) {
       return { amount: stored.amount, fields: null, places };
     }
+    // A new amount beside the row's own rate resent: the amount is the
+    // change, and the rate is derived from it rather than refused against it.
+    if (amountMoved && rateResent) exchangeRate = undefined;
+    // An amount not moved is not given: a rate sent (even the row's own,
+    // beside a new original amount) computes it; otherwise the row's stands.
     if (!amountMoved)
       amount = exchangeRate === undefined ? stored.amount : undefined;
   }

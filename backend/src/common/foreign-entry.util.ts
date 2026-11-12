@@ -38,6 +38,15 @@ export function pickForeignEntryRequest(item: {
   };
 }
 
+/** Whether a request names any foreign-entry figure at all. */
+export function hasForeignEntryRequest(request: ForeignEntryRequest): boolean {
+  return (
+    request.originalAmount !== undefined ||
+    request.originalCurrencyCode !== undefined ||
+    request.exchangeRate !== undefined
+  );
+}
+
 /** The account a foreign entry is converted into. */
 export interface ForeignEntryAccount {
   currencyCode: string;
@@ -82,8 +91,11 @@ export interface ResolvedForeignEntry {
 /**
  * The pre-fee base behind an account-currency amount that has the account's
  * foreign-transaction fee folded in: the inverse of `applyFxConversion`'s
- * `amount = base - |base| x fee%`. Mirrors `handleConvertedTotalOverride` in
- * `frontend/src/components/transactions/TransactionForm.tsx`.
+ * `amount = base - |base| x fee%`. `handleConvertedTotalOverride` in
+ * `frontend/src/components/transactions/TransactionForm.tsx` inverts the same
+ * way but rounds the base to the entry places and recomputes the amount; here
+ * the base keeps money precision and the amount charged is kept as given, so
+ * converting back at the derived rate returns that amount.
  */
 export function fxBaseFromCharged(
   amount: number,
