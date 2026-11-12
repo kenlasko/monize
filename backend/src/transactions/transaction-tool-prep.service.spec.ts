@@ -1095,6 +1095,64 @@ describe("TransactionToolPrepService", () => {
     });
   });
 
+  describe("prepareUpdateEach", () => {
+    it("previews a transfer tag edit as its own card, which the bulk preview skips", async () => {
+      const transferTx = {
+        id: "t2",
+        isTransfer: true,
+        linkedTransactionId: "t3",
+      };
+      transactions.previewTransferTagChange.mockResolvedValue({
+        tagNames: ["QA-Test"],
+        newTagNames: ["QA-Test"],
+        removeTagIds: [],
+        removeTagNames: [],
+      });
+      const items = [{ transactionId: "t2", tagNames: ["QA-Test"] }];
+
+      transactions.findOne.mockResolvedValueOnce(transferTx);
+      const bulk = await service.prepareUpdateBulk(userId, items);
+      expect(bulk.skipped).toHaveLength(1);
+
+      transactions.findOne.mockResolvedValueOnce(transferTx);
+      const each = await service.prepareUpdateEach(userId, items);
+      expect(each.skipped).toEqual([]);
+      expect(each.previewRows).toEqual([
+        expect.objectContaining({
+          status: "ok",
+          fromAccountName: "Checking",
+          toAccountName: "Savings",
+          tagNames: ["QA-Test"],
+          newTagNames: ["QA-Test"],
+        }),
+      ]);
+    });
+
+    it("shows a standard edit as the bulk preview does", async () => {
+      const items = [{ transactionId: "t1", amount: -5 }];
+      const bulk = await service.prepareUpdateBulk(userId, items);
+      const each = await service.prepareUpdateEach(userId, items);
+      expect(each.previewRows).toEqual(bulk.previewRows);
+    });
+
+    it("reports a row that cannot be prepared, by index, and previews the rest", async () => {
+      transactions.findOne
+        .mockRejectedValueOnce(new NotFoundException("Transaction not found"))
+        .mockResolvedValueOnce({ id: "t1", isTransfer: false });
+      const result = await service.prepareUpdateEach(userId, [
+        { transactionId: "gone", amount: -5 },
+        { transactionId: "t1", amount: -5 },
+      ]);
+      expect(result.skipped).toEqual([
+        { index: 0, reason: "Transaction not found" },
+      ]);
+      expect(result.previewRows.map((row) => row.status)).toEqual([
+        "error",
+        "ok",
+      ]);
+    });
+  });
+
   describe("prepareUpdateBulk", () => {
     it("maps standard edits to batch rows and skips transfers", async () => {
       transactions.findOne
