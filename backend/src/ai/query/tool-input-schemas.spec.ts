@@ -963,6 +963,56 @@ describe("tool-input-schemas", () => {
     });
   });
 
+  describe("manageTransactionsSchema (foreign-currency entries)", () => {
+    const TXID = "11111111-1111-4111-8111-111111111111";
+
+    it("accepts a create with an original amount in place of the amount", () => {
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "create",
+          items: [
+            {
+              accountName: "Checking",
+              date: "2026-01-15",
+              originalAmount: -100,
+              originalCurrencyCode: "EUR",
+            },
+          ],
+        }).success,
+      ).toBe(true);
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "create",
+          items: [{ accountName: "Checking", date: "2026-01-15" }],
+        }).success,
+      ).toBe(false);
+    });
+
+    it("counts a change to the entry alone as an edit", () => {
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "update",
+          items: [{ transactionId: TXID, exchangeRate: 1.1 }],
+        }).success,
+      ).toBe(true);
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "update",
+          items: [{ transactionId: TXID, originalCurrencyCode: "USD" }],
+        }).success,
+      ).toBe(true);
+    });
+
+    it("refuses a currency code that is not three letters long", () => {
+      expect(
+        manageTransactionsSchema.safeParse({
+          operation: "update",
+          items: [{ transactionId: TXID, originalCurrencyCode: "EURO" }],
+        }).success,
+      ).toBe(false);
+    });
+  });
+
   describe("manageTransactionsSchema (tags)", () => {
     const TXID = "11111111-1111-4111-8111-111111111111";
 

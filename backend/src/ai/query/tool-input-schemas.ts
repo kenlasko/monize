@@ -676,6 +676,10 @@ const manageTransactionItemSchema = z
       z.number().finite().min(0).max(1_000_000),
     ).optional(),
     toAmount: amountSchema.optional(),
+    // non-transfer: entered in another currency (amount, exchangeRate, both or
+    // neither alongside; resolveForeignEntry works out the rest)
+    originalAmount: amountSchema.optional(),
+    originalCurrencyCode: z.string().length(3).optional(),
     // split transactions (category splits only)
     splits: z
       .array(manageTransactionSplitSchema)
@@ -851,11 +855,11 @@ export const manageTransactionsSchema = z
                 "accountName is required (or provide toAccountName for a transfer).",
             });
           }
-          if (item.amount === undefined) {
+          if (item.amount === undefined && item.originalAmount === undefined) {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
               path: path("amount"),
-              message: "amount is required.",
+              message: "amount (or originalAmount) is required.",
             });
           }
           if (item.date === undefined) {
@@ -880,6 +884,9 @@ export const manageTransactionsSchema = z
           item.payeeName !== undefined ||
           item.categoryName !== undefined ||
           item.description !== undefined ||
+          item.originalAmount !== undefined ||
+          item.originalCurrencyCode !== undefined ||
+          item.exchangeRate !== undefined ||
           hasSplits ||
           hasAttachments ||
           hasTags;
@@ -888,7 +895,7 @@ export const manageTransactionsSchema = z
             code: z.ZodIssueCode.custom,
             path: path("transactionId"),
             message:
-              "Provide at least one field to change (amount, date, payeeName, categoryName, description, splits, attachments, addTagNames, removeTagNames or splitTags).",
+              "Provide at least one field to change (amount, date, payeeName, categoryName, description, originalAmount, originalCurrencyCode, exchangeRate, splits, attachments, addTagNames, removeTagNames or splitTags).",
           });
         }
       } else {

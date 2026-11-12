@@ -111,7 +111,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
         includeTransactions: {
           type: "boolean",
           description:
-            "When true, also include the raw individual transaction list (with IDs) in addition to the summary. Costs many more tokens; default false. Set true only when the user asks to see specific transactions or you need a transaction ID to act on it. Rows entered in a foreign currency also carry read-only originalAmount, originalCurrencyCode, and exchangeRate metadata (the transaction's amount stays in the account currency); these are informational only -- creating foreign-currency transactions is not supported here.",
+            "When true, also include the raw individual transaction list (with IDs) in addition to the summary. Costs many more tokens; default false. Set true only when the user asks to see specific transactions or you need a transaction ID to act on it. Rows entered in a foreign currency also carry originalAmount, originalCurrencyCode, and exchangeRate (the transaction's amount stays in the account currency); manage_transactions sets and changes them.",
         },
         limit: {
           type: "integer",
@@ -522,9 +522,10 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
     description:
       "Create, update, or delete the user's cash transactions (including transfers between their own accounts). This does NOT change anything immediately: it shows the user one or more confirmation cards they must explicitly approve before anything is saved. Use it only when the user clearly asks to add, edit, categorize, transfer, or delete a transaction in their latest message. Accepts NAMES for account, category, and payee -- they are resolved internally, so you do NOT need to look up IDs first. " +
       "operation = 'create' | 'update' | 'delete'. Provide an 'items' array (1-25 rows). " +
-      "create (standard): { accountName, amount, date, payeeName?, categoryName?, description?, createPayeeIfMissing? } -- amount is positive for income, negative for expenses. " +
+      "create (standard): { accountName, amount, date, payeeName?, categoryName?, description?, createPayeeIfMissing?, originalAmount?, originalCurrencyCode?, exchangeRate? } -- amount is positive for income, negative for expenses. " +
+      "Foreign currency (standard create/update, never a transfer): when the user paid in a currency other than the account's (e.g. EUR 100 charged as USD 110 to a USD account), give originalAmount (signed like amount, in the currency paid in) and originalCurrencyCode, plus amount (what the account was actually charged, in the account currency), exchangeRate (account-currency units per 1 unit of originalCurrencyCode, before the account's foreign transaction fee), both, or neither. With amount alone the rate is derived from the two amounts; with exchangeRate alone the amount is computed; with both they must agree (the tool refuses a conflict -- never adjust the user's figures to make them agree); with neither the market rate for the date is used. The card shows which. On update, the transaction's own figures fill in what you omit, and originalCurrencyCode set to the account's own currency removes the foreign-currency entry. " +
       "create (transfer): { fromAccountName, toAccountName, amount, date, description?, payeeName?, categoryName?, createPayeeIfMissing?, exchangeRate?, toAmount? } -- an item is a transfer when toAccountName is present; amount is the positive transfer amount (exchangeRate/toAmount only for cross-currency); payeeName is an optional custom label for the transfer, matched to an existing payee (or created if missing, like a normal transaction) and applied to both legs (omit to leave the payee blank; blank transfer payees display as 'Transfer to/from <account>' resolved from the current account name); categoryName is an optional spending category stored on both legs (surfaces the transfer in the monthly category breakdown without counting as income/expense). " +
-      "update: { transactionId, amount?, date?, payeeName?, categoryName?, description?, createPayeeIfMissing? } -- provide only the fields to change (at least one); a category-only change is just transactionId + categoryName. First call search_transactions to obtain the transactionId. Transfers are auto-detected and edited correctly; for a transfer, categoryName is stored on both legs and surfaces the transfer in the monthly category breakdown (without making it count as income/expense), and payeeName sets its custom label (matched to an existing payee or created if missing, like a normal transaction). " +
+      "update: { transactionId, amount?, date?, payeeName?, categoryName?, description?, createPayeeIfMissing?, originalAmount?, originalCurrencyCode?, exchangeRate? } -- provide only the fields to change (at least one); a category-only change is just transactionId + categoryName. First call search_transactions to obtain the transactionId. Transfers are auto-detected and edited correctly; for a transfer, categoryName is stored on both legs and surfaces the transfer in the monthly category breakdown (without making it count as income/expense), and payeeName sets its custom label (matched to an existing payee or created if missing, like a normal transaction). " +
       "split transactions (create or update): add a 'splits' array of { categoryName, amount, memo? } (>= 2 lines, category splits only) instead of a single categoryName; the split amounts must sum to the transaction amount (e.g. a -100 expense split -60 Groceries / -40 Household). On create also give accountName, amount, date; on update give transactionId and splits (replaces the whole split set). Updating an EXISTING split transaction: parent fields (date, payeeName, description) work without splits, but changing its categories or its amount requires resending the COMPLETE splits array (the tool errors with instructions otherwise). Read tools return one row per split line (same transaction id, distinct splitId), and always the COMPLETE set for each transaction even when you filtered by category -- so read the current lines first, then resend all of them with your change applied. Several split transactions CAN go in one call: give each item its own complete splits array, and every row is previewed and applied with its own set (up to 25 rows). Replacing a split set keeps each line's tags when the line names its existing splitId (else a line keeps the tags of an existing line in the same category). Tags (update only): addTagNames adds tags (a name the user has no tag for creates it) and removeTagNames removes them; the transaction's other tags stay, and a tag-only item changes nothing else. On a transfer both legs change. A split line's own tags (tagNames on its read row) change only through splitTags: [{ splitId, addTagNames?, removeTagNames? }]; to move a tag between the transaction and a line, remove it from one and add it to the other in the same item. Call list_tags for the user's tag names. Only one proposing tool call is allowed per reply, so send them as ONE call with many items rather than several calls. Never promise cards for transactions you have not proposed. " +
       "delete: { transactionId } -- removes the transaction (and any linked transfer legs / split children). First call search_transactions to obtain the transactionId. " +
       "attachments (create or update): add an 'attachments' array naming files the user attached to their CURRENT chat message, each entry a filename (string) or 1-based position (number); the named files are saved as permanent attachments on the transaction when the card is approved. Only images and PDFs up to 5 MB can be saved (CSV/text chat files cannot). Use this when the user asks to save/attach a receipt or document they just sent -- on create the file lands on the new transaction, on update an attachments-only item is a valid edit. Send attachment items one at a time (a single item), never on transfers or delete. " +
@@ -597,12 +598,24 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
               exchangeRate: {
                 type: "number",
                 description:
-                  "create (transfer): exchange rate for a cross-currency transfer. Omit for same-currency.",
+                  "create (transfer): exchange rate for a cross-currency transfer. Omit for same-currency. Standard create/update with originalCurrencyCode: account-currency units per 1 unit of originalCurrencyCode.",
               },
               toAmount: {
                 type: "number",
                 description:
                   "create (transfer): explicit destination amount for a cross-currency transfer. Overrides exchangeRate.",
+              },
+              originalAmount: {
+                type: "number",
+                description:
+                  "Standard create/update, not a transfer: the signed amount in originalCurrencyCode, the currency the user actually paid in. amount is then what the account was charged.",
+              },
+              originalCurrencyCode: {
+                type: "string",
+                minLength: 3,
+                maxLength: 3,
+                description:
+                  "Standard create/update: ISO code of originalAmount's currency. On update, the account's own currency removes the foreign-currency entry.",
               },
               splits: {
                 type: "array",

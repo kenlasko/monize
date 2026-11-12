@@ -13,6 +13,10 @@ import {
 } from "../../tags/tag-change.util";
 import { randomUUID } from "crypto";
 import {
+  foreignEntryDisplayFields,
+  foreignEntryWriteFields,
+} from "../../transactions/foreign-entry-preview";
+import {
   AiActionSigningService,
   AI_ACTION_TTL_MS,
 } from "./ai-action-signing.service";
@@ -131,6 +135,7 @@ export function transactionPreviewRow(
     payeeWillBeCreated: preview.payeeWillBeCreated,
     categoryName: preview.categoryName,
     description: preview.description,
+    ...foreignEntryDisplayFields(preview),
     ...(preview.ruleEffects ? { ruleEffects: preview.ruleEffects } : {}),
   };
 }
@@ -265,6 +270,7 @@ export class AiActionBuilderService {
       categoryId: splits ? null : preview.categoryId,
       description: preview.description,
       currencyCode: preview.currencyCode,
+      ...foreignEntryWriteFields(preview),
       ...(splits ? { splits: splits.map(toSplitRowDescriptor) } : {}),
       ...(attachments?.length ? { attachments } : {}),
     };
@@ -283,6 +289,7 @@ export class AiActionBuilderService {
         payeeWillBeCreated: preview.payeeWillBeCreated,
         categoryName: preview.categoryName,
         description: preview.description,
+        ...foreignEntryDisplayFields(preview),
         ...(preview.ruleEffects ? { ruleEffects: preview.ruleEffects } : {}),
         ...(splits ? { splits: splits.map(toSplitPreview) } : {}),
         ...(attachments?.length
@@ -663,6 +670,7 @@ export class AiActionBuilderService {
       categoryId: splits ? null : preview.categoryId,
       description: preview.description,
       currencyCode: preview.currencyCode,
+      ...foreignEntryWriteFields(preview),
       ...(splits ? { splits: splits.map(toSplitRowDescriptor) } : {}),
       ...(attachments?.length ? { attachments } : {}),
       ...tagChangeWriteFields(preview),
@@ -694,6 +702,7 @@ export class AiActionBuilderService {
           : {}),
         description: preview.description,
         isReconciled: preview.isReconciled,
+        ...foreignEntryDisplayFields(preview),
         ...(splits ? { splits: splits.map(toSplitPreview) } : {}),
         ...(attachments?.length
           ? { attachments: attachments.map(toAttachmentPreview) }
@@ -851,6 +860,7 @@ export class AiActionBuilderService {
         categoryId: preview.categoryId,
         description: preview.description,
         currencyCode: preview.currencyCode,
+        ...foreignEntryWriteFields(preview),
       })),
     };
     return {

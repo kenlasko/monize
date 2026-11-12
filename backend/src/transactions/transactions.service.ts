@@ -147,6 +147,11 @@ import { assertReconciledRowsMutable } from "./reconciled-lock.util";
 import { moneyDecimalsFor, roundMoney } from "../common/round.util";
 import { assertAmountPrecision } from "../common/amount-precision.util";
 import {
+  ForeignEntryFields,
+  ForeignEntryPreviewRequest,
+  previewForeignEntry,
+} from "./foreign-entry-preview";
+import {
   loadCurrencyPlaces,
   loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
@@ -361,7 +366,7 @@ export interface LlmTransactionSearch {
  * human-in-the-loop confirmation flow so both surfaces validate ownership and
  * resolve names identically.
  */
-export interface CreateTransactionPreview {
+export interface CreateTransactionPreview extends ForeignEntryFields {
   accountId: string;
   accountName: string;
   amount: number;
@@ -411,7 +416,7 @@ export interface CategorizeTransactionPreview {
  * descriptor can apply an idempotent overwrite. Shared by the MCP
  * `update_transaction` dry-run and the AI Assistant confirmation flow.
  */
-export interface UpdateTransactionPreview {
+export interface UpdateTransactionPreview extends ForeignEntryFields {
   transactionId: string;
   accountId: string;
   accountName: string;
@@ -901,7 +906,8 @@ export class TransactionsService {
     userId: string,
     input: {
       accountId: string;
-      amount: number;
+      /** The account-currency amount; may be left to a foreign entry to work out. */
+      amount?: number;
       transactionDate: string;
       payeeName?: string;
       categoryId?: string;
@@ -910,6 +916,11 @@ export class TransactionsService {
       createPayeeIfMissing?: boolean;
       /** The row will carry split lines (rules do not set a category then). */
       hasSplits?: boolean;
+      /**
+       * Entered in another currency: the original amount and currency, and any
+       * rate, resolved against `amount` by `previewForeignEntry`.
+       */
+      foreignEntry?: ForeignEntryPreviewRequest;
       /** Stored as given by create(); absent stores null. */
       referenceNumber?: string;
       /** Stored as given by create(); absent stores the entity default (UNRECONCILED). */
@@ -918,15 +929,39 @@ export class TransactionsService {
   ): Promise<CreateTransactionPreview> {
     const account = await this.accountsService.findOne(userId, input.accountId);
     // The commit refuses an amount with more places than the account's
-    // currency carries; the preview says so first.
-    await withScopedDb(this.dataSource, async (m) => {
-      const places = await loadCurrencyPlacesForRead(m, [account.currencyCode]);
-      assertAmountPrecision(
-        input.amount,
-        precisionCurrencyFor(places, account.currencyCode),
-        "amount",
-      );
-    });
+    // currency carries; the preview says so first. A foreign entry is worked
+    // out first, since it may supply the amount.
+    const { amount, fields: foreignEntry } = await withScopedDb(
+      this.dataSource,
+      async (m) => {
+        const fx = input.foreignEntry
+          ? await previewForeignEntry(m, {
+              account,
+              amount: input.amount,
+              date: input.transactionDate.slice(0, 10),
+              request: input.foreignEntry,
+            })
+          : { amount: input.amount, fields: null };
+        if (fx.amount === undefined) {
+          throw new BadRequestException(
+            tr(
+              "errors.params.eitherRequired",
+              'A value for either "amount" or "originalAmount" is required',
+              { param: "amount", other: "originalAmount" },
+            ),
+          );
+        }
+        const places = await loadCurrencyPlacesForRead(m, [
+          account.currencyCode,
+        ]);
+        assertAmountPrecision(
+          fx.amount,
+          precisionCurrencyFor(places, account.currencyCode),
+          "amount",
+        );
+        return { amount: fx.amount, fields: fx.fields };
+      },
+    );
 
     let categoryId: string | null = input.categoryId ?? null;
     let categoryName: string | null = null;
@@ -988,7 +1023,7 @@ export class TransactionsService {
       this.rulesApplier.previewForRow(m, userId, {
         accountId: input.accountId,
         currencyCode: account.currencyCode,
-        amount: input.amount,
+        amount,
         isTransfer: false,
         payeeId,
         payeeText: inputPayeeName,
@@ -1009,7 +1044,7 @@ export class TransactionsService {
     return {
       accountId: input.accountId,
       accountName: account.name,
-      amount: input.amount,
+      amount,
       transactionDate: input.transactionDate,
       payeeId,
       payeeName,
@@ -1019,6 +1054,7 @@ export class TransactionsService {
       categoryName,
       description,
       currencyCode: account.currencyCode,
+      ...(foreignEntry ?? {}),
       ...(ruleEffects ? { ruleEffects } : {}),
     };
   }
@@ -1110,6 +1146,12 @@ export class TransactionsService {
       splitTags?: readonly SplitTagRequest[];
       /** The reference number to set; the value the transaction holds already is not a change. */
       referenceNumber?: string;
+      /**
+       * Foreign-currency figures to change (`previewForeignEntry`; the row's
+       * own entry fills in the rest). The account's own currency as
+       * `originalCurrencyCode` clears the entry.
+       */
+      foreignEntry?: ForeignEntryPreviewRequest;
     },
   ): Promise<UpdateTransactionPreview> {
     const existing = await this.findOne(userId, transactionId);
@@ -1163,7 +1205,13 @@ export class TransactionsService {
       tagChange.tagNames.length > 0 ||
       tagChange.removeTagIds.length > 0 ||
       splitTagChanges.length > 0;
+    const fxRequested =
+      input.foreignEntry !== undefined &&
+      (input.foreignEntry.originalAmount !== undefined ||
+        input.foreignEntry.originalCurrencyCode !== undefined ||
+        input.foreignEntry.exchangeRate !== undefined);
     const hasFieldChange =
+      fxRequested ||
       input.amount !== undefined ||
       input.transactionDate !== undefined ||
       input.payeeName !== undefined ||
@@ -1190,11 +1238,61 @@ export class TransactionsService {
             ),
       );
     }
+    // A foreign entry is worked out when the edit names one, or when it moves
+    // the amount of a row that carries one: the amount charged is the fact,
+    // so the rate is derived again from it rather than left stale beside it.
+    const amountMoves =
+      input.amount !== undefined && input.amount !== Number(existing.amount);
+    let amount = input.amount ?? Number(existing.amount);
+    let foreignEntry: ForeignEntryFields | null = null;
+    if (fxRequested || (amountMoves && existing.originalCurrencyCode)) {
+      const fx = await withScopedDb(this.dataSource, (m) =>
+        previewForeignEntry(m, {
+          account: {
+            currencyCode: existing.currencyCode,
+            fxFeePercent: existing.account?.fxFeePercent ?? null,
+          },
+          amount: input.amount,
+          date: String(input.transactionDate ?? existing.transactionDate).slice(
+            0,
+            10,
+          ),
+          request: input.foreignEntry ?? {},
+          stored: {
+            amount: Number(existing.amount),
+            originalAmount:
+              existing.originalAmount === null ||
+              existing.originalAmount === undefined
+                ? null
+                : Number(existing.originalAmount),
+            originalCurrencyCode: existing.originalCurrencyCode ?? null,
+            exchangeRate: Number(existing.exchangeRate),
+          },
+        }),
+      );
+      amount = fx.amount ?? amount;
+      foreignEntry = fx.fields;
+      // A rate or original amount that moves a split parent's amount needs
+      // its lines resent, exactly as a typed amount does.
+      if (
+        existing.isSplit &&
+        !input.splitsAccompany &&
+        amount !== Number(existing.amount)
+      ) {
+        throw new BadRequestException(
+          tr(
+            "errors.transactions.splitAmountNeedsSplits",
+            "This is a split transaction: its amount must equal the sum of its split lines. Resend the update with both the new amount and the complete splits array (every line: categoryName, amount, optional memo) summing to it.",
+          ),
+        );
+      }
+    }
+
     // A value difference, not a field being present: a model resends fields it
     // does not change, and a tag edit must not then commit the whole snapshot.
     const fieldsDiffer =
-      (input.amount !== undefined &&
-        input.amount !== Number(existing.amount)) ||
+      foreignEntry !== null ||
+      amountMoves ||
       (input.transactionDate !== undefined &&
         input.transactionDate !== String(existing.transactionDate)) ||
       (input.payeeName !== undefined &&
@@ -1221,7 +1319,6 @@ export class TransactionsService {
         );
       });
     }
-    const amount = input.amount ?? Number(existing.amount);
     const transactionDate = input.transactionDate ?? existing.transactionDate;
     const description =
       input.description !== undefined
@@ -1290,6 +1387,7 @@ export class TransactionsService {
       description,
       currencyCode: existing.currencyCode,
       isReconciled: existing.isReconciled,
+      ...(foreignEntry ?? {}),
       ...(referenceChanges ? { referenceNumber } : {}),
       ...tagChangeFields(tagChange),
       ...(splitTagChanges.length > 0 ? { splitTagChanges } : {}),

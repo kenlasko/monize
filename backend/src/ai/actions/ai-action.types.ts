@@ -30,6 +30,10 @@ import type {
   RuleRunSkippedRow,
 } from "../../transaction-rules/rule-run.types";
 import type { RuleTrigger } from "../../transaction-rules/rule-trigger.types";
+import type {
+  ForeignEntryFields,
+  ForeignEntryWrite,
+} from "../../transactions/foreign-entry-preview";
 
 export type AiActionType =
   | "create_transaction"
@@ -259,7 +263,14 @@ export interface AttachmentRefDescriptor {
   sha256: string;
 }
 
-export interface CreateTransactionDescriptor extends BaseDescriptor {
+/**
+ * A create or edit descriptor's foreign-currency entry (`ForeignEntryWrite`):
+ * present only when the row is entered in another currency, or when an edit
+ * changes or clears (`originalCurrencyCode: null`) that entry. Signed with the
+ * rest, so a client cannot change a rate the card did not show.
+ */
+export interface CreateTransactionDescriptor
+  extends BaseDescriptor, ForeignEntryWrite {
   type: "create_transaction";
   accountId: string;
   amount: number;
@@ -470,7 +481,7 @@ export interface CreateInvestmentTransactionDescriptor extends BaseDescriptor {
  * Identical to the singular `CreateTransactionDescriptor` minus the per-action
  * envelope (the batch shares one `actionId`/`expiresAt`/`userId`/signature).
  */
-export interface TransactionRowDescriptor {
+export interface TransactionRowDescriptor extends ForeignEntryWrite {
   accountId: string;
   amount: number;
   transactionDate: string;
@@ -520,7 +531,8 @@ export interface CreateInvestmentTransactionsDescriptor extends BaseDescriptor {
  * as it will be persisted), so confirm applies an idempotent overwrite of the
  * identified transaction -- mirroring `CreateTransactionDescriptor` plus the id.
  */
-export interface UpdateTransactionDescriptor extends BaseDescriptor {
+export interface UpdateTransactionDescriptor
+  extends BaseDescriptor, ForeignEntryWrite {
   type: "update_transaction";
   transactionId: string;
   accountId: string;
@@ -667,7 +679,7 @@ export interface UpdateTransferDescriptor extends BaseDescriptor {
  * the same resolved fields the matching singular descriptor would, minus the
  * per-action envelope (the batch shares one actionId/expiresAt/userId/signature).
  */
-export interface BatchUpdateTransactionRow {
+export interface BatchUpdateTransactionRow extends ForeignEntryWrite {
   transactionId: string;
   accountId: string;
   amount: number;
@@ -1057,7 +1069,7 @@ export interface AiActionRulePreview extends AiActionRuleState {
  * of the signed descriptor) -- it carries resolved names so the user sees what
  * the action will do.
  */
-export interface AiActionPreview {
+export interface AiActionPreview extends ForeignEntryFields {
   accountName?: string;
   amount?: number;
   currencyCode?: string;
@@ -1174,7 +1186,7 @@ export interface AiActionPreview {
  * that failed to resolve (unknown security/account, validation error). Flagged
  * rows are NOT part of the signed descriptor; only `status: "ok"` rows are.
  */
-export interface AiActionPreviewRow {
+export interface AiActionPreviewRow extends ForeignEntryFields {
   status: "ok" | "error";
   /** Human-readable reason the row was dropped, when status is "error". */
   error?: string;

@@ -40,6 +40,7 @@ import {
   UpdateRowInput,
   SplitLineInput,
 } from "../../transactions/transaction-tool-prep.service";
+import type { ForeignEntryRequest } from "../../common/foreign-entry.util";
 import {
   RuleToolInput,
   RuleToolRefusal,
@@ -782,18 +783,30 @@ export class ToolExecutorService {
   private toCreateRow(item: Record<string, unknown>): CreateRowInput {
     return {
       accountName: item.accountName as string,
-      amount: item.amount as number,
+      amount: item.amount as number | undefined,
       date: item.date as string,
       payeeName: item.payeeName as string | undefined,
       categoryName: item.categoryName as string | undefined,
       description: item.description as string | undefined,
       createPayeeIfMissing: item.createPayeeIfMissing as boolean | undefined,
       splits: item.splits as SplitLineInput[] | undefined,
+      ...this.foreignEntryOf(item),
+    };
+  }
+
+  /** A row's foreign-currency figures, passed through as given. */
+  private foreignEntryOf(item: Record<string, unknown>): ForeignEntryRequest {
+    return {
+      originalAmount: item.originalAmount as number | undefined,
+      originalCurrencyCode: item.originalCurrencyCode as string | undefined,
+      exchangeRate: item.exchangeRate as number | undefined,
     };
   }
 
   private toTransferRow(item: Record<string, unknown>): TransferRowInput {
     return {
+      originalAmount: item.originalAmount as number | undefined,
+      originalCurrencyCode: item.originalCurrencyCode as string | undefined,
       fromAccountName: item.fromAccountName as string,
       toAccountName: item.toAccountName as string,
       amount: item.amount as number,
@@ -820,6 +833,7 @@ export class ToolExecutorService {
       tagNames: item.addTagNames as string[] | undefined,
       removeTagNames: item.removeTagNames as string[] | undefined,
       splitTags: item.splitTags as UpdateRowInput["splitTags"],
+      ...this.foreignEntryOf(item),
     };
   }
 

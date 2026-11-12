@@ -2092,6 +2092,32 @@ describe("ToolExecutorService", () => {
       });
     });
 
+    it("single create hands a foreign-currency entry to the shared preview", async () => {
+      await service.execute(userId, "manage_transactions", {
+        operation: "create",
+        items: [
+          {
+            accountName: "Checking",
+            amount: -110,
+            date: "2026-01-15",
+            originalAmount: -100,
+            originalCurrencyCode: "EUR",
+          },
+        ],
+      });
+      expect(transactions.previewCreate).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({
+          amount: -110,
+          foreignEntry: expect.objectContaining({
+            originalAmount: -100,
+            originalCurrencyCode: "EUR",
+            exchangeRate: undefined,
+          }),
+        }),
+      );
+    });
+
     it("single create errors on an unknown account", async () => {
       const result = await service.execute(userId, "manage_transactions", {
         operation: "create",
@@ -2118,6 +2144,24 @@ describe("ToolExecutorService", () => {
     });
 
     it("single create with splits builds a create_transaction card carrying resolved splits", async () => {
+      // previewCreate returns the amount it was given (or the one a foreign
+      // entry worked out); the lines are validated against that.
+      transactions.previewCreate.mockImplementationOnce(
+        async (_u: string, input: { amount: number }) => ({
+          accountId: "acc-1",
+          accountName: "Checking",
+          amount: input.amount,
+          transactionDate: "2026-01-15",
+          payeeId: null,
+          payeeName: null,
+          payeeMatched: false,
+          payeeWillBeCreated: false,
+          categoryId: null,
+          categoryName: null,
+          description: null,
+          currencyCode: "USD",
+        }),
+      );
       const result = await service.execute(userId, "manage_transactions", {
         operation: "create",
         items: [
