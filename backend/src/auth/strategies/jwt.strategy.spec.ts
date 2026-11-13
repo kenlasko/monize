@@ -5,6 +5,8 @@ import { JwtStrategy } from "./jwt.strategy";
 import { AuthService } from "../auth.service";
 import { DelegationService } from "../../delegation/delegation.service";
 import { getRequestContext } from "../../common/request-context";
+import { admitPat } from "../pat-access/pat-bearer";
+import type { ValidatedToken } from "../pat.service";
 
 // Real tokens always carry a UUID `sub` (it is the user's id). jwt.strategy now
 // seeds a user context via withUserContext(payload.sub), which validates the id
@@ -317,6 +319,105 @@ describe("JwtStrategy", () => {
         "withUserContext requires a valid UUID",
       );
       expect(authService.getUserStateById).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("personal access token", () => {
+    const PAT: ValidatedToken = {
+      userId: USER_ID,
+      scopes: "read",
+      tokenId: "55555555-5555-5555-5555-555555555555",
+    };
+
+    // passport attaches success/fail/error to a per-request copy of the
+    // strategy before calling authenticate(); stand in for that here.
+    type Passportish = {
+      success: jest.Mock;
+      fail: jest.Mock;
+      error: jest.Mock;
+      authenticate(req: unknown): void;
+    };
+    let hooks: Passportish;
+
+    const patRequest = (extra: Record<string, unknown> = {}) => ({
+      headers: { authorization: "Bearer pat_abc" },
+      ...extra,
+    });
+    const settle = () => new Promise((resolve) => setImmediate(resolve));
+
+    beforeEach(() => {
+      hooks = strategy as unknown as Passportish;
+      hooks.success = jest.fn();
+      hooks.fail = jest.fn();
+      hooks.error = jest.fn();
+    });
+
+    it("fails 401 for a PAT bearer with no admitted record, ignoring the cookie", async () => {
+      strategy.authenticate(
+        patRequest({ cookies: { auth_token: "valid-looking-cookie" } }) as any,
+      );
+      await settle();
+
+      expect(hooks.fail).toHaveBeenCalledWith(401);
+      expect(hooks.success).not.toHaveBeenCalled();
+      expect(hooks.error).not.toHaveBeenCalled();
+      expect(authService.getUserStateById).not.toHaveBeenCalled();
+    });
+
+    it("succeeds with the owner acting as self for an admitted token", async () => {
+      authService.getUserStateById.mockResolvedValue(mockUser);
+      const req = patRequest();
+      admitPat(req, PAT);
+
+      strategy.authenticate(req as any);
+      await settle();
+
+      expect(authService.getUserStateById).toHaveBeenCalledWith(USER_ID);
+      expect(hooks.success).toHaveBeenCalledWith({
+        ...mockUser,
+        id: USER_ID,
+        realUserId: USER_ID,
+        isActing: false,
+        delegationId: null,
+        pat: { tokenId: PAT.tokenId, scopes: "read" },
+      });
+      expect(hooks.fail).not.toHaveBeenCalled();
+      expect(hooks.error).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ["missing", null],
+      ["inactive", { ...mockUser, isActive: false }],
+    ])(
+      "errors with Unauthorized when the owner is %s",
+      async (_label, user) => {
+        authService.getUserStateById.mockResolvedValue(user);
+        const req = patRequest();
+        admitPat(req, PAT);
+
+        strategy.authenticate(req as any);
+        await settle();
+
+        expect(hooks.error).toHaveBeenCalledWith(
+          expect.any(UnauthorizedException),
+        );
+        expect(hooks.success).not.toHaveBeenCalled();
+      },
+    );
+
+    it("delegates a non-PAT request to the parent authenticate", () => {
+      const parent = Object.getPrototypeOf(JwtStrategy.prototype);
+      const spy = jest.spyOn(parent, "authenticate").mockImplementation();
+      try {
+        const req = { headers: { authorization: "Bearer eyJhbGciOi.e30.sig" } };
+
+        strategy.authenticate(req as any, { session: false });
+
+        expect(spy).toHaveBeenCalledWith(req, { session: false });
+        expect(hooks.fail).not.toHaveBeenCalled();
+      } finally {
+        spy.mockRestore();
+      }
     });
   });
 

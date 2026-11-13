@@ -79,6 +79,7 @@ import { PaymentFrequency } from "./loan-amortization.util";
 import { formatDateYMD, todayYMD } from "../common/date-utils";
 import { assertStringParam } from "../common/query-param-utils";
 import { tr } from "../i18n/translate";
+import { AllowPat, PatScope } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * Sanitise a user-supplied date-format string for the account export
@@ -132,6 +133,7 @@ function sanitizeDateFormat(input: string | undefined): string | undefined {
 const NO_SCOPED_ACCOUNT = "00000000-0000-0000-0000-000000000000";
 
 @ApiTags("Accounts")
+@AllowPat()
 @Controller("accounts")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
@@ -552,6 +554,7 @@ export class AccountsController {
   }
 
   @Post("loan-preview")
+  @PatScope("read")
   @ApiOperation({
     summary: "Preview loan amortization calculation",
     description:
@@ -577,6 +580,7 @@ export class AccountsController {
   }
 
   @Post("mortgage-preview")
+  @PatScope("read")
   @ApiOperation({
     summary: "Preview mortgage amortization calculation",
     description:
@@ -612,6 +616,7 @@ export class AccountsController {
   }
 
   @Post("mortgage-type/detect")
+  @PatScope("read")
   @ApiOperation({
     summary: "Suggest a mortgage type from sample installments",
     description:
@@ -1013,6 +1018,7 @@ export class AccountsController {
   }
 
   @Post(":id/mortgage-type/detect")
+  @PatScope("read")
   @ApiOperation({
     summary: "Suggest a mortgage type from the loan's posted installments",
     description:
@@ -1068,6 +1074,7 @@ export class AccountsController {
   }
 
   @Post(":id/setup-loan-payments/preview")
+  @PatScope("read")
   @ApiOperation({
     summary: "Preview the first installment of a loan payment setup",
     description:

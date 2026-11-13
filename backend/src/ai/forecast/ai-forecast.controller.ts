@@ -4,8 +4,10 @@ import { Throttle } from "@nestjs/throttler";
 import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import { AiForecastService } from "./ai-forecast.service";
 import { ForecastRequestDto } from "./dto/ai-forecast.dto";
+import { AllowPat } from "../../auth/pat-access/pat-access.decorator";
 
 @ApiTags("AI Forecast")
+@AllowPat()
 @Controller("ai/forecast")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()

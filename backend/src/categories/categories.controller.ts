@@ -36,8 +36,10 @@ import {
 } from "../delegation/decorators/delegate-access.decorator";
 import { DelegationService } from "../delegation/delegation.service";
 import { delegateReadableAccountScope } from "../delegation/delegate-account-scope.util";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 @ApiTags("Categories")
+@AllowPat()
 @Controller("categories")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()

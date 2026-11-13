@@ -24,6 +24,7 @@ import { CalendarDayNotesService, DayNote } from "./calendar-day-notes.service";
 import { resolveDayNoteSpan } from "./day-note-span";
 import { DayNotesQueryDto } from "./dto/day-notes-query.dto";
 import { UpsertDayNoteDto } from "./dto/upsert-day-note.dto";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * A user's own notes on calendar dates.
@@ -38,6 +39,7 @@ import { UpsertDayNoteDto } from "./dto/upsert-day-note.dto";
  * `userId` comes from the JWT on every route and is never read from the request.
  */
 @ApiTags("Calendar")
+@AllowPat()
 @Controller("calendar/day-notes")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()

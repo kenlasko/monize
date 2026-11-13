@@ -29,6 +29,7 @@ import {
   OwnerOnly,
   DelegateRequiresSection,
 } from "../delegation/decorators/delegate-access.decorator";
+import { AllowPat, NoPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * The notification centre: what this account has been told, and what it has
@@ -40,6 +41,7 @@ import {
  * See notification-preferences.md: Delegate access policy (TODO 10).
  */
 @ApiTags("Notifications")
+@AllowPat()
 @Controller("notifications")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
@@ -115,6 +117,7 @@ export class NotificationController {
   }
 
   @Delete()
+  @NoPat()
   @ApiOperation({
     summary: "Dismiss every notification matching the given filter",
   })

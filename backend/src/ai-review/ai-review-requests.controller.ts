@@ -15,6 +15,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { OwnerOnly } from "../delegation/decorators/delegate-access.decorator";
 import { AiReviewWorkService } from "./ai-review-work.service";
 import { ListAiReviewRequestsDto } from "./dto/list-ai-review-requests.dto";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * The review inbox (design 6.5): the user's AI review requests with the
@@ -25,6 +26,7 @@ import { ListAiReviewRequestsDto } from "./dto/list-ai-review-requests.dto";
  * refused on every route. `userId` is the JWT's.
  */
 @ApiTags("AI Review")
+@AllowPat()
 @Controller("ai-review-requests")
 @UseGuards(AuthGuard("jwt"))
 @OwnerOnly()

@@ -20,7 +20,11 @@ describe("RequestContextInterceptor", () => {
   function makeContext(opts: {
     type?: "http" | "rpc";
     headers?: Record<string, string | string[] | undefined>;
-    user?: { id?: string; realUserId?: string };
+    user?: {
+      id?: string;
+      realUserId?: string;
+      pat?: { tokenId: string; scopes: string };
+    };
   }) {
     const request = {
       headers: opts.headers ?? {},
@@ -390,6 +394,37 @@ describe("RequestContextInterceptor", () => {
       const args = usersRepository.update.mock.calls[0];
       expect(args[0]).toEqual({ id: "44444444-4444-4444-4444-444444444441" });
       expect(args[1].lastActivityAt).toBeInstanceOf(Date);
+    });
+
+    it("does not write last_activity_at for a personal access token request", async () => {
+      preferencesRepository.findOne.mockResolvedValue(null);
+      const ctx = makeContext({
+        user: {
+          id: "44444444-4444-4444-4444-444444444443",
+          pat: {
+            tokenId: "55555555-5555-5555-5555-555555555551",
+            scopes: "read",
+          },
+        },
+      });
+
+      const obs$ = (await interceptor.intercept(ctx, makeNext() as any)) as any;
+      await firstValueFrom(obs$);
+      await new Promise((r) => setImmediate(r));
+
+      expect(usersRepository.update).not.toHaveBeenCalled();
+    });
+
+    it("writes last_activity_at for the same user without pat", async () => {
+      preferencesRepository.findOne.mockResolvedValue(null);
+      const ctx = makeContext({
+        user: { id: "44444444-4444-4444-4444-444444444444" },
+      });
+
+      const obs$ = (await interceptor.intercept(ctx, makeNext() as any)) as any;
+      await firstValueFrom(obs$);
+
+      expect(usersRepository.update).toHaveBeenCalledTimes(1);
     });
 
     it("throttles repeat writes within the 5-minute window", async () => {

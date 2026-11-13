@@ -37,6 +37,7 @@ import {
   DelegateRequiresSection,
 } from "../delegation/decorators/delegate-access.decorator";
 import { DelegationService } from "../delegation/delegation.service";
+import { AllowPat, NoPat } from "../auth/pat-access/pat-access.decorator";
 
 // A UUID that cannot match any real account: forces a naturally-empty,
 // correctly-shaped result for an acting delegate with no readable accounts
@@ -46,6 +47,7 @@ const NO_READABLE_ACCOUNT = "00000000-0000-0000-0000-000000000000";
 @ApiTags("Investment Transactions")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller("investment-transactions")
 export class InvestmentTransactionsController {
   constructor(
@@ -637,6 +639,7 @@ export class InvestmentTransactionsController {
   }
 
   @Delete()
+  @NoPat()
   @ApiOperation({
     summary: "Delete ALL investment transactions and holdings",
     description:

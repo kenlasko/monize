@@ -44,3 +44,14 @@ export function apiScopesList(): string {
 export function isApiScope(scope: string): scope is ApiScope {
   return (API_SCOPES as readonly string[]).includes(scope);
 }
+
+/**
+ * True when a stored comma-separated scope list holds `required`.
+ *
+ * Exact membership, on every surface: `write` does not imply `read`, so a
+ * token meant to do both carries both. The MCP transport and the REST
+ * `PatAccessGuard` both answer from here.
+ */
+export function hasApiScope(scopes: string, required: string): boolean {
+  return scopes.split(",").includes(required);
+}

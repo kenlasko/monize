@@ -27,8 +27,10 @@ import {
   AllowDelegate,
   DelegateRequiresSection,
 } from "../delegation/decorators/delegate-access.decorator";
+import { AllowPat, PatScope } from "../auth/pat-access/pat-access.decorator";
 
 @ApiTags("Custom Reports")
+@AllowPat()
 @Controller("reports/custom")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
@@ -122,6 +124,7 @@ export class ReportsController {
   }
 
   @Post(":id/execute")
+  @PatScope("read")
   @ApiOperation({ summary: "Execute a custom report and get aggregated data" })
   @ApiParam({ name: "id", description: "Report ID" })
   @ApiResponse({ status: 200, description: "Report execution result" })

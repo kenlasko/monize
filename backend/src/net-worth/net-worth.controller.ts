@@ -36,6 +36,7 @@ import {
 } from "../delegation/decorators/delegate-access.decorator";
 import { DelegationService } from "../delegation/delegation.service";
 import { JointAccountsService } from "../delegation/joint-accounts.service";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 // A UUID that cannot match any real account: forces a naturally-empty,
 // correctly-shaped result for an acting delegate with no readable accounts
@@ -69,6 +70,7 @@ type PeriodWindow = PeriodResultWindow & {
 };
 
 @ApiTags("Net Worth")
+@AllowPat()
 @Controller("net-worth")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()

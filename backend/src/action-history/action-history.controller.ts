@@ -15,8 +15,10 @@ import {
 import { AuthGuard } from "@nestjs/passport";
 import { ActionHistoryService } from "./action-history.service";
 import { ActionHistoryQueryDto } from "./dto/action-history-response.dto";
+import { AllowPat, NoPat } from "../auth/pat-access/pat-access.decorator";
 
 @ApiTags("Action History")
+@AllowPat()
 @Controller("action-history")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
@@ -31,6 +33,7 @@ export class ActionHistoryController {
   }
 
   @Post("undo")
+  @NoPat()
   @ApiOperation({ summary: "Undo the most recent action" })
   @ApiResponse({ status: 200, description: "Action undone successfully" })
   @ApiResponse({ status: 404, description: "Nothing to undo" })
@@ -39,6 +42,7 @@ export class ActionHistoryController {
   }
 
   @Post("redo")
+  @NoPat()
   @ApiOperation({ summary: "Redo the most recently undone action" })
   @ApiResponse({ status: 200, description: "Action redone successfully" })
   @ApiResponse({ status: 404, description: "Nothing to redo" })

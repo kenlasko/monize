@@ -17,6 +17,7 @@ import {
 import { CopyAttachmentToWarrantyDto } from "./dto/copy-attachment-to-warranty.dto";
 import { TransactionAttachment } from "./entities/transaction-attachment.entity";
 import { WarrantyAttachmentCopyService } from "./warranty-attachment-copy.service";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * The warranty's "add an existing document" route. Owner only, as every
@@ -26,6 +27,7 @@ import { WarrantyAttachmentCopyService } from "./warranty-attachment-copy.servic
 @ApiTags("Attachments")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller()
 export class WarrantyAttachmentCopyController {
   constructor(private readonly copies: WarrantyAttachmentCopyService) {}
