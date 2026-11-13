@@ -327,6 +327,50 @@ Update and uninstall:
       `"Uninstall Monize.exe" /S --remove-data` removes it.
 - [ ] Uninstall with the checkbox ticked: `%LOCALAPPDATA%\Monize` is gone.
 
+## CI
+
+Two jobs in `.github/workflows/ci.yml` run this package, and both gate a
+release (`prepare-release` needs them):
+
+- **`desktop`** (Ubuntu): `npm ci`, `lint`, `typecheck`, `test` and
+  `smoke:postgres` against the Linux PostgreSQL binaries. The guard specs
+  read the Dockerfiles, `backend/docker-entrypoint.sh`, `.env.example` and the
+  compose files, so the job checks out everything but installs only this
+  package.
+- **`desktop-windows`** (`windows-latest`): checks out with LF line endings
+  (the image defaults to CRLF, which breaks the help-image script under `sh`
+  and every line of `lint`), installs `cwebp` from the libwebp release zip
+  pinned by SHA-256, builds `backend/` and `frontend/`, then runs `lint`,
+  `test`, `smoke:postgres` and `dist` here, and finally
+  `scripts/smoke-install.ps1` against the new installer. A passing run
+  uploads `Monize-Setup-<v>.exe`, its `.blockmap` and `latest.yml` as the
+  `monize-windows-installer` artifact (kept 7 days); a failing one uploads
+  the smoke test's `logs` folder instead.
+
+`scripts/smoke-install.ps1` installs the installer silently, checks that it
+asked for no elevation and landed in `%LOCALAPPDATA%\Programs\Monize`,
+starts Monize on a fresh data folder, registers a user and reads the
+accounts list through the frontend, checks that everything listens on
+127.0.0.1 only, then `--quit`, a relaunch, a hard kill of the main process
+(the backend and frontend must follow it, PostgreSQL must survive and be
+stopped by the next launch), a refused install into `%LOCALAPPDATA%\Monize`,
+and a silent uninstall with and without `--remove-data`. Run it by hand on
+Windows, from the repository root, after `npm run dist`:
+
+```powershell
+pwsh -NoProfile -File desktop\scripts\smoke-install.ps1                      # newest installer in desktop\release
+pwsh -NoProfile -File desktop\scripts\smoke-install.ps1 -Installer <path to Monize-Setup-<v>.exe>
+```
+
+It needs PowerShell 7.2 or later and installs and uninstalls Monize for the
+current user, so it refuses to start when Monize is already installed. It
+never removes a `%LOCALAPPDATA%\Monize` that existed before it started; on
+such a machine the `--remove-data` check is skipped (on a CI runner that is a
+failure). `-DataDir` names the data folder (default: a new one under the temp
+directory, removed after a pass and kept after a failure), and
+`-FrontendPort`, `-BackendPort` and `-PostgresPort` the ports it expects in
+`config.json` (default 3380, 3381 and 5433).
+
 ## Where data lives
 
 Per user, under `%LOCALAPPDATA%\Monize\`: `pgdata`, `backups`, `attachments`,
