@@ -45,6 +45,8 @@ function actionOf(snapshot: Partial<ScheduledPostingSnapshot> | null) {
 function managerWith({
   scheduleExists = true,
   laterClaims = [] as { d: string }[],
+  // Where the posting left the cursor, unless a test moves it.
+  nextDueDate = "2025-02-15",
 } = {}) {
   const statements: string[] = [];
   const query = jest.fn(async (sql: string) => {
@@ -53,7 +55,9 @@ function managerWith({
       sql.includes("FROM scheduled_transactions") &&
       sql.includes("FOR UPDATE")
     ) {
-      return scheduleExists ? [{ id: SCHEDULE }] : [];
+      return scheduleExists
+        ? [{ id: SCHEDULE, next_due_date: nextDueDate }]
+        : [];
     }
     if (sql.includes("stp.original_due_date > $2")) return laterClaims;
     return [[], 0];
@@ -132,6 +136,37 @@ describe("undoScheduledPosting (issue #2165)", () => {
     ).toBe(false);
   });
 
+  it("does not count a later claim the posting itself found", async () => {
+    const { manager } = managerWith({ laterClaims: [{ d: "2025-03-15" }] });
+    const removeMoney = jest.fn();
+
+    await undoScheduledPosting(
+      actionOf({ ...recurring, laterClaimedSlots: ["2025-03-15"] }),
+      manager,
+      removeMoney,
+    );
+
+    expect(removeMoney).toHaveBeenCalled();
+    expect(rewind).toHaveBeenCalled();
+  });
+
+  it("refuses before any write when the cursor has moved since the posting", async () => {
+    const { manager, query } = managerWith({ nextDueDate: "2025-03-15" });
+    const removeMoney = jest.fn();
+
+    await expect(
+      undoScheduledPosting(actionOf(recurring), manager, removeMoney),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        errorCode: "SCHEDULED_POSTING_UNDO_CURSOR_MOVED",
+      }),
+    });
+    expect(removeMoney).not.toHaveBeenCalled();
+    expect(
+      query.mock.calls.some(([sql]) => String(sql).includes("DELETE")),
+    ).toBe(false);
+  });
+
   it("re-inserts a one-time schedule the posting deleted", async () => {
     const { manager } = managerWith({ scheduleExists: false });
     const removedSchedule = {
@@ -139,6 +174,9 @@ describe("undoScheduledPosting (issue #2165)", () => {
       splits: [],
       splitTags: [],
       overrides: [],
+      payrollRules: [],
+      payrollRulePeriods: [],
+      linkedAccountIds: [],
     };
 
     await undoScheduledPosting(
@@ -180,6 +218,9 @@ describe("undoScheduledPosting (issue #2165)", () => {
           splits: [],
           splitTags: [],
           overrides: [],
+          payrollRules: [],
+          payrollRulePeriods: [],
+          linkedAccountIds: [],
         },
       }),
       manager,

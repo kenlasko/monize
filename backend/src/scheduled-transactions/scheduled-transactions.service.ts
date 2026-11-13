@@ -4820,7 +4820,10 @@ export class ScheduledTransactionsService {
           : undefined;
       const baseline =
         postedMoney && !isOnce ? await cursorBaseline(m, current) : undefined;
-      const recordPosting = (cursor?: ScheduleCursorChange): void => {
+      const recordPosting = (
+        cursor?: ScheduleCursorChange,
+        laterClaimedSlots?: string[],
+      ): void => {
         if (!postedMoney) return;
         posting = {
           name: current.name,
@@ -4830,6 +4833,9 @@ export class ScheduledTransactionsService {
             dueDate: nextDueDateStr,
             money: postedMoney,
             ...(cursor ? { cursor } : {}),
+            ...(laterClaimedSlots && laterClaimedSlots.length > 0
+              ? { laterClaimedSlots }
+              : {}),
             ...(removedSchedule ? { removedSchedule } : {}),
           },
         };
@@ -4858,15 +4864,15 @@ export class ScheduledTransactionsService {
       // consumed slots are the occurrence claimed above and every claim at or
       // after it: a settlement rule may hold a later slot (INV-LOAN-008), and a
       // cursor left on it would refuse every later post (A26-S08-03).
-      const advance = await advanceScheduleCursor(
-        m,
-        current,
-        new Set([
-          nextDueDateStr,
-          ...(await claimedSlotsFrom(m, id, nextDueDateStr)),
-        ]),
+      const consumedSlots = new Set([
+        nextDueDateStr,
+        ...(await claimedSlotsFrom(m, id, nextDueDateStr)),
+      ]);
+      const advance = await advanceScheduleCursor(m, current, consumedSlots);
+      recordPosting(
+        baseline ? cursorChangeOf(baseline, advance) : undefined,
+        [...consumedSlots].filter((slot) => slot !== nextDueDateStr),
       );
-      recordPosting(baseline ? cursorChangeOf(baseline, advance) : undefined);
       return false;
     });
 

@@ -5440,19 +5440,27 @@ columns before and after, and the overrides the posting removed, read under
 the schedule lock before the advance) or, for a one-time bill, every row of the
 schedule its delete cascaded over (`to_jsonb`, rebuilt with
 `jsonb_populate_record`). The undo (`backend/src/action-history/scheduled-posting-undo.ts`)
-locks the schedule row, refuses `SCHEDULED_POSTING_UNDO_LATER_OCCURRENCE`
-before any write while a later slot of the schedule holds a claim (last in,
-first out, as for a rule run's settlements), removes the rows through the undo
-of the create that wrote them, releases the claim, and rewinds the cursor with
-`rewindScheduleCursor` (only while it still stands where the posting left it)
-or re-inserts the one-time schedule, all in the undo's one transaction. Redo is
+locks the schedule row and refuses before any write while a later slot of the
+schedule holds a claim made after the posting (`SCHEDULED_POSTING_UNDO_LATER_OCCURRENCE`,
+last in, first out, as for a rule run's settlements; a claim the posting found
+ahead of the cursor is recorded with it and does not count) or while the cursor
+stands anywhere but where the posting left it (`SCHEDULED_POSTING_UNDO_CURSOR_MOVED`:
+a skip records no entry, and a rewind past it would undo the skip too). It then
+removes the rows through the undo of the create that wrote them, after the
+strict reconciled lock on every row, releases the claim, and rewinds the cursor
+with `rewindScheduleCursor` or re-inserts the one-time schedule (with its
+lines, their tags, its overrides, its payroll rules and its loan link; a
+category, payee or transfer account deleted since is cleared, as `ON DELETE
+SET NULL` would have, and anything else gone refuses
+`SCHEDULED_POSTING_UNDO_REFERENCE_GONE`), all in the undo's one transaction. Redo is
 refused (`SCHEDULED_POSTING_REDO`): posting again is `post()`'s job, at the
 prices, rates and loan balance of the day. A posting that wrote no money of its
 own (`recordOnly`, a retired loan) records no entry, and a transfer with a leg
 in another owner's account keeps the transfer's per-owner entries, whose undo
 does not rewind the schedule. `scheduled-posting-undo.integration.spec.ts`
 holds the ledger, the balances, the claim and the cursor across a plain bill,
-a consumed override, a one-time split bill, a transfer and the two refusals.
+a consumed override, a one-time split bill, a transfer, a claim found ahead of
+the cursor, a category deleted before the restore and the refusals.
 
 ### INV-OCCURRENCE-002 -- a stored override price survives
 

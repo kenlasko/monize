@@ -1,5 +1,7 @@
+import { ConflictException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { returnedRows } from "../common/db/query-result";
+import { tr } from "../i18n/translate";
 import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
 import { ScheduledTransactionOverride } from "./entities/scheduled-transaction-override.entity";
 import { todayYMD } from "../common/date-utils";
@@ -40,15 +42,20 @@ export type ScheduledPostingMoney =
 
 /**
  * A one-time schedule the posting deleted, as its rows stood (`to_jsonb` of
- * each, every column), with the rows that went with it by `ON DELETE CASCADE`
- * and that the bill needs to be posted again: its split lines, their tags and
- * its overrides. The occurrence claim is not kept: the undo releases it.
+ * each, every column), with what its delete took with it: by `ON DELETE
+ * CASCADE` its split lines, their tags, its overrides and its payroll
+ * deduction rules with their periods, and by `ON DELETE SET NULL` the loan
+ * accounts naming it as their payment schedule. The occurrence claim is not
+ * kept: the undo releases it.
  */
 export interface RemovedScheduleSnapshot {
   readonly schedule: Record<string, unknown>;
   readonly splits: readonly Record<string, unknown>[];
   readonly splitTags: readonly Record<string, unknown>[];
   readonly overrides: readonly Record<string, unknown>[];
+  readonly payrollRules: readonly Record<string, unknown>[];
+  readonly payrollRulePeriods: readonly Record<string, unknown>[];
+  readonly linkedAccountIds: readonly string[];
 }
 
 /** `afterData` of a `scheduled_posting` entry. */
@@ -60,6 +67,12 @@ export interface ScheduledPostingSnapshot {
   readonly money: ScheduledPostingMoney;
   /** A recurring schedule's cursor advance. */
   readonly cursor?: ScheduleCursorChange;
+  /**
+   * The slots after `dueDate` already claimed when the posting ran (a rule's
+   * settlement ahead of the cursor, which the advance stepped over): not an
+   * occurrence posted after this one.
+   */
+  readonly laterClaimedSlots?: readonly string[];
   /** A one-time schedule, deleted by the posting. */
   readonly removedSchedule?: RemovedScheduleSnapshot;
 }
@@ -144,18 +157,66 @@ export async function snapshotRemovedSchedule(
       `SELECT to_jsonb(o) AS row FROM scheduled_transaction_overrides o
         WHERE o.scheduled_transaction_id = $1`,
     ),
+    payrollRules: await rowsOf(
+      `SELECT to_jsonb(pr) AS row FROM payroll_deduction_rules pr
+        WHERE pr.scheduled_transaction_id = $1`,
+    ),
+    payrollRulePeriods: await rowsOf(
+      `SELECT to_jsonb(pp) AS row FROM payroll_deduction_rule_periods pp
+         JOIN payroll_deduction_rules pr ON pr.id = pp.rule_id
+        WHERE pr.scheduled_transaction_id = $1`,
+    ),
+    linkedAccountIds: (
+      await rowsOf(
+        `SELECT to_jsonb(a.id) AS row FROM accounts a
+          WHERE a.scheduled_transaction_id = $1`,
+      )
+    ).map((id) => String(id)),
   };
 }
 
 /**
- * Put back a one-time schedule `snapshotRemovedSchedule` read. Every row is
- * rebuilt by the database from its own column list
- * (`jsonb_populate_record`), so no column is lost on the way. The schedule
- * is written under `userId` whatever the snapshot says, the children only
- * under that schedule, and a split tag only for a tag the user still holds.
+ * Put back a one-time schedule `snapshotRemovedSchedule` read, in the undo's
+ * transaction. Every row is rebuilt by the database from its own column list
+ * (`jsonb_populate_record`), so no column is lost on the way. The schedule is
+ * written under `userId` whatever the snapshot says, the children only under
+ * that schedule and that user, and a split tag only for a tag the user still
+ * holds.
+ *
+ * A row it names that has been deleted since is treated as the delete would
+ * have treated a live schedule: a category or a transfer account is cleared
+ * (`ON DELETE SET NULL`), as is a payee (the schedule keeps `payee_name`), and
+ * a payroll rule whose category is gone is not restored (`ON DELETE CASCADE`).
+ * Anything else gone (the account, a security, a currency) refuses the undo
+ * with `SCHEDULED_POSTING_UNDO_REFERENCE_GONE` and the transaction rolls back.
+ *
  * Returns false, writing nothing, when a schedule with the id already exists.
  */
 export async function restoreRemovedSchedule(
+  m: EntityManager,
+  userId: string,
+  snapshot: RemovedScheduleSnapshot,
+): Promise<boolean> {
+  try {
+    return await restoreRows(m, userId, snapshot);
+  } catch (error) {
+    if (
+      (error as { driverError?: { code?: string } })?.driverError?.code !==
+      "23503"
+    ) {
+      throw error;
+    }
+    throw new ConflictException({
+      message: tr(
+        "errors.actionHistory.scheduledPostingUndoReferenceGone",
+        "Something this scheduled transaction used (an account, a security or a currency) has been deleted since, so the posting cannot be undone. Delete the posted transaction instead",
+      ),
+      errorCode: "SCHEDULED_POSTING_UNDO_REFERENCE_GONE",
+    });
+  }
+}
+
+async function restoreRows(
   m: EntityManager,
   userId: string,
   snapshot: RemovedScheduleSnapshot,
@@ -165,7 +226,15 @@ export async function restoreRemovedSchedule(
       `INSERT INTO scheduled_transactions
        SELECT * FROM jsonb_populate_record(
          NULL::scheduled_transactions,
-         $1::jsonb || jsonb_build_object('user_id', $2::text)
+         $1::jsonb || jsonb_build_object(
+           'user_id', $2::text,
+           'category_id', (SELECT c.id FROM categories c
+                            WHERE c.id = ($1::jsonb ->> 'category_id')::uuid),
+           'payee_id', (SELECT p.id FROM payees p
+                         WHERE p.id = ($1::jsonb ->> 'payee_id')::uuid),
+           'transfer_account_id', (SELECT a.id FROM accounts a
+                                    WHERE a.id = ($1::jsonb ->> 'transfer_account_id')::uuid)
+         )
        )
        ON CONFLICT (id) DO NOTHING
        RETURNING id`,
@@ -174,40 +243,88 @@ export async function restoreRemovedSchedule(
   );
   if (restored.length === 0) return false;
   const scheduleId = restored[0].id;
-  if (snapshot.splits.length > 0) {
-    await m.query(
-      `INSERT INTO scheduled_transaction_splits
-       SELECT r.* FROM jsonb_populate_recordset(
-         NULL::scheduled_transaction_splits, $1::jsonb
+  const insert = async (
+    rows: readonly unknown[] | undefined,
+    sql: string,
+    params: readonly unknown[],
+  ): Promise<void> => {
+    if (!rows || rows.length === 0) return;
+    await m.query(sql, [JSON.stringify(rows), ...params]);
+  };
+  // A line's category, gone since, is cleared as the delete would have.
+  await insert(
+    snapshot.splits,
+    `INSERT INTO scheduled_transaction_splits
+     SELECT r.* FROM jsonb_array_elements($1::jsonb) e,
+       LATERAL jsonb_populate_record(
+         NULL::scheduled_transaction_splits,
+         e.value || jsonb_build_object(
+           'category_id', (SELECT c.id FROM categories c
+                            WHERE c.id = (e.value ->> 'category_id')::uuid)
+         )
        ) r
-        WHERE r.scheduled_transaction_id = $2
-       ON CONFLICT (id) DO NOTHING`,
-      [JSON.stringify(snapshot.splits), scheduleId],
-    );
-  }
-  if (snapshot.splitTags.length > 0) {
-    await m.query(
-      `INSERT INTO scheduled_transaction_split_tags
-       SELECT r.* FROM jsonb_populate_recordset(
-         NULL::scheduled_transaction_split_tags, $1::jsonb
+      WHERE r.scheduled_transaction_id = $2
+     ON CONFLICT (id) DO NOTHING`,
+    [scheduleId],
+  );
+  await insert(
+    snapshot.splitTags,
+    `INSERT INTO scheduled_transaction_split_tags
+     SELECT r.* FROM jsonb_populate_recordset(
+       NULL::scheduled_transaction_split_tags, $1::jsonb
+     ) r
+       JOIN scheduled_transaction_splits sp
+         ON sp.id = r.scheduled_transaction_split_id
+        AND sp.scheduled_transaction_id = $2
+       JOIN tags g ON g.id = r.tag_id AND g.user_id = $3
+     ON CONFLICT DO NOTHING`,
+    [scheduleId, userId],
+  );
+  await insert(
+    snapshot.overrides,
+    `INSERT INTO scheduled_transaction_overrides
+     SELECT r.* FROM jsonb_array_elements($1::jsonb) e,
+       LATERAL jsonb_populate_record(
+         NULL::scheduled_transaction_overrides,
+         e.value || jsonb_build_object(
+           'category_id', (SELECT c.id FROM categories c
+                            WHERE c.id = (e.value ->> 'category_id')::uuid)
+         )
        ) r
-         JOIN scheduled_transaction_splits sp
-           ON sp.id = r.scheduled_transaction_split_id
-          AND sp.scheduled_transaction_id = $2
-         JOIN tags g ON g.id = r.tag_id AND g.user_id = $3
-       ON CONFLICT DO NOTHING`,
-      [JSON.stringify(snapshot.splitTags), scheduleId, userId],
-    );
-  }
-  if (snapshot.overrides.length > 0) {
+      WHERE r.scheduled_transaction_id = $2
+     ON CONFLICT DO NOTHING`,
+    [scheduleId],
+  );
+  await insert(
+    snapshot.payrollRules,
+    `INSERT INTO payroll_deduction_rules
+     SELECT r.* FROM jsonb_populate_recordset(
+       NULL::payroll_deduction_rules, $1::jsonb
+     ) r
+       JOIN categories c ON c.id = r.category_id
+      WHERE r.scheduled_transaction_id = $2 AND r.user_id = $3
+     ON CONFLICT DO NOTHING`,
+    [scheduleId, userId],
+  );
+  await insert(
+    snapshot.payrollRulePeriods,
+    `INSERT INTO payroll_deduction_rule_periods
+     SELECT r.* FROM jsonb_populate_recordset(
+       NULL::payroll_deduction_rule_periods, $1::jsonb
+     ) r
+       JOIN payroll_deduction_rules pr
+         ON pr.id = r.rule_id AND pr.scheduled_transaction_id = $2
+      WHERE r.user_id = $3
+     ON CONFLICT DO NOTHING`,
+    [scheduleId, userId],
+  );
+  if (snapshot.linkedAccountIds && snapshot.linkedAccountIds.length > 0) {
+    // Only a link nothing has taken since.
     await m.query(
-      `INSERT INTO scheduled_transaction_overrides
-       SELECT r.* FROM jsonb_populate_recordset(
-         NULL::scheduled_transaction_overrides, $1::jsonb
-       ) r
-        WHERE r.scheduled_transaction_id = $2
-       ON CONFLICT DO NOTHING`,
-      [JSON.stringify(snapshot.overrides), scheduleId],
+      `UPDATE accounts SET scheduled_transaction_id = $1
+        WHERE id = ANY($2::uuid[]) AND user_id = $3
+          AND scheduled_transaction_id IS NULL`,
+      [scheduleId, snapshot.linkedAccountIds, userId],
     );
   }
   return true;

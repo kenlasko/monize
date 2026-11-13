@@ -342,6 +342,60 @@ describe("Undo of a scheduled posting (integration)", () => {
     expect((await historyRows())[0].is_undone).toBe(false);
   });
 
+  it("a later slot already claimed when it posted does not block the undo", async () => {
+    const id = await makeSchedule({});
+    // A rule settled February ahead of the cursor; posting January steps
+    // the cursor over it to March.
+    await db.query(
+      `INSERT INTO scheduled_transaction_postings
+         (scheduled_transaction_id, original_due_date, posted_date)
+       VALUES ($1, $2, $2)`,
+      [id, SECOND_DUE],
+    );
+    await post(id);
+    expect((await cursorOf(id)).next_due_date).toBe("2025-03-15");
+
+    await undo();
+
+    expect(await ledgerRows(accountId)).toBe(0);
+    expect(await claims(id)).toEqual([SECOND_DUE]);
+    expect((await cursorOf(id)).next_due_date).toBe(FIRST_DUE);
+  });
+
+  it("refuses, writing nothing, when the next occurrence was skipped since", async () => {
+    const id = await makeSchedule({});
+    await post(id);
+    await asUser(() => scheduled.skip(userId, id));
+    expect((await cursorOf(id)).next_due_date).toBe("2025-03-15");
+
+    await expect(undo()).rejects.toThrow(ConflictException);
+
+    expect(await ledgerRows(accountId)).toBe(1);
+    expect(await claims(id)).toEqual([FIRST_DUE]);
+    expect((await cursorOf(id)).next_due_date).toBe("2025-03-15");
+  });
+
+  it("a one-time bill whose category was deleted since comes back without it", async () => {
+    const gifts = await createTestCategory(db, userId, { name: "Gifts" });
+    const id = await makeSchedule({
+      name: "Present",
+      frequency: "ONCE",
+      categoryId: gifts.id,
+    });
+    await post(id);
+    await db.query(`UPDATE transactions SET category_id = NULL`);
+    await db.query(`DELETE FROM categories WHERE id = $1`, [gifts.id]);
+
+    await undo();
+
+    const [row] = await db.query(
+      `SELECT name, category_id FROM scheduled_transactions WHERE id = $1`,
+      [id],
+    );
+    expect(row).toEqual({ name: "Present", category_id: null });
+    expect(await balanceOf(accountId)).toBe(OPENING);
+  });
+
   it("is not redoable: the person posts the occurrence again", async () => {
     const id = await makeSchedule({});
     await post(id);

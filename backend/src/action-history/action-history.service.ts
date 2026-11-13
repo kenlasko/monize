@@ -947,12 +947,22 @@ export class ActionHistoryService {
 
   /**
    * The rows a scheduled posting wrote are removed exactly as the undo of the
-   * create that wrote them would remove them (`scheduled-posting-undo.ts`).
+   * create that wrote them would remove them (`scheduled-posting-undo.ts`),
+   * after the strict reconciled lock (INV-RECONCILE-001): the transaction
+   * create's undo takes it itself; a transfer's two legs and an investment
+   * row's cash transaction are locked and checked here first, so a
+   * reconciled row refuses the undo before anything is written.
    */
   private scheduledPostingRemover(
     action: ActionHistory,
     manager: EntityManager,
   ): ScheduledPostingMoneyRemover {
+    const assertMutable = async (ids: string[]): Promise<void> => {
+      const rows = await lockTransactionRows(manager, ids, action.userId);
+      await assertReconciledRowsMutable(manager, action.userId, [
+        ...rows.values(),
+      ]);
+    };
     return async (money) => {
       switch (money.kind) {
         case "transaction":
@@ -962,6 +972,7 @@ export class ActionHistoryService {
           );
           return;
         case "transfer":
+          await assertMutable([money.fromTransactionId, money.toTransactionId]);
           await this.undoTransferCreate(
             {
               ...action,
@@ -975,12 +986,20 @@ export class ActionHistoryService {
             manager,
           );
           return;
-        case "investment":
+        case "investment": {
+          const row = await manager.findOne(InvestmentTransaction, {
+            where: {
+              id: money.investmentTransactionId,
+              userId: action.userId,
+            },
+          });
+          if (row?.transactionId) await assertMutable([row.transactionId]);
           await this.undoInvestmentCreate(
             { ...action, entityId: money.investmentTransactionId },
             manager,
           );
           return;
+        }
       }
     };
   }
