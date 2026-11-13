@@ -102,7 +102,7 @@ describe("PatAccessGuard", () => {
 
   beforeEach(() => {
     patService = { validateToken: jest.fn() };
-    guard = new PatAccessGuard(new Reflector(), patService as PatService);
+    guard = new PatAccessGuard(new Reflector(), patService as unknown as PatService);
   });
 
   it("passes a non-http context", async () => {
