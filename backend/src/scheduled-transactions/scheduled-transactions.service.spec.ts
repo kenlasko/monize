@@ -4009,6 +4009,18 @@ describe("ScheduledTransactionsService", () => {
         expect(entry.afterData.removedSchedule).toBeUndefined();
       });
 
+      it("keeps an estimated schedule's amount before the posting, for the undo", async () => {
+        stubFindOne(
+          makeScheduled({ nextDueDate: "2025-02-15", amountIsEstimated: true }),
+        );
+        noOverride();
+
+        // The person states the amount: no estimate is read for the post.
+        await service.post(userId, stId, { amount: -95 } as never);
+
+        expect(postings()[0][1].afterData.estimatedAmount).toBe(-1200);
+      });
+
       it("keeps a one-time bill's rows, which the posting deletes, instead of a cursor", async () => {
         stubFindOne(makeScheduled({ frequency: "ONCE" }));
         noOverride();

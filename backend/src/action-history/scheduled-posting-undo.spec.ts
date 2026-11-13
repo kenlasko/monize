@@ -115,6 +115,21 @@ describe("undoScheduledPosting (issue #2165)", () => {
     expect(result).toEqual({ scheduleIds: [SCHEDULE], securityIds: [] });
   });
 
+  it("puts an estimated schedule's amount back to its estimate before the posting", async () => {
+    const { manager, query } = managerWith();
+
+    await undoScheduledPosting(
+      actionOf({ ...recurring, estimatedAmount: -87.5 }),
+      manager,
+      jest.fn(),
+    );
+
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining("amount_is_estimated = true"),
+      [-87.5, SCHEDULE, USER],
+    );
+  });
+
   it("refuses before any write while a later occurrence holds a claim", async () => {
     const { manager, query } = managerWith({
       laterClaims: [{ d: "2025-03-15" }],

@@ -73,6 +73,12 @@ export interface ScheduledPostingSnapshot {
    * occurrence posted after this one.
    */
   readonly laterClaimedSlots?: readonly string[];
+  /**
+   * An estimated schedule's stored `amount` before the posting: the snapshot
+   * `post()` rewrites after its commit to the next occurrence's estimate,
+   * which the payment it posted is part of (issue #2096).
+   */
+  readonly estimatedAmount?: number;
   /** A one-time schedule, deleted by the posting. */
   readonly removedSchedule?: RemovedScheduleSnapshot;
 }
@@ -177,18 +183,20 @@ export async function snapshotRemovedSchedule(
 
 /**
  * Put back a one-time schedule `snapshotRemovedSchedule` read, in the undo's
- * transaction. Every row is rebuilt by the database from its own column list
- * (`jsonb_populate_record`), so no column is lost on the way. The schedule is
+ * transaction. Every row is rebuilt by the database (`jsonb_populate_record`)
+ * over the columns the table still has (`insertHead`), so no column is lost
+ * on the way and one added since takes its default. The schedule is
  * written under `userId` whatever the snapshot says, the children only under
  * that schedule and that user, and a split tag only for a tag the user still
  * holds.
  *
  * A row it names that has been deleted since is treated as the delete would
- * have treated a live schedule: a category or a transfer account is cleared
- * (`ON DELETE SET NULL`), as is a payee (the schedule keeps `payee_name`), and
- * a payroll rule whose category is gone is not restored (`ON DELETE CASCADE`).
- * Anything else gone (the account, a security, a currency) refuses the undo
- * with `SCHEDULED_POSTING_UNDO_REFERENCE_GONE` and the transaction rolls back.
+ * have treated a live schedule: a category, or the schedule's own transfer
+ * account, is cleared (`ON DELETE SET NULL`), as is a payee (the schedule
+ * keeps `payee_name`), and a payroll rule whose category is gone is not
+ * restored (`ON DELETE CASCADE`). Anything else gone (the account, a split
+ * line's transfer account, a security, a currency) refuses the undo with
+ * `SCHEDULED_POSTING_UNDO_REFERENCE_GONE` and the transaction rolls back.
  *
  * Returns false, writing nothing, when a schedule with the id already exists.
  */
@@ -216,6 +224,33 @@ export async function restoreRemovedSchedule(
   }
 }
 
+/**
+ * `INSERT INTO table (columns) SELECT r.columns`, over the columns the table
+ * has now that the snapshot rows carry: a column added since the posting takes
+ * its default rather than NULL, and one dropped since is left out. The names
+ * are the catalogue's own, never the snapshot's.
+ */
+async function insertHead(
+  m: EntityManager,
+  table: string,
+  rows: readonly Record<string, unknown>[],
+): Promise<string> {
+  const carried = new Set(rows.flatMap((row) => Object.keys(row)));
+  const columns = returnedRows<{ column_name: string }>(
+    await m.query(
+      `SELECT column_name FROM information_schema.columns
+        WHERE table_schema = current_schema() AND table_name = $1
+        ORDER BY ordinal_position`,
+      [table],
+    ),
+  )
+    .map((c) => c.column_name)
+    .filter((c) => carried.has(c))
+    .map((c) => `"${c.replace(/"/g, '""')}"`);
+  return `INSERT INTO ${table} (${columns.join(", ")})
+     SELECT ${columns.map((c) => `r.${c}`).join(", ")}`;
+}
+
 async function restoreRows(
   m: EntityManager,
   userId: string,
@@ -223,19 +258,19 @@ async function restoreRows(
 ): Promise<boolean> {
   const restored = returnedRows<{ id: string }>(
     await m.query(
-      `INSERT INTO scheduled_transactions
-       SELECT * FROM jsonb_populate_record(
-         NULL::scheduled_transactions,
-         $1::jsonb || jsonb_build_object(
-           'user_id', $2::text,
-           'category_id', (SELECT c.id FROM categories c
-                            WHERE c.id = ($1::jsonb ->> 'category_id')::uuid),
-           'payee_id', (SELECT p.id FROM payees p
-                         WHERE p.id = ($1::jsonb ->> 'payee_id')::uuid),
-           'transfer_account_id', (SELECT a.id FROM accounts a
-                                    WHERE a.id = ($1::jsonb ->> 'transfer_account_id')::uuid)
-         )
-       )
+      `${await insertHead(m, "scheduled_transactions", [snapshot.schedule])}
+         FROM jsonb_populate_record(
+           NULL::scheduled_transactions,
+           $1::jsonb || jsonb_build_object(
+             'user_id', $2::text,
+             'category_id', (SELECT c.id FROM categories c
+                              WHERE c.id = ($1::jsonb ->> 'category_id')::uuid),
+             'payee_id', (SELECT p.id FROM payees p
+                           WHERE p.id = ($1::jsonb ->> 'payee_id')::uuid),
+             'transfer_account_id', (SELECT a.id FROM accounts a
+                                      WHERE a.id = ($1::jsonb ->> 'transfer_account_id')::uuid)
+           )
+         ) r
        ON CONFLICT (id) DO NOTHING
        RETURNING id`,
       [JSON.stringify(snapshot.schedule), userId],
@@ -244,18 +279,22 @@ async function restoreRows(
   if (restored.length === 0) return false;
   const scheduleId = restored[0].id;
   const insert = async (
-    rows: readonly unknown[] | undefined,
-    sql: string,
+    table: string,
+    rows: readonly Record<string, unknown>[] | undefined,
+    tail: string,
     params: readonly unknown[],
   ): Promise<void> => {
     if (!rows || rows.length === 0) return;
-    await m.query(sql, [JSON.stringify(rows), ...params]);
+    await m.query(`${await insertHead(m, table, rows)}\n${tail}`, [
+      JSON.stringify(rows),
+      ...params,
+    ]);
   };
   // A line's category, gone since, is cleared as the delete would have.
   await insert(
+    "scheduled_transaction_splits",
     snapshot.splits,
-    `INSERT INTO scheduled_transaction_splits
-     SELECT r.* FROM jsonb_array_elements($1::jsonb) e,
+    `FROM jsonb_array_elements($1::jsonb) e,
        LATERAL jsonb_populate_record(
          NULL::scheduled_transaction_splits,
          e.value || jsonb_build_object(
@@ -268,9 +307,9 @@ async function restoreRows(
     [scheduleId],
   );
   await insert(
+    "scheduled_transaction_split_tags",
     snapshot.splitTags,
-    `INSERT INTO scheduled_transaction_split_tags
-     SELECT r.* FROM jsonb_populate_recordset(
+    `FROM jsonb_populate_recordset(
        NULL::scheduled_transaction_split_tags, $1::jsonb
      ) r
        JOIN scheduled_transaction_splits sp
@@ -281,9 +320,9 @@ async function restoreRows(
     [scheduleId, userId],
   );
   await insert(
+    "scheduled_transaction_overrides",
     snapshot.overrides,
-    `INSERT INTO scheduled_transaction_overrides
-     SELECT r.* FROM jsonb_array_elements($1::jsonb) e,
+    `FROM jsonb_array_elements($1::jsonb) e,
        LATERAL jsonb_populate_record(
          NULL::scheduled_transaction_overrides,
          e.value || jsonb_build_object(
@@ -296,9 +335,9 @@ async function restoreRows(
     [scheduleId],
   );
   await insert(
+    "payroll_deduction_rules",
     snapshot.payrollRules,
-    `INSERT INTO payroll_deduction_rules
-     SELECT r.* FROM jsonb_populate_recordset(
+    `FROM jsonb_populate_recordset(
        NULL::payroll_deduction_rules, $1::jsonb
      ) r
        JOIN categories c ON c.id = r.category_id
@@ -307,9 +346,9 @@ async function restoreRows(
     [scheduleId, userId],
   );
   await insert(
+    "payroll_deduction_rule_periods",
     snapshot.payrollRulePeriods,
-    `INSERT INTO payroll_deduction_rule_periods
-     SELECT r.* FROM jsonb_populate_recordset(
+    `FROM jsonb_populate_recordset(
        NULL::payroll_deduction_rule_periods, $1::jsonb
      ) r
        JOIN payroll_deduction_rules pr

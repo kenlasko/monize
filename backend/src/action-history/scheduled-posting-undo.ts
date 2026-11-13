@@ -101,6 +101,17 @@ export async function undoScheduledPosting(
     // Cannot miss: the cursor was confirmed where the posting left it, under
     // the lock this transaction holds.
     await rewindScheduleCursor(manager, scheduleId, userId, snapshot.cursor);
+    if (snapshot.estimatedAmount !== undefined) {
+      // The estimate of the occurrence the cursor is back on, from a history
+      // without the payment just removed: what it was before the posting.
+      // Only the snapshot column, and only while the row is still estimated
+      // (CONC-008).
+      await manager.query(
+        `UPDATE scheduled_transactions SET amount = $1
+          WHERE id = $2 AND user_id = $3 AND amount_is_estimated = true`,
+        [snapshot.estimatedAmount, scheduleId, userId],
+      );
+    }
   } else if (snapshot.removedSchedule && locked.length === 0) {
     await restoreRemovedSchedule(manager, userId, snapshot.removedSchedule);
   }

@@ -5448,11 +5448,14 @@ stands anywhere but where the posting left it (`SCHEDULED_POSTING_UNDO_CURSOR_MO
 a skip records no entry, and a rewind past it would undo the skip too). It then
 removes the rows through the undo of the create that wrote them, after the
 strict reconciled lock on every row, releases the claim, and rewinds the cursor
-with `rewindScheduleCursor` or re-inserts the one-time schedule (with its
-lines, their tags, its overrides, its payroll rules and its loan link; a
-category, payee or transfer account deleted since is cleared, as `ON DELETE
-SET NULL` would have, and anything else gone refuses
-`SCHEDULED_POSTING_UNDO_REFERENCE_GONE`), all in the undo's one transaction. Redo is
+with `rewindScheduleCursor`, putting an estimated schedule's stored amount
+back to the estimate it held before the posting, or re-inserts the one-time
+schedule (over the columns the table has now, so one added since takes its
+default; with its lines, their tags, its overrides, its payroll rules and its
+loan link; a category, a payee or the schedule's own transfer account deleted
+since is cleared, as `ON DELETE SET NULL` would have, and anything else gone
+refuses `SCHEDULED_POSTING_UNDO_REFERENCE_GONE`), all in the undo's one
+transaction. Redo is
 refused (`SCHEDULED_POSTING_REDO`): posting again is `post()`'s job, at the
 prices, rates and loan balance of the day. A posting that wrote no money of its
 own (`recordOnly`, a retired loan) records no entry, and a transfer with a leg

@@ -164,9 +164,22 @@ describe("scheduled posting history (issue #2165)", () => {
       linkedAccountIds: [],
     };
 
+    /** The catalogue: every table has an id, a user and a parent column. */
+    const CATALOGUE = ["id", "user_id", "scheduled_transaction_id", "rule_id"];
+    const catalogued = (answer: (sql: string) => unknown) =>
+      jest.fn(async (sql: string) =>
+        sql.includes("information_schema.columns")
+          ? CATALOGUE.map((column_name) => ({ column_name }))
+          : answer(sql),
+      );
+    const writes = (query: jest.Mock) =>
+      (query.mock.calls as unknown as [string, unknown[]][]).filter(
+        ([sql]) => !sql.includes("information_schema.columns"),
+      );
+
     it("writes the schedule under the acting user, then each child under it", async () => {
-      const query = jest.fn(async (sql: string) =>
-        sql.includes("INSERT INTO scheduled_transactions\n")
+      const query = catalogued((sql) =>
+        sql.startsWith("INSERT INTO scheduled_transactions ")
           ? [{ id: SCHEDULE }]
           : [],
       );
@@ -176,8 +189,13 @@ describe("scheduled posting history (issue #2165)", () => {
         true,
       );
 
-      const calls = query.mock.calls as unknown as [string, unknown[]][];
+      const calls = writes(query);
       expect(calls).toHaveLength(7);
+      // The columns the table has now that the snapshot carries, by name.
+      expect(calls[0][0]).toContain(
+        'INSERT INTO scheduled_transactions ("id", "user_id")',
+      );
+      expect(calls[0][0]).toContain('SELECT r."id", r."user_id"');
       expect(calls[0][0]).toContain("'user_id', $2::text");
       // A category, payee or transfer account deleted since is cleared.
       expect(calls[0][0]).toContain("FROM categories c");
@@ -206,21 +224,21 @@ describe("scheduled posting history (issue #2165)", () => {
     });
 
     it("writes nothing more when the schedule already exists", async () => {
-      const query = jest.fn().mockResolvedValue([]);
+      const query = catalogued(() => []);
       const m = { query } as unknown as EntityManager;
 
       await expect(restoreRemovedSchedule(m, USER, snapshot)).resolves.toBe(
         false,
       );
-      expect(query).toHaveBeenCalledTimes(1);
+      expect(writes(query)).toHaveLength(1);
     });
 
     it("skips the child writes a schedule without children needs", async () => {
-      const query = jest.fn().mockResolvedValue([{ id: SCHEDULE }]);
+      const query = catalogued(() => [{ id: SCHEDULE }]);
       const m = { query } as unknown as EntityManager;
 
       await restoreRemovedSchedule(m, USER, empty);
-      expect(query).toHaveBeenCalledTimes(1);
+      expect(writes(query)).toHaveLength(1);
     });
 
     it("refuses with a named reason when a row it needs has been deleted since", async () => {

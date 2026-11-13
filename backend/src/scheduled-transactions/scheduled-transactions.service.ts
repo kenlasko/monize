@@ -4836,6 +4836,9 @@ export class ScheduledTransactionsService {
             ...(laterClaimedSlots && laterClaimedSlots.length > 0
               ? { laterClaimedSlots }
               : {}),
+            ...(cursor && current.amountIsEstimated
+              ? { estimatedAmount: Number(current.amount) }
+              : {}),
             ...(removedSchedule ? { removedSchedule } : {}),
           },
         };
