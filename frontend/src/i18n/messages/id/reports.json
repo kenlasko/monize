@@ -1953,8 +1953,10 @@
       "MEMO": "Memo",
       "CATEGORY": "Kategori",
       "ACCOUNT": "Akun",
+      "ACCOUNT_AMOUNT": "Jumlah (mata uang akun)",
       "TAG": "Tag"
-    }
+    },
+    "accountCurrency": "Mata uang akun"
   },
   "investmentReportLabels": {
     "groupBy": {

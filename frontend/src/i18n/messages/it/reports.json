@@ -1953,8 +1953,10 @@
       "MEMO": "Nota",
       "CATEGORY": "Categoria",
       "ACCOUNT": "Conto",
+      "ACCOUNT_AMOUNT": "Importo (valuta del conto)",
       "TAG": "Etichetta"
-    }
+    },
+    "accountCurrency": "Valuta del conto"
   },
   "investmentReportLabels": {
     "groupBy": {

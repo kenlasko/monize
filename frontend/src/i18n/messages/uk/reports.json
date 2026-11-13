@@ -1953,8 +1953,10 @@
       "MEMO": "Пам'ятка",
       "CATEGORY": "Категорія",
       "ACCOUNT": "Рахунок",
+      "ACCOUNT_AMOUNT": "Сума (валюта рахунку)",
       "TAG": "Тег"
-    }
+    },
+    "accountCurrency": "Валюта рахунку"
   },
   "investmentReportLabels": {
     "groupBy": {

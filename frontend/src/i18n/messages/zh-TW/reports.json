@@ -1953,8 +1953,10 @@
       "MEMO": "備註",
       "CATEGORY": "類別",
       "ACCOUNT": "科目",
+      "ACCOUNT_AMOUNT": "金額（帳戶幣別）",
       "TAG": "標籤"
-    }
+    },
+    "accountCurrency": "帳戶幣別"
   },
   "investmentReportLabels": {
     "groupBy": {

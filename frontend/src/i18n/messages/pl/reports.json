@@ -1953,8 +1953,10 @@
       "MEMO": "Notatka",
       "CATEGORY": "Kategoria",
       "ACCOUNT": "Konto",
+      "ACCOUNT_AMOUNT": "Kwota (waluta konta)",
       "TAG": "Tag"
-    }
+    },
+    "accountCurrency": "Waluta konta"
   },
   "investmentReportLabels": {
     "groupBy": {

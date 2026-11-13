@@ -1953,8 +1953,10 @@
       "MEMO": "Memo",
       "CATEGORY": "Categorie",
       "ACCOUNT": "Rekening",
+      "ACCOUNT_AMOUNT": "Bedrag (rekeningvaluta)",
       "TAG": "Label"
-    }
+    },
+    "accountCurrency": "Rekeningvaluta"
   },
   "investmentReportLabels": {
     "groupBy": {

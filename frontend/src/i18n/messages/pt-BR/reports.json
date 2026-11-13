@@ -1953,8 +1953,10 @@
       "MEMO": "Nota",
       "CATEGORY": "Categoria",
       "ACCOUNT": "Conta",
+      "ACCOUNT_AMOUNT": "Valor (moeda da conta)",
       "TAG": "Etiqueta"
-    }
+    },
+    "accountCurrency": "Moeda da conta"
   },
   "investmentReportLabels": {
     "groupBy": {

@@ -1953,8 +1953,10 @@
       "MEMO": "메모",
       "CATEGORY": "카테고리",
       "ACCOUNT": "계정",
+      "ACCOUNT_AMOUNT": "금액 (계좌 통화)",
       "TAG": "태그"
-    }
+    },
+    "accountCurrency": "계좌 통화"
   },
   "investmentReportLabels": {
     "groupBy": {
