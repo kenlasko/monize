@@ -343,31 +343,48 @@ describe("ForecastAggregatorService", () => {
       });
 
       it("converts the history and the income at the row's own rate", async () => {
-        mockTransactionRepo.createQueryBuilder.mockImplementation(() =>
-          mockQueryBuilder([
-            {
-              month: "2025-12",
-              categoryId: "cat-travel",
-              categoryName: "Travel",
-              isIncome: false,
-              ...ownRate,
-              income: "0",
-              expenses: "125",
-            },
-            { month: "2025-12", ...ownRate, total: "250", payees: ["Client"] },
-          ]),
-        );
+        // The history's read first, then the income's, each with its own rows.
+        mockTransactionRepo.createQueryBuilder
+          .mockImplementationOnce(() =>
+            mockQueryBuilder([
+              {
+                month: "2025-12",
+                categoryId: "cat-travel",
+                categoryName: "Travel",
+                isIncome: false,
+                uncategorized: false,
+                ...ownRate,
+                income: "0",
+                expenses: "125",
+              },
+            ]),
+          )
+          .mockImplementationOnce(() =>
+            mockQueryBuilder([
+              {
+                month: "2025-12",
+                ...ownRate,
+                total: "250",
+                payees: ["Client"],
+              },
+            ]),
+          );
         scoped.manager.query.mockResolvedValue([marketRate]);
 
         const result = await service.computeAggregates(userId, "EUR");
 
         expect(result.fxComplete).toBe(true);
-        expect(result.monthlyHistory[0].totalExpenses).toBe(100);
-        expect(result.monthlyHistory[0].categoryBreakdown).toContainEqual({
-          categoryName: "Travel",
-          total: 100,
-          isIncome: false,
-        });
+        expect(result.monthlyHistory).toEqual([
+          {
+            month: "2025-12",
+            totalIncome: 0,
+            totalExpenses: 100,
+            netCashFlow: -100,
+            categoryBreakdown: [
+              { categoryName: "Travel", total: 100, isIncome: false },
+            ],
+          },
+        ]);
         expect(result.incomePatterns.monthlyIncome).toEqual([
           { month: "2025-12", total: 200, sourceCount: 1 },
         ]);
