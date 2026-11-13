@@ -45,7 +45,9 @@ function CustomTooltip({
   actualLabel: string;
   formatChartMonth: (monthKey: string) => string;
 }) {
+  const tReports = useTranslations('reports');
   if (!active || !payload || payload.length === 0) return null;
+  const partialLabel = tReports('partialData.pdfSuffix');
 
   return (
     <div className={CHART_TOOLTIP_CLASS}>
@@ -64,7 +66,10 @@ function CustomTooltip({
               the chart says what is missing. */}
           {entry.dataKey === 'actual' &&
             entry.payload?.valuationComplete === false && (
-              <span className="text-amber-600 dark:text-amber-400"> *</span>
+              <span className="text-amber-600 dark:text-amber-400">
+                {' '}
+                {partialLabel}
+              </span>
             )}
         </p>
       ))}

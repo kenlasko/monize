@@ -310,20 +310,26 @@ export interface TrendPointCompleteness {
   missingRatePairs?: string[];
 }
 
-export interface BudgetTrendPoint extends TrendPointCompleteness {
+export interface BudgetTrendPoint {
   monthKey: string;
   budgeted: number;
   actual: number;
   variance: number;
   percentUsed: number;
+  /** See `TrendPointCompleteness`. */
+  valuationComplete?: boolean;
+  missingRatePairs?: string[];
 }
 
-export interface CategoryTrendDataPoint extends TrendPointCompleteness {
+export interface CategoryTrendDataPoint {
   monthKey: string;
   budgeted: number;
   actual: number;
   variance: number;
   percentUsed: number;
+  /** See `TrendPointCompleteness`. */
+  valuationComplete?: boolean;
+  missingRatePairs?: string[];
 }
 
 export interface CategoryTrendSeries {

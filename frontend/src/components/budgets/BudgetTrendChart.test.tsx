@@ -125,7 +125,7 @@ describe('BudgetTrendChart', () => {
       mockTooltip.point = undefined;
     }
 
-    expect(screen.getByText(/Actual.*\$4800\.00/)).toHaveTextContent('*');
+    expect(screen.getByText(/Actual.*\$4800\.00/)).toHaveTextContent('(partial)');
     expect(screen.getByTestId('budget-trend-partial-note')).toHaveTextContent(
       'No exchange rate for JPY->CAD: add one on the Currencies page.',
     );
@@ -135,7 +135,7 @@ describe('BudgetTrendChart', () => {
     render(<BudgetTrendChart data={mockData} formatCurrency={mockFormat} />);
 
     expect(screen.queryByTestId('budget-trend-partial-note')).toBeNull();
-    expect(screen.getByText(/Actual.*\$4800\.00/)).not.toHaveTextContent('*');
+    expect(screen.getByText(/Actual.*\$4800\.00/)).not.toHaveTextContent('(partial)');
   });
 
   it('renders with single data point', () => {

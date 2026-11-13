@@ -43,8 +43,8 @@ export function PartialTrendFigure({
 
 /**
  * The note under a trend chart whose figures include a partial month: the
- * chart's tooltip marks each such month with `*`, and this says why and what
- * to add. Renders nothing while every point is whole.
+ * chart's tooltip labels each such month "(partial)", and this says why and
+ * what to add. Renders nothing while every point is whole.
  */
 export function BudgetTrendPartialNote({
   points,
@@ -58,7 +58,6 @@ export function BudgetTrendPartialNote({
       className="mt-2 text-xs text-amber-700 dark:text-amber-300"
       data-testid="budget-trend-partial-note"
     >
-      <span aria-hidden="true">* </span>
       {explanation}
     </p>
   );
