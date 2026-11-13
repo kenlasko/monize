@@ -4,7 +4,7 @@ What the web app offers to a native shell that hosts it: the Electron window on 
 
 This is a contract, not a framework. The shells share no code; they share these rules, written once so neither plan has to restate them. `docs/future-plans/windows-installer.md` (section 3, decisions D10 and D11) and `docs/future-plans/android-offline-app.md` describe the shells.
 
-**Status.** Nothing in this contract is implemented yet. The page helper, the Electron shell and the Capacitor shell are all planned. Until the helper lands, the page treats every client as a browser; this document is what the helper, the Electron preload and the Capacitor layer are built against, and a deviation from it is a change to this document first.
+**Status.** The page's side is implemented: `frontend/src/lib/shell.ts` holds the detection helper and the capability table, and the two push controls honour it. The Electron shell and the Capacitor shell are planned; this document is what the Electron preload and the Capacitor layer are built against, and a deviation from it is a change to this document first.
 
 ## A shell announces itself with one flag
 
@@ -12,7 +12,7 @@ This is a contract, not a framework. The shells share no code; they share these 
 
 The Electron preload sets it through `contextBridge.exposeInMainWorld` with `contextIsolation` on, so it exists before any page script runs and the page's own scripts cannot replace the preload's object. A shell that set it from a page-injected script after load would race the helper's first read.
 
-The page reads the flag in one helper, `detectShell()`. It returns the flag when present; otherwise it duck-types `window.Capacitor` and answers `capacitor`. The fallback is there because the Android plan already detects Capacitor that way and its bridge does not set the flag, so that plan needs no change. The helper never answers "browser" for a shell: a feature written as "not a browser" would treat the Electron window as a browser and offer push that cannot work there.
+The page reads the flag in one helper, `detectShell()` in `frontend/src/lib/shell.ts`. It returns the flag when present and well-formed (a `kind` the capability table knows and a string `version`; anything else counts as absent); otherwise it duck-types `window.Capacitor` and answers `capacitor`, unless the object's `isNativePlatform()` answers false, which is Capacitor's web build running in a plain browser. The fallback is there because the Android plan already detects Capacitor that way and its bridge does not set the flag, so that plan needs no change. The helper never answers "browser" for a shell: a feature written as "not a browser" would treat the Electron window as a browser and offer push that cannot work there.
 
 The page owns the helper, and no component reads `window.__MONIZE_SHELL__` or `window.Capacitor` directly, so a new shell kind or a renamed flag changes one file.
 
@@ -46,7 +46,7 @@ The reason is that the page must still work in a browser and in a shell that doe
 - **Electron:** no Web Push, because the Electron window has no push service to register with. The tray offers "Open in browser", where the installed PWA and its push keep working against the same server. A native notification bridge is a later task, and when it exists it sets `canReceivePush` for `electron` and gets its own section here.
 - **Capacitor:** FCM through the native layer, because Android WebView has no Push API. The Android plan defers FCM past its first release, so until then `canReceivePush` is false for `capacitor` too.
 
-`PushEnableBanner` (`frontend/src/components/layout/PushEnableBanner.tsx`) and the push settings panel (`frontend/src/components/settings/PushDevicesPanel.tsx`) hide their Enable control when `canReceivePush` is false and say why in place of it. A silent hide is a defect: the user would look for the setting and conclude the feature is broken. A shell that gains push later flips the capability, and no component changes.
+`PushEnableBanner` (`frontend/src/components/layout/PushEnableBanner.tsx`) and the push settings panel (`frontend/src/components/settings/PushDevicesPanel.tsx`) gate on `pushUnavailableShell()`, which answers only for a shell whose `canReceivePush` is false; a browser keeps its own states (blocked, needs installing, unsupported) from `frontend/src/lib/push.ts` untouched. Inside such a shell the banner renders nothing, because its only purpose is to offer Enable and a prompt for something the reader cannot do is worse than none; the settings panel hides its Enable control and says why in place of it, with the shell's own remedy. A silent hide in the panel is a defect: the user would look for the setting and conclude the feature is broken. A shell that gains push later flips the capability, and no component changes.
 
 ## Auth is not bypassed
 
