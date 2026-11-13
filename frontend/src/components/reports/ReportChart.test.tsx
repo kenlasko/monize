@@ -689,4 +689,58 @@ describe('ReportChart', () => {
       expect(tableData.totalRow).toEqual(['Total', '$180.00', '']);
     });
   });
+  describe('original-currency amount column', () => {
+    const rows = [
+      { label: 'Hotel', value: 150, count: 1, id: 'tx-1', originalAmount: 100, originalCurrency: 'EUR' },
+      { label: 'Gift', value: 40, count: 1, id: 'tx-2', originalAmount: 40, originalCurrency: 'CAD' },
+      { label: 'Groceries', value: 20, count: 1, id: 'tx-3' },
+    ];
+    const columns = [TableColumn.LABEL, TableColumn.VALUE, TableColumn.ORIGINAL_AMOUNT];
+
+    it('prints what a row was entered as, naming a currency that is not the reader\'s, blank elsewhere, and totals nothing', () => {
+      const { container } = render(
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+      );
+
+      expect(screen.getByRole('columnheader', { name: 'Amount (original currency)' })).toBeInTheDocument();
+      const bodyRows = container.querySelectorAll('tbody tr');
+      expect(bodyRows[0].lastElementChild?.textContent).toBe('$100.00 EUR');
+      expect(bodyRows[1].lastElementChild?.textContent).toBe('$40.00');
+      expect(bodyRows[2].lastElementChild?.textContent).toBe('-');
+      // Amounts in several currencies have no sum: the footer cell is empty.
+      expect(container.querySelector('tfoot tr')?.lastElementChild?.textContent).toBe('');
+    });
+
+    it('exports csv with the raw original amount and its currency in a column of its own', async () => {
+      const { exportToCsv } = await import('@/lib/csv-export');
+      (exportToCsv as any).mockClear();
+      render(
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+      );
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+      await act(async () => { fireEvent.click(screen.getByText(/CSV/i)); });
+
+      const [, headers, csvRows] = (exportToCsv as any).mock.calls[0];
+      expect(headers).toEqual(['Item', 'Amount', 'Amount (original currency)', 'Original currency']);
+      expect(csvRows[0]).toEqual(['Hotel', 150, 100, 'EUR']);
+      expect(csvRows[2]).toEqual(['Groceries', 20, '', '']);
+      expect(csvRows[3]).toEqual(['Total', 210, '', '']);
+    });
+
+    it('exports pdf with the formatted original amount and no total under it', async () => {
+      const { exportToPdf } = await import('@/lib/pdf-export');
+      (exportToPdf as any).mockClear();
+      render(
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+      );
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+      await act(async () => { fireEvent.click(screen.getByText(/PDF/i)); });
+
+      const { tableData } = (exportToPdf as any).mock.calls[0][0];
+      expect(tableData.headers).toEqual(['Item', 'Amount', 'Amount (original currency)']);
+      expect(tableData.rows[0]).toEqual(['Hotel', '$150.00', '$100.00 EUR']);
+      expect(tableData.rows[2]).toEqual(['Groceries', '$20.00', '']);
+      expect(tableData.totalRow).toEqual(['Total', '$210.00', '']);
+    });
+  });
 });

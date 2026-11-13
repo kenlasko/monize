@@ -36,6 +36,9 @@ const DEFAULT_TABLE_COLUMNS = [TableColumn.LABEL, TableColumn.VALUE, TableColumn
 
 /** The CSV-only column naming the currency of each account-currency amount. */
 const ACCOUNT_CURRENCY_CSV_COLUMN = 'ACCOUNT_CURRENCY' as const;
+/** The CSV-only column naming the currency of each original-currency amount. */
+const ORIGINAL_CURRENCY_CSV_COLUMN = 'ORIGINAL_CURRENCY' as const;
+type CsvColumn = TableColumn | typeof ACCOUNT_CURRENCY_CSV_COLUMN | typeof ORIGINAL_CURRENCY_CSV_COLUMN;
 
 interface ReportChartProps {
   viewType: ReportViewType;
@@ -66,6 +69,7 @@ interface ReportChartProps {
 function getColumnMap(
   labelHeader: string,
   accountAmountHeader: string,
+  originalAmountHeader: string,
   total: number,
   signed: boolean,
 ): Record<TableColumn, { header: string; getValue: (item: AggregatedDataPoint) => string | number }> {
@@ -79,6 +83,7 @@ function getColumnMap(
     [TableColumn.ACCOUNT]: { header: 'Account', getValue: (item) => item.account || '' },
     [TableColumn.VALUE]: { header: 'Amount', getValue: (item) => item.value },
     [TableColumn.ACCOUNT_AMOUNT]: { header: accountAmountHeader, getValue: (item) => item.accountAmount ?? '' },
+    [TableColumn.ORIGINAL_AMOUNT]: { header: originalAmountHeader, getValue: (item) => item.originalAmount ?? '' },
     [TableColumn.PERCENTAGE]: {
       header: '%',
       getValue: (item) =>
@@ -155,25 +160,38 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
       ? ''
       : withCurrencyCode(formatCurrency(item.accountAmount, item.accountCurrency), item.accountCurrency, defaultCurrency);
   const accountAmountHeader = t('customReportLabels.tableColumn.ACCOUNT_AMOUNT');
+  // What a row entered in a foreign currency was entered as; blank on any other
+  // row. It mixes currencies too, so it has no total either.
+  const formatOriginalAmount = (item: AggregatedDataPoint) =>
+    item.originalAmount === undefined || !item.originalCurrency
+      ? ''
+      : withCurrencyCode(formatCurrency(item.originalAmount, item.originalCurrency), item.originalCurrency, defaultCurrency);
+  const originalAmountHeader = t('customReportLabels.tableColumn.ORIGINAL_AMOUNT');
 
   const labelHeader = groupBy === GroupByType.CATEGORY ? 'Category' :
                       groupBy === GroupByType.PAYEE ? 'Payee' :
                       groupBy === GroupByType.NONE ? 'Item' : 'Period';
 
   const handleExportCsv = () => {
-    const columnMap = getColumnMap(labelHeader, accountAmountHeader, total, signed);
-    // The account-currency amount is a raw number in a spreadsheet, so its
-    // currency travels in a column of its own beside it.
-    const csvColumns = columns.flatMap((col): Array<TableColumn | typeof ACCOUNT_CURRENCY_CSV_COLUMN> =>
-      col === TableColumn.ACCOUNT_AMOUNT ? [col, ACCOUNT_CURRENCY_CSV_COLUMN] : [col],
-    );
-    const headers = csvColumns.map((col) =>
-      col === ACCOUNT_CURRENCY_CSV_COLUMN ? t('customReportLabels.accountCurrency') : columnMap[col]?.header || col,
-    );
+    const columnMap = getColumnMap(labelHeader, accountAmountHeader, originalAmountHeader, total, signed);
+    // An account- or original-currency amount is a raw number in a
+    // spreadsheet, so its currency travels in a column of its own beside it.
+    const csvColumns = columns.flatMap((col): CsvColumn[] => {
+      if (col === TableColumn.ACCOUNT_AMOUNT) return [col, ACCOUNT_CURRENCY_CSV_COLUMN];
+      if (col === TableColumn.ORIGINAL_AMOUNT) return [col, ORIGINAL_CURRENCY_CSV_COLUMN];
+      return [col];
+    });
+    const headers = csvColumns.map((col) => {
+      if (col === ACCOUNT_CURRENCY_CSV_COLUMN) return t('customReportLabels.accountCurrency');
+      if (col === ORIGINAL_CURRENCY_CSV_COLUMN) return t('customReportLabels.originalCurrency');
+      return columnMap[col]?.header || col;
+    });
     const rows = chartData.map((item) =>
-      csvColumns.map((col) =>
-        col === ACCOUNT_CURRENCY_CSV_COLUMN ? (item.accountCurrency ?? '') : (columnMap[col]?.getValue(item) ?? ''),
-      ),
+      csvColumns.map((col) => {
+        if (col === ACCOUNT_CURRENCY_CSV_COLUMN) return item.accountCurrency ?? '';
+        if (col === ORIGINAL_CURRENCY_CSV_COLUMN) return item.originalCurrency ?? '';
+        return columnMap[col]?.getValue(item) ?? '';
+      }),
     );
     // The same Total row as the PDF: the metric-aware headline (raw number, marked
     // when it is a subtotal), 100% and the summed count.
@@ -193,11 +211,12 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
-    const columnMap = getColumnMap(labelHeader, accountAmountHeader, total, signed);
+    const columnMap = getColumnMap(labelHeader, accountAmountHeader, originalAmountHeader, total, signed);
     const headers = columns.map((col) => columnMap[col]?.header || col);
     // The PDF prints what the screen prints: formatted figures, never raw numbers.
     const pdfCell = (col: TableColumn, item: AggregatedDataPoint) => {
       if (col === TableColumn.ACCOUNT_AMOUNT) return formatAccountAmount(item);
+      if (col === TableColumn.ORIGINAL_AMOUNT) return formatOriginalAmount(item);
       const value = columnMap[col]?.getValue(item) ?? '';
       if (typeof value !== 'number') return value;
       if (col === TableColumn.VALUE) return formatValue(value);
@@ -390,6 +409,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   </th>
                 )}
                 {columns.includes(TableColumn.ACCOUNT_AMOUNT) && <Th align="right">{accountAmountHeader}</Th>}
+                {columns.includes(TableColumn.ORIGINAL_AMOUNT) && <Th align="right">{originalAmountHeader}</Th>}
                 {columns.includes(TableColumn.PERCENTAGE) && (
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     %
@@ -466,6 +486,11 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                       {formatAccountAmount(item) || '-'}
                     </Td>
                   )}
+                  {columns.includes(TableColumn.ORIGINAL_AMOUNT) && (
+                    <Td align="right" className="whitespace-nowrap">
+                      {formatOriginalAmount(item) || '-'}
+                    </Td>
+                  )}
                   {columns.includes(TableColumn.PERCENTAGE) && (
                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
                       {signed
@@ -521,6 +546,9 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   </td>
                 )}
                 {columns.includes(TableColumn.ACCOUNT_AMOUNT) && (
+                  <td className="px-4 py-3"></td>
+                )}
+                {columns.includes(TableColumn.ORIGINAL_AMOUNT) && (
                   <td className="px-4 py-3"></td>
                 )}
                 {columns.includes(TableColumn.PERCENTAGE) && (

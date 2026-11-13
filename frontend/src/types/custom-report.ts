@@ -56,6 +56,7 @@ export enum TableColumn {
   CATEGORY = 'CATEGORY',
   ACCOUNT = 'ACCOUNT',
   ACCOUNT_AMOUNT = 'ACCOUNT_AMOUNT',
+  ORIGINAL_AMOUNT = 'ORIGINAL_AMOUNT',
   TAG = 'TAG',
 }
 
@@ -152,6 +153,13 @@ export interface AggregatedDataPoint {
    */
   accountAmount?: number;
   accountCurrency?: string;
+  /**
+   * What a row entered in a foreign currency was entered as, unconverted and
+   * signed as `value` is; `originalCurrency` names its currency. Absent on an
+   * ordinary row and on a split line. A column of these has no total.
+   */
+  originalAmount?: number;
+  originalCurrency?: string;
   // Budget variance fields (for BUDGET_VARIANCE metric)
   budgeted?: number;
   actual?: number;
@@ -254,6 +262,7 @@ export const TABLE_COLUMN_LABELS: Record<TableColumn, string> = {
   [TableColumn.CATEGORY]: 'Category',
   [TableColumn.ACCOUNT]: 'Account',
   [TableColumn.ACCOUNT_AMOUNT]: 'Amount (account currency)',
+  [TableColumn.ORIGINAL_AMOUNT]: 'Amount (original currency)',
   [TableColumn.TAG]: 'Tag',
 };
 
