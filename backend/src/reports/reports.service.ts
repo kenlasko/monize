@@ -1099,6 +1099,17 @@ export class ReportsService {
             account: tx.account?.name || undefined,
             accountAmount,
             accountCurrency: tx.currencyCode,
+            // Only a row entered in a foreign currency has one; it is stored
+            // with the amount's sign, so it is signed as the amount is. A split
+            // line has none: only the whole transaction was entered in it.
+            ...(tx.originalAmount !== null &&
+            tx.originalAmount !== undefined &&
+            tx.originalCurrencyCode
+              ? {
+                  originalAmount: lineAmount(tx.originalAmount),
+                  originalCurrency: tx.originalCurrencyCode,
+                }
+              : {}),
           });
         }
       }
@@ -1602,6 +1613,13 @@ export class ReportsService {
             multiplier *
             ((a.accountCurrency || "").localeCompare(b.accountCurrency || "") ||
               (a.accountAmount || 0) - (b.accountAmount || 0))
+          );
+        case TableColumn.ORIGINAL_AMOUNT:
+          return (
+            multiplier *
+            ((a.originalCurrency || "").localeCompare(
+              b.originalCurrency || "",
+            ) || (a.originalAmount || 0) - (b.originalAmount || 0))
           );
         default:
           return 0;
