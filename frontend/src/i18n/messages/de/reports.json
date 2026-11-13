@@ -1953,8 +1953,10 @@
       "MEMO": "Memo",
       "CATEGORY": "Kategorie",
       "ACCOUNT": "Konto",
+      "ACCOUNT_AMOUNT": "Betrag (Kontowährung)",
       "TAG": "Tag"
-    }
+    },
+    "accountCurrency": "Kontowährung"
   },
   "investmentReportLabels": {
     "groupBy": {

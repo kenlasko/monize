@@ -2037,6 +2037,118 @@ describe("ReportsService", () => {
           expect(result.summary.total).toBe(290);
         });
 
+        it("lists each row's own amount in its account's currency beside the converted value", async () => {
+          const result = await run(
+            GroupByType.NONE,
+            groceries,
+            MetricType.NONE,
+          );
+
+          const byId = new Map(result.data.map((d) => [d.id, d]));
+          expect(byId.get("tx-1")).toMatchObject({
+            value: 200,
+            accountAmount: 200,
+            accountCurrency: "CAD",
+          });
+          expect(byId.get("tx-2")).toMatchObject({
+            value: 90,
+            accountAmount: 10000,
+            accountCurrency: "JPY",
+          });
+        });
+
+        it("signs the account-currency amount as it signs the value in a both-direction list", async () => {
+          setupExecuteMocks(
+            {
+              groupBy: GroupByType.NONE,
+              config: {
+                ...defaultConfig,
+                metric: MetricType.NONE,
+                direction: DirectionFilter.BOTH,
+              },
+            },
+            [jpy("tx-out", -10000), jpy("tx-in", 5000)],
+          );
+
+          const result = await service.execute("user-1", "report-1");
+
+          const byId = new Map(result.data.map((d) => [d.id, d]));
+          expect(byId.get("tx-out")).toMatchObject({
+            value: -90,
+            accountAmount: -10000,
+            accountCurrency: "JPY",
+          });
+          expect(byId.get("tx-in")).toMatchObject({
+            value: 45,
+            accountAmount: 5000,
+            accountCurrency: "JPY",
+          });
+        });
+
+        it("gives each split line its own account-currency amount", async () => {
+          const split = jpy("tx-split", -10000, {
+            isSplit: true,
+            splits: [
+              {
+                id: "s-1",
+                transactionId: "tx-split",
+                amount: -6000,
+                memo: "Rice",
+                category: mockCategory,
+              } as any,
+              {
+                id: "s-2",
+                transactionId: "tx-split",
+                amount: -4000,
+                memo: "Tea",
+                category: mockCategory,
+              } as any,
+            ],
+          });
+
+          const result = await run(GroupByType.NONE, [split], MetricType.NONE);
+
+          expect(
+            result.data.map((d) => [
+              d.memo,
+              d.accountAmount,
+              d.accountCurrency,
+            ]),
+          ).toEqual([
+            ["Rice", 6000, "JPY"],
+            ["Tea", 4000, "JPY"],
+          ]);
+        });
+
+        it("sorts the account-currency column by currency, then by amount within one", async () => {
+          setupExecuteMocks(
+            {
+              groupBy: GroupByType.NONE,
+              config: {
+                ...defaultConfig,
+                metric: MetricType.NONE,
+                sortBy: TableColumn.ACCOUNT_AMOUNT,
+                sortDirection: SortDirection.ASC,
+              },
+            },
+            [
+              jpy("j-big", -10000),
+              cad("c-big", -200),
+              jpy("j-small", -500),
+              cad("c-small", -5),
+            ],
+          );
+
+          const result = await service.execute("user-1", "report-1");
+
+          expect(result.data.map((d) => d.id)).toEqual([
+            "c-small",
+            "c-big",
+            "j-small",
+            "j-big",
+          ]);
+        });
+
         it("converts by payee", async () => {
           const result = await run(GroupByType.PAYEE, groceries);
 

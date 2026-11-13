@@ -1953,8 +1953,10 @@
       "MEMO": "Ghi nhớ",
       "CATEGORY": "Danh mục",
       "ACCOUNT": "Tài khoản",
+      "ACCOUNT_AMOUNT": "Số tiền (tiền tệ tài khoản)",
       "TAG": "Thẻ"
-    }
+    },
+    "accountCurrency": "Tiền tệ tài khoản"
   },
   "investmentReportLabels": {
     "groupBy": {

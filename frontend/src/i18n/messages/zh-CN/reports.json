@@ -1953,8 +1953,10 @@
       "MEMO": "备注",
       "CATEGORY": "分类",
       "ACCOUNT": "账户",
+      "ACCOUNT_AMOUNT": "金额（账户币种）",
       "TAG": "标签"
-    }
+    },
+    "accountCurrency": "账户币种"
   },
   "investmentReportLabels": {
     "groupBy": {

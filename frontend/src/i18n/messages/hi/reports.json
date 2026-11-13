@@ -1953,8 +1953,10 @@
       "MEMO": "मेमो",
       "CATEGORY": "श्रेणी",
       "ACCOUNT": "खाता",
+      "ACCOUNT_AMOUNT": "राशि (खाता मुद्रा)",
       "TAG": "टैग"
-    }
+    },
+    "accountCurrency": "खाता मुद्रा"
   },
   "investmentReportLabels": {
     "groupBy": {

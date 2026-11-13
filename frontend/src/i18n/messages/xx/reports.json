@@ -1953,8 +1953,10 @@
       "MEMO": "[XX-Memo-XX]",
       "CATEGORY": "[XX-Category-XX]",
       "ACCOUNT": "[XX-Account-XX]",
+      "ACCOUNT_AMOUNT": "[XX-Amount (account currency)-XX]",
       "TAG": "[XX-Tag-XX]"
-    }
+    },
+    "accountCurrency": "[XX-Account currency-XX]"
   },
   "investmentReportLabels": {
     "groupBy": {

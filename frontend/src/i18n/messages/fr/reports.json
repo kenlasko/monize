@@ -1953,8 +1953,10 @@
       "MEMO": "Mémo",
       "CATEGORY": "Catégorie",
       "ACCOUNT": "Compte",
+      "ACCOUNT_AMOUNT": "Montant (devise du compte)",
       "TAG": "Étiquette"
-    }
+    },
+    "accountCurrency": "Devise du compte"
   },
   "investmentReportLabels": {
     "groupBy": {

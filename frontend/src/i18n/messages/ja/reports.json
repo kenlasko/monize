@@ -1953,8 +1953,10 @@
       "MEMO": "摘要",
       "CATEGORY": "カテゴリ",
       "ACCOUNT": "口座",
+      "ACCOUNT_AMOUNT": "金額（口座通貨）",
       "TAG": "タグ"
-    }
+    },
+    "accountCurrency": "口座通貨"
   },
   "investmentReportLabels": {
     "groupBy": {
