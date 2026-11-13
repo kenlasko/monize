@@ -732,7 +732,6 @@ function PayeeDetailContent() {
                   <PayeeRecurringPanel
                     charges={analytics?.recurringCharges ?? []}
                     nextBill={nextBill}
-                    currencyStrategy={currencyStrategy}
                     isLoading={false}
                   />
                   <PayeeSeasonalityPanel

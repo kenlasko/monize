@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { screen, fireEvent } from '@testing-library/react';
 import { render } from '@/test/render';
 import { PayeeRecurringPanel } from './PayeeRecurringPanel';
-import type { DisplayCurrencyStrategy } from '@/components/transactions/widget-shared';
 import type { RecurringChargeInfo } from '@/types/transaction';
 
 const mockPush = vi.hoisted(() => vi.fn());
@@ -12,15 +11,11 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-const strategy: DisplayCurrencyStrategy = {
-  displayCurrency: 'CAD',
-  converted: false,
-};
-
 function charge(overrides: Partial<RecurringChargeInfo> = {}): RecurringChargeInfo {
   return {
     payeeName: 'Netflix',
     payeeId: 'payee-1',
+    currencyCode: 'CAD',
     amounts: [14.99, 14.99, 16.99],
     dates: ['2026-04-15', '2026-05-15', '2026-06-15'],
     frequency: 'monthly',
@@ -40,7 +35,6 @@ function renderPanel(
     <PayeeRecurringPanel
       charges={charges}
       nextBill={nextBill}
-      currencyStrategy={strategy}
       isLoading={false}
     />,
   );
@@ -66,6 +60,13 @@ describe('PayeeRecurringPanel', () => {
     expect(screen.getByText(/Monthly/)).toBeInTheDocument();
     expect(screen.getByText(/Entertainment/)).toBeInTheDocument();
     expect(screen.getByText(/was .*14\.99/)).toBeInTheDocument();
+  });
+
+  it('shows each amount in the currency it was billed in (issue #2155)', () => {
+    renderPanel([charge({ currencyCode: 'EUR' })]);
+    // A EUR charge is not relabelled as the display currency.
+    expect(screen.getByText(/€16\.99/)).toBeInTheDocument();
+    expect(screen.getByText(/was .*€14\.99/)).toBeInTheDocument();
   });
 
   it('omits the price change when the amount is steady', () => {

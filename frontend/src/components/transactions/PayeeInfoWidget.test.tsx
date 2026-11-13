@@ -104,6 +104,7 @@ describe('PayeeInfoWidget', () => {
       {
         payeeName: 'Hydro One',
         payeeId: 'p-hydro',
+        currencyCode: 'CAD',
         amounts: [100, 100, 100.5],
         dates: ['2026-04-28', '2026-05-28', '2026-06-28'],
         frequency: 'monthly',
@@ -194,6 +195,25 @@ describe('PayeeInfoWidget', () => {
   it('shows the recurring cadence line', async () => {
     await renderWidget();
     expect(screen.getByText('Recurring: Monthly · CAD 100.50')).toBeInTheDocument();
+  });
+
+  it('shows a recurring amount in the currency it was billed in (issue #2155)', async () => {
+    mockedTransactions.getRecurringCharges.mockResolvedValue([
+      {
+        payeeName: 'Hydro One',
+        payeeId: 'p-hydro',
+        currencyCode: 'USD',
+        amounts: [100, 100, 100.5],
+        dates: ['2026-04-28', '2026-05-28', '2026-06-28'],
+        frequency: 'monthly',
+        currentAmount: 100.5,
+        previousAmount: 100,
+        categoryName: 'Electricity',
+        categoryId: 'c-2',
+      },
+    ]);
+    await renderWidget();
+    expect(screen.getByText('Recurring: Monthly · USD 100.50')).toBeInTheDocument();
   });
 
   it('hides the recurring line when cadence is irregular', async () => {

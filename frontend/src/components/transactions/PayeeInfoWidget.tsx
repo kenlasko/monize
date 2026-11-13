@@ -76,7 +76,11 @@ export function PayeeInfoWidget({
 
   const [summary, setSummary] = useState<TransactionSummary | null>(null);
   const [topCategories, setTopCategories] = useState<GroupedTotal[]>([]);
-  const [recurring, setRecurring] = useState<{ cadence: string; amount: number } | null>(null);
+  const [recurring, setRecurring] = useState<{
+    cadence: string;
+    amount: number;
+    currencyCode: string;
+  } | null>(null);
   const [aliases, setAliases] = useState<PayeeAlias[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -127,7 +131,11 @@ export function PayeeInfoWidget({
       const best = [...recurringResult]
         .filter((r) => CADENCE_KEYS.has(r.frequency))
         .sort((a, b) => b.dates.length - a.dates.length)[0];
-      setRecurring(best ? { cadence: best.frequency, amount: best.currentAmount } : null);
+      setRecurring(
+        best
+          ? { cadence: best.frequency, amount: best.currentAmount, currencyCode: best.currencyCode }
+          : null,
+      );
       setAliases(aliasesResult);
       setIsLoading(false);
     };
@@ -247,7 +255,8 @@ export function PayeeInfoWidget({
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 flex items-center">
             {t('payeeWidget.recurring', {
               cadence: t(`payeeWidget.cadence.${recurring.cadence}`),
-              amount: formatCurrency(recurring.amount, currencyStrategy.displayCurrency),
+              // Billed in the charge's own currency, not converted.
+              amount: formatCurrency(recurring.amount, recurring.currencyCode),
             })}
             <InfoTooltip text={t('payeeWidget.recurringTooltip')} usePortal />
           </p>
