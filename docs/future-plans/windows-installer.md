@@ -4,10 +4,12 @@ Design for shipping Monize to Windows as one installer that a person runs and
 then opens like any other desktop application. The task list is
 `docs/future-plans/windows-installer-tasks.md`.
 
-Status: **proposal**. It needs its own discussion with the `approved-to-build`
-label before any task after P1 starts (`CONTRIBUTING.md`). Nothing in this
-document has shipped. Written from the code on 2026-10-19; section 10 lists
-the assumptions a fresh session should re-check.
+Status: **building**. The maintainer directed the build on 2026-11-13 without
+opening a discussion; the section 11 questions were taken at their stated
+defaults. Nothing in this document has shipped: the work is on local
+`feat/desktop-*` branches (the task list records which). Written from the code
+on 2026-10-19; section 12 lists what the build changed, and it wins where it
+disagrees with an earlier section.
 
 ## 1. Goal
 
@@ -31,8 +33,8 @@ confirms or corrects.
 | # | Decision | Why |
 | --- | --- | --- |
 | D1 | **Electron shell** (`electron` with the `electron-builder` NSIS target) supervises three local processes: PostgreSQL, the backend, the frontend. Its window loads `http://127.0.0.1:<port>`. | One installer, one icon, a tray, auto-update through `electron-updater` against the GitHub Releases feed the backend already polls (`backend/src/updates/updates.service.ts`), and `safeStorage` (DPAPI) for secrets. Neither layer is rewritten. |
-| D2 | **The backend and the frontend run as child processes of Electron's own binary with `ELECTRON_RUN_AS_NODE=1`.** No separate `node.exe`. | The pattern VS Code uses. Electron 40.x bundles Node 24.15, the same major CI tests on (`.github/workflows/ci.yml`). Nothing in either layer's runtime needs a native addon, so the Electron ABI question does not arise. Fallback if it ever does: ship `node.exe` as an extra resource. |
-| D3 | **PostgreSQL 16 comes from `@embedded-postgres/windows-x64` (the zonky binaries, Apache-2.0) driven by the `embedded-postgres` wrapper.** Pinned to major 16. | Real PostgreSQL, so RLS, the identity GUCs, advisory locks and the four contrib extensions behave exactly as in production. PGlite was rejected: one connection at a time, extensions must be preloaded, and it is untested against TypeORM pooling and the per-transaction RLS context. |
+| D2 | **The backend and the frontend run as child processes of Electron's own binary with `ELECTRON_RUN_AS_NODE=1`.** No separate `node.exe`. | The pattern VS Code uses. Electron 45.x bundles Node 24.22 (pinned 45.3.2; checked against the Electron release feed on 2026-11-13, when 40.x was already out of support), the same major CI tests on (`.github/workflows/ci.yml`). Nothing in either layer's runtime needs a native addon, so the Electron ABI question does not arise. Fallback if it ever does: ship `node.exe` as an extra resource. |
+| D3 | **PostgreSQL 16 comes from `@embedded-postgres/windows-x64` (the zonky binaries), driven directly through `initdb` and `pg_ctl`; the `embedded-postgres` wrapper is not used (section 12).** Pinned to an exact 16.x version. | Real PostgreSQL, so RLS, the identity GUCs, advisory locks and the four contrib extensions behave exactly as in production. PGlite was rejected: one connection at a time, extensions must be preloaded, and it is untested against TypeORM pooling and the per-transaction RLS context. |
 | D4 | **Single machine, single origin, loopback only.** Every listener binds `127.0.0.1`. | Windows Firewall never prompts, the database and the API are unreachable from the LAN, and cookies and CSP need no change. A LAN toggle is a later proposal. |
 | D5 | **Same repository, a new `desktop/` workspace** with its own manifest, like `backend/`, `frontend/` and `e2e/`. | Lock-step with the two layers it bundles; the release workflow builds it from the same gated revision (REL-003, `docs/release-integrity.md`). |
 | D6 | **Data lives under `%LOCALAPPDATA%\Monize\`**: `pgdata`, `backups`, `attachments`, `logs` and a `config.json`. The uninstaller keeps it unless the user ticks "Remove my data". | Per-user, so the installer needs no elevation (`perMachine: false`). |
@@ -248,3 +250,71 @@ existing backup entries.
 3. Signing route (D9). Default: SignPath first.
 4. Whether the Windows build is part of every release from the start.
    Default: yes, once C1 has been green for a few releases.
+
+## 12. Amendments made while building (2026-11-13)
+
+Each is a decision the build made against the text above, with its reason.
+
+1. **No `embedded-postgres` wrapper (D3).** Its 16.x line is ESM-only,
+   resolves binaries from `node_modules` rather than a directory the shell
+   chooses, registers its own exit hook, and stops PostgreSQL on Windows with
+   `taskkill /f`, which is a crash stop. The runner drives `initdb` and
+   `pg_ctl` from `resources/postgres/bin` itself. Both the Windows and the
+   Linux binary package are optional dependencies at one exact version
+   (16.15.0-beta.19), so `npm ci` works on either system and the runner is
+   tested against real binaries on Linux.
+2. **Data checksums.** The cluster is created with `--data-checksums`. The
+   binary packages carry no `pg_checksums`, so initdb is the only moment the
+   choice exists.
+3. **Server settings are passed on every start** (`pg_ctl -o`): loopback
+   only, the persisted port, no unix socket, `timezone=UTC` (initdb otherwise
+   writes the machine's zone into `postgresql.conf`, and the backend assumes
+   UTC).
+4. **Staging includes `help/`.** This plan predates in-app help; the backend
+   image now carries the guide text and its screenshots, so the staged
+   backend does too. The staging manifest is checked against every `COPY` of
+   both production Dockerfile stages, so the next such addition fails a spec
+   instead of being missed.
+5. **Boot and environment are guarded against drift.** A spec compares the
+   supervisor's commands with `backend/docker-entrypoint.sh` and the
+   frontend image's `CMD`; another holds every variable the child
+   environments carry to the documented set. A backend boot step or a renamed
+   variable turns the desktop suite red rather than needing a second,
+   remembered change.
+6. **One runtime module, bootable without Electron.** The composition of
+   config, secrets, the PostgreSQL runner and the supervisor lives in one
+   module that the Electron main process and a development script both call,
+   so the whole stack is exercised on Linux under plain Node.
+7. **Children end with the shell.** A desktop-owned preload exits a backend
+   or frontend child when its stdin pipe closes, which is what the operating
+   system does when the shell dies. Without it a killed shell left both
+   listening, and the next launch moved the ports (D8). On start the shell
+   also stops a database server left by an earlier session and waits up to
+   5 s for the persisted ports before it moves one.
+8. **Children are stopped by termination on Windows.** The backend has no
+   shutdown hook, so a container stop already ends it without running its
+   code; PostgreSQL rolls back what was in flight and backup files are
+   written through a temp-file-then-rename helper.
+9. **The child environment is an allowlist**, not the parent's environment
+   plus overrides, so a user-level `DATABASE_HOST` or `NODE_OPTIONS` cannot
+   change what the application does. `HOST` and `HOSTNAME` are both set in
+   both children.
+10. **`dataDir` is not stored in `config.json`** (D6): a pointer kept inside
+    the directory it points to is useless. "Move data folder" (D9) needs
+    another home for it.
+11. **Attachments stay in the database.** Section 6 sets
+    `ATTACHMENT_CONTAINER_DIR` but not the provider, so the backend keeps its
+    default (`database`) and the folder is unused; a backup of `pgdata` then
+    holds everything.
+12. **Settings that exist only as environment variables are not reachable**
+    in the desktop build (SMTP, OIDC, the system default AI provider). The
+    shell composes the environment itself; a way to add to it is a later
+    proposal.
+13. **The shell's own strings are English only.** It has no i18n framework;
+    every string sits in one keyed module so that can change.
+14. **The PostgreSQL executables need the VC++ runtime** and the package
+    ships none; the installer carries it app-local (D7). GitHub's Windows
+    runners have it installed, so CI alone will not catch its absence.
+15. **Size.** The staged tree is about 620 MB before compression; the
+    backend's production `node_modules` is 279 MB of it.
+
