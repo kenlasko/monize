@@ -12,6 +12,8 @@ const USAGE = `Usage: node scripts/stage.mjs [options]
   --skip-postgres        do not stage the embedded PostgreSQL binaries
   --skip-backend-deps    reuse the staged backend/node_modules instead of npm ci
   --require-webp         fail when cwebp is missing instead of copying PNGs
+  --vc-redist <dir>      Windows: the directory holding the x64 Visual C++
+                         runtime DLLs (default: found through vswhere)
 `;
 
 function parseArgs(argv) {
@@ -30,6 +32,7 @@ function parseArgs(argv) {
     else if (arg === "--skip-postgres") opts.skipPostgres = true;
     else if (arg === "--skip-backend-deps") opts.skipBackendDeps = true;
     else if (arg === "--require-webp") opts.requireWebp = true;
+    else if (arg === "--vc-redist") opts.vcRedistDir = value();
     else if (arg === "--help" || arg === "-h") opts.help = true;
     else throw new Error(`unknown option ${arg}`);
   }
@@ -56,6 +59,7 @@ try {
       skipPostgres: opts.skipPostgres,
       skipBackendDeps: opts.skipBackendDeps,
       requireWebp: opts.requireWebp,
+      vcRedistDir: opts.vcRedistDir,
       log: out,
       warn: (message) => err(`warning: ${message}`),
     });

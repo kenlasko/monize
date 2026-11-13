@@ -6,6 +6,7 @@ import {
   session,
   shell,
 } from "electron";
+import { existsSync } from "fs";
 import { homedir } from "os";
 import { join, resolve } from "path";
 
@@ -17,15 +18,18 @@ import {
   showRecoveryKey,
 } from "./dialogs";
 import { createLogger } from "./logger";
-import { createRuntime, Runtime } from "./runtime";
+import { createRuntime, Runtime, stopLeftoverPostgres } from "./runtime";
+import { APP_ID } from "./shell/app-id";
 import { createShellController } from "./shell/controller";
 import { DEEP_LINK_SCHEME } from "./shell/deep-link";
+import { iconPathFor } from "./shell/icon";
 import {
   instanceData,
   launchRequestFrom,
   secondInstanceAction,
 } from "./shell/launch-args";
 import { createQuitGate } from "./shell/quit-gate";
+import { quitExitCode, waitForOtherShellToExit } from "./shell/quit-wait";
 import { effectiveSafeStorage } from "./shell/safe-storage";
 import { isPresentableError } from "./shell/splash-view";
 import { TEXT } from "./shell/strings";
@@ -33,6 +37,7 @@ import { createSplash } from "./splash";
 import { UpdatePolicy } from "./shell/update-policy";
 import { createTray, TrayHandle } from "./tray";
 import { createUpdater } from "./updater";
+import { systemClock } from "./supervisor/clock";
 import {
   createMainWindow,
   installPermissionPolicy,
@@ -74,14 +79,44 @@ function exitWithPathError(error: unknown): void {
   });
 }
 
-function iconPathFor(paths: AppPaths): string {
-  return join(
-    paths.resourcesDir,
-    "frontend",
-    "public",
-    "icons",
-    "icon-192x192.png",
-  );
+/**
+ * `--quit` found a running shell and has asked it to stop. The installer and
+ * the uninstaller run this before they touch the application's files, so it
+ * returns only when that shell has gone (`shell/quit-wait.ts`).
+ */
+function exitWhenOtherShellHasGone(): void {
+  void waitForOtherShellToExit({
+    clock: systemClock,
+    tryLock: () => app.requestSingleInstanceLock(instanceData(launch)),
+  }).then((gone) => app.exit(quitExitCode(gone)));
+}
+
+/**
+ * `--quit` with no shell running. A shell that was killed leaves its
+ * PostgreSQL behind, still holding the files under the installation and the
+ * data folder; it is shut down properly here rather than left for whoever
+ * asked to terminate.
+ */
+function stopLeftoverThenExit(paths: AppPaths): void {
+  if (!existsSync(paths.data.pgdata)) {
+    app.exit(0);
+    return;
+  }
+  const logger = createLogger({ logsDir: paths.data.logs, stdout: null });
+  stopLeftoverPostgres(paths, logger)
+    .then(
+      () => 0,
+      (error: unknown) => {
+        logger.error(
+          `--quit could not stop the database server: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        return 1;
+      },
+    )
+    .then((code) => {
+      logger.close();
+      app.exit(code);
+    });
 }
 
 function main(): void {
@@ -96,20 +131,28 @@ function main(): void {
   // data, and Electron keys the single-instance lock on this folder, so one
   // data folder is one running shell.
   app.setPath("userData", join(paths.data.dataDir, "shell"));
+  if (process.platform === "win32") {
+    // The id the installer's shortcuts carry, so Windows groups this window
+    // under them and attributes its notifications to Monize.
+    app.setAppUserModelId(APP_ID);
+  }
   if (!app.requestSingleInstanceLock(instanceData(launch))) {
-    app.exit(0);
+    if (launch.quit) {
+      exitWhenOtherShellHasGone();
+    } else {
+      app.exit(0);
+    }
     return;
   }
   if (launch.quit) {
-    // Nothing else is running, so there is nothing to ask to quit.
-    app.exit(0);
+    stopLeftoverThenExit(paths);
     return;
   }
   run(paths);
 }
 
 function run(paths: AppPaths): void {
-  const iconPath = iconPathFor(paths);
+  const iconPath = iconPathFor(paths.resourcesDir, process.platform);
   let mainWindow: BrowserWindow | null = null;
   let tray: TrayHandle | null = null;
   let updates: UpdatePolicy | null = null;
@@ -224,7 +267,10 @@ function run(paths: AppPaths): void {
   app.on("second-instance", (_event, argv, _cwd, data) => {
     const action = secondInstanceAction(argv, data);
     if (action.kind === "quit") {
-      controller.runtime?.logger.info("Shell: another launch asked to quit.");
+      // A waiting --quit repeats its request until this shell has gone.
+      if (!gate.quitting) {
+        controller.runtime?.logger.info("Shell: another launch asked to quit.");
+      }
       app.quit();
     } else if (action.kind === "deep-link") {
       controller.deepLink(action.raw);
@@ -247,8 +293,9 @@ function run(paths: AppPaths): void {
   if (launch.deepLink !== null) controller.deepLink(launch.deepLink);
 
   void app.whenReady().then(async () => {
-    // Registered by the installer too; from a development run it would point
-    // the operating system at a checkout, so only a packaged app registers.
+    // On Windows nothing else registers the scheme (the uninstaller removes
+    // it). From a development run it would point the operating system at a
+    // checkout, so only a packaged app registers.
     const registered =
       app.isPackaged && app.setAsDefaultProtocolClient(DEEP_LINK_SCHEME);
     await controller.boot();

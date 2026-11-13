@@ -31,13 +31,22 @@ const EXCLUDED: Record<string, Record<string, string>> = {
 
 /**
  * Kinds that ship something no container image has, so they quote no COPY:
- * the PostgreSQL binaries (the containers use a postgres image) and the
- * desktop's own files (`kind: "desktop"`, such as the parent-watch preload).
+ * the PostgreSQL binaries (the containers use a postgres image), the Visual
+ * C++ runtime those binaries need on Windows, and the desktop's own files
+ * (`kind: "desktop"`, such as the parent-watch preload).
  */
-const NO_DOCKERFILE_LINE = ["postgres", "desktop"];
+const NO_DOCKERFILE_LINE = ["postgres", "vc-runtime", "desktop"];
 
-/** Build output and installed packages: not files in the repository. */
-const BUILT = ["backend/dist", "frontend/.next/", "@embedded-postgres/"];
+/**
+ * Build output, installed packages and the build machine's Visual Studio
+ * redistributable directory: not files in the repository.
+ */
+const BUILT = [
+  "backend/dist",
+  "frontend/.next/",
+  "@embedded-postgres/",
+  "vc-redist/",
+];
 
 function dockerfile(layer: string): string {
   return fs.readFileSync(path.join(repoRoot, layer, "Dockerfile"), "utf8");
@@ -189,7 +198,10 @@ describe("staging manifest", () => {
 
   it("stages desktop-only files outside the layer directories", () => {
     const desktopOnly = manifest.entries.filter((e) => e.kind === "desktop");
-    expect(desktopOnly.map((e) => e.to)).toEqual(["shell/parent-watch.cjs"]);
+    expect(desktopOnly.map((e) => e.to)).toEqual([
+      "shell/parent-watch.cjs",
+      "shell/icon.ico",
+    ]);
     for (const entry of desktopOnly) {
       expect(entry.from).toMatch(/^desktop\//);
       expect(entry.to).not.toMatch(/^(backend|frontend)(\/|$)/);

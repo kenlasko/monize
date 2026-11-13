@@ -1,6 +1,14 @@
 import fs from "node:fs";
+import { VC_RUNTIME_DLL } from "./vc-runtime.mjs";
 
-const KINDS = ["copy", "backend-deps", "help-images", "postgres", "desktop"];
+const KINDS = [
+  "copy",
+  "backend-deps",
+  "help-images",
+  "postgres",
+  "desktop",
+  "vc-runtime",
+];
 
 /**
  * A desktop-owned file mirrors no Dockerfile line, so it must not land where
@@ -10,6 +18,22 @@ function isDesktopOnly(entry) {
   const top = entry.to.split("/")[0];
   return (
     entry.from.startsWith("desktop/") && top !== "backend" && top !== "frontend"
+  );
+}
+
+/**
+ * A vc-runtime entry lists the Visual C++ runtime DLLs to put beside the
+ * PostgreSQL executables, so it names DLLs of that family and lands in
+ * postgres/.
+ */
+function isVcRuntime(entry) {
+  return (
+    Array.isArray(entry.files) &&
+    entry.files.length > 0 &&
+    entry.files.every(
+      (file) => typeof file === "string" && VC_RUNTIME_DLL.test(file),
+    ) &&
+    entry.to.split("/")[0] === "postgres"
   );
 }
 
@@ -34,6 +58,11 @@ export function loadManifest(file) {
     if (kind === "desktop" && !isDesktopOnly(entry)) {
       throw new Error(
         `${file}: a desktop entry comes from desktop/ and stages outside backend/ and frontend/ (${entry.to})`,
+      );
+    }
+    if (kind === "vc-runtime" && !isVcRuntime(entry)) {
+      throw new Error(
+        `${file}: a vc-runtime entry lists lower-case Visual C++ runtime DLL names in "files" and stages under postgres/ (${entry.to})`,
       );
     }
   }

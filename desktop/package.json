@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.splash.json",
     "test": "jest && node --test \"scripts/**/*.test.mjs\"",
     "stage": "node scripts/stage.mjs",
+    "dist": "npm run typecheck && npm run build && npm run stage -- --require-webp && electron-builder --win --publish never",
     "smoke:postgres": "npm run build && node scripts/smoke-postgres.mjs",
     "dev:boot": "npm run build && node scripts/dev-boot.mjs"
   },
@@ -29,6 +30,7 @@
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
     "electron": "45.3.2",
+    "electron-builder": "26.18.0",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.7",

@@ -8,7 +8,11 @@ import { findDeepLinkArgument } from "./deep-link";
  * and the argv is the fallback for a sender that passed none.
  */
 
-/** Asks the running instance to quit cleanly; the CI smoke test uses it. */
+/**
+ * Asks the running instance to quit cleanly and returns once it has gone
+ * (`quit-wait.ts`); with none running, stops a PostgreSQL a killed instance
+ * left behind. The installer, the uninstaller and the CI smoke test use it.
+ */
 export const QUIT_FLAG = "--quit";
 
 export interface LaunchRequest {

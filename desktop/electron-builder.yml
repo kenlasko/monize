@@ -1,0 +1,107 @@
+# Packaging for the Windows installer (plan: docs/future-plans/windows-installer.md,
+# task D7). `npm run dist` is the only supported way to run it; desktop/README.md
+# has the steps and the acceptance checklist.
+
+# Also the AppUserModelID the shell sets at run time: src/shell/app-id.ts holds
+# the same string and src/shell/app-id.spec.ts fails when the two differ.
+appId: com.monize.desktop
+productName: Monize
+copyright: Copyright (C) Monize contributors. Licensed under AGPL-3.0-only.
+
+directories:
+  output: release
+  buildResources: build
+
+# The Electron version is not restated: electron-builder reads it from the
+# exact-pinned `electron` devDependency.
+
+# The shell (main process, preloads, splash) goes into app.asar. The backend,
+# the frontend and PostgreSQL are run as child processes from real files, so
+# they are extraResources, outside the archive.
+asar: true
+files:
+  - package.json
+  - dist/**
+  # Compiled test doubles and source maps are not part of the application.
+  - "!dist/test-support{,/**}"
+  - "!dist/**/*.spec.js"
+  - "!dist/**/*.fake.js"
+  - "!dist/**/*.map"
+  # PostgreSQL ships through the staged `postgres` resource. Its platform
+  # packages are optionalDependencies only so that `npm ci` installs them.
+  - "!**/node_modules/@embedded-postgres{,/**}"
+
+# One entry from `staging`, not one per directory: electron-builder never
+# copies a `node_modules` that sits at the root of a `from` directory, so
+# `from: staging/backend` would ship a backend with no dependencies.
+# src/packaging.spec.ts holds this entry to the staging manifest.
+extraResources:
+  - from: staging
+    to: .
+    filter:
+      - backend/**
+      - frontend/**
+      - postgres/**
+      - shell/**
+
+# Nothing in the main process is a native addon (`pg` is pure JavaScript), so
+# there is nothing to rebuild against Electron's headers.
+npmRebuild: false
+
+# Code signing is task C3. With no certificate configured electron-builder
+# skips signing; this line makes an unsigned build a stated choice rather
+# than an accident, and C3 flips it together with the signing options.
+forceCodeSigning: false
+
+# The default. For this target it changes little: because the installer
+# carries a blockmap for differential updates (nsis.differentialPackage, left
+# on for the updater, task D8), electron-builder packs the application as a
+# non-solid LZMA archive with a 1 MB dictionary whatever is set here, so that
+# an update changes few blocks. Only `store` would differ, and it would
+# roughly triple the download.
+compression: normal
+
+protocols:
+  - name: Monize
+    schemes:
+      - monize
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+
+nsis:
+  oneClick: false
+  # Per user, so no elevation (plan D6). build/installer.nsh also skips the
+  # "only for me / for everyone" page and refuses /allusers: a per-machine
+  # install would run the installer as another account, whose
+  # %LOCALAPPDATA% is not the one holding the person's data.
+  perMachine: false
+  allowElevation: false
+  packElevateHelper: false
+  allowToChangeInstallationDirectory: true
+  include: build/installer.nsh
+  artifactName: Monize-Setup-${version}.${ext}
+  uninstallDisplayName: Monize
+  shortcutName: Monize
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  runAfterFinish: true
+  # electron-builder's own switch removes %APPDATA%\Monize (roaming), never
+  # %LOCALAPPDATA%\Monize, and only for one-click installers; it stays off so
+  # that the "Remove my data" choice in build/installer.nsh is the only thing
+  # that deletes anything the person owns.
+  deleteAppDataOnUninstall: false
+  # The uninstaller opens on the page that carries that choice.
+  removeDefaultUninstallWelcomePage: true
+
+# `npm run dist` passes --publish never. The provider is recorded here so the
+# build writes latest.yml and app-update.yml for the updater (task D8) and the
+# release job (task C2).
+publish:
+  provider: github
+  owner: kenlasko
+  repo: monize
