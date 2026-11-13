@@ -42,6 +42,24 @@ dependencies come from a fresh `npm ci --omit=dev` in a temp directory. Without
 `cwebp` the help screenshots are copied as PNG (the backend serves them, at
 about 2.4 times the size) with a warning.
 
+## Running the stack without Electron
+
+`scripts/dev-boot.mjs` boots the staged stack under plain Node through the
+same runtime module the Electron main process uses (`src/runtime.ts`):
+PostgreSQL, db-init, db-migrate, the backend, the frontend. It runs on Linux
+as well as Windows, so the supervisor, the PostgreSQL runner and the staged
+layout can be exercised with no window and no installer.
+
+```bash
+npm run stage                                   # after building backend/ and frontend/
+npm run dev:boot -- --data-dir /tmp/monize-dev  # Ctrl-C stops all three
+npm run dev:boot -- --data-dir /tmp/monize-dev --exit-when-ready   # boot, GET /login, stop
+npm run smoke:postgres                          # the PostgreSQL runner alone, against real binaries
+```
+
+The data directory must be named: outside Electron the secrets are stored in
+plain text, so the script never uses the installed application's folder.
+
 ## Where data lives
 
 Per user, under `%LOCALAPPDATA%\Monize\`: `pgdata`, `backups`, `attachments`,
