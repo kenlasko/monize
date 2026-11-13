@@ -62,9 +62,9 @@
 | D4 | Window, preload, tray, splash, external links | D3, F1 | neutral | [x] on Linux; Windows acceptance open |
 | D5 | Embedded PostgreSQL runner | D3 | neutral | [x] on Linux; Windows acceptance open |
 | D6 | Staging script: assemble backend, frontend and database files for packaging | D3 | neutral | [x] |
-| D7 | electron-builder configuration, NSIS include, unsigned local build, manual acceptance | D4, D5, D6, B1 | neutral | [ ] |
+| D7 | electron-builder configuration, NSIS include, unsigned local build, manual acceptance | D4, D5, D6, B1 | neutral | [x] config, Linux-verified; never built or run on Windows |
 | C1 | CI job on `windows-latest`: build, package, smoke-test, upload artifact | D7 | none | [ ] |
-| D8 | Updater against GitHub Releases | D7 | neutral | [ ] |
+| D8 | Updater against GitHub Releases | D7 | neutral | [x] unit-verified; a real update is Windows-only |
 | C2 | Release job attaches the installer, `latest.yml` and the blockmap | C1, D8 | release | [ ] |
 | C3 | Code signing | C2 | release | [ ] |
 | F2 | The page honours the shell contract: shell flag, push banner, external links | F1, D4 | neutral | [x] |
@@ -90,10 +90,21 @@ merges them all and is where the whole stack was run.
 | D4 | `feat/desktop-d4-electron-shell` | 2577bd73a, 7962a0ba0 | Real Electron launch on Linux (WSLg): splash, login page, second launch, `--quit`, deep links |
 | D5 | `feat/desktop-d5-postgres-runner` | ab5eaf58b, 7934511e1, b7828e4ae | `npm run smoke:postgres` against the real 16.15 Linux binaries, 13 steps |
 | D6 | `feat/desktop-d6-staging-script` | 2b2599b83 | A real staging run; the Dockerfile guard proven red |
+| D7 | `feat/desktop-d7-installer` | f54ac5880, d7b188325, ecee9c297 | A packaged Linux build of the same shell booted to the login page and quit cleanly; both NSIS passes compile under Wine with warnings as errors. The installer itself has never run |
+| D8 | `feat/desktop-d8-updater` | 4532a39f2, db2b9eaa6 | Desktop suite, including the install sequence walked against the real quit gate |
 | runtime | `feat/desktop-integration` | bf165a666, 483e52399 | The runtime module, `dev-boot`, and the `HOST` exemption removed once B2 and D2 met |
 
 D3b is a task this list did not have: backend and frontend children exit when
 the shell that spawned them dies (plan section 12, item 7).
+
+D7 found three things wrong in this list's D7 section, fixed in the build:
+mapping each staged directory as its own `extraResources` entry drops the
+backend's and the frontend's `node_modules` (electron-builder removes a
+`node_modules` at the root of any `from`), so the staging directory is mapped
+once with filters; `perMachine: false` alone still offers an elevating
+all-users page; and an install directory the person may change can be made to
+coincide with the data directory, which an update or uninstall would then
+delete, so the installer refuses it.
 
 Not run anywhere yet: anything on Windows. D3, D4 and D5 each leave a
 Windows checklist in the desktop README; C1 is the first place they can run.
