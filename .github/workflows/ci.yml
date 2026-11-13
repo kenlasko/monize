@@ -998,6 +998,191 @@ jobs:
           # cc8be0f09d430af908c2fcbbd4b6de11_0 - Non-literal fs path opening a listed help screenshot for its size [CWE-73] - review-by: 2027-02-06
           exclude-fingerprint: "df1db3090cab23fd55c9a22789aa6b2f_0,9a51af5fd92c92c4c022addd331ee9c6_0,8145f16fcf77da087020769e5609a11b_0,b04cb91b90deb5e16504baa7ab95f678_0,b04cb91b90deb5e16504baa7ab95f678_1,b6c4552155ecc9b65a9205911f502bf1_0,b6c4552155ecc9b65a9205911f502bf1_1,b6c4552155ecc9b65a9205911f502bf1_2,b6c4552155ecc9b65a9205911f502bf1_3,c055716bae113b20589f9ea5c5963e65_0,f9b26e7d59d0f577ff9a0e93ea4f7b7c_0,f9b26e7d59d0f577ff9a0e93ea4f7b7c_1,f6196720ad017b3d11d24487792c1479_0,45093073db7d96d61cd30bceb943f63f_0,45093073db7d96d61cd30bceb943f63f_1,45093073db7d96d61cd30bceb943f63f_2,b7502b6ea7c0a272ab08099b55d0392c_0,4beb484f871a7489b5f5ff2df93f72f1_0,0ff64c8083ce01b1e8c867832c0dff85_0,1f87dd3b3950178c2eac383cfcead816_0,e717be7fe9c133adba7d48ccb371c6ba_0,173289a7a56f6f6b27dc2314746e9451_0,242a05abd45296bc2ba6d9174dc6f3dd_0,90aa4e42622acc64795b7d291a5d74f9_0,fae1b07dcb3c5444235e7e0b4bcae188_0,fae1b07dcb3c5444235e7e0b4bcae188_1,dc1e615df30fcceb5a3cd2fd3ccd4c32_0,dc1e615df30fcceb5a3cd2fd3ccd4c32_1,693f53c921285bddc3861f6027338c94_0,f4213ea85085fdf7e12b1eb1ee903f75_0,cc8be0f09d430af908c2fcbbd4b6de11_0"
 
+  # The desktop package's own checks (desktop/README.md, "CI"). Its jest suite
+  # includes guard specs that read backend/docker-entrypoint.sh, both
+  # Dockerfiles, .env.example and the compose files, so it needs the whole
+  # checkout but neither the backend's nor the frontend's dependencies.
+  # smoke:postgres runs the PostgreSQL runner against the real Linux binaries
+  # of the same package version the installer ships for Windows.
+  desktop:
+    name: Desktop Lint, Tests & PostgreSQL Smoke
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: 24
+          # Test and lint jobs only: nothing they restore reaches an image or a
+          # release, which is what zizmor's cache-poisoning audit is about.
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run smoke:postgres
+
+  # Builds the Windows installer the way desktop/README.md ("The installer")
+  # tells a person to, then installs it, runs it and uninstalls it
+  # (desktop/scripts/smoke-install.ps1). Nothing else exercises the desktop
+  # code on Windows.
+  #
+  # Shells, deliberately: `pwsh` (the Windows default) for every build step,
+  # because that is how a person builds on Windows, and because Git Bash
+  # rewrites PATH and would hide a `sh` or `cwebp` that the staging step
+  # (which spawns both) cannot find on the real one. `bash` only where the
+  # step is POSIX shell by nature.
+  #
+  # No npm cache: the installer it uploads is a distributable, and
+  # zizmor's cache-poisoning audit is about exactly that.
+  desktop-windows:
+    name: Desktop Windows Installer
+    runs-on: windows-latest
+    timeout-minutes: 75
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      # Before the checkout, which uses the git CLI and so reads this config.
+      # Git for Windows on the image sets core.autocrlf=true: every file would arrive
+      # with CRLF, which breaks backend/scripts/convert-help-images.sh under
+      # `sh` (the staging step runs it), fails every line of `npm run lint`
+      # (prettier's endOfLine) and changes what the guard specs read from the
+      # Dockerfiles and backend/docker-entrypoint.sh. The repository has no
+      # .gitattributes; LF everywhere is what every other job checks out.
+      - name: Check out with LF line endings and long paths
+        shell: bash
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global core.longpaths true
+      - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      # cwebp is the only build tool the image lacks (desktop/README.md). From
+      # the libwebp project's own release zip rather than Chocolatey: one
+      # download from the project's bucket, no community package and no
+      # Chocolatey outage in the path, and the version and the bytes are both
+      # pinned here. The SHA-256 is of the zip whose detached signature
+      # (libwebp-1.6.0-windows-x64.zip.asc) verifies against the WebP release
+      # signing key, fingerprint 6B0E 6B70 976D E303 EDF2 F601 F9C3 D6BD B823
+      # 2B5D. To move to a later release, verify its .asc the same way and
+      # replace both values.
+      - name: Install cwebp (libwebp 1.6.0)
+        env:
+          LIBWEBP_VERSION: 1.6.0
+          LIBWEBP_SHA256: 48886f506b21f62e4661f0f4cbfca19800897c385128e8902542d29a950c93f1
+        run: |
+          $name = "libwebp-$env:LIBWEBP_VERSION-windows-x64"
+          $zip = Join-Path $env:RUNNER_TEMP "$name.zip"
+          Invoke-WebRequest -Uri "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/$name.zip" -OutFile $zip -MaximumRetryCount 3 -RetryIntervalSec 10
+          $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant()
+          if ($actual -ne $env:LIBWEBP_SHA256) {
+            throw "$name.zip has SHA-256 $actual, expected $env:LIBWEBP_SHA256"
+          }
+          Expand-Archive -LiteralPath $zip -DestinationPath $env:RUNNER_TEMP
+          Add-Content -LiteralPath $env:GITHUB_PATH -Value (Join-Path $env:RUNNER_TEMP "$name\bin")
+
+      # What the staging step spawns by name, resolved the way it will be:
+      # cwebp (above), `sh` from Git for Windows (Git\bin, on the image's PATH
+      # already; added here only if a future image drops it) and vswhere, which
+      # finds the Visual C++ runtime the installer carries beside PostgreSQL.
+      - name: Check the build tools
+        run: |
+          if (-not (Get-Command -Name sh -CommandType Application -ErrorAction SilentlyContinue)) {
+            $gitBin = Join-Path $env:ProgramFiles 'Git\bin'
+            if (-not (Test-Path -LiteralPath (Join-Path $gitBin 'sh.exe'))) { throw "no sh.exe on PATH or in $gitBin" }
+            Add-Content -LiteralPath $env:GITHUB_PATH -Value $gitBin
+            $env:PATH = "$gitBin;$env:PATH"
+          }
+          Get-Command -Name sh, cwebp -CommandType Application | Format-Table -Property Name, Source -AutoSize
+          & cwebp -version
+          if ($LASTEXITCODE -ne 0) { throw "cwebp -version exited with $LASTEXITCODE" }
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path -LiteralPath $vswhere)) { throw "vswhere.exe is missing: $vswhere" }
+          & $vswhere -products '*' -property installationPath
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Build the backend
+        working-directory: backend
+        # The same heap backend/Dockerfile gives `nest build`.
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: npm run build
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Build the frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+      - name: Lint the desktop package
+        working-directory: desktop
+        run: npm run lint
+      - name: Test the desktop package
+        working-directory: desktop
+        run: npm test
+      # The PostgreSQL runner against the Windows binaries, before they are
+      # packaged: a failure here names the runner, not the installer.
+      - name: Smoke-test the PostgreSQL runner
+        working-directory: desktop
+        run: npm run smoke:postgres
+      # typecheck, build, stage --require-webp, electron-builder --win
+      # --publish never.
+      - name: Build the installer
+        working-directory: desktop
+        run: npm run dist
+
+      # A data directory with a space in its name, as under a profile named
+      # "First Last"; the script removes it after a pass and keeps it, with
+      # its logs, after a failure.
+      - name: Install, run and uninstall the installer
+        timeout-minutes: 30
+        env:
+          SMOKE_DATA_DIR: ${{ runner.temp }}\monize smoke data
+        run: |
+          $installer = @(Get-ChildItem -Path desktop/release -Filter 'Monize-Setup-*.exe' -File | Where-Object { $_.Extension -ieq '.exe' })
+          if ($installer.Count -ne 1) { throw "expected one Monize-Setup-*.exe in desktop/release, found $($installer.Count)" }
+          pwsh -NoProfile -File desktop/scripts/smoke-install.ps1 -Installer $installer[0].FullName -DataDir $env:SMOKE_DATA_DIR
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload the smoke test's logs
+        if: failure()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: desktop-windows-smoke-logs
+          path: ${{ runner.temp }}/monize smoke data/logs/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # Only an installer that passed the smoke test. Not a release asset:
+      # attaching these to a GitHub release is a separate change (task C2).
+      - name: Upload the installer
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: monize-windows-installer
+          path: |
+            desktop/release/Monize-Setup-*.exe
+            desktop/release/Monize-Setup-*.exe.blockmap
+            desktop/release/latest.yml
+          if-no-files-found: error
+          retention-days: 7
+
   # Resolve the release version and shared build metadata ONCE, so the parallel
   # backend/frontend build jobs below stamp identical version/date/sha values.
   # No commit happens here: the release job owns the version-bump commit so the
@@ -1026,6 +1211,8 @@ jobs:
         env-doc-check,
         e2e-tests,
         helm-chart,
+        desktop,
+        desktop-windows,
       ]
     permissions:
       contents: read
