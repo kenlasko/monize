@@ -59,7 +59,7 @@ On the **Income vs Expenses** report, clicking an income or expense bar filters 
 
 ### Partial Figures
 
-Amounts in another currency are converted to your default currency at the exchange rate of each transaction's own date, or at the rate a foreign-currency entry recorded, never at today's rate, so last year's spending reads the same whatever the currency has done since.
+Amounts in another currency are converted to your default currency at the exchange rate of each transaction's own date, or at the rate a foreign-currency entry recorded, never at today's rate, so last year's spending reads the same whatever the currency has done since. A transfer between an account in another currency and one in your default currency counts at the amounts it actually moved: 100 USD that arrived as 90 EUR is 90 EUR in every report, even when only the USD account is included.
 
 When a figure cannot be worked out completely -- for example an amount in a currency with no exchange rate for its date -- the report says which figures are partial and what is missing (such as the currency to add a rate for on the [Currencies](currency-management.md) page) instead of showing a wrong total.
 

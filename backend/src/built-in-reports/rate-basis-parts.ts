@@ -9,6 +9,7 @@ import {
   RawRateBasis,
   transactionRateBasis,
 } from "./report-currency.service";
+import { transferRateReader, transferRateSql } from "./transfer-rate-sql";
 
 /** A raw row of a read split by {@link splitByRateBasis}. */
 export type RatePartRow = Record<string, any>;
@@ -25,6 +26,14 @@ export interface RateBasisColumns {
   date: string;
   originalCurrency: string;
   exchangeRate: string;
+  /**
+   * Where the read's transfer legs sit, when its rows can be one: each part of
+   * the reader's own legs is also split by the rate its transfer's posted
+   * amounts imply (`fx_transfer_rate`, {@link transferRateSql}), which wins
+   * over the stored rate. The reader is the request's
+   * ({@link transferRateReader}); without one the column is not added.
+   */
+  transferLegs?: { transactionAlias: string; splitAlias?: string };
 }
 
 /**
@@ -65,6 +74,19 @@ export function splitByRateBasis<T extends ObjectLiteral>(
     // The output columns' names: lower case, so the unquoted names match.
     .addGroupBy("fx_original_currency")
     .addGroupBy("fx_exchange_rate");
+  const reader = columns.transferLegs ? transferRateReader() : undefined;
+  if (columns.transferLegs && reader) {
+    const { transactionAlias, splitAlias } = columns.transferLegs;
+    qb.setParameter("fxReaderId", reader)
+      .addSelect(
+        transferRateSql(":fxReportingCurrency", transactionAlias, {
+          readerParam: ":fxReaderId",
+          ...(splitAlias ? { splitAlias } : {}),
+        }),
+        "fx_transfer_rate",
+      )
+      .addGroupBy("fx_transfer_rate");
+  }
 }
 
 /**
@@ -84,6 +106,7 @@ export function partRateBasis(
       transactionDate: day ?? "",
       originalCurrencyCode: row.fx_original_currency,
       exchangeRate: row.fx_exchange_rate,
+      transferRate: row.fx_transfer_rate,
     },
     reporting,
   );
@@ -235,6 +258,7 @@ export function convertRateParts(
         txDate: row.fx_day,
         originalCurrencyCode: row.fx_original_currency,
         exchangeRate: row.fx_exchange_rate,
+        transferRate: row.fx_transfer_rate,
         amounts: Object.fromEntries(
           names.sums.map((name) => [name, Number(row[name]) || 0]),
         ),

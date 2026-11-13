@@ -1,7 +1,12 @@
 import { DataSource } from "typeorm";
 import { InternalServerErrorException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
-import { CashFlowSankeyService } from "./cash-flow-sankey.service";
+import {
+  CashFlowSankeyService,
+  splitTransferLegsQuery,
+  wholeTransferLegsQuery,
+} from "./cash-flow-sankey.service";
+import { requestContextStorage } from "../common/request-context";
 import { ReportCurrencyService } from "./report-currency.service";
 import { Category } from "../categories/entities/category.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
@@ -962,5 +967,35 @@ describe("CashFlowSankeyService", () => {
         service.getCashFlowSankey(USER, "2026-09-01", "2026-09-30"),
       ).rejects.toBe(boom);
     });
+  });
+});
+
+describe("the Sankey's transfer reads (issue #2153)", () => {
+  const OWNER = "00000000-0000-4000-8000-000000000001";
+  const scope = {
+    userId: OWNER,
+    scopeAccountIds: [],
+    startDate: undefined,
+    endDate: "2026-03-31",
+    currency: "EUR",
+  };
+
+  it("converts the reader's own legs at the amounts their transfer moved", () => {
+    requestContextStorage.run({ userId: OWNER }, () => {
+      expect(wholeTransferLegsQuery(scope).sql).toContain('"t".is_transfer');
+      expect(splitTransferLegsQuery(scope).sql).toContain(
+        '"ts".transfer_account_id IS NOT NULL',
+      );
+    });
+  });
+
+  it("keeps the market rate on a ledger the reader does not own", () => {
+    requestContextStorage.run(
+      { userId: OWNER, realUserId: "00000000-0000-4000-8000-000000000002" },
+      () => {
+        expect(wholeTransferLegsQuery(scope).sql).not.toContain("fx_leg");
+        expect(splitTransferLegsQuery(scope).sql).not.toContain("fx_cp");
+      },
+    );
   });
 });

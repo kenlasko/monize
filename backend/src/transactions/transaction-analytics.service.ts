@@ -556,7 +556,13 @@ export class TransactionAnalyticsService {
       // Converting splits each foreign bucket by day and own rate in this same
       // read, so the conversion needs no second pass over the filtered rows.
       if (reporting)
-        splitByRateBasis(queryBuilder, TRANSACTION_RATE_BASIS, reporting);
+        splitByRateBasis(
+          queryBuilder,
+          excludeTransfers
+            ? TRANSACTION_OWN_RATE_BASIS
+            : TRANSACTION_RATE_BASIS,
+          reporting,
+        );
 
       const rows: RawGroupRow[] = await queryBuilder.getRawMany();
 
@@ -1285,7 +1291,9 @@ export class TransactionAnalyticsService {
         this.dataSource,
         userId,
       );
-      byOwnRate(queryBuilder, "transaction", defaultCurrency);
+      byOwnRate(queryBuilder, "transaction", defaultCurrency, {
+        transfers: true,
+      });
 
       const rows = await queryBuilder.getRawMany();
       if (rows.length === 0) return [];
@@ -1723,7 +1731,9 @@ export class TransactionAnalyticsService {
         )
         .groupBy("transaction.currencyCode")
         .addGroupBy(dayExpr);
-      byOwnRate(qb, "transaction", reporting);
+      byOwnRate(qb, "transaction", reporting, {
+        transfers: !excludeTransfers,
+      });
 
       const rows = await qb.getRawMany();
       const rates = await this.loadRateIndex(
@@ -2583,12 +2593,21 @@ const DAY_TX_SQL = "TO_CHAR(transaction.transactionDate, 'YYYY-MM-DD')";
 /** A grouped raw row: its label columns, its currency and its day. */
 type RawGroupRow = Record<string, any>;
 
-/** {@link splitByRateBasis}'s columns for the `transaction` alias. */
-const TRANSACTION_RATE_BASIS: RateBasisColumns = {
+/**
+ * {@link splitByRateBasis}'s columns for the `transaction` alias, for a read
+ * that keeps no transfer legs.
+ */
+const TRANSACTION_OWN_RATE_BASIS: RateBasisColumns = {
   currency: "transaction.currencyCode",
   date: "transaction.transactionDate",
   originalCurrency: "transaction.originalCurrencyCode",
   exchangeRate: "transaction.exchangeRate",
+};
+
+/** The same, for a read whose rows can be transfer legs. */
+const TRANSACTION_RATE_BASIS: RateBasisColumns = {
+  ...TRANSACTION_OWN_RATE_BASIS,
+  transferLegs: { transactionAlias: "transaction" },
 };
 
 /** The transaction-list filter surface every analytics read applies. */
@@ -2707,12 +2726,15 @@ const clampGroupLimit = (limit: number | undefined): number =>
  * Select and group by the columns a part outside `reporting` needs to convert
  * at the rate it settled at, for a read that already splits every row by its
  * day, so {@link addDatedAmount} reads each part's own rate the way the
- * reports do (INV-FX-002); `alias` is the query's transaction alias.
+ * reports do (INV-FX-002); `alias` is the query's transaction alias. A read
+ * whose rows can be transfer legs passes `transfers`, so a leg converts at its
+ * transfer's posted amounts too.
  */
 function byOwnRate(
   qb: SelectQueryBuilder<Transaction>,
   alias: string,
   reporting: string,
+  { transfers = false }: { transfers?: boolean } = {},
 ): SelectQueryBuilder<Transaction> {
   splitByRateBasis(
     qb,
@@ -2720,6 +2742,7 @@ function byOwnRate(
       currency: `${alias}.currencyCode`,
       originalCurrency: `${alias}.originalCurrencyCode`,
       exchangeRate: `${alias}.exchangeRate`,
+      ...(transfers ? { transferLegs: { transactionAlias: alias } } : {}),
     },
     reporting,
     { byDay: false },

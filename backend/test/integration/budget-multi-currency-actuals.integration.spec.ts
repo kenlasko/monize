@@ -421,7 +421,7 @@ describe("budget actuals across currencies (integration)", () => {
     expect(spending.missingRatePairs).toEqual([]);
   });
 
-  it("marks a transfer destination unknown when the JPY rate is missing", async () => {
+  it("reads a transfer at the CAD it moved when the JPY rate is missing", async () => {
     const inbound = await insertTransaction({
       accountId: savingsId,
       amount: 45,
@@ -436,6 +436,30 @@ describe("budget actuals across currencies (integration)", () => {
     });
     inbound.linkedTransactionId = outbound.id;
     await dataSource.manager.save(inbound);
+
+    const spending = await runQuery();
+
+    // The other side posted 45 CAD, which is the transfer's own rate
+    // (issue #2153); no market rate is needed.
+    expect(resolveCategorySpentOrNull(transferLine, spending)).toBe(45);
+    expect(spending.missingRatePairs).toEqual([]);
+  });
+
+  it("marks a transfer destination unknown when the JPY rate is missing and the other side does not link back", async () => {
+    const inbound = await insertTransaction({
+      accountId: savingsId,
+      amount: 45,
+      isTransfer: true,
+    });
+    // A one-sided link is not a transfer's two sides, so only the market rate
+    // could convert the leg.
+    await insertTransaction({
+      accountId: jpyAccountId,
+      currencyCode: "JPY",
+      amount: -5000,
+      isTransfer: true,
+      linkedTransactionId: inbound.id,
+    });
 
     const spending = await runQuery();
 

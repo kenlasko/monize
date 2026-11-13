@@ -281,6 +281,44 @@ describe("ReportCurrencyService", () => {
       expect(sql).toContain("x.exchange_rate <> 1");
     });
 
+    it("reads a transfer leg's rate off its counterpart ahead of the stored one", () => {
+      const rows = ownRateSql("$2", "x", { readerParam: "$1" });
+      const lines = ownRateSql("$2", "x", {
+        readerParam: "$1",
+        splitAlias: "xs",
+      });
+
+      expect(rows).toMatch(/^COALESCE\(CASE/);
+      expect(rows).toContain('"x".is_transfer');
+      expect(rows).toContain('"x".user_id = $1');
+      expect(rows).toContain("x.exchange_rate <> 1");
+      expect(lines).toContain('"xs".transfer_account_id IS NOT NULL');
+      expect(rateBasisColumnsSql("$5", "t", { readerParam: "$1" })).toContain(
+        '"t".currency_code <> $5::text',
+      );
+    });
+
+    it("takes a transfer's own rate first, a rate of 1 included", () => {
+      const leg = {
+        currencyCode: "USD",
+        transactionDate: "2026-03-10",
+        originalCurrencyCode: "EUR",
+        exchangeRate: 1.25,
+      };
+
+      expect(
+        transactionRateBasis({ ...leg, transferRate: "1.1111" }, "EUR")
+          .own_rate,
+      ).toBe(1.1111);
+      // A transfer that moved at par: a real rate, unlike a stored 1.
+      expect(
+        transactionRateBasis({ ...leg, transferRate: "1" }, "EUR").own_rate,
+      ).toBe(1);
+      expect(
+        transactionRateBasis({ ...leg, transferRate: null }, "EUR").own_rate,
+      ).toBe(1.25);
+    });
+
     it("derives the same basis from a loaded transaction", () => {
       expect(
         transactionRateBasis(

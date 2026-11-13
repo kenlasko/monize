@@ -162,6 +162,7 @@ interface SpendingRow {
   /** The row's own rate columns (`splitByRateBasis`). */
   fx_original_currency?: string | null;
   fx_exchange_rate?: string | null;
+  fx_transfer_rate?: string | null;
 }
 
 /**
@@ -330,7 +331,14 @@ export async function queryCategorySpendingBuckets(
       .groupBy(PARENT_TRANSFER_DESTINATION)
       .addGroupBy("t.currency_code")
       .addGroupBy("t.transaction_date");
-    splitByRateBasis(parentQb, OWN_RATE_COLUMNS, currency, { byDay: false });
+    // A transfer leg converts at the amounts its transfer moved, as in the
+    // reports (`transferRateSql`).
+    splitByRateBasis(
+      parentQb,
+      { ...OWN_RATE_COLUMNS, transferLegs: { transactionAlias: "t" } },
+      currency,
+      { byDay: false },
+    );
     transferRows.push(...(await parentQb.getRawMany()));
     const splitTransferQb = outgoingSplitTransfers(splitsRepository, window)
       .select(SPLIT_TRANSFER_DESTINATION, "key")
@@ -340,9 +348,15 @@ export async function queryCategorySpendingBuckets(
       .groupBy(SPLIT_TRANSFER_DESTINATION)
       .addGroupBy("t.currency_code")
       .addGroupBy("t.transaction_date");
-    splitByRateBasis(splitTransferQb, OWN_RATE_COLUMNS, currency, {
-      byDay: false,
-    });
+    splitByRateBasis(
+      splitTransferQb,
+      {
+        ...OWN_RATE_COLUMNS,
+        transferLegs: { transactionAlias: "t", splitAlias: "s" },
+      },
+      currency,
+      { byDay: false },
+    );
     transferRows.push(...(await splitTransferQb.getRawMany()));
   }
 
