@@ -424,7 +424,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "calculate",
     description:
-      "Perform accurate server-side arithmetic on numbers from previous tool results. Use this instead of doing math yourself. Supports: percentage (part/whole*100), difference (a-b), ratio (a/b), sum, average, and convert (a currency conversion at the exchange rate the server holds for a date). Always use this tool for any calculation rather than computing values yourself, and NEVER convert between currencies yourself -- use operation 'convert' with values: [amount], fromCurrency, toCurrency and an optional date (defaults to today). The result of a conversion reports the amount, both currency codes, the rate applied and the date it applied on; quote all of them.",
+      "Perform accurate server-side arithmetic on numbers from previous tool results. Use this instead of doing math yourself. Supports: percentage (part/whole*100), difference (a-b), ratio (a/b), sum, average, and convert (a currency conversion at the exchange rate the server holds for a date). Always use this tool for any calculation rather than computing values yourself, and NEVER convert between currencies yourself -- use operation 'convert' with values: [amount], fromCurrency, toCurrency and an optional date (defaults to today). The result of a conversion reports the amount, both currency codes, the rate applied and the date it applied on; quote all of them. 'result' is the unrounded answer, so pass it, not 'formattedResult' (rounded for display), to a further calculation.",
     inputSchema: {
       type: "object",
       properties: {

@@ -5,14 +5,25 @@
  * calculations (percentages, ratios, differences, sums, averages) to
  * the server so the user always gets accurate results.
  *
- * All internal math uses integer arithmetic (scaled to 4 decimal places)
- * to avoid floating-point drift, matching the pattern prescribed in
- * CLAUDE.md for financial values.
+ * `result` is the exact answer, never a display of it: the arithmetic is done
+ * on the inputs' decimal values (`calculate-arithmetic.ts`), with no rounding
+ * of an input or an intermediate, so a model that feeds `result` into the next
+ * call gets the same answer as one call would. Display rounding (two places,
+ * half away from zero) happens only in `formattedResult`.
  */
 
 import type { DatedConversion } from "../../currencies/exchange-rate.service";
 import { todayYMD } from "../../common/date-utils";
-import { roundToDecimals, sumMoney } from "../../common/round.util";
+import { roundToDecimals } from "../../common/round.util";
+import {
+  exactAverage,
+  exactDifference,
+  exactQuotient,
+  exactSum,
+} from "./calculate-arithmetic";
+
+/** Places `formattedResult` shows; `result` is never rounded to them. */
+const DISPLAY_DECIMALS = 2;
 
 export type CalculateOperation =
   "percentage" | "difference" | "ratio" | "sum" | "average";
@@ -33,7 +44,9 @@ export interface CalculateInput {
 }
 
 export interface CalculateResult {
+  /** The exact answer, unrounded, safe to feed into another calculation. */
   result: number;
+  /** `result` for display: two places, half away from zero. */
   formattedResult: string;
   operation: CalculateOperation;
   label?: string;
@@ -148,7 +161,7 @@ export async function executeConversion(
 
   return {
     result: conversion.convertedAmount,
-    formattedResult: `${conversion.convertedAmount.toFixed(2)} ${conversion.toCurrency}`,
+    formattedResult: `${toDisplay(conversion.convertedAmount).toFixed(DISPLAY_DECIMALS)} ${conversion.toCurrency}`,
     operation: CONVERT_OPERATION,
     ...(label && { label }),
     amount: conversion.amount,
@@ -177,6 +190,9 @@ export function executeCalculation(
   if (values.length === 0) {
     return { error: "At least one value is required." };
   }
+  if (!values.every((value) => Number.isFinite(value))) {
+    return { error: "Every value must be a finite number." };
+  }
 
   let result: number;
 
@@ -191,7 +207,7 @@ export function executeCalculation(
       if (whole === 0) {
         return { error: "Cannot calculate percentage: divisor is zero." };
       }
-      result = roundToDecimals((part / whole) * 100, 2);
+      result = exactQuotient(part, whole, 100);
       break;
     }
 
@@ -201,7 +217,7 @@ export function executeCalculation(
           error: "Difference requires exactly 2 values: [a, b].",
         };
       }
-      result = roundToDecimals(values[0] - values[1], 2);
+      result = exactDifference(values[0], values[1]);
       break;
     }
 
@@ -212,12 +228,12 @@ export function executeCalculation(
       if (values[1] === 0) {
         return { error: "Cannot calculate ratio: divisor is zero." };
       }
-      result = roundToDecimals(values[0] / values[1], 2);
+      result = exactQuotient(values[0], values[1]);
       break;
     }
 
     case "sum": {
-      result = roundToDecimals(sumMoney(values), 2);
+      result = exactSum(values);
       break;
     }
 
@@ -225,7 +241,7 @@ export function executeCalculation(
       if (values.length === 0) {
         return { error: "Average requires at least one value." };
       }
-      result = roundToDecimals(sumMoney(values) / values.length, 2);
+      result = exactAverage(values);
       break;
     }
 
@@ -238,13 +254,19 @@ export function executeCalculation(
   return { result, formattedResult, operation, ...(label && { label }) };
 }
 
+/** `value` at the display precision; a rounded `-0` reads as `0`. */
+function toDisplay(value: number): number {
+  return roundToDecimals(value, DISPLAY_DECIMALS) || 0;
+}
+
 function formatResult(value: number, operation: CalculateOperation): string {
+  const shown = toDisplay(value);
   switch (operation) {
     case "percentage":
-      return `${value}%`;
+      return `${shown}%`;
     case "ratio":
-      return `${value}:1`;
+      return `${shown}:1`;
     default:
-      return value.toFixed(2);
+      return shown.toFixed(DISPLAY_DECIMALS);
   }
 }

@@ -25,17 +25,27 @@ describe("executeCalculation", () => {
       });
     });
 
-    it("rounds to 2 decimal places", () => {
+    it("rounds only the display: result keeps the full quotient", () => {
       const result = executeCalculation({
         operation: "percentage",
         values: [1, 3],
       });
 
       expect(result).toEqual({
-        result: 33.33,
+        result: 33.333333333333336,
         formattedResult: "33.33%",
         operation: "percentage",
       });
+    });
+
+    it("works on the decimal values, not their binary doubles", () => {
+      // (0.07 / 0.1) * 100 is 70.00000000000001 in floats.
+      const result = executeCalculation({
+        operation: "percentage",
+        values: [0.07, 0.1],
+      });
+
+      expect(result).toMatchObject({ result: 70, formattedResult: "70%" });
     });
 
     it("returns error when divisor is zero", () => {
@@ -101,7 +111,7 @@ describe("executeCalculation", () => {
       });
     });
 
-    it("rounds a cent midpoint half away from zero, like roundToDecimals", () => {
+    it("displays a cent midpoint half away from zero, like roundToDecimals", () => {
       // 1.005 * 100 is 100.49999999999999 in binary, so the local
       // Math.round(x * 100) / 100 this tool once had answered 1.00.
       const result = executeCalculation({
@@ -109,7 +119,38 @@ describe("executeCalculation", () => {
         values: [1.005, 0],
       });
 
-      expect(result).toMatchObject({ result: 1.01, formattedResult: "1.01" });
+      expect(result).toMatchObject({ result: 1.005, formattedResult: "1.01" });
+    });
+
+    it("displays a negative cent midpoint half away from zero", () => {
+      const result = executeCalculation({
+        operation: "difference",
+        values: [0, 1.005],
+      });
+
+      expect(result).toMatchObject({
+        result: -1.005,
+        formattedResult: "-1.01",
+      });
+    });
+
+    it("is exact where floats drift", () => {
+      // 0.3 - 0.1 is 0.19999999999999998 in floats.
+      const result = executeCalculation({
+        operation: "difference",
+        values: [0.3, 0.1],
+      });
+
+      expect(result).toMatchObject({ result: 0.2, formattedResult: "0.20" });
+    });
+
+    it("never displays a sub-cent negative as -0.00", () => {
+      const result = executeCalculation({
+        operation: "difference",
+        values: [0, 0.001],
+      });
+
+      expect(result).toMatchObject({ result: -0.001, formattedResult: "0.00" });
     });
 
     it("returns error with fewer than 2 values", () => {
@@ -132,9 +173,21 @@ describe("executeCalculation", () => {
       });
 
       expect(result).toEqual({
-        result: 1.67,
+        result: 1.6666666666666667,
         formattedResult: "1.67:1",
         operation: "ratio",
+      });
+    });
+
+    it("returns the unrounded ratio (Discussion #2136)", () => {
+      const result = executeCalculation({
+        operation: "ratio",
+        values: [1.2345, 1],
+      });
+
+      expect(result).toMatchObject({
+        result: 1.2345,
+        formattedResult: "1.23:1",
       });
     });
 
@@ -203,6 +256,35 @@ describe("executeCalculation", () => {
       });
     });
 
+    it("does not round the inputs or the total (Discussion #2136)", () => {
+      // sumMoney once rounded each input to 4 places and the tool then the
+      // total to 2, so this answered 0.01 while [0.00492, 0] as a
+      // difference answered 0: one value, two answers.
+      const sum = executeCalculation({
+        operation: "sum",
+        values: [0.00246, 0.00246],
+      });
+      const difference = executeCalculation({
+        operation: "difference",
+        values: [0.00492, 0],
+      });
+
+      expect(sum).toMatchObject({ result: 0.00492, formattedResult: "0.00" });
+      expect(difference).toMatchObject({
+        result: 0.00492,
+        formattedResult: "0.00",
+      });
+    });
+
+    it("keeps eight-place amounts exact", () => {
+      const result = executeCalculation({
+        operation: "sum",
+        values: [0.00000001, 0.00002499, 1e-9],
+      });
+
+      expect(result).toMatchObject({ result: 0.000025001 });
+    });
+
     it("handles large values", () => {
       const result = executeCalculation({
         operation: "sum",
@@ -241,6 +323,30 @@ describe("executeCalculation", () => {
         result: 1.5,
         formattedResult: "1.50",
         operation: "average",
+      });
+    });
+
+    it("averages the exact sum, with no intermediate rounding", () => {
+      const result = executeCalculation({
+        operation: "average",
+        values: [0.00246, 0.00246],
+      });
+
+      expect(result).toMatchObject({
+        result: 0.00246,
+        formattedResult: "0.00",
+      });
+    });
+
+    it("keeps a repeating mean at double precision", () => {
+      const result = executeCalculation({
+        operation: "average",
+        values: [0.1, 0.1, 0.2],
+      });
+
+      expect(result).toMatchObject({
+        result: 0.13333333333333333,
+        formattedResult: "0.13",
       });
     });
   });
@@ -289,6 +395,17 @@ describe("executeCalculation", () => {
 
       expect(result).toEqual({
         error: "At least one value is required.",
+      });
+    });
+
+    it("returns error for a non-finite value", () => {
+      const result = executeCalculation({
+        operation: "sum",
+        values: [1, Number.NaN],
+      });
+
+      expect(result).toEqual({
+        error: "Every value must be a finite number.",
       });
     });
 

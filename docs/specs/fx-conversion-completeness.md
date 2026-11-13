@@ -65,7 +65,11 @@ interface FxTotal {
 
 `FxAggregate` (`backend/src/common/fx-aggregate.ts`) accumulates this. Callers
 add signed amounts and read the quadruple at the end; they never branch on `null`
-themselves, which is what kept the old code's `?? amount` out of sight.
+themselves, which is what kept the old code's `?? amount` out of sight. Each
+component is rounded to four places half away from zero by `roundMoney` before
+it is accumulated, so `-0.00005` adds `-0.0001` exactly as `roundMoney` answers
+it; a bare `Math.round(x * 10000)` rounded a negative midpoint toward zero
+(Discussion #2136).
 
 **A component can go missing for two reasons, and only one of them has a
 currency to blame.** A missing *rate* is a fact about a pair, and naming it
