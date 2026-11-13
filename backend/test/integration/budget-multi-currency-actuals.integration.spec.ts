@@ -291,7 +291,11 @@ describe("budget actuals across currencies (integration)", () => {
     );
 
     // The CAD part only, and said to be partial.
-    expect(trend[0]).toMatchObject({ actual: 230, valuationComplete: false });
+    expect(trend[0]).toMatchObject({
+      actual: 230,
+      valuationComplete: false,
+      missingRatePairs: ["JPY->CAD"],
+    });
     const series = (id: string) =>
       categoryTrend.find((s) => s.categoryId === id)?.data[0];
     expect(series(groceriesId)).toMatchObject({

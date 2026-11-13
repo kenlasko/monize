@@ -21,6 +21,11 @@ export interface BudgetTrendPoint {
    * frozen actuals carry no completeness (residual of A26-H12).
    */
   valuationComplete?: boolean;
+  /**
+   * `"JPY->CAD"` for each pair with no rate behind a partial figure; empty
+   * while complete, absent where `valuationComplete` is.
+   */
+  missingRatePairs?: string[];
 }
 
 export interface CategoryTrendPoint {
@@ -42,8 +47,9 @@ export interface CategoryTrendSeries {
     actual: number;
     variance: number;
     percentUsed: number;
-    /** As `BudgetTrendPoint.valuationComplete`. */
+    /** As `BudgetTrendPoint.valuationComplete` and `missingRatePairs`. */
     valuationComplete?: boolean;
+    missingRatePairs?: string[];
   }>;
 }
 

@@ -26,6 +26,21 @@ import { BudgetCategory } from "./entities/budget-category.entity";
  * budget's currency, clamped at zero as a whole so a net-refund month shows
  * no spending. `complete` is false while a line had a row with no rate.
  */
+/**
+ * Whether one category's figure in `spending` is complete and, when it is not,
+ * the pairs with no rate, so the reader learns what to add.
+ */
+function lineCompleteness(
+  spending: CategorySpending,
+  categoryId: string,
+): { valuationComplete: boolean; missingRatePairs: string[] } {
+  const complete = !spending.incompleteCategoryIds.has(categoryId);
+  return {
+    valuationComplete: complete,
+    missingRatePairs: complete ? [] : spending.missingRatePairs,
+  };
+}
+
 function netExpenseActual(
   lines: readonly BudgetCategory[],
   spending: CategorySpending,
@@ -96,10 +111,12 @@ export class BudgetTrendReportsService {
       const expenseLines = (budget.categories || []).filter(
         (bc) => !bc.isIncome,
       );
-      const current = netExpenseActual(
+      const currentSpending = await this.periodSpending(
+        userId,
         expenseLines,
-        await this.periodSpending(userId, expenseLines, currentPeriod),
+        currentPeriod,
       );
+      const current = netExpenseActual(expenseLines, currentSpending);
       const budgeted = Number(currentPeriod.totalBudgeted) || 0;
       const variance = current.actual - budgeted;
       const percentUsed =
@@ -114,6 +131,9 @@ export class BudgetTrendReportsService {
         variance: roundMoney(variance),
         percentUsed,
         valuationComplete: current.complete,
+        missingRatePairs: current.complete
+          ? []
+          : currentSpending.missingRatePairs,
       });
     }
 
@@ -195,11 +215,13 @@ export class BudgetTrendReportsService {
         const budgeted = Number(pc.budgetedAmount) || 0;
         let actual = Number(pc.actualAmount) || 0;
         // A closed period's frozen actual carries no completeness either way.
-        let valuationComplete: boolean | undefined;
+        let completeness:
+          | { valuationComplete: boolean; missingRatePairs: string[] }
+          | undefined;
 
         if (openSpending) {
           actual = Math.max(-(openSpending.spendingMap.get(catId) ?? 0), 0);
-          valuationComplete = !openSpending.incompleteCategoryIds.has(catId);
+          completeness = lineCompleteness(openSpending, catId);
         }
 
         const variance = actual - budgeted;
@@ -212,7 +234,7 @@ export class BudgetTrendReportsService {
           actual: roundMoney(actual),
           variance: roundMoney(variance),
           percentUsed,
-          ...(valuationComplete === undefined ? {} : { valuationComplete }),
+          ...(completeness ?? {}),
         });
       }
     }
@@ -366,7 +388,9 @@ export class BudgetTrendReportsService {
           actual: roundMoney(actual),
           variance: roundMoney(variance),
           percentUsed,
-          valuationComplete: !spending?.incompleteCategoryIds.has(catId),
+          ...(spending
+            ? lineCompleteness(spending, catId)
+            : { valuationComplete: true, missingRatePairs: [] }),
         });
       }
 
@@ -439,6 +463,8 @@ export class BudgetTrendReportsService {
         variance: roundMoney(variance),
         percentUsed,
         valuationComplete: complete,
+        missingRatePairs:
+          complete || !spending ? [] : spending.missingRatePairs,
       });
     }
 

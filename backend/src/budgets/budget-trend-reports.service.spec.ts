@@ -457,6 +457,8 @@ describe("BudgetTrendReportsService", () => {
 
       expect(result[1].actual).toBe(400);
       expect(result[1].valuationComplete).toBe(false);
+      // The reader is told which rate to add.
+      expect(result[1].missingRatePairs).toEqual(["JPY->USD"]);
     });
 
     it("should handle zero budgeted in open period without division error", async () => {
@@ -667,7 +669,9 @@ describe("BudgetTrendReportsService", () => {
       const currentMonth = result[result.length - 1];
       expect(currentMonth.actual).toBe(250);
       expect(currentMonth.valuationComplete).toBe(false);
+      expect(currentMonth.missingRatePairs).toEqual(["JPY->USD"]);
       expect(result[0].valuationComplete).toBe(true);
+      expect(result[0].missingRatePairs).toEqual([]);
     });
 
     it("should compute live trend including transfer accounts", async () => {
@@ -1009,6 +1013,9 @@ describe("BudgetTrendReportsService", () => {
       expect(cat2CurrentMonth.actual).toBe(180);
       expect(cat2CurrentMonth.budgeted).toBe(300);
       expect(cat2CurrentMonth.valuationComplete).toBe(false);
+      expect(cat2CurrentMonth.missingRatePairs).toEqual(["JPY->USD"]);
+      // cat-1 converted whole, so the pair is not laid at its door.
+      expect(cat1CurrentMonth.missingRatePairs).toEqual([]);
     });
 
     it("should display parent:child name for categories with parents in live mode", async () => {
