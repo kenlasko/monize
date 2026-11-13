@@ -270,7 +270,11 @@ with no such transfer `no-history`.
 `transfer-estimate-floor.ts`, pure; the destination's figures are read by
 `loadTransferDestinations` through the one ledger spelling
 (`ledger-balance.sql.ts`), as of a date, signed as stored (a card in debt is
-negative). "Owes" is the negated balance, zero for an account holding money.
+negative). "Owes" is the negated balance as of today less every credit already
+entered with a later date, zero for an account holding money: posting an
+occurrence early dates it on its due date, and that payment has settled what
+it pays although today's balance does not hold it yet. A charge dated later is
+not owed yet.
 
 **Statement mode**: a `MONTHLY` transfer into a `CREDIT_CARD` whose statement
 settlement day and due day are both set. The settlement day is the last day of
@@ -280,7 +284,7 @@ one after:
 
 | Occurrence due | Pays | Raised to |
 | --- | --- | --- |
-| after `S`, on or before `S'` | the closed statement | its remainder: owed at `S` less the credits (payments, refunds) dated after `S` |
+| after `S`, on or before `S'` | the closed statement | its remainder: owed at `S` less the credits (payments, refunds) dated after `S`, later dates included |
 | after `S'`, on or before `S''` | the open cycle | owed today less that remainder |
 | any other | | not raised |
 

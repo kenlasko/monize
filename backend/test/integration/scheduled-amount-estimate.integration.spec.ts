@@ -313,6 +313,26 @@ describe("Scheduled amount estimate (integration)", () => {
       );
       expect(estimatedAmountFor(raised, next)).toBe(-2200);
       expect(estimatedAmountFor(raised, addMonthsClamped(next, 1))).toBe(-1000);
+
+      // A payment posted ahead of its date has paid its share: 2200 owed
+      // today, 1500 of it paid by a transfer dated next month.
+      await insertTransfer(next, 1500, line.id);
+      const paidAhead = await withUserContext(userId, () =>
+        estimates.estimateFor(userId, {
+          payeeId: null,
+          categoryId: null,
+          currencyCode: "USD",
+          transfer: {
+            accountId,
+            transferAccountId: line.id,
+            frequency: "MONTHLY",
+            nextOccurrenceDueDate: addMonthsClamped(next, 1),
+          },
+        }),
+      );
+      expect(estimatedAmountFor(paidAhead, addMonthsClamped(next, 1))).toBe(
+        -1000,
+      );
     });
 
     it("reads only the transfers out of the source, however large the ones back", async () => {

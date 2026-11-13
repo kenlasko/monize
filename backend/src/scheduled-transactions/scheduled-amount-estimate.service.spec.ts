@@ -250,6 +250,7 @@ describe("ScheduledAmountEstimateService", () => {
       account?: Record<string, unknown> | null;
       balances?: Record<string, number>;
       credits?: number;
+      creditsAhead?: number;
       history?: ReturnType<typeof transferRow>[];
     }) => {
       manager.query.mockImplementation(async (sql: string) => {
@@ -263,9 +264,13 @@ describe("ScheduledAmountEstimateService", () => {
             balance: String(b),
           }));
         }
-        if (sql.includes("AS credits")) {
+        if (sql.includes("AS credits_since")) {
           return [
-            { account_id: "acc-card", credits: String(opts.credits ?? 0) },
+            {
+              account_id: "acc-card",
+              credits_since: String(opts.credits ?? 0),
+              credits_ahead: String(opts.creditsAhead ?? 0),
+            },
           ];
         }
         if (sql.includes("linked_transaction_id")) {
@@ -360,11 +365,34 @@ describe("ScheduledAmountEstimateService", () => {
 
       expect(estimatedAmountFor(estimate, "2026-11-26")).toBe(-3456.78);
       expect(estimatedAmountFor(estimate, "2026-12-26")).toBe(-2000);
-      expect(
-        manager.query.mock.calls.some(([sql]) =>
-          String(sql).includes("AS credits"),
-        ),
-      ).toBe(false);
+      // With no statement, credits are read from today on.
+      const credits = manager.query.mock.calls.find(([sql]) =>
+        String(sql).includes("AS credits_since"),
+      )!;
+      expect(credits[1]).toEqual(["user-1", ["acc-card"], [NOV_19], NOV_19]);
+    });
+
+    it("counts a payment posted ahead of its date against the debt", async () => {
+      // 3456.78 owed today; 3000 of it paid by a transfer dated next week.
+      ledger({
+        account: {
+          ...cardRow,
+          account_type: "LINE_OF_CREDIT",
+          statement_settlement_day: null,
+          statement_due_day: null,
+        },
+        balances: { [NOV_19]: -3456.78 },
+        creditsAhead: 3000,
+      });
+
+      const estimate = await service.estimateFor(
+        "user-1",
+        transferBasis(),
+        NOV_19,
+      );
+
+      // 456.78 left, under the baseline.
+      expect(estimatedAmountFor(estimate, "2026-11-26")).toBe(-2000);
     });
 
     it("reads no floor for an account the user does not own", async () => {

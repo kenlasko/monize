@@ -89,8 +89,8 @@ interface RawDestinationRow {
 
 /**
  * Each of the user's accounts in `accountIds` with its ledger: the balance
- * today, and for a card with both statement days the balance at the closed
- * statement and the credits since. A balance is the one ledger spelling
+ * today and the credits dated after it, and for a card with both statement
+ * days the balance at the closed statement and the credits since. A balance is the one ledger spelling
  * (`ledger-balance.sql.ts`), so it is the figure the account shows as of that
  * date. An account the user does not own is absent: no floor is read for it.
  */
@@ -142,35 +142,46 @@ export async function loadTransferDestinations(
         GROUP BY a.id, a.opening_balance, d.as_of`,
       [userId, asOf.map((p) => p.accountId), asOf.map((p) => p.date)],
     );
-  const credits: { account_id: string; credits: string }[] =
-    lastSettlementOf.size === 0
-      ? []
-      : await m.query(
-          `SELECT d.account_id, COALESCE(SUM(t.amount), 0) AS credits
-             FROM unnest($2::uuid[], $3::date[]) AS d(account_id, after_date)
-             LEFT JOIN transactions t ON t.account_id = d.account_id
-              AND t.user_id = $1
-              AND ${LEDGER_MOVEMENT_PREDICATE}
-              AND t.amount > 0
-              AND t.transaction_date > d.after_date
-              AND t.transaction_date <= $4
-            GROUP BY d.account_id`,
-          [
-            userId,
-            [...lastSettlementOf.keys()],
-            [...lastSettlementOf.values()],
-            today,
-          ],
-        );
+  // Credits are counted whenever they are dated: a payment posted early is
+  // dated on its due date, after today, and has already settled what it pays.
+  // For a card, those after its closed statement; for any account, those
+  // after today, which today's balance does not hold yet.
+  const creditsFrom = accounts.map((row) => ({
+    accountId: row.id,
+    after: lastSettlementOf.get(row.id) ?? today,
+  }));
+  const credits: {
+    account_id: string;
+    credits_since: string;
+    credits_ahead: string;
+  }[] = await m.query(
+    `SELECT d.account_id,
+            COALESCE(SUM(t.amount) FILTER (WHERE t.transaction_date > d.after_date), 0)
+              AS credits_since,
+            COALESCE(SUM(t.amount) FILTER (WHERE t.transaction_date > $4), 0)
+              AS credits_ahead
+       FROM unnest($2::uuid[], $3::date[]) AS d(account_id, after_date)
+       LEFT JOIN transactions t ON t.account_id = d.account_id
+        AND t.user_id = $1
+        AND ${LEDGER_MOVEMENT_PREDICATE}
+        AND t.amount > 0
+        AND t.transaction_date > LEAST(d.after_date, $4::date)
+      GROUP BY d.account_id`,
+    [
+      userId,
+      creditsFrom.map((c) => c.accountId),
+      creditsFrom.map((c) => c.after),
+      today,
+    ],
+  );
 
   const balanceAt = new Map(
     balances.map((b) => [`${b.account_id}|${b.as_of}`, Number(b.balance)]),
   );
-  const creditsOf = new Map(
-    credits.map((c) => [c.account_id, Number(c.credits)]),
-  );
+  const creditsOf = new Map(credits.map((c) => [c.account_id, c]));
   for (const row of accounts) {
     const lastSettlement = lastSettlementOf.get(row.id) ?? null;
+    const rowCredits = creditsOf.get(row.id);
     result.set(row.id, {
       facts: factsOf(row),
       currencyCode: row.currency_code,
@@ -179,7 +190,10 @@ export async function loadTransferDestinations(
         balanceAtLastSettlement: lastSettlement
           ? (balanceAt.get(`${row.id}|${lastSettlement}`) ?? 0)
           : null,
-        creditsSinceLastSettlement: creditsOf.get(row.id) ?? 0,
+        creditsSinceLastSettlement: lastSettlement
+          ? Number(rowCredits?.credits_since ?? 0)
+          : 0,
+        creditsAfterToday: Number(rowCredits?.credits_ahead ?? 0),
       },
     });
   }

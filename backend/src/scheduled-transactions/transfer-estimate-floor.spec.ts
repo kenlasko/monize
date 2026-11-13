@@ -44,12 +44,14 @@ describe("transfer-estimate-floor", () => {
       balanceToday,
       balanceAtLastSettlement: -1000,
       creditsSinceLastSettlement: 1000,
+      creditsAfterToday: 0,
     });
     // The Nov 5 statement owed 2700.
     const afterNovemberClose = (balanceToday: number, credits = 0) => ({
       balanceToday,
       balanceAtLastSettlement: -2700,
       creditsSinceLastSettlement: credits,
+      creditsAfterToday: 0,
     });
 
     it.each([
@@ -119,6 +121,27 @@ describe("transfer-estimate-floor", () => {
       ).toBe(-3100);
     });
 
+    it("counts a payment posted ahead of its date as paid", () => {
+      // Nov 19: the Nov 26 occurrence is posted early, dated Nov 26, so today's
+      // balance does not hold it yet. Dec 26 is what it would be once paid.
+      const ledger = {
+        balanceToday: -4800,
+        balanceAtLastSettlement: -2700,
+        creditsSinceLastSettlement: 2700,
+        creditsAfterToday: 2700,
+      };
+      expect(estimateOn("2026-11-19", ledger, "2026-12-26", "2026-12-26")).toBe(
+        -2100,
+      );
+      const balanceFloors = transferBalanceFloors(
+        { mode: "balance" },
+        { ...ledger, balanceAtLastSettlement: null },
+        "2026-12-26",
+        4,
+      );
+      expect(balanceFloors[0].owed).toBe(2100);
+    });
+
     it("places the cycle by the settlement dates around today", () => {
       expect(transferFloorPlan(card, "MONTHLY", "2026-11-05")).toEqual({
         mode: "statement",
@@ -183,6 +206,7 @@ describe("transfer-estimate-floor", () => {
           balanceToday: -2600.5,
           balanceAtLastSettlement: null,
           creditsSinceLastSettlement: 0,
+          creditsAfterToday: 0,
         },
         "2026-11-26",
         4,
@@ -206,6 +230,7 @@ describe("transfer-estimate-floor", () => {
           balanceToday: -2600.5,
           balanceAtLastSettlement: null,
           creditsSinceLastSettlement: 0,
+          creditsAfterToday: 0,
         },
         "2026-10-26",
         4,
@@ -231,6 +256,7 @@ describe("transfer-estimate-floor", () => {
               balanceToday: -300000,
               balanceAtLastSettlement: null,
               creditsSinceLastSettlement: 0,
+              creditsAfterToday: 0,
             },
             "2026-11-26",
             4,
@@ -246,6 +272,7 @@ describe("transfer-estimate-floor", () => {
           balanceToday: 5000,
           balanceAtLastSettlement: null,
           creditsSinceLastSettlement: 0,
+          creditsAfterToday: 0,
         },
         "2026-11-26",
         4,

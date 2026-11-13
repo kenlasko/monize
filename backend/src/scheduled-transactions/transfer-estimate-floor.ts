@@ -68,10 +68,16 @@ export interface TransferDestinationLedger {
    */
   balanceAtLastSettlement: number | null;
   /**
-   * The sum of the credits (payments, refunds) dated after `lastSettlement`
-   * and on or before today, >= 0; 0 when the plan reads none.
+   * The sum of the credits (payments, refunds) dated after `lastSettlement`,
+   * a later date than today's included, >= 0; 0 when the plan reads none.
    */
   creditsSinceLastSettlement: number;
+  /**
+   * The sum of the credits dated after today, >= 0: a payment posted early
+   * carries its due date, and has settled what it pays although today's
+   * balance does not hold it yet.
+   */
+  creditsAfterToday: number;
 }
 
 /**
@@ -155,14 +161,17 @@ export function transferFloorPlan(
 /**
  * The floors of one schedule, in the destination's currency.
  *
+ * "Owed" counts every credit already entered, a future-dated one included:
+ * a payment posted ahead of its date has paid what it pays.
+ *
  * Statement mode, with S the closed statement's settlement date:
  *  - an occurrence due after S through the open settlement pays the closed
  *    statement: what it still owes, the debt at S less the credits since;
- *  - an occurrence due in the cycle after pays the open cycle: today's debt
+ *  - an occurrence due in the cycle after pays the open cycle: what is owed
  *    less what the closed statement still owes.
  *
  * Balance mode: the next occurrence, the one due on `nextOccurrenceDueDate`
- * (where an override moved it, if one did), is raised to today's debt.
+ * (where an override moved it, if one did), is raised to what is owed.
  *
  * @param decimals the destination currency's money precision.
  */
@@ -173,7 +182,10 @@ export function transferBalanceFloors(
   decimals: number,
 ): EstimateBalanceFloor[] {
   if (plan.mode === "none") return [];
-  const owedToday = Math.max(0, roundMoney(-ledger.balanceToday, decimals));
+  const owedToday = Math.max(
+    0,
+    roundMoney(-ledger.balanceToday - ledger.creditsAfterToday, decimals),
+  );
   if (plan.mode === "balance" || ledger.balanceAtLastSettlement === null) {
     return [
       {
