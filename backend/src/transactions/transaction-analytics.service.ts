@@ -556,7 +556,13 @@ export class TransactionAnalyticsService {
       // Converting splits each foreign bucket by day and own rate in this same
       // read, so the conversion needs no second pass over the filtered rows.
       if (reporting)
-        splitByRateBasis(queryBuilder, TRANSACTION_RATE_BASIS, reporting);
+        splitByRateBasis(
+          queryBuilder,
+          excludeTransfers
+            ? TRANSACTION_OWN_RATE_BASIS
+            : TRANSACTION_RATE_BASIS,
+          reporting,
+        );
 
       const rows: RawGroupRow[] = await queryBuilder.getRawMany();
 
@@ -2587,12 +2593,20 @@ const DAY_TX_SQL = "TO_CHAR(transaction.transactionDate, 'YYYY-MM-DD')";
 /** A grouped raw row: its label columns, its currency and its day. */
 type RawGroupRow = Record<string, any>;
 
-/** {@link splitByRateBasis}'s columns for the `transaction` alias. */
-const TRANSACTION_RATE_BASIS: RateBasisColumns = {
+/**
+ * {@link splitByRateBasis}'s columns for the `transaction` alias, for a read
+ * that keeps no transfer legs.
+ */
+const TRANSACTION_OWN_RATE_BASIS: RateBasisColumns = {
   currency: "transaction.currencyCode",
   date: "transaction.transactionDate",
   originalCurrency: "transaction.originalCurrencyCode",
   exchangeRate: "transaction.exchangeRate",
+};
+
+/** The same, for a read whose rows can be transfer legs. */
+const TRANSACTION_RATE_BASIS: RateBasisColumns = {
+  ...TRANSACTION_OWN_RATE_BASIS,
   transferLegs: { transactionAlias: "transaction" },
 };
 
