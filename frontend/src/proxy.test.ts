@@ -596,3 +596,60 @@ describe('proxy.ts share branch placement', () => {
     expect(shareBranch).toBeLessThan(firstBodyRead);
   });
 });
+
+describe('proxy Server Action refusal', () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    fetchMock.mockReset();
+  });
+
+  it('answers a POST naming a Server Action with 404 and the not-found marker', async () => {
+    const response = await proxy(
+      makeRequest('/dashboard', {
+        method: 'POST',
+        headers: { 'next-action': 'x', cookie: 'auth_token=abc' },
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get('x-nextjs-action-not-found')).toBe('1');
+    expect(response.headers.get('x-middleware-next')).toBeNull();
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+  });
+
+  it('refuses one on a public path and at the root, never forwarding it', async () => {
+    for (const path of ['/', '/login']) {
+      const response = await proxy(
+        makeRequest(path, { method: 'POST', headers: { 'Next-Action': '7f00' } }),
+      );
+      expect(response.status).toBe(404);
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('leaves a GET carrying the header on its ordinary path', async () => {
+    const response = await proxy(
+      makeRequest('/login', { headers: { 'next-action': 'x' } }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('x-middleware-next')).toBe('1');
+  });
+
+  it('holds while the app defines no Server Action', () => {
+    const sources = import.meta.glob(
+      ['/src/**/*.{ts,tsx}', '!/src/**/*.test.{ts,tsx}'],
+      { query: '?raw', eager: true, import: 'default' },
+    ) as Record<string, string>;
+    const directive = /^\s*['"]use server['"]/m;
+
+    expect(Object.keys(sources).length).toBeGreaterThan(100);
+    expect(Object.keys(sources).filter((file) => directive.test(sources[file]))).toEqual([]);
+  });
+});

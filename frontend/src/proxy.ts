@@ -19,6 +19,7 @@ import {
 } from "@/lib/proxy-body-limit";
 
 const logger = createLogger("Proxy");
+const SERVER_ACTION_HEADER = "next-action";
 let backendConnected = false;
 
 // Security headers that mirror next.config.js. Next's `headers()` config is
@@ -164,6 +165,20 @@ export async function proxy(request: NextRequest) {
   // Let Next.js API routes handle health checks directly (no proxy)
   if (pathname.startsWith("/api/v1/health/")) {
     return NextResponse.next();
+  }
+
+  // This app defines no Server Actions (no "use server" anywhere in src/), so a
+  // request naming one is a scanner probing for them or a client of some other
+  // deployment. Let through, every one reached Next's action handler, which
+  // logged "Failed to find Server Action" at WARN with a full stack (issue
+  // #2156). Answered the way Next answers an unknown action -- 404 with
+  // `x-nextjs-action-not-found`, which a genuine stale client's router reads as
+  // "reload the page" -- without the log line. `proxy.test.ts` fails if a
+  // "use server" module is ever added while this refusal stands.
+  if (request.method === "POST" && request.headers.has(SERVER_ACTION_HEADER)) {
+    const response = new NextResponse(null, { status: 404 });
+    response.headers.set("x-nextjs-action-not-found", "1");
+    return applySecurityHeaders(response);
   }
 
   // A share the service worker did not catch (evicted worker, or a browser that
