@@ -258,7 +258,7 @@ Create your own reports with flexible filtering, grouping, and visualization opt
 | | **Description (optional)**, **Icon**, **Background Color** | How the report's card looks on the Reports page |
 | **Visualization** | **View Type** | Table, Line Chart, Bar Chart, or Pie Chart |
 | | **Group By** | No Grouping, Category, Payee, Year, Month, Week, Day, or Tag |
-| **Table Configuration** (Table only) | **Columns to Display** | Which columns the table shows |
+| **Table Configuration** (Table only) | **Columns to Display** | Which columns the table shows. In a list of individual transactions, **Amount (account currency)** shows each row's amount in its own account's currency, unconverted, beside **Amount** in your default currency; it has no total, since its rows can be in several currencies |
 | | **Sort By** / **Sort Direction** | Default or any column, Ascending or Descending |
 | **Time Period** | **Timeframe** | Last 7 Days, Last 30 Days, Last Month, Last 3 Months, Last 6 Months, Last 12 Months, Last Year, Year to Date, or Custom Range (with **Start Date** and **End Date**) |
 | **Aggregation Options** | **Metric** | No Aggregation, Total Amount, Transaction Count, Average Amount, or Budget Variance |
