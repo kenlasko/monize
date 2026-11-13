@@ -29,6 +29,13 @@ const EXCLUDED: Record<string, Record<string, string>> = {
   frontend: {},
 };
 
+/**
+ * Kinds that ship something no container image has, so they quote no COPY:
+ * the PostgreSQL binaries (the containers use a postgres image) and the
+ * desktop's own files (`kind: "desktop"`, such as the parent-watch preload).
+ */
+const NO_DOCKERFILE_LINE = ["postgres", "desktop"];
+
 /** Build output and installed packages: not files in the repository. */
 const BUILT = ["backend/dist", "frontend/.next/", "@embedded-postgres/"];
 
@@ -155,18 +162,37 @@ describe("staging manifest", () => {
     ]);
   });
 
-  it("quotes a COPY line that is really in the Dockerfile", () => {
+  it("quotes a COPY line that is really in the Dockerfile, unless it ships what no container has", () => {
     const squash = (s: string) => s.replace(/\s+/g, " ");
     for (const entry of manifest.entries) {
       expect(entry.mirrors.length).toBeGreaterThan(10);
       const match = /^(backend|frontend)\/Dockerfile: (COPY .+?)(?: \(|$)/.exec(
         entry.mirrors,
       );
-      if (match) {
-        expect(squash(dockerfile(match[1]))).toContain(squash(match[2]));
+      if (NO_DOCKERFILE_LINE.includes(entry.kind ?? "copy")) {
+        expect({ to: entry.to, mirrors: entry.mirrors }).toEqual({
+          to: entry.to,
+          mirrors: expect.stringMatching(/^none: /),
+        });
       } else {
-        expect(entry.mirrors).toMatch(/^none: /);
+        // Every other entry is a layer file and must name its real COPY.
+        expect({ to: entry.to, quotes: match !== null }).toEqual({
+          to: entry.to,
+          quotes: true,
+        });
+        if (match !== null) {
+          expect(squash(dockerfile(match[1]))).toContain(squash(match[2]));
+        }
       }
+    }
+  });
+
+  it("stages desktop-only files outside the layer directories", () => {
+    const desktopOnly = manifest.entries.filter((e) => e.kind === "desktop");
+    expect(desktopOnly.map((e) => e.to)).toEqual(["shell/parent-watch.cjs"]);
+    for (const entry of desktopOnly) {
+      expect(entry.from).toMatch(/^desktop\//);
+      expect(entry.to).not.toMatch(/^(backend|frontend)(\/|$)/);
     }
   });
 

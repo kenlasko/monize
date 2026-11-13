@@ -13,6 +13,7 @@ import { fakeSpawner } from "../test-support/fake-process";
 import { flush, manualClock } from "../test-support/manual-clock";
 import { memoryLogger } from "../test-support/memory-logger";
 import { createSupervisor, SupervisorInput } from "./create-supervisor";
+import { describeCause } from "./types";
 
 const PORTS = { frontend: 4380, backend: 4381, postgres: 6433 };
 const SECRETS: PlainSecrets = {
@@ -24,6 +25,8 @@ const WINDOWS_PATHS: AppPaths = {
   resourcesDir: "C:\\Program Files\\Monize\\resources",
   data: dataPathsFor("C:\\Users\\a\\AppData\\Local\\Monize", "win32"),
 };
+const WINDOWS_PRELOAD =
+  "C:\\Program Files\\Monize\\resources\\shell\\parent-watch.cjs";
 const BASE_ENV = {
   SystemRoot: "C:\\Windows",
   DEMO_MODE: "true",
@@ -47,6 +50,8 @@ function setup(overrides: Partial<SupervisorInput> = {}) {
     execPath: "C:\\Program Files\\Monize\\Monize.exe",
     platform: "win32",
     spawn: spawner.spawn,
+    // Only the preload is looked for on disk; it is "there" unless a case says not.
+    fileExists: (path) => path.endsWith("parent-watch.cjs"),
     fetch: net.fetch,
     clock,
     ...overrides,
@@ -110,6 +115,35 @@ describe("createSupervisor", () => {
       ["dist/main.js", "C:\\Program Files\\Monize\\resources\\backend"],
       ["server.js", "C:\\Program Files\\Monize\\resources\\frontend"],
     ]);
+  });
+
+  it("starts every child, the one-shot steps included, behind the staged parent-watch preload", async () => {
+    const { boot, spawner } = setup();
+    await boot();
+
+    expect(spawner.processes).toHaveLength(4);
+    for (const spawned of spawner.processes) {
+      expect(spawned.args.slice(0, 2)).toEqual(["--require", WINDOWS_PRELOAD]);
+      expect(spawned.options.stdio).toEqual(["pipe", "pipe", "pipe"]);
+    }
+  });
+
+  it("fails the boot at its first child, naming the file, when the preload is missing", async () => {
+    const { input, journal, spawner } = setup({ fileExists: () => false });
+
+    const result = await createSupervisor(input).start();
+
+    expect(spawner.processes).toEqual([]);
+    expect(journal).toEqual(["postgres.start", "postgres.stop"]);
+    expect(result).toMatchObject({
+      outcome: "failed",
+      failure: {
+        step: "db-init",
+        cause: { kind: "spawn-error", code: "PARENT_WATCH_MISSING" },
+      },
+    });
+    if (result.outcome !== "failed") throw new Error("expected a failure");
+    expect(describeCause(result.failure.cause)).toContain(WINDOWS_PRELOAD);
   });
 
   it("gives each child exactly the environment env.ts composes, and nothing else from the parent", async () => {

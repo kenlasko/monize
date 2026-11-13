@@ -1,7 +1,18 @@
-import { FakeProcess, fakeSpawner } from "../test-support/fake-process";
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+
+import {
+  FAKE_PARENT_WATCH,
+  FAKE_PARENT_WATCH_DEPS,
+  FakeProcess,
+  fakeSpawner,
+} from "../test-support/fake-process";
 import { flush, manualClock } from "../test-support/manual-clock";
 import { memoryLogger } from "../test-support/memory-logger";
+import { REPO_PARENT_WATCH } from "../test-support/parent-watch-processes";
 import { ChildSpec, ChildStopError, startChild } from "./child";
+import { ParentWatchMissingError } from "./parent-watch";
 
 const SPEC: ChildSpec = {
   source: "backend",
@@ -23,6 +34,7 @@ function setup(configure: (process: FakeProcess) => void = () => undefined) {
   const logger = memoryLogger();
   const child = startChild(SPEC, {
     execPath: "/opt/monize/Monize",
+    ...FAKE_PARENT_WATCH_DEPS,
     logger,
     spawn: spawner.spawn,
     clock,
@@ -47,16 +59,52 @@ describe("startChild with a fake spawner", () => {
     const { process: spawned, child } = setup();
 
     expect(spawned.command).toBe("/opt/monize/Monize");
-    expect(spawned.args).toEqual(["dist/main.js"]);
+    // The parent-watch preload comes first, before the layer's own arguments.
+    expect(spawned.args).toEqual([
+      "--require",
+      FAKE_PARENT_WATCH,
+      "dist/main.js",
+    ]);
     // Exactly the composed environment: nothing merged in from the parent.
+    // stdin is a pipe: the one the preload watches.
     expect(spawned.options).toEqual({
       cwd: "/res/backend",
       env: { NODE_ENV: "production", ELECTRON_RUN_AS_NODE: "1" },
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true,
       shell: false,
     });
     expect(child.pid).toBe(spawned.pid);
+  });
+
+  it("refuses to start a child without the parent-watch preload, naming the file", async () => {
+    const spawner = fakeSpawner();
+    const logger = memoryLogger();
+    const child = startChild(SPEC, {
+      execPath: "/opt/monize/Monize",
+      parentWatch: "/res/shell/parent-watch.cjs",
+      fileExists: () => false,
+      logger,
+      spawn: spawner.spawn,
+    });
+
+    const exit = await child.exited;
+
+    expect(spawner.processes).toEqual([]);
+    expect(child.pid).toBeUndefined();
+    expect(exit.error).toBeInstanceOf(ParentWatchMissingError);
+    expect(exit.error?.code).toBe("PARENT_WATCH_MISSING");
+    expect(exit.error?.message).toContain("/res/shell/parent-watch.cjs");
+    expect(logger.messages("main").join("\n")).toMatch(/could not be started/);
+    await expect(child.stop()).resolves.toBeUndefined();
+  });
+
+  it("ignores an error on the stdin pipe, which it never writes to", async () => {
+    const { process: spawned, child } = setup();
+
+    spawned.stdin.emit("error", new Error("write EPIPE"));
+
+    expect(await settled(child.exited)).toBe(false);
   });
 
   it("logs stdout as info and stderr as warn under the child's source, line by line", async () => {
@@ -135,6 +183,7 @@ describe("startChild with a fake spawner", () => {
     const clock = manualClock();
     const child = startChild(SPEC, {
       execPath: "/opt/monize/Monize",
+      ...FAKE_PARENT_WATCH_DEPS,
       logger: memoryLogger(),
       clock,
       spawn: () => {
@@ -253,7 +302,11 @@ describe("startChild with a fake spawner", () => {
 
 describe("startChild with a real process", () => {
   const PARENT_ONLY = "MONIZE_CHILD_SPEC_PARENT_ONLY";
-  const real = (args: readonly string[], execPath = process.execPath) => {
+  const real = (
+    args: readonly string[],
+    execPath = process.execPath,
+    parentWatch = REPO_PARENT_WATCH,
+  ) => {
     const logger = memoryLogger();
     const child = startChild(
       {
@@ -262,7 +315,7 @@ describe("startChild with a real process", () => {
         cwd: __dirname,
         env: { MONIZE_CHILD_SPEC: "given" },
       },
-      { execPath, logger },
+      { execPath, parentWatch, logger },
     );
     return { child, logger };
   };
@@ -300,6 +353,24 @@ describe("startChild with a real process", () => {
     expect(exit.error?.code).toBe("ENOENT");
     expect(exit.code).toBeNull();
     await expect(child.stop()).resolves.toBeUndefined();
+  });
+
+  it("loads the parent-watch preload by absolute path, even one with spaces in it", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "monize child spec "));
+    try {
+      const preload = join(dir, "Program Files", "shell", "parent-watch.cjs");
+      mkdirSync(join(dir, "Program Files", "shell"), { recursive: true });
+      copyFileSync(REPO_PARENT_WATCH, preload);
+      const script =
+        "console.log(Object.keys(require.cache).filter((k) => k.endsWith('parent-watch.cjs')).join());";
+
+      const { child, logger } = real(["-e", script], process.execPath, preload);
+
+      await expect(child.exited).resolves.toEqual({ code: 0, signal: null });
+      expect(logger.messages("frontend")).toEqual([preload]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("stops a running process and resolves once it is gone", async () => {

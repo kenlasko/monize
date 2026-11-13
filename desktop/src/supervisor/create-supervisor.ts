@@ -15,13 +15,15 @@ import { createBootSupervisor, LayerTarget } from "./boot";
 import { ChildOptions, createChildLauncher, SpawnFn } from "./child";
 import { Clock } from "./clock";
 import { FRONTEND_HEALTH_PATH } from "./frontend";
+import { parentWatchPath } from "./parent-watch";
 import { BootOptions, PostgresRunner, Supervisor } from "./types";
 
 /**
  * The one call the Electron main process makes to get a supervisor: it turns
  * the bootstrap's result (`loadOrCreateConfig`) and the resolved paths into
- * the two child environments, the two working directories and the two health
- * URLs, and wires them to the state machine.
+ * the two child environments, the two working directories, the two health
+ * URLs and the path of the parent-watch preload, and wires them to the state
+ * machine.
  */
 
 export interface SupervisorInput {
@@ -40,6 +42,8 @@ export interface SupervisorInput {
   /** Decides the path flavour of the layer directories. Default: the host's. */
   readonly platform?: NodeJS.Platform;
   readonly spawn?: SpawnFn;
+  /** Whether a file exists; `fs.existsSync` unless a spec replaces it. */
+  readonly fileExists?: (path: string) => boolean;
   readonly fetch?: FetchLike;
   readonly clock?: Clock;
   readonly options?: Partial<BootOptions>;
@@ -92,8 +96,10 @@ export function createSupervisor(input: SupervisorInput): Supervisor {
     postgres: input.postgres,
     launch: createChildLauncher({
       execPath: input.execPath,
+      parentWatch: parentWatchPath(input.paths.resourcesDir, input.platform),
       logger,
       spawn: input.spawn,
+      fileExists: input.fileExists,
       clock: input.clock,
       options: input.childOptions,
     }),

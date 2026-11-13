@@ -9,7 +9,12 @@ import {
   SupervisorStatus,
 } from "../supervisor/types";
 import { FakeFetch, fakeFetch } from "./fake-fetch";
-import { FakeProcess, FakeSpawner, fakeSpawner } from "./fake-process";
+import {
+  FakeProcess,
+  FakeSpawner,
+  FAKE_PARENT_WATCH_DEPS,
+  fakeSpawner,
+} from "./fake-process";
 import { flush, ManualClock, manualClock } from "./manual-clock";
 import { MemoryLogger, memoryLogger } from "./memory-logger";
 
@@ -112,6 +117,7 @@ export function bootHarness(
     postgres,
     launch: createChildLauncher({
       execPath: "/opt/monize/Monize",
+      ...FAKE_PARENT_WATCH_DEPS,
       logger,
       spawn: spawner.spawn,
       clock,

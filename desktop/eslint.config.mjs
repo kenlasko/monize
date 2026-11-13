@@ -21,4 +21,13 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Preloads a child loads with `--require`: CommonJS, run by Node itself.
+    files: ["resources/**/*.cjs"],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: { require: "readonly", process: "readonly" },
+    },
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
 );

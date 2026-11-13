@@ -1,4 +1,8 @@
-import { fakeSpawner } from "../test-support/fake-process";
+import {
+  FAKE_PARENT_WATCH,
+  FAKE_PARENT_WATCH_DEPS,
+  fakeSpawner,
+} from "../test-support/fake-process";
 import { flush, manualClock } from "../test-support/manual-clock";
 import { memoryLogger } from "../test-support/memory-logger";
 import {
@@ -21,6 +25,7 @@ function setup() {
   const logger = memoryLogger();
   const launch = createChildLauncher({
     execPath: "/opt/monize/Monize",
+    ...FAKE_PARENT_WATCH_DEPS,
     logger,
     spawn: spawner.spawn,
     clock,
@@ -59,7 +64,12 @@ describe("runBackendOneShot", () => {
     await flush();
 
     const [spawned] = spawner.processes;
-    expect(spawned.args).toEqual(["dist/db-init.js"]);
+    // The one-shot steps carry the parent-watch prefix too.
+    expect(spawned.args).toEqual([
+      "--require",
+      FAKE_PARENT_WATCH,
+      "dist/db-init.js",
+    ]);
     expect(spawned.options.cwd).toBe("/res/backend");
     expect(spawned.options.env).toEqual({ DATABASE_NAME: "monize" });
     spawned.exit(0);
@@ -185,7 +195,11 @@ describe("startBackendServer", () => {
 
     const handle = startBackendServer(launch, RUNTIME);
 
-    expect(spawner.processes[0].args).toEqual([BACKEND_SERVER_SCRIPT]);
+    expect(spawner.processes[0].args).toEqual([
+      "--require",
+      FAKE_PARENT_WATCH,
+      BACKEND_SERVER_SCRIPT,
+    ]);
     expect(spawner.processes[0].options.cwd).toBe("/res/backend");
     expect(handle.pid).toBe(spawner.processes[0].pid);
   });

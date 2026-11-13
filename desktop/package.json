@@ -6,7 +6,7 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "lint": "eslint \"src/**/*.ts\" \"scripts/**/*.mjs\" --max-warnings=0",
+    "lint": "eslint \"src/**/*.ts\" \"scripts/**/*.mjs\" \"resources/**/*.cjs\" --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "jest && node --test \"scripts/**/*.test.mjs\"",
     "stage": "node scripts/stage.mjs",

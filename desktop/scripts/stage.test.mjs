@@ -53,6 +53,7 @@ function fixtureRepo() {
   write(root, "frontend/.next/static/chunks/c.js");
   write(root, "frontend/public/favicon.ico");
   write(root, "frontend/server-log-format.cjs");
+  write(root, "desktop/resources/parent-watch.cjs");
   return root;
 }
 
@@ -166,6 +167,7 @@ test("stage assembles the manifest layout from a fixture", () => {
     ".next/static/chunks/c.js",
     "frontend/public/favicon.ico",
     "frontend/server-log-format.cjs",
+    "shell/parent-watch.cjs",
   ]) {
     const file = rel.startsWith(".next")
       ? path.join(out, "frontend", rel)
@@ -324,4 +326,23 @@ test("the real manifest loads and rejects a malformed one", () => {
   const bad = path.join(tmp(), "m.json");
   fs.writeFileSync(bad, JSON.stringify({ entries: [{ from: "a", to: "b" }] }));
   assert.throws(() => loadManifest(bad), /"mirrors"/);
+});
+
+test("a desktop entry comes from desktop/ and stays out of the layers", () => {
+  const manifest = loadManifest(realManifest);
+  const desktop = manifest.entries.filter((e) => e.kind === "desktop");
+  assert.deepEqual(
+    desktop.map((e) => e.to),
+    ["shell/parent-watch.cjs"],
+  );
+  const entry = { kind: "desktop", from: "desktop/x.cjs", mirrors: "none: x" };
+  for (const bad of [
+    { ...entry, to: "backend/x.cjs" },
+    { ...entry, to: "frontend/x.cjs" },
+    { ...entry, from: "backend/x.cjs", to: "shell/x.cjs" },
+  ]) {
+    const file = path.join(tmp(), "m.json");
+    fs.writeFileSync(file, JSON.stringify({ entries: [bad] }));
+    assert.throws(() => loadManifest(file), /desktop entry/);
+  }
 });

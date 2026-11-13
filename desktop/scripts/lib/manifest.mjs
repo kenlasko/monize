@@ -1,5 +1,18 @@
 import fs from "node:fs";
 
+const KINDS = ["copy", "backend-deps", "help-images", "postgres", "desktop"];
+
+/**
+ * A desktop-owned file mirrors no Dockerfile line, so it must not land where
+ * a layer's files do: the layers stay what the containers run.
+ */
+function isDesktopOnly(entry) {
+  const top = entry.to.split("/")[0];
+  return (
+    entry.from.startsWith("desktop/") && top !== "backend" && top !== "frontend"
+  );
+}
+
 /** Reads and validates a staging manifest; throws on a malformed entry. */
 export function loadManifest(file) {
   const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
@@ -15,8 +28,13 @@ export function loadManifest(file) {
       }
     }
     const kind = entry.kind ?? "copy";
-    if (!["copy", "backend-deps", "help-images", "postgres"].includes(kind)) {
+    if (!KINDS.includes(kind)) {
       throw new Error(`${file}: unknown kind "${kind}" for ${entry.to}`);
+    }
+    if (kind === "desktop" && !isDesktopOnly(entry)) {
+      throw new Error(
+        `${file}: a desktop entry comes from desktop/ and stages outside backend/ and frontend/ (${entry.to})`,
+      );
     }
   }
   return manifest;
