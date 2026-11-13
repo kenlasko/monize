@@ -9,6 +9,8 @@ import {
   estimatedAmountFor,
 } from "@/scheduled-transactions/scheduled-amount-estimate.service";
 import { addMonthsClamped } from "@/common/recurrence";
+import { addDaysYMD } from "@/common/date-utils";
+import { computeStatementCycle } from "@/accounts/statement-cycle.util";
 import {
   cleanTables,
   createIntegrationModule,
@@ -177,5 +179,140 @@ describe("Scheduled amount estimate (integration)", () => {
     expect(occurrences.every((o) => o.amount === -90 && o.estimated)).toBe(
       true,
     );
+  });
+
+  describe("an estimated transfer (issue #2164)", () => {
+    /** A transfer from chequing into the card, both legs linked. */
+    const insertTransfer = async (
+      date: string,
+      amount: number,
+      cardId: string,
+      columns: Record<string, unknown> = {},
+    ) => {
+      const [{ id: from }] = await db.query(
+        `INSERT INTO transactions (user_id, account_id, transaction_date, amount,
+           currency_code, is_transfer, status)
+         VALUES ($1, $2, $3, $4, 'USD', true, $5) RETURNING id`,
+        [userId, accountId, date, -amount, columns.status ?? "UNRECONCILED"],
+      );
+      const [{ id: to }] = await db.query(
+        `INSERT INTO transactions (user_id, account_id, transaction_date, amount,
+           currency_code, is_transfer, status, linked_transaction_id)
+         VALUES ($1, $2, $3, $4, 'USD', true, $5, $6) RETURNING id`,
+        [userId, cardId, date, amount, columns.status ?? "UNRECONCILED", from],
+      );
+      await db.query(
+        `UPDATE transactions SET linked_transaction_id = $1 WHERE id = $2`,
+        [to, from],
+      );
+    };
+
+    it("matches the transfers into the card and raises the next cycles to its ledger", async () => {
+      const card = await createTestAccount(db, userId, {
+        name: "Card",
+        accountType: "CREDIT_CARD",
+        openingBalance: 0,
+        currentBalance: 0,
+        statementSettlementDay: 5,
+        statementDueDay: 26,
+      } as never);
+      const cycle = computeStatementCycle(5, null, today);
+      const lastSettlement = cycle.lastSettlementDate;
+      const following = computeStatementCycle(
+        5,
+        null,
+        addDaysYMD(cycle.nextSettlementDate, 1),
+      ).nextSettlementDate;
+
+      // History: three payments of 2000 into the card, one void, one into
+      // another account, all well before the closed statement.
+      await insertTransfer(monthsAgo(4), 2000, card.id);
+      await insertTransfer(monthsAgo(3), 2000, card.id);
+      await insertTransfer(monthsAgo(2), 2000, card.id);
+      await insertTransfer(monthsAgo(2), 9000, card.id, { status: "VOID" });
+      await insertTransfer(monthsAgo(2), 9000, otherAccountId);
+      // The card: 8700 charged before the close (2700 owed on the statement
+      // once the 6000 paid in is counted), 2100 since.
+      await insertTransaction(monthsAgo(5), -8700, { account_id: card.id });
+      await insertTransaction(addDaysYMD(lastSettlement, 1), -2100, {
+        account_id: card.id,
+      });
+
+      const estimate = await withUserContext(userId, () =>
+        estimates.estimateFor(userId, {
+          payeeId: null,
+          categoryId: null,
+          currencyCode: "USD",
+          transfer: {
+            accountId,
+            transferAccountId: card.id,
+            frequency: "MONTHLY",
+            nextOccurrenceDueDate: cycle.nextSettlementDate,
+          },
+        }),
+      );
+
+      expect(estimate.status).toBe("estimated");
+      expect(estimate.profile?.payments.map((p) => p.amount)).toEqual([
+        -2000, -2000, -2000,
+      ]);
+      // The closed statement, what the card owes beyond it, then the baseline.
+      expect(estimatedAmountFor(estimate, cycle.nextSettlementDate)).toBe(
+        -2700,
+      );
+      expect(estimatedAmountFor(estimate, following)).toBe(-2100);
+      expect(estimatedAmountFor(estimate, addMonthsClamped(following, 1))).toBe(
+        -2000,
+      );
+    });
+
+    it("raises the next occurrence of a transfer into an account with no statement days to what it owes", async () => {
+      const line = await createTestAccount(db, userId, {
+        name: "Line of credit",
+        accountType: "LINE_OF_CREDIT",
+        openingBalance: -2500,
+        currentBalance: -2500,
+      } as never);
+      await insertTransfer(monthsAgo(3), 1000, line.id);
+      await insertTransfer(monthsAgo(2), 1000, line.id);
+      // Future-dated: not owed yet.
+      await insertTransaction(addMonthsClamped(today, 1), -900, {
+        account_id: line.id,
+      });
+      const next = addMonthsClamped(today, 1);
+
+      const estimate = await withUserContext(userId, () =>
+        estimates.estimateFor(userId, {
+          payeeId: null,
+          categoryId: null,
+          currencyCode: "USD",
+          transfer: {
+            accountId,
+            transferAccountId: line.id,
+            frequency: "MONTHLY",
+            nextOccurrenceDueDate: next,
+          },
+        }),
+      );
+
+      // -2500 opening, +2000 paid in: 500 owed, under the 1000 baseline.
+      expect(estimatedAmountFor(estimate, next)).toBe(-1000);
+      await insertTransaction(today, -1700, { account_id: line.id });
+      const raised = await withUserContext(userId, () =>
+        estimates.estimateFor(userId, {
+          payeeId: null,
+          categoryId: null,
+          currencyCode: "USD",
+          transfer: {
+            accountId,
+            transferAccountId: line.id,
+            frequency: "MONTHLY",
+            nextOccurrenceDueDate: next,
+          },
+        }),
+      );
+      expect(estimatedAmountFor(raised, next)).toBe(-2200);
+      expect(estimatedAmountFor(raised, addMonthsClamped(next, 1))).toBe(-1000);
+    });
   });
 });
