@@ -1622,6 +1622,17 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     transactionRateBasis in
                     built-in-reports/report-currency.service.ts), and anything
                     else takes the market rate on its own date (issue #2106).
+                    A transfer's own conversion is its two posted amounts: the
+                    custom report engine converts a transfer leg, or a split's
+                    transfer line, whose other side posted in the reporting
+                    currency at what that side moved (100 USD that arrived as
+                    90 EUR reads 90 EUR), whether or not the other side is in
+                    the report's scope (reports/transfer-counterpart.ts,
+                    discussion #2139). The other side is read from the same-owner
+                    joins of the report's fetch, as context only; a cross-owner
+                    or unreadable counterpart falls back to the market rate. The
+                    built-in reports, the Sankey and the assistant's analytics
+                    still convert a transfer leg at the market rate.
                     Like the Sankey, these reports do not yet say which of the
                     two rates answered. The assistant's and the MCP tools'
                     transaction analytics (TransactionAnalyticsService: the
@@ -1647,7 +1658,13 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     report-currency.service.spec.ts: a row settled at 1.35
                     converts 1,350 CAD to 1,000 USD and loads no rate history;
                     spending-reports.service.spec.ts and reports.service.spec.ts
-                    the same through a report.
+                    the same through a report. reports.service.spec.ts
+                    "transfer legs convert at the amounts moved": the outgoing
+                    leg of 100 USD -> 90 EUR alone reads -90 EUR against a
+                    market 0.80, with no rate on file at all, and when the
+                    incoming leg's stored rate disagrees; the incoming leg alone
+                    reads 100 USD; a split transfer's counterpart reads its own
+                    line, not the parent's amount.
                     transaction-analytics.service.spec.ts "a row carrying its own
                     rate": EUR 100 charged as USD 125 reads EUR 100 in the
                     assistant's totals and breakdown, the report rule's figure,

@@ -20,6 +20,10 @@ import {
 import { ParsedSearch } from "../transactions/transaction-search-query.util";
 import { createNetCells, netLinesOf } from "./report-net-cells";
 import {
+  convertAtTransferAmounts,
+  transferCounterpartOf,
+} from "./transfer-counterpart";
+import {
   CustomReport,
   TimeframeType,
   GroupByType,
@@ -71,24 +75,27 @@ import {
 /** Rows one execution reads; past it the report is truncated, never complete. */
 const REPORT_ROW_LIMIT = 50000;
 
-/** What {@link RowConverter.convert} reads of a row: its currency, date and rate. */
-type ConvertibleRow = Pick<
-  Transaction,
-  "currencyCode" | "transactionDate" | "originalCurrencyCode" | "exchangeRate"
->;
-
 /**
  * The one conversion door of a single report execution: the reporting currency
  * and the rate history the rows need are resolved once, and every row is
  * converted through {@link RowConverter.convert} at its own rate, or the market
  * rate on its own date (issue #2106), which records a row it cannot convert
- * instead of letting it join a sum in its own units (INV-FX-001).
+ * instead of letting it join a sum in its own units (INV-FX-001). A transfer
+ * leg whose other side posted in the reporting currency converts at the two
+ * amounts the transfer moved (`transfer-counterpart.ts`, discussion #2139).
  */
 interface RowConverter {
   readonly currency: string;
   readonly gaps: ConversionGaps;
-  /** `null` when `row` has no rate into the reporting currency on its date. */
-  convert(amount: number, row: ConvertibleRow): number | null;
+  /**
+   * `amount` of `row`, or of its `split` line when given, in the reporting
+   * currency; `null` when it has no rate into it on its date.
+   */
+  convert(
+    amount: number,
+    row: Transaction,
+    split?: TransactionSplit,
+  ): number | null;
 }
 
 /**
@@ -128,24 +135,48 @@ export class ReportsService {
 
   private async createConverter(
     userId: string,
-    transactions: readonly ConvertibleRow[],
+    transactions: readonly Transaction[],
   ): Promise<RowConverter> {
     const currency = await this.currencyService.getDefaultCurrency(userId);
+    const atTransferAmounts = (
+      amount: number,
+      row: Transaction,
+      split?: TransactionSplit,
+    ): number | null =>
+      convertAtTransferAmounts(
+        amount,
+        {
+          amount: Number(split ? split.amount : row.amount),
+          currencyCode: row.currencyCode,
+        },
+        transferCounterpartOf(row, split),
+        currency,
+      );
+    // A row whose every line converts at its transfer's own amounts needs no
+    // rate history, so it does not widen the span the index loads.
+    const needsMarketRate = (tx: Transaction): boolean =>
+      tx.isSplit && tx.splits && tx.splits.length > 0
+        ? tx.splits.some(
+            (split) =>
+              atTransferAmounts(Number(split.amount), tx, split) === null,
+          )
+        : atTransferAmounts(Number(tx.amount), tx) === null;
     const convertRow = await this.currencyService.buildConverter(
-      transactions.map((tx) => transactionRateBasis(tx, currency)),
+      transactions
+        .filter(needsMarketRate)
+        .map((tx) => transactionRateBasis(tx, currency)),
       currency,
     );
     const gaps = new ConversionGaps();
     return {
       currency,
       gaps,
-      convert: (amount, row) => {
+      convert: (amount, row, split) => {
         // Zero converts to zero at any rate, so an empty row records no gap.
         if (amount === 0) return 0;
-        const converted = convertRow(
-          amount,
-          transactionRateBasis(row, currency),
-        );
+        const converted =
+          atTransferAmounts(amount, row, split) ??
+          convertRow(amount, transactionRateBasis(row, currency));
         if (converted === null) gaps.record(row.currencyCode);
         return converted;
       },
@@ -643,6 +674,22 @@ export class ReportsService {
           "linkedTransaction.userId = transaction.userId",
         )
         .leftJoinAndSelect("linkedTransaction.account", "linkedAccount")
+        // A transfer leg in a foreign currency converts at the amounts its
+        // transfer moved (discussion #2139), read off the other side whether
+        // or not the filters keep it: the parent's line that links back to a
+        // split transfer's counterpart, and a split line's own counterpart,
+        // both restricted to the reader's ledger like the join above. Context
+        // for the conversion only, never a row of the report.
+        .leftJoinAndSelect(
+          "linkedTransaction.splits",
+          "linkedSplits",
+          "linkedSplits.linkedTransactionId = transaction.id",
+        )
+        .leftJoinAndSelect(
+          "splits.linkedTransaction",
+          "splitLinkedTransaction",
+          "splitLinkedTransaction.userId = transaction.userId",
+        )
         .where("transaction.userId = :userId", { userId })
         .andWhere("transaction.transactionDate >= :startDate", { startDate })
         .andWhere("transaction.transactionDate <= :endDate", { endDate })
@@ -983,10 +1030,11 @@ export class ReportsService {
       // BOTH lists rows of either sign, so each keeps its own: money in is
       // positive, money out negative, and the headline is the signed net of
       // the listed rows (discussion #1978). A transfer leg keeps its sign too,
-      // so both legs of an in-scope same-currency transfer net to zero; a
-      // cross-currency pair converts each leg at its own rate or the market
-      // rate on its date, not the one its two amounts imply, and can leave a
-      // residual.
+      // so both legs of an in-scope same-currency transfer net to zero, and
+      // so do a cross-currency pair's when one leg is in the reporting
+      // currency: the other converts at the amounts the transfer moved. A pair
+      // in two other currencies converts each leg at the market rate on its
+      // date and can leave a residual.
       const lineAmount = (amount: string | number): number =>
         config.direction === DirectionFilter.BOTH
           ? Number(amount)
@@ -1008,7 +1056,7 @@ export class ReportsService {
           // Only the lines that are ordinary cash: an embedded investment line
           // is the trade's own cash side, not a row of this report.
           for (const split of ordinarySplitLines(tx)) {
-            const value = conv.convert(lineAmount(split.amount), tx);
+            const value = conv.convert(lineAmount(split.amount), tx, split);
             if (value === null) continue;
             result.push({
               id: tx.id,
@@ -1060,7 +1108,7 @@ export class ReportsService {
     );
     for (const tx of transactions) {
       for (const line of netLinesOf(tx, false)) {
-        cells.add("total", line, conv.convert(line.amount, tx));
+        cells.add("total", line, conv.convert(line.amount, tx, line.split));
       }
     }
 
@@ -1099,7 +1147,11 @@ export class ReportsService {
     // under "Uncategorized" spending (re-audit F-CUSTOM-001).
     for (const tx of transactions) {
       for (const line of netLinesOf(tx, true)) {
-        cells.add(line.category, line, conv.convert(line.amount, tx));
+        cells.add(
+          line.category,
+          line,
+          conv.convert(line.amount, tx, line.split),
+        );
       }
     }
     const dataMap = cells.settle();
@@ -1160,7 +1212,7 @@ export class ReportsService {
       if (lines.length === 0) continue;
       const payeeId = tx.payeeId || "unknown";
       for (const line of lines) {
-        cells.add(payeeId, line, conv.convert(line.amount, tx));
+        cells.add(payeeId, line, conv.convert(line.amount, tx, line.split));
       }
       if (!payeeNames.has(payeeId) && tx.payeeName) {
         payeeNames.set(payeeId, tx.payeeName);
@@ -1213,7 +1265,7 @@ export class ReportsService {
       // Converted once per line, so a row under several tags records one gap.
       const converted = lines.map((line) => ({
         line,
-        value: conv.convert(line.amount, tx),
+        value: conv.convert(line.amount, tx, line.split),
       }));
       // A line sits under its own tags plus the parent's, never under a tag
       // that only a sibling line carries. `netLinesOf` maps `ordinarySplitLines`
@@ -1311,7 +1363,7 @@ export class ReportsService {
 
       labels.set(key, label);
       for (const line of lines) {
-        cells.add(key, line, conv.convert(line.amount, tx));
+        cells.add(key, line, conv.convert(line.amount, tx, line.split));
       }
     }
     const dataMap = cells.settle();

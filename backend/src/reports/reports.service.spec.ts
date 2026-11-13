@@ -2254,6 +2254,294 @@ describe("ReportsService", () => {
       });
     });
 
+    describe("transfer legs convert at the amounts moved (discussion #2139)", () => {
+      // 100 USD sent from acc-usd arrived as 90 EUR in acc-eur. The market
+      // rate on the day is deliberately another figure (0.80 EUR per USD).
+      const outLeg = (extra: Partial<Transaction> = {}) =>
+        createMockTransaction({
+          id: "tx-out",
+          accountId: "acc-usd",
+          account: { id: "acc-usd", name: "US Chequing" } as never,
+          amount: -100,
+          currencyCode: "USD",
+          exchangeRate: 1,
+          isTransfer: true,
+          categoryId: null,
+          category: null,
+          linkedTransactionId: "tx-in",
+          linkedTransaction: {
+            id: "tx-in",
+            amount: 90,
+            currencyCode: "EUR",
+            exchangeRate: 0.9,
+            isSplit: false,
+            linkedTransactionId: "tx-out",
+            account: { id: "acc-eur", name: "Euro Savings" },
+          } as never,
+          ...extra,
+        });
+      const inLeg = (extra: Partial<Transaction> = {}) =>
+        createMockTransaction({
+          id: "tx-in",
+          accountId: "acc-eur",
+          account: { id: "acc-eur", name: "Euro Savings" } as never,
+          amount: 90,
+          currencyCode: "EUR",
+          exchangeRate: 0.9,
+          isTransfer: true,
+          categoryId: null,
+          category: null,
+          linkedTransactionId: "tx-out",
+          linkedTransaction: {
+            id: "tx-out",
+            amount: -100,
+            currencyCode: "USD",
+            exchangeRate: 1,
+            isSplit: false,
+            linkedTransactionId: "tx-in",
+            account: { id: "acc-usd", name: "US Chequing" },
+          } as never,
+          ...extra,
+        });
+
+      const run = async (
+        reporting: string,
+        transactions: Transaction[],
+        config: Partial<ReportConfig> = {},
+        groupBy: GroupByType = GroupByType.NONE,
+      ) => {
+        mockCurrencyService.getDefaultCurrency.mockResolvedValue(reporting);
+        setupExecuteMocks(
+          {
+            groupBy,
+            config: {
+              ...defaultConfig,
+              metric: MetricType.NONE,
+              direction: DirectionFilter.BOTH,
+              includeTransfers: true,
+              ...config,
+            },
+          },
+          transactions,
+        );
+        return service.execute("user-1", "report-1");
+      };
+
+      it("converts the outgoing leg alone at what arrived, not the market rate", async () => {
+        storedRates.set("USD->EUR", 0.8);
+
+        const result = await run("EUR", [outLeg()]);
+
+        expect(result.data).toHaveLength(1);
+        expect(result.data[0].id).toBe("tx-out");
+        expect(result.data[0].value).toBe(-90);
+        expect(result.data[0].count).toBe(1);
+        expect(result.missingCurrencies).toEqual([]);
+        expect(result.excludedCount).toBe(0);
+      });
+
+      it("converts the incoming leg alone at what was sent, in the reverse direction", async () => {
+        storedRates.set("EUR->USD", 1.25);
+
+        const result = await run("USD", [inLeg()]);
+
+        expect(result.data.map((d) => [d.id, d.value])).toEqual([
+          ["tx-in", 100],
+        ]);
+      });
+
+      it("converts with no rate on file, and asks the history for none", async () => {
+        const result = await run("EUR", [outLeg()]);
+
+        expect(result.data[0].value).toBe(-90);
+        expect(result.missingCurrencies).toEqual([]);
+        expect(result.excludedCount).toBe(0);
+        expect(mockCurrencyService.buildConverter).toHaveBeenCalledWith(
+          [],
+          "EUR",
+        );
+      });
+
+      it("sums the leg at what arrived in an aggregate", async () => {
+        storedRates.set("USD->EUR", 0.8);
+
+        const result = await run(
+          "EUR",
+          [outLeg()],
+          {
+            metric: MetricType.TOTAL_AMOUNT,
+            direction: DirectionFilter.EXPENSES_ONLY,
+          },
+          GroupByType.MONTH,
+        );
+
+        expect(result.data.map((d) => d.value)).toEqual([90]);
+        expect(result.summary.total).toBe(90);
+      });
+
+      it("nets both legs of an in-scope pair to zero", async () => {
+        storedRates.set("USD->EUR", 0.8);
+
+        const result = await run("EUR", [outLeg(), inLeg()]);
+
+        expect(result.data.map((d) => [d.id, d.value])).toEqual([
+          ["tx-out", -90],
+          ["tx-in", 90],
+        ]);
+        expect(result.data.reduce((sum, d) => sum + d.value, 0)).toBe(0);
+      });
+
+      it("answers the posted amounts when they disagree with the stored rate", async () => {
+        // An explicit destination amount is stored as given; the incoming
+        // leg's rate says 0.85, but 90 EUR is what arrived.
+        const result = await run("EUR", [
+          outLeg({
+            linkedTransaction: {
+              id: "tx-in",
+              amount: 90,
+              currencyCode: "EUR",
+              exchangeRate: 0.85,
+              isSplit: false,
+              linkedTransactionId: "tx-out",
+            } as never,
+          }),
+        ]);
+
+        expect(result.data[0].value).toBe(-90);
+      });
+
+      it("falls back to the market rate when the counterpart is not readable", async () => {
+        // A cross-owner counterpart is never hydrated by the fetch.
+        storedRates.set("USD->EUR", 0.8);
+
+        const result = await run("EUR", [outLeg({ linkedTransaction: null })]);
+
+        expect(result.data[0].value).toBe(-80);
+      });
+
+      it("records the gap when neither the counterpart nor a rate answers", async () => {
+        const result = await run("EUR", [outLeg({ linkedTransaction: null })]);
+
+        expect(result.data).toEqual([]);
+        expect(result.missingCurrencies).toEqual(["USD"]);
+        expect(result.excludedCount).toBe(1);
+      });
+
+      it("does not trust a link that does not point back", async () => {
+        storedRates.set("USD->EUR", 0.8);
+
+        const result = await run("EUR", [
+          outLeg({
+            linkedTransaction: {
+              id: "tx-in",
+              amount: 90,
+              currencyCode: "EUR",
+              isSplit: false,
+              linkedTransactionId: "tx-other",
+            } as never,
+          }),
+        ]);
+
+        expect(result.data[0].value).toBe(-80);
+      });
+
+      it("takes the market rate when neither leg is in the reporting currency", async () => {
+        storedRates.set("USD->CAD", 1.4);
+
+        const result = await run("CAD", [outLeg()]);
+
+        expect(result.data[0].value).toBe(-140);
+      });
+
+      it("converts a split's transfer line at what its counterpart received", async () => {
+        storedRates.set("USD->EUR", 0.8);
+        const parent = createMockTransaction({
+          id: "tx-split",
+          amount: -160,
+          currencyCode: "USD",
+          isSplit: true,
+          splits: [
+            {
+              id: "s-groceries",
+              amount: -60,
+              categoryId: "cat-1",
+              transferAccountId: null,
+              tags: [],
+            },
+            {
+              id: "s-transfer",
+              amount: -100,
+              categoryId: null,
+              transferAccountId: "acc-eur",
+              linkedTransactionId: "tx-in",
+              linkedTransaction: {
+                id: "tx-in",
+                amount: 90,
+                currencyCode: "EUR",
+                isSplit: false,
+                linkedTransactionId: "tx-split",
+              },
+              tags: [],
+            },
+          ] as never,
+        });
+
+        const result = await run("EUR", [parent]);
+
+        expect(result.data.map((d) => d.value)).toEqual([-48, -90]);
+      });
+
+      it("converts a split transfer's counterpart at its own line, not the parent's amount", async () => {
+        storedRates.set("EUR->USD", 1.25);
+        const counterpart = inLeg({
+          linkedTransactionId: "tx-split",
+          linkedTransaction: {
+            id: "tx-split",
+            amount: -160,
+            currencyCode: "USD",
+            isSplit: true,
+            linkedTransactionId: null,
+            splits: [
+              {
+                id: "s-transfer",
+                amount: -100,
+                transferAccountId: "acc-eur",
+                linkedTransactionId: "tx-in",
+              },
+            ],
+          } as never,
+        });
+
+        const result = await run("USD", [counterpart]);
+
+        expect(result.data[0].value).toBe(100);
+      });
+
+      it("hydrates the counterpart's side regardless of the report's filters", async () => {
+        const { qb } = setupExecuteMocks(
+          {
+            groupBy: GroupByType.NONE,
+            filters: { accountIds: ["acc-usd"] },
+            config: { ...defaultConfig, includeTransfers: true },
+          },
+          [],
+        );
+
+        await service.execute("user-1", "report-1");
+
+        expect(qb.leftJoinAndSelect).toHaveBeenCalledWith(
+          "linkedTransaction.splits",
+          "linkedSplits",
+          "linkedSplits.linkedTransactionId = transaction.id",
+        );
+        expect(qb.leftJoinAndSelect).toHaveBeenCalledWith(
+          "splits.linkedTransaction",
+          "splitLinkedTransaction",
+          "splitLinkedTransaction.userId = transaction.userId",
+        );
+      });
+    });
+
     describe("signed category sums (audit A26-M33)", () => {
       const refundRows = () => [
         createMockTransaction({

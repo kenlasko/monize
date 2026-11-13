@@ -50,6 +50,12 @@ describe("netLinesOf", () => {
       ["a", "tx-1:0"],
       ["uncategorized", "tx-1:1"],
     ]);
+    // Each line carries its split, so a transfer line converts at its own
+    // counterpart's amount (discussion #2139); a whole row carries none.
+    expect(netLinesOf(parent, false).map((l) => l.split)).toEqual(
+      parent.splits,
+    );
+    expect(netLinesOf(tx({}), false)[0].split).toBeUndefined();
     expect(netLinesOf(tx({ isSplit: true, splits: [] }), false)).toEqual([]);
   });
 
