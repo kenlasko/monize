@@ -68,7 +68,20 @@ import {
   assertScheduleHasOccurrence,
   OccurrencePin,
 } from "./occurrence-pin";
-import { advanceScheduleCursor, claimedSlotsFrom } from "./schedule-cursor";
+import {
+  advanceScheduleCursor,
+  claimedSlotsFrom,
+  ScheduleCursorChange,
+} from "./schedule-cursor";
+import {
+  SCHEDULED_POSTING_ACTION,
+  SCHEDULED_POSTING_ENTITY_TYPE,
+  ScheduledPostingMoney,
+  ScheduledPostingSnapshot,
+  cursorBaseline,
+  cursorChangeOf,
+  snapshotRemovedSchedule,
+} from "./scheduled-posting-history";
 import { addDaysYMD, todayInTimezone, todayYMD } from "../common/date-utils";
 import {
   calculateNextDueDate as calcNextDueDate,
@@ -4306,6 +4319,12 @@ export class ScheduledTransactionsService {
     // a correctness bug -- rollback still unwinds cleanly -- and is tracked as a
     // follow-up rather than reshaped here.
     let writtenTransfer: { savedFromId: string; savedToId: string } | undefined;
+    // What the posting wrote, recorded after the commit as its one history
+    // entry, whose undo also rewinds the schedule (issue #2165). Unset when the
+    // posting wrote no money of its own, and for a transfer with a leg in
+    // another owner's account, which keeps the transfer's per-owner entries.
+    let posting:
+      { name: string; snapshot: ScheduledPostingSnapshot } | undefined;
     // A managed loan bill whose debt is already retired posts NO money. The
     // occurrence is still claimed and the schedule still advances, so nothing
     // retries it; the post-commit recalculation then deactivates the schedule
@@ -4720,6 +4739,7 @@ export class ScheduledTransactionsService {
         );
       }
       const claimId = claimed[0].id;
+      let postedMoney: ScheduledPostingMoney | null = null;
 
       if (options.recordOnly) {
         // The payment is already in the ledger: claim and advance only.
@@ -4739,6 +4759,11 @@ export class ScheduledTransactionsService {
           options.investmentFigures,
         );
         await options.afterInvestmentWrite?.(m, investmentTransactionId);
+        postedMoney = {
+          kind: "investment",
+          investmentTransactionId,
+          securityId: current.investmentSecurityId ?? null,
+        };
       } else if (preparedTransfer) {
         // Already validated and authorized above; only the writes join this
         // transaction, so the legs and their balance updates commit with the
@@ -4752,6 +4777,15 @@ export class ScheduledTransactionsService {
           claimId,
           writtenTransfer.savedFromId,
         );
+        if (!preparedTransfer.hasForeignLeg) {
+          postedMoney = {
+            kind: "transfer",
+            fromTransactionId: writtenTransfer.savedFromId,
+            toTransactionId: writtenTransfer.savedToId,
+            fromAccountId: preparedTransfer.dto.fromAccountId,
+            toAccountId: preparedTransfer.dto.toAccountId,
+          };
+        }
       } else if (!skipFinancialWrite) {
         const created = await this.transactionsService.create(
           userId,
@@ -4760,12 +4794,15 @@ export class ScheduledTransactionsService {
             // Server-set: the row pays the occurrence claimed above, so the
             // owner's settlement rules refuse it (row_from_scheduled_posting).
             fromScheduledPosting: true,
+            // The posting's own entry, after the commit, undoes the row.
+            recordHistory: false,
             ...(options.actorIsNotOwner === true
               ? { actorIsNotOwner: true }
               : {}),
           },
         );
         await this.recordClaimTransaction(m, claimId, created.id);
+        postedMoney = { kind: "transaction", transactionId: created.id };
       } else {
         this.logger.log(
           `Scheduled loan payment ${id} posted no money: the loan owes nothing ` +
@@ -4774,16 +4811,41 @@ export class ScheduledTransactionsService {
         );
       }
 
+      // Read before the occurrence's override is removed, so the undo puts
+      // it back with the rest.
+      const isOnce = current.frequency === "ONCE";
+      const removedSchedule =
+        postedMoney && isOnce
+          ? await snapshotRemovedSchedule(m, id)
+          : undefined;
+      const baseline =
+        postedMoney && !isOnce ? await cursorBaseline(m, current) : undefined;
+      const recordPosting = (cursor?: ScheduleCursorChange): void => {
+        if (!postedMoney) return;
+        posting = {
+          name: current.name,
+          snapshot: {
+            scheduledTransactionId: id,
+            claimId,
+            dueDate: nextDueDateStr,
+            money: postedMoney,
+            ...(cursor ? { cursor } : {}),
+            ...(removedSchedule ? { removedSchedule } : {}),
+          },
+        };
+      };
+
       if (lockedOverride) {
         await m.remove(lockedOverride);
       }
 
-      if (current.frequency === "ONCE") {
+      if (isOnce) {
         // One-time bill or deposit: remove the scheduled transaction entirely
         // after posting so it disappears from the Bills & Deposits page.
         // Splits, overrides and the posting claim are cleaned up via
         // ON DELETE CASCADE.
         await m.delete(ScheduledTransaction, id);
+        recordPosting();
         return true;
       }
 
@@ -4796,7 +4858,7 @@ export class ScheduledTransactionsService {
       // consumed slots are the occurrence claimed above and every claim at or
       // after it: a settlement rule may hold a later slot (INV-LOAN-008), and a
       // cursor left on it would refuse every later post (A26-S08-03).
-      await advanceScheduleCursor(
+      const advance = await advanceScheduleCursor(
         m,
         current,
         new Set([
@@ -4804,6 +4866,7 @@ export class ScheduledTransactionsService {
           ...(await claimedSlotsFrom(m, id, nextDueDateStr)),
         ]),
       );
+      recordPosting(baseline ? cursorChangeOf(baseline, advance) : undefined);
       return false;
     });
 
@@ -4819,8 +4882,13 @@ export class ScheduledTransactionsService {
           prepared,
           written.savedFromId,
           written.savedToId,
+          { recordHistory: posting === undefined },
         ),
       );
+    }
+
+    if (posting) {
+      this.recordPosted(userId, posting);
     }
 
     if (removedAfterOnce) {
@@ -4846,6 +4914,26 @@ export class ScheduledTransactionsService {
     }
 
     return this.findOne(userId, id);
+  }
+
+  /**
+   * Record the one history entry of a posted occurrence, after the posting
+   * committed (issue #2165): its undo removes what the posting wrote, releases
+   * the claim and rewinds the schedule (`action-history/scheduled-posting-undo.ts`).
+   */
+  private recordPosted(
+    userId: string,
+    posting: { name: string; snapshot: ScheduledPostingSnapshot },
+  ): void {
+    void this.actionHistoryService.record(userId, {
+      entityType: SCHEDULED_POSTING_ENTITY_TYPE,
+      entityId: posting.snapshot.scheduledTransactionId,
+      action: SCHEDULED_POSTING_ACTION,
+      afterData: { ...posting.snapshot },
+      description: `Posted scheduled transaction "${posting.name}"`,
+      descriptionKey: "postedScheduledTransaction",
+      descriptionParams: { name: posting.name },
+    });
   }
 
   /**
@@ -5130,9 +5218,11 @@ export class ScheduledTransactionsService {
       dto.exchangeRate = exchangeRate;
     }
 
+    // The posting's own entry, after the commit, undoes the row.
     const created = await this.investmentTransactionsService.create(
       userId,
       dto,
+      { recordHistory: false },
     );
     return created.id;
   }

@@ -25,6 +25,12 @@ import {
   undoRuleRun,
 } from "./rule-run-undo";
 import {
+  ScheduledPostingMoneyRemover,
+  assertScheduledPostingRedoable,
+  undoScheduledPosting,
+} from "./scheduled-posting-undo";
+import { SCHEDULED_POSTING_ENTITY_TYPE } from "../scheduled-transactions/scheduled-posting-history";
+import {
   LegBalanceWriter,
   removeLockedTransactionLeg,
 } from "../transactions/remove-transaction-leg";
@@ -311,7 +317,14 @@ function assertConversionUndoable(
 export interface RecordActionParams {
   entityType: string;
   entityId: string | null;
-  action: "create" | "update" | "delete" | "bulk_update" | "bulk_delete";
+  action:
+    | "create"
+    | "update"
+    | "delete"
+    | "bulk_update"
+    | "bulk_delete"
+    // A scheduled occurrence posted (scheduled-posting-undo.ts).
+    | "post";
   beforeData?: Record<string, any> | null;
   afterData?: Record<string, any> | null;
   relatedEntities?: Record<string, any>[] | null;
@@ -666,11 +679,10 @@ export class ActionHistoryService {
       // `common/db/derived-state-writers.guard.spec.ts`.
       //
       // That scan reads one file at a time, so it does not see a caller two
-      // service hops up: `ScheduledTransactionsService` posting a non-transfer
-      // occurrence calls `TransactionsService.create` inside its transaction,
-      // and `create` records history. Closing that needs the money write and the
-      // history split apart in `create`, the way `createTransfer` now is -- not a
-      // change to this method.
+      // service hops up. `ScheduledTransactionsService.post` writes its money
+      // inside its transaction with the nested create's history switched off
+      // (`recordHistory: false`) and records its own entry after the commit
+      // (issue #2165); a new nested caller of a recording create does the same.
       const saved = await withScopedDb(this.dataSource, async (manager) => {
         const repo = manager.getRepository(ActionHistory);
 
@@ -865,6 +877,17 @@ export class ActionHistoryService {
         );
         return { settledScheduleIds: [...undone.settledScheduleIds] };
       }
+      case SCHEDULED_POSTING_ENTITY_TYPE: {
+        const undone = await undoScheduledPosting(
+          action,
+          manager,
+          this.scheduledPostingRemover(action, manager),
+        );
+        return {
+          settledScheduleIds: undone.scheduleIds,
+          bondRecomputeSecurityIds: undone.securityIds,
+        };
+      }
       default:
         throw new ConflictException(
           tr(
@@ -884,6 +907,9 @@ export class ActionHistoryService {
     // A run that restructured rows cannot be replayed from its snapshot.
     if (action.entityType === RULE_RUN_ENTITY_TYPE) {
       assertRuleRunRedoable(action);
+    }
+    if (action.entityType === SCHEDULED_POSTING_ENTITY_TYPE) {
+      assertScheduledPostingRedoable();
     }
     // Redo of a create replays the row from its stored snapshot, which names
     // the legs the undo deleted (a rule's transfer counterpart, transfer split
@@ -917,6 +943,46 @@ export class ActionHistoryService {
       default:
         return action;
     }
+  }
+
+  /**
+   * The rows a scheduled posting wrote are removed exactly as the undo of the
+   * create that wrote them would remove them (`scheduled-posting-undo.ts`).
+   */
+  private scheduledPostingRemover(
+    action: ActionHistory,
+    manager: EntityManager,
+  ): ScheduledPostingMoneyRemover {
+    return async (money) => {
+      switch (money.kind) {
+        case "transaction":
+          await this.undoTransactionCreate(
+            { ...action, entityId: money.transactionId },
+            manager,
+          );
+          return;
+        case "transfer":
+          await this.undoTransferCreate(
+            {
+              ...action,
+              afterData: {
+                fromTransactionId: money.fromTransactionId,
+                toTransactionId: money.toTransactionId,
+                fromAccountId: money.fromAccountId,
+                toAccountId: money.toAccountId,
+              },
+            },
+            manager,
+          );
+          return;
+        case "investment":
+          await this.undoInvestmentCreate(
+            { ...action, entityId: money.investmentTransactionId },
+            manager,
+          );
+          return;
+      }
+    };
   }
 
   // --- Transaction undo handlers ---

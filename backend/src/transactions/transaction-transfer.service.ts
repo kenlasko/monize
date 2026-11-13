@@ -1157,6 +1157,7 @@ export class TransactionTransferService {
     savedFromId: string,
     savedToId: string,
     findOne: (userId: string, id: string) => Promise<Transaction>,
+    options: { recordHistory?: boolean } = {},
   ): Promise<TransferResult> {
     const {
       effectiveUserId,
@@ -1175,6 +1176,10 @@ export class TransactionTransferService {
       fromTransaction: await findOne(fromOwnerId, savedFromId),
       toTransaction: await findOne(toOwnerId, savedToId),
     };
+
+    // A scheduled posting records its own entry, which also rewinds the
+    // schedule (issue #2165): one user action, one entry.
+    if (options.recordHistory === false) return result;
 
     await this.recordCreateTransferHistory({
       effectiveUserId,

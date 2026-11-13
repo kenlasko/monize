@@ -152,6 +152,8 @@ describe("scheduled-transactions module RLS context smoke (real withScopedDb)", 
       // post() re-reads/locks the occurrence override inside the transaction
       // (issue #1154 re-review); default to no override present.
       findOne: jest.fn().mockResolvedValue(null),
+      // The overrides the posting's undo would put back (issue #2165).
+      find: jest.fn().mockResolvedValue([]),
     };
 
     const { service, manager, transactionsService } = await buildModule(
@@ -190,7 +192,7 @@ describe("scheduled-transactions module RLS context smoke (real withScopedDb)", 
     expect(transactionsService.create).toHaveBeenCalledWith(
       OWNER_ID,
       expect.objectContaining({ accountId: "acc-1" }),
-      { fromScheduledPosting: true },
+      { fromScheduledPosting: true, recordHistory: false },
     );
     // The post's bookkeeping write (advance nextDueDate) also ran in context.
     expect(manager.update).toHaveBeenCalledWith(

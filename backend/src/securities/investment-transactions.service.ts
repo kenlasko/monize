@@ -1177,6 +1177,11 @@ export class InvestmentTransactionsService {
        * approval booked.
        */
       afterWrite?: (manager: EntityManager, id: string) => Promise<void>;
+      /**
+       * `false` when the caller records the history entry itself: a
+       * scheduled posting, whose one entry also rewinds the schedule.
+       */
+      recordHistory?: boolean;
     } = {},
   ): Promise<InvestmentTransaction> {
     const account = await this.accountsService.findOne(
@@ -1453,6 +1458,7 @@ export class InvestmentTransactionsService {
     }
 
     const result = await this.findOne(userId, savedId);
+    if (options.recordHistory === false) return result;
 
     // Capture linked cash transaction for redo support
     const afterData: Record<string, unknown> = { ...result };

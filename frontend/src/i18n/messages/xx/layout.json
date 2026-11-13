@@ -64,6 +64,7 @@
       "tag": "[XX-Tag-XX]",
       "account": "[XX-Account-XX]",
       "scheduled_transaction": "[XX-Scheduled-XX]",
+      "scheduled_posting": "[XX-Scheduled-XX]",
       "security": "[XX-Security-XX]",
       "budget": "[XX-Budget-XX]",
       "custom_report": "[XX-Report-XX]"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "[XX-Created scheduled transaction \"{name}\"-XX]",
       "updatedScheduledTransaction": "[XX-Updated scheduled transaction \"{name}\"-XX]",
       "deletedScheduledTransaction": "[XX-Deleted scheduled transaction \"{name}\"-XX]",
+      "postedScheduledTransaction": "[XX-Posted scheduled transaction \"{name}\"-XX]",
       "createdSecurity": "[XX-Created security \"{symbol}\"-XX]",
       "updatedSecurity": "[XX-Updated security \"{symbol}\"-XX]",
       "deletedSecurity": "[XX-Deleted security \"{symbol}\"-XX]",

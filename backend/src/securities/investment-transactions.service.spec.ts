@@ -530,6 +530,20 @@ describe("InvestmentTransactionsService", () => {
      * Test that fails under it: the first one below -- interest is stored
      * against a stock, where the form would have offered only bonds.
      */
+    it("records its own history entry unless the caller records one (issue #2165)", async () => {
+      await service.create(userId, createBuyDto, { recordHistory: false });
+      expect(mockActionHistoryService.record).not.toHaveBeenCalled();
+
+      await service.create(userId, createBuyDto);
+      expect(mockActionHistoryService.record).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({
+          entityType: "investment_transaction",
+          action: "create",
+        }),
+      );
+    });
+
     it("refuses INTEREST against a security that is not a bond", async () => {
       await expect(
         service.create(userId, {
