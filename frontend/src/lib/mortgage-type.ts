@@ -80,15 +80,11 @@ export function annualizationFor(type: MortgageType): MortgageAnnualization {
 /**
  * The type an account carries: its stored `mortgageType`. Read only on a
  * mortgage; every other account carries the column default, `ANNUITY`, the
- * annuity engine every `LOAN` account uses, and a null (written by a 1.19.x
- * rollback before the contract migration) reads as that default. Mirrors the
- * backend's `mortgageTypeOf`; every frontend consumer of the type reads it
- * through here.
+ * annuity engine every `LOAN` account uses. Mirrors the backend's
+ * `mortgageTypeOf`; every frontend consumer of the type reads it through here.
  */
-export function mortgageTypeOf(account: {
-  mortgageType: MortgageType | null;
-}): MortgageType {
-  return account.mortgageType ?? 'ANNUITY';
+export function mortgageTypeOf(account: { mortgageType: MortgageType }): MortgageType {
+  return account.mortgageType;
 }
 
 /**

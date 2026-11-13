@@ -1,13 +1,12 @@
 # Spec: mortgage types
 
-Status: implemented through P3-B1. Phase 1 (P1-B1 to P1-Q: the column, the
-traits, the type-keyed consumers and the Select), the LINEAR and INTEREST_ONLY
-methods with `prepayment_mode` on both layers (P2-B1, P2-F1), type detection
-(P2-B2, P2-F2) and P3-B1 (1.20.0: the column `DEFAULT 'ANNUITY'`, no code
-reading or writing the two legacy flags) are shipped, and every truth-table
-row below names the spec that asserts it. The contract migration (P3-B2:
-`NOT NULL`, the two flags dropped) is not yet; until it lands the column is
-nullable and `mortgageTypeOf` reads a null as `ANNUITY` (section 8).
+Status: implemented. Phase 1 (P1-B1 to P1-Q: the column, the traits, the
+type-keyed consumers and the Select), the LINEAR and INTEREST_ONLY methods
+with `prepayment_mode` on both layers (P2-B1, P2-F1), type detection (P2-B2,
+P2-F2), P3-B1 (1.20.0: the column `DEFAULT 'ANNUITY'`, no code reading or
+writing the two legacy flags) and the contract migration P3-B2 (after 1.21.0:
+the column `NOT NULL`, the two flags dropped) are done, and every truth-table
+row below names the spec that asserts it.
 Governs: issue #1501 (tracking) and its sub-issues #1502 to #1514, agreed in
 discussion #1486 in line with the direction set in #787. The plan is
 `docs/future-plans/mortgage-types.md`, the task list
@@ -99,13 +98,15 @@ Decisions 1 to 6 were agreed in #1486; 7 to 11 are made here.
    nullable in Phases 1 and 2 and read through the legacy flags when null; in
    Phase 3, P3-B1 (1.20.0, one release after Phase 1 shipped) gave every null
    row a type and the column `DEFAULT 'ANNUITY'`, and stopped reading and
-   writing the two flags. The column stays nullable and the flags stay in the
-   schema, unused, because 1.19.x maps both flags and may write a null type on
-   a non-mortgage row, so a rollback to it runs against the 1.20.0 schema;
-   `mortgageTypeOf` reads such a null as `ANNUITY`. The contract migration
-   (P3-B2, 1.21.0 or later) makes the column `NOT NULL` and drops the flags.
-   A backup or an action-history snapshot written before P3-B1 is resolved by
-   the same rule on replay (section 4.2).
+   writing the two flags. The column stayed nullable and the flags stayed in
+   the schema, unused, because 1.19.x maps both flags and may write a null
+   type on a non-mortgage row, so a rollback to it ran against the 1.20.0
+   schema. The contract migration (P3-B2,
+   `20261113022314_accounts_mortgage_type_contract.sql`, after 1.21.0) types
+   any null such a rollback left by the same rule, makes the column
+   `NOT NULL` and drops the flags; `mortgageTypeOf` is a plain read. A backup
+   or an action-history snapshot written before then is resolved by the same
+   rule on replay (section 4.2).
 7. **Precision: the methods compute at storage precision, not at cents.** The
    constant principal is `roundMoney(P / N)` = 833.3333 in the worked example,
    not 833.33. This is the precision the annuity engine already uses (its
@@ -221,8 +222,8 @@ The effective annual rate follows the compounding trait exactly as
 | true | false | semi-annual | semi-annual inversion | `CANADIAN_FIXED` | none | none |
 | true | true | nominal | `periodicRate * ppy` | `ANNUITY` | none | day count |
 
-A NULL flag reads as false. Asserted by: both migrations landing each row on
-its type, a NULL flag included, and every non-mortgage row on `ANNUITY`, by
+A NULL flag reads as false. Asserted by: the three migrations landing each row
+on its type, a NULL flag included, and every non-mortgage row on `ANNUITY`, by
 `mortgage-type-backfill.integration.spec.ts`; the same rule on a replayed
 snapshot by `legacy-mortgage-type.util.spec.ts`,
 `legacy-mortgage-type-restore.spec.ts`, `action-history.service.spec.ts` and
@@ -470,7 +471,7 @@ Mechanism, built by the tasks named:
   pattern);
 - the CHECK constraint on `accounts.mortgage_type`, reconciled with
   `MORTGAGE_TYPES` by a contract spec, on a column that defaults to
-  `ANNUITY` from P3-B1 (`NOT NULL` from P3-B2);
+  `ANNUITY` from P3-B1 and is `NOT NULL` from P3-B2;
 - the CHECK keeping `accounts.payment_amount` null for LINEAR and
   INTEREST_ONLY (decision 11, section 5.6), so no stored constant payment can
   disagree with the method.
@@ -653,7 +654,7 @@ tables, not their own results.
 | `original_principal` | LINEAR, SHORTEN_TERM | `abs(opening_balance)`, the amount borrowed when the account was opened. Stated here because it is a substitution, not a guess: a mortgage account's opening balance is the advance. | `mortgage-installment.util.spec.ts` ("falls back to the opening balance when original_principal is null"); `scheduled-transaction-loan.mortgage-methods.spec.ts` ("reads a mortgage whose original_principal is null from its opening balance"); `loan-schedule-methods.test.ts` ("reads abs(opening balance) when the original principal is unset") |
 | `original_principal` and `opening_balance` 0 | LINEAR, SHORTEN_TERM | Refused as above: `c` would be 0 and the loan would not amortize. | `mortgage-installment.util.spec.ts` ("needs a principal only for SHORTEN_TERM"); `mortgage-amortization.util.spec.ts` ("LINEAR refuses a zero principal: c would be 0"); `loan-schedule-methods.test.ts` (c unknown, not 0) |
 | `prepayment_mode` | LINEAR | `SHORTEN_TERM` (decision 10). | `mortgage-type.util.spec.ts` ("reads a null mode as SHORTEN_TERM"); `mortgage-type.test.ts` ("prepaymentModeOf") |
-| `mortgage_type` | any | `ANNUITY`. P3-B1 gave every row a type and the column `DEFAULT 'ANNUITY'`; the column stays nullable until P3-B2, a null exists only on a row a 1.19.x rollback wrote, and `mortgageTypeOf` reads it as `ANNUITY`. A snapshot written before P3-B1 is resolved on replay by table 4.2. | `mortgage-type-backfill.integration.spec.ts` ("leaves the column nullable with DEFAULT 'ANNUITY' under the CHECK"); `legacy-mortgage-type.util.spec.ts` |
+| `mortgage_type` | any | Cannot be missing: the column is `NOT NULL DEFAULT 'ANNUITY'` from P3-B2, whose migration first types every null a 1.19.x rollback left by table 4.2. A snapshot written before then is resolved on replay by the same table. | `mortgage-type-backfill.integration.spec.ts` ("types the nulls a 1.19.x rollback left, from the flags, before dropping them", "drops both flags and refuses a null type, keeping the default and the CHECK"); `legacy-mortgage-type.util.spec.ts` |
 | a rate for `d` | any | As today: `effectiveAnnualRateOn` falls back to `accounts.interest_rate`. | `loan-rate-timeline-cases.json` on both layers (INV-LOAN-006); `loan-rate-changes.mortgage-methods.spec.ts` (no linear template priced at a defaulted 0%) |
 | `debt(d)` unreadable | any | As today: the posting rolls back and the anchor endpoint errors (`docs/specs/scheduled-loan-installment-pricing.md` section 3). | `scheduled-transaction-loan.service.spec.ts` ("refuses rather than posting a stale split when the ledger cannot be read"); `loan-payment-setup.mortgage-methods.spec.ts` ("refuses when the ledger cannot be read, writing nothing") |
 
@@ -796,8 +797,8 @@ the E2E one, which has no spec to hold it and says why.
 
 | Layer | Suite | What it asserts | Task |
 | --- | --- | --- | --- |
-| Database | `mortgage-type-backfill.integration.spec.ts`, `scripts/verify-schema.sh` | both migrations per table 4.2, re-applied as no-ops; the column nullable with the default; CHECK refuses an unknown type; `schema.sql` and the migrations agree, the flags kept | P1-B1, P3-B1 |
-| Backup and undo | `legacy-mortgage-type.util.spec.ts`, `legacy-mortgage-type-restore.spec.ts`, `action-history.service.spec.ts`, `backup-restore.integration.spec.ts` | a pre-contract snapshot replays with its table 4.2 type | P3-B1 |
+| Database | `mortgage-type-backfill.integration.spec.ts`, `scripts/verify-schema.sh` | the three migrations per table 4.2, re-applied as no-ops, including on a schema without the flags; the column `NOT NULL` with the default and both flags dropped; CHECK refuses an unknown type; `schema.sql` and the migrations agree | P1-B1, P3-B1, P3-B2 |
+| Backup and undo | `legacy-mortgage-type.util.spec.ts`, `legacy-mortgage-type-restore.spec.ts`, `action-history.service.spec.ts`, `backup-restore.integration.spec.ts` | a pre-contract snapshot replays with its table 4.2 type and without the flags, which `schema.sql` no longer has | P3-B1, P3-B2 |
 | Backend unit | `mortgage-type.util.spec.ts` | traits per 4.1; prepayment mode per decisions 4 and 10 | P1-B2, P2-B1 |
 | Backend unit | `mortgage-amortization.util.spec.ts` ("periodic-rate convention") | rate and EAR per type follow its compounding trait | P1-B2 |
 | Backend contract | `mortgage-type.contract.spec.ts` (reads `database/schema.sql`) | the `mortgage_type` and `prepayment_mode` CHECK lists equal `MORTGAGE_TYPES` and `PREPAYMENT_MODES`, both directions | P1-B2, P2-B1 |

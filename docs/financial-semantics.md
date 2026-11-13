@@ -860,9 +860,9 @@ type uses the nominal convention, including a Canadian variable-rate mortgage,
 which is an `ANNUITY` mortgage (`docs/specs/mortgage-types.md`, table 4.2).
 
 The convention is a trait of the mortgage type (`accounts.mortgage_type`,
-`DEFAULT 'ANNUITY'`): `MORTGAGE_TYPE_TRAITS` decides it once per layer
+`NOT NULL DEFAULT 'ANNUITY'`): `MORTGAGE_TYPE_TRAITS` decides it once per layer
 and every consumer asks `compoundingFor(type)` of the type `mortgageTypeOf`
-reads, which reads a null (only a 1.19.x rollback writes one) as `ANNUITY`.
+reads.
 Every non-mortgage account carries the default, so a plain `LOAN` prices
 as `ANNUITY`.
 
