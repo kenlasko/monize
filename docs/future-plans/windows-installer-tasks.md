@@ -63,7 +63,7 @@
 | D5 | Embedded PostgreSQL runner | D3 | neutral | [x] on Linux; Windows acceptance open |
 | D6 | Staging script: assemble backend, frontend and database files for packaging | D3 | neutral | [x] |
 | D7 | electron-builder configuration, NSIS include, unsigned local build, manual acceptance | D4, D5, D6, B1 | neutral | [x] config, Linux-verified; never built or run on Windows |
-| C1 | CI job on `windows-latest`: build, package, smoke-test, upload artifact | D7 | none | [ ] |
+| C1 | CI job on `windows-latest`: build, package, smoke-test, upload artifact | D7 | none | [x] written and statically checked; never run |
 | D8 | Updater against GitHub Releases | D7 | neutral | [x] unit-verified; a real update is Windows-only |
 | C2 | Release job attaches the installer, `latest.yml` and the blockmap | C1, D8 | release | [ ] |
 | C3 | Code signing | C2 | release | [ ] |
@@ -92,6 +92,7 @@ merges them all and is where the whole stack was run.
 | D6 | `feat/desktop-d6-staging-script` | 2b2599b83 | A real staging run; the Dockerfile guard proven red |
 | D7 | `feat/desktop-d7-installer` | f54ac5880, d7b188325, ecee9c297 | A packaged Linux build of the same shell booted to the login page and quit cleanly; both NSIS passes compile under Wine with warnings as errors. The installer itself has never run |
 | D8 | `feat/desktop-d8-updater` | 4532a39f2, db2b9eaa6 | Desktop suite, including the install sequence walked against the real quit gate |
+| C1 | `feat/desktop-c1-windows-ci` | 4db3838ab | actionlint, zizmor, PowerShell parser and PSScriptAnalyzer clean; neither job has run. It also adds a Linux `desktop` job, which this list lacked: nothing ran the desktop checks in CI |
 | runtime | `feat/desktop-integration` | bf165a666, 483e52399 | The runtime module, `dev-boot`, and the `HOST` exemption removed once B2 and D2 met |
 
 D3b is a task this list did not have: backend and frontend children exit when
