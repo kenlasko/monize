@@ -1510,6 +1510,15 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     Gains and the capital-gain entries": 1,100 USD at 1.40 less
                     1,000 USD at 1.25 is 290 CAD in both, where converting the
                     period's 100 USD at its rate read 140).
+                    The assistant's spending insights and cash-flow forecast
+                    (ai/insights/insights-aggregator.service.ts,
+                    ai/forecast/forecast-aggregator.service.ts history and
+                    income patterns) convert each foreign part on its own day,
+                    no longer at its month's last day, a rate struck after every
+                    earlier row of the month (issues #2130 and #2146;
+                    fx-own-rate-surfaces.integration.spec.ts: USD 132 on day 15
+                    at that day's 1.20 is EUR 110, where the month's last 1.175
+                    read 112.34).
 Known gap           Convert before summing (A26-H12) is closed on three paths:
                     the custom report engine (reports/reports.service.ts,
                     each row converted at its own date, FxAggregate, `summary.total` null
@@ -1646,7 +1655,10 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     category and outgoing-transfer lines) and the assistant's
                     spending insights (ai/insights/insights-aggregator.service.ts,
                     each part on its own date, no longer at its month's last
-                    day) read the same columns through the same rule.
+                    day) read the same columns through the same rule, and so do
+                    the assistant's cash-flow forecast history and income
+                    patterns (ai/forecast/forecast-aggregator.service.ts, split
+                    by day and own rate through splitByRateBasis, issue #2146).
 Test                investment-transaction-summary.service.spec.ts: a sale of
                     820.91 USD settled at 3.7287 reads 3,060.9271 PLN and asks
                     for no market rate; a row without a rate is converted at the
@@ -1675,6 +1687,36 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     insights to one EUR 150 on PostgreSQL;
                     budget-multi-currency-actuals.integration.spec.ts converts a
                     JPY row at its own 125 per CAD beside one at the market rate.
+                    fx-own-rate-surfaces.integration.spec.ts holds the
+                    discussion #2105 row (EUR 100 charged as USD 125, market
+                    1.175) beside a market-rate row, EUR income received at its
+                    own rate and a reporting-currency row to one EUR 260 of
+                    expenses and EUR 200 of income (a reader ignoring the own
+                    rate reads 266.38, one at the month's last rate 262.34) in
+                    Spending by Category, by
+                    Payee, the monthly trend, Income vs Expenses, Income by
+                    Source, a custom report, list_transactions, the MCP flow
+                    totals, compare_periods, the transaction summary, the
+                    monthly totals, the spending insights and the forecast, on
+                    PostgreSQL; forecast-aggregator.service.spec.ts "a row
+                    carrying its own rate" the same in the forecast's history
+                    and income.
+Scope               Not the portfolio period result's flows, which convert each
+                    row at the market rate on its own day by design
+                    (docs/specs/portfolio-period-result.md sections 2 and 10.2,
+                    case 11): the external flows (securities/external-flow.util.ts,
+                    folded by net-worth/period-flow-fold.util.ts,
+                    notification-center/portfolio-flow.util.ts and
+                    securities/daily-movement.service.ts) and the invested
+                    capital and income (net-worth/invested-capital-flow.util.ts).
+                    Each is subtracted from a value change that values the same
+                    cash or shares at that day's market rate, so it is measured
+                    at the same rate: a contribution entered as CAD 1,000 and
+                    charged to a USD sleeve as USD 735, on a day the market said
+                    0.74, adds CAD 993.24 to the value change and to the flows
+                    and leaves the investment result at 0 (INV-PORTRESULT-001);
+                    at its own rate the CAD 6.76 conversion spread would read as
+                    an investment loss.
 Status              enforced
 ```
 

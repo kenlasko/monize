@@ -21,6 +21,15 @@ import {
   convertAtDate,
   RateIndex,
 } from "../../common/time-series/rate-index.util";
+import {
+  convertRateBasis,
+  toOwnRate,
+} from "../../built-in-reports/report-currency.service";
+import {
+  partRateBasis,
+  RatePartRow,
+  splitByRateBasis,
+} from "../../built-in-reports/rate-basis-parts";
 
 export interface MonthlyHistoryEntry {
   month: string;
@@ -116,6 +125,20 @@ export { RecurringCharge };
  * embedded BUY taught the baseline 560 of monthly spending (re-audit).
  */
 const REPORTABLE_TX_AMOUNT = reportableTransactionAmountSql("t");
+
+/**
+ * What a forecast read splits a foreign row by ({@link splitByRateBasis}): its
+ * day and the rate it settled at, so each part converts as the reports convert
+ * it -- at its own rate where that reaches the reporting currency (INV-FX-002),
+ * else at the market rate on its own date (INV-FX-001), never at its month's
+ * last day (issue #2146).
+ */
+const FORECAST_RATE_BASIS = {
+  currency: "t.currencyCode",
+  date: "t.transactionDate",
+  originalCurrency: "t.originalCurrencyCode",
+  exchangeRate: "t.exchangeRate",
+};
 
 /**
  * How far ahead the forecast summary looks for each schedule's next occurrence.
@@ -217,12 +240,6 @@ export class ForecastAggregatorService {
     );
   }
 
-  /** Last day of a `YYYY-MM` month; the resolver clamps a future date to today. */
-  private monthEnd(month: string): string {
-    const [y, m] = month.split("-").map(Number);
-    return new Date(Date.UTC(y, m, 0)).toISOString().substring(0, 10);
-  }
-
   /** Add `amount` to `agg` in `currency`; a missing rate is recorded, never 1. */
   private addConverted(
     agg: FxAggregate,
@@ -243,14 +260,63 @@ export class ForecastAggregatorService {
     );
   }
 
+  /**
+   * The currencies of the {@link splitByRateBasis} parts the market rate
+   * converts: not a part in `currency`, nor one that settled into it at its own
+   * rate, which needs no history.
+   */
+  private marketRateCurrencies(
+    rows: readonly RatePartRow[],
+    currency: string,
+  ): Set<string> {
+    const foreign = new Set<string>();
+    for (const row of rows) {
+      const from: string = row.currencyCode ?? currency;
+      if (from === currency) continue;
+      const basis = partRateBasis(row, from, row.fx_day, currency);
+      if (toOwnRate(basis.own_rate) === null) foreign.add(from);
+    }
+    return foreign;
+  }
+
+  /**
+   * Add `amount` of one {@link splitByRateBasis} part to `agg` in `currency`,
+   * at the part's own rate or the market rate on its day, the reports' rule
+   * (`convertRateBasis`); a missing rate is recorded, never 1.
+   */
+  private addPart(
+    agg: FxAggregate,
+    amount: number,
+    row: RatePartRow,
+    currency: string,
+    rateIndex: RateIndex,
+  ): void {
+    const from: string = row.currencyCode ?? currency;
+    if (from === currency || amount === 0) {
+      agg.addConverted(amount);
+      return;
+    }
+    agg.add(
+      convertRateBasis(
+        amount,
+        partRateBasis(row, from, row.fx_day, currency),
+        currency,
+        rateIndex,
+        this.logger,
+      ),
+      from,
+      currency,
+    );
+  }
+
   private async getMonthlyHistory(
     userId: string,
     startDate: string,
     endDate: string,
     currency: string,
   ): Promise<{ entries: MonthlyHistoryEntry[]; missingPairs: string[] }> {
-    const rows = await withScopedDb(this.dataSource, (manager) =>
-      manager
+    const rows = await withScopedDb(this.dataSource, (manager) => {
+      const qb = manager
         .getRepository(Transaction)
         .createQueryBuilder("t")
         .leftJoin("t.category", "cat")
@@ -283,21 +349,22 @@ export class ForecastAggregatorService {
         .addGroupBy("cat.name")
         .addGroupBy("cat.isIncome")
         .addGroupBy("t.currencyCode")
-        .orderBy("month", "ASC")
-        .getRawMany(),
-    );
+        .orderBy("month", "ASC");
+      splitByRateBasis(qb, FORECAST_RATE_BASIS, currency);
+      return qb.getRawMany();
+    });
 
     const rateIndex = await this.loadRateIndex(
-      rows.map((r) => r.currencyCode ?? currency),
+      this.marketRateCurrencies(rows, currency),
       currency,
       startDate,
       endDate,
     );
 
-    // One signed figure per (month, category), converted per row at the rate
-    // for the month: a refund nets against the spending it reverses instead of
-    // counting as income. An uncategorized row has no side to net within, so
-    // its credits and debits stay on their own sides.
+    // One signed figure per (month, category), each part converted at its own
+    // rate or the rate for its day: a refund nets against the spending it
+    // reverses instead of counting as income. An uncategorized row has no side
+    // to net within, so its credits and debits stay on their own sides.
     const monthMap = new Map<
       string,
       {
@@ -318,8 +385,6 @@ export class ForecastAggregatorService {
         categories: new Map(),
       };
       monthMap.set(row.month, entry);
-      const from: string = row.currencyCode ?? currency;
-      const date = this.monthEnd(row.month);
       const income = Number(row.income) || 0;
       const expenses = Number(row.expenses) || 0;
       const isIncome = row.isIncome === true || row.isIncome === "true";
@@ -337,24 +402,10 @@ export class ForecastAggregatorService {
       };
       entry.categories.set(key, cat);
       if (uncategorized) {
-        this.addConverted(
-          entry.income,
-          income,
-          from,
-          currency,
-          date,
-          rateIndex,
-        );
-        this.addConverted(cat.net, -expenses, from, currency, date, rateIndex);
+        this.addPart(entry.income, income, row, currency, rateIndex);
+        this.addPart(cat.net, -expenses, row, currency, rateIndex);
       } else {
-        this.addConverted(
-          cat.net,
-          income - expenses,
-          from,
-          currency,
-          date,
-          rateIndex,
-        );
+        this.addPart(cat.net, income - expenses, row, currency, rateIndex);
       }
     }
 
@@ -497,14 +548,19 @@ export class ForecastAggregatorService {
     endDate: string,
     currency: string,
   ): Promise<{ patterns: IncomePatterns; missingPairs: string[] }> {
-    const rows = await withScopedDb(this.dataSource, (manager) =>
-      manager
+    const rows = await withScopedDb(this.dataSource, (manager) => {
+      const qb = manager
         .getRepository(Transaction)
         .createQueryBuilder("t")
         .select("TO_CHAR(t.transactionDate, 'YYYY-MM')", "month")
         .addSelect("t.currencyCode", "currencyCode")
         .addSelect(`SUM(${REPORTABLE_TX_AMOUNT})`, "total")
-        .addSelect("COUNT(DISTINCT t.payeeName)", "sourceCount")
+        // The names, not a COUNT(DISTINCT): a foreign row splits by its day
+        // and rate, and a payee paid on two days is still one source.
+        .addSelect(
+          "ARRAY_REMOVE(ARRAY_AGG(DISTINCT t.payeeName), NULL)",
+          "payees",
+        )
         .where("t.userId = :userId", { userId })
         .andWhere("t.transactionDate >= :startDate", { startDate })
         .andWhere("t.transactionDate <= :endDate", { endDate })
@@ -517,37 +573,34 @@ export class ForecastAggregatorService {
         .andWhere(investmentLinkedTransactionExclusion("t"))
         .groupBy("TO_CHAR(t.transactionDate, 'YYYY-MM')")
         .addGroupBy("t.currencyCode")
-        .orderBy("month", "ASC")
-        .getRawMany(),
-    );
+        .orderBy("month", "ASC");
+      splitByRateBasis(qb, FORECAST_RATE_BASIS, currency);
+      return qb.getRawMany();
+    });
 
     const rateIndex = await this.loadRateIndex(
-      rows.map((r) => r.currencyCode ?? currency),
+      this.marketRateCurrencies(rows, currency),
       currency,
       startDate,
       endDate,
     );
     // One converted figure per month; a payee paid in two currencies counts
-    // once per currency.
+    // once per currency, and once however many days or rates its rows span.
     const byMonth = new Map<
       string,
-      { total: FxAggregate; sourceCount: number }
+      { total: FxAggregate; sources: Set<string> }
     >();
     for (const r of rows) {
       const m = byMonth.get(r.month) ?? {
         total: new FxAggregate(),
-        sourceCount: 0,
+        sources: new Set<string>(),
       };
       byMonth.set(r.month, m);
-      this.addConverted(
-        m.total,
-        Number(r.total) || 0,
-        r.currencyCode ?? currency,
-        currency,
-        this.monthEnd(r.month),
-        rateIndex,
-      );
-      m.sourceCount += Number(r.sourceCount) || 0;
+      this.addPart(m.total, Number(r.total) || 0, r, currency, rateIndex);
+      const from: string = r.currencyCode ?? currency;
+      for (const payee of (r.payees as string[] | null) ?? []) {
+        m.sources.add(`${from}\u0000${payee}`);
+      }
     }
     const missing = new Set<string>();
     const monthlyIncome = [...byMonth.entries()].map(([month, m]) => {
@@ -555,7 +608,7 @@ export class ForecastAggregatorService {
       return {
         month,
         total: m.total.knownSubtotal,
-        sourceCount: m.sourceCount,
+        sourceCount: m.sources.size,
       };
     });
 
