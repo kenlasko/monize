@@ -679,7 +679,6 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
       {/* Header with title and date range buttons */}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-4">
         <div>
-        <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
           {t('investmentValueChart.title')}{titleSuffix ? ` (${titleSuffix})` : ''}
           {/* Background-load indicator: chart stays on screen during a refetch
@@ -735,19 +734,6 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
             </span>
           )}
         </h3>
-        {/* Deep-link to the full Portfolio Value report for the richer view
-            (per-security breakdown, table, PDF/CSV export). */}
-        <Link
-          href="/reports/portfolio-value"
-          title={t('investmentValueChart.viewReportTitle')}
-          className="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-        >
-          {t('investmentValueChart.viewReport')}
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
-        </Link>
-        </div>
         {measuredFromLabel && (
           <p
             className="mt-0.5 text-xs text-gray-500 dark:text-gray-400"
@@ -1011,6 +997,24 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
           </ResponsiveContainer>
         </div>
       )}
+
+      {/* Deep-link to the full Portfolio Value report for the richer view
+          (per-security breakdown, table, PDF/CSV export). Below the x-axis
+          rather than beside the title, so the "Updating" indicator growing
+          next to the title cannot push the date range selectors onto their
+          own row. */}
+      <div className="flex justify-center mt-2">
+        <Link
+          href="/reports/portfolio-value"
+          title={t('investmentValueChart.viewReportTitle')}
+          className="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+        >
+          {t('investmentValueChart.viewReport')}
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </Link>
+      </div>
     </div>
   );
 }
