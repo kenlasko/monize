@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { ScheduledTransactionForm } from './ScheduledTransactionForm';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
+import { getLocalDateString } from '@/lib/utils';
 
 vi.mock('react-hot-toast', () => ({
   default: {
@@ -1912,6 +1913,51 @@ describe('ScheduledTransactionForm', () => {
     });
     // Transfer amount shows absolute value, no crash
     expect(screen.getByText('Transfer Amount')).toBeInTheDocument();
+  });
+
+  it('defaults Next Due Date to one month after templateTransaction.transactionDate', async () => {
+    const template = {
+      id: 't1',
+      accountId: 'acc-1',
+      payeeId: 'payee-1',
+      payeeName: 'Landlord',
+      categoryId: 'cat-1',
+      amount: -1500,
+      currencyCode: 'CAD',
+      transactionDate: '2026-10-22',
+      isTransfer: false,
+      isSplit: false,
+      tags: [],
+    } as any;
+
+    render(<ScheduledTransactionForm templateTransaction={template} />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Next Due Date')).toBeInTheDocument();
+    });
+    const dateInput = screen.getByLabelText('Next Due Date') as HTMLInputElement;
+    expect(dateInput.value).toBe('2026-11-22');
+  });
+
+  it('defaults Next Due Date to today when templateTransaction has no transactionDate', async () => {
+    const template = {
+      id: 't1',
+      accountId: 'acc-1',
+      payeeId: 'payee-1',
+      payeeName: 'Landlord',
+      categoryId: 'cat-1',
+      amount: -1500,
+      currencyCode: 'CAD',
+      isTransfer: false,
+      isSplit: false,
+      tags: [],
+    } as any;
+
+    render(<ScheduledTransactionForm templateTransaction={template} />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Next Due Date')).toBeInTheDocument();
+    });
+    const dateInput = screen.getByLabelText('Next Due Date') as HTMLInputElement;
+    expect(dateInput.value).toBe(getLocalDateString());
   });
 
   // ============================================================
