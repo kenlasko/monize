@@ -34,9 +34,6 @@ const EXEMPT: ReadonlyMap<string, string> = new Map([
     "HOSTNAME",
     "the Next.js standalone server's bind address, read by its server.js",
   ],
-  // Remove once B2 (the backend's HOST bind variable) is merged: it adds HOST
-  // to .env.example, and this exemption then hides nothing.
-  ["HOST", "added to .env.example by task B2, not yet merged into this branch"],
 ]);
 
 function documentedInEnvExample(): Set<string> {
