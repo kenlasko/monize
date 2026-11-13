@@ -68,6 +68,34 @@ updates:
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"
+    directory: "/desktop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # Same TypeScript 7 blocker as the backend.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # The bundled PostgreSQL is pinned to major 16, matching the server's
+      # database. A major bump needs pg_upgrade and its own plan.
+      - dependency-name: "embedded-postgres"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@embedded-postgres/*"
+        update-types: ["version-update:semver-major"]
+      # The bundled Node major must match what CI tests the backend on, so an
+      # Electron major (which moves the bundled Node) is a planned change.
+      - dependency-name: "electron"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "npm"
     directory: "/e2e"
     schedule:
       interval: "weekly"

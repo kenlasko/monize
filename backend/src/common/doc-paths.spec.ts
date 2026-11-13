@@ -82,6 +82,14 @@ describe("doc path grammar", () => {
     expect(kinds("133_currency_global_liveness.sql")).toBe("bare");
   });
 
+  it("roots the desktop and mobile layers", () => {
+    expect(classifySpan("desktop/src/version.spec.ts")).toEqual({
+      kind: "rooted",
+      path: "desktop/src/version.spec.ts",
+    });
+    expect(kinds("mobile/package.json")).toBe("rooted");
+  });
+
   it("treats a line reference as a claim about its path", () => {
     expect(classifySpan("database/schema.sql:705-795")).toEqual({
       kind: "rooted",

@@ -357,7 +357,8 @@ jobs:
         run: |
           (cd backend && npm ci)
           (cd frontend && npm ci)
-          node scripts/npm-audit-gate.mjs
+          (cd desktop && npm ci)
+          node scripts/npm-audit-gate.mjs backend frontend desktop
       # Visibility only: build tooling (eslint, jest, the Nest CLI) never
       # reaches a user, and its advisories are routinely unfixable for weeks --
       # the current one, brace-expansion GHSA-mh99-v99m-4gvg, has no patched
@@ -369,6 +370,7 @@ jobs:
         run: |
           cd backend && npm audit --audit-level=high
           cd ../frontend && npm audit --audit-level=high
+          cd ../desktop && npm audit --audit-level=high
 
   license-check:
     name: License Compliance (${{ matrix.package }})
@@ -376,7 +378,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [backend, frontend]
+        package: [backend, frontend, desktop]
     defaults:
       run:
         working-directory: ${{ matrix.package }}
@@ -1281,7 +1283,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      # Re-apply the resolved version to both package.json files (kept in
+      # Re-apply the resolved version to all three package.json files (kept in
       # lockstep) and commit it. Deterministic: the version was decided in
       # prepare-release.
       - name: Bump version
@@ -1290,6 +1292,7 @@ jobs:
         run: |
           cd backend  && npm version "$VERSION" --no-git-tag-version --allow-same-version && cd ..
           cd frontend && npm version "$VERSION" --no-git-tag-version --allow-same-version && cd ..
+          cd desktop  && npm version "$VERSION" --no-git-tag-version --allow-same-version && cd ..
 
       # Pushes the version bump directly to protected main. The push is
       # authenticated with RELEASE_TOKEN (admin PAT, wired in via the checkout
@@ -1300,7 +1303,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add backend/package.json backend/package-lock.json frontend/package.json frontend/package-lock.json
+          git add backend/package.json backend/package-lock.json frontend/package.json frontend/package-lock.json desktop/package.json desktop/package-lock.json
           git commit -m "chore: bump version to ${VERSION} [skip ci]"
           git pull --rebase
           git push
