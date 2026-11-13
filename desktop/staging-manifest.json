@@ -1,5 +1,5 @@
 {
-  "description": "What desktop/scripts/stage.mjs copies into desktop/staging/. The layout mirrors the production stage of backend/Dockerfile and frontend/Dockerfile; src/staging-manifest.spec.ts fails when a Dockerfile gains a COPY this list does not account for. from is repo-relative (a directory, a file, or a glob in the last segment); to is under staging/; kind is copy (default), backend-deps, help-images or postgres.",
+  "description": "What desktop/scripts/stage.mjs copies into desktop/staging/. The layout mirrors the production stage of backend/Dockerfile and frontend/Dockerfile; src/staging-manifest.spec.ts fails when a Dockerfile gains a COPY this list does not account for. from is repo-relative (a directory, a file, or a glob in the last segment); to is under staging/; kind is copy (default), backend-deps, help-images, postgres or desktop. A desktop entry is a desktop-owned file that mirrors no Dockerfile line (it is copied like copy, from desktop/, never into backend/ or frontend/).",
   "entries": [
     {
       "from": "backend/dist",
@@ -79,6 +79,12 @@
       "from": "frontend/server-log-format.cjs",
       "to": "frontend/server-log-format.cjs",
       "mirrors": "frontend/Dockerfile: COPY --from=builder --chown=nextjs:nodejs /app/server-log-format.cjs ./"
+    },
+    {
+      "kind": "desktop",
+      "from": "desktop/resources/parent-watch.cjs",
+      "to": "shell/parent-watch.cjs",
+      "mirrors": "none: desktop-only, no container runs it; the supervisor loads it into every backend and frontend process with --require (src/supervisor/parent-watch.ts)"
     },
     {
       "kind": "postgres",

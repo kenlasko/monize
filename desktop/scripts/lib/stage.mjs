@@ -107,7 +107,7 @@ export function stage({
       continue;
     }
     log(`stage  ${entry.to}`);
-    if (kind === "copy") {
+    if (kind === "copy" || kind === "desktop") {
       copySource({
         src: path.join(repoRoot, entry.from),
         dest,

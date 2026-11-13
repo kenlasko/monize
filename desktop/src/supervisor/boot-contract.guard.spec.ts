@@ -2,13 +2,25 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 
 import { dataPathsFor } from "../app-paths";
-import { composeBackendEnv, composeFrontendEnv } from "../env";
+import {
+  backendOrigin,
+  composeBackendEnv,
+  composeFrontendEnv,
+  frontendOrigin,
+} from "../env";
+import { fakePostgres } from "../test-support/boot-harness";
+import { fakeFetch } from "../test-support/fake-fetch";
+import { fakeSpawner } from "../test-support/fake-process";
+import { flush, manualClock } from "../test-support/manual-clock";
+import { memoryLogger } from "../test-support/memory-logger";
 import {
   BACKEND_BOOT_SCRIPTS,
   BACKEND_HEALTH_PATH,
   BACKEND_SERVER_SCRIPT,
 } from "./backend";
+import { createSupervisor } from "./create-supervisor";
 import { FRONTEND_HEALTH_PATH, FRONTEND_SERVER_ARGS } from "./frontend";
+import { parentWatchArgs, parentWatchPath } from "./parent-watch";
 
 /**
  * Do-not-drift guard for the boot path. The containers boot the backend
@@ -18,6 +30,12 @@ import { FRONTEND_HEALTH_PATH, FRONTEND_SERVER_ARGS } from "./frontend";
  * reads the two files and fails when they and the supervisor disagree, so a
  * boot step, a start argument, an image-level variable or a health route
  * changed for the containers is never silently missing on the desktop.
+ *
+ * The one difference allowed is named: `DESKTOP_ONLY_PREFIX`, the
+ * parent-watch preload (`parent-watch.ts`) every child is started behind. The
+ * last section boots the real supervisor over a fake spawner and holds every
+ * command it spawns to exactly that prefix followed by the container's own
+ * command for the same step, read from the two files.
  *
  * When it fails, the fix is in the supervisor (or `desktop/src/env.ts`), to
  * make the desktop do what the containers now do. It is never to teach this
@@ -333,5 +351,113 @@ describe("the health routes the supervisor polls exist", () => {
     expect(FRONTEND_HEALTH_PATH.startsWith(exempt?.[1] ?? "no exemption")).toBe(
       true,
     );
+  });
+});
+
+describe("what the supervisor spawns is the containers' commands behind one named desktop-only prefix", () => {
+  const RESOURCES = "/opt/monize/resources";
+  /** The only arguments the desktop adds: the orphan guard, never a layer argument. */
+  const DESKTOP_ONLY_PREFIX = parentWatchArgs(
+    parentWatchPath(RESOURCES, "linux"),
+  );
+
+  /** Each container command after `node`, in boot order, read from the files. */
+  function containerCommands(entrypoint: string): string[][] {
+    const backend = parseEntrypoint(entrypoint).steps.map((step) => [
+      step.script,
+    ]);
+    const [cmd] = execForms(productionStage("frontend/Dockerfile"), "CMD");
+    if (cmd?.[0] !== "node") throw new Error("frontend CMD is not `node ...`");
+    return [...backend, cmd.slice(1)];
+  }
+
+  /** Every way the spawned argv and the prefixed container commands disagree. */
+  function spawnProblems(
+    spawned: readonly (readonly string[])[],
+    commands: readonly (readonly string[])[],
+  ): string[] {
+    const expected = commands.map((args) => [...DESKTOP_ONLY_PREFIX, ...args]);
+    const problems: string[] = [];
+    for (let i = 0; i < Math.max(spawned.length, expected.length); i += 1) {
+      const got = JSON.stringify(spawned[i] ?? null);
+      const want = JSON.stringify(expected[i] ?? null);
+      if (got !== want) {
+        problems.push(
+          `spawn ${i + 1}: the supervisor ran ${got}; the container runs ` +
+            `${want} (its command behind DESKTOP_ONLY_PREFIX).`,
+        );
+      }
+    }
+    return problems;
+  }
+
+  /** Boot the real supervisor over fakes and collect each spawn's argv. */
+  async function spawnedByTheSupervisor(): Promise<string[][]> {
+    const journal: string[] = [];
+    const spawner = fakeSpawner(journal);
+    const servers = [BACKEND_SERVER_SCRIPT, ...FRONTEND_SERVER_ARGS.slice(-1)];
+    spawner.onSpawn = (spawned) => {
+      if (!servers.includes(spawned.script)) {
+        queueMicrotask(() => spawned.exit(0));
+      }
+    };
+    const net = fakeFetch();
+    net.respond(`${backendOrigin(SAMPLE.ports)}${BACKEND_HEALTH_PATH}`, 200);
+    net.respond(`${frontendOrigin(SAMPLE.ports)}${FRONTEND_HEALTH_PATH}`, 200);
+    const supervisor = createSupervisor({
+      paths: {
+        resourcesDir: RESOURCES,
+        data: dataPathsFor("/data/Monize", "linux"),
+      },
+      config: { ports: SAMPLE.ports },
+      secrets: SAMPLE.secrets,
+      logger: memoryLogger(),
+      postgres: fakePostgres(journal),
+      baseEnv: {},
+      execPath: "/opt/monize/Monize",
+      platform: "linux",
+      spawn: spawner.spawn,
+      fileExists: () => true,
+      fetch: net.fetch,
+      clock: manualClock(),
+    });
+    const result = await supervisor.start();
+    await flush();
+    expect(result).toEqual({ outcome: "ready" });
+    return spawner.processes.map((spawned) => [...spawned.args]);
+  }
+
+  it("spawns, in order, exactly the prefix plus each container command, and nothing else", async () => {
+    const spawned = await spawnedByTheSupervisor();
+
+    expect(spawnProblems(spawned, containerCommands(read(ENTRYPOINT)))).toEqual(
+      [],
+    );
+  });
+
+  it("the prefix is two arguments, a --require of the staged preload's absolute path", () => {
+    expect(DESKTOP_ONLY_PREFIX).toEqual([
+      "--require",
+      "/opt/monize/resources/shell/parent-watch.cjs",
+    ]);
+  });
+
+  describe("the comparison itself", () => {
+    const commands = [["dist/db-init.js"], ["--require", "./a.cjs", "s.js"]];
+    const prefixed = commands.map((args) => [...DESKTOP_ONLY_PREFIX, ...args]);
+
+    it("accepts the prefixed commands", () => {
+      expect(spawnProblems(prefixed, commands)).toEqual([]);
+    });
+
+    it("fails on a missing prefix, an extra argument, or a missing step", () => {
+      expect(spawnProblems([commands[0], prefixed[1]], commands)).toEqual([
+        expect.stringContaining("spawn 1"),
+      ]);
+      expect(
+        spawnProblems([prefixed[0], [...prefixed[1], "--inspect"]], commands),
+      ).toEqual([expect.stringContaining("spawn 2")]);
+      expect(spawnProblems([prefixed[0]], commands)).toHaveLength(1);
+    });
   });
 });

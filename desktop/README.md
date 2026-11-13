@@ -42,6 +42,12 @@ dependencies come from a fresh `npm ci --omit=dev` in a temp directory. Without
 `cwebp` the help screenshots are copied as PNG (the backend serves them, at
 about 2.4 times the size) with a warning.
 
+One staged file is the desktop's own and mirrors no Dockerfile line (manifest
+`kind: "desktop"`): `shell/parent-watch.cjs`, from `resources/parent-watch.cjs`.
+The supervisor loads it into every backend and frontend process with
+`--require` so that they exit when the shell dies, even when it is killed;
+a boot without it fails at its first child rather than running unguarded.
+
 ## Running the stack without Electron
 
 `scripts/dev-boot.mjs` boots the staged stack under plain Node through the

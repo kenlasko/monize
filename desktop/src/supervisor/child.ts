@@ -1,9 +1,11 @@
 import { spawn } from "child_process";
+import { existsSync } from "fs";
 
 import { ChildEnv } from "../env";
 import { Logger, LogSource } from "../logger";
 import { Clock, systemClock } from "./clock";
 import { asError, messageOf } from "./errors";
+import { ParentWatchMissingError, parentWatchArgs } from "./parent-watch";
 import { withDefaults } from "./types";
 
 /**
@@ -39,7 +41,8 @@ import { withDefaults } from "./types";
  *   temporary file that the helper's own stale-file sweep removes. Everything
  *   else (cron timers, caches) is memory, rebuilt on start.
  * - **`dist/db-init.js` and `dist/db-migrate.js`** are only stopped when a
- *   boot is cancelled or overruns its deadline. `schema.sql` is sent as one
+ *   boot is cancelled or overruns its deadline, or end themselves through the
+ *   parent watch below when the shell dies mid-step. `schema.sql` is sent as one
  *   statement batch and each migration runs between BEGIN and COMMIT with its
  *   ledger row, so PostgreSQL rolls back whatever was in flight when the
  *   connection drops, and the session advisory lock they hold is released with
@@ -51,6 +54,21 @@ import { withDefaults } from "./types";
  * The clean shutdown that does matter is PostgreSQL's, and it comes last, after
  * both children are gone, through the runner's own `stop()`.
  *
+ * ## When the shell itself dies
+ *
+ * `stop()` needs a live shell. For a shell that is killed (Task Manager, a
+ * crash) every child runs with the orphan guard of `parent-watch.ts`: a
+ * desktop-owned `--require` preload that exits the process when its stdin
+ * pipe, held open by this module for the child's whole life, reaches
+ * end-of-file. It is not the cooperative stop channel rejected above: nothing
+ * is ever sent on it and `stop()` does not use it, so it cannot make a
+ * shutdown hang, and the do-not-drift guard accounts for its two arguments as
+ * a named desktop-only prefix. `stop()` does not close the pipe first either:
+ * the signal that follows at once ends the process just as soon on POSIX and
+ * is `TerminateProcess` on Windows, so it would add a second way to stop for
+ * no earlier exit. A missing preload fails the start (`ParentWatchMissingError`)
+ * rather than running a child unguarded.
+ *
  * `TerminateProcess` ends one process, not its descendants. Neither layer
  * starts a second process today (plan section 4); if one ever does, this is
  * the place that needs a job object.
@@ -59,7 +77,10 @@ import { withDefaults } from "./types";
 export interface ChildSpec {
   /** Which log the output goes to. */
   readonly source: LogSource;
-  /** Arguments after the executable, relative to `cwd`. */
+  /**
+   * The layer's own arguments, relative to `cwd`: what follows `node` in the
+   * container. The parent-watch prefix is added in front of them here.
+   */
   readonly args: readonly string[];
   /** The layer's resource directory. */
   readonly cwd: string;
@@ -91,9 +112,15 @@ export interface OutputStream {
   on(event: "error", listener: (error: Error) => void): unknown;
 }
 
+/** The child's stdin: never written to, never ended; only its errors are read. */
+export interface InputStream {
+  on(event: "error", listener: (error: Error) => void): unknown;
+}
+
 /** The part of Node's `ChildProcess` the supervisor uses. */
 export interface SpawnedProcess {
   readonly pid?: number;
+  readonly stdin: InputStream | null;
   readonly stdout: OutputStream | null;
   readonly stderr: OutputStream | null;
   kill(signal?: NodeJS.Signals): boolean;
@@ -107,7 +134,8 @@ export interface SpawnedProcess {
 export interface ChildSpawnOptions {
   readonly cwd: string;
   readonly env: ChildEnv;
-  readonly stdio: readonly ["ignore", "pipe", "pipe"];
+  /** stdin is the parent-watch pipe; stdout and stderr go to the logger. */
+  readonly stdio: readonly ["pipe", "pipe", "pipe"];
   readonly windowsHide: true;
   readonly shell: false;
 }
@@ -145,8 +173,12 @@ export const DEFAULT_CHILD_OPTIONS: ChildOptions = {
 export interface ChildDeps {
   /** `process.execPath` in production: Electron's binary. */
   readonly execPath: string;
+  /** Absolute path of the parent-watch preload (`parentWatchPath`). */
+  readonly parentWatch: string;
   readonly logger: Logger;
   readonly spawn?: SpawnFn;
+  /** Whether a file exists; `fs.existsSync` unless a spec replaces it. */
+  readonly fileExists?: (path: string) => boolean;
   readonly clock?: Clock;
   readonly options?: Partial<ChildOptions>;
 }
@@ -189,20 +221,37 @@ export function startChild(spec: ChildSpec, deps: ChildDeps): ChildHandle {
     finish({ code: null, signal: null, error: asError(error) });
   }
 
-  let child: SpawnedProcess;
-  try {
-    child = (deps.spawn ?? nodeSpawn)(deps.execPath, spec.args, {
-      cwd: spec.cwd,
-      env: spec.env,
-      stdio: ["ignore", "pipe", "pipe"],
-      windowsHide: true,
-      shell: false,
-    });
-  } catch (error) {
-    neverStarted(error);
-    return { pid: undefined, exited, stop: () => Promise.resolve() };
+  const notStarted: ChildHandle = {
+    pid: undefined,
+    exited,
+    stop: () => Promise.resolve(),
+  };
+  if (!(deps.fileExists ?? existsSync)(deps.parentWatch)) {
+    neverStarted(new ParentWatchMissingError(deps.parentWatch));
+    return notStarted;
   }
 
+  let child: SpawnedProcess;
+  try {
+    child = (deps.spawn ?? nodeSpawn)(
+      deps.execPath,
+      [...parentWatchArgs(deps.parentWatch), ...spec.args],
+      {
+        cwd: spec.cwd,
+        env: spec.env,
+        stdio: ["pipe", "pipe", "pipe"],
+        windowsHide: true,
+        shell: false,
+      },
+    );
+  } catch (error) {
+    neverStarted(error);
+    return notStarted;
+  }
+
+  // The pipe stays open, unwritten, until the process is gone; Node destroys
+  // it on exit. An EPIPE from a child that died first is not news.
+  child.stdin?.on("error", () => undefined);
   child.stdout?.on("data", (chunk) => out.write(chunk));
   child.stderr?.on("data", (chunk) => err.write(chunk));
   child.stdout?.on("error", () => undefined);
