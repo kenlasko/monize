@@ -212,8 +212,9 @@ interface AutoPostState {
  * again at its next run (`processAutoPostWithinContext`: active,
  * auto-posting, not estimated, and due on or before today by the occurrence's
  * override date when it has one, an earlier one included, else by
- * `next_due_date`; `findPostponedIds` and the cron's `overrideDueIds`). Putting the schedule back on such an
- * occurrence would only re-post what the person just undid, so the undo of
+ * `next_due_date`: `findPostponedIds` and the cron's `overrideDueIds`).
+ * Putting the schedule back on such an occurrence would only re-post what the
+ * person just undid, so the undo of
  * an automatic (or due, auto-posting) posting removes the payment and frees
  * the occurrence but leaves it skipped (issue #2165, maintainer decision).
  */

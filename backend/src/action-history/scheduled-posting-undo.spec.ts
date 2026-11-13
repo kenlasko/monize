@@ -48,6 +48,7 @@ function managerWith({
   // Where the posting left the cursor, unless a test moves it.
   nextDueDate = "2025-02-15",
   autoPost = false,
+  timezone = null as string | null,
 } = {}) {
   const statements: string[] = [];
   const query = jest.fn(async (sql: string) => {
@@ -68,6 +69,9 @@ function managerWith({
         : [];
     }
     if (sql.includes("stp.original_due_date > $2")) return laterClaims;
+    if (sql.includes("FROM user_preferences")) {
+      return [{ timezone, last_client_timezone: null }];
+    }
     return [[], 0];
   });
   return { manager: { query } as unknown as EntityManager, query, statements };
@@ -276,6 +280,70 @@ describe("undoScheduledPosting (issue #2165)", () => {
       await undoScheduledPosting(actionOf(movedEarlier), manager, jest.fn());
 
       expect(rewind).not.toHaveBeenCalled();
+    });
+
+    it("decides due by the user's timezone, as the cron does", async () => {
+      // 20:00 UTC on 14 Feb is already 15 Feb in Auckland (UTC+13).
+      jest.useFakeTimers({ now: new Date("2025-02-14T20:00:00Z") });
+      try {
+        const dueOn = (nextDueDate: string) => ({
+          ...recurring,
+          dueDate: nextDueDate,
+          cursor: {
+            ...cursorChange,
+            before: { ...cursorChange.before, nextDueDate },
+            after: { ...cursorChange.after, nextDueDate: "2025-03-15" },
+          },
+        });
+
+        const auckland = managerWith({
+          autoPost: true,
+          nextDueDate: "2025-03-15",
+          timezone: "Pacific/Auckland",
+        });
+        await undoScheduledPosting(
+          actionOf(dueOn("2025-02-15")),
+          auckland.manager,
+          jest.fn(),
+        );
+        expect(rewind).not.toHaveBeenCalled();
+
+        const utc = managerWith({
+          autoPost: true,
+          nextDueDate: "2025-03-15",
+          timezone: "UTC",
+        });
+        await undoScheduledPosting(
+          actionOf(dueOn("2025-02-15")),
+          utc.manager,
+          jest.fn(),
+        );
+        expect(rewind).toHaveBeenCalledTimes(1);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("keeps a schedule the advance itself retired inactive", async () => {
+      const { manager, query } = managerWith({ autoPost: true });
+      const retiredByAdvance = {
+        ...recurring,
+        cursor: {
+          ...cursorChange,
+          after: { ...cursorChange.after, isActive: false },
+        },
+      };
+
+      await undoScheduledPosting(
+        actionOf(retiredByAdvance),
+        manager,
+        jest.fn(),
+      );
+
+      expect(query).toHaveBeenCalledWith(
+        expect.stringContaining("SET last_posted_date = $1"),
+        [null, SCHEDULE, USER, "2025-02-15", false],
+      );
     });
 
     it("rewinds an auto-post schedule posted ahead of its due date", async () => {
