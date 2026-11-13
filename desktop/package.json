@@ -5,15 +5,25 @@
   "private": true,
   "license": "AGPL-3.0-only",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "jest && node --test \"scripts/**/*.test.mjs\"",
-    "stage": "node scripts/stage.mjs"
+    "stage": "node scripts/stage.mjs",
+    "smoke:postgres": "npm run build && node scripts/smoke-postgres.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  },
+  "optionalDependencies": {
+    "@embedded-postgres/linux-x64": "16.15.0-beta.19",
+    "@embedded-postgres/windows-x64": "16.15.0-beta.19"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.7",
