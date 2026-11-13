@@ -24,10 +24,10 @@ export class McpCalculateTools {
         annotations: READ_ONLY,
         description:
           "Server-side arithmetic on numbers from previous tool results, and " +
-          "currency conversion at the server's rate for a date. Use it instead " +
-          "of doing the maths yourself, and never convert currencies yourself: " +
-          "`convert` returns the converted amount with the rate and the date " +
-          "it applied on -- quote both.",
+          "currency conversion at the server's rate for a date. Never do the " +
+          "maths or convert currencies yourself: `convert` returns the " +
+          "converted amount with the rate and its date -- quote both. " +
+          "`result` is unrounded; `formattedResult` is for display.",
         inputSchema: z.object({
           operation: z
             .enum([
