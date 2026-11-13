@@ -3696,6 +3696,101 @@ describe("TransactionAnalyticsService", () => {
       expect(mockQueryBuilder.having).toHaveBeenCalledWith("COUNT(*) >= 3");
     });
 
+    it("detects a charge per currency and says which", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          payeeName: "Spotify",
+          currencyCode: "USD",
+          amounts: [10, 10, 10],
+          dates: ["2025-10-01", "2025-11-01", "2025-12-01"],
+          txnCount: "3",
+        },
+      ]);
+
+      const result = await service.getRecurringCharges(userId, start, end);
+
+      // A payee billed in two currencies is two series, never one whose
+      // "price change" is a change of unit (issue #2155).
+      expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith(
+        "t.currencyCode",
+      );
+      expect(result[0].currencyCode).toBe("USD");
+      // No reporting currency asked for, so nothing converted and no rate read.
+      expect(result[0].converted).toBeUndefined();
+      expect(managerMock.query).not.toHaveBeenCalled();
+    });
+
+    describe("with a reporting currency", () => {
+      const usdCharge = {
+        payeeName: "Spotify",
+        currencyCode: "USD",
+        amounts: [12.5, 12.5, 13.2],
+        dates: ["2025-10-01", "2025-11-03", "2025-12-01"],
+        // The latest settled into EUR at its own 1.10 USD per EUR; the
+        // previous carries the column's default 1, which is not a rate.
+        originalCurrencies: [null, "EUR", "EUR"],
+        exchangeRates: ["1", "1", "1.10000000"],
+        txnCount: "3",
+      };
+
+      it("converts the latest at its own rate and the previous at its date's", async () => {
+        mockQueryBuilder.getRawMany.mockResolvedValue([usdCharge]);
+        // EUR->USD 1.25 struck on the previous occurrence's day, and a later
+        // 1.30 that must not reach it (INV-FX-001's look-ahead clause).
+        managerMock.query.mockResolvedValue([
+          storedRate("EUR", "USD", 1.25, "2025-11-03"),
+          storedRate("EUR", "USD", 1.3, "2025-11-20"),
+        ]);
+
+        const result = await service.getRecurringCharges(userId, start, end, {
+          reportingCurrency: "EUR",
+        });
+
+        expect(result[0].currentAmount).toBe(13.2);
+        expect(result[0].converted).toEqual({
+          currency: "EUR",
+          // 13.20 / 1.10, never 13.20 / 1.30 and never 13.20 itself.
+          currentAmount: 12,
+          // 12.50 / 1.25 on its own date.
+          previousAmount: 10,
+          missingRatePair: null,
+        });
+      });
+
+      it("reports an occurrence with no rate as unknown, not the native amount", async () => {
+        mockQueryBuilder.getRawMany.mockResolvedValue([usdCharge]);
+
+        const result = await service.getRecurringCharges(userId, start, end, {
+          reportingCurrency: "EUR",
+        });
+
+        expect(result[0].converted).toEqual({
+          currency: "EUR",
+          currentAmount: 12,
+          previousAmount: null,
+          missingRatePair: "USD->EUR",
+        });
+      });
+
+      it("needs no rate for a charge already in the reporting currency", async () => {
+        mockQueryBuilder.getRawMany.mockResolvedValue([
+          { ...usdCharge, currencyCode: "EUR" },
+        ]);
+
+        const result = await service.getRecurringCharges(userId, start, end, {
+          reportingCurrency: "EUR",
+        });
+
+        expect(result[0].converted).toEqual({
+          currency: "EUR",
+          currentAmount: 13.2,
+          previousAmount: 12.5,
+          missingRatePair: null,
+        });
+        expect(managerMock.query).not.toHaveBeenCalled();
+      });
+    });
+
     it("accepts an account and payees together", async () => {
       // Neither option supersedes the other; the payee surfaces send one id,
       // the account panel sends an account, and nothing stops a caller

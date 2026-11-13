@@ -2377,6 +2377,11 @@ export class TransactionAnalyticsService {
    * threshold and the amounts are the account's own. The caller must authorize
    * the account first -- this method trusts the id it is handed, exactly as it
    * trusts `userId`.
+   *
+   * A charge is detected per currency, so its amounts are one currency's
+   * (`currencyCode`). `reportingCurrency` adds `converted`: the latest and the
+   * previous occurrence in that currency, each at its own rate and date, for a
+   * caller that sets them beside reporting-currency figures (issue #2155).
    */
   async getRecurringCharges(
     userId: string,
@@ -2386,6 +2391,7 @@ export class TransactionAnalyticsService {
       uncategorizedLabel?: string;
       payeeIds?: string[];
       accountId?: string;
+      reportingCurrency?: string;
     } = {},
   ): Promise<RecurringCharge[]> {
     return withScopedDb(this.dataSource, async (m) => {
@@ -2419,6 +2425,17 @@ export class TransactionAnalyticsService {
           "dates",
         )
         .addSelect("COUNT(*)", "txnCount")
+        .addSelect("t.currencyCode", "currencyCode")
+        // Each occurrence's own rate columns, in the order of `amounts`, so it
+        // converts as the reports convert it.
+        .addSelect(
+          "ARRAY_AGG(t.originalCurrencyCode ORDER BY t.transactionDate ASC)",
+          "originalCurrencies",
+        )
+        .addSelect(
+          "ARRAY_AGG(t.exchangeRate ORDER BY t.transactionDate ASC)",
+          "exchangeRates",
+        )
         .where("t.userId = :userId", { userId })
         .andWhere("t.transactionDate >= :startDate", { startDate })
         .andWhere("t.transactionDate <= :endDate", { endDate })
@@ -2439,6 +2456,9 @@ export class TransactionAnalyticsService {
         .addGroupBy("chargePayee.id")
         .addGroupBy("cat.name")
         .addGroupBy("cat.id")
+        // Amounts in two currencies are not one series: a price "change" from
+        // 15.99 USD to 21.50 CAD is a unit change (issue #2155).
+        .addGroupBy("t.currencyCode")
         .having("COUNT(*) >= 3")
         .orderBy("COUNT(*)", "DESC");
 
@@ -2459,7 +2479,7 @@ export class TransactionAnalyticsService {
       // reported against "Bills: Cell Phone" in an insight or a forecast.
       const names = await loadQualifiedCategoryNames(m, userId);
 
-      return rows
+      const charges = rows
         .map((r) => {
           const amounts: number[] = (r.amounts || []).map(Number);
           const dates: string[] = r.dates || [];
@@ -2470,20 +2490,93 @@ export class TransactionAnalyticsService {
             amounts.length > 1 ? amounts[amounts.length - 2] : currentAmount;
 
           return {
-            payeeName: r.payeeName,
-            payeeId: r.payeeId || null,
-            amounts,
-            dates,
-            frequency,
-            currentAmount,
-            previousAmount,
-            categoryName: r.categoryId
-              ? (names.get(r.categoryId) ?? r.categoryName)
-              : r.categoryName,
-            categoryId: r.categoryId || null,
+            charge: {
+              payeeName: r.payeeName,
+              payeeId: r.payeeId || null,
+              currencyCode: r.currencyCode,
+              amounts,
+              dates,
+              frequency,
+              currentAmount,
+              previousAmount,
+              categoryName: r.categoryId
+                ? (names.get(r.categoryId) ?? r.categoryName)
+                : r.categoryName,
+              categoryId: r.categoryId || null,
+            } as RecurringCharge,
+            originalCurrencies: (r.originalCurrencies || []) as Array<
+              string | null
+            >,
+            exchangeRates: (r.exchangeRates || []) as Array<
+              string | number | null
+            >,
           };
         })
-        .filter((r) => r.frequency !== "irregular");
+        .filter((r) => r.charge.frequency !== "irregular");
+
+      if (!options.reportingCurrency) return charges.map((r) => r.charge);
+      return this.convertRecurringCharges(
+        m,
+        charges,
+        options.reportingCurrency,
+      );
+    });
+  }
+
+  /**
+   * Each charge with its latest and previous occurrence converted into
+   * `reporting` (`convertDatedRows`: the row's own rate, else the market rate
+   * on its date), or `null` where that occurrence has no rate.
+   */
+  private async convertRecurringCharges(
+    m: EntityManager,
+    charges: ReadonlyArray<{
+      charge: RecurringCharge;
+      originalCurrencies: Array<string | null>;
+      exchangeRates: Array<string | number | null>;
+    }>,
+    reporting: string,
+  ): Promise<RecurringCharge[]> {
+    const occurrence = (
+      entry: (typeof charges)[number],
+      index: number,
+      key: string,
+    ) => ({
+      key,
+      currencyCode: entry.charge.currencyCode,
+      txDate: entry.charge.dates[index],
+      originalCurrencyCode: entry.originalCurrencies[index] ?? null,
+      exchangeRate: entry.exchangeRates[index] ?? null,
+      amounts: { amount: entry.charge.amounts[index] },
+    });
+    const parts = charges.flatMap((entry, i) => {
+      const last = entry.charge.amounts.length - 1;
+      return [
+        occurrence(entry, last, `${i}:current`),
+        occurrence(entry, Math.max(last - 1, 0), `${i}:previous`),
+      ];
+    });
+    const converted = await convertDatedRows(
+      (sql, params) => m.query(sql, params),
+      parts,
+      reporting,
+      this.logger,
+    );
+    return charges.map((entry, i) => {
+      const currentAmount = converted.get(`${i}:current`)?.amount ?? null;
+      const previousAmount = converted.get(`${i}:previous`)?.amount ?? null;
+      return {
+        ...entry.charge,
+        converted: {
+          currency: reporting,
+          currentAmount,
+          previousAmount,
+          missingRatePair:
+            currentAmount === null || previousAmount === null
+              ? `${entry.charge.currencyCode}->${reporting}`
+              : null,
+        },
+      };
     });
   }
 }

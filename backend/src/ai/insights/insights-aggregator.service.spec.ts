@@ -296,6 +296,7 @@ describe("InsightsAggregatorService", () => {
         userId,
         expect.any(String),
         expect.any(String),
+        { reportingCurrency: "USD" },
       );
       expect(result.recurringCharges).toEqual(charges);
     });
@@ -385,6 +386,7 @@ describe("InsightsAggregatorService", () => {
         userId,
         "2026-04-01",
         "2026-10-21",
+        { reportingCurrency: "PLN" },
       );
       expect(result.daysElapsedInMonth).toBe(21);
       expect(result.daysInMonth).toBe(31);
@@ -429,6 +431,7 @@ describe("InsightsAggregatorService", () => {
         userId,
         "2026-05-01",
         "2026-11-01",
+        { reportingCurrency: "JPY" },
       );
       expect(result.daysElapsedInMonth).toBe(1);
       expect(result.daysInMonth).toBe(30);
@@ -462,6 +465,7 @@ describe("InsightsAggregatorService", () => {
         userId,
         "2027-09-01",
         "2028-03-15",
+        { reportingCurrency: "USD" },
       );
       expect(result.daysInMonth).toBe(31);
     });

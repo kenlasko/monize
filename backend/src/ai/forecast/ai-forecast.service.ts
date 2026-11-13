@@ -13,6 +13,7 @@ import {
 import { FORECAST_SYSTEM_PROMPT } from "../context/prompt-templates";
 import { aiLanguageInstruction } from "../context/language-directive";
 import { sanitizePromptValue } from "../../common/sanitization.util";
+import { recurringChargeAmountForPrompt } from "../context/recurring-charge-prompt";
 import {
   decimalPlacesFor,
   formatCurrencyAmount,
@@ -270,7 +271,7 @@ export class AiForecastService {
       sections.push("\n--- DETECTED RECURRING CHARGES ---");
       for (const charge of aggregates.recurringCharges.slice(0, 15)) {
         sections.push(
-          `${sanitizePromptValue(charge.payeeName)} (${charge.frequency}): latest=${charge.currentAmount.toFixed(2)}, category=${sanitizePromptValue(charge.categoryName || "unknown")}`,
+          `${sanitizePromptValue(charge.payeeName)} (${charge.frequency}): latest=${recurringChargeAmountForPrompt(charge, "current", aggregates.currency)}, category=${sanitizePromptValue(charge.categoryName || "unknown")}`,
         );
       }
     }

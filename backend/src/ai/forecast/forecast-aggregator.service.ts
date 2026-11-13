@@ -195,7 +195,8 @@ export class ForecastAggregatorService {
         userId,
         twelveMonthsAgo,
         today,
-        { uncategorizedLabel: "Uncategorized" },
+        // In the forecast's currency, beside every other figure (issue #2155).
+        { uncategorizedLabel: "Uncategorized", reportingCurrency: currency },
       ),
     ]);
 
