@@ -20,6 +20,28 @@ npm run typecheck
 npm test
 ```
 
+## Staging
+
+`npm run stage` assembles `staging/` (git-ignored) for packaging from build
+output that already exists: `npm run build` in `backend/` and `frontend/`
+first. It builds nothing and exits non-zero naming whatever is missing. The
+layout mirrors the production stage of `backend/Dockerfile` and
+`frontend/Dockerfile` and is declared in `staging-manifest.json`;
+`src/staging-manifest.spec.ts` fails when a Dockerfile gains a `COPY` the
+manifest does not account for.
+
+```bash
+npm run stage                          # everything; needs sh + cwebp, (PNG fallback without cwebp)
+npm run stage -- --require-webp        # CI: fail when cwebp is missing instead of copying PNGs
+npm run stage -- --skip-postgres       # without the @embedded-postgres platform package
+npm run stage -- --skip-backend-deps   # reuse the staged backend/node_modules
+```
+
+Also `--repo-root <dir>` and `--out <dir>`. The backend's production
+dependencies come from a fresh `npm ci --omit=dev` in a temp directory. Without
+`cwebp` the help screenshots are copied as PNG (the backend serves them, at
+about 2.4 times the size) with a warning.
+
 ## Where data lives
 
 Per user, under `%LOCALAPPDATA%\Monize\`: `pgdata`, `backups`, `attachments`,
