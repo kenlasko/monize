@@ -3724,7 +3724,11 @@ describe('ScheduledTransactionForm: Estimate', () => {
   it('shows the next estimate in a disabled Amount field, and no auto-post', async () => {
     render(<ScheduledTransactionForm scheduledTransaction={estimatedSt} />);
     await waitFor(() =>
-      expect(mockGetAmountEstimate).toHaveBeenCalledWith('acc-1', 'payee-1', 'cat-1', '2024-03-01'),
+      expect(mockGetAmountEstimate).toHaveBeenCalledWith(
+        'acc-1',
+        { payeeId: 'payee-1', categoryId: 'cat-1' },
+        '2024-03-01',
+      ),
     );
 
     const amount = screen.getByLabelText('Amount') as HTMLInputElement;
@@ -3809,5 +3813,90 @@ describe('ScheduledTransactionForm: Estimate', () => {
 
     expect(toast.error).toHaveBeenCalledWith('Choose a payee and a category to estimate the amount from.');
     expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  describe('a transfer (issue #2164)', () => {
+    const estimatedTransfer = {
+      ...estimatedSt,
+      name: 'Card payment',
+      payeeId: null,
+      categoryId: null,
+      isTransfer: true,
+      transferAccountId: 'acc-2',
+      amount: -2000,
+      amountEstimate: {
+        ...estimate,
+        months: { '2024-03': { amount: -2000, basis: 'recent' } },
+        floors: [
+          {
+            after: '2024-02-05',
+            through: '2024-03-05',
+            months: { '2024-03': { amount: -2700, basis: 'balance' } },
+          },
+        ],
+      },
+    } as any;
+
+    beforeEach(() => {
+      mockGetAmountEstimate.mockResolvedValue(estimatedTransfer.amountEstimate);
+    });
+
+    it('previews on the destination and shows the raised estimate in a disabled Transfer Amount', async () => {
+      render(<ScheduledTransactionForm scheduledTransaction={estimatedTransfer} />);
+      await waitFor(() =>
+        expect(mockGetAmountEstimate).toHaveBeenCalledWith(
+          'acc-1',
+          { transferAccountId: 'acc-2', frequency: 'MONTHLY' },
+          '2024-03-01',
+        ),
+      );
+
+      const amount = screen.getByLabelText('Transfer Amount') as HTMLInputElement;
+      expect(amount).toBeDisabled();
+      expect(amount.value).toContain('2,700');
+      expectToggle(screen.getByRole('switch', { name: 'Estimate' }), true);
+      expect(screen.getByRole('switch', { name: 'Auto-post on due date' })).toBeDisabled();
+      expect(screen.getByText(/Raised to what Savings owes\./)).toBeInTheDocument();
+    });
+
+    it('saves the transfer estimated, with no payee or category asked for', async () => {
+      const { container } = render(
+        <ScheduledTransactionForm scheduledTransaction={estimatedTransfer} />,
+      );
+      await waitFor(() => expect(mockGetAmountEstimate).toHaveBeenCalled());
+
+      const submitBtn = container.querySelector('button[type="submit"]')!;
+      await act(async () => { fireEvent.click(submitBtn); });
+
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalledWith(
+          's1',
+          expect.objectContaining({
+            amountIsEstimated: true,
+            autoPost: false,
+            isTransfer: true,
+            transferAccountId: 'acc-2',
+            amount: -2700,
+          }),
+        );
+      });
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+
+    it('says what is missing when no transfer reached the destination', async () => {
+      mockGetAmountEstimate.mockResolvedValue({
+        ...estimate,
+        status: 'no-history',
+        months: {},
+        floors: [],
+      });
+      render(<ScheduledTransactionForm scheduledTransaction={estimatedTransfer} />);
+      await waitFor(() => expect(mockGetAmountEstimate).toHaveBeenCalled());
+
+      expect(
+        await screen.findByText(/No transfers to Savings from this account in the last 24 months/),
+      ).toBeInTheDocument();
+      expect((screen.getByLabelText('Transfer Amount') as HTMLInputElement).value).toBe('');
+    });
   });
 });

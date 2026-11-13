@@ -28,7 +28,7 @@ import {
   occurrenceFollowsEstimate,
   occurrencePin,
 } from '@/lib/scheduled-effective-amount';
-import { useAmountEstimateText } from './useAmountEstimateText';
+import { estimateSubjectOf, useAmountEstimateText } from './useAmountEstimateText';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
@@ -1283,10 +1283,11 @@ export function PostTransactionDialog({
             {postEstimate !== undefined && (
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {t('postDialog.estimatedHint', {
-                  detail: estimateText(scheduledTransaction.amountEstimate, {
-                    payeeName: scheduledTransaction.payee?.name ?? scheduledTransaction.payeeName,
-                    categoryName: scheduledTransaction.category?.name ?? null,
-                  }),
+                  detail: estimateText(
+                    scheduledTransaction.amountEstimate,
+                    estimateSubjectOf(scheduledTransaction),
+                    nextOccurrenceDueDate(scheduledTransaction),
+                  ),
                 })}
               </p>
             )}

@@ -73,8 +73,23 @@ export type ScheduleAmountEstimateStatus =
 /** One month of a schedule's history estimate. */
 export interface EstimatedMonth {
   amount: number;
-  /** `seasonal`: the same calendar month's payments; `recent`: the newest three. */
-  basis: 'seasonal' | 'recent';
+  /**
+   * `seasonal`: the same calendar month's payments; `recent`: the newest
+   * three; `balance`: what a transfer's destination owes raised it (issue #2164).
+   */
+  basis: 'seasonal' | 'recent' | 'balance';
+}
+
+/**
+ * The occurrences a transfer's balance floor governs (issue #2164): one due
+ * after `after` (exclusive; `null` for no bound) and on or before `through`
+ * reads its month from `months`, the history estimate already raised to what
+ * the destination owes.
+ */
+export interface EstimateFloor {
+  after: string | null;
+  through: string;
+  months: Record<string, EstimatedMonth>;
 }
 
 /**
@@ -94,6 +109,8 @@ export interface ScheduleAmountEstimate {
   growthRate: number | null;
   historyMonths: number;
   missingPair: { from: string; to: string } | null;
+  /** A transfer's balance floors; empty (or absent from an older server) otherwise. */
+  floors?: EstimateFloor[];
 }
 
 export interface ScheduledTransaction {

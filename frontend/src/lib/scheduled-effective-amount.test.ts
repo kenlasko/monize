@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   estimateAmountOn,
+  estimateEntryOn,
   estimatedOccurrenceAmount,
   nextOccurrenceEffectiveAmount,
   occurrenceFollowsEstimate,
@@ -559,5 +560,65 @@ describe('estimated amounts (issue #2096)', () => {
   it('reads a preview estimate by month', () => {
     expect(estimateAmountOn(estimated().amountEstimate, '2025-02-28')).toBe(-220);
     expect(estimateAmountOn(null, '2025-02-28')).toBeNull();
+  });
+
+  describe("a transfer's balance floors (issue #2164)", () => {
+    // The card's statement closed on Feb 5 owing 2700; the open cycle owes 300.
+    const transfer = () =>
+      estimated({
+        isTransfer: true,
+        amountEstimate: {
+          status: 'estimated',
+          currencyCode: 'CAD',
+          months: {
+            '2025-02': { amount: -2000, basis: 'recent' },
+            '2025-03': { amount: -2000, basis: 'recent' },
+            '2025-04': { amount: -2000, basis: 'recent' },
+          },
+          paymentCount: 3,
+          latestPaymentDate: '2025-01-26',
+          growthRate: null,
+          historyMonths: 24,
+          missingPair: null,
+          floors: [
+            {
+              after: '2025-02-05',
+              through: '2025-03-05',
+              months: {
+                '2025-02': { amount: -2700, basis: 'balance' },
+                '2025-03': { amount: -2700, basis: 'balance' },
+              },
+            },
+            {
+              after: '2025-03-05',
+              through: '2025-04-05',
+              months: {
+                '2025-03': { amount: -2000, basis: 'recent' },
+                '2025-04': { amount: -2000, basis: 'recent' },
+              },
+            },
+          ],
+        },
+      });
+
+    it('reads a date a floor governs from the floor, as the server prices it', () => {
+      expect(estimatedOccurrenceAmount(transfer(), '2025-02-26')).toBe(-2700);
+      expect(estimateEntryOn(transfer().amountEstimate, '2025-02-26')?.basis).toBe('balance');
+      // The floor's bounds: after Feb 5, through Mar 5.
+      expect(estimatedOccurrenceAmount(transfer(), '2025-02-05')).toBe(-2000);
+      expect(estimatedOccurrenceAmount(transfer(), '2025-03-05')).toBe(-2700);
+      expect(estimatedOccurrenceAmount(transfer(), '2025-03-26')).toBe(-2000);
+    });
+
+    it('reads the plain month past every floor', () => {
+      expect(estimatedOccurrenceAmount(transfer(), '2025-04-26')).toBe(-2000);
+      expect(estimateEntryOn(transfer().amountEstimate, '2025-04-26')?.basis).toBe('recent');
+    });
+
+    it('reads the months alone from a server that sends no floors', () => {
+      const st = transfer();
+      const { floors: _floors, ...older } = st.amountEstimate!;
+      expect(estimateAmountOn(older, '2025-02-26')).toBe(-2000);
+    });
   });
 });

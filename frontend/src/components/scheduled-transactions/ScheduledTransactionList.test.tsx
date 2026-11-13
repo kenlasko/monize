@@ -533,6 +533,43 @@ describe('ScheduledTransactionList', () => {
     ).toBeGreaterThan(0);
   });
 
+  // Issue #2164: an estimated transfer names its destination, and says when
+  // what that account owes raised the next payment.
+  it("says an estimated transfer's next payment was raised to what its destination owes", () => {
+    const transactions = [createTransaction({
+      isTransfer: true,
+      transferAccountId: 'card-1',
+      transferAccount: { id: 'card-1', name: 'Visa' } as never,
+      nextDueDate: '2025-02-26',
+      amountIsEstimated: true,
+      effectiveAmount: -2700,
+      effectiveAmountComplete: true,
+      amountEstimate: {
+        status: 'estimated',
+        currencyCode: 'CAD',
+        months: { '2025-02': { amount: -2000, basis: 'recent' } },
+        paymentCount: null,
+        latestPaymentDate: null,
+        growthRate: null,
+        historyMonths: 24,
+        missingPair: null,
+        floors: [
+          {
+            after: '2025-02-05',
+            through: '2025-03-05',
+            months: { '2025-02': { amount: -2700, basis: 'balance' } },
+          },
+        ],
+      },
+    })];
+    render(<ScheduledTransactionList transactions={transactions} />);
+    expect(
+      screen.getAllByRole('button', {
+        name: 'Estimated from the history of transfers to Visa. Raised to what Visa owes.',
+      }).length,
+    ).toBeGreaterThan(0);
+  });
+
   it('shows a moved occurrence at its own month estimate, not as modified', () => {
     const transactions = [createTransaction({
       amountIsEstimated: true,

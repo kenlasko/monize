@@ -36,7 +36,10 @@ import type {
 } from './useCashFlowForecast';
 import { CHART_GRID_PROPS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
-import { useAmountEstimateText } from '@/components/scheduled-transactions/useAmountEstimateText';
+import {
+  estimateSubjectOf,
+  useAmountEstimateText,
+} from '@/components/scheduled-transactions/useAmountEstimateText';
 
 function CashFlowTooltip({
   active,
@@ -261,10 +264,7 @@ export function CashFlowForecastPlot({
                   <li key={id}>
                     {t('forecast.unknownEstimateItem', {
                       name: st.name,
-                      reason: estimateText(st.amountEstimate, {
-                        payeeName: st.payee?.name ?? st.payeeName,
-                        categoryName: st.category?.name ?? null,
-                      }),
+                      reason: estimateText(st.amountEstimate, estimateSubjectOf(st)),
                     })}
                   </li>
                 );
