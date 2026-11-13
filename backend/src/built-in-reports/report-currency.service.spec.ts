@@ -282,14 +282,18 @@ describe("ReportCurrencyService", () => {
     });
 
     it("reads a transfer leg's rate off its counterpart ahead of the stored one", () => {
-      const rows = ownRateSql("$2", "x", "rows");
-      const lines = ownRateSql("$2", "x", { splitAlias: "xs" });
+      const rows = ownRateSql("$2", "x", { readerParam: "$1" });
+      const lines = ownRateSql("$2", "x", {
+        readerParam: "$1",
+        splitAlias: "xs",
+      });
 
       expect(rows).toMatch(/^COALESCE\(CASE/);
       expect(rows).toContain('"x".is_transfer');
+      expect(rows).toContain('"x".user_id = $1');
       expect(rows).toContain("x.exchange_rate <> 1");
       expect(lines).toContain('"xs".transfer_account_id IS NOT NULL');
-      expect(rateBasisColumnsSql("$5", "t", "rows")).toContain(
+      expect(rateBasisColumnsSql("$5", "t", { readerParam: "$1" })).toContain(
         '"t".currency_code <> $5::text',
       );
     });

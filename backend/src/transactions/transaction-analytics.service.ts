@@ -1285,7 +1285,9 @@ export class TransactionAnalyticsService {
         this.dataSource,
         userId,
       );
-      byOwnRate(queryBuilder, "transaction", defaultCurrency);
+      byOwnRate(queryBuilder, "transaction", defaultCurrency, {
+        transfers: true,
+      });
 
       const rows = await queryBuilder.getRawMany();
       if (rows.length === 0) return [];
@@ -1723,7 +1725,9 @@ export class TransactionAnalyticsService {
         )
         .groupBy("transaction.currencyCode")
         .addGroupBy(dayExpr);
-      byOwnRate(qb, "transaction", reporting);
+      byOwnRate(qb, "transaction", reporting, {
+        transfers: !excludeTransfers,
+      });
 
       const rows = await qb.getRawMany();
       const rates = await this.loadRateIndex(
@@ -2708,13 +2712,15 @@ const clampGroupLimit = (limit: number | undefined): number =>
  * Select and group by the columns a part outside `reporting` needs to convert
  * at the rate it settled at, for a read that already splits every row by its
  * day, so {@link addDatedAmount} reads each part's own rate the way the
- * reports do (INV-FX-002), a transfer leg at its transfer's posted amounts
- * included; `alias` is the query's transaction alias.
+ * reports do (INV-FX-002); `alias` is the query's transaction alias. A read
+ * whose rows can be transfer legs passes `transfers`, so a leg converts at its
+ * transfer's posted amounts too.
  */
 function byOwnRate(
   qb: SelectQueryBuilder<Transaction>,
   alias: string,
   reporting: string,
+  { transfers = false }: { transfers?: boolean } = {},
 ): SelectQueryBuilder<Transaction> {
   splitByRateBasis(
     qb,
@@ -2722,7 +2728,7 @@ function byOwnRate(
       currency: `${alias}.currencyCode`,
       originalCurrency: `${alias}.originalCurrencyCode`,
       exchangeRate: `${alias}.exchangeRate`,
-      transferLegs: { transactionAlias: alias },
+      ...(transfers ? { transferLegs: { transactionAlias: alias } } : {}),
     },
     reporting,
     { byDay: false },

@@ -9,7 +9,7 @@ import {
   RawRateBasis,
   transactionRateBasis,
 } from "./report-currency.service";
-import { TransferLegAliases, transferRateSql } from "./transfer-rate-sql";
+import { transferRateReader, transferRateSql } from "./transfer-rate-sql";
 
 /** A raw row of a read split by {@link splitByRateBasis}. */
 export type RatePartRow = Record<string, any>;
@@ -27,12 +27,13 @@ export interface RateBasisColumns {
   originalCurrency: string;
   exchangeRate: string;
   /**
-   * Where the read's transfer legs sit, when its rows can be one: each such
-   * part is also split by the rate its transfer's posted amounts imply
-   * (`fx_transfer_rate`, {@link transferRateSql}), which wins over the stored
-   * rate.
+   * Where the read's transfer legs sit, when its rows can be one: each part of
+   * the reader's own legs is also split by the rate its transfer's posted
+   * amounts imply (`fx_transfer_rate`, {@link transferRateSql}), which wins
+   * over the stored rate. The reader is the request's
+   * ({@link transferRateReader}); without one the column is not added.
    */
-  transferLegs?: TransferLegAliases;
+  transferLegs?: { transactionAlias: string; splitAlias?: string };
 }
 
 /**
@@ -73,11 +74,18 @@ export function splitByRateBasis<T extends ObjectLiteral>(
     // The output columns' names: lower case, so the unquoted names match.
     .addGroupBy("fx_original_currency")
     .addGroupBy("fx_exchange_rate");
-  if (columns.transferLegs) {
-    qb.addSelect(
-      transferRateSql(":fxReportingCurrency", columns.transferLegs),
-      "fx_transfer_rate",
-    ).addGroupBy("fx_transfer_rate");
+  const reader = columns.transferLegs ? transferRateReader() : undefined;
+  if (columns.transferLegs && reader) {
+    const { transactionAlias, splitAlias } = columns.transferLegs;
+    qb.setParameter("fxReaderId", reader)
+      .addSelect(
+        transferRateSql(":fxReportingCurrency", transactionAlias, {
+          readerParam: ":fxReaderId",
+          ...(splitAlias ? { splitAlias } : {}),
+        }),
+        "fx_transfer_rate",
+      )
+      .addGroupBy("fx_transfer_rate");
   }
 }
 

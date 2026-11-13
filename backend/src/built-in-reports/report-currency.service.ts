@@ -12,11 +12,7 @@ import {
 import { FIAT_MONEY_DECIMALS, sumMoney } from "../common/round.util";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { preferredCurrency } from "../common/default-currency.util";
-import {
-  transferLegAliases,
-  TransferLegs,
-  transferRateSql,
-} from "./transfer-rate-sql";
+import { TransferLegs, transferRateSql } from "./transfer-rate-sql";
 
 export interface RawCategoryAggregate extends RawRateBasis {
   category_id: string | null;
@@ -112,10 +108,10 @@ export function wholeGroups<T extends RawRateBasis>(
  * reporting unit. A stored 1 between two different codes is the column's
  * default, not a rate, and falls back to the market rate like an absent one.
  *
- * A read whose rows can be transfer legs names where they sit
- * (`transferLegs`): a leg whose other side posted in the reporting currency
- * converts at the two amounts the transfer moved ({@link transferRateSql}),
- * ahead of any stored rate.
+ * A read whose rows can be transfer legs passes `transferLegs`
+ * (`ownTransferLegs`): a leg of the reader's own whose other side posted in
+ * the reporting currency converts at the two amounts the transfer moved
+ * ({@link transferRateSql}), ahead of any stored rate.
  */
 export function ownRateSql(
   currencyParam: string,
@@ -132,7 +128,8 @@ export function ownRateSql(
   if (!transferLegs) return stored;
   const transfer = transferRateSql(
     `${currencyParam}::text`,
-    transferLegAliases(alias, transferLegs),
+    alias,
+    transferLegs,
   );
   return `COALESCE(${transfer}, ${stored})`;
 }

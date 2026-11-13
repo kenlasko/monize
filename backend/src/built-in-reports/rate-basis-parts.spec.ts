@@ -7,6 +7,9 @@ import {
   readTopGroupParts,
   splitByRateBasis,
 } from "./rate-basis-parts";
+import { requestContextStorage } from "../common/request-context";
+
+const READER = "00000000-0000-4000-8000-000000000001";
 
 describe("rate-basis-parts", () => {
   describe("splitByRateBasis", () => {
@@ -88,28 +91,54 @@ describe("rate-basis-parts", () => {
         addGroupBy: jest.fn().mockReturnThis(),
       };
 
-      splitByRateBasis(
-        qb as unknown as SelectQueryBuilder<object>,
-        {
-          currency: "transaction.currencyCode",
-          originalCurrency: "transaction.originalCurrencyCode",
-          exchangeRate: "transaction.exchangeRate",
-          transferLegs: { transactionAlias: "transaction" },
-        },
-        "EUR",
-        { byDay: false },
+      const columns = {
+        currency: "transaction.currencyCode",
+        originalCurrency: "transaction.originalCurrencyCode",
+        exchangeRate: "transaction.exchangeRate",
+        transferLegs: { transactionAlias: "transaction", splitAlias: "s" },
+      };
+
+      requestContextStorage.run({ userId: READER }, () =>
+        splitByRateBasis(
+          qb as unknown as SelectQueryBuilder<object>,
+          columns,
+          "EUR",
+          { byDay: false },
+        ),
       );
 
+      expect(qb.setParameter).toHaveBeenCalledWith("fxReaderId", READER);
       const [sql, alias] = qb.addSelect.mock.calls[2];
       expect(alias).toBe("fx_transfer_rate");
-      expect(sql).toContain(
-        '"transaction".currency_code <> :fxReportingCurrency',
-      );
+      expect(sql).toContain('"s".transfer_account_id IS NOT NULL');
+      expect(sql).toContain('"transaction".user_id = :fxReaderId');
       expect(qb.addGroupBy.mock.calls.map((c) => c[0])).toEqual([
         "fx_original_currency",
         "fx_exchange_rate",
         "fx_transfer_rate",
       ]);
+    });
+
+    it("adds no transfer column without a reader", () => {
+      const qb = {
+        setParameter: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        addGroupBy: jest.fn().mockReturnThis(),
+      };
+
+      splitByRateBasis(
+        qb as unknown as SelectQueryBuilder<object>,
+        {
+          currency: "t.currency_code",
+          originalCurrency: "t.original_currency_code",
+          exchangeRate: "t.exchange_rate",
+          transferLegs: { transactionAlias: "t" },
+        },
+        "EUR",
+        { byDay: false },
+      );
+
+      expect(qb.addSelect).toHaveBeenCalledTimes(2);
     });
   });
 

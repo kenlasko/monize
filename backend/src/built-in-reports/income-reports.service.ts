@@ -13,6 +13,7 @@ import {
   ReportConverter,
   rateBasisColumnsSql,
 } from "./report-currency.service";
+import { ownTransferLegs } from "./transfer-rate-sql";
 import {
   MONEY_SCALE,
   roundMoney,
@@ -695,7 +696,7 @@ export class IncomeReportsService {
         SELECT
           ${wholeFlowBucketStart} as period_start,
           t.currency_code,
-          ${rateBasisColumnsSql(wholeFlowCurrencyParam, "t", "rows")},
+          ${rateBasisColumnsSql(wholeFlowCurrencyParam, "t", ownTransferLegs(userId, "$1"))},
           t.amount as leg_amount,
           ${transactionTagValuesArrayExpr("t", wholeFlowKeyParam)} as tag_values
         FROM transactions t
@@ -762,7 +763,7 @@ export class IncomeReportsService {
         SELECT
           ${splitFlowBucketStart} as period_start,
           t.currency_code,
-          ${rateBasisColumnsSql(splitFlowCurrencyParam, "t", { splitAlias: "ts" })},
+          ${rateBasisColumnsSql(splitFlowCurrencyParam, "t", ownTransferLegs(userId, "$1", "ts"))},
           ts.amount as leg_amount,
           ${tagValuesArrayExpr("t", "ts", splitFlowKeyParam)} as tag_values
         FROM transactions t

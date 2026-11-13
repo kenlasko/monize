@@ -10,6 +10,7 @@ import {
   wholeGroups,
   rateBasisColumnsSql,
 } from "./report-currency.service";
+import { ownTransferLegs } from "./transfer-rate-sql";
 import { MONEY_SCALE, roundMoney, toMoneyNumber } from "../common/round.util";
 import {
   MonthlyCategoryBreakdownResponse,
@@ -281,7 +282,7 @@ export class MonthlyCategoryBreakdownService {
         t.account_id,
         a.name as account_name,
         t.currency_code,
-        ${rateBasisColumnsSql("$3", "t", "rows")},
+        ${rateBasisColumnsSql("$3", "t", ownTransferLegs(userId, "$1"))},
         SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END) as outflow,
         SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) as inflow
       FROM transactions t

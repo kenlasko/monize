@@ -15,7 +15,10 @@ import { TransactionSplit } from "@/transactions/entities/transaction-split.enti
 import { SplitKind } from "@/transactions/entities/split-kind.enum";
 import { buildRateIndex } from "@/common/time-series/rate-index.util";
 import { withScopedDb } from "@/common/db/scoped-db";
-import { withUserContext } from "@/common/db/with-context";
+import { withDelegateContext, withUserContext } from "@/common/db/with-context";
+import { Budget, BudgetType } from "@/budgets/entities/budget.entity";
+import { BudgetCategory } from "@/budgets/entities/budget-category.entity";
+import { queryCategorySpending } from "@/budgets/budget-spending.util";
 import {
   cleanTables,
   createIntegrationModule,
@@ -205,6 +208,7 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
   beforeEach(async () => {
     await cleanTables(dataSource, [
       "exchange_rates",
+      "budgets",
       "transaction_split_tags",
       "transaction_tags",
       "tags",
@@ -385,6 +389,77 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
       fxComplete: true,
       totalExpenses: 138,
       totalIncome: 180,
+    });
+  });
+
+  it("reads both outgoing transfers at 90 EUR in a budget's transfer actuals", async () => {
+    await seed("EUR");
+    const budget = await dataSource.manager.save(
+      dataSource.manager.create(Budget, {
+        userId,
+        name: "March",
+        budgetType: BudgetType.MONTHLY,
+        periodStart: START,
+        currencyCode: "EUR",
+        config: {},
+      } as Partial<Budget>),
+    );
+    const line = {
+      id: "bc-savings",
+      budgetId: budget.id,
+      categoryId: null,
+      isTransfer: true,
+      transferAccountId: euId,
+    } as unknown as BudgetCategory;
+
+    const spending = await asUser(() =>
+      withScopedDb(dataSource, (m) =>
+        queryCategorySpending(
+          m.getRepository(Transaction),
+          m.getRepository(TransactionSplit),
+          userId,
+          [line],
+          START,
+          END,
+        ),
+      ),
+    );
+
+    expect(spending.currency).toBe("EUR");
+    expect(spending.transferSpendingMap.get(euId)).toBe(180);
+    expect(spending.missingRatePairs).toEqual([]);
+  });
+
+  it("keeps the market rate for a delegate reading the owner's ledger", async () => {
+    await seed("EUR");
+    const delegateId = (
+      await createTestUserDirect(dataSource, { email: "delegate@example.com" })
+    ).id;
+
+    const summary = await withDelegateContext(userId, delegateId, () =>
+      analytics.getSummary(
+        userId,
+        [usId],
+        START,
+        END,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { inReportingCurrency: true },
+      ),
+    );
+
+    // The counterpart sits in an account a delegate may not read, so the leg
+    // is the market's 80, beside the groceries line's 48.
+    expect(summary.converted).toMatchObject({
+      totalExpenses: 128,
+      missingCurrencies: [],
     });
   });
 
