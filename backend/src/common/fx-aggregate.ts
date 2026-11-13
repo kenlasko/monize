@@ -1,3 +1,18 @@
+import { FIAT_MONEY_DECIMALS, roundMoney } from "./round.util";
+
+/**
+ * `amount` as a whole count of ten-thousandths, rounded half away from zero by
+ * `roundMoney` before it is scaled (Discussion #2136). A bare
+ * `Math.round(amount * 10000)` rounds a negative midpoint toward zero
+ * (`-0.00005` came back `0` where `roundMoney` answers `-0.0001`) and a
+ * positive one lost to the float multiply downward (`0.00145 * 10000` is
+ * `14.499999999999998`); the product of an already-rounded value is an integer
+ * to within an ULP, so `Math.round` only absorbs that ULP.
+ */
+function toMinorUnits(amount: number): number {
+  return Math.round(roundMoney(amount, FIAT_MONEY_DECIMALS) * 10000);
+}
+
 /**
  * Accumulate amounts that each need converting into one reporting currency,
  * keeping "could not convert" distinguishable from "converted to zero".
@@ -44,12 +59,12 @@ export class FxAggregate {
       this.missing.add(`${from}->${to}`);
       return;
     }
-    this.subtotalMinorUnits += Math.round(converted * 10000);
+    this.subtotalMinorUnits += toMinorUnits(converted);
   }
 
   /** Add a value that needed no conversion (already in the reporting currency). */
   addConverted(amount: number): void {
-    this.subtotalMinorUnits += Math.round(amount * 10000);
+    this.subtotalMinorUnits += toMinorUnits(amount);
   }
 
   /**

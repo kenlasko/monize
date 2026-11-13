@@ -1,4 +1,5 @@
 import { FxAggregate } from "./fx-aggregate";
+import { roundMoney } from "./round.util";
 
 /**
  * The numerical examples in docs/specs/fx-conversion-completeness.md section 4,
@@ -14,6 +15,34 @@ describe("FxAggregate", () => {
     expect(agg.knownSubtotal).toBe(0);
     expect(agg.isComplete).toBe(true);
     expect(agg.missingPairs).toEqual([]);
+  });
+
+  describe("rounds each component like roundMoney (Discussion #2136)", () => {
+    it.each([0.00005, -0.00005, 0.00015, -0.00015, 0.00145, -1.00145, 2.5])(
+      "%p, through add and addConverted",
+      (amount) => {
+        const added = new FxAggregate();
+        added.add(amount, "USD", "EUR");
+        const converted = new FxAggregate();
+        converted.addConverted(amount);
+        expect(added.total).toBe(roundMoney(amount, 4));
+        expect(converted.total).toBe(roundMoney(amount, 4));
+      },
+    );
+
+    it("rounds a negative midpoint away from zero, not toward it", () => {
+      const agg = new FxAggregate();
+      agg.addConverted(-0.00005);
+      expect(agg.total).toBe(-0.0001);
+      expect(agg.knownSubtotal).toBe(-0.0001);
+    });
+
+    it("rounds a midpoint the float multiply lands under upward", () => {
+      // 0.00145 * 10000 is 14.499999999999998.
+      const agg = new FxAggregate();
+      agg.add(0.00145, "USD", "EUR");
+      expect(agg.total).toBe(0.0015);
+    });
   });
 
   it("sums converted components", () => {
