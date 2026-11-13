@@ -60,6 +60,40 @@ npm run smoke:postgres                          # the PostgreSQL runner alone, a
 The data directory must be named: outside Electron the secrets are stored in
 plain text, so the script never uses the installed application's folder.
 
+## Running the shell in development
+
+`npm start` builds `dist/` and runs the Electron shell (`src/electron-main.ts`)
+against the staged stack: a splash while PostgreSQL, the migrations, the
+backend and the frontend start, then the main window on the frontend origin
+and a tray icon. Name a data directory and allow plain-text secrets, as for
+`dev:boot`:
+
+```bash
+npm run stage                                   # after building backend/ and frontend/
+MONIZE_DATA_DIR=/tmp/monize-shell MONIZE_INSECURE_SECRETS=1 npm start
+MONIZE_DATA_DIR=/tmp/monize-shell npx electron . --quit   # asks the running shell to quit
+```
+
+- One data directory is one running shell: a second launch on the same
+  directory focuses the first window and exits, and `--quit` asks the running
+  shell to stop everything and exit (a no-op when none runs).
+- Closing the window hides it to the tray; Quit in the tray stops the
+  frontend, the backend and PostgreSQL, then exits. Without a tray (some Linux
+  sessions) closing the window quits.
+- Chromium's profile, the page's cookies included, lives under
+  `<data dir>/shell`.
+- `monize://` is registered with the operating system only by a packaged
+  build. In development, pass a link as an argument instead:
+  `npx electron . monize://open/accounts`.
+- A shell started from a terminal that sets `ELECTRON_RUN_AS_NODE` (the VS Code
+  integrated terminal does) runs Electron as plain Node and fails at once;
+  unset it first.
+- Logs: `<data dir>/logs/main.log` has the boot statuses and every window
+  load (`Window finished loading <url>`).
+
+The shell's own text is English only and lives in `src/shell/strings.ts`;
+there is no translation framework in this package yet.
+
 ## Where data lives
 
 Per user, under `%LOCALAPPDATA%\Monize\`: `pgdata`, `backups`, `attachments`,

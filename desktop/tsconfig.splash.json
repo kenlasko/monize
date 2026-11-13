@@ -1,0 +1,17 @@
+{
+  // The splash page script runs in a sandboxed renderer, not in Node: DOM
+  // types, no Node types, and a plain script (no module wrapper).
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": ["es2022", "dom"],
+    "module": "commonjs",
+    "moduleDetection": "legacy",
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "types": []
+  },
+  "files": ["src/splash/splash-page.ts"]
+}

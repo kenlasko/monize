@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Monize</title>
+    <link rel="stylesheet" href="splash.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Monize</h1>
+      <div class="status">
+        <span id="spinner" class="spinner" aria-hidden="true"></span>
+        <p id="title" role="status" aria-live="polite"></p>
+      </div>
+      <p id="detail" class="detail"></p>
+      <pre id="log" class="log" hidden></pre>
+      <div id="actions" class="actions" hidden>
+        <button id="retry" type="button" hidden></button>
+        <button id="quit" type="button" hidden></button>
+      </div>
+    </main>
+    <script src="splash-page.js"></script>
+  </body>
+</html>
