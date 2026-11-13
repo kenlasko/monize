@@ -1,4 +1,5 @@
 import { BadRequestException } from "@nestjs/common";
+import { createSecureContext } from "node:tls";
 import type { ImapFlowOptions } from "imapflow";
 import { publicOnlyLookup } from "../../ai/providers/provider-egress";
 import {
@@ -6,6 +7,7 @@ import {
   IMAP_CONNECTION_TIMEOUT_MS,
   IMAP_GREETING_TIMEOUT_MS,
   IMAP_SOCKET_TIMEOUT_MS,
+  IMAP_TLS_CIPHERS,
   ImapFlowLike,
   ImapFlowMailboxClient,
   MailboxConnection,
@@ -77,6 +79,16 @@ describe("buildImapFlowOptions (INV-RECEIPT-001, INV-RECEIPT-004)", () => {
       rejectUnauthorized: true,
       minVersion: "TLSv1.2",
     });
+  });
+
+  it("never offers finite-field DHE, so a weak-DH server negotiates ECDHE (#2166)", () => {
+    const { tls } = buildImapFlowOptions(conn());
+    expect(tls?.ciphers).toBe(IMAP_TLS_CIPHERS);
+    expect(IMAP_TLS_CIPHERS.endsWith(":!kDHE")).toBe(true);
+    // OpenSSL accepts the list (an unknown token would throw here).
+    expect(() =>
+      createSecureContext({ ciphers: IMAP_TLS_CIPHERS }),
+    ).not.toThrow();
   });
 
   it("passes the public-only lookup as the socket lookup unless the policy allows private", () => {
