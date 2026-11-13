@@ -222,6 +222,7 @@ step("first start creates the cluster and the database", async () => {
             current_setting('server_encoding') AS encoding,
             current_setting('log_checkpoints') AS checkpoints,
             current_setting('fsync') AS fsync,
+            current_setting('data_checksums') AS checksums,
             (SELECT datcollate FROM pg_database WHERE datname = current_database()) AS collation,
             (SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname = current_database()) AS owner`,
   );
@@ -232,6 +233,7 @@ step("first start creates the cluster and the database", async () => {
     encoding: "UTF8",
     checkpoints: "off",
     fsync: "on",
+    checksums: "on",
     collation: "C",
     owner: SUPERUSER,
   });

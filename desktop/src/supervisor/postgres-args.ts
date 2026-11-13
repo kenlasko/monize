@@ -60,6 +60,10 @@ export function initdbArgs(input: {
     "--auth=scram-sha-256",
     "--encoding=UTF8",
     "--locale=C",
+    // Page checksums make the server report a damaged page instead of serving
+    // it. They can only be chosen here: the bundled binaries include no
+    // pg_checksums to turn them on for an existing cluster.
+    "--data-checksums",
   ];
 }
 

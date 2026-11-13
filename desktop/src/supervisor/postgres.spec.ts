@@ -52,6 +52,7 @@ describe("createPostgresRunner: first run", () => {
       "--auth=scram-sha-256",
       "--encoding=UTF8",
       "--locale=C",
+      "--data-checksums",
     ]);
     expect(start.binary).toBe("pg_ctl");
     // The server would inherit a captured pipe and pg_ctl would never return.
