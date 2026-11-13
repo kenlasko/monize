@@ -94,59 +94,79 @@ describe('ResetPasswordPage', () => {
     mockResetPassword.mockResolvedValue(undefined);
   });
 
-  it('renders the page heading', () => {
-    render(<ResetPasswordPage />);
+  it('renders the page heading', async () => {
+    await act(async () => {
+      render(<ResetPasswordPage />);
+    });
     expect(screen.getByText('Set new password')).toBeInTheDocument();
   });
 
-  it('renders the description text', () => {
-    render(<ResetPasswordPage />);
+  it('renders the description text', async () => {
+    await act(async () => {
+      render(<ResetPasswordPage />);
+    });
     expect(screen.getByText('Enter your new password below.')).toBeInTheDocument();
   });
 
-  it('renders the Monize logo', () => {
-    render(<ResetPasswordPage />);
+  it('renders the Monize logo', async () => {
+    await act(async () => {
+      render(<ResetPasswordPage />);
+    });
     expect(screen.getByAltText('Monize')).toBeInTheDocument();
   });
 
-  it('renders the new password field when token is present', () => {
-    render(<ResetPasswordPage />);
+  it('renders the new password field when token is present', async () => {
+    await act(async () => {
+      render(<ResetPasswordPage />);
+    });
     expect(screen.getByText('New Password')).toBeInTheDocument();
   });
 
-  it('renders the confirm password field when token is present', () => {
-    render(<ResetPasswordPage />);
+  it('renders the confirm password field when token is present', async () => {
+    await act(async () => {
+      render(<ResetPasswordPage />);
+    });
     expect(screen.getByText('Confirm Password')).toBeInTheDocument();
   });
 
-  it('renders the submit button when token is present', () => {
-    render(<ResetPasswordPage />);
+  it('renders the submit button when token is present', async () => {
+    await act(async () => {
+      render(<ResetPasswordPage />);
+    });
     expect(screen.getByText('Reset password')).toBeInTheDocument();
   });
 
-  it('renders back to sign in link', () => {
-    render(<ResetPasswordPage />);
+  it('renders back to sign in link', async () => {
+    await act(async () => {
+      render(<ResetPasswordPage />);
+    });
     expect(screen.getByText('Back to sign in')).toBeInTheDocument();
   });
 
-  it('shows error message when token is missing', () => {
+  it('shows error message when token is missing', async () => {
     mockSearchParams = new URLSearchParams();
 
-    render(<ResetPasswordPage />);
+    await act(async () => {
+      render(<ResetPasswordPage />);
+    });
     expect(screen.getByText('Invalid or missing reset token.')).toBeInTheDocument();
   });
 
-  it('shows request new link when token is missing', () => {
+  it('shows request new link when token is missing', async () => {
     mockSearchParams = new URLSearchParams();
 
-    render(<ResetPasswordPage />);
+    await act(async () => {
+      render(<ResetPasswordPage />);
+    });
     expect(screen.getByText('Request a new reset link')).toBeInTheDocument();
   });
 
-  it('does not show password fields when token is missing', () => {
+  it('does not show password fields when token is missing', async () => {
     mockSearchParams = new URLSearchParams();
 
-    render(<ResetPasswordPage />);
+    await act(async () => {
+      render(<ResetPasswordPage />);
+    });
     expect(screen.queryByText('New Password')).not.toBeInTheDocument();
     expect(screen.queryByText('Confirm Password')).not.toBeInTheDocument();
   });

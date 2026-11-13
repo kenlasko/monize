@@ -85,6 +85,7 @@ export class AuthController {
   private localAuthEnabled: boolean;
   private registrationEnabled: boolean;
   private force2fa: boolean;
+  private brandPanel: boolean;
   private useSecureCookies: boolean;
   private trustedDeviceCookieKey: string;
 
@@ -112,6 +113,11 @@ export class AuthController {
       "false",
     );
     this.force2fa = force2faSetting.toLowerCase() === "true";
+    // Default to true if not explicitly set to 'false'
+    this.brandPanel =
+      this.configService
+        .get<string>("AUTH_BRAND_PANEL", "true")
+        .toLowerCase() !== "false";
     const disableHttpsHeaders =
       this.configService
         .get<string>("DISABLE_HTTPS_HEADERS", "false")
@@ -758,6 +764,7 @@ export class AuthController {
       smtp: this.emailService.getStatus().configured,
       force2fa: this.demoModeService.isDemo ? false : this.force2fa,
       demo: this.demoModeService.isDemo,
+      brandPanel: this.brandPanel,
     };
   }
 

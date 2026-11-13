@@ -1,11 +1,12 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Card } from '@/components/ui/Card';
 import { AuthBrandPanel } from '@/components/auth/AuthBrandPanel';
 import { AuthLanguagePicker } from '@/components/auth/AuthLanguagePicker';
 import { AppVersion } from '@/components/ui/AppVersion';
+import { authApi } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 interface AuthShellProps {
@@ -50,8 +51,32 @@ export function AuthShell({
   languagePicker = false,
   showVersion = false,
 }: AuthShellProps) {
+  // The administrator may hide the panel (AUTH_BRAND_PANEL). Until the server
+  // answers, and if it cannot, the panel shows without its sample-data picture.
+  const [methods, setMethods] = useState<{ brandPanel?: boolean } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    Promise.resolve()
+      .then(() => authApi.getAuthMethods())
+      .then((result) => {
+        if (active) setMethods(result);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const showPanel = methods?.brandPanel !== false;
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 lg:grid lg:grid-cols-2">
+    <div
+      className={cn(
+        'min-h-screen bg-gray-50 dark:bg-gray-900',
+        showPanel && 'lg:grid lg:grid-cols-2',
+      )}
+    >
       <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className={cn('w-full space-y-6', wide ? 'max-w-lg' : 'max-w-md')}>
           <div className="text-center">
@@ -86,7 +111,7 @@ export function AuthShell({
           )}
         </div>
       </div>
-      <AuthBrandPanel />
+      {showPanel && <AuthBrandPanel showScreenshot={methods !== null} />}
     </div>
   );
 }

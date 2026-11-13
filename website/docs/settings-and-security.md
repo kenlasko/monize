@@ -554,6 +554,8 @@ FORCE_2FA=true
 
 With this set, a new account must set up 2FA before using Monize, the Security section shows **Required by administrator**, and 2FA cannot be disabled (it can still be reset). For OIDC logins the requirement is pushed up to the identity provider: a sign-in is rejected unless the provider actually asserts that multi-factor authentication happened (via the `amr`/`acr` claims), because app-level 2FA does not apply to an SSO account.
 
+The sign-in screens show a screenshot of the app, labelled **Sample data**, beside the form on wide screens. To hide the whole panel, for example on a shared instance, set `AUTH_BRAND_PANEL=false`; the sign-in screens then show the form alone, in one column.
+
 ---
 
 ## Trusted Devices

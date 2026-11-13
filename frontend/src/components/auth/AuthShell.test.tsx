@@ -1,13 +1,32 @@
-import { describe, it, expect } from 'vitest';
-import { render } from '@/test/render';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
+import { render, act } from '@/test/render';
+import { authApi } from '@/lib/auth';
 import { AuthShell } from './AuthShell';
 import { CARD_CLASS } from '@/components/ui/Card';
+
+vi.mock('@/lib/auth', () => ({ authApi: { getAuthMethods: vi.fn() } }));
+const getAuthMethods = vi.mocked(authApi.getAuthMethods);
+const SHOT = 'auth-brand-shot-dashboard-overview';
 
 function renderShell(ui: React.ReactElement) {
   return render(ui);
 }
 
+async function renderSettled(ui: React.ReactElement) {
+  let view!: ReturnType<typeof render>;
+  await act(async () => {
+    view = render(ui);
+  });
+  return view;
+}
+
 describe('AuthShell', () => {
+  beforeEach(() => {
+    getAuthMethods.mockReset();
+    // Pending by default: a sync test must not see a state update land outside act().
+    getAuthMethods.mockReturnValue(new Promise(() => {}));
+  });
+
   it('renders the transparent brand mark, title, subtitle and body', () => {
     const { getByRole, getByText, getByAltText } = renderShell(
       <AuthShell title="Sign in" subtitle={<span>or register</span>}>
@@ -28,6 +47,39 @@ describe('AuthShell', () => {
   it('sets the brand panel beside the form on every screen', () => {
     const { getByTestId } = renderShell(<AuthShell title="t">x</AuthShell>);
     expect(getByTestId('auth-brand-panel')).toBeInTheDocument();
+  });
+
+  it('shows the panel at once, with no picture until the server answers', async () => {
+    getAuthMethods.mockReturnValue(new Promise(() => {}));
+    const { getByTestId, queryByTestId, container } = await renderSettled(
+      <AuthShell title="t">x</AuthShell>,
+    );
+    expect(getByTestId('auth-brand-panel')).toBeInTheDocument();
+    expect(queryByTestId(SHOT)).not.toBeInTheDocument();
+    expect(container.firstElementChild?.className).toContain('lg:grid-cols-2');
+  });
+
+  it('adds the picture once the server allows the panel', async () => {
+    getAuthMethods.mockResolvedValue({ brandPanel: true } as never);
+    const { getByTestId } = await renderSettled(<AuthShell title="t">x</AuthShell>);
+    expect(getByTestId(SHOT)).toBeInTheDocument();
+  });
+
+  it('keeps the panel without a picture when the request fails', async () => {
+    getAuthMethods.mockRejectedValue(new Error('network'));
+    const { getByTestId, queryByTestId } = await renderSettled(<AuthShell title="t">x</AuthShell>);
+    expect(getByTestId('auth-brand-panel')).toBeInTheDocument();
+    expect(queryByTestId(SHOT)).not.toBeInTheDocument();
+  });
+
+  it('drops the panel and the second column when the administrator hides it', async () => {
+    getAuthMethods.mockResolvedValue({ brandPanel: false } as never);
+    const { queryByTestId, container, getByText } = await renderSettled(
+      <AuthShell title="t">x</AuthShell>,
+    );
+    expect(queryByTestId('auth-brand-panel')).not.toBeInTheDocument();
+    expect(container.firstElementChild?.className).not.toContain('grid');
+    expect(getByText('x')).toBeInTheDocument();
   });
 
   it('wraps the body in the shared Card surface', () => {

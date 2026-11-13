@@ -607,6 +607,7 @@ npm run dev
 | `LOCAL_AUTH_ENABLED` | Enable local auth | `true` |
 | `REGISTRATION_ENABLED` | Allow new user registration | `true` |
 | `FORCE_2FA` | Require 2FA for all local users | `false` |
+| `AUTH_BRAND_PANEL` | Show the brand panel with a sample-data screenshot beside the sign-in screens (`false` hides the panel) | `true` |
 | `OIDC_ISSUER_URL` | OIDC provider URL | - |
 | `OIDC_CLIENT_ID` | OIDC client ID | - |
 | `OIDC_CLIENT_SECRET` | OIDC client secret | - |

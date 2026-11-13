@@ -7,16 +7,18 @@ import { render, screen, act } from '@/test/render';
 import enAuth from '@/i18n/messages/en/auth.json';
 import { AuthBrandPanel, AUTH_BRAND_SLIDE_COOKIE, AUTH_BRAND_SLIDES } from './AuthBrandPanel';
 
+const SHOT = 'auth-brand-shot-dashboard-overview';
+
 const slideTitle = (i: number) => enAuth.brandPanel.slides[AUTH_BRAND_SLIDES[i].id].title;
 
 let clock = Date.now();
 /** Long enough that the next panel is a new visit, not a screen of the same one. */
 const laterVisit = () => vi.setSystemTime((clock += 60_000));
 
-async function visit() {
+async function visit(showScreenshot = true) {
   let view!: ReturnType<typeof render>;
   await act(async () => {
-    view = render(<AuthBrandPanel />);
+    view = render(<AuthBrandPanel showScreenshot={showScreenshot} />);
   });
   return view;
 }
@@ -70,23 +72,43 @@ describe('AuthBrandPanel', () => {
   it('bounds the picture by the panel, so a narrow window scales it instead of cropping it', async () => {
     await visit();
     for (const variant of ['', '.light']) {
-      const shot = screen.getByTestId(`auth-brand-shot-dashboard-overview${variant}`);
+      const shot = await screen.findByTestId(`${SHOT}${variant}`);
       expect(shot.className).toContain('max-w-full');
       expect(shot.className).toContain('max-h-full');
       expect(shot.className).not.toContain('max-w-none');
     }
   });
 
+  it('shows the picture with a Sample data label when asked to', async () => {
+    await visit();
+    expect(await screen.findByTestId(SHOT)).toBeInTheDocument();
+    expect(screen.getByText(enAuth.brandPanel.sampleData)).toBeInTheDocument();
+  });
+
+  it('shows neither picture nor label otherwise, and keeps the text', async () => {
+    await visit(false);
+    expect(screen.queryByTestId(SHOT)).not.toBeInTheDocument();
+    expect(screen.queryByText(enAuth.brandPanel.sampleData)).not.toBeInTheDocument();
+    expect(screen.getByText(slideTitle(0))).toBeInTheDocument();
+  });
+
   it('names the same pictures as the script that builds them', () => {
-    const script = readFileSync(resolve(process.cwd(), 'scripts/build-brand-screenshots.mjs'), 'utf8');
-    const names = [...(script.match(/const NAMES = \[([^\]]*)\]/)?.[1] ?? '').matchAll(/'([^']+)'/g)].map((m) => m[1]);
+    const script = readFileSync(
+      resolve(process.cwd(), 'scripts/build-brand-screenshots.mjs'),
+      'utf8',
+    );
+    const names = [
+      ...(script.match(/const NAMES = \[([^\]]*)\]/)?.[1] ?? '').matchAll(/'([^']+)'/g),
+    ].map((m) => m[1]);
     expect(names).toEqual(AUTH_BRAND_SLIDES.map((slide) => slide.image));
   });
 
   it('has a picture on disk for every slide in both modes', () => {
     for (const { image } of AUTH_BRAND_SLIDES) {
       for (const variant of ['', '.light']) {
-        expect(existsSync(resolve(process.cwd(), `public/brand/${image}${variant}.webp`))).toBe(true);
+        expect(existsSync(resolve(process.cwd(), `public/brand/${image}${variant}.webp`))).toBe(
+          true,
+        );
       }
     }
   });
