@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.splash.json",
     "test": "jest && node --test \"scripts/**/*.test.mjs\"",
     "stage": "node scripts/stage.mjs",
+    "dist": "npm run typecheck && npm run build && npm run stage -- --require-webp && electron-builder --win --publish never",
     "smoke:postgres": "npm run build && node scripts/smoke-postgres.mjs",
     "dev:boot": "npm run build && node scripts/dev-boot.mjs"
   },

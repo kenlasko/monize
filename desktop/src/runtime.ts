@@ -86,6 +86,24 @@ function postgresOptions(
 }
 
 /**
+ * Stops a PostgreSQL that an earlier session left running on this data
+ * folder: a shell that is killed cannot stop its server, which is detached
+ * rather than a child. The runner decides from the data directory alone, so
+ * this is a no-op when no server runs there. Rejects when a server is
+ * running and will not stop.
+ */
+export async function stopLeftoverPostgres(
+  paths: AppPaths,
+  logger: Logger,
+  createPostgres: RuntimeDeps["createPostgres"] = (options) =>
+    createPostgresRunner(options),
+): Promise<void> {
+  await createPostgres(
+    postgresOptions(paths, logger, STOP_ONLY_PORT, STOP_ONLY_PASSWORD),
+  ).stop();
+}
+
+/**
  * A previous session that was killed leaves its PostgreSQL running (it is
  * detached, not a child) and, for a moment, its backend and frontend. Each
  * still holds a persisted port, and a busy persisted port is moved, which
@@ -104,11 +122,7 @@ async function releasePersistedPorts(
     return;
   }
   try {
-    await deps
-      .createPostgres(
-        postgresOptions(paths, logger, STOP_ONLY_PORT, STOP_ONLY_PASSWORD),
-      )
-      .stop();
+    await stopLeftoverPostgres(paths, logger, deps.createPostgres);
   } catch (error) {
     // start() meets the same server again and reports it properly.
     logger.warn(
