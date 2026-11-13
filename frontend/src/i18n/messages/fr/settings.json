@@ -330,7 +330,11 @@
       "unsupported": {
         "unsupported": "Ce navigateur ne peut pas recevoir de notifications push.",
         "denied": "Les notifications sont bloquées pour Monize dans ce navigateur. Autorisez-les dans les paramètres du site, puis rechargez cette page.",
-        "ios-browser": "Sur iPhone et iPad, les notifications push ne fonctionnent qu'une fois Monize installé sur l'écran d'accueil. Utilisez Partager, puis Sur l'écran d'accueil, et ouvrez Monize depuis là."
+        "ios-browser": "Sur iPhone et iPad, les notifications push ne fonctionnent qu'une fois Monize installé sur l'écran d'accueil. Utilisez Partager, puis Sur l'écran d'accueil, et ouvrez Monize depuis là.",
+        "shell": {
+          "electron": "Les notifications ne sont pas disponibles dans la fenêtre de bureau de Monize. Ouvrez Monize dans votre navigateur depuis le menu de la zone de notification (« Open in browser ») : les notifications push y continuent de fonctionner.",
+          "capacitor": "Les notifications push ne sont pas encore disponibles dans l'application Monize pour Android. Ouvrez Monize dans votre navigateur pour les recevoir."
+        }
       },
       "disabledReason": {
         "GONE": "Plus joignable. Réactivez le push dans ce navigateur.",

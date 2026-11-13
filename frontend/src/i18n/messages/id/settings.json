@@ -330,7 +330,11 @@
       "unsupported": {
         "unsupported": "Peramban ini tidak dapat menerima notifikasi push.",
         "denied": "Notifikasi diblokir untuk Monize di peramban ini. Izinkan di pengaturan situs peramban, lalu muat ulang halaman ini.",
-        "ios-browser": "Di iPhone dan iPad, notifikasi push hanya berfungsi setelah Monize dipasang ke Layar Utama. Gunakan Bagikan, lalu Tambahkan ke Layar Utama, dan buka Monize dari sana."
+        "ios-browser": "Di iPhone dan iPad, notifikasi push hanya berfungsi setelah Monize dipasang ke Layar Utama. Gunakan Bagikan, lalu Tambahkan ke Layar Utama, dan buka Monize dari sana.",
+        "shell": {
+          "electron": "Notifikasi tidak tersedia di jendela desktop Monize. Buka Monize di browser dari menu baki (\"Open in browser\"), dan notifikasi push tetap berfungsi di sana.",
+          "capacitor": "Notifikasi push belum tersedia di aplikasi Monize untuk Android. Buka Monize di browser untuk menerimanya."
+        }
       },
       "disabledReason": {
         "GONE": "Tidak dapat dijangkau lagi. Aktifkan kembali push di peramban tersebut.",
