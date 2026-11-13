@@ -1954,9 +1954,11 @@
       "CATEGORY": "Categoria",
       "ACCOUNT": "Conta",
       "ACCOUNT_AMOUNT": "Montante (moeda da conta)",
+      "ORIGINAL_AMOUNT": "Montante (moeda original)",
       "TAG": "Etiqueta"
     },
-    "accountCurrency": "Moeda da conta"
+    "accountCurrency": "Moeda da conta",
+    "originalCurrency": "Moeda original"
   },
   "investmentReportLabels": {
     "groupBy": {

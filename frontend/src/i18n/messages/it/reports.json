@@ -1954,9 +1954,11 @@
       "CATEGORY": "Categoria",
       "ACCOUNT": "Conto",
       "ACCOUNT_AMOUNT": "Importo (valuta del conto)",
+      "ORIGINAL_AMOUNT": "Importo (valuta originale)",
       "TAG": "Etichetta"
     },
-    "accountCurrency": "Valuta del conto"
+    "accountCurrency": "Valuta del conto",
+    "originalCurrency": "Valuta originale"
   },
   "investmentReportLabels": {
     "groupBy": {

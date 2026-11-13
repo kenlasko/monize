@@ -1954,9 +1954,11 @@
       "CATEGORY": "Kategori",
       "ACCOUNT": "Hesap",
       "ACCOUNT_AMOUNT": "Tutar (hesap para birimi)",
+      "ORIGINAL_AMOUNT": "Tutar (orijinal para birimi)",
       "TAG": "Etiket"
     },
-    "accountCurrency": "Hesap para birimi"
+    "accountCurrency": "Hesap para birimi",
+    "originalCurrency": "Orijinal para birimi"
   },
   "investmentReportLabels": {
     "groupBy": {

@@ -1954,9 +1954,11 @@
       "CATEGORY": "카테고리",
       "ACCOUNT": "계정",
       "ACCOUNT_AMOUNT": "금액 (계좌 통화)",
+      "ORIGINAL_AMOUNT": "금액 (원래 통화)",
       "TAG": "태그"
     },
-    "accountCurrency": "계좌 통화"
+    "accountCurrency": "계좌 통화",
+    "originalCurrency": "원래 통화"
   },
   "investmentReportLabels": {
     "groupBy": {

@@ -1954,9 +1954,11 @@
       "CATEGORY": "類別",
       "ACCOUNT": "科目",
       "ACCOUNT_AMOUNT": "金額（帳戶幣別）",
+      "ORIGINAL_AMOUNT": "金額（原始幣別）",
       "TAG": "標籤"
     },
-    "accountCurrency": "帳戶幣別"
+    "accountCurrency": "帳戶幣別",
+    "originalCurrency": "原始幣別"
   },
   "investmentReportLabels": {
     "groupBy": {

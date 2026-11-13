@@ -1954,9 +1954,11 @@
       "CATEGORY": "カテゴリ",
       "ACCOUNT": "口座",
       "ACCOUNT_AMOUNT": "金額（口座通貨）",
+      "ORIGINAL_AMOUNT": "金額（元の通貨）",
       "TAG": "タグ"
     },
-    "accountCurrency": "口座通貨"
+    "accountCurrency": "口座通貨",
+    "originalCurrency": "元の通貨"
   },
   "investmentReportLabels": {
     "groupBy": {
