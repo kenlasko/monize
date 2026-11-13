@@ -1299,7 +1299,9 @@ describe("IncomeReportsService", () => {
 
       const [wholeSql] = scopedManager.query.mock.calls[2];
       const [splitSql] = scopedManager.query.mock.calls[3];
-      expect(wholeSql).not.toContain("linked_transaction_id");
+      // The counterpart is joined only to scope the flows; the transfer-rate
+      // subquery reads it by id on its own (issue #2153).
+      expect(wholeSql).not.toContain("LEFT JOIN transactions lt");
       expect(wholeSql).not.toContain("lt.");
       expect(splitSql).not.toContain("NOT (ts.transfer_account_id");
     });
@@ -1408,7 +1410,9 @@ describe("IncomeReportsService", () => {
 
       const [wholeSql] = scopedManager.query.mock.calls[2];
       const [splitSql] = scopedManager.query.mock.calls[3];
-      expect(wholeSql).not.toContain("linked_transaction_id");
+      // The counterpart is joined only to scope the flows; the transfer-rate
+      // subquery reads it by id on its own (issue #2153).
+      expect(wholeSql).not.toContain("LEFT JOIN transactions lt");
       expect(splitSql).not.toContain("NOT (ts.transfer_account_id");
     });
 

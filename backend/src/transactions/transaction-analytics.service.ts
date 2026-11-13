@@ -2589,6 +2589,7 @@ const TRANSACTION_RATE_BASIS: RateBasisColumns = {
   date: "transaction.transactionDate",
   originalCurrency: "transaction.originalCurrencyCode",
   exchangeRate: "transaction.exchangeRate",
+  transferLegs: { transactionAlias: "transaction" },
 };
 
 /** The transaction-list filter surface every analytics read applies. */
@@ -2707,7 +2708,8 @@ const clampGroupLimit = (limit: number | undefined): number =>
  * Select and group by the columns a part outside `reporting` needs to convert
  * at the rate it settled at, for a read that already splits every row by its
  * day, so {@link addDatedAmount} reads each part's own rate the way the
- * reports do (INV-FX-002); `alias` is the query's transaction alias.
+ * reports do (INV-FX-002), a transfer leg at its transfer's posted amounts
+ * included; `alias` is the query's transaction alias.
  */
 function byOwnRate(
   qb: SelectQueryBuilder<Transaction>,
@@ -2720,6 +2722,7 @@ function byOwnRate(
       currency: `${alias}.currencyCode`,
       originalCurrency: `${alias}.originalCurrencyCode`,
       exchangeRate: `${alias}.exchangeRate`,
+      transferLegs: { transactionAlias: alias },
     },
     reporting,
     { byDay: false },

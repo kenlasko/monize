@@ -1659,8 +1659,22 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     discussion #2139). The other side is read from the same-owner
                     joins of the report's fetch, as context only; a cross-owner
                     or unreadable counterpart falls back to the market rate. The
-                    built-in reports, the Sankey and the assistant's analytics
-                    still convert a transfer leg at the market rate.
+                    SQL reads apply the same rule (issue #2153): a read whose
+                    rows can be transfer legs selects transferRateSql
+                    (built-in-reports/transfer-rate-sql.ts), the leg's amount
+                    over its counterpart's, as the own rate ahead of a stored
+                    one, through ownRateSql / rateBasisColumnsSql with
+                    `transferLegs` or splitByRateBasis's `transferLegs`
+                    (fx_transfer_rate). The counterpart is a same-owner
+                    subquery by id, independent of the read's filters. That
+                    covers the Cash Flow Sankey's transfer flows, the Monthly
+                    Category Breakdown's transfer rows, Income vs Expenses'
+                    tagged transfer flows, TransactionAnalyticsService's
+                    summary, grouped totals, tag breakdown, monthly totals and
+                    flow totals, and the payee and category detail pages'
+                    account panels (built-in-reports/account-breakdown-fx.ts).
+                    Budget actuals' outgoing-transfer lines still convert a
+                    transfer leg at the market rate.
                     Like the Sankey, these reports do not yet say which of the
                     two rates answered. The assistant's and the MCP tools'
                     transaction analytics (TransactionAnalyticsService: the
@@ -1696,6 +1710,14 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     incoming leg's stored rate disagrees; the incoming leg alone
                     reads 100 USD; a split transfer's counterpart reads its own
                     line, not the parent's amount.
+                    report-transfer-fx-surfaces.integration.spec.ts holds the
+                    same 100 USD -> 90 EUR transfer, plain and as a split line,
+                    to 90 EUR (the market's 80) in the Sankey, the Monthly
+                    Category Breakdown, Income vs Expenses' tagged flows, the
+                    transaction summary, grouped totals, tag breakdown, monthly
+                    totals, MCP flow totals and a payee's account panel, and
+                    each 90 EUR leg to 100 USD
+                    (the market's 112.50), on PostgreSQL.
                     transaction-analytics.service.spec.ts "a row carrying its own
                     rate": EUR 100 charged as USD 125 reads EUR 100 in the
                     assistant's totals and breakdown, the report rule's figure,

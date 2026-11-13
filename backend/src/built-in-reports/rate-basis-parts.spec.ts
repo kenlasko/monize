@@ -80,7 +80,55 @@ describe("rate-basis-parts", () => {
     });
   });
 
+  describe("splitByRateBasis over transfer legs", () => {
+    it("also keys a part by the rate its transfer's amounts imply", () => {
+      const qb = {
+        setParameter: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        addGroupBy: jest.fn().mockReturnThis(),
+      };
+
+      splitByRateBasis(
+        qb as unknown as SelectQueryBuilder<object>,
+        {
+          currency: "transaction.currencyCode",
+          originalCurrency: "transaction.originalCurrencyCode",
+          exchangeRate: "transaction.exchangeRate",
+          transferLegs: { transactionAlias: "transaction" },
+        },
+        "EUR",
+        { byDay: false },
+      );
+
+      const [sql, alias] = qb.addSelect.mock.calls[2];
+      expect(alias).toBe("fx_transfer_rate");
+      expect(sql).toContain(
+        '"transaction".currency_code <> :fxReportingCurrency',
+      );
+      expect(qb.addGroupBy.mock.calls.map((c) => c[0])).toEqual([
+        "fx_original_currency",
+        "fx_exchange_rate",
+        "fx_transfer_rate",
+      ]);
+    });
+  });
+
   describe("partRateBasis", () => {
+    it("reads a transfer part at its transfer's rate ahead of a stored one", () => {
+      expect(
+        partRateBasis(
+          {
+            fx_original_currency: "CAD",
+            fx_exchange_rate: "0.8",
+            fx_transfer_rate: "0.75",
+          },
+          "USD",
+          "2026-01-12",
+          "CAD",
+        ).own_rate,
+      ).toBe(0.75);
+    });
+
     it("reads a part's own rate into the reporting currency, and none for a stored 1", () => {
       expect(
         partRateBasis(
@@ -218,6 +266,32 @@ describe("rate-basis-parts", () => {
       // 100 USD at 1.25 plus 100 USD at its own 1.30; the CAD part is not
       // the conversion's to answer.
       expect([...converted.entries()]).toEqual([["a|USD", { total: 255 }]]);
+    });
+
+    it("converts a transfer part at its transfer's amounts, with no history", async () => {
+      const query = jest.fn();
+
+      const converted = await convertRateParts(
+        query,
+        [
+          {
+            key: "a",
+            currencyCode: "USD",
+            fx_day: "2026-03-10",
+            fx_original_currency: null,
+            fx_exchange_rate: "1",
+            // 100 USD that arrived as 90 EUR.
+            fx_transfer_rate: "1.11111111111111111111",
+            total: "-100",
+          },
+        ],
+        "EUR",
+        (row) => String(row.key),
+        { sums: ["total"], currency: "currencyCode" },
+      );
+
+      expect([...converted.entries()]).toEqual([["a", { total: -90 }]]);
+      expect(query).not.toHaveBeenCalled();
     });
   });
 });

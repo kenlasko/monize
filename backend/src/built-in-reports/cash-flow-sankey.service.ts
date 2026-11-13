@@ -147,7 +147,7 @@ export function wholeTransferLegsQuery(scope: SankeyQueryScope): BuiltQuery {
         cp.name AS counterpart_name,
         t.currency_code,
         TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS tx_date,
-        ${ownRateSql("$4")} AS own_rate,
+        ${ownRateSql("$4", "t", "rows")} AS own_rate,
         cp.managed_purpose AS counterpart_managed_purpose,
         SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) AS inflow,
         SUM(CASE WHEN t.amount < 0 THEN t.amount ELSE 0 END) AS outflow
@@ -187,7 +187,7 @@ export function splitTransferLegsQuery(scope: SankeyQueryScope): BuiltQuery {
         cp.name AS counterpart_name,
         t.currency_code,
         TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS tx_date,
-        ${ownRateSql("$4")} AS own_rate,
+        ${ownRateSql("$4", "t", { splitAlias: "ts" })} AS own_rate,
         cp.managed_purpose AS counterpart_managed_purpose,
         SUM(CASE WHEN ts.amount > 0 THEN ts.amount ELSE 0 END) AS inflow,
         SUM(CASE WHEN ts.amount < 0 THEN ts.amount ELSE 0 END) AS outflow

@@ -77,6 +77,9 @@ export async function readAccountTotalsInReportingCurrency(
       date: "t.transaction_date",
       originalCurrency: "t.original_currency_code",
       exchangeRate: "t.exchange_rate",
+      // A payee's or category's transfer legs count here, as they do in the
+      // summary the same page reads.
+      transferLegs: { transactionAlias: "t" },
     },
     reportingCurrency,
   );

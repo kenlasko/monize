@@ -12,6 +12,11 @@ import {
 import { FIAT_MONEY_DECIMALS, sumMoney } from "../common/round.util";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { preferredCurrency } from "../common/default-currency.util";
+import {
+  transferLegAliases,
+  TransferLegs,
+  transferRateSql,
+} from "./transfer-rate-sql";
 
 export interface RawCategoryAggregate extends RawRateBasis {
   category_id: string | null;
@@ -106,15 +111,30 @@ export function wholeGroups<T extends RawRateBasis>(
  * reporting currency settled at `exchange_rate` account-currency units per
  * reporting unit. A stored 1 between two different codes is the column's
  * default, not a rate, and falls back to the market rate like an absent one.
+ *
+ * A read whose rows can be transfer legs names where they sit
+ * (`transferLegs`): a leg whose other side posted in the reporting currency
+ * converts at the two amounts the transfer moved ({@link transferRateSql}),
+ * ahead of any stored rate.
  */
-export function ownRateSql(currencyParam: string, alias = "t"): string {
-  return `CASE
+export function ownRateSql(
+  currencyParam: string,
+  alias = "t",
+  transferLegs?: TransferLegs,
+): string {
+  const stored = `CASE
           WHEN ${alias}.original_currency_code = ${currencyParam}::text
            AND ${alias}.original_currency_code <> ${alias}.currency_code
            AND ${alias}.exchange_rate > 0
            AND ${alias}.exchange_rate <> 1
           THEN ${alias}.exchange_rate
         END`;
+  if (!transferLegs) return stored;
+  const transfer = transferRateSql(
+    `${currencyParam}::text`,
+    transferLegAliases(alias, transferLegs),
+  );
+  return `COALESCE(${transfer}, ${stored})`;
 }
 
 /**
@@ -132,12 +152,13 @@ export function ownRateSql(currencyParam: string, alias = "t"): string {
 export function rateBasisColumnsSql(
   currencyParam: string,
   alias = "t",
+  transferLegs?: TransferLegs,
 ): string {
   return `CASE
           WHEN ${alias}.currency_code = ${currencyParam}::text THEN NULL
           ELSE TO_CHAR(${alias}.transaction_date, 'YYYY-MM-DD')
         END AS tx_date,
-        ${ownRateSql(currencyParam, alias)} AS own_rate`;
+        ${ownRateSql(currencyParam, alias, transferLegs)} AS own_rate`;
 }
 
 /** The `GROUP BY` entries matching {@link rateBasisColumnsSql}'s columns. */
@@ -146,6 +167,8 @@ export const RATE_BASIS_GROUP_BY = "tx_date, own_rate";
 /**
  * {@link rateBasisColumnsSql} for a transaction already loaded as an entity,
  * the custom report engine's shape: the same date and the same own-rate rule.
+ * `transferRate` is what {@link transferRateSql} selected for the row, which
+ * wins over the stored rate.
  */
 export function transactionRateBasis(
   tx: {
@@ -153,6 +176,7 @@ export function transactionRateBasis(
     transactionDate: string | Date;
     originalCurrencyCode?: string | null;
     exchangeRate?: number | string | null;
+    transferRate?: number | string | null;
   },
   reportingCurrency: string,
 ): RawRateBasis {
@@ -161,12 +185,13 @@ export function transactionRateBasis(
   }
   const rate = Number(tx.exchangeRate);
   const ownRate =
-    tx.originalCurrencyCode === reportingCurrency &&
+    toOwnRate(tx.transferRate) ??
+    (tx.originalCurrencyCode === reportingCurrency &&
     tx.originalCurrencyCode !== tx.currencyCode &&
     rate > 0 &&
     rate !== 1
       ? rate
-      : null;
+      : null);
   const date =
     tx.transactionDate instanceof Date
       ? tx.transactionDate.toISOString().slice(0, 10)
@@ -283,6 +308,8 @@ export interface DatedAmountRow {
   txDate: string;
   originalCurrencyCode?: string | null;
   exchangeRate?: number | string | null;
+  /** The rate its transfer's posted amounts imply (`transferRateSql`). */
+  transferRate?: number | string | null;
   /** The sums the aggregate carries, by name. */
   amounts: Record<string, number>;
 }
@@ -309,6 +336,7 @@ export async function convertDatedRows(
         transactionDate: row.txDate,
         originalCurrencyCode: row.originalCurrencyCode,
         exchangeRate: row.exchangeRate,
+        transferRate: row.transferRate,
       },
       reportingCurrency,
     ),

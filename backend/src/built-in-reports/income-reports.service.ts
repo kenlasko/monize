@@ -695,7 +695,7 @@ export class IncomeReportsService {
         SELECT
           ${wholeFlowBucketStart} as period_start,
           t.currency_code,
-          ${rateBasisColumnsSql(wholeFlowCurrencyParam)},
+          ${rateBasisColumnsSql(wholeFlowCurrencyParam, "t", "rows")},
           t.amount as leg_amount,
           ${transactionTagValuesArrayExpr("t", wholeFlowKeyParam)} as tag_values
         FROM transactions t
@@ -762,7 +762,7 @@ export class IncomeReportsService {
         SELECT
           ${splitFlowBucketStart} as period_start,
           t.currency_code,
-          ${rateBasisColumnsSql(splitFlowCurrencyParam)},
+          ${rateBasisColumnsSql(splitFlowCurrencyParam, "t", { splitAlias: "ts" })},
           ts.amount as leg_amount,
           ${tagValuesArrayExpr("t", "ts", splitFlowKeyParam)} as tag_values
         FROM transactions t

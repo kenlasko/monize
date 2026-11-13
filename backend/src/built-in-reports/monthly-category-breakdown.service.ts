@@ -281,7 +281,7 @@ export class MonthlyCategoryBreakdownService {
         t.account_id,
         a.name as account_name,
         t.currency_code,
-        ${rateBasisColumnsSql("$3")},
+        ${rateBasisColumnsSql("$3", "t", "rows")},
         SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END) as outflow,
         SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) as inflow
       FROM transactions t
