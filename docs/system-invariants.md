@@ -142,6 +142,7 @@ implied.
 | INV-AUTH-003 | A destructive OIDC action requires a provider round trip | enforced |
 | INV-AUTH-004 | A logout reports only what it achieved | enforced |
 | INV-AUTH-005 | A replaced password ends every credential issued on the old one | enforced |
+| INV-AUTH-006 | A personal access token reaches only opted-in routes, with the scope the request needs | enforced |
 | INV-ACTIVITY-001 | Activity is attributed to whoever acted, not to whoever was acted for | enforced |
 | INV-PROFILE-001 | A user-profile response is an allowlist | enforced |
 | INV-DISPLAY-001 | A figure addressed to a person is rendered in that person's number locale | partial |
@@ -6043,6 +6044,64 @@ Required tests      Unit: auth-email.service.spec.ts, users.service.spec.ts,
                     password, and the disable, unchanged. Still owed: a
                     real-database test that a PAT minted before a reset is refused
                     by the bearer guard after it.
+Status              enforced
+```
+
+### INV-AUTH-006 -- a personal access token reaches only opted-in routes, with the scope the request needs
+
+```text
+Statement           A personal access token (`pat_...`, sent as
+                    `Authorization: Bearer`) authenticates a REST request only on a
+                    route that opted in with @AllowPat(), that asks for neither a
+                    step-up (@RequireStepUp) nor a role (@Roles), and that is not
+                    marked @NoPat(); and only when the token holds the scope the
+                    request needs: `read` for GET, HEAD and OPTIONS, `write` for
+                    every other method, except a non-GET handler marked
+                    @PatScope("read"). `write` does not imply `read`. A route that
+                    did not opt in is closed, so a new controller is session-only
+                    until someone decides otherwise. A PAT always acts as its
+                    owner, never as a delegate.
+Source of truth     personal_access_tokens (hash, scopes, expires_at, is_revoked);
+                    the @AllowPat / @NoPat / @PatScope metadata on each controller
+Enforcement         backend/src/auth/guards/pat-access.guard.ts. PatAccessGuard is
+                    global (APP_GUARD, registered from AuthModule). For a PAT bearer
+                    it applies the route policy from metadata alone (403, before
+                    any lookup), validates the token (PatService.validateToken:
+                    401 when invalid, expired or revoked), then checks the scope
+                    (403, hasApiScope, exact membership), and only then records
+                    the token in a WeakMap (admitPat).
+                    JwtStrategy.authenticate authenticates a PAT only from that
+                    record (admittedPatOf), never from a fresh validation and never
+                    from a cookie: a `pat_` bearer with no record fails with 401.
+                    CsrfGuard skips the double-submit check for a PAT bearer, which
+                    is safe only because patBearerOf
+                    (backend/src/auth/pat-access/pat-bearer.ts) is the one
+                    predicate PatAccessGuard, JwtStrategy and CsrfGuard all call.
+                    The MCP transport is @PatSelfAuthenticated() and checks scope
+                    per tool; a controller that authenticates nobody (health,
+                    OAuth discovery) is @PatIgnored(). RequestContextInterceptor does not touch
+                    users.last_activity_at for a PAT request, so a script cannot
+                    hold off the emergency-access timer. The reviewed list of open
+                    controllers (46) and of @PatScope("read") handlers is held in
+                    pat-access.routes.guard.spec.ts, so opening a controller or
+                    declaring a POST a pure read is an edit to that list in the
+                    same PR.
+Concurrency scope   per request
+Failure response    401 for an invalid, expired or revoked token; 403 for a closed
+                    route or a missing scope. The only write is the token's own
+                    last_used_at, at most once a minute, once it has validated.
+Required tests      Unit: pat-access.guard.spec.ts (route policy, scope matrix,
+                    closed route refused before any lookup), pat-access.routes.guard.spec.ts (scans the
+                    source: the open controllers and the @PatScope("read") counts
+                    are exactly the reviewed lists, @AllowPat() sits only on a
+                    class, and the session-only directories (admin, auth,
+                    backup, delegation, emergency-access, mcp, oauth, push,
+                    users) carry no PAT decorator), pat-bearer.spec.ts (the shared predicate and the
+                    WeakMap record), jwt.strategy.spec.ts (a PAT authenticates only
+                    from the guard's record, never falls through to the cookie),
+                    csrf.guard.spec.ts (a PAT bearer skips the CSRF check). Still
+                    owed: there is no real-HTTP or integration test that sends a
+                    PAT through the full global guard chain to a real controller.
 Status              enforced
 ```
 
