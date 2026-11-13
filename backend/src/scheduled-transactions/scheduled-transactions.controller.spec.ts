@@ -434,7 +434,34 @@ describe("ScheduledTransactionsController", () => {
       expect(result).toBe(expected);
       expect(mockService.previewAmountEstimate).toHaveBeenCalledWith(
         mockReq.user.id,
-        { accountId: "acc-1", payeeId: "payee-1", categoryId: "cat-1" },
+        {
+          accountId: "acc-1",
+          payeeId: "payee-1",
+          categoryId: "cat-1",
+          transferAccountId: null,
+        },
+      );
+    });
+
+    it("passes a transfer's destination and frequency through (issue #2164)", async () => {
+      mockService.previewAmountEstimate.mockResolvedValue({});
+
+      await controller.previewAmountEstimate(mockReq, "acc-1", {
+        transferAccountId: "acc-card",
+        frequency: "MONTHLY" as never,
+        nextDueDate: "2026-11-26",
+      });
+
+      expect(mockService.previewAmountEstimate).toHaveBeenCalledWith(
+        mockReq.user.id,
+        {
+          accountId: "acc-1",
+          payeeId: null,
+          categoryId: null,
+          transferAccountId: "acc-card",
+          frequency: "MONTHLY",
+          nextDueDate: "2026-11-26",
+        },
       );
     });
   });

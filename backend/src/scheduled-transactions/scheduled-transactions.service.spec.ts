@@ -10493,6 +10493,7 @@ describe("ScheduledTransactionsService", () => {
       status: "estimated",
       currencyCode: "USD",
       missingPair: null,
+      floors: [],
       profile: buildEstimateProfile(
         [
           { date: "2026-08-15", amount: -100 },
@@ -10508,6 +10509,7 @@ describe("ScheduledTransactionsService", () => {
       currencyCode: "USD",
       missingPair: null,
       profile: null,
+      floors: [],
     };
     const baseDto = {
       accountId: "acc-1",
@@ -10524,7 +10526,11 @@ describe("ScheduledTransactionsService", () => {
     describe("create", () => {
       it.each([
         ["a split", { splits: [{ categoryId: "c", amount: -1 }] as any }],
-        ["a transfer", { isTransfer: true, transferAccountId: "acc-2" }],
+        ["a transfer with no destination", { isTransfer: true }],
+        [
+          "an auto-posted transfer",
+          { isTransfer: true, transferAccountId: "acc-2", autoPost: true },
+        ],
         ["an auto-posted schedule", { autoPost: true }],
         ["no payee", { payeeId: undefined }],
         ["no category", { categoryId: undefined }],
@@ -10547,6 +10553,36 @@ describe("ScheduledTransactionsService", () => {
           payeeId: "payee-1",
           categoryId: "cat-1",
           currencyCode: "USD",
+        });
+        expect(scheduledRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({ amount: -110, amountIsEstimated: true }),
+        );
+      });
+
+      it("estimates a transfer on its two accounts, with no payee or category (issue #2164)", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(knownEstimate());
+        const saved = makeScheduled({ amountIsEstimated: true } as never);
+        scheduledRepo.save.mockResolvedValue(saved);
+        stubFindOne(saved);
+
+        await service.create(userId, {
+          ...baseDto,
+          payeeId: undefined,
+          categoryId: undefined,
+          isTransfer: true,
+          transferAccountId: "acc-2",
+        });
+
+        expect(amountEstimates.estimateFor).toHaveBeenCalledWith(userId, {
+          payeeId: null,
+          categoryId: null,
+          currencyCode: "USD",
+          transfer: {
+            accountId: "acc-1",
+            transferAccountId: "acc-2",
+            frequency: "MONTHLY",
+            nextOccurrenceDueDate: "2026-12-15",
+          },
         });
         expect(scheduledRepo.create).toHaveBeenCalledWith(
           expect.objectContaining({ amount: -110, amountIsEstimated: true }),
@@ -10630,7 +10666,8 @@ describe("ScheduledTransactionsService", () => {
         expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
       });
 
-      it("drops the flag when the schedule becomes a transfer", async () => {
+      it("keeps the flag when the schedule becomes a transfer, matched on its accounts (issue #2164)", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(knownEstimate());
         stubFindOne(makeScheduled({ amountIsEstimated: true } as never));
 
         await service.update(userId, stId, {
@@ -10641,9 +10678,80 @@ describe("ScheduledTransactionsService", () => {
         expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
           ScheduledTransaction,
           stId,
+          expect.not.objectContaining({ amountIsEstimated: false }),
+        );
+        expect(amountEstimates.estimateFor).toHaveBeenCalledWith(
+          userId,
+          expect.objectContaining({
+            transfer: expect.objectContaining({
+              accountId: "acc-1",
+              transferAccountId: "acc-2",
+            }),
+          }),
+        );
+      });
+
+      it("drops the flag when an estimated transfer becomes a split", async () => {
+        stubFindOne(
+          makeScheduled({
+            amountIsEstimated: true,
+            isTransfer: true,
+            transferAccountId: "acc-2",
+          } as never),
+        );
+
+        await service.update(userId, stId, {
+          isTransfer: false,
+          splits: [
+            { categoryId: "cat-1", amount: -600 },
+            { categoryId: "cat-2", amount: -600 },
+          ] as never,
+        });
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          ScheduledTransaction,
+          stId,
           expect.objectContaining({ amountIsEstimated: false }),
         );
-        expect(amountEstimates.estimateFor).not.toHaveBeenCalled();
+      });
+
+      it("refuses a delegate moving an estimated transfer to another account", async () => {
+        stubFindOne(
+          makeScheduled({
+            amountIsEstimated: true,
+            isTransfer: true,
+            transferAccountId: "acc-2",
+          } as never),
+        );
+
+        await expect(
+          service.update(
+            userId,
+            stId,
+            { transferAccountId: "acc-3" },
+            { actorIsDelegate: true },
+          ),
+        ).rejects.toThrow(ForbiddenException);
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
+
+      it("lets a delegate recategorize an estimated transfer: its basis is the accounts", async () => {
+        stubFindOne(
+          makeScheduled({
+            amountIsEstimated: true,
+            isTransfer: true,
+            transferAccountId: "acc-2",
+          } as never),
+        );
+
+        await service.update(
+          userId,
+          stId,
+          { categoryId: "33333333-3333-3333-3333-333333333333" },
+          { actorIsDelegate: true },
+        );
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalled();
       });
 
       it("turns the estimate on and writes the snapshot", async () => {

@@ -995,6 +995,7 @@ describe("ScheduledOccurrenceService", () => {
       status: "estimated",
       currencyCode: "CAD",
       missingPair: null,
+      floors: [],
       profile: buildEstimateProfile(
         [
           { date: "2025-12-15", amount: -180 },
@@ -1128,6 +1129,65 @@ describe("ScheduledOccurrenceService", () => {
         amount: -151.67,
         estimated: true,
       });
+    });
+
+    it("prices an estimated transfer's next occurrence through its balance floor, wherever an override moved it (issue #2164)", async () => {
+      estimates.estimateMany.mockResolvedValue(
+        new Map([
+          [
+            "st-heat",
+            {
+              ...seasonalEstimate(),
+              // The card owes 2,000 for the occurrence moved to Dec 18.
+              floors: [{ after: null, through: "2026-12-18", owed: 2000 }],
+            },
+          ],
+        ]),
+      );
+      overridesRepo.find.mockResolvedValue([
+        {
+          id: "ovr-moved",
+          scheduledTransactionId: "st-heat",
+          originalDate: "2026-12-15",
+          overrideDate: "2026-12-18",
+          amount: null,
+        },
+      ]);
+
+      const occurrences = await service.expand(
+        userId,
+        [
+          heatingBill({
+            isTransfer: true,
+            transferAccountId: "card-1",
+          } as never),
+        ],
+        { through: "2027-01-31" },
+      );
+
+      expect(occurrences.map((o) => [o.dueDate, o.amount])).toEqual([
+        ["2026-12-18", -2000],
+        ["2027-01-15", -151.67],
+      ]);
+      expect(estimates.estimateMany).toHaveBeenCalledWith(
+        userId,
+        new Map([
+          [
+            "st-heat",
+            {
+              payeeId: "payee-1",
+              categoryId: "cat-1",
+              currencyCode: "CAD",
+              transfer: {
+                accountId: "chequing-1",
+                transferAccountId: "card-1",
+                frequency: "MONTHLY",
+                nextOccurrenceDueDate: "2026-12-18",
+              },
+            },
+          ],
+        ]),
+      );
     });
 
     it("reports an unknown estimate as unknown, never the snapshot", async () => {

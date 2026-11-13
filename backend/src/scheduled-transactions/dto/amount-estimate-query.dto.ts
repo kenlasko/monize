@@ -1,21 +1,48 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsOptional, IsUUID, ValidateIf } from "class-validator";
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { IsEnum, IsOptional, IsUUID, ValidateIf } from "class-validator";
+import { FrequencyType } from "./create-scheduled-transaction.dto";
 import { IsCalendarDate } from "../../common/validators/is-calendar-date.validator";
 
 /**
  * The query of `GET /scheduled-transactions/amount-estimate/:accountId`: the
- * payee and category a schedule's estimate is matched on (issue #2096).
+ * payee and category a schedule's estimate is matched on (issue #2096), or
+ * for a transfer the account it transfers to (issue #2164).
  */
 export class AmountEstimateQueryDto {
-  @ApiProperty({ description: "Payee UUID the payment history is matched on" })
-  @IsUUID()
-  payeeId: string;
-
-  @ApiProperty({
-    description: "Category UUID the payment history is matched on",
+  @ApiPropertyOptional({
+    description:
+      "Payee UUID the payment history is matched on; required unless transferAccountId is sent",
   })
+  @ValidateIf((o) => !o.transferAccountId)
   @IsUUID()
-  categoryId: string;
+  payeeId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Category UUID the payment history is matched on; required unless transferAccountId is sent",
+  })
+  @ValidateIf((o) => !o.transferAccountId)
+  @IsUUID()
+  categoryId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "For a transfer: the destination account UUID the transfer history is matched on and whose balance raises the estimate",
+  })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
+  @IsUUID()
+  transferAccountId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "For a transfer: the schedule's frequency, which decides whether a credit card's statement cycle applies",
+    enum: FrequencyType,
+  })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
+  @IsEnum(FrequencyType)
+  frequency?: FrequencyType;
 
   @ApiPropertyOptional({
     description:

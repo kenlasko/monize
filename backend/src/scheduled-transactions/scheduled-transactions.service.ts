@@ -121,6 +121,7 @@ import {
   ScheduleAmountEstimateStatus,
   ScheduleEstimateBasis,
   ScheduledAmountEstimateService,
+  estimateBasisOf,
   estimateReadModel,
   estimatedAmountFor,
   occurrenceFollowsEstimate,
@@ -1123,16 +1124,22 @@ export class ScheduledTransactionsService {
         autoPost: !!createDto.autoPost,
         payeeId: createDto.payeeId ?? null,
         categoryId: createDto.categoryId ?? null,
+        transferAccountId: isTransfer ? (transferAccountId ?? null) : null,
       });
     }
     const scheduleAmount = createDto.amountIsEstimated
       ? ((await this.estimatedSnapshot(
           userId,
-          {
+          estimateBasisOf({
             payeeId: createDto.payeeId ?? null,
             categoryId: createDto.categoryId ?? null,
             currencyCode: account.currencyCode,
-          },
+            accountId: createDto.accountId,
+            isTransfer: !!isTransfer,
+            transferAccountId: transferAccountId ?? null,
+            frequency: createDto.frequency,
+            nextDueDate,
+          }),
           nextDueDate,
         )) ?? createDto.amount)
       : createDto.amount;
@@ -1266,8 +1273,9 @@ export class ScheduledTransactionsService {
   /**
    * Refuse a schedule an estimate cannot price (issue #2096,
    * docs/specs/scheduled-amount-estimate.md 2): only a plain, single-category,
-   * account-currency schedule with a payee is estimated, and never auto-posted,
-   * because the estimate is a forecast a person confirms when posting.
+   * account-currency schedule with a payee, or a transfer to another account
+   * (issue #2164, section 10), is estimated, and never auto-posted, because
+   * the estimate is a forecast a person confirms when posting.
    */
   private assertEstimatable(
     shape: {
@@ -1278,19 +1286,15 @@ export class ScheduledTransactionsService {
       autoPost: boolean;
       payeeId: string | null;
       categoryId: string | null;
+      transferAccountId: string | null;
     },
     { requireBasis = true }: { requireBasis?: boolean } = {},
   ): void {
-    if (
-      shape.isSplit ||
-      shape.isTransfer ||
-      shape.isInvestment ||
-      shape.isForeign
-    ) {
+    if (shape.isSplit || shape.isInvestment || shape.isForeign) {
       throw new BadRequestException(
         tr(
           "errors.scheduled.estimateRequiresPlain",
-          "An estimated amount is only available for a single-category transaction in the account's currency, not a split, a transfer, an investment or a foreign-currency amount",
+          "An estimated amount is only available for a single-category transaction or a transfer in the account's currency, not a split, an investment or a foreign-currency amount",
         ),
       );
     }
@@ -1302,7 +1306,19 @@ export class ScheduledTransactionsService {
         ),
       );
     }
-    if (requireBasis && (!shape.payeeId || !shape.categoryId)) {
+    if (!requireBasis) return;
+    if (shape.isTransfer) {
+      if (!shape.transferAccountId) {
+        throw new BadRequestException(
+          tr(
+            "errors.scheduled.estimateRequiresTransferAccount",
+            "An estimated transfer needs the account it transfers to, to match the transfer history on",
+          ),
+        );
+      }
+      return;
+    }
+    if (!shape.payeeId || !shape.categoryId) {
       throw new BadRequestException(
         tr(
           "errors.scheduled.estimateRequiresPayeeAndCategory",
@@ -2138,46 +2154,68 @@ export class ScheduledTransactionsService {
     });
   }
 
-  /** The history estimate of every estimated row, keyed by schedule id. */
+  /**
+   * The history estimate of every estimated row, keyed by schedule id; a
+   * row's `nextOverride` says where its next occurrence falls.
+   */
   private async estimatesFor(
     userId: string,
-    rows: ScheduledTransaction[],
+    rows: (ScheduledTransaction & {
+      nextOverride?: { overrideDate: string } | null;
+    })[],
   ): Promise<Map<string, ScheduleAmountEstimate>> {
     const bases = new Map<string, ScheduleEstimateBasis>();
     for (const row of rows) {
       if (!row.amountIsEstimated) continue;
-      bases.set(row.id, {
-        payeeId: row.payeeId,
-        categoryId: row.categoryId,
-        currencyCode: row.currencyCode,
-      });
+      bases.set(
+        row.id,
+        estimateBasisOf(
+          row,
+          row.nextOverride ? ensureYMD(row.nextOverride.overrideDate) : null,
+        ),
+      );
     }
     if (bases.size === 0) return new Map();
     return this.amountEstimates.estimateMany(userId, bases);
   }
 
   /**
-   * The estimate a schedule on `accountId` paying `payeeId` in `categoryId`
-   * would carry: the schedule form's preview (issue #2096). The same service,
-   * basis and rounding as the saved schedule's read, so the preview is what
-   * the save will show.
+   * The estimate a schedule on `accountId` paying `payeeId` in `categoryId`,
+   * or transferring to `transferAccountId`, would carry: the schedule form's
+   * preview (issues #2096, #2164). The same service, basis and rounding as
+   * the saved schedule's read, so the preview is what the save will show.
    */
   async previewAmountEstimate(
     userId: string,
     query: {
       accountId: string;
-      payeeId: string;
-      categoryId: string;
+      payeeId: string | null;
+      categoryId: string | null;
+      /** A transfer's destination; matched on instead of payee and category. */
+      transferAccountId?: string | null;
+      /** A transfer's frequency: a card's statement cycle is monthly. */
+      frequency?: FrequencyType;
       /** The form's next due date, so an overdue one has its month. */
       nextDueDate?: string;
     },
   ): Promise<ScheduleAmountEstimateReadModel> {
     const account = await this.accountsService.findOne(userId, query.accountId);
-    const estimate = await this.amountEstimates.estimateFor(userId, {
-      payeeId: query.payeeId,
-      categoryId: query.categoryId,
-      currencyCode: account.currencyCode,
-    });
+    if (query.transferAccountId) {
+      await this.accountsService.findOne(userId, query.transferAccountId);
+    }
+    const estimate = await this.amountEstimates.estimateFor(
+      userId,
+      estimateBasisOf({
+        payeeId: query.payeeId,
+        categoryId: query.categoryId,
+        currencyCode: account.currencyCode,
+        accountId: query.accountId,
+        isTransfer: !!query.transferAccountId,
+        transferAccountId: query.transferAccountId ?? null,
+        frequency: query.frequency ?? "MONTHLY",
+        nextDueDate: query.nextDueDate ?? todayYMD(),
+      }),
+    );
     return estimateReadModel(estimate, todayYMD(), query.nextDueDate);
   }
 
@@ -2744,11 +2782,20 @@ export class ScheduledTransactionsService {
 
     // The estimate flag (issue #2096). Asked for explicitly, an unpriceable
     // shape is refused; carried over from the stored row, a switch to a split,
-    // transfer, investment or foreign-currency amount drops it -- as that
-    // switch drops the foreign-currency trio -- while turning auto-post on, or
-    // this request clearing the payee or category, is refused. A payee or
+    // investment or foreign-currency amount drops it -- as that switch drops
+    // the foreign-currency trio -- while turning auto-post on, this request
+    // clearing the payee or category, or a switch between a transfer and a
+    // transaction without the new kind's basis, is refused. A payee or
     // category that went away on its own (a deleted category is SET NULL)
-    // leaves the schedule editable, estimated with status no-basis.
+    // leaves the schedule editable, estimated with status no-basis. A
+    // transfer's basis is its two accounts (issue #2164).
+    const effectiveAccountId = updateData.accountId || scheduled.accountId;
+    const effectiveTransferAccountId = effectiveIsTransfer
+      ? transferAccountId !== undefined
+        ? transferAccountId || null
+        : (scheduled.transferAccountId ?? null)
+      : null;
+    const kindChanged = !!effectiveIsTransfer !== !!scheduled.isTransfer;
     const estimateShape = {
       isSplit: effectiveIsSplit,
       isTransfer: !!effectiveIsTransfer,
@@ -2767,6 +2814,7 @@ export class ScheduledTransactionsService {
         : fieldsToUpdate.categoryId !== undefined
           ? (fieldsToUpdate.categoryId as string | null)
           : scheduled.categoryId,
+      transferAccountId: effectiveTransferAccountId,
     };
     let effectiveEstimated =
       updateData.amountIsEstimated ?? scheduled.amountIsEstimated ?? false;
@@ -2775,7 +2823,6 @@ export class ScheduledTransactionsService {
     } else if (effectiveEstimated) {
       if (
         estimateShape.isSplit ||
-        estimateShape.isTransfer ||
         estimateShape.isInvestment ||
         estimateShape.isForeign
       ) {
@@ -2783,9 +2830,11 @@ export class ScheduledTransactionsService {
       } else {
         // Only this request's own clearing of the basis is refused.
         const clearsBasis =
+          kindChanged ||
           (fieldsToUpdate.payeeId !== undefined && !estimateShape.payeeId) ||
           (fieldsToUpdate.categoryId !== undefined &&
-            !estimateShape.categoryId);
+            !estimateShape.categoryId) ||
+          (transferAccountId !== undefined && !effectiveTransferAccountId);
         this.assertEstimatable(estimateShape, { requireBasis: clearsBasis });
       }
     }
@@ -2793,14 +2842,18 @@ export class ScheduledTransactionsService {
       fieldsToUpdate.amountIsEstimated = effectiveEstimated;
     }
     const basisChanged =
-      estimateShape.payeeId !== scheduled.payeeId ||
-      estimateShape.categoryId !== scheduled.categoryId ||
-      accountCurrencyCode !== scheduled.currencyCode;
+      kindChanged ||
+      accountCurrencyCode !== scheduled.currencyCode ||
+      (estimateShape.isTransfer
+        ? effectiveAccountId !== scheduled.accountId ||
+          effectiveTransferAccountId !== (scheduled.transferAccountId ?? null)
+        : estimateShape.payeeId !== scheduled.payeeId ||
+          estimateShape.categoryId !== scheduled.categoryId);
     if (effectiveEstimated && options.actorIsDelegate && basisChanged) {
       throw new ForbiddenException(
         tr(
           "errors.scheduled.estimateBasisOwnerOnly",
-          "Only the owner can change the payee or category of a bill whose amount is estimated",
+          "Only the owner can change what an estimated bill is matched on: its payee and category, or a transfer's accounts",
         ),
       );
     }
@@ -2818,15 +2871,24 @@ export class ScheduledTransactionsService {
       delete fieldsToUpdate.amount;
     }
     if (effectiveEstimated && snapshotMayMove) {
+      const snapshotDueDate =
+        (fieldsToUpdate.nextDueDate as string | undefined) ??
+        ensureYMD(scheduled.nextDueDate);
       const snapshot = await this.estimatedSnapshot(
         userId,
-        {
+        estimateBasisOf({
           payeeId: estimateShape.payeeId,
           categoryId: estimateShape.categoryId,
           currencyCode: accountCurrencyCode,
-        },
-        (fieldsToUpdate.nextDueDate as string | undefined) ??
-          ensureYMD(scheduled.nextDueDate),
+          accountId: effectiveAccountId,
+          isTransfer: estimateShape.isTransfer,
+          transferAccountId: effectiveTransferAccountId,
+          frequency:
+            (fieldsToUpdate.frequency as FrequencyType | undefined) ??
+            scheduled.frequency,
+          nextDueDate: snapshotDueDate,
+        }),
+        snapshotDueDate,
       );
       // A form resends the amount it loaded; only a different estimate is a
       // change worth writing.
@@ -3836,11 +3898,12 @@ export class ScheduledTransactionsService {
     ) {
       estimatedAmount = await this.estimatedSnapshot(
         userId,
-        {
-          payeeId: scheduled.payeeId,
-          categoryId: scheduled.categoryId,
-          currencyCode: scheduled.currencyCode,
-        },
+        estimateBasisOf(
+          scheduled,
+          storedOverride?.overrideDate
+            ? ensureYMD(storedOverride.overrideDate)
+            : null,
+        ),
         storedOverride?.overrideDate
           ? ensureYMD(storedOverride.overrideDate)
           : nextDueDateStr,
@@ -4783,11 +4846,7 @@ export class ScheduledTransactionsService {
     if (!row.amountIsEstimated) return;
     const snapshot = await this.estimatedSnapshot(
       userId,
-      {
-        payeeId: row.payeeId,
-        categoryId: row.categoryId,
-        currencyCode: row.currencyCode,
-      },
+      estimateBasisOf(row),
       ensureYMD(row.nextDueDate),
     );
     if (snapshot === null || sameNullableNumber(snapshot, Number(row.amount))) {
