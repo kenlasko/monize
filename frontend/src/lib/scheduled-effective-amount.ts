@@ -186,7 +186,7 @@ export function estimateEntryOn(
   const date = String(dueDate).slice(0, 10);
   const month = date.slice(0, 7);
   const floor = (estimate.floors ?? []).find(
-    (f) => (f.after === null || date > f.after) && date <= f.through,
+    (f) => date > f.after && date <= f.through,
   );
   return floor?.months[month] ?? estimate.months[month] ?? null;
 }

@@ -471,7 +471,7 @@ describe("ScheduledAmountEstimateService", () => {
       ]);
     });
 
-    it("builds a transfer's basis from the schedule, at the later of the cursor and a moved occurrence", () => {
+    it("builds a transfer's basis from the schedule, at where an override moved its next occurrence", () => {
       const schedule = {
         payeeId: "payee-1",
         categoryId: "cat-1",
@@ -490,7 +490,10 @@ describe("ScheduledAmountEstimateService", () => {
       });
       expect(
         estimateBasisOf(schedule, "2026-11-20").transfer!.nextOccurrenceDueDate,
-      ).toBe("2026-11-26");
+      ).toBe("2026-11-20");
+      expect(estimateBasisOf(schedule).transfer!.nextOccurrenceDueDate).toBe(
+        "2026-11-26",
+      );
       expect(
         estimateBasisOf({ ...schedule, isTransfer: false }).transfer,
       ).toBeUndefined();

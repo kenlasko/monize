@@ -405,7 +405,7 @@
     "basisWithGrowth": "Estimated from {count, plural, one {# payment} other {# payments}}, the latest on {date}, with a {growth} change year over year.",
     "basisWithheld": "Estimated from the payee and category's payment history.",
     "basisWithheldTransfer": "Estimated from the history of transfers to {account}.",
-    "raisedToBalance": "Raised to what {account} owes.",
+    "raisedToBalance": "Raised to cover what {account} owes for this payment.",
     "basisAndRaise": "{basis} {raised}",
     "noHistoryTransfer": "No transfers to {account} from this account in the last {months} months, so the amount is unknown. Enter each occurrence's amount, or record a transfer.",
     "missingRateTransfer": "No exchange rate from {from} to {to} to convert a past transfer or what {account} owes, so the amount is unknown. Add the rate on the Currencies page.",

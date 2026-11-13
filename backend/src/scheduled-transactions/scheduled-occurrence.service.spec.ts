@@ -1139,7 +1139,9 @@ describe("ScheduledOccurrenceService", () => {
             {
               ...seasonalEstimate(),
               // The card owes 2,000 for the occurrence moved to Dec 18.
-              floors: [{ after: null, through: "2026-12-18", owed: 2000 }],
+              floors: [
+                { after: "2026-12-17", through: "2026-12-18", owed: 2000 },
+              ],
             },
           ],
         ]),

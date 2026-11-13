@@ -10735,6 +10735,44 @@ describe("ScheduledTransactionsService", () => {
         expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
       });
 
+      it("keeps an estimated bill whose category went away editable when the request carries an empty transfer account", async () => {
+        stubFindOne(
+          makeScheduled({ amountIsEstimated: true, categoryId: null } as never),
+        );
+        amountEstimates.estimateFor.mockResolvedValue(unknownEstimate);
+
+        await service.update(userId, stId, {
+          name: "Gas",
+          transferAccountId: null,
+        } as never);
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          ScheduledTransaction,
+          stId,
+          expect.objectContaining({ name: "Gas" }),
+        );
+      });
+
+      it("re-reads an estimated transfer's snapshot when its frequency changes", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(knownEstimate());
+        stubFindOne(
+          makeScheduled({
+            amountIsEstimated: true,
+            isTransfer: true,
+            transferAccountId: "acc-2",
+          } as never),
+        );
+
+        await service.update(userId, stId, { frequency: "WEEKLY" as never });
+
+        expect(amountEstimates.estimateFor).toHaveBeenCalledWith(
+          userId,
+          expect.objectContaining({
+            transfer: expect.objectContaining({ frequency: "WEEKLY" }),
+          }),
+        );
+      });
+
       it("lets a delegate recategorize an estimated transfer: its basis is the accounts", async () => {
         stubFindOne(
           makeScheduled({

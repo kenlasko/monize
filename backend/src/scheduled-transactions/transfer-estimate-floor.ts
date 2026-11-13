@@ -21,7 +21,18 @@ import { roundMoney } from "../common/round.util";
  *    the destination owes today; later occurrences stay at the baseline. A
  *    destination holding money (an asset with a positive balance) owes nothing,
  *    so it never raises anything.
+ *  - NONE for a loan or a mortgage: a payment into one is an installment, and
+ *    its whole debt is not the next bill.
  */
+
+/**
+ * The destinations whose debt is paid off in installments: raising a payment
+ * to the debt would ask for the whole principal.
+ */
+const INSTALLMENT_DEBT_TYPES: ReadonlySet<string> = new Set([
+  "LOAN",
+  "MORTGAGE",
+]);
 
 /** What the floor needs to know about the transfer's destination account. */
 export interface TransferDestinationFacts {
@@ -41,7 +52,8 @@ export type TransferFloorPlan =
       /** The settlement after the open one. */
       followingSettlement: string;
     }
-  | { mode: "balance" };
+  | { mode: "balance" }
+  | { mode: "none" };
 
 /**
  * The destination's ledger, signed as stored (a card in debt is negative), in
@@ -63,15 +75,27 @@ export interface TransferDestinationLedger {
 }
 
 /**
- * One raise: an occurrence due after `after` (exclusive, `null` for no lower
- * bound) and on or before `through` is raised to `owed`, when `owed` is more
- * than its baseline.
+ * One raise: an occurrence due after `after` (exclusive) and on or before
+ * `through` is raised to `owed`, when `owed` is more than its baseline.
  */
 export interface EstimateBalanceFloor {
-  after: string | null;
+  after: string;
   through: string;
   /** What the destination is owed for these occurrences, >= 0, in the schedule's currency. */
   owed: number;
+}
+
+/** Whether `destination` is a credit card with both statement days set. */
+export function hasStatementCycle(
+  destination: TransferDestinationFacts,
+): destination is TransferDestinationFacts & {
+  statementSettlementDay: number;
+} {
+  return (
+    destination.accountType === "CREDIT_CARD" &&
+    destination.statementSettlementDay !== null &&
+    destination.statementDueDay !== null
+  );
 }
 
 /**
@@ -79,7 +103,7 @@ export interface EstimateBalanceFloor {
  * The settlement day is the last day of its cycle, so a cycle closing today is
  * still open: its rows are dated on or before today.
  */
-function settlementDatesAround(
+export function settlementDatesAround(
   settlementDay: number,
   today: string,
 ): {
@@ -102,20 +126,22 @@ function settlementDatesAround(
 
 /**
  * Statement mode for a monthly transfer into a credit card with both statement
- * days; balance mode otherwise. A schedule paying more often than monthly has
- * more than one occurrence per cycle, and raising each of them to the same
- * statement would ask for it twice, so it raises only its next occurrence.
+ * days; none for a loan or a mortgage; balance mode otherwise. A schedule
+ * paying more often than monthly has more than one occurrence per cycle, and
+ * raising each of them to the same statement would ask for it twice, so it
+ * raises only its next occurrence.
  */
 export function transferFloorPlan(
   destination: TransferDestinationFacts | null,
   frequency: FrequencyType,
   today: string,
 ): TransferFloorPlan {
+  if (destination && INSTALLMENT_DEBT_TYPES.has(destination.accountType)) {
+    return { mode: "none" };
+  }
   if (
     destination &&
-    destination.accountType === "CREDIT_CARD" &&
-    destination.statementSettlementDay !== null &&
-    destination.statementDueDay !== null &&
+    hasStatementCycle(destination) &&
     frequency === "MONTHLY"
   ) {
     return {
@@ -135,8 +161,8 @@ export function transferFloorPlan(
  *  - an occurrence due in the cycle after pays the open cycle: today's debt
  *    less what the closed statement still owes.
  *
- * Balance mode: the next occurrence (due on or before `nextOccurrenceDueDate`)
- * is raised to today's debt.
+ * Balance mode: the next occurrence, the one due on `nextOccurrenceDueDate`
+ * (where an override moved it, if one did), is raised to today's debt.
  *
  * @param decimals the destination currency's money precision.
  */
@@ -146,9 +172,16 @@ export function transferBalanceFloors(
   nextOccurrenceDueDate: string,
   decimals: number,
 ): EstimateBalanceFloor[] {
+  if (plan.mode === "none") return [];
   const owedToday = Math.max(0, roundMoney(-ledger.balanceToday, decimals));
   if (plan.mode === "balance" || ledger.balanceAtLastSettlement === null) {
-    return [{ after: null, through: nextOccurrenceDueDate, owed: owedToday }];
+    return [
+      {
+        after: addDaysYMD(nextOccurrenceDueDate, -1),
+        through: nextOccurrenceDueDate,
+        owed: owedToday,
+      },
+    ];
   }
   const statementOwed = Math.max(
     0,
@@ -176,11 +209,7 @@ export function floorFor(
   floors: readonly EstimateBalanceFloor[],
   dueDate: string,
 ): EstimateBalanceFloor | null {
-  return (
-    floors.find(
-      (f) => (f.after === null || dueDate > f.after) && dueDate <= f.through,
-    ) ?? null
-  );
+  return floors.find((f) => dueDate > f.after && dueDate <= f.through) ?? null;
 }
 
 /**

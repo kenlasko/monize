@@ -3856,7 +3856,7 @@ describe('ScheduledTransactionForm: Estimate', () => {
       expect(amount.value).toContain('2,700');
       expectToggle(screen.getByRole('switch', { name: 'Estimate' }), true);
       expect(screen.getByRole('switch', { name: 'Auto-post on due date' })).toBeDisabled();
-      expect(screen.getByText(/Raised to what Savings owes\./)).toBeInTheDocument();
+      expect(screen.getByText(/Raised to cover what Savings owes for this payment\./)).toBeInTheDocument();
     });
 
     it('saves the transfer estimated, with no payee or category asked for', async () => {

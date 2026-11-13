@@ -565,7 +565,7 @@ describe('ScheduledTransactionList', () => {
     render(<ScheduledTransactionList transactions={transactions} />);
     expect(
       screen.getAllByRole('button', {
-        name: 'Estimated from the history of transfers to Visa. Raised to what Visa owes.',
+        name: 'Estimated from the history of transfers to Visa. Raised to cover what Visa owes for this payment.',
       }).length,
     ).toBeGreaterThan(0);
   });

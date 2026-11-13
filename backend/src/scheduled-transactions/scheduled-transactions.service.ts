@@ -2834,7 +2834,9 @@ export class ScheduledTransactionsService {
           (fieldsToUpdate.payeeId !== undefined && !estimateShape.payeeId) ||
           (fieldsToUpdate.categoryId !== undefined &&
             !estimateShape.categoryId) ||
-          (transferAccountId !== undefined && !effectiveTransferAccountId);
+          (estimateShape.isTransfer &&
+            transferAccountId !== undefined &&
+            !effectiveTransferAccountId);
         this.assertEstimatable(estimateShape, { requireBasis: clearsBasis });
       }
     }
@@ -2860,9 +2862,14 @@ export class ScheduledTransactionsService {
     // The history is read only when the snapshot can move: the estimate was
     // just turned on, or its basis or next due date changed. A rename or a
     // pause leaves it as it is.
+    // A transfer's frequency decides whether a card's statement cycle raises
+    // it (issue #2164), so a change of it moves the snapshot as well.
     const snapshotMayMove =
       fieldsToUpdate.amountIsEstimated === true ||
       basisChanged ||
+      (estimateShape.isTransfer &&
+        fieldsToUpdate.frequency !== undefined &&
+        fieldsToUpdate.frequency !== scheduled.frequency) ||
       (fieldsToUpdate.nextDueDate !== undefined &&
         ensureYMD(fieldsToUpdate.nextDueDate as string) !==
           ensureYMD(scheduled.nextDueDate));

@@ -188,17 +188,56 @@ describe("transfer-estimate-floor", () => {
         4,
       );
       expect(floors).toEqual([
-        { after: null, through: "2026-11-26", owed: 2600.5 },
+        { after: "2026-11-25", through: "2026-11-26", owed: 2600.5 },
       ]);
       expect(
         applyBalanceFloor(BASELINE, floorFor(floors, "2026-11-26"), 2),
       ).toEqual({ amount: -2600.5, raised: true });
-      // Overdue is still the next occurrence.
+      // Only the next occurrence's own date: a weekly schedule's occurrences
+      // before a next occurrence moved later are not each asked for the debt.
+      expect(floorFor(floors, "2026-11-19")).toBeNull();
+      expect(floorFor(floors, "2026-12-26")).toBeNull();
+    });
+
+    it("raises an overdue next occurrence on its own date", () => {
+      const floors = transferBalanceFloors(
+        { mode: "balance" },
+        {
+          balanceToday: -2600.5,
+          balanceAtLastSettlement: null,
+          creditsSinceLastSettlement: 0,
+        },
+        "2026-10-26",
+        4,
+      );
       expect(
         applyBalanceFloor(BASELINE, floorFor(floors, "2026-10-26"), 2).amount,
       ).toBe(-2600.5);
-      expect(floorFor(floors, "2026-12-26")).toBeNull();
     });
+
+    it.each(["LOAN", "MORTGAGE"])(
+      "never raises an installment into a %s to its whole debt",
+      (accountType) => {
+        const plan = transferFloorPlan(
+          { ...card, accountType, statementSettlementDay: null },
+          "MONTHLY",
+          "2026-11-10",
+        );
+        expect(plan).toEqual({ mode: "none" });
+        expect(
+          transferBalanceFloors(
+            plan,
+            {
+              balanceToday: -300000,
+              balanceAtLastSettlement: null,
+              creditsSinceLastSettlement: 0,
+            },
+            "2026-11-26",
+            4,
+          ),
+        ).toEqual([]);
+      },
+    );
 
     it("never raises anything for a destination holding money", () => {
       const floors = transferBalanceFloors(
@@ -219,7 +258,11 @@ describe("transfer-estimate-floor", () => {
   });
 
   describe("applyBalanceFloor", () => {
-    const floor = { after: null, through: "2026-11-26", owed: 2100.456 };
+    const floor = {
+      after: "2026-11-25",
+      through: "2026-11-26",
+      owed: 2100.456,
+    };
 
     it("keeps the estimate when it is at least the debt", () => {
       expect(applyBalanceFloor(-2500, floor, 2)).toEqual({

@@ -289,11 +289,15 @@ cycle is the balance beyond it. A schedule paying more often than monthly would
 have two occurrences in one cycle, each asking for the same statement, so it is
 in balance mode instead.
 
-**Balance mode**: every other transfer (a card without both statement days, a
-line of credit, any other account). The next occurrence, the one on or before
-the later of the cursor and the date an override moved it to, is raised to what
-the destination owes today. Later occurrences are not raised. An asset holding
-money owes nothing and never raises anything.
+**Balance mode**: every other transfer (a card without both statement days, or
+not monthly, a line of credit, any other account). The next occurrence, on the
+date it falls (the cursor, or where an override moved it), is raised to what
+the destination owes today; no other occurrence is, so a weekly schedule whose
+next occurrence was moved past the following ones asks for the debt once. An
+asset holding money owes nothing and never raises anything.
+
+**None**: a transfer into a `LOAN` or a `MORTGAGE`. A payment into one is an
+installment, and the whole principal is not the next bill.
 
 An occurrence is `-max(|baseline|, owed)`, the owed figure rounded to the
 currency's entry places (`applyBalanceFloor`). A destination in another currency
@@ -330,8 +334,9 @@ the debt itself never reaches a client (a delegate's included): a figure under
 the baseline reads as the baseline. `estimateEntryOn`
 (`frontend/src/lib/scheduled-effective-amount.ts`) reads a date a floor governs
 from the floor before the plain month, and a raised month carries
-`basis: "balance"`, which the estimate text reports as "Raised to what the
-account owes". A delegate cannot change an estimated transfer's accounts
+`basis: "balance"`, which the estimate text reports as "Raised to cover what
+the account owes for this payment" (in statement mode that is the statement's
+remainder or the open cycle's spending, not the whole balance). A delegate cannot change an estimated transfer's accounts
 (`estimateBasisOwnerOnly`); its category is not the basis and stays editable.
 Estimated transfers are never auto-posted, as section 2.
 
@@ -344,4 +349,10 @@ Estimated transfers are never auto-posted, as section 2.
    statement's remainder.
 4. An occurrence two or more cycles out, and an overdue occurrence of an
    earlier cycle, stay at the baseline.
+5. A transfer with no past transfers is `no-history`, every occurrence unknown,
+   even when the destination's debt is known: the issue makes the history the
+   baseline, and an occurrence away from the floor has no figure. The person
+   enters the amount, as for a bill with no payments (section 5).
+6. A frequency change moves an estimated transfer's snapshot (it decides the
+   mode); it is not a change of the basis, so a delegate may make it.
 

@@ -82,12 +82,11 @@ export interface EstimatedMonth {
 
 /**
  * The occurrences a transfer's balance floor governs (issue #2164): one due
- * after `after` (exclusive; `null` for no bound) and on or before `through`
- * reads its month from `months`, the history estimate already raised to what
- * the destination owes.
+ * after `after` (exclusive) and on or before `through` reads its month from
+ * `months`, the history estimate already raised to what the destination owes.
  */
 export interface EstimateFloor {
-  after: string | null;
+  after: string;
   through: string;
   months: Record<string, EstimatedMonth>;
 }

@@ -79,9 +79,8 @@ export interface TransferEstimateBasis {
   transferAccountId: string | null;
   frequency: FrequencyType;
   /**
-   * The latest date the next occurrence can fall on: the later of the cursor
-   * and an override's move of it. Balance mode raises occurrences on or
-   * before it.
+   * The date the next occurrence falls on: the cursor, or where an override
+   * moved it. Balance mode raises the occurrence due on it.
    */
   nextOccurrenceDueDate: string;
 }
@@ -120,17 +119,15 @@ export function estimateBasisOf(
     currencyCode: schedule.currencyCode,
   };
   if (schedule.isTransfer !== true) return basis;
-  const cursor = ensureYMD(schedule.nextDueDate);
-  const moved = nextOccurrenceDueDate
-    ? ensureYMD(nextOccurrenceDueDate)
-    : cursor;
   return {
     ...basis,
     transfer: {
       accountId: schedule.accountId,
       transferAccountId: schedule.transferAccountId ?? null,
       frequency: schedule.frequency,
-      nextOccurrenceDueDate: moved > cursor ? moved : cursor,
+      nextOccurrenceDueDate: ensureYMD(
+        nextOccurrenceDueDate ?? schedule.nextDueDate,
+      ),
     },
   };
 }
@@ -147,13 +144,13 @@ export interface EstimatedMonthReadModel {
 
 /**
  * The occurrences a transfer's balance floor governs, as a client reads them:
- * an occurrence due after `after` (exclusive; `null` for no bound) and on or
- * before `through` reads its month here instead of from `months`. Each month
+ * an occurrence due after `after` (exclusive) and on or before `through`
+ * reads its month here instead of from `months`. Each month
  * is the history estimate raised to the floor, so the debt itself is never
  * sent: a figure below the baseline reads as the baseline.
  */
 export interface EstimateFloorReadModel {
-  after: string | null;
+  after: string;
   through: string;
   months: Record<string, EstimatedMonthReadModel>;
 }
@@ -292,12 +289,8 @@ export function estimateReadModel(
     }
     for (const balanceFloor of estimate.floors) {
       const floorMonths: Record<string, EstimatedMonthReadModel> = {};
-      const from =
-        balanceFloor.after === null
-          ? first
-          : monthKeyOf(balanceFloor.after) > first
-            ? monthKeyOf(balanceFloor.after)
-            : first;
+      const afterMonth = monthKeyOf(balanceFloor.after);
+      const from = afterMonth > first ? afterMonth : first;
       const through = monthKeyOf(balanceFloor.through);
       for (
         let month = from;

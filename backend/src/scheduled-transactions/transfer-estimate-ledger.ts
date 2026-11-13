@@ -7,7 +7,8 @@ import {
 import {
   TransferDestinationFacts,
   TransferDestinationLedger,
-  transferFloorPlan,
+  hasStatementCycle,
+  settlementDatesAround,
 } from "./transfer-estimate-floor";
 
 /**
@@ -116,9 +117,13 @@ export async function loadTransferDestinations(
   // frequency: the plan decides per schedule whether it uses it.
   const lastSettlementOf = new Map<string, string>();
   for (const row of accounts) {
-    const plan = transferFloorPlan(factsOf(row), "MONTHLY", today);
-    if (plan.mode === "statement") {
-      lastSettlementOf.set(row.id, plan.lastSettlement);
+    const facts = factsOf(row);
+    if (hasStatementCycle(facts)) {
+      lastSettlementOf.set(
+        row.id,
+        settlementDatesAround(facts.statementSettlementDay, today)
+          .lastSettlement,
+      );
     }
   }
 

@@ -174,31 +174,45 @@ function getTransferAccountId(st?: ScheduledTransaction): string {
   return st?.transferAccountId || '';
 }
 
+/** What an estimate preview is asked for (issues #2096, #2164). */
+interface EstimateRequest {
+  accountId: string;
+  basis:
+    | { payeeId: string; categoryId: string }
+    | { transferAccountId: string; frequency: FrequencyType };
+  nextDueDate: string;
+}
+
 /**
- * The key an estimate preview is requested and kept by, or `null` while its
- * basis is incomplete: a transaction's payee and category (issue #2096), a
- * transfer's destination and frequency (issue #2164, a card's statement cycle
- * applies to a monthly transfer).
+ * The key an estimate preview is requested and kept by, the request itself
+ * serialized, or `null` while its basis is incomplete: a transaction's payee
+ * and category (issue #2096), a transfer's destination and frequency (issue
+ * #2164, a card's statement cycle applies to a monthly transfer).
  */
-function estimateRequestKeyOf(basis: {
+function estimateRequestKeyOf(fields: {
   transfer: boolean;
   accountId: string | null | undefined;
   payeeId: string | null | undefined;
   categoryId: string | null | undefined;
   transferAccountId: string | null | undefined;
-  frequency: string | null | undefined;
+  frequency: FrequencyType | null | undefined;
   nextDueDate: string | null | undefined;
 }): string | null {
-  if (!basis.accountId) return null;
-  const tail = basis.nextDueDate || '';
-  if (basis.transfer) {
-    return basis.transferAccountId && basis.transferAccountId !== basis.accountId
-      ? [basis.accountId, 'transfer', basis.transferAccountId, basis.frequency || 'MONTHLY', tail].join('|')
-      : null;
+  if (!fields.accountId) return null;
+  let basis: EstimateRequest['basis'];
+  if (fields.transfer) {
+    if (!fields.transferAccountId || fields.transferAccountId === fields.accountId) return null;
+    basis = { transferAccountId: fields.transferAccountId, frequency: fields.frequency || 'MONTHLY' };
+  } else {
+    if (!fields.payeeId || !fields.categoryId) return null;
+    basis = { payeeId: fields.payeeId, categoryId: fields.categoryId };
   }
-  return basis.payeeId && basis.categoryId
-    ? [basis.accountId, 'payee', basis.payeeId, basis.categoryId, tail].join('|')
-    : null;
+  const request: EstimateRequest = {
+    accountId: fields.accountId,
+    basis,
+    nextDueDate: fields.nextDueDate || '',
+  };
+  return JSON.stringify(request);
 }
 
 export function ScheduledTransactionForm({
@@ -502,16 +516,10 @@ export function ScheduledTransactionForm({
   });
   useEffect(() => {
     if (!estimateRequestKey || isActingDelegate) return;
-    const [accountId, kind, first, second, nextDueDate] = estimateRequestKey.split('|');
+    const request = JSON.parse(estimateRequestKey) as EstimateRequest;
     let cancelled = false;
     scheduledTransactionsApi
-      .getAmountEstimate(
-        accountId,
-        kind === 'transfer'
-          ? { transferAccountId: first, frequency: second as FrequencyType }
-          : { payeeId: first, categoryId: second },
-        nextDueDate || undefined,
-      )
+      .getAmountEstimate(request.accountId, request.basis, request.nextDueDate || undefined)
       .then((estimate) => {
         if (!cancelled) setEstimatePreview({ key: estimateRequestKey, estimate });
       })
