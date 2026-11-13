@@ -330,7 +330,11 @@
       "unsupported": {
         "unsupported": "Dieser Browser kann keine Push-Benachrichtigungen empfangen.",
         "denied": "Benachrichtigungen sind für Monize in diesem Browser blockiert. Erlauben Sie sie in den Website-Einstellungen des Browsers und laden Sie diese Seite neu.",
-        "ios-browser": "Auf iPhone und iPad funktionieren Push-Benachrichtigungen erst, wenn Monize zum Home-Bildschirm hinzugefügt wurde. Nutzen Sie „Teilen“, dann „Zum Home-Bildschirm“, und öffnen Sie Monize von dort."
+        "ios-browser": "Auf iPhone und iPad funktionieren Push-Benachrichtigungen erst, wenn Monize zum Home-Bildschirm hinzugefügt wurde. Nutzen Sie „Teilen“, dann „Zum Home-Bildschirm“, und öffnen Sie Monize von dort.",
+        "shell": {
+          "electron": "Benachrichtigungen sind im Monize-Desktopfenster nicht verfügbar. Öffnen Sie Monize über das Tray-Menü im Browser („Open in browser“); dort funktionieren Push-Benachrichtigungen weiterhin.",
+          "capacitor": "Push-Benachrichtigungen sind in der Monize-Android-App noch nicht verfügbar. Öffnen Sie Monize im Browser, um sie zu erhalten."
+        }
       },
       "disabledReason": {
         "GONE": "Nicht mehr erreichbar. Aktivieren Sie Push in jenem Browser erneut.",

@@ -330,7 +330,11 @@
       "unsupported": {
         "unsupported": "Deze browser kan geen pushmeldingen ontvangen.",
         "denied": "Meldingen zijn geblokkeerd voor Monize in deze browser. Sta ze toe in de site-instellingen en herlaad deze pagina.",
-        "ios-browser": "Op iPhone en iPad werken pushmeldingen pas als Monize op het beginscherm is geïnstalleerd. Gebruik Deel en daarna Zet op beginscherm, en open Monize van daaruit."
+        "ios-browser": "Op iPhone en iPad werken pushmeldingen pas als Monize op het beginscherm is geïnstalleerd. Gebruik Deel en daarna Zet op beginscherm, en open Monize van daaruit.",
+        "shell": {
+          "electron": "Meldingen zijn niet beschikbaar in het Monize-bureaubladvenster. Open Monize in uw browser via het systeemvakmenu (\"Open in browser\"); daar blijven pushmeldingen gewoon werken.",
+          "capacitor": "Pushmeldingen zijn nog niet beschikbaar in de Monize-app voor Android. Open Monize in uw browser om ze te ontvangen."
+        }
       },
       "disabledReason": {
         "GONE": "Niet meer bereikbaar. Schakel push opnieuw in in die browser.",

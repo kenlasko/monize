@@ -330,7 +330,11 @@
       "unsupported": {
         "unsupported": "이 브라우저는 푸시 알림을 받을 수 없습니다.",
         "denied": "이 브라우저에서 Monize 알림이 차단되어 있습니다. 브라우저의 사이트 설정에서 허용한 뒤 이 페이지를 새로고침하세요.",
-        "ios-browser": "iPhone과 iPad에서는 Monize를 홈 화면에 설치해야 푸시 알림이 작동합니다. 공유 메뉴에서 홈 화면에 추가를 선택한 뒤 거기서 Monize를 여세요."
+        "ios-browser": "iPhone과 iPad에서는 Monize를 홈 화면에 설치해야 푸시 알림이 작동합니다. 공유 메뉴에서 홈 화면에 추가를 선택한 뒤 거기서 Monize를 여세요.",
+        "shell": {
+          "electron": "Monize 데스크톱 창에서는 알림을 사용할 수 없습니다. 트레이 메뉴의 \"Open in browser\"로 Monize를 브라우저에서 열면 푸시 알림을 계속 사용할 수 있습니다.",
+          "capacitor": "Monize Android 앱에서는 아직 푸시 알림을 사용할 수 없습니다. 알림을 받으려면 브라우저에서 Monize를 여세요."
+        }
       },
       "disabledReason": {
         "GONE": "더 이상 연결할 수 없습니다. 해당 브라우저에서 푸시를 다시 켜세요.",

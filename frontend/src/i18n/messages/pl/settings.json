@@ -330,7 +330,11 @@
       "unsupported": {
         "unsupported": "Ta przeglądarka nie może odbierać powiadomień push.",
         "denied": "Powiadomienia dla Monize są zablokowane w tej przeglądarce. Zezwól na nie w ustawieniach witryny, a następnie odśwież tę stronę.",
-        "ios-browser": "Na iPhonie i iPadzie powiadomienia push działają dopiero po zainstalowaniu Monize na ekranie głównym. Użyj Udostępnij, potem Dodaj do ekranu głównego i otwórz Monize stamtąd."
+        "ios-browser": "Na iPhonie i iPadzie powiadomienia push działają dopiero po zainstalowaniu Monize na ekranie głównym. Użyj Udostępnij, potem Dodaj do ekranu głównego i otwórz Monize stamtąd.",
+        "shell": {
+          "electron": "Powiadomienia nie są dostępne w oknie pulpitu Monize. Otwórz Monize w przeglądarce z menu w zasobniku (\"Open in browser\"), a powiadomienia push nadal będą tam działać.",
+          "capacitor": "Powiadomienia push nie są jeszcze dostępne w aplikacji Monize na Androida. Otwórz Monize w przeglądarce, aby je otrzymywać."
+        }
       },
       "disabledReason": {
         "GONE": "Nieosiągalne. Włącz push ponownie w tamtej przeglądarce.",

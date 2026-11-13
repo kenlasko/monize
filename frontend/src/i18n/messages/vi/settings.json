@@ -330,7 +330,11 @@
       "unsupported": {
         "unsupported": "Trình duyệt này không thể nhận thông báo đẩy.",
         "denied": "Thông báo cho Monize đang bị chặn trong trình duyệt này. Hãy cho phép trong cài đặt trang web rồi tải lại trang.",
-        "ios-browser": "Trên iPhone và iPad, thông báo đẩy chỉ hoạt động sau khi cài Monize vào Màn hình chính. Chọn Chia sẻ, rồi Thêm vào Màn hình chính, và mở Monize từ đó."
+        "ios-browser": "Trên iPhone và iPad, thông báo đẩy chỉ hoạt động sau khi cài Monize vào Màn hình chính. Chọn Chia sẻ, rồi Thêm vào Màn hình chính, và mở Monize từ đó.",
+        "shell": {
+          "electron": "Thông báo không khả dụng trong cửa sổ máy tính của Monize. Hãy mở Monize trong trình duyệt từ menu khay hệ thống (\"Open in browser\"), thông báo đẩy vẫn hoạt động ở đó.",
+          "capacitor": "Thông báo đẩy chưa khả dụng trong ứng dụng Monize cho Android. Hãy mở Monize trong trình duyệt để nhận thông báo."
+        }
       },
       "disabledReason": {
         "GONE": "Không còn tiếp cận được. Hãy bật lại đẩy trong trình duyệt đó.",
