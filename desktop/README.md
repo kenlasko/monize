@@ -100,6 +100,80 @@ MONIZE_DATA_DIR=/tmp/monize-shell npx electron . --quit   # asks the running she
 The shell's own text is English only and lives in `src/shell/strings.ts`;
 there is no translation framework in this package yet.
 
+## Updates
+
+`src/updater.ts` runs `electron-updater` against GitHub Releases; every
+decision is in `src/shell/update-policy.ts` and `src/shell/version-policy.ts`.
+
+- **Where it looks.** electron-builder writes `resources/app-update.yml` from
+  the `publish` block of `electron-builder.yml` (GitHub, `kenlasko/monize`).
+  The updater reads the latest release's `latest.yml`, then downloads the
+  installer it names. A release must carry `Monize-Setup-<v>.exe`,
+  `latest.yml` and `Monize-Setup-<v>.exe.blockmap`.
+- **When.** Once after the stack first reaches `ready`, and whenever the
+  person chooses Check for updates in the tray. Never while a check or a
+  download is running, and not at all in a development run (below).
+- **What the person sees.** The download runs in the background; the tray
+  item reads "Downloading update... N%", then "Restart to update to <v>", and
+  a notification says the update is ready. Nothing installs until the person
+  answers Restart now. Then the window hides, the shell stops the frontend,
+  the backend and PostgreSQL (a clean `pg_ctl stop`), and only then starts the
+  installer and quits; the installer opens Monize again, and the new backend
+  runs `db-migrate` against the same `pgdata`. Later leaves the update
+  downloaded for the next restart.
+- **Not on an ordinary quit.** `autoInstallOnAppQuit` is off: a quit also
+  comes from Windows signing out, from `--quit` and from the installer's or
+  uninstaller's own stop-running-instance step, and an installer started then
+  would be cut off or run beside another one. A downloaded update is found in
+  the cache and offered again on the next launch.
+- **Which versions.** Never a downgrade or the running version. A stable
+  install is never offered a prerelease, even one published by mistake as a
+  normal release. A prerelease install (`1.22.0-beta.1`) follows newer
+  prereleases and the next stable release (electron-updater's own default,
+  keyed on the running version).
+- **Failures.** A failed check or download is a line in `logs/main.log`
+  (`Updates: ...`, and electron-updater's own `Updater: ...` lines); it is
+  shown in a dialog only when the person asked from the tray, and the app
+  keeps running.
+
+**What is verified, and what is not.** The installer is checked against the
+`sha512` in `latest.yml`, after a full or a differential download and again
+when a cached download is reused; that catches a corrupted or swapped file,
+but `latest.yml` comes from the same release, so it is no proof of who made
+it. The Authenticode check (`Get-AuthenticodeSignature`, matched against
+`publisherName`) runs only when `app-update.yml` carries a `publisherName`,
+which electron-builder writes only for a signed build. An unsigned build
+(until the signing task, C3) therefore verifies the checksum alone; the
+download itself is HTTPS from GitHub.
+
+**Trying it without a release.** On Windows only (`NsisUpdater` installs NSIS
+installers; the Linux updaters do not apply):
+
+1. Build the installer with electron-builder and install it, then raise
+   `version` in `package.json` (say to `1.21.1`) and build again. Keep the second build's `release/` folder: it holds
+   `Monize-Setup-1.21.1.exe`, its `.blockmap` and `latest.yml`.
+2. Serve that folder: `npx http-server release -p 8080` (or
+   `python -m http.server 8080 -d release`).
+3. Point the installed build at it: in the install directory (per user, by
+   default `%LOCALAPPDATA%\Programs\Monize`), edit `resources\app-update.yml`
+   and replace the `provider`, `owner` and `repo` lines with
+   `provider: generic` and `url: http://127.0.0.1:8080/`, keeping the other
+   keys. For an unpackaged run (`npm start`) the same two lines go in a
+   `dev-app-update.yml` beside this package's `package.json` instead
+   (git-ignored); its presence is what turns the updater on in development.
+4. Start the installed build with some data in it. Within a minute of the
+   window opening the tray reads "Restart to update to 1.21.1" and a
+   notification appears; `logs/main.log` shows `version 1.21.1 is
+   downloaded`.
+5. Choose Restart now. Expect, in order: the window hides; `main.log` shows
+   `stopping the stack first`, the supervisor stopping each process, then
+   `the stack is stopped; installing version 1.21.1`; the installer runs and
+   reopens Monize; the splash shows "Updating the database..."; the app opens
+   on the same data. `postgres.log` shows a clean shutdown before the install
+   (no recovery on the next start).
+6. Repeat step 4 and choose Later: nothing installs; quit from the tray and
+   check that no installer starts; the next launch offers it again.
+
 ## Where data lives
 
 Per user, under `%LOCALAPPDATA%\Monize\`: `pgdata`, `backups`, `attachments`,
