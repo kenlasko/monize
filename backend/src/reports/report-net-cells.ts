@@ -3,6 +3,7 @@ import { ordinarySplitLines } from "../common/investment-filter.util";
 import { isNetSpending } from "../built-in-reports/spending-reports.service";
 import { DirectionFilter } from "./entities/custom-report.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
+import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 
 /**
  * What a custom report's category costs, settled the way Spending by Category
@@ -49,6 +50,8 @@ export interface NetLine {
   unit: string;
   /** The row's currency, which `amount` is in. */
   currency: string;
+  /** The split line this is, for a split parent; absent for a whole row. */
+  split?: TransactionSplit;
 }
 
 /**
@@ -73,6 +76,7 @@ export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
         amount: Number(split.amount),
         unit: unitOf(index),
         currency: tx.currencyCode,
+        split,
       };
     });
   }
