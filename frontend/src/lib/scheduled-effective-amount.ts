@@ -1,4 +1,5 @@
 import type {
+  EstimatedMonth,
   ScheduleAmountEstimate,
   ScheduledTransaction,
   ScheduledTransactionOverride,
@@ -168,8 +169,26 @@ export function estimateAmountOn(
   estimate: ScheduleAmountEstimate | null | undefined,
   dueDate: string,
 ): number | null {
-  const entry = estimate?.months[String(dueDate).slice(0, 7)];
-  return entry ? entry.amount : null;
+  return estimateEntryOn(estimate, dueDate)?.amount ?? null;
+}
+
+/**
+ * The month entry `estimate` gives an occurrence falling on `dueDate`, its
+ * amount and the rule behind it, or `null` when it gives none. A transfer's
+ * balance floor governing the date (issue #2164) answers before the plain
+ * month, as the server prices it.
+ */
+export function estimateEntryOn(
+  estimate: ScheduleAmountEstimate | null | undefined,
+  dueDate: string,
+): EstimatedMonth | null {
+  if (!estimate) return null;
+  const date = String(dueDate).slice(0, 10);
+  const month = date.slice(0, 7);
+  const floor = (estimate.floors ?? []).find(
+    (f) => date > f.after && date <= f.through,
+  );
+  return floor?.months[month] ?? estimate.months[month] ?? null;
 }
 
 /**

@@ -26,11 +26,13 @@ alone.
 ## 2. Which schedules can be estimated
 
 An estimated schedule (`scheduled_transactions.amount_is_estimated`) is a plain,
-single-category schedule in its account's currency, with a payee and a category:
+single-category schedule in its account's currency, with a payee and a category,
+or a transfer to another account (issue #2164, section 10):
 
 | Shape | Estimate on create / explicit update | Flag already on, update changes the shape |
 | --- | --- | --- |
-| Split, transfer, investment | refused (`estimateRequiresPlain`) | flag dropped, like the foreign-currency trio |
+| Split, investment | refused (`estimateRequiresPlain`) | flag dropped, like the foreign-currency trio |
+| Transfer with no destination | refused (`estimateRequiresTransferAccount`) | refused when this request clears it, or switches between a transfer and a transaction without the new kind's basis |
 | Foreign-currency amount (`original_currency_code`) | refused (`estimateRequiresPlain`) | flag dropped |
 | Auto-post on | refused (`estimateNoAutoPost`) | refused |
 | No payee id or no category | refused (`estimateRequiresPayeeAndCategory`) | refused when this request clears it; a payee or category gone on its own leaves the schedule editable (status `no-basis`) |
@@ -225,6 +227,10 @@ marker.
 | Refusals before write, snapshot, flag dropped on a shape change, posting default and refusal, list read model | `scheduled-transactions.service.spec.ts`, "estimated amounts" |
 | Bill Payment History band | `built-in-reports.service.spec.ts` |
 | Client forecast, Post dialog, editor, list label, form toggle | the frontend tests named in `docs/future-plans/scheduled-amount-estimate-tasks.md` |
+| A transfer's floor: statement and balance modes, the worked example of section 10.3, rounding and sign | `transfer-estimate-floor.spec.ts` |
+| A transfer's history and ledger reads, FX of the debt, the read model's raised months | `scheduled-amount-estimate.service.spec.ts`, "an estimated transfer"; `test/integration/scheduled-amount-estimate.integration.spec.ts` |
+| A transfer's refusals, basis, snapshot and delegate rule; the expansion through the floor | `scheduled-transactions.service.spec.ts`, "estimated amounts"; `scheduled-occurrence.service.spec.ts` |
+| The client floor reader, the Transfer tab's toggle, the raised note | `lib/scheduled-effective-amount.test.ts`, `ScheduledTransactionForm.test.tsx`, `ScheduledTransactionList.test.tsx` |
 
 ## 9. Decisions (issue #2096)
 
@@ -239,3 +245,132 @@ marker.
 5. An estimated schedule is never auto-posted.
 6. "The graph" is the Bills page Cash Flow Forecast chart.
 7. One branch for the whole change.
+
+## 10. Transfers (issue #2164)
+
+A scheduled transfer can be estimated too, typically the monthly payment of a
+credit card from a chequing account. Its history estimate is the **baseline**
+of every occurrence; what the destination account owes **raises** the next
+occurrences, never lowers them.
+
+### 10.1 The baseline
+
+The same arithmetic as section 4, over a different history
+(`transfer-estimate-ledger.ts` `loadTransferHistory`): every non-void plain
+transfer from the schedule's account into its destination inside the 24-month
+window, read on the source leg, so its amount is in the schedule's currency
+and negative. A transfer the other way is not read at all: the schedule always
+posts out of its source, and were the money brought back the larger side, the
+estimate would turn positive, the opposite of what posting moves. The payee
+and category play no part; a transfer with no destination is `no-basis`, one
+with no such transfer `no-history`.
+
+### 10.2 The floor
+
+`transfer-estimate-floor.ts`, pure; the destination's figures are read by
+`loadTransferDestinations` through the one ledger spelling
+(`ledger-balance.sql.ts`), as of a date, signed as stored (a card in debt is
+negative). "Owes" is the negated balance as of today less every credit already
+entered with a later date, zero for an account holding money: posting an
+occurrence early dates it on its due date, and that payment has settled what
+it pays although today's balance does not hold it yet. A charge dated later is
+not owed yet.
+
+**Statement mode**: a `MONTHLY` transfer into a `CREDIT_CARD` whose statement
+settlement day and due day are both set. The settlement day is the last day of
+its cycle, so a cycle closing today is still open. With `S` the newest
+settlement date before today, `S'` the first on or after today and `S''` the
+one after:
+
+| Occurrence due | Pays | Raised to |
+| --- | --- | --- |
+| after `S`, on or before `S'` | the closed statement | its remainder: owed at `S` less the credits (payments, refunds) dated after `S`, later dates included |
+| after `S'`, on or before `S''` | the open cycle | owed today less that remainder |
+| any other | | not raised |
+
+The settlement day is read as the account form describes it, the last day of
+the cycle: a row dated on it is on the statement that closes that day, as in
+the issue's Nov 5 row. (`computeStatementCycle`'s `cycleStart`/`cycleEnd`
+labels place it at the start of the next cycle; only its settlement dates are
+used here.)
+
+So the grace period between a statement's close and its due date is covered:
+until the payment posts, the closed statement's amount is pending, and the open
+cycle is the balance beyond it. A schedule paying more often than monthly would
+have two occurrences in one cycle, each asking for the same statement, so it is
+in balance mode instead.
+
+**Balance mode**: every other transfer (a card without both statement days, or
+not monthly, a line of credit, any other account). The next occurrence, on the
+date it falls (the cursor, or where an override moved it), is raised to what
+the destination owes today; no other occurrence is, so a weekly schedule whose
+next occurrence was moved past the following ones asks for the debt once. An
+asset holding money owes nothing and never raises anything.
+
+**None**: a transfer into a `LOAN` or a `MORTGAGE`. A payment into one is an
+installment, and the whole principal is not the next bill.
+
+An occurrence is `-max(|baseline|, owed)`, the owed figure rounded to the
+currency's entry places (`applyBalanceFloor`). A destination in another currency
+has its owed figures converted at the current stored rate, as a payment is
+(section 3); with no rate the estimate is `missing-rate`, naming the pair,
+since whether it is raised cannot be told. An account the user does not own
+reads no floor.
+
+### 10.3 The issue's worked example
+
+Statement closes on the 5th, payment due on the 26th, baseline 2000; each row
+is a case of `transfer-estimate-floor.spec.ts`:
+
+| Date | Card owes | Nov 26 payment | Dec 26 payment | Why |
+| --- | --- | --- | --- | --- |
+| Oct 26 | 1200 (Oct statement paid) | 2000 | | the baseline |
+| Nov 02 | 2100 | 2100 | | the balance passes the baseline |
+| Nov 05 | 2700 | 2700 | | the cycle closes at the end of the day |
+| Nov 10 | 3000 | 2700 | 2000 | the closed statement; the new cycle starts at the baseline |
+| Nov 19 | 4800 | 2700 | 2100 | owed less the pending 2700 |
+| Nov 26 | 2300 (paid 2700) | posted | 2300 | the statement's remainder is zero |
+| Nov 28 | 2500 | | 2500 | |
+
+A payment made by hand after the close counts against the closed statement: on
+Nov 19 with 1000 paid, Nov 26 is the baseline (1700 left) and Dec 26 is 3100.
+
+### 10.4 Where it is read
+
+The floors ride `ScheduleAmountEstimate.floors`, so `estimatedAmountFor` (the
+expansion, the list read, the save snapshot, the posting) applies them alike;
+`estimateBasisOf` is the one place a schedule becomes a basis. The read model
+sends each floor as `{ after, through, months }`, each month already raised, so
+a debt under the baseline never reaches a client: it reads as the baseline. A
+raised figure is the bill's own figure, and a delegate who can see the
+schedule sees it as they see a typed amount; when raised it is what the
+destination owes for that payment, even where the delegation cannot read the
+destination. `estimateEntryOn`
+(`frontend/src/lib/scheduled-effective-amount.ts`) reads a date a floor governs
+from the floor before the plain month, and a raised month carries
+`basis: "balance"`, which the estimate text reports as "Raised to cover what
+the account owes for this payment" (in statement mode that is the statement's
+remainder or the open cycle's spending, not the whole balance). A delegate cannot change an estimated transfer's accounts
+(`estimateBasisOwnerOnly`); its category is not the basis and stays editable.
+Estimated transfers are never auto-posted, as section 2.
+
+### 10.5 Decisions
+
+1. The baseline is the history of transfers between the same two accounts.
+2. Statement mode needs both statement days and a monthly schedule; anything
+   else raises only the next occurrence.
+3. A payment made outside the schedule after a statement closes lowers that
+   statement's remainder.
+4. An occurrence two or more cycles out, and an overdue occurrence of an
+   earlier cycle, stay at the baseline.
+5. Known limit: a statement window holds two monthly occurrences only when
+   month-end clamping lands one on the settlement day (a card settling on the
+   28th paid on the 30th: Jan 30 and Feb 28 both pay the Jan 28 statement), and
+   both are raised to it. The person edits one; the next window is empty.
+6. A transfer with no past transfers is `no-history`, every occurrence unknown,
+   even when the destination's debt is known: the issue makes the history the
+   baseline, and an occurrence away from the floor has no figure. The person
+   enters the amount, as for a bill with no payments (section 5).
+7. A frequency change moves an estimated transfer's snapshot (it decides the
+   mode); it is not a change of the basis, so a delegate may make it.
+

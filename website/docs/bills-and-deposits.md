@@ -56,9 +56,20 @@ For a bill whose amount changes from month to month, such as heating or electric
 
 ![A schedule with Estimate on](images/scheduled-transaction-estimate.png)
 
-The estimate follows new payments as you record them. Under the **Amount**, the form says how many payments the estimate is based on, or what is missing when there is not enough to estimate from: no payments yet, or no exchange rate for a payment's currency. An estimated schedule needs a **Payee** and a **Category**, is available for a single-category transaction in the account's own currency (not a split, transfer, investment, or foreign-currency amount), and is never posted automatically, so **Auto-post on due date** is turned off.
+The estimate follows new payments as you record them. Under the **Amount**, the form says how many payments the estimate is based on, or what is missing when there is not enough to estimate from: no payments yet, or no exchange rate for a payment's currency. An estimated schedule needs a **Payee** and a **Category**, is available for a single-category transaction in the account's own currency (not a split, investment, or foreign-currency amount) or for a transfer (see [Estimated Transfers](#estimated-transfers)), and is never posted automatically, so **Auto-post on due date** is turned off.
 
 You still decide every occurrence: the bills list labels the amount **Estimated**, **Edit Occurrence** shows each upcoming occurrence's estimate and lets you change any of them, and the **Post Transaction** dialog opens on the estimate for you to correct before posting. An occurrence you change keeps your amount; one you leave alone keeps following the estimate.
+
+#### Estimated Transfers
+
+A transfer, such as the monthly payment of a credit card from your chequing account, has an **Estimate** toggle beside its **Transfer Amount** too. Its starting point is the same estimate, worked out from the last 24 months of transfers from the schedule's account to the **To Account** (no payee or category needed). When the account you pay into owes more than that, the payment is raised to match, and never lowered:
+
+- For a credit card with a **Settlement Date** and a **Due Date** in its account settings, and a monthly schedule, the payment for the statement that last closed is raised to what that statement still owes, and the payment after it to what the card owes beyond that statement. Between the statement's close and its due date, the closed statement's payment is still pending, so the next one counts only the spending since. Once a payment posts, the next cycle starts again from the estimate.
+- For any other account, or a card without both statement days, the next payment is raised to what the account owes today, until you post it or change that occurrence. A payment into a loan or a mortgage is an installment, so it is never raised to the whole balance.
+
+For example, with a statement closing on the 5th, payment due on the 26th and an estimate of $2,000: on November 2 with $2,100 owed, the November 26 payment is $2,100. On November 19 with $4,800 owed and the $2,700 November statement not yet paid, November 26 is $2,700 and December 26 is $2,100. Once the $2,700 posts, December 26 follows the card's balance.
+
+The note under the **Transfer Amount**, and the **Estimated** label's tooltip in the bills list, say when a payment was raised to cover what the account owes.
 
 ### Split Scheduled Transactions
 

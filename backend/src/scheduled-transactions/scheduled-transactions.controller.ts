@@ -256,8 +256,10 @@ export class ScheduledTransactionsController {
       req.user.id,
       {
         accountId,
-        payeeId: query.payeeId,
-        categoryId: query.categoryId,
+        payeeId: query.payeeId ?? null,
+        categoryId: query.categoryId ?? null,
+        transferAccountId: query.transferAccountId || null,
+        frequency: query.frequency || undefined,
         nextDueDate: query.nextDueDate || undefined,
       },
     );

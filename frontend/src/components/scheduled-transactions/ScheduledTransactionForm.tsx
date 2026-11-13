@@ -174,6 +174,47 @@ function getTransferAccountId(st?: ScheduledTransaction): string {
   return st?.transferAccountId || '';
 }
 
+/** What an estimate preview is asked for (issues #2096, #2164). */
+interface EstimateRequest {
+  accountId: string;
+  basis:
+    | { payeeId: string; categoryId: string }
+    | { transferAccountId: string; frequency: FrequencyType };
+  nextDueDate: string;
+}
+
+/**
+ * The key an estimate preview is requested and kept by, the request itself
+ * serialized, or `null` while its basis is incomplete: a transaction's payee
+ * and category (issue #2096), a transfer's destination and frequency (issue
+ * #2164, a card's statement cycle applies to a monthly transfer).
+ */
+function estimateRequestKeyOf(fields: {
+  transfer: boolean;
+  accountId: string | null | undefined;
+  payeeId: string | null | undefined;
+  categoryId: string | null | undefined;
+  transferAccountId: string | null | undefined;
+  frequency: FrequencyType | null | undefined;
+  nextDueDate: string | null | undefined;
+}): string | null {
+  if (!fields.accountId) return null;
+  let basis: EstimateRequest['basis'];
+  if (fields.transfer) {
+    if (!fields.transferAccountId || fields.transferAccountId === fields.accountId) return null;
+    basis = { transferAccountId: fields.transferAccountId, frequency: fields.frequency || 'MONTHLY' };
+  } else {
+    if (!fields.payeeId || !fields.categoryId) return null;
+    basis = { payeeId: fields.payeeId, categoryId: fields.categoryId };
+  }
+  const request: EstimateRequest = {
+    accountId: fields.accountId,
+    basis,
+    nextDueDate: fields.nextDueDate || '',
+  };
+  return JSON.stringify(request);
+}
+
 export function ScheduledTransactionForm({
   scheduledTransaction,
   templateTransaction,
@@ -434,9 +475,10 @@ export function ScheduledTransactionForm({
     !!entryCurrency &&
     entryCurrency.toUpperCase() !== accountCurrency.toUpperCase();
 
-  // The Estimate option (issue #2096): single-category, account-currency
-  // schedules only, as the server allows.
-  const estimating = mode === 'transaction' && !isForeign && watchedEstimate === true;
+  // The Estimate option: a single-category, account-currency schedule (issue
+  // #2096) or a transfer (issue #2164), as the server allows.
+  const estimating =
+    ((mode === 'transaction' && !isForeign) || mode === 'transfer') && watchedEstimate === true;
   const estimateText = useAmountEstimateText();
   // A delegate does not turn the estimate on or off, and is refused its
   // preview: it reads the owner's payments in every account (issue #2096).
@@ -445,27 +487,39 @@ export function ScheduledTransactionForm({
   // it was asked for, so a stale answer for another payee is never shown
   // (docs/frontend/api-and-cache.md). A saved schedule's own estimate stands in
   // until the first answer arrives.
-  const estimateRequestKey =
-    estimating && watchedAccountId && selectedPayeeId && selectedCategoryId
-      ? `${watchedAccountId}|${selectedPayeeId}|${selectedCategoryId}|${watchedNextDueDate || ''}`
-      : null;
+  const estimateRequestKey = estimating
+    ? estimateRequestKeyOf({
+        transfer: mode === 'transfer',
+        accountId: watchedAccountId,
+        payeeId: selectedPayeeId,
+        categoryId: selectedCategoryId,
+        transferAccountId: transferToAccountId,
+        frequency: watchedFrequency,
+        nextDueDate: watchedNextDueDate,
+      })
+    : null;
   const [estimatePreview, setEstimatePreview] = useState<{
     key: string;
     estimate: ScheduleAmountEstimate | null;
-  } | null>(() =>
-    scheduledTransaction?.amountEstimate
-      ? {
-          key: `${scheduledTransaction.accountId}|${scheduledTransaction.payeeId}|${scheduledTransaction.categoryId}|${scheduledTransaction.nextDueDate.split('T')[0]}`,
-          estimate: scheduledTransaction.amountEstimate,
-        }
-      : null,
-  );
+  } | null>(() => {
+    if (!scheduledTransaction?.amountEstimate) return null;
+    const key = estimateRequestKeyOf({
+      transfer: isScheduledTransfer(scheduledTransaction),
+      accountId: scheduledTransaction.accountId,
+      payeeId: scheduledTransaction.payeeId,
+      categoryId: scheduledTransaction.categoryId,
+      transferAccountId: scheduledTransaction.transferAccountId,
+      frequency: scheduledTransaction.frequency,
+      nextDueDate: scheduledTransaction.nextDueDate.split('T')[0],
+    });
+    return key ? { key, estimate: scheduledTransaction.amountEstimate } : null;
+  });
   useEffect(() => {
     if (!estimateRequestKey || isActingDelegate) return;
-    const [accountId, payeeId, categoryId, nextDueDate] = estimateRequestKey.split('|');
+    const request = JSON.parse(estimateRequestKey) as EstimateRequest;
     let cancelled = false;
     scheduledTransactionsApi
-      .getAmountEstimate(accountId, payeeId, categoryId, nextDueDate || undefined)
+      .getAmountEstimate(request.accountId, request.basis, request.nextDueDate || undefined)
       .then((estimate) => {
         if (!cancelled) setEstimatePreview({ key: estimateRequestKey, estimate });
       })
@@ -947,6 +1001,54 @@ export function ScheduledTransactionForm({
     }
   };
 
+  // The Estimate toggle and the note under an estimated amount, on the
+  // Transaction tab (issue #2096) and the Transfer tab (issue #2164).
+  const renderEstimateToggle = () => (
+    <div className="flex shrink-0 flex-col">
+      <span className="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+        {t('form.estimateLabel')}
+        <InfoTooltip
+          text={
+            isActingDelegate
+              ? t('form.estimateDelegateDisabled')
+              : mode === 'transfer'
+                ? t('form.estimateTooltipTransfer')
+                : t('form.estimateTooltip')
+          }
+        />
+      </span>
+      <div className="flex flex-1 items-center">
+        <ToggleSwitch
+          checked={estimating}
+          onChange={handleEstimateChange}
+          label={t('form.estimateLabel')}
+          disabled={isLoading || isActingDelegate}
+        />
+      </div>
+    </div>
+  );
+  const renderEstimateNote = () =>
+    estimating ? (
+      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        {t('form.estimatedAmountNote', {
+          detail: estimateText(
+            currentEstimate,
+            {
+              payeeName: payees.find((p) => p.id === selectedPayeeId)?.name ?? null,
+              categoryName: categories.find((c) => c.id === selectedCategoryId)?.name ?? null,
+              ...(mode === 'transfer'
+                ? {
+                    transferAccountName:
+                      accounts.find((a) => a.id === transferToAccountId)?.name ?? null,
+                  }
+                : {}),
+            },
+            watchedNextDueDate || undefined,
+          ),
+        })}
+      </p>
+    ) : null;
+
   const handleModeChange = (newMode: ScheduledTransactionMode) => {
     setMode(newMode);
 
@@ -1152,8 +1254,9 @@ export function ScheduledTransactionForm({
       return;
     }
 
-    // An estimate is matched on the payee and the category (issue #2096).
-    if (estimating && (!selectedPayeeId || !selectedCategoryId)) {
+    // An estimate is matched on the payee and the category (issue #2096); a
+    // transfer's on its destination, which the check below requires.
+    if (estimating && mode !== 'transfer' && (!selectedPayeeId || !selectedCategoryId)) {
       toast.error(t('form.toasts.estimateNeedsPayeeAndCategory'));
       return;
     }
@@ -1251,8 +1354,12 @@ export function ScheduledTransactionForm({
       };
 
       if (mode === 'transfer') {
-        // Amount should be negative (money leaving source account)
-        const transferAmount = -Math.abs(Number(data.amount));
+        // Amount should be negative (money leaving source account); an
+        // estimated transfer sends its next occurrence's estimate, which the
+        // server replaces with its own.
+        const transferAmount = -Math.abs(
+          Number(estimating ? (nextEstimateAmount ?? data.amount ?? 0) : data.amount),
+        );
         payload = {
           ...payload,
           amount: transferAmount,
@@ -1751,40 +1858,10 @@ export function ScheduledTransactionForm({
                 </div>
                 {/* Between Amount and Reference Number, taking its width from
                     the Amount input (issue #2096). */}
-                {!isForeign && (
-                  <div className="flex shrink-0 flex-col">
-                    <span className="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {t('form.estimateLabel')}
-                      <InfoTooltip
-                        text={
-                          isActingDelegate
-                            ? t('form.estimateDelegateDisabled')
-                            : t('form.estimateTooltip')
-                        }
-                      />
-                    </span>
-                    <div className="flex flex-1 items-center">
-                      <ToggleSwitch
-                        checked={estimating}
-                        onChange={handleEstimateChange}
-                        label={t('form.estimateLabel')}
-                        disabled={isLoading || isActingDelegate}
-                      />
-                    </div>
-                  </div>
-                )}
+                {!isForeign && renderEstimateToggle()}
               </div>
               {isForeign && renderFxCaption()}
-              {estimating && (
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {t('form.estimatedAmountNote', {
-                    detail: estimateText(currentEstimate, {
-                      payeeName: payees.find((p) => p.id === selectedPayeeId)?.name ?? null,
-                      categoryName: categories.find((c) => c.id === selectedCategoryId)?.name ?? null,
-                    }),
-                  })}
-                </p>
-              )}
+              {renderEstimateNote()}
             </div>
             <Input
               label={t('form.referenceNumberLabel')}
@@ -2027,15 +2104,33 @@ export function ScheduledTransactionForm({
 
           {/* Row 4: Transfer Amount, Reference Number (mirrors the Transaction tab) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <CurrencyInput
-              label={t('form.transferAmountLabel')}
-              prefix={currencySymbol}
-              decimalPlaces={amountDecimalPlaces}
-              value={watchedAmount}
-              onChange={(value) => setValue('amount', value !== undefined ? Math.abs(value) : 0, { shouldValidate: true })}
-              allowNegative={false}
-              error={errors.amount?.message}
-            />
+            <div>
+              <div className="flex items-stretch space-x-2">
+                <div className="flex-1 min-w-0">
+                  <CurrencyInput
+                    label={t('form.transferAmountLabel')}
+                    prefix={currencySymbol}
+                    decimalPlaces={amountDecimalPlaces}
+                    // Estimating, the field shows the next occurrence's
+                    // estimate (issue #2164) and is not edited; an unknown
+                    // estimate is an empty field, never the stored snapshot.
+                    value={
+                      estimating
+                        ? nextEstimateAmount != null
+                          ? Math.abs(nextEstimateAmount)
+                          : undefined
+                        : watchedAmount
+                    }
+                    onChange={(value) => setValue('amount', value !== undefined ? Math.abs(value) : 0, { shouldValidate: true })}
+                    allowNegative={false}
+                    disabled={estimating}
+                    error={errors.amount?.message}
+                  />
+                </div>
+                {renderEstimateToggle()}
+              </div>
+              {renderEstimateNote()}
+            </div>
             <Input
               label={t('form.referenceNumberLabel')}
               type="text"

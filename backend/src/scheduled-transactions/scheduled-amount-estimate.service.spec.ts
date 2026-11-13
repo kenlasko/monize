@@ -2,8 +2,10 @@ import { DataSource } from "typeorm";
 import {
   ScheduleEstimateBasis,
   ScheduledAmountEstimateService,
+  estimateBasisOf,
   estimateReadModel,
   estimatedAmountFor,
+  estimatedOccurrenceFor,
   occurrenceFollowsEstimate,
 } from "./scheduled-amount-estimate.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
@@ -206,5 +208,325 @@ describe("ScheduledAmountEstimateService", () => {
     expect(occurrenceFollowsEstimate({ amountIsEstimated: false }, null)).toBe(
       false,
     );
+  });
+
+  describe("an estimated transfer (issue #2164)", () => {
+    const NOV_19 = "2026-11-19";
+    const transferBasis = (
+      overrides: Partial<NonNullable<ScheduleEstimateBasis["transfer"]>> = {},
+    ): ScheduleEstimateBasis => ({
+      payeeId: null,
+      categoryId: null,
+      currencyCode: "CAD",
+      transfer: {
+        accountId: "acc-chequing",
+        transferAccountId: "acc-card",
+        frequency: "MONTHLY",
+        nextOccurrenceDueDate: "2026-11-26",
+        ...overrides,
+      },
+    });
+    const transferRow = (date: string, amount: number, currency = "CAD") => ({
+      account_id: "acc-chequing",
+      transfer_account_id: "acc-card",
+      tx_date: date,
+      currency_code: currency,
+      amount: String(amount),
+    });
+    /** The issue's card: closes on the 5th, due on the 26th. */
+    const cardRow = {
+      id: "acc-card",
+      account_type: "CREDIT_CARD",
+      statement_settlement_day: 5,
+      statement_due_day: 26,
+      currency_code: "CAD",
+    };
+
+    /**
+     * Answers each read by what it asks: the destination, its balances, its
+     * credits since the statement and the transfer history.
+     */
+    const ledger = (opts: {
+      account?: Record<string, unknown> | null;
+      balances?: Record<string, number>;
+      credits?: number;
+      creditsAhead?: number;
+      history?: ReturnType<typeof transferRow>[];
+    }) => {
+      manager.query.mockImplementation(async (sql: string) => {
+        if (sql.includes("statement_settlement_day")) {
+          return opts.account === null ? [] : [opts.account ?? cardRow];
+        }
+        if (sql.includes("AS balance")) {
+          return Object.entries(opts.balances ?? {}).map(([asOf, b]) => ({
+            account_id: "acc-card",
+            as_of: asOf,
+            balance: String(b),
+          }));
+        }
+        if (sql.includes("AS credits_since")) {
+          return [
+            {
+              account_id: "acc-card",
+              credits_since: String(opts.credits ?? 0),
+              credits_ahead: String(opts.creditsAhead ?? 0),
+            },
+          ];
+        }
+        if (sql.includes("linked_transaction_id")) {
+          return (
+            opts.history ?? [
+              transferRow("2026-08-26", -1900),
+              transferRow("2026-09-26", -2000),
+              transferRow("2026-10-26", -2100),
+            ]
+          );
+        }
+        return [];
+      });
+    };
+
+    it("matches the transfers between the two accounts and raises the next cycles to the card's debt", async () => {
+      // The Nov 5 statement owed 2700; the card owes 4800 today.
+      ledger({ balances: { [NOV_19]: -4800, "2026-11-05": -2700 } });
+
+      const estimate = await service.estimateFor(
+        "user-1",
+        transferBasis(),
+        NOV_19,
+      );
+
+      expect(estimate.status).toBe("estimated");
+      // The closed statement, what lies beyond it, then the baseline.
+      expect(estimatedOccurrenceFor(estimate, "2026-11-26")).toEqual({
+        amount: -2700,
+        basis: "balance",
+      });
+      expect(estimatedAmountFor(estimate, "2026-12-26")).toBe(-2100);
+      expect(estimatedOccurrenceFor(estimate, "2027-01-26")).toEqual({
+        amount: -2000,
+        basis: "recent",
+      });
+
+      const history = manager.query.mock.calls.find(([sql]) =>
+        String(sql).includes("linked_transaction_id"),
+      )!;
+      expect(history[0]).toContain("'VOID'");
+      // Only money sent to the destination: what came back is not a payment.
+      expect(history[0]).toContain("t.amount < 0");
+      expect(history[1]).toEqual([
+        "user-1",
+        ["acc-chequing"],
+        ["acc-card"],
+        "2024-11-19",
+        NOV_19,
+      ]);
+      const balances = manager.query.mock.calls.find(([sql]) =>
+        String(sql).includes("AS balance"),
+      )!;
+      expect(balances[1]).toEqual([
+        "user-1",
+        ["acc-card", "acc-card"],
+        [NOV_19, "2026-11-05"],
+      ]);
+      const credits = manager.query.mock.calls.find(([sql]) =>
+        String(sql).includes("AS credits"),
+      )!;
+      expect(credits[1]).toEqual([
+        "user-1",
+        ["acc-card"],
+        ["2026-11-05"],
+        NOV_19,
+      ]);
+      // No payee history is read for a transfer.
+      expect(
+        manager.query.mock.calls.some(([sql]) =>
+          String(sql).includes("transaction_splits"),
+        ),
+      ).toBe(false);
+    });
+
+    it("raises only the next occurrence outside a card's statement cycle", async () => {
+      ledger({
+        account: {
+          ...cardRow,
+          account_type: "LINE_OF_CREDIT",
+          statement_settlement_day: null,
+          statement_due_day: null,
+        },
+        balances: { [NOV_19]: -3456.78 },
+      });
+
+      const estimate = await service.estimateFor(
+        "user-1",
+        transferBasis(),
+        NOV_19,
+      );
+
+      expect(estimatedAmountFor(estimate, "2026-11-26")).toBe(-3456.78);
+      expect(estimatedAmountFor(estimate, "2026-12-26")).toBe(-2000);
+      // With no statement, credits are read from today on.
+      const credits = manager.query.mock.calls.find(([sql]) =>
+        String(sql).includes("AS credits_since"),
+      )!;
+      expect(credits[1]).toEqual(["user-1", ["acc-card"], [NOV_19], NOV_19]);
+    });
+
+    it("counts a payment posted ahead of its date against the debt", async () => {
+      // 3456.78 owed today; 3000 of it paid by a transfer dated next week.
+      ledger({
+        account: {
+          ...cardRow,
+          account_type: "LINE_OF_CREDIT",
+          statement_settlement_day: null,
+          statement_due_day: null,
+        },
+        balances: { [NOV_19]: -3456.78 },
+        creditsAhead: 3000,
+      });
+
+      const estimate = await service.estimateFor(
+        "user-1",
+        transferBasis(),
+        NOV_19,
+      );
+
+      // 456.78 left, under the baseline.
+      expect(estimatedAmountFor(estimate, "2026-11-26")).toBe(-2000);
+    });
+
+    it("reads no floor for an account the user does not own", async () => {
+      ledger({ account: null });
+
+      const estimate = await service.estimateFor(
+        "user-1",
+        transferBasis(),
+        NOV_19,
+      );
+
+      expect(estimate.floors).toEqual([]);
+      expect(estimatedAmountFor(estimate, "2026-11-26")).toBe(-2000);
+    });
+
+    it("is no-basis without a destination and no-history without transfers", async () => {
+      ledger({ history: [], balances: { [NOV_19]: -4800 } });
+
+      const result = await service.estimateMany(
+        "user-1",
+        new Map([
+          ["a", transferBasis({ transferAccountId: null })],
+          ["b", transferBasis()],
+        ]),
+        NOV_19,
+      );
+
+      expect(result.get("a")!.status).toBe("no-basis");
+      expect(result.get("b")!.status).toBe("no-history");
+      expect(estimatedAmountFor(result.get("b")!, "2026-11-26")).toBeNull();
+    });
+
+    it("converts a destination's debt in another currency at the current rate", async () => {
+      ledger({
+        account: { ...cardRow, currency_code: "USD" },
+        balances: { [NOV_19]: -3000, "2026-11-05": -2000 },
+      });
+
+      const estimate = await service.estimateFor(
+        "user-1",
+        transferBasis(),
+        NOV_19,
+      );
+
+      // 2000 USD owed on the statement at 1.4.
+      expect(estimatedAmountFor(estimate, "2026-11-26")).toBe(-2800);
+      expect(exchangeRates.getRateForDate).toHaveBeenCalledWith(
+        "USD",
+        "CAD",
+        NOV_19,
+        { fetchMissing: false },
+      );
+    });
+
+    it("is unknown and names the pair when the destination's currency has no current rate", async () => {
+      exchangeRates.getRateForDate.mockResolvedValue(null);
+      ledger({
+        account: { ...cardRow, currency_code: "USD" },
+        balances: { [NOV_19]: -3000, "2026-11-05": -2000 },
+      });
+
+      const estimate = await service.estimateFor(
+        "user-1",
+        transferBasis(),
+        NOV_19,
+      );
+
+      expect(estimate).toMatchObject({
+        status: "missing-rate",
+        missingPair: { from: "USD", to: "CAD" },
+        floors: [],
+      });
+    });
+
+    it("publishes each floor's months raised, never the debt itself", async () => {
+      ledger({ balances: { [NOV_19]: -4800, "2026-11-05": -1500 } });
+
+      const model = estimateReadModel(
+        await service.estimateFor("user-1", transferBasis(), NOV_19),
+        NOV_19,
+        "2026-11-26",
+      );
+
+      expect(model.months["2026-11"]).toEqual({
+        amount: -2000,
+        basis: "recent",
+      });
+      expect(model.floors).toEqual([
+        {
+          after: "2026-11-05",
+          through: "2026-12-05",
+          // The statement's 1500 is under the baseline: it reads as the baseline.
+          months: {
+            "2026-11": { amount: -2000, basis: "recent" },
+            "2026-12": { amount: -2000, basis: "recent" },
+          },
+        },
+        {
+          after: "2026-12-05",
+          through: "2027-01-05",
+          months: {
+            "2026-12": { amount: -3300, basis: "balance" },
+            "2027-01": { amount: -3300, basis: "balance" },
+          },
+        },
+      ]);
+    });
+
+    it("builds a transfer's basis from the schedule, at where an override moved its next occurrence", () => {
+      const schedule = {
+        payeeId: "payee-1",
+        categoryId: "cat-1",
+        currencyCode: "CAD",
+        accountId: "acc-chequing",
+        isTransfer: true,
+        transferAccountId: "acc-card",
+        frequency: "MONTHLY" as const,
+        nextDueDate: "2026-11-26",
+      };
+      expect(estimateBasisOf(schedule, "2026-11-28").transfer).toEqual({
+        accountId: "acc-chequing",
+        transferAccountId: "acc-card",
+        frequency: "MONTHLY",
+        nextOccurrenceDueDate: "2026-11-28",
+      });
+      expect(
+        estimateBasisOf(schedule, "2026-11-20").transfer!.nextOccurrenceDueDate,
+      ).toBe("2026-11-20");
+      expect(estimateBasisOf(schedule).transfer!.nextOccurrenceDueDate).toBe(
+        "2026-11-26",
+      );
+      expect(
+        estimateBasisOf({ ...schedule, isTransfer: false }).transfer,
+      ).toBeUndefined();
+    });
   });
 });

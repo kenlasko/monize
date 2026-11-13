@@ -22,6 +22,7 @@ import {
   ScheduleAmountEstimateStatus,
   ScheduleEstimateBasis,
   ScheduledAmountEstimateService,
+  estimateBasisOf,
   estimatedAmountFor,
   occurrenceFollowsEstimate,
 } from "./scheduled-amount-estimate.service";
@@ -220,7 +221,11 @@ export class ScheduledOccurrenceService {
       }
     }
 
-    const estimated = await this.priceEstimatedOccurrences(userId, occurrences);
+    const estimated = await this.priceEstimatedOccurrences(
+      userId,
+      occurrences,
+      overridesBySchedule,
+    );
     const priced = await this.priceLoanOccurrences(
       userId,
       estimated,
@@ -376,16 +381,26 @@ export class ScheduledOccurrenceService {
   private async priceEstimatedOccurrences(
     userId: string,
     occurrences: ResolvedScheduledOccurrence[],
+    overridesBySchedule: ReadonlyMap<string, ScheduledTransactionOverride[]>,
   ): Promise<ResolvedScheduledOccurrence[]> {
     const bases = new Map<string, ScheduleEstimateBasis>();
     for (const occurrence of occurrences) {
       if (!occurrence.estimated) continue;
       const { schedule } = occurrence;
-      bases.set(schedule.id, {
-        payeeId: schedule.payeeId,
-        categoryId: schedule.categoryId,
-        currencyCode: schedule.currencyCode,
-      });
+      if (bases.has(schedule.id)) continue;
+      // Where an override moved the next occurrence: a transfer's balance
+      // floor raises that occurrence wherever it falls (issue #2164).
+      const cursor = ensureYMD(schedule.nextDueDate);
+      const nextOverride = (overridesBySchedule.get(schedule.id) ?? []).find(
+        (o) => ensureYMD(o.originalDate) === cursor,
+      );
+      bases.set(
+        schedule.id,
+        estimateBasisOf(
+          schedule,
+          nextOverride ? ensureYMD(nextOverride.overrideDate) : null,
+        ),
+      );
     }
     if (bases.size === 0) return occurrences;
 

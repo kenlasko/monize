@@ -12,6 +12,7 @@ import {
   LoanProjectionAnchor,
   LoanOccurrencesProjection,
   ScheduleAmountEstimate,
+  FrequencyType,
 } from '@/types/scheduled-transaction';
 import { dedupe, invalidateBalanceCaches, invalidateCache } from './apiCache';
 
@@ -119,15 +120,18 @@ export const scheduledTransactionsApi = {
    * would carry (issue #2096): the schedule form's preview, computed by the
    * same server code as a saved schedule's. Not cached: every payment moves it.
    */
+  // A transaction's estimate is matched on its payee and category; a
+  // transfer's on the account it transfers to (issue #2164).
   getAmountEstimate: async (
     accountId: string,
-    payeeId: string,
-    categoryId: string,
+    basis:
+      | { payeeId: string; categoryId: string }
+      | { transferAccountId: string; frequency: FrequencyType },
     nextDueDate?: string,
   ): Promise<ScheduleAmountEstimate> => {
     const response = await apiClient.get<ScheduleAmountEstimate>(
       `/scheduled-transactions/amount-estimate/${accountId}`,
-      { params: { payeeId, categoryId, ...(nextDueDate ? { nextDueDate } : {}) } },
+      { params: { ...basis, ...(nextDueDate ? { nextDueDate } : {}) } },
     );
     return response.data;
   },
