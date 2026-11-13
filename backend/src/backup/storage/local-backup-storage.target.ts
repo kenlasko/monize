@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createReadStream, promises as fs } from "fs";
 import { randomUUID } from "crypto";
-import { resolve } from "path";
+import * as path from "path";
 import {
   cleanStaleTempFiles,
   copyFileAtomic,
@@ -13,6 +13,7 @@ import {
   assertWithinAllowedRoots,
   BackupPathNotAllowedError,
   BackupPathUnusableError,
+  PathApi,
   resolveAllowedRoots,
 } from "../backup-paths";
 import { isShardableId, shardedSegments } from "../../common/shard-path.util";
@@ -545,17 +546,7 @@ export class LocalBackupStorageTarget implements BackupStorageTarget {
    * stays within the base folder (prevents path traversal CWE-22).
    */
   private safePath(basePath: string, filename: string): string {
-    const full = resolve(basePath, filename);
-    if (!full.startsWith(basePath + "/") && full !== basePath) {
-      throw new BadRequestException(
-        tr(
-          "errors.backup.pathTraversal",
-          `Path traversal detected: ${filename}`,
-          { filename },
-        ),
-      );
-    }
-    return full;
+    return safeBackupPath(basePath, filename);
   }
 
   /**
@@ -565,59 +556,7 @@ export class LocalBackupStorageTarget implements BackupStorageTarget {
    * (CWE-22: Path traversal).
    */
   private validateFolderPath(folderPath: string): string {
-    if (typeof folderPath !== "string") {
-      throw new BadRequestException(
-        tr(
-          "errors.backup.folderPathMustBeString",
-          "Folder path must be a string",
-        ),
-      );
-    }
-    if (folderPath.length > 4096) {
-      throw new BadRequestException(
-        tr("errors.backup.folderPathTooLong", "Folder path is too long"),
-      );
-    }
-    if (!folderPath.startsWith("/")) {
-      throw new BadRequestException(
-        tr(
-          "errors.backup.folderPathMustBeAbsolute",
-          "Folder path must be an absolute path",
-        ),
-      );
-    }
-    if (folderPath.includes("..")) {
-      throw new BadRequestException(
-        tr(
-          "errors.backup.folderPathNoDotDot",
-          "Folder path must not contain '..' segments",
-        ),
-      );
-    }
-    if (folderPath.includes("\0")) {
-      throw new BadRequestException(
-        tr(
-          "errors.backup.folderPathNoNullBytes",
-          "Folder path must not contain null bytes",
-        ),
-      );
-    }
-    // Trim trailing slashes without a greedy regex (avoids ReDoS on '/' runs).
-    let trimmed = folderPath;
-    while (trimmed.length > 1 && trimmed.endsWith("/")) {
-      trimmed = trimmed.slice(0, -1);
-    }
-    // Ensure the resolved path matches the input (no symlink-like tricks via //)
-    const normalized = resolve(trimmed);
-    if (normalized !== trimmed) {
-      throw new BadRequestException(
-        tr(
-          "errors.backup.folderPathMustBeNormalized",
-          "Folder path must be a normalized absolute path",
-        ),
-      );
-    }
-    return normalized;
+    return validateBackupFolderPath(folderPath);
   }
 
   /**
@@ -740,4 +679,101 @@ export class LocalBackupStorageTarget implements BackupStorageTarget {
       );
     }
   }
+}
+
+/**
+ * Join `filename` onto `basePath` and refuse a result outside the base
+ * (CWE-22). The boundary is the platform's separator, so on Windows a drive
+ * change (`D:\x`), a UNC path or `..\..\Windows` resolves outside
+ * `C:\Monize\backups` and is refused exactly as `../../etc` is on POSIX.
+ *
+ * `pathApi` exists so the win32 semantics can be proven on a Linux runner with
+ * `path.win32` (the pattern `common/jest-config.guard.spec.ts` follows); every
+ * production caller takes the default, the host's own `path`.
+ */
+export function safeBackupPath(
+  basePath: string,
+  filename: string,
+  pathApi: PathApi = path,
+): string {
+  const full = pathApi.resolve(basePath, filename);
+  if (!full.startsWith(basePath + pathApi.sep) && full !== basePath) {
+    throw new BadRequestException(
+      tr(
+        "errors.backup.pathTraversal",
+        `Path traversal detected: ${filename}`,
+        { filename },
+      ),
+    );
+  }
+  return full;
+}
+
+/**
+ * Validate a user- or operator-supplied folder path and return its normalized
+ * form: absolute on the host platform (`/data/backups` on POSIX,
+ * `C:\Monize\backups` on Windows), no `..`, no null bytes, and already in the
+ * form `resolve` would give it. `pathApi` is injectable for the same reason
+ * as in `safeBackupPath`.
+ */
+export function validateBackupFolderPath(
+  folderPath: string,
+  pathApi: PathApi = path,
+): string {
+  if (typeof folderPath !== "string") {
+    throw new BadRequestException(
+      tr(
+        "errors.backup.folderPathMustBeString",
+        "Folder path must be a string",
+      ),
+    );
+  }
+  if (folderPath.length > 4096) {
+    throw new BadRequestException(
+      tr("errors.backup.folderPathTooLong", "Folder path is too long"),
+    );
+  }
+  if (!pathApi.isAbsolute(folderPath)) {
+    throw new BadRequestException(
+      tr(
+        "errors.backup.folderPathMustBeAbsolute",
+        "Folder path must be an absolute path",
+      ),
+    );
+  }
+  if (folderPath.includes("..")) {
+    throw new BadRequestException(
+      tr(
+        "errors.backup.folderPathNoDotDot",
+        "Folder path must not contain '..' segments",
+      ),
+    );
+  }
+  if (folderPath.includes("\0")) {
+    throw new BadRequestException(
+      tr(
+        "errors.backup.folderPathNoNullBytes",
+        "Folder path must not contain null bytes",
+      ),
+    );
+  }
+  // Trim trailing separators without a greedy regex (avoids ReDoS on runs of
+  // them), never past the root: `/` on POSIX, `C:\` on Windows.
+  const rootLength = pathApi.parse(folderPath).root.length;
+  let trimmed = folderPath;
+  while (trimmed.length > rootLength && trimmed.endsWith(pathApi.sep)) {
+    trimmed = trimmed.slice(0, -1);
+  }
+  // Ensure the resolved path matches the input (no symlink-like tricks via //,
+  // no drive-relative or forward-slash spelling on Windows).
+  const normalized = pathApi.normalize(pathApi.resolve(trimmed));
+  if (normalized !== trimmed) {
+    throw new BadRequestException(
+      tr(
+        "errors.backup.folderPathMustBeNormalized",
+        "Folder path must be a normalized absolute path",
+      ),
+    );
+  }
+  return normalized;
 }
