@@ -146,7 +146,7 @@ describe('authApi', () => {
 
   it('createToken posts new PAT', async () => {
     vi.mocked(apiClient.post).mockResolvedValue({ data: { id: 'pat-1', token: 'abc' } });
-    await authApi.createToken({ name: 'CI', expiresAt: null } as any);
+    await authApi.createToken({ name: 'CI', expiresAt: null });
     expect(apiClient.post).toHaveBeenCalledWith('/auth/tokens', {
       name: 'CI',
       expiresAt: null,
@@ -155,7 +155,7 @@ describe('authApi', () => {
 
   it('createToken sends the step-up token as a header', async () => {
     vi.mocked(apiClient.post).mockResolvedValue({ data: { id: 'pat-1', token: 'abc' } });
-    await authApi.createToken({ name: 'CI', expiresAt: null } as any, 'step-up-jwt');
+    await authApi.createToken({ name: 'CI', expiresAt: null }, 'step-up-jwt');
     expect(apiClient.post).toHaveBeenCalledWith(
       '/auth/tokens',
       { name: 'CI', expiresAt: null },
