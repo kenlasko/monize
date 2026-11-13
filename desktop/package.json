@@ -28,6 +28,7 @@
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
     "electron": "45.3.2",
+    "electron-builder": "26.18.0",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.7",
