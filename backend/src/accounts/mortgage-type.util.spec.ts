@@ -17,10 +17,6 @@ describe("mortgageTypeOf", () => {
       expect(mortgageTypeOf({ mortgageType: type })).toBe(type);
     }
   });
-
-  it("reads a null, which only a 1.19.x rollback writes, as the default", () => {
-    expect(mortgageTypeOf({ mortgageType: null })).toBe("ANNUITY");
-  });
 });
 
 describe("prepayment mode (spec decisions 4 and 10)", () => {

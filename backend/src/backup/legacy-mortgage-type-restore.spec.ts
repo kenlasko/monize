@@ -4,17 +4,17 @@ import type { EntityManager } from "typeorm";
 import { parseSchemaColumns } from "../common/db/raw-sql-columns";
 import { BackupRestoreDatabaseService } from "./backup-restore-database.service";
 
-// The shipped column list, so the fixture follows schema.sql as the contract
-// migration later removes the flags from it.
+// The shipped column list: the restore inserts only the columns schema.sql has.
 const columns = parseSchemaColumns(
   readFileSync(join(__dirname, "../../../database/schema.sql"), "utf8"),
 ).get("accounts")!;
 
 /**
- * docs/specs/mortgage-types.md, task P3-B1: an `accounts` row from a backup
- * taken before the type was required is inserted with the type the default
- * migration would have given it, and without the legacy flags. The real
- * database round trip is in `backup-restore.integration.spec.ts`.
+ * docs/specs/mortgage-types.md, tasks P3-B1 and P3-B2: an `accounts` row from
+ * a backup taken before the type was required is inserted with the type the
+ * default and contract migrations would have given it, and without the legacy
+ * flags, which the schema no longer has. The real database round trip is in
+ * `backup-restore.integration.spec.ts`.
  */
 describe("restoring accounts from before the mortgage-type contract", () => {
   const restoreOne = async (row: Record<string, unknown>) => {
@@ -45,12 +45,12 @@ describe("restoring accounts from before the mortgage-type contract", () => {
     return Object.fromEntries(inserted.map((c, i) => [c, values[i]]));
   };
 
-  it("keeps the flags in the schema until the contract migration, and still leaves them out of a restore", () => {
-    // A 1.19.x rollback maps both columns, so they stay; no code reads them,
-    // so the restored row carries the type alone (the cases below).
+  it("has the type and neither legacy flag in the schema", () => {
+    // The contract migration dropped both flags, so a restore that inserted a
+    // backup's flag columns would fail; the cases below leave them out.
     expect(columns.has("mortgage_type")).toBe(true);
-    expect(columns.has("is_canadian_mortgage")).toBe(true);
-    expect(columns.has("is_variable_rate")).toBe(true);
+    expect(columns.has("is_canadian_mortgage")).toBe(false);
+    expect(columns.has("is_variable_rate")).toBe(false);
   });
 
   it.each([

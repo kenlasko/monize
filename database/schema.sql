@@ -224,16 +224,11 @@ CREATE TABLE accounts (
     date_acquired DATE, -- date the asset was acquired (for net worth historical accuracy)
     linked_loan_account_id UUID, -- asset's financing loan/mortgage (self-referential FK added below; for the equity view)
     -- Mortgage-specific fields
-    -- Superseded by mortgage_type and unused since 1.20.0; kept so a 1.19.x
-    -- rollback still finds them, and dropped by the contract migration.
-    is_canadian_mortgage BOOLEAN DEFAULT false,
-    is_variable_rate BOOLEAN DEFAULT false,
     -- Compounding convention and amortization method (docs/specs/mortgage-types.md):
     -- 'ANNUITY' | 'CANADIAN_FIXED' | 'LINEAR' | 'INTEREST_ONLY'. Read only on a
     -- MORTGAGE; every other account carries the default, the annuity engine a
-    -- plain LOAN uses. Nullable until the contract migration, because 1.19.x may
-    -- write null on a non-mortgage row; a null reads as ANNUITY.
-    mortgage_type VARCHAR(20) DEFAULT 'ANNUITY',
+    -- plain LOAN uses.
+    mortgage_type VARCHAR(20) NOT NULL DEFAULT 'ANNUITY',
     -- What an extra repayment does to a LINEAR mortgage's constant principal:
     -- 'SHORTEN_TERM' (null reads as this) or 'LOWER_INSTALLMENT'. Null on every
     -- other type (accounts_prepayment_mode_linear_only).

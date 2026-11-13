@@ -15,14 +15,29 @@
 -- 2. Every other null row (a non-mortgage account; a plain LOAN prices as
 --    ANNUITY) takes the default.
 -- 3. The default. Every statement is a no-op on re-apply.
-UPDATE accounts
-   SET mortgage_type = CASE
-         WHEN COALESCE(is_canadian_mortgage, false)
-              AND NOT COALESCE(is_variable_rate, false) THEN 'CANADIAN_FIXED'
-         ELSE 'ANNUITY'
-       END
- WHERE account_type = 'MORTGAGE'
-   AND mortgage_type IS NULL;
+--
+-- Step 1 runs only while both flags exist: the contract migration (P3-B2)
+-- drops them from schema.sql, and a fresh install replays this file on top of
+-- it. Wherever the flags exist it does what it always did, and the filename
+-- is unchanged, so no deployed database re-runs it.
+DO $$
+BEGIN
+    IF (
+        SELECT count(*) FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'accounts'
+          AND column_name IN ('is_canadian_mortgage', 'is_variable_rate')
+    ) = 2 THEN
+        UPDATE accounts
+           SET mortgage_type = CASE
+                 WHEN COALESCE(is_canadian_mortgage, false)
+                      AND NOT COALESCE(is_variable_rate, false) THEN 'CANADIAN_FIXED'
+                 ELSE 'ANNUITY'
+               END
+         WHERE account_type = 'MORTGAGE'
+           AND mortgage_type IS NULL;
+    END IF;
+END $$;
 
 UPDATE accounts
    SET mortgage_type = 'ANNUITY'

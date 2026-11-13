@@ -35,7 +35,7 @@ describe("mortgage method CHECKs (integration)", () => {
   const insertMortgage = (
     id: string,
     fields: {
-      mortgageType: string | null;
+      mortgageType: string;
       prepaymentMode?: string | null;
       paymentAmount?: number | null;
     },
@@ -107,11 +107,6 @@ describe("mortgage method CHECKs (integration)", () => {
     await insertMortgage("20000000-0000-4000-8000-000000000004", {
       mortgageType: "ANNUITY",
       paymentAmount: 1108.8584,
-    });
-    // A mortgage written by a release before the type: null type, any payment.
-    await insertMortgage("20000000-0000-4000-8000-000000000005", {
-      mortgageType: null,
-      paymentAmount: 1500,
     });
   });
 

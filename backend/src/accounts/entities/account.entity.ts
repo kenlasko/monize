@@ -342,16 +342,14 @@ export class Account {
 
   // Mortgage-specific fields
   // Read only on a MORTGAGE; every other account carries the default, the
-  // annuity engine a plain LOAN uses. Nullable until the contract migration
-  // (a 1.19.x rollback may write null); read it through `mortgageTypeOf`.
+  // annuity engine a plain LOAN uses. Read it through `mortgageTypeOf`.
   @Column({
     type: "varchar",
     length: 20,
     name: "mortgage_type",
-    nullable: true,
     default: "ANNUITY",
   })
-  mortgageType: MortgageType | null;
+  mortgageType: MortgageType;
 
   // What an extra repayment does to a LINEAR mortgage's constant principal;
   // null reads as SHORTEN_TERM, and the column is null on every other type.

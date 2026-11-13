@@ -1,23 +1,26 @@
 /**
  * The mortgage type of an account snapshot written before the type was
- * required (docs/specs/mortgage-types.md, task P3-B1), for the two paths that
- * replay one into today's schema: a backup restore and an action-history undo.
+ * required (docs/specs/mortgage-types.md, tasks P3-B1 and P3-B2), for the two
+ * paths that replay one into today's schema: a backup restore and an
+ * action-history undo.
  *
  * Before Phase 1 a snapshot carries `is_canadian_mortgage` / `is_variable_rate`
- * and no type; in Phases 1 and 2 it carries a type that is null on every
- * non-mortgage row and on a mortgage a pre-Phase-1 pod wrote. No code reads
- * the flags any more (the columns stay only for a 1.19.x rollback, until the
- * contract migration drops them), so a snapshot replayed as it stands would
- * insert the default or the null, and a Canadian fixed-rate mortgage would be
- * read as ANNUITY.
+ * and no type; up to 1.21.x it may carry a type that is null on a non-mortgage
+ * row and on a mortgage a pre-Phase-1 pod or a 1.19.x rollback wrote. The
+ * contract migration dropped both flag columns and made the type NOT NULL, so
+ * a snapshot replayed as it stands would name columns that no longer exist,
+ * or refuse its null, and a Canadian fixed-rate mortgage would be read as
+ * ANNUITY.
  *
- * The answer is the default migration's: a stored type stands; a missing one
- * on a MORTGAGE is the type its flags denote (spec table 4.2: Canadian and not
- * variable is CANADIAN_FIXED, a NULL flag reading as false); on every other
- * account it is the column default, ANNUITY. A stored value is passed through
- * unchecked, as every other restored column is: the CHECK refuses a bad one.
+ * The answer is the default and contract migrations': a stored type stands; a
+ * missing one on a MORTGAGE is the type its flags denote (spec table 4.2:
+ * Canadian and not variable is CANADIAN_FIXED, a NULL flag reading as false);
+ * on every other account it is the column default, ANNUITY. A stored value is
+ * passed through unchecked, as every other restored column is: the CHECK
+ * refuses a bad one.
  *
- * This module is the one place in `src/` that names the legacy flags.
+ * This module is the one place in `src/` that names the legacy flags: old
+ * backups and undo snapshots still carry them.
  */
 function mortgageTypeOfSnapshot(
   accountType: unknown,
