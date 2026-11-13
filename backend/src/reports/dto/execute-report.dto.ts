@@ -44,6 +44,13 @@ export interface AggregatedDataPoint {
    */
   accountAmount?: number;
   accountCurrency?: string;
+  /**
+   * What a row entered in a foreign currency was entered as, unconverted and
+   * signed as `value` is; `originalCurrency` names its currency. Absent on an
+   * ordinary row and on a split line. A column of these has no total.
+   */
+  originalAmount?: number;
+  originalCurrency?: string;
   // Budget variance fields (for BUDGET_VARIANCE metric)
   budgeted?: number;
   actual?: number;

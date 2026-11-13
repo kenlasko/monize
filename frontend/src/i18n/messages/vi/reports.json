@@ -1954,9 +1954,11 @@
       "CATEGORY": "Danh mục",
       "ACCOUNT": "Tài khoản",
       "ACCOUNT_AMOUNT": "Số tiền (tiền tệ tài khoản)",
+      "ORIGINAL_AMOUNT": "Số tiền (tiền tệ gốc)",
       "TAG": "Thẻ"
     },
-    "accountCurrency": "Tiền tệ tài khoản"
+    "accountCurrency": "Tiền tệ tài khoản",
+    "originalCurrency": "Tiền tệ gốc"
   },
   "investmentReportLabels": {
     "groupBy": {

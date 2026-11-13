@@ -1954,9 +1954,11 @@
       "CATEGORY": "श्रेणी",
       "ACCOUNT": "खाता",
       "ACCOUNT_AMOUNT": "राशि (खाता मुद्रा)",
+      "ORIGINAL_AMOUNT": "राशि (मूल मुद्रा)",
       "TAG": "टैग"
     },
-    "accountCurrency": "खाता मुद्रा"
+    "accountCurrency": "खाता मुद्रा",
+    "originalCurrency": "मूल मुद्रा"
   },
   "investmentReportLabels": {
     "groupBy": {

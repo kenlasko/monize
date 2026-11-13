@@ -2149,6 +2149,131 @@ describe("ReportsService", () => {
           ]);
         });
 
+        describe("the original-currency amount", () => {
+          // Paid 100 EUR from the CAD account: 150 CAD charged.
+          const euroEntry = (id: string, amount: number, original: number) =>
+            cad(id, amount, {
+              originalAmount: original,
+              originalCurrencyCode: "EUR",
+              exchangeRate: 1.5,
+            });
+
+          it("lists what a foreign-currency entry was entered as, and nothing on an ordinary row", async () => {
+            const result = await run(
+              GroupByType.NONE,
+              [euroEntry("tx-eur", -150, -100), cad("tx-cad", -200)],
+              MetricType.NONE,
+            );
+
+            const byId = new Map(result.data.map((d) => [d.id, d]));
+            expect(byId.get("tx-eur")).toMatchObject({
+              value: 150,
+              accountAmount: 150,
+              accountCurrency: "CAD",
+              originalAmount: 100,
+              originalCurrency: "EUR",
+            });
+            expect(byId.get("tx-cad")).not.toHaveProperty("originalAmount");
+            expect(byId.get("tx-cad")).not.toHaveProperty("originalCurrency");
+          });
+
+          it("signs the original amount as it signs the value in a both-direction list", async () => {
+            setupExecuteMocks(
+              {
+                groupBy: GroupByType.NONE,
+                config: {
+                  ...defaultConfig,
+                  metric: MetricType.NONE,
+                  direction: DirectionFilter.BOTH,
+                },
+              },
+              [euroEntry("tx-out", -150, -100), euroEntry("tx-in", 75, 50)],
+            );
+
+            const result = await service.execute("user-1", "report-1");
+
+            const byId = new Map(result.data.map((d) => [d.id, d]));
+            expect(byId.get("tx-out")).toMatchObject({
+              value: -150,
+              originalAmount: -100,
+              originalCurrency: "EUR",
+            });
+            expect(byId.get("tx-in")).toMatchObject({
+              value: 75,
+              originalAmount: 50,
+              originalCurrency: "EUR",
+            });
+          });
+
+          it("gives a split line no original amount: only the whole transaction was entered in it", async () => {
+            const split = euroEntry("tx-split", -150, -100);
+            const result = await run(
+              GroupByType.NONE,
+              [
+                {
+                  ...split,
+                  isSplit: true,
+                  splits: [
+                    {
+                      id: "s-1",
+                      transactionId: "tx-split",
+                      amount: -90,
+                      memo: "Hotel",
+                      category: mockCategory,
+                    } as any,
+                    {
+                      id: "s-2",
+                      transactionId: "tx-split",
+                      amount: -60,
+                      memo: "Meals",
+                      category: mockCategory,
+                    } as any,
+                  ],
+                } as Transaction,
+              ],
+              MetricType.NONE,
+            );
+
+            expect(result.data).toHaveLength(2);
+            for (const line of result.data) {
+              expect(line).not.toHaveProperty("originalAmount");
+              expect(line).not.toHaveProperty("originalCurrency");
+            }
+          });
+
+          it("sorts the original-currency column by currency, then by amount within one", async () => {
+            setupExecuteMocks(
+              {
+                groupBy: GroupByType.NONE,
+                config: {
+                  ...defaultConfig,
+                  metric: MetricType.NONE,
+                  sortBy: TableColumn.ORIGINAL_AMOUNT,
+                  sortDirection: SortDirection.ASC,
+                },
+              },
+              [
+                cad("usd-big", -300, {
+                  originalAmount: -220,
+                  originalCurrencyCode: "USD",
+                }),
+                euroEntry("eur-big", -150, -100),
+                cad("plain", -40),
+                euroEntry("eur-small", -15, -10),
+              ],
+            );
+
+            const result = await service.execute("user-1", "report-1");
+
+            expect(result.data.map((d) => d.id)).toEqual([
+              "plain",
+              "eur-small",
+              "eur-big",
+              "usd-big",
+            ]);
+          });
+        });
+
         it("converts by payee", async () => {
           const result = await run(GroupByType.PAYEE, groceries);
 

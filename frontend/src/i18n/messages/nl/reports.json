@@ -1954,9 +1954,11 @@
       "CATEGORY": "Categorie",
       "ACCOUNT": "Rekening",
       "ACCOUNT_AMOUNT": "Bedrag (rekeningvaluta)",
+      "ORIGINAL_AMOUNT": "Bedrag (oorspronkelijke valuta)",
       "TAG": "Label"
     },
-    "accountCurrency": "Rekeningvaluta"
+    "accountCurrency": "Rekeningvaluta",
+    "originalCurrency": "Oorspronkelijke valuta"
   },
   "investmentReportLabels": {
     "groupBy": {

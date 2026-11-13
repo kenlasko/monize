@@ -1954,9 +1954,11 @@
       "CATEGORY": "Kategoria",
       "ACCOUNT": "Konto",
       "ACCOUNT_AMOUNT": "Kwota (waluta konta)",
+      "ORIGINAL_AMOUNT": "Kwota (waluta pierwotna)",
       "TAG": "Tag"
     },
-    "accountCurrency": "Waluta konta"
+    "accountCurrency": "Waluta konta",
+    "originalCurrency": "Waluta pierwotna"
   },
   "investmentReportLabels": {
     "groupBy": {

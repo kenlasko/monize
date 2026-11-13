@@ -1954,9 +1954,11 @@
       "CATEGORY": "分类",
       "ACCOUNT": "账户",
       "ACCOUNT_AMOUNT": "金额（账户币种）",
+      "ORIGINAL_AMOUNT": "金额（原始币种）",
       "TAG": "标签"
     },
-    "accountCurrency": "账户币种"
+    "accountCurrency": "账户币种",
+    "originalCurrency": "原始币种"
   },
   "investmentReportLabels": {
     "groupBy": {

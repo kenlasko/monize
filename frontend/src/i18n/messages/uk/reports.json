@@ -1954,9 +1954,11 @@
       "CATEGORY": "Категорія",
       "ACCOUNT": "Рахунок",
       "ACCOUNT_AMOUNT": "Сума (валюта рахунку)",
+      "ORIGINAL_AMOUNT": "Сума (початкова валюта)",
       "TAG": "Тег"
     },
-    "accountCurrency": "Валюта рахунку"
+    "accountCurrency": "Валюта рахунку",
+    "originalCurrency": "Початкова валюта"
   },
   "investmentReportLabels": {
     "groupBy": {

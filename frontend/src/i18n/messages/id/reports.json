@@ -1954,9 +1954,11 @@
       "CATEGORY": "Kategori",
       "ACCOUNT": "Akun",
       "ACCOUNT_AMOUNT": "Jumlah (mata uang akun)",
+      "ORIGINAL_AMOUNT": "Jumlah (mata uang asli)",
       "TAG": "Tag"
     },
-    "accountCurrency": "Mata uang akun"
+    "accountCurrency": "Mata uang akun",
+    "originalCurrency": "Mata uang asli"
   },
   "investmentReportLabels": {
     "groupBy": {

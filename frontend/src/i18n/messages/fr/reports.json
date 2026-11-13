@@ -1954,9 +1954,11 @@
       "CATEGORY": "Catégorie",
       "ACCOUNT": "Compte",
       "ACCOUNT_AMOUNT": "Montant (devise du compte)",
+      "ORIGINAL_AMOUNT": "Montant (devise d'origine)",
       "TAG": "Étiquette"
     },
-    "accountCurrency": "Devise du compte"
+    "accountCurrency": "Devise du compte",
+    "originalCurrency": "Devise d'origine"
   },
   "investmentReportLabels": {
     "groupBy": {
