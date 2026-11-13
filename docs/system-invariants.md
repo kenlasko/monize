@@ -77,7 +77,7 @@ implied.
 | INV-RECONCILE-001 | While the strict lock is on, a reconciled transaction is not altered | enforced |
 | INV-DELEGATION-001 | A grantee's write is authorized in the transaction that writes it, and a revoke is final | partial |
 | INV-FX-001 | An unavailable rate never becomes 1:1, a rate from after the date, or an unboundedly old one | partial |
-| INV-FX-002 | A row that carries its own exchange rate is converted at that rate on every surface | enforced |
+| INV-FX-002 | A row that carries its own exchange rate is converted at that rate on every surface | partial |
 | INV-FX-003 | A currency pair is stored in one orientation | partial |
 | INV-FX-004 | A user-supplied rate never replaces a global exchange-rate observation | enforced |
 | INV-FX-005 | A provider-written rate names its provider, every provider question goes through the chain, and an outage is never remembered as an empty answer | enforced |
@@ -1673,7 +1673,17 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     PostgreSQL; forecast-aggregator.service.spec.ts "a row
                     carrying its own rate" the same in the forecast's history
                     and income.
-Status              enforced
+Status              partial: the portfolio external flows
+                    (securities/external-flow.util.ts, folded by
+                    net-worth/period-flow-fold.util.ts,
+                    notification-center/portfolio-flow.util.ts and
+                    securities/daily-movement.service.ts) sum a deposit's amount
+                    with no rate columns and convert it at the market rate on its
+                    day, so a non-transfer contribution of CAD 1,000 charged as
+                    USD 735 reads CAD 993.24 at a market 0.74 and the CAD 6.76
+                    lands in the period's investment result (INV-PORTRESULT-001).
+                    A transfer leg carries no original currency, so the rule does
+                    not reach it there either.
 ```
 
 ### INV-FX-003 -- a pair is stored in one orientation
