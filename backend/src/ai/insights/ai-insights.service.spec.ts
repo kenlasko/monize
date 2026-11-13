@@ -473,6 +473,7 @@ describe("AiInsightsService", () => {
             {
               payeeName: "Netflix",
               payeeId: "payee-1",
+              currencyCode: "USD",
               amounts: [15.99, 15.99, 15.99],
               dates: ["2026-01-01", "2026-02-01", "2026-03-01"],
               frequency: "monthly",
@@ -972,6 +973,7 @@ describe("AiInsightsService", () => {
             {
               payeeName: "Netflix",
               payeeId: "payee-1",
+              currencyCode: "USD",
               amounts: [15.99, 15.99, 17.99],
               dates: ["2025-10-01", "2025-11-01", "2025-12-01"],
               frequency: "monthly",
@@ -992,6 +994,51 @@ describe("AiInsightsService", () => {
       expect(prompt).toContain("Netflix");
       expect(prompt).toContain("monthly");
       expect(prompt).toContain("current=17.99");
+    });
+
+    it("states a foreign recurring charge in the prompt's currency, naming what was billed", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      mockAggregatorService.computeAggregates!.mockResolvedValue(
+        makeAggregates({
+          recurringCharges: [
+            {
+              payeeName: "Spotify",
+              payeeId: "payee-2",
+              currencyCode: "EUR",
+              amounts: [10, 10, 12],
+              dates: ["2025-10-01", "2025-11-01", "2025-12-01"],
+              frequency: "monthly",
+              currentAmount: 12,
+              previousAmount: 10,
+              categoryName: "Entertainment",
+              categoryId: "cat-2",
+              converted: {
+                currency: "USD",
+                currentAmount: 13.2,
+                previousAmount: null,
+              },
+            },
+          ],
+        }),
+      );
+
+      await service.generateInsights(userId);
+
+      const prompt = mockAiService.complete!.mock.calls[0][1].messages[0]
+        .content as string;
+      // Converted where a rate exists, unknown where none does, never the
+      // billed 12 read as 12 USD; the change is the billed price's.
+      expect(prompt).toContain("current=13.20 (billed 12.00 EUR)");
+      expect(prompt).toContain(
+        "previous=unknown (no EUR->USD exchange rate; billed 10.00 EUR)",
+      );
+      expect(prompt).toContain("change=20.0%");
+      expect(prompt).not.toContain("current=12.00,");
     });
 
     it("includes monthly spending trends in prompt", async () => {

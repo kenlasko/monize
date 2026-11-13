@@ -220,6 +220,8 @@ export interface GroupedTotal {
 export interface RecurringChargeInfo {
   payeeName: string;
   payeeId: string | null;
+  /** The currency every amount is in: a charge is detected per currency. */
+  currencyCode: string;
   amounts: number[];
   dates: string[];
   frequency: string;

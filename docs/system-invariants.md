@@ -1518,7 +1518,13 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     earlier row of the month (issues #2130 and #2146;
                     fx-own-rate-surfaces.integration.spec.ts: USD 132 on day 15
                     at that day's 1.20 is EUR 110, where the month's last 1.175
-                    read 112.34).
+                    read 112.34). Their detected recurring charges are detected
+                    per currency and state the latest and previous occurrence
+                    converted at its own rate or date, the billed amount named
+                    beside it, or unknown with the pair
+                    (TransactionAnalyticsService.getRecurringCharges
+                    `reportingCurrency`, ai/context/recurring-charge-prompt.ts;
+                    issue #2155).
 Known gap           Convert before summing (A26-H12) is closed on three paths:
                     the custom report engine (reports/reports.service.ts,
                     each row converted at its own date, FxAggregate, `summary.total` null
@@ -1528,13 +1534,26 @@ Known gap           Convert before summing (A26-H12) is closed on three paths:
                     and budget actuals in budgets/budget-spending.util.ts
                     queryCategorySpending (each row at its own date into the
                     budget's currency, per-key completeness,
-                    resolveCategorySpentOrNull). It is still open where the
+                    resolveCategorySpentOrNull). A budget's income
+                    (resolveBudgetIncome), the savings rate's
+                    no-income-category income, the health history's open
+                    period (an unrated category is left out of its score) and
+                    every live trend figure (budget-trend-reports.service.ts,
+                    `valuationComplete` and `missingRatePairs` per point, read
+                    on the trend chart, the category trend, Budget vs Actual
+                    and Category Performance through PartialTrendFigure) now
+                    read that converted query too (issue #2155).
+                    It is still open where the
                     callers have not been moved: budgets.service.ts,
                     budget-alert.service.ts, budget-period.service.ts and the
-                    budget report and generator services still read
+                    budget report services still read
                     resolveCategorySpent, the converted part, so a category with
                     a missing rate shows a subtotal as its spent figure and
-                    alerts on it; computeActualIncome sums currencies unconverted;
+                    alerts on it, and an income-linked budget derives its lines
+                    from resolveBudgetIncome's converted part with no flag
+                    beside it; the budget generator
+                    (budget-generator.service.ts) still sums its monthly
+                    category, income and transfer statistics across currencies;
                     getLlmInvestmentTransactions totals, the ai/insights
                     aggregator and getTransfersByAccount's roll-ups still add
                     currencies.

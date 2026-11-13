@@ -4,6 +4,7 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { BudgetHealthReportsService } from "./budget-health-reports.service";
 import {
   CategorySpending,
+  queryCategorySpending,
   queryCategorySpendingBuckets,
 } from "./budget-spending.util";
 import { BudgetsService } from "./budgets.service";
@@ -20,6 +21,7 @@ import { TransactionSplit } from "../transactions/entities/transaction-split.ent
 import {
   createScopedDbMocks,
   DataSourceMock,
+  ManagerMock,
 } from "../test-helpers/scoped-db-testing";
 
 jest.mock("../common/db/scoped-db", () =>
@@ -29,10 +31,14 @@ jest.mock("../common/db/scoped-db", () =>
 jest.mock("./budget-spending.util", () => ({
   ...jest.requireActual("./budget-spending.util"),
   queryCategorySpendingBuckets: jest.fn(),
+  queryCategorySpending: jest.fn(),
 }));
 
 const mockedSpending = queryCategorySpendingBuckets as jest.MockedFunction<
   typeof queryCategorySpendingBuckets
+>;
+const mockedPeriodSpending = queryCategorySpending as jest.MockedFunction<
+  typeof queryCategorySpending
 >;
 
 /** Every month of the requested range answers with `s`. */
@@ -56,6 +62,7 @@ function spending(
 
 describe("BudgetHealthReportsService", () => {
   let scopedDataSource: DataSourceMock;
+  let scopedManager: ManagerMock;
   let service: BudgetHealthReportsService;
   let periodsRepository: Record<string, jest.Mock>;
   let transactionsRepository: Record<string, jest.Mock>;
@@ -125,6 +132,7 @@ describe("BudgetHealthReportsService", () => {
     innerJoin: jest.fn().mockReturnThis(),
     groupBy: jest.fn().mockReturnThis(),
     addGroupBy: jest.fn().mockReturnThis(),
+    setParameter: jest.fn().mockReturnThis(),
     getRawMany: jest.fn().mockResolvedValue([]),
     getRawOne: jest.fn().mockResolvedValue({ total: "0" }),
     ...overrides,
@@ -133,6 +141,8 @@ describe("BudgetHealthReportsService", () => {
   beforeEach(async () => {
     mockedSpending.mockReset();
     mockSpending(spending({}));
+    mockedPeriodSpending.mockReset();
+    mockedPeriodSpending.mockResolvedValue(spending({}));
     periodsRepository = {
       find: jest.fn().mockResolvedValue([]),
     };
@@ -147,11 +157,14 @@ describe("BudgetHealthReportsService", () => {
       getSummary: jest.fn(),
     };
 
-    ({ dataSource: scopedDataSource } = createScopedDbMocks([
-      [BudgetPeriod, periodsRepository as never],
-      [Transaction, transactionsRepository as never],
-      [TransactionSplit, splitsRepository as never],
-    ]));
+    ({ dataSource: scopedDataSource, manager: scopedManager } =
+      createScopedDbMocks([
+        [BudgetPeriod, periodsRepository as never],
+        [Transaction, transactionsRepository as never],
+        [TransactionSplit, splitsRepository as never],
+      ]));
+    // No exchange-rate history unless a case supplies it.
+    scopedManager.query.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -399,15 +412,11 @@ describe("BudgetHealthReportsService", () => {
       );
     });
 
-    it("queries transactions for OPEN periods rather than using stored actuals", async () => {
-      const qb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-1200" }),
-      });
-      transactionsRepository.createQueryBuilder.mockReturnValue(qb);
-      splitsRepository.createQueryBuilder.mockReturnValue(
-        createMockQueryBuilder({
-          getRawOne: jest.fn().mockResolvedValue({ total: "0" }),
-        }),
+    it("reads an OPEN period's actuals through the budget page's converted read", async () => {
+      // 1200 of the 1000 budgeted, net within the category and already in the
+      // budget's currency: what the budget page shows for the period.
+      mockedPeriodSpending.mockResolvedValue(
+        spending({ "cat-essential": -1200 }),
       );
 
       periodsRepository.find.mockResolvedValue([
@@ -438,9 +447,56 @@ describe("BudgetHealthReportsService", () => {
         1,
       );
 
-      expect(transactionsRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockedPeriodSpending).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        "user-1",
+        mockBudget.categories,
+        "2026-05-01",
+        "2026-05-31",
+      );
+      // No raw, unconverted sum of its own (issue #2155).
+      expect(transactionsRepository.createQueryBuilder).not.toHaveBeenCalled();
       expect(result).toHaveLength(1);
       expect(result[0].score).toBeLessThan(100);
+    });
+
+    it("leaves an OPEN period's category with an unrated row out of the score (issue #2155)", async () => {
+      // The converted part alone is 1200 of 1000; with a row that had no rate
+      // the real figure is unknown, so the category is not scored on it.
+      mockedPeriodSpending.mockResolvedValue(
+        spending({ "cat-essential": -1200 }, ["cat-essential"]),
+      );
+      periodsRepository.find.mockResolvedValue([
+        {
+          id: "p-open",
+          budgetId: "budget-1",
+          status: PeriodStatus.OPEN,
+          periodStart: "2026-05-01",
+          periodEnd: "2026-05-31",
+          periodCategories: [
+            {
+              categoryId: "cat-essential",
+              budgetedAmount: 1000,
+              actualAmount: 0,
+              budgetCategory: {
+                id: "bc-essential",
+                isIncome: false,
+                categoryGroup: CategoryGroup.NEED,
+              },
+            },
+          ],
+        },
+      ]);
+
+      const result = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        1,
+      );
+
+      // No deduction for the unknown overspend, and no under-budget bonus.
+      expect(result[0].score).toBe(100);
     });
   });
 
@@ -464,6 +520,59 @@ describe("BudgetHealthReportsService", () => {
         "t.account_id NOT IN (:...excludedAccountIds)",
         { excludedAccountIds: ["acc-x"] },
       );
+    });
+
+    it("converts foreign income into the budget's currency when no income category is set (issue #2155)", async () => {
+      const thisMonth = new Date();
+      const month = `${thisMonth.getFullYear()}-${String(thisMonth.getMonth() + 1).padStart(2, "0")}`;
+      const qb = createMockQueryBuilder({
+        getRawMany: jest.fn().mockResolvedValue([
+          { month, currencyCode: "USD", total: "3000" },
+          // EUR 1250 that settled into USD at its own 1.25 EUR per USD.
+          {
+            month,
+            currencyCode: "EUR",
+            total: "1250",
+            fx_day: `${month}-05`,
+            fx_original_currency: "USD",
+            fx_exchange_rate: "1.25000000",
+          },
+        ]),
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(qb);
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      // USD 4000, never the 4250 a sum across currencies gave.
+      expect(result[0].income).toBe(4000);
+      expect(result[0].valuationComplete).toBe(true);
+      expect(qb.setParameter).toHaveBeenCalledWith(
+        "fxReportingCurrency",
+        "USD",
+      );
+    });
+
+    it("flags a month whose foreign income had no rate, keeping what converted", async () => {
+      const thisMonth = new Date();
+      const month = `${thisMonth.getFullYear()}-${String(thisMonth.getMonth() + 1).padStart(2, "0")}`;
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([
+            { month, currencyCode: "USD", total: "3000" },
+            {
+              month,
+              currencyCode: "JPY",
+              total: "100000",
+              fx_day: `${month}-05`,
+            },
+          ]),
+        }),
+      );
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      expect(result[0].income).toBe(3000);
+      expect(result[0].valuationComplete).toBe(false);
     });
 
     it("reads income and expenses through the budget page's net, converted actuals", async () => {

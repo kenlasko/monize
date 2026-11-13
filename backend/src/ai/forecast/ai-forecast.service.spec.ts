@@ -467,6 +467,52 @@ describe("AiForecastService", () => {
       expect(prompt).toContain("EUR->USD) are left out");
     });
 
+    it("states a detected recurring charge in the forecast's currency (issue #2155)", async () => {
+      const charge = (
+        payeeName: string,
+        currencyCode: string,
+        currentAmount: number,
+        convertedCurrent: number | null,
+      ) => ({
+        payeeName,
+        payeeId: null,
+        currencyCode,
+        amounts: [currentAmount, currentAmount, currentAmount],
+        dates: ["2026-01-01", "2026-02-01", "2026-03-01"],
+        frequency: "monthly",
+        currentAmount,
+        previousAmount: currentAmount,
+        categoryName: "Subscriptions",
+        categoryId: null,
+        converted: {
+          currency: "USD",
+          currentAmount: convertedCurrent,
+          previousAmount: convertedCurrent,
+        },
+      });
+      mockAggregatorService.computeAggregates!.mockResolvedValue(
+        makeAggregates({
+          recurringCharges: [
+            charge("Netflix", "USD", 15.99, 15.99),
+            charge("Spotify", "EUR", 10, 11.5),
+            charge("Hulu", "GBP", 8, null),
+          ],
+        }),
+      );
+
+      await service.generateForecast(userId);
+
+      const prompt =
+        mockAiService.complete!.mock.calls[0][1].messages[0].content;
+      expect(prompt).toContain("Netflix (monthly): latest=15.99,");
+      expect(prompt).toContain(
+        "Spotify (monthly): latest=11.50 (billed 10.00 EUR),",
+      );
+      expect(prompt).toContain(
+        "Hulu (monthly): latest=unknown (no GBP->USD exchange rate; billed 8.00 GBP),",
+      );
+    });
+
     it("prints a coin balance at its currency row's places, not Intl's two", async () => {
       mockAggregatorService.computeAggregates!.mockResolvedValue(
         makeAggregates({

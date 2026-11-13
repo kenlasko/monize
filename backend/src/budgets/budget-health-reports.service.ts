@@ -18,10 +18,29 @@ import {
 import { roundMoney, roundToDecimals, sumMoney } from "../common/round.util";
 import {
   budgetExcludedAccountIds,
+  CategorySpending,
   excludeBudgetAccounts,
+  queryCategorySpending,
   queryCategorySpendingBuckets,
   resolveCategorySpent,
 } from "./budget-spending.util";
+import {
+  convertRateParts,
+  RatePartRow,
+  splitByRateBasis,
+} from "../built-in-reports/rate-basis-parts";
+import { Budget } from "./entities/budget.entity";
+
+/** A transaction's calendar month, `YYYY-MM`. */
+const MONTH_SQL = "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')";
+
+/** What an income row is split by so each part converts at its own rate. */
+const INCOME_RATE_BASIS = {
+  currency: "t.currency_code",
+  date: "t.transaction_date",
+  originalCurrency: "t.original_currency_code",
+  exchangeRate: "t.exchange_rate",
+};
 
 @Injectable()
 export class BudgetHealthReportsService {
@@ -158,19 +177,25 @@ export class BudgetHealthReportsService {
       let underBudgetBonus = 0;
       let essentialWeightPenalty = 0;
 
+      // An open period has no frozen actuals: read the budget page's own,
+      // converted into the budget's currency, once for the period.
+      const openSpending =
+        period.status === PeriodStatus.OPEN
+          ? await this.periodSpending(userId, budget, period)
+          : null;
+
       for (const pc of cats) {
         const budgeted = Number(pc.budgetedAmount) || 0;
         if (budgeted <= 0) continue;
 
         let actual = Number(pc.actualAmount) || 0;
-        // For open periods, compute actuals from transactions
-        if (period.status === PeriodStatus.OPEN && pc.categoryId) {
-          actual = await this.computeCategoryActual(
-            userId,
-            pc.categoryId,
-            period.periodStart,
-            period.periodEnd,
-            budgetExcludedAccountIds(budget.config),
+        if (openSpending && pc.categoryId) {
+          // A category with a row that had no rate has no known actual: it is
+          // left out of the score rather than scored on its converted part.
+          if (openSpending.incompleteCategoryIds.has(pc.categoryId)) continue;
+          actual = Math.max(
+            -(openSpending.spendingMap.get(pc.categoryId) ?? 0),
+            0,
           );
         }
 
@@ -237,8 +262,11 @@ export class BudgetHealthReportsService {
     const today = new Date();
 
     // No income categories: the income side is every positive non-transfer
-    // transaction of the window. Only rows in the budget's currency are known;
-    // a month holding another currency is reported incomplete, never added 1:1.
+    // transaction of the window, converted into the budget's currency at each
+    // row's own rate or the market rate on its date (issue #2155). A month
+    // with a foreign row that has no rate is reported incomplete and keeps
+    // only its budget-currency income (`convertRateParts` withholds the
+    // month's whole foreign figure); nothing is added 1:1.
     const incomeByMonth = new Map<string, number>();
     const foreignIncomeMonths = new Set<string>();
     if (incomeCategoryIds.length === 0) {
@@ -252,38 +280,56 @@ export class BudgetHealthReportsService {
         today.getFullYear(),
         today.getMonth() + 1,
       );
-      const rows = await withScopedDb(this.dataSource, (m) =>
-        excludeBudgetAccounts(
-          m
-            .getRepository(Transaction)
-            .createQueryBuilder("t")
-            .select(
-              "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
-              "month",
-            )
-            .addSelect("t.currency_code", "currencyCode")
-            .addSelect("COALESCE(SUM(t.amount), 0)", "total")
-            .where("t.user_id = :userId", { userId })
-            .andWhere("t.amount > 0")
-            .andWhere("t.is_transfer = false")
-            .andWhere("t.transaction_date >= :start", { start: rangeStart })
-            .andWhere("t.transaction_date <= :end", { end: rangeEnd })
-            .andWhere("t.status != :void", { void: "VOID" })
-            .groupBy(
-              "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
-            )
-            .addGroupBy("t.currency_code"),
-          excludedAccountIds,
-        ).getRawMany(),
+      const { rows, converted } = await withScopedDb(
+        this.dataSource,
+        async (m) => {
+          const qb = excludeBudgetAccounts(
+            m
+              .getRepository(Transaction)
+              .createQueryBuilder("t")
+              .select(MONTH_SQL, "month")
+              .addSelect("t.currency_code", "currencyCode")
+              .addSelect("COALESCE(SUM(t.amount), 0)", "total")
+              .where("t.user_id = :userId", { userId })
+              .andWhere("t.amount > 0")
+              .andWhere("t.is_transfer = false")
+              .andWhere("t.transaction_date >= :start", { start: rangeStart })
+              .andWhere("t.transaction_date <= :end", { end: rangeEnd })
+              .andWhere("t.status != :void", { void: "VOID" }),
+            excludedAccountIds,
+          )
+            .groupBy(MONTH_SQL)
+            .addGroupBy("t.currency_code");
+          splitByRateBasis(qb, INCOME_RATE_BASIS, budget.currencyCode);
+          const parts: RatePartRow[] = await qb.getRawMany();
+          return {
+            rows: parts,
+            converted: await convertRateParts(
+              (sql, params) => m.query(sql, params),
+              parts,
+              budget.currencyCode,
+              (row) => row.month,
+              { sums: ["total"], currency: "currencyCode" },
+              this.logger,
+            ),
+          };
+        },
       );
       for (const row of rows) {
-        if (row.currencyCode !== budget.currencyCode) {
-          foreignIncomeMonths.add(row.month);
-          continue;
-        }
+        if (row.currencyCode !== budget.currencyCode) continue;
         incomeByMonth.set(
           row.month,
           (incomeByMonth.get(row.month) || 0) + parseFloat(row.total || "0"),
+        );
+      }
+      for (const [month, figures] of converted) {
+        if (figures.total === null) {
+          foreignIncomeMonths.add(month);
+          continue;
+        }
+        incomeByMonth.set(
+          month,
+          (incomeByMonth.get(month) || 0) + figures.total,
         );
       }
     }
@@ -396,53 +442,29 @@ export class BudgetHealthReportsService {
     return 0;
   }
 
-  private async computeCategoryActual(
+  /**
+   * The expense actuals of one period through `queryCategorySpending`: net
+   * within each category, converted into the budget's currency at each row's
+   * own rate or date, the budget's excluded accounts left out. Before issue
+   * #2155 an open period summed raw amounts across currencies.
+   */
+  private periodSpending(
     userId: string,
-    categoryId: string,
-    periodStart: string,
-    periodEnd: string,
-    excludedAccountIds: readonly string[],
-  ): Promise<number> {
-    const [directResult, splitResult] = await Promise.all([
-      withScopedDb(this.dataSource, (m) =>
-        excludeBudgetAccounts(
-          m
-            .getRepository(Transaction)
-            .createQueryBuilder("t")
-            .select("COALESCE(SUM(t.amount), 0)", "total")
-            .where("t.user_id = :userId", { userId })
-            .andWhere("t.category_id = :categoryId", { categoryId })
-            .andWhere("t.transaction_date >= :start", { start: periodStart })
-            .andWhere("t.transaction_date <= :end", { end: periodEnd })
-            .andWhere("t.status != :void", { void: "VOID" })
-            .andWhere("t.is_split = false"),
-          excludedAccountIds,
-        ).getRawOne(),
+    budget: Budget,
+    period: BudgetPeriod,
+  ): Promise<CategorySpending> {
+    const lines = (budget.categories || []).filter(
+      (bc) => !bc.isIncome && !bc.isTransfer && bc.categoryId !== null,
+    );
+    return withScopedDb(this.dataSource, (m) =>
+      queryCategorySpending(
+        m.getRepository(Transaction),
+        m.getRepository(TransactionSplit),
+        userId,
+        lines,
+        period.periodStart,
+        period.periodEnd,
       ),
-      withScopedDb(this.dataSource, (m) =>
-        excludeBudgetAccounts(
-          m
-            .getRepository(TransactionSplit)
-            .createQueryBuilder("s")
-            .innerJoin("s.transaction", "t")
-            .select("COALESCE(SUM(s.amount), 0)", "total")
-            .where("t.user_id = :userId", { userId })
-            .andWhere("s.category_id = :categoryId", { categoryId })
-            .andWhere("t.transaction_date >= :start", { start: periodStart })
-            .andWhere("t.transaction_date <= :end", { end: periodEnd })
-            .andWhere("t.status != :void", { void: "VOID" }),
-          excludedAccountIds,
-        ).getRawOne(),
-      ),
-    ]);
-
-    // Expenses are negative; negate to get positive spending, clamp to 0
-    return Math.max(
-      -(
-        parseFloat(directResult?.total || "0") +
-        parseFloat(splitResult?.total || "0")
-      ),
-      0,
     );
   }
 

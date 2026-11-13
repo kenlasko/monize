@@ -4,6 +4,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { budgetsApi } from '@/lib/budgets';
 import type { Budget, CategoryTrendSeries } from '@/types/budget';
+import {
+  BudgetTrendPartialNote,
+  PartialTrendFigure,
+} from '@/components/budgets/PartialTrendFigure';
+import { trendPartialPairs } from '@/lib/budget-trend-completeness';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useReportData } from '@/hooks/useReportData';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
@@ -366,7 +371,11 @@ export function CategoryPerformanceReport() {
     avgActual: {
       field: 'avgActual',
       label: t('categoryPerformance.colAvgActual'),
-      value: (row) => formatCurrency(row.avgActual),
+      // The export marks a partial average in words; the screen uses the marker.
+      value: (row) =>
+        trendPartialPairs(row.monthData) === null
+          ? formatCurrency(row.avgActual)
+          : `${formatCurrency(row.avgActual)} ${t('partialData.pdfSuffix')}`,
       align: 'right',
     },
     avgPercent: {
@@ -605,7 +614,9 @@ export function CategoryPerformanceReport() {
                     </td>
                     <td role="cell" className={`col-start-2 row-start-2 text-gray-600 dark:text-gray-400 ${cellPadding(columns.avgActual)} ${FIGURE_CELL}`}>
                       <CellLabel className={CAPTION_CLASS}>{columns.avgActual.label}</CellLabel>
-                      {columns.avgActual.value(row)}
+                      <PartialTrendFigure points={row.monthData}>
+                        {formatCurrency(row.avgActual)}
+                      </PartialTrendFigure>
                     </td>
                     {/* Percent used sits under the actual it is a share of. */}
                     <td role="cell" className={`col-start-2 row-start-3 font-medium ${percentUsedColor(row.avgPercent)} ${cellPadding(columns.avgPercent)} ${FIGURE_CELL}`}>
@@ -638,6 +649,9 @@ export function CategoryPerformanceReport() {
                 ))}
               </tbody>
             </table>
+            <BudgetTrendPartialNote
+              points={categoryData.flatMap((series) => series.data)}
+            />
           </div>
         )}
       </div>

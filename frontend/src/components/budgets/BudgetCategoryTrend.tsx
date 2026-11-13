@@ -14,6 +14,7 @@ import {
 import { chartSeriesColor } from '@/lib/chart-colors';
 import { CAPTION_CLASS, CellLabel, Th } from '@/components/ui/Table';
 import type { CategoryTrendSeries } from '@/types/budget';
+import { BudgetTrendPartialNote, PartialTrendFigure } from './PartialTrendFigure';
 import { useChartMonthFormat } from '@/hooks/useChartMonthFormat';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
@@ -247,6 +248,7 @@ export function BudgetCategoryTrend({
           </LineChart>
         </ResponsiveContainer>
       </div>
+      <BudgetTrendPartialNote points={data.flatMap((series) => series.data)} />
 
       {/* Summary table.
 
@@ -333,7 +335,9 @@ export function BudgetCategoryTrend({
                   </td>
                   <td role="cell" className={`col-start-2 row-start-2 text-gray-600 dark:text-gray-400 ${CELL_PADDING} ${MONEY_CELL}`}>
                     <CellLabel className={CAPTION_CLASS}>{columnLabels.avgActual}</CellLabel>
-                    {formatCurrency(avgActual)}
+                    <PartialTrendFigure points={series.data}>
+                      {formatCurrency(avgActual)}
+                    </PartialTrendFigure>
                   </td>
                   {/* The variance takes the right of line 1 beside the
                       category: it is the figure the row is read for. It is

@@ -8,7 +8,6 @@ import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { NextScheduledItem } from '@/lib/scheduled-utils';
-import type { DisplayCurrencyStrategy } from '@/components/transactions/widget-shared';
 import type { RecurringChargeInfo } from '@/types/transaction';
 
 /** Cadences the recurring detector can report that mean an actual rhythm. */
@@ -17,7 +16,6 @@ const CADENCE_KEYS = new Set(['weekly', 'biweekly', 'monthly', 'quarterly', 'yea
 interface PayeeRecurringPanelProps {
   charges: RecurringChargeInfo[];
   nextBill: NextScheduledItem | null;
-  currencyStrategy: DisplayCurrencyStrategy;
   isLoading: boolean;
 }
 
@@ -37,13 +35,13 @@ function usualDayOfMonth(dates: string[]): number | null {
 /**
  * What this payee charges on a rhythm: each detected cadence with its latest
  * amount, a price-change note when the amount moved, and the next scheduled
- * bill. The detector reports one row per category, so a payee with a phone
- * plan and a hardware charge shows both.
+ * bill. The detector reports one row per category and currency, so a payee
+ * with a phone plan and a hardware charge shows both; each amount is shown in
+ * the currency it was billed in.
  */
 export function PayeeRecurringPanel({
   charges,
   nextBill,
-  currencyStrategy,
   isLoading,
 }: PayeeRecurringPanelProps) {
   const t = useTranslations('payeeDetail');
@@ -125,7 +123,8 @@ export function PayeeRecurringPanel({
                         cadence: t(`cadence.${charge.frequency}`),
                         amount: formatCurrency(
                           charge.currentAmount,
-                          currencyStrategy.displayCurrency,
+                          // Billed in the charge's own currency, not converted.
+                          charge.currencyCode,
                         ),
                       })}
                     </p>
@@ -150,7 +149,8 @@ export function PayeeRecurringPanel({
                       {t('recurringPanel.wasAmount', {
                         amount: formatCurrency(
                           charge.previousAmount,
-                          currencyStrategy.displayCurrency,
+                          // Billed in the charge's own currency, not converted.
+                          charge.currencyCode,
                         ),
                       })}
                     </span>

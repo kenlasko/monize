@@ -11,6 +11,12 @@ export interface RecurringCharge {
   // imported rows). Lets AI surfaces deep-link a recurring charge back to its
   // payee; a null id is rendered as plain text instead of a link.
   payeeId: string | null;
+  /**
+   * The currency every figure below is in: a charge is detected per currency,
+   * so a payee billed in two currencies is two charges, never one series of
+   * amounts in mixed units (issue #2155).
+   */
+  currencyCode: string;
   amounts: number[];
   dates: string[];
   frequency: string;
@@ -18,6 +24,20 @@ export interface RecurringCharge {
   previousAmount: number;
   categoryName: string | null;
   categoryId: string | null;
+  /**
+   * Present only when the caller named a reporting currency: the latest and
+   * the previous occurrence converted into it, each at its own settled rate
+   * where that reaches the currency (INV-FX-002), else the market rate on its
+   * own date (INV-FX-001). `null` when that occurrence has no admissible rate,
+   * never the native amount.
+   */
+  converted?: RecurringChargeConversion;
+}
+
+export interface RecurringChargeConversion {
+  currency: string;
+  currentAmount: number | null;
+  previousAmount: number | null;
 }
 
 /**

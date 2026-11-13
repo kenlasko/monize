@@ -297,12 +297,28 @@ export interface BudgetVelocity {
 
 // --- Report Types ---
 
+/**
+ * Whether a trend point's `actual` is the whole figure. `false` when a row of
+ * a live month had no exchange rate to the budget's currency: `actual` is then
+ * the converted part and `missingRatePairs` names what to add. Absent on a
+ * closed period, whose stored figure carries no completeness either way; read
+ * it as `=== false` (`trendPartialPairs`).
+ */
+export interface TrendPointCompleteness {
+  valuationComplete?: boolean;
+  /** `"JPY->CAD"` for each pair with no rate behind a partial figure. */
+  missingRatePairs?: string[];
+}
+
 export interface BudgetTrendPoint {
   monthKey: string;
   budgeted: number;
   actual: number;
   variance: number;
   percentUsed: number;
+  /** See `TrendPointCompleteness`. */
+  valuationComplete?: boolean;
+  missingRatePairs?: string[];
 }
 
 export interface CategoryTrendDataPoint {
@@ -311,6 +327,9 @@ export interface CategoryTrendDataPoint {
   actual: number;
   variance: number;
   percentUsed: number;
+  /** See `TrendPointCompleteness`. */
+  valuationComplete?: boolean;
+  missingRatePairs?: string[];
 }
 
 export interface CategoryTrendSeries {

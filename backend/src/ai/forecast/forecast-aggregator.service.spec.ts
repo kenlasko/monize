@@ -768,7 +768,8 @@ describe("ForecastAggregatorService", () => {
         userId,
         expect.any(String),
         expect.any(String),
-        { uncategorizedLabel: "Uncategorized" },
+        // Converted into the forecast's currency (issue #2155).
+        { uncategorizedLabel: "Uncategorized", reportingCurrency: "USD" },
       );
       expect(result.recurringCharges).toEqual(charges);
     });

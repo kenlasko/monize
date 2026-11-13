@@ -2144,6 +2144,60 @@ describe("BudgetsService", () => {
       expect(rent!.percentage).toBe(50);
     });
 
+    it("converts foreign income into the budget's currency before deriving lines (issue #2155)", async () => {
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        incomeLinked: true,
+        baseIncome: null,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-inc",
+            categoryId: "cat-inc",
+            amount: 5000,
+            isIncome: true,
+            category: { name: "Salary" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 30,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+        ],
+      });
+      // USD 3000 beside EUR 1250 that settled into USD at its own 1.25 EUR
+      // per USD: USD 4000 of income, never 4250 added across currencies.
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([
+            spendingRow("cat-inc", "3000"),
+            {
+              ...spendingRow("cat-inc", "1250"),
+              currencyCode: "EUR",
+              fx_original_currency: "USD",
+              fx_exchange_rate: "1.25000000",
+            },
+          ]),
+        }),
+      );
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([]),
+        }),
+      );
+
+      const result = await service.getSummary("user-1", "budget-1");
+
+      expect(result.actualIncome).toBe(4000);
+      const groceries = result.categoryBreakdown.find(
+        (c) => c.categoryName === "Groceries",
+      );
+      expect(groceries!.budgeted).toBe(1200);
+    });
+
     it("returns null percentage for non-income-linked budgets", async () => {
       const normalBudget = {
         ...mockBudget,

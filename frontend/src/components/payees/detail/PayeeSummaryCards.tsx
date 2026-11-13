@@ -14,11 +14,15 @@ export interface PayeePeriodTotals {
   net: number;
 }
 
-/** The payee's dominant detected cadence, with its latest and previous amounts. */
+/**
+ * The payee's dominant detected cadence, with its latest and previous amounts
+ * in the currency it was billed in (`currencyCode`), not converted.
+ */
 export interface PayeeRecurringSummary {
   cadence: string;
   amount: number;
   previousAmount: number;
+  currencyCode: string;
 }
 
 interface PayeeSummaryCardsProps {
@@ -89,7 +93,7 @@ export function PayeeSummaryCards({
     if (!recurring || recurring.previousAmount === recurring.amount) return undefined;
     const key = recurring.amount > recurring.previousAmount ? 'summary.priceUp' : 'summary.priceDown';
     return t(key, {
-      amount: formatCurrency(recurring.previousAmount, displayCurrency),
+      amount: formatCurrency(recurring.previousAmount, recurring.currencyCode),
     });
   })();
 
@@ -131,7 +135,7 @@ export function PayeeSummaryCards({
       label: t('summary.recurring'),
       value: t('summary.recurringValue', {
         cadence: t(`cadence.${recurring.cadence}`),
-        amount: formatCurrency(recurring.amount, displayCurrency),
+        amount: formatCurrency(recurring.amount, recurring.currencyCode),
       }),
       note: priceChangeNote,
     });

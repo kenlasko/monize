@@ -9,6 +9,9 @@ vi.mock('@/hooks/useChartMonthFormat', () => ({
   useChartMonthFormat: () => (monthKey: string) => `chartMonth:${monthKey}`,
 }));
 
+// The data point the mocked tooltip is hovering, for the partial-month case.
+const mockTooltip = vi.hoisted(() => ({ point: undefined as unknown }));
+
 // Mock recharts to avoid rendering actual SVGs in tests
 vi.mock('recharts', () => ({
   LineChart: ({ children }: { children: React.ReactNode }) => (
@@ -24,7 +27,12 @@ vi.mock('recharts', () => ({
     // Render the tooltip content with active payload to cover CustomTooltip branches
     const payload = [
       { value: 5000, dataKey: 'budgeted', color: 'var(--chart-primary)' },
-      { value: 4800, dataKey: 'actual', color: 'var(--chart-income)' },
+      {
+        value: 4800,
+        dataKey: 'actual',
+        color: 'var(--chart-income)',
+        payload: mockTooltip.point,
+      },
     ];
     if (content) {
       const ContentComponent = content.type;
@@ -100,6 +108,34 @@ describe('BudgetTrendChart', () => {
     expect(screen.getByText('chartMonth:2025-09')).toBeInTheDocument();
     expect(screen.getByText(/Budgeted.*\$5000\.00/)).toBeInTheDocument();
     expect(screen.getByText(/Actual.*\$4800\.00/)).toBeInTheDocument();
+  });
+
+  it('marks a partial month and names the missing rate (issue #2155)', () => {
+    const partial = {
+      ...mockData[0],
+      valuationComplete: false,
+      missingRatePairs: ['JPY->CAD'],
+    };
+    mockTooltip.point = partial;
+    try {
+      render(
+        <BudgetTrendChart data={[partial, mockData[1]]} formatCurrency={mockFormat} />,
+      );
+    } finally {
+      mockTooltip.point = undefined;
+    }
+
+    expect(screen.getByText(/Actual.*\$4800\.00/)).toHaveTextContent('(partial)');
+    expect(screen.getByTestId('budget-trend-partial-note')).toHaveTextContent(
+      'No exchange rate for JPY->CAD: add one on the Currencies page.',
+    );
+  });
+
+  it('adds no partial note while every month is whole', () => {
+    render(<BudgetTrendChart data={mockData} formatCurrency={mockFormat} />);
+
+    expect(screen.queryByTestId('budget-trend-partial-note')).toBeNull();
+    expect(screen.getByText(/Actual.*\$4800\.00/)).not.toHaveTextContent('(partial)');
   });
 
   it('renders with single data point', () => {

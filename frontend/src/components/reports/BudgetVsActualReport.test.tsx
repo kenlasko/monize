@@ -240,6 +240,34 @@ describe('BudgetVsActualReport', () => {
     expect(screen.getByRole('button', { name: /Try Again/i })).toBeInTheDocument();
   });
 
+  it('marks a partial month in the table and the export, naming the rate (issue #2155)', async () => {
+    mockGetAll.mockResolvedValue([makeBudget()]);
+    mockGetTrend.mockResolvedValue([
+      makePoint('2025-01', 1000, 1100),
+      {
+        ...makePoint('2025-02', 1000, 230),
+        valuationComplete: false,
+        missingRatePairs: ['JPY->CAD'],
+      },
+    ]);
+    mockGetCategoryTrend.mockResolvedValue([]);
+    await renderReport();
+
+    const markers = await screen.findAllByTestId('partial-total');
+    expect(markers).toHaveLength(1);
+    expect(markers[0].closest('tr')).toHaveTextContent('Alpha month');
+    expect(screen.getByTestId('budget-trend-partial-note')).toHaveTextContent(
+      'No exchange rate for JPY->CAD: add one on the Currencies page.',
+    );
+
+    const exportBtn = await screen.findByTitle('Export PDF');
+    await act(async () => { fireEvent.click(exportBtn); });
+    await waitFor(() => expect(mockExportToPdf).toHaveBeenCalled());
+    const [whole, partial] = mockExportToPdf.mock.calls[0][0].tableData.rows;
+    expect(whole[2]).not.toContain('(partial)');
+    expect(partial[2]).toContain('(partial)');
+  });
+
   it('exports to PDF', async () => {
     mockGetAll.mockResolvedValue([makeBudget()]);
     mockGetTrend.mockResolvedValue([makePoint('2025-01', 1000, 1100)]);

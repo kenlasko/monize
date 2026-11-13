@@ -442,4 +442,79 @@ describe("a row's own rate on every surface (integration)", () => {
       forecast.incomePatterns.monthlyIncome.find((m) => m.month === MONTH),
     ).toEqual({ month: MONTH, total: INCOME, sourceCount: 1 });
   });
+  /**
+   * A detected recurring charge reaches both prompts beside reporting-currency
+   * figures, so its occurrences convert by the same rule (issue #2155). The
+   * USD charge's previous occurrence has no rate of its own and reads the
+   * market's 1.10 on its day (USD 11 is EUR 10); the latest settled at its own
+   * 1.25 (USD 15 is EUR 12, where the market's 1.20 reads 12.50 and the native
+   * figure 15).
+   */
+  it("states a recurring charge's occurrences in the reader's currency", async () => {
+    const [{ id: usCardId }] = await dataSource.query(
+      `SELECT id FROM accounts WHERE user_id = $1 AND name = 'US Card'`,
+      [userId],
+    );
+    const current = day(15);
+    const previous = addDaysYMD(current, -30);
+    const first = addDaysYMD(current, -60);
+    await dataSource.query(
+      `INSERT INTO exchange_rates (from_currency, to_currency, rate_date, rate, source)
+       VALUES ('EUR', 'USD', $1::DATE, '1.1000000000', 'test')`,
+      [addDaysYMD(previous, -4)],
+    );
+    for (const [date, amount, own] of [
+      [first, -11, null],
+      [previous, -11, null],
+      [current, -15, { originalAmount: -12, exchangeRate: 1.25 }],
+    ] as const) {
+      await dataSource.manager.save(
+        dataSource.manager.create(Transaction, {
+          userId,
+          accountId: usCardId,
+          status: TransactionStatus.UNRECONCILED,
+          isTransfer: false,
+          isSplit: false,
+          amount,
+          currencyCode: "USD",
+          transactionDate: date,
+          payeeName: "Streaming",
+          ...(own ? { originalCurrencyCode: "EUR", ...own } : {}),
+        } as Partial<Transaction>),
+      );
+    }
+
+    const insights = await asUser(() =>
+      new InsightsAggregatorService(dataSource, analytics).computeAggregates(
+        userId,
+        "EUR",
+      ),
+    );
+    const forecast = await asUser(() =>
+      new ForecastAggregatorService(
+        dataSource,
+        { findAll: async () => [] } as never,
+        analytics,
+        { expand: async () => [] } as never,
+      ).computeAggregates(userId, "EUR"),
+    );
+
+    for (const charges of [
+      insights.recurringCharges,
+      forecast.recurringCharges,
+    ]) {
+      const streaming = charges.find((c) => c.payeeName === "Streaming");
+      expect(streaming).toMatchObject({
+        currencyCode: "USD",
+        frequency: "monthly",
+        currentAmount: 15,
+        previousAmount: 11,
+        converted: {
+          currency: "EUR",
+          currentAmount: 12,
+          previousAmount: 10,
+        },
+      });
+    }
+  });
 });

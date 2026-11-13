@@ -368,6 +368,7 @@ function PayeeDetailContent() {
           cadence: best.frequency,
           amount: best.currentAmount,
           previousAmount: best.previousAmount,
+          currencyCode: best.currencyCode,
         }
       : null;
   }, [analytics?.recurringCharges]);
@@ -732,7 +733,6 @@ function PayeeDetailContent() {
                   <PayeeRecurringPanel
                     charges={analytics?.recurringCharges ?? []}
                     nextBill={nextBill}
-                    currencyStrategy={currencyStrategy}
                     isLoading={false}
                   />
                   <PayeeSeasonalityPanel

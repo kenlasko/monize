@@ -27,6 +27,7 @@ import {
 import { INSIGHT_SYSTEM_PROMPT } from "../context/prompt-templates";
 import { aiLanguageInstruction } from "../context/language-directive";
 import { sanitizePromptValue } from "../../common/sanitization.util";
+import { recurringChargeAmountForPrompt } from "../context/recurring-charge-prompt";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import { AiInsightResponse, InsightsListResponse } from "./dto/ai-insights.dto";
 import { preferredCurrency } from "../../common/default-currency.util";
@@ -600,6 +601,8 @@ export class AiInsightsService {
     if (aggregates.recurringCharges.length > 0) {
       sections.push("\n--- RECURRING CHARGES ---");
       for (const charge of aggregates.recurringCharges.slice(0, 15)) {
+        // On the billed amounts: one currency per charge, so the change is
+        // the price's, not an exchange rate's move (issue #2155).
         const amountChange =
           charge.previousAmount > 0
             ? (
@@ -615,7 +618,7 @@ export class AiInsightsService {
           ? `, categoryId=${charge.categoryId}`
           : "";
         sections.push(
-          `${sanitizePromptValue(charge.payeeName)} (${charge.frequency}): current=${charge.currentAmount.toFixed(2)}, previous=${charge.previousAmount.toFixed(2)}, change=${amountChange}%, category=${sanitizePromptValue(charge.categoryName || "unknown")}, occurrences=${charge.amounts.length}${payeeIdSuffix}${chargeCatIdSuffix}`,
+          `${sanitizePromptValue(charge.payeeName)} (${charge.frequency}): current=${recurringChargeAmountForPrompt(charge, "current", aggregates.currency)}, previous=${recurringChargeAmountForPrompt(charge, "previous", aggregates.currency)}, change=${amountChange}%, category=${sanitizePromptValue(charge.categoryName || "unknown")}, occurrences=${charge.amounts.length}${payeeIdSuffix}${chargeCatIdSuffix}`,
         );
       }
     }

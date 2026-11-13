@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { TransactionsModule } from "@/transactions/transactions.module";
 import { BudgetsModule } from "@/budgets/budgets.module";
 import { BudgetsService } from "@/budgets/budgets.service";
+import { BudgetTrendReportsService } from "@/budgets/budget-trend-reports.service";
 import { Budget, BudgetType } from "@/budgets/entities/budget.entity";
 import { BudgetCategory } from "@/budgets/entities/budget-category.entity";
 import { getCurrentMonthPeriodDates } from "@/budgets/budget-date.utils";
@@ -256,6 +257,94 @@ describe("budget actuals across currencies (integration)", () => {
     );
     expect(groceries?.spent).toBe(290);
     expect(groceries?.percentUsed).toBe(58);
+  });
+
+  it("reads the converted figures on the live budget trends (issue #2155)", async () => {
+    await insertCadAndJpyGroceries();
+    await insertRate();
+    const trends = module.get(BudgetTrendReportsService);
+
+    const trend = await withUserContext(userId, () =>
+      trends.getTrend(userId, budget.id, 1),
+    );
+    const categoryTrend = await withUserContext(userId, () =>
+      trends.getCategoryTrend(userId, budget.id, 1),
+    );
+
+    // CAD 290 of groceries and 30 of dining, never the 10,230 a raw sum read.
+    expect(trend[0]).toMatchObject({ actual: 320, valuationComplete: true });
+    expect(
+      categoryTrend.find((series) => series.categoryId === groceriesId)
+        ?.data[0],
+    ).toMatchObject({ actual: 290, valuationComplete: true });
+  });
+
+  it("flags a live trend month whose JPY row has no rate (issue #2155)", async () => {
+    await insertCadAndJpyGroceries();
+    const trends = module.get(BudgetTrendReportsService);
+
+    const trend = await withUserContext(userId, () =>
+      trends.getTrend(userId, budget.id, 1),
+    );
+    const categoryTrend = await withUserContext(userId, () =>
+      trends.getCategoryTrend(userId, budget.id, 1),
+    );
+
+    // The CAD part only, and said to be partial.
+    expect(trend[0]).toMatchObject({
+      actual: 230,
+      valuationComplete: false,
+      missingRatePairs: ["JPY->CAD"],
+    });
+    const series = (id: string) =>
+      categoryTrend.find((s) => s.categoryId === id)?.data[0];
+    expect(series(groceriesId)).toMatchObject({
+      actual: 200,
+      valuationComplete: false,
+    });
+    expect(series(diningId)).toMatchObject({
+      actual: 30,
+      valuationComplete: true,
+    });
+  });
+
+  it("derives an income-linked line from converted income (issue #2155)", async () => {
+    const salaryId = (
+      await createTestCategory(dataSource, userId, {
+        name: "Salary",
+        isIncome: true,
+      })
+    ).id;
+    await dataSource.manager.update(Budget, budget.id, { incomeLinked: true });
+    await dataSource.manager.save(
+      dataSource.manager.create(BudgetCategory, {
+        budgetId: budget.id,
+        categoryId: salaryId,
+        isIncome: true,
+        isTransfer: false,
+        amount: 0,
+      } as Partial<BudgetCategory>),
+    );
+    // CAD 1,000 beside JPY 100,000 (CAD 900): CAD 1,900 of income, where the
+    // raw sum read 101,000.
+    await insertTransaction({ categoryId: salaryId, amount: 1000 });
+    await insertTransaction({
+      accountId: jpyAccountId,
+      currencyCode: "JPY",
+      categoryId: salaryId,
+      amount: 100000,
+    });
+    await insertRate();
+
+    const summary = await withUserContext(userId, () =>
+      budgets.getSummary(userId, budget.id),
+    );
+
+    // Dining is 100% of income, groceries 500%.
+    const line = (id: string) =>
+      summary.categoryBreakdown.find((c) => c.categoryId === id);
+    expect(line(diningId)?.budgeted).toBe(1900);
+    expect(line(groceriesId)?.budgeted).toBe(9500);
   });
 
   it("withholds the line and names the pair when no rate exists", async () => {

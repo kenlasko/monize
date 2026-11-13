@@ -121,10 +121,12 @@ export class InsightsAggregatorService {
         currentMonthStart.substring(0, 7),
         previousMonthStart.substring(0, 7),
       ),
+      // In the insights' currency, beside every other figure (issue #2155).
       this.transactionAnalytics.getRecurringCharges(
         userId,
         sixMonthsAgo,
         today,
+        { reportingCurrency: currency },
       ),
     ]);
     const { categorySpending, monthlySpending, missingRatePairs } = spending;

@@ -28,9 +28,8 @@ import {
   PeriodDateRange,
 } from "./budget-date.utils";
 import {
-  budgetExcludedAccountIds,
-  excludeBudgetAccounts,
   queryCategorySpending,
+  resolveBudgetIncome,
   resolveCategoryName,
   resolveCategorySpent,
 } from "./budget-spending.util";
@@ -1034,67 +1033,6 @@ export class BudgetsService {
     return promise;
   }
 
-  async computeActualIncome(
-    userId: string,
-    budget: Budget,
-    periodStart: string,
-    periodEnd: string,
-  ): Promise<number> {
-    const incomeCategories = (budget.categories || []).filter(
-      (bc) => bc.isIncome && bc.categoryId !== null,
-    );
-
-    if (incomeCategories.length === 0) return 0;
-
-    const incomeCategoryIds = incomeCategories.map(
-      (bc) => bc.categoryId as string,
-    );
-
-    const excludedAccountIds = budgetExcludedAccountIds(budget.config);
-    const [directResult, splitResult] = await Promise.all([
-      withScopedDb(this.dataSource, (m) =>
-        excludeBudgetAccounts(
-          m
-            .getRepository(Transaction)
-            .createQueryBuilder("t")
-            .select("COALESCE(SUM(t.amount), 0)", "total")
-            .where("t.user_id = :userId", { userId })
-            .andWhere("t.category_id IN (:...incomeCategoryIds)", {
-              incomeCategoryIds,
-            })
-            .andWhere("t.transaction_date >= :periodStart", { periodStart })
-            .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-            .andWhere("t.status != :void", { void: "VOID" })
-            .andWhere("t.is_split = false"),
-          excludedAccountIds,
-        ).getRawOne(),
-      ),
-      withScopedDb(this.dataSource, (m) =>
-        excludeBudgetAccounts(
-          m
-            .getRepository(TransactionSplit)
-            .createQueryBuilder("s")
-            .innerJoin("s.transaction", "t")
-            .select("COALESCE(SUM(s.amount), 0)", "total")
-            .where("t.user_id = :userId", { userId })
-            .andWhere("s.category_id IN (:...incomeCategoryIds)", {
-              incomeCategoryIds,
-            })
-            .andWhere("t.transaction_date >= :periodStart", { periodStart })
-            .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-            .andWhere("t.status != :void", { void: "VOID" }),
-          excludedAccountIds,
-        ).getRawOne(),
-      ),
-    ]);
-
-    return Math.max(
-      parseFloat(directResult?.total || "0") +
-        parseFloat(splitResult?.total || "0"),
-      0,
-    );
-  }
-
   private async computeCategoryActuals(
     userId: string,
     budget: Budget,
@@ -1119,17 +1057,6 @@ export class BudgetsService {
       return [];
     }
 
-    // If income-linked, compute actual income to derive effective budgets
-    let actualIncome = 0;
-    if (budget.incomeLinked) {
-      actualIncome = await this.computeActualIncome(
-        userId,
-        budget,
-        periodStart,
-        periodEnd,
-      );
-    }
-
     // The two spending queries share one scoped transaction so the direct and
     // split halves of a category's total come from the same snapshot.
     const { spendingMap, transferSpendingMap } = await withScopedDb(
@@ -1144,6 +1071,12 @@ export class BudgetsService {
           periodEnd,
         ),
     );
+
+    // An income-linked budget derives its lines from the income the same
+    // read converted into the budget's currency (issue #2155).
+    const actualIncome = budget.incomeLinked
+      ? resolveBudgetIncome(budgetCategories, spendingMap)
+      : 0;
 
     return budgetCategories.map((bc) => {
       const rawAmount = Number(bc.amount);

@@ -257,6 +257,40 @@ describe('CategoryPerformanceReport', () => {
     });
   });
 
+  it('marks an average holding a partial month, on screen and in the export (issue #2155)', async () => {
+    mockGetAll.mockResolvedValue([makeBudget()]);
+    const partial = makeSeries('a', 'Apples', [
+      { budgeted: 100, actual: 110 },
+      { budgeted: 100, actual: 120 },
+    ]);
+    partial.data[1] = {
+      ...partial.data[1],
+      valuationComplete: false,
+      missingRatePairs: ['JPY->CAD'],
+    };
+    mockGetCategoryTrend.mockResolvedValue([
+      partial,
+      makeSeries('b', 'Bananas', [{ budgeted: 50, actual: 40 }]),
+    ]);
+    await renderReport();
+
+    const markers = await screen.findAllByTestId('partial-total');
+    expect(markers).toHaveLength(1);
+    expect(markers[0].closest('tr')).toHaveTextContent('Apples');
+    expect(screen.getByTestId('budget-trend-partial-note')).toHaveTextContent(
+      'No exchange rate for JPY->CAD: add one on the Currencies page.',
+    );
+
+    const exportBtn = await screen.findByTitle('Export PDF');
+    await act(async () => { fireEvent.click(exportBtn); });
+    await waitFor(() => expect(mockExportToPdf).toHaveBeenCalled());
+    const { headers, rows } = mockExportToPdf.mock.calls[0][0].tableData;
+    const actual = headers.indexOf('Avg Actual');
+    const byName = (name: string) => rows.find((row: string[]) => row.includes(name));
+    expect(byName('Apples')[actual]).toContain('(partial)');
+    expect(byName('Bananas')[actual]).not.toContain('(partial)');
+  });
+
   it('exports to PDF when export button clicked', async () => {
     mockGetAll.mockResolvedValue([makeBudget()]);
     mockGetCategoryTrend.mockResolvedValue([
