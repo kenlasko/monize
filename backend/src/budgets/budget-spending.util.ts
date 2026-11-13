@@ -3,6 +3,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { BudgetCategory } from "./entities/budget-category.entity";
 import { FxAggregate } from "../common/fx-aggregate";
+import { sumMoney } from "../common/round.util";
 import { buildRateIndex } from "../common/time-series/rate-index.util";
 import {
   convertRateBasis,
@@ -434,6 +435,30 @@ export async function queryCategorySpendingBuckets(
   }
 
   return { currency, buckets };
+}
+
+/**
+ * A budget's actual income from its spending maps: the signed net of its
+ * income lines, converted into the budget's currency by `queryCategorySpending`
+ * and clamped at zero as a whole, so a deduction in one income category nets
+ * against another's pay. Each category counts once however many lines name
+ * it. The figure is the KNOWN converted part (`incompleteCategoryIds` names an
+ * income line with a row that had no rate); before issue #2155 it was a sum of
+ * raw amounts in whatever currency each row was in.
+ */
+export function resolveBudgetIncome(
+  budgetCategories: readonly BudgetCategory[],
+  spendingMap: Map<string, number>,
+): number {
+  const incomeCategoryIds = new Set(
+    budgetCategories
+      .filter((bc) => bc.isIncome && bc.categoryId !== null)
+      .map((bc) => bc.categoryId as string),
+  );
+  return Math.max(
+    sumMoney([...incomeCategoryIds].map((id) => spendingMap.get(id) ?? 0)),
+    0,
+  );
 }
 
 /** Resolves the display name for a budget category. */
