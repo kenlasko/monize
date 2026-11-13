@@ -158,6 +158,38 @@ function isOAuthPath(pathname: string): boolean {
   );
 }
 
+// Next treats a POST to a page as a possible Server Action when it names one
+// (the `Next-Action` header) or when its body is multipart/form-data, which is
+// how a no-JavaScript form posts one. This app defines no Server Actions (no
+// "use server" anywhere in src/), so Next's action handler refuses every such
+// request -- and logs each refusal at WARN with a full stack: "Failed to find
+// Server Action. This request might be from an older or newer deployment"
+// (issue #2156). The traffic is scanners posting multipart bodies to page
+// paths; no page here accepts a POST. A URL-encoded POST without the header is
+// left alone: Next skips it without logging.
+function isPossibleServerAction(request: NextRequest): boolean {
+  if (request.method !== "POST") return false;
+  const contentType = request.headers.get("content-type") ?? "";
+  return (
+    request.headers.has("next-action") ||
+    contentType.toLowerCase().startsWith("multipart/form-data")
+  );
+}
+
+// The answer Next itself gives when an app has no Server Actions (409,
+// `x-nextjs-action-not-found`, a plain-text body), without the log line.
+// `proxy.test.ts` fails if a "use server" module is added while this stands.
+function serverActionUnavailable(): NextResponse {
+  const response = new NextResponse("Server Action unavailable.", {
+    status: 409,
+    headers: {
+      "content-type": "text/plain",
+      "x-nextjs-action-not-found": "1",
+    },
+  });
+  return applySecurityHeaders(response);
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -239,6 +271,12 @@ export async function proxy(request: NextRequest) {
         NextResponse.json({ error: "Backend unavailable" }, { status: 502 }),
       );
     }
+  }
+
+  // Page paths only, and before the auth check: a signed-out scanner would
+  // otherwise be redirected to the public /login and refused there instead.
+  if (isPossibleServerAction(request)) {
+    return serverActionUnavailable();
   }
 
   // Handle auth redirects for non-API routes
