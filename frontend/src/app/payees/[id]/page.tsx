@@ -368,6 +368,7 @@ function PayeeDetailContent() {
           cadence: best.frequency,
           amount: best.currentAmount,
           previousAmount: best.previousAmount,
+          currencyCode: best.currencyCode,
         }
       : null;
   }, [analytics?.recurringCharges]);

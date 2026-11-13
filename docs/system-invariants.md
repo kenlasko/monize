@@ -1546,7 +1546,9 @@ Known gap           Convert before summing (A26-H12) is closed on three paths:
                     budget report services still read
                     resolveCategorySpent, the converted part, so a category with
                     a missing rate shows a subtotal as its spent figure and
-                    alerts on it; the budget generator
+                    alerts on it, and an income-linked budget derives its lines
+                    from resolveBudgetIncome's converted part with no flag
+                    beside it; the budget generator
                     (budget-generator.service.ts) still sums its monthly
                     category, income and transfer statistics across currencies;
                     getLlmInvestmentTransactions totals, the ai/insights
