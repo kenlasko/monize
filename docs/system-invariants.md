@@ -5448,8 +5448,10 @@ stands anywhere but where the posting left it (`SCHEDULED_POSTING_UNDO_CURSOR_MO
 a skip records no entry, and a rewind past it would undo the skip too). It then
 removes the rows through the undo of the create that wrote them, after the
 strict reconciled lock on every row, releases the claim, and rewinds the cursor
-with `rewindScheduleCursor`, putting an estimated schedule's stored amount
-back to the estimate it held before the posting, or re-inserts the one-time
+with `rewindScheduleCursor` (an override it puts back whose category was
+deleted since loses the category, as `ON DELETE SET NULL` did), putting an
+estimated schedule's stored amount back to the estimate it held before the
+posting, or re-inserts the one-time
 schedule (over the columns the table has now, so one added since takes its
 default; with its lines, their tags, its overrides, its payroll rules and its
 loan link; a category, a payee or the schedule's own transfer account deleted
@@ -5457,10 +5459,13 @@ since is cleared, as `ON DELETE SET NULL` would have, and anything else gone
 refuses `SCHEDULED_POSTING_UNDO_REFERENCE_GONE`), all in the undo's one
 transaction. Where the hourly auto-post cron would post the occurrence again
 (the schedule auto-posts, is active, is not estimated, and the slot is due
-today or earlier with no override postponing it), the undo removes the money
-and releases the claim but leaves the cursor advanced and a one-time bill
-deleted, so the occurrence ends as a skip leaves it (`wouldAutoPost`;
-maintainer decision on issue #2165). Redo is
+today or earlier in the user's effective timezone, by its override's date when
+it has one, an earlier one included), the undo removes the money and releases
+the claim but leaves the cursor advanced and a one-time bill deleted, so the
+occurrence ends as a skip leaves it (`wouldAutoPost`; maintainer decision on
+issue #2165); a schedule the advance left active is active again, since the
+removed payment may have retired it after the commit (a loan's last
+installment). Redo is
 refused (`SCHEDULED_POSTING_REDO`): posting again is `post()`'s job, at the
 prices, rates and loan balance of the day. A posting that wrote no money of its
 own (`recordOnly`, a retired loan) records no entry, and a transfer with a leg
