@@ -37,6 +37,13 @@ export interface AggregatedDataPoint {
   memo?: string;
   category?: string;
   account?: string;
+  /**
+   * The row's own amount in its account's currency, unconverted, signed as
+   * `value` is; `accountCurrency` names its currency. A column of these holds
+   * several currencies, so it has no total.
+   */
+  accountAmount?: number;
+  accountCurrency?: string;
   // Budget variance fields (for BUDGET_VARIANCE metric)
   budgeted?: number;
   actual?: number;

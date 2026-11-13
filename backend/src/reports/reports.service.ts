@@ -1056,7 +1056,8 @@ export class ReportsService {
           // Only the lines that are ordinary cash: an embedded investment line
           // is the trade's own cash side, not a row of this report.
           for (const split of ordinarySplitLines(tx)) {
-            const value = conv.convert(lineAmount(split.amount), tx, split);
+            const accountAmount = lineAmount(split.amount);
+            const value = conv.convert(accountAmount, tx, split);
             if (value === null) continue;
             result.push({
               id: tx.id,
@@ -1075,10 +1076,13 @@ export class ReportsService {
               memo: split.memo || undefined,
               category: this.formatCategoryLabel(split.category),
               account: tx.account?.name || undefined,
+              accountAmount,
+              accountCurrency: tx.currencyCode,
             });
           }
         } else {
-          const value = conv.convert(lineAmount(tx.amount), tx);
+          const accountAmount = lineAmount(tx.amount);
+          const value = conv.convert(accountAmount, tx);
           if (value === null) continue;
           result.push({
             id: tx.id,
@@ -1093,6 +1097,8 @@ export class ReportsService {
             memo: undefined, // Transactions don't have memo, only splits do
             category: this.formatCategoryLabel(tx.category),
             account: tx.account?.name || undefined,
+            accountAmount,
+            accountCurrency: tx.currencyCode,
           });
         }
       }
@@ -1589,6 +1595,14 @@ export class ReportsService {
           );
         case TableColumn.ACCOUNT:
           return multiplier * (a.account || "").localeCompare(b.account || "");
+        // Amounts in different currencies do not compare: rows are ordered by
+        // currency first and by amount within one.
+        case TableColumn.ACCOUNT_AMOUNT:
+          return (
+            multiplier *
+            ((a.accountCurrency || "").localeCompare(b.accountCurrency || "") ||
+              (a.accountAmount || 0) - (b.accountAmount || 0))
+          );
         default:
           return 0;
       }
