@@ -5737,10 +5737,17 @@ Statement           An occurrence of a schedule with amount_is_estimated, which
                     estimate is unknown, never the stored snapshot; an override
                     that states an amount is never replaced by an estimate; an
                     estimated schedule is never posted automatically
-                    (docs/specs/scheduled-amount-estimate.md, issue #2096).
+                    (docs/specs/scheduled-amount-estimate.md, issue #2096). An
+                    estimated transfer's occurrence is its month's estimate of
+                    the transfers between its two accounts, raised (never
+                    lowered) to what the destination owes for the occurrences
+                    its balance floor governs (section 10, issue #2164).
 Source of truth     The ledger (non-void payments to the payee in the category,
-                    24 months) read by ScheduledAmountEstimateService; the
-                    arithmetic in scheduled-transactions/amount-estimate.ts.
+                    24 months; for a transfer, the transfers between its
+                    accounts and the destination's as-of balances) read by
+                    ScheduledAmountEstimateService; the arithmetic in
+                    scheduled-transactions/amount-estimate.ts and
+                    transfer-estimate-floor.ts.
                     scheduled_transactions.amount is a snapshot of the next
                     occurrence's estimate, written on save.
 Enforcement         ScheduledOccurrenceService.expand prices each estimated slot
@@ -5751,7 +5758,10 @@ Enforcement         ScheduledOccurrenceService.expand prices each estimated slot
                     when no amount is entered and refuses an unknown one. On the
                     client estimatedOccurrenceAmount (lib/scheduled-effective-
                     amount.ts) is the one reader, used by lib/forecast.ts, the
-                    Post dialog, the occurrence editor and picker. Auto-post:
+                    Post dialog, the occurrence editor and picker; it reads a
+                    transfer's floor months before the plain month, and the
+                    server applies the floor inside estimatedAmountFor, so no
+                    caller prices a transfer without it. Auto-post:
                     assertEstimatable refuses the pair before any write, both
                     auto-post candidate reads filter amount_is_estimated, and
                     the under-lock requireActiveAutoPost check refuses it.
@@ -5762,7 +5772,9 @@ Crash semantics     nothing is written per occurrence; the snapshot is written
                     in the schedule's own update.
 Failure response    unknown amount (null) with the status that says why; a post
                     of an unknown estimate without an amount is a 400.
-Required tests      amount-estimate.spec.ts, scheduled-amount-estimate.service.spec.ts,
+Required tests      amount-estimate.spec.ts, transfer-estimate-floor.spec.ts,
+                    scheduled-amount-estimate.service.spec.ts (and its
+                    integration twin),
                     scheduled-occurrence.service.spec.ts and
                     scheduled-transactions.service.spec.ts (the estimate
                     blocks), forecast.test.ts, the dialog and form tests named
