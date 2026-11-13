@@ -3753,7 +3753,6 @@ describe("TransactionAnalyticsService", () => {
           currentAmount: 12,
           // 12.50 / 1.25 on its own date.
           previousAmount: 10,
-          missingRatePair: null,
         });
       });
 
@@ -3768,7 +3767,6 @@ describe("TransactionAnalyticsService", () => {
           currency: "EUR",
           currentAmount: 12,
           previousAmount: null,
-          missingRatePair: "USD->EUR",
         });
       });
 
@@ -3785,7 +3783,6 @@ describe("TransactionAnalyticsService", () => {
           currency: "EUR",
           currentAmount: 13.2,
           previousAmount: 12.5,
-          missingRatePair: null,
         });
         expect(managerMock.query).not.toHaveBeenCalled();
       });

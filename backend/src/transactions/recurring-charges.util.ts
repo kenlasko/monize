@@ -29,7 +29,7 @@ export interface RecurringCharge {
    * the previous occurrence converted into it, each at its own settled rate
    * where that reaches the currency (INV-FX-002), else the market rate on its
    * own date (INV-FX-001). `null` when that occurrence has no admissible rate,
-   * never the native amount; the pair is in `missingRatePair`.
+   * never the native amount.
    */
   converted?: RecurringChargeConversion;
 }
@@ -38,8 +38,6 @@ export interface RecurringChargeConversion {
   currency: string;
   currentAmount: number | null;
   previousAmount: number | null;
-  /** `"USD->CAD"` when either figure has no rate, else `null`. */
-  missingRatePair: string | null;
 }
 
 /**

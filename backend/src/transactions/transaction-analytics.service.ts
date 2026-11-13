@@ -2563,18 +2563,12 @@ export class TransactionAnalyticsService {
       this.logger,
     );
     return charges.map((entry, i) => {
-      const currentAmount = converted.get(`${i}:current`)?.amount ?? null;
-      const previousAmount = converted.get(`${i}:previous`)?.amount ?? null;
       return {
         ...entry.charge,
         converted: {
           currency: reporting,
-          currentAmount,
-          previousAmount,
-          missingRatePair:
-            currentAmount === null || previousAmount === null
-              ? `${entry.charge.currencyCode}->${reporting}`
-              : null,
+          currentAmount: converted.get(`${i}:current`)?.amount ?? null,
+          previousAmount: converted.get(`${i}:previous`)?.amount ?? null,
         },
       };
     });

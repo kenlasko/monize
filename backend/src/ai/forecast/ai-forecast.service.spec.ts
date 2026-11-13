@@ -488,8 +488,6 @@ describe("AiForecastService", () => {
           currency: "USD",
           currentAmount: convertedCurrent,
           previousAmount: convertedCurrent,
-          missingRatePair:
-            convertedCurrent === null ? `${currencyCode}->USD` : null,
         },
       });
       mockAggregatorService.computeAggregates!.mockResolvedValue(

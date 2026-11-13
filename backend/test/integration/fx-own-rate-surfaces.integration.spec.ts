@@ -513,7 +513,6 @@ describe("a row's own rate on every surface (integration)", () => {
           currency: "EUR",
           currentAmount: 12,
           previousAmount: 10,
-          missingRatePair: null,
         },
       });
     }

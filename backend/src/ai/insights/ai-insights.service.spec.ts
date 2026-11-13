@@ -1021,7 +1021,6 @@ describe("AiInsightsService", () => {
                 currency: "USD",
                 currentAmount: 13.2,
                 previousAmount: null,
-                missingRatePair: "EUR->USD",
               },
             },
           ],
