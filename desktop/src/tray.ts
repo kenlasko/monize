@@ -1,6 +1,7 @@
 import { Menu, MenuItemConstructorOptions, nativeImage, Tray } from "electron";
 
 import { Logger } from "./logger";
+import { trayResizeFor } from "./shell/icon";
 import { TEXT } from "./shell/strings";
 import {
   TrayEntry,
@@ -16,8 +17,6 @@ import {
  */
 
 export type TrayHandlers = Readonly<Record<TrayItemId, () => void>>;
-
-const TRAY_ICON_SIZE = 16;
 
 export function menuTemplate(
   entries: readonly TrayEntry[],
@@ -47,9 +46,11 @@ export function createTray(options: {
     if (source.isEmpty()) {
       logger.warn(`The tray icon ${options.iconPath} could not be read.`);
     }
-    const image = source.isEmpty()
-      ? source
-      : source.resize({ width: TRAY_ICON_SIZE, height: TRAY_ICON_SIZE });
+    const edge = trayResizeFor(options.iconPath);
+    const image =
+      source.isEmpty() || edge === null
+        ? source
+        : source.resize({ width: edge, height: edge });
     const tray = new Tray(image);
     tray.setToolTip(TEXT.trayTooltip);
     tray.setContextMenu(

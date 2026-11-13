@@ -1,10 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
+import process from "node:process";
 import { formatSize, copySource, sizeOf } from "./copy.mjs";
 import { installBackendDeps } from "./backend-deps.mjs";
 import { stageHelpImages } from "./help-images.mjs";
 import { loadManifest } from "./manifest.mjs";
 import { stagePostgres } from "./postgres.mjs";
+import { stageVcRuntime } from "./vc-runtime.mjs";
 
 /** Build output the script consumes and never produces. */
 export const REQUIRED_BUILD_OUTPUT = [
@@ -39,16 +41,27 @@ function isSkipped(entry, options) {
   const kind = entry.kind ?? "copy";
   return (
     (kind === "postgres" && options.skipPostgres) ||
-    (kind === "backend-deps" && options.skipBackendDeps)
+    (kind === "backend-deps" && options.skipBackendDeps) ||
+    // The Visual C++ runtime belongs to the Windows PostgreSQL binaries.
+    (kind === "vc-runtime" &&
+      (options.skipPostgres ||
+        (options.platform ?? process.platform) !== "win32"))
   );
+}
+
+/** What an entry promises under staging/: its files when it lists them, else `to`. */
+function destinationsOf(entry) {
+  return entry.kind === "vc-runtime"
+    ? entry.files.map((file) => `${entry.to}/${file}`)
+    : [entry.to];
 }
 
 /** Every non-skipped manifest destination that does not exist under `outDir`. */
 export function missingDestinations(manifest, outDir, options = {}) {
   return manifest.entries
     .filter((entry) => !isSkipped(entry, options))
-    .filter((entry) => !fs.existsSync(path.join(outDir, entry.to)))
-    .map((entry) => entry.to);
+    .flatMap(destinationsOf)
+    .filter((to) => !fs.existsSync(path.join(outDir, to)));
 }
 
 /**
@@ -63,11 +76,13 @@ export function stage({
   skipPostgres = false,
   skipBackendDeps = false,
   requireWebp = false,
+  platform = process.platform,
+  vcRedistDir,
   log = () => {},
   warn = () => {},
   hooks = {},
 }) {
-  const options = { skipPostgres, skipBackendDeps };
+  const options = { skipPostgres, skipBackendDeps, platform };
   const manifest = loadManifest(manifestFile);
 
   const missing = missingBuildOutput(repoRoot);
@@ -132,6 +147,15 @@ export function stage({
         requireWebp,
         warn,
       });
+    } else if (kind === "vc-runtime") {
+      const used = (hooks.stageVcRuntime ?? stageVcRuntime)({
+        postgresDir: path.join(outDir, "postgres"),
+        files: entry.files,
+        platform,
+        explicitDir: vcRedistDir,
+        warn,
+      });
+      log(`       from ${used.dir} [${used.source}]`);
     } else {
       stagePostgres({ desktopRoot, dest });
     }
@@ -145,7 +169,9 @@ export function stage({
   }
   for (const entry of manifest.entries) {
     if (!isSkipped(entry, options)) {
-      sizes.push({ to: entry.to, bytes: sizeOf(path.join(outDir, entry.to)) });
+      for (const to of destinationsOf(entry)) {
+        sizes.push({ to, bytes: sizeOf(path.join(outDir, to)) });
+      }
     }
   }
   return { sizes, total: sizeOf(outDir) };

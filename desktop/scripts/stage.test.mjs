@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { copySource, globToRegExp, sizeOf } from "./lib/copy.mjs";
 import { stageHelpImages } from "./lib/help-images.mjs";
@@ -54,6 +55,7 @@ function fixtureRepo() {
   write(root, "frontend/public/favicon.ico");
   write(root, "frontend/server-log-format.cjs");
   write(root, "desktop/resources/parent-watch.cjs");
+  write(root, "desktop/build/icon.ico");
   return root;
 }
 
@@ -168,6 +170,7 @@ test("stage assembles the manifest layout from a fixture", () => {
     "frontend/public/favicon.ico",
     "frontend/server-log-format.cjs",
     "shell/parent-watch.cjs",
+    "shell/icon.ico",
   ]) {
     const file = rel.startsWith(".next")
       ? path.join(out, "frontend", rel)
@@ -235,6 +238,91 @@ test("missingDestinations reports what is absent, ignoring skipped entries", () 
   });
   assert.ok(!some.includes("postgres"));
   assert.ok(!some.includes("backend/node_modules"));
+});
+
+test("the Visual C++ runtime is staged on Windows only, after PostgreSQL", () => {
+  const manifest = loadManifest(realManifest);
+  const out = tmp();
+  const dll = "postgres/bin/vcruntime140.dll";
+  assert.ok(
+    missingDestinations(manifest, out, { platform: "win32" }).includes(dll),
+  );
+  for (const options of [
+    { platform: "linux" },
+    { platform: "win32", skipPostgres: true },
+  ]) {
+    assert.ok(!missingDestinations(manifest, out, options).includes(dll));
+  }
+
+  const kinds = manifest.entries.map((entry) => entry.kind ?? "copy");
+  assert.ok(kinds.indexOf("vc-runtime") > kinds.indexOf("postgres"));
+
+  // On Windows the step runs with the manifest's list; a missing DLL fails the run.
+  const repo = fixtureRepo();
+  const desktop = path.join(repo, "desktop");
+  write(
+    desktop,
+    "staging-manifest.json",
+    fs.readFileSync(realManifest, "utf8"),
+  );
+  for (const d of ["bin", "lib", "share"]) {
+    write(
+      desktop,
+      `node_modules/@embedded-postgres/${process.platform === "win32" ? "windows" : "linux"}-x64/native/${d}/f`,
+    );
+  }
+  const calls = [];
+  const base = {
+    repoRoot: repo,
+    desktopRoot: desktop,
+    outDir: path.join(tmp(), "staging"),
+    platform: "win32",
+  };
+  assert.throws(
+    () =>
+      stage({
+        ...base,
+        hooks: {
+          ...fakeHooks,
+          stageVcRuntime: (args) => {
+            calls.push(args);
+            return { dir: "C:\\redist", source: "test" };
+          },
+        },
+      }),
+    /staging is incomplete.*postgres\/bin\/vcruntime140\.dll/,
+  );
+  assert.deepEqual(calls[0].files, [
+    "vcruntime140.dll",
+    "vcruntime140_1.dll",
+    "msvcp140.dll",
+  ]);
+  assert.equal(calls[0].platform, "win32");
+  assert.ok(calls[0].postgresDir.endsWith("postgres"));
+
+  const logs = [];
+  stage({
+    ...base,
+    log: (line) => logs.push(line),
+    hooks: {
+      ...fakeHooks,
+      stageVcRuntime: ({ postgresDir, files }) => {
+        for (const file of files) write(postgresDir, `bin/${file}`);
+        return { dir: "C:\\redist", source: "test" };
+      },
+    },
+  });
+  assert.ok(logs.some((line) => line.includes("[test]")));
+
+  // Elsewhere the step is skipped, not attempted.
+  const skipped = [];
+  stage({
+    ...base,
+    platform: "linux",
+    log: (line) => skipped.push(line),
+    hooks: { ...fakeHooks, stageVcRuntime: () => assert.fail("not on Linux") },
+  });
+  assert.ok(skipped.includes("skip   postgres/bin"));
 });
 
 test("help images: PNG fallback warns, --require-webp fails, cwebp runs the script", () => {
@@ -333,7 +421,7 @@ test("a desktop entry comes from desktop/ and stays out of the layers", () => {
   const desktop = manifest.entries.filter((e) => e.kind === "desktop");
   assert.deepEqual(
     desktop.map((e) => e.to),
-    ["shell/parent-watch.cjs"],
+    ["shell/parent-watch.cjs", "shell/icon.ico"],
   );
   const entry = { kind: "desktop", from: "desktop/x.cjs", mirrors: "none: x" };
   for (const bad of [
@@ -345,4 +433,28 @@ test("a desktop entry comes from desktop/ and stays out of the layers", () => {
     fs.writeFileSync(file, JSON.stringify({ entries: [bad] }));
     assert.throws(() => loadManifest(file), /desktop entry/);
   }
+});
+
+test("a vc-runtime entry lists runtime DLLs and stages under postgres/", () => {
+  const entry = {
+    kind: "vc-runtime",
+    from: "vc-redist/x64",
+    to: "postgres/bin",
+    files: ["vcruntime140.dll"],
+    mirrors: "none: x",
+  };
+  for (const bad of [
+    { ...entry, files: [] },
+    { ...entry, files: undefined },
+    { ...entry, files: ["kernel32.dll"] },
+    { ...entry, files: ["VCRUNTIME140.dll"] },
+    { ...entry, to: "backend/bin" },
+  ]) {
+    const file = path.join(tmp(), "m.json");
+    fs.writeFileSync(file, JSON.stringify({ entries: [bad] }));
+    assert.throws(() => loadManifest(file), /vc-runtime entry/);
+  }
+  const file = path.join(tmp(), "m.json");
+  fs.writeFileSync(file, JSON.stringify({ entries: [entry] }));
+  assert.doesNotThrow(() => loadManifest(file));
 });
