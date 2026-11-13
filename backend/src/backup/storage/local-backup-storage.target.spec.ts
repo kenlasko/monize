@@ -1,10 +1,15 @@
 import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { promises as fs } from "fs";
 import { tmpdir } from "os";
-import { join } from "path";
+import { join, posix, win32 } from "path";
+import { BadRequestException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
-import { LocalBackupStorageTarget } from "./local-backup-storage.target";
+import {
+  LocalBackupStorageTarget,
+  safeBackupPath,
+  validateBackupFolderPath,
+} from "./local-backup-storage.target";
 import { BackupStoreLocation } from "./backup-storage.interface";
 
 /**
@@ -248,3 +253,101 @@ async function read(stream: NodeJS.ReadableStream): Promise<string> {
   }
   return Buffer.concat(chunks).toString();
 }
+
+/**
+ * The folder and filename guards under both platforms' path semantics. A Linux
+ * runner only ever sees POSIX paths, so the win32 cases run the same production
+ * functions through `path.win32` (as `common/jest-config.guard.spec.ts` does)
+ * rather than pretending `process.platform` is something else.
+ */
+describe("folder path validation across platforms", () => {
+  const WIN_BASE = "C:\\Monize\\backups";
+
+  describe("validateBackupFolderPath", () => {
+    it("accepts a normalized absolute POSIX path and trims trailing slashes", () => {
+      expect(validateBackupFolderPath("/data/backups", posix)).toBe(
+        "/data/backups",
+      );
+      expect(validateBackupFolderPath("/data/backups//", posix)).toBe(
+        "/data/backups",
+      );
+      expect(validateBackupFolderPath("/", posix)).toBe("/");
+    });
+
+    it("refuses a relative or unnormalized POSIX path", () => {
+      for (const bad of ["data/backups", "C:\\Monize\\backups", "//data"]) {
+        expect(() => validateBackupFolderPath(bad, posix)).toThrow(
+          BadRequestException,
+        );
+      }
+    });
+
+    it("accepts a normalized absolute Windows path and trims trailing separators", () => {
+      expect(validateBackupFolderPath(WIN_BASE, win32)).toBe(WIN_BASE);
+      expect(validateBackupFolderPath(`${WIN_BASE}\\\\`, win32)).toBe(WIN_BASE);
+      expect(validateBackupFolderPath("C:\\", win32)).toBe("C:\\");
+    });
+
+    // A drive-less rooted path (`\Monize\backups`) is not listed: Windows
+    // resolves it against the process's current drive, so it fails the
+    // normalized-form check there, but `path.win32` on a Linux runner has no
+    // drive to add and cannot show that.
+    it("refuses a Windows path that is relative, drive-relative, unnormalized or traversing", () => {
+      for (const bad of [
+        "Monize\\backups",
+        "C:Monize\\backups",
+        "C:/Monize/backups",
+        "C:\\Monize\\..\\Windows",
+        "C:\\Monize\\backups\0",
+      ]) {
+        expect(() => validateBackupFolderPath(bad, win32)).toThrow(
+          BadRequestException,
+        );
+      }
+    });
+  });
+
+  describe("safeBackupPath", () => {
+    it("joins a sharded segment inside a POSIX base", () => {
+      expect(safeBackupPath("/data/backups", "22/22/u", posix)).toBe(
+        "/data/backups/22/22/u",
+      );
+    });
+
+    it("refuses POSIX traversal and a sibling sharing the base's prefix", () => {
+      for (const bad of ["../../etc", "/etc", "../backups-evil/x"]) {
+        expect(() => safeBackupPath("/data/backups", bad, posix)).toThrow(
+          BadRequestException,
+        );
+      }
+    });
+
+    it("joins a sharded segment inside a Windows base", () => {
+      expect(safeBackupPath(WIN_BASE, "22/22/u", win32)).toBe(
+        "C:\\Monize\\backups\\22\\22\\u",
+      );
+      expect(
+        safeBackupPath(
+          WIN_BASE,
+          "monize-backup-daily-2026-09-14.json.gz",
+          win32,
+        ),
+      ).toBe("C:\\Monize\\backups\\monize-backup-daily-2026-09-14.json.gz");
+    });
+
+    it("refuses Windows traversal, a drive change, a UNC path and a prefix sibling", () => {
+      for (const bad of [
+        "..\\..\\Windows",
+        "D:\\x",
+        "\\\\server\\share\\x",
+        "\\Windows",
+        "..\\backups-evil\\x",
+        "c:\\monize\\backups-evil",
+      ]) {
+        expect(() => safeBackupPath(WIN_BASE, bad, win32)).toThrow(
+          BadRequestException,
+        );
+      }
+    });
+  });
+});
