@@ -64,6 +64,7 @@
       "tag": "Etiqueta",
       "account": "Cuenta",
       "scheduled_transaction": "Programada",
+      "scheduled_posting": "Programada",
       "security": "Valor",
       "budget": "Presupuesto",
       "custom_report": "Informe"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "Transacción programada \"{name}\" creada",
       "updatedScheduledTransaction": "Transacción programada \"{name}\" actualizada",
       "deletedScheduledTransaction": "Transacción programada \"{name}\" eliminada",
+      "postedScheduledTransaction": "Transacción programada \"{name}\" registrada",
       "createdSecurity": "Valor \"{symbol}\" creado",
       "updatedSecurity": "Valor \"{symbol}\" actualizado",
       "deletedSecurity": "Valor \"{symbol}\" eliminado",

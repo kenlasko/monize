@@ -112,7 +112,11 @@
     "unsupportedSimpleAction": "Hành động không được hỗ trợ: {{ action }}",
     "unsupportedTableForReinsert": "Bảng không được hỗ trợ để chèn lại: {{ tableName }}",
     "undoConversion": "Thay đổi này đã chuyển đổi một giao dịch thành chuyển khoản hoặc ngược lại, nên không thể hoàn tác tự động. Hãy chuyển đổi lại.",
-    "customRecurrenceMissing": "Không thể hoàn tác hoặc làm lại thay đổi này: lịch sử của giao dịch định kỳ không có quy tắc lặp lại tùy chỉnh"
+    "customRecurrenceMissing": "Không thể hoàn tác hoặc làm lại thay đổi này: lịch sử của giao dịch định kỳ không có quy tắc lặp lại tùy chỉnh",
+    "scheduledPostingRedo": "Không thể làm lại giao dịch định kỳ đã đăng. Thay vào đó, hãy đăng lại từ Hóa đơn & Tiền gửi",
+    "scheduledPostingUndoLaterOccurrence": "Một lần sau của giao dịch định kỳ này đã được đăng kể từ đó, vì vậy không thể hoàn tác lần đăng này. Hãy hoàn tác hoặc xóa lần sau trước",
+    "scheduledPostingUndoCursorMoved": "Giao dịch định kỳ này đã tiến lên kể từ lần đăng này (một lần đã bị bỏ qua hoặc ngày tiếp theo đã thay đổi), vì vậy không thể hoàn tác lần đăng. Thay vào đó, hãy xóa giao dịch đã đăng",
+    "scheduledPostingUndoReferenceGone": "Một thứ mà giao dịch định kỳ này sử dụng (tài khoản, chứng khoán hoặc tiền tệ) đã bị xóa kể từ đó, vì vậy không thể hoàn tác lần đăng. Thay vào đó, hãy xóa giao dịch đã đăng"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Chỉ cung cấp mật khẩu hoặc lời mời qua email, không cả hai.",

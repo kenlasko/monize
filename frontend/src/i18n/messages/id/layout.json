@@ -64,6 +64,7 @@
       "tag": "Tag",
       "account": "Akun",
       "scheduled_transaction": "Terjadwal",
+      "scheduled_posting": "Terjadwal",
       "security": "Sekuritas",
       "budget": "Anggaran",
       "custom_report": "Laporan"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "Transaksi terjadwal \"{name}\" dibuat",
       "updatedScheduledTransaction": "Transaksi terjadwal \"{name}\" diperbarui",
       "deletedScheduledTransaction": "Transaksi terjadwal \"{name}\" dihapus",
+      "postedScheduledTransaction": "Transaksi terjadwal \"{name}\" diposting",
       "createdSecurity": "Sekuritas \"{symbol}\" dibuat",
       "updatedSecurity": "Sekuritas \"{symbol}\" diperbarui",
       "deletedSecurity": "Sekuritas \"{symbol}\" dihapus",

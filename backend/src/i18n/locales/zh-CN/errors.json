@@ -112,7 +112,11 @@
     "unsupportedSimpleAction": "不支持的操作：{{ action }}",
     "unsupportedTableForReinsert": "不支持重新插入的表：{{ tableName }}",
     "undoConversion": "此更改将交易转换为转账或从转账转换回交易，因此无法自动撤销。请将其转换回原状。",
-    "customRecurrenceMissing": "无法撤销或重做此更改：计划交易的历史记录中缺少其自定义重复规则"
+    "customRecurrenceMissing": "无法撤销或重做此更改：计划交易的历史记录中缺少其自定义重复规则",
+    "scheduledPostingRedo": "已过账的计划交易无法重做。请改为在账单与存款中重新过账",
+    "scheduledPostingUndoLaterOccurrence": "此计划交易的后续一期已在此后过账，因此无法撤销此次过账。请先撤销或删除后续那一期",
+    "scheduledPostingUndoCursorMoved": "此计划交易在此次过账后已向前推进（跳过了某一期或更改了下一日期），因此无法撤销此次过账。请改为删除已过账的交易",
+    "scheduledPostingUndoReferenceGone": "此计划交易使用的某项内容（账户、证券或货币）此后已被删除，因此无法撤销此次过账。请改为删除已过账的交易"
   },
   "admin": {
     "passwordOrInviteNotBoth": "请提供密码或邮件邀请之一，不能同时提供。",

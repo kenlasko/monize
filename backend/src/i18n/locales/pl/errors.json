@@ -112,7 +112,11 @@
     "unsupportedSimpleAction": "Nieobsługiwana operacja: {{ action }}",
     "unsupportedTableForReinsert": "Nieobsługiwana tabela do ponownego wstawienia: {{ tableName }}",
     "undoConversion": "Ta zmiana przekonwertowała transakcję na przelew lub z przelewu, więc nie można jej automatycznie cofnąć. Zamiast tego przekonwertuj ją z powrotem.",
-    "customRecurrenceMissing": "Tej zmiany nie można cofnąć ani ponowić: w jej historii brakuje niestandardowej reguły powtarzania zaplanowanej transakcji"
+    "customRecurrenceMissing": "Tej zmiany nie można cofnąć ani ponowić: w jej historii brakuje niestandardowej reguły powtarzania zaplanowanej transakcji",
+    "scheduledPostingRedo": "Zaksięgowanej zaplanowanej transakcji nie można ponowić. Zamiast tego zaksięguj ją ponownie w sekcji Rachunki i wpłaty",
+    "scheduledPostingUndoLaterOccurrence": "Od tego czasu zaksięgowano późniejsze wystąpienie tej zaplanowanej transakcji, więc tego księgowania nie można cofnąć. Najpierw cofnij lub usuń późniejsze",
+    "scheduledPostingUndoCursorMoved": "Ta zaplanowana transakcja przesunęła się od tego księgowania (pominięto wystąpienie lub zmieniono jej następną datę), więc księgowania nie można cofnąć. Zamiast tego usuń zaksięgowaną transakcję",
+    "scheduledPostingUndoReferenceGone": "Coś, czego używała ta zaplanowana transakcja (konto, papier wartościowy lub waluta), zostało od tego czasu usunięte, więc księgowania nie można cofnąć. Zamiast tego usuń zaksięgowaną transakcję"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Podaj hasło albo zaproszenie e-mail, ale nie oba naraz.",

@@ -64,6 +64,7 @@
       "tag": "Etikett",
       "account": "Konto",
       "scheduled_transaction": "Terminiert",
+      "scheduled_posting": "Terminiert",
       "security": "Wertpapier",
       "budget": "Budget",
       "custom_report": "Bericht"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "Geplante Buchung \"{name}\" erstellt",
       "updatedScheduledTransaction": "Geplante Buchung \"{name}\" aktualisiert",
       "deletedScheduledTransaction": "Geplante Buchung \"{name}\" gelöscht",
+      "postedScheduledTransaction": "Geplante Buchung \"{name}\" gebucht",
       "createdSecurity": "Wertpapier \"{symbol}\" erstellt",
       "updatedSecurity": "Wertpapier \"{symbol}\" aktualisiert",
       "deletedSecurity": "Wertpapier \"{symbol}\" gelöscht",
