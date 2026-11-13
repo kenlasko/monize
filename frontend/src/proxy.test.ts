@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { proxy } from './proxy';
+import { SHARE_TARGET_PATH } from '@/lib/share-target';
 
 const BASE = 'https://monize.laskonet.com';
 
@@ -601,6 +602,9 @@ describe('proxy Server Action refusal', () => {
   const fetchMock = vi.fn();
 
   beforeEach(() => {
+    fetchMock.mockResolvedValue(
+      new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }),
+    );
     vi.stubGlobal('fetch', fetchMock);
   });
 
@@ -609,36 +613,68 @@ describe('proxy Server Action refusal', () => {
     fetchMock.mockReset();
   });
 
-  it('answers a POST naming a Server Action with 404 and the not-found marker', async () => {
-    const response = await proxy(
-      makeRequest('/dashboard', {
-        method: 'POST',
-        headers: { 'next-action': 'x', cookie: 'auth_token=abc' },
-      }),
-    );
+  const MULTIPART = 'multipart/form-data; boundary=----x';
 
-    expect(response.status).toBe(404);
+  async function expectRefused(response: Response) {
+    expect(response.status).toBe(409);
     expect(response.headers.get('x-nextjs-action-not-found')).toBe('1');
+    expect(response.headers.get('content-type')).toBe('text/plain');
     expect(response.headers.get('x-middleware-next')).toBeNull();
     expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(await response.text()).toBe('Server Action unavailable.');
+  }
+
+  // The request issue #2156 logged: no Next-Action header, so Next printed no
+  // id, reached only because the body was multipart.
+  it('refuses a multipart POST to a page path that names no action', async () => {
+    for (const cookie of ['auth_token=abc', undefined]) {
+      const response = await proxy(
+        makeRequest('/dashboard', {
+          method: 'POST',
+          headers: { 'content-type': MULTIPART, ...(cookie ? { cookie } : {}) },
+        }),
+      );
+      await expectRefused(response);
+    }
   });
 
-  it('refuses one on a public path and at the root, never forwarding it', async () => {
+  it('refuses a POST naming an action on a public path and at the root', async () => {
     for (const path of ['/', '/login']) {
-      const response = await proxy(
-        makeRequest(path, { method: 'POST', headers: { 'Next-Action': '7f00' } }),
+      await expectRefused(
+        await proxy(makeRequest(path, { method: 'POST', headers: { 'Next-Action': '7f00' } })),
       );
-      expect(response.status).toBe(404);
     }
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('leaves a GET carrying the header on its ordinary path', async () => {
+  it('leaves the API, the share target and a GET on their ordinary paths', async () => {
+    const api = await proxy(
+      makeRequest('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'content-type': MULTIPART, 'next-action': 'x' },
+      }),
+    );
+    expect(api.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const share = await proxy(
+      makeRequest(SHARE_TARGET_PATH, { method: 'POST', headers: { 'content-type': MULTIPART } }),
+    );
+    expect(share.status).toBe(303);
+
+    const get = await proxy(makeRequest('/login', { headers: { 'next-action': 'x' } }));
+    expect(get.status).toBe(200);
+    expect(get.headers.get('x-middleware-next')).toBe('1');
+  });
+
+  it('leaves a URL-encoded POST without the header to Next', async () => {
     const response = await proxy(
-      makeRequest('/login', { headers: { 'next-action': 'x' } }),
+      makeRequest('/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      }),
     );
 
-    expect(response.status).toBe(200);
     expect(response.headers.get('x-middleware-next')).toBe('1');
   });
 
@@ -650,6 +686,11 @@ describe('proxy Server Action refusal', () => {
     const directive = /^\s*['"]use server['"]/m;
 
     expect(Object.keys(sources).length).toBeGreaterThan(100);
-    expect(Object.keys(sources).filter((file) => directive.test(sources[file]))).toEqual([]);
+    expect(
+      Object.keys(sources).filter((file) => directive.test(sources[file])),
+      'A Server Action was added: remove isPossibleServerAction/serverActionUnavailable ' +
+        'from src/proxy.ts (it answers every action 409) and its bullet in ' +
+        'docs/frontend/api-and-cache.md.',
+    ).toEqual([]);
   });
 });
