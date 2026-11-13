@@ -113,8 +113,10 @@ describe("mortgage_type migrations over the legacy flags", () => {
 
   afterAll(async () => {
     if (dataSource?.isInitialized) {
-      // Leave the shared schema as schema.sql has it: the type NOT NULL with
-      // DEFAULT 'ANNUITY', the flags gone.
+      // Leave the column as the entity maps it: NOT NULL with DEFAULT
+      // 'ANNUITY', the flags gone. (Dropping the column in restorePrePhase1
+      // also drops the method CHECKs that name it; the harness, built from the
+      // entities, never had them.)
       await cleanTables(dataSource, ["accounts", "users"]);
       await restorePrePhase1();
       await applyExpand();
