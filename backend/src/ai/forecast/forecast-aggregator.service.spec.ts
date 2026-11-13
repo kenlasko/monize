@@ -401,17 +401,24 @@ describe("ForecastAggregatorService", () => {
               categoryName: "Travel",
               isIncome: false,
               ...ownRate,
+              fx_day: "2025-12-15",
               fx_exchange_rate: "1.0000000000",
               income: "0",
               expenses: "117.5",
             },
           ]),
         );
-        scoped.manager.query.mockResolvedValue([marketRate]);
+        scoped.manager.query.mockResolvedValue([
+          { ...marketRate, rate_date: "2025-12-14" },
+          // Struck after the row: the month's last day would read it.
+          { ...marketRate, rate: "1.25", rate_date: "2025-12-28" },
+        ]);
 
         const result = await service.computeAggregates(userId, "EUR");
 
         expect(result.fxComplete).toBe(true);
+        // 117.5 at the day's 1.175; the stored 1 read 117.5 and the
+        // month's last rate 94.
         expect(result.monthlyHistory[0].totalExpenses).toBe(100);
       });
 
