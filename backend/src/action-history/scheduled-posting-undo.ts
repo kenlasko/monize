@@ -2,8 +2,12 @@ import { ConflictException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { returnedRows } from "../common/db/query-result";
 import { tr } from "../i18n/translate";
-import { todayYMD } from "../common/date-utils";
-import { rewindScheduleCursor } from "../scheduled-transactions/schedule-cursor";
+import { todayInTimezone, todayYMD } from "../common/date-utils";
+import { getEffectiveTimezoneOfUser } from "../common/users-by-timezone.util";
+import {
+  ScheduleCursorChange,
+  rewindScheduleCursor,
+} from "../scheduled-transactions/schedule-cursor";
 import {
   RemovedScheduleSnapshot,
   ScheduledPostingMoney,
@@ -92,7 +96,11 @@ export async function undoScheduledPosting(
   );
   if (locked.length > 0 && snapshot.cursor) {
     await assertNoLaterOccurrence(manager, snapshot, userId);
-    assertCursorUnmoved(snapshot, locked[0].next_due_date);
+    assertCursorUnmoved(
+      snapshot,
+      snapshot.cursor.after.nextDueDate,
+      locked[0].next_due_date,
+    );
   }
 
   await removeMoney(snapshot.money);
@@ -106,7 +114,11 @@ export async function undoScheduledPosting(
     [snapshot.claimId, userId],
   );
 
-  const today = todayYMD();
+  // The day the cron decides "due" by: the user's effective timezone, as
+  // `processAutoPostWithinContext` buckets them, not the request's.
+  const today =
+    todayInTimezone(await getEffectiveTimezoneOfUser(manager, userId)) ??
+    todayYMD();
   if (snapshot.cursor && locked.length > 0) {
     const { before, after, prunedOverrides } = snapshot.cursor;
     const rewoundWouldAutoPost = wouldAutoPost(
@@ -123,18 +135,34 @@ export async function undoScheduledPosting(
     );
     if (rewoundWouldAutoPost) {
       // The occurrence is left as a skip leaves it: the cursor where the
-      // posting moved it, `last_posted_date` as it was before.
+      // posting moved it, `last_posted_date` as it was before. A schedule the
+      // advance left active but that is inactive now was retired after the
+      // commit by the payment this undo removed (a loan's last installment,
+      // `rewriteLoanTemplate`): the debt is owed again, so it is active again.
       await manager.query(
-        `UPDATE scheduled_transactions SET last_posted_date = $1
+        `UPDATE scheduled_transactions
+            SET last_posted_date = $1,
+                is_active = CASE WHEN $5::boolean THEN true ELSE is_active END
           WHERE id = $2 AND user_id = $3
             AND next_due_date = $4`,
-        [before.lastPostedDate, scheduleId, userId, after.nextDueDate],
+        [
+          before.lastPostedDate,
+          scheduleId,
+          userId,
+          after.nextDueDate,
+          before.isActive && after.isActive,
+        ],
       );
       return result(snapshot);
     }
     // Cannot miss: the cursor was confirmed where the posting left it, under
     // the lock this transaction holds.
-    await rewindScheduleCursor(manager, scheduleId, userId, snapshot.cursor);
+    await rewindScheduleCursor(
+      manager,
+      scheduleId,
+      userId,
+      await withoutGoneCategories(manager, userId, snapshot.cursor),
+    );
     if (snapshot.estimatedAmount !== undefined) {
       // The estimate of the occurrence the cursor is back on, from a history
       // without the payment just removed: what it was before the posting.
@@ -182,8 +210,9 @@ interface AutoPostState {
 /**
  * Whether the hourly auto-post cron would post this schedule's occurrence
  * again at its next run (`processAutoPostWithinContext`: active,
- * auto-posting, not estimated, due on or before today, and not postponed by
- * an override to a later date). Putting the schedule back on such an
+ * auto-posting, not estimated, and due on or before today by the occurrence's
+ * override date when it has one, an earlier one included, else by
+ * `next_due_date`; `findPostponedIds` and the cron's `overrideDueIds`). Putting the schedule back on such an
  * occurrence would only re-post what the person just undid, so the undo of
  * an automatic (or due, auto-posting) posting removes the payment and frees
  * the occurrence but leaves it skipped (issue #2165, maintainer decision).
@@ -193,8 +222,7 @@ function wouldAutoPost(state: AutoPostState, today: string): boolean {
     state.autoPost &&
     state.isActive &&
     !state.amountIsEstimated &&
-    state.nextDueDate <= today &&
-    !(state.overrideDate !== null && state.overrideDate > today)
+    (state.overrideDate ?? state.nextDueDate) <= today
   );
 }
 
@@ -271,11 +299,10 @@ async function assertNoLaterOccurrence(
  */
 function assertCursorUnmoved(
   snapshot: ScheduledPostingSnapshot,
+  postedTo: string,
   nextDueDate: string,
 ): void {
-  if (!snapshot.cursor || nextDueDate === snapshot.cursor.after.nextDueDate) {
-    return;
-  }
+  if (nextDueDate === postedTo) return;
   throw new ConflictException({
     message: tr(
       "errors.actionHistory.scheduledPostingUndoCursorMoved",
@@ -284,4 +311,38 @@ function assertCursorUnmoved(
     errorCode: "SCHEDULED_POSTING_UNDO_CURSOR_MOVED",
     scheduledTransactionId: snapshot.scheduledTransactionId,
   });
+}
+
+/**
+ * The cursor change with the category of each override it re-inserts cleared
+ * where that category has been deleted since, as `ON DELETE SET NULL` did to
+ * every live override: the re-insert would otherwise fail its foreign key.
+ */
+async function withoutGoneCategories(
+  manager: EntityManager,
+  userId: string,
+  change: ScheduleCursorChange,
+): Promise<ScheduleCursorChange> {
+  const named = [
+    ...new Set(
+      change.prunedOverrides
+        .map((o) => o.categoryId)
+        .filter((id): id is string => !!id),
+    ),
+  ];
+  if (named.length === 0) return change;
+  const kept = new Set(
+    returnedRows<{ id: string }>(
+      await manager.query(
+        `SELECT id FROM categories WHERE id = ANY($1::uuid[]) AND user_id = $2`,
+        [named, userId],
+      ),
+    ).map((row) => row.id),
+  );
+  return {
+    ...change,
+    prunedOverrides: change.prunedOverrides.map((o) =>
+      o.categoryId && !kept.has(o.categoryId) ? { ...o, categoryId: null } : o,
+    ),
+  };
 }

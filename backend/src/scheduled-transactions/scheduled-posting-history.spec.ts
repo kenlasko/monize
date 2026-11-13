@@ -102,31 +102,8 @@ describe("scheduled posting history (issue #2165)", () => {
   });
 
   describe("snapshotRemovedSchedule", () => {
-    it("reads every row the delete takes with it, as the database's own jsonb", async () => {
-      const query = jest.fn(async (sql: string) => {
-        if (sql.includes("FROM scheduled_transactions s")) {
-          return [{ row: { id: SCHEDULE, name: "Trip" } }];
-        }
-        if (sql.includes("FROM scheduled_transaction_split_tags")) {
-          return [{ row: { tag_id: "tag-1" } }];
-        }
-        if (sql.includes("FROM scheduled_transaction_splits sp")) {
-          return [{ row: { id: "split-1" } }];
-        }
-        if (sql.includes("FROM scheduled_transaction_overrides")) {
-          return [{ row: { id: "o-1" } }];
-        }
-        if (sql.includes("FROM payroll_deduction_rule_periods")) {
-          return [{ row: { id: "period-1" } }];
-        }
-        if (sql.includes("FROM payroll_deduction_rules")) {
-          return [{ row: { id: "rule-1" } }];
-        }
-        return [{ row: "loan-1" }];
-      });
-      const m = { query } as unknown as EntityManager;
-
-      await expect(snapshotRemovedSchedule(m, SCHEDULE)).resolves.toEqual({
+    it("reads every row the delete takes with it in one statement, as the database's own jsonb", async () => {
+      const snapshot = {
         schedule: { id: SCHEDULE, name: "Trip" },
         splits: [{ id: "split-1" }],
         splitTags: [{ tag_id: "tag-1" }],
@@ -134,13 +111,26 @@ describe("scheduled posting history (issue #2165)", () => {
         payrollRules: [{ id: "rule-1" }],
         payrollRulePeriods: [{ id: "period-1" }],
         linkedAccountIds: ["loan-1"],
-      });
-      for (const [, params] of query.mock.calls as unknown as [
-        string,
-        unknown[],
-      ][]) {
-        expect(params).toEqual([SCHEDULE]);
+      };
+      const query = jest.fn().mockResolvedValue([snapshot]);
+      const m = { query } as unknown as EntityManager;
+
+      await expect(snapshotRemovedSchedule(m, SCHEDULE)).resolves.toEqual(
+        snapshot,
+      );
+      expect(query).toHaveBeenCalledTimes(1);
+      const [sql, params] = query.mock.calls[0];
+      for (const table of [
+        "scheduled_transaction_splits",
+        "scheduled_transaction_split_tags",
+        "scheduled_transaction_overrides",
+        "payroll_deduction_rules",
+        "payroll_deduction_rule_periods",
+        "accounts",
+      ]) {
+        expect(sql).toContain(`FROM ${table}`);
       }
+      expect(params).toEqual([SCHEDULE]);
     });
   });
 
@@ -166,10 +156,20 @@ describe("scheduled posting history (issue #2165)", () => {
 
     /** The catalogue: every table has an id, a user and a parent column. */
     const CATALOGUE = ["id", "user_id", "scheduled_transaction_id", "rule_id"];
+    const TABLES = [
+      "scheduled_transactions",
+      "scheduled_transaction_splits",
+      "scheduled_transaction_split_tags",
+      "scheduled_transaction_overrides",
+      "payroll_deduction_rules",
+      "payroll_deduction_rule_periods",
+    ];
     const catalogued = (answer: (sql: string) => unknown) =>
       jest.fn(async (sql: string) =>
         sql.includes("information_schema.columns")
-          ? CATALOGUE.map((column_name) => ({ column_name }))
+          ? TABLES.flatMap((table_name) =>
+              CATALOGUE.map((column_name) => ({ table_name, column_name })),
+            )
           : answer(sql),
       );
     const writes = (query: jest.Mock) =>

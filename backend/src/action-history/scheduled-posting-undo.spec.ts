@@ -138,6 +138,44 @@ describe("undoScheduledPosting (issue #2165)", () => {
     );
   });
 
+  it("clears the category of an override it puts back when that category is gone", async () => {
+    const { manager, query } = managerWith();
+    (query as jest.Mock).mockImplementation(async (sql: string) => {
+      if (sql.includes("FOR UPDATE")) {
+        return [
+          {
+            id: SCHEDULE,
+            next_due_date: "2025-02-15",
+            auto_post: false,
+            amount_is_estimated: false,
+          },
+        ];
+      }
+      if (sql.includes("FROM categories")) return [{ id: "cat-kept" }];
+      return [[], 0];
+    });
+    const withOverrides = {
+      ...recurring,
+      cursor: {
+        ...cursorChange,
+        prunedOverrides: [
+          { id: "o-1", categoryId: "cat-kept" },
+          { id: "o-2", categoryId: "cat-gone" },
+          { id: "o-3", categoryId: null },
+        ] as unknown as cursor.PrunedScheduleOverride[],
+      },
+    };
+
+    await undoScheduledPosting(actionOf(withOverrides), manager, jest.fn());
+
+    const [, , , change] = rewind.mock.calls[0];
+    expect(
+      change.prunedOverrides.map(
+        (o: { categoryId: string | null }) => o.categoryId,
+      ),
+    ).toEqual(["cat-kept", null, null]);
+  });
+
   it("refuses before any write while a later occurrence holds a claim", async () => {
     const { manager, query } = managerWith({
       laterClaims: [{ d: "2025-03-15" }],
@@ -206,10 +244,38 @@ describe("undoScheduledPosting (issue #2165)", () => {
       expect(released(query)).toBe(true);
       expect(rewind).not.toHaveBeenCalled();
       // As a skip leaves it: the posting's stamp goes, the cursor stays.
+      // A schedule the advance left active is active again (a loan the
+      // removed payment had retired after the commit).
       expect(query).toHaveBeenCalledWith(
         expect.stringContaining("SET last_posted_date = $1"),
-        [null, SCHEDULE, USER, "2025-02-15"],
+        [null, SCHEDULE, USER, "2025-02-15", true],
       );
+    });
+
+    it("leaves an auto-post occurrence an override moved earlier, to a due day, skipped", async () => {
+      const { manager } = managerWith({
+        autoPost: true,
+        nextDueDate: "2099-02-15",
+      });
+      const movedEarlier = {
+        ...recurring,
+        dueDate: "2099-01-15",
+        cursor: {
+          ...cursorChange,
+          before: { ...cursorChange.before, nextDueDate: "2099-01-15" },
+          after: { ...cursorChange.after, nextDueDate: "2099-02-15" },
+          prunedOverrides: [
+            {
+              originalDate: "2099-01-15",
+              overrideDate: "2025-01-10",
+            } as cursor.PrunedScheduleOverride,
+          ],
+        },
+      };
+
+      await undoScheduledPosting(actionOf(movedEarlier), manager, jest.fn());
+
+      expect(rewind).not.toHaveBeenCalled();
     });
 
     it("rewinds an auto-post schedule posted ahead of its due date", async () => {

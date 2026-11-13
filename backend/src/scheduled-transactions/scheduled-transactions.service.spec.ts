@@ -4034,10 +4034,7 @@ describe("ScheduledTransactionsService", () => {
         expect(entry.afterData.removedSchedule).toBeDefined();
         expect(entry.afterData.cursor).toBeUndefined();
         const snapshotRead = mockQueryRunner.manager.query.mock.calls.findIndex(
-          (c: unknown[]) =>
-            String(c[0]).includes(
-              "to_jsonb(s) AS row FROM scheduled_transactions",
-            ),
+          (c: unknown[]) => String(c[0]).includes("to_jsonb(s) AS schedule"),
         );
         expect(snapshotRead).toBeGreaterThanOrEqual(0);
         // Read before the delete took the rows with it.

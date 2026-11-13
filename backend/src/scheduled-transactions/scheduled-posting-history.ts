@@ -18,8 +18,12 @@ import {
  * The history entry of one posted occurrence (issue #2165). `post()` writes
  * the money through the transaction, transfer or investment service with their
  * own history switched off and records this one entry after its commit, so the
- * undo puts back everything the posting did: the money, the occurrence claim
- * and the schedule's cursor (or, for a one-time bill, the schedule itself).
+ * undo puts back what the posting did to the ledger and the schedule: the
+ * money, the occurrence claim and the schedule's cursor (or, for a one-time
+ * bill, the schedule itself). What a caller's `beforeWrite` or
+ * `afterInvestmentWrite` hook recorded (an AI review request marked applied,
+ * a trade email's row) is the caller's and stays, as for the undo of any
+ * create those hooks ride on.
  */
 export const SCHEDULED_POSTING_ENTITY_TYPE = "scheduled_posting";
 export const SCHEDULED_POSTING_ACTION = "post";
@@ -140,45 +144,43 @@ export async function snapshotRemovedSchedule(
   m: EntityManager,
   scheduleId: string,
 ): Promise<RemovedScheduleSnapshot> {
-  const rowsOf = async (sql: string): Promise<Record<string, unknown>[]> =>
-    returnedRows<{ row: Record<string, unknown> }>(
-      await m.query(sql, [scheduleId]),
-    ).map((r) => r.row);
-  const [schedule] = await rowsOf(
-    `SELECT to_jsonb(s) AS row FROM scheduled_transactions s WHERE s.id = $1`,
+  // One statement: it runs under the schedule row lock the posting holds.
+  const [row] = returnedRows<RemovedScheduleSnapshot>(
+    await m.query(
+      `SELECT to_jsonb(s) AS schedule,
+              COALESCE((SELECT jsonb_agg(to_jsonb(sp))
+                          FROM scheduled_transaction_splits sp
+                         WHERE sp.scheduled_transaction_id = s.id), '[]')
+                AS splits,
+              COALESCE((SELECT jsonb_agg(to_jsonb(st))
+                          FROM scheduled_transaction_split_tags st
+                          JOIN scheduled_transaction_splits sp
+                            ON sp.id = st.scheduled_transaction_split_id
+                         WHERE sp.scheduled_transaction_id = s.id), '[]')
+                AS "splitTags",
+              COALESCE((SELECT jsonb_agg(to_jsonb(o))
+                          FROM scheduled_transaction_overrides o
+                         WHERE o.scheduled_transaction_id = s.id), '[]')
+                AS overrides,
+              COALESCE((SELECT jsonb_agg(to_jsonb(pr))
+                          FROM payroll_deduction_rules pr
+                         WHERE pr.scheduled_transaction_id = s.id), '[]')
+                AS "payrollRules",
+              COALESCE((SELECT jsonb_agg(to_jsonb(pp))
+                          FROM payroll_deduction_rule_periods pp
+                          JOIN payroll_deduction_rules pr ON pr.id = pp.rule_id
+                         WHERE pr.scheduled_transaction_id = s.id), '[]')
+                AS "payrollRulePeriods",
+              COALESCE((SELECT jsonb_agg(a.id)
+                          FROM accounts a
+                         WHERE a.scheduled_transaction_id = s.id), '[]')
+                AS "linkedAccountIds"
+         FROM scheduled_transactions s
+        WHERE s.id = $1`,
+      [scheduleId],
+    ),
   );
-  return {
-    schedule,
-    splits: await rowsOf(
-      `SELECT to_jsonb(sp) AS row FROM scheduled_transaction_splits sp
-        WHERE sp.scheduled_transaction_id = $1`,
-    ),
-    splitTags: await rowsOf(
-      `SELECT to_jsonb(st) AS row FROM scheduled_transaction_split_tags st
-         JOIN scheduled_transaction_splits sp
-           ON sp.id = st.scheduled_transaction_split_id
-        WHERE sp.scheduled_transaction_id = $1`,
-    ),
-    overrides: await rowsOf(
-      `SELECT to_jsonb(o) AS row FROM scheduled_transaction_overrides o
-        WHERE o.scheduled_transaction_id = $1`,
-    ),
-    payrollRules: await rowsOf(
-      `SELECT to_jsonb(pr) AS row FROM payroll_deduction_rules pr
-        WHERE pr.scheduled_transaction_id = $1`,
-    ),
-    payrollRulePeriods: await rowsOf(
-      `SELECT to_jsonb(pp) AS row FROM payroll_deduction_rule_periods pp
-         JOIN payroll_deduction_rules pr ON pr.id = pp.rule_id
-        WHERE pr.scheduled_transaction_id = $1`,
-    ),
-    linkedAccountIds: (
-      await rowsOf(
-        `SELECT to_jsonb(a.id) AS row FROM accounts a
-          WHERE a.scheduled_transaction_id = $1`,
-      )
-    ).map((id) => String(id)),
-  };
+  return row;
 }
 
 /**
@@ -224,27 +226,52 @@ export async function restoreRemovedSchedule(
   }
 }
 
+/** The tables a restore writes, whose current columns `insertHead` reads. */
+const RESTORED_TABLES = [
+  "scheduled_transactions",
+  "scheduled_transaction_splits",
+  "scheduled_transaction_split_tags",
+  "scheduled_transaction_overrides",
+  "payroll_deduction_rules",
+  "payroll_deduction_rule_periods",
+] as const;
+type RestoredTable = (typeof RESTORED_TABLES)[number];
+
+/** Each restored table's columns now, in order, in one catalogue read. */
+async function currentColumns(
+  m: EntityManager,
+): Promise<Map<string, string[]>> {
+  const byTable = new Map<string, string[]>();
+  for (const row of returnedRows<{ table_name: string; column_name: string }>(
+    await m.query(
+      `SELECT table_name, column_name FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = ANY($1::text[])
+        ORDER BY table_name, ordinal_position`,
+      [[...RESTORED_TABLES]],
+    ),
+  )) {
+    byTable.set(row.table_name, [
+      ...(byTable.get(row.table_name) ?? []),
+      row.column_name,
+    ]);
+  }
+  return byTable;
+}
+
 /**
  * `INSERT INTO table (columns) SELECT r.columns`, over the columns the table
  * has now that the snapshot rows carry: a column added since the posting takes
  * its default rather than NULL, and one dropped since is left out. The names
  * are the catalogue's own, never the snapshot's.
  */
-async function insertHead(
-  m: EntityManager,
-  table: string,
+function insertHead(
+  catalogue: ReadonlyMap<string, string[]>,
+  table: RestoredTable,
   rows: readonly Record<string, unknown>[],
-): Promise<string> {
+): string {
   const carried = new Set(rows.flatMap((row) => Object.keys(row)));
-  const columns = returnedRows<{ column_name: string }>(
-    await m.query(
-      `SELECT column_name FROM information_schema.columns
-        WHERE table_schema = current_schema() AND table_name = $1
-        ORDER BY ordinal_position`,
-      [table],
-    ),
-  )
-    .map((c) => c.column_name)
+  const columns = (catalogue.get(table) ?? [])
     .filter((c) => carried.has(c))
     .map((c) => `"${c.replace(/"/g, '""')}"`);
   return `INSERT INTO ${table} (${columns.join(", ")})
@@ -256,9 +283,10 @@ async function restoreRows(
   userId: string,
   snapshot: RemovedScheduleSnapshot,
 ): Promise<boolean> {
+  const catalogue = await currentColumns(m);
   const restored = returnedRows<{ id: string }>(
     await m.query(
-      `${await insertHead(m, "scheduled_transactions", [snapshot.schedule])}
+      `${insertHead(catalogue, "scheduled_transactions", [snapshot.schedule])}
          FROM jsonb_populate_record(
            NULL::scheduled_transactions,
            $1::jsonb || jsonb_build_object(
@@ -279,13 +307,13 @@ async function restoreRows(
   if (restored.length === 0) return false;
   const scheduleId = restored[0].id;
   const insert = async (
-    table: string,
+    table: RestoredTable,
     rows: readonly Record<string, unknown>[] | undefined,
     tail: string,
     params: readonly unknown[],
   ): Promise<void> => {
     if (!rows || rows.length === 0) return;
-    await m.query(`${await insertHead(m, table, rows)}\n${tail}`, [
+    await m.query(`${insertHead(catalogue, table, rows)}\n${tail}`, [
       JSON.stringify(rows),
       ...params,
     ]);
