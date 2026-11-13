@@ -40,6 +40,7 @@ import {
   UpdateRowInput,
   SplitLineInput,
 } from "../../transactions/transaction-tool-prep.service";
+import { pickForeignEntryRequest } from "../../common/foreign-entry.util";
 import {
   RuleToolInput,
   RuleToolRefusal,
@@ -782,18 +783,21 @@ export class ToolExecutorService {
   private toCreateRow(item: Record<string, unknown>): CreateRowInput {
     return {
       accountName: item.accountName as string,
-      amount: item.amount as number,
+      amount: item.amount as number | undefined,
       date: item.date as string,
       payeeName: item.payeeName as string | undefined,
       categoryName: item.categoryName as string | undefined,
       description: item.description as string | undefined,
       createPayeeIfMissing: item.createPayeeIfMissing as boolean | undefined,
       splits: item.splits as SplitLineInput[] | undefined,
+      ...pickForeignEntryRequest(item),
     };
   }
 
   private toTransferRow(item: Record<string, unknown>): TransferRowInput {
     return {
+      originalAmount: item.originalAmount as number | undefined,
+      originalCurrencyCode: item.originalCurrencyCode as string | undefined,
       fromAccountName: item.fromAccountName as string,
       toAccountName: item.toAccountName as string,
       amount: item.amount as number,
@@ -820,6 +824,7 @@ export class ToolExecutorService {
       tagNames: item.addTagNames as string[] | undefined,
       removeTagNames: item.removeTagNames as string[] | undefined,
       splitTags: item.splitTags as UpdateRowInput["splitTags"],
+      ...pickForeignEntryRequest(item),
     };
   }
 

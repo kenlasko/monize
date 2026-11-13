@@ -88,6 +88,15 @@ import {
   itemsArray,
 } from "./schema-fragments";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
+import {
+  ForeignEntryRateSource,
+  pickForeignEntryRequest,
+} from "../../common/foreign-entry.util";
+import {
+  ForeignEntryFields,
+  foreignEntryDisplayFields,
+  foreignEntryWriteFields,
+} from "../../transactions/foreign-entry-preview";
 import { SEARCH_SYNTAX_SUMMARY } from "../../transactions/transaction-search-query.util";
 
 type ManageOperation = "create" | "update" | "delete";
@@ -131,6 +140,23 @@ function tagConfirmNote(change: {
   );
 }
 
+/** How a confirmation names where a foreign entry's rate came from. */
+const RATE_SOURCE_NOTE: Record<ForeignEntryRateSource, string> = {
+  supplied: "rate as given",
+  derived: "rate derived from the two amounts",
+  market: "market rate for the date",
+};
+
+/** The foreign-currency entry a create or edit sets, as a confirmation line. */
+function fxConfirmNote(p: ForeignEntryFields): string {
+  if (p.originalCurrencyCode === undefined) return "";
+  if (p.originalCurrencyCode === null) return "\nForeign currency: removed";
+  const source = p.exchangeRateSource
+    ? ` (${RATE_SOURCE_NOTE[p.exchangeRateSource]})`
+    : "";
+  return `\nPaid: ${p.originalAmount} ${p.originalCurrencyCode} at ${p.exchangeRate}${source}`;
+}
+
 /**
  * One file to save on the transaction: either a relayed chat attachment
  * (referenced by its monize-attachment:// URI) or inline base64 bytes from a
@@ -159,6 +185,9 @@ interface ManageItem {
   createPayeeIfMissing?: boolean;
   exchangeRate?: number;
   toAmount?: number;
+  // non-transfer: entered in another currency
+  originalAmount?: number;
+  originalCurrencyCode?: string;
   // split transactions (category splits only)
   splits?: {
     categoryName: string;
@@ -258,7 +287,7 @@ export class McpTransactionsTools {
             .optional()
             .default(false)
             .describe(
-              "A foreign-currency row carries read-only originalAmount, originalCurrencyCode and exchangeRate beside the account-currency amount.",
+              "A foreign-currency row carries originalAmount, originalCurrencyCode and exchangeRate beside the account-currency amount.",
             ),
           limit: numberArg(z.number().int().min(1).max(100))
             .optional()
@@ -481,15 +510,31 @@ export class McpTransactionsTools {
                 .describe(
                   "An unmatched payee name creates a payee (default) or stays free text.",
                 ),
-              exchangeRate: numberArg(z.number().min(0).max(1_000_000))
+              exchangeRate: numberArg(z.number().min(0).max(9_999_999_999))
                 .optional()
-                .describe("create: rate for a cross-currency transfer."),
+                .describe(
+                  "Rate for a cross-currency transfer (create) or originalCurrencyCode.",
+                ),
               toAmount: numberArg(
                 z.number().min(-999999999999).max(999999999999),
               )
                 .optional()
                 .describe(
                   "create: explicit destination amount, overriding exchangeRate.",
+                ),
+              originalAmount: numberArg(
+                z.number().min(-999999999999).max(999999999999),
+              )
+                .optional()
+                .describe(
+                  "Signed, in originalCurrencyCode; not on a transfer. With amount charged, exchangeRate, both (must agree) or neither (market rate).",
+                ),
+              originalCurrencyCode: z
+                .string()
+                .length(3)
+                .optional()
+                .describe(
+                  "Currency paid in. update: the account's own clears it.",
                 ),
               splits: z
                 .array(
@@ -795,18 +840,21 @@ export class McpTransactionsTools {
   private toCreateRow(item: ManageItem): CreateRowInput {
     return {
       accountName: item.accountName as string,
-      amount: item.amount as number,
+      amount: item.amount,
       date: item.date as string,
       payeeName: item.payeeName,
       categoryName: item.categoryName,
       description: item.description,
       createPayeeIfMissing: item.createPayeeIfMissing,
       splits: item.splits,
+      ...pickForeignEntryRequest(item),
     };
   }
 
   private toTransferRow(item: ManageItem): TransferRowInput {
     return {
+      originalAmount: item.originalAmount,
+      originalCurrencyCode: item.originalCurrencyCode,
       fromAccountName: item.fromAccountName as string,
       toAccountName: item.toAccountName as string,
       amount: item.amount as number,
@@ -860,6 +908,7 @@ export class McpTransactionsTools {
       tagNames: item.addTagNames,
       removeTagNames: item.removeTagNames,
       splitTags: item.splitTags,
+      ...pickForeignEntryRequest(item),
     };
   }
 
@@ -885,6 +934,7 @@ export class McpTransactionsTools {
             accountName: preview.accountName,
             amount: preview.amount,
             currencyCode: preview.currencyCode,
+            ...foreignEntryDisplayFields(preview),
             transactionDate: preview.transactionDate,
             payeeName: preview.payeeName,
             splits: (splits ?? []).map((s) => ({
@@ -919,6 +969,7 @@ export class McpTransactionsTools {
           accountName: preview.accountName,
           amount: preview.amount,
           currencyCode: preview.currencyCode,
+          ...foreignEntryDisplayFields(preview),
           transactionDate: preview.transactionDate,
           splits: (splits ?? []).map((s) => ({
             categoryName: s.categoryName,
@@ -1220,7 +1271,7 @@ export class McpTransactionsTools {
       ctx,
       userId,
       action,
-      `Create this split transaction?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}\nSplits: ${(splits ?? []).map((s) => `${s.categoryName} ${s.amount}`).join(", ")}${this.attachmentConfirmNote(attachmentRefs)}`,
+      `Create this split transaction?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}${fxConfirmNote(preview)}\nDate: ${preview.transactionDate}\nSplits: ${(splits ?? []).map((s) => `${s.categoryName} ${s.amount}`).join(", ")}${this.attachmentConfirmNote(attachmentRefs)}`,
     );
     if (isAsk(outcome)) {
       // The refs park the file bytes for the round that commits, and this
@@ -1247,6 +1298,7 @@ export class McpTransactionsTools {
         payeeName: preview.payeeName ?? undefined,
         description: preview.description ?? undefined,
         currencyCode: preview.currencyCode,
+        ...foreignEntryWriteFields(preview),
         splits: toSplitDtoRows(splits ?? []),
       },
       { createPayeeIfMissing: createPayee },
@@ -1333,7 +1385,7 @@ export class McpTransactionsTools {
           ctx,
           userId,
           action,
-          `Create this transaction?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}${this.attachmentConfirmNote(attachmentRefs)}`,
+          `Create this transaction?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}${fxConfirmNote(preview)}\nDate: ${preview.transactionDate}${this.attachmentConfirmNote(attachmentRefs)}`,
         );
         if (isAsk(outcome)) {
           // See manageCreateSplit: the asking round parks nothing it keeps.
@@ -1358,6 +1410,7 @@ export class McpTransactionsTools {
             categoryId: preview.categoryId ?? undefined,
             description: preview.description ?? undefined,
             currencyCode: preview.currencyCode,
+            ...foreignEntryWriteFields(preview),
           },
           { createPayeeIfMissing: std.okCreatePayee[0] },
         );
@@ -1486,6 +1539,7 @@ export class McpTransactionsTools {
           categoryId: preview.categoryId ?? undefined,
           description: preview.description ?? undefined,
           currencyCode: preview.currencyCode,
+          ...foreignEntryWriteFields(preview),
         },
         { createPayeeIfMissing: std.okCreatePayee[i] },
       );
@@ -1588,8 +1642,8 @@ export class McpTransactionsTools {
       const attachmentNote =
         this.attachmentConfirmNote(attachmentRefs) + tagConfirmNote(preview);
       const confirmMessage = splits
-        ? `Apply this transaction edit?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}\nSplits: ${splits.map((s) => `${s.categoryName} ${s.amount}`).join(", ")}${attachmentNote}${reconciledNote}`
-        : `Apply this transaction edit?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}${attachmentNote}${reconciledNote}`;
+        ? `Apply this transaction edit?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}${fxConfirmNote(preview)}\nDate: ${preview.transactionDate}\nSplits: ${splits.map((s) => `${s.categoryName} ${s.amount}`).join(", ")}${attachmentNote}${reconciledNote}`
+        : `Apply this transaction edit?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}${fxConfirmNote(preview)}\nDate: ${preview.transactionDate}${attachmentNote}${reconciledNote}`;
       const outcome = await this.emitOrConfirm(
         server,
         ctx,
@@ -1870,9 +1924,9 @@ export class McpTransactionsTools {
       case "delete_transaction":
         return `Delete this transaction?\nAccount: ${p.accountName}${p.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`;
       case "update_transaction":
-        return `Apply this transaction edit?\nAccount: ${p.accountName}\nAmount: ${p.amount} ${p.currencyCode}${tagConfirmNote(p)}${p.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`;
+        return `Apply this transaction edit?\nAccount: ${p.accountName}\nAmount: ${p.amount} ${p.currencyCode}${fxConfirmNote(p)}${tagConfirmNote(p)}${p.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`;
       default:
-        return `Create this transaction?\nAccount: ${p.accountName}\nAmount: ${p.amount} ${p.currencyCode}`;
+        return `Create this transaction?\nAccount: ${p.accountName}\nAmount: ${p.amount} ${p.currencyCode}${fxConfirmNote(p)}`;
     }
   }
 
@@ -1895,6 +1949,7 @@ export class McpTransactionsTools {
             categoryId: d.categoryId ?? undefined,
             description: d.description ?? undefined,
             currencyCode: d.currencyCode,
+            ...foreignEntryWriteFields(d),
           },
           { createPayeeIfMissing: d.createPayee === true },
         );

@@ -214,6 +214,27 @@ describe("AiActionsService", () => {
     expect(result).toEqual({ type: "create_transaction", id: "tx-new" });
   });
 
+  it("creates a foreign-currency entry with the signed figures, through the DTO's validation", async () => {
+    const descriptor = createTxDescriptor({
+      amount: -110,
+      originalAmount: -100,
+      originalCurrencyCode: "EUR",
+      exchangeRate: 1.1,
+    });
+    await service.confirm(USER, dtoFor(descriptor));
+    expect(transactions.create).toHaveBeenCalledWith(
+      USER,
+      expect.objectContaining({
+        amount: -110,
+        currencyCode: "USD",
+        originalAmount: -100,
+        originalCurrencyCode: "EUR",
+        exchangeRate: 1.1,
+      }),
+      { createPayeeIfMissing: false },
+    );
+  });
+
   it("links the resolved payee when the descriptor carries a payeeId", async () => {
     const descriptor = createTxDescriptor({ payeeId: PAYEE });
     await service.confirm(USER, dtoFor(descriptor));
@@ -1844,6 +1865,30 @@ describe("AiActionsService", () => {
         count: 2,
         skipped: [],
       });
+    });
+
+    it("carries a row's foreign-currency entry to the bulk create", async () => {
+      transactions.createBulk.mockResolvedValue({
+        created: [{ id: "tx-1" }, { id: "tx-2" }],
+        skipped: [],
+      });
+      const descriptor = bulkTxDescriptor();
+      descriptor.rows[0] = {
+        ...descriptor.rows[0],
+        amount: -110,
+        originalAmount: -100,
+        originalCurrencyCode: "EUR",
+        exchangeRate: 1.1,
+      };
+      await service.confirm(USER, dtoFor(descriptor));
+      const passedRows = transactions.createBulk.mock.calls[0][1];
+      expect(passedRows[0].dto).toMatchObject({
+        amount: -110,
+        originalAmount: -100,
+        originalCurrencyCode: "EUR",
+        exchangeRate: 1.1,
+      });
+      expect(passedRows[1].dto).not.toHaveProperty("originalCurrencyCode");
     });
 
     it("reports rows the service skipped, remapped to original indices", async () => {

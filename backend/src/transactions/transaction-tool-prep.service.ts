@@ -38,6 +38,16 @@ import { BulkCreateSkip, bulkSkipReason } from "../common/bulk-create.types";
 import { didYouMean } from "../common/name-suggestions.util";
 import { tr } from "../i18n/translate";
 import { TransactionSplit } from "./entities/transaction-split.entity";
+import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { resolveFxRateOrNull } from "../common/fx-entry.util";
+import {
+  ForeignEntryRequest,
+  hasForeignEntryRequest,
+} from "../common/foreign-entry.util";
+import {
+  ForeignEntryPreviewRequest,
+  foreignEntryWriteFields,
+} from "./foreign-entry-preview";
 import { carrySplitTags } from "./split-tag-carry.util";
 import { updatePreviewRow } from "./update-preview-row.util";
 import {
@@ -62,10 +72,15 @@ export interface SplitLineInput {
   categorySource?: "ai";
 }
 
-/** Standard create-row input (names; resolved internally). */
-export interface CreateRowInput {
+/**
+ * Standard create-row input (names; resolved internally). A foreign-currency
+ * entry gives `originalAmount` and `originalCurrencyCode`, with `amount` (what
+ * the account was charged), `exchangeRate`, both or neither
+ * (`resolveForeignEntry`); `amount` is then optional.
+ */
+export interface CreateRowInput extends ForeignEntryRequest {
   accountName: string;
-  amount: number;
+  amount?: number;
   date: string;
   payeeName?: string;
   categoryName?: string;
@@ -77,6 +92,12 @@ export interface CreateRowInput {
 
 /** Transfer create-row input (names; resolved internally). */
 export interface TransferRowInput {
+  /**
+   * Refused on a transfer, whose legs each carry their own account's currency:
+   * accepted here only so the refusal can name them instead of dropping them.
+   */
+  originalAmount?: number;
+  originalCurrencyCode?: string;
   fromAccountName: string;
   toAccountName: string;
   amount: number;
@@ -89,8 +110,12 @@ export interface TransferRowInput {
   toAmount?: number;
 }
 
-/** Update-row input (names; resolved internally; >=1 mutable field). */
-export interface UpdateRowInput {
+/**
+ * Update-row input (names; resolved internally; >=1 mutable field). The
+ * foreign-currency fields change the row's entry, its own figures filling in
+ * the rest; the account's own currency as `originalCurrencyCode` clears it.
+ */
+export interface UpdateRowInput extends ForeignEntryRequest {
   transactionId: string;
   amount?: number;
   date?: string;
@@ -196,7 +221,48 @@ export class TransactionToolPrepService {
     @Inject(forwardRef(() => TransactionAnalyticsService))
     private readonly analyticsService: TransactionAnalyticsService,
     private readonly splitService: TransactionSplitService,
+    private readonly exchangeRateService: ExchangeRateService,
   ) {}
+
+  /**
+   * A row's foreign-currency figures for `previewCreate` / `previewUpdate`,
+   * with the market-rate lookup used when the caller gave neither the amount
+   * charged nor a rate; `undefined` when the row names none.
+   */
+  private foreignEntryOf(
+    row: ForeignEntryRequest,
+  ): ForeignEntryPreviewRequest | undefined {
+    if (!hasForeignEntryRequest(row)) return undefined;
+    return {
+      originalAmount: row.originalAmount,
+      originalCurrencyCode: row.originalCurrencyCode,
+      exchangeRate: row.exchangeRate,
+      lookupRate: (from, to, date) =>
+        resolveFxRateOrNull(this.exchangeRateService, from, to, date),
+    };
+  }
+
+  /**
+   * A transfer moves money between two accounts, each leg in its own
+   * account's currency; a cross-currency one takes `exchangeRate` or
+   * `toAmount`, never a foreign entry. Refused rather than dropped.
+   */
+  private assertNoForeignEntryOnTransfer(row: {
+    originalAmount?: number;
+    originalCurrencyCode?: string;
+  }): void {
+    if (
+      row.originalAmount !== undefined ||
+      row.originalCurrencyCode !== undefined
+    ) {
+      throw new BadRequestException(
+        tr(
+          "errors.transactions.fxEntryNotOnTransfer",
+          "originalAmount and originalCurrencyCode are for a transaction in one account. A transfer between accounts in different currencies takes exchangeRate or toAmount when it is created.",
+        ),
+      );
+    }
+  }
 
   private async resolveCategoryId(
     userId: string,
@@ -307,6 +373,8 @@ export class TransactionToolPrepService {
         payeeName: row.payeeName ?? null,
         categoryName: row.categoryName ?? null,
         description: row.description ?? null,
+        // No foreign-entry figures on a row that failed: its currency code is
+        // unvalidated, and the card formats the code it is given.
       };
 
       const account = await this.accountsService.resolveByName(
@@ -341,6 +409,7 @@ export class TransactionToolPrepService {
           categoryId,
           description: row.description,
           createPayeeIfMissing,
+          foreignEntry: this.foreignEntryOf(row),
         });
         okPreviews.push(preview);
         okCreatePayee.push(createPayeeIfMissing);
@@ -414,6 +483,7 @@ export class TransactionToolPrepService {
       }
 
       try {
+        this.assertNoForeignEntryOnTransfer(row);
         const preview = await this.transferService.previewCreateTransfer(
           userId,
           {
@@ -450,6 +520,7 @@ export class TransactionToolPrepService {
     userId: string,
     row: TransferRowInput,
   ): Promise<CreateTransferPreview> {
+    this.assertNoForeignEntryOnTransfer(row);
     const fromAccount = await this.accountsService.resolveByName(
       userId,
       row.fromAccountName,
@@ -511,16 +582,8 @@ export class TransactionToolPrepService {
     }
     // A split row carries its categories in the splits array; the parent has no
     // single category.
-    const splits = row.splits
-      ? await this.resolveSplits(
-          userId,
-          row.splits,
-          row.amount,
-          account.currencyCode,
-        )
-      : undefined;
     let categoryId: string | undefined;
-    if (!splits && row.categoryName) {
+    if (!row.splits && row.categoryName) {
       const resolved = await this.resolveCategoryId(userId, row.categoryName);
       if (!resolved) throw this.unknownCategoryError(row.categoryName);
       categoryId = resolved;
@@ -533,8 +596,19 @@ export class TransactionToolPrepService {
       categoryId,
       description: row.description,
       createPayeeIfMissing: createPayee,
-      hasSplits: !!splits,
+      hasSplits: !!row.splits,
+      foreignEntry: this.foreignEntryOf(row),
     });
+    // The lines sum to the amount the row will store, which a foreign entry
+    // may have worked out.
+    const splits = row.splits
+      ? await this.resolveSplits(
+          userId,
+          row.splits,
+          preview.amount,
+          account.currencyCode,
+        )
+      : undefined;
     return { preview, createPayee, splits };
   }
 
@@ -560,6 +634,17 @@ export class TransactionToolPrepService {
       );
     }
     if (this.transferService.isTransfer(existing)) {
+      this.assertNoForeignEntryOnTransfer(item);
+      // The transfer edit takes no rate, so one sent would be dropped while the
+      // model reports it changed.
+      if (item.exchangeRate !== undefined) {
+        throw new BadRequestException(
+          tr(
+            "errors.transactions.transferRateNotEditable",
+            "A transfer's exchange rate cannot be changed here. Edit the transfer from the Transactions screen to change its rate.",
+          ),
+        );
+      }
       if (item.splits) {
         throw new BadRequestException(
           "A transfer cannot be converted into a split transaction.",
@@ -665,6 +750,7 @@ export class TransactionToolPrepService {
           removeNames: line.removeTagNames,
         })),
         referenceNumber: item.referenceNumber,
+        foreignEntry: this.foreignEntryOf(item),
       },
     );
     // Validate splits against the effective amount the edit will leave on the
@@ -817,6 +903,7 @@ export class TransactionToolPrepService {
           categoryId: splits ? null : preview.categoryId,
           description: preview.description,
           currencyCode: preview.currencyCode,
+          ...foreignEntryWriteFields(preview),
           ...(splits ? { splits: splits.map(toSplitRowDescriptor) } : {}),
           ...tagChangeWriteFields(preview),
           ...splitTagChangeWriteFields(preview),

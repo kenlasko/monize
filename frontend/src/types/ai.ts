@@ -338,7 +338,23 @@ export interface PendingActionAttachment {
   byteSize: number;
 }
 
-export interface PendingActionPreview {
+/** Where a foreign-currency entry's exchange rate came from (the card says which). */
+export type ForeignEntryRateSource = 'supplied' | 'derived' | 'market';
+
+/**
+ * A cash create or edit card's foreign-currency entry: present only when the
+ * row is entered in another currency, or when an edit changes that entry;
+ * `originalCurrencyCode: null` means the edit removes it. `amount` above stays
+ * what the account is charged, in its own currency.
+ */
+export interface PendingActionForeignEntry {
+  originalAmount?: number | null;
+  originalCurrencyCode?: string | null;
+  exchangeRate?: number;
+  exchangeRateSource?: ForeignEntryRateSource;
+}
+
+export interface PendingActionPreview extends PendingActionForeignEntry {
   accountName?: string;
   amount?: number;
   currencyCode?: string;
@@ -525,7 +541,7 @@ export interface PendingActionRule extends PendingActionRuleState {
 }
 
 /** One row in a bulk confirmation card; `status: 'error'` rows are flagged. */
-export interface PendingActionPreviewRow {
+export interface PendingActionPreviewRow extends PendingActionForeignEntry {
   status: 'ok' | 'error';
   error?: string;
   // Payee display field (batch_actions with a payee operation).

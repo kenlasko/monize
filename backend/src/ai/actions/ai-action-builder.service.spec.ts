@@ -30,6 +30,85 @@ describe("AiActionBuilderService", () => {
     );
   });
 
+  it("signs a foreign-currency entry's figures and shows its rate source only on the card", () => {
+    const preview: CreateTransactionPreview = {
+      accountId: "a1",
+      accountName: "Checking",
+      amount: -110,
+      transactionDate: "2025-01-15",
+      payeeId: null,
+      payeeName: null,
+      payeeMatched: false,
+      payeeWillBeCreated: false,
+      categoryId: null,
+      categoryName: null,
+      description: null,
+      currencyCode: "USD",
+      originalAmount: -100,
+      originalCurrencyCode: "EUR",
+      exchangeRate: 1.1,
+      exchangeRateSource: "derived",
+    };
+    const single = builder.buildCreateTransaction("u1", preview);
+    const bulk = builder.buildCreateTransactions(
+      "u1",
+      [preview],
+      [transactionPreviewRow(preview)],
+    );
+    const figures = {
+      originalAmount: -100,
+      originalCurrencyCode: "EUR",
+      exchangeRate: 1.1,
+    };
+    expect(single.descriptor).toMatchObject(figures);
+    expect(single.descriptor).not.toHaveProperty("exchangeRateSource");
+    expect(single.preview).toMatchObject({
+      ...figures,
+      exchangeRateSource: "derived",
+    });
+    expect((bulk.descriptor as { rows: unknown[] }).rows[0]).toMatchObject(
+      figures,
+    );
+    expect(bulk.preview.rows?.[0]).toMatchObject({
+      exchangeRateSource: "derived",
+    });
+
+    const edit = builder.buildUpdateTransaction("u1", {
+      ...preview,
+      transactionId: "t1",
+      isReconciled: false,
+      originalAmount: null,
+      originalCurrencyCode: null,
+      exchangeRate: 1,
+      exchangeRateSource: undefined,
+    } as UpdateTransactionPreview);
+    expect(edit.descriptor).toMatchObject({
+      originalAmount: null,
+      originalCurrencyCode: null,
+      exchangeRate: 1,
+    });
+    expect(edit.preview).toMatchObject({ originalCurrencyCode: null });
+  });
+
+  it("signs no foreign-currency field for an ordinary entry", () => {
+    const action = builder.buildCreateTransaction("u1", {
+      accountId: "a1",
+      accountName: "Checking",
+      amount: -50,
+      transactionDate: "2025-01-15",
+      payeeId: null,
+      payeeName: null,
+      payeeMatched: false,
+      payeeWillBeCreated: false,
+      categoryId: null,
+      categoryName: null,
+      description: null,
+      currencyCode: "USD",
+    });
+    expect(action.descriptor).not.toHaveProperty("originalCurrencyCode");
+    expect(action.descriptor).not.toHaveProperty("exchangeRate");
+  });
+
   it("builds a signed create_transaction action from a preview", () => {
     const preview: CreateTransactionPreview = {
       accountId: "a1",

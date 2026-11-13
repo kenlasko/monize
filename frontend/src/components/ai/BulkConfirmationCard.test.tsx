@@ -54,6 +54,36 @@ describe('BulkConfirmationCard', () => {
     expect(screen.getByText(/1 transaction.*1 skipped/)).toBeInTheDocument();
   });
 
+  it("shows a row's foreign-currency payment and rate beside its amount", () => {
+    render(
+      <BulkConfirmationCard
+        action={makeAction({
+          preview: {
+            rows: [
+              {
+                status: 'ok',
+                accountName: 'Checking',
+                amount: -110,
+                currencyCode: 'USD',
+                transactionDate: '2026-01-15',
+                payeeName: 'Hotel',
+                originalAmount: -100,
+                originalCurrencyCode: 'EUR',
+                exchangeRate: 1.1,
+                exchangeRateSource: 'supplied',
+              },
+            ],
+          },
+        })}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByText(/paid .*100\.00 at 1 EUR = 1\.100000 USD, as given/),
+    ).toBeInTheDocument();
+  });
+
   it('approves all valid rows via the single button', () => {
     const onConfirm = vi.fn();
     render(

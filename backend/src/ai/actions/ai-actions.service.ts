@@ -89,6 +89,7 @@ import {
   updateTransactionCommitArgs,
   updateTransferCommitArgs,
 } from "./edit-commit-args";
+import { foreignEntryWriteFields } from "../../transactions/foreign-entry-preview";
 import { CreateTransferDto } from "../../transactions/dto/create-transfer.dto";
 import { UpdateTransferDto } from "../../transactions/dto/update-transfer.dto";
 import { BulkCreateSkip } from "../../common/bulk-create.types";
@@ -981,6 +982,7 @@ export class AiActionsService {
         ? undefined
         : (descriptor.categoryId ?? undefined),
       description: descriptor.description ?? undefined,
+      ...foreignEntryWriteFields(descriptor),
       splits: descriptor.splits ? toSplitDtoRows(descriptor.splits) : undefined,
     });
     const transaction = await this.transactionsService.create(userId, dto, {
@@ -1259,6 +1261,7 @@ export class AiActionsService {
         payeeName: row.payeeName ?? undefined,
         categoryId: row.categoryId ?? undefined,
         description: row.description ?? undefined,
+        ...foreignEntryWriteFields(row),
       });
       if (validated) {
         toCreate.push({

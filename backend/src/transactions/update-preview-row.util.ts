@@ -8,6 +8,7 @@ import {
   splitTagChangeDisplayFields,
   tagChangeDisplayFields,
 } from "../tags/tag-change.util";
+import { foreignEntryDisplayFields } from "./foreign-entry-preview";
 import { UpdateTransferPreview } from "./transaction-transfer.service";
 import { UpdateTransactionPreview } from "./transactions.service";
 
@@ -44,6 +45,7 @@ export function updatePreviewRow(result: ResolvedUpdate): AiActionPreviewRow {
     categoryName: splits ? null : preview.categoryName,
     description: preview.description,
     isReconciled: preview.isReconciled,
+    ...foreignEntryDisplayFields(preview),
     ...(splits ? { splits: splits.map(toSplitPreview) } : {}),
     ...tagChangeDisplayFields(preview),
     ...splitTagChangeDisplayFields(preview),

@@ -10,6 +10,7 @@ import { TransactionsService } from "./transactions.service";
 import { TransactionTransferService } from "./transaction-transfer.service";
 import { TransactionAnalyticsService } from "./transaction-analytics.service";
 import { TransactionSplitService } from "./transaction-split.service";
+import { ExchangeRateService } from "../currencies/exchange-rate.service";
 
 describe("TransactionToolPrepService", () => {
   let service: TransactionToolPrepService;
@@ -18,6 +19,7 @@ describe("TransactionToolPrepService", () => {
   let transfer: Record<string, jest.Mock>;
   let analytics: Record<string, jest.Mock>;
   let splitService: Record<string, jest.Mock>;
+  let exchangeRates: Record<string, jest.Mock>;
 
   const userId = "user-1";
 
@@ -125,6 +127,10 @@ describe("TransactionToolPrepService", () => {
     splitService = {
       validateSplitsInCurrency: jest.fn().mockResolvedValue(undefined),
     };
+    exchangeRates = {
+      getRateForDate: jest.fn().mockResolvedValue(1.0987),
+      getLatestRate: jest.fn().mockResolvedValue(null),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -134,6 +140,7 @@ describe("TransactionToolPrepService", () => {
         { provide: TransactionTransferService, useValue: transfer },
         { provide: TransactionAnalyticsService, useValue: analytics },
         { provide: TransactionSplitService, useValue: splitService },
+        { provide: ExchangeRateService, useValue: exchangeRates },
       ],
     }).compile();
 
@@ -229,6 +236,13 @@ describe("TransactionToolPrepService", () => {
     });
 
     it("resolves split categories, validates the sum, and omits a single category", async () => {
+      // previewCreate returns the amount it was given; the lines sum to it.
+      transactions.previewCreate.mockImplementationOnce(
+        async (_u: string, input: { amount: number }) => ({
+          ...createPreview,
+          amount: input.amount,
+        }),
+      );
       const result = await service.prepareCreateSingle(userId, {
         accountName: "Checking",
         amount: -100,
@@ -1454,6 +1468,180 @@ describe("TransactionToolPrepService", () => {
       });
       expect(row.payeeId).toBeNull();
       expect(row.createPayee).toBe(true);
+    });
+  });
+
+  describe("foreign-currency entries", () => {
+    const foreign = {
+      originalAmount: -100,
+      originalCurrencyCode: "EUR",
+      exchangeRate: 1.1,
+    };
+    const foreignPreview = {
+      ...createPreview,
+      amount: -110,
+      originalAmount: -100,
+      originalCurrencyCode: "EUR",
+      exchangeRate: 1.1,
+      exchangeRateSource: "supplied" as const,
+    };
+
+    it("hands the figures and a market-rate lookup to previewCreate", async () => {
+      transactions.previewCreate.mockResolvedValueOnce(foreignPreview);
+      const result = await service.prepareCreate(userId, [
+        { accountName: "Checking", date: "2026-01-15", ...foreign },
+      ]);
+      const input = transactions.previewCreate.mock.calls[0][1];
+      expect(input).toMatchObject({ amount: undefined, foreignEntry: foreign });
+      // The lookup is the stored-rate ladder for the pair and the date.
+      await expect(
+        input.foreignEntry.lookupRate("EUR", "USD", "2026-01-15"),
+      ).resolves.toBe(1.0987);
+      expect(exchangeRates.getRateForDate).toHaveBeenCalledWith(
+        "EUR",
+        "USD",
+        "2026-01-15",
+      );
+      // The card's row shows the entry and where its rate came from.
+      expect(result.previewRows[0]).toMatchObject({
+        status: "ok",
+        amount: -110,
+        originalAmount: -100,
+        originalCurrencyCode: "EUR",
+        exchangeRate: 1.1,
+        exchangeRateSource: "supplied",
+      });
+    });
+
+    it("leaves the unvalidated figures off a row that failed", async () => {
+      transactions.previewCreate.mockRejectedValueOnce(
+        new NotFoundException('Currency "US$" not found'),
+      );
+      const result = await service.prepareCreate(userId, [
+        {
+          accountName: "Checking",
+          date: "2026-01-15",
+          originalAmount: -10,
+          originalCurrencyCode: "US$",
+        },
+      ]);
+      expect(result.previewRows[0].status).toBe("error");
+      expect(result.previewRows[0]).not.toHaveProperty("originalCurrencyCode");
+    });
+
+    it("passes no entry for a row that names none", async () => {
+      await service.prepareCreate(userId, [
+        { accountName: "Checking", amount: -10, date: "2026-01-15" },
+      ]);
+      expect(
+        transactions.previewCreate.mock.calls[0][1].foreignEntry,
+      ).toBeUndefined();
+    });
+
+    it("validates a split create's lines against the amount the entry worked out", async () => {
+      transactions.previewCreate.mockResolvedValueOnce(foreignPreview);
+      await service.prepareCreateSingle(userId, {
+        accountName: "Checking",
+        date: "2026-01-15",
+        ...foreign,
+        splits: [
+          { categoryName: "Dining", amount: -60 },
+          { categoryName: "Dining", amount: -50 },
+        ],
+      });
+      expect(splitService.validateSplitsInCurrency).toHaveBeenCalledWith(
+        expect.any(Array),
+        -110,
+        "USD",
+      );
+    });
+
+    it("refuses an entry on a transfer, on create and on edit, rather than dropping it", async () => {
+      const bulk = await service.prepareCreateTransfer(userId, [
+        {
+          fromAccountName: "Checking",
+          toAccountName: "Savings",
+          amount: 100,
+          date: "2026-01-15",
+          originalAmount: 90,
+          originalCurrencyCode: "EUR",
+        },
+      ]);
+      expect(bulk.okPreviews).toHaveLength(0);
+      expect(bulk.skipped[0].reason).toContain("originalAmount");
+      await expect(
+        service.prepareCreateTransferSingle(userId, {
+          fromAccountName: "Checking",
+          toAccountName: "Savings",
+          amount: 100,
+          date: "2026-01-15",
+          originalCurrencyCode: "EUR",
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      transactions.findOne.mockResolvedValueOnce({
+        id: "t1",
+        isTransfer: true,
+        linkedTransactionId: null,
+      });
+      await expect(
+        service.prepareUpdate(userId, {
+          transactionId: "t1",
+          originalAmount: 90,
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      // A rate on a transfer edit would be dropped: the edit takes none.
+      transactions.findOne.mockResolvedValueOnce({
+        id: "t1",
+        isTransfer: true,
+        linkedTransactionId: null,
+      });
+      await expect(
+        service.prepareUpdate(userId, {
+          transactionId: "t1",
+          exchangeRate: 0.92,
+        }),
+      ).rejects.toThrow(/exchange rate cannot be changed here/);
+      expect(transfer.previewCreateTransfer).not.toHaveBeenCalled();
+      expect(transfer.previewUpdateTransfer).not.toHaveBeenCalled();
+    });
+
+    it("carries an edit's entry onto a bulk row: the figures signed, the source shown", async () => {
+      transactions.previewUpdate.mockResolvedValueOnce({
+        transactionId: "t1",
+        accountId: "a1",
+        accountName: "Checking",
+        amount: -132,
+        transactionDate: "2026-02-01",
+        payeeId: "p1",
+        payeeName: "Store",
+        payeeMatched: true,
+        payeeWillBeCreated: false,
+        categoryId: "c1",
+        categoryName: "Dining",
+        description: null,
+        currencyCode: "USD",
+        isReconciled: false,
+        originalAmount: -120,
+        originalCurrencyCode: "EUR",
+        exchangeRate: 1.1,
+        exchangeRateSource: "derived",
+      });
+      const result = await service.prepareUpdateBulk(userId, [
+        { transactionId: "t1", originalAmount: -120 },
+      ]);
+      expect(
+        transactions.previewUpdate.mock.calls[0][2].foreignEntry,
+      ).toMatchObject({ originalAmount: -120 });
+      expect(result.okRows[0]).toMatchObject({
+        amount: -132,
+        originalAmount: -120,
+        originalCurrencyCode: "EUR",
+        exchangeRate: 1.1,
+      });
+      expect(result.okRows[0]).not.toHaveProperty("exchangeRateSource");
+      expect(result.previewRows[0]).toMatchObject({
+        exchangeRateSource: "derived",
+      });
     });
   });
 });

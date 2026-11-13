@@ -43,6 +43,35 @@ describe("updateTransactionCommitArgs", () => {
     });
   });
 
+  it("writes the foreign-currency entry a card changes, or clears", () => {
+    expect(
+      updateTransactionCommitArgs({
+        ...edit,
+        amount: -110,
+        originalAmount: -100,
+        originalCurrencyCode: "EUR",
+        exchangeRate: 1.1,
+      }).dto,
+    ).toMatchObject({
+      amount: -110,
+      originalAmount: -100,
+      originalCurrencyCode: "EUR",
+      exchangeRate: 1.1,
+    });
+    expect(
+      updateTransactionCommitArgs({
+        ...edit,
+        originalAmount: null,
+        originalCurrencyCode: null,
+        exchangeRate: 1,
+      }).dto,
+    ).toMatchObject({
+      originalAmount: null,
+      originalCurrencyCode: null,
+      exchangeRate: 1,
+    });
+  });
+
   it("carries the tags a card adds and removes", () => {
     const { options } = updateTransactionCommitArgs({
       ...edit,

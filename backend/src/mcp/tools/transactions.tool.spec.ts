@@ -1169,6 +1169,140 @@ describe("McpTransactionsTools", () => {
       ctx.setUser({ userId: "u1", scopes: "write" });
     });
 
+    describe("foreign-currency entries", () => {
+      const fxPreview = {
+        ...stdPreview,
+        amount: -110,
+        originalAmount: -100,
+        originalCurrencyCode: "EUR",
+        exchangeRate: 1.1,
+        exchangeRateSource: "derived" as const,
+      };
+
+      it("creates the entry the approver saw: the amount charged, the original and the rate", async () => {
+        acceptingClient();
+        prepService.prepareCreate.mockResolvedValue(okStd([fxPreview]));
+        transactionsService.create.mockResolvedValue({
+          id: "tx-1",
+          transactionDate: "2025-01-15",
+        });
+        await handlers["manage_transactions"](
+          {
+            operation: "create",
+            items: [
+              {
+                accountName: "Checking",
+                amount: -110,
+                date: "2025-01-15",
+                originalAmount: -100,
+                originalCurrencyCode: "EUR",
+              },
+            ],
+          },
+          ctx,
+        );
+        expect(prepService.prepareCreate).toHaveBeenCalledWith("u1", [
+          expect.objectContaining({
+            amount: -110,
+            originalAmount: -100,
+            originalCurrencyCode: "EUR",
+            exchangeRate: undefined,
+          }),
+        ]);
+        expect(elicitInput.mock.calls[0][0].message).toContain(
+          "Paid: -100 EUR at 1.1 (rate derived from the two amounts)",
+        );
+        const dto = transactionsService.create.mock.calls[0][1];
+        expect(dto).toMatchObject({
+          amount: -110,
+          currencyCode: "USD",
+          originalAmount: -100,
+          originalCurrencyCode: "EUR",
+          exchangeRate: 1.1,
+        });
+        expect(dto).not.toHaveProperty("exchangeRateSource");
+      });
+
+      it("commits an edit's changed entry, and says when it clears one", async () => {
+        acceptingClient();
+        prepService.prepareUpdate.mockResolvedValue({
+          kind: "standard",
+          createPayee: false,
+          preview: {
+            transactionId: "t1",
+            accountId: "a1",
+            accountName: "Checking",
+            amount: -110,
+            transactionDate: "2025-02-01",
+            payeeId: "p1",
+            payeeName: "Store",
+            payeeMatched: true,
+            payeeWillBeCreated: false,
+            categoryId: "c1",
+            categoryName: "Groceries",
+            description: null,
+            currencyCode: "USD",
+            isReconciled: false,
+            originalAmount: null,
+            originalCurrencyCode: null,
+            exchangeRate: 1,
+          },
+        });
+        transactionsService.update.mockResolvedValue({ id: "t1" });
+        await handlers["manage_transactions"](
+          {
+            operation: "update",
+            items: [{ transactionId: "t1", originalCurrencyCode: "USD" }],
+          },
+          ctx,
+        );
+        expect(prepService.prepareUpdate).toHaveBeenCalledWith(
+          "u1",
+          expect.objectContaining({ originalCurrencyCode: "USD" }),
+        );
+        expect(elicitInput.mock.calls[0][0].message).toContain(
+          "Foreign currency: removed",
+        );
+        expect(transactionsService.update.mock.calls[0][2]).toMatchObject({
+          amount: -110,
+          originalAmount: null,
+          originalCurrencyCode: null,
+          exchangeRate: 1,
+        });
+      });
+
+      it("accepts the figures as strings, as a model writes them", async () => {
+        const config = collectToolConfigs().find(
+          (c) => c.name === "manage_transactions",
+        );
+        const parsed = (
+          config?.config.inputSchema as {
+            safeParse(v: unknown): { success: boolean };
+          }
+        ).safeParse({
+          operation: "create",
+          items: [
+            {
+              accountName: "Checking",
+              date: "2025-01-15",
+              originalAmount: "-100",
+              originalCurrencyCode: "EUR",
+              exchangeRate: "1.1",
+            },
+            // A coin into a fiat with small units: IDR per BTC.
+            {
+              accountName: "Rupiah",
+              date: "2025-01-15",
+              originalAmount: -0.01,
+              originalCurrencyCode: "BTC",
+              exchangeRate: 1_500_000_000,
+            },
+          ],
+        });
+        expect(parsed.success).toBe(true);
+      });
+    });
+
     it("declines a single create and writes nothing", async () => {
       decliningClient();
       prepService.prepareCreate.mockResolvedValue(okStd());

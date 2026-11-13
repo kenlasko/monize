@@ -146,6 +146,13 @@ import {
 import { assertReconciledRowsMutable } from "./reconciled-lock.util";
 import { moneyDecimalsFor, roundMoney } from "../common/round.util";
 import { assertAmountPrecision } from "../common/amount-precision.util";
+import { hasForeignEntryRequest } from "../common/foreign-entry.util";
+import {
+  CurrencyPlacesLoader,
+  ForeignEntryFields,
+  ForeignEntryPreviewRequest,
+  previewForeignEntry,
+} from "./foreign-entry-preview";
 import {
   loadCurrencyPlaces,
   loadCurrencyPlacesForRead,
@@ -361,7 +368,7 @@ export interface LlmTransactionSearch {
  * human-in-the-loop confirmation flow so both surfaces validate ownership and
  * resolve names identically.
  */
-export interface CreateTransactionPreview {
+export interface CreateTransactionPreview extends ForeignEntryFields {
   accountId: string;
   accountName: string;
   amount: number;
@@ -411,7 +418,7 @@ export interface CategorizeTransactionPreview {
  * descriptor can apply an idempotent overwrite. Shared by the MCP
  * `update_transaction` dry-run and the AI Assistant confirmation flow.
  */
-export interface UpdateTransactionPreview {
+export interface UpdateTransactionPreview extends ForeignEntryFields {
   transactionId: string;
   accountId: string;
   accountName: string;
@@ -891,6 +898,12 @@ export class TransactionsService {
     return { created, skipped };
   }
 
+  /** `currencies.decimal_places` for a preview, each read its own short transaction. */
+  private currencyPlacesLoader(): CurrencyPlacesLoader {
+    return (codes) =>
+      withScopedDb(this.dataSource, (m) => loadCurrencyPlacesForRead(m, codes));
+  }
+
   /**
    * Validate and resolve a proposed transaction WITHOUT persisting it. Used by
    * the MCP `create_transaction` dry-run and the AI Assistant confirmation
@@ -901,7 +914,8 @@ export class TransactionsService {
     userId: string,
     input: {
       accountId: string;
-      amount: number;
+      /** The account-currency amount; may be left to a foreign entry to work out. */
+      amount?: number;
       transactionDate: string;
       payeeName?: string;
       categoryId?: string;
@@ -910,6 +924,11 @@ export class TransactionsService {
       createPayeeIfMissing?: boolean;
       /** The row will carry split lines (rules do not set a category then). */
       hasSplits?: boolean;
+      /**
+       * Entered in another currency: the original amount and currency, and any
+       * rate, resolved against `amount` by `previewForeignEntry`.
+       */
+      foreignEntry?: ForeignEntryPreviewRequest;
       /** Stored as given by create(); absent stores null. */
       referenceNumber?: string;
       /** Stored as given by create(); absent stores the entity default (UNRECONCILED). */
@@ -918,15 +937,35 @@ export class TransactionsService {
   ): Promise<CreateTransactionPreview> {
     const account = await this.accountsService.findOne(userId, input.accountId);
     // The commit refuses an amount with more places than the account's
-    // currency carries; the preview says so first.
-    await withScopedDb(this.dataSource, async (m) => {
-      const places = await loadCurrencyPlacesForRead(m, [account.currencyCode]);
-      assertAmountPrecision(
-        input.amount,
-        precisionCurrencyFor(places, account.currencyCode),
-        "amount",
+    // currency carries; the preview says so first. A foreign entry is worked
+    // out first, since it may supply the amount, outside any transaction: its
+    // market-rate lookup may ask a provider (`previewForeignEntry`).
+    const fx = input.foreignEntry
+      ? await previewForeignEntry(this.currencyPlacesLoader(), {
+          account,
+          amount: input.amount,
+          date: input.transactionDate.slice(0, 10),
+          request: input.foreignEntry,
+        })
+      : { amount: input.amount, fields: null, places: null };
+    if (fx.amount === undefined) {
+      throw new BadRequestException(
+        tr(
+          "errors.params.eitherRequired",
+          'A value for either "amount" or "originalAmount" is required',
+          { param: "amount", other: "originalAmount" },
+        ),
       );
-    });
+    }
+    const amount = fx.amount;
+    const foreignEntry = fx.fields;
+    const places =
+      fx.places ?? (await this.currencyPlacesLoader()([account.currencyCode]));
+    assertAmountPrecision(
+      amount,
+      precisionCurrencyFor(places, account.currencyCode),
+      "amount",
+    );
 
     let categoryId: string | null = input.categoryId ?? null;
     let categoryName: string | null = null;
@@ -988,7 +1027,7 @@ export class TransactionsService {
       this.rulesApplier.previewForRow(m, userId, {
         accountId: input.accountId,
         currencyCode: account.currencyCode,
-        amount: input.amount,
+        amount,
         isTransfer: false,
         payeeId,
         payeeText: inputPayeeName,
@@ -1009,7 +1048,7 @@ export class TransactionsService {
     return {
       accountId: input.accountId,
       accountName: account.name,
-      amount: input.amount,
+      amount,
       transactionDate: input.transactionDate,
       payeeId,
       payeeName,
@@ -1019,6 +1058,7 @@ export class TransactionsService {
       categoryName,
       description,
       currencyCode: account.currencyCode,
+      ...(foreignEntry ?? {}),
       ...(ruleEffects ? { ruleEffects } : {}),
     };
   }
@@ -1110,6 +1150,12 @@ export class TransactionsService {
       splitTags?: readonly SplitTagRequest[];
       /** The reference number to set; the value the transaction holds already is not a change. */
       referenceNumber?: string;
+      /**
+       * Foreign-currency figures to change (`previewForeignEntry`; the row's
+       * own entry fills in the rest). The account's own currency as
+       * `originalCurrencyCode` clears the entry.
+       */
+      foreignEntry?: ForeignEntryPreviewRequest;
     },
   ): Promise<UpdateTransactionPreview> {
     const existing = await this.findOne(userId, transactionId);
@@ -1163,7 +1209,11 @@ export class TransactionsService {
       tagChange.tagNames.length > 0 ||
       tagChange.removeTagIds.length > 0 ||
       splitTagChanges.length > 0;
+    const fxRequested =
+      input.foreignEntry !== undefined &&
+      hasForeignEntryRequest(input.foreignEntry);
     const hasFieldChange =
+      fxRequested ||
       input.amount !== undefined ||
       input.transactionDate !== undefined ||
       input.payeeName !== undefined ||
@@ -1190,11 +1240,64 @@ export class TransactionsService {
             ),
       );
     }
+    // A foreign entry is worked out when the edit names one, or when it moves
+    // the amount of a row that carries one: the amount charged is the fact,
+    // so the rate is derived again from it rather than left stale beside it.
+    const amountMoves =
+      input.amount !== undefined && input.amount !== Number(existing.amount);
+    let amount = input.amount ?? Number(existing.amount);
+    let foreignEntry: ForeignEntryFields | null = null;
+    let foreignEntryPlaces: ReadonlyMap<string, number> | null = null;
+    if (fxRequested || (amountMoves && existing.originalCurrencyCode)) {
+      // Outside any transaction, as in previewCreate.
+      const fx = await previewForeignEntry(this.currencyPlacesLoader(), {
+        account: {
+          currencyCode: existing.currencyCode,
+          fxFeePercent: existing.account?.fxFeePercent ?? null,
+        },
+        amount: input.amount,
+        date: String(input.transactionDate ?? existing.transactionDate).slice(
+          0,
+          10,
+        ),
+        request: input.foreignEntry ?? {},
+        stored: {
+          amount: Number(existing.amount),
+          originalAmount:
+            existing.originalAmount === null ||
+            existing.originalAmount === undefined
+              ? null
+              : Number(existing.originalAmount),
+          originalCurrencyCode: existing.originalCurrencyCode ?? null,
+          exchangeRate: Number(existing.exchangeRate),
+        },
+      });
+      // Always set on an edit: the row's own amount when nothing moved it.
+      if (fx.amount !== undefined) amount = fx.amount;
+      foreignEntry = fx.fields;
+      foreignEntryPlaces = fx.places;
+      // A rate or original amount that moves a split parent's amount needs
+      // its lines resent, exactly as a typed amount does.
+      if (
+        existing.isSplit &&
+        !input.splitsAccompany &&
+        amount !== Number(existing.amount)
+      ) {
+        throw new BadRequestException(
+          tr(
+            "errors.transactions.splitAmountNeedsSplits",
+            "This is a split transaction: its amount must equal the sum of its split lines. Resend the update with both the new amount and the complete splits array (every line: categoryName, amount, optional memo) summing to it.",
+          ),
+        );
+      }
+    }
+
     // A value difference, not a field being present: a model resends fields it
     // does not change, and a tag edit must not then commit the whole snapshot.
     const fieldsDiffer =
-      (input.amount !== undefined &&
-        input.amount !== Number(existing.amount)) ||
+      foreignEntry !== null ||
+      // The amount the edit leaves, typed or worked out by the entry.
+      amount !== Number(existing.amount) ||
       (input.transactionDate !== undefined &&
         input.transactionDate !== String(existing.transactionDate)) ||
       (input.payeeName !== undefined &&
@@ -1208,20 +1311,23 @@ export class TransactionsService {
       referenceChanges ||
       input.splitsAccompany === true;
 
-    if (input.amount !== undefined) {
-      const newAmount = input.amount;
-      await withScopedDb(this.dataSource, async (m) => {
-        const places = await loadCurrencyPlacesForRead(m, [
-          existing.currencyCode,
-        ]);
-        assertAmountPrecision(
-          newAmount,
-          precisionCurrencyFor(places, existing.currencyCode),
-          "amount",
-        );
-      });
+    // The amount typed, and the amount the row will hold (worked out by the
+    // entry, or the account's own currency standing an original amount in for
+    // it), at the places the commit holds it to. The typed one first: an
+    // entry compares amounts at money precision, so an over-precise one could
+    // otherwise read as unmoved and be dropped rather than refused.
+    if (input.amount !== undefined || amount !== Number(existing.amount)) {
+      const places =
+        foreignEntryPlaces ??
+        (await this.currencyPlacesLoader()([existing.currencyCode]));
+      const accountCurrency = precisionCurrencyFor(
+        places,
+        existing.currencyCode,
+      );
+      if (input.amount !== undefined)
+        assertAmountPrecision(input.amount, accountCurrency, "amount");
+      assertAmountPrecision(amount, accountCurrency, "amount");
     }
-    const amount = input.amount ?? Number(existing.amount);
     const transactionDate = input.transactionDate ?? existing.transactionDate;
     const description =
       input.description !== undefined
@@ -1290,6 +1396,7 @@ export class TransactionsService {
       description,
       currencyCode: existing.currencyCode,
       isReconciled: existing.isReconciled,
+      ...(foreignEntry ?? {}),
       ...(referenceChanges ? { referenceNumber } : {}),
       ...tagChangeFields(tagChange),
       ...(splitTagChanges.length > 0 ? { splitTagChanges } : {}),

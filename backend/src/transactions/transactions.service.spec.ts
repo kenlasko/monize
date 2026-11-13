@@ -244,7 +244,7 @@ describe("TransactionsService", () => {
       [TransactionAttachment, attachmentsRepository],
       [Warranty, warrantiesRepository],
       // `decimal_places` per currency, for the precision refusals.
-      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
+      [Currency, currencyPlacesRepoMock({ BTC: 8, USD: 2, EUR: 2 })],
     ]);
     mockDataSource = tenantMocks.dataSource;
 
@@ -10409,6 +10409,74 @@ describe("TransactionsService", () => {
         }),
       ).rejects.toThrow();
     });
+
+    describe("a foreign-currency entry", () => {
+      it("keeps the amount charged and derives the rate from it", async () => {
+        const lookupRate = jest.fn();
+        const preview = await service.previewCreate("user-1", {
+          accountId: "account-1",
+          amount: -110,
+          transactionDate: "2026-01-15",
+          foreignEntry: {
+            originalAmount: -100,
+            originalCurrencyCode: "EUR",
+            lookupRate,
+          },
+        });
+        expect(preview).toMatchObject({
+          amount: -110,
+          currencyCode: "USD",
+          originalAmount: -100,
+          originalCurrencyCode: "EUR",
+          exchangeRate: 1.1,
+          exchangeRateSource: "derived",
+        });
+        expect(lookupRate).not.toHaveBeenCalled();
+      });
+
+      it("computes the amount from the market rate on the date when no figure is given", async () => {
+        const lookupRate = jest.fn().mockResolvedValue(1.0987);
+        const preview = await service.previewCreate("user-1", {
+          accountId: "account-1",
+          transactionDate: "2026-01-15",
+          foreignEntry: {
+            originalAmount: -100,
+            originalCurrencyCode: "EUR",
+            lookupRate,
+          },
+        });
+        expect(lookupRate).toHaveBeenCalledWith("EUR", "USD", "2026-01-15");
+        expect(preview).toMatchObject({
+          amount: -109.87,
+          exchangeRate: 1.0987,
+          exchangeRateSource: "market",
+        });
+      });
+
+      it("refuses a rate that disagrees with the amount charged", async () => {
+        await expect(
+          service.previewCreate("user-1", {
+            accountId: "account-1",
+            amount: -110,
+            transactionDate: "2026-01-15",
+            foreignEntry: {
+              originalAmount: -100,
+              originalCurrencyCode: "EUR",
+              exchangeRate: 1.2,
+            },
+          }),
+        ).rejects.toThrow(/converts to -120 USD/);
+      });
+
+      it("refuses a row with neither an amount nor an original amount", async () => {
+        await expect(
+          service.previewCreate("user-1", {
+            accountId: "account-1",
+            transactionDate: "2026-01-15",
+          }),
+        ).rejects.toThrow(/"amount" or "originalAmount"/);
+      });
+    });
   });
 
   describe("previewCategorize", () => {
@@ -10490,6 +10558,171 @@ describe("TransactionsService", () => {
         currencyCode: "USD",
       });
       expect(transactionsRepository.save).not.toHaveBeenCalled();
+    });
+
+    describe("a foreign-currency entry", () => {
+      /** Entered as EUR 100, charged USD 110. */
+      const foreignTx = {
+        ...baseTx,
+        amount: -110,
+        originalAmount: -100,
+        originalCurrencyCode: "EUR",
+        exchangeRate: 1.1,
+      };
+
+      it("derives the rate again when the amount charged moves, so it is never left stale", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          amount: -112,
+        });
+        expect(preview).toMatchObject({
+          amount: -112,
+          originalAmount: -100,
+          originalCurrencyCode: "EUR",
+          exchangeRate: 1.12,
+          exchangeRateSource: "derived",
+        });
+      });
+
+      it("leaves the entry alone when the amount is resent unchanged", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          amount: -110,
+          description: "new",
+        });
+        expect(preview.originalCurrencyCode).toBeUndefined();
+        expect(preview.exchangeRate).toBeUndefined();
+      });
+
+      it("derives the rate from the amount charged when only the original amount changes", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          foreignEntry: { originalAmount: -120 },
+        });
+        // The account was charged 110 USD; that stays, the rate moves.
+        expect(preview).toMatchObject({
+          amount: -110,
+          originalAmount: -120,
+          exchangeRate: 0.9166666667,
+          exchangeRateSource: "derived",
+        });
+        expect(preview.tagsOnly).toBeUndefined();
+      });
+
+      it("refuses a new rate beside the amount sent when the two disagree", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            amount: -110,
+            foreignEntry: { exchangeRate: 1.2 },
+          }),
+        ).rejects.toThrow(/converts to -120 USD.*not -110 USD/);
+      });
+
+      it("refuses an entry on an ordinary row whose rate disagrees with the amount it was charged", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({
+          ...baseTx,
+          amount: -110,
+        });
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            amount: -110,
+            foreignEntry: {
+              originalAmount: -100,
+              originalCurrencyCode: "EUR",
+              exchangeRate: 1.05,
+            },
+          }),
+        ).rejects.toThrow(/converts to -105 USD.*not -110 USD/);
+      });
+
+      it("clears the entry when the account's own currency is named", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          foreignEntry: { originalCurrencyCode: "USD" },
+        });
+        expect(preview).toMatchObject({
+          amount: -110,
+          originalAmount: null,
+          originalCurrencyCode: null,
+          exchangeRate: 1,
+        });
+      });
+
+      it("adds an entry to an ordinary row, deriving the rate from the amount it was charged", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...baseTx });
+        const lookupRate = jest.fn().mockResolvedValue(1.1);
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          foreignEntry: {
+            originalAmount: -10,
+            originalCurrencyCode: "EUR",
+            lookupRate,
+          },
+        });
+        // An existing row's amount is a fact; no market rate converts over it.
+        expect(lookupRate).not.toHaveBeenCalled();
+        expect(preview).toMatchObject({
+          amount: -12.5,
+          originalCurrencyCode: "EUR",
+          exchangeRate: 1.25,
+          exchangeRateSource: "derived",
+        });
+      });
+
+      it("is not tag-only when the entry moves the amount, so the commit writes it", async () => {
+        // A new rate and no amount: the entry computes a new amount, though
+        // the caller typed none.
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
+        tagsService.findByNames.mockResolvedValue([]);
+        const preview = await service.previewUpdate("user-1", "tx-1", {
+          foreignEntry: { exchangeRate: 1.2 },
+          tagNames: ["Travel"],
+        });
+        expect(preview.amount).toBe(-120);
+        expect(preview).not.toHaveProperty("tagsOnly");
+      });
+
+      it("never moves an ordinary row's amount through an original amount in its own currency", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...baseTx });
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            foreignEntry: { originalCurrencyCode: "USD", originalAmount: -60 },
+          }),
+        ).rejects.toThrow(/originalAmount \(-60\) and amount \(-12.5\)/);
+      });
+
+      it("refuses an over-precise typed amount rather than reading it as unmoved", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
+        await expect(
+          service.previewUpdate("user-1", "tx-1", { amount: -110.00004 }),
+        ).rejects.toThrow(/more decimal places than USD carries/);
+      });
+
+      it("holds an amount the entry stands in to the account currency's places", async () => {
+        // Equal to the amount charged at money precision, but with a fifth
+        // place: refused, never written as the row's amount.
+        transactionsRepository.findOne.mockResolvedValueOnce({ ...foreignTx });
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            foreignEntry: {
+              originalCurrencyCode: "USD",
+              originalAmount: -110.00004,
+            },
+          }),
+        ).rejects.toThrow(/more decimal places than USD carries/);
+      });
+
+      it("refuses an entry change that moves a split parent's amount without its lines", async () => {
+        transactionsRepository.findOne.mockResolvedValueOnce({
+          ...foreignTx,
+          isSplit: true,
+        });
+        await expect(
+          service.previewUpdate("user-1", "tx-1", {
+            foreignEntry: { exchangeRate: 1.2 },
+          }),
+        ).rejects.toThrow(/sum of its split lines/);
+      });
     });
 
     describe("reference number (an email receipt's order number)", () => {

@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { splitTagChangeText } from '@/components/ai/split-tag-change-text';
+import { foreignEntryText } from '@/components/ai/foreign-entry-text';
+import { FX_RATE_DISPLAY_DECIMALS } from '@/lib/format';
 import { Button } from '@/components/ui/Button';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { PendingAction, PendingActionPreviewRow } from '@/types/ai';
@@ -28,7 +30,7 @@ export function BulkConfirmationCard({
   onCancel,
 }: BulkConfirmationCardProps) {
   const t = useTranslations('ai');
-  const { formatCurrency, formatCurrencyPrecise, formatQuantity } =
+  const { formatCurrency, formatCurrencyPrecise, formatQuantity, formatNumber } =
     useNumberFormat();
   const { preview, type, status } = action;
   // The generic batch envelope carries the operation on the (verbatim)
@@ -305,6 +307,20 @@ export function BulkConfirmationCard({
               }`,
           )
           .join(' + '),
+      );
+    }
+    // Entered in another currency: what was paid and at which rate.
+    const foreignEntry = foreignEntryText(row, row.currencyCode, t, {
+      currency: formatCurrency,
+      rate: (rate) => formatNumber(rate, FX_RATE_DISPLAY_DECIMALS),
+    });
+    if (foreignEntry && 'cleared' in foreignEntry) {
+      parts.push(t('confirmAction.fxClearedBulk'));
+    } else if (foreignEntry) {
+      parts.push(
+        foreignEntry.rate
+          ? t('confirmAction.fxPaidAtBulk', { paid: foreignEntry.paid, rate: foreignEntry.rate })
+          : t('confirmAction.fxPaidBulk', { paid: foreignEntry.paid }),
       );
     }
     // The tags the row adds and removes; its other tags stay.

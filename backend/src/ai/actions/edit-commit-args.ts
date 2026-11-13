@@ -5,6 +5,7 @@ import {
   toSplitDtoRows,
 } from "./ai-action.types";
 import type { SplitTagChangeWrite } from "../../tags/tag-change.util";
+import { foreignEntryWriteFields } from "../../transactions/foreign-entry-preview";
 import type { UpdateTransactionDto } from "../../transactions/dto/update-transaction.dto";
 import type { UpdateTransferDto } from "../../transactions/dto/update-transfer.dto";
 
@@ -60,6 +61,8 @@ export function updateTransactionCommitArgs(
       // When replacing the split set the parent keeps no single category.
       categoryId: d.splits ? undefined : (d.categoryId ?? undefined),
       description: d.description ?? undefined,
+      // Only when the card changes the foreign-currency entry (or clears it).
+      ...foreignEntryWriteFields(d),
       // Only when the card sets one: a key present but undefined would clear it.
       ...(referenceNumber === undefined ? {} : { referenceNumber }),
       // Splits ride inside the same DTO so update() rebuilds the set in the

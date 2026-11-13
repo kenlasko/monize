@@ -200,6 +200,37 @@ same shapes:
 | A foreign pair with no `exchangeRate`, or one `<= 0` | Rejected, `fxRateRequired` |
 | `originalAmount` and `amount` with opposite signs | Rejected, `fxSignMismatch` |
 
+**Entry from a tool.** `manage_transactions` (MCP and the AI Assistant) takes
+`originalAmount` and `originalCurrencyCode` with any subset of `amount` (what
+the account was charged) and `exchangeRate`. `resolveForeignEntry`
+(`backend/src/common/foreign-entry.util.ts`), behind `previewForeignEntry`
+(`backend/src/transactions/foreign-entry-preview.ts`), works the entry out the
+way the transaction form does, then runs `normalizeFxEntry` so the preview
+refuses what the commit would:
+
+| `amount` | `exchangeRate` | Result |
+| --- | --- | --- |
+| given | given | Both kept when the rate converts (fee included) to the amount within one unit of the account currency's `decimal_places`; refused otherwise, rewriting neither |
+| given | - | Rate derived from the two amounts, the fee backed out (`fxBaseFromCharged`) |
+| - | given | Amount from `applyFxConversion` |
+| - | - | The market rate for the date (a create only), refused naming the pair and date when none exists, or might be unreachable; both amounts zero is refused with no lookup (zero needs no rate) |
+
+The amount charged is the fact: a conversion never replaces it. On an edit the
+row's own figures fill in what the caller omits, the row's amount included, so
+a changed original amount or currency derives the rate again from what the
+account was charged, and only a new rate with no amount sent computes a new
+amount; an amount sent beside a new rate is held to it like a create's (moved or
+not, it is never rewritten from the rate), and a figure resent as the row holds
+it is no change. A moved amount on a
+foreign row derives the rate again rather than leaving it stale, a different currency
+needs its own `originalAmount` (the row's is in the old one), and the account's
+own currency as `originalCurrencyCode` clears the entry (refusing a rate, or an
+original amount that differs from the amount). A derived rate the
+`NUMERIC(20,10)` column cannot hold is refused naming both amounts. The lookup
+runs outside any transaction, since it may ask a provider. The card says where the
+rate came from (`exchangeRateSource`: supplied, derived or market; display
+only, never signed), INV-FX-002. A transfer refuses the two fields.
+
 ### A missing rate is not a rate of 1
 
 ```text
