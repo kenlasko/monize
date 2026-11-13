@@ -277,6 +277,7 @@ describe("ForecastAggregatorService", () => {
             categoryName: "Groceries",
             isIncome: false,
             currencyCode: "EUR",
+            fx_day: "2025-06-20",
             income: "0",
             expenses: "100",
           },
@@ -298,18 +299,176 @@ describe("ForecastAggregatorService", () => {
           rate: "2",
           rate_date: "2025-06-20",
         },
+        // Struck after the row: the month's last day would have read it.
+        {
+          from_currency: "EUR",
+          to_currency: "USD",
+          rate: "3",
+          rate_date: "2025-06-25",
+        },
       ]);
 
       const result = await service.computeAggregates(userId, "USD");
 
       const june = result.monthlyHistory[0];
       expect(june.totalIncome).toBe(4000);
-      expect(june.totalExpenses).toBe(600); // 400 + 100 EUR * 2
+      // 400 + 100 EUR at its own day's 2, not the month-end 3.
+      expect(june.totalExpenses).toBe(600);
       expect(june.categoryBreakdown).toContainEqual({
         categoryName: "Groceries",
         total: 600,
         isIncome: false,
       });
+    });
+
+    describe("a row carrying its own rate (INV-FX-002)", () => {
+      // EUR 100 charged to a USD card as USD 125 (1 EUR = 1.25 USD) on a day
+      // the market said 1.175: Spending by Category reads EUR 100, and so must
+      // the forecast's history, not the market's EUR 106.38 (issue #2146).
+      const ownRate = {
+        currencyCode: "USD",
+        fx_day: "2025-12-31",
+        fx_original_currency: "EUR",
+        fx_exchange_rate: "1.2500000000",
+      };
+      const marketRate = {
+        from_currency: "EUR",
+        to_currency: "USD",
+        rate: "1.175",
+        rate_date: "2025-12-31",
+      };
+
+      beforeEach(() => {
+        mockAccountsService.findAll.mockResolvedValue([]);
+      });
+
+      it("converts the history and the income at the row's own rate", async () => {
+        mockTransactionRepo.createQueryBuilder.mockImplementation(() =>
+          mockQueryBuilder([
+            {
+              month: "2025-12",
+              categoryId: "cat-travel",
+              categoryName: "Travel",
+              isIncome: false,
+              ...ownRate,
+              income: "0",
+              expenses: "125",
+            },
+            { month: "2025-12", ...ownRate, total: "250", payees: ["Client"] },
+          ]),
+        );
+        scoped.manager.query.mockResolvedValue([marketRate]);
+
+        const result = await service.computeAggregates(userId, "EUR");
+
+        expect(result.fxComplete).toBe(true);
+        expect(result.monthlyHistory[0].totalExpenses).toBe(100);
+        expect(result.monthlyHistory[0].categoryBreakdown).toContainEqual({
+          categoryName: "Travel",
+          total: 100,
+          isIncome: false,
+        });
+        expect(result.incomePatterns.monthlyIncome).toEqual([
+          { month: "2025-12", total: 200, sourceCount: 1 },
+        ]);
+        // A part that settled at its own rate needs no rate history.
+        expect(scoped.manager.query).not.toHaveBeenCalled();
+      });
+
+      it("falls back to the market rate on the row's day for a stored 1 across two currencies", async () => {
+        mockTransactionRepo.createQueryBuilder.mockImplementation(() =>
+          mockQueryBuilder([
+            {
+              month: "2025-12",
+              categoryId: "cat-travel",
+              categoryName: "Travel",
+              isIncome: false,
+              ...ownRate,
+              fx_exchange_rate: "1.0000000000",
+              income: "0",
+              expenses: "117.5",
+            },
+          ]),
+        );
+        scoped.manager.query.mockResolvedValue([marketRate]);
+
+        const result = await service.computeAggregates(userId, "EUR");
+
+        expect(result.fxComplete).toBe(true);
+        expect(result.monthlyHistory[0].totalExpenses).toBe(100);
+      });
+
+      it("splits each read by a foreign row's day and own rate", async () => {
+        const qb = mockQueryBuilder();
+        mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
+
+        await service.computeAggregates(userId, "EUR");
+
+        // Both reads, the history's and the income's.
+        for (const column of [
+          "fx_day",
+          "fx_original_currency",
+          "fx_exchange_rate",
+        ]) {
+          expect(
+            qb.addGroupBy.mock.calls.filter((c) => c[0] === column),
+          ).toHaveLength(2);
+        }
+        expect(qb.setParameter).toHaveBeenCalledWith(
+          "fxReportingCurrency",
+          "EUR",
+        );
+      });
+    });
+
+    it("converts each income part on its own day and counts a source once across its days", async () => {
+      mockTransactionRepo.createQueryBuilder.mockImplementation(() =>
+        mockQueryBuilder([
+          {
+            month: "2025-06",
+            currencyCode: "USD",
+            total: "4000",
+            payees: ["Employer"],
+          },
+          {
+            month: "2025-06",
+            currencyCode: "EUR",
+            fx_day: "2025-06-05",
+            total: "100",
+            payees: ["Client"],
+          },
+          {
+            month: "2025-06",
+            currencyCode: "EUR",
+            fx_day: "2025-06-20",
+            total: "100",
+            payees: ["Client", "Agency"],
+          },
+        ]),
+      );
+      scoped.manager.query.mockResolvedValue([
+        {
+          from_currency: "EUR",
+          to_currency: "USD",
+          rate: "2",
+          rate_date: "2025-06-01",
+        },
+        {
+          from_currency: "EUR",
+          to_currency: "USD",
+          rate: "3",
+          rate_date: "2025-06-15",
+        },
+      ]);
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      // 4,000 + 100 EUR at 2 + 100 EUR at 3; the month-end rate read 4,600.
+      // Client is one source though its income spans two days.
+      expect(result.incomePatterns.monthlyIncome).toEqual([
+        { month: "2025-06", total: 4500, sourceCount: 3 },
+      ]);
+      expect(result.fxComplete).toBe(true);
     });
 
     it("keeps two categories that share a name apart, and a real 'Uncategorized' apart from no category", async () => {
@@ -516,10 +675,10 @@ describe("ForecastAggregatorService", () => {
 
     it("computes income patterns and variability", async () => {
       const incomeData = [
-        { month: "2025-03", total: "4000", sourceCount: "1" },
-        { month: "2025-04", total: "4200", sourceCount: "1" },
-        { month: "2025-05", total: "3800", sourceCount: "1" },
-        { month: "2025-06", total: "4100", sourceCount: "1" },
+        { month: "2025-03", total: "4000", payees: ["Source 1"] },
+        { month: "2025-04", total: "4200", payees: ["Source 1"] },
+        { month: "2025-05", total: "3800", payees: ["Source 1"] },
+        { month: "2025-06", total: "4100", payees: ["Source 1"] },
       ];
 
       // All 3 QB calls return income data; getIncomePatterns
@@ -538,10 +697,18 @@ describe("ForecastAggregatorService", () => {
 
     it("detects high income variability for freelancer patterns", async () => {
       const incomeData = [
-        { month: "2025-03", total: "2000", sourceCount: "2" },
-        { month: "2025-04", total: "6000", sourceCount: "3" },
-        { month: "2025-05", total: "1500", sourceCount: "1" },
-        { month: "2025-06", total: "8000", sourceCount: "4" },
+        { month: "2025-03", total: "2000", payees: ["Source 1", "Source 2"] },
+        {
+          month: "2025-04",
+          total: "6000",
+          payees: ["Source 1", "Source 2", "Source 3"],
+        },
+        { month: "2025-05", total: "1500", payees: ["Source 1"] },
+        {
+          month: "2025-06",
+          total: "8000",
+          payees: ["Source 1", "Source 2", "Source 3", "Source 4"],
+        },
       ];
 
       mockTransactionRepo.createQueryBuilder.mockImplementation(() =>
@@ -628,7 +795,7 @@ describe("ForecastAggregatorService", () => {
 
     it("returns zero variability for single month of income", async () => {
       const singleMonthData = [
-        { month: "2025-06", total: "5000", sourceCount: "1" },
+        { month: "2025-06", total: "5000", payees: ["Source 1"] },
       ];
 
       mockTransactionRepo.createQueryBuilder.mockImplementation(() =>

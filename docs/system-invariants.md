@@ -1635,7 +1635,10 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     category and outgoing-transfer lines) and the assistant's
                     spending insights (ai/insights/insights-aggregator.service.ts,
                     each part on its own date, no longer at its month's last
-                    day) read the same columns through the same rule.
+                    day) read the same columns through the same rule, and so do
+                    the assistant's cash-flow forecast history and income
+                    patterns (ai/forecast/forecast-aggregator.service.ts, split
+                    by day and own rate through splitByRateBasis, issue #2146).
 Test                investment-transaction-summary.service.spec.ts: a sale of
                     820.91 USD settled at 3.7287 reads 3,060.9271 PLN and asks
                     for no market rate; a row without a rate is converted at the
@@ -1658,6 +1661,18 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     insights to one EUR 150 on PostgreSQL;
                     budget-multi-currency-actuals.integration.spec.ts converts a
                     JPY row at its own 125 per CAD beside one at the market rate.
+                    fx-own-rate-surfaces.integration.spec.ts holds the
+                    discussion #2105 row (EUR 100 charged as USD 125, market
+                    1.175) beside a market-rate row, EUR income received at its
+                    own rate and a reporting-currency row to one EUR 250 of
+                    expenses and EUR 200 of income in Spending by Category, by
+                    Payee, the monthly trend, Income vs Expenses, Income by
+                    Source, a custom report, list_transactions, the MCP flow
+                    totals, compare_periods, the transaction summary, the
+                    monthly totals, the spending insights and the forecast, on
+                    PostgreSQL; forecast-aggregator.service.spec.ts "a row
+                    carrying its own rate" the same in the forecast's history
+                    and income.
 Status              enforced
 ```
 
