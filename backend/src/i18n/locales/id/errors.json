@@ -237,6 +237,8 @@
     "invalidToken": "Token tidak valid",
     "tokenRevoked": "Token telah dicabut",
     "tokenExpired": "Token telah kedaluwarsa",
+    "patRouteNotAllowed": "Endpoint ini tidak tersedia untuk token akses pribadi. Masuk untuk menggunakannya.",
+    "patInsufficientScope": "Token akses pribadi ini tidak memiliki cakupan \"{{ scope }}\"",
     "userAccountInactive": "Akun pengguna tidak aktif",
     "passwordChangeRequired": "Perubahan kata sandi diperlukan",
     "tokenNotFound": "Token tidak ditemukan",

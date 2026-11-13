@@ -594,7 +594,8 @@
   },
   "apiAccess": {
     "heading": "API-Zugang",
-    "description": "Erstellen Sie persönliche Zugriffstoken, um externe KI-Tools wie Claude Desktop über MCP zu verbinden.",
+    "description": "Erstellen Sie persönliche Zugriffstoken, um externe KI-Tools wie Claude Desktop über MCP zu verbinden oder die REST API unter /api/v1 aufzurufen.",
+    "restrictedNote": "Lese-Token können nur lesen. Endpunkte für Anmeldung, Sicherheit, Administration, Freigabe und Backups stehen für Token nicht zur Verfügung.",
     "createTokenButton": "Token erstellen",
     "mcpServerUrlLabel": "MCP-Server-URL",
     "mcpServerUrlHelp": "Verwenden Sie diese URL bei der Konfiguration von MCP-Clients wie Claude Code oder Claude Desktop.",
@@ -608,7 +609,7 @@
     "revokeButton": "Widerrufen",
     "revokeModal": {
       "title": "Token widerrufen",
-      "message": "Dieser Token wird sofort ungültig. Alle MCP-Verbindungen, die ihn verwenden, werden getrennt.",
+      "message": "Dieser Token wird sofort ungültig. Alle MCP-Verbindungen oder API-Clients, die ihn verwenden, werden getrennt.",
       "confirmLabel": "Widerrufen"
     },
     "createModal": {

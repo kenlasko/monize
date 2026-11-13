@@ -17,6 +17,7 @@ import {
 import { AuthGuard } from "@nestjs/passport";
 import { ReplaceLoanFeesDto } from "./dto/loan-fee.dto";
 import { LoanFeesService, LoanFeeView } from "./loan-fees.service";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * A mortgage's fees (docs/specs/mortgage-fees.md section 7). Owner-only on
@@ -26,6 +27,7 @@ import { LoanFeesService, LoanFeeView } from "./loan-fees.service";
 @ApiTags("Accounts")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller("accounts/:accountId/loan-fees")
 export class LoanFeesController {
   constructor(private readonly service: LoanFeesService) {}

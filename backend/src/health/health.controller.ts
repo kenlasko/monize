@@ -8,6 +8,7 @@ import {
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { tr } from "../i18n/translate";
 import { SkipThrottle } from "@nestjs/throttler";
+import { PatIgnored } from "../auth/pat-access/pat-access.decorator";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 import { CLUSTER_MODE, ClusterMode } from "../common/cluster/cluster-mode";
@@ -39,6 +40,7 @@ export const EVENT_BUS_READINESS_GRACE_MS = PG_LISTENER_RECONNECT_MAX_MS * 4;
 
 @ApiTags("Health")
 @SkipThrottle()
+@PatIgnored()
 @Controller("health")
 export class HealthController {
   private readonly logger = new Logger(HealthController.name);

@@ -109,6 +109,34 @@ describe("CsrfGuard", () => {
     });
   });
 
+  describe("personal access token bearer", () => {
+    it("passes a POST with a PAT bearer and no CSRF cookie or header", () => {
+      const context = createMockContext({
+        method: "POST",
+        headers: { authorization: "Bearer pat_abc" },
+      });
+      expect(guard.canActivate(context)).toBe(true);
+    });
+
+    it("passes with stale session cookies and no CSRF header", () => {
+      const context = createMockContext({
+        method: "DELETE",
+        cookies: { auth_token: "stale-jwt", csrf_token: "stale-csrf" },
+        headers: { authorization: "Bearer pat_abc" },
+      });
+      expect(guard.canActivate(context)).toBe(true);
+    });
+
+    it("still requires CSRF for a JWT bearer", () => {
+      const context = createMockContext({
+        method: "POST",
+        headers: { authorization: "Bearer eyJhbGciOi.e30.sig" },
+      });
+      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      expect(() => guard.canActivate(context)).toThrow("Missing CSRF token");
+    });
+  });
+
   describe("missing tokens", () => {
     it("throws ForbiddenException when both tokens are missing", () => {
       const context = createMockContext({

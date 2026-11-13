@@ -22,6 +22,7 @@ import { RunScenarioDto } from "./dto/run-scenario.dto";
 import { ReorderScenariosDto } from "./dto/reorder-scenarios.dto";
 import { parseUuids } from "../common/query-param-utils";
 import { rateLimit } from "../common/throttle.util";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * A simulation runs synchronously on the event loop (up to 50,000 paths x 200
@@ -36,6 +37,7 @@ interface AuthRequest extends Request {
   user: { id: string };
 }
 
+@AllowPat()
 @Controller("monte-carlo")
 @UseGuards(AuthGuard("jwt"))
 export class MonteCarloController {

@@ -25,10 +25,12 @@ import { UpdateInstitutionDto } from "./dto/update-institution.dto";
 import { AssignAccountDto } from "./dto/assign-account.dto";
 import { Institution } from "./entities/institution.entity";
 import { Account } from "../accounts/entities/account.entity";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 @ApiTags("Institutions")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller("institutions")
 export class InstitutionsController {
   constructor(private readonly institutionsService: InstitutionsService) {}

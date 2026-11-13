@@ -594,7 +594,8 @@
   },
   "apiAccess": {
     "heading": "API 存取",
-    "description": "建立個人存取權杖，透過 MCP 連接 Claude Desktop 等外部 AI 工具。",
+    "description": "建立個人存取權杖，透過 MCP 連接 Claude Desktop 等外部 AI 工具，或呼叫 /api/v1 的 REST API。",
+    "restrictedNote": "讀取權杖只能讀取。登入、安全、管理、共用和備份端點不適用於權杖。",
     "createTokenButton": "建立權杖",
     "mcpServerUrlLabel": "MCP 伺服器 URL",
     "mcpServerUrlHelp": "設定 MCP 客戶端（例如 Claude Code 或 Claude Desktop）時使用此 URL。",
@@ -608,7 +609,7 @@
     "revokeButton": "撤銷",
     "revokeModal": {
       "title": "撤銷權杖",
-      "message": "此權杖將立即失效。使用此權杖的所有 MCP 連線都將中斷。",
+      "message": "此權杖將立即失效。使用此權杖的所有 MCP 連線或 API 用戶端都將中斷。",
       "confirmLabel": "撤銷"
     },
     "createModal": {

@@ -276,6 +276,48 @@ describe('ApiAccessSection', () => {
     });
   });
 
+  it('defaults the expiry to 90 days', async () => {
+    (authApi.createToken as any).mockResolvedValue({ ...mockToken, token: 'pat_x' });
+
+    render(<ApiAccessSection />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Create Token' })).toBeInTheDocument();
+    });
+    await openCreateModal();
+    expect(screen.getByRole('combobox')).toHaveValue('90');
+
+    fireEvent.change(screen.getByLabelText('Token Name'), { target: { value: 'CLI' } });
+    fireEvent.click(getFormSubmitButton());
+
+    await waitFor(() => {
+      expect(authApi.createToken).toHaveBeenCalled();
+    });
+    const sent = (authApi.createToken as any).mock.calls[0][0];
+    const days = (new Date(sent.expiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000);
+    expect(days).toBeGreaterThan(89);
+    expect(days).toBeLessThan(91);
+  });
+
+  it('sends expiresAt null when no expiration is chosen', async () => {
+    (authApi.createToken as any).mockResolvedValue({ ...mockToken, token: 'pat_x' });
+
+    render(<ApiAccessSection />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Create Token' })).toBeInTheDocument();
+    });
+    await openCreateModal();
+    fireEvent.change(screen.getByLabelText('Token Name'), { target: { value: 'CLI' } });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '' } });
+    fireEvent.click(getFormSubmitButton());
+
+    await waitFor(() => {
+      expect(authApi.createToken).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'CLI', expiresAt: null }),
+        'step-up-jwt',
+      );
+    });
+  });
+
   it('sends the step-up token with the create request', async () => {
     (authApi.createToken as any).mockResolvedValue({ ...mockToken, token: 'pat_x' });
 

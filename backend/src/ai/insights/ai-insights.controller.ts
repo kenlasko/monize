@@ -29,8 +29,10 @@ import {
   DelegateRequiresFullScope,
   DelegateRequiresSection,
 } from "../../delegation/decorators/delegate-access.decorator";
+import { AllowPat } from "../../auth/pat-access/pat-access.decorator";
 
 @ApiTags("AI Insights")
+@AllowPat()
 @Controller("ai/insights")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()

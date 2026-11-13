@@ -594,7 +594,8 @@
   },
   "apiAccess": {
     "heading": "API Access",
-    "description": "Create personal access tokens to connect external AI tools like Claude Desktop via MCP.",
+    "description": "Create personal access tokens to connect external AI tools like Claude Desktop via MCP, or to call the REST API at /api/v1.",
+    "restrictedNote": "Read tokens can only read. Sign-in, security, admin, sharing, and backup endpoints are not available to tokens.",
     "createTokenButton": "Create Token",
     "mcpServerUrlLabel": "MCP Server URL",
     "mcpServerUrlHelp": "Use this URL when configuring MCP clients such as Claude Code or Claude Desktop.",
@@ -608,7 +609,7 @@
     "revokeButton": "Revoke",
     "revokeModal": {
       "title": "Revoke Token",
-      "message": "This token will immediately stop working. Any MCP connections using it will be disconnected.",
+      "message": "This token will immediately stop working. Any MCP connections or API clients using it will be disconnected.",
       "confirmLabel": "Revoke"
     },
     "createModal": {

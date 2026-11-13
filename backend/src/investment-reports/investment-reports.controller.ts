@@ -27,8 +27,10 @@ import {
   AllowDelegate,
   DelegateRequiresSection,
 } from "../delegation/decorators/delegate-access.decorator";
+import { AllowPat, PatScope } from "../auth/pat-access/pat-access.decorator";
 
 @ApiTags("Investment Reports")
+@AllowPat()
 @Controller("reports/investment")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
@@ -97,6 +99,7 @@ export class InvestmentReportsController {
   }
 
   @Post(":id/execute")
+  @PatScope("read")
   @ApiOperation({ summary: "Run an investment report and get its rows" })
   @ApiParam({ name: "id", description: "Report ID" })
   @ApiResponse({ status: 200, description: "Report execution result" })

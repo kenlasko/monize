@@ -20,6 +20,7 @@ import {
 } from "./notification-preference.service";
 import { UpdateNotificationPreferenceDto } from "./dto/update-notification-preference.dto";
 import { UpdatePortfolioAlertDto } from "./dto/update-portfolio-alert.dto";
+import { AllowPat, NoPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * The per-category channel matrix, from the account's own side. Personal
@@ -35,6 +36,7 @@ function categoriesFor(req: AuthenticatedRequest) {
   return configurableCategoriesFor(req.user.role === "admin");
 }
 
+@AllowPat()
 @Controller("notifications/preferences")
 @UseGuards(AuthGuard("jwt"))
 @OwnerOnly()
@@ -56,6 +58,7 @@ export class NotificationPreferenceController {
   }
 
   @Put("portfolio-alert")
+  @NoPat()
   setPortfolioAlert(
     @Request() req: AuthenticatedRequest,
     @Body() dto: UpdatePortfolioAlertDto,
@@ -67,6 +70,7 @@ export class NotificationPreferenceController {
   }
 
   @Put(":category")
+  @NoPat()
   update(
     @Request() req: AuthenticatedRequest,
     @Param("category", new ParseEnumPipe(NotificationCategory))

@@ -83,6 +83,7 @@ import {
 } from "./tag-key-filter.util";
 import { parseTransactionSort } from "./register-sort-param";
 import { TRANSACTION_SORT_FIELDS } from "./register-order";
+import { AllowPat, NoPat } from "../auth/pat-access/pat-access.decorator";
 
 const ALL_TRANSACTION_STATUSES = new Set<string>(
   Object.values(TransactionStatus),
@@ -197,6 +198,7 @@ function transferActorFrom(req: {
 }
 
 @ApiTags("Transactions")
+@AllowPat()
 @Controller("transactions")
 @UseGuards(AuthGuard("jwt"))
 @UseInterceptors(DelegateTransferMaskInterceptor)
@@ -1476,6 +1478,7 @@ export class TransactionsController {
   }
 
   @Post("bulk-update")
+  @NoPat()
   @ApiOperation({ summary: "Bulk update transactions by IDs or filters" })
   @ApiResponse({
     status: 200,
@@ -1488,6 +1491,7 @@ export class TransactionsController {
   }
 
   @Post("bulk-delete")
+  @NoPat()
   @ApiOperation({ summary: "Bulk delete transactions by IDs or filters" })
   @ApiResponse({
     status: 200,

@@ -594,7 +594,8 @@
   },
   "apiAccess": {
     "heading": "Truy cập API",
-    "description": "Tạo mã thông báo truy cập cá nhân để kết nối các công cụ AI bên ngoài như Claude Desktop qua MCP.",
+    "description": "Tạo mã thông báo truy cập cá nhân để kết nối các công cụ AI bên ngoài như Claude Desktop qua MCP, hoặc để gọi REST API tại /api/v1.",
+    "restrictedNote": "Mã thông báo đọc chỉ có thể đọc. Các điểm cuối đăng nhập, bảo mật, quản trị, chia sẻ và sao lưu không khả dụng với mã thông báo.",
     "createTokenButton": "Tạo mã thông báo",
     "mcpServerUrlLabel": "URL máy chủ MCP",
     "mcpServerUrlHelp": "Sử dụng URL này khi cấu hình các ứng dụng MCP như Claude Code hoặc Claude Desktop.",
@@ -608,7 +609,7 @@
     "revokeButton": "Thu hồi",
     "revokeModal": {
       "title": "Thu hồi mã thông báo",
-      "message": "Mã thông báo này sẽ ngừng hoạt động ngay lập tức. Bất kỳ kết nối MCP nào sử dụng nó sẽ bị ngắt kết nối.",
+      "message": "Mã thông báo này sẽ ngừng hoạt động ngay lập tức. Bất kỳ kết nối MCP hoặc ứng dụng khách API nào sử dụng nó sẽ bị ngắt kết nối.",
       "confirmLabel": "Thu hồi"
     },
     "createModal": {

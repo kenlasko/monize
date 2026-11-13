@@ -237,6 +237,8 @@
     "invalidToken": "令牌无效",
     "tokenRevoked": "令牌已被撤销",
     "tokenExpired": "令牌已过期",
+    "patRouteNotAllowed": "此端点不适用于个人访问令牌。请登录后使用。",
+    "patInsufficientScope": "此个人访问令牌没有“{{ scope }}”权限范围",
     "userAccountInactive": "用户账户已停用",
     "passwordChangeRequired": "需要更改密码",
     "tokenNotFound": "未找到令牌",

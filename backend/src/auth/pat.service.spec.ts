@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import * as crypto from "crypto";
-import { PatService } from "./pat.service";
+import { DEFAULT_PAT_LIFETIME_DAYS, PatService } from "./pat.service";
 import { PersonalAccessToken } from "./entities/personal-access-token.entity";
 import { User } from "../users/entities/user.entity";
 import { getRequestContext } from "../common/request-context";
@@ -156,6 +156,53 @@ describe("PatService", () => {
       );
     });
 
+    describe("expiry", () => {
+      const DAY_MS = 24 * 60 * 60 * 1000;
+
+      beforeEach(() => {
+        repository.count.mockResolvedValue(0);
+        repository.create.mockImplementation((data) => ({
+          ...data,
+          id: "token-1",
+        }));
+        repository.save.mockImplementation((token) =>
+          Promise.resolve({ ...token }),
+        );
+      });
+
+      it("defaults an omitted expiresAt to the default lifetime", async () => {
+        const before = Date.now();
+        await service.create("user-1", { name: "Default" });
+        const after = Date.now();
+
+        const stored = repository.create.mock.calls[0][0].expiresAt as Date;
+        expect(stored).toBeInstanceOf(Date);
+        expect(stored.getTime()).toBeGreaterThanOrEqual(
+          before + DEFAULT_PAT_LIFETIME_DAYS * DAY_MS,
+        );
+        expect(stored.getTime()).toBeLessThanOrEqual(
+          after + DEFAULT_PAT_LIFETIME_DAYS * DAY_MS,
+        );
+      });
+
+      it("stores null for an explicit null (no expiry)", async () => {
+        await service.create("user-1", { name: "Forever", expiresAt: null });
+
+        expect(repository.create).toHaveBeenCalledWith(
+          expect.objectContaining({ expiresAt: null }),
+        );
+      });
+
+      it("keeps an explicit date", async () => {
+        const expiresAt = "2027-06-01T00:00:00.000Z";
+        await service.create("user-1", { name: "Dated", expiresAt });
+
+        expect(repository.create).toHaveBeenCalledWith(
+          expect.objectContaining({ expiresAt: new Date(expiresAt) }),
+        );
+      });
+    });
+
     it("should reject when max tokens reached", async () => {
       repository.count.mockResolvedValue(10);
 
@@ -260,6 +307,39 @@ describe("PatService", () => {
         "token-1",
         expect.objectContaining({ lastUsedAt: expect.any(Date) }),
       );
+    });
+
+    describe("lastUsedAt write throttle", () => {
+      const rawToken = "pat_" + crypto.randomBytes(32).toString("hex");
+
+      it.each([
+        ["10 seconds old", 10 * 1000, false],
+        ["2 minutes old", 2 * 60 * 1000, true],
+        ["never used", null, true],
+      ])("lastUsedAt %s: writes=%s", async (_label, ageMs, writes: boolean) => {
+        repository.findOne.mockResolvedValue({
+          ...mockToken,
+          isRevoked: false,
+          expiresAt: null,
+          lastUsedAt: ageMs === null ? null : new Date(Date.now() - ageMs),
+        });
+        repository.update.mockResolvedValue(undefined);
+
+        await expect(service.validateToken(rawToken)).resolves.toEqual({
+          userId: "user-1",
+          scopes: "read",
+          tokenId: "token-1",
+        });
+
+        if (writes) {
+          expect(repository.update).toHaveBeenCalledWith(
+            "token-1",
+            expect.objectContaining({ lastUsedAt: expect.any(Date) }),
+          );
+        } else {
+          expect(repository.update).not.toHaveBeenCalled();
+        }
+      });
     });
 
     // RLS (task C1): PAT validation is pre-identity (the token-hash lookup

@@ -364,7 +364,8 @@ export interface PersonalAccessToken {
 export interface CreatePatData {
   name: string;
   scopes?: string;
-  expiresAt?: string;
+  /** Omitted: the server's 90-day default. `null`: never expires. */
+  expiresAt?: string | null;
 }
 
 export interface CreatePatResponse extends PersonalAccessToken {

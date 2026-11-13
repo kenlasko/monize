@@ -22,8 +22,10 @@ import { RateChangeInferenceService } from "./rate-change-inference.service";
 import { CreateLoanRateChangeDto } from "./dto/create-loan-rate-change.dto";
 import { UpdateLoanRateChangeDto } from "./dto/update-loan-rate-change.dto";
 import { AllowDelegate } from "../delegation/decorators/delegate-access.decorator";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 @ApiTags("Loan Rate Changes")
+@AllowPat()
 @Controller("accounts/:accountId/rate-changes")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()

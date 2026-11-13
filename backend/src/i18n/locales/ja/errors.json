@@ -237,6 +237,8 @@
     "invalidToken": "無効なトークンです",
     "tokenRevoked": "トークンが失効しています",
     "tokenExpired": "トークンの有効期限が切れています",
+    "patRouteNotAllowed": "このエンドポイントは個人用アクセストークンでは利用できません。利用するにはサインインしてください。",
+    "patInsufficientScope": "この個人用アクセストークンには「{{ scope }}」スコープがありません",
     "userAccountInactive": "ユーザーアカウントが非アクティブです",
     "passwordChangeRequired": "パスワードの変更が必要です",
     "tokenNotFound": "トークンが見つかりません",

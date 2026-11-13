@@ -594,7 +594,8 @@
   },
   "apiAccess": {
     "heading": "Akses API",
-    "description": "Buat token akses pribadi untuk menghubungkan alat AI eksternal seperti Claude Desktop melalui MCP.",
+    "description": "Buat token akses pribadi untuk menghubungkan alat AI eksternal seperti Claude Desktop melalui MCP, atau untuk memanggil REST API di /api/v1.",
+    "restrictedNote": "Token baca hanya dapat membaca. Endpoint masuk, keamanan, admin, berbagi, dan pencadangan tidak tersedia untuk token.",
     "createTokenButton": "Buat Token",
     "mcpServerUrlLabel": "URL Server MCP",
     "mcpServerUrlHelp": "Gunakan URL ini saat mengonfigurasi klien MCP seperti Claude Code atau Claude Desktop.",
@@ -608,7 +609,7 @@
     "revokeButton": "Cabut",
     "revokeModal": {
       "title": "Cabut Token",
-      "message": "Token ini akan segera berhenti berfungsi. Koneksi MCP mana pun yang menggunakannya akan terputus.",
+      "message": "Token ini akan segera berhenti berfungsi. Koneksi MCP atau klien API mana pun yang menggunakannya akan terputus.",
       "confirmLabel": "Cabut"
     },
     "createModal": {

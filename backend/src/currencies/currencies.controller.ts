@@ -55,6 +55,7 @@ import {
   FxProviderChain,
   FxProviderDescription,
 } from "./providers/fx-provider-chain";
+import { AllowPat, NoPat } from "../auth/pat-access/pat-access.decorator";
 
 export interface ExchangeRateStatus {
   lastUpdated: Date | null;
@@ -64,6 +65,7 @@ export interface ExchangeRateStatus {
 @ApiTags("Currencies")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller("currencies")
 export class CurrenciesController {
   constructor(
@@ -342,6 +344,7 @@ export class CurrenciesController {
   }
 
   @Post("exchange-rates/backfill")
+  @NoPat()
   @UseGuards(RolesGuard)
   @Roles("admin")
   @ApiOperation({

@@ -594,7 +594,8 @@
   },
   "apiAccess": {
     "heading": "Accès API",
-    "description": "Créez des jetons d'accès personnels pour connecter des outils d'IA externes tels que Claude Desktop via MCP.",
+    "description": "Créez des jetons d'accès personnels pour connecter des outils d'IA externes tels que Claude Desktop via MCP, ou pour appeler la REST API à l'adresse /api/v1.",
+    "restrictedNote": "Les jetons de lecture ne peuvent que lire. Les points de terminaison de connexion, de sécurité, d'administration, de partage et de sauvegarde ne sont pas disponibles pour les jetons.",
     "createTokenButton": "Créer un jeton",
     "mcpServerUrlLabel": "URL du serveur MCP",
     "mcpServerUrlHelp": "Utilisez cette URL lors de la configuration de clients MCP tels que Claude Code ou Claude Desktop.",
@@ -608,7 +609,7 @@
     "revokeButton": "Révoquer",
     "revokeModal": {
       "title": "Révoquer le jeton",
-      "message": "Ce jeton cessera immédiatement de fonctionner. Toutes les connexions MCP qui l'utilisent seront déconnectées.",
+      "message": "Ce jeton cessera immédiatement de fonctionner. Toutes les connexions MCP ou tous les clients d'API qui l'utilisent seront déconnectés.",
       "confirmLabel": "Révoquer"
     },
     "createModal": {

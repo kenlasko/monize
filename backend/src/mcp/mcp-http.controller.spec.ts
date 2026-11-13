@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { McpHttpController } from "./mcp-http.controller";
 import { McpServerService } from "./mcp-server.service";
 import { PatService } from "../auth/pat.service";
+import { PAT_SELF_AUTHENTICATED_KEY } from "../auth/pat-access/pat-access.decorator";
 import { OAuthProviderService } from "../oauth/oauth-provider.service";
 import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/server";
@@ -60,6 +61,12 @@ describe("McpHttpController", () => {
   // to the bare origin as MCP traffic and let the app shell answer it
   // (frontend/src/proxy.ts). This endpoint has always refused these, on every
   // verb -- so that claim is checked here rather than left as a comment.
+  it("is marked @PatSelfAuthenticated() so PatAccessGuard stands aside", () => {
+    expect(
+      Reflect.getMetadata(PAT_SELF_AUTHENTICATED_KEY, McpHttpController),
+    ).toBe(true);
+  });
+
   describe("malformed and unknown Authorization headers", () => {
     const cases: Array<[string, Record<string, string>]> = [
       ["no Authorization header", {}],

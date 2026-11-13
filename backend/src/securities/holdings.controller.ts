@@ -19,10 +19,12 @@ import {
 import { AuthGuard } from "@nestjs/passport";
 import { HoldingsService } from "./holdings.service";
 import { Holding } from "./entities/holding.entity";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 @ApiTags("Holdings")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller("holdings")
 export class HoldingsController {
   constructor(private readonly holdingsService: HoldingsService) {}

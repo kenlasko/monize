@@ -70,6 +70,7 @@ import {
 import { EnterBondSeriesDto } from "./dto/enter-bond-series.dto";
 import { FetchBondSeriesDto } from "./dto/fetch-bond-series.dto";
 import { BondEngineError, BondEngineErrorCode } from "./engine/bond-engine";
+import { AllowPat, NoPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * The bond catalog, a linked security's lots valued on a day, and the on-demand
@@ -77,6 +78,7 @@ import { BondEngineError, BondEngineErrorCode } from "./engine/bond-engine";
  * and another user's security answers 404 exactly as an unlinked one does.
  */
 @ApiTags("Bonds")
+@AllowPat()
 @Controller("bonds")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
@@ -238,6 +240,7 @@ export class BondsController {
   }
 
   @Post("instruments/manual")
+  @NoPat()
   @UseGuards(RolesGuard)
   @Roles("admin")
   @ApiOperation({

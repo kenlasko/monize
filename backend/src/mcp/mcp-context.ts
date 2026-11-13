@@ -2,6 +2,7 @@ import { sharedLedgerRefusal } from "../common/db/shared-ledger-refusal";
 import { sanitizeToolResultStrings } from "../common/sanitization.util";
 import type { AuthInfo, ServerContext } from "@modelcontextprotocol/server";
 import { ConfirmMismatchError } from "./mcp-confirm";
+import { hasApiScope } from "../auth/scopes";
 
 export interface McpUserContext {
   userId: string;
@@ -106,7 +107,7 @@ export function callerKey(
 }
 
 export function hasScope(scopes: string, required: string): boolean {
-  return scopes.split(",").includes(required);
+  return hasApiScope(scopes, required);
 }
 
 export function requireScope(

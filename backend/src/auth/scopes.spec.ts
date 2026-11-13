@@ -7,6 +7,7 @@ import {
   MCP_SCOPE_PREFIX,
   apiScopesList,
   apiScopesPattern,
+  hasApiScope,
   isApiScope,
 } from "./scopes";
 import { CreatePatDto } from "./dto/create-pat.dto";
@@ -178,5 +179,19 @@ describe("API scope vocabulary", () => {
   it("exposes the list for messages and documentation", () => {
     expect(apiScopesList()).toBe(API_SCOPES.join(", "));
     expect(apiScopesPattern().test(API_SCOPES.join(","))).toBe(true);
+  });
+
+  describe("hasApiScope", () => {
+    it.each([
+      ["read", "read", true],
+      ["read,write", "read", true],
+      ["read,write", "write", true],
+      ["write", "read", false],
+      ["read", "write", false],
+      ["", "read", false],
+      ["readwrite", "read", false],
+    ])("scopes %p requires %p: %s", (scopes, required, expected) => {
+      expect(hasApiScope(scopes, required)).toBe(expected);
+    });
   });
 });

@@ -41,11 +41,14 @@ const SCOPE_OPTIONS = [
 ];
 
 const EXPIRY_OPTIONS = [
-  { value: '', labelKey: 'createModal.expiry.none' },
   { value: '30', labelKey: 'createModal.expiry.d30' },
   { value: '90', labelKey: 'createModal.expiry.d90' },
   { value: '365', labelKey: 'createModal.expiry.y1' },
+  { value: '', labelKey: 'createModal.expiry.none' },
 ];
+
+/** The server's own default, so a form that is never touched matches an omitted `expiresAt`. */
+const DEFAULT_EXPIRY_DAYS = '90';
 
 const buildCreateTokenSchema = (t: (key: string) => string) => z.object({
   name: z.string().min(1, t('createModal.validation.nameRequired')).max(100, t('createModal.validation.nameMax')),
@@ -107,7 +110,7 @@ export function ApiAccessSection() {
     resolver: zodResolver(buildCreateTokenSchema(t)),
     defaultValues: {
       name: '',
-      expiryDays: '',
+      expiryDays: DEFAULT_EXPIRY_DAYS,
     },
   });
 
@@ -160,7 +163,8 @@ export function ApiAccessSection() {
 
     setIsCreating(true);
     try {
-      let expiresAt: string | undefined;
+      // `null` is an explicit "never expires": an omitted value means 90 days server-side.
+      let expiresAt: string | null = null;
       if (pending.expiryDays) {
         const date = new Date();
         date.setDate(date.getDate() + parseInt(pending.expiryDays));
@@ -242,7 +246,7 @@ export function ApiAccessSection() {
   const handleCloseCreateModal = () => {
     setShowCreateModal(false);
     setCreatedToken(null);
-    resetForm();
+    resetForm({ name: '', expiryDays: DEFAULT_EXPIRY_DAYS });
     setSelectedScopes(['read']);
     setCopied(false);
   };
@@ -290,6 +294,9 @@ export function ApiAccessSection() {
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {t('description')}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {t('restrictedNote')}
           </p>
         </div>
         <Button

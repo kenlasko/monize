@@ -28,6 +28,11 @@ import {
 import { EmailReceiptParserGenerateService } from "./email-receipt-parser-generate.service";
 import { EmailReceiptParserPreviewService } from "./email-receipt-parser-preview.service";
 import { EmailReceiptParsersService } from "./email-receipt-parsers.service";
+import {
+  AllowPat,
+  NoPat,
+  PatScope,
+} from "../../auth/pat-access/pat-access.decorator";
 
 /**
  * The user's receipt parsers (design sections 5 and 8). Owner-only: a delegate
@@ -35,6 +40,7 @@ import { EmailReceiptParsersService } from "./email-receipt-parsers.service";
  * is proposed for the owner's transactions. `userId` is the JWT's.
  */
 @ApiTags("Email Receipts")
+@AllowPat()
 @Controller("email-receipt-parsers")
 @UseGuards(AuthGuard("jwt"))
 @OwnerOnly()
@@ -53,6 +59,7 @@ export class EmailReceiptParsersController {
   }
 
   @Post("test")
+  @PatScope("read")
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 30 } })
   @ApiOperation({
@@ -109,6 +116,7 @@ export class EmailReceiptParsersController {
   }
 
   @Post()
+  @NoPat()
   @Throttle({ default: { ttl: 60000, limit: 20 } })
   @ApiOperation({
     summary: "Create a receipt parser (approved: a person wrote it)",
@@ -145,6 +153,7 @@ export class EmailReceiptParsersController {
   }
 
   @Post(":id/preview")
+  @PatScope("read")
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 30 } })
   @ApiOperation({
@@ -160,6 +169,7 @@ export class EmailReceiptParsersController {
   }
 
   @Post(":id/approve")
+  @NoPat()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 30 } })
   @ApiOperation({ summary: "Approve a draft parser so it starts reading mail" })

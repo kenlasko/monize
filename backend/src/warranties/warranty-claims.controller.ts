@@ -29,6 +29,7 @@ import {
   WarrantyClaimView,
   WarrantyClaimsService,
 } from "./warranty-claims.service";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * The claims made against one warranty
@@ -44,6 +45,7 @@ import {
 @ApiTags("Warranties")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller("warranties/:id/claims")
 export class WarrantyClaimsController {
   constructor(private readonly claimsService: WarrantyClaimsService) {}

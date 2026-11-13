@@ -34,6 +34,7 @@ import {
 import { EmailReceiptProfileBatchService } from "./email-receipt-profile-batch.service";
 import { EmailReceiptsService } from "./email-receipts.service";
 import type { ReceiptBulkTarget } from "./receipt-bulk";
+import { AllowPat, PatScope } from "../../auth/pat-access/pat-access.decorator";
 
 /** The emails a request names: its ids, or the filter as the DTO carries it. */
 function targetOf(dto: {
@@ -68,6 +69,7 @@ function targetOf(dto: {
  * in the module, so `:id` (a UUID, by `ParseUUIDPipe`) never sees it.
  */
 @ApiTags("Email Receipts")
+@AllowPat()
 @Controller("email-receipts")
 @UseGuards(AuthGuard("jwt"))
 @OwnerOnly()
@@ -198,6 +200,7 @@ export class EmailReceiptsController {
 
   // Declared before `:id`, so the literal segment is matched first.
   @Post("bulk/count")
+  @PatScope("read")
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 60 } })
   @ApiOperation({

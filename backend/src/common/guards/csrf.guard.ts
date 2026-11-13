@@ -12,6 +12,7 @@ import * as crypto from "crypto";
 import { SKIP_CSRF_KEY } from "../decorators/skip-csrf.decorator";
 import { verifyCsrfToken } from "../csrf.util";
 import { derivePurposeKey } from "../../auth/crypto.util";
+import { patBearerOf } from "../../auth/pat-access/pat-bearer";
 
 @Injectable()
 export class CsrfGuard implements CanActivate {
@@ -41,6 +42,17 @@ export class CsrfGuard implements CanActivate {
       context.getClass(),
     ]);
     if (skipCsrf) {
+      return true;
+    }
+
+    // A personal access token is not a browser session. The double-submit
+    // check exists because a browser attaches cookies to a request the user
+    // never made; an `Authorization` header is only ever sent by code that
+    // holds the token, and a cross-site page cannot add one. The exemption is
+    // safe only because the same predicate decides authentication: a request
+    // it matches is authenticated by its PAT or refused (`PatAccessGuard`,
+    // `JwtStrategy`), never by a cookie that happens to ride along.
+    if (patBearerOf(request) !== null) {
       return true;
     }
 

@@ -155,6 +155,7 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-AUTH-003 OIDC round trip | required | -- | required | -- | -- | -- | required | required |
 | INV-AUTH-004 truthful logout | supporting | -- | required | -- | -- | **required** | -- | required |
 | INV-AUTH-005 password replacement revokes credentials | **required** | -- | required | -- | -- | -- | -- | optional |
+| INV-AUTH-006 a personal access token reaches only opted-in routes | **required** | **required** | -- | -- | -- | -- | -- | required |
 | INV-ACTIVITY-001 activity attribution | supporting | -- | **required** | -- | -- | -- | -- | -- |
 | INV-PROFILE-001 allowlist | required | **required** | supporting | -- | -- | -- | -- | -- |
 | INV-DISPLAY-001 reader's number locale | **required** | **required** | -- | -- | -- | -- | -- | optional |

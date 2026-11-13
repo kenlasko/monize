@@ -680,7 +680,7 @@ An administrator can turn an SSO account back into a local one with **Unlink SSO
 
 ## Personal Access Tokens (PATs)
 
-Personal Access Tokens provide API access for external integrations such as MCP clients. Tokens are managed in **Settings > API Access**.
+Personal Access Tokens provide API access for external integrations: MCP clients, and your own scripts calling the Monize REST API. Tokens are managed in **Settings > API Access**.
 
 ![The API Access section, with the MCP server URL](images/settings-api-access.png)
 
@@ -693,13 +693,13 @@ Each token is created with one or more scopes that control what operations it ca
 | **Read** | View accounts, transactions, categories, payees and financial reports |
 | **Write** | Create transactions, payees and categories, and update or delete resources |
 
-Scopes are enforced by the server on every request: a token without the **Write** scope cannot change anything. The same two scopes are used for OAuth/MCP clients, so a token cannot be granted a scope the server does not define.
+Scopes are enforced by the server on every request: a token without the **Write** scope cannot change anything, and the **Write** scope does not include **Read**, so a token that must do both needs both. The same two scopes are used for OAuth/MCP clients, so a token cannot be granted a scope the server does not define.
 
 ### Creating a Token
 
 1. Navigate to **Settings > API Access**
 2. Click **Create Token**
-3. Give it a **Token Name** (for example, *Claude Desktop*), choose at least one scope, and pick an **Expiration**: **30 days**, **90 days**, **1 year**, or **No expiration**
+3. Give it a **Token Name** (for example, *Claude Desktop*), choose at least one scope, and pick an **Expiration**: **30 days**, **90 days** (the default), **1 year**, or **No expiration** (a deliberate choice, since the token then works until you revoke it)
 4. Click **Create Token**. Because a token can reach your account without signing in, Monize first asks you to confirm it is you -- with your password, your authenticator code, or a fresh sign-in at your identity provider.
 5. Copy the token from the **Token Created** dialog -- it is not shown again
 
@@ -712,9 +712,26 @@ The section also displays the **MCP Server URL** for this instance, with a **Cop
 - Tokens are prefixed with `pat_` for easy identification
 - The full token is displayed **only once** at creation time
 - Tokens are stored as SHA-256 hashes in the database
-- Tokens can have an optional expiration date
+- Tokens expire after 90 days unless you choose another expiration; **No expiration** is available but never the default
 - **Revoke** a token at any time from the settings page; it stops working immediately and any MCP connection using it is disconnected
 - Tokens are rejected if the owning user account is locked or disabled
+
+### Using a Token with the REST API
+
+A token also signs a script in to the REST API, with no interactive sign-in. This works the same whether your account uses a password, a password with two-factor authentication, or single sign-on or a passkey. Send the token as a bearer header:
+
+```bash
+curl -H "Authorization: Bearer pat_..." https://monize.example.com/api/v1/portfolio/summary
+```
+
+- A **Read** token can fetch data (GET requests). A **Write** token can create, change and delete (POST, PUT, PATCH, DELETE). A few POST requests only calculate an answer, such as a search or a preview, and work with **Read**.
+- A request the token's scope does not allow, or to an area tokens cannot use, is refused with `403`. A token that is wrong, expired or revoked is refused with `401`.
+- No CSRF header is needed, and a token always acts as you, never as someone you have shared your accounts with.
+- Using a token does not count as you being active, so a script cannot postpone the [emergency access](emergency-access.md) timer.
+
+Tokens cover your financial data: accounts, transactions, categories, payees, tags, securities and investments, budgets, reports, scheduled transactions, currencies, imports, attachments, warranties, notes, rules, notifications and the AI assistant's questions and insights. They do **not** work for sign-in and credentials, your profile and settings, administration, shared access (delegation), emergency access, backup, restore and export, the MCP relay, push subscriptions, AI provider settings and AI action approval, bank sync, mailbox credentials, shared expenses or connecting apps. Those need you signed in. A few single actions inside the covered areas need you signed in too: bulk edits and bulk deletes of transactions, undo and redo, approving an email receipt parser, changing which notifications you receive, dismissing every notification at once, starting a Microsoft Money import, AI contact lookup for a payee, and the administrator-only price and rate backfills.
+
+> **Security Note:** Treat a token like a password. It works without a second factor. Create one token per script or application so you can revoke one without breaking the rest, give it only the scope it needs (**Read** unless the script must change data), keep it out of source control and shared chats, and revoke it when you stop using it.
 
 For MCP integration details, see [AI > MCP Server](ai.md#mcp-server).
 
@@ -831,7 +848,7 @@ Monize implements comprehensive security measures:
 | **TOTP Encryption** | Per-user unique salt (not shared secret) |
 | **2FA Backup Codes** | 12 single-use codes, bcrypt-hashed, generated on 2FA setup |
 | **Trusted Devices** | 14-day device trust, SHA-256 hashed, revocable |
-| **Personal Access Tokens** | Scoped (read/write), SHA-256 hashed, revocable |
+| **Personal Access Tokens** | Scoped (read/write), 90-day default expiry, SHA-256 hashed, revocable; usable on the REST API's data routes but not on sign-in, admin, backup or sharing routes |
 | **Rate Limiting** | 100 req/min global, 3-5 per 15 min on auth endpoints |
 | **Forced 2FA** | `FORCE_2FA=true` makes 2FA mandatory; OIDC logins must assert MFA at the provider |
 | **Step-Up Re-Authentication** | High-sensitivity actions (creating an access token, emergency access) re-prompt for your strongest factor (password, TOTP, or a fresh OIDC sign-in) and issue a short-lived token scoped to that action alone |
