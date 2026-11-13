@@ -3331,9 +3331,8 @@ Enforcement         The convention is the nominal annual rate divided by the
                     compoundingFor in backend/src/accounts/mortgage-type.util.ts
                     and frontend/src/lib/mortgage-type.ts, Records over the type
                     so a type without a row is a compile error, read through
-                    mortgageTypeOf from accounts.mortgage_type, DEFAULT
-                    'ANNUITY' (a null, which only a 1.19.x rollback writes,
-                    reads as ANNUITY). getPeriodicRate and
+                    mortgageTypeOf from accounts.mortgage_type, NOT NULL
+                    DEFAULT 'ANNUITY'. getPeriodicRate and
                     calculateEffectiveAnnualRate on the backend, and
                     getPeriodicRate and effectiveAnnualRate in
                     frontend/src/lib/loan-frequency.ts, take only the type.
@@ -3783,8 +3782,8 @@ Enforcement         amortizationMethodFor over MORTGAGE_TYPE_TRAITS
                     accounts.payment_amount null for LINEAR and INTEREST_ONLY
                     (no stored constant payment can disagree with the method)
                     and accounts.prepayment_mode null off LINEAR; the column
-                    defaults to ANNUITY and mortgageTypeOf reads a null as
-                    ANNUITY, so every mortgage names its method. Type detection (detectMortgageType,
+                    is NOT NULL DEFAULT 'ANNUITY', so every mortgage names its
+                    method. Type detection (detectMortgageType,
                     backend/src/accounts/mortgage-type-detection.util.ts) only
                     suggests: neither detection route writes a row, and the
                     user confirms the type in the account form.
