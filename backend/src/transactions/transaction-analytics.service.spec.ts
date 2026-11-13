@@ -3720,6 +3720,19 @@ describe("TransactionAnalyticsService", () => {
       expect(managerMock.query).not.toHaveBeenCalled();
     });
 
+    it("orders every per-occurrence array the same way, ties included", async () => {
+      await service.getRecurringCharges(userId, start, end);
+
+      const arrays = (mockQueryBuilder.addSelect.mock.calls as any[][])
+        .map((c) => c[0] as string)
+        .filter((sql) => sql.startsWith("ARRAY_AGG("));
+      expect(arrays).toHaveLength(4);
+      // Two charges on one day keep their own amount, date and rate.
+      for (const sql of arrays) {
+        expect(sql).toMatch(/ORDER BY t\.transactionDate ASC, t\.id ASC\)$/);
+      }
+    });
+
     describe("with a reporting currency", () => {
       const usdCharge = {
         payeeName: "Spotify",

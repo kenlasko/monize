@@ -190,6 +190,9 @@ export class BudgetHealthReportsService {
 
         let actual = Number(pc.actualAmount) || 0;
         if (openSpending && pc.categoryId) {
+          // A category with a row that had no rate has no known actual: it is
+          // left out of the score rather than scored on its converted part.
+          if (openSpending.incompleteCategoryIds.has(pc.categoryId)) continue;
           actual = Math.max(
             -(openSpending.spendingMap.get(pc.categoryId) ?? 0),
             0,
@@ -261,8 +264,9 @@ export class BudgetHealthReportsService {
     // No income categories: the income side is every positive non-transfer
     // transaction of the window, converted into the budget's currency at each
     // row's own rate or the market rate on its date (issue #2155). A month
-    // with a row that has no rate keeps what converted and says so; nothing is
-    // added 1:1.
+    // with a foreign row that has no rate is reported incomplete and keeps
+    // only its budget-currency income (`convertRateParts` withholds the
+    // month's whole foreign figure); nothing is added 1:1.
     const incomeByMonth = new Map<string, number>();
     const foreignIncomeMonths = new Set<string>();
     if (incomeCategoryIds.length === 0) {

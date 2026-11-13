@@ -460,6 +460,44 @@ describe("BudgetHealthReportsService", () => {
       expect(result).toHaveLength(1);
       expect(result[0].score).toBeLessThan(100);
     });
+
+    it("leaves an OPEN period's category with an unrated row out of the score (issue #2155)", async () => {
+      // The converted part alone is 1200 of 1000; with a row that had no rate
+      // the real figure is unknown, so the category is not scored on it.
+      mockedPeriodSpending.mockResolvedValue(
+        spending({ "cat-essential": -1200 }, ["cat-essential"]),
+      );
+      periodsRepository.find.mockResolvedValue([
+        {
+          id: "p-open",
+          budgetId: "budget-1",
+          status: PeriodStatus.OPEN,
+          periodStart: "2026-05-01",
+          periodEnd: "2026-05-31",
+          periodCategories: [
+            {
+              categoryId: "cat-essential",
+              budgetedAmount: 1000,
+              actualAmount: 0,
+              budgetCategory: {
+                id: "bc-essential",
+                isIncome: false,
+                categoryGroup: CategoryGroup.NEED,
+              },
+            },
+          ],
+        },
+      ]);
+
+      const result = await service.getHealthScoreHistory(
+        "user-1",
+        "budget-1",
+        1,
+      );
+
+      // No deduction for the unknown overspend, and no under-budget bonus.
+      expect(result[0].score).toBe(100);
+    });
   });
 
   describe("getSavingsRate", () => {

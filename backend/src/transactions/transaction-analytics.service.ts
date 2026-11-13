@@ -2417,23 +2417,24 @@ export class TransactionAnalyticsService {
         // has to be the ordinary part -- otherwise this answers 560 where the
         // built-in Recurring Expenses report answers 60 for the same rows.
         .addSelect(
-          `ARRAY_AGG(ABS(${RECURRING_REPORTABLE_AMOUNT}) ORDER BY t.transactionDate ASC)`,
+          `ARRAY_AGG(ABS(${RECURRING_REPORTABLE_AMOUNT}) ORDER BY t.transactionDate ASC, t.id ASC)`,
           "amounts",
         )
         .addSelect(
-          "ARRAY_AGG(TO_CHAR(t.transactionDate, 'YYYY-MM-DD') ORDER BY t.transactionDate ASC)",
+          "ARRAY_AGG(TO_CHAR(t.transactionDate, 'YYYY-MM-DD') ORDER BY t.transactionDate ASC, t.id ASC)",
           "dates",
         )
         .addSelect("COUNT(*)", "txnCount")
         .addSelect("t.currencyCode", "currencyCode")
         // Each occurrence's own rate columns, in the order of `amounts`, so it
-        // converts as the reports convert it.
+        // converts as the reports convert it. Every array orders by date and
+        // then id: two charges on one day must not swap rates between arrays.
         .addSelect(
-          "ARRAY_AGG(t.originalCurrencyCode ORDER BY t.transactionDate ASC)",
+          "ARRAY_AGG(t.originalCurrencyCode ORDER BY t.transactionDate ASC, t.id ASC)",
           "originalCurrencies",
         )
         .addSelect(
-          "ARRAY_AGG(t.exchangeRate ORDER BY t.transactionDate ASC)",
+          "ARRAY_AGG(t.exchangeRate ORDER BY t.transactionDate ASC, t.id ASC)",
           "exchangeRates",
         )
         .where("t.userId = :userId", { userId })

@@ -969,6 +969,20 @@ describe("BudgetTrendReportsService", () => {
       expect(result).toEqual([]);
     });
 
+    it("shows a net-refund month as nothing spent, not its magnitude", async () => {
+      periodsRepository.find.mockResolvedValueOnce([]);
+      // cat-1 refunded 120 more than it spent: the budget page's 0, where the
+      // old ABS(SUM) read 120 of spending.
+      mockCurrentMonth(spending({ "cat-1": 120, "cat-2": -40 }));
+
+      const result = await service.getCategoryTrend("user-1", "budget-1", 1);
+
+      const current = (id: string) =>
+        result.find((s) => s.categoryId === id)!.data[0];
+      expect(current("cat-1").actual).toBe(0);
+      expect(current("cat-2").actual).toBe(40);
+    });
+
     it("should compute live category trend with actual transaction data", async () => {
       periodsRepository.find.mockResolvedValueOnce([]);
       const monthKey = currentMonthKey();
