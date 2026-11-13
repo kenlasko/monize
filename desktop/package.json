@@ -5,9 +5,11 @@
   "private": true,
   "license": "AGPL-3.0-only",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "smoke:postgres": "npm run build && node scripts/smoke-postgres.mjs"
   },
   "dependencies": {
     "pg": "^8.23.1"
