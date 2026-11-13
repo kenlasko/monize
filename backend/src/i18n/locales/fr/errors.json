@@ -237,6 +237,8 @@
     "invalidToken": "Jeton invalide",
     "tokenRevoked": "Le jeton a été révoqué",
     "tokenExpired": "Le jeton a expiré",
+    "patRouteNotAllowed": "Ce point de terminaison n'est pas disponible pour les jetons d'accès personnels. Connectez-vous pour l'utiliser.",
+    "patInsufficientScope": "Ce jeton d'accès personnel n'a pas le périmètre \"{{ scope }}\"",
     "userAccountInactive": "Le compte utilisateur est inactif",
     "passwordChangeRequired": "Changement de mot de passe requis",
     "tokenNotFound": "Jeton introuvable",

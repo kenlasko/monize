@@ -237,6 +237,8 @@
     "invalidToken": "Token no válido",
     "tokenRevoked": "El token ha sido revocado",
     "tokenExpired": "El token ha caducado",
+    "patRouteNotAllowed": "Este endpoint no está disponible para tokens de acceso personal. Inicia sesión para usarlo.",
+    "patInsufficientScope": "Este token de acceso personal no tiene el permiso \"{{ scope }}\"",
     "userAccountInactive": "La cuenta de usuario está inactiva",
     "passwordChangeRequired": "Se requiere cambio de contraseña",
     "tokenNotFound": "Token no encontrado",

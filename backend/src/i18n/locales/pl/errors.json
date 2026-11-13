@@ -237,6 +237,8 @@
     "invalidToken": "Nieprawidłowy token",
     "tokenRevoked": "Token został unieważniony",
     "tokenExpired": "Token wygasł",
+    "patRouteNotAllowed": "Ten punkt końcowy nie jest dostępny dla osobistych tokenów dostępu. Zaloguj się, aby z niego korzystać.",
+    "patInsufficientScope": "Ten osobisty token dostępu nie ma zakresu \"{{ scope }}\"",
     "userAccountInactive": "Konto użytkownika jest nieaktywne",
     "passwordChangeRequired": "Wymagana zmiana hasła",
     "tokenNotFound": "Nie znaleziono tokena",

@@ -594,7 +594,8 @@
   },
   "apiAccess": {
     "heading": "API-toegang",
-    "description": "Maak persoonlijke toegangstokens aan om externe AI-tools zoals Claude Desktop via MCP te verbinden.",
+    "description": "Maak persoonlijke toegangstokens aan om externe AI-tools zoals Claude Desktop via MCP te verbinden of om de REST API op /api/v1 aan te roepen.",
+    "restrictedNote": "Leestokens kunnen alleen lezen. Eindpunten voor aanmelden, beveiliging, beheer, delen en back-ups zijn niet beschikbaar voor tokens.",
     "createTokenButton": "Token aanmaken",
     "mcpServerUrlLabel": "MCP-server-URL",
     "mcpServerUrlHelp": "Gebruik deze URL bij het configureren van MCP-clients zoals Claude Code of Claude Desktop.",
@@ -608,7 +609,7 @@
     "revokeButton": "Intrekken",
     "revokeModal": {
       "title": "Token intrekken",
-      "message": "Dit token werkt onmiddellijk niet meer. Alle MCP-verbindingen die er gebruik van maken worden verbroken.",
+      "message": "Dit token werkt onmiddellijk niet meer. Alle MCP-verbindingen of API-clients die er gebruik van maken worden verbroken.",
       "confirmLabel": "Intrekken"
     },
     "createModal": {

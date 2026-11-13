@@ -594,7 +594,8 @@
   },
   "apiAccess": {
     "heading": "APIアクセス",
-    "description": "個人用アクセストークンを作成して、Claude Desktop などの外部AIツールをMCPで接続します。",
+    "description": "個人用アクセストークンを作成して、Claude Desktop などの外部AIツールをMCPで接続したり、/api/v1 の REST API を呼び出したりできます。",
+    "restrictedNote": "読み取りトークンでは読み取りのみ可能です。サインイン、セキュリティ、管理、共有、バックアップのエンドポイントはトークンでは利用できません。",
     "createTokenButton": "トークンを作成",
     "mcpServerUrlLabel": "MCPサーバーURL",
     "mcpServerUrlHelp": "Claude CodeやClaude DesktopなどのMCPクライアントを設定する際にこのURLを使用してください。",
@@ -608,7 +609,7 @@
     "revokeButton": "取り消し",
     "revokeModal": {
       "title": "トークンを取り消し",
-      "message": "このトークンは即座に機能しなくなります。これを使用しているMCP接続はすべて切断されます。",
+      "message": "このトークンは即座に機能しなくなります。これを使用しているMCP接続やAPIクライアントはすべて切断されます。",
       "confirmLabel": "取り消し"
     },
     "createModal": {

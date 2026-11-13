@@ -237,6 +237,8 @@
     "invalidToken": "Ongeldig token",
     "tokenRevoked": "Token is ingetrokken",
     "tokenExpired": "Token is verlopen",
+    "patRouteNotAllowed": "Dit eindpunt is niet beschikbaar voor persoonlijke toegangstokens. Meld je aan om het te gebruiken.",
+    "patInsufficientScope": "Dit persoonlijke toegangstoken heeft het bereik \"{{ scope }}\" niet",
     "userAccountInactive": "Gebruikersaccount is inactief",
     "passwordChangeRequired": "Wachtwoordwijziging vereist",
     "tokenNotFound": "Token niet gevonden",

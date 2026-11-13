@@ -237,6 +237,8 @@
     "invalidToken": "Mã thông báo không hợp lệ",
     "tokenRevoked": "Mã thông báo đã bị thu hồi",
     "tokenExpired": "Mã thông báo đã hết hạn",
+    "patRouteNotAllowed": "Điểm cuối này không khả dụng với mã thông báo truy cập cá nhân. Hãy đăng nhập để sử dụng.",
+    "patInsufficientScope": "Mã thông báo truy cập cá nhân này không có phạm vi \"{{ scope }}\"",
     "userAccountInactive": "Tài khoản người dùng không hoạt động",
     "passwordChangeRequired": "Yêu cầu thay đổi mật khẩu",
     "tokenNotFound": "Không tìm thấy mã thông báo",

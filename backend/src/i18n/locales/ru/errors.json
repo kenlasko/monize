@@ -237,6 +237,8 @@
     "invalidToken": "Недопустимый токен",
     "tokenRevoked": "Токен был отозван",
     "tokenExpired": "Токен истёк",
+    "patRouteNotAllowed": "Эта конечная точка недоступна для токенов личного доступа. Войдите в систему, чтобы использовать её.",
+    "patInsufficientScope": "У этого токена личного доступа нет области доступа \"{{ scope }}\"",
     "userAccountInactive": "Аккаунт пользователя неактивен",
     "passwordChangeRequired": "Требуется смена пароля",
     "tokenNotFound": "Токен не найден",

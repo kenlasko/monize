@@ -237,6 +237,8 @@
     "invalidToken": "Geçersiz kod",
     "tokenRevoked": "Kod iptal edildi",
     "tokenExpired": "Kodun süresi doldu",
+    "patRouteNotAllowed": "Bu uç nokta kişisel erişim belirteçleri için kullanılamaz. Kullanmak için oturum açın.",
+    "patInsufficientScope": "Bu kişisel erişim belirteci \"{{ scope }}\" kapsamına sahip değil",
     "userAccountInactive": "Kullanıcı hesabı etkin değil",
     "passwordChangeRequired": "Şifre değişikliği gerekli",
     "tokenNotFound": "Kod bulunamadı",

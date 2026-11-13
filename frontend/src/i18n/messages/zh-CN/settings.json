@@ -594,7 +594,8 @@
   },
   "apiAccess": {
     "heading": "API 访问",
-    "description": "创建个人访问令牌，通过 MCP 连接 Claude Desktop 等外部 AI 工具。",
+    "description": "创建个人访问令牌，通过 MCP 连接 Claude Desktop 等外部 AI 工具，或调用 /api/v1 的 REST API。",
+    "restrictedNote": "读取令牌只能读取。登录、安全、管理、共享和备份端点不适用于令牌。",
     "createTokenButton": "创建令牌",
     "mcpServerUrlLabel": "MCP 服务器 URL",
     "mcpServerUrlHelp": "配置 Claude Code 或 Claude Desktop 等 MCP 客户端时使用此 URL。",
@@ -608,7 +609,7 @@
     "revokeButton": "撤销",
     "revokeModal": {
       "title": "撤销令牌",
-      "message": "此令牌将立即失效。使用该令牌的任何 MCP 连接将被断开。",
+      "message": "此令牌将立即失效。使用该令牌的任何 MCP 连接或 API 客户端将被断开。",
       "confirmLabel": "撤销"
     },
     "createModal": {

@@ -237,6 +237,8 @@
     "invalidToken": "無效的令牌",
     "tokenRevoked": "令牌已撤銷",
     "tokenExpired": "令牌已過期",
+    "patRouteNotAllowed": "此端點不適用於個人存取權杖。請登入後使用。",
+    "patInsufficientScope": "此個人存取權杖沒有「{{ scope }}」範圍",
     "userAccountInactive": "使用者帳戶未啟用",
     "passwordChangeRequired": "需要變更密碼",
     "tokenNotFound": "找不到令牌",
