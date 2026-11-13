@@ -2201,6 +2201,16 @@ export class ScheduledTransactionsService {
   ): Promise<ScheduleAmountEstimateReadModel> {
     const account = await this.accountsService.findOne(userId, query.accountId);
     if (query.transferAccountId) {
+      // The pair the save refuses is refused here too: the preview answers
+      // only a shape the commit would accept.
+      if (query.transferAccountId === query.accountId) {
+        throw new BadRequestException(
+          tr(
+            "errors.scheduled.sameSourceAndDestination",
+            "Source and destination accounts must be different",
+          ),
+        );
+      }
       await this.accountsService.findOne(userId, query.transferAccountId);
     }
     const estimate = await this.amountEstimates.estimateFor(

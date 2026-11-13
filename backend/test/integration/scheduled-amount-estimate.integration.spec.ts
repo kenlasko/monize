@@ -314,5 +314,37 @@ describe("Scheduled amount estimate (integration)", () => {
       expect(estimatedAmountFor(raised, next)).toBe(-2200);
       expect(estimatedAmountFor(raised, addMonthsClamped(next, 1))).toBe(-1000);
     });
+
+    it("reads only the transfers out of the source, however large the ones back", async () => {
+      const savings = await createTestAccount(db, userId, {
+        name: "Savings",
+        accountType: "SAVINGS",
+        openingBalance: 10000,
+        currentBalance: 10000,
+      } as never);
+      await insertTransfer(monthsAgo(2), 100, savings.id);
+      // Money brought back from savings: the chequing leg is positive.
+      await insertTransfer(monthsAgo(1), -900, savings.id);
+
+      const estimate = await withUserContext(userId, () =>
+        estimates.estimateFor(userId, {
+          payeeId: null,
+          categoryId: null,
+          currencyCode: "USD",
+          transfer: {
+            accountId,
+            transferAccountId: savings.id,
+            frequency: "MONTHLY",
+            nextOccurrenceDueDate: addMonthsClamped(today, 1),
+          },
+        }),
+      );
+
+      expect(estimate.profile?.payments.map((p) => p.amount)).toEqual([-100]);
+      // Savings holds money: nothing raises the payment.
+      expect(estimatedAmountFor(estimate, addMonthsClamped(today, 1))).toBe(
+        -100,
+      );
+    });
   });
 });

@@ -28,10 +28,12 @@ export interface TransferHistoryRow {
 }
 
 /**
- * Every non-void transfer between each pair inside the window, read on the
- * source account's leg: its amount is in the schedule's currency, negative
- * for money sent to the destination. A transfer the other way is positive on
- * this leg, and the estimate's dominant-side rule drops it as a refund.
+ * Every non-void transfer from each pair's source into its destination inside
+ * the window, read on the source account's leg: its amount is in the
+ * schedule's currency and negative. A transfer the other way is positive on
+ * this leg and is not a payment of this schedule, which always posts out of
+ * the source, so it is not read: were it the larger side, the estimate would
+ * turn positive, the opposite of what posting moves.
  */
 export async function loadTransferHistory(
   m: EntityManager,
@@ -54,6 +56,7 @@ export async function loadTransferHistory(
            FROM unnest($2::uuid[], $3::uuid[]) AS k(account_id, transfer_account_id)
        )
        AND t.is_transfer = true
+       AND t.amount < 0
        AND COALESCE(t.is_split, false) = false
        AND ${LEDGER_MOVEMENT_PREDICATE}
        AND t.transaction_date > $4
@@ -73,11 +76,6 @@ export async function loadTransferHistory(
 export interface TransferDestination {
   facts: TransferDestinationFacts;
   currencyCode: string;
-  /**
-   * The closed statement's settlement date the ledger was read at, when the
-   * account is a card with both statement days; `null` otherwise.
-   */
-  lastSettlement: string | null;
   ledger: TransferDestinationLedger;
 }
 
@@ -176,7 +174,6 @@ export async function loadTransferDestinations(
     result.set(row.id, {
       facts: factsOf(row),
       currencyCode: row.currency_code,
-      lastSettlement,
       ledger: {
         balanceToday: balanceAt.get(`${row.id}|${today}`) ?? 0,
         balanceAtLastSettlement: lastSettlement

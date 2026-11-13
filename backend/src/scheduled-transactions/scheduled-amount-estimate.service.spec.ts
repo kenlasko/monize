@@ -307,6 +307,8 @@ describe("ScheduledAmountEstimateService", () => {
         String(sql).includes("linked_transaction_id"),
       )!;
       expect(history[0]).toContain("'VOID'");
+      // Only money sent to the destination: what came back is not a payment.
+      expect(history[0]).toContain("t.amount < 0");
       expect(history[1]).toEqual([
         "user-1",
         ["acc-chequing"],

@@ -259,10 +259,11 @@ The same arithmetic as section 4, over a different history
 (`transfer-estimate-ledger.ts` `loadTransferHistory`): every non-void plain
 transfer from the schedule's account into its destination inside the 24-month
 window, read on the source leg, so its amount is in the schedule's currency
-and negative. A transfer the other way is positive on that leg and is dropped
-by the dominant-side rule as a refund. The payee and category play no part; a
-transfer with no destination is `no-basis`, one with no such transfer
-`no-history`.
+and negative. A transfer the other way is not read at all: the schedule always
+posts out of its source, and were the money brought back the larger side, the
+estimate would turn positive, the opposite of what posting moves. The payee
+and category play no part; a transfer with no destination is `no-basis`, one
+with no such transfer `no-history`.
 
 ### 10.2 The floor
 
@@ -282,6 +283,12 @@ one after:
 | after `S`, on or before `S'` | the closed statement | its remainder: owed at `S` less the credits (payments, refunds) dated after `S` |
 | after `S'`, on or before `S''` | the open cycle | owed today less that remainder |
 | any other | | not raised |
+
+The settlement day is read as the account form describes it, the last day of
+the cycle: a row dated on it is on the statement that closes that day, as in
+the issue's Nov 5 row. (`computeStatementCycle`'s `cycleStart`/`cycleEnd`
+labels place it at the start of the next cycle; only its settlement dates are
+used here.)
 
 So the grace period between a statement's close and its due date is covered:
 until the payment posts, the closed statement's amount is pending, and the open
@@ -330,8 +337,11 @@ The floors ride `ScheduleAmountEstimate.floors`, so `estimatedAmountFor` (the
 expansion, the list read, the save snapshot, the posting) applies them alike;
 `estimateBasisOf` is the one place a schedule becomes a basis. The read model
 sends each floor as `{ after, through, months }`, each month already raised, so
-the debt itself never reaches a client (a delegate's included): a figure under
-the baseline reads as the baseline. `estimateEntryOn`
+a debt under the baseline never reaches a client: it reads as the baseline. A
+raised figure is the bill's own figure, and a delegate who can see the
+schedule sees it as they see a typed amount; when raised it is what the
+destination owes for that payment, even where the delegation cannot read the
+destination. `estimateEntryOn`
 (`frontend/src/lib/scheduled-effective-amount.ts`) reads a date a floor governs
 from the floor before the plain month, and a raised month carries
 `basis: "balance"`, which the estimate text reports as "Raised to cover what
@@ -349,10 +359,14 @@ Estimated transfers are never auto-posted, as section 2.
    statement's remainder.
 4. An occurrence two or more cycles out, and an overdue occurrence of an
    earlier cycle, stay at the baseline.
-5. A transfer with no past transfers is `no-history`, every occurrence unknown,
+5. Known limit: a statement window holds two monthly occurrences only when
+   month-end clamping lands one on the settlement day (a card settling on the
+   28th paid on the 30th: Jan 30 and Feb 28 both pay the Jan 28 statement), and
+   both are raised to it. The person edits one; the next window is empty.
+6. A transfer with no past transfers is `no-history`, every occurrence unknown,
    even when the destination's debt is known: the issue makes the history the
    baseline, and an occurrence away from the floor has no figure. The person
    enters the amount, as for a bill with no payments (section 5).
-6. A frequency change moves an estimated transfer's snapshot (it decides the
+7. A frequency change moves an estimated transfer's snapshot (it decides the
    mode); it is not a change of the basis, so a delegate may make it.
 

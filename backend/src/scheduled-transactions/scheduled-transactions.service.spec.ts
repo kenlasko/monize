@@ -10735,6 +10735,18 @@ describe("ScheduledTransactionsService", () => {
         expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
       });
 
+      it("refuses a preview of a transfer into its own source account", async () => {
+        await expect(
+          service.previewAmountEstimate(userId, {
+            accountId: "acc-1",
+            payeeId: null,
+            categoryId: null,
+            transferAccountId: "acc-1",
+          }),
+        ).rejects.toThrow(BadRequestException);
+        expect(amountEstimates.estimateFor).not.toHaveBeenCalled();
+      });
+
       it("keeps an estimated bill whose category went away editable when the request carries an empty transfer account", async () => {
         stubFindOne(
           makeScheduled({ amountIsEstimated: true, categoryId: null } as never),

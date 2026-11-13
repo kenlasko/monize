@@ -13,7 +13,11 @@ export class AmountEstimateQueryDto {
     description:
       "Payee UUID the payment history is matched on; required unless transferAccountId is sent",
   })
-  @ValidateIf((o) => !o.transferAccountId)
+  // Required without a transfer account; validated whenever it is sent.
+  @ValidateIf(
+    (o, v) =>
+      !o.transferAccountId || (v !== undefined && v !== null && v !== ""),
+  )
   @IsUUID()
   payeeId?: string;
 
@@ -21,7 +25,10 @@ export class AmountEstimateQueryDto {
     description:
       "Category UUID the payment history is matched on; required unless transferAccountId is sent",
   })
-  @ValidateIf((o) => !o.transferAccountId)
+  @ValidateIf(
+    (o, v) =>
+      !o.transferAccountId || (v !== undefined && v !== null && v !== ""),
+  )
   @IsUUID()
   categoryId?: string;
 
