@@ -16,6 +16,7 @@
     "dev:boot": "npm run build && node scripts/dev-boot.mjs"
   },
   "dependencies": {
+    "electron-updater": "6.8.11",
     "pg": "^8.23.1"
   },
   "optionalDependencies": {

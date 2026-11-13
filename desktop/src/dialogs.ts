@@ -110,3 +110,53 @@ export async function showRecoveryKey(
     noLink: true,
   });
 }
+
+export async function showUpToDate(
+  version: string,
+  parent: BrowserWindow | null,
+): Promise<void> {
+  await ask(parent, {
+    type: "info",
+    title: APP_NAME,
+    message: TEXT.updateUpToDateTitle,
+    detail: TEXT.updateUpToDateMessage(version),
+    buttons: [TEXT.close],
+    noLink: true,
+  });
+}
+
+export async function showUpdateFailed(context: {
+  readonly parent: BrowserWindow | null;
+  readonly logsDir: string;
+  readonly logger: Logger;
+}): Promise<void> {
+  const response = await ask(context.parent, {
+    type: "warning",
+    title: APP_NAME,
+    message: TEXT.updateFailedTitle,
+    detail: TEXT.updateFailedMessage,
+    buttons: [TEXT.showLogs, TEXT.close],
+    defaultId: 1,
+    cancelId: 1,
+    noLink: true,
+  });
+  if (response === 0) await openFolder(context.logsDir, context.logger);
+}
+
+/** True only for Restart now; closing the box is Later. */
+export async function confirmInstallUpdate(
+  version: string,
+  parent: BrowserWindow | null,
+): Promise<boolean> {
+  const response = await ask(parent, {
+    type: "question",
+    title: APP_NAME,
+    message: TEXT.updateReadyTitle(version),
+    detail: TEXT.updateReadyMessage,
+    buttons: [TEXT.updateRestartNow, TEXT.updateLater],
+    defaultId: 0,
+    cancelId: 1,
+    noLink: true,
+  });
+  return response === 0;
+}

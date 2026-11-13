@@ -83,5 +83,28 @@ export const TEXT = {
   trayShowLogs: "Show logs",
   trayShowRecoveryKey: "Show recovery key...",
   trayCheckForUpdates: "Check for updates",
+  trayCheckingForUpdates: "Checking for updates...",
+  trayDownloadingUpdate: (percent: number) =>
+    `Downloading update... ${percent}%`,
+  trayRestartToUpdate: (version: string) => `Restart to update to ${version}`,
+  trayInstallingUpdate: "Installing update...",
   trayQuit: "Quit Monize",
+
+  updateUpToDateTitle: "Monize is up to date",
+  updateUpToDateMessage: (version: string) =>
+    `You have the newest version, ${version}.`,
+  updateFailedTitle: "Monize could not check for updates",
+  updateFailedMessage:
+    "The check or the download did not complete. Check the internet " +
+    "connection and try again from the tray icon; the logs say what happened. " +
+    "Monize keeps working as it is.",
+  updateReadyTitle: (version: string) =>
+    `Monize ${version} is ready to install`,
+  updateReadyMessage:
+    "Monize closes, stops its database and installs the update, then opens " +
+    "again. This takes a minute or two; your data stays where it is.",
+  updateRestartNow: "Restart now",
+  updateLater: "Later",
+  updateNotificationBody:
+    "Click here, or choose Restart to update in the tray menu, when it suits you.",
 } as const;

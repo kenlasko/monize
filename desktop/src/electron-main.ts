@@ -5,7 +5,6 @@ import {
   safeStorage,
   session,
   shell,
-  Tray,
 } from "electron";
 import { homedir } from "os";
 import { join, resolve } from "path";
@@ -31,7 +30,9 @@ import { effectiveSafeStorage } from "./shell/safe-storage";
 import { isPresentableError } from "./shell/splash-view";
 import { TEXT } from "./shell/strings";
 import { createSplash } from "./splash";
-import { createTray } from "./tray";
+import { UpdatePolicy } from "./shell/update-policy";
+import { createTray, TrayHandle } from "./tray";
+import { createUpdater } from "./updater";
 import {
   createMainWindow,
   installPermissionPolicy,
@@ -43,7 +44,8 @@ import {
  * Order matters. The single-instance lock is taken before anything else (a
  * second shell would otherwise find the first one's PostgreSQL, take it for
  * an orphan and stop it); then the splash, the runtime, the boot, the window.
- * Quitting holds `before-quit` until `supervisor.stop()` has resolved.
+ * Quitting holds `before-quit` until `supervisor.stop()` has resolved, and an
+ * update installs only after the same stop (`shell/update-policy.ts`).
  */
 
 /** `dist/` when built, so `desktop/` is one level up. */
@@ -109,7 +111,8 @@ function main(): void {
 function run(paths: AppPaths): void {
   const iconPath = iconPathFor(paths);
   let mainWindow: BrowserWindow | null = null;
-  let tray: Tray | null = null;
+  let tray: TrayHandle | null = null;
+  let updates: UpdatePolicy | null = null;
 
   const controller = createShellController({
     createRuntime: () =>
@@ -136,6 +139,7 @@ function run(paths: AppPaths): void {
         mainWindow = openApp(runtime, url);
         splash.close();
       },
+      stackReady: () => updates?.stackReady(),
       navigate: (url) => {
         if (mainWindow === null) return;
         void mainWindow.loadURL(url).catch(() => undefined);
@@ -184,9 +188,22 @@ function run(paths: AppPaths): void {
       isQuitting: () => gate.quitting,
       trayAvailable: () => tray !== null,
     });
+    const updater = createUpdater({
+      logger,
+      logsDir: runtime.paths.data.logs,
+      window: () => mainWindow,
+      stopStack: () => controller.shutdown(),
+      isQuitting: () => gate.quitting,
+      quit: () => app.quit(),
+      beginInstall: () => {
+        logger.info("Shell: installing an update; stopping the stack first.");
+        mainWindow?.hide();
+      },
+    });
+    updates = updater;
     tray = createTray({
       iconPath,
-      state: { updatesAvailable: false },
+      state: { update: updater.state },
       logger,
       handlers: {
         open: () => showWindow(window),
@@ -194,10 +211,11 @@ function run(paths: AppPaths): void {
         "show-logs": () => void openFolder(runtime.paths.data.logs, logger),
         "show-recovery-key": () =>
           void showRecoveryKey(runtime.bootstrap.secrets.encryptionKey, window),
-        "check-for-updates": () => undefined,
+        "check-for-updates": () => updater.menuAction(),
         quit: () => app.quit(),
       },
     });
+    updater.onChange((update) => tray?.setState({ update }));
     return window;
   }
 

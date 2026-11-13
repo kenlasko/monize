@@ -26,6 +26,7 @@ function recorder(): Recorder {
       events.push(`splash:${view.title}`);
     },
     openApp: (_runtime, url) => events.push(`open:${url}`),
+    stackReady: () => events.push("ready"),
     navigate: (url) => events.push(`navigate:${url}`),
     focus: () => events.push("focus"),
     addressChanged: (origin) => events.push(`moved:${origin}`),
@@ -76,8 +77,26 @@ describe("createShellController", () => {
       `splash:${STATUS_TEXT.idle}`,
       `splash:${STATUS_TEXT.postgres}`,
       `open:${FAKE_ORIGIN}`,
+      "ready",
     ]);
     expect(controller.runtime).toBe(runtime);
+  });
+
+  it("says the stack is ready once, after the window and the address notice", async () => {
+    const runtime = fakeRuntime(["frontend"]);
+    const { ui, controller } = setup(runtime);
+    const booted = controller.boot();
+    await tick();
+    await runtime.settleStart({ outcome: "ready" });
+    await booted;
+    await controller.boot();
+    await controller.retry();
+    expect(ui.events.slice(-3)).toEqual([
+      `open:${FAKE_ORIGIN}`,
+      `moved:${FAKE_ORIGIN}`,
+      "ready",
+    ]);
+    expect(ui.events.filter((e) => e === "ready")).toHaveLength(1);
   });
 
   it("redacts the two secrets the runtime does not", async () => {
@@ -124,9 +143,10 @@ describe("createShellController", () => {
 
     const retried = controller.retry();
     expect(runtime.calls).toEqual(["start", "start"]);
+    expect(ui.events).not.toContain("ready");
     await runtime.settleStart({ outcome: "ready" });
     await retried;
-    expect(ui.events[ui.events.length - 1]).toBe(`open:${FAKE_ORIGIN}`);
+    expect(ui.events.slice(-2)).toEqual([`open:${FAKE_ORIGIN}`, "ready"]);
   });
 
   it("ignores Retry while a boot is running or after it succeeded", async () => {
@@ -258,5 +278,6 @@ describe("createShellController", () => {
     await runtime.settleStart({ outcome: "ready" });
     await Promise.all([booted, stopped]);
     expect(ui.events.some((e) => e.startsWith("open:"))).toBe(false);
+    expect(ui.events).not.toContain("ready");
   });
 });

@@ -23,6 +23,8 @@ export interface ShellUi {
   showSplash(view: SplashView): void;
   /** The stack answered: open the main window on `url`, close the splash. */
   openApp(runtime: Runtime, url: string): void;
+  /** Once, right after `openApp`: the stack first reached `ready` (the updater's cue). */
+  stackReady(runtime: Runtime): void;
   /** Load `url` (already checked to be on the app's origin) and focus. */
   navigate(url: string): void;
   /** Bring the shell forward: the main window once open, else the splash. */
@@ -93,6 +95,7 @@ export function createShellController(deps: ControllerDeps): ShellController {
         if (rt.bootstrap.movedPorts.length > 0) {
           ui.addressChanged(rt.origin);
         }
+        ui.stackReady(rt);
       }
     } else if (result.outcome === "failed") {
       lastFailed = true;
