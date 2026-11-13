@@ -41,18 +41,26 @@ import {
  * foreign row at the market rate on its own date (INV-FX-001), whichever reader
  * asks (discussion #2105, issue #2146).
  *
- * The reader reports in EUR. A USD card holds a hotel night entered as
- * EUR 100 and charged as USD 125 (1 EUR = 1.25 USD) on a day the market said
- * 1.175, so the market rate would read EUR 106.38, the figure `list_transactions`
- * once gave while Spending by Category gave EUR 100. Beside it: a USD row with
- * no rate of its own (USD 110 when the market said 1.10, EUR 100, though the
- * month's last rate would read EUR 93.62), EUR 50 already in the reporting
- * currency, and EUR 200 of income received as USD 250 at its own 1.25 (the
- * market's 1.10 that day would read EUR 227.27).
+ * The reader reports in EUR; the market says 1 EUR = 1.20 USD from day 14 and
+ * 1.175 from day 27, the month's last rate. The rows:
  *
- * Every surface reads EUR 250 of expenses and EUR 200 of income. A surface that
- * took the market rate for an own-rate row, or a month's last rate for a dated
- * one, reads a different number, and the assertion names it.
+ *   day 10  EUR 50 spent, already in the reporting currency     EUR  50.00
+ *   day 15  USD 132 spent, no rate of its own: 132 / 1.20        EUR 110.00
+ *   day 20  EUR 200 received as USD 250 at its own 1.25          EUR 200.00
+ *   day 28  EUR 100 charged as USD 125 at its own 1.25 (the      EUR 100.00
+ *           discussion's row; the market's 1.175 reads 106.38,
+ *           the figure `list_transactions` once gave)
+ *
+ * Every surface reads EUR 260 of expenses and EUR 200 of income. Each wrong
+ * reader reads a number of its own, so no two mistakes cancel:
+ *
+ *   own rate ignored (market on each day)    expenses 266.38  income 208.33
+ *   month's last (or latest) rate, own rate  expenses 262.34  income 200.00
+ *   both of those                            expenses 268.72  income 212.77
+ *
+ * An edit to the fixture keeps those four expense figures apart: USD 110 at
+ * 1.10 beside the USD 125 once made "both mistakes" read (110 + 125) / 1.175,
+ * the right total exactly, and the expense assertions caught neither.
  */
 describe("a row's own rate on every surface (integration)", () => {
   let module: TestingModule;
@@ -81,7 +89,7 @@ describe("a row's own rate on every surface (integration)", () => {
   };
   const day = (n: number) => addDaysYMD(START, n - 1);
 
-  const EXPENSES = 250;
+  const EXPENSES = 260;
   const INCOME = 200;
 
   beforeAll(async () => {
@@ -179,10 +187,10 @@ describe("a row's own rate on every surface (integration)", () => {
         payeeId: hotel.id,
         payeeName: hotel.name,
       },
-      // USD 110 with no rate of its own: the market's 1.10 on its day.
+      // USD 132 with no rate of its own: the market's 1.20 on its day.
       {
         accountId: usCard.id,
-        amount: -110,
+        amount: -132,
         currencyCode: "USD",
         transactionDate: day(15),
         categoryId: travelId,
@@ -229,7 +237,7 @@ describe("a row's own rate on every surface (integration)", () => {
     }
     // EUR->USD, the canonical orientation (`EUR` sorts before `USD`).
     for (const [date, rate] of [
-      [day(14), "1.1000000000"],
+      [day(14), "1.2000000000"],
       [day(27), "1.1750000000"],
     ]) {
       await dataSource.query(
@@ -384,7 +392,7 @@ describe("a row's own rate on every surface (integration)", () => {
       totalIncome: INCOME,
       missingCurrencies: [],
     });
-    // The bar chart's signed month: -50 - 100 + 200 - 100.
+    // The bar chart's signed month: -50 - 110 + 200 - 100.
     expect(monthly).toEqual([
       expect.objectContaining({
         month: MONTH,
