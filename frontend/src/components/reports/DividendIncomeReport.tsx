@@ -416,10 +416,10 @@ export function DividendIncomeReport() {
   );
 
   // Backend returns each capital gain entry in the holding account's currency,
-  // and the same figures in the reporting currency at the rate for the entry's
-  // own period (`inReportingCurrency`). A single account reads its native
-  // figures; several read the reporting-currency ones, never a past month at
-  // today's rate (issue #2106).
+  // and the same figures folded in the reporting currency, each flow at its own
+  // rate (`inReportingCurrency`). A single account reads its native figures;
+  // several read the reporting-currency ones, never a past month at today's
+  // rate (issues #2106, #2130).
   const convertCapitalGain = useCallback((entry: CapitalGainEntry): number | null => {
     // A null gain is unknown (no rate between the security's currency and the
     // account's); it must not survive conversion as a 0.

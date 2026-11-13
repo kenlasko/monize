@@ -1099,9 +1099,10 @@ export interface CapitalGainEntry {
   unrealizedGain: number | null;
   totalCapitalGain: number | null;
   /**
-   * The same figures in the reader's reporting currency, at the rate for the
-   * entry's own period (a month's last day, a day's own), from the server
-   * (issue #2106). Null where unknown.
+   * The same figures in the reader's reporting currency, from the server's
+   * fold in that currency: each boundary at its own date's rate, each flow at
+   * its own, and the realized gain each sale's as Realized Gains states it
+   * (issues #2106, #2130). Null where unknown.
    */
   inReportingCurrency?: {
     currency: string;

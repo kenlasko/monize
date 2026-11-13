@@ -2163,6 +2163,27 @@ describe("ReportsService", () => {
           expect(result.summary.total).toBe(2);
         });
 
+        it("leaves a group's currency part out whole when one of its days has no rate (issue #2130)", async () => {
+          // The rate is observed on 2025-01-10, so the refund struck in December
+          // is past FX_MAX_RATE_AGE_DAYS and has none. Keeping the January debit
+          // alone would read 290: a debit in, its refund out.
+          storedRates.set("JPY->CAD", 0.009);
+          const result = await run(GroupByType.CATEGORY, [
+            cad("tx-1", -200),
+            jpy("tx-2", -10000, { transactionDate: "2025-01-10" }),
+            jpy("tx-3", 5000, { transactionDate: "2025-12-20" }),
+          ]);
+
+          expect(result.data).toHaveLength(1);
+          expect(result.data[0].value).toBe(200);
+          expect(result.data[0].count).toBe(1);
+          expect(result.summary.total).toBeNull();
+          expect(result.summary.knownTotal).toBe(200);
+          expect(result.missingCurrencies).toEqual(["JPY"]);
+          // The refund with no rate, and the debit that left with it.
+          expect(result.excludedCount).toBe(2);
+        });
+
         it("leaves a zero amount in without a rate", async () => {
           const result = await run(GroupByType.CATEGORY, [
             cad("tx-1", -200),

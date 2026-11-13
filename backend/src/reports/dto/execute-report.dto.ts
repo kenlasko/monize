@@ -82,7 +82,14 @@ export interface ReportResult {
    * are in none of the figures. Empty when the report is complete.
    */
   missingCurrencies: string[];
-  /** How many rows (or split lines) were left out for want of a rate. */
+  /**
+   * How many rows (or split lines) were left out for want of a rate: those
+   * with none, and those of the same currency in the same group and category
+   * that left with them where no other group kept them, so a refund struck on
+   * a day with no rate never leaves its debit standing alone. The amounts of a
+   * part with no rate could not be converted as a whole, as a built-in
+   * report's group with a day no rate reaches cannot.
+   */
   excludedCount: number;
   /**
    * True when the row limit cut the read short (the newest rows are the ones

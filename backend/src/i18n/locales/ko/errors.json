@@ -878,7 +878,8 @@
     "transferCounterpartChanged": "편집 중에 이 이체의 상대편이 변경되었습니다. 새로 고친 뒤 다시 시도하세요.",
     "splitTransferTargetAmountRequiresTransfer": "수령 금액은 분할 내 이체에만 지정할 수 있습니다",
     "splitIdNotOnTransaction": "splitId {{ splitId }}은(는) 이 거래의 분할 항목이 아닙니다. 거래의 분할 항목을 다시 읽고 해당 splitId 값을 사용하세요.",
-    "splitIdRepeated": "splitId {{ splitId }}이(가) 여러 줄에 지정되었습니다. 기존 각 항목은 한 번만 이어받을 수 있습니다."
+    "splitIdRepeated": "splitId {{ splitId }}이(가) 여러 줄에 지정되었습니다. 기존 각 항목은 한 번만 이어받을 수 있습니다.",
+    "splitTagCarryAmbiguous": "다시 보낸 각 줄이 어느 기존 분할 줄을 이어받는지 모호하며, 해당 줄에는 태그가 있습니다. 다시 보내는 각 줄에 이어받는 줄의 splitId를 거래의 분할 줄을 읽은 그대로 지정하세요."
   },
   "users": {
     "userNotFound": "사용자를 찾을 수 없습니다",

@@ -878,7 +878,8 @@
     "transferCounterpartChanged": "Phía bên kia của giao dịch chuyển khoản này đã thay đổi trong khi bạn chỉnh sửa. Hãy tải lại và thử lại.",
     "splitTransferTargetAmountRequiresTransfer": "Chỉ giao dịch chuyển khoản trong phần tách mới có thể có số tiền nhận",
     "splitIdNotOnTransaction": "splitId {{ splitId }} không phải là dòng chia của giao dịch này. Hãy đọc lại các dòng chia của giao dịch và dùng giá trị splitId của chúng.",
-    "splitIdRepeated": "splitId {{ splitId }} được nêu ở nhiều hơn một dòng. Mỗi dòng hiện có chỉ được tiếp nối một lần."
+    "splitIdRepeated": "splitId {{ splitId }} được nêu ở nhiều hơn một dòng. Mỗi dòng hiện có chỉ được tiếp nối một lần.",
+    "splitTagCarryAmbiguous": "Không rõ mỗi dòng gửi lại tiếp nối dòng chia hiện có nào, và các dòng đó mang thẻ. Hãy ghi cho mỗi dòng gửi lại splitId của dòng mà nó tiếp nối, như khi các dòng chia của giao dịch được đọc."
   },
   "users": {
     "userNotFound": "Không tìm thấy người dùng",

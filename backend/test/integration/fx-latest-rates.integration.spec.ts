@@ -40,6 +40,7 @@ import { PayeeDetailService } from "@/payees/payee-detail.service";
 import { Tag } from "@/tags/entities/tag.entity";
 import { PortfolioService } from "@/securities/portfolio.service";
 import { AiUsageService } from "@/ai/ai-usage.service";
+import { InsightsAggregatorService } from "@/ai/insights/insights-aggregator.service";
 
 /**
  * INV-FX-001 and INV-FX-003 against a real PostgreSQL database: "the rate for a
@@ -342,6 +343,150 @@ describe("latest exchange rates and the readers that take them (integration)", (
     expect(payeeDetail.accounts.map((r) => r.convertedTotal)).toEqual([-2650]);
   });
 
+  it("converts a row at its own rate alike in the reports and the assistant (issue #2130)", async () => {
+    await dataSource.manager.save(
+      dataSource.manager.create(UserPreference, {
+        userId,
+        defaultCurrency: "EUR",
+      }),
+    );
+    const usCard = await createTestAccount(dataSource, userId, {
+      name: "US Card",
+      currencyCode: "USD",
+    });
+    const euChequing = await createTestAccount(dataSource, userId, {
+      name: "EU Chequing",
+      currencyCode: "EUR",
+    });
+    const category = await createTestCategory(dataSource, userId, {
+      name: "Travel",
+    });
+    const day = addDaysYMD(today, -30);
+    // EUR 100 charged as USD 125 (1 EUR = 1.25 USD) on a day the market said
+    // 1.175, beside EUR 50 already in the reporting currency.
+    for (const row of [
+      {
+        accountId: usCard.id,
+        amount: -125,
+        currencyCode: "USD",
+        originalCurrencyCode: "EUR",
+        originalAmount: -100,
+        exchangeRate: 1.25,
+      },
+      { accountId: euChequing.id, amount: -50, currencyCode: "EUR" },
+    ]) {
+      await dataSource.manager.save(
+        dataSource.manager.create(Transaction, {
+          userId,
+          transactionDate: day,
+          payeeName: "Hotel",
+          categoryId: category.id,
+          status: TransactionStatus.UNRECONCILED,
+          isTransfer: false,
+          isSplit: false,
+          ...row,
+        } as Partial<Transaction>),
+      );
+    }
+    await insertRate("EUR", "USD", addDaysYMD(day, -1), "1.1750000000");
+
+    const analytics = new TransactionAnalyticsService(dataSource);
+    const window = { startDate: addDaysYMD(today, -60), endDate: today };
+    const [report, assistant, summary, grouped, detail] = await withUserContext(
+      userId,
+      async () =>
+        [
+          await spending.getSpendingByCategory(
+            userId,
+            window.startDate,
+            window.endDate,
+          ),
+          await analytics.getLlmListTransactions(userId, {
+            ...window,
+            groupBy: "category",
+            direction: "expenses",
+          }),
+          await analytics.getSummary(
+            userId,
+            undefined,
+            window.startDate,
+            window.endDate,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            { inReportingCurrency: true },
+          ),
+          await analytics.getGroupedTotals(userId, {
+            groupBy: "category",
+            ...window,
+          }),
+          await new CategoryDetailService(dataSource, {
+            findOne: async () => category,
+          } as never).getDetail(userId, category.id),
+        ] as const,
+    );
+
+    // EUR 100 at its own rate plus EUR 50; the market rate read EUR 156.38.
+    expect(report.totalSpending).toBe(150);
+    expect(assistant.totalExpenses).toBe(150);
+    expect(assistant.fxComplete).toBe(true);
+    expect(assistant.breakdown).toEqual([
+      expect.objectContaining({ categoryId: category.id, total: 150 }),
+    ]);
+    expect(summary.converted).toMatchObject({
+      currency: "EUR",
+      totalExpenses: 150,
+      missingCurrencies: [],
+    });
+    expect(summary.byCurrency).toEqual({
+      EUR: expect.objectContaining({ totalExpenses: 50, transactionCount: 1 }),
+      USD: expect.objectContaining({ totalExpenses: 125, transactionCount: 1 }),
+    });
+    expect(
+      grouped.map((r) => [r.currencyCode, r.total, r.convertedTotal]).sort(),
+    ).toEqual([
+      ["EUR", -50, -50],
+      ["USD", -125, -100],
+    ]);
+    // The bound stays in the read: the largest group only, its parts whole.
+    const top = await withUserContext(userId, () =>
+      analytics.getGroupedTotals(userId, {
+        groupBy: "category",
+        ...window,
+        limit: 1,
+      }),
+    );
+    expect(top.map((r) => [r.currencyCode, r.total, r.convertedTotal])).toEqual(
+      [["USD", -125, -100]],
+    );
+    // The assistant's spending insights read the same EUR 150.
+    const insights = await withUserContext(userId, () =>
+      new InsightsAggregatorService(dataSource, analytics).computeAggregates(
+        userId,
+        "EUR",
+      ),
+    );
+    expect(insights.fxComplete).toBe(true);
+    expect(
+      insights.monthlySpending.reduce((sum, month) => sum + month.total, 0),
+    ).toBe(150);
+    // The detail page's account panel, from its one read.
+    expect(
+      detail.accounts
+        .map((r) => [r.currencyCode, r.total, r.convertedTotal])
+        .sort(),
+    ).toEqual([
+      ["EUR", -50, -50],
+      ["USD", -125, -100],
+    ]);
+  });
+
   it("states a foreign brokerage's history at each row's own date (issue #2106)", async () => {
     await dataSource.manager.save(
       dataSource.manager.create(UserPreference, {
@@ -432,6 +577,79 @@ describe("latest exchange rates and the readers that take them (integration)", (
     expect(usage.reportingCurrency).toBe("CAD");
     // No usage logged: no cost to state, unknown rather than zero.
     expect(usage.totalEstimatedCostInReportingCurrency).toBeNull();
+  });
+
+  it("states a sale's gain alike in Realized Gains and the capital-gain entries (issue #2130)", async () => {
+    await dataSource.manager.save(
+      dataSource.manager.create(UserPreference, {
+        userId,
+        defaultCurrency: "CAD",
+      }),
+    );
+    const past = addDaysYMD(today, -60);
+    const sold = addDaysYMD(today, -10);
+    // 1.25 CAD per USD around the purchase; 1.40 from the sale on.
+    await insertRate("CAD", "USD", addDaysYMD(past, -2), "0.8000000000");
+    await insertRate("CAD", "USD", addDaysYMD(sold, -1), "0.7142857143");
+    const brokerage = await createTestAccount(dataSource, userId, {
+      name: "US Brokerage",
+      currencyCode: "USD",
+    });
+    await dataSource.manager.update(Account, brokerage.id, {
+      accountType: AccountType.INVESTMENT,
+      accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+    });
+    const funding = await createTestAccount(dataSource, userId, {
+      name: "US Chequing",
+      currencyCode: "USD",
+      openingBalance: 10000,
+      currentBalance: 10000,
+    });
+    const security = await withUserContext(userId, () =>
+      module.get(SecuritiesService).create(userId, {
+        symbol: "MSFT",
+        name: "Microsoft",
+        securityType: "STOCK" as any,
+        currencyCode: "USD",
+      } as any),
+    );
+    for (const [action, transactionDate, price] of [
+      [InvestmentAction.BUY, past, 100],
+      [InvestmentAction.SELL, sold, 110],
+    ] as const) {
+      await withUserContext(userId, () =>
+        investments.create(userId, {
+          accountId: brokerage.id,
+          action,
+          transactionDate,
+          securityId: security.id,
+          fundingAccountId: funding.id,
+          quantity: 10,
+          price,
+          commission: 0,
+        }),
+      );
+    }
+
+    const [realized, gains] = await withUserContext(
+      userId,
+      async () =>
+        [
+          await investments.getRealizedGains(userId),
+          await investments.getCapitalGainsByMonth(userId, {
+            startDate: addDaysYMD(past, -1),
+            endDate: today,
+          }),
+        ] as const,
+    );
+
+    // 1,100 USD at 1.40 less 1,000 USD at 1.25: 290 CAD, in both reports.
+    expect(realized).toHaveLength(1);
+    expect(realized[0].inReportingCurrency.realizedGain).toBe(290);
+    const realizedInEntries = gains
+      .map((entry) => entry.inReportingCurrency.realizedGain)
+      .filter((gain) => gain !== 0);
+    expect(realizedInEntries).toEqual([290]);
   });
 
   it("rejects a back-dated cross-currency trade when only today's rate is stored", async () => {

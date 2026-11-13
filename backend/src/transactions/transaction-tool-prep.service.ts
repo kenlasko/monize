@@ -29,7 +29,6 @@ import {
   BatchCreateTransferRow,
   ResolvedSplitLine,
   toSplitRowDescriptor,
-  toSplitPreview,
 } from "../ai/actions/ai-action.types";
 import {
   transactionPreviewRow,
@@ -47,14 +46,12 @@ import {
 } from "../common/foreign-entry.util";
 import {
   ForeignEntryPreviewRequest,
-  foreignEntryDisplayFields,
   foreignEntryWriteFields,
 } from "./foreign-entry-preview";
 import { carrySplitTags } from "./split-tag-carry.util";
+import { updatePreviewRow } from "./update-preview-row.util";
 import {
-  splitTagChangeDisplayFields,
   splitTagChangeWriteFields,
-  tagChangeDisplayFields,
   tagChangeFields,
   tagChangeWriteFields,
 } from "../tags/tag-change.util";
@@ -67,7 +64,8 @@ export interface SplitLineInput {
   /**
    * Update only: the existing line this one continues (a read tool's
    * `splitId`), whose tags it keeps. Without it a line keeps the tags of an
-   * existing line of the same category (`carrySplitTags`).
+   * existing line of the same category, and amount and memo where they tell
+   * lines apart; an ambiguous match is refused (`carrySplitTags`).
    */
   splitId?: string;
   /** `"ai"` marks a category the AI chose, on the confirmation card only. */
@@ -792,11 +790,13 @@ export class TransactionToolPrepService {
         id: line.id,
         categoryId: line.categoryId,
         amount: line.amount,
+        memo: line.memo,
         tags: line.tags,
       })),
       resolved.map((line, i) => ({
         categoryId: line.categoryId,
         amount: line.amount,
+        memo: line.memo,
         ...(inputs[i]?.splitId ? { splitId: inputs[i].splitId } : {}),
       })),
     );
@@ -910,24 +910,7 @@ export class TransactionToolPrepService {
           ...(preview.tagsOnly ? { tagsOnly: true as const } : {}),
         });
         okIndex.push(i);
-        previewRows.push({
-          status: "ok",
-          accountName: preview.accountName,
-          amount: preview.amount,
-          currencyCode: preview.currencyCode,
-          transactionDate: preview.transactionDate,
-          payeeName: preview.payeeName,
-          payeeWillBeCreated: preview.payeeWillBeCreated,
-          // The card shows the split lines instead of a single category name,
-          // because that is what the row will write.
-          categoryName: splits ? null : preview.categoryName,
-          description: preview.description,
-          isReconciled: preview.isReconciled,
-          ...foreignEntryDisplayFields(preview),
-          ...(splits ? { splits: splits.map(toSplitPreview) } : {}),
-          ...tagChangeDisplayFields(preview),
-          ...splitTagChangeDisplayFields(preview),
-        });
+        previewRows.push(updatePreviewRow(result));
       } catch (err) {
         const reason = this.skipReason(err);
         skipped.push({ index: i, reason });
@@ -940,6 +923,37 @@ export class TransactionToolPrepService {
     }
 
     return { okRows, previewRows, okIndex, skipped };
+  }
+
+  /**
+   * Preview each edit as its own card would: what a single item and
+   * `approvalMode: "individual"` apply, one card per row, where a transfer
+   * edit is a card of its own rather than a skipped row (`prepareUpdateBulk`).
+   * A dryRun of those modes previews through this, so it accepts what their
+   * save accepts.
+   */
+  async prepareUpdateEach(
+    userId: string,
+    items: UpdateRowInput[],
+  ): Promise<{ previewRows: AiActionPreviewRow[]; skipped: BulkCreateSkip[] }> {
+    const previewRows: AiActionPreviewRow[] = [];
+    const skipped: BulkCreateSkip[] = [];
+    for (const [i, item] of items.entries()) {
+      try {
+        previewRows.push(
+          updatePreviewRow(await this.prepareUpdate(userId, item)),
+        );
+      } catch (err) {
+        const reason = this.skipReason(err);
+        skipped.push({ index: i, reason });
+        previewRows.push({
+          status: "error",
+          transactionDate: item.date ?? undefined,
+          error: reason,
+        });
+      }
+    }
+    return { previewRows, skipped };
   }
 
   /** Map each delete to a batch row descriptor best-effort. */

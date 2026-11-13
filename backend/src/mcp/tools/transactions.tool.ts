@@ -688,7 +688,12 @@ export class McpTransactionsTools {
           }
 
           if (args.dryRun) {
-            return this.manageDryRun(user.userId, operation, items);
+            return this.manageDryRun(
+              user.userId,
+              operation,
+              items,
+              approvalMode,
+            );
           }
           if (operation === "create") {
             return await this.manageCreate(
@@ -983,11 +988,15 @@ export class McpTransactionsTools {
     });
   }
 
-  /** Dry-run preview for every item without writing. */
+  /**
+   * Dry-run preview for every item without writing, through the path the save
+   * would take for the same request and approval mode (`manageUpdate`).
+   */
   private async manageDryRun(
     userId: string,
     operation: ManageOperation,
     items: ManageItem[],
+    approvalMode: ApprovalMode,
   ) {
     // A single split create/update is its own rich unit; the bulk preview
     // helpers do not carry splits.
@@ -1021,15 +1030,18 @@ export class McpTransactionsTools {
       });
     }
     if (operation === "update") {
-      const bulk = await this.prepService.prepareUpdateBulk(
-        userId,
-        items.map((i) => this.toUpdateRow(i)),
-      );
+      // A single item and individual approval save one card per row, where a
+      // transfer is its own card; only a bulk card skips transfers.
+      const rows = items.map((i) => this.toUpdateRow(i));
+      const prepared =
+        items.length === 1 || approvalMode === "individual"
+          ? await this.prepService.prepareUpdateEach(userId, rows)
+          : await this.prepService.prepareUpdateBulk(userId, rows);
       return toolResult({
         dryRun: true,
         operation,
-        previews: bulk.previewRows,
-        skipped: bulk.skipped,
+        previews: prepared.previewRows,
+        skipped: prepared.skipped,
         message:
           "This is a preview. Call again with dryRun=false to apply the changes.",
       });

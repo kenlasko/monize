@@ -142,6 +142,8 @@ Every card's item comes from `confirmItemsForCards`, so what a card is fingerpri
 
 Two consequences to keep: **individual approval mode asks for every card in ONE round** (a round per card would be 25 rounds on a full batch, and the flow allows two), and **a relay card is offered only on the round that asks** -- on a retry the human has already answered in their own client, and a web-chat turn that began in between would swallow that answer.
 
+**A `dryRun` previews through the path its save would take.** `manage_transactions` saves a single item, and `approvalMode: "individual"` (which `resolveApprovalMode` picks below `BULK_APPROVAL_THRESHOLD` items), one card per row, where a transfer edit is a card of its own; only a bulk card skips transfers. Its update preview follows the same choice: `TransactionToolPrepService.prepareUpdateEach` for the first two, `prepareUpdateBulk` for the bulk card, both mapping a row through `updatePreviewRow`. Previewing every update through the bulk preparer refused a single transfer tag edit that the save then applied.
+
 **On a 2025-era connection the server asks and waits**, exactly as it always did, through `ctx.mcpReq.elicitInput` (which relates the dialog to the tool call; a server-to-client request with no relation goes to the standalone GET stream, which a tool-calling client does not hold open). The SDK's own `legacyShim` is off: our fallback for a client that cannot show a dialog is behavioural, and a shim cannot reproduce it.
 
 ## An advertised capability is not evidence; observed behaviour is

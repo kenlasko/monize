@@ -878,7 +878,8 @@
     "transferCounterpartChanged": "De andere kant van deze overboeking is gewijzigd tijdens het bewerken. Herlaad en probeer het opnieuw.",
     "splitTransferTargetAmountRequiresTransfer": "Alleen een overboeking in een splitsing kan een ontvangen bedrag hebben",
     "splitIdNotOnTransaction": "splitId {{ splitId }} is geen splitsregel van deze transactie. Lees de splitsregels van de transactie opnieuw en gebruik hun splitId-waarden.",
-    "splitIdRepeated": "splitId {{ splitId }} wordt door meer dan één regel genoemd. Elke bestaande regel kan maar één keer worden voortgezet."
+    "splitIdRepeated": "splitId {{ splitId }} wordt door meer dan één regel genoemd. Elke bestaande regel kan maar één keer worden voortgezet.",
+    "splitTagCarryAmbiguous": "Het is onduidelijk welke bestaande splitsingsregel elke opnieuw verzonden regel voortzet, en de regels hebben tags. Geef elke opnieuw verzonden regel de splitId van de regel die hij voortzet, zoals de splitsingsregels van de transactie zijn gelezen."
   },
   "users": {
     "userNotFound": "Gebruiker niet gevonden",

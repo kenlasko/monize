@@ -75,19 +75,10 @@ import { SecuritiesService } from "./securities.service";
 import { SecurityPriceService } from "./security-price.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
-import {
-  buildRateIndex,
-  convertAtDate,
-} from "../common/time-series/rate-index.util";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { attachInvestmentRowReportingRates } from "./investment-row-reporting-rates";
 import { CurrenciesService } from "../currencies/currencies.service";
-import {
-  FIAT_MONEY_DECIMALS,
-  roundToDecimals,
-  roundMoney,
-  sumMoney,
-} from "../common/round.util";
+import { roundToDecimals, roundMoney, sumMoney } from "../common/round.util";
 import { stripHtml } from "../common/sanitization.util";
 import {
   BulkCreateResult,
@@ -491,27 +482,6 @@ function keepsStoredSeries(
         String(stored.transactionDate).slice(0, 10))
   );
 }
-
-/** A capital-gain entry's money figures, in the reporting currency. */
-interface CapitalGainFiguresInReporting {
-  startValue: number | null;
-  endValue: number | null;
-  realizedGain: number | null;
-  realizedGainKnownSubtotal: number | null;
-  unrealizedGain: number | null;
-  totalCapitalGain: number | null;
-  /** `"CAD->USD"` when a figure is unknown for want of this period's rate. */
-  missingRatePairs: string[];
-}
-
-/**
- * A capital-gain entry as the report endpoints return it: the account-currency
- * figures, and the same ones in the reader's reporting currency at the rate
- * for the entry's own period (issue #2106).
- */
-export type CapitalGainEntryWithReporting = CapitalGainEntry & {
-  inReportingCurrency: CapitalGainFiguresInReporting & { currency: string };
-};
 
 @Injectable()
 export class InvestmentTransactionsService {
@@ -3675,7 +3645,7 @@ export class InvestmentTransactionsService {
       startDate: string;
       endDate: string;
     },
-  ): Promise<CapitalGainEntryWithReporting[]> {
+  ): Promise<CapitalGainEntry[]> {
     let accountIds = opts.accountIds;
     if (accountIds && accountIds.length > 0) {
       const resolvedIds = new Set<string>(accountIds);
@@ -3686,16 +3656,13 @@ export class InvestmentTransactionsService {
       accountIds = [...resolvedIds];
     }
 
-    return this.withCapitalGainsInReportingCurrency(
+    return this.portfolioCalculationService.calculateCapitalGainsByMonth(
       userId,
-      await this.portfolioCalculationService.calculateCapitalGainsByMonth(
-        userId,
-        {
-          accountIds,
-          startDate: opts.startDate,
-          endDate: opts.endDate,
-        },
-      ),
+      {
+        accountIds,
+        startDate: opts.startDate,
+        endDate: opts.endDate,
+      },
     );
   }
 
@@ -3710,7 +3677,7 @@ export class InvestmentTransactionsService {
       startDate: string;
       endDate: string;
     },
-  ): Promise<CapitalGainEntryWithReporting[]> {
+  ): Promise<CapitalGainEntry[]> {
     let accountIds = opts.accountIds;
     if (accountIds && accountIds.length > 0) {
       const resolvedIds = new Set<string>(accountIds);
@@ -3721,140 +3688,11 @@ export class InvestmentTransactionsService {
       accountIds = [...resolvedIds];
     }
 
-    return this.withCapitalGainsInReportingCurrency(
-      userId,
-      await this.portfolioCalculationService.calculateCapitalGainsByDay(
-        userId,
-        {
-          accountIds,
-          startDate: opts.startDate,
-          endDate: opts.endDate,
-        },
-      ),
-    );
-  }
-
-  /**
-   * Each entry with its figures in the reporting currency beside the
-   * account-currency ones, for a report that sums accounts of several
-   * currencies (`capitalGainsInReportingCurrency`).
-   */
-  private async withCapitalGainsInReportingCurrency(
-    userId: string,
-    entries: CapitalGainEntry[],
-  ): Promise<CapitalGainEntryWithReporting[]> {
-    const { currency, figures } = await this.capitalGainsInReportingCurrency(
-      userId,
-      entries,
-    );
-    return entries.map((entry, index) => ({
-      ...entry,
-      inReportingCurrency: { currency, ...figures[index] },
-    }));
-  }
-
-  /**
-   * Capital-gain entries' figures in the reader's reporting currency, each at
-   * the rate for the period it belongs to -- the opening mark at its first
-   * day, every other figure at its last (a day entry's own day for both) --
-   * never at today's (issue #2106). A pair with no rate
-   * leaves the figure null and is named in `missingRatePairs`, never rate 1.
-   * Shared by the report endpoints and the assistant's roll-up.
-   */
-  private async capitalGainsInReportingCurrency(
-    userId: string,
-    entries: readonly CapitalGainEntry[],
-  ): Promise<{
-    currency: string;
-    figures: CapitalGainFiguresInReporting[];
-    missingRatePairs: Set<string>;
-  }> {
-    // Every figure is converted into the reader's currency at the rate for the
-    // period it belongs to, so a bucket never adds CAD to USD. A pair with no
-    // rate leaves the figure unknown and is named, never read as rate 1.
-    const defaultCurrency = await resolveUserDefaultCurrency(
-      this.dataSource,
-      userId,
-    );
-    // A month entry ("YYYY-MM") converts at its last day, a day entry at its own.
-    const periodEndOf = (period: string): string => {
-      if (period.length > 7) return period;
-      const [y, m] = period.split("-").map(Number);
-      return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
-    };
-    const periodStartOf = (period: string): string =>
-      period.length > 7 ? period : `${period}-01`;
-    const foreign = new Set<string>();
-    for (const e of entries) {
-      if (e.accountCurrencyCode && e.accountCurrencyCode !== defaultCurrency) {
-        foreign.add(e.accountCurrencyCode);
-      }
-    }
-    const periodsInWindow = entries.map((e) => e.month).sort();
-    const rateIndex =
-      foreign.size > 0
-        ? await withScopedDb(this.dataSource, (m) =>
-            buildRateIndex(
-              (sql, params) => m.query(sql, params),
-              foreign,
-              defaultCurrency,
-              periodStartOf(periodsInWindow[0]),
-              periodEndOf(periodsInWindow[periodsInWindow.length - 1]),
-            ),
-          )
-        : new Map();
-    const missingRatePairs = new Set<string>();
-    const toDefault = (
-      value: number | null,
-      e: CapitalGainEntry,
-      /** The period's last day unless named: the opening mark is its first. */
-      onDate: string = periodEndOf(e.month),
-    ): number | null => {
-      if (value === null) return null;
-      const from = e.accountCurrencyCode;
-      if (from === defaultCurrency || value === 0) return value;
-      const converted = from
-        ? convertAtDate(value, from, defaultCurrency, onDate, rateIndex)
-        : null;
-      if (converted === null) {
-        missingRatePairs.add(`${from ?? "?"}->${defaultCurrency}`);
-        return null;
-      }
-      // A converted, reporting-currency figure: the fiat four places.
-      return roundMoney(converted, FIAT_MONEY_DECIMALS);
-    };
-
-    if (entries.length === 0) {
-      return { currency: defaultCurrency, figures: [], missingRatePairs };
-    }
-    const figures = entries.map((raw) => {
-      const converted = {
-        // The opening mark at the period's first day, so it meets the previous
-        // period's closing mark; every flow figure at the period's last day.
-        startValue: toDefault(raw.startValue, raw, periodStartOf(raw.month)),
-        endValue: toDefault(raw.endValue, raw),
-        realizedGain: toDefault(raw.realizedGain, raw),
-        realizedGainKnownSubtotal: toDefault(
-          raw.realizedGain ?? raw.realizedGainKnownSubtotal ?? 0,
-          raw,
-        ),
-        unrealizedGain: toDefault(raw.unrealizedGain, raw),
-        totalCapitalGain: toDefault(raw.totalCapitalGain, raw),
-      };
-      // A figure known in the account's currency and unknown here lacks the
-      // pair's rate for this period: named, so the reader knows what to add.
-      const lacksRate =
-        (raw.startValue !== null && converted.startValue === null) ||
-        (raw.endValue !== null && converted.endValue === null) ||
-        (raw.totalCapitalGain !== null && converted.totalCapitalGain === null);
-      return {
-        ...converted,
-        missingRatePairs: lacksRate
-          ? [`${raw.accountCurrencyCode ?? "?"}->${defaultCurrency}`]
-          : [],
-      };
+    return this.portfolioCalculationService.calculateCapitalGainsByDay(userId, {
+      accountIds,
+      startDate: opts.startDate,
+      endDate: opts.endDate,
     });
-    return { currency: defaultCurrency, figures, missingRatePairs };
   }
 
   /**
@@ -3864,8 +3702,10 @@ export class InvestmentTransactionsService {
    * narrows by symbol, and aggregates into buckets ('month', 'security', or
    * 'account') so the assistant gets a compact shape with period totals.
    *
-   * Every figure is converted into the user's default currency at the rate for
-   * its month; a pair with no rate makes the figure null and is named in
+   * Every figure is the fold's own in the user's default currency
+   * (`CapitalGainEntry.inReportingCurrency`: each boundary at its date's rate,
+   * each flow at its own, each sale's gain as Realized Gains states it); a pair
+   * with no rate makes the figure null and is named in
    * `totals.missingRatePairs` (never rate 1).
    */
   async getLlmCapitalGains(
@@ -3937,14 +3777,15 @@ export class InvestmentTransactionsService {
     let totalsIncomplete = false;
     let totalsRealizedIncomplete = false;
 
-    const {
-      currency: defaultCurrency,
-      figures,
-      missingRatePairs,
-    } = await this.capitalGainsInReportingCurrency(userId, filtered);
+    const defaultCurrency =
+      raw[0]?.inReportingCurrency.currency ??
+      (await resolveUserDefaultCurrency(this.dataSource, userId));
+    const missingRatePairs = new Set(
+      filtered.flatMap((entry) => entry.inReportingCurrency.missingRatePairs),
+    );
 
-    for (const [index, raw] of filtered.entries()) {
-      const e = { ...raw, ...figures[index] };
+    for (const raw of filtered) {
+      const e = { ...raw, ...raw.inReportingCurrency };
       if (e.realizedGain === null) {
         totalsRealizedIncomplete = true;
       } else {

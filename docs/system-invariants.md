@@ -1458,10 +1458,12 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     (and a group with a day no rate reaches is left out whole,
                     wholeGroups, counted once in excludedCount -- the tax
                     summary's categories too; Bill Payment History converts
-                    each payment alone and nets nothing, and the custom report
-                    engine's cells, which net by group, still keep the rows of
-                    a group that converted while `summary.total` is withheld,
-                    a known gap);
+                    each payment alone and nets nothing; the custom report
+                    engine converts row by row and its cells leave a
+                    (group, category, currency) part with a row no rate
+                    reaches out whole, rows that converted included
+                    (reports/report-net-cells.ts, issue #2130), its
+                    excludedCount counting those rows too);
                     buildConverter takes the row's own rate where it reaches
                     the reporting currency (INV-FX-002), else convertAtDate over
                     one ExchangeRateService.getRateIndex load for the span the
@@ -1477,12 +1479,18 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     amounts with the client's latest-rate map onto a server
                     figure converted at each row's own rate or date
                     (convertDatedRows in report-currency.service.ts for the
-                    dated fold): the transaction summary's `converted`, the
+                    dated fold; the transaction summary, grouped totals,
+                    tag-key breakdown and the category and payee detail account
+                    panels split their one read by day and own rate
+                    (built-in-reports/rate-basis-parts.ts) rather than reading
+                    the rows a second time, issue #2130): the transaction summary's `converted`, the
                     grouped totals' and tag-key breakdown's `convertedTotal`,
                     the category and payee detail account panels, the
                     foreign-fee summary's `convertedFeeTotal`, the daily
                     balances' `convertedBalance`, the capital-gain entries'
-                    `inReportingCurrency` (each period at its own end), the
+                    `inReportingCurrency` (the fold run in the reporting
+                    currency: each boundary at its date's rate, each flow at
+                    its own), the
                     realized gains' `inReportingCurrency` and the AI usage
                     costs; the intraday chart prices only the latest session at
                     the live spot. A holding's cost and total net invested in
@@ -1491,14 +1499,17 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     (position-basis-replay.ts), computeNetInvestmentFlowsInReporting
                     each flow at its own; a holding with no usable history
                     still falls back to today's rate, having no dates.
-                    Known gap: a capital-gain entry's `inReportingCurrency`
-                    converts the account-currency period figures at the
-                    period's rates, while Realized Gains' `inReportingCurrency`
-                    replays each sale against each purchase's own rate, so the
-                    two state a sale's realized gain in the reporting currency
-                    differently by the currency's move since purchase. One
-                    answer needs the capital-gains fold run in the reporting
-                    currency, a follow-up for the maintainer to schedule.
+                    A capital-gain entry's `inReportingCurrency` comes from
+                    the capital-gains fold itself, kept in the reporting
+                    currency in the same pass over calculateRealizedGains'
+                    reporting replay, and its realized gain sums each sale's
+                    disposalInReporting figure (securities/disposal-in-reporting.ts),
+                    the rule Realized Gains lists, so the two state a sale's
+                    gain alike (issue #2130; portfolio-calculation.service.spec.ts
+                    and fx-latest-rates.integration.spec.ts "alike in Realized
+                    Gains and the capital-gain entries": 1,100 USD at 1.40 less
+                    1,000 USD at 1.25 is 290 CAD in both, where converting the
+                    period's 100 USD at its rate read 140).
 Known gap           Convert before summing (A26-H12) is closed on three paths:
                     the custom report engine (reports/reports.service.ts,
                     each row converted at its own date, FxAggregate, `summary.total` null
@@ -1612,7 +1623,19 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     built-in-reports/report-currency.service.ts), and anything
                     else takes the market rate on its own date (issue #2106).
                     Like the Sankey, these reports do not yet say which of the
-                    two rates answered.
+                    two rates answered. The assistant's and the MCP tools'
+                    transaction analytics (TransactionAnalyticsService: the
+                    list/query totals, grouped breakdowns, period comparisons
+                    and monthly totals) group each part by its own rate
+                    (byOwnRate) and convert it through the same
+                    transactionRateBasis / convertRateBasis rule, so the
+                    assistant's total for a sale agrees with Spending by
+                    Category's (issue #2130). Budget actuals
+                    (budgets/budget-spending.util.ts queryCategorySpending,
+                    category and outgoing-transfer lines) and the assistant's
+                    spending insights (ai/insights/insights-aggregator.service.ts,
+                    each part on its own date, no longer at its month's last
+                    day) read the same columns through the same rule.
 Test                investment-transaction-summary.service.spec.ts: a sale of
                     820.91 USD settled at 3.7287 reads 3,060.9271 PLN and asks
                     for no market rate; a row without a rate is converted at the
@@ -1625,6 +1648,16 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     converts 1,350 CAD to 1,000 USD and loads no rate history;
                     spending-reports.service.spec.ts and reports.service.spec.ts
                     the same through a report.
+                    transaction-analytics.service.spec.ts "a row carrying its own
+                    rate": EUR 100 charged as USD 125 reads EUR 100 in the
+                    assistant's totals and breakdown, the report rule's figure,
+                    not the market's EUR 106.38; fx-latest-rates.integration.spec.ts
+                    "alike in the reports and the assistant" holds Spending by
+                    Category, list_transactions, the transaction summary and the
+                    grouped totals, the category detail panel and the spending
+                    insights to one EUR 150 on PostgreSQL;
+                    budget-multi-currency-actuals.integration.spec.ts converts a
+                    JPY row at its own 125 per CAD beside one at the market rate.
 Status              enforced
 ```
 
