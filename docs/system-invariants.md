@@ -77,7 +77,7 @@ implied.
 | INV-RECONCILE-001 | While the strict lock is on, a reconciled transaction is not altered | enforced |
 | INV-DELEGATION-001 | A grantee's write is authorized in the transaction that writes it, and a revoke is final | partial |
 | INV-FX-001 | An unavailable rate never becomes 1:1, a rate from after the date, or an unboundedly old one | partial |
-| INV-FX-002 | A row that carries its own exchange rate is converted at that rate on every surface | partial |
+| INV-FX-002 | A row that carries its own exchange rate is converted at that rate on every surface | enforced |
 | INV-FX-003 | A currency pair is stored in one orientation | partial |
 | INV-FX-004 | A user-supplied rate never replaces a global exchange-rate observation | enforced |
 | INV-FX-005 | A provider-written rate names its provider, every provider question goes through the chain, and an outage is never remembered as an empty answer | enforced |
@@ -1510,6 +1510,15 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     Gains and the capital-gain entries": 1,100 USD at 1.40 less
                     1,000 USD at 1.25 is 290 CAD in both, where converting the
                     period's 100 USD at its rate read 140).
+                    The assistant's spending insights and cash-flow forecast
+                    (ai/insights/insights-aggregator.service.ts,
+                    ai/forecast/forecast-aggregator.service.ts history and
+                    income patterns) convert each foreign part on its own day,
+                    no longer at its month's last day, a rate struck after every
+                    earlier row of the month (issues #2130 and #2146;
+                    fx-own-rate-surfaces.integration.spec.ts: USD 132 on day 15
+                    at that day's 1.20 is EUR 110, where the month's last 1.175
+                    read 112.34).
 Known gap           Convert before summing (A26-H12) is closed on three paths:
                     the custom report engine (reports/reports.service.ts,
                     each row converted at its own date, FxAggregate, `summary.total` null
@@ -1664,8 +1673,10 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     fx-own-rate-surfaces.integration.spec.ts holds the
                     discussion #2105 row (EUR 100 charged as USD 125, market
                     1.175) beside a market-rate row, EUR income received at its
-                    own rate and a reporting-currency row to one EUR 250 of
-                    expenses and EUR 200 of income in Spending by Category, by
+                    own rate and a reporting-currency row to one EUR 260 of
+                    expenses and EUR 200 of income (a reader ignoring the own
+                    rate reads 266.38, one at the month's last rate 262.34) in
+                    Spending by Category, by
                     Payee, the monthly trend, Income vs Expenses, Income by
                     Source, a custom report, list_transactions, the MCP flow
                     totals, compare_periods, the transaction summary, the
@@ -1673,17 +1684,23 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     PostgreSQL; forecast-aggregator.service.spec.ts "a row
                     carrying its own rate" the same in the forecast's history
                     and income.
-Status              partial: the portfolio external flows
-                    (securities/external-flow.util.ts, folded by
-                    net-worth/period-flow-fold.util.ts,
+Scope               Not the portfolio period result's flows, which convert each
+                    row at the market rate on its own day by design
+                    (docs/specs/portfolio-period-result.md sections 2 and 10.2,
+                    case 11): the external flows (securities/external-flow.util.ts,
+                    folded by net-worth/period-flow-fold.util.ts,
                     notification-center/portfolio-flow.util.ts and
-                    securities/daily-movement.service.ts) sum a deposit's amount
-                    with no rate columns and convert it at the market rate on its
-                    day, so a non-transfer contribution of CAD 1,000 charged as
-                    USD 735 reads CAD 993.24 at a market 0.74 and the CAD 6.76
-                    lands in the period's investment result (INV-PORTRESULT-001).
-                    A transfer leg carries no original currency, so the rule does
-                    not reach it there either.
+                    securities/daily-movement.service.ts) and the invested
+                    capital and income (net-worth/invested-capital-flow.util.ts).
+                    Each is subtracted from a value change that values the same
+                    cash or shares at that day's market rate, so it is measured
+                    at the same rate: a contribution entered as CAD 1,000 and
+                    charged to a USD sleeve as USD 735, on a day the market said
+                    0.74, adds CAD 993.24 to the value change and to the flows
+                    and leaves the investment result at 0 (INV-PORTRESULT-001);
+                    at its own rate the CAD 6.76 conversion spread would read as
+                    an investment loss.
+Status              enforced
 ```
 
 ### INV-FX-003 -- a pair is stored in one orientation
