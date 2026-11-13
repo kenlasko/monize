@@ -47,6 +47,7 @@ function managerWith({
   laterClaims = [] as { d: string }[],
   // Where the posting left the cursor, unless a test moves it.
   nextDueDate = "2025-02-15",
+  autoPost = false,
 } = {}) {
   const statements: string[] = [];
   const query = jest.fn(async (sql: string) => {
@@ -56,7 +57,14 @@ function managerWith({
       sql.includes("FOR UPDATE")
     ) {
       return scheduleExists
-        ? [{ id: SCHEDULE, next_due_date: nextDueDate }]
+        ? [
+            {
+              id: SCHEDULE,
+              next_due_date: nextDueDate,
+              auto_post: autoPost,
+              amount_is_estimated: false,
+            },
+          ]
         : [];
     }
     if (sql.includes("stp.original_due_date > $2")) return laterClaims;
@@ -180,6 +188,126 @@ describe("undoScheduledPosting (issue #2165)", () => {
     expect(
       query.mock.calls.some(([sql]) => String(sql).includes("DELETE")),
     ).toBe(false);
+  });
+
+  describe("an occurrence the auto-post cron would post again is left skipped", () => {
+    const released = (query: jest.Mock) =>
+      query.mock.calls.some(([sql]) =>
+        String(sql).includes("DELETE FROM scheduled_transaction_postings"),
+      );
+
+    it("removes the money and frees the claim, but does not rewind a due auto-post schedule", async () => {
+      const { manager, query } = managerWith({ autoPost: true });
+      const removeMoney = jest.fn();
+
+      await undoScheduledPosting(actionOf(recurring), manager, removeMoney);
+
+      expect(removeMoney).toHaveBeenCalled();
+      expect(released(query)).toBe(true);
+      expect(rewind).not.toHaveBeenCalled();
+      // As a skip leaves it: the posting's stamp goes, the cursor stays.
+      expect(query).toHaveBeenCalledWith(
+        expect.stringContaining("SET last_posted_date = $1"),
+        [null, SCHEDULE, USER, "2025-02-15"],
+      );
+    });
+
+    it("rewinds an auto-post schedule posted ahead of its due date", async () => {
+      const { manager } = managerWith({
+        autoPost: true,
+        nextDueDate: "2099-02-15",
+      });
+      const ahead = {
+        ...recurring,
+        dueDate: "2099-01-15",
+        cursor: {
+          ...cursorChange,
+          before: { ...cursorChange.before, nextDueDate: "2099-01-15" },
+          after: { ...cursorChange.after, nextDueDate: "2099-02-15" },
+        },
+      };
+
+      await undoScheduledPosting(actionOf(ahead), manager, jest.fn());
+
+      expect(rewind).toHaveBeenCalled();
+    });
+
+    it("rewinds an auto-post occurrence whose override postpones it", async () => {
+      const { manager } = managerWith({ autoPost: true });
+      const postponed = {
+        ...recurring,
+        cursor: {
+          ...cursorChange,
+          prunedOverrides: [
+            {
+              originalDate: "2025-01-15",
+              overrideDate: "2099-01-01",
+            } as cursor.PrunedScheduleOverride,
+          ],
+        },
+      };
+
+      await undoScheduledPosting(actionOf(postponed), manager, jest.fn());
+
+      expect(rewind).toHaveBeenCalled();
+    });
+
+    it("does not bring back a due one-time auto-post bill", async () => {
+      const { manager, query } = managerWith({ scheduleExists: false });
+      const removedSchedule = {
+        schedule: {
+          id: SCHEDULE,
+          auto_post: true,
+          is_active: true,
+          amount_is_estimated: false,
+          next_due_date: "2025-01-15",
+        },
+        splits: [],
+        splitTags: [],
+        overrides: [],
+        payrollRules: [],
+        payrollRulePeriods: [],
+        linkedAccountIds: [],
+      };
+
+      await undoScheduledPosting(
+        actionOf({ ...recurring, cursor: undefined, removedSchedule }),
+        manager,
+        jest.fn(),
+      );
+
+      expect(restore).not.toHaveBeenCalled();
+      expect(released(query)).toBe(true);
+    });
+
+    it("brings back a one-time auto-post bill an override postpones", async () => {
+      const { manager } = managerWith({ scheduleExists: false });
+      const removedSchedule = {
+        schedule: {
+          id: SCHEDULE,
+          auto_post: true,
+          is_active: true,
+          amount_is_estimated: false,
+          next_due_date: "2025-01-15",
+        },
+        splits: [],
+        splitTags: [],
+        overrides: [
+          { original_date: "2025-01-15", override_date: "2099-01-01" },
+        ],
+        payrollRules: [],
+        payrollRulePeriods: [],
+        linkedAccountIds: [],
+      };
+
+      await undoScheduledPosting(
+        actionOf({ ...recurring, cursor: undefined, removedSchedule }),
+        manager,
+        jest.fn(),
+      );
+
+      expect(restore).toHaveBeenCalled();
+    });
   });
 
   it("re-inserts a one-time schedule the posting deleted", async () => {

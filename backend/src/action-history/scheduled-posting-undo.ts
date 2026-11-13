@@ -2,8 +2,10 @@ import { ConflictException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { returnedRows } from "../common/db/query-result";
 import { tr } from "../i18n/translate";
+import { todayYMD } from "../common/date-utils";
 import { rewindScheduleCursor } from "../scheduled-transactions/schedule-cursor";
 import {
+  RemovedScheduleSnapshot,
   ScheduledPostingMoney,
   ScheduledPostingSnapshot,
   restoreRemovedSchedule,
@@ -56,7 +58,8 @@ export function assertScheduledPostingRedoable(): never {
  * 4. put the schedule back: a recurring one's cursor rewound by
  *    `rewindScheduleCursor`, with the overrides the posting removed; a
  *    one-time one, which the posting deleted, re-inserted from its snapshot
- *    (`restoreRemovedSchedule`).
+ *    (`restoreRemovedSchedule`). Except where the auto-post cron would post
+ *    that occurrence again (`wouldAutoPost`): it is then left skipped.
  *
  * Every write is scoped to the action's user.
  */
@@ -72,9 +75,15 @@ export async function undoScheduledPosting(
   const userId = action.userId;
   const scheduleId = snapshot.scheduledTransactionId;
 
-  const locked = returnedRows<{ id: string; next_due_date: string }>(
+  const locked = returnedRows<{
+    id: string;
+    next_due_date: string;
+    auto_post: boolean;
+    amount_is_estimated: boolean;
+  }>(
     await manager.query(
-      `SELECT id, TO_CHAR(next_due_date, 'YYYY-MM-DD') AS next_due_date
+      `SELECT id, TO_CHAR(next_due_date, 'YYYY-MM-DD') AS next_due_date,
+              auto_post, amount_is_estimated
          FROM scheduled_transactions
         WHERE id = $1 AND user_id = $2
         FOR UPDATE`,
@@ -97,7 +106,32 @@ export async function undoScheduledPosting(
     [snapshot.claimId, userId],
   );
 
+  const today = todayYMD();
   if (snapshot.cursor && locked.length > 0) {
+    const { before, after, prunedOverrides } = snapshot.cursor;
+    const rewoundWouldAutoPost = wouldAutoPost(
+      {
+        autoPost: locked[0].auto_post,
+        isActive: before.isActive,
+        amountIsEstimated: locked[0].amount_is_estimated,
+        nextDueDate: before.nextDueDate,
+        overrideDate:
+          prunedOverrides.find((o) => o.originalDate === before.nextDueDate)
+            ?.overrideDate ?? null,
+      },
+      today,
+    );
+    if (rewoundWouldAutoPost) {
+      // The occurrence is left as a skip leaves it: the cursor where the
+      // posting moved it, `last_posted_date` as it was before.
+      await manager.query(
+        `UPDATE scheduled_transactions SET last_posted_date = $1
+          WHERE id = $2 AND user_id = $3
+            AND next_due_date = $4`,
+        [before.lastPostedDate, scheduleId, userId, after.nextDueDate],
+      );
+      return result(snapshot);
+    }
     // Cannot miss: the cursor was confirmed where the posting left it, under
     // the lock this transaction holds.
     await rewindScheduleCursor(manager, scheduleId, userId, snapshot.cursor);
@@ -112,16 +146,78 @@ export async function undoScheduledPosting(
         [snapshot.estimatedAmount, scheduleId, userId],
       );
     }
-  } else if (snapshot.removedSchedule && locked.length === 0) {
+  } else if (
+    snapshot.removedSchedule &&
+    locked.length === 0 &&
+    !wouldAutoPost(removedScheduleState(snapshot.removedSchedule), today)
+  ) {
     await restoreRemovedSchedule(manager, userId, snapshot.removedSchedule);
   }
 
+  return result(snapshot);
+}
+
+function result(
+  snapshot: ScheduledPostingSnapshot,
+): ScheduledPostingUndoResult {
   return {
-    scheduleIds: [scheduleId],
+    scheduleIds: [snapshot.scheduledTransactionId],
     securityIds:
       snapshot.money.kind === "investment" && snapshot.money.securityId
         ? [snapshot.money.securityId]
         : [],
+  };
+}
+
+/** What the auto-post cron reads of a schedule to decide it is due. */
+interface AutoPostState {
+  readonly autoPost: boolean;
+  readonly isActive: boolean;
+  readonly amountIsEstimated: boolean;
+  readonly nextDueDate: string;
+  /** The date an override of the `nextDueDate` occurrence moved it to. */
+  readonly overrideDate: string | null;
+}
+
+/**
+ * Whether the hourly auto-post cron would post this schedule's occurrence
+ * again at its next run (`processAutoPostWithinContext`: active,
+ * auto-posting, not estimated, due on or before today, and not postponed by
+ * an override to a later date). Putting the schedule back on such an
+ * occurrence would only re-post what the person just undid, so the undo of
+ * an automatic (or due, auto-posting) posting removes the payment and frees
+ * the occurrence but leaves it skipped (issue #2165, maintainer decision).
+ */
+function wouldAutoPost(state: AutoPostState, today: string): boolean {
+  return (
+    state.autoPost &&
+    state.isActive &&
+    !state.amountIsEstimated &&
+    state.nextDueDate <= today &&
+    !(state.overrideDate !== null && state.overrideDate > today)
+  );
+}
+
+/** The `AutoPostState` of a one-time schedule's snapshot (snake_case `to_jsonb`). */
+function removedScheduleState(removed: RemovedScheduleSnapshot): AutoPostState {
+  const row = removed.schedule as {
+    auto_post?: boolean;
+    is_active?: boolean;
+    amount_is_estimated?: boolean;
+    next_due_date?: string;
+  };
+  const nextDueDate = String(row.next_due_date ?? "").slice(0, 10);
+  const override = removed.overrides.find(
+    (o) => String(o.original_date ?? "").slice(0, 10) === nextDueDate,
+  );
+  return {
+    autoPost: row.auto_post === true,
+    isActive: row.is_active === true,
+    amountIsEstimated: row.amount_is_estimated === true,
+    nextDueDate,
+    overrideDate: override
+      ? String(override.override_date ?? "").slice(0, 10) || null
+      : null,
   };
 }
 

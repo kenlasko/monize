@@ -396,6 +396,39 @@ describe("Undo of a scheduled posting (integration)", () => {
     expect(await balanceOf(accountId)).toBe(OPENING);
   });
 
+  it("an auto-posted occurrence that is due is undone as a skip, so the cron does not post it again", async () => {
+    const id = await makeSchedule({ autoPost: true });
+    await post(id);
+
+    await undo();
+
+    expect(await ledgerRows(accountId)).toBe(0);
+    expect(await balanceOf(accountId)).toBe(OPENING);
+    expect(await claims(id)).toEqual([]);
+    expect(await cursorOf(id)).toMatchObject({
+      next_due_date: SECOND_DUE,
+      last_posted_date: null,
+    });
+
+    // The next tick finds nothing due on January.
+    await scheduled.processAutoPostTransactions();
+    expect(await claims(id)).not.toContain(FIRST_DUE);
+  });
+
+  it("a due one-time auto-post bill is not brought back to be posted again", async () => {
+    const id = await makeSchedule({ frequency: "ONCE", autoPost: true });
+    await post(id);
+
+    await undo();
+
+    expect(await ledgerRows(accountId)).toBe(0);
+    expect(
+      await db.query(`SELECT id FROM scheduled_transactions WHERE id = $1`, [
+        id,
+      ]),
+    ).toEqual([]);
+  });
+
   it("is not redoable: the person posts the occurrence again", async () => {
     const id = await makeSchedule({});
     await post(id);
