@@ -22,6 +22,10 @@ import { useChartMonthFormat } from '@/hooks/useChartMonthFormat';
 import { useTranslations } from 'next-intl';
 import { useReportData } from '@/hooks/useReportData';
 import { BudgetCategoryTrend } from '@/components/budgets/BudgetCategoryTrend';
+import {
+  BudgetTrendPartialNote,
+  PartialTrendFigure,
+} from '@/components/budgets/PartialTrendFigure';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
 import { ReportError } from '@/components/reports/ReportError';
 import { SortableHeader } from '@/components/ui/SortableHeader';
@@ -315,7 +319,11 @@ export function BudgetVsActualReport() {
     actual: {
       field: 'actual',
       label: t('budgetVsActual.colActual'),
-      value: (point) => formatCurrency(point.actual),
+      // The export marks a partial month in words; the screen uses the marker.
+      value: (point) =>
+        point.valuationComplete === false
+          ? `${formatCurrency(point.actual)} ${t('partialData.pdfSuffix')}`
+          : formatCurrency(point.actual),
       align: 'right',
     },
     variance: {
@@ -628,7 +636,9 @@ export function BudgetVsActualReport() {
                         </td>
                         <td role="cell" className={`col-start-3 row-start-1 text-gray-600 dark:text-gray-400 ${cellPadding(columns.actual)} ${MONEY_CELL}`}>
                           <CellLabel className={CAPTION_CLASS}>{columns.actual.label}</CellLabel>
-                          {formatCurrency(point.actual)}
+                          <PartialTrendFigure points={[point]}>
+                            {formatCurrency(point.actual)}
+                          </PartialTrendFigure>
                         </td>
                         {/* The variance takes the middle of line 1 beside the
                             month: it is the figure the row is read for. */}
@@ -648,6 +658,7 @@ export function BudgetVsActualReport() {
                   </tbody>
                 </table>
               </div>
+              <BudgetTrendPartialNote points={trendData} />
             </>
           )}
         </div>

@@ -16,6 +16,7 @@ import { useChartMonthFormat } from '@/hooks/useChartMonthFormat';
 import type { BudgetTrendPoint } from '@/types/budget';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { BudgetTrendPartialNote } from './PartialTrendFigure';
 
 interface BudgetTrendChartProps {
   data: BudgetTrendPoint[];
@@ -32,7 +33,12 @@ function CustomTooltip({
   formatChartMonth,
 }: {
   active?: boolean;
-  payload?: Array<{ value: number; dataKey: string; color: string }>;
+  payload?: Array<{
+    value: number;
+    dataKey: string;
+    color: string;
+    payload?: BudgetTrendPoint;
+  }>;
   label?: string;
   formatCurrency: (amount: number) => string;
   budgetedLabel: string;
@@ -54,6 +60,12 @@ function CustomTooltip({
         >
           {entry.dataKey === 'budgeted' ? budgetedLabel : actualLabel}:{' '}
           {formatCurrency(entry.value)}
+          {/* A partial month's actual is its converted part; the note under
+              the chart says what is missing. */}
+          {entry.dataKey === 'actual' &&
+            entry.payload?.valuationComplete === false && (
+              <span className="text-amber-600 dark:text-amber-400"> *</span>
+            )}
         </p>
       ))}
     </div>
@@ -139,6 +151,7 @@ export function BudgetTrendChart({
           </LineChart>
         </ResponsiveContainer>
       </div>
+      <BudgetTrendPartialNote points={data} />
     </div>
   );
 }

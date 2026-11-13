@@ -146,6 +146,35 @@ describe('BudgetCategoryTrend', () => {
     expect(screen.getAllByText('Avg Variance').length).toBeGreaterThan(0);
   });
 
+  it('marks a category average holding a partial month and names the rate (issue #2155)', () => {
+    const data: CategoryTrendSeries[] = [
+      {
+        ...mockData[0],
+        data: [
+          mockData[0].data[0],
+          { ...mockData[0].data[1], valuationComplete: false, missingRatePairs: ['JPY->CAD'] },
+        ],
+      },
+      mockData[1],
+    ];
+    render(<BudgetCategoryTrend data={data} formatCurrency={mockFormat} />);
+
+    // Groceries' average (475) is a subtotal; Dining's (280) is whole.
+    const markers = screen.getAllByTestId('partial-total');
+    expect(markers).toHaveLength(1);
+    expect(markers[0]).toHaveTextContent('$475.00');
+    expect(screen.getByTestId('budget-trend-partial-note')).toHaveTextContent(
+      'No exchange rate for JPY->CAD: add one on the Currencies page.',
+    );
+  });
+
+  it('marks nothing while every month is whole', () => {
+    render(<BudgetCategoryTrend data={mockData} formatCurrency={mockFormat} />);
+
+    expect(screen.queryByTestId('partial-total')).toBeNull();
+    expect(screen.queryByTestId('budget-trend-partial-note')).toBeNull();
+  });
+
   it('shows positive variance in red and negative in green', () => {
     render(<BudgetCategoryTrend data={mockData} formatCurrency={mockFormat} />);
 

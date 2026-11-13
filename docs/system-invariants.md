@@ -1537,9 +1537,12 @@ Known gap           Convert before summing (A26-H12) is closed on three paths:
                     resolveCategorySpentOrNull). A budget's income
                     (resolveBudgetIncome), the savings rate's
                     no-income-category income, the health history's open
-                    period and every live trend figure
-                    (budget-trend-reports.service.ts, `valuationComplete` per
-                    point) now read that converted query too (issue #2155).
+                    period (an unrated category is left out of its score) and
+                    every live trend figure (budget-trend-reports.service.ts,
+                    `valuationComplete` and `missingRatePairs` per point, read
+                    on the trend chart, the category trend, Budget vs Actual
+                    and Category Performance through PartialTrendFigure) now
+                    read that converted query too (issue #2155).
                     It is still open where the
                     callers have not been moved: budgets.service.ts,
                     budget-alert.service.ts, budget-period.service.ts and the
