@@ -4,6 +4,7 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { BudgetReportsService } from "./budget-reports.service";
 import {
   CategorySpending,
+  queryCategorySpending,
   queryCategorySpendingBuckets,
 } from "./budget-spending.util";
 import { BudgetTrendReportsService } from "./budget-trend-reports.service";
@@ -25,6 +26,7 @@ import { Category } from "../categories/entities/category.entity";
 import {
   createScopedDbMocks,
   DataSourceMock,
+  ManagerMock,
 } from "../test-helpers/scoped-db-testing";
 
 jest.mock("../common/db/scoped-db", () =>
@@ -34,10 +36,15 @@ jest.mock("../common/db/scoped-db", () =>
 jest.mock("./budget-spending.util", () => ({
   ...jest.requireActual("./budget-spending.util"),
   queryCategorySpendingBuckets: jest.fn(),
+  queryCategorySpending: jest.fn(),
 }));
 
 const mockedSpending = queryCategorySpendingBuckets as jest.MockedFunction<
   typeof queryCategorySpendingBuckets
+>;
+/** One open period's actuals, the budget page's converted read. */
+const mockedPeriodSpending = queryCategorySpending as jest.MockedFunction<
+  typeof queryCategorySpending
 >;
 
 /** Every month of the requested range answers with `s`. */
@@ -61,6 +68,7 @@ function spending(
 
 describe("BudgetReportsService", () => {
   let scopedDataSource: DataSourceMock;
+  let scopedManager: ManagerMock;
   let service: BudgetReportsService;
   let periodsRepository: Record<string, jest.Mock>;
   let periodCategoriesRepository: Record<string, jest.Mock>;
@@ -202,6 +210,7 @@ describe("BudgetReportsService", () => {
     innerJoin: jest.fn().mockReturnThis(),
     groupBy: jest.fn().mockReturnThis(),
     addGroupBy: jest.fn().mockReturnThis(),
+    setParameter: jest.fn().mockReturnThis(),
     getRawMany: jest.fn().mockResolvedValue([]),
     getRawOne: jest.fn().mockResolvedValue({ total: "0" }),
     ...overrides,
@@ -210,6 +219,8 @@ describe("BudgetReportsService", () => {
   beforeEach(async () => {
     mockedSpending.mockReset();
     mockSpending(spending({}));
+    mockedPeriodSpending.mockReset();
+    mockedPeriodSpending.mockResolvedValue(spending({}));
     periodsRepository = {
       find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn().mockResolvedValue(null),
@@ -271,12 +282,15 @@ describe("BudgetReportsService", () => {
       }),
     };
 
-    ({ dataSource: scopedDataSource } = createScopedDbMocks([
-      [BudgetPeriod, periodsRepository as never],
-      [BudgetPeriodCategory, periodCategoriesRepository as never],
-      [Transaction, transactionsRepository as never],
-      [TransactionSplit, splitsRepository as never],
-    ]));
+    ({ dataSource: scopedDataSource, manager: scopedManager } =
+      createScopedDbMocks([
+        [BudgetPeriod, periodsRepository as never],
+        [BudgetPeriodCategory, periodCategoriesRepository as never],
+        [Transaction, transactionsRepository as never],
+        [TransactionSplit, splitsRepository as never],
+      ]));
+    // No exchange-rate history unless a case supplies it.
+    scopedManager.query.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -376,16 +390,9 @@ describe("BudgetReportsService", () => {
 
       periodsRepository.find.mockResolvedValueOnce(closedPeriods);
       periodsRepository.findOne.mockResolvedValueOnce(openPeriod);
-
-      const directQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-400" }),
-      });
-      const splitQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-50" }),
-      });
-
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(directQb);
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
+      mockedPeriodSpending.mockResolvedValue(
+        spending({ "cat-1": -400, "cat-2": -50 }),
+      );
 
       const result = await service.getTrend("user-1", "budget-1", 6);
 
@@ -583,16 +590,7 @@ describe("BudgetReportsService", () => {
       ];
 
       periodsRepository.find.mockResolvedValueOnce(periods);
-
-      const directQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-300" }),
-      });
-      const splitQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-25" }),
-      });
-
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(directQb);
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
+      mockedPeriodSpending.mockResolvedValue(spending({ "cat-1": -325 }));
 
       const result = await service.getCategoryTrend("user-1", "budget-1", 6);
 
@@ -1032,7 +1030,12 @@ describe("BudgetReportsService", () => {
         createMockQueryBuilder({
           getRawMany: jest.fn().mockResolvedValue([
             { month: currentMonthKey, currencyCode: "USD", total: "4000" },
-            { month: currentMonthKey, currencyCode: "JPY", total: "900000" },
+            {
+              month: currentMonthKey,
+              currencyCode: "JPY",
+              total: "900000",
+              fx_day: `${currentMonthKey}-05`,
+            },
           ]),
         }),
       );
@@ -1558,15 +1561,8 @@ describe("BudgetReportsService", () => {
 
       periodsRepository.find.mockResolvedValueOnce(periods);
 
-      // computeCategoryActual will query transactions and splits
-      const txQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-300" }),
-      });
-      const splitQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-50" }),
-      });
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(txQb);
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
+      // 300 direct and 50 split, converted, from the budget page's read.
+      mockedPeriodSpending.mockResolvedValue(spending({ "cat-1": -350 }));
 
       const result = await service.getHealthScoreHistory(
         "user-1",
@@ -1577,8 +1573,7 @@ describe("BudgetReportsService", () => {
       expect(result).toHaveLength(1);
       // actual = -(-300 + -50) = 350, 350/500 = 70% -> under budget bonus
       expect(result[0].score).toBeGreaterThanOrEqual(90);
-      expect(transactionsRepository.createQueryBuilder).toHaveBeenCalled();
-      expect(splitsRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockedPeriodSpending).toHaveBeenCalledTimes(1);
     });
 
     it("should compute actuals from transactions for OPEN period over budget", async () => {
@@ -1616,14 +1611,7 @@ describe("BudgetReportsService", () => {
       periodsRepository.find.mockResolvedValueOnce(periods);
 
       // Expenses exceed budget: -800 total
-      const txQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-700" }),
-      });
-      const splitQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-100" }),
-      });
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(txQb);
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
+      mockedPeriodSpending.mockResolvedValue(spending({ "cat-1": -800 }));
 
       const result = await service.getHealthScoreHistory(
         "user-1",
@@ -2153,7 +2141,7 @@ describe("BudgetReportsService", () => {
       expect(result[0].score).toBeGreaterThanOrEqual(90);
     });
 
-    it("should handle computeCategoryActual with null query results", async () => {
+    it("should read an OPEN period with no rows as nothing spent", async () => {
       const periods: Partial<BudgetPeriod>[] = [
         {
           id: "p-1",
@@ -2187,15 +2175,8 @@ describe("BudgetReportsService", () => {
 
       periodsRepository.find.mockResolvedValueOnce(periods);
 
-      // Return null results from queries (missing total field)
-      const txQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue(null),
-      });
-      const splitQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue(null),
-      });
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(txQb);
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
+      // The category has no entry: nothing spent in it.
+      mockedPeriodSpending.mockResolvedValue(spending({}));
 
       const result = await service.getHealthScoreHistory(
         "user-1",
@@ -2203,7 +2184,7 @@ describe("BudgetReportsService", () => {
         6,
       );
 
-      // Should not crash -- null?.total || "0" => 0
+      // 0 of 500 spent
       expect(result).toHaveLength(1);
       expect(result[0].score).toBe(100);
     });

@@ -18,10 +18,61 @@ import {
   createScopedDbMocks,
   DataSourceMock,
 } from "../test-helpers/scoped-db-testing";
+import {
+  CategorySpending,
+  queryCategorySpending,
+  queryCategorySpendingBuckets,
+} from "./budget-spending.util";
+import { monthBuckets } from "../test-helpers/budget-spending-buckets";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
 );
+
+/**
+ * Every figure comes from the budget page's own converted read (issue #2155),
+ * whose netting, conversion and excluded accounts `budget-spending.util.spec`
+ * covers; here it is stubbed with the converted sums a case needs.
+ */
+jest.mock("./budget-spending.util", () => ({
+  ...jest.requireActual("./budget-spending.util"),
+  queryCategorySpending: jest.fn(),
+  queryCategorySpendingBuckets: jest.fn(),
+}));
+
+const mockedPeriodSpending = queryCategorySpending as jest.MockedFunction<
+  typeof queryCategorySpending
+>;
+const mockedBuckets = queryCategorySpendingBuckets as jest.MockedFunction<
+  typeof queryCategorySpendingBuckets
+>;
+
+/** Converted net sums (expenses negative) and outgoing transfers. */
+function spending(
+  categories: Record<string, number>,
+  transfers: Record<string, number> = {},
+  incomplete: string[] = [],
+): CategorySpending {
+  return {
+    spendingMap: new Map(Object.entries(categories)),
+    transferSpendingMap: new Map(Object.entries(transfers)),
+    currency: "USD",
+    incompleteCategoryIds: new Set(incomplete),
+    incompleteTransferAccountIds: new Set(),
+    missingRatePairs: incomplete.length > 0 ? ["JPY->USD"] : [],
+  };
+}
+
+const currentMonthKey = () => {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+};
+
+/** The current month answers with `s`; every other month is empty. */
+const mockCurrentMonth = (s: CategorySpending) =>
+  mockedBuckets.mockImplementation(
+    monthBuckets((key) => (key === currentMonthKey() ? s : spending({}))),
+  );
 
 describe("BudgetTrendReportsService", () => {
   let scopedDataSource: DataSourceMock;
@@ -227,6 +278,10 @@ describe("BudgetTrendReportsService", () => {
   });
 
   beforeEach(async () => {
+    mockedPeriodSpending.mockReset();
+    mockedPeriodSpending.mockResolvedValue(spending({}));
+    mockedBuckets.mockReset();
+    mockedBuckets.mockImplementation(monthBuckets(() => spending({})));
     periodsRepository = {
       find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn().mockResolvedValue(null),
@@ -350,23 +405,58 @@ describe("BudgetTrendReportsService", () => {
 
       periodsRepository.find.mockResolvedValueOnce(closedPeriods);
       periodsRepository.findOne.mockResolvedValueOnce(openPeriod);
-
-      const directQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-400" }),
-      });
-      const splitQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-50" }),
-      });
-
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(directQb);
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
+      mockedPeriodSpending.mockResolvedValue(
+        spending({ "cat-1": -400, "cat-2": -50 }),
+      );
 
       const result = await service.getTrend("user-1", "budget-1", 6);
 
+      expect(mockedPeriodSpending).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        "user-1",
+        [mockBudgetCategory, mockBudgetCategory2],
+        "2026-02-01",
+        "2026-02-28",
+      );
       expect(result).toHaveLength(2);
       expect(result[1].monthKey).toBe("2026-02");
       expect(result[1].actual).toBe(450);
       expect(result[1].budgeted).toBe(800);
+      expect(result[1].valuationComplete).toBe(true);
+      // A closed period's frozen figure carries no completeness either way.
+      expect(result[0]).not.toHaveProperty("valuationComplete");
+    });
+
+    it("flags an open period whose converted read had a row with no rate (issue #2155)", async () => {
+      periodsRepository.find.mockResolvedValueOnce([
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-01-01",
+          periodEnd: "2026-01-31",
+          totalBudgeted: 800,
+          actualExpenses: 700,
+          actualIncome: 5000,
+          status: PeriodStatus.CLOSED,
+        },
+      ]);
+      periodsRepository.findOne.mockResolvedValueOnce({
+        id: "p-2",
+        budgetId: "budget-1",
+        periodStart: "2026-02-01",
+        periodEnd: "2026-02-28",
+        totalBudgeted: 800,
+        status: PeriodStatus.OPEN,
+      });
+      mockedPeriodSpending.mockResolvedValue(
+        spending({ "cat-1": -400 }, {}, ["cat-1"]),
+      );
+
+      const result = await service.getTrend("user-1", "budget-1", 6);
+
+      expect(result[1].actual).toBe(400);
+      expect(result[1].valuationComplete).toBe(false);
     });
 
     it("should handle zero budgeted in open period without division error", async () => {
@@ -438,7 +528,7 @@ describe("BudgetTrendReportsService", () => {
       };
       budgetsService.findOne.mockResolvedValueOnce(budgetWithTransfers);
 
-      const closedPeriods: Partial<BudgetPeriod>[] = [
+      periodsRepository.find.mockResolvedValueOnce([
         {
           id: "p-1",
           budgetId: "budget-1",
@@ -449,48 +539,32 @@ describe("BudgetTrendReportsService", () => {
           actualIncome: 5000,
           status: PeriodStatus.CLOSED,
         },
-      ];
-
-      const openPeriod: Partial<BudgetPeriod> = {
+      ]);
+      periodsRepository.findOne.mockResolvedValueOnce({
         id: "p-2",
         budgetId: "budget-1",
         periodStart: "2026-02-01",
         periodEnd: "2026-02-28",
         totalBudgeted: 700,
         status: PeriodStatus.OPEN,
-      };
-
-      periodsRepository.find.mockResolvedValueOnce(closedPeriods);
-      periodsRepository.findOne.mockResolvedValueOnce(openPeriod);
-
-      // direct transactions query
-      const directQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-300" }),
       });
-      // splits query
-      const splitQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-50" }),
-      });
-      // transfer query
-      const transferQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-150" }),
-      });
-      // a transfer recorded as one line of a split parent (audit P5-007)
-      const splitTransferQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-25" }),
-      });
-
-      transactionsRepository.createQueryBuilder
-        .mockReturnValueOnce(directQb)
-        .mockReturnValueOnce(transferQb);
-      splitsRepository.createQueryBuilder
-        .mockReturnValueOnce(splitQb)
-        .mockReturnValueOnce(splitTransferQb);
+      // 350 spent in the category; 175 out to savings across both transfer
+      // shapes (audit P5-007), which the shared read covers.
+      mockedPeriodSpending.mockResolvedValue(
+        spending({ "cat-1": -350 }, { "acct-savings": 175 }),
+      );
 
       const result = await service.getTrend("user-1", "budget-1", 6);
 
+      expect(mockedPeriodSpending).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        "user-1",
+        [mockBudgetCategory, mockTransferCategory],
+        "2026-02-01",
+        "2026-02-28",
+      );
       expect(result).toHaveLength(2);
-      // actuals = -(-300 + -50 + -150 + -25) = 525
       expect(result[1].actual).toBe(525);
     });
 
@@ -501,7 +575,7 @@ describe("BudgetTrendReportsService", () => {
       };
       budgetsService.findOne.mockResolvedValueOnce(budgetOnlyTransfers);
 
-      const closedPeriods: Partial<BudgetPeriod>[] = [
+      periodsRepository.find.mockResolvedValueOnce([
         {
           id: "p-1",
           budgetId: "budget-1",
@@ -512,31 +586,18 @@ describe("BudgetTrendReportsService", () => {
           actualIncome: 5000,
           status: PeriodStatus.CLOSED,
         },
-      ];
-
-      const openPeriod: Partial<BudgetPeriod> = {
+      ]);
+      periodsRepository.findOne.mockResolvedValueOnce({
         id: "p-2",
         budgetId: "budget-1",
         periodStart: "2026-02-01",
         periodEnd: "2026-02-28",
         totalBudgeted: 200,
         status: PeriodStatus.OPEN,
-      };
-
-      periodsRepository.find.mockResolvedValueOnce(closedPeriods);
-      periodsRepository.findOne.mockResolvedValueOnce(openPeriod);
-
-      const transferQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-175" }),
       });
-      // The split-transfer read runs even with no regular categories: a
-      // transfer can arrive as one line of a split parent (audit P5-007).
-      const splitTransferQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-25" }),
-      });
-
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(transferQb);
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitTransferQb);
+      mockedPeriodSpending.mockResolvedValue(
+        spending({}, { "acct-savings": 200 }),
+      );
 
       const result = await service.getTrend("user-1", "budget-1", 6);
 
@@ -558,49 +619,31 @@ describe("BudgetTrendReportsService", () => {
       expect(result).toEqual([]);
     });
 
-    it("should leave the budget's excluded accounts out of the live trend queries", async () => {
+    it("reads the live trend through the budget page's converted read, month by month", async () => {
       budgetsService.findOne.mockResolvedValueOnce({
         ...mockBudget,
         config: { excludedAccountIds: ["acc-x"] },
         categories: [mockBudgetCategory],
       });
       periodsRepository.find.mockResolvedValueOnce([]);
-      const directQb = createMockQueryBuilder();
-      const splitQb = createMockQueryBuilder();
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(directQb);
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
 
       await service.getTrend("user-1", "budget-1", 3);
 
-      for (const qb of [directQb, splitQb]) {
-        expect(qb.andWhere).toHaveBeenCalledWith(
-          "t.account_id NOT IN (:...excludedAccountIds)",
-          { excludedAccountIds: ["acc-x"] },
-        );
-      }
+      // The shared read takes the excluded accounts from the budget row and
+      // converts each row into the budget's currency (issue #2155).
+      expect(mockedBuckets).toHaveBeenCalledTimes(1);
+      const [, , userId, lines, , rangeEnd, bucketOf] =
+        mockedBuckets.mock.calls[0];
+      expect(userId).toBe("user-1");
+      expect(lines).toEqual([mockBudgetCategory]);
+      expect(rangeEnd.slice(0, 7)).toBe(currentMonthKey());
+      expect(bucketOf("2026-03-14")).toBe("2026-03");
+      expect(transactionsRepository.createQueryBuilder).not.toHaveBeenCalled();
     });
 
     it("should compute live trend with category and split data", async () => {
       periodsRepository.find.mockResolvedValueOnce([]);
-
-      const today = new Date();
-      const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-
-      // Direct transactions query builder
-      const directQb = createMockQueryBuilder({
-        getRawMany: jest
-          .fn()
-          .mockResolvedValue([{ month: monthKey, total: "250" }]),
-      });
-      // Splits query builder
-      const splitQb = createMockQueryBuilder({
-        getRawMany: jest
-          .fn()
-          .mockResolvedValue([{ month: monthKey, total: "100" }]),
-      });
-
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(directQb);
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
+      mockCurrentMonth(spending({ "cat-1": -250, "cat-2": -100 }));
 
       const result = await service.getTrend("user-1", "budget-1", 3);
 
@@ -609,9 +652,22 @@ describe("BudgetTrendReportsService", () => {
       // The current month should have actual = 250 + 100 = 350
       const currentMonth = result[result.length - 1];
       expect(currentMonth.actual).toBe(350);
+      expect(currentMonth.valuationComplete).toBe(true);
 
       // Total budgeted = 500 + 300 = 800 (non-income categories)
       expect(currentMonth.budgeted).toBe(800);
+    });
+
+    it("flags a live month whose converted read had a row with no rate (issue #2155)", async () => {
+      periodsRepository.find.mockResolvedValueOnce([]);
+      mockCurrentMonth(spending({ "cat-1": -250 }, {}, ["cat-1"]));
+
+      const result = await service.getTrend("user-1", "budget-1", 3);
+
+      const currentMonth = result[result.length - 1];
+      expect(currentMonth.actual).toBe(250);
+      expect(currentMonth.valuationComplete).toBe(false);
+      expect(result[0].valuationComplete).toBe(true);
     });
 
     it("should compute live trend including transfer accounts", async () => {
@@ -625,46 +681,14 @@ describe("BudgetTrendReportsService", () => {
       };
       budgetsService.findOne.mockResolvedValueOnce(budgetWithTransfers);
       periodsRepository.find.mockResolvedValueOnce([]);
-
-      const today = new Date();
-      const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-
-      // Direct transactions query
-      const directQb = createMockQueryBuilder({
-        getRawMany: jest
-          .fn()
-          .mockResolvedValue([{ month: monthKey, total: "200" }]),
-      });
-      // Splits query
-      const splitQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([]),
-      });
-      // Transfer query
-      const transferQb = createMockQueryBuilder({
-        getRawMany: jest
-          .fn()
-          .mockResolvedValue([{ month: monthKey, total: "150" }]),
-      });
-      // a transfer recorded as one line of a split parent (audit P5-007)
-      const splitTransferQb = createMockQueryBuilder({
-        getRawMany: jest
-          .fn()
-          .mockResolvedValue([{ month: monthKey, total: "30" }]),
-      });
-
-      transactionsRepository.createQueryBuilder
-        .mockReturnValueOnce(directQb)
-        .mockReturnValueOnce(transferQb);
-      splitsRepository.createQueryBuilder
-        .mockReturnValueOnce(splitQb)
-        .mockReturnValueOnce(splitTransferQb);
+      // 200 spent; 150 whole-row and 30 split-line transfer out to savings.
+      mockCurrentMonth(spending({ "cat-1": -200 }, { "acct-savings": 180 }));
 
       const result = await service.getTrend("user-1", "budget-1", 3);
 
       expect(result).toHaveLength(3);
 
       const currentMonth = result[result.length - 1];
-      // 200 (direct) + 150 (whole-row transfer) + 30 (split-line transfer)
       expect(currentMonth.actual).toBe(380);
 
       // totalBudgeted = 500 (cat) + 200 (transfer) = 700
@@ -678,21 +702,7 @@ describe("BudgetTrendReportsService", () => {
       };
       budgetsService.findOne.mockResolvedValueOnce(budgetOnlyTransfers);
       periodsRepository.find.mockResolvedValueOnce([]);
-
-      const today = new Date();
-      const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-
-      const transferQb = createMockQueryBuilder({
-        getRawMany: jest
-          .fn()
-          .mockResolvedValue([{ month: monthKey, total: "180" }]),
-      });
-      const splitTransferQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([]),
-      });
-
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(transferQb);
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitTransferQb);
+      mockCurrentMonth(spending({}, { "acct-savings": 180 }));
 
       const result = await service.getTrend("user-1", "budget-1", 3);
 
@@ -720,20 +730,14 @@ describe("BudgetTrendReportsService", () => {
 
     it("should fill zero actuals for months without transactions", async () => {
       periodsRepository.find.mockResolvedValueOnce([]);
-
-      // Return empty rows -- no transactions in any month
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
-        createMockQueryBuilder({ getRawMany: jest.fn().mockResolvedValue([]) }),
-      );
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(
-        createMockQueryBuilder({ getRawMany: jest.fn().mockResolvedValue([]) }),
-      );
+      mockedBuckets.mockResolvedValue({ currency: "USD", buckets: new Map() });
 
       const result = await service.getTrend("user-1", "budget-1", 3);
 
       expect(result).toHaveLength(3);
       for (const point of result) {
         expect(point.actual).toBe(0);
+        expect(point.valuationComplete).toBe(true);
       }
     });
   });
@@ -892,7 +896,7 @@ describe("BudgetTrendReportsService", () => {
         category: mockCategory,
       };
 
-      const periods: Partial<BudgetPeriod>[] = [
+      periodsRepository.find.mockResolvedValueOnce([
         {
           id: "p-1",
           budgetId: "budget-1",
@@ -901,26 +905,18 @@ describe("BudgetTrendReportsService", () => {
           status: PeriodStatus.OPEN,
           periodCategories: [mockPc as BudgetPeriodCategory],
         },
-      ];
-
-      periodsRepository.find.mockResolvedValueOnce(periods);
-
-      const directQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-300" }),
-      });
-      const splitQb = createMockQueryBuilder({
-        getRawOne: jest.fn().mockResolvedValue({ total: "-25" }),
-      });
-
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(directQb);
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
+      ]);
+      mockedPeriodSpending.mockResolvedValue(spending({ "cat-1": -325 }));
 
       const result = await service.getCategoryTrend("user-1", "budget-1", 6);
 
+      // One converted read for the period, not a raw sum per category.
+      expect(mockedPeriodSpending).toHaveBeenCalledTimes(1);
       expect(result).toHaveLength(1);
       expect(result[0].data[0].actual).toBe(325);
       expect(result[0].data[0].budgeted).toBe(500);
       expect(result[0].data[0].percentUsed).toBe(65);
+      expect(result[0].data[0].valuationComplete).toBe(true);
     });
 
     it("should fall back to live category trend when no periods exist", async () => {
@@ -975,26 +971,11 @@ describe("BudgetTrendReportsService", () => {
 
     it("should compute live category trend with actual transaction data", async () => {
       periodsRepository.find.mockResolvedValueOnce([]);
-
-      const today = new Date();
-      const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-
-      const directQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { categoryId: "cat-1", month: monthKey, total: "350" },
-          { categoryId: "cat-2", month: monthKey, total: "180" },
-        ]),
-      });
-      const splitQb = createMockQueryBuilder({
-        getRawMany: jest
-          .fn()
-          .mockResolvedValue([
-            { categoryId: "cat-1", month: monthKey, total: "50" },
-          ]),
-      });
-
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(directQb);
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
+      const monthKey = currentMonthKey();
+      // cat-1: 350 direct + 50 split; cat-2: 180, with no rate for a cat-2 row.
+      mockCurrentMonth(
+        spending({ "cat-1": -400, "cat-2": -180 }, {}, ["cat-2"]),
+      );
 
       const result = await service.getCategoryTrend("user-1", "budget-1", 3);
 
@@ -1003,17 +984,17 @@ describe("BudgetTrendReportsService", () => {
       const cat1 = result.find((s) => s.categoryId === "cat-1");
       const cat2 = result.find((s) => s.categoryId === "cat-2");
 
-      // Current month for cat-1: 350 + 50 = 400
       const cat1CurrentMonth = cat1!.data[cat1!.data.length - 1];
       expect(cat1CurrentMonth.monthKey).toBe(monthKey);
       expect(cat1CurrentMonth.actual).toBe(400);
       expect(cat1CurrentMonth.budgeted).toBe(500);
       expect(cat1CurrentMonth.variance).toBe(-100);
+      expect(cat1CurrentMonth.valuationComplete).toBe(true);
 
-      // Current month for cat-2: 180
       const cat2CurrentMonth = cat2!.data[cat2!.data.length - 1];
       expect(cat2CurrentMonth.actual).toBe(180);
       expect(cat2CurrentMonth.budgeted).toBe(300);
+      expect(cat2CurrentMonth.valuationComplete).toBe(false);
     });
 
     it("should display parent:child name for categories with parents in live mode", async () => {
@@ -1075,13 +1056,7 @@ describe("BudgetTrendReportsService", () => {
 
     it("should fill zero actuals for months without matching transactions", async () => {
       periodsRepository.find.mockResolvedValueOnce([]);
-
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
-        createMockQueryBuilder({ getRawMany: jest.fn().mockResolvedValue([]) }),
-      );
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(
-        createMockQueryBuilder({ getRawMany: jest.fn().mockResolvedValue([]) }),
-      );
+      mockedBuckets.mockResolvedValue({ currency: "USD", buckets: new Map() });
 
       const result = await service.getCategoryTrend("user-1", "budget-1", 3);
 
