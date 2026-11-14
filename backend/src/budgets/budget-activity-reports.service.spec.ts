@@ -55,6 +55,10 @@ function spending(
     currency: "USD",
     incompleteCategoryIds: new Set(extra.incomplete ?? []),
     incompleteTransferAccountIds: new Set(),
+    transferIncomeMap: new Map(),
+    incompleteTransferIncomeAccountIds: new Set(),
+    outsideTransferIncome: 0,
+    outsideTransferIncomeComplete: true,
     missingRatePairs: extra.incomplete ? ["JPY->USD"] : [],
   };
 }

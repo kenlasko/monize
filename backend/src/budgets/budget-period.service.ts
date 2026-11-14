@@ -22,6 +22,7 @@ import {
 import {
   queryCategorySpending,
   resolveCategorySpent,
+  resolveOutsideTransferIncome,
 } from "./budget-spending.util";
 import { roundMoney, sumMoney } from "../common/round.util";
 
@@ -150,11 +151,12 @@ export class BudgetPeriodService {
         openPeriod.periodEnd,
       );
 
-      let totalIncome = 0;
+      // `config.transfersInAsIncome` is income no line carries (issue #2141).
+      let totalIncome = actuals.outsideTransferIncome;
       let totalExpenses = 0;
 
       for (const pc of openPeriod.periodCategories) {
-        const actual = actuals.get(pc.budgetCategoryId) || 0;
+        const actual = actuals.lines.get(pc.budgetCategoryId) || 0;
         pc.actualAmount = actual;
 
         const rollover = this.computeRollover(pc, actual);
@@ -366,9 +368,9 @@ export class BudgetPeriodService {
     budget: Budget,
     periodStart: string,
     periodEnd: string,
-  ): Promise<Map<string, number>> {
+  ): Promise<{ lines: Map<string, number>; outsideTransferIncome: number }> {
     const budgetCategories = budget.categories || [];
-    const { spendingMap, transferSpendingMap } = await queryCategorySpending(
+    const spending = await queryCategorySpending(
       manager.getRepository(Transaction),
       manager.getRepository(TransactionSplit),
       userId,
@@ -377,15 +379,23 @@ export class BudgetPeriodService {
       periodEnd,
     );
 
-    const result = new Map<string, number>();
+    const lines = new Map<string, number>();
     for (const bc of budgetCategories) {
       if ((bc.isTransfer && bc.transferAccountId) || bc.categoryId) {
-        result.set(
+        lines.set(
           bc.id,
-          resolveCategorySpent(bc, spendingMap, transferSpendingMap),
+          resolveCategorySpent(
+            bc,
+            spending.spendingMap,
+            spending.transferSpendingMap,
+            spending.transferIncomeMap,
+          ),
         );
       }
     }
-    return result;
+    return {
+      lines,
+      outsideTransferIncome: resolveOutsideTransferIncome(spending),
+    };
   }
 }

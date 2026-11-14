@@ -28,6 +28,11 @@ export enum BudgetStrategy {
 export interface BudgetConfig {
   includeTransfers?: boolean;
   excludedAccountIds?: string[];
+  /**
+   * Transfers in from the excluded accounts count as income (issue #2141,
+   * `budgetTransfersInAsIncome`).
+   */
+  transfersInAsIncome?: boolean;
   fiscalYearStart?: number;
   payFrequency?: "WEEKLY" | "BIWEEKLY" | "SEMIMONTHLY" | "MONTHLY";
   payDayOfMonth?: number;

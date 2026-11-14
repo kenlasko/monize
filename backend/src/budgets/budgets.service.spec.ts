@@ -922,6 +922,91 @@ describe("BudgetsService", () => {
       ).toBeNull();
       expect(spending.missingRatePairs).toEqual(["JPY->USD"]);
     });
+
+    it("counts transfers in as income: a line's and the toggle's (issue #2141)", async () => {
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        incomeLinked: true,
+        config: { excludedAccountIds: ["hisa", "rrsp"] },
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 10,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-2",
+            categoryId: null,
+            category: null,
+            isTransfer: true,
+            isIncome: true,
+            transferAccountId: "hisa",
+            transferAccount: { name: "HISA" },
+            amount: 2000,
+          },
+        ],
+      });
+      transactionsRepository.manager.query.mockImplementation(
+        async (sql: string) =>
+          sql.includes("FROM budgets")
+            ? [
+                {
+                  currency_code: TEST_BUDGET_CURRENCY,
+                  config: {
+                    excludedAccountIds: ["hisa", "rrsp"],
+                    transfersInAsIncome: true,
+                  },
+                },
+              ]
+            : [],
+      );
+      // The category's direct read, then the incoming transfers' parent read.
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getRawMany: jest
+              .fn()
+              .mockResolvedValue([spendingRow("cat-1", "-100")]),
+          }),
+        )
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getRawMany: jest
+              .fn()
+              .mockResolvedValue([
+                spendingRow("hisa", "2000"),
+                spendingRow("hisa", "-500"),
+                spendingRow("rrsp", "300"),
+              ]),
+          }),
+        );
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({ getRawMany: jest.fn().mockResolvedValue([]) }),
+      );
+
+      const result = await service.getSummary("user-1", "budget-1");
+
+      const hisa = result.categoryBreakdown.find(
+        (c) => c.budgetCategoryId === "bc-2",
+      );
+      expect(hisa).toMatchObject({
+        isIncome: true,
+        isTransfer: true,
+        spent: 1500,
+      });
+      expect(result.outsideTransferIncome).toBe(300);
+      expect(result.totalIncome).toBe(1800);
+      // The income-linked line is a percentage of every income, transfers in
+      // included: 10% of 1,800.
+      const groceries = result.categoryBreakdown.find(
+        (c) => c.budgetCategoryId === "bc-1",
+      );
+      expect(groceries!.budgeted).toBe(180);
+    });
   });
 
   describe("getVelocity", () => {

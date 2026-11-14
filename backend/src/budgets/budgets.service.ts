@@ -32,6 +32,7 @@ import {
   resolveBudgetIncome,
   resolveCategoryName,
   resolveCategorySpent,
+  resolveOutsideTransferIncome,
 } from "./budget-spending.util";
 import { formatDateYMD, todayYMD } from "../common/date-utils";
 import { overdueCarryFrom } from "../common/scheduled-occurrences";
@@ -73,6 +74,31 @@ export interface UpcomingBill {
   categoryId: string | null;
 }
 
+/** One budget line's figures for the current period. */
+export interface CategoryActualRow {
+  budgetCategoryId: string;
+  categoryId: string | null;
+  categoryName: string;
+  budgeted: number;
+  spent: number;
+  remaining: number;
+  percentUsed: number;
+  isIncome: boolean;
+  /** A transfer line: outgoing savings, or transfer income when `isIncome`. */
+  isTransfer: boolean;
+  percentage: number | null;
+}
+
+/** The current period's line figures and the income no line carries. */
+interface CategoryActuals {
+  lines: CategoryActualRow[];
+  /**
+   * `config.transfersInAsIncome`'s income, clamped at zero like a line's
+   * (`resolveOutsideTransferIncome`); `0` with the toggle off (issue #2141).
+   */
+  outsideTransferIncome: number;
+}
+
 @Injectable()
 export class BudgetsService {
   // Short-lived cache to dedup concurrent computeCategoryActuals calls
@@ -80,19 +106,7 @@ export class BudgetsService {
   private categoryActualsCache = new Map<
     string,
     {
-      data: Promise<
-        Array<{
-          budgetCategoryId: string;
-          categoryId: string | null;
-          categoryName: string;
-          budgeted: number;
-          spent: number;
-          remaining: number;
-          percentUsed: number;
-          isIncome: boolean;
-          percentage: number | null;
-        }>
-      >;
+      data: Promise<CategoryActuals>;
       timestamp: number;
     }
   >();
@@ -410,35 +424,31 @@ export class BudgetsService {
     percentUsed: number;
     incomeLinked: boolean;
     actualIncome: number | null;
-    categoryBreakdown: Array<{
-      budgetCategoryId: string;
-      categoryId: string | null;
-      categoryName: string;
-      budgeted: number;
-      spent: number;
-      remaining: number;
-      percentUsed: number;
-      isIncome: boolean;
-      percentage: number | null;
-    }>;
+    /** Included in `totalIncome`; `0` unless `config.transfersInAsIncome`. */
+    outsideTransferIncome: number;
+    categoryBreakdown: CategoryActualRow[];
   }> {
     const budget = await this.findOne(userId, budgetId);
 
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
 
-    const categoryBreakdown = await this.getCachedCategoryActuals(
-      userId,
-      budget,
-      periodStart,
-      periodEnd,
-    );
+    const { lines: categoryBreakdown, outsideTransferIncome } =
+      await this.getCachedCategoryActuals(
+        userId,
+        budget,
+        periodStart,
+        periodEnd,
+      );
 
     const expenseCategories = categoryBreakdown.filter((c) => !c.isIncome);
     const incomeCategories = categoryBreakdown.filter((c) => c.isIncome);
 
     const totalBudgeted = sumMoney(expenseCategories.map((c) => c.budgeted));
     const totalSpent = sumMoney(expenseCategories.map((c) => c.spent));
-    const totalIncome = sumMoney(incomeCategories.map((c) => c.spent));
+    const totalIncome = sumMoney([
+      ...incomeCategories.map((c) => c.spent),
+      outsideTransferIncome,
+    ]);
     const remaining = roundMoney(totalBudgeted - totalSpent);
     const percentUsed =
       totalBudgeted > 0
@@ -459,6 +469,7 @@ export class BudgetsService {
       percentUsed,
       incomeLinked: budget.incomeLinked,
       actualIncome,
+      outsideTransferIncome,
       categoryBreakdown,
     };
   }
@@ -557,7 +568,7 @@ export class BudgetsService {
     );
     const daysRemaining = Math.max(0, totalDays - daysElapsed);
 
-    const categoryBreakdown = await this.getCachedCategoryActuals(
+    const { lines: categoryBreakdown } = await this.getCachedCategoryActuals(
       userId,
       budget,
       periodStart,
@@ -870,7 +881,7 @@ export class BudgetsService {
     const budget = budgets[0];
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
 
-    const categoryBreakdown = await this.getCachedCategoryActuals(
+    const { lines: categoryBreakdown } = await this.getCachedCategoryActuals(
       userId,
       budget,
       periodStart,
@@ -971,7 +982,7 @@ export class BudgetsService {
     const budget = budgets[0];
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
 
-    const categoryBreakdown = await this.getCachedCategoryActuals(
+    const { lines: categoryBreakdown } = await this.getCachedCategoryActuals(
       userId,
       budget,
       periodStart,
@@ -1038,47 +1049,34 @@ export class BudgetsService {
     budget: Budget,
     periodStart: string,
     periodEnd: string,
-  ): Promise<
-    Array<{
-      budgetCategoryId: string;
-      categoryId: string | null;
-      categoryName: string;
-      budgeted: number;
-      spent: number;
-      remaining: number;
-      percentUsed: number;
-      isIncome: boolean;
-      percentage: number | null;
-    }>
-  > {
+  ): Promise<CategoryActuals> {
     const budgetCategories = budget.categories || [];
 
     if (budgetCategories.length === 0) {
-      return [];
+      return { lines: [], outsideTransferIncome: 0 };
     }
 
     // The two spending queries share one scoped transaction so the direct and
     // split halves of a category's total come from the same snapshot.
-    const { spendingMap, transferSpendingMap } = await withScopedDb(
-      this.dataSource,
-      (m) =>
-        queryCategorySpending(
-          m.getRepository(Transaction),
-          m.getRepository(TransactionSplit),
-          userId,
-          budgetCategories,
-          periodStart,
-          periodEnd,
-        ),
+    const spending = await withScopedDb(this.dataSource, (m) =>
+      queryCategorySpending(
+        m.getRepository(Transaction),
+        m.getRepository(TransactionSplit),
+        userId,
+        budgetCategories,
+        periodStart,
+        periodEnd,
+      ),
     );
 
     // An income-linked budget derives its lines from the income the same
-    // read converted into the budget's currency (issue #2155).
+    // read converted into the budget's currency (issue #2155), transfers in
+    // included (issue #2141).
     const actualIncome = budget.incomeLinked
-      ? resolveBudgetIncome(budgetCategories, spendingMap)
+      ? resolveBudgetIncome(budgetCategories, spending)
       : 0;
 
-    return budgetCategories.map((bc) => {
+    const lines = budgetCategories.map((bc) => {
       const rawAmount = Number(bc.amount);
       let budgeted: number;
       let percentage: number | null = null;
@@ -1090,7 +1088,12 @@ export class BudgetsService {
         budgeted = rawAmount;
       }
 
-      const spent = resolveCategorySpent(bc, spendingMap, transferSpendingMap);
+      const spent = resolveCategorySpent(
+        bc,
+        spending.spendingMap,
+        spending.transferSpendingMap,
+        spending.transferIncomeMap,
+      );
       const categoryName = resolveCategoryName(bc);
       const remaining = roundMoney(budgeted - spent);
       const percentUsed =
@@ -1105,8 +1108,14 @@ export class BudgetsService {
         remaining,
         percentUsed,
         isIncome: bc.isIncome,
+        isTransfer: bc.isTransfer,
         percentage,
       };
     });
+
+    return {
+      lines,
+      outsideTransferIncome: resolveOutsideTransferIncome(spending),
+    };
   }
 }
