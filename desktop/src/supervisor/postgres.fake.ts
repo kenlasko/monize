@@ -1,3 +1,5 @@
+import { randomBytes } from "crypto";
+
 import { pathFor } from "./postgres-args";
 import {
   PgConnectConfig,
@@ -14,7 +16,8 @@ import {
  * through `on` and asserts on what was run, written and logged.
  */
 
-export const PASSWORD = "s3cr3t-Pa55word";
+/** Random per run: a spec asserts it never appears in argv, logs or errors. */
+export const PASSWORD = randomBytes(12).toString("base64url");
 
 export interface RecordedCall {
   readonly binary: string;

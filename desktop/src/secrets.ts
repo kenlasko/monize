@@ -109,7 +109,7 @@ function decodeBase64(value: string, name: string): Buffer {
 }
 
 function assertUsable(secret: string, name: string): string {
-  if (secret.length < MIN_SECRET_LENGTH || secret.trim() !== secret) {
+  if (secret.length < MIN_SECRET_LENGTH || /^\s|\s$/.test(secret)) {
     throw new SecretError(
       "invalid-secret",
       name,

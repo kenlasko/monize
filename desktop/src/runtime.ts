@@ -63,7 +63,7 @@ const PORT_RELEASE_POLL_MS = 250;
  * and the password are never used by it, but the runner validates both.
  */
 const STOP_ONLY_PORT = 1;
-const STOP_ONLY_PASSWORD = "not-used-by-stop";
+const STOP_ONLY_PLACEHOLDER = "not-used-by-stop";
 
 const SERVER_LOG_FILE = "postgres-server.log";
 
@@ -99,7 +99,7 @@ export async function stopLeftoverPostgres(
     createPostgresRunner(options),
 ): Promise<void> {
   await createPostgres(
-    postgresOptions(paths, logger, STOP_ONLY_PORT, STOP_ONLY_PASSWORD),
+    postgresOptions(paths, logger, STOP_ONLY_PORT, STOP_ONLY_PLACEHOLDER),
   ).stop();
 }
 

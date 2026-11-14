@@ -7,7 +7,7 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron";
  * `shell/splash-channels.ts`, held equal by `splash-preload.spec.ts`.
  */
 
-export const SPLASH_API_KEY = "monizeSplash";
+export const SPLASH_API_NAME = "monizeSplash";
 export const SPLASH_CHANNELS = {
   view: "monize-splash:view",
   retry: "monize-splash:retry",
@@ -30,4 +30,4 @@ export const splashApi: SplashApi = {
   quit: () => ipcRenderer.send(SPLASH_CHANNELS.quit),
 };
 
-contextBridge.exposeInMainWorld(SPLASH_API_KEY, splashApi);
+contextBridge.exposeInMainWorld(SPLASH_API_NAME, splashApi);
