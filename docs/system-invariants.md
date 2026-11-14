@@ -5424,12 +5424,58 @@ a `settle_loan_installment` rule claims an occurrence a bank row paid through
 the same `INSERT ... ON CONFLICT DO NOTHING RETURNING id` (INV-LOAN-008), so a
 bill post and a settlement of one slot cannot both succeed. And `post()` now
 records the transaction it created on its claim (`transaction_id`, `ON DELETE
-CASCADE`), for every schedule: deleting a posted bill's transaction, or undoing
-its create, deletes the claim in the same statement. The occurrence then has no
-effect, and the cursor is not rewound, so the auto-post cron (which reads the
-cursor) does not re-post it; a person who moves `next_due_date` back onto that
-date can post it again, where before the claim outlived its transaction and
-`post()` answered "already posted". An investment post records no transaction.
+CASCADE`), for every schedule: deleting a posted bill's transaction deletes the
+claim in the same statement. The occurrence then has no effect, and the cursor
+is not rewound, so the auto-post cron (which reads the cursor) does not re-post
+it; a person who moves `next_due_date` back onto that date can post it again,
+where before the claim outlived its transaction and `post()` answered "already
+posted". An investment post records no transaction.
+
+Undo of a posting (issue #2165). `post()` writes the money through
+`TransactionsService.create`, `writeTransferLegs` or
+`InvestmentTransactionsService.create` with their own history switched off
+(`recordHistory: false`) and, after its commit, records one
+`scheduled_posting` entry (`backend/src/scheduled-transactions/scheduled-posting-history.ts`):
+the rows it wrote, the claim, the slot, and either the cursor advance (the
+columns before and after, and the overrides the posting removed, read under
+the schedule lock before the advance) or, for a one-time bill, every row of the
+schedule its delete cascaded over (`to_jsonb`, rebuilt with
+`jsonb_populate_record`). The undo (`backend/src/action-history/scheduled-posting-undo.ts`)
+locks the schedule row and refuses before any write while a later slot of the
+schedule holds a claim made after the posting (`SCHEDULED_POSTING_UNDO_LATER_OCCURRENCE`,
+last in, first out, as for a rule run's settlements; a claim the posting found
+ahead of the cursor is recorded with it and does not count) or while the cursor
+stands anywhere but where the posting left it (`SCHEDULED_POSTING_UNDO_CURSOR_MOVED`:
+a skip records no entry, and a rewind past it would undo the skip too). It then
+removes the rows through the undo of the create that wrote them, after the
+strict reconciled lock on every row, releases the claim, and rewinds the cursor
+with `rewindScheduleCursor` (an override it puts back whose category was
+deleted since loses the category, as `ON DELETE SET NULL` did), putting an
+estimated schedule's stored amount back to the estimate it held before the
+posting, or re-inserts the one-time
+schedule (over the columns the table has now, so one added since takes its
+default; with its lines, their tags, its overrides, its payroll rules and its
+loan link; a category, a payee or the schedule's own transfer account deleted
+since is cleared, as `ON DELETE SET NULL` would have, and anything else gone
+refuses `SCHEDULED_POSTING_UNDO_REFERENCE_GONE`), all in the undo's one
+transaction. Where the hourly auto-post cron would post the occurrence again
+(the schedule auto-posts, is active, is not estimated, and the slot is due
+today or earlier in the user's effective timezone, by its override's date when
+it has one, an earlier one included), the undo removes the money and releases
+the claim but leaves the cursor advanced and a one-time bill deleted, so the
+occurrence ends as a skip leaves it (`wouldAutoPost`; maintainer decision on
+issue #2165); a schedule the advance left active is active again, since the
+removed payment may have retired it after the commit (a loan's last
+installment). Redo is
+refused (`SCHEDULED_POSTING_REDO`): posting again is `post()`'s job, at the
+prices, rates and loan balance of the day. A posting that wrote no money of its
+own (`recordOnly`, a retired loan) records no entry, and a transfer with a leg
+in another owner's account keeps the transfer's per-owner entries, whose undo
+does not rewind the schedule. `scheduled-posting-undo.integration.spec.ts`
+holds the ledger, the balances, the claim and the cursor across a plain bill,
+a consumed override, a one-time split bill, a transfer, a claim found ahead of
+the cursor, a category deleted before the restore, the due auto-post skip
+(with a cron tick after it) and the refusals.
 
 ### INV-OCCURRENCE-002 -- a stored override price survives
 

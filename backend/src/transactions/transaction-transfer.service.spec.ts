@@ -510,6 +510,27 @@ describe("TransactionTransferService", () => {
       );
     });
 
+    it("records no entry when the caller records its own (a scheduled posting, issue #2165)", async () => {
+      mockFindOne
+        .mockResolvedValueOnce({ id: "from-tx-id", amount: -500 })
+        .mockResolvedValueOnce({ id: "to-tx-id", amount: 500 });
+      const prepared = await service.prepareTransfer("user-1", baseTransferDto);
+      const written = await service.writeTransferLegs(prepared);
+
+      const result = await service.completeTransfer(
+        prepared,
+        written.savedFromId,
+        written.savedToId,
+        mockFindOne,
+        { recordHistory: false },
+      );
+
+      expect(result.fromTransaction).toEqual(
+        expect.objectContaining({ id: "from-tx-id" }),
+      );
+      expect(actionHistoryService.record).not.toHaveBeenCalled();
+    });
+
     it("writes both legs with the effective user's id and no system context on the same-owner path", async () => {
       mockFindOne
         .mockResolvedValueOnce({ id: "from-tx-id", amount: -500 })

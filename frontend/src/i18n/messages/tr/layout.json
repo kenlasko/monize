@@ -64,6 +64,7 @@
       "tag": "Etiket",
       "account": "Hesap",
       "scheduled_transaction": "Zamanlanmış",
+      "scheduled_posting": "Zamanlanmış",
       "security": "Menkul Kıymet",
       "budget": "Bütçe",
       "custom_report": "Rapor"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "\"{name}\" zamanlanmış işlemi oluşturuldu",
       "updatedScheduledTransaction": "\"{name}\" zamanlanmış işlemi güncellendi",
       "deletedScheduledTransaction": "\"{name}\" zamanlanmış işlemi silindi",
+      "postedScheduledTransaction": "\"{name}\" zamanlanmış işlemi kaydedildi",
       "createdSecurity": "\"{symbol}\" menkul kıymeti oluşturuldu",
       "updatedSecurity": "\"{symbol}\" menkul kıymeti güncellendi",
       "deletedSecurity": "\"{symbol}\" menkul kıymeti silindi",

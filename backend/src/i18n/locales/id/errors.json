@@ -112,7 +112,11 @@
     "unsupportedSimpleAction": "Tindakan tidak didukung: {{ action }}",
     "unsupportedTableForReinsert": "Tabel tidak didukung untuk penyisipan ulang: {{ tableName }}",
     "undoConversion": "Perubahan ini mengonversi transaksi ke atau dari transfer, sehingga tidak dapat dibatalkan secara otomatis. Konversikan kembali saja.",
-    "customRecurrenceMissing": "Perubahan ini tidak dapat dibatalkan atau diulang: aturan pengulangan kustom transaksi terjadwal tidak ada dalam riwayatnya"
+    "customRecurrenceMissing": "Perubahan ini tidak dapat dibatalkan atau diulang: aturan pengulangan kustom transaksi terjadwal tidak ada dalam riwayatnya",
+    "scheduledPostingRedo": "Transaksi terjadwal yang sudah diposting tidak dapat diulang. Posting lagi dari Tagihan & Setoran sebagai gantinya",
+    "scheduledPostingUndoLaterOccurrence": "Kejadian berikutnya dari transaksi terjadwal ini telah diposting sejak itu, sehingga posting ini tidak dapat dibatalkan. Batalkan atau hapus yang berikutnya terlebih dahulu",
+    "scheduledPostingUndoCursorMoved": "Transaksi terjadwal ini telah bergerak maju sejak posting ini (sebuah kejadian dilewati atau tanggal berikutnya diubah), sehingga posting tidak dapat dibatalkan. Hapus transaksi yang diposting sebagai gantinya",
+    "scheduledPostingUndoReferenceGone": "Sesuatu yang digunakan transaksi terjadwal ini (akun, sekuritas, atau mata uang) telah dihapus sejak itu, sehingga posting tidak dapat dibatalkan. Hapus transaksi yang diposting sebagai gantinya"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Berikan kata sandi atau undangan email, tidak keduanya.",

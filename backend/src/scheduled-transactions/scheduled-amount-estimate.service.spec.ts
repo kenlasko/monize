@@ -175,6 +175,9 @@ describe("ScheduledAmountEstimateService", () => {
     expect(model).toMatchObject({
       status: "estimated",
       paymentCount: 1,
+      levelPaymentCount: 1,
+      levelRule: "year",
+      seasonal: false,
       latestPaymentDate: "2026-10-15",
       growthRate: null,
       historyMonths: 24,

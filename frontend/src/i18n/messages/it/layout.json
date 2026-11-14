@@ -64,6 +64,7 @@
       "tag": "Etichetta",
       "account": "Conto",
       "scheduled_transaction": "Pianificata",
+      "scheduled_posting": "Pianificata",
       "security": "Titolo",
       "budget": "Budget",
       "custom_report": "Report"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "Transazione pianificata \"{name}\" creata",
       "updatedScheduledTransaction": "Transazione pianificata \"{name}\" aggiornata",
       "deletedScheduledTransaction": "Transazione pianificata \"{name}\" eliminata",
+      "postedScheduledTransaction": "Transazione pianificata \"{name}\" registrata",
       "createdSecurity": "Titolo \"{symbol}\" creato",
       "updatedSecurity": "Titolo \"{symbol}\" aggiornato",
       "deletedSecurity": "Titolo \"{symbol}\" eliminato",

@@ -112,7 +112,11 @@
     "unsupportedSimpleAction": "[XX-Unsupported action: {{ action }}-XX]",
     "unsupportedTableForReinsert": "[XX-Unsupported table for re-insert: {{ tableName }}-XX]",
     "undoConversion": "[XX-This change converted a transaction to or from a transfer, so it cannot be undone automatically. Convert it back instead.-XX]",
-    "customRecurrenceMissing": "[XX-This change cannot be undone or redone: the scheduled transaction's custom schedule rule is missing from its history-XX]"
+    "customRecurrenceMissing": "[XX-This change cannot be undone or redone: the scheduled transaction's custom schedule rule is missing from its history-XX]",
+    "scheduledPostingRedo": "[XX-A posted scheduled transaction cannot be redone. Post it again from Bills & Deposits instead-XX]",
+    "scheduledPostingUndoLaterOccurrence": "[XX-A later occurrence of this scheduled transaction has been posted since, so this posting cannot be undone. Undo or delete the later one first-XX]",
+    "scheduledPostingUndoCursorMoved": "[XX-This scheduled transaction has moved on since this posting (an occurrence was skipped or its next date changed), so the posting cannot be undone. Delete the posted transaction instead-XX]",
+    "scheduledPostingUndoReferenceGone": "[XX-Something this scheduled transaction used (an account, a security or a currency) has been deleted since, so the posting cannot be undone. Delete the posted transaction instead-XX]"
   },
   "admin": {
     "passwordOrInviteNotBoth": "[XX-Provide either a password or an email invite, not both.-XX]",

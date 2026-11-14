@@ -64,6 +64,7 @@
       "tag": "标签",
       "account": "账户",
       "scheduled_transaction": "计划交易",
+      "scheduled_posting": "计划交易",
       "security": "证券",
       "budget": "预算",
       "custom_report": "报表"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "已创建计划交易\"{name}\"",
       "updatedScheduledTransaction": "已更新计划交易\"{name}\"",
       "deletedScheduledTransaction": "已删除计划交易\"{name}\"",
+      "postedScheduledTransaction": "已过账计划交易\"{name}\"",
       "createdSecurity": "已创建证券\"{symbol}\"",
       "updatedSecurity": "已更新证券\"{symbol}\"",
       "deletedSecurity": "已删除证券\"{symbol}\"",

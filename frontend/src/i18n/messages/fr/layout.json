@@ -64,6 +64,7 @@
       "tag": "Étiquette",
       "account": "Compte",
       "scheduled_transaction": "Planifiée",
+      "scheduled_posting": "Planifiée",
       "security": "Titre",
       "budget": "Budget",
       "custom_report": "Rapport"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "Transaction planifiée \"{name}\" créée",
       "updatedScheduledTransaction": "Transaction planifiée \"{name}\" mise à jour",
       "deletedScheduledTransaction": "Transaction planifiée \"{name}\" supprimée",
+      "postedScheduledTransaction": "Transaction planifiée \"{name}\" comptabilisée",
       "createdSecurity": "Titre \"{symbol}\" créé",
       "updatedSecurity": "Titre \"{symbol}\" mis à jour",
       "deletedSecurity": "Titre \"{symbol}\" supprimé",

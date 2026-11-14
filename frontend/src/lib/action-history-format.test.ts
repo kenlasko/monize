@@ -95,6 +95,7 @@ describe('renderActionDescription', () => {
     expect(KNOWN_DESCRIPTION_KEYS.has('createdTransfer')).toBe(true);
     expect(KNOWN_DESCRIPTION_KEYS.has('convertedToTransfer')).toBe(true);
     expect(KNOWN_DESCRIPTION_KEYS.has('convertedToTransaction')).toBe(true);
-    expect(KNOWN_DESCRIPTION_KEYS.size).toBe(43);
+    expect(KNOWN_DESCRIPTION_KEYS.has('postedScheduledTransaction')).toBe(true);
+    expect(KNOWN_DESCRIPTION_KEYS.size).toBe(44);
   });
 });

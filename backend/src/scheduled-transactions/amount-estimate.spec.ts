@@ -84,7 +84,7 @@ describe("amount-estimate", () => {
       expect(profile.level).toBe(-100);
     });
 
-    it("estimates a short history at the newest three payments' mean", () => {
+    it("estimates a short history with no pattern at the latest year's mean", () => {
       const profile = buildEstimateProfile(
         [
           { date: "2026-07-15", amount: -100 },
@@ -97,12 +97,73 @@ describe("amount-estimate", () => {
       )!;
       expect(profile.seasonal).toBe(false);
       expect(profile.growthRate).toBe(0);
-      // (-110 - 120 - 130) / 3, every month.
+      // (-100 - 110 - 120 - 130) / 4, every month: all four are in the year.
       expect(estimateForMonth(profile, "2026-12")).toEqual({
-        amount: -120,
+        amount: -115,
         basis: "recent",
       });
-      expect(estimateForMonth(profile, "2027-07").amount).toBe(-120);
+      expect(estimateForMonth(profile, "2027-07").amount).toBe(-115);
+    });
+
+    it("averages every payment of the latest year, not only the newest three", () => {
+      // A card payment that swings month to month, one large payment among
+      // the newest three: the year's twelve price it, not those three.
+      const amounts = [
+        -4259.96, -9366.25, -7959.08, -4431.89, -9807.91, -3994.56, -16244.83,
+        -164.62, -5424.58, -4121.92, -15775.65, -2335.76,
+      ];
+      const history = [
+        // Older than a year: in the 24-month window, not in the average.
+        { date: "2025-10-27", amount: -2750.81 },
+        ...amounts.map((amount, i) => ({
+          date: `${shiftMonthKey("2025-11", i)}-26`,
+          amount,
+        })),
+      ];
+      const profile = buildEstimateProfile(history, "2026-11-13", 2)!;
+      expect(profile.seasonal).toBe(false);
+      expect(profile.growthRate).toBe(0);
+      expect(profile.payments).toHaveLength(13);
+      expect(profile.levelRule).toBe("year");
+      expect(profile.levelPaymentCount).toBe(12);
+      // -83887.01 / 12, where the newest three alone gave -7411.11.
+      expect(estimateForMonth(profile, "2026-11")).toEqual({
+        amount: -6990.58,
+        basis: "recent",
+      });
+    });
+
+    it("leaves a payment on the year's exclusive lower bound out of the average", () => {
+      const profile = buildEstimateProfile(
+        [
+          { date: "2025-11-09", amount: -400 },
+          { date: "2026-03-15", amount: -100 },
+          { date: "2026-10-15", amount: -200 },
+        ],
+        TODAY,
+        2,
+      )!;
+      expect(profile.payments).toHaveLength(3);
+      expect(estimateForMonth(profile, "2026-12").amount).toBe(-150);
+    });
+
+    it("falls back to the newest three when the latest year holds no payment", () => {
+      const profile = buildEstimateProfile(
+        [
+          { date: "2025-01-15", amount: -100 },
+          { date: "2025-03-15", amount: -110 },
+          { date: "2025-06-15", amount: -120 },
+          { date: "2025-09-15", amount: -130 },
+        ],
+        TODAY,
+        2,
+      )!;
+      expect(profile.seasonal).toBe(false);
+      expect(profile.growthRate).toBe(0);
+      expect(profile.levelRule).toBe("recent");
+      expect(profile.levelPaymentCount).toBe(3);
+      // (-110 - 120 - 130) / 3.
+      expect(estimateForMonth(profile, "2026-12").amount).toBe(-120);
     });
 
     it("rounds at the currency's places", () => {
@@ -121,8 +182,8 @@ describe("amount-estimate", () => {
 
   /**
    * The bills that are not seasonal must not be read as seasonal: two years of
-   * history are not a season, and a price change is a new level, not a
-   * pattern or a trend.
+   * history are not a season, and a price change is neither a pattern nor a
+   * trend, so it is averaged over the latest year with the old price.
    */
   describe("a bill that does not vary by season", () => {
     it("estimates a flat bill at its price", () => {
@@ -147,7 +208,7 @@ describe("amount-estimate", () => {
       expect(profile.seasonal).toBe(false);
     });
 
-    it("estimates a price step at the new price, over two years of history", () => {
+    it("averages a price step over the latest year, over two years of history", () => {
       // 10 a month, 15 a month from May 2026.
       const profile = buildEstimateProfile(
         twoYears((month, year) => (year === 2026 && month >= 5 ? -15 : -10)),
@@ -164,17 +225,19 @@ describe("amount-estimate", () => {
           "2027-05",
           "2027-11",
         ]),
-      ).toEqual([-15, -15, -15, -15, -15]);
+        // Dec 2025 to Apr 2026 at -10, May to Nov 2026 at -15: -155 / 12.
+      ).toEqual([-12.92, -12.92, -12.92, -12.92, -12.92]);
     });
 
-    it("estimates a price step at the new price, over thirteen months of history", () => {
+    it("averages a price step over the latest year, over thirteen months of history", () => {
       const history = twoYears((month, year) =>
         year === 2026 && month >= 5 ? -15 : -10,
       ).filter((p) => p.date >= "2025-11-01");
       expect(history).toHaveLength(13);
       const profile = buildEstimateProfile(history, TODAY, 2)!;
+      // November 2025 is on the year's far side; the same twelve months.
       expect(months(profile, ["2026-12", "2027-04", "2027-11"])).toEqual([
-        -15, -15, -15,
+        -12.92, -12.92, -12.92,
       ]);
     });
   });
@@ -191,6 +254,9 @@ describe("amount-estimate", () => {
       )!;
       expect(profile.seasonal).toBe(false);
       expect(profile.growthRate).toBeCloseTo(0.05, 10);
+      // A trend keeps the newest three, which it then grows.
+      expect(profile.levelRule).toBe("recent");
+      expect(profile.levelPaymentCount).toBe(3);
       // From November 2026's -105: one month out, then a full year.
       expect(estimateForMonth(profile, "2026-12").amount).toBeCloseTo(
         -105 * Math.pow(1.05, 1 / 12),
@@ -236,6 +302,7 @@ describe("amount-estimate", () => {
       const profile = buildEstimateProfile(heating, TODAY, 2)!;
       expect(profile.seasonal).toBe(true);
       expect(profile.growthRate).toBeCloseTo(0.1, 10);
+      expect(profile.levelRule).toBe("recent");
       // The newest payments (Sep to Nov 2026) put a month of index 1 at
       // -1.1 x the shape's mean; January is 200 / mean of that, two months
       // past November, and July eight.

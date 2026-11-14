@@ -64,6 +64,7 @@
       "tag": "टैग",
       "account": "खाता",
       "scheduled_transaction": "अनुसूचित",
+      "scheduled_posting": "अनुसूचित",
       "security": "प्रतिभूति",
       "budget": "बजट",
       "custom_report": "रिपोर्ट"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "अनुसूचित लेनदेन \"{name}\" बनाया गया",
       "updatedScheduledTransaction": "अनुसूचित लेनदेन \"{name}\" अपडेट हुआ",
       "deletedScheduledTransaction": "अनुसूचित लेनदेन \"{name}\" हटाया गया",
+      "postedScheduledTransaction": "अनुसूचित लेनदेन \"{name}\" पोस्ट किया गया",
       "createdSecurity": "प्रतिभूति \"{symbol}\" बनाई गई",
       "updatedSecurity": "प्रतिभूति \"{symbol}\" अपडेट हुई",
       "deletedSecurity": "प्रतिभूति \"{symbol}\" हटाई गई",
