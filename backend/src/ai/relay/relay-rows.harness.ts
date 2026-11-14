@@ -236,10 +236,9 @@ export function createRelayRowsHarness(): RelayRowsHarness {
           "INSERT INTO ai_relay_agents (user_id, agent_credential, agent_seen_at)",
         )
       ) {
-        const [userId, credentialId, windowMs, bufferMs] = params as [
+        const [userId, credentialId, windowMs] = params as [
           string,
           string,
-          number,
           number,
         ];
         const existed = agents.some((a) => a.userId === userId);
@@ -250,7 +249,7 @@ export function createRelayRowsHarness(): RelayRowsHarness {
             r.userId === userId &&
             r.claimedCredential === holder &&
             holder !== null &&
-            ((r.status === "claimed" && r.expiresAt + bufferMs > now()) ||
+            ((r.status === "claimed" && r.expiresAt > now()) ||
               (r.answeredAt !== null && r.answeredAt + windowMs > now())),
         );
         const mayHold =

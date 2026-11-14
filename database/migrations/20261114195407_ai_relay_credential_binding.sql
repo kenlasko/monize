@@ -13,11 +13,13 @@
 --
 -- ai_relay_prompts.claimed_credential is the credential that claimed a turn.
 -- Only that credential may answer it, or adopt it from a reconnected session.
--- A turn claimed before this migration has none and can no longer be answered;
--- it expires on its deadline like any abandoned turn.
+-- A turn claimed without one (before this migration, or by a pod still on the
+-- previous release during the rollout) can no longer be answered by the new
+-- release; it expires on its deadline like any abandoned turn. Accepting a NULL
+-- would leave exactly the user-wide answer this closes.
 --
--- All three are nullable additions: the previous release keeps working against
--- this schema for the length of a rolling deployment.
+-- All three are nullable additions, so the previous release's own statements
+-- keep working against this schema for the length of a rolling deployment.
 
 ALTER TABLE ai_relay_agents
     ADD COLUMN IF NOT EXISTS agent_credential TEXT;

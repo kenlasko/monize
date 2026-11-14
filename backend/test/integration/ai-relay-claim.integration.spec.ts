@@ -308,6 +308,46 @@ describe("AI relay claim (real PostgreSQL)", () => {
       expect(claimed?.promptId).toBe(id);
     });
 
+    it("refuses a takeover right after the stale holder answered", async () => {
+      const first = await queue("first");
+      await asUser(() => relay.waitForPrompt(userId, "session-a", CRED));
+      await expect(
+        asUser(() => relay.postResponse(userId, first, "done", CRED)),
+      ).resolves.toBe(true);
+      await makeHolderStale();
+      const second = await queue("second");
+
+      const claimed = await asUser(() =>
+        relay.waitForPrompt(userId, "session-x", OTHER_CRED),
+      );
+      expect(claimed).toBeNull();
+      expect(await statusOf(second)).toBe("pending");
+    });
+
+    it("lets another credential take over once the holder's turn is past its deadline", async () => {
+      const first = await queue("first");
+      await asUser(() => relay.waitForPrompt(userId, "session-a", CRED));
+      await makeHolderStale();
+      // Past the idle deadline but inside the late-answer grace: the browser
+      // has given up, so the dead holder no longer keeps the chat.
+      await db.query(
+        `UPDATE ai_relay_prompts
+            SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second'
+          WHERE id = $1`,
+        [first],
+      );
+      const second = await queue("second");
+
+      const claimed = await asUser(() =>
+        relay.waitForPrompt(userId, "session-x", OTHER_CRED),
+      );
+      expect(claimed?.promptId).toBe(second);
+      // The dead holder's late answer is still its own to give.
+      await expect(
+        asUser(() => relay.postResponse(userId, first, "late", CRED)),
+      ).resolves.toBe(true);
+    });
+
     it("refuses a takeover of a stale holder that still has a turn in flight", async () => {
       const first = await queue("first");
       await asUser(() => relay.waitForPrompt(userId, "session-a", CRED));

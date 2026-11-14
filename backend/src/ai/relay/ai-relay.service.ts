@@ -188,8 +188,9 @@ interface PromptStateRow {
  *
  * The queue is rows, not process memory. The browser inserts a `pending`
  * `ai_relay_prompts` row and parks; the agent's long-poll claims one with a
- * conditional `UPDATE` under `FOR UPDATE SKIP LOCKED`, so two agents polling one
- * user get different prompts and the loser of a double `post_response` is
+ * conditional `UPDATE` under `FOR UPDATE SKIP LOCKED`, so two sessions of the
+ * credential serving the chat get different prompts (another credential
+ * claims nothing, `holdChat`) and the loser of a double `post_response` is
  * refused by the database rather than by a read it had already passed
  * (INV-HA-005). A wake-up on the `EVENT_BUS` only shortens the wait: it carries
  * ids, never the prompt or the answer, and every waiter re-reads its row on a
@@ -798,7 +799,10 @@ export class AiRelayService {
    * the chat at a time. Another takes it over only once the holder has not
    * asked for work within CONNECTED_WINDOW_MS AND has no turn in flight or
    * just answered; a holder parked on `get_next_prompt` re-asks every
-   * WAKE_POLL_INTERVAL_MS, so it never lapses while connected.
+   * WAKE_POLL_INTERVAL_MS, so it never lapses while connected. "In flight"
+   * is the turn's live deadline, not the late-answer grace: an agent that died
+   * mid-turn gives the chat up once the browser has given up on it, and its
+   * late answer is still accepted from its own credential.
    *
    * The upsert locks the user's `ai_relay_agents` row until the caller's
    * transaction commits, including when its `WHERE` refuses the update, so a
@@ -833,15 +837,14 @@ export class AiRelayService {
                            = ai_relay_agents.agent_credential
                        AND (
                              (p.status = 'claimed'
-                              AND p.expires_at + ${msInterval("$4")}
-                                  > CURRENT_TIMESTAMP)
+                              AND p.expires_at > CURRENT_TIMESTAMP)
                           OR p.answered_at + ${msInterval("$3")}
                                   > CURRENT_TIMESTAMP
                            )
                   )
                 )
          RETURNING user_id`,
-        [userId, credentialId, CONNECTED_WINDOW_MS, BUFFER_TTL_MS],
+        [userId, credentialId, CONNECTED_WINDOW_MS],
       ),
     );
     return held.length > 0;

@@ -1274,6 +1274,19 @@ describe("AiRelayService", () => {
       expect(harness.agents[0].agentCredential).toBe(MINE);
     });
 
+    it("lets another credential take over once a holder that died mid-turn has passed the turn's deadline", async () => {
+      await claimAsHolder("first");
+      // The holder goes silent: the turn's idle deadline passes, though its
+      // late-answer grace has not. The chat must not stay locked for the grace.
+      await jest.advanceTimersByTimeAsync(IDLE_TIMEOUT_MS + 1000);
+      start(USER, "second", []);
+      await settle();
+
+      const taken = await service.waitForPrompt(USER, undefined, THEIRS);
+      expect(taken?.prompt).toBe("second");
+      expect(harness.agents[0].agentCredential).toBe(THEIRS);
+    });
+
     it("does not let another credential take over within the window after the holder answered", async () => {
       const { claimed } = await claimAsHolder("first");
       await service.postResponse(USER, claimed.promptId, "done", MINE);
