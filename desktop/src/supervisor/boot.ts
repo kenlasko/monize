@@ -81,6 +81,7 @@ export function createBootSupervisor(deps: BootDeps): Supervisor {
   const lifetime = new AbortController();
   const statusListeners = new Set<(status: SupervisorStatus) => void>();
   const fatalListeners = new Set<(failure: FatalFailure) => void>();
+  const slowStartListeners = new Set<(server: ServerName) => void>();
   const servers = new Map<ServerName, ChildHandle>();
   let status: SupervisorStatus = "idle";
   let fatal: FatalFailure | null = null;
@@ -121,7 +122,40 @@ export function createBootSupervisor(deps: BootDeps): Supervisor {
     return handle;
   }
 
-  function waitHealthy(
+  /**
+   * Until `settled` aborts: every `startupProgressMs`, a log line saying the
+   * server is still starting, and on the first one the slow-start event. A
+   * failure's log tail then shows the wait, not only what came before it.
+   */
+  async function reportProgress(
+    name: ServerName,
+    settled: AbortSignal,
+  ): Promise<void> {
+    const startedAt = clock.now();
+    for (let tick = 0; ; tick++) {
+      await clock.sleep(options.startupProgressMs, settled);
+      if (settled.aborted) return;
+      const seconds = Math.round((clock.now() - startedAt) / 1000);
+      logger.info(`The ${name} is still starting (${seconds} s so far).`);
+      if (tick === 0) notify(slowStartListeners, name);
+    }
+  }
+
+  async function waitHealthy(
+    name: ServerName,
+    handle: ChildHandle,
+  ): Promise<HealthOutcome<ChildExit>> {
+    const settled = new AbortController();
+    const progress = reportProgress(name, settled.signal);
+    try {
+      return await waitForHealthyOf(name, handle);
+    } finally {
+      settled.abort();
+      await progress;
+    }
+  }
+
+  function waitForHealthyOf(
     name: ServerName,
     handle: ChildHandle,
   ): Promise<HealthOutcome<ChildExit>> {
@@ -329,6 +363,10 @@ export function createBootSupervisor(deps: BootDeps): Supervisor {
     onFatal(listener) {
       fatalListeners.add(listener);
       return () => fatalListeners.delete(listener);
+    },
+    onSlowStart(listener) {
+      slowStartListeners.add(listener);
+      return () => slowStartListeners.delete(listener);
     },
   };
 }

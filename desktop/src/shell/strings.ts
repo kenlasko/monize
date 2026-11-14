@@ -35,6 +35,9 @@ export const STATUS_TEXT: Readonly<Record<SupervisorStatus, string>> = {
 
 export const TEXT = {
   splashPreparing: "Opening the data folder...",
+  slowStart:
+    "This can take a few minutes the first time Monize starts after it is " +
+    "installed or updated. Please wait.",
   bootFailedTitle: "Monize could not start",
   bootFailedAt: "This step failed:",
   startupErrorTitle: "Monize could not start",

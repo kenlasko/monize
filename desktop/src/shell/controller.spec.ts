@@ -66,6 +66,35 @@ function setup(runtime: FakeRuntime | Error = fakeRuntime()) {
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 
 describe("createShellController", () => {
+  it("adds the slow-start note under the step that is still starting, and only that one", async () => {
+    const runtime = fakeRuntime();
+    const { ui, controller } = setup(runtime);
+    const booted = controller.boot();
+    await tick();
+    runtime.emitStatus("backend");
+    runtime.emitSlowStart("frontend");
+    expect(ui.views.at(-1)).toMatchObject({
+      title: STATUS_TEXT.backend,
+      detail: "",
+    });
+    runtime.emitSlowStart("backend");
+    expect(ui.views.at(-1)).toMatchObject({
+      title: STATUS_TEXT.backend,
+      detail: TEXT.slowStart,
+      busy: true,
+    });
+    runtime.emitStatus("frontend");
+    expect(ui.views.at(-1)).toMatchObject({
+      title: STATUS_TEXT.frontend,
+      detail: "",
+    });
+    await runtime.settleStart({ outcome: "ready" });
+    await booted;
+    const shown = ui.views.length;
+    runtime.emitSlowStart("frontend");
+    expect(ui.views).toHaveLength(shown);
+  });
+
   it("shows the splash, boots, then opens the app on its origin", async () => {
     const runtime = fakeRuntime();
     const { ui, controller } = setup(runtime);

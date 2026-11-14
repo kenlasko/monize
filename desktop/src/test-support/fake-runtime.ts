@@ -4,6 +4,7 @@ import { Runtime } from "../runtime";
 import {
   BootResult,
   FatalFailure,
+  ServerName,
   StopReport,
   Supervisor,
   SupervisorStatus,
@@ -22,6 +23,7 @@ export interface FakeRuntime extends Runtime {
   settleStart(result: BootResult): Promise<void>;
   emitStatus(status: SupervisorStatus): void;
   emitFatal(failure: FatalFailure): void;
+  emitSlowStart(server: ServerName): void;
   /** Lets the spec hold `stop()` open. */
   holdStop(): () => void;
 }
@@ -41,6 +43,7 @@ export function fakeRuntime(movedPorts: readonly PortName[] = []): FakeRuntime {
   const starts: ((result: BootResult) => void)[] = [];
   const statusListeners: ((status: SupervisorStatus) => void)[] = [];
   const fatalListeners: ((failure: FatalFailure) => void)[] = [];
+  const slowStartListeners: ((server: ServerName) => void)[] = [];
   let stopGate: Promise<void> = Promise.resolve();
   let stopping: Promise<StopReport> | null = null;
 
@@ -62,6 +65,10 @@ export function fakeRuntime(movedPorts: readonly PortName[] = []): FakeRuntime {
     },
     onFatal: (listener) => {
       fatalListeners.push(listener);
+      return () => undefined;
+    },
+    onSlowStart: (listener) => {
+      slowStartListeners.push(listener);
       return () => undefined;
     },
   };
@@ -95,6 +102,7 @@ export function fakeRuntime(movedPorts: readonly PortName[] = []): FakeRuntime {
     },
     emitStatus: (status) => statusListeners.forEach((fn) => fn(status)),
     emitFatal: (failure) => fatalListeners.forEach((fn) => fn(failure)),
+    emitSlowStart: (server) => slowStartListeners.forEach((fn) => fn(server)),
     holdStop() {
       let release: () => void = () => undefined;
       stopGate = new Promise((resolve) => {

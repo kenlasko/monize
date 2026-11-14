@@ -196,6 +196,51 @@ describe("boot: a failed step", () => {
     expect(h.clock.pending).toBe(0);
   });
 
+  it("waits out a slow first start with the default deadlines, saying so as it goes", async () => {
+    // A real PC's first start after an install took the backend over two
+    // minutes to begin; the old 120 s default failed it.
+    const h = bootHarness();
+    const slow: string[] = [];
+    h.supervisor.onSlowStart((server) => slow.push(server));
+    const { started } = await h.bootToBackend();
+    const progress = () =>
+      h.logger.records
+        .filter((record) => record.source === "main")
+        .map((record) => record.msg)
+        .filter((msg) => msg.includes("still starting"));
+
+    await h.clock.advance(19_999);
+    expect(slow).toEqual([]);
+    await h.clock.advance(1);
+    expect(slow).toEqual(["backend"]);
+    expect(progress()).toEqual([
+      "The backend is still starting (20 s so far).",
+    ]);
+
+    await h.clock.advance(4 * 60_000);
+    expect(slow).toEqual(["backend"]);
+    expect(progress().at(-1)).toBe(
+      "The backend is still starting (260 s so far).",
+    );
+
+    h.fetch.respond(BACKEND_URL, 200);
+    h.fetch.respond(FRONTEND_URL, 200);
+    await h.clock.advance(250);
+    expect((await started).outcome).toBe("ready");
+    const logged = progress().length;
+    await h.clock.advance(60_000);
+    expect(progress()).toHaveLength(logged);
+    expect(slow).toEqual(["backend"]);
+  });
+
+  it("stops reporting progress when the wait is cancelled", async () => {
+    const h = bootHarness();
+    await h.bootToBackend();
+    await h.clock.advance(20_000);
+    await h.supervisor.stop();
+    expect(h.clock.pending).toBe(0);
+  });
+
   it("a backend that dies during startup fails the boot at once, not at the deadline", async () => {
     const h = bootHarness();
     const { started } = await h.bootToBackend();

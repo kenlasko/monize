@@ -79,10 +79,11 @@ export function preparingView(): SplashView {
   };
 }
 
-export function statusView(status: SupervisorStatus): SplashView {
+/** `detail` is the line under the title, empty unless there is more to say. */
+export function statusView(status: SupervisorStatus, detail = ""): SplashView {
   return {
     title: STATUS_TEXT[status],
-    detail: "",
+    detail,
     lines: [],
     ...LABELS,
     canRetry: false,

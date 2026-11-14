@@ -8,6 +8,7 @@ import {
   startupErrorView,
   statusView,
 } from "./splash-view";
+import { TEXT } from "./strings";
 
 /**
  * The shell's boot and shutdown sequence, with every Electron call behind
@@ -70,6 +71,7 @@ export function createShellController(deps: ControllerDeps): ShellController {
   let booting = false;
   let lastFailed = false;
   let pendingDeepLink: string | null = null;
+  let lastStatus: SupervisorStatus | null = null;
   let stopping: Promise<void> | null = null;
 
   function resolveDeepLink(rt: Runtime, raw: string): string | null {
@@ -116,8 +118,16 @@ export function createShellController(deps: ControllerDeps): ShellController {
     rt.logger.redact(rt.bootstrap.secrets.encryptionKey);
     rt.logger.redact(rt.bootstrap.secrets.jwtSecret);
     rt.supervisor.onStatus((status) => {
+      lastStatus = status;
       if (!opened && splashShows(status)) {
         ui.showSplash(statusView(status));
+      }
+    });
+    // A server that has been starting a while: say so, under the same title,
+    // until the next status replaces it. Only for the step still showing.
+    rt.supervisor.onSlowStart((server) => {
+      if (!opened && lastStatus === server) {
+        ui.showSplash(statusView(server, TEXT.slowStart));
       }
     });
     rt.supervisor.onFatal((failure) => ui.fatal(rt, failure));

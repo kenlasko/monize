@@ -135,6 +135,12 @@ export interface Supervisor {
   onStatus(listener: (status: SupervisorStatus) => void): () => void;
   /** Called once if the `fatal` status is reached. Returns the unsubscribe function. */
   onFatal(listener: (failure: FatalFailure) => void): () => void;
+  /**
+   * Called when a server has been starting for `startupProgressMs` without
+   * answering, once per wait (a boot step, or a restart). Returns the
+   * unsubscribe function.
+   */
+  onSlowStart(listener: (server: ServerName) => void): () => void;
 }
 
 export interface BootOptions {
@@ -146,10 +152,23 @@ export interface BootOptions {
    * bound is there to surface a hang, not to hurry the work.
    */
   readonly dbMigrateDeadlineMs: number;
-  /** From spawning `main.js` to a 200 from its readiness route. */
+  /**
+   * From spawning `main.js` to a 200 from its readiness route. Generous on
+   * purpose: the first start after an install or an update reads every file
+   * of the module graph for the first time, with the antivirus scanning each
+   * one, and a real PC took over two minutes where a CI runner takes five
+   * seconds. A server that dies ends the wait at once, so the bound only
+   * costs time on a real hang.
+   */
   readonly backendReadyDeadlineMs: number;
-  /** From spawning `server.js` to a 200 from its liveness route. */
+  /** From spawning `server.js` to a 200 from its liveness route; as above. */
   readonly frontendReadyDeadlineMs: number;
+  /**
+   * While a server is starting, how often the log says it still is. The first
+   * time is also when `onSlowStart` fires, so the splash can say a long wait
+   * is expected.
+   */
+  readonly startupProgressMs: number;
   readonly healthIntervalMs: number;
   readonly healthRequestTimeoutMs: number;
   /** The pause before the one restart of a child that exited after `ready`. */
@@ -163,8 +182,9 @@ export interface BootOptions {
 export const DEFAULT_BOOT_OPTIONS: BootOptions = {
   dbInitDeadlineMs: 5 * 60_000,
   dbMigrateDeadlineMs: 30 * 60_000,
-  backendReadyDeadlineMs: 120_000,
-  frontendReadyDeadlineMs: 60_000,
+  backendReadyDeadlineMs: 10 * 60_000,
+  frontendReadyDeadlineMs: 5 * 60_000,
+  startupProgressMs: 20_000,
   healthIntervalMs: 250,
   healthRequestTimeoutMs: 3000,
   restartBackoffMs: 2000,
