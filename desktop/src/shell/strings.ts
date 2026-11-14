@@ -75,18 +75,21 @@ export const TEXT = {
   recoveryKeyTitle: "Recovery key",
   recoveryKeyMessage:
     "This key decrypts your two-factor sign-in secrets and every encrypted " +
-    "value in your Monize data. Windows keeps it locked to your account, so " +
-    "a restored backup on another computer or a new Windows account cannot " +
-    "be read without it. Store it somewhere safe, such as a password " +
-    "manager, and never share it.",
+    "value in your Monize data. Windows keeps Monize's own copy locked to " +
+    "this Windows account, so it is lost with this PC; reading those values " +
+    "from a copy of the data anywhere else needs this key. Store it " +
+    "somewhere safe, such as a password manager, and never share it.",
   recoveryKeyCopied: "The recovery key was copied to the clipboard.",
 
   recoveryReminderTitle: "Save your recovery key",
   recoveryReminderMessage:
-    "Monize made a recovery key for your data. Without it, a backup " +
-    "restored on another computer or under a new Windows account cannot be " +
-    "read. Save it now in a password manager or another safe place off this " +
-    "PC.\n\nYou can also do this at any time from the Monize icon in the " +
+    "Monize made a recovery key that decrypts the protected values in your " +
+    "data, such as two-factor sign-in secrets and stored mailbox and bank " +
+    "credentials. Windows keeps it locked to this Windows account, so it is " +
+    "lost with this PC. Save a copy now in a password manager or another " +
+    "safe place off this PC.\n\nAlso keep in-app backups (Settings, Backup " +
+    "& Restore) somewhere other than this PC: they restore on any computer." +
+    "\n\nYou can save the key at any time from the Monize icon in the " +
     "system tray: Show recovery key, or Export recovery key.",
   recoveryReminderButtons: {
     export: "Export to a file...",
@@ -98,8 +101,9 @@ export const TEXT = {
   recoveryExportConfirmTitle: "Export the recovery key?",
   recoveryExportConfirmMessage:
     "The recovery key decrypts your two-factor sign-in secrets and every " +
-    "encrypted value in your Monize data, so a restored backup can be read " +
-    "on another computer or a new Windows account. The file you save holds " +
+    "encrypted value in your Monize data. Windows keeps Monize's own copy " +
+    "locked to this Windows account, so this file is the copy that outlives " +
+    "this PC. The file you save holds " +
     "the key in plain text: keep it somewhere safe and off this PC, such as " +
     "a password manager or a USB drive in a safe place, and never share it.",
   recoveryExportConfirmSave: "Choose where to save it",
@@ -112,8 +116,9 @@ export const TEXT = {
     `Nothing was saved. ${reason}`,
   recoveryExportFileExplanation:
     "This key decrypts the two-factor sign-in secrets and every encrypted " +
-    "value in your Monize data. A backup restored on another computer, or " +
-    "under a new Windows account, cannot be read without it.",
+    "value in your Monize data. Monize's own copy is locked to one Windows " +
+    "account; reading those values from a copy of the data anywhere else " +
+    "needs this key.",
   recoveryExportFileKeepSafe:
     "Keep this file somewhere safe and off the PC that runs Monize, and " +
     "never share it: anyone who has it can read your encrypted data.",
