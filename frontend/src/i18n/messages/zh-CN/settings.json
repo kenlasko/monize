@@ -330,8 +330,13 @@
       "unsupported": {
         "unsupported": "此浏览器无法接收推送通知。",
         "denied": "此浏览器已阻止 Monize 的通知。请在浏览器的网站设置中允许通知，然后重新加载本页。",
-        "ios-browser": "在 iPhone 和 iPad 上，只有将 Monize 添加到主屏幕后推送通知才会生效。请使用“分享”，然后选择“添加到主屏幕”，并从那里打开 Monize。"
+        "ios-browser": "在 iPhone 和 iPad 上，只有将 Monize 添加到主屏幕后推送通知才会生效。请使用“分享”，然后选择“添加到主屏幕”，并从那里打开 Monize。",
+        "shell": {
+          "electron": "Monize 桌面窗口中无法使用通知。请从托盘菜单(\"Open in browser\")在浏览器中打开 Monize,推送通知在浏览器中仍可正常使用。",
+          "capacitor": "Monize Android 应用暂不支持推送通知。请在浏览器中打开 Monize 以接收通知。"
+        }
       },
+      "native": "Monize 桌面应用在运行时会在这台电脑上显示您的通知，即使窗口已关闭到托盘也是如此，因此这里无需启用任何内容。通知的显示方式由 Windows 的通知设置决定。",
       "disabledReason": {
         "GONE": "已无法送达。请在该浏览器中重新启用推送。",
         "KEY_ROTATED": "此实例轮换推送密钥对时已停用。请在该浏览器中重新启用推送。",

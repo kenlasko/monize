@@ -2,7 +2,10 @@
 
 > Companion to [`windows-installer.md`](./windows-installer.md) (the plan).
 > Each task is one PR. Mark a task done by checking its box and recording the
-> commits under it. Discussion: not yet opened (task P1).
+> commits under it. Discussion: none opened; the maintainer directed the build
+> on 2026-11-13 and the open questions took their defaults (plan section 12
+> records what the build then changed). Nothing is pushed: each task is a
+> local branch, listed under "Build record" below.
 
 ## How to use this list (read first, every session)
 
@@ -49,24 +52,64 @@
 
 | ID | Task | Depends on | Deploy impact | Status |
 | --- | --- | --- | --- | --- |
-| P1 | Open the discussion, settle the open questions, obtain `approved-to-build` | -- | none | [ ] |
-| B1 | Backup local storage: Windows-safe path validation and `BACKUP_ALLOWED_ROOTS` separator | P1 | neutral | [ ] |
-| B2 | `HOST` for the backend listener | P1 | neutral | [ ] |
-| F1 | `docs/frontend/shell-contract.md` and its index row, written with the Android plan | P1 | none | [ ] |
-| D1 | Repository wiring for a fourth workspace: guards, manifests collector, ignore files, dependabot, license and audit matrices | P1 | none | [ ] |
-| D2 | Desktop package: config, secrets, ports, logger, unit tests | D1 | neutral | [ ] |
-| D3 | Supervisor: child spawner, boot state machine, backend and frontend runners, health polling | D2, B2 | neutral | [ ] |
-| D4 | Window, preload, tray, splash, external links | D3, F1 | neutral | [ ] |
-| D5 | Embedded PostgreSQL runner | D3 | neutral | [ ] |
-| D6 | Staging script: assemble backend, frontend and database files for packaging | D3 | neutral | [ ] |
-| D7 | electron-builder configuration, NSIS include, unsigned local build, manual acceptance | D4, D5, D6, B1 | neutral | [ ] |
-| C1 | CI job on `windows-latest`: build, package, smoke-test, upload artifact | D7 | none | [ ] |
-| D8 | Updater against GitHub Releases | D7 | neutral | [ ] |
+| P1 | Open the discussion, settle the open questions, obtain `approved-to-build` | -- | none | superseded: built on the maintainer's direction |
+| B1 | Backup local storage: Windows-safe path validation and `BACKUP_ALLOWED_ROOTS` separator | P1 | neutral | [x] |
+| B2 | `HOST` for the backend listener | P1 | neutral | [x] |
+| F1 | `docs/frontend/shell-contract.md` and its index row, written with the Android plan | P1 | none | [x] |
+| D1 | Repository wiring for a fourth workspace: guards, manifests collector, ignore files, dependabot, license and audit matrices | P1 | none | [x] |
+| D2 | Desktop package: config, secrets, ports, logger, unit tests | D1 | neutral | [x] |
+| D3 | Supervisor: child spawner, boot state machine, backend and frontend runners, health polling | D2, B2 | neutral | [x] on Linux; Windows acceptance open |
+| D4 | Window, preload, tray, splash, external links | D3, F1 | neutral | [x] on Linux; Windows acceptance open |
+| D5 | Embedded PostgreSQL runner | D3 | neutral | [x] on Linux; Windows acceptance open |
+| D6 | Staging script: assemble backend, frontend and database files for packaging | D3 | neutral | [x] |
+| D7 | electron-builder configuration, NSIS include, unsigned local build, manual acceptance | D4, D5, D6, B1 | neutral | [x] config, Linux-verified; never built or run on Windows |
+| C1 | CI job on `windows-latest`: build, package, smoke-test, upload artifact | D7 | none | [x] written and statically checked; never run |
+| D8 | Updater against GitHub Releases | D7 | neutral | [x] unit-verified; a real update is Windows-only |
 | C2 | Release job attaches the installer, `latest.yml` and the blockmap | C1, D8 | release | [ ] |
 | C3 | Code signing | C2 | release | [ ] |
-| F2 | The page honours the shell contract: shell flag, push banner, external links | F1, D4 | neutral | [ ] |
+| F2 | The page honours the shell contract: shell flag, push banner, external links | F1, D4 | neutral | [x] |
 | Q1 | README, website and docs: the Windows install path | C2 | none | [ ] |
 | D9 | Polish: launch at login, notification bridge, recovery-key dialog, log viewer | D8, F2 | neutral | [ ] |
+
+## Build record
+
+Branches are local and unpushed. Each is based on what it depends on, so they
+can be opened as PRs in the order of the task graph. `feat/desktop-integration`
+merges them all and is where the whole stack was run.
+
+| Task | Branch | Commits | Verified |
+| --- | --- | --- | --- |
+| B1 | `feat/desktop-b1-backup-windows-paths` | ff53b828c | Specs through `path.win32`; the four Windows cases fail on the old code |
+| B2 | `feat/desktop-b2-backend-host` | 6bcccfaf9 | Unit spec; a real boot logs `bound to 127.0.0.1` |
+| F1 | `feat/desktop-f1-shell-contract` | bb07f53cc | Doc guards |
+| F2 | `feat/desktop-f2-page-honours-shell` | 43137d2e4, 2550faccf, f7c96f406 | Vitest for the helper and both push controls; checked in the Electron window |
+| D1 | `feat/desktop-d1-workspace-wiring` | a1337b8ea | Guard specs, manifest collector. It also adds the desktop manifest to the release job's version bump, which is a release-path edit |
+| D2 | `feat/desktop-d2-config-secrets-ports` | b593033c3, 082064891, 4ba4bf93e | Desktop suite |
+| D3 | `feat/desktop-d3-supervisor` | 10c3bb780, 1e4be779f, 68041f740 | Desktop suite with fakes; real boot on Linux |
+| D3b | `feat/desktop-d3b-orphan-guard` | d86107efb | Real-process specs; `kill -9` of the shell frees both ports in under 2 s |
+| D4 | `feat/desktop-d4-electron-shell` | 2577bd73a, 7962a0ba0 | Real Electron launch on Linux (WSLg): splash, login page, second launch, `--quit`, deep links |
+| D5 | `feat/desktop-d5-postgres-runner` | ab5eaf58b, 7934511e1, b7828e4ae | `npm run smoke:postgres` against the real 16.15 Linux binaries, 13 steps |
+| D6 | `feat/desktop-d6-staging-script` | 2b2599b83 | A real staging run; the Dockerfile guard proven red |
+| D7 | `feat/desktop-d7-installer` | f54ac5880, d7b188325, ecee9c297 | A packaged Linux build of the same shell booted to the login page and quit cleanly; both NSIS passes compile under Wine with warnings as errors. The installer itself has never run |
+| D8 | `feat/desktop-d8-updater` | 4532a39f2, db2b9eaa6 | Desktop suite, including the install sequence walked against the real quit gate |
+| C1 | `feat/desktop-c1-windows-ci` | 4db3838ab | actionlint, zizmor, PowerShell parser and PSScriptAnalyzer clean; neither job has run. It also adds a Linux `desktop` job, which this list lacked: nothing ran the desktop checks in CI |
+| D9 (move) | `feat/desktop-d9c-move-data-folder` | c5ebde42e, f133a7c1a | Desktop suite with a spec per failure branch; a real move on Linux through the tray item's own function (same user and account at the new folder, the old one untouched, one PostgreSQL), an injected verify failure, a missing moved folder and the way back; `installer.nsh` compiled alone with warnings as errors and its pointer handling run under Wine. Nothing on Windows: the README checklist has the steps |
+| runtime | `feat/desktop-integration` | bf165a666, 483e52399 | The runtime module, `dev-boot`, and the `HOST` exemption removed once B2 and D2 met |
+
+D3b is a task this list did not have: backend and frontend children exit when
+the shell that spawned them dies (plan section 12, item 7).
+
+D7 found three things wrong in this list's D7 section, fixed in the build:
+mapping each staged directory as its own `extraResources` entry drops the
+backend's and the frontend's `node_modules` (electron-builder removes a
+`node_modules` at the root of any `from`), so the staging directory is mapped
+once with filters; `perMachine: false` alone still offers an elevating
+all-users page; and an install directory the person may change can be made to
+coincide with the data directory, which an update or uninstall would then
+delete, so the installer refuses it.
+
+Not run anywhere yet: anything on Windows. D3, D4 and D5 each leave a
+Windows checklist in the desktop README; C1 is the first place they can run.
 
 ## Suggested order
 
@@ -553,14 +596,18 @@ attachments directory, copied while the app is stopped).
 Each item is its own small PR; none blocks the others.
 
 - Launch at login (`app.setLoginItemSettings`) with a tray toggle.
-- Notification bridge: poll the notification centre's unread route with the
-  window session's cookies and raise a native `Notification` per new row;
-  clicking opens the window on the notification. Replaces D10's loss for
-  the in-window case without touching `sw.js`.
+- Notification bridge: raise a native `Notification` per new unread row of
+  the notification centre; clicking opens the window on the notification.
+  Replaces D10's loss for the in-window case without touching `sw.js`.
+  Built with the page polling, not the main process (section 12, item 17):
+  the shell makes no request and holds no credential.
+  `docs/frontend/shell-contract.md`, "Native notifications", is the design.
 - "Export recovery key" writes a text file through a save dialog, in addition
   to the show dialog from D4.
 - Log viewer: a window tailing the three log files.
-- "Move data folder": stop, copy, verify, switch the config, restart.
+- "Move data folder": stop, copy, verify, switch the config, restart. Built;
+  plan section 12, item 19 records where the pointer lives (not in
+  `config.json`) and why the Chromium profile does not move.
 
 ## PR body
 

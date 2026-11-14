@@ -215,5 +215,63 @@
   "shared": {
     "title": "Gedeelde uitgaven",
     "message": "Een gedeelde groep is bijgewerkt. Open Monize om de wijziging te bekijken."
+  },
+  "native": {
+    "payments": {
+      "title": "Betalingsherinnering",
+      "body": "Een rekening of geplande betaling vraagt uw aandacht. Open Monize voor de details."
+    },
+    "budgets": {
+      "title": "Budgetwaarschuwing",
+      "body": "Een van uw budgetten vraagt uw aandacht. Open Monize voor de details."
+    },
+    "system": {
+      "title": "Systeemmelding",
+      "body": "Monize heeft een systeemmelding voor u. Open de app voor de details."
+    },
+    "balances": {
+      "title": "Saldowaarschuwing",
+      "body": "Een rekeningsaldo heeft een door u ingestelde drempel overschreden. Open Monize voor de details."
+    },
+    "investments": {
+      "title": "Beleggingsbeweging",
+      "body": "Uw beleggingen zijn vandaag bewogen. Open Monize voor de details."
+    },
+    "strategies": {
+      "title": "Strategiesignaal",
+      "body": "Een van uw strategieën heeft de aanbeveling gewijzigd. Open Monize voor de details."
+    },
+    "bank_sync": {
+      "title": "Bankkoppeling",
+      "body": "Een bankkoppeling vraagt uw aandacht. Open Monize voor de details."
+    },
+    "bank_sync_activity": {
+      "title": "Banksynchronisatie",
+      "body": "Er is nieuws over uw banksynchronisatie. Open Monize voor de details."
+    },
+    "email_receipts": {
+      "title": "E-mailkwitanties vereisen aandacht",
+      "body": "Sommige e-mails in uw kwitantiemap hebben een profiel nodig of moeten worden gecorrigeerd. Open Monize voor meer informatie."
+    },
+    "bonds": {
+      "title": "Obligatiemelding",
+      "body": "Er is nieuws over een van je obligaties. Open Monize voor de details."
+    },
+    "ai_review": {
+      "title": "AI-beoordelingsvoorstellen",
+      "body": "Enkele AI-beoordelingsvoorstellen wachten op je beslissing. Open Monize voor de details."
+    },
+    "warranties": {
+      "title": "Garantieherinnering",
+      "body": "Een van je garanties verloopt binnenkort. Open Monize voor de details."
+    },
+    "shared_expenses": {
+      "title": "Gedeelde uitgaven",
+      "body": "Een gedeelde groep is bijgewerkt. Open Monize om de wijziging te bekijken."
+    },
+    "fallback": {
+      "title": "Monize",
+      "body": "Je hebt een nieuwe melding in Monize."
+    }
   }
 }

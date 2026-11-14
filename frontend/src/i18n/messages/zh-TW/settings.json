@@ -330,8 +330,13 @@
       "unsupported": {
         "unsupported": "此瀏覽器無法接收推播通知。",
         "denied": "此瀏覽器已封鎖 Monize 的通知。請在瀏覽器的網站設定中允許，然後重新載入本頁。",
-        "ios-browser": "在 iPhone 與 iPad 上，必須先將 Monize 加入主畫面，推播通知才會運作。請使用「分享」，接著選擇「加入主畫面」，並從那裡開啟 Monize。"
+        "ios-browser": "在 iPhone 與 iPad 上，必須先將 Monize 加入主畫面，推播通知才會運作。請使用「分享」，接著選擇「加入主畫面」，並從那裡開啟 Monize。",
+        "shell": {
+          "electron": "Monize 桌面視窗中無法使用通知。請從系統匣選單(\"Open in browser\")在瀏覽器中開啟 Monize,推播通知在瀏覽器中仍可正常使用。",
+          "capacitor": "Monize Android 應用程式目前尚不支援推播通知。請在瀏覽器中開啟 Monize 以接收通知。"
+        }
       },
+      "native": "Monize 桌面應用程式在執行時會在這台電腦上顯示您的通知，即使視窗已關閉到系統匣也一樣，因此這裡不需要啟用任何項目。通知的顯示方式由 Windows 的通知設定決定。",
       "disabledReason": {
         "GONE": "已無法送達。請在該瀏覽器重新啟用推播。",
         "KEY_ROTATED": "此執行個體輪替推播金鑰組時已停用。請在該瀏覽器重新啟用推播。",

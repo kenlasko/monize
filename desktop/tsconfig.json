@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": ["es2022"],
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "types": ["node", "jest"]
+  },
+  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/splash/splash-page.ts",
+    "src/log-viewer/log-viewer-page.ts"
+  ]
+}

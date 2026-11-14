@@ -330,8 +330,13 @@
       "unsupported": {
         "unsupported": "Bu tarayıcı anlık bildirim alamaz.",
         "denied": "Bu tarayıcıda Monize bildirimleri engellenmiş. Tarayıcının site ayarlarından izin verin ve bu sayfayı yenileyin.",
-        "ios-browser": "iPhone ve iPad'de anlık bildirimler yalnızca Monize Ana Ekrana eklendikten sonra çalışır. Paylaş, ardından Ana Ekrana Ekle'yi kullanın ve Monize'ı oradan açın."
+        "ios-browser": "iPhone ve iPad'de anlık bildirimler yalnızca Monize Ana Ekrana eklendikten sonra çalışır. Paylaş, ardından Ana Ekrana Ekle'yi kullanın ve Monize'ı oradan açın.",
+        "shell": {
+          "electron": "Bildirimler Monize masaüstü penceresinde kullanılamaz. Monize'ı tepsi menüsünden (\"Open in browser\") tarayıcıda açın; anlık bildirimler orada çalışmaya devam eder.",
+          "capacitor": "Anlık bildirimler Monize Android uygulamasında henüz kullanılamıyor. Bunları almak için Monize'ı tarayıcıda açın."
+        }
       },
+      "native": "Monize masaüstü uygulaması, çalıştığı sürece, penceresi tepsiye kapatılmış olsa bile bildirimlerinizi bu bilgisayarda gösterir; bu nedenle burada etkinleştirilecek bir şey yoktur. Nasıl görüneceklerine Windows bildirim ayarları karar verir.",
       "disabledReason": {
         "GONE": "Artık erişilebilir değil. O tarayıcıda anlık bildirimleri yeniden açın.",
         "KEY_ROTATED": "Bu örnek anlık bildirim anahtar çiftini değiştirdiğinde devre dışı bırakıldı. O tarayıcıda anlık bildirimleri yeniden açın.",

@@ -4,10 +4,12 @@ Design for shipping Monize to Windows as one installer that a person runs and
 then opens like any other desktop application. The task list is
 `docs/future-plans/windows-installer-tasks.md`.
 
-Status: **proposal**. It needs its own discussion with the `approved-to-build`
-label before any task after P1 starts (`CONTRIBUTING.md`). Nothing in this
-document has shipped. Written from the code on 2026-10-19; section 10 lists
-the assumptions a fresh session should re-check.
+Status: **building**. The maintainer directed the build on 2026-11-13 without
+opening a discussion; the section 11 questions were taken at their stated
+defaults. Nothing in this document has shipped: the work is on local
+`feat/desktop-*` branches (the task list records which). Written from the code
+on 2026-10-19; section 12 lists what the build changed, and it wins where it
+disagrees with an earlier section.
 
 ## 1. Goal
 
@@ -31,15 +33,15 @@ confirms or corrects.
 | # | Decision | Why |
 | --- | --- | --- |
 | D1 | **Electron shell** (`electron` with the `electron-builder` NSIS target) supervises three local processes: PostgreSQL, the backend, the frontend. Its window loads `http://127.0.0.1:<port>`. | One installer, one icon, a tray, auto-update through `electron-updater` against the GitHub Releases feed the backend already polls (`backend/src/updates/updates.service.ts`), and `safeStorage` (DPAPI) for secrets. Neither layer is rewritten. |
-| D2 | **The backend and the frontend run as child processes of Electron's own binary with `ELECTRON_RUN_AS_NODE=1`.** No separate `node.exe`. | The pattern VS Code uses. Electron 40.x bundles Node 24.15, the same major CI tests on (`.github/workflows/ci.yml`). Nothing in either layer's runtime needs a native addon, so the Electron ABI question does not arise. Fallback if it ever does: ship `node.exe` as an extra resource. |
-| D3 | **PostgreSQL 16 comes from `@embedded-postgres/windows-x64` (the zonky binaries, Apache-2.0) driven by the `embedded-postgres` wrapper.** Pinned to major 16. | Real PostgreSQL, so RLS, the identity GUCs, advisory locks and the four contrib extensions behave exactly as in production. PGlite was rejected: one connection at a time, extensions must be preloaded, and it is untested against TypeORM pooling and the per-transaction RLS context. |
+| D2 | **The backend and the frontend run as child processes of Electron's own binary with `ELECTRON_RUN_AS_NODE=1`.** No separate `node.exe`. | The pattern VS Code uses. Electron 45.x bundles Node 24.22 (pinned 45.3.2; checked against the Electron release feed on 2026-11-13, when 40.x was already out of support), the same major CI tests on (`.github/workflows/ci.yml`). Nothing in either layer's runtime needs a native addon, so the Electron ABI question does not arise. Fallback if it ever does: ship `node.exe` as an extra resource. |
+| D3 | **PostgreSQL 16 comes from `@embedded-postgres/windows-x64` (the zonky binaries), driven directly through `initdb` and `pg_ctl`; the `embedded-postgres` wrapper is not used (section 12).** Pinned to an exact 16.x version. | Real PostgreSQL, so RLS, the identity GUCs, advisory locks and the four contrib extensions behave exactly as in production. PGlite was rejected: one connection at a time, extensions must be preloaded, and it is untested against TypeORM pooling and the per-transaction RLS context. |
 | D4 | **Single machine, single origin, loopback only.** Every listener binds `127.0.0.1`. | Windows Firewall never prompts, the database and the API are unreachable from the LAN, and cookies and CSP need no change. A LAN toggle is a later proposal. |
 | D5 | **Same repository, a new `desktop/` workspace** with its own manifest, like `backend/`, `frontend/` and `e2e/`. | Lock-step with the two layers it bundles; the release workflow builds it from the same gated revision (REL-003, `docs/release-integrity.md`). |
 | D6 | **Data lives under `%LOCALAPPDATA%\Monize\`**: `pgdata`, `backups`, `attachments`, `logs` and a `config.json`. The uninstaller keeps it unless the user ticks "Remove my data". | Per-user, so the installer needs no elevation (`perMachine: false`). |
 | D7 | **`JWT_SECRET`, `ENCRYPTION_KEY` and `DATABASE_PASSWORD` are generated on first run and stored encrypted with Electron `safeStorage`** in the config file. A tray item reveals `ENCRYPTION_KEY` as a recovery key. | Losing `ENCRYPTION_KEY` makes TOTP secrets and every encrypted column unreadable (`docs/backup-restore-contract.md` section 8). DPAPI binds the stored copy to the Windows account, so the person must be able to export it. |
 | D8 | **Ports are chosen once on first run and persisted** (defaults 3380 frontend, 3381 backend, 5433 PostgreSQL; a busy default is probed past and the result saved). | `PUBLIC_APP_URL` is a stable origin used by OIDC redirect registration, the MCP issuer and service-worker caches. A new port on every launch would break all three. |
 | D9 | **Code signing through SignPath Foundation's free open-source programme first; Azure Artifact Signing is the paid alternative.** | Monize is AGPL, which qualifies. EV hardware tokens cannot run on GitHub-hosted runners. Unsigned builds work but sit behind SmartScreen. |
-| D10 | **Web Push does not work inside the Electron window** (there is no push service). The tray offers "Open in browser", where the installed PWA and push keep working against the same local servers. A native notification bridge is a later task. | The push handlers in `frontend/public/sw.js` need a browser push service; the rest of the worker (offline cache, share target) is irrelevant on loopback. |
+| D10 | **Web Push does not work inside the Electron window** (there is no push service). The tray offers "Open in browser", where the installed PWA and push keep working against the same local servers. A native notification bridge is a later task (built in D9: section 12, item 17). | The push handlers in `frontend/public/sw.js` need a browser push service; the rest of the worker (offline cache, share target) is irrelevant on loopback. |
 | D11 | **The Windows shell (Electron) and the Android shell (Capacitor, planned separately) stay independent.** They share one written contract that the web app offers to any shell, not a framework. | Capacitor has no Windows target: its desktop route is Electron underneath (`@capawesome/capacitor-electron` 0.2.2, pre-1.0, three months old; `@capacitor-community/electron` unmaintained since 2023). The shells do different jobs: Android is a thin client to a remote server, Windows hosts the server. Tauri 2 was the only single-codebase option and was declined. |
 
 ## 3. Relationship to the Android plan
@@ -141,6 +143,7 @@ by the code named in section 4):
 ```text
 NODE_ENV=production  PORT=3381  HOST=127.0.0.1  TZ=UTC
 DATABASE_HOST=127.0.0.1  DATABASE_PORT=5433  DATABASE_USER=monize  DATABASE_PASSWORD=<generated>  DATABASE_NAME=monize
+RLS_MODE=enforce  DATABASE_APP_USER=monize_app  DATABASE_APP_PASSWORD=<generated>   (section 12, item 16)
 JWT_SECRET=<generated>  ENCRYPTION_KEY=<generated>
 PUBLIC_APP_URL=http://127.0.0.1:3380  CORS_ORIGIN=http://127.0.0.1:3380  DISABLE_HTTPS_HEADERS=true
 BACKUP_CONTAINER_DIR=%LOCALAPPDATA%\Monize\backups  ATTACHMENT_CONTAINER_DIR=%LOCALAPPDATA%\Monize\attachments
@@ -248,3 +251,158 @@ existing backup entries.
 3. Signing route (D9). Default: SignPath first.
 4. Whether the Windows build is part of every release from the start.
    Default: yes, once C1 has been green for a few releases.
+
+## 12. Amendments made while building (2026-11-13)
+
+Each is a decision the build made against the text above, with its reason.
+
+1. **No `embedded-postgres` wrapper (D3).** Its 16.x line is ESM-only,
+   resolves binaries from `node_modules` rather than a directory the shell
+   chooses, registers its own exit hook, and stops PostgreSQL on Windows with
+   `taskkill /f`, which is a crash stop. The runner drives `initdb` and
+   `pg_ctl` from `resources/postgres/bin` itself. Both the Windows and the
+   Linux binary package are optional dependencies at one exact version
+   (16.15.0-beta.19), so `npm ci` works on either system and the runner is
+   tested against real binaries on Linux.
+2. **Data checksums.** The cluster is created with `--data-checksums`. The
+   binary packages carry no `pg_checksums`, so initdb is the only moment the
+   choice exists.
+3. **Server settings are passed on every start** (`pg_ctl -o`): loopback
+   only, the persisted port, no unix socket, `timezone=UTC` (initdb otherwise
+   writes the machine's zone into `postgresql.conf`, and the backend assumes
+   UTC).
+4. **Staging includes `help/`.** This plan predates in-app help; the backend
+   image now carries the guide text and its screenshots, so the staged
+   backend does too. The staging manifest is checked against every `COPY` of
+   both production Dockerfile stages, so the next such addition fails a spec
+   instead of being missed.
+5. **Boot and environment are guarded against drift.** A spec compares the
+   supervisor's commands with `backend/docker-entrypoint.sh` and the
+   frontend image's `CMD`; another holds every variable the child
+   environments carry to the documented set. A backend boot step or a renamed
+   variable turns the desktop suite red rather than needing a second,
+   remembered change.
+6. **One runtime module, bootable without Electron.** The composition of
+   config, secrets, the PostgreSQL runner and the supervisor lives in one
+   module that the Electron main process and a development script both call,
+   so the whole stack is exercised on Linux under plain Node.
+7. **Children end with the shell.** A desktop-owned preload exits a backend
+   or frontend child when its stdin pipe closes, which is what the operating
+   system does when the shell dies. Without it a killed shell left both
+   listening, and the next launch moved the ports (D8). On start the shell
+   also stops a database server left by an earlier session and waits up to
+   5 s for the persisted ports before it moves one.
+8. **Children are stopped by termination on Windows.** The backend has no
+   shutdown hook, so a container stop already ends it without running its
+   code; PostgreSQL rolls back what was in flight and backup files are
+   written through a temp-file-then-rename helper.
+9. **The child environment is an allowlist**, not the parent's environment
+   plus overrides, so a user-level `DATABASE_HOST` or `NODE_OPTIONS` cannot
+   change what the application does. `HOST` and `HOSTNAME` are both set in
+   both children.
+10. **`dataDir` is not stored in `config.json`** (D6): a pointer kept inside
+    the directory it points to is useless. "Move data folder" (D9) gave it
+    another home: item 19.
+11. **Attachments stay in the database.** Section 6 sets
+    `ATTACHMENT_CONTAINER_DIR` but not the provider, so the backend keeps its
+    default (`database`) and the folder is unused; a backup of `pgdata` then
+    holds everything.
+12. **Settings that exist only as environment variables are not reachable**
+    in the desktop build (SMTP, OIDC, the system default AI provider). The
+    shell composes the environment itself; a way to add to it is a later
+    proposal.
+13. **The shell's own strings are English only.** It has no i18n framework;
+    every string sits in one keyed module so that can change.
+14. **The PostgreSQL executables need the VC++ runtime** and the package
+    ships none; the installer carries it app-local (D7). GitHub's Windows
+    runners have it installed, so CI alone will not catch its absence.
+15. **Size.** The staged tree is about 620 MB before compression; the
+    backend's production `node_modules` is 279 MB of it.
+16. **Row-level security is enforced** (decided by the maintainer on
+    2026-11-14). The cluster's owner is a superuser, and a superuser bypasses
+    every policy, so the backend connects as the unprivileged `monize_app`
+    role with `RLS_MODE=enforce`. A fourth secret, the role's password, is
+    generated on first run and stored like the other three; db-init creates
+    the role and rotates its password on every start. The container
+    deployments default to `RLS_MODE=off`, so the desktop build is the first
+    to run every UI flow with policies in force: a flow that fails only under
+    enforcement shows up here first. The install smoke test asserts the
+    backend's own "enforce verified" line.
+17. **The notification bridge polls from the page** (D9). The sketch had the
+    main process poll the unread route with the window session's cookies.
+    That request would be the shell's, not the page's: it could not refresh
+    an expired access token without handling the page's credentials, could
+    not tell who it was asking for when a second person signs in, and with
+    `unreadOnly` would never materialize bill reminders. The page instead
+    reads the full list every minute with its own session and publishes the
+    unread rows and the signed-in user's id through a second preload key;
+    the main process decides what is new in a pure state machine and raises
+    the notifications. The copy is Web Push's generic per-category text, not
+    the row's own, because a notification can show on a locked screen.
+    `canReceivePush` stays false for `electron`; a separate capability,
+    `receivesNotificationsNatively`, changes the push settings text instead.
+    `docs/frontend/shell-contract.md`, "Native notifications", has the rules.
+18. **The desktop's backend `node_modules` differs from the image's by exactly
+    the files Node never executes**: declaration files, source maps,
+    TypeScript sources and Markdown (licences are kept), removed to cut the
+    installer's file count, since every file is written twice and scanned by
+    Defender. A check after the prune (`desktop/scripts/lib/prune-check.mjs`)
+    holds it: every `main`, `module`, `bin` and `exports` target of every
+    package must still resolve, or staging fails naming the package.
+
+19. **"Move data folder" (D9).** Four decisions, each with its reason;
+    `desktop/README.md`, "Moving the data folder", has the sequence and the
+    table of every failure.
+    - **The pointer is a file beside the default data folder**,
+      `%LOCALAPPDATA%\Monize-location.ini`, in UTF-16 INI form. Beside, not
+      inside: a pointer in the old folder dies when the person deletes the
+      old copy by hand, and the next start would be an empty Monize. Not
+      `%APPDATA%`, which roams. Not the registry: the shell would have to
+      start a process to read it before doing anything else, and the move
+      could not be tested off Windows. INI in UTF-16 because NSIS reads it
+      natively and in Unicode, so the installer carries no parser. Read
+      strictly, and a pointer to a folder without `config.json` stops the
+      launch instead of creating a database there. Precedence is
+      `MONIZE_DATA_DIR`, then the pointer, then the default: the variable is
+      one launch's explicit choice (development, the smoke tests) and must
+      stay immune to what a machine has recorded; such a launch neither
+      reads nor writes the pointer. The single-instance lock stays keyed on
+      the data folder: every launch reads the same pointer first, so every
+      launch asks for the same lock, and the moving shell holds the old
+      folder's lock until it exits just after the commit.
+    - **Everything moves except the Chromium profile, of which only
+      `Local State` moves.** The running shell holds the profile open (the
+      cookie store exclusively on Windows), so it can be neither copied
+      whole nor verified; the person signs in again. `Local State` must
+      move: on Windows Chromium keeps the key behind `safeStorage` in it,
+      wrapped by DPAPI, so `config.json`'s secrets open only for the same
+      Windows account AND beside that file. D7's "bound to the account, not
+      to a path" was half right. This could not be observed from Linux; the
+      first move on Windows proves it, and the rollback below is the net.
+    - **Copy, verify, rename, then one atomic pointer write as the commit**
+      (bytes before the commit, deletes after it). Before the commit every
+      failure, a kill included, leaves the old folder in charge and the copy
+      removed (at once, or by the next launch from a journal, and only a
+      folder carrying that move's marker). After it nothing is ever deleted
+      without a click: the old folder gets a `moved-elsewhere.json` that
+      makes the shell refuse to start on it, so PostgreSQL never runs on
+      both copies; a new folder that fails its first start can be left for
+      the previous one ("Go back", offered only until the new folder has
+      once reached `ready`); and the old copy is deleted only on request,
+      only when it carries that note, and only what Monize created in it.
+      Refused targets: non-empty, a drive root, a `\\server\share` path,
+      inside the current, default or installation folder, or without room.
+      A mapped network drive or a removable one is not detected (that needs
+      a Windows API this package cannot call without a dependency); the
+      confirmation says to use a disk that stays connected.
+    - **The installer reads the pointer** for the installation-folder
+      refusal, the uninstaller's last check and "Remove my data", which now
+      also empties the moved folder (and the copy a move left) of what
+      Monize created, recognised by `config.json` plus
+      `pgdata\monize.initialized`, and deletes the pointer. Stopping the
+      running application needed nothing: `--quit` resolves the folder as
+      any launch does. Building this found that `MonizeRelation` in
+      `desktop/build/installer.nsh` returned with two registers swapped, so
+      of the two answers for the default folder only the first was ever
+      compared; fixed here, and it is what made the moved folder comparable
+      at all.

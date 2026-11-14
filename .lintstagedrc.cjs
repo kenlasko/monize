@@ -12,6 +12,9 @@ module.exports = {
   'frontend/**/*.{ts,tsx,js,jsx}': (files) => [
     `bash -c "cd frontend && npx eslint --max-warnings=0 --fix ${relativeTo('frontend')(files)}"`,
   ],
+  'desktop/**/*.{ts,js,mjs,cjs}': (files) => [
+    `bash -c "cd desktop && npx eslint --max-warnings=0 --fix ${relativeTo('desktop')(files)}"`,
+  ],
   'e2e/**/*.{ts,js}': (files) => [
     `bash -c "cd e2e && npx prettier --write ${relativeTo('e2e')(files)}"`,
   ],
