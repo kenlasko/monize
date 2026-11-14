@@ -64,6 +64,7 @@
       "tag": "Etiqueta",
       "account": "Conta",
       "scheduled_transaction": "Agendada",
+      "scheduled_posting": "Agendada",
       "security": "Título",
       "budget": "Orçamento",
       "custom_report": "Relatório"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "Transação agendada \"{name}\" criada",
       "updatedScheduledTransaction": "Transação agendada \"{name}\" atualizada",
       "deletedScheduledTransaction": "Transação agendada \"{name}\" excluída",
+      "postedScheduledTransaction": "Transação agendada \"{name}\" lançada",
       "createdSecurity": "Título \"{symbol}\" criado",
       "updatedSecurity": "Título \"{symbol}\" atualizado",
       "deletedSecurity": "Título \"{symbol}\" excluído",

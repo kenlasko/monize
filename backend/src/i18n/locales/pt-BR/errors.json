@@ -112,7 +112,11 @@
     "unsupportedSimpleAction": "Ação não suportada: {{ action }}",
     "unsupportedTableForReinsert": "Tabela não suportada para reinserção: {{ tableName }}",
     "undoConversion": "Esta alteração converteu uma transação em transferência ou vice-versa, então não pode ser desfeita automaticamente. Converta-a de volta.",
-    "customRecurrenceMissing": "Esta alteração não pode ser desfeita nem refeita: a regra de repetição personalizada da transação agendada não está no histórico"
+    "customRecurrenceMissing": "Esta alteração não pode ser desfeita nem refeita: a regra de repetição personalizada da transação agendada não está no histórico",
+    "scheduledPostingRedo": "Uma transação agendada lançada não pode ser refeita. Lance-a novamente em Faturas e depósitos",
+    "scheduledPostingUndoLaterOccurrence": "Uma ocorrência posterior desta transação agendada foi lançada desde então, por isso este lançamento não pode ser desfeito. Desfaça ou exclua a posterior primeiro",
+    "scheduledPostingUndoCursorMoved": "Esta transação agendada avançou desde este lançamento (uma ocorrência foi pulada ou a próxima data mudou), por isso o lançamento não pode ser desfeito. Exclua a transação lançada em vez disso",
+    "scheduledPostingUndoReferenceGone": "Algo que esta transação agendada usava (uma conta, um título ou uma moeda) foi excluído desde então, por isso o lançamento não pode ser desfeito. Exclua a transação lançada em vez disso"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Forneça uma senha ou um convite por e-mail, não ambos.",
@@ -237,6 +241,8 @@
     "invalidToken": "Token inválido",
     "tokenRevoked": "O token foi revogado",
     "tokenExpired": "O token expirou",
+    "patRouteNotAllowed": "Este endpoint não está disponível para tokens de acesso pessoal. Entre para usá-lo.",
+    "patInsufficientScope": "Este token de acesso pessoal não tem o escopo \"{{ scope }}\"",
     "userAccountInactive": "A conta do usuário está inativa",
     "passwordChangeRequired": "É necessário alterar a senha",
     "tokenNotFound": "Token não encontrado",

@@ -38,8 +38,10 @@ import {
   AllowDelegate,
   DelegateRequiresSection,
 } from "../delegation/decorators/delegate-access.decorator";
+import { AllowPat, PatScope } from "../auth/pat-access/pat-access.decorator";
 
 @ApiTags("Budgets")
+@AllowPat()
 @Controller("budgets")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
@@ -89,6 +91,7 @@ export class BudgetsController {
   }
 
   @Post("category-budget-status")
+  @PatScope("read")
   @ApiOperation({
     summary:
       "Get budget status for specific categories (for transaction list context)",
@@ -108,6 +111,7 @@ export class BudgetsController {
   }
 
   @Post("generate")
+  @PatScope("read")
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({
     summary: "Analyze spending and suggest budget amounts",

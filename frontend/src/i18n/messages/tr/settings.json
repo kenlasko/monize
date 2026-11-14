@@ -598,7 +598,8 @@
   },
   "apiAccess": {
     "heading": "API Erişimi",
-    "description": "MCP aracılığıyla Claude Desktop gibi harici AI araçlarını bağlamak için kişisel erişim belirteçleri oluşturun.",
+    "description": "MCP aracılığıyla Claude Desktop gibi harici AI araçlarını bağlamak veya /api/v1 adresindeki REST API'yi çağırmak için kişisel erişim belirteçleri oluşturun.",
+    "restrictedNote": "Okuma belirteçleri yalnızca okuyabilir. Oturum açma, güvenlik, yönetici, paylaşım ve yedekleme uç noktaları belirteçler için kullanılamaz.",
     "createTokenButton": "Belirteç Oluştur",
     "mcpServerUrlLabel": "MCP Sunucu URL'si",
     "mcpServerUrlHelp": "Claude Code veya Claude Desktop gibi MCP istemcilerini yapılandırırken bu URL'yi kullanın.",
@@ -612,7 +613,7 @@
     "revokeButton": "İptal Et",
     "revokeModal": {
       "title": "Belirteci İptal Et",
-      "message": "Bu belirteç hemen çalışmayı durduracak. Bunu kullanan MCP bağlantıları kesilecektir.",
+      "message": "Bu belirteç hemen çalışmayı durduracak. Bunu kullanan MCP bağlantıları veya API istemcileri kesilecektir.",
       "confirmLabel": "İptal Et"
     },
     "createModal": {

@@ -112,7 +112,11 @@
     "unsupportedSimpleAction": "Action non prise en charge : {{ action }}",
     "unsupportedTableForReinsert": "Table non prise en charge pour la réinsertion : {{ tableName }}",
     "undoConversion": "Cette modification a converti une transaction en virement ou inversement ; elle ne peut donc pas être annulée automatiquement. Reconvertissez-la plutôt.",
-    "customRecurrenceMissing": "Cette modification ne peut pas être annulée ni rétablie : la règle de répétition personnalisée de la transaction planifiée est absente de son historique"
+    "customRecurrenceMissing": "Cette modification ne peut pas être annulée ni rétablie : la règle de répétition personnalisée de la transaction planifiée est absente de son historique",
+    "scheduledPostingRedo": "Une transaction planifiée comptabilisée ne peut pas être rétablie. Comptabilisez-la de nouveau depuis Factures et dépôts",
+    "scheduledPostingUndoLaterOccurrence": "Une occurrence ultérieure de cette transaction planifiée a été comptabilisée depuis, cette comptabilisation ne peut donc pas être annulée. Annulez ou supprimez d'abord l'occurrence ultérieure",
+    "scheduledPostingUndoCursorMoved": "Cette transaction planifiée a avancé depuis cette comptabilisation (une occurrence a été ignorée ou sa prochaine date a changé), la comptabilisation ne peut donc pas être annulée. Supprimez plutôt la transaction comptabilisée",
+    "scheduledPostingUndoReferenceGone": "Un élément utilisé par cette transaction planifiée (un compte, un titre ou une devise) a été supprimé depuis, la comptabilisation ne peut donc pas être annulée. Supprimez plutôt la transaction comptabilisée"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Fournissez soit un mot de passe, soit une invitation par e-mail, mais pas les deux.",
@@ -237,6 +241,8 @@
     "invalidToken": "Jeton invalide",
     "tokenRevoked": "Le jeton a été révoqué",
     "tokenExpired": "Le jeton a expiré",
+    "patRouteNotAllowed": "Ce point de terminaison n'est pas disponible pour les jetons d'accès personnels. Connectez-vous pour l'utiliser.",
+    "patInsufficientScope": "Ce jeton d'accès personnel n'a pas le périmètre \"{{ scope }}\"",
     "userAccountInactive": "Le compte utilisateur est inactif",
     "passwordChangeRequired": "Changement de mot de passe requis",
     "tokenNotFound": "Jeton introuvable",

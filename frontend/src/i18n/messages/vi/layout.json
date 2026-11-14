@@ -64,6 +64,7 @@
       "tag": "Thẻ nhãn",
       "account": "Tài khoản",
       "scheduled_transaction": "Đã lên lịch",
+      "scheduled_posting": "Đã lên lịch",
       "security": "Chứng khoán",
       "budget": "Ngân sách",
       "custom_report": "Báo cáo"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "Đã tạo giao dịch định kỳ \"{name}\"",
       "updatedScheduledTransaction": "Đã cập nhật giao dịch định kỳ \"{name}\"",
       "deletedScheduledTransaction": "Đã xóa giao dịch định kỳ \"{name}\"",
+      "postedScheduledTransaction": "Đã đăng giao dịch định kỳ \"{name}\"",
       "createdSecurity": "Đã tạo chứng khoán \"{symbol}\"",
       "updatedSecurity": "Đã cập nhật chứng khoán \"{symbol}\"",
       "deletedSecurity": "Đã xóa chứng khoán \"{symbol}\"",

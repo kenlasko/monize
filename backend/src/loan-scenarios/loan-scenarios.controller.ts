@@ -21,8 +21,10 @@ import { LoanScenariosService } from "./loan-scenarios.service";
 import { CreateLoanScenarioDto } from "./dto/create-loan-scenario.dto";
 import { UpdateLoanScenarioDto } from "./dto/update-loan-scenario.dto";
 import { AllowDelegate } from "../delegation/decorators/delegate-access.decorator";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 @ApiTags("Loan Scenarios")
+@AllowPat()
 @Controller("accounts/:accountId/loan-scenarios")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()

@@ -16,7 +16,28 @@ import { tr } from "../i18n/translate";
 
 const MAX_TOKENS_PER_USER = 10;
 
-interface ValidatedToken {
+/**
+ * How long a token lives when its creator names no expiry. A PAT works
+ * without a second factor, so "forever" is something the caller asks for
+ * (`expiresAt: null`), never what an omitted field means.
+ */
+export const DEFAULT_PAT_LIFETIME_DAYS = 90;
+
+/**
+ * `last_used_at` is written at most this often per token. It answers "is this
+ * token still in use", which a minute's resolution answers as well, and a REST
+ * client would otherwise turn every request into a row update.
+ */
+const LAST_USED_WRITE_INTERVAL_MS = 60 * 1000;
+
+/** `undefined` (omitted) is the default lifetime; `null` is no expiry. */
+function resolveExpiry(expiresAt: string | null | undefined): Date | null {
+  if (expiresAt === null) return null;
+  if (expiresAt) return new Date(expiresAt);
+  return new Date(Date.now() + DEFAULT_PAT_LIFETIME_DAYS * 24 * 60 * 60 * 1000);
+}
+
+export interface ValidatedToken {
   userId: string;
   scopes: string;
   /**
@@ -87,7 +108,7 @@ export class PatService {
           tokenPrefix,
           tokenHash,
           scopes: dto.scopes || "read",
-          expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
+          expiresAt: resolveExpiry(dto.expiresAt),
         }),
       );
     });
@@ -174,11 +195,17 @@ export class PatService {
       );
     }
 
-    await this.scoped(PersonalAccessToken, (repo) =>
-      repo.update(token.id, {
-        lastUsedAt: new Date(),
-      }),
-    );
+    const now = Date.now();
+    if (
+      !token.lastUsedAt ||
+      now - token.lastUsedAt.getTime() >= LAST_USED_WRITE_INTERVAL_MS
+    ) {
+      await this.scoped(PersonalAccessToken, (repo) =>
+        repo.update(token.id, {
+          lastUsedAt: new Date(now),
+        }),
+      );
+    }
 
     return {
       userId: token.userId,

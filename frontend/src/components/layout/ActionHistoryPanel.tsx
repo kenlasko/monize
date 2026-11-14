@@ -24,7 +24,7 @@ const logger = createLogger('ActionHistoryPanel');
 
 const KNOWN_ENTITY_TYPES = new Set([
   'transaction', 'transfer', 'investment_transaction', 'bulk_transaction',
-  'category', 'payee', 'tag', 'account', 'scheduled_transaction',
+  'category', 'payee', 'tag', 'account', 'scheduled_transaction', 'scheduled_posting',
   'security', 'budget', 'custom_report',
 ]);
 

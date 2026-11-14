@@ -154,11 +154,11 @@ AI_DEFAULT_API_KEY=sk-ant-...
 <ol>
 <li>In Monize, navigate to <strong>Settings &gt; API Access</strong>.</li>
 <li>Click <strong>Create Token</strong>.</li>
-<li>Give the token a name (e.g., <code>Claude Desktop</code>), select scopes (<strong>Read</strong>, <strong>Write</strong>) and an expiration, and click <strong>Create Token</strong>. Monize asks you to confirm it is you first.</li>
+<li>Give the token a name (e.g., <code>Claude Desktop</code>), select scopes (<strong>Read</strong>, <strong>Write</strong>) and an expiration (90 days by default), and click <strong>Create Token</strong>. Monize asks you to confirm it is you first.</li>
 <li>Copy the token -- it begins with <code>pat_</code> and is shown only once.</li>
 </ol>
 <figure><img src="/docs/images/settings-api-token-dialog.png" alt="The Create API Token dialog" width="512" height="466" loading="lazy" decoding="async" class="shot-dark"/><img src="/docs/images/settings-api-token-dialog.light.png" alt="The Create API Token dialog" width="512" height="466" loading="lazy" decoding="async" class="shot-light"/><figcaption>The Create API Token dialog</figcaption></figure>
-<p>Tokens are stored as SHA-256 hashes in the database. You can revoke a token at any time from the settings page. The same section shows the instance&#x27;s <strong>MCP Server URL</strong> with a <strong>Copy</strong> button. See <a href="/docs/settings-and-security#personal-access-tokens-pats">Personal Access Tokens</a> for the details.</p>
+<p>Tokens are stored as SHA-256 hashes in the database. You can revoke a token at any time from the settings page. The same section shows the instance&#x27;s <strong>MCP Server URL</strong> with a <strong>Copy</strong> button. The same token also works for the REST API, for your own scripts. See <a href="/docs/settings-and-security#personal-access-tokens-pats">Personal Access Tokens</a> for the details, including which areas tokens cannot reach.</p>
 <p><strong>Step 2: Configure Claude Desktop</strong></p>
 <p>Edit your <code>claude_desktop_config.json</code> file. The location depends on your operating system:</p>
 <div class="table-wrap"><table><thead><tr><th>OS</th><th>Path</th></tr></thead><tbody><tr><td>macOS</td><td><code>~/Library/Application Support/Claude/claude_desktop_config.json</code></td></tr><tr><td>Windows</td><td><code>%APPDATA%\Claude\claude_desktop_config.json</code></td></tr><tr><td>Linux</td><td><code>~/.config/Claude/claude_desktop_config.json</code></td></tr></tbody></table></div>
@@ -184,7 +184,7 @@ AI_DEFAULT_API_KEY=sk-ant-...
 <p><strong>Notes for self-hosted users:</strong></p>
 <ul>
 <li>If you use a self-signed TLS certificate, you may need to add <code>NODE_EXTRA_CA_CERTS</code> to the entry&#x27;s <code>env</code> block pointing at your CA bundle.</li>
-<li>PATs do not auto-rotate. Set a reasonable expiry when you generate the token, or rotate manually on a schedule.</li>
+<li>PATs do not auto-rotate. Tokens expire after 90 days by default, so create a new one before then (or choose another expiry when you generate it), and rotate manually on a schedule.</li>
 <li>You can revoke a PAT instantly from <strong>Settings &gt; API Access</strong> without restarting Claude Desktop -- the next request from the bridge fails authentication and Claude Desktop surfaces the error.</li>
 </ul>
 <h3 id="available-mcp-tools">Available MCP Tools<a class="hlink" href="#available-mcp-tools" aria-label="Link to this section">#</a></h3>

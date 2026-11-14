@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { subscribeUndoRedo, notifyUndoRedo } from './undoRedoSignal';
+import { subscribeUndoRedo, notifyUndoRedo, isUndoRefusal } from './undoRedoSignal';
 
 describe('undoRedoSignal', () => {
   it('should notify subscribers when signal fires', () => {
@@ -52,5 +52,17 @@ describe('undoRedoSignal', () => {
 
   it('should handle notify with no subscribers', () => {
     expect(() => notifyUndoRedo()).not.toThrow();
+  });
+
+  it('holds Undo on a scheduled posting the server refuses to undo (issue #2165)', () => {
+    for (const code of [
+      'SCHEDULED_POSTING_UNDO_LATER_OCCURRENCE',
+      'SCHEDULED_POSTING_UNDO_CURSOR_MOVED',
+      'SCHEDULED_POSTING_UNDO_REFERENCE_GONE',
+    ]) {
+      expect(isUndoRefusal(409, code)).toBe(true);
+    }
+    // A redo refusal is not an undo refusal.
+    expect(isUndoRefusal(409, 'SCHEDULED_POSTING_REDO')).toBe(false);
   });
 });

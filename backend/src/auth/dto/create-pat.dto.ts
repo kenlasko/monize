@@ -34,9 +34,16 @@ export class CreatePatDto {
   })
   scopes?: string;
 
-  @ApiPropertyOptional({ description: "Token expiration date (ISO 8601)" })
+  // Omitted means the default lifetime (`DEFAULT_PAT_LIFETIME_DAYS`); a token
+  // that never expires is asked for with an explicit null. `@IsOptional()`
+  // lets both through, and `PatService` tells them apart.
+  @ApiPropertyOptional({
+    description:
+      "Token expiration date (ISO 8601). Omit for the default of 90 days; send null for a token that never expires.",
+    nullable: true,
+  })
   @IsOptional()
   @IsDateString()
   @IsFutureDate({ message: "Expiration date must be in the future" })
-  expiresAt?: string;
+  expiresAt?: string | null;
 }

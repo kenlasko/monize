@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { DEFAULT_CIPHERS } from "node:tls";
 import { ImapFlow } from "imapflow";
 import type { ImapFlowOptions } from "imapflow";
 import {
@@ -29,6 +30,8 @@ import {
  * REQUIRED (`doSTARTTLS: true`, so a server that does not offer it fails the
  * connection rather than continuing in plaintext) and runs before the login.
  * The certificate is verified; there is no switch to accept any certificate.
+ * The TLS 1.2 key exchange is never finite-field DHE (`IMAP_TLS_CIPHERS`), and
+ * nothing lowers OpenSSL's security level.
  */
 
 /**
@@ -123,6 +126,16 @@ export const IMAP_CONNECTION_TIMEOUT_MS = 30_000;
 export const IMAP_GREETING_TIMEOUT_MS = 15_000;
 export const IMAP_SOCKET_TIMEOUT_MS = 60_000;
 
+/**
+ * Node's default cipher list without finite-field Diffie-Hellman (`!kDHE`). A
+ * server that prefers DHE and sends 1024-bit parameters (Shaw's IMAP, #2166)
+ * fails OpenSSL's default security level with "dh key too small" even though
+ * it offers other key exchanges; not offering DHE lets it pick one of those
+ * (by its own preference, so Shaw picks RSA over ECDHE). A server offering
+ * only DHE is the one this refuses. TLS 1.3 suites are unaffected.
+ */
+export const IMAP_TLS_CIPHERS = `${DEFAULT_CIPHERS}:!kDHE`;
+
 /** Headroom over the per-message cap for protocol framing around a literal. */
 const LITERAL_SLACK_BYTES = 64 * 1024;
 /** What a test connection and a size probe may receive in one literal. */
@@ -166,6 +179,7 @@ export function buildImapFlowOptions(
       ...(lookup ? { lookup } : {}),
       rejectUnauthorized: true,
       minVersion: "TLSv1.2",
+      ciphers: IMAP_TLS_CIPHERS,
     },
     // No IDLE: a poll is one short session, never a long-lived one.
     disableAutoIdle: true,

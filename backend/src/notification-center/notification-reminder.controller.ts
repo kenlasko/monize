@@ -20,6 +20,7 @@ import { AuthGuard } from "@nestjs/passport";
 
 import { NotificationReminderService } from "./notification-reminder.service";
 import { CreateNotificationReminderDto } from "./dto/create-notification-reminder.dto";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * A user's own reminders: ask to be nagged about a notification, list the active
@@ -28,6 +29,7 @@ import { CreateNotificationReminderDto } from "./dto/create-notification-reminde
  * calls (Phase 5), which is why it is a POST that succeeds idempotently.
  */
 @ApiTags("Notifications")
+@AllowPat()
 @Controller("notifications/reminders")
 @UseGuards(AuthGuard("jwt"))
 @OwnerOnly()

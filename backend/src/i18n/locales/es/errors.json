@@ -112,7 +112,11 @@
     "unsupportedSimpleAction": "Acción no admitida: {{ action }}",
     "unsupportedTableForReinsert": "Tabla no admitida para reinserción: {{ tableName }}",
     "undoConversion": "Este cambio convirtió una transacción en una transferencia o viceversa, por lo que no se puede deshacer automáticamente. Conviértala de nuevo en su lugar.",
-    "customRecurrenceMissing": "Este cambio no se puede deshacer ni rehacer: falta en su historial la regla de repetición personalizada de la transacción programada"
+    "customRecurrenceMissing": "Este cambio no se puede deshacer ni rehacer: falta en su historial la regla de repetición personalizada de la transacción programada",
+    "scheduledPostingRedo": "Una transacción programada registrada no se puede rehacer. Vuelva a registrarla desde Facturas y depósitos",
+    "scheduledPostingUndoLaterOccurrence": "Desde entonces se ha registrado una ocurrencia posterior de esta transacción programada, por lo que este registro no se puede deshacer. Deshaga o elimine primero la posterior",
+    "scheduledPostingUndoCursorMoved": "Esta transacción programada ha avanzado desde este registro (se omitió una ocurrencia o cambió su próxima fecha), por lo que el registro no se puede deshacer. Elimine la transacción registrada en su lugar",
+    "scheduledPostingUndoReferenceGone": "Algo que usaba esta transacción programada (una cuenta, un valor o una moneda) se ha eliminado desde entonces, por lo que el registro no se puede deshacer. Elimine la transacción registrada en su lugar"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Proporciona una contraseña o una invitación por correo, no ambas.",
@@ -237,6 +241,8 @@
     "invalidToken": "Token no válido",
     "tokenRevoked": "El token ha sido revocado",
     "tokenExpired": "El token ha caducado",
+    "patRouteNotAllowed": "Este endpoint no está disponible para tokens de acceso personal. Inicia sesión para usarlo.",
+    "patInsufficientScope": "Este token de acceso personal no tiene el permiso \"{{ scope }}\"",
     "userAccountInactive": "La cuenta de usuario está inactiva",
     "passwordChangeRequired": "Se requiere cambio de contraseña",
     "tokenNotFound": "Token no encontrado",

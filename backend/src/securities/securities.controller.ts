@@ -62,10 +62,12 @@ import { BackfillPricesQueryDto } from "./dto/backfill-prices-query.dto";
 import { UpdateSecurityPriceDto } from "./dto/update-security-price.dto";
 import { Security } from "./entities/security.entity";
 import { withSystemContext } from "../common/db/with-context";
+import { AllowPat, NoPat } from "../auth/pat-access/pat-access.decorator";
 
 @ApiTags("Securities")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller("securities")
 export class SecuritiesController {
   private readonly logger = new Logger(SecuritiesController.name);
@@ -578,6 +580,7 @@ export class SecuritiesController {
   }
 
   @Post("prices/refresh")
+  @NoPat()
   @UseGuards(RolesGuard)
   @Roles("admin")
   @ApiOperation({
@@ -704,6 +707,7 @@ export class SecuritiesController {
   }
 
   @Post("prices/backfill")
+  @NoPat()
   @UseGuards(RolesGuard)
   @Roles("admin")
   @ApiOperation({
@@ -737,6 +741,7 @@ export class SecuritiesController {
   }
 
   @Post("prices/backfill-transactions")
+  @NoPat()
   @UseGuards(RolesGuard)
   @Roles("admin")
   @ApiOperation({

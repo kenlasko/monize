@@ -40,6 +40,7 @@ import { UpdateTransactionRuleDto } from "./dto/update-transaction-rule.dto";
 import { ReorderTransactionRulesDto } from "./dto/reorder-transaction-rules.dto";
 import { SetTransactionRuleEnabledDto } from "./dto/set-transaction-rule-enabled.dto";
 import { TransactionRuleResponseDto } from "./dto/transaction-rule-response.dto";
+import { AllowPat, PatScope } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * A user's own rules. Owner-only: `@OwnerOnly()` makes `AccountDelegateGuard`
@@ -48,6 +49,7 @@ import { TransactionRuleResponseDto } from "./dto/transaction-rule-response.dto"
  * is the JWT's, never a param or a body field.
  */
 @ApiTags("Transaction Rules")
+@AllowPat()
 @Controller("transaction-rules")
 @UseGuards(AuthGuard("jwt"))
 @OwnerOnly()
@@ -93,6 +95,7 @@ export class TransactionRulesController {
   // Registered before the `:id` routes, like "reorder": a literal segment
   // must not be captured by ParseUUIDPipe.
   @Post("preview-draft")
+  @PatScope("read")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Test an unsaved rule on existing transactions (writes nothing)",
@@ -111,6 +114,7 @@ export class TransactionRulesController {
 
   // Registered before the `:id` routes, like "preview-draft". Read-only.
   @Post("match-draft")
+  @PatScope("read")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
@@ -131,6 +135,7 @@ export class TransactionRulesController {
   // Registered before the `:id` routes, like "preview-draft". Read-only: the
   // global throttler applies, as it does to preview-draft.
   @Post("explain-row")
+  @PatScope("read")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
@@ -200,6 +205,7 @@ export class TransactionRulesController {
   }
 
   @Post(":id/preview-run")
+  @PatScope("read")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Preview running a rule on existing transactions (writes nothing)",

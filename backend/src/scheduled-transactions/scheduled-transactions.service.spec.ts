@@ -3147,7 +3147,7 @@ describe("ScheduledTransactionsService", () => {
           amount: -1200,
           currencyCode: "USD",
         }),
-        { fromScheduledPosting: true },
+        { fromScheduledPosting: true, recordHistory: false },
       );
     });
 
@@ -3163,7 +3163,7 @@ describe("ScheduledTransactionsService", () => {
       expect(transactionsService.create).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ amount: -0.000025, currencyCode: "BTC" }),
-        { fromScheduledPosting: true },
+        { fromScheduledPosting: true, recordHistory: false },
       );
     });
 
@@ -3257,7 +3257,11 @@ describe("ScheduledTransactionsService", () => {
       expect(transactionsService.create).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ accountId: "acc-1" }),
-        { fromScheduledPosting: true, actorIsNotOwner: true },
+        {
+          fromScheduledPosting: true,
+          recordHistory: false,
+          actorIsNotOwner: true,
+        },
       );
     });
 
@@ -3716,7 +3720,7 @@ describe("ScheduledTransactionsService", () => {
       expect(transactionsService.create).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ amount: -500, description: "inline desc" }),
-        { fromScheduledPosting: true },
+        { fromScheduledPosting: true, recordHistory: false },
       );
     });
 
@@ -3744,7 +3748,7 @@ describe("ScheduledTransactionsService", () => {
       expect(transactionsService.create).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ amount: -999, description: "override desc" }),
-        { fromScheduledPosting: true },
+        { fromScheduledPosting: true, recordHistory: false },
       );
     });
 
@@ -3812,7 +3816,7 @@ describe("ScheduledTransactionsService", () => {
       expect(transactionsService.create).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ accountId: "acc-1", amount: -1200 }),
-        { fromScheduledPosting: true },
+        { fromScheduledPosting: true, recordHistory: false },
       );
     });
 
@@ -3924,6 +3928,7 @@ describe("ScheduledTransactionsService", () => {
         // refuse to settle it against the same occurrence.
         expect(transactionsService.create.mock.calls[0][2]).toEqual({
           fromScheduledPosting: true,
+          recordHistory: false,
         });
       });
 
@@ -3961,6 +3966,175 @@ describe("ScheduledTransactionsService", () => {
 
         expect(investmentTransactionsService.create).toHaveBeenCalledTimes(1);
         expect(recordings()).toEqual([]);
+      });
+    });
+
+    describe("records the posting as one undoable history entry (issue #2165)", () => {
+      const noOverride = () => {
+        const overrideQb = mockQueryBuilder(null);
+        overrideQb.getOne.mockResolvedValue(null);
+        overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+        accountsRepo.findOne.mockResolvedValue(null);
+      };
+      const postings = () =>
+        mockActionHistoryService.record.mock.calls.filter(
+          (c: any[]) => c[1].entityType === "scheduled_posting",
+        );
+
+      it("records the row, the claim and the cursor advance of a recurring bill", async () => {
+        stubFindOne(makeScheduled({ nextDueDate: "2025-02-15" }));
+        noOverride();
+
+        await service.post(userId, stId);
+
+        expect(postings()).toHaveLength(1);
+        const [recordedFor, entry] = postings()[0];
+        expect(recordedFor).toBe(userId);
+        expect(entry).toMatchObject({
+          entityId: stId,
+          action: "post",
+          descriptionKey: "postedScheduledTransaction",
+          descriptionParams: { name: "Monthly Rent" },
+          afterData: {
+            scheduledTransactionId: stId,
+            claimId: "posting-1",
+            dueDate: "2025-02-15",
+            money: { kind: "transaction", transactionId: "tx-1" },
+            cursor: {
+              before: { nextDueDate: "2025-02-15", lastPostedDate: null },
+              after: { nextDueDate: "2025-03-15" },
+            },
+          },
+        });
+        expect(entry.afterData.removedSchedule).toBeUndefined();
+      });
+
+      it("keeps an estimated schedule's amount before the posting, for the undo", async () => {
+        stubFindOne(
+          makeScheduled({ nextDueDate: "2025-02-15", amountIsEstimated: true }),
+        );
+        noOverride();
+
+        // The person states the amount: no estimate is read for the post.
+        await service.post(userId, stId, { amount: -95 } as never);
+
+        expect(postings()[0][1].afterData.estimatedAmount).toBe(-1200);
+      });
+
+      it("keeps a one-time bill's rows, which the posting deletes, instead of a cursor", async () => {
+        stubFindOne(makeScheduled({ frequency: "ONCE" }));
+        noOverride();
+        mockQueryRunner.manager.delete = jest
+          .fn()
+          .mockResolvedValue({ affected: 1 });
+
+        await service.post(userId, stId);
+
+        const [, entry] = postings()[0];
+        expect(entry.afterData.removedSchedule).toBeDefined();
+        expect(entry.afterData.cursor).toBeUndefined();
+        const snapshotRead = mockQueryRunner.manager.query.mock.calls.findIndex(
+          (c: unknown[]) => String(c[0]).includes("to_jsonb(s) AS schedule"),
+        );
+        expect(snapshotRead).toBeGreaterThanOrEqual(0);
+        // Read before the delete took the rows with it.
+        expect(
+          mockQueryRunner.manager.query.mock.invocationCallOrder[snapshotRead],
+        ).toBeLessThan(
+          (mockQueryRunner.manager.delete as jest.Mock).mock
+            .invocationCallOrder[0],
+        );
+      });
+
+      it("records an investment posting and switches the trade's own entry off", async () => {
+        stubFindOne(
+          makeScheduled({
+            isInvestment: true,
+            investmentAction: "BUY" as any,
+            investmentSecurityId: "sec-1",
+            investmentQuantity: 1,
+            investmentPrice: 100,
+          }),
+        );
+        noOverride();
+
+        await service.post(userId, stId);
+
+        expect(investmentTransactionsService.create.mock.calls[0][2]).toEqual({
+          recordHistory: false,
+        });
+        expect(postings()[0][1].afterData.money).toEqual({
+          kind: "investment",
+          investmentTransactionId: "inv-tx-1",
+          securityId: "sec-1",
+        });
+      });
+
+      it("records a transfer posting and switches the transfer's own entry off", async () => {
+        stubFindOne(
+          makeScheduled({ isTransfer: true, transferAccountId: "acc-2" }),
+        );
+        noOverride();
+        transactionsService.prepareTransfer.mockResolvedValueOnce({
+          effectiveUserId: userId,
+          realUserId: userId,
+          dto: { fromAccountId: "acc-1", toAccountId: "acc-2" },
+          fromOwnerId: userId,
+          toOwnerId: userId,
+          hasForeignLeg: false,
+        });
+
+        await service.post(userId, stId);
+
+        expect(transactionsService.completeTransfer.mock.calls[0][3]).toEqual({
+          recordHistory: false,
+        });
+        expect(postings()[0][1].afterData.money).toEqual({
+          kind: "transfer",
+          fromTransactionId: "tx-1",
+          toTransactionId: "tx-2",
+          fromAccountId: "acc-1",
+          toAccountId: "acc-2",
+        });
+      });
+
+      it("leaves a transfer with a leg in another owner's account to the transfer's own entries", async () => {
+        stubFindOne(
+          makeScheduled({ isTransfer: true, transferAccountId: "acc-2" }),
+        );
+        noOverride();
+        transactionsService.prepareTransfer.mockResolvedValueOnce({
+          effectiveUserId: userId,
+          realUserId: userId,
+          dto: { fromAccountId: "acc-1", toAccountId: "acc-2" },
+          fromOwnerId: userId,
+          toOwnerId: "other-owner",
+          hasForeignLeg: true,
+        });
+
+        await service.post(userId, stId);
+
+        expect(transactionsService.completeTransfer.mock.calls[0][3]).toEqual({
+          recordHistory: true,
+        });
+        expect(postings()).toEqual([]);
+      });
+
+      it("records nothing for a posting that wrote no money", async () => {
+        stubFindOne(
+          makeScheduled({
+            isInvestment: true,
+            investmentAction: "BUY" as any,
+            investmentSecurityId: "sec-1",
+            investmentQuantity: 1,
+            investmentPrice: 100,
+          }),
+        );
+        noOverride();
+
+        await service.post(userId, stId, undefined, { recordOnly: true });
+
+        expect(postings()).toEqual([]);
       });
     });
 
@@ -4258,7 +4432,7 @@ describe("ScheduledTransactionsService", () => {
       expect(transactionsService.create).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ transactionDate: "2025-03-01" }),
-        { fromScheduledPosting: true },
+        { fromScheduledPosting: true, recordHistory: false },
       );
     });
 
@@ -4342,7 +4516,7 @@ describe("ScheduledTransactionsService", () => {
       expect(transactionsService.create).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ referenceNumber: "CHQ-1234" }),
-        { fromScheduledPosting: true },
+        { fromScheduledPosting: true, recordHistory: false },
       );
     });
 
@@ -4380,7 +4554,7 @@ describe("ScheduledTransactionsService", () => {
       expect(transactionsService.create).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ referenceNumber: "ACCT-42" }),
-        { fromScheduledPosting: true },
+        { fromScheduledPosting: true, recordHistory: false },
       );
     });
 
@@ -4397,7 +4571,7 @@ describe("ScheduledTransactionsService", () => {
       expect(transactionsService.create).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ referenceNumber: undefined }),
-        { fromScheduledPosting: true },
+        { fromScheduledPosting: true, recordHistory: false },
       );
     });
 
@@ -4902,7 +5076,7 @@ describe("ScheduledTransactionsService", () => {
       expect(transactionsService.create).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ transactionDate: "2025-03-15" }),
-        { fromScheduledPosting: true },
+        { fromScheduledPosting: true, recordHistory: false },
       );
     });
 
@@ -6090,7 +6264,7 @@ describe("ScheduledTransactionsService", () => {
           originalCurrencyCode: "USD",
           exchangeRate: 1.4,
         }),
-        { fromScheduledPosting: true },
+        { fromScheduledPosting: true, recordHistory: false },
       );
     });
 
@@ -6117,7 +6291,7 @@ describe("ScheduledTransactionsService", () => {
       expect(transactionsService.create).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ amount: -57.4 }),
-        { fromScheduledPosting: true },
+        { fromScheduledPosting: true, recordHistory: false },
       );
     });
 
@@ -6182,7 +6356,7 @@ describe("ScheduledTransactionsService", () => {
           originalAmount: -40,
           exchangeRate: 1.5,
         }),
-        { fromScheduledPosting: true },
+        { fromScheduledPosting: true, recordHistory: false },
       );
     });
 
@@ -7137,7 +7311,7 @@ describe("ScheduledTransactionsService", () => {
         expect.objectContaining({
           transactionDate: "2025-03-12",
         }),
-        { fromScheduledPosting: true },
+        { fromScheduledPosting: true, recordHistory: false },
       );
     });
   });
@@ -10839,7 +11013,7 @@ describe("ScheduledTransactionsService", () => {
         expect(transactionsService.create).toHaveBeenCalledWith(
           userId,
           expect.objectContaining({ amount: -110 }),
-          { fromScheduledPosting: true },
+          { fromScheduledPosting: true, recordHistory: false },
         );
       });
 
@@ -10866,7 +11040,7 @@ describe("ScheduledTransactionsService", () => {
         expect(transactionsService.create).toHaveBeenCalledWith(
           userId,
           expect.objectContaining({ amount: -133.5 }),
-          { fromScheduledPosting: true },
+          { fromScheduledPosting: true, recordHistory: false },
         );
       });
 

@@ -48,6 +48,7 @@ import {
   WarrantyImportResult,
   WarrantyImportService,
 } from "./warranty-import.service";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * The content types a browser sends for a `.csv` file: `text/csv` and its
@@ -83,6 +84,7 @@ const CSV_CONTENT_TYPES: ReadonlySet<string> = new Set([
 @ApiTags("Warranties")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller("warranties")
 export class WarrantiesController {
   constructor(

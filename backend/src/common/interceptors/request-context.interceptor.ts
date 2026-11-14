@@ -110,7 +110,7 @@ export class RequestContextInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest<Request>();
     const user = (
       request as unknown as {
-        user?: { id?: string; realUserId?: string };
+        user?: { id?: string; realUserId?: string; pat?: unknown };
       }
     ).user;
     const userId: string | undefined = user?.id;
@@ -119,7 +119,10 @@ export class RequestContextInterceptor implements NestInterceptor {
     // app.real_user_id for delegate-keyed rows. jwt.strategy resolves it.
     const realUserId: string | undefined = user?.realUserId ?? userId;
 
-    if (realUserId) {
+    // A personal access token is a script, not a person at the keyboard
+    // (`JwtStrategy.patUser` sets `pat`). Stamping its traffic would keep the
+    // owner's emergency-access clock from ever running out.
+    if (realUserId && !user?.pat) {
       this.touchLastActivity(realUserId);
     }
 

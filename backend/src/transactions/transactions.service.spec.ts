@@ -1093,6 +1093,58 @@ describe("TransactionsService", () => {
       );
     });
 
+    it("records its own history entry unless the caller records one (issue #2165)", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        splits: [],
+      });
+      const record = (service as any).actionHistoryService.record as jest.Mock;
+      const dto = {
+        accountId: "account-1",
+        transactionDate: "2026-01-15",
+        amount: -50,
+        currencyCode: "USD",
+      } as any;
+
+      record.mockClear();
+      await service.create("user-1", dto, { recordHistory: false });
+      expect(record).not.toHaveBeenCalled();
+
+      await service.create("user-1", dto);
+      expect(record).toHaveBeenCalledWith(
+        "user-1",
+        expect.objectContaining({
+          entityType: "transaction",
+          action: "create",
+        }),
+      );
+    });
+
+    it("passes the history switch of a scheduled posting's transfer through", async () => {
+      const complete = jest
+        .spyOn((service as any).transferService, "completeTransfer")
+        .mockResolvedValue({
+          fromTransaction: { id: "a", userId: "user-1" },
+          toTransaction: { id: "b", userId: "user-1" },
+        });
+
+      await service.completeTransfer({ dto: {} } as any, "a", "b", {
+        recordHistory: false,
+      });
+
+      expect(complete).toHaveBeenCalledWith(
+        { dto: {} },
+        "a",
+        "b",
+        expect.any(Function),
+        { recordHistory: false },
+      );
+    });
+
     it("refuses a future-dated transaction on a closed account", async () => {
       accountsService.findOne.mockResolvedValue({
         ...mockAccount,

@@ -38,8 +38,10 @@ import {
   isRecurringExpenseRange,
   MonthlyCategoryBreakdownQueryDto,
 } from "./dto";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 @ApiTags("Built-in Reports")
+@AllowPat()
 @Controller("built-in-reports")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()

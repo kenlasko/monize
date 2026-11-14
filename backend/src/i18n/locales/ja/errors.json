@@ -112,7 +112,11 @@
     "unsupportedSimpleAction": "サポートされていないアクション：{{ action }}",
     "unsupportedTableForReinsert": "再挿入のためのサポートされていないテーブル：{{ tableName }}",
     "undoConversion": "この変更は取引を振替に、または振替から変換したため、自動的に元に戻せません。代わりに元の形に変換し直してください。",
-    "customRecurrenceMissing": "この変更は元に戻すこともやり直すこともできません。予定取引のカスタム繰り返しルールが履歴にありません"
+    "customRecurrenceMissing": "この変更は元に戻すこともやり直すこともできません。予定取引のカスタム繰り返しルールが履歴にありません",
+    "scheduledPostingRedo": "転記済みのスケジュール取引はやり直せません。代わりに請求書・入金から再度転記してください",
+    "scheduledPostingUndoLaterOccurrence": "このスケジュール取引の後の回がその後転記されたため、この転記は元に戻せません。先に後の回を元に戻すか削除してください",
+    "scheduledPostingUndoCursorMoved": "このスケジュール取引はこの転記の後に進んでいます（回がスキップされたか次回の日付が変更されました）。そのため転記を元に戻せません。代わりに転記された取引を削除してください",
+    "scheduledPostingUndoReferenceGone": "このスケジュール取引が使用していたもの（口座、銘柄、または通貨）がその後削除されたため、転記を元に戻せません。代わりに転記された取引を削除してください"
   },
   "admin": {
     "passwordOrInviteNotBoth": "パスワードまたはメール招待のどちらかを指定してください。両方は指定できません。",
@@ -237,6 +241,8 @@
     "invalidToken": "無効なトークンです",
     "tokenRevoked": "トークンが失効しています",
     "tokenExpired": "トークンの有効期限が切れています",
+    "patRouteNotAllowed": "このエンドポイントは個人用アクセストークンでは利用できません。利用するにはサインインしてください。",
+    "patInsufficientScope": "この個人用アクセストークンには「{{ scope }}」スコープがありません",
     "userAccountInactive": "ユーザーアカウントが非アクティブです",
     "passwordChangeRequired": "パスワードの変更が必要です",
     "tokenNotFound": "トークンが見つかりません",

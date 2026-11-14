@@ -277,12 +277,12 @@ This method works because Claude Desktop spawns a local subprocess (the "bridge"
 
 1. In Monize, navigate to **Settings > API Access**.
 2. Click **Create Token**.
-3. Give the token a name (e.g., `Claude Desktop`), select scopes (**Read**, **Write**) and an expiration, and click **Create Token**. Monize asks you to confirm it is you first.
+3. Give the token a name (e.g., `Claude Desktop`), select scopes (**Read**, **Write**) and an expiration (90 days by default), and click **Create Token**. Monize asks you to confirm it is you first.
 4. Copy the token -- it begins with `pat_` and is shown only once.
 
 ![The Create API Token dialog](images/settings-api-token-dialog.png)
 
-Tokens are stored as SHA-256 hashes in the database. You can revoke a token at any time from the settings page. The same section shows the instance's **MCP Server URL** with a **Copy** button. See [Personal Access Tokens](settings-and-security.md#personal-access-tokens-pats) for the details.
+Tokens are stored as SHA-256 hashes in the database. You can revoke a token at any time from the settings page. The same section shows the instance's **MCP Server URL** with a **Copy** button. The same token also works for the REST API, for your own scripts. See [Personal Access Tokens](settings-and-security.md#personal-access-tokens-pats) for the details, including which areas tokens cannot reach.
 
 **Step 2: Configure Claude Desktop**
 
@@ -322,7 +322,7 @@ Fully quit and relaunch Claude Desktop. The Monize tools should appear in the to
 **Notes for self-hosted users:**
 
 - If you use a self-signed TLS certificate, you may need to add `NODE_EXTRA_CA_CERTS` to the entry's `env` block pointing at your CA bundle.
-- PATs do not auto-rotate. Set a reasonable expiry when you generate the token, or rotate manually on a schedule.
+- PATs do not auto-rotate. Tokens expire after 90 days by default, so create a new one before then (or choose another expiry when you generate it), and rotate manually on a schedule.
 - You can revoke a PAT instantly from **Settings > API Access** without restarting Claude Desktop -- the next request from the bridge fails authentication and Claude Desktop surfaces the error.
 
 ### Available MCP Tools

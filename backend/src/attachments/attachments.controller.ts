@@ -38,6 +38,7 @@ import { TransactionAttachment } from "./entities/transaction-attachment.entity"
 import { WarrantyAttachmentUploadDto } from "./dto/warranty-attachment-upload.dto";
 import { UpdateDocumentKindDto } from "./dto/update-document-kind.dto";
 import { AttachmentListItemDto } from "./dto/attachment-list-item.dto";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 /** The two named parts of one request, the same on every upload route. */
 interface UploadParts {
@@ -73,6 +74,7 @@ const uploadPairInterceptor = FileFieldsInterceptor(
 @ApiTags("Attachments")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller()
 export class AttachmentsController {
   constructor(private readonly attachmentsService: AttachmentsService) {}

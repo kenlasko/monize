@@ -35,10 +35,12 @@ import {
   CsvHeadersResponseDto,
   ColumnMappingResponseDto,
 } from "./dto/import.dto";
+import { AllowPat, PatScope } from "../auth/pat-access/pat-access.decorator";
 
 @ApiTags("Import")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller("import")
 export class ImportController {
   constructor(private readonly importService: ImportService) {}
@@ -46,6 +48,7 @@ export class ImportController {
   // --- QIF ---
 
   @Post("qif/parse")
+  @PatScope("read")
   @ApiOperation({ summary: "Parse a QIF file and return metadata for mapping" })
   @ApiResponse({
     status: 200,
@@ -76,6 +79,7 @@ export class ImportController {
   // --- Multi-account QIF ---
 
   @Post("qif/multi-account/parse")
+  @PatScope("read")
   @ApiOperation({
     summary:
       "Parse a multi-account QIF file and return accounts, categories, and metadata",
@@ -115,6 +119,7 @@ export class ImportController {
   // --- OFX ---
 
   @Post("ofx/parse")
+  @PatScope("read")
   @ApiOperation({
     summary: "Parse an OFX file and return metadata for mapping",
   })
@@ -147,6 +152,7 @@ export class ImportController {
   // --- CSV ---
 
   @Post("csv/headers")
+  @PatScope("read")
   @ApiOperation({
     summary: "Parse CSV headers and return sample data for column mapping",
   })
@@ -167,6 +173,7 @@ export class ImportController {
   }
 
   @Post("csv/parse")
+  @PatScope("read")
   @ApiOperation({
     summary: "Parse a CSV file with column mapping and return metadata",
   })

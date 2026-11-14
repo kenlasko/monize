@@ -64,6 +64,7 @@
       "tag": "Label",
       "account": "Rekening",
       "scheduled_transaction": "Gepland",
+      "scheduled_posting": "Gepland",
       "security": "Waardepapier",
       "budget": "Budget",
       "custom_report": "Rapport"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "Geplande transactie \"{name}\" aangemaakt",
       "updatedScheduledTransaction": "Geplande transactie \"{name}\" bijgewerkt",
       "deletedScheduledTransaction": "Geplande transactie \"{name}\" verwijderd",
+      "postedScheduledTransaction": "Geplande transactie \"{name}\" geboekt",
       "createdSecurity": "Waardepapier \"{symbol}\" aangemaakt",
       "updatedSecurity": "Waardepapier \"{symbol}\" bijgewerkt",
       "deletedSecurity": "Waardepapier \"{symbol}\" verwijderd",

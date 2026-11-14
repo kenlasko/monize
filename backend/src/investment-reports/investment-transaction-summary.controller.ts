@@ -10,6 +10,7 @@ import {
   AllowDelegate,
   DelegateRequiresSection,
 } from "../delegation/decorators/delegate-access.decorator";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * Its own controller rather than a route on `InvestmentReportsController`:
@@ -27,6 +28,7 @@ import {
  * over exactly the row set the list route would return.
  */
 @ApiTags("Investment Reports")
+@AllowPat()
 @Controller("reports/investment-transactions")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()

@@ -35,6 +35,7 @@ import {
   PayrollDeductionRuleView,
   PayrollDeductionsService,
 } from "./payroll-deductions.service";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * Payroll deduction rules (docs/specs/payroll-deductions.md section 5.2).
@@ -44,6 +45,7 @@ import {
 @ApiTags("Payroll deductions")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller("payroll-deductions")
 export class PayrollDeductionsController {
   constructor(private readonly service: PayrollDeductionsService) {}

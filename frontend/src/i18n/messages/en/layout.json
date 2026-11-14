@@ -64,6 +64,7 @@
       "tag": "Tag",
       "account": "Account",
       "scheduled_transaction": "Scheduled",
+      "scheduled_posting": "Scheduled",
       "security": "Security",
       "budget": "Budget",
       "custom_report": "Report"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "Created scheduled transaction \"{name}\"",
       "updatedScheduledTransaction": "Updated scheduled transaction \"{name}\"",
       "deletedScheduledTransaction": "Deleted scheduled transaction \"{name}\"",
+      "postedScheduledTransaction": "Posted scheduled transaction \"{name}\"",
       "createdSecurity": "Created security \"{symbol}\"",
       "updatedSecurity": "Updated security \"{symbol}\"",
       "deletedSecurity": "Deleted security \"{symbol}\"",

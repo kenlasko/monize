@@ -22,6 +22,7 @@ import { MarketIndexService, MarketIndexView } from "./market-index.service";
 import { PerformanceComparisonService } from "./performance-comparison.service";
 import { PerformanceComparisonQueryDto } from "./dto/performance-comparison-query.dto";
 import { PerformanceComparisonView } from "./performance-comparison.types";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * The Security Performance report's comparison chart and the benchmark catalog
@@ -32,6 +33,7 @@ import { PerformanceComparisonView } from "./performance-comparison.types";
  * being parsed as an id.
  */
 @ApiTags("Investment Performance")
+@AllowPat()
 @Controller("investments/performance")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()

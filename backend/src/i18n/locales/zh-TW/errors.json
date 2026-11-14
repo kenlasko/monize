@@ -112,7 +112,11 @@
     "unsupportedSimpleAction": "不支援的操作：{{ action }}",
     "unsupportedTableForReinsert": "不支援重新插入的資料表：{{ tableName }}",
     "undoConversion": "此變更將交易轉換為轉帳或從轉帳轉換回交易，因此無法自動復原。請將其轉換回原狀。",
-    "customRecurrenceMissing": "無法復原或重做此變更：排程交易的歷史記錄中缺少其自訂重複規則"
+    "customRecurrenceMissing": "無法復原或重做此變更：排程交易的歷史記錄中缺少其自訂重複規則",
+    "scheduledPostingRedo": "已過帳的排程交易無法重做。請改為在帳單與存款中重新過帳",
+    "scheduledPostingUndoLaterOccurrence": "此排程交易的後續一期已在此後過帳，因此無法復原此次過帳。請先復原或刪除後續那一期",
+    "scheduledPostingUndoCursorMoved": "此排程交易在此次過帳後已向前推進（略過了某一期或變更了下一日期），因此無法復原此次過帳。請改為刪除已過帳的交易",
+    "scheduledPostingUndoReferenceGone": "此排程交易使用的某項內容（帳戶、證券或貨幣）此後已被刪除，因此無法復原此次過帳。請改為刪除已過帳的交易"
   },
   "admin": {
     "passwordOrInviteNotBoth": "請提供密碼或電子郵件邀請，不能兩者同時提供。",
@@ -237,6 +241,8 @@
     "invalidToken": "無效的令牌",
     "tokenRevoked": "令牌已撤銷",
     "tokenExpired": "令牌已過期",
+    "patRouteNotAllowed": "此端點不適用於個人存取權杖。請登入後使用。",
+    "patInsufficientScope": "此個人存取權杖沒有「{{ scope }}」範圍",
     "userAccountInactive": "使用者帳戶未啟用",
     "passwordChangeRequired": "需要變更密碼",
     "tokenNotFound": "找不到令牌",

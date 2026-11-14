@@ -1,6 +1,7 @@
 import { Controller, Get } from "@nestjs/common";
 import { ApiExcludeController } from "@nestjs/swagger";
 import { SkipCsrf } from "../common/decorators/skip-csrf.decorator";
+import { PatIgnored } from "../auth/pat-access/pat-access.decorator";
 import {
   OAuthProviderService,
   MCP_RESOURCE_SCOPES,
@@ -17,6 +18,7 @@ import {
  */
 @ApiExcludeController()
 @SkipCsrf()
+@PatIgnored()
 @Controller(".well-known")
 export class OAuthMetadataController {
   constructor(private readonly providerService: OAuthProviderService) {}

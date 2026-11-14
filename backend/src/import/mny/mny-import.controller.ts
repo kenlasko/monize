@@ -42,6 +42,7 @@ import {
   StartMnyImportDto,
 } from "./dto/mny-import.dto";
 import { MnyImportOptions } from "./model/mny-import-options";
+import { AllowPat, NoPat } from "../../auth/pat-access/pat-access.decorator";
 
 /**
  * The four calls the wizard makes for a Microsoft Money import.
@@ -82,6 +83,7 @@ function toJobDto(job: ImportJob): MnyImportJobDto {
 @ApiTags("Import")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller("import/mny")
 export class MnyImportController {
   constructor(
@@ -159,6 +161,7 @@ export class MnyImportController {
   }
 
   @Post("start")
+  @NoPat()
   @ApiOperation({
     summary: "Start importing a staged Money file in the background",
   })

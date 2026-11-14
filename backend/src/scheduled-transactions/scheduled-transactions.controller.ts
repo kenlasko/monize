@@ -52,6 +52,7 @@ import { DelegateScheduledTransferMaskInterceptor } from "../delegation/intercep
 import { DelegationService } from "../delegation/delegation.service";
 import { JointAccountsService } from "../delegation/joint-accounts.service";
 import { tr } from "../i18n/translate";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 /**
  * A delegate does not turn an estimate on or off (issue #2096): the estimate
@@ -68,6 +69,7 @@ function withoutDelegateEstimateToggle<
 }
 
 @ApiTags("Scheduled Transactions")
+@AllowPat()
 @Controller("scheduled-transactions")
 @UseGuards(AuthGuard("jwt"))
 @UseInterceptors(DelegateScheduledTransferMaskInterceptor)

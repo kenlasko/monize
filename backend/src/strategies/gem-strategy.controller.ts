@@ -23,10 +23,12 @@ import { GemReportQueryDto } from "./dto/gem-report-query.dto";
 import { CreateGemStrategyDto } from "./dto/create-gem-strategy.dto";
 import { UpdateGemStrategyDto } from "./dto/update-gem-strategy.dto";
 import { GemStrategyReportView } from "./gem-report.types";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 @ApiTags("Strategies")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller("strategies/gem")
 export class GemStrategyController {
   constructor(private readonly gemStrategyService: GemStrategyService) {}

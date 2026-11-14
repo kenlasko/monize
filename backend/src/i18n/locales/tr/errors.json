@@ -112,7 +112,11 @@
     "unsupportedSimpleAction": "Desteklenmeyen eylem: {{ action }}",
     "unsupportedTableForReinsert": "Yeniden ekleme için desteklenmeyen tablo: {{ tableName }}",
     "undoConversion": "Bu değişiklik bir işlemi transfere veya transferden işleme dönüştürdü, bu nedenle otomatik olarak geri alınamaz. Bunun yerine geri dönüştürün.",
-    "customRecurrenceMissing": "Bu değişiklik geri alınamaz veya yinelenemez: planlanmış işlemin özel tekrar kuralı geçmişinde yok"
+    "customRecurrenceMissing": "Bu değişiklik geri alınamaz veya yinelenemez: planlanmış işlemin özel tekrar kuralı geçmişinde yok",
+    "scheduledPostingRedo": "Kaydedilmiş zamanlanmış bir işlem yinelenemez. Bunun yerine Faturalar ve Mevduatlar sayfasından yeniden kaydedin",
+    "scheduledPostingUndoLaterOccurrence": "Bu zamanlanmış işlemin daha sonraki bir tekrarı o zamandan beri kaydedildi, bu nedenle bu kayıt geri alınamaz. Önce sonrakini geri alın veya silin",
+    "scheduledPostingUndoCursorMoved": "Bu zamanlanmış işlem bu kayıttan sonra ilerledi (bir tekrar atlandı veya sonraki tarihi değişti), bu nedenle kayıt geri alınamaz. Bunun yerine kaydedilen işlemi silin",
+    "scheduledPostingUndoReferenceGone": "Bu zamanlanmış işlemin kullandığı bir şey (bir hesap, bir menkul kıymet veya bir para birimi) o zamandan beri silindi, bu nedenle kayıt geri alınamaz. Bunun yerine kaydedilen işlemi silin"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Şifre veya e-posta daveti sağlayın, ikisini birden değil.",
@@ -237,6 +241,8 @@
     "invalidToken": "Geçersiz kod",
     "tokenRevoked": "Kod iptal edildi",
     "tokenExpired": "Kodun süresi doldu",
+    "patRouteNotAllowed": "Bu uç nokta kişisel erişim belirteçleri için kullanılamaz. Kullanmak için oturum açın.",
+    "patInsufficientScope": "Bu kişisel erişim belirteci \"{{ scope }}\" kapsamına sahip değil",
     "userAccountInactive": "Kullanıcı hesabı etkin değil",
     "passwordChangeRequired": "Şifre değişikliği gerekli",
     "tokenNotFound": "Kod bulunamadı",

@@ -24,6 +24,7 @@ import {
   toWebRequest,
 } from "@modelcontextprotocol/node";
 import { SkipCsrf } from "../common/decorators/skip-csrf.decorator";
+import { PatSelfAuthenticated } from "../auth/pat-access/pat-access.decorator";
 import { SetMetadata } from "@nestjs/common";
 import { SKIP_PASSWORD_CHECK_KEY } from "../auth/guards/must-change-password.guard";
 import { McpServerService } from "./mcp-server.service";
@@ -56,6 +57,7 @@ const SkipPasswordCheck = () => SetMetadata(SKIP_PASSWORD_CHECK_KEY, true);
 @ApiTags("MCP")
 @SkipCsrf()
 @SkipPasswordCheck()
+@PatSelfAuthenticated()
 @Controller("mcp")
 export class McpHttpController implements OnModuleDestroy {
   private static readonly SESSION_TTL_MS = 3_600_000; // 1 hour

@@ -21,6 +21,7 @@ import {
 } from "./html-table-finance.service";
 import { QuoteTablePreviewDto } from "./dto/quote-table-preview.dto";
 import { QuoteTableField } from "./html-table-quote.parser";
+import { AllowPat } from "../auth/pat-access/pat-access.decorator";
 
 /** Rows returned to the preview, newest first. */
 const PREVIEW_ROWS = 15;
@@ -56,6 +57,7 @@ function ymd(date: Date): string {
 @ApiTags("Securities")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller("quote-tables")
 export class QuoteTablePreviewController {
   private readonly logger = new Logger(QuoteTablePreviewController.name);

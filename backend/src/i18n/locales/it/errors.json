@@ -112,7 +112,11 @@
     "unsupportedSimpleAction": "Azione non supportata: {{ action }}",
     "unsupportedTableForReinsert": "Tabella non supportata per il reinserimento: {{ tableName }}",
     "undoConversion": "Questa modifica ha convertito una transazione in trasferimento o viceversa, quindi non può essere annullata automaticamente. Riconvertila invece.",
-    "customRecurrenceMissing": "Questa modifica non può essere annullata né ripetuta: la regola di ripetizione personalizzata della transazione pianificata manca dalla sua cronologia"
+    "customRecurrenceMissing": "Questa modifica non può essere annullata né ripetuta: la regola di ripetizione personalizzata della transazione pianificata manca dalla sua cronologia",
+    "scheduledPostingRedo": "Una transazione pianificata registrata non può essere ripetuta. Registrala di nuovo da Fatture & Versamenti",
+    "scheduledPostingUndoLaterOccurrence": "Nel frattempo è stata registrata un'occorrenza successiva di questa transazione pianificata, quindi questa registrazione non può essere annullata. Annulla o elimina prima quella successiva",
+    "scheduledPostingUndoCursorMoved": "Questa transazione pianificata è andata avanti dopo questa registrazione (un'occorrenza è stata saltata o la data successiva è cambiata), quindi la registrazione non può essere annullata. Elimina invece la transazione registrata",
+    "scheduledPostingUndoReferenceGone": "Qualcosa usato da questa transazione pianificata (un conto, un titolo o una valuta) è stato eliminato nel frattempo, quindi la registrazione non può essere annullata. Elimina invece la transazione registrata"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Fornisci una password o un invito via email, non entrambi.",
@@ -237,6 +241,8 @@
     "invalidToken": "Token non valido",
     "tokenRevoked": "Il token è stato revocato",
     "tokenExpired": "Il token è scaduto",
+    "patRouteNotAllowed": "Questo endpoint non è disponibile per i token di accesso personali. Accedi per utilizzarlo.",
+    "patInsufficientScope": "Questo token di accesso personale non ha l'ambito \"{{ scope }}\"",
     "userAccountInactive": "L'account utente è inattivo",
     "passwordChangeRequired": "Modifica password richiesta",
     "tokenNotFound": "Token non trovato",

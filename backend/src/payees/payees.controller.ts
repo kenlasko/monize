@@ -54,10 +54,12 @@ import {
 } from "../delegation/decorators/delegate-access.decorator";
 import { DelegationService } from "../delegation/delegation.service";
 import { delegateReadableAccountScope } from "../delegation/delegate-account-scope.util";
+import { AllowPat, NoPat } from "../auth/pat-access/pat-access.decorator";
 
 @ApiTags("Payees")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
+@AllowPat()
 @Controller("payees")
 export class PayeesController {
   constructor(
@@ -260,6 +262,7 @@ export class PayeesController {
    * parameter route is shadowed by it.
    */
   @Post("lookup-contact")
+  @NoPat()
   @AllowDelegate()
   @DelegateRequiresCapability("payees", "create")
   // Each call may be a paid model call on the user's provider.
@@ -586,6 +589,7 @@ export class PayeesController {
    * differently, not errors.
    */
   @Post(":id/lookup-contact")
+  @NoPat()
   @AllowDelegate()
   @DelegateRequiresCapability("payees", "edit")
   @Throttle({ default: { ttl: 60000, limit: 10 } })

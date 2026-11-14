@@ -112,7 +112,11 @@
     "unsupportedSimpleAction": "Unsupported action: {{ action }}",
     "unsupportedTableForReinsert": "Unsupported table for re-insert: {{ tableName }}",
     "undoConversion": "This change converted a transaction to or from a transfer, so it cannot be undone automatically. Convert it back instead.",
-    "customRecurrenceMissing": "This change cannot be undone or redone: the scheduled transaction's custom schedule rule is missing from its history"
+    "customRecurrenceMissing": "This change cannot be undone or redone: the scheduled transaction's custom schedule rule is missing from its history",
+    "scheduledPostingRedo": "A posted scheduled transaction cannot be redone. Post it again from Bills & Deposits instead",
+    "scheduledPostingUndoLaterOccurrence": "A later occurrence of this scheduled transaction has been posted since, so this posting cannot be undone. Undo or delete the later one first",
+    "scheduledPostingUndoCursorMoved": "This scheduled transaction has moved on since this posting (an occurrence was skipped or its next date changed), so the posting cannot be undone. Delete the posted transaction instead",
+    "scheduledPostingUndoReferenceGone": "Something this scheduled transaction used (an account, a security or a currency) has been deleted since, so the posting cannot be undone. Delete the posted transaction instead"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Provide either a password or an email invite, not both.",
@@ -237,6 +241,8 @@
     "invalidToken": "Invalid token",
     "tokenRevoked": "Token has been revoked",
     "tokenExpired": "Token has expired",
+    "patRouteNotAllowed": "This endpoint is not available to personal access tokens. Sign in to use it.",
+    "patInsufficientScope": "This personal access token does not have the \"{{ scope }}\" scope",
     "userAccountInactive": "User account is inactive",
     "passwordChangeRequired": "Password change required",
     "tokenNotFound": "Token not found",

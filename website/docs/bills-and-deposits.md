@@ -173,6 +173,8 @@ To record an occurrence yourself, click **Post Transaction** on its row. The **P
 
 Click **Post Transaction** to create the transaction and advance the schedule to its next due date. Clicking an item in the dashboard's [Upcoming Bills](dashboard.md#upcoming-bills) widget opens the same dialog.
 
+Posted one by mistake? **Undo** it (**Ctrl+Z**, or **Action History** in the header, where it is listed as **Posted scheduled transaction**). Undo removes the transaction and puts the schedule back on the occurrence you posted, with any change you had made to that occurrence; a one-time bill comes back to the list. On a schedule that posts automatically, an occurrence that is already due would only be posted again within the hour, so undoing it removes the transaction and leaves that occurrence skipped instead. When a later occurrence of the same schedule has been posted since, undo that one first; when the next occurrence has been skipped since, delete the posted transaction instead. A posting cannot be redone: post the occurrence again instead.
+
 ---
 
 ## Auto-Posting

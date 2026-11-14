@@ -64,6 +64,7 @@
       "tag": "Тег",
       "account": "Рахунок",
       "scheduled_transaction": "Запланована",
+      "scheduled_posting": "Запланована",
       "security": "Цінний папір",
       "budget": "Бюджет",
       "custom_report": "Звіт"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "Створено заплановану транзакцію \"{name}\"",
       "updatedScheduledTransaction": "Оновлено заплановану транзакцію \"{name}\"",
       "deletedScheduledTransaction": "Видалено заплановану транзакцію \"{name}\"",
+      "postedScheduledTransaction": "Проведено заплановану транзакцію \"{name}\"",
       "createdSecurity": "Створено цінний папір \"{symbol}\"",
       "updatedSecurity": "Оновлено цінний папір \"{symbol}\"",
       "deletedSecurity": "Видалено цінний папір \"{symbol}\"",

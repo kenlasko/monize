@@ -598,7 +598,8 @@
   },
   "apiAccess": {
     "heading": "API 접근",
-    "description": "MCP를 통해 Claude Desktop과 같은 외부 AI 도구를 연결하기 위한 개인 접근 토큰을 만드세요.",
+    "description": "MCP를 통해 Claude Desktop과 같은 외부 AI 도구를 연결하거나 /api/v1의 REST API를 호출하기 위한 개인 접근 토큰을 만드세요.",
+    "restrictedNote": "읽기 토큰은 읽기만 할 수 있습니다. 로그인, 보안, 관리자, 공유, 백업 엔드포인트는 토큰으로 사용할 수 없습니다.",
     "createTokenButton": "토큰 생성",
     "mcpServerUrlLabel": "MCP 서버 URL",
     "mcpServerUrlHelp": "Claude Code 또는 Claude Desktop과 같은 MCP 클라이언트를 구성할 때 이 URL을 사용하세요.",
@@ -612,7 +613,7 @@
     "revokeButton": "취소",
     "revokeModal": {
       "title": "토큰 취소",
-      "message": "이 토큰은 즉시 작동을 중단합니다. 이 토큰을 사용하는 MCP 연결이 모두 끊어집니다.",
+      "message": "이 토큰은 즉시 작동을 중단합니다. 이 토큰을 사용하는 MCP 연결 및 API 클라이언트가 모두 끊어집니다.",
       "confirmLabel": "취소"
     },
     "createModal": {

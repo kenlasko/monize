@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
 import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -20,6 +21,7 @@ import { PatController } from "./pat.controller";
 import { StepUpAuthService } from "./step-up/step-up.service";
 import { StepUpAuthController } from "./step-up/step-up.controller";
 import { StepUpGuard } from "./step-up/step-up.guard";
+import { PatAccessGuard } from "./guards/pat-access.guard";
 import { UsersModule } from "../users/users.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { DelegationModule } from "../delegation/delegation.module";
@@ -60,6 +62,10 @@ import { DelegationModule } from "../delegation/delegation.module";
     PasswordBreachService,
     StepUpAuthService,
     StepUpGuard,
+    PatAccessGuard,
+    // Global: a PAT is refused on every route that did not opt in with
+    // `@AllowPat()`, wherever the controller lives.
+    { provide: APP_GUARD, useExisting: PatAccessGuard },
   ],
   controllers: [AuthController, PatController, StepUpAuthController],
   exports: [
