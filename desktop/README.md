@@ -116,6 +116,27 @@ MONIZE_DATA_DIR=/tmp/monize-shell npx electron . --quit   # asks the running she
 The shell's own text is English only and lives in `src/shell/strings.ts`;
 there is no translation framework in this package yet.
 
+## Notifications
+
+The window has no push service, so the shell raises native notifications
+from the notification centre instead (`docs/frontend/shell-contract.md`,
+"Native notifications"). The page polls `GET /notifications` every minute
+with its own session and publishes the unread rows through the preload's
+`window.__MONIZE_SHELL_NOTIFICATIONS__`; `src/notifications.ts` validates
+each snapshot and raises what `src/shell/notification-bridge.ts` says is new.
+The shell makes no request of its own.
+
+- A row is raised once, and nothing from before the launch or the last
+  sign-out; at most three per poll, then one "N more" summary.
+- Reading or dismissing a row (anywhere) closes its notification; signing
+  out, or another person signing in, closes all of them; so does Quit.
+- `main.log` records every raise by row id: `Notifications: raised one for
+  row <id>.` It does so even where the system draws nothing (WSLg, a Linux
+  session without a notification daemon).
+- The page side ships with the frontend: a staged frontend built before the
+  bridge publishes nothing, and its settings still say notifications are
+  unavailable in the window.
+
 ## Updates
 
 `src/updater.ts` runs `electron-updater` against GitHub Releases; every
@@ -314,6 +335,19 @@ Restart and recovery:
       the data intact.
 - [ ] `Monize.exe --quit` from a terminal stops a running Monize and
       returns only when no `Monize.exe` or `postgres.exe` is left.
+
+Notifications:
+
+- [ ] Signed in, add a bill that is not posted automatically and falls due
+      tomorrow, then close the window to the tray: a Windows notification
+      titled "Payment reminder" appears within about two minutes, attributed
+      to Monize, and stays in the notification centre.
+- [ ] Clicking it shows the window on the notification's page.
+- [ ] Marking the row read in the bell removes it from the notification
+      centre within a minute; signing out removes every Monize notification.
+- [ ] A relaunch raises nothing for rows that already existed.
+- [ ] With Do not disturb (Focus) on, nothing pops up and the notification
+      still lands in the notification centre.
 
 Update and uninstall:
 
