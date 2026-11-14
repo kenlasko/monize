@@ -13,5 +13,10 @@
     "types": ["node", "jest"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/splash/splash-page.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/splash/splash-page.ts",
+    "src/log-viewer/log-viewer-page.ts"
+  ]
 }

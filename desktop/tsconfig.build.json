@@ -8,6 +8,7 @@
     "dist",
     "src/**/*.spec.ts",
     "src/**/*.fake.ts",
-    "src/splash/splash-page.ts"
+    "src/splash/splash-page.ts",
+    "src/log-viewer/log-viewer-page.ts"
   ]
 }

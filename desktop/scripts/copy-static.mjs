@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Copies the shell's static files (the splash page and its stylesheet) next to
+// Copies the shell's static files (the splash and log viewer pages and their stylesheets) next to
 // the compiled main process, which loads them from dist/ by its own __dirname.
 // tsc copies nothing that is not TypeScript; a bundler replaces this later.
 
@@ -12,7 +12,12 @@ const desktopRoot = path.resolve(
   "..",
 );
 
-export const STATIC_FILES = ["splash/splash.html", "splash/splash.css"];
+export const STATIC_FILES = [
+  "splash/splash.html",
+  "splash/splash.css",
+  "log-viewer/log-viewer.html",
+  "log-viewer/log-viewer.css",
+];
 
 for (const file of STATIC_FILES) {
   const to = path.join(desktopRoot, "dist", file);

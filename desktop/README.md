@@ -343,6 +343,10 @@ Tray polish:
       writes a text file holding the key, the date and the version. The key
       matches "Show recovery key", and `logs\main.log` names the path but not
       the key. Cancelling either step writes nothing.
+- [ ] "View logs" opens a window with a picker (Monize, Server, Web
+      application, Database, Database server). The text follows new log lines
+      within a few seconds; "Pause updates" stops that; choosing a source that
+      has no file yet says so. "Show logs folder" still opens Explorer.
 <!-- tray-polish-end -->
 
 ## CI

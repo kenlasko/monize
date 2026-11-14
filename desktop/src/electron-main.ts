@@ -18,6 +18,7 @@ import {
   showRecoveryKey,
 } from "./dialogs";
 import { createLogger } from "./logger";
+import { createLogViewer } from "./log-viewer";
 import { exportRecoveryKey } from "./recovery-export";
 import { createRuntime, Runtime, stopLeftoverPostgres } from "./runtime";
 import { APP_ID } from "./shell/app-id";
@@ -269,11 +270,15 @@ function run(paths: AppPaths): void {
       logger,
       isQuitting: () => gate.quitting,
       trayAvailable: () => tray !== null,
-      showOnReady: () =>
-        showWindowOnReady({
+      showOnReady: () => {
+        const show = showWindowOnReady({
           startedAtLogin: atLogin,
           trayAvailable: tray !== null,
-        }),
+        });
+        if (!show)
+          logger.info("Shell: started at sign-in; staying in the tray.");
+        return show;
+      },
     });
     const updater = createUpdater({
       logger,
@@ -288,6 +293,13 @@ function run(paths: AppPaths): void {
       },
     });
     updates = updater;
+    const logViewer = createLogViewer({
+      htmlPath: join(__dirname, "log-viewer", "log-viewer.html"),
+      preloadPath: join(__dirname, "log-viewer-preload.js"),
+      iconPath,
+      logsDir: runtime.paths.data.logs,
+      logger,
+    });
     tray = createTray({
       iconPath,
       state: { update: updater.state, loginItem: loginItemState() },
@@ -295,6 +307,7 @@ function run(paths: AppPaths): void {
       handlers: {
         open: () => showWindow(window),
         "open-in-browser": () => void shell.openExternal(origin),
+        "view-logs": () => logViewer.show(),
         "show-logs": () => void openFolder(runtime.paths.data.logs, logger),
         "show-recovery-key": () =>
           void showRecoveryKey(runtime.bootstrap.secrets.encryptionKey, window),

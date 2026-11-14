@@ -12,6 +12,7 @@ import { UpdateState } from "./update-policy";
 export const TRAY_ITEM_IDS = [
   "open",
   "open-in-browser",
+  "view-logs",
   "show-logs",
   "show-recovery-key",
   "export-recovery-key",
@@ -94,6 +95,7 @@ export function trayMenuModel(state: TrayState): readonly TrayEntry[] {
     item("open", TEXT.trayOpen, true),
     item("open-in-browser", TEXT.trayOpenInBrowser, true),
     SEPARATOR,
+    item("view-logs", TEXT.trayViewLogs, true),
     item("show-logs", TEXT.trayShowLogs, true),
     item("show-recovery-key", TEXT.trayShowRecoveryKey, true),
     item("export-recovery-key", TEXT.trayExportRecoveryKey, true),

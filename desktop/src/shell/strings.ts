@@ -100,10 +100,26 @@ export const TEXT = {
     "Keep this file somewhere safe and off the PC that runs Monize, and " +
     "never share it: anyone who has it can read your encrypted data.",
 
+  logViewerTitle: "Monize logs",
+  logViewerSourceLabel: "Log",
+  logViewerPause: "Pause updates",
+  logViewerRefresh: "Refresh",
+  logViewerEmpty: "Nothing has been logged here yet.",
+  logViewerMissing: "This log has not been written yet.",
+  logViewerFailed: "This log could not be read.",
+  logViewerSources: {
+    main: "Monize",
+    backend: "Server",
+    frontend: "Web application",
+    postgres: "Database (Monize's view)",
+    "postgres-server": "Database server",
+  },
+
   trayTooltip: "Monize",
   trayOpen: "Open Monize",
   trayOpenInBrowser: "Open in browser",
-  trayShowLogs: "Show logs",
+  trayViewLogs: "View logs",
+  trayShowLogs: "Show logs folder",
   trayShowRecoveryKey: "Show recovery key...",
   trayExportRecoveryKey: "Export recovery key...",
   trayStartAtLogin: "Start Monize when I sign in",

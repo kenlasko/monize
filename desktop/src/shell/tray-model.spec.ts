@@ -20,6 +20,27 @@ describe("trayMenuModel", () => {
     expect(items({ kind: "idle" }).at(-1)?.label).toBe(TEXT.trayQuit);
   });
 
+  it("orders the items and separators as the plan lays them out", () => {
+    const layout = trayMenuModel({
+      update: { kind: "idle" },
+      loginItem: { enabled: false },
+    }).map((entry) => (entry.type === "separator" ? "-" : entry.id));
+    expect(layout).toEqual([
+      "open",
+      "open-in-browser",
+      "-",
+      "view-logs",
+      "show-logs",
+      "show-recovery-key",
+      "export-recovery-key",
+      "-",
+      "start-at-login",
+      "check-for-updates",
+      "-",
+      "quit",
+    ]);
+  });
+
   it("enables Check for updates when nothing is running", () => {
     for (const kind of ["idle", "up-to-date", "error"] as const) {
       expect(updateEntry({ kind })).toMatchObject({
