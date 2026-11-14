@@ -442,6 +442,17 @@ function Assert-LoopbackOnly($Ports) {
     Assert-True ($exposed.Count -eq 0) "listening beyond 127.0.0.1 (plan D4): $(($exposed | ForEach-Object { "$($_.LocalAddress):$($_.LocalPort) pid $($_.OwningProcess)" }) -join ', ')"
 }
 
+# The backend logs this line only after it has connected as the runtime role
+# and checked that the role holds no SUPERUSER or BYPASSRLS and owns no
+# policied table; without it, row-level security would not be in force.
+function Assert-RlsEnforced([string] $When) {
+    $log = Join-Path (Join-Path $DataDir 'logs') 'backend.log'
+    Assert-True (Test-Path -LiteralPath $log) "no backend log at $log ($When)"
+    $verified = @(Select-String -LiteralPath $log -SimpleMatch -Pattern 'RLS_MODE=enforce verified: connected as \"monize_app\"')
+    Assert-True ($verified.Count -gt 0) "the backend did not report row-level security enforced as monize_app ($When)"
+    Write-Detail "row-level security enforced as monize_app ($($verified.Count) boot(s) logged)"
+}
+
 function Assert-DataIntact([string] $When) {
     Assert-True (Test-Path -LiteralPath (Join-Path $DataDir 'pgdata\PG_VERSION')) "$When`: $DataDir\pgdata is gone"
     Assert-True (Test-Path -LiteralPath (Join-Path $DataDir 'config.json')) "$When`: $DataDir\config.json is gone"
@@ -564,7 +575,7 @@ try {
     Assert-PersistedPort $ports 'first launch'
     $origin = "http://127.0.0.1:$($ports.frontend)"
     $config = Read-AppConfig (Join-Path $DataDir 'config.json')
-    foreach ($name in @('jwtSecret', 'encryptionKey', 'databasePassword')) {
+    foreach ($name in @('jwtSecret', 'encryptionKey', 'databasePassword', 'databaseAppPassword')) {
         Assert-True ($config.secrets.$name.enc -eq 'safeStorage') "config.json stores $name as '$($config.secrets.$name.enc)', expected DPAPI (safeStorage)"
     }
 
@@ -586,6 +597,9 @@ try {
 
     Write-Step 'Every listener is on 127.0.0.1 (plan D4)'
     Assert-LoopbackOnly $ports
+
+    Write-Step 'The backend runs as the runtime role with row-level security enforced'
+    Assert-RlsEnforced 'first launch'
 
     Write-Step 'Quit with Monize.exe --quit'
     Invoke-Quit 'first launch'

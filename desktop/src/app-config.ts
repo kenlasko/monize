@@ -21,6 +21,10 @@ export const SECRET_NAMES = [
   "jwtSecret",
   "encryptionKey",
   "databasePassword",
+  // The unprivileged runtime role's password: the backend connects as that
+  // role with row-level security enforced (RLS_MODE=enforce), never as the
+  // cluster's superuser, which bypasses every policy.
+  "databaseAppPassword",
 ] as const;
 export type SecretName = (typeof SECRET_NAMES)[number];
 
@@ -111,6 +115,10 @@ function parseSecrets(value: unknown): StoredSecrets {
     jwtSecret: parseSecret(raw.jwtSecret, "jwtSecret"),
     encryptionKey: parseSecret(raw.encryptionKey, "encryptionKey"),
     databasePassword: parseSecret(raw.databasePassword, "databasePassword"),
+    databaseAppPassword: parseSecret(
+      raw.databaseAppPassword,
+      "databaseAppPassword",
+    ),
   };
 }
 
@@ -150,6 +158,7 @@ export function serializeConfig(config: AppConfig): string {
       jwtSecret: config.secrets.jwtSecret,
       encryptionKey: config.secrets.encryptionKey,
       databasePassword: config.secrets.databasePassword,
+      databaseAppPassword: config.secrets.databaseAppPassword,
     },
   };
   return `${JSON.stringify(ordered, null, 2)}\n`;

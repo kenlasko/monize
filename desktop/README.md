@@ -293,6 +293,9 @@ Install and first run:
 - [ ] `%LOCALAPPDATA%\Monize\config.json` holds no secret in plain text
       (they are encrypted with DPAPI); "Show recovery key" in the tray shows
       the key.
+- [ ] `%LOCALAPPDATA%\Monize\logs\backend.log` contains
+      `RLS_MODE=enforce verified: connected as "monize_app"`: the backend
+      runs with row-level security in force, not as the database's owner.
 - [ ] Create an account and a transaction; trigger a manual backup from
       Settings; the file appears under `%LOCALAPPDATA%\Monize\backups`.
 - [ ] Opening `monize://open/accounts` from Run (Win+R) brings the window to

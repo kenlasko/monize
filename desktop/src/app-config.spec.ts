@@ -18,6 +18,7 @@ const VALID: AppConfig = {
     jwtSecret: { enc: "safeStorage", value: "AAAA" },
     encryptionKey: { enc: "safeStorage", value: "BBBB" },
     databasePassword: { enc: "plain", value: "CCCC" },
+    databaseAppPassword: { enc: "plain", value: "DDDD" },
   },
 };
 

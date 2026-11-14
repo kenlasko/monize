@@ -171,6 +171,7 @@ const SAMPLE = {
     jwtSecret: "j".repeat(40),
     encryptionKey: "e".repeat(40),
     databasePassword: "p".repeat(40),
+    databaseAppPassword: "q".repeat(40),
   },
 };
 const BACKEND_ENV = composeBackendEnv(

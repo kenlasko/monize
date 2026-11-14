@@ -20,6 +20,7 @@ const CONFIG: ChildEnvConfig = {
     jwtSecret: generateSecret(),
     encryptionKey: generateSecret(),
     databasePassword: generateSecret(),
+    databaseAppPassword: generateSecret(),
   },
 };
 const PATHS = dataPathsFor("C:\\Users\\a\\AppData\\Local\\Monize", "win32");
@@ -42,6 +43,8 @@ const HOSTILE: Record<string, string> = {
   ENCRYPTION_KEY: "",
   ELECTRON_RUN_AS_NODE: "0",
   RLS_MODE: "off",
+  DATABASE_APP_USER: "monize",
+  DATABASE_APP_PASSWORD: "",
   Path: "C:\\Windows\\System32",
   SystemRoot: "C:\\Windows",
   TEMP: "C:\\Temp",
@@ -49,6 +52,26 @@ const HOSTILE: Record<string, string> = {
 
 const backend = composeBackendEnv(CONFIG, PATHS, HOSTILE);
 const frontend = composeFrontendEnv(CONFIG, HOSTILE);
+
+describe("the backend's database identity", () => {
+  // The cluster's owner is a superuser, and a superuser bypasses every
+  // row-level security policy. The backend must connect as the unprivileged
+  // runtime role with enforcement on, whatever the parent environment says.
+  it("connects as the runtime role with row-level security enforced", () => {
+    expect(backend.RLS_MODE).toBe("enforce");
+    expect(backend.DATABASE_APP_USER).toBe("monize_app");
+    expect(backend.DATABASE_APP_USER).not.toBe(backend.DATABASE_USER);
+    expect(backend.DATABASE_APP_PASSWORD).toBe(
+      CONFIG.secrets.databaseAppPassword,
+    );
+    expect(backend.DATABASE_APP_PASSWORD).not.toBe(backend.DATABASE_PASSWORD);
+  });
+
+  it("gives the frontend none of it", () => {
+    expect(frontend.RLS_MODE).toBeUndefined();
+    expect(frontend.DATABASE_APP_PASSWORD).toBeUndefined();
+  });
+});
 
 describe("both children", () => {
   it.each([
@@ -71,7 +94,9 @@ describe("both children", () => {
     expect(env.SystemRoot).toBe("C:\\Windows");
     expect(env.TEMP).toBe("C:\\Temp");
     expect(env.NODE_OPTIONS).toBeUndefined();
-    expect(env.RLS_MODE).toBeUndefined();
+    // The parent's "off" never reaches a child; the backend's own value is
+    // asserted under "the backend's database identity".
+    expect(env.RLS_MODE).not.toBe("off");
     expect(env.host).toBeUndefined();
   });
 
@@ -108,6 +133,9 @@ describe("composeBackendEnv", () => {
       DATABASE_PORT: "6433",
       DATABASE_USER: "monize",
       DATABASE_PASSWORD: CONFIG.secrets.databasePassword,
+      RLS_MODE: "enforce",
+      DATABASE_APP_USER: "monize_app",
+      DATABASE_APP_PASSWORD: CONFIG.secrets.databaseAppPassword,
       DATABASE_NAME: "monize",
       JWT_SECRET: CONFIG.secrets.jwtSecret,
       ENCRYPTION_KEY: CONFIG.secrets.encryptionKey,
@@ -131,18 +159,20 @@ describe("composeBackendEnv", () => {
     expect(backend.JWT_SECRET).toBe(CONFIG.secrets.jwtSecret);
   });
 
-  it.each(["jwtSecret", "encryptionKey", "databasePassword"] as const)(
-    "refuses an empty %s",
-    (name) => {
-      const config = { ...CONFIG, secrets: { ...CONFIG.secrets, [name]: "" } };
-      expect(() => composeBackendEnv(config, PATHS, {})).toThrow(ChildEnvError);
-      const blank = {
-        ...CONFIG,
-        secrets: { ...CONFIG.secrets, [name]: "   " },
-      };
-      expect(() => composeBackendEnv(blank, PATHS, {})).toThrow(ChildEnvError);
-    },
-  );
+  it.each([
+    "jwtSecret",
+    "encryptionKey",
+    "databasePassword",
+    "databaseAppPassword",
+  ] as const)("refuses an empty %s", (name) => {
+    const config = { ...CONFIG, secrets: { ...CONFIG.secrets, [name]: "" } };
+    expect(() => composeBackendEnv(config, PATHS, {})).toThrow(ChildEnvError);
+    const blank = {
+      ...CONFIG,
+      secrets: { ...CONFIG.secrets, [name]: "   " },
+    };
+    expect(() => composeBackendEnv(blank, PATHS, {})).toThrow(ChildEnvError);
+  });
 
   it("refuses a JWT_SECRET or ENCRYPTION_KEY below the backend's floor", () => {
     const short = {

@@ -20,6 +20,7 @@ const SECRETS: PlainSecrets = {
   jwtSecret: generateSecret(),
   encryptionKey: generateSecret(),
   databasePassword: generateSecret(),
+  databaseAppPassword: generateSecret(),
 };
 const WINDOWS_PATHS: AppPaths = {
   resourcesDir: "C:\\Program Files\\Monize\\resources",
@@ -204,7 +205,7 @@ describe("createSupervisor", () => {
     );
   });
 
-  it("registers the three secrets for redaction before anything is started", () => {
+  it("registers every secret for redaction before anything is started", () => {
     const { input, logger, journal } = setup();
 
     createSupervisor(input);
@@ -214,6 +215,7 @@ describe("createSupervisor", () => {
         SECRETS.jwtSecret,
         SECRETS.encryptionKey,
         SECRETS.databasePassword,
+        SECRETS.databaseAppPassword,
       ].sort(),
     );
     expect(journal).toEqual([]);

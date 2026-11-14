@@ -69,6 +69,7 @@ const config = {
     jwtSecret: "j".repeat(40) + "abcdefgh",
     encryptionKey: "e".repeat(40) + "abcdefgh",
     databasePassword: "p".repeat(40),
+    databaseAppPassword: "q".repeat(40),
   },
 };
 // An empty parent env, so only the keys the desktop sets are checked.

@@ -32,6 +32,7 @@ export const FAKE_SECRETS = {
   jwtSecret: "j".repeat(64),
   encryptionKey: "e".repeat(64),
   databasePassword: "d".repeat(64),
+  databaseAppPassword: "a".repeat(64),
 } as const;
 
 export function fakeRuntime(movedPorts: readonly PortName[] = []): FakeRuntime {
@@ -76,6 +77,7 @@ export function fakeRuntime(movedPorts: readonly PortName[] = []): FakeRuntime {
           jwtSecret: { enc: "plain", value: "" },
           encryptionKey: { enc: "plain", value: "" },
           databasePassword: { enc: "plain", value: "" },
+          databaseAppPassword: { enc: "plain", value: "" },
         },
       },
       secrets: FAKE_SECRETS,

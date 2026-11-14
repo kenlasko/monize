@@ -143,6 +143,7 @@ by the code named in section 4):
 ```text
 NODE_ENV=production  PORT=3381  HOST=127.0.0.1  TZ=UTC
 DATABASE_HOST=127.0.0.1  DATABASE_PORT=5433  DATABASE_USER=monize  DATABASE_PASSWORD=<generated>  DATABASE_NAME=monize
+RLS_MODE=enforce  DATABASE_APP_USER=monize_app  DATABASE_APP_PASSWORD=<generated>   (section 12, item 16)
 JWT_SECRET=<generated>  ENCRYPTION_KEY=<generated>
 PUBLIC_APP_URL=http://127.0.0.1:3380  CORS_ORIGIN=http://127.0.0.1:3380  DISABLE_HTTPS_HEADERS=true
 BACKUP_CONTAINER_DIR=%LOCALAPPDATA%\Monize\backups  ATTACHMENT_CONTAINER_DIR=%LOCALAPPDATA%\Monize\attachments
@@ -317,4 +318,14 @@ Each is a decision the build made against the text above, with its reason.
     runners have it installed, so CI alone will not catch its absence.
 15. **Size.** The staged tree is about 620 MB before compression; the
     backend's production `node_modules` is 279 MB of it.
+16. **Row-level security is enforced** (decided by the maintainer on
+    2026-11-14). The cluster's owner is a superuser, and a superuser bypasses
+    every policy, so the backend connects as the unprivileged `monize_app`
+    role with `RLS_MODE=enforce`. A fourth secret, the role's password, is
+    generated on first run and stored like the other three; db-init creates
+    the role and rotates its password on every start. The container
+    deployments default to `RLS_MODE=off`, so the desktop build is the first
+    to run every UI flow with policies in force: a flow that fails only under
+    enforcement shows up here first. The install smoke test asserts the
+    backend's own "enforce verified" line.
 

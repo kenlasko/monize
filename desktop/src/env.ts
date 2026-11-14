@@ -24,6 +24,14 @@ export interface ChildEnvConfig {
 export const LOOPBACK = "127.0.0.1";
 export const DATABASE_USER = "monize";
 export const DATABASE_NAME = "monize";
+/**
+ * The runtime role the backend connects as. db-init creates it (and rotates
+ * its password) on every start, because the cluster's owner is a superuser
+ * here and can; the backend's startup check then refuses to serve unless the
+ * connection is that role and it holds no SUPERUSER or BYPASSRLS.
+ */
+export const DATABASE_APP_USER = "monize_app";
+export const RLS_MODE = "enforce";
 
 /** The backend's floor for `JWT_SECRET` and `ENCRYPTION_KEY`. */
 const MIN_KEY_LENGTH = 32;
@@ -143,6 +151,13 @@ export function composeBackendEnv(
       1,
     ),
     DATABASE_NAME,
+    RLS_MODE,
+    DATABASE_APP_USER,
+    DATABASE_APP_PASSWORD: requireSecret(
+      secrets.databaseAppPassword,
+      "DATABASE_APP_PASSWORD",
+      1,
+    ),
     JWT_SECRET: requireSecret(secrets.jwtSecret, "JWT_SECRET", MIN_KEY_LENGTH),
     ENCRYPTION_KEY: requireSecret(
       secrets.encryptionKey,

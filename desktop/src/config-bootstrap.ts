@@ -71,6 +71,11 @@ function unwrapAll(stored: StoredSecrets, policy: SecretPolicy): PlainSecrets {
       "databasePassword",
       policy,
     ),
+    databaseAppPassword: unwrapSecret(
+      stored.databaseAppPassword,
+      "databaseAppPassword",
+      policy,
+    ),
   };
 }
 
@@ -81,6 +86,11 @@ function wrapAll(plain: PlainSecrets, policy: SecretPolicy): StoredSecrets {
     databasePassword: wrapSecret(
       plain.databasePassword,
       "databasePassword",
+      policy,
+    ),
+    databaseAppPassword: wrapSecret(
+      plain.databaseAppPassword,
+      "databaseAppPassword",
       policy,
     ),
   };
@@ -96,8 +106,12 @@ async function createFirstRun(
     jwtSecret: generate(),
     encryptionKey: generate(),
     databasePassword: generate(),
+    databaseAppPassword: generate(),
   };
-  if (new Set(SECRET_NAMES.map((name) => secrets[name])).size !== 3) {
+  if (
+    new Set(SECRET_NAMES.map((name) => secrets[name])).size !==
+    SECRET_NAMES.length
+  ) {
     throw new Error("Secret generation returned the same value twice.");
   }
   // Wrap before touching the disk, so a refusal (no OS encryption and no
