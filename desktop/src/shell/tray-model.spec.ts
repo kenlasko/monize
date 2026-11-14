@@ -33,6 +33,7 @@ describe("trayMenuModel", () => {
       "show-logs",
       "show-recovery-key",
       "export-recovery-key",
+      "move-data-folder",
       "-",
       "start-at-login",
       "check-for-updates",
@@ -117,5 +118,17 @@ describe("trayMenuModel", () => {
     for (const item of items({ kind: "idle" })) {
       expect(item.label.length).toBeGreaterThan(0);
     }
+  });
+
+  it("offers Move data folder after the recovery-key items, always enabled", () => {
+    const ids = items({ kind: "disabled" }).map((item) => item.id);
+    expect(ids.indexOf("move-data-folder")).toBe(
+      ids.indexOf("export-recovery-key") + 1,
+    );
+    expect(
+      items({ kind: "disabled" }).find(
+        (item) => item.id === "move-data-folder",
+      ),
+    ).toMatchObject({ label: TEXT.move.trayItem, enabled: true });
   });
 });

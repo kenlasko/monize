@@ -7,10 +7,9 @@ import {
   shell,
 } from "electron";
 import { existsSync } from "fs";
-import { homedir } from "os";
 import { join, resolve } from "path";
 
-import { AppPaths, resolveAppPaths } from "./app-paths";
+import { AppPaths } from "./app-paths";
 import {
   openFolder,
   showAddressChanged,
@@ -24,6 +23,12 @@ import {
   createNotificationBridge,
   NotificationBridgeHandle,
 } from "./notifications";
+import {
+  createMoveFeature,
+  refuseBlockedLaunch,
+  resolveLaunch,
+} from "./move-data";
+import { LaunchPaths } from "./move/launch";
 import { createRuntime, Runtime, stopLeftoverPostgres } from "./runtime";
 import { APP_ID } from "./shell/app-id";
 import { createShellController } from "./shell/controller";
@@ -44,6 +49,7 @@ import {
 import { createQuitGate } from "./shell/quit-gate";
 import { quitExitCode, waitForOtherShellToExit } from "./shell/quit-wait";
 import { effectiveSafeStorage } from "./shell/safe-storage";
+import { moveProgressView } from "./shell/move-view";
 import { isPresentableError } from "./shell/splash-view";
 import { TEXT } from "./shell/strings";
 import { createSplash } from "./splash";
@@ -60,7 +66,9 @@ import {
 
 /**
  * The Electron main process: the twin of `scripts/dev-boot.mjs` with a window.
- * Order matters. The single-instance lock is taken before anything else (a
+ * Order matters. The data folder is resolved first (`MONIZE_DATA_DIR`, else
+ * the pointer a move wrote, else the default), because the single-instance
+ * lock is keyed on it; the lock is taken before anything else is done (a
  * second shell would otherwise find the first one's PostgreSQL, take it for
  * an orphan and stop it); then the splash, the runtime, the boot, the window.
  * Quitting holds `before-quit` until `supervisor.stop()` has resolved, and an
@@ -88,17 +96,6 @@ function toggleLoginItem(): void {
   app.setLoginItemSettings({
     openAtLogin: !enabled,
     args: [...loginItemSettings(!enabled).args],
-  });
-}
-
-function resolvePaths(): AppPaths {
-  return resolveAppPaths({
-    env: process.env,
-    platform: process.platform,
-    isPackaged: app.isPackaged,
-    resourcesPath: process.resourcesPath,
-    desktopRoot,
-    homeDir: homedir(),
   });
 }
 
@@ -154,11 +151,19 @@ function stopLeftoverThenExit(paths: AppPaths): void {
 }
 
 function main(): void {
-  let paths: AppPaths;
+  let located: LaunchPaths;
   try {
-    paths = resolvePaths();
+    located = resolveLaunch(desktopRoot);
   } catch (error) {
-    exitWithPathError(error);
+    // --quit is run by the installer, which nobody is watching: no dialog.
+    if (launch.quit) app.exit(1);
+    else exitWithPathError(error);
+    return;
+  }
+  const { paths } = located;
+  // A folder whose data was moved away, or a moved folder that is not
+  // there, is not started on. --quit starts nothing, so it is let through.
+  if (!launch.quit && refuseBlockedLaunch(located)) {
     return;
   }
   // Chromium's profile (the page's cookies included) lives with the app's
@@ -182,10 +187,11 @@ function main(): void {
     stopLeftoverThenExit(paths);
     return;
   }
-  run(paths);
+  run(located);
 }
 
-function run(paths: AppPaths): void {
+function run(located: LaunchPaths): void {
+  const { paths } = located;
   const iconPath = iconPathFor(paths.resourcesDir, process.platform);
   let mainWindow: BrowserWindow | null = null;
   let tray: TrayHandle | null = null;
@@ -227,7 +233,11 @@ function run(paths: AppPaths): void {
         mainWindow = openApp(runtime, url);
         splash.close();
       },
-      stackReady: () => updates?.stackReady(),
+      stackReady: () => {
+        updates?.stackReady();
+        move.stackReady();
+      },
+      bootFailed: () => move.bootFailed(),
       navigate: (url) => {
         if (mainWindow === null) return;
         void mainWindow.loadURL(url).catch(() => undefined);
@@ -255,12 +265,41 @@ function run(paths: AppPaths): void {
   });
 
   const gate = createQuitGate({
-    shutdown: () => controller.shutdown(),
+    // A data folder being copied is abandoned first, so the process never
+    // ends in the middle of a file.
+    shutdown: () => move.cancelAndWait().then(() => controller.shutdown()),
     exit: (code) => app.exit(code),
     onBegin: () => {
       controller.runtime?.logger.info("Shell: quitting; stopping the stack.");
       notifications?.stop();
       mainWindow?.hide();
+    },
+  });
+
+  const move = createMoveFeature({
+    launch: located,
+    window: () => mainWindow,
+    showProgress: (progress) => splash.show(moveProgressView(progress)),
+    stopStack: () => controller.shutdown(),
+    isQuitting: () => gate.quitting,
+    isUpdateBusy: () =>
+      ["checking", "downloading", "installing"].includes(
+        updates?.state.kind ?? "idle",
+      ),
+    beginMove: () => {
+      controller.runtime?.logger.info(
+        "Shell: moving the data folder; stopping the stack first.",
+      );
+      mainWindow?.hide();
+      tray?.tray.destroy();
+      tray = null;
+    },
+    log: (line) => {
+      const logger =
+        controller.runtime?.logger ??
+        createLogger({ logsDir: paths.data.logs, stdout: null });
+      logger.info(line);
+      if (logger !== controller.runtime?.logger) logger.close();
     },
   });
 
@@ -342,6 +381,7 @@ function run(paths: AppPaths): void {
             loginItem: loginItemState(),
           });
         },
+        "move-data-folder": () => move.start(),
         "check-for-updates": () => updater.menuAction(),
         quit: () => app.quit(),
       },
@@ -388,6 +428,8 @@ function run(paths: AppPaths): void {
     // checkout, so only a packaged app registers.
     const registered =
       app.isPackaged && app.setAsDefaultProtocolClient(DEEP_LINK_SCHEME);
+    // A move that was interrupted is settled before anything starts.
+    await move.recover();
     await controller.boot();
     controller.runtime?.logger.info(
       registered

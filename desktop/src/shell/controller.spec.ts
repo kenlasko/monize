@@ -31,6 +31,7 @@ function recorder(): Recorder {
     focus: () => events.push("focus"),
     addressChanged: (origin) => events.push(`moved:${origin}`),
     fatal: (_runtime, failure) => events.push(`fatal:${failure.child}`),
+    bootFailed: () => events.push("boot-failed"),
   };
 }
 
@@ -279,5 +280,59 @@ describe("createShellController", () => {
     await Promise.all([booted, stopped]);
     expect(ui.events.some((e) => e.startsWith("open:"))).toBe(false);
     expect(ui.events).not.toContain("ready");
+  });
+
+  describe("bootFailed (the cue for a move's way back)", () => {
+    it("follows the failure in the splash, on the first attempt and on each retry", async () => {
+      const runtime = fakeRuntime();
+      const { ui, controller } = setup(runtime);
+      const booted = controller.boot();
+      await tick();
+      await runtime.settleStart({ outcome: "failed", failure });
+      await booted;
+      expect(ui.events.slice(-2)).toEqual([
+        `splash:${TEXT.bootFailedTitle}`,
+        "boot-failed",
+      ]);
+      const retried = controller.retry();
+      await tick();
+      await runtime.settleStart({ outcome: "failed", failure });
+      await retried;
+      expect(ui.events.filter((e) => e === "boot-failed")).toHaveLength(2);
+    });
+
+    it("follows a runtime that could not be created", async () => {
+      const { ui, controller } = setup(
+        new ConfigError("invalid", "config.json: ports is missing."),
+      );
+      await controller.boot();
+      expect(ui.events.slice(-2)).toEqual([
+        `splash:${TEXT.startupErrorTitle}`,
+        "boot-failed",
+      ]);
+    });
+
+    it("is not called for a boot that succeeds, and may be left out", async () => {
+      const runtime = fakeRuntime();
+      const { ui, controller } = setup(runtime);
+      const booted = controller.boot();
+      await tick();
+      await runtime.settleStart({ outcome: "ready" });
+      await booted;
+      expect(ui.events).not.toContain("boot-failed");
+
+      const failing = fakeRuntime();
+      const bare = recorder();
+      const { bootFailed: _omitted, ...withoutHook } = bare;
+      const second = createShellController({
+        createRuntime: () => Promise.resolve(failing),
+        ui: withoutHook,
+        reportStartupError: () => undefined,
+      });
+      const secondBoot = second.boot();
+      await tick();
+      await failing.settleStart({ outcome: "failed", failure });
+      await expect(secondBoot).resolves.toBeUndefined();
+    });
   });
 });

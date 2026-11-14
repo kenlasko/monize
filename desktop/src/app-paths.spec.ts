@@ -4,6 +4,8 @@ import {
   dataPathsFor,
   resolveAppPaths,
   resolveDataDir,
+  resolveDataDirOrigin,
+  resolveDefaultDataDir,
   resolveResourcesDir,
 } from "./app-paths";
 
@@ -109,5 +111,51 @@ describe("resolveAppPaths", () => {
     const paths = resolveAppPaths(input({ env: { MONIZE_DATA_DIR: "/d" } }));
     expect(paths.resourcesDir).toBe("/repo/desktop/staging");
     expect(paths.data.configFile).toBe("/d/config.json");
+  });
+});
+
+describe("the data-folder pointer", () => {
+  it("is used when MONIZE_DATA_DIR is not set", () => {
+    expect(
+      resolveDataDirOrigin(input({ movedDataDir: "/mnt/big/Monize" })),
+    ).toEqual({ dataDir: "/mnt/big/Monize", origin: "pointer" });
+  });
+
+  it("loses to MONIZE_DATA_DIR, so a launch that names its folder gets it", () => {
+    expect(
+      resolveDataDirOrigin(
+        input({
+          env: { MONIZE_DATA_DIR: "/tmp/one-launch" },
+          movedDataDir: "/mnt/big/Monize",
+        }),
+      ),
+    ).toEqual({ dataDir: "/tmp/one-launch", origin: "env" });
+  });
+
+  it("is absent or null for an install that never moved", () => {
+    for (const movedDataDir of [undefined, null]) {
+      expect(resolveDataDirOrigin(input({ movedDataDir }))).toEqual({
+        dataDir: "/home/user/.local/share/Monize",
+        origin: "default",
+      });
+    }
+  });
+
+  it("refuses a relative folder", () => {
+    expect(() => resolveDataDir(input({ movedDataDir: "Monize" }))).toThrow(
+      AppPathsError,
+    );
+  });
+
+  it("leaves the default folder where the installer expects it", () => {
+    expect(
+      resolveDefaultDataDir(
+        input({
+          platform: "win32",
+          env: { LOCALAPPDATA: "C:\\Users\\a\\AppData\\Local" },
+          movedDataDir: "D:\\Monize",
+        }),
+      ),
+    ).toBe("C:\\Users\\a\\AppData\\Local\\Monize");
   });
 });

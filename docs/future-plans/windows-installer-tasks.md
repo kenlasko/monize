@@ -93,6 +93,7 @@ merges them all and is where the whole stack was run.
 | D7 | `feat/desktop-d7-installer` | f54ac5880, d7b188325, ecee9c297 | A packaged Linux build of the same shell booted to the login page and quit cleanly; both NSIS passes compile under Wine with warnings as errors. The installer itself has never run |
 | D8 | `feat/desktop-d8-updater` | 4532a39f2, db2b9eaa6 | Desktop suite, including the install sequence walked against the real quit gate |
 | C1 | `feat/desktop-c1-windows-ci` | 4db3838ab | actionlint, zizmor, PowerShell parser and PSScriptAnalyzer clean; neither job has run. It also adds a Linux `desktop` job, which this list lacked: nothing ran the desktop checks in CI |
+| D9 (move) | `feat/desktop-d9c-move-data-folder` | c5ebde42e, f133a7c1a | Desktop suite with a spec per failure branch; a real move on Linux through the tray item's own function (same user and account at the new folder, the old one untouched, one PostgreSQL), an injected verify failure, a missing moved folder and the way back; `installer.nsh` compiled alone with warnings as errors and its pointer handling run under Wine. Nothing on Windows: the README checklist has the steps |
 | runtime | `feat/desktop-integration` | bf165a666, 483e52399 | The runtime module, `dev-boot`, and the `HOST` exemption removed once B2 and D2 met |
 
 D3b is a task this list did not have: backend and frontend children exit when
@@ -604,7 +605,9 @@ Each item is its own small PR; none blocks the others.
 - "Export recovery key" writes a text file through a save dialog, in addition
   to the show dialog from D4.
 - Log viewer: a window tailing the three log files.
-- "Move data folder": stop, copy, verify, switch the config, restart.
+- "Move data folder": stop, copy, verify, switch the config, restart. Built;
+  plan section 12, item 19 records where the pointer lives (not in
+  `config.json`) and why the Chromium profile does not move.
 
 ## PR body
 

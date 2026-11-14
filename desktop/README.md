@@ -306,13 +306,43 @@ lists when each one runs.
 - **The uninstaller refuses to delete a folder that holds the data**
   (`customUnInstall`): a last line of defence should such an installation
   exist anyway. It exits with an error, which also stops an update.
-- **"Remove my data (%LOCALAPPDATA%\Monize)"** is an unticked checkbox on
-  the uninstaller's first page. A silent uninstall (`/S`) keeps the data
-  unless it is run with `--remove-data`. An update never removes it. Data in
-  a folder chosen with `MONIZE_DATA_DIR` is never touched.
+- **"Remove my data (%LOCALAPPDATA%\Monize, or the folder it was moved
+  to)"** is an unticked checkbox on the uninstaller's first page. A silent
+  uninstall (`/S`) keeps the data unless it is run with `--remove-data`. An
+  update never removes it. Data in a folder chosen with `MONIZE_DATA_DIR` is
+  never touched.
+- **A data folder that was moved is honoured everywhere the default one
+  is.** The installer reads the pointer the application writes beside the
+  default folder (`%LOCALAPPDATA%\Monize-location.ini`, see "Moving the
+  data folder" below). The installation-folder refusal and the
+  uninstaller's last line of defence both cover the moved folder and the
+  copy a move left behind. "Remove my data" removes the default folder as
+  before, and from a moved folder (and the left-behind copy) exactly what
+  Monize created there, recognised by its `config.json` and
+  `pgdata\monize.initialized`: a file the person added stays, and the
+  folder with it. It then deletes the pointer. Stopping the running
+  application needed no change: `Monize.exe --quit` resolves the data
+  folder as every launch does.
 - An uninstall also removes the `monize://` registration when it points at
   the removed executable, and the copy of the installer that electron-builder
   keeps under `%LOCALAPPDATA%\monize-desktop-updater` for updates.
+
+#### Checking `installer.nsh` off Windows
+
+`scripts/installer-harness.nsi` stands in for electron-builder's template so
+the include compiles alone, as the installer and as the uninstaller, with
+warnings as errors:
+
+```bash
+nix shell nixpkgs#nsis -c makensis -WX -DNSH="$PWD/build/installer.nsh" -DOUT=/tmp/i.exe scripts/installer-harness.nsi
+nix shell nixpkgs#nsis -c makensis -WX -DNSH="$PWD/build/installer.nsh" -DOUT=/tmp/u.exe -DBUILD_UNINSTALLER scripts/installer-harness.nsi
+```
+
+Both programs run under Wine: `i.exe /S /D=<folder>` exits 2 for a folder
+the installer refuses; `u.exe /S` writes `Uninstall Monize.exe` into
+`%LOCALAPPDATA%\Programs\Monize`, whose `/S --remove-data` is the real
+data removal. That is how the pointer handling was exercised; it is no
+substitute for the checklist below.
 
 `build/icon.ico` (16 to 256 pixels) is generated from
 `frontend/public/icons/icon-512x512.png` by `node scripts/make-icon.mjs`,
@@ -414,6 +444,54 @@ Tray polish:
       has no file yet says so. "Show logs folder" still opens Explorer.
 <!-- tray-polish-end -->
 
+Moving the data folder (needs a second drive, or a folder outside the
+profile such as `C:\MonizeData`; do these before the uninstall checks):
+
+- [ ] Tray, "Move data folder...": choosing the installation folder, a
+      folder inside `%LOCALAPPDATA%\Monize`, a folder with files in it, a
+      drive's root or `\\server\share\x` is refused with a sentence that
+      says why, and Monize keeps running.
+- [ ] Choose a new folder whose name has a space and an accented letter.
+      The confirmation shows both folders and the size. After Move: the
+      window closes, the splash shows the copy and the check progressing,
+      then Monize opens again and asks for a sign-in. No console window.
+- [ ] The same user signs in and the account and transaction are there:
+      `config.json` decrypted at the new place. (This is the step that
+      proves the DPAPI assumption below; if it fails, the "Go back" dialog
+      must appear instead.)
+- [ ] `%LOCALAPPDATA%\Monize-location.ini` names the new folder;
+      `%LOCALAPPDATA%\Monize` still holds everything plus
+      `moved-elsewhere.json`; Task Manager shows one `postgres.exe` tree,
+      started from the new folder (`postgres-server.log` there is growing).
+- [ ] The dialog offering to delete the old copy appears; choose "Ask me
+      next time". Quit. `set MONIZE_DATA_DIR=%LOCALAPPDATA%\Monize` then
+      `Monize.exe` in that terminal: an error says the data was moved, and
+      nothing starts.
+- [ ] Relaunch normally: Monize uses the new folder and asks again. Choose
+      "Delete the old copy": `%LOCALAPPDATA%\Monize` is gone, the new folder
+      untouched.
+- [ ] Start a move to a large folder and end `Monize.exe` in Task Manager
+      while the splash says "Copying". Relaunch: a dialog says the move did
+      not finish, Monize runs on the old folder, and neither the target nor
+      a `.monize-partial` folder is left.
+- [ ] Move to a USB drive, quit while Monize is starting there for the
+      first time (or unplug before the relaunch finishes), unplug it,
+      launch: "Monize cannot find its data folder" offers "Go back to the
+      previous folder", and going back starts Monize on the old folder.
+      After a first successful start on the drive, the same dialog offers
+      only Quit, and creates nothing in the drive's place.
+- [ ] With the data moved: run the installer again with the directory
+      page pointed inside the moved folder (Next is greyed out), and
+      `Monize-Setup-<v>.exe /S /D=<moved folder>\app` exits non-zero.
+- [ ] With the data moved, install the same build over itself while Monize
+      runs: Monize closes without a prompt and the data is intact.
+- [ ] With the data moved, put a file of your own in the moved folder, then
+      uninstall with the checkbox ticked: the moved folder holds only your
+      file, `%LOCALAPPDATA%\Monize-location.ini` is gone, and a reinstall
+      starts empty in `%LOCALAPPDATA%\Monize`. Uninstalling with the
+      checkbox clear instead leaves the moved folder and the pointer, and a
+      reinstall finds the data.
+
 ## CI
 
 Two jobs in `.github/workflows/ci.yml` run this package, and both gate a
@@ -463,3 +541,148 @@ directory, removed after a pass and kept after a failure), and
 Per user, under `%LOCALAPPDATA%\Monize\`: `pgdata`, `backups`, `attachments`,
 `logs`, a `config.json` and `shell` (Chromium's profile). The uninstaller
 keeps this directory unless the user ticks "Remove my data".
+
+A launch chooses its data folder in this order (`src/app-paths.ts`,
+`src/move/launch.ts`):
+
+1. `MONIZE_DATA_DIR`. One launch's explicit choice (development, the smoke
+   tests), so nothing recorded on the machine may redirect it. Such a launch
+   neither reads nor writes the pointer, and "Move data folder" says it
+   cannot be used.
+2. The pointer written by "Move data folder".
+3. The default folder above.
+
+## Moving the data folder
+
+The tray's "Move data folder..." moves everything Monize keeps to a folder
+the person chooses. The code is in `src/move/` (no Electron, unit-tested
+against the real filesystem with one capability replaced per failure),
+`src/move-data.ts` and `src/move-dialogs.ts` (the Electron side).
+
+**The pointer** is `%LOCALAPPDATA%\Monize-location.ini`: a file beside the
+default data folder, never inside a data folder (`src/move/location.ts`).
+
+- Not inside the old folder: deleting the old copy by hand would delete the
+  pointer and start an empty Monize beside the real data.
+- Not in `config.json`: that file is inside the folder being pointed at.
+- Not `%APPDATA%`: that roams to other computers, where the path is wrong.
+- Not the registry: the shell would need a child process to read it before
+  it can do anything, and none of this could run under jest or on Linux.
+- An INI file in UTF-16 with a byte-order mark, because NSIS reads that
+  natively and in Unicode (`ReadINIStr`), so the installer needs no parser.
+- Read strictly. A pointer that cannot be read stops the launch; a pointer
+  naming a folder with no `config.json` (an unplugged drive) stops it too.
+  Falling back to the default folder, or creating a new database where the
+  drive should be, would show an empty Monize.
+
+Every launch reads the same pointer before it takes the single-instance
+lock, and the lock is keyed on the data folder (`<data dir>/shell`), so every
+launch asks for the same lock before, during and after a move. The shell
+that moves the data holds the old folder's lock until it exits, and it exits
+right after the pointer is written.
+
+**What moves:** `pgdata`, `backups`, `attachments`, `logs`, `config.json`,
+and from `shell` only `Local State`. The rest of the Chromium profile is
+held open by the running shell (on Windows the cookie store exclusively), so
+a copy of it could be neither completed nor verified: the person signs in
+again after a move. `Local State` moves because on Windows Chromium keeps
+the key `safeStorage` encrypts with in that file, wrapped by DPAPI; the
+secrets in `config.json` are therefore tied to the Windows account AND to
+that file, not to the account alone. That is Chromium's documented design
+and could not be observed from Linux: the first Windows move is what proves
+it, and "Go back to the previous folder" is the net under it.
+
+**The sequence** (`src/move/move.ts`), with the old folder authoritative
+until step 6 and never modified before it:
+
+1. Refuse a bad target, before anything stops (`src/move/target.ts`): not
+   empty, not new-with-an-existing-parent, a drive root, a `\\server\share`
+   path, the current folder or anything inside it, anything inside the
+   default folder or the installation folder (checked again with links
+   resolved), a name `pg_ctl` or the pointer file cannot carry, or too
+   little free space (the data's size plus a tenth plus 64 MB). A mapped
+   network drive or a USB drive cannot be told from a local disk without
+   asking Windows, so the confirmation asks for a disk that is always
+   connected, and the launch check described below covers the rest. Also
+   refused: while an update is in progress, and while the old copy of the
+   previous move has been neither deleted nor kept.
+2. Confirm, showing both folders and the size.
+3. Stop the stack through the supervisor and wait for it. A
+   `pgdata/postmaster.pid` still present means PostgreSQL did not shut down
+   cleanly, and nothing is copied.
+4. Write a journal beside the pointer, then copy into
+   `<target>.monize-partial`, hashing each file (SHA-256) as it is read and
+   flushing each to disk.
+5. Verify: the same folders and files with the same sizes; every file read
+   back and hashed again; and the original looked at once more, to prove
+   nothing wrote to it meanwhile. Logs and `Local State` are the exception:
+   the process doing the copy writes them, so they are copied as they read
+   and verified against those bytes. Then rename the staging folder to the
+   target (an empty target is removed first; a target that has gained a
+   file stops the move).
+6. **Write the pointer** (atomically): the commit. It records the new
+   folder, the previous one, and `state=pending`.
+7. Leave `moved-elsewhere.json` in the old folder, remove the journal,
+   restart the shell.
+
+On the next start (`src/move/after-restart.ts`):
+
+- The stack reaches `ready` on the new folder: the pointer becomes
+  `state=confirmed`, and a dialog offers to delete the old copy ("Delete the
+  old copy", "Keep it", "Ask me next time"; the last is the default and
+  repeats at every start). Nothing is deleted without that click, and then
+  only a folder that carries a `moved-elsewhere.json` naming the current
+  folder, and in it only what Monize created.
+- The new folder fails to start, or is not there, while still `pending`:
+  "Go back to the previous folder" stops whatever started, points the
+  pointer at the previous folder again and restarts. The new folder is kept
+  and marked. Once `confirmed` this is no longer offered, because data may
+  have been entered in the new folder.
+
+Every way it can fail, and what is left:
+
+| Where it fails | What the person sees | What is on disk |
+| --- | --- | --- |
+| Target refused, or Cancel | A sentence saying why; Monize keeps running | Nothing changed |
+| The database does not stop cleanly | "Your data was not moved"; Monize restarts on the old folder | Nothing created |
+| Copy fails midway (disk full, read error) | The same, with the cause | Staging folder removed |
+| A file reads back differently, or the original changed | The same | Staging folder removed |
+| The target is no longer empty | The same | Staging removed; their file untouched |
+| The pointer cannot be written | The same | The finished copy removed; no pointer |
+| The pointer write fails and cannot be read back | "...cannot tell which folder is current"; restart | Nothing deleted; the next launch decides from the pointer |
+| Quit (tray, installer, update) during the copy | Monize quits | Staging removed before the process ends |
+| Killed or power lost before the pointer write, even after the rename | Next launch: "A move of your data did not finish" | The copy is removed at launch if it carries the move's marker; old folder in use |
+| Killed after the pointer write | Nothing; the next launch finishes the tidy-up | New folder in use; old one marked |
+| The new folder does not start (first time) | "Go back to the previous folder" or "Stay here" | Old folder intact; going back keeps the new one, marked |
+| The moved folder is missing later | "Monize cannot find its data folder"; Quit | Nothing created |
+| The old folder is opened by hand (`MONIZE_DATA_DIR`) | "This folder's data was moved"; nothing starts | Untouched |
+| Deleting the old copy stops halfway | "The old copy was not deleted" | What is left is still marked; offered again |
+
+PostgreSQL never runs against both copies: the stack is stopped before the
+copy, the copy is never started before the pointer names it, and the shell
+refuses to start on a folder that holds `moved-elsewhere.json` (delete that
+file to use such a copy on purpose).
+
+Known limits:
+
+- A backup folder the person chose explicitly in Settings is stored in the
+  database as an absolute path under the old `backups` folder. After a move
+  it is outside the allowed root and automatic backups are refused, loudly,
+  until the folder is chosen again. The default backup folder needs nothing.
+- A folder outside the user profile may be readable by other accounts on the
+  computer; the confirmation says so. The files are not re-protected.
+- `--quit` run in the instant between the pointer write and the moving
+  shell's exit finds no running shell at the new folder and returns, while
+  that shell is about to restart. The installer's own look for running
+  processes covers it.
+
+**Driving a real move without the dialogs** (a development build only; a
+packaged build ignores these flags): `--test-move-to=<folder>` runs the tray
+item's own function once the stack is ready, with the folder picker
+answering that folder and the confirmation answering yes;
+`--test-move-fault=copy|verify|pointer` injects that failure
+(`src/move/test-faults.ts`); `--test-move-answers=rollback,delete,keep`
+answers the dialogs after the restart ("later" otherwise). Every dialog that
+would have been shown is logged as `move (unattended): ...`. Do not set
+`MONIZE_DATA_DIR` for this: point `HOME` and `XDG_DATA_HOME` at a scratch
+directory instead, so the default folder and the pointer land there.
