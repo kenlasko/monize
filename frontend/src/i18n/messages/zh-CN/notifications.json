@@ -215,5 +215,63 @@
   "shared": {
     "title": "共同支出",
     "message": "共享群组有更新。打开 Monize 查看。"
+  },
+  "native": {
+    "payments": {
+      "title": "付款提醒",
+      "body": "有一笔账单或计划付款需要您关注。打开 Monize 查看详情。"
+    },
+    "budgets": {
+      "title": "预算提醒",
+      "body": "您的某个预算需要关注。打开 Monize 查看详情。"
+    },
+    "system": {
+      "title": "系统通知",
+      "body": "Monize 有一条系统通知给您。打开应用查看详情。"
+    },
+    "balances": {
+      "title": "余额提醒",
+      "body": "某个账户余额超过了您设置的阈值。打开 Monize 查看详情。"
+    },
+    "investments": {
+      "title": "投资变动",
+      "body": "您的投资今天发生了变动。打开 Monize 查看详情。"
+    },
+    "strategies": {
+      "title": "策略信号",
+      "body": "您的某个策略更改了推荐。打开 Monize 查看详情。"
+    },
+    "bank_sync": {
+      "title": "银行连接",
+      "body": "有银行连接需要您关注。打开 Monize 查看详情。"
+    },
+    "bank_sync_activity": {
+      "title": "银行同步",
+      "body": "您的银行同步有新消息。打开 Monize 查看详情。"
+    },
+    "email_receipts": {
+      "title": "电子邮件收据需要关注",
+      "body": "您的收据收件箱中的一些电子邮件需要个人资料或修复。打开 Monize 了解详情。"
+    },
+    "bonds": {
+      "title": "债券通知",
+      "body": "您的某只债券有新消息。打开 Monize 查看详情。"
+    },
+    "ai_review": {
+      "title": "AI 审核提案",
+      "body": "部分 AI 审核提案正在等待您的决定。打开 Monize 查看详情。"
+    },
+    "warranties": {
+      "title": "保修提醒",
+      "body": "您有一项保修即将到期。打开 Monize 查看详情。"
+    },
+    "shared_expenses": {
+      "title": "共同支出",
+      "body": "共享群组有更新。打开 Monize 查看。"
+    },
+    "fallback": {
+      "title": "Monize",
+      "body": "您在 Monize 中有一条新通知。"
+    }
   }
 }

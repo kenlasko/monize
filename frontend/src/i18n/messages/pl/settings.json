@@ -336,6 +336,7 @@
           "capacitor": "Powiadomienia push nie są jeszcze dostępne w aplikacji Monize na Androida. Otwórz Monize w przeglądarce, aby je otrzymywać."
         }
       },
+      "native": "Aplikacja komputerowa Monize pokazuje Twoje powiadomienia na tym komputerze, dopóki działa, także gdy jej okno jest zamknięte do zasobnika, więc nie trzeba tu niczego włączać. To, jak się pojawiają, określają ustawienia powiadomień systemu Windows.",
       "disabledReason": {
         "GONE": "Nieosiągalne. Włącz push ponownie w tamtej przeglądarce.",
         "KEY_ROTATED": "Wyłączone, gdy ta instancja wymieniła parę kluczy push. Włącz push ponownie w tamtej przeglądarce.",

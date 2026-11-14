@@ -215,5 +215,63 @@
   "shared": {
     "title": "Rozliczenia",
     "message": "W grupie rozliczeń są zmiany. Otwórz Monize, aby je sprawdzić."
+  },
+  "native": {
+    "payments": {
+      "title": "Przypomnienie o płatności",
+      "body": "Rachunek lub zaplanowana płatność wymaga Twojej uwagi. Otwórz Monize, aby zobaczyć szczegóły."
+    },
+    "budgets": {
+      "title": "Alert budżetowy",
+      "body": "Jeden z Twoich budżetów wymaga uwagi. Otwórz Monize, aby zobaczyć szczegóły."
+    },
+    "system": {
+      "title": "Komunikat systemowy",
+      "body": "Monize ma dla Ciebie komunikat systemowy. Otwórz aplikację, aby zobaczyć szczegóły."
+    },
+    "balances": {
+      "title": "Alert salda",
+      "body": "Saldo konta przekroczyło ustawiony przez Ciebie próg. Otwórz Monize, aby zobaczyć szczegóły."
+    },
+    "investments": {
+      "title": "Ruch inwestycji",
+      "body": "Twoje inwestycje zmieniły się dzisiaj. Otwórz Monize, aby zobaczyć szczegóły."
+    },
+    "strategies": {
+      "title": "Sygnał strategii",
+      "body": "Jedna z Twoich strategii zmieniła swoją rekomendację. Otwórz Monize, aby zobaczyć szczegóły."
+    },
+    "bank_sync": {
+      "title": "Połączenie bankowe",
+      "body": "Połączenie bankowe wymaga uwagi. Otwórz Monize, aby zobaczyć szczegóły."
+    },
+    "bank_sync_activity": {
+      "title": "Synchronizacja bankowa",
+      "body": "Synchronizacja bankowa ma nowe informacje. Otwórz Monize, aby zobaczyć szczegóły."
+    },
+    "email_receipts": {
+      "title": "Potwierdzenia e-maili wymagają uwagi",
+      "body": "Kilka wiadomości e-mail w skrzynce potwierdzeń wymaga profilu lub poprawy. Otwórz Monize, aby uzyskać szczegóły."
+    },
+    "bonds": {
+      "title": "Powiadomienie o obligacjach",
+      "body": "Co najmniej jedna z Twoich obligacji ma nowe informacje. Otwórz Monize, aby zobaczyć szczegóły."
+    },
+    "ai_review": {
+      "title": "Propozycje przeglądu AI",
+      "body": "Część propozycji przeglądu AI czeka na Twoją decyzję. Otwórz Monize, aby zobaczyć szczegóły."
+    },
+    "warranties": {
+      "title": "Przypomnienie o gwarancji",
+      "body": "Jedna z Twoich gwarancji wkrótce wygaśnie. Otwórz Monize, aby zobaczyć szczegóły."
+    },
+    "shared_expenses": {
+      "title": "Rozliczenia",
+      "body": "W grupie rozliczeń są zmiany. Otwórz Monize, aby je sprawdzić."
+    },
+    "fallback": {
+      "title": "Monize",
+      "body": "Masz nowe powiadomienie w Monize."
+    }
   }
 }
