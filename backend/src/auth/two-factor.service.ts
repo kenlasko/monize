@@ -44,6 +44,12 @@ import { SingleUseTokenService } from "./single-use-token.service";
  */
 export const TWO_FACTOR_TOKEN_SCOPE = "2fa-token";
 export const TWO_FACTOR_USER_SCOPE = "2fa-user";
+/**
+ * Marks a lock the 2FA budget set, for as long as that lock lasts, so the login
+ * can tell it from a password lock: a known device is spared only the latter
+ * (`./login-device`, #2181).
+ */
+export const TWO_FACTOR_LOCK_SCOPE = "2fa-lock";
 
 /** `single_use_tokens.purpose` for a spent TOTP code. Shared by both TOTP paths. */
 export const TOTP_CLAIM_PURPOSE = "totp";
@@ -467,12 +473,25 @@ export class TwoFactorService {
     count: number,
   ): Promise<void> {
     if (count >= this.MAX_USER_2FA_ATTEMPTS) {
+      // Marker first: a lock without it would be one a known device skips.
+      await this.attemptCounters.increment(
+        TWO_FACTOR_LOCK_SCOPE,
+        userId,
+        this.BASE_LOCKOUT_MS,
+        "sliding",
+      );
       await this.scoped(User, (repo) =>
         repo
           .createQueryBuilder()
           .update(User)
-          .set({ lockedUntil: new Date(Date.now() + this.BASE_LOCKOUT_MS) })
-          .where("id = :id", { id: userId })
+          // Never shortens a longer password lock: a known login device can
+          // reach 2FA under one (#2181). The database clock, like the marker.
+          .set({
+            lockedUntil: () =>
+              "GREATEST(COALESCE(locked_until, CURRENT_TIMESTAMP), " +
+              "CURRENT_TIMESTAMP + (CAST(:lockMs AS bigint) * INTERVAL '1 millisecond'))",
+          })
+          .where("id = :id", { id: userId, lockMs: this.BASE_LOCKOUT_MS })
           .execute(),
       );
       this.logger.warn(

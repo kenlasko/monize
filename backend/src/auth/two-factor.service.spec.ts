@@ -16,6 +16,7 @@ import {
   TwoFactorService,
   TOTP_CLAIM_PURPOSE,
   TWO_FACTOR_TOKEN_SCOPE,
+  TWO_FACTOR_LOCK_SCOPE,
   TWO_FACTOR_USER_SCOPE,
 } from "./two-factor.service";
 import { TokenService } from "./token.service";
@@ -1423,8 +1424,16 @@ describe("TwoFactorService", () => {
         const builder = usersRepository.createQueryBuilder.mock.results[0]
           ?.value as { set: jest.Mock };
         expect(builder.set).toHaveBeenCalledWith({
-          lockedUntil: expect.any(Date),
+          lockedUntil: expect.any(Function),
         });
+        // Marks the lock as the 2FA budget's, so a known login device is not
+        // spared it (#2181).
+        expect(attemptCounters.increment).toHaveBeenCalledWith(
+          TWO_FACTOR_LOCK_SCOPE,
+          "user-1",
+          30 * 60 * 1000,
+          "sliding",
+        );
       });
 
       it("clears the per-user count on success", async () => {
@@ -2042,7 +2051,9 @@ describe("TwoFactorService", () => {
       const qb = usersRepository.createQueryBuilder.mock.results[0]?.value as {
         set: jest.Mock;
       };
-      expect(qb.set).toHaveBeenCalledWith({ lockedUntil: expect.any(Date) });
+      expect(qb.set).toHaveBeenCalledWith({
+        lockedUntil: expect.any(Function),
+      });
       // The eleventh is refused by the budget before anything is checked.
       await expect(
         service.reset2FA("user-1", PASSWORD, "123456"),

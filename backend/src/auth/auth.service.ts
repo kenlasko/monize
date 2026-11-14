@@ -34,13 +34,22 @@ import {
   oidcLinkTemplate,
 } from "../notifications/email-templates";
 import { TokenService } from "./token.service";
-import { TwoFactorService } from "./two-factor.service";
+import { TWO_FACTOR_LOCK_SCOPE, TwoFactorService } from "./two-factor.service";
 import { AuthEmailService } from "./auth-email.service";
 import { DelegationService } from "../delegation/delegation.service";
 import { BackupEncryptionService } from "../backup/backup-encryption.service";
 import { withSystemContext } from "../common/db/with-context";
 import { withScopedDb } from "../common/db/scoped-db";
 import { recordFailedLogin } from "./login-lockout";
+import { AuthAttemptCounterService } from "./auth-attempt-counter.service";
+import {
+  LOGIN_DEVICE_FAILURE_LIMIT,
+  LOGIN_DEVICE_SCOPE,
+  LOGIN_DEVICE_WINDOW_MS,
+  issueLoginDeviceCookie,
+  loginDeviceCookieName,
+  verifyLoginDeviceCookie,
+} from "./login-device";
 import {
   revokeOAuthGrantsAfterCommit,
   revokeStandingCredentials,
@@ -81,6 +90,7 @@ export class AuthService {
   private jwtSecret: string;
   /** Derived key for CSRF HMAC -- cryptographically isolated from the JWT signing key */
   private csrfKey: string;
+  private loginDeviceKey: string;
   private readonly oidcPasswordLogin: boolean;
 
   constructor(
@@ -95,9 +105,11 @@ export class AuthService {
     private delegationService: DelegationService,
     private readonly i18n: I18nService,
     private readonly moduleRef: ModuleRef,
+    private readonly attemptCounters: AuthAttemptCounterService,
   ) {
     this.jwtSecret = this.configService.get<string>("JWT_SECRET")!;
     this.csrfKey = derivePurposeKey(this.jwtSecret, "csrf-token");
+    this.loginDeviceKey = derivePurposeKey(this.jwtSecret, "login-device");
     this.oidcPasswordLogin = oidcPasswordLoginAllowed(this.configService);
   }
 
@@ -140,6 +152,78 @@ export class AuthService {
   /** Get the derived CSRF key for use by the controller */
   getCsrfKey(): string {
     return this.csrfKey;
+  }
+
+  /**
+   * The `login_device_*` cookie marking this browser as known for `userId`
+   * (`./login-device`, #2181), bound to the current password hash; `null` for
+   * an account that cannot sign in with a password.
+   */
+  async issueLoginDeviceCookie(
+    userId: string,
+  ): Promise<{ name: string; value: string } | null> {
+    const row = await withSystemContext(() =>
+      this.scoped(User, (repo) =>
+        repo.findOne({
+          where: { id: userId },
+          select: { id: true, passwordHash: true, authProvider: true },
+        }),
+      ),
+    );
+    // No password sign-in, no password lock to be spared: the same refusal
+    // the login makes for an SSO account without the fallback.
+    if (!row?.passwordHash) return null;
+    if (row.authProvider === "oidc" && !this.oidcPasswordLogin) return null;
+    return {
+      name: loginDeviceCookieName(this.loginDeviceKey, userId),
+      value: issueLoginDeviceCookie(
+        this.loginDeviceKey,
+        userId,
+        row.passwordHash,
+      ),
+    };
+  }
+
+  /**
+   * Under a lock, whether this login comes from a browser that signed in to
+   * the account before and may still try its password (#2181,
+   * `./login-device`). Returns the device's budget key, or `null` to refuse.
+   *
+   * - The cookie must verify for this account and its current password hash.
+   * - A lock the 2FA budget set holds: only someone who knew the password could
+   *   cause it, so a stranger cannot use it against the owner.
+   * - The device's budget is reserved before the password is checked (CONC-010)
+   *   and a success resets it, so a concurrent burst on one copied cookie
+   *   cannot read past `LOGIN_DEVICE_FAILURE_LIMIT`.
+   */
+  private async sparedKnownDevice(
+    user: User,
+    cookies: Record<string, unknown> | undefined,
+  ): Promise<string | null> {
+    const cookie =
+      cookies?.[loginDeviceCookieName(this.loginDeviceKey, user.id)];
+    if (
+      typeof cookie !== "string" ||
+      !verifyLoginDeviceCookie(
+        this.loginDeviceKey,
+        user.id,
+        user.passwordHash!,
+        cookie,
+      )
+    ) {
+      return null;
+    }
+    if ((await this.attemptCounters.peek(TWO_FACTOR_LOCK_SCOPE, user.id)) > 0) {
+      return null;
+    }
+    const key = hashToken(cookie);
+    const { count } = await this.attemptCounters.increment(
+      LOGIN_DEVICE_SCOPE,
+      key,
+      LOGIN_DEVICE_WINDOW_MS,
+      "sliding",
+    );
+    return count > LOGIN_DEVICE_FAILURE_LIMIT ? null : key;
   }
 
   /**
@@ -458,10 +542,16 @@ export class AuthService {
     loginDto: LoginDto,
     trustedDeviceRef?: string,
     userAgent?: string,
+    loginDeviceCookies?: Record<string, unknown>,
   ) {
     // RLS: pre-identity path -- see the note on register(). System context.
     return withSystemContext(() =>
-      this.loginWithinContext(loginDto, trustedDeviceRef, userAgent),
+      this.loginWithinContext(
+        loginDto,
+        trustedDeviceRef,
+        userAgent,
+        loginDeviceCookies,
+      ),
     );
   }
 
@@ -469,6 +559,7 @@ export class AuthService {
     loginDto: LoginDto,
     trustedDeviceRef?: string,
     userAgent?: string,
+    loginDeviceCookies?: Record<string, unknown>,
   ) {
     const { email: rawEmail, password, rememberMe } = loginDto;
     const email = rawEmail.toLowerCase().trim();
@@ -500,18 +591,35 @@ export class AuthService {
       );
     }
 
-    // Check account lockout
+    // Check account lockout. Under it, a browser that signed in before goes on
+    // to the password check on a budget of its own and does not feed the lock,
+    // so strangers failing from any number of IPs cannot shut the owner out of
+    // it (#2181). An unlocked account takes no detour: no cookie, no write.
+    let knownDeviceKey: string | null = null;
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      this.logger.warn(`Login failed: account locked for user ${user.id}`);
-      throw new ForbiddenException(
-        tr(
-          "errors.auth.accountTemporarilyLocked",
-          "Account is temporarily locked due to too many failed login attempts. Please try again later.",
-        ),
-      );
+      knownDeviceKey = await this.sparedKnownDevice(user, loginDeviceCookies);
+      if (!knownDeviceKey) {
+        this.logger.warn(`Login failed: account locked for user ${user.id}`);
+        throw new ForbiddenException(
+          tr(
+            "errors.auth.accountTemporarilyLocked",
+            "Account is temporarily locked due to too many failed login attempts. Please try again later.",
+          ),
+        );
+      }
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+
+    if (!isPasswordValid && knownDeviceKey) {
+      // Counted on the device's own budget; the lock already stands.
+      this.logger.warn(
+        `Login failed: invalid password from a known device for user ${user.id}`,
+      );
+      throw new UnauthorizedException(
+        tr("errors.auth.invalidCredentials", "Invalid credentials"),
+      );
+    }
 
     if (!isPasswordValid) {
       this.logger.warn(`Login failed: invalid password for user ${user.id}`);
@@ -574,18 +682,26 @@ export class AuthService {
     // standing after a proven-correct password, and the old `if` could also skip
     // the reset entirely because the snapshot said there was nothing to clear.
     // A correct password is authoritative about the attempts before it.
-    await withScopedDb(this.dataSource, (manager) =>
-      manager.query(
-        `UPDATE users
-            SET failed_login_attempts = 0, locked_until = NULL
-          WHERE id = $1
-            AND (failed_login_attempts <> 0 OR locked_until IS NOT NULL)`,
-        [user.id],
-      ),
-    );
-    // Keep the snapshot in step: sanitizeUser and generateTokenPair read it.
-    user.failedLoginAttempts = 0;
-    user.lockedUntil = null;
+    //
+    // Except past a lock on a known device: the lock is the strangers' count,
+    // and clearing it would hand them a fresh allowance every time the owner
+    // signs in (#2181). The device's own budget resets.
+    if (knownDeviceKey) {
+      await this.attemptCounters.reset(LOGIN_DEVICE_SCOPE, knownDeviceKey);
+    } else {
+      await withScopedDb(this.dataSource, (manager) =>
+        manager.query(
+          `UPDATE users
+              SET failed_login_attempts = 0, locked_until = NULL
+            WHERE id = $1
+              AND (failed_login_attempts <> 0 OR locked_until IS NOT NULL)`,
+          [user.id],
+        ),
+      );
+      // Keep the snapshot in step: sanitizeUser and generateTokenPair read it.
+      user.failedLoginAttempts = 0;
+      user.lockedUntil = null;
+    }
 
     // Hard email-verification gate: a local account that self-registered while
     // SMTP was enabled must confirm its email before it can sign in. The

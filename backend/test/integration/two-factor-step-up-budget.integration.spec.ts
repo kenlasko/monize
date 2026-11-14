@@ -6,7 +6,10 @@ import { DataSource } from "typeorm";
 import { AuthAttemptCounterService } from "@/auth/auth-attempt-counter.service";
 import { StepUpAuthService } from "@/auth/step-up/step-up.service";
 import { TokenService } from "@/auth/token.service";
-import { TwoFactorService } from "@/auth/two-factor.service";
+import {
+  TWO_FACTOR_LOCK_SCOPE,
+  TwoFactorService,
+} from "@/auth/two-factor.service";
 import { withSystemContext } from "@/common/db/with-context";
 import { User } from "@/users/entities/user.entity";
 import {
@@ -139,6 +142,43 @@ describe("2FA and step-up attempt budgets under concurrency (integration)", () =
 
     expect(checks.mock.calls.length).toBeLessThanOrEqual(MAX_USER_2FA_ATTEMPTS);
     expect(checks.mock.calls.length).toBeGreaterThan(0);
+  });
+
+  it("the 2FA lock marks itself and never shortens a longer password lock (#2181)", async () => {
+    const lock = (n: number) =>
+      withSystemContext(() =>
+        (
+          twoFactor as never as {
+            lockIfUserTotpBudgetSpent(id: string, count: number): Promise<void>;
+          }
+        ).lockIfUserTotpBudgetSpent(user.id, n),
+      );
+    const secondsLeft = async () => {
+      const [row] = await dataSource.query(
+        `SELECT EXTRACT(EPOCH FROM locked_until - CURRENT_TIMESTAMP) AS secs
+           FROM users WHERE id = $1`,
+        [user.id],
+      );
+      return Number(row.secs);
+    };
+
+    await lock(MAX_USER_2FA_ATTEMPTS);
+    expect(await secondsLeft()).toBeGreaterThan(29 * 60);
+    expect(await secondsLeft()).toBeLessThanOrEqual(30 * 60);
+    expect(
+      await withSystemContext(() =>
+        counters.peek(TWO_FACTOR_LOCK_SCOPE, user.id),
+      ),
+    ).toBe(1);
+
+    // A known login device reached 2FA under a 4-hour password lock.
+    await dataSource.query(
+      `UPDATE users SET locked_until = CURRENT_TIMESTAMP + INTERVAL '4 hours'
+        WHERE id = $1`,
+      [user.id],
+    );
+    await lock(MAX_USER_2FA_ATTEMPTS);
+    expect(await secondsLeft()).toBeGreaterThan(3.9 * 60 * 60);
   });
 
   it("step-up: a burst of wrong TOTP codes reaches the verifier at most the cap", async () => {

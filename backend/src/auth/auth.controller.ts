@@ -73,6 +73,7 @@ import { DemoRestricted } from "../common/decorators/demo-restricted.decorator";
 import { DemoModeService } from "../common/demo-mode.service";
 import { generateCsrfToken, getCsrfCookieOptions } from "../common/csrf.util";
 import { encrypt, decrypt, derivePurposeKey } from "./crypto.util";
+import { LOGIN_DEVICE_MAX_AGE_MS } from "./login-device";
 import { withSystemContext } from "../common/db/with-context";
 import { tr } from "../i18n/translate";
 import { toDelegatedUserProfile, toUserProfile } from "../users/user-profile";
@@ -236,6 +237,29 @@ export class AuthController {
     );
   }
 
+  /**
+   * Mark this browser as known for the account (`./login-device`, #2181). The
+   * sign-in has already succeeded, so a failure here is logged, not thrown.
+   */
+  private async setLoginDeviceCookie(res: Response, userId: string) {
+    try {
+      const cookie = await this.authService.issueLoginDeviceCookie(userId);
+      if (!cookie) return;
+      res.cookie(cookie.name, cookie.value, {
+        httpOnly: true,
+        secure: this.useSecureCookies,
+        sameSite: "strict" as const,
+        maxAge: LOGIN_DEVICE_MAX_AGE_MS,
+        // Only the sign-in routes read it; no other request carries it.
+        path: "/api/v1/auth",
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Could not issue the login device cookie for user ${userId}: ${(err as Error).message}`,
+      );
+    }
+  }
+
   private clearAuthCookies(res: Response) {
     res.clearCookie("auth_token", {
       httpOnly: true,
@@ -309,6 +333,7 @@ export class AuthController {
       result.refreshToken!,
       result.user!.id,
     );
+    await this.setLoginDeviceCookie(res, result.user!.id);
     res.json({ user: result.user });
   }
 
@@ -381,6 +406,7 @@ export class AuthController {
       loginDto,
       trustedDeviceRef,
       userAgent,
+      req.cookies,
     );
 
     // If 2FA is required, return temp token without setting cookie.
@@ -410,6 +436,7 @@ export class AuthController {
       result.user!.id,
       result.rememberMe,
     );
+    await this.setLoginDeviceCookie(res, result.user!.id);
     res.json({ user: result.user });
   }
 
@@ -634,6 +661,9 @@ export class AuthController {
       );
 
       this.setAuthCookies(res, accessToken, refreshToken, result.user.id);
+      // An SSO account allowed a password fallback (OIDC_ALLOW_PASSWORD_LOGIN)
+      // becomes known here too; issueLoginDeviceCookie refuses any other.
+      await this.setLoginDeviceCookie(res, result.user.id);
 
       // A re-authentication round trip ends here too: the code exchange above
       // verified state, nonce, issuer, audience and signature, and the account
@@ -1083,6 +1113,7 @@ export class AuthController {
       result.user.id,
       result.rememberMe,
     );
+    await this.setLoginDeviceCookie(res, result.user.id);
 
     if (result.trustedDeviceRef) {
       // The trusted-device reference is a 64-byte random opaque identifier
