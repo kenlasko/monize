@@ -77,11 +77,35 @@ export const TEXT = {
     "manager, and never share it.",
   recoveryKeyCopied: "The recovery key was copied to the clipboard.",
 
+  recoveryExportConfirmTitle: "Export the recovery key?",
+  recoveryExportConfirmMessage:
+    "The recovery key decrypts your two-factor sign-in secrets and every " +
+    "encrypted value in your Monize data, so a restored backup can be read " +
+    "on another computer or a new Windows account. The file you save holds " +
+    "the key in plain text: keep it somewhere safe and off this PC, such as " +
+    "a password manager or a USB drive in a safe place, and never share it.",
+  recoveryExportConfirmSave: "Choose where to save it",
+  recoveryExportSaveTitle: "Save the recovery key",
+  recoveryExportSavedTitle: "The recovery key was saved",
+  recoveryExportSavedMessage: (path: string) =>
+    `The file is ${path}. Move it somewhere safe and off this PC.`,
+  recoveryExportFailedTitle: "The recovery key could not be saved",
+  recoveryExportFailedMessage: (reason: string) =>
+    `Nothing was saved. ${reason}`,
+  recoveryExportFileExplanation:
+    "This key decrypts the two-factor sign-in secrets and every encrypted " +
+    "value in your Monize data. A backup restored on another computer, or " +
+    "under a new Windows account, cannot be read without it.",
+  recoveryExportFileKeepSafe:
+    "Keep this file somewhere safe and off the PC that runs Monize, and " +
+    "never share it: anyone who has it can read your encrypted data.",
+
   trayTooltip: "Monize",
   trayOpen: "Open Monize",
   trayOpenInBrowser: "Open in browser",
   trayShowLogs: "Show logs",
   trayShowRecoveryKey: "Show recovery key...",
+  trayExportRecoveryKey: "Export recovery key...",
   trayStartAtLogin: "Start Monize when I sign in",
   trayCheckForUpdates: "Check for updates",
   trayCheckingForUpdates: "Checking for updates...",

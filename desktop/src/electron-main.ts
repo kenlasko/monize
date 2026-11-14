@@ -18,6 +18,7 @@ import {
   showRecoveryKey,
 } from "./dialogs";
 import { createLogger } from "./logger";
+import { exportRecoveryKey } from "./recovery-export";
 import { createRuntime, Runtime, stopLeftoverPostgres } from "./runtime";
 import { APP_ID } from "./shell/app-id";
 import { createShellController } from "./shell/controller";
@@ -297,6 +298,14 @@ function run(paths: AppPaths): void {
         "show-logs": () => void openFolder(runtime.paths.data.logs, logger),
         "show-recovery-key": () =>
           void showRecoveryKey(runtime.bootstrap.secrets.encryptionKey, window),
+        "export-recovery-key": () =>
+          void exportRecoveryKey({
+            key: runtime.bootstrap.secrets.encryptionKey,
+            version: app.getVersion(),
+            documentsDir: app.getPath("documents"),
+            parent: window,
+            logger,
+          }),
         "start-at-login": () => {
           toggleLoginItem();
           tray?.setState({

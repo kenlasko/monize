@@ -338,6 +338,11 @@ Tray polish:
 - [ ] With it ticked, sign out and in: Monize starts with no window and no
       splash, only the tray icon; "Open Monize" then shows the window. A
       double-click on the Start Menu shortcut still opens the window.
+- [ ] "Export recovery key..." warns that the file must be kept somewhere
+      safe and off this PC, offers `Documents\Monize recovery key.txt`, and
+      writes a text file holding the key, the date and the version. The key
+      matches "Show recovery key", and `logs\main.log` names the path but not
+      the key. Cancelling either step writes nothing.
 <!-- tray-polish-end -->
 
 ## CI
