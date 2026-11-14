@@ -300,6 +300,7 @@ GOOGLE_PLACES_MONTHLY_CAP=1000   # optional, default 1000
 <pre><code class="language-bash">FORCE_2FA=true
 </code></pre>
 <p>With this set, a new account must set up 2FA before using Monize, the Security section shows <strong>Required by administrator</strong>, and 2FA cannot be disabled (it can still be reset). For OIDC logins the requirement is pushed up to the identity provider: a sign-in is rejected unless the provider actually asserts that multi-factor authentication happened (via the <code>amr</code>/<code>acr</code> claims), because app-level 2FA does not apply to an SSO account.</p>
+<p>The sign-in screens show a screenshot of the app, labelled <strong>Sample data</strong>, beside the form on wide screens. To hide the whole panel, for example on a shared instance, set <code>AUTH_BRAND_PANEL=false</code>; the sign-in screens then show the form alone, in one column.</p>
 <h2 id="trusted-devices">Trusted Devices<a class="hlink" href="#trusted-devices" aria-label="Link to this section">#</a></h2>
 <p>When logging in with 2FA, you can mark a device as &quot;trusted&quot; to skip the TOTP prompt on future logins from that device.</p>
 <p>A device is trusted by checking <strong>&quot;Don&#x27;t ask again on this browser&quot;</strong> during a 2FA login. A device stays trusted for 14 days; the list shows when each one expires.</p>
