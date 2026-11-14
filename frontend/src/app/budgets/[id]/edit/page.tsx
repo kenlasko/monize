@@ -13,6 +13,11 @@ import { BudgetForm } from '@/components/budgets/BudgetForm';
 import { BudgetCategoryForm } from '@/components/budgets/BudgetCategoryForm';
 import { BudgetProgressBar } from '@/components/budgets/BudgetProgressBar';
 import { BudgetBackLink } from '@/components/budgets/BudgetBackLink';
+import { TransferIncomeLineForm } from '@/components/budgets/TransferIncomeLineForm';
+import { budgetLineName } from '@/components/budgets/utils/budget-line-name';
+import { Button } from '@/components/ui/Button';
+import { accountsApi } from '@/lib/accounts';
+import type { Account } from '@/types/account';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { budgetsApi } from '@/lib/budgets';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -23,13 +28,9 @@ import type {
   BudgetSummary,
   UpdateBudgetData,
   UpdateBudgetCategoryData,
+  CreateTransferIncomeLineData,
 } from '@/types/budget';
 
-function getCategoryDisplayName(cat: BudgetCategory): string {
-  if (!cat.category) return 'Unknown';
-  const { name, parent } = cat.category;
-  return parent ? `${parent.name}: ${name}` : name;
-}
 
 export default function BudgetEditPage() {
   return (
@@ -56,6 +57,16 @@ function BudgetEditContent() {
   const [removingCategory, setRemovingCategory] = useState<BudgetCategory | null>(
     null,
   );
+  const [addingTransferIncome, setAddingTransferIncome] = useState(false);
+  // `null` until loaded or when the load failed: the add dialog is not offered
+  // on a list that never arrived.
+  const [accounts, setAccounts] = useState<Account[] | null>(null);
+
+  const getCategoryDisplayName = (cat: BudgetCategory): string =>
+    budgetLineName(cat, {
+      transfersFrom: (name) => t('lineNames.transfersFrom', { name }),
+      unknown: t('lineNames.unknown'),
+    });
 
   // A different budget shows the spinner again; set during render rather than
   // in the effect that loads it.
@@ -95,6 +106,10 @@ function BudgetEditContent() {
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    accountsApi.getAll().then(setAccounts).catch(() => setAccounts(null));
+  }, []);
+
   const handleSaveBudget = async (data: UpdateBudgetData) => {
     setIsSaving(true);
     try {
@@ -118,6 +133,20 @@ function BudgetEditContent() {
       loadData();
     } catch (err) {
       toast.error(getErrorMessage(err, t('pages.edit.toasts.categoryFailed')));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAddTransferIncome = async (data: CreateTransferIncomeLineData) => {
+    setIsSaving(true);
+    try {
+      await budgetsApi.addTransferIncomeLine(budgetId, data);
+      toast.success(t('pages.edit.toasts.transferIncomeAdded'));
+      setAddingTransferIncome(false);
+      loadData();
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('pages.edit.toasts.transferIncomeFailed')));
     } finally {
       setIsSaving(false);
     }
@@ -151,6 +180,16 @@ function BudgetEditContent() {
 
   const expenseCategories = budget.categories.filter((c) => !c.isIncome);
   const incomeCategories = budget.categories.filter((c) => c.isIncome);
+  // One transfer line per account: an account already named is not offered.
+  const namedTransferAccounts = new Set(
+    budget.categories
+      .filter((c) => c.isTransfer && c.transferAccountId)
+      .map((c) => c.transferAccountId),
+  );
+  const transferIncomeAccounts = (accounts ?? []).filter(
+    (a) => !a.isClosed && a.userId === budget.userId && !namedTransferAccounts.has(a.id),
+  );
+  const transfersInAsIncome = budget.config?.transfersInAsIncome === true;
 
   return (
     <PageLayout>
@@ -185,11 +224,22 @@ function BudgetEditContent() {
               {t('pages.edit.categoryAllocations')}
             </h2>
 
-            {incomeCategories.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   {t('pages.edit.income')}
                 </h3>
+                {accounts !== null && transferIncomeAccounts.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAddingTransferIncome(true)}
+                  >
+                    {t('pages.edit.addTransferIncome')}
+                  </Button>
+                )}
+              </div>
+              {(incomeCategories.length > 0 || transfersInAsIncome) && (
                 <div className="space-y-2">
                   {incomeCategories.map((cat) => (
                     <button
@@ -208,9 +258,26 @@ function BudgetEditContent() {
                       </div>
                     </button>
                   ))}
+                  {transfersInAsIncome && (
+                    <div className="p-3 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          {t('pages.edit.outsideTransferIncome')}
+                        </span>
+                        {summary && (
+                          <span className="text-sm text-green-600 dark:text-green-400">
+                            {formatCurrency(summary.outsideTransferIncome, budget.currencyCode)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {t('pages.edit.outsideTransferIncomeHint')}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">
               {t('pages.edit.expensesWithCount', { count: expenseCategories.length })}
@@ -279,6 +346,23 @@ function BudgetEditContent() {
                 setRemovingCategory(editingCategory);
                 setEditingCategory(null);
               }}
+              isSaving={isSaving}
+            />
+          </Modal>
+        )}
+
+        {addingTransferIncome && (
+          <Modal
+            isOpen={true}
+            onClose={() => setAddingTransferIncome(false)}
+            title={t('pages.edit.addTransferIncomeTitle')}
+            className="p-6"
+          >
+            <TransferIncomeLineForm
+              accounts={transferIncomeAccounts}
+              currencyCode={budget.currencyCode}
+              onSave={handleAddTransferIncome}
+              onCancel={() => setAddingTransferIncome(false)}
               isSaving={isSaving}
             />
           </Modal>

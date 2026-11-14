@@ -18,6 +18,7 @@ import {
   UpdateBudgetData,
   CreateBudgetCategoryData,
   UpdateBudgetCategoryData,
+  CreateTransferIncomeLineData,
   GenerateBudgetRequest,
   GenerateBudgetResponse,
   ApplyGeneratedBudgetData,
@@ -66,6 +67,18 @@ export const budgetsApi = {
   ): Promise<BudgetCategory> => {
     const response = await apiClient.post<BudgetCategory>(
       `/budgets/${budgetId}/categories`,
+      data,
+    );
+    invalidateCache('budgets:');
+    return response.data;
+  },
+
+  addTransferIncomeLine: async (
+    budgetId: string,
+    data: CreateTransferIncomeLineData,
+  ): Promise<BudgetCategory> => {
+    const response = await apiClient.post<BudgetCategory>(
+      `/budgets/${budgetId}/categories/transfer-income`,
       data,
     );
     invalidateCache('budgets:');

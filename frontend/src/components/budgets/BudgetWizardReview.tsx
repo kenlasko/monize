@@ -35,8 +35,14 @@ export function BudgetWizardReview({
   ).filter((c) => !c.isIncome);
 
   const transferEntries = Array.from(state.selectedTransfers.values());
+  const incomeTransferEntries = Array.from(
+    state.selectedIncomeTransfers?.values() ?? [],
+  );
 
-  const totalIncome = sumMoney(incomeCategories.map((c) => c.amount));
+  const totalIncome = sumMoney([
+    ...incomeCategories.map((c) => c.amount),
+    ...incomeTransferEntries.map((t) => t.amount),
+  ]);
   const totalExpenses = sumMoney(expenseCategories.map((c) => c.amount));
   const totalTransfers = sumMoney(transferEntries.map((t) => t.amount));
   const net = roundMoney(totalIncome - totalExpenses - totalTransfers);
@@ -59,17 +65,30 @@ export function BudgetWizardReview({
     return transfer?.accountName ?? t('wizardReview.categoryTypes.transfer');
   };
 
+  const getIncomeTransferName = (accountId?: string): string => {
+    const transfer = state.analysisResult?.incomeTransfers?.find(
+      (tr) => tr.accountId === accountId,
+    );
+    return transfer
+      ? t('lineNames.transfersFrom', { name: transfer.accountName })
+      : t('wizardReview.categoryTypes.transferIn');
+  };
+
   const handleCreate = async () => {
     setIsSubmitting(true);
     try {
       const allCategories = [
         ...Array.from(state.selectedCategories.values()),
+        ...incomeTransferEntries,
         ...transferEntries,
       ];
 
       const config: Record<string, unknown> = {};
       if (state.excludedAccountIds.length > 0) {
         config.excludedAccountIds = state.excludedAccountIds;
+      }
+      if (state.transfersInAsIncome) {
+        config.transfersInAsIncome = true;
       }
 
       await budgetsApi.applyGenerated({
@@ -165,6 +184,16 @@ export function BudgetWizardReview({
               </dd>
             </div>
           )}
+          {state.transfersInAsIncome && (
+            <div>
+              <dt className="text-sm text-gray-500 dark:text-gray-400">
+                {t('wizardReview.fields.transfersInAsIncome')}
+              </dt>
+              <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {t('wizardReview.transfersInAsIncomeOn')}
+              </dd>
+            </div>
+          )}
         </dl>
       </div>
 
@@ -244,6 +273,22 @@ export function BudgetWizardReview({
                 </td>
                 <td className="hidden sm:table-cell py-2 px-4 text-sm text-right text-gray-500 dark:text-gray-400">
                   {t('wizardReview.categoryTypes.income')}
+                </td>
+              </tr>
+            ))}
+            {incomeTransferEntries.map((entry) => (
+              <tr
+                key={`in-${entry.transferAccountId}`}
+                className="border-b border-gray-100 dark:border-gray-700 last:border-0"
+              >
+                <td className="py-2 px-2 sm:px-4 text-sm text-gray-900 dark:text-gray-100">
+                  {getIncomeTransferName(entry.transferAccountId)}
+                </td>
+                <td className="py-2 px-2 sm:px-4 text-sm text-right text-green-600 dark:text-green-400">
+                  {formatCurrency(entry.amount, state.currencyCode)}
+                </td>
+                <td className="hidden sm:table-cell py-2 px-4 text-sm text-right text-gray-500 dark:text-gray-400">
+                  {t('wizardReview.categoryTypes.transferIn')}
                 </td>
               </tr>
             ))}

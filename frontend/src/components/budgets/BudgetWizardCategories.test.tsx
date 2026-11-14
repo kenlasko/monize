@@ -74,6 +74,7 @@ describe('BudgetWizardCategories', () => {
         suggested: 200,
       },
     ],
+    incomeTransfers: [],
     estimatedMonthlyIncome: 5000,
     totalBudgeted: 600,
     projectedMonthlySavings: 4400,
@@ -97,6 +98,7 @@ describe('BudgetWizardCategories', () => {
     analysisResult: mockAnalysisResult,
     selectedCategories: makeSelectedCategories(),
     selectedTransfers: new Map(),
+    selectedIncomeTransfers: new Map(),
     budgetName: 'Test Budget',
     budgetType: 'MONTHLY',
     periodStart: '2026-02-01',
@@ -107,6 +109,7 @@ describe('BudgetWizardCategories', () => {
     alertWarnPercent: 80,
     alertCriticalPercent: 95,
     excludedAccountIds: [],
+    transfersInAsIncome: false,
     isSubmitting: false,
   };
 

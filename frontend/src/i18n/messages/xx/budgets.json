@@ -259,6 +259,23 @@
       "analyzeFailed": "[XX-Failed to analyze spending-XX]"
     }
   },
+  "lineNames": {
+    "transfersFrom": "[XX-Transfers from {name}-XX]",
+    "unknown": "[XX-Unknown-XX]"
+  },
+  "transferIncomeForm": {
+    "hint": "[XX-Money moved in from this account counts as the budget's income, less anything moved back to it.-XX]",
+    "account": "[XX-From Account-XX]",
+    "accountPlaceholder": "[XX-Choose an account-XX]",
+    "accountRequired": "[XX-Choose the account the transfers come from-XX]",
+    "amount": "[XX-Planned Amount-XX]",
+    "submit": "[XX-Add-XX]"
+  },
+  "transfersInAsIncome": {
+    "label": "[XX-Count transfers in from excluded accounts as income-XX]",
+    "hint": "[XX-Money moved from an excluded account into this budget's accounts counts as income, less anything moved back to it. An account with its own transfer line is counted on that line instead.-XX]",
+    "noExcludedAccounts": "[XX-This budget excludes no account yet, so nothing is counted.-XX]"
+  },
   "wizardCategories": {
     "title": "[XX-Review Categories-XX]",
     "noAnalysis": "[XX-No analysis data. Go back and run the analysis first.-XX]",
@@ -266,6 +283,7 @@
       "income": "[XX-Income-XX]",
       "expenses": "[XX-Expenses-XX]",
       "transfers": "[XX-Transfers / Savings-XX]",
+      "transfersIn": "[XX-Transfers In (Income)-XX]",
       "trendMedian": "[XX-Trend / Median-XX]",
       "amount": "[XX-Amount-XX]"
     },
@@ -275,6 +293,7 @@
       "transfers": "[XX-Transfers-XX]",
       "remaining": "[XX-Remaining-XX]"
     },
+    "transfersInHint": "[XX-Money moved in from a ticked account counts as income, less anything moved back to it. Tick only the accounts you draw income from, such as a savings reserve.-XX]",
     "allocation503020": "[XX-50/30/20 Allocation-XX]",
     "allocationTarget": "[XX-(target {percent}%)-XX]",
     "nextButton": "[XX-Next: Configure-XX]",
@@ -353,8 +372,10 @@
       "rollover": "[XX-Rollover-XX]",
       "alerts": "[XX-Alerts-XX]",
       "incomeLinked": "[XX-Income Linked-XX]",
-      "excludedAccounts": "[XX-Excluded Accounts-XX]"
+      "excludedAccounts": "[XX-Excluded Accounts-XX]",
+      "transfersInAsIncome": "[XX-Transfers In-XX]"
     },
+    "transfersInAsIncomeOn": "[XX-From excluded accounts count as income-XX]",
     "rolloverOff": "[XX-Off-XX]",
     "alertsValue": "[XX-Warn {warn}% / Critical {critical}%-XX]",
     "accountCount": "[XX-{count} {count, plural, one {account} other {accounts}}-XX]",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "[XX-Income-XX]",
       "expense": "[XX-Expense-XX]",
-      "transfer": "[XX-Transfer-XX]"
+      "transfer": "[XX-Transfer-XX]",
+      "transferIn": "[XX-Transfer in-XX]"
     },
     "createButton": "[XX-Create Budget-XX]",
     "categoryCount": "[XX-{count} categories-XX]",
@@ -521,6 +543,10 @@
       "budgetSettings": "[XX-Budget Settings-XX]",
       "categoryAllocations": "[XX-Category Allocations-XX]",
       "income": "[XX-Income-XX]",
+      "addTransferIncome": "[XX-Add Transfer Income-XX]",
+      "addTransferIncomeTitle": "[XX-Add Transfer Income-XX]",
+      "outsideTransferIncome": "[XX-Transfers from accounts outside this budget-XX]",
+      "outsideTransferIncomeHint": "[XX-Counted this period because the budget counts transfers in from its excluded accounts as income.-XX]",
       "expensesWithCount": "[XX-Expenses ({count})-XX]",
       "resetsEachPeriod": "[XX-Resets each period-XX]",
       "percentUsed": "[XX-{percent}% used-XX]",
@@ -538,7 +564,9 @@
         "categoryFailed": "[XX-Failed to update category-XX]",
         "loadFailed": "[XX-Failed to load budget-XX]",
         "categoryRemoved": "[XX-Category removed from budget-XX]",
-        "categoryRemoveFailed": "[XX-Failed to remove category-XX]"
+        "categoryRemoveFailed": "[XX-Failed to remove category-XX]",
+        "transferIncomeAdded": "[XX-Transfer income added-XX]",
+        "transferIncomeFailed": "[XX-Failed to add transfer income-XX]"
       }
     }
   },

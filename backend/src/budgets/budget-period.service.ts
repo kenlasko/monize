@@ -75,6 +75,8 @@ export class BudgetPeriodService {
         relations: [
           "periodCategories",
           "periodCategories.budgetCategory",
+          // A transfer line is named by its account (issue #2141).
+          "periodCategories.budgetCategory.transferAccount",
           "periodCategories.category",
         ],
       }),

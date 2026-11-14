@@ -74,6 +74,7 @@ const mockSummary: BudgetSummary = {
   percentUsed: 59.62,
   incomeLinked: false,
   actualIncome: null,
+  outsideTransferIncome: 0,
   categoryBreakdown: [
     {
       budgetCategoryId: 'bc-1',
@@ -84,6 +85,7 @@ const mockSummary: BudgetSummary = {
       remaining: 180,
       percentUsed: 70,
       isIncome: false,
+      isTransfer: false,
       percentage: null,
     },
   ],

@@ -270,6 +270,7 @@ describe("BudgetPeriodService", () => {
         relations: [
           "periodCategories",
           "periodCategories.budgetCategory",
+          "periodCategories.budgetCategory.transferAccount",
           "periodCategories.category",
         ],
       });

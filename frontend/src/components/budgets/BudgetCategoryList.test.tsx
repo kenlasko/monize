@@ -15,6 +15,7 @@ const mockCategories: CategoryBreakdown[] = [
     remaining: 180,
     percentUsed: 70,
     isIncome: false,
+    isTransfer: false,
     percentage: null,
   },
   {
@@ -26,6 +27,7 @@ const mockCategories: CategoryBreakdown[] = [
     remaining: 120,
     percentUsed: 60,
     isIncome: false,
+    isTransfer: false,
     percentage: null,
   },
   {
@@ -37,6 +39,7 @@ const mockCategories: CategoryBreakdown[] = [
     remaining: 0,
     percentUsed: 100,
     isIncome: true,
+    isTransfer: false,
     percentage: null,
   },
 ];
