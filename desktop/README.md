@@ -330,6 +330,16 @@ Update and uninstall:
       `"Uninstall Monize.exe" /S --remove-data` removes it.
 - [ ] Uninstall with the checkbox ticked: `%LOCALAPPDATA%\Monize` is gone.
 
+Tray polish:
+
+- [ ] The tray menu has "Start Monize when I sign in", unticked on a fresh
+      install. Ticking it adds a Monize entry under Settings > Apps >
+      Startup; unticking removes it. A development run does not show the item.
+- [ ] With it ticked, sign out and in: Monize starts with no window and no
+      splash, only the tray icon; "Open Monize" then shows the window. A
+      double-click on the Start Menu shortcut still opens the window.
+<!-- tray-polish-end -->
+
 ## CI
 
 Two jobs in `.github/workflows/ci.yml` run this package, and both gate a

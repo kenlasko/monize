@@ -36,6 +36,9 @@ export function menuTemplate(
           id: entry.id,
           label: entry.label,
           enabled: entry.enabled,
+          ...(entry.checked === undefined
+            ? {}
+            : { type: "checkbox" as const, checked: entry.checked }),
           click: () => handlers[entry.id](),
         },
   );

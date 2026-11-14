@@ -28,6 +28,8 @@ export interface MainWindowOptions {
   readonly logger: Logger;
   readonly isQuitting: () => boolean;
   readonly trayAvailable: () => boolean;
+  /** Asked once the page is ready: false keeps a login launch in the tray. */
+  readonly showOnReady: () => boolean;
 }
 
 export function secureWebPreferences(
@@ -163,7 +165,9 @@ export function createMainWindow(options: MainWindowOptions): BrowserWindow {
   const contents = window.webContents;
   guardContents(contents, options);
   logLoads(contents, options.logger);
-  window.once("ready-to-show", () => window.show());
+  window.once("ready-to-show", () => {
+    if (options.showOnReady()) window.show();
+  });
   window.on("close", (event) => {
     const decision = closeDecision({
       quitting: options.isQuitting(),

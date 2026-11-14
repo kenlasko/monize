@@ -14,6 +14,7 @@ export const TRAY_ITEM_IDS = [
   "open-in-browser",
   "show-logs",
   "show-recovery-key",
+  "start-at-login",
   "check-for-updates",
   "quit",
 ] as const;
@@ -25,11 +26,20 @@ export type TrayEntry =
       readonly id: TrayItemId;
       readonly label: string;
       readonly enabled: boolean;
+      /** Present only on a checkbox item: whether it is ticked. */
+      readonly checked?: boolean;
     }
   | { readonly type: "separator" };
 
+/**
+ * The launch-at-login item: `null` when it is not offered at all (see
+ * `login-item.ts`), else whether the system will start Monize at sign-in.
+ */
+export type LoginItemState = { readonly enabled: boolean } | null;
+
 export interface TrayState {
   readonly update: UpdateState;
+  readonly loginItem: LoginItemState;
 }
 
 function item(id: TrayItemId, label: string, enabled: boolean): TrayEntry {
@@ -63,6 +73,21 @@ export function updateItem(update: UpdateState): TrayEntry {
   }
 }
 
+/** The launch-at-login checkbox, or nothing where it is not offered. */
+function loginEntries(loginItem: LoginItemState): readonly TrayEntry[] {
+  return loginItem === null
+    ? []
+    : [
+        {
+          type: "item",
+          id: "start-at-login",
+          label: TEXT.trayStartAtLogin,
+          enabled: true,
+          checked: loginItem.enabled,
+        },
+      ];
+}
+
 export function trayMenuModel(state: TrayState): readonly TrayEntry[] {
   return [
     item("open", TEXT.trayOpen, true),
@@ -70,6 +95,8 @@ export function trayMenuModel(state: TrayState): readonly TrayEntry[] {
     SEPARATOR,
     item("show-logs", TEXT.trayShowLogs, true),
     item("show-recovery-key", TEXT.trayShowRecoveryKey, true),
+    SEPARATOR,
+    ...loginEntries(state.loginItem),
     updateItem(state.update),
     SEPARATOR,
     item("quit", TEXT.trayQuit, true),

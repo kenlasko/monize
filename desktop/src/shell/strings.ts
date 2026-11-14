@@ -82,6 +82,7 @@ export const TEXT = {
   trayOpenInBrowser: "Open in browser",
   trayShowLogs: "Show logs",
   trayShowRecoveryKey: "Show recovery key...",
+  trayStartAtLogin: "Start Monize when I sign in",
   trayCheckForUpdates: "Check for updates",
   trayCheckingForUpdates: "Checking for updates...",
   trayDownloadingUpdate: (percent: number) =>

@@ -24,6 +24,13 @@ import { createShellController } from "./shell/controller";
 import { DEEP_LINK_SCHEME } from "./shell/deep-link";
 import { iconPathFor } from "./shell/icon";
 import {
+  loginItemOffered,
+  loginItemSettings,
+  showSplashView,
+  showWindowOnReady,
+  startedAtLogin,
+} from "./shell/login-item";
+import {
   instanceData,
   launchRequestFrom,
   secondInstanceAction,
@@ -36,6 +43,7 @@ import { TEXT } from "./shell/strings";
 import { createSplash } from "./splash";
 import { UpdatePolicy } from "./shell/update-policy";
 import { createTray, TrayHandle } from "./tray";
+import { LoginItemState } from "./shell/tray-model";
 import { createUpdater } from "./updater";
 import { systemClock } from "./supervisor/clock";
 import {
@@ -56,6 +64,26 @@ import {
 /** `dist/` when built, so `desktop/` is one level up. */
 const desktopRoot = resolve(__dirname, "..");
 const launch = launchRequestFrom(process.argv);
+const loginItemAvailable = (): boolean =>
+  loginItemOffered({ platform: process.platform, isPackaged: app.isPackaged });
+
+/** Read when the menu is built, so it shows what the system holds now. */
+function loginItemState(): LoginItemState {
+  if (!loginItemAvailable()) return null;
+  return {
+    enabled: app.getLoginItemSettings({
+      args: [...loginItemSettings(true).args],
+    }).openAtLogin,
+  };
+}
+
+function toggleLoginItem(): void {
+  const enabled = loginItemState()?.enabled ?? true;
+  app.setLoginItemSettings({
+    openAtLogin: !enabled,
+    args: [...loginItemSettings(!enabled).args],
+  });
+}
 
 function resolvePaths(): AppPaths {
   return resolveAppPaths({
@@ -156,6 +184,12 @@ function run(paths: AppPaths): void {
   let mainWindow: BrowserWindow | null = null;
   let tray: TrayHandle | null = null;
   let updates: UpdatePolicy | null = null;
+  // Settled at launch: a login launch stays in the tray (shell/login-item.ts).
+  const atLogin = startedAtLogin({
+    argv: process.argv,
+    wasOpenedAtLogin:
+      loginItemAvailable() && app.getLoginItemSettings().wasOpenedAtLogin,
+  });
 
   const controller = createShellController({
     createRuntime: () =>
@@ -177,7 +211,11 @@ function run(paths: AppPaths): void {
       logger.close();
     },
     ui: {
-      showSplash: (view) => splash.show(view),
+      showSplash: (view) => {
+        if (showSplashView({ startedAtLogin: atLogin, busy: view.busy })) {
+          splash.show(view);
+        }
+      },
       openApp: (runtime, url) => {
         mainWindow = openApp(runtime, url);
         splash.close();
@@ -230,6 +268,11 @@ function run(paths: AppPaths): void {
       logger,
       isQuitting: () => gate.quitting,
       trayAvailable: () => tray !== null,
+      showOnReady: () =>
+        showWindowOnReady({
+          startedAtLogin: atLogin,
+          trayAvailable: tray !== null,
+        }),
     });
     const updater = createUpdater({
       logger,
@@ -246,7 +289,7 @@ function run(paths: AppPaths): void {
     updates = updater;
     tray = createTray({
       iconPath,
-      state: { update: updater.state },
+      state: { update: updater.state, loginItem: loginItemState() },
       logger,
       handlers: {
         open: () => showWindow(window),
@@ -254,11 +297,20 @@ function run(paths: AppPaths): void {
         "show-logs": () => void openFolder(runtime.paths.data.logs, logger),
         "show-recovery-key": () =>
           void showRecoveryKey(runtime.bootstrap.secrets.encryptionKey, window),
+        "start-at-login": () => {
+          toggleLoginItem();
+          tray?.setState({
+            update: updater.state,
+            loginItem: loginItemState(),
+          });
+        },
         "check-for-updates": () => updater.menuAction(),
         quit: () => app.quit(),
       },
     });
-    updater.onChange((update) => tray?.setState({ update }));
+    updater.onChange((update) =>
+      tray?.setState({ update, loginItem: loginItemState() }),
+    );
     return window;
   }
 
