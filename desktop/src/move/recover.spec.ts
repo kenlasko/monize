@@ -1,5 +1,6 @@
 import { mkdirSync, rmSync, writeFileSync } from "fs";
-import { join, posix } from "path";
+import * as hostPath from "path";
+import { dirname, join } from "path";
 
 import {
   createMoveFixture,
@@ -66,7 +67,7 @@ describe("recoverInterruptedMove", () => {
   const recover = (location: DataLocation | null) =>
     recoverInterruptedMove({
       fs: nodeMoveFs,
-      path: posix,
+      path: hostPath,
       journalFile: fixture.journalFile,
       location,
       log: (line) => fixture.logs.push(line),
@@ -161,7 +162,7 @@ describe("recoverInterruptedMove", () => {
           throw new Error("EBUSY");
         },
       },
-      path: posix,
+      path: hostPath,
       journalFile: fixture.journalFile,
       location: null,
       log: () => undefined,

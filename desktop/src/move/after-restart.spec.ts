@@ -1,5 +1,6 @@
 import { rmSync, writeFileSync } from "fs";
-import { join, posix } from "path";
+import * as hostPath from "path";
+import { dirname, join } from "path";
 
 import {
   createMoveFixture,
@@ -62,7 +63,11 @@ describe("the launch after a move", () => {
     };
     // What the shell does: resolve the folder from the pointer on disk.
     const launch = resolveLaunchPaths({
-      env: { XDG_DATA_HOME: posix.dirname(fixture.source) },
+      // The default data folder's parent, under each platform's own name.
+      env:
+        process.platform === "win32"
+          ? { LOCALAPPDATA: dirname(fixture.source) }
+          : { XDG_DATA_HOME: dirname(fixture.source) },
       platform: process.platform,
       isPackaged: false,
       resourcesPath: "",
@@ -72,7 +77,7 @@ describe("the launch after a move", () => {
     return createAfterRestart({
       launch,
       platform: process.platform,
-      path: posix,
+      path: hostPath,
       fs: nodeMoveFs,
       ui,
       stopStack: async () => void events.push("stop-stack"),

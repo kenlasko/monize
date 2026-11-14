@@ -10,6 +10,8 @@ import {
 } from "fs";
 import { join } from "path";
 
+const onPosix = process.platform === "win32" ? it.skip : it;
+
 import {
   createMoveFixture,
   exists,
@@ -78,8 +80,12 @@ describe("runMove", () => {
     expect(statSync(join(fixture.target, BACKUP)).mtimeMs).toBe(
       statSync(join(fixture.source, BACKUP)).mtimeMs,
     );
-    // PostgreSQL refuses a cluster directory that others can read.
-    expect(statSync(join(fixture.target, "pgdata")).mode & 0o777).toBe(0o700);
+    // PostgreSQL refuses a cluster directory that others can read. Windows
+    // has no mode bits to keep: its folders carry ACLs, which the copy does
+    // not change.
+    if (process.platform !== "win32") {
+      expect(statSync(join(fixture.target, "pgdata")).mode & 0o777).toBe(0o700);
+    }
     // The old folder is whole, plus the note that says where its data went.
     const { "moved-elsewhere.json": tombstone, ...rest } = snapshot(
       fixture.source,
@@ -317,18 +323,23 @@ describe("runMove", () => {
     expect(snapshot(staging)).toEqual({ "theirs.txt": "mine" });
   });
 
-  it("failing to mark the old folder is a warning, not a failed move", async () => {
-    chmodSync(fixture.source, 0o500);
-    try {
-      const outcome = await run();
-      expect(outcome).toMatchObject({
-        kind: "moved",
-        warnings: [expect.stringContaining("marking the old folder")],
-      });
-      // The journal stays, so the next launch writes the note.
-      expect(exists(fixture.journalFile)).toBe(true);
-    } finally {
-      chmodSync(fixture.source, 0o700);
-    }
-  });
+  // chmod cannot make a folder unwritable on Windows, so the failure is
+  // injected only where it can be.
+  onPosix(
+    "failing to mark the old folder is a warning, not a failed move",
+    async () => {
+      chmodSync(fixture.source, 0o500);
+      try {
+        const outcome = await run();
+        expect(outcome).toMatchObject({
+          kind: "moved",
+          warnings: [expect.stringContaining("marking the old folder")],
+        });
+        // The journal stays, so the next launch writes the note.
+        expect(exists(fixture.journalFile)).toBe(true);
+      } finally {
+        chmodSync(fixture.source, 0o700);
+      }
+    },
+  );
 });

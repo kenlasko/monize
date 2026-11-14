@@ -1,5 +1,6 @@
 import { mkdirSync, rmSync, writeFileSync } from "fs";
-import { join, posix } from "path";
+import * as hostPath from "path";
+import { dirname, join } from "path";
 
 import {
   createMoveFixture,
@@ -38,7 +39,7 @@ describe("after a move", () => {
 
   const deps = (fs: MoveFs = nodeMoveFs): AftermathDeps => ({
     fs,
-    path: posix,
+    path: hostPath,
     platform: process.platform,
     locationFile: fixture.locationFile,
     log: (line) => fixture.logs.push(line),
@@ -181,7 +182,7 @@ describe("after a move", () => {
       for (const previousDataDir of [
         fixture.target,
         join(fixture.target, "pgdata"),
-        posix.dirname(fixture.target),
+        dirname(fixture.target),
       ]) {
         const result = await removeOldCopy(deps(), {
           ...confirmed,
