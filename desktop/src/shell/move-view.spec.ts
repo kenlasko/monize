@@ -30,15 +30,20 @@ describe("the move's progress in the splash", () => {
       canQuit: false,
       canRetry: false,
       lines: [],
+      progress: 0.5,
     });
     expect(view.detail).toContain("512.0 KB of 1.0 MB (50%)");
     expect(view.detail).toContain(TEXT.move.progressKeepOpen);
   });
 
   it("shows only the phase when there is nothing to count", () => {
-    expect(
-      moveProgressView({ phase: "stopping", doneBytes: 0, totalBytes: 0 })
-        .detail,
-    ).toBe(TEXT.move.phase.stopping);
+    const view = moveProgressView({
+      phase: "stopping",
+      doneBytes: 0,
+      totalBytes: 0,
+    });
+    expect(view.detail).toBe(TEXT.move.phase.stopping);
+    // The bar runs without a fill rather than claiming 0%.
+    expect(view.progress).toBeNull();
   });
 });

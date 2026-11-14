@@ -43,5 +43,6 @@ export function moveProgressView(progress: MoveProgress): SplashView {
     canRetry: false,
     canQuit: false,
     busy: true,
+    progress: counted ? percentOf(progress) / 100 : null,
   };
 }

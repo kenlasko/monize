@@ -9,18 +9,31 @@
     <title>Monize</title>
     <link rel="stylesheet" href="splash.css" />
   </head>
-  <body>
+  <body data-state="busy">
+    <div class="backdrop" aria-hidden="true">
+      <span class="glow glow-a"></span>
+      <span class="glow glow-b"></span>
+      <span class="grid"></span>
+    </div>
     <main>
-      <h1>Monize</h1>
+      <header class="brand">
+        <span class="mark">
+          <span class="ring" aria-hidden="true"></span>
+          <img src="monize-logo.svg" alt="" width="40" height="40" />
+        </span>
+        <h1>Monize</h1>
+      </header>
       <div class="status">
-        <span id="spinner" class="spinner" aria-hidden="true"></span>
         <p id="title" role="status" aria-live="polite"></p>
+        <div id="progress" class="progress" aria-hidden="true">
+          <span id="progress-fill" class="progress-fill"></span>
+        </div>
       </div>
       <p id="detail" class="detail"></p>
       <pre id="log" class="log" hidden></pre>
       <div id="actions" class="actions" hidden>
-        <button id="retry" type="button" hidden></button>
-        <button id="quit" type="button" hidden></button>
+        <button id="quit" type="button" class="secondary" hidden></button>
+        <button id="retry" type="button" class="primary" hidden></button>
       </div>
     </main>
     <script src="splash-page.js"></script>

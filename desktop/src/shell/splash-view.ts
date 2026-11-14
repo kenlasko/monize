@@ -5,6 +5,7 @@ import { formatConsoleLine, LogRecord } from "../logger";
 import { PortError } from "../ports";
 import { SecretError } from "../secrets";
 import {
+  BOOT_STEPS,
   BootFailure,
   describeCause,
   SupervisorStatus,
@@ -25,8 +26,14 @@ export interface SplashView {
   readonly quitLabel: string;
   readonly canRetry: boolean;
   readonly canQuit: boolean;
-  /** True while work is in progress (the page shows a spinner). */
+  /** True while work is in progress (the page shows a progress bar). */
   readonly busy: boolean;
+  /**
+   * How far the boot has got, from 0 to 1, for the progress bar; null when
+   * the work has no place in the boot order (a restart, a shutdown) or none
+   * is in progress, and the bar, if shown, runs without a fill.
+   */
+  readonly progress: number | null;
 }
 
 /** Caps what reaches the page, whatever the supervisor's tail length. */
@@ -47,6 +54,18 @@ export function splashLines(records: readonly LogRecord[]): readonly string[] {
     .map((record) => clip(formatConsoleLine(record).trimEnd()));
 }
 
+/**
+ * The share of the boot done when `status` starts: each of the boot steps is
+ * one equal part, so starting the first shows a sliver and starting the last
+ * leaves one part to fill. Not a measure of time (the first boot's initdb
+ * takes longest), only of where the boot is.
+ */
+export function bootProgress(status: SupervisorStatus): number | null {
+  if (status === "idle") return 0;
+  const index = (BOOT_STEPS as readonly SupervisorStatus[]).indexOf(status);
+  return index === -1 ? null : (index + 1) / (BOOT_STEPS.length + 1);
+}
+
 export function preparingView(): SplashView {
   return {
     title: STATUS_TEXT.idle,
@@ -56,6 +75,7 @@ export function preparingView(): SplashView {
     canRetry: false,
     canQuit: false,
     busy: true,
+    progress: 0,
   };
 }
 
@@ -68,6 +88,7 @@ export function statusView(status: SupervisorStatus): SplashView {
     canRetry: false,
     canQuit: false,
     busy: true,
+    progress: bootProgress(status),
   };
 }
 
@@ -81,6 +102,7 @@ export function failedView(failure: BootFailure): SplashView {
     canRetry: true,
     canQuit: true,
     busy: false,
+    progress: null,
   };
 }
 
@@ -112,5 +134,6 @@ export function startupErrorView(error: unknown): SplashView {
     canRetry: false,
     canQuit: true,
     busy: false,
+    progress: null,
   };
 }

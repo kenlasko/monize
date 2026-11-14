@@ -27,6 +27,8 @@ export interface Splash {
 }
 
 const SIZE = { width: 520, height: 300 };
+/** The page's darkest blue, so no white shows before it paints or on a resize. */
+const BACKGROUND = "#172554";
 const FAILURE_SIZE = { width: 760, height: 540 };
 
 export function createSplash(options: SplashOptions): Splash {
@@ -65,6 +67,7 @@ export function createSplash(options: SplashOptions): Splash {
       center: true,
       title: APP_NAME,
       icon: options.iconPath,
+      backgroundColor: BACKGROUND,
       webPreferences: {
         preload: options.preloadPath,
         contextIsolation: true,

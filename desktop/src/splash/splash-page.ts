@@ -15,6 +15,8 @@ interface SplashViewData {
   canRetry: boolean;
   canQuit: boolean;
   busy: boolean;
+  /** 0 to 1, or null for a bar that runs without a fill. */
+  progress: number | null;
 }
 
 interface SplashBridge {
@@ -50,13 +52,39 @@ function asView(value: unknown): SplashViewData | null {
     canRetry: view.canRetry === true,
     canQuit: view.canQuit === true,
     busy: view.busy === true,
+    progress: asProgress(view.progress),
   };
 }
 
+function asProgress(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.min(1, Math.max(0, value));
+}
+
+/** Replays the title's fade when its text changes, not on every view. */
+function setTitle(text: string): void {
+  const title = byId("title");
+  if (title.textContent === text) return;
+  title.textContent = text;
+  title.classList.remove("changed");
+  void title.offsetWidth;
+  title.classList.add("changed");
+}
+
+function renderProgress(progress: number | null): void {
+  const bar = byId("progress");
+  bar.dataset.mode = progress === null ? "indeterminate" : "determinate";
+  byId("progress-fill").style.setProperty(
+    "--progress",
+    progress === null ? "" : `${(progress * 100).toFixed(1)}%`,
+  );
+}
+
 function render(view: SplashViewData): void {
-  byId("title").textContent = view.title;
+  document.body.dataset.state = view.busy ? "busy" : "stopped";
+  setTitle(view.title);
   byId("detail").textContent = view.detail;
-  byId("spinner").hidden = !view.busy;
+  renderProgress(view.progress);
   const log = byId("log");
   log.textContent = view.lines.join("\n");
   log.hidden = view.lines.length === 0;

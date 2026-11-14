@@ -1,8 +1,13 @@
 import { AppPathsError } from "../app-paths";
 import { PortError } from "../ports";
 import { SecretError } from "../secrets";
-import { BootFailure, SUPERVISOR_STATUSES } from "../supervisor/types";
 import {
+  BOOT_STEPS,
+  BootFailure,
+  SUPERVISOR_STATUSES,
+} from "../supervisor/types";
+import {
+  bootProgress,
   failedView,
   MAX_SPLASH_LINE_CHARS,
   MAX_SPLASH_LINES,
@@ -29,6 +34,31 @@ describe("splash views", () => {
         busy: true,
       });
       expect(view.lines).toEqual([]);
+    }
+  });
+
+  it("moves the progress bar forward with each boot step, never to full", () => {
+    expect(preparingView().progress).toBe(0);
+    expect(statusView("idle").progress).toBe(0);
+    let previous = 0;
+    for (const step of BOOT_STEPS) {
+      const progress = statusView(step).progress;
+      expect(progress).not.toBeNull();
+      expect(progress).toBeGreaterThan(previous);
+      expect(progress).toBeLessThan(1);
+      previous = progress ?? previous;
+    }
+  });
+
+  it("gives no fill to work outside the boot order", () => {
+    for (const status of [
+      "restarting-backend",
+      "restarting-frontend",
+      "stopping",
+      "stopped",
+      "fatal",
+    ] as const) {
+      expect(bootProgress(status)).toBeNull();
     }
   });
 
@@ -63,6 +93,7 @@ describe("splash views", () => {
       canRetry: true,
       canQuit: true,
       busy: false,
+      progress: null,
       retryLabel: TEXT.retry,
       quitLabel: TEXT.quit,
     });
