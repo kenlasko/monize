@@ -64,6 +64,7 @@
       "tag": "Тег",
       "account": "Счёт",
       "scheduled_transaction": "Запланированная",
+      "scheduled_posting": "Запланированная",
       "security": "Ценная бумага",
       "budget": "Бюджет",
       "custom_report": "Отчёт"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "Создана запланированная проводка \"{name}\"",
       "updatedScheduledTransaction": "Обновлена запланированная проводка \"{name}\"",
       "deletedScheduledTransaction": "Удалена запланированная проводка \"{name}\"",
+      "postedScheduledTransaction": "Проведена запланированная проводка \"{name}\"",
       "createdSecurity": "Создана ценная бумага \"{symbol}\"",
       "updatedSecurity": "Обновлена ценная бумага \"{symbol}\"",
       "deletedSecurity": "Удалена ценная бумага \"{symbol}\"",

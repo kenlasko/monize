@@ -64,6 +64,7 @@
       "tag": "태그",
       "account": "계정",
       "scheduled_transaction": "예약됨",
+      "scheduled_posting": "예약됨",
       "security": "유가증권",
       "budget": "예산",
       "custom_report": "보고서"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "예약 거래 \"{name}\" 생성됨",
       "updatedScheduledTransaction": "예약 거래 \"{name}\" 업데이트됨",
       "deletedScheduledTransaction": "예약 거래 \"{name}\" 삭제됨",
+      "postedScheduledTransaction": "예약 거래 \"{name}\" 게시됨",
       "createdSecurity": "유가증권 \"{symbol}\" 생성됨",
       "updatedSecurity": "유가증권 \"{symbol}\" 업데이트됨",
       "deletedSecurity": "유가증권 \"{symbol}\" 삭제됨",

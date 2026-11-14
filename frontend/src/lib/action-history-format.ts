@@ -16,6 +16,7 @@ export const KNOWN_DESCRIPTION_KEYS = new Set<string>([
   'lookedUpPayeeContact',
   'createdReport', 'updatedReport', 'deletedReport',
   'createdScheduledTransaction', 'updatedScheduledTransaction', 'deletedScheduledTransaction',
+  'postedScheduledTransaction',
   'createdSecurity', 'updatedSecurity', 'deletedSecurity',
   'createdTag', 'updatedTag', 'deletedTag',
   'createdTransaction', 'updatedTransaction', 'deletedTransaction',

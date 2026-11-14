@@ -112,7 +112,11 @@
     "unsupportedSimpleAction": "Nicht unterstützte Aktion: {{ action }}",
     "unsupportedTableForReinsert": "Nicht unterstützte Tabelle für Wiedereinfügung: {{ tableName }}",
     "undoConversion": "Diese Änderung hat eine Transaktion in eine Überweisung oder zurück umgewandelt und kann daher nicht automatisch rückgängig gemacht werden. Wandeln Sie sie stattdessen zurück.",
-    "customRecurrenceMissing": "Diese Änderung kann nicht rückgängig gemacht oder wiederholt werden: Die benutzerdefinierte Wiederholungsregel der geplanten Transaktion fehlt in ihrem Verlauf"
+    "customRecurrenceMissing": "Diese Änderung kann nicht rückgängig gemacht oder wiederholt werden: Die benutzerdefinierte Wiederholungsregel der geplanten Transaktion fehlt in ihrem Verlauf",
+    "scheduledPostingRedo": "Eine gebuchte geplante Transaktion kann nicht wiederholt werden. Buchen Sie sie stattdessen erneut unter Rechnungen & Einzahlungen",
+    "scheduledPostingUndoLaterOccurrence": "Ein späteres Vorkommen dieser geplanten Transaktion wurde inzwischen gebucht, daher kann diese Buchung nicht rückgängig gemacht werden. Machen Sie zuerst das spätere rückgängig oder löschen Sie es",
+    "scheduledPostingUndoCursorMoved": "Diese geplante Transaktion hat sich seit dieser Buchung weiterbewegt (ein Vorkommen wurde übersprungen oder das nächste Datum geändert), daher kann die Buchung nicht rückgängig gemacht werden. Löschen Sie stattdessen die gebuchte Transaktion",
+    "scheduledPostingUndoReferenceGone": "Etwas, das diese geplante Transaktion verwendet hat (ein Konto, ein Wertpapier oder eine Währung), wurde inzwischen gelöscht, daher kann die Buchung nicht rückgängig gemacht werden. Löschen Sie stattdessen die gebuchte Transaktion"
   },
   "admin": {
     "passwordOrInviteNotBoth": "Geben Sie entweder ein Passwort oder eine E-Mail-Einladung an, nicht beides.",

@@ -64,6 +64,7 @@
       "tag": "タグ",
       "account": "勘定科目",
       "scheduled_transaction": "スケジュール",
+      "scheduled_posting": "スケジュール",
       "security": "有価証券",
       "budget": "予算",
       "custom_report": "レポート"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "スケジュール取引「{name}」を作成しました",
       "updatedScheduledTransaction": "スケジュール取引「{name}」を更新しました",
       "deletedScheduledTransaction": "スケジュール取引「{name}」を削除しました",
+      "postedScheduledTransaction": "スケジュール取引「{name}」を転記しました",
       "createdSecurity": "有価証券「{symbol}」を作成しました",
       "updatedSecurity": "有価証券「{symbol}」を更新しました",
       "deletedSecurity": "有価証券「{symbol}」を削除しました",

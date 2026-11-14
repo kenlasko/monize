@@ -184,6 +184,13 @@ export interface CreateTransactionOptions {
    */
   fromScheduledPosting?: boolean;
   /**
+   * `false` when the caller records the history entry itself, after its own
+   * transaction commits: a scheduled posting writes this row inside its
+   * transaction, and its one entry undoes the row with the schedule's cursor
+   * (issue #2165).
+   */
+  recordHistory?: boolean;
+  /**
    * Runs inside the write's own transaction before anything is written. A
    * throw refuses the create with nothing written. The joint register
    * re-asserts the grantee's grant here (A26-M04).
@@ -864,7 +871,9 @@ export class TransactionsService {
     );
 
     const result = await this.findOne(userId, savedTransactionId);
-    this.recordTransactionAction(userId, result, "create");
+    if (options?.recordHistory !== false) {
+      this.recordTransactionAction(userId, result, "create");
+    }
     return { transaction: result, created: true };
   }
 
@@ -4720,6 +4729,10 @@ export class TransactionsService {
     prepared: PreparedTransfer,
     savedFromId: string,
     savedToId: string,
+    options: {
+      /** `false` when the caller records the history entry itself. */
+      recordHistory?: boolean;
+    } = {},
   ): Promise<TransferResult> {
     const userId = prepared.effectiveUserId;
     const result = await this.transferService.completeTransfer(
@@ -4727,6 +4740,7 @@ export class TransactionsService {
       savedFromId,
       savedToId,
       this.findOne.bind(this),
+      options,
     );
 
     const tagIds = prepared.dto.tagIds;

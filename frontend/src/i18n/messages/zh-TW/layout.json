@@ -64,6 +64,7 @@
       "tag": "標籤",
       "account": "科目",
       "scheduled_transaction": "排程",
+      "scheduled_posting": "排程",
       "security": "證券",
       "budget": "預算",
       "custom_report": "報表"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "已建立排程交易「{name}」",
       "updatedScheduledTransaction": "已更新排程交易「{name}」",
       "deletedScheduledTransaction": "已刪除排程交易「{name}」",
+      "postedScheduledTransaction": "已過帳排程交易「{name}」",
       "createdSecurity": "已建立證券「{symbol}」",
       "updatedSecurity": "已更新證券「{symbol}」",
       "deletedSecurity": "已刪除證券「{symbol}」",

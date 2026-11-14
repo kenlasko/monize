@@ -3896,7 +3896,11 @@ describe('ScheduledTransactionForm: Estimate', () => {
       expect(
         await screen.findByText(/No transfers to Savings from this account in the last 24 months/),
       ).toBeInTheDocument();
-      expect((screen.getByLabelText('Transfer Amount') as HTMLInputElement).value).toBe('');
+      // CurrencyInput copies its value into the field in an effect, which can
+      // run after the commit that shows the note.
+      await waitFor(() =>
+        expect((screen.getByLabelText('Transfer Amount') as HTMLInputElement).value).toBe(''),
+      );
     });
   });
 });

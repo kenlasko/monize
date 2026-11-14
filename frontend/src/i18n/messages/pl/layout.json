@@ -64,6 +64,7 @@
       "tag": "Tag",
       "account": "Konto",
       "scheduled_transaction": "Zaplanowana",
+      "scheduled_posting": "Zaplanowana",
       "security": "Papier wartościowy",
       "budget": "Budżet",
       "custom_report": "Raport"
@@ -114,6 +115,7 @@
       "createdScheduledTransaction": "Utworzono zaplanowaną transakcję \"{name}\"",
       "updatedScheduledTransaction": "Zaktualizowano zaplanowaną transakcję \"{name}\"",
       "deletedScheduledTransaction": "Usunięto zaplanowaną transakcję \"{name}\"",
+      "postedScheduledTransaction": "Zaksięgowano zaplanowaną transakcję \"{name}\"",
       "createdSecurity": "Utworzono papier wartościowy \"{symbol}\"",
       "updatedSecurity": "Zaktualizowano papier wartościowy \"{symbol}\"",
       "deletedSecurity": "Usunięto papier wartościowy \"{symbol}\"",
