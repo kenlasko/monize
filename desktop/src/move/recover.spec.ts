@@ -71,7 +71,8 @@ describe("recoverInterruptedMove", () => {
       location,
       log: (line) => fixture.logs.push(line),
     });
-  const pointer = () => readLocationSync(fixture.locationFile, "linux");
+  const pointer = () =>
+    readLocationSync(fixture.locationFile, process.platform);
 
   it("does nothing when no move was under way", async () => {
     expect(await recover(null)).toEqual({ kind: "none" });

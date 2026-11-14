@@ -48,7 +48,7 @@ describe("runMove", () => {
   function expectOldFolderAuthoritative(outcome: MoveOutcome): void {
     expect(outcome).toMatchObject({ kind: "failed", leftover: [] });
     expect(snapshot(fixture.source)).toEqual(before);
-    expect(readLocationSync(fixture.locationFile, "linux")).toBeNull();
+    expect(readLocationSync(fixture.locationFile, process.platform)).toBeNull();
     expect(exists(fixture.target)).toBe(false);
     expect(exists(stagingFor(fixture.target))).toBe(false);
     expect(exists(fixture.journalFile)).toBe(false);
@@ -64,7 +64,7 @@ describe("runMove", () => {
     const outcome = await run();
 
     expect(outcome).toEqual({ kind: "moved", warnings: [] });
-    expect(readLocationSync(fixture.locationFile, "linux")).toEqual({
+    expect(readLocationSync(fixture.locationFile, process.platform)).toEqual({
       dataDir: fixture.target,
       previousDataDir: fixture.source,
       state: "pending",
@@ -156,7 +156,7 @@ describe("runMove", () => {
     expect(outcome).toMatchObject({ failure: "source-changed" });
     expect(exists(fixture.target)).toBe(false);
     expect(exists(stagingFor(fixture.target))).toBe(false);
-    expect(readLocationSync(fixture.locationFile, "linux")).toBeNull();
+    expect(readLocationSync(fixture.locationFile, process.platform)).toBeNull();
   });
 
   it("Chromium rewriting its key file during the copy does not", async () => {
@@ -231,7 +231,7 @@ describe("runMove", () => {
     expect(snapshot(fixture.target)).toEqual({ "theirs.txt": "mine" });
     expect(snapshot(fixture.source)).toEqual(before);
     expect(exists(stagingFor(fixture.target))).toBe(false);
-    expect(readLocationSync(fixture.locationFile, "linux")).toBeNull();
+    expect(readLocationSync(fixture.locationFile, process.platform)).toBeNull();
   });
 
   it("the rename failing leaves the old folder in charge", async () => {

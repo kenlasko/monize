@@ -83,7 +83,7 @@ describe("the move coordinator", () => {
   function deps(overrides: Partial<CoordinatorDeps> = {}): CoordinatorDeps {
     return {
       launch: launch(),
-      platform: "linux",
+      platform: process.platform,
       fs: nodeMoveFs,
       installDir: null,
       ui: ui(),
@@ -117,9 +117,9 @@ describe("the move coordinator", () => {
       `log:${fixture.target}:true`,
       "relaunch",
     ]);
-    expect(readLocationSync(fixture.locationFile, "linux")?.dataDir).toBe(
-      fixture.target,
-    );
+    expect(
+      readLocationSync(fixture.locationFile, process.platform)?.dataDir,
+    ).toBe(fixture.target);
   });
 
   it("does nothing under MONIZE_DATA_DIR but say why", async () => {

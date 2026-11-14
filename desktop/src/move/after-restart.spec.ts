@@ -38,7 +38,8 @@ describe("the launch after a move", () => {
       target: fixture.target,
       now: new Date("2026-11-13T10:00:00.000Z"),
     });
-  const pointer = () => readLocationSync(fixture.locationFile, "linux");
+  const pointer = () =>
+    readLocationSync(fixture.locationFile, process.platform);
 
   function subject(
     answers: { rollback?: boolean; cleanup?: CleanupChoice } = {},
@@ -62,7 +63,7 @@ describe("the launch after a move", () => {
     // What the shell does: resolve the folder from the pointer on disk.
     const launch = resolveLaunchPaths({
       env: { XDG_DATA_HOME: posix.dirname(fixture.source) },
-      platform: "linux",
+      platform: process.platform,
       isPackaged: false,
       resourcesPath: "",
       desktopRoot: "/repo/desktop",
@@ -70,7 +71,7 @@ describe("the launch after a move", () => {
     });
     return createAfterRestart({
       launch,
-      platform: "linux",
+      platform: process.platform,
       path: posix,
       fs: nodeMoveFs,
       ui,

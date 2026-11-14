@@ -39,12 +39,12 @@ describe("after a move", () => {
   const deps = (fs: MoveFs = nodeMoveFs): AftermathDeps => ({
     fs,
     path: posix,
-    platform: "linux",
+    platform: process.platform,
     locationFile: fixture.locationFile,
     log: (line) => fixture.logs.push(line),
   });
   const pointer = (): DataLocation =>
-    readLocationSync(fixture.locationFile, "linux") as DataLocation;
+    readLocationSync(fixture.locationFile, process.platform) as DataLocation;
   const NOW = new Date("2026-11-13T11:00:00.000Z");
   const tombstoneIn = (dir: string) => join(dir, "moved-elsewhere.json");
 

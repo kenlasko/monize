@@ -3,6 +3,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  realpathSync,
   readdirSync,
   readFileSync,
   rmSync,
@@ -10,6 +11,7 @@ import {
   writeFileSync,
 } from "fs";
 import { tmpdir } from "os";
+import * as hostPath from "path";
 import { join, posix } from "path";
 
 import { locationFileFor } from "../move/location";
@@ -98,7 +100,9 @@ export function movedSnapshot(dir: string): Record<string, string> {
 }
 
 export function createMoveFixture(): MoveFixture {
-  const root = mkdtempSync(join(tmpdir(), "monize-move-"));
+  // Resolved, so the root is spelled as the move's link-resolving checks see
+  // it: the Windows runner's temp folder is an 8.3 short name (RUNNER~1).
+  const root = realpathSync.native(mkdtempSync(join(tmpdir(), "monize-move-")));
   const source = join(root, "local", "Monize");
   const target = join(root, "disk two", "Monize data");
   mkdirSync(join(root, "disk two"), { recursive: true });
@@ -117,8 +121,10 @@ export function createMoveFixture(): MoveFixture {
     progress,
     deps: (fs = nodeMoveFs, overrides = {}) => ({
       fs,
-      path: posix,
-      platform: "linux",
+      // The host's: these tests run the move against real temp folders, which
+      // are C:\ paths on the Windows CI runner.
+      path: hostPath,
+      platform: process.platform,
       locationFile,
       journalFile,
       signal: { cancelled: false },

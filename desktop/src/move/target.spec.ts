@@ -80,7 +80,7 @@ describe("inspectTarget", () => {
   beforeEach(() => {
     fixture = createMoveFixture();
     rules = {
-      platform: "linux",
+      platform: process.platform,
       source: fixture.source,
       defaultDataDir: fixture.source,
       installDir: null,
