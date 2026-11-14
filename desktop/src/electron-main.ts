@@ -18,6 +18,10 @@ import {
   showRecoveryKey,
 } from "./dialogs";
 import { createLogger } from "./logger";
+import {
+  createNotificationBridge,
+  NotificationBridgeHandle,
+} from "./notifications";
 import { createRuntime, Runtime, stopLeftoverPostgres } from "./runtime";
 import { APP_ID } from "./shell/app-id";
 import { createShellController } from "./shell/controller";
@@ -156,6 +160,7 @@ function run(paths: AppPaths): void {
   let mainWindow: BrowserWindow | null = null;
   let tray: TrayHandle | null = null;
   let updates: UpdatePolicy | null = null;
+  let notifications: NotificationBridgeHandle | null = null;
 
   const controller = createShellController({
     createRuntime: () =>
@@ -214,6 +219,7 @@ function run(paths: AppPaths): void {
     exit: (code) => app.exit(code),
     onBegin: () => {
       controller.runtime?.logger.info("Shell: quitting; stopping the stack.");
+      notifications?.stop();
       mainWindow?.hide();
     },
   });
@@ -244,6 +250,16 @@ function run(paths: AppPaths): void {
       },
     });
     updates = updater;
+    notifications = createNotificationBridge({
+      origin,
+      logger,
+      contents: () => (window.isDestroyed() ? null : window.webContents),
+      open: (target) => {
+        void window.loadURL(target).catch(() => undefined);
+        showWindow(window);
+      },
+      show: () => showWindow(window),
+    });
     tray = createTray({
       iconPath,
       state: { update: updater.state },

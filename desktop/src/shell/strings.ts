@@ -107,4 +107,12 @@ export const TEXT = {
   updateLater: "Later",
   updateNotificationBody:
     "Click here, or choose Restart to update in the tray menu, when it suits you.",
+
+  // The page composes each notification's own title and body in the reader's
+  // language; only the summary for a burst is the shell's.
+  notificationsMoreTitle: "Monize",
+  notificationsMoreBody: (count: number) =>
+    count === 1
+      ? "1 more notification is waiting in Monize."
+      : `${count} more notifications are waiting in Monize.`,
 } as const;
