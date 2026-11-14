@@ -394,6 +394,9 @@ export interface BackupData {
   budget_categories: Record<string, unknown>[];
   budget_periods: Record<string, unknown>[];
   budget_period_categories: Record<string, unknown>[];
+  /** Absent from artifacts written before buckets existed. */
+  budget_buckets?: Record<string, unknown>[];
+  budget_period_buckets?: Record<string, unknown>[];
   notifications: Record<string, unknown>[];
   custom_reports: Record<string, unknown>[];
   investment_reports: Record<string, unknown>[];

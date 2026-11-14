@@ -247,6 +247,12 @@ export const RESTORE_PLAN: ReadonlyArray<RestoreStep> = [
   { table: "loan_scenarios", countKey: "loanScenarios", scopeToUser: true },
   { table: "budgets", countKey: "budgets", scopeToUser: true },
   {
+    // Before budget_categories: a line's bucket_id references it.
+    table: "budget_buckets",
+    countKey: "budgetBuckets",
+    scopeToUser: false,
+  },
+  {
     table: "budget_categories",
     countKey: "budgetCategories",
     scopeToUser: false,
@@ -255,6 +261,12 @@ export const RESTORE_PLAN: ReadonlyArray<RestoreStep> = [
   {
     table: "budget_period_categories",
     countKey: "budgetPeriodCategories",
+    scopeToUser: false,
+  },
+  {
+    // After budget_periods and budget_buckets, both of which it references.
+    table: "budget_period_buckets",
+    countKey: "budgetPeriodBuckets",
     scopeToUser: false,
   },
   { table: "notifications", countKey: "notifications", scopeToUser: true },

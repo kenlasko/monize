@@ -147,6 +147,7 @@ describe("BudgetsService", () => {
     rolloverType: RolloverType.NONE,
     rolloverCap: null,
     flexGroup: null,
+    bucketId: null,
     alertWarnPercent: 80,
     alertCriticalPercent: 95,
     notes: null,

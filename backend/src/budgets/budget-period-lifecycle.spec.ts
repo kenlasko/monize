@@ -72,6 +72,7 @@ describe("Budget Period Lifecycle Integration", () => {
     rolloverType: RolloverType.MONTHLY,
     rolloverCap: 200,
     flexGroup: null,
+    bucketId: null,
     alertWarnPercent: 80,
     alertCriticalPercent: 95,
     notes: null,

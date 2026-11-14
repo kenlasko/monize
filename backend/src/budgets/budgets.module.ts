@@ -4,6 +4,8 @@ import { Budget } from "./entities/budget.entity";
 import { BudgetCategory } from "./entities/budget-category.entity";
 import { BudgetPeriod } from "./entities/budget-period.entity";
 import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
+import { BudgetBucket } from "./entities/budget-bucket.entity";
+import { BudgetPeriodBucket } from "./entities/budget-period-bucket.entity";
 import { Notification } from "../notification-center/entities/notification.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
@@ -36,6 +38,8 @@ import { NotificationCenterModule } from "../notification-center/notification-ce
       BudgetCategory,
       BudgetPeriod,
       BudgetPeriodCategory,
+      BudgetBucket,
+      BudgetPeriodBucket,
       Notification,
       Transaction,
       TransactionSplit,
