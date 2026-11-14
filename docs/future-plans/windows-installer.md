@@ -301,8 +301,8 @@ Each is a decision the build made against the text above, with its reason.
    change what the application does. `HOST` and `HOSTNAME` are both set in
    both children.
 10. **`dataDir` is not stored in `config.json`** (D6): a pointer kept inside
-    the directory it points to is useless. "Move data folder" (D9) needs
-    another home for it.
+    the directory it points to is useless. "Move data folder" (D9) gave it
+    another home: item 17.
 11. **Attachments stay in the database.** Section 6 sets
     `ATTACHMENT_CONTAINER_DIR` but not the provider, so the backend keeps its
     default (`database`) and the folder is unused; a backup of `pgdata` then
@@ -328,4 +328,59 @@ Each is a decision the build made against the text above, with its reason.
     to run every UI flow with policies in force: a flow that fails only under
     enforcement shows up here first. The install smoke test asserts the
     backend's own "enforce verified" line.
-
+17. **"Move data folder" (D9).** Four decisions, each with its reason;
+    `desktop/README.md`, "Moving the data folder", has the sequence and the
+    table of every failure.
+    - **The pointer is a file beside the default data folder**,
+      `%LOCALAPPDATA%\Monize-location.ini`, in UTF-16 INI form. Beside, not
+      inside: a pointer in the old folder dies when the person deletes the
+      old copy by hand, and the next start would be an empty Monize. Not
+      `%APPDATA%`, which roams. Not the registry: the shell would have to
+      start a process to read it before doing anything else, and the move
+      could not be tested off Windows. INI in UTF-16 because NSIS reads it
+      natively and in Unicode, so the installer carries no parser. Read
+      strictly, and a pointer to a folder without `config.json` stops the
+      launch instead of creating a database there. Precedence is
+      `MONIZE_DATA_DIR`, then the pointer, then the default: the variable is
+      one launch's explicit choice (development, the smoke tests) and must
+      stay immune to what a machine has recorded; such a launch neither
+      reads nor writes the pointer. The single-instance lock stays keyed on
+      the data folder: every launch reads the same pointer first, so every
+      launch asks for the same lock, and the moving shell holds the old
+      folder's lock until it exits just after the commit.
+    - **Everything moves except the Chromium profile, of which only
+      `Local State` moves.** The running shell holds the profile open (the
+      cookie store exclusively on Windows), so it can be neither copied
+      whole nor verified; the person signs in again. `Local State` must
+      move: on Windows Chromium keeps the key behind `safeStorage` in it,
+      wrapped by DPAPI, so `config.json`'s secrets open only for the same
+      Windows account AND beside that file. D7's "bound to the account, not
+      to a path" was half right. This could not be observed from Linux; the
+      first move on Windows proves it, and the rollback below is the net.
+    - **Copy, verify, rename, then one atomic pointer write as the commit**
+      (bytes before the commit, deletes after it). Before the commit every
+      failure, a kill included, leaves the old folder in charge and the copy
+      removed (at once, or by the next launch from a journal, and only a
+      folder carrying that move's marker). After it nothing is ever deleted
+      without a click: the old folder gets a `moved-elsewhere.json` that
+      makes the shell refuse to start on it, so PostgreSQL never runs on
+      both copies; a new folder that fails its first start can be left for
+      the previous one ("Go back", offered only until the new folder has
+      once reached `ready`); and the old copy is deleted only on request,
+      only when it carries that note, and only what Monize created in it.
+      Refused targets: non-empty, a drive root, a `\\server\share` path,
+      inside the current, default or installation folder, or without room.
+      A mapped network drive or a removable one is not detected (that needs
+      a Windows API this package cannot call without a dependency); the
+      confirmation says to use a disk that stays connected.
+    - **The installer reads the pointer** for the installation-folder
+      refusal, the uninstaller's last check and "Remove my data", which now
+      also empties the moved folder (and the copy a move left) of what
+      Monize created, recognised by `config.json` plus
+      `pgdata\monize.initialized`, and deletes the pointer. Stopping the
+      running application needed nothing: `--quit` resolves the folder as
+      any launch does. Building this found that `MonizeRelation` in
+      `desktop/build/installer.nsh` returned with two registers swapped, so
+      of the two answers for the default folder only the first was ever
+      compared; fixed here, and it is what made the moved folder comparable
+      at all.
