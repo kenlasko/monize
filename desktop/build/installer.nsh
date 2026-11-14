@@ -62,6 +62,10 @@
 !define MONIZE_TXT_DIR_NOT_EMPTY "Monize cannot be installed in:$\r$\n$INSTDIR$\r$\n$\r$\nThat folder already contains other files. Updating or uninstalling Monize deletes everything in its installation folder. Run Setup again and choose a new or empty folder."
 !define MONIZE_TXT_UNINSTALL_HOLDS_DATA "Nothing was removed.$\r$\n$\r$\nThe installation folder holds Monize's data:$\r$\n$INSTDIR$\r$\n$\r$\nRemoving the application would delete that data. Copy the folder somewhere safe, then delete it by hand."
 !define MONIZE_TXT_PER_USER_ONLY "Monize installs for the current user only; /allusers is not supported."
+; The installer's details list (monizeShowDetails, customInstall).
+!define MONIZE_TXT_CHECKING "Checking the installation folder and closing Monize if it is running..."
+!define MONIZE_TXT_UNPACKING "Unpacking and copying Monize's files. There are tens of thousands of them, so this can take several minutes, longer while antivirus software scans them. The list will not move until it is done."
+!define MONIZE_TXT_INSTALLED "Monize is installed."
 
 ; ---------------------------------------------------------------------------
 ; Settings
@@ -419,6 +423,18 @@ FunctionEnd
   ${EndIf}
 !macroend
 
+; The template's install section starts with `SetDetailsPrint none` in an
+; interactive run, which leaves the list empty even when it is shown. This
+; runs right after that (customCheckAppRunning is the section's first hook)
+; and turns it back on, so the list carries the template's own lines
+; ("Extract: app-64.7z", the shortcuts) and the ones below.
+!macro monizeShowDetails
+  ${IfNot} ${Silent}
+    SetDetailsPrint both
+  ${EndIf}
+  DetailPrint "${MONIZE_TXT_CHECKING}"
+!macroend
+
 !endif ; installer
 
 ; ---------------------------------------------------------------------------
@@ -488,6 +504,12 @@ FunctionEnd
 !macro customHeader
   !ifndef BUILD_UNINSTALLER
     !insertmacro monizeDefineVerifyInstDir
+    ; The template's common.nsh says `nevershow`; this comes after it, and
+    ; the last one wins. With tens of thousands of files and no visible
+    ; progress, the installer looked stalled for minutes: the list shows
+    ; what it is doing, and monizeShowDetails says what the long quiet
+    ; stretch is.
+    ShowInstDetails show
   !endif
 !macroend
 
@@ -507,9 +529,17 @@ FunctionEnd
 
 !macro customCheckAppRunning
   !ifndef BUILD_UNINSTALLER
+    !insertmacro monizeShowDetails
     !insertmacro monizeRefuseBadInstDir
   !endif
   !insertmacro monizeStopRunningApp
+  !ifndef BUILD_UNINSTALLER
+    DetailPrint "${MONIZE_TXT_UNPACKING}"
+  !endif
+!macroend
+
+!macro customInstall
+  DetailPrint "${MONIZE_TXT_INSTALLED}"
 !macroend
 
 !macro customUnInstall

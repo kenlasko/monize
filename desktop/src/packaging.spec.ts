@@ -156,6 +156,7 @@ describe("build/installer.nsh", () => {
       "customInit",
       "customInstallMode",
       "customCheckAppRunning",
+      "customInstall",
       "customUnInstall",
       "customUnInstallSection",
     ]) {

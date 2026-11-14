@@ -17,6 +17,8 @@ Name "MonizeHarness"
 OutFile "${OUT}"
 InstallDir "$LOCALAPPDATA\Programs\Monize"
 RequestExecutionLevel user
+; As the template's common.nsh does, ahead of customHeader.
+ShowInstDetails nevershow
 
 !define PRODUCT_FILENAME "Monize"
 !define APP_FILENAME "Monize"
@@ -65,7 +67,12 @@ UninstPage instfiles
     !insertmacro customInstallMode
   FunctionEnd
   Section "Main"
+    ; As the template's installSection.nsh does, ahead of the first hook.
+    ${IfNot} ${Silent}
+      SetDetailsPrint none
+    ${EndIf}
     !insertmacro customCheckAppRunning
+    !insertmacro customInstall
   SectionEnd
 !else
   Section "Main"
