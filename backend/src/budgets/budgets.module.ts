@@ -20,6 +20,7 @@ import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetPeriodCronService } from "./budget-period-cron.service";
 import { BudgetGeneratorService } from "./budget-generator.service";
 import { BudgetAlertService } from "./budget-alert.service";
+import { BudgetBucketsService } from "./budget-buckets.service";
 import { BudgetReportsService } from "./budget-reports.service";
 import { BudgetTrendReportsService } from "./budget-trend-reports.service";
 import { BudgetHealthReportsService } from "./budget-health-reports.service";
@@ -73,6 +74,7 @@ import { NotificationCenterModule } from "../notification-center/notification-ce
     BudgetHealthReportsService,
     BudgetActivityReportsService,
     BudgetReportsService,
+    BudgetBucketsService,
   ],
   controllers: [BudgetsController],
   exports: [
@@ -81,6 +83,7 @@ import { NotificationCenterModule } from "../notification-center/notification-ce
     BudgetGeneratorService,
     BudgetReportsService,
     BudgetAlertService,
+    BudgetBucketsService,
   ],
 })
 export class BudgetsModule {}

@@ -4,6 +4,10 @@ import { BudgetsService } from "./budgets.service";
 import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetGeneratorService } from "./budget-generator.service";
 import { BudgetReportsService } from "./budget-reports.service";
+import { BudgetBucketsService } from "./budget-buckets.service";
+import { ParseUUIDPipe } from "@nestjs/common";
+import { ROUTE_ARGS_METADATA } from "@nestjs/common/constants";
+import { ALLOW_DELEGATE_KEY } from "../delegation/decorators/delegate-access.decorator";
 
 describe("BudgetsController", () => {
   let controller: BudgetsController;
@@ -16,6 +20,9 @@ describe("BudgetsController", () => {
   >;
   let mockBudgetReportsService: Partial<
     Record<keyof BudgetReportsService, jest.Mock>
+  >;
+  let mockBudgetBucketsService: Partial<
+    Record<keyof BudgetBucketsService, jest.Mock>
   >;
   const mockReq = { user: { id: "user-1" } };
 
@@ -35,6 +42,13 @@ describe("BudgetsController", () => {
       getVelocity: jest.fn(),
       getDashboardSummary: jest.fn(),
       getCategoryBudgetStatus: jest.fn(),
+    };
+
+    mockBudgetBucketsService = {
+      findAll: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      remove: jest.fn(),
     };
 
     mockBudgetPeriodService = {
@@ -72,10 +86,97 @@ describe("BudgetsController", () => {
           provide: BudgetReportsService,
           useValue: mockBudgetReportsService,
         },
+        { provide: BudgetBucketsService, useValue: mockBudgetBucketsService },
       ],
     }).compile();
 
     controller = module.get<BudgetsController>(BudgetsController);
+  });
+
+  describe("bucket routes", () => {
+    const proto = BudgetsController.prototype as unknown as Record<
+      string,
+      (...args: never[]) => unknown
+    >;
+    // The pipes Nest attaches to each @Param argument of a handler.
+    const paramPipes = (method: string): Record<string, unknown[]> => {
+      const args = Reflect.getMetadata(
+        ROUTE_ARGS_METADATA,
+        BudgetsController,
+        method,
+      ) as Record<string, { data: string; pipes: unknown[] }>;
+      return Object.fromEntries(
+        Object.values(args)
+          .filter((a) => a.data !== undefined)
+          .map((a) => [a.data, a.pipes]),
+      );
+    };
+
+    it.each([
+      ["findBuckets", ["id"]],
+      ["createBucket", ["id"]],
+      ["updateBucket", ["id", "bucketId"]],
+      ["removeBucket", ["id", "bucketId"]],
+    ])("%s pins ParseUUIDPipe on every id", (method, params) => {
+      const pipes = paramPipes(method);
+      expect(Object.keys(pipes).sort()).toEqual([...params].sort());
+      for (const p of params) expect(pipes[p]).toContain(ParseUUIDPipe);
+    });
+
+    it("only the GET is open to a delegate", () => {
+      expect(Reflect.getMetadata(ALLOW_DELEGATE_KEY, proto.findBuckets)).toBe(
+        true,
+      );
+      for (const m of ["createBucket", "updateBucket", "removeBucket"]) {
+        expect(
+          Reflect.getMetadata(ALLOW_DELEGATE_KEY, proto[m]),
+        ).toBeUndefined();
+      }
+    });
+
+    it("findBuckets delegates with userId and id", () => {
+      mockBudgetBucketsService.findAll!.mockReturnValue("list");
+      expect(controller.findBuckets(mockReq, "b-1")).toBe("list");
+      expect(mockBudgetBucketsService.findAll).toHaveBeenCalledWith(
+        "user-1",
+        "b-1",
+      );
+    });
+
+    it("createBucket delegates with userId, id and dto", () => {
+      const dto = { name: "Needs" } as never;
+      mockBudgetBucketsService.create!.mockReturnValue("made");
+      expect(controller.createBucket(mockReq, "b-1", dto)).toBe("made");
+      expect(mockBudgetBucketsService.create).toHaveBeenCalledWith(
+        "user-1",
+        "b-1",
+        dto,
+      );
+    });
+
+    it("updateBucket delegates with both ids", () => {
+      const dto = { sortOrder: 1 } as never;
+      mockBudgetBucketsService.update!.mockReturnValue("changed");
+      expect(controller.updateBucket(mockReq, "b-1", "k-1", dto)).toBe(
+        "changed",
+      );
+      expect(mockBudgetBucketsService.update).toHaveBeenCalledWith(
+        "user-1",
+        "b-1",
+        "k-1",
+        dto,
+      );
+    });
+
+    it("removeBucket delegates with both ids", () => {
+      mockBudgetBucketsService.remove!.mockReturnValue("gone");
+      expect(controller.removeBucket(mockReq, "b-1", "k-1")).toBe("gone");
+      expect(mockBudgetBucketsService.remove).toHaveBeenCalledWith(
+        "user-1",
+        "b-1",
+        "k-1",
+      );
+    });
   });
 
   describe("create()", () => {
