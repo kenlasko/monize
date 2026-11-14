@@ -51,7 +51,8 @@ const ALLOWED: Record<string, string> = {
     "Module wiring (TypeOrmModule.forFeature).",
   "backend/src/oauth/postgres.adapter.ts":
     "The oidc-provider Adapter implementation -- the reason the exception exists. " +
-    "Every method is keyed by an opaque provider id (id/model/grantId/userCode/uid).",
+    "Every method is keyed by an opaque provider id (id/model/grantId/userCode/uid), " +
+    "except sweepOAuthPayloads, the daily expiry sweep, keyed by expires_at alone.",
   "backend/src/oauth/oauth-provider.service.ts":
     "Constructs the adapter factory, and revokeAllForUser -- the second access " +
     "path, keyed by an application user id. Admin-initiated, id server-derived, " +

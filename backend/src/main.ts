@@ -25,6 +25,8 @@ import { OAuthProviderService } from "./oauth/oauth-provider.service";
 import { oauthDebugLogger } from "./oauth/oauth-debug-logger.middleware";
 import { isOidcProviderPath } from "./oauth/oidc-provider-paths";
 import { installOidcProviderLogBridge } from "./oauth/oidc-provider-log-bridge";
+import { createOAuthEndpointThrottle } from "./oauth/oauth-endpoint-throttle";
+import { ThrottlerStorage } from "@nestjs/throttler";
 import { DataSource } from "typeorm";
 import { parseRlsMode } from "./common/db/rls-config";
 import { checkClusterBoot } from "./common/cluster/cluster-mode";
@@ -625,6 +627,12 @@ async function bootstrap() {
   // mounted earlier (before the global cookie/helmet/CORS chain) so that
   // requests from MCP clients with an off-allowlist Origin still appear in the
   // log and bypass the strict app-wide CORS layer.
+  //
+  // The global ThrottlerGuard never sees these paths, so the anonymous
+  // row-writing endpoints are capped here, ahead of the provider (#2177).
+  app.use(
+    createOAuthEndpointThrottle(app.get<ThrottlerStorage>(ThrottlerStorage)),
+  );
   app.use(
     (
       req: express.Request,
