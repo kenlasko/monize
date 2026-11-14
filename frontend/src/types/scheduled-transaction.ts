@@ -103,6 +103,19 @@ export interface ScheduleAmountEstimate {
   months: Record<string, EstimatedMonth>;
   /** `null` when withheld: a delegate is not told how often the owner paid. */
   paymentCount: number | null;
+  /**
+   * How many of those payments set the figure; `null` when withheld, absent
+   * from an older server.
+   */
+  levelPaymentCount?: number | null;
+  /**
+   * Which payments set the figure: `year`, every payment of the last 12
+   * months (no season, no trend); `recent`, the newest three. Absent from an
+   * older server, whose text then names only the payment count.
+   */
+  levelRule?: 'year' | 'recent' | null;
+  /** Whether the history varies by season; absent from an older server. */
+  seasonal?: boolean;
   latestPaymentDate: string | null;
   /** The year-over-year growth applied, or null when the history shows no trend. */
   growthRate: number | null;

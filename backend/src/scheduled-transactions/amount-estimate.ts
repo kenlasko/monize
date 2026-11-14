@@ -10,8 +10,10 @@ import { addMonthsClamped } from "../common/recurrence";
  * The model is a level, a seasonal index and a trend, each admitted only when
  * the history shows it:
  *
- *  - the LEVEL is the newest payments, so a price change since last year is
- *    the price from now on;
+ *  - the LEVEL is the mean of the latest year's payments when the history
+ *    shows neither a season nor a trend, so one unusual payment moves the
+ *    estimate by a twelfth rather than a third; with a season or a trend it
+ *    is the newest payments, which that pattern then shapes or grows;
  *  - a calendar month's SEASONAL INDEX (its mean over its year's mean) shapes
  *    the level only when both years vary by month and agree on how;
  *  - a year-over-year GROWTH projects the level forward only when every
@@ -22,8 +24,17 @@ import { addMonthsClamped } from "../common/recurrence";
 /** How far back a payment still counts, in calendar months. */
 export const ESTIMATE_HISTORY_MONTHS = 24;
 
-/** How many of the newest payments the level averages. */
+/**
+ * How many of the newest payments the level averages when the history shows
+ * a season or a trend, or holds no payment in the latest year.
+ */
 export const ESTIMATE_RECENT_PAYMENTS = 3;
+
+/**
+ * How far back, in calendar months, the payments a level with neither a
+ * season nor a trend averages reach: the latest year's.
+ */
+export const ESTIMATE_LEVEL_YEAR_MONTHS = 12;
 
 /**
  * How many calendar months must hold a payment in BOTH years before a
@@ -90,17 +101,29 @@ export interface EstimateProfile {
    */
   seasonalIndex: ReadonlyMap<number, number>;
   /**
-   * The newest payments' mean, with their months' seasonal index taken out:
-   * what a month of index 1 costs at the latest price.
+   * What a month of index 1 costs at the latest price: the latest year's
+   * mean when the history shows neither a season nor a trend, otherwise the
+   * newest payments' mean with their months' seasonal index taken out.
    */
   level: number;
   /** Months since year 0 of the newest payment, where the level stands. */
   levelMonth: number;
+  /**
+   * Which payments the level averages: `"year"`, every payment of the latest
+   * year (no season, no trend); `"recent"`, the newest
+   * `ESTIMATE_RECENT_PAYMENTS` (a season or a trend, or none in that year).
+   */
+  levelRule: EstimateLevelRule;
+  /** How many payments the level averages. */
+  levelPaymentCount: number;
   /** The year-over-year growth projected forward from the level; 0 when none. */
   growthRate: number;
   /** The places every estimate is rounded to: the currency's entry places. */
   decimals: number;
 }
+
+/** Which payments an estimate's level averages (`EstimateProfile.levelRule`). */
+export type EstimateLevelRule = "year" | "recent";
 
 /** `YYYY-MM` of a `YYYY-MM-DD`. */
 export function monthKeyOf(ymd: string): string {
@@ -274,6 +297,30 @@ export function seasonalIndex(
 }
 
 /**
+ * The payments the level averages. With neither a season nor a trend, every
+ * payment of the latest `ESTIMATE_LEVEL_YEAR_MONTHS` (after today less that
+ * many months, the day clamped like the history window's): a bill or a card
+ * payment that swings month to month is priced at its year, not at whichever
+ * three months happen to be newest. With a season or a trend, or when the
+ * latest year holds no payment, the newest `ESTIMATE_RECENT_PAYMENTS`.
+ */
+function levelPayments(
+  payments: EstimatePayment[],
+  today: string,
+  patterned: boolean,
+): { rule: EstimateLevelRule; payments: EstimatePayment[] } {
+  if (!patterned) {
+    const yearStart = addMonthsClamped(today, -ESTIMATE_LEVEL_YEAR_MONTHS);
+    const latestYear = payments.filter((p) => p.date > yearStart);
+    if (latestYear.length > 0) return { rule: "year", payments: latestYear };
+  }
+  return {
+    rule: "recent",
+    payments: payments.slice(-ESTIMATE_RECENT_PAYMENTS),
+  };
+}
+
+/**
  * The profile an estimate is read from, or `null` when no payment counts.
  *
  * Only payments on the history's dominant side of zero count: a refund from
@@ -303,15 +350,23 @@ export function buildEstimateProfile(
 
   const index = seasonalIndex(payments, today);
   const indexOf = (date: string) => index?.get(Number(date.slice(5, 7))) ?? 1;
-  const recent = payments.slice(-ESTIMATE_RECENT_PAYMENTS);
+  const growthRate = yearOverYearGrowth(payments, today);
+  const levelBasis = levelPayments(
+    payments,
+    today,
+    index !== null || growthRate !== 0,
+  );
+  const levelOf = levelBasis.payments;
 
   return {
     payments,
     seasonal: index !== null,
     seasonalIndex: index ?? new Map(),
-    level: mean(recent.map((p) => p.amount / indexOf(p.date))),
-    levelMonth: monthIndex(recent[recent.length - 1].date),
-    growthRate: yearOverYearGrowth(payments, today),
+    level: mean(levelOf.map((p) => p.amount / indexOf(p.date))),
+    levelMonth: monthIndex(levelOf[levelOf.length - 1].date),
+    levelRule: levelBasis.rule,
+    levelPaymentCount: levelOf.length,
+    growthRate,
     decimals,
   };
 }
