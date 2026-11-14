@@ -394,6 +394,12 @@
       "todayTitle": "{{ name }}: Garantie läuft heute ab",
       "todayMessage": "Die Garantie für {{ name }} läuft heute, am {{ date }}, ab. Öffnen Sie sie, um ihre Dokumente zu prüfen oder einen Anspruch zu erfassen."
     },
+    "security": {
+      "oauthTitle": "Neue App verbunden: {{ clientName }}",
+      "oauthMessage": "Der Anwendung {{ clientName }} wurde soeben Zugriff auf Ihr Monize-Konto gewährt. Wenn Sie das nicht waren, ändern Sie jetzt Ihr Passwort: Dadurch wird der Zugriff aller verbundenen Anwendungen widerrufen.",
+      "relayTitle": "Eine neue Verbindung hat Ihren KI-Chat beantwortet",
+      "relayMessage": "Eine Verbindung, die Ihren Monize-KI-Chat bisher nicht beantwortet hat, hat gerade eine Eingabe abgeholt. Wenn Sie diesen Assistenten nicht verbunden haben, widerrufen Sie Ihre API-Token in den Einstellungen und ändern Sie Ihr Passwort."
+    },
     "payrollDeduction": {
       "resetTitle": "{{ category }}: Höchstbetrag für das nächste Jahr bestätigen",
       "resetMessage": "Der Abzug {{ category }} auf {{ bill }} wird am {{ date }} zurückgesetzt. Aktualisieren Sie den Jahreshöchstbetrag, falls er sich ändert; andernfalls gilt wieder {{ amount }}."

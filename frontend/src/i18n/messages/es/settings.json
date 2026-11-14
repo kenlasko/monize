@@ -401,6 +401,7 @@
         "BONDS": "Bonos",
         "AI_REVIEW": "Propuestas de revisión de IA",
         "WARRANTIES": "Recordatorios de garantía",
+        "SECURITY": "Seguridad",
         "SHARED_EXPENSES": "Gastos compartidos"
       },
       "channelNotApplicable": "No aplicable a este tipo de notificación",

@@ -208,6 +208,12 @@
     "todayTitle": "{name}：保修今天到期",
     "todayMessage": "{name} 的保修于今天（{date}）到期。打开即可查看其文档或记录保修申请。"
   },
+  "security": {
+    "oauthTitle": "新应用已连接：{clientName}",
+    "oauthMessage": "应用 {clientName} 刚刚获得了访问您 Monize 账户的权限。如果不是您本人操作，请立即修改密码：这会撤销所有已连接应用的访问权限。",
+    "relayTitle": "新连接已回应您的 AI 聊天",
+    "relayMessage": "一个此前从未回应过您 Monize AI 聊天的连接刚刚获取了一条提示。如果您没有连接此助手，请在设置中撤销您的 API 令牌并修改密码。"
+  },
   "payrollDeduction": {
     "resetTitle": "{category}：请确认明年的上限",
     "resetMessage": "{bill} 上的 {category} 扣款将于 {date} 重置。如果年度上限有变化请更新；否则 {amount} 将再次适用。"

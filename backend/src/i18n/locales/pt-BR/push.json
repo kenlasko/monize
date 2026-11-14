@@ -52,6 +52,10 @@
       "title": "Lembrete de garantia",
       "body": "Uma de suas garantias expira em breve. Abra o Monize para ver os detalhes."
     },
+    "security": {
+      "title": "Aviso de segurança",
+      "body": "Algo mudou em quem pode acessar sua conta do Monize. Abra o Monize para ver os detalhes."
+    },
     "shared_expenses": {
       "title": "Despesas compartilhadas",
       "body": "Há novidades em um grupo compartilhado. Abra o Monize para conferir."

@@ -394,6 +394,12 @@
       "todayTitle": "{{ name }}: la garanzia scade oggi",
       "todayMessage": "La garanzia di {{ name }} scade oggi, {{ date }}. Aprila per controllare i documenti o registrare una richiesta di assistenza."
     },
+    "security": {
+      "oauthTitle": "Nuova app connessa: {{ clientName }}",
+      "oauthMessage": "All'applicazione {{ clientName }} è stato appena concesso l'accesso al tuo account Monize. Se non sei stato tu, cambia subito la password: in questo modo viene revocato l'accesso di tutte le applicazioni connesse.",
+      "relayTitle": "Una nuova connessione ha risposto alla tua chat IA",
+      "relayMessage": "Una connessione che non aveva mai risposto alla tua chat IA di Monize ha appena prelevato un prompt. Se non hai connesso tu questo assistente, revoca i tuoi token API in Impostazioni e cambia la password."
+    },
     "payrollDeduction": {
       "resetTitle": "{{ category }}: conferma il massimo del prossimo anno",
       "resetMessage": "La trattenuta {{ category }} su {{ bill }} si azzera il {{ date }}. Aggiorna il massimo annuo se cambia; altrimenti si applica di nuovo {{ amount }}."

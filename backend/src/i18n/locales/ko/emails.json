@@ -394,6 +394,12 @@
       "todayTitle": "{{ name }}: 보증이 오늘 만료됩니다",
       "todayMessage": "{{ name }}의 보증이 오늘({{ date }}) 만료됩니다. 열어서 문서를 검토하거나 보증 청구를 기록하세요."
     },
+    "security": {
+      "oauthTitle": "새 앱이 연결되었습니다: {{ clientName }}",
+      "oauthMessage": "애플리케이션 {{ clientName }}에 Monize 계정 접근 권한이 방금 부여되었습니다. 본인이 아니라면 지금 비밀번호를 변경하세요. 연결된 모든 애플리케이션의 접근 권한이 취소됩니다.",
+      "relayTitle": "새 연결이 AI 채팅에 응답했습니다",
+      "relayMessage": "이전에 Monize AI 채팅에 응답한 적 없는 연결이 방금 프롬프트를 가져갔습니다. 이 어시스턴트를 연결하지 않았다면 설정에서 API 토큰을 취소하고 비밀번호를 변경하세요."
+    },
     "payrollDeduction": {
       "resetTitle": "{{ category }}: 내년 상한액을 확인하세요",
       "resetMessage": "{{ bill }}의 {{ category }} 공제가 {{ date }}에 초기화됩니다. 연간 상한액이 바뀌면 업데이트하세요. 그렇지 않으면 {{ amount }}이(가) 다시 적용됩니다."

@@ -401,6 +401,7 @@
         "BONDS": "Obrigações",
         "AI_REVIEW": "Propostas de revisão de IA",
         "WARRANTIES": "Lembretes de garantia",
+        "SECURITY": "Segurança",
         "SHARED_EXPENSES": "Despesas compartilhadas"
       },
       "channelNotApplicable": "Não aplicável a este tipo de notificação",
