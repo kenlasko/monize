@@ -159,6 +159,7 @@ export class ScheduledTransactionsController {
             amountEstimate: {
               ...row.amountEstimate,
               paymentCount: null,
+              levelPaymentCount: null,
               latestPaymentDate: null,
             },
           }

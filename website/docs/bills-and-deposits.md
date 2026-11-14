@@ -49,14 +49,14 @@ The summary at the top counts your **Active Bills** and **Active Deposits**, the
 
 For a bill whose amount changes from month to month, such as heating or electricity, turn on **Estimate** beside the **Amount**. Monize then works out each occurrence's amount from the last 24 months of payments to the schedule's **Payee** in its **Category**, in any of your accounts:
 
-- The starting point is the average of your three most recent payments, so a price change is the price from then on.
+- The starting point is the average of your payments over the last 12 months, so one unusually large or small payment does not swing the estimate. When your payments show a seasonal pattern or a steady trend (below), the starting point is the average of your three most recent payments instead, shaped by that pattern.
 - When two years of payments show the same pattern by month, both years, each month is shaped by that pattern: a bill that costs more in winter is forecast to cost more in winter. A bill that costs the same every month, or one whose price simply changed, is not treated as seasonal.
 - When every month went up (or down) by about the same share from one year to the next, the estimate carries that trend forward.
 - A payment in another currency is converted at the current exchange rate. Refunds from the biller are left out.
 
 ![A schedule with Estimate on](images/scheduled-transaction-estimate.png)
 
-The estimate follows new payments as you record them. Under the **Amount**, the form says how many payments the estimate is based on, or what is missing when there is not enough to estimate from: no payments yet, or no exchange rate for a payment's currency. An estimated schedule needs a **Payee** and a **Category**, is available for a single-category transaction in the account's own currency (not a split, investment, or foreign-currency amount) or for a transfer (see [Estimated Transfers](#estimated-transfers)), and is never posted automatically, so **Auto-post on due date** is turned off.
+The estimate follows new payments as you record them. Under the **Amount**, the form says which payments set the estimate (those of the last 12 months, or your three most recent) and when the latest was, or what is missing when there is not enough to estimate from: no payments yet, or no exchange rate for a payment's currency. An estimated schedule needs a **Payee** and a **Category**, is available for a single-category transaction in the account's own currency (not a split, investment, or foreign-currency amount) or for a transfer (see [Estimated Transfers](#estimated-transfers)), and is never posted automatically, so **Auto-post on due date** is turned off.
 
 You still decide every occurrence: the bills list labels the amount **Estimated**, **Edit Occurrence** shows each upcoming occurrence's estimate and lets you change any of them, and the **Post Transaction** dialog opens on the estimate for you to correct before posting. An occurrence you change keeps your amount; one you leave alone keeps following the estimate.
 

@@ -62,21 +62,36 @@ export function useAmountEstimateText(): (
             dueDate !== undefined && estimateEntryOn(estimate, dueDate)?.basis === 'balance'
               ? t('estimate.raisedToBalance', { account })
               : null;
-          const basis =
-            estimate.paymentCount === null
-              ? isTransfer
-                ? t('estimate.basisWithheldTransfer', { account })
-                : t('estimate.basisWithheld')
-              : estimate.growthRate !== null && estimate.growthRate !== 0
-                ? t('estimate.basisWithGrowth', {
-                    count: estimate.paymentCount,
-                    date: estimate.latestPaymentDate ? formatDate(estimate.latestPaymentDate) : '',
-                    growth: formatPercent(estimate.growthRate * 100, 1),
-                  })
-                : t('estimate.basis', {
-                    count: estimate.paymentCount,
-                    date: estimate.latestPaymentDate ? formatDate(estimate.latestPaymentDate) : '',
-                  });
+          const date = estimate.latestPaymentDate ? formatDate(estimate.latestPaymentDate) : '';
+          const growth =
+            estimate.growthRate !== null && estimate.growthRate !== 0
+              ? formatPercent(estimate.growthRate * 100, 1)
+              : null;
+          const levelCount = estimate.levelPaymentCount;
+          let basis: string;
+          if (estimate.paymentCount === null) {
+            basis = isTransfer
+              ? t('estimate.basisWithheldTransfer', { account })
+              : t('estimate.basisWithheld');
+          } else if (estimate.levelRule === 'year' && typeof levelCount === 'number') {
+            basis = t('estimate.basisYear', { count: levelCount, date });
+          } else if (estimate.levelRule === 'recent' && typeof levelCount === 'number') {
+            const count = levelCount;
+            if (estimate.seasonal) {
+              basis = growth
+                ? t('estimate.basisSeasonalWithGrowth', { count, date, growth })
+                : t('estimate.basisSeasonal', { count, date });
+            } else {
+              basis = growth
+                ? t('estimate.basisRecentWithGrowth', { count, date, growth })
+                : t('estimate.basisRecent', { count, date });
+            }
+          } else {
+            // An older server names only how many payments it read.
+            basis = growth
+              ? t('estimate.basisWithGrowth', { count: estimate.paymentCount, date, growth })
+              : t('estimate.basis', { count: estimate.paymentCount, date });
+          }
           return raised ? t('estimate.basisAndRaise', { basis, raised }) : basis;
         }
         case 'no-history':
