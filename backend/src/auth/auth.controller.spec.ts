@@ -577,7 +577,35 @@ describe("AuthController", () => {
         smtp: true,
         force2fa: false,
         demo: false,
+        brandPanel: true,
       });
+    });
+
+    it("turns the brand panel off only for a literal false, any case", async () => {
+      const get = configService.get.getMockImplementation()!;
+      for (const [value, expected] of [
+        ["FALSE", false],
+        ["false", false],
+        ["0", true],
+        ["", true],
+      ] as const) {
+        configService.get.mockImplementation((key: string, d?: string) =>
+          key === "AUTH_BRAND_PANEL" ? value : get(key, d),
+        );
+        const c = new AuthController(
+          authService as never,
+          oidcService as never,
+          undefined as never,
+          configService as never,
+          emailService as never,
+          demoModeService as never,
+          undefined as never,
+          undefined as never,
+          undefined as never,
+          undefined as never,
+        );
+        expect((await c.getAuthMethods()).brandPanel).toBe(expected);
+      }
     });
 
     it("reports oidcPasswordLogin only when the flag is true", async () => {
