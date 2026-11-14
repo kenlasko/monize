@@ -797,8 +797,12 @@ jobs:
           # are the caller's own command-line arguments and the committed
           # desktop/staging-manifest.json, so the path-traversal and query findings
           # there describe no input an attacker supplies. desktop/src, which does
-          # ship, stays scanned.
-          skip-path: ".trail,desktop/scripts"
+          # ship, stays scanned, except desktop/src/test-support: helpers only the
+          # desktop specs import (fakes and temp-directory fixtures), which Bearer
+          # does not recognise as test code the way it does *.spec.ts. They are
+          # left out of the installer too (`!dist/test-support` in
+          # desktop/electron-builder.yml's `files`).
+          skip-path: ".trail,desktop/scripts,desktop/src/test-support"
           # Exclude some false positives and low-risk findings that we are aware of and have accepted for now.
           # Each entry has a "review-by" date; the bearer-exceptions-review workflow
           # opens an issue when any entry is past due, so exceptions don't become permanent debt.
@@ -1020,7 +1024,17 @@ jobs:
           # d4f8d392d818168193ab2bb2a7566871_1 - same call, second sink [CWE-78] - review-by: 2027-02-13
           # 4ec6862f6eb8000234e8fdabf8959e74_0 - node-postgres pass-through for the runner's own statements, with values [CWE-89] - review-by: 2027-02-13
           # 4ec6862f6eb8000234e8fdabf8959e74_1 - same pass-through, without values [CWE-89] - review-by: 2027-02-13
-          exclude-fingerprint: "d4f8d392d818168193ab2bb2a7566871_0,d4f8d392d818168193ab2bb2a7566871_1,4ec6862f6eb8000234e8fdabf8959e74_0,4ec6862f6eb8000234e8fdabf8959e74_1,df1db3090cab23fd55c9a22789aa6b2f_0,9a51af5fd92c92c4c022addd331ee9c6_0,8145f16fcf77da087020769e5609a11b_0,b04cb91b90deb5e16504baa7ab95f678_0,b04cb91b90deb5e16504baa7ab95f678_1,b6c4552155ecc9b65a9205911f502bf1_0,b6c4552155ecc9b65a9205911f502bf1_1,b6c4552155ecc9b65a9205911f502bf1_2,b6c4552155ecc9b65a9205911f502bf1_3,c055716bae113b20589f9ea5c5963e65_0,f9b26e7d59d0f577ff9a0e93ea4f7b7c_0,f9b26e7d59d0f577ff9a0e93ea4f7b7c_1,f6196720ad017b3d11d24487792c1479_0,45093073db7d96d61cd30bceb943f63f_0,45093073db7d96d61cd30bceb943f63f_1,45093073db7d96d61cd30bceb943f63f_2,b7502b6ea7c0a272ab08099b55d0392c_0,4beb484f871a7489b5f5ff2df93f72f1_0,0ff64c8083ce01b1e8c867832c0dff85_0,1f87dd3b3950178c2eac383cfcead816_0,e717be7fe9c133adba7d48ccb371c6ba_0,173289a7a56f6f6b27dc2314746e9451_0,242a05abd45296bc2ba6d9174dc6f3dd_0,90aa4e42622acc64795b7d291a5d74f9_0,fae1b07dcb3c5444235e7e0b4bcae188_0,fae1b07dcb3c5444235e7e0b4bcae188_1,dc1e615df30fcceb5a3cd2fd3ccd4c32_0,dc1e615df30fcceb5a3cd2fd3ccd4c32_1,693f53c921285bddc3861f6027338c94_0,f4213ea85085fdf7e12b1eb1ee903f75_0,cc8be0f09d430af908c2fcbbd4b6de11_0"
+          # The two below are in the desktop shell. In desktop/src/electron-main.ts a
+          # click on a native notification loads its row's link in the main window:
+          # the URL comes from notificationUrl() in shell/notification-bridge.ts, which
+          # resolves the link through the shell's navigation policy and returns the
+          # app's own origin or its home page, never a file or another origin.
+          # Renaming the variable did not clear it. In desktop/src/move/target.ts,
+          # relationOf() resolves two folder names only to compare them as strings
+          # for the "Move data folder" refusals; it opens nothing.
+          # 3282e1a4a347b1d24e25476f60c08a82_0 - loadURL of an app-origin notification link [CWE-22] - review-by: 2027-02-14
+          # 7254ad08500a2051f88804ac75b3fb16_0 - path.resolve of two folder names compared as strings [CWE-22] - review-by: 2027-02-14
+          exclude-fingerprint: "3282e1a4a347b1d24e25476f60c08a82_0,7254ad08500a2051f88804ac75b3fb16_0,d4f8d392d818168193ab2bb2a7566871_0,d4f8d392d818168193ab2bb2a7566871_1,4ec6862f6eb8000234e8fdabf8959e74_0,4ec6862f6eb8000234e8fdabf8959e74_1,df1db3090cab23fd55c9a22789aa6b2f_0,9a51af5fd92c92c4c022addd331ee9c6_0,8145f16fcf77da087020769e5609a11b_0,b04cb91b90deb5e16504baa7ab95f678_0,b04cb91b90deb5e16504baa7ab95f678_1,b6c4552155ecc9b65a9205911f502bf1_0,b6c4552155ecc9b65a9205911f502bf1_1,b6c4552155ecc9b65a9205911f502bf1_2,b6c4552155ecc9b65a9205911f502bf1_3,c055716bae113b20589f9ea5c5963e65_0,f9b26e7d59d0f577ff9a0e93ea4f7b7c_0,f9b26e7d59d0f577ff9a0e93ea4f7b7c_1,f6196720ad017b3d11d24487792c1479_0,45093073db7d96d61cd30bceb943f63f_0,45093073db7d96d61cd30bceb943f63f_1,45093073db7d96d61cd30bceb943f63f_2,b7502b6ea7c0a272ab08099b55d0392c_0,4beb484f871a7489b5f5ff2df93f72f1_0,0ff64c8083ce01b1e8c867832c0dff85_0,1f87dd3b3950178c2eac383cfcead816_0,e717be7fe9c133adba7d48ccb371c6ba_0,173289a7a56f6f6b27dc2314746e9451_0,242a05abd45296bc2ba6d9174dc6f3dd_0,90aa4e42622acc64795b7d291a5d74f9_0,fae1b07dcb3c5444235e7e0b4bcae188_0,fae1b07dcb3c5444235e7e0b4bcae188_1,dc1e615df30fcceb5a3cd2fd3ccd4c32_0,dc1e615df30fcceb5a3cd2fd3ccd4c32_1,693f53c921285bddc3861f6027338c94_0,f4213ea85085fdf7e12b1eb1ee903f75_0,cc8be0f09d430af908c2fcbbd4b6de11_0"
 
   # The desktop package's own checks (desktop/README.md, "CI"). Its jest suite
   # includes guard specs that read backend/docker-entrypoint.sh, both
