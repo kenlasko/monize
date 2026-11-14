@@ -595,10 +595,12 @@ attachments directory, copied while the app is stopped).
 Each item is its own small PR; none blocks the others.
 
 - Launch at login (`app.setLoginItemSettings`) with a tray toggle.
-- Notification bridge: poll the notification centre's unread route with the
-  window session's cookies and raise a native `Notification` per new row;
-  clicking opens the window on the notification. Replaces D10's loss for
-  the in-window case without touching `sw.js`.
+- Notification bridge: raise a native `Notification` per new unread row of
+  the notification centre; clicking opens the window on the notification.
+  Replaces D10's loss for the in-window case without touching `sw.js`.
+  Built with the page polling, not the main process (section 12, item 17):
+  the shell makes no request and holds no credential.
+  `docs/frontend/shell-contract.md`, "Native notifications", is the design.
 - "Export recovery key" writes a text file through a save dialog, in addition
   to the show dialog from D4.
 - Log viewer: a window tailing the three log files.

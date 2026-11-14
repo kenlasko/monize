@@ -336,6 +336,7 @@
           "capacitor": "Pushmeldingen zijn nog niet beschikbaar in de Monize-app voor Android. Open Monize in uw browser om ze te ontvangen."
         }
       },
+      "native": "De Monize-desktopapp toont je meldingen op deze pc zolang de app draait, ook als het venster naar het systeemvak is gesloten, dus hier hoeft niets te worden ingeschakeld. De meldingsinstellingen van Windows bepalen hoe ze verschijnen.",
       "disabledReason": {
         "GONE": "Niet meer bereikbaar. Schakel push opnieuw in in die browser.",
         "KEY_ROTATED": "Stopgezet toen deze instantie haar pushsleutelpaar verving. Schakel push opnieuw in in die browser.",

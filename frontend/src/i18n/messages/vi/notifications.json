@@ -215,5 +215,63 @@
   "shared": {
     "title": "Chi phí chung",
     "message": "Một nhóm chung có cập nhật. Mở Monize để xem lại."
+  },
+  "native": {
+    "payments": {
+      "title": "Nhắc nhở thanh toán",
+      "body": "Một hóa đơn hoặc khoản thanh toán đã lên lịch cần bạn chú ý. Mở Monize để xem chi tiết."
+    },
+    "budgets": {
+      "title": "Cảnh báo ngân sách",
+      "body": "Một trong các ngân sách của bạn cần được chú ý. Mở Monize để xem chi tiết."
+    },
+    "system": {
+      "title": "Thông báo hệ thống",
+      "body": "Monize có một thông báo hệ thống cho bạn. Mở ứng dụng để xem chi tiết."
+    },
+    "balances": {
+      "title": "Cảnh báo số dư",
+      "body": "Số dư của một tài khoản đã vượt ngưỡng bạn đặt. Mở Monize để xem chi tiết."
+    },
+    "investments": {
+      "title": "Biến động đầu tư",
+      "body": "Các khoản đầu tư của bạn có biến động hôm nay. Mở Monize để xem chi tiết."
+    },
+    "strategies": {
+      "title": "Tín hiệu chiến lược",
+      "body": "Một trong các chiến lược của bạn đã thay đổi khuyến nghị. Mở Monize để xem chi tiết."
+    },
+    "bank_sync": {
+      "title": "Kết nối ngân hàng",
+      "body": "Một kết nối ngân hàng cần được chú ý. Mở Monize để xem chi tiết."
+    },
+    "bank_sync_activity": {
+      "title": "Đồng bộ ngân hàng",
+      "body": "Đồng bộ ngân hàng của bạn có tin mới. Mở Monize để xem chi tiết."
+    },
+    "email_receipts": {
+      "title": "Biên lai email cần chú ý",
+      "body": "Một số email trong hộp inbox biên lai của bạn cần profil hoặc sửa chữa. Mở Monize để biết chi tiết."
+    },
+    "bonds": {
+      "title": "Thông báo trái phiếu",
+      "body": "Một trong các trái phiếu của bạn có tin mới. Mở Monize để xem chi tiết."
+    },
+    "ai_review": {
+      "title": "Đề xuất xem xét của AI",
+      "body": "Một số đề xuất xem xét của AI đang chờ quyết định của bạn. Mở Monize để xem chi tiết."
+    },
+    "warranties": {
+      "title": "Nhắc nhở bảo hành",
+      "body": "Một trong các bảo hành của bạn sắp hết hạn. Mở Monize để xem chi tiết."
+    },
+    "shared_expenses": {
+      "title": "Chi phí chung",
+      "body": "Một nhóm chung có cập nhật. Mở Monize để xem lại."
+    },
+    "fallback": {
+      "title": "Monize",
+      "body": "Bạn có một thông báo mới trong Monize."
+    }
   }
 }

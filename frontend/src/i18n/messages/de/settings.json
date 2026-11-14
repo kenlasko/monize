@@ -336,6 +336,7 @@
           "capacitor": "Push-Benachrichtigungen sind in der Monize-Android-App noch nicht verfügbar. Öffnen Sie Monize im Browser, um sie zu erhalten."
         }
       },
+      "native": "Die Monize-Desktop-App zeigt Ihre Benachrichtigungen auf diesem PC an, solange sie läuft, auch wenn ihr Fenster in den Infobereich geschlossen ist. Hier muss also nichts aktiviert werden. Wie sie erscheinen, legen die Benachrichtigungseinstellungen von Windows fest.",
       "disabledReason": {
         "GONE": "Nicht mehr erreichbar. Aktivieren Sie Push in jenem Browser erneut.",
         "KEY_ROTATED": "Stillgelegt, als diese Instanz ihr Push-Schlüsselpaar erneuert hat. Aktivieren Sie Push in jenem Browser erneut.",

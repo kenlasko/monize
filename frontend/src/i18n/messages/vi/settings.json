@@ -336,6 +336,7 @@
           "capacitor": "Thông báo đẩy chưa khả dụng trong ứng dụng Monize cho Android. Hãy mở Monize trong trình duyệt để nhận thông báo."
         }
       },
+      "native": "Ứng dụng Monize trên máy tính hiển thị thông báo của bạn trên PC này khi đang chạy, kể cả khi cửa sổ đã được đóng xuống khay hệ thống, nên không có gì cần bật ở đây. Cài đặt thông báo của Windows quyết định cách chúng hiển thị.",
       "disabledReason": {
         "GONE": "Không còn tiếp cận được. Hãy bật lại đẩy trong trình duyệt đó.",
         "KEY_ROTATED": "Đã ngừng khi phiên bản này xoay cặp khóa đẩy. Hãy bật lại đẩy trong trình duyệt đó.",

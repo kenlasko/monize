@@ -57,7 +57,10 @@ export function decideNavigation(
  * The permissions the page is granted, and only on its own origin. The page
  * copies values to the clipboard (`navigator.clipboard.writeText`: recovery
  * codes, API tokens, the MCP address); nothing else it does needs one.
- * Notifications stay denied: the window has no push service (plan D10).
+ * Notifications stay denied: the window has no push service (plan D10), and
+ * the native ones are raised by the main process from what the page publishes
+ * through the notification bridge (`notification-bridge.ts`), never by the
+ * page's own Notification API.
  */
 export const ALLOWED_PERMISSIONS: ReadonlySet<string> = new Set([
   "clipboard-sanitized-write",

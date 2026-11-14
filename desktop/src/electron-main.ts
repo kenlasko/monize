@@ -20,6 +20,10 @@ import {
 import { createLogger } from "./logger";
 import { createLogViewer } from "./log-viewer";
 import { exportRecoveryKey } from "./recovery-export";
+import {
+  createNotificationBridge,
+  NotificationBridgeHandle,
+} from "./notifications";
 import { createRuntime, Runtime, stopLeftoverPostgres } from "./runtime";
 import { APP_ID } from "./shell/app-id";
 import { createShellController } from "./shell/controller";
@@ -192,6 +196,7 @@ function run(paths: AppPaths): void {
     wasOpenedAtLogin:
       loginItemAvailable() && app.getLoginItemSettings().wasOpenedAtLogin,
   });
+  let notifications: NotificationBridgeHandle | null = null;
 
   const controller = createShellController({
     createRuntime: () =>
@@ -254,6 +259,7 @@ function run(paths: AppPaths): void {
     exit: (code) => app.exit(code),
     onBegin: () => {
       controller.runtime?.logger.info("Shell: quitting; stopping the stack.");
+      notifications?.stop();
       mainWindow?.hide();
     },
   });
@@ -299,6 +305,16 @@ function run(paths: AppPaths): void {
       iconPath,
       logsDir: runtime.paths.data.logs,
       logger,
+    });
+    notifications = createNotificationBridge({
+      origin,
+      logger,
+      contents: () => (window.isDestroyed() ? null : window.webContents),
+      open: (target) => {
+        void window.loadURL(target).catch(() => undefined);
+        showWindow(window);
+      },
+      show: () => showWindow(window),
     });
     tray = createTray({
       iconPath,

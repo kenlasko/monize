@@ -41,7 +41,7 @@ confirms or corrects.
 | D7 | **`JWT_SECRET`, `ENCRYPTION_KEY` and `DATABASE_PASSWORD` are generated on first run and stored encrypted with Electron `safeStorage`** in the config file. A tray item reveals `ENCRYPTION_KEY` as a recovery key. | Losing `ENCRYPTION_KEY` makes TOTP secrets and every encrypted column unreadable (`docs/backup-restore-contract.md` section 8). DPAPI binds the stored copy to the Windows account, so the person must be able to export it. |
 | D8 | **Ports are chosen once on first run and persisted** (defaults 3380 frontend, 3381 backend, 5433 PostgreSQL; a busy default is probed past and the result saved). | `PUBLIC_APP_URL` is a stable origin used by OIDC redirect registration, the MCP issuer and service-worker caches. A new port on every launch would break all three. |
 | D9 | **Code signing through SignPath Foundation's free open-source programme first; Azure Artifact Signing is the paid alternative.** | Monize is AGPL, which qualifies. EV hardware tokens cannot run on GitHub-hosted runners. Unsigned builds work but sit behind SmartScreen. |
-| D10 | **Web Push does not work inside the Electron window** (there is no push service). The tray offers "Open in browser", where the installed PWA and push keep working against the same local servers. A native notification bridge is a later task. | The push handlers in `frontend/public/sw.js` need a browser push service; the rest of the worker (offline cache, share target) is irrelevant on loopback. |
+| D10 | **Web Push does not work inside the Electron window** (there is no push service). The tray offers "Open in browser", where the installed PWA and push keep working against the same local servers. A native notification bridge is a later task (built in D9: section 12, item 17). | The push handlers in `frontend/public/sw.js` need a browser push service; the rest of the worker (offline cache, share target) is irrelevant on loopback. |
 | D11 | **The Windows shell (Electron) and the Android shell (Capacitor, planned separately) stay independent.** They share one written contract that the web app offers to any shell, not a framework. | Capacitor has no Windows target: its desktop route is Electron underneath (`@capawesome/capacitor-electron` 0.2.2, pre-1.0, three months old; `@capacitor-community/electron` unmaintained since 2023). The shells do different jobs: Android is a thin client to a remote server, Windows hosts the server. Tauri 2 was the only single-codebase option and was declined. |
 
 ## 3. Relationship to the Android plan
@@ -328,4 +328,17 @@ Each is a decision the build made against the text above, with its reason.
     to run every UI flow with policies in force: a flow that fails only under
     enforcement shows up here first. The install smoke test asserts the
     backend's own "enforce verified" line.
-
+17. **The notification bridge polls from the page** (D9). The sketch had the
+    main process poll the unread route with the window session's cookies.
+    That request would be the shell's, not the page's: it could not refresh
+    an expired access token without handling the page's credentials, could
+    not tell who it was asking for when a second person signs in, and with
+    `unreadOnly` would never materialize bill reminders. The page instead
+    reads the full list every minute with its own session and publishes the
+    unread rows and the signed-in user's id through a second preload key;
+    the main process decides what is new in a pure state machine and raises
+    the notifications. The copy is Web Push's generic per-category text, not
+    the row's own, because a notification can show on a locked screen.
+    `canReceivePush` stays false for `electron`; a separate capability,
+    `receivesNotificationsNatively`, changes the push settings text instead.
+    `docs/frontend/shell-contract.md`, "Native notifications", has the rules.

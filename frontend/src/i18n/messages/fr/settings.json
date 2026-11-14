@@ -336,6 +336,7 @@
           "capacitor": "Les notifications push ne sont pas encore disponibles dans l'application Monize pour Android. Ouvrez Monize dans votre navigateur pour les recevoir."
         }
       },
+      "native": "L’application de bureau Monize affiche vos notifications sur ce PC tant qu’elle est ouverte, y compris lorsque sa fenêtre est réduite dans la zone de notification : il n’y a donc rien à activer ici. Les paramètres de notification de Windows déterminent leur affichage.",
       "disabledReason": {
         "GONE": "Plus joignable. Réactivez le push dans ce navigateur.",
         "KEY_ROTATED": "Retiré lors de la rotation de la paire de clés push de cette instance. Réactivez le push dans ce navigateur.",

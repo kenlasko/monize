@@ -215,5 +215,63 @@
   "shared": {
     "title": "Gastos compartidos",
     "message": "Hay novedades en un grupo compartido. Abre Monize para revisarlas."
+  },
+  "native": {
+    "payments": {
+      "title": "Recordatorio de pago",
+      "body": "Una factura o un pago programado requiere tu atención. Abre Monize para ver los detalles."
+    },
+    "budgets": {
+      "title": "Alerta de presupuesto",
+      "body": "Uno de tus presupuestos requiere tu atención. Abre Monize para ver los detalles."
+    },
+    "system": {
+      "title": "Aviso del sistema",
+      "body": "Monize tiene un aviso del sistema para ti. Abre la aplicación para ver los detalles."
+    },
+    "balances": {
+      "title": "Alerta de saldo",
+      "body": "El saldo de una cuenta ha cruzado un umbral que estableciste. Abre Monize para ver los detalles."
+    },
+    "investments": {
+      "title": "Movimiento de inversiones",
+      "body": "Tus inversiones se movieron hoy. Abre Monize para ver los detalles."
+    },
+    "strategies": {
+      "title": "Señal de estrategia",
+      "body": "Una de tus estrategias cambió su recomendación. Abre Monize para ver los detalles."
+    },
+    "bank_sync": {
+      "title": "Conexión bancaria",
+      "body": "Una conexión bancaria requiere tu atención. Abre Monize para ver los detalles."
+    },
+    "bank_sync_activity": {
+      "title": "Sincronización bancaria",
+      "body": "Tu sincronización bancaria tiene novedades. Abre Monize para ver los detalles."
+    },
+    "email_receipts": {
+      "title": "Los recibos de correo necesitan atención",
+      "body": "Algunos correos en su bandeja de entrada de recibos necesitan un perfil o una corrección. Abra Monize para más detalles."
+    },
+    "bonds": {
+      "title": "Aviso de bonos",
+      "body": "Uno de sus bonos tiene novedades. Abra Monize para ver los detalles."
+    },
+    "ai_review": {
+      "title": "Propuestas de revisión de IA",
+      "body": "Algunas propuestas de revisión de IA esperan su decisión. Abra Monize para ver los detalles."
+    },
+    "warranties": {
+      "title": "Recordatorio de garantía",
+      "body": "Una de sus garantías vence pronto. Abra Monize para ver los detalles."
+    },
+    "shared_expenses": {
+      "title": "Gastos compartidos",
+      "body": "Hay novedades en un grupo compartido. Abre Monize para revisarlas."
+    },
+    "fallback": {
+      "title": "Monize",
+      "body": "Tienes una notificación nueva en Monize."
+    }
   }
 }

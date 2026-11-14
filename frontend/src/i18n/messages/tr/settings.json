@@ -336,6 +336,7 @@
           "capacitor": "Anlık bildirimler Monize Android uygulamasında henüz kullanılamıyor. Bunları almak için Monize'ı tarayıcıda açın."
         }
       },
+      "native": "Monize masaüstü uygulaması, çalıştığı sürece, penceresi tepsiye kapatılmış olsa bile bildirimlerinizi bu bilgisayarda gösterir; bu nedenle burada etkinleştirilecek bir şey yoktur. Nasıl görüneceklerine Windows bildirim ayarları karar verir.",
       "disabledReason": {
         "GONE": "Artık erişilebilir değil. O tarayıcıda anlık bildirimleri yeniden açın.",
         "KEY_ROTATED": "Bu örnek anlık bildirim anahtar çiftini değiştirdiğinde devre dışı bırakıldı. O tarayıcıda anlık bildirimleri yeniden açın.",

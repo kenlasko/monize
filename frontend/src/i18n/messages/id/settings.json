@@ -336,6 +336,7 @@
           "capacitor": "Notifikasi push belum tersedia di aplikasi Monize untuk Android. Buka Monize di browser untuk menerimanya."
         }
       },
+      "native": "Aplikasi desktop Monize menampilkan notifikasi Anda di PC ini selama aplikasi berjalan, juga saat jendelanya ditutup ke baki, jadi tidak ada yang perlu diaktifkan di sini. Pengaturan notifikasi Windows menentukan cara notifikasi tersebut muncul.",
       "disabledReason": {
         "GONE": "Tidak dapat dijangkau lagi. Aktifkan kembali push di peramban tersebut.",
         "KEY_ROTATED": "Dinonaktifkan saat instans ini merotasi pasangan kunci push. Aktifkan kembali push di peramban tersebut.",

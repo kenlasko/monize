@@ -215,5 +215,63 @@
   "shared": {
     "title": "Paylaşılan giderler",
     "message": "Ortak bir grupta güncelleme var. İncelemek için Monize'ı açın."
+  },
+  "native": {
+    "payments": {
+      "title": "Ödeme hatırlatması",
+      "body": "Bir fatura veya planlanmış ödeme ilginizi bekliyor. Ayrıntılar için Monize'i açın."
+    },
+    "budgets": {
+      "title": "Bütçe uyarısı",
+      "body": "Bütçelerinizden biri ilginizi bekliyor. Ayrıntılar için Monize'i açın."
+    },
+    "system": {
+      "title": "Sistem bildirimi",
+      "body": "Monize'in sizin için bir sistem bildirimi var. Ayrıntılar için uygulamayı açın."
+    },
+    "balances": {
+      "title": "Bakiye uyarısı",
+      "body": "Bir hesap bakiyesi belirlediğiniz eşiği aştı. Ayrıntılar için Monize'i açın."
+    },
+    "investments": {
+      "title": "Yatırım hareketi",
+      "body": "Yatırımlarınız bugün hareket etti. Ayrıntılar için Monize'i açın."
+    },
+    "strategies": {
+      "title": "Strateji sinyali",
+      "body": "Stratejilerinizden biri önerisini değiştirdi. Ayrıntılar için Monize'i açın."
+    },
+    "bank_sync": {
+      "title": "Banka bağlantısı",
+      "body": "Bir banka bağlantısı ilginizi bekliyor. Ayrıntılar için Monize'i açın."
+    },
+    "bank_sync_activity": {
+      "title": "Banka senkronizasyonu",
+      "body": "Banka senkronizasyonunuzda yenilikler var. Ayrıntılar için Monize'i açın."
+    },
+    "email_receipts": {
+      "title": "E-posta makbuzları ilgilenilmesi gerekiyor",
+      "body": "Makbuz gelen kutunuzdaki bazı e-postalar bir profil veya düzeltme gerektirir. Detaylar için Monize'i açın."
+    },
+    "bonds": {
+      "title": "Tahvil bildirimi",
+      "body": "Tahvillerinizden biriyle ilgili yeni bir gelişme var. Ayrıntılar için Monize uygulamasını açın."
+    },
+    "ai_review": {
+      "title": "Yapay zeka inceleme önerileri",
+      "body": "Bazı yapay zeka inceleme önerileri kararınızı bekliyor. Ayrıntılar için Monize'i açın."
+    },
+    "warranties": {
+      "title": "Garanti hatırlatıcısı",
+      "body": "Garantilerinizden birinin süresi yakında doluyor. Ayrıntılar için Monize'i açın."
+    },
+    "shared_expenses": {
+      "title": "Paylaşılan giderler",
+      "body": "Ortak bir grupta güncelleme var. İncelemek için Monize'ı açın."
+    },
+    "fallback": {
+      "title": "Monize",
+      "body": "Monize'da yeni bir bildiriminiz var."
+    }
   }
 }
