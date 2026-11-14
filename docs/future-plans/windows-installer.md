@@ -328,4 +328,11 @@ Each is a decision the build made against the text above, with its reason.
     to run every UI flow with policies in force: a flow that fails only under
     enforcement shows up here first. The install smoke test asserts the
     backend's own "enforce verified" line.
+17. **The desktop's backend `node_modules` differs from the image's by exactly
+    the files Node never executes**: declaration files, source maps,
+    TypeScript sources and Markdown (licences are kept), removed to cut the
+    installer's file count, since every file is written twice and scanned by
+    Defender. A check after the prune (`desktop/scripts/lib/prune-check.mjs`)
+    holds it: every `main`, `module`, `bin` and `exports` target of every
+    package must still resolve, or staging fails naming the package.
 
