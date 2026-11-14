@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync, writeFileSync } from "fs";
 import * as hostPath from "path";
-import { dirname, join } from "path";
+import { join } from "path";
 
 import {
   createMoveFixture,
