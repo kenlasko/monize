@@ -64,7 +64,7 @@
 !define MONIZE_TXT_PER_USER_ONLY "Monize installs for the current user only; /allusers is not supported."
 ; The installer's details list (monizeShowDetails, customInstall).
 !define MONIZE_TXT_CHECKING "Checking the installation folder and closing Monize if it is running..."
-!define MONIZE_TXT_UNPACKING "Unpacking and copying Monize's files. There are tens of thousands of them, so this can take several minutes, longer while antivirus software scans them. The list will not move until it is done."
+!define MONIZE_TXT_UNPACKING "Copying files... this will take some time."
 !define MONIZE_TXT_INSTALLED "Monize is installed."
 
 ; ---------------------------------------------------------------------------

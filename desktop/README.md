@@ -324,8 +324,10 @@ lists when each one runs.
   application needed no change: `Monize.exe --quit` resolves the data
   folder as every launch does.
 - **The installer shows its details list**, which electron-builder's template
-  hides, and says before the file step that it unpacks tens of thousands of
-  files and can sit still for minutes while it does.
+  hides, and says before the file step that copying the files will take
+  some time: the step copies tens of thousands of files and the list does not
+  move for minutes while it does. The line stays short because the window's
+  status line cuts off long text.
 - An uninstall also removes the `monize://` registration when it points at
   the removed executable, and the copy of the installer that electron-builder
   keeps under `%LOCALAPPDATA%\monize-desktop-updater` for updates.
