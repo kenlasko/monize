@@ -480,6 +480,25 @@ fetch('https://api.github.com/repos/kenlasko/monize').then(function(r){ return r
   if(d && d.stargazers_count) $('#stars').textContent='★ '+d.stargazers_count;
 }).catch(function(){});
 
+/* Windows installer links (best effort). Each link starts at the Windows guide's
+   download section and becomes a direct download once GitHub says which file the
+   newest release, and the one Windows beta prerelease, carry. /releases/latest
+   never returns a prerelease, so a beta is never offered as the release. */
+function winAsset(rel){
+  var a=(rel&&rel.assets||[]).filter(function(x){ return /^Monize-Setup-.+\.exe$/.test(x.name); })[0];
+  return a ? {url:a.browser_download_url, version:rel.tag_name.replace(/^v/,'')} : null;
+}
+fetch('https://api.github.com/repos/kenlasko/monize/releases/latest').then(function(r){ return r.ok ? r.json() : null; }).then(function(rel){
+  var w=winAsset(rel); if(!w) return;
+  $$('[data-win-download]').forEach(function(a){ a.href=w.url; a.title='Monize-Setup-'+w.version+'.exe'; });
+  $$('[data-win-version]').forEach(function(s){ s.textContent='Version '+w.version+' · Windows 10/11, 64-bit.'; });
+}).catch(function(){});
+fetch('https://api.github.com/repos/kenlasko/monize/releases?per_page=30').then(function(r){ return r.ok ? r.json() : null; }).then(function(list){
+  var beta=(list||[]).filter(function(rel){ return rel.prerelease && /^v\d+\.\d+\.\d+-beta\.\d+$/.test(rel.tag_name); })[0];
+  var w=winAsset(beta); if(!w) return;
+  $$('[data-win-beta]').forEach(function(a){ a.href=w.url; a.removeAttribute('target'); a.title='Monize-Setup-'+w.version+'.exe: a preview of the next release, less tested'; a.textContent='Windows beta '+w.version; });
+}).catch(function(){});
+
 /* ---------- features ---------- */
 var fchips=$('#fchips'), fgrid=asStrip($('#fgrid'),'Features — scroll sideways for more'), fcat='all';
 M.FCATS.forEach(function(c){

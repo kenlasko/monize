@@ -15,6 +15,9 @@ Each delegate has their own login. Shared Access is not available in demo mode.
 
 ---
 
+> [!NOTE]
+> **Monize for Windows:** Shared Access works, but everyone signs in on the PC running Monize, in its window or in a browser on that PC, because nothing else can reach it.
+
 ## Concepts
 
 | Term | Meaning |

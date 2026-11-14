@@ -65,10 +65,10 @@
 | D7 | electron-builder configuration, NSIS include, unsigned local build, manual acceptance | D4, D5, D6, B1 | neutral | [x] config, Linux-verified; never built or run on Windows |
 | C1 | CI job on `windows-latest`: build, package, smoke-test, upload artifact | D7 | none | [x] written and statically checked; never run |
 | D8 | Updater against GitHub Releases | D7 | neutral | [x] unit-verified; a real update is Windows-only |
-| C2 | Release job attaches the installer, `latest.yml` and the blockmap | C1, D8 | release | [ ] |
+| C2 | Release job attaches the installer, `latest.yml` and the blockmap | C1, D8 | release | [x] written and statically checked; no release or beta has run it (see C2) |
 | C3 | Code signing | C2 | release | [ ] |
 | F2 | The page honours the shell contract: shell flag, push banner, external links | F1, D4 | neutral | [x] |
-| Q1 | README, website and docs: the Windows install path | C2 | none | [ ] |
+| Q1 | README, website and docs: the Windows install path | C2 | none | [x] guide page, notes, site links, README, backup script |
 | D9 | Polish: launch at login, notification bridge, recovery-key dialog, log viewer | D8, F2 | neutral | [ ] |
 
 ## Build record
@@ -541,6 +541,21 @@ Steps:
 
 **Acceptance:** a `workflow_dispatch` release on a scratch tag attaches the
 three assets; `electron-updater` on an installed previous version sees it.
+
+**As built (2026-11-14), with the maintainer's choices:** the Windows build no
+longer runs on PRs or branch pushes (about 40 minutes each). `desktop-windows`
+runs after `prepare-release` (stamped with the release version) or
+`prepare-preview` (stamped `<next patch>-beta.<run number>`), or at once on a
+manual dispatch of a non-main branch, which only uploads the 7-day artifact.
+It sets the version with `npm version` in all three packages before building,
+checks out `github.sha` explicitly and fails if it differs from the gated
+`git_sha`. `prepare-release` no longer needs it (it now needs the version
+`prepare-release` resolves); `release` needs it instead, checks the version,
+and passes the three files to `gh release create`. A new `windows-beta` job
+publishes each merge to `main` as the one Windows beta prerelease
+(`v<version>`, `--target` the gated SHA) and deletes every older one. Not yet
+observed: a real release or beta run, electron-builder's `beta.yml` name for a
+prerelease version, and an installed beta updating to the next.
 The PR body carries the `docs/release-integrity.md` section 7 statement:
 which revision each artifact is bound to and how, that no post-gate commit is
 added, no new bypass or PAT, and which gap-register rows move.

@@ -1070,6 +1070,23 @@ jobs:
   # (desktop/scripts/smoke-install.ps1). Nothing else exercises the desktop
   # code on Windows.
   #
+  # When it runs. About 40 minutes on windows-latest, so not on a PR or a
+  # push to a branch:
+  #
+  #   * a release dispatch on main: after prepare-release, stamped with the
+  #     release version; the release job attaches what it uploads.
+  #   * a push to main (a beta): after prepare-preview, stamped
+  #     <next patch>-beta.<run number>; windows-beta publishes it as the one
+  #     Windows beta prerelease.
+  #   * a manual dispatch on any other branch: at once, with the version in
+  #     package.json, as a 7-day artifact and nothing more. That is how a
+  #     branch's installer is tried before it merges:
+  #     `gh workflow run "CI Pipeline" --ref <branch>`.
+  #
+  # On main, the needs carry the whole gate: prepare-release and
+  # prepare-preview run only once every test, scan and E2E job has passed.
+  # `!cancelled()` is what lets the branch build start with both skipped.
+  #
   # Shells, deliberately: `pwsh` (the Windows default) for every build step,
   # because that is how a person builds on Windows, and because Git Bash
   # rewrites PATH and would hide a `sh` or `cwebp` that the staging step
@@ -1081,7 +1098,16 @@ jobs:
   desktop-windows:
     name: Desktop Windows Installer
     runs-on: windows-latest
+    needs: [desktop, prepare-release, prepare-preview]
+    if: >-
+      !cancelled() && needs.desktop.result == 'success' && (
+        needs.prepare-release.result == 'success' ||
+        needs.prepare-preview.result == 'success' ||
+        (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')
+      )
     timeout-minutes: 75
+    outputs:
+      version: ${{ steps.installer-version.outputs.version }}
     defaults:
       run:
         shell: pwsh
@@ -1099,13 +1125,50 @@ jobs:
           git config --global core.autocrlf false
           git config --global core.eol lf
           git config --global core.longpaths true
+      # The revision the images are built from (REL-003): prepare-release and
+      # prepare-preview both record github.sha as git_sha, and this checks out
+      # that commit by name and refuses anything else.
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Check the revision
+        env:
+          GATED_SHA: ${{ needs.prepare-release.outputs.git_sha || needs.prepare-preview.outputs.git_sha || github.sha }}
+        run: |
+          $head = (git rev-parse HEAD).Trim()
+          if ($head -ne $env:GATED_SHA) { throw "checked out $head, but the gated revision is $env:GATED_SHA" }
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
           package-manager-cache: false
+
+      # The version the installer, the backend and the frontend report, set
+      # before anything is built (the frontend inlines it). The same
+      # `npm version` the image builds run, with no commit: the release job
+      # owns the bump commit. A beta adds the run number to the images'
+      # <next patch>-beta so each beta sorts after the one before it, which is
+      # what lets an installed beta update to the next one. A branch build
+      # keeps package.json's version.
+      - name: Set the installer version
+        id: installer-version
+        env:
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
+          PREVIEW_VERSION: ${{ needs.prepare-preview.outputs.version }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          if ($env:RELEASE_VERSION) { $version = $env:RELEASE_VERSION }
+          elseif ($env:PREVIEW_VERSION) { $version = "$($env:PREVIEW_VERSION).$($env:RUN_NUMBER)" }
+          else { $version = (Get-Content -Raw desktop/package.json | ConvertFrom-Json).version }
+          foreach ($dir in 'backend', 'frontend', 'desktop') {
+            Push-Location $dir
+            npm version $version --no-git-tag-version --allow-same-version
+            $code = $LASTEXITCODE
+            Pop-Location
+            if ($code -ne 0) { throw "npm version $version failed in $dir" }
+          }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Installer version: $version"
 
       # cwebp is the only build tool the image lacks (desktop/README.md). From
       # the libwebp project's own release zip rather than Chocolatey: one
@@ -1211,8 +1274,11 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      # Only an installer that passed the smoke test. Not a release asset:
-      # attaching these to a GitHub release is a separate change (task C2).
+      # Only an installer that passed the smoke test. The release job and
+      # windows-beta attach exactly these files. The updater reads
+      # latest.yml for a release and beta.yml for a beta (electron-builder
+      # names the file after the version's prerelease channel), so both
+      # patterns are listed and whichever exists is uploaded.
       - name: Upload the installer
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
@@ -1221,6 +1287,7 @@ jobs:
             desktop/release/Monize-Setup-*.exe
             desktop/release/Monize-Setup-*.exe.blockmap
             desktop/release/latest.yml
+            desktop/release/beta.yml
           if-no-files-found: error
           retention-days: 7
 
@@ -1253,7 +1320,6 @@ jobs:
         e2e-tests,
         helm-chart,
         desktop,
-        desktop-windows,
       ]
     permissions:
       contents: read
@@ -1486,7 +1552,10 @@ jobs:
   release:
     name: Commit Version & Release
     runs-on: ubuntu-latest
-    needs: [prepare-release, build-and-push]
+    # desktop-windows too: a release carries its Windows installer, so a
+    # failed Windows build stops the release (no bump commit, no tag) the same
+    # way a failed image leg does.
+    needs: [prepare-release, build-and-push, desktop-windows]
     permissions:
       contents: write # to push the version-bump commit and create the GitHub release
     steps:
@@ -1567,20 +1636,56 @@ jobs:
             echo "Release notes: GitHub auto-generated (no input or notes file found)"
           fi
 
+      # The installer desktop-windows built and smoke-tested from the gated
+      # revision, stamped with this version. electron-updater on an installed
+      # copy reads latest.yml from the newest release and downloads the
+      # installer it names, so all three files go on the release.
+      - name: Download the Windows installer
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: monize-windows-installer
+          path: ${{ runner.temp }}/windows-installer
+
+      - name: Check the Windows installer
+        env:
+          VERSION: ${{ needs.prepare-release.outputs.version }}
+          BUILT_VERSION: ${{ needs.desktop-windows.outputs.version }}
+          DIR: ${{ runner.temp }}/windows-installer
+        run: |
+          if [ "$BUILT_VERSION" != "$VERSION" ]; then
+            echo "::error::The Windows installer is $BUILT_VERSION, the release is $VERSION"
+            exit 1
+          fi
+          for file in "Monize-Setup-${VERSION}.exe" "Monize-Setup-${VERSION}.exe.blockmap" latest.yml; do
+            if [ ! -f "$DIR/$file" ]; then
+              echo "::error::The Windows installer artifact has no $file"
+              exit 1
+            fi
+          done
+          grep -qx "version: ${VERSION}" "$DIR/latest.yml" || { echo "::error::latest.yml does not name ${VERSION}"; exit 1; }
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.prepare-release.outputs.version }}
           NOTES_PATH: ${{ steps.notes.outputs.path }}
+          DIR: ${{ runner.temp }}/windows-installer
         run: |
+          ASSETS=(
+            "$DIR/Monize-Setup-${VERSION}.exe"
+            "$DIR/Monize-Setup-${VERSION}.exe.blockmap"
+            "$DIR/latest.yml"
+          )
           if [ -n "$NOTES_PATH" ]; then
             gh release create "v${VERSION}" \
               --title "v${VERSION}" \
-              --notes-file "$NOTES_PATH"
+              --notes-file "$NOTES_PATH" \
+              "${ASSETS[@]}"
           else
             gh release create "v${VERSION}" \
               --title "v${VERSION}" \
-              --generate-notes
+              --generate-notes \
+              "${ASSETS[@]}"
           fi
 
   # ---------------------------------------------------------------------------
@@ -1797,6 +1902,76 @@ jobs:
             echo "${IMAGE}:beta"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # The Windows beta: the installer desktop-windows built from this push to
+  # main, published as a GitHub prerelease tagged v<next patch>-beta.<run>.
+  # There is one at a time: after the new one is up, every older Windows beta
+  # prerelease and its tag are deleted, so the Releases page and the download
+  # links always lead to the newest. Nothing here touches a full release:
+  # /releases/latest, which the website, the backend's update check and a
+  # stable install's updater read, never returns a prerelease. An installed
+  # beta follows prereleases (desktop/src/shell/version-policy.ts), reads
+  # beta.yml from this release and moves to the next beta or the next full
+  # release, whichever is newer.
+  #
+  # A light publish like build-preview: no version commit, no signing.
+  windows-beta:
+    name: Publish Windows Beta
+    runs-on: ubuntu-latest
+    needs: [prepare-preview, desktop-windows]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write # to create the beta prerelease and delete the one it replaces
+    steps:
+      - name: Download the Windows installer
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: monize-windows-installer
+          path: ${{ runner.temp }}/windows-installer
+
+      - name: Publish the beta prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          VERSION: ${{ needs.desktop-windows.outputs.version }}
+          DIR: ${{ runner.temp }}/windows-installer
+        run: |
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$'; then
+            echo "::error::'$VERSION' is not a Windows beta version"
+            exit 1
+          fi
+          TAG="v${VERSION}"
+          shopt -s nullglob
+          ASSETS=("$DIR"/Monize-Setup-*.exe "$DIR"/Monize-Setup-*.exe.blockmap "$DIR"/*.yml)
+          if [ ! -f "$DIR/Monize-Setup-${VERSION}.exe" ]; then
+            echo "::error::The artifact has no Monize-Setup-${VERSION}.exe"
+            exit 1
+          fi
+          {
+            echo "A preview of the next Monize release for Windows, built from ${SHA} on main."
+            echo
+            echo "Betas are not tested as much as releases. Back up first (Settings > Backup) and keep your recovery key. An installed beta updates itself to the next beta or the next release, whichever is newer."
+            echo
+            echo "Download Monize-Setup-${VERSION}.exe below. The installer is unsigned, so Windows SmartScreen warns: choose More info, then Run anyway."
+          } > "$RUNNER_TEMP/beta-notes.md"
+          gh release create "$TAG" \
+            --repo "$REPO" \
+            --prerelease \
+            --target "$SHA" \
+            --title "Windows beta ${VERSION}" \
+            --notes-file "$RUNNER_TEMP/beta-notes.md" \
+            "${ASSETS[@]}"
+          # Only now that the new one is up: one Windows beta at a time. A
+          # failed delete fails the job, so a leftover beta is seen, not kept.
+          OLD_TAGS=$(gh release list --repo "$REPO" --limit 200 --json tagName,isPrerelease \
+            --jq '.[] | select(.isPrerelease) | .tagName' |
+            { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$' || true; })
+          for old in $OLD_TAGS; do
+            if [ "$old" != "$TAG" ]; then
+              gh release delete "$old" --repo "$REPO" --yes --cleanup-tag
+            fi
+          done
 
   # Runs the Playwright suite against a full stack (postgres + backend +
   # frontend) brought up via docker-compose.e2e.yml. Runs chromium + firefox.

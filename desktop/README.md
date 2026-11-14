@@ -504,23 +504,46 @@ profile such as `C:\MonizeData`; do these before the uninstall checks):
 
 ## CI
 
-Two jobs in `.github/workflows/ci.yml` run this package, and both gate a
-release (`prepare-release` needs them):
+Four jobs in `.github/workflows/ci.yml` run this package or ship what it
+builds:
 
-- **`desktop`** (Ubuntu): `npm ci`, `lint`, `typecheck`, `test` and
-  `smoke:postgres` against the Linux PostgreSQL binaries. The guard specs
-  read the Dockerfiles, `backend/docker-entrypoint.sh`, `.env.example` and the
-  compose files, so the job checks out everything but installs only this
-  package.
-- **`desktop-windows`** (`windows-latest`): checks out with LF line endings
+- **`desktop`** (Ubuntu), on every PR and push: `npm ci`, `lint`,
+  `typecheck`, `test` and `smoke:postgres` against the Linux PostgreSQL
+  binaries. `prepare-release` needs it. The guard specs read the Dockerfiles,
+  `backend/docker-entrypoint.sh`, `.env.example` and the compose files, so
+  the job checks out everything but installs only this package.
+- **`desktop-windows`** (`windows-latest`, about 40 minutes), never on a PR:
+  - a release dispatch on `main`, after `prepare-release`, stamped with the
+    release version;
+  - a push to `main` (a beta), after `prepare-preview`, stamped
+    `<next patch>-beta.<run number>`;
+  - a manual dispatch on any other branch, at once, with the version in
+    `package.json`: `gh workflow run "CI Pipeline" --ref <branch>`, then
+    fetch the `monize-windows-installer` artifact. This is how a branch's
+    installer is tried before it merges.
+
+  It sets that version in `backend/`, `frontend/` and here with
+  `npm version` (no commit), checks that it built the gated revision, checks
+  out with LF line endings
   (the image defaults to CRLF, which breaks the help-image script under `sh`
   and every line of `lint`), installs `cwebp` from the libwebp release zip
   pinned by SHA-256, builds `backend/` and `frontend/`, then runs `lint`,
   `test`, `smoke:postgres` and `dist` here, and finally
   `scripts/smoke-install.ps1` against the new installer. A passing run
-  uploads `Monize-Setup-<v>.exe`, its `.blockmap` and `latest.yml` as the
-  `monize-windows-installer` artifact (kept 7 days); a failing one uploads
-  the smoke test's `logs` folder instead.
+  uploads `Monize-Setup-<v>.exe`, its `.blockmap` and `latest.yml` (a beta:
+  `beta.yml`, which electron-builder names after the prerelease channel) as
+  the `monize-windows-installer` artifact (kept 7 days); a failing one
+  uploads the smoke test's `logs` folder instead.
+- **`release`** needs `desktop-windows`, checks that the artifact carries the
+  release version, and attaches the three files to the GitHub release. A
+  failed Windows build stops the release before the bump commit and the tag.
+- **`windows-beta`** (a push to `main`) publishes the beta as a GitHub
+  prerelease tagged `v<version>` and then deletes every older Windows beta
+  prerelease and its tag, so there is only ever one. `/releases/latest` never
+  returns a prerelease, so the website, the backend's update check and a
+  stable install's updater never see a beta. An installed beta follows
+  prereleases (`src/shell/version-policy.ts`) and updates to the next beta or
+  the next release, whichever is newer.
 
 `scripts/smoke-install.ps1` installs the installer silently, checks that it
 asked for no elevation and landed in `%LOCALAPPDATA%\Programs\Monize`,
@@ -561,6 +584,32 @@ A launch chooses its data folder in this order (`src/app-paths.ts`,
    cannot be used.
 2. The pointer written by "Move data folder".
 3. The default folder above.
+
+## Full backups (`scripts/Backup-Monize.ps1`)
+
+A PowerShell script for the person, not for the build: the user guide's
+Windows page ("Full Backup Script") links to it on `main` and says how to run
+it. It is not packaged into the installer.
+
+- **Backup** (`-Destination <folder>`, optionally `-Zip`): finds the data
+  folder as a launch does (the pointer, else the default), runs
+  `Monize.exe --quit`, refuses to copy while `pgdata/postmaster.pid` exists,
+  copies everything Monize owns except the Chromium profile (it keeps only
+  `shell/Local State`, which `config.json` cannot be decrypted without) into
+  `Monize-backup-<date>-<time>`, checks every file arrived at the same size,
+  writes `monize-backup.json` (time, computer, the Windows account's SID, the
+  installed version), and starts Monize again if it was running.
+- **Restore** (`-Restore <folder or .zip>`): refuses a backup whose SID is
+  not the current account's (DPAPI could not unlock its `config.json`;
+  `-Force` overrides), quits Monize, renames the data folder to
+  `<folder>.before-restore-<date>-<time>` (never deletes it), copies the
+  backup in, checks it, and starts Monize.
+- Windows PowerShell 5.1 syntax only, since that is what every Windows has.
+  Checked on 2026-11-14 with Windows PowerShell 5.1 against a fake data
+  folder and a stand-in for `Monize.exe`: folder and zip backups, a zip
+  restore, and the refusals (a running database, a destination inside the
+  data folder, another account's backup). Never run against a real
+  installation yet.
 
 ## Moving the data folder
 

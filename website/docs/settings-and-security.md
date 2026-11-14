@@ -199,6 +199,9 @@ Critical budget alerts (over budget, income shortfall) are sent immediately rega
 
 > Email is only available when an administrator has configured SMTP on the server. Without it the section reads *"Email notifications are not available. SMTP has not been configured by the administrator."*
 
+> [!NOTE]
+> **Monize for Windows:** email is never available: the Windows app has no SMTP settings. Notifications reach you in the app and as Windows notifications instead.
+
 ### Browser Push
 
 Monize can deliver notifications to a phone or desktop even when the app is closed, using Web Push. No Firebase, Google Play or Apple Developer account is involved -- the instance generates and holds its own key pair.
@@ -239,6 +242,9 @@ A device can stop being reachable on its own. Monize says which of the three hap
 ### UnifiedPush
 
 The same encrypted push can be delivered to a self-hosted UnifiedPush distributor -- **ntfy**, **NextPush** and similar -- instead of Google's or Apple's infrastructure. It shares the instance's push key pair and its on/off switch.
+
+> [!NOTE]
+> **Monize for Windows:** phones cannot reach the Windows app, so neither UnifiedPush nor browser push on a phone can be set up. Browser push works in a browser on the same PC, opened from the tray menu's **Open in browser**.
 
 To use it, register an endpoint in your UnifiedPush distributor app, then turn on the **UnifiedPush** column for the notification categories you want in the matrix below. Devices delivered this way are labelled **UnifiedPush** in the device list.
 
@@ -411,6 +417,9 @@ The page walks you through it under **Show setup help**, with every value to pas
 
 ![The Enable Banking credentials dialog](images/bank-sync-credentials-dialog.png)
 
+> [!NOTE]
+> **Monize for Windows:** Enable Banking production applications do not work, because the Windows app's address is `http://127.0.0.1`. Use [SimpleFIN](#simplefin) instead.
+
 The redirect URL does not have to be reachable from the internet -- only your browser opens it -- but the Monize server must be able to reach `api.enablebanking.com` over HTTPS. A Production application accepts only an `https` redirect URL, so `PUBLIC_APP_URL` must be an https address.
 
 ### Connecting a Bank
@@ -546,7 +555,7 @@ If you have lost both your authenticator and your backup codes, an administrator
 
 ### Required 2FA
 
-An administrator can make two-factor authentication mandatory for the whole deployment:
+An administrator can make two-factor authentication mandatory for the whole deployment (not on [Monize for Windows](windows.md#what-the-windows-app-cannot-do), which has no server settings):
 
 ```bash
 FORCE_2FA=true
@@ -603,6 +612,9 @@ Monize checks new passwords against the [Have I Been Pwned](https://haveibeenpwn
 
 ### Forgot Password
 
+> [!NOTE]
+> **Monize for Windows:** password reset by email is not available, because the app cannot send email. An administrator can set a new password for another user under **Admin > User Management**; keep your own password in a password manager.
+
 1. On the login page, click **Forgot your password?**
 2. Enter your email address and click **Send reset link**
 3. Check your email for a reset link
@@ -641,6 +653,9 @@ Ten wrong two-factor codes in a row also lock the account for 30 minutes.
 ---
 
 ## Single Sign-On (OIDC)
+
+> [!NOTE]
+> **Monize for Windows:** single sign-on is not available, because it is configured with server settings. Use a password with two-factor authentication.
 
 Monize supports OpenID Connect (OIDC) for single sign-on integration with identity providers.
 
@@ -895,6 +910,9 @@ It also disables the `Secure` flag on authentication cookies so they work over p
 > **Do not use in production with HTTPS.** Only set this when HTTPS is not available at the application level.
 
 ### Encryption Key
+
+> [!NOTE]
+> **Monize for Windows:** the key is created on first start and kept encrypted for your Windows account; you never set it. Save a copy with **Export recovery key...** in the tray menu ([The Recovery Key](windows.md#the-recovery-key)).
 
 Everything Monize stores encrypted at rest -- AI provider API keys, Google Places API keys, bank sync and mailbox credentials, emergency-access credentials, the instance push key pair, and the key that automatic backups are encrypted with -- is protected by a single deployment secret:
 
