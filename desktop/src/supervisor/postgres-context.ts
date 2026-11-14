@@ -98,8 +98,17 @@ export function createContext(
     kind: PostgresFailure,
     message: string,
     output = "",
-  ): PostgresRunnerError =>
-    new PostgresRunnerError(kind, redact(message), redact(tailOf(output)));
+  ): PostgresRunnerError => {
+    const tail = redact(tailOf(output));
+    // What the binary printed is the only explanation there is (a permission,
+    // a missing file), so it goes to the log and not only into the error.
+    for (const line of tail.split(/\r?\n/)) {
+      if (line.trim() !== "") {
+        options.log(`postgres: ${line.trimEnd()}`);
+      }
+    }
+    return new PostgresRunnerError(kind, redact(message), tail);
+  };
 
   const problem = configProblem(options, deps.platform);
   if (problem !== undefined) {

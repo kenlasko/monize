@@ -1150,15 +1150,18 @@ jobs:
 
       # A data directory with a space in its name, as under a profile named
       # "First Last"; the script removes it after a pass and keeps it, with
-      # its logs, after a failure.
+      # its logs, after a failure. It sits under the user's profile, as the
+      # real one does. The first run kept it on the work drive and initdb
+      # exited 1 within 200 ms there; the suspected cause is that the runner
+      # account is an elevated administrator, so initdb re-executes under a
+      # restricted token that cannot write where only Administrators may.
       - name: Install, run and uninstall the installer
         timeout-minutes: 30
-        env:
-          SMOKE_DATA_DIR: ${{ runner.temp }}\monize smoke data
         run: |
+          $dataDir = Join-Path $env:USERPROFILE 'monize smoke data'
           $installer = @(Get-ChildItem -Path desktop/release -Filter 'Monize-Setup-*.exe' -File | Where-Object { $_.Extension -ieq '.exe' })
           if ($installer.Count -ne 1) { throw "expected one Monize-Setup-*.exe in desktop/release, found $($installer.Count)" }
-          pwsh -NoProfile -File desktop/scripts/smoke-install.ps1 -Installer $installer[0].FullName -DataDir $env:SMOKE_DATA_DIR
+          pwsh -NoProfile -File desktop/scripts/smoke-install.ps1 -Installer $installer[0].FullName -DataDir $dataDir
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Upload the smoke test's logs
@@ -1166,7 +1169,7 @@ jobs:
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: desktop-windows-smoke-logs
-          path: ${{ runner.temp }}/monize smoke data/logs/
+          path: ~/monize smoke data/logs/
           if-no-files-found: ignore
           retention-days: 7
 
