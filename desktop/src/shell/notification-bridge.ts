@@ -18,8 +18,8 @@ import { BridgeRow, BridgeSnapshot } from "./notification-snapshot";
  *   shell's clock are one clock.
  * - At most `MAX_RAISED_PER_SNAPSHOT` rows per snapshot, newest first; the rest
  *   are counted into one summary.
- * - A raised row that is no longer in the snapshot (read, dismissed, or its
- *   category's push switched off) is taken back.
+ * - A raised row that is no longer in the snapshot (read or dismissed) is
+ *   taken back.
  * - A change of identity, sign-out included, takes back everything and starts
  *   again, so the previous person's notifications are never left on screen.
  * - After `stop` (quit) every notification is taken back and nothing more is

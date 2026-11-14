@@ -59,6 +59,11 @@ export function createNotificationBridge(
     shown.delete(id);
   }
 
+  function retract(id: string): void {
+    logger.info(`Notifications: closed the one for row ${id}.`);
+    close(id);
+  }
+
   function clearAll(): void {
     for (const id of [...shown.keys()]) close(id);
     for (const summary of summaries) summary.close();
@@ -106,7 +111,7 @@ export function createNotificationBridge(
       logger.info("Notifications: the signed-in person left; closed theirs.");
       clearAll();
     }
-    for (const id of effect.retract) close(id);
+    for (const id of effect.retract) retract(id);
     for (const row of effect.raise) raise(row, identity);
     if (effect.overflow > 0) summarise(effect.overflow, identity);
   }
