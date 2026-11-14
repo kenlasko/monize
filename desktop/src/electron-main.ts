@@ -349,8 +349,10 @@ function run(located: LaunchPaths): void {
       origin,
       logger,
       contents: () => (window.isDestroyed() ? null : window.webContents),
-      open: (target) => {
-        void window.loadURL(target).catch(() => undefined);
+      // An app-origin URL: notificationUrl() resolves the row's link through
+      // the navigation policy and falls back to the home page.
+      open: (url) => {
+        void window.loadURL(url).catch(() => undefined);
         showWindow(window);
       },
       show: () => showWindow(window),
