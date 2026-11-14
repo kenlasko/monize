@@ -20,7 +20,15 @@ export interface AppPathsInput {
   readonly desktopRoot: string;
   /** `os.homedir()`, for the XDG fallback off Windows. */
   readonly homeDir: string;
+  /**
+   * The folder the data-folder pointer names (`move/location.ts`), when the
+   * person has moved their data; absent or null otherwise.
+   */
+  readonly movedDataDir?: string | null;
 }
+
+/** Which rule chose the data directory. */
+export type DataDirOrigin = "env" | "pointer" | "default";
 
 /** Everything the app writes, under one per-user directory (plan D6). */
 export interface DataPaths {
@@ -65,24 +73,30 @@ export function resolveResourcesDir(input: AppPathsInput): string {
     : path.join(input.desktopRoot, "staging");
 }
 
-/**
- * `MONIZE_DATA_DIR` when set, else `%LOCALAPPDATA%\Monize` on Windows, else
- * `$XDG_DATA_HOME/Monize` or `~/.local/share/Monize` so the package can be
- * exercised on Linux. A relative override is refused rather than resolved
- * against whatever the working directory happens to be; a relative
- * `XDG_DATA_HOME` is ignored, as the XDG specification says.
- */
-export function resolveDataDir(input: AppPathsInput): string {
+/** The override, normalised; undefined when `MONIZE_DATA_DIR` is not set. */
+export function dataDirOverride(input: AppPathsInput): string | undefined {
   const path = pathFor(input.platform);
   const override = nonEmpty(input.env[DATA_DIR_ENV]);
-  if (override !== undefined) {
-    if (!path.isAbsolute(override)) {
-      throw new AppPathsError(
-        `${DATA_DIR_ENV} must be an absolute path; got a relative one.`,
-      );
-    }
-    return path.normalize(override);
+  if (override === undefined) {
+    return undefined;
   }
+  if (!path.isAbsolute(override)) {
+    throw new AppPathsError(
+      `${DATA_DIR_ENV} must be an absolute path; got a relative one.`,
+    );
+  }
+  return path.normalize(override);
+}
+
+/**
+ * Where the data lives when nothing says otherwise: `%LOCALAPPDATA%\Monize`
+ * on Windows, else `$XDG_DATA_HOME/Monize` or `~/.local/share/Monize` so the
+ * package can be exercised on Linux. A relative `XDG_DATA_HOME` is ignored,
+ * as the XDG specification says. The installer knows this folder, and the
+ * data-folder pointer sits beside it.
+ */
+export function resolveDefaultDataDir(input: AppPathsInput): string {
+  const path = pathFor(input.platform);
   if (input.platform === "win32") {
     const localAppData = nonEmpty(input.env.LOCALAPPDATA);
     if (localAppData === undefined || !path.isAbsolute(localAppData)) {
@@ -98,6 +112,37 @@ export function resolveDataDir(input: AppPathsInput): string {
     return path.join(xdg, APP_DIR_NAME);
   }
   return path.join(input.homeDir, ".local", "share", APP_DIR_NAME);
+}
+
+/**
+ * The data directory and the rule that chose it, in this order:
+ *
+ * 1. `MONIZE_DATA_DIR`. One launch's explicit choice (development, the smoke
+ *    tests), so nothing recorded on the machine may redirect it. A relative
+ *    value is refused rather than resolved against the working directory.
+ * 2. The data-folder pointer, written by "Move data folder".
+ * 3. The default folder.
+ */
+export function resolveDataDirOrigin(input: AppPathsInput): {
+  readonly dataDir: string;
+  readonly origin: DataDirOrigin;
+} {
+  const override = dataDirOverride(input);
+  if (override !== undefined) {
+    return { dataDir: override, origin: "env" };
+  }
+  if (input.movedDataDir !== undefined && input.movedDataDir !== null) {
+    const path = pathFor(input.platform);
+    if (!path.isAbsolute(input.movedDataDir)) {
+      throw new AppPathsError("The moved data folder is not an absolute path.");
+    }
+    return { dataDir: path.normalize(input.movedDataDir), origin: "pointer" };
+  }
+  return { dataDir: resolveDefaultDataDir(input), origin: "default" };
+}
+
+export function resolveDataDir(input: AppPathsInput): string {
+  return resolveDataDirOrigin(input).dataDir;
 }
 
 /** The fixed layout under a data directory. */

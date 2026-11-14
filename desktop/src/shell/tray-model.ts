@@ -14,6 +14,7 @@ export const TRAY_ITEM_IDS = [
   "open-in-browser",
   "show-logs",
   "show-recovery-key",
+  "move-data-folder",
   "check-for-updates",
   "quit",
 ] as const;
@@ -70,6 +71,7 @@ export function trayMenuModel(state: TrayState): readonly TrayEntry[] {
     SEPARATOR,
     item("show-logs", TEXT.trayShowLogs, true),
     item("show-recovery-key", TEXT.trayShowRecoveryKey, true),
+    item("move-data-folder", TEXT.move.trayItem, true),
     updateItem(state.update),
     SEPARATOR,
     item("quit", TEXT.trayQuit, true),

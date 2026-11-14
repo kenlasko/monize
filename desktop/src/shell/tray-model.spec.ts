@@ -58,4 +58,16 @@ describe("trayMenuModel", () => {
       expect(item.label.length).toBeGreaterThan(0);
     }
   });
+
+  it("offers Move data folder beside the recovery key, always enabled", () => {
+    const ids = items({ kind: "disabled" }).map((item) => item.id);
+    expect(ids.indexOf("move-data-folder")).toBe(
+      ids.indexOf("show-recovery-key") + 1,
+    );
+    expect(
+      items({ kind: "disabled" }).find(
+        (item) => item.id === "move-data-folder",
+      ),
+    ).toMatchObject({ label: TEXT.move.trayItem, enabled: true });
+  });
 });

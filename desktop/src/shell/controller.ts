@@ -32,6 +32,12 @@ export interface ShellUi {
   /** Persisted ports moved this launch; the app has a new origin (plan D8). */
   addressChanged(origin: string): void;
   fatal(runtime: Runtime, failure: FatalFailure): void;
+  /**
+   * The splash is showing a failure: the runtime could not be created, or a
+   * boot attempt failed. "Move data folder" offers the way back to the
+   * previous folder from here when this folder has never started.
+   */
+  bootFailed?(): void;
 }
 
 export interface ControllerDeps {
@@ -100,6 +106,7 @@ export function createShellController(deps: ControllerDeps): ShellController {
     } else if (result.outcome === "failed") {
       lastFailed = true;
       ui.showSplash(failedView(result.failure));
+      ui.bootFailed?.();
     }
   }
 
@@ -131,6 +138,7 @@ export function createShellController(deps: ControllerDeps): ShellController {
         (error: unknown) => {
           deps.reportStartupError(error);
           ui.showSplash(startupErrorView(error));
+          ui.bootFailed?.();
           return null;
         },
       );

@@ -1,4 +1,5 @@
 import { SupervisorStatus } from "../supervisor/types";
+import { MOVE_TEXT } from "./move-strings";
 
 /**
  * Every sentence the shell shows a person, in one place and keyed by id.
@@ -76,6 +77,9 @@ export const TEXT = {
     "be read without it. Store it somewhere safe, such as a password " +
     "manager, and never share it.",
   recoveryKeyCopied: "The recovery key was copied to the clipboard.",
+
+  /** "Move data folder" (`move-strings.ts`). */
+  move: MOVE_TEXT,
 
   trayTooltip: "Monize",
   trayOpen: "Open Monize",
