@@ -6,13 +6,16 @@ import {
   SdkError,
   SdkErrorCode,
 } from "@modelcontextprotocol/server";
+import { Logger } from "@nestjs/common";
 import {
   ConfirmMismatchError,
+  ConfirmRequiredError,
   confirmWrite,
   confirmWriteMany,
   confirmationFingerprint,
   installConfirmSupport,
   isAsk,
+  needsHumanAnswer,
   roundStableAction,
 } from "./mcp-confirm";
 import { AiActionBuilderService } from "../ai/actions/ai-action-builder.service";
@@ -193,6 +196,91 @@ describe("mcp-confirm", () => {
             "Confirm?",
           ),
         ).resolves.toBe("declined");
+      });
+    });
+
+    // "unsupported" is also what a raw HTTP caller with a stolen
+    // bearer produces, so a deletion or bulk write must not fall through.
+    describe("when no dialog reached a human", () => {
+      let warn: jest.SpyInstance;
+
+      beforeEach(() => {
+        warn = jest.spyOn(Logger.prototype, "warn").mockImplementation();
+      });
+
+      afterEach(() => warn.mockRestore());
+
+      it.each([
+        ["a deletion", { type: "delete_transaction", id: "t1" }],
+        ["a bulk card", { type: "batch_actions", actions: [] }],
+        ["a rule run", { type: "run_transaction_rule" }],
+      ])("refuses %s from a client with no elicitation", async (_l, action) => {
+        const server = fakeServer({ capabilities: {} });
+        await expect(
+          confirmWrite(server, ctx, "Delete?", action),
+        ).rejects.toBeInstanceOf(ConfirmRequiredError);
+        expect(elicit).not.toHaveBeenCalled();
+      });
+
+      it("still lets a single create through", async () => {
+        const server = fakeServer({ capabilities: {} });
+        await expect(
+          confirmWrite(server, ctx, "Create?", { type: "create_transaction" }),
+        ).resolves.toBe("unsupported");
+        expect(elicit).not.toHaveBeenCalled();
+      });
+
+      it("refuses a deletion when the client advertises elicitation but never answers", async () => {
+        elicit.mockRejectedValue(
+          new SdkError(SdkErrorCode.RequestTimeout, "Request timed out"),
+        );
+        const server = fakeServer({ capabilities: caps });
+        await expect(
+          confirmWrite(server, ctx, "Delete?", {
+            type: "delete_transaction",
+            id: "t1",
+          }),
+        ).rejects.toBeInstanceOf(ConfirmRequiredError);
+      });
+
+      it("leaves a human's answer to a deletion alone", async () => {
+        const server = fakeServer({ capabilities: caps });
+        const action = { type: "delete_transaction", id: "t1" };
+        elicit.mockResolvedValueOnce({ action: "accept" });
+        await expect(
+          confirmWrite(server, ctx, "Delete?", action),
+        ).resolves.toBe("accepted");
+        elicit.mockResolvedValueOnce({ action: "decline" });
+        await expect(
+          confirmWrite(server, ctx, "Delete?", action),
+        ).resolves.toBe("declined");
+        expect(warn).not.toHaveBeenCalled();
+      });
+
+      it("logs what it let through and what it refused", async () => {
+        const server = fakeServer({ capabilities: {} });
+        await confirmWrite(server, ctx, "Create?", {
+          type: "create_transaction",
+        });
+        expect(warn).toHaveBeenLastCalledWith(
+          expect.stringContaining("mcp-unconfirmed-write outcome=allowed"),
+        );
+        expect(warn).toHaveBeenLastCalledWith(
+          expect.stringContaining("actions=create_transaction"),
+        );
+        expect(warn).toHaveBeenLastCalledWith(
+          expect.stringContaining("user=u1 credential=pat:t1"),
+        );
+
+        await expect(
+          confirmWrite(server, ctx, "Delete?", {
+            type: "delete_transaction",
+            id: "t1",
+          }),
+        ).rejects.toBeInstanceOf(ConfirmRequiredError);
+        expect(warn).toHaveBeenLastCalledWith(
+          expect.stringContaining("mcp-unconfirmed-write outcome=refused"),
+        );
       });
     });
 
@@ -398,10 +486,16 @@ describe("mcp-confirm", () => {
       const outcome = await confirmWriteMany(
         server,
         modernCtx({ capabilities: {} }),
-        items,
+        [items[0]],
       );
       if (isAsk(outcome)) throw new Error("expected no question");
-      expect([...outcome.values()]).toEqual(["unsupported", "unsupported"]);
+      expect([...outcome.values()]).toEqual(["unsupported"]);
+    });
+
+    it("refuses a round of several items for a client that declared no elicitation", async () => {
+      await expect(
+        confirmWriteMany(server, modernCtx({ capabilities: {} }), items),
+      ).rejects.toBeInstanceOf(ConfirmRequiredError);
     });
 
     // A state nobody can seal is attacker-controlled input on the way back.
@@ -462,6 +556,19 @@ describe("mcp-confirm", () => {
  * `expiresAt` shipped: every confirmed write on 2026-07-28 was refused with
  * "the confirmation no longer matches the change", and every test was green.
  */
+describe("needsHumanAnswer", () => {
+  const item = (action?: unknown) => ({ key: "k", message: "m", action });
+
+  it.each([
+    ["a single update", [item({ type: "update_transaction" })], false],
+    ["a single item with no action", [item()], false],
+    ["two items", [item(), item()], true],
+    ["a delete_tag action", [item({ type: "delete_tag" })], true],
+  ])("is decided for %s", (_label, items, expected) => {
+    expect(needsHumanAnswer(items)).toBe(expected);
+  });
+});
+
 describe("the fingerprint of a real action, across two rounds", () => {
   const builder = new AiActionBuilderService(
     new AiActionSigningService({

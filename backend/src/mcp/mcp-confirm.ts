@@ -1,4 +1,5 @@
 import { createHash } from "crypto";
+import { Logger } from "@nestjs/common";
 import {
   CLIENT_CAPABILITIES_META_KEY,
   inputRequired,
@@ -9,13 +10,19 @@ import {
   type ServerContext,
 } from "@modelcontextprotocol/server";
 import { canonicalize } from "../ai/actions/ai-action-signing.service";
-import { AI_ACTION_ENVELOPE_FIELDS } from "../ai/actions/ai-action.types";
+import {
+  AI_ACTION_ENVELOPE_FIELDS,
+  type AiActionType,
+} from "../ai/actions/ai-action.types";
 import {
   clientAnsweredForItself,
   elicitationBehaviour,
   recordElicitationAnswered,
   recordElicitationSilent,
 } from "./mcp-elicitation-support";
+// Call-time use only, so the cycle with mcp-context (which reads the errors
+// above) never sees a half-loaded module.
+import { resolveUserContext } from "./mcp-context";
 import type {
   McpConfirmState,
   McpRequestStateCodec,
@@ -82,6 +89,79 @@ export class ConfirmMismatchError extends Error {
     );
     this.name = "ConfirmMismatchError";
   }
+}
+
+/**
+ * A deletion or a multi-row write that no human confirmed. Nothing is written;
+ * the tool reports it and the model tells the user where the change can be
+ * approved instead.
+ *
+ * "unsupported" -- a client that declared no elicitation, or never answered it
+ * -- is also exactly what a raw HTTP caller holding a stolen bearer produces,
+ * so for the changes that destroy data or touch many rows at once it refuses
+ * rather than falls through.
+ */
+export class ConfirmRequiredError extends Error {
+  constructor() {
+    super(
+      "Not changed: deleting, or changing several items at once, needs a confirmation dialog, and this MCP client did not show one. Ask the user to make this change in the Monize web chat or in Monize itself, or to use an MCP client that shows confirmation dialogs.",
+    );
+    this.name = "ConfirmRequiredError";
+  }
+}
+
+/** Action types that write many rows from one card. */
+const BULK_ACTION_TYPES: ReadonlySet<AiActionType> = new Set<AiActionType>([
+  "batch_actions",
+  "create_transactions",
+  "create_investment_transactions",
+  "run_transaction_rule",
+]);
+
+function actionType(action: unknown): string | undefined {
+  const type = (action as { type?: unknown } | null | undefined)?.type;
+  return typeof type === "string" ? type : undefined;
+}
+
+/**
+ * Whether a round may write only on a human's answer: more than one item, a
+ * deletion (any `delete_*` action, so a new one is covered without a list
+ * edit), or a card that writes many rows.
+ */
+export function needsHumanAnswer(items: readonly ConfirmItem[]): boolean {
+  return (
+    items.length > 1 ||
+    items.some((item) => {
+      const type = actionType(item.action);
+      return (
+        type !== undefined &&
+        (type.startsWith("delete_") ||
+          BULK_ACTION_TYPES.has(type as AiActionType))
+      );
+    })
+  );
+}
+
+const logger = new Logger("McpConfirm");
+
+/**
+ * The policy for a round in which no dialog reached a human: refuse a deletion
+ * or a multi-row write, let a single create or edit through, and log either
+ * case with a stable marker so an operator can tell a write nobody answered
+ * for from one a person approved.
+ */
+function applyUnconfirmedPolicy(
+  ctx: ServerContext,
+  items: readonly ConfirmItem[],
+  answers: Map<string, WriteConfirmation>,
+): void {
+  if (![...answers.values()].includes("unsupported")) return;
+  const refused = needsHumanAnswer(items);
+  const user = resolveUserContext(ctx);
+  logger.warn(
+    `mcp-unconfirmed-write outcome=${refused ? "refused" : "allowed"} user=${user?.userId ?? "unknown"} credential=${user?.credentialId ?? "unknown"} actions=${items.map((item) => actionType(item.action) ?? "unknown").join(",")}`,
+  );
+  if (refused) throw new ConfirmRequiredError();
 }
 
 /**
@@ -256,9 +336,11 @@ export async function confirmWrite(
  *    the dialog failed in a way we cannot account for; abort, so a write never
  *    happens over a user's refusal.
  *  - "unsupported": no dialog reached a human, so the caller falls back to its
- *    normal behavior. The client still gates every tool call with its own
- *    approval prompt, so this is not a consent bypass -- it is the only consent
- *    step such a client has.
+ *    normal behavior, relying on the client's own per-tool approval prompt.
+ *    That prompt is only as honest as the client, so this outcome is returned
+ *    only for a single create or edit: a round that deletes or writes several
+ *    rows throws `ConfirmRequiredError` instead (`needsHumanAnswer`), and every
+ *    unconfirmed round is logged as `mcp-unconfirmed-write`.
  *
  * **On 2026-07-28 the answer arrives on a later call, not from a wait.** Round
  * one returns `{ ask }` carrying a sealed `requestState`; the client shows the
@@ -299,9 +381,11 @@ export async function confirmWriteMany(
   items: ConfirmItem[],
 ): Promise<{ ask: InputRequiredResult } | Map<string, WriteConfirmation>> {
   if (items.length === 0) return new Map();
-  return isModern(ctx)
-    ? confirmModern(server, ctx, items)
-    : confirmLegacy(server, ctx, items);
+  const outcome = isModern(ctx)
+    ? await confirmModern(server, ctx, items)
+    : await confirmLegacy(server, ctx, items);
+  if (outcome instanceof Map) applyUnconfirmedPolicy(ctx, items, outcome);
+  return outcome;
 }
 
 /** 2026-07-28: return the question, or read the answers to it. */

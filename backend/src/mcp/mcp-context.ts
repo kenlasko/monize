@@ -1,7 +1,7 @@
 import { sharedLedgerRefusal } from "../common/db/shared-ledger-refusal";
 import { sanitizeToolResultStrings } from "../common/sanitization.util";
 import type { AuthInfo, ServerContext } from "@modelcontextprotocol/server";
-import { ConfirmMismatchError } from "./mcp-confirm";
+import { ConfirmMismatchError, ConfirmRequiredError } from "./mcp-confirm";
 import { hasApiScope } from "../auth/scopes";
 
 export interface McpUserContext {
@@ -151,10 +151,13 @@ export function toolError(message: string) {
 export function safeToolError(err: unknown) {
   const sharedRefusal = sharedLedgerRefusal(err);
   if (sharedRefusal) return toolError(sharedRefusal);
-  // A confirmation that no longer matches the change is not an internal
-  // failure: it is a refusal the caller can act on, and the model needs to be
-  // told to ask again rather than to retry the same call.
-  if (err instanceof ConfirmMismatchError) {
+  // A confirmation that no longer matches the change, or a deletion nobody
+  // confirmed, is not an internal failure: it is a refusal the caller can act
+  // on, and the model needs to be told what to do rather than to retry.
+  if (
+    err instanceof ConfirmMismatchError ||
+    err instanceof ConfirmRequiredError
+  ) {
     return toolError(err.message);
   }
   if (

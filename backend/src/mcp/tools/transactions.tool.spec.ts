@@ -1051,7 +1051,7 @@ describe("McpTransactionsTools", () => {
       expect(relayService.emitPendingAction).toHaveBeenCalledTimes(1);
     });
 
-    it("deletes a single transaction when the client cannot elicit", async () => {
+    it("refuses to delete a single transaction when the client cannot elicit", async () => {
       ctx.setUser({ userId: "u1", scopes: "write" });
       prepService.prepareDelete.mockResolvedValue({
         transactionId: "t1",
@@ -1064,14 +1064,18 @@ describe("McpTransactionsTools", () => {
         currencyCode: "USD",
       });
 
+      const record = jest.spyOn(McpWriteLimiter.prototype, "record");
+
       const result = await handlers["manage_transactions"](
         { operation: "delete", items: [{ transactionId: "t1" }] },
         ctx,
       );
 
-      expect(transactionsService.removeAny).toHaveBeenCalledWith("u1", "t1");
-      const parsed = result.structuredContent as any;
-      expect(parsed.deleted).toBe(true);
+      expect(result.isError).toBe(true);
+      expect((result.content as any)[0].text).toContain("Not changed");
+      expect(transactionsService.removeAny).not.toHaveBeenCalled();
+      expect(record).not.toHaveBeenCalled();
+      record.mockRestore();
     });
 
     it("bulk delete (>= 6 items) builds one batch card", async () => {

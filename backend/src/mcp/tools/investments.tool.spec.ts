@@ -816,6 +816,10 @@ describe("McpInvestmentsTools", () => {
     });
 
     it("deletes a single security on success", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "write" });
       const result = await handlers["manage_securities"](
         { operation: "delete", items: [{ symbol: "AAPL" }] },
@@ -973,6 +977,10 @@ describe("McpInvestmentsTools", () => {
     });
 
     it("individual mode commits one security card per item (non-relay)", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "write" });
       securityPrepService.prepareCreateSecurities.mockResolvedValue({
         okPreviews: [securityPreview, { ...securityPreview, symbol: "MSFT" }],
@@ -999,6 +1007,10 @@ describe("McpInvestmentsTools", () => {
     });
 
     it("individual mode updates each security (non-relay commit)", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "write" });
       securityPrepService.prepareUpdateSecurities.mockResolvedValue({
         okPreviews: [
@@ -1045,6 +1057,10 @@ describe("McpInvestmentsTools", () => {
     });
 
     it("individual mode deletes each security (non-relay commit)", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "write" });
       securityPrepService.prepareDeleteSecurities.mockResolvedValue({
         okPreviews: [

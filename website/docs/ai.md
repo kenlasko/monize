@@ -329,6 +329,8 @@ Fully quit and relaunch Claude Desktop. The Monize tools should appear in the to
 
 External AI clients can use the following tools through MCP. Read tools require the `read` scope; write tools require the `write` scope and are additionally gated by an approval step and the [daily write limit](#privacy-and-security).
 
+The approval step is a confirmation dialog that Monize asks your MCP client to show. If the client cannot show it, or nobody answers it, the client can still create or edit one item at a time, with your client's own approval prompt as the only check. Deletions, and changes to several items at once, are refused in that case: make them in the Monize web chat or in Monize itself, or use a client that shows the dialog.
+
 | Tool | Description | Scope |
 |------|-------------|-------|
 | `list_transactions` | Search and summarize transactions (opt in to include individual rows) | read |

@@ -109,8 +109,9 @@ export class McpHttpController implements OnModuleDestroy {
    * requires a client to recover from by re-initializing -- reads recover, but
    * an in-flight confirmation does not: its answer never reaches the pod that
    * asked, that pod's wait expires, and `clientAnsweredForItself` reads the
-   * timeout as `"unsupported"` and lets the write proceed under the client's own
-   * approval prompt.
+   * timeout as `"unsupported"`: a single create or edit proceeds under the
+   * client's own approval prompt, and a deletion or multi-row write is refused
+   * (`needsHumanAnswer` in `mcp-confirm.ts`).
    *
    * The 2026-07-28 leg has none of this: no session, no server-side wait, and a
    * fresh server per request, so it is replica-agnostic as it stands.

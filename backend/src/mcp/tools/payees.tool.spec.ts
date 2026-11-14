@@ -367,6 +367,9 @@ describe("McpPayeesTools", () => {
     });
 
     it("deletes a single payee on success", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
       ctx.setUser({ userId: "u1", scopes: "read,write" });
       const result = await handlers["manage_payees"](
         { operation: "delete", items: [{ name: "Old Payee" }] },
@@ -553,6 +556,9 @@ describe("McpPayeesTools", () => {
     });
 
     it("individual mode commits one card per item (non-relay)", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
       ctx.setUser({ userId: "u1", scopes: "read,write" });
       prepService.prepareCreatePayees.mockResolvedValue({
         okPreviews: [
@@ -619,6 +625,9 @@ describe("McpPayeesTools", () => {
     });
 
     it("individual mode updates each payee (non-relay commit)", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
       ctx.setUser({ userId: "u1", scopes: "read,write" });
       prepService.prepareUpdatePayees.mockResolvedValue({
         okPreviews: [
@@ -649,6 +658,9 @@ describe("McpPayeesTools", () => {
     });
 
     it("individual mode deletes each payee (non-relay commit)", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
       ctx.setUser({ userId: "u1", scopes: "read,write" });
       prepService.prepareDeletePayees.mockResolvedValue({
         okPreviews: [
