@@ -14,6 +14,7 @@ import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import {
   ESTIMATE_HISTORY_MONTHS,
   EstimateBasis,
+  EstimateLevelRule,
   EstimatePayment,
   EstimateProfile,
   buildEstimateProfile,
@@ -170,6 +171,18 @@ export interface ScheduleAmountEstimateReadModel {
    * is not told how often the owner paid).
    */
   paymentCount: number | null;
+  /**
+   * How many of those payments the level averages (the latest year's, or the
+   * newest three); `null` when withheld or with no estimate.
+   */
+  levelPaymentCount: number | null;
+  /**
+   * Which payments the level averages (`EstimateProfile.levelRule`): the
+   * latest year's, or the newest three; `null` with no estimate.
+   */
+  levelRule: EstimateLevelRule | null;
+  /** Whether the history varies by season, shaping each month's estimate. */
+  seasonal: boolean;
   /** The newest payment the estimate read, `YYYY-MM-DD`; null when none or withheld. */
   latestPaymentDate: string | null;
   /** The year-over-year growth applied, or null when the history shows no trend. */
@@ -311,6 +324,9 @@ export function estimateReadModel(
     currencyCode: estimate.currencyCode,
     months,
     paymentCount: profile?.payments.length ?? 0,
+    levelPaymentCount: profile?.levelPaymentCount ?? null,
+    levelRule: profile?.levelRule ?? null,
+    seasonal: profile?.seasonal ?? false,
     latestPaymentDate:
       profile && profile.payments.length > 0
         ? profile.payments[profile.payments.length - 1].date

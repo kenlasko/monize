@@ -101,9 +101,14 @@ Each payment is placed by its calendar-month offset from today's month: 0 to
    the months both years hold agree with a correlation of at least 0.6
    (`ESTIMATE_SEASONAL_MIN_CORRELATION`). A flat bill does not vary; a price
    step varies in one year only. The index used is the two years' average.
-2. **Level.** The mean of the newest three payments, each divided by its
-   month's index (1 when not seasonal): what a month of index 1 costs at the
-   latest price.
+2. **Level.** What a month of index 1 costs at the latest price. With
+   neither a season (step 1) nor a trend (step 3), the mean of every payment
+   in the latest year (`ESTIMATE_LEVEL_YEAR_MONTHS`, after today minus 12
+   months, the day clamped as the window's), so one unusual payment moves the
+   estimate by its share of the year rather than a third. With a season or a
+   trend, or when the latest year holds no payment, the mean of the newest
+   three payments (`ESTIMATE_RECENT_PAYMENTS`), each divided by its month's
+   index (1 when not seasonal), which the pattern then shapes or grows.
 3. **Growth** `g`. Over the offsets `k` holding a payment at both `k` and
    `k + 12`, the sum of the latest year's monthly means over the earlier
    year's, minus one, only when at least three months compare
@@ -124,9 +129,10 @@ one payment on the 5th of each month from December 2024:
 
 | History | Month | Estimate |
 | --- | --- | --- |
-| -100 (Jul), -110 (Aug), -120 (Sep), -130 (Oct 2026) only | any | (-110 - 120 - 130) / 3 = -120, recent |
+| -100 (Jul), -110 (Aug), -120 (Sep), -130 (Oct 2026) only | any | (-100 - 110 - 120 - 130) / 4 = -115, the year's mean |
+| -100 (Jan), -110 (Mar), -120 (Jun), -130 (Sep 2025) only | any | (-110 - 120 - 130) / 3 = -120: no payment in the latest year |
 | -10 every month | any | -10: no season, no trend |
-| -10, then -15 from May 2026 (24 or 13 months) | 2026-12 to 2027-11 | -15: the new level; no season, no trend |
+| -10, then -15 from May 2026 (24 or 13 months) | 2026-12 to 2027-11 | (5 x -10 + 7 x -15) / 12 = -12.92: the year's mean; no season, no trend |
 | -100, then -105 every month from Dec 2025 | 2027-11 | -105 x 1.05 = -110.25 |
 | heating shape (Jan 200 ... Jul 50), latest year 10% dearer | 2027-01 | -220 x 1.1^(2/12) = -223.52, seasonal |
 | same | 2027-07 | -55 x 1.1^(8/12) = -58.61, seasonal |
@@ -188,8 +194,9 @@ forecast, the balance forecast, `GET /scheduled-transactions/occurrences`, the
 AI assistant and MCP, whose items carry `amountEstimated`) reads the same
 figure. `findAll` sends `amountEstimate` (status, one amount per month from the
 earlier of the month before today's and the next due month, at most 24 months
-back, through 24 months ahead; payment count, newest payment date, growth,
-missing pair), sets `effectiveAmount` to the next occurrence's estimate and each
+back, through 24 months ahead; payment count, the level's rule (`levelRule`,
+`year` or `recent`) and how many payments it averages (`levelPaymentCount`),
+whether it is seasonal, newest payment date, growth, missing pair), sets `effectiveAmount` to the next occurrence's estimate and each
 amountless override's `effectiveAmount` to its own month's. The rule for which
 occurrence follows the estimate is `occurrenceFollowsEstimate` on each side.
 `GET /scheduled-transactions/amount-estimate/:accountId?payeeId&categoryId` is
@@ -198,8 +205,8 @@ the form's preview, through the same service.
 The history spans every one of the owner's accounts, so a delegate (an acting
 session) is refused the preview, cannot turn the estimate on or off (the key is
 dropped from its create or update) and cannot change an estimated bill's payee
-or category (`estimateBasisOwnerOnly`), and `findAll` withholds `paymentCount` and
-`latestPaymentDate` from one (`null`): the delegate sees the bill's figures, as
+or category (`estimateBasisOwnerOnly`), and `findAll` withholds `paymentCount`,
+`levelPaymentCount` and `latestPaymentDate` from one (`null`): the delegate sees the bill's figures, as
 they would a typed amount, but not when or how often the owner paid. The AI
 forecast prompt and the bill reminder email label an estimated amount, and an
 unknown estimate there is not called a missing rate (the prompt names the
@@ -240,7 +247,10 @@ marker.
    months; another currency is converted at the most recent rate. Split and
    transfer schedules are not estimated.
 3. Seasonal per calendar month with a year-over-year growth trend; otherwise the
-   mean of the last three payments.
+   mean of the last three payments. Revised 2026-11-14 by the maintainer: with
+   neither a season nor a trend, the mean of the latest year's payments, for
+   transactions and transfers alike (a card payment's newest three swung its
+   estimate by one large month).
 4. No history: the toggle still saves, the amount is unknown and says why.
 5. An estimated schedule is never auto-posted.
 6. "The graph" is the Bills page Cash Flow Forecast chart.

@@ -149,6 +149,8 @@ describe("ScheduledTransactionsController", () => {
         status: "estimated",
         months: { "2026-12": { amount: -120, basis: "recent" } },
         paymentCount: 7,
+        levelPaymentCount: 5,
+        levelRule: "year",
         latestPaymentDate: "2026-10-15",
       };
       mockService.findAll.mockResolvedValue([
@@ -161,6 +163,7 @@ describe("ScheduledTransactionsController", () => {
       expect(row.amountEstimate).toEqual({
         ...amountEstimate,
         paymentCount: null,
+        levelPaymentCount: null,
         latestPaymentDate: null,
       });
       // The owner's own read is untouched.
