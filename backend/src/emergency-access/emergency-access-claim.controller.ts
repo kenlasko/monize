@@ -133,58 +133,46 @@ export class EmergencyAccessClaimController {
   @Post("preview")
   @AllowDelegate()
   @SkipCsrf()
+  @DemoRestricted()
   @Throttle({ default: { ttl: 900000, limit: 5 } })
   @ApiOperation({
-    summary: "Validate the magic link and return owner identity + message",
+    summary: "Validate the magic link and return the contact's first name",
   })
   async preview(@Body() dto: ClaimPreviewDto) {
     // RLS (task C4): the claimant is the grantee (or a bare token), not the
-    // owner, so every read here (contacts by token hash, the owner's settings
-    // and users row) is owner-keyed but runs with the wrong identity. Run under
-    // a system context. Inert at RLS_MODE=off -- only seeds AsyncLocalStorage.
+    // owner, so the contact lookup by token hash is owner-keyed but runs with
+    // the wrong identity. Run under a system context. Inert at RLS_MODE=off --
+    // only seeds AsyncLocalStorage.
     return withSystemContext(() => this.previewWithinContext(dto));
   }
 
   private async previewWithinContext(dto: ClaimPreviewDto) {
     const contact = await this.findValidContact(dto.token);
-    const settings = await this.scoped(EmergencyAccessSettings, (repo) =>
-      repo.findOne({
-        where: { ownerUserId: contact.ownerUserId },
-      }),
+    // The token alone proves nothing about who holds it, so the owner's name and
+    // decrypted message are returned by `complete` only; this audit line is the
+    // trace a leaked link leaves before any takeover (#2173, #2180).
+    this.logger.log(
+      `Emergency access claim link previewed for contact ${contact.id} of user ${contact.ownerUserId}`,
     );
-    const owner = await this.scoped(User, (repo) =>
-      repo.findOne({
-        where: { id: contact.ownerUserId },
-      }),
-    );
-    if (!settings || !owner) {
-      throw new NotFoundException(
-        tr(
-          "errors.emergencyAccess.ownerAccountGone",
-          "Owner account no longer exists.",
-        ),
-      );
-    }
-
-    let message: string | null = null;
-    if (settings.messageCiphertext && this.encryption.isConfigured()) {
-      try {
-        message = this.encryption.decrypt(settings.messageCiphertext);
-      } catch (error) {
-        this.logger.error(
-          "Failed to decrypt emergency access message during preview",
-          error instanceof Error ? error.stack : error,
-        );
-      }
-    }
-
     return {
-      ownerFirstName: owner.firstName,
-      ownerLastName: owner.lastName,
       contactFirstName: contact.firstName,
-      message,
       expiresAt: contact.claimTokenExpiresAt,
     };
+  }
+
+  private decryptMessage(ciphertext: string | null): string | null {
+    if (!ciphertext || !this.encryption.isConfigured()) {
+      return null;
+    }
+    try {
+      return this.encryption.decrypt(ciphertext);
+    } catch (error) {
+      this.logger.error(
+        "Failed to decrypt emergency access message after claim",
+        error instanceof Error ? error.stack : error,
+      );
+      return null;
+    }
   }
 
   @Post("complete")
@@ -226,28 +214,30 @@ export class EmergencyAccessClaimController {
 
     const tokenHash = hashToken(dto.token);
     const passwordHash = await bcrypt.hash(dto.newPassword, 12);
-    const ownerId = await withScopedDb(this.dataSource, async (manager) => {
-      // CONSUME THE TOKEN FIRST, in one conditional statement, before touching a
-      // single credential.
-      //
-      // The previous shape was a `findOne` followed by an ordinary entity save,
-      // under a comment claiming it revalidated "under lock" -- there was no
-      // lock and no predicate. Two requests could both read the unused token,
-      // both replace the owner's password with a different value, and both mark
-      // it used: an account-takeover race where an attacker holding the link
-      // competes with the intended contact instead of merely arriving second
-      // (audit P4-007, DOC-04-04).
-      //
-      // `claim_token_used_at IS NULL` and the expiry are predicates of the
-      // UPDATE, so PostgreSQL re-evaluates them after the row lock. Exactly one
-      // statement gets a row back; every other caller sees zero and is refused
-      // before anything is written.
-      //
-      // `claim_voided_reason = NULL` is belt-and-braces, not a guard: every path
-      // that writes a reason stamps `claim_token_used_at` alongside it, so the
-      // WHERE above already excludes every row where it could be non-NULL.
-      const consumed: unknown = await manager.query(
-        `UPDATE emergency_access_contacts
+    const { ownerId, messageCiphertext } = await withScopedDb(
+      this.dataSource,
+      async (manager) => {
+        // CONSUME THE TOKEN FIRST, in one conditional statement, before touching a
+        // single credential.
+        //
+        // The previous shape was a `findOne` followed by an ordinary entity save,
+        // under a comment claiming it revalidated "under lock" -- there was no
+        // lock and no predicate. Two requests could both read the unused token,
+        // both replace the owner's password with a different value, and both mark
+        // it used: an account-takeover race where an attacker holding the link
+        // competes with the intended contact instead of merely arriving second
+        // (audit P4-007, DOC-04-04).
+        //
+        // `claim_token_used_at IS NULL` and the expiry are predicates of the
+        // UPDATE, so PostgreSQL re-evaluates them after the row lock. Exactly one
+        // statement gets a row back; every other caller sees zero and is refused
+        // before anything is written.
+        //
+        // `claim_voided_reason = NULL` is belt-and-braces, not a guard: every path
+        // that writes a reason stamps `claim_token_used_at` alongside it, so the
+        // WHERE above already excludes every row where it could be non-NULL.
+        const consumed: unknown = await manager.query(
+          `UPDATE emergency_access_contacts
             SET claim_token_used_at = CURRENT_TIMESTAMP,
                 claim_token_hash = NULL,
                 claim_token_ciphertext = NULL,
@@ -258,100 +248,110 @@ export class EmergencyAccessClaimController {
             AND claim_token_expires_at >= CURRENT_TIMESTAMP
             AND ${OWNER_NOT_RETURNED_SQL}
           RETURNING id, owner_user_id`,
-        [tokenHash],
-      );
-      const claimed = returnedRows<{ id: string; owner_user_id: string }>(
-        consumed,
-      );
-      if (claimed.length === 0) {
-        throw new NotFoundException(
-          tr(
-            "errors.emergencyAccess.invalidClaimLink",
-            "This emergency access link is invalid, expired, or has already been used.",
-          ),
+          [tokenHash],
         );
-      }
-      const contactId = claimed[0].id;
-      const ownerId = claimed[0].owner_user_id;
-
-      const owner = await manager.findOne(User, {
-        where: { id: ownerId },
-      });
-      if (!owner) {
-        throw new NotFoundException(
-          tr(
-            "errors.emergencyAccess.ownerAccountGone",
-            "Owner account no longer exists.",
-          ),
+        const claimed = returnedRows<{ id: string; owner_user_id: string }>(
+          consumed,
         );
-      }
+        if (claimed.length === 0) {
+          throw new NotFoundException(
+            tr(
+              "errors.emergencyAccess.invalidClaimLink",
+              "This emergency access link is invalid, expired, or has already been used.",
+            ),
+          );
+        }
+        const contactId = claimed[0].id;
+        const ownerId = claimed[0].owner_user_id;
 
-      // Replace credentials so the contact can sign in.
-      await manager
-        .createQueryBuilder()
-        .update(User)
-        .set({
-          passwordHash,
-          mustChangePassword: false,
-          twoFactorSecret: null,
-          pendingTwoFactorSecret: null,
-          backupCodes: null,
-          authProvider: "local",
-          lastLogin: new Date(),
-          lastActivityAt: new Date(),
-          failedLoginAttempts: 0,
-          lockedUntil: null,
-          resetToken: null,
-          resetTokenExpiry: null,
-        })
-        .where("id = :id", { id: ownerId })
-        .execute();
+        const owner = await manager.findOne(User, {
+          where: { id: ownerId },
+        });
+        if (!owner) {
+          throw new NotFoundException(
+            tr(
+              "errors.emergencyAccess.ownerAccountGone",
+              "Owner account no longer exists.",
+            ),
+          );
+        }
 
-      // 2FA on the preferences side.
-      await manager
-        .createQueryBuilder()
-        .update(UserPreference)
-        .set({ twoFactorEnabled: false })
-        .where("user_id = :id", { id: ownerId })
-        .execute();
+        // Replace credentials so the contact can sign in.
+        await manager
+          .createQueryBuilder()
+          .update(User)
+          .set({
+            passwordHash,
+            mustChangePassword: false,
+            twoFactorSecret: null,
+            pendingTwoFactorSecret: null,
+            backupCodes: null,
+            authProvider: "local",
+            lastLogin: new Date(),
+            lastActivityAt: new Date(),
+            failedLoginAttempts: 0,
+            lockedUntil: null,
+            resetToken: null,
+            resetTokenExpiry: null,
+          })
+          .where("id = :id", { id: ownerId })
+          .execute();
 
-      // Trusted devices and personal access tokens belonged to the previous
-      // holder: a claim that left a PAT live would share the account with
-      // whoever the owner handed one to (`credential-revocation.ts`).
-      await revokeStandingCredentials(manager, ownerId);
+        // 2FA on the preferences side.
+        await manager
+          .createQueryBuilder()
+          .update(UserPreference)
+          .set({ twoFactorEnabled: false })
+          .where("user_id = :id", { id: ownerId })
+          .execute();
 
-      // The claiming token was already consumed above; void the siblings
-      // (single-claim wins).
-      await manager
-        .createQueryBuilder()
-        .update(EmergencyAccessContact)
-        .set({
-          claimTokenHash: null,
-          claimTokenExpiresAt: null,
-          claimTokenUsedAt: () => "CURRENT_TIMESTAMP",
-          claimVoidedReason: "claimed_by_other",
-          // The credential goes with the hash that made it usable: worthless
-          // without one, but still a recoverable secret under the application
-          // key, and nothing will ever want it again (DR-RRV4-03).
-          claimTokenCiphertext: null,
-        })
-        .where("owner_user_id = :id", { id: ownerId })
-        .andWhere("id <> :contactId", { contactId })
-        .andWhere("claim_token_hash IS NOT NULL")
-        .andWhere("claim_token_used_at IS NULL")
-        .execute();
+        // Trusted devices and personal access tokens belonged to the previous
+        // holder: a claim that left a PAT live would share the account with
+        // whoever the owner handed one to (`credential-revocation.ts`).
+        await revokeStandingCredentials(manager, ownerId);
 
-      // Disable the emergency access feature on the now-claimed account so
-      // the cron does not re-fire if the new holder ever lapses.
-      await manager
-        .createQueryBuilder()
-        .update(EmergencyAccessSettings)
-        .set({ enabled: false, grantedAt: new Date() })
-        .where("owner_user_id = :id", { id: ownerId })
-        .execute();
+        // The claiming token was already consumed above; void the siblings
+        // (single-claim wins).
+        await manager
+          .createQueryBuilder()
+          .update(EmergencyAccessContact)
+          .set({
+            claimTokenHash: null,
+            claimTokenExpiresAt: null,
+            claimTokenUsedAt: () => "CURRENT_TIMESTAMP",
+            claimVoidedReason: "claimed_by_other",
+            // The credential goes with the hash that made it usable: worthless
+            // without one, but still a recoverable secret under the application
+            // key, and nothing will ever want it again (DR-RRV4-03).
+            claimTokenCiphertext: null,
+          })
+          .where("owner_user_id = :id", { id: ownerId })
+          .andWhere("id <> :contactId", { contactId })
+          .andWhere("claim_token_hash IS NOT NULL")
+          .andWhere("claim_token_used_at IS NULL")
+          .execute();
 
-      return ownerId;
-    });
+        // Read inside the claim transaction, so nothing that can fail sits
+        // between the commit and the new session; decrypted after the commit.
+        const settings = await manager
+          .getRepository(EmergencyAccessSettings)
+          .findOne({ where: { ownerUserId: ownerId } });
+
+        // Disable the emergency access feature on the now-claimed account so
+        // the cron does not re-fire if the new holder ever lapses.
+        await manager
+          .createQueryBuilder()
+          .update(EmergencyAccessSettings)
+          .set({ enabled: false, grantedAt: new Date() })
+          .where("owner_user_id = :id", { id: ownerId })
+          .execute();
+
+        return {
+          ownerId,
+          messageCiphertext: settings?.messageCiphertext ?? null,
+        };
+      },
+    );
 
     // Revoke every existing refresh token *after* the transaction, and the reason
     // is not the one that used to be written here ("it writes via its own repo" --
@@ -392,6 +392,8 @@ export class EmergencyAccessClaimController {
       );
     }
 
+    const message = this.decryptMessage(messageCiphertext);
+
     const { accessToken, refreshToken } =
       await this.tokenService.generateTokenPair(freshOwner, false);
 
@@ -417,6 +419,11 @@ export class EmergencyAccessClaimController {
 
     this.logger.log(`Emergency access claim completed for user ${ownerId}`);
 
-    res.json({ ok: true });
+    res.json({
+      ok: true,
+      ownerFirstName: freshOwner.firstName,
+      ownerLastName: freshOwner.lastName,
+      message,
+    });
   }
 }

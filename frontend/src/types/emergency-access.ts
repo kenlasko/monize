@@ -41,10 +41,18 @@ export interface UpsertEmergencyAccessContact {
   email: string;
 }
 
+/**
+ * What the claim link reveals before anyone acts on it. The owner's name and
+ * message come back only from a completed claim (`EmergencyAccessClaimResult`).
+ */
 export interface EmergencyAccessClaimPreview {
+  contactFirstName: string;
+  expiresAt: string;
+}
+
+export interface EmergencyAccessClaimResult {
+  ok: true;
   ownerFirstName: string | null;
   ownerLastName: string | null;
-  contactFirstName: string;
   message: string | null;
-  expiresAt: string;
 }

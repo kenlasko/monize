@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import '@/lib/zodConfig';
@@ -16,7 +16,10 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { emergencyAccessApi } from '@/lib/emergency-access';
 import { buildPasswordSchema } from '@/lib/zod-helpers';
 import { getErrorMessage } from '@/lib/errors';
-import type { EmergencyAccessClaimPreview } from '@/types/emergency-access';
+import type {
+  EmergencyAccessClaimPreview,
+  EmergencyAccessClaimResult,
+} from '@/types/emergency-access';
 
 const buildSchema = (t: (key: string) => string, tc: (key: string) => string) => z
   .object({
@@ -42,6 +45,10 @@ function EmergencyClaimForm() {
   );
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [claimed, setClaimed] = useState<EmergencyAccessClaimResult | null>(
+    null,
+  );
+  const continueRef = useRef<HTMLButtonElement>(null);
 
   const {
     register,
@@ -75,6 +82,12 @@ function EmergencyClaimForm() {
       cancelled = true;
     };
   }, [token, t]);
+
+  // The form that held focus is gone once the claim succeeds; move focus to
+  // the message panel's only action so keyboard and screen-reader users land on it.
+  useEffect(() => {
+    if (claimed) continueRef.current?.focus();
+  }, [claimed]);
 
   if (!token) {
     return (
@@ -114,16 +127,49 @@ function EmergencyClaimForm() {
     );
   }
 
-  const ownerName =
-    [preview.ownerFirstName, preview.ownerLastName].filter(Boolean).join(' ') ||
-    t('ownerFallback');
+  // The owner's message is revealed only once the claim has succeeded (#2173).
+  if (claimed?.message) {
+    return (
+      <div className="mt-8 space-y-6">
+        <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            {t('messageHeading', { name: claimed.ownerFirstName || t('ownerFirstNameFallback') })}
+          </h3>
+          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
+            {claimed.message}
+          </p>
+        </div>
+        <Button
+          ref={continueRef}
+          type="button"
+          variant="primary"
+          size="lg"
+          className="w-full"
+          onClick={() => router.push('/dashboard')}
+        >
+          {t('continueToDashboard')}
+        </Button>
+      </div>
+    );
+  }
 
   const onSubmit = async (data: FormData) => {
     setSubmitting(true);
     try {
-      await emergencyAccessApi.completeClaim(token, data.newPassword);
+      const result = await emergencyAccessApi.completeClaim(
+        token,
+        data.newPassword,
+      );
+      const ownerName =
+        [result.ownerFirstName, result.ownerLastName]
+          .filter(Boolean)
+          .join(' ') || t('ownerFallback');
       toast.success(t('toasts.success', { name: ownerName }));
-      router.push('/dashboard');
+      if (result.message) {
+        setClaimed(result);
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err) {
       toast.error(
         getErrorMessage(
@@ -140,27 +186,12 @@ function EmergencyClaimForm() {
     <div className="mt-8 space-y-6">
       <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-2">
         <p className="text-sm text-blue-900 dark:text-blue-100">
-          {t.rich('intro', {
-            contactName: preview.contactFirstName,
-            ownerName,
-            b: (chunks) => <strong>{chunks}</strong>,
-          })}
+          {t('intro', { contactName: preview.contactFirstName })}
         </p>
         <p className="text-sm text-blue-900 dark:text-blue-100">
           {t('introDetail')}
         </p>
       </div>
-
-      {preview.message && (
-        <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            {t('messageHeading', { name: preview.ownerFirstName ?? t('ownerFirstNameFallback') })}
-          </h3>
-          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
-            {preview.message}
-          </p>
-        </div>
-      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
