@@ -11,11 +11,17 @@ import { GenerateBudgetDto, BudgetProfile } from "./dto/generate-budget.dto";
 import { ApplyGeneratedBudgetDto } from "./dto/apply-generated-budget.dto";
 import { roundMoney, sumMoney } from "../common/round.util";
 import {
+  incomingParentTransfers,
+  incomingSplitTransfers,
   outgoingParentTransfers,
   outgoingSplitTransfers,
   PARENT_TRANSFER_AMOUNT,
   SPLIT_TRANSFER_AMOUNT,
 } from "./budget-spending.util";
+import {
+  assertOneTransferLinePerAccount,
+  assertTransferAccountsOwned,
+} from "./budget-transfer-lines.util";
 
 export interface CategoryAnalysis {
   categoryId: string;
@@ -56,6 +62,12 @@ export interface TransferAnalysis {
 export interface GenerateBudgetResult {
   categories: CategoryAnalysis[];
   transfers: TransferAnalysis[];
+  /**
+   * Per source account, the monthly net of the transfers in from it, for a
+   * transfer income line (issue #2141). Not in `estimatedMonthlyIncome`: only
+   * the user knows which source is a reserve.
+   */
+  incomeTransfers: TransferAnalysis[];
   estimatedMonthlyIncome: number;
   totalBudgeted: number;
   totalTransfers: number;
@@ -142,6 +154,18 @@ export class BudgetGeneratorService {
       suggested: this.getSuggestedAmountFromStats(t, profile),
     }));
 
+    const incomeTransfers: TransferAnalysis[] = (
+      await this.getTransfersBySource(
+        userId,
+        startDateStr,
+        endDateStr,
+        analysisMonths,
+      )
+    ).map((t) => ({
+      ...t,
+      suggested: this.getSuggestedAmountFromStats(t, profile),
+    }));
+
     const estimatedMonthlyIncome =
       incomeAnalysis.length > 0
         ? sumMoney(incomeAnalysis.map((i) => i.median))
@@ -154,6 +178,7 @@ export class BudgetGeneratorService {
     return {
       categories: allCategories,
       transfers,
+      incomeTransfers,
       estimatedMonthlyIncome,
       totalBudgeted,
       totalTransfers,
@@ -169,6 +194,23 @@ export class BudgetGeneratorService {
   }
 
   async apply(userId: string, dto: ApplyGeneratedBudgetDto): Promise<Budget> {
+    // Refused before anything is written (issue #2141): one transfer line per
+    // account, and a transfer income line names one of the user's accounts.
+    const transferLines = (dto.categories ?? []).filter(
+      (cat) => cat.transferAccountId,
+    );
+    assertOneTransferLinePerAccount(
+      transferLines.map((cat) => cat.transferAccountId as string),
+    );
+    const incomeSources = transferLines
+      .filter((cat) => cat.isIncome)
+      .map((cat) => cat.transferAccountId as string);
+    if (incomeSources.length > 0) {
+      await withScopedDb(this.dataSource, (m) =>
+        assertTransferAccountsOwned(m, userId, incomeSources),
+      );
+    }
+
     const savedBudget = await withScopedDb(this.dataSource, (m) => {
       const repo = m.getRepository(Budget);
       return repo.save(
@@ -551,8 +593,89 @@ export class BudgetGeneratorService {
         return [parents, splits] as const;
       },
     );
-    const rows = [...parentRows, ...splitRows];
+    return this.toTransferAnalyses(
+      [...parentRows, ...splitRows],
+      analysisMonths,
+    );
+  }
 
+  /**
+   * The sources of the user's transfers in, per month: the signed net of the
+   * legs in their other accounts whose counterpart is the source, through the
+   * builders a transfer income line reads (`incomingParentTransfers`), so a
+   * suggestion is what the line would count. Each month is clamped at zero, as
+   * a period's actual is, and a source that never paid in is left out. Only
+   * the user's own accounts: `apply` refuses any other as a source.
+   */
+  private async getTransfersBySource(
+    userId: string,
+    startDate: string,
+    endDate: string,
+    analysisMonths: number,
+  ): Promise<Omit<TransferAnalysis, "suggested">[]> {
+    const window = { userId, periodStart: startDate, periodEnd: endDate };
+    const [parentRows, splitRows] = await withScopedDb(
+      this.dataSource,
+      async (m) => {
+        const parents = await incomingParentTransfers(
+          m.getRepository(Transaction),
+          window,
+        )
+          .innerJoin("lt.account", "a")
+          .andWhere("a.user_id = :userId")
+          .select("a.id", "accountId")
+          .addSelect("a.name", "accountName")
+          .addSelect("a.account_type", "accountType")
+          .addSelect("EXTRACT(YEAR FROM t.transaction_date)::int", "year")
+          .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
+          .addSelect(`SUM(${PARENT_TRANSFER_AMOUNT})`, "total")
+          .groupBy("a.id")
+          .addGroupBy("a.name")
+          .addGroupBy("a.account_type")
+          .addGroupBy("EXTRACT(YEAR FROM t.transaction_date)")
+          .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
+          .getRawMany();
+        const splits = await incomingSplitTransfers(
+          m.getRepository(TransactionSplit),
+          window,
+        )
+          .innerJoin("s.transferAccount", "a")
+          .andWhere("a.user_id = :userId")
+          .select("a.id", "accountId")
+          .addSelect("a.name", "accountName")
+          .addSelect("a.account_type", "accountType")
+          .addSelect("EXTRACT(YEAR FROM t.transaction_date)::int", "year")
+          .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
+          .addSelect(`SUM(${SPLIT_TRANSFER_AMOUNT})`, "total")
+          .groupBy("a.id")
+          .addGroupBy("a.name")
+          .addGroupBy("a.account_type")
+          .addGroupBy("EXTRACT(YEAR FROM t.transaction_date)")
+          .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
+          .getRawMany();
+        return [parents, splits] as const;
+      },
+    );
+    return this.toTransferAnalyses(
+      [...parentRows, ...splitRows],
+      analysisMonths,
+      { clampMonthsAtZero: true },
+    ).filter((t) => t.monthlyOccurrences > 0);
+  }
+
+  /** Per-account monthly statistics of transfer rows grouped by month. */
+  private toTransferAnalyses(
+    rows: Array<{
+      accountId: string;
+      accountName: string;
+      accountType: string;
+      year: number;
+      month: number;
+      total: string | null;
+    }>,
+    analysisMonths: number,
+    { clampMonthsAtZero = false }: { clampMonthsAtZero?: boolean } = {},
+  ): Omit<TransferAnalysis, "suggested">[] {
     const accountMap = new Map<
       string,
       {
@@ -579,7 +702,7 @@ export class BudgetGeneratorService {
       const existing = entry.monthlyTotals.get(monthKey) || 0;
       entry.monthlyTotals.set(
         monthKey,
-        existing + parseFloat(row.total || "0"),
+        roundMoney(existing + parseFloat(row.total || "0")),
       );
     }
 
@@ -589,7 +712,7 @@ export class BudgetGeneratorService {
       const monthlyAmounts = this.buildMonthlyArray(
         entry.monthlyTotals,
         analysisMonths,
-      );
+      ).map((amount) => (clampMonthsAtZero ? Math.max(amount, 0) : amount));
 
       const nonZeroMonths = monthlyAmounts.filter((m) => m > 0).length;
       const sortedForPercentiles = [...monthlyAmounts].sort((a, b) => a - b);

@@ -30,6 +30,7 @@ import {
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
+import { Account } from "../accounts/entities/account.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { ScheduledTransactionOverride } from "../scheduled-transactions/entities/scheduled-transaction-override.entity";
 import { ActionHistoryService } from "../action-history/action-history.service";
@@ -83,6 +84,7 @@ describe("BudgetsService", () => {
   let transactionsRepository: Record<string, jest.Mock>;
   let splitsRepository: Record<string, jest.Mock>;
   let categoriesRepository: Record<string, jest.Mock>;
+  let accountsRepository: Record<string, jest.Mock>;
   let scheduledTransactionsRepository: Record<string, jest.Mock>;
   let overridesRepository: Record<string, jest.Mock>;
   let investmentTransactionsService: InvestmentFxMock;
@@ -226,6 +228,10 @@ describe("BudgetsService", () => {
       findOne: jest.fn(),
     };
 
+    accountsRepository = {
+      find: jest.fn().mockResolvedValue([]),
+    };
+
     scheduledTransactionsRepository = {
       createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
     };
@@ -249,6 +255,7 @@ describe("BudgetsService", () => {
         [Transaction, transactionsRepository as never],
         [TransactionSplit, splitsRepository as never],
         [Category, categoriesRepository as never],
+        [Account, accountsRepository as never],
         [ScheduledTransaction, scheduledTransactionsRepository as never],
         [
           UserPreference,
@@ -596,6 +603,93 @@ describe("BudgetsService", () => {
           description: expect.stringContaining("February 2026"),
         }),
       );
+    });
+  });
+
+  describe("addTransferIncomeLine (issue #2141)", () => {
+    it("adds an income transfer line naming the source, under the budget's lock", async () => {
+      budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
+      accountsRepository.find.mockResolvedValue([{ id: "acct-hisa" }]);
+      budgetCategoriesRepository.findOne.mockResolvedValue(null);
+      budgetCategoriesRepository.save.mockImplementation(async (d) => ({
+        ...d,
+        id: "new-bc",
+      }));
+
+      const result = await service.addTransferIncomeLine("user-1", "budget-1", {
+        transferAccountId: "acct-hisa",
+        amount: 2000,
+      });
+
+      expect(budgetsRepository.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "budget-1", userId: "user-1" },
+          lock: { mode: "pessimistic_write" },
+        }),
+      );
+      expect(accountsRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ userId: "user-1" }),
+        }),
+      );
+      expect(budgetCategoriesRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          budgetId: "budget-1",
+          categoryId: null,
+          transferAccountId: "acct-hisa",
+          isTransfer: true,
+          isIncome: true,
+          amount: 2000,
+          rolloverType: RolloverType.NONE,
+        }),
+      );
+      expect(result.id).toBe("new-bc");
+    });
+
+    it("refuses a budget the user does not own", async () => {
+      budgetsRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.addTransferIncomeLine("user-1", "budget-1", {
+          transferAccountId: "acct-hisa",
+          amount: 2000,
+        }),
+      ).rejects.toThrow(NotFoundException);
+      expect(budgetCategoriesRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("refuses an account the user does not own", async () => {
+      budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
+      accountsRepository.find.mockResolvedValue([]);
+
+      await expect(
+        service.addTransferIncomeLine("user-1", "budget-1", {
+          transferAccountId: "acct-other",
+          amount: 2000,
+        }),
+      ).rejects.toThrow(NotFoundException);
+      expect(budgetCategoriesRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("refuses an account a transfer line of the budget already names", async () => {
+      budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
+      accountsRepository.find.mockResolvedValue([{ id: "acct-hisa" }]);
+      budgetCategoriesRepository.findOne.mockResolvedValue({
+        ...mockBudgetCategory,
+        isTransfer: true,
+        transferAccountId: "acct-hisa",
+      });
+
+      await expect(
+        service.addTransferIncomeLine("user-1", "budget-1", {
+          transferAccountId: "acct-hisa",
+          amount: 2000,
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(budgetCategoriesRepository.findOne).toHaveBeenCalledWith({
+        where: { budgetId: "budget-1", transferAccountId: "acct-hisa" },
+      });
+      expect(budgetCategoriesRepository.save).not.toHaveBeenCalled();
     });
   });
 
@@ -950,19 +1044,20 @@ describe("BudgetsService", () => {
           },
         ],
       });
-      transactionsRepository.manager.query.mockImplementation(
-        async (sql: string) =>
-          sql.includes("FROM budgets")
-            ? [
-                {
-                  currency_code: TEST_BUDGET_CURRENCY,
-                  config: {
-                    excludedAccountIds: ["hisa", "rrsp"],
-                    transfersInAsIncome: true,
-                  },
+      (
+        transactionsRepository.manager as unknown as { query: jest.Mock }
+      ).query.mockImplementation(async (sql: string) =>
+        sql.includes("FROM budgets")
+          ? [
+              {
+                currency_code: TEST_BUDGET_CURRENCY,
+                config: {
+                  excludedAccountIds: ["hisa", "rrsp"],
+                  transfersInAsIncome: true,
                 },
-              ]
-            : [],
+              },
+            ]
+          : [],
       );
       // The category's direct read, then the incoming transfers' parent read.
       transactionsRepository.createQueryBuilder

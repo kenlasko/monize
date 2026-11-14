@@ -510,6 +510,55 @@ describe("BudgetHealthReportsService", () => {
       expect(result).toHaveLength(3);
     });
 
+    it("counts transfer income lines and the toggle's figure as income (issue #2141)", async () => {
+      budgetsService.findOne.mockResolvedValueOnce({
+        ...mockBudget,
+        categories: [
+          {
+            id: "bc-hisa",
+            budgetId: "budget-1",
+            categoryId: null,
+            isTransfer: true,
+            isIncome: true,
+            transferAccountId: "acct-hisa",
+            amount: 2000,
+          },
+          {
+            id: "bc-food",
+            budgetId: "budget-1",
+            categoryId: "cat-food",
+            isTransfer: false,
+            isIncome: false,
+            transferAccountId: null,
+            amount: 500,
+          },
+        ],
+      });
+      mockSpending({
+        ...spending({ "cat-food": -1000 }),
+        transferIncomeMap: new Map([["acct-hisa", 2000]]),
+        outsideTransferIncome: 500,
+      });
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      // The transfer income line passes to the actuals read with the others.
+      expect(mockedSpending.mock.calls[0][3].map((bc) => bc.id)).toEqual([
+        "bc-hisa",
+        "bc-food",
+      ]);
+      // No income category, but the budget has an income line: the income
+      // side is 2,000 + 500, never the every-deposit fallback.
+      expect(transactionsRepository.createQueryBuilder).not.toHaveBeenCalled();
+      expect(result[0]).toMatchObject({
+        income: 2500,
+        expenses: 1000,
+        savings: 1500,
+        savingsRate: 60,
+        valuationComplete: true,
+      });
+    });
+
     it("leaves the budget's excluded accounts out of the no-income-category query", async () => {
       budgetsService.findOne.mockResolvedValueOnce({
         ...mockBudget,

@@ -330,7 +330,9 @@
     "budgetCategoryNotFound": "Budget category with ID {{ id }} not found",
     "periodNotFound": "Budget period with ID {{ id }} not found",
     "noOpenPeriod": "No open period to close",
-    "categoryIdsNotOwned": "Category IDs not found or not owned by user: {{ ids }}"
+    "categoryIdsNotOwned": "Category IDs not found or not owned by user: {{ ids }}",
+    "transferAccountNotFound": "Account with ID {{ id }} not found",
+    "transferAccountAlreadyInBudget": "This account already has a transfer line in the budget"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "A payroll deduction rule tracks a bill paid in a fiat currency; this bill's account holds the cryptocurrency {{ code }}. Choose a bill paid from a fiat account.",

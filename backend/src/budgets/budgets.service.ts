@@ -7,7 +7,12 @@ import { tr } from "../i18n/translate";
 import { DataSource, In } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { Budget } from "./entities/budget.entity";
-import { BudgetCategory } from "./entities/budget-category.entity";
+import {
+  BudgetCategory,
+  RolloverType,
+} from "./entities/budget-category.entity";
+import { CreateTransferIncomeLineDto } from "./dto/create-transfer-income-line.dto";
+import { assertTransferAccountsOwned } from "./budget-transfer-lines.util";
 import {
   Notification,
   NotificationType,
@@ -294,6 +299,61 @@ export class BudgetsService {
     return withScopedDb(this.dataSource, (m) => {
       const repo = m.getRepository(BudgetCategory);
       return repo.save(repo.create({ ...dto, budgetId: budget.id }));
+    });
+  }
+
+  /**
+   * Adds a transfer income line (issue #2141). The budget, the account and
+   * the one-line-per-account rule are checked in the write's own transaction,
+   * under the budget row's lock, so two concurrent adds of one account cannot
+   * both pass the duplicate check.
+   */
+  async addTransferIncomeLine(
+    userId: string,
+    budgetId: string,
+    dto: CreateTransferIncomeLineDto,
+  ): Promise<BudgetCategory> {
+    return withScopedDb(this.dataSource, async (m) => {
+      const budget = await m.getRepository(Budget).findOne({
+        where: { id: budgetId, userId },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!budget) {
+        throw new NotFoundException(
+          tr(
+            "errors.budgets.notFound",
+            `Budget with ID ${budgetId} not found`,
+            {
+              id: budgetId,
+            },
+          ),
+        );
+      }
+      await assertTransferAccountsOwned(m, userId, [dto.transferAccountId]);
+      const repo = m.getRepository(BudgetCategory);
+      const existing = await repo.findOne({
+        where: { budgetId, transferAccountId: dto.transferAccountId },
+      });
+      if (existing) {
+        throw new BadRequestException(
+          tr(
+            "errors.budgets.transferAccountAlreadyInBudget",
+            "This account already has a transfer line in the budget",
+          ),
+        );
+      }
+      return repo.save(
+        repo.create({
+          budgetId,
+          categoryId: null,
+          transferAccountId: dto.transferAccountId,
+          isTransfer: true,
+          isIncome: true,
+          amount: dto.amount,
+          rolloverType: dto.rolloverType ?? RolloverType.NONE,
+          notes: dto.notes ?? null,
+        }),
+      );
     });
   }
 

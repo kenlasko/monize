@@ -28,6 +28,7 @@ import { BudgetReportsService } from "./budget-reports.service";
 import { CreateBudgetDto } from "./dto/create-budget.dto";
 import { UpdateBudgetDto } from "./dto/update-budget.dto";
 import { CreateBudgetCategoryDto } from "./dto/create-budget-category.dto";
+import { CreateTransferIncomeLineDto } from "./dto/create-transfer-income-line.dto";
 import { UpdateBudgetCategoryDto } from "./dto/update-budget-category.dto";
 import { BulkUpdateBudgetCategoriesDto } from "./dto/bulk-update-budget-categories.dto";
 import { GenerateBudgetDto } from "./dto/generate-budget.dto";
@@ -193,6 +194,23 @@ export class BudgetsController {
     @Body() dto: CreateBudgetCategoryDto,
   ) {
     return this.budgetsService.addCategory(req.user.id, id, dto);
+  }
+
+  @Post(":id/categories/transfer-income")
+  @ApiOperation({
+    summary: "Add a line counting transfers in from an account as income",
+  })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiResponse({ status: 201, description: "Transfer income line added" })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget or account not found" })
+  addTransferIncomeLine(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: CreateTransferIncomeLineDto,
+  ) {
+    return this.budgetsService.addTransferIncomeLine(req.user.id, id, dto);
   }
 
   @Patch(":id/categories/:categoryId")
