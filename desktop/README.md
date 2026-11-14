@@ -43,6 +43,37 @@ dependencies come from a fresh `npm ci --omit=dev` in a temp directory. Without
 `cwebp` the help screenshots are copied as PNG (the backend serves them, at
 about 2.4 times the size) with a warning.
 
+The staged backend `node_modules` is then pruned of files Node never
+executes (`scripts/lib/prune.mjs`, one predicate, `isPrunable`): declaration
+files (`*.d.ts`, `*.d.mts`, `*.d.cts`), source maps (`*.map`), TypeScript
+sources shipped beside the compiled JavaScript (`*.ts`, `*.mts`, `*.cts`) and
+Markdown (`*.md`, `*.markdown`), plus the directories that empty. It exists
+because the installer writes every file twice and Windows Defender scans each
+write: about 56,800 files made the install take many minutes, and these four
+kinds are most of the backend's 40,000. Never pruned: any file whose name
+starts with `LICENSE`, `LICENCE`, `NOTICE`, `COPYING` or `AUTHORS` in any case
+or extension (a redistributed app ships third-party licences, so
+`LICENSE.md` stays), `package.json`, and every other extension. Directories
+are never removed by name (`test`, `docs`): some packages use those for
+runtime code. Symlinks are left alone.
+
+The prune fails closed (`scripts/lib/prune-check.mjs`). Afterwards the run
+reads every `package.json` under the staged `node_modules` and checks each
+runtime entry point it declares: `main`, `module`, `bin` and every target in
+`exports` (nested conditions, `*` subpath patterns checked by their static
+directory). Only the conditions Node itself takes are followed (`node`,
+`import`, `require`, `default`, `node-addons`, `module-sync`): `types`,
+`typings`, `browser` and a package's own source conditions such as zod's
+`@zod/source` are never loaded by `node`, so their `.ts` targets are not
+entry points. A target that resolves to a pruned file, or to a missing file
+with a pruned extension, fails the run naming the package and the target, and
+so does a package left with no file but `package.json` and licences. A package
+that shipped only declarations, maps and Markdown (`@types/luxon`,
+`@tokenizer/token`) is exempt: Node could never load anything from it. The summary reports the file count of
+`backend/node_modules` before and after the prune and the total staged file
+count. The staged frontend (`.next/standalone`) has only about 93 such files
+and is left alone.
+
 One staged file is the desktop's own and mirrors no Dockerfile line (manifest
 `kind: "desktop"`): `shell/parent-watch.cjs`, from `resources/parent-watch.cjs`.
 The supervisor loads it into every backend and frontend process with

@@ -4,6 +4,8 @@ import process from "node:process";
 import { formatSize, copySource, sizeOf } from "./copy.mjs";
 import { installBackendDeps } from "./backend-deps.mjs";
 import { stageHelpImages } from "./help-images.mjs";
+import { assertEntryPointsIntact } from "./prune-check.mjs";
+import { countFiles, pruneTree } from "./prune.mjs";
 import { loadManifest } from "./manifest.mjs";
 import { stagePostgres } from "./postgres.mjs";
 import { stageVcRuntime } from "./vc-runtime.mjs";
@@ -114,6 +116,7 @@ export function stage({
   }
 
   const sizes = [];
+  let prune = null;
   for (const entry of manifest.entries) {
     const kind = entry.kind ?? "copy";
     const dest = path.join(outDir, entry.to);
@@ -134,6 +137,7 @@ export function stage({
         backendDir: path.join(repoRoot, "backend"),
         dest,
       });
+      prune = pruneBackendDeps(dest, log);
     } else if (kind === "help-images") {
       (hooks.stageHelpImages ?? stageHelpImages)({
         src: path.join(repoRoot, entry.from),
@@ -174,15 +178,35 @@ export function stage({
       }
     }
   }
-  return { sizes, total: sizeOf(outDir) };
+  return { sizes, total: sizeOf(outDir), files: countFiles(outDir), prune };
 }
 
-export function formatSummary({ sizes, total }) {
+/**
+ * Removes the files Node never executes from the staged backend dependencies,
+ * then fails unless every declared entry point still resolves.
+ */
+function pruneBackendDeps(dir, log) {
+  const { removed, before, after } = pruneTree(dir);
+  const checked = assertEntryPointsIntact(dir, removed);
+  log(
+    `       pruned ${removed.length} files; entry-point check: ${checked.targets} targets in ${checked.packages} packages`,
+  );
+  return { before, after, ...checked };
+}
+
+export function formatSummary({ sizes, total, files, prune }) {
   const width = Math.max(...sizes.map((s) => s.to.length));
   const rows = sizes.map(
     (s) => `  ${s.to.padEnd(width)}  ${formatSize(s.bytes)}`,
   );
-  return [...rows, `  ${"total".padEnd(width)}  ${formatSize(total)}`].join(
-    "\n",
-  );
+  const lines = [...rows, `  ${"total".padEnd(width)}  ${formatSize(total)}`];
+  if (prune) {
+    lines.push(
+      `  backend/node_modules files: ${prune.before} before prune, ${prune.after} after`,
+    );
+  }
+  if (files !== undefined) {
+    lines.push(`  staged files: ${files}`);
+  }
+  return lines.join("\n");
 }

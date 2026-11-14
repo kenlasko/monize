@@ -342,3 +342,11 @@ Each is a decision the build made against the text above, with its reason.
     `canReceivePush` stays false for `electron`; a separate capability,
     `receivesNotificationsNatively`, changes the push settings text instead.
     `docs/frontend/shell-contract.md`, "Native notifications", has the rules.
+18. **The desktop's backend `node_modules` differs from the image's by exactly
+    the files Node never executes**: declaration files, source maps,
+    TypeScript sources and Markdown (licences are kept), removed to cut the
+    installer's file count, since every file is written twice and scanned by
+    Defender. A check after the prune (`desktop/scripts/lib/prune-check.mjs`)
+    holds it: every `main`, `module`, `bin` and `exports` target of every
+    package must still resolve, or staging fails naming the package.
+
