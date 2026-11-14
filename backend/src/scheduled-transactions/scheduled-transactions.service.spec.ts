@@ -10488,7 +10488,7 @@ describe("ScheduledTransactionsService", () => {
 
   // ==================== estimated amounts (issue #2096) ====================
   describe("estimated amounts (issue #2096)", () => {
-    /** Three payments, not seasonal: every month is their mean, -110. */
+    /** Three payments in the year, no pattern: every month is their mean, -110. */
     const knownEstimate = (): ScheduleAmountEstimate => ({
       status: "estimated",
       currencyCode: "USD",

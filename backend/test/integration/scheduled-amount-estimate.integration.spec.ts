@@ -134,7 +134,8 @@ describe("Scheduled amount estimate (integration)", () => {
     expect(
       estimate.profile?.payments.map((p) => p.amount).sort((a, b) => a - b),
     ).toEqual([-120, -110, -100]);
-    // Not seasonal (one year), so every month is the newest three's mean.
+    // Neither seasonal nor trending (one year), so every month is the
+    // latest year's mean.
     expect(estimatedAmountFor(estimate, addMonthsClamped(today, 1))).toBe(-110);
   });
 

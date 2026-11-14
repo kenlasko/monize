@@ -1041,8 +1041,8 @@ describe("ScheduledOccurrenceService", () => {
         through: "2027-01-31",
       });
 
-      // One year of history is not seasonal, so every month is the mean of
-      // the newest three: (-180 - 220 - 55) / 3 = -151.67.
+      // One year of history is neither seasonal nor trending, so every month
+      // is the latest year's mean: (-180 - 220 - 55) / 3 = -151.67.
       expect(occurrences.map((o) => [o.dueDate, o.amount])).toEqual([
         ["2026-12-15", -151.67],
         ["2027-01-15", -151.67],
