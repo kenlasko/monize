@@ -40,12 +40,25 @@
 ; Silent uninstall (/S) keeps the data unless this switch is given.
 !define MONIZE_REMOVE_DATA_SWITCH "--remove-data"
 
+; "Move data folder" (src/move/) records where the data went in a file beside
+; the default data folder: <default data folder>-location.ini, an INI file in
+; UTF-16, which ReadINIStr reads as Unicode. A move that is under way keeps
+; its journal beside it. src/packaging.spec.ts holds these names, and the
+; names of what the application creates in a data folder, equal to the
+; application's own.
+!define MONIZE_LOCATION_SUFFIX "-location.ini"
+!define MONIZE_JOURNAL_SUFFIX "-move.json"
+!define MONIZE_LOCATION_SECTION "location"
+; What makes a folder a Monize data folder: its config.json and, in its
+; database folder, the marker the application writes once initdb has finished.
+!define MONIZE_INIT_MARKER "monize.initialized"
+
 !define UNINSTALL_SECTION_NAME "Remove Monize"
-!define MONIZE_TXT_REMOVE_DATA "Remove my data (%LOCALAPPDATA%\${MONIZE_DATA_DIR_NAME})"
+!define MONIZE_TXT_REMOVE_DATA "Remove my data (%LOCALAPPDATA%\${MONIZE_DATA_DIR_NAME}, or the folder it was moved to)"
 
 !define MUI_DIRECTORYPAGE_TEXT_TOP "Setup will install $(^NameDA) in the following folder. Choose a new or empty folder: the folder that holds your Monize data cannot be used. $_CLICK"
 
-!define MONIZE_TXT_DIR_IS_DATA "Monize cannot be installed in:$\r$\n$INSTDIR$\r$\n$\r$\nThat folder is, contains, or is inside the folder where Monize keeps your data:$\r$\n$monizeDataDir$\r$\n$\r$\nUpdating or uninstalling Monize deletes everything in its installation folder, so your data would be lost. Run Setup again and choose another folder."
+!define MONIZE_TXT_DIR_IS_DATA "Monize cannot be installed in:$\r$\n$INSTDIR$\r$\n$\r$\nThat folder is, contains, or is inside the folder where Monize keeps your data:$\r$\n$monizeDataDirHit$\r$\n$\r$\nUpdating or uninstalling Monize deletes everything in its installation folder, so your data would be lost. Run Setup again and choose another folder."
 !define MONIZE_TXT_DIR_NOT_EMPTY "Monize cannot be installed in:$\r$\n$INSTDIR$\r$\n$\r$\nThat folder already contains other files. Updating or uninstalling Monize deletes everything in its installation folder. Run Setup again and choose a new or empty folder."
 !define MONIZE_TXT_UNINSTALL_HOLDS_DATA "Nothing was removed.$\r$\n$\r$\nThe installation folder holds Monize's data:$\r$\n$INSTDIR$\r$\n$\r$\nRemoving the application would delete that data. Copy the folder somewhere safe, then delete it by hand."
 !define MONIZE_TXT_PER_USER_ONLY "Monize installs for the current user only; /allusers is not supported."
@@ -72,6 +85,9 @@
 
 Var monizeDataDir     ; %LOCALAPPDATA%\Monize as the application resolves it
 Var monizeDataDirAlt  ; the same from Windows' own folder table, when it differs
+Var monizeDataDirMoved ; where "Move data folder" put the data, when it did
+Var monizeDataDirPrev  ; the copy that move left behind, until it is deleted
+Var monizeDataDirHit  ; set by MonizeRelationToData: the data folder it found
 Var pid               ; this process; electron-builder's KILL_PROCESS spares it
 
 ; ---------------------------------------------------------------------------
@@ -139,15 +155,47 @@ Function ${MONIZE_UN}MonizeNormalizePath
   Exch $0
 FunctionEnd
 
+; Stack: a default data folder (normalised; may be empty). Reads the pointer
+; beside it into $monizeDataDirMoved and $monizeDataDirPrev, unless an earlier
+; call already found one. A missing file or key leaves them empty.
+Function ${MONIZE_UN}MonizeReadLocation
+  Exch $0
+  Push $1
+  ${If} $0 != ""
+  ${AndIf} $monizeDataDirMoved == ""
+  ${AndIf} ${FileExists} "$0${MONIZE_LOCATION_SUFFIX}"
+    ReadINIStr $1 "$0${MONIZE_LOCATION_SUFFIX}" "${MONIZE_LOCATION_SECTION}" "dataDir"
+    ${If} $1 != ""
+      Push $1
+      Call ${MONIZE_UN}MonizeNormalizePath
+      Pop $monizeDataDirMoved
+    ${EndIf}
+    ReadINIStr $1 "$0${MONIZE_LOCATION_SUFFIX}" "${MONIZE_LOCATION_SECTION}" "previousDataDir"
+    ${If} $1 != ""
+      Push $1
+      Call ${MONIZE_UN}MonizeNormalizePath
+      Pop $monizeDataDirPrev
+    ${EndIf}
+    ClearErrors
+  ${EndIf}
+  Pop $1
+  Pop $0
+FunctionEnd
+
 ; Sets $monizeDataDir and $monizeDataDirAlt. The application reads the
 ; LOCALAPPDATA environment variable (src/app-paths.ts), so that is the first
 ; answer; Windows' own answer for the current user is kept as a second one
-; when the two differ. Both are empty when neither is known.
+; when the two differ. Both are empty when neither is known. Also sets
+; $monizeDataDirMoved and $monizeDataDirPrev from the pointer that "Move data
+; folder" leaves beside the default folder; both are empty for an install
+; that never moved its data.
 Function ${MONIZE_UN}MonizeFindDataDir
   Push $0
   Push $1
   StrCpy $monizeDataDir ""
   StrCpy $monizeDataDirAlt ""
+  StrCpy $monizeDataDirMoved ""
+  StrCpy $monizeDataDirPrev ""
 
   ReadEnvStr $0 LOCALAPPDATA
   ${If} $0 != ""
@@ -170,6 +218,11 @@ Function ${MONIZE_UN}MonizeFindDataDir
       StrCpy $monizeDataDirAlt $0
     ${EndIf}
   ${EndIf}
+
+  Push $monizeDataDir
+  Call ${MONIZE_UN}MonizeReadLocation
+  Push $monizeDataDirAlt
+  Call ${MONIZE_UN}MonizeReadLocation
 
   Pop $1
   Pop $0
@@ -215,16 +268,39 @@ Function ${MONIZE_UN}MonizeRelation
     ${EndIf}
   ${EndIf}
 
+  ; The stack holds, from the top: $4, $3, $2, the caller's $0, the caller's
+  ; $1. Both registers go back to the caller as they were, and the answer is
+  ; left on the stack. (Restoring them crosswise, as this once did, made
+  ; every comparison after the first in MonizeRelationToData compare the
+  ; wrong folder.)
   StrCpy $0 $4
   Pop $4
   Pop $3
   Pop $2
-  Pop $1
   Exch $0
+  Exch
+  Pop $1
 FunctionEnd
 
-; Stack: folder -> how it stands to the data folder (either answer for it),
-; as MonizeRelation says. Sets $monizeDataDir.
+; In MonizeRelationToData: $0 = the folder, $1 = the answer so far. Tries one
+; more data folder while there is no answer yet.
+!macro monizeTryRelation CANDIDATE
+  ${If} $1 == ""
+    Push $0
+    Push ${CANDIDATE}
+    Call ${MONIZE_UN}MonizeRelation
+    Pop $1
+    ${If} $1 != ""
+      StrCpy $monizeDataDirHit ${CANDIDATE}
+    ${EndIf}
+  ${EndIf}
+!macroend
+
+; Stack: folder -> how it stands to a folder that holds the person's data, as
+; MonizeRelation says: the default data folder (either answer for it), the
+; folder the data was moved to, or the copy a move left behind. Sets
+; $monizeDataDirHit to the one it found, and the variables MonizeFindDataDir
+; sets.
 Function ${MONIZE_UN}MonizeRelationToData
   Exch $0
   Push $1
@@ -232,16 +308,12 @@ Function ${MONIZE_UN}MonizeRelationToData
   Push $0
   Call ${MONIZE_UN}MonizeNormalizePath
   Pop $0
-  Push $0
-  Push $monizeDataDir
-  Call ${MONIZE_UN}MonizeRelation
-  Pop $1
-  ${If} $1 == ""
-    Push $0
-    Push $monizeDataDirAlt
-    Call ${MONIZE_UN}MonizeRelation
-    Pop $1
-  ${EndIf}
+  StrCpy $monizeDataDirHit ""
+  StrCpy $1 ""
+  !insertmacro monizeTryRelation $monizeDataDir
+  !insertmacro monizeTryRelation $monizeDataDirAlt
+  !insertmacro monizeTryRelation $monizeDataDirMoved
+  !insertmacro monizeTryRelation $monizeDataDirPrev
   StrCpy $0 $1
   Pop $1
   Exch $0
@@ -256,7 +328,8 @@ FunctionEnd
 ; Stack: folder -> why Monize must not be installed there: "data", "notempty"
 ; or "" when it may.
 ;
-; "data": the folder is, contains, or is inside %LOCALAPPDATA%\Monize. The
+; "data": the folder is, contains, or is inside %LOCALAPPDATA%\Monize, or
+; the folder the data was moved to, or the copy a move left behind. The
 ; uninstaller deletes the installation folder with everything in it, on every
 ; update as well as on an uninstall, so this is the one way the installer
 ; could destroy the person's financial data. The directory page appends the
@@ -352,6 +425,11 @@ FunctionEnd
 ; Both: stop a running Monize before its files are touched
 ; ---------------------------------------------------------------------------
 
+; Nothing here needs to know where the data folder is: `Monize.exe --quit`
+; resolves it as every launch does (MONIZE_DATA_DIR, the pointer of a moved
+; folder, the default), so it reaches the running application, and a
+; PostgreSQL left behind, wherever the data was moved to.
+;
 ; First the clean way: `Monize.exe --quit` asks the running application to
 ; stop its frontend, backend and PostgreSQL, and returns when that process has
 ; gone; when none is running it shuts down a PostgreSQL that a killed Monize
@@ -507,6 +585,49 @@ FunctionEnd
     Call un.MonizeRemoveDataFolder
     Push $monizeDataDirAlt
     Call un.MonizeRemoveDataFolder
+    ; A data folder that was moved, and the copy the move left behind.
+    Push $monizeDataDirMoved
+    Call un.MonizeRemoveMovedFolder
+    Push $monizeDataDirPrev
+    Call un.MonizeRemoveMovedFolder
+    ; With the data gone, the record of where it was goes too: left behind,
+    ; it would stop a later installation from starting.
+    ${If} $monizeDataDir != ""
+      Delete "$monizeDataDir${MONIZE_LOCATION_SUFFIX}"
+      Delete "$monizeDataDir${MONIZE_JOURNAL_SUFFIX}"
+    ${EndIf}
+    ${If} $monizeDataDirAlt != ""
+      Delete "$monizeDataDirAlt${MONIZE_LOCATION_SUFFIX}"
+      Delete "$monizeDataDirAlt${MONIZE_JOURNAL_SUFFIX}"
+    ${EndIf}
+    Pop $1
+    Pop $0
+  FunctionEnd
+
+  ; Stack: folder. A moved data folder is wherever the person chose, under
+  ; whatever name, so it is recognised by what it holds, and only what the
+  ; application created in it is deleted (OWNED_TOP_LEVEL and TOMBSTONE_FILE
+  ; in src/move/layout.ts): a file the person put there stays, and the folder
+  ; with it. The two things that identify the folder go last, so a deletion
+  ; that is interrupted can be repeated. Does nothing for anything else.
+  Function un.MonizeRemoveMovedFolder
+    Exch $0
+    Push $1
+    StrLen $1 $0
+    ${If} $1 > 3
+    ${AndIf} ${FileExists} "$0\config.json"
+    ${AndIf} ${FileExists} "$0\pgdata\${MONIZE_INIT_MARKER}"
+      SetOutPath $TEMP
+      RMDir /r "$0\backups"
+      RMDir /r "$0\attachments"
+      RMDir /r "$0\logs"
+      RMDir /r "$0\shell"
+      Delete "$0\moved-elsewhere.json"
+      Delete "$0\pgdata.initdb-password"
+      RMDir /r "$0\pgdata"
+      Delete "$0\config.json"
+      RMDir "$0"
+    ${EndIf}
     Pop $1
     Pop $0
   FunctionEnd

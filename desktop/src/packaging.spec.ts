@@ -2,8 +2,21 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 
 import { resolveDataDir } from "./app-paths";
+import {
+  CONFIG_FILE,
+  OWNED_TOP_LEVEL,
+  PGDATA_DIR,
+  TOMBSTONE_FILE,
+} from "./move/layout";
+import {
+  LOCATION_SECTION,
+  locationFileFor,
+  serializeLocation,
+} from "./move/location";
+import { journalFileFor } from "./move/records";
 import { QUIT_FLAG } from "./shell/launch-args";
 import { QUIT_WAIT_MS } from "./shell/quit-wait";
+import { INIT_MARKER } from "./supervisor/postgres-context";
 
 /**
  * The installer is built on Windows only, so the parts of its configuration
@@ -160,5 +173,84 @@ describe("build/installer.nsh", () => {
     expect(remove).toMatch(
       /^\s*;.*\n\s*;.*\n\s*\$\{If\} \$\{isUpdated\}\n\s*Return/,
     );
+  });
+
+  describe("the moved data folder", () => {
+    it("finds the pointer where the shell writes it, and reads the keys it writes", () => {
+      const dataDir = "C:\\Users\\a\\AppData\\Local\\Monize";
+      expect(locationFileFor(dataDir)).toBe(
+        `${dataDir}${define("MONIZE_LOCATION_SUFFIX")}`,
+      );
+      expect(journalFileFor(dataDir)).toBe(
+        `${dataDir}${define("MONIZE_JOURNAL_SUFFIX")}`,
+      );
+      expect(define("MONIZE_LOCATION_SECTION")).toBe(LOCATION_SECTION);
+      const written = serializeLocation({
+        dataDir: "D:\\Monize",
+        previousDataDir: dataDir,
+        state: "confirmed",
+        movedAt: "2026-11-13T10:00:00.000Z",
+      })
+        .subarray(2)
+        .toString("utf16le");
+      for (const key of ["dataDir", "previousDataDir"]) {
+        expect(written).toContain(`\r\n${key}=`);
+        expect(nsh).toContain(`"\${MONIZE_LOCATION_SECTION}" "${key}"`);
+      }
+    });
+
+    it("protects it like the default folder: every data folder is tried", () => {
+      const relation =
+        /Function \$\{MONIZE_UN\}MonizeRelationToData\n([\s\S]*?)FunctionEnd/.exec(
+          nsh,
+        )?.[1];
+      for (const folder of [
+        "$monizeDataDir",
+        "$monizeDataDirAlt",
+        "$monizeDataDirMoved",
+        "$monizeDataDirPrev",
+      ]) {
+        expect(relation).toContain(
+          `!insertmacro monizeTryRelation ${folder}\n`,
+        );
+      }
+    });
+
+    it("recognises a moved folder by what the shell puts in one, and removes only that", () => {
+      const remove =
+        /Function un\.MonizeRemoveMovedFolder\n([\s\S]*?)FunctionEnd/.exec(
+          nsh,
+        )?.[1] ?? "";
+      expect(define("MONIZE_INIT_MARKER")).toBe(INIT_MARKER);
+      expect(remove).toContain(`\${FileExists} "$0\\${CONFIG_FILE}"`);
+      expect(remove).toContain(
+        `\${FileExists} "$0\\${PGDATA_DIR}\\\${MONIZE_INIT_MARKER}"`,
+      );
+      const removed = [
+        ...remove.matchAll(/(?:RMDir \/r|Delete) "\$0\\([^"]+)"/g),
+      ]
+        .map((match) => match[1])
+        .sort();
+      expect(removed).toEqual([...OWNED_TOP_LEVEL, TOMBSTONE_FILE].sort());
+      // The folder itself goes only when that left it empty.
+      expect(remove).toMatch(/\n\s*RMDir "\$0"\n/);
+      expect(remove).not.toMatch(/RMDir \/r "\$0"/);
+    });
+
+    it("removes it, the copy a move left, and the pointer, only with the data", () => {
+      const remove =
+        /Function un\.MonizeRemoveData\n([\s\S]*?)FunctionEnd/.exec(nsh)?.[1];
+      expect(remove).toMatch(
+        /Push \$monizeDataDirMoved\n\s*Call un\.MonizeRemoveMovedFolder/,
+      );
+      expect(remove).toMatch(
+        /Push \$monizeDataDirPrev\n\s*Call un\.MonizeRemoveMovedFolder/,
+      );
+      expect(remove).toContain(
+        'Delete "$monizeDataDir${MONIZE_LOCATION_SUFFIX}"',
+      );
+      // Nothing else in the file deletes a moved folder.
+      expect(nsh.split("Call un.MonizeRemoveMovedFolder").length - 1).toBe(2);
+    });
   });
 });
