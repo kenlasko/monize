@@ -291,7 +291,7 @@ Tools carry title, description, input and output schema and annotations; resourc
 | `completions` | Argument autocompletion; no client asks. |
 | The tasks extension (`io.modelcontextprotocol/tasks`) | Every tool here answers within a request. |
 | `x-mcp-header` / `Mcp-Param-*` mirroring | No tool argument needs to be visible to an intermediary. |
-| DNS-rebinding protection | Auth is bearer-only, so there are no ambient browser credentials to steal. |
+| DNS-rebinding protection (rejecting a request by its `Origin`) | Auth is bearer-only, so there are no ambient browser credentials to steal. CORS on `/api/v1/mcp` answers only the first-party allow-list (`PUBLIC_APP_URL`, `CORS_ORIGIN`), so a foreign page holding a token still cannot read the response; OAuth and discovery stay `*` (`backend/src/common/http/cors-policy.ts`). |
 | Client ID Metadata Documents | `docs/future-plans/mcp-client-id-metadata-documents.md`; DCR still works and nothing presents a URL as its `client_id`. |
 
 The 2025-era session path is the one piece with an end date: once no client negotiates that revision, `legacy: "reject"` on the whole endpoint retires the session table and `mcp-elicitation-support.ts` with it.
