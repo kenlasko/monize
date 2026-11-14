@@ -34,10 +34,11 @@ describe("McpRelayTools", () => {
         prompt: "hi",
         history: [],
       };
-      const handlers = register({
-        waitForPrompt: jest.fn().mockResolvedValue(claimed),
-      });
+      const waitForPrompt = jest.fn().mockResolvedValue(claimed);
+      const handlers = register({ waitForPrompt });
       const result = await handlers.get_next_prompt({}, ctx());
+      // The credential binds the claim (#2176), beside the session.
+      expect(waitForPrompt).toHaveBeenCalledWith("user-1", "s", "pat:t1");
       const body = parse(result);
       expect(body.hasPrompt).toBe(true);
       expect(body.promptId).toBe("p1");
@@ -111,7 +112,12 @@ describe("McpRelayTools", () => {
         ctx(),
       );
       expect(parse(result)).toEqual({ delivered: true });
-      expect(postResponse).toHaveBeenCalledWith("user-1", "p1", "answer");
+      expect(postResponse).toHaveBeenCalledWith(
+        "user-1",
+        "p1",
+        "answer",
+        "pat:t1",
+      );
     });
 
     it("reports delivered:false for an unknown prompt", async () => {
@@ -142,6 +148,7 @@ describe("McpRelayTools", () => {
         // The calling session, so an agent that reconnected mid-prompt re-binds
         // its relay turn instead of losing it to the old session id.
         "s",
+        "pat:t1",
       );
     });
 

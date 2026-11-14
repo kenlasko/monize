@@ -27,6 +27,9 @@ import {
  * neither (VER-001), so the contended row here is locked by a second,
  * uncommitted connection while the service's own statement runs.
  */
+const CRED = "pat:agent";
+const OTHER_CRED = "pat:other";
+
 describe("AI relay claim (real PostgreSQL)", () => {
   let module: TestingModule;
   let db: DataSource;
@@ -95,8 +98,8 @@ describe("AI relay claim (real PostgreSQL)", () => {
     await queue("only one");
 
     const [a, b] = await Promise.all([
-      asUser(() => relay.waitForPrompt(userId, "session-a")),
-      asUser(() => relay.waitForPrompt(userId, "session-b")),
+      asUser(() => relay.waitForPrompt(userId, "session-a", CRED)),
+      asUser(() => relay.waitForPrompt(userId, "session-b", CRED)),
     ]);
 
     expect([a, b].filter(Boolean)).toHaveLength(1);
@@ -120,7 +123,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
       );
 
       const claimed = await asUser(() =>
-        relay.waitForPrompt(userId, "session-b"),
+        relay.waitForPrompt(userId, "session-b", CRED),
       );
       expect(claimed?.promptId).toBe(second);
     } finally {
@@ -134,16 +137,16 @@ describe("AI relay claim (real PostgreSQL)", () => {
   it("refuses a second post_response for the same turn", async () => {
     const id = await queue("q");
     const claimed = await asUser(() =>
-      relay.waitForPrompt(userId, "session-a"),
+      relay.waitForPrompt(userId, "session-a", CRED),
     );
     expect(claimed?.promptId).toBe(id);
 
     await expect(
-      asUser(() => relay.postResponse(userId, id, "first")),
+      asUser(() => relay.postResponse(userId, id, "first", CRED)),
     ).resolves.toBe(true);
     // The row is `answered` now, so the second UPDATE matches no row at all.
     await expect(
-      asUser(() => relay.postResponse(userId, id, "second")),
+      asUser(() => relay.postResponse(userId, id, "second", CRED)),
     ).resolves.toBe(false);
 
     const [row] = await db.query(
@@ -156,15 +159,15 @@ describe("AI relay claim (real PostgreSQL)", () => {
   it("refuses an answer for a turn nobody claimed", async () => {
     const id = await queue("q");
     await expect(
-      asUser(() => relay.postResponse(userId, id, "x")),
+      asUser(() => relay.postResponse(userId, id, "x", CRED)),
     ).resolves.toBe(false);
     expect(await statusOf(id)).toBe("pending");
   });
 
   it("hands a late answer to the pickup endpoint exactly once", async () => {
     const id = await queue("q");
-    await asUser(() => relay.waitForPrompt(userId, "session-a"));
-    await asUser(() => relay.postResponse(userId, id, "late"));
+    await asUser(() => relay.waitForPrompt(userId, "session-a", CRED));
+    await asUser(() => relay.postResponse(userId, id, "late", CRED));
 
     await expect(
       asUser(() => relay.takeBufferedResponse(userId, id)),
@@ -188,7 +191,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
     // The deadline is compared in the database's clock, so a replica whose own
     // clock has drifted still agrees about which turns are claimable.
     const claimed = await asUser(() =>
-      relay.waitForPrompt(userId, "session-a"),
+      relay.waitForPrompt(userId, "session-a", CRED),
     );
     expect(claimed?.promptId).toBe(live);
     expect(await statusOf(stale)).toBe("pending");
@@ -207,18 +210,124 @@ describe("AI relay claim (real PostgreSQL)", () => {
     );
 
     const claimed = await withUserContext(other.id, () =>
-      relay.waitForPrompt(other.id, "session-a"),
+      relay.waitForPrompt(other.id, "session-a", CRED),
     );
 
     expect(claimed?.promptId).toBe(theirs.id);
     expect(await statusOf(mine)).toBe("pending");
   });
 
+  describe("credential binding (#2176)", () => {
+    it("claims nothing for another credential while the holder holds the chat", async () => {
+      await asUser(() => relay.waitForPrompt(userId, "session-a", CRED));
+      const id = await queue("private");
+
+      const claimed = await asUser(() =>
+        relay.waitForPrompt(userId, "session-x", OTHER_CRED),
+      );
+      expect(claimed).toBeNull();
+      expect(await statusOf(id)).toBe("pending");
+
+      const mine = await asUser(() =>
+        relay.waitForPrompt(userId, "session-a", CRED),
+      );
+      expect(mine?.promptId).toBe(id);
+    });
+
+    it("refuses another credential's post_response and accepts the claimer's", async () => {
+      const id = await queue("q");
+      await asUser(() => relay.waitForPrompt(userId, "session-a", CRED));
+
+      await expect(
+        asUser(() => relay.postResponse(userId, id, "spoofed", OTHER_CRED)),
+      ).resolves.toBe(false);
+      expect(await statusOf(id)).toBe("claimed");
+
+      await expect(
+        asUser(() => relay.postResponse(userId, id, "real", CRED)),
+      ).resolves.toBe(true);
+      const [row] = await db.query(
+        `SELECT answer FROM ai_relay_prompts WHERE id = $1`,
+        [id],
+      );
+      expect(row.answer).toEqual({ text: "real" });
+    });
+
+    it("refuses another credential's report_progress and leaves the turn bound", async () => {
+      const id = await queue("q");
+      await asUser(() => relay.waitForPrompt(userId, "session-a", CRED));
+
+      await expect(
+        asUser(() =>
+          relay.reportProgress(userId, id, "x", "session-x", OTHER_CRED),
+        ),
+      ).resolves.toBe(false);
+      const [row] = await db.query(
+        `SELECT claimed_by FROM ai_relay_prompts WHERE id = $1`,
+        [id],
+      );
+      expect(row.claimed_by).toBe("session-a");
+    });
+
+    it("makes exactly one of two credentials polling concurrently the holder", async () => {
+      await queue("only one");
+
+      const [a, b] = await Promise.all([
+        asUser(() => relay.waitForPrompt(userId, "session-a", CRED)),
+        asUser(() => relay.waitForPrompt(userId, "session-x", OTHER_CRED)),
+      ]);
+
+      expect([a, b].filter(Boolean)).toHaveLength(1);
+      const [agent] = await db.query(
+        `SELECT agent_credential FROM ai_relay_agents WHERE user_id = $1`,
+        [userId],
+      );
+      const [turn] = await db.query(
+        `SELECT claimed_credential FROM ai_relay_prompts WHERE user_id = $1`,
+        [userId],
+      );
+      expect(turn.claimed_credential).toBe(agent.agent_credential);
+    });
+
+    const makeHolderStale = () =>
+      db.query(
+        `UPDATE ai_relay_agents
+            SET agent_seen_at = CURRENT_TIMESTAMP - INTERVAL '1 hour'
+          WHERE user_id = $1`,
+        [userId],
+      );
+
+    it("lets another credential take over a stale holder with no live turn", async () => {
+      await asUser(() => relay.waitForPrompt(userId, "session-a", CRED));
+      await makeHolderStale();
+      const id = await queue("q");
+
+      const claimed = await asUser(() =>
+        relay.waitForPrompt(userId, "session-x", OTHER_CRED),
+      );
+      expect(claimed?.promptId).toBe(id);
+    });
+
+    it("refuses a takeover of a stale holder that still has a turn in flight", async () => {
+      const first = await queue("first");
+      await asUser(() => relay.waitForPrompt(userId, "session-a", CRED));
+      expect(await statusOf(first)).toBe("claimed");
+      await makeHolderStale();
+      const second = await queue("second");
+
+      const claimed = await asUser(() =>
+        relay.waitForPrompt(userId, "session-x", OTHER_CRED),
+      );
+      expect(claimed).toBeNull();
+      expect(await statusOf(second)).toBe("pending");
+    });
+  });
+
   describe("the agent row", () => {
     it("keeps one liveness row per user however often the agent polls", async () => {
       await queue("q");
-      await asUser(() => relay.waitForPrompt(userId, "session-a"));
-      await asUser(() => relay.waitForPrompt(userId, "session-a"));
+      await asUser(() => relay.waitForPrompt(userId, "session-a", CRED));
+      await asUser(() => relay.waitForPrompt(userId, "session-a", CRED));
 
       const rows = await db.query(
         `SELECT last_poll_at FROM ai_relay_agents WHERE user_id = $1`,
@@ -260,7 +369,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
 
     async function claimedTurn(): Promise<void> {
       await queue("q");
-      await asUser(() => relay.waitForPrompt(userId, "session-a"));
+      await asUser(() => relay.waitForPrompt(userId, "session-a", CRED));
     }
 
     it("drains oldest first and only once", async () => {
@@ -317,7 +426,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
 
     it("leaves a turn whose answer would still be accepted alone", async () => {
       const id = await queue("slow agent");
-      await asUser(() => relay.waitForPrompt(userId, "session-a"));
+      await asUser(() => relay.waitForPrompt(userId, "session-a", CRED));
       await db.query(
         `UPDATE ai_relay_prompts
             SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 minute'
@@ -329,7 +438,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
 
       expect(await statusOf(id)).toBe("claimed");
       await expect(
-        asUser(() => relay.postResponse(userId, id, "recovered")),
+        asUser(() => relay.postResponse(userId, id, "recovered", CRED)),
       ).resolves.toBe(true);
     });
 
@@ -354,7 +463,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
 
     it("drops a card past its expiry and keeps a live one", async () => {
       await queue("q");
-      await asUser(() => relay.waitForPrompt(userId, "session-a"));
+      await asUser(() => relay.waitForPrompt(userId, "session-a", CRED));
       await asUser(() =>
         relay.emitPendingAction(
           userId,
@@ -491,9 +600,11 @@ describe("AI relay claim (real PostgreSQL)", () => {
         [first],
       );
 
-      const claimed = await asUser(() => relay.waitForPrompt(userId, "s-a"));
+      const claimed = await asUser(() =>
+        relay.waitForPrompt(userId, "s-a", CRED),
+      );
       expect(claimed?.promptId).toBe(first);
-      const next = await asUser(() => relay.waitForPrompt(userId, "s-b"));
+      const next = await asUser(() => relay.waitForPrompt(userId, "s-b", CRED));
       expect(next?.promptId).toBe(second);
     });
 
@@ -531,7 +642,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
 
       try {
         await expect(
-          asUser(() => relay.waitForPrompt(userId, "s-a")),
+          asUser(() => relay.waitForPrompt(userId, "s-a", CRED)),
         ).rejects.toThrow(/clock reset failed/);
 
         // A claim that committed before the reset ran would leave the turn
@@ -549,7 +660,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
 
     it("leaves an expired turn in place for one more sweep", async () => {
       const id = await queue("nobody came");
-      await asUser(() => relay.waitForPrompt(userId, "s-a"));
+      await asUser(() => relay.waitForPrompt(userId, "s-a", CRED));
       await db.query(
         `UPDATE ai_relay_prompts
             SET expires_at = CURRENT_TIMESTAMP - INTERVAL '11 minutes'

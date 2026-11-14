@@ -34,4 +34,16 @@ export class AiRelayAgent {
     nullable: true,
   })
   idleDisconnectedAt: Date | null;
+
+  /**
+   * The one credential serving this user's web chat. Another credential's
+   * poll claims nothing until this one has been quiet past `agentSeenAt` and
+   * has no turn in flight.
+   */
+  @Column({ type: "text", name: "agent_credential", nullable: true })
+  agentCredential: string | null;
+
+  /** When the serving credential last asked for work. */
+  @Column({ type: "timestamptz", name: "agent_seen_at", nullable: true })
+  agentSeenAt: Date | null;
 }

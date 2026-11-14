@@ -2311,6 +2311,10 @@ CREATE TABLE ai_relay_prompts (
     -- The MCP session that claimed this turn. A relay turn belongs to ONE
     -- session; liveness from another session the user has open is not part of it.
     claimed_by TEXT,
+    -- The credential that claimed this turn. Only it may answer the turn, or
+    -- adopt it from a reconnected session; another credential of the same user
+    -- is refused (#2176).
+    claimed_credential TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     claimed_at TIMESTAMPTZ,
     answered_at TIMESTAMPTZ,
@@ -2325,13 +2329,17 @@ CREATE INDEX idx_ai_relay_prompts_expiry
     ON ai_relay_prompts(expires_at);
 
 -- One row per user whose agent has ever polled. Progress, not business data:
--- these columns decide whether the tunnel indicator reads offline, listening
--- or busy, and nothing financial reads them.
+-- the timestamps decide whether the tunnel indicator reads offline, listening
+-- or busy, and nothing financial reads them. agent_credential is the one
+-- credential serving the web chat; another credential claims nothing until it
+-- has been quiet past agent_seen_at and has no turn in flight (#2176).
 CREATE TABLE ai_relay_agents (
     user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     last_poll_at TIMESTAMPTZ,
     idle_since TIMESTAMPTZ,
-    idle_disconnected_at TIMESTAMPTZ
+    idle_disconnected_at TIMESTAMPTZ,
+    agent_credential TEXT,
+    agent_seen_at TIMESTAMPTZ
 );
 
 -- Write-confirmation cards composed after the browser's stream gave up, so an
