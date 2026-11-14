@@ -564,13 +564,19 @@ describe("NotificationService", () => {
       expect(String(dismissed)).not.toContain("LIKE");
       // `gem:` too: the GEM signal-change row is the only memory that a
       // period's change was announced, and the period outlives the window
-      // (A26-L24).
+      // (A26-L24). `relay:cred:` is the memory that a credential was announced.
       expect(dismissedArgs[1]).toEqual([
         "bond:unbooked:",
         "bond:missing:",
         "gem:",
+        "relay:cred:",
       ]);
-      expect(readArgs[1]).toEqual(["bond:unbooked:", "bond:missing:", "gem:"]);
+      expect(readArgs[1]).toEqual([
+        "bond:unbooked:",
+        "bond:missing:",
+        "gem:",
+        "relay:cred:",
+      ]);
     });
 
     it("forgets a dismissed state-keyed row only after the long window", async () => {

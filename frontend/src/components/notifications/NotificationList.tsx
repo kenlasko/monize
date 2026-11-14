@@ -41,6 +41,8 @@ function notificationRoute(notification: Notification): string | null {
     case 'BACKUP_PARTIAL':
     case 'ENCRYPTION_KEY_MISSING':
     case 'SMTP_FAILURE':
+    case 'OAUTH_CLIENT_AUTHORIZED':
+    case 'RELAY_CREDENTIAL_FIRST_USE':
       return '/settings';
     case 'AI_REVIEW_PROPOSALS_READY':
     case 'AI_REVIEW_PROPOSALS_EXPIRING':

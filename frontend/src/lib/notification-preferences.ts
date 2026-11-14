@@ -24,6 +24,7 @@ export const NOTIFICATION_PREFERENCE_CATEGORIES: readonly NotificationCategory[]
     'BONDS',
     'AI_REVIEW',
     'WARRANTIES',
+    'SECURITY',
     "SHARED_EXPENSES",
   ];
 
@@ -69,6 +70,8 @@ export const NOTIFICATION_CATEGORY_CHANNELS: Record<
   AI_REVIEW: { email: true, emailNotification: true, push: true, unifiedpush: true },
   SHARED_EXPENSES: { email: true, emailNotification: true, push: true, unifiedpush: true },
   WARRANTIES: { email: true, emailNotification: true, push: true, unifiedpush: true },
+  // No report-mode digest for security notices, like bank sync.
+  SECURITY: { email: false, emailNotification: true, push: true, unifiedpush: true },
 };
 
 /**

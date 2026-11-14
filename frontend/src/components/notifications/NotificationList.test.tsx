@@ -1446,4 +1446,38 @@ describe('NotificationList', () => {
       expect(mockPush).toHaveBeenCalledWith('/warranties');
     });
   });
+
+  describe('security notices', () => {
+    it.each([
+      ['OAUTH_CLIENT_AUTHORIZED', { clientId: 'c1', clientName: 'Claude' }, 'New app connected: Claude'],
+      ['RELAY_CREDENTIAL_FIRST_USE', { credentialKind: 'pat' }, 'A new connection answered your AI chat'],
+    ] as const)('composes %s and opens settings from the stored target or the type table', (type, data, title) => {
+      for (const target of ['/settings', null]) {
+        mockPush.mockClear();
+        const { unmount } = render(
+          <NotificationList
+            {...defaultProps}
+            notifications={[
+              makeNotification({
+                id: 'sec-1',
+                budgetId: null,
+                budgetCategoryId: null,
+                type,
+                category: 'SECURITY',
+                severity: 'warning',
+                title: 'stored title',
+                message: 'stored message',
+                data: { ...data },
+                target,
+              }),
+            ]}
+          />,
+        );
+        expect(screen.getByText(title)).toBeInTheDocument();
+        fireEvent.click(screen.getByTestId('notification-item-sec-1'));
+        expect(mockPush).toHaveBeenCalledWith('/settings');
+        unmount();
+      }
+    });
+  });
 });

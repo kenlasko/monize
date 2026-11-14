@@ -345,3 +345,25 @@ describe('useNotificationCopy: warranty notifications', () => {
     }
   });
 });
+
+describe('useNotificationCopy: security notifications', () => {
+  it('OAUTH_CLIENT_AUTHORIZED names the client, as text', () => {
+    const copy = copyOf(row('OAUTH_CLIENT_AUTHORIZED', { clientId: 'c1', clientName: '<b>Claude</b>' }));
+    expect(copy.title).toBe('New app connected: <b>Claude</b>');
+    expect(copy.message).toContain('The application <b>Claude</b> was just granted access');
+  });
+
+  it('RELAY_CREDENTIAL_FIRST_USE needs no facts', () => {
+    const copy = copyOf(row('RELAY_CREDENTIAL_FIRST_USE', { credentialKind: 'pat' }));
+    expect(copy.title).toBe('A new connection answered your AI chat');
+    expect(copy.message).toContain('revoke your API tokens');
+  });
+
+  it('falls back to the stored English when the client name is missing', () => {
+    for (const data of [{}, { clientName: '' }, { clientName: 7 }]) {
+      const copy = copyOf(row('OAUTH_CLIENT_AUTHORIZED', { ...data }));
+      expect(copy.title).toBe('stored title');
+      expect(copy.message).toBe('stored message');
+    }
+  });
+});

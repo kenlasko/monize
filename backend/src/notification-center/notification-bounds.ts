@@ -27,12 +27,14 @@ export const TARGET_MAX_LENGTH = 255;
  * `STATE_KEYED_FORGET_DAYS` ago. The first two must match
  * `bondDedupeKeys.unbooked` and `bondDedupeKeys.missing`
  * (`bond-notification-events.ts`, which builds its keys from these by
- * position, so a new prefix goes at the end).
+ * position, so a new prefix goes at the end). `relay:cred:<id>` is the memory
+ * that a relay credential was already announced as first-use.
  */
 export const STATE_KEYED_DEDUPE_PREFIXES: readonly string[] = [
   "bond:unbooked:",
   "bond:missing:",
   "gem:",
+  "relay:cred:",
 ];
 
 /** A dismissed state-keyed notification older than this is forgotten by the purge. */

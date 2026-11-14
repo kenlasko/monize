@@ -258,6 +258,12 @@
       "todayTitle": "[XX-{{ name }}: warranty expires today-XX]",
       "todayMessage": "[XX-The warranty for {{ name }} expires today, {{ date }}. Open to review its documents or record a claim.-XX]"
     },
+    "security": {
+      "oauthTitle": "[XX-New app connected: {{ clientName }}-XX]",
+      "oauthMessage": "[XX-The application {{ clientName }} was just granted access to your Monize account. If this wasn't you, change your password now: that revokes every connected application's access.-XX]",
+      "relayTitle": "[XX-A new connection answered your AI chat-XX]",
+      "relayMessage": "[XX-A connection that has not answered your Monize AI chat before just picked up a prompt. If you did not connect this assistant, revoke your API tokens in Settings and change your password.-XX]"
+    },
     "payrollDeduction": {
       "resetTitle": "[XX-{{ category }}: confirm next year's maximum-XX]",
       "resetMessage": "[XX-The {{ category }} deduction on {{ bill }} resets on {{ date }}. Update the yearly maximum if it changes; otherwise {{ amount }} applies again.-XX]"

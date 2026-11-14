@@ -37,6 +37,7 @@ export const NOTIFICATION_PREFERENCE_CATEGORIES: readonly NotificationCategory[]
     NotificationCategory.BONDS,
     NotificationCategory.AI_REVIEW,
     NotificationCategory.WARRANTIES,
+    NotificationCategory.SECURITY,
     NotificationCategory.SHARED_EXPENSES,
   ];
 
@@ -182,6 +183,14 @@ export const NOTIFICATION_CATEGORY_CHANNELS: Record<
     push: true,
     unifiedpush: true,
   },
+  // Security notices have no report-mode digest (like bank sync): the report
+  // email cell is not applicable, the immediate email and both push wires are live.
+  [NotificationCategory.SECURITY]: {
+    email: false,
+    emailNotification: true,
+    push: true,
+    unifiedpush: true,
+  },
 };
 
 /** A category's channel state when the user has stored no row for it. */
@@ -238,6 +247,14 @@ export const NOTIFICATION_CATEGORY_DEFAULTS: Readonly<
   // Warranty reminders keep the global rule: the bell and the report email,
   // push off until the user turns it on.
   [NotificationCategory.WARRANTIES]: GLOBAL_DEFAULTS,
+  // A security notice is important and infrequent, so it interrupts by default
+  // (like bank sync): immediate email and push on, UnifiedPush off.
+  [NotificationCategory.SECURITY]: {
+    email: true,
+    emailNotification: true,
+    push: true,
+    unifiedpush: false,
+  },
   [NotificationCategory.SHARED_EXPENSES]: GLOBAL_DEFAULTS,
 };
 
