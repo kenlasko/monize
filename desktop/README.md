@@ -378,6 +378,11 @@ Install and first run:
 - [ ] `%LOCALAPPDATA%\Monize\config.json` holds no secret in plain text
       (they are encrypted with DPAPI); "Show recovery key" in the tray shows
       the key.
+- [ ] When the window first opens, "Save your recovery key" asks to export
+      or show the key. "Remind me later" brings it back on the next launch;
+      exporting the file, copying the key, or "Don't remind me again" stops
+      it (`%LOCALAPPDATA%\Monize\recovery-reminder.json` records which).
+      Saving the key from the tray stops it too.
 - [ ] `%LOCALAPPDATA%\Monize\logs\backend.log` contains
       `RLS_MODE=enforce verified: connected as "monize_app"`: the backend
       runs with row-level security in force, not as the database's owner.

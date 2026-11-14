@@ -81,6 +81,20 @@ export const TEXT = {
     "manager, and never share it.",
   recoveryKeyCopied: "The recovery key was copied to the clipboard.",
 
+  recoveryReminderTitle: "Save your recovery key",
+  recoveryReminderMessage:
+    "Monize made a recovery key for your data. Without it, a backup " +
+    "restored on another computer or under a new Windows account cannot be " +
+    "read. Save it now in a password manager or another safe place off this " +
+    "PC.\n\nYou can also do this at any time from the Monize icon in the " +
+    "system tray: Show recovery key, or Export recovery key.",
+  recoveryReminderButtons: {
+    export: "Export to a file...",
+    show: "Show the key...",
+    later: "Remind me later",
+    never: "Don't remind me again",
+  },
+
   recoveryExportConfirmTitle: "Export the recovery key?",
   recoveryExportConfirmMessage:
     "The recovery key decrypts your two-factor sign-in secrets and every " +

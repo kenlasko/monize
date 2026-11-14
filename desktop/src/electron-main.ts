@@ -20,6 +20,11 @@ import { createLogger } from "./logger";
 import { createLogViewer } from "./log-viewer";
 import { exportRecoveryKey } from "./recovery-export";
 import {
+  recordRecoveryKeySaved,
+  remindToSaveRecoveryKey,
+} from "./recovery-reminder";
+import { RECOVERY_REMINDER_FILE } from "./shell/recovery-reminder";
+import {
   createNotificationBridge,
   NotificationBridgeHandle,
 } from "./notifications";
@@ -305,6 +310,13 @@ function run(located: LaunchPaths): void {
 
   function openApp(runtime: Runtime, url: string): BrowserWindow {
     const { logger, origin } = runtime;
+    const reminderFile = join(
+      runtime.paths.data.dataDir,
+      RECOVERY_REMINDER_FILE,
+    );
+    const keySaved = (saved: boolean): void => {
+      if (saved) void recordRecoveryKeySaved(reminderFile, logger);
+    };
     installPermissionPolicy(session.defaultSession, origin, logger);
     const window = createMainWindow({
       origin,
@@ -367,7 +379,10 @@ function run(located: LaunchPaths): void {
         "view-logs": () => logViewer.show(),
         "show-logs": () => void openFolder(runtime.paths.data.logs, logger),
         "show-recovery-key": () =>
-          void showRecoveryKey(runtime.bootstrap.secrets.encryptionKey, window),
+          void showRecoveryKey(
+            runtime.bootstrap.secrets.encryptionKey,
+            window,
+          ).then(keySaved),
         "export-recovery-key": () =>
           void exportRecoveryKey({
             key: runtime.bootstrap.secrets.encryptionKey,
@@ -375,7 +390,7 @@ function run(located: LaunchPaths): void {
             documentsDir: app.getPath("documents"),
             parent: window,
             logger,
-          }),
+          }).then(keySaved),
         "start-at-login": () => {
           toggleLoginItem();
           tray?.setState({
@@ -391,6 +406,18 @@ function run(located: LaunchPaths): void {
     updater.onChange((update) =>
       tray?.setState({ update, loginItem: loginItemState() }),
     );
+    // The first time the window appears in this launch (later, for a launch
+    // at sign-in that starts in the tray), until the key has been saved.
+    window.once("show", () => {
+      void remindToSaveRecoveryKey({
+        file: reminderFile,
+        key: runtime.bootstrap.secrets.encryptionKey,
+        version: app.getVersion(),
+        documentsDir: app.getPath("documents"),
+        parent: window,
+        logger,
+      });
+    });
     return window;
   }
 

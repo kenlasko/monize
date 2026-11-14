@@ -51,9 +51,10 @@ async function pickPath(
   return result.canceled || result.filePath === "" ? null : result.filePath;
 }
 
+/** Resolves true when the file was written. */
 export async function exportRecoveryKey(
   context: RecoveryExportContext,
-): Promise<void> {
+): Promise<boolean> {
   const confirmed = await box(context.parent, {
     type: "warning",
     title: APP_NAME,
@@ -64,9 +65,9 @@ export async function exportRecoveryKey(
     cancelId: 1,
     noLink: true,
   });
-  if (confirmed !== 0) return;
+  if (confirmed !== 0) return false;
   const path = await pickPath(context);
-  if (path === null) return;
+  if (path === null) return false;
   try {
     const text = recoveryKeyFileText({
       key: context.key,
@@ -89,7 +90,7 @@ export async function exportRecoveryKey(
       buttons: [TEXT.close],
       noLink: true,
     });
-    return;
+    return false;
   }
   context.logger.info(recoveryExportLogMessage(path));
   await box(context.parent, {
@@ -100,4 +101,5 @@ export async function exportRecoveryKey(
     buttons: [TEXT.close],
     noLink: true,
   });
+  return true;
 }

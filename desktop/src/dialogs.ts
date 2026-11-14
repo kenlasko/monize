@@ -74,11 +74,14 @@ export async function showAddressChanged(
   });
 }
 
-/** Plan D7: a confirmation first, then the key with Copy. */
+/**
+ * Plan D7: a confirmation first, then the key with Copy. Resolves true when
+ * the key was copied, which the recovery reminder counts as saved.
+ */
 export async function showRecoveryKey(
   key: string,
   parent: BrowserWindow | null,
-): Promise<void> {
+): Promise<boolean> {
   const confirmed = await ask(parent, {
     type: "warning",
     title: APP_NAME,
@@ -89,7 +92,7 @@ export async function showRecoveryKey(
     cancelId: 1,
     noLink: true,
   });
-  if (confirmed !== 0) return;
+  if (confirmed !== 0) return false;
   const response = await ask(parent, {
     type: "info",
     title: TEXT.recoveryKeyTitle,
@@ -100,7 +103,7 @@ export async function showRecoveryKey(
     cancelId: 1,
     noLink: true,
   });
-  if (response !== 0) return;
+  if (response !== 0) return false;
   clipboard.writeText(key);
   await ask(parent, {
     type: "info",
@@ -109,6 +112,7 @@ export async function showRecoveryKey(
     buttons: [TEXT.close],
     noLink: true,
   });
+  return true;
 }
 
 export async function showUpToDate(
