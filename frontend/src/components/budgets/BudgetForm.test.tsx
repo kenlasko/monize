@@ -71,6 +71,68 @@ describe('BudgetForm', () => {
     });
   });
 
+  describe('transfers in as income (issue #2141)', () => {
+    const label = 'Count transfers in from excluded accounts as income';
+
+    it('keeps the other config keys when the option changes', async () => {
+      const handleSave = vi.fn().mockResolvedValue(undefined);
+      render(
+        <BudgetForm
+          budget={{ ...mockBudget, config: { excludedAccountIds: ['acc-hisa'] } }}
+          onSave={handleSave}
+          onCancel={vi.fn()}
+        />,
+      );
+
+      const toggle = screen.getByLabelText(label);
+      expect(toggle).not.toBeChecked();
+      fireEvent.click(toggle);
+      fireEvent.click(screen.getByText('Save Changes'));
+
+      await waitFor(() => {
+        expect(handleSave).toHaveBeenCalledWith(
+          expect.objectContaining({
+            config: { excludedAccountIds: ['acc-hisa'], transfersInAsIncome: true },
+          }),
+        );
+      });
+    });
+
+    it('sends no config when the option is unchanged', async () => {
+      const handleSave = vi.fn().mockResolvedValue(undefined);
+      render(
+        <BudgetForm
+          budget={{
+            ...mockBudget,
+            config: { excludedAccountIds: ['acc-hisa'], transfersInAsIncome: true },
+          }}
+          onSave={handleSave}
+          onCancel={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByLabelText(label)).toBeChecked();
+      fireEvent.click(screen.getByText('Save Changes'));
+
+      await waitFor(() => expect(handleSave).toHaveBeenCalled());
+      expect(handleSave.mock.calls[0][0]).not.toHaveProperty('config');
+    });
+
+    it('warns that nothing counts while no account is excluded', () => {
+      render(
+        <BudgetForm
+          budget={{ ...mockBudget, config: { transfersInAsIncome: true } }}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+
+      expect(
+        screen.getByText('This budget excludes no account yet, so nothing is counted.'),
+      ).toBeInTheDocument();
+    });
+  });
+
   it('calls onCancel when cancel button is clicked', () => {
     const handleCancel = vi.fn();
     render(
@@ -253,6 +315,7 @@ describe('BudgetForm', () => {
     expect(screen.getByText('Rollover')).toBeInTheDocument();
     expect(screen.getByText('Zero-Based')).toBeInTheDocument();
     expect(screen.getByText('50/30/20')).toBeInTheDocument();
+    expect(screen.getByText('Bucket')).toBeInTheDocument();
   });
 
   it('renders all budget type options', () => {

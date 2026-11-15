@@ -308,7 +308,7 @@ const NPM_RUN = /npm run ([\w:.-]+)/g;
 
 function collectScriptNames() {
   const names = new Set();
-  for (const dir of ['', 'backend', 'frontend', 'e2e']) {
+  for (const dir of ['', 'backend', 'frontend', 'e2e', 'desktop', 'mobile']) {
     const manifest = join(REPO_ROOT, dir, 'package.json');
     if (!existsSync(manifest)) continue;
     const { scripts = {} } = JSON.parse(readFileSync(manifest, 'utf8'));

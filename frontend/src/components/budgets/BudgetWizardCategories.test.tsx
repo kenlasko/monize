@@ -1,12 +1,16 @@
+import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { render, screen, fireEvent, act, within } from '@/test/render';
 import { BudgetWizardCategories } from './BudgetWizardCategories';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import type { WizardState } from './BudgetWizard';
 import type { GenerateBudgetResponse, ApplyBudgetCategoryData } from '@/types/budget';
+import type { BudgetBucketEditorRow } from './utils/budget-bucket-presets';
 
 // Mock format
 vi.mock('@/lib/format', async (importOriginal) => ({
+  // The bucket editor and tally need the rest of the module (moneyDecimalsForCurrency).
+  ...(await importOriginal<typeof import('@/lib/format')>()),
   roundMoney: (await importOriginal<typeof import('@/lib/format')>()).roundMoney,
   sumMoney: (await importOriginal<typeof import('@/lib/format')>()).sumMoney,
   formatCurrency: vi.fn((amount: number) => `$${amount.toFixed(2)}`),
@@ -74,6 +78,7 @@ describe('BudgetWizardCategories', () => {
         suggested: 200,
       },
     ],
+    incomeTransfers: [],
     estimatedMonthlyIncome: 5000,
     totalBudgeted: 600,
     projectedMonthlySavings: 4400,
@@ -97,6 +102,9 @@ describe('BudgetWizardCategories', () => {
     analysisResult: mockAnalysisResult,
     selectedCategories: makeSelectedCategories(),
     selectedTransfers: new Map(),
+    selectedIncomeTransfers: new Map(),
+    buckets: [],
+    bucketsPresetApplied: false,
     budgetName: 'Test Budget',
     budgetType: 'MONTHLY',
     periodStart: '2026-02-01',
@@ -107,6 +115,7 @@ describe('BudgetWizardCategories', () => {
     alertWarnPercent: 80,
     alertCriticalPercent: 95,
     excludedAccountIds: [],
+    transfersInAsIncome: false,
     isSubmitting: false,
   };
 
@@ -768,6 +777,157 @@ describe('BudgetWizardCategories', () => {
       const call = mockUpdateState.mock.calls[mockUpdateState.mock.calls.length - 1][0];
       const t = call.selectedTransfers.get('acc-savings');
       expect(t?.categoryGroup).toBe('NEED');
+    });
+  });
+
+  describe('Bucket strategy', () => {
+    const buckets: BudgetBucketEditorRow[] = [
+      { key: 'k-fixed', name: 'Fixed costs', targetType: 'PERCENT', targetValue: 50, carryOver: false, carryCap: null },
+      { key: 'k-save', name: 'Savings pot', targetType: 'PERCENT', targetValue: 20, carryOver: true, carryCap: null },
+    ];
+    const transferAnalysis = {
+      accountId: 'acc-savings',
+      accountName: 'Savings account',
+      accountType: 'SAVINGS',
+      average: 200,
+      median: 200,
+      p25: 100,
+      p75: 300,
+      min: 100,
+      max: 300,
+      stdDev: 80,
+      monthlyAmounts: [100, 200, 300],
+      monthlyOccurrences: 3,
+      isFixed: false,
+      seasonalMonths: [],
+      suggested: 200,
+    } as any;
+
+    const bucketState = (overrides: Partial<WizardState> = {}): WizardState => {
+      const categories = new Map<string, ApplyBudgetCategoryData>([
+        ['cat-salary', { categoryId: 'cat-salary', amount: 5000, isIncome: true }],
+        ['cat-groceries', { categoryId: 'cat-groceries', amount: 400, isIncome: false, bucketKey: 'k-fixed' }],
+      ]);
+      return {
+        ...defaultState,
+        strategy: 'BUCKET',
+        buckets,
+        analysisResult: { ...mockAnalysisResult, transfers: [transferAnalysis] },
+        selectedCategories: categories,
+        selectedTransfers: new Map([
+          ['acc-savings', { transferAccountId: 'acc-savings', isTransfer: true, amount: 200 }],
+        ]),
+        ...overrides,
+      };
+    };
+
+    /** The host owns the state, as `BudgetWizard` does; `spy` sees every update. */
+    function Host({ initial, spy }: { initial: WizardState; spy: (u: Partial<WizardState>) => void }) {
+      const [state, setState] = useState(initial);
+      return (
+        <BudgetWizardCategories
+          state={state}
+          updateState={(u) => {
+            spy(u);
+            setState((prev) => ({ ...prev, ...u }));
+          }}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />
+      );
+    }
+
+    const renderBucket = (state: WizardState = bucketState()) =>
+      render(
+        <BudgetWizardCategories state={state} updateState={mockUpdateState} onNext={mockOnNext} onBack={mockOnBack} />,
+      );
+
+    it('shows the Buckets panel with the editor above the categories', () => {
+      renderBucket();
+      const panel = screen.getByRole('region', { name: 'Buckets' });
+      expect(within(panel).getByRole('button', { name: 'Three Buckets' })).toBeInTheDocument();
+      expect(within(panel).getByText('Fixed costs')).toBeInTheDocument();
+      expect(within(panel).getByText('Savings pot')).toBeInTheDocument();
+    });
+
+    it('gives each selected expense and transfer row a bucket select, and income rows none', () => {
+      renderBucket();
+      const groceries = screen.getByRole('combobox', { name: 'Bucket for Groceries' }) as HTMLSelectElement;
+      expect(groceries.value).toBe('k-fixed');
+      expect(Array.from(groceries.options).map((o) => o.textContent)).toEqual(['Unassigned', 'Fixed costs', 'Savings pot']);
+      expect((screen.getByRole('combobox', { name: 'Bucket for Savings account' }) as HTMLSelectElement).value).toBe('');
+      expect(screen.queryByRole('combobox', { name: 'Bucket for Salary' })).not.toBeInTheDocument();
+      // Dining is not selected.
+      expect(screen.queryByRole('combobox', { name: 'Bucket for Dining' })).not.toBeInTheDocument();
+    });
+
+    it('shows no bucket select and no panel for the other strategies', () => {
+      for (const strategy of ['FIXED', 'ROLLOVER', 'ZERO_BASED', 'FIFTY_THIRTY_TWENTY'] as const) {
+        const { unmount } = renderBucket(bucketState({ strategy }));
+        expect(screen.queryByRole('combobox', { name: /^Bucket for/ })).not.toBeInTheDocument();
+        expect(screen.queryByRole('region', { name: 'Buckets' })).not.toBeInTheDocument();
+        expect(screen.queryByTestId('wizard-bucket-tally')).not.toBeInTheDocument();
+        unmount();
+      }
+    });
+
+    it('shows a stale key as Unassigned', () => {
+      const state = bucketState();
+      state.selectedCategories.set('cat-groceries', { categoryId: 'cat-groceries', amount: 400, bucketKey: 'gone' });
+      renderBucket(state);
+      expect((screen.getByRole('combobox', { name: 'Bucket for Groceries' }) as HTMLSelectElement).value).toBe('');
+    });
+
+    it('stores the choice as the line bucketKey, and Unassigned removes it', () => {
+      renderBucket();
+      fireEvent.change(screen.getByRole('combobox', { name: 'Bucket for Savings account' }), { target: { value: 'k-save' } });
+      const transfers = mockUpdateState.mock.calls[0][0].selectedTransfers as Map<string, ApplyBudgetCategoryData>;
+      expect(transfers.get('acc-savings')).toEqual({ transferAccountId: 'acc-savings', isTransfer: true, amount: 200, bucketKey: 'k-save' });
+
+      fireEvent.change(screen.getByRole('combobox', { name: 'Bucket for Groceries' }), { target: { value: '' } });
+      const categories = mockUpdateState.mock.calls[1][0].selectedCategories as Map<string, ApplyBudgetCategoryData>;
+      expect(categories.get('cat-groceries')).toEqual({ categoryId: 'cat-groceries', amount: 400, isIncome: false });
+      expect(categories.get('cat-groceries')).not.toHaveProperty('bucketKey');
+    });
+
+    it('tallies selected lines per bucket and the unassigned ones', () => {
+      renderBucket();
+      const tally = screen.getByTestId('wizard-bucket-tally');
+      const items = within(tally).getAllByRole('listitem').map((li) => li.textContent);
+      expect(items).toEqual([
+        expect.stringMatching(/^Fixed costs1 line · \$400\.00$/),
+        expect.stringMatching(/^Savings pot0 lines · \$0\.00$/),
+        expect.stringMatching(/^Unassigned1 line · \$200\.00$/),
+      ]);
+    });
+
+    it('unassigns the rows of a removed bucket and keeps them on a rename', async () => {
+      const spy = vi.fn();
+      render(<Host initial={bucketState()} spy={spy} />);
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Edit Fixed costs' }));
+      });
+      fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Bills' } });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+      });
+      const renamed = spy.mock.calls.at(-1)![0] as Partial<WizardState>;
+      expect(renamed.buckets?.[0]).toMatchObject({ key: 'k-fixed', name: 'Bills' });
+      expect(renamed).not.toHaveProperty('selectedCategories');
+      expect((screen.getByRole('combobox', { name: 'Bucket for Groceries' }) as HTMLSelectElement).value).toBe('k-fixed');
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Delete Bills' }));
+      });
+      const dialog = screen.getByText('Delete Bucket').closest('[role="dialog"]') as HTMLElement;
+      await act(async () => {
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+      });
+      const removed = spy.mock.calls.at(-1)![0] as Partial<WizardState>;
+      expect(removed.buckets?.map((b) => b.key)).toEqual(['k-save']);
+      expect(removed.selectedCategories?.get('cat-groceries')).not.toHaveProperty('bucketKey');
+      expect((screen.getByRole('combobox', { name: 'Bucket for Groceries' }) as HTMLSelectElement).value).toBe('');
     });
   });
 });

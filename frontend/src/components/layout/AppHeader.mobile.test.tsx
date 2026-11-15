@@ -101,7 +101,7 @@ describe('AppHeader below xl', () => {
   it('stays pinned where the tab bar is, and slides away where it is not', () => {
     const { container, unmount } = render(<AppHeader />);
     expect(mockHideOnScroll).toHaveBeenLastCalledWith(false);
-    expect(container.querySelector('header')?.style.transform).toBe('translateY(-0px)');
+    expect(container.querySelector('header')?.style.transform).toBe('translateY(0px)');
     unmount();
 
     mockHasTabBar = false;

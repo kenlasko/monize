@@ -330,7 +330,20 @@
     "budgetCategoryNotFound": "[XX-Budget category with ID {{ id }} not found-XX]",
     "periodNotFound": "[XX-Budget period with ID {{ id }} not found-XX]",
     "noOpenPeriod": "[XX-No open period to close-XX]",
-    "categoryIdsNotOwned": "[XX-Category IDs not found or not owned by user: {{ ids }}-XX]"
+    "categoryIdsNotOwned": "[XX-Category IDs not found or not owned by user: {{ ids }}-XX]",
+    "transferAccountNotFound": "[XX-Account with ID {{ id }} not found-XX]",
+    "transferAccountAlreadyInBudget": "[XX-This account already has a transfer line in the budget-XX]",
+    "bucketNotFound": "[XX-Bucket with ID {{ id }} not found-XX]",
+    "bucketLimit": "[XX-A budget can have at most {{ max }} buckets-XX]",
+    "bucketNameInvalid": "[XX-A bucket name must be 1 to {{ max }} characters-XX]",
+    "bucketNameDuplicate": "[XX-This budget already has a bucket with that name-XX]",
+    "bucketTargetInvalid": "[XX-A bucket target must be greater than zero-XX]",
+    "bucketPercentInvalid": "[XX-A percent target must be greater than 0 and at most 100, with at most two decimals-XX]",
+    "bucketCarryCapNeedsCarryOver": "[XX-A carry cap needs carry-over turned on-XX]",
+    "bucketOnIncomeLine": "[XX-An income line cannot belong to a bucket-XX]",
+    "bucketKeyDuplicate": "[XX-The bucket key \"{{ key }}\" is used more than once-XX]",
+    "bucketKeyUnknown": "[XX-No bucket in this request has the key \"{{ key }}\"-XX]",
+    "transferLineDirectionFixed": "[XX-A transfer line's direction cannot be changed. Remove it and add a new line instead.-XX]"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "[XX-A payroll deduction rule tracks a bill paid in a fiat currency; this bill's account holds the cryptocurrency {{ code }}. Choose a bill paid from a fiat account.-XX]",

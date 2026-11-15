@@ -36,7 +36,9 @@
       "SAVING": "貯蓄"
     },
     "saving": "保存中...",
-    "remove": "予算から削除"
+    "remove": "予算から削除",
+    "bucket": "バケット",
+    "bucketUnassigned": "未割り当て"
   },
   "categoryList": {
     "title": "カテゴリ予算",
@@ -94,7 +96,8 @@
       "FIXED": "固定",
       "ROLLOVER": "繰越",
       "ZERO_BASED": "ゼロベース",
-      "FIFTY_THIRTY_TWENTY": "50/30/20"
+      "FIFTY_THIRTY_TWENTY": "50/30/20",
+      "BUCKET": "バケット"
     }
   },
   "healthGauge": {
@@ -239,6 +242,10 @@
       "FIFTY_THIRTY_TWENTY": {
         "label": "50/30/20",
         "description": "50%を必需品、30%を欲しいもの、20%を貯蓄に。カテゴリはグループでタグ付けされます。"
+      },
+      "BUCKET": {
+        "label": "バケット",
+        "description": "収入をいくつかの名前付きバケットに分けます。カテゴリごとではなく、バケットごとに管理します。"
       }
     },
     "profiles": {
@@ -259,6 +266,23 @@
       "analyzeFailed": "支出の分析に失敗しました"
     }
   },
+  "lineNames": {
+    "transfersFrom": "{name}からの振替",
+    "unknown": "不明"
+  },
+  "transferIncomeForm": {
+    "hint": "この口座から入ってくるお金は、この口座へ戻した分を差し引いて予算の収入として数えます。",
+    "account": "振替元口座",
+    "accountPlaceholder": "口座を選択",
+    "accountRequired": "振替元の口座を選択してください",
+    "amount": "予定額",
+    "submit": "追加"
+  },
+  "transfersInAsIncome": {
+    "label": "除外した口座からの入金振替を収入として数える",
+    "hint": "除外した口座からこの予算の口座へ振り替えたお金は、その口座へ戻した分を差し引いて収入として数えます。独自の振替行がある口座は、その行で数えます。",
+    "noExcludedAccounts": "この予算はまだどの口座も除外していないため、何も数えられません。"
+  },
   "wizardCategories": {
     "title": "カテゴリを確認",
     "noAnalysis": "分析データがありません。戻って先に分析を実行してください。",
@@ -266,6 +290,7 @@
       "income": "収入",
       "expenses": "支出",
       "transfers": "振替 / 貯蓄",
+      "transfersIn": "入金振替（収入）",
       "trendMedian": "トレンド / 中央値",
       "amount": "金額"
     },
@@ -275,6 +300,7 @@
       "transfers": "振替",
       "remaining": "残額"
     },
+    "transfersInHint": "チェックした口座から入ってくるお金は、その口座へ戻した分を差し引いて収入として数えます。貯蓄の積立など、収入を引き出す口座だけをチェックしてください。",
     "allocation503020": "50/30/20 配分",
     "allocationTarget": "（目標 {percent}%）",
     "nextButton": "次へ：設定",
@@ -305,7 +331,8 @@
       "FIXED": "カテゴリごとに金額を設定します。未使用の予算は毎期間リセットされます。",
       "ROLLOVER": "未使用の予算はカテゴリごとの繰越ルールに基づいて繰り越されます。",
       "ZERO_BASED": "収入のすべてのお金が割り当てられます。収入から支出を引くとゼロになるはずです。",
-      "FIFTY_THIRTY_TWENTY": "カテゴリは必需品（50%）、欲しいもの（30%）、貯蓄（20%）としてグループ分けされます。"
+      "FIFTY_THIRTY_TWENTY": "カテゴリは必需品（50%）、欲しいもの（30%）、貯蓄（20%）としてグループ分けされます。",
+      "BUCKET": "収入を名前付きバケットに分けます。各カテゴリは1つのバケットに属します。"
     },
     "linkBudgetToIncome": "予算を収入にリンク",
     "linkBudgetToIncomeHint": "カテゴリ金額が基本収入のパーセンテージになります",
@@ -353,8 +380,10 @@
       "rollover": "繰越",
       "alerts": "アラート",
       "incomeLinked": "収入リンク",
-      "excludedAccounts": "除外口座"
+      "excludedAccounts": "除外口座",
+      "transfersInAsIncome": "入金振替"
     },
+    "transfersInAsIncomeOn": "除外した口座からの分を収入として数える",
     "rolloverOff": "オフ",
     "alertsValue": "警告 {warn}% / 緊急 {critical}%",
     "accountCount": "{count} {count, plural, one {口座} other {口座}}",
@@ -373,7 +402,8 @@
     "categoryTypes": {
       "income": "収入",
       "expense": "支出",
-      "transfer": "振替"
+      "transfer": "振替",
+      "transferIn": "入金振替"
     },
     "createButton": "予算を作成",
     "categoryCount": "{count} カテゴリ",
@@ -381,6 +411,19 @@
     "toasts": {
       "created": "予算が正常に作成されました",
       "failed": "予算の作成に失敗しました"
+    }
+  },
+  "wizardBuckets": {
+    "title": "バケット",
+    "description": "収入をバケットに分け、下の各支出と振替のバケットを選択します。",
+    "selectLabel": "{name} のバケット",
+    "unassigned": "未割り当て",
+    "tallyTitle": "バケットごとの項目数",
+    "tallyValue": "{count, plural, one {#件} other {#件}} · {amount}",
+    "review": {
+      "lineCount": "{count, plural, one {#件} other {#件}}",
+      "unassigned": "{count, plural, one {支出または振替の#件} other {支出または振替の#件}}がどのバケットにも属していません。このまま予算を作成し、後から編集ページで割り当てることもできます。",
+      "noBuckets": "この予算にはまだバケットがありません。このまま作成し、後から編集ページでバケットを追加することもできます。"
     }
   },
   "zeroBasedBar": {
@@ -464,6 +507,23 @@
           "すべての支出をグループでカテゴリ分けする必要がある"
         ],
         "bestFor": "各カテゴリを個別に追跡せずに、バランスの取れた経験則的なアプローチを望む人。"
+      },
+      "BUCKET": {
+        "title": "バケット予算",
+        "description": "収入をいくつかの名前付きバケットに分け、それぞれに収入の割合または固定金額で目標を設定します。各カテゴリは1つのバケットに属するため、カテゴリごとではなくバケットを管理できます。バケットは残りを次の期間に繰り越せます。",
+        "pros": [
+          "見るべき数字が少ない",
+          "各バケット内では柔軟",
+          "貯蓄バケットは時間とともに積み上がる",
+          "バケット内の不定期な支出にも対応"
+        ],
+        "cons": [
+          "カテゴリごとの詳細が少ない",
+          "カテゴリをバケットに分類する必要がある",
+          "割合の目標には収入額が必要",
+          "繰越残高は時々確認が必要"
+        ],
+        "bestFor": "カテゴリごとの予算は細かすぎるが、50/30/20よりしっかりした構造が欲しい人。"
       }
     }
   },
@@ -521,6 +581,10 @@
       "budgetSettings": "予算設定",
       "categoryAllocations": "カテゴリ配分",
       "income": "収入",
+      "addTransferIncome": "振替収入を追加",
+      "addTransferIncomeTitle": "振替収入を追加",
+      "outsideTransferIncome": "この予算外の口座からの振替",
+      "outsideTransferIncomeHint": "この予算は除外した口座からの入金振替を収入として数えるため、この期間に計上されています。",
       "expensesWithCount": "支出（{count}）",
       "resetsEachPeriod": "毎期間リセット",
       "percentUsed": "{percent}% 使用済み",
@@ -538,8 +602,12 @@
         "categoryFailed": "カテゴリの更新に失敗しました",
         "loadFailed": "予算の読み込みに失敗しました",
         "categoryRemoved": "カテゴリを予算から削除しました",
-        "categoryRemoveFailed": "カテゴリを削除できませんでした"
-      }
+        "categoryRemoveFailed": "カテゴリを削除できませんでした",
+        "transferIncomeAdded": "振替収入を追加しました",
+        "transferIncomeFailed": "振替収入を追加できませんでした"
+      },
+      "buckets": "バケット",
+      "unassignedBucket": "未割り当て"
     }
   },
   "validation": {
@@ -550,5 +618,140 @@
   "categoryValidation": {
     "amountMin": "金額は0以上でなければなりません",
     "mustBeNumber": "数値でなければなりません"
+  },
+  "bucketEditor": {
+    "presetLabel": "プリセットから開始",
+    "presets": {
+      "THREE": "3つのバケット",
+      "FOUR": "4つのバケット (60/10/10/20)",
+      "SCRATCH": "ゼロから開始"
+    },
+    "presetBucketNames": {
+      "fixedCosts": "固定費",
+      "everydaySpending": "日常の支出",
+      "savings": "貯蓄",
+      "dailyExpenses": "日々の出費",
+      "splurge": "自由に使うお金",
+      "longTermGoals": "長期目標",
+      "safetyAndDebt": "安全と負債"
+    },
+    "listLabel": "バケット",
+    "empty": {
+      "title": "バケットはまだありません",
+      "description": "プリセットから始めるか、バケットを追加して、各カテゴリを割り当てます。"
+    },
+    "add": "バケットを追加",
+    "limitReached": "1つの予算に設定できるバケットは最大 {max} 個です。",
+    "newTitle": "新しいバケット",
+    "editTitle": "{name} を編集",
+    "summary": "割合の目標の合計は {percent}、金額の目標の合計は {amount} です。",
+    "row": {
+      "percentTarget": "収入の {percent}",
+      "amountTarget": "1期間あたり {amount}",
+      "noCarry": "毎期間ゼロから開始",
+      "carries": "繰り越す",
+      "carriesUpTo": "繰り越す（上限 {cap}）",
+      "caption": "{target} · {carry}",
+      "edit": "編集",
+      "delete": "削除",
+      "editLabel": "{name} を編集",
+      "deleteLabel": "{name} を削除"
+    },
+    "targetTypes": {
+      "PERCENT": "収入の割合",
+      "AMOUNT": "固定金額"
+    },
+    "form": {
+      "name": "名前",
+      "namePlaceholder": "例：貯蓄",
+      "targetType": "目標",
+      "targetTypeTooltip": "割合の目標は予算の収入に対する割合です。収入連動予算ではその期間に受け取った収入、そうでなければ基準収入、それもなければ収入カテゴリの金額が基準になります。固定金額は毎期間同じです。",
+      "targetPercent": "収入の割合",
+      "targetAmount": "1期間あたりの金額",
+      "carryOver": "残りを繰り越す",
+      "carryOverTooltip": "期間の終了時にバケットに残った金額は次の期間に加算されます。使いすぎたバケットは何も繰り越されません。",
+      "carryCap": "繰越上限（任意）",
+      "carryCapPlaceholder": "上限なし",
+      "save": "保存",
+      "saveChanges": "変更を保存"
+    },
+    "validation": {
+      "nameRequired": "名前を入力してください",
+      "nameMax": "名前は {max} 文字以内にしてください",
+      "nameDuplicate": "同じ名前の別のバケットがあります",
+      "targetRequired": "目標を入力してください",
+      "percentRange": "割合の目標は0より大きく100以下にしてください",
+      "percentDecimals": "割合の目標は小数第2位までです",
+      "amountPositive": "金額の目標は0より大きくしてください",
+      "capNeedsCarryOver": "繰越上限を使うには繰り越しをオンにしてください",
+      "capPositive": "繰越上限は0より大きくしてください"
+    },
+    "delete": {
+      "title": "バケットを削除",
+      "message": "バケット「{name}」を削除しますか？このバケットのカテゴリは未割り当てになります。",
+      "confirm": "削除"
+    },
+    "replace": {
+      "title": "バケットを置き換え",
+      "message": "現在のバケットを「{preset}」に置き換えますか？現在のバケットは削除され、そのカテゴリは未割り当てになります。",
+      "clearMessage": "すべてのバケットを削除してゼロから始めますか？それらのカテゴリは未割り当てになります。",
+      "confirm": "置き換え"
+    },
+    "toasts": {
+      "created": "バケットを追加しました",
+      "updated": "バケットを更新しました",
+      "deleted": "バケットを削除しました",
+      "saveFailed": "バケットの保存に失敗しました",
+      "deleteFailed": "バケットの削除に失敗しました",
+      "presetApplied": "プリセットを適用しました",
+      "presetFailed": "プリセットの適用に失敗しました"
+    }
+  },
+  "bucketSummary": {
+    "title": "バケット配分",
+    "loading": "バケット配分を読み込み中",
+    "loadFailed": "バケット配分を読み込めませんでした。しばらくしてからもう一度お試しください。",
+    "emptyTitle": "バケットはまだありません",
+    "emptyDescription": "バケットを追加して、収入を名前付きの枠に分けましょう。",
+    "emptyAction": "バケットを追加",
+    "income": "バケットの収入",
+    "incomeUnknown": "不明",
+    "incomeSource": {
+      "ACTUAL": "この期間の実際の収入に基づく",
+      "BASE_INCOME": "予算の基準収入に基づく",
+      "INCOME_LINES": "計画した収入カテゴリに基づく",
+      "NONE": "収入が見つかりません"
+    },
+    "totalAllocated": "配分合計",
+    "allocatedSoFar": "これまでの配分",
+    "allocatedSoFarHint": "金額が未確定のバケットがあるため、これは一部の数値です。",
+    "unallocated": "未配分",
+    "unallocatedUnknown": "不明",
+    "overAllocatedHint": "配分超過：バケットの合計が収入を上回っています。",
+    "targetPercent": "収入の {percent}",
+    "targetAmount": "1期間あたり {amount}",
+    "carriedIn": "繰越額 {amount}",
+    "spent": "支出済み",
+    "available": "利用可能",
+    "overspent": "超過支出",
+    "categories": "{count, plural, one {#カテゴリ} other {#カテゴリ}}",
+    "allocationUnknown": "予算に基準収入を設定するか、収入カテゴリを追加してください。",
+    "allocationUnknownAction": "予算を編集",
+    "unassignedTitle": "未割り当て",
+    "unassignedDescription": "{count, plural, one {カテゴリ項目#件} other {カテゴリ項目#件}}がどのバケットにも属していません。",
+    "unassignedPlanned": "計画",
+    "unassignedAction": "割り当てる"
+  },
+  "periodBuckets": {
+    "title": "バケット",
+    "name": "バケット",
+    "target": "目標",
+    "allocated": "配分",
+    "allocatedUnknown": "不明",
+    "carriedIn": "繰越額",
+    "spent": "支出済み",
+    "carriedOut": "繰越先",
+    "targetPercent": "収入の {percent}",
+    "targetAmount": "1期間あたり {amount}"
   }
 }

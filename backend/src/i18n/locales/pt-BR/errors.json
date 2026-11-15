@@ -330,7 +330,20 @@
     "budgetCategoryNotFound": "Categoria de orçamento com ID {{ id }} não encontrada",
     "periodNotFound": "Período de orçamento com ID {{ id }} não encontrado",
     "noOpenPeriod": "Não há período aberto para encerrar",
-    "categoryIdsNotOwned": "IDs de categoria não encontrados ou não pertencentes ao usuário: {{ ids }}"
+    "categoryIdsNotOwned": "IDs de categoria não encontrados ou não pertencentes ao usuário: {{ ids }}",
+    "transferAccountNotFound": "Conta com ID {{ id }} não encontrada",
+    "transferAccountAlreadyInBudget": "Esta conta já tem uma linha de transferência no orçamento",
+    "bucketNotFound": "A caixinha com ID {{ id }} não foi encontrada",
+    "bucketLimit": "Um orçamento pode ter no máximo {{ max }} caixinhas",
+    "bucketNameInvalid": "O nome de uma caixinha deve ter de 1 a {{ max }} caracteres",
+    "bucketNameDuplicate": "Este orçamento já tem uma caixinha com esse nome",
+    "bucketTargetInvalid": "A meta de uma caixinha deve ser maior que zero",
+    "bucketPercentInvalid": "Uma meta em percentual deve ser maior que 0 e no máximo 100, com no máximo duas casas decimais",
+    "bucketCarryCapNeedsCarryOver": "Um limite de transição exige que a transição esteja ativada",
+    "bucketOnIncomeLine": "Uma linha de receita não pode pertencer a uma caixinha",
+    "bucketKeyDuplicate": "A chave de caixinha \"{{ key }}\" é usada mais de uma vez",
+    "bucketKeyUnknown": "Nenhuma caixinha nesta requisição tem a chave \"{{ key }}\"",
+    "transferLineDirectionFixed": "Não é possível alterar a direção de uma linha de transferência. Remova-a e adicione uma nova linha."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Uma regra de dedução salarial acompanha uma conta a pagar paga em uma moeda fiduciária; a conta desta fatura contém a criptomoeda {{ code }}. Escolha uma conta a pagar paga a partir de uma conta em moeda fiduciária.",

@@ -136,7 +136,7 @@ describe('useSwipeToPaginate', () => {
     act(() => {
       zone.dispatchEvent(createTouchEvent('touchend', 185, 202));
     });
-    expect(zone.style.transform).toBe('translateX(0)');
+    expect(zone.style.transform).toBe('translateX(0px)');
     act(() => {
       vi.advanceTimersByTime(300);
     });

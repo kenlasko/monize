@@ -63,6 +63,7 @@ services:
       LOCAL_AUTH_ENABLED: ${LOCAL_AUTH_ENABLED:-true}
       REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-true}
       FORCE_2FA: ${FORCE_2FA:-false}
+      AUTH_BRAND_PANEL: ${AUTH_BRAND_PANEL:-true}
       REMEMBER_ME_DAYS: ${REMEMBER_ME_DAYS:-30}
       # Reminder cron limits (empty values use backend defaults)
       UNIFIEDPUSH_PRIVATE_ENDPOINTS: ${UNIFIEDPUSH_PRIVATE_ENDPOINTS:-}

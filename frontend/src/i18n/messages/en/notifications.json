@@ -215,5 +215,63 @@
   "shared": {
     "title": "Shared expenses",
     "message": "A shared group has an update. Open Monize to review it."
+  },
+  "native": {
+    "payments": {
+      "title": "Payment reminder",
+      "body": "A bill or scheduled payment needs your attention. Open Monize for the details."
+    },
+    "budgets": {
+      "title": "Budget alert",
+      "body": "One of your budgets needs your attention. Open Monize for the details."
+    },
+    "system": {
+      "title": "System notice",
+      "body": "Monize has a system notice for you. Open the app for the details."
+    },
+    "balances": {
+      "title": "Balance alert",
+      "body": "An account balance crossed a threshold you set. Open Monize for the details."
+    },
+    "investments": {
+      "title": "Investment movement",
+      "body": "Your investments moved today. Open Monize for the details."
+    },
+    "strategies": {
+      "title": "Strategy signal",
+      "body": "One of your strategies changed its recommendation. Open Monize for the details."
+    },
+    "bank_sync": {
+      "title": "Bank connection",
+      "body": "A bank connection needs your attention. Open Monize for the details."
+    },
+    "bank_sync_activity": {
+      "title": "Bank sync",
+      "body": "Your bank sync has news. Open Monize for the details."
+    },
+    "email_receipts": {
+      "title": "Email receipts need attention",
+      "body": "Some emails in your receipts inbox need a profile or a fix. Open Monize for the details."
+    },
+    "bonds": {
+      "title": "Bond notice",
+      "body": "One of your bonds has news. Open Monize for the details."
+    },
+    "ai_review": {
+      "title": "AI review proposals",
+      "body": "Some AI review proposals wait for your decision. Open Monize for the details."
+    },
+    "warranties": {
+      "title": "Warranty reminder",
+      "body": "One of your warranties expires soon. Open Monize for the details."
+    },
+    "shared_expenses": {
+      "title": "Shared expenses",
+      "body": "A shared group has an update. Open Monize to review it."
+    },
+    "fallback": {
+      "title": "Monize",
+      "body": "You have a new notification in Monize."
+    }
   }
 }

@@ -10,6 +10,8 @@ export interface AuthMethods {
   /** SSO accounts with a local password may sign in with it and enroll app TOTP. */
   oidcPasswordLogin?: boolean;
   demo: boolean;
+  /** False when the admin hides the brand panel (and its sample-data screenshot) on the auth screens. */
+  brandPanel?: boolean;
 }
 
 export const authApi = {

@@ -4,7 +4,7 @@ import { CurrenciesService } from "@/currencies/currencies.service";
 import { ExchangeRateService } from "@/currencies/exchange-rate.service";
 import { FxProviderChain } from "@/currencies/providers/fx-provider-chain";
 import { UsersService } from "@/users/users.service";
-import { withUserContext } from "@/common/db/with-context";
+import { withSystemContext, withUserContext } from "@/common/db/with-context";
 import {
   cleanTables,
   createIntegrationModule,
@@ -110,10 +110,11 @@ describe("currency ownership (integration)", () => {
       "currencies",
       "users",
     ]);
-    // A fresh instance holds only the bootstrap currency.
+    // A fresh instance holds only the bootstrap currency, inactive: it is
+    // offered to nobody until a user's own default or choice adds it.
     await dataSource.query(
       `INSERT INTO currencies (code, name, symbol, decimal_places, is_active, created_by_user_id)
-       VALUES ('USD', 'US Dollar', '$', 2, true, NULL)`,
+       VALUES ('USD', 'US Dollar', '$', 2, false, NULL)`,
     );
   });
 
@@ -161,6 +162,37 @@ describe("currency ownership (integration)", () => {
     });
     expect(await codesOf(a.id)).toContain("PLN");
     expect(await codesOf(b.id)).not.toContain("PLN");
+  });
+
+  it("#2186: a new user on a fresh instance has only the default they chose, never the reference rows", async () => {
+    const a = await newUser();
+    await withUserContext(a.id, () =>
+      users.updatePreferences(a.id, { defaultCurrency: "CAD" }),
+    );
+    // A bond program's currency, seeded as reference data on startup.
+    await withSystemContext(() => currencies.ensureCatalogCurrency("PLN"));
+
+    expect(await codesOf(a.id)).toEqual(["CAD"]);
+    expect(await codesOf(a.id, true)).toEqual(["CAD"]);
+  });
+
+  it("#2186: a user who keeps the registration default has it, beside a currency they added first", async () => {
+    const a = await newUser();
+    await withUserContext(a.id, () =>
+      currencies.create(a.id, { code: "EUR", name: "Euro", symbol: "€" }),
+    );
+
+    expect(await codesOf(a.id)).toEqual(["EUR", "USD"]);
+    expect(await codesOf(a.id, true)).toEqual(["EUR", "USD"]);
+  });
+
+  it("#2186: a default currency the user deactivated stays deactivated", async () => {
+    const a = await newUser();
+    expect(await codesOf(a.id)).toEqual(["USD"]);
+    await withUserContext(a.id, () => currencies.deactivate(a.id, "USD"));
+
+    expect(await codesOf(a.id)).toEqual([]);
+    expect(await codesOf(a.id, true)).toEqual(["USD"]);
   });
 
   it("A26-S09-06: a code outside ISO 4217 that a user's action introduces is that user's own currency", async () => {

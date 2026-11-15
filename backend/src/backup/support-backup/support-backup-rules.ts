@@ -8,6 +8,7 @@ import {
   scale,
   scaleQty,
 } from "./support-backup-rule-kinds";
+import { BUDGET_RULES } from "./support-backup-rules.budgets";
 import { LOAN_RULES } from "./support-backup-rules.loans";
 import { PLANNING_RULES } from "./support-backup-rules.planning";
 import { WARRANTY_RULES } from "./support-backup-rules.warranties";
@@ -552,67 +553,9 @@ export const RULES: Record<string, TableRules> = {
   // spread where they stood so the registry's order is unchanged.
   ...LOAN_RULES,
   security_tags: { security_id: keep, tag_id: keep },
-  budgets: {
-    id: keep,
-    user_id: keep,
-    name: mask,
-    description: drop,
-    budget_type: keep,
-    period_start: keep,
-    period_end: keep,
-    base_income: scale,
-    income_linked: keep,
-    strategy: keep,
-    is_active: keep,
-    currency_code: keep,
-    config: keep, // inventoried: flags/percentages/UUIDs only, no amounts
-    created_at: keep,
-    updated_at: keep,
-  },
-  budget_categories: {
-    id: keep,
-    budget_id: keep,
-    category_id: keep,
-    transfer_account_id: keep,
-    is_transfer: keep,
-    category_group: keep,
-    amount: scale,
-    is_income: keep,
-    rollover_type: keep,
-    rollover_cap: scale,
-    flex_group: mask, // user-authored group name
-    alert_warn_percent: keep,
-    alert_critical_percent: keep,
-    notes: drop,
-    sort_order: keep,
-    created_at: keep,
-    updated_at: keep,
-  },
-  budget_periods: {
-    id: keep,
-    budget_id: keep,
-    period_start: keep,
-    period_end: keep,
-    actual_income: scale,
-    actual_expenses: scale,
-    total_budgeted: scale,
-    status: keep,
-    created_at: keep,
-    updated_at: keep,
-  },
-  budget_period_categories: {
-    id: keep,
-    budget_period_id: keep,
-    budget_category_id: keep,
-    category_id: keep,
-    budgeted_amount: scale,
-    rollover_in: scale,
-    actual_amount: scale,
-    effective_budget: scale,
-    rollover_out: scale,
-    created_at: keep,
-    updated_at: keep,
-  },
+  // The budget tables, in their own file (support-backup-rules.budgets.ts),
+  // spread where they stood so the registry's order is unchanged.
+  ...BUDGET_RULES,
   notifications: {
     id: keep,
     user_id: keep,

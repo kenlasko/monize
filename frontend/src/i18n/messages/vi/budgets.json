@@ -36,7 +36,9 @@
       "SAVING": "Tiết kiệm"
     },
     "saving": "Đang lưu...",
-    "remove": "Xóa khỏi ngân sách"
+    "remove": "Xóa khỏi ngân sách",
+    "bucket": "Hũ",
+    "bucketUnassigned": "Chưa phân công"
   },
   "categoryList": {
     "title": "Ngân sách danh mục",
@@ -94,7 +96,8 @@
       "FIXED": "Cố định",
       "ROLLOVER": "Chuyển tiếp",
       "ZERO_BASED": "Dựa trên zero",
-      "FIFTY_THIRTY_TWENTY": "50/30/20"
+      "FIFTY_THIRTY_TWENTY": "50/30/20",
+      "BUCKET": "Hũ"
     }
   },
   "healthGauge": {
@@ -239,6 +242,10 @@
       "FIFTY_THIRTY_TWENTY": {
         "label": "50/30/20",
         "description": "50% nhu cầu thiết yếu, 30% nhu cầu muốn có, 20% tiết kiệm. Các danh mục được gắn nhãn theo nhóm."
+      },
+      "BUCKET": {
+        "label": "Hũ",
+        "description": "Thu nhập được chia vào vài hũ có tên. Theo dõi từng hũ thay vì từng danh mục."
       }
     },
     "profiles": {
@@ -259,6 +266,23 @@
       "analyzeFailed": "Phân tích chi tiêu thất bại"
     }
   },
+  "lineNames": {
+    "transfersFrom": "Chuyển khoản từ {name}",
+    "unknown": "Không xác định"
+  },
+  "transferIncomeForm": {
+    "hint": "Tiền chuyển vào từ tài khoản này được tính là thu nhập của ngân sách, trừ đi số tiền chuyển ngược lại.",
+    "account": "Từ tài khoản",
+    "accountPlaceholder": "Chọn tài khoản",
+    "accountRequired": "Chọn tài khoản nơi các khoản chuyển đến",
+    "amount": "Số tiền dự kiến",
+    "submit": "Thêm"
+  },
+  "transfersInAsIncome": {
+    "label": "Tính các khoản chuyển vào từ tài khoản bị loại trừ là thu nhập",
+    "hint": "Tiền chuyển từ một tài khoản bị loại trừ vào các tài khoản của ngân sách này được tính là thu nhập, trừ đi số tiền chuyển ngược lại. Tài khoản có dòng chuyển khoản riêng được tính ở dòng đó.",
+    "noExcludedAccounts": "Ngân sách này chưa loại trừ tài khoản nào, nên không có gì được tính."
+  },
   "wizardCategories": {
     "title": "Xem xét danh mục",
     "noAnalysis": "Không có dữ liệu phân tích. Quay lại và chạy phân tích trước.",
@@ -266,6 +290,7 @@
       "income": "Thu nhập",
       "expenses": "Chi tiêu",
       "transfers": "Chuyển khoản / Tiết kiệm",
+      "transfersIn": "Chuyển khoản vào (thu nhập)",
       "trendMedian": "Xu hướng / Trung vị",
       "amount": "Số tiền"
     },
@@ -275,6 +300,7 @@
       "transfers": "Chuyển khoản",
       "remaining": "Còn lại"
     },
+    "transfersInHint": "Tiền chuyển vào từ tài khoản được đánh dấu được tính là thu nhập, trừ đi số tiền chuyển ngược lại. Chỉ đánh dấu các tài khoản bạn rút thu nhập, chẳng hạn quỹ tiết kiệm dự phòng.",
     "allocation503020": "Phân bổ 50/30/20",
     "allocationTarget": "(mục tiêu {percent}%)",
     "nextButton": "Tiếp: Cấu hình",
@@ -305,7 +331,8 @@
       "FIXED": "Đặt số tiền theo danh mục. Ngân sách chưa chi đặt lại mỗi kỳ.",
       "ROLLOVER": "Ngân sách chưa chi được chuyển tiếp dựa trên quy tắc chuyển tiếp theo danh mục.",
       "ZERO_BASED": "Mỗi đồng thu nhập được phân công. Thu nhập trừ chi phí phải bằng zero.",
-      "FIFTY_THIRTY_TWENTY": "Danh mục được nhóm thành Nhu cầu thiết yếu (50%), Nhu cầu muốn có (30%), Tiết kiệm (20%)."
+      "FIFTY_THIRTY_TWENTY": "Danh mục được nhóm thành Nhu cầu thiết yếu (50%), Nhu cầu muốn có (30%), Tiết kiệm (20%).",
+      "BUCKET": "Thu nhập chia vào các hũ có tên. Mỗi danh mục thuộc một hũ."
     },
     "linkBudgetToIncome": "Liên kết ngân sách với thu nhập",
     "linkBudgetToIncomeHint": "Số tiền danh mục trở thành tỷ lệ phần trăm của thu nhập cơ bản",
@@ -353,8 +380,10 @@
       "rollover": "Chuyển tiếp",
       "alerts": "Cảnh báo",
       "incomeLinked": "Liên kết thu nhập",
-      "excludedAccounts": "Tài khoản loại trừ"
+      "excludedAccounts": "Tài khoản loại trừ",
+      "transfersInAsIncome": "Chuyển khoản vào"
     },
+    "transfersInAsIncomeOn": "Từ tài khoản bị loại trừ được tính là thu nhập",
     "rolloverOff": "Tắt",
     "alertsValue": "Cảnh báo {warn}% / Nghiêm trọng {critical}%",
     "accountCount": "{count} {count, plural, one {tài khoản} other {tài khoản}}",
@@ -373,7 +402,8 @@
     "categoryTypes": {
       "income": "Thu nhập",
       "expense": "Chi tiêu",
-      "transfer": "Chuyển khoản"
+      "transfer": "Chuyển khoản",
+      "transferIn": "Chuyển khoản vào"
     },
     "createButton": "Tạo ngân sách",
     "categoryCount": "{count} danh mục",
@@ -381,6 +411,19 @@
     "toasts": {
       "created": "Tạo ngân sách thành công",
       "failed": "Tạo ngân sách thất bại"
+    }
+  },
+  "wizardBuckets": {
+    "title": "Hũ",
+    "description": "Chia thu nhập vào các hũ, rồi chọn hũ cho từng khoản chi và chuyển khoản bên dưới.",
+    "selectLabel": "Hũ cho {name}",
+    "unassigned": "Chưa phân công",
+    "tallyTitle": "Số dòng theo hũ",
+    "tallyValue": "{count, plural, one {# dòng} other {# dòng}} · {amount}",
+    "review": {
+      "lineCount": "{count, plural, one {# dòng} other {# dòng}}",
+      "unassigned": "{count, plural, one {# dòng chi tiêu hoặc chuyển khoản} other {# dòng chi tiêu hoặc chuyển khoản}} chưa thuộc hũ nào. Bạn vẫn có thể tạo ngân sách và phân công sau trong trang chỉnh sửa.",
+      "noBuckets": "Ngân sách này chưa có hũ nào. Bạn vẫn có thể tạo và thêm hũ sau trong trang chỉnh sửa."
     }
   },
   "zeroBasedBar": {
@@ -464,6 +507,23 @@
           "Yêu cầu phân loại từng chi tiêu theo nhóm"
         ],
         "bestFor": "Những người muốn cách tiếp cận cân bằng, dễ nhớ mà không cần theo dõi từng danh mục riêng lẻ."
+      },
+      "BUCKET": {
+        "title": "Ngân sách theo hũ",
+        "description": "Thu nhập được chia vào vài hũ có tên, mỗi hũ có mục tiêu là một phần trăm thu nhập hoặc số tiền cố định. Mỗi danh mục thuộc một hũ nên bạn theo dõi hũ thay vì từng danh mục. Hũ có thể chuyển phần còn lại sang kỳ sau.",
+        "pros": [
+          "Ít con số cần theo dõi hơn",
+          "Linh hoạt trong từng hũ",
+          "Hũ tiết kiệm có thể tích lũy theo thời gian",
+          "Phù hợp với chi tiêu không đều trong một hũ"
+        ],
+        "cons": [
+          "Ít chi tiết hơn cho từng danh mục",
+          "Cần xếp các danh mục vào hũ",
+          "Mục tiêu theo phần trăm cần biết thu nhập",
+          "Số dư chuyển tiếp cần kiểm tra thỉnh thoảng"
+        ],
+        "bestFor": "Những người thấy ngân sách theo từng danh mục quá rườm rà nhưng muốn có cấu trúc rõ hơn 50/30/20."
       }
     }
   },
@@ -521,6 +581,10 @@
       "budgetSettings": "Cài đặt ngân sách",
       "categoryAllocations": "Phân bổ danh mục",
       "income": "Thu nhập",
+      "addTransferIncome": "Thêm thu nhập từ chuyển khoản",
+      "addTransferIncomeTitle": "Thêm thu nhập từ chuyển khoản",
+      "outsideTransferIncome": "Chuyển khoản từ tài khoản ngoài ngân sách này",
+      "outsideTransferIncomeHint": "Được tính trong kỳ này vì ngân sách tính các khoản chuyển vào từ tài khoản bị loại trừ là thu nhập.",
       "expensesWithCount": "Chi tiêu ({count})",
       "resetsEachPeriod": "Đặt lại mỗi kỳ",
       "percentUsed": "{percent}% đã dùng",
@@ -538,8 +602,12 @@
         "categoryFailed": "Cập nhật danh mục thất bại",
         "loadFailed": "Tải ngân sách thất bại",
         "categoryRemoved": "Đã xóa danh mục khỏi ngân sách",
-        "categoryRemoveFailed": "Không thể xóa danh mục"
-      }
+        "categoryRemoveFailed": "Không thể xóa danh mục",
+        "transferIncomeAdded": "Đã thêm thu nhập từ chuyển khoản",
+        "transferIncomeFailed": "Không thể thêm thu nhập từ chuyển khoản"
+      },
+      "buckets": "Hũ",
+      "unassignedBucket": "Chưa phân công"
     }
   },
   "validation": {
@@ -550,5 +618,140 @@
   "categoryValidation": {
     "amountMin": "Số tiền phải từ 0 trở lên",
     "mustBeNumber": "Phải là số"
+  },
+  "bucketEditor": {
+    "presetLabel": "Bắt đầu từ mẫu có sẵn",
+    "presets": {
+      "THREE": "Ba hũ",
+      "FOUR": "Bốn hũ (60/10/10/20)",
+      "SCRATCH": "Bắt đầu từ đầu"
+    },
+    "presetBucketNames": {
+      "fixedCosts": "Chi phí cố định",
+      "everydaySpending": "Chi tiêu hằng ngày",
+      "savings": "Tiết kiệm",
+      "dailyExpenses": "Chi phí hằng ngày",
+      "splurge": "Hưởng thụ",
+      "longTermGoals": "Mục tiêu dài hạn",
+      "safetyAndDebt": "An toàn và nợ"
+    },
+    "listLabel": "Hũ",
+    "empty": {
+      "title": "Chưa có hũ nào",
+      "description": "Bắt đầu từ mẫu có sẵn hoặc thêm hũ, rồi phân từng danh mục vào một hũ."
+    },
+    "add": "Thêm hũ",
+    "limitReached": "Một ngân sách có tối đa {max} hũ.",
+    "newTitle": "Hũ mới",
+    "editTitle": "Chỉnh sửa {name}",
+    "summary": "Các mục tiêu theo phần trăm cộng lại là {percent}. Các mục tiêu theo số tiền cộng lại là {amount}.",
+    "row": {
+      "percentTarget": "{percent} thu nhập",
+      "amountTarget": "{amount} mỗi kỳ",
+      "noCarry": "Bắt đầu mới mỗi kỳ",
+      "carries": "Chuyển tiếp",
+      "carriesUpTo": "Chuyển tiếp, tối đa {cap}",
+      "caption": "{target} · {carry}",
+      "edit": "Sửa",
+      "delete": "Xóa",
+      "editLabel": "Chỉnh sửa {name}",
+      "deleteLabel": "Xóa {name}"
+    },
+    "targetTypes": {
+      "PERCENT": "Phần trăm thu nhập",
+      "AMOUNT": "Số tiền cố định"
+    },
+    "form": {
+      "name": "Tên",
+      "namePlaceholder": "ví dụ: Tiết kiệm",
+      "targetType": "Mục tiêu",
+      "targetTypeTooltip": "Mục tiêu theo phần trăm là một phần thu nhập của ngân sách: thu nhập nhận được trong kỳ với ngân sách gắn với thu nhập, nếu không thì thu nhập cơ sở, nếu không nữa thì số tiền của các danh mục thu nhập. Số tiền cố định giống nhau mỗi kỳ.",
+      "targetPercent": "Phần trăm thu nhập",
+      "targetAmount": "Số tiền mỗi kỳ",
+      "carryOver": "Chuyển tiếp phần còn lại",
+      "carryOverTooltip": "Phần còn lại trong hũ khi kỳ kết thúc được cộng vào kỳ sau. Hũ chi vượt mức không chuyển tiếp gì.",
+      "carryCap": "Giới hạn chuyển tiếp (tùy chọn)",
+      "carryCapPlaceholder": "Không giới hạn",
+      "save": "Lưu",
+      "saveChanges": "Lưu thay đổi"
+    },
+    "validation": {
+      "nameRequired": "Nhập tên",
+      "nameMax": "Tên tối đa {max} ký tự",
+      "nameDuplicate": "Đã có hũ khác dùng tên này",
+      "targetRequired": "Nhập mục tiêu",
+      "percentRange": "Mục tiêu theo phần trăm phải lớn hơn 0 và tối đa 100",
+      "percentDecimals": "Mục tiêu theo phần trăm có tối đa hai chữ số thập phân",
+      "amountPositive": "Mục tiêu theo số tiền phải lớn hơn 0",
+      "capNeedsCarryOver": "Giới hạn chuyển tiếp cần bật chuyển tiếp",
+      "capPositive": "Giới hạn chuyển tiếp phải lớn hơn 0"
+    },
+    "delete": {
+      "title": "Xóa hũ",
+      "message": "Xóa hũ \"{name}\"? Các danh mục của hũ sẽ chuyển sang chưa phân công.",
+      "confirm": "Xóa"
+    },
+    "replace": {
+      "title": "Thay thế hũ",
+      "message": "Thay các hũ hiện tại bằng \"{preset}\"? Các hũ hiện tại sẽ bị xóa và danh mục của chúng sẽ chuyển sang chưa phân công.",
+      "clearMessage": "Xóa mọi hũ và bắt đầu lại từ đầu? Các danh mục của chúng sẽ chuyển sang chưa phân công.",
+      "confirm": "Thay thế"
+    },
+    "toasts": {
+      "created": "Đã thêm hũ",
+      "updated": "Đã cập nhật hũ",
+      "deleted": "Đã xóa hũ",
+      "saveFailed": "Lưu hũ thất bại",
+      "deleteFailed": "Xóa hũ thất bại",
+      "presetApplied": "Đã áp dụng mẫu",
+      "presetFailed": "Áp dụng mẫu thất bại"
+    }
+  },
+  "bucketSummary": {
+    "title": "Phân bổ theo hũ",
+    "loading": "Đang tải phân bổ theo hũ",
+    "loadFailed": "Không thể tải phân bổ theo hũ. Hãy thử lại sau giây lát.",
+    "emptyTitle": "Chưa có hũ nào",
+    "emptyDescription": "Thêm hũ để chia thu nhập thành các phần có tên.",
+    "emptyAction": "Thêm hũ",
+    "income": "Thu nhập của hũ",
+    "incomeUnknown": "Không rõ",
+    "incomeSource": {
+      "ACTUAL": "Dựa trên thu nhập thực tế trong kỳ này",
+      "BASE_INCOME": "Dựa trên thu nhập cơ sở của ngân sách",
+      "INCOME_LINES": "Dựa trên các danh mục thu nhập đã lập kế hoạch",
+      "NONE": "Không tìm thấy thu nhập"
+    },
+    "totalAllocated": "Tổng đã phân bổ",
+    "allocatedSoFar": "Đã phân bổ đến nay",
+    "allocatedSoFarHint": "Một số hũ chưa biết số tiền, nên đây chỉ là con số một phần.",
+    "unallocated": "Chưa phân bổ",
+    "unallocatedUnknown": "Không rõ",
+    "overAllocatedHint": "Phân bổ vượt mức: tổng các hũ lớn hơn thu nhập của bạn.",
+    "targetPercent": "{percent} thu nhập",
+    "targetAmount": "{amount} mỗi kỳ",
+    "carriedIn": "Chuyển vào {amount}",
+    "spent": "Đã chi",
+    "available": "Còn lại",
+    "overspent": "Chi vượt mức",
+    "categories": "{count, plural, one {# danh mục} other {# danh mục}}",
+    "allocationUnknown": "Đặt thu nhập cơ sở cho ngân sách, hoặc thêm một danh mục thu nhập.",
+    "allocationUnknownAction": "Sửa ngân sách",
+    "unassignedTitle": "Chưa phân công",
+    "unassignedDescription": "{count, plural, one {# dòng danh mục} other {# dòng danh mục}} chưa thuộc hũ nào.",
+    "unassignedPlanned": "Kế hoạch",
+    "unassignedAction": "Phân công ngay"
+  },
+  "periodBuckets": {
+    "title": "Hũ",
+    "name": "Hũ",
+    "target": "Mục tiêu",
+    "allocated": "Đã phân bổ",
+    "allocatedUnknown": "Không rõ",
+    "carriedIn": "Chuyển vào",
+    "spent": "Đã chi",
+    "carriedOut": "Chuyển ra",
+    "targetPercent": "{percent} thu nhập",
+    "targetAmount": "{amount} mỗi kỳ"
   }
 }

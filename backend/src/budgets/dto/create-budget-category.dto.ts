@@ -9,6 +9,7 @@ import {
   Min,
   Max,
   IsInt,
+  ValidateIf,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
@@ -106,4 +107,14 @@ export class CreateBudgetCategoryDto {
   @Min(0)
   @Max(1000)
   sortOrder?: number;
+
+  @ApiPropertyOptional({
+    description:
+      "Bucket of this budget the line belongs to (null clears; a non-income line only)",
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null)
+  @IsUUID()
+  bucketId?: string | null;
 }

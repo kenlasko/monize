@@ -49,6 +49,8 @@ export const ROOTED = [
   "helm/",
   "scripts/",
   "e2e/",
+  "desktop/",
+  "mobile/",
   ".github/",
   ".claude/",
 ];

@@ -25,9 +25,13 @@ import { BudgetsService } from "./budgets.service";
 import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetGeneratorService } from "./budget-generator.service";
 import { BudgetReportsService } from "./budget-reports.service";
+import { BudgetBucketsService } from "./budget-buckets.service";
+import { CreateBudgetBucketDto } from "./dto/create-budget-bucket.dto";
+import { UpdateBudgetBucketDto } from "./dto/update-budget-bucket.dto";
 import { CreateBudgetDto } from "./dto/create-budget.dto";
 import { UpdateBudgetDto } from "./dto/update-budget.dto";
 import { CreateBudgetCategoryDto } from "./dto/create-budget-category.dto";
+import { CreateTransferIncomeLineDto } from "./dto/create-transfer-income-line.dto";
 import { UpdateBudgetCategoryDto } from "./dto/update-budget-category.dto";
 import { BulkUpdateBudgetCategoriesDto } from "./dto/bulk-update-budget-categories.dto";
 import { GenerateBudgetDto } from "./dto/generate-budget.dto";
@@ -55,6 +59,7 @@ export class BudgetsController {
     private readonly budgetPeriodService: BudgetPeriodService,
     private readonly budgetGeneratorService: BudgetGeneratorService,
     private readonly budgetReportsService: BudgetReportsService,
+    private readonly budgetBucketsService: BudgetBucketsService,
   ) {}
 
   @Post()
@@ -195,6 +200,23 @@ export class BudgetsController {
     return this.budgetsService.addCategory(req.user.id, id, dto);
   }
 
+  @Post(":id/categories/transfer-income")
+  @ApiOperation({
+    summary: "Add a line counting transfers in from an account as income",
+  })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiResponse({ status: 201, description: "Transfer income line added" })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget or account not found" })
+  addTransferIncomeLine(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: CreateTransferIncomeLineDto,
+  ) {
+    return this.budgetsService.addTransferIncomeLine(req.user.id, id, dto);
+  }
+
   @Patch(":id/categories/:categoryId")
   @ApiOperation({ summary: "Update a budget category allocation" })
   @ApiParam({ name: "id", description: "Budget UUID" })
@@ -244,6 +266,64 @@ export class BudgetsController {
       id,
       dto.categories,
     );
+  }
+
+  @Get(":id/buckets")
+  @AllowDelegate()
+  @ApiOperation({ summary: "List the buckets of a budget" })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiResponse({ status: 200, description: "Buckets retrieved" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget not found" })
+  findBuckets(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.budgetBucketsService.findAll(req.user.id, id);
+  }
+
+  @Post(":id/buckets")
+  @ApiOperation({ summary: "Add a bucket to a budget" })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiResponse({ status: 201, description: "Bucket added" })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget not found" })
+  createBucket(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: CreateBudgetBucketDto,
+  ) {
+    return this.budgetBucketsService.create(req.user.id, id, dto);
+  }
+
+  @Patch(":id/buckets/:bucketId")
+  @ApiOperation({ summary: "Update a bucket" })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiParam({ name: "bucketId", description: "Bucket UUID" })
+  @ApiResponse({ status: 200, description: "Bucket updated" })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget or bucket not found" })
+  updateBucket(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Param("bucketId", ParseUUIDPipe) bucketId: string,
+    @Body() dto: UpdateBudgetBucketDto,
+  ) {
+    return this.budgetBucketsService.update(req.user.id, id, bucketId, dto);
+  }
+
+  @Delete(":id/buckets/:bucketId")
+  @ApiOperation({ summary: "Delete a bucket; its lines become unassigned" })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiParam({ name: "bucketId", description: "Bucket UUID" })
+  @ApiResponse({ status: 200, description: "Bucket deleted" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget or bucket not found" })
+  removeBucket(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Param("bucketId", ParseUUIDPipe) bucketId: string,
+  ) {
+    return this.budgetBucketsService.remove(req.user.id, id, bucketId);
   }
 
   @Get(":id/summary")
@@ -396,6 +476,17 @@ export class BudgetsController {
   @ApiResponse({ status: 404, description: "Budget not found" })
   getFlexGroupStatus(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.budgetReportsService.getFlexGroupStatus(req.user.id, id);
+  }
+
+  @Get(":id/reports/bucket-status")
+  @AllowDelegate()
+  @ApiOperation({ summary: "Get bucket allocation status" })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiResponse({ status: 200, description: "Bucket status retrieved" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget not found" })
+  getBucketStatus(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.budgetReportsService.getBucketStatus(req.user.id, id);
   }
 
   @Get(":id/reports/daily-spending")

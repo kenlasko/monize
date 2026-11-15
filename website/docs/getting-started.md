@@ -12,6 +12,9 @@ Before installing Monize, ensure you have:
 - A minimum of 1 GB RAM available
 - A modern web browser (Chrome, Firefox, Safari, or Edge)
 
+> [!TIP]
+> **Just want Monize on one Windows PC?** [Monize for Windows](windows.md) is a single installer with everything included: no Docker, no server and no setup. It is reachable from that PC only, so read [what it cannot do](windows.md#what-the-windows-app-cannot-do) first.
+
 ---
 
 ## Installation
@@ -111,6 +114,10 @@ images from source instead (for development), use `docker-compose.dev.yml`.
 ### Using Kubernetes (Helm)
 
 Helm charts are provided in the `helm/` directory for Kubernetes deployments. Refer to the Helm README for detailed configuration options.
+
+### On Windows (Installer)
+
+Download `Monize-Setup-<version>.exe` from the [latest release](https://github.com/kenlasko/monize/releases/latest) and run it. Everything Monize needs is inside, including its database, and it installs for your Windows account without administrator rights. It runs on that PC only. [Monize for Windows](windows.md) covers installing, updates, backups and the features a single-PC installation cannot offer.
 
 ---
 
@@ -328,6 +335,9 @@ Monize is a **Progressive Web App (PWA)**, which means it can be installed direc
 > **Note:** The PWA caches the app itself, but your financial data still requires a network connection to your Monize server. The PWA does not provide fully offline access to transactions, accounts, or reports.
 
 ### Before You Install
+
+> [!NOTE]
+> **Monize for Windows:** the app already has its own window. To install Monize as a browser app on the same PC, choose **Open in browser** in the tray menu and install it from there; `http://127.0.0.1` counts as local, so the browser offers it. Phones and other devices cannot reach the Windows app.
 
 - Monize must be accessed over **HTTPS** (or over `http://localhost` for local development). Browsers will not offer installation on plain HTTP URLs.
 - Use a modern browser that supports PWAs (Chrome, Edge, Safari, Firefox, Brave, Opera, or Samsung Internet).
