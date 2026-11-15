@@ -56,6 +56,8 @@ Each row has:
 | **Trend / Median** | A small sparkline of recent months, with your median monthly amount |
 | **Amount** | The suggested budget amount -- edit it to your preference |
 
+Select a column heading to sort that table by it; select it again to reverse the order. Sorting by the category name keeps each subcategory directly under its parent (every **Taxes:** subcategory sits together under **Taxes**), and sorting by **Amount** puts unticked rows last.
+
 An account can be ticked under **Transfers In (Income)** or under **Transfers / Savings**, not both: ticking one unticks the other.
 
 Use the profile buttons (**Comfortable**, **On Track**, **Aggressive**) at the top to switch the suggested amounts for all categories at once. The totals at the bottom show **Total Income**, **Total Expenses**, **Transfers**, and **Remaining**.

@@ -1,5 +1,6 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
@@ -140,6 +141,16 @@ export function BudgetWizardBucketsPanel({
   );
 }
 
+/**
+ * Wide enough for the longest option at the select's text size (the wrapper
+ * is text-xs too, so `ch` measures at it), plus the arrow's padding, and never
+ * narrower than 10rem.
+ */
+export function bucketSelectWidth(labels: readonly string[]): string {
+  const longest = Math.max(0, ...labels.map((label) => label.length));
+  return `max(10rem, calc(${longest + 1}ch + 2.25rem))`;
+}
+
 /** A selected expense or transfer row's bucket choice. */
 export function BudgetWizardBucketSelect({
   id,
@@ -155,18 +166,24 @@ export function BudgetWizardBucketSelect({
   onChange: (key: string | null) => void;
 }) {
   const t = useTranslations('budgets');
+  const options = [
+    { value: '', label: t('wizardBuckets.unassigned') },
+    ...buckets.map((b) => ({ value: b.key, label: b.name })),
+  ];
   return (
-    <div className="w-full sm:w-40 flex-shrink-0">
+    <div
+      className="w-full sm:w-[var(--bucket-select-width)] max-w-full flex-shrink-0 text-xs"
+      style={{ '--bucket-select-width': bucketSelectWidth(options.map((o) => o.label)) } as CSSProperties}
+    >
+      {/* The global `select` rule is unlayered, so it outranks plain utilities:
+          without `!` its padding and text-base push the text below the 28px box. */}
       <Select
         id={id}
         aria-label={t('wizardBuckets.selectLabel', { name: lineName })}
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
-        className="h-7 py-0 pl-2 pr-7 text-xs"
-        options={[
-          { value: '', label: t('wizardBuckets.unassigned') },
-          ...buckets.map((b) => ({ value: b.key, label: b.name })),
-        ]}
+        className="h-7 py-0! pl-2! pr-7! text-xs!"
+        options={options}
       />
     </div>
   );
