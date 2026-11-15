@@ -116,7 +116,7 @@ Click **Rate history** on a currency's row to see the rates Monize holds for it 
 
 ![The rate history of a currency](images/currency-rate-history.png)
 
-Reports dated before the first stored rate cannot convert that currency, so after importing years of history, use **Fill gaps in rate history** for each foreign currency you use.
+Reports dated before the first stored rate cannot convert that currency. After an import, Monize fills the rate history of every foreign currency the imported accounts and their securities use, from the first imported date up to today, in the background; you do not need to start it. Use **Fill gaps in rate history** for anything it could not fetch, for example while a rate provider was not answering.
 
 ### Rate Direction
 
