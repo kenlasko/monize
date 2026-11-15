@@ -67,6 +67,26 @@ describe("SecurityNoticeService", () => {
     expect(notify.mock.calls[1][1].data.clientName).toBe("c2");
   });
 
+  it("does not split a surrogate pair at the length bound", async () => {
+    await service.oauthClientAuthorized("u1", {
+      grantId: "g1",
+      clientId: "c1",
+      clientName: `${"a".repeat(99)}\u{1F600}tail`,
+    });
+    const name: string = notify.mock.calls[0][1].data.clientName;
+    expect(name).toBe(`${"a".repeat(99)}\u{1F600}`);
+    expect(JSON.stringify(name)).not.toMatch(/\\ud83d"/);
+  });
+
+  it("strips line and paragraph separators from the client name", async () => {
+    await service.oauthClientAuthorized("u1", {
+      grantId: "g1",
+      clientId: "c1",
+      clientName: "Claude\u2028(official)\u2029x",
+    });
+    expect(notify.mock.calls[0][1].data.clientName).toBe("Claude (official) x");
+  });
+
   it("keys a relay notice on the credential without storing its id", async () => {
     await service.relayCredentialFirstUse("u1", "pat:secret-id-123");
     const [, input, options] = notify.mock.calls[0];

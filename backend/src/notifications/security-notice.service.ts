@@ -19,10 +19,17 @@ import { NotificationDispatchService } from "./notification-dispatch.service";
 
 const CLIENT_NAME_MAX = 100;
 
-// Control (\p{Cc}: line breaks) and format characters (\p{Cf}: bidi overrides
-// U+202A-202E, isolates U+2066-2069, marks U+200E/F, zero-width) could spoof
-// the title, subject and push text.
-const UNSAFE_NAME_CHARS = /[\p{Cc}\p{Cf}]+/gu;
+// Control (\p{Cc}: line breaks), format (\p{Cf}: bidi overrides U+202A-202E,
+// isolates U+2066-2069, marks U+200E/F, zero-width) and line/paragraph
+// separator characters (\p{Zl}, \p{Zp}: U+2028/U+2029) could spoof the title,
+// subject and push text.
+const UNSAFE_NAME_CHARS = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu;
+
+/** At most `max` code points: a UTF-16 slice can split a surrogate pair, and
+ * PostgreSQL's jsonb rejects the lone half, which would drop the notice. */
+function boundCodePoints(text: string, max: number): string {
+  return Array.from(text).slice(0, max).join("");
+}
 
 export function oauthClientAuthorizedNotice(facts: {
   grantId: string;
@@ -32,10 +39,10 @@ export function oauthClientAuthorizedNotice(facts: {
   // The name is chosen by whoever registered the client: cleaned and bounded
   // here, escaped wherever it is rendered.
   const clientName =
-    facts.clientName
-      .replace(UNSAFE_NAME_CHARS, " ")
-      .trim()
-      .slice(0, CLIENT_NAME_MAX) || facts.clientId.slice(0, CLIENT_NAME_MAX);
+    boundCodePoints(
+      facts.clientName.replace(UNSAFE_NAME_CHARS, " ").trim(),
+      CLIENT_NAME_MAX,
+    ) || boundCodePoints(facts.clientId, CLIENT_NAME_MAX);
   return {
     type: NotificationType.OAUTH_CLIENT_AUTHORIZED,
     severity: NotificationSeverity.WARNING,

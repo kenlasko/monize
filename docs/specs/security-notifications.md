@@ -36,9 +36,17 @@ writes no row and sends nothing.
 - Relay: `relay:cred:<credentialId>`. The prefix is in
   `STATE_KEYED_DEDUPE_PREFIXES`, so `purgeOld` keeps the row as the memory that
   the credential was announced. Without it the purge would delete the row and the
-  next claim would announce the same credential again.
+  next claim would announce the same credential again. `purgeOld` never forgets
+  a `relay:cred:` row, also not after a year dismissed.
+- Known limit: the notification row is the only memory, so the two paths that
+  delete a user's notifications outright, "delete my data" and the backup
+  restore wipe, also forget which credentials were announced. A personal access
+  token that survives them is announced once more on its next relay claim.
+  Keeping the mark on the credential itself would remove this; that is a design
+  change left for agreement.
 
-`data` holds `{ clientId, clientName }` (name trimmed, at most 100 characters,
+`data` holds `{ clientId, clientName }` (name with control, format and
+line/paragraph separator characters replaced, trimmed, at most 100 code points,
 the client id when empty) or `{ credentialKind }` (`pat` or `oauth`). The raw
 credential id is never in `data`, the title or the message. A client name is
 chosen by whoever registered the client; the immediate email template escapes
