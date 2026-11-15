@@ -96,7 +96,7 @@ describe("loadOrCreateConfig", () => {
 
   it("refuses to regenerate when config.json is gone but pgdata holds data", async () => {
     mkdirSync(paths.pgdata, { recursive: true });
-    writeFileSync(join(paths.pgdata, "PG_VERSION"), "16\n");
+    writeFileSync(join(paths.pgdata, "PG_VERSION"), "18\n");
     const attempt = loadOrCreateConfig({
       paths,
       policy: SECURE,

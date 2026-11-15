@@ -27,7 +27,7 @@ async function failureOf(promise: Promise<void>): Promise<PostgresRunnerError> {
 /** An initialized cluster whose `postmaster.pid` names the given pid. */
 function worldWithPidFile(firstLine = "4242"): FakeWorld {
   const world = createWorld();
-  world.files.set(`${DATA}/PG_VERSION`, "16\n");
+  world.files.set(`${DATA}/PG_VERSION`, "18\n");
   world.files.set(`${DATA}/monize.initialized`, "2026-11-01T09:00:00.000Z\n");
   world.files.set(PID_FILE, `${firstLine}\n${DATA}\n1794000000\n5433\n`);
   world.databases.add("monize");

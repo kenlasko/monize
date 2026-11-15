@@ -32,7 +32,7 @@ export type {
 } from "./postgres-types";
 
 /**
- * The embedded PostgreSQL 16 server of the desktop shell: one cluster in the
+ * The embedded PostgreSQL 18 server of the desktop shell: one cluster in the
  * user's data directory, listening on loopback only, driven through the
  * `initdb` and `pg_ctl` binaries in `binDir`.
  *

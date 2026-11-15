@@ -704,7 +704,7 @@ Example environment for K8s:
 ### Windows (single PC)
 
 For one Windows 10/11 x64 PC there is an installer with everything inside:
-the frontend, the backend and PostgreSQL 16 run as one app with a tray icon,
+the frontend, the backend and PostgreSQL 18 run as one app with a tray icon,
 installed for the current Windows account without administrator rights.
 
 - **Download:** `Monize-Setup-<version>.exe` from the

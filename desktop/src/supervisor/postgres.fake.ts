@@ -148,7 +148,7 @@ export function createWorld(
     if (scripted) {
       return scripted;
     }
-    world.files.set(path.join(dataDir, "PG_VERSION"), "16\n");
+    world.files.set(path.join(dataDir, "PG_VERSION"), "18\n");
     return ok("Success. You can now start the database server.\n");
   };
 

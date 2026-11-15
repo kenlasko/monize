@@ -41,7 +41,7 @@ export interface MoveFixture {
 
 const FILES: Readonly<Record<string, string>> = {
   "config.json": '{"version":1}',
-  "pgdata/PG_VERSION": "16\n",
+  "pgdata/PG_VERSION": "18\n",
   "pgdata/monize.initialized": "2026-11-13T00:00:00.000Z\n",
   "pgdata/base/1/1259": "x".repeat(8192),
   "pgdata/base/1/2619": "y".repeat(300),
