@@ -20,10 +20,12 @@ const PATH = `/bonds/securities/${SECURITY}/redemption-split`;
 
 /**
  * The redemption-split route through the real request pipeline: the global
- * `ValidationPipe` of `main.ts` runs before the parameter pipes, and with
- * `transform: true` it turns a `number`-typed query parameter into `+value`
- * first. Calling the controller method directly skips that step, which is how
- * every quantity came to be refused with a 400 (issue 2221).
+ * `ValidationPipe` runs before the parameter pipes, and with `transform: true`
+ * it converts a query parameter by its declared type first. Calling the
+ * controller method directly skips that step, which is how every quantity came
+ * to be refused with a 400 (issue 2221). A spelling `+value` would read as a
+ * whole number (`0x10` as 16, `2.9999999999999999` as 3) is refused, not
+ * answered for a quantity nobody typed.
  */
 describe("GET /bonds/securities/:id/redemption-split over HTTP", () => {
   let app: INestApplication;
@@ -98,27 +100,6 @@ describe("GET /bonds/securities/:id/redemption-split over HTTP", () => {
     },
   );
 
-  // The global pipe reads the text as `+value` before the quantity pipe sees
-  // it, the same leniency as every `ParseIntPipe` route: what is held is a
-  // whole number of bonds in range, not how it was spelled.
-  it.each([
-    ["1e3", 1000],
-    [" 5", 5],
-    ["007", 7],
-  ])("reads quantity=%p as %d bonds", async (raw, expected) => {
-    holdings.redemptionSplit.mockResolvedValue({});
-    await request(app.getHttpServer()).get(PATH).query(query(raw)).expect(200);
-    expect(holdings.redemptionSplit).toHaveBeenCalledWith(
-      USER,
-      SECURITY,
-      ACCOUNT,
-      INSTRUMENT,
-      "2024-08-08",
-      expected,
-      undefined,
-    );
-  });
-
   it.each([
     ["absent", undefined],
     ["empty", ""],
@@ -127,8 +108,12 @@ describe("GET /bonds/securities/:id/redemption-split over HTTP", () => {
     ["fractional", "1.5"],
     ["not a number", "abc"],
     ["over the bound", "1000000001"],
-    ["over the bound in exponent form", "1e10"],
-    ["a fraction in exponent form", "5e-1"],
+    ["in exponent form", "1e3"],
+    ["hexadecimal", "0x10"],
+    ["written with a grouping point", "1.000"],
+    ["a fraction past double precision", "2.9999999999999999"],
+    ["padded", " 5"],
+    ["zero-led", "007"],
     ["repeated", ["4", "5"]],
   ])(
     "refuses a quantity that is %s with a 400 before the service runs",
@@ -144,4 +129,12 @@ describe("GET /bonds/securities/:id/redemption-split over HTTP", () => {
       expect(holdings.redemptionSplit).not.toHaveBeenCalled();
     },
   );
+
+  it("names the text it refused, not an empty value", async () => {
+    const res = await request(app.getHttpServer())
+      .get(PATH)
+      .query(query("0x10"))
+      .expect(400);
+    expect(res.body.message).toMatch(/bonds: 0x10$/);
+  });
 });

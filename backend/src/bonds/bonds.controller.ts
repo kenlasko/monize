@@ -513,7 +513,9 @@ export class BondsController {
     @Request() req,
     @Param("securityId", ParseUUIDPipe) securityId: string,
     @Query("date", new ParseCalendarDatePipe()) date: string,
-    @Query("quantity", new ParseBondQuantityPipe()) quantity: number,
+    // `string`, not `number`: the global ValidationPipe would hand the pipe
+    // `+value` and no text to check (ParseBondQuantityPipe).
+    @Query("quantity", new ParseBondQuantityPipe()) quantity: string,
     @Query("bondInstrumentId", new ParseUUIDPipe()) bondInstrumentId: string,
     @Query("accountId", new ParseUUIDPipe()) accountId: string,
     @Query("excludeTransactionId", new ParseUUIDPipe({ optional: true }))
@@ -526,7 +528,7 @@ export class BondsController {
         accountId,
         bondInstrumentId,
         date,
-        quantity,
+        Number(quantity),
         excludeTransactionId,
       ),
     );

@@ -167,41 +167,29 @@ export const MAX_REDEMPTION_QUANTITY = 1_000_000_000;
 
 /**
  * `quantity` of the redemption-split route: a positive whole number of bonds up
- * to `MAX_REDEMPTION_QUANTITY`. The handler parameter is typed `number`, so the
- * global `ValidationPipe` (`createGlobalValidationPipe`, `transform: true`) has
- * already turned the query text into `+value` before this pipe runs: a request
- * hands it a number, held here to a safe integer in range. Text `+value` reads
- * as such an integer is therefore accepted however it is spelled (`1e3` is
- * 1000), as on every `ParseIntPipe` route; a repeated key (an array) arrives as
- * `NaN` and is refused. Text, as a direct caller passes it, is held to plain
- * digits; any other type is refused rather than coerced.
+ * to `MAX_REDEMPTION_QUANTITY`, written as plain digits, answered as the text
+ * the handler converts. The handler parameter is declared `string`, so the
+ * global `ValidationPipe` (`createGlobalValidationPipe`) hands this pipe the
+ * query text as `String(value)`; declared `number`, it would hand over `+value`,
+ * which reads `0x10` as 16 and `2.9999999999999999` as 3 and leaves no text to
+ * check (issue 2221). A repeated key arrives joined (`4,5`) and fails the
+ * digits; any type other than text is refused.
  */
 @Injectable()
-export class ParseBondQuantityPipe implements PipeTransform<unknown, number> {
-  transform(value: unknown): number {
-    const quantity =
-      typeof value === "number"
-        ? value
-        : typeof value === "string" && /^[1-9]\d{0,9}$/.test(value)
-          ? Number(value)
-          : Number.NaN;
+export class ParseBondQuantityPipe implements PipeTransform<unknown, string> {
+  transform(value: unknown): string {
     if (
-      Number.isSafeInteger(quantity) &&
-      quantity >= 1 &&
-      quantity <= MAX_REDEMPTION_QUANTITY
+      typeof value === "string" &&
+      /^[1-9]\d{0,9}$/.test(value) &&
+      Number(value) <= MAX_REDEMPTION_QUANTITY
     ) {
-      return quantity;
+      return value;
     }
-    const shown =
-      typeof value === "string" ||
-      (typeof value === "number" && Number.isFinite(value))
-        ? String(value)
-        : "";
     throw new BadRequestException(
       tr(
         "errors.bonds.QUANTITY_INVALID",
-        `The quantity must be a positive whole number of bonds: ${shown}`,
-        { quantity: shown },
+        `The quantity must be a positive whole number of bonds: ${typeof value === "string" ? value : ""}`,
+        { quantity: typeof value === "string" ? value : "" },
       ),
     );
   }
