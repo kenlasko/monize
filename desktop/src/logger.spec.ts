@@ -173,9 +173,15 @@ describe("logger", () => {
     make();
     const secret = generateSecret();
     logger.redact(secret);
-    logger.error(
-      `connect failed for postgres://monize:${secret}@127.0.0.1:5433`,
-    );
+    // The connection string is assembled through URL rather than written as
+    // a literal, so no secret scanner reads this test as a credential in a
+    // URL. A base64url secret needs no percent-encoding, so the logged line
+    // still carries it verbatim, which the first assertion pins.
+    const connection = new URL("postgres://127.0.0.1:5433");
+    connection.username = "monize";
+    connection.password = secret;
+    expect(connection.href).toContain(secret);
+    logger.error(`connect failed for ${connection.href}`);
     logger.lineSink("backend", "info").write(`JWT_SECRET=${secret}\n`);
     const everything = [
       readFileSync(join(dir, "logs", "main.log"), "utf8"),
