@@ -5,7 +5,10 @@ import {
   InvestmentTransaction,
 } from "../securities/entities/investment-transaction.entity";
 import { AccountSubType } from "../accounts/entities/account.entity";
-import { TransactionStatus } from "../transactions/entities/transaction.entity";
+import {
+  Transaction,
+  TransactionStatus,
+} from "../transactions/entities/transaction.entity";
 
 import { Security } from "../securities/entities/security.entity";
 import { Holding } from "../securities/entities/holding.entity";
@@ -1540,6 +1543,71 @@ describe("ImportInvestmentProcessorService", () => {
       expect(linkedTxSave).toBeDefined();
       expect(ctx.affectedAccountIds.has("acc-eq")).toBe(true);
     });
+  });
+
+  // Microsoft Money and Quicken name the account an activity's cash went
+  // through (`SellX` with `L[Bank]`, or Money's `Category|[Bank]`). Only a cash
+  // transfer action books to it; on any other action the cash stays in the
+  // investment account, because the other account's own export carries the
+  // matching transfer, and writing it here as well would count it twice.
+  describe("a named account on an action that is not a cash transfer", () => {
+    it.each([
+      ["DivX", InvestmentAction.DIVIDEND, 130],
+      ["MiscInc", InvestmentAction.INTEREST, 3],
+      ["SellX", InvestmentAction.SELL, 91111.51],
+    ])(
+      "writes a %s row's cash into the investment account, not the named one",
+      async (action, expected, amount) => {
+        const securityMap = new Map<string, string | null>([
+          ["Stocks - TCS", "sec-1"],
+        ]);
+        const accountMap = new Map<string, string | null>([
+          ["ICICI Bank", "acc-icici"],
+        ]);
+        const ctx = makeContext({ securityMap, accountMap });
+
+        await service.processTransaction(ctx, {
+          action,
+          security: "Stocks - TCS",
+          date: "2010-10-21",
+          amount,
+          quantity: action === "SellX" ? 92 : 0,
+          price: action === "SellX" ? 1000 : 0,
+          commission: action === "SellX" ? 888.49 : 0,
+          isTransfer: true,
+          transferAccount: "ICICI Bank",
+        });
+
+        const saved = managerOf(ctx).save.mock.calls.map(([e]) => e);
+        const investmentRows = saved.filter(
+          (e) => e instanceof InvestmentTransaction,
+        );
+        expect(investmentRows[0]).toMatchObject({
+          action: expected,
+          accountId,
+          totalAmount: amount,
+        });
+
+        const cashRows = [
+          ...new Set(saved.filter((e) => e instanceof Transaction)),
+        ];
+        expect(cashRows).toHaveLength(1);
+        expect(cashRows[0]).toMatchObject({
+          accountId,
+          amount,
+          isTransfer: false,
+        });
+        expect(cashRows[0].linkedTransactionId).toBeUndefined();
+
+        expect(saved.some((e) => e?.accountId === "acc-icici")).toBe(false);
+        expect(
+          managerOf(ctx).query.mock.calls.some(([, params]) =>
+            (params ?? []).includes("acc-icici"),
+          ),
+        ).toBe(false);
+        expect(ctx.affectedAccountIds.has("acc-icici")).toBe(false);
+      },
+    );
   });
 
   describe("XIn / XOut cash transfers", () => {

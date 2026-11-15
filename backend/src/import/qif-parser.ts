@@ -10,7 +10,8 @@
  * - M = Memo
  * - N = Number (cheque number) OR Action (for investment transactions)
  * - C = Cleared status (* or c = cleared, X or R = reconciled)
- * - L = Category (transfers start with [])
+ * - L = Category (transfers start with []; in an investment section Microsoft
+ *   Money writes "Category|[Account]", see parseMoneyActivityField)
  * - S = Split category
  * - E = Split memo
  * - $ = Split amount
@@ -26,6 +27,7 @@
 
 import { applyQifClearedField } from "./qif-status.util";
 import { normalizeAmountSeparators } from "./amount-separators.util";
+import { isQifCashTransfer } from "./qif-cash-transfer-action";
 
 export interface QifTransaction {
   date: string;
@@ -219,6 +221,8 @@ export function parseQif(
   let accountName = "";
   let currentTransaction: Partial<QifTransaction> | null = null;
   let currentQRaw: string | null = null;
+  // The account of a Money "Category|[Account]" field, settled at the record's end.
+  let currentMoneyAccount: string | null = null;
   let currentSplits: QifSplit[] = [];
   let currentSplit: Partial<QifSplit> | null = null;
   let openingBalance: number | null = null;
@@ -331,6 +335,7 @@ export function parseQif(
         commission: 0,
       };
       currentQRaw = null;
+      currentMoneyAccount = null;
       currentSplits = [];
       currentSplit = null;
     }
@@ -374,6 +379,21 @@ export function parseQif(
         break;
 
       case "L": {
+        const moneyField =
+          accountType === "INVESTMENT" ? parseMoneyActivityField(value) : null;
+        if (moneyField) {
+          currentTransaction.category = "";
+          currentTransaction.tagNames = moneyField.tagNames;
+          currentTransaction.isTransfer = false;
+          currentTransaction.transferAccount = "";
+          currentMoneyAccount = truncate(
+            moneyField.account,
+            FIELD_LIMITS.CATEGORY,
+          );
+          break;
+        }
+        currentMoneyAccount = null;
+
         // Category or Transfer (tags appended after / separator)
         const { category, tagNames, isTransfer, transferAccount } =
           parseCategoryOrTransfer(value);
@@ -477,6 +497,12 @@ export function parseQif(
             parseQifQuantity(currentQRaw, true) ?? 0;
         }
 
+        settleMoneyActivityAccount(
+          currentTransaction,
+          currentMoneyAccount,
+          transferAccountsSet,
+        );
+
         if (currentTransaction.date) {
           // Check if this is an Opening Balance record
           // Opening Balance records have Payee="Opening Balance" and typically a transfer category [AccountName]
@@ -501,6 +527,7 @@ export function parseQif(
 
         currentTransaction = null;
         currentQRaw = null;
+        currentMoneyAccount = null;
         currentSplits = [];
         currentSplit = null;
         break;
@@ -515,6 +542,11 @@ export function parseQif(
     ) {
       currentTransaction.quantity = parseQifQuantity(currentQRaw, true) ?? 0;
     }
+    settleMoneyActivityAccount(
+      currentTransaction,
+      currentMoneyAccount,
+      transferAccountsSet,
+    );
     if (currentSplit && currentSplit.category !== undefined) {
       currentSplits.push(currentSplit as QifSplit);
     }
@@ -778,6 +810,55 @@ function parseCategoryOrTransfer(value: string): {
 }
 
 /**
+ * Microsoft Money writes an investment activity's income or expense category
+ * and the account its cash moved through as one field:
+ * "Investment Income:Dividends|[Checking]". Returns the account and any tags
+ * written on either side, or `null` when the field is not of that form. The
+ * category half is dropped: nothing the import writes for an investment row
+ * carries one. Read only in an investment section; whether the account is used
+ * waits for the record's action (`settleMoneyActivityAccount`).
+ */
+function parseMoneyActivityField(
+  value: string,
+): { account: string; tagNames: string[] } | null {
+  const pipeIndex = value.indexOf("|");
+  if (pipeIndex === -1) return null;
+  const transferMatch = value
+    .slice(pipeIndex + 1)
+    .trim()
+    .match(/^\[([^\]]+)\](.*)$/);
+  if (!transferMatch) return null;
+  return {
+    account: transferMatch[1],
+    tagNames: [
+      ...extractCategoryAndTags(value.slice(0, pipeIndex)).tagNames,
+      ...extractTagNames(transferMatch[2]),
+    ],
+  };
+}
+
+/**
+ * Settle a Money "Category|[Account]" field once the record is complete, since
+ * its N (action) line may follow the L line. The account becomes the row's
+ * transfer, and joins the file's transfer accounts, only when the import
+ * writes the row as a cash transfer (`isQifCashTransfer`). On any other
+ * activity (DivX, SellX, MiscInc, ...) the import ignores the account, so
+ * listing it would only have the wizard create an account nothing uses.
+ */
+function settleMoneyActivityAccount(
+  tx: Partial<QifTransaction>,
+  account: string | null,
+  transferAccounts: Set<string>,
+): void {
+  if (account === null || !isQifCashTransfer(tx.action ?? "", account)) {
+    return;
+  }
+  tx.isTransfer = true;
+  tx.transferAccount = account;
+  transferAccounts.add(account);
+}
+
+/**
  * Extract tag names from a string that starts with / separator.
  * Quicken separates tags with both / and : (colon) characters.
  * e.g., "/TagA/TagB" -> ["TagA", "TagB"]
@@ -928,6 +1009,8 @@ export function parseQifFull(
   // Per-block state
   let currentTransaction: Partial<QifTransaction> | null = null;
   let currentQRaw: string | null = null;
+  // The account of a Money "Category|[Account]" field, settled at the record's end.
+  let currentMoneyAccount: string | null = null;
   let currentSplits: QifSplit[] = [];
   let currentSplit: Partial<QifSplit> | null = null;
   let blockCategoriesSet = new Set<string>();
@@ -986,6 +1069,12 @@ export function parseQifFull(
         currentTransaction.quantity = parseQifQuantity(currentQRaw, true) ?? 0;
       }
 
+      settleMoneyActivityAccount(
+        currentTransaction,
+        currentMoneyAccount,
+        blockTransferAccountsSet,
+      );
+
       const isOB =
         currentTransaction.payee?.toLowerCase() === "opening balance" ||
         (currentTransaction.isTransfer &&
@@ -1011,6 +1100,7 @@ export function parseQifFull(
     // Reset per-block state
     currentTransaction = null;
     currentQRaw = null;
+    currentMoneyAccount = null;
     currentSplits = [];
     currentSplit = null;
     blockCategoriesSet = new Set();
@@ -1250,6 +1340,7 @@ export function parseQifFull(
         commission: 0,
       };
       currentQRaw = null;
+      currentMoneyAccount = null;
       currentSplits = [];
       currentSplit = null;
     }
@@ -1293,6 +1384,23 @@ export function parseQifFull(
         break;
 
       case "L": {
+        const moneyField =
+          currentBlock.accountType === "INVESTMENT"
+            ? parseMoneyActivityField(value)
+            : null;
+        if (moneyField) {
+          currentTransaction.category = "";
+          currentTransaction.tagNames = moneyField.tagNames;
+          currentTransaction.isTransfer = false;
+          currentTransaction.transferAccount = "";
+          currentMoneyAccount = truncate(
+            moneyField.account,
+            FIELD_LIMITS.CATEGORY,
+          );
+          break;
+        }
+        currentMoneyAccount = null;
+
         const { category, tagNames, isTransfer, transferAccount } =
           parseCategoryOrTransfer(value);
         currentTransaction.category = truncate(category, FIELD_LIMITS.CATEGORY);
@@ -1390,6 +1498,12 @@ export function parseQifFull(
             parseQifQuantity(currentQRaw, true) ?? 0;
         }
 
+        settleMoneyActivityAccount(
+          currentTransaction,
+          currentMoneyAccount,
+          blockTransferAccountsSet,
+        );
+
         if (currentTransaction.date) {
           const isOB =
             currentTransaction.payee?.toLowerCase() === "opening balance" ||
@@ -1414,6 +1528,7 @@ export function parseQifFull(
 
         currentTransaction = null;
         currentQRaw = null;
+        currentMoneyAccount = null;
         currentSplits = [];
         currentSplit = null;
         break;
