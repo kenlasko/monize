@@ -98,6 +98,9 @@ describe("createCorsDelegate", () => {
     ])("answers any origin on %s", async (path) => {
       const res = await preflight(path, FOREIGN_ORIGIN);
       expect(res.headers["access-control-allow-origin"]).toBe("*");
+      // The wildcard is safe only while credentials stay off: some of these
+      // paths read a cookie.
+      expect(res.headers["access-control-allow-credentials"]).toBeUndefined();
     });
   });
 
