@@ -251,7 +251,9 @@ export class BudgetHealthReportsService {
       (bc) => !bc.isIncome,
     );
 
-    // A transfer income line is an income line too (issue #2141).
+    // A transfer income line is an income line too (issue #2141), so a budget
+    // whose only income line is one reads its income from its lines, not the
+    // all-deposits fallback below, as its summary does (spec section 5).
     const incomeLines = incomeCategories.filter(
       (bc) => bc.categoryId !== null || isTransferIncomeLine(bc),
     );

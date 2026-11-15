@@ -114,6 +114,19 @@ deselects that account's outgoing transfer and vice versa.
   it would turn an outgoing savings line into an income line for the same
   account, or the reverse, and change what its figure means; the line is
   removed and a new one added instead.
+- Period detail: a closed period's Income card is the frozen
+  `actual_income`; the part of it no line row carries (the toggle's figure,
+  `actual_income` less the income rows) is its own "Transfers from accounts
+  outside this budget" row, so the rows add up to the card. An open period
+  has nothing frozen yet: its Income card and rows are the lines' stored
+  actuals alone, and the live figure, toggle included, is the budget
+  summary's.
+- Savings rate (`budget-health-reports.service.ts`): a transfer income line
+  is an income line. A budget whose only income line is "Transfers from
+  HISA" therefore reads its income from its lines and no longer falls back to
+  "all non-transfer deposits", so a salary no line names is left out of its
+  savings rate. This is deliberate: it is how the summary reads the same
+  budget's income, and the two must agree.
 - Wizard: the income transfer table on the Categories step; the toggle beside
   the excluded-accounts picker on the Configure step.
 - Settings: the toggle in the budget form; transfer income lines in the income
