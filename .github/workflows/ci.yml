@@ -357,7 +357,8 @@ jobs:
         run: |
           (cd backend && npm ci)
           (cd frontend && npm ci)
-          node scripts/npm-audit-gate.mjs
+          (cd desktop && npm ci)
+          node scripts/npm-audit-gate.mjs backend frontend desktop
       # Visibility only: build tooling (eslint, jest, the Nest CLI) never
       # reaches a user, and its advisories are routinely unfixable for weeks --
       # the current one, brace-expansion GHSA-mh99-v99m-4gvg, has no patched
@@ -369,6 +370,7 @@ jobs:
         run: |
           cd backend && npm audit --audit-level=high
           cd ../frontend && npm audit --audit-level=high
+          cd ../desktop && npm audit --audit-level=high
 
   license-check:
     name: License Compliance (${{ matrix.package }})
@@ -376,7 +378,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [backend, frontend]
+        package: [backend, frontend, desktop]
     defaults:
       run:
         working-directory: ${{ matrix.package }}
@@ -787,7 +789,20 @@ jobs:
           # .trail/ is the Trail tool's own hook and learning notes: developer tooling
           # that never ships in an image or runs in the app, so its findings are not
           # Monize's attack surface.
-          skip-path: ".trail"
+          # desktop/scripts/ is the desktop package's build and development tooling
+          # (the staging script, the icon generator, dev-boot, the PostgreSQL and
+          # install smoke tests, and their tests). It runs on a developer's machine
+          # or a CI runner and is not packed into the application: electron-builder's
+          # `files` list ships only dist/ and package.json. Its path and SQL inputs
+          # are the caller's own command-line arguments and the committed
+          # desktop/staging-manifest.json, so the path-traversal and query findings
+          # there describe no input an attacker supplies. desktop/src, which does
+          # ship, stays scanned, except desktop/src/test-support: helpers only the
+          # desktop specs import (fakes and temp-directory fixtures), which Bearer
+          # does not recognise as test code the way it does *.spec.ts. They are
+          # left out of the installer too (`!dist/test-support` in
+          # desktop/electron-builder.yml's `files`).
+          skip-path: ".trail,desktop/scripts,desktop/src/test-support"
           # Exclude some false positives and low-risk findings that we are aware of and have accepted for now.
           # Each entry has a "review-by" date; the bearer-exceptions-review workflow
           # opens an issue when any entry is past due, so exceptions don't become permanent debt.
@@ -994,7 +1009,287 @@ jobs:
           # help.service.spec.ts asserts for traversal and encoded names. Same shape and same
           # false positive as the page read above.
           # cc8be0f09d430af908c2fcbbd4b6de11_0 - Non-literal fs path opening a listed help screenshot for its size [CWE-73] - review-by: 2027-02-06
-          exclude-fingerprint: "df1db3090cab23fd55c9a22789aa6b2f_0,9a51af5fd92c92c4c022addd331ee9c6_0,8145f16fcf77da087020769e5609a11b_0,b04cb91b90deb5e16504baa7ab95f678_0,b04cb91b90deb5e16504baa7ab95f678_1,b6c4552155ecc9b65a9205911f502bf1_0,b6c4552155ecc9b65a9205911f502bf1_1,b6c4552155ecc9b65a9205911f502bf1_2,b6c4552155ecc9b65a9205911f502bf1_3,c055716bae113b20589f9ea5c5963e65_0,f9b26e7d59d0f577ff9a0e93ea4f7b7c_0,f9b26e7d59d0f577ff9a0e93ea4f7b7c_1,f6196720ad017b3d11d24487792c1479_0,45093073db7d96d61cd30bceb943f63f_0,45093073db7d96d61cd30bceb943f63f_1,45093073db7d96d61cd30bceb943f63f_2,b7502b6ea7c0a272ab08099b55d0392c_0,4beb484f871a7489b5f5ff2df93f72f1_0,0ff64c8083ce01b1e8c867832c0dff85_0,1f87dd3b3950178c2eac383cfcead816_0,e717be7fe9c133adba7d48ccb371c6ba_0,173289a7a56f6f6b27dc2314746e9451_0,242a05abd45296bc2ba6d9174dc6f3dd_0,90aa4e42622acc64795b7d291a5d74f9_0,fae1b07dcb3c5444235e7e0b4bcae188_0,fae1b07dcb3c5444235e7e0b4bcae188_1,dc1e615df30fcceb5a3cd2fd3ccd4c32_0,dc1e615df30fcceb5a3cd2fd3ccd4c32_1,693f53c921285bddc3861f6027338c94_0,f4213ea85085fdf7e12b1eb1ee903f75_0,cc8be0f09d430af908c2fcbbd4b6de11_0"
+          # The four below are in desktop/src/supervisor/postgres-os.ts, the desktop
+          # shell's operating-system layer for the bundled PostgreSQL. Its `run`
+          # spawns initdb and pg_ctl from the application's own resources directory
+          # with an argument array and no shell; the file and the arguments are built
+          # by postgres-context.ts and postgres-args.ts from the shell's own config
+          # (the settings string is refused unless it matches [A-Za-z0-9_.,=-]), and
+          # nothing a page, a request or a user types reaches them. Its `query` is a
+          # pass-through to node-postgres for the runner's three statements in
+          # postgres-ready.ts: two constant SELECTs (one with a bound parameter) and
+          # one CREATE DATABASE whose two identifiers postgres-context.ts refuses
+          # unless they match ^[a-z_][a-z0-9_]{0,62}$, which admits no quote. Bearer cannot see either guard from the sink.
+          # d4f8d392d818168193ab2bb2a7566871_0 - spawn of a bundled PostgreSQL binary with an argument array [CWE-78] - review-by: 2027-02-13
+          # d4f8d392d818168193ab2bb2a7566871_1 - same call, second sink [CWE-78] - review-by: 2027-02-13
+          # 4ec6862f6eb8000234e8fdabf8959e74_0 - node-postgres pass-through for the runner's own statements, with values [CWE-89] - review-by: 2027-02-13
+          # 4ec6862f6eb8000234e8fdabf8959e74_1 - same pass-through, without values [CWE-89] - review-by: 2027-02-13
+          # The two below are in the desktop shell. In desktop/src/electron-main.ts a
+          # click on a native notification loads its row's link in the main window:
+          # the URL comes from notificationUrl() in shell/notification-bridge.ts, which
+          # resolves the link through the shell's navigation policy and returns the
+          # app's own origin or its home page, never a file or another origin.
+          # Renaming the variable did not clear it. In desktop/src/move/target.ts,
+          # relationOf() resolves two folder names only to compare them as strings
+          # for the "Move data folder" refusals; it opens nothing.
+          # 3282e1a4a347b1d24e25476f60c08a82_0 - loadURL of an app-origin notification link [CWE-22] - review-by: 2027-02-14
+          # 7254ad08500a2051f88804ac75b3fb16_0 - path.resolve of two folder names compared as strings [CWE-22] - review-by: 2027-02-14
+          exclude-fingerprint: "3282e1a4a347b1d24e25476f60c08a82_0,7254ad08500a2051f88804ac75b3fb16_0,d4f8d392d818168193ab2bb2a7566871_0,d4f8d392d818168193ab2bb2a7566871_1,4ec6862f6eb8000234e8fdabf8959e74_0,4ec6862f6eb8000234e8fdabf8959e74_1,df1db3090cab23fd55c9a22789aa6b2f_0,9a51af5fd92c92c4c022addd331ee9c6_0,8145f16fcf77da087020769e5609a11b_0,b04cb91b90deb5e16504baa7ab95f678_0,b04cb91b90deb5e16504baa7ab95f678_1,b6c4552155ecc9b65a9205911f502bf1_0,b6c4552155ecc9b65a9205911f502bf1_1,b6c4552155ecc9b65a9205911f502bf1_2,b6c4552155ecc9b65a9205911f502bf1_3,c055716bae113b20589f9ea5c5963e65_0,f9b26e7d59d0f577ff9a0e93ea4f7b7c_0,f9b26e7d59d0f577ff9a0e93ea4f7b7c_1,f6196720ad017b3d11d24487792c1479_0,45093073db7d96d61cd30bceb943f63f_0,45093073db7d96d61cd30bceb943f63f_1,45093073db7d96d61cd30bceb943f63f_2,b7502b6ea7c0a272ab08099b55d0392c_0,4beb484f871a7489b5f5ff2df93f72f1_0,0ff64c8083ce01b1e8c867832c0dff85_0,1f87dd3b3950178c2eac383cfcead816_0,e717be7fe9c133adba7d48ccb371c6ba_0,173289a7a56f6f6b27dc2314746e9451_0,242a05abd45296bc2ba6d9174dc6f3dd_0,90aa4e42622acc64795b7d291a5d74f9_0,fae1b07dcb3c5444235e7e0b4bcae188_0,fae1b07dcb3c5444235e7e0b4bcae188_1,dc1e615df30fcceb5a3cd2fd3ccd4c32_0,dc1e615df30fcceb5a3cd2fd3ccd4c32_1,693f53c921285bddc3861f6027338c94_0,f4213ea85085fdf7e12b1eb1ee903f75_0,cc8be0f09d430af908c2fcbbd4b6de11_0"
+
+  # The desktop package's own checks (desktop/README.md, "CI"). Its jest suite
+  # includes guard specs that read backend/docker-entrypoint.sh, both
+  # Dockerfiles, .env.example and the compose files, so it needs the whole
+  # checkout but neither the backend's nor the frontend's dependencies.
+  # smoke:postgres runs the PostgreSQL runner against the real Linux binaries
+  # of the same package version the installer ships for Windows.
+  desktop:
+    name: Desktop Lint, Tests & PostgreSQL Smoke
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: 24
+          # Test and lint jobs only: nothing they restore reaches an image or a
+          # release, which is what zizmor's cache-poisoning audit is about.
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run smoke:postgres
+
+  # Builds the Windows installer the way desktop/README.md ("The installer")
+  # tells a person to, then installs it, runs it and uninstalls it
+  # (desktop/scripts/smoke-install.ps1). Nothing else exercises the desktop
+  # code on Windows.
+  #
+  # When it runs. About 40 minutes on windows-latest, so not on a PR or a
+  # push to a branch:
+  #
+  #   * a release dispatch on main: after prepare-release, stamped with the
+  #     release version; the release job attaches what it uploads.
+  #   * a push to main (a beta): after prepare-preview, stamped
+  #     <next patch>-beta.<run number>; windows-beta publishes it as the one
+  #     Windows beta prerelease.
+  #   * a manual dispatch on any other branch: at once, with the version in
+  #     package.json, as a 7-day artifact and nothing more. That is how a
+  #     branch's installer is tried before it merges:
+  #     `gh workflow run "CI Pipeline" --ref <branch>`.
+  #
+  # On main, the needs carry the whole gate: prepare-release and
+  # prepare-preview run only once every test, scan and E2E job has passed.
+  # `!cancelled()` is what lets the branch build start with both skipped.
+  #
+  # Shells, deliberately: `pwsh` (the Windows default) for every build step,
+  # because that is how a person builds on Windows, and because Git Bash
+  # rewrites PATH and would hide a `sh` or `cwebp` that the staging step
+  # (which spawns both) cannot find on the real one. `bash` only where the
+  # step is POSIX shell by nature.
+  #
+  # No npm cache: the installer it uploads is a distributable, and
+  # zizmor's cache-poisoning audit is about exactly that.
+  desktop-windows:
+    name: Desktop Windows Installer
+    runs-on: windows-latest
+    needs: [desktop, prepare-release, prepare-preview]
+    if: >-
+      !cancelled() && needs.desktop.result == 'success' && (
+        needs.prepare-release.result == 'success' ||
+        needs.prepare-preview.result == 'success' ||
+        (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')
+      )
+    timeout-minutes: 75
+    outputs:
+      version: ${{ steps.installer-version.outputs.version }}
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      # Before the checkout, which uses the git CLI and so reads this config.
+      # Git for Windows on the image sets core.autocrlf=true: every file would arrive
+      # with CRLF, which breaks backend/scripts/convert-help-images.sh under
+      # `sh` (the staging step runs it), fails every line of `npm run lint`
+      # (prettier's endOfLine) and changes what the guard specs read from the
+      # Dockerfiles and backend/docker-entrypoint.sh. The repository has no
+      # .gitattributes; LF everywhere is what every other job checks out.
+      - name: Check out with LF line endings and long paths
+        shell: bash
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global core.longpaths true
+      # The revision the images are built from (REL-003): prepare-release and
+      # prepare-preview both record github.sha as git_sha, and this checks out
+      # that commit by name and refuses anything else.
+      - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Check the revision
+        env:
+          GATED_SHA: ${{ needs.prepare-release.outputs.git_sha || needs.prepare-preview.outputs.git_sha || github.sha }}
+        run: |
+          $head = (git rev-parse HEAD).Trim()
+          if ($head -ne $env:GATED_SHA) { throw "checked out $head, but the gated revision is $env:GATED_SHA" }
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      # The version the installer, the backend and the frontend report, set
+      # before anything is built (the frontend inlines it). The same
+      # `npm version` the image builds run, with no commit: the release job
+      # owns the bump commit. A beta adds the run number to the images'
+      # <next patch>-beta so each beta sorts after the one before it, which is
+      # what lets an installed beta update to the next one. A branch build
+      # keeps package.json's version.
+      - name: Set the installer version
+        id: installer-version
+        env:
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
+          PREVIEW_VERSION: ${{ needs.prepare-preview.outputs.version }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          if ($env:RELEASE_VERSION) { $version = $env:RELEASE_VERSION }
+          elseif ($env:PREVIEW_VERSION) { $version = "$($env:PREVIEW_VERSION).$($env:RUN_NUMBER)" }
+          else { $version = (Get-Content -Raw desktop/package.json | ConvertFrom-Json).version }
+          foreach ($dir in 'backend', 'frontend', 'desktop') {
+            Push-Location $dir
+            npm version $version --no-git-tag-version --allow-same-version
+            $code = $LASTEXITCODE
+            Pop-Location
+            if ($code -ne 0) { throw "npm version $version failed in $dir" }
+          }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Installer version: $version"
+
+      # cwebp is the only build tool the image lacks (desktop/README.md). From
+      # the libwebp project's own release zip rather than Chocolatey: one
+      # download from the project's bucket, no community package and no
+      # Chocolatey outage in the path, and the version and the bytes are both
+      # pinned here. The SHA-256 is of the zip whose detached signature
+      # (libwebp-1.6.0-windows-x64.zip.asc) verifies against the WebP release
+      # signing key, fingerprint 6B0E 6B70 976D E303 EDF2 F601 F9C3 D6BD B823
+      # 2B5D. To move to a later release, verify its .asc the same way and
+      # replace both values.
+      - name: Install cwebp (libwebp 1.6.0)
+        env:
+          LIBWEBP_VERSION: 1.6.0
+          LIBWEBP_SHA256: 48886f506b21f62e4661f0f4cbfca19800897c385128e8902542d29a950c93f1
+        run: |
+          $name = "libwebp-$env:LIBWEBP_VERSION-windows-x64"
+          $zip = Join-Path $env:RUNNER_TEMP "$name.zip"
+          Invoke-WebRequest -Uri "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/$name.zip" -OutFile $zip -MaximumRetryCount 3 -RetryIntervalSec 10
+          $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant()
+          if ($actual -ne $env:LIBWEBP_SHA256) {
+            throw "$name.zip has SHA-256 $actual, expected $env:LIBWEBP_SHA256"
+          }
+          Expand-Archive -LiteralPath $zip -DestinationPath $env:RUNNER_TEMP
+          Add-Content -LiteralPath $env:GITHUB_PATH -Value (Join-Path $env:RUNNER_TEMP "$name\bin")
+
+      # What the staging step spawns by name, resolved the way it will be:
+      # cwebp (above), `sh` from Git for Windows (Git\bin, on the image's PATH
+      # already; added here only if a future image drops it) and vswhere, which
+      # finds the Visual C++ runtime the installer carries beside PostgreSQL.
+      - name: Check the build tools
+        run: |
+          if (-not (Get-Command -Name sh -CommandType Application -ErrorAction SilentlyContinue)) {
+            $gitBin = Join-Path $env:ProgramFiles 'Git\bin'
+            if (-not (Test-Path -LiteralPath (Join-Path $gitBin 'sh.exe'))) { throw "no sh.exe on PATH or in $gitBin" }
+            Add-Content -LiteralPath $env:GITHUB_PATH -Value $gitBin
+            $env:PATH = "$gitBin;$env:PATH"
+          }
+          Get-Command -Name sh, cwebp -CommandType Application | Format-Table -Property Name, Source -AutoSize
+          & cwebp -version
+          if ($LASTEXITCODE -ne 0) { throw "cwebp -version exited with $LASTEXITCODE" }
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path -LiteralPath $vswhere)) { throw "vswhere.exe is missing: $vswhere" }
+          & $vswhere -products '*' -property installationPath
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Build the backend
+        working-directory: backend
+        # The same heap backend/Dockerfile gives `nest build`.
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: npm run build
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Build the frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+      - name: Lint the desktop package
+        working-directory: desktop
+        run: npm run lint
+      - name: Test the desktop package
+        working-directory: desktop
+        run: npm test
+      # The PostgreSQL runner against the Windows binaries, before they are
+      # packaged: a failure here names the runner, not the installer.
+      - name: Smoke-test the PostgreSQL runner
+        working-directory: desktop
+        run: npm run smoke:postgres
+      # typecheck, build, stage --require-webp, electron-builder --win
+      # --publish never.
+      - name: Build the installer
+        working-directory: desktop
+        run: npm run dist
+
+      # A data directory with a space in its name, as under a profile named
+      # "First Last"; the script removes it after a pass and keeps it, with
+      # its logs, after a failure. It sits under the user's profile, as the
+      # real one does. The first run kept it on the work drive and initdb
+      # exited 1 within 200 ms there; the suspected cause is that the runner
+      # account is an elevated administrator, so initdb re-executes under a
+      # restricted token that cannot write where only Administrators may.
+      - name: Install, run and uninstall the installer
+        timeout-minutes: 30
+        run: |
+          $dataDir = Join-Path $env:USERPROFILE 'monize smoke data'
+          $installer = @(Get-ChildItem -Path desktop/release -Filter 'Monize-Setup-*.exe' -File | Where-Object { $_.Extension -ieq '.exe' })
+          if ($installer.Count -ne 1) { throw "expected one Monize-Setup-*.exe in desktop/release, found $($installer.Count)" }
+          pwsh -NoProfile -File desktop/scripts/smoke-install.ps1 -Installer $installer[0].FullName -DataDir $dataDir
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload the smoke test's logs
+        if: failure()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: desktop-windows-smoke-logs
+          path: ~/monize smoke data/logs/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # Only an installer that passed the smoke test. The release job and
+      # windows-beta attach exactly these files. The updater reads
+      # latest.yml for a release and beta.yml for a beta (electron-builder
+      # names the file after the version's prerelease channel), so both
+      # patterns are listed and whichever exists is uploaded.
+      - name: Upload the installer
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: monize-windows-installer
+          path: |
+            desktop/release/Monize-Setup-*.exe
+            desktop/release/Monize-Setup-*.exe.blockmap
+            desktop/release/latest.yml
+            desktop/release/beta.yml
+          if-no-files-found: error
+          retention-days: 7
 
   # Resolve the release version and shared build metadata ONCE, so the parallel
   # backend/frontend build jobs below stamp identical version/date/sha values.
@@ -1024,6 +1319,7 @@ jobs:
         env-doc-check,
         e2e-tests,
         helm-chart,
+        desktop,
       ]
     permissions:
       contents: read
@@ -1256,7 +1552,10 @@ jobs:
   release:
     name: Commit Version & Release
     runs-on: ubuntu-latest
-    needs: [prepare-release, build-and-push]
+    # desktop-windows too: a release carries its Windows installer, so a
+    # failed Windows build stops the release (no bump commit, no tag) the same
+    # way a failed image leg does.
+    needs: [prepare-release, build-and-push, desktop-windows]
     permissions:
       contents: write # to push the version-bump commit and create the GitHub release
     steps:
@@ -1281,7 +1580,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      # Re-apply the resolved version to both package.json files (kept in
+      # Re-apply the resolved version to all three package.json files (kept in
       # lockstep) and commit it. Deterministic: the version was decided in
       # prepare-release.
       - name: Bump version
@@ -1290,6 +1589,7 @@ jobs:
         run: |
           cd backend  && npm version "$VERSION" --no-git-tag-version --allow-same-version && cd ..
           cd frontend && npm version "$VERSION" --no-git-tag-version --allow-same-version && cd ..
+          cd desktop  && npm version "$VERSION" --no-git-tag-version --allow-same-version && cd ..
 
       # Pushes the version bump directly to protected main. The push is
       # authenticated with RELEASE_TOKEN (admin PAT, wired in via the checkout
@@ -1300,7 +1600,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add backend/package.json backend/package-lock.json frontend/package.json frontend/package-lock.json
+          git add backend/package.json backend/package-lock.json frontend/package.json frontend/package-lock.json desktop/package.json desktop/package-lock.json
           git commit -m "chore: bump version to ${VERSION} [skip ci]"
           git pull --rebase
           git push
@@ -1336,20 +1636,56 @@ jobs:
             echo "Release notes: GitHub auto-generated (no input or notes file found)"
           fi
 
+      # The installer desktop-windows built and smoke-tested from the gated
+      # revision, stamped with this version. electron-updater on an installed
+      # copy reads latest.yml from the newest release and downloads the
+      # installer it names, so all three files go on the release.
+      - name: Download the Windows installer
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: monize-windows-installer
+          path: ${{ runner.temp }}/windows-installer
+
+      - name: Check the Windows installer
+        env:
+          VERSION: ${{ needs.prepare-release.outputs.version }}
+          BUILT_VERSION: ${{ needs.desktop-windows.outputs.version }}
+          DIR: ${{ runner.temp }}/windows-installer
+        run: |
+          if [ "$BUILT_VERSION" != "$VERSION" ]; then
+            echo "::error::The Windows installer is $BUILT_VERSION, the release is $VERSION"
+            exit 1
+          fi
+          for file in "Monize-Setup-${VERSION}.exe" "Monize-Setup-${VERSION}.exe.blockmap" latest.yml; do
+            if [ ! -f "$DIR/$file" ]; then
+              echo "::error::The Windows installer artifact has no $file"
+              exit 1
+            fi
+          done
+          grep -qx "version: ${VERSION}" "$DIR/latest.yml" || { echo "::error::latest.yml does not name ${VERSION}"; exit 1; }
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.prepare-release.outputs.version }}
           NOTES_PATH: ${{ steps.notes.outputs.path }}
+          DIR: ${{ runner.temp }}/windows-installer
         run: |
+          ASSETS=(
+            "$DIR/Monize-Setup-${VERSION}.exe"
+            "$DIR/Monize-Setup-${VERSION}.exe.blockmap"
+            "$DIR/latest.yml"
+          )
           if [ -n "$NOTES_PATH" ]; then
             gh release create "v${VERSION}" \
               --title "v${VERSION}" \
-              --notes-file "$NOTES_PATH"
+              --notes-file "$NOTES_PATH" \
+              "${ASSETS[@]}"
           else
             gh release create "v${VERSION}" \
               --title "v${VERSION}" \
-              --generate-notes
+              --generate-notes \
+              "${ASSETS[@]}"
           fi
 
   # ---------------------------------------------------------------------------
@@ -1566,6 +1902,76 @@ jobs:
             echo "${IMAGE}:beta"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # The Windows beta: the installer desktop-windows built from this push to
+  # main, published as a GitHub prerelease tagged v<next patch>-beta.<run>.
+  # There is one at a time: after the new one is up, every older Windows beta
+  # prerelease and its tag are deleted, so the Releases page and the download
+  # links always lead to the newest. Nothing here touches a full release:
+  # /releases/latest, which the website, the backend's update check and a
+  # stable install's updater read, never returns a prerelease. An installed
+  # beta follows prereleases (desktop/src/shell/version-policy.ts), reads
+  # beta.yml from this release and moves to the next beta or the next full
+  # release, whichever is newer.
+  #
+  # A light publish like build-preview: no version commit, no signing.
+  windows-beta:
+    name: Publish Windows Beta
+    runs-on: ubuntu-latest
+    needs: [prepare-preview, desktop-windows]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write # to create the beta prerelease and delete the one it replaces
+    steps:
+      - name: Download the Windows installer
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: monize-windows-installer
+          path: ${{ runner.temp }}/windows-installer
+
+      - name: Publish the beta prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          VERSION: ${{ needs.desktop-windows.outputs.version }}
+          DIR: ${{ runner.temp }}/windows-installer
+        run: |
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$'; then
+            echo "::error::'$VERSION' is not a Windows beta version"
+            exit 1
+          fi
+          TAG="v${VERSION}"
+          shopt -s nullglob
+          ASSETS=("$DIR"/Monize-Setup-*.exe "$DIR"/Monize-Setup-*.exe.blockmap "$DIR"/*.yml)
+          if [ ! -f "$DIR/Monize-Setup-${VERSION}.exe" ]; then
+            echo "::error::The artifact has no Monize-Setup-${VERSION}.exe"
+            exit 1
+          fi
+          {
+            echo "A preview of the next Monize release for Windows, built from ${SHA} on main."
+            echo
+            echo "Betas are not tested as much as releases. Back up first (Settings > Backup) and keep your recovery key. An installed beta updates itself to the next beta or the next release, whichever is newer."
+            echo
+            echo "Download Monize-Setup-${VERSION}.exe below. The installer is unsigned, so Windows SmartScreen warns: choose More info, then Run anyway."
+          } > "$RUNNER_TEMP/beta-notes.md"
+          gh release create "$TAG" \
+            --repo "$REPO" \
+            --prerelease \
+            --target "$SHA" \
+            --title "Windows beta ${VERSION}" \
+            --notes-file "$RUNNER_TEMP/beta-notes.md" \
+            "${ASSETS[@]}"
+          # Only now that the new one is up: one Windows beta at a time. A
+          # failed delete fails the job, so a leftover beta is seen, not kept.
+          OLD_TAGS=$(gh release list --repo "$REPO" --limit 200 --json tagName,isPrerelease \
+            --jq '.[] | select(.isPrerelease) | .tagName' |
+            { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$' || true; })
+          for old in $OLD_TAGS; do
+            if [ "$old" != "$TAG" ]; then
+              gh release delete "$old" --repo "$REPO" --yes --cleanup-tag
+            fi
+          done
 
   # Runs the Playwright suite against a full stack (postgres + backend +
   # frontend) brought up via docker-compose.e2e.yml. Runs chromium + firefox.

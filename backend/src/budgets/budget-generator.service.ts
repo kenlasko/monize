@@ -7,15 +7,31 @@ import { TransactionSplit } from "../transactions/entities/transaction-split.ent
 import { Category } from "../categories/entities/category.entity";
 import { Budget } from "./entities/budget.entity";
 import { BudgetCategory } from "./entities/budget-category.entity";
+import {
+  BudgetBucket,
+  BudgetBucketTargetType,
+} from "./entities/budget-bucket.entity";
+import {
+  MAX_BUCKETS_PER_BUDGET,
+  checkBucketTarget,
+  checkedBucketCarryCap,
+  checkedBucketName,
+} from "./budget-bucket-rules.util";
 import { GenerateBudgetDto, BudgetProfile } from "./dto/generate-budget.dto";
 import { ApplyGeneratedBudgetDto } from "./dto/apply-generated-budget.dto";
 import { roundMoney, sumMoney } from "../common/round.util";
 import {
+  incomingParentTransfers,
+  incomingSplitTransfers,
   outgoingParentTransfers,
   outgoingSplitTransfers,
   PARENT_TRANSFER_AMOUNT,
   SPLIT_TRANSFER_AMOUNT,
 } from "./budget-spending.util";
+import {
+  assertOneTransferLinePerAccount,
+  assertTransferAccountsOwned,
+} from "./budget-transfer-lines.util";
 
 export interface CategoryAnalysis {
   categoryId: string;
@@ -56,6 +72,12 @@ export interface TransferAnalysis {
 export interface GenerateBudgetResult {
   categories: CategoryAnalysis[];
   transfers: TransferAnalysis[];
+  /**
+   * Per source account, the monthly net of the transfers in from it, for a
+   * transfer income line (issue #2141). Not in `estimatedMonthlyIncome`: only
+   * the user knows which source is a reserve.
+   */
+  incomeTransfers: TransferAnalysis[];
   estimatedMonthlyIncome: number;
   totalBudgeted: number;
   totalTransfers: number;
@@ -142,6 +164,18 @@ export class BudgetGeneratorService {
       suggested: this.getSuggestedAmountFromStats(t, profile),
     }));
 
+    const incomeTransfers: TransferAnalysis[] = (
+      await this.getTransfersBySource(
+        userId,
+        startDateStr,
+        endDateStr,
+        analysisMonths,
+      )
+    ).map((t) => ({
+      ...t,
+      suggested: this.getSuggestedAmountFromStats(t, profile),
+    }));
+
     const estimatedMonthlyIncome =
       incomeAnalysis.length > 0
         ? sumMoney(incomeAnalysis.map((i) => i.median))
@@ -154,6 +188,7 @@ export class BudgetGeneratorService {
     return {
       categories: allCategories,
       transfers,
+      incomeTransfers,
       estimatedMonthlyIncome,
       totalBudgeted,
       totalTransfers,
@@ -168,11 +203,77 @@ export class BudgetGeneratorService {
     };
   }
 
+  /**
+   * The whole apply is one `withScopedDb` transaction: the request's own
+   * rules (one transfer line per account, a transfer income line naming one
+   * of the user's accounts, issue #2141; the bucket rules) and the category
+   * ownership check first, then the budget row, its
+   * buckets, and its lines with each `bucketKey` resolved to the new bucket's
+   * id. A refusal anywhere leaves nothing written (design 6.6).
+   */
   async apply(userId: string, dto: ApplyGeneratedBudgetDto): Promise<Budget> {
-    const savedBudget = await withScopedDb(this.dataSource, (m) => {
-      const repo = m.getRepository(Budget);
-      return repo.save(
-        repo.create({
+    return withScopedDb(this.dataSource, async (m) => {
+      const lines = dto.categories ?? [];
+      const transferLines = lines.filter((cat) => cat.transferAccountId);
+      assertOneTransferLinePerAccount(
+        transferLines.map((cat) => cat.transferAccountId as string),
+      );
+      const incomeSources = transferLines
+        .filter((cat) => cat.isIncome)
+        .map((cat) => cat.transferAccountId as string);
+      if (incomeSources.length > 0) {
+        await assertTransferAccountsOwned(m, userId, incomeSources);
+      }
+
+      const buckets = this.checkedRequestBuckets(dto);
+      const knownKeys = new Set(buckets.map((b) => b.key));
+      for (const cat of lines) {
+        if (cat.bucketKey === undefined) continue;
+        if (cat.isIncome) {
+          throw new BadRequestException(
+            tr(
+              "errors.budgets.bucketOnIncomeLine",
+              "An income line cannot belong to a bucket",
+            ),
+          );
+        }
+        if (!knownKeys.has(cat.bucketKey)) {
+          throw new BadRequestException(
+            tr(
+              "errors.budgets.bucketKeyUnknown",
+              `No bucket in this request has the key "${cat.bucketKey}"`,
+              { key: cat.bucketKey },
+            ),
+          );
+        }
+      }
+
+      // M27: Validate that all categoryIds belong to the user
+      const categoryIds = lines
+        .filter((cat) => cat.categoryId && !cat.transferAccountId)
+        .map((cat) => cat.categoryId as string);
+      if (categoryIds.length > 0) {
+        const uniqueIds = [...new Set(categoryIds)];
+        const ownedCategories = await m.getRepository(Category).find({
+          where: { id: In(uniqueIds), userId },
+          select: ["id"],
+        });
+        const ownedIds = new Set(ownedCategories.map((c) => c.id));
+        const invalidIds = uniqueIds.filter((id) => !ownedIds.has(id));
+        if (invalidIds.length > 0) {
+          throw new BadRequestException(
+            tr(
+              "errors.budgets.categoryIdsNotOwned",
+              `Category IDs not found or not owned by user: ${invalidIds.join(", ")}`,
+              { ids: invalidIds.join(", ") },
+            ),
+          );
+        }
+      }
+
+      const budgetRepo = m.getRepository(Budget);
+      const savedBudget = await budgetRepo.save(
+        budgetRepo.create({
           userId,
           name: dto.name,
           description: dto.description ?? null,
@@ -187,39 +288,31 @@ export class BudgetGeneratorService {
           config: dto.config ?? {},
         }),
       );
-    });
 
-    if (dto.categories && dto.categories.length > 0) {
-      // M27: Validate that all categoryIds belong to the user
-      const categoryIds = dto.categories
-        .filter((cat) => cat.categoryId && !cat.transferAccountId)
-        .map((cat) => cat.categoryId as string);
-      if (categoryIds.length > 0) {
-        const uniqueIds = [...new Set(categoryIds)];
-        const ownedCategories = await withScopedDb(this.dataSource, (m) =>
-          m.getRepository(Category).find({
-            where: { id: In(uniqueIds), userId },
-            select: ["id"],
-          }),
+      const bucketIds = new Map<string, string>();
+      if (buckets.length > 0) {
+        const bucketRepo = m.getRepository(BudgetBucket);
+        const savedBuckets = await bucketRepo.save(
+          buckets.map((b, i) =>
+            bucketRepo.create({
+              budgetId: savedBudget.id,
+              name: b.name,
+              targetType: b.targetType,
+              targetValue: b.targetValue,
+              carryOver: b.carryOver,
+              carryCap: b.carryCap,
+              sortOrder: b.sortOrder ?? i,
+            }),
+          ),
         );
-        const ownedIds = new Set(ownedCategories.map((c) => c.id));
-        const invalidIds = uniqueIds.filter((id) => !ownedIds.has(id));
-        if (invalidIds.length > 0) {
-          throw new BadRequestException(
-            tr(
-              "errors.budgets.categoryIdsNotOwned",
-              `Category IDs not found or not owned by user: ${invalidIds.join(", ")}`,
-              { ids: invalidIds.join(", ") },
-            ),
-          );
-        }
+        buckets.forEach((b, i) => bucketIds.set(b.key, savedBuckets[i].id));
       }
 
-      await withScopedDb(this.dataSource, (m) => {
-        const repo = m.getRepository(BudgetCategory);
-        return repo.save(
-          dto.categories!.map((cat) =>
-            repo.create({
+      if (lines.length > 0) {
+        const lineRepo = m.getRepository(BudgetCategory);
+        await lineRepo.save(
+          lines.map((cat) =>
+            lineRepo.create({
               budgetId: savedBudget.id,
               categoryId: cat.transferAccountId
                 ? null
@@ -236,24 +329,79 @@ export class BudgetGeneratorService {
               alertCriticalPercent: cat.alertCriticalPercent ?? 95,
               notes: cat.notes ?? null,
               sortOrder: cat.sortOrder ?? 0,
+              ...(cat.bucketKey !== undefined
+                ? { bucketId: bucketIds.get(cat.bucketKey) }
+                : {}),
             }),
           ),
         );
-      });
-    }
+      }
 
-    return withScopedDb(
-      this.dataSource,
-      (m) =>
-        m.getRepository(Budget).findOne({
-          where: { id: savedBudget.id },
-          relations: [
-            "categories",
-            "categories.category",
-            "categories.transferAccount",
-          ],
-        }) as Promise<Budget>,
-    );
+      return (await budgetRepo.findOne({
+        where: { id: savedBudget.id },
+        relations: [
+          "categories",
+          "categories.category",
+          "categories.transferAccount",
+          "buckets",
+        ],
+        order: { buckets: { sortOrder: "ASC", name: "ASC" } },
+      })) as Budget;
+    });
+  }
+
+  /**
+   * The request's buckets with every `BudgetBucketsService` rule applied
+   * (shared pure functions) plus the key rule; nothing here touches the
+   * database.
+   */
+  private checkedRequestBuckets(dto: ApplyGeneratedBudgetDto): Array<{
+    key: string;
+    name: string;
+    targetType: BudgetBucketTargetType;
+    targetValue: number;
+    carryOver: boolean;
+    carryCap: number | null;
+    sortOrder?: number;
+  }> {
+    const requested = dto.buckets ?? [];
+    if (requested.length > MAX_BUCKETS_PER_BUDGET) {
+      throw new BadRequestException(
+        tr(
+          "errors.budgets.bucketLimit",
+          `A budget can have at most ${MAX_BUCKETS_PER_BUDGET} buckets`,
+          { max: MAX_BUCKETS_PER_BUDGET },
+        ),
+      );
+    }
+    const keys = new Set<string>();
+    const accepted: Array<{ name: string }> = [];
+    return requested.map((b) => {
+      if (keys.has(b.key)) {
+        throw new BadRequestException(
+          tr(
+            "errors.budgets.bucketKeyDuplicate",
+            `The bucket key "${b.key}" is used more than once`,
+            { key: b.key },
+          ),
+        );
+      }
+      keys.add(b.key);
+      const name = checkedBucketName(b.name, accepted, null);
+      accepted.push({ name });
+      const carryOver = b.carryOver ?? false;
+      checkBucketTarget(b.targetType, b.targetValue);
+      const carryCap = checkedBucketCarryCap(carryOver, b.carryCap ?? null);
+      return {
+        key: b.key,
+        name,
+        targetType: b.targetType,
+        targetValue: b.targetValue,
+        carryOver,
+        carryCap,
+        sortOrder: b.sortOrder,
+      };
+    });
   }
 
   private async getSpendingByCategory(
@@ -551,8 +699,96 @@ export class BudgetGeneratorService {
         return [parents, splits] as const;
       },
     );
-    const rows = [...parentRows, ...splitRows];
+    return this.toTransferAnalyses(
+      [...parentRows, ...splitRows],
+      analysisMonths,
+    );
+  }
 
+  /**
+   * The sources of the user's transfers in, per month: the signed net of the
+   * legs in their other accounts whose counterpart is the source, through the
+   * builders a transfer income line reads (`incomingParentTransfers`). Each
+   * month is clamped at zero, as a period's actual is, and a source that never
+   * paid in is left out. Only the user's own accounts: `apply` refuses any
+   * other as a source.
+   *
+   * A suggestion is a starting amount, not a forecast of the line's actual.
+   * The analysis runs before the wizard knows the budget's excluded accounts,
+   * so a leg into an account the budget will exclude (HISA -> RRSP with both
+   * excluded) is still counted here, though the line will never count it. And
+   * like the outgoing analysis, legs into accounts of different currencies are
+   * summed as raw amounts, unconverted.
+   */
+  private async getTransfersBySource(
+    userId: string,
+    startDate: string,
+    endDate: string,
+    analysisMonths: number,
+  ): Promise<Omit<TransferAnalysis, "suggested">[]> {
+    const window = { userId, periodStart: startDate, periodEnd: endDate };
+    const [parentRows, splitRows] = await withScopedDb(
+      this.dataSource,
+      async (m) => {
+        const parents = await incomingParentTransfers(
+          m.getRepository(Transaction),
+          window,
+        )
+          .innerJoin("lt.account", "a")
+          .andWhere("a.user_id = :userId")
+          .select("a.id", "accountId")
+          .addSelect("a.name", "accountName")
+          .addSelect("a.account_type", "accountType")
+          .addSelect("EXTRACT(YEAR FROM t.transaction_date)::int", "year")
+          .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
+          .addSelect(`SUM(${PARENT_TRANSFER_AMOUNT})`, "total")
+          .groupBy("a.id")
+          .addGroupBy("a.name")
+          .addGroupBy("a.account_type")
+          .addGroupBy("EXTRACT(YEAR FROM t.transaction_date)")
+          .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
+          .getRawMany();
+        const splits = await incomingSplitTransfers(
+          m.getRepository(TransactionSplit),
+          window,
+        )
+          .innerJoin("s.transferAccount", "a")
+          .andWhere("a.user_id = :userId")
+          .select("a.id", "accountId")
+          .addSelect("a.name", "accountName")
+          .addSelect("a.account_type", "accountType")
+          .addSelect("EXTRACT(YEAR FROM t.transaction_date)::int", "year")
+          .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
+          .addSelect(`SUM(${SPLIT_TRANSFER_AMOUNT})`, "total")
+          .groupBy("a.id")
+          .addGroupBy("a.name")
+          .addGroupBy("a.account_type")
+          .addGroupBy("EXTRACT(YEAR FROM t.transaction_date)")
+          .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
+          .getRawMany();
+        return [parents, splits] as const;
+      },
+    );
+    return this.toTransferAnalyses(
+      [...parentRows, ...splitRows],
+      analysisMonths,
+      { clampMonthsAtZero: true },
+    ).filter((t) => t.monthlyOccurrences > 0);
+  }
+
+  /** Per-account monthly statistics of transfer rows grouped by month. */
+  private toTransferAnalyses(
+    rows: Array<{
+      accountId: string;
+      accountName: string;
+      accountType: string;
+      year: number;
+      month: number;
+      total: string | null;
+    }>,
+    analysisMonths: number,
+    { clampMonthsAtZero = false }: { clampMonthsAtZero?: boolean } = {},
+  ): Omit<TransferAnalysis, "suggested">[] {
     const accountMap = new Map<
       string,
       {
@@ -579,7 +815,7 @@ export class BudgetGeneratorService {
       const existing = entry.monthlyTotals.get(monthKey) || 0;
       entry.monthlyTotals.set(
         monthKey,
-        existing + parseFloat(row.total || "0"),
+        roundMoney(existing + parseFloat(row.total || "0")),
       );
     }
 
@@ -589,7 +825,7 @@ export class BudgetGeneratorService {
       const monthlyAmounts = this.buildMonthlyArray(
         entry.monthlyTotals,
         analysisMonths,
-      );
+      ).map((amount) => (clampMonthsAtZero ? Math.max(amount, 0) : amount));
 
       const nonZeroMonths = monthlyAmounts.filter((m) => m > 0).length;
       const sortedForPercentiles = [...monthlyAmounts].sort((a, b) => a - b);

@@ -1015,7 +1015,13 @@ PostgreSQL/database dump. The schedule, folder and retention configured there ar
 related to, but not the same on-disk format as, the manual per-account export a
 person can download themselves. It does not capture the schema, another
 deployment's data, or server configuration; whole-instance disaster recovery is a
-separate backup of PostgreSQL and the attachment storage. A person's own manual
+separate backup of PostgreSQL and the attachment storage. On the Windows desktop
+build that backup is the whole data folder (`pgdata` and `attachments` together
+with the shell's configuration file and Chromium's key file) copied while the app
+is stopped, which is what `desktop/scripts/Backup-Monize.ps1` does; it restores
+only under the same Windows account, because the configuration file holds the
+database passwords encrypted with DPAPI, so a new PC recovers from per-user
+backups instead. A person's own manual
 export/restore stays in **Settings → Backup & Restore**
 (`frontend/src/components/settings/BackupRestoreSection.tsx`), open to every user
 and touching only their own data. The two were previously stacked in one Settings

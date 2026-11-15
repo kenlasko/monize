@@ -215,5 +215,63 @@
   "shared": {
     "title": "Spese condivise",
     "message": "Ci sono novità in un gruppo condiviso. Apri Monize per consultarle."
+  },
+  "native": {
+    "payments": {
+      "title": "Promemoria di pagamento",
+      "body": "Una bolletta o un pagamento programmato richiede la tua attenzione. Apri Monize per i dettagli."
+    },
+    "budgets": {
+      "title": "Avviso di budget",
+      "body": "Uno dei tuoi budget richiede la tua attenzione. Apri Monize per i dettagli."
+    },
+    "system": {
+      "title": "Avviso di sistema",
+      "body": "Monize ha un avviso di sistema per te. Apri l'app per i dettagli."
+    },
+    "balances": {
+      "title": "Avviso di saldo",
+      "body": "Il saldo di un conto ha superato una soglia che hai impostato. Apri Monize per i dettagli."
+    },
+    "investments": {
+      "title": "Movimento degli investimenti",
+      "body": "I tuoi investimenti si sono mossi oggi. Apri Monize per i dettagli."
+    },
+    "strategies": {
+      "title": "Segnale di strategia",
+      "body": "Una delle tue strategie ha cambiato la sua raccomandazione. Apri Monize per i dettagli."
+    },
+    "bank_sync": {
+      "title": "Collegamento bancario",
+      "body": "Un collegamento bancario richiede la tua attenzione. Apri Monize per i dettagli."
+    },
+    "bank_sync_activity": {
+      "title": "Sincronizzazione bancaria",
+      "body": "La tua sincronizzazione bancaria ha novità. Apri Monize per i dettagli."
+    },
+    "email_receipts": {
+      "title": "Le ricevute email richiedono attenzione",
+      "body": "Alcuni messaggi nella cartella riceute richiedono un profilo o una correzione. Apri Monize per i dettagli."
+    },
+    "bonds": {
+      "title": "Avviso sulle obbligazioni",
+      "body": "Una delle tue obbligazioni ha novità. Apri Monize per i dettagli."
+    },
+    "ai_review": {
+      "title": "Proposte di revisione IA",
+      "body": "Alcune proposte di revisione IA attendono la tua decisione. Apri Monize per i dettagli."
+    },
+    "warranties": {
+      "title": "Promemoria garanzia",
+      "body": "Una delle tue garanzie scade a breve. Apri Monize per i dettagli."
+    },
+    "shared_expenses": {
+      "title": "Spese condivise",
+      "body": "Ci sono novità in un gruppo condiviso. Apri Monize per consultarle."
+    },
+    "fallback": {
+      "title": "Monize",
+      "body": "Hai una nuova notifica in Monize."
+    }
   }
 }

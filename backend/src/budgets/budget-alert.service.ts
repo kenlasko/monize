@@ -44,6 +44,7 @@ import {
   queryCategorySpending,
   resolveCategoryName,
   resolveCategorySpent,
+  resolveOutsideTransferIncome,
 } from "./budget-spending.util";
 import { FALLBACK_DEFAULT_CURRENCY } from "../common/default-currency.util";
 import {
@@ -294,12 +295,13 @@ export class BudgetAlertService {
       return { alertsCreated: 0, emailsSent: 0 };
     }
 
-    const actuals = await this.computeCategoryActuals(
-      budget.userId,
-      budget,
-      periodStart,
-      periodEnd,
-    );
+    const { lines: actuals, outsideTransferIncome } =
+      await this.computeCategoryActuals(
+        budget.userId,
+        budget,
+        periodStart,
+        periodEnd,
+      );
 
     // Every figure below is read by this budget's owner, so it is rendered in
     // their number locale rather than the server's (issue #1316). Resolved once
@@ -367,6 +369,7 @@ export class BudgetAlertService {
         budget.baseIncome,
         periodProgress,
         n,
+        { outsideTransferIncome, currencyCode: budget.currencyCode },
       );
       if (incomeAlert) {
         candidates.push({ ...incomeAlert, budgetId: budget.id });
@@ -632,12 +635,27 @@ export class BudgetAlertService {
     expectedIncome: number,
     periodProgress: number,
     n: NumberT = defaultNumberT,
+    /**
+     * The income no line carries (`config.transfersInAsIncome`, issue #2141)
+     * and the budget's currency, which names the figure when no line does.
+     */
+    budgetIncome: { outsideTransferIncome: number; currencyCode: string } = {
+      outsideTransferIncome: 0,
+      currencyCode: "",
+    },
   ): AlertCandidate | null {
     if (periodProgress < 0.5) return null;
 
-    const totalActualIncome = sumMoney(incomeActuals.map((cat) => cat.spent));
+    const totalActualIncome = sumMoney([
+      ...incomeActuals.map((cat) => cat.spent),
+      budgetIncome.outsideTransferIncome,
+    ]);
     const expectedSoFar = expectedIncome * periodProgress;
     const incomeRatio = totalActualIncome / expectedSoFar;
+    const currencyCode =
+      budgetIncome.currencyCode ||
+      incomeActuals[0]?.currencyCode ||
+      FALLBACK_DEFAULT_CURRENCY;
 
     if (incomeRatio < 0.8) {
       return {
@@ -648,10 +666,10 @@ export class BudgetAlertService {
         title: "Income below expected",
         message: `Your actual income (${n.formatCurrency(
           totalActualIncome,
-          incomeActuals[0]?.currencyCode || FALLBACK_DEFAULT_CURRENCY,
+          currencyCode,
         )}) is below ${n.formatPercent(Math.round(incomeRatio * 100), 0)} of expected income (${n.formatCurrency(
           expectedSoFar,
-          incomeActuals[0]?.currencyCode || FALLBACK_DEFAULT_CURRENCY,
+          currencyCode,
         )}) at this point in the period.`,
         data: {
           actualIncome: totalActualIncome,
@@ -1196,31 +1214,34 @@ export class BudgetAlertService {
     budget: Budget,
     periodStart: string,
     periodEnd: string,
-  ): Promise<CategoryActual[]> {
+  ): Promise<{ lines: CategoryActual[]; outsideTransferIncome: number }> {
     const budgetCategories = budget.categories || [];
 
     if (budgetCategories.length === 0) {
-      return [];
+      return { lines: [], outsideTransferIncome: 0 };
     }
 
     // The two spending queries share one scoped transaction so the direct and
     // split halves of a category's total come from the same snapshot.
-    const { spendingMap, transferSpendingMap } = await withScopedDb(
-      this.dataSource,
-      (m) =>
-        queryCategorySpending(
-          m.getRepository(Transaction),
-          m.getRepository(TransactionSplit),
-          userId,
-          budgetCategories,
-          periodStart,
-          periodEnd,
-        ),
+    const spending = await withScopedDb(this.dataSource, (m) =>
+      queryCategorySpending(
+        m.getRepository(Transaction),
+        m.getRepository(TransactionSplit),
+        userId,
+        budgetCategories,
+        periodStart,
+        periodEnd,
+      ),
     );
 
-    return budgetCategories.map((bc) => {
+    const lines = budgetCategories.map((bc) => {
       const budgeted = Number(bc.amount);
-      const spent = resolveCategorySpent(bc, spendingMap, transferSpendingMap);
+      const spent = resolveCategorySpent(
+        bc,
+        spending.spendingMap,
+        spending.transferSpendingMap,
+        spending.transferIncomeMap,
+      );
       const categoryName = resolveCategoryName(bc);
       const percentUsed =
         budgeted > 0 ? Math.round((spent / budgeted) * 10000) / 100 : 0;
@@ -1239,5 +1260,9 @@ export class BudgetAlertService {
         flexGroup: bc.flexGroup,
       };
     });
+    return {
+      lines,
+      outsideTransferIncome: resolveOutsideTransferIncome(spending),
+    };
   }
 }

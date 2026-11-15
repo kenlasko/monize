@@ -330,7 +330,20 @@
     "budgetCategoryNotFound": "Nie znaleziono kategorii budżetu o ID {{ id }}",
     "periodNotFound": "Nie znaleziono okresu budżetu o ID {{ id }}",
     "noOpenPeriod": "Brak otwartego okresu do zamknięcia",
-    "categoryIdsNotOwned": "Identyfikatory kategorii nie zostały znalezione lub nie należą do użytkownika: {{ ids }}"
+    "categoryIdsNotOwned": "Identyfikatory kategorii nie zostały znalezione lub nie należą do użytkownika: {{ ids }}",
+    "transferAccountNotFound": "Nie znaleziono konta o ID {{ id }}",
+    "transferAccountAlreadyInBudget": "To konto ma już linię przelewu w budżecie",
+    "bucketNotFound": "Nie znaleziono koperty o ID {{ id }}",
+    "bucketLimit": "Budżet może mieć najwyżej {{ max }} kopert",
+    "bucketNameInvalid": "Nazwa koperty musi mieć od 1 do {{ max }} znaków",
+    "bucketNameDuplicate": "Ten budżet ma już kopertę o tej nazwie",
+    "bucketTargetInvalid": "Cel koperty musi być większy od zera",
+    "bucketPercentInvalid": "Cel procentowy musi być większy niż 0 i najwyżej 100, z najwyżej dwoma miejscami po przecinku",
+    "bucketCarryCapNeedsCarryOver": "Limit przenoszenia wymaga włączonego przenoszenia",
+    "bucketOnIncomeLine": "Pozycja przychodu nie może należeć do koperty",
+    "bucketKeyDuplicate": "Klucz koperty \"{{ key }}\" jest użyty więcej niż raz",
+    "bucketKeyUnknown": "Żadna koperta w tym żądaniu nie ma klucza \"{{ key }}\"",
+    "transferLineDirectionFixed": "Nie można zmienić kierunku linii przelewu. Usuń ją i dodaj nową linię."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Reguła potrącenia z wynagrodzenia śledzi rachunek opłacany w walucie fiducjarnej; konto tego rachunku zawiera kryptowalutę {{ code }}. Wybierz rachunek opłacany z konta w walucie fiducjarnej.",

@@ -43,6 +43,7 @@ describe('BudgetWizardStrategy', () => {
         suggested: 400,
       },
     ],
+    incomeTransfers: [],
     estimatedMonthlyIncome: 5000,
     totalBudgeted: 400,
     projectedMonthlySavings: 4600,
@@ -108,6 +109,9 @@ describe('BudgetWizardStrategy', () => {
     analysisResult: mockAnalysisResult,
     selectedCategories: makeSelectedCategories(),
     selectedTransfers: new Map(),
+    selectedIncomeTransfers: new Map(),
+    buckets: [],
+    bucketsPresetApplied: false,
     budgetName: 'February 2026 Budget',
     budgetType: 'MONTHLY',
     periodStart: '2026-02-01',
@@ -118,6 +122,7 @@ describe('BudgetWizardStrategy', () => {
     alertWarnPercent: 80,
     alertCriticalPercent: 95,
     excludedAccountIds: [],
+    transfersInAsIncome: false,
     isSubmitting: false,
   };
 
@@ -811,6 +816,42 @@ describe('BudgetWizardStrategy', () => {
   });
 
   // --- Excluded accounts counter pluralization ---
+  it('sets the transfers-in-as-income option beside the excluded accounts (issue #2141)', () => {
+    render(
+      <BudgetWizardStrategy
+        state={{ ...defaultState, excludedAccountIds: ['acc-1'] }}
+        updateState={mockUpdateState}
+        accounts={mockAccounts}
+        onNext={mockOnNext}
+        onBack={mockOnBack}
+      />,
+    );
+
+    const toggle = screen.getByLabelText('Count transfers in from excluded accounts as income');
+    expect(toggle).not.toBeChecked();
+    fireEvent.click(toggle);
+    expect(mockUpdateState).toHaveBeenCalledWith({ transfersInAsIncome: true });
+  });
+
+  it('counts income transfer lines with the transfers selected', () => {
+    render(
+      <BudgetWizardStrategy
+        state={{
+          ...defaultState,
+          selectedIncomeTransfers: new Map([
+            ['acc-1', { transferAccountId: 'acc-1', isTransfer: true, isIncome: true, amount: 100 }],
+          ]),
+        }}
+        updateState={mockUpdateState}
+        accounts={mockAccounts}
+        onNext={mockOnNext}
+        onBack={mockOnBack}
+      />,
+    );
+
+    expect(screen.getByText(/and 1 transfers selected/)).toBeInTheDocument();
+  });
+
   it('shows singular account excluded message for 1 excluded account', () => {
     render(
       <BudgetWizardStrategy

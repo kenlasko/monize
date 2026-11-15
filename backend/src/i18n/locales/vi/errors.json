@@ -330,7 +330,20 @@
     "budgetCategoryNotFound": "Không tìm thấy danh mục ngân sách với ID {{ id }}",
     "periodNotFound": "Không tìm thấy kỳ ngân sách với ID {{ id }}",
     "noOpenPeriod": "Không có kỳ mở để đóng",
-    "categoryIdsNotOwned": "Không tìm thấy ID danh mục hoặc không thuộc sở hữu của người dùng: {{ ids }}"
+    "categoryIdsNotOwned": "Không tìm thấy ID danh mục hoặc không thuộc sở hữu của người dùng: {{ ids }}",
+    "transferAccountNotFound": "Không tìm thấy tài khoản với ID {{ id }}",
+    "transferAccountAlreadyInBudget": "Tài khoản này đã có một dòng chuyển khoản trong ngân sách",
+    "bucketNotFound": "Không tìm thấy hũ có ID {{ id }}",
+    "bucketLimit": "Một ngân sách có tối đa {{ max }} hũ",
+    "bucketNameInvalid": "Tên hũ phải có từ 1 đến {{ max }} ký tự",
+    "bucketNameDuplicate": "Ngân sách này đã có hũ cùng tên",
+    "bucketTargetInvalid": "Mục tiêu của hũ phải lớn hơn 0",
+    "bucketPercentInvalid": "Mục tiêu theo phần trăm phải lớn hơn 0 và tối đa 100, với tối đa hai chữ số thập phân",
+    "bucketCarryCapNeedsCarryOver": "Giới hạn chuyển tiếp cần bật chuyển tiếp",
+    "bucketOnIncomeLine": "Dòng thu nhập không thể thuộc một hũ",
+    "bucketKeyDuplicate": "Khóa hũ \"{{ key }}\" được dùng nhiều lần",
+    "bucketKeyUnknown": "Không có hũ nào trong yêu cầu này có khóa \"{{ key }}\"",
+    "transferLineDirectionFixed": "Không thể thay đổi chiều của một dòng chuyển khoản. Hãy xóa dòng này và thêm một dòng mới."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Quy tắc khấu trừ lương theo dõi một hóa đơn được thanh toán bằng tiền pháp định; tài khoản của hóa đơn này giữ tiền mã hóa {{ code }}. Hãy chọn một hóa đơn được thanh toán từ tài khoản tiền pháp định.",

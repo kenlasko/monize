@@ -1,0 +1,7 @@
+dist
+staging
+release
+dev-app-update.yml
+# The installer's build resources (icon, NSIS include). The root .gitignore
+# ignores every build/ directory; this one is source.
+!build/

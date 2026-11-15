@@ -17,6 +17,7 @@ const mockBudgetCategory: BudgetCategory = {
   categoryId: 'cat-1',
   category: { id: 'cat-1', name: 'Groceries', isIncome: false },
   categoryGroup: null,
+  bucketId: null,
   transferAccountId: null,
   transferAccount: null,
   isTransfer: false,
@@ -97,6 +98,99 @@ describe('BudgetPeriodDetail', () => {
     );
 
     expect(screen.getByText('January 2026')).toBeInTheDocument();
+  });
+
+  it('reads a closed period\'s income from the close, transfers in included (issue #2141)', () => {
+    const hisaLine: BudgetPeriodCategory = {
+      ...mockIncomePeriodCategory,
+      id: 'bpc-hisa',
+      budgetCategoryId: 'bc-hisa',
+      categoryId: null,
+      actualAmount: 2000,
+      category: null,
+      budgetCategory: {
+        ...mockIncomeBudgetCategory,
+        id: 'bc-hisa',
+        categoryId: null,
+        category: null,
+        isTransfer: true,
+        transferAccountId: 'acc-hisa',
+        transferAccount: { id: 'acc-hisa', name: 'HISA', accountType: 'SAVINGS' },
+      },
+    };
+    render(
+      <BudgetPeriodDetail
+        period={{
+          ...mockPeriod,
+          // 5,200 salary + 2,000 from the HISA line + 300 the toggle swept in.
+          actualIncome: 7500,
+          periodCategories: [mockPeriodCategory, mockIncomePeriodCategory, hisaLine],
+        }}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(screen.getByText('Transfers from HISA')).toBeInTheDocument();
+    expect(screen.getByText('$7500.00')).toBeInTheDocument();
+    // The part no line carries is its own row, so the rows add up to the card.
+    expect(
+      screen.getByText('Transfers from accounts outside this budget'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('$300.00')).toBeInTheDocument();
+  });
+
+  it('shows no outside-transfer row when the close froze only the lines\' income', () => {
+    render(
+      <BudgetPeriodDetail
+        period={{
+          ...mockPeriod,
+          actualIncome: 5200,
+          periodCategories: [mockPeriodCategory, mockIncomePeriodCategory],
+        }}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(
+      screen.queryByText('Transfers from accounts outside this budget'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows the outside-transfer row on a closed period with no income line', () => {
+    render(
+      <BudgetPeriodDetail
+        period={{
+          ...mockPeriod,
+          actualIncome: 450,
+          periodCategories: [mockPeriodCategory],
+        }}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(screen.getByText('Income Categories')).toBeInTheDocument();
+    expect(
+      screen.getByText('Transfers from accounts outside this budget'),
+    ).toBeInTheDocument();
+  });
+
+  it('adds up an open period\'s income from its lines alone', () => {
+    render(
+      <BudgetPeriodDetail
+        period={{
+          ...mockPeriod,
+          status: 'OPEN',
+          actualIncome: 9999,
+          periodCategories: [mockPeriodCategory, mockIncomePeriodCategory],
+        }}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(screen.queryByText('$9999.00')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Transfers from accounts outside this budget'),
+    ).not.toBeInTheDocument();
   });
 
   it('renders period status badge', () => {
@@ -216,6 +310,9 @@ describe('BudgetPeriodDetail', () => {
   it('handles period with no categories', () => {
     const emptyPeriod: BudgetPeriod = {
       ...mockPeriod,
+      // A close with no line froze no income; income without a line is the
+      // toggle's, covered above.
+      actualIncome: 0,
       periodCategories: [],
     };
 
@@ -321,5 +418,77 @@ describe('BudgetPeriodDetail', () => {
     const categoryNames = screen.getAllByText(/Dining|Entertainment/);
     expect(categoryNames[0]).toHaveTextContent('Dining');
     expect(categoryNames[1]).toHaveTextContent('Entertainment');
+  });
+
+  describe('buckets table', () => {
+    const periodBucket = {
+      id: 'pb-1',
+      budgetPeriodId: 'period-1',
+      bucketId: 'b-1',
+      bucketName: 'Needs',
+      targetType: 'PERCENT' as const,
+      targetValue: 50,
+      incomeBasis: 5000,
+      allocatedAmount: 2500 as number | null,
+      carryIn: 100,
+      actualAmount: 2300,
+      carryOut: 300,
+      createdAt: '2026-01-01',
+      updatedAt: '2026-02-01',
+    };
+
+    it('shows the frozen figures of a closed period', () => {
+      render(
+        <BudgetPeriodDetail
+          period={{ ...mockPeriod, periodBuckets: [periodBucket] }}
+          formatCurrency={mockFormat}
+        />,
+      );
+
+      expect(screen.getByRole('heading', { name: 'Buckets' })).toBeInTheDocument();
+      expect(screen.getByText('Needs')).toBeInTheDocument();
+      expect(screen.getByText('50% of income')).toBeInTheDocument();
+      expect(screen.getByText('$2500.00')).toBeInTheDocument();
+      expect(screen.getByText('$100.00')).toBeInTheDocument();
+      expect(screen.getByText('$2300.00')).toBeInTheDocument();
+      expect(screen.getByText('$300.00')).toBeInTheDocument();
+    });
+
+    it('renders an unknown allocation as a label, not zero', () => {
+      render(
+        <BudgetPeriodDetail
+          period={{
+            ...mockPeriod,
+            periodBuckets: [{ ...periodBucket, allocatedAmount: null }],
+          }}
+          formatCurrency={mockFormat}
+        />,
+      );
+
+      expect(screen.getByText('Unknown')).toBeInTheDocument();
+      expect(screen.queryByText('$0.00')).toBeNull();
+    });
+
+    it('is not shown for an open period', () => {
+      render(
+        <BudgetPeriodDetail
+          period={{ ...mockPeriod, status: 'OPEN', periodBuckets: [periodBucket] }}
+          formatCurrency={mockFormat}
+        />,
+      );
+
+      expect(screen.queryByRole('heading', { name: 'Buckets' })).toBeNull();
+    });
+
+    it('is not shown when there are no rows', () => {
+      render(
+        <BudgetPeriodDetail
+          period={{ ...mockPeriod, periodBuckets: [] }}
+          formatCurrency={mockFormat}
+        />,
+      );
+
+      expect(screen.queryByRole('heading', { name: 'Buckets' })).toBeNull();
+    });
   });
 });

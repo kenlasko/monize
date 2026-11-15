@@ -1,0 +1,425 @@
+/*
+ * The splash wears the sign-in screen's brand panel (AuthBrandPanel in the
+ * frontend): the blue accent ramp, a soft white glow and the logo on a white
+ * tile. It is the same in light and dark mode, as that panel is.
+ */
+:root {
+  color-scheme: dark;
+  --blue-400: #60a5fa;
+  --blue-700: #1d4ed8;
+  --blue-800: #1e40af;
+  --blue-950: #172554;
+  --teal: #4fa091;
+  --fg: #ffffff;
+  --muted: rgb(255 255 255 / 0.72);
+  --faint: rgb(255 255 255 / 0.14);
+  --log-bg: rgb(2 6 23 / 0.55);
+  --error: #fca5a5;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    var(--blue-700) 0%,
+    var(--blue-800) 45%,
+    var(--blue-950) 100%
+  );
+  color: var(--fg);
+  font: 14px/1.4 "Segoe UI", system-ui, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ---- The moving backdrop ------------------------------------------------ */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(48px);
+}
+
+.glow-a {
+  width: 360px;
+  height: 360px;
+  top: -170px;
+  right: -110px;
+  background: rgb(255 255 255 / 0.16);
+}
+
+.glow-b {
+  width: 300px;
+  height: 300px;
+  bottom: -190px;
+  left: -90px;
+  background: color-mix(in oklab, var(--teal) 45%, transparent);
+}
+
+/* A faint ledger grid that fades out toward the bottom. */
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
+}
+
+/* ---- Layout ------------------------------------------------------------- */
+
+main {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 24px 32px;
+  gap: 12px;
+  -webkit-app-region: drag;
+}
+
+/* Booting: one centred column, the mark above the name. */
+body[data-state="busy"] main {
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+body[data-state="busy"] .brand {
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mark {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgb(2 6 23 / 0.35);
+}
+
+body[data-state="busy"] .mark {
+  width: 64px;
+  height: 64px;
+  padding: 8px;
+  border-radius: 18px;
+}
+
+.mark img {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* A soft ring that breathes out from the tile while work is in progress. */
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 0 rgb(255 255 255 / 0.45);
+  opacity: 0;
+}
+
+h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+body[data-state="busy"] h1 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+body[data-state="busy"] .status {
+  align-items: center;
+  max-width: 300px;
+}
+
+.status p,
+.detail {
+  margin: 0;
+}
+
+#title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+body[data-state="busy"] #title {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+body[data-state="stopped"] #title {
+  font-size: 16px;
+}
+
+.detail {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.detail:empty {
+  display: none;
+}
+
+/* ---- Progress ----------------------------------------------------------- */
+
+.progress {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--faint);
+}
+
+body[data-state="stopped"] .progress {
+  display: none;
+}
+
+.progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--progress, 0%);
+  overflow: hidden;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--teal), var(--blue-400) 60%, #fff);
+  box-shadow: 0 0 12px rgb(147 197 253 / 0.8);
+  transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* A sheen that runs along the filled part. */
+.progress-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.55),
+    transparent
+  );
+  transform: translateX(-100%);
+}
+
+/* No share to show: a segment sweeps across instead. */
+.progress[data-mode="indeterminate"] .progress-fill {
+  width: 35%;
+  transition: none;
+}
+
+/* ---- Failure ------------------------------------------------------------ */
+
+body[data-state="stopped"] .mark {
+  background: #ffffff;
+}
+
+body[data-state="stopped"] #title::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  vertical-align: middle;
+  border-radius: 50%;
+  background: var(--error);
+  box-shadow: 0 0 10px var(--error);
+}
+
+.log[hidden],
+.actions[hidden],
+button[hidden] {
+  display: none;
+}
+
+.log {
+  flex: 1;
+  margin: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  background: var(--log-bg);
+  border: 1px solid var(--faint);
+  border-radius: 8px;
+  color: #e2e8f0;
+  font: 12px/1.4 Consolas, ui-monospace, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-app-region: no-drag;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: auto;
+  -webkit-app-region: no-drag;
+}
+
+button {
+  min-width: 96px;
+  padding: 7px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+button.primary {
+  background: #ffffff;
+  color: var(--blue-800);
+}
+
+button.primary:hover {
+  background: #dbeafe;
+}
+
+button.secondary {
+  background: transparent;
+  border-color: rgb(255 255 255 / 0.4);
+  color: var(--fg);
+}
+
+button.secondary:hover {
+  background: rgb(255 255 255 / 0.1);
+}
+
+/* ---- Motion, only for those who have not asked for less ----------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .glow-a {
+    animation: drift-a 9s ease-in-out infinite alternate;
+  }
+
+  .glow-b {
+    animation: drift-b 11s ease-in-out infinite alternate;
+  }
+
+  body[data-state="busy"] .brand {
+    animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  body[data-state="busy"] .status {
+    animation: rise 0.7s 0.12s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  body[data-state="busy"] .ring {
+    animation: breathe 2.4s ease-out infinite;
+  }
+
+  .progress-fill::after {
+    animation: sheen 1.6s ease-in-out infinite;
+  }
+
+  .progress[data-mode="indeterminate"] .progress-fill {
+    animation: sweep 1.3s ease-in-out infinite;
+  }
+
+  #title.changed {
+    animation: fade-in 0.35s ease-out both;
+  }
+}
+
+@keyframes drift-a {
+  to {
+    transform: translate(-60px, 40px) scale(1.15);
+  }
+}
+
+@keyframes drift-b {
+  to {
+    transform: translate(70px, -30px) scale(1.2);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes breathe {
+  0% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgb(255 255 255 / 0.45);
+  }
+  100% {
+    opacity: 0;
+    box-shadow: 0 0 0 16px rgb(255 255 255 / 0);
+  }
+}
+
+@keyframes sheen {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(290%);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}

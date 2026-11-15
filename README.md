@@ -71,6 +71,8 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 
 | Version | Highlights |
 |---------|------------|
+| 1.21 | Crypto wallet accounts and cryptocurrencies with eight decimal places. The user guide in a side panel inside the app, searchable with `?`. A redesigned dashboard you arrange in place, with a net worth hero. Command palette (Ctrl/Cmd+K) and a mobile tab bar. Bills with a Custom frequency, estimated amounts and mortgage fees. Prices from a web page, US Treasury securities, time-weighted returns and market index comparison. Reports convert past amounts at the exchange rate of their own date |
+| 1.20 | Warranties (Tools > Warranties) with reminders and claims. Shared Expenses for trips and households. Payroll Deductions with yearly caps (Tools > Taxes). SimpleFIN bank sync. Convert a transaction into a transfer and back. Return of Capital. Microsoft Money 97-99 import. The user guide moved to [monize.net/docs](https://www.monize.net/docs/). A UI consistency pass and security and financial-math audits |
 | 1.19 | Government bonds valued from their terms of issue, starting with Polish retail treasury bonds. Email receipts read brokerage trade confirmations and join buy-now-pay-later purchases to their repayments. Advanced transaction search. Hideable table columns and account-wide default views. Cash Flow Forecast dashboard widget, with overdue bills counted. OFX re-imports skip rows already imported. Exchange rates from the ECB via Frankfurter |
 | 1.18 | Bank sync through Open Banking (Enable Banking). Email receipts: order confirmations read from a mailbox and matched to transactions. Mortgage types: annuity, Canadian fixed, linear and interest-only. A bank debit settles a loan installment directly. Rules can split a row or convert it to a transfer. Cash Flow Sankey report |
 | 1.17 | Calendar view for transactions and investments, with day notes. Transaction rules (Tools > Rules) and an AI review inbox. Sort the register by any column. London Stock Exchange and Deutsche Börse price sources. Automatic backups copied off the machine (S3 and email). Several backend replicas with `CLUSTER_MODE=multi` |
@@ -83,7 +85,8 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 
 ## Features
 ### Account Management
-- Ten account types: Chequing, Savings, Credit Card, Loan, Mortgage, Line of Credit, Investment, Cash, Asset and Other
+- Eleven account types: Chequing, Savings, Credit Card, Loan, Mortgage, Line of Credit, Investment, Cash, Asset, Crypto and Other
+- Crypto wallets: a Crypto account holds one coin and works like a chequing account (transactions, transfers, bills, imports and rules), with amounts kept to eight decimal places and network fees recorded as a split line
 - A detail page for each account type: balance history, recurring charges (turn one into a scheduled bill with one click) and a 90-day balance forecast for bank accounts; the statement cycle, interest and fees and a payoff calculator for credit cards; value, appreciation and an equity panel against the financing loan for assets
 - Financial institutions: group your accounts by bank or brokerage, with the institution's logo
 - An investment account is shown as one account (the brokerage and its cash), with a reconciliation status on investment transactions
@@ -92,7 +95,7 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 - Exclude an account from net worth
 - Credit card statement dates: configurable due date and settlement date (billing cycle closing date). After you reconcile a card, Monize offers to schedule the payment
 - Favourite accounts on dashboard with credit card date indicators
-- Account reconciliation: edit, sort and group while you reconcile, an optional lock on reconciled transactions, and highlighted overdue unreconciled transactions
+- Account reconciliation: edit, sort and group while you reconcile, an optional lock on reconciled transactions, and highlighted overdue unreconciled transactions. The statement ending balance is pre-filled, and the Accounts page shows when each account was last reconciled and how many rows are unreconciled
 - Export an account to CSV or QIF
 
 ### Transaction Management
@@ -101,6 +104,10 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 - Table or Calendar view of the register. Each day shows its transactions and, if you choose, the day's balance or its change. Day notes go on one day or across several
 - Sort the register by any column; the running balance is shown in date order
 - Search from the header on every page, with amounts and dates typed your own way (`1 234,56`, `02.07.2026`)
+- Advanced search syntax: `#10` for cheque 10, `payee:costco -cat:gas`, `amount:50..100`, `date:2026-03` and `has:warranty`, with a line that shows how your search was read
+- Hide the columns you don't need on the register, the holdings table and the brokerage register, and save default views (density, shown columns, chart folding) for every account
+- Convert a transaction into a transfer, or a transfer back into a transaction, keeping its attachments, tags and history
+- Transfers between currencies, including a transfer line inside a split, name each currency and fill in the received amount from that day's rate
 - Date fields take partial dates (`9-14`, `4/1/26`, month names), and "Create & New" enters many transactions in a row
 - Foreign-currency transactions: enter the amount you were charged, see and edit the rate, and see what foreign-currency fees cost you per account
 - Transfers, one-off and scheduled, can carry a category, so they show in category reports without counting as income or expenses
@@ -112,12 +119,14 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 - Payee brand icons and category icons that subcategories inherit
 - A page for each payee (statistics, recurrence, seasonality, address, phone and email) and for each category (subcategories, top payees, seasonality). Payee details can be looked up through Google Places or your AI provider, and are shown for confirmation before they are saved
 - Multi-currency transactions with automatic exchange rate tracking
-- Import from CSV (including brokerage exports), OFX/QFX, and QIF (Quicken, including Quicken for Mac .qmtf transfer files, and Microsoft Money) with smart column auto-matching and categories nested to any depth
-- Microsoft Money full-file import: read a `.mny` file directly -- accounts, transfers, splits, investments, price history, exchange rates and scheduled bills -- and reconcile every balance against the file afterwards ([guide](docs/import-ms-money.md))
+- Import from CSV (including brokerage exports), OFX/QFX, and QIF (Quicken, including Quicken for Mac .qmtf transfer files, and Microsoft Money) with smart column auto-matching and categories nested to any depth. Drag files onto the Import page; OFX re-imports skip rows already imported, and a CSV row with a date or amount that can't be read is listed with its line number instead of being dropped
+- Microsoft Money full-file import (Money 97 and later): read a `.mny` file directly -- accounts, transfers, splits, investments, price history, exchange rates and scheduled bills -- and reconcile every balance against the file afterwards ([guide](docs/import-ms-money.md))
 - Quicken full-file import: import all accounts, categories, and tags from a single QIF export
-- Bank sync (Settings -> Bank sync): import booked transactions from your bank through Open Banking (Enable Banking), with a preview before the first import, your `import` rules applied, and a daily or on-demand sync
-- Email receipts (Settings -> Email receipts): Monize reads order confirmations from a dedicated mailbox (Google, Microsoft 365 or IMAP), matches each one to the transaction that paid for it, and proposes a description, a payee and a split by line item for your approval. Built-in parsers for Amazon, Allegro, PayU and Google Play, a parser editor, and parsers drafted by AI
+- Bank sync (Settings -> Bank sync): import booked transactions from your bank through Open Banking (Enable Banking) or SimpleFIN Bridge, with a preview before the first import, your `import` rules applied, and a daily or on-demand sync
+- Email receipts (Settings -> Email receipts): Monize reads order confirmations from a dedicated mailbox (Google, Microsoft 365 or IMAP), matches each one to the transaction that paid for it, and proposes a description, a payee and a split by line item for your approval. Built-in parsers for Amazon, Allegro, PayU and Google Play, a parser editor, and parsers drafted by AI. Brokerage trade confirmations become buys, sells, dividends and reinvestments, and buy-now-pay-later purchases are split into their items when the repayment arrives
 - Warranties (Tools > Warranties): what you bought, when its warranty ends (or that it never does), the receipt, manual and photos, serial and model numbers, and the claims you made. Add one from a transaction in the register, get a reminder 30 and 7 days before it ends and on the day, see what is expiring on a dashboard widget, and import or export the Warracker CSV format
+- Shared Expenses (Tools > Shared Expenses): split the costs of a trip, a shared flat or a club with other people, in any currency, and see the fewest repayments that settle the group. Nobody needs a Monize account, and nothing touches your own balances or reports
+- Payroll Deductions (Tools > Taxes): a yearly maximum on a deduction line of your paycheque (a pension or employment-insurance contribution, for example). Each paycheque is capped to the room left, the cash flow forecast shows the capped amounts ahead of time, and a report covers every year
 - Data reset: wipe financial data and re-import without losing your user account or settings
 - Share into the app: with Monize installed as a PWA (Android and desktop Chromium), share a receipt photo, a PDF or a statement export (CSV, OFX, QFX, QIF) to it from another app and land on a review screen that offers to attach it to a new transaction, open the import wizard or send it to the AI Assistant. Nothing is imported or attached until you choose it, and shared files are kept on the device for an hour
 
@@ -132,15 +141,17 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 ### Investment Features
 - Track stocks, bonds, ETFs, mutual funds, options, GICs and cryptocurrency
 - Exchange-aware symbol resolution for North American, European and Asian markets (NYSE, NASDAQ, AMEX, ARCA, BATS, TSX, TSX-V, CSE, NEO, LSE, XETRA, Frankfurt, Euronext Paris, Amsterdam, Milan, Stockholm, Tokyo, HKEX, Shanghai, Shenzhen, ASX, Korea, Taiwan, Singapore, BSE and NSE)
-- Daily price updates from Yahoo Finance, MSN, the London Stock Exchange and Deutsche Börse
+- Daily price updates from Yahoo Finance, MSN, the London Stock Exchange and Deutsche Börse, or from a table on a web page you name for quotes they don't carry. Price updates can be turned off for a single security
+- Government bonds valued from their terms of issue rather than a market price: Polish retail treasury bonds and US Treasury bills, notes, bonds, TIPS and FRNs, with accrued interest, suggested redemptions and maturity notifications
 - A page for each security: position, price chart, documents and news
 - Per-security transaction history with a running share balance
 - Portfolio value and performance charts from intraday and month-to-date up to ten years, all time or a custom date range, with a breakdown by security
 - Calendar view of the investment register
-- Investment transactions: buy, sell, dividend, interest, reinvestment, capital gains, splits, share additions and removals, CD and bond redemptions, and transfers between accounts that keep the cost basis
+- Investment transactions: buy, sell, dividend, interest, reinvestment, capital gains, splits, share additions and removals, CD and bond redemptions, return of capital (lowers the cost basis instead of counting as income), and transfers between accounts that keep the cost basis
 - Scheduled investment transactions
 - Asset-class and country allocation, with look-through for ETFs and funds
 - Compare securities with each other and against market indexes
+- Time-weighted return chart for the whole portfolio, each account or each security, with market indexes such as the S&P 500 drawn alongside
 - Manual price management: add, edit, and delete individual price entries
 - Price backfill from transaction history (uses buy/sell prices when market data unavailable)
 - Portfolio tracking with real-time valuations
@@ -151,13 +162,15 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 - Overpayment simulator: shorten the term or lower the installment, saved scenarios, a goal seek (work backwards from a payoff date), a fixed monthly payment plan and a chart that compares scenarios. Exports to CSV, PNG and PDF
 - Mortgage types: Annuity (Level Payment), Canadian Fixed Rate, Linear (Constant Principal) and Interest Only. Monize can suggest the type from two or three installments on a statement, or from the installments you already posted. A rate-fixed term for every mortgage
 - Settlement from bank debits: an imported monthly debit is split into principal and interest, booked against the loan, and marks the scheduled installment as paid, so no duplicate transaction is created
+- Mortgage fees: insurance, taxes or other fees on a mortgage payment, as a fixed amount or a percentage of the balance, each with its own category and its own line on the scheduled payment
 - All payment frequencies, and Canadian semi-annual compounding
 - Loan Amortization Schedule, Loan Overpayment Simulator and Debt Payoff Timeline reports
 
 ### Multi-Currency Support
 - 44 currencies with built-in symbol and formatting metadata (USD, CAD, EUR, GBP, JPY, CHF, AUD, CNY and more), created on demand rather than pre-seeded
 - Daily exchange rate updates from an ordered chain of providers (Frankfurter, then Yahoo Finance, by default), a rate history for each currency, and a Fill gaps button for missing dates
-- Automatic currency conversion for reporting
+- Cryptocurrencies alongside fiat currencies, priced from a Yahoo pair such as `BTC-EUR` and refreshed on weekends too
+- Automatic currency conversion for reporting: reports, budgets and cost basis convert each amount at the rate for its own date, and name the currency when a rate is missing
 - Per-account currency settings
 
 ### Multi-Language Support
@@ -168,8 +181,9 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 - Numbers follow your own convention, on screen and in the fields you type into (for example a decimal comma, or Indian lakh grouping)
 
 ### Scheduled Transactions
-- Recurring bills, deposits and transfers with 13 frequencies: once, daily, weekly, every two weeks, every four weeks, twice a month, monthly, every two months, quarterly, every four months, twice a year, yearly and every two years
-- Zero-amount reminders for bills that change every time
+- Recurring bills, deposits and transfers with 13 fixed frequencies: once, daily, weekly, every two weeks, every four weeks, twice a month, monthly, every two months, quarterly, every four months, twice a year, yearly and every two years
+- A Custom frequency: chosen weekdays, days of the month (including the last day) or dates of the year, every 1-12 weeks, months or years
+- Zero-amount reminders for bills that change every time, or estimated amounts worked out from your payment history to that payee, allowing for seasonal patterns
 - Automatic transaction entry option
 - Skip and override individual occurrences
 - Scheduled transactions in another currency
@@ -177,12 +191,13 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 - Bill payment history tracking
 
 ### Dashboard and Appearance
-- 22 widgets that you can hide, reorder and configure (time range, accounts, chart type), among them Favourite Accounts and Securities, Upcoming Bills (a list or a small calendar), Top Movers (gainers or losers, by amount or percent), Portfolio Value, Assets vs Liabilities, Credit Utilization and Favourite Reports
+- 26 widgets that you can add, remove, drag and resize in place on the dashboard, and configure (time range, accounts, chart type), among them Favourite Accounts and Securities, Upcoming Bills (a list or a small calendar), Cash Flow Forecast, Top Movers (gainers or losers, by amount or percent), Portfolio Value, Assets vs Liabilities, Credit Utilization, Warranties expiring soon, Favourite Reports and a daily Trivia fact about your finances
+- A hero at the top with your net worth or portfolio value and its chart
 - Each widget title opens its full report
 - Fifteen colour themes for the whole app, each with a light and a dark variant (Settings -> Preferences)
 
 ### Reports
-- **Built-in Reports** -- 47 across ten categories (spending, income, net worth, tax, debt, investment, insights, maintenance, budget, bills), all server-side aggregated. A sample:
+- **Built-in Reports** -- 48 across ten categories (spending, income, net worth, tax, debt, investment, insights, maintenance, budget, bills), all server-side aggregated. A sample:
   - Spending by Category / Payee
   - Income by Source
   - Monthly Spending Trend
@@ -194,6 +209,7 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
   - Weekend vs Weekday Spending
   - Spending Anomalies
   - Tax Summary
+  - Payroll Deductions
   - Recurring Expenses Tracker
   - Account Balances (at any date, with that day's prices and exchange rates)
   - Credit Utilization
@@ -229,7 +245,8 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 - **Natural language queries** about your finances ("How much did I spend on dining last month?", "What are my top expense categories?")
 - **Multi-provider support**: Anthropic (Claude), OpenAI (GPT), Ollama (local models), Ollama Cloud, and any OpenAI-compatible endpoint, or your own AI subscription through the MCP relay
 - **Real-time streaming** responses via Server-Sent Events
-- **21 tools**: transactions, accounts, categories, payees, portfolio, capital gains, upcoming bills, budget status, period comparison, reports, transaction rules, a calculator that converts currencies, and charts
+- **28 tools**: transactions, accounts, categories, payees, tags, portfolio, capital gains, upcoming bills, budget status, period comparison, reports, transaction rules, warranties, bond series, a calculator that converts currencies, and charts
+- **Answers from the user guide**: "how do I..." questions are answered from the guide, citing the sections used
 - **Changes on request**: the assistant can add, change or delete transactions (up to 25 in one request), split them, record investment trades, manage payees, securities and rules, set a fund's allocation and attach a receipt to a transaction. Nothing is written until you approve it
 - **Attachments and a chat bubble**: attach images, PDFs and CSV files to a question, and open the chat from any page
 - **Spending Insights**: AI analysis of your spending patterns and anomalies
@@ -257,12 +274,16 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 - Install Monize as a PWA on a phone or a desktop
 - A layout built for the phone: nearly forty tables become cards, the register and the reports catalogue fit the width, and donut charts show their total in the centre
 - A horizontal swipe moves between views; on the register it turns the page
-- A mobile navigation drawer, sorting chips on the register, and a full-screen notification panel
+- A bottom tab bar on phones and tablets, with three tabs you choose, a **+** button that adds whatever the page is about, and **More**
+- Sorting chips on the register, and a full-screen notification panel
 - Scan receipts with the camera, and share files from other apps into Monize
+- A command palette (Ctrl/Cmd+K) that searches accounts, payees, categories, bills, securities, reports, pages, settings, transactions and the guide in one box
+- The [user guide](https://www.monize.net/docs/) inside the app: a side panel from the **?** on each page, screenshots in your current theme, offline, and **Learn more** links on tooltips, empty screens and error messages that open the exact section
 - Guided tours of the main features, and a What's New digest after each update
 
 ### Self-Hosting and Operations
 - Docker Compose files for development, production, demo and several replicas, and a Helm chart for Kubernetes
+- A Windows installer for a single PC, with its own PostgreSQL, tray icon and automatic updates: no Docker needed ([Monize for Windows](https://www.monize.net/docs/windows))
 - Several backend replicas with `CLUSTER_MODE=multi`, with PostgreSQL only and no Redis
 - Attachment storage in the database, on disk or in S3 (`ATTACHMENT_STORAGE_PROVIDER`); existing attachments are copied across when you switch
 - The automatic backup store on disk or in S3 (`BACKUP_STORAGE_PROVIDER`)
@@ -607,6 +628,7 @@ npm run dev
 | `LOCAL_AUTH_ENABLED` | Enable local auth | `true` |
 | `REGISTRATION_ENABLED` | Allow new user registration | `true` |
 | `FORCE_2FA` | Require 2FA for all local users | `false` |
+| `AUTH_BRAND_PANEL` | Show the brand panel with a sample-data screenshot beside the sign-in screens (`false` hides the panel) | `true` |
 | `OIDC_ISSUER_URL` | OIDC provider URL | - |
 | `OIDC_CLIENT_ID` | OIDC client ID | - |
 | `OIDC_CLIENT_SECRET` | OIDC client secret | - |
@@ -678,6 +700,35 @@ Example environment for K8s:
 - name: PUBLIC_APP_URL
   value: "https://money.example.com"
 ```
+
+### Windows (single PC)
+
+For one Windows 10/11 x64 PC there is an installer with everything inside:
+the frontend, the backend and PostgreSQL 16 run as one app with a tray icon,
+installed for the current Windows account without administrator rights.
+
+- **Download:** `Monize-Setup-<version>.exe` from the
+  [latest release](https://github.com/kenlasko/monize/releases/latest). A
+  beta built from `main` is the one
+  [prerelease](https://github.com/kenlasko/monize/releases) named
+  "Windows beta". The installer is not code-signed yet, so SmartScreen asks
+  for confirmation.
+- **Reachable from that PC only.** Everything binds `127.0.0.1`: no phone,
+  no other computer, no email (there are no SMTP settings), no OIDC. The
+  [Windows guide](https://www.monize.net/docs/windows#what-the-windows-app-cannot-do)
+  lists everything this rules out.
+- **Data** lives in `%LOCALAPPDATA%\Monize` (`pgdata`, `attachments`,
+  `backups`, `logs`, `config.json`); the tray's "Move data folder..." moves
+  it. The secrets in `config.json` are generated on first start and
+  encrypted for the Windows account.
+- **Backups:** save the recovery key from the tray ("Export recovery
+  key..."), keep in-app backups off the PC (they restore anywhere), and
+  for a full copy of the instance use
+  [`desktop/scripts/Backup-Monize.ps1`](desktop/scripts/Backup-Monize.ps1),
+  which restores under the same Windows account only. The guide's
+  [Backups and Disaster Recovery](https://www.monize.net/docs/windows#backups-and-disaster-recovery)
+  explains which copy restores where.
+- **Building it yourself:** [`desktop/README.md`](desktop/README.md).
 
 ## API Documentation
 

@@ -11,6 +11,7 @@
 | `tables-and-registers.md` | touching a table, a register, row density, a pager or a list toolbar |
 | `financial-figures.md` | rendering, deriving or totalling a money figure; scheduled occurrences, loans, portfolio ranges, charts |
 | `pwa-push-share.md` | touching push notifications, the service worker, or the Web Share Target |
+| `shell-contract.md` | adding code that detects a native shell, changing the push enable controls, or building the Electron or Capacitor shell |
 | `testing.md` | writing or changing a test, a mock or a test helper |
 | `theming.md` | adding a colour, a palette, a chart or a theme |
 

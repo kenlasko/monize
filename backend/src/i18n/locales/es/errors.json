@@ -330,7 +330,20 @@
     "budgetCategoryNotFound": "Categoría de presupuesto con ID {{ id }} no encontrada",
     "periodNotFound": "Período de presupuesto con ID {{ id }} no encontrado",
     "noOpenPeriod": "No hay ningún período abierto para cerrar",
-    "categoryIdsNotOwned": "IDs de categoría no encontrados o no pertenecen al usuario: {{ ids }}"
+    "categoryIdsNotOwned": "IDs de categoría no encontrados o no pertenecen al usuario: {{ ids }}",
+    "transferAccountNotFound": "Cuenta con ID {{ id }} no encontrada",
+    "transferAccountAlreadyInBudget": "Esta cuenta ya tiene una línea de transferencia en el presupuesto",
+    "bucketNotFound": "No se encontró el bolsillo con ID {{ id }}",
+    "bucketLimit": "Un presupuesto puede tener como máximo {{ max }} bolsillos",
+    "bucketNameInvalid": "El nombre de un bolsillo debe tener entre 1 y {{ max }} caracteres",
+    "bucketNameDuplicate": "Este presupuesto ya tiene un bolsillo con ese nombre",
+    "bucketTargetInvalid": "El objetivo de un bolsillo debe ser mayor que cero",
+    "bucketPercentInvalid": "Un objetivo en porcentaje debe ser mayor que 0 y como máximo 100, con como máximo dos decimales",
+    "bucketCarryCapNeedsCarryOver": "Un límite de traslado requiere tener activado el traslado",
+    "bucketOnIncomeLine": "Una línea de ingresos no puede pertenecer a un bolsillo",
+    "bucketKeyDuplicate": "La clave de bolsillo \"{{ key }}\" se usa más de una vez",
+    "bucketKeyUnknown": "Ningún bolsillo de esta solicitud tiene la clave \"{{ key }}\"",
+    "transferLineDirectionFixed": "No se puede cambiar la dirección de una línea de transferencia. Elimínela y añada una línea nueva."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Una regla de deducción de nómina hace seguimiento de una factura pagada en una moneda fiduciaria; la cuenta de esta factura contiene la criptomoneda {{ code }}. Elige una factura pagada desde una cuenta en moneda fiduciaria.",
