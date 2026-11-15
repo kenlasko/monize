@@ -98,6 +98,7 @@ describe('BudgetWizardReview', () => {
     selectedTransfers: new Map(),
     selectedIncomeTransfers: new Map(),
     buckets: [],
+    bucketsPresetApplied: false,
     currencyCode: 'USD',
     baseIncome: null,
     incomeLinked: false,

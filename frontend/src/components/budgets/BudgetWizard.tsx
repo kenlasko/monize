@@ -41,6 +41,11 @@ export interface WizardState {
    * changes, and only sent while the strategy is Bucket.
    */
   buckets: BudgetBucketEditorRow[];
+  /**
+   * Set once the Bucket strategy has pre-applied its preset. A list the person
+   * then empties ("Start from scratch") stays empty on a later analysis.
+   */
+  bucketsPresetApplied: boolean;
 
   // Step 3: Strategy / Options
   budgetName: string;
@@ -91,6 +96,7 @@ export function BudgetWizard({
     selectedTransfers: new Map(),
     selectedIncomeTransfers: new Map(),
     buckets: [],
+    bucketsPresetApplied: false,
     budgetName: `${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()} Budget`,
     budgetType: 'MONTHLY',
     periodStart: defaultPeriodStart,
@@ -178,9 +184,12 @@ export function BudgetWizard({
         });
       }
 
-      // Bucket: pre-apply "Three buckets" the first time (names translated once,
-      // no line assigned); a list the person already has is never replaced.
-      const buckets = isBucket && state.buckets.length === 0
+      // Bucket: pre-apply "Three buckets" once (names translated once, no line
+      // assigned). A list the person already has is never replaced, and one
+      // they emptied afterwards stays empty.
+      const applyPreset =
+        isBucket && !state.bucketsPresetApplied && state.buckets.length === 0;
+      const buckets = applyPreset
         ? materializeBudgetBucketPreset(findBudgetBucketPreset('THREE'), t, newClientId)
         : state.buckets;
       if (isBucket) {
@@ -214,10 +223,10 @@ export function BudgetWizard({
         selectedIncomeTransfers: new Map(),
         baseIncome: estimatedIncome,
         defaultRolloverType: defaultRollover,
-        ...(isBucket ? { buckets } : {}),
+        ...(isBucket ? { buckets, bucketsPresetApplied: true } : {}),
       });
     },
-    [updateState, state.strategy, state.buckets, state.selectedCategories, state.selectedTransfers, t],
+    [updateState, state.strategy, state.buckets, state.bucketsPresetApplied, state.selectedCategories, state.selectedTransfers, t],
   );
 
   return (

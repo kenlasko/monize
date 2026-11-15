@@ -66,6 +66,9 @@ vi.mock('./BudgetWizardCategories', () => ({
   BudgetWizardCategories: ({ state, updateState, onNext, onBack }: any) => (
     <div data-testid="step-categories">
       <WizardBucketProbe state={state} />
+      <button data-testid="clear-buckets" onClick={() => updateState({ buckets: [] })}>
+        Clear
+      </button>
       <button
         data-testid="rename-first-bucket"
         onClick={() =>
@@ -432,6 +435,19 @@ describe('BudgetWizard', () => {
       fireEvent.click(screen.getByTestId('analyze-btn'));
       expect(screen.getByTestId('bucket-names')).toHaveTextContent('Bills|Everyday spending|Savings');
       expect(screen.getByTestId('bucket-keys')).toHaveTextContent(keys!);
+    });
+
+    it('leaves an emptied bucket list empty when the analysis is run again', () => {
+      renderWizard();
+      fireEvent.click(screen.getByTestId('choose-bucket'));
+      fireEvent.click(screen.getByTestId('analyze-btn'));
+      expect(screen.getByTestId('bucket-names')).toHaveTextContent('Fixed costs|Everyday spending|Savings');
+
+      // Start from scratch, then back and re-run: the preset does not return.
+      fireEvent.click(screen.getByTestId('clear-buckets'));
+      fireEvent.click(screen.getByTestId('categories-back'));
+      fireEvent.click(screen.getByTestId('analyze-btn'));
+      expect(screen.getByTestId('bucket-names')).toBeEmptyDOMElement();
     });
 
     it('keeps buckets and assignments across back and forward navigation', () => {
