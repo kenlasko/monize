@@ -413,6 +413,19 @@
       "failed": "[XX-Failed to create budget-XX]"
     }
   },
+  "wizardBuckets": {
+    "title": "[XX-Buckets-XX]",
+    "description": "[XX-Split your income into buckets, then choose a bucket for each expense and transfer below.-XX]",
+    "selectLabel": "[XX-Bucket for {name}-XX]",
+    "unassigned": "[XX-Unassigned-XX]",
+    "tallyTitle": "[XX-Lines per Bucket-XX]",
+    "tallyValue": "[XX-{count, plural, one {# line} other {# lines}} · {amount}-XX]",
+    "review": {
+      "lineCount": "[XX-{count, plural, one {# line} other {# lines}}-XX]",
+      "unassigned": "[XX-{count, plural, one {# expense or transfer line is} other {# expense or transfer lines are}} not in any bucket. You can still create the budget and assign them later on its edit page.-XX]",
+      "noBuckets": "[XX-This budget has no buckets yet. You can still create it and add buckets later on its edit page.-XX]"
+    }
+  },
   "zeroBasedBar": {
     "title": "[XX-Zero-Based Assignment-XX]",
     "fullyAssigned": "[XX-Fully assigned-XX]",
@@ -693,5 +706,52 @@
       "presetApplied": "[XX-Preset applied-XX]",
       "presetFailed": "[XX-Failed to apply preset-XX]"
     }
+  },
+  "bucketSummary": {
+    "title": "[XX-Bucket allocation-XX]",
+    "loading": "[XX-Loading bucket allocation-XX]",
+    "loadFailed": "[XX-Could not load the bucket allocation. Try again in a moment.-XX]",
+    "emptyTitle": "[XX-No buckets yet-XX]",
+    "emptyDescription": "[XX-Add buckets to split your income into named pots.-XX]",
+    "emptyAction": "[XX-Add buckets-XX]",
+    "income": "[XX-Bucket income-XX]",
+    "incomeUnknown": "[XX-Unknown-XX]",
+    "incomeSource": {
+      "ACTUAL": "[XX-Based on actual income this period-XX]",
+      "BASE_INCOME": "[XX-Based on the budget's base income-XX]",
+      "INCOME_LINES": "[XX-Based on planned income categories-XX]",
+      "NONE": "[XX-No income found-XX]"
+    },
+    "totalAllocated": "[XX-Total allocated-XX]",
+    "allocatedSoFar": "[XX-Allocated so far-XX]",
+    "allocatedSoFarHint": "[XX-Some buckets have no known amount yet, so this is a partial figure.-XX]",
+    "unallocated": "[XX-Unallocated-XX]",
+    "unallocatedUnknown": "[XX-Unknown-XX]",
+    "overAllocatedHint": "[XX-Over-allocated: the buckets add up to more than your income.-XX]",
+    "targetPercent": "[XX-{percent} of income-XX]",
+    "targetAmount": "[XX-{amount} per period-XX]",
+    "carriedIn": "[XX-Carried in {amount}-XX]",
+    "spent": "[XX-Spent-XX]",
+    "available": "[XX-Available-XX]",
+    "overspent": "[XX-Overspent-XX]",
+    "categories": "[XX-{count, plural, one {# category} other {# categories}}-XX]",
+    "allocationUnknown": "[XX-Set a base income on the budget, or add an income category.-XX]",
+    "allocationUnknownAction": "[XX-Edit budget-XX]",
+    "unassignedTitle": "[XX-Unassigned-XX]",
+    "unassignedDescription": "[XX-{count, plural, one {# category line is} other {# category lines are}} not in any bucket.-XX]",
+    "unassignedPlanned": "[XX-Planned-XX]",
+    "unassignedAction": "[XX-Assign them-XX]"
+  },
+  "periodBuckets": {
+    "title": "[XX-Buckets-XX]",
+    "name": "[XX-Bucket-XX]",
+    "target": "[XX-Target-XX]",
+    "allocated": "[XX-Allocated-XX]",
+    "allocatedUnknown": "[XX-Unknown-XX]",
+    "carriedIn": "[XX-Carried in-XX]",
+    "spent": "[XX-Spent-XX]",
+    "carriedOut": "[XX-Carried out-XX]",
+    "targetPercent": "[XX-{percent} of income-XX]",
+    "targetAmount": "[XX-{amount} per period-XX]"
   }
 }
