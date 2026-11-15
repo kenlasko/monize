@@ -35,6 +35,7 @@ import {
   PeriodDateRange,
 } from "./budget-date.utils";
 import {
+  budgetTransfersInAsIncome,
   queryCategorySpending,
   resolveBudgetIncome,
   resolveCategoryName,
@@ -1172,7 +1173,12 @@ export class BudgetsService {
   ): Promise<CategoryActuals> {
     const budgetCategories = budget.categories || [];
 
-    if (budgetCategories.length === 0) {
+    // A budget with no line still counts transfers in from its excluded
+    // accounts when the toggle is on (issue #2141).
+    if (
+      budgetCategories.length === 0 &&
+      !budgetTransfersInAsIncome(budget.config)
+    ) {
       return { lines: [], outsideTransferIncome: 0 };
     }
 
@@ -1186,6 +1192,7 @@ export class BudgetsService {
         budgetCategories,
         periodStart,
         periodEnd,
+        budget.id,
       ),
     );
 

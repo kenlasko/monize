@@ -1237,6 +1237,39 @@ describe("BudgetsService", () => {
       );
       expect(groceries!.budgeted).toBe(180);
     });
+
+    it("counts the toggle's income on a budget with no line (issue #2141)", async () => {
+      const config = {
+        excludedAccountIds: ["hisa"],
+        transfersInAsIncome: true,
+      };
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        config,
+        categories: [],
+      });
+      (
+        transactionsRepository.manager as unknown as { query: jest.Mock }
+      ).query.mockImplementation(async (sql: string) =>
+        sql.includes("FROM budgets")
+          ? [{ currency_code: TEST_BUDGET_CURRENCY, config }]
+          : [],
+      );
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([spendingRow("hisa", "750")]),
+        }),
+      );
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({ getRawMany: jest.fn().mockResolvedValue([]) }),
+      );
+
+      const result = await service.getSummary("user-1", "budget-1");
+
+      expect(result.categoryBreakdown).toEqual([]);
+      expect(result.outsideTransferIncome).toBe(750);
+      expect(result.totalIncome).toBe(750);
+    });
   });
 
   describe("getVelocity", () => {

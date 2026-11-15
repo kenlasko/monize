@@ -420,4 +420,55 @@ describe("queryCategorySpending with transfers in", () => {
     expect(txRepo.createQueryBuilder).toHaveBeenCalledTimes(1);
     expect(splitRepo.createQueryBuilder).toHaveBeenCalledTimes(1);
   });
+
+  it("counts the toggle's figure for a budget with no line at all, given its id", async () => {
+    const incomingParent = makeQbReturning([row("hisa", "1500")]);
+    const incomingSplit = makeQbReturning([]);
+    const txRepo: any = {
+      manager: makeManager({
+        excludedAccountIds: ["hisa"],
+        transfersInAsIncome: true,
+      }),
+      createQueryBuilder: jest.fn().mockReturnValueOnce(incomingParent),
+    };
+    const splitRepo: any = {
+      createQueryBuilder: jest.fn().mockReturnValueOnce(incomingSplit),
+    };
+
+    const result = await queryCategorySpending(
+      txRepo,
+      splitRepo,
+      "user-1",
+      [],
+      "2026-01-01",
+      "2026-01-31",
+      "b-1",
+    );
+
+    expect(txRepo.manager.query).toHaveBeenCalledWith(
+      expect.stringContaining("FROM budgets b WHERE b.id = $1"),
+      ["b-1"],
+    );
+    expect(result.currency).toBe("CAD");
+    expect(result.outsideTransferIncome).toBe(1500);
+  });
+
+  it("reads nothing for a budget with no line and no id", async () => {
+    const txRepo: any = {
+      manager: makeManager({ transfersInAsIncome: true }),
+      createQueryBuilder: jest.fn(),
+    };
+
+    const result = await queryCategorySpending(
+      txRepo,
+      { createQueryBuilder: jest.fn() } as any,
+      "user-1",
+      [],
+      "2026-01-01",
+      "2026-01-31",
+    );
+
+    expect(txRepo.manager.query).not.toHaveBeenCalled();
+    expect(result.outsideTransferIncome).toBe(0);
+  });
 });

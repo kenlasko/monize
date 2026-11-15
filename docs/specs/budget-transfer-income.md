@@ -44,7 +44,10 @@ income line first and clamps the whole, as it already does for categories.
 
 **Option (a)** reads the same legs with every excluded account as a source,
 less any account a transfer line of the budget already names (that line
-counts it). It is one figure, clamped at zero as a line.
+counts it). It is one figure, clamped at zero as a line. It needs no line: a
+budget with the toggle on and no line at all still shows it on the summary
+and freezes it at the period close (the spending read takes the budget's id
+rather than reading it off the first line).
 
 **One line per account.** An account is named by at most one transfer line
 of a budget, outgoing or income: a transfer to it counted as savings progress

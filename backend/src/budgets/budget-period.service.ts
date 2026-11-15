@@ -379,6 +379,7 @@ export class BudgetPeriodService {
       budgetCategories,
       periodStart,
       periodEnd,
+      budget.id,
     );
 
     const lines = new Map<string, number>();
