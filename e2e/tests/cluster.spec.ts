@@ -148,43 +148,64 @@ test.describe('CLUSTER_MODE=multi', () => {
 
   test('counts one login lockout for the deployment, not one per replica', async ({
     request,
+    playwright,
   }) => {
     // The attempt budget is five (`AuthService.MAX_FAILED_ATTEMPTS`), counted
     // by one guarded UPDATE on the user's row. Spread over two replicas a
     // per-process counter would give the attacker ten, and the sixth attempt
     // here would be answered "invalid credentials" instead of "locked".
     const user = await registerViaApi(request);
-    const attempts: Array<string | undefined> = [];
-
-    for (let i = 0; i < 5; i++) {
-      const res = await request.post('/api/v1/auth/login', {
-        data: { email: user.email, password: 'WrongPassword123!' },
-      });
-      expect(res.status(), `failed attempt ${i + 1} should be refused`).toBe(
-        401,
-      );
-      attempts.push(servedBy(res.headers()));
-    }
-
-    const replicas = new Set(attempts.filter(Boolean) as string[]);
-    expect(
-      replicas.size,
-      `all five attempts were served by ${[...replicas].join(', ') || 'no labelled replica'}; ` +
-        'the budget is only proven shared when they are spread',
-    ).toBeGreaterThan(1);
-
-    // The right password, now. A shared counter has already locked the
-    // account; a per-replica one would let this through.
-    const afterLock = await request.post('/api/v1/auth/login', {
-      data: { email: user.email, password: E2E_DEFAULT_PASSWORD },
+    // The attacker is a separate client. Registering left a known-device
+    // cookie in `request`, and under a lock that browser is spared (#2181),
+    // so the guesses and the locked-out login come from a context with none.
+    const stranger = await playwright.request.newContext({
+      baseURL: process.env.BASE_URL || 'http://localhost:3001',
     });
-    // 403 is the lockout on this route and 401 is "invalid credentials", so
-    // the status alone says which happened -- and it says it in every locale,
-    // which the message does not.
-    expect(
-      afterLock.status(),
-      `the correct password was accepted after five failures: ${await afterLock.text()}`,
-    ).toBe(403);
+    try {
+      const attempts: Array<string | undefined> = [];
+
+      for (let i = 0; i < 5; i++) {
+        const res = await stranger.post('/api/v1/auth/login', {
+          data: { email: user.email, password: 'WrongPassword123!' },
+        });
+        expect(res.status(), `failed attempt ${i + 1} should be refused`).toBe(
+          401,
+        );
+        attempts.push(servedBy(res.headers()));
+      }
+
+      const replicas = new Set(attempts.filter(Boolean) as string[]);
+      expect(
+        replicas.size,
+        `all five attempts were served by ${[...replicas].join(', ') || 'no labelled replica'}; ` +
+          'the budget is only proven shared when they are spread',
+      ).toBeGreaterThan(1);
+
+      // The right password, now. A shared counter has already locked the
+      // account; a per-replica one would let this through.
+      const afterLock = await stranger.post('/api/v1/auth/login', {
+        data: { email: user.email, password: E2E_DEFAULT_PASSWORD },
+      });
+      // 403 is the lockout on this route and 401 is "invalid credentials", so
+      // the status alone says which happened -- and it says it in every locale,
+      // which the message does not.
+      expect(
+        afterLock.status(),
+        `the correct password was accepted after five failures: ${await afterLock.text()}`,
+      ).toBe(403);
+
+      // The owner's own browser, known from the sign-up, still gets in through
+      // the lock the stranger caused (#2181).
+      const owner = await request.post('/api/v1/auth/login', {
+        data: { email: user.email, password: E2E_DEFAULT_PASSWORD },
+      });
+      expect(
+        owner.status(),
+        `the known device was refused under the lock: ${await owner.text()}`,
+      ).toBe(201);
+    } finally {
+      await stranger.dispose();
+    }
   });
 
   test('relays a prompt to an agent on another replica and back', async ({
