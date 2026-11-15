@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, renderHook, screen, fireEvent } from '@/test/render';
 import { HelpMenu } from './HelpMenu';
 import { useHelpMenuEntries } from '@/hooks/useHelpMenuEntries';
@@ -124,6 +124,34 @@ describe('HelpMenu', () => {
       'href',
       'https://github.com/kenlasko/monize/discussions',
     );
+  });
+
+  describe('the desktop app menu', () => {
+    afterEach(() => {
+      delete window.__MONIZE_SHELL__;
+      delete window.__MONIZE_SHELL_MENU__;
+    });
+
+    it('is not offered in a browser', () => {
+      openMenu();
+      expect(screen.queryByText('Desktop app menu')).not.toBeInTheDocument();
+    });
+
+    it('asks the shell to show its menu, and closes the Help menu', () => {
+      const open = vi.fn();
+      window.__MONIZE_SHELL__ = { kind: 'electron', version: '1.22.0' };
+      window.__MONIZE_SHELL_MENU__ = { open };
+      openMenu();
+      fireEvent.click(screen.getByText('Desktop app menu'));
+      expect(open).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText('Search help')).not.toBeInTheDocument();
+    });
+
+    it('is not offered by a shell whose preload has no menu bridge', () => {
+      window.__MONIZE_SHELL__ = { kind: 'electron', version: '1.20.0' };
+      openMenu();
+      expect(screen.queryByText('Desktop app menu')).not.toBeInTheDocument();
+    });
   });
 
   it('closes the menu after an action', () => {

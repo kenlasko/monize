@@ -12,20 +12,21 @@ This is a contract, not a framework. The shells share no code; they share these 
 
 The Electron preload sets it through `contextBridge.exposeInMainWorld` with `contextIsolation` on, so it exists before any page script runs and the page's own scripts cannot replace the preload's object. A shell that set it from a page-injected script after load would race the helper's first read.
 
-The flag is data and nothing else. The Electron preload exposes exactly one other key, `window.__MONIZE_SHELL_NOTIFICATIONS__`, the notification bridge described in "Native notifications"; no other key, and no other function, crosses into the page.
+The flag is data and nothing else. The Electron preload exposes exactly two other keys, `window.__MONIZE_SHELL_NOTIFICATIONS__`, the notification bridge described in "Native notifications", and `window.__MONIZE_SHELL_MENU__`, described in "The shell menu"; no other key, and no other function, crosses into the page.
 
 The page reads the flag in one helper, `detectShell()` in `frontend/src/lib/shell.ts`. It returns the flag when present and well-formed (a `kind` the capability table knows and a string `version`; anything else counts as absent); otherwise it duck-types `window.Capacitor` and answers `capacitor`, unless the object's `isNativePlatform()` answers false, which is Capacitor's web build running in a plain browser. The fallback is there because the Android plan already detects Capacitor that way and its bridge does not set the flag, so that plan needs no change. The helper never answers "browser" for a shell: a feature written as "not a browser" would treat the Electron window as a browser and offer push that cannot work there.
 
-The page owns the helper, and no component reads `window.__MONIZE_SHELL__`, `window.__MONIZE_SHELL_NOTIFICATIONS__` or `window.Capacitor` directly, so a new shell kind or a renamed flag changes one file.
+The page owns the helper, and no component reads `window.__MONIZE_SHELL__`, `window.__MONIZE_SHELL_NOTIFICATIONS__`, `window.__MONIZE_SHELL_MENU__` or `window.Capacitor` directly, so a new shell kind or a renamed flag changes one file.
 
 ## The page asks for capabilities, not kinds
 
-The page branches on four capabilities, derived from `kind` in one helper the page owns (the same module as `detectShell()`):
+The page branches on five capabilities, derived from `kind` in one helper the page owns (the same module as `detectShell()`):
 
 - `canReceivePush`: true in a browser that has the Push API, true in `capacitor` once FCM is built, false in `electron` (see Notifications).
 - `opensExternalLinksNatively`: true when the shell itself sends a foreign-origin navigation to the system browser (see External links).
 - `supportsDeepLinks`: true when the operating system hands `monize://` URLs to the shell (see Deep links).
-- `receivesNotificationsNatively`: true when the shell raises the operating system's own notifications from what the page publishes to it (see Native notifications). It is not push and does not change `canReceivePush`. It is the one capability that also needs the shell's side to be present: the table says yes for `electron`, and the helper answers true only if the bridge key is there too, so a page newer than its shell never says notifications appear when nothing would show them.
+- `receivesNotificationsNatively`: true when the shell raises the operating system's own notifications from what the page publishes to it (see Native notifications). It is not push and does not change `canReceivePush`. It also needs the shell's side to be present: the table says yes for `electron`, and the helper answers true only if the bridge key is there too, so a page newer than its shell never says notifications appear when nothing would show them.
+- `offersShellMenu`: true when the shell has a menu of its own that the page can ask it to show in the window (see The shell menu). Like `receivesNotificationsNatively`, the helper answers true only when the table says yes and the preload's key is there.
 
 A component that tests `kind === 'electron'` has to be found and edited when a third shell appears; one that tests a capability does not. The derivation table is the only place a kind is named.
 
@@ -71,6 +72,17 @@ The Electron shell shows the notification centre's unread rows as the operating 
 **A click** shows the window and loads the row's target on the app origin, resolved and checked against the navigation policy (`desktop/src/shell/navigation.ts`); a missing target, or one that would leave the origin, opens the home page. The click does not mark the row read, as a push click does not.
 
 **What is not covered.** Nothing arrives while Monize is closed: the server runs inside it. The notification matrix's Push column governs Web Push and is not applied: in the window, which has no push device, it is not a live control. Each raise is logged by row id, never its text, in `main.log`.
+
+## The shell menu
+
+The Electron shell's tray menu (open in browser, logs, the recovery key, moving the data folder, start at sign-in, updates, quit) is also reachable from inside the window, because a person who never finds the tray icon, or runs a session without a tray, still needs those items. There are two ways in, both built by the main process from the same model and handlers as the tray (`windowMenuModel` in `desktop/src/shell/tray-model.ts`, glue in `desktop/src/window-menus.ts`), so the three never disagree; "Open Monize" is left out of both because the reader is already in the window.
+
+- **The menu bar.** The window hides its menu bar until Alt is pressed. Its first menu is "Monize" (Alt+M) with the tray's items, in place of Electron's File menu; Electron's Edit, View and Window menus follow for the clipboard, zoom and reload, and Electron's Help menu, which links to electronjs.org, is left out. The page plays no part in it.
+- **The Help menu entry.** Where `offersShellMenu()` is true, the header Help menu and its phone twin (`useHelpMenuEntries`) add "Desktop app menu", which calls `openShellMenu()`. That calls `window.__MONIZE_SHELL_MENU__.open()`, the preload sends one message on `monize:shell-menu` with no payload, and the main process pops the native menu up at the pointer in the window.
+
+**The request carries nothing and returns nothing.** The page cannot choose an item, pass an argument or learn the menu's state: the shell builds the menu from its own state at the moment of the request, and every item still needs the reader's own click, most of them then opening a native dialog. A script that reached the key could at most open the menu. The main process accepts the request only from the main window's page on the app origin, the same check the notification bridge applies (`desktop/src/shell/ipc-sender.ts`), so another window that shares the preload is ignored.
+
+**When it goes away.** When a data-folder move or a quit begins, the shell removes the tray, puts back a menu bar without the Monize menu and stops answering the request, so no item runs against a stack that is stopping.
 
 ## Auth is not bypassed
 

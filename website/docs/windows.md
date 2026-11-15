@@ -51,6 +51,13 @@ Closing the window does not stop Monize: it keeps running in the system tray, so
 | **Check for updates** | Looks for a newer version now. |
 | **Quit Monize** | Stops the app, its server and its database. |
 
+The same items, apart from **Open Monize**, are also inside the window, so you do not have to find the tray icon:
+
+- **Help menu:** click **?** in the top bar and choose **Desktop app menu**. The menu opens where you clicked.
+- **Menu bar:** press **Alt** to show the window's menu bar, then open **Monize** (or press **Alt+M**). The bar also has Edit, View and Window menus for copy and paste, zoom and reload.
+
+On a PC whose taskbar has no tray area, these two are the only way to reach the items.
+
 ---
 
 ## Where Your Data Lives

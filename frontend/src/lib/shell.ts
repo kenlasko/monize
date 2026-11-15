@@ -4,7 +4,8 @@ import { getPushSupport } from '@/lib/push';
  * The page's side of the native-shell contract (`docs/frontend/shell-contract.md`).
  *
  * This is the only module that reads `window.__MONIZE_SHELL__`,
- * `window.__MONIZE_SHELL_NOTIFICATIONS__` or `window.Capacitor`, and
+ * `window.__MONIZE_SHELL_NOTIFICATIONS__`, `window.__MONIZE_SHELL_MENU__` or
+ * `window.Capacitor`, and
  * `SHELL_CAPABILITIES` is the only place a shell kind is named. Components ask for a capability, never for a kind, so a third shell or
  * a renamed flag is a change here and nowhere else.
  */
@@ -22,6 +23,8 @@ declare global {
     __MONIZE_SHELL__?: unknown;
     /** The Electron preload's notification bridge: `{ publish(snapshot) }`. */
     __MONIZE_SHELL_NOTIFICATIONS__?: unknown;
+    /** The Electron preload's shell menu: `{ open() }`. */
+    __MONIZE_SHELL_MENU__?: unknown;
     /** Present in a Capacitor WebView; its bridge does not set the flag. */
     Capacitor?: { isNativePlatform?: () => boolean } & Record<string, unknown>;
   }
@@ -40,6 +43,11 @@ interface ShellCapabilities {
    * arrives while the shell is closed, and the push controls stay unavailable.
    */
   receivesNotificationsNatively: boolean;
+  /**
+   * The shell has a menu of its own (the Windows tray's) that this page can
+   * ask it to show in the window (`openShellMenu`).
+   */
+  offersShellMenu: boolean;
 }
 
 /** The one derivation table. Change a row when a shell gains a capability. */
@@ -49,12 +57,14 @@ const SHELL_CAPABILITIES: Record<ShellKind, ShellCapabilities> = {
     opensExternalLinksNatively: true,
     supportsDeepLinks: true,
     receivesNotificationsNatively: true,
+    offersShellMenu: true,
   },
   capacitor: {
     canReceivePush: false,
     opensExternalLinksNatively: false,
     supportsDeepLinks: false,
     receivesNotificationsNatively: false,
+    offersShellMenu: false,
   },
 };
 
@@ -179,5 +189,45 @@ export function publishNotificationsToShell(
     notificationBridge()?.publish(snapshot);
   } catch {
     // The shell refused the value; the next poll publishes the whole state again.
+  }
+}
+
+interface ShellMenuBridge {
+  open: () => void;
+}
+
+function shellMenuBridge(): ShellMenuBridge | null {
+  if (typeof window === 'undefined') return null;
+  const bridge = window.__MONIZE_SHELL_MENU__;
+  if (typeof bridge !== 'object' || bridge === null) return null;
+  return typeof (bridge as { open?: unknown }).open === 'function'
+    ? (bridge as ShellMenuBridge)
+    : null;
+}
+
+/**
+ * Whether the shell can show its own menu in the window. The table must say
+ * so AND the bridge must be there, so a page newer than its shell never offers
+ * an entry that does nothing.
+ */
+export function offersShellMenu(): boolean {
+  const shell = detectShell();
+  return (
+    shell !== null &&
+    SHELL_CAPABILITIES[shell.kind].offersShellMenu &&
+    shellMenuBridge() !== null
+  );
+}
+
+/**
+ * Asks the shell to pop up its menu where the pointer is. Carries nothing and
+ * learns nothing back; a no-op outside such a shell, and never throws.
+ */
+export function openShellMenu(): void {
+  if (!offersShellMenu()) return;
+  try {
+    shellMenuBridge()?.open();
+  } catch {
+    // The shell did not take the request; there is nothing for the page to show.
   }
 }
