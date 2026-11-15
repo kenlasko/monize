@@ -7,9 +7,19 @@ import { NetWorthService } from "../net-worth/net-worth.service";
 import { SecurityPriceService } from "../securities/security-price.service";
 import { SecuritiesService } from "../securities/securities.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { ExchangeRateHistoryService } from "../currencies/exchange-rate-history.service";
+import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { moneyDecimalsFor, roundMoney } from "../common/round.util";
 import { LEDGER_MOVEMENT_PREDICATE } from "../common/ledger-balance.sql";
 import { todayYMD } from "../common/date-utils";
+import { investmentEffectStatusSql } from "../securities/investment-row-effects.util";
+
+/**
+ * How many bounded gap fills one import spends on each currency. A fill asks
+ * for at most `MAX_GAP_WINDOWS` windows of up to a year, so this reaches back
+ * about half a century; whatever is left is the Currencies page's button.
+ */
+export const IMPORT_RATE_FILL_MAX_ROUNDS = 6;
 
 /**
  * The work every import pipeline does once its rows are written: recompute
@@ -40,6 +50,8 @@ export class ImportPostProcessingService {
     private exchangeRateService: ExchangeRateService,
     @Inject(forwardRef(() => SecuritiesService))
     private securitiesService: SecuritiesService,
+    @Inject(forwardRef(() => ExchangeRateHistoryService))
+    private rateHistory: ExchangeRateHistoryService,
   ) {}
 
   async run(
@@ -185,7 +197,37 @@ export class ImportPostProcessingService {
       );
     }
 
-    for (const accountId of affectedAccountIds) {
+    this.recalculateNetWorth(userId, affectedAccountIds);
+
+    // The backfill above fetches a pair's history only while the pair holds no
+    // row at all, so a currency whose today's rate is already stored (it was
+    // added, or an account opened in it, before the import) never got the
+    // years the imported rows reach back to (issue #2186). The gap fill plans
+    // exactly those, against the user's own first use of the currency. In the
+    // background: each fill may spend `GAP_FILL_BUDGET_MS` on the provider,
+    // and the import has already written its rows.
+    this.fillRateHistory(userId, affectedIds)
+      .then((stored) => {
+        // A brokerage snapshot converts its securities at the stored rates.
+        if (stored > 0) this.recalculateNetWorth(userId, affectedAccountIds);
+      })
+      .catch((err) =>
+        this.logger.warn(
+          `Post-import rate history fill failed: ${err.message}`,
+        ),
+      );
+
+    // A settlement rule claimed a scheduled occurrence during the import: the
+    // schedule's next installment is priced on the ledger the import left,
+    // in its own transaction after the commit (INV-CACHE-001).
+    await repriceSettledLoanTemplates(this.dataSource, settledScheduleIds);
+  }
+
+  private recalculateNetWorth(
+    userId: string,
+    accountIds: ReadonlySet<string>,
+  ): void {
+    for (const accountId of accountIds) {
       this.netWorthService
         .recalculateAccount(userId, accountId)
         .catch((err) =>
@@ -194,10 +236,64 @@ export class ImportPostProcessingService {
           ),
         );
     }
+  }
 
-    // A settlement rule claimed a scheduled occurrence during the import: the
-    // schedule's next installment is priced on the ledger the import left,
-    // in its own transaction after the commit (INV-CACHE-001).
-    await repriceSettledLoanTemplates(this.dataSource, settledScheduleIds);
+  /**
+   * Fill the stored rate history of every foreign currency the imported
+   * accounts use -- the accounts' own and their securities' -- against the
+   * user's reporting currency, over the span their data uses it. The same fill
+   * the Currencies page's button runs, repeated while it reports windows left
+   * and the last round got an answer. Returns how many rates were stored.
+   *
+   * A currency no provider carries (a custom code, a coin without a price
+   * symbol) or a provider that did not answer is logged and skipped: the
+   * import's rows are correct either way, and the page still offers the fill.
+   */
+  private async fillRateHistory(
+    userId: string,
+    accountIds: readonly string[],
+  ): Promise<number> {
+    if (accountIds.length === 0) return 0;
+    const reporting = await resolveUserDefaultCurrency(this.dataSource, userId);
+    // Rows as EFFECTS: renders `it.status != 'VOID'`, because a void trade
+    // records something that did not happen and puts no currency in use.
+    const rows: Array<{ code: string }> = await withScopedDb(
+      this.dataSource,
+      (manager) =>
+        manager.query(
+          `SELECT DISTINCT code FROM (
+             SELECT a.currency_code AS code
+               FROM accounts a
+              WHERE a.id = ANY($1::UUID[]) AND a.user_id = $2
+             UNION
+             SELECT s.currency_code AS code
+               FROM investment_transactions it
+               JOIN securities s ON s.id = it.security_id
+              WHERE it.account_id = ANY($1::UUID[]) AND it.user_id = $2
+                AND ${investmentEffectStatusSql("it")}
+           ) used
+           WHERE code IS NOT NULL AND code <> $3
+           ORDER BY code`,
+          [accountIds, userId, reporting],
+        ),
+    );
+
+    let stored = 0;
+    for (const { code } of rows) {
+      for (let round = 0; round < IMPORT_RATE_FILL_MAX_ROUNDS; round++) {
+        try {
+          const fill = await this.rateHistory.fillRateGaps(userId, code);
+          stored += fill.stored;
+          const answered = fill.windowsFetched - fill.windowsUnanswered;
+          if (fill.windowsRemaining === 0 || answered === 0) break;
+        } catch (err) {
+          this.logger.warn(
+            `Post-import rate history fill for ${code}->${reporting} stopped: ${err.message}`,
+          );
+          break;
+        }
+      }
+    }
+    return stored;
   }
 }

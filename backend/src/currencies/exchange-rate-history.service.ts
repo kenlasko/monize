@@ -170,7 +170,8 @@ export interface RateGapFill {
  * "Missing exchange rates: EUR->PLN 2026-01-01 to 2026-06-19" and there is
  * nothing the reader can do about it without admin rights. This is that door:
  * list what is stored, work out which dates no stored observation can answer,
- * and ask the provider for those.
+ * and ask the provider for those. An import walks through it too, without a
+ * press (`ImportPostProcessingService`, issue #2186).
  *
  * It is a sibling of `ExchangeRateService` rather than more of it because that
  * file is already past this repository's size ceiling; the provider call itself

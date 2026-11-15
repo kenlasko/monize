@@ -1,15 +1,20 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { Logger } from "@nestjs/common";
-import { ImportPostProcessingService } from "./import-post-processing.service";
+import {
+  IMPORT_RATE_FILL_MAX_ROUNDS,
+  ImportPostProcessingService,
+} from "./import-post-processing.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { SecurityPriceService } from "../securities/security-price.service";
 import { SecuritiesService } from "../securities/securities.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { ExchangeRateHistoryService } from "../currencies/exchange-rate-history.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import { lockAccountsForBalanceWrite } from "../common/db/locks";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
 import { requestContextStorage } from "../common/request-context";
+import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -18,6 +23,9 @@ jest.mock("../common/db/scoped-db", () =>
 jest.mock("../common/db/locks", () =>
   jest.requireActual("../test-helpers/locks-testing").locksMockModule(),
 );
+jest.mock("../common/default-currency.util", () => ({
+  resolveUserDefaultCurrency: jest.fn().mockResolvedValue("CAD"),
+}));
 jest.mock("../loan-installments/reprice-template", () => ({
   repriceSettledLoanTemplates: jest.fn().mockResolvedValue(undefined),
 }));
@@ -48,6 +56,7 @@ describe("ImportPostProcessingService", () => {
   };
   let rates: { backfillHistoricalRates: jest.Mock };
   let securities: { recomputeBondPricesOfAccounts: jest.Mock };
+  let rateHistory: { fillRateGaps: jest.Mock };
   let errorSpy: jest.SpyInstance;
   let warnSpy: jest.SpyInstance;
 
@@ -67,6 +76,7 @@ describe("ImportPostProcessingService", () => {
     securities = {
       recomputeBondPricesOfAccounts: jest.fn().mockResolvedValue(undefined),
     };
+    rateHistory = { fillRateGaps: jest.fn() };
 
     errorSpy = jest.spyOn(Logger.prototype, "error").mockImplementation();
     warnSpy = jest.spyOn(Logger.prototype, "warn").mockImplementation();
@@ -80,6 +90,7 @@ describe("ImportPostProcessingService", () => {
         { provide: SecurityPriceService, useValue: prices },
         { provide: ExchangeRateService, useValue: rates },
         { provide: SecuritiesService, useValue: securities },
+        { provide: ExchangeRateHistoryService, useValue: rateHistory },
       ],
     }).compile();
 
@@ -118,6 +129,11 @@ describe("ImportPostProcessingService", () => {
     });
 
     it("reads and writes in the same transaction as the lock", async () => {
+      // The background rate-history fill opens its own transaction; hold it
+      // at its first step so only the balance write's is counted.
+      (resolveUserDefaultCurrency as jest.Mock).mockReturnValueOnce(
+        new Promise(() => undefined),
+      );
       await service.run(userId, false, new Set([accountA, accountB]));
 
       // One transaction: the lock is only worth anything for as long as it is
@@ -323,6 +339,118 @@ describe("ImportPostProcessingService", () => {
       await expect(
         service.run(userId, false, new Set([accountA])),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe("rate history of the imported currencies (#2186)", () => {
+    // The fill runs in the background; let its promise chain settle.
+    const settle = async () => {
+      for (let i = 0; i < 20; i++) {
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+    };
+    const usedCurrencies = (codes: string[]) =>
+      scoped.manager.query.mockImplementation(async (sql: string) =>
+        sql.includes("SELECT DISTINCT code")
+          ? codes.map((code) => ({ code }))
+          : [],
+      );
+    const fill = (over: Record<string, number>) => ({
+      stored: 0,
+      windowsFetched: 0,
+      windowsUnanswered: 0,
+      windowsRemaining: 0,
+      ...over,
+    });
+
+    it("fills each foreign currency the imported accounts use, round after round while windows remain", async () => {
+      // backfillHistoricalRates skips a pair that holds any row, so a currency
+      // whose today's rate was stored before the import never got the years
+      // the imported rows reach back to.
+      usedCurrencies(["EUR"]);
+      rateHistory.fillRateGaps
+        .mockResolvedValueOnce(
+          fill({ stored: 2000, windowsFetched: 8, windowsRemaining: 4 }),
+        )
+        .mockResolvedValueOnce(fill({ stored: 900, windowsFetched: 4 }));
+
+      await service.run(userId, false, new Set([accountA]));
+      await settle();
+
+      expect(rateHistory.fillRateGaps).toHaveBeenCalledTimes(2);
+      expect(rateHistory.fillRateGaps).toHaveBeenCalledWith(userId, "EUR");
+      const discovery = scoped.manager.query.mock.calls.find(([sql]) =>
+        String(sql).includes("SELECT DISTINCT code"),
+      );
+      // The reporting currency is excluded: it has no rate history.
+      expect(discovery?.[1]).toEqual([[accountA], userId, "CAD"]);
+      // Rates were stored, so the snapshots are recomputed after the fill
+      // as well as straight after the import.
+      expect(netWorth.recalculateAccount).toHaveBeenCalledTimes(2);
+    });
+
+    it("does not hold the import for the fill", async () => {
+      usedCurrencies(["EUR"]);
+      rateHistory.fillRateGaps.mockReturnValue(new Promise(() => undefined));
+
+      await expect(
+        service.run(userId, false, new Set([accountA])),
+      ).resolves.toBeUndefined();
+    });
+
+    it("stops a currency when a round got no answer, and recomputes nothing more when nothing was stored", async () => {
+      usedCurrencies(["EUR"]);
+      rateHistory.fillRateGaps.mockResolvedValue(
+        fill({ windowsFetched: 3, windowsUnanswered: 3, windowsRemaining: 3 }),
+      );
+
+      await service.run(userId, false, new Set([accountA]));
+      await settle();
+
+      expect(rateHistory.fillRateGaps).toHaveBeenCalledTimes(1);
+      expect(netWorth.recalculateAccount).toHaveBeenCalledTimes(1);
+    });
+
+    it("spends at most the round cap on one currency", async () => {
+      usedCurrencies(["EUR"]);
+      rateHistory.fillRateGaps.mockResolvedValue(
+        fill({ stored: 10, windowsFetched: 8, windowsRemaining: 8 }),
+      );
+
+      await service.run(userId, false, new Set([accountA]));
+      await settle();
+
+      expect(rateHistory.fillRateGaps).toHaveBeenCalledTimes(
+        IMPORT_RATE_FILL_MAX_ROUNDS,
+      );
+    });
+
+    it("warns about a currency the fill refuses and still fills the others", async () => {
+      usedCurrencies(["PTS", "USD"]);
+      rateHistory.fillRateGaps
+        .mockRejectedValueOnce(new Error("no provider carries PTS->CAD"))
+        .mockResolvedValueOnce(fill({ stored: 5, windowsFetched: 1 }));
+
+      await service.run(userId, false, new Set([accountA]));
+      await settle();
+
+      expect(rateHistory.fillRateGaps.mock.calls).toEqual([
+        [userId, "PTS"],
+        [userId, "USD"],
+      ]);
+      expect(
+        warnSpy.mock.calls.some((call) =>
+          String(call[0]).includes("rate history fill for PTS->CAD stopped"),
+        ),
+      ).toBe(true);
+      expect(errorSpy).not.toHaveBeenCalled();
+    });
+
+    it("asks nothing when the import touched no account", async () => {
+      await service.run(userId, false, new Set());
+      await settle();
+
+      expect(rateHistory.fillRateGaps).not.toHaveBeenCalled();
     });
   });
 
