@@ -854,6 +854,7 @@ export class McpInvestmentsTools {
           "Apply this investment transaction edit?",
           ...this.editLines(preview),
         ].join("\n"),
+        action.descriptor,
       );
       if (isAsk(confirmation)) return confirmation.ask;
       if (confirmation === "declined") {
@@ -1006,6 +1007,7 @@ export class McpInvestmentsTools {
           `Type: ${preview.action}`,
           `Date: ${preview.transactionDate}`,
         ].join("\n"),
+        action.descriptor,
       );
       if (isAsk(confirmation)) return confirmation.ask;
       if (confirmation === "declined") {

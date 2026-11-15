@@ -208,6 +208,12 @@
     "todayTitle": "{name}: garansi berakhir hari ini",
     "todayMessage": "Garansi untuk {name} berakhir hari ini, {date}. Buka untuk meninjau dokumennya atau mencatat klaim."
   },
+  "security": {
+    "oauthTitle": "Aplikasi baru terhubung: {clientName}",
+    "oauthMessage": "Aplikasi {clientName} baru saja diberi akses ke akun Monize Anda. Jika ini bukan Anda, segera ubah kata sandi Anda: tindakan itu mencabut akses semua aplikasi yang terhubung.",
+    "relayTitle": "Koneksi baru menjawab obrolan AI Anda",
+    "relayMessage": "Koneksi yang belum pernah menjawab obrolan AI Monize Anda baru saja mengambil sebuah prompt. Jika Anda tidak menghubungkan asisten ini, ubah kata sandi Anda."
+  },
   "payrollDeduction": {
     "resetTitle": "{category}: konfirmasi batas maksimum tahun depan",
     "resetMessage": "Potongan {category} pada {bill} diatur ulang pada {date}. Perbarui batas maksimum tahunan jika berubah; jika tidak, {amount} berlaku lagi."
@@ -268,6 +274,10 @@
     "shared_expenses": {
       "title": "Pengeluaran bersama",
       "body": "Ada pembaruan di grup bersama. Buka Monize untuk meninjaunya."
+    },
+    "security": {
+      "title": "Pemberitahuan keamanan",
+      "body": "Ada perubahan pada siapa yang dapat mengakses akun Monize Anda. Buka Monize untuk melihat detailnya."
     },
     "fallback": {
       "title": "Monize",

@@ -6,12 +6,13 @@
   "backToSignIn": "Kembali ke halaman masuk",
   "ownerFallback": "pemilik akun",
   "ownerFirstNameFallback": "pemilik",
-  "intro": "Halo {contactName}, Anda ditunjuk sebagai kontak darurat pada akun Monize milik <b>{ownerName}</b>.",
+  "intro": "Halo {contactName}, Anda ditunjuk sebagai kontak darurat pada akun Monize yang disebutkan dalam email yang membawa Anda ke sini.",
   "introDetail": "Menetapkan kata sandi di sini akan masuk ke akun sebagai pemegang akun dan memberikan Anda akses penuh ke akun. Sesi yang ada dicabut dan kredensial sebelumnya diganti.",
   "messageHeading": "Pesan dari {name}",
   "newPasswordLabel": "Kata Sandi Baru",
   "confirmPasswordLabel": "Konfirmasi Kata Sandi",
   "submit": "Klaim akses darurat",
+  "continueToDashboard": "Lanjutkan ke dasbor",
   "toasts": {
     "success": "Anda sekarang memiliki akses ke akun milik {name}.",
     "failed": "Gagal menyelesaikan klaim akses darurat. Tautan mungkin telah kedaluwarsa atau sudah digunakan."

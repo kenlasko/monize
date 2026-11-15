@@ -1051,7 +1051,7 @@ describe("McpTransactionsTools", () => {
       expect(relayService.emitPendingAction).toHaveBeenCalledTimes(1);
     });
 
-    it("deletes a single transaction when the client cannot elicit", async () => {
+    it("refuses to delete a single transaction when the client cannot elicit", async () => {
       ctx.setUser({ userId: "u1", scopes: "write" });
       prepService.prepareDelete.mockResolvedValue({
         transactionId: "t1",
@@ -1064,14 +1064,18 @@ describe("McpTransactionsTools", () => {
         currencyCode: "USD",
       });
 
+      const record = jest.spyOn(McpWriteLimiter.prototype, "record");
+
       const result = await handlers["manage_transactions"](
         { operation: "delete", items: [{ transactionId: "t1" }] },
         ctx,
       );
 
-      expect(transactionsService.removeAny).toHaveBeenCalledWith("u1", "t1");
-      const parsed = result.structuredContent as any;
-      expect(parsed.deleted).toBe(true);
+      expect(result.isError).toBe(true);
+      expect((result.content as any)[0].text).toContain("Not changed");
+      expect(transactionsService.removeAny).not.toHaveBeenCalled();
+      expect(record).not.toHaveBeenCalled();
+      record.mockRestore();
     });
 
     it("bulk delete (>= 6 items) builds one batch card", async () => {
@@ -1530,6 +1534,29 @@ describe("McpTransactionsTools", () => {
       );
       expect(result.isError).toBe(true);
       expect(transactionsService.create).not.toHaveBeenCalled();
+    });
+
+    it("refuses a bulk create from a client that cannot elicit", async () => {
+      relayService.emitPendingAction.mockResolvedValue(false);
+      prepService.prepareCreate.mockResolvedValue(
+        okStd([stdPreview, stdPreview]),
+      );
+      const result = await handlers["manage_transactions"](
+        {
+          operation: "create",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            accountName: "Checking",
+            amount: -50 - i,
+            date: "2025-01-15",
+          })),
+        },
+        ctx,
+      );
+      expect(result.isError).toBe(true);
+      expect((result.content as any)[0].text).toContain("Not changed");
+      expect(elicitInput).not.toHaveBeenCalled();
+      expect(transactionsService.create).not.toHaveBeenCalled();
+      expect(transactionsService.createTransfer).not.toHaveBeenCalled();
     });
 
     it("commits a bulk create including a transfer card via confirmWrite", async () => {

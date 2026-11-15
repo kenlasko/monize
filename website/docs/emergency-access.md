@@ -110,7 +110,7 @@ You can **Remove** a contact from the list. Removing a contact also invalidates 
 
 ## The Free-Form Message
 
-You can write an optional message of up to 4,000 characters that will be included in the grant email and shown to the contact on the claim page. Typical contents:
+You can write an optional message of up to 4,000 characters that will be included in the grant email and shown to the contact on the claim page once they have claimed the account. Typical contents:
 
 - Where to find paper records, safe-deposit-box keys, or password managers
 - Account numbers for institutions that are not in Monize
@@ -177,11 +177,11 @@ If a link could not be delivered to a contact (for example, the email server was
 If you have received an emergency access email, follow these steps to take over the account:
 
 1. Open the link in the email. It looks like `https://your-monize-server/emergency-access/claim?token=...`
-2. The page greets you by name, names the account holder, and shows their message if they wrote one
+2. The page greets you by name. It does not repeat the account holder's name or their message until the claim succeeds: the email already shows both, and the link alone does not prove who opened it
 3. Enter a **New Password** (it must meet Monize's standard requirements and must not appear in the [Have I Been Pwned](https://haveibeenpwned.com/) breach database)
 4. Enter it again in **Confirm Password** and click **Claim emergency access**
 
-![The emergency access claim page showing the owner's name, optional message, and new password fields](images/emergency-access-claim.png)
+![The emergency access claim page showing the greeting and the new password fields](images/emergency-access-claim.png)
 
 After a successful claim:
 
@@ -190,7 +190,7 @@ After a successful claim:
 - Two-factor authentication is disabled on the account (you will need to re-enable it under Settings if you want it)
 - All sibling magic links for the same account are voided -- you are the sole new holder
 - Emergency Access is automatically disabled on the now-claimed account
-- You are signed in and taken to the dashboard
+- You are signed in. If the account holder wrote a message, it is shown with a **Continue to dashboard** button; otherwise you are taken straight to the dashboard
 
 > [!IMPORTANT]
 > **One-shot only.** The claim link can be used only once. Refreshing the page after a successful claim, or opening it from a second browser, fails with "This emergency access link is invalid, expired, or has already been used."

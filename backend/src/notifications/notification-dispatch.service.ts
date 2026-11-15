@@ -91,6 +91,10 @@ export const PUSH_CATEGORY_COPY: Readonly<
     title: "Warranty reminder",
     body: "One of your warranties expires soon. Open Monize for the details.",
   },
+  [NotificationCategory.SECURITY]: {
+    title: "Security notice",
+    body: "Something changed in who can access your Monize account. Open Monize for the details.",
+  },
 };
 
 export interface NotifyOptions {

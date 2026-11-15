@@ -394,6 +394,12 @@
       "todayTitle": "{{ name }} : la garantie expire aujourd'hui",
       "todayMessage": "La garantie de {{ name }} expire aujourd'hui, le {{ date }}. Ouvrez-la pour consulter ses documents ou enregistrer une réclamation."
     },
+    "security": {
+      "oauthTitle": "Nouvelle application connectée : {{ clientName }}",
+      "oauthMessage": "L'application {{ clientName }} vient de recevoir l'accès à votre compte Monize. Si ce n'était pas vous, changez votre mot de passe maintenant : cela révoque l'accès de toutes les applications connectées.",
+      "relayTitle": "Une nouvelle connexion a répondu à votre chat IA",
+      "relayMessage": "Une connexion qui n'avait jamais répondu à votre chat IA Monize vient de récupérer une requête. Si vous n'avez pas connecté cet assistant, changez votre mot de passe."
+    },
     "payrollDeduction": {
       "resetTitle": "{{ category }} : confirmez le maximum de l'an prochain",
       "resetMessage": "La retenue {{ category }} sur {{ bill }} se réinitialise le {{ date }}. Mettez à jour le maximum annuel s'il change ; sinon {{ amount }} s'applique de nouveau."

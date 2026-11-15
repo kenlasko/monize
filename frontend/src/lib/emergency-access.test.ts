@@ -171,22 +171,35 @@ describe('emergencyAccessApi', () => {
 
   it('previewClaim() POSTs /emergency-access/claim/preview with the token', async () => {
     client.post.mockResolvedValue({
-      data: { contactFirstName: 'Carol', message: null },
+      data: { contactFirstName: 'Carol', expiresAt: '2026-12-01T00:00:00.000Z' },
     });
     const result = await emergencyAccessApi.previewClaim('abc');
     expect(client.post).toHaveBeenCalledWith(
       '/emergency-access/claim/preview',
       { token: 'abc' },
     );
-    expect(result).toEqual({ contactFirstName: 'Carol', message: null });
+    expect(result).toEqual({
+      contactFirstName: 'Carol',
+      expiresAt: '2026-12-01T00:00:00.000Z',
+    });
   });
 
-  it('completeClaim() POSTs /emergency-access/claim/complete with token + password', async () => {
-    client.post.mockResolvedValue({ data: { ok: true } });
-    await emergencyAccessApi.completeClaim('abc', 'CorrectHorse99!');
+  it('completeClaim() POSTs /emergency-access/claim/complete and returns the owner details', async () => {
+    const data = {
+      ok: true,
+      ownerFirstName: 'Owner',
+      ownerLastName: 'One',
+      message: 'secret',
+    };
+    client.post.mockResolvedValue({ data });
+    const result = await emergencyAccessApi.completeClaim(
+      'abc',
+      'CorrectHorse99!',
+    );
     expect(client.post).toHaveBeenCalledWith(
       '/emergency-access/claim/complete',
       { token: 'abc', newPassword: 'CorrectHorse99!' },
     );
+    expect(result).toEqual(data);
   });
 });

@@ -27,7 +27,7 @@ The digest is the multi-architecture **image index** digest (what
 | Image | Tag | Digest | Used in |
 | --- | --- | --- | --- |
 | `mcr.microsoft.com/playwright` | `v1.65.0-noble` | `sha256:9beb546099e11f52d62e505537914870e01a67e0e6b00ae41da4775324e73dbe` | `scripts/e2e-playwright.sh` (E2E shards in `.github/workflows/ci.yml`) |
-| `mirror.gcr.io/library/postgres` | `16-alpine` | `sha256:16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229` | `.github/workflows/ci.yml` (integration-test service), `scripts/verify-schema.sh`, `docker-compose.e2e.yml` |
+| `mirror.gcr.io/library/postgres` | `18-alpine` | `sha256:b6972e1115a4ff8eba5d7f7d19184926d1e16d7d1136ae1e1a7ebf286da0f015` | `.github/workflows/ci.yml` (integration-test service), `scripts/verify-schema.sh`, `docker-compose.e2e.yml` |
 | `mirror.gcr.io/library/nginx` | `1.29-alpine` | `sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de` | `docker-compose.e2e.yml` (cluster-shard load balancer) |
 | `mirror.gcr.io/library/node` | `24-alpine` | `sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53` | `backend/Dockerfile`, `frontend/Dockerfile` (`development` and `production` stages) |
 | `mirror.gcr.io/library/node` | `24-slim` | `sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205` | `backend/Dockerfile` (`builder` and `deps` stages), `frontend/Dockerfile` (`builder` stage) |
@@ -103,5 +103,5 @@ project's own images in the user-facing compose files and the Helm chart,
 where `:latest` is a convenience for self-hosters, and pinning them is a
 separate decision (issue #1837, item 5).
 
-- `docker-compose.dev.yml`, `docker-compose.prod.yml`, `docker-compose.ha.yml`: `postgres:16-alpine`, `caddy:2-alpine`, and the project's own `ghcr.io/kenlasko/monize-*:latest`
+- `docker-compose.dev.yml`, `docker-compose.prod.yml`, `docker-compose.ha.yml`: `postgres:18-alpine` (dev) and `postgres:16-alpine` (prod, ha), `caddy:2-alpine`, and the project's own `ghcr.io/kenlasko/monize-*:latest`
 - `helm/values.yaml`: the project's own images, by tag

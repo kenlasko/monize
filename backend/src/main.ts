@@ -23,8 +23,11 @@ import { resolveRestoreQueueConfig } from "./backup/restore-queue-config";
 import { createRestoreTicketAuthorizer } from "./backup/restore-upload-ticket";
 import { OAuthProviderService } from "./oauth/oauth-provider.service";
 import { oauthDebugLogger } from "./oauth/oauth-debug-logger.middleware";
+import { createCorsDelegate } from "./common/http/cors-policy";
 import { isOidcProviderPath } from "./oauth/oidc-provider-paths";
 import { installOidcProviderLogBridge } from "./oauth/oidc-provider-log-bridge";
+import { createOAuthEndpointThrottle } from "./oauth/oauth-endpoint-throttle";
+import { ThrottlerStorage } from "@nestjs/throttler";
 import { DataSource } from "typeorm";
 import { parseRlsMode } from "./common/db/rls-config";
 import { checkClusterBoot } from "./common/cluster/cluster-mode";
@@ -439,8 +442,7 @@ async function bootstrap() {
   // middleware so a request from an MCP client (Claude Desktop, mcp-remote)
   // is logged even when the strict app-wide CORS layer would have rejected
   // its Origin. CORS itself is path-aware further down (see app.enableCors
-  // delegate) — these paths get permissive CORS because they authenticate
-  // by Bearer token, not cookies.
+  // delegate in common/http/cors-policy.ts).
   app.use("/api/v1/mcp", oauthDebugLogger("mcp"));
   app.use("/.well-known/oauth-protected-resource", oauthDebugLogger("prm"));
   app.use(
@@ -484,83 +486,11 @@ async function bootstrap() {
           "http://127.0.0.1:3000",
         ]
       : []),
-  ].filter(Boolean);
+  ].filter((origin): origin is string => Boolean(origin));
 
-  // Path-aware CORS: the MCP and OAuth surfaces accept any origin
-  // because they authenticate via Bearer tokens (PAT / OAuth access
-  // token) and never receive cookies — a third-party origin can't ride
-  // ambient credentials. The rest of the app keeps the strict allow-list
-  // because it relies on cookies + CSRF for browser sessions.
-  app.enableCors((req, callback) => {
-    const path = req.path ?? req.url ?? "";
-    const isOpenSurface =
-      path === "/api/v1/mcp" ||
-      path.startsWith("/api/v1/mcp/") ||
-      path === "/oauth" ||
-      path.startsWith("/oauth/") ||
-      path.startsWith("/api/v1/oauth-consent/") ||
-      path === "/.well-known/oauth-protected-resource" ||
-      path === "/.well-known/oauth-authorization-server" ||
-      path.startsWith("/.well-known/oauth-authorization-server/") ||
-      path === "/.well-known/openid-configuration";
-
-    if (isOpenSurface) {
-      callback(null, {
-        origin: "*",
-        credentials: false,
-        methods: ["GET", "POST", "DELETE", "OPTIONS"],
-        allowedHeaders: [
-          "Authorization",
-          "Content-Type",
-          "Accept",
-          // Mcp-Session-Id is 2025-era; Mcp-Method and Mcp-Name are required on
-          // every 2026-07-28 Streamable HTTP POST so intermediaries can route
-          // and authorize without parsing the JSON-RPC body.
-          "Mcp-Session-Id",
-          "Mcp-Protocol-Version",
-          "Mcp-Method",
-          "Mcp-Name",
-        ],
-        exposedHeaders: ["Mcp-Session-Id", "WWW-Authenticate"],
-        maxAge: 600,
-      });
-      return;
-    }
-
-    callback(null, {
-      origin: (origin, cb) => {
-        // Requests with no Origin header (server-to-server, health checks,
-        // curl, same-origin navigations): always allow. Non-browser clients
-        // can trivially set any Origin, so blocking null Origin adds no real
-        // security. Sandboxed-iframe abuse is prevented by Helmet's
-        // frameguard: { action: "deny" } instead.
-        if (!origin) return cb(null, true);
-        if (allowedOrigins.includes(origin)) cb(null, true);
-        else cb(new Error("Not allowed by CORS"));
-      },
-      credentials: true,
-      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      allowedHeaders: [
-        "Content-Type",
-        "Authorization",
-        "Accept",
-        "X-CSRF-Token",
-        "X-Restore-Password",
-        "X-Restore-OIDC-Token",
-        // Sent by the client on an encrypted restore whose backup password
-        // differs from the login one. Missing here, that restore died at the
-        // preflight -- the same argument as the ticket header below, and a gap
-        // that predates it.
-        "X-Backup-Password",
-        // Without this a cross-origin restore upload never leaves the browser:
-        // the preflight refuses the header, so the upload is "blocked by CORS"
-        // rather than refused with the 403 that says what to do.
-        "X-Restore-Upload-Ticket",
-        "Mcp-Session-Id",
-      ],
-      exposedHeaders: ["Mcp-Session-Id"],
-    });
-  });
+  // Path-aware CORS: OAuth and discovery answer any origin, the MCP
+  // endpoint and the rest of the app only the allow-list above.
+  app.enableCors(createCorsDelegate(allowedOrigins));
 
   // The restore mount goes AFTER CORS, and that ordering is the point: the
   // admission middleware below answers requests itself (403 with no ticket, 413
@@ -626,6 +556,12 @@ async function bootstrap() {
   // mounted earlier (before the global cookie/helmet/CORS chain) so that
   // requests from MCP clients with an off-allowlist Origin still appear in the
   // log and bypass the strict app-wide CORS layer.
+  //
+  // The global ThrottlerGuard never sees these paths, so the anonymous
+  // row-writing endpoints are capped here, ahead of the provider (#2177).
+  app.use(
+    createOAuthEndpointThrottle(app.get<ThrottlerStorage>(ThrottlerStorage)),
+  );
   app.use(
     (
       req: express.Request,

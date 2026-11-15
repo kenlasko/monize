@@ -394,6 +394,12 @@
       "todayTitle": "{{ name }}: garantinin süresi bugün doluyor",
       "todayMessage": "{{ name }} garantisinin süresi bugün, {{ date }} tarihinde doluyor. Belgelerini incelemek veya bir talep kaydetmek için açın."
     },
+    "security": {
+      "oauthTitle": "Yeni uygulama bağlandı: {{ clientName }}",
+      "oauthMessage": "{{ clientName }} uygulamasına Monize hesabınıza erişim izni verildi. Bu siz değilseniz şifrenizi hemen değiştirin: bu işlem bağlı tüm uygulamaların erişimini iptal eder.",
+      "relayTitle": "Yeni bir bağlantı yapay zekâ sohbetinize yanıt verdi",
+      "relayMessage": "Monize yapay zekâ sohbetinize daha önce yanıt vermemiş bir bağlantı az önce bir istem aldı. Bu asistanı siz bağlamadıysanız şifrenizi değiştirin."
+    },
     "payrollDeduction": {
       "resetTitle": "{{ category }}: gelecek yılın üst sınırını onaylayın",
       "resetMessage": "{{ bill }} üzerindeki {{ category }} kesintisi {{ date }} tarihinde sıfırlanır. Yıllık üst sınır değişiyorsa güncelleyin; aksi halde {{ amount }} yeniden uygulanır."

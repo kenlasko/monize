@@ -406,6 +406,7 @@
         "BONDS": "债券",
         "AI_REVIEW": "AI 审核提案",
         "WARRANTIES": "保修提醒",
+        "SECURITY": "安全",
         "SHARED_EXPENSES": "共同支出"
       },
       "channelNotApplicable": "不适用于此通知类型",

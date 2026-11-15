@@ -6,12 +6,13 @@
   "backToSignIn": "Voltar ao login",
   "ownerFallback": "o proprietário da conta",
   "ownerFirstNameFallback": "o proprietário",
-  "intro": "Olá {contactName}, você foi designado(a) como contato de emergência na conta Monize de <b>{ownerName}</b>.",
+  "intro": "Olá {contactName}, você foi designado(a) como contato de emergência na conta Monize indicada no e-mail que trouxe você até aqui.",
   "introDetail": "Definir uma senha aqui permitirá entrar como titular da conta e você terá acesso total à mesma. As sessões existentes serão revogadas e as credenciais anteriores substituídas.",
   "messageHeading": "Mensagem de {name}",
   "newPasswordLabel": "Nova senha",
   "confirmPasswordLabel": "Confirmar senha",
   "submit": "Reivindicar acesso de emergência",
+  "continueToDashboard": "Continuar para o painel",
   "toasts": {
     "success": "Você agora tem acesso à conta de {name}.",
     "failed": "Falha ao concluir a reivindicação de acesso de emergência. O link pode ter expirado ou já ter sido utilizado."

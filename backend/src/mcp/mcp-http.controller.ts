@@ -108,9 +108,10 @@ export class McpHttpController implements OnModuleDestroy {
    * the wrong replica and is answered `404 Session not found`, which the spec
    * requires a client to recover from by re-initializing -- reads recover, but
    * an in-flight confirmation does not: its answer never reaches the pod that
-   * asked, that pod's wait expires, and `clientAnsweredForItself` reads the
-   * timeout as `"unsupported"` and lets the write proceed under the client's own
-   * approval prompt.
+   * asked, that pod's wait expires, and `elicitationUnanswered` reads the
+   * timeout: a single create or edit proceeds as `"unsupported"` under the
+   * client's own approval prompt, and a deletion or multi-row write is refused
+   * with `ConfirmNotAnsweredError` (`needsHumanAnswer` in `mcp-confirm.ts`).
    *
    * The 2026-07-28 leg has none of this: no session, no server-side wait, and a
    * fresh server per request, so it is replica-agnostic as it stands.

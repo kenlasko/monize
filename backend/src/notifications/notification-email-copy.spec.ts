@@ -175,6 +175,8 @@ const examples = {
     threshold: 0,
     daysLeft: 0,
   },
+  OAUTH_CLIENT_AUTHORIZED: { clientId: "c1", clientName: "Claude Desktop" },
+  RELAY_CREDENTIAL_FIRST_USE: { credentialKind: "pat" },
   BOND_MATURITY_SOON: {
     ...bondFacts,
     maturityDate: "2026-10-25",
@@ -353,6 +355,47 @@ describe("notification email copy", () => {
         { now: new Date("2026-09-30T12:00:00Z") },
       );
       expect(later).toEqual(expiring);
+    });
+  });
+
+  describe("security notifications", () => {
+    const english = (type: NotificationType, data: Record<string, unknown>) =>
+      notificationEmailCopy(source(type, data), englishEmailT, "en", { now });
+
+    it("names the client in the OAuth notice and says nothing identifying in the relay one", () => {
+      const oauth = english(
+        NotificationType.OAUTH_CLIENT_AUTHORIZED,
+        examples.OAUTH_CLIENT_AUTHORIZED,
+      );
+      expect(oauth.title).toBe("New app connected: Claude Desktop");
+      expect(oauth.message).toContain("change your password now");
+      const relay = english(
+        NotificationType.RELAY_CREDENTIAL_FIRST_USE,
+        examples.RELAY_CREDENTIAL_FIRST_USE,
+      );
+      expect(relay.title).toBe("A new connection answered your AI chat");
+      expect(relay.message).toContain("change your password");
+      expect(relay.message).not.toContain("API tokens");
+    });
+
+    it("escapes a hostile client name once in the immediate email HTML", () => {
+      const copy = english(NotificationType.OAUTH_CLIENT_AUTHORIZED, {
+        clientName: "<script>alert(1)</script>",
+      });
+      const html = notificationImmediateTemplate({
+        ...copy,
+        url: "https://app.example/settings",
+        severity: "warning",
+      });
+      expect(html).not.toContain("<script>");
+      expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+      expect(html).not.toContain("&amp;lt;");
+    });
+
+    it("keeps the stored copy when the client name is missing", () => {
+      expect(english(NotificationType.OAUTH_CLIENT_AUTHORIZED, {}).title).toBe(
+        "Stored title",
+      );
     });
   });
 

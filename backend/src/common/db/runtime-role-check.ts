@@ -136,12 +136,22 @@ export const FORBIDDEN_ROLE_MEMBERSHIPS = [
     role: "pg_monitor",
     why: "is an umbrella granting pg_read_all_settings and other monitoring roles, so it reaches forbidden capability",
   },
+  {
+    // PostgreSQL 17+. Absent on 16, where the name simply matches no row.
+    role: "pg_maintain",
+    why: "can VACUUM, ANALYZE, CLUSTER, REINDEX, REFRESH MATERIALIZED VIEW and LOCK TABLE on every relation in the cluster, including tables it does not own",
+  },
+  {
+    // PostgreSQL 18+. The autovacuum counterpart of pg_signal_backend.
+    role: "pg_signal_autovacuum_worker",
+    why: "can cancel or terminate autovacuum workers across the cluster, holding back the vacuuming every database depends on",
+  },
 ] as const;
 
 /**
  * The predefined roles a member may safely hold, classified deliberately rather
  * than allowed by omission (DR-RR7-002). Together with
- * `FORBIDDEN_ROLE_MEMBERSHIPS` this covers every PostgreSQL 16 `pg_*` role, and
+ * `FORBIDDEN_ROLE_MEMBERSHIPS` this covers every PostgreSQL 18 `pg_*` role, and
  * `runtime-role.integration.spec.ts` fails when the live catalog holds
  * a `pg_*` predefined role that appears in neither list -- so a future
  * PostgreSQL's new predefined role forces a decision instead of defaulting to

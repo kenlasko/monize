@@ -6,12 +6,13 @@
   "backToSignIn": "Terug naar inloggen",
   "ownerFallback": "de rekeninghouder",
   "ownerFirstNameFallback": "de eigenaar",
-  "intro": "Hoi {contactName}, je bent aangewezen als noodcontact op het Monize-account van <b>{ownerName}</b>.",
+  "intro": "Hoi {contactName}, je bent aangewezen als noodcontact op het Monize-account dat wordt genoemd in de e-mail waarmee je hier bent gekomen.",
   "introDetail": "Door hier een wachtwoord in te stellen, word je ingelogd als de rekeninghouder en krijg je volledige toegang tot het account. Bestaande sessies worden ingetrokken en de vorige inloggegevens worden vervangen.",
   "messageHeading": "Bericht van {name}",
   "newPasswordLabel": "Nieuw wachtwoord",
   "confirmPasswordLabel": "Wachtwoord bevestigen",
   "submit": "Noodtoegang claimen",
+  "continueToDashboard": "Doorgaan naar dashboard",
   "toasts": {
     "success": "Je hebt nu toegang tot het account van {name}.",
     "failed": "Noodtoegangsclaim voltooien mislukt. De koppeling is mogelijk verlopen of al gebruikt."

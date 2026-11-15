@@ -208,6 +208,12 @@
     "todayTitle": "{name}: a garantia expira hoje",
     "todayMessage": "A garantia de {name} expira hoje, {date}. Abra-a para rever os documentos ou registar uma reclamação."
   },
+  "security": {
+    "oauthTitle": "Nova aplicação ligada: {clientName}",
+    "oauthMessage": "A aplicação {clientName} acabou de receber acesso à sua conta Monize. Se não foi você, altere já a sua palavra-passe: isso revoga o acesso de todas as aplicações ligadas.",
+    "relayTitle": "Uma nova ligação respondeu ao seu chat de IA",
+    "relayMessage": "Uma ligação que nunca tinha respondido ao seu chat de IA do Monize acabou de recolher um pedido. Se não ligou este assistente, altere a sua palavra-passe."
+  },
   "payrollDeduction": {
     "resetTitle": "{category}: confirme o máximo do próximo ano",
     "resetMessage": "A dedução {category} em {bill} é reiniciada em {date}. Atualize o máximo anual se mudar; caso contrário, {amount} aplica-se de novo."
@@ -268,6 +274,10 @@
     "shared_expenses": {
       "title": "Despesas partilhadas",
       "body": "Há novidades num grupo partilhado. Abra o Monize para as consultar."
+    },
+    "security": {
+      "title": "Aviso de segurança",
+      "body": "Algo mudou quanto a quem pode aceder à sua conta Monize. Abra o Monize para ver os detalhes."
     },
     "fallback": {
       "title": "Monize",

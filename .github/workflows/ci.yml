@@ -150,7 +150,7 @@ jobs:
         # digest):
         # a service container starts before any login step can run, and an
         # anonymous Docker Hub pull from a shared runner IP is rate-limited.
-        image: mirror.gcr.io/library/postgres:16-alpine@sha256:16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229
+        image: mirror.gcr.io/library/postgres:18-alpine@sha256:b6972e1115a4ff8eba5d7f7d19184926d1e16d7d1136ae1e1a7ebf286da0f015
         env:
           POSTGRES_DB: monize_test
           POSTGRES_USER: monize_test
@@ -160,9 +160,11 @@ jobs:
         # The data directory in memory: the database is thrown away with the
         # job, so durability buys nothing here. With fsync off as well (the
         # step below), a local run of the email-receipts pipeline spec went
-        # from 149s to 112s.
+        # from 149s to 112s. From PostgreSQL 18 the image keeps PGDATA at
+        # /var/lib/postgresql/18/docker, so the mount is the parent directory;
+        # a tmpfs on the old /var/lib/postgresql/data would sit unused.
         options: >-
-          --tmpfs /var/lib/postgresql/data
+          --tmpfs /var/lib/postgresql
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s

@@ -6,12 +6,13 @@
   "backToSignIn": "Powrót do logowania",
   "ownerFallback": "właściciel konta",
   "ownerFirstNameFallback": "właściciel",
-  "intro": "Cześć {contactName}, zostałeś wyznaczony jako kontakt awaryjny na koncie Monize użytkownika <b>{ownerName}</b>.",
+  "intro": "Cześć {contactName}, zostałeś wyznaczony jako kontakt awaryjny na koncie Monize wskazanym w wiadomości e-mail, z której tu przyszedłeś.",
   "introDetail": "Ustawienie hasła tutaj zaloguje Cię jako posiadacza konta i da Ci pełny dostęp do konta. Istniejące sesje zostaną unieważnione, a poprzednie dane logowania zastąpione.",
   "messageHeading": "Wiadomość od {name}",
   "newPasswordLabel": "Nowe hasło",
   "confirmPasswordLabel": "Potwierdź hasło",
   "submit": "Przejmij dostęp awaryjny",
+  "continueToDashboard": "Przejdź do pulpitu",
   "toasts": {
     "success": "Masz teraz dostęp do konta użytkownika {name}.",
     "failed": "Nie udało się dokończyć przejęcia dostępu awaryjnego. Link mógł wygasnąć lub został już użyty."

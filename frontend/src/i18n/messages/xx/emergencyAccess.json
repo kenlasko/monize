@@ -6,12 +6,13 @@
   "backToSignIn": "[XX-Back to sign in-XX]",
   "ownerFallback": "[XX-the account owner-XX]",
   "ownerFirstNameFallback": "[XX-the owner-XX]",
-  "intro": "[XX-Hi {contactName}, you were designated as an emergency contact on <b>{ownerName}</b>'s Monize account.-XX]",
+  "intro": "[XX-Hi {contactName}, you were designated as an emergency contact on the Monize account named in the email that brought you here.-XX]",
   "introDetail": "[XX-Setting a password here will sign you in as the account holder and give you full access to the account. Existing sessions are revoked and the previous credentials are replaced.-XX]",
   "messageHeading": "[XX-Message from {name}-XX]",
   "newPasswordLabel": "[XX-New Password-XX]",
   "confirmPasswordLabel": "[XX-Confirm Password-XX]",
   "submit": "[XX-Claim emergency access-XX]",
+  "continueToDashboard": "[XX-Continue to dashboard-XX]",
   "toasts": {
     "success": "[XX-You now have access to {name}'s account.-XX]",
     "failed": "[XX-Failed to complete emergency access claim. The link may have expired or already been used.-XX]"

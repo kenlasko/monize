@@ -47,7 +47,7 @@ Registered globally via `APP_FILTER`, `APP_GUARD`, `APP_INTERCEPTOR`:
 | Provider | Purpose |
 |----------|---------|
 | `GlobalExceptionFilter` | Catches all exceptions; handles HttpException and TypeORM QueryFailedError |
-| `ThrottlerGuard` | Rate limiting (100 requests/minute) |
+| `ThrottlerGuard` | Rate limiting (100 requests/minute). It never sees `/oauth/*`, which the provider answers before the Nest router: `createOAuthEndpointThrottle` (`src/oauth/oauth-endpoint-throttle.ts`), mounted in `main.ts` ahead of the provider, caps the routes that store a row for an anonymous caller per IP, in the same storage under a hashed key |
 | `CsrfGuard` | CSRF double-submit cookie validation |
 | `MustChangePasswordGuard` | Blocks access until password change (admin-reset users) |
 | `DemoModeGuard` | Restricts write operations in demo mode |
@@ -140,6 +140,8 @@ Before adding an env var for anything a user can also configure, ask which resou
 **A page whose form submission must redirect off-origin needs its own CSP.** Helmet's app-wide `form-action 'self'` is enforced by Chrome against every redirect hop after a form submit, so the OAuth consent POST's final cross-origin hop to the client's `redirect_uri` was silently cancelled -- server logs `authorization.success`, browser parked on the consent form. The interaction controller sets a per-page `form-action 'self' https:` (`setInteractionPageHeaders`); the redirect_uri is per-client and dynamic, so it cannot be enumerated. Do not loosen the global Helmet `form-action` -- only this page needs it.
 
 `node-oidc-provider` prints `oidc-provider NOTICE:`/`WARNING:` lines with bare `console.info`/`console.warn` and exposes no logger hook, so `oauth/oidc-provider-log-bridge.ts` -- installed at the top of `main.ts` -- re-routes exactly those lines to a `[OidcProvider]` logger. That fixes only the formatting: every such notice means a config option was left at its default, so fix the config. In particular, `ttl` needs an explicit number for every artifact the provider can issue (`AccessToken`, `AuthorizationCode`, `IdToken`, `RefreshToken`, `Grant`, `Interaction`, `Session`); the guard in `src/oauth/oauth-provider.service.spec.ts` fails when one is missing.
+
+The provider stores every artifact, a dynamically registered client included, with an expiry, and `OAuthProviderService.sweepExpiredPayloads` deletes expired rows daily, after giving any client stored without one (before #2177) the idle TTL. A client lives 30 days from its last post-consent use (`OAUTH_CLIENT_IDLE_TTL_SECONDS`, longer than the refresh-token TTL); registration accepts at most `MAX_DCR_REDIRECT_URIS` redirect URIs, and every route that stores a row for an anonymous caller -- registration (`/oauth/reg`), new authorization requests (`/oauth/auth`, `/oauth/request`) and the logout page (`/oauth/session/end`) -- is capped per IP by `createOAuthEndpointThrottle`, which matches paths the way the provider's router does (ASCII case folded, one trailing slash ignored). The paths themselves are `OIDC_PROVIDER_ROUTES` (`src/oauth/oidc-provider-paths.ts`), shared by the provider's `routes` map and the caps.
 
 ## CodeQL runs as default setup, and a suppression annotation closes nothing there
 

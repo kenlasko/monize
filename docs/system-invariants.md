@@ -151,6 +151,7 @@ implied.
 | INV-MCP-002 | An MCP request is answered by the MCP transport, never by the app shell | enforced |
 | INV-MCP-003 | A write confirmation is bound to one credential and one change | enforced |
 | INV-MCP-004 | A write happens only on the round a human answered | enforced |
+| INV-MCP-005 | A deletion or multi-row write over MCP needs a human's answer; a write nobody answered for is logged | partial |
 | INV-CURRENCY-001 | A shared currency is deleted only by its creator, on a global count; a user's action never creates or leaves one offered to every user | partial |
 | SE-001 | Accepted shares and contributions conserve the entry total | enforced |
 | SE-002 | An invitation claims a participant without replacing their history | enforced |
@@ -6605,7 +6606,8 @@ Enforcement         On 2026-07-28 the first round RETURNS the question
                     server waits for the dialog and refuses on any answer that
                     is not an accept, except where the client demonstrably
                     cannot show one ("unsupported"), where the client's own
-                    per-tool approval prompt is the consent step.
+                    per-tool approval prompt is the consent step -- for a
+                    single create or edit only (INV-MCP-005).
 Concurrency scope   per tool call
 Failure response    A tool error naming the refusal; no write.
 Required tests      Present: mcp-confirm.spec.ts covers every non-accept answer.
@@ -6614,6 +6616,54 @@ Required tests      Present: mcp-confirm.spec.ts covers every non-accept answer.
                     happened only in the first case. The write-tool specs cover
                     the same on both rounds.
 Status              enforced
+```
+
+### INV-MCP-005 -- an unanswered confirmation never deletes or writes in bulk
+
+```text
+Statement           When no confirmation dialog reached a human ("unsupported":
+                    a client that declared no elicitation, or whose dialog was
+                    never answered: a timeout or a closed connection),
+                    nothing is deleted and no more than one action card is
+                    written; every such round leaves a log line
+                    that separates it from a write a person approved. This
+                    protects users of clients that cannot show a dialog; it is
+                    not a defence against a stolen bearer, whose caller answers
+                    its own dialog (that is the credential layer's job).
+Source of truth     backend/src/mcp/mcp-confirm.ts
+Enforcement         confirmWriteMany, the only confirmation door, applies
+                    applyUnconfirmedPolicy to every round on both revisions
+                    before returning to the tool: needsHumanAnswer (fails closed:
+                    more than one action card, an action that is missing, has
+                    no string type or has an unknown type, any delete_* action,
+                    or a batch_actions,
+                    create_transactions, create_investment_transactions or
+                    run_transaction_rule card; the first three holding exactly
+                    one row and not deleting count as a single write) throws
+                    ConfirmRequiredError, which safeToolError returns as a
+                    refusal before the tool writes. A dialog that times out or
+                    loses its connection in a round that needs a human throws
+                    ConfirmNotAnsweredError instead, without marking the
+                    session silent; for a single write it marks the session
+                    "unanswered" and the write proceeds. Each unconfirmed round logs a Logger.warn line
+                    "mcp-unconfirmed-write outcome=refused|allowed" with the
+                    user, the credential and the action types.
+Concurrency scope   per tool call
+Failure response    A tool error telling the user to approve the change in the
+                    Monize web chat, the app, or a client that shows dialogs
+                    (ConfirmRequiredError), or that the confirmation was not
+                    answered in time and the change can be made again or in the
+                    Monize web chat or Monize itself (ConfirmNotAnsweredError);
+                    no write.
+Required tests      Present: mcp-confirm.spec.ts covers a delete, a bulk card and
+                    a multi-item round with no elicitation and with an
+                    unanswered one, a single create still allowed, and the log
+                    line; transactions.tool.spec.ts drives the reported
+                    raw-client delete and asserts nothing is removed.
+Status              partial -- a single create or edit still proceeds on the
+                    client's own approval prompt, and the record is an operator
+                    log line, not something the user sees: no notification is
+                    raised for a credential's first unconfirmed write.
 ```
 
 ### INV-CURRENCY-001 -- shared currency deletion

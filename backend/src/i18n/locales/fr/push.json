@@ -52,6 +52,10 @@
       "title": "Rappel de garantie",
       "body": "L'une de vos garanties expire bientôt. Ouvrez Monize pour les détails."
     },
+    "security": {
+      "title": "Avis de sécurité",
+      "body": "Quelque chose a changé concernant les personnes qui peuvent accéder à votre compte Monize. Ouvrez Monize pour les détails."
+    },
     "shared_expenses": {
       "title": "Dépenses partagées",
       "body": "Un groupe partagé a été mis à jour. Ouvrez Monize pour le consulter."

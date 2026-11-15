@@ -12,6 +12,7 @@ import {
 import { renderConsentPage } from "./consent-template";
 import { AuthService } from "../auth/auth.service";
 import { withUserContext } from "../common/db/with-context";
+import { SecurityNoticeService } from "../notifications/security-notice.service";
 
 /**
  * Hosts the user-facing OAuth interaction routes (login + consent) for the
@@ -30,6 +31,7 @@ export class OAuthInteractionController {
     private readonly jwtService: JwtService,
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly securityNotices: SecurityNoticeService,
   ) {}
 
   @Get(":uid")
@@ -224,6 +226,24 @@ export class OAuthInteractionController {
     this.logger.log(
       `interaction.confirm grant saved id=${grantId} account=${user.id} client=${clientId} oidcScopes=${(details.missingOIDCScope ?? []).join(",")} resources=${Object.keys(details.missingResourceScopes ?? {}).join(",")}`,
     );
+
+    if (!existing) {
+      // A new grant is a new way into the account. The notice never throws.
+      try {
+        const { name } = await this.lookupClient(clientId);
+        await withUserContext(user.id, () =>
+          this.securityNotices.oauthClientAuthorized(user.id, {
+            grantId,
+            clientId,
+            clientName: name,
+          }),
+        );
+      } catch (err) {
+        this.logger.warn(
+          `interaction.confirm security notice failed: ${(err as Error).message}`,
+        );
+      }
+    }
 
     await provider.interactionFinished(
       req,

@@ -6,13 +6,17 @@ import {
   SdkError,
   SdkErrorCode,
 } from "@modelcontextprotocol/server";
+import { Logger } from "@nestjs/common";
 import {
   ConfirmMismatchError,
+  ConfirmNotAnsweredError,
+  ConfirmRequiredError,
   confirmWrite,
   confirmWriteMany,
   confirmationFingerprint,
   installConfirmSupport,
   isAsk,
+  needsHumanAnswer,
   roundStableAction,
 } from "./mcp-confirm";
 import { AiActionBuilderService } from "../ai/actions/ai-action-builder.service";
@@ -101,17 +105,17 @@ describe("mcp-confirm", () => {
 
     it("returns 'unsupported' without eliciting when the client lacks the capability", async () => {
       const server = fakeServer({ capabilities: {} });
-      await expect(confirmWrite(server, ctx, "Confirm?")).resolves.toBe(
-        "unsupported",
-      );
+      await expect(
+        confirmWrite(server, ctx, "Confirm?", { type: "create_transaction" }),
+      ).resolves.toBe("unsupported");
       expect(elicit).not.toHaveBeenCalled();
     });
 
     it("returns 'unsupported' when capabilities are undefined", async () => {
       const server = fakeServer({ capabilities: undefined });
-      await expect(confirmWrite(server, ctx, "Confirm?")).resolves.toBe(
-        "unsupported",
-      );
+      await expect(
+        confirmWrite(server, ctx, "Confirm?", { type: "create_transaction" }),
+      ).resolves.toBe("unsupported");
     });
 
     it("returns 'declined' (never silently proceeds) when a supported dialog fails in an unaccounted-for way", async () => {
@@ -141,8 +145,6 @@ describe("mcp-confirm", () => {
         ["invalid request", ProtocolErrorCode.InvalidRequest],
         ["invalid params", ProtocolErrorCode.InvalidParams],
         ["parse error", ProtocolErrorCode.ParseError],
-        ["request timeout", SdkErrorCode.RequestTimeout],
-        ["connection closed", SdkErrorCode.ConnectionClosed],
         // The SDK refuses locally, before any network call, when the client
         // advertised no elicitation: no dialog reached a human either.
         [
@@ -152,9 +154,66 @@ describe("mcp-confirm", () => {
       ])("returns 'unsupported' on %s", async (_label, code) => {
         elicit.mockRejectedValue(buildError(code));
         const server = fakeServer({ capabilities: caps });
-        await expect(confirmWrite(server, ctx, "Confirm?")).resolves.toBe(
-          "unsupported",
-        );
+        await expect(
+          confirmWrite(server, ctx, "Confirm?", { type: "create_transaction" }),
+        ).resolves.toBe("unsupported");
+      });
+
+      it.each([
+        ["request timeout", SdkErrorCode.RequestTimeout],
+        ["connection closed", SdkErrorCode.ConnectionClosed],
+      ])(
+        "refuses this write on %s without marking the session silent",
+        async (_label, code) => {
+          elicit
+            .mockRejectedValueOnce(buildError(code))
+            .mockResolvedValueOnce({ action: "accept" });
+          const server = fakeServer({ capabilities: caps });
+          const del = { type: "delete_transaction", id: "t1" };
+          await expect(
+            confirmWrite(server, ctx, "Delete?", del),
+          ).rejects.toBeInstanceOf(ConfirmNotAnsweredError);
+          await expect(confirmWrite(server, ctx, "Delete?", del)).resolves.toBe(
+            "accepted",
+          );
+          expect(elicit).toHaveBeenCalledTimes(2);
+        },
+      );
+
+      it.each([
+        ["request timeout", SdkErrorCode.RequestTimeout],
+        ["connection closed", SdkErrorCode.ConnectionClosed],
+      ])(
+        "lets a single create proceed on %s and stops asking",
+        async (_label, code) => {
+          elicit.mockRejectedValue(buildError(code));
+          const server = fakeServer({ capabilities: caps });
+          const create = { type: "create_transaction" };
+          await expect(
+            confirmWrite(server, ctx, "Create?", create),
+          ).resolves.toBe("unsupported");
+          await expect(
+            confirmWrite(server, ctx, "Create?", create),
+          ).resolves.toBe("unsupported");
+          expect(elicit).toHaveBeenCalledTimes(1);
+        },
+      );
+
+      it("still asks a delete after a single create timed out", async () => {
+        elicit
+          .mockRejectedValueOnce(buildError(SdkErrorCode.RequestTimeout))
+          .mockResolvedValueOnce({ action: "accept" });
+        const server = fakeServer({ capabilities: caps });
+        await expect(
+          confirmWrite(server, ctx, "Create?", { type: "create_transaction" }),
+        ).resolves.toBe("unsupported");
+        await expect(
+          confirmWrite(server, ctx, "Delete?", {
+            type: "delete_transaction",
+            id: "t1",
+          }),
+        ).resolves.toBe("accepted");
+        expect(elicit).toHaveBeenCalledTimes(2);
       });
 
       it("stops asking it for the rest of the session", async () => {
@@ -165,10 +224,12 @@ describe("mcp-confirm", () => {
           ),
         );
         const server = fakeServer({ capabilities: caps });
-        await confirmWrite(server, ctx, "Confirm?");
-        await expect(confirmWrite(server, ctx, "Confirm?")).resolves.toBe(
-          "unsupported",
-        );
+        await confirmWrite(server, ctx, "Confirm?", {
+          type: "create_transaction",
+        });
+        await expect(
+          confirmWrite(server, ctx, "Confirm?", { type: "create_transaction" }),
+        ).resolves.toBe("unsupported");
         expect(elicit).toHaveBeenCalledTimes(1);
       });
 
@@ -179,7 +240,14 @@ describe("mcp-confirm", () => {
             "Method not found",
           ),
         );
-        await confirmWrite(fakeServer({ capabilities: caps }), ctx, "Confirm?");
+        await confirmWrite(
+          fakeServer({ capabilities: caps }),
+          ctx,
+          "Confirm?",
+          {
+            type: "create_transaction",
+          },
+        );
 
         // A different session's server, whose client does answer.
         const capableCtx = mcpTestCtx(
@@ -193,6 +261,94 @@ describe("mcp-confirm", () => {
             "Confirm?",
           ),
         ).resolves.toBe("declined");
+      });
+    });
+
+    // "unsupported" is also what a raw HTTP caller with a stolen
+    // bearer produces, so a deletion or bulk write must not fall through.
+    describe("when no dialog reached a human", () => {
+      let warn: jest.SpyInstance;
+
+      beforeEach(() => {
+        warn = jest.spyOn(Logger.prototype, "warn").mockImplementation();
+      });
+
+      afterEach(() => warn.mockRestore());
+
+      it.each([
+        ["a deletion", { type: "delete_transaction", id: "t1" }],
+        ["a bulk card", { type: "batch_actions", actions: [] }],
+        ["a rule run", { type: "run_transaction_rule" }],
+      ])("refuses %s from a client with no elicitation", async (_l, action) => {
+        const server = fakeServer({ capabilities: {} });
+        await expect(
+          confirmWrite(server, ctx, "Delete?", action),
+        ).rejects.toBeInstanceOf(ConfirmRequiredError);
+        expect(elicit).not.toHaveBeenCalled();
+      });
+
+      it("still lets a single create through", async () => {
+        const server = fakeServer({ capabilities: {} });
+        await expect(
+          confirmWrite(server, ctx, "Create?", { type: "create_transaction" }),
+        ).resolves.toBe("unsupported");
+        expect(elicit).not.toHaveBeenCalled();
+      });
+
+      it("refuses a deletion when the client advertises elicitation but never answers", async () => {
+        elicit.mockRejectedValue(
+          new SdkError(SdkErrorCode.RequestTimeout, "Request timed out"),
+        );
+        const server = fakeServer({ capabilities: caps });
+        await expect(
+          confirmWrite(server, ctx, "Delete?", {
+            type: "delete_transaction",
+            id: "t1",
+          }),
+        ).rejects.toBeInstanceOf(ConfirmNotAnsweredError);
+        expect(warn).toHaveBeenLastCalledWith(
+          expect.stringContaining("mcp-unconfirmed-write outcome=refused"),
+        );
+      });
+
+      it("leaves a human's answer to a deletion alone", async () => {
+        const server = fakeServer({ capabilities: caps });
+        const action = { type: "delete_transaction", id: "t1" };
+        elicit.mockResolvedValueOnce({ action: "accept" });
+        await expect(
+          confirmWrite(server, ctx, "Delete?", action),
+        ).resolves.toBe("accepted");
+        elicit.mockResolvedValueOnce({ action: "decline" });
+        await expect(
+          confirmWrite(server, ctx, "Delete?", action),
+        ).resolves.toBe("declined");
+        expect(warn).not.toHaveBeenCalled();
+      });
+
+      it("logs what it let through and what it refused", async () => {
+        const server = fakeServer({ capabilities: {} });
+        await confirmWrite(server, ctx, "Create?", {
+          type: "create_transaction",
+        });
+        expect(warn).toHaveBeenLastCalledWith(
+          expect.stringContaining("mcp-unconfirmed-write outcome=allowed"),
+        );
+        expect(warn).toHaveBeenLastCalledWith(
+          expect.stringContaining("actions=create_transaction"),
+        );
+        expect(warn).toHaveBeenLastCalledWith(
+          expect.stringContaining("user=u1 credential=pat:t1"),
+        );
+
+        await expect(
+          confirmWrite(server, ctx, "Delete?", {
+            type: "delete_transaction",
+            id: "t1",
+          }),
+        ).rejects.toBeInstanceOf(ConfirmRequiredError);
+        expect(warn).toHaveBeenLastCalledWith(
+          expect.stringContaining("mcp-unconfirmed-write outcome=refused"),
+        );
       });
     });
 
@@ -398,10 +554,16 @@ describe("mcp-confirm", () => {
       const outcome = await confirmWriteMany(
         server,
         modernCtx({ capabilities: {} }),
-        items,
+        [{ ...items[0], action: { type: "create_transaction" } }],
       );
       if (isAsk(outcome)) throw new Error("expected no question");
-      expect([...outcome.values()]).toEqual(["unsupported", "unsupported"]);
+      expect([...outcome.values()]).toEqual(["unsupported"]);
+    });
+
+    it("refuses a round of several items for a client that declared no elicitation", async () => {
+      await expect(
+        confirmWriteMany(server, modernCtx({ capabilities: {} }), items),
+      ).rejects.toBeInstanceOf(ConfirmRequiredError);
     });
 
     // A state nobody can seal is attacker-controlled input on the way back.
@@ -462,6 +624,68 @@ describe("mcp-confirm", () => {
  * `expiresAt` shipped: every confirmed write on 2026-07-28 was refused with
  * "the confirmation no longer matches the change", and every test was green.
  */
+describe("needsHumanAnswer", () => {
+  const item = (action?: unknown) => ({ key: "k", message: "m", action });
+
+  it.each([
+    ["a single update", [item({ type: "update_transaction" })], false],
+    ["a single item with no action", [item()], true],
+    ["a single item with an unknown type", [item({ type: "nope" })], true],
+    ["an array of one card", [item([{ type: "create_transaction" }])], false],
+    [
+      "an array of several cards",
+      [item([{ type: "create_transaction" }, { type: "create_transfer" }])],
+      true,
+    ],
+    ["two items", [item(), item()], true],
+    [
+      "a one-row batch that is not a delete",
+      [item({ type: "batch_actions", operation: "create_payee", rows: [{}] })],
+      false,
+    ],
+    [
+      "a one-row batch that deletes",
+      [item({ type: "batch_actions", operation: "delete_payee", rows: [{}] })],
+      true,
+    ],
+    [
+      "a two-row batch",
+      [
+        item({
+          type: "batch_actions",
+          operation: "create_payee",
+          rows: [{}, {}],
+        }),
+      ],
+      true,
+    ],
+    ["a batch with no rows array", [item({ type: "batch_actions" })], true],
+    [
+      "a one-row create_transactions card",
+      [item({ type: "create_transactions", rows: [{}] })],
+      false,
+    ],
+    [
+      "a one-row create_investment_transactions card",
+      [item({ type: "create_investment_transactions", rows: [{}] })],
+      false,
+    ],
+    [
+      "a two-row create_transactions card",
+      [item({ type: "create_transactions", rows: [{}, {}] })],
+      true,
+    ],
+    [
+      "a one-row run_transaction_rule card",
+      [item({ type: "run_transaction_rule", rows: [{}] })],
+      true,
+    ],
+    ["a delete_tag action", [item({ type: "delete_tag" })], true],
+  ])("is decided for %s", (_label, items, expected) => {
+    expect(needsHumanAnswer(items)).toBe(expected);
+  });
+});
+
 describe("the fingerprint of a real action, across two rounds", () => {
   const builder = new AiActionBuilderService(
     new AiActionSigningService({

@@ -358,6 +358,16 @@ describe("predefined-role classification (DR-RR7-002)", () => {
     );
   });
 
+  it("forbids the predefined roles PostgreSQL 17 and 18 added", () => {
+    // pg_maintain (17) reaches every relation in the cluster, tables it does not
+    // own included; pg_signal_autovacuum_worker (18) signals sessions it does not
+    // own, as pg_signal_backend does. Left unclassified, the live catalog guard
+    // in runtime-role.integration.spec.ts fails on PostgreSQL 18.
+    const forbidden = FORBIDDEN_ROLE_MEMBERSHIPS.map((m) => m.role);
+    expect(forbidden).toContain("pg_maintain");
+    expect(forbidden).toContain("pg_signal_autovacuum_worker");
+  });
+
   it("classifies every forbidden role with a capability-specific reason", () => {
     for (const { role, why } of FORBIDDEN_ROLE_MEMBERSHIPS) {
       expect(role).toMatch(/^pg_/);

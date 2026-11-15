@@ -52,6 +52,10 @@
       "title": "Nhắc nhở bảo hành",
       "body": "Một trong các bảo hành của bạn sắp hết hạn. Mở Monize để xem chi tiết."
     },
+    "security": {
+      "title": "Thông báo bảo mật",
+      "body": "Có thay đổi về những người có thể truy cập tài khoản Monize của bạn. Mở Monize để xem chi tiết."
+    },
     "shared_expenses": {
       "title": "Chi phí chung",
       "body": "Một nhóm chung có cập nhật. Mở Monize để xem lại."

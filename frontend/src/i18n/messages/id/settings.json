@@ -406,6 +406,7 @@
         "BONDS": "Obligasi",
         "AI_REVIEW": "Usulan tinjauan AI",
         "WARRANTIES": "Pengingat garansi",
+        "SECURITY": "Keamanan",
         "SHARED_EXPENSES": "Pengeluaran bersama"
       },
       "channelNotApplicable": "Tidak berlaku untuk jenis notifikasi ini",

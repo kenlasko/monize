@@ -34,7 +34,7 @@ confirms or corrects.
 | --- | --- | --- |
 | D1 | **Electron shell** (`electron` with the `electron-builder` NSIS target) supervises three local processes: PostgreSQL, the backend, the frontend. Its window loads `http://127.0.0.1:<port>`. | One installer, one icon, a tray, auto-update through `electron-updater` against the GitHub Releases feed the backend already polls (`backend/src/updates/updates.service.ts`), and `safeStorage` (DPAPI) for secrets. Neither layer is rewritten. |
 | D2 | **The backend and the frontend run as child processes of Electron's own binary with `ELECTRON_RUN_AS_NODE=1`.** No separate `node.exe`. | The pattern VS Code uses. Electron 45.x bundles Node 24.22 (pinned 45.3.2; checked against the Electron release feed on 2026-11-13, when 40.x was already out of support), the same major CI tests on (`.github/workflows/ci.yml`). Nothing in either layer's runtime needs a native addon, so the Electron ABI question does not arise. Fallback if it ever does: ship `node.exe` as an extra resource. |
-| D3 | **PostgreSQL 16 comes from `@embedded-postgres/windows-x64` (the zonky binaries), driven directly through `initdb` and `pg_ctl`; the `embedded-postgres` wrapper is not used (section 12).** Pinned to an exact 16.x version. | Real PostgreSQL, so RLS, the identity GUCs, advisory locks and the four contrib extensions behave exactly as in production. PGlite was rejected: one connection at a time, extensions must be preloaded, and it is untested against TypeORM pooling and the per-transaction RLS context. |
+| D3 | **PostgreSQL 18 comes from `@embedded-postgres/windows-x64` (the zonky binaries), driven directly through `initdb` and `pg_ctl`; the `embedded-postgres` wrapper is not used (section 12).** Pinned to an exact 18.x version, the major the production cluster runs (section 12, item 20). | Real PostgreSQL, so RLS, the identity GUCs, advisory locks and the four contrib extensions behave exactly as in production. PGlite was rejected: one connection at a time, extensions must be preloaded, and it is untested against TypeORM pooling and the per-transaction RLS context. |
 | D4 | **Single machine, single origin, loopback only.** Every listener binds `127.0.0.1`. | Windows Firewall never prompts, the database and the API are unreachable from the LAN, and cookies and CSP need no change. A LAN toggle is a later proposal. |
 | D5 | **Same repository, a new `desktop/` workspace** with its own manifest, like `backend/`, `frontend/` and `e2e/`. | Lock-step with the two layers it bundles; the release workflow builds it from the same gated revision (REL-003, `docs/release-integrity.md`). |
 | D6 | **Data lives under `%LOCALAPPDATA%\Monize\`**: `pgdata`, `backups`, `attachments`, `logs` and a `config.json`. The uninstaller keeps it unless the user ticks "Remove my data". | Per-user, so the installer needs no elevation (`perMachine: false`). |
@@ -223,7 +223,7 @@ existing backup entries.
 5. Upgrades are in place: the new backend runs `db-migrate` against the same
    `pgdata` on the next launch, exactly as a container upgrade does
    (`docs/database-migrations.md`). A PostgreSQL major bump is its own plan
-   and uses `pg_upgrade`; dependabot must not move the pinned 16.x package
+   and uses `pg_upgrade`; dependabot must not move the pinned 18.x package
    across a major.
 
 ## 10. Assumptions a fresh session should check
@@ -236,8 +236,8 @@ existing backup entries.
   (`grep -l '"install"\|gyp' */package.json` and the lockfiles).
 - Electron's bundled Node is still at or above the backend's engine floor;
   `npm view electron@<pinned> --json` reports it.
-- `@embedded-postgres/windows-x64` still publishes a 16.x line; on 2026-10-19
-  the newest was 16.14.0-beta.17.
+- `@embedded-postgres/windows-x64` still publishes an 18.x line; on 2026-11-15
+  the newest was 18.6.0-beta.19.
 - `PUBLIC_APP_URL` is still runtime-read by the backend and build-inlined but
   unused by the frontend (`frontend/next.config.js`).
 - The SignPath Foundation programme still accepts AGPL projects (D9).
@@ -262,7 +262,7 @@ Each is a decision the build made against the text above, with its reason.
    `taskkill /f`, which is a crash stop. The runner drives `initdb` and
    `pg_ctl` from `resources/postgres/bin` itself. Both the Windows and the
    Linux binary package are optional dependencies at one exact version
-   (16.15.0-beta.19), so `npm ci` works on either system and the runner is
+   (16.15.0-beta.19 when built, 18.6.0-beta.19 since item 20), so `npm ci` works on either system and the runner is
    tested against real binaries on Linux.
 2. **Data checksums.** The cluster is created with `--data-checksums`. The
    binary packages carry no `pg_checksums`, so initdb is the only moment the
@@ -406,3 +406,14 @@ Each is a decision the build made against the text above, with its reason.
       of the two answers for the default folder only the first was ever
       compared; fixed here, and it is what made the moved folder comparable
       at all.
+20. **PostgreSQL 18, not 16 (D3, 2026-11-15).** The production cluster runs
+    18 (CloudNativePG), so the desktop now bundles the same major:
+    `@embedded-postgres/windows-x64` and `linux-x64` at 18.6.0-beta.19. It
+    was switched before any installer was released, so no `pgdata` needs
+    `pg_upgrade`. Nothing in the runner depended on the major: the 18
+    packages have the same `native/` layout and carry the four contrib
+    extensions, and `--data-checksums` is still accepted. Checked on 18.6:
+    `npm run smoke:postgres` passes, and `schema.sql` plus every migration,
+    applied twice, loads without error and leaves the same catalog as
+    `schema.sql` alone. CI's backend integration suites and
+    `scripts/verify-schema.sh` moved to 18 in the same branch.
