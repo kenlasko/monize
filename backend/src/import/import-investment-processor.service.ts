@@ -35,6 +35,7 @@ import {
   formatInvestmentActionLabel,
   formatInvestmentCashPayeeName,
 } from "../securities/investment-cash-payee.util";
+import { isQifCashTransfer } from "./qif-cash-transfer-action";
 
 @Injectable()
 export class ImportInvestmentProcessorService {
@@ -107,12 +108,10 @@ export class ImportInvestmentProcessorService {
     // they must be routed through the cash transfer path as well.
     const qifActionRaw = (qifTx.action || "").toLowerCase();
     if (
-      qifActionRaw === "xin" ||
-      qifActionRaw === "xout" ||
-      (qifActionRaw === "cash" && qifTx.isTransfer && qifTx.transferAccount) ||
-      ((qifActionRaw === "withdrwx" || qifActionRaw === "contribx") &&
-        qifTx.isTransfer &&
-        qifTx.transferAccount)
+      isQifCashTransfer(
+        qifActionRaw,
+        qifTx.isTransfer ? qifTx.transferAccount : null,
+      )
     ) {
       // WithdrwX means money leaving the account (like XOut)
       if (qifActionRaw === "withdrwx") {

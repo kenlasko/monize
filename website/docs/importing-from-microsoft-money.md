@@ -463,7 +463,7 @@ Monize detects the date format (MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD or YYYY-DD-MM
 
 If the QIF file contains category references, you need to map them to Monize categories.
 
-> **Investment income and expenses paid through another account:** Money exports a dividend, interest payment, sale or other investment activity whose cash went to a different account as `Investment Income:Dividends|[ICICI Bank]`: the activity's category, then the account. Monize treats that field as a transfer to the bracketed account, exactly as it treats `[ICICI Bank]` alone, so the category half is not listed here for mapping.
+> **Investment activities paid through another account:** Money exports a dividend, interest payment, sale or other investment activity whose cash went to a different account as `Investment Income:Dividends|[ICICI Bank]`: the activity's category, then the account. Monize does not list that category here, and it posts the activity's cash to the investment account's own cash account, not to ICICI Bank. Import ICICI Bank's QIF file as well: its matching transfer row moves the money from the investment account's cash into ICICI Bank. Without it, the investment's cash balance keeps the proceeds and ICICI Bank never receives them. Only a transfer activity (Transfer In, Transfer Out) moves money to the named account directly.
 
 ![Map Categories](images/import-map-categories.png)
 

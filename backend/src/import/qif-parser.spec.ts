@@ -1797,14 +1797,14 @@ Pvoid where prohibited
   // Microsoft Money writes an investment activity's category and the account
   // its cash moved through as one field (discussion #2184, issue #2209).
   describe("parseQif - Microsoft Money Category|[Account] field", () => {
-    it("reads each activity as a transfer and offers no piped category", () => {
+    it("offers neither the piped category nor an account no row will use", () => {
       const result = parseQif(MONEY_INVESTMENT_ACTIVITIES);
       expect(result.accountType).toBe("INVESTMENT");
       expect(result.categories).toEqual([]);
-      expect(result.transferAccounts).toEqual([
-        "Cash Rs",
-        "ICICI - Sharmi 3675",
-      ]);
+      // DivX, MiscInc and SellX keep their cash in the investment account, so
+      // listing Cash Rs or the ICICI account would only have the wizard
+      // create an account nothing books to.
+      expect(result.transferAccounts).toEqual([]);
       expect(result.securities).toEqual([
         "Stocks - TCS",
         "xStocks - Welspun India",
@@ -1818,8 +1818,8 @@ Pvoid where prohibited
         action: "DivX",
         security: "xStocks - Welspun India",
         category: "",
-        isTransfer: true,
-        transferAccount: "Cash Rs",
+        isTransfer: false,
+        transferAccount: "",
         splits: [],
       });
       expect(misc).toMatchObject({
@@ -1828,8 +1828,8 @@ Pvoid where prohibited
         action: "MiscInc",
         security: "Stocks - TCS",
         category: "",
-        isTransfer: true,
-        transferAccount: "ICICI - Sharmi 3675",
+        isTransfer: false,
+        transferAccount: "",
       });
       expect(sell).toMatchObject({
         date: "2010-10-21",
@@ -1840,9 +1840,42 @@ Pvoid where prohibited
         quantity: 92,
         commission: 888.49,
         category: "",
-        isTransfer: true,
-        transferAccount: "ICICI - Sharmi 3675",
+        isTransfer: false,
+        transferAccount: "",
       });
+    });
+
+    it.each(["XOut", "XIn", "Cash", "WithdrwX", "ContribX"])(
+      "keeps the account as the transfer of a %s row, whose cash the import moves",
+      (action) => {
+        // The L line precedes N, as Money writes it: the account is settled
+        // only once the record's action is known.
+        const qif = `!Type:Invst
+D01/15/2026
+T500.00
+LTransfers:Out|[ICICI Bank]
+N${action}
+^`;
+        const result = parseQif(qif);
+        expect(result.categories).toEqual([]);
+        expect(result.transferAccounts).toEqual(["ICICI Bank"]);
+        expect(result.transactions[0]).toMatchObject({
+          category: "",
+          isTransfer: true,
+          transferAccount: "ICICI Bank",
+        });
+      },
+    );
+
+    it("settles the account of a last record that has no terminator", () => {
+      const qif = `!Type:Invst
+D01/15/2026
+T500.00
+NXOut
+LTransfers:Out|[ICICI Bank]`;
+      const result = parseQif(qif);
+      expect(result.transferAccounts).toEqual(["ICICI Bank"]);
+      expect(result.transactions[0].transferAccount).toBe("ICICI Bank");
     });
 
     it("keeps tags written on either side of the account", () => {
@@ -1852,23 +1885,56 @@ NMiscExp
 T12.00
 LTaxes:TDS/Withheld|[ICICI Bank]/FY2026
 ^`;
-      const tx = parseQif(qif).transactions[0];
+      const result = parseQif(qif);
+      const tx = result.transactions[0];
       expect(tx.category).toBe("");
-      expect(tx.isTransfer).toBe(true);
-      expect(tx.transferAccount).toBe("ICICI Bank");
+      expect(tx.isTransfer).toBe(false);
       expect(tx.tagNames).toEqual(["Withheld", "FY2026"]);
+      expect(result.categories).toEqual([]);
+      expect(result.transferAccounts).toEqual([]);
     });
 
-    it("leaves a pipe that is not followed by a bracketed account alone", () => {
+    it("does not carry a piped account into the next record", () => {
+      const qif = `!Type:Invst
+D01/15/2026
+T12.00
+LInvestment Income:Dividends|[ICICI Bank]
+NDivX
+^
+D01/16/2026
+T50.00
+NXOut
+^`;
+      const result = parseQif(qif);
+      expect(result.transferAccounts).toEqual([]);
+      expect(result.transactions[1].isTransfer).toBe(false);
+    });
+
+    it("reads the form only in an investment section", () => {
+      // No exporter is known to write it on a bank row, where turning a
+      // category into a linked transfer would move money; it stays a category.
       const qif = `!Type:Bank
 D01/15/2026
 T-12.00
-LFood|Snacks
+LFood|[Checking]
 ^`;
       const result = parseQif(qif);
-      expect(result.transactions[0].category).toBe("Food|Snacks");
+      expect(result.transactions[0].category).toBe("Food|[Checking]");
       expect(result.transactions[0].isTransfer).toBe(false);
-      expect(result.categories).toEqual(["Food|Snacks"]);
+      expect(result.categories).toEqual(["Food|[Checking]"]);
+      expect(result.transferAccounts).toEqual([]);
+    });
+
+    it("leaves a pipe that is not followed by a bracketed account alone", () => {
+      const qif = `!Type:Invst
+D01/15/2026
+T12.00
+NMiscExp
+LFees|Broker
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions[0].category).toBe("Fees|Broker");
+      expect(result.categories).toEqual(["Fees|Broker"]);
     });
   });
 });
@@ -2370,17 +2436,14 @@ T-50.00
       expect(result.categoryDefs[0].name).toBe("Food");
       expect(result.categoryDefs[1].name).toBe("Utilities");
     });
-    it("reads a Microsoft Money Category|[Account] field as the transfer", () => {
-      const qif = `!Account\nNShares\nTInvst\n^\n${MONEY_INVESTMENT_ACTIVITIES}\n`;
+    it("reads a Microsoft Money Category|[Account] field by the row's action", () => {
+      const qif = `!Account\nNShares\nTInvst\n^\n${MONEY_INVESTMENT_ACTIVITIES}\nD01/11/2010\nT500.00\nLTransfers:Out|[ICICI Bank]\nNXOut\n^\n!Account\nNICICI Bank\nTBank\n^\n!Type:Bank\nD01/11/2010\nT-12.00\nLFood|[Checking]\n^\n`;
       const result = parseQifFull(qif);
-      const block = result.accountBlocks[0];
-      expect(block.categories).toEqual([]);
-      expect(block.transferAccounts).toEqual([
-        "Cash Rs",
-        "ICICI - Sharmi 3675",
-      ]);
+      const [shares, bank] = result.accountBlocks;
+      expect(shares.categories).toEqual([]);
+      expect(shares.transferAccounts).toEqual(["ICICI Bank"]);
       expect(
-        block.transactions.map((tx: QifTransaction) => [
+        shares.transactions.map((tx: QifTransaction) => [
           tx.date,
           tx.action,
           tx.category,
@@ -2388,10 +2451,23 @@ T-50.00
           tx.transferAccount,
         ]),
       ).toEqual([
-        ["1994-11-02", "DivX", "", true, "Cash Rs"],
-        ["2005-03-03", "MiscInc", "", true, "ICICI - Sharmi 3675"],
-        ["2010-10-21", "SellX", "", true, "ICICI - Sharmi 3675"],
+        ["1994-11-02", "DivX", "", false, ""],
+        ["2005-03-03", "MiscInc", "", false, ""],
+        ["2010-10-21", "SellX", "", false, ""],
+        ["2010-11-01", "XOut", "", true, "ICICI Bank"],
       ]);
+      // A bank section keeps the field as a category.
+      expect(bank.categories).toEqual(["Food|[Checking]"]);
+      expect(bank.transferAccounts).toEqual([]);
+    });
+
+    it("settles a piped account on a block's last record without a terminator", () => {
+      const qif = `!Account\nNShares\nTInvst\n^\n!Type:Invst\nD01/15/2026\nT500.00\nNXOut\nLTransfers:Out|[ICICI Bank]\n!Account\nNICICI Bank\nTBank\n^\n!Type:Bank\nD01/16/2026\nT-5.00\n^\n`;
+      const result = parseQifFull(qif, "MM/DD/YYYY");
+      expect(result.accountBlocks[0].transferAccounts).toEqual(["ICICI Bank"]);
+      expect(result.accountBlocks[0].transactions[0].transferAccount).toBe(
+        "ICICI Bank",
+      );
     });
   });
 
