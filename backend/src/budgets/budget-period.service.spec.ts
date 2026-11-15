@@ -49,6 +49,7 @@ describe("BudgetPeriodService", () => {
   let periodsRepository: Record<string, jest.Mock>;
   let periodCategoriesRepository: Record<string, jest.Mock>;
   let periodBucketsRepository: Record<string, jest.Mock>;
+  let bucketsRepository: Record<string, jest.Mock>;
   let currenciesRepository: Record<string, jest.Mock>;
   let transactionsRepository: Record<string, jest.Mock>;
   let splitsRepository: Record<string, jest.Mock>;
@@ -169,6 +170,8 @@ describe("BudgetPeriodService", () => {
         .mockImplementation((data) => ({ ...data, id: data.id || "new-bpc" })),
     };
 
+    bucketsRepository = { find: jest.fn().mockResolvedValue([]) };
+
     periodBucketsRepository = {
       find: jest.fn().mockResolvedValue([]),
       insert: jest.fn().mockResolvedValue({ identifiers: [] }),
@@ -201,6 +204,7 @@ describe("BudgetPeriodService", () => {
         [BudgetPeriod, periodsRepository as never],
         [BudgetPeriodCategory, periodCategoriesRepository as never],
         [BudgetPeriodBucket, periodBucketsRepository as never],
+        [BudgetBucket, bucketsRepository as never],
         [Currency, currenciesRepository as never],
         [Transaction, transactionsRepository as never],
         [TransactionSplit, splitsRepository as never],
@@ -619,6 +623,8 @@ describe("BudgetPeriodService", () => {
       budget?: Partial<Budget>;
       incomeLines?: Array<{ id: string; amount: number; received: number }>;
       existing?: Array<Partial<BudgetPeriodBucket>>;
+      /** The buckets as the close's own transaction reads them. */
+      currentBuckets?: BudgetBucket[];
     }) => {
       const expenseLines = Object.keys(opts.spent).map((bucketId) =>
         line(`l-${bucketId}`, bucketId),
@@ -645,6 +651,9 @@ describe("BudgetPeriodService", () => {
         })),
       });
       periodBucketsRepository.find.mockResolvedValue(opts.existing ?? []);
+      bucketsRepository.find.mockResolvedValue(
+        opts.currentBuckets ?? opts.buckets,
+      );
       const rows = [
         ...Object.entries(opts.spent).map(([bucketId, amount]) =>
           spendingRow(`cat-l-${bucketId}`, String(-amount)),
@@ -961,6 +970,24 @@ describe("BudgetPeriodService", () => {
           (call: unknown[]) => !Array.isArray(call[0]),
         ),
       ).toEqual([]);
+    });
+
+    it("reads the buckets inside the close, so one deleted since the budget was read is not frozen", async () => {
+      arrangeClose({
+        buckets: [fixed, savings],
+        currentBuckets: [fixed],
+        spent: { "b-fixed": 100, "b-save": 50 },
+      });
+
+      await service.closePeriod("user-1", "budget-1");
+
+      expect(bucketsRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lock: { mode: "pessimistic_read" },
+        }),
+      );
+      expect(() => written("b-save")).toThrow("no row written");
+      expect(written("b-fixed")).toMatchObject({ bucketName: "Fixed costs" });
     });
 
     it("reads and writes no bucket rows for a budget without buckets", async () => {

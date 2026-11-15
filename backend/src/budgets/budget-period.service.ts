@@ -11,6 +11,7 @@ import { Budget } from "./entities/budget.entity";
 import { RolloverType } from "./entities/budget-category.entity";
 import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
 import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
+import { BudgetBucket } from "./entities/budget-bucket.entity";
 import { BudgetPeriodBucket } from "./entities/budget-period-bucket.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
@@ -410,7 +411,17 @@ export class BudgetPeriodService {
     actuals: PeriodActuals,
   ): Promise<Map<string, number>> {
     const carry = new Map<string, number>();
-    const buckets = budget.buckets ?? [];
+    if ((budget.buckets ?? []).length === 0) return carry;
+
+    // The buckets as they are now, read inside the close's transaction with
+    // FOR SHARE: `budget` was read before it, so a bucket deleted in between
+    // would otherwise be inserted here against a vanished key and fail the whole
+    // close; the lock keeps a delete from landing before the writes below.
+    const buckets = await manager.getRepository(BudgetBucket).find({
+      where: { budgetId: budget.id },
+      order: { sortOrder: "ASC", name: "ASC" },
+      lock: { mode: "pessimistic_read" },
+    });
     if (buckets.length === 0) return carry;
 
     // A writer's read of the places (FOR KEY SHARE): the amounts below are
@@ -455,7 +466,7 @@ export class BudgetPeriodService {
 
     const figures = computeBudgetBucketFigures(
       buildBudgetBucketFiguresInput({
-        budget,
+        budget: { ...budget, buckets },
         rows,
         actualIncome,
         carriedIn,
