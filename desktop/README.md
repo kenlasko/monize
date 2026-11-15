@@ -556,6 +556,12 @@ builds:
   prereleases (`src/shell/version-policy.ts`) and updates to the next beta or
   the next release, whichever is newer.
 
+`release` and `windows-beta` each spell out their needs' results under
+`!cancelled()` rather than relying on the default condition. The default
+also counts the jobs `desktop-windows` needs, and on any one run either
+`prepare-release` or `prepare-preview` is skipped, so either job would be
+skipped after every leg had passed.
+
 `scripts/smoke-install.ps1` installs the installer silently, checks that it
 asked for no elevation and landed in `%LOCALAPPDATA%\Programs\Monize`,
 starts Monize on a fresh data folder, registers a user and reads the
