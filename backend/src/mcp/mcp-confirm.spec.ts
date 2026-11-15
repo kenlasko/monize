@@ -180,6 +180,25 @@ describe("mcp-confirm", () => {
         },
       );
 
+      it.each([
+        ["request timeout", SdkErrorCode.RequestTimeout],
+        ["connection closed", SdkErrorCode.ConnectionClosed],
+      ])(
+        "lets a single create proceed on %s and stops asking",
+        async (_label, code) => {
+          elicit.mockRejectedValue(buildError(code));
+          const server = fakeServer({ capabilities: caps });
+          const create = { type: "create_transaction" };
+          await expect(
+            confirmWrite(server, ctx, "Create?", create),
+          ).resolves.toBe("unsupported");
+          await expect(
+            confirmWrite(server, ctx, "Create?", create),
+          ).resolves.toBe("unsupported");
+          expect(elicit).toHaveBeenCalledTimes(1);
+        },
+      );
+
       it("stops asking it for the rest of the session", async () => {
         elicit.mockRejectedValue(
           new ProtocolError(
@@ -599,6 +618,28 @@ describe("needsHumanAnswer", () => {
       true,
     ],
     ["two items", [item(), item()], true],
+    [
+      "a one-row batch that is not a delete",
+      [item({ type: "batch_actions", operation: "create_payee", rows: [{}] })],
+      false,
+    ],
+    [
+      "a one-row batch that deletes",
+      [item({ type: "batch_actions", operation: "delete_payee", rows: [{}] })],
+      true,
+    ],
+    [
+      "a two-row batch",
+      [
+        item({
+          type: "batch_actions",
+          operation: "create_payee",
+          rows: [{}, {}],
+        }),
+      ],
+      true,
+    ],
+    ["a batch with no rows array", [item({ type: "batch_actions" })], true],
     ["a delete_tag action", [item({ type: "delete_tag" })], true],
   ])("is decided for %s", (_label, items, expected) => {
     expect(needsHumanAnswer(items)).toBe(expected);

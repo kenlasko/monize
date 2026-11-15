@@ -42,10 +42,10 @@ three limits). Without it a session id lands on the wrong replica and is answere
 `404 Session not found`, which the spec requires a client to recover from by
 re-initializing. Reads recover; a confirmation in flight does not. Its answer
 never reaches the replica that asked, that replica's wait expires, and
-`clientAnsweredForItself` reads the timeout as `"unsupported"` -- so a single
-create or edit proceeds under the client's own approval prompt rather than the
-dialog's, and a deletion or multi-row write is refused (see "No human answered"
-below).
+`elicitationUnanswered` reads the timeout -- so a single create or edit
+proceeds as `"unsupported"` under the client's own approval prompt rather than
+the dialog's, and a deletion or multi-row write is refused with
+`ConfirmNotAnsweredError` (see "No human answered" below).
 
 The 2026-07-28 leg has none of this and needs none of it: no session, no
 server-side wait, a fresh server per request.
@@ -154,20 +154,20 @@ Two consequences to keep: **individual approval mode asks for every card in ONE 
 
 So the outcome decides, not the advertisement:
 
-- Only a returned `action` is a user's answer. A rejection whose code says the client answered for itself (`clientAnsweredForItself` in `mcp-elicitation-support.ts`: method not found, invalid request/params, parse error, connection closed, request timeout) is `"unsupported"`; an unaccounted-for failure shape stays `"declined"`, so a case nobody has reasoned about refuses the write.
+- Only a returned `action` is a user's answer. A rejection whose code says the client answered for itself (`clientAnsweredForItself` in `mcp-elicitation-support.ts`: method not found, invalid request/params, parse error, capability not supported) is `"unsupported"`; a timeout or closed connection (`elicitationUnanswered`) is handled as the "No human answered" section says; an unaccounted-for failure shape stays `"declined"`, so a case nobody has reasoned about refuses the write.
 - Behaviour is remembered per session, in a `WeakMap` keyed on the session's `McpServer` so the record dies with the session. A client caught answering for itself is not asked again (the round trip costs `CONFIRM_TIMEOUT_MS` per row otherwise); a client that has answered once is never demoted, so a later unanswered dialog on it is `"declined"`.
 - **The wait must expire before the client abandons the tool call waiting on it.** Claude's MCP tool deadline is 60s; a five-minute server-side wait produced no result at all, only an opaque client-side timeout. `mcp-confirm.spec.ts` fails if `CONFIRM_TIMEOUT_MS` leaves that range, and pins the SDK normalization above so it cannot silently become load-bearing again. A 2026-07-28 request has no server-side wait at all, so the human's window there is the seal's own TTL.
 - The record is legacy-only, and so is the memory: a 2026-07-28 request gets a fresh server and has nothing to save.
 
 ## No human answered: a single create or edit only (INV-MCP-005)
 
-`"unsupported"` -- a client that declared no elicitation, or advertised it and never answered -- relies on the client's own per-tool approval prompt. That prompt is only as honest as the client, and some clients have none. This policy protects the users of clients that cannot show a confirmation dialog. It is not a defence against a stolen bearer: that caller declares elicitation and accepts its own dialog, and defence against it belongs to the credential layer (scopes, grant notifications). So `confirmWriteMany` applies one policy to every round with an `"unsupported"` answer, on both revisions, before returning to the tool:
+`"unsupported"` -- a client that declared no elicitation, or advertised it and never answered a single create or edit -- relies on the client's own per-tool approval prompt. That prompt is only as honest as the client, and some clients have none. This policy protects the users of clients that cannot show a confirmation dialog. It is not a defence against a stolen bearer: that caller declares elicitation and accepts its own dialog, and defence against it belongs to the credential layer (scopes, grant notifications). So `confirmWriteMany` applies one policy to every round with an `"unsupported"` answer, on both revisions, before returning to the tool:
 
-- **A round that deletes or writes several rows is refused** with `ConfirmRequiredError`: more than one item, any `delete_*` action (a prefix, so a new delete is covered without a list edit), or a card that writes many rows (`batch_actions`, `create_transactions`, `create_investment_transactions`, `run_transaction_rule`). `needsHumanAnswer` is the predicate and it fails closed: an action that is an array, has no string `type`, or has a type outside the known single-write types needs a human answer too, and an array counts one card per element. The refusal is thrown before the tool writes anything, and its message tells the model to send the user to the Monize web chat (the relay card), the app, or a client that shows dialogs.
+- **A round that deletes or writes several rows is refused** with `ConfirmRequiredError`: more than one item, any `delete_*` action (a prefix, so a new delete is covered without a list edit), or a card that writes many rows (`batch_actions`, `create_transactions`, `create_investment_transactions`, `run_transaction_rule`). `needsHumanAnswer` is the predicate and it fails closed: an action that has no string `type`, or has a type outside the known single-write types needs a human answer too, and an array counts one card per element. The refusal is thrown before the tool writes anything, and its message tells the model to send the user to the Monize web chat (the relay card), the app, or a client that shows dialogs.
 - **A single create or edit still proceeds**, because an honest client that cannot show a dialog would otherwise lose every write; the asymmetry is the point: such a client loses deletes and bulk edits.
 - **Every unconfirmed round is logged** by `applyUnconfirmedPolicy` as a `Logger.warn` line beginning `mcp-unconfirmed-write outcome=refused|allowed`, with the user, the credential and the action types, so an operator can tell a write nobody answered for from one a person approved. A user-facing record (a notification on the first unconfirmed write of a credential) is not built: it belongs with the grant and token notifications, which do not exist yet.
 
-A dialog that times out (`RequestTimeout`) or whose connection closes (`ConnectionClosed`) on a 2025-era session refuses that one write with `ConfirmNotAnsweredError` and does not mark the session silent, so the next write is asked again; only the codes that mean the client cannot elicit (`MethodNotFound` and the like) mark it silent.
+A dialog that times out (`RequestTimeout`) or whose connection closes (`ConnectionClosed`) on a 2025-era session is classified by `elicitationUnanswered`. When the round needs a human, that one write is refused with `ConfirmNotAnsweredError` and the session is not marked silent, so the next write is asked again. When it does not (a single typed create or edit), the session is marked silent and the write proceeds as `"unsupported"`, so a client that never answers is not waited on for every write. A `batch_actions` card holding one row that is not a delete counts as a single write (`isOneRowNonDeleteBatch`).
 
 Do not add a tool-side "if unsupported then refuse" check; the policy is one decision in `mcp-confirm.ts`, and `mcp-confirm.spec.ts` holds it.
 

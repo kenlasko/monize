@@ -6602,9 +6602,10 @@ Status              enforced
 
 ```text
 Statement           When no confirmation dialog reached a human ("unsupported":
-                    a client that declared no elicitation, or advertised it and
-                    never answered), nothing is deleted and no more than one
-                    action card is written; every such round leaves a log line
+                    a client that declared no elicitation, or whose dialog was
+                    never answered: a timeout or a closed connection),
+                    nothing is deleted and no more than one action card is
+                    written; every such round leaves a log line
                     that separates it from a write a person approved. This
                     protects users of clients that cannot show a dialog; it is
                     not a defence against a stolen bearer, whose caller answers

@@ -437,6 +437,35 @@ describe("McpPayeesTools", () => {
       expect(parsed.operation).toBe("create");
     });
 
+    it("lets a 2-item create with one row left proceed for a client that cannot elicit", async () => {
+      ctx.setUser({ userId: "u1", scopes: "read,write" });
+      actionBuilder.buildBatchActions.mockReturnValue({
+        type: "batch_actions",
+        descriptor: {
+          type: "batch_actions",
+          operation: "create_payee",
+          rows: [{ name: "A" }],
+        },
+      });
+      prepService.prepareCreatePayees.mockResolvedValue({
+        okPreviews: [
+          { name: "A", defaultCategoryId: null, defaultCategoryName: null },
+        ],
+        okRows: [{ name: "A", defaultCategoryId: null }],
+        previewRows: [{ status: "ok", name: "A" }],
+        okIndex: [0],
+        skipped: [{ index: 1, reason: "duplicate" }],
+      });
+
+      const result = await handlers["manage_payees"](
+        { operation: "create", items: [{ name: "A" }, { name: "B" }] },
+        ctx,
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(payeesService.create).toHaveBeenCalledTimes(1);
+    });
+
     it("creates multiple payees as one bulk card via confirmation", async () => {
       server.server.getClientCapabilities.mockReturnValue({
         elicitation: { form: {} },

@@ -21,8 +21,9 @@ import type { McpServer } from "@modelcontextprotocol/server";
  *  - "unknown":  nothing observed yet.
  *  - "answers":  the client returned an accept/decline/cancel at least once, so
  *                it demonstrably shows dialogs to a human.
- *  - "silent":   the client answered for itself (rejected the method, dropped
- *                the connection, or never replied), so no human is behind it.
+ *  - "silent":   the client answered for itself (rejected the method or the
+ *                request as malformed), or it never answered a single create
+ *                or edit (`elicitationUnanswered`), so it is not asked again.
  */
 export type ElicitationBehaviour = "unknown" | "answers" | "silent";
 
@@ -59,8 +60,9 @@ export function recordElicitationSilent(server: McpServer): void {
 
 /**
  * Whether an `elicitInput` rejection means the client answered for itself
- * rather than for its user: it rejected the request as unknown or malformed,
- * the connection went away, or it never replied at all. `MethodNotFound` is the
+ * rather than for its user: it rejected the request as unknown or malformed, or
+ * the SDK refused it locally for a missing capability. A timeout or a dropped
+ * connection is not here: see `elicitationUnanswered`. `MethodNotFound` is the
  * one that matters in practice -- a client that advertises `elicitation` and
  * then answers -32601 to `elicitation/create`.
  *
@@ -83,8 +85,6 @@ export function clientAnsweredForItself(err: unknown): boolean {
   }
   if (SdkError.isInstance(err)) {
     return (
-      err.code === SdkErrorCode.ConnectionClosed ||
-      err.code === SdkErrorCode.RequestTimeout ||
       // The SDK refuses locally, before any network call, when the client
       // advertises no elicitation at all: no dialog reached a human, which is
       // the same outcome as a client that answered for itself.
@@ -92,4 +92,18 @@ export function clientAnsweredForItself(err: unknown): boolean {
     );
   }
   return false;
+}
+
+/**
+ * Whether an `elicitInput` rejection means nobody answered: the wait expired or
+ * the connection closed while the dialog was open. That is one unanswered
+ * dialog, not proof that the client cannot show one, so a round that needs a
+ * human is refused without marking the session silent.
+ */
+export function elicitationUnanswered(err: unknown): boolean {
+  return (
+    SdkError.isInstance(err) &&
+    (err.code === SdkErrorCode.ConnectionClosed ||
+      err.code === SdkErrorCode.RequestTimeout)
+  );
 }

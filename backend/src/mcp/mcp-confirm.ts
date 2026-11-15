@@ -4,8 +4,6 @@ import {
   CLIENT_CAPABILITIES_META_KEY,
   inputRequired,
   inputResponse,
-  SdkError,
-  SdkErrorCode,
   type ClientCapabilities,
   type InputRequiredResult,
   type McpServer,
@@ -19,6 +17,7 @@ import {
 } from "../ai/actions/ai-action.types";
 import {
   clientAnsweredForItself,
+  elicitationUnanswered,
   elicitationBehaviour,
   recordElicitationAnswered,
   recordElicitationSilent,
@@ -159,9 +158,7 @@ function actionType(action: unknown): string | undefined {
  * answer too. An array counts one card per element.
  */
 export function needsHumanAnswer(items: readonly ConfirmItem[]): boolean {
-  const cards = items.flatMap((item) =>
-    Array.isArray(item.action) ? item.action : [item.action],
-  );
+  const cards = actionCards(items);
   return (
     cards.length !== 1 ||
     cards.some((card) => {
@@ -170,9 +167,37 @@ export function needsHumanAnswer(items: readonly ConfirmItem[]): boolean {
         type === undefined ||
         !SINGLE_ACTION_TYPES.has(type) ||
         type.startsWith("delete_") ||
-        BULK_ACTION_TYPES.has(type as AiActionType)
+        (BULK_ACTION_TYPES.has(type as AiActionType) &&
+          !isOneRowNonDeleteBatch(card))
       );
     })
+  );
+}
+
+/** The cards of a round: an array action counts one card per element. */
+function actionCards(items: readonly ConfirmItem[]): unknown[] {
+  return items.flatMap((item) =>
+    Array.isArray(item.action) ? item.action : [item.action],
+  );
+}
+
+/**
+ * A `batch_actions` card that holds exactly one row and does not delete is a
+ * single create or edit (a bulk tool with one row left after skips). Anything
+ * else about the card's shape stays bulk, so a malformed one fails closed.
+ */
+function isOneRowNonDeleteBatch(card: unknown): boolean {
+  const { type, operation, rows } = card as {
+    type?: unknown;
+    operation?: unknown;
+    rows?: unknown;
+  };
+  return (
+    type === "batch_actions" &&
+    typeof operation === "string" &&
+    !operation.startsWith("delete") &&
+    Array.isArray(rows) &&
+    rows.length === 1
   );
 }
 
@@ -193,7 +218,11 @@ function applyUnconfirmedPolicy(
   const refused = needsHumanAnswer(items);
   const user = resolveUserContext(ctx);
   logger.warn(
-    `mcp-unconfirmed-write outcome=${refused ? "refused" : "allowed"} user=${user?.userId ?? "unknown"} credential=${user?.credentialId ?? "unknown"} actions=${items.map((item) => actionType(item.action) ?? "unknown").join(",")}`,
+    `mcp-unconfirmed-write outcome=${refused ? "refused" : "allowed"} user=${user?.userId ?? "unknown"} credential=${user?.credentialId ?? "unknown"} actions=${actionCards(
+      items,
+    )
+      .map((card) => actionType(card) ?? "unknown")
+      .join(",")}`,
   );
   if (refused) throw new ConfirmRequiredError();
 }
@@ -499,8 +528,12 @@ async function confirmLegacy(
   items: ConfirmItem[],
 ): Promise<Map<string, WriteConfirmation>> {
   const answers = new Map<string, WriteConfirmation>();
+  const needsHuman = needsHumanAnswer(items);
   for (const item of items) {
-    answers.set(item.key, await confirmLegacyOne(server, ctx, item.message));
+    answers.set(
+      item.key,
+      await confirmLegacyOne(server, ctx, item.message, needsHuman),
+    );
   }
   return answers;
 }
@@ -509,6 +542,7 @@ async function confirmLegacyOne(
   server: McpServer,
   ctx: ServerContext,
   message: string,
+  needsHuman: boolean,
 ): Promise<WriteConfirmation> {
   const capabilities = server.server.getClientCapabilities();
   if (!capabilities?.elicitation?.form) {
@@ -533,7 +567,8 @@ async function confirmLegacyOne(
     recordElicitationAnswered(server);
     return result.action === "accept" ? "accepted" : "declined";
   } catch (err) {
-    if (!clientAnsweredForItself(err)) {
+    const unanswered = elicitationUnanswered(err);
+    if (!unanswered && !clientAnsweredForItself(err)) {
       return "declined";
     }
     // A client that has already shown a dialog in this session can show
@@ -542,15 +577,12 @@ async function confirmLegacyOne(
     if (elicitationBehaviour(server) === "answers") {
       return "declined";
     }
-    // An unanswered dialog is not a client that cannot show one: refuse this
-    // write and ask again next time.
-    if (
-      SdkError.isInstance(err) &&
-      (err.code === SdkErrorCode.RequestTimeout ||
-        err.code === SdkErrorCode.ConnectionClosed)
-    ) {
-      throw new ConfirmNotAnsweredError();
-    }
+    // A round that needs a human is refused for this one write and asked again
+    // next time: an unanswered dialog does not show the client cannot show one.
+    // A single create or edit falls through to the client's own prompt, and the
+    // session is marked so a client that never answers is not asked (and
+    // waited on for CONFIRM_TIMEOUT_MS) again.
+    if (unanswered && needsHuman) throw new ConfirmNotAnsweredError();
     recordElicitationSilent(server);
     return "unsupported";
   }
