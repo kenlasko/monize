@@ -417,12 +417,12 @@ describe('DocumentScanDialog', () => {
         name: 'Enhanced scan preview',
       }).parentElement as HTMLElement;
       const frame = content.parentElement as HTMLElement;
-      expect(content.style.transform).toBe('translate(0px, 0px) scale(1)');
+      expect(content.style.transform).toBe('translate(0px) scale(1)');
 
       await act(async () => {
         fireEvent.wheel(frame, { deltaY: -1, clientX: 0, clientY: 0 });
       });
-      expect(content.style.transform).not.toBe('translate(0px, 0px) scale(1)');
+      expect(content.style.transform).not.toBe('translate(0px) scale(1)');
     });
 
     // A magnified image pans on a drag, so the corner handles stand down rather

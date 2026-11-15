@@ -263,6 +263,7 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 
 ### Self-Hosting and Operations
 - Docker Compose files for development, production, demo and several replicas, and a Helm chart for Kubernetes
+- A Windows installer for a single PC, with its own PostgreSQL, tray icon and automatic updates: no Docker needed ([Monize for Windows](https://www.monize.net/docs/windows))
 - Several backend replicas with `CLUSTER_MODE=multi`, with PostgreSQL only and no Redis
 - Attachment storage in the database, on disk or in S3 (`ATTACHMENT_STORAGE_PROVIDER`); existing attachments are copied across when you switch
 - The automatic backup store on disk or in S3 (`BACKUP_STORAGE_PROVIDER`)
@@ -607,6 +608,7 @@ npm run dev
 | `LOCAL_AUTH_ENABLED` | Enable local auth | `true` |
 | `REGISTRATION_ENABLED` | Allow new user registration | `true` |
 | `FORCE_2FA` | Require 2FA for all local users | `false` |
+| `AUTH_BRAND_PANEL` | Show the brand panel with a sample-data screenshot beside the sign-in screens (`false` hides the panel) | `true` |
 | `OIDC_ISSUER_URL` | OIDC provider URL | - |
 | `OIDC_CLIENT_ID` | OIDC client ID | - |
 | `OIDC_CLIENT_SECRET` | OIDC client secret | - |
@@ -678,6 +680,35 @@ Example environment for K8s:
 - name: PUBLIC_APP_URL
   value: "https://money.example.com"
 ```
+
+### Windows (single PC)
+
+For one Windows 10/11 x64 PC there is an installer with everything inside:
+the frontend, the backend and PostgreSQL 16 run as one app with a tray icon,
+installed for the current Windows account without administrator rights.
+
+- **Download:** `Monize-Setup-<version>.exe` from the
+  [latest release](https://github.com/kenlasko/monize/releases/latest). A
+  beta built from `main` is the one
+  [prerelease](https://github.com/kenlasko/monize/releases) named
+  "Windows beta". The installer is not code-signed yet, so SmartScreen asks
+  for confirmation.
+- **Reachable from that PC only.** Everything binds `127.0.0.1`: no phone,
+  no other computer, no email (there are no SMTP settings), no OIDC. The
+  [Windows guide](https://www.monize.net/docs/windows#what-the-windows-app-cannot-do)
+  lists everything this rules out.
+- **Data** lives in `%LOCALAPPDATA%\Monize` (`pgdata`, `attachments`,
+  `backups`, `logs`, `config.json`); the tray's "Move data folder..." moves
+  it. The secrets in `config.json` are generated on first start and
+  encrypted for the Windows account.
+- **Backups:** save the recovery key from the tray ("Export recovery
+  key..."), keep in-app backups off the PC (they restore anywhere), and
+  for a full copy of the instance use
+  [`desktop/scripts/Backup-Monize.ps1`](desktop/scripts/Backup-Monize.ps1),
+  which restores under the same Windows account only. The guide's
+  [Backups and Disaster Recovery](https://www.monize.net/docs/windows#backups-and-disaster-recovery)
+  explains which copy restores where.
+- **Building it yourself:** [`desktop/README.md`](desktop/README.md).
 
 ## API Documentation
 

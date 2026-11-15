@@ -3,8 +3,9 @@ import { createCurrency } from '../helpers/factories';
 import { uniqueId, randomCurrencyCode } from '../helpers/api';
 
 // Currencies are created on demand rather than pre-seeded: a fresh instance
-// only has the default-preference currency (USD, ensured on startup), and any
-// other currency is added when a user creates or picks it. Tests create their
+// only has the default-preference currency (USD, ensured on startup as an
+// inactive row and given to each user whose default it is), and any other
+// currency is added when a user creates or picks it. Tests create their
 // own currencies with distinct fake 3-char codes. These cover
 // navigate/list/create/edit/deactivate/validation.
 test.describe('Currencies', () => {
@@ -24,7 +25,8 @@ test.describe('Currencies', () => {
 
     await page.goto('/currencies');
 
-    // USD is ensured on startup as the default-preference currency.
+    // USD is the user's default-preference currency, so it is listed for them
+    // even after they added another currency first.
     await expect(page.locator('tr', { hasText: 'US Dollar' })).toBeVisible();
     // A user-created currency shows up in the list.
     await expect(page.locator('tr', { hasText: created.name })).toBeVisible();

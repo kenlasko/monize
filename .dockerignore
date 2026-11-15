@@ -42,3 +42,7 @@ website/docs/images/*
 # test an import would otherwise be baked into the image. The committed test
 # fixtures are excluded too: nothing in the image reads them.
 **/*.mny
+
+# The Windows desktop shell (Electron) is built on a Windows runner, not in
+# either image; nothing under it is read by the backend or frontend build.
+desktop

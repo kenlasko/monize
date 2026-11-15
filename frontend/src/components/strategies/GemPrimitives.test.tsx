@@ -134,16 +134,18 @@ describe("GemPrimitives", () => {
 
   it("renders a neutral comparison bar, and the loss tone when negative", () => {
     const { container, rerender } = render(<GemBar width={40} />);
-    const fill = () => container.querySelector('[aria-hidden="true"] > div');
+    const fill = () => container.querySelector<HTMLElement>('[aria-hidden="true"] > div');
     expect(fill()).toHaveStyle({ width: "40%" });
     // Colour is reserved for the chart series and for gains/losses, so a
     // positive bar is neutral rather than tinted per asset -- and it comes
     // from the chart tokens, so it re-colours with the theme instead of
     // staying Tailwind grey/red on every palette.
-    expect(fill()).toHaveStyle({ backgroundColor: "var(--chart-neutral)" });
+    // Read from the inline style the component writes: the computed style
+    // resolves `var()` against a theme the test document does not load.
+    expect(fill()?.style.backgroundColor).toBe("var(--chart-neutral)");
     expect(fill()?.className).not.toMatch(/bg-(gray|red)-\d/);
     rerender(<GemBar width={40} negative />);
-    expect(fill()).toHaveStyle({ backgroundColor: "var(--chart-expense)" });
+    expect(fill()?.style.backgroundColor).toBe("var(--chart-expense)");
   });
 
   it("renders an empty state with an optional action", () => {

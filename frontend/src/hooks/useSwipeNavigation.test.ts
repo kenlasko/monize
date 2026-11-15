@@ -447,7 +447,7 @@ describe('useSwipeNavigation', () => {
       });
 
       // Should snap back
-      expect(contentDiv.style.transform).toBe('translateX(0)');
+      expect(contentDiv.style.transform).toBe('translateX(0px)');
       expect(contentDiv.style.opacity).toBe('1');
 
       // Advance past animation
@@ -470,7 +470,7 @@ describe('useSwipeNavigation', () => {
       // The useLayoutEffect should have read and removed the session storage item
       expect(sessionStorage.getItem('swipe-enter')).toBeNull();
       // Content should end up animating to translateX(0)
-      expect(contentDiv.style.transform).toBe('translateX(0)');
+      expect(contentDiv.style.transform).toBe('translateX(0px)');
     });
 
     it('animates from left when sessionStorage has from-left', () => {
@@ -480,7 +480,7 @@ describe('useSwipeNavigation', () => {
       renderSwipeHookWithEnterAnimation('/accounts');
 
       expect(sessionStorage.getItem('swipe-enter')).toBeNull();
-      expect(contentDiv.style.transform).toBe('translateX(0)');
+      expect(contentDiv.style.transform).toBe('translateX(0px)');
     });
 
     it('does nothing when sessionStorage has no swipe-enter', () => {

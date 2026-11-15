@@ -37,6 +37,7 @@ import {
 import { assertRuntimeRoleSafe } from "./common/db/runtime-role-check";
 import { assertRequiredDbFunctions } from "./common/db/required-db-functions";
 import { ConfigService } from "@nestjs/config";
+import { resolveListenHost } from "./common/listen-host";
 import { logEncryptionKeyStatus } from "./common/encryption/encryption-key";
 import { logJwtSecretStatus } from "./common/jwt-secret-policy";
 
@@ -659,9 +660,19 @@ async function bootstrap() {
   server.headersTimeout = 605000; // must be > requestTimeout
 
   const port = process.env.PORT || 3001;
-  await app.listen(port);
+  // HOST is optional: unset keeps the all-interfaces default (containers); the
+  // desktop build sets 127.0.0.1 so the API is not reachable from the network.
+  const host = resolveListenHost(process.env.HOST);
+  if (host) {
+    await app.listen(port, host);
+  } else {
+    await app.listen(port);
+  }
 
-  logger.log(`Application is running on: http://localhost:${port}`);
+  logger.log(
+    `Application is running on: http://${host ?? "localhost"}:${port}` +
+      (host ? ` (bound to ${host})` : ""),
+  );
   if (process.env.NODE_ENV !== "production") {
     logger.log(`API Documentation: http://localhost:${port}/api/docs`);
   }

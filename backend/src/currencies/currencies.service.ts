@@ -132,6 +132,11 @@ export class CurrenciesService implements OnApplicationBootstrap {
    * currencies(code). Guarantee that single currency on startup so the first
    * user can register before anyone picks a currency at onboarding. Idempotent.
    *
+   * The row is inactive reference data, like the bond catalog's: a user who
+   * picks CAD at onboarding is offered CAD and nothing else (issue #2186). A
+   * user who keeps USD is given it by `ensureCurrencyForUser`, from the
+   * preference write or from `findAll`'s default-currency fallback.
+   *
    * RLS: this is a bootstrap hook, so there is no request/user context for
    * `withScopedDb` to spend -- and the row it writes is a system currency owned
    * by nobody. It runs under `withSystemContext`, like the seeders (C3).
@@ -139,7 +144,7 @@ export class CurrenciesService implements OnApplicationBootstrap {
   async onApplicationBootstrap(): Promise<void> {
     try {
       await withSystemContext(() =>
-        this.ensureBootstrapCurrency(DEFAULT_CURRENCY_CODE),
+        this.insertSystemCurrencyIfMissing(DEFAULT_CURRENCY_CODE),
       );
     } catch (err) {
       this.logger.warn(
@@ -263,6 +268,16 @@ export class CurrenciesService implements OnApplicationBootstrap {
     return this.buildUserCurrencyView(currency, true);
   }
 
+  /**
+   * The currencies `userId` has: the ones they added (a preference row, active
+   * or not), their own custom ones, and any system row active for everybody.
+   *
+   * `includeInactive` adds an inactive system row only when this user's own
+   * accounts or securities are denominated in it. Reference rows nobody chose
+   * -- the bootstrap USD, a bond program's PLN -- are not "optional currencies"
+   * of every user (issue #2186); a user adds one from the Currencies page,
+   * which adopts the existing row.
+   */
   async findAll(
     userId: string,
     includeInactive = false,
@@ -277,11 +292,21 @@ export class CurrenciesService implements OnApplicationBootstrap {
              c.quote_symbol AS "quoteSymbol"
       FROM currencies c
       LEFT JOIN user_currency_preferences ucp
-        ON ucp.currency_code = c.code AND ucp.user_id = $1
-      WHERE (c.created_by_user_id IS NULL OR ucp.user_id IS NOT NULL)`;
+        ON ucp.currency_code = c.code AND ucp.user_id = $1`;
 
-    if (!includeInactive) {
-      query += ` AND COALESCE(ucp.is_active, c.is_active) = true`;
+    if (includeInactive) {
+      query += `
+      WHERE (ucp.user_id IS NOT NULL
+             OR (c.created_by_user_id IS NULL
+                 AND (c.is_active
+                      OR EXISTS (SELECT 1 FROM accounts a
+                                  WHERE a.user_id = $1 AND a.currency_code = c.code)
+                      OR EXISTS (SELECT 1 FROM securities s
+                                  WHERE s.user_id = $1 AND s.currency_code = c.code))))`;
+    } else {
+      query += `
+      WHERE (c.created_by_user_id IS NULL OR ucp.user_id IS NOT NULL)
+        AND COALESCE(ucp.is_active, c.is_active) = true`;
     }
 
     query += ` ORDER BY c.code ASC`;
@@ -292,21 +317,28 @@ export class CurrenciesService implements OnApplicationBootstrap {
     return withScopedDb(this.dataSource, async (manager) => {
       const rows: UserCurrencyView[] = await manager.query(query, [userId]);
 
-      // A fresh instance no longer pre-seeds a list of currencies; the user's
-      // chosen currency is created when they pick it at onboarding. If they
-      // skipped onboarding this list is empty on first use, so lazily create
-      // their default-preference currency (with a proper symbol) here.
-      if (rows.length === 0) {
-        const prefRows: Array<{ default_currency: string | null }> =
-          await manager.query(
-            `SELECT default_currency FROM user_preferences WHERE user_id = $1`,
-            [userId],
-          );
-        const defaultCurrency = prefRows[0]?.default_currency;
-        if (defaultCurrency) {
-          await this.ensureCurrencyForUser(userId, defaultCurrency);
-          return manager.query(query, [userId]);
-        }
+      // A fresh instance pre-seeds no list of currencies, and the bootstrap
+      // USD is offered to nobody. The user's chosen currency is ensured when
+      // they pick it at onboarding, but a user who kept the registration
+      // default (or skipped onboarding) never wrote a preference for it, so it
+      // is lazily ensured here, with a proper symbol. Only while no preference
+      // row exists: a default the user deactivated stays deactivated.
+      const prefRows: Array<{
+        default_currency: string | null;
+        hasPreference: boolean;
+      }> = await manager.query(
+        `SELECT up.default_currency,
+                EXISTS (SELECT 1 FROM user_currency_preferences ucp
+                         WHERE ucp.user_id = up.user_id
+                           AND ucp.currency_code = up.default_currency) AS "hasPreference"
+           FROM user_preferences up
+          WHERE up.user_id = $1`,
+        [userId],
+      );
+      const defaultCurrency = prefRows[0]?.default_currency;
+      if (defaultCurrency && prefRows[0]?.hasPreference !== true) {
+        await this.ensureCurrencyForUser(userId, defaultCurrency);
+        return manager.query(query, [userId]);
       }
 
       return rows;
@@ -322,18 +354,6 @@ export class CurrenciesService implements OnApplicationBootstrap {
       ...entry,
       kind: DEFAULT_CURRENCY_KIND,
     }));
-  }
-
-  /**
-   * Ensure the bootstrap system currency row exists, creating it from the
-   * curated/derived metadata (name, symbol, decimal places) when missing. It is
-   * ACTIVE and owned by nobody, so every user is offered it: that is right for
-   * the one default-preference currency and wrong for anything else. Called only
-   * from `onApplicationBootstrap`, never from a user's request -- a request
-   * goes through `ensureCurrencyForUser`.
-   */
-  private async ensureBootstrapCurrency(code: string): Promise<void> {
-    await this.insertSystemCurrencyIfMissing(code, true);
   }
 
   /**
@@ -405,22 +425,20 @@ export class CurrenciesService implements OnApplicationBootstrap {
    * by the bond catalog (its seed and a series fetch); an existing row, active or not, is left as is.
    */
   async ensureCatalogCurrency(code: string): Promise<void> {
-    // The default-preference currency is created as bootstrap would create it:
-    // whichever of the two startup hooks runs first must not leave it inactive
-    // (a USD bond program seeded before the bootstrap currency did).
-    await this.insertSystemCurrencyIfMissing(
-      code,
-      code.toUpperCase() === DEFAULT_CURRENCY_CODE,
-    );
+    // The default-preference currency is created exactly as bootstrap creates
+    // it, so the order of the two startup hooks does not matter.
+    await this.insertSystemCurrencyIfMissing(code);
   }
 
-  private async insertSystemCurrencyIfMissing(
-    code: string,
-    active: boolean,
-  ): Promise<void> {
+  /**
+   * Create `code` as an inactive system row from the curated/derived metadata
+   * (name, symbol, decimal places) when it is missing. Owned by nobody and
+   * offered to nobody: a user is given it by `ensureCurrencyForUser` or by
+   * adding it on the Currencies page, which both write their preference row.
+   * An existing row, active or not, is left as it is.
+   */
+  private async insertSystemCurrencyIfMissing(code: string): Promise<void> {
     const upper = code.toUpperCase();
-    // A fixed fragment, never caller text.
-    const isActive = active ? "true" : "false";
     await withScopedDb(this.dataSource, async (manager) => {
       const existing = await manager.getRepository(Currency).findOne({
         where: { code: upper },
@@ -430,7 +448,7 @@ export class CurrenciesService implements OnApplicationBootstrap {
       const meta = resolveCurrencyMetadata(upper);
       await manager.query(
         `INSERT INTO currencies (code, name, symbol, decimal_places, is_active, created_by_user_id, kind)
-       VALUES ($1, $2, $3, $4, ${isActive}, NULL, $5)
+       VALUES ($1, $2, $3, $4, false, NULL, $5)
        ON CONFLICT (code) DO NOTHING`,
         [
           upper,

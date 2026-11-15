@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Monize</title>
+    <link rel="stylesheet" href="log-viewer.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <label for="source" id="source-label"></label>
+        <select id="source"></select>
+        <button id="refresh" type="button"></button>
+        <label class="pause"
+          ><input id="pause" type="checkbox" /><span id="pause-label"></span
+        ></label>
+      </header>
+      <pre id="log" class="log"></pre>
+      <p id="note" class="note" role="status" aria-live="polite"></p>
+    </main>
+    <script src="log-viewer-page.js"></script>
+  </body>
+</html>

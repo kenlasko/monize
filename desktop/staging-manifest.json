@@ -1,0 +1,109 @@
+{
+  "description": "What desktop/scripts/stage.mjs copies into desktop/staging/. The layout mirrors the production stage of backend/Dockerfile and frontend/Dockerfile; src/staging-manifest.spec.ts fails when a Dockerfile gains a COPY this list does not account for. from is repo-relative (a directory, a file, or a glob in the last segment); to is under staging/; kind is copy (default), backend-deps, help-images, postgres, desktop or vc-runtime. A desktop entry is a desktop-owned file that mirrors no Dockerfile line (it is copied like copy, from desktop/, never into backend/ or frontend/). A vc-runtime entry is staged on Windows only: its files are the Visual C++ runtime DLLs the PostgreSQL binaries import, copied from the build machine's Visual Studio redistributable directory.",
+  "entries": [
+    {
+      "from": "backend/dist",
+      "to": "backend/dist",
+      "exclude": ["*.js.map"],
+      "mirrors": "backend/Dockerfile: COPY --from=builder /app/dist ./dist (the next RUN deletes *.js.map)"
+    },
+    {
+      "kind": "backend-deps",
+      "from": "backend/package.json",
+      "to": "backend/node_modules",
+      "mirrors": "backend/Dockerfile: COPY --from=deps /app/node_modules ./node_modules (npm ci --omit=dev, without --libc=musl)"
+    },
+    {
+      "from": "backend/package.json",
+      "to": "backend/package.json",
+      "mirrors": "backend/Dockerfile: COPY backend/package*.json ./"
+    },
+    {
+      "from": "backend/package-lock.json",
+      "to": "backend/package-lock.json",
+      "mirrors": "backend/Dockerfile: COPY backend/package*.json ./"
+    },
+    {
+      "from": "database/schema.sql",
+      "to": "backend/schema.sql",
+      "mirrors": "backend/Dockerfile: COPY --from=builder /app/schema.sql ./schema.sql"
+    },
+    {
+      "from": "database/migrations",
+      "to": "backend/migrations",
+      "mirrors": "backend/Dockerfile: COPY --from=builder /app/migrations ./migrations"
+    },
+    {
+      "from": "docs/release-notes",
+      "to": "backend/release-notes",
+      "mirrors": "backend/Dockerfile: COPY --from=builder /app/release-notes ./release-notes"
+    },
+    {
+      "from": "website/docs/*.md",
+      "to": "backend/help",
+      "mirrors": "backend/Dockerfile: COPY --from=builder /app/help ./help (the builder stage copies website/docs/*.md into ./help/)"
+    },
+    {
+      "from": "website/docs/nav.json",
+      "to": "backend/help/nav.json",
+      "mirrors": "backend/Dockerfile: COPY --from=builder /app/help ./help"
+    },
+    {
+      "from": "website/docs/search-index.json",
+      "to": "backend/help/search-index.json",
+      "mirrors": "backend/Dockerfile: COPY --from=builder /app/help ./help"
+    },
+    {
+      "kind": "help-images",
+      "from": "website/docs/images",
+      "to": "backend/help/images",
+      "mirrors": "backend/Dockerfile: COPY --from=help-images --chown=nestjs:nodejs /images ./help/images/ (converted by backend/scripts/convert-help-images.sh)"
+    },
+    {
+      "from": "frontend/.next/standalone",
+      "to": "frontend",
+      "dereference": true,
+      "mirrors": "frontend/Dockerfile: COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./"
+    },
+    {
+      "from": "frontend/.next/static",
+      "to": "frontend/.next/static",
+      "mirrors": "frontend/Dockerfile: COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static"
+    },
+    {
+      "from": "frontend/public",
+      "to": "frontend/public",
+      "mirrors": "frontend/Dockerfile: COPY --from=builder --chown=nextjs:nodejs /app/public ./public"
+    },
+    {
+      "from": "frontend/server-log-format.cjs",
+      "to": "frontend/server-log-format.cjs",
+      "mirrors": "frontend/Dockerfile: COPY --from=builder --chown=nextjs:nodejs /app/server-log-format.cjs ./"
+    },
+    {
+      "kind": "desktop",
+      "from": "desktop/resources/parent-watch.cjs",
+      "to": "shell/parent-watch.cjs",
+      "mirrors": "none: desktop-only, no container runs it; the supervisor loads it into every backend and frontend process with --require (src/supervisor/parent-watch.ts)"
+    },
+    {
+      "kind": "desktop",
+      "from": "desktop/build/icon.ico",
+      "to": "shell/icon.ico",
+      "mirrors": "none: desktop-only; the window, splash and tray icon on Windows, which loads an .ico from a real file outside the asar (src/shell/icon.ts)"
+    },
+    {
+      "kind": "postgres",
+      "from": "@embedded-postgres/<windows-x64|linux-x64>/native",
+      "to": "postgres",
+      "mirrors": "none: the containers use a postgres image; the desktop build ships the native/ directory of the embedded-postgres platform package"
+    },
+    {
+      "kind": "vc-runtime",
+      "from": "vc-redist/x64/Microsoft.VC*.CRT",
+      "to": "postgres/bin",
+      "files": ["vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll"],
+      "mirrors": "none: Windows only; the Visual C++ runtime the PostgreSQL binaries import and their package does not ship, found on the build machine by scripts/lib/vc-runtime.mjs, which also fails the run when anything under postgres/ imports a runtime DLL this list lacks"
+    }
+  ]
+}
