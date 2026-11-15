@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import BudgetEditPage from './page';
 
 // Mock next/navigation
 const mockPush = vi.fn();
+// One router object, as Next gives: a fresh one per render would re-run the
+// page's load effect on every render.
+const mockRouter = { push: (...args: any[]) => mockPush(...args) };
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => mockRouter,
   usePathname: () => '/budgets/budget-1/edit',
   useParams: () => ({ id: 'budget-1' }),
 }));
@@ -94,6 +97,9 @@ const mockGetById = vi.fn();
 const mockGetSummary = vi.fn();
 const mockRemoveCategory = vi.fn();
 const mockAddTransferIncomeLine = vi.fn();
+const mockCreateBucket = vi.fn();
+const mockUpdateBucket = vi.fn();
+const mockDeleteBucket = vi.fn();
 
 vi.mock('@/lib/budgets', () => ({
   budgetsApi: {
@@ -103,6 +109,9 @@ vi.mock('@/lib/budgets', () => ({
     updateCategory: vi.fn(),
     removeCategory: (...args: any[]) => mockRemoveCategory(...args),
     addTransferIncomeLine: (...args: any[]) => mockAddTransferIncomeLine(...args),
+    createBucket: (...args: any[]) => mockCreateBucket(...args),
+    updateBucket: (...args: any[]) => mockUpdateBucket(...args),
+    deleteBucket: (...args: any[]) => mockDeleteBucket(...args),
   },
 }));
 
@@ -134,12 +143,25 @@ vi.mock('@/components/budgets/BudgetForm', () => ({
   ),
 }));
 
+const categoryFormProps: { current: any } = { current: null };
 vi.mock('@/components/budgets/BudgetCategoryForm', () => ({
-  BudgetCategoryForm: ({ onRemove }: any) => (
-    <div data-testid="category-form">
-      <button data-testid="category-remove" onClick={onRemove}>Remove from budget</button>
-    </div>
-  ),
+  BudgetCategoryForm: (props: any) => {
+    categoryFormProps.current = props;
+    return (
+      <div data-testid="category-form">
+        <button data-testid="category-remove" onClick={props.onRemove}>Remove from budget</button>
+      </div>
+    );
+  },
+}));
+
+// The editor has its own suite; here only its wiring to the page matters.
+const bucketEditorProps: { current: any } = { current: null };
+vi.mock('@/components/budgets/BudgetBucketEditor', () => ({
+  BudgetBucketEditor: (props: any) => {
+    bucketEditorProps.current = props;
+    return <div data-testid="bucket-editor" />;
+  },
 }));
 
 const mockToastSuccess = vi.fn();
@@ -252,6 +274,8 @@ describe('BudgetEditPage', () => {
     mockGetSummary.mockResolvedValue(mockSummary);
     mockRemoveCategory.mockResolvedValue(undefined);
     mockGetAccounts.mockResolvedValue([]);
+    categoryFormProps.current = null;
+    bucketEditorProps.current = null;
   });
 
   it('shows loading spinner initially', async () => {
@@ -564,6 +588,140 @@ describe('BudgetEditPage', () => {
       expect(await screen.findByText('Transfers from HISA')).toBeInTheDocument();
       expect(screen.getByText('Transfers from accounts outside this budget')).toBeInTheDocument();
       expect(screen.getByText('$300.00')).toBeInTheDocument();
+    });
+  });
+
+  describe('buckets', () => {
+    const buckets = [
+      {
+        id: 'bk-1',
+        budgetId: 'budget-1',
+        name: 'Fixed costs',
+        targetType: 'PERCENT',
+        targetValue: 50,
+        carryOver: false,
+        carryCap: null,
+        sortOrder: 0,
+        createdAt: '2026-11-01',
+        updatedAt: '2026-11-01',
+      },
+    ];
+    const bucketBudget = {
+      ...mockBudget,
+      strategy: 'BUCKET',
+      buckets,
+      categories: [
+        { ...mockBudget.categories[0], bucketId: 'bk-1' },
+        {
+          ...mockBudget.categories[0],
+          id: 'bc-2',
+          categoryId: 'cat-2',
+          category: { id: 'cat-2', name: 'Dining', isIncome: false },
+          bucketId: null,
+        },
+      ],
+    };
+
+    it('has no Buckets section for a budget of another strategy, even one holding buckets', async () => {
+      mockGetById.mockResolvedValue({ ...bucketBudget, strategy: 'FIFTY_THIRTY_TWENTY' });
+      render(<BudgetEditPage />);
+
+      await screen.findByTestId('budget-form');
+      expect(screen.queryByRole('heading', { name: 'Buckets' })).not.toBeInTheDocument();
+      expect(screen.queryByTestId('bucket-editor')).not.toBeInTheDocument();
+      expect(screen.queryByText('Fixed costs')).not.toBeInTheDocument();
+      expect(screen.queryByText('Unassigned')).not.toBeInTheDocument();
+    });
+
+    it('shows the Buckets section with the persisted editor for a Bucket budget', async () => {
+      mockGetById.mockResolvedValue(bucketBudget);
+      render(<BudgetEditPage />);
+
+      expect(await screen.findByRole('region', { name: 'Buckets' })).toBeInTheDocument();
+      expect(screen.getByTestId('bucket-editor')).toBeInTheDocument();
+      expect(bucketEditorProps.current).toMatchObject({
+        mode: 'persisted',
+        currencyCode: 'USD',
+        buckets,
+      });
+    });
+
+    it('badges each expense line with its bucket, or Unassigned', async () => {
+      mockGetById.mockResolvedValue(bucketBudget);
+      render(<BudgetEditPage />);
+
+      await screen.findByTestId('bucket-editor');
+      expect(screen.getByRole('button', { name: /Groceries/ })).toHaveTextContent('Fixed costs');
+      expect(screen.getByRole('button', { name: /Dining/ })).toHaveTextContent('Unassigned');
+    });
+
+    it('hands the line form the strategy and the buckets', async () => {
+      mockGetById.mockResolvedValue(bucketBudget);
+      render(<BudgetEditPage />);
+
+      fireEvent.click(await screen.findByRole('button', { name: /Groceries/ }));
+      await screen.findByTestId('category-form');
+      expect(categoryFormProps.current).toMatchObject({ strategy: 'BUCKET', buckets });
+    });
+
+    it('sends each editor callback to the bucket routes of this budget', async () => {
+      mockGetById.mockResolvedValue(bucketBudget);
+      mockCreateBucket.mockResolvedValue(buckets[0]);
+      mockUpdateBucket.mockResolvedValue(buckets[0]);
+      mockDeleteBucket.mockResolvedValue(undefined);
+      render(<BudgetEditPage />);
+      await screen.findByTestId('bucket-editor');
+
+      const data = { name: 'Savings', targetType: 'PERCENT', targetValue: 20 };
+      await act(async () => {
+        await bucketEditorProps.current.onCreate(data);
+        await bucketEditorProps.current.onUpdate('bk-1', { name: 'Needs' });
+        await bucketEditorProps.current.onDelete('bk-1');
+      });
+
+      expect(mockCreateBucket).toHaveBeenCalledWith('budget-1', data);
+      expect(mockUpdateBucket).toHaveBeenCalledWith('budget-1', 'bk-1', { name: 'Needs' });
+      expect(mockDeleteBucket).toHaveBeenCalledWith('budget-1', 'bk-1');
+    });
+
+    it('re-reads the budget in place after a bucket write, so the list sees the new bucket', async () => {
+      mockGetById.mockResolvedValue(bucketBudget);
+      render(<BudgetEditPage />);
+      await screen.findByTestId('bucket-editor');
+      expect(screen.getByRole('button', { name: /Dining/ })).toHaveTextContent('Unassigned');
+
+      const savings = { ...buckets[0], id: 'bk-2', name: 'Savings', sortOrder: 1 };
+      mockGetById.mockResolvedValue({
+        ...bucketBudget,
+        buckets: [...buckets, savings],
+        categories: [bucketBudget.categories[0], { ...bucketBudget.categories[1], bucketId: 'bk-2' }],
+      });
+      mockGetById.mockClear();
+      await act(async () => {
+        await bucketEditorProps.current.onWritten();
+      });
+
+      expect(mockGetById).toHaveBeenCalledTimes(1);
+      expect(mockGetSummary).toHaveBeenCalled();
+      // In place: the editor stayed mounted and never gave way to the spinner.
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Dining/ })).toHaveTextContent('Savings');
+      expect(bucketEditorProps.current.buckets).toEqual([...buckets, savings]);
+    });
+
+    it('reports a failed re-read without leaving the page', async () => {
+      mockGetById.mockResolvedValue(bucketBudget);
+      render(<BudgetEditPage />);
+      await screen.findByTestId('bucket-editor');
+
+      mockGetById.mockRejectedValue(new Error('boom'));
+      await act(async () => {
+        await bucketEditorProps.current.onWritten();
+      });
+
+      expect(mockToastError).toHaveBeenCalledWith('Failed to load budget');
+      expect(mockPush).not.toHaveBeenCalled();
+      expect(screen.getByTestId('bucket-editor')).toBeInTheDocument();
     });
   });
 });

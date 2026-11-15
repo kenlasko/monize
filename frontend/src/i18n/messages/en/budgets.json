@@ -36,7 +36,9 @@
       "SAVING": "Saving"
     },
     "saving": "Saving...",
-    "remove": "Remove from budget"
+    "remove": "Remove from budget",
+    "bucket": "Bucket",
+    "bucketUnassigned": "Unassigned"
   },
   "categoryList": {
     "title": "Category Budgets",
@@ -590,7 +592,9 @@
         "categoryRemoveFailed": "Failed to remove category",
         "transferIncomeAdded": "Transfer income added",
         "transferIncomeFailed": "Failed to add transfer income"
-      }
+      },
+      "buckets": "Buckets",
+      "unassignedBucket": "Unassigned"
     }
   },
   "validation": {
@@ -601,5 +605,93 @@
   "categoryValidation": {
     "amountMin": "Amount must be 0 or greater",
     "mustBeNumber": "Must be a number"
+  },
+  "bucketEditor": {
+    "presetLabel": "Start From a Preset",
+    "presets": {
+      "THREE": "Three Buckets",
+      "FOUR": "Four Buckets (60/10/10/20)",
+      "SCRATCH": "Start From Scratch"
+    },
+    "presetBucketNames": {
+      "fixedCosts": "Fixed costs",
+      "everydaySpending": "Everyday spending",
+      "savings": "Savings",
+      "dailyExpenses": "Daily expenses",
+      "splurge": "Splurge",
+      "longTermGoals": "Long-term goals",
+      "safetyAndDebt": "Safety and debt"
+    },
+    "listLabel": "Buckets",
+    "empty": {
+      "title": "No buckets yet",
+      "description": "Start from a preset or add a bucket, then assign each category to one."
+    },
+    "add": "Add Bucket",
+    "limitReached": "A budget can have at most {max} buckets.",
+    "newTitle": "New Bucket",
+    "editTitle": "Edit {name}",
+    "summary": "Percent targets add up to {percent}. Amount targets add up to {amount}.",
+    "row": {
+      "percentTarget": "{percent} of income",
+      "amountTarget": "{amount} per period",
+      "noCarry": "Starts each period fresh",
+      "carries": "Carries over",
+      "carriesUpTo": "Carries over, up to {cap}",
+      "caption": "{target} · {carry}",
+      "edit": "Edit",
+      "delete": "Delete",
+      "editLabel": "Edit {name}",
+      "deleteLabel": "Delete {name}"
+    },
+    "targetTypes": {
+      "PERCENT": "Percent of Income",
+      "AMOUNT": "Fixed Amount"
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "e.g. Savings",
+      "targetType": "Target",
+      "targetTypeTooltip": "A percent target is a share of the budget's income: the income received this period for an income-linked budget, otherwise the base income, otherwise the income categories' amounts. A fixed amount is the same every period.",
+      "targetPercent": "Percent of Income",
+      "targetAmount": "Amount per Period",
+      "carryOver": "Carry Over What Is Left",
+      "carryOverTooltip": "What is left in the bucket when a period closes is added to the next period. An overspent bucket carries nothing.",
+      "carryCap": "Carry Cap (optional)",
+      "carryCapPlaceholder": "No cap",
+      "save": "Save",
+      "saveChanges": "Save Changes"
+    },
+    "validation": {
+      "nameRequired": "Enter a name",
+      "nameMax": "A name can be at most {max} characters",
+      "nameDuplicate": "Another bucket already has this name",
+      "targetRequired": "Enter a target",
+      "percentRange": "A percent target must be greater than 0 and at most 100",
+      "percentDecimals": "A percent target can have at most two decimals",
+      "amountPositive": "An amount target must be greater than 0",
+      "capNeedsCarryOver": "A carry cap needs carry-over turned on",
+      "capPositive": "A carry cap must be greater than 0"
+    },
+    "delete": {
+      "title": "Delete Bucket",
+      "message": "Delete the bucket \"{name}\"? Its categories become unassigned.",
+      "confirm": "Delete"
+    },
+    "replace": {
+      "title": "Replace Buckets",
+      "message": "Replace the current buckets with \"{preset}\"? The current buckets are deleted and their categories become unassigned.",
+      "clearMessage": "Delete every bucket and start from scratch? Their categories become unassigned.",
+      "confirm": "Replace"
+    },
+    "toasts": {
+      "created": "Bucket added",
+      "updated": "Bucket updated",
+      "deleted": "Bucket deleted",
+      "saveFailed": "Failed to save bucket",
+      "deleteFailed": "Failed to delete bucket",
+      "presetApplied": "Preset applied",
+      "presetFailed": "Failed to apply preset"
+    }
   }
 }

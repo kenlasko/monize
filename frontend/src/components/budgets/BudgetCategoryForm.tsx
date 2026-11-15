@@ -10,9 +10,12 @@ import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { NumericInput } from '@/components/ui/NumericInput';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
+import { Select } from '@/components/ui/Select';
 import { getCurrencySymbol } from '@/lib/format';
 import type {
+  BudgetBucket,
   BudgetCategory,
+  BudgetStrategy,
   UpdateBudgetCategoryData,
 } from '@/types/budget';
 
@@ -28,6 +31,8 @@ const buildBudgetCategoryFormSchema = (t: (key: string) => string) => z.object({
   alertWarnPercent: z.string().regex(/^\d*$/, t('categoryValidation.mustBeNumber')),
   alertCriticalPercent: z.string().regex(/^\d*$/, t('categoryValidation.mustBeNumber')),
   notes: z.string().max(1000).optional().or(z.literal('')),
+  // '' is unassigned.
+  bucketId: z.string(),
 });
 
 type BudgetCategoryFormData = z.infer<ReturnType<typeof buildBudgetCategoryFormSchema>>;
@@ -40,6 +45,10 @@ interface BudgetCategoryFormProps {
   /** Offers a "Remove from budget" action; the caller confirms and deletes. */
   onRemove?: () => void;
   isSaving?: boolean;
+  /** The budget's saved strategy; a Bucket budget offers the bucket select. */
+  strategy?: BudgetStrategy;
+  /** The budget's buckets, the select's options beside "Unassigned". */
+  buckets?: readonly BudgetBucket[];
 }
 
 const ROLLOVER_VALUES = ['NONE', 'MONTHLY', 'QUARTERLY', 'ANNUAL'] as const;
@@ -52,6 +61,8 @@ export function BudgetCategoryForm({
   onCancel,
   onRemove,
   isSaving = false,
+  strategy,
+  buckets = [],
 }: BudgetCategoryFormProps) {
   const t = useTranslations('budgets');
   const tc = useTranslations('common');
@@ -72,8 +83,12 @@ export function BudgetCategoryForm({
       alertWarnPercent: String(category.alertWarnPercent),
       alertCriticalPercent: String(category.alertCriticalPercent),
       notes: category.notes ?? '',
+      bucketId: category.bucketId ?? '',
     },
   });
+
+  // An income line cannot belong to a bucket (design decision 7).
+  const showBucketSelect = strategy === 'BUCKET' && !category.isIncome;
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const watchedRolloverType = watch('rolloverType');
@@ -88,6 +103,7 @@ export function BudgetCategoryForm({
       alertWarnPercent: parseInt(formData.alertWarnPercent) || 80,
       alertCriticalPercent: parseInt(formData.alertCriticalPercent) || 95,
       notes: formData.notes || undefined,
+      ...(showBucketSelect ? { bucketId: formData.bucketId || null } : {}),
     };
 
     await onSave(data);
@@ -178,6 +194,18 @@ export function BudgetCategoryForm({
           ))}
         </select>
       </div>
+
+      {showBucketSelect && (
+        <Select
+          id="budget-category-bucket"
+          label={t('categoryForm.bucket')}
+          {...register('bucketId')}
+          options={[
+            { value: '', label: t('categoryForm.bucketUnassigned') },
+            ...buckets.map((bucket) => ({ value: bucket.id, label: bucket.name })),
+          ]}
+        />
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <Controller
