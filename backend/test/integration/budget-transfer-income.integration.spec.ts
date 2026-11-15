@@ -309,6 +309,24 @@ describe("budget transfer income (integration)", () => {
       summary.categoryBreakdown.find((c) => c.budgetCategoryId === hisaLine.id),
     ).toMatchObject({ isIncome: true, isTransfer: true, spent: 2000 });
   });
+
+  it("counts the toggle on a budget with no line at all", async () => {
+    await setToggle(true);
+    await transfer(rrspId, chequingId, 300);
+    await dataSource.query(
+      `DELETE FROM budget_categories WHERE budget_id = $1`,
+      [budget.id],
+    );
+
+    const summary = await withUserContext(userId, () =>
+      budgets.getSummary(userId, budget.id),
+    );
+
+    expect(summary.categoryBreakdown).toEqual([]);
+    expect(summary.outsideTransferIncome).toBe(300);
+    expect(summary.totalIncome).toBe(300);
+  });
+
   it("adds a transfer income line with a row in the open period, refusing a second for the account", async () => {
     const periods = module.get(BudgetPeriodService);
     await withUserContext(userId, () =>

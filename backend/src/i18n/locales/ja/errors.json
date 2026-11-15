@@ -342,7 +342,8 @@
     "bucketCarryCapNeedsCarryOver": "繰越上限を使うには繰り越しをオンにしてください",
     "bucketOnIncomeLine": "収入項目はバケットに属せません",
     "bucketKeyDuplicate": "バケットのキー「{{ key }}」が複数回使われています",
-    "bucketKeyUnknown": "このリクエストにキー「{{ key }}」のバケットはありません"
+    "bucketKeyUnknown": "このリクエストにキー「{{ key }}」のバケットはありません",
+    "transferLineDirectionFixed": "振替行の方向は変更できません。行を削除して、新しい行を追加してください。"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "給与控除ルールは法定通貨で支払う請求を対象にします。この請求の口座は暗号資産 {{ code }} を保有しています。法定通貨の口座から支払う請求を選択してください。",

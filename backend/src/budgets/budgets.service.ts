@@ -36,6 +36,7 @@ import {
   PeriodDateRange,
 } from "./budget-date.utils";
 import {
+  budgetTransfersInAsIncome,
   queryCategorySpending,
   resolveBudgetIncome,
   resolveBudgetLineBudgeted,
@@ -409,24 +410,58 @@ export class BudgetsService {
     categoryId: string,
     dto: UpdateBudgetCategoryDto,
   ): Promise<BudgetCategory> {
-    await this.findOne(userId, budgetId);
+    // The lookups, the refusal and the save share one transaction, so a
+    // refused PATCH has written nothing.
+    return withScopedDb(this.dataSource, async (m) => {
+      await this.findOne(userId, budgetId);
 
-    const budgetCategory = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(BudgetCategory).findOne({
+      const repo = m.getRepository(BudgetCategory);
+      const budgetCategory = await repo.findOne({
         where: { id: categoryId, budgetId },
-      }),
-    );
+      });
 
-    if (!budgetCategory) {
-      throw new NotFoundException(
-        tr(
-          "errors.budgets.budgetCategoryNotFound",
-          `Budget category with ID ${categoryId} not found`,
-          { id: categoryId },
-        ),
+      if (!budgetCategory) {
+        throw new NotFoundException(
+          tr(
+            "errors.budgets.budgetCategoryNotFound",
+            `Budget category with ID ${categoryId} not found`,
+            { id: categoryId },
+          ),
+        );
+      }
+
+      // A transfer line's direction is what it is: flipping `isIncome` would
+      // turn "Transfer to HISA" (outgoing, counted as savings) into "Transfers
+      // from HISA" (the net coming in, clamped at zero) under the same
+      // account. Resending the value it already has is not a change.
+      if (
+        budgetCategory.isTransfer &&
+        dto.isIncome !== undefined &&
+        dto.isIncome !== budgetCategory.isIncome
+      ) {
+        throw new BadRequestException(
+          tr(
+            "errors.budgets.transferLineDirectionFixed",
+            "A transfer line's direction cannot be changed. Remove it and add a new line instead.",
+          ),
+        );
+      }
+
+      this.applyCategoryUpdate(budgetCategory, dto);
+      await assertBucketAssignable(
+        m,
+        budgetId,
+        budgetCategory.bucketId ?? null,
+        budgetCategory.isIncome,
       );
-    }
+      return repo.save(budgetCategory);
+    });
+  }
 
+  private applyCategoryUpdate(
+    budgetCategory: BudgetCategory,
+    dto: UpdateBudgetCategoryDto,
+  ): void {
     if (dto.categoryGroup !== undefined)
       budgetCategory.categoryGroup = dto.categoryGroup;
     if (dto.amount !== undefined) budgetCategory.amount = dto.amount;
@@ -444,19 +479,10 @@ export class BudgetsService {
     if (dto.sortOrder !== undefined) budgetCategory.sortOrder = dto.sortOrder;
 
     // Truth table D: absent = unchanged, null = cleared, a bucket id = set. The
-    // check runs on the row as it would become, so flipping a bucketed line to
-    // income is refused (unless the same request clears the bucket).
+    // check runs on the row as it would become (`updateCategory`), so flipping
+    // a bucketed line to income is refused (unless the same request clears the
+    // bucket).
     if (dto.bucketId !== undefined) budgetCategory.bucketId = dto.bucketId;
-
-    return withScopedDb(this.dataSource, async (m) => {
-      await assertBucketAssignable(
-        m,
-        budgetId,
-        budgetCategory.bucketId ?? null,
-        budgetCategory.isIncome,
-      );
-      return m.getRepository(BudgetCategory).save(budgetCategory);
-    });
   }
 
   async removeCategory(
@@ -1196,7 +1222,12 @@ export class BudgetsService {
   ): Promise<CategoryActuals> {
     const budgetCategories = budget.categories || [];
 
-    if (budgetCategories.length === 0) {
+    // A budget with no line still counts transfers in from its excluded
+    // accounts when the toggle is on (issue #2141).
+    if (
+      budgetCategories.length === 0 &&
+      !budgetTransfersInAsIncome(budget.config)
+    ) {
       return { lines: [], outsideTransferIncome: 0 };
     }
 
@@ -1210,6 +1241,7 @@ export class BudgetsService {
         budgetCategories,
         periodStart,
         periodEnd,
+        budget.id,
       ),
     );
 

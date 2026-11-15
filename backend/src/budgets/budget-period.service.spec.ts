@@ -564,6 +564,48 @@ describe("BudgetPeriodService", () => {
         expect.objectContaining({ actualIncome: 2300, actualExpenses: 0 }),
       );
     });
+
+    it("freezes the toggle's income on a budget with no line (issue #2141)", async () => {
+      budgetsService.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [],
+      });
+      periodsRepository.findOne.mockResolvedValue({
+        ...mockPeriod,
+        status: PeriodStatus.OPEN,
+        periodCategories: [],
+      });
+      periodsRepository.save.mockImplementation((data) => data);
+      const baseQuery = scopedManager.query.getMockImplementation()!;
+      scopedManager.query.mockImplementation(async (sql: string, p: unknown) =>
+        typeof sql === "string" && sql.includes("FROM budgets")
+          ? [
+              {
+                currency_code: "USD",
+                config: {
+                  excludedAccountIds: ["hisa"],
+                  transfersInAsIncome: true,
+                },
+              },
+            ]
+          : baseQuery(sql, p),
+      );
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([spendingRow("hisa", "400")]),
+        }),
+      );
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(),
+      );
+
+      await service.closePeriod("user-1", "budget-1");
+
+      expect(scopedManager.save).toHaveBeenCalledWith(
+        BudgetPeriod,
+        expect.objectContaining({ actualIncome: 400, actualExpenses: 0 }),
+      );
+    });
   });
 
   describe("closePeriod -- bucket snapshot and carry (INV-BUDGET-003)", () => {

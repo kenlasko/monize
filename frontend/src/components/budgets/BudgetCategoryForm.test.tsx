@@ -27,6 +27,65 @@ const mockCategory: BudgetCategory = {
 };
 
 describe('BudgetCategoryForm', () => {
+  describe('on a transfer income line', () => {
+    const transferIncomeLine: BudgetCategory = {
+      ...mockCategory,
+      categoryId: null,
+      category: null,
+      isTransfer: true,
+      isIncome: true,
+      transferAccountId: 'acct-hisa',
+      transferAccount: { id: 'acct-hisa', name: 'HISA' } as BudgetCategory['transferAccount'],
+    };
+
+    it('titles the dialog with the line name', () => {
+      render(
+        <BudgetCategoryForm
+          category={transferIncomeLine}
+          currencyCode="CAD"
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByText('Edit: Transfers from HISA')).toBeInTheDocument();
+    });
+
+    it('does not offer the need / want / saving group', () => {
+      render(
+        <BudgetCategoryForm
+          category={transferIncomeLine}
+          currencyCode="CAD"
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+
+      expect(screen.queryByText('Category Group (50/30/20)')).not.toBeInTheDocument();
+    });
+  });
+
+  it('titles an outgoing transfer line with its account', () => {
+    render(
+      <BudgetCategoryForm
+        category={{
+          ...mockCategory,
+          categoryId: null,
+          category: null,
+          isTransfer: true,
+          transferAccountId: 'acct-hisa',
+          transferAccount: { id: 'acct-hisa', name: 'HISA' } as BudgetCategory['transferAccount'],
+        }}
+        currencyCode="CAD"
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Edit: HISA')).toBeInTheDocument();
+    expect(screen.getByText('Category Group (50/30/20)')).toBeInTheDocument();
+  });
+
   it('renders with category name', () => {
     render(
       <BudgetCategoryForm

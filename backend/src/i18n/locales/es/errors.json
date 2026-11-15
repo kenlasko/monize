@@ -342,7 +342,8 @@
     "bucketCarryCapNeedsCarryOver": "Un límite de traslado requiere tener activado el traslado",
     "bucketOnIncomeLine": "Una línea de ingresos no puede pertenecer a un bolsillo",
     "bucketKeyDuplicate": "La clave de bolsillo \"{{ key }}\" se usa más de una vez",
-    "bucketKeyUnknown": "Ningún bolsillo de esta solicitud tiene la clave \"{{ key }}\""
+    "bucketKeyUnknown": "Ningún bolsillo de esta solicitud tiene la clave \"{{ key }}\"",
+    "transferLineDirectionFixed": "No se puede cambiar la dirección de una línea de transferencia. Elimínela y añada una línea nueva."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Una regla de deducción de nómina hace seguimiento de una factura pagada en una moneda fiduciaria; la cuenta de esta factura contiene la criptomoneda {{ code }}. Elige una factura pagada desde una cuenta en moneda fiduciaria.",

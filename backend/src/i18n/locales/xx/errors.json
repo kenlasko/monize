@@ -342,7 +342,8 @@
     "bucketCarryCapNeedsCarryOver": "[XX-A carry cap needs carry-over turned on-XX]",
     "bucketOnIncomeLine": "[XX-An income line cannot belong to a bucket-XX]",
     "bucketKeyDuplicate": "[XX-The bucket key \"{{ key }}\" is used more than once-XX]",
-    "bucketKeyUnknown": "[XX-No bucket in this request has the key \"{{ key }}\"-XX]"
+    "bucketKeyUnknown": "[XX-No bucket in this request has the key \"{{ key }}\"-XX]",
+    "transferLineDirectionFixed": "[XX-A transfer line's direction cannot be changed. Remove it and add a new line instead.-XX]"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "[XX-A payroll deduction rule tracks a bill paid in a fiat currency; this bill's account holds the cryptocurrency {{ code }}. Choose a bill paid from a fiat account.-XX]",

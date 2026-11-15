@@ -342,7 +342,8 @@
     "bucketCarryCapNeedsCarryOver": "이월 한도를 쓰려면 이월을 켜야 합니다",
     "bucketOnIncomeLine": "소득 항목은 버킷에 속할 수 없습니다",
     "bucketKeyDuplicate": "버킷 키 \"{{ key }}\"가 여러 번 사용되었습니다",
-    "bucketKeyUnknown": "이 요청에 키가 \"{{ key }}\"인 버킷이 없습니다"
+    "bucketKeyUnknown": "이 요청에 키가 \"{{ key }}\"인 버킷이 없습니다",
+    "transferLineDirectionFixed": "이체 항목의 방향은 변경할 수 없습니다. 항목을 삭제하고 새 항목을 추가하세요."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "급여 공제 규칙은 법정 통화로 지불하는 청구서를 추적합니다. 이 청구서의 계정은 암호화폐 {{ code }}을(를) 보유하고 있습니다. 법정 통화 계정에서 지불하는 청구서를 선택하세요.",

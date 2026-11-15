@@ -849,6 +849,76 @@ describe("BudgetsService", () => {
       expect(result.rolloverType).toBe(RolloverType.MONTHLY);
     });
 
+    describe("on a transfer line", () => {
+      const transferLine = {
+        ...mockBudgetCategory,
+        categoryId: null,
+        category: null,
+        isTransfer: true,
+        transferAccountId: "acct-hisa",
+      };
+
+      it.each([
+        ["outgoing to income", false, true],
+        ["income to outgoing", true, false],
+      ])(
+        "refuses flipping isIncome from %s without writing",
+        async (_label, from, to) => {
+          budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
+          budgetCategoriesRepository.findOne.mockResolvedValue({
+            ...transferLine,
+            isIncome: from,
+          });
+
+          await expect(
+            service.updateCategory("user-1", "budget-1", "bc-1", {
+              isIncome: to,
+              amount: 900,
+            }),
+          ).rejects.toThrow(BadRequestException);
+          expect(budgetCategoriesRepository.save).not.toHaveBeenCalled();
+        },
+      );
+
+      it("accepts the isIncome value it already has, as a form resends it", async () => {
+        budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
+        budgetCategoriesRepository.findOne.mockResolvedValue({
+          ...transferLine,
+          isIncome: true,
+        });
+        budgetCategoriesRepository.save.mockImplementation((data) => data);
+
+        const result = await service.updateCategory(
+          "user-1",
+          "budget-1",
+          "bc-1",
+          { isIncome: true, amount: 900 },
+        );
+
+        expect(result.isIncome).toBe(true);
+        expect(result.amount).toBe(900);
+      });
+    });
+
+    it("still lets a category line change isIncome", async () => {
+      budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
+      budgetCategoriesRepository.findOne.mockResolvedValue({
+        ...mockBudgetCategory,
+        isTransfer: false,
+        isIncome: false,
+      });
+      budgetCategoriesRepository.save.mockImplementation((data) => data);
+
+      const result = await service.updateCategory(
+        "user-1",
+        "budget-1",
+        "bc-1",
+        { isIncome: true },
+      );
+
+      expect(result.isIncome).toBe(true);
+    });
+
     it("throws NotFoundException when budget category not found", async () => {
       budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
       budgetCategoriesRepository.findOne.mockResolvedValue(null);
@@ -1429,6 +1499,39 @@ describe("BudgetsService", () => {
         (c) => c.budgetCategoryId === "bc-1",
       );
       expect(groceries!.budgeted).toBe(180);
+    });
+
+    it("counts the toggle's income on a budget with no line (issue #2141)", async () => {
+      const config = {
+        excludedAccountIds: ["hisa"],
+        transfersInAsIncome: true,
+      };
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        config,
+        categories: [],
+      });
+      (
+        transactionsRepository.manager as unknown as { query: jest.Mock }
+      ).query.mockImplementation(async (sql: string) =>
+        sql.includes("FROM budgets")
+          ? [{ currency_code: TEST_BUDGET_CURRENCY, config }]
+          : [],
+      );
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([spendingRow("hisa", "750")]),
+        }),
+      );
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({ getRawMany: jest.fn().mockResolvedValue([]) }),
+      );
+
+      const result = await service.getSummary("user-1", "budget-1");
+
+      expect(result.categoryBreakdown).toEqual([]);
+      expect(result.outsideTransferIncome).toBe(750);
+      expect(result.totalIncome).toBe(750);
     });
   });
 

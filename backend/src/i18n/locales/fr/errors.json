@@ -342,7 +342,8 @@
     "bucketCarryCapNeedsCarryOver": "Un plafond de report nécessite que le report soit activé",
     "bucketOnIncomeLine": "Une ligne de revenus ne peut pas appartenir à une enveloppe",
     "bucketKeyDuplicate": "La clé d'enveloppe « {{ key }} » est utilisée plusieurs fois",
-    "bucketKeyUnknown": "Aucune enveloppe de cette requête n'a la clé « {{ key }} »"
+    "bucketKeyUnknown": "Aucune enveloppe de cette requête n'a la clé « {{ key }} »",
+    "transferLineDirectionFixed": "Le sens d'une ligne de virement ne peut pas être modifié. Supprimez-la et ajoutez une nouvelle ligne."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Une règle de retenue salariale suit une facture payée dans une devise fiduciaire ; le compte de cette facture contient la cryptomonnaie {{ code }}. Choisissez une facture payée depuis un compte en devise fiduciaire.",

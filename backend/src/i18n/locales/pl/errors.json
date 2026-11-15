@@ -342,7 +342,8 @@
     "bucketCarryCapNeedsCarryOver": "Limit przenoszenia wymaga włączonego przenoszenia",
     "bucketOnIncomeLine": "Pozycja przychodu nie może należeć do koperty",
     "bucketKeyDuplicate": "Klucz koperty \"{{ key }}\" jest użyty więcej niż raz",
-    "bucketKeyUnknown": "Żadna koperta w tym żądaniu nie ma klucza \"{{ key }}\""
+    "bucketKeyUnknown": "Żadna koperta w tym żądaniu nie ma klucza \"{{ key }}\"",
+    "transferLineDirectionFixed": "Nie można zmienić kierunku linii przelewu. Usuń ją i dodaj nową linię."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Reguła potrącenia z wynagrodzenia śledzi rachunek opłacany w walucie fiducjarnej; konto tego rachunku zawiera kryptowalutę {{ code }}. Wybierz rachunek opłacany z konta w walucie fiducjarnej.",

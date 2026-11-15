@@ -342,7 +342,8 @@
     "bucketCarryCapNeedsCarryOver": "Devir üst sınırı için devrin açık olması gerekir",
     "bucketOnIncomeLine": "Bir gelir satırı bir zarfa ait olamaz",
     "bucketKeyDuplicate": "\"{{ key }}\" zarf anahtarı birden fazla kez kullanılmış",
-    "bucketKeyUnknown": "Bu istekteki hiçbir zarfın anahtarı \"{{ key }}\" değil"
+    "bucketKeyUnknown": "Bu istekteki hiçbir zarfın anahtarı \"{{ key }}\" değil",
+    "transferLineDirectionFixed": "Bir transfer satırının yönü değiştirilemez. Satırı kaldırın ve yerine yeni bir satır ekleyin."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Bordro kesinti kuralı, fiat para biriminde ödenen bir faturayı izler; bu faturanın hesabı {{ code }} kripto parasını tutuyor. Fiat bir hesaptan ödenen bir fatura seçin.",

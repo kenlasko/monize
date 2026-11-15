@@ -308,6 +308,7 @@ export async function queryCategorySpending(
   budgetCategories: BudgetCategory[],
   periodStart: string,
   periodEnd: string,
+  budgetId?: string,
 ): Promise<CategorySpending> {
   const { currency, buckets } = await queryCategorySpendingBuckets(
     transactionsRepository,
@@ -317,6 +318,7 @@ export async function queryCategorySpending(
     periodStart,
     periodEnd,
     () => "",
+    budgetId,
   );
   return buckets.get("") ?? emptyCategorySpending(currency);
 }
@@ -346,6 +348,10 @@ export function emptyCategorySpending(currency: string): CategorySpending & {
  * date-grouped row. Netting, conversion at the row's own date, excluded
  * accounts and missing-rate reporting are the single-range ones, applied inside
  * each bucket. A bucket with no row is absent.
+ *
+ * `budgetId` names the budget when `budgetCategories` may be empty: a budget
+ * with no line can still count `config.transfersInAsIncome` (issue #2141).
+ * Without it, the budget is the one its first line belongs to.
  */
 export async function queryCategorySpendingBuckets(
   transactionsRepository: Repository<Transaction>,
@@ -355,11 +361,12 @@ export async function queryCategorySpendingBuckets(
   periodStart: string,
   periodEnd: string,
   bucketOf: (txDate: string) => string,
+  budgetId: string | undefined = budgetCategories[0]?.budgetId,
 ): Promise<{ currency: string; buckets: Map<string, CategorySpending> }> {
   const buckets = new Map<string, CategorySpending>();
 
-  // No line, no amount to convert and no budget to name a currency from.
-  if (budgetCategories.length === 0) return { currency: "", buckets };
+  // No budget, no amount to convert and no currency to name.
+  if (budgetId === undefined) return { currency: "", buckets };
 
   const manager = transactionsRepository.manager;
   // The budget's own transfer lines come with it: a caller passing a subset
@@ -377,7 +384,7 @@ export async function queryCategorySpendingBuckets(
                 AND bc.transfer_account_id IS NOT NULL
             ) AS transfer_account_ids
        FROM budgets b WHERE b.id = $1`,
-    [budgetCategories[0].budgetId],
+    [budgetId],
   );
   const currency = budgetRows[0]?.currency_code ?? "";
   // Read from the budget row itself, so no caller can forget to pass them.

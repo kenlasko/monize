@@ -342,7 +342,8 @@
     "bucketCarryCapNeedsCarryOver": "Un limite di riporto richiede che il riporto sia attivo",
     "bucketOnIncomeLine": "Una riga di entrata non può appartenere a una busta",
     "bucketKeyDuplicate": "La chiave di busta \"{{ key }}\" è usata più di una volta",
-    "bucketKeyUnknown": "Nessuna busta in questa richiesta ha la chiave \"{{ key }}\""
+    "bucketKeyUnknown": "Nessuna busta in questa richiesta ha la chiave \"{{ key }}\"",
+    "transferLineDirectionFixed": "La direzione di una riga di trasferimento non può essere modificata. Rimuovila e aggiungi una nuova riga."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Una regola di trattenuta sullo stipendio tiene traccia di una fattura pagata in una valuta fiat; il conto di questa fattura contiene la criptovaluta {{ code }}. Scegli una fattura pagata da un conto in valuta fiat.",

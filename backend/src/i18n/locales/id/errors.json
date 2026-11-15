@@ -342,7 +342,8 @@
     "bucketCarryCapNeedsCarryOver": "Batas bawa memerlukan fitur bawa sisa yang aktif",
     "bucketOnIncomeLine": "Baris pendapatan tidak dapat menjadi bagian dari kantong",
     "bucketKeyDuplicate": "Kunci kantong \"{{ key }}\" digunakan lebih dari sekali",
-    "bucketKeyUnknown": "Tidak ada kantong dalam permintaan ini dengan kunci \"{{ key }}\""
+    "bucketKeyUnknown": "Tidak ada kantong dalam permintaan ini dengan kunci \"{{ key }}\"",
+    "transferLineDirectionFixed": "Arah baris transfer tidak dapat diubah. Hapus baris ini dan tambahkan baris baru."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Aturan potongan gaji melacak tagihan yang dibayar dalam mata uang fiat; akun tagihan ini menyimpan mata uang kripto {{ code }}. Pilih tagihan yang dibayar dari akun fiat.",

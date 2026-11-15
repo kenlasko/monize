@@ -342,7 +342,8 @@
     "bucketCarryCapNeedsCarryOver": "Um limite de transição exige que a transição esteja ativada",
     "bucketOnIncomeLine": "Uma linha de receita não pode pertencer a uma caixinha",
     "bucketKeyDuplicate": "A chave de caixinha \"{{ key }}\" é usada mais de uma vez",
-    "bucketKeyUnknown": "Nenhuma caixinha nesta requisição tem a chave \"{{ key }}\""
+    "bucketKeyUnknown": "Nenhuma caixinha nesta requisição tem a chave \"{{ key }}\"",
+    "transferLineDirectionFixed": "Não é possível alterar a direção de uma linha de transferência. Remova-a e adicione uma nova linha."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Uma regra de dedução salarial acompanha uma conta a pagar paga em uma moeda fiduciária; a conta desta fatura contém a criptomoeda {{ code }}. Escolha uma conta a pagar paga a partir de uma conta em moeda fiduciária.",

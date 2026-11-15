@@ -708,10 +708,17 @@ export class BudgetGeneratorService {
   /**
    * The sources of the user's transfers in, per month: the signed net of the
    * legs in their other accounts whose counterpart is the source, through the
-   * builders a transfer income line reads (`incomingParentTransfers`), so a
-   * suggestion is what the line would count. Each month is clamped at zero, as
-   * a period's actual is, and a source that never paid in is left out. Only
-   * the user's own accounts: `apply` refuses any other as a source.
+   * builders a transfer income line reads (`incomingParentTransfers`). Each
+   * month is clamped at zero, as a period's actual is, and a source that never
+   * paid in is left out. Only the user's own accounts: `apply` refuses any
+   * other as a source.
+   *
+   * A suggestion is a starting amount, not a forecast of the line's actual.
+   * The analysis runs before the wizard knows the budget's excluded accounts,
+   * so a leg into an account the budget will exclude (HISA -> RRSP with both
+   * excluded) is still counted here, though the line will never count it. And
+   * like the outgoing analysis, legs into accounts of different currencies are
+   * summed as raw amounts, unconverted.
    */
   private async getTransfersBySource(
     userId: string,

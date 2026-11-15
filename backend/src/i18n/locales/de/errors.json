@@ -342,7 +342,8 @@
     "bucketCarryCapNeedsCarryOver": "Eine Übertragungsgrenze setzt aktivierten Übertrag voraus",
     "bucketOnIncomeLine": "Eine Einkommenszeile kann keinem Topf angehören",
     "bucketKeyDuplicate": "Der Topfschlüssel \"{{ key }}\" wird mehrfach verwendet",
-    "bucketKeyUnknown": "Kein Topf in dieser Anfrage hat den Schlüssel \"{{ key }}\""
+    "bucketKeyUnknown": "Kein Topf in dieser Anfrage hat den Schlüssel \"{{ key }}\"",
+    "transferLineDirectionFixed": "Die Richtung einer Überweisungszeile kann nicht geändert werden. Entfernen Sie sie und fügen Sie stattdessen eine neue Zeile hinzu."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Eine Lohnabzugsregel erfasst eine Rechnung, die in einer Fiat-Währung bezahlt wird; das Konto dieser Rechnung enthält die Kryptowährung {{ code }}. Wählen Sie eine Rechnung, die von einem Fiat-Konto bezahlt wird.",

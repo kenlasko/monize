@@ -342,7 +342,8 @@
     "bucketCarryCapNeedsCarryOver": "Giới hạn chuyển tiếp cần bật chuyển tiếp",
     "bucketOnIncomeLine": "Dòng thu nhập không thể thuộc một hũ",
     "bucketKeyDuplicate": "Khóa hũ \"{{ key }}\" được dùng nhiều lần",
-    "bucketKeyUnknown": "Không có hũ nào trong yêu cầu này có khóa \"{{ key }}\""
+    "bucketKeyUnknown": "Không có hũ nào trong yêu cầu này có khóa \"{{ key }}\"",
+    "transferLineDirectionFixed": "Không thể thay đổi chiều của một dòng chuyển khoản. Hãy xóa dòng này và thêm một dòng mới."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Quy tắc khấu trừ lương theo dõi một hóa đơn được thanh toán bằng tiền pháp định; tài khoản của hóa đơn này giữ tiền mã hóa {{ code }}. Hãy chọn một hóa đơn được thanh toán từ tài khoản tiền pháp định.",
