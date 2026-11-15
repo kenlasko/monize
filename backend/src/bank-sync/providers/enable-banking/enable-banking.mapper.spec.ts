@@ -737,6 +737,37 @@ describe("mapTransactionsPage", () => {
     expect(page.continuationKey).toBe("next-page");
   });
 
+  it("returns the continuation key byte for byte", () => {
+    // Opaque tokens: a long one, one wrapped over lines, one with edge spaces
+    // and base64 padding must all come back unchanged, or the next page is
+    // refused (422 WRONG_REQUEST_PARAMETERS, "continuation_key parameter is
+    // invalid").
+    for (const key of [
+      "A".repeat(3000),
+      "eyJwYWdlIjoyfQ==\r\nMTIzNDU2Nzg5MA==\n",
+      " +/abc= ",
+    ]) {
+      expect(
+        mapTransactionsPage({ transactions: [], continuation_key: key })
+          .continuationKey,
+      ).toBe(key);
+    }
+  });
+
+  it("refuses a continuation key past the sanity bound instead of cutting it", () => {
+    const atBound = "A".repeat(16_384);
+    expect(
+      mapTransactionsPage({ transactions: [], continuation_key: atBound })
+        .continuationKey,
+    ).toBe(atBound);
+    expect(() =>
+      mapTransactionsPage({
+        transactions: [],
+        continuation_key: "A".repeat(16_385),
+      }),
+    ).toThrow(BankSyncProviderError);
+  });
+
   it("has no continuation key on the last page", () => {
     for (const continuation_key of [null, undefined, "", "  ", 5]) {
       expect(
