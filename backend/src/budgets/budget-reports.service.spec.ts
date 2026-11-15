@@ -11,6 +11,7 @@ import { BudgetTrendReportsService } from "./budget-trend-reports.service";
 import { BudgetHealthReportsService } from "./budget-health-reports.service";
 import { BudgetActivityReportsService } from "./budget-activity-reports.service";
 import { BudgetsService } from "./budgets.service";
+import { BudgetBucketReportsService } from "./budget-bucket-reports.service";
 import { monthBuckets } from "../test-helpers/budget-spending-buckets";
 import { Budget, BudgetType, BudgetStrategy } from "./entities/budget.entity";
 import {
@@ -304,6 +305,7 @@ describe("BudgetReportsService", () => {
         BudgetTrendReportsService,
         BudgetHealthReportsService,
         BudgetActivityReportsService,
+        BudgetBucketReportsService,
         BudgetReportsService,
         {
           provide: getRepositoryToken(BudgetPeriod),

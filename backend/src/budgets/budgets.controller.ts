@@ -478,6 +478,17 @@ export class BudgetsController {
     return this.budgetReportsService.getFlexGroupStatus(req.user.id, id);
   }
 
+  @Get(":id/reports/bucket-status")
+  @AllowDelegate()
+  @ApiOperation({ summary: "Get bucket allocation status" })
+  @ApiParam({ name: "id", description: "Budget UUID" })
+  @ApiResponse({ status: 200, description: "Bucket status retrieved" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Budget not found" })
+  getBucketStatus(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.budgetReportsService.getBucketStatus(req.user.id, id);
+  }
+
   @Get(":id/reports/daily-spending")
   @AllowDelegate()
   @ApiOperation({ summary: "Get daily spending for current period (heatmap)" })

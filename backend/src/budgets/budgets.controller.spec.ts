@@ -68,6 +68,7 @@ describe("BudgetsController", () => {
       getHealthScore: jest.fn(),
       getSeasonalPatterns: jest.fn(),
       getFlexGroupStatus: jest.fn(),
+      getBucketStatus: jest.fn(),
       getDailySpending: jest.fn(),
       getSavingsRate: jest.fn(),
       getHealthScoreHistory: jest.fn(),
@@ -535,6 +536,38 @@ describe("BudgetsController", () => {
 
       expect(result).toBe("flex-groups");
       expect(mockBudgetReportsService.getFlexGroupStatus).toHaveBeenCalledWith(
+        "user-1",
+        "budget-1",
+      );
+    });
+  });
+
+  describe("getBucketStatus()", () => {
+    it("pins ParseUUIDPipe on the id and is open to a delegate", () => {
+      const args = Reflect.getMetadata(
+        ROUTE_ARGS_METADATA,
+        BudgetsController,
+        "getBucketStatus",
+      ) as Record<string, { data: string; pipes: unknown[] }>;
+      const idArg = Object.values(args).find((a) => a.data === "id");
+      expect(idArg?.pipes).toContain(ParseUUIDPipe);
+      expect(
+        Reflect.getMetadata(
+          ALLOW_DELEGATE_KEY,
+          BudgetsController.prototype.getBucketStatus,
+        ),
+      ).toBe(true);
+    });
+
+    it("delegates to budgetReportsService.getBucketStatus", () => {
+      mockBudgetReportsService.getBucketStatus!.mockReturnValue(
+        "bucket-status",
+      );
+
+      const result = controller.getBucketStatus(mockReq, "budget-1");
+
+      expect(result).toBe("bucket-status");
+      expect(mockBudgetReportsService.getBucketStatus).toHaveBeenCalledWith(
         "user-1",
         "budget-1",
       );

@@ -240,6 +240,8 @@ implied.
 | INV-WTY-005 | A warranty or claim write naming a row the caller does not own is refused before the write | enforced |
 | INV-WTY-006 | A warranty import's preview and commit are one computation | enforced |
 | INV-WTY-007 | A delegate never learns a transaction outside their readable accounts through a warranty | enforced |
+| INV-BUDGET-001 | Every bucket figure is produced by one pure function | enforced |
+| INV-BUDGET-002 | A line's bucket belongs to the line's own budget, and an income line has none | partial |
 | SE-001 | Accepted contributions and shares conserve both currency totals | enforced |
 | SE-002 | Joining preserves the existing participant's history | enforced |
 | SE-003 | Group membership grants no private finance access | enforced |
@@ -9956,6 +9958,71 @@ Required tests      Present: warranties.integration.spec.ts (truth table C,
                     rls-context-smoke.spec.ts.
 Status              enforced
 ```
+
+## Budgets
+
+Specification: `docs/future-plans/bucket-budget.md` (section 5), where these are
+BUDGET-001 to BUDGET-003 (the third arrives with the period close).
+
+### INV-BUDGET-001 -- one function writes the bucket arithmetic
+
+```text
+Statement           Every bucket figure (allocated, carriedIn, planned, spent,
+                    available, percentUsed, carryOut, and the totals above
+                    them) is produced by computeBudgetBucketFigures. No other
+                    code adds, subtracts or divides bucket figures. An unknown
+                    allocation is null and so is everything derived from it,
+                    never 0; totalAllocated is null when any allocation is
+                    unknown, and knownAllocated carries the partial sum.
+Source of truth     budget_buckets, the budget's lines as BudgetsService.
+                    getSummary reports them, budget_period_buckets.carry_in
+Enforcement         computeBudgetBucketFigures in
+                    backend/src/budgets/budget-bucket-figures.util.ts is the
+                    only place the section 4 arithmetic is written; every sum
+                    goes through sumMoney and every derived amount through
+                    roundMoney with the currency's decimals. The live read
+                    (BudgetBucketReportsService.getBucketStatus) builds its
+                    inputs from the summary and calls it.
+Concurrency scope   --
+Retry semantics     --
+Crash semantics     --
+Failure response    --
+Required tests      Present: budget-bucket-figures.util.spec.ts (truth tables
+                    A, B and C, the section 8 examples, negative spent, the
+                    ten-lines-of-0.1 case), budget-bucket-reports.service.spec.ts.
+Status              enforced
+```
+
+The other callers named in the design (the period close, the assistant and MCP
+shape, the dashboard card) are later tasks; each must call the function and
+none may restate the arithmetic. There is no source scan over them yet.
+
+### INV-BUDGET-002 -- a line's bucket is its own budget's
+
+```text
+Statement           A budget line's bucket_id names a bucket of the SAME
+                    budget, and an income line has none. A bucket of another
+                    budget, or another person's, is read as missing.
+Source of truth     budget_categories.bucket_id, budget_buckets.budget_id
+Enforcement         assertBucketAssignable
+                    (backend/src/budgets/budget-bucket-membership.util.ts)
+                    runs inside the withScopedDb transaction of every write
+                    that sets bucket_id, before the write; the bucket is read
+                    by (id, budgetId) under row-level security, so a foreign
+                    id is a 404 and an income line with a bucket is a 400.
+Concurrency scope   the write's own transaction
+Retry semantics     a refused write wrote nothing, so a retry starts clean
+Crash semantics     --
+Failure response    404 for a bucket not of this budget, 400 for an income line
+Required tests      Present: budget-buckets.service.spec.ts and the budgets
+                    service specs (truth table D with typed mocks). Missing:
+                    a PG integration test that drives a foreign bucket id
+                    through each writing route (task Q1 of the bucket plan).
+Status              partial
+```
+
+Status is `partial` because the required PG integration proof has not been
+written; the check itself is in the write path of every writer that exists.
 
 ## Shared expenses
 

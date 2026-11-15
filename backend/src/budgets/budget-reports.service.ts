@@ -2,6 +2,8 @@ import { Injectable, Logger } from "@nestjs/common";
 import { BudgetTrendReportsService } from "./budget-trend-reports.service";
 import { BudgetHealthReportsService } from "./budget-health-reports.service";
 import { BudgetActivityReportsService } from "./budget-activity-reports.service";
+import { BudgetBucketReportsService } from "./budget-bucket-reports.service";
+import type { BudgetBucketStatusResult } from "./budget-bucket-reports.service";
 import { BudgetsService } from "./budgets.service";
 import {
   getCurrentMonthPeriodDates,
@@ -182,6 +184,7 @@ export class BudgetReportsService {
     private readonly healthReports: BudgetHealthReportsService,
     private readonly activityReports: BudgetActivityReportsService,
     private readonly budgetsService: BudgetsService,
+    private readonly bucketReports: BudgetBucketReportsService,
   ) {}
 
   getTrend(
@@ -245,6 +248,13 @@ export class BudgetReportsService {
     budgetId: string,
   ): Promise<FlexGroupStatusResult[]> {
     return this.activityReports.getFlexGroupStatus(userId, budgetId);
+  }
+
+  getBucketStatus(
+    userId: string,
+    budgetId: string,
+  ): Promise<BudgetBucketStatusResult> {
+    return this.bucketReports.getBucketStatus(userId, budgetId);
   }
 
   /**
