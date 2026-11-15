@@ -190,7 +190,7 @@
     ],
     "coverageDirectory": "./coverage",
     "transformIgnorePatterns": [
-      "node_modules/(?!(@scure|@otplib|otplib|@noble|openid-client|oauth4webapi|jose|uuid|mdb-reader|@nestjs|he|htmlparser2|domhandler|domutils|dom-serializer|domelementtype|entities)/)"
+      "node_modules/(?!(@scure|@otplib|otplib|@noble|openid-client|oauth4webapi|jose|uuid|mdb-reader|@nestjs|he|htmlparser2|domhandler|domutils|dom-serializer|domelementtype|entities|web-push|https-proxy-agent|agent-base|proxy-agent-negotiate)/)"
     ],
     "coverageThreshold": {
       "global": {

@@ -66,7 +66,7 @@
 <li><strong>Stored rates</strong> -- every stored rate, newest first, with its <strong>Date</strong>, <strong>Rate</strong>, and <strong>Source</strong> (Yahoo Finance, Frankfurter (ECB), or Money import)</li>
 </ul>
 <figure><img src="/docs/images/currency-rate-history.png" alt="The rate history of a currency" width="512" height="736" loading="lazy" decoding="async" class="shot-dark"/><img src="/docs/images/currency-rate-history.light.png" alt="The rate history of a currency" width="512" height="736" loading="lazy" decoding="async" class="shot-light"/><figcaption>The rate history of a currency</figcaption></figure>
-<p>Reports dated before the first stored rate cannot convert that currency, so after importing years of history, use <strong>Fill gaps in rate history</strong> for each foreign currency you use.</p>
+<p>Reports dated before the first stored rate cannot convert that currency. After an import, Monize fills the rate history of every foreign currency the imported accounts and their securities use, from the first imported date up to today, in the background; you do not need to start it. Use <strong>Fill gaps in rate history</strong> for anything it could not fetch, for example while a rate provider was not answering.</p>
 <h3 id="rate-direction">Rate Direction<a class="hlink" href="#rate-direction" aria-label="Link to this section">#</a></h3>
 <p>A rate is always a number of one currency per <strong>one unit</strong> of another, and which way round it reads depends on where you are looking:</p>
 <ul>
