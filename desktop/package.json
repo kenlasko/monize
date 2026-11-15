@@ -41,6 +41,9 @@
     "typescript-eslint": "^8.72.1"
   },
   "overrides": {
-    "minimatch@>=10": "^11.0.1"
+    "minimatch@>=7": "^11.0.1",
+    "test-exclude": {
+      "glob": "^13.0.6"
+    }
   }
 }
