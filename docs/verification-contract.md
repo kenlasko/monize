@@ -164,6 +164,7 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-MCP-002 transport answers MCP | **required** | -- | -- | -- | -- | -- | -- | optional |
 | INV-MCP-003 confirmation binding | **required** | **required** | -- | -- | -- | -- | -- | -- |
 | INV-MCP-004 answered before written | **required** | **required** | -- | -- | -- | -- | -- | -- |
+| INV-MCP-005 an unanswered confirmation never deletes or writes in bulk | **required** | **required** | -- | -- | -- | -- | -- | -- |
 | INV-CURRENCY-001 currency delete | supporting | **required** | required | required | -- | -- | -- | optional |
 | INV-ATTACHMENT-001 bytes present | supporting | -- | required | optional | -- | **required** | **required** | required |
 | INV-ATTACHMENT-002 scan pair is one | **required** | **required** | **required** | -- | -- | -- | -- | **required** |

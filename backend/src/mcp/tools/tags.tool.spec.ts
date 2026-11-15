@@ -246,6 +246,9 @@ describe("McpTagsTools", () => {
     });
 
     it("commits a batch of six as one card, counting each write", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
       aiActions.commitApproved.mockResolvedValue({
         type: "batch_actions",
         id: "t1",
@@ -273,6 +276,9 @@ describe("McpTagsTools", () => {
     });
 
     it("commits each card of a small batch on its own", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
       const result = await call("manage_tags", {
         operation: "create",
         items: [{ name: "A" }, { name: "B" }],
