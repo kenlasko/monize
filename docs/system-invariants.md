@@ -6609,7 +6609,10 @@ Enforcement         Creator-only, on a genuinely global count, under a lock.
                     function currency_code_in_use_globally (migration 137) which
                     covers every FK including budgets and both exchange_rates
                     columns -- not the caller's tenant-scoped count.
-                    No user action creates a currency offered to every user:
+                    No system row is created active, the bootstrap default and
+                    the bond catalog's included, and none the user did not add
+                    is listed to them. No user action creates a currency
+                    offered to every user:
                     a request path calls ensureCurrencyForUser, which writes a
                     known ISO code as an inactive reference row and any other
                     code as the user's own, and activates only that user's
@@ -6630,6 +6633,8 @@ Required tests      Present: currency-references.spec.ts derives the reference l
                     A two-connection delete-versus-use test is still owed.
                     currency-ownership.integration.spec.ts: a first default of
                     PLN saves on a fresh instance and is offered to nobody else;
+                    a new user is listed only the default they chose, never the
+                    inactive bootstrap USD or a bond program's PLN (#2186);
                     a non-ISO code is its user's own; deleting the creator
                     removes an unreferenced custom currency and deactivates a
                     referenced one, also on a direct DELETE FROM users.
