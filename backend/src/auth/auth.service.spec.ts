@@ -1220,7 +1220,7 @@ describe("AuthService", () => {
       it("refuses every login under the lock that lacks this account's live cookie", async () => {
         usersRepository.findOne.mockResolvedValue(lockedUser());
         const otherAccount = jar("another-user", hash);
-        const oldPassword = jar(mockUser.id, await bcrypt.hash("Old", 4));
+        const supersededHash = jar(mockUser.id, await bcrypt.hash("Old", 4));
         const expired = jar(
           mockUser.id,
           hash,
@@ -1237,7 +1237,7 @@ describe("AuthService", () => {
         for (const cookies of [
           undefined,
           otherAccount,
-          oldPassword,
+          supersededHash,
           expired,
           misfiled,
           forged,
