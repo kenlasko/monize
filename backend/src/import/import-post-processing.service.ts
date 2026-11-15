@@ -22,6 +22,30 @@ import { investmentEffectStatusSql } from "../securities/investment-row-effects.
 export const IMPORT_RATE_FILL_MAX_ROUNDS = 6;
 
 /**
+ * Post-import rate history fills still running, and the net-worth recalc each
+ * one starts when it stored rates.
+ *
+ * Module scope for the reason `pendingPriceWrites` gives: the thing that waits
+ * is the integration helper `cleanTables`, which must not truncate `accounts`
+ * or `exchange_rates` under a fill that has outlived its import (a deadlock
+ * reported against whichever spec ran next, bond-import in CI). Nothing in
+ * `src/` waits on this; production keeps the fire-and-forget behaviour.
+ */
+const pendingRateHistoryFills = new Set<Promise<unknown>>();
+
+/**
+ * Resolves once every post-import rate history fill started so far has
+ * finished. Settled, not successful: a failed fill has also stopped touching
+ * the database.
+ */
+export async function settlePendingRateHistoryFills(): Promise<void> {
+  // Snapshotted because a settling promise removes itself from the set.
+  while (pendingRateHistoryFills.size > 0) {
+    await Promise.allSettled([...pendingRateHistoryFills]);
+  }
+}
+
+/**
  * The work every import pipeline does once its rows are written: recompute
  * balances, backfill prices and FX rates, and kick a net-worth recalculation.
  *
@@ -206,7 +230,7 @@ export class ImportPostProcessingService {
     // exactly those, against the user's own first use of the currency. In the
     // background: each fill may spend `GAP_FILL_BUDGET_MS` on the provider,
     // and the import has already written its rows.
-    this.fillRateHistory(userId, affectedIds)
+    const fill = this.fillRateHistory(userId, affectedIds)
       .then((stored) => {
         // A brokerage snapshot converts its securities at the stored rates.
         if (stored > 0) this.recalculateNetWorth(userId, affectedAccountIds);
@@ -216,6 +240,8 @@ export class ImportPostProcessingService {
           `Post-import rate history fill failed: ${err.message}`,
         ),
       );
+    pendingRateHistoryFills.add(fill);
+    void fill.finally(() => pendingRateHistoryFills.delete(fill));
 
     // A settlement rule claimed a scheduled occurrence during the import: the
     // schedule's next installment is priced on the ledger the import left,

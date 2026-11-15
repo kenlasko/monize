@@ -4,6 +4,7 @@ import { Logger } from "@nestjs/common";
 import {
   IMPORT_RATE_FILL_MAX_ROUNDS,
   ImportPostProcessingService,
+  settlePendingRateHistoryFills,
 } from "./import-post-processing.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { SecurityPriceService } from "../securities/security-price.service";
@@ -131,8 +132,11 @@ describe("ImportPostProcessingService", () => {
     it("reads and writes in the same transaction as the lock", async () => {
       // The background rate-history fill opens its own transaction; hold it
       // at its first step so only the balance write's is counted.
+      let release: (code: string) => void = () => undefined;
       (resolveUserDefaultCurrency as jest.Mock).mockReturnValueOnce(
-        new Promise(() => undefined),
+        new Promise<string>((resolve) => {
+          release = resolve;
+        }),
       );
       await service.run(userId, false, new Set([accountA, accountB]));
 
@@ -140,6 +144,10 @@ describe("ImportPostProcessingService", () => {
       // held, and it dies with the transaction that took it.
       const balanceTransactions = scoped.dataSource.transaction.mock.calls;
       expect(balanceTransactions).toHaveLength(1);
+
+      // Let the held fill finish, so it leaves the pending set.
+      release("CAD");
+      await settlePendingRateHistoryFills();
     });
 
     it("writes back one bulk UPDATE keyed by account", async () => {
@@ -391,11 +399,22 @@ describe("ImportPostProcessingService", () => {
 
     it("does not hold the import for the fill", async () => {
       usedCurrencies(["EUR"]);
-      rateHistory.fillRateGaps.mockReturnValue(new Promise(() => undefined));
+      let finish: (value: unknown) => void = () => undefined;
+      rateHistory.fillRateGaps.mockReturnValue(
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+      );
 
       await expect(
         service.run(userId, false, new Set([accountA])),
       ).resolves.toBeUndefined();
+
+      // Released afterwards, so the fill leaves the pending set for the
+      // cases after this one.
+      await settle();
+      finish(fill({}));
+      await settlePendingRateHistoryFills();
     });
 
     it("stops a currency when a round got no answer, and recomputes nothing more when nothing was stored", async () => {
@@ -444,6 +463,31 @@ describe("ImportPostProcessingService", () => {
         ),
       ).toBe(true);
       expect(errorSpy).not.toHaveBeenCalled();
+    });
+
+    it("stays visible to settlePendingRateHistoryFills until the fill has finished", async () => {
+      // The integration helper truncates tables only once this settles; a
+      // fill still reading `accounts` under the truncate deadlocked it.
+      usedCurrencies(["EUR"]);
+      let finish: (value: unknown) => void = () => undefined;
+      rateHistory.fillRateGaps.mockReturnValue(
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+      );
+
+      await service.run(userId, false, new Set([accountA]));
+      let settled = false;
+      const settling = settlePendingRateHistoryFills().then(() => {
+        settled = true;
+      });
+      await settle();
+      expect(rateHistory.fillRateGaps).toHaveBeenCalled();
+      expect(settled).toBe(false);
+
+      finish(fill({ stored: 0 }));
+      await settling;
+      expect(settled).toBe(true);
     });
 
     it("asks nothing when the import touched no account", async () => {
