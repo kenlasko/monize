@@ -212,7 +212,7 @@
     "oauthTitle": "New app connected: {clientName}",
     "oauthMessage": "The application {clientName} was just granted access to your Monize account. If this wasn't you, change your password now: that revokes every connected application's access.",
     "relayTitle": "A new connection answered your AI chat",
-    "relayMessage": "A connection that has not answered your Monize AI chat before just picked up a prompt. If you did not connect this assistant, revoke your API tokens in Settings and change your password."
+    "relayMessage": "A connection that has not answered your Monize AI chat before just picked up a prompt. If you did not connect this assistant, change your password."
   },
   "payrollDeduction": {
     "resetTitle": "{category}: confirm next year's maximum",
@@ -274,6 +274,10 @@
     "shared_expenses": {
       "title": "Shared expenses",
       "body": "A shared group has an update. Open Monize to review it."
+    },
+    "security": {
+      "title": "Security notice",
+      "body": "Something changed in who can access your Monize account. Open Monize for the details."
     },
     "fallback": {
       "title": "Monize",

@@ -48,6 +48,25 @@ describe("SecurityNoticeService", () => {
     expect(notify.mock.calls[1][1].title).toContain("c2");
   });
 
+  it("strips control and bidi characters from the client name", async () => {
+    await service.oauthClientAuthorized("u1", {
+      grantId: "g1",
+      clientId: "c1",
+      clientName: "Good\u202Etpircs\nApp\u2066x\u200F",
+    });
+    await service.oauthClientAuthorized("u1", {
+      grantId: "g2",
+      clientId: "c2",
+      clientName: "\u202E\u2069\n",
+    });
+    const first = notify.mock.calls[0][1];
+    expect(first.data.clientName).toBe("Good tpircs App x");
+    expect(first.title).not.toMatch(
+      /[\u202A-\u202E\u2066-\u2069\u200E\u200F\n]/,
+    );
+    expect(notify.mock.calls[1][1].data.clientName).toBe("c2");
+  });
+
   it("keys a relay notice on the credential without storing its id", async () => {
     await service.relayCredentialFirstUse("u1", "pat:secret-id-123");
     const [, input, options] = notify.mock.calls[0];

@@ -212,7 +212,7 @@
     "oauthTitle": "Yeni uygulama bağlandı: {clientName}",
     "oauthMessage": "{clientName} uygulamasına Monize hesabınıza erişim izni verildi. Bu siz değilseniz şifrenizi hemen değiştirin: bu işlem bağlı tüm uygulamaların erişimini iptal eder.",
     "relayTitle": "Yeni bir bağlantı yapay zekâ sohbetinize yanıt verdi",
-    "relayMessage": "Monize yapay zekâ sohbetinize daha önce yanıt vermemiş bir bağlantı az önce bir istem aldı. Bu asistanı siz bağlamadıysanız Ayarlar'dan API belirteçlerinizi iptal edin ve şifrenizi değiştirin."
+    "relayMessage": "Monize yapay zekâ sohbetinize daha önce yanıt vermemiş bir bağlantı az önce bir istem aldı. Bu asistanı siz bağlamadıysanız şifrenizi değiştirin."
   },
   "payrollDeduction": {
     "resetTitle": "{category}: gelecek yılın üst sınırını onaylayın",
@@ -274,6 +274,10 @@
     "shared_expenses": {
       "title": "Paylaşılan giderler",
       "body": "Ortak bir grupta güncelleme var. İncelemek için Monize'ı açın."
+    },
+    "security": {
+      "title": "Güvenlik bildirimi",
+      "body": "Monize hesabınıza kimlerin erişebildiği değişti. Ayrıntılar için Monize'i açın."
     },
     "fallback": {
       "title": "Monize",

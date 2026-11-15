@@ -19,16 +19,23 @@ import { NotificationDispatchService } from "./notification-dispatch.service";
 
 const CLIENT_NAME_MAX = 100;
 
+// Control (\p{Cc}: line breaks) and format characters (\p{Cf}: bidi overrides
+// U+202A-202E, isolates U+2066-2069, marks U+200E/F, zero-width) could spoof
+// the title, subject and push text.
+const UNSAFE_NAME_CHARS = /[\p{Cc}\p{Cf}]+/gu;
+
 export function oauthClientAuthorizedNotice(facts: {
   grantId: string;
   clientId: string;
   clientName: string;
 }): CreateNotificationInput {
-  // The name is chosen by whoever registered the client: bounded here, escaped
-  // wherever it is rendered.
+  // The name is chosen by whoever registered the client: cleaned and bounded
+  // here, escaped wherever it is rendered.
   const clientName =
-    facts.clientName.trim().slice(0, CLIENT_NAME_MAX) ||
-    facts.clientId.slice(0, CLIENT_NAME_MAX);
+    facts.clientName
+      .replace(UNSAFE_NAME_CHARS, " ")
+      .trim()
+      .slice(0, CLIENT_NAME_MAX) || facts.clientId.slice(0, CLIENT_NAME_MAX);
   return {
     type: NotificationType.OAUTH_CLIENT_AUTHORIZED,
     severity: NotificationSeverity.WARNING,
@@ -53,7 +60,7 @@ export function relayCredentialFirstUseNotice(
     title: "A new connection answered your AI chat",
     message:
       "A connection that has not answered your Monize AI chat before just picked up a prompt. " +
-      "If you did not connect this assistant, revoke your API tokens in Settings and change your password.",
+      "If you did not connect this assistant, change your password.",
     data: { credentialKind },
     target: "/settings",
     dedupeKey: `relay:cred:${credentialId}`,

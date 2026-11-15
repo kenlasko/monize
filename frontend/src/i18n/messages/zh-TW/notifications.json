@@ -212,7 +212,7 @@
     "oauthTitle": "新應用程式已連線：{clientName}",
     "oauthMessage": "應用程式 {clientName} 剛剛獲得存取您 Monize 帳戶的權限。如果不是您本人操作，請立即變更密碼：這會撤銷所有已連線應用程式的存取權限。",
     "relayTitle": "新連線已回應您的 AI 聊天",
-    "relayMessage": "一個先前從未回應過您 Monize AI 聊天的連線剛剛取得了一則提示。如果您沒有連線此助理，請在設定中撤銷您的 API 權杖並變更密碼。"
+    "relayMessage": "一個先前從未回應過您 Monize AI 聊天的連線剛剛取得了一則提示。如果您沒有連線此助理，請變更密碼。"
   },
   "payrollDeduction": {
     "resetTitle": "{category}：請確認明年的上限",
@@ -274,6 +274,10 @@
     "shared_expenses": {
       "title": "共同支出",
       "body": "共享群組有更新。開啟 Monize 查看。"
+    },
+    "security": {
+      "title": "安全通知",
+      "body": "有權存取您 Monize 帳戶的人員發生了變化。開啟 Monize 查看詳細資料。"
     },
     "fallback": {
       "title": "Monize",

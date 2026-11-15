@@ -374,7 +374,8 @@ describe("notification email copy", () => {
         examples.RELAY_CREDENTIAL_FIRST_USE,
       );
       expect(relay.title).toBe("A new connection answered your AI chat");
-      expect(relay.message).toContain("revoke your API tokens");
+      expect(relay.message).toContain("change your password");
+      expect(relay.message).not.toContain("API tokens");
     });
 
     it("escapes a hostile client name once in the immediate email HTML", () => {

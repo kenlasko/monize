@@ -54,4 +54,3 @@ The target of both is `/settings`. Push copy names the category only.
 
 - A settings screen listing OAuth grants with revoke.
 - Relay credential binding (`AiRelayService`).
-- Translations into non-English locales (a later step).

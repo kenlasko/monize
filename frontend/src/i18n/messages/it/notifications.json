@@ -212,7 +212,7 @@
     "oauthTitle": "Nuova app connessa: {clientName}",
     "oauthMessage": "All'applicazione {clientName} è stato appena concesso l'accesso al tuo account Monize. Se non sei stato tu, cambia subito la password: in questo modo viene revocato l'accesso di tutte le applicazioni connesse.",
     "relayTitle": "Una nuova connessione ha risposto alla tua chat IA",
-    "relayMessage": "Una connessione che non aveva mai risposto alla tua chat IA di Monize ha appena prelevato un prompt. Se non hai connesso tu questo assistente, revoca i tuoi token API in Impostazioni e cambia la password."
+    "relayMessage": "Una connessione che non aveva mai risposto alla tua chat IA di Monize ha appena prelevato un prompt. Se non hai connesso tu questo assistente, cambia la password."
   },
   "payrollDeduction": {
     "resetTitle": "{category}: conferma il massimo del prossimo anno",
@@ -274,6 +274,10 @@
     "shared_expenses": {
       "title": "Spese condivise",
       "body": "Ci sono novità in un gruppo condiviso. Apri Monize per consultarle."
+    },
+    "security": {
+      "title": "Avviso di sicurezza",
+      "body": "È cambiato qualcosa su chi può accedere al tuo account Monize. Apri Monize per i dettagli."
     },
     "fallback": {
       "title": "Monize",

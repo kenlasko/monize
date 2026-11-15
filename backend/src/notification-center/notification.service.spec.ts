@@ -588,7 +588,12 @@ describe("NotificationService", () => {
       const [[dismissed, args]] = manager.query.mock.calls.filter(([sql]) =>
         String(sql).includes("DELETE FROM notifications"),
       );
-      expect(String(dismissed)).toContain("OR dismissed_at < $3");
+      expect(String(dismissed)).toContain("OR (dismissed_at < $3");
+      // A relay credential row is the memory it was announced: never forgotten.
+      expect(String(dismissed)).toContain(
+        "NOT starts_with(COALESCE(dedupe_key, ''), $4)",
+      );
+      expect(args[3]).toBe("relay:cred:");
       const expected = before - STATE_KEYED_FORGET_DAYS * 24 * 60 * 60 * 1000;
       expect(Math.abs((args[2] as Date).getTime() - expected)).toBeLessThan(
         60_000,

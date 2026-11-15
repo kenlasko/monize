@@ -212,7 +212,7 @@
     "oauthTitle": "Nieuwe app gekoppeld: {clientName}",
     "oauthMessage": "De applicatie {clientName} heeft zojuist toegang gekregen tot je Monize-account. Was jij dit niet, wijzig dan nu je wachtwoord: daarmee wordt de toegang van alle gekoppelde applicaties ingetrokken.",
     "relayTitle": "Een nieuwe verbinding heeft je AI-chat beantwoord",
-    "relayMessage": "Een verbinding die je Monize AI-chat nog niet eerder had beantwoord, heeft zojuist een prompt opgehaald. Heb je deze assistent niet gekoppeld, trek dan je API-tokens in via Instellingen in en wijzig je wachtwoord."
+    "relayMessage": "Een verbinding die je Monize AI-chat nog niet eerder had beantwoord, heeft zojuist een prompt opgehaald. Heb je deze assistent niet gekoppeld, wijzig dan je wachtwoord."
   },
   "payrollDeduction": {
     "resetTitle": "{category}: bevestig het maximum voor volgend jaar",
@@ -274,6 +274,10 @@
     "shared_expenses": {
       "title": "Gedeelde uitgaven",
       "body": "Een gedeelde groep is bijgewerkt. Open Monize om de wijziging te bekijken."
+    },
+    "security": {
+      "title": "Beveiligingsmelding",
+      "body": "Er is iets veranderd in wie toegang heeft tot je Monize-account. Open Monize voor de details."
     },
     "fallback": {
       "title": "Monize",

@@ -30,14 +30,20 @@ export const TARGET_MAX_LENGTH = 255;
  * position, so a new prefix goes at the end). `relay:cred:<id>` is the memory
  * that a relay credential was already announced as first-use.
  */
+export const RELAY_CREDENTIAL_DEDUPE_PREFIX = "relay:cred:";
+
 export const STATE_KEYED_DEDUPE_PREFIXES: readonly string[] = [
   "bond:unbooked:",
   "bond:missing:",
   "gem:",
-  "relay:cred:",
+  RELAY_CREDENTIAL_DEDUPE_PREFIX,
 ];
 
-/** A dismissed state-keyed notification older than this is forgotten by the purge. */
+/**
+ * A dismissed state-keyed notification older than this is forgotten by the
+ * purge, except a `relay:cred:` row: that row is the only memory that the
+ * credential was announced, so forgetting it re-sends a false "new connection".
+ */
 export const STATE_KEYED_FORGET_DAYS = 365;
 
 /**

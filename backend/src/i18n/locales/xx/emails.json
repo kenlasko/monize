@@ -262,7 +262,7 @@
       "oauthTitle": "[XX-New app connected: {{ clientName }}-XX]",
       "oauthMessage": "[XX-The application {{ clientName }} was just granted access to your Monize account. If this wasn't you, change your password now: that revokes every connected application's access.-XX]",
       "relayTitle": "[XX-A new connection answered your AI chat-XX]",
-      "relayMessage": "[XX-A connection that has not answered your Monize AI chat before just picked up a prompt. If you did not connect this assistant, revoke your API tokens in Settings and change your password.-XX]"
+      "relayMessage": "[XX-A connection that has not answered your Monize AI chat before just picked up a prompt. If you did not connect this assistant, change your password.-XX]"
     },
     "payrollDeduction": {
       "resetTitle": "[XX-{{ category }}: confirm next year's maximum-XX]",

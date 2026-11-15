@@ -398,7 +398,7 @@
       "oauthTitle": "Nueva aplicación conectada: {{ clientName }}",
       "oauthMessage": "A la aplicación {{ clientName }} se le acaba de conceder acceso a su cuenta de Monize. Si no fue usted, cambie su contraseña ahora: así se revoca el acceso de todas las aplicaciones conectadas.",
       "relayTitle": "Una nueva conexión respondió a su chat de IA",
-      "relayMessage": "Una conexión que no había respondido antes a su chat de IA de Monize acaba de recoger una solicitud. Si no conectó este asistente, revoque sus tokens de API en Ajustes y cambie su contraseña."
+      "relayMessage": "Una conexión que no había respondido antes a su chat de IA de Monize acaba de recoger una solicitud. Si no conectó este asistente, cambie su contraseña."
     },
     "payrollDeduction": {
       "resetTitle": "{{ category }}: confirme el máximo del próximo año",

@@ -398,7 +398,7 @@
       "oauthTitle": "Ứng dụng mới đã kết nối: {{ clientName }}",
       "oauthMessage": "Ứng dụng {{ clientName }} vừa được cấp quyền truy cập vào tài khoản Monize của bạn. Nếu không phải bạn, hãy đổi mật khẩu ngay: thao tác này thu hồi quyền truy cập của mọi ứng dụng đã kết nối.",
       "relayTitle": "Một kết nối mới đã trả lời cuộc trò chuyện AI của bạn",
-      "relayMessage": "Một kết nối chưa từng trả lời cuộc trò chuyện AI Monize của bạn vừa nhận một câu lệnh. Nếu bạn không kết nối trợ lý này, hãy thu hồi token API của bạn trong Cài đặt và đổi mật khẩu."
+      "relayMessage": "Một kết nối chưa từng trả lời cuộc trò chuyện AI Monize của bạn vừa nhận một câu lệnh. Nếu bạn không kết nối trợ lý này, hãy đổi mật khẩu."
     },
     "payrollDeduction": {
       "resetTitle": "{{ category }}: xác nhận mức tối đa cho năm tới",

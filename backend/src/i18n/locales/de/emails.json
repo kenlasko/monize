@@ -398,7 +398,7 @@
       "oauthTitle": "Neue App verbunden: {{ clientName }}",
       "oauthMessage": "Der Anwendung {{ clientName }} wurde soeben Zugriff auf Ihr Monize-Konto gewährt. Wenn Sie das nicht waren, ändern Sie jetzt Ihr Passwort: Dadurch wird der Zugriff aller verbundenen Anwendungen widerrufen.",
       "relayTitle": "Eine neue Verbindung hat Ihren KI-Chat beantwortet",
-      "relayMessage": "Eine Verbindung, die Ihren Monize-KI-Chat bisher nicht beantwortet hat, hat gerade eine Eingabe abgeholt. Wenn Sie diesen Assistenten nicht verbunden haben, widerrufen Sie Ihre API-Token in den Einstellungen und ändern Sie Ihr Passwort."
+      "relayMessage": "Eine Verbindung, die Ihren Monize-KI-Chat bisher nicht beantwortet hat, hat gerade eine Eingabe abgeholt. Wenn Sie diesen Assistenten nicht verbunden haben, ändern Sie Ihr Passwort."
     },
     "payrollDeduction": {
       "resetTitle": "{{ category }}: Höchstbetrag für das nächste Jahr bestätigen",

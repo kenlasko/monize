@@ -204,7 +204,7 @@ Critical budget alerts (over budget, income shortfall) are sent immediately rega
 
 ### Security Notices
 
-Monize tells you when somebody new can reach your account. You get a notice when a new application is granted access through the OAuth consent page, and when a connection answers your AI chat for the first time. Each notice reaches the bell, and by default also reaches you by immediate email and browser push. You can change this in the **Security** row of the delivery matrix. If a notice is not from you, change your password: that revokes the access of every connected application. For the AI chat, also revoke your API tokens in Settings.
+Monize tells you when somebody new can reach your account. You get a notice when a new application is granted access through the OAuth consent page, and when a connection answers your AI chat for the first time. Each notice reaches the bell, and by default also reaches you by immediate email and browser push. You can change this in the **Security** row of the delivery matrix. If a notice is not from you, change your password: that revokes the access of every connected application and every API token.
 
 ### Browser Push
 

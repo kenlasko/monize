@@ -398,7 +398,7 @@
       "oauthTitle": "Połączono nową aplikację: {{ clientName }}",
       "oauthMessage": "Aplikacja {{ clientName }} właśnie otrzymała dostęp do Twojego konta Monize. Jeśli to nie Ty, zmień teraz hasło: unieważni to dostęp wszystkich połączonych aplikacji.",
       "relayTitle": "Nowe połączenie odpowiedziało w Twoim czacie AI",
-      "relayMessage": "Połączenie, które wcześniej nie odpowiadało w Twoim czacie AI Monize, właśnie pobrało zapytanie. Jeśli ten asystent nie został połączony przez Ciebie, unieważnij swoje tokeny API w Ustawieniach i zmień hasło."
+      "relayMessage": "Połączenie, które wcześniej nie odpowiadało w Twoim czacie AI Monize, właśnie pobrało zapytanie. Jeśli ten asystent nie został połączony przez Ciebie, zmień hasło."
     },
     "payrollDeduction": {
       "resetTitle": "{{ category }}: potwierdź maksimum na przyszły rok",

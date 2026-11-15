@@ -69,7 +69,7 @@ export const NOTIFICATION_EMAIL_MESSAGES = {
     "The application {{ clientName }} was just granted access to your Monize account. If this wasn't you, change your password now: that revokes every connected application's access.",
   "security.relayTitle": "A new connection answered your AI chat",
   "security.relayMessage":
-    "A connection that has not answered your Monize AI chat before just picked up a prompt. If you did not connect this assistant, revoke your API tokens in Settings and change your password.",
+    "A connection that has not answered your Monize AI chat before just picked up a prompt. If you did not connect this assistant, change your password.",
   "payrollDeduction.resetTitle": "{{ category }}: confirm next year's maximum",
   "payrollDeduction.resetMessage":
     "The {{ category }} deduction on {{ bill }} resets on {{ date }}. Update the yearly maximum if it changes; otherwise {{ amount }} applies again.",

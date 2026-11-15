@@ -356,7 +356,8 @@ describe('useNotificationCopy: security notifications', () => {
   it('RELAY_CREDENTIAL_FIRST_USE needs no facts', () => {
     const copy = copyOf(row('RELAY_CREDENTIAL_FIRST_USE', { credentialKind: 'pat' }));
     expect(copy.title).toBe('A new connection answered your AI chat');
-    expect(copy.message).toContain('revoke your API tokens');
+    expect(copy.message).toContain('change your password');
+    expect(copy.message).not.toContain('API tokens');
   });
 
   it('falls back to the stored English when the client name is missing', () => {
