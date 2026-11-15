@@ -7,7 +7,7 @@ import {
 } from "./oidc-provider-paths";
 
 import {
-  OAUTH_ENDPOINT_THROTTLES,
+  ENDPOINT_THROTTLE_RULES,
   createOAuthEndpointThrottle,
   routeKey,
 } from "./oauth-endpoint-throttle";
@@ -52,7 +52,7 @@ describe("createOAuthEndpointThrottle", () => {
 
   it("refuses the registration past its cap with 429 and Retry-After", async () => {
     const middleware = createOAuthEndpointThrottle(storage);
-    const cap = OAUTH_ENDPOINT_THROTTLES[0].limit;
+    const cap = ENDPOINT_THROTTLE_RULES[0].limit;
 
     for (let i = 0; i < cap; i += 1) {
       await expect(call(middleware, "POST", "/oauth/reg")).resolves.toEqual(
@@ -74,7 +74,7 @@ describe("createOAuthEndpointThrottle", () => {
 
   it("counts each client address separately", async () => {
     const middleware = createOAuthEndpointThrottle(storage, [
-      { ...OAUTH_ENDPOINT_THROTTLES[0], limit: 1 },
+      { ...ENDPOINT_THROTTLE_RULES[0], limit: 1 },
     ]);
 
     await call(middleware, "POST", "/oauth/reg", "198.51.100.1");
@@ -87,7 +87,7 @@ describe("createOAuthEndpointThrottle", () => {
 
   it("caps new authorization requests, direct and pushed, in one bucket", async () => {
     const middleware = createOAuthEndpointThrottle(storage, [
-      { ...OAUTH_ENDPOINT_THROTTLES[1], limit: 2 },
+      { ...ENDPOINT_THROTTLE_RULES[1], limit: 2 },
     ]);
 
     expect((await call(middleware, "GET", "/oauth/auth")).passed).toBe(true);
@@ -103,7 +103,7 @@ describe("createOAuthEndpointThrottle", () => {
       // The router folds ASCII case and ignores one trailing slash; a looser
       // match here was a way past the cap.
       const middleware = createOAuthEndpointThrottle(storage, [
-        { ...OAUTH_ENDPOINT_THROTTLES[0], limit: 1 },
+        { ...ENDPOINT_THROTTLE_RULES[0], limit: 1 },
       ]);
 
       await call(middleware, "POST", "/oauth/reg");
@@ -113,7 +113,7 @@ describe("createOAuthEndpointThrottle", () => {
 
   it("counts a case-folded authorization request too", async () => {
     const middleware = createOAuthEndpointThrottle(storage, [
-      { ...OAUTH_ENDPOINT_THROTTLES[1], limit: 1 },
+      { ...ENDPOINT_THROTTLE_RULES[1], limit: 1 },
     ]);
 
     await call(middleware, "GET", "/oauth/auth");
@@ -129,7 +129,7 @@ describe("createOAuthEndpointThrottle", () => {
 
   it("counts the logout page, which saves a Session for an anonymous caller", async () => {
     const middleware = createOAuthEndpointThrottle(storage, [
-      { ...OAUTH_ENDPOINT_THROTTLES[1], limit: 1 },
+      { ...ENDPOINT_THROTTLE_RULES[1], limit: 1 },
     ]);
 
     await call(middleware, "GET", "/oauth/session/end");
@@ -159,7 +159,7 @@ describe("createOAuthEndpointThrottle", () => {
       );
       expect(
         methods.some((m) =>
-          OAUTH_ENDPOINT_THROTTLES.some((rule) => rule.matches(m, path)),
+          ENDPOINT_THROTTLE_RULES.some((rule) => rule.matches(m, path)),
         ),
       ).toBe(true);
     }
@@ -169,7 +169,7 @@ describe("createOAuthEndpointThrottle", () => {
       );
       for (const m of methods) {
         expect(
-          OAUTH_ENDPOINT_THROTTLES.some((rule) => rule.matches(m, path)),
+          ENDPOINT_THROTTLE_RULES.some((rule) => rule.matches(m, path)),
         ).toBe(false);
       }
     }
@@ -217,7 +217,7 @@ describe("createOAuthEndpointThrottle", () => {
   });
 
   it("keeps DCR far below the 50-per-second the issue measured", () => {
-    const [registration, authorization] = OAUTH_ENDPOINT_THROTTLES;
+    const [registration, authorization] = ENDPOINT_THROTTLE_RULES;
     expect(registration.limit / (registration.ttlMs / 60_000)).toBeLessThan(1);
     expect(authorization.limit / (authorization.ttlMs / 60_000)).toBeLessThan(
       100,
