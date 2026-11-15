@@ -52,7 +52,7 @@ function netExpenseActual(
   );
   const destinations = new Set(
     lines
-      .filter((bc) => bc.isTransfer && bc.transferAccountId)
+      .filter((bc) => bc.isTransfer && bc.transferAccountId && !bc.isIncome)
       .map((bc) => bc.transferAccountId as string),
   );
   const net = sumMoney([
@@ -376,6 +376,7 @@ export class BudgetTrendReportsService {
               bc,
               spending.spendingMap,
               spending.transferSpendingMap,
+              spending.transferIncomeMap,
             )
           : 0;
         const variance = actual - budgeted;

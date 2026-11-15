@@ -23,6 +23,7 @@ import { useHelpStore } from '@/store/helpStore';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useScrollToTopOnNavigation } from '@/hooks/useScrollToTopOnNavigation';
 import { usePushResumeOnSignIn } from '@/hooks/usePushResumeOnSignIn';
+import { useShellNotificationBridge } from '@/hooks/useShellNotificationBridge';
 import { cn } from '@/lib/utils';
 
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password', '/setup-2fa', '/change-password'];
@@ -42,6 +43,9 @@ export function SwipeShell({ children, httpsHeadersActive = false }: SwipeShellP
   // Push held across this account's own sign-out resumes here, whichever
   // sign-in path brought the reader in. A no-op without a held marker.
   usePushResumeOnSignIn();
+  // The desktop app's native notifications: polls only inside a shell that
+  // shows them, and tells it on sign-out (the sign-in pages mount this too).
+  useShellNotificationBridge();
 
   const isAuthRoute = AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
 

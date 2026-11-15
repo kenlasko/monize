@@ -1,5 +1,8 @@
 import { promises as fs } from "fs";
-import { dirname, resolve, sep } from "path";
+import * as defaultPathApi from "path";
+
+/** The host `path`, or `path.win32` / `path.posix` in a spec. */
+export type PathApi = typeof defaultPathApi;
 
 /**
  * Where a user's automatic backups may be written, and where they may not.
@@ -33,7 +36,9 @@ import { dirname, resolve, sep } from "path";
 
 /**
  * Roots a backup may be written under, from `BACKUP_ALLOWED_ROOTS`
- * (colon-separated, in the style of `PATH`).
+ * (separated by the platform's path-list delimiter, in the style of `PATH`:
+ * `:` on POSIX, `;` on Windows, where `:` is part of every drive letter).
+ * An entry that is not absolute on the platform is ignored.
  *
  * Defaults to the deployment's backup folder alone. That is a deliberate
  * tightening: a deployment where users had chosen folders elsewhere must list
@@ -41,24 +46,28 @@ import { dirname, resolve, sep } from "path";
  * the variable. Refusing loudly is the right failure -- the alternative is
  * keeping a hole open because closing it is inconvenient, and the hole is
  * "any authenticated user can write anywhere the process can".
+ *
+ * `pathApi` is the host's `path` in production; the specs pass `path.win32`
+ * to prove the Windows semantics on a Linux runner.
  */
 export function resolveAllowedRoots(
   configured: string | undefined,
   defaultRoot: string,
+  pathApi: PathApi = defaultPathApi,
 ): string[] {
   const extra = (configured ?? "")
-    .split(":")
+    .split(pathApi.delimiter)
     .map((entry) => entry.trim())
-    .filter((entry) => entry.startsWith("/"))
-    .map((entry) => resolve(entry));
+    .filter((entry) => pathApi.isAbsolute(entry))
+    .map((entry) => pathApi.resolve(entry));
   // The default root is always allowed: it is the operator's own choice of
   // where backups go, and excluding it would break the out-of-the-box setup.
-  return [...new Set([resolve(defaultRoot), ...extra])];
+  return [...new Set([pathApi.resolve(defaultRoot), ...extra])];
 }
 
 /** True when `candidate` is `root` or sits beneath it. */
-function isWithin(candidate: string, root: string): boolean {
-  return candidate === root || candidate.startsWith(root + sep);
+function isWithin(candidate: string, root: string, pathApi: PathApi): boolean {
+  return candidate === root || candidate.startsWith(root + pathApi.sep);
 }
 
 /**
@@ -71,6 +80,7 @@ function isWithin(candidate: string, root: string): boolean {
  */
 async function realpathOfExistingAncestor(
   path: string,
+  pathApi: PathApi,
 ): Promise<{ real: string; missing: string[] }> {
   const missing: string[] = [];
   let current = path;
@@ -94,13 +104,19 @@ async function realpathOfExistingAncestor(
       if (code !== "ENOENT") {
         throw new BackupPathUnusableError(path, code ?? String(error));
       }
-      const parent = dirname(current);
+      const parent = pathApi.dirname(current);
       if (parent === current) {
         // Reached `/` without finding anything that exists, which cannot happen
         // on a running system but must not loop if it does.
         return { real: current, missing: missing.reverse() };
       }
-      missing.push(current.slice(parent === sep ? 1 : parent.length + 1));
+      // A root parent (`/`, `C:\`) already ends in the separator; any other
+      // parent is followed by one.
+      missing.push(
+        current.slice(
+          parent.endsWith(pathApi.sep) ? parent.length : parent.length + 1,
+        ),
+      );
       current = parent;
     }
   }
@@ -136,13 +152,20 @@ export class BackupPathNotAllowedError extends Error {
  * Returns the canonical form, which is what callers must use for every
  * filesystem operation afterwards: validating one path and then operating on
  * another is how a check becomes decorative.
+ *
+ * `pathApi` is injectable for the same reason as in `resolveAllowedRoots`.
  */
 export async function assertWithinAllowedRoots(
   path: string,
   allowedRoots: string[],
+  pathApi: PathApi = defaultPathApi,
 ): Promise<string> {
-  const { real, missing } = await realpathOfExistingAncestor(resolve(path));
-  const canonical = missing.length > 0 ? resolve(real, ...missing) : real;
+  const { real, missing } = await realpathOfExistingAncestor(
+    pathApi.resolve(path),
+    pathApi,
+  );
+  const canonical =
+    missing.length > 0 ? pathApi.resolve(real, ...missing) : real;
 
   const realRoots = await Promise.all(
     allowedRoots.map(async (root) => {
@@ -155,7 +178,7 @@ export async function assertWithinAllowedRoots(
     }),
   );
 
-  if (!realRoots.some((root) => isWithin(canonical, root))) {
+  if (!realRoots.some((root) => isWithin(canonical, root, pathApi))) {
     throw new BackupPathNotAllowedError(path, allowedRoots);
   }
   return canonical;

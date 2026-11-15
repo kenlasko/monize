@@ -36,6 +36,11 @@ function slideIndexForMount(): number {
   return Number.isInteger(last) && last >= 0 ? (last + 1) % AUTH_BRAND_SLIDES.length : 0;
 }
 
+interface AuthBrandPanelProps {
+  /** The sample-data picture; the shell passes true only once the server allows it. */
+  showScreenshot?: boolean;
+}
+
 /**
  * The gradient half of every auth screen: the brand, a line about one feature
  * and a picture of it, a different feature on each visit.
@@ -45,7 +50,7 @@ function slideIndexForMount(): number {
  * Only the picture matching the mode is fetched, and neither below `lg`, where
  * the panel is not displayed: a lazy image that is `display: none` never loads.
  */
-export function AuthBrandPanel() {
+export function AuthBrandPanel({ showScreenshot = false }: AuthBrandPanelProps) {
   const t = useTranslations('auth.brandPanel');
   const [index] = useState(slideIndexForMount);
   const slide = AUTH_BRAND_SLIDES[index];
@@ -80,20 +85,27 @@ export function AuthBrandPanel() {
         <p className="mt-4 text-base text-white/80 xl:text-lg">{t(`slides.${slide.id}.body`)}</p>
       </div>
       <div className="auth-brand-rise relative mt-10 min-h-0 flex-1 xl:mt-14">
-        {(['.light', ''] as const).map((variant) => (
-          <Image
-            key={variant}
-            data-testid={`auth-brand-shot-${slide.image}${variant}`}
-            src={`/brand/${slide.image}${variant}.webp`}
-            alt=""
-            width={1400}
-            height={875}
-            unoptimized
-            className={`h-auto max-h-full w-auto max-w-full rounded-xl shadow-2xl ring-1 ring-white/15 ${
-              variant ? 'dark:hidden' : 'hidden dark:block'
-            }`}
-          />
-        ))}
+        {showScreenshot && (
+          <div className="relative h-full w-fit max-w-full">
+            {(['.light', ''] as const).map((variant) => (
+              <Image
+                key={variant}
+                data-testid={`auth-brand-shot-${slide.image}${variant}`}
+                src={`/brand/${slide.image}${variant}.webp`}
+                alt=""
+                width={1400}
+                height={875}
+                unoptimized
+                className={`h-auto max-h-full w-auto max-w-full rounded-xl shadow-2xl ring-1 ring-white/15 ${
+                  variant ? 'dark:hidden' : 'hidden dark:block'
+                }`}
+              />
+            ))}
+            <span className="absolute right-3 top-3 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white">
+              {t('sampleData')}
+            </span>
+          </div>
+        )}
       </div>
     </aside>
   );

@@ -2,7 +2,10 @@ import { Injectable, Logger } from "@nestjs/common";
 import { BudgetTrendReportsService } from "./budget-trend-reports.service";
 import { BudgetHealthReportsService } from "./budget-health-reports.service";
 import { BudgetActivityReportsService } from "./budget-activity-reports.service";
+import { BudgetBucketReportsService } from "./budget-bucket-reports.service";
+import type { BudgetBucketStatusResult } from "./budget-bucket-reports.service";
 import { BudgetsService } from "./budgets.service";
+import { BudgetStrategy } from "./entities/budget.entity";
 import {
   getCurrentMonthPeriodDates,
   getPreviousMonthPeriodDates,
@@ -166,6 +169,23 @@ export interface LlmBudgetStatusResult {
     score: number;
     label: string;
   };
+  /**
+   * Present only for a BUCKET budget with at least one bucket; the current
+   * period, taken verbatim from the bucket status service (INV-BUDGET-001).
+   * `null` is "unknown" (a PERCENT target with no known income), never 0.
+   */
+  buckets?: Array<{
+    name: string;
+    targetType: string;
+    targetValue: number;
+    allocated: number | null;
+    carriedIn: number;
+    spent: number;
+    available: number | null;
+    percentUsed: number | null;
+  }>;
+  bucketIncome?: number | null;
+  unallocated?: number | null;
 }
 
 export interface LlmBudgetStatusError {
@@ -182,6 +202,7 @@ export class BudgetReportsService {
     private readonly healthReports: BudgetHealthReportsService,
     private readonly activityReports: BudgetActivityReportsService,
     private readonly budgetsService: BudgetsService,
+    private readonly bucketReports: BudgetBucketReportsService,
   ) {}
 
   getTrend(
@@ -245,6 +266,13 @@ export class BudgetReportsService {
     budgetId: string,
   ): Promise<FlexGroupStatusResult[]> {
     return this.activityReports.getFlexGroupStatus(userId, budgetId);
+  }
+
+  getBucketStatus(
+    userId: string,
+    budgetId: string,
+  ): Promise<BudgetBucketStatusResult> {
+    return this.bucketReports.getBucketStatus(userId, budgetId);
   }
 
   /**
@@ -313,6 +341,20 @@ export class BudgetReportsService {
       healthScore = null;
     }
 
+    let bucketStatus: BudgetBucketStatusResult | null = null;
+    if (budget.strategy === BudgetStrategy.BUCKET) {
+      try {
+        bucketStatus = await this.bucketReports.getBucketStatus(
+          userId,
+          budget.id,
+        );
+      } catch (err) {
+        this.logger.warn(
+          `Failed to compute bucket status for ${budget.id}: ${err instanceof Error ? err.message : err}`,
+        );
+      }
+    }
+
     const overBudgetCategories = summary.categoryBreakdown
       .filter((c) => !c.isIncome && c.percentUsed > 100)
       .map((c) => ({
@@ -364,6 +406,21 @@ export class BudgetReportsService {
         score: healthScore.score,
         label: healthScore.label,
       };
+    }
+
+    if (bucketStatus && bucketStatus.buckets.length > 0) {
+      result.buckets = bucketStatus.buckets.map((b) => ({
+        name: b.name,
+        targetType: b.targetType,
+        targetValue: b.targetValue,
+        allocated: b.allocated,
+        carriedIn: b.carriedIn,
+        spent: b.spent,
+        available: b.available,
+        percentUsed: b.percentUsed,
+      }));
+      result.bucketIncome = bucketStatus.income;
+      result.unallocated = bucketStatus.unallocated;
     }
 
     return result;

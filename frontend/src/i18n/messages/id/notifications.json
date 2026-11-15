@@ -215,5 +215,63 @@
   "shared": {
     "title": "Pengeluaran bersama",
     "message": "Ada pembaruan di grup bersama. Buka Monize untuk meninjaunya."
+  },
+  "native": {
+    "payments": {
+      "title": "Pengingat pembayaran",
+      "body": "Sebuah tagihan atau pembayaran terjadwal memerlukan perhatian Anda. Buka Monize untuk detailnya."
+    },
+    "budgets": {
+      "title": "Peringatan anggaran",
+      "body": "Salah satu anggaran Anda memerlukan perhatian. Buka Monize untuk detailnya."
+    },
+    "system": {
+      "title": "Pemberitahuan sistem",
+      "body": "Monize memiliki pemberitahuan sistem untuk Anda. Buka aplikasi untuk detailnya."
+    },
+    "balances": {
+      "title": "Peringatan saldo",
+      "body": "Saldo sebuah akun melewati ambang batas yang Anda tetapkan. Buka Monize untuk detailnya."
+    },
+    "investments": {
+      "title": "Pergerakan investasi",
+      "body": "Investasi Anda bergerak hari ini. Buka Monize untuk detailnya."
+    },
+    "strategies": {
+      "title": "Sinyal strategi",
+      "body": "Salah satu strategi Anda mengubah rekomendasinya. Buka Monize untuk detailnya."
+    },
+    "bank_sync": {
+      "title": "Koneksi bank",
+      "body": "Sebuah koneksi bank memerlukan perhatian Anda. Buka Monize untuk detailnya."
+    },
+    "bank_sync_activity": {
+      "title": "Sinkronisasi bank",
+      "body": "Sinkronisasi bank Anda memiliki kabar. Buka Monize untuk detailnya."
+    },
+    "email_receipts": {
+      "title": "Tanda terima email memerlukan perhatian",
+      "body": "Beberapa email di kotak masuk tanda terima Anda memerlukan profil atau perbaikan. Buka Monize untuk detailnya."
+    },
+    "bonds": {
+      "title": "Pemberitahuan obligasi",
+      "body": "Salah satu obligasi Anda memiliki kabar baru. Buka Monize untuk melihat detailnya."
+    },
+    "ai_review": {
+      "title": "Usulan tinjauan AI",
+      "body": "Beberapa usulan tinjauan AI menunggu keputusan Anda. Buka Monize untuk melihat detailnya."
+    },
+    "warranties": {
+      "title": "Pengingat garansi",
+      "body": "Salah satu garansi Anda segera berakhir. Buka Monize untuk melihat detailnya."
+    },
+    "shared_expenses": {
+      "title": "Pengeluaran bersama",
+      "body": "Ada pembaruan di grup bersama. Buka Monize untuk meninjaunya."
+    },
+    "fallback": {
+      "title": "Monize",
+      "body": "Anda punya notifikasi baru di Monize."
+    }
   }
 }

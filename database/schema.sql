@@ -2455,6 +2455,34 @@ CREATE TABLE budgets (
 CREATE INDEX idx_budgets_user ON budgets(user_id);
 CREATE INDEX idx_budgets_user_active ON budgets(user_id, is_active);
 
+-- Budget Buckets - the named pots of a Bucket-strategy budget
+-- (docs/future-plans/bucket-budget.md section 6.1). A target is a percent of
+-- bucket income or an amount per period; the percent upper bound and the
+-- case-insensitive name rule are the service's.
+CREATE TABLE budget_buckets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    budget_id UUID NOT NULL REFERENCES budgets(id) ON DELETE CASCADE,
+    -- Stored trimmed.
+    name VARCHAR(50) NOT NULL,
+    target_type VARCHAR(10) NOT NULL,
+    -- A percent (PERCENT) or an amount in the budget's currency per period
+    -- (AMOUNT).
+    target_value NUMERIC(24, 8) NOT NULL,
+    carry_over BOOLEAN NOT NULL DEFAULT false,
+    carry_cap NUMERIC(24, 8),
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_budget_buckets_budget_name UNIQUE (budget_id, name),
+    CONSTRAINT chk_budget_buckets_target_type
+        CHECK (target_type IN ('PERCENT', 'AMOUNT')),
+    CONSTRAINT chk_budget_buckets_target_value CHECK (target_value > 0),
+    CONSTRAINT chk_budget_buckets_carry_cap
+        CHECK (carry_cap IS NULL OR carry_cap > 0)
+);
+
+CREATE INDEX idx_budget_buckets_budget ON budget_buckets(budget_id);
+
 -- Budget Categories - per-category budget allocation
 CREATE TABLE budget_categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -2473,10 +2501,14 @@ CREATE TABLE budget_categories (
     notes TEXT,
     sort_order INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- The bucket a non-income line belongs to; deleting the bucket unassigns it.
+    bucket_id UUID REFERENCES budget_buckets(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_budget_categories_budget ON budget_categories(budget_id);
+CREATE INDEX idx_budget_categories_bucket ON budget_categories(bucket_id)
+    WHERE bucket_id IS NOT NULL;
 CREATE INDEX idx_budget_categories_category ON budget_categories(category_id);
 CREATE INDEX idx_budget_categories_transfer_account ON budget_categories(transfer_account_id)
     WHERE transfer_account_id IS NOT NULL;
@@ -2520,6 +2552,36 @@ CREATE TABLE budget_period_categories (
 
 CREATE INDEX idx_bpc_period ON budget_period_categories(budget_period_id);
 CREATE INDEX idx_bpc_category ON budget_period_categories(category_id);
+
+-- Budget Period Buckets - per-bucket carry and frozen figures for each period
+-- (docs/future-plans/bucket-budget.md section 6.3). bucket_name keeps the
+-- name as it was when the row was last written, so a closed period still
+-- reads after its bucket is deleted (bucket_id then NULL).
+CREATE TABLE budget_period_buckets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    budget_period_id UUID NOT NULL REFERENCES budget_periods(id) ON DELETE CASCADE,
+    bucket_id UUID REFERENCES budget_buckets(id) ON DELETE SET NULL,
+    bucket_name VARCHAR(50) NOT NULL,
+    target_type VARCHAR(10) NOT NULL,
+    target_value NUMERIC(24, 8) NOT NULL,
+    -- Bucket income at the close; null while open or when unknown.
+    income_basis NUMERIC(24, 8),
+    -- Null while open, and when the allocation is unknown at the close.
+    allocated_amount NUMERIC(24, 8),
+    carry_in NUMERIC(24, 8) NOT NULL DEFAULT 0,
+    actual_amount NUMERIC(24, 8) NOT NULL DEFAULT 0,
+    carry_out NUMERIC(24, 8) NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_budget_period_buckets_period_bucket
+        UNIQUE (budget_period_id, bucket_id),
+    CONSTRAINT chk_budget_period_buckets_target_type
+        CHECK (target_type IN ('PERCENT', 'AMOUNT')),
+    CONSTRAINT chk_budget_period_buckets_target_value CHECK (target_value > 0)
+);
+
+CREATE INDEX idx_budget_period_buckets_bucket ON budget_period_buckets(bucket_id)
+    WHERE bucket_id IS NOT NULL;
 
 -- Every durable notification, whatever produced it (migration 179, renamed from
 -- budget_alerts). The table stopped being about budgets some time ago:
@@ -2694,6 +2756,8 @@ CREATE TRIGGER update_budgets_updated_at BEFORE UPDATE ON budgets FOR EACH ROW E
 CREATE TRIGGER update_budget_categories_updated_at BEFORE UPDATE ON budget_categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_budget_periods_updated_at BEFORE UPDATE ON budget_periods FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_budget_period_categories_updated_at BEFORE UPDATE ON budget_period_categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_budget_buckets_updated_at BEFORE UPDATE ON budget_buckets FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_budget_period_buckets_updated_at BEFORE UPDATE ON budget_period_buckets FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Import Column Mappings (for CSV imports)
 CREATE TABLE import_column_mappings (
@@ -4355,6 +4419,32 @@ CREATE POLICY budget_period_categories_isolation ON budget_period_categories
     SELECT 1 FROM budget_periods bp
     JOIN budgets b ON b.id = bp.budget_id
     WHERE bp.id = budget_period_categories.budget_period_id
+      AND b.user_id = (SELECT app_current_user_id())));
+
+-- budget_buckets -> budgets.user_id (migration 20261114231741)
+DROP POLICY IF EXISTS budget_buckets_isolation ON budget_buckets;
+CREATE POLICY budget_buckets_isolation ON budget_buckets
+  USING ((SELECT app_bypass_rls()) OR EXISTS (
+    SELECT 1 FROM budgets b
+    WHERE b.id = budget_buckets.budget_id
+      AND b.user_id = (SELECT app_current_user_id())))
+  WITH CHECK ((SELECT app_bypass_rls()) OR EXISTS (
+    SELECT 1 FROM budgets b
+    WHERE b.id = budget_buckets.budget_id
+      AND b.user_id = (SELECT app_current_user_id())));
+
+-- budget_period_buckets -> budget_periods -> budgets.user_id (two-hop)
+DROP POLICY IF EXISTS budget_period_buckets_isolation ON budget_period_buckets;
+CREATE POLICY budget_period_buckets_isolation ON budget_period_buckets
+  USING ((SELECT app_bypass_rls()) OR EXISTS (
+    SELECT 1 FROM budget_periods bp
+    JOIN budgets b ON b.id = bp.budget_id
+    WHERE bp.id = budget_period_buckets.budget_period_id
+      AND b.user_id = (SELECT app_current_user_id())))
+  WITH CHECK ((SELECT app_bypass_rls()) OR EXISTS (
+    SELECT 1 FROM budget_periods bp
+    JOIN budgets b ON b.id = bp.budget_id
+    WHERE bp.id = budget_period_buckets.budget_period_id
       AND b.user_id = (SELECT app_current_user_id())));
 
 -- ---------------------------------------------------------------------------

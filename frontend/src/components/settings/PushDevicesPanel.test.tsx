@@ -135,6 +135,78 @@ describe('PushDevicesPanel', () => {
     ).toBeInTheDocument();
   });
 
+  describe('inside a native shell', () => {
+    afterEach(() => {
+      delete window.__MONIZE_SHELL__;
+      delete window.__MONIZE_SHELL_NOTIFICATIONS__;
+    });
+
+    it('says notifications appear on this PC when the desktop app shows them natively', async () => {
+      window.__MONIZE_SHELL__ = { kind: 'electron', version: '1.0.0' };
+      window.__MONIZE_SHELL_NOTIFICATIONS__ = { publish: vi.fn() };
+
+      render(<PushDevicesPanel />);
+
+      expect(
+        await screen.findByText(/shows your notifications on this PC while it is running/i),
+      ).toBeInTheDocument();
+      // Still not push: nothing to enable, and no remedy that sends the reader away.
+      expect(
+        screen.queryByRole('button', { name: /enable on this device/i }),
+      ).toBeNull();
+      expect(screen.queryByText(/not available in the Monize desktop window/i)).toBeNull();
+    });
+
+    it('says the same where push is off on the server', async () => {
+      window.__MONIZE_SHELL__ = { kind: 'electron', version: '1.0.0' };
+      window.__MONIZE_SHELL_NOTIFICATIONS__ = { publish: vi.fn() };
+      mockGetConfig.mockResolvedValue({ enabled: false, configured: false, publicKey: null });
+
+      render(<PushDevicesPanel />);
+
+      expect(
+        await screen.findByText(/shows your notifications on this PC while it is running/i),
+      ).toBeInTheDocument();
+    });
+
+    it('says why in place of Enable in the Electron window', async () => {
+      window.__MONIZE_SHELL__ = { kind: 'electron', version: '1.0.0' };
+
+      render(<PushDevicesPanel />);
+
+      expect(
+        await screen.findByText(/not available in the Monize desktop window/i),
+      ).toHaveTextContent(/Open in browser/);
+      expect(
+        screen.queryByRole('button', { name: /enable on this device/i }),
+      ).toBeNull();
+      expect(screen.queryByText(/permission/i)).toBeNull();
+    });
+
+    it('says why in place of Enable in the Android app', async () => {
+      window.__MONIZE_SHELL__ = { kind: 'capacitor', version: '' };
+
+      render(<PushDevicesPanel />);
+
+      expect(
+        await screen.findByText(/not available in the Monize Android app yet/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /enable on this device/i }),
+      ).toBeNull();
+    });
+
+    it('still offers Enable for a malformed flag', async () => {
+      window.__MONIZE_SHELL__ = { kind: 'electron' };
+
+      render(<PushDevicesPanel />);
+
+      expect(
+        await screen.findByRole('button', { name: /enable on this device/i }),
+      ).toBeInTheDocument();
+    });
+  });
+
   // A test send with nothing registered would report success over nothing.
   it('disables the test button until a live device exists', async () => {
     render(<PushDevicesPanel />);

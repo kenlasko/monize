@@ -330,7 +330,20 @@
     "budgetCategoryNotFound": "Categoria de orçamento com ID {{ id }} não encontrada",
     "periodNotFound": "Período de orçamento com ID {{ id }} não encontrado",
     "noOpenPeriod": "Não há período aberto para encerrar",
-    "categoryIdsNotOwned": "IDs de categoria não encontrados ou não pertencentes ao utilizador: {{ ids }}"
+    "categoryIdsNotOwned": "IDs de categoria não encontrados ou não pertencentes ao utilizador: {{ ids }}",
+    "transferAccountNotFound": "Conta com ID {{ id }} não encontrada",
+    "transferAccountAlreadyInBudget": "Esta conta já tem uma linha de transferência no orçamento",
+    "bucketNotFound": "O cofre com ID {{ id }} não foi encontrado",
+    "bucketLimit": "Um orçamento pode ter no máximo {{ max }} cofres",
+    "bucketNameInvalid": "O nome de um cofre tem de ter entre 1 e {{ max }} caracteres",
+    "bucketNameDuplicate": "Este orçamento já tem um cofre com esse nome",
+    "bucketTargetInvalid": "O objetivo de um cofre tem de ser superior a zero",
+    "bucketPercentInvalid": "Um objetivo em percentagem tem de ser superior a 0 e no máximo 100, com no máximo duas casas decimais",
+    "bucketCarryCapNeedsCarryOver": "Um limite de transição exige que a transição esteja ativada",
+    "bucketOnIncomeLine": "Uma linha de receita não pode pertencer a um cofre",
+    "bucketKeyDuplicate": "A chave de cofre \"{{ key }}\" é usada mais do que uma vez",
+    "bucketKeyUnknown": "Nenhum cofre neste pedido tem a chave \"{{ key }}\"",
+    "transferLineDirectionFixed": "Não é possível alterar a direção de uma linha de transferência. Remova-a e adicione uma nova linha."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Uma regra de dedução salarial acompanha uma conta a pagar paga numa moeda fiduciária; a conta desta fatura contém a criptomoeda {{ code }}. Escolha uma conta a pagar paga a partir de uma conta em moeda fiduciária.",

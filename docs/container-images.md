@@ -26,7 +26,7 @@ The digest is the multi-architecture **image index** digest (what
 
 | Image | Tag | Digest | Used in |
 | --- | --- | --- | --- |
-| `mcr.microsoft.com/playwright` | `v1.64.1-noble` | `sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea` | `scripts/e2e-playwright.sh` (E2E shards in `.github/workflows/ci.yml`) |
+| `mcr.microsoft.com/playwright` | `v1.65.0-noble` | `sha256:9beb546099e11f52d62e505537914870e01a67e0e6b00ae41da4775324e73dbe` | `scripts/e2e-playwright.sh` (E2E shards in `.github/workflows/ci.yml`) |
 | `mirror.gcr.io/library/postgres` | `16-alpine` | `sha256:16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229` | `.github/workflows/ci.yml` (integration-test service), `scripts/verify-schema.sh`, `docker-compose.e2e.yml` |
 | `mirror.gcr.io/library/nginx` | `1.29-alpine` | `sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de` | `docker-compose.e2e.yml` (cluster-shard load balancer) |
 | `mirror.gcr.io/library/node` | `24-alpine` | `sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53` | `backend/Dockerfile`, `frontend/Dockerfile` (`development` and `production` stages) |
@@ -38,8 +38,8 @@ the platform manifest on some engines):
 
 | Tag | Platform | Manifest digest |
 | --- | --- | --- |
-| `v1.64.1-noble` | `linux/amd64` | `sha256:d65108d1a8095d8b0c4a5e32bf1807a40a5ce90ff0c78473e1116b1c243235e8` |
-| `v1.64.1-noble` | `linux/arm64` | `sha256:969a9e3655576186a7f3b3d85502f8c4041f4afce571df7aadba6384d93ee61f` |
+| `v1.65.0-noble` | `linux/amd64` | `sha256:f6fe3cf9a493670b9a20f33597a807262abb25c40c31839ba4ac1dbc51fe7366` |
+| `v1.65.0-noble` | `linux/arm64` | `sha256:714043ec4d54008d194a4b3835bc2a1156c51862d8bb45d72bea414f0ce9ed61` |
 
 ## When to move a digest
 

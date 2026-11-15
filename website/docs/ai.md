@@ -237,6 +237,9 @@ Monize supports two ways to authenticate an MCP client. Pick based on whether yo
 > [!IMPORTANT]
 > Claude Desktop's built-in **Add Connector** flow only works when your Monize instance is exposed on the public internet behind HTTPS. The connector handshake requires Claude Desktop to reach your Monize URL directly, and self-signed certificates or non-routable hostnames (e.g., `http://localhost:3001`, `http://192.168.x.x`, or `*.local` mDNS names) are rejected. If your instance is private, use the [Personal Access Token + Local Bridge](#option-2-personal-access-token--local-bridge) method instead.
 
+> [!NOTE]
+> **Monize for Windows:** only the [Personal Access Token + Local Bridge](#option-2-personal-access-token--local-bridge) method works, and only from an AI client on the same PC, because Monize is reachable at `http://127.0.0.1` alone. Use the address the tray menu's **Open in browser** opens as your Monize URL.
+
 ### Option 1: OAuth (Claude Desktop "Add Connector")
 
 This is the easiest method when your Monize instance is publicly reachable. Tokens are issued through a browser-based consent flow and managed automatically by Claude Desktop -- you never copy or paste a token, and revocation is per-app rather than per-token.

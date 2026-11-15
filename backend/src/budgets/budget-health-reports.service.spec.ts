@@ -56,6 +56,10 @@ function spending(
     currency: "USD",
     incompleteCategoryIds: new Set(incomplete),
     incompleteTransferAccountIds: new Set(),
+    transferIncomeMap: new Map(),
+    incompleteTransferIncomeAccountIds: new Set(),
+    outsideTransferIncome: 0,
+    outsideTransferIncomeComplete: true,
     missingRatePairs: incomplete.length > 0 ? ["JPY->USD"] : [],
   };
 }
@@ -504,6 +508,86 @@ describe("BudgetHealthReportsService", () => {
     it("returns one entry per month requested", async () => {
       const result = await service.getSavingsRate("user-1", "budget-1", 3);
       expect(result).toHaveLength(3);
+    });
+
+    it("counts transfer income lines and the toggle's figure as income (issue #2141)", async () => {
+      budgetsService.findOne.mockResolvedValueOnce({
+        ...mockBudget,
+        categories: [
+          {
+            id: "bc-hisa",
+            budgetId: "budget-1",
+            categoryId: null,
+            isTransfer: true,
+            isIncome: true,
+            transferAccountId: "acct-hisa",
+            amount: 2000,
+          },
+          {
+            id: "bc-food",
+            budgetId: "budget-1",
+            categoryId: "cat-food",
+            isTransfer: false,
+            isIncome: false,
+            transferAccountId: null,
+            amount: 500,
+          },
+        ],
+      });
+      mockSpending({
+        ...spending({ "cat-food": -1000 }),
+        transferIncomeMap: new Map([["acct-hisa", 2000]]),
+        outsideTransferIncome: 500,
+      });
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      // The transfer income line passes to the actuals read with the others.
+      expect(mockedSpending.mock.calls[0][3].map((bc) => bc.id)).toEqual([
+        "bc-hisa",
+        "bc-food",
+      ]);
+      // No income category, but the budget has an income line: the income
+      // side is 2,000 + 500, never the every-deposit fallback.
+      expect(transactionsRepository.createQueryBuilder).not.toHaveBeenCalled();
+      expect(result[0]).toMatchObject({
+        income: 2500,
+        expenses: 1000,
+        savings: 1500,
+        savingsRate: 60,
+        valuationComplete: true,
+      });
+    });
+
+    it("still reads the toggle's figure when the budget has only savings transfer lines", async () => {
+      budgetsService.findOne.mockResolvedValueOnce({
+        ...mockBudget,
+        config: {
+          excludedAccountIds: ["acct-hisa"],
+          transfersInAsIncome: true,
+        },
+        categories: [
+          {
+            id: "bc-tfsa",
+            budgetId: "budget-1",
+            categoryId: null,
+            isTransfer: true,
+            isIncome: false,
+            transferAccountId: "acct-tfsa",
+            amount: 300,
+          },
+        ],
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        createMockQueryBuilder(),
+      );
+      mockSpending({ ...spending({}), outsideTransferIncome: 2000 });
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      expect(mockedSpending).toHaveBeenCalledTimes(1);
+      // The savings line names the budget; it is not an expense of the rate.
+      expect(result[0]).toMatchObject({ income: 2000, expenses: 0 });
     });
 
     it("leaves the budget's excluded accounts out of the no-income-category query", async () => {

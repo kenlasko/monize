@@ -216,6 +216,9 @@ With this path the user never types a password into Monize: they sign in at Goog
 
 The **Connect with Google** button appears only after the administrator has registered an OAuth client and set both of its environment variables. One client serves every user of the deployment.
 
+> [!NOTE]
+> **Monize for Windows:** **Connect with Google** and **Connect with Microsoft** are not available, because they need those server settings. Use [Gmail with an app password](#gmail-with-an-app-password) or [any other IMAP server](#any-other-imap-server).
+
 ### For the administrator
 
 Decide the **audience** first, using the table above: **Internal** if your deployment belongs to a Google Workspace organisation and everyone who will connect is in it; otherwise **External**, which stays in **Testing** with its 7-day expiry.

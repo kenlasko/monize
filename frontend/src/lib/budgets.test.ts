@@ -61,6 +61,15 @@ describe('budgetsApi', () => {
     });
   });
 
+  it('addTransferIncomeLine posts to /budgets/:id/categories/transfer-income', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { id: 'bc-2' } });
+    await budgetsApi.addTransferIncomeLine('b-1', { transferAccountId: 'a-1', amount: 2000 });
+    expect(apiClient.post).toHaveBeenCalledWith('/budgets/b-1/categories/transfer-income', {
+      transferAccountId: 'a-1',
+      amount: 2000,
+    });
+  });
+
   it('updateCategory patches a budget category', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'bc-1' } });
     await budgetsApi.updateCategory('b-1', 'bc-1', { amount: 200 } as any);
@@ -195,6 +204,41 @@ describe('budgetsApi', () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: { spent: 50 } });
     await budgetsApi.getDashboardSummary();
     expect(apiClient.get).toHaveBeenCalledWith('/budgets/dashboard-summary');
+  });
+
+  it('getBuckets fetches /budgets/:id/buckets', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [{ id: 'bk-1' }] });
+    const result = await budgetsApi.getBuckets('b-1');
+    expect(apiClient.get).toHaveBeenCalledWith('/budgets/b-1/buckets');
+    expect(result).toHaveLength(1);
+  });
+
+  it('createBucket posts to /budgets/:id/buckets', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { id: 'bk-1' } });
+    const data = { name: 'Savings', targetType: 'PERCENT', targetValue: 20 } as const;
+    const result = await budgetsApi.createBucket('b-1', data);
+    expect(apiClient.post).toHaveBeenCalledWith('/budgets/b-1/buckets', data);
+    expect(result.id).toBe('bk-1');
+  });
+
+  it('updateBucket patches /budgets/:id/buckets/:bucketId', async () => {
+    vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'bk-1' } });
+    await budgetsApi.updateBucket('b-1', 'bk-1', { carryCap: null });
+    expect(apiClient.patch).toHaveBeenCalledWith('/budgets/b-1/buckets/bk-1', {
+      carryCap: null,
+    });
+  });
+
+  it('deleteBucket calls DELETE /budgets/:id/buckets/:bucketId', async () => {
+    vi.mocked(apiClient.delete).mockResolvedValue({});
+    await budgetsApi.deleteBucket('b-1', 'bk-1');
+    expect(apiClient.delete).toHaveBeenCalledWith('/budgets/b-1/buckets/bk-1');
+  });
+
+  it('getBucketStatus fetches /budgets/:id/reports/bucket-status', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { buckets: [] } });
+    await budgetsApi.getBucketStatus('b-1');
+    expect(apiClient.get).toHaveBeenCalledWith('/budgets/b-1/reports/bucket-status');
   });
 
   it('getCategoryBudgetStatus returns empty object for empty input', async () => {

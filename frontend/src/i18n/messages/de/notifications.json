@@ -215,5 +215,63 @@
   "shared": {
     "title": "Gemeinsame Ausgaben",
     "message": "Eine gemeinsame Gruppe wurde aktualisiert. Öffne Monize, um die Änderungen anzusehen."
+  },
+  "native": {
+    "payments": {
+      "title": "Zahlungserinnerung",
+      "body": "Eine Rechnung oder geplante Zahlung braucht Ihre Aufmerksamkeit. Öffnen Sie Monize für die Details."
+    },
+    "budgets": {
+      "title": "Budgetwarnung",
+      "body": "Eines Ihrer Budgets braucht Ihre Aufmerksamkeit. Öffnen Sie Monize für die Details."
+    },
+    "system": {
+      "title": "Systemhinweis",
+      "body": "Monize hat einen Systemhinweis für Sie. Öffnen Sie die App für die Details."
+    },
+    "balances": {
+      "title": "Kontostandwarnung",
+      "body": "Ein Kontostand hat einen von Ihnen festgelegten Schwellenwert überschritten. Öffnen Sie Monize für die Details."
+    },
+    "investments": {
+      "title": "Anlagebewegung",
+      "body": "Ihre Anlagen haben sich heute bewegt. Öffnen Sie Monize für die Details."
+    },
+    "strategies": {
+      "title": "Strategiesignal",
+      "body": "Eine Ihrer Strategien hat ihre Empfehlung geändert. Öffnen Sie Monize für die Details."
+    },
+    "bank_sync": {
+      "title": "Bankverbindung",
+      "body": "Eine Bankverbindung braucht Ihre Aufmerksamkeit. Öffnen Sie Monize für die Details."
+    },
+    "bank_sync_activity": {
+      "title": "Bank-Synchronisierung",
+      "body": "Es gibt Neuigkeiten zu Ihrer Bank-Synchronisierung. Öffnen Sie Monize für die Details."
+    },
+    "email_receipts": {
+      "title": "E-Mail-Belege benötigen Aufmerksamkeit",
+      "body": "Einige E-Mails in Ihrem Belegepostfach benötigen ein Profil oder eine Korrektur. Öffnen Sie Monize für die Details."
+    },
+    "bonds": {
+      "title": "Anleihen-Hinweis",
+      "body": "Zu einer Ihrer Anleihen gibt es Neuigkeiten. Öffnen Sie Monize für die Details."
+    },
+    "ai_review": {
+      "title": "KI-Prüfvorschläge",
+      "body": "Einige KI-Prüfvorschläge warten auf Ihre Entscheidung. Öffnen Sie Monize für die Details."
+    },
+    "warranties": {
+      "title": "Garantie-Erinnerung",
+      "body": "Eine Ihrer Garantien läuft bald ab. Öffnen Sie Monize für die Details."
+    },
+    "shared_expenses": {
+      "title": "Gemeinsame Ausgaben",
+      "body": "Eine gemeinsame Gruppe wurde aktualisiert. Öffne Monize, um die Änderungen anzusehen."
+    },
+    "fallback": {
+      "title": "Monize",
+      "body": "Sie haben eine neue Benachrichtigung in Monize."
+    }
   }
 }

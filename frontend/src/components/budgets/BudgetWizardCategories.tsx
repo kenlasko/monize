@@ -8,7 +8,20 @@ import { getCurrencySymbol, formatAmount, getDecimalPlacesForCurrency, gainLossC
 import { parseLocaleNumber, formatNumberForEdit } from '@/lib/number-parse';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { WizardState } from './BudgetWizard';
-import type { BudgetProfile, CategoryGroup, TransferAnalysis } from '@/types/budget';
+import type {
+  ApplyBudgetCategoryData,
+  BudgetProfile,
+  CategoryGroup,
+  TransferAnalysis,
+} from '@/types/budget';
+import {
+  BudgetWizardBucketSelect,
+  BudgetWizardBucketTallyCard,
+  BudgetWizardBucketsPanel,
+  liveBucketKey,
+  tallyBudgetWizardBuckets,
+  withBucketKey,
+} from './BudgetWizardBuckets';
 
 function BudgetAmountInput({
   categoryId,
@@ -110,8 +123,18 @@ export function BudgetWizardCategories({
 }: BudgetWizardCategoriesProps) {
   const t = useTranslations('budgets');
   const { formatCurrency, formatPercentTrimmed } = useNumberFormat();
-  const { analysisResult, selectedCategories, selectedTransfers = new Map(), profile, strategy, currencyCode } = state;
+  const {
+    analysisResult,
+    selectedCategories,
+    selectedTransfers = new Map(),
+    selectedIncomeTransfers = new Map(),
+    buckets = [],
+    profile,
+    strategy,
+    currencyCode,
+  } = state;
   const is503020 = strategy === 'FIFTY_THIRTY_TWENTY';
+  const isBucket = strategy === 'BUCKET';
 
   const incomeCategories = useMemo(
     () =>
@@ -132,9 +155,17 @@ export function BudgetWizardCategories({
     [analysisResult],
   );
 
+  const incomeTransferAnalysis = useMemo(
+    () => analysisResult?.incomeTransfers ?? [],
+    [analysisResult],
+  );
+
   const totals = useMemo(() => {
     const cats = Array.from(selectedCategories.values());
-    const totalIncome = sumMoney(cats.filter((c) => c.isIncome).map((c) => c.amount));
+    const totalIncome = sumMoney([
+      ...cats.filter((c) => c.isIncome).map((c) => c.amount),
+      ...Array.from(selectedIncomeTransfers.values()).map((t) => t.amount),
+    ]);
     const totalExpenses = sumMoney(cats.filter((c) => !c.isIncome).map((c) => c.amount));
     const totalTransfers = sumMoney(Array.from(selectedTransfers.values()).map((t) => t.amount));
 
@@ -144,7 +175,7 @@ export function BudgetWizardCategories({
       totalTransfers,
       net: roundMoney(totalIncome - totalExpenses - totalTransfers),
     };
-  }, [selectedCategories, selectedTransfers]);
+  }, [selectedCategories, selectedTransfers, selectedIncomeTransfers]);
 
   const handleProfileChange = (newProfile: BudgetProfile) => {
     if (!analysisResult) return;
@@ -174,34 +205,44 @@ export function BudgetWizardCategories({
       updated.set(cat.categoryId, { ...existing, amount });
     }
 
-    const updatedTransfers = new Map(selectedTransfers);
-    for (const t of analysisResult.transfers ?? []) {
-      const existing = updatedTransfers.get(t.accountId);
-      if (!existing) continue;
+    const reprice = (
+      selected: Map<string, ApplyBudgetCategoryData>,
+      analyses: TransferAnalysis[],
+    ) => {
+      const repriced = new Map(selected);
+      for (const t of analyses) {
+        const existing = repriced.get(t.accountId);
+        if (!existing) continue;
 
-      let tAmount: number;
-      switch (newProfile) {
-        case 'COMFORTABLE':
-          tAmount = t.p75;
-          break;
-        case 'AGGRESSIVE':
-          tAmount = t.p25;
-          break;
-        default:
-          tAmount = t.median;
+        let tAmount: number;
+        switch (newProfile) {
+          case 'COMFORTABLE':
+            tAmount = t.p75;
+            break;
+          case 'AGGRESSIVE':
+            tAmount = t.p25;
+            break;
+          default:
+            tAmount = t.median;
+        }
+
+        if (tAmount === 0 && t.average > 0) {
+          tAmount = t.average;
+        }
+
+        repriced.set(t.accountId, { ...existing, amount: tAmount });
       }
-
-      if (tAmount === 0 && t.average > 0) {
-        tAmount = t.average;
-      }
-
-      updatedTransfers.set(t.accountId, { ...existing, amount: tAmount });
-    }
+      return repriced;
+    };
 
     updateState({
       profile: newProfile,
       selectedCategories: updated,
-      selectedTransfers: updatedTransfers,
+      selectedTransfers: reprice(selectedTransfers, analysisResult.transfers ?? []),
+      selectedIncomeTransfers: reprice(
+        selectedIncomeTransfers,
+        analysisResult.incomeTransfers ?? [],
+      ),
     });
   };
 
@@ -252,8 +293,11 @@ export function BudgetWizardCategories({
     }
   };
 
+  // One transfer line per account (issue #2141): choosing a direction for an
+  // account drops the other.
   const handleToggleTransfer = (accountId: string, checked: boolean) => {
     const updated = new Map(selectedTransfers);
+    const updatedIncome = new Map(selectedIncomeTransfers);
     if (checked) {
       const t = analysisResult?.transfers?.find(
         (tr) => tr.accountId === accountId,
@@ -265,11 +309,49 @@ export function BudgetWizardCategories({
           amount: t.suggested,
           ...(is503020 ? { categoryGroup: 'SAVING' as CategoryGroup } : {}),
         });
+        updatedIncome.delete(accountId);
       }
     } else {
       updated.delete(accountId);
     }
-    updateState({ selectedTransfers: updated });
+    updateState({
+      selectedTransfers: updated,
+      selectedIncomeTransfers: updatedIncome,
+    });
+  };
+
+  const handleToggleIncomeTransfer = (accountId: string, checked: boolean) => {
+    const updated = new Map(selectedTransfers);
+    const updatedIncome = new Map(selectedIncomeTransfers);
+    if (checked) {
+      const t = analysisResult?.incomeTransfers?.find(
+        (tr) => tr.accountId === accountId,
+      );
+      if (t) {
+        updatedIncome.set(accountId, {
+          transferAccountId: t.accountId,
+          isTransfer: true,
+          isIncome: true,
+          amount: t.suggested,
+        });
+        updated.delete(accountId);
+      }
+    } else {
+      updatedIncome.delete(accountId);
+    }
+    updateState({
+      selectedTransfers: updated,
+      selectedIncomeTransfers: updatedIncome,
+    });
+  };
+
+  const handleIncomeTransferAmountChange = (accountId: string, amount: number) => {
+    const updated = new Map(selectedIncomeTransfers);
+    const existing = updated.get(accountId);
+    if (existing) {
+      updated.set(accountId, { ...existing, amount });
+      updateState({ selectedIncomeTransfers: updated });
+    }
   };
 
   const handleTransferGroupChange = (accountId: string, group: CategoryGroup) => {
@@ -281,10 +363,28 @@ export function BudgetWizardCategories({
     }
   };
 
-  const renderTransferRow = (transfer: TransferAnalysis) => {
-    const isSelected = selectedTransfers.has(transfer.accountId);
-    const currentAmount = selectedTransfers.get(transfer.accountId)?.amount ?? 0;
-    const currentGroup = selectedTransfers.get(transfer.accountId)?.categoryGroup ?? 'SAVING';
+  const handleCategoryBucketChange = (categoryId: string, key: string | null) => {
+    const existing = selectedCategories.get(categoryId);
+    if (!existing || existing.isIncome) return;
+    const updated = new Map(selectedCategories);
+    updated.set(categoryId, withBucketKey(existing, key));
+    updateState({ selectedCategories: updated });
+  };
+
+  const handleTransferBucketChange = (accountId: string, key: string | null) => {
+    const existing = selectedTransfers.get(accountId);
+    if (!existing) return;
+    const updated = new Map(selectedTransfers);
+    updated.set(accountId, withBucketKey(existing, key));
+    updateState({ selectedTransfers: updated });
+  };
+
+  const renderTransferRow = (transfer: TransferAnalysis, incoming = false) => {
+    const selected = incoming ? selectedIncomeTransfers : selectedTransfers;
+    const isSelected = selected.has(transfer.accountId);
+    const currentAmount = selected.get(transfer.accountId)?.amount ?? 0;
+    const currentGroup = selected.get(transfer.accountId)?.categoryGroup ?? 'SAVING';
+    const onToggle = incoming ? handleToggleIncomeTransfer : handleToggleTransfer;
 
     return (
       <tr
@@ -292,14 +392,12 @@ export function BudgetWizardCategories({
         className="border-b border-gray-100 dark:border-gray-700 last:border-0"
       >
         <td className="py-1 pl-1 pr-0 sm:py-2 sm:px-4">
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className={`flex items-center gap-1 sm:gap-2${isBucket ? ' flex-wrap' : ''}`}>
             <label className="flex flex-1 items-center gap-1 sm:gap-2 cursor-pointer min-w-0">
               <input
                 type="checkbox"
                 checked={isSelected}
-                onChange={(e) =>
-                  handleToggleTransfer(transfer.accountId, e.target.checked)
-                }
+                onChange={(e) => onToggle(transfer.accountId, e.target.checked)}
                 className="flex-shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-500 dark:bg-gray-700"
               />
               <span className="text-sm text-gray-900 dark:text-gray-100 truncate">
@@ -314,10 +412,19 @@ export function BudgetWizardCategories({
                 </span>
               )}
             </label>
-            {is503020 && isSelected && (
+            {is503020 && isSelected && !incoming && (
               <CategoryGroupPicker
                 value={currentGroup}
                 onChange={(group) => handleTransferGroupChange(transfer.accountId, group)}
+              />
+            )}
+            {isBucket && isSelected && !incoming && (
+              <BudgetWizardBucketSelect
+                id={`wizard-bucket-transfer-${transfer.accountId}`}
+                lineName={transfer.accountName}
+                value={liveBucketKey(selectedTransfers.get(transfer.accountId), buckets)}
+                buckets={buckets}
+                onChange={(key) => handleTransferBucketChange(transfer.accountId, key)}
               />
             )}
           </div>
@@ -326,7 +433,7 @@ export function BudgetWizardCategories({
           <div className="flex items-center justify-end gap-2">
             <Sparkline
               data={transfer.monthlyAmounts}
-              className="text-blue-400 dark:text-blue-500 flex-shrink-0"
+              className={`${incoming ? 'text-green-400 dark:text-green-500' : 'text-blue-400 dark:text-blue-500'} flex-shrink-0`}
               strokeColor="currentColor"
               fillColor="currentColor"
             />
@@ -341,7 +448,7 @@ export function BudgetWizardCategories({
               categoryId={transfer.accountId}
               amount={currentAmount}
               currencyCode={currencyCode}
-              onChange={handleTransferAmountChange}
+              onChange={incoming ? handleIncomeTransferAmountChange : handleTransferAmountChange}
             />
           ) : (
             <div className="h-7" />
@@ -365,7 +472,7 @@ export function BudgetWizardCategories({
         className="border-b border-gray-100 dark:border-gray-700 last:border-0"
       >
         <td className="py-1 pl-1 pr-0 sm:py-2 sm:px-4">
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className={`flex items-center gap-1 sm:gap-2${isBucket ? ' flex-wrap' : ''}`}>
             <label className="flex flex-1 items-center gap-1 sm:gap-2 cursor-pointer min-w-0">
               <input
                 type="checkbox"
@@ -388,6 +495,15 @@ export function BudgetWizardCategories({
               <CategoryGroupPicker
                 value={currentGroup}
                 onChange={(group) => handleCategoryGroupChange(cat.categoryId, group)}
+              />
+            )}
+            {isBucket && isSelected && !cat.isIncome && (
+              <BudgetWizardBucketSelect
+                id={`wizard-bucket-category-${cat.categoryId}`}
+                lineName={cat.categoryName}
+                value={liveBucketKey(selectedCategories.get(cat.categoryId), buckets)}
+                buckets={buckets}
+                onChange={(key) => handleCategoryBucketChange(cat.categoryId, key)}
               />
             )}
           </div>
@@ -448,6 +564,10 @@ export function BudgetWizardCategories({
     ];
   }, [is503020, selectedCategories, selectedTransfers, totals.totalIncome, t]);
 
+  const bucketTally = isBucket
+    ? tallyBudgetWizardBuckets(buckets, selectedCategories, selectedTransfers, currencyCode)
+    : null;
+
   if (!analysisResult) {
     return (
       <div className="text-center text-gray-500 dark:text-gray-400 py-12">
@@ -481,6 +601,8 @@ export function BudgetWizardCategories({
         </div>
       </div>
 
+      {isBucket && <BudgetWizardBucketsPanel state={state} updateState={updateState} />}
+
       {/* Income categories */}
       {incomeCategories.length > 0 && (
         <div>
@@ -503,6 +625,35 @@ export function BudgetWizardCategories({
                 {incomeCategories.map(renderCategoryRow)}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Transfers in counted as income (issue #2141) */}
+      {incomeTransferAnalysis.length > 0 && (
+        <div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+            <table className="w-full table-fixed sm:table-auto">
+              <thead>
+                <tr className="bg-green-50 dark:bg-green-900/20 border-b border-green-200 dark:border-green-800">
+                  <th className="text-left py-2 pl-1 pr-0 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
+                    {t('wizardCategories.tableHeaders.transfersIn')}
+                  </th>
+                  <th className="hidden sm:table-cell w-44 text-right py-2 px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
+                    {t('wizardCategories.tableHeaders.trendMedian')}
+                  </th>
+                  <th className="w-24 sm:w-48 py-2 pl-0.5 pr-1 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase text-right">
+                    {t('wizardCategories.tableHeaders.amount')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {incomeTransferAnalysis.map((transfer) => renderTransferRow(transfer, true))}
+              </tbody>
+            </table>
+            <p className="px-2 py-2 sm:px-4 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
+              {t('wizardCategories.transfersInHint')}
+            </p>
           </div>
         </div>
       )}
@@ -550,7 +701,7 @@ export function BudgetWizardCategories({
                 </tr>
               </thead>
               <tbody>
-                {transferAnalysis.map(renderTransferRow)}
+                {transferAnalysis.map((transfer) => renderTransferRow(transfer))}
               </tbody>
             </table>
           </div>
@@ -641,6 +792,8 @@ export function BudgetWizardCategories({
         </div>
       )}
 
+      {bucketTally && <BudgetWizardBucketTallyCard tally={bucketTally} currencyCode={currencyCode} />}
+
       {/* Actions */}
       <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
         <Button variant="outline" onClick={onBack}>
@@ -648,7 +801,11 @@ export function BudgetWizardCategories({
         </Button>
         <Button
           onClick={onNext}
-          disabled={selectedCategories.size === 0 && selectedTransfers.size === 0}
+          disabled={
+            selectedCategories.size === 0 &&
+            selectedTransfers.size === 0 &&
+            selectedIncomeTransfers.size === 0
+          }
         >
           {t('wizardCategories.nextButton')}
         </Button>

@@ -15,6 +15,7 @@ const mockCategories: CategoryBreakdown[] = [
     remaining: 120,
     percentUsed: 60,
     isIncome: false,
+    isTransfer: false,
     percentage: null,
   },
   {
@@ -26,6 +27,7 @@ const mockCategories: CategoryBreakdown[] = [
     remaining: 155,
     percentUsed: 22.5,
     isIncome: false,
+    isTransfer: false,
     percentage: null,
   },
   {
@@ -37,6 +39,7 @@ const mockCategories: CategoryBreakdown[] = [
     remaining: 180,
     percentUsed: 70,
     isIncome: false,
+    isTransfer: false,
     percentage: null,
   },
 ];
@@ -48,6 +51,7 @@ const mockBudgetCategories: BudgetCategory[] = [
     categoryId: 'cat-1',
     category: { id: 'cat-1', name: 'Dining', isIncome: false },
     categoryGroup: null,
+    bucketId: null,
     transferAccountId: null,
     transferAccount: null,
     isTransfer: false,
@@ -69,6 +73,7 @@ const mockBudgetCategories: BudgetCategory[] = [
     categoryId: 'cat-2',
     category: { id: 'cat-2', name: 'Entertainment', isIncome: false },
     categoryGroup: null,
+    bucketId: null,
     transferAccountId: null,
     transferAccount: null,
     isTransfer: false,
@@ -90,6 +95,7 @@ const mockBudgetCategories: BudgetCategory[] = [
     categoryId: 'cat-3',
     category: { id: 'cat-3', name: 'Groceries', isIncome: false },
     categoryGroup: null,
+    bucketId: null,
     transferAccountId: null,
     transferAccount: null,
     isTransfer: false,
@@ -181,6 +187,7 @@ describe('BudgetFlexGroupCard', () => {
         remaining: 0,
         percentUsed: 100,
         isIncome: true,
+        isTransfer: false,
         percentage: null,
       },
     ];

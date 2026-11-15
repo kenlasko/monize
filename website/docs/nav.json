@@ -3,6 +3,7 @@
     "group": "Getting started",
     "pages": [
       { "slug": "getting-started", "summary": "Installation, first-time setup, and initial configuration." },
+      { "slug": "windows", "summary": "The Windows installer: download, data, updates, backups and disaster recovery, and what it cannot do." },
       { "slug": "importing-transactions", "summary": "Import CSV, OFX/QFX and QIF files from your bank." },
       { "slug": "importing-from-quicken", "summary": "A complete migration guide from Quicken." },
       { "slug": "importing-from-microsoft-money", "summary": "Migrate from Microsoft Money, including direct .mny file import." }

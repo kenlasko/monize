@@ -36,7 +36,9 @@
       "SAVING": "Ahorro"
     },
     "saving": "Guardando...",
-    "remove": "Quitar del presupuesto"
+    "remove": "Quitar del presupuesto",
+    "bucket": "Bolsillo",
+    "bucketUnassigned": "Sin asignar"
   },
   "categoryList": {
     "title": "Presupuestos por categoría",
@@ -94,7 +96,8 @@
       "FIXED": "Fijo",
       "ROLLOVER": "Traspaso",
       "ZERO_BASED": "Base cero",
-      "FIFTY_THIRTY_TWENTY": "50/30/20"
+      "FIFTY_THIRTY_TWENTY": "50/30/20",
+      "BUCKET": "Bolsillo"
     }
   },
   "healthGauge": {
@@ -239,6 +242,10 @@
       "FIFTY_THIRTY_TWENTY": {
         "label": "50/30/20",
         "description": "50% necesidades, 30% deseos, 20% ahorros. Las categorías se etiquetan por grupo."
+      },
+      "BUCKET": {
+        "label": "Bolsillo",
+        "description": "Los ingresos se dividen en unos pocos bolsillos con nombre. Controla cada bolsillo, no cada categoría."
       }
     },
     "profiles": {
@@ -259,6 +266,23 @@
       "analyzeFailed": "Error al analizar los gastos"
     }
   },
+  "lineNames": {
+    "transfersFrom": "Transferencias desde {name}",
+    "unknown": "Desconocido"
+  },
+  "transferIncomeForm": {
+    "hint": "El dinero que entra desde esta cuenta cuenta como ingreso del presupuesto, menos lo que se devuelva a ella.",
+    "account": "Cuenta de origen",
+    "accountPlaceholder": "Elige una cuenta",
+    "accountRequired": "Elige la cuenta de la que vienen las transferencias",
+    "amount": "Importe previsto",
+    "submit": "Añadir"
+  },
+  "transfersInAsIncome": {
+    "label": "Contar como ingreso las transferencias entrantes desde cuentas excluidas",
+    "hint": "El dinero transferido desde una cuenta excluida a las cuentas de este presupuesto cuenta como ingreso, menos lo que se devuelva a ella. Una cuenta con su propia línea de transferencia se cuenta en esa línea.",
+    "noExcludedAccounts": "Este presupuesto aún no excluye ninguna cuenta, así que no se cuenta nada."
+  },
   "wizardCategories": {
     "title": "Revisar categorías",
     "noAnalysis": "Sin datos de análisis. Vuelve atrás y ejecuta el análisis primero.",
@@ -266,6 +290,7 @@
       "income": "Ingresos",
       "expenses": "Gastos",
       "transfers": "Transferencias / Ahorros",
+      "transfersIn": "Transferencias entrantes (ingresos)",
       "trendMedian": "Tendencia / Mediana",
       "amount": "Monto"
     },
@@ -275,6 +300,7 @@
       "transfers": "Transferencias",
       "remaining": "Restante"
     },
+    "transfersInHint": "El dinero que entra desde una cuenta marcada cuenta como ingreso, menos lo que se devuelva a ella. Marca solo las cuentas de las que obtienes ingresos, como una reserva de ahorro.",
     "allocation503020": "Asignación 50/30/20",
     "allocationTarget": "(objetivo {percent}%)",
     "nextButton": "Siguiente: Configurar",
@@ -305,7 +331,8 @@
       "FIXED": "Establece montos por categoría. El presupuesto no gastado se reinicia cada período.",
       "ROLLOVER": "El presupuesto no gastado se traslada según las reglas de traspaso por categoría.",
       "ZERO_BASED": "Cada peso de ingresos está asignado. Ingresos menos gastos debe ser igual a cero.",
-      "FIFTY_THIRTY_TWENTY": "Categorías agrupadas como Necesidades (50%), Deseos (30%), Ahorros (20%)."
+      "FIFTY_THIRTY_TWENTY": "Categorías agrupadas como Necesidades (50%), Deseos (30%), Ahorros (20%).",
+      "BUCKET": "Ingresos divididos en bolsillos con nombre. Cada categoría pertenece a un bolsillo."
     },
     "linkBudgetToIncome": "Vincular presupuesto a ingresos",
     "linkBudgetToIncomeHint": "Los montos de categorías se convierten en porcentajes de tus ingresos base",
@@ -353,8 +380,10 @@
       "rollover": "Traspaso",
       "alerts": "Alertas",
       "incomeLinked": "Ingresos vinculados",
-      "excludedAccounts": "Cuentas excluidas"
+      "excludedAccounts": "Cuentas excluidas",
+      "transfersInAsIncome": "Transferencias entrantes"
     },
+    "transfersInAsIncomeOn": "Las de cuentas excluidas cuentan como ingreso",
     "rolloverOff": "Desactivado",
     "alertsValue": "Advertencia {warn}% / Crítico {critical}%",
     "accountCount": "{count} {count, plural, one {cuenta} other {cuentas}}",
@@ -373,7 +402,8 @@
     "categoryTypes": {
       "income": "Ingresos",
       "expense": "Gasto",
-      "transfer": "Transferencia"
+      "transfer": "Transferencia",
+      "transferIn": "Transferencia entrante"
     },
     "createButton": "Crear presupuesto",
     "categoryCount": "{count} categorías",
@@ -381,6 +411,19 @@
     "toasts": {
       "created": "Presupuesto creado correctamente",
       "failed": "Error al crear el presupuesto"
+    }
+  },
+  "wizardBuckets": {
+    "title": "Bolsillos",
+    "description": "Divide tus ingresos en bolsillos y elige un bolsillo para cada gasto y transferencia a continuación.",
+    "selectLabel": "Bolsillo para {name}",
+    "unassigned": "Sin asignar",
+    "tallyTitle": "Líneas por bolsillo",
+    "tallyValue": "{count, plural, one {# línea} other {# líneas}} · {amount}",
+    "review": {
+      "lineCount": "{count, plural, one {# línea} other {# líneas}}",
+      "unassigned": "{count, plural, one {# línea de gasto o transferencia no está} other {# líneas de gasto o transferencia no están}} en ningún bolsillo. Aun así puedes crear el presupuesto y asignarlas más tarde en su página de edición.",
+      "noBuckets": "Este presupuesto aún no tiene bolsillos. Aun así puedes crearlo y añadir bolsillos más tarde en su página de edición."
     }
   },
   "zeroBasedBar": {
@@ -464,6 +507,23 @@
           "Requiere categorizar cada gasto por grupo"
         ],
         "bestFor": "Personas que quieren un enfoque equilibrado y fácil de recordar sin rastrear cada categoría individualmente."
+      },
+      "BUCKET": {
+        "title": "Presupuesto por bolsillos",
+        "description": "Los ingresos se dividen en unos pocos bolsillos con nombre, cada uno con un objetivo que es una parte de los ingresos o un monto fijo. Cada categoría pertenece a un bolsillo, así que controlas el bolsillo en lugar de cada categoría. Un bolsillo puede trasladar lo que sobra al siguiente período.",
+        "pros": [
+          "Menos números que vigilar",
+          "Flexible dentro de cada bolsillo",
+          "Los bolsillos de ahorro pueden crecer con el tiempo",
+          "Funciona con gastos irregulares dentro de un bolsillo"
+        ],
+        "cons": [
+          "Menos detalle por categoría",
+          "Requiere clasificar las categorías en bolsillos",
+          "Los objetivos en porcentaje necesitan unos ingresos conocidos",
+          "Los saldos trasladados requieren una revisión ocasional"
+        ],
+        "bestFor": "Personas a las que los presupuestos por categoría les parecen demasiado minuciosos, pero que quieren más estructura que con 50/30/20."
       }
     }
   },
@@ -521,6 +581,10 @@
       "budgetSettings": "Configuración del presupuesto",
       "categoryAllocations": "Asignaciones por categoría",
       "income": "Ingresos",
+      "addTransferIncome": "Añadir ingreso por transferencia",
+      "addTransferIncomeTitle": "Añadir ingreso por transferencia",
+      "outsideTransferIncome": "Transferencias desde cuentas fuera de este presupuesto",
+      "outsideTransferIncomeHint": "Contado en este período porque el presupuesto cuenta como ingreso las transferencias entrantes desde sus cuentas excluidas.",
       "expensesWithCount": "Gastos ({count})",
       "resetsEachPeriod": "Se reinicia cada período",
       "percentUsed": "{percent}% usado",
@@ -538,8 +602,12 @@
         "categoryFailed": "Error al actualizar la categoría",
         "loadFailed": "Error al cargar el presupuesto",
         "categoryRemoved": "Categoría quitada del presupuesto",
-        "categoryRemoveFailed": "No se pudo quitar la categoría"
-      }
+        "categoryRemoveFailed": "No se pudo quitar la categoría",
+        "transferIncomeAdded": "Ingreso por transferencia añadido",
+        "transferIncomeFailed": "No se pudo añadir el ingreso por transferencia"
+      },
+      "buckets": "Bolsillos",
+      "unassignedBucket": "Sin asignar"
     }
   },
   "validation": {
@@ -550,5 +618,140 @@
   "categoryValidation": {
     "amountMin": "El monto debe ser 0 o mayor",
     "mustBeNumber": "Debe ser un número"
+  },
+  "bucketEditor": {
+    "presetLabel": "Empezar desde un preajuste",
+    "presets": {
+      "THREE": "Tres bolsillos",
+      "FOUR": "Cuatro bolsillos (60/10/10/20)",
+      "SCRATCH": "Empezar desde cero"
+    },
+    "presetBucketNames": {
+      "fixedCosts": "Gastos fijos",
+      "everydaySpending": "Gastos cotidianos",
+      "savings": "Ahorros",
+      "dailyExpenses": "Gastos diarios",
+      "splurge": "Caprichos",
+      "longTermGoals": "Metas a largo plazo",
+      "safetyAndDebt": "Seguridad y deudas"
+    },
+    "listLabel": "Bolsillos",
+    "empty": {
+      "title": "Aún no hay bolsillos",
+      "description": "Empieza desde un preajuste o añade un bolsillo y luego asígnale categorías."
+    },
+    "add": "Añadir bolsillo",
+    "limitReached": "Un presupuesto puede tener como máximo {max} bolsillos.",
+    "newTitle": "Nuevo bolsillo",
+    "editTitle": "Editar {name}",
+    "summary": "Los objetivos en porcentaje suman {percent}. Los objetivos en monto suman {amount}.",
+    "row": {
+      "percentTarget": "{percent} de los ingresos",
+      "amountTarget": "{amount} por período",
+      "noCarry": "Empieza de cero cada período",
+      "carries": "Se traslada",
+      "carriesUpTo": "Se traslada, hasta {cap}",
+      "caption": "{target} · {carry}",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "editLabel": "Editar {name}",
+      "deleteLabel": "Eliminar {name}"
+    },
+    "targetTypes": {
+      "PERCENT": "Porcentaje de los ingresos",
+      "AMOUNT": "Monto fijo"
+    },
+    "form": {
+      "name": "Nombre",
+      "namePlaceholder": "p. ej., Ahorros",
+      "targetType": "Objetivo",
+      "targetTypeTooltip": "Un objetivo en porcentaje es una parte de los ingresos del presupuesto: los ingresos recibidos en este período en un presupuesto vinculado a ingresos, si no los ingresos base, si no los montos de las categorías de ingresos. Un monto fijo es igual cada período.",
+      "targetPercent": "Porcentaje de los ingresos",
+      "targetAmount": "Monto por período",
+      "carryOver": "Trasladar lo que sobra",
+      "carryOverTooltip": "Lo que queda en el bolsillo al cerrar un período se suma al siguiente. Un bolsillo con exceso de gasto no traslada nada.",
+      "carryCap": "Límite de traslado (opcional)",
+      "carryCapPlaceholder": "Sin límite",
+      "save": "Guardar",
+      "saveChanges": "Guardar cambios"
+    },
+    "validation": {
+      "nameRequired": "Introduce un nombre",
+      "nameMax": "Un nombre puede tener como máximo {max} caracteres",
+      "nameDuplicate": "Otro bolsillo ya tiene este nombre",
+      "targetRequired": "Introduce un objetivo",
+      "percentRange": "Un objetivo en porcentaje debe ser mayor que 0 y como máximo 100",
+      "percentDecimals": "Un objetivo en porcentaje puede tener como máximo dos decimales",
+      "amountPositive": "Un objetivo en monto debe ser mayor que 0",
+      "capNeedsCarryOver": "Un límite de traslado requiere tener activado el traslado",
+      "capPositive": "Un límite de traslado debe ser mayor que 0"
+    },
+    "delete": {
+      "title": "Eliminar bolsillo",
+      "message": "¿Eliminar el bolsillo \"{name}\"? Sus categorías quedarán sin asignar.",
+      "confirm": "Eliminar"
+    },
+    "replace": {
+      "title": "Reemplazar bolsillos",
+      "message": "¿Reemplazar los bolsillos actuales por \"{preset}\"? Los bolsillos actuales se eliminan y sus categorías quedan sin asignar.",
+      "clearMessage": "¿Eliminar todos los bolsillos y empezar desde cero? Sus categorías quedarán sin asignar.",
+      "confirm": "Reemplazar"
+    },
+    "toasts": {
+      "created": "Bolsillo añadido",
+      "updated": "Bolsillo actualizado",
+      "deleted": "Bolsillo eliminado",
+      "saveFailed": "Error al guardar el bolsillo",
+      "deleteFailed": "Error al eliminar el bolsillo",
+      "presetApplied": "Preajuste aplicado",
+      "presetFailed": "Error al aplicar el preajuste"
+    }
+  },
+  "bucketSummary": {
+    "title": "Distribución por bolsillos",
+    "loading": "Cargando la distribución por bolsillos",
+    "loadFailed": "No se pudo cargar la distribución por bolsillos. Inténtalo de nuevo en un momento.",
+    "emptyTitle": "Aún no hay bolsillos",
+    "emptyDescription": "Añade bolsillos para dividir tus ingresos en partes con nombre.",
+    "emptyAction": "Añadir bolsillos",
+    "income": "Ingresos de los bolsillos",
+    "incomeUnknown": "Desconocido",
+    "incomeSource": {
+      "ACTUAL": "Según los ingresos reales de este período",
+      "BASE_INCOME": "Según los ingresos base del presupuesto",
+      "INCOME_LINES": "Según las categorías de ingresos planificadas",
+      "NONE": "No se encontraron ingresos"
+    },
+    "totalAllocated": "Total asignado",
+    "allocatedSoFar": "Asignado hasta ahora",
+    "allocatedSoFarHint": "Algunos bolsillos aún no tienen un monto conocido, por lo que esta cifra es parcial.",
+    "unallocated": "Sin asignar",
+    "unallocatedUnknown": "Desconocido",
+    "overAllocatedHint": "Sobreasignado: los bolsillos suman más que tus ingresos.",
+    "targetPercent": "{percent} de los ingresos",
+    "targetAmount": "{amount} por período",
+    "carriedIn": "{amount} trasladados",
+    "spent": "Gastado",
+    "available": "Disponible",
+    "overspent": "Con exceso de gasto",
+    "categories": "{count, plural, one {# categoría} other {# categorías}}",
+    "allocationUnknown": "Define unos ingresos base en el presupuesto o añade una categoría de ingresos.",
+    "allocationUnknownAction": "Editar presupuesto",
+    "unassignedTitle": "Sin asignar",
+    "unassignedDescription": "{count, plural, one {# línea de categoría no está} other {# líneas de categoría no están}} en ningún bolsillo.",
+    "unassignedPlanned": "Planificado",
+    "unassignedAction": "Asignarlas"
+  },
+  "periodBuckets": {
+    "title": "Bolsillos",
+    "name": "Bolsillo",
+    "target": "Objetivo",
+    "allocated": "Asignado",
+    "allocatedUnknown": "Desconocido",
+    "carriedIn": "Trasladado",
+    "spent": "Gastado",
+    "carriedOut": "Trasladado al siguiente",
+    "targetPercent": "{percent} de los ingresos",
+    "targetAmount": "{amount} por período"
   }
 }

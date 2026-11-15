@@ -162,6 +162,13 @@ export async function deleteAllUserData(
     [userId],
   );
   await manager.query(
+    `DELETE FROM budget_period_buckets WHERE budget_period_id IN
+     (SELECT bp.id FROM budget_periods bp
+      JOIN budgets b ON bp.budget_id = b.id
+      WHERE b.user_id = $1)`,
+    [userId],
+  );
+  await manager.query(
     `DELETE FROM budget_period_categories WHERE budget_period_id IN
      (SELECT bp.id FROM budget_periods bp
       JOIN budgets b ON bp.budget_id = b.id
@@ -175,6 +182,13 @@ export async function deleteAllUserData(
   );
   await manager.query(
     `DELETE FROM budget_categories WHERE budget_id IN
+     (SELECT id FROM budgets WHERE user_id = $1)`,
+    [userId],
+  );
+  // After budget_categories and budget_period_buckets, whose bucket_id
+  // references it.
+  await manager.query(
+    `DELETE FROM budget_buckets WHERE budget_id IN
      (SELECT id FROM budgets WHERE user_id = $1)`,
     [userId],
   );

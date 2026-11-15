@@ -215,5 +215,63 @@
   "shared": {
     "title": "[XX-Shared expenses-XX]",
     "message": "[XX-A shared group has an update. Open Monize to review it.-XX]"
+  },
+  "native": {
+    "payments": {
+      "title": "[XX-Payment reminder-XX]",
+      "body": "[XX-A bill or scheduled payment needs your attention. Open Monize for the details.-XX]"
+    },
+    "budgets": {
+      "title": "[XX-Budget alert-XX]",
+      "body": "[XX-One of your budgets needs your attention. Open Monize for the details.-XX]"
+    },
+    "system": {
+      "title": "[XX-System notice-XX]",
+      "body": "[XX-Monize has a system notice for you. Open the app for the details.-XX]"
+    },
+    "balances": {
+      "title": "[XX-Balance alert-XX]",
+      "body": "[XX-An account balance crossed a threshold you set. Open Monize for the details.-XX]"
+    },
+    "investments": {
+      "title": "[XX-Investment movement-XX]",
+      "body": "[XX-Your investments moved today. Open Monize for the details.-XX]"
+    },
+    "strategies": {
+      "title": "[XX-Strategy signal-XX]",
+      "body": "[XX-One of your strategies changed its recommendation. Open Monize for the details.-XX]"
+    },
+    "bank_sync": {
+      "title": "[XX-Bank connection-XX]",
+      "body": "[XX-A bank connection needs your attention. Open Monize for the details.-XX]"
+    },
+    "bank_sync_activity": {
+      "title": "[XX-Bank sync-XX]",
+      "body": "[XX-Your bank sync has news. Open Monize for the details.-XX]"
+    },
+    "email_receipts": {
+      "title": "[XX-Email receipts need attention-XX]",
+      "body": "[XX-Some emails in your receipts inbox need a profile or a fix. Open Monize for the details.-XX]"
+    },
+    "bonds": {
+      "title": "[XX-Bond notice-XX]",
+      "body": "[XX-One of your bonds has news. Open Monize for the details.-XX]"
+    },
+    "ai_review": {
+      "title": "[XX-AI review proposals-XX]",
+      "body": "[XX-Some AI review proposals wait for your decision. Open Monize for the details.-XX]"
+    },
+    "warranties": {
+      "title": "[XX-Warranty reminder-XX]",
+      "body": "[XX-One of your warranties expires soon. Open Monize for the details.-XX]"
+    },
+    "shared_expenses": {
+      "title": "[XX-Shared expenses-XX]",
+      "body": "[XX-A shared group has an update. Open Monize to review it.-XX]"
+    },
+    "fallback": {
+      "title": "[XX-Monize-XX]",
+      "body": "[XX-You have a new notification in Monize.-XX]"
+    }
   }
 }
