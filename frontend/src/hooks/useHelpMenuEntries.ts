@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import {
   ChatBubbleLeftRightIcon,
   CommandLineIcon,
+  ComputerDesktopIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
   MagnifyingGlassIcon,
@@ -13,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { GITHUB_REPO_URL as REPO_URL } from '@/lib/github';
 import { tourIdForHelpPage } from '@/lib/help-tours';
+import { offersShellMenu, openShellMenu } from '@/lib/shell';
 import { getTourById, INTRO_TOUR } from '@/lib/tours/registry';
 import { isTourOfferable } from '@/lib/tours/requirements';
 import { useHelpSearchStore } from '@/store/helpSearchStore';
@@ -41,7 +43,10 @@ export interface HelpMenuLink {
 export interface HelpMenuEntries {
   /** `null` on a screen `PageHeader` gave no `help` key, so it is never shown. */
   helpForPage: HelpMenuAction | null;
-  /** Search help, keyboard shortcuts, take the tour, What's new, in menu order. */
+  /**
+   * Search help, keyboard shortcuts, take the tour, What's new, and the
+   * desktop app's own menu inside a shell that offers one, in menu order.
+   */
   actions: HelpMenuAction[];
   /** Report an issue, Discussions: real external links, opened in a new tab. */
   links: HelpMenuLink[];
@@ -114,6 +119,18 @@ export function useHelpMenuEntries(): HelpMenuEntries {
       onClick: () => useWhatsNewStore.getState().open(),
       Icon: SparklesIcon,
     },
+    // The shell's own menu (the Windows tray's items), popped up by the shell
+    // itself: `docs/frontend/shell-contract.md`, "The shell menu".
+    ...(offersShellMenu()
+      ? [
+          {
+            key: 'shellMenu',
+            label: t('shellMenu'),
+            onClick: openShellMenu,
+            Icon: ComputerDesktopIcon,
+          },
+        ]
+      : []),
   ];
 
   const links: HelpMenuLink[] = [

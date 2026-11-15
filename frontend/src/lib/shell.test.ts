@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   canReceivePush,
   detectShell,
+  offersShellMenu,
+  openShellMenu,
   opensExternalLinksNatively,
   publishNotificationsToShell,
   pushUnavailableShell,
@@ -25,6 +27,7 @@ describe('shell', () => {
     vi.unstubAllGlobals();
     delete window.__MONIZE_SHELL__;
     delete window.__MONIZE_SHELL_NOTIFICATIONS__;
+    delete window.__MONIZE_SHELL_MENU__;
     delete window.Capacitor;
   });
 
@@ -111,6 +114,47 @@ describe('shell', () => {
     });
   });
 
+  describe('shell menu', () => {
+    it('is offered in electron once its preload exposes the bridge, and opens it', () => {
+      const open = vi.fn();
+      window.__MONIZE_SHELL__ = { kind: 'electron', version: '1.2.3' };
+      window.__MONIZE_SHELL_MENU__ = { open };
+
+      expect(offersShellMenu()).toBe(true);
+      openShellMenu();
+      expect(open).toHaveBeenCalledTimes(1);
+      expect(open).toHaveBeenCalledWith();
+    });
+
+    it('is not offered by an electron shell without the bridge', () => {
+      window.__MONIZE_SHELL__ = { kind: 'electron', version: '1.0.0' };
+      expect(offersShellMenu()).toBe(false);
+      window.__MONIZE_SHELL_MENU__ = { open: 'not a function' };
+      expect(offersShellMenu()).toBe(false);
+      expect(() => openShellMenu()).not.toThrow();
+    });
+
+    it('is not offered by a browser or capacitor even if the key is planted', () => {
+      const open = vi.fn();
+      window.__MONIZE_SHELL_MENU__ = { open };
+      expect(offersShellMenu()).toBe(false);
+      window.__MONIZE_SHELL__ = { kind: 'capacitor', version: '7.0.0' };
+      expect(offersShellMenu()).toBe(false);
+      openShellMenu();
+      expect(open).not.toHaveBeenCalled();
+    });
+
+    it('never throws into the page when the shell refuses the request', () => {
+      window.__MONIZE_SHELL__ = { kind: 'electron', version: '1.2.3' };
+      window.__MONIZE_SHELL_MENU__ = {
+        open: () => {
+          throw new Error('render frame disposed');
+        },
+      };
+      expect(() => openShellMenu()).not.toThrow();
+    });
+  });
+
   describe('capacitor', () => {
     it('is detected from the flag', () => {
       window.__MONIZE_SHELL__ = { kind: 'capacitor', version: '7.0.0' };
@@ -164,6 +208,7 @@ describe('shell', () => {
       expect(opensExternalLinksNatively()).toBe(false);
       expect(supportsDeepLinks()).toBe(false);
       expect(receivesNotificationsNatively()).toBe(false);
+      expect(offersShellMenu()).toBe(false);
       expect(mockGetPushSupport).not.toHaveBeenCalled();
     });
   });

@@ -155,6 +155,8 @@ export const TEXT = {
   trayRestartToUpdate: (version: string) => `Restart to update to ${version}`,
   trayInstallingUpdate: "Installing update...",
   trayQuit: "Quit Monize",
+  /** The window's menu bar entry; "&" makes Alt+M open it. */
+  appMenuMonize: "&Monize",
 
   updateUpToDateTitle: "Monize is up to date",
   updateUpToDateMessage: (version: string) =>

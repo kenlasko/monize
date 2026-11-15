@@ -1,6 +1,7 @@
 import { IpcMainEvent, ipcMain, Notification, WebContents } from "electron";
 
 import { Logger } from "./logger";
+import { isFromAppPage } from "./shell/ipc-sender";
 import {
   applySnapshot,
   BridgeEffect,
@@ -117,9 +118,11 @@ export function createNotificationBridge(
   }
 
   const listener = (event: IpcMainEvent, payload: unknown): void => {
-    const contents = options.contents();
-    const frameUrl = event.senderFrame?.url ?? "";
-    if (contents === null || event.sender !== contents || !onOrigin(frameUrl)) {
+    const facts = {
+      sender: event.sender,
+      frameUrl: event.senderFrame?.url ?? "",
+    };
+    if (!isFromAppPage(facts, options.contents(), origin)) {
       logger.warn("Notifications: ignored a snapshot from another page.");
       return;
     }
@@ -132,14 +135,6 @@ export function createNotificationBridge(
     state = step.state;
     apply(step.effect, snapshot.identity);
   };
-
-  function onOrigin(url: string): boolean {
-    try {
-      return new URL(url).origin === origin;
-    } catch {
-      return false;
-    }
-  }
 
   ipcMain.on(NOTIFICATIONS_CHANNEL, listener);
   logger.info(

@@ -108,3 +108,16 @@ export function trayMenuModel(state: TrayState): readonly TrayEntry[] {
     item("quit", TEXT.trayQuit, true),
   ];
 }
+
+/**
+ * The same menu offered inside the window: the window's "Monize" menu bar
+ * entry and the popup the page's Help menu asks for
+ * (`docs/frontend/shell-contract.md`, "The shell menu"). One model, so an item
+ * added to the tray reaches the window too; only "Open Monize" is left out,
+ * since the reader is already in it.
+ */
+export function windowMenuModel(state: TrayState): readonly TrayEntry[] {
+  return trayMenuModel(state).filter(
+    (entry) => entry.type !== "item" || entry.id !== "open",
+  );
+}
