@@ -651,8 +651,17 @@ Monize protects against brute-force login attacks with automatic account lockout
 3. The escalation is forgotten 24 hours after a lockout has expired, so the next failure after that counts as a first one again
 4. If email is configured, a lockout notification is sent to the account owner
 5. A successful login resets the failure counter and clears any lockout
+6. The counter belongs to the account, not to a network address, so guesses sent from many addresses count together
 
 Ten wrong two-factor codes in a row also lock the account for 30 minutes.
+
+### Signing in during a lockout from a browser you already use
+
+Anyone who knows your email address can cause a lockout by entering wrong passwords. So that this cannot keep you out, each browser you sign in with remembers your account for 180 days. While your account is locked because of wrong passwords, you can still sign in from such a browser with your correct password. Your sign-in does not clear the lockout for everyone else.
+
+- This browser gets 10 wrong passwords per day during a lockout. After that, it is locked out too, until a full day passes with no sign-in attempt from it.
+- Changing or resetting your password makes every browser forget your account.
+- A lockout caused by wrong two-factor codes applies to every browser.
 
 > **Note:** Login attempts for non-existent accounts return a generic "Invalid credentials" message and do not reveal whether the account exists.
 

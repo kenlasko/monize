@@ -6032,9 +6032,22 @@ Enforcement         An atomic CTE increments in the database. recordFailedLogin
                     statement bounds the lock (30 minutes doubling per five
                     failures, at most 4 hours) and forgets the escalation once a
                     lock expired more than 24 hours ago, so a stranger who knows
-                    the address cannot extend a lockout without limit. A password
-                    reset (email, admin, owner of a delegate, emergency claim)
-                    clears the counter and the lock. The success path resets the
+                    the address cannot extend a lockout without limit. The count
+                    is per account, not per IP, so guesses spread over many
+                    addresses share one budget. Under a password lock, a browser
+                    holding this account's login_device_* cookie (auth/login-
+                    device.ts, #2181; HMAC over the account, its issue time and
+                    the current password hash) goes on to the password check on
+                    its own auth_attempt_counters budget, reserved before bcrypt
+                    (CONC-010), and its failures do not feed this counter; past
+                    that budget, or under a lock the 2FA budget set (marked by
+                    the 2fa-lock counter), it is refused like any other. So
+                    strangers cannot lock the owner out of a browser they already
+                    use, and the owner's sign-in there does not clear their count.
+                    A password reset (email, admin, owner of a delegate, emergency
+                    claim) clears the counter and the lock, and revokes every such
+                    cookie with the hash. The success path (other than through a
+                    lock on a known device) resets the
                     counter and the lock in SQL and then writes only last_login
                     (AuthService.recordLastLogin); it used to save the entity read
                     before bcrypt, which wrote the old count back over the reset
@@ -6048,9 +6061,16 @@ Required tests      Two connections: test/integration/login-lockout.integration.
                     PostgreSQL. test/integration/credential-writes-atomic.integration.spec.ts
                     drives AuthService.login with four prior failures (plain and
                     trusted-device 2FA) and asserts the counter is 0 and one later
-                    failure does not lock. Unit: login-lockout.spec.ts pins the parameters;
-                    auth.service.spec.ts asserts the login emits the single
-                    incrementing statement; auth-email.service.spec.ts asserts a
+                    failure does not lock; its #2181 block proves on real
+                    PostgreSQL that a known device signs in through the lock
+                    without clearing it, that 15 concurrent wrong guesses on one
+                    cookie get exactly 10 password checks, and that a replaced
+                    password revokes the cookie. Unit: login-lockout.spec.ts pins
+                    the parameters; auth.service.spec.ts asserts the login emits
+                    the single incrementing statement and, in "known login device
+                    (#2181)", the unlocked, refused, spared, 2FA-lock and
+                    spent-budget cases; login-device.spec.ts pins the cookie
+                    binding and expiry; auth-email.service.spec.ts asserts a
                     reset clears the lock.
 Status              enforced
 ```

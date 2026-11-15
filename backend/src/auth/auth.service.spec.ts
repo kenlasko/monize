@@ -36,6 +36,11 @@ import {
   type UserPreferenceRepoMock,
 } from "../test-helpers/user-preference-testing";
 import { authAttemptCounterProvider } from "../test-helpers/auth-attempt-counter-testing";
+import {
+  issueLoginDeviceCookie,
+  loginDeviceCookieName,
+  verifyLoginDeviceCookie,
+} from "./login-device";
 import { singleUseTokenProvider } from "../test-helpers/single-use-token-testing";
 
 jest.mock("../common/db/scoped-db", () =>
@@ -1116,6 +1121,191 @@ describe("AuthService", () => {
       expect((service as any).logger.warn).toHaveBeenCalledWith(
         expect.stringContaining("account locked"),
       );
+    });
+
+    describe("known login device (#2181)", () => {
+      const PASSWORD = "CorrectPass";
+      let hash: string;
+      beforeAll(async () => {
+        hash = await bcrypt.hash(PASSWORD, 4);
+      });
+      const lockedUser = () => ({
+        ...mockUser,
+        passwordHash: hash,
+        failedLoginAttempts: 7,
+        lockedUntil: new Date(Date.now() + 60 * 60 * 1000),
+      });
+      const deviceKey = () => (service as any).loginDeviceKey as string;
+      /** The cookie jar of a browser that signed in as `userId` under `pwHash`. */
+      const jar = (
+        userId: string,
+        pwHash: string,
+        now: number = Date.now(),
+      ) => ({
+        [loginDeviceCookieName(deviceKey(), userId)]: issueLoginDeviceCookie(
+          deviceKey(),
+          userId,
+          pwHash,
+          now,
+        ),
+      });
+      const attempt = (password: string, cookies?: Record<string, unknown>) =>
+        service.login(
+          { email: "test@example.com", password },
+          undefined,
+          undefined,
+          cookies,
+        );
+      const counters = () => (service as any).attemptCounters;
+      const accountResetCall = () =>
+        scopedManager.query.mock.calls.find((c) =>
+          String(c[0]).includes("SET failed_login_attempts = 0"),
+        );
+
+      it("issues a cookie bound to the current password, and none to an account that cannot use one", async () => {
+        usersRepository.findOne.mockResolvedValueOnce({
+          ...mockUser,
+          passwordHash: hash,
+        });
+        const cookie = await service.issueLoginDeviceCookie(mockUser.id);
+        expect(cookie?.name).toBe(
+          loginDeviceCookieName(deviceKey(), mockUser.id),
+        );
+        expect(
+          verifyLoginDeviceCookie(
+            deviceKey(),
+            mockUser.id,
+            hash,
+            cookie?.value,
+          ),
+        ).toBe(true);
+
+        usersRepository.findOne.mockResolvedValueOnce({
+          ...mockUser,
+          passwordHash: null,
+        });
+        await expect(
+          service.issueLoginDeviceCookie(mockUser.id),
+        ).resolves.toBeNull();
+
+        // SSO account without OIDC_ALLOW_PASSWORD_LOGIN: password sign-in is
+        // refused, so there is no password lock to be spared.
+        usersRepository.findOne.mockResolvedValueOnce({
+          ...mockUser,
+          authProvider: "oidc",
+          passwordHash: hash,
+        });
+        await expect(
+          service.issueLoginDeviceCookie(mockUser.id),
+        ).resolves.toBeNull();
+      });
+
+      it("feeds the per-account lockout from every source while the account is unlocked", async () => {
+        // Guesses spread over many IPs all land on the one account counter; a
+        // cookie changes nothing and writes nothing before the lock.
+        usersRepository.findOne.mockResolvedValue({
+          ...mockUser,
+          passwordHash: hash,
+        });
+        stageFailedAttempt({ attempts: 1 });
+
+        await expect(attempt("Wrong", jar(mockUser.id, hash))).rejects.toThrow(
+          UnauthorizedException,
+        );
+
+        expect(failedAttemptCall()).toBeDefined();
+        expect(counters().increment).not.toHaveBeenCalled();
+      });
+
+      it("refuses every login under the lock that lacks this account's live cookie", async () => {
+        usersRepository.findOne.mockResolvedValue(lockedUser());
+        const otherAccount = jar("another-user", hash);
+        const oldPassword = jar(mockUser.id, await bcrypt.hash("Old", 4));
+        const expired = jar(
+          mockUser.id,
+          hash,
+          Date.now() - 181 * 24 * 60 * 60 * 1000,
+        );
+        const misfiled = {
+          [loginDeviceCookieName(deviceKey(), mockUser.id)]:
+            Object.values(otherAccount)[0],
+        };
+        const forged = {
+          [loginDeviceCookieName(deviceKey(), mockUser.id)]: "abc.def.ghi",
+        };
+
+        for (const cookies of [
+          undefined,
+          otherAccount,
+          oldPassword,
+          expired,
+          misfiled,
+          forged,
+        ]) {
+          await expect(attempt(PASSWORD, cookies)).rejects.toThrow(
+            ForbiddenException,
+          );
+        }
+      });
+
+      it("lets the owner in from a known device while strangers keep the account locked", async () => {
+        usersRepository.findOne.mockResolvedValue(lockedUser());
+        preferencesRepository.findOne.mockResolvedValue(null);
+
+        const result = await attempt(PASSWORD, jar(mockUser.id, hash));
+
+        expect(result.accessToken).toBeDefined();
+        // The strangers' lock and count stand; clearing them would hand them a
+        // fresh allowance every time the owner signs in.
+        expect(accountResetCall()).toBeUndefined();
+        expect(counters().reset).toHaveBeenCalledWith(
+          "login-device",
+          expect.any(String),
+        );
+      });
+
+      it("hands a 2FA account on a known device to the second factor, not to the lock", async () => {
+        usersRepository.findOne.mockResolvedValue({
+          ...lockedUser(),
+          twoFactorSecret: "secret",
+        });
+        preferencesRepository.findOne.mockResolvedValue({
+          twoFactorEnabled: true,
+        });
+
+        const result = await attempt(PASSWORD, jar(mockUser.id, hash));
+
+        expect(result.requires2FA).toBe(true);
+        expect(accountResetCall()).toBeUndefined();
+      });
+
+      it("does not spare a known device a lock the 2FA budget set", async () => {
+        usersRepository.findOne.mockResolvedValue(lockedUser());
+        counters().rows.set(`2fa-lock\u0000${mockUser.id}`, {
+          count: 1,
+          windowExpiresAt: new Date(Date.now() + 30 * 60 * 1000),
+        });
+
+        await expect(attempt(PASSWORD, jar(mockUser.id, hash))).rejects.toThrow(
+          ForbiddenException,
+        );
+      });
+
+      it("counts a known device's failures on its own budget, then locks it out too", async () => {
+        usersRepository.findOne.mockResolvedValue(lockedUser());
+        const cookies = jar(mockUser.id, hash);
+
+        for (let i = 0; i < 10; i++) {
+          await expect(attempt("Wrong", cookies)).rejects.toThrow(
+            UnauthorizedException,
+          );
+        }
+        expect(failedAttemptCall()).toBeUndefined();
+
+        await expect(attempt(PASSWORD, cookies)).rejects.toThrow(
+          ForbiddenException,
+        );
+      });
     });
 
     it("allows login when lock has expired", async () => {
@@ -4216,7 +4406,8 @@ describe("AuthService", () => {
       expect(mockQB.update).toHaveBeenCalled();
       expect(mockQB.set).toHaveBeenCalledWith(
         expect.objectContaining({
-          lockedUntil: expect.any(Date),
+          // GREATEST(...) on the database clock: never shortens a longer lock.
+          lockedUntil: expect.any(Function),
         }),
       );
     });

@@ -110,6 +110,9 @@ describe("AuthController", () => {
       generateBackupCodes: jest.fn(),
       confirmOidcLink: jest.fn(),
       getCsrfKey: jest.fn().mockReturnValue("test-csrf-key"),
+      issueLoginDeviceCookie: jest
+        .fn()
+        .mockResolvedValue({ name: "login_device_x", value: "iat.nonce.mac" }),
       // No sanitizeUser mock: the profile endpoints call the real
       // toUserProfile/toDelegatedUserProfile allowlist directly, so these
       // tests exercise the actual serializer rather than a re-implementation.
@@ -2093,6 +2096,7 @@ describe("AuthController", () => {
         dto,
         "my-trusted-token",
         "TestBrowser/1.0",
+        expressReq.cookies,
       );
     });
 
@@ -2116,6 +2120,7 @@ describe("AuthController", () => {
         dto,
         undefined,
         "TestBrowser/1.0",
+        expressReq.cookies,
       );
     });
 
@@ -2139,7 +2144,121 @@ describe("AuthController", () => {
         dto,
         undefined,
         "TestBrowser/1.0",
+        expressReq.cookies,
       );
+    });
+  });
+
+  describe("login_device cookie (#2181)", () => {
+    const cookieNames = (res: any) =>
+      res.cookie.mock.calls.map((c: unknown[]) => c[0]);
+    const signedIn = {
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      user: { id: "user-1", realUserId: "user-1", email: "test@example.com" },
+    };
+
+    it("hands the request's cookies to authService.login", async () => {
+      authService.login.mockResolvedValue(signedIn);
+      const expressReq = {
+        cookies: { login_device_x: "iat.nonce.mac" },
+        headers: { "user-agent": "TestBrowser/1.0" },
+      } as any;
+      const dto = { email: "test@example.com", password: "password" };
+
+      await controller.login(dto as any, expressReq, mockRes() as any);
+
+      expect(authService.login).toHaveBeenCalledWith(
+        dto,
+        undefined,
+        "TestBrowser/1.0",
+        { login_device_x: "iat.nonce.mac" },
+      );
+    });
+
+    it("marks the browser as known after a completed sign-in", async () => {
+      authService.login.mockResolvedValue(signedIn);
+      const res = mockRes();
+
+      await controller.login(
+        { email: "test@example.com", password: "password" } as any,
+        { cookies: {}, headers: {} } as any,
+        res as any,
+      );
+
+      expect(authService.issueLoginDeviceCookie).toHaveBeenCalledWith("user-1");
+      expect(res.cookie).toHaveBeenCalledWith(
+        "login_device_x",
+        "iat.nonce.mac",
+        expect.objectContaining({
+          httpOnly: true,
+          sameSite: "strict",
+          path: "/api/v1/auth",
+        }),
+      );
+      expect(res.json).toHaveBeenCalledWith({ user: signedIn.user });
+    });
+
+    it("sets nothing for an account without a password", async () => {
+      authService.login.mockResolvedValue(signedIn);
+      authService.issueLoginDeviceCookie.mockResolvedValueOnce(null);
+      const res = mockRes();
+
+      await controller.login(
+        { email: "test@example.com", password: "password" } as any,
+        { cookies: {}, headers: {} } as any,
+        res as any,
+      );
+
+      expect(cookieNames(res)).not.toContain("login_device_x");
+    });
+
+    it("still completes the sign-in when the cookie cannot be issued", async () => {
+      authService.login.mockResolvedValue(signedIn);
+      authService.issueLoginDeviceCookie.mockRejectedValueOnce(
+        new Error("db down"),
+      );
+      const res = mockRes();
+
+      await controller.login(
+        { email: "test@example.com", password: "password" } as any,
+        { cookies: {}, headers: {} } as any,
+        res as any,
+      );
+
+      expect(res.json).toHaveBeenCalledWith({ user: signedIn.user });
+      expect(cookieNames(res)).not.toContain("login_device_x");
+    });
+
+    it("does not mark the browser while the second factor is still owed", async () => {
+      authService.login.mockResolvedValue({
+        requires2FA: true,
+        tempToken: "temp",
+      });
+      const res = mockRes();
+
+      await controller.login(
+        { email: "test@example.com", password: "password" } as any,
+        { cookies: {}, headers: {} } as any,
+        res as any,
+      );
+
+      expect(authService.issueLoginDeviceCookie).not.toHaveBeenCalled();
+      expect(cookieNames(res)).not.toContain("login_device_x");
+    });
+
+    it("marks the browser once the second factor completes the sign-in", async () => {
+      authService.verify2FA.mockResolvedValue(signedIn);
+      const res = mockRes();
+
+      await controller.verify2FA(
+        { tempToken: "temp", code: "123456" } as any,
+        { headers: {}, cookies: {} } as any,
+        res as any,
+      );
+
+      expect(authService.issueLoginDeviceCookie).toHaveBeenCalledWith("user-1");
+      expect(cookieNames(res)).toContain("login_device_x");
     });
   });
 

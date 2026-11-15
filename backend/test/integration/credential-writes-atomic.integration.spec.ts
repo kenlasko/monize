@@ -12,6 +12,7 @@ import { AdminService } from "@/admin/admin.service";
 import { DelegationService } from "@/delegation/delegation.service";
 import { withSystemContext, withUserContext } from "@/common/db/with-context";
 import { User } from "@/users/entities/user.entity";
+import { AuthAttemptCounterService } from "@/auth/auth-attempt-counter.service";
 import {
   INTEGRATION_TYPEORM_OPTIONS,
   cleanTables,
@@ -92,6 +93,7 @@ describe("credential writes are atomic (integration)", () => {
       {} as never,
       {} as never,
       moduleRefStub as never,
+      new AuthAttemptCounterService(dataSource),
     );
     users = new UsersService(
       dataSource,
@@ -129,6 +131,7 @@ describe("credential writes are atomic (integration)", () => {
   beforeEach(async () => {
     await dropFailpoint();
     await cleanTables(dataSource, [
+      "auth_attempt_counters",
       "refresh_tokens",
       "personal_access_tokens",
       "trusted_devices",
@@ -250,6 +253,91 @@ describe("credential writes are atomic (integration)", () => {
         ),
       ).resolves.toMatchObject({ accessToken: expect.any(String) });
       expect(await counters(user.id)).toEqual({ attempts: 0, locked: false });
+    });
+  });
+
+  describe("known login device under a password lock (#2181, INV-AUTH-002)", () => {
+    const lockLikeStrangers = () =>
+      dataSource.query(
+        `UPDATE users
+            SET failed_login_attempts = 7,
+                locked_until = CURRENT_TIMESTAMP + INTERVAL '1 hour'
+          WHERE id = $1`,
+        [user.id],
+      );
+    async function knownDeviceJar(): Promise<Record<string, string>> {
+      const cookie = await auth.issueLoginDeviceCookie(user.id);
+      return { [cookie!.name]: cookie!.value };
+    }
+    const statusOf = (r: PromiseSettledResult<unknown>) =>
+      r.status === "rejected"
+        ? (r.reason as { getStatus(): number }).getStatus()
+        : 200;
+
+    it("lets the owner in from a known device without clearing the strangers' lock", async () => {
+      const jar = await knownDeviceJar();
+      await lockLikeStrangers();
+
+      await expect(
+        auth.login({ email: user.email, password: PASSWORD } as never),
+      ).rejects.toThrow(/temporarily locked/);
+      await expect(
+        auth.login(
+          { email: user.email, password: PASSWORD } as never,
+          undefined,
+          undefined,
+          jar,
+        ),
+      ).resolves.toMatchObject({ accessToken: expect.any(String) });
+      expect(await counters(user.id)).toEqual({ attempts: 7, locked: true });
+    });
+
+    it("lets no more concurrent guesses through on one device cookie than its budget", async () => {
+      const jar = await knownDeviceJar();
+      await lockLikeStrangers();
+
+      const results = await Promise.allSettled(
+        Array.from({ length: 15 }, () =>
+          auth.login(
+            { email: user.email, password: "wrong" } as never,
+            undefined,
+            undefined,
+            jar,
+          ),
+        ),
+      );
+      const statuses = results.map(statusOf);
+
+      expect(statuses.filter((s) => s === 401)).toHaveLength(10);
+      expect(statuses.filter((s) => s === 403)).toHaveLength(5);
+      // The device's failures never fed the account counter.
+      expect(await counters(user.id)).toEqual({ attempts: 7, locked: true });
+      await expect(
+        auth.login(
+          { email: user.email, password: PASSWORD } as never,
+          undefined,
+          undefined,
+          jar,
+        ),
+      ).rejects.toThrow(/temporarily locked/);
+    });
+
+    it("stops honouring the cookie once the password is replaced", async () => {
+      const jar = await knownDeviceJar();
+      await dataSource.query(
+        `UPDATE users SET password_hash = password_hash || 'x' WHERE id = $1`,
+        [user.id],
+      );
+      await lockLikeStrangers();
+
+      await expect(
+        auth.login(
+          { email: user.email, password: PASSWORD } as never,
+          undefined,
+          undefined,
+          jar,
+        ),
+      ).rejects.toThrow(/temporarily locked/);
     });
   });
 
