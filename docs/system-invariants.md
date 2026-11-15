@@ -10000,8 +10000,10 @@ Required tests      Present: budget-bucket-figures.util.spec.ts (truth tables
 Status              enforced
 ```
 
-The remaining callers named in the design (the assistant and MCP shape, the
-dashboard card) are later tasks; each must call the function and none may
+The assistant and MCP shape (BudgetReportsService.getLlmBudgetStatus) now
+reads the same function through the bucket status service and passes its
+figures through unchanged. The remaining caller named in the design (the
+dashboard card) is a later task; it must call the function and may not
 restate the arithmetic. There is no source scan over them yet.
 
 ### INV-BUDGET-002 -- a line's bucket is its own budget's
