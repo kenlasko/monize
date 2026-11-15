@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { gainLossColor } from '@/lib/format';
+import { gainLossColor, roundMoney, sumMoney } from '@/lib/format';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { BudgetProgressBar } from './BudgetProgressBar';
@@ -52,14 +52,19 @@ export function BudgetPeriodDetail({
     (sum, pc) => sum + Number(pc.actualAmount),
     0,
   );
+  const lineIncome = sumMoney(
+    incomeCategories.map((pc) => Number(pc.actualAmount)),
+  );
   // A closed period's income is the figure the close froze, which includes
-  // transfers in no line carries (`transfersInAsIncome`, issue #2141).
-  const totalIncome = period.status === 'CLOSED'
-    ? Number(period.actualIncome)
-    : incomeCategories.reduce(
-      (sum, pc) => sum + Number(pc.actualAmount),
-      0,
-    );
+  // transfers in no line carries (`transfersInAsIncome`, issue #2141). That
+  // part is shown as its own row so the income rows add up to the card. An
+  // open period has no frozen figure: its rows are the lines' alone, and the
+  // live total, toggle included, is on the budget's dashboard.
+  const isClosed = period.status === 'CLOSED';
+  const totalIncome = isClosed ? Number(period.actualIncome) : lineIncome;
+  const outsideTransferIncome = isClosed
+    ? Math.max(0, roundMoney(totalIncome - lineIncome))
+    : 0;
   const remaining = totalBudgeted - totalSpent;
   const percentUsed = totalBudgeted > 0
     ? Math.round((totalSpent / totalBudgeted) * 10000) / 100
@@ -192,7 +197,7 @@ export function BudgetPeriodDetail({
       )}
 
       {/* Income Categories */}
-      {incomeCategories.length > 0 && (
+      {(incomeCategories.length > 0 || outsideTransferIncome > 0) && (
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
@@ -208,6 +213,16 @@ export function BudgetPeriodDetail({
                 isIncome
               />
             ))}
+            {outsideTransferIncome > 0 && (
+              <div className="px-6 py-4 flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {t('pages.edit.outsideTransferIncome')}
+                </span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {formatCurrency(outsideTransferIncome)}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}

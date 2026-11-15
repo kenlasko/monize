@@ -131,6 +131,65 @@ describe('BudgetPeriodDetail', () => {
 
     expect(screen.getByText('Transfers from HISA')).toBeInTheDocument();
     expect(screen.getByText('$7500.00')).toBeInTheDocument();
+    // The part no line carries is its own row, so the rows add up to the card.
+    expect(
+      screen.getByText('Transfers from accounts outside this budget'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('$300.00')).toBeInTheDocument();
+  });
+
+  it('shows no outside-transfer row when the close froze only the lines\' income', () => {
+    render(
+      <BudgetPeriodDetail
+        period={{
+          ...mockPeriod,
+          actualIncome: 5200,
+          periodCategories: [mockPeriodCategory, mockIncomePeriodCategory],
+        }}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(
+      screen.queryByText('Transfers from accounts outside this budget'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows the outside-transfer row on a closed period with no income line', () => {
+    render(
+      <BudgetPeriodDetail
+        period={{
+          ...mockPeriod,
+          actualIncome: 450,
+          periodCategories: [mockPeriodCategory],
+        }}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(screen.getByText('Income Categories')).toBeInTheDocument();
+    expect(
+      screen.getByText('Transfers from accounts outside this budget'),
+    ).toBeInTheDocument();
+  });
+
+  it('adds up an open period\'s income from its lines alone', () => {
+    render(
+      <BudgetPeriodDetail
+        period={{
+          ...mockPeriod,
+          status: 'OPEN',
+          actualIncome: 9999,
+          periodCategories: [mockPeriodCategory, mockIncomePeriodCategory],
+        }}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(screen.queryByText('$9999.00')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Transfers from accounts outside this budget'),
+    ).not.toBeInTheDocument();
   });
 
   it('renders period status badge', () => {
@@ -250,6 +309,9 @@ describe('BudgetPeriodDetail', () => {
   it('handles period with no categories', () => {
     const emptyPeriod: BudgetPeriod = {
       ...mockPeriod,
+      // A close with no line froze no income; income without a line is the
+      // toggle's, covered above.
+      actualIncome: 0,
       periodCategories: [],
     };
 
