@@ -66,7 +66,7 @@
 <p>Use the first name only -- the email addresses the contact by first name (&quot;Hi Alice&quot;), so a last name is unnecessary.</p>
 </aside>
 <h2 id="the-free-form-message">The Free-Form Message<a class="hlink" href="#the-free-form-message" aria-label="Link to this section">#</a></h2>
-<p>You can write an optional message of up to 4,000 characters that will be included in the grant email and shown to the contact on the claim page. Typical contents:</p>
+<p>You can write an optional message of up to 4,000 characters that will be included in the grant email and shown to the contact on the claim page once they have claimed the account. Typical contents:</p>
 <ul>
 <li>Where to find paper records, safe-deposit-box keys, or password managers</li>
 <li>Account numbers for institutions that are not in Monize</li>
@@ -118,11 +118,11 @@
 <p>If you have received an emergency access email, follow these steps to take over the account:</p>
 <ol>
 <li>Open the link in the email. It looks like <code>https://your-monize-server/emergency-access/claim?token=...</code></li>
-<li>The page greets you by name, names the account holder, and shows their message if they wrote one</li>
+<li>The page greets you by name. It does not repeat the account holder&#x27;s name or their message until the claim succeeds: the email already shows both, and the link alone does not prove who opened it</li>
 <li>Enter a <strong>New Password</strong> (it must meet Monize&#x27;s standard requirements and must not appear in the <a href="https://haveibeenpwned.com/" rel="noopener" class="ext">Have I Been Pwned</a> breach database)</li>
 <li>Enter it again in <strong>Confirm Password</strong> and click <strong>Claim emergency access</strong></li>
 </ol>
-<span class="shot-missing" role="img" aria-label="The emergency access claim page showing the owner&#x27;s name, optional message, and new password fields">Screenshot pending: The emergency access claim page showing the owner&#x27;s name, optional message, and new password fields</span>
+<span class="shot-missing" role="img" aria-label="The emergency access claim page showing the greeting and the new password fields">Screenshot pending: The emergency access claim page showing the greeting and the new password fields</span>
 <p>After a successful claim:</p>
 <ul>
 <li>The owner&#x27;s previous password is replaced by yours</li>
@@ -130,7 +130,7 @@
 <li>Two-factor authentication is disabled on the account (you will need to re-enable it under Settings if you want it)</li>
 <li>All sibling magic links for the same account are voided -- you are the sole new holder</li>
 <li>Emergency Access is automatically disabled on the now-claimed account</li>
-<li>You are signed in and taken to the dashboard</li>
+<li>You are signed in. If the account holder wrote a message, it is shown with a <strong>Continue to dashboard</strong> button; otherwise you are taken straight to the dashboard</li>
 </ul>
 <aside class="callout callout-important">
 <p class="callout-title">Important</p>

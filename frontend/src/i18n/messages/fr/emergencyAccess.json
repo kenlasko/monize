@@ -6,12 +6,13 @@
   "backToSignIn": "Retour à la connexion",
   "ownerFallback": "le titulaire du compte",
   "ownerFirstNameFallback": "le titulaire",
-  "intro": "Bonjour {contactName}, vous avez été désigné(e) comme contact d'urgence sur le compte Monize de <b>{ownerName}</b>.",
+  "intro": "Bonjour {contactName}, vous avez été désigné(e) comme contact d'urgence sur le compte Monize indiqué dans l'e-mail qui vous a conduit ici.",
   "introDetail": "La définition d'un mot de passe ici vous connectera en tant que titulaire du compte et vous donnera un accès complet au compte. Les sessions existantes sont révoquées et les informations d'identification précédentes sont remplacées.",
   "messageHeading": "Message de {name}",
   "newPasswordLabel": "Nouveau mot de passe",
   "confirmPasswordLabel": "Confirmer le mot de passe",
   "submit": "Activer l'accès d'urgence",
+  "continueToDashboard": "Continuer vers le tableau de bord",
   "toasts": {
     "success": "Vous avez désormais accès au compte de {name}.",
     "failed": "Échec de l'activation de l'accès d'urgence. Le lien est peut-être expiré ou a déjà été utilisé."
