@@ -94,7 +94,8 @@
       "FIXED": "Fixed",
       "ROLLOVER": "Rollover",
       "ZERO_BASED": "Zero-Based",
-      "FIFTY_THIRTY_TWENTY": "50/30/20"
+      "FIFTY_THIRTY_TWENTY": "50/30/20",
+      "BUCKET": "Bucket"
     }
   },
   "healthGauge": {
@@ -239,6 +240,10 @@
       "FIFTY_THIRTY_TWENTY": {
         "label": "50/30/20",
         "description": "50% needs, 30% wants, 20% savings. Categories are tagged by group."
+      },
+      "BUCKET": {
+        "label": "Bucket",
+        "description": "Income is split into a few named buckets. Watch each bucket, not every category."
       }
     },
     "profiles": {
@@ -324,7 +329,8 @@
       "FIXED": "Set amounts per category. Unspent budget resets each period.",
       "ROLLOVER": "Unspent budget carries forward based on per-category rollover rules.",
       "ZERO_BASED": "Every dollar of income is assigned. Income minus expenses should equal zero.",
-      "FIFTY_THIRTY_TWENTY": "Categories grouped as Needs (50%), Wants (30%), Savings (20%)."
+      "FIFTY_THIRTY_TWENTY": "Categories grouped as Needs (50%), Wants (30%), Savings (20%).",
+      "BUCKET": "Income split into named buckets. Each category belongs to one bucket."
     },
     "linkBudgetToIncome": "Link budget to income",
     "linkBudgetToIncomeHint": "Category amounts become percentages of your base income",
@@ -486,6 +492,23 @@
           "Requires categorizing every expense by group"
         ],
         "bestFor": "People who want a balanced, rule-of-thumb approach without tracking every category individually."
+      },
+      "BUCKET": {
+        "title": "Bucket Budget",
+        "description": "Income is split into a few named buckets, each with a target that is a share of income or a fixed amount. Every category belongs to one bucket, so you watch the bucket instead of each category. A bucket can carry what is left into the next period.",
+        "pros": [
+          "Fewer numbers to watch",
+          "Flexible within each bucket",
+          "Savings buckets can build up over time",
+          "Works with irregular spending inside a bucket"
+        ],
+        "cons": [
+          "Less detail for each category",
+          "Needs categories sorted into buckets",
+          "Percent targets need a known income",
+          "Carry-over balances need an occasional check"
+        ],
+        "bestFor": "People who find per-category budgets too fiddly but want more structure than 50/30/20."
       }
     }
   },

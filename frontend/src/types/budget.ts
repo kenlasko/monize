@@ -1,9 +1,11 @@
 export type BudgetType = 'MONTHLY' | 'ANNUAL' | 'PAY_PERIOD';
-export type BudgetStrategy = 'FIXED' | 'ROLLOVER' | 'ZERO_BASED' | 'FIFTY_THIRTY_TWENTY';
+export type BudgetStrategy = 'FIXED' | 'ROLLOVER' | 'ZERO_BASED' | 'FIFTY_THIRTY_TWENTY' | 'BUCKET';
 export type RolloverType = 'NONE' | 'MONTHLY' | 'QUARTERLY' | 'ANNUAL';
 export type CategoryGroup = 'NEED' | 'WANT' | 'SAVING';
 export type PeriodStatus = 'OPEN' | 'CLOSED' | 'PROJECTED';
 export type BudgetProfile = 'COMFORTABLE' | 'ON_TRACK' | 'AGGRESSIVE';
+export type BudgetBucketTargetType = 'PERCENT' | 'AMOUNT';
+export type BudgetBucketIncomeSource = 'ACTUAL' | 'BASE_INCOME' | 'INCOME_LINES' | 'NONE';
 
 export interface BudgetConfig {
   includeTransfers?: boolean;
@@ -34,6 +36,97 @@ export interface Budget {
   currencyCode: string;
   config: BudgetConfig;
   categories: BudgetCategory[];
+  /** Present on the budget read; only a Bucket budget has any. */
+  buckets?: BudgetBucket[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** One named pot of a Bucket-strategy budget. */
+export interface BudgetBucket {
+  id: string;
+  budgetId: string;
+  name: string;
+  targetType: BudgetBucketTargetType;
+  /** A percent of bucket income (PERCENT) or an amount per period (AMOUNT). */
+  targetValue: number;
+  carryOver: boolean;
+  carryCap: number | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateBudgetBucketData {
+  name: string;
+  targetType: BudgetBucketTargetType;
+  targetValue: number;
+  carryOver?: boolean;
+  carryCap?: number;
+  sortOrder?: number;
+}
+
+export interface UpdateBudgetBucketData {
+  name?: string;
+  targetType?: BudgetBucketTargetType;
+  targetValue?: number;
+  carryOver?: boolean;
+  /** `null` clears the cap. */
+  carryCap?: number | null;
+  sortOrder?: number;
+}
+
+/** One bucket in `GET /budgets/:id/reports/bucket-status`. */
+export interface BudgetBucketStatus {
+  bucketId: string;
+  name: string;
+  targetType: BudgetBucketTargetType;
+  targetValue: number;
+  carryOver: boolean;
+  carryCap: number | null;
+  /** `null` when a PERCENT target meets an unknown income. */
+  allocated: number | null;
+  carriedIn: number;
+  planned: number;
+  spent: number;
+  /** `null` when `allocated` is. */
+  available: number | null;
+  /** `null` when `allocated` is. */
+  percentUsed: number | null;
+  lineCount: number;
+}
+
+export interface BudgetBucketStatusResult {
+  periodStart: string;
+  periodEnd: string;
+  currencyCode: string;
+  /** `null` when unknown. */
+  income: number | null;
+  incomeSource: BudgetBucketIncomeSource;
+  /** `null` when any bucket's allocation is unknown; see `knownAllocated`. */
+  totalAllocated: number | null;
+  /** The partial sum of the known allocations, always a number. */
+  knownAllocated: number;
+  /** `null` when income or `totalAllocated` is. */
+  unallocated: number | null;
+  buckets: BudgetBucketStatus[];
+  unassigned: { planned: number; spent: number; lineCount: number };
+}
+
+/** One bucket's row in a budget period (carry received, figures frozen at close). */
+export interface BudgetPeriodBucket {
+  id: string;
+  budgetPeriodId: string;
+  /** `null` once the bucket is deleted. */
+  bucketId: string | null;
+  bucketName: string;
+  targetType: BudgetBucketTargetType;
+  targetValue: number;
+  incomeBasis: number | null;
+  allocatedAmount: number | null;
+  carryIn: number;
+  actualAmount: number;
+  carryOut: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,6 +142,7 @@ export interface BudgetCategory {
     parentId?: string | null;
     parent?: { id: string; name: string } | null;
   } | null;
+  bucketId: string | null;
   transferAccountId: string | null;
   transferAccount: {
     id: string;
@@ -80,6 +174,7 @@ export interface BudgetPeriod {
   totalBudgeted: number;
   status: PeriodStatus;
   periodCategories?: BudgetPeriodCategory[];
+  periodBuckets?: BudgetPeriodBucket[];
   createdAt: string;
   updatedAt: string;
 }
@@ -176,6 +271,13 @@ export interface ApplyBudgetCategoryData {
   alertCriticalPercent?: number;
   notes?: string;
   sortOrder?: number;
+  /** Names a bucket of the request's `buckets` by its `key`. */
+  bucketKey?: string;
+}
+
+/** A bucket in a wizard apply; `key` is client-chosen, unique in the request. */
+export interface ApplyBudgetBucketData extends CreateBudgetBucketData {
+  key: string;
 }
 
 export interface ApplyGeneratedBudgetData {
@@ -190,6 +292,7 @@ export interface ApplyGeneratedBudgetData {
   currencyCode: string;
   config?: Record<string, unknown>;
   categories: ApplyBudgetCategoryData[];
+  buckets?: ApplyBudgetBucketData[];
 }
 
 export interface CreateBudgetData {
@@ -219,6 +322,8 @@ export interface CreateBudgetCategoryData {
   alertCriticalPercent?: number;
   notes?: string;
   sortOrder?: number;
+  /** A bucket UUID, or `null` to unassign. */
+  bucketId?: string | null;
 }
 
 export interface UpdateBudgetCategoryData extends Partial<CreateBudgetCategoryData> {}

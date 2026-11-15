@@ -136,6 +136,7 @@ vi.mock('@/components/budgets/utils/budget-labels', () => ({
     ROLLOVER: 'Rollover',
     ZERO_BASED: 'Zero-Based',
     FIFTY_THIRTY_TWENTY: '50/30/20',
+    BUCKET: 'Bucket',
   },
 }));
 

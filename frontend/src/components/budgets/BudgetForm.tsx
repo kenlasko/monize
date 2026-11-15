@@ -16,7 +16,7 @@ import type {
 } from '@/types/budget';
 
 const BUDGET_TYPES = ['MONTHLY', 'ANNUAL', 'PAY_PERIOD'] as const;
-const STRATEGIES = ['FIXED', 'ROLLOVER', 'ZERO_BASED', 'FIFTY_THIRTY_TWENTY'] as const;
+const STRATEGIES = ['FIXED', 'ROLLOVER', 'ZERO_BASED', 'FIFTY_THIRTY_TWENTY', 'BUCKET'] as const;
 
 const buildBudgetFormSchema = (t: (key: string) => string) => z.object({
   name: z.string().min(1, t('validation.nameRequired')).max(255, t('validation.nameMax')),
@@ -38,7 +38,7 @@ interface BudgetFormProps {
 }
 
 const TYPE_VALUES = ['MONTHLY', 'ANNUAL', 'PAY_PERIOD'] as const;
-const STRATEGY_VALUES = ['FIXED', 'ROLLOVER', 'ZERO_BASED', 'FIFTY_THIRTY_TWENTY'] as const;
+const STRATEGY_VALUES = ['FIXED', 'ROLLOVER', 'ZERO_BASED', 'FIFTY_THIRTY_TWENTY', 'BUCKET'] as const;
 
 export function BudgetForm({
   budget,

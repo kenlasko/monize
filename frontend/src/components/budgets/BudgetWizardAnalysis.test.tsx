@@ -63,6 +63,7 @@ describe('BudgetWizardAnalysis', () => {
     expect(screen.getByTestId('strategy-ROLLOVER')).toBeInTheDocument();
     expect(screen.getByTestId('strategy-ZERO_BASED')).toBeInTheDocument();
     expect(screen.getByTestId('strategy-FIFTY_THIRTY_TWENTY')).toBeInTheDocument();
+    expect(screen.getByTestId('strategy-BUCKET')).toBeInTheDocument();
   });
 
   it('renders analysis period options', () => {

@@ -27,4 +27,10 @@ describe('StrategyDetailCard', () => {
     expect(screen.getByText('50/30/20 Budget')).toBeInTheDocument();
     expect(screen.getByText(/balanced approach/)).toBeInTheDocument();
   });
+
+  it('renders BUCKET strategy', () => {
+    render(<StrategyDetailCard strategy="BUCKET" />);
+    expect(screen.getByText('Bucket Budget')).toBeInTheDocument();
+    expect(screen.getByText(/Fewer numbers to watch/)).toBeInTheDocument();
+  });
 });
