@@ -431,6 +431,67 @@ describe("CurrenciesService", () => {
       // ...and is activated for this user only (4th query).
       expect(mockDataSource.query.mock.calls[3][1]).toEqual([userId, "EUR"]);
     });
+
+    it("ensures the default currency even when the user already has another one (#2186)", async () => {
+      // A user who kept the registration default USD and added EUR first: the
+      // bootstrap USD is offered to nobody, so without this their default
+      // would be missing from their own list.
+      const eur = {
+        code: "EUR",
+        name: "Euro",
+        symbol: "€",
+        decimalPlaces: 2,
+        isActive: true,
+        isSystem: true,
+        createdAt: new Date(),
+      };
+      const usd = { ...eur, code: "USD", name: "US Dollar", symbol: "$" };
+      mockCurrencyRepo.findOne!.mockResolvedValue(mockCurrency); // USD exists
+      mockDataSource.query
+        .mockResolvedValueOnce([eur]) // main query
+        .mockResolvedValueOnce([
+          { default_currency: "USD", hasPreference: false },
+        ])
+        .mockResolvedValueOnce([]) // INSERT user_currency_preferences
+        .mockResolvedValueOnce([eur, usd]); // re-query
+
+      const result = await service.findAll(userId, true);
+
+      expect(result.map((c) => c.code)).toEqual(["EUR", "USD"]);
+      const prefInsert = mockDataSource.query.mock.calls[2];
+      expect(prefInsert[0]).toContain("INSERT INTO user_currency_preferences");
+      expect(prefInsert[1]).toEqual([userId, "USD"]);
+    });
+
+    it("leaves a default currency the user deactivated alone", async () => {
+      mockDataSource.query
+        .mockResolvedValueOnce([]) // main query: the default is inactive
+        .mockResolvedValueOnce([
+          { default_currency: "USD", hasPreference: true },
+        ]);
+
+      const result = await service.findAll(userId);
+
+      expect(result).toEqual([]);
+      expect(mockDataSource.query).toHaveBeenCalledTimes(2);
+    });
+
+    it("lists an inactive system currency only when the user chose it or their data uses it", async () => {
+      mockDataSource.query.mockResolvedValue([]);
+
+      await service.findAll(userId, true);
+
+      const query: string = mockDataSource.query.mock.calls[0][0];
+      // A bare `created_by_user_id IS NULL` listed every reference row (the
+      // bootstrap USD, a bond program's PLN) as an optional currency of
+      // everyone's.
+      expect(query).not.toMatch(
+        /c\.created_by_user_id IS NULL OR ucp\.user_id IS NOT NULL/,
+      );
+      expect(query).toContain("ucp.user_id IS NOT NULL");
+      expect(query).toContain("FROM accounts a");
+      expect(query).toContain("FROM securities s");
+    });
   });
 
   describe("getCatalog()", () => {
@@ -461,6 +522,15 @@ describe("CurrenciesService", () => {
         expect.stringContaining("INSERT INTO currencies"),
         ["USD", "US Dollar", "$", 2, "FIAT"],
       );
+    });
+
+    it("creates the default USD inactive, so no user is offered it unasked (#2186)", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(null);
+
+      await service.onApplicationBootstrap();
+
+      const [sql] = mockDataSource.query.mock.calls[0];
+      expect(sql).toMatch(/VALUES \(\$1, \$2, \$3, \$4, false, NULL, \$5\)/);
     });
 
     it("does not throw when the startup ensure fails", async () => {
@@ -611,14 +681,14 @@ describe("CurrenciesService", () => {
       expect(params[0]).toBe("PLN");
     });
 
-    it("creates the default-preference currency active, as bootstrap would", async () => {
+    it("creates the default-preference currency inactive too, as bootstrap does", async () => {
       mockCurrencyRepo.findOne!.mockResolvedValue(null);
 
       // A bond program in USD seeded before the bootstrap currency.
       await service.ensureCatalogCurrency("usd");
 
       const [sql, params] = mockDataSource.query.mock.calls[0];
-      expect(sql).toMatch(/VALUES \(\$1, \$2, \$3, \$4, true, NULL, \$5\)/);
+      expect(sql).toMatch(/VALUES \(\$1, \$2, \$3, \$4, false, NULL, \$5\)/);
       expect(params[0]).toBe("USD");
     });
 

@@ -330,7 +330,20 @@
     "budgetCategoryNotFound": "未找到 ID 为 {{ id }} 的预算分类",
     "periodNotFound": "未找到 ID 为 {{ id }} 的预算周期",
     "noOpenPeriod": "没有可关闭的开放周期",
-    "categoryIdsNotOwned": "未找到分类 ID 或不属于该用户：{{ ids }}"
+    "categoryIdsNotOwned": "未找到分类 ID 或不属于该用户：{{ ids }}",
+    "transferAccountNotFound": "未找到 ID 为 {{ id }} 的账户",
+    "transferAccountAlreadyInBudget": "此账户在预算中已有转账项目",
+    "bucketNotFound": "未找到 ID 为 {{ id }} 的资金桶",
+    "bucketLimit": "一个预算最多可以有 {{ max }} 个资金桶",
+    "bucketNameInvalid": "资金桶名称必须为 1 到 {{ max }} 个字符",
+    "bucketNameDuplicate": "此预算中已有同名资金桶",
+    "bucketTargetInvalid": "资金桶目标必须大于零",
+    "bucketPercentInvalid": "百分比目标必须大于 0 且不超过 100，最多两位小数",
+    "bucketCarryCapNeedsCarryOver": "结转上限需要开启结转",
+    "bucketOnIncomeLine": "收入项不能属于资金桶",
+    "bucketKeyDuplicate": "资金桶键“{{ key }}”被多次使用",
+    "bucketKeyUnknown": "此请求中没有键为“{{ key }}”的资金桶",
+    "transferLineDirectionFixed": "转账项目的方向无法更改。请删除该项目并添加新项目。"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "工资扣款规则跟踪以法定货币支付的账单；此账单的账户持有加密货币 {{ code }}。请选择从法定货币账户支付的账单。",

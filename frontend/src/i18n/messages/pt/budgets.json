@@ -36,7 +36,9 @@
       "SAVING": "Poupança"
     },
     "saving": "A guardar...",
-    "remove": "Remover do orçamento"
+    "remove": "Remover do orçamento",
+    "bucket": "Cofre",
+    "bucketUnassigned": "Sem atribuição"
   },
   "categoryList": {
     "title": "Orçamentos por Categoria",
@@ -94,7 +96,8 @@
       "FIXED": "Fixo",
       "ROLLOVER": "Transição",
       "ZERO_BASED": "Base Zero",
-      "FIFTY_THIRTY_TWENTY": "50/30/20"
+      "FIFTY_THIRTY_TWENTY": "50/30/20",
+      "BUCKET": "Cofre"
     }
   },
   "healthGauge": {
@@ -239,6 +242,10 @@
       "FIFTY_THIRTY_TWENTY": {
         "label": "50/30/20",
         "description": "50% necessidades, 30% desejos, 20% poupanças. As categorias são marcadas por grupo."
+      },
+      "BUCKET": {
+        "label": "Cofre",
+        "description": "A receita é dividida em alguns cofres com nome. Acompanhe cada cofre, não cada categoria."
       }
     },
     "profiles": {
@@ -259,6 +266,23 @@
       "analyzeFailed": "Falha ao analisar despesas"
     }
   },
+  "lineNames": {
+    "transfersFrom": "Transferências de {name}",
+    "unknown": "Desconhecido"
+  },
+  "transferIncomeForm": {
+    "hint": "O dinheiro recebido desta conta conta como rendimento do orçamento, menos o que for devolvido a ela.",
+    "account": "Conta de origem",
+    "accountPlaceholder": "Escolha uma conta",
+    "accountRequired": "Escolha a conta de onde vêm as transferências",
+    "amount": "Montante previsto",
+    "submit": "Adicionar"
+  },
+  "transfersInAsIncome": {
+    "label": "Contar como rendimento as transferências recebidas de contas excluídas",
+    "hint": "O dinheiro transferido de uma conta excluída para as contas deste orçamento conta como rendimento, menos o que for devolvido a ela. Uma conta com a sua própria linha de transferência é contada nessa linha.",
+    "noExcludedAccounts": "Este orçamento ainda não exclui nenhuma conta, por isso nada é contado."
+  },
   "wizardCategories": {
     "title": "Rever Categorias",
     "noAnalysis": "Sem dados de análise. Volte atrás e execute a análise primeiro.",
@@ -266,6 +290,7 @@
       "income": "Receita",
       "expenses": "Despesas",
       "transfers": "Transferências / Poupanças",
+      "transfersIn": "Transferências recebidas (rendimento)",
       "trendMedian": "Tendência / Mediana",
       "amount": "Montante"
     },
@@ -275,6 +300,7 @@
       "transfers": "Transferências",
       "remaining": "Restante"
     },
+    "transfersInHint": "O dinheiro recebido de uma conta assinalada conta como rendimento, menos o que for devolvido a ela. Assinale apenas as contas de onde retira rendimento, como uma reserva de poupança.",
     "allocation503020": "Alocação 50/30/20",
     "allocationTarget": "(meta {percent}%)",
     "nextButton": "Seguinte: Configurar",
@@ -305,7 +331,8 @@
       "FIXED": "Defina montantes por categoria. O orçamento não gasto reinicia em cada período.",
       "ROLLOVER": "O orçamento não gasto transita com base em regras de transição por categoria.",
       "ZERO_BASED": "Cada euro de receita é atribuído. Receita menos despesas deve ser igual a zero.",
-      "FIFTY_THIRTY_TWENTY": "Categorias agrupadas como Necessidades (50%), Desejos (30%), Poupanças (20%)."
+      "FIFTY_THIRTY_TWENTY": "Categorias agrupadas como Necessidades (50%), Desejos (30%), Poupanças (20%).",
+      "BUCKET": "Receita dividida em cofres com nome. Cada categoria pertence a um cofre."
     },
     "linkBudgetToIncome": "Ligar orçamento à receita",
     "linkBudgetToIncomeHint": "Os montantes das categorias tornam-se percentagens da sua receita base",
@@ -353,8 +380,10 @@
       "rollover": "Transição",
       "alerts": "Alertas",
       "incomeLinked": "Receita Ligada",
-      "excludedAccounts": "Contas Excluídas"
+      "excludedAccounts": "Contas Excluídas",
+      "transfersInAsIncome": "Transferências recebidas"
     },
+    "transfersInAsIncomeOn": "As de contas excluídas contam como rendimento",
     "rolloverOff": "Desativada",
     "alertsValue": "Aviso {warn}% / Crítico {critical}%",
     "accountCount": "{count} {count, plural, one {conta} other {contas}}",
@@ -373,7 +402,8 @@
     "categoryTypes": {
       "income": "Receita",
       "expense": "Despesa",
-      "transfer": "Transferência"
+      "transfer": "Transferência",
+      "transferIn": "Transferência recebida"
     },
     "createButton": "Criar Orçamento",
     "categoryCount": "{count} categorias",
@@ -381,6 +411,19 @@
     "toasts": {
       "created": "Orçamento criado com sucesso",
       "failed": "Falha ao criar orçamento"
+    }
+  },
+  "wizardBuckets": {
+    "title": "Cofres",
+    "description": "Divida a sua receita em cofres e depois escolha um cofre para cada despesa e transferência abaixo.",
+    "selectLabel": "Cofre para {name}",
+    "unassigned": "Sem atribuição",
+    "tallyTitle": "Linhas por Cofre",
+    "tallyValue": "{count, plural, one {# linha} other {# linhas}} · {amount}",
+    "review": {
+      "lineCount": "{count, plural, one {# linha} other {# linhas}}",
+      "unassigned": "{count, plural, one {# linha de despesa ou transferência não está} other {# linhas de despesa ou transferência não estão}} em nenhum cofre. Pode criar o orçamento na mesma e atribuí-las mais tarde na página de edição.",
+      "noBuckets": "Este orçamento ainda não tem cofres. Pode criá-lo na mesma e adicionar cofres mais tarde na página de edição."
     }
   },
   "zeroBasedBar": {
@@ -464,6 +507,23 @@
           "Requer categorizar cada despesa por grupo"
         ],
         "bestFor": "Pessoas que pretendem uma abordagem equilibrada e baseada em regras práticas, sem acompanhar cada categoria individualmente."
+      },
+      "BUCKET": {
+        "title": "Orçamento por Cofres",
+        "description": "A receita é dividida em alguns cofres com nome, cada um com um objetivo que é uma parte da receita ou um montante fixo. Cada categoria pertence a um cofre, pelo que acompanha o cofre em vez de cada categoria. Um cofre pode transitar o que sobrar para o período seguinte.",
+        "pros": [
+          "Menos números para acompanhar",
+          "Flexível dentro de cada cofre",
+          "Os cofres de poupança podem crescer ao longo do tempo",
+          "Funciona com despesas irregulares dentro de um cofre"
+        ],
+        "cons": [
+          "Menos detalhe em cada categoria",
+          "Requer categorias organizadas por cofres",
+          "Objetivos em percentagem exigem uma receita conhecida",
+          "Os saldos transitados precisam de verificação ocasional"
+        ],
+        "bestFor": "Pessoas que acham os orçamentos por categoria demasiado trabalhosos, mas querem mais estrutura do que o 50/30/20."
       }
     }
   },
@@ -521,6 +581,10 @@
       "budgetSettings": "Definições do Orçamento",
       "categoryAllocations": "Alocações por Categoria",
       "income": "Receita",
+      "addTransferIncome": "Adicionar rendimento de transferência",
+      "addTransferIncomeTitle": "Adicionar rendimento de transferência",
+      "outsideTransferIncome": "Transferências de contas fora deste orçamento",
+      "outsideTransferIncomeHint": "Contado neste período porque o orçamento conta como rendimento as transferências recebidas das suas contas excluídas.",
       "expensesWithCount": "Despesas ({count})",
       "resetsEachPeriod": "Reinicia em cada período",
       "percentUsed": "{percent}% utilizado",
@@ -538,8 +602,12 @@
         "categoryFailed": "Falha ao atualizar categoria",
         "loadFailed": "Falha ao carregar orçamento",
         "categoryRemoved": "Categoria removida do orçamento",
-        "categoryRemoveFailed": "Falha ao remover a categoria"
-      }
+        "categoryRemoveFailed": "Falha ao remover a categoria",
+        "transferIncomeAdded": "Rendimento de transferência adicionado",
+        "transferIncomeFailed": "Não foi possível adicionar o rendimento de transferência"
+      },
+      "buckets": "Cofres",
+      "unassignedBucket": "Sem atribuição"
     }
   },
   "validation": {
@@ -550,5 +618,140 @@
   "categoryValidation": {
     "amountMin": "O montante deve ser 0 ou superior",
     "mustBeNumber": "Deve ser um número"
+  },
+  "bucketEditor": {
+    "presetLabel": "Começar a Partir de um Modelo",
+    "presets": {
+      "THREE": "Três Cofres",
+      "FOUR": "Quatro Cofres (60/10/10/20)",
+      "SCRATCH": "Começar do Zero"
+    },
+    "presetBucketNames": {
+      "fixedCosts": "Custos fixos",
+      "everydaySpending": "Despesas do dia a dia",
+      "savings": "Poupança",
+      "dailyExpenses": "Despesas diárias",
+      "splurge": "Extras",
+      "longTermGoals": "Objetivos a longo prazo",
+      "safetyAndDebt": "Segurança e dívidas"
+    },
+    "listLabel": "Cofres",
+    "empty": {
+      "title": "Ainda sem cofres",
+      "description": "Comece a partir de um modelo ou adicione um cofre e depois atribua cada categoria a um."
+    },
+    "add": "Adicionar Cofre",
+    "limitReached": "Um orçamento pode ter no máximo {max} cofres.",
+    "newTitle": "Novo Cofre",
+    "editTitle": "Editar: {name}",
+    "summary": "Os objetivos em percentagem somam {percent}. Os objetivos em montante somam {amount}.",
+    "row": {
+      "percentTarget": "{percent} da receita",
+      "amountTarget": "{amount} por período",
+      "noCarry": "Recomeça em cada período",
+      "carries": "Transita",
+      "carriesUpTo": "Transita, até {cap}",
+      "caption": "{target} · {carry}",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "editLabel": "Editar {name}",
+      "deleteLabel": "Eliminar {name}"
+    },
+    "targetTypes": {
+      "PERCENT": "Percentagem da Receita",
+      "AMOUNT": "Montante Fixo"
+    },
+    "form": {
+      "name": "Nome",
+      "namePlaceholder": "ex.: Poupança",
+      "targetType": "Objetivo",
+      "targetTypeTooltip": "Um objetivo em percentagem é uma parte da receita do orçamento: a receita recebida neste período num orçamento associado à receita, caso contrário a receita base, caso contrário os montantes das categorias de receita. Um montante fixo é igual em todos os períodos.",
+      "targetPercent": "Percentagem da Receita",
+      "targetAmount": "Montante por Período",
+      "carryOver": "Transitar o Que Sobrar",
+      "carryOverTooltip": "O que sobrar no cofre quando um período fecha é somado ao período seguinte. Um cofre com excesso de despesa não transita nada.",
+      "carryCap": "Limite de Transição (opcional)",
+      "carryCapPlaceholder": "Sem limite",
+      "save": "Guardar",
+      "saveChanges": "Guardar Alterações"
+    },
+    "validation": {
+      "nameRequired": "Introduza um nome",
+      "nameMax": "Um nome pode ter no máximo {max} caracteres",
+      "nameDuplicate": "Outro cofre já tem este nome",
+      "targetRequired": "Introduza um objetivo",
+      "percentRange": "Um objetivo em percentagem tem de ser superior a 0 e no máximo 100",
+      "percentDecimals": "Um objetivo em percentagem pode ter no máximo duas casas decimais",
+      "amountPositive": "Um objetivo em montante tem de ser superior a 0",
+      "capNeedsCarryOver": "Um limite de transição exige que a transição esteja ativada",
+      "capPositive": "Um limite de transição tem de ser superior a 0"
+    },
+    "delete": {
+      "title": "Eliminar Cofre",
+      "message": "Eliminar o cofre \"{name}\"? As suas categorias ficam sem atribuição.",
+      "confirm": "Eliminar"
+    },
+    "replace": {
+      "title": "Substituir Cofres",
+      "message": "Substituir os cofres atuais por \"{preset}\"? Os cofres atuais são eliminados e as suas categorias ficam sem atribuição.",
+      "clearMessage": "Eliminar todos os cofres e começar do zero? As suas categorias ficam sem atribuição.",
+      "confirm": "Substituir"
+    },
+    "toasts": {
+      "created": "Cofre adicionado",
+      "updated": "Cofre atualizado",
+      "deleted": "Cofre eliminado",
+      "saveFailed": "Falha ao guardar o cofre",
+      "deleteFailed": "Falha ao eliminar o cofre",
+      "presetApplied": "Modelo aplicado",
+      "presetFailed": "Falha ao aplicar o modelo"
+    }
+  },
+  "bucketSummary": {
+    "title": "Distribuição por cofres",
+    "loading": "A carregar a distribuição por cofres",
+    "loadFailed": "Não foi possível carregar a distribuição por cofres. Tente novamente dentro de momentos.",
+    "emptyTitle": "Ainda sem cofres",
+    "emptyDescription": "Adicione cofres para dividir a sua receita em partes com nome.",
+    "emptyAction": "Adicionar cofres",
+    "income": "Receita dos cofres",
+    "incomeUnknown": "Desconhecida",
+    "incomeSource": {
+      "ACTUAL": "Com base na receita real deste período",
+      "BASE_INCOME": "Com base na receita base do orçamento",
+      "INCOME_LINES": "Com base nas categorias de receita planeadas",
+      "NONE": "Nenhuma receita encontrada"
+    },
+    "totalAllocated": "Total atribuído",
+    "allocatedSoFar": "Atribuído até agora",
+    "allocatedSoFarHint": "Alguns cofres ainda não têm montante conhecido, pelo que este valor é parcial.",
+    "unallocated": "Por atribuir",
+    "unallocatedUnknown": "Desconhecido",
+    "overAllocatedHint": "Atribuição em excesso: os cofres somam mais do que a sua receita.",
+    "targetPercent": "{percent} da receita",
+    "targetAmount": "{amount} por período",
+    "carriedIn": "Transitado: {amount}",
+    "spent": "Gasto",
+    "available": "Disponível",
+    "overspent": "Excesso de despesa",
+    "categories": "{count, plural, one {# categoria} other {# categorias}}",
+    "allocationUnknown": "Defina uma receita base no orçamento ou adicione uma categoria de receita.",
+    "allocationUnknownAction": "Editar orçamento",
+    "unassignedTitle": "Sem atribuição",
+    "unassignedDescription": "{count, plural, one {# linha de categoria não está} other {# linhas de categoria não estão}} em nenhum cofre.",
+    "unassignedPlanned": "Planeado",
+    "unassignedAction": "Atribuir"
+  },
+  "periodBuckets": {
+    "title": "Cofres",
+    "name": "Cofre",
+    "target": "Objetivo",
+    "allocated": "Atribuído",
+    "allocatedUnknown": "Desconhecido",
+    "carriedIn": "Transição de entrada",
+    "spent": "Gasto",
+    "carriedOut": "Transição de saída",
+    "targetPercent": "{percent} da receita",
+    "targetAmount": "{amount} por período"
   }
 }

@@ -536,6 +536,48 @@ describe("resolveRestoreReferences", () => {
       { table: "accounts", column: "institution_id", rows: 1 },
     ]);
   });
+
+  describe("budget line buckets (INV-BUDGET-002)", () => {
+    const B1 = "11111111-1111-4111-8111-111111111111";
+    const B2 = "22222222-2222-4222-8222-222222222222";
+    const K1 = "33333333-3333-4333-8333-333333333333";
+    const L1 = "44444444-4444-4444-8444-444444444444";
+
+    const withBuckets = (line: Record<string, unknown>) =>
+      backup({
+        budgets: [
+          { id: B1, user_id: "u" },
+          { id: B2, user_id: "u" },
+        ],
+        budget_buckets: [{ id: K1, budget_id: B1 }],
+        budget_categories: [
+          { id: L1, budget_id: B1, is_income: false, bucket_id: K1, ...line },
+        ],
+      });
+
+    it("keeps a bucket of the line's own budget on an expense line", () => {
+      const { data, severed } = resolveRestoreReferences(withBuckets({}));
+      expect(data.budget_categories[0]).toMatchObject({ bucket_id: K1 });
+      expect(severed).toEqual([]);
+    });
+
+    it("severs a bucket of the person's other budget", () => {
+      const { data, severed } = resolveRestoreReferences(
+        withBuckets({ budget_id: B2 }),
+      );
+      expect(data.budget_categories[0]).toMatchObject({ bucket_id: null });
+      expect(severed).toEqual([
+        { table: "budget_categories", column: "bucket_id", rows: 1 },
+      ]);
+    });
+
+    it("severs a bucket on an income line", () => {
+      const { data } = resolveRestoreReferences(
+        withBuckets({ is_income: true }),
+      );
+      expect(data.budget_categories[0]).toMatchObject({ bucket_id: null });
+    });
+  });
 });
 
 describe("remapRestoreRow", () => {

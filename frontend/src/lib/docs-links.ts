@@ -33,6 +33,7 @@ export const DOCS_LINKS = {
   budgetRollover: { page: 'budgets', section: 'rollover-rules' },
   budgetExcludedAccounts: { page: 'budgets', section: 'excluded-accounts' },
   budgetVelocity: { page: 'budgets', section: 'spending-velocity' },
+  budgetBuckets: { page: 'budgets', section: 'buckets' },
   categories: { page: 'categories-and-payees', section: 'categories' },
   payees: { page: 'categories-and-payees', section: 'payees' },
   googlePlacesSetup: { page: 'categories-and-payees', section: 'setting-up-google-places' },

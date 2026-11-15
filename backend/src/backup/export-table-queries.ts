@@ -594,6 +594,13 @@ export function buildExportTableQueries(
     },
     { key: "budgets", sql: "SELECT * FROM budgets WHERE user_id = $1" },
     {
+      // Before budget_categories, whose bucket_id references it.
+      key: "budget_buckets",
+      sql: `SELECT bb.* FROM budget_buckets bb
+            JOIN budgets b ON bb.budget_id = b.id
+            WHERE b.user_id = $1`,
+    },
+    {
       key: "budget_categories",
       sql: `SELECT bc.* FROM budget_categories bc
             JOIN budgets b ON bc.budget_id = b.id
@@ -609,6 +616,13 @@ export function buildExportTableQueries(
       key: "budget_period_categories",
       sql: `SELECT bpc.* FROM budget_period_categories bpc
             JOIN budget_periods bp ON bpc.budget_period_id = bp.id
+            JOIN budgets b ON bp.budget_id = b.id
+            WHERE b.user_id = $1`,
+    },
+    {
+      key: "budget_period_buckets",
+      sql: `SELECT bpb.* FROM budget_period_buckets bpb
+            JOIN budget_periods bp ON bpb.budget_period_id = bp.id
             JOIN budgets b ON bp.budget_id = b.id
             WHERE b.user_id = $1`,
     },
