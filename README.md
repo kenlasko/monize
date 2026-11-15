@@ -421,7 +421,7 @@ Every screenshot comes from the built-in demo data ([Try It with Demo Data](#try
 
 ### Backend
 - **Framework**: NestJS (Node.js/TypeScript)
-- **Database**: PostgreSQL 16+ (developed against PG16, daily usage with PG18)
+- **Database**: PostgreSQL 16+ (developed and tested in CI against PG18, the version production runs; 16 and 17 are no longer tested)
 - **Authentication**: Passport.js (Local & OIDC strategies)
 - **API Documentation**: Swagger/OpenAPI (development only)
 - **ORM**: TypeORM

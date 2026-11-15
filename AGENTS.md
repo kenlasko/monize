@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Monize is a personal finance manager (a Microsoft Money replacement). Four layers, each with its own `package.json`: `backend/` (NestJS + TypeORM), `frontend/` (Next.js App Router + React, Tailwind v4, Zustand), `database/` (`schema.sql` plus `migrations/`, PostgreSQL 16), `e2e/` (Playwright). `docs/` holds the cross-layer contracts, `helm/` the chart, `scripts/` the repo-level CI checks. Everything runs in Docker: `docker compose -f docker-compose.dev.yml up`.
+Monize is a personal finance manager (a Microsoft Money replacement). Four layers, each with its own `package.json`: `backend/` (NestJS + TypeORM), `frontend/` (Next.js App Router + React, Tailwind v4, Zustand), `database/` (`schema.sql` plus `migrations/`, PostgreSQL 18), `e2e/` (Playwright). `docs/` holds the cross-layer contracts, `helm/` the chart, `scripts/` the repo-level CI checks. Everything runs in Docker: `docker compose -f docker-compose.dev.yml up`.
 
 This is the canonical instruction file for every coding agent; `CLAUDE.md` imports it and adds only what Claude Code specifically should do. It holds the repo-wide rules and the workflow. The layer files `backend/CLAUDE.md` and `frontend/CLAUDE.md` are indexes over `docs/backend/` and `docs/frontend/`; `database/CLAUDE.md` and `e2e/CLAUDE.md` are short. Read the layer file for the layer you touch, then only the documents its table sends you to.
 

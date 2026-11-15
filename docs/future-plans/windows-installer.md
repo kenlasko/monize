@@ -415,6 +415,5 @@ Each is a decision the build made against the text above, with its reason.
     extensions, and `--data-checksums` is still accepted. Checked on 18.6:
     `npm run smoke:postgres` passes, and `schema.sql` plus every migration,
     applied twice, loads without error and leaves the same catalog as
-    `schema.sql` alone. CI's backend suites and `scripts/verify-schema.sh`
-    still run on 16, so the desktop is the only build tested on 18 by CI,
-    through `smoke:postgres` in the desktop job.
+    `schema.sql` alone. CI's backend integration suites and
+    `scripts/verify-schema.sh` moved to 18 in the same branch.
