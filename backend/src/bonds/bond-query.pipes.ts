@@ -173,7 +173,7 @@ export const MAX_REDEMPTION_QUANTITY = 1_000_000_000;
  * query text as `String(value)`; declared `number`, it would hand over `+value`,
  * which reads `0x10` as 16 and `2.9999999999999999` as 3 and leaves no text to
  * check (issue 2221). A repeated key arrives joined (`4,5`) and fails the
- * digits; any type other than text is refused.
+ * digits; a direct caller's value of any type other than text is refused.
  */
 @Injectable()
 export class ParseBondQuantityPipe implements PipeTransform<unknown, string> {

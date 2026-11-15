@@ -3,6 +3,8 @@ import {
   DefaultValuePipe,
   Get,
   Param,
+  ParseBoolPipe,
+  ParseFloatPipe,
   ParseIntPipe,
   ParseUUIDPipe,
   Query,
@@ -32,13 +34,25 @@ import { ParseBondQuantityPipe } from "../bonds/bond-query.pipes";
 
 const SRC_ROOT = join(__dirname, "..");
 
-/** Nest pipes that accept the number or boolean the global pipe converted. */
-const CONVERTED_VALUE_PIPES: ReadonlySet<string> = new Set([
-  "DefaultValuePipe",
-  "ParseBoolPipe",
-  "ParseFloatPipe",
-  "ParseIntPipe",
-]);
+/**
+ * Nest's own pipes that accept the number or boolean the global pipe converted,
+ * matched by identity so a local class of the same name is not mistaken for one.
+ * They do not restore the text either: `?limit=0x10` reaches `ParseIntPipe` as 16.
+ */
+const CONVERTED_VALUE_PIPES: readonly (abstract new (
+  ...args: never[]
+) => unknown)[] = [
+  DefaultValuePipe,
+  ParseBoolPipe,
+  ParseFloatPipe,
+  ParseIntPipe,
+];
+
+function isConvertedValuePipe(pipe: unknown): boolean {
+  return CONVERTED_VALUE_PIPES.some(
+    (nest) => pipe === nest || pipe instanceof nest,
+  );
+}
 
 const SCANNED: ReadonlyMap<number, string> = new Map([
   [RouteParamtypes.QUERY, "Query"],
@@ -75,15 +89,30 @@ function pipeName(pipe: unknown): string {
 
 type ControllerClass = { readonly name: string; readonly prototype: object };
 
+/** Own and inherited method names, so a handler on a base class is scanned. */
+function methodNames(prototype: object): string[] {
+  const names = new Set<string>();
+  for (
+    let proto: object | null = prototype;
+    proto !== null && proto !== Object.prototype;
+    proto = Object.getPrototypeOf(proto) as object | null
+  ) {
+    for (const name of Object.getOwnPropertyNames(proto)) {
+      if (name !== "constructor") names.add(name);
+    }
+  }
+  return [...names];
+}
+
 /**
  * Every pipe outside `CONVERTED_VALUE_PIPES` on a named `@Query()` or
  * `@Param()` argument of `controller` whose emitted type is `Number` or
- * `Boolean`, as `Class.method(@Query("key") Type) Pipe`.
+ * `Boolean`, as `Class.method(@Query("key") Type) Pipe`. Pipes applied with
+ * `@UsePipes` are out of scope: no controller applies one that way.
  */
 function convertedValuePipeOffenders(controller: ControllerClass): string[] {
   const offenders: string[] = [];
-  for (const method of Object.getOwnPropertyNames(controller.prototype)) {
-    if (method === "constructor") continue;
+  for (const method of methodNames(controller.prototype)) {
     const args = Reflect.getMetadata(
       ROUTE_ARGS_METADATA,
       controller,
@@ -106,10 +135,9 @@ function convertedValuePipeOffenders(controller: ControllerClass): string[] {
         continue;
       }
       for (const pipe of arg.pipes) {
-        const name = pipeName(pipe);
-        if (CONVERTED_VALUE_PIPES.has(name)) continue;
+        if (isConvertedValuePipe(pipe)) continue;
         offenders.push(
-          `${controller.name}.${method}(@${decorator}("${arg.data}") ${(type as { name: string }).name}) ${name}`,
+          `${controller.name}.${method}(@${decorator}("${arg.data}") ${(type as { name: string }).name}) ${pipeName(pipe)}`,
         );
       }
     }
@@ -143,12 +171,21 @@ describe("a pipe on a number- or boolean-typed query or route parameter", () => 
     expect(
       offenders.map(
         (o) =>
-          `${o} receives +value or value === "true", not the query text: declare the parameter string so the pipe checks the text (as ParseBondQuantityPipe does), or use ParseIntPipe / ParseBoolPipe`,
+          `${o} receives +value or value === "true", not the query text: declare the parameter string so the pipe checks the text, as ParseBondQuantityPipe does (docs/backend/entities-and-dtos.md)`,
       ),
     ).toEqual([]);
   }, 120_000);
 
   describe("the scan", () => {
+    // A local class named like Nest's, which the allowlist must not admit.
+    const LookalikePipe = {
+      ParseIntPipe: class {
+        transform(value: unknown): unknown {
+          return value;
+        }
+      },
+    }.ParseIntPipe;
+
     @Controller("probe")
     class Probe {
       @Get("a")
@@ -172,18 +209,34 @@ describe("a pipe on a number- or boolean-typed query or route parameter", () => 
         @Query("days", new DefaultValuePipe(30), ParseIntPipe) _d: number,
       ): void {}
 
+      @Get("g")
+      lookalike(@Query("days", LookalikePipe) _d: number): void {}
+
       @Get("f")
       untouchedUnion(
         @Query("quantity", new ParseBondQuantityPipe()) _q: number | undefined,
       ): void {}
     }
 
+    const offenders = [
+      'numberQuery(@Query("quantity") Number) ParseBondQuantityPipe',
+      'booleanParam(@Param("on") Boolean) ParseBondQuantityPipe',
+      'uuidOnNumber(@Param("id") Number) ParseUUIDPipe',
+      'lookalike(@Query("days") Number) ParseIntPipe',
+    ];
+
     it("names every pipe of another kind on a Number or Boolean parameter, constructed or not", () => {
-      expect(convertedValuePipeOffenders(Probe)).toEqual([
-        'Probe.numberQuery(@Query("quantity") Number) ParseBondQuantityPipe',
-        'Probe.booleanParam(@Param("on") Boolean) ParseBondQuantityPipe',
-        'Probe.uuidOnNumber(@Param("id") Number) ParseUUIDPipe',
-      ]);
+      expect(convertedValuePipeOffenders(Probe)).toEqual(
+        offenders.map((o) => `Probe.${o}`),
+      );
+    });
+
+    it("scans a handler the controller inherits", () => {
+      @Controller("child")
+      class Child extends Probe {}
+      expect(convertedValuePipeOffenders(Child)).toEqual(
+        offenders.map((o) => `Child.${o}`),
+      );
     });
   });
 });
