@@ -1,7 +1,8 @@
-import { INestApplication, ValidationPipe } from "@nestjs/common";
+import { INestApplication } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
+import { createGlobalValidationPipe } from "../common/pipes/global-validation.pipe";
 import { BondAuctionsService } from "./bond-auctions.service";
 import { BondCatalogService } from "./bond-catalog.service";
 import { BondHoldingsService } from "./bond-holdings.service";
@@ -51,14 +52,7 @@ describe("GET /bonds/securities/:id/redemption-split over HTTP", () => {
         next();
       },
     );
-    // As `main.ts` registers it.
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
+    app.useGlobalPipes(createGlobalValidationPipe());
     await app.init();
   });
 
@@ -104,6 +98,27 @@ describe("GET /bonds/securities/:id/redemption-split over HTTP", () => {
     },
   );
 
+  // The global pipe reads the text as `+value` before the quantity pipe sees
+  // it, the same leniency as every `ParseIntPipe` route: what is held is a
+  // whole number of bonds in range, not how it was spelled.
+  it.each([
+    ["1e3", 1000],
+    [" 5", 5],
+    ["007", 7],
+  ])("reads quantity=%p as %d bonds", async (raw, expected) => {
+    holdings.redemptionSplit.mockResolvedValue({});
+    await request(app.getHttpServer()).get(PATH).query(query(raw)).expect(200);
+    expect(holdings.redemptionSplit).toHaveBeenCalledWith(
+      USER,
+      SECURITY,
+      ACCOUNT,
+      INSTRUMENT,
+      "2024-08-08",
+      expected,
+      undefined,
+    );
+  });
+
   it.each([
     ["absent", undefined],
     ["empty", ""],
@@ -112,6 +127,8 @@ describe("GET /bonds/securities/:id/redemption-split over HTTP", () => {
     ["fractional", "1.5"],
     ["not a number", "abc"],
     ["over the bound", "1000000001"],
+    ["over the bound in exponent form", "1e10"],
+    ["a fraction in exponent form", "5e-1"],
     ["repeated", ["4", "5"]],
   ])(
     "refuses a quantity that is %s with a 400 before the service runs",

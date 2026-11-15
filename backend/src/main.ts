@@ -1,5 +1,5 @@
 import { NestFactory } from "@nestjs/core";
-import { Logger, RequestMethod, ValidationPipe } from "@nestjs/common";
+import { Logger, RequestMethod } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import helmet from "helmet";
 import * as express from "express";
@@ -43,6 +43,7 @@ import { ConfigService } from "@nestjs/config";
 import { resolveListenHost } from "./common/listen-host";
 import { logEncryptionKeyStatus } from "./common/encryption/encryption-key";
 import { logJwtSecretStatus } from "./common/jwt-secret-policy";
+import { createGlobalValidationPipe } from "./common/pipes/global-validation.pipe";
 
 // node-oidc-provider writes its notices straight to console.info/console.warn,
 // which would otherwise be the only unformatted lines in the log. Installed
@@ -512,13 +513,7 @@ async function bootstrap() {
   );
 
   // Global validation pipe
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
+  app.useGlobalPipes(createGlobalValidationPipe());
 
   // API prefix. The protected-resource metadata route (RFC 9728) is the
   // only NestJS-controller path that must live at the application root

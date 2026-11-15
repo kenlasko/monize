@@ -168,10 +168,12 @@ export const MAX_REDEMPTION_QUANTITY = 1_000_000_000;
 /**
  * `quantity` of the redemption-split route: a positive whole number of bonds up
  * to `MAX_REDEMPTION_QUANTITY`. The handler parameter is typed `number`, so the
- * global `ValidationPipe` (`transform: true`, `main.ts`) has already turned the
- * query text into `+value` before this pipe runs: a request hands it a number,
- * held here to a safe integer in range, and a repeated key (an array) arrives
- * as `NaN` and is refused. Text, as a direct caller passes it, is held to plain
+ * global `ValidationPipe` (`createGlobalValidationPipe`, `transform: true`) has
+ * already turned the query text into `+value` before this pipe runs: a request
+ * hands it a number, held here to a safe integer in range. Text `+value` reads
+ * as such an integer is therefore accepted however it is spelled (`1e3` is
+ * 1000), as on every `ParseIntPipe` route; a repeated key (an array) arrives as
+ * `NaN` and is refused. Text, as a direct caller passes it, is held to plain
  * digits; any other type is refused rather than coerced.
  */
 @Injectable()
