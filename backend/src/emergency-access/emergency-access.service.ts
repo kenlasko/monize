@@ -13,6 +13,7 @@ import { EmergencyAccessContact } from "./entities/emergency-access-contact.enti
 import { UpsertSettingsDto } from "./dto/upsert-settings.dto";
 import { UpsertContactDto } from "./dto/upsert-contact.dto";
 import { EncryptionService } from "../common/encryption/encryption.service";
+import { decryptMessage } from "./decrypt-message.util";
 import { EmailService } from "../notifications/email.service";
 import { User } from "../users/entities/user.entity";
 
@@ -87,22 +88,7 @@ export class EmergencyAccessService {
   }
 
   private decryptMessage(ciphertext: string | null): string | null {
-    if (!ciphertext) return null;
-    if (!this.encryption.isConfigured()) {
-      this.logger.warn(
-        "Encryption key not configured; emergency access message cannot be decrypted",
-      );
-      return null;
-    }
-    try {
-      return this.encryption.decrypt(ciphertext);
-    } catch (error) {
-      this.logger.error(
-        "Failed to decrypt emergency access message",
-        error instanceof Error ? error.stack : error,
-      );
-      return null;
-    }
+    return decryptMessage(this.encryption, this.logger, ciphertext);
   }
 
   private buildMessageMetadata(

@@ -601,8 +601,13 @@ describe("EmergencyAccessClaimController", () => {
         messageCiphertext: "enc(unreadable)",
       });
       encryption.isConfigured.mockReturnValue(false);
+      const warn = jest.spyOn(Logger.prototype, "warn").mockImplementation();
       expect(await completedMessage()).toBeNull();
       expect(encryption.decrypt).not.toHaveBeenCalled();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("Encryption key not configured"),
+      );
+      warn.mockRestore();
     });
 
     it("is null when decrypt throws a non-Error value", async () => {

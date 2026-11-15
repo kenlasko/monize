@@ -35,6 +35,7 @@ import {
 import { EncryptionService } from "../common/encryption/encryption.service";
 import { generateCsrfToken, getCsrfCookieOptions } from "../common/csrf.util";
 import { withSystemContext } from "../common/db/with-context";
+import { decryptMessage } from "./decrypt-message.util";
 import { ClaimCompleteDto, ClaimPreviewDto } from "./dto/claim.dto";
 
 /**
@@ -158,21 +159,6 @@ export class EmergencyAccessClaimController {
       contactFirstName: contact.firstName,
       expiresAt: contact.claimTokenExpiresAt,
     };
-  }
-
-  private decryptMessage(ciphertext: string | null): string | null {
-    if (!ciphertext || !this.encryption.isConfigured()) {
-      return null;
-    }
-    try {
-      return this.encryption.decrypt(ciphertext);
-    } catch (error) {
-      this.logger.error(
-        "Failed to decrypt emergency access message after claim",
-        error instanceof Error ? error.stack : error,
-      );
-      return null;
-    }
   }
 
   @Post("complete")
@@ -392,7 +378,11 @@ export class EmergencyAccessClaimController {
       );
     }
 
-    const message = this.decryptMessage(messageCiphertext);
+    const message = decryptMessage(
+      this.encryption,
+      this.logger,
+      messageCiphertext,
+    );
 
     const { accessToken, refreshToken } =
       await this.tokenService.generateTokenPair(freshOwner, false);
