@@ -22,10 +22,15 @@ import type { McpServer } from "@modelcontextprotocol/server";
  *  - "answers":  the client returned an accept/decline/cancel at least once, so
  *                it demonstrably shows dialogs to a human.
  *  - "silent":   the client answered for itself (rejected the method or the
- *                request as malformed), or it never answered a single create
- *                or edit (`elicitationUnanswered`), so it is not asked again.
+ *                request as malformed), so no human is behind it and it is
+ *                not asked again.
+ *  - "unanswered": a dialog for a single create or edit timed out or lost its
+ *                connection. A person may still be behind the client, so a
+ *                round that needs a human still asks; a single write skips
+ *                the dialog rather than wait again.
  */
-export type ElicitationBehaviour = "unknown" | "answers" | "silent";
+export type ElicitationBehaviour =
+  "unknown" | "answers" | "silent" | "unanswered";
 
 /**
  * Keyed on the `McpServer` because there is exactly one per 2025-era MCP
@@ -47,10 +52,10 @@ export function recordElicitationAnswered(server: McpServer): void {
 }
 
 /**
- * Record that the client answered for itself. A client that has already proven
- * it shows dialogs is NOT demoted: a single dropped connection or unanswered
- * dialog on a capable client is a one-off, not evidence that the next
- * confirmation would go unseen.
+ * Record that the client answered for itself (rejected the method or the
+ * request). A client that has already proven it shows dialogs is NOT demoted:
+ * a single rejection on a capable client is a one-off, not evidence that the
+ * next confirmation would go unseen.
  */
 export function recordElicitationSilent(server: McpServer): void {
   if (observed.get(server) !== "answers") {
@@ -106,4 +111,12 @@ export function elicitationUnanswered(err: unknown): boolean {
     (err.code === SdkErrorCode.ConnectionClosed ||
       err.code === SdkErrorCode.RequestTimeout)
   );
+}
+
+/** Record one unanswered dialog; neither a proven nor a silent client is changed. */
+export function recordElicitationUnanswered(server: McpServer): void {
+  const current = observed.get(server);
+  if (current !== "answers" && current !== "silent") {
+    observed.set(server, "unanswered");
+  }
 }

@@ -21,6 +21,7 @@ import {
   elicitationBehaviour,
   recordElicitationAnswered,
   recordElicitationSilent,
+  recordElicitationUnanswered,
 } from "./mcp-elicitation-support";
 // Call-time use only, so the cycle with mcp-context (which reads the errors
 // above) never sees a half-loaded module.
@@ -123,7 +124,7 @@ export class ConfirmRequiredError extends Error {
 export class ConfirmNotAnsweredError extends Error {
   constructor() {
     super(
-      "Not changed: the confirmation was not answered in time. Ask the user to make the change again and to answer the confirmation dialog when it appears.",
+      "Not changed: the confirmation was not answered in time. Ask the user to make the change again and to answer the confirmation dialog when it appears. If no dialog appears, make the change in the Monize web chat or in Monize itself.",
     );
     this.name = "ConfirmNotAnsweredError";
   }
@@ -168,7 +169,7 @@ export function needsHumanAnswer(items: readonly ConfirmItem[]): boolean {
         !SINGLE_ACTION_TYPES.has(type) ||
         type.startsWith("delete_") ||
         (BULK_ACTION_TYPES.has(type as AiActionType) &&
-          !isOneRowNonDeleteBatch(card))
+          !isOneRowNonDeleteCard(card))
       );
     })
   );
@@ -182,20 +183,23 @@ function actionCards(items: readonly ConfirmItem[]): unknown[] {
 }
 
 /**
- * A `batch_actions` card that holds exactly one row and does not delete is a
- * single create or edit (a bulk tool with one row left after skips). Anything
- * else about the card's shape stays bulk, so a malformed one fails closed.
+ * A `batch_actions`, `create_transactions` or `create_investment_transactions`
+ * card that holds exactly one row and does not delete is a single create or
+ * edit (a bulk tool with one row left after skips). Anything else about the
+ * card's shape stays bulk, so a malformed one fails closed.
  */
-function isOneRowNonDeleteBatch(card: unknown): boolean {
+function isOneRowNonDeleteCard(card: unknown): boolean {
   const { type, operation, rows } = card as {
     type?: unknown;
     operation?: unknown;
     rows?: unknown;
   };
   return (
-    type === "batch_actions" &&
-    typeof operation === "string" &&
-    !operation.startsWith("delete") &&
+    (type === "create_transactions" ||
+      type === "create_investment_transactions" ||
+      (type === "batch_actions" &&
+        typeof operation === "string" &&
+        !operation.startsWith("delete"))) &&
     Array.isArray(rows) &&
     rows.length === 1
   );
@@ -216,6 +220,15 @@ function applyUnconfirmedPolicy(
 ): void {
   if (![...answers.values()].includes("unsupported")) return;
   const refused = needsHumanAnswer(items);
+  logUnconfirmed(ctx, items, refused);
+  if (refused) throw new ConfirmRequiredError();
+}
+
+function logUnconfirmed(
+  ctx: ServerContext,
+  items: readonly ConfirmItem[],
+  refused: boolean,
+): void {
   const user = resolveUserContext(ctx);
   logger.warn(
     `mcp-unconfirmed-write outcome=${refused ? "refused" : "allowed"} user=${user?.userId ?? "unknown"} credential=${user?.credentialId ?? "unknown"} actions=${actionCards(
@@ -224,7 +237,6 @@ function applyUnconfirmedPolicy(
       .map((card) => actionType(card) ?? "unknown")
       .join(",")}`,
   );
-  if (refused) throw new ConfirmRequiredError();
 }
 
 /**
@@ -532,7 +544,7 @@ async function confirmLegacy(
   for (const item of items) {
     answers.set(
       item.key,
-      await confirmLegacyOne(server, ctx, item.message, needsHuman),
+      await confirmLegacyOne(server, ctx, item.message, items, needsHuman),
     );
   }
   return answers;
@@ -542,6 +554,7 @@ async function confirmLegacyOne(
   server: McpServer,
   ctx: ServerContext,
   message: string,
+  items: readonly ConfirmItem[],
   needsHuman: boolean,
 ): Promise<WriteConfirmation> {
   const capabilities = server.server.getClientCapabilities();
@@ -552,7 +565,13 @@ async function confirmLegacyOne(
   // client that drops the request, the round trip costs CONFIRM_TIMEOUT_MS
   // every time, which on a 25-row individual batch is the same paralysis in
   // slow motion.
-  if (elicitationBehaviour(server) === "silent") {
+  const behaviour = elicitationBehaviour(server);
+  if (behaviour === "silent") {
+    return "unsupported";
+  }
+  // A dialog went unanswered earlier: a single create or edit does not wait
+  // for another, but a round that needs a human still asks.
+  if (behaviour === "unanswered" && !needsHuman) {
     return "unsupported";
   }
   try {
@@ -577,12 +596,19 @@ async function confirmLegacyOne(
     if (elicitationBehaviour(server) === "answers") {
       return "declined";
     }
-    // A round that needs a human is refused for this one write and asked again
-    // next time: an unanswered dialog does not show the client cannot show one.
-    // A single create or edit falls through to the client's own prompt, and the
-    // session is marked so a client that never answers is not asked (and
-    // waited on for CONFIRM_TIMEOUT_MS) again.
-    if (unanswered && needsHuman) throw new ConfirmNotAnsweredError();
+    // An unanswered dialog does not show the client cannot show one. A round
+    // that needs a human is refused for this one write and asked again next
+    // time. A single create or edit falls through to the client's own prompt,
+    // and the session is marked "unanswered" so it is not waited on for
+    // CONFIRM_TIMEOUT_MS again.
+    if (unanswered) {
+      if (needsHuman) {
+        logUnconfirmed(ctx, items, true);
+        throw new ConfirmNotAnsweredError();
+      }
+      recordElicitationUnanswered(server);
+      return "unsupported";
+    }
     recordElicitationSilent(server);
     return "unsupported";
   }

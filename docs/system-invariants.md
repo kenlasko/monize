@@ -6618,14 +6618,22 @@ Enforcement         confirmWriteMany, the only confirmation door, applies
                     no string type or has an unknown type, any delete_* action,
                     or a batch_actions,
                     create_transactions, create_investment_transactions or
-                    run_transaction_rule card) throws ConfirmRequiredError,
-                    which safeToolError returns as a refusal before the tool
-                    writes. Each unconfirmed round logs a Logger.warn line
+                    run_transaction_rule card; the first three holding exactly
+                    one row and not deleting count as a single write) throws
+                    ConfirmRequiredError, which safeToolError returns as a
+                    refusal before the tool writes. A dialog that times out or
+                    loses its connection in a round that needs a human throws
+                    ConfirmNotAnsweredError instead, without marking the
+                    session silent; for a single write it marks the session
+                    "unanswered" and the write proceeds. Each unconfirmed round logs a Logger.warn line
                     "mcp-unconfirmed-write outcome=refused|allowed" with the
                     user, the credential and the action types.
 Concurrency scope   per tool call
 Failure response    A tool error telling the user to approve the change in the
-                    Monize web chat, the app, or a client that shows dialogs;
+                    Monize web chat, the app, or a client that shows dialogs
+                    (ConfirmRequiredError), or that the confirmation was not
+                    answered in time and the change can be made again or in the
+                    Monize web chat or Monize itself (ConfirmNotAnsweredError);
                     no write.
 Required tests      Present: mcp-confirm.spec.ts covers a delete, a bulk card and
                     a multi-item round with no elicitation and with an

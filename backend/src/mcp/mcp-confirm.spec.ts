@@ -199,6 +199,23 @@ describe("mcp-confirm", () => {
         },
       );
 
+      it("still asks a delete after a single create timed out", async () => {
+        elicit
+          .mockRejectedValueOnce(buildError(SdkErrorCode.RequestTimeout))
+          .mockResolvedValueOnce({ action: "accept" });
+        const server = fakeServer({ capabilities: caps });
+        await expect(
+          confirmWrite(server, ctx, "Create?", { type: "create_transaction" }),
+        ).resolves.toBe("unsupported");
+        await expect(
+          confirmWrite(server, ctx, "Delete?", {
+            type: "delete_transaction",
+            id: "t1",
+          }),
+        ).resolves.toBe("accepted");
+        expect(elicit).toHaveBeenCalledTimes(2);
+      });
+
       it("stops asking it for the rest of the session", async () => {
         elicit.mockRejectedValue(
           new ProtocolError(
@@ -289,6 +306,9 @@ describe("mcp-confirm", () => {
             id: "t1",
           }),
         ).rejects.toBeInstanceOf(ConfirmNotAnsweredError);
+        expect(warn).toHaveBeenLastCalledWith(
+          expect.stringContaining("mcp-unconfirmed-write outcome=refused"),
+        );
       });
 
       it("leaves a human's answer to a deletion alone", async () => {
@@ -640,6 +660,26 @@ describe("needsHumanAnswer", () => {
       true,
     ],
     ["a batch with no rows array", [item({ type: "batch_actions" })], true],
+    [
+      "a one-row create_transactions card",
+      [item({ type: "create_transactions", rows: [{}] })],
+      false,
+    ],
+    [
+      "a one-row create_investment_transactions card",
+      [item({ type: "create_investment_transactions", rows: [{}] })],
+      false,
+    ],
+    [
+      "a two-row create_transactions card",
+      [item({ type: "create_transactions", rows: [{}, {}] })],
+      true,
+    ],
+    [
+      "a one-row run_transaction_rule card",
+      [item({ type: "run_transaction_rule", rows: [{}] })],
+      true,
+    ],
     ["a delete_tag action", [item({ type: "delete_tag" })], true],
   ])("is decided for %s", (_label, items, expected) => {
     expect(needsHumanAnswer(items)).toBe(expected);
