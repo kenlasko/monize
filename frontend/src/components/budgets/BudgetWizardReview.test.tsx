@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@/test/render';
+import { render, screen, fireEvent, waitFor, within } from '@/test/render';
 import { BudgetWizardReview } from './BudgetWizardReview';
 import type { WizardState } from './BudgetWizard';
 import type { ApplyBudgetCategoryData, GenerateBudgetResponse } from '@/types/budget';
+import type { BudgetBucketEditorRow } from './utils/budget-bucket-presets';
 
 // Mock budgets API
 const mockApplyGenerated = vi.fn();
@@ -14,6 +15,8 @@ vi.mock('@/lib/budgets', () => ({
 
 // Mock format
 vi.mock('@/lib/format', async (importOriginal) => ({
+  // The bucket review needs the rest of the module (moneyDecimalsForCurrency).
+  ...(await importOriginal<typeof import('@/lib/format')>()),
   roundMoney: (await importOriginal<typeof import('@/lib/format')>()).roundMoney,
   sumMoney: (await importOriginal<typeof import('@/lib/format')>()).sumMoney,
   formatCurrency: vi.fn((amount: number) => `$${amount.toFixed(2)}`),
@@ -94,6 +97,7 @@ describe('BudgetWizardReview', () => {
     periodStart: '2026-02-01',
     selectedTransfers: new Map(),
     selectedIncomeTransfers: new Map(),
+    buckets: [],
     currencyCode: 'USD',
     baseIncome: null,
     incomeLinked: false,
@@ -577,5 +581,173 @@ describe('BudgetWizardReview', () => {
     );
 
     expect(screen.queryByText('Income Linked')).not.toBeInTheDocument();
+  });
+
+  describe('Bucket strategy', () => {
+    const buckets: BudgetBucketEditorRow[] = [
+      { key: 'k-fixed', name: 'Fixed costs', targetType: 'PERCENT', targetValue: 50, carryOver: false, carryCap: null },
+      { key: 'k-save', name: 'Savings', targetType: 'AMOUNT', targetValue: 300, carryOver: true, carryCap: 1000 },
+      { key: 'k-fun', name: 'Fun', targetType: 'PERCENT', targetValue: 10, carryOver: true, carryCap: null },
+    ];
+
+    const analysisWithTransfer: GenerateBudgetResponse = {
+      ...mockAnalysisResult,
+      categories: [
+        ...mockAnalysisResult.categories,
+        { ...mockAnalysisResult.categories[1], categoryId: 'cat-dining', categoryName: 'Dining', suggested: 200 },
+      ],
+      transfers: [{ accountId: 'acc-tfsa', accountName: 'TFSA', suggested: 250 } as any],
+    };
+
+    /** Lines as the categories step can leave them, stale and stray keys included. */
+    const lines = () => ({
+      selectedCategories: new Map<string, ApplyBudgetCategoryData>([
+        // A stray key on an income line is never sent.
+        ['cat-salary', { categoryId: 'cat-salary', amount: 5000, isIncome: true, bucketKey: 'k-fixed' }],
+        ['cat-groceries', { categoryId: 'cat-groceries', amount: 400, isIncome: false, bucketKey: 'k-fixed' }],
+        // The bucket this named was removed.
+        ['cat-dining', { categoryId: 'cat-dining', amount: 200, isIncome: false, bucketKey: 'k-gone' }],
+      ]),
+      selectedTransfers: new Map<string, ApplyBudgetCategoryData>([
+        ['acc-tfsa', { transferAccountId: 'acc-tfsa', isTransfer: true, amount: 250, bucketKey: 'k-save' }],
+      ]),
+    });
+
+    const bucketState = (overrides: Partial<WizardState> = {}): WizardState => ({
+      ...defaultState,
+      strategy: 'BUCKET',
+      analysisResult: analysisWithTransfer,
+      buckets,
+      ...lines(),
+      ...overrides,
+    });
+
+    const renderReview = (state: WizardState) =>
+      render(
+        <BudgetWizardReview state={state} updateState={mockUpdateState} onComplete={mockOnComplete} onBack={mockOnBack} />,
+      );
+
+    const basePayload = {
+      name: 'February 2026 Budget',
+      budgetType: 'MONTHLY',
+      periodStart: '2026-02-01',
+      currencyCode: 'USD',
+      baseIncome: undefined,
+      incomeLinked: false,
+      config: undefined,
+    };
+
+    it('lists the buckets with their target, carry-over and line counts', () => {
+      renderReview(bucketState());
+      const list = screen.getByRole('list', { name: 'Buckets' });
+      const items = within(list).getAllByRole('listitem');
+      expect(items).toHaveLength(3);
+      expect(within(items[0]).getByText('Fixed costs')).toBeInTheDocument();
+      expect(within(items[0]).getByText('1 line')).toBeInTheDocument();
+      expect(within(items[0]).getByText(/of income · Starts each period fresh$/)).toBeInTheDocument();
+      expect(within(items[1]).getByText('Savings')).toBeInTheDocument();
+      expect(within(items[1]).getByText(/per period · Carries over, up to /)).toBeInTheDocument();
+      expect(within(items[1]).getByText('1 line')).toBeInTheDocument();
+      expect(within(items[2]).getByText(/of income · Carries over$/)).toBeInTheDocument();
+      expect(within(items[2]).getByText('0 lines')).toBeInTheDocument();
+    });
+
+    it('warns, without blocking, when selected lines are unassigned', async () => {
+      mockApplyGenerated.mockResolvedValue({ id: 'new-budget' });
+      renderReview(bucketState());
+      expect(screen.getByRole('note')).toHaveTextContent(
+        '1 expense or transfer line is not in any bucket. You can still create the budget and assign them later on its edit page.',
+      );
+      fireEvent.click(screen.getByText('Create Budget'));
+      await waitFor(() => expect(mockOnComplete).toHaveBeenCalled());
+    });
+
+    it('warns when there are no buckets, and still creates the budget', async () => {
+      mockApplyGenerated.mockResolvedValue({ id: 'new-budget' });
+      renderReview(bucketState({ buckets: [] }));
+      expect(screen.getByRole('note')).toHaveTextContent(
+        'This budget has no buckets yet. You can still create it and add buckets later on its edit page.',
+      );
+      expect(screen.queryByRole('list', { name: 'Buckets' })).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText('Create Budget'));
+      await waitFor(() => expect(mockApplyGenerated).toHaveBeenCalledWith(expect.objectContaining({ buckets: [] })));
+      // No line names a bucket that is not in the request.
+      const sent = mockApplyGenerated.mock.calls[0][0].categories as ApplyBudgetCategoryData[];
+      expect(sent.every((c) => !('bucketKey' in c))).toBe(true);
+    });
+
+    it('shows no warning when every selected expense and transfer line has a bucket', () => {
+      const all = lines();
+      all.selectedCategories.set('cat-dining', { categoryId: 'cat-dining', amount: 200, isIncome: false, bucketKey: 'k-fun' });
+      renderReview(bucketState(all));
+      expect(screen.queryByRole('note')).not.toBeInTheDocument();
+    });
+
+    it('sends the buckets with their keys and each line bucketKey only for a live bucket', async () => {
+      mockApplyGenerated.mockResolvedValue({ id: 'new-budget' });
+      renderReview(bucketState());
+      fireEvent.click(screen.getByText('Create Budget'));
+
+      await waitFor(() => expect(mockApplyGenerated).toHaveBeenCalledTimes(1));
+      expect(mockApplyGenerated.mock.calls[0][0]).toEqual({
+        ...basePayload,
+        strategy: 'BUCKET',
+        categories: [
+          { categoryId: 'cat-salary', amount: 5000, isIncome: true },
+          { categoryId: 'cat-groceries', amount: 400, isIncome: false, bucketKey: 'k-fixed' },
+          { categoryId: 'cat-dining', amount: 200, isIncome: false },
+          { transferAccountId: 'acc-tfsa', isTransfer: true, amount: 250, bucketKey: 'k-save' },
+        ],
+        buckets: [
+          { key: 'k-fixed', name: 'Fixed costs', targetType: 'PERCENT', targetValue: 50, carryOver: false, sortOrder: 0 },
+          { key: 'k-save', name: 'Savings', targetType: 'AMOUNT', targetValue: 300, carryOver: true, carryCap: 1000, sortOrder: 1 },
+          { key: 'k-fun', name: 'Fun', targetType: 'PERCENT', targetValue: 10, carryOver: true, sortOrder: 2 },
+        ],
+      });
+      const sentBuckets = mockApplyGenerated.mock.calls[0][0].buckets as Record<string, unknown>[];
+      expect(sentBuckets[0]).not.toHaveProperty('carryCap');
+      expect(sentBuckets[2]).not.toHaveProperty('carryCap');
+    });
+
+    it.each([
+      ['FIXED', {}],
+      ['FIFTY_THIRTY_TWENTY', { categoryGroup: 'NEED' }],
+    ] as const)('leaves the %s payload unchanged: no buckets, no bucketKey', async (strategy, group) => {
+      mockApplyGenerated.mockResolvedValue({ id: 'new-budget' });
+      const state: WizardState = {
+        ...defaultState,
+        strategy,
+        // Buckets kept from an earlier Bucket choice are not sent.
+        buckets,
+        selectedCategories: new Map<string, ApplyBudgetCategoryData>([
+          ['cat-salary', { categoryId: 'cat-salary', amount: 5000, isIncome: true }],
+          ['cat-groceries', { categoryId: 'cat-groceries', amount: 400, isIncome: false, ...group }],
+        ]),
+      };
+      renderReview(state);
+      expect(screen.queryByRole('heading', { name: 'Buckets' })).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText('Create Budget'));
+
+      await waitFor(() => expect(mockApplyGenerated).toHaveBeenCalledTimes(1));
+      expect(mockApplyGenerated.mock.calls[0][0]).toEqual({
+        ...basePayload,
+        strategy,
+        categories: [
+          { categoryId: 'cat-salary', amount: 5000, isIncome: true },
+          { categoryId: 'cat-groceries', amount: 400, isIncome: false, ...group },
+        ],
+      });
+      expect(mockApplyGenerated.mock.calls[0][0]).not.toHaveProperty('buckets');
+    });
+
+    it('drops a leftover bucketKey when the strategy is no longer Bucket', async () => {
+      mockApplyGenerated.mockResolvedValue({ id: 'new-budget' });
+      renderReview(bucketState({ strategy: 'ROLLOVER' }));
+      fireEvent.click(screen.getByText('Create Budget'));
+      await waitFor(() => expect(mockApplyGenerated).toHaveBeenCalledTimes(1));
+      const payload = mockApplyGenerated.mock.calls[0][0];
+      expect(payload).not.toHaveProperty('buckets');
+      expect((payload.categories as ApplyBudgetCategoryData[]).some((c) => 'bucketKey' in c)).toBe(false);
+    });
   });
 });

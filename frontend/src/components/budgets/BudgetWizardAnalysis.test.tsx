@@ -25,6 +25,7 @@ describe('BudgetWizardAnalysis', () => {
     selectedCategories: new Map(),
     selectedTransfers: new Map(),
     selectedIncomeTransfers: new Map(),
+    buckets: [],
     budgetName: 'Test Budget',
     budgetType: 'MONTHLY',
     periodStart: '2026-02-01',

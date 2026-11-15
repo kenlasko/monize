@@ -10,6 +10,8 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getErrorMessage } from '@/lib/errors';
 import { STRATEGY_LABELS, BUDGET_TYPE_LABELS } from './utils/budget-labels';
 import type { WizardState } from './BudgetWizard';
+import type { ApplyBudgetBucketData, ApplyBudgetCategoryData } from '@/types/budget';
+import { BudgetWizardBucketReview, liveBucketKey, withBucketKey } from './BudgetWizardBuckets';
 
 interface BudgetWizardReviewProps {
   state: WizardState;
@@ -73,6 +75,26 @@ export function BudgetWizardReview({
       ? t('lineNames.transfersFrom', { name: transfer.accountName })
       : t('wizardReview.categoryTypes.transferIn');
   };
+  const isBucket = state.strategy === 'BUCKET';
+  const buckets = state.buckets ?? [];
+
+  // Only a Bucket budget sends buckets; a line names its bucket only while that
+  // bucket still exists, and an income line never does (the server refuses it).
+  const requestLine = (line: ApplyBudgetCategoryData): ApplyBudgetCategoryData =>
+    line.bucketKey === undefined
+      ? line
+      : withBucketKey(line, isBucket ? liveBucketKey(line, buckets) : null);
+
+  const requestBuckets = (): ApplyBudgetBucketData[] =>
+    buckets.map((row, index) => ({
+      key: row.key,
+      name: row.name,
+      targetType: row.targetType,
+      targetValue: row.targetValue,
+      carryOver: row.carryOver,
+      ...(row.carryCap !== null ? { carryCap: row.carryCap } : {}),
+      sortOrder: index,
+    }));
 
   const handleCreate = async () => {
     setIsSubmitting(true);
@@ -81,7 +103,7 @@ export function BudgetWizardReview({
         ...Array.from(state.selectedCategories.values()),
         ...incomeTransferEntries,
         ...transferEntries,
-      ];
+      ].map(requestLine);
 
       const config: Record<string, unknown> = {};
       if (state.excludedAccountIds.length > 0) {
@@ -101,6 +123,7 @@ export function BudgetWizardReview({
         incomeLinked: state.incomeLinked,
         config: Object.keys(config).length > 0 ? config : undefined,
         categories: allCategories,
+        ...(isBucket ? { buckets: requestBuckets() } : {}),
       });
       toast.success(t('wizardReview.toasts.created'));
       onComplete();
@@ -242,6 +265,8 @@ export function BudgetWizardReview({
           </div>
         </div>
       </div>
+
+      {isBucket && <BudgetWizardBucketReview state={state} />}
 
       {/* Category list */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
