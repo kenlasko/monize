@@ -167,15 +167,23 @@ export const MAX_REDEMPTION_QUANTITY = 1_000_000_000;
 
 /**
  * `quantity` of the redemption-split route: a positive whole number of bonds up
- * to `MAX_REDEMPTION_QUANTITY`, written as plain digits. The type is checked
- * before the text, so a repeated key (an array) is refused rather than coerced.
+ * to `MAX_REDEMPTION_QUANTITY`, written as plain digits, answered as the text
+ * the handler converts. The handler parameter is declared `string`, so the
+ * global `ValidationPipe` (`createGlobalValidationPipe`) hands this pipe the
+ * query text as `String(value)`; declared `number`, it would hand over `+value`,
+ * which reads `0x10` as 16 and `2.9999999999999999` as 3 and leaves no text to
+ * check (issue 2221). A repeated key arrives joined (`4,5`) and fails the
+ * digits; a direct caller's value of any type other than text is refused.
  */
 @Injectable()
-export class ParseBondQuantityPipe implements PipeTransform<unknown, number> {
-  transform(value: unknown): number {
-    if (typeof value === "string" && /^[1-9]\d{0,9}$/.test(value)) {
-      const quantity = Number(value);
-      if (quantity <= MAX_REDEMPTION_QUANTITY) return quantity;
+export class ParseBondQuantityPipe implements PipeTransform<unknown, string> {
+  transform(value: unknown): string {
+    if (
+      typeof value === "string" &&
+      /^[1-9]\d{0,9}$/.test(value) &&
+      Number(value) <= MAX_REDEMPTION_QUANTITY
+    ) {
+      return value;
     }
     throw new BadRequestException(
       tr(
