@@ -77,7 +77,10 @@ describe("McpPayeesTools", () => {
         preview: { name: "Old Payee" },
         descriptor: { type: "delete_payee", payeeId: "p2" },
       }),
-      buildBatchActions: jest.fn().mockReturnValue({ type: "batch_actions" }),
+      buildBatchActions: jest.fn().mockReturnValue({
+        type: "batch_actions",
+        descriptor: { type: "batch_actions" },
+      }),
     };
 
     tool = new McpPayeesTools(
@@ -435,6 +438,10 @@ describe("McpPayeesTools", () => {
     });
 
     it("creates multiple payees as one bulk card via confirmation", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "read,write" });
       prepService.prepareCreatePayees.mockResolvedValue({
         okPreviews: [
@@ -470,6 +477,10 @@ describe("McpPayeesTools", () => {
     });
 
     it("bulk-updates multiple payees via confirmation", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "read,write" });
       prepService.prepareUpdatePayees.mockResolvedValue({
         okPreviews: [
@@ -505,6 +516,10 @@ describe("McpPayeesTools", () => {
     });
 
     it("bulk-deletes multiple payees via confirmation", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "read,write" });
       prepService.prepareDeletePayees.mockResolvedValue({
         okPreviews: [
@@ -531,6 +546,10 @@ describe("McpPayeesTools", () => {
     });
 
     it("bulk create reports skipped rows in the summary (non-relay)", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "read,write" });
       prepService.prepareCreatePayees.mockResolvedValue({
         okPreviews: [

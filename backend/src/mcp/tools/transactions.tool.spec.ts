@@ -1536,6 +1536,29 @@ describe("McpTransactionsTools", () => {
       expect(transactionsService.create).not.toHaveBeenCalled();
     });
 
+    it("refuses a bulk create from a client that cannot elicit", async () => {
+      relayService.emitPendingAction.mockResolvedValue(false);
+      prepService.prepareCreate.mockResolvedValue(
+        okStd([stdPreview, stdPreview]),
+      );
+      const result = await handlers["manage_transactions"](
+        {
+          operation: "create",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            accountName: "Checking",
+            amount: -50 - i,
+            date: "2025-01-15",
+          })),
+        },
+        ctx,
+      );
+      expect(result.isError).toBe(true);
+      expect((result.content as any)[0].text).toContain("Not changed");
+      expect(elicitInput).not.toHaveBeenCalled();
+      expect(transactionsService.create).not.toHaveBeenCalled();
+      expect(transactionsService.createTransfer).not.toHaveBeenCalled();
+    });
+
     it("commits a bulk create including a transfer card via confirmWrite", async () => {
       relayService.emitPendingAction.mockResolvedValue(false);
       acceptingClient();

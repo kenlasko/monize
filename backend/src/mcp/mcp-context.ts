@@ -1,7 +1,11 @@
 import { sharedLedgerRefusal } from "../common/db/shared-ledger-refusal";
 import { sanitizeToolResultStrings } from "../common/sanitization.util";
 import type { AuthInfo, ServerContext } from "@modelcontextprotocol/server";
-import { ConfirmMismatchError, ConfirmRequiredError } from "./mcp-confirm";
+import {
+  ConfirmMismatchError,
+  ConfirmNotAnsweredError,
+  ConfirmRequiredError,
+} from "./mcp-confirm";
 import { hasApiScope } from "../auth/scopes";
 
 export interface McpUserContext {
@@ -156,6 +160,7 @@ export function safeToolError(err: unknown) {
   // on, and the model needs to be told what to do rather than to retry.
   if (
     err instanceof ConfirmMismatchError ||
+    err instanceof ConfirmNotAnsweredError ||
     err instanceof ConfirmRequiredError
   ) {
     return toolError(err.message);

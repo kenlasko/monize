@@ -77,12 +77,14 @@ describe("McpInvestmentsTools", () => {
 
     relayService = { emitPendingAction: jest.fn().mockResolvedValue(false) };
     const actionBuilder = {
-      buildCreateInvestmentTransaction: jest
-        .fn()
-        .mockReturnValue({ type: "create_investment_transaction" }),
-      buildCreateInvestmentTransactions: jest
-        .fn()
-        .mockReturnValue({ type: "create_investment_transactions" }),
+      buildCreateInvestmentTransaction: jest.fn().mockReturnValue({
+        type: "create_investment_transaction",
+        descriptor: { type: "create_investment_transaction" },
+      }),
+      buildCreateInvestmentTransactions: jest.fn().mockReturnValue({
+        type: "create_investment_transactions",
+        descriptor: { type: "create_investment_transactions" },
+      }),
       buildCreateSecurity: jest.fn().mockReturnValue({
         type: "create_security",
         preview: { symbol: "AAPL", securityName: "Apple Inc." },
@@ -115,19 +117,26 @@ describe("McpInvestmentsTools", () => {
         preview: { symbol: "AAPL", securityName: "Apple Inc." },
         descriptor: { type: "delete_security", securityId: "sec-1" },
       }),
-      buildBatchActions: jest.fn().mockReturnValue({ type: "batch_actions" }),
-      buildUpdateInvestmentTransaction: jest
-        .fn()
-        .mockReturnValue({ type: "update_investment_transaction" }),
-      buildDeleteInvestmentTransaction: jest
-        .fn()
-        .mockReturnValue({ type: "delete_investment_transaction" }),
-      buildBatchUpdateInvestmentTransactions: jest
-        .fn()
-        .mockReturnValue({ type: "batch_actions" }),
-      buildBatchDeleteInvestmentTransactions: jest
-        .fn()
-        .mockReturnValue({ type: "batch_actions" }),
+      buildBatchActions: jest.fn().mockReturnValue({
+        type: "batch_actions",
+        descriptor: { type: "batch_actions" },
+      }),
+      buildUpdateInvestmentTransaction: jest.fn().mockReturnValue({
+        type: "update_investment_transaction",
+        descriptor: { type: "update_investment_transaction" },
+      }),
+      buildDeleteInvestmentTransaction: jest.fn().mockReturnValue({
+        type: "delete_investment_transaction",
+        descriptor: { type: "delete_investment_transaction" },
+      }),
+      buildBatchUpdateInvestmentTransactions: jest.fn().mockReturnValue({
+        type: "batch_actions",
+        descriptor: { type: "batch_actions" },
+      }),
+      buildBatchDeleteInvestmentTransactions: jest.fn().mockReturnValue({
+        type: "batch_actions",
+        descriptor: { type: "batch_actions" },
+      }),
     };
     actionBuilderRef = actionBuilder;
 
@@ -858,6 +867,10 @@ describe("McpInvestmentsTools", () => {
     });
 
     it("creates multiple securities as one bulk card via confirmation", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "write" });
       securityPrepService.prepareCreateSecurities.mockResolvedValue({
         okPreviews: [securityPreview, { ...securityPreview, symbol: "MSFT" }],
@@ -887,6 +900,10 @@ describe("McpInvestmentsTools", () => {
     });
 
     it("bulk-updates multiple securities via confirmation", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "write" });
       securityPrepService.prepareUpdateSecurities.mockResolvedValue({
         okPreviews: [
@@ -949,6 +966,10 @@ describe("McpInvestmentsTools", () => {
     });
 
     it("bulk-deletes multiple securities via confirmation", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "write" });
       securityPrepService.prepareDeleteSecurities.mockResolvedValue({
         okPreviews: [
@@ -1443,6 +1464,10 @@ describe("McpInvestmentsTools", () => {
     });
 
     it("creates a bulk batch in one card and maps skip indices back", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "write" });
       investmentTransactionsService.prepareCreateInvestmentBulk.mockResolvedValue(
         {
@@ -1647,6 +1672,10 @@ describe("McpInvestmentsTools", () => {
       });
 
       it("writes the accrued interest of every row (bulk create)", async () => {
+        server.server.getClientCapabilities.mockReturnValue({
+          elicitation: { form: {} },
+        });
+        elicitInput.mockResolvedValue({ action: "accept" });
         ctx.setUser({ userId: "u1", scopes: "write" });
         investmentTransactionsService.prepareCreateInvestmentBulk.mockResolvedValue(
           {
@@ -1676,6 +1705,10 @@ describe("McpInvestmentsTools", () => {
       });
 
       it("writes the accrued interest of an edit (single and bulk update)", async () => {
+        server.server.getClientCapabilities.mockReturnValue({
+          elicitation: { form: {} },
+        });
+        elicitInput.mockResolvedValue({ action: "accept" });
         ctx.setUser({ userId: "u1", scopes: "write" });
         investmentTransactionsService.previewUpdateInvestmentTransaction.mockResolvedValue(
           { ...redeemPreview, transactionId: "it1" },
@@ -1779,6 +1812,10 @@ describe("McpInvestmentsTools", () => {
     });
 
     it("shows one bulk update card and writes each edit on confirm", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "write" });
       investmentTransactionsService.prepareUpdateInvestmentBulk.mockResolvedValue(
         {
@@ -1829,6 +1866,10 @@ describe("McpInvestmentsTools", () => {
     });
 
     it("deletes a single investment transaction", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "write" });
       investmentTransactionsService.previewDeleteInvestmentTransaction.mockResolvedValue(
         {
@@ -1862,6 +1903,10 @@ describe("McpInvestmentsTools", () => {
     });
 
     it("shows one bulk delete card and removes each on confirm", async () => {
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
       ctx.setUser({ userId: "u1", scopes: "write" });
       investmentTransactionsService.prepareDeleteInvestmentBulk.mockResolvedValue(
         {

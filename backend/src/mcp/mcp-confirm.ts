@@ -4,6 +4,8 @@ import {
   CLIENT_CAPABILITIES_META_KEY,
   inputRequired,
   inputResponse,
+  SdkError,
+  SdkErrorCode,
   type ClientCapabilities,
   type InputRequiredResult,
   type McpServer,
@@ -12,6 +14,7 @@ import {
 import { canonicalize } from "../ai/actions/ai-action-signing.service";
 import {
   AI_ACTION_ENVELOPE_FIELDS,
+  AI_ACTION_TYPES,
   type AiActionType,
 } from "../ai/actions/ai-action.types";
 import {
@@ -97,9 +100,11 @@ export class ConfirmMismatchError extends Error {
  * approved instead.
  *
  * "unsupported" -- a client that declared no elicitation, or never answered it
- * -- is also exactly what a raw HTTP caller holding a stolen bearer produces,
- * so for the changes that destroy data or touch many rows at once it refuses
- * rather than falls through.
+ * -- means no dialog reached a human, so for the changes that destroy data or
+ * touch many rows at once it refuses rather than falls through. This protects
+ * users of clients that cannot show a confirmation dialog; it is not a defence
+ * against a stolen bearer, whose caller can declare elicitation and accept its
+ * own dialog (that belongs to the credential layer: scopes, grant notifications).
  */
 export class ConfirmRequiredError extends Error {
   constructor() {
@@ -107,6 +112,21 @@ export class ConfirmRequiredError extends Error {
       "Not changed: deleting, or changing several items at once, needs a confirmation dialog, and this MCP client did not show one. Ask the user to make this change in the Monize web chat or in Monize itself, or to use an MCP client that shows confirmation dialogs.",
     );
     this.name = "ConfirmRequiredError";
+  }
+}
+
+/**
+ * A dialog was shown (or sent) and nobody answered it in time, or the
+ * connection ended while it was open. Nothing is written. This is not
+ * evidence that the client cannot show dialogs, so the session is not marked
+ * silent and a later write is asked again.
+ */
+export class ConfirmNotAnsweredError extends Error {
+  constructor() {
+    super(
+      "Not changed: the confirmation was not answered in time. Ask the user to make the change again and to answer the confirmation dialog when it appears.",
+    );
+    this.name = "ConfirmNotAnsweredError";
   }
 }
 
@@ -118,25 +138,39 @@ const BULK_ACTION_TYPES: ReadonlySet<AiActionType> = new Set<AiActionType>([
   "run_transaction_rule",
 ]);
 
+/** Single-row action types a tool may confirm: the AI actions and the one MCP-only write. */
+const SINGLE_ACTION_TYPES: ReadonlySet<string> = new Set<string>([
+  ...AI_ACTION_TYPES,
+  "enter_bond_series_manually",
+]);
+
 function actionType(action: unknown): string | undefined {
   const type = (action as { type?: unknown } | null | undefined)?.type;
   return typeof type === "string" ? type : undefined;
 }
 
 /**
- * Whether a round may write only on a human's answer: more than one item, a
- * deletion (any `delete_*` action, so a new one is covered without a list
- * edit), or a card that writes many rows.
+ * Whether a round may write only on a human's answer: more than one action
+ * card, a deletion (any `delete_*` action, so a new one is covered without a
+ * list edit), or a card that writes many rows.
+ *
+ * Fails closed: an action that is missing, has no string `type` or has a type
+ * this server does not know is not a single create or edit, so it needs an
+ * answer too. An array counts one card per element.
  */
 export function needsHumanAnswer(items: readonly ConfirmItem[]): boolean {
+  const cards = items.flatMap((item) =>
+    Array.isArray(item.action) ? item.action : [item.action],
+  );
   return (
-    items.length > 1 ||
-    items.some((item) => {
-      const type = actionType(item.action);
+    cards.length !== 1 ||
+    cards.some((card) => {
+      const type = actionType(card);
       return (
-        type !== undefined &&
-        (type.startsWith("delete_") ||
-          BULK_ACTION_TYPES.has(type as AiActionType))
+        type === undefined ||
+        !SINGLE_ACTION_TYPES.has(type) ||
+        type.startsWith("delete_") ||
+        BULK_ACTION_TYPES.has(type as AiActionType)
       );
     })
   );
@@ -507,6 +541,15 @@ async function confirmLegacyOne(
     // human behind it -- refuse rather than fall through to the write.
     if (elicitationBehaviour(server) === "answers") {
       return "declined";
+    }
+    // An unanswered dialog is not a client that cannot show one: refuse this
+    // write and ask again next time.
+    if (
+      SdkError.isInstance(err) &&
+      (err.code === SdkErrorCode.RequestTimeout ||
+        err.code === SdkErrorCode.ConnectionClosed)
+    ) {
+      throw new ConfirmNotAnsweredError();
     }
     recordElicitationSilent(server);
     return "unsupported";

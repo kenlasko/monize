@@ -6600,14 +6600,19 @@ Status              enforced
 ```text
 Statement           When no confirmation dialog reached a human ("unsupported":
                     a client that declared no elicitation, or advertised it and
-                    never answered), nothing is deleted and no more than one row
-                    is written; every such round leaves a log line that
-                    separates it from a write a person approved.
+                    never answered), nothing is deleted and no more than one
+                    action card is written; every such round leaves a log line
+                    that separates it from a write a person approved. This
+                    protects users of clients that cannot show a dialog; it is
+                    not a defence against a stolen bearer, whose caller answers
+                    its own dialog (that is the credential layer's job).
 Source of truth     backend/src/mcp/mcp-confirm.ts
 Enforcement         confirmWriteMany, the only confirmation door, applies
                     applyUnconfirmedPolicy to every round on both revisions
-                    before returning to the tool: needsHumanAnswer (more than
-                    one item, any delete_* action, or a batch_actions,
+                    before returning to the tool: needsHumanAnswer (fails closed:
+                    more than one action card, an action that is missing, has
+                    no string type or has an unknown type, any delete_* action,
+                    or a batch_actions,
                     create_transactions, create_investment_transactions or
                     run_transaction_rule card) throws ConfirmRequiredError,
                     which safeToolError returns as a refusal before the tool
