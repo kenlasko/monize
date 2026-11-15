@@ -140,10 +140,12 @@ describe("GemPrimitives", () => {
     // positive bar is neutral rather than tinted per asset -- and it comes
     // from the chart tokens, so it re-colours with the theme instead of
     // staying Tailwind grey/red on every palette.
-    expect(fill()).toHaveStyle({ backgroundColor: "var(--chart-neutral)" });
+    // Read from the inline style the component writes: the computed style
+    // resolves `var()` against a theme the test document does not load.
+    expect(fill()?.style.backgroundColor).toBe("var(--chart-neutral)");
     expect(fill()?.className).not.toMatch(/bg-(gray|red)-\d/);
     rerender(<GemBar width={40} negative />);
-    expect(fill()).toHaveStyle({ backgroundColor: "var(--chart-expense)" });
+    expect(fill()?.style.backgroundColor).toBe("var(--chart-expense)");
   });
 
   it("renders an empty state with an optional action", () => {
