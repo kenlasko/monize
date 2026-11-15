@@ -185,12 +185,25 @@ export class ParseBondQuantityPipe implements PipeTransform<unknown, string> {
     ) {
       return value;
     }
-    throw new BadRequestException(
-      tr(
-        "errors.bonds.QUANTITY_INVALID",
-        `The quantity must be a positive whole number of bonds: ${typeof value === "string" ? value : ""}`,
-        { quantity: typeof value === "string" ? value : "" },
-      ),
-    );
+    throw quantityInvalidException(typeof value === "string" ? value : "");
   }
+}
+
+/**
+ * The 400 of a redemption quantity that is not a positive whole number of
+ * bonds, from the route's pipe or from `BondHoldingsService.redemptionSplit`
+ * itself. `QUANTITY_INVALID` is its `errorCode`, so a client can tell the
+ * refused quantity from a request that failed; `quantity` is the refused text.
+ */
+export function quantityInvalidException(
+  quantity: string,
+): BadRequestException {
+  return new BadRequestException({
+    message: tr(
+      "errors.bonds.QUANTITY_INVALID",
+      `The quantity must be a positive whole number of bonds: ${quantity}`,
+      { quantity },
+    ),
+    errorCode: "QUANTITY_INVALID",
+  });
 }

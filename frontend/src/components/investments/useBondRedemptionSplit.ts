@@ -8,15 +8,29 @@ import type { BondLotsRefusalCode, BondRedemptionSplit } from '@/types/bond';
 /** Wait for the person to stop typing a quantity or a date before asking. */
 export const REDEMPTION_SPLIT_DEBOUNCE_MS = 300;
 
-/** The refusals of a removal the server answers with 400 and the code as `errorCode`. */
-const REMOVAL_REFUSAL_CODES: readonly string[] = [
+/**
+ * The most bonds the server splits one redemption for (the backend's
+ * `MAX_REDEMPTION_QUANTITY`, which `bond-query.pipes.spec.ts` checks this
+ * against); a larger quantity is answered with `QUANTITY_INVALID`.
+ */
+export const MAX_REDEMPTION_QUANTITY = 1_000_000_000;
+
+/**
+ * Why the server refused to split: a removal the lots cannot cover, or a
+ * quantity that is not a whole number of bonds it splits for.
+ */
+export type RedemptionSplitRefusalCode = BondLotsRefusalCode | 'QUANTITY_INVALID';
+
+/** The refusals the server answers with 400 or 422 and the code as `errorCode`. */
+const REFUSAL_CODES: readonly string[] = [
   'OVER_REMOVAL',
   'REMOVAL_EXCEEDS_SERIES',
   'SPLIT',
   'FRACTIONAL_QUANTITY',
   'INVALID_QUANTITY',
   'SERIES_NOT_DETERMINED',
-] satisfies BondLotsRefusalCode[];
+  'QUANTITY_INVALID',
+] satisfies RedemptionSplitRefusalCode[];
 
 /** Everything the split depends on; a change of any field is another request. */
 export interface RedemptionSplitRequest {
@@ -45,8 +59,8 @@ export function redemptionRequestKey(r: RedemptionSplitRequest): string {
 interface SplitData {
   key: string;
   split: BondRedemptionSplit | null;
-  /** The removal refusal code when the server refused the quantity. */
-  refusalCode: BondLotsRefusalCode | null;
+  /** The refusal code when the server refused the quantity. */
+  refusalCode: RedemptionSplitRefusalCode | null;
   failed: boolean;
 }
 
@@ -54,7 +68,7 @@ export interface BondRedemptionSplitResult {
   /** The key of the request the figures belong to; null while none was answered. */
   key: string | null;
   split: BondRedemptionSplit | null;
-  refusalCode: BondLotsRefusalCode | null;
+  refusalCode: RedemptionSplitRefusalCode | null;
   /** The request failed: that is not "no split". */
   failed: boolean;
   loading: boolean;
@@ -96,11 +110,11 @@ export function useBondRedemptionSplit(
           const code = getErrorCode(err);
           const status = (err as { response?: { status?: number } })?.response?.status;
           const refused =
-            (status === 400 || status === 422) && code !== undefined && REMOVAL_REFUSAL_CODES.includes(code);
+            (status === 400 || status === 422) && code !== undefined && REFUSAL_CODES.includes(code);
           setData({
             key,
             split: null,
-            refusalCode: refused ? (code as BondLotsRefusalCode) : null,
+            refusalCode: refused ? (code as RedemptionSplitRefusalCode) : null,
             failed: !refused,
           });
         });

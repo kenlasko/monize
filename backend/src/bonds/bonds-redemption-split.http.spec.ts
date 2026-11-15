@@ -126,6 +126,7 @@ describe("GET /bonds/securities/:id/redemption-split over HTTP", () => {
         .query(sent)
         .expect(400);
       expect(res.body.message).toMatch(/positive whole number of bonds/);
+      expect(res.body.errorCode).toBe("QUANTITY_INVALID");
       expect(holdings.redemptionSplit).not.toHaveBeenCalled();
     },
   );

@@ -1,6 +1,9 @@
 import { BadRequestException } from "@nestjs/common";
+import { readFileSync } from "fs";
+import { join } from "path";
 import { todayYMD } from "../common/date-utils";
 import {
+  MAX_REDEMPTION_QUANTITY,
   ParseAssumePipe,
   ParseBondAsOfPipe,
   ParseBenchmarkIdPipe,
@@ -204,5 +207,34 @@ describe("ParseBondQuantityPipe", () => {
     };
     expect(messageOf("1e3")).toMatch(/bonds: 1e3$/);
     expect(messageOf(4)).toMatch(/bonds: $/);
+  });
+
+  it("bounds the quantity where the REDEEM form says it does", () => {
+    // The form names the bound in the message it shows for QUANTITY_INVALID.
+    const frontend = readFileSync(
+      join(
+        __dirname,
+        "../../../frontend/src/components/investments/useBondRedemptionSplit.ts",
+      ),
+      "utf8",
+    );
+    const declared = frontend.match(/MAX_REDEMPTION_QUANTITY\s*=\s*([\d_]+)/);
+    expect(declared).not.toBeNull();
+    expect(Number(declared![1].replace(/_/g, ""))).toBe(
+      MAX_REDEMPTION_QUANTITY,
+    );
+  });
+
+  it("carries QUANTITY_INVALID as its errorCode, so a client can tell it from a failed request", () => {
+    try {
+      pipe.transform("0");
+    } catch (error) {
+      expect((error as BadRequestException).getResponse()).toEqual({
+        message: "The quantity must be a positive whole number of bonds: 0",
+        errorCode: "QUANTITY_INVALID",
+      });
+      return;
+    }
+    throw new Error("expected a refusal");
   });
 });
