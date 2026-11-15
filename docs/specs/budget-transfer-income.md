@@ -80,7 +80,19 @@ once, on the line.
 net of incoming transfers over the analysis window (each month clamped at
 zero, as a period's actual is), with the same statistics and profile-based
 `suggested` amount as the outgoing `transfers`. Accounts whose every month is
-zero are left out. The wizard lists them under Income, none preselected: a
+zero are left out.
+
+A suggestion is a starting amount, not what the line will count:
+
+- The analysis runs before the wizard's Configure step picks the excluded
+  accounts, so it cannot leave out a leg whose receiving account the budget
+  will exclude (truth table row 5: HISA -> RRSP with both excluded is
+  suggested, but the line counts 0).
+- Like the outgoing `transfers`, a source that paid into accounts of
+  different currencies has its raw amounts summed, unconverted. Converting
+  both analyses is a separate change.
+
+The wizard lists them under Income, none preselected: a
 chequing account that pays a credit card is a "source" too, and only the user
 knows which source is a reserve. Selecting an income transfer for an account
 deselects that account's outgoing transfer and vice versa.
