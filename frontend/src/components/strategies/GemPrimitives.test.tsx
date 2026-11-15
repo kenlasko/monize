@@ -134,7 +134,7 @@ describe("GemPrimitives", () => {
 
   it("renders a neutral comparison bar, and the loss tone when negative", () => {
     const { container, rerender } = render(<GemBar width={40} />);
-    const fill = () => container.querySelector('[aria-hidden="true"] > div');
+    const fill = () => container.querySelector<HTMLElement>('[aria-hidden="true"] > div');
     expect(fill()).toHaveStyle({ width: "40%" });
     // Colour is reserved for the chart series and for gains/losses, so a
     // positive bar is neutral rather than tinted per asset -- and it comes
