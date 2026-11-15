@@ -1557,7 +1557,20 @@ jobs:
     # desktop-windows too: a release carries its Windows installer, so a
     # failed Windows build stops the release (no bump commit, no tag) the same
     # way a failed image leg does.
+    #
+    # The `if:` names every need's result under `!cancelled()`, as
+    # windows-beta does, instead of leaning on the implicit `success()`. That
+    # default also looks past the direct needs to desktop-windows's own:
+    # prepare-preview is skipped on every release dispatch, so the plain
+    # default would skip this job after every leg had passed. A failed or
+    # skipped need still stops the release.
     needs: [prepare-release, build-and-push, desktop-windows]
+    if: >-
+      !cancelled() &&
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' &&
+      needs.prepare-release.result == 'success' &&
+      needs.build-and-push.result == 'success' &&
+      needs.desktop-windows.result == 'success'
     permissions:
       contents: write # to push the version-bump commit and create the GitHub release
     steps:
