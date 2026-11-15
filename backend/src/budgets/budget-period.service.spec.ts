@@ -19,6 +19,7 @@ import {
 import { Currency } from "../currencies/entities/currency.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
+import * as spendingUtil from "./budget-spending.util";
 import {
   createScopedDbMocks,
   DataSourceMock,
@@ -881,6 +882,34 @@ describe("BudgetPeriodService", () => {
         allocatedAmount: 840,
         actualAmount: 100,
         carryOut: 740,
+      });
+    });
+
+    it("counts the transfers-in-as-income figure in an income-linked budget's bucket income", async () => {
+      // The live summary's income includes what `config.transfersInAsIncome`
+      // adds (issue #2141); the close's bucket income must too, or the frozen
+      // allocation differs from the one the card showed.
+      const outside = jest
+        .spyOn(spendingUtil, "resolveOutsideTransferIncome")
+        .mockReturnValue(300);
+      arrangeClose({
+        buckets: [savings],
+        spent: { "b-save": 100 },
+        budget: { incomeLinked: true, baseIncome: 9999 },
+        incomeLines: [{ id: "pay", amount: 4000, received: 4200 }],
+      });
+
+      try {
+        await service.closePeriod("user-1", "budget-1");
+      } finally {
+        outside.mockRestore();
+      }
+
+      expect(written("b-save")).toMatchObject({
+        incomeBasis: 4500,
+        allocatedAmount: 900,
+        actualAmount: 100,
+        carryOut: 800,
       });
     });
 

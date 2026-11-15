@@ -791,7 +791,7 @@ describe("BudgetGeneratorService", () => {
       expect(result.categories).toHaveLength(1);
     });
 
-    it("checks and writes in one transaction, so a refused line leaves no budget row", async () => {
+    it("refuses a foreign category inside the one transaction, before any write", async () => {
       budgetsRepository.save.mockResolvedValue({ id: "new-budget" });
       categoriesRepository.find.mockResolvedValue([]);
 
@@ -810,10 +810,9 @@ describe("BudgetGeneratorService", () => {
           ],
         }),
       ).rejects.toThrow("cat-not-mine");
-      // The first transaction opened is the one the refusal leaves through,
-      // so the budget insert inside it rolls back with it (before, it was the
-      // insert's own, already committed).
-      expect(budgetsRepository.save).toHaveBeenCalled();
+      // The ownership check runs inside the one transaction, before the budget
+      // row is written, so the refusal leaves through it with nothing written.
+      expect(budgetsRepository.save).not.toHaveBeenCalled();
       await expect(
         scopedDataSource.transaction.mock.results[0].value,
       ).rejects.toThrow("cat-not-mine");
