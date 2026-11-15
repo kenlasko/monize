@@ -41,6 +41,11 @@ const MAX_REMITTANCE_LINE_LENGTH = 750;
 const MAX_REMITTANCE_LINES = 20;
 const MAX_PSU_TYPES = 10;
 const MAX_REDIRECT_URLS = 50;
+/**
+ * A sanity bound on a pagination key, not a cut: keys are opaque and are sent
+ * back as received, so one longer than this is refused rather than shortened.
+ */
+const MAX_CONTINUATION_KEY_LENGTH = 16_384;
 
 /** The last characters of an identifier that are shown; the rest is masked. */
 const MASK_VISIBLE_CHARACTERS = 4;
@@ -94,6 +99,26 @@ function text(value: unknown, max: number): string | null {
   const cleaned = value.replace(/[\u0000-\u001f\u007f]+/g, " ").trim();
   if (cleaned === "") return null;
   return cleaned.slice(0, max);
+}
+
+/**
+ * A pagination key exactly as the provider sent it, or null on the last page.
+ *
+ * The key is an opaque token the provider must get back byte for byte, so it
+ * does not go through `text()`: trimming it, turning its line breaks into
+ * spaces or cutting it at a length makes the provider refuse the next page
+ * (Enable Banking answers 422 WRONG_REQUEST_PARAMETERS "continuation_key
+ * parameter is invalid", seen with ING Romania). A blank key means no next page.
+ */
+function continuationKey(value: unknown): string | null {
+  if (typeof value !== "string" || value.trim() === "") return null;
+  if (value.length > MAX_CONTINUATION_KEY_LENGTH) {
+    throw new BankSyncProviderError(
+      "invalid_response",
+      `Enable Banking returned a pagination key longer than ${MAX_CONTINUATION_KEY_LENGTH} characters.`,
+    );
+  }
+  return value;
 }
 
 /** A decimal string as sent, or null. A finite number is accepted as its text. */
@@ -426,7 +451,7 @@ export function mapTransactionsPage(payload: unknown): {
     transactions: requireArray(body, "transactions")
       .map(mapTransaction)
       .filter((row): row is BankTransaction => row !== null),
-    continuationKey: text(body.continuation_key, 2000),
+    continuationKey: continuationKey(body.continuation_key),
   };
 }
 
