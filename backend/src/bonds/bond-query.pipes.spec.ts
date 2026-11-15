@@ -163,10 +163,17 @@ describe("ParseOptionalProgramCodePipe", () => {
 describe("ParseBondQuantityPipe", () => {
   const pipe = new ParseBondQuantityPipe();
 
-  it("accepts a positive whole number of bonds", () => {
+  it("accepts a positive whole number of bonds written as plain digits", () => {
     expect(pipe.transform("1")).toBe(1);
     expect(pipe.transform("240")).toBe(240);
+    expect(pipe.transform("3910")).toBe(3910);
     expect(pipe.transform("1000000000")).toBe(1_000_000_000);
+  });
+
+  it("accepts the number the global ValidationPipe hands over for a number-typed parameter", () => {
+    expect(pipe.transform(1)).toBe(1);
+    expect(pipe.transform(3910)).toBe(3910);
+    expect(pipe.transform(1_000_000_000)).toBe(1_000_000_000);
   });
 
   it.each([
@@ -181,9 +188,33 @@ describe("ParseBondQuantityPipe", () => {
     "1000000001",
     "99999999999",
     ["1", "2"],
-    4,
+    0,
+    -0,
+    -1,
+    1.5,
+    1_000_000_001,
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.MAX_SAFE_INTEGER + 1,
     null,
+    true,
+    { quantity: 4 },
   ])("refuses %p with a 400", (value) => {
     expect(() => pipe.transform(value)).toThrow(BadRequestException);
+  });
+
+  it("names the refused value, and nothing for one it cannot print", () => {
+    const messageOf = (value: unknown) => {
+      try {
+        pipe.transform(value);
+      } catch (error) {
+        return (error as BadRequestException).message;
+      }
+      throw new Error("expected a refusal");
+    };
+    expect(messageOf(1_000_000_001)).toMatch(/: 1000000001$/);
+    expect(messageOf("1.5")).toMatch(/: 1\.5$/);
+    expect(messageOf(Number.NaN)).toMatch(/bonds: $/);
+    expect(messageOf(["1", "2"])).toMatch(/bonds: $/);
   });
 });
