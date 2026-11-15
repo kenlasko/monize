@@ -101,12 +101,18 @@
   --highlight-flash-ring: #f59e0b;
 }
 
-/* Base styles -- extend background behind display cutouts */
+/* Base styles -- extend background behind display cutouts.
+   `color-scheme` tells the browser which native chrome to draw: the page
+   scrollbar, form-control popups and the date-picker icon. Dark mode is a
+   class here, not the OS media query, so without it Chromium on Windows keeps
+   painting a light scrollbar beside a dark page. */
 html {
+  color-scheme: light;
   @apply bg-gray-50;
 }
 
 html.dark {
+  color-scheme: dark;
   @apply bg-gray-900;
 }
 
