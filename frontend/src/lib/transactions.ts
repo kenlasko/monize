@@ -23,6 +23,7 @@ import {
   RecurringChargeInfo,
   StaleUnreconciledSummary,
   RegisterFilterOptions,
+  TransactionExportRow,
 } from '@/types/transaction';
 import { invalidateBalanceCaches } from './apiCache';
 import { API_MAX_PAGE_LIMIT } from './api-page-limits';
@@ -105,6 +106,31 @@ export interface TransactionsGetAllParams {
   sortDirection?: 'asc' | 'desc';
 }
 
+/** The register's filters, without the paging a single page adds. */
+export type TransactionsRegisterFilterParams = Omit<
+  TransactionsGetAllParams,
+  'page' | 'limit' | 'targetTransactionId'
+>;
+
+/** The register's filters as the API reads them, shared by the list and its export. */
+function buildRegisterFilterParams(params?: TransactionsRegisterFilterParams) {
+  return {
+    ...buildFilterParams(params),
+    startDate: params?.startDate,
+    endDate: params?.endDate,
+    search: params?.search,
+    amountFrom: params?.amountFrom,
+    amountTo: params?.amountTo,
+    statuses: params?.statuses && params.statuses.length > 0 ? params.statuses.join(',') : undefined,
+    tagKey: params?.tagKey || undefined,
+    tagKeyOp: params?.tagKey ? params?.tagKeyOp : undefined,
+    tagKeyValue: params?.tagKey ? params?.tagKeyValue || undefined : undefined,
+    hasAttachments: params?.hasAttachments,
+    sortBy: params?.sortBy,
+    sortDirection: params?.sortDirection,
+  };
+}
+
 export const transactionsApi = {
   // Create a new transaction
   create: async (data: CreateTransactionData): Promise<Transaction> => {
@@ -116,22 +142,10 @@ export const transactionsApi = {
   // Get paginated transactions with optional filters
   getAll: async (params?: TransactionsGetAllParams): Promise<PaginatedTransactions> => {
     const apiParams = {
-      ...buildFilterParams(params),
-      startDate: params?.startDate,
-      endDate: params?.endDate,
+      ...buildRegisterFilterParams(params),
       page: params?.page,
       limit: params?.limit,
-      search: params?.search,
       targetTransactionId: params?.targetTransactionId,
-      amountFrom: params?.amountFrom,
-      amountTo: params?.amountTo,
-      statuses: params?.statuses && params.statuses.length > 0 ? params.statuses.join(',') : undefined,
-      tagKey: params?.tagKey || undefined,
-      tagKeyOp: params?.tagKey ? params?.tagKeyOp : undefined,
-      tagKeyValue: params?.tagKey ? params?.tagKeyValue || undefined : undefined,
-      hasAttachments: params?.hasAttachments,
-      sortBy: params?.sortBy,
-      sortDirection: params?.sortDirection,
     };
 
     const response = await apiClient.get<PaginatedTransactions>('/transactions', {
@@ -139,6 +153,26 @@ export const transactionsApi = {
       timeout: 60000,
     });
     return response.data;
+  },
+
+  /**
+   * Every transaction matching the register's filters, in one request: the
+   * server walks the pages itself. Walking `getAll` from here took one request
+   * per page, which on a large ledger ran into the API's request throttle
+   * (issue #2198). The rows carry only the fields the CSV export writes.
+   */
+  getAllForExport: async (
+    params?: TransactionsRegisterFilterParams,
+  ): Promise<TransactionExportRow[]> => {
+    const response = await apiClient.get<{ data: TransactionExportRow[] }>(
+      '/transactions/export',
+      {
+        params: buildRegisterFilterParams(params),
+        // The whole register in one response; a large ledger takes a while.
+        timeout: 300000,
+      },
+    );
+    return response.data.data;
   },
 
   /**
