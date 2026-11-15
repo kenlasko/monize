@@ -242,7 +242,7 @@ implied.
 | INV-WTY-007 | A delegate never learns a transaction outside their readable accounts through a warranty | enforced |
 | INV-BUDGET-001 | Every bucket figure is produced by one pure function | enforced |
 | INV-BUDGET-002 | A line's bucket belongs to the line's own budget, and an income line has none | partial |
-| INV-BUDGET-003 | A closed period's bucket figures are frozen, and the next period's carry_in equals the closed period's carry_out | partial |
+| INV-BUDGET-003 | A closed period's bucket figures are frozen, and the next period's carry_in equals the closed period's carry_out | enforced |
 | SE-001 | Accepted contributions and shares conserve both currency totals | enforced |
 | SE-002 | Joining preserves the existing participant's history | enforced |
 | SE-003 | Group membership grants no private finance access | enforced |
@@ -10024,14 +10024,28 @@ Retry semantics     a refused write wrote nothing, so a retry starts clean
 Crash semantics     --
 Failure response    404 for a bucket not of this budget, 400 for an income line
 Required tests      Present: budget-buckets.service.spec.ts and the budgets
-                    service specs (truth table D with typed mocks). Missing:
-                    a PG integration test that drives a foreign bucket id
-                    through each writing route (task Q1 of the bucket plan).
+                    service specs (truth table D with typed mocks);
+                    backend/test/integration/budget-buckets.integration.spec.ts
+                    under enforced row-level security drives a bucket of the
+                    same person's other budget and one of another person's
+                    budget through addCategory, updateCategory and
+                    bulkUpdateCategories, a bucket on an income line through
+                    all three and through the wizard apply (as a bucketKey),
+                    and re-reads each row to show a refusal wrote nothing
+                    (a bulk batch's valid item included); null clears and an
+                    own bucket sets.
 Status              partial
 ```
 
-Status is `partial` because the required PG integration proof has not been
-written; the check itself is in the write path of every writer that exists.
+Status is `partial` because one writer of `bucket_id` does not run the check:
+the backup restore (`backend/src/backup/restore-references.ts`) requires a
+line's `bucket_id` to name a `budget_buckets` row of the same file, so it can
+never point at another person's bucket, but a hand-edited file can point a
+line at a bucket of the restoring person's other budget, or give an income
+line a bucket. No figure is wrong for it: `computeBudgetBucketFigures` counts a
+line whose bucket is not one of its budget's as unassigned and skips income
+lines. Every request writer (line add, line update, bulk update, wizard apply)
+runs the check and has the PG proof above.
 
 ### INV-BUDGET-003 -- a closed period's buckets are frozen, and carry once
 
@@ -10078,15 +10092,26 @@ Required tests      Present: budget-period.service.spec.ts (truth table C
                     created mid-period inserted with carry_in 0; a NULL
                     bucket_id row untouched; no bucket read or write for a
                     budget without buckets), budget-period-lifecycle.spec.ts
-                    (two consecutive closes over a mocked table). Missing: the
-                    two-close carry chain on real PostgreSQL, with and without
-                    a cap, and a closed row surviving a later bucket edit
-                    (task Q1 of the bucket plan).
-Status              partial
+                    (two consecutive closes over a mocked table);
+                    backend/test/integration/budget-buckets.integration.spec.ts
+                    on real PostgreSQL: two consecutive closes with the
+                    section 8 figures asserting each frozen row as literals
+                    and each next period's carry_in equal to the closed
+                    carry_out, uncapped (600, then 1250) and capped at 500
+                    (from a 250 carry-in); a rename and retarget after a close
+                    leaving the CLOSED row byte-for-byte unchanged while the
+                    next close freezes the new name and target; a bucket
+                    deletion nulling bucket_id on its lines and snapshot rows,
+                    which keep bucket_name and their figures, and the next
+                    close leaving the orphaned row alone; the live
+                    getBucketStatus showing the carried-in 250 and the
+                    section 8 figures that the close then freezes.
+Status              enforced
 ```
 
-Status is `partial` because the required PG integration proof has not been
-written; the write path itself is complete for every close.
+No two-connection test of two concurrent closes exists; the matrix lists that
+kind as supporting only, and the serialising lock is the one the existing
+period close already holds.
 
 ## Shared expenses
 
