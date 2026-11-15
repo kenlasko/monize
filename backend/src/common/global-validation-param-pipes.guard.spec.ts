@@ -17,41 +17,39 @@ import { join, relative } from "path";
 import { ParseBondQuantityPipe } from "../bonds/bond-query.pipes";
 
 /**
- * A pipe on a `@Query()` or `@Param()` parameter runs after the global
- * `ValidationPipe` (`createGlobalValidationPipe`), whose `transform: true`
- * converts a parameter TypeScript emits as `Number` to `+value` and one emitted
- * as `Boolean` to `value === "true"` first. A pipe on such a parameter never
- * sees the request's text: `ParseBondQuantityPipe` accepted only text on a
- * `number` parameter and refused every request (issue 2221), and a pipe that
- * took the number instead could no longer tell `0x10` from `16`.
+ * The global `ValidationPipe` (`createGlobalValidationPipe`) hands a `@Query()`
+ * or `@Param()` parameter TypeScript emits as `Number` or `Boolean` the
+ * request's own value (an empty one as absent), not `+value` or
+ * `value === "true"` as Nest's would: those conversions read `?limit=0x10` as
+ * 16, `?limit=` as 0 and `?includeInactive=yes` as false before any pipe could
+ * refuse them (issues 2221, 2225). Such a parameter therefore converts its own
+ * text, with the Nest pipe written for it as its last pipe: `ParseIntPipe` or
+ * `ParseFloatPipe` on a `Number`, `ParseBoolPipe` on a `Boolean`, optionally
+ * after a `DefaultValuePipe`. Without one the handler would receive a string;
+ * a pipe of ours there would take the text a `number` declaration promises is
+ * not text, so a parameter a pipe of ours checks is declared `string`, as
+ * `ParseBondQuantityPipe`'s is.
  *
  * The guard reads what TypeScript actually emitted (`design:paramtypes`), not
  * the annotation as written: `x?: number` and `type Q = number` emit `Number`,
  * while `x: number | undefined` emits `Object` and is passed through untouched.
- * Only the Nest pipes written for an already-converted value may sit on a
- * `Number` or `Boolean` parameter.
  */
 
 const SRC_ROOT = join(__dirname, "..");
 
-/**
- * Nest's own pipes that accept the number or boolean the global pipe converted,
- * matched by identity so a local class of the same name is not mistaken for one.
- * They do not restore the text either: `?limit=0x10` reaches `ParseIntPipe` as 16.
- */
-const CONVERTED_VALUE_PIPES: readonly (abstract new (
-  ...args: never[]
-) => unknown)[] = [
-  DefaultValuePipe,
-  ParseBoolPipe,
-  ParseFloatPipe,
-  ParseIntPipe,
-];
+type PipeClass = abstract new (...args: never[]) => unknown;
 
-function isConvertedValuePipe(pipe: unknown): boolean {
-  return CONVERTED_VALUE_PIPES.some(
-    (nest) => pipe === nest || pipe instanceof nest,
-  );
+/** The Nest pipes that convert the text of each emitted type, matched by identity. */
+const CONVERTERS: ReadonlyMap<unknown, readonly PipeClass[]> = new Map<
+  unknown,
+  readonly PipeClass[]
+>([
+  [Number, [ParseIntPipe, ParseFloatPipe]],
+  [Boolean, [ParseBoolPipe]],
+]);
+
+function isPipeOf(pipe: unknown, nest: PipeClass): boolean {
+  return pipe === nest || pipe instanceof nest;
 }
 
 const SCANNED: ReadonlyMap<number, string> = new Map([
@@ -105,12 +103,13 @@ function methodNames(prototype: object): string[] {
 }
 
 /**
- * Every pipe outside `CONVERTED_VALUE_PIPES` on a named `@Query()` or
- * `@Param()` argument of `controller` whose emitted type is `Number` or
- * `Boolean`, as `Class.method(@Query("key") Type) Pipe`. Pipes applied with
- * `@UsePipes` are out of scope: no controller applies one that way.
+ * Every named `@Query()` or `@Param()` argument of `controller` whose emitted
+ * type is `Number` or `Boolean` and whose pipes are not a converter of that
+ * type, last, after nothing but a `DefaultValuePipe`, as
+ * `Class.method(@Query("key") Type) pipes`. Pipes applied with `@UsePipes` are
+ * out of scope: no controller applies one that way.
  */
-function convertedValuePipeOffenders(controller: ControllerClass): string[] {
+function unconvertedParamOffenders(controller: ControllerClass): string[] {
   const offenders: string[] = [];
   for (const method of methodNames(controller.prototype)) {
     const args = Reflect.getMetadata(
@@ -127,26 +126,31 @@ function convertedValuePipeOffenders(controller: ControllerClass): string[] {
     for (const [key, arg] of Object.entries(args)) {
       const decorator = SCANNED.get(Number(key.split(":")[0]));
       const type = types[arg.index];
+      const converters = CONVERTERS.get(type);
       if (
         decorator === undefined ||
         typeof arg.data !== "string" ||
-        (type !== Number && type !== Boolean)
+        converters === undefined
       ) {
         continue;
       }
-      for (const pipe of arg.pipes) {
-        if (isConvertedValuePipe(pipe)) continue;
-        offenders.push(
-          `${controller.name}.${method}(@${decorator}("${arg.data}") ${(type as { name: string }).name}) ${pipeName(pipe)}`,
-        );
-      }
+      const last = arg.pipes[arg.pipes.length - 1];
+      const converted =
+        converters.some((nest) => isPipeOf(last, nest)) &&
+        arg.pipes
+          .slice(0, -1)
+          .every((pipe) => isPipeOf(pipe, DefaultValuePipe));
+      if (converted) continue;
+      offenders.push(
+        `${controller.name}.${method}(@${decorator}("${arg.data}") ${(type as { name: string }).name}) [${arg.pipes.map(pipeName).join(", ")}]`,
+      );
     }
   }
   return offenders;
 }
 
-describe("a pipe on a number- or boolean-typed query or route parameter", () => {
-  it("is one written for the global ValidationPipe's converted value", () => {
+describe("a number- or boolean-typed query or route parameter", () => {
+  it("converts its own text with the Nest pipe written for its type", () => {
     const offenders: string[] = [];
     let controllers = 0;
     for (const file of controllerFiles(SRC_ROOT)) {
@@ -160,7 +164,7 @@ describe("a pipe on a number- or boolean-typed query or route parameter", () => 
           continue;
         }
         controllers += 1;
-        for (const offender of convertedValuePipeOffenders(
+        for (const offender of unconvertedParamOffenders(
           value as ControllerClass,
         )) {
           offenders.push(`src/${relative(SRC_ROOT, file)}: ${offender}`);
@@ -171,13 +175,13 @@ describe("a pipe on a number- or boolean-typed query or route parameter", () => 
     expect(
       offenders.map(
         (o) =>
-          `${o} receives +value or value === "true", not the query text: declare the parameter string so the pipe checks the text, as ParseBondQuantityPipe does (docs/backend/entities-and-dtos.md)`,
+          `${o} receives the request's text, not a converted value: end its pipes with ParseIntPipe or ParseFloatPipe (number) or ParseBoolPipe (boolean), after at most a DefaultValuePipe, or declare it string for a pipe of ours, as ParseBondQuantityPipe's is (docs/backend/entities-and-dtos.md)`,
       ),
     ).toEqual([]);
   }, 120_000);
 
   describe("the scan", () => {
-    // A local class named like Nest's, which the allowlist must not admit.
+    // A local class named like Nest's, which the scan must not admit.
     const LookalikePipe = {
       ParseIntPipe: class {
         transform(value: unknown): unknown {
@@ -216,17 +220,47 @@ describe("a pipe on a number- or boolean-typed query or route parameter", () => 
       untouchedUnion(
         @Query("quantity", new ParseBondQuantityPipe()) _q: number | undefined,
       ): void {}
+
+      @Get("h")
+      bareNumber(@Query("days") _d?: number): void {}
+
+      @Get("i")
+      wrongKind(@Query("on", ParseIntPipe) _on: boolean): void {}
+
+      @Get("j")
+      defaultAfter(
+        @Query("days", ParseIntPipe, new DefaultValuePipe(3)) _d: number,
+      ): void {}
+
+      @Get("k")
+      nestBoolean(
+        @Query("on", new ParseBoolPipe({ optional: true })) _on?: boolean,
+      ): void {}
+
+      @Get("l")
+      nestFloat(
+        @Query("t", new DefaultValuePipe(0.5), ParseFloatPipe) _t: number,
+      ): void {}
+
+      @Get("m")
+      oursBefore(
+        @Query("days", new ParseBondQuantityPipe(), ParseIntPipe) _d: number,
+      ): void {}
     }
 
     const offenders = [
-      'numberQuery(@Query("quantity") Number) ParseBondQuantityPipe',
-      'booleanParam(@Param("on") Boolean) ParseBondQuantityPipe',
-      'uuidOnNumber(@Param("id") Number) ParseUUIDPipe',
-      'lookalike(@Query("days") Number) ParseIntPipe',
+      'numberQuery(@Query("quantity") Number) [ParseBondQuantityPipe]',
+      'booleanParam(@Param("on") Boolean) [ParseBondQuantityPipe]',
+      'uuidOnNumber(@Param("id") Number) [ParseUUIDPipe]',
+      'lookalike(@Query("days") Number) [ParseIntPipe]',
+      'bareNumber(@Query("days") Number) []',
+      'wrongKind(@Query("on") Boolean) [ParseIntPipe]',
+      'defaultAfter(@Query("days") Number) [ParseIntPipe, DefaultValuePipe]',
+      'oursBefore(@Query("days") Number) [ParseBondQuantityPipe, ParseIntPipe]',
     ];
 
-    it("names every pipe of another kind on a Number or Boolean parameter, constructed or not", () => {
-      expect(convertedValuePipeOffenders(Probe)).toEqual(
+    it("names every Number or Boolean parameter not ending in its own type's Nest converter", () => {
+      expect(unconvertedParamOffenders(Probe)).toEqual(
         offenders.map((o) => `Probe.${o}`),
       );
     });
@@ -234,7 +268,7 @@ describe("a pipe on a number- or boolean-typed query or route parameter", () => 
     it("scans a handler the controller inherits", () => {
       @Controller("child")
       class Child extends Probe {}
-      expect(convertedValuePipeOffenders(Child)).toEqual(
+      expect(unconvertedParamOffenders(Child)).toEqual(
         offenders.map((o) => `Child.${o}`),
       );
     });
