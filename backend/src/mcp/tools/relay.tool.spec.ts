@@ -88,14 +88,18 @@ describe("McpRelayTools", () => {
       expect(parse(result)).toEqual({ hasPrompt: false, stop: true });
     });
 
-    it("tells a refused poll another connection serves the chat, without touching the idle clock", async () => {
+    it("tells a refused poll to stop because another connection serves the chat, without touching the idle clock", async () => {
       const shouldStopForIdle = jest.fn().mockResolvedValue(true);
       const handlers = register({
         waitForPrompt: jest.fn().mockResolvedValue(RELAY_POLL_REFUSED),
         shouldStopForIdle,
       });
       const result = await handlers.get_next_prompt({}, ctx());
-      expect(parse(result)).toEqual({ hasPrompt: false, heldElsewhere: true });
+      expect(parse(result)).toEqual({
+        hasPrompt: false,
+        heldElsewhere: true,
+        stop: true,
+      });
       expect(shouldStopForIdle).not.toHaveBeenCalled();
     });
 

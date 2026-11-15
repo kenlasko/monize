@@ -48,8 +48,8 @@ export class McpRelayTools {
           "Long-poll for the next prompt typed in the Monize web chat. " +
           "{ hasPrompt: false }: call again. With stop: true the user went " +
           "inactive: exit, they will reconnect you. With heldElsewhere: true " +
-          "another connection of this account serves the chat: call again to " +
-          "wait. { hasPrompt: true }: carries the prompt, `history` (oldest " +
+          "another connection of this account serves the chat: stop and " +
+          "exit. { hasPrompt: true }: carries the prompt, `history` (oldest " +
           "first), any `attachments` (read each `uri`; text files are inlined) " +
           "and `guidance` -- follow it, and always finish the prompt with post_response.",
         inputSchema: z.object({}),
@@ -75,9 +75,13 @@ export class McpRelayTools {
             user.credentialId,
           );
           if (claimed === RELAY_POLL_REFUSED) {
-            // Not the idle clock's business: it is per user, and a refused
-            // poller must not consume the stop meant for the holder.
-            return toolResult({ hasPrompt: false, heldElsewhere: true });
+            // Stop, but not through the idle clock: it is per user, and a
+            // refused poller must not consume the stop meant for the holder.
+            return toolResult({
+              hasPrompt: false,
+              heldElsewhere: true,
+              stop: true,
+            });
           }
           if (!claimed) {
             // No prompt this window. If the user has gone quiet long enough,

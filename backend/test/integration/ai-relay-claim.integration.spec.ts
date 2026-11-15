@@ -285,7 +285,8 @@ describe("AI relay claim (real PostgreSQL)", () => {
         asUser(() => relay.waitForPrompt(userId, "session-x", OTHER_CRED)),
       ]);
 
-      expect([a, b].filter(Boolean)).toHaveLength(1);
+      expect([a, b].map(promptIdOf).filter(Boolean)).toHaveLength(1);
+      expect([a, b]).toContain(RELAY_POLL_REFUSED);
       const [agent] = await db.query(
         `SELECT agent_credential FROM ai_relay_agents WHERE user_id = $1`,
         [userId],

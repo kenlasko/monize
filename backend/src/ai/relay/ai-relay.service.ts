@@ -389,7 +389,6 @@ export class AiRelayService {
     text: string,
     credentialId: string,
   ): Promise<boolean> {
-    await this.recordPoll(userId);
     const answered = await this.writeAnswer(
       userId,
       promptId,
@@ -399,6 +398,9 @@ export class AiRelayService {
     if (!answered) {
       return false;
     }
+    // Only the credential that owns the turn is plainly alive and back; a
+    // refused post must not make the status read "listening".
+    await this.recordPoll(userId);
     await this.publishWake(userId, promptId);
     return true;
   }
@@ -430,7 +432,6 @@ export class AiRelayService {
     sessionId: string | undefined,
     credentialId: string,
   ): Promise<boolean> {
-    await this.recordPoll(userId);
     // A reconnected agent's new session is adopted here rather than locked out
     // -- but only by the credential that claimed the turn: knowing the
     // promptId proves nothing about who is asking. The same statement counts
@@ -444,6 +445,8 @@ export class AiRelayService {
     if (!owned) {
       return false;
     }
+    // Recorded only for the owning credential, as in postResponse.
+    await this.recordPoll(userId);
     // The browser accumulates assistant_text into one live-narration block
     // (rendered whitespace-pre-wrap), so terminate each discrete update with a
     // newline to keep sequential progress lines from running together.

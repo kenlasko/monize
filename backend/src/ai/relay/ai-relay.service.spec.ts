@@ -1256,6 +1256,30 @@ describe("AiRelayService", () => {
       await expect(pending).resolves.toEqual({ text: "real" });
     });
 
+    it("does not record a poll for a refused post_response, but does for the holder's", async () => {
+      const { claimed } = await claimAsHolder();
+      const before = harness.agents[0].lastPollAt;
+      await jest.advanceTimersByTimeAsync(10 * 1000);
+
+      await service.postResponse(USER, claimed.promptId, "spoofed", THEIRS);
+      expect(harness.agents[0].lastPollAt).toBe(before);
+
+      await service.postResponse(USER, claimed.promptId, "real", MINE);
+      expect(harness.agents[0].lastPollAt).toBeGreaterThan(before!);
+    });
+
+    it("does not record a poll for a refused report_progress, but does for the holder's", async () => {
+      const { claimed } = await claimAsHolder("q", "session-a");
+      const before = harness.agents[0].lastPollAt;
+      await jest.advanceTimersByTimeAsync(10 * 1000);
+
+      await service.reportProgress(USER, claimed.promptId, "x", "s", THEIRS);
+      expect(harness.agents[0].lastPollAt).toBe(before);
+
+      await service.reportProgress(USER, claimed.promptId, "x", "s", MINE);
+      expect(harness.agents[0].lastPollAt).toBeGreaterThan(before!);
+    });
+
     it("does not let another credential adopt a turn through report_progress", async () => {
       const { claimed } = await claimAsHolder("q", "session-a");
 
