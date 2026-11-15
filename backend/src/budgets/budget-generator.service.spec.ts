@@ -773,6 +773,34 @@ describe("BudgetGeneratorService", () => {
       expect(result.categories).toHaveLength(1);
     });
 
+    it("checks and writes in one transaction, so a refused line leaves no budget row", async () => {
+      budgetsRepository.save.mockResolvedValue({ id: "new-budget" });
+      categoriesRepository.find.mockResolvedValue([]);
+
+      await expect(
+        service.apply("user-1", {
+          name: "B",
+          periodStart: "2026-02-01",
+          strategy: BudgetStrategy.FIXED,
+          currencyCode: "USD",
+          categories: [
+            {
+              categoryId: "cat-not-mine",
+              amount: 100,
+              rolloverType: RolloverType.NONE,
+            },
+          ],
+        }),
+      ).rejects.toThrow("cat-not-mine");
+      // The first transaction opened is the one the refusal leaves through,
+      // so the budget insert inside it rolls back with it (before, it was the
+      // insert's own, already committed).
+      expect(budgetsRepository.save).toHaveBeenCalled();
+      await expect(
+        scopedDataSource.transaction.mock.results[0].value,
+      ).rejects.toThrow("cat-not-mine");
+    });
+
     it("refuses two transfer lines for one account before writing (issue #2141)", async () => {
       await expect(
         service.apply("user-1", {

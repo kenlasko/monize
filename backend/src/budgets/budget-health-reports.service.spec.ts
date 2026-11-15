@@ -559,6 +559,37 @@ describe("BudgetHealthReportsService", () => {
       });
     });
 
+    it("still reads the toggle's figure when the budget has only savings transfer lines", async () => {
+      budgetsService.findOne.mockResolvedValueOnce({
+        ...mockBudget,
+        config: {
+          excludedAccountIds: ["acct-hisa"],
+          transfersInAsIncome: true,
+        },
+        categories: [
+          {
+            id: "bc-tfsa",
+            budgetId: "budget-1",
+            categoryId: null,
+            isTransfer: true,
+            isIncome: false,
+            transferAccountId: "acct-tfsa",
+            amount: 300,
+          },
+        ],
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        createMockQueryBuilder(),
+      );
+      mockSpending({ ...spending({}), outsideTransferIncome: 2000 });
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      expect(mockedSpending).toHaveBeenCalledTimes(1);
+      // The savings line names the budget; it is not an expense of the rate.
+      expect(result[0]).toMatchObject({ income: 2000, expenses: 0 });
+    });
+
     it("leaves the budget's excluded accounts out of the no-income-category query", async () => {
       budgetsService.findOne.mockResolvedValueOnce({
         ...mockBudget,

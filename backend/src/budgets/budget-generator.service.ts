@@ -193,7 +193,19 @@ export class BudgetGeneratorService {
     };
   }
 
+  /**
+   * One transaction: every refusal below shares it with the writes, and the
+   * nested `withScopedDb` calls join it, so a refused line leaves no budget
+   * row behind.
+   */
   async apply(userId: string, dto: ApplyGeneratedBudgetDto): Promise<Budget> {
+    return withScopedDb(this.dataSource, () => this.applyInScope(userId, dto));
+  }
+
+  private async applyInScope(
+    userId: string,
+    dto: ApplyGeneratedBudgetDto,
+  ): Promise<Budget> {
     // Refused before anything is written (issue #2141): one transfer line per
     // account, and a transfer income line names one of the user's accounts.
     const transferLines = (dto.categories ?? []).filter(

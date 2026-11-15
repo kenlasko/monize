@@ -235,7 +235,13 @@ describe("budget transfer income (integration)", () => {
     // HISA counts once, on its line; RRSP is the toggle's.
     expect(resolveCategorySpentOrNull(hisaLine, spending)).toBe(2000);
     expect(resolveOutsideTransferIncome(spending)).toBe(300);
+    // A caller reading a subset of the lines (the savings rate leaves the
+    // outgoing ones out) still has HISA named by the budget's own line.
+    expect(resolveOutsideTransferIncome(await read([groceriesLine]))).toBe(300);
     // Without the line, the toggle sweeps HISA too.
+    await dataSource.query(`DELETE FROM budget_categories WHERE id = $1`, [
+      hisaLine.id,
+    ]);
     expect(resolveOutsideTransferIncome(await read([groceriesLine]))).toBe(
       2300,
     );

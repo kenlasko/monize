@@ -225,6 +225,8 @@ export class BudgetsService {
     const saved = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(Budget).save(budget),
     );
+    // `config.transfersInAsIncome` changes what the summary counts.
+    this.invalidateCategoryActuals(id);
 
     this.actionHistoryService.record(userId, {
       entityType: "budget",
@@ -313,7 +315,7 @@ export class BudgetsService {
     budgetId: string,
     dto: CreateTransferIncomeLineDto,
   ): Promise<BudgetCategory> {
-    return withScopedDb(this.dataSource, async (m) => {
+    const saved = await withScopedDb(this.dataSource, async (m) => {
       const budget = await m.getRepository(Budget).findOne({
         where: { id: budgetId, userId },
         lock: { mode: "pessimistic_write" },
@@ -355,6 +357,9 @@ export class BudgetsService {
         }),
       );
     });
+    // After the commit: the page re-reads the summary straight after the add.
+    this.invalidateCategoryActuals(budgetId);
+    return saved;
   }
 
   async updateCategory(
@@ -1069,6 +1074,13 @@ export class BudgetsService {
 
   private getCurrentPeriodDates(_budget: Budget): PeriodDateRange {
     return getCurrentMonthPeriodDates();
+  }
+
+  /** Drops a budget's cached actuals once its lines or config changed. */
+  private invalidateCategoryActuals(budgetId: string): void {
+    for (const key of this.categoryActualsCache.keys()) {
+      if (key.startsWith(`${budgetId}:`)) this.categoryActualsCache.delete(key);
+    }
   }
 
   private getCachedCategoryActuals(

@@ -362,11 +362,23 @@ export async function queryCategorySpendingBuckets(
   if (budgetCategories.length === 0) return { currency: "", buckets };
 
   const manager = transactionsRepository.manager;
-  const budgetRows: Array<{ currency_code: string; config: unknown }> =
-    await manager.query(
-      "SELECT currency_code, config FROM budgets WHERE id = $1",
-      [budgetCategories[0].budgetId],
-    );
+  // The budget's own transfer lines come with it: a caller passing a subset
+  // of lines (the savings rate leaves out the outgoing ones) must not widen
+  // what `config.transfersInAsIncome` sweeps (issue #2141).
+  const budgetRows: Array<{
+    currency_code: string;
+    config: unknown;
+    transfer_account_ids?: string[] | null;
+  }> = await manager.query(
+    `SELECT b.currency_code, b.config,
+            ARRAY(
+              SELECT bc.transfer_account_id::text FROM budget_categories bc
+              WHERE bc.budget_id = b.id AND bc.is_transfer = true
+                AND bc.transfer_account_id IS NOT NULL
+            ) AS transfer_account_ids
+       FROM budgets b WHERE b.id = $1`,
+    [budgetCategories[0].budgetId],
+  );
   const currency = budgetRows[0]?.currency_code ?? "";
   // Read from the budget row itself, so no caller can forget to pass them.
   const excludedAccountIds = budgetExcludedAccountIds(budgetRows[0]?.config);
@@ -382,11 +394,12 @@ export async function queryCategorySpendingBuckets(
     .map((bc) => bc.transferAccountId as string);
   // The toggle counts every excluded account a transfer line does not already
   // name: that line counts it, once (spec section 2).
-  const namedTransferAccounts = new Set(
-    budgetCategories
+  const namedTransferAccounts = new Set([
+    ...budgetCategories
       .filter(isTransferLine)
       .map((bc) => bc.transferAccountId as string),
-  );
+    ...(budgetRows[0]?.transfer_account_ids ?? []),
+  ]);
   const outsideSources = new Set(
     budgetTransfersInAsIncome(budgetRows[0]?.config)
       ? excludedAccountIds.filter((id) => !namedTransferAccounts.has(id))

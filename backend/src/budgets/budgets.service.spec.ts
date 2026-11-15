@@ -646,6 +646,27 @@ describe("BudgetsService", () => {
       expect(result.id).toBe("new-bc");
     });
 
+    it("drops the budget's cached actuals, so the next summary counts the new line", async () => {
+      const compute = jest
+        .spyOn(service as any, "computeCategoryActuals")
+        .mockResolvedValue({ lines: [], outsideTransferIncome: 0 });
+      budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
+      await service.getSummary("user-1", "budget-1");
+      await service.getSummary("user-1", "budget-1");
+      expect(compute).toHaveBeenCalledTimes(1);
+
+      accountsRepository.find.mockResolvedValue([{ id: "acct-hisa" }]);
+      budgetCategoriesRepository.findOne.mockResolvedValue(null);
+      budgetCategoriesRepository.save.mockImplementation(async (d) => d);
+      await service.addTransferIncomeLine("user-1", "budget-1", {
+        transferAccountId: "acct-hisa",
+        amount: 2000,
+      });
+      await service.getSummary("user-1", "budget-1");
+
+      expect(compute).toHaveBeenCalledTimes(2);
+    });
+
     it("refuses a budget the user does not own", async () => {
       budgetsRepository.findOne.mockResolvedValue(null);
 

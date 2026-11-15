@@ -278,6 +278,50 @@ describe("queryCategorySpending with transfers in", () => {
     expect(result.outsideTransferIncomeComplete).toBe(true);
   });
 
+  it("leaves out an account the budget's own transfer line names when the caller passes a subset", async () => {
+    // The savings rate passes only income and category lines; the budget's
+    // TFSA savings line still keeps TFSA out of the toggle's sweep.
+    const incomingParent = makeQbReturning([row("rrsp", "300")]);
+    const incomingSplit = makeQbReturning([]);
+    const txRepo: any = {
+      manager: {
+        query: jest.fn().mockImplementation(async (sql: string) =>
+          sql.includes("FROM budgets")
+            ? [
+                {
+                  currency_code: "CAD",
+                  config: {
+                    excludedAccountIds: ["rrsp", "tfsa"],
+                    transfersInAsIncome: true,
+                  },
+                  transfer_account_ids: ["tfsa"],
+                },
+              ]
+            : [],
+        ),
+      },
+      createQueryBuilder: jest.fn().mockReturnValueOnce(incomingParent),
+    };
+    const splitRepo: any = {
+      createQueryBuilder: jest.fn().mockReturnValueOnce(incomingSplit),
+    };
+
+    const result = await queryCategorySpending(
+      txRepo,
+      splitRepo,
+      "user-1",
+      [line({ id: "bc-c", isTransfer: false, transferAccountId: null })],
+      "2026-01-01",
+      "2026-01-31",
+    );
+
+    expect(incomingParent.andWhere).toHaveBeenCalledWith(
+      "lt.account_id IN (:...sourceAccountIds)",
+      { sourceAccountIds: ["rrsp"] },
+    );
+    expect(result.outsideTransferIncome).toBe(300);
+  });
+
   it("flags the toggle's figure incomplete when a row had no rate", async () => {
     const txRepo: any = {
       manager: makeManager({

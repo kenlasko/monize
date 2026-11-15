@@ -25,6 +25,7 @@ import {
   resolveCategorySpent,
   resolveOutsideTransferIncome,
   isTransferIncomeLine,
+  budgetTransfersInAsIncome,
 } from "./budget-spending.util";
 import {
   convertRateParts,
@@ -340,8 +341,15 @@ export class BudgetHealthReportsService {
     // The budget page's own actuals in one query over the window, bucketed by
     // month: net within the category, converted into the budget's currency, the
     // budget's excluded accounts left out.
+    // With no line on either side the read still runs for the transfers in
+    // `config.transfersInAsIncome` counts, on the budget's other lines (it
+    // needs one to name the budget); `sumSide` reads `spendingLines` only.
+    const queryLines =
+      spendingLines.length > 0 || !budgetTransfersInAsIncome(budget.config)
+        ? spendingLines
+        : budget.categories || [];
     const spendingByMonth =
-      spendingLines.length > 0
+      queryLines.length > 0
         ? (
             await withScopedDb(this.dataSource, (m) => {
               const first = new Date(
@@ -353,7 +361,7 @@ export class BudgetHealthReportsService {
                 m.getRepository(Transaction),
                 m.getRepository(TransactionSplit),
                 userId,
-                spendingLines,
+                queryLines,
                 formatMonthKey(first.getFullYear(), first.getMonth() + 1) +
                   "-01",
                 getMonthEndYMD(today.getFullYear(), today.getMonth() + 1),

@@ -154,8 +154,8 @@ export class BudgetPeriodService {
       );
 
       // `config.transfersInAsIncome` is income no line carries (issue #2141).
-      let totalIncome = actuals.outsideTransferIncome;
-      let totalExpenses = 0;
+      const incomeParts: number[] = [actuals.outsideTransferIncome];
+      const expenseParts: number[] = [];
 
       for (const pc of openPeriod.periodCategories) {
         const actual = actuals.lines.get(pc.budgetCategoryId) || 0;
@@ -168,16 +168,16 @@ export class BudgetPeriodService {
           (c) => c.id === pc.budgetCategoryId,
         );
         if (bcEntry?.isIncome) {
-          totalIncome += actual;
+          incomeParts.push(actual);
         } else {
-          totalExpenses += actual;
+          expenseParts.push(actual);
         }
 
         await manager.save(BudgetPeriodCategory, pc);
       }
 
-      openPeriod.actualIncome = totalIncome;
-      openPeriod.actualExpenses = totalExpenses;
+      openPeriod.actualIncome = sumMoney(incomeParts);
+      openPeriod.actualExpenses = sumMoney(expenseParts);
       openPeriod.status = PeriodStatus.CLOSED;
 
       const closedPeriod = await manager.save(BudgetPeriod, openPeriod);
