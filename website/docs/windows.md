@@ -169,11 +169,11 @@ To run it on a schedule, create a task in **Task Scheduler** that runs `powershe
 
 ### Advanced: Using the Database Directly
 
-The Windows app ships only the parts of PostgreSQL 16 that it runs (`postgres`, `initdb`, `pg_ctl`), not `pg_dump` or `psql`, and its database passwords are kept encrypted for your Windows account. There is no supported way to connect another tool to its database, and Monize has no way yet to open a full backup under another Windows account, even with the recovery key.
+The Windows app ships only the parts of PostgreSQL 18 that it runs (`postgres`, `initdb`, `pg_ctl`), not `pg_dump` or `psql`, and its database passwords are kept encrypted for your Windows account. There is no supported way to connect another tool to its database, and Monize has no way yet to open a full backup under another Windows account, even with the recovery key.
 
 - For a portable copy of your data, use an in-app backup.
 - To move a whole instance to a server, restore each user's in-app backup on the server.
-- The `pgdata` folder of a full backup is an ordinary PostgreSQL 16 data directory. Someone comfortable with PostgreSQL can start it with their own PostgreSQL 16 (for example the official Docker image), after changing `pg_hba.conf` so they can connect without the stored password, and run the Monize server against it with the recovery key as `ENCRYPTION_KEY`. Do this on a copy, never on the only one.
+- The `pgdata` folder of a full backup is an ordinary PostgreSQL 18 data directory. Someone comfortable with PostgreSQL can start it with their own PostgreSQL 18 (for example the official Docker image), after changing `pg_hba.conf` so they can connect without the stored password, and run the Monize server against it with the recovery key as `ENCRYPTION_KEY`. Do this on a copy, never on the only one.
 
 ---
 

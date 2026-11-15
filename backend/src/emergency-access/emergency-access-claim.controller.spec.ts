@@ -1,7 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { DataSource } from "typeorm";
-import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Logger, NotFoundException } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { DEMO_RESTRICTED_KEY } from "../common/guards/demo-mode.guard";
 import { EmergencyAccessClaimController } from "./emergency-access-claim.controller";
 import { EmergencyAccessContact } from "./entities/emergency-access-contact.entity";
 import { EmergencyAccessSettings } from "./entities/emergency-access-settings.entity";
@@ -154,13 +156,14 @@ describe("EmergencyAccessClaimController", () => {
   });
 
   describe("preview", () => {
-    it("returns owner info + decrypted message for a valid token", async () => {
+    it("returns only the contact's first name and the expiry for a valid token", async () => {
+      const expiresAt = new Date(Date.now() + 100000);
       contactsRepo.findOne.mockResolvedValue({
         id: "c1",
         ownerUserId: ownerId,
         firstName: "Carol",
         claimTokenHash: TOKEN_HASH,
-        claimTokenExpiresAt: new Date(Date.now() + 100000),
+        claimTokenExpiresAt: expiresAt,
         claimTokenUsedAt: null,
       });
       settingsRepo.findOne.mockResolvedValue({
@@ -174,14 +177,62 @@ describe("EmergencyAccessClaimController", () => {
       });
 
       const res = await controller.preview({ token: RAW_TOKEN });
-      expect(res.ownerFirstName).toBe("Owner");
-      expect(res.contactFirstName).toBe("Carol");
-      expect(res.message).toBe("secret");
+
+      // The owner's identity and the decrypted message wait for `complete`: a
+      // bare token proves nothing about who holds it (#2173).
+      expect(res).toEqual({ contactFirstName: "Carol", expiresAt });
+      expect(encryption.decrypt).not.toHaveBeenCalled();
+      expect(settingsRepo.findOne).not.toHaveBeenCalled();
+      expect(usersRepo.findOne).not.toHaveBeenCalled();
+    });
+
+    it("writes an audit line naming the contact and owner for a valid token", async () => {
+      const log = jest.spyOn(Logger.prototype, "log").mockImplementation();
+      try {
+        contactsRepo.findOne.mockResolvedValue({
+          id: "c1",
+          ownerUserId: ownerId,
+          firstName: "Carol",
+          claimTokenHash: TOKEN_HASH,
+          claimTokenExpiresAt: new Date(Date.now() + 100000),
+          claimTokenUsedAt: null,
+        });
+
+        await controller.preview({ token: RAW_TOKEN });
+
+        expect(log).toHaveBeenCalledWith(
+          `Emergency access claim link previewed for contact c1 of user ${ownerId}`,
+        );
+      } finally {
+        log.mockRestore();
+      }
+    });
+
+    it("writes no audit line for an invalid token", async () => {
+      const log = jest.spyOn(Logger.prototype, "log").mockImplementation();
+      try {
+        contactsRepo.findOne.mockResolvedValue(null);
+
+        await expect(
+          controller.preview({ token: RAW_TOKEN }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+
+        expect(log).not.toHaveBeenCalled();
+      } finally {
+        log.mockRestore();
+      }
+    });
+
+    it("is demo-restricted, like complete (#2180)", () => {
+      const reflector = new Reflector();
+      for (const handler of [controller.preview, controller.complete]) {
+        expect(reflector.get(DEMO_RESTRICTED_KEY, handler)).toBe(true);
+      }
     });
 
     // RLS (task C4): the claimant is the grantee, not the owner, so the
     // owner-keyed reads run under a system context.
-    it("runs the owner-keyed reads under a system context", async () => {
+    it("runs the owner-keyed contact read under a system context", async () => {
       let ctx: ReturnType<typeof getRequestContext>;
       contactsRepo.findOne.mockImplementation(() => {
         ctx = getRequestContext();
@@ -194,9 +245,6 @@ describe("EmergencyAccessClaimController", () => {
           claimTokenUsedAt: null,
         });
       });
-      settingsRepo.findOne.mockResolvedValue({ ownerUserId: ownerId });
-      usersRepo.findOne.mockResolvedValue({ id: ownerId, firstName: "Owner" });
-
       await controller.preview({ token: RAW_TOKEN });
 
       expect(ctx).toEqual({ system: true });
@@ -308,6 +356,9 @@ describe("EmergencyAccessClaimController", () => {
       expect(queryRunner.manager.createQueryBuilder).not.toHaveBeenCalled();
       expect(tokenService.generateTokenPair).not.toHaveBeenCalled();
       expect(res.cookie).not.toHaveBeenCalled();
+      expect(res.json).not.toHaveBeenCalled();
+      expect(settingsRepo.findOne).not.toHaveBeenCalled();
+      expect(encryption.decrypt).not.toHaveBeenCalled();
     });
 
     it("rejects breached passwords", async () => {
@@ -348,7 +399,16 @@ describe("EmergencyAccessClaimController", () => {
           claimTokenUsedAt: null,
         })
         .mockResolvedValueOnce({ id: ownerId });
-      usersRepo.findOne.mockResolvedValue({ id: ownerId, isActive: true });
+      usersRepo.findOne.mockResolvedValue({
+        id: ownerId,
+        isActive: true,
+        firstName: "Owner",
+        lastName: "One",
+      });
+      settingsRepo.findOne.mockResolvedValue({
+        ownerUserId: ownerId,
+        messageCiphertext: "enc(secret)",
+      });
 
       const res = makeRes();
       await controller.complete(
@@ -366,7 +426,12 @@ describe("EmergencyAccessClaimController", () => {
         "a",
         expect.any(Object),
       );
-      expect(res.json).toHaveBeenCalledWith({ ok: true });
+      expect(res.json).toHaveBeenCalledWith({
+        ok: true,
+        ownerFirstName: "Owner",
+        ownerLastName: "One",
+        message: "secret",
+      });
     });
 
     it("ends the previous holder's PATs, trusted devices and OAuth grants", async () => {
@@ -497,96 +562,69 @@ describe("EmergencyAccessClaimController", () => {
     });
   });
 
-  describe("preview missing data", () => {
-    function validContact() {
-      return {
-        id: "c1",
-        ownerUserId: ownerId,
-        firstName: "Carol",
-        claimTokenHash: TOKEN_HASH,
-        claimTokenExpiresAt: new Date(Date.now() + 100000),
-        claimTokenUsedAt: null,
-      };
+  describe("the message returned by complete", () => {
+    async function completedMessage(): Promise<unknown> {
+      queryRunner.manager.findOne.mockResolvedValue({ id: ownerId });
+      usersRepo.findOne.mockResolvedValue({ id: ownerId, firstName: "Owner" });
+      const res = { cookie: jest.fn(), json: jest.fn() };
+      await controller.complete(
+        { token: RAW_TOKEN, newPassword: "Aa1!correcthorse" },
+        res as never,
+      );
+      return (res.json.mock.calls[0][0] as { message: unknown }).message;
     }
 
-    it("throws when the settings row is missing", async () => {
-      contactsRepo.findOne.mockResolvedValue(validContact());
+    it("is null when the settings row is missing", async () => {
       settingsRepo.findOne.mockResolvedValue(null);
-      usersRepo.findOne.mockResolvedValue({
-        id: ownerId,
-        firstName: "Owner",
-      });
-      await expect(
-        controller.preview({ token: RAW_TOKEN }),
-      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(await completedMessage()).toBeNull();
     });
 
-    it("throws when the owner row is missing", async () => {
-      contactsRepo.findOne.mockResolvedValue(validContact());
+    it("is null when the owner wrote no message", async () => {
       settingsRepo.findOne.mockResolvedValue({
         ownerUserId: ownerId,
         messageCiphertext: null,
       });
-      usersRepo.findOne.mockResolvedValue(null);
-      await expect(
-        controller.preview({ token: RAW_TOKEN }),
-      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(await completedMessage()).toBeNull();
     });
 
-    it("returns a null message when decryption throws", async () => {
-      contactsRepo.findOne.mockResolvedValue(validContact());
+    it("is null when decryption throws", async () => {
       settingsRepo.findOne.mockResolvedValue({
         ownerUserId: ownerId,
         messageCiphertext: "enc(garbage)",
       });
-      usersRepo.findOne.mockResolvedValue({
-        id: ownerId,
-        firstName: "Owner",
-        lastName: "One",
-      });
       encryption.decrypt.mockImplementation(() => {
         throw new Error("bad key");
       });
-
-      const res = await controller.preview({ token: RAW_TOKEN });
-      expect(res.message).toBeNull();
+      expect(await completedMessage()).toBeNull();
     });
 
-    it("returns a null message when the encryption key is not configured", async () => {
-      contactsRepo.findOne.mockResolvedValue(validContact());
+    it("is null when the encryption key is not configured", async () => {
       settingsRepo.findOne.mockResolvedValue({
         ownerUserId: ownerId,
         messageCiphertext: "enc(unreadable)",
       });
-      usersRepo.findOne.mockResolvedValue({
-        id: ownerId,
-        firstName: "Owner",
-        lastName: "One",
-      });
       encryption.isConfigured.mockReturnValue(false);
-
-      const res = await controller.preview({ token: RAW_TOKEN });
-      expect(res.message).toBeNull();
-      expect(encryption.decrypt).not.toHaveBeenCalled();
+      const warn = jest.spyOn(Logger.prototype, "warn").mockImplementation();
+      try {
+        expect(await completedMessage()).toBeNull();
+        expect(encryption.decrypt).not.toHaveBeenCalled();
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining("Encryption key not configured"),
+        );
+      } finally {
+        warn.mockRestore();
+      }
     });
 
-    it("returns a null message when decrypt throws a non-Error value", async () => {
-      contactsRepo.findOne.mockResolvedValue(validContact());
+    it("is null when decrypt throws a non-Error value", async () => {
       settingsRepo.findOne.mockResolvedValue({
         ownerUserId: ownerId,
         messageCiphertext: "enc(corrupt)",
       });
-      usersRepo.findOne.mockResolvedValue({
-        id: ownerId,
-        firstName: "Owner",
-        lastName: "One",
-      });
       encryption.decrypt.mockImplementation(() => {
         throw "raw-string-not-an-Error";
       });
-
-      const res = await controller.preview({ token: RAW_TOKEN });
-      expect(res.message).toBeNull();
+      expect(await completedMessage()).toBeNull();
     });
   });
 

@@ -4,6 +4,7 @@ import { EmailService } from "./email.service";
 import { BillReminderService } from "./bill-reminder.service";
 import { ProviderOutageAlertService } from "./provider-outage-alert.service";
 import { NotificationDispatchService } from "./notification-dispatch.service";
+import { SecurityNoticeService } from "./security-notice.service";
 import { NotificationReminderCronService } from "./notification-reminder-cron.service";
 import { NotificationsController } from "./notifications.controller";
 import { UsersModule } from "../users/users.module";
@@ -48,6 +49,8 @@ import { BalanceThresholdAlertService } from "../notification-center/balance-thr
     BillReminderService,
     ProviderOutageAlertService,
     NotificationDispatchService,
+    // OAuth grant and relay first-use notices (SECURITY category).
+    SecurityNoticeService,
     // The reminder cron re-emits through the dispatch, so it lives on the
     // delivery side; the reminder CRUD stays in NotificationCenterModule.
     NotificationReminderCronService,
@@ -65,6 +68,7 @@ import { BalanceThresholdAlertService } from "../notification-center/balance-thr
   exports: [
     EmailService,
     NotificationDispatchService,
+    SecurityNoticeService,
     BalanceThresholdAlertService,
   ],
 })

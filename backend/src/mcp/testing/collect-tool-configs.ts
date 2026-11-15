@@ -103,7 +103,7 @@ export function collectToolConfigs(): CapturedToolConfig[] {
       {} as any,
       {} as any,
     ) as unknown as ToolProvider,
-    new McpRelayTools({} as any) as unknown as ToolProvider,
+    new McpRelayTools({} as any, {} as any) as unknown as ToolProvider,
   ];
 
   const configs: CapturedToolConfig[] = [];

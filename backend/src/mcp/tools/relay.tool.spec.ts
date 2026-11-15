@@ -1,18 +1,27 @@
 import { RELAY_POLL_REFUSED } from "../../ai/relay/ai-relay.service";
 import { McpRelayTools } from "./relay.tool";
 import { AiRelayService } from "../../ai/relay/ai-relay.service";
+import { SecurityNoticeService } from "../../notifications/security-notice.service";
 import { mcpTestCtx } from "../testing/mcp-test-context";
 
 type Handler = (args: any, extra: any) => Promise<any>;
 
-function register(relay: Partial<AiRelayService>) {
+function register(
+  relay: Partial<AiRelayService>,
+  notices: Partial<SecurityNoticeService> = {
+    relayCredentialFirstUse: jest.fn().mockResolvedValue(undefined),
+  },
+) {
   const handlers: Record<string, Handler> = {};
   const server = {
     registerTool: (name: string, _config: unknown, handler: Handler) => {
       handlers[name] = handler;
     },
   };
-  new McpRelayTools(relay as AiRelayService).register(server as any);
+  new McpRelayTools(
+    relay as AiRelayService,
+    notices as SecurityNoticeService,
+  ).register(server as any);
   return handlers;
 }
 
@@ -44,6 +53,33 @@ describe("McpRelayTools", () => {
       expect(body.hasPrompt).toBe(true);
       expect(body.promptId).toBe("p1");
       expect(body.prompt).toBe("hi");
+    });
+
+    it("announces the claiming credential once a prompt is claimed", async () => {
+      const relayCredentialFirstUse = jest.fn().mockResolvedValue(undefined);
+      const handlers = register(
+        {
+          waitForPrompt: jest
+            .fn()
+            .mockResolvedValue({ promptId: "p1", prompt: "hi", history: [] }),
+        },
+        { relayCredentialFirstUse },
+      );
+      await handlers.get_next_prompt({}, ctx());
+      expect(relayCredentialFirstUse).toHaveBeenCalledWith("user-1", "pat:t1");
+    });
+
+    it("announces nothing when no prompt was claimed", async () => {
+      const relayCredentialFirstUse = jest.fn();
+      const handlers = register(
+        {
+          waitForPrompt: jest.fn().mockResolvedValue(null),
+          shouldStopForIdle: jest.fn().mockResolvedValue(false),
+        },
+        { relayCredentialFirstUse },
+      );
+      await handlers.get_next_prompt({}, ctx());
+      expect(relayCredentialFirstUse).not.toHaveBeenCalled();
     });
 
     it("includes attachment refs when the prompt carries uploads", async () => {

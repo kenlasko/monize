@@ -21,8 +21,8 @@
     "pg": "^8.23.1"
   },
   "optionalDependencies": {
-    "@embedded-postgres/linux-x64": "16.15.0-beta.19",
-    "@embedded-postgres/windows-x64": "16.15.0-beta.19"
+    "@embedded-postgres/linux-x64": "18.6.0-beta.19",
+    "@embedded-postgres/windows-x64": "18.6.0-beta.19"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -5,6 +5,7 @@ import {
   AiRelayService,
   RELAY_POLL_REFUSED,
 } from "../../ai/relay/ai-relay.service";
+import { SecurityNoticeService } from "../../notifications/security-notice.service";
 import {
   callerKey,
   resolveUserContext,
@@ -36,7 +37,10 @@ import { uuidString } from "./schema-fragments";
  */
 @Injectable()
 export class McpRelayTools {
-  constructor(private readonly relayService: AiRelayService) {}
+  constructor(
+    private readonly relayService: AiRelayService,
+    private readonly securityNotices: SecurityNoticeService,
+  ) {}
 
   register(server: McpServer) {
     server.registerTool(
@@ -90,6 +94,14 @@ export class McpRelayTools {
               return toolResult({ hasPrompt: false, stop: true });
             }
             return toolResult({ hasPrompt: false });
+          }
+          // First claim by a credential: the dedupe key makes a repeat a no-op.
+          // Awaits only the row write (the fan-out is detached); never throws.
+          if (user.credentialId) {
+            await this.securityNotices.relayCredentialFirstUse(
+              user.userId,
+              user.credentialId,
+            );
           }
           return toolResult({
             hasPrompt: true,

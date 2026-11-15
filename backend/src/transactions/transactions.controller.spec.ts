@@ -930,6 +930,171 @@ describe("TransactionsController", () => {
     });
   });
 
+  describe("exportRegister()", () => {
+    const page = (
+      data: Record<string, unknown>[],
+      hasMore: boolean,
+    ): {
+      data: Record<string, unknown>[];
+      pagination: { hasMore: boolean };
+    } => ({
+      data,
+      pagination: { hasMore },
+    });
+    const row = (id: string, extra: Record<string, unknown> = {}) => ({
+      id,
+      transactionDate: "2026-01-15",
+      amount: "-10.0000",
+      currencyCode: "CAD",
+      status: "UNRECONCILED",
+      description: null,
+      payeeName: null,
+      isSplit: false,
+      isTransfer: false,
+      account: { id: uuid1, name: "Chequing", currentBalance: 1234 },
+      payee: null,
+      category: null,
+      tags: [],
+      linkedTransaction: null,
+      splits: [],
+      ...extra,
+    });
+
+    it("walks every page of the register in one request (issue #2198)", async () => {
+      mockService.findAll
+        .mockResolvedValueOnce(page([row("tx-1"), row("tx-2")], true))
+        .mockResolvedValueOnce(page([row("tx-3")], false));
+
+      const result = await controller.exportRegister(mockReq, uuid1);
+
+      expect(result.data.map((r) => r.id)).toEqual(["tx-1", "tx-2", "tx-3"]);
+      expect(mockService.findAll).toHaveBeenCalledTimes(2);
+      // Page number and the API's largest page size, in findAll's page and
+      // limit positions; the account filter rides along on every page.
+      expect(mockService.findAll.mock.calls.map((c) => [c[6], c[7]])).toEqual([
+        [1, 200],
+        [2, 200],
+      ]);
+      expect(mockService.findAll.mock.calls[1][1]).toEqual([uuid1]);
+      // No page is ever asked to land on a target row.
+      expect(mockService.findAll.mock.calls[0][10]).toBeUndefined();
+    });
+
+    it("answers with only the fields the file is built from", async () => {
+      mockService.findAll.mockResolvedValueOnce(page([row("tx-1")], false));
+
+      const result = await controller.exportRegister(mockReq);
+
+      expect(result.data[0].account).toEqual({ name: "Chequing" });
+    });
+
+    it("passes the register's filters and order to every page", async () => {
+      mockService.findAll.mockResolvedValueOnce(page([], false));
+
+      await controller.exportRegister(
+        mockReq,
+        undefined,
+        `${uuid1},${uuid2}`,
+        "2026-01-01",
+        "2026-01-31",
+        undefined,
+        uuid3,
+        undefined,
+        undefined,
+        true,
+        "coffee",
+        "-50",
+        "50",
+        undefined,
+        "cleared,void",
+        undefined,
+        undefined,
+        undefined,
+        "USD",
+        true,
+        "amount",
+        "asc",
+      );
+
+      const args = mockService.findAll.mock.calls[0];
+      expect(args[0]).toBe("user-1");
+      expect(args[1]).toEqual([uuid1, uuid2]);
+      expect(args[2]).toBe("2026-01-01");
+      expect(args[3]).toBe("2026-01-31");
+      expect(args[4]).toEqual([uuid3]);
+      expect(args[8]).toBe(true);
+      expect(args[9]).toBe("coffee");
+      expect(args[11]).toBe(-50);
+      expect(args[12]).toBe(50);
+      expect(args[14]).toEqual(["CLEARED", "VOID"]);
+      expect(args[15]).toBe("amount");
+      expect(args[16]).toBe("ASC");
+      expect(args[18]).toEqual(["USD"]);
+      expect(args[19]).toBe(true);
+    });
+
+    it("refuses an invalid filter before reading anything", async () => {
+      await expect(
+        controller.exportRegister(mockReq, undefined, undefined, "not-a-date"),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockService.findAll).not.toHaveBeenCalled();
+    });
+
+    it("exports nothing for a delegate who can read none of the accounts", async () => {
+      mockDelegationService.readableAccountIds.mockResolvedValue([]);
+      const actingReq = {
+        user: { id: "owner-1", isActing: true, delegationId: "del-1" },
+      };
+
+      const result = await controller.exportRegister(actingReq);
+
+      expect(result).toEqual({ data: [] });
+      expect(mockService.findAll).not.toHaveBeenCalled();
+    });
+
+    it("masks a counterpart the delegate cannot read before dropping the fields the mask keys on", async () => {
+      mockDelegationService.readableAccountIds.mockResolvedValue([uuid1]);
+      mockCrossOwnerAccess.readableAccountIdSetFor.mockResolvedValue(
+        new Set([uuid1]),
+      );
+      mockService.findAll.mockResolvedValueOnce(
+        page(
+          [
+            row("tx-1", {
+              userId: "owner-1",
+              isTransfer: true,
+              payeeName: "Transfer to Secret Savings",
+              linkedTransaction: {
+                userId: "owner-1",
+                accountId: uuid2,
+                account: { id: uuid2, name: "Secret Savings" },
+              },
+            }),
+          ],
+          false,
+        ),
+      );
+      const actingReq = {
+        user: {
+          id: "owner-1",
+          realUserId: "deleg-1",
+          isActing: true,
+          delegationId: "del-1",
+        },
+      };
+
+      const result = await controller.exportRegister(actingReq);
+
+      expect(mockCrossOwnerAccess.readableAccountIdSetFor).toHaveBeenCalledWith(
+        "deleg-1",
+      );
+      expect(result.data[0].linkedTransaction).toEqual({
+        account: { name: "Hidden account" },
+      });
+      expect(result.data[0].payeeName).toBe("Transfer to Hidden account");
+    });
+  });
+
   describe("getFilterOptions()", () => {
     it("passes the requested accounts through in own context", async () => {
       await controller.getFilterOptions(mockReq, `${uuid1},${uuid2}`);

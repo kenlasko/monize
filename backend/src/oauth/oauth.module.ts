@@ -8,12 +8,14 @@ import { OAuthProviderService } from "./oauth-provider.service";
 import { OAuthInteractionController } from "./oauth-interaction.controller";
 import { OAuthMetadataController } from "./oauth-metadata.controller";
 import { AuthModule } from "../auth/auth.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { OAUTH_GRANT_REVOKER } from "../auth/credential-revocation";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([OAuthPayload, OauthInstanceConfig]),
     AuthModule,
+    NotificationsModule,
     EncryptionModule,
   ],
   providers: [

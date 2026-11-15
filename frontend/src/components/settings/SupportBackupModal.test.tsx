@@ -40,7 +40,12 @@ describe('SupportBackupModal', () => {
   it('renders sections, a de-identification note and account scope', async () => {
     await open();
     expect(screen.getByText('Create support backup')).toBeInTheDocument();
-    expect(screen.getByText(/de-identified copy/i)).toBeInTheDocument();
+    // The note is the heading's help button's accessible name. Its popover
+    // text is in the DOM only once the modal's next-frame autofocus has
+    // opened it, which a loaded CI worker may not have run yet.
+    expect(
+      screen.getByRole('button', { name: /de-identified copy/i }),
+    ).toBeInTheDocument();
     expect(screen.getByText('Budgets')).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByText('Everyday Chequing')).toBeInTheDocument(),

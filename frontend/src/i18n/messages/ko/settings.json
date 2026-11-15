@@ -406,6 +406,7 @@
         "BONDS": "채권",
         "AI_REVIEW": "AI 검토 제안",
         "WARRANTIES": "보증 알림",
+        "SECURITY": "보안",
         "SHARED_EXPENSES": "공동 지출"
       },
       "channelNotApplicable": "이 알림 유형에는 해당되지 않습니다",

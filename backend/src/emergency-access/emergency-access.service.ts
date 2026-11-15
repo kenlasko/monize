@@ -13,6 +13,7 @@ import { EmergencyAccessContact } from "./entities/emergency-access-contact.enti
 import { UpsertSettingsDto } from "./dto/upsert-settings.dto";
 import { UpsertContactDto } from "./dto/upsert-contact.dto";
 import { EncryptionService } from "../common/encryption/encryption.service";
+import { decryptMessage } from "./decrypt-message.util";
 import { EmailService } from "../notifications/email.service";
 import { User } from "../users/entities/user.entity";
 
@@ -86,29 +87,14 @@ export class EmergencyAccessService {
     };
   }
 
-  private decryptMessage(ciphertext: string | null): string | null {
-    if (!ciphertext) return null;
-    if (!this.encryption.isConfigured()) {
-      this.logger.warn(
-        "Encryption key not configured; emergency access message cannot be decrypted",
-      );
-      return null;
-    }
-    try {
-      return this.encryption.decrypt(ciphertext);
-    } catch (error) {
-      this.logger.error(
-        "Failed to decrypt emergency access message",
-        error instanceof Error ? error.stack : error,
-      );
-      return null;
-    }
-  }
-
   private buildMessageMetadata(
     settings: EmergencyAccessSettings | null,
   ): MessageMetadata {
-    const decrypted = this.decryptMessage(settings?.messageCiphertext ?? null);
+    const decrypted = decryptMessage(
+      this.encryption,
+      this.logger,
+      settings?.messageCiphertext ?? null,
+    );
     return {
       hasMessage: !!decrypted,
       charCount: decrypted?.length ?? 0,
@@ -158,7 +144,11 @@ export class EmergencyAccessService {
       }),
     );
     return {
-      message: this.decryptMessage(settings?.messageCiphertext ?? null),
+      message: decryptMessage(
+        this.encryption,
+        this.logger,
+        settings?.messageCiphertext ?? null,
+      ),
     };
   }
 

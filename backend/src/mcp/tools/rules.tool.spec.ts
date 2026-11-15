@@ -521,6 +521,9 @@ describe("McpRulesTools", () => {
         ],
         ["run", { operation: "run", ruleId: RULE }, "run_transaction_rule"],
       ])("commits a %s through the same path", async (_n, args, type) => {
+        server.server.getClientCapabilities.mockReturnValue({
+          elicitation: { form: {} },
+        });
         aiActions.commitApproved.mockResolvedValue({
           type,
           id: RULE,

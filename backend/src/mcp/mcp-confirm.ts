@@ -1,4 +1,5 @@
 import { createHash } from "crypto";
+import { Logger } from "@nestjs/common";
 import {
   CLIENT_CAPABILITIES_META_KEY,
   inputRequired,
@@ -9,13 +10,22 @@ import {
   type ServerContext,
 } from "@modelcontextprotocol/server";
 import { canonicalize } from "../ai/actions/ai-action-signing.service";
-import { AI_ACTION_ENVELOPE_FIELDS } from "../ai/actions/ai-action.types";
+import {
+  AI_ACTION_ENVELOPE_FIELDS,
+  AI_ACTION_TYPES,
+  type AiActionType,
+} from "../ai/actions/ai-action.types";
 import {
   clientAnsweredForItself,
+  elicitationUnanswered,
   elicitationBehaviour,
   recordElicitationAnswered,
   recordElicitationSilent,
+  recordElicitationUnanswered,
 } from "./mcp-elicitation-support";
+// Call-time use only, so the cycle with mcp-context (which reads the errors
+// above) never sees a half-loaded module.
+import { resolveUserContext } from "./mcp-context";
 import type {
   McpConfirmState,
   McpRequestStateCodec,
@@ -82,6 +92,151 @@ export class ConfirmMismatchError extends Error {
     );
     this.name = "ConfirmMismatchError";
   }
+}
+
+/**
+ * A deletion or a multi-row write that no human confirmed. Nothing is written;
+ * the tool reports it and the model tells the user where the change can be
+ * approved instead.
+ *
+ * "unsupported" -- a client that declared no elicitation, or never answered it
+ * -- means no dialog reached a human, so for the changes that destroy data or
+ * touch many rows at once it refuses rather than falls through. This protects
+ * users of clients that cannot show a confirmation dialog; it is not a defence
+ * against a stolen bearer, whose caller can declare elicitation and accept its
+ * own dialog (that belongs to the credential layer: scopes, grant notifications).
+ */
+export class ConfirmRequiredError extends Error {
+  constructor() {
+    super(
+      "Not changed: deleting, or changing several items at once, needs a confirmation dialog, and this MCP client did not show one. Ask the user to make this change in the Monize web chat or in Monize itself, or to use an MCP client that shows confirmation dialogs.",
+    );
+    this.name = "ConfirmRequiredError";
+  }
+}
+
+/**
+ * A dialog was shown (or sent) and nobody answered it in time, or the
+ * connection ended while it was open. Nothing is written. This is not
+ * evidence that the client cannot show dialogs, so the session is not marked
+ * silent and a later write is asked again.
+ */
+export class ConfirmNotAnsweredError extends Error {
+  constructor() {
+    super(
+      "Not changed: the confirmation was not answered in time. Ask the user to make the change again and to answer the confirmation dialog when it appears. If no dialog appears, make the change in the Monize web chat or in Monize itself.",
+    );
+    this.name = "ConfirmNotAnsweredError";
+  }
+}
+
+/** Action types that write many rows from one card. */
+const BULK_ACTION_TYPES: ReadonlySet<AiActionType> = new Set<AiActionType>([
+  "batch_actions",
+  "create_transactions",
+  "create_investment_transactions",
+  "run_transaction_rule",
+]);
+
+/** Single-row action types a tool may confirm: the AI actions and the one MCP-only write. */
+const SINGLE_ACTION_TYPES: ReadonlySet<string> = new Set<string>([
+  ...AI_ACTION_TYPES,
+  "enter_bond_series_manually",
+]);
+
+function actionType(action: unknown): string | undefined {
+  const type = (action as { type?: unknown } | null | undefined)?.type;
+  return typeof type === "string" ? type : undefined;
+}
+
+/**
+ * Whether a round may write only on a human's answer: more than one action
+ * card, a deletion (any `delete_*` action, so a new one is covered without a
+ * list edit), or a card that writes many rows.
+ *
+ * Fails closed: an action that is missing, has no string `type` or has a type
+ * this server does not know is not a single create or edit, so it needs an
+ * answer too. An array counts one card per element.
+ */
+export function needsHumanAnswer(items: readonly ConfirmItem[]): boolean {
+  const cards = actionCards(items);
+  return (
+    cards.length !== 1 ||
+    cards.some((card) => {
+      const type = actionType(card);
+      return (
+        type === undefined ||
+        !SINGLE_ACTION_TYPES.has(type) ||
+        type.startsWith("delete_") ||
+        (BULK_ACTION_TYPES.has(type as AiActionType) &&
+          !isOneRowNonDeleteCard(card))
+      );
+    })
+  );
+}
+
+/** The cards of a round: an array action counts one card per element. */
+function actionCards(items: readonly ConfirmItem[]): unknown[] {
+  return items.flatMap((item) =>
+    Array.isArray(item.action) ? item.action : [item.action],
+  );
+}
+
+/**
+ * A `batch_actions`, `create_transactions` or `create_investment_transactions`
+ * card that holds exactly one row and does not delete is a single create or
+ * edit (a bulk tool with one row left after skips). Anything else about the
+ * card's shape stays bulk, so a malformed one fails closed.
+ */
+function isOneRowNonDeleteCard(card: unknown): boolean {
+  const { type, operation, rows } = card as {
+    type?: unknown;
+    operation?: unknown;
+    rows?: unknown;
+  };
+  return (
+    (type === "create_transactions" ||
+      type === "create_investment_transactions" ||
+      (type === "batch_actions" &&
+        typeof operation === "string" &&
+        !operation.startsWith("delete"))) &&
+    Array.isArray(rows) &&
+    rows.length === 1
+  );
+}
+
+const logger = new Logger("McpConfirm");
+
+/**
+ * The policy for a round in which no dialog reached a human: refuse a deletion
+ * or a multi-row write, let a single create or edit through, and log either
+ * case with a stable marker so an operator can tell a write nobody answered
+ * for from one a person approved.
+ */
+function applyUnconfirmedPolicy(
+  ctx: ServerContext,
+  items: readonly ConfirmItem[],
+  answers: Map<string, WriteConfirmation>,
+): void {
+  if (![...answers.values()].includes("unsupported")) return;
+  const refused = needsHumanAnswer(items);
+  logUnconfirmed(ctx, items, refused);
+  if (refused) throw new ConfirmRequiredError();
+}
+
+function logUnconfirmed(
+  ctx: ServerContext,
+  items: readonly ConfirmItem[],
+  refused: boolean,
+): void {
+  const user = resolveUserContext(ctx);
+  logger.warn(
+    `mcp-unconfirmed-write outcome=${refused ? "refused" : "allowed"} user=${user?.userId ?? "unknown"} credential=${user?.credentialId ?? "unknown"} actions=${actionCards(
+      items,
+    )
+      .map((card) => actionType(card) ?? "unknown")
+      .join(",")}`,
+  );
 }
 
 /**
@@ -256,9 +411,11 @@ export async function confirmWrite(
  *    the dialog failed in a way we cannot account for; abort, so a write never
  *    happens over a user's refusal.
  *  - "unsupported": no dialog reached a human, so the caller falls back to its
- *    normal behavior. The client still gates every tool call with its own
- *    approval prompt, so this is not a consent bypass -- it is the only consent
- *    step such a client has.
+ *    normal behavior, relying on the client's own per-tool approval prompt.
+ *    That prompt is only as honest as the client, so this outcome is returned
+ *    only for a single create or edit: a round that deletes or writes several
+ *    rows throws `ConfirmRequiredError` instead (`needsHumanAnswer`), and every
+ *    unconfirmed round is logged as `mcp-unconfirmed-write`.
  *
  * **On 2026-07-28 the answer arrives on a later call, not from a wait.** Round
  * one returns `{ ask }` carrying a sealed `requestState`; the client shows the
@@ -299,9 +456,11 @@ export async function confirmWriteMany(
   items: ConfirmItem[],
 ): Promise<{ ask: InputRequiredResult } | Map<string, WriteConfirmation>> {
   if (items.length === 0) return new Map();
-  return isModern(ctx)
-    ? confirmModern(server, ctx, items)
-    : confirmLegacy(server, ctx, items);
+  const outcome = isModern(ctx)
+    ? await confirmModern(server, ctx, items)
+    : await confirmLegacy(server, ctx, items);
+  if (outcome instanceof Map) applyUnconfirmedPolicy(ctx, items, outcome);
+  return outcome;
 }
 
 /** 2026-07-28: return the question, or read the answers to it. */
@@ -381,8 +540,12 @@ async function confirmLegacy(
   items: ConfirmItem[],
 ): Promise<Map<string, WriteConfirmation>> {
   const answers = new Map<string, WriteConfirmation>();
+  const needsHuman = needsHumanAnswer(items);
   for (const item of items) {
-    answers.set(item.key, await confirmLegacyOne(server, ctx, item.message));
+    answers.set(
+      item.key,
+      await confirmLegacyOne(server, ctx, item.message, items, needsHuman),
+    );
   }
   return answers;
 }
@@ -391,6 +554,8 @@ async function confirmLegacyOne(
   server: McpServer,
   ctx: ServerContext,
   message: string,
+  items: readonly ConfirmItem[],
+  needsHuman: boolean,
 ): Promise<WriteConfirmation> {
   const capabilities = server.server.getClientCapabilities();
   if (!capabilities?.elicitation?.form) {
@@ -400,7 +565,13 @@ async function confirmLegacyOne(
   // client that drops the request, the round trip costs CONFIRM_TIMEOUT_MS
   // every time, which on a 25-row individual batch is the same paralysis in
   // slow motion.
-  if (elicitationBehaviour(server) === "silent") {
+  const behaviour = elicitationBehaviour(server);
+  if (behaviour === "silent") {
+    return "unsupported";
+  }
+  // A dialog went unanswered earlier: a single create or edit does not wait
+  // for another, but a round that needs a human still asks.
+  if (behaviour === "unanswered" && !needsHuman) {
     return "unsupported";
   }
   try {
@@ -415,7 +586,8 @@ async function confirmLegacyOne(
     recordElicitationAnswered(server);
     return result.action === "accept" ? "accepted" : "declined";
   } catch (err) {
-    if (!clientAnsweredForItself(err)) {
+    const unanswered = elicitationUnanswered(err);
+    if (!unanswered && !clientAnsweredForItself(err)) {
       return "declined";
     }
     // A client that has already shown a dialog in this session can show
@@ -423,6 +595,19 @@ async function confirmLegacyOne(
     // human behind it -- refuse rather than fall through to the write.
     if (elicitationBehaviour(server) === "answers") {
       return "declined";
+    }
+    // An unanswered dialog does not show the client cannot show one. A round
+    // that needs a human is refused for this one write and asked again next
+    // time. A single create or edit falls through to the client's own prompt,
+    // and the session is marked "unanswered" so it is not waited on for
+    // CONFIRM_TIMEOUT_MS again.
+    if (unanswered) {
+      if (needsHuman) {
+        logUnconfirmed(ctx, items, true);
+        throw new ConfirmNotAnsweredError();
+      }
+      recordElicitationUnanswered(server);
+      return "unsupported";
     }
     recordElicitationSilent(server);
     return "unsupported";

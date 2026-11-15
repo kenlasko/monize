@@ -406,6 +406,7 @@
         "BONDS": "Bonds",
         "AI_REVIEW": "AI review proposals",
         "WARRANTIES": "Warranty reminders",
+        "SECURITY": "Security",
         "SHARED_EXPENSES": "Shared expenses"
       },
       "channelNotApplicable": "Not applicable for this notification type",

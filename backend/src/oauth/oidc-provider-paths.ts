@@ -1,4 +1,20 @@
 /**
+ * The provider's endpoint paths, all under `/oauth/*` (see
+ * `OAuthProviderService.initialize`). Written once so the per-IP caps in
+ * `oauth-endpoint-throttle.ts` cannot drift from the routes they cap.
+ */
+export const OIDC_PROVIDER_ROUTES = {
+  authorization: "/oauth/auth",
+  token: "/oauth/token",
+  jwks: "/oauth/jwks",
+  registration: "/oauth/reg",
+  revocation: "/oauth/token/revocation",
+  userinfo: "/oauth/me",
+  end_session: "/oauth/session/end",
+  pushed_authorization_request: "/oauth/request",
+} as const;
+
+/**
  * Decides which request paths are handled by node-oidc-provider.
  *
  * The provider is mounted at the application root (not under `/oauth`) because

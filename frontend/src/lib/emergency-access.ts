@@ -10,6 +10,7 @@ import type {
   UpsertEmergencyAccessSettings,
   UpsertEmergencyAccessContact,
   EmergencyAccessClaimPreview,
+  EmergencyAccessClaimResult,
 } from '@/types/emergency-access';
 
 const STEP_UP_PURPOSE = 'emergency-access';
@@ -105,10 +106,11 @@ export const emergencyAccessApi = {
   completeClaim: async (
     token: string,
     newPassword: string,
-  ): Promise<void> => {
-    await apiClient.post('/emergency-access/claim/complete', {
-      token,
-      newPassword,
-    });
+  ): Promise<EmergencyAccessClaimResult> => {
+    const res = await apiClient.post<EmergencyAccessClaimResult>(
+      '/emergency-access/claim/complete',
+      { token, newPassword },
+    );
+    return res.data;
   },
 };

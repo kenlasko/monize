@@ -250,8 +250,8 @@ export class McpTagsTools {
         "Cancelled: the confirmation was declined, so nothing was changed.",
       );
     }
-    // "accepted", or "unsupported": no dialog reached a human, and the client
-    // still gates every tool call with its own approval prompt.
+    // "accepted", or "unsupported": no dialog reached a human, which
+    // confirmWrite allows only for a single create or edit.
     const result = await this.aiActions.commitApproved(
       userId,
       action.descriptor,

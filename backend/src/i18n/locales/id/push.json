@@ -52,6 +52,10 @@
       "title": "Pengingat garansi",
       "body": "Salah satu garansi Anda segera berakhir. Buka Monize untuk melihat detailnya."
     },
+    "security": {
+      "title": "Pemberitahuan keamanan",
+      "body": "Ada perubahan pada siapa yang dapat mengakses akun Monize Anda. Buka Monize untuk melihat detailnya."
+    },
     "shared_expenses": {
       "title": "Pengeluaran bersama",
       "body": "Ada pembaruan di grup bersama. Buka Monize untuk meninjaunya."

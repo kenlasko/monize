@@ -53,6 +53,36 @@ describe('transactionsApi', () => {
     expect(params.payeeIds).toBe('p1,p2');
   });
 
+  describe('getAllForExport', () => {
+    it('asks /transactions/export once, with the filters and no paging', async () => {
+      const rows = [{ id: 'tx-1' }, { id: 'tx-2' }];
+      vi.mocked(apiClient.get).mockResolvedValue({ data: { data: rows } });
+
+      const result = await transactionsApi.getAllForExport({
+        accountIds: ['a1', 'a2'],
+        startDate: '2026-01-01',
+        statuses: ['CLEARED', 'VOID'] as any,
+        hasAttachments: false,
+      });
+
+      expect(result).toEqual(rows);
+      expect(apiClient.get).toHaveBeenCalledTimes(1);
+      const [url, config] = vi.mocked(apiClient.get).mock.calls[0];
+      expect(url).toBe('/transactions/export');
+      const params = config!.params as Record<string, unknown>;
+      expect(params).toMatchObject({
+        accountIds: 'a1,a2',
+        startDate: '2026-01-01',
+        statuses: 'CLEARED,VOID',
+        hasAttachments: false,
+      });
+      expect(params).not.toHaveProperty('page');
+      expect(params).not.toHaveProperty('limit');
+      // The whole register in one response needs longer than a page does.
+      expect(config!.timeout).toBeGreaterThan(60000);
+    });
+  });
+
   describe('getAllPages', () => {
     it('returns an empty array when the first page has no results', async () => {
       vi.mocked(apiClient.get).mockResolvedValue({

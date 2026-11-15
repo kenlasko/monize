@@ -66,6 +66,11 @@ export type NotificationType =
   // A payroll deduction rule resets in two months (PAYMENTS): confirm next
   // period's maximum. The data carries the names, the reset date and the maximum.
   | 'PAYROLL_DEDUCTION_RESET_DUE'
+  // Who can reach the account changed (SECURITY): an OAuth client was granted
+  // access (data: clientName), or a credential answered the AI chat relay for
+  // the first time (data: credentialKind).
+  | 'OAUTH_CLIENT_AUTHORIZED'
+  | 'RELAY_CREDENTIAL_FIRST_USE'
   | 'SHARED_EXPENSE_UPDATED';
 
 /** How urgent, and how it is drawn. */
@@ -111,6 +116,7 @@ export type NotificationCategory =
   | 'BONDS'
   | 'AI_REVIEW'
   | 'WARRANTIES'
+  | 'SECURITY'
   | "SHARED_EXPENSES";
 
 export interface Notification {

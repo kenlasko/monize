@@ -1,3 +1,4 @@
+import { ConfirmRequiredError } from "./mcp-confirm";
 import {
   callerKey,
   hasScope,
@@ -68,6 +69,13 @@ describe("mcp-context", () => {
   });
 
   describe("safeToolError", () => {
+    it("should pass through the message of a ConfirmRequiredError", () => {
+      const err = new ConfirmRequiredError();
+      const result = safeToolError(err);
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain(err.message);
+    });
+
     it("should pass through message for a 404 NotFoundException", () => {
       const notFoundErr = {
         getStatus: () => 404,

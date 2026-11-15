@@ -383,7 +383,7 @@ focuses the existing window.
 Files: `desktop/src/supervisor/postgres.ts` (+ spec with a fake runner),
 `desktop/scripts/smoke-postgres.mjs`, the desktop manifest (dependencies
 `embedded-postgres` and `@embedded-postgres/windows-x64` pinned to the 16.x
-line as an exact version).
+line as an exact version; moved to 18.x by amendment 20 of the plan).
 
 Steps:
 1. On first run: `initdb` into `pgdata` with `--auth=scram-sha-256`,

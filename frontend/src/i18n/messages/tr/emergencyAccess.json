@@ -6,12 +6,13 @@
   "backToSignIn": "Oturum açmaya dön",
   "ownerFallback": "hesap sahibi",
   "ownerFirstNameFallback": "sahip",
-  "intro": "Merhaba {contactName}, <b>{ownerName}</b>'in Monize hesabında acil iletişim kişisi olarak belirlendiniz.",
+  "intro": "Merhaba {contactName}, sizi buraya getiren e-postada adı geçen Monize hesabında acil iletişim kişisi olarak belirlendiniz.",
   "introDetail": "Burada bir şifre belirlemek, sizi hesap sahibi olarak oturum açtıracak ve hesaba tam erişim sağlayacaktır. Mevcut oturumlar iptal edilir ve önceki kimlik bilgileri değiştirilir.",
   "messageHeading": "{name}'den mesaj",
   "newPasswordLabel": "Yeni Şifre",
   "confirmPasswordLabel": "Şifreyi Onayla",
   "submit": "Acil erişimi talep et",
+  "continueToDashboard": "Panoya devam et",
   "toasts": {
     "success": "{name}'in hesabına artık erişiminiz var.",
     "failed": "Acil erişim talebi tamamlanamadı. Bağlantının süresi dolmuş veya zaten kullanılmış olabilir."

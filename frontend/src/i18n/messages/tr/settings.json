@@ -406,6 +406,7 @@
         "BONDS": "Tahviller",
         "AI_REVIEW": "Yapay zeka inceleme önerileri",
         "WARRANTIES": "Garanti hatırlatıcıları",
+        "SECURITY": "Güvenlik",
         "SHARED_EXPENSES": "Paylaşılan giderler"
       },
       "channelNotApplicable": "Bu bildirim türü için geçerli değil",

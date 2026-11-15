@@ -406,6 +406,7 @@
         "BONDS": "債券",
         "AI_REVIEW": "AIレビュー提案",
         "WARRANTIES": "保証のリマインダー",
+        "SECURITY": "セキュリティ",
         "SHARED_EXPENSES": "共同支出"
       },
       "channelNotApplicable": "この通知タイプには適用されません",

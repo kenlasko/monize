@@ -65,6 +65,7 @@ export const NATIVE_COPY_KEY: Readonly<Record<NotificationCategory, string>> = {
   AI_REVIEW: 'ai_review',
   WARRANTIES: 'warranties',
   SHARED_EXPENSES: 'shared_expenses',
+  SECURITY: 'security',
 };
 
 /** For a row with no category (an older server) or one this page does not know. */

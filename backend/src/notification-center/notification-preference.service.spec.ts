@@ -56,6 +56,13 @@ const PINNED_DEFAULTS: Record<
   [NotificationCategory.AI_REVIEW]: GLOBAL_DEFAULT,
   // Warranty reminders: the global rule (report email on, push off).
   [NotificationCategory.WARRANTIES]: GLOBAL_DEFAULT,
+  // Important and infrequent: interrupts by default, like bank sync.
+  [NotificationCategory.SECURITY]: {
+    email: true,
+    emailNotification: true,
+    push: true,
+    unifiedpush: false,
+  },
   [NotificationCategory.SHARED_EXPENSES]: GLOBAL_DEFAULT,
 };
 

@@ -394,6 +394,12 @@
       "todayTitle": "{{ name }}: bảo hành hết hạn hôm nay",
       "todayMessage": "Bảo hành của {{ name }} hết hạn hôm nay, {{ date }}. Mở để xem tài liệu hoặc ghi lại yêu cầu bảo hành."
     },
+    "security": {
+      "oauthTitle": "Ứng dụng mới đã kết nối: {{ clientName }}",
+      "oauthMessage": "Ứng dụng {{ clientName }} vừa được cấp quyền truy cập vào tài khoản Monize của bạn. Nếu không phải bạn, hãy đổi mật khẩu ngay: thao tác này thu hồi quyền truy cập của mọi ứng dụng đã kết nối.",
+      "relayTitle": "Một kết nối mới đã trả lời cuộc trò chuyện AI của bạn",
+      "relayMessage": "Một kết nối chưa từng trả lời cuộc trò chuyện AI Monize của bạn vừa nhận một câu lệnh. Nếu bạn không kết nối trợ lý này, hãy đổi mật khẩu."
+    },
     "payrollDeduction": {
       "resetTitle": "{{ category }}: xác nhận mức tối đa cho năm tới",
       "resetMessage": "Khoản khấu trừ {{ category }} trên {{ bill }} sẽ đặt lại vào {{ date }}. Hãy cập nhật mức tối đa hằng năm nếu thay đổi; nếu không, {{ amount }} sẽ áp dụng lại."

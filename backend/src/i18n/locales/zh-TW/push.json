@@ -52,6 +52,10 @@
       "title": "保固提醒",
       "body": "您有一項保固即將到期。開啟 Monize 查看詳細資料。"
     },
+    "security": {
+      "title": "安全通知",
+      "body": "有權存取您 Monize 帳戶的人員發生了變化。開啟 Monize 查看詳細資料。"
+    },
     "shared_expenses": {
       "title": "共同支出",
       "body": "共享群組有更新。開啟 Monize 查看。"

@@ -52,6 +52,10 @@
       "title": "[XX-Warranty reminder-XX]",
       "body": "[XX-One of your warranties expires soon. Open Monize for the details.-XX]"
     },
+    "security": {
+      "title": "[XX-Security notice-XX]",
+      "body": "[XX-Something changed in who can access your Monize account. Open Monize for the details.-XX]"
+    },
     "shared_expenses": {
       "title": "[XX-Shared expenses-XX]",
       "body": "[XX-A shared group has an update. Open Monize to review it.-XX]"

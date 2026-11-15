@@ -1241,21 +1241,10 @@ function TransactionsContent() {
             : filters.filterHasAttachments === 'yes',
       };
 
-      // Fetch all pages of filtered transactions
-      const allTransactions: Transaction[] = [];
-      let page = 1;
-      let hasMore = true;
-
-      while (hasMore) {
-        const response = await transactionsApi.getAll({
-          ...queryParams,
-          page,
-          limit: PAGE_SIZE,
-        });
-        allTransactions.push(...response.data);
-        hasMore = page < response.pagination.totalPages;
-        page++;
-      }
+      // One request for every filtered row: walking the paged list from here
+      // took a request per page and ran a large ledger into the API's
+      // throttle (issue #2198).
+      const allTransactions = await transactionsApi.getAllForExport(queryParams);
 
       if (allTransactions.length === 0) {
         toast.error(t('toasts.noneToExport'));

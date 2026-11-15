@@ -83,7 +83,7 @@ Proposed default matrix (a preference-less user):
 
 | Group        | in_app | email | push | unifiedpush | throttle |
 |--------------|:------:|:-----:|:----:|:-----------:|:--------:|
-| security     |   on   |  on   | off  |     off     |   0 min  |
+| security     |   on   |  on   |  on  |     off     |   0 min  |
 | system       |   on   |  on   | off  |     off     |  15 min  |
 | budgets      |   on   |  off  | off  |     off     |  60 min  |
 | bills        |   on   |  off  | off  |     off     |   0 min  |
@@ -118,6 +118,14 @@ and the alert email and push stay off until the user turns them on. Its two
 types are `WARRANTY_EXPIRING` (30 and 7 days before `expires_on`) and
 `WARRANTY_EXPIRES_TODAY` (the day itself); each points at the warranty's own
 detail page, and the push copy names the category only.
+
+`security` (`SECURITY`, `docs/specs/security-notifications.md`) is important and
+infrequent, so it defaults like `bank_sync`: immediate email and push on,
+UnifiedPush off. It has no report-mode digest, so its report-email cell is not
+applicable (`NOTIFICATION_CATEGORY_CHANNELS`); the immediate email and both push
+wires are live controls. Its two types are `OAUTH_CLIENT_AUTHORIZED` and
+`RELAY_CREDENTIAL_FIRST_USE`; each points at `/settings`, and the push copy names
+the category only.
 
 Rationale: in-app is always the record (a user opts a group *out* of the bell
 deliberately, which is allowed but off the default path). email defaults on only

@@ -42,8 +42,10 @@ three limits). Without it a session id lands on the wrong replica and is answere
 `404 Session not found`, which the spec requires a client to recover from by
 re-initializing. Reads recover; a confirmation in flight does not. Its answer
 never reaches the replica that asked, that replica's wait expires, and
-`clientAnsweredForItself` reads the timeout as `"unsupported"` -- so the write
-proceeds under the client's own approval prompt rather than the dialog's.
+`elicitationUnanswered` reads the timeout -- so a single create or edit
+proceeds as `"unsupported"` under the client's own approval prompt rather than
+the dialog's, and a deletion or multi-row write is refused with
+`ConfirmNotAnsweredError` (see "No human answered" below).
 
 The 2026-07-28 leg has none of this and needs none of it: no session, no
 server-side wait, a fresh server per request.
@@ -120,7 +122,7 @@ Checklist for a new tool:
 2. Add the tool to its domain `tools/*.tool.ts` with the five config fields above.
 3. Add its output schema to `tool-output-schemas.ts` (conventions below) and import it.
 4. Pick the right annotation preset (below).
-5. If it mutates data, derive scope `"write"`, enforce the daily write limit via `McpWriteLimiter` (see `transactions.tool.ts`), and sanitize user strings with `stripHtml(...)` before persisting. Gate the write behind a user confirmation with `confirmWrite(server, ctx, message, action)`, passing the signed action descriptor as it is -- `confirmationFingerprint` strips the per-build fields itself (see below), so a caller neither may nor need pre-trim it. **Handle all four outcomes**: return `outcome.ask` unchanged when `isAsk(outcome)` (the question, on 2026-07-28 -- write nothing), persist on `"accepted"`/`"unsupported"`, and return a `toolError` without writing on `"declined"`. `"unsupported"` means no dialog reached a human -- the client still gates every tool call with its own approval prompt, so proceeding is not a consent bypass.
+5. If it mutates data, derive scope `"write"`, enforce the daily write limit via `McpWriteLimiter` (see `transactions.tool.ts`), and sanitize user strings with `stripHtml(...)` before persisting. Gate the write behind a user confirmation with `confirmWrite(server, ctx, message, action)`, passing the signed action descriptor as it is -- `confirmationFingerprint` strips the per-build fields itself (see below), so a caller neither may nor need pre-trim it. **Handle all four outcomes**: return `outcome.ask` unchanged when `isAsk(outcome)` (the question, on 2026-07-28 -- write nothing), persist on `"accepted"`/`"unsupported"`, and return a `toolError` without writing on `"declined"`. `"unsupported"` means no dialog reached a human and is returned only for a single create or edit; a deletion or a multi-row write throws `ConfirmRequiredError` instead, which the tool's `safeToolError` turns into a refusal (see "No human answered" below).
    - **Relay first.** When the call is serving a prompt the user typed in the Monize web chat (reverse relay), confirm there instead: build the signed `PendingAiAction` with `AiActionBuilderService` (shared with the AI Assistant tool executor) and emit it. If the card is shown in the browser (committed via `/ai/actions/confirm` on approval), return `RELAY_PREVIEW_SHOWN` and do NOT write or `confirmWrite`; otherwise fall through to `confirmWrite`. Offer the card only when `ctx.mcpReq.requestState()` is absent -- a retry round already carries the user's answer.
 6. Update `mcp-server.service.ts` count and `mcp.module.ts` if it's a new provider class.
 7. Add/extend tests (below). `mcp-annotations.spec.ts` enforces that every tool has title + input/output schema + annotations with the right read/write hints -- bump `EXPECTED_TOOL_COUNT` and `WRITE_TOOLS`/`IDEMPOTENT_WRITES`.
@@ -152,10 +154,22 @@ Two consequences to keep: **individual approval mode asks for every card in ONE 
 
 So the outcome decides, not the advertisement:
 
-- Only a returned `action` is a user's answer. A rejection whose code says the client answered for itself (`clientAnsweredForItself` in `mcp-elicitation-support.ts`: method not found, invalid request/params, parse error, connection closed, request timeout) is `"unsupported"`; an unaccounted-for failure shape stays `"declined"`, so a case nobody has reasoned about refuses the write.
+- Only a returned `action` is a user's answer. A rejection whose code says the client answered for itself (`clientAnsweredForItself` in `mcp-elicitation-support.ts`: method not found, invalid request/params, parse error, capability not supported) is `"unsupported"`; a timeout or closed connection (`elicitationUnanswered`) is handled as the "No human answered" section says; an unaccounted-for failure shape stays `"declined"`, so a case nobody has reasoned about refuses the write.
 - Behaviour is remembered per session, in a `WeakMap` keyed on the session's `McpServer` so the record dies with the session. A client caught answering for itself is not asked again (the round trip costs `CONFIRM_TIMEOUT_MS` per row otherwise); a client that has answered once is never demoted, so a later unanswered dialog on it is `"declined"`.
 - **The wait must expire before the client abandons the tool call waiting on it.** Claude's MCP tool deadline is 60s; a five-minute server-side wait produced no result at all, only an opaque client-side timeout. `mcp-confirm.spec.ts` fails if `CONFIRM_TIMEOUT_MS` leaves that range, and pins the SDK normalization above so it cannot silently become load-bearing again. A 2026-07-28 request has no server-side wait at all, so the human's window there is the seal's own TTL.
 - The record is legacy-only, and so is the memory: a 2026-07-28 request gets a fresh server and has nothing to save.
+
+## No human answered: a single create or edit only (INV-MCP-005)
+
+`"unsupported"` -- a client that declared no elicitation, or advertised it and never answered a single create or edit -- relies on the client's own per-tool approval prompt. That prompt is only as honest as the client, and some clients have none. This policy protects the users of clients that cannot show a confirmation dialog. It is not a defence against a stolen bearer: that caller declares elicitation and accepts its own dialog, and defence against it belongs to the credential layer (scopes, grant notifications). So `confirmWriteMany` applies one policy to every round with an `"unsupported"` answer, on both revisions, before returning to the tool:
+
+- **A round that deletes or writes several rows is refused** with `ConfirmRequiredError`: more than one item, any `delete_*` action (a prefix, so a new delete is covered without a list edit), or a card that writes many rows (`batch_actions`, `create_transactions`, `create_investment_transactions`, `run_transaction_rule`; the first three holding exactly one row and not deleting count as a single write). `needsHumanAnswer` is the predicate and it fails closed: an action that has no string `type`, or has a type outside the known single-write types needs a human answer too, and an array counts one card per element. The refusal is thrown before the tool writes anything, and its message tells the model to send the user to the Monize web chat (the relay card), the app, or a client that shows dialogs.
+- **A single create or edit still proceeds**, because an honest client that cannot show a dialog would otherwise lose every write; the asymmetry is the point: such a client loses deletes and bulk edits.
+- **Every unconfirmed round is logged** by `applyUnconfirmedPolicy` (and, for a `ConfirmNotAnsweredError` refusal, before the throw) as a `Logger.warn` line beginning `mcp-unconfirmed-write outcome=refused|allowed`, with the user, the credential and the action types, so an operator can tell a write nobody answered for from one a person approved. A user-facing record (a notification on the first unconfirmed write of a credential) is not built: it belongs with the grant and token notifications, which do not exist yet.
+
+A dialog that times out (`RequestTimeout`) or whose connection closes (`ConnectionClosed`) on a 2025-era session is classified by `elicitationUnanswered`. When the round needs a human, that one write is refused with `ConfirmNotAnsweredError` and the refusal is logged as `outcome=refused` and the session is not marked silent, so the next write is asked again. When it does not (a single typed create or edit), the session is marked `"unanswered"` and the write proceeds as `"unsupported"`; later single writes skip the dialog so a client that never answers is not waited on for every write, while a round that needs a human still asks. Only the codes that mean the client cannot elicit (`MethodNotFound` and the like) mark the session `"silent"`, after which nothing is asked. A `batch_actions`, `create_transactions` or `create_investment_transactions` card holding one row that is not a delete counts as a single write (`isOneRowNonDeleteCard`).
+
+Do not add a tool-side "if unsupported then refuse" check; the policy is one decision in `mcp-confirm.ts`, and `mcp-confirm.spec.ts` holds it.
 
 ## A relay turn belongs to one caller, for a bounded time
 
@@ -292,7 +306,7 @@ Tools carry title, description, input and output schema and annotations; resourc
 | `completions` | Argument autocompletion; no client asks. |
 | The tasks extension (`io.modelcontextprotocol/tasks`) | Every tool here answers within a request. |
 | `x-mcp-header` / `Mcp-Param-*` mirroring | No tool argument needs to be visible to an intermediary. |
-| DNS-rebinding protection | Auth is bearer-only, so there are no ambient browser credentials to steal. |
+| DNS-rebinding protection (rejecting a request by its `Origin`) | Auth is bearer-only, so there are no ambient browser credentials to steal. CORS on `/api/v1/mcp` answers only the first-party allow-list (`PUBLIC_APP_URL`, `CORS_ORIGIN`, plus the localhost origins `main.ts` adds outside production), so a foreign page holding a token still cannot read the response. CORS limits cross-origin reads, not DNS rebinding: a rebound page is same-origin to the browser, so CORS does not apply to it; OAuth and discovery stay `*` (`backend/src/common/http/cors-policy.ts`). The MCP origin list is the app allow-list, and `CORS_ORIGIN` holds one extra origin (not a comma-separated list): setting it to a browser-hosted MCP client's origin replaces any extra origin already there, and also grants that origin credentialed access to the cookie-authenticated API. |
 | Client ID Metadata Documents | `docs/future-plans/mcp-client-id-metadata-documents.md`; DCR still works and nothing presents a URL as its `client_id`. |
 
 The 2025-era session path is the one piece with an end date: once no client negotiates that revision, `legacy: "reject"` on the whole endpoint retires the session table and `mcp-elicitation-support.ts` with it.

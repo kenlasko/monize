@@ -27,6 +27,7 @@ import {
   STRATEGY_NOTIFICATION_TYPES,
   SYSTEM_NOTIFICATION_TYPES,
   WARRANTY_NOTIFICATION_TYPES,
+  SECURITY_NOTIFICATION_TYPES,
   notificationCategoryOf,
 } from "./entities/notification.entity";
 import {
@@ -182,6 +183,16 @@ describe("notification type partition", () => {
     expect(byCategory[NotificationCategory.WARRANTIES].sort()).toEqual(
       [...WARRANTY_NOTIFICATION_TYPES].sort(),
     );
+    // Security notices: a new OAuth grant, a first-use relay credential.
+    expect(byCategory[NotificationCategory.SECURITY].sort()).toEqual(
+      [
+        NotificationType.OAUTH_CLIENT_AUTHORIZED,
+        NotificationType.RELAY_CREDENTIAL_FIRST_USE,
+      ].sort(),
+    );
+    expect(byCategory[NotificationCategory.SECURITY].sort()).toEqual(
+      [...SECURITY_NOTIFICATION_TYPES].sort(),
+    );
     // BUDGETS is the remainder: everything not in one of the explicit sets
     // above -- never a second list, so this arm proves the partition is total.
     expect(byCategory[NotificationCategory.BUDGETS].sort()).toEqual(
@@ -200,7 +211,8 @@ describe("notification type partition", () => {
           !EMAIL_RECEIPT_NOTIFICATION_TYPES.includes(t) &&
           !BOND_NOTIFICATION_TYPES.includes(t) &&
           !AI_REVIEW_NOTIFICATION_TYPES.includes(t) &&
-          !WARRANTY_NOTIFICATION_TYPES.includes(t),
+          !WARRANTY_NOTIFICATION_TYPES.includes(t) &&
+          !SECURITY_NOTIFICATION_TYPES.includes(t),
       ).sort(),
     );
   });

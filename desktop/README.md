@@ -1,7 +1,7 @@
 # Monize desktop
 
 The Windows shell for Monize: an Electron app that starts the backend, the
-frontend and a bundled PostgreSQL 16 on one machine and opens the result in a
+frontend and a bundled PostgreSQL 18 on one machine and opens the result in a
 window. The plan is `docs/future-plans/windows-installer.md`; the task list is
 `docs/future-plans/windows-installer-tasks.md`.
 

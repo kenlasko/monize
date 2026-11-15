@@ -6,12 +6,13 @@
   "backToSignIn": "Quay lại đăng nhập",
   "ownerFallback": "chủ tài khoản",
   "ownerFirstNameFallback": "chủ tài khoản",
-  "intro": "Xin chào {contactName}, bạn đã được chỉ định là người liên hệ khẩn cấp trên tài khoản Monize của <b>{ownerName}</b>.",
+  "intro": "Xin chào {contactName}, bạn đã được chỉ định là người liên hệ khẩn cấp trên tài khoản Monize được nêu trong email đã dẫn bạn đến đây.",
   "introDetail": "Đặt mật khẩu tại đây sẽ đăng nhập bạn với tư cách là chủ tài khoản và cấp cho bạn toàn quyền truy cập vào tài khoản. Các phiên hiện tại bị thu hồi và thông tin đăng nhập trước đó bị thay thế.",
   "messageHeading": "Tin nhắn từ {name}",
   "newPasswordLabel": "Mật khẩu mới",
   "confirmPasswordLabel": "Xác nhận mật khẩu",
   "submit": "Yêu cầu quyền truy cập khẩn cấp",
+  "continueToDashboard": "Tiếp tục đến bảng điều khiển",
   "toasts": {"success": "Bạn hiện có quyền truy cập vào tài khoản của {name}.","failed": "Không thể hoàn tất yêu cầu truy cập khẩn cấp. Liên kết có thể đã hết hạn hoặc đã được sử dụng."},
   "passwordsNoMatch": "Mật khẩu không khớp"
 }

@@ -301,6 +301,9 @@
 <p>Monize detects the date format (MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD or YYYY-DD-MM) from the dates in each file; the date range in the information box shows how they were read. There is no override on this step, so if the dates look swapped, check your Windows regional date setting and export again.</p>
 <h3 id="step-3-map-categories">Step 3: Map Categories<a class="hlink" href="#step-3-map-categories" aria-label="Link to this section">#</a></h3>
 <p>If the QIF file contains category references, you need to map them to Monize categories.</p>
+<blockquote>
+<p><strong>Investment activities paid through another account:</strong> Money exports a dividend, interest payment, sale or other investment activity whose cash went to a different account as <code>Investment Income:Dividends|[ICICI Bank]</code>: the activity&#x27;s category, then the account. Monize does not list that category here, and it posts the activity&#x27;s cash to the investment account&#x27;s own cash account, not to ICICI Bank. Import ICICI Bank&#x27;s QIF file as well: its matching transfer row moves the money from the investment account&#x27;s cash into ICICI Bank. Without it, the investment&#x27;s cash balance keeps the proceeds and ICICI Bank never receives them. Only a transfer activity (Transfer In, Transfer Out) moves money to the named account directly.</p>
+</blockquote>
 <figure><img src="/docs/images/import-map-categories.png" alt="Map Categories" width="896" height="742" loading="lazy" decoding="async" class="shot-dark"/><img src="/docs/images/import-map-categories.light.png" alt="Map Categories" width="896" height="742" loading="lazy" decoding="async" class="shot-light"/><figcaption>Map Categories</figcaption></figure>
 <h4 id="understanding-the-display">Understanding the Display<a class="hlink" href="#understanding-the-display" aria-label="Link to this section">#</a></h4>
 <p>Categories are displayed in three groups:</p>

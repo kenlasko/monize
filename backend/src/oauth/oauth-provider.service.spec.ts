@@ -3,8 +3,10 @@ import { dirname, join } from "path";
 import { InternalServerErrorException } from "@nestjs/common";
 import {
   OAuthProviderService,
+  MAX_DCR_REDIRECT_URIS,
   MCP_RESOURCE_SCOPES,
 } from "./oauth-provider.service";
+import { OAUTH_CLIENT_IDLE_TTL_SECONDS } from "./postgres.adapter";
 import { getRequestContext } from "../common/request-context";
 import {
   OauthSigningKeysService,
@@ -61,6 +63,9 @@ jest.mock(
             return lastMockProvider;
           },
         ),
+      errors: {
+        InvalidClientMetadata: class InvalidClientMetadata extends Error {},
+      },
     };
   },
   { virtual: true },
@@ -302,6 +307,33 @@ describe("OAuthProviderService", () => {
       }
     });
 
+    it("keeps a registered client alive longer than any refresh token minted for it", async () => {
+      // An idle client expires (#2177); it must never expire while a refresh
+      // token minted for it can still be redeemed, or a client that refreshes
+      // within its token's life would be refused as unknown.
+      const svc = new OAuthProviderService(
+        makeConfigService({
+          PUBLIC_APP_URL: "https://app.test",
+          JWT_SECRET: VALID_JWT,
+        }),
+        makeDataSource().dataSource,
+        makeAuthService({
+          id: "u",
+          isActive: true,
+          mustChangePassword: false,
+        }),
+        makeSigningKeys(),
+      );
+      await svc.ensureInitialized();
+
+      const ttl = providerConstructorCalls[0].config.ttl as Record<
+        string,
+        number
+      >;
+      expect(OAUTH_CLIENT_IDLE_TTL_SECONDS).toBeGreaterThan(ttl.RefreshToken);
+      expect(OAUTH_CLIENT_IDLE_TTL_SECONDS).toBeGreaterThan(ttl.Grant);
+    });
+
     // RFC 9207, which the 2026-07-28 revision asks authorization servers to
     // support (SEP-2468): the authorization response names the issuer that
     // produced it, so a client can tell one authorization server's code from
@@ -392,6 +424,80 @@ describe("OAuthProviderService", () => {
         config: providerConstructorCalls[0].config as Record<string, any>,
       };
     }
+
+    describe("dynamic client registration metadata (#2177)", () => {
+      // The provider passes its request context only while registering; a
+      // stored client rebuilt on lookup gets none.
+      const REGISTRATION_CTX = { method: "POST" };
+
+      it("never refuses a stored client after the fact", async () => {
+        const { config } = await init({
+          id: ACCOUNT_ID,
+          isActive: true,
+          mustChangePassword: false,
+        });
+        const many = Array.from(
+          { length: MAX_DCR_REDIRECT_URIS + 5 },
+          (_, i) => `https://client.test/cb${i}`,
+        );
+
+        expect(() =>
+          config.extraClientMetadata.validator(
+            undefined,
+            "redirect_uris",
+            many,
+          ),
+        ).not.toThrow();
+      });
+
+      it("refuses more redirect URIs than the cap", async () => {
+        const { config } = await init({
+          id: ACCOUNT_ID,
+          isActive: true,
+          mustChangePassword: false,
+        });
+        const { properties, validator } = config.extraClientMetadata;
+        const uris = (n: number) =>
+          Array.from({ length: n }, (_, i) => `https://client.test/cb${i}`);
+
+        expect(properties).toEqual(["redirect_uris"]);
+        expect(() =>
+          validator(
+            REGISTRATION_CTX,
+            "redirect_uris",
+            uris(MAX_DCR_REDIRECT_URIS),
+          ),
+        ).not.toThrow();
+        expect(() =>
+          validator(
+            REGISTRATION_CTX,
+            "redirect_uris",
+            uris(MAX_DCR_REDIRECT_URIS + 1),
+          ),
+        ).toThrow(/redirect_uris/);
+        expect(MAX_DCR_REDIRECT_URIS).toBeLessThan(50);
+      });
+
+      it("leaves a malformed value to the provider's own checks", async () => {
+        const { config } = await init({
+          id: ACCOUNT_ID,
+          isActive: true,
+          mustChangePassword: false,
+        });
+        const { validator } = config.extraClientMetadata;
+
+        expect(() =>
+          validator(
+            REGISTRATION_CTX,
+            "redirect_uris",
+            "https://client.test/cb",
+          ),
+        ).not.toThrow();
+        expect(() =>
+          validator(REGISTRATION_CTX, "redirect_uris", undefined),
+        ).not.toThrow();
+      });
+    });
 
     it("pkce.required always returns true", async () => {
       const { config } = await init({
@@ -928,6 +1034,64 @@ describe("OAuthProviderService", () => {
         makeSigningKeys(),
       );
       await expect(svc.revokeAllForUser(ACCOUNT_ID)).resolves.toBe(0);
+    });
+  });
+
+  describe("sweepExpiredPayloads (#2177)", () => {
+    function makeService(dataSource: import("typeorm").DataSource) {
+      return new OAuthProviderService(
+        makeConfigService({
+          PUBLIC_APP_URL: "https://app.test",
+          JWT_SECRET: VALID_JWT,
+        }),
+        dataSource,
+        makeAuthService({
+          id: "u",
+          isActive: true,
+          mustChangePassword: false,
+        }),
+        makeSigningKeys(),
+      );
+    }
+
+    function makeSweepSource(execute: jest.Mock) {
+      const where = jest.fn().mockReturnValue({
+        execute,
+        returning: () => ({ execute }),
+      });
+      const builder = {
+        update: () => ({ set: () => ({ where }) }),
+        delete: () => ({ where }),
+      };
+      return {
+        dataSource: {
+          getRepository: () => ({ createQueryBuilder: () => builder }),
+        } as unknown as import("typeorm").DataSource,
+        where,
+      };
+    }
+
+    it("adopts clients without an expiry, deletes expired rows, and reports both", async () => {
+      const execute = jest
+        .fn()
+        .mockResolvedValueOnce({ raw: [{ id: "c1" }, { id: "c2" }] })
+        .mockResolvedValueOnce({ affected: 42 });
+      const { dataSource, where } = makeSweepSource(execute);
+
+      await expect(
+        makeService(dataSource).sweepExpiredPayloads(),
+      ).resolves.toEqual({ adopted: 2, deleted: 42 });
+      expect(where).toHaveBeenCalledTimes(2);
+    });
+
+    it("swallows a failed run: the next one takes what this one left", async () => {
+      const { dataSource } = makeSweepSource(
+        jest.fn().mockRejectedValue(new Error("connection lost")),
+      );
+
+      await expect(
+        makeService(dataSource).sweepExpiredPayloads(),
+      ).resolves.toEqual({ adopted: 0, deleted: 0 });
     });
   });
 });

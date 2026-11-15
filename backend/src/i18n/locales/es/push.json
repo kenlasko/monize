@@ -52,6 +52,10 @@
       "title": "Recordatorio de garantía",
       "body": "Una de sus garantías vence pronto. Abra Monize para ver los detalles."
     },
+    "security": {
+      "title": "Aviso de seguridad",
+      "body": "Ha cambiado algo en quién puede acceder a su cuenta de Monize. Abra Monize para ver los detalles."
+    },
     "shared_expenses": {
       "title": "Gastos compartidos",
       "body": "Hay novedades en un grupo compartido. Abre Monize para revisarlas."
