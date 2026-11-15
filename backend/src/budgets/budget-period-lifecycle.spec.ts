@@ -60,6 +60,8 @@ describe("Budget Period Lifecycle Integration", () => {
   let periodCategoriesRepository: Record<string, jest.Mock>;
   /** budget_period_buckets as the mocked repository holds them. */
   let periodBucketRows: Array<Partial<BudgetPeriodBucket>>;
+  /** The buckets the close's own transaction reads. */
+  let currentBucketsForClose: BudgetBucket[] = [];
   let periodBucketsRepository: Record<string, jest.Mock>;
   let transactionsRepository: Record<string, jest.Mock>;
   let splitsRepository: Record<string, jest.Mock>;
@@ -253,6 +255,15 @@ describe("Budget Period Lifecycle Integration", () => {
         [BudgetPeriod, periodsRepository as never],
         [BudgetPeriodCategory, periodCategoriesRepository as never],
         [BudgetPeriodBucket, periodBucketsRepository as never],
+        [
+          BudgetBucket,
+          {
+            // The close re-reads the budget's buckets in its transaction.
+            find: jest
+              .fn()
+              .mockImplementation(async () => currentBucketsForClose),
+          } as never,
+        ],
         [
           Currency,
           {
@@ -740,6 +751,9 @@ describe("Budget Period Lifecycle Integration", () => {
       ],
       buckets: [savings],
     };
+    beforeEach(() => {
+      currentBucketsForClose = bucketBudget.buckets ?? [];
+    });
 
     const openPeriodFor = (
       id: string,

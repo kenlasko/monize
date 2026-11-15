@@ -241,7 +241,7 @@ implied.
 | INV-WTY-006 | A warranty import's preview and commit are one computation | enforced |
 | INV-WTY-007 | A delegate never learns a transaction outside their readable accounts through a warranty | enforced |
 | INV-BUDGET-001 | Every bucket figure is produced by one pure function | enforced |
-| INV-BUDGET-002 | A line's bucket belongs to the line's own budget, and an income line has none | partial |
+| INV-BUDGET-002 | A line's bucket belongs to the line's own budget, and an income line has none | enforced |
 | INV-BUDGET-003 | A closed period's bucket figures are frozen, and the next period's carry_in equals the closed period's carry_out | enforced |
 | SE-001 | Accepted contributions and shares conserve both currency totals | enforced |
 | SE-002 | Joining preserves the existing participant's history | enforced |
@@ -10022,7 +10022,8 @@ Enforcement         assertBucketAssignable
 Concurrency scope   the write's own transaction
 Retry semantics     a refused write wrote nothing, so a retry starts clean
 Crash semantics     --
-Failure response    404 for a bucket not of this budget, 400 for an income line
+Failure response    404 for a bucket not of this budget, 400 for an income line;
+                    a restore severs the link instead of refusing the file
 Required tests      Present: budget-buckets.service.spec.ts and the budgets
                     service specs (truth table D with typed mocks);
                     backend/test/integration/budget-buckets.integration.spec.ts
@@ -10034,18 +10035,16 @@ Required tests      Present: budget-buckets.service.spec.ts and the budgets
                     and re-reads each row to show a refusal wrote nothing
                     (a bulk batch's valid item included); null clears and an
                     own bucket sets.
-Status              partial
+Status              enforced
 ```
 
-Status is `partial` because one writer of `bucket_id` does not run the check:
-the backup restore (`backend/src/backup/restore-references.ts`) requires a
-line's `bucket_id` to name a `budget_buckets` row of the same file, so it can
-never point at another person's bucket, but a hand-edited file can point a
-line at a bucket of the restoring person's other budget, or give an income
-line a bucket. No figure is wrong for it: `computeBudgetBucketFigures` counts a
-line whose bucket is not one of its budget's as unassigned and skips income
-lines. Every request writer (line add, line update, bulk update, wizard apply)
-runs the check and has the PG proof above.
+The backup restore is the one writer that cannot run `assertBucketAssignable`
+(it writes rows, not requests). `resolveRestoreReferences`
+(`backend/src/backup/restore-references.ts`) requires a line's `bucket_id` to
+name a `budget_buckets` row of the same file, and then sets it NULL (counted in
+`severed`, the line reads as unassigned) when that bucket belongs to a different
+budget than the line or the line is an income line. `restore-references.spec.ts`
+holds the three cases.
 
 ### INV-BUDGET-003 -- a closed period's buckets are frozen, and carry once
 
