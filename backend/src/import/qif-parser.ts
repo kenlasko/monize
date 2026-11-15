@@ -10,7 +10,8 @@
  * - M = Memo
  * - N = Number (cheque number) OR Action (for investment transactions)
  * - C = Cleared status (* or c = cleared, X or R = reconciled)
- * - L = Category (transfers start with [])
+ * - L = Category (transfers start with []; Microsoft Money writes
+ *   "Category|[Account]" on investment activities, read as the transfer)
  * - S = Split category
  * - E = Split memo
  * - $ = Split amount
@@ -747,6 +748,32 @@ function parseCategoryOrTransfer(value: string): {
       isTransfer: false,
       transferAccount: "",
     };
+  }
+
+  // Microsoft Money writes an investment activity's income or expense
+  // category and the account its cash moved through as one field:
+  // "Investment Income:Dividends|[Checking]". Nothing the import writes for
+  // such a row carries a category (the investment row has none), so the field
+  // is read as the transfer to the bracketed account, as "[Checking]" alone
+  // would be, and the category is dropped rather than offered for mapping.
+  const pipeIndex = value.indexOf("|");
+  if (pipeIndex !== -1) {
+    const moneyTransfer = value
+      .slice(pipeIndex + 1)
+      .trim()
+      .match(/^\[([^\]]+)\](.*)$/);
+    if (moneyTransfer) {
+      const categoryPart = extractCategoryAndTags(value.slice(0, pipeIndex));
+      return {
+        category: "",
+        tagNames: [
+          ...categoryPart.tagNames,
+          ...extractTagNames(moneyTransfer[2]),
+        ],
+        isTransfer: true,
+        transferAccount: moneyTransfer[1],
+      };
+    }
   }
 
   // Transfers are denoted by [Account Name]

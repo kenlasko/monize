@@ -1,4 +1,37 @@
-import { parseQif, validateQifContent } from "./qif-parser";
+import { parseQif, QifTransaction, validateQifContent } from "./qif-parser";
+
+// The three records of discussion #2184, as Microsoft Money exports them.
+const MONEY_INVESTMENT_ACTIVITIES = `!Type:Invst
+^
+D02-11-1994
+MRs. 126.08
+T130.00
+LInvestment Income:Dividends|[Cash Rs]
+$130.00
+NDivX
+YxStocks - Welspun India
+I
+Q
+^
+D03-03'2005
+T3.00
+LInvestment Income:Interest|[ICICI - Sharmi 3675]
+$3.00
+NMiscInc
+YStocks - TCS
+I
+Q
+^
+D21-10'2010
+T91,111.51
+LInvestment Income:Capital Gains|[ICICI - Sharmi 3675]
+$91,111.51
+NSellX
+YStocks - TCS
+I1,000
+Q92
+O888.49
+^`;
 
 describe("QIF Parser", () => {
   describe("validateQifContent", () => {
@@ -1761,6 +1794,83 @@ Pvoid where prohibited
       expect(tx.voidedByExport).toBeFalsy();
     });
   });
+  // Microsoft Money writes an investment activity's category and the account
+  // its cash moved through as one field (discussion #2184, issue #2209).
+  describe("parseQif - Microsoft Money Category|[Account] field", () => {
+    it("reads each activity as a transfer and offers no piped category", () => {
+      const result = parseQif(MONEY_INVESTMENT_ACTIVITIES);
+      expect(result.accountType).toBe("INVESTMENT");
+      expect(result.categories).toEqual([]);
+      expect(result.transferAccounts).toEqual([
+        "Cash Rs",
+        "ICICI - Sharmi 3675",
+      ]);
+      expect(result.securities).toEqual([
+        "Stocks - TCS",
+        "xStocks - Welspun India",
+      ]);
+      expect(result.detectedDateFormat).toBe("DD/MM/YYYY");
+
+      const [div, misc, sell] = result.transactions;
+      expect(div).toMatchObject({
+        date: "1994-11-02",
+        amount: 130,
+        action: "DivX",
+        security: "xStocks - Welspun India",
+        category: "",
+        isTransfer: true,
+        transferAccount: "Cash Rs",
+        splits: [],
+      });
+      expect(misc).toMatchObject({
+        date: "2005-03-03",
+        amount: 3,
+        action: "MiscInc",
+        security: "Stocks - TCS",
+        category: "",
+        isTransfer: true,
+        transferAccount: "ICICI - Sharmi 3675",
+      });
+      expect(sell).toMatchObject({
+        date: "2010-10-21",
+        amount: 91111.51,
+        action: "SellX",
+        security: "Stocks - TCS",
+        price: 1000,
+        quantity: 92,
+        commission: 888.49,
+        category: "",
+        isTransfer: true,
+        transferAccount: "ICICI - Sharmi 3675",
+      });
+    });
+
+    it("keeps tags written on either side of the account", () => {
+      const qif = `!Type:Invst
+D01/15/2026
+NMiscExp
+T12.00
+LTaxes:TDS/Withheld|[ICICI Bank]/FY2026
+^`;
+      const tx = parseQif(qif).transactions[0];
+      expect(tx.category).toBe("");
+      expect(tx.isTransfer).toBe(true);
+      expect(tx.transferAccount).toBe("ICICI Bank");
+      expect(tx.tagNames).toEqual(["Withheld", "FY2026"]);
+    });
+
+    it("leaves a pipe that is not followed by a bracketed account alone", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-12.00
+LFood|Snacks
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions[0].category).toBe("Food|Snacks");
+      expect(result.transactions[0].isTransfer).toBe(false);
+      expect(result.categories).toEqual(["Food|Snacks"]);
+    });
+  });
 });
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -2259,6 +2369,29 @@ T-50.00
       expect(result.categoryDefs).toHaveLength(2);
       expect(result.categoryDefs[0].name).toBe("Food");
       expect(result.categoryDefs[1].name).toBe("Utilities");
+    });
+    it("reads a Microsoft Money Category|[Account] field as the transfer", () => {
+      const qif = `!Account\nNShares\nTInvst\n^\n${MONEY_INVESTMENT_ACTIVITIES}\n`;
+      const result = parseQifFull(qif);
+      const block = result.accountBlocks[0];
+      expect(block.categories).toEqual([]);
+      expect(block.transferAccounts).toEqual([
+        "Cash Rs",
+        "ICICI - Sharmi 3675",
+      ]);
+      expect(
+        block.transactions.map((tx: QifTransaction) => [
+          tx.date,
+          tx.action,
+          tx.category,
+          tx.isTransfer,
+          tx.transferAccount,
+        ]),
+      ).toEqual([
+        ["1994-11-02", "DivX", "", true, "Cash Rs"],
+        ["2005-03-03", "MiscInc", "", true, "ICICI - Sharmi 3675"],
+        ["2010-10-21", "SellX", "", true, "ICICI - Sharmi 3675"],
+      ]);
     });
   });
 
