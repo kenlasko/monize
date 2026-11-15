@@ -340,7 +340,9 @@
     "bucketTargetInvalid": "A bucket target must be greater than zero",
     "bucketPercentInvalid": "A percent target must be greater than 0 and at most 100, with at most two decimals",
     "bucketCarryCapNeedsCarryOver": "A carry cap needs carry-over turned on",
-    "bucketOnIncomeLine": "An income line cannot belong to a bucket"
+    "bucketOnIncomeLine": "An income line cannot belong to a bucket",
+    "bucketKeyDuplicate": "The bucket key \"{{ key }}\" is used more than once",
+    "bucketKeyUnknown": "No bucket in this request has the key \"{{ key }}\""
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "A payroll deduction rule tracks a bill paid in a fiat currency; this bill's account holds the cryptocurrency {{ code }}. Choose a bill paid from a fiat account.",

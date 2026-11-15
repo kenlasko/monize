@@ -14,6 +14,12 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Account } from "../accounts/entities/account.entity";
+import {
+  BudgetBucket,
+  BudgetBucketTargetType,
+} from "./entities/budget-bucket.entity";
+import { BadRequestException } from "@nestjs/common";
+import { withScopedDb } from "../common/db/scoped-db";
 import { BudgetProfile } from "./dto/generate-budget.dto";
 import {
   createScopedDbMocks,
@@ -33,6 +39,7 @@ describe("BudgetGeneratorService", () => {
   let accountsRepository: Record<string, jest.Mock>;
   let budgetsRepository: Record<string, jest.Mock>;
   let budgetCategoriesRepository: Record<string, jest.Mock>;
+  let budgetBucketsRepository: Record<string, jest.Mock>;
 
   const createMockQueryBuilder = (
     overrides: Record<string, jest.Mock> = {},
@@ -53,6 +60,7 @@ describe("BudgetGeneratorService", () => {
   });
 
   beforeEach(async () => {
+    jest.clearAllMocks();
     transactionsRepository = {
       createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
     };
@@ -95,6 +103,15 @@ describe("BudgetGeneratorService", () => {
       }),
     };
 
+    budgetBucketsRepository = {
+      create: jest.fn().mockImplementation((data) => ({ ...data })),
+      save: jest
+        .fn()
+        .mockImplementation((rows: unknown[]) =>
+          rows.map((r, i) => ({ ...(r as object), id: `new-bucket-${i}` })),
+        ),
+    };
+
     ({ dataSource: scopedDataSource } = createScopedDbMocks([
       [Transaction, transactionsRepository as never],
       [TransactionSplit, splitsRepository as never],
@@ -102,6 +119,7 @@ describe("BudgetGeneratorService", () => {
       [Account, accountsRepository as never],
       [Budget, budgetsRepository as never],
       [BudgetCategory, budgetCategoriesRepository as never],
+      [BudgetBucket, budgetBucketsRepository as never],
     ]));
 
     const module: TestingModule = await Test.createTestingModule({
@@ -1081,7 +1099,199 @@ describe("BudgetGeneratorService", () => {
           "categories",
           "categories.category",
           "categories.transferAccount",
+          "buckets",
         ],
+        order: { buckets: { sortOrder: "ASC", name: "ASC" } },
+      });
+    });
+
+    describe("with buckets (design 6.6)", () => {
+      const baseDto = {
+        name: "Buckets",
+        periodStart: "2026-02-01",
+        currencyCode: "USD",
+        strategy: BudgetStrategy.BUCKET,
+      };
+      const bucket = (over: Record<string, unknown> = {}) => ({
+        key: "save",
+        name: "Savings",
+        targetType: BudgetBucketTargetType.PERCENT,
+        targetValue: 20,
+        ...over,
+      });
+      const line = (over: Record<string, unknown> = {}) => ({
+        categoryId: "cat-1",
+        amount: 100,
+        rolloverType: RolloverType.NONE,
+        ...over,
+      });
+      const expectNothingWritten = () => {
+        expect(budgetsRepository.save).not.toHaveBeenCalled();
+        expect(budgetBucketsRepository.save).not.toHaveBeenCalled();
+        expect(budgetCategoriesRepository.save).not.toHaveBeenCalled();
+      };
+
+      beforeEach(() => {
+        budgetsRepository.findOne.mockResolvedValue({
+          id: "new-budget",
+          categories: [],
+          buckets: [],
+        });
+      });
+
+      it("writes budget, buckets and lines in one transaction and resolves keys", async () => {
+        const result = await service.apply("user-1", {
+          ...baseDto,
+          buckets: [
+            bucket(),
+            bucket({
+              key: "fun",
+              name: "Fun",
+              targetType: BudgetBucketTargetType.AMOUNT,
+              targetValue: 150,
+              carryOver: true,
+              carryCap: 300,
+            }),
+          ],
+          categories: [
+            line({ bucketKey: "fun" }),
+            line({ categoryId: "cat-2" }),
+            line({ categoryId: "cat-2", isIncome: true }),
+          ],
+        });
+
+        expect(withScopedDb).toHaveBeenCalledTimes(1);
+        expect(scopedDataSource.transaction).toHaveBeenCalledTimes(1);
+        expect(budgetBucketsRepository.create).toHaveBeenNthCalledWith(
+          2,
+          expect.objectContaining({
+            budgetId: "new-budget",
+            name: "Fun",
+            targetType: BudgetBucketTargetType.AMOUNT,
+            targetValue: 150,
+            carryOver: true,
+            carryCap: 300,
+            sortOrder: 1,
+          }),
+        );
+        expect(budgetCategoriesRepository.create).toHaveBeenNthCalledWith(
+          1,
+          expect.objectContaining({ bucketId: "new-bucket-1" }),
+        );
+        const unassigned = budgetCategoriesRepository.create.mock.calls[1][0];
+        expect(unassigned).not.toHaveProperty("bucketId");
+        expect(budgetsRepository.findOne).toHaveBeenCalledWith(
+          expect.objectContaining({
+            relations: expect.arrayContaining(["buckets"]),
+          }),
+        );
+        expect(result.buckets).toEqual([]);
+      });
+
+      it("trims the bucket name and defaults carry flags and order", async () => {
+        await service.apply("user-1", {
+          ...baseDto,
+          buckets: [bucket({ name: "  Savings  " })],
+          categories: [line()],
+        });
+        expect(budgetBucketsRepository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: "Savings",
+            carryOver: false,
+            carryCap: null,
+            sortOrder: 0,
+          }),
+        );
+      });
+
+      it("a request without buckets writes none and one transaction", async () => {
+        await service.apply("user-1", { ...baseDto, categories: [line()] });
+        expect(withScopedDb).toHaveBeenCalledTimes(1);
+        expect(budgetBucketsRepository.save).not.toHaveBeenCalled();
+        expect(budgetCategoriesRepository.save).toHaveBeenCalled();
+      });
+
+      it.each([
+        [
+          "a duplicate key",
+          { buckets: [bucket(), bucket({ name: "Other" })], categories: [] },
+        ],
+        [
+          "a bucketKey naming no bucket",
+          { buckets: [bucket()], categories: [line({ bucketKey: "nope" })] },
+        ],
+        [
+          "a bucketKey with no buckets at all",
+          { categories: [line({ bucketKey: "save" })] },
+        ],
+        [
+          "a bucketKey on an income line",
+          {
+            buckets: [bucket()],
+            categories: [line({ bucketKey: "save", isIncome: true })],
+          },
+        ],
+        [
+          "a duplicate name ignoring case and space",
+          {
+            buckets: [bucket(), bucket({ key: "b", name: " SAVINGS " })],
+            categories: [line()],
+          },
+        ],
+        [
+          "a percent above 100",
+          { buckets: [bucket({ targetValue: 100.5 })], categories: [line()] },
+        ],
+        [
+          "a percent with three decimals",
+          { buckets: [bucket({ targetValue: 10.123 })], categories: [line()] },
+        ],
+        [
+          "a zero target",
+          {
+            buckets: [
+              bucket({
+                targetType: BudgetBucketTargetType.AMOUNT,
+                targetValue: 0,
+              }),
+            ],
+            categories: [line()],
+          },
+        ],
+        [
+          "a carry cap without carry-over",
+          { buckets: [bucket({ carryCap: 50 })], categories: [line()] },
+        ],
+        [
+          "a blank name",
+          { buckets: [bucket({ name: "   " })], categories: [line()] },
+        ],
+        [
+          "more than 12 buckets",
+          {
+            buckets: Array.from({ length: 13 }, (_, i) =>
+              bucket({ key: `k${i}`, name: `B${i}` }),
+            ),
+            categories: [line()],
+          },
+        ],
+      ])("refuses %s and writes nothing", async (_label, extra) => {
+        await expect(
+          service.apply("user-1", { ...baseDto, ...extra } as never),
+        ).rejects.toThrow(BadRequestException);
+        expectNothingWritten();
+      });
+
+      it("refuses a foreign category before any write", async () => {
+        categoriesRepository.find.mockResolvedValue([]);
+        await expect(
+          service.apply("user-1", {
+            ...baseDto,
+            buckets: [bucket()],
+            categories: [line({ bucketKey: "save" })],
+          }),
+        ).rejects.toThrow(BadRequestException);
+        expectNothingWritten();
       });
     });
   });
