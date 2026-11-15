@@ -1,3 +1,4 @@
+import { RELAY_POLL_REFUSED } from "../../ai/relay/ai-relay.service";
 import { McpRelayTools } from "./relay.tool";
 import { AiRelayService } from "../../ai/relay/ai-relay.service";
 import { mcpTestCtx } from "../testing/mcp-test-context";
@@ -85,6 +86,27 @@ describe("McpRelayTools", () => {
       });
       const result = await handlers.get_next_prompt({}, ctx());
       expect(parse(result)).toEqual({ hasPrompt: false, stop: true });
+    });
+
+    it("tells a refused poll another connection serves the chat, without touching the idle clock", async () => {
+      const shouldStopForIdle = jest.fn().mockResolvedValue(true);
+      const handlers = register({
+        waitForPrompt: jest.fn().mockResolvedValue(RELAY_POLL_REFUSED),
+        shouldStopForIdle,
+      });
+      const result = await handlers.get_next_prompt({}, ctx());
+      expect(parse(result)).toEqual({ hasPrompt: false, heldElsewhere: true });
+      expect(shouldStopForIdle).not.toHaveBeenCalled();
+    });
+
+    it("consults the idle clock for the holder's empty poll", async () => {
+      const shouldStopForIdle = jest.fn().mockResolvedValue(false);
+      const handlers = register({
+        waitForPrompt: jest.fn().mockResolvedValue(null),
+        shouldStopForIdle,
+      });
+      await handlers.get_next_prompt({}, ctx());
+      expect(shouldStopForIdle).toHaveBeenCalledWith("user-1");
     });
 
     it("errors without user context", async () => {

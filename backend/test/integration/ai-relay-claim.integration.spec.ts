@@ -4,6 +4,7 @@ import { TestingModule } from "@nestjs/testing";
 import {
   AiRelayService,
   INACTIVITY_TIMEOUT_MS,
+  RELAY_POLL_REFUSED,
 } from "@/ai/relay/ai-relay.service";
 import { RelaySweeperService } from "@/ai/relay/relay-sweeper.service";
 import { RelayAttachmentStore } from "@/ai/relay/relay-attachment.store";
@@ -225,7 +226,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
       const claimed = await asUser(() =>
         relay.waitForPrompt(userId, "session-x", OTHER_CRED),
       );
-      expect(claimed).toBeNull();
+      expect(claimed).toBe(RELAY_POLL_REFUSED);
       expect(await statusOf(id)).toBe("pending");
 
       const mine = await asUser(() =>
@@ -320,7 +321,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
       const claimed = await asUser(() =>
         relay.waitForPrompt(userId, "session-x", OTHER_CRED),
       );
-      expect(claimed).toBeNull();
+      expect(claimed).toBe(RELAY_POLL_REFUSED);
       expect(await statusOf(second)).toBe("pending");
     });
 
@@ -358,7 +359,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
       const claimed = await asUser(() =>
         relay.waitForPrompt(userId, "session-x", OTHER_CRED),
       );
-      expect(claimed).toBeNull();
+      expect(claimed).toBe(RELAY_POLL_REFUSED);
       expect(await statusOf(second)).toBe("pending");
     });
   });
@@ -643,9 +644,11 @@ describe("AI relay claim (real PostgreSQL)", () => {
       const claimed = await asUser(() =>
         relay.waitForPrompt(userId, "s-a", CRED),
       );
-      expect(claimed?.promptId).toBe(first);
+      expect(claimed).not.toBe(RELAY_POLL_REFUSED);
+      expect((claimed as { promptId: string } | null)?.promptId).toBe(first);
       const next = await asUser(() => relay.waitForPrompt(userId, "s-b", CRED));
-      expect(next?.promptId).toBe(second);
+      expect(next).not.toBe(RELAY_POLL_REFUSED);
+      expect((next as { promptId: string } | null)?.promptId).toBe(second);
     });
 
     it("rolls the claim back when the inactivity reset in the same transaction fails", async () => {

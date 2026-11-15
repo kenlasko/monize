@@ -606,6 +606,9 @@ export const getNextPromptOutput = toolOutput({
   // True when the user has gone inactive long enough that the agent should stop
   // polling and exit (only set alongside hasPrompt:false).
   stop: bool.optional(),
+  // True when another credential of this account serves the chat (only set
+  // alongside hasPrompt:false).
+  heldElsewhere: bool.optional(),
   promptId: str.optional(),
   prompt: str.optional(),
   // How to run a relay turn. Returned only with a claimed prompt, so a client

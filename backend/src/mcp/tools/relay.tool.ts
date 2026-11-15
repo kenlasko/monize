@@ -1,7 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/server";
-import { AiRelayService } from "../../ai/relay/ai-relay.service";
+import {
+  AiRelayService,
+  RELAY_POLL_REFUSED,
+} from "../../ai/relay/ai-relay.service";
 import {
   callerKey,
   resolveUserContext,
@@ -46,6 +49,9 @@ export class McpRelayTools {
           "{ hasPrompt: false }: call again immediately to keep listening. " +
           "{ hasPrompt: false, stop: true }: the user went inactive; stop " +
           "polling and exit, they will reconnect you. " +
+          "{ hasPrompt: false, heldElsewhere: true }: another connection of " +
+          "this account is serving the chat; call again to wait until it " +
+          "frees up. " +
           "{ hasPrompt: true }: the result carries the prompt, `history` " +
           "(oldest first), any `attachments` (read each `uri` to view an image " +
           "or PDF; text files are already inlined into the prompt) and " +
@@ -73,6 +79,11 @@ export class McpRelayTools {
             callerKey(ctx),
             user.credentialId,
           );
+          if (claimed === RELAY_POLL_REFUSED) {
+            // Not the idle clock's business: it is per user, and a refused
+            // poller must not consume the stop meant for the holder.
+            return toolResult({ hasPrompt: false, heldElsewhere: true });
+          }
           if (!claimed) {
             // No prompt this window. If the user has gone quiet long enough,
             // tell the agent to stop looping instead of polling forever.

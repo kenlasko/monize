@@ -412,7 +412,7 @@ Three relay control tools drive this loop:
 
 | Tool | Direction | Purpose |
 |------|-----------|---------|
-| `get_next_prompt` | Monize -> agent | Long-poll for the next chat prompt. Returns `{ hasPrompt: false }` if none arrives in the poll window -- call it again immediately to keep listening. |
+| `get_next_prompt` | Monize -> agent | Long-poll for the next chat prompt. Returns `{ hasPrompt: false }` if none arrives in the poll window -- call it again immediately to keep listening. Returns `{ hasPrompt: false, heldElsewhere: true }` if another connection of your account is serving the chat -- call again to wait until it frees up. |
 | `report_progress` | agent -> Monize | Stream a one-line status update shown live in the chat while you work. Optional but recommended. |
 | `post_response` | agent -> Monize | Deliver the final answer for a claimed prompt back to the browser. |
 
