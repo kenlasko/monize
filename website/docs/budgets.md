@@ -22,7 +22,7 @@ Monize includes a **Budget Wizard** that analyzes your historical spending to su
 
 ![Budget wizard step 1: choosing a strategy, the analysis period and a budget profile](images/budget-wizard-step1.png)
 
-1. **Choose a Budget Strategy** -- Select one of four strategies (see [Budget Strategies](#budget-strategies) below). Selecting a card opens a detail panel with its **Pros**, **Cons**, and who it is **Best for**.
+1. **Choose a Budget Strategy** -- Select one of five strategies (see [Budget Strategies](#budget-strategies) below). Selecting a card opens a detail panel with its **Pros**, **Cons**, and who it is **Best for**.
 2. **Analysis Period** -- Choose **3 months**, **6 months** (the default), or **12 months** of transaction history to analyze. Longer periods smooth out anomalies; shorter periods reflect recent habits.
 3. **Budget Profile** -- Pick how aggressive your targets should be:
 
@@ -62,6 +62,8 @@ Use the profile buttons (**Comfortable**, **On Track**, **Aggressive**) at the t
 
 For **50/30/20** budgets, each expense row also has a Need / Want / Saving picker, and a **50/30/20 Allocation** box compares what you have assigned to each group against its target.
 
+For **Bucket** budgets, a **Buckets** panel above the category tables holds your buckets (see [Buckets](#buckets)), pre-filled with the **Three Buckets** preset the first time, and each ticked expense or transfer row has a **Bucket** select to choose the bucket it belongs to, or **Unassigned**. A tally shows how much each bucket's categories add up to.
+
 Only categories found in your history are listed here. To budget for a category you have never used, create the budget first and add it later. Click **Next: Configure** to continue.
 
 ### Step 3: Configure Options
@@ -90,6 +92,7 @@ The review step shows a complete summary of your budget before it is created:
 - **Summary cards** -- **Est. Income**, **Total Expenses**, **Transfers**, and **Remaining**
 - **Budget details** -- **Name**, **Type**, **Strategy**, **Start Date**, **Rollover**, **Alerts**, **Income Linked**, **Excluded Accounts**, and **Transfers In** when transfers from excluded accounts count as income
 - **Category table** -- every included category with its amount and type (Income, Transfer in, Expense, or Transfer)
+- **Buckets** (Bucket budgets) -- each bucket with its target, whether it carries over, and how many categories it holds. A warning tells you how many categories are not in any bucket; you can still create the budget, and they show up as **Unassigned** on the dashboard
 
 On mobile, the Type column is hidden to give category names and amounts more room.
 
@@ -167,16 +170,47 @@ Click a category row to open the Transactions page filtered to that category and
 
 ### Strategy Widgets
 
-Two widgets appear above the health score for specific strategies:
+Three widgets appear above the health score for specific strategies:
 
 - **Zero-Based Assignment** (Zero-Based budgets) -- how much of your income is assigned (**Assigned: x / y**), marked **Fully assigned**, **Under-assigned**, or **Over-assigned**
 - **50/30/20 Allocation** (50/30/20 budgets) -- for **Needs**, **Wants**, and **Savings**, the target percentage against the percentage and amount actually budgeted
+- **Bucket allocation** (Bucket budgets) -- one row per bucket with its progress, plus the unassigned categories (see [Buckets](#buckets))
 
 ### Flex Groups
 
 A flex group pools several related categories under one shared limit -- for example, "Fun Money" for Restaurants, Movies, and Hobbies. Individual categories within a group can go over budget, but as long as the group total is within its limit, you have stayed on plan.
 
 You assign categories to flex groups in step 3 of the wizard (**Flex Groups** > **Configure**), or later from the budget's edit page (**Flex Group (optional)** in a category's settings). When at least one group exists, a **Flex Groups** card on the dashboard shows each group's combined spending against its combined budget.
+
+### Buckets
+
+A bucket is a named pot with its own target, for example "Fixed costs", "Everyday spending" and "Savings". Each expense or transfer category in a Bucket budget belongs to one bucket, so you watch a handful of buckets instead of every category. A flex group pools categories under their combined budget; a bucket has its own target and can carry what is left into the next period. A category can be in both.
+
+**Targets.** Each bucket's target is either a **Percent of Income** or a **Fixed Amount** per period, and one budget can mix the two.
+
+**Which income a percent is a share of.** The **Bucket allocation** card shows the figure as **Bucket income**, with where it came from:
+
+- an income-linked budget uses the income actually received this period (**Based on actual income this period**)
+- otherwise the budget's base income (**Based on the budget's base income**)
+- otherwise the total of the budget's planned income categories (**Based on planned income categories**)
+
+If none of these is known, the card shows **Unknown** and **No income found**, and each percent bucket's allocation is unknown rather than zero. It says "Set a base income on the budget, or add an income category"; the **Edit budget** link takes you to the edit page. Fixed-amount buckets still work.
+
+**Targets need not add up.** Targets do not have to total 100%. The card shows **Total allocated** and **Unallocated** (your income less the allocations). When the buckets add up to more than your income it warns that you are over-allocated. If some allocations are unknown, the card shows **Allocated so far** as a partial figure and **Unallocated** as unknown.
+
+**Assigning categories.** Choose a category's bucket in the wizard, or from its settings on the edit page (**Bucket**). Income categories and transfer income lines cannot be in a bucket. Categories with no bucket are not dropped: the card shows them in an **Unassigned** row with their planned and spent amounts and an **Assign them** link.
+
+**What each bucket shows.** Its target, **Carried in** (when not zero), **Spent**, and **Available**: the allocation plus what was carried in, less what was spent. A bucket that has gone past that shows **Overspent**.
+
+**Carry-over.** Turn on **Carry Over What Is Left** for a bucket and, when a period closes, what is left in it is added to the next period. An optional **Carry Cap (optional)** limits how much can be carried; a cap needs carry-over turned on. An overspent bucket carries nothing, not a debt. With carry-over off, the bucket starts each period fresh.
+
+A bucket's carry-over and a category's [rollover](#rollover-rules) are independent. A bucket's balance comes from its allocation and its categories' spending only; a category's own rollover does not enter it. To build balances at the bucket level, leave the categories' rollover on **None**.
+
+**Presets.** The bucket editor offers **Start From a Preset**: **Three Buckets** (Fixed costs 50%, Everyday spending 30%, Savings 20%, with Savings carrying over), **Four Buckets (60/10/10/20)** (Daily expenses, Splurge, Long-term goals and Safety and debt, with the last two carrying over), or **Start From Scratch**. A preset only fills in a starting list: rename, retarget, add or remove buckets freely. Applying a preset to a budget that already has buckets asks for confirmation, because the current buckets are deleted. A budget can have at most 12 buckets.
+
+**Deleting a bucket.** Its categories become unassigned. Closed periods keep their record of the bucket, under the name it had.
+
+**Changing strategy.** Buckets are kept if you switch the budget to another strategy; they are only shown, and only used, while the strategy is **Bucket**.
 
 ### Upcoming Bills
 
@@ -211,7 +245,7 @@ Nothing is saved: click **Reset** to put every slider back, or leave the page. T
 
 ## Budget Strategies
 
-Monize supports four budget strategies, each suited to a different financial style:
+Monize supports five budget strategies, each suited to a different financial style:
 
 | Strategy | Description |
 |----------|-------------|
@@ -219,6 +253,7 @@ Monize supports four budget strategies, each suited to a different financial sty
 | **Rollover** | Unused budget carries forward to the next period based on per-category rollover rules. Good for saving toward irregular expenses. |
 | **Zero-Based** | Every dollar of income is assigned a purpose: income minus all budgeted amounts should equal zero. The dashboard shows how much is still unassigned. |
 | **50/30/20** | Categories are grouped as Needs (50%), Wants (30%), or Savings (20%) of your income. The wizard and dashboard compare each group with its target. |
+| **Bucket** | Income is split into a few named buckets, each with a target that is a share of income or a fixed amount. Every category belongs to one bucket, so you watch the bucket instead of each category, and a bucket can carry what is left into the next period. See [Buckets](#buckets). |
 
 You can change a budget's strategy later from its edit page.
 
@@ -344,7 +379,7 @@ Budgets are divided into periods (monthly for a monthly budget). Shortly after m
 
 1. **Closes** the current period
 2. Records the actual spending for each category
-3. Calculates rollover amounts per category
+3. Calculates rollover amounts per category and, for a Bucket budget, each bucket's carry-over
 4. Opens the next period, carrying the rollover balances forward
 
 ### Viewing Historical Periods
@@ -352,6 +387,7 @@ Budgets are divided into periods (monthly for a monthly budget). Shortly after m
 Once a budget has more than one period, a **Period:** selector appears at the top of the dashboard. Choose **Current Period**, or any past period by month. A closed period shows:
 - **Total Budgeted**, **Total Spent**, and whether you finished **Under Budget** or **Over Budget**, plus **Income**
 - A **Rollover Summary** of the amounts carried in and carried out
+- For a Bucket budget, a **Buckets** table listing each bucket's **Target**, **Allocated**, **Carried in**, **Spent** and **Carried out**
 - **Overall Budget Usage**
 - The final actual amount for every category, under **Expense Categories** and **Income Categories**
 
@@ -390,6 +426,8 @@ To edit an existing budget:
 
 ![The budget edit page, with the budget settings and the category allocations](images/budget-edit-page.png)
 
+For a Bucket budget, a **Buckets** section appears with the bucket editor (**Add Bucket**, edit, delete, and the presets), described in [Buckets](#buckets).
+
 Below the settings, **Category Allocations** lists the budget's **Income** and **Expenses** categories with their amounts and rollover settings. **Add Transfer Income** beside the **Income** heading adds a transfer income line for one of your accounts (see [Transfers as Income](#transfers-as-income)). Click a category to open its settings:
 
 | Field | Description |
@@ -399,6 +437,7 @@ Below the settings, **Category Allocations** lists the budget's **Income** and *
 | **Rollover Cap (optional)** | The most that can accumulate; shown when the category rolls over |
 | **Flex Group (optional)** | The flex group this category belongs to |
 | **Category Group (50/30/20)** | Need, Want, or Saving |
+| **Bucket** | The bucket the category belongs to, or **Unassigned**; shown on Bucket budgets for expense categories (see [Buckets](#buckets)) |
 | **Warning at (%)** / **Critical at (%)** | This category's own alert thresholds |
 | **Notes (optional)** | Your own notes about the category budget |
 
