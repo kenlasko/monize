@@ -31,6 +31,7 @@ import { NetWorthService } from "../net-worth/net-worth.service";
 import { SecurityPriceService } from "../securities/security-price.service";
 import { SecuritiesService } from "../securities/securities.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { ExchangeRateHistoryService } from "../currencies/exchange-rate-history.service";
 import { HoldingsService } from "../securities/holdings.service";
 import { ImportEntityCreatorService } from "./import-entity-creator.service";
 import { ImportPostProcessingService } from "./import-post-processing.service";
@@ -357,6 +358,10 @@ describe("ImportService", () => {
           },
         },
         { provide: ExchangeRateService, useValue: mockExchangeRateService },
+        {
+          provide: ExchangeRateHistoryService,
+          useValue: { fillRateGaps: jest.fn().mockResolvedValue({}) },
+        },
         { provide: HoldingsService, useValue: mockHoldingsService },
         ImportPostProcessingService,
         ImportEntityCreatorService,

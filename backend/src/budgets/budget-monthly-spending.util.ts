@@ -73,6 +73,7 @@ export async function queryMonthlyCategorySpent(
             bc,
             spending.spendingMap,
             spending.transferSpendingMap,
+            spending.transferIncomeMap,
           ),
       );
     }

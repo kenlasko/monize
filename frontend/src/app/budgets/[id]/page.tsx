@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
@@ -11,6 +11,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { BudgetDashboard } from '@/components/budgets/BudgetDashboard';
 import { BudgetPeriodDetail } from '@/components/budgets/BudgetPeriodDetail';
 import { BudgetPeriodSelector } from '@/components/budgets/BudgetPeriodSelector';
+import type { BudgetBucketStatusState } from '@/components/budgets/BudgetBucketSummary';
 import { BudgetBackLink } from '@/components/budgets/BudgetBackLink';
 import { BudgetSwitcher } from '@/components/budgets/BudgetSwitcher';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -81,6 +82,12 @@ function BudgetDetailContent() {
   const [trendData, setTrendData] = useState<
     BudgetTrendPoint[]
   >([]);
+  const [bucketStatus, setBucketStatus] = useState<BudgetBucketStatusState>({
+    state: 'loading',
+  });
+  // The newest bucket-status request; a slower, older one (another budget, or
+  // an earlier reload) must not land over it.
+  const bucketStatusRequest = useRef(0);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<BudgetPeriod | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -119,6 +126,22 @@ function BudgetDetailContent() {
         setScheduledTransactions(stData);
         setDailySpending(dailyData);
         setTrendData(trend);
+
+        // Only a Bucket budget has a bucket status. It loads beside the rest
+        // but never fails the page: its own card says the request failed.
+        if (summaryData.budget.strategy === 'BUCKET') {
+          const request = ++bucketStatusRequest.current;
+          const isCurrent = () => bucketStatusRequest.current === request;
+          setBucketStatus({ state: 'loading' });
+          budgetsApi
+            .getBucketStatus(budgetId)
+            .then((data) => {
+              if (isCurrent()) setBucketStatus({ state: 'ready', data });
+            })
+            .catch(() => {
+              if (isCurrent()) setBucketStatus({ state: 'error' });
+            });
+        }
       } catch (err) {
         const message = getErrorMessage(err, t('pages.detail.toasts.loadFailed'));
         setError(message);
@@ -312,6 +335,7 @@ function BudgetDetailContent() {
             dailySpending={dailySpending}
             trendData={trendData}
             healthScore={healthScore}
+            bucketStatus={bucketStatus}
             displayCurrency={currencyCode}
             // A bare amount is the budget's currency; a row that knows its own
             // currency says so, because an occurrence's amount is in the

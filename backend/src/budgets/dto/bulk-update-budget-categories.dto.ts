@@ -1,5 +1,7 @@
 import {
   IsArray,
+  IsOptional,
+  ValidateIf,
   IsNumber,
   IsUUID,
   Min,
@@ -7,7 +9,7 @@ import {
   ValidateNested,
   ArrayMaxSize,
 } from "class-validator";
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 
 export class BulkCategoryAmountDto {
@@ -20,6 +22,16 @@ export class BulkCategoryAmountDto {
   @Min(0)
   @Max(999999999999)
   amount: number;
+
+  @ApiPropertyOptional({
+    description:
+      "Bucket of this budget the line belongs to (null clears; a non-income line only)",
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null)
+  @IsUUID()
+  bucketId?: string | null;
 }
 
 export class BulkUpdateBudgetCategoriesDto {

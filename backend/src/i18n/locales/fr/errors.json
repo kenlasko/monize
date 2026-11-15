@@ -330,7 +330,20 @@
     "budgetCategoryNotFound": "Catégorie de budget avec l'ID {{ id }} introuvable",
     "periodNotFound": "Période de budget avec l'ID {{ id }} introuvable",
     "noOpenPeriod": "Aucune période ouverte à clôturer",
-    "categoryIdsNotOwned": "IDs de catégorie introuvables ou n'appartenant pas à l'utilisateur : {{ ids }}"
+    "categoryIdsNotOwned": "IDs de catégorie introuvables ou n'appartenant pas à l'utilisateur : {{ ids }}",
+    "transferAccountNotFound": "Compte avec l'ID {{ id }} introuvable",
+    "transferAccountAlreadyInBudget": "Ce compte a déjà une ligne de virement dans le budget",
+    "bucketNotFound": "Enveloppe introuvable avec l'ID {{ id }}",
+    "bucketLimit": "Un budget peut avoir au maximum {{ max }} enveloppes",
+    "bucketNameInvalid": "Le nom d'une enveloppe doit comporter de 1 à {{ max }} caractères",
+    "bucketNameDuplicate": "Ce budget a déjà une enveloppe portant ce nom",
+    "bucketTargetInvalid": "L'objectif d'une enveloppe doit être supérieur à zéro",
+    "bucketPercentInvalid": "Un objectif en pourcentage doit être supérieur à 0 et au maximum 100, avec au maximum deux décimales",
+    "bucketCarryCapNeedsCarryOver": "Un plafond de report nécessite que le report soit activé",
+    "bucketOnIncomeLine": "Une ligne de revenus ne peut pas appartenir à une enveloppe",
+    "bucketKeyDuplicate": "La clé d'enveloppe « {{ key }} » est utilisée plusieurs fois",
+    "bucketKeyUnknown": "Aucune enveloppe de cette requête n'a la clé « {{ key }} »",
+    "transferLineDirectionFixed": "Le sens d'une ligne de virement ne peut pas être modifié. Supprimez-la et ajoutez une nouvelle ligne."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Une règle de retenue salariale suit une facture payée dans une devise fiduciaire ; le compte de cette facture contient la cryptomonnaie {{ code }}. Choisissez une facture payée depuis un compte en devise fiduciaire.",

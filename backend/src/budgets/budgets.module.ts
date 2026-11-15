@@ -4,6 +4,8 @@ import { Budget } from "./entities/budget.entity";
 import { BudgetCategory } from "./entities/budget-category.entity";
 import { BudgetPeriod } from "./entities/budget-period.entity";
 import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
+import { BudgetBucket } from "./entities/budget-bucket.entity";
+import { BudgetPeriodBucket } from "./entities/budget-period-bucket.entity";
 import { Notification } from "../notification-center/entities/notification.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
@@ -18,6 +20,8 @@ import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetPeriodCronService } from "./budget-period-cron.service";
 import { BudgetGeneratorService } from "./budget-generator.service";
 import { BudgetAlertService } from "./budget-alert.service";
+import { BudgetBucketsService } from "./budget-buckets.service";
+import { BudgetBucketReportsService } from "./budget-bucket-reports.service";
 import { BudgetReportsService } from "./budget-reports.service";
 import { BudgetTrendReportsService } from "./budget-trend-reports.service";
 import { BudgetHealthReportsService } from "./budget-health-reports.service";
@@ -36,6 +40,8 @@ import { NotificationCenterModule } from "../notification-center/notification-ce
       BudgetCategory,
       BudgetPeriod,
       BudgetPeriodCategory,
+      BudgetBucket,
+      BudgetPeriodBucket,
       Notification,
       Transaction,
       TransactionSplit,
@@ -69,6 +75,8 @@ import { NotificationCenterModule } from "../notification-center/notification-ce
     BudgetHealthReportsService,
     BudgetActivityReportsService,
     BudgetReportsService,
+    BudgetBucketsService,
+    BudgetBucketReportsService,
   ],
   controllers: [BudgetsController],
   exports: [
@@ -77,6 +85,7 @@ import { NotificationCenterModule } from "../notification-center/notification-ce
     BudgetGeneratorService,
     BudgetReportsService,
     BudgetAlertService,
+    BudgetBucketsService,
   ],
 })
 export class BudgetsModule {}

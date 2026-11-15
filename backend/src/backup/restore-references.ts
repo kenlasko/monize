@@ -173,16 +173,22 @@ export const RESTORE_REFERENCE_COLUMNS: Readonly<
   loan_rate_changes: { account_id: "accounts" },
   loan_fees: { account_id: "accounts", category_id: "categories" },
   loan_scenarios: { account_id: "accounts" },
+  budget_buckets: { budget_id: "budgets" },
   budget_categories: {
     budget_id: "budgets",
     category_id: "categories",
     transfer_account_id: "accounts",
+    bucket_id: "budget_buckets",
   },
   budget_periods: { budget_id: "budgets" },
   budget_period_categories: {
     budget_period_id: "budget_periods",
     budget_category_id: "budget_categories",
     category_id: "categories",
+  },
+  budget_period_buckets: {
+    budget_period_id: "budget_periods",
+    bucket_id: "budget_buckets",
   },
   notifications: {
     budget_id: "budgets",
@@ -436,11 +442,52 @@ export function resolveRestoreReferences(
           });
   }
 
+  severBucketsOutsideTheirBudget(result, severedCounts);
+
   const severed = [...severedCounts].map(([key, rows]) => {
     const [table, column] = key.split(".");
     return { table, column, rows };
   });
   return { data: result as unknown as BackupData, severed };
+}
+
+/**
+ * INV-BUDGET-002 for the restore: a line keeps its `bucket_id` only when the
+ * bucket belongs to the line's own budget and the line is not an income line
+ * (the rule `assertBucketAssignable` holds for every request writer). Any other
+ * link, which only a hand-edited file can carry, is set NULL (the line then
+ * counts as unassigned) and counted like a severed reference. Runs after the
+ * reference pass, so every id is canonical and `bucket_id` already names a
+ * bucket of the file.
+ */
+function severBucketsOutsideTheirBudget(
+  result: Record<string, unknown>,
+  severedCounts: Map<string, number>,
+): void {
+  const buckets = result.budget_buckets;
+  const lines = result.budget_categories;
+  if (!Array.isArray(buckets) || !Array.isArray(lines)) return;
+
+  const budgetOfBucket = new Map<unknown, unknown>();
+  for (const bucket of buckets) {
+    if (isRow(bucket)) budgetOfBucket.set(bucket.id, bucket.budget_id);
+  }
+
+  let severed = 0;
+  result.budget_categories = lines.map((line) => {
+    if (
+      !isRow(line) ||
+      line.bucket_id === null ||
+      line.bucket_id === undefined
+    ) {
+      return line;
+    }
+    const sameBudget = budgetOfBucket.get(line.bucket_id) === line.budget_id;
+    if (sameBudget && line.is_income !== true) return line;
+    severed += 1;
+    return { ...line, bucket_id: null };
+  });
+  if (severed > 0) severedCounts.set("budget_categories.bucket_id", severed);
 }
 
 /**

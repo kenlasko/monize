@@ -27,6 +27,7 @@ import {
 import { createLogger } from '@/lib/logger';
 import { useRereadOnVisible } from '@/hooks/useRereadOnVisible';
 import { subscribePushDevices } from '@/lib/pushDevicesSignal';
+import { pushUnavailableShell } from '@/lib/shell';
 
 const logger = createLogger('PushEnableBanner');
 
@@ -79,7 +80,13 @@ export function PushEnableBanner() {
   // Settings already offers all of this, in more words. Two asks on one screen
   // is one too many.
   const onSettings = pathname?.startsWith('/settings') ?? false;
-  const active = isAuthenticated && !onSettings && !dismissed;
+  // A native shell that cannot receive push (docs/frontend/shell-contract.md)
+  // has nothing for this banner to offer, and a nag that names a thing the
+  // reader cannot do is worse than none. The explanation lives in the settings
+  // panel, where the reader goes looking, and says why there.
+  const inUnsupportedShell = pushUnavailableShell() !== null;
+  const active =
+    isAuthenticated && !onSettings && !dismissed && !inUnsupportedShell;
 
   useEffect(() => {
     if (!active) return;

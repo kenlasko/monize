@@ -856,6 +856,15 @@ export class UsersService {
     deleted.pushDevices = result[1] ?? 0;
 
     result = await manager.query(
+      `DELETE FROM budget_period_buckets WHERE budget_period_id IN
+         (SELECT bp.id FROM budget_periods bp
+          JOIN budgets b ON bp.budget_id = b.id
+          WHERE b.user_id = $1)`,
+      [userId],
+    );
+    deleted.budgetPeriodBuckets = result[1] ?? 0;
+
+    result = await manager.query(
       `DELETE FROM budget_period_categories WHERE budget_period_id IN
          (SELECT bp.id FROM budget_periods bp
           JOIN budgets b ON bp.budget_id = b.id
@@ -877,6 +886,13 @@ export class UsersService {
       [userId],
     );
     deleted.budgetCategories = result[1] ?? 0;
+
+    result = await manager.query(
+      `DELETE FROM budget_buckets WHERE budget_id IN
+         (SELECT id FROM budgets WHERE user_id = $1)`,
+      [userId],
+    );
+    deleted.budgetBuckets = result[1] ?? 0;
 
     result = await manager.query("DELETE FROM budgets WHERE user_id = $1", [
       userId,

@@ -10,6 +10,7 @@ import {
 } from "typeorm";
 import { BudgetCategory } from "./budget-category.entity";
 import { BudgetPeriod } from "./budget-period.entity";
+import { BudgetBucket } from "./budget-bucket.entity";
 import { User } from "../../users/entities/user.entity";
 
 export enum BudgetType {
@@ -23,11 +24,17 @@ export enum BudgetStrategy {
   ROLLOVER = "ROLLOVER",
   ZERO_BASED = "ZERO_BASED",
   FIFTY_THIRTY_TWENTY = "FIFTY_THIRTY_TWENTY",
+  BUCKET = "BUCKET",
 }
 
 export interface BudgetConfig {
   includeTransfers?: boolean;
   excludedAccountIds?: string[];
+  /**
+   * Transfers in from the excluded accounts count as income (issue #2141,
+   * `budgetTransfersInAsIncome`).
+   */
+  transfersInAsIncome?: boolean;
   fiscalYearStart?: number;
   payFrequency?: "WEEKLY" | "BIWEEKLY" | "SEMIMONTHLY" | "MONTHLY";
   payDayOfMonth?: number;
@@ -142,6 +149,10 @@ export class Budget {
 
   @OneToMany(() => BudgetPeriod, (bp) => bp.budget)
   periods: BudgetPeriod[];
+
+  /** Shown only while `strategy` is BUCKET; a strategy change keeps them. */
+  @OneToMany(() => BudgetBucket, (bucket) => bucket.budget)
+  buckets?: BudgetBucket[];
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;

@@ -330,7 +330,20 @@
     "budgetCategoryNotFound": "Categoria budget con ID {{ id }} non trovata",
     "periodNotFound": "Periodo budget con ID {{ id }} non trovato",
     "noOpenPeriod": "Nessun periodo aperto da chiudere",
-    "categoryIdsNotOwned": "ID categoria non trovati o non di proprietà dell'utente: {{ ids }}"
+    "categoryIdsNotOwned": "ID categoria non trovati o non di proprietà dell'utente: {{ ids }}",
+    "transferAccountNotFound": "Conto con ID {{ id }} non trovato",
+    "transferAccountAlreadyInBudget": "Questo conto ha già una riga di trasferimento nel budget",
+    "bucketNotFound": "Busta con ID {{ id }} non trovata",
+    "bucketLimit": "Un budget può avere al massimo {{ max }} buste",
+    "bucketNameInvalid": "Il nome di una busta deve avere da 1 a {{ max }} caratteri",
+    "bucketNameDuplicate": "Questo budget ha già una busta con quel nome",
+    "bucketTargetInvalid": "L'obiettivo di una busta deve essere maggiore di zero",
+    "bucketPercentInvalid": "Un obiettivo in percentuale deve essere maggiore di 0 e al massimo 100, con al massimo due decimali",
+    "bucketCarryCapNeedsCarryOver": "Un limite di riporto richiede che il riporto sia attivo",
+    "bucketOnIncomeLine": "Una riga di entrata non può appartenere a una busta",
+    "bucketKeyDuplicate": "La chiave di busta \"{{ key }}\" è usata più di una volta",
+    "bucketKeyUnknown": "Nessuna busta in questa richiesta ha la chiave \"{{ key }}\"",
+    "transferLineDirectionFixed": "La direzione di una riga di trasferimento non può essere modificata. Rimuovila e aggiungi una nuova riga."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Una regola di trattenuta sullo stipendio tiene traccia di una fattura pagata in una valuta fiat; il conto di questa fattura contiene la criptovaluta {{ code }}. Scegli una fattura pagata da un conto in valuta fiat.",

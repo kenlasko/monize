@@ -384,7 +384,7 @@ export function createBudget(
     periodStart?: string;
     currencyCode?: string;
     budgetType?: 'MONTHLY' | 'ANNUAL' | 'PAY_PERIOD';
-    strategy?: 'FIXED' | 'ROLLOVER' | 'ZERO_BASED' | 'FIFTY_THIRTY_TWENTY';
+    strategy?: 'FIXED' | 'ROLLOVER' | 'ZERO_BASED' | 'FIFTY_THIRTY_TWENTY' | 'BUCKET';
     baseIncome?: number;
   } = {},
 ): Promise<CreatedBudget> {

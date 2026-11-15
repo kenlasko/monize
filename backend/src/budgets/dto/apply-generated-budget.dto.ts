@@ -10,6 +10,7 @@ import {
   IsUUID,
   IsInt,
   MaxLength,
+  MinLength,
   Min,
   Max,
   IsObject,
@@ -26,6 +27,19 @@ import {
   RolloverType,
   CategoryGroup,
 } from "../entities/budget-category.entity";
+import { CreateBudgetBucketDto } from "./create-budget-bucket.dto";
+
+/** A bucket of the wizard request: a create-bucket body plus a request-local key. */
+export class ApplyBudgetBucketDto extends CreateBudgetBucketDto {
+  @ApiProperty({
+    description:
+      "Client-chosen key, unique in the request; lines name their bucket by it",
+  })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(40)
+  key: string;
+}
 
 export class ApplyBudgetCategoryDto {
   @ApiPropertyOptional({
@@ -132,6 +146,15 @@ export class ApplyBudgetCategoryDto {
   @Min(0)
   @Max(1000)
   sortOrder?: number;
+
+  @ApiPropertyOptional({
+    description: "Key of a bucket in this request; not for an income line",
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(40)
+  bucketKey?: string;
 }
 
 export class ApplyGeneratedBudgetDto {
@@ -213,4 +236,15 @@ export class ApplyGeneratedBudgetDto {
   @ValidateNested({ each: true })
   @Type(() => ApplyBudgetCategoryDto)
   categories: ApplyBudgetCategoryDto[];
+
+  @ApiPropertyOptional({
+    description: "Buckets of a Bucket-strategy budget (at most 12)",
+    type: [ApplyBudgetBucketDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12)
+  @ValidateNested({ each: true })
+  @Type(() => ApplyBudgetBucketDto)
+  buckets?: ApplyBudgetBucketDto[];
 }
