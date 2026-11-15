@@ -230,6 +230,7 @@ vi.mock('@/lib/auth', () => ({
 
 // Mock API libs
 const mockGetAll = vi.fn();
+const mockGetAllForExport = vi.fn();
 const mockGetSummary = vi.fn();
 const mockGetById = vi.fn();
 const mockBulkUpdate = vi.fn();
@@ -238,6 +239,7 @@ const mockGetMonthlyTotals = vi.fn();
 vi.mock('@/lib/transactions', () => ({
   transactionsApi: {
     getAll: (...args: any[]) => mockGetAll(...args),
+    getAllForExport: (...args: any[]) => mockGetAllForExport(...args),
     getSummary: (...args: any[]) => mockGetSummary(...args),
     getById: (...args: any[]) => mockGetById(...args),
     bulkUpdate: (...args: any[]) => mockBulkUpdate(...args),
@@ -644,6 +646,7 @@ describe('TransactionsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetAll.mockResolvedValue({ data: [], pagination: { page: 1, totalPages: 1, total: 0 } });
+    mockGetAllForExport.mockResolvedValue([]);
     mockGetSummary.mockResolvedValue({ totalIncome: 0, totalExpenses: 0, netCashFlow: 0, transactionCount: 0 });
     mockGetAllAccounts.mockResolvedValue([]);
     mockGetAllCategories.mockResolvedValue([]);
@@ -2634,6 +2637,7 @@ describe('TransactionsPage', () => {
         pagination: { page: 1, totalPages: 1, total: 2 },
         startingBalance: 5000,
       });
+      mockGetAllForExport.mockResolvedValue(exportTransactions);
 
       render(<TransactionsPage />);
 
@@ -2656,26 +2660,26 @@ describe('TransactionsPage', () => {
       expect(rows[1]).toEqual(['2026-02-02', 'Checking', 'Employer', 'Salary', 'Monthly pay', '', 3000, 'USD', 'CLEARED']);
     });
 
-    it('fetches all pages when exporting multi-page results', async () => {
-      const page1Transactions = [
-        { id: 'tx-1', transactionDate: '2026-02-01', amount: -50, status: 'UNRECONCILED', payee: null, payeeName: null, category: null, account: { id: 'acc-1', name: 'Checking' }, description: null, tags: [], currencyCode: 'USD', isTransfer: false },
+    it('exports every filtered row in one request instead of walking the pages (issue #2198)', async () => {
+      // Walking the paged list from the page took a request per 50 rows, and
+      // a 26,000-row ledger ran into the API's 100-a-minute throttle.
+      const exportRows = [
+        { id: 'tx-1', transactionDate: '2026-02-01', amount: -50, status: 'UNRECONCILED', payee: null, payeeName: null, category: null, account: { name: 'Checking' }, description: null, tags: [], currencyCode: 'USD', isTransfer: false, isSplit: false, linkedTransaction: null, splits: [] },
+        { id: 'tx-2', transactionDate: '2026-02-02', amount: 100, status: 'CLEARED', payee: null, payeeName: null, category: null, account: { name: 'Checking' }, description: null, tags: [], currencyCode: 'USD', isTransfer: false, isSplit: false, linkedTransaction: null, splits: [] },
       ];
-      const page2Transactions = [
-        { id: 'tx-2', transactionDate: '2026-02-02', amount: 100, status: 'CLEARED', payee: null, payeeName: null, category: null, account: { id: 'acc-1', name: 'Checking' }, description: null, tags: [], currencyCode: 'USD', isTransfer: false },
-      ];
-
-      mockGetAll.mockImplementation((params: any) => {
-        if (params?.page === 2) {
-          return Promise.resolve({ data: page2Transactions, pagination: { page: 2, totalPages: 2, total: 2 }, startingBalance: 5000 });
-        }
-        return Promise.resolve({ data: page1Transactions, pagination: { page: 1, totalPages: 2, total: 2 }, startingBalance: 5000 });
+      mockGetAll.mockResolvedValue({
+        data: [exportRows[0]],
+        pagination: { page: 1, totalPages: 2, total: 2 },
+        startingBalance: 5000,
       });
+      mockGetAllForExport.mockResolvedValue(exportRows);
 
       render(<TransactionsPage />);
 
       await waitFor(() => {
         expect(screen.getByTestId('tx-count')).toHaveTextContent('1 transactions');
       });
+      const listCalls = mockGetAll.mock.calls.length;
 
       fireEvent.click(screen.getByTestId('export-btn'));
 
@@ -2685,6 +2689,12 @@ describe('TransactionsPage', () => {
 
       const [, , rows] = mockExportToCsv.mock.calls[0];
       expect(rows).toHaveLength(2);
+      expect(mockGetAllForExport).toHaveBeenCalledTimes(1);
+      expect(mockGetAll).toHaveBeenCalledTimes(listCalls);
+      // The export asks for the register's filters, never a page of them.
+      const [params] = mockGetAllForExport.mock.calls[0];
+      expect(params).not.toHaveProperty('page');
+      expect(params).not.toHaveProperty('limit');
     });
 
     it('shows error toast when no transactions to export', async () => {
@@ -2695,6 +2705,7 @@ describe('TransactionsPage', () => {
         pagination: { page: 1, totalPages: 1, total: 0 },
         startingBalance: 0,
       });
+      mockGetAllForExport.mockResolvedValue([]);
 
       render(<TransactionsPage />);
 
@@ -2727,8 +2738,7 @@ describe('TransactionsPage', () => {
         expect(screen.getByTestId('tx-count')).toHaveTextContent('3 transactions');
       });
 
-      // Now make next call fail (the export call)
-      mockGetAll.mockRejectedValueOnce(new Error('Network error'));
+      mockGetAllForExport.mockRejectedValueOnce(new Error('Network error'));
 
       fireEvent.click(screen.getByTestId('export-btn'));
 
@@ -2749,6 +2759,7 @@ describe('TransactionsPage', () => {
         pagination: { page: 1, totalPages: 1, total: 1 },
         startingBalance: 5000,
       });
+      mockGetAllForExport.mockResolvedValue(exportTransactions);
 
       render(<TransactionsPage />);
 
@@ -2777,6 +2788,7 @@ describe('TransactionsPage', () => {
         pagination: { page: 1, totalPages: 1, total: 1 },
         startingBalance: 0,
       });
+      mockGetAllForExport.mockResolvedValue(sparseTransaction);
 
       render(<TransactionsPage />);
 
@@ -2813,6 +2825,7 @@ describe('TransactionsPage', () => {
         pagination: { page: 1, totalPages: 1, total: 2 },
         startingBalance: 5000,
       });
+      mockGetAllForExport.mockResolvedValue(apiShapedTransactions);
 
       render(<TransactionsPage />);
 
@@ -2847,6 +2860,7 @@ describe('TransactionsPage', () => {
         pagination: { page: 1, totalPages: 1, total: 2 },
         startingBalance: 5000,
       });
+      mockGetAllForExport.mockResolvedValue(transfers);
 
       render(<TransactionsPage />);
 
@@ -2877,6 +2891,7 @@ describe('TransactionsPage', () => {
         pagination: { page: 1, totalPages: 1, total: 1 },
         startingBalance: 5000,
       });
+      mockGetAllForExport.mockResolvedValue(transfers);
 
       render(<TransactionsPage />);
 
@@ -2923,6 +2938,7 @@ describe('TransactionsPage', () => {
         pagination: { page: 1, totalPages: 1, total: 1 },
         startingBalance: 5000,
       });
+      mockGetAllForExport.mockResolvedValue(splitTransaction);
 
       render(<TransactionsPage />);
 
@@ -2966,6 +2982,7 @@ describe('TransactionsPage', () => {
         pagination: { page: 1, totalPages: 1, total: 1 },
         startingBalance: 5000,
       });
+      mockGetAllForExport.mockResolvedValue(splitTransaction);
 
       render(<TransactionsPage />);
 
@@ -3014,6 +3031,7 @@ describe('TransactionsPage', () => {
         pagination: { page: 1, totalPages: 1, total: 1 },
         startingBalance: 5000,
       });
+      mockGetAllForExport.mockResolvedValue(splitTransaction);
 
       render(<TransactionsPage />);
 

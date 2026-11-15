@@ -1,4 +1,5 @@
 import {
+  applyDecorators,
   Controller,
   Get,
   Post,
@@ -27,6 +28,7 @@ import {
   ApiQuery,
 } from "@nestjs/swagger";
 import { AuthGuard } from "@nestjs/passport";
+import { Throttle } from "@nestjs/throttler";
 import { TransactionsService } from "./transactions.service";
 import {
   AllowDelegate,
@@ -81,8 +83,15 @@ import {
   TAG_KEY_FILTER_OPS,
   tagKeyOpNeedsValue,
 } from "./tag-key-filter.util";
-import { parseTransactionSort } from "./register-sort-param";
+import {
+  parseTransactionSort,
+  TransactionSortSelection,
+} from "./register-sort-param";
 import { TRANSACTION_SORT_FIELDS } from "./register-order";
+import {
+  collectRegisterExportRows,
+  TransactionExportRow,
+} from "./register-export";
 import { AllowPat, NoPat } from "../auth/pat-access/pat-access.decorator";
 
 const ALL_TRANSACTION_STATUSES = new Set<string>(
@@ -180,6 +189,168 @@ function parseTransactionStatuses(
     }
   }
   return statuses.length > 0 ? (statuses as TransactionStatus[]) : undefined;
+}
+
+/** The register's filter query parameters, as they arrive. */
+interface RawRegisterFilters {
+  accountId?: string;
+  accountIds?: string;
+  startDate?: string;
+  endDate?: string;
+  categoryId?: string;
+  categoryIds?: string;
+  payeeId?: string;
+  payeeIds?: string;
+  includeInvestmentBrokerage?: boolean;
+  search?: string;
+  amountFrom?: string;
+  amountTo?: string;
+  tagIds?: string;
+  statuses?: string;
+  tagKey?: string;
+  tagKeyOp?: string;
+  tagKeyValue?: string;
+  originalCurrencyCodes?: string;
+  hasAttachments?: boolean;
+  sortBy?: string;
+  sortDirection?: string;
+  externalId?: string;
+}
+
+/** The register's filters parsed, with the scope the query runs in. */
+interface RegisterListing {
+  userId: string;
+  accountIds?: string[];
+  startDate?: string;
+  endDate?: string;
+  categoryIds?: string[];
+  payeeIds?: string[];
+  includeInvestmentBrokerage: boolean;
+  search?: string;
+  amountFrom?: number;
+  amountTo?: number;
+  tagIds?: string[];
+  statuses?: TransactionStatus[];
+  sortBy: TransactionSortSelection["sortBy"];
+  sortDirection: TransactionSortSelection["sortDirection"];
+  tagKeyFilter?: TagKeyFilter;
+  originalCurrencyCodes?: string[];
+  hasAttachments?: boolean;
+  jointAccountIds: string[];
+  externalId?: string;
+}
+
+/**
+ * The Swagger entries for the register's filters, shared by the paged list
+ * and its export so the two routes document the same query.
+ */
+function RegisterFilterApiQueries() {
+  return applyDecorators(
+    ApiQuery({
+      name: "accountId",
+      required: false,
+      description:
+        "Filter by account ID (single value, deprecated - use accountIds)",
+    }),
+    ApiQuery({
+      name: "accountIds",
+      required: false,
+      description: "Filter by account IDs (comma-separated)",
+    }),
+    ApiQuery({
+      name: "startDate",
+      required: false,
+      description: "Filter by start date (YYYY-MM-DD)",
+    }),
+    ApiQuery({
+      name: "endDate",
+      required: false,
+      description: "Filter by end date (YYYY-MM-DD)",
+    }),
+    ApiQuery({
+      name: "categoryId",
+      required: false,
+      description:
+        "Filter by category ID (single value, deprecated - use categoryIds)",
+    }),
+    ApiQuery({
+      name: "categoryIds",
+      required: false,
+      description:
+        "Filter by category IDs (comma-separated, also matches split transactions)",
+    }),
+    ApiQuery({
+      name: "payeeId",
+      required: false,
+      description:
+        "Filter by payee ID (single value, deprecated - use payeeIds)",
+    }),
+    ApiQuery({
+      name: "payeeIds",
+      required: false,
+      description: "Filter by payee IDs (comma-separated)",
+    }),
+    ApiQuery({
+      name: "includeInvestmentBrokerage",
+      required: false,
+      description:
+        "Include transactions from investment brokerage accounts (default: false)",
+    }),
+    ApiQuery({
+      name: "search",
+      required: false,
+      description: SEARCH_PARAM_DESCRIPTION,
+    }),
+    ApiQuery({
+      name: "amountFrom",
+      required: false,
+      description: "Filter by minimum amount (inclusive)",
+    }),
+    ApiQuery({
+      name: "amountTo",
+      required: false,
+      description: "Filter by maximum amount (inclusive)",
+    }),
+    ApiQuery({
+      name: "tagIds",
+      required: false,
+      description: "Filter by tag IDs (comma-separated)",
+    }),
+    ApiQuery({
+      name: "statuses",
+      required: false,
+      description:
+        "Filter by reconciliation statuses (comma-separated: UNRECONCILED, CLEARED, RECONCILED, VOID)",
+    }),
+    ApiQuery({
+      name: "originalCurrencyCodes",
+      required: false,
+      description:
+        "Filter by the currency a transaction was entered in (comma-separated ISO codes, foreign-currency entries only)",
+    }),
+    ApiQuery({
+      name: "hasAttachments",
+      required: false,
+      description:
+        "Filter by attachment presence (true = only with attachments, false = only without)",
+    }),
+    ApiQuery({
+      name: "sortBy",
+      required: false,
+      description: `Column to sort the register by (default: date). One of: ${TRANSACTION_SORT_FIELDS.join(", ")}`,
+    }),
+    ApiQuery({
+      name: "sortDirection",
+      required: false,
+      description: "Sort direction: asc or desc (default: desc)",
+    }),
+    ApiQuery({
+      name: "externalId",
+      required: false,
+      description:
+        "Only the transaction created with this externalId (exact match, non-empty). Combine with accountIds to name the account, since a key is unique per account; a row in an investment brokerage account also needs includeInvestmentBrokerage=true.",
+    }),
+  );
 }
 
 /**
@@ -313,49 +484,7 @@ export class TransactionsController {
 
   @Get()
   @ApiOperation({ summary: "Get all transactions for the authenticated user" })
-  @ApiQuery({
-    name: "accountId",
-    required: false,
-    description:
-      "Filter by account ID (single value, deprecated - use accountIds)",
-  })
-  @ApiQuery({
-    name: "accountIds",
-    required: false,
-    description: "Filter by account IDs (comma-separated)",
-  })
-  @ApiQuery({
-    name: "startDate",
-    required: false,
-    description: "Filter by start date (YYYY-MM-DD)",
-  })
-  @ApiQuery({
-    name: "endDate",
-    required: false,
-    description: "Filter by end date (YYYY-MM-DD)",
-  })
-  @ApiQuery({
-    name: "categoryId",
-    required: false,
-    description:
-      "Filter by category ID (single value, deprecated - use categoryIds)",
-  })
-  @ApiQuery({
-    name: "categoryIds",
-    required: false,
-    description:
-      "Filter by category IDs (comma-separated, also matches split transactions)",
-  })
-  @ApiQuery({
-    name: "payeeId",
-    required: false,
-    description: "Filter by payee ID (single value, deprecated - use payeeIds)",
-  })
-  @ApiQuery({
-    name: "payeeIds",
-    required: false,
-    description: "Filter by payee IDs (comma-separated)",
-  })
+  @RegisterFilterApiQueries()
   @ApiQuery({
     name: "page",
     required: false,
@@ -367,70 +496,10 @@ export class TransactionsController {
     description: "Number of transactions per page (default: 50, max: 200)",
   })
   @ApiQuery({
-    name: "includeInvestmentBrokerage",
-    required: false,
-    description:
-      "Include transactions from investment brokerage accounts (default: false)",
-  })
-  @ApiQuery({
-    name: "search",
-    required: false,
-    description: SEARCH_PARAM_DESCRIPTION,
-  })
-  @ApiQuery({
-    name: "amountFrom",
-    required: false,
-    description: "Filter by minimum amount (inclusive)",
-  })
-  @ApiQuery({
-    name: "amountTo",
-    required: false,
-    description: "Filter by maximum amount (inclusive)",
-  })
-  @ApiQuery({
-    name: "tagIds",
-    required: false,
-    description: "Filter by tag IDs (comma-separated)",
-  })
-  @ApiQuery({
-    name: "statuses",
-    required: false,
-    description:
-      "Filter by reconciliation statuses (comma-separated: UNRECONCILED, CLEARED, RECONCILED, VOID)",
-  })
-  @ApiQuery({
     name: "targetTransactionId",
     required: false,
     description:
       "Navigate to the page containing this transaction ID (overrides page parameter)",
-  })
-  @ApiQuery({
-    name: "originalCurrencyCodes",
-    required: false,
-    description:
-      "Filter by the currency a transaction was entered in (comma-separated ISO codes, foreign-currency entries only)",
-  })
-  @ApiQuery({
-    name: "hasAttachments",
-    required: false,
-    description:
-      "Filter by attachment presence (true = only with attachments, false = only without)",
-  })
-  @ApiQuery({
-    name: "sortBy",
-    required: false,
-    description: `Column to sort the register by (default: date). One of: ${TRANSACTION_SORT_FIELDS.join(", ")}`,
-  })
-  @ApiQuery({
-    name: "sortDirection",
-    required: false,
-    description: "Sort direction: asc or desc (default: desc)",
-  })
-  @ApiQuery({
-    name: "externalId",
-    required: false,
-    description:
-      "Only the transaction created with this externalId (exact match, non-empty). Combine with accountIds to name the account, since a key is unique per account; a row in an investment brokerage account also needs includeInvestmentBrokerage=true.",
   })
   @ApiResponse({
     status: 200,
@@ -498,9 +567,6 @@ export class TransactionsController {
       }
     }
 
-    validateDateParam(startDate, "startDate");
-    validateDateParam(endDate, "endDate");
-
     if (targetTransactionId && !UUID_REGEX.test(targetTransactionId)) {
       throw new BadRequestException(
         tr(
@@ -511,11 +577,159 @@ export class TransactionsController {
       );
     }
 
-    const sanitizedSearch = searchParam(search);
+    const listing = await this.resolveRegisterListing(req, {
+      accountId,
+      accountIds,
+      startDate,
+      endDate,
+      categoryId,
+      categoryIds,
+      payeeId,
+      payeeIds,
+      includeInvestmentBrokerage,
+      search,
+      amountFrom,
+      amountTo,
+      tagIds: tagIdsParam,
+      statuses: statusesParam,
+      tagKey,
+      tagKeyOp,
+      tagKeyValue,
+      originalCurrencyCodes,
+      hasAttachments,
+      sortBy,
+      sortDirection,
+      externalId,
+    });
+    if (listing === null) {
+      const safeLimit = limit ? parseInt(limit, 10) : 50;
+      const safePage = page ? parseInt(page, 10) : 1;
+      return {
+        data: [],
+        pagination: {
+          page: safePage,
+          limit: safeLimit,
+          total: 0,
+          totalPages: 0,
+          hasMore: false,
+        },
+      };
+    }
+
+    return this.findRegisterPage(
+      listing,
+      page ? parseInt(page, 10) : undefined,
+      limit ? parseInt(limit, 10) : undefined,
+      targetTransactionId,
+    );
+  }
+
+  @Get("export")
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @ApiOperation({
+    summary:
+      "Every transaction matching the register's filters, in register order, for a CSV export",
+  })
+  @RegisterFilterApiQueries()
+  @ApiResponse({
+    status: 200,
+    description:
+      "All matching transactions in one response, each with only the fields the export writes",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @AllowDelegate()
+  async exportRegister(
+    @Request() req,
+    @Query("accountId") accountId?: string,
+    @Query("accountIds") accountIds?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("categoryId") categoryId?: string,
+    @Query("categoryIds") categoryIds?: string,
+    @Query("payeeId") payeeId?: string,
+    @Query("payeeIds") payeeIds?: string,
+    @Query("includeInvestmentBrokerage", new ParseBoolPipe({ optional: true }))
+    includeInvestmentBrokerage?: boolean,
+    @Query("search") search?: string,
+    @Query("amountFrom") amountFrom?: string,
+    @Query("amountTo") amountTo?: string,
+    @Query("tagIds") tagIdsParam?: string,
+    @Query("statuses") statusesParam?: string,
+    @Query("tagKey") tagKey?: string,
+    @Query("tagKeyOp") tagKeyOp?: string,
+    @Query("tagKeyValue") tagKeyValue?: string,
+    @Query("originalCurrencyCodes") originalCurrencyCodes?: string,
+    @Query("hasAttachments", new ParseBoolPipe({ optional: true }))
+    hasAttachments?: boolean,
+    @Query("sortBy") sortBy?: string,
+    @Query("sortDirection") sortDirection?: string,
+    @Query("externalId") externalId?: string,
+  ): Promise<{ data: TransactionExportRow[] }> {
+    const listing = await this.resolveRegisterListing(req, {
+      accountId,
+      accountIds,
+      startDate,
+      endDate,
+      categoryId,
+      categoryIds,
+      payeeId,
+      payeeIds,
+      includeInvestmentBrokerage,
+      search,
+      amountFrom,
+      amountTo,
+      tagIds: tagIdsParam,
+      statuses: statusesParam,
+      tagKey,
+      tagKeyOp,
+      tagKeyValue,
+      originalCurrencyCodes,
+      hasAttachments,
+      sortBy,
+      sortDirection,
+      externalId,
+    });
+    if (listing === null) return { data: [] };
+
+    const data = await collectRegisterExportRows({
+      fetchPage: (pageNum, pageSize) =>
+        this.findRegisterPage(listing, pageNum, pageSize),
+      readableAccountIds: () =>
+        this.crossOwnerAccess.readableAccountIdSetFor(
+          req.user.realUserId ?? req.user.id,
+        ),
+      isActing: req.user.isActing === true,
+    });
+    return { data };
+  }
+
+  /**
+   * The register's filters, validated and parsed, and the scope the query
+   * runs in -- one definition for the paged list and its export, so a file
+   * holds exactly the rows the register shows. Null means an acting delegate
+   * can read none of the requested accounts: the answer is no rows, never an
+   * unfiltered query, which would leak the whole owner ledger.
+   */
+  private async resolveRegisterListing(
+    req: {
+      user: {
+        id: string;
+        realUserId?: string;
+        isActing?: boolean;
+        // Present whenever isActing is.
+        delegationId: string;
+      };
+    },
+    raw: RawRegisterFilters,
+  ): Promise<RegisterListing | null> {
+    validateDateParam(raw.startDate, "startDate");
+    validateDateParam(raw.endDate, "endDate");
+
+    const sanitizedSearch = searchParam(raw.search);
     // An exact match, so never trimmed or truncated: a key longer than any
     // stored one simply matches nothing. An empty one is refused, as a create
     // refuses it, rather than read as a filter no row can satisfy.
-    const externalIdFilter = assertStringParam(externalId, "externalId");
+    const externalIdFilter = assertStringParam(raw.externalId, "externalId");
     if (externalIdFilter === "") {
       throw new BadRequestException(
         tr("errors.params.isRequired", 'A value for "externalId" is required', {
@@ -525,7 +739,7 @@ export class TransactionsController {
     }
 
     const parsedAmountFrom =
-      amountFrom !== undefined ? parseFloat(amountFrom) : undefined;
+      raw.amountFrom !== undefined ? parseFloat(raw.amountFrom) : undefined;
     if (parsedAmountFrom !== undefined && isNaN(parsedAmountFrom)) {
       throw new BadRequestException(
         tr(
@@ -537,7 +751,7 @@ export class TransactionsController {
     }
 
     const parsedAmountTo =
-      amountTo !== undefined ? parseFloat(amountTo) : undefined;
+      raw.amountTo !== undefined ? parseFloat(raw.amountTo) : undefined;
     if (parsedAmountTo !== undefined && isNaN(parsedAmountTo)) {
       throw new BadRequestException(
         tr(
@@ -548,17 +762,19 @@ export class TransactionsController {
       );
     }
 
-    const tagKeyFilter = parseTagKeyFilter(tagKey, tagKeyOp, tagKeyValue);
-    const sort = parseTransactionSort(sortBy, sortDirection);
+    const tagKeyFilter = parseTagKeyFilter(
+      raw.tagKey,
+      raw.tagKeyOp,
+      raw.tagKeyValue,
+    );
+    const sort = parseTransactionSort(raw.sortBy, raw.sortDirection);
 
-    let effectiveAccountIds = parseIds(accountIds, accountId);
+    let effectiveAccountIds = parseIds(raw.accountIds, raw.accountId);
     let registerUserId = req.user.id;
     let jointAccountIds: string[] = [];
     if (req.user.isActing) {
       // A delegate only ever sees transactions for the accounts they were
-      // granted READ on. Intersect any requested ids with the readable set;
-      // an empty result means "no visible accounts" -> empty page (NOT an
-      // unfiltered query, which would leak the whole owner ledger).
+      // granted READ on. Intersect any requested ids with the readable set.
       const readable = await this.delegationService.readableAccountIds(
         req.user.delegationId,
       );
@@ -567,20 +783,7 @@ export class TransactionsController {
         effectiveAccountIds && effectiveAccountIds.length > 0
           ? effectiveAccountIds.filter((id) => readableSet.has(id))
           : readable;
-      if (effectiveAccountIds.length === 0) {
-        const safeLimit = limit ? parseInt(limit, 10) : 50;
-        const safePage = page ? parseInt(page, 10) : 1;
-        return {
-          data: [],
-          pagination: {
-            page: safePage,
-            limit: safeLimit,
-            total: 0,
-            totalPages: 0,
-            hasMore: false,
-          },
-        };
-      }
+      if (effectiveAccountIds.length === 0) return null;
     } else {
       // Own context: joint accounts read natively (joint-accounts spec).
       const scope = await this.resolveOwnContextJointScope(
@@ -591,29 +794,58 @@ export class TransactionsController {
       jointAccountIds = scope.jointAccountIds;
     }
 
-    return this.transactionsService.findAll(
-      registerUserId,
-      effectiveAccountIds,
-      startDate,
-      endDate,
-      parseCategoryIds(categoryIds ?? categoryId),
-      parseIds(payeeIds, payeeId),
-      page ? parseInt(page, 10) : undefined,
-      limit ? parseInt(limit, 10) : undefined,
-      includeInvestmentBrokerage === true,
-      sanitizedSearch,
-      targetTransactionId,
-      parsedAmountFrom,
-      parsedAmountTo,
-      parseUuids(tagIdsParam),
-      parseTransactionStatuses(statusesParam),
-      sort.sortBy,
-      sort.sortDirection,
+    return {
+      userId: registerUserId,
+      accountIds: effectiveAccountIds,
+      startDate: raw.startDate,
+      endDate: raw.endDate,
+      categoryIds: parseCategoryIds(raw.categoryIds ?? raw.categoryId),
+      payeeIds: parseIds(raw.payeeIds, raw.payeeId),
+      includeInvestmentBrokerage: raw.includeInvestmentBrokerage === true,
+      search: sanitizedSearch,
+      amountFrom: parsedAmountFrom,
+      amountTo: parsedAmountTo,
+      tagIds: parseUuids(raw.tagIds),
+      statuses: parseTransactionStatuses(raw.statuses),
+      sortBy: sort.sortBy,
+      sortDirection: sort.sortDirection,
       tagKeyFilter,
-      parseCurrencyCodes(originalCurrencyCodes),
-      hasAttachments,
+      originalCurrencyCodes: parseCurrencyCodes(raw.originalCurrencyCodes),
+      hasAttachments: raw.hasAttachments,
       jointAccountIds,
-      externalIdFilter,
+      externalId: externalIdFilter,
+    };
+  }
+
+  private findRegisterPage(
+    listing: RegisterListing,
+    page?: number,
+    limit?: number,
+    targetTransactionId?: string,
+  ) {
+    return this.transactionsService.findAll(
+      listing.userId,
+      listing.accountIds,
+      listing.startDate,
+      listing.endDate,
+      listing.categoryIds,
+      listing.payeeIds,
+      page,
+      limit,
+      listing.includeInvestmentBrokerage,
+      listing.search,
+      targetTransactionId,
+      listing.amountFrom,
+      listing.amountTo,
+      listing.tagIds,
+      listing.statuses,
+      listing.sortBy,
+      listing.sortDirection,
+      listing.tagKeyFilter,
+      listing.originalCurrencyCodes,
+      listing.hasAttachments,
+      listing.jointAccountIds,
+      listing.externalId,
     );
   }
 

@@ -341,6 +341,39 @@ export interface PaginatedTransactions {
   searchInterpretation?: SearchInterpretation;
 }
 
+interface ExportNamedRef {
+  name: string;
+}
+
+/**
+ * One row of `GET /transactions/export`: only the fields the Transactions
+ * page's CSV is built from, in the full row's nesting, so a whole filtered
+ * register fits in one response (issue #2198). Twin of `TransactionExportRow`
+ * in `backend/src/transactions/register-export.ts`.
+ */
+export interface TransactionExportRow {
+  id: string;
+  transactionDate: string;
+  /** Arrives as the decimal string the API serializes ("-67.9900"). */
+  amount: number | string;
+  currencyCode: string;
+  status: TransactionStatus;
+  description: string | null;
+  payeeName: string | null;
+  isSplit: boolean;
+  isTransfer: boolean;
+  account: ExportNamedRef | null;
+  payee: ExportNamedRef | null;
+  category: ExportNamedRef | null;
+  tags: ExportNamedRef[];
+  linkedTransaction: { account: ExportNamedRef | null } | null;
+  splits: {
+    amount: number | string;
+    category: ExportNamedRef | null;
+    transferAccount: ExportNamedRef | null;
+  }[];
+}
+
 // Transfer types
 export interface CreateTransferData {
   fromAccountId: string;
