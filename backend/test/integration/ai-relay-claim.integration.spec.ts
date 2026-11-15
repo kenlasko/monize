@@ -17,6 +17,13 @@ import {
   createTestUserDirect,
 } from "../helpers/integration-setup";
 
+/** The claimed prompt's id; undefined for an empty or refused poll. */
+function promptIdOf(
+  result: Awaited<ReturnType<AiRelayService["waitForPrompt"]>>,
+): string | undefined {
+  return result && result !== RELAY_POLL_REFUSED ? result.promptId : undefined;
+}
+
 /**
  * The relay queue's concurrency, against a real database.
  *
@@ -126,7 +133,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
       const claimed = await asUser(() =>
         relay.waitForPrompt(userId, "session-b", CRED),
       );
-      expect(claimed?.promptId).toBe(second);
+      expect(promptIdOf(claimed)).toBe(second);
     } finally {
       await runner.rollbackTransaction();
       await runner.release();
@@ -140,7 +147,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
     const claimed = await asUser(() =>
       relay.waitForPrompt(userId, "session-a", CRED),
     );
-    expect(claimed?.promptId).toBe(id);
+    expect(promptIdOf(claimed)).toBe(id);
 
     await expect(
       asUser(() => relay.postResponse(userId, id, "first", CRED)),
@@ -194,7 +201,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
     const claimed = await asUser(() =>
       relay.waitForPrompt(userId, "session-a", CRED),
     );
-    expect(claimed?.promptId).toBe(live);
+    expect(promptIdOf(claimed)).toBe(live);
     expect(await statusOf(stale)).toBe("pending");
   });
 
@@ -214,7 +221,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
       relay.waitForPrompt(other.id, "session-a", CRED),
     );
 
-    expect(claimed?.promptId).toBe(theirs.id);
+    expect(promptIdOf(claimed)).toBe(theirs.id);
     expect(await statusOf(mine)).toBe("pending");
   });
 
@@ -232,7 +239,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
       const mine = await asUser(() =>
         relay.waitForPrompt(userId, "session-a", CRED),
       );
-      expect(mine?.promptId).toBe(id);
+      expect(promptIdOf(mine)).toBe(id);
     });
 
     it("refuses another credential's post_response and accepts the claimer's", async () => {
@@ -306,7 +313,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
       const claimed = await asUser(() =>
         relay.waitForPrompt(userId, "session-x", OTHER_CRED),
       );
-      expect(claimed?.promptId).toBe(id);
+      expect(promptIdOf(claimed)).toBe(id);
     });
 
     it("refuses a takeover right after the stale holder answered", async () => {
@@ -342,7 +349,7 @@ describe("AI relay claim (real PostgreSQL)", () => {
       const claimed = await asUser(() =>
         relay.waitForPrompt(userId, "session-x", OTHER_CRED),
       );
-      expect(claimed?.promptId).toBe(second);
+      expect(promptIdOf(claimed)).toBe(second);
       // The dead holder's late answer is still its own to give.
       await expect(
         asUser(() => relay.postResponse(userId, first, "late", CRED)),

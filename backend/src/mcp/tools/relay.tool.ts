@@ -46,17 +46,12 @@ export class McpRelayTools {
         annotations: READ_ONLY,
         description:
           "Long-poll for the next prompt typed in the Monize web chat. " +
-          "{ hasPrompt: false }: call again immediately to keep listening. " +
-          "{ hasPrompt: false, stop: true }: the user went inactive; stop " +
-          "polling and exit, they will reconnect you. " +
-          "{ hasPrompt: false, heldElsewhere: true }: another connection of " +
-          "this account is serving the chat; call again to wait until it " +
-          "frees up. " +
-          "{ hasPrompt: true }: the result carries the prompt, `history` " +
-          "(oldest first), any `attachments` (read each `uri` to view an image " +
-          "or PDF; text files are already inlined into the prompt) and " +
-          "`guidance` -- follow it, and always finish the claimed prompt with " +
-          "post_response.",
+          "{ hasPrompt: false }: call again. With stop: true the user went " +
+          "inactive: exit, they will reconnect you. With heldElsewhere: true " +
+          "another connection of this account serves the chat: call again to " +
+          "wait. { hasPrompt: true }: carries the prompt, `history` (oldest " +
+          "first), any `attachments` (read each `uri`; text files are inlined) " +
+          "and `guidance` -- follow it, and always finish the prompt with post_response.",
         inputSchema: z.object({}),
         outputSchema: getNextPromptOutput,
       },
