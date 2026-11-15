@@ -1,8 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { INestApplication, ValidationPipe } from "@nestjs/common";
+import { INestApplication } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule } from "@nestjs/config";
 import cookieParser from "cookie-parser";
+import { createGlobalValidationPipe } from "@/common/pipes/global-validation.pipe";
 
 export async function createTestApp(
   modules: any[],
@@ -28,16 +29,9 @@ export async function createTestApp(
   const module = await moduleBuilder.compile();
   const app = module.createNestApplication();
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-    }),
-  );
+  // The pipe main.ts registers: an `enableImplicitConversion` of the test app's
+  // own would convert a DTO field the running server leaves as sent.
+  app.useGlobalPipes(createGlobalValidationPipe());
   app.setGlobalPrefix("api/v1");
   app.use(cookieParser());
 

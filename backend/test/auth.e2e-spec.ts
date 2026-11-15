@@ -1,7 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { INestApplication, ValidationPipe } from "@nestjs/common";
+import { INestApplication } from "@nestjs/common";
 import * as request from "supertest";
 import cookieParser from "cookie-parser";
+import { createGlobalValidationPipe } from "@/common/pipes/global-validation.pipe";
 import { AuthController } from "@/auth/auth.controller";
 import { AuthService } from "@/auth/auth.service";
 import { OidcService } from "@/auth/oidc/oidc.service";
@@ -125,13 +126,7 @@ describe("AuthController (e2e)", () => {
 
     app = moduleFixture.createNestApplication();
     app.use(cookieParser());
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
+    app.useGlobalPipes(createGlobalValidationPipe());
     await app.init();
   });
 

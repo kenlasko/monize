@@ -1,11 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import {
-  INestApplication,
-  ValidationPipe,
-  NotFoundException,
-} from "@nestjs/common";
+import { INestApplication, NotFoundException } from "@nestjs/common";
 import * as request from "supertest";
 import cookieParser from "cookie-parser";
+import { createGlobalValidationPipe } from "@/common/pipes/global-validation.pipe";
 import { TransactionsController } from "@/transactions/transactions.controller";
 import { TransactionsService } from "@/transactions/transactions.service";
 import { ThrottlerGuard } from "@nestjs/throttler";
@@ -116,13 +113,7 @@ describe("TransactionsController (e2e)", () => {
 
     app = moduleFixture.createNestApplication();
     app.use(cookieParser());
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
+    app.useGlobalPipes(createGlobalValidationPipe());
     await app.init();
   });
 
