@@ -11,6 +11,7 @@ import type { WizardState } from './BudgetWizard';
 import type {
   ApplyBudgetCategoryData,
   BudgetProfile,
+  CategoryAnalysis,
   CategoryGroup,
   TransferAnalysis,
 } from '@/types/budget';
@@ -22,6 +23,7 @@ import {
   tallyBudgetWizardBuckets,
   withBucketKey,
 } from './BudgetWizardBuckets';
+import { BudgetWizardTableHead, useWizardTableSort } from './BudgetWizardTableHead';
 
 function BudgetAmountInput({
   categoryId,
@@ -159,6 +161,21 @@ export function BudgetWizardCategories({
     () => analysisResult?.incomeTransfers ?? [],
     [analysisResult],
   );
+
+  const categoryAccessors = {
+    name: (c: CategoryAnalysis) => c.categoryName,
+    median: (c: CategoryAnalysis) => c.median,
+    amount: (c: CategoryAnalysis) => selectedCategories.get(c.categoryId)?.amount ?? null,
+  };
+  const transferAccessors = (selected: Map<string, ApplyBudgetCategoryData>) => ({
+    name: (tr: TransferAnalysis) => tr.accountName,
+    median: (tr: TransferAnalysis) => tr.median,
+    amount: (tr: TransferAnalysis) => selected.get(tr.accountId)?.amount ?? null,
+  });
+  const incomeTable = useWizardTableSort(incomeCategories, categoryAccessors);
+  const incomeTransferTable = useWizardTableSort(incomeTransferAnalysis, transferAccessors(selectedIncomeTransfers));
+  const expenseTable = useWizardTableSort(expenseCategories, categoryAccessors);
+  const transferTable = useWizardTableSort(transferAnalysis, transferAccessors(selectedTransfers));
 
   const totals = useMemo(() => {
     const cats = Array.from(selectedCategories.values());
@@ -608,21 +625,13 @@ export function BudgetWizardCategories({
         <div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <table className="w-full table-fixed sm:table-auto">
-              <thead>
-                <tr className="bg-green-50 dark:bg-green-900/20 border-b border-green-200 dark:border-green-800">
-                  <th className="text-left py-2 pl-1 pr-0 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
-                    {t('wizardCategories.tableHeaders.income')}
-                  </th>
-                  <th className="hidden sm:table-cell w-44 text-right py-2 px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
-                    {t('wizardCategories.tableHeaders.trendMedian')}
-                  </th>
-                  <th className="w-24 sm:w-48 py-2 pl-0.5 pr-1 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase text-right">
-                    {t('wizardCategories.tableHeaders.amount')}
-                  </th>
-                </tr>
-              </thead>
+              <BudgetWizardTableHead
+                tone="income"
+                nameLabel={t('wizardCategories.tableHeaders.income')}
+                table={incomeTable}
+              />
               <tbody>
-                {incomeCategories.map(renderCategoryRow)}
+                {incomeTable.rows.map(renderCategoryRow)}
               </tbody>
             </table>
           </div>
@@ -634,21 +643,13 @@ export function BudgetWizardCategories({
         <div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <table className="w-full table-fixed sm:table-auto">
-              <thead>
-                <tr className="bg-green-50 dark:bg-green-900/20 border-b border-green-200 dark:border-green-800">
-                  <th className="text-left py-2 pl-1 pr-0 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
-                    {t('wizardCategories.tableHeaders.transfersIn')}
-                  </th>
-                  <th className="hidden sm:table-cell w-44 text-right py-2 px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase">
-                    {t('wizardCategories.tableHeaders.trendMedian')}
-                  </th>
-                  <th className="w-24 sm:w-48 py-2 pl-0.5 pr-1 sm:px-4 text-xs font-medium text-green-700 dark:text-green-400 uppercase text-right">
-                    {t('wizardCategories.tableHeaders.amount')}
-                  </th>
-                </tr>
-              </thead>
+              <BudgetWizardTableHead
+                tone="income"
+                nameLabel={t('wizardCategories.tableHeaders.transfersIn')}
+                table={incomeTransferTable}
+              />
               <tbody>
-                {incomeTransferAnalysis.map((transfer) => renderTransferRow(transfer, true))}
+                {incomeTransferTable.rows.map((transfer) => renderTransferRow(transfer, true))}
               </tbody>
             </table>
             <p className="px-2 py-2 sm:px-4 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
@@ -662,21 +663,13 @@ export function BudgetWizardCategories({
       <div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
           <table className="w-full table-fixed sm:table-auto">
-            <thead>
-              <tr className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
-                <th className="text-left py-2 pl-1 pr-0 sm:px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase">
-                  {t('wizardCategories.tableHeaders.expenses')}
-                </th>
-                <th className="hidden sm:table-cell w-44 text-right py-2 px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase">
-                  {t('wizardCategories.tableHeaders.trendMedian')}
-                </th>
-                <th className="w-24 sm:w-48 py-2 pl-0.5 pr-1 sm:px-4 text-xs font-medium text-red-700 dark:text-red-400 uppercase text-right">
-                  {t('wizardCategories.tableHeaders.amount')}
-                </th>
-              </tr>
-            </thead>
+            <BudgetWizardTableHead
+              tone="expense"
+              nameLabel={t('wizardCategories.tableHeaders.expenses')}
+              table={expenseTable}
+            />
             <tbody>
-              {expenseCategories.map(renderCategoryRow)}
+              {expenseTable.rows.map(renderCategoryRow)}
             </tbody>
           </table>
         </div>
@@ -687,21 +680,13 @@ export function BudgetWizardCategories({
         <div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <table className="w-full table-fixed sm:table-auto">
-              <thead>
-                <tr className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800">
-                  <th className="text-left py-2 pl-1 pr-0 sm:px-4 text-xs font-medium text-blue-700 dark:text-blue-400 uppercase">
-                    {t('wizardCategories.tableHeaders.transfers')}
-                  </th>
-                  <th className="hidden sm:table-cell w-44 text-right py-2 px-4 text-xs font-medium text-blue-700 dark:text-blue-400 uppercase">
-                    {t('wizardCategories.tableHeaders.trendMedian')}
-                  </th>
-                  <th className="w-24 sm:w-48 py-2 pl-0.5 pr-1 sm:px-4 text-xs font-medium text-blue-700 dark:text-blue-400 uppercase text-right">
-                    {t('wizardCategories.tableHeaders.amount')}
-                  </th>
-                </tr>
-              </thead>
+              <BudgetWizardTableHead
+                tone="transfer"
+                nameLabel={t('wizardCategories.tableHeaders.transfers')}
+                table={transferTable}
+              />
               <tbody>
-                {transferAnalysis.map((transfer) => renderTransferRow(transfer))}
+                {transferTable.rows.map((transfer) => renderTransferRow(transfer))}
               </tbody>
             </table>
           </div>
