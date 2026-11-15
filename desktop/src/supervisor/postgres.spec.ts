@@ -30,7 +30,7 @@ async function failureOf(promise: Promise<void>): Promise<PostgresRunnerError> {
 /** A world whose cluster was created by an earlier run. */
 function initializedWorld(): FakeWorld {
   const world = createWorld();
-  world.files.set(`${DATA}/PG_VERSION`, "16\n");
+  world.files.set(`${DATA}/PG_VERSION`, "18\n");
   world.files.set(MARKER, "2026-11-01T09:00:00.000Z\n");
   world.databases.add("monize");
   return world;
@@ -191,7 +191,7 @@ describe("createPostgresRunner: later runs", () => {
 describe("createPostgresRunner: interrupted first run", () => {
   it("renames the directory aside and initializes afresh, deleting nothing", async () => {
     const world = createWorld();
-    world.files.set(`${DATA}/PG_VERSION`, "16\n");
+    world.files.set(`${DATA}/PG_VERSION`, "18\n");
     world.files.set(`${DATA}/base/1/1259`, "half a catalog");
     await runnerIn(world).start();
 
@@ -208,7 +208,7 @@ describe("createPostgresRunner: interrupted first run", () => {
 
   it("fails without running initdb when the directory cannot be moved", async () => {
     const world = createWorld();
-    world.files.set(`${DATA}/PG_VERSION`, "16\n");
+    world.files.set(`${DATA}/PG_VERSION`, "18\n");
     world.deps = {
       ...world.deps,
       fs: {

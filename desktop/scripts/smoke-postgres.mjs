@@ -202,7 +202,7 @@ step("first start creates the cluster and the database", async () => {
   assert.ok(fs.existsSync(path.join(dataDir, "monize.initialized")));
   assert.equal(
     fs.readFileSync(path.join(dataDir, "PG_VERSION"), "utf8").trim(),
-    "16",
+    "18",
   );
   assert.deepEqual(
     fs.readdirSync(profile).sort(),
@@ -446,7 +446,7 @@ step("a server left by a crashed shell is replaced", async () => {
 
 step("an interrupted initialization is moved aside, not deleted", async () => {
   fs.mkdirSync(secondDataDir, { recursive: true });
-  fs.writeFileSync(path.join(secondDataDir, "PG_VERSION"), "16\n");
+  fs.writeFileSync(path.join(secondDataDir, "PG_VERSION"), "18\n");
   const { runner, statuses } = launch(secondDataDir);
   await runner.start();
   assert.deepEqual(statuses, ["initializing", "starting", "ready"]);
