@@ -12,6 +12,8 @@ import {
   RolloverType,
 } from "./entities/budget-category.entity";
 import { CreateTransferIncomeLineDto } from "./dto/create-transfer-income-line.dto";
+import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
+import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
 import { assertTransferAccountsOwned } from "./budget-transfer-lines.util";
 import {
   Notification,
@@ -344,7 +346,7 @@ export class BudgetsService {
           ),
         );
       }
-      return repo.save(
+      const line = await repo.save(
         repo.create({
           budgetId,
           categoryId: null,
@@ -356,6 +358,28 @@ export class BudgetsService {
           notes: dto.notes ?? null,
         }),
       );
+      // The open period's close freezes only the lines it has a row for, so a
+      // line added mid-period gets its row here, or this period's income from
+      // it would be left out of `actual_income`.
+      const openPeriod = await m.getRepository(BudgetPeriod).findOne({
+        where: { budgetId, status: PeriodStatus.OPEN },
+      });
+      if (openPeriod) {
+        const periodCats = m.getRepository(BudgetPeriodCategory);
+        await periodCats.save(
+          periodCats.create({
+            budgetPeriodId: openPeriod.id,
+            budgetCategoryId: line.id,
+            categoryId: null,
+            budgetedAmount: dto.amount,
+            rolloverIn: 0,
+            effectiveBudget: dto.amount,
+            actualAmount: 0,
+            rolloverOut: 0,
+          }),
+        );
+      }
+      return line;
     });
     // After the commit: the page re-reads the summary straight after the add.
     this.invalidateCategoryActuals(budgetId);

@@ -16,10 +16,10 @@ interface BudgetPeriodDetailProps {
 
 function getCategoryName(
   pc: BudgetPeriodCategory,
-  transfersFrom: (name: string) => string,
+  labels: { transfersFrom: (name: string) => string; unknown: string },
 ): string {
   if (pc.budgetCategory?.isTransfer && pc.budgetCategory.transferAccount) {
-    return budgetLineName(pc.budgetCategory, { transfersFrom, unknown: 'Uncategorized' });
+    return budgetLineName(pc.budgetCategory, labels);
   }
   if (pc.category?.name) return pc.category.name;
   if (pc.budgetCategory?.category?.name) return pc.budgetCategory.category.name;
@@ -252,9 +252,10 @@ function PeriodCategoryRow({
 }) {
   const t = useTranslations('budgets');
   const { formatPercentTrimmed } = useNumberFormat();
-  const name = getCategoryName(periodCategory, (account) =>
-    t('lineNames.transfersFrom', { name: account }),
-  );
+  const name = getCategoryName(periodCategory, {
+    transfersFrom: (account) => t('lineNames.transfersFrom', { name: account }),
+    unknown: t('lineNames.unknown'),
+  });
   const budgeted = Number(periodCategory.effectiveBudget);
   const spent = Number(periodCategory.actualAmount);
   const rolloverIn = Number(periodCategory.rolloverIn);

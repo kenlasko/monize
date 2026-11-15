@@ -31,6 +31,8 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Account } from "../accounts/entities/account.entity";
+import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
+import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { ScheduledTransactionOverride } from "../scheduled-transactions/entities/scheduled-transaction-override.entity";
 import { ActionHistoryService } from "../action-history/action-history.service";
@@ -85,6 +87,8 @@ describe("BudgetsService", () => {
   let splitsRepository: Record<string, jest.Mock>;
   let categoriesRepository: Record<string, jest.Mock>;
   let accountsRepository: Record<string, jest.Mock>;
+  let periodsRepository: Record<string, jest.Mock>;
+  let periodCategoriesRepository: Record<string, jest.Mock>;
   let scheduledTransactionsRepository: Record<string, jest.Mock>;
   let overridesRepository: Record<string, jest.Mock>;
   let investmentTransactionsService: InvestmentFxMock;
@@ -232,6 +236,15 @@ describe("BudgetsService", () => {
       find: jest.fn().mockResolvedValue([]),
     };
 
+    periodsRepository = {
+      findOne: jest.fn().mockResolvedValue(null),
+    };
+
+    periodCategoriesRepository = {
+      create: jest.fn((d) => d),
+      save: jest.fn(async (d) => d),
+    };
+
     scheduledTransactionsRepository = {
       createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
     };
@@ -256,6 +269,8 @@ describe("BudgetsService", () => {
         [TransactionSplit, splitsRepository as never],
         [Category, categoriesRepository as never],
         [Account, accountsRepository as never],
+        [BudgetPeriod, periodsRepository as never],
+        [BudgetPeriodCategory, periodCategoriesRepository as never],
         [ScheduledTransaction, scheduledTransactionsRepository as never],
         [
           UserPreference,
@@ -665,6 +680,35 @@ describe("BudgetsService", () => {
       await service.getSummary("user-1", "budget-1");
 
       expect(compute).toHaveBeenCalledTimes(2);
+    });
+
+    it("gives the line a row in the open period, so its close counts it", async () => {
+      budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
+      accountsRepository.find.mockResolvedValue([{ id: "acct-hisa" }]);
+      budgetCategoriesRepository.findOne.mockResolvedValue(null);
+      budgetCategoriesRepository.save.mockImplementation(async (d) => ({
+        ...d,
+        id: "new-bc",
+      }));
+      periodsRepository.findOne.mockResolvedValue({ id: "period-open" });
+
+      await service.addTransferIncomeLine("user-1", "budget-1", {
+        transferAccountId: "acct-hisa",
+        amount: 2000,
+      });
+
+      expect(periodsRepository.findOne).toHaveBeenCalledWith({
+        where: { budgetId: "budget-1", status: PeriodStatus.OPEN },
+      });
+      expect(periodCategoriesRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          budgetPeriodId: "period-open",
+          budgetCategoryId: "new-bc",
+          budgetedAmount: 2000,
+          effectiveBudget: 2000,
+          actualAmount: 0,
+        }),
+      );
     });
 
     it("refuses a budget the user does not own", async () => {

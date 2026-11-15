@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { TransactionsModule } from "@/transactions/transactions.module";
 import { BudgetsModule } from "@/budgets/budgets.module";
 import { BudgetsService } from "@/budgets/budgets.service";
+import { BudgetPeriodService } from "@/budgets/budget-period.service";
 import { Budget, BudgetType } from "@/budgets/entities/budget.entity";
 import { BudgetCategory } from "@/budgets/entities/budget-category.entity";
 import { getCurrentMonthPeriodDates } from "@/budgets/budget-date.utils";
@@ -307,5 +308,35 @@ describe("budget transfer income (integration)", () => {
     expect(
       summary.categoryBreakdown.find((c) => c.budgetCategoryId === hisaLine.id),
     ).toMatchObject({ isIncome: true, isTransfer: true, spent: 2000 });
+  });
+  it("adds a transfer income line with a row in the open period, refusing a second for the account", async () => {
+    const periods = module.get(BudgetPeriodService);
+    await withUserContext(userId, () =>
+      periods.getOrCreateCurrentPeriod(userId, budget.id),
+    );
+
+    const line = await withUserContext(userId, () =>
+      budgets.addTransferIncomeLine(userId, budget.id, {
+        transferAccountId: rrspId,
+        amount: 300,
+      }),
+    );
+
+    const rows: Array<{ budgeted_amount: string }> = await dataSource.query(
+      `SELECT bpc.budgeted_amount FROM budget_period_categories bpc
+         JOIN budget_periods bp ON bp.id = bpc.budget_period_id
+        WHERE bpc.budget_category_id = $1 AND bp.status = 'OPEN'`,
+      [line.id],
+    );
+    expect(rows.map((r) => Number(r.budgeted_amount))).toEqual([300]);
+
+    await expect(
+      withUserContext(userId, () =>
+        budgets.addTransferIncomeLine(userId, budget.id, {
+          transferAccountId: hisaId,
+          amount: 100,
+        }),
+      ),
+    ).rejects.toThrow("already has a transfer line");
   });
 });
