@@ -84,6 +84,8 @@ describe("BudgetBucketReportsService", () => {
     } as unknown as Budget;
     return {
       budget,
+      periodStart: "2026-11-01",
+      periodEnd: "2026-11-30",
       incomeLinked: budget.incomeLinked,
       actualIncome: null,
       categoryBreakdown: [
@@ -114,10 +116,6 @@ describe("BudgetBucketReportsService", () => {
       [BudgetPeriodBucket, periodBuckets],
       [Currency, currencies],
     ]));
-    jest.spyOn(dateUtils, "getCurrentMonthPeriodDates").mockReturnValue({
-      periodStart: "2026-11-01",
-      periodEnd: "2026-11-30",
-    });
     const module = await Test.createTestingModule({
       providers: [
         BudgetBucketReportsService,
@@ -170,6 +168,20 @@ describe("BudgetBucketReportsService", () => {
       available: 600,
       percentUsed: 40,
     });
+  });
+
+  it("labels the figures with the summary's period, not a second clock read", async () => {
+    // At midnight on a month boundary a second read of the clock names the
+    // next month while the summary's figures are this month's.
+    jest.spyOn(dateUtils, "getCurrentMonthPeriodDates").mockReturnValue({
+      periodStart: "2026-12-01",
+      periodEnd: "2026-12-31",
+    });
+
+    const r = await service.getBucketStatus("user-1", "budget-1");
+
+    expect(r.periodStart).toBe("2026-11-01");
+    expect(r.periodEnd).toBe("2026-11-30");
   });
 
   it("reads carry_in from the open period's bucket rows", async () => {

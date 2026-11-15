@@ -36,6 +36,7 @@ import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { ScheduledTransactionOverride } from "../scheduled-transactions/entities/scheduled-transaction-override.entity";
 import { BudgetBucket } from "./entities/budget-bucket.entity";
+import * as dateUtils from "./budget-date.utils";
 import { ActionHistoryService } from "../action-history/action-history.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { addDaysYMD, getMonthEndYMD, todayYMD } from "../common/date-utils";
@@ -1228,6 +1229,28 @@ describe("BudgetsService", () => {
       expect(groceries!.budgeted).toBe(500);
       expect(groceries!.spent).toBe(350);
       expect(groceries!.remaining).toBe(150);
+    });
+
+    it("returns the period dates its figures were read for", async () => {
+      const spy = jest
+        .spyOn(dateUtils, "getCurrentMonthPeriodDates")
+        .mockReturnValue({
+          periodStart: "2026-11-01",
+          periodEnd: "2026-11-30",
+        });
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [],
+      });
+
+      try {
+        const result = await service.getSummary("user-1", "budget-1");
+
+        expect(result.periodStart).toBe("2026-11-01");
+        expect(result.periodEnd).toBe("2026-11-30");
+      } finally {
+        spy.mockRestore();
+      }
     });
 
     it("returns zero totals when budget has no categories", async () => {

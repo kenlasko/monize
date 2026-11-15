@@ -2,12 +2,12 @@ import { Injectable } from "@nestjs/common";
 import { DataSource, In } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { loadCurrencyPlacesForRead } from "../common/currency-places.util";
-import { moneyDecimalsFor, sumMoney } from "../common/round.util";
+import { moneyDecimalsFor } from "../common/round.util";
 import { BudgetsService } from "./budgets.service";
-import { getCurrentMonthPeriodDates } from "./budget-date.utils";
 import {
   BudgetBucketFigure,
   BudgetBucketFigures,
+  buildBudgetBucketFiguresInput,
   computeBudgetBucketFigures,
 } from "./budget-bucket-figures.util";
 import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
@@ -42,21 +42,10 @@ export class BudgetBucketReportsService {
     // this service runs no actuals query of its own.
     const summary = await this.budgetsService.getSummary(userId, budgetId);
     const budget = summary.budget;
-    // The summary reads the current calendar month (`getCurrentPeriodDates` in
-    // BudgetsService is `getCurrentMonthPeriodDates`); the same function names
-    // the dates here.
-    const { periodStart, periodEnd } = getCurrentMonthPeriodDates();
-
-    const bucketIdByLine = new Map<string, string | null>();
-    for (const bc of budget.categories ?? []) {
-      bucketIdByLine.set(bc.id, bc.bucketId ?? null);
-    }
-    const lines = summary.categoryBreakdown.map((row) => ({
-      bucketId: bucketIdByLine.get(row.budgetCategoryId) ?? null,
-      isIncome: row.isIncome,
-      budgeted: row.budgeted,
-      spent: row.spent,
-    }));
+    // The dates the summary read its figures for, not a second clock read: a
+    // request straddling midnight at a month boundary would otherwise label
+    // one month's figures with the next month's dates.
+    const { periodStart, periodEnd } = summary;
 
     const { decimals, carriedIn } = await withScopedDb(
       this.dataSource,
@@ -86,19 +75,15 @@ export class BudgetBucketReportsService {
       },
     );
 
-    const figures = computeBudgetBucketFigures({
-      buckets: budget.buckets ?? [],
-      lines,
-      incomeLinked: summary.incomeLinked,
-      baseIncome: budget.baseIncome ?? null,
-      incomeLinesBudgeted: sumMoney(
-        lines.filter((l) => l.isIncome).map((l) => l.budgeted),
+    const figures = computeBudgetBucketFigures(
+      buildBudgetBucketFiguresInput({
+        budget,
+        rows: summary.categoryBreakdown,
+        actualIncome: summary.actualIncome,
+        carriedIn,
         decimals,
-      ),
-      actualIncome: summary.actualIncome,
-      carriedIn,
-      decimals,
-    });
+      }),
+    );
 
     return {
       periodStart,
@@ -109,7 +94,7 @@ export class BudgetBucketReportsService {
       totalAllocated: figures.totalAllocated,
       knownAllocated: figures.knownAllocated,
       unallocated: figures.unallocated,
-      // carryOut is the period close's (B4); the live read does not expose it.
+      // carryOut is the period close's; the live read does not expose it.
       buckets: figures.buckets.map(({ carryOut: _carryOut, ...rest }) => rest),
       unassigned: figures.unassigned,
     };

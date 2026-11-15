@@ -4,7 +4,9 @@ import { BudgetBucketTargetType } from "./entities/budget-bucket.entity";
 /**
  * The one place the bucket arithmetic of docs/future-plans/bucket-budget.md
  * section 4 is written (INV-BUDGET-001). The live read
- * (`BudgetBucketReportsService`) and the period close both call it; no other
+ * (`BudgetBucketReportsService`) and the period close
+ * (`BudgetPeriodService.closePeriod`) both call it, through
+ * `buildBudgetBucketFiguresInput`; no other
  * code adds, subtracts or divides bucket figures. Pure: no I/O, no dates.
  *
  * Every sum goes through `sumMoney` and every derived amount through
@@ -78,6 +80,67 @@ export interface BudgetBucketFigures {
   unallocated: number | null;
   buckets: BudgetBucketFigure[];
   unassigned: { planned: number; spent: number; lineCount: number };
+}
+
+/** One budget line's figures for a period, keyed by the line's id. */
+export interface BudgetBucketLineRow {
+  budgetCategoryId: string;
+  isIncome: boolean;
+  budgeted: number;
+  spent: number;
+}
+
+/** What both callers hold before the figures are computed. */
+export interface BudgetBucketInputSource {
+  budget: {
+    buckets?: readonly BudgetBucketFigureBucket[];
+    /** The budget's lines, for each line's bucket. */
+    categories?: readonly { id: string; bucketId?: string | null }[];
+    incomeLinked: boolean;
+    baseIncome: number | null;
+  };
+  /** The period's line figures: the live summary's rows, or the close's. */
+  rows: readonly BudgetBucketLineRow[];
+  /** The summary's `actualIncome`: income received, or null when not linked. */
+  actualIncome: number | null;
+  carriedIn: ReadonlyMap<string, number>;
+  decimals: number;
+}
+
+/**
+ * The one builder of `computeBudgetBucketFigures`' input. The live read
+ * (`BudgetBucketReportsService`) passes the summary's rows; the period close
+ * (`BudgetPeriodService.closePeriod`) passes the rows it is freezing. Both
+ * reach the arithmetic through the same input, so a frozen snapshot is the
+ * figure the live card showed for the same rows (INV-BUDGET-001).
+ */
+export function buildBudgetBucketFiguresInput(
+  source: BudgetBucketInputSource,
+): BudgetBucketFiguresInput {
+  const { budget, decimals } = source;
+  const bucketIdByLine = new Map<string, string | null>();
+  for (const bc of budget.categories ?? []) {
+    bucketIdByLine.set(bc.id, bc.bucketId ?? null);
+  }
+  const lines = source.rows.map((row) => ({
+    bucketId: bucketIdByLine.get(row.budgetCategoryId) ?? null,
+    isIncome: row.isIncome,
+    budgeted: row.budgeted,
+    spent: row.spent,
+  }));
+  return {
+    buckets: budget.buckets ?? [],
+    lines,
+    incomeLinked: budget.incomeLinked,
+    baseIncome: budget.baseIncome ?? null,
+    incomeLinesBudgeted: sumMoney(
+      lines.filter((l) => l.isIncome).map((l) => l.budgeted),
+      decimals,
+    ),
+    actualIncome: source.actualIncome,
+    carriedIn: source.carriedIn,
+    decimals,
+  };
 }
 
 const PERCENT_USED_DECIMALS = 2;

@@ -38,6 +38,7 @@ import {
 import {
   queryCategorySpending,
   resolveBudgetIncome,
+  resolveBudgetLineBudgeted,
   resolveCategoryName,
   resolveCategorySpent,
   resolveOutsideTransferIncome,
@@ -548,6 +549,9 @@ export class BudgetsService {
     budgetId: string,
   ): Promise<{
     budget: Budget;
+    /** The period the figures were read for (`getCurrentPeriodDates`). */
+    periodStart: string;
+    periodEnd: string;
     totalBudgeted: number;
     totalSpent: number;
     totalIncome: number;
@@ -593,6 +597,8 @@ export class BudgetsService {
 
     return {
       budget,
+      periodStart,
+      periodEnd,
       totalBudgeted,
       totalSpent,
       totalIncome,
@@ -1215,16 +1221,13 @@ export class BudgetsService {
       : 0;
 
     const lines = budgetCategories.map((bc) => {
-      const rawAmount = Number(bc.amount);
-      let budgeted: number;
-      let percentage: number | null = null;
-
-      if (budget.incomeLinked && !bc.isIncome) {
-        percentage = rawAmount;
-        budgeted = roundMoney((actualIncome * rawAmount) / 100);
-      } else {
-        budgeted = rawAmount;
-      }
+      const percentage =
+        budget.incomeLinked && !bc.isIncome ? Number(bc.amount) : null;
+      const budgeted = resolveBudgetLineBudgeted(
+        bc,
+        budget.incomeLinked,
+        actualIncome,
+      );
 
       const spent = resolveCategorySpent(
         bc,

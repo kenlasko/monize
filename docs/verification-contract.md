@@ -243,6 +243,7 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-WTY-007 no transaction through a warranty | required | -- | **required** | -- | -- | -- | -- | -- |
 | INV-BUDGET-001 one function for every bucket figure | **required** | -- | -- | -- | -- | -- | -- | -- |
 | INV-BUDGET-002 a line's bucket is its own budget's | required | -- | **required** (not yet met) | -- | -- | -- | -- | -- |
+| INV-BUDGET-003 a closed period's buckets are frozen and carry once | required | -- | **required** (not yet met) | supporting | -- | -- | -- | -- |
 | INV-PAYROLL-001 a deduction rule never writes the ledger | -- | **required** | -- | -- | -- | -- | -- | -- |
 | INV-PAYROLL-002 a post caps a ruled line and re-sums | **required** | -- | required (not yet met) | -- | -- | -- | -- | -- |
 | INV-PAYROLL-003 posting and projection cap alike | **required** | -- | required (not yet met) | -- | -- | -- | -- | optional |

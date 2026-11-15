@@ -242,6 +242,7 @@ implied.
 | INV-WTY-007 | A delegate never learns a transaction outside their readable accounts through a warranty | enforced |
 | INV-BUDGET-001 | Every bucket figure is produced by one pure function | enforced |
 | INV-BUDGET-002 | A line's bucket belongs to the line's own budget, and an income line has none | partial |
+| INV-BUDGET-003 | A closed period's bucket figures are frozen, and the next period's carry_in equals the closed period's carry_out | partial |
 | SE-001 | Accepted contributions and shares conserve both currency totals | enforced |
 | SE-002 | Joining preserves the existing participant's history | enforced |
 | SE-003 | Group membership grants no private finance access | enforced |
@@ -9962,7 +9963,7 @@ Status              enforced
 ## Budgets
 
 Specification: `docs/future-plans/bucket-budget.md` (section 5), where these are
-BUDGET-001 to BUDGET-003 (the third arrives with the period close).
+BUDGET-001 to BUDGET-003.
 
 ### INV-BUDGET-001 -- one function writes the bucket arithmetic
 
@@ -9980,22 +9981,28 @@ Enforcement         computeBudgetBucketFigures in
                     backend/src/budgets/budget-bucket-figures.util.ts is the
                     only place the section 4 arithmetic is written; every sum
                     goes through sumMoney and every derived amount through
-                    roundMoney with the currency's decimals. The live read
-                    (BudgetBucketReportsService.getBucketStatus) builds its
-                    inputs from the summary and calls it.
+                    roundMoney with the currency's decimals. Its two callers
+                    build their input through the one builder beside it,
+                    buildBudgetBucketFiguresInput: the live read
+                    (BudgetBucketReportsService.getBucketStatus) from the
+                    summary's line rows, and the period close
+                    (BudgetPeriodService.closePeriod) from the line actuals it
+                    freezes, each line's budgeted amount read through the
+                    summary's own resolveBudgetLineBudgeted.
 Concurrency scope   --
 Retry semantics     --
 Crash semantics     --
 Failure response    --
 Required tests      Present: budget-bucket-figures.util.spec.ts (truth tables
                     A, B and C, the section 8 examples, negative spent, the
-                    ten-lines-of-0.1 case), budget-bucket-reports.service.spec.ts.
+                    ten-lines-of-0.1 case), budget-bucket-reports.service.spec.ts,
+                    budget-period.service.spec.ts (the close's frozen rows).
 Status              enforced
 ```
 
-The other callers named in the design (the period close, the assistant and MCP
-shape, the dashboard card) are later tasks; each must call the function and
-none may restate the arithmetic. There is no source scan over them yet.
+The remaining callers named in the design (the assistant and MCP shape, the
+dashboard card) are later tasks; each must call the function and none may
+restate the arithmetic. There is no source scan over them yet.
 
 ### INV-BUDGET-002 -- a line's bucket is its own budget's
 
@@ -10023,6 +10030,61 @@ Status              partial
 
 Status is `partial` because the required PG integration proof has not been
 written; the check itself is in the write path of every writer that exists.
+
+### INV-BUDGET-003 -- a closed period's buckets are frozen, and carry once
+
+```text
+Statement           When a budget period closes, one budget_period_buckets row
+                    per bucket the budget has at that moment holds the figures
+                    frozen at the close (bucket_name, target_type,
+                    target_value, income_basis, allocated_amount,
+                    actual_amount, carry_out), and the next period's carry_in
+                    for that bucket equals that carry_out. Nothing rewrites
+                    the frozen columns of a CLOSED period's rows; deleting a
+                    bucket only nulls bucket_id on them.
+Source of truth     budget_period_buckets, budget_periods.status
+Enforcement         BudgetPeriodService.closePeriod writes both inside its one
+                    withScopedDb transaction, under the FOR UPDATE lock on the
+                    OPEN period row that already serialises a close (a second
+                    close waits on it and then finds no OPEN period). The
+                    figures come from computeBudgetBucketFigures over the
+                    close's own line actuals (INV-BUDGET-001). The period's
+                    rows are read under that lock, then each current bucket's
+                    row is updated by id (carry_in kept) or inserted with
+                    carry_in 0; a row with a NULL bucket_id (bucket deleted)
+                    is left as it is, which is why the write is not an
+                    ON CONFLICT on (budget_period_id, bucket_id), where NULLs
+                    are distinct. Each positive carry_out is handed to
+                    createPeriodForBudget, which inserts the next period's
+                    carry_in rows only in the branch that won the
+                    ON CONFLICT claim on budget_periods. Outside the close and
+                    that creation, only the whole-account paths (backup
+                    restore, account deletion) write the table, and they
+                    replace or remove rows, never edit them.
+                    BudgetBucketsService never writes budget_period_buckets,
+                    and the FK's ON DELETE SET NULL touches bucket_id alone.
+Concurrency scope   the period row (FOR UPDATE), the close's transaction
+Retry semantics     a close that rolled back wrote nothing; the next run finds
+                    the period still OPEN and closes it whole
+Crash semantics     the frozen rows, the CLOSED status and the next period's
+                    carry_in rows commit together or not at all
+Failure response    a second close is NoOpenPeriodError (a skip for the cron)
+Required tests      Present: budget-period.service.spec.ts (truth table C
+                    through a mocked close with the section 8 figures; the
+                    carry reaching the next period's creation; rows only for a
+                    positive carry and only when the claim was won; a bucket
+                    created mid-period inserted with carry_in 0; a NULL
+                    bucket_id row untouched; no bucket read or write for a
+                    budget without buckets), budget-period-lifecycle.spec.ts
+                    (two consecutive closes over a mocked table). Missing: the
+                    two-close carry chain on real PostgreSQL, with and without
+                    a cap, and a closed row surviving a later bucket edit
+                    (task Q1 of the bucket plan).
+Status              partial
+```
+
+Status is `partial` because the required PG integration proof has not been
+written; the write path itself is complete for every close.
 
 ## Shared expenses
 
