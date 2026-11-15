@@ -332,7 +332,8 @@
     "noOpenPeriod": "閉鎖するオープン期間がありません",
     "categoryIdsNotOwned": "カテゴリIDが見つからないか、ユーザーが所有していません：{{ ids }}",
     "transferAccountNotFound": "ID {{ id }} の口座が見つかりません",
-    "transferAccountAlreadyInBudget": "この口座には予算内にすでに振替行があります"
+    "transferAccountAlreadyInBudget": "この口座には予算内にすでに振替行があります",
+    "transferLineDirectionFixed": "振替行の方向は変更できません。行を削除して、新しい行を追加してください。"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "給与控除ルールは法定通貨で支払う請求を対象にします。この請求の口座は暗号資産 {{ code }} を保有しています。法定通貨の口座から支払う請求を選択してください。",

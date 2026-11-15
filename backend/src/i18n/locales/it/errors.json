@@ -332,7 +332,8 @@
     "noOpenPeriod": "Nessun periodo aperto da chiudere",
     "categoryIdsNotOwned": "ID categoria non trovati o non di proprietà dell'utente: {{ ids }}",
     "transferAccountNotFound": "Conto con ID {{ id }} non trovato",
-    "transferAccountAlreadyInBudget": "Questo conto ha già una riga di trasferimento nel budget"
+    "transferAccountAlreadyInBudget": "Questo conto ha già una riga di trasferimento nel budget",
+    "transferLineDirectionFixed": "La direzione di una riga di trasferimento non può essere modificata. Rimuovila e aggiungi una nuova riga."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Una regola di trattenuta sullo stipendio tiene traccia di una fattura pagata in una valuta fiat; il conto di questa fattura contiene la criptovaluta {{ code }}. Scegli una fattura pagata da un conto in valuta fiat.",

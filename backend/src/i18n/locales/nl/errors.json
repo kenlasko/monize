@@ -332,7 +332,8 @@
     "noOpenPeriod": "Geen open periode om te sluiten",
     "categoryIdsNotOwned": "Categorie-ID's niet gevonden of niet eigendom van gebruiker: {{ ids }}",
     "transferAccountNotFound": "Rekening met ID {{ id }} niet gevonden",
-    "transferAccountAlreadyInBudget": "Deze rekening heeft al een overboekingsregel in het budget"
+    "transferAccountAlreadyInBudget": "Deze rekening heeft al een overboekingsregel in het budget",
+    "transferLineDirectionFixed": "De richting van een overboekingsregel kan niet worden gewijzigd. Verwijder de regel en voeg een nieuwe toe."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Een looninhoudingsregel volgt een rekening die in een fiatvaluta wordt betaald; de rekening van deze betaling bevat de cryptovaluta {{ code }}. Kies een betaling die vanaf een fiatrekening wordt voldaan.",

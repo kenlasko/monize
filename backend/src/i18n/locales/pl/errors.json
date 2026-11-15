@@ -332,7 +332,8 @@
     "noOpenPeriod": "Brak otwartego okresu do zamknięcia",
     "categoryIdsNotOwned": "Identyfikatory kategorii nie zostały znalezione lub nie należą do użytkownika: {{ ids }}",
     "transferAccountNotFound": "Nie znaleziono konta o ID {{ id }}",
-    "transferAccountAlreadyInBudget": "To konto ma już linię przelewu w budżecie"
+    "transferAccountAlreadyInBudget": "To konto ma już linię przelewu w budżecie",
+    "transferLineDirectionFixed": "Nie można zmienić kierunku linii przelewu. Usuń ją i dodaj nową linię."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Reguła potrącenia z wynagrodzenia śledzi rachunek opłacany w walucie fiducjarnej; konto tego rachunku zawiera kryptowalutę {{ code }}. Wybierz rachunek opłacany z konta w walucie fiducjarnej.",

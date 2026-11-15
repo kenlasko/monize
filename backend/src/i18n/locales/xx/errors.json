@@ -332,7 +332,8 @@
     "noOpenPeriod": "[XX-No open period to close-XX]",
     "categoryIdsNotOwned": "[XX-Category IDs not found or not owned by user: {{ ids }}-XX]",
     "transferAccountNotFound": "[XX-Account with ID {{ id }} not found-XX]",
-    "transferAccountAlreadyInBudget": "[XX-This account already has a transfer line in the budget-XX]"
+    "transferAccountAlreadyInBudget": "[XX-This account already has a transfer line in the budget-XX]",
+    "transferLineDirectionFixed": "[XX-A transfer line's direction cannot be changed. Remove it and add a new line instead.-XX]"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "[XX-A payroll deduction rule tracks a bill paid in a fiat currency; this bill's account holds the cryptocurrency {{ code }}. Choose a bill paid from a fiat account.-XX]",

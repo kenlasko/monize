@@ -332,7 +332,8 @@
     "noOpenPeriod": "Tidak ada periode yang terbuka untuk ditutup",
     "categoryIdsNotOwned": "ID kategori tidak ditemukan atau bukan milik pengguna: {{ ids }}",
     "transferAccountNotFound": "Akun dengan ID {{ id }} tidak ditemukan",
-    "transferAccountAlreadyInBudget": "Akun ini sudah memiliki baris transfer di anggaran"
+    "transferAccountAlreadyInBudget": "Akun ini sudah memiliki baris transfer di anggaran",
+    "transferLineDirectionFixed": "Arah baris transfer tidak dapat diubah. Hapus baris ini dan tambahkan baris baru."
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Aturan potongan gaji melacak tagihan yang dibayar dalam mata uang fiat; akun tagihan ini menyimpan mata uang kripto {{ code }}. Pilih tagihan yang dibayar dari akun fiat.",

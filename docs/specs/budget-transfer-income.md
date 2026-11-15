@@ -106,6 +106,11 @@ deselects that account's outgoing transfer and vice versa.
   (`transferAccountId`, `amount`, optional rollover and notes). Refuses an
   account the user cannot see or one a transfer line of the budget already
   names.
+- `PATCH /budgets/:id/categories/:categoryId`: refuses a change of `isIncome`
+  on a transfer line (resending the value it has is not a change). Flipping
+  it would turn an outgoing savings line into an income line for the same
+  account, or the reverse, and change what its figure means; the line is
+  removed and a new one added instead.
 - Wizard: the income transfer table on the Categories step; the toggle beside
   the excluded-accounts picker on the Configure step.
 - Settings: the toggle in the budget form; transfer income lines in the income

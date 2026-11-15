@@ -11,6 +11,7 @@ import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { NumericInput } from '@/components/ui/NumericInput';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { getCurrencySymbol } from '@/lib/format';
+import { budgetLineName } from './utils/budget-line-name';
 import type {
   BudgetCategory,
   UpdateBudgetCategoryData,
@@ -75,6 +76,8 @@ export function BudgetCategoryForm({
     },
   });
 
+  const isTransferIncome = category.isTransfer && category.isIncome;
+
   // eslint-disable-next-line react-hooks/incompatible-library
   const watchedRolloverType = watch('rolloverType');
 
@@ -96,7 +99,12 @@ export function BudgetCategoryForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-        {t('categoryForm.editTitle', { name: category.category?.parent ? `${category.category.parent.name}: ${category.category.name}` : category.category?.name ?? 'Category' })}
+        {t('categoryForm.editTitle', {
+          name: budgetLineName(category, {
+            transfersFrom: (name) => t('lineNames.transfersFrom', { name }),
+            unknown: t('lineNames.unknown'),
+          }),
+        })}
       </h3>
 
       <Controller
@@ -163,21 +171,24 @@ export function BudgetCategoryForm({
         placeholder={t('categoryForm.flexGroupPlaceholder')}
       />
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          {t('categoryForm.categoryGroup')}
-        </label>
-        <select
-          {...register('categoryGroup')}
-          className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-        >
-          {GROUP_VALUES.map((value) => (
-            <option key={value} value={value}>
-              {value === '' ? t('categoryForm.groupOptions.none') : t(`categoryForm.groupOptions.${value}`)}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* A transfer income line is money arriving, not a need, want or saving. */}
+      {!isTransferIncome && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('categoryForm.categoryGroup')}
+          </label>
+          <select
+            {...register('categoryGroup')}
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          >
+            {GROUP_VALUES.map((value) => (
+              <option key={value} value={value}>
+                {value === '' ? t('categoryForm.groupOptions.none') : t(`categoryForm.groupOptions.${value}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <Controller
