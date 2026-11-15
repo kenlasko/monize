@@ -868,7 +868,9 @@
         "sharedPersonLinks": "Пов’язані контакти",
         "sharedIntegrations": "Зв’язки з особистими фінансами",
         "sharedPostings": "Особисті проведення спільних витрат",
-        "sharedLedgerLinks": "Пов’язані особисті операції"
+        "sharedLedgerLinks": "Пов’язані особисті операції",
+        "budgetBuckets": "Конверти бюджету",
+        "budgetPeriodBuckets": "Конверти періоду бюджету"
       }
     },
     "storedBackups": {

@@ -868,7 +868,9 @@
         "sharedPersonLinks": "Gekoppelde contacten",
         "sharedIntegrations": "Koppelingen met persoonlijke financiën",
         "sharedPostings": "Persoonlijke boekingen van gedeelde uitgaven",
-        "sharedLedgerLinks": "Gekoppelde persoonlijke transacties"
+        "sharedLedgerLinks": "Gekoppelde persoonlijke transacties",
+        "budgetBuckets": "Budgetpotjes",
+        "budgetPeriodBuckets": "Budgetperiodepotjes"
       }
     },
     "storedBackups": {

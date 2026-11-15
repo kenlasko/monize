@@ -10,6 +10,7 @@ import {
 } from "typeorm";
 import { Budget } from "./budget.entity";
 import { BudgetPeriodCategory } from "./budget-period-category.entity";
+import { BudgetPeriodBucket } from "./budget-period-bucket.entity";
 
 export enum PeriodStatus {
   OPEN = "OPEN",
@@ -91,6 +92,9 @@ export class BudgetPeriod {
 
   @OneToMany(() => BudgetPeriodCategory, (bpc) => bpc.budgetPeriod)
   periodCategories: BudgetPeriodCategory[];
+
+  @OneToMany(() => BudgetPeriodBucket, (bpb) => bpb.budgetPeriod)
+  periodBuckets?: BudgetPeriodBucket[];
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;

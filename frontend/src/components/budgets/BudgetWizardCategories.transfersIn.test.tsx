@@ -65,6 +65,8 @@ const baseState: WizardState = {
     ['acc-hisa', { transferAccountId: 'acc-hisa', isTransfer: true, amount: 300 }],
   ]),
   selectedIncomeTransfers: new Map(),
+  buckets: [],
+  bucketsPresetApplied: false,
   budgetName: 'B',
   budgetType: 'MONTHLY',
   periodStart: '2026-11-01',

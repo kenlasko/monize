@@ -36,7 +36,9 @@
       "SAVING": "Épargne"
     },
     "saving": "Enregistrement...",
-    "remove": "Retirer du budget"
+    "remove": "Retirer du budget",
+    "bucket": "Enveloppe",
+    "bucketUnassigned": "Non attribué"
   },
   "categoryList": {
     "title": "Budgets par catégorie",
@@ -94,7 +96,8 @@
       "FIXED": "Fixe",
       "ROLLOVER": "Report",
       "ZERO_BASED": "Base zéro",
-      "FIFTY_THIRTY_TWENTY": "50/30/20"
+      "FIFTY_THIRTY_TWENTY": "50/30/20",
+      "BUCKET": "Enveloppe"
     }
   },
   "healthGauge": {
@@ -239,6 +242,10 @@
       "FIFTY_THIRTY_TWENTY": {
         "label": "50/30/20",
         "description": "50% de besoins, 30% d'envies, 20% d'épargne. Les catégories sont étiquetées par groupe."
+      },
+      "BUCKET": {
+        "label": "Enveloppe",
+        "description": "Les revenus sont répartis en quelques enveloppes nommées. Suivez chaque enveloppe, pas chaque catégorie."
       }
     },
     "profiles": {
@@ -324,7 +331,8 @@
       "FIXED": "Définissez des montants par catégorie. Le budget non dépensé se réinitialise à chaque période.",
       "ROLLOVER": "Le budget non dépensé est reporté selon les règles de report par catégorie.",
       "ZERO_BASED": "Chaque euro de revenus est affecté. Les revenus moins les dépenses doivent être égaux à zéro.",
-      "FIFTY_THIRTY_TWENTY": "Catégories regroupées en Besoins (50%), Envies (30%), Épargne (20%)."
+      "FIFTY_THIRTY_TWENTY": "Catégories regroupées en Besoins (50%), Envies (30%), Épargne (20%).",
+      "BUCKET": "Revenus répartis en enveloppes nommées. Chaque catégorie appartient à une enveloppe."
     },
     "linkBudgetToIncome": "Lier le budget aux revenus",
     "linkBudgetToIncomeHint": "Les montants des catégories deviennent des pourcentages de vos revenus de base",
@@ -403,6 +411,19 @@
     "toasts": {
       "created": "Budget créé avec succès",
       "failed": "Échec de la création du budget"
+    }
+  },
+  "wizardBuckets": {
+    "title": "Enveloppes",
+    "description": "Répartissez vos revenus en enveloppes, puis choisissez une enveloppe pour chaque dépense et chaque virement ci-dessous.",
+    "selectLabel": "Enveloppe pour {name}",
+    "unassigned": "Non attribué",
+    "tallyTitle": "Lignes par enveloppe",
+    "tallyValue": "{count, plural, one {# ligne} other {# lignes}} · {amount}",
+    "review": {
+      "lineCount": "{count, plural, one {# ligne} other {# lignes}}",
+      "unassigned": "{count, plural, one {# ligne de dépense ou de virement n'est} other {# lignes de dépense ou de virement ne sont}} dans aucune enveloppe. Vous pouvez quand même créer le budget et les attribuer plus tard sur sa page de modification.",
+      "noBuckets": "Ce budget n'a pas encore d'enveloppes. Vous pouvez quand même le créer et ajouter des enveloppes plus tard sur sa page de modification."
     }
   },
   "zeroBasedBar": {
@@ -486,6 +507,23 @@
           "Nécessite de classer chaque dépense par groupe"
         ],
         "bestFor": "Les personnes qui souhaitent une approche équilibrée et pratique sans suivre chaque catégorie individuellement."
+      },
+      "BUCKET": {
+        "title": "Budget par enveloppes",
+        "description": "Les revenus sont répartis en quelques enveloppes nommées, chacune avec un objectif exprimé en part des revenus ou en montant fixe. Chaque catégorie appartient à une enveloppe : vous suivez l'enveloppe plutôt que chaque catégorie. Une enveloppe peut reporter ce qui reste sur la période suivante.",
+        "pros": [
+          "Moins de chiffres à suivre",
+          "Flexible au sein de chaque enveloppe",
+          "Les enveloppes d'épargne peuvent se constituer avec le temps",
+          "Convient aux dépenses irrégulières au sein d'une enveloppe"
+        ],
+        "cons": [
+          "Moins de détail par catégorie",
+          "Nécessite de classer les catégories dans des enveloppes",
+          "Les objectifs en pourcentage exigent un revenu connu",
+          "Les soldes reportés demandent une vérification de temps en temps"
+        ],
+        "bestFor": "Les personnes qui trouvent les budgets par catégorie trop fastidieux, mais qui veulent plus de structure que le 50/30/20."
       }
     }
   },
@@ -567,7 +605,9 @@
         "categoryRemoveFailed": "Impossible de retirer la catégorie",
         "transferIncomeAdded": "Revenu de virement ajouté",
         "transferIncomeFailed": "Impossible d'ajouter le revenu de virement"
-      }
+      },
+      "buckets": "Enveloppes",
+      "unassignedBucket": "Non attribué"
     }
   },
   "validation": {
@@ -578,5 +618,140 @@
   "categoryValidation": {
     "amountMin": "Le montant doit être égal ou supérieur à 0",
     "mustBeNumber": "Doit être un nombre"
+  },
+  "bucketEditor": {
+    "presetLabel": "Partir d'un modèle",
+    "presets": {
+      "THREE": "Trois enveloppes",
+      "FOUR": "Quatre enveloppes (60/10/10/20)",
+      "SCRATCH": "Partir de zéro"
+    },
+    "presetBucketNames": {
+      "fixedCosts": "Charges fixes",
+      "everydaySpending": "Dépenses courantes",
+      "savings": "Épargne",
+      "dailyExpenses": "Dépenses quotidiennes",
+      "splurge": "Plaisirs",
+      "longTermGoals": "Objectifs à long terme",
+      "safetyAndDebt": "Sécurité et dettes"
+    },
+    "listLabel": "Enveloppes",
+    "empty": {
+      "title": "Aucune enveloppe pour l'instant",
+      "description": "Partez d'un modèle ou ajoutez une enveloppe, puis attribuez-lui chaque catégorie."
+    },
+    "add": "Ajouter une enveloppe",
+    "limitReached": "Un budget peut avoir au maximum {max} enveloppes.",
+    "newTitle": "Nouvelle enveloppe",
+    "editTitle": "Modifier {name}",
+    "summary": "Les objectifs en pourcentage totalisent {percent}. Les objectifs en montant totalisent {amount}.",
+    "row": {
+      "percentTarget": "{percent} des revenus",
+      "amountTarget": "{amount} par période",
+      "noCarry": "Repart de zéro à chaque période",
+      "carries": "Report possible",
+      "carriesUpTo": "Report possible, jusqu'à {cap}",
+      "caption": "{target} · {carry}",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "editLabel": "Modifier {name}",
+      "deleteLabel": "Supprimer {name}"
+    },
+    "targetTypes": {
+      "PERCENT": "Pourcentage des revenus",
+      "AMOUNT": "Montant fixe"
+    },
+    "form": {
+      "name": "Nom",
+      "namePlaceholder": "ex. : Épargne",
+      "targetType": "Objectif",
+      "targetTypeTooltip": "Un objectif en pourcentage est une part des revenus du budget : les revenus reçus sur cette période pour un budget lié aux revenus, sinon le revenu de base, sinon les montants des catégories de revenus. Un montant fixe est identique à chaque période.",
+      "targetPercent": "Pourcentage des revenus",
+      "targetAmount": "Montant par période",
+      "carryOver": "Reporter ce qui reste",
+      "carryOverTooltip": "Ce qui reste dans l'enveloppe à la clôture d'une période est ajouté à la période suivante. Une enveloppe en dépassement ne reporte rien.",
+      "carryCap": "Plafond de report (facultatif)",
+      "carryCapPlaceholder": "Sans plafond",
+      "save": "Enregistrer",
+      "saveChanges": "Enregistrer les modifications"
+    },
+    "validation": {
+      "nameRequired": "Saisissez un nom",
+      "nameMax": "Un nom peut contenir au maximum {max} caractères",
+      "nameDuplicate": "Une autre enveloppe porte déjà ce nom",
+      "targetRequired": "Saisissez un objectif",
+      "percentRange": "Un objectif en pourcentage doit être supérieur à 0 et au maximum 100",
+      "percentDecimals": "Un objectif en pourcentage peut avoir au maximum deux décimales",
+      "amountPositive": "Un objectif en montant doit être supérieur à 0",
+      "capNeedsCarryOver": "Un plafond de report nécessite que le report soit activé",
+      "capPositive": "Un plafond de report doit être supérieur à 0"
+    },
+    "delete": {
+      "title": "Supprimer l'enveloppe",
+      "message": "Supprimer l'enveloppe « {name} » ? Ses catégories ne seront plus attribuées.",
+      "confirm": "Supprimer"
+    },
+    "replace": {
+      "title": "Remplacer les enveloppes",
+      "message": "Remplacer les enveloppes actuelles par « {preset} » ? Les enveloppes actuelles sont supprimées et leurs catégories ne sont plus attribuées.",
+      "clearMessage": "Supprimer toutes les enveloppes et repartir de zéro ? Leurs catégories ne seront plus attribuées.",
+      "confirm": "Remplacer"
+    },
+    "toasts": {
+      "created": "Enveloppe ajoutée",
+      "updated": "Enveloppe mise à jour",
+      "deleted": "Enveloppe supprimée",
+      "saveFailed": "Échec de l'enregistrement de l'enveloppe",
+      "deleteFailed": "Échec de la suppression de l'enveloppe",
+      "presetApplied": "Modèle appliqué",
+      "presetFailed": "Échec de l'application du modèle"
+    }
+  },
+  "bucketSummary": {
+    "title": "Répartition par enveloppes",
+    "loading": "Chargement de la répartition par enveloppes",
+    "loadFailed": "Impossible de charger la répartition par enveloppes. Réessayez dans un instant.",
+    "emptyTitle": "Aucune enveloppe pour l'instant",
+    "emptyDescription": "Ajoutez des enveloppes pour répartir vos revenus en parts nommées.",
+    "emptyAction": "Ajouter des enveloppes",
+    "income": "Revenus des enveloppes",
+    "incomeUnknown": "Inconnu",
+    "incomeSource": {
+      "ACTUAL": "Selon les revenus réels de cette période",
+      "BASE_INCOME": "Selon le revenu de base du budget",
+      "INCOME_LINES": "Selon les catégories de revenus prévues",
+      "NONE": "Aucun revenu trouvé"
+    },
+    "totalAllocated": "Total réparti",
+    "allocatedSoFar": "Réparti jusqu'ici",
+    "allocatedSoFarHint": "Certaines enveloppes n'ont pas encore de montant connu : ce chiffre est partiel.",
+    "unallocated": "Non réparti",
+    "unallocatedUnknown": "Inconnu",
+    "overAllocatedHint": "Sur-répartition : les enveloppes totalisent plus que vos revenus.",
+    "targetPercent": "{percent} des revenus",
+    "targetAmount": "{amount} par période",
+    "carriedIn": "{amount} reportés",
+    "spent": "Dépensé",
+    "available": "Disponible",
+    "overspent": "Dépassement",
+    "categories": "{count, plural, one {# catégorie} other {# catégories}}",
+    "allocationUnknown": "Définissez un revenu de base pour le budget ou ajoutez une catégorie de revenus.",
+    "allocationUnknownAction": "Modifier le budget",
+    "unassignedTitle": "Non attribué",
+    "unassignedDescription": "{count, plural, one {# ligne de catégorie n'est} other {# lignes de catégorie ne sont}} dans aucune enveloppe.",
+    "unassignedPlanned": "Prévu",
+    "unassignedAction": "Les attribuer"
+  },
+  "periodBuckets": {
+    "title": "Enveloppes",
+    "name": "Enveloppe",
+    "target": "Objectif",
+    "allocated": "Réparti",
+    "allocatedUnknown": "Inconnu",
+    "carriedIn": "Reporté de la période précédente",
+    "spent": "Dépensé",
+    "carriedOut": "Reporté à la suivante",
+    "targetPercent": "{percent} des revenus",
+    "targetAmount": "{amount} par période"
   }
 }

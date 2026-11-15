@@ -868,7 +868,9 @@
         "sharedPersonLinks": "Linked contacts",
         "sharedIntegrations": "Personal finance connections",
         "sharedPostings": "Personal shared-expense bookings",
-        "sharedLedgerLinks": "Linked personal transactions"
+        "sharedLedgerLinks": "Linked personal transactions",
+        "budgetBuckets": "Budget buckets",
+        "budgetPeriodBuckets": "Budget period buckets"
       }
     },
     "storedBackups": {

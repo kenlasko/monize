@@ -36,7 +36,9 @@
       "SAVING": "儲蓄"
     },
     "saving": "儲存中...",
-    "remove": "從預算中移除"
+    "remove": "從預算中移除",
+    "bucket": "資金桶",
+    "bucketUnassigned": "未分配"
   },
   "categoryList": {
     "title": "類別預算",
@@ -94,7 +96,8 @@
       "FIXED": "固定",
       "ROLLOVER": "結轉",
       "ZERO_BASED": "零基",
-      "FIFTY_THIRTY_TWENTY": "50/30/20"
+      "FIFTY_THIRTY_TWENTY": "50/30/20",
+      "BUCKET": "資金桶"
     }
   },
   "healthGauge": {
@@ -239,6 +242,10 @@
       "FIFTY_THIRTY_TWENTY": {
         "label": "50/30/20",
         "description": "50% 必需品，30% 想要，20% 儲蓄。類別按群組標記。"
+      },
+      "BUCKET": {
+        "label": "資金桶",
+        "description": "收入會分成幾個有名稱的資金桶。只需關注每個資金桶，不必逐一查看每個類別。"
       }
     },
     "profiles": {
@@ -324,7 +331,8 @@
       "FIXED": "為每個類別設定金額。未花費的預算在每個期間結束時重置。",
       "ROLLOVER": "未花費的預算根據各類別結轉規則延續。",
       "ZERO_BASED": "每一筆收入都已指定用途。收入減支出應等於零。",
-      "FIFTY_THIRTY_TWENTY": "類別分為必需品 (50%)、想要 (30%)、儲蓄 (20%)。"
+      "FIFTY_THIRTY_TWENTY": "類別分為必需品 (50%)、想要 (30%)、儲蓄 (20%)。",
+      "BUCKET": "收入分成有名稱的資金桶。每個類別屬於一個資金桶。"
     },
     "linkBudgetToIncome": "將預算連結至收入",
     "linkBudgetToIncomeHint": "類別金額將成為您基本收入的百分比",
@@ -403,6 +411,19 @@
     "toasts": {
       "created": "預算建立成功",
       "failed": "建立預算失敗"
+    }
+  },
+  "wizardBuckets": {
+    "title": "資金桶",
+    "description": "將收入分成資金桶，然後為下方的每個支出和轉帳選擇資金桶。",
+    "selectLabel": "{name} 的資金桶",
+    "unassigned": "未分配",
+    "tallyTitle": "每個資金桶的項目數",
+    "tallyValue": "{count, plural, one {# 項} other {# 項}} · {amount}",
+    "review": {
+      "lineCount": "{count, plural, one {# 項} other {# 項}}",
+      "unassigned": "{count, plural, one {# 個支出或轉帳項目} other {# 個支出或轉帳項目}}不屬於任何資金桶。您仍可建立預算，之後再到編輯頁面分配。",
+      "noBuckets": "此預算尚無資金桶。您仍可建立預算，之後再到編輯頁面新增資金桶。"
     }
   },
   "zeroBasedBar": {
@@ -486,6 +507,23 @@
           "需要按群組分類每筆支出"
         ],
         "bestFor": "希望採用平衡的經驗法則方式，而不需個別追蹤每個類別的人。"
+      },
+      "BUCKET": {
+        "title": "資金桶預算",
+        "description": "收入會分成幾個有名稱的資金桶，每個資金桶的目標是收入的一定百分比或固定金額。每個類別屬於一個資金桶，因此您只需關注資金桶，不必逐一查看類別。資金桶可將剩餘金額結轉到下一期。",
+        "pros": [
+          "需要關注的數字更少",
+          "每個資金桶內部具彈性",
+          "儲蓄資金桶可隨時間累積",
+          "適合資金桶內不固定的支出"
+        ],
+        "cons": [
+          "每個類別的細節較少",
+          "需要將類別歸入資金桶",
+          "百分比目標需要已知收入",
+          "結轉餘額需要不時檢查"
+        ],
+        "bestFor": "覺得逐一類別預算太繁瑣，但又希望比 50/30/20 更有架構的人。"
       }
     }
   },
@@ -567,7 +605,9 @@
         "categoryRemoveFailed": "移除類別失敗",
         "transferIncomeAdded": "已新增轉帳收入",
         "transferIncomeFailed": "新增轉帳收入失敗"
-      }
+      },
+      "buckets": "資金桶",
+      "unassignedBucket": "未分配"
     }
   },
   "validation": {
@@ -578,5 +618,140 @@
   "categoryValidation": {
     "amountMin": "金額必須大於或等於 0",
     "mustBeNumber": "必須為數字"
+  },
+  "bucketEditor": {
+    "presetLabel": "從預設開始",
+    "presets": {
+      "THREE": "三個資金桶",
+      "FOUR": "四個資金桶 (60/10/10/20)",
+      "SCRATCH": "從頭開始"
+    },
+    "presetBucketNames": {
+      "fixedCosts": "固定支出",
+      "everydaySpending": "日常開銷",
+      "savings": "儲蓄",
+      "dailyExpenses": "日常花費",
+      "splurge": "享樂",
+      "longTermGoals": "長期目標",
+      "safetyAndDebt": "保障與債務"
+    },
+    "listLabel": "資金桶",
+    "empty": {
+      "title": "尚無資金桶",
+      "description": "從預設開始或新增資金桶，然後將每個類別分配給一個資金桶。"
+    },
+    "add": "新增資金桶",
+    "limitReached": "一個預算最多可有 {max} 個資金桶。",
+    "newTitle": "新增資金桶",
+    "editTitle": "編輯 {name}",
+    "summary": "百分比目標合計為 {percent}，金額目標合計為 {amount}。",
+    "row": {
+      "percentTarget": "收入的 {percent}",
+      "amountTarget": "每期 {amount}",
+      "noCarry": "每期從零開始",
+      "carries": "結轉",
+      "carriesUpTo": "結轉，上限 {cap}",
+      "caption": "{target} · {carry}",
+      "edit": "編輯",
+      "delete": "刪除",
+      "editLabel": "編輯 {name}",
+      "deleteLabel": "刪除 {name}"
+    },
+    "targetTypes": {
+      "PERCENT": "收入百分比",
+      "AMOUNT": "固定金額"
+    },
+    "form": {
+      "name": "名稱",
+      "namePlaceholder": "例如：儲蓄",
+      "targetType": "目標",
+      "targetTypeTooltip": "百分比目標是預算收入的一定比例：連結收入的預算為本期已收到的收入，否則為基本收入，再否則為收入類別的金額。固定金額每期相同。",
+      "targetPercent": "收入百分比",
+      "targetAmount": "每期金額",
+      "carryOver": "結轉剩餘金額",
+      "carryOverTooltip": "期間結束時資金桶中剩餘的金額會加到下一期。超支的資金桶不會結轉任何金額。",
+      "carryCap": "結轉上限（選填）",
+      "carryCapPlaceholder": "無上限",
+      "save": "儲存",
+      "saveChanges": "儲存變更"
+    },
+    "validation": {
+      "nameRequired": "請輸入名稱",
+      "nameMax": "名稱最多 {max} 個字元",
+      "nameDuplicate": "已有另一個資金桶使用此名稱",
+      "targetRequired": "請輸入目標",
+      "percentRange": "百分比目標必須大於 0 且不超過 100",
+      "percentDecimals": "百分比目標最多到小數點後兩位",
+      "amountPositive": "金額目標必須大於 0",
+      "capNeedsCarryOver": "結轉上限需要開啟結轉",
+      "capPositive": "結轉上限必須大於 0"
+    },
+    "delete": {
+      "title": "刪除資金桶",
+      "message": "要刪除資金桶「{name}」嗎？其類別將變為未分配。",
+      "confirm": "刪除"
+    },
+    "replace": {
+      "title": "取代資金桶",
+      "message": "要用「{preset}」取代目前的資金桶嗎？目前的資金桶將被刪除，其類別將變為未分配。",
+      "clearMessage": "要刪除所有資金桶並從頭開始嗎？其類別將變為未分配。",
+      "confirm": "取代"
+    },
+    "toasts": {
+      "created": "已新增資金桶",
+      "updated": "已更新資金桶",
+      "deleted": "已刪除資金桶",
+      "saveFailed": "儲存資金桶失敗",
+      "deleteFailed": "刪除資金桶失敗",
+      "presetApplied": "已套用預設",
+      "presetFailed": "套用預設失敗"
+    }
+  },
+  "bucketSummary": {
+    "title": "資金桶分配",
+    "loading": "正在載入資金桶分配",
+    "loadFailed": "無法載入資金桶分配。請稍後再試。",
+    "emptyTitle": "尚無資金桶",
+    "emptyDescription": "新增資金桶，將收入分成有名稱的部分。",
+    "emptyAction": "新增資金桶",
+    "income": "資金桶收入",
+    "incomeUnknown": "未知",
+    "incomeSource": {
+      "ACTUAL": "依本期實際收入計算",
+      "BASE_INCOME": "依預算的基本收入計算",
+      "INCOME_LINES": "依規劃的收入類別計算",
+      "NONE": "找不到收入"
+    },
+    "totalAllocated": "已分配總額",
+    "allocatedSoFar": "目前已分配",
+    "allocatedSoFarHint": "部分資金桶的金額尚未確定，因此這只是部分數字。",
+    "unallocated": "未分配",
+    "unallocatedUnknown": "未知",
+    "overAllocatedHint": "超額分配：資金桶合計超過您的收入。",
+    "targetPercent": "收入的 {percent}",
+    "targetAmount": "每期 {amount}",
+    "carriedIn": "結轉進來 {amount}",
+    "spent": "已花費",
+    "available": "可用",
+    "overspent": "已超支",
+    "categories": "{count, plural, one {# 個類別} other {# 個類別}}",
+    "allocationUnknown": "請為預算設定基本收入，或新增一個收入類別。",
+    "allocationUnknownAction": "編輯預算",
+    "unassignedTitle": "未分配",
+    "unassignedDescription": "{count, plural, one {# 個類別項目} other {# 個類別項目}}不屬於任何資金桶。",
+    "unassignedPlanned": "規劃",
+    "unassignedAction": "前往分配"
+  },
+  "periodBuckets": {
+    "title": "資金桶",
+    "name": "資金桶",
+    "target": "目標",
+    "allocated": "已分配",
+    "allocatedUnknown": "未知",
+    "carriedIn": "結轉進來",
+    "spent": "已花費",
+    "carriedOut": "結轉出去",
+    "targetPercent": "收入的 {percent}",
+    "targetAmount": "每期 {amount}"
   }
 }

@@ -25,6 +25,8 @@ describe('BudgetWizardAnalysis', () => {
     selectedCategories: new Map(),
     selectedTransfers: new Map(),
     selectedIncomeTransfers: new Map(),
+    buckets: [],
+    bucketsPresetApplied: false,
     budgetName: 'Test Budget',
     budgetType: 'MONTHLY',
     periodStart: '2026-02-01',
@@ -63,6 +65,7 @@ describe('BudgetWizardAnalysis', () => {
     expect(screen.getByTestId('strategy-ROLLOVER')).toBeInTheDocument();
     expect(screen.getByTestId('strategy-ZERO_BASED')).toBeInTheDocument();
     expect(screen.getByTestId('strategy-FIFTY_THIRTY_TWENTY')).toBeInTheDocument();
+    expect(screen.getByTestId('strategy-BUCKET')).toBeInTheDocument();
   });
 
   it('renders analysis period options', () => {

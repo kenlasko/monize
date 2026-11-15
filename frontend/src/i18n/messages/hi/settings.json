@@ -868,7 +868,9 @@
         "sharedPersonLinks": "जुड़े हुए संपर्क",
         "sharedIntegrations": "व्यक्तिगत वित्त से जुड़ाव",
         "sharedPostings": "साझा खर्च की व्यक्तिगत प्रविष्टियाँ",
-        "sharedLedgerLinks": "जुड़े हुए व्यक्तिगत लेनदेन"
+        "sharedLedgerLinks": "जुड़े हुए व्यक्तिगत लेनदेन",
+        "budgetBuckets": "बजट बकेट",
+        "budgetPeriodBuckets": "बजट अवधि बकेट"
       }
     },
     "storedBackups": {

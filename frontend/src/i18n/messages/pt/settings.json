@@ -868,7 +868,9 @@
         "sharedPersonLinks": "Contactos associados",
         "sharedIntegrations": "Ligações às finanças pessoais",
         "sharedPostings": "Lançamentos pessoais de despesas partilhadas",
-        "sharedLedgerLinks": "Transações pessoais associadas"
+        "sharedLedgerLinks": "Transações pessoais associadas",
+        "budgetBuckets": "Cofres do orçamento",
+        "budgetPeriodBuckets": "Cofres do período do orçamento"
       }
     },
     "storedBackups": {

@@ -22,6 +22,10 @@ import {
   GenerateBudgetRequest,
   GenerateBudgetResponse,
   ApplyGeneratedBudgetData,
+  BudgetBucket,
+  CreateBudgetBucketData,
+  UpdateBudgetBucketData,
+  BudgetBucketStatusResult,
 } from '@/types/budget';
 import { dedupe, invalidateCache } from './apiCache';
 
@@ -108,13 +112,60 @@ export const budgetsApi = {
 
   bulkUpdateCategories: async (
     budgetId: string,
-    categories: Array<{ id: string; amount: number }>,
+    categories: Array<{ id: string; amount?: number; bucketId?: string | null }>,
   ): Promise<BudgetCategory[]> => {
     const response = await apiClient.post<BudgetCategory[]>(
       `/budgets/${budgetId}/categories/bulk`,
       { categories },
     );
     invalidateCache('budgets:');
+    return response.data;
+  },
+
+  // Buckets
+  getBuckets: async (budgetId: string): Promise<BudgetBucket[]> => {
+    const response = await apiClient.get<BudgetBucket[]>(
+      `/budgets/${budgetId}/buckets`,
+    );
+    return response.data;
+  },
+
+  createBucket: async (
+    budgetId: string,
+    data: CreateBudgetBucketData,
+  ): Promise<BudgetBucket> => {
+    const response = await apiClient.post<BudgetBucket>(
+      `/budgets/${budgetId}/buckets`,
+      data,
+    );
+    invalidateCache('budgets:');
+    return response.data;
+  },
+
+  updateBucket: async (
+    budgetId: string,
+    bucketId: string,
+    data: UpdateBudgetBucketData,
+  ): Promise<BudgetBucket> => {
+    const response = await apiClient.patch<BudgetBucket>(
+      `/budgets/${budgetId}/buckets/${bucketId}`,
+      data,
+    );
+    invalidateCache('budgets:');
+    return response.data;
+  },
+
+  deleteBucket: async (budgetId: string, bucketId: string): Promise<void> => {
+    await apiClient.delete(`/budgets/${budgetId}/buckets/${bucketId}`);
+    invalidateCache('budgets:');
+  },
+
+  getBucketStatus: async (
+    budgetId: string,
+  ): Promise<BudgetBucketStatusResult> => {
+    const response = await apiClient.get<BudgetBucketStatusResult>(
+      `/budgets/${budgetId}/reports/bucket-status`,
+    );
     return response.data;
   },
 

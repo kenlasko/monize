@@ -332,7 +332,17 @@
     "noOpenPeriod": "Kapatılacak açık dönem yok",
     "categoryIdsNotOwned": "Kategori kimlikleri bulunamadı veya kullanıcıya ait değil: {{ ids }}",
     "transferAccountNotFound": "{{ id }} kimliğine sahip hesap bulunamadı",
-    "transferAccountAlreadyInBudget": "Bu hesabın bütçede zaten bir transfer satırı var"
+    "transferAccountAlreadyInBudget": "Bu hesabın bütçede zaten bir transfer satırı var",
+    "bucketNotFound": "{{ id }} kimliğine sahip zarf bulunamadı",
+    "bucketLimit": "Bir bütçede en fazla {{ max }} zarf olabilir",
+    "bucketNameInvalid": "Zarf adı 1 ile {{ max }} karakter arasında olmalıdır",
+    "bucketNameDuplicate": "Bu bütçede bu ada sahip bir zarf zaten var",
+    "bucketTargetInvalid": "Zarf hedefi sıfırdan büyük olmalıdır",
+    "bucketPercentInvalid": "Yüzde hedefi 0'dan büyük ve en fazla 100 olmalı, en fazla iki ondalık basamak içerebilir",
+    "bucketCarryCapNeedsCarryOver": "Devir üst sınırı için devrin açık olması gerekir",
+    "bucketOnIncomeLine": "Bir gelir satırı bir zarfa ait olamaz",
+    "bucketKeyDuplicate": "\"{{ key }}\" zarf anahtarı birden fazla kez kullanılmış",
+    "bucketKeyUnknown": "Bu istekteki hiçbir zarfın anahtarı \"{{ key }}\" değil"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Bordro kesinti kuralı, fiat para biriminde ödenen bir faturayı izler; bu faturanın hesabı {{ code }} kripto parasını tutuyor. Fiat bir hesaptan ödenen bir fatura seçin.",

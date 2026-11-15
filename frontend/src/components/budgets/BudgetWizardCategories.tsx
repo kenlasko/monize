@@ -14,6 +14,14 @@ import type {
   CategoryGroup,
   TransferAnalysis,
 } from '@/types/budget';
+import {
+  BudgetWizardBucketSelect,
+  BudgetWizardBucketTallyCard,
+  BudgetWizardBucketsPanel,
+  liveBucketKey,
+  tallyBudgetWizardBuckets,
+  withBucketKey,
+} from './BudgetWizardBuckets';
 
 function BudgetAmountInput({
   categoryId,
@@ -120,11 +128,13 @@ export function BudgetWizardCategories({
     selectedCategories,
     selectedTransfers = new Map(),
     selectedIncomeTransfers = new Map(),
+    buckets = [],
     profile,
     strategy,
     currencyCode,
   } = state;
   const is503020 = strategy === 'FIFTY_THIRTY_TWENTY';
+  const isBucket = strategy === 'BUCKET';
 
   const incomeCategories = useMemo(
     () =>
@@ -353,6 +363,22 @@ export function BudgetWizardCategories({
     }
   };
 
+  const handleCategoryBucketChange = (categoryId: string, key: string | null) => {
+    const existing = selectedCategories.get(categoryId);
+    if (!existing || existing.isIncome) return;
+    const updated = new Map(selectedCategories);
+    updated.set(categoryId, withBucketKey(existing, key));
+    updateState({ selectedCategories: updated });
+  };
+
+  const handleTransferBucketChange = (accountId: string, key: string | null) => {
+    const existing = selectedTransfers.get(accountId);
+    if (!existing) return;
+    const updated = new Map(selectedTransfers);
+    updated.set(accountId, withBucketKey(existing, key));
+    updateState({ selectedTransfers: updated });
+  };
+
   const renderTransferRow = (transfer: TransferAnalysis, incoming = false) => {
     const selected = incoming ? selectedIncomeTransfers : selectedTransfers;
     const isSelected = selected.has(transfer.accountId);
@@ -366,7 +392,7 @@ export function BudgetWizardCategories({
         className="border-b border-gray-100 dark:border-gray-700 last:border-0"
       >
         <td className="py-1 pl-1 pr-0 sm:py-2 sm:px-4">
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className={`flex items-center gap-1 sm:gap-2${isBucket ? ' flex-wrap' : ''}`}>
             <label className="flex flex-1 items-center gap-1 sm:gap-2 cursor-pointer min-w-0">
               <input
                 type="checkbox"
@@ -390,6 +416,15 @@ export function BudgetWizardCategories({
               <CategoryGroupPicker
                 value={currentGroup}
                 onChange={(group) => handleTransferGroupChange(transfer.accountId, group)}
+              />
+            )}
+            {isBucket && isSelected && !incoming && (
+              <BudgetWizardBucketSelect
+                id={`wizard-bucket-transfer-${transfer.accountId}`}
+                lineName={transfer.accountName}
+                value={liveBucketKey(selectedTransfers.get(transfer.accountId), buckets)}
+                buckets={buckets}
+                onChange={(key) => handleTransferBucketChange(transfer.accountId, key)}
               />
             )}
           </div>
@@ -437,7 +472,7 @@ export function BudgetWizardCategories({
         className="border-b border-gray-100 dark:border-gray-700 last:border-0"
       >
         <td className="py-1 pl-1 pr-0 sm:py-2 sm:px-4">
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className={`flex items-center gap-1 sm:gap-2${isBucket ? ' flex-wrap' : ''}`}>
             <label className="flex flex-1 items-center gap-1 sm:gap-2 cursor-pointer min-w-0">
               <input
                 type="checkbox"
@@ -460,6 +495,15 @@ export function BudgetWizardCategories({
               <CategoryGroupPicker
                 value={currentGroup}
                 onChange={(group) => handleCategoryGroupChange(cat.categoryId, group)}
+              />
+            )}
+            {isBucket && isSelected && !cat.isIncome && (
+              <BudgetWizardBucketSelect
+                id={`wizard-bucket-category-${cat.categoryId}`}
+                lineName={cat.categoryName}
+                value={liveBucketKey(selectedCategories.get(cat.categoryId), buckets)}
+                buckets={buckets}
+                onChange={(key) => handleCategoryBucketChange(cat.categoryId, key)}
               />
             )}
           </div>
@@ -520,6 +564,10 @@ export function BudgetWizardCategories({
     ];
   }, [is503020, selectedCategories, selectedTransfers, totals.totalIncome, t]);
 
+  const bucketTally = isBucket
+    ? tallyBudgetWizardBuckets(buckets, selectedCategories, selectedTransfers, currencyCode)
+    : null;
+
   if (!analysisResult) {
     return (
       <div className="text-center text-gray-500 dark:text-gray-400 py-12">
@@ -552,6 +600,8 @@ export function BudgetWizardCategories({
           ))}
         </div>
       </div>
+
+      {isBucket && <BudgetWizardBucketsPanel state={state} updateState={updateState} />}
 
       {/* Income categories */}
       {incomeCategories.length > 0 && (
@@ -741,6 +791,8 @@ export function BudgetWizardCategories({
           </div>
         </div>
       )}
+
+      {bucketTally && <BudgetWizardBucketTallyCard tally={bucketTally} currencyCode={currencyCode} />}
 
       {/* Actions */}
       <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">

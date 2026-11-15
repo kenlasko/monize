@@ -4,6 +4,7 @@ import {
   excludeBudgetAccounts,
   queryCategorySpending,
   queryCategorySpendingBuckets,
+  resolveBudgetLineBudgeted,
   resolveCategoryName,
   resolveCategorySpent,
   resolveCategorySpentOrNull,
@@ -727,5 +728,26 @@ describe("resolveCategorySpentOrNull", () => {
       250.5,
     );
     expect(at({ isTransfer: true, transferAccountId: "acc-9" } as any)).toBe(0);
+  });
+});
+
+describe("resolveBudgetLineBudgeted", () => {
+  it("reads an expense line of an income-linked budget as a share of income", () => {
+    expect(
+      resolveBudgetLineBudgeted(
+        { amount: 33.33, isIncome: false },
+        true,
+        3333.33,
+      ),
+    ).toBe(1110.9989);
+  });
+
+  it("keeps the line's own amount otherwise", () => {
+    expect(
+      resolveBudgetLineBudgeted({ amount: 4000, isIncome: true }, true, 5000),
+    ).toBe(4000);
+    expect(
+      resolveBudgetLineBudgeted({ amount: 250, isIncome: false }, false, 5000),
+    ).toBe(250);
   });
 });

@@ -36,7 +36,9 @@
       "SAVING": "[XX-Saving-XX]"
     },
     "saving": "[XX-Saving...-XX]",
-    "remove": "[XX-Remove from budget-XX]"
+    "remove": "[XX-Remove from budget-XX]",
+    "bucket": "[XX-Bucket-XX]",
+    "bucketUnassigned": "[XX-Unassigned-XX]"
   },
   "categoryList": {
     "title": "[XX-Category Budgets-XX]",
@@ -94,7 +96,8 @@
       "FIXED": "[XX-Fixed-XX]",
       "ROLLOVER": "[XX-Rollover-XX]",
       "ZERO_BASED": "[XX-Zero-Based-XX]",
-      "FIFTY_THIRTY_TWENTY": "[XX-50/30/20-XX]"
+      "FIFTY_THIRTY_TWENTY": "[XX-50/30/20-XX]",
+      "BUCKET": "[XX-Bucket-XX]"
     }
   },
   "healthGauge": {
@@ -239,6 +242,10 @@
       "FIFTY_THIRTY_TWENTY": {
         "label": "[XX-50/30/20-XX]",
         "description": "[XX-50% needs, 30% wants, 20% savings. Categories are tagged by group.-XX]"
+      },
+      "BUCKET": {
+        "label": "[XX-Bucket-XX]",
+        "description": "[XX-Income is split into a few named buckets. Watch each bucket, not every category.-XX]"
       }
     },
     "profiles": {
@@ -324,7 +331,8 @@
       "FIXED": "[XX-Set amounts per category. Unspent budget resets each period.-XX]",
       "ROLLOVER": "[XX-Unspent budget carries forward based on per-category rollover rules.-XX]",
       "ZERO_BASED": "[XX-Every dollar of income is assigned. Income minus expenses should equal zero.-XX]",
-      "FIFTY_THIRTY_TWENTY": "[XX-Categories grouped as Needs (50%), Wants (30%), Savings (20%).-XX]"
+      "FIFTY_THIRTY_TWENTY": "[XX-Categories grouped as Needs (50%), Wants (30%), Savings (20%).-XX]",
+      "BUCKET": "[XX-Income split into named buckets. Each category belongs to one bucket.-XX]"
     },
     "linkBudgetToIncome": "[XX-Link budget to income-XX]",
     "linkBudgetToIncomeHint": "[XX-Category amounts become percentages of your base income-XX]",
@@ -403,6 +411,19 @@
     "toasts": {
       "created": "[XX-Budget created successfully-XX]",
       "failed": "[XX-Failed to create budget-XX]"
+    }
+  },
+  "wizardBuckets": {
+    "title": "[XX-Buckets-XX]",
+    "description": "[XX-Split your income into buckets, then choose a bucket for each expense and transfer below.-XX]",
+    "selectLabel": "[XX-Bucket for {name}-XX]",
+    "unassigned": "[XX-Unassigned-XX]",
+    "tallyTitle": "[XX-Lines per Bucket-XX]",
+    "tallyValue": "[XX-{count, plural, one {# line} other {# lines}} · {amount}-XX]",
+    "review": {
+      "lineCount": "[XX-{count, plural, one {# line} other {# lines}}-XX]",
+      "unassigned": "[XX-{count, plural, one {# expense or transfer line is} other {# expense or transfer lines are}} not in any bucket. You can still create the budget and assign them later on its edit page.-XX]",
+      "noBuckets": "[XX-This budget has no buckets yet. You can still create it and add buckets later on its edit page.-XX]"
     }
   },
   "zeroBasedBar": {
@@ -486,6 +507,23 @@
           "[XX-Requires categorizing every expense by group-XX]"
         ],
         "bestFor": "[XX-People who want a balanced, rule-of-thumb approach without tracking every category individually.-XX]"
+      },
+      "BUCKET": {
+        "title": "[XX-Bucket Budget-XX]",
+        "description": "[XX-Income is split into a few named buckets, each with a target that is a share of income or a fixed amount. Every category belongs to one bucket, so you watch the bucket instead of each category. A bucket can carry what is left into the next period.-XX]",
+        "pros": [
+          "[XX-Fewer numbers to watch-XX]",
+          "[XX-Flexible within each bucket-XX]",
+          "[XX-Savings buckets can build up over time-XX]",
+          "[XX-Works with irregular spending inside a bucket-XX]"
+        ],
+        "cons": [
+          "[XX-Less detail for each category-XX]",
+          "[XX-Needs categories sorted into buckets-XX]",
+          "[XX-Percent targets need a known income-XX]",
+          "[XX-Carry-over balances need an occasional check-XX]"
+        ],
+        "bestFor": "[XX-People who find per-category budgets too fiddly but want more structure than 50/30/20.-XX]"
       }
     }
   },
@@ -567,7 +605,9 @@
         "categoryRemoveFailed": "[XX-Failed to remove category-XX]",
         "transferIncomeAdded": "[XX-Transfer income added-XX]",
         "transferIncomeFailed": "[XX-Failed to add transfer income-XX]"
-      }
+      },
+      "buckets": "[XX-Buckets-XX]",
+      "unassignedBucket": "[XX-Unassigned-XX]"
     }
   },
   "validation": {
@@ -578,5 +618,140 @@
   "categoryValidation": {
     "amountMin": "[XX-Amount must be 0 or greater-XX]",
     "mustBeNumber": "[XX-Must be a number-XX]"
+  },
+  "bucketEditor": {
+    "presetLabel": "[XX-Start From a Preset-XX]",
+    "presets": {
+      "THREE": "[XX-Three Buckets-XX]",
+      "FOUR": "[XX-Four Buckets (60/10/10/20)-XX]",
+      "SCRATCH": "[XX-Start From Scratch-XX]"
+    },
+    "presetBucketNames": {
+      "fixedCosts": "[XX-Fixed costs-XX]",
+      "everydaySpending": "[XX-Everyday spending-XX]",
+      "savings": "[XX-Savings-XX]",
+      "dailyExpenses": "[XX-Daily expenses-XX]",
+      "splurge": "[XX-Splurge-XX]",
+      "longTermGoals": "[XX-Long-term goals-XX]",
+      "safetyAndDebt": "[XX-Safety and debt-XX]"
+    },
+    "listLabel": "[XX-Buckets-XX]",
+    "empty": {
+      "title": "[XX-No buckets yet-XX]",
+      "description": "[XX-Start from a preset or add a bucket, then assign each category to one.-XX]"
+    },
+    "add": "[XX-Add Bucket-XX]",
+    "limitReached": "[XX-A budget can have at most {max} buckets.-XX]",
+    "newTitle": "[XX-New Bucket-XX]",
+    "editTitle": "[XX-Edit {name}-XX]",
+    "summary": "[XX-Percent targets add up to {percent}. Amount targets add up to {amount}.-XX]",
+    "row": {
+      "percentTarget": "[XX-{percent} of income-XX]",
+      "amountTarget": "[XX-{amount} per period-XX]",
+      "noCarry": "[XX-Starts each period fresh-XX]",
+      "carries": "[XX-Carries over-XX]",
+      "carriesUpTo": "[XX-Carries over, up to {cap}-XX]",
+      "caption": "[XX-{target} · {carry}-XX]",
+      "edit": "[XX-Edit-XX]",
+      "delete": "[XX-Delete-XX]",
+      "editLabel": "[XX-Edit {name}-XX]",
+      "deleteLabel": "[XX-Delete {name}-XX]"
+    },
+    "targetTypes": {
+      "PERCENT": "[XX-Percent of Income-XX]",
+      "AMOUNT": "[XX-Fixed Amount-XX]"
+    },
+    "form": {
+      "name": "[XX-Name-XX]",
+      "namePlaceholder": "[XX-e.g. Savings-XX]",
+      "targetType": "[XX-Target-XX]",
+      "targetTypeTooltip": "[XX-A percent target is a share of the budget's income: the income received this period for an income-linked budget, otherwise the base income, otherwise the income categories' amounts. A fixed amount is the same every period.-XX]",
+      "targetPercent": "[XX-Percent of Income-XX]",
+      "targetAmount": "[XX-Amount per Period-XX]",
+      "carryOver": "[XX-Carry Over What Is Left-XX]",
+      "carryOverTooltip": "[XX-What is left in the bucket when a period closes is added to the next period. An overspent bucket carries nothing.-XX]",
+      "carryCap": "[XX-Carry Cap (optional)-XX]",
+      "carryCapPlaceholder": "[XX-No cap-XX]",
+      "save": "[XX-Save-XX]",
+      "saveChanges": "[XX-Save Changes-XX]"
+    },
+    "validation": {
+      "nameRequired": "[XX-Enter a name-XX]",
+      "nameMax": "[XX-A name can be at most {max} characters-XX]",
+      "nameDuplicate": "[XX-Another bucket already has this name-XX]",
+      "targetRequired": "[XX-Enter a target-XX]",
+      "percentRange": "[XX-A percent target must be greater than 0 and at most 100-XX]",
+      "percentDecimals": "[XX-A percent target can have at most two decimals-XX]",
+      "amountPositive": "[XX-An amount target must be greater than 0-XX]",
+      "capNeedsCarryOver": "[XX-A carry cap needs carry-over turned on-XX]",
+      "capPositive": "[XX-A carry cap must be greater than 0-XX]"
+    },
+    "delete": {
+      "title": "[XX-Delete Bucket-XX]",
+      "message": "[XX-Delete the bucket \"{name}\"? Its categories become unassigned.-XX]",
+      "confirm": "[XX-Delete-XX]"
+    },
+    "replace": {
+      "title": "[XX-Replace Buckets-XX]",
+      "message": "[XX-Replace the current buckets with \"{preset}\"? The current buckets are deleted and their categories become unassigned.-XX]",
+      "clearMessage": "[XX-Delete every bucket and start from scratch? Their categories become unassigned.-XX]",
+      "confirm": "[XX-Replace-XX]"
+    },
+    "toasts": {
+      "created": "[XX-Bucket added-XX]",
+      "updated": "[XX-Bucket updated-XX]",
+      "deleted": "[XX-Bucket deleted-XX]",
+      "saveFailed": "[XX-Failed to save bucket-XX]",
+      "deleteFailed": "[XX-Failed to delete bucket-XX]",
+      "presetApplied": "[XX-Preset applied-XX]",
+      "presetFailed": "[XX-Failed to apply preset-XX]"
+    }
+  },
+  "bucketSummary": {
+    "title": "[XX-Bucket allocation-XX]",
+    "loading": "[XX-Loading bucket allocation-XX]",
+    "loadFailed": "[XX-Could not load the bucket allocation. Try again in a moment.-XX]",
+    "emptyTitle": "[XX-No buckets yet-XX]",
+    "emptyDescription": "[XX-Add buckets to split your income into named pots.-XX]",
+    "emptyAction": "[XX-Add buckets-XX]",
+    "income": "[XX-Bucket income-XX]",
+    "incomeUnknown": "[XX-Unknown-XX]",
+    "incomeSource": {
+      "ACTUAL": "[XX-Based on actual income this period-XX]",
+      "BASE_INCOME": "[XX-Based on the budget's base income-XX]",
+      "INCOME_LINES": "[XX-Based on planned income categories-XX]",
+      "NONE": "[XX-No income found-XX]"
+    },
+    "totalAllocated": "[XX-Total allocated-XX]",
+    "allocatedSoFar": "[XX-Allocated so far-XX]",
+    "allocatedSoFarHint": "[XX-Some buckets have no known amount yet, so this is a partial figure.-XX]",
+    "unallocated": "[XX-Unallocated-XX]",
+    "unallocatedUnknown": "[XX-Unknown-XX]",
+    "overAllocatedHint": "[XX-Over-allocated: the buckets add up to more than your income.-XX]",
+    "targetPercent": "[XX-{percent} of income-XX]",
+    "targetAmount": "[XX-{amount} per period-XX]",
+    "carriedIn": "[XX-Carried in {amount}-XX]",
+    "spent": "[XX-Spent-XX]",
+    "available": "[XX-Available-XX]",
+    "overspent": "[XX-Overspent-XX]",
+    "categories": "[XX-{count, plural, one {# category} other {# categories}}-XX]",
+    "allocationUnknown": "[XX-Set a base income on the budget, or add an income category.-XX]",
+    "allocationUnknownAction": "[XX-Edit budget-XX]",
+    "unassignedTitle": "[XX-Unassigned-XX]",
+    "unassignedDescription": "[XX-{count, plural, one {# category line is} other {# category lines are}} not in any bucket.-XX]",
+    "unassignedPlanned": "[XX-Planned-XX]",
+    "unassignedAction": "[XX-Assign them-XX]"
+  },
+  "periodBuckets": {
+    "title": "[XX-Buckets-XX]",
+    "name": "[XX-Bucket-XX]",
+    "target": "[XX-Target-XX]",
+    "allocated": "[XX-Allocated-XX]",
+    "allocatedUnknown": "[XX-Unknown-XX]",
+    "carriedIn": "[XX-Carried in-XX]",
+    "spent": "[XX-Spent-XX]",
+    "carriedOut": "[XX-Carried out-XX]",
+    "targetPercent": "[XX-{percent} of income-XX]",
+    "targetAmount": "[XX-{amount} per period-XX]"
   }
 }

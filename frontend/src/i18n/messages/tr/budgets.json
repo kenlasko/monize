@@ -36,7 +36,9 @@
       "SAVING": "Tasarruf"
     },
     "saving": "Kaydediliyor...",
-    "remove": "Bütçeden kaldır"
+    "remove": "Bütçeden kaldır",
+    "bucket": "Zarf",
+    "bucketUnassigned": "Atanmamış"
   },
   "categoryList": {
     "title": "Kategori Bütçeleri",
@@ -94,7 +96,8 @@
       "FIXED": "Sabit",
       "ROLLOVER": "Devir",
       "ZERO_BASED": "Sıfır Tabanlı",
-      "FIFTY_THIRTY_TWENTY": "50/30/20"
+      "FIFTY_THIRTY_TWENTY": "50/30/20",
+      "BUCKET": "Zarf"
     }
   },
   "healthGauge": {
@@ -239,6 +242,10 @@
       "FIFTY_THIRTY_TWENTY": {
         "label": "50/30/20",
         "description": "%50 ihtiyaçlar, %30 istekler, %20 tasarruf. Kategoriler gruba göre etiketlenir."
+      },
+      "BUCKET": {
+        "label": "Zarf",
+        "description": "Gelir, adlandırılmış birkaç zarfa bölünür. Her kategoriyi değil, her zarfı takip edin."
       }
     },
     "profiles": {
@@ -324,7 +331,8 @@
       "FIXED": "Kategori başına tutarlar belirleyin. Harcanmayan bütçe her dönem sıfırlanır.",
       "ROLLOVER": "Harcanmayan bütçe, kategori başına devir kurallarına göre ileriye taşınır.",
       "ZERO_BASED": "Gelirin her lirası atanır. Gelir eksi giderler sıfıra eşit olmalıdır.",
-      "FIFTY_THIRTY_TWENTY": "Kategoriler İhtiyaçlar (%50), İstekler (%30), Tasarruf (%20) olarak gruplandırılır."
+      "FIFTY_THIRTY_TWENTY": "Kategoriler İhtiyaçlar (%50), İstekler (%30), Tasarruf (%20) olarak gruplandırılır.",
+      "BUCKET": "Gelir adlandırılmış zarflara bölünür. Her kategori tek bir zarfa aittir."
     },
     "linkBudgetToIncome": "Bütçeyi gelire bağla",
     "linkBudgetToIncomeHint": "Kategori tutarları temel gelirinizin yüzdesi haline gelir",
@@ -403,6 +411,19 @@
     "toasts": {
       "created": "Bütçe başarıyla oluşturuldu",
       "failed": "Bütçe oluşturulamadı"
+    }
+  },
+  "wizardBuckets": {
+    "title": "Zarflar",
+    "description": "Gelirinizi zarflara bölün, ardından aşağıdaki her gider ve transfer için bir zarf seçin.",
+    "selectLabel": "{name} için zarf",
+    "unassigned": "Atanmamış",
+    "tallyTitle": "Zarf Başına Satır",
+    "tallyValue": "{count, plural, one {# satır} other {# satır}} · {amount}",
+    "review": {
+      "lineCount": "{count, plural, one {# satır} other {# satır}}",
+      "unassigned": "{count, plural, one {# gider veya transfer satırı} other {# gider veya transfer satırı}} hiçbir zarfta değil. Yine de bütçeyi oluşturup bunları daha sonra düzenleme sayfasında atayabilirsiniz.",
+      "noBuckets": "Bu bütçede henüz zarf yok. Yine de oluşturup zarfları daha sonra düzenleme sayfasında ekleyebilirsiniz."
     }
   },
   "zeroBasedBar": {
@@ -486,6 +507,23 @@
           "Her gideri gruba göre kategorize etmeyi gerektirir"
         ],
         "bestFor": "Her kategoriyi ayrı ayrı takip etmeden dengeli, pratik bir yaklaşım isteyen kişiler."
+      },
+      "BUCKET": {
+        "title": "Zarf Bütçesi",
+        "description": "Gelir, her biri gelirin bir payı veya sabit bir tutar olan hedefe sahip, adlandırılmış birkaç zarfa bölünür. Her kategori tek bir zarfa aittir, böylece her kategori yerine zarfı takip edersiniz. Bir zarf, kalanı bir sonraki döneme devredebilir.",
+        "pros": [
+          "Takip edilecek daha az sayı",
+          "Her zarf içinde esnek",
+          "Tasarruf zarfları zamanla birikebilir",
+          "Zarf içindeki düzensiz harcamalarla uyumlu"
+        ],
+        "cons": [
+          "Her kategori için daha az ayrıntı",
+          "Kategorilerin zarflara ayrılmasını gerektirir",
+          "Yüzde hedefleri bilinen bir gelir gerektirir",
+          "Devredilen bakiyelerin ara sıra kontrol edilmesi gerekir"
+        ],
+        "bestFor": "Kategori bazlı bütçeleri fazla zahmetli bulan ama 50/30/20'den daha fazla yapı isteyen kişiler."
       }
     }
   },
@@ -567,7 +605,9 @@
         "categoryRemoveFailed": "Kategori kaldırılamadı",
         "transferIncomeAdded": "Transfer geliri eklendi",
         "transferIncomeFailed": "Transfer geliri eklenemedi"
-      }
+      },
+      "buckets": "Zarflar",
+      "unassignedBucket": "Atanmamış"
     }
   },
   "validation": {
@@ -578,5 +618,140 @@
   "categoryValidation": {
     "amountMin": "Tutar 0 veya daha büyük olmalıdır",
     "mustBeNumber": "Sayı olmalıdır"
+  },
+  "bucketEditor": {
+    "presetLabel": "Hazır Şablondan Başla",
+    "presets": {
+      "THREE": "Üç Zarf",
+      "FOUR": "Dört Zarf (60/10/10/20)",
+      "SCRATCH": "Sıfırdan Başla"
+    },
+    "presetBucketNames": {
+      "fixedCosts": "Sabit giderler",
+      "everydaySpending": "Günlük harcamalar",
+      "savings": "Tasarruf",
+      "dailyExpenses": "Günlük giderler",
+      "splurge": "Keyfi harcamalar",
+      "longTermGoals": "Uzun vadeli hedefler",
+      "safetyAndDebt": "Güvence ve borçlar"
+    },
+    "listLabel": "Zarflar",
+    "empty": {
+      "title": "Henüz zarf yok",
+      "description": "Hazır bir şablondan başlayın veya bir zarf ekleyin, ardından her kategoriyi bir zarfa atayın."
+    },
+    "add": "Zarf Ekle",
+    "limitReached": "Bir bütçede en fazla {max} zarf olabilir.",
+    "newTitle": "Yeni Zarf",
+    "editTitle": "Düzenle: {name}",
+    "summary": "Yüzde hedefleri toplamı {percent}. Tutar hedefleri toplamı {amount}.",
+    "row": {
+      "percentTarget": "Gelirin {percent} kadarı",
+      "amountTarget": "Dönem başına {amount}",
+      "noCarry": "Her dönem sıfırdan başlar",
+      "carries": "Devreder",
+      "carriesUpTo": "Devreder, en fazla {cap}",
+      "caption": "{target} · {carry}",
+      "edit": "Düzenle",
+      "delete": "Sil",
+      "editLabel": "{name} öğesini düzenle",
+      "deleteLabel": "{name} öğesini sil"
+    },
+    "targetTypes": {
+      "PERCENT": "Gelirin Yüzdesi",
+      "AMOUNT": "Sabit Tutar"
+    },
+    "form": {
+      "name": "Ad",
+      "namePlaceholder": "örn. Tasarruf",
+      "targetType": "Hedef",
+      "targetTypeTooltip": "Yüzde hedefi, bütçenin gelirinin bir payıdır: gelire bağlı bir bütçede bu dönem alınan gelir, aksi halde temel gelir, o da yoksa gelir kategorilerinin tutarları. Sabit tutar her dönem aynıdır.",
+      "targetPercent": "Gelirin Yüzdesi",
+      "targetAmount": "Dönem Başına Tutar",
+      "carryOver": "Kalanı Devret",
+      "carryOverTooltip": "Dönem kapandığında zarfta kalan, bir sonraki döneme eklenir. Fazla harcanan zarf hiçbir şey devretmez.",
+      "carryCap": "Devir Üst Sınırı (isteğe bağlı)",
+      "carryCapPlaceholder": "Sınır yok",
+      "save": "Kaydet",
+      "saveChanges": "Değişiklikleri Kaydet"
+    },
+    "validation": {
+      "nameRequired": "Bir ad girin",
+      "nameMax": "Ad en fazla {max} karakter olabilir",
+      "nameDuplicate": "Başka bir zarf zaten bu ada sahip",
+      "targetRequired": "Bir hedef girin",
+      "percentRange": "Yüzde hedefi 0'dan büyük ve en fazla 100 olmalıdır",
+      "percentDecimals": "Yüzde hedefi en fazla iki ondalık basamak içerebilir",
+      "amountPositive": "Tutar hedefi 0'dan büyük olmalıdır",
+      "capNeedsCarryOver": "Devir üst sınırı için devrin açık olması gerekir",
+      "capPositive": "Devir üst sınırı 0'dan büyük olmalıdır"
+    },
+    "delete": {
+      "title": "Zarfı Sil",
+      "message": "\"{name}\" zarfı silinsin mi? Kategorileri atanmamış olur.",
+      "confirm": "Sil"
+    },
+    "replace": {
+      "title": "Zarfları Değiştir",
+      "message": "Mevcut zarflar \"{preset}\" ile değiştirilsin mi? Mevcut zarflar silinir ve kategorileri atanmamış olur.",
+      "clearMessage": "Tüm zarflar silinip sıfırdan başlansın mı? Kategorileri atanmamış olur.",
+      "confirm": "Değiştir"
+    },
+    "toasts": {
+      "created": "Zarf eklendi",
+      "updated": "Zarf güncellendi",
+      "deleted": "Zarf silindi",
+      "saveFailed": "Zarf kaydedilemedi",
+      "deleteFailed": "Zarf silinemedi",
+      "presetApplied": "Şablon uygulandı",
+      "presetFailed": "Şablon uygulanamadı"
+    }
+  },
+  "bucketSummary": {
+    "title": "Zarf dağılımı",
+    "loading": "Zarf dağılımı yükleniyor",
+    "loadFailed": "Zarf dağılımı yüklenemedi. Biraz sonra tekrar deneyin.",
+    "emptyTitle": "Henüz zarf yok",
+    "emptyDescription": "Gelirinizi adlandırılmış paylara bölmek için zarf ekleyin.",
+    "emptyAction": "Zarf ekle",
+    "income": "Zarf geliri",
+    "incomeUnknown": "Bilinmiyor",
+    "incomeSource": {
+      "ACTUAL": "Bu dönemin gerçekleşen gelirine göre",
+      "BASE_INCOME": "Bütçenin temel gelirine göre",
+      "INCOME_LINES": "Planlanan gelir kategorilerine göre",
+      "NONE": "Gelir bulunamadı"
+    },
+    "totalAllocated": "Toplam dağıtılan",
+    "allocatedSoFar": "Şimdiye kadar dağıtılan",
+    "allocatedSoFarHint": "Bazı zarfların tutarı henüz bilinmiyor, bu yüzden bu rakam kısmidir.",
+    "unallocated": "Dağıtılmayan",
+    "unallocatedUnknown": "Bilinmiyor",
+    "overAllocatedHint": "Fazla dağıtım: zarfların toplamı gelirinizden fazla.",
+    "targetPercent": "Gelirin {percent} kadarı",
+    "targetAmount": "Dönem başına {amount}",
+    "carriedIn": "Devreden: {amount}",
+    "spent": "Harcanan",
+    "available": "Kullanılabilir",
+    "overspent": "Fazla harcama",
+    "categories": "{count, plural, one {# kategori} other {# kategori}}",
+    "allocationUnknown": "Bütçeye bir temel gelir girin veya bir gelir kategorisi ekleyin.",
+    "allocationUnknownAction": "Bütçeyi düzenle",
+    "unassignedTitle": "Atanmamış",
+    "unassignedDescription": "{count, plural, one {# kategori satırı} other {# kategori satırı}} hiçbir zarfta değil.",
+    "unassignedPlanned": "Planlanan",
+    "unassignedAction": "Ata"
+  },
+  "periodBuckets": {
+    "title": "Zarflar",
+    "name": "Zarf",
+    "target": "Hedef",
+    "allocated": "Dağıtılan",
+    "allocatedUnknown": "Bilinmiyor",
+    "carriedIn": "Devreden",
+    "spent": "Harcanan",
+    "carriedOut": "Devredilen",
+    "targetPercent": "Gelirin {percent} kadarı",
+    "targetAmount": "Dönem başına {amount}"
   }
 }

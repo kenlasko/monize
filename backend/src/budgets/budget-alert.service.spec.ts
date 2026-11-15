@@ -101,6 +101,7 @@ function makeCategory(overrides: Partial<BudgetCategory> = {}): BudgetCategory {
     rolloverType: RolloverType.NONE,
     rolloverCap: null,
     flexGroup: null,
+    bucketId: null,
     alertWarnPercent: 80,
     alertCriticalPercent: 95,
     notes: null,

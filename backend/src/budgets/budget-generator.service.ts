@@ -7,6 +7,16 @@ import { TransactionSplit } from "../transactions/entities/transaction-split.ent
 import { Category } from "../categories/entities/category.entity";
 import { Budget } from "./entities/budget.entity";
 import { BudgetCategory } from "./entities/budget-category.entity";
+import {
+  BudgetBucket,
+  BudgetBucketTargetType,
+} from "./entities/budget-bucket.entity";
+import {
+  MAX_BUCKETS_PER_BUDGET,
+  checkBucketTarget,
+  checkedBucketCarryCap,
+  checkedBucketName,
+} from "./budget-bucket-rules.util";
 import { GenerateBudgetDto, BudgetProfile } from "./dto/generate-budget.dto";
 import { ApplyGeneratedBudgetDto } from "./dto/apply-generated-budget.dto";
 import { roundMoney, sumMoney } from "../common/round.util";
@@ -194,39 +204,76 @@ export class BudgetGeneratorService {
   }
 
   /**
-   * One transaction: every refusal below shares it with the writes, and the
-   * nested `withScopedDb` calls join it, so a refused line leaves no budget
-   * row behind.
+   * The whole apply is one `withScopedDb` transaction: the request's own
+   * rules (one transfer line per account, a transfer income line naming one
+   * of the user's accounts, issue #2141; the bucket rules) and the category
+   * ownership check first, then the budget row, its
+   * buckets, and its lines with each `bucketKey` resolved to the new bucket's
+   * id. A refusal anywhere leaves nothing written (design 6.6).
    */
   async apply(userId: string, dto: ApplyGeneratedBudgetDto): Promise<Budget> {
-    return withScopedDb(this.dataSource, () => this.applyInScope(userId, dto));
-  }
-
-  private async applyInScope(
-    userId: string,
-    dto: ApplyGeneratedBudgetDto,
-  ): Promise<Budget> {
-    // Refused before anything is written (issue #2141): one transfer line per
-    // account, and a transfer income line names one of the user's accounts.
-    const transferLines = (dto.categories ?? []).filter(
-      (cat) => cat.transferAccountId,
-    );
-    assertOneTransferLinePerAccount(
-      transferLines.map((cat) => cat.transferAccountId as string),
-    );
-    const incomeSources = transferLines
-      .filter((cat) => cat.isIncome)
-      .map((cat) => cat.transferAccountId as string);
-    if (incomeSources.length > 0) {
-      await withScopedDb(this.dataSource, (m) =>
-        assertTransferAccountsOwned(m, userId, incomeSources),
+    return withScopedDb(this.dataSource, async (m) => {
+      const lines = dto.categories ?? [];
+      const transferLines = lines.filter((cat) => cat.transferAccountId);
+      assertOneTransferLinePerAccount(
+        transferLines.map((cat) => cat.transferAccountId as string),
       );
-    }
+      const incomeSources = transferLines
+        .filter((cat) => cat.isIncome)
+        .map((cat) => cat.transferAccountId as string);
+      if (incomeSources.length > 0) {
+        await assertTransferAccountsOwned(m, userId, incomeSources);
+      }
 
-    const savedBudget = await withScopedDb(this.dataSource, (m) => {
-      const repo = m.getRepository(Budget);
-      return repo.save(
-        repo.create({
+      const buckets = this.checkedRequestBuckets(dto);
+      const knownKeys = new Set(buckets.map((b) => b.key));
+      for (const cat of lines) {
+        if (cat.bucketKey === undefined) continue;
+        if (cat.isIncome) {
+          throw new BadRequestException(
+            tr(
+              "errors.budgets.bucketOnIncomeLine",
+              "An income line cannot belong to a bucket",
+            ),
+          );
+        }
+        if (!knownKeys.has(cat.bucketKey)) {
+          throw new BadRequestException(
+            tr(
+              "errors.budgets.bucketKeyUnknown",
+              `No bucket in this request has the key "${cat.bucketKey}"`,
+              { key: cat.bucketKey },
+            ),
+          );
+        }
+      }
+
+      // M27: Validate that all categoryIds belong to the user
+      const categoryIds = lines
+        .filter((cat) => cat.categoryId && !cat.transferAccountId)
+        .map((cat) => cat.categoryId as string);
+      if (categoryIds.length > 0) {
+        const uniqueIds = [...new Set(categoryIds)];
+        const ownedCategories = await m.getRepository(Category).find({
+          where: { id: In(uniqueIds), userId },
+          select: ["id"],
+        });
+        const ownedIds = new Set(ownedCategories.map((c) => c.id));
+        const invalidIds = uniqueIds.filter((id) => !ownedIds.has(id));
+        if (invalidIds.length > 0) {
+          throw new BadRequestException(
+            tr(
+              "errors.budgets.categoryIdsNotOwned",
+              `Category IDs not found or not owned by user: ${invalidIds.join(", ")}`,
+              { ids: invalidIds.join(", ") },
+            ),
+          );
+        }
+      }
+
+      const budgetRepo = m.getRepository(Budget);
+      const savedBudget = await budgetRepo.save(
+        budgetRepo.create({
           userId,
           name: dto.name,
           description: dto.description ?? null,
@@ -241,39 +288,31 @@ export class BudgetGeneratorService {
           config: dto.config ?? {},
         }),
       );
-    });
 
-    if (dto.categories && dto.categories.length > 0) {
-      // M27: Validate that all categoryIds belong to the user
-      const categoryIds = dto.categories
-        .filter((cat) => cat.categoryId && !cat.transferAccountId)
-        .map((cat) => cat.categoryId as string);
-      if (categoryIds.length > 0) {
-        const uniqueIds = [...new Set(categoryIds)];
-        const ownedCategories = await withScopedDb(this.dataSource, (m) =>
-          m.getRepository(Category).find({
-            where: { id: In(uniqueIds), userId },
-            select: ["id"],
-          }),
+      const bucketIds = new Map<string, string>();
+      if (buckets.length > 0) {
+        const bucketRepo = m.getRepository(BudgetBucket);
+        const savedBuckets = await bucketRepo.save(
+          buckets.map((b, i) =>
+            bucketRepo.create({
+              budgetId: savedBudget.id,
+              name: b.name,
+              targetType: b.targetType,
+              targetValue: b.targetValue,
+              carryOver: b.carryOver,
+              carryCap: b.carryCap,
+              sortOrder: b.sortOrder ?? i,
+            }),
+          ),
         );
-        const ownedIds = new Set(ownedCategories.map((c) => c.id));
-        const invalidIds = uniqueIds.filter((id) => !ownedIds.has(id));
-        if (invalidIds.length > 0) {
-          throw new BadRequestException(
-            tr(
-              "errors.budgets.categoryIdsNotOwned",
-              `Category IDs not found or not owned by user: ${invalidIds.join(", ")}`,
-              { ids: invalidIds.join(", ") },
-            ),
-          );
-        }
+        buckets.forEach((b, i) => bucketIds.set(b.key, savedBuckets[i].id));
       }
 
-      await withScopedDb(this.dataSource, (m) => {
-        const repo = m.getRepository(BudgetCategory);
-        return repo.save(
-          dto.categories!.map((cat) =>
-            repo.create({
+      if (lines.length > 0) {
+        const lineRepo = m.getRepository(BudgetCategory);
+        await lineRepo.save(
+          lines.map((cat) =>
+            lineRepo.create({
               budgetId: savedBudget.id,
               categoryId: cat.transferAccountId
                 ? null
@@ -290,24 +329,79 @@ export class BudgetGeneratorService {
               alertCriticalPercent: cat.alertCriticalPercent ?? 95,
               notes: cat.notes ?? null,
               sortOrder: cat.sortOrder ?? 0,
+              ...(cat.bucketKey !== undefined
+                ? { bucketId: bucketIds.get(cat.bucketKey) }
+                : {}),
             }),
           ),
         );
-      });
-    }
+      }
 
-    return withScopedDb(
-      this.dataSource,
-      (m) =>
-        m.getRepository(Budget).findOne({
-          where: { id: savedBudget.id },
-          relations: [
-            "categories",
-            "categories.category",
-            "categories.transferAccount",
-          ],
-        }) as Promise<Budget>,
-    );
+      return (await budgetRepo.findOne({
+        where: { id: savedBudget.id },
+        relations: [
+          "categories",
+          "categories.category",
+          "categories.transferAccount",
+          "buckets",
+        ],
+        order: { buckets: { sortOrder: "ASC", name: "ASC" } },
+      })) as Budget;
+    });
+  }
+
+  /**
+   * The request's buckets with every `BudgetBucketsService` rule applied
+   * (shared pure functions) plus the key rule; nothing here touches the
+   * database.
+   */
+  private checkedRequestBuckets(dto: ApplyGeneratedBudgetDto): Array<{
+    key: string;
+    name: string;
+    targetType: BudgetBucketTargetType;
+    targetValue: number;
+    carryOver: boolean;
+    carryCap: number | null;
+    sortOrder?: number;
+  }> {
+    const requested = dto.buckets ?? [];
+    if (requested.length > MAX_BUCKETS_PER_BUDGET) {
+      throw new BadRequestException(
+        tr(
+          "errors.budgets.bucketLimit",
+          `A budget can have at most ${MAX_BUCKETS_PER_BUDGET} buckets`,
+          { max: MAX_BUCKETS_PER_BUDGET },
+        ),
+      );
+    }
+    const keys = new Set<string>();
+    const accepted: Array<{ name: string }> = [];
+    return requested.map((b) => {
+      if (keys.has(b.key)) {
+        throw new BadRequestException(
+          tr(
+            "errors.budgets.bucketKeyDuplicate",
+            `The bucket key "${b.key}" is used more than once`,
+            { key: b.key },
+          ),
+        );
+      }
+      keys.add(b.key);
+      const name = checkedBucketName(b.name, accepted, null);
+      accepted.push({ name });
+      const carryOver = b.carryOver ?? false;
+      checkBucketTarget(b.targetType, b.targetValue);
+      const carryCap = checkedBucketCarryCap(carryOver, b.carryCap ?? null);
+      return {
+        key: b.key,
+        name,
+        targetType: b.targetType,
+        targetValue: b.targetValue,
+        carryOver,
+        carryCap,
+        sortOrder: b.sortOrder,
+      };
+    });
   }
 
   private async getSpendingByCategory(
