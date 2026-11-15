@@ -66,8 +66,23 @@ describe("createCorsDelegate", () => {
     });
 
     it("does not widen to a path that only starts with the same letters", async () => {
-      const res = await preflight("/api/v1/mcpx", FOREIGN_ORIGIN);
-      expect(res.headers["access-control-allow-origin"]).toBeUndefined();
+      // Only the strict branch sets credentials, so this fails if /mcpx
+      // were treated as an MCP path.
+      const res = await preflight("/api/v1/mcpx", APP_ORIGIN);
+      expect(res.headers["access-control-allow-credentials"]).toBe("true");
+    });
+
+    it("lets an allow-listed page read a POST and its challenge headers", async () => {
+      const res = await request(buildApp())
+        .post("/api/v1/mcp")
+        .set("Origin", APP_ORIGIN)
+        .set("Authorization", "Bearer token");
+      expect(res.headers["access-control-allow-origin"]).toBe(APP_ORIGIN);
+      const exposed = String(
+        res.headers["access-control-expose-headers"],
+      ).toLowerCase();
+      expect(exposed).toContain("www-authenticate");
+      expect(exposed).toContain("mcp-session-id");
     });
   });
 
