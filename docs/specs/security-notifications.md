@@ -44,6 +44,14 @@ writes no row and sends nothing.
   token that survives them is announced once more on its next relay claim.
   Keeping the mark on the credential itself would remove this; that is a design
   change left for agreement.
+- Known limit: no row is seeded for credentials that already exist when this
+  ships, so each relay credential already in use is announced once on its first
+  claim after the upgrade. Seeding dismissed `relay:cred:` rows would need a data
+  migration, outside this change; the release notes should say so.
+- Known limit: both notices advise a password change, which revokes every grant
+  and token. An account that signs in only through OIDC, with no usable local
+  password, has no remedy in the app until a grant list with revoke exists
+  (out of scope, section 5).
 
 `data` holds `{ clientId, clientName }` (name with control, format and
 line/paragraph separator characters replaced, trimmed, at most 100 code points,
