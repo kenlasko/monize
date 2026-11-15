@@ -259,6 +259,23 @@
       "analyzeFailed": "खर्च विश्लेषण करने में विफल"
     }
   },
+  "lineNames": {
+    "transfersFrom": "{name} से ट्रांसफ़र",
+    "unknown": "अज्ञात"
+  },
+  "transferIncomeForm": {
+    "hint": "इस खाते से आने वाला पैसा बजट की आय गिना जाता है, उसमें से वापस भेजी गई राशि घटाकर।",
+    "account": "किस खाते से",
+    "accountPlaceholder": "खाता चुनें",
+    "accountRequired": "वह खाता चुनें जिससे ट्रांसफ़र आते हैं",
+    "amount": "नियोजित राशि",
+    "submit": "जोड़ें"
+  },
+  "transfersInAsIncome": {
+    "label": "बाहर रखे गए खातों से आने वाले ट्रांसफ़र को आय गिनें",
+    "hint": "बाहर रखे गए किसी खाते से इस बजट के खातों में भेजा गया पैसा आय गिना जाता है, उसमें से वापस भेजी गई राशि घटाकर। जिस खाते की अपनी ट्रांसफ़र पंक्ति है, उसे उसी पंक्ति में गिना जाता है।",
+    "noExcludedAccounts": "यह बजट अभी किसी खाते को बाहर नहीं रखता, इसलिए कुछ भी नहीं गिना जाता।"
+  },
   "wizardCategories": {
     "title": "श्रेणियों की समीक्षा करें",
     "noAnalysis": "कोई विश्लेषण डेटा नहीं। वापस जाएं और पहले विश्लेषण चलाएं।",
@@ -266,6 +283,7 @@
       "income": "आय",
       "expenses": "व्यय",
       "transfers": "स्थानांतरण / बचत",
+      "transfersIn": "आने वाले ट्रांसफ़र (आय)",
       "trendMedian": "प्रवृत्ति / मध्यम",
       "amount": "राशि"
     },
@@ -275,6 +293,7 @@
       "transfers": "स्थानांतरण",
       "remaining": "शेष"
     },
+    "transfersInHint": "चुने गए खाते से आने वाला पैसा आय गिना जाता है, उसमें से वापस भेजी गई राशि घटाकर। केवल वे खाते चुनें जिनसे आप आय निकालते हैं, जैसे बचत रिज़र्व।",
     "allocation503020": "50/30/20 आवंटन",
     "allocationTarget": "(लक्ष्य {percent}%)",
     "nextButton": "अगला: कॉन्फ़िगर करें",
@@ -353,8 +372,10 @@
       "rollover": "रोलओवर",
       "alerts": "अलर्ट",
       "incomeLinked": "आय जुड़ी",
-      "excludedAccounts": "बाहर किए गए खाते"
+      "excludedAccounts": "बाहर किए गए खाते",
+      "transfersInAsIncome": "आने वाले ट्रांसफ़र"
     },
+    "transfersInAsIncomeOn": "बाहर रखे गए खातों से आने वाले आय गिने जाते हैं",
     "rolloverOff": "बंद",
     "alertsValue": "चेतावनी {warn}% / गंभीर {critical}%",
     "accountCount": "{count} {count, plural, one {खाता} other {खाते}}",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "आय",
       "expense": "व्यय",
-      "transfer": "स्थानांतरण"
+      "transfer": "स्थानांतरण",
+      "transferIn": "आने वाला ट्रांसफ़र"
     },
     "createButton": "बजट बनाएं",
     "categoryCount": "{count} श्रेणियां",
@@ -521,6 +543,10 @@
       "budgetSettings": "बजट सेटिंग्स",
       "categoryAllocations": "श्रेणी आवंटन",
       "income": "आय",
+      "addTransferIncome": "ट्रांसफ़र आय जोड़ें",
+      "addTransferIncomeTitle": "ट्रांसफ़र आय जोड़ें",
+      "outsideTransferIncome": "इस बजट से बाहर के खातों से ट्रांसफ़र",
+      "outsideTransferIncomeHint": "इस अवधि में गिना गया क्योंकि बजट अपने बाहर रखे गए खातों से आने वाले ट्रांसफ़र को आय गिनता है।",
       "expensesWithCount": "व्यय ({count})",
       "resetsEachPeriod": "प्रत्येक अवधि रीसेट होता है",
       "percentUsed": "{percent}% उपयोग",
@@ -538,7 +564,9 @@
         "categoryFailed": "श्रेणी अपडेट करने में विफल",
         "loadFailed": "बजट लोड करने में विफल",
         "categoryRemoved": "श्रेणी बजट से हटा दी गई",
-        "categoryRemoveFailed": "श्रेणी हटाने में विफल"
+        "categoryRemoveFailed": "श्रेणी हटाने में विफल",
+        "transferIncomeAdded": "ट्रांसफ़र आय जोड़ी गई",
+        "transferIncomeFailed": "ट्रांसफ़र आय नहीं जोड़ी जा सकी"
       }
     }
   },

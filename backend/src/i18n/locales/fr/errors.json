@@ -330,7 +330,9 @@
     "budgetCategoryNotFound": "Catégorie de budget avec l'ID {{ id }} introuvable",
     "periodNotFound": "Période de budget avec l'ID {{ id }} introuvable",
     "noOpenPeriod": "Aucune période ouverte à clôturer",
-    "categoryIdsNotOwned": "IDs de catégorie introuvables ou n'appartenant pas à l'utilisateur : {{ ids }}"
+    "categoryIdsNotOwned": "IDs de catégorie introuvables ou n'appartenant pas à l'utilisateur : {{ ids }}",
+    "transferAccountNotFound": "Compte avec l'ID {{ id }} introuvable",
+    "transferAccountAlreadyInBudget": "Ce compte a déjà une ligne de virement dans le budget"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Une règle de retenue salariale suit une facture payée dans une devise fiduciaire ; le compte de cette facture contient la cryptomonnaie {{ code }}. Choisissez une facture payée depuis un compte en devise fiduciaire.",

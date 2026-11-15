@@ -259,6 +259,23 @@
       "analyzeFailed": "Harcamalar analiz edilemedi"
     }
   },
+  "lineNames": {
+    "transfersFrom": "{name} hesabından transferler",
+    "unknown": "Bilinmiyor"
+  },
+  "transferIncomeForm": {
+    "hint": "Bu hesaptan gelen para, ona geri gönderilenler düşülerek bütçenin geliri sayılır.",
+    "account": "Kaynak hesap",
+    "accountPlaceholder": "Bir hesap seçin",
+    "accountRequired": "Transferlerin geldiği hesabı seçin",
+    "amount": "Planlanan tutar",
+    "submit": "Ekle"
+  },
+  "transfersInAsIncome": {
+    "label": "Hariç tutulan hesaplardan gelen transferleri gelir say",
+    "hint": "Hariç tutulan bir hesaptan bu bütçenin hesaplarına aktarılan para, ona geri gönderilenler düşülerek gelir sayılır. Kendi transfer satırı olan bir hesap o satırda sayılır.",
+    "noExcludedAccounts": "Bu bütçe henüz hiçbir hesabı hariç tutmuyor, bu yüzden hiçbir şey sayılmıyor."
+  },
   "wizardCategories": {
     "title": "Kategorileri İncele",
     "noAnalysis": "Analiz verisi yok. Geri dönün ve önce analizi çalıştırın.",
@@ -266,6 +283,7 @@
       "income": "Gelir",
       "expenses": "Giderler",
       "transfers": "Transferler / Tasarruf",
+      "transfersIn": "Gelen transferler (gelir)",
       "trendMedian": "Trend / Medyan",
       "amount": "Tutar"
     },
@@ -275,6 +293,7 @@
       "transfers": "Transferler",
       "remaining": "Kalan"
     },
+    "transfersInHint": "İşaretli bir hesaptan gelen para, ona geri gönderilenler düşülerek gelir sayılır. Yalnızca gelir çektiğiniz hesapları işaretleyin, örneğin bir tasarruf rezervi.",
     "allocation503020": "50/30/20 Dağılımı",
     "allocationTarget": "(hedef %{percent})",
     "nextButton": "İleri: Yapılandır",
@@ -353,8 +372,10 @@
       "rollover": "Devir",
       "alerts": "Uyarılar",
       "incomeLinked": "Gelire Bağlı",
-      "excludedAccounts": "Hariç Tutulan Hesaplar"
+      "excludedAccounts": "Hariç Tutulan Hesaplar",
+      "transfersInAsIncome": "Gelen transferler"
     },
+    "transfersInAsIncomeOn": "Hariç tutulan hesaplardan gelenler gelir sayılır",
     "rolloverOff": "Kapalı",
     "alertsValue": "Uyarı %{warn} / Kritik %{critical}",
     "accountCount": "{count} {count, plural, one {hesap} other {hesap}}",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "Gelir",
       "expense": "Gider",
-      "transfer": "Transfer"
+      "transfer": "Transfer",
+      "transferIn": "Gelen transfer"
     },
     "createButton": "Bütçe Oluştur",
     "categoryCount": "{count} kategori",
@@ -521,6 +543,10 @@
       "budgetSettings": "Bütçe Ayarları",
       "categoryAllocations": "Kategori Tahsisleri",
       "income": "Gelir",
+      "addTransferIncome": "Transfer geliri ekle",
+      "addTransferIncomeTitle": "Transfer geliri ekle",
+      "outsideTransferIncome": "Bu bütçenin dışındaki hesaplardan transferler",
+      "outsideTransferIncomeHint": "Bütçe, hariç tuttuğu hesaplardan gelen transferleri gelir saydığı için bu dönemde sayıldı.",
       "expensesWithCount": "Giderler ({count})",
       "resetsEachPeriod": "Her dönem sıfırlanır",
       "percentUsed": "%{percent} kullanıldı",
@@ -538,7 +564,9 @@
         "categoryFailed": "Kategori güncellenemedi",
         "loadFailed": "Bütçe yüklenemedi",
         "categoryRemoved": "Kategori bütçeden kaldırıldı",
-        "categoryRemoveFailed": "Kategori kaldırılamadı"
+        "categoryRemoveFailed": "Kategori kaldırılamadı",
+        "transferIncomeAdded": "Transfer geliri eklendi",
+        "transferIncomeFailed": "Transfer geliri eklenemedi"
       }
     }
   },

@@ -259,6 +259,23 @@
       "analyzeFailed": "Échec de l'analyse des dépenses"
     }
   },
+  "lineNames": {
+    "transfersFrom": "Virements depuis {name}",
+    "unknown": "Inconnu"
+  },
+  "transferIncomeForm": {
+    "hint": "L'argent reçu de ce compte compte comme revenu du budget, moins ce qui y est renvoyé.",
+    "account": "Compte d'origine",
+    "accountPlaceholder": "Choisissez un compte",
+    "accountRequired": "Choisissez le compte d'où viennent les virements",
+    "amount": "Montant prévu",
+    "submit": "Ajouter"
+  },
+  "transfersInAsIncome": {
+    "label": "Compter comme revenu les virements reçus des comptes exclus",
+    "hint": "L'argent viré d'un compte exclu vers les comptes de ce budget compte comme revenu, moins ce qui y est renvoyé. Un compte qui a sa propre ligne de virement est compté sur cette ligne.",
+    "noExcludedAccounts": "Ce budget n'exclut encore aucun compte, donc rien n'est compté."
+  },
   "wizardCategories": {
     "title": "Réviser les catégories",
     "noAnalysis": "Aucune donnée d'analyse. Revenez en arrière et lancez l'analyse d'abord.",
@@ -266,6 +283,7 @@
       "income": "Revenus",
       "expenses": "Dépenses",
       "transfers": "Virements / Épargne",
+      "transfersIn": "Virements reçus (revenu)",
       "trendMedian": "Tendance / Médiane",
       "amount": "Montant"
     },
@@ -275,6 +293,7 @@
       "transfers": "Virements",
       "remaining": "Restant"
     },
+    "transfersInHint": "L'argent reçu d'un compte coché compte comme revenu, moins ce qui y est renvoyé. Ne cochez que les comptes dont vous tirez un revenu, comme une réserve d'épargne.",
     "allocation503020": "Répartition 50/30/20",
     "allocationTarget": "(cible {percent}%)",
     "nextButton": "Suivant : Configurer",
@@ -353,8 +372,10 @@
       "rollover": "Report",
       "alerts": "Alertes",
       "incomeLinked": "Revenus liés",
-      "excludedAccounts": "Comptes exclus"
+      "excludedAccounts": "Comptes exclus",
+      "transfersInAsIncome": "Virements reçus"
     },
+    "transfersInAsIncomeOn": "Ceux des comptes exclus comptent comme revenu",
     "rolloverOff": "Désactivé",
     "alertsValue": "Avertissement {warn}% / Critique {critical}%",
     "accountCount": "{count} {count, plural, one {compte} other {comptes}}",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "Revenus",
       "expense": "Dépense",
-      "transfer": "Virement"
+      "transfer": "Virement",
+      "transferIn": "Virement reçu"
     },
     "createButton": "Créer le budget",
     "categoryCount": "{count} catégories",
@@ -521,6 +543,10 @@
       "budgetSettings": "Paramètres du budget",
       "categoryAllocations": "Allocations par catégorie",
       "income": "Revenus",
+      "addTransferIncome": "Ajouter un revenu de virement",
+      "addTransferIncomeTitle": "Ajouter un revenu de virement",
+      "outsideTransferIncome": "Virements depuis des comptes hors de ce budget",
+      "outsideTransferIncomeHint": "Compté sur cette période parce que le budget compte comme revenu les virements reçus de ses comptes exclus.",
       "expensesWithCount": "Dépenses ({count})",
       "resetsEachPeriod": "Réinitialise chaque période",
       "percentUsed": "{percent}% utilisé",
@@ -538,7 +564,9 @@
         "categoryFailed": "Échec de la mise à jour de la catégorie",
         "loadFailed": "Échec du chargement du budget",
         "categoryRemoved": "Catégorie retirée du budget",
-        "categoryRemoveFailed": "Impossible de retirer la catégorie"
+        "categoryRemoveFailed": "Impossible de retirer la catégorie",
+        "transferIncomeAdded": "Revenu de virement ajouté",
+        "transferIncomeFailed": "Impossible d'ajouter le revenu de virement"
       }
     }
   },

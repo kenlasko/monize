@@ -119,7 +119,9 @@ describe("resolveCategorySpent", () => {
       transferAccountId: "acc-1",
     } as any);
     const transfers = new Map([["acc-1", 250.5]]);
-    expect(resolveCategorySpent(bc, new Map(), transfers)).toBe(250.5);
+    expect(resolveCategorySpent(bc, new Map(), transfers, new Map())).toBe(
+      250.5,
+    );
   });
 
   it("returns 0 when transfer account has no recorded spending", () => {
@@ -127,41 +129,43 @@ describe("resolveCategorySpent", () => {
       isTransfer: true,
       transferAccountId: "acc-2",
     } as any);
-    expect(resolveCategorySpent(bc, new Map(), new Map())).toBe(0);
+    expect(resolveCategorySpent(bc, new Map(), new Map(), new Map())).toBe(0);
   });
 
   it("returns 0 for expense category with no entry in the spending map", () => {
     const bc = makeBudgetCategory();
-    expect(resolveCategorySpent(bc, new Map(), new Map())).toBe(0);
+    expect(resolveCategorySpent(bc, new Map(), new Map(), new Map())).toBe(0);
   });
 
   it("returns the negated amount for expense categories (expenses are negative in DB)", () => {
     const bc = makeBudgetCategory();
     const spending = new Map([["cat-1", -123.45]]);
-    expect(resolveCategorySpent(bc, spending, new Map())).toBe(123.45);
+    expect(resolveCategorySpent(bc, spending, new Map(), new Map())).toBe(
+      123.45,
+    );
   });
 
   it("clamps to 0 when refunds exceed spending for expense categories", () => {
     const bc = makeBudgetCategory();
     const spending = new Map([["cat-1", 50]]); // refunds > spending => positive raw
-    expect(resolveCategorySpent(bc, spending, new Map())).toBe(0);
+    expect(resolveCategorySpent(bc, spending, new Map(), new Map())).toBe(0);
   });
 
   it("returns the positive amount for income categories", () => {
     const bc = makeBudgetCategory({ isIncome: true } as any);
     const spending = new Map([["cat-1", 1500]]);
-    expect(resolveCategorySpent(bc, spending, new Map())).toBe(1500);
+    expect(resolveCategorySpent(bc, spending, new Map(), new Map())).toBe(1500);
   });
 
   it("clamps to 0 when income deductions exceed income", () => {
     const bc = makeBudgetCategory({ isIncome: true } as any);
     const spending = new Map([["cat-1", -75]]);
-    expect(resolveCategorySpent(bc, spending, new Map())).toBe(0);
+    expect(resolveCategorySpent(bc, spending, new Map(), new Map())).toBe(0);
   });
 
   it("returns 0 when categoryId is missing", () => {
     const bc = makeBudgetCategory({ categoryId: null } as any);
-    expect(resolveCategorySpent(bc, new Map(), new Map())).toBe(0);
+    expect(resolveCategorySpent(bc, new Map(), new Map(), new Map())).toBe(0);
   });
 });
 
@@ -672,6 +676,10 @@ describe("resolveCategorySpentOrNull", () => {
       currency: "CAD",
       incompleteCategoryIds: new Set(),
       incompleteTransferAccountIds: new Set(),
+      transferIncomeMap: new Map(),
+      incompleteTransferIncomeAccountIds: new Set(),
+      outsideTransferIncome: 0,
+      outsideTransferIncomeComplete: true,
       missingRatePairs: [],
       ...overrides,
     };

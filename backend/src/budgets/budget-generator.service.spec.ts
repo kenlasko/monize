@@ -525,6 +525,71 @@ describe("BudgetGeneratorService", () => {
       expect(savings!.max).toBe(300);
     });
 
+    it("suggests transfer income per source, netted and clamped per month (issue #2141)", async () => {
+      const now = new Date();
+      const monthsAgo = (n: number) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - n, 1);
+        return { year: d.getFullYear(), month: d.getMonth() + 1 };
+      };
+      const source = (id: string, n: number, total: string) => ({
+        accountId: id,
+        accountName: id.toUpperCase(),
+        accountType: "SAVINGS",
+        ...monthsAgo(n),
+        total,
+      });
+      // The incoming reads are the only ones joined to the source account
+      // with the owner predicate.
+      const incoming = (qb: ReturnType<typeof createMockQueryBuilder>) => {
+        let isIncoming = false;
+        qb.andWhere = jest.fn().mockImplementation((arg: unknown) => {
+          if (arg === "a.user_id = :userId") isIncoming = true;
+          return qb;
+        });
+        return () => isIncoming;
+      };
+      transactionsRepository.createQueryBuilder.mockImplementation(() => {
+        const qb = createMockQueryBuilder();
+        const isIncoming = incoming(qb);
+        qb.getRawMany = jest.fn().mockImplementation(() =>
+          Promise.resolve(
+            isIncoming()
+              ? [
+                  source("hisa", 1, "2000"),
+                  source("hisa", 2, "2000"),
+                  source("hisa", 3, "2500"),
+                  // Net outflow to the account: clamped at zero, never listed.
+                  source("chequing", 1, "-800"),
+                ]
+              : [],
+          ),
+        );
+        return qb;
+      });
+      splitsRepository.createQueryBuilder.mockImplementation(() => {
+        const qb = createMockQueryBuilder();
+        const isIncoming = incoming(qb);
+        qb.getRawMany = jest
+          .fn()
+          .mockImplementation(() =>
+            Promise.resolve(isIncoming() ? [source("hisa", 3, "-500")] : []),
+          );
+        return qb;
+      });
+
+      const result = await service.generate("user-1", {
+        analysisMonths: 3,
+        profile: BudgetProfile.ON_TRACK,
+      });
+
+      expect(result.incomeTransfers.map((t) => t.accountId)).toEqual(["hisa"]);
+      const hisa = result.incomeTransfers[0];
+      expect(hisa.monthlyAmounts).toEqual([2000, 2000, 2000]);
+      expect(hisa.suggested).toBe(2000);
+      // Not preselected income: the estimate is the categories' alone.
+      expect(result.estimatedMonthlyIncome).toBe(0);
+    });
+
     it("prefers expense data when a refund causes a category to appear in both queries", async () => {
       const now = new Date();
       const month1 = now.getMonth();
@@ -706,6 +771,124 @@ describe("BudgetGeneratorService", () => {
       );
       expect(budgetCategoriesRepository.save).toHaveBeenCalled();
       expect(result.categories).toHaveLength(1);
+    });
+
+    it("checks and writes in one transaction, so a refused line leaves no budget row", async () => {
+      budgetsRepository.save.mockResolvedValue({ id: "new-budget" });
+      categoriesRepository.find.mockResolvedValue([]);
+
+      await expect(
+        service.apply("user-1", {
+          name: "B",
+          periodStart: "2026-02-01",
+          strategy: BudgetStrategy.FIXED,
+          currencyCode: "USD",
+          categories: [
+            {
+              categoryId: "cat-not-mine",
+              amount: 100,
+              rolloverType: RolloverType.NONE,
+            },
+          ],
+        }),
+      ).rejects.toThrow("cat-not-mine");
+      // The first transaction opened is the one the refusal leaves through,
+      // so the budget insert inside it rolls back with it (before, it was the
+      // insert's own, already committed).
+      expect(budgetsRepository.save).toHaveBeenCalled();
+      await expect(
+        scopedDataSource.transaction.mock.results[0].value,
+      ).rejects.toThrow("cat-not-mine");
+    });
+
+    it("refuses two transfer lines for one account before writing (issue #2141)", async () => {
+      await expect(
+        service.apply("user-1", {
+          name: "B",
+          periodStart: "2026-02-01",
+          strategy: BudgetStrategy.FIXED,
+          currencyCode: "USD",
+          categories: [
+            {
+              transferAccountId: "acct-hisa",
+              isTransfer: true,
+              amount: 100,
+              rolloverType: RolloverType.NONE,
+            },
+            {
+              transferAccountId: "acct-hisa",
+              isTransfer: true,
+              isIncome: true,
+              amount: 2000,
+              rolloverType: RolloverType.NONE,
+            },
+          ],
+        }),
+      ).rejects.toThrow("already has a transfer line");
+      expect(budgetsRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("refuses a transfer income source the user does not own before writing", async () => {
+      accountsRepository.find.mockResolvedValue([]);
+
+      await expect(
+        service.apply("user-1", {
+          name: "B",
+          periodStart: "2026-02-01",
+          strategy: BudgetStrategy.FIXED,
+          currencyCode: "USD",
+          categories: [
+            {
+              transferAccountId: "acct-other",
+              isTransfer: true,
+              isIncome: true,
+              amount: 2000,
+              rolloverType: RolloverType.NONE,
+            },
+          ],
+        }),
+      ).rejects.toThrow("acct-other");
+      expect(accountsRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ userId: "user-1" }),
+        }),
+      );
+      expect(budgetsRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("saves an owned transfer income source as an income transfer line", async () => {
+      accountsRepository.find.mockResolvedValue([{ id: "acct-hisa" }]);
+      budgetsRepository.findOne.mockResolvedValue({ id: "new-budget" });
+
+      await service.apply("user-1", {
+        name: "B",
+        periodStart: "2026-02-01",
+        strategy: BudgetStrategy.FIXED,
+        currencyCode: "USD",
+        config: { transfersInAsIncome: true },
+        categories: [
+          {
+            transferAccountId: "acct-hisa",
+            isTransfer: true,
+            isIncome: true,
+            amount: 2000,
+            rolloverType: RolloverType.NONE,
+          },
+        ],
+      });
+
+      expect(budgetsRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ config: { transfersInAsIncome: true } }),
+      );
+      expect(budgetCategoriesRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          categoryId: null,
+          transferAccountId: "acct-hisa",
+          isTransfer: true,
+          isIncome: true,
+          amount: 2000,
+        }),
+      );
     });
 
     it("creates a budget with multiple categories", async () => {

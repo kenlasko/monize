@@ -24,6 +24,7 @@ describe('BudgetWizardAnalysis', () => {
     analysisResult: null,
     selectedCategories: new Map(),
     selectedTransfers: new Map(),
+    selectedIncomeTransfers: new Map(),
     budgetName: 'Test Budget',
     budgetType: 'MONTHLY',
     periodStart: '2026-02-01',
@@ -34,6 +35,7 @@ describe('BudgetWizardAnalysis', () => {
     alertWarnPercent: 80,
     alertCriticalPercent: 95,
     excludedAccountIds: [],
+    transfersInAsIncome: false,
     isSubmitting: false,
   };
 
@@ -143,6 +145,7 @@ describe('BudgetWizardAnalysis', () => {
   it('calls generate API and advances on analyze click', async () => {
     const mockResult = {
       categories: [{ categoryId: 'cat-1', categoryName: 'Groceries', isIncome: false, suggested: 500 }],
+      incomeTransfers: [],
       estimatedMonthlyIncome: 5000,
       totalBudgeted: 500,
       projectedMonthlySavings: 4500,

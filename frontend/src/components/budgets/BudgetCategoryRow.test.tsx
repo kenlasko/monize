@@ -14,6 +14,7 @@ const baseCategory: CategoryBreakdown = {
   remaining: 180,
   percentUsed: 70,
   isIncome: false,
+  isTransfer: false,
   percentage: null,
 };
 

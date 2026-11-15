@@ -259,6 +259,23 @@
       "analyzeFailed": "分析支出失败"
     }
   },
+  "lineNames": {
+    "transfersFrom": "来自{name}的转账",
+    "unknown": "未知"
+  },
+  "transferIncomeForm": {
+    "hint": "从此账户转入的资金计为预算收入，扣除转回该账户的部分。",
+    "account": "转出账户",
+    "accountPlaceholder": "选择账户",
+    "accountRequired": "请选择转账来源账户",
+    "amount": "计划金额",
+    "submit": "添加"
+  },
+  "transfersInAsIncome": {
+    "label": "将从排除账户转入的资金计为收入",
+    "hint": "从排除账户转入本预算账户的资金计为收入，扣除转回该账户的部分。有自己转账项目的账户在该项目中计算。",
+    "noExcludedAccounts": "本预算尚未排除任何账户，因此不计入任何金额。"
+  },
   "wizardCategories": {
     "title": "审核分类",
     "noAnalysis": "无分析数据。请返回并先运行分析。",
@@ -266,6 +283,7 @@
       "income": "收入",
       "expenses": "支出",
       "transfers": "转账/储蓄",
+      "transfersIn": "转入（收入）",
       "trendMedian": "趋势/中位数",
       "amount": "金额"
     },
@@ -275,6 +293,7 @@
       "transfers": "转账",
       "remaining": "剩余"
     },
+    "transfersInHint": "从勾选账户转入的资金计为收入，扣除转回该账户的部分。只勾选您从中提取收入的账户，例如储蓄备用金。",
     "allocation503020": "50/30/20 分配",
     "allocationTarget": "（目标 {percent}%）",
     "nextButton": "下一步：配置",
@@ -353,8 +372,10 @@
       "rollover": "滚存",
       "alerts": "提醒",
       "incomeLinked": "收入关联",
-      "excludedAccounts": "排除账户"
+      "excludedAccounts": "排除账户",
+      "transfersInAsIncome": "转入"
     },
+    "transfersInAsIncomeOn": "来自排除账户的转入计为收入",
     "rolloverOff": "关闭",
     "alertsValue": "警告 {warn}% / 严重 {critical}%",
     "accountCount": "{count} 个账户",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "收入",
       "expense": "支出",
-      "transfer": "转账"
+      "transfer": "转账",
+      "transferIn": "转入"
     },
     "createButton": "创建预算",
     "categoryCount": "{count} 个分类",
@@ -521,6 +543,10 @@
       "budgetSettings": "预算设置",
       "categoryAllocations": "分类分配",
       "income": "收入",
+      "addTransferIncome": "添加转账收入",
+      "addTransferIncomeTitle": "添加转账收入",
+      "outsideTransferIncome": "来自本预算以外账户的转账",
+      "outsideTransferIncomeHint": "因本预算将从排除账户转入的资金计为收入，本期已计入。",
       "expensesWithCount": "支出（{count}）",
       "resetsEachPeriod": "每期重置",
       "percentUsed": "已用 {percent}%",
@@ -538,7 +564,9 @@
         "categoryFailed": "更新分类失败",
         "loadFailed": "加载预算失败",
         "categoryRemoved": "已从预算中移除类别",
-        "categoryRemoveFailed": "移除类别失败"
+        "categoryRemoveFailed": "移除类别失败",
+        "transferIncomeAdded": "已添加转账收入",
+        "transferIncomeFailed": "添加转账收入失败"
       }
     }
   },

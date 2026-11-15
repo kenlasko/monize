@@ -27,6 +27,8 @@ export interface WizardState {
   // Step 2: Categories
   selectedCategories: Map<string, ApplyBudgetCategoryData>;
   selectedTransfers: Map<string, ApplyBudgetCategoryData>;
+  /** Transfer income lines, keyed by source account (issue #2141). */
+  selectedIncomeTransfers: Map<string, ApplyBudgetCategoryData>;
 
   // Step 3: Strategy / Options
   budgetName: string;
@@ -39,6 +41,8 @@ export interface WizardState {
   alertWarnPercent: number;
   alertCriticalPercent: number;
   excludedAccountIds: string[];
+  /** Transfers in from the excluded accounts count as income. */
+  transfersInAsIncome: boolean;
 
   // Step 4: Review
   isSubmitting: boolean;
@@ -73,6 +77,7 @@ export function BudgetWizard({
     analysisResult: null,
     selectedCategories: new Map(),
     selectedTransfers: new Map(),
+    selectedIncomeTransfers: new Map(),
     budgetName: `${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()} Budget`,
     budgetType: 'MONTHLY',
     periodStart: defaultPeriodStart,
@@ -83,6 +88,7 @@ export function BudgetWizard({
     alertWarnPercent: 80,
     alertCriticalPercent: 95,
     excludedAccountIds: [],
+    transfersInAsIncome: false,
     isSubmitting: false,
   });
 
@@ -167,6 +173,8 @@ export function BudgetWizard({
         analysisResult: result,
         selectedCategories: categories,
         selectedTransfers: transfers,
+        // None preselected: only the user knows which source is a reserve.
+        selectedIncomeTransfers: new Map(),
         baseIncome: estimatedIncome,
         defaultRolloverType: defaultRollover,
       });

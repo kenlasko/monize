@@ -10,6 +10,7 @@ import { NumericInput } from '@/components/ui/NumericInput';
 import { Select } from '@/components/ui/Select';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { STRATEGY_LABELS } from './utils/budget-labels';
+import { TransfersInAsIncomeToggle } from './TransfersInAsIncomeToggle';
 import { getCurrencySymbol } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { WizardState } from './BudgetWizard';
@@ -428,12 +429,23 @@ export function BudgetWizardStrategy({
               {t('wizardStrategy.excludedCount', { count: state.excludedAccountIds.length })}
             </div>
           )}
+
+          <TransfersInAsIncomeToggle
+            checked={state.transfersInAsIncome}
+            onChange={(checked) => updateState({ transfersInAsIncome: checked })}
+            excludedCount={state.excludedAccountIds.length}
+          />
         </div>
       )}
 
       {/* Category count */}
       <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
-        {t('wizardStrategy.categoriesAndTransfers', { categories: String(state.selectedCategories.size), transfers: String(state.selectedTransfers.size) })}
+        {t('wizardStrategy.categoriesAndTransfers', {
+          categories: String(state.selectedCategories.size),
+          transfers: String(
+            state.selectedTransfers.size + (state.selectedIncomeTransfers?.size ?? 0),
+          ),
+        })}
       </div>
 
       {/* Actions */}

@@ -5,6 +5,7 @@ import { gainLossColor } from '@/lib/format';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { BudgetProgressBar } from './BudgetProgressBar';
+import { budgetLineName } from './utils/budget-line-name';
 import type { BudgetPeriod, BudgetPeriodCategory } from '@/types/budget';
 
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -13,7 +14,13 @@ interface BudgetPeriodDetailProps {
   formatCurrency: (amount: number) => string;
 }
 
-function getCategoryName(pc: BudgetPeriodCategory): string {
+function getCategoryName(
+  pc: BudgetPeriodCategory,
+  labels: { transfersFrom: (name: string) => string; unknown: string },
+): string {
+  if (pc.budgetCategory?.isTransfer && pc.budgetCategory.transferAccount) {
+    return budgetLineName(pc.budgetCategory, labels);
+  }
   if (pc.category?.name) return pc.category.name;
   if (pc.budgetCategory?.category?.name) return pc.budgetCategory.category.name;
   return 'Uncategorized';
@@ -45,10 +52,14 @@ export function BudgetPeriodDetail({
     (sum, pc) => sum + Number(pc.actualAmount),
     0,
   );
-  const totalIncome = incomeCategories.reduce(
-    (sum, pc) => sum + Number(pc.actualAmount),
-    0,
-  );
+  // A closed period's income is the figure the close froze, which includes
+  // transfers in no line carries (`transfersInAsIncome`, issue #2141).
+  const totalIncome = period.status === 'CLOSED'
+    ? Number(period.actualIncome)
+    : incomeCategories.reduce(
+      (sum, pc) => sum + Number(pc.actualAmount),
+      0,
+    );
   const remaining = totalBudgeted - totalSpent;
   const percentUsed = totalBudgeted > 0
     ? Math.round((totalSpent / totalBudgeted) * 10000) / 100
@@ -241,7 +252,10 @@ function PeriodCategoryRow({
 }) {
   const t = useTranslations('budgets');
   const { formatPercentTrimmed } = useNumberFormat();
-  const name = getCategoryName(periodCategory);
+  const name = getCategoryName(periodCategory, {
+    transfersFrom: (account) => t('lineNames.transfersFrom', { name: account }),
+    unknown: t('lineNames.unknown'),
+  });
   const budgeted = Number(periodCategory.effectiveBudget);
   const spent = Number(periodCategory.actualAmount);
   const rolloverIn = Number(periodCategory.rolloverIn);

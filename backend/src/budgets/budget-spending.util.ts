@@ -138,6 +138,101 @@ export function outgoingSplitTransfers(
   return excludeBudgetAccounts(qb, window.excludedAccountIds ?? []);
 }
 
+/**
+ * The transfers a transfer income line (or `config.transfersInAsIncome`)
+ * counts, issue #2141 (`docs/specs/budget-transfer-income.md`): the legs in a
+ * budget account whose counterpart is a source account, both shapes as above.
+ * Unlike the outgoing builders these keep both directions, so the signed sum
+ * is the net change: money in from the source is positive, money from a budget
+ * account back to it negative. The source's own leg is never read, since its
+ * counterpart is the budget account and not itself.
+ */
+export interface IncomingTransferWindow {
+  userId: string;
+  periodStart: string;
+  periodEnd: string;
+  /** Restrict to these source accounts; omit to sweep every source. */
+  sourceAccountIds?: string[];
+  /** The budget's excluded accounts: a leg in one is not the budget's. */
+  excludedAccountIds?: readonly string[];
+}
+
+/** Source account of a whole-row transfer (incoming parent builder alias). */
+export const PARENT_TRANSFER_SOURCE = "lt.account_id";
+/** Source account of a split-line transfer (incoming split builder alias). */
+export const SPLIT_TRANSFER_SOURCE = "s.transfer_account_id";
+
+export function incomingParentTransfers(
+  repository: Repository<Transaction>,
+  window: IncomingTransferWindow,
+): SelectQueryBuilder<Transaction> {
+  const qb = repository
+    .createQueryBuilder("t")
+    .innerJoin("t.linkedTransaction", "lt")
+    .where("t.user_id = :userId", { userId: window.userId })
+    .andWhere("t.is_transfer = true")
+    .andWhere("t.transaction_date >= :periodStart", {
+      periodStart: window.periodStart,
+    })
+    .andWhere("t.transaction_date <= :periodEnd", {
+      periodEnd: window.periodEnd,
+    })
+    .andWhere("t.status != :void", { void: "VOID" });
+  if (window.sourceAccountIds) {
+    qb.andWhere("lt.account_id IN (:...sourceAccountIds)", {
+      sourceAccountIds: window.sourceAccountIds,
+    });
+  }
+  return excludeBudgetAccounts(qb, window.excludedAccountIds ?? []);
+}
+
+export function incomingSplitTransfers(
+  repository: Repository<TransactionSplit>,
+  window: IncomingTransferWindow,
+): SelectQueryBuilder<TransactionSplit> {
+  const qb = repository
+    .createQueryBuilder("s")
+    .innerJoin("s.transaction", "t")
+    .where("t.user_id = :userId", { userId: window.userId })
+    .andWhere("t.transaction_date >= :periodStart", {
+      periodStart: window.periodStart,
+    })
+    .andWhere("t.transaction_date <= :periodEnd", {
+      periodEnd: window.periodEnd,
+    })
+    .andWhere("t.status != :void", { void: "VOID" });
+  if (window.sourceAccountIds) {
+    qb.andWhere("s.transfer_account_id IN (:...sourceAccountIds)", {
+      sourceAccountIds: window.sourceAccountIds,
+    });
+  } else {
+    qb.andWhere("s.transfer_account_id IS NOT NULL");
+  }
+  return excludeBudgetAccounts(qb, window.excludedAccountIds ?? []);
+}
+
+/**
+ * Whether the budget counts transfers in from its excluded accounts as income
+ * (`config.transfersInAsIncome`, issue #2141). `config` is a JSONB column the
+ * client writes, so anything but `true` reads as off.
+ */
+export function budgetTransfersInAsIncome(config: unknown): boolean {
+  if (config === null || typeof config !== "object") return false;
+  return (
+    (config as { transfersInAsIncome?: unknown }).transfersInAsIncome === true
+  );
+}
+
+/** A transfer line of either direction: it names `transferAccountId`. */
+function isTransferLine(bc: BudgetCategory): boolean {
+  return bc.isTransfer && bc.transferAccountId !== null;
+}
+
+/** A transfer income line: money arriving from `transferAccountId`. */
+export function isTransferIncomeLine(bc: BudgetCategory): boolean {
+  return isTransferLine(bc) && bc.isIncome;
+}
+
 /** What `queryCategorySpending` returns: converted sums plus what is unknown. */
 export interface CategorySpending {
   /** categoryId -> signed net sum of the rows that converted, in `currency`. */
@@ -150,6 +245,20 @@ export interface CategorySpending {
   incompleteCategoryIds: ReadonlySet<string>;
   /** Transfer destinations with a row that had no rate. */
   incompleteTransferAccountIds: ReadonlySet<string>;
+  /**
+   * source accountId -> signed net of the transfers in from it, of the rows
+   * that converted (transfer income lines only).
+   */
+  transferIncomeMap: Map<string, number>;
+  /** Transfer income sources with a row that had no rate. */
+  incompleteTransferIncomeAccountIds: ReadonlySet<string>;
+  /**
+   * Signed net of the transfers in from the excluded accounts no transfer line
+   * names, when `config.transfersInAsIncome` is on; `0` when it is off.
+   */
+  outsideTransferIncome: number;
+  /** `false` when a row of `outsideTransferIncome` had no rate. */
+  outsideTransferIncomeComplete: boolean;
   /** `"JPY->CAD"` for each pair with no admissible rate, sorted. */
   missingRatePairs: string[];
 }
@@ -212,9 +321,10 @@ export async function queryCategorySpending(
   return buckets.get("") ?? emptyCategorySpending(currency);
 }
 
-function emptyCategorySpending(currency: string): CategorySpending & {
+export function emptyCategorySpending(currency: string): CategorySpending & {
   incompleteCategoryIds: Set<string>;
   incompleteTransferAccountIds: Set<string>;
+  incompleteTransferIncomeAccountIds: Set<string>;
 } {
   return {
     spendingMap: new Map(),
@@ -222,6 +332,10 @@ function emptyCategorySpending(currency: string): CategorySpending & {
     currency,
     incompleteCategoryIds: new Set(),
     incompleteTransferAccountIds: new Set(),
+    transferIncomeMap: new Map(),
+    incompleteTransferIncomeAccountIds: new Set(),
+    outsideTransferIncome: 0,
+    outsideTransferIncomeComplete: true,
     missingRatePairs: [],
   };
 }
@@ -248,11 +362,23 @@ export async function queryCategorySpendingBuckets(
   if (budgetCategories.length === 0) return { currency: "", buckets };
 
   const manager = transactionsRepository.manager;
-  const budgetRows: Array<{ currency_code: string; config: unknown }> =
-    await manager.query(
-      "SELECT currency_code, config FROM budgets WHERE id = $1",
-      [budgetCategories[0].budgetId],
-    );
+  // The budget's own transfer lines come with it: a caller passing a subset
+  // of lines (the savings rate leaves out the outgoing ones) must not widen
+  // what `config.transfersInAsIncome` sweeps (issue #2141).
+  const budgetRows: Array<{
+    currency_code: string;
+    config: unknown;
+    transfer_account_ids?: string[] | null;
+  }> = await manager.query(
+    `SELECT b.currency_code, b.config,
+            ARRAY(
+              SELECT bc.transfer_account_id::text FROM budget_categories bc
+              WHERE bc.budget_id = b.id AND bc.is_transfer = true
+                AND bc.transfer_account_id IS NOT NULL
+            ) AS transfer_account_ids
+       FROM budgets b WHERE b.id = $1`,
+    [budgetCategories[0].budgetId],
+  );
   const currency = budgetRows[0]?.currency_code ?? "";
   // Read from the budget row itself, so no caller can forget to pass them.
   const excludedAccountIds = budgetExcludedAccountIds(budgetRows[0]?.config);
@@ -261,7 +387,23 @@ export async function queryCategorySpendingBuckets(
     .filter((bc) => bc.categoryId !== null)
     .map((bc) => bc.categoryId as string);
   const transferBudgetCategories = budgetCategories.filter(
-    (bc) => bc.isTransfer && bc.transferAccountId,
+    (bc) => isTransferLine(bc) && !bc.isIncome,
+  );
+  const transferIncomeSources = budgetCategories
+    .filter(isTransferIncomeLine)
+    .map((bc) => bc.transferAccountId as string);
+  // The toggle counts every excluded account a transfer line does not already
+  // name: that line counts it, once (spec section 2).
+  const namedTransferAccounts = new Set([
+    ...budgetCategories
+      .filter(isTransferLine)
+      .map((bc) => bc.transferAccountId as string),
+    ...(budgetRows[0]?.transfer_account_ids ?? []),
+  ]);
+  const outsideSources = new Set(
+    budgetTransfersInAsIncome(budgetRows[0]?.config)
+      ? excludedAccountIds.filter((id) => !namedTransferAccounts.has(id))
+      : [],
   );
 
   // Every query groups by currency and transaction date as well as by key, so
@@ -269,6 +411,7 @@ export async function queryCategorySpendingBuckets(
   const dateExpr = "TO_CHAR(t.transaction_date, 'YYYY-MM-DD')";
   const categoryRows: SpendingRow[] = [];
   const transferRows: SpendingRow[] = [];
+  const incomeTransferRows: SpendingRow[] = [];
 
   if (categoryIds.length > 0) {
     const directQb = transactionsRepository
@@ -360,12 +503,57 @@ export async function queryCategorySpendingBuckets(
     transferRows.push(...(await splitTransferQb.getRawMany()));
   }
 
+  const incomeSources = [...new Set(transferIncomeSources), ...outsideSources];
+  if (incomeSources.length > 0) {
+    const window: IncomingTransferWindow = {
+      userId,
+      periodStart,
+      periodEnd,
+      sourceAccountIds: incomeSources,
+      excludedAccountIds,
+    };
+    // Signed sums: the net change of each source (spec section 2).
+    const parentQb = incomingParentTransfers(transactionsRepository, window)
+      .select(PARENT_TRANSFER_SOURCE, "key")
+      .addSelect("t.currency_code", "currencyCode")
+      .addSelect(dateExpr, "txDate")
+      .addSelect(`COALESCE(SUM(${PARENT_TRANSFER_AMOUNT}), 0)`, "total")
+      .groupBy(PARENT_TRANSFER_SOURCE)
+      .addGroupBy("t.currency_code")
+      .addGroupBy("t.transaction_date");
+    splitByRateBasis(
+      parentQb,
+      { ...OWN_RATE_COLUMNS, transferLegs: { transactionAlias: "t" } },
+      currency,
+      { byDay: false },
+    );
+    incomeTransferRows.push(...(await parentQb.getRawMany()));
+    const splitQb = incomingSplitTransfers(splitsRepository, window)
+      .select(SPLIT_TRANSFER_SOURCE, "key")
+      .addSelect("t.currency_code", "currencyCode")
+      .addSelect(dateExpr, "txDate")
+      .addSelect(`COALESCE(SUM(${SPLIT_TRANSFER_AMOUNT}), 0)`, "total")
+      .groupBy(SPLIT_TRANSFER_SOURCE)
+      .addGroupBy("t.currency_code")
+      .addGroupBy("t.transaction_date");
+    splitByRateBasis(
+      splitQb,
+      {
+        ...OWN_RATE_COLUMNS,
+        transferLegs: { transactionAlias: "t", splitAlias: "s" },
+      },
+      currency,
+      { byDay: false },
+    );
+    incomeTransferRows.push(...(await splitQb.getRawMany()));
+  }
+
   // A row the market rate converts needs the history; one that settled into
   // the budget's currency at its own rate does not.
   const basisOf = (row: SpendingRow) =>
     partRateBasis(row, row.currencyCode, row.txDate, currency);
   const foreignCurrencies = new Set<string>();
-  for (const row of [...categoryRows, ...transferRows]) {
+  for (const row of [...categoryRows, ...transferRows, ...incomeTransferRows]) {
     if (row.currencyCode === currency) continue;
     if (toOwnRate(basisOf(row).own_rate) === null) {
       foreignCurrencies.add(row.currencyCode);
@@ -426,9 +614,21 @@ export async function queryCategorySpendingBuckets(
   };
   const categoryByBucket = groupByBucket(categoryRows);
   const transferByBucket = groupByBucket(transferRows);
+  // A source both a line names and the toggle sweeps cannot exist (the toggle
+  // leaves out every named account), so each row is one or the other.
+  const lineIncomeByBucket = groupByBucket(
+    incomeTransferRows.filter((row) => !outsideSources.has(row.key)),
+  );
+  const outsideIncomeByBucket = groupByBucket(
+    incomeTransferRows
+      .filter((row) => outsideSources.has(row.key))
+      .map((row) => ({ ...row, key: "" })),
+  );
   const bucketKeys = new Set([
     ...categoryByBucket.keys(),
     ...transferByBucket.keys(),
+    ...lineIncomeByBucket.keys(),
+    ...outsideIncomeByBucket.keys(),
   ]);
   for (const bucket of bucketKeys) {
     const spending = emptyCategorySpending(currency);
@@ -442,8 +642,24 @@ export async function queryCategorySpendingBuckets(
       spending.transferSpendingMap.set(key, agg.knownSubtotal);
       if (!agg.isComplete) spending.incompleteTransferAccountIds.add(key);
     }
+    const lineIncome = fold(lineIncomeByBucket.get(bucket) ?? []);
+    for (const [key, agg] of lineIncome.totals) {
+      spending.transferIncomeMap.set(key, agg.knownSubtotal);
+      if (!agg.isComplete) spending.incompleteTransferIncomeAccountIds.add(key);
+    }
+    const outsideIncome = fold(outsideIncomeByBucket.get(bucket) ?? []);
+    const outsideAgg = outsideIncome.totals.get("");
+    if (outsideAgg) {
+      spending.outsideTransferIncome = outsideAgg.knownSubtotal;
+      spending.outsideTransferIncomeComplete = outsideAgg.isComplete;
+    }
     spending.missingRatePairs = [
-      ...new Set([...categories.pairs, ...transfers.pairs]),
+      ...new Set([
+        ...categories.pairs,
+        ...transfers.pairs,
+        ...lineIncome.pairs,
+        ...outsideIncome.pairs,
+      ]),
     ].sort();
     buckets.set(bucket, spending);
   }
@@ -459,20 +675,47 @@ export async function queryCategorySpendingBuckets(
  * it. The figure is the KNOWN converted part (`incompleteCategoryIds` names an
  * income line with a row that had no rate); before issue #2155 it was a sum of
  * raw amounts in whatever currency each row was in.
+ *
+ * Transfer income lines and `config.transfersInAsIncome` net into it the same
+ * way (issue #2141).
  */
 export function resolveBudgetIncome(
   budgetCategories: readonly BudgetCategory[],
-  spendingMap: Map<string, number>,
+  spending: Pick<
+    CategorySpending,
+    "spendingMap" | "transferIncomeMap" | "outsideTransferIncome"
+  >,
 ): number {
   const incomeCategoryIds = new Set(
     budgetCategories
-      .filter((bc) => bc.isIncome && bc.categoryId !== null)
+      .filter((bc) => bc.isIncome && !bc.isTransfer && bc.categoryId !== null)
       .map((bc) => bc.categoryId as string),
   );
+  const incomeSources = new Set(
+    budgetCategories
+      .filter(isTransferIncomeLine)
+      .map((bc) => bc.transferAccountId as string),
+  );
   return Math.max(
-    sumMoney([...incomeCategoryIds].map((id) => spendingMap.get(id) ?? 0)),
+    sumMoney([
+      ...[...incomeCategoryIds].map((id) => spending.spendingMap.get(id) ?? 0),
+      ...[...incomeSources].map(
+        (id) => spending.transferIncomeMap.get(id) ?? 0,
+      ),
+      spending.outsideTransferIncome,
+    ]),
     0,
   );
+}
+
+/**
+ * The income `config.transfersInAsIncome` adds, as a line reads it: the net
+ * change clamped at zero, like an income line's actual (issue #2141).
+ */
+export function resolveOutsideTransferIncome(
+  spending: Pick<CategorySpending, "outsideTransferIncome">,
+): number {
+  return Math.max(spending.outsideTransferIncome, 0);
 }
 
 /** Resolves the display name for a budget category. */
@@ -498,6 +741,8 @@ export function resolveCategoryName(bc: BudgetCategory): string {
  *     exceed income.
  *   - Transfers: already filtered to outgoing (amount < 0), returned as a
  *     positive value by the query.
+ *   - Transfer income lines: the signed net in from the source, clamped to 0
+ *     when more went back to it than came out (issue #2141).
  *
  * The figure is the KNOWN converted part: a row with no exchange rate is not in
  * it. A caller that can show "unknown" uses `resolveCategorySpentOrNull`.
@@ -506,7 +751,14 @@ export function resolveCategorySpent(
   bc: BudgetCategory,
   spendingMap: Map<string, number>,
   transferSpendingMap: Map<string, number>,
+  transferIncomeMap: Map<string, number>,
 ): number {
+  if (isTransferIncomeLine(bc)) {
+    return Math.max(
+      transferIncomeMap.get(bc.transferAccountId as string) ?? 0,
+      0,
+    );
+  }
   if (bc.isTransfer && bc.transferAccountId) {
     return transferSpendingMap.get(bc.transferAccountId) || 0;
   }
@@ -523,8 +775,11 @@ export function resolveCategorySpentOrNull(
   bc: BudgetCategory,
   spending: CategorySpending,
 ): number | null {
-  const incomplete =
-    bc.isTransfer && bc.transferAccountId
+  const incomplete = isTransferIncomeLine(bc)
+    ? spending.incompleteTransferIncomeAccountIds.has(
+        bc.transferAccountId as string,
+      )
+    : bc.isTransfer && bc.transferAccountId
       ? spending.incompleteTransferAccountIds.has(bc.transferAccountId)
       : bc.categoryId !== null &&
         spending.incompleteCategoryIds.has(bc.categoryId);
@@ -533,5 +788,6 @@ export function resolveCategorySpentOrNull(
     bc,
     spending.spendingMap,
     spending.transferSpendingMap,
+    spending.transferIncomeMap,
   );
 }

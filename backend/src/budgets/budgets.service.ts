@@ -7,7 +7,14 @@ import { tr } from "../i18n/translate";
 import { DataSource, In } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { Budget } from "./entities/budget.entity";
-import { BudgetCategory } from "./entities/budget-category.entity";
+import {
+  BudgetCategory,
+  RolloverType,
+} from "./entities/budget-category.entity";
+import { CreateTransferIncomeLineDto } from "./dto/create-transfer-income-line.dto";
+import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
+import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
+import { assertTransferAccountsOwned } from "./budget-transfer-lines.util";
 import {
   Notification,
   NotificationType,
@@ -32,6 +39,7 @@ import {
   resolveBudgetIncome,
   resolveCategoryName,
   resolveCategorySpent,
+  resolveOutsideTransferIncome,
 } from "./budget-spending.util";
 import { formatDateYMD, todayYMD } from "../common/date-utils";
 import { overdueCarryFrom } from "../common/scheduled-occurrences";
@@ -73,6 +81,31 @@ export interface UpcomingBill {
   categoryId: string | null;
 }
 
+/** One budget line's figures for the current period. */
+export interface CategoryActualRow {
+  budgetCategoryId: string;
+  categoryId: string | null;
+  categoryName: string;
+  budgeted: number;
+  spent: number;
+  remaining: number;
+  percentUsed: number;
+  isIncome: boolean;
+  /** A transfer line: outgoing savings, or transfer income when `isIncome`. */
+  isTransfer: boolean;
+  percentage: number | null;
+}
+
+/** The current period's line figures and the income no line carries. */
+interface CategoryActuals {
+  lines: CategoryActualRow[];
+  /**
+   * `config.transfersInAsIncome`'s income, clamped at zero like a line's
+   * (`resolveOutsideTransferIncome`); `0` with the toggle off (issue #2141).
+   */
+  outsideTransferIncome: number;
+}
+
 @Injectable()
 export class BudgetsService {
   // Short-lived cache to dedup concurrent computeCategoryActuals calls
@@ -80,19 +113,7 @@ export class BudgetsService {
   private categoryActualsCache = new Map<
     string,
     {
-      data: Promise<
-        Array<{
-          budgetCategoryId: string;
-          categoryId: string | null;
-          categoryName: string;
-          budgeted: number;
-          spent: number;
-          remaining: number;
-          percentUsed: number;
-          isIncome: boolean;
-          percentage: number | null;
-        }>
-      >;
+      data: Promise<CategoryActuals>;
       timestamp: number;
     }
   >();
@@ -206,6 +227,8 @@ export class BudgetsService {
     const saved = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(Budget).save(budget),
     );
+    // `config.transfersInAsIncome` changes what the summary counts.
+    this.invalidateCategoryActuals(id);
 
     this.actionHistoryService.record(userId, {
       entityType: "budget",
@@ -281,6 +304,86 @@ export class BudgetsService {
       const repo = m.getRepository(BudgetCategory);
       return repo.save(repo.create({ ...dto, budgetId: budget.id }));
     });
+  }
+
+  /**
+   * Adds a transfer income line (issue #2141). The budget, the account and
+   * the one-line-per-account rule are checked in the write's own transaction,
+   * under the budget row's lock, so two concurrent adds of one account cannot
+   * both pass the duplicate check.
+   */
+  async addTransferIncomeLine(
+    userId: string,
+    budgetId: string,
+    dto: CreateTransferIncomeLineDto,
+  ): Promise<BudgetCategory> {
+    const saved = await withScopedDb(this.dataSource, async (m) => {
+      const budget = await m.getRepository(Budget).findOne({
+        where: { id: budgetId, userId },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!budget) {
+        throw new NotFoundException(
+          tr(
+            "errors.budgets.notFound",
+            `Budget with ID ${budgetId} not found`,
+            {
+              id: budgetId,
+            },
+          ),
+        );
+      }
+      await assertTransferAccountsOwned(m, userId, [dto.transferAccountId]);
+      const repo = m.getRepository(BudgetCategory);
+      const existing = await repo.findOne({
+        where: { budgetId, transferAccountId: dto.transferAccountId },
+      });
+      if (existing) {
+        throw new BadRequestException(
+          tr(
+            "errors.budgets.transferAccountAlreadyInBudget",
+            "This account already has a transfer line in the budget",
+          ),
+        );
+      }
+      const line = await repo.save(
+        repo.create({
+          budgetId,
+          categoryId: null,
+          transferAccountId: dto.transferAccountId,
+          isTransfer: true,
+          isIncome: true,
+          amount: dto.amount,
+          rolloverType: dto.rolloverType ?? RolloverType.NONE,
+          notes: dto.notes ?? null,
+        }),
+      );
+      // The open period's close freezes only the lines it has a row for, so a
+      // line added mid-period gets its row here, or this period's income from
+      // it would be left out of `actual_income`.
+      const openPeriod = await m.getRepository(BudgetPeriod).findOne({
+        where: { budgetId, status: PeriodStatus.OPEN },
+      });
+      if (openPeriod) {
+        const periodCats = m.getRepository(BudgetPeriodCategory);
+        await periodCats.save(
+          periodCats.create({
+            budgetPeriodId: openPeriod.id,
+            budgetCategoryId: line.id,
+            categoryId: null,
+            budgetedAmount: dto.amount,
+            rolloverIn: 0,
+            effectiveBudget: dto.amount,
+            actualAmount: 0,
+            rolloverOut: 0,
+          }),
+        );
+      }
+      return line;
+    });
+    // After the commit: the page re-reads the summary straight after the add.
+    this.invalidateCategoryActuals(budgetId);
+    return saved;
   }
 
   async updateCategory(
@@ -410,35 +513,31 @@ export class BudgetsService {
     percentUsed: number;
     incomeLinked: boolean;
     actualIncome: number | null;
-    categoryBreakdown: Array<{
-      budgetCategoryId: string;
-      categoryId: string | null;
-      categoryName: string;
-      budgeted: number;
-      spent: number;
-      remaining: number;
-      percentUsed: number;
-      isIncome: boolean;
-      percentage: number | null;
-    }>;
+    /** Included in `totalIncome`; `0` unless `config.transfersInAsIncome`. */
+    outsideTransferIncome: number;
+    categoryBreakdown: CategoryActualRow[];
   }> {
     const budget = await this.findOne(userId, budgetId);
 
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
 
-    const categoryBreakdown = await this.getCachedCategoryActuals(
-      userId,
-      budget,
-      periodStart,
-      periodEnd,
-    );
+    const { lines: categoryBreakdown, outsideTransferIncome } =
+      await this.getCachedCategoryActuals(
+        userId,
+        budget,
+        periodStart,
+        periodEnd,
+      );
 
     const expenseCategories = categoryBreakdown.filter((c) => !c.isIncome);
     const incomeCategories = categoryBreakdown.filter((c) => c.isIncome);
 
     const totalBudgeted = sumMoney(expenseCategories.map((c) => c.budgeted));
     const totalSpent = sumMoney(expenseCategories.map((c) => c.spent));
-    const totalIncome = sumMoney(incomeCategories.map((c) => c.spent));
+    const totalIncome = sumMoney([
+      ...incomeCategories.map((c) => c.spent),
+      outsideTransferIncome,
+    ]);
     const remaining = roundMoney(totalBudgeted - totalSpent);
     const percentUsed =
       totalBudgeted > 0
@@ -459,6 +558,7 @@ export class BudgetsService {
       percentUsed,
       incomeLinked: budget.incomeLinked,
       actualIncome,
+      outsideTransferIncome,
       categoryBreakdown,
     };
   }
@@ -557,7 +657,7 @@ export class BudgetsService {
     );
     const daysRemaining = Math.max(0, totalDays - daysElapsed);
 
-    const categoryBreakdown = await this.getCachedCategoryActuals(
+    const { lines: categoryBreakdown } = await this.getCachedCategoryActuals(
       userId,
       budget,
       periodStart,
@@ -870,7 +970,7 @@ export class BudgetsService {
     const budget = budgets[0];
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
 
-    const categoryBreakdown = await this.getCachedCategoryActuals(
+    const { lines: categoryBreakdown } = await this.getCachedCategoryActuals(
       userId,
       budget,
       periodStart,
@@ -971,7 +1071,7 @@ export class BudgetsService {
     const budget = budgets[0];
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
 
-    const categoryBreakdown = await this.getCachedCategoryActuals(
+    const { lines: categoryBreakdown } = await this.getCachedCategoryActuals(
       userId,
       budget,
       periodStart,
@@ -998,6 +1098,13 @@ export class BudgetsService {
 
   private getCurrentPeriodDates(_budget: Budget): PeriodDateRange {
     return getCurrentMonthPeriodDates();
+  }
+
+  /** Drops a budget's cached actuals once its lines or config changed. */
+  private invalidateCategoryActuals(budgetId: string): void {
+    for (const key of this.categoryActualsCache.keys()) {
+      if (key.startsWith(`${budgetId}:`)) this.categoryActualsCache.delete(key);
+    }
   }
 
   private getCachedCategoryActuals(
@@ -1038,47 +1145,34 @@ export class BudgetsService {
     budget: Budget,
     periodStart: string,
     periodEnd: string,
-  ): Promise<
-    Array<{
-      budgetCategoryId: string;
-      categoryId: string | null;
-      categoryName: string;
-      budgeted: number;
-      spent: number;
-      remaining: number;
-      percentUsed: number;
-      isIncome: boolean;
-      percentage: number | null;
-    }>
-  > {
+  ): Promise<CategoryActuals> {
     const budgetCategories = budget.categories || [];
 
     if (budgetCategories.length === 0) {
-      return [];
+      return { lines: [], outsideTransferIncome: 0 };
     }
 
     // The two spending queries share one scoped transaction so the direct and
     // split halves of a category's total come from the same snapshot.
-    const { spendingMap, transferSpendingMap } = await withScopedDb(
-      this.dataSource,
-      (m) =>
-        queryCategorySpending(
-          m.getRepository(Transaction),
-          m.getRepository(TransactionSplit),
-          userId,
-          budgetCategories,
-          periodStart,
-          periodEnd,
-        ),
+    const spending = await withScopedDb(this.dataSource, (m) =>
+      queryCategorySpending(
+        m.getRepository(Transaction),
+        m.getRepository(TransactionSplit),
+        userId,
+        budgetCategories,
+        periodStart,
+        periodEnd,
+      ),
     );
 
     // An income-linked budget derives its lines from the income the same
-    // read converted into the budget's currency (issue #2155).
+    // read converted into the budget's currency (issue #2155), transfers in
+    // included (issue #2141).
     const actualIncome = budget.incomeLinked
-      ? resolveBudgetIncome(budgetCategories, spendingMap)
+      ? resolveBudgetIncome(budgetCategories, spending)
       : 0;
 
-    return budgetCategories.map((bc) => {
+    const lines = budgetCategories.map((bc) => {
       const rawAmount = Number(bc.amount);
       let budgeted: number;
       let percentage: number | null = null;
@@ -1090,7 +1184,12 @@ export class BudgetsService {
         budgeted = rawAmount;
       }
 
-      const spent = resolveCategorySpent(bc, spendingMap, transferSpendingMap);
+      const spent = resolveCategorySpent(
+        bc,
+        spending.spendingMap,
+        spending.transferSpendingMap,
+        spending.transferIncomeMap,
+      );
       const categoryName = resolveCategoryName(bc);
       const remaining = roundMoney(budgeted - spent);
       const percentUsed =
@@ -1105,8 +1204,14 @@ export class BudgetsService {
         remaining,
         percentUsed,
         isIncome: bc.isIncome,
+        isTransfer: bc.isTransfer,
         percentage,
       };
     });
+
+    return {
+      lines,
+      outsideTransferIncome: resolveOutsideTransferIncome(spending),
+    };
   }
 }

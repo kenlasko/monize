@@ -61,6 +61,15 @@ describe('budgetsApi', () => {
     });
   });
 
+  it('addTransferIncomeLine posts to /budgets/:id/categories/transfer-income', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { id: 'bc-2' } });
+    await budgetsApi.addTransferIncomeLine('b-1', { transferAccountId: 'a-1', amount: 2000 });
+    expect(apiClient.post).toHaveBeenCalledWith('/budgets/b-1/categories/transfer-income', {
+      transferAccountId: 'a-1',
+      amount: 2000,
+    });
+  });
+
   it('updateCategory patches a budget category', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'bc-1' } });
     await budgetsApi.updateCategory('b-1', 'bc-1', { amount: 200 } as any);

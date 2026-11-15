@@ -259,6 +259,23 @@
       "analyzeFailed": "Analisi delle spese non riuscita"
     }
   },
+  "lineNames": {
+    "transfersFrom": "Trasferimenti da {name}",
+    "unknown": "Sconosciuto"
+  },
+  "transferIncomeForm": {
+    "hint": "Il denaro in entrata da questo conto conta come reddito del budget, meno quanto vi viene restituito.",
+    "account": "Conto di origine",
+    "accountPlaceholder": "Scegli un conto",
+    "accountRequired": "Scegli il conto da cui arrivano i trasferimenti",
+    "amount": "Importo previsto",
+    "submit": "Aggiungi"
+  },
+  "transfersInAsIncome": {
+    "label": "Conta come reddito i trasferimenti in entrata dai conti esclusi",
+    "hint": "Il denaro trasferito da un conto escluso ai conti di questo budget conta come reddito, meno quanto vi viene restituito. Un conto con una propria riga di trasferimento viene contato su quella riga.",
+    "noExcludedAccounts": "Questo budget non esclude ancora alcun conto, quindi non viene contato nulla."
+  },
   "wizardCategories": {
     "title": "Revisione categorie",
     "noAnalysis": "Nessun dato di analisi. Torna indietro ed esegui prima l'analisi.",
@@ -266,6 +283,7 @@
       "income": "Entrate",
       "expenses": "Uscite",
       "transfers": "Trasferimenti / Risparmio",
+      "transfersIn": "Trasferimenti in entrata (reddito)",
       "trendMedian": "Trend / Mediana",
       "amount": "Importo"
     },
@@ -275,6 +293,7 @@
       "transfers": "Trasferimenti",
       "remaining": "Rimanente"
     },
+    "transfersInHint": "Il denaro in entrata da un conto selezionato conta come reddito, meno quanto vi viene restituito. Seleziona solo i conti da cui ricavi un reddito, come una riserva di risparmio.",
     "allocation503020": "Allocazione 50/30/20",
     "allocationTarget": "(obiettivo {percent}%)",
     "nextButton": "Avanti: Configura",
@@ -353,8 +372,10 @@
       "rollover": "Riporto",
       "alerts": "Avvisi",
       "incomeLinked": "Entrate collegate",
-      "excludedAccounts": "Conti esclusi"
+      "excludedAccounts": "Conti esclusi",
+      "transfersInAsIncome": "Trasferimenti in entrata"
     },
+    "transfersInAsIncomeOn": "Quelli dai conti esclusi contano come reddito",
     "rolloverOff": "Disattivato",
     "alertsValue": "Avviso {warn}% / Critico {critical}%",
     "accountCount": "{count} {count, plural, one {conto} other {conti}}",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "Entrate",
       "expense": "Uscite",
-      "transfer": "Trasferimento"
+      "transfer": "Trasferimento",
+      "transferIn": "Trasferimento in entrata"
     },
     "createButton": "Crea budget",
     "categoryCount": "{count} categorie",
@@ -521,6 +543,10 @@
       "budgetSettings": "Impostazioni budget",
       "categoryAllocations": "Allocazioni per categoria",
       "income": "Entrate",
+      "addTransferIncome": "Aggiungi reddito da trasferimento",
+      "addTransferIncomeTitle": "Aggiungi reddito da trasferimento",
+      "outsideTransferIncome": "Trasferimenti da conti esterni a questo budget",
+      "outsideTransferIncomeHint": "Contato in questo periodo perché il budget conta come reddito i trasferimenti in entrata dai suoi conti esclusi.",
       "expensesWithCount": "Uscite ({count})",
       "resetsEachPeriod": "Si azzera ogni periodo",
       "percentUsed": "{percent}% utilizzato",
@@ -538,7 +564,9 @@
         "categoryFailed": "Impossibile aggiornare la categoria",
         "loadFailed": "Impossibile caricare il budget",
         "categoryRemoved": "Categoria rimossa dal budget",
-        "categoryRemoveFailed": "Impossibile rimuovere la categoria"
+        "categoryRemoveFailed": "Impossibile rimuovere la categoria",
+        "transferIncomeAdded": "Reddito da trasferimento aggiunto",
+        "transferIncomeFailed": "Impossibile aggiungere il reddito da trasferimento"
       }
     }
   },

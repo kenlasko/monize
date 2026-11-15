@@ -99,6 +99,40 @@ describe('BudgetPeriodDetail', () => {
     expect(screen.getByText('January 2026')).toBeInTheDocument();
   });
 
+  it('reads a closed period\'s income from the close, transfers in included (issue #2141)', () => {
+    const hisaLine: BudgetPeriodCategory = {
+      ...mockIncomePeriodCategory,
+      id: 'bpc-hisa',
+      budgetCategoryId: 'bc-hisa',
+      categoryId: null,
+      actualAmount: 2000,
+      category: null,
+      budgetCategory: {
+        ...mockIncomeBudgetCategory,
+        id: 'bc-hisa',
+        categoryId: null,
+        category: null,
+        isTransfer: true,
+        transferAccountId: 'acc-hisa',
+        transferAccount: { id: 'acc-hisa', name: 'HISA', accountType: 'SAVINGS' },
+      },
+    };
+    render(
+      <BudgetPeriodDetail
+        period={{
+          ...mockPeriod,
+          // 5,200 salary + 2,000 from the HISA line + 300 the toggle swept in.
+          actualIncome: 7500,
+          periodCategories: [mockPeriodCategory, mockIncomePeriodCategory, hisaLine],
+        }}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(screen.getByText('Transfers from HISA')).toBeInTheDocument();
+    expect(screen.getByText('$7500.00')).toBeInTheDocument();
+  });
+
   it('renders period status badge', () => {
     render(
       <BudgetPeriodDetail period={mockPeriod} formatCurrency={mockFormat} />,

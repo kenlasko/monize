@@ -259,6 +259,23 @@
       "analyzeFailed": "Analyseren van uitgaven mislukt"
     }
   },
+  "lineNames": {
+    "transfersFrom": "Overboekingen van {name}",
+    "unknown": "Onbekend"
+  },
+  "transferIncomeForm": {
+    "hint": "Geld dat van deze rekening binnenkomt, telt als inkomen van het budget, min wat ernaar wordt teruggeboekt.",
+    "account": "Van rekening",
+    "accountPlaceholder": "Kies een rekening",
+    "accountRequired": "Kies de rekening waar de overboekingen vandaan komen",
+    "amount": "Gepland bedrag",
+    "submit": "Toevoegen"
+  },
+  "transfersInAsIncome": {
+    "label": "Inkomende overboekingen van uitgesloten rekeningen als inkomen tellen",
+    "hint": "Geld dat van een uitgesloten rekening naar de rekeningen van dit budget wordt overgeboekt, telt als inkomen, min wat ernaar wordt teruggeboekt. Een rekening met een eigen overboekingsregel wordt op die regel geteld.",
+    "noExcludedAccounts": "Dit budget sluit nog geen rekening uit, dus er wordt niets geteld."
+  },
   "wizardCategories": {
     "title": "Categorieën beoordelen",
     "noAnalysis": "Geen analysegegevens. Ga terug en voer eerst de analyse uit.",
@@ -266,6 +283,7 @@
       "income": "Inkomsten",
       "expenses": "Uitgaven",
       "transfers": "Overboekingen / Sparen",
+      "transfersIn": "Inkomende overboekingen (inkomen)",
       "trendMedian": "Trend / Mediaan",
       "amount": "Bedrag"
     },
@@ -275,6 +293,7 @@
       "transfers": "Overboekingen",
       "remaining": "Resterend"
     },
+    "transfersInHint": "Geld dat van een aangevinkte rekening binnenkomt, telt als inkomen, min wat ernaar wordt teruggeboekt. Vink alleen de rekeningen aan waaruit u inkomen haalt, zoals een spaarbuffer.",
     "allocation503020": "50/30/20-verdeling",
     "allocationTarget": "(doel {percent}%)",
     "nextButton": "Volgende: Configureren",
@@ -353,8 +372,10 @@
       "rollover": "Overdracht",
       "alerts": "Waarschuwingen",
       "incomeLinked": "Inkomen gekoppeld",
-      "excludedAccounts": "Uitgesloten rekeningen"
+      "excludedAccounts": "Uitgesloten rekeningen",
+      "transfersInAsIncome": "Inkomende overboekingen"
     },
+    "transfersInAsIncomeOn": "Die van uitgesloten rekeningen tellen als inkomen",
     "rolloverOff": "Uit",
     "alertsValue": "Waarschuwing {warn}% / Kritiek {critical}%",
     "accountCount": "{count} {count, plural, one {rekening} other {rekeningen}}",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "Inkomsten",
       "expense": "Uitgaven",
-      "transfer": "Overboeking"
+      "transfer": "Overboeking",
+      "transferIn": "Inkomende overboeking"
     },
     "createButton": "Budget aanmaken",
     "categoryCount": "{count} categorieën",
@@ -521,6 +543,10 @@
       "budgetSettings": "Budgetinstellingen",
       "categoryAllocations": "Categorieverdelingen",
       "income": "Inkomsten",
+      "addTransferIncome": "Overboekingsinkomen toevoegen",
+      "addTransferIncomeTitle": "Overboekingsinkomen toevoegen",
+      "outsideTransferIncome": "Overboekingen van rekeningen buiten dit budget",
+      "outsideTransferIncomeHint": "Deze periode geteld omdat het budget inkomende overboekingen van zijn uitgesloten rekeningen als inkomen telt.",
       "expensesWithCount": "Uitgaven ({count})",
       "resetsEachPeriod": "Reset elke periode",
       "percentUsed": "{percent}% gebruikt",
@@ -538,7 +564,9 @@
         "categoryFailed": "Bijwerken van categorie mislukt",
         "loadFailed": "Laden van budget mislukt",
         "categoryRemoved": "Categorie uit budget verwijderd",
-        "categoryRemoveFailed": "Categorie verwijderen mislukt"
+        "categoryRemoveFailed": "Categorie verwijderen mislukt",
+        "transferIncomeAdded": "Overboekingsinkomen toegevoegd",
+        "transferIncomeFailed": "Overboekingsinkomen kon niet worden toegevoegd"
       }
     }
   },

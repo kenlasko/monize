@@ -23,6 +23,9 @@ import {
   queryCategorySpending,
   queryCategorySpendingBuckets,
   resolveCategorySpent,
+  resolveOutsideTransferIncome,
+  isTransferIncomeLine,
+  budgetTransfersInAsIncome,
 } from "./budget-spending.util";
 import {
   convertRateParts,
@@ -248,15 +251,16 @@ export class BudgetHealthReportsService {
       (bc) => !bc.isIncome,
     );
 
-    const incomeCategoryIds = incomeCategories
-      .filter((bc) => bc.categoryId !== null)
-      .map((bc) => bc.categoryId as string);
+    // A transfer income line is an income line too (issue #2141).
+    const incomeLines = incomeCategories.filter(
+      (bc) => bc.categoryId !== null || isTransferIncomeLine(bc),
+    );
     const spendingLines = [
-      ...incomeCategories,
+      ...incomeLines,
       ...expenseCategories.filter(
         (bc) => bc.categoryId !== null && !bc.isTransfer,
       ),
-    ].filter((bc) => bc.categoryId !== null);
+    ];
 
     const excludedAccountIds = budgetExcludedAccountIds(budget.config);
     const today = new Date();
@@ -269,7 +273,7 @@ export class BudgetHealthReportsService {
     // month's whole foreign figure); nothing is added 1:1.
     const incomeByMonth = new Map<string, number>();
     const foreignIncomeMonths = new Set<string>();
-    if (incomeCategoryIds.length === 0) {
+    if (incomeLines.length === 0) {
       const startD = new Date(
         today.getFullYear(),
         today.getMonth() - (months - 1),
@@ -337,8 +341,15 @@ export class BudgetHealthReportsService {
     // The budget page's own actuals in one query over the window, bucketed by
     // month: net within the category, converted into the budget's currency, the
     // budget's excluded accounts left out.
+    // With no line on either side the read still runs for the transfers in
+    // `config.transfersInAsIncome` counts, on the budget's other lines (it
+    // needs one to name the budget); `sumSide` reads `spendingLines` only.
+    const queryLines =
+      spendingLines.length > 0 || !budgetTransfersInAsIncome(budget.config)
+        ? spendingLines
+        : budget.categories || [];
     const spendingByMonth =
-      spendingLines.length > 0
+      queryLines.length > 0
         ? (
             await withScopedDb(this.dataSource, (m) => {
               const first = new Date(
@@ -350,7 +361,7 @@ export class BudgetHealthReportsService {
                 m.getRepository(Transaction),
                 m.getRepository(TransactionSplit),
                 userId,
-                spendingLines,
+                queryLines,
                 formatMonthKey(first.getFullYear(), first.getMonth() + 1) +
                   "-01",
                 getMonthEndYMD(today.getFullYear(), today.getMonth() + 1),
@@ -379,15 +390,19 @@ export class BudgetHealthReportsService {
                     bc,
                     spending.spendingMap,
                     spending.transferSpendingMap,
+                    spending.transferIncomeMap,
                   ),
                 ),
             )
           : 0;
 
-      const income =
-        incomeCategoryIds.length > 0
+      // `config.transfersInAsIncome` adds to either side's income.
+      const income = sumMoney([
+        incomeLines.length > 0
           ? sumSide(true)
-          : incomeByMonth.get(monthKey) || 0;
+          : incomeByMonth.get(monthKey) || 0,
+        spending ? resolveOutsideTransferIncome(spending) : 0,
+      ]);
       const expenses = sumSide(false);
       const savings = income - expenses;
       const savingsRate =
@@ -401,7 +416,9 @@ export class BudgetHealthReportsService {
         savingsRate,
         valuationComplete:
           !foreignIncomeMonths.has(monthKey) &&
-          (spending?.incompleteCategoryIds.size ?? 0) === 0,
+          (spending?.incompleteCategoryIds.size ?? 0) === 0 &&
+          (spending?.incompleteTransferIncomeAccountIds.size ?? 0) === 0 &&
+          spending?.outsideTransferIncomeComplete !== false,
       });
     }
 

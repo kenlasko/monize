@@ -259,6 +259,23 @@
       "analyzeFailed": "Error al analizar los gastos"
     }
   },
+  "lineNames": {
+    "transfersFrom": "Transferencias desde {name}",
+    "unknown": "Desconocido"
+  },
+  "transferIncomeForm": {
+    "hint": "El dinero que entra desde esta cuenta cuenta como ingreso del presupuesto, menos lo que se devuelva a ella.",
+    "account": "Cuenta de origen",
+    "accountPlaceholder": "Elige una cuenta",
+    "accountRequired": "Elige la cuenta de la que vienen las transferencias",
+    "amount": "Importe previsto",
+    "submit": "Añadir"
+  },
+  "transfersInAsIncome": {
+    "label": "Contar como ingreso las transferencias entrantes desde cuentas excluidas",
+    "hint": "El dinero transferido desde una cuenta excluida a las cuentas de este presupuesto cuenta como ingreso, menos lo que se devuelva a ella. Una cuenta con su propia línea de transferencia se cuenta en esa línea.",
+    "noExcludedAccounts": "Este presupuesto aún no excluye ninguna cuenta, así que no se cuenta nada."
+  },
   "wizardCategories": {
     "title": "Revisar categorías",
     "noAnalysis": "Sin datos de análisis. Vuelve atrás y ejecuta el análisis primero.",
@@ -266,6 +283,7 @@
       "income": "Ingresos",
       "expenses": "Gastos",
       "transfers": "Transferencias / Ahorros",
+      "transfersIn": "Transferencias entrantes (ingresos)",
       "trendMedian": "Tendencia / Mediana",
       "amount": "Monto"
     },
@@ -275,6 +293,7 @@
       "transfers": "Transferencias",
       "remaining": "Restante"
     },
+    "transfersInHint": "El dinero que entra desde una cuenta marcada cuenta como ingreso, menos lo que se devuelva a ella. Marca solo las cuentas de las que obtienes ingresos, como una reserva de ahorro.",
     "allocation503020": "Asignación 50/30/20",
     "allocationTarget": "(objetivo {percent}%)",
     "nextButton": "Siguiente: Configurar",
@@ -353,8 +372,10 @@
       "rollover": "Traspaso",
       "alerts": "Alertas",
       "incomeLinked": "Ingresos vinculados",
-      "excludedAccounts": "Cuentas excluidas"
+      "excludedAccounts": "Cuentas excluidas",
+      "transfersInAsIncome": "Transferencias entrantes"
     },
+    "transfersInAsIncomeOn": "Las de cuentas excluidas cuentan como ingreso",
     "rolloverOff": "Desactivado",
     "alertsValue": "Advertencia {warn}% / Crítico {critical}%",
     "accountCount": "{count} {count, plural, one {cuenta} other {cuentas}}",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "Ingresos",
       "expense": "Gasto",
-      "transfer": "Transferencia"
+      "transfer": "Transferencia",
+      "transferIn": "Transferencia entrante"
     },
     "createButton": "Crear presupuesto",
     "categoryCount": "{count} categorías",
@@ -521,6 +543,10 @@
       "budgetSettings": "Configuración del presupuesto",
       "categoryAllocations": "Asignaciones por categoría",
       "income": "Ingresos",
+      "addTransferIncome": "Añadir ingreso por transferencia",
+      "addTransferIncomeTitle": "Añadir ingreso por transferencia",
+      "outsideTransferIncome": "Transferencias desde cuentas fuera de este presupuesto",
+      "outsideTransferIncomeHint": "Contado en este período porque el presupuesto cuenta como ingreso las transferencias entrantes desde sus cuentas excluidas.",
       "expensesWithCount": "Gastos ({count})",
       "resetsEachPeriod": "Se reinicia cada período",
       "percentUsed": "{percent}% usado",
@@ -538,7 +564,9 @@
         "categoryFailed": "Error al actualizar la categoría",
         "loadFailed": "Error al cargar el presupuesto",
         "categoryRemoved": "Categoría quitada del presupuesto",
-        "categoryRemoveFailed": "No se pudo quitar la categoría"
+        "categoryRemoveFailed": "No se pudo quitar la categoría",
+        "transferIncomeAdded": "Ingreso por transferencia añadido",
+        "transferIncomeFailed": "No se pudo añadir el ingreso por transferencia"
       }
     }
   },

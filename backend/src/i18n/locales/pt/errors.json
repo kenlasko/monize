@@ -330,7 +330,9 @@
     "budgetCategoryNotFound": "Categoria de orçamento com ID {{ id }} não encontrada",
     "periodNotFound": "Período de orçamento com ID {{ id }} não encontrado",
     "noOpenPeriod": "Não há período aberto para encerrar",
-    "categoryIdsNotOwned": "IDs de categoria não encontrados ou não pertencentes ao utilizador: {{ ids }}"
+    "categoryIdsNotOwned": "IDs de categoria não encontrados ou não pertencentes ao utilizador: {{ ids }}",
+    "transferAccountNotFound": "Conta com ID {{ id }} não encontrada",
+    "transferAccountAlreadyInBudget": "Esta conta já tem uma linha de transferência no orçamento"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Uma regra de dedução salarial acompanha uma conta a pagar paga numa moeda fiduciária; a conta desta fatura contém a criptomoeda {{ code }}. Escolha uma conta a pagar paga a partir de uma conta em moeda fiduciária.",

@@ -259,6 +259,23 @@
       "analyzeFailed": "Nie udało się przeanalizować wydatków"
     }
   },
+  "lineNames": {
+    "transfersFrom": "Przelewy z {name}",
+    "unknown": "Nieznane"
+  },
+  "transferIncomeForm": {
+    "hint": "Pieniądze wpływające z tego konta liczą się jako dochód budżetu, pomniejszone o to, co do niego wraca.",
+    "account": "Z konta",
+    "accountPlaceholder": "Wybierz konto",
+    "accountRequired": "Wybierz konto, z którego pochodzą przelewy",
+    "amount": "Planowana kwota",
+    "submit": "Dodaj"
+  },
+  "transfersInAsIncome": {
+    "label": "Licz przelewy przychodzące z wykluczonych kont jako dochód",
+    "hint": "Pieniądze przelane z wykluczonego konta na konta tego budżetu liczą się jako dochód, pomniejszone o to, co do niego wraca. Konto z własną linią przelewu jest liczone w tej linii.",
+    "noExcludedAccounts": "Ten budżet nie wyklucza jeszcze żadnego konta, więc nic nie jest liczone."
+  },
   "wizardCategories": {
     "title": "Przejrzyj kategorie",
     "noAnalysis": "Brak danych analizy. Wróć i najpierw uruchom analizę.",
@@ -266,6 +283,7 @@
       "income": "Przychody",
       "expenses": "Wydatki",
       "transfers": "Przelewy / Oszczędności",
+      "transfersIn": "Przelewy przychodzące (dochód)",
       "trendMedian": "Trend / Mediana",
       "amount": "Kwota"
     },
@@ -275,6 +293,7 @@
       "transfers": "Przelewy",
       "remaining": "Pozostało"
     },
+    "transfersInHint": "Pieniądze wpływające z zaznaczonego konta liczą się jako dochód, pomniejszone o to, co do niego wraca. Zaznacz tylko konta, z których czerpiesz dochód, np. rezerwę oszczędności.",
     "allocation503020": "Podział 50/30/20",
     "allocationTarget": "(cel {percent}%)",
     "nextButton": "Dalej: Konfiguracja",
@@ -353,8 +372,10 @@
       "rollover": "Przenoszona",
       "alerts": "Alerty",
       "incomeLinked": "Powiązano z przychodem",
-      "excludedAccounts": "Wykluczone konta"
+      "excludedAccounts": "Wykluczone konta",
+      "transfersInAsIncome": "Przelewy przychodzące"
     },
+    "transfersInAsIncomeOn": "Z wykluczonych kont liczą się jako dochód",
     "rolloverOff": "Wyłączone",
     "alertsValue": "Ostrzeżenie {warn}% / Krytyczny {critical}%",
     "accountCount": "{count} {count, plural, one {konto} few {konta} many {kont} other {konta}}",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "Przychody",
       "expense": "Wydatek",
-      "transfer": "Przelew"
+      "transfer": "Przelew",
+      "transferIn": "Przelew przychodzący"
     },
     "createButton": "Utwórz budżet",
     "categoryCount": "{count} kategorii",
@@ -521,6 +543,10 @@
       "budgetSettings": "Ustawienia budżetu",
       "categoryAllocations": "Przydziały kategorii",
       "income": "Przychody",
+      "addTransferIncome": "Dodaj dochód z przelewów",
+      "addTransferIncomeTitle": "Dodaj dochód z przelewów",
+      "outsideTransferIncome": "Przelewy z kont spoza tego budżetu",
+      "outsideTransferIncomeHint": "Liczone w tym okresie, ponieważ budżet liczy przelewy przychodzące z wykluczonych kont jako dochód.",
       "expensesWithCount": "Wydatki ({count})",
       "resetsEachPeriod": "Zeruje się co okres",
       "percentUsed": "{percent}% wykorzystane",
@@ -538,7 +564,9 @@
         "categoryFailed": "Nie udało się zaktualizować kategorii",
         "loadFailed": "Nie udało się załadować budżetu",
         "categoryRemoved": "Kategoria usunięta z budżetu",
-        "categoryRemoveFailed": "Nie udało się usunąć kategorii"
+        "categoryRemoveFailed": "Nie udało się usunąć kategorii",
+        "transferIncomeAdded": "Dodano dochód z przelewów",
+        "transferIncomeFailed": "Nie udało się dodać dochodu z przelewów"
       }
     }
   },

@@ -270,6 +270,7 @@ describe("BudgetPeriodService", () => {
         relations: [
           "periodCategories",
           "periodCategories.budgetCategory",
+          "periodCategories.budgetCategory.transferAccount",
           "periodCategories.category",
         ],
       });
@@ -463,6 +464,74 @@ describe("BudgetPeriodService", () => {
           budgetCategoryId: "bc-transfer",
           actualAmount: 150,
         }),
+      );
+    });
+
+    it("freezes transfers in as the period's income (issue #2141)", async () => {
+      const incomeLine = {
+        ...mockBudgetCategory,
+        id: "bc-hisa",
+        categoryId: null,
+        isTransfer: true,
+        isIncome: true,
+        transferAccountId: "hisa",
+      };
+      budgetsService.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [incomeLine],
+      });
+      periodsRepository.findOne.mockResolvedValue({
+        ...mockPeriod,
+        status: PeriodStatus.OPEN,
+        periodCategories: [
+          {
+            ...mockPeriodCategory,
+            budgetCategoryId: "bc-hisa",
+            budgetCategory: incomeLine,
+          },
+        ],
+      });
+      periodsRepository.save.mockImplementation((data) => data);
+      const baseQuery = scopedManager.query.getMockImplementation()!;
+      scopedManager.query.mockImplementation(async (sql: string, p: unknown) =>
+        typeof sql === "string" && sql.includes("FROM budgets")
+          ? [
+              {
+                currency_code: "USD",
+                config: {
+                  excludedAccountIds: ["hisa", "rrsp"],
+                  transfersInAsIncome: true,
+                },
+              },
+            ]
+          : baseQuery(sql, p),
+      );
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest
+            .fn()
+            .mockResolvedValue([
+              spendingRow("hisa", "2000"),
+              spendingRow("rrsp", "300"),
+            ]),
+        }),
+      );
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(),
+      );
+
+      await service.closePeriod("user-1", "budget-1");
+
+      expect(scopedManager.save).toHaveBeenCalledWith(
+        BudgetPeriodCategory,
+        expect.objectContaining({
+          budgetCategoryId: "bc-hisa",
+          actualAmount: 2000,
+        }),
+      );
+      expect(scopedManager.save).toHaveBeenCalledWith(
+        BudgetPeriod,
+        expect.objectContaining({ actualIncome: 2300, actualExpenses: 0 }),
       );
     });
   });

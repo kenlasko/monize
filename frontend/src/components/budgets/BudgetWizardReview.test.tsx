@@ -69,6 +69,7 @@ describe('BudgetWizardReview', () => {
     ],
     transfers: [],
     totalTransfers: 0,
+    incomeTransfers: [],
     estimatedMonthlyIncome: 5000,
     totalBudgeted: 400,
     projectedMonthlySavings: 4600,
@@ -92,6 +93,7 @@ describe('BudgetWizardReview', () => {
     budgetType: 'MONTHLY',
     periodStart: '2026-02-01',
     selectedTransfers: new Map(),
+    selectedIncomeTransfers: new Map(),
     currencyCode: 'USD',
     baseIncome: null,
     incomeLinked: false,
@@ -99,6 +101,7 @@ describe('BudgetWizardReview', () => {
     alertWarnPercent: 80,
     alertCriticalPercent: 95,
     excludedAccountIds: [],
+    transfersInAsIncome: false,
     isSubmitting: false,
   };
 
@@ -108,6 +111,68 @@ describe('BudgetWizardReview', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('sends transfer income lines and the transfers-in option (issue #2141)', async () => {
+    mockApplyGenerated.mockResolvedValue({ id: 'b-new' });
+    const state: WizardState = {
+      ...defaultState,
+      analysisResult: {
+        ...defaultState.analysisResult!,
+        incomeTransfers: [
+          {
+            accountId: 'acc-hisa',
+            accountName: 'HISA',
+            accountType: 'SAVINGS',
+            average: 2000,
+            median: 2000,
+            p25: 2000,
+            p75: 2000,
+            min: 2000,
+            max: 2000,
+            stdDev: 0,
+            monthlyAmounts: [2000],
+            monthlyOccurrences: 1,
+            isFixed: true,
+            seasonalMonths: [],
+            suggested: 2000,
+          },
+        ],
+      },
+      selectedIncomeTransfers: new Map([
+        ['acc-hisa', { transferAccountId: 'acc-hisa', isTransfer: true, isIncome: true, amount: 2000 }],
+      ]),
+      excludedAccountIds: ['acc-rrsp'],
+      transfersInAsIncome: true,
+    };
+
+    render(
+      <BudgetWizardReview
+        state={state}
+        updateState={mockUpdateState}
+        onComplete={mockOnComplete}
+        onBack={mockOnBack}
+      />,
+    );
+
+    expect(screen.getByText('Transfers from HISA')).toBeInTheDocument();
+    expect(screen.getByText('Transfer in')).toBeInTheDocument();
+    expect(screen.getByText('From excluded accounts count as income')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Create Budget'));
+
+    await waitFor(() => expect(mockApplyGenerated).toHaveBeenCalled());
+    const payload = mockApplyGenerated.mock.calls[0][0];
+    expect(payload.config).toEqual({
+      excludedAccountIds: ['acc-rrsp'],
+      transfersInAsIncome: true,
+    });
+    expect(payload.categories).toContainEqual({
+      transferAccountId: 'acc-hisa',
+      isTransfer: true,
+      isIncome: true,
+      amount: 2000,
+    });
   });
 
   it('renders budget details', () => {

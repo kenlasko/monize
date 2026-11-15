@@ -330,7 +330,9 @@
     "budgetCategoryNotFound": "找不到 ID 為 {{ id }} 的預算類別",
     "periodNotFound": "找不到 ID 為 {{ id }} 的預算期間",
     "noOpenPeriod": "沒有可關閉的開放期間",
-    "categoryIdsNotOwned": "找不到類別 ID 或類別不屬於使用者：{{ ids }}"
+    "categoryIdsNotOwned": "找不到類別 ID 或類別不屬於使用者：{{ ids }}",
+    "transferAccountNotFound": "找不到 ID 為 {{ id }} 的科目",
+    "transferAccountAlreadyInBudget": "此帳戶在預算中已有轉帳項目"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "薪資扣款規則會追蹤以法定貨幣支付的帳單；此帳單的科目持有加密貨幣 {{ code }}。請選擇從法定貨幣科目支付的帳單。",

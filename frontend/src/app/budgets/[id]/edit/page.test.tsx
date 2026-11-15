@@ -93,6 +93,7 @@ vi.mock('@/hooks/useNumberFormat', async () => {
 const mockGetById = vi.fn();
 const mockGetSummary = vi.fn();
 const mockRemoveCategory = vi.fn();
+const mockAddTransferIncomeLine = vi.fn();
 
 vi.mock('@/lib/budgets', () => ({
   budgetsApi: {
@@ -101,7 +102,27 @@ vi.mock('@/lib/budgets', () => ({
     update: vi.fn(),
     updateCategory: vi.fn(),
     removeCategory: (...args: any[]) => mockRemoveCategory(...args),
+    addTransferIncomeLine: (...args: any[]) => mockAddTransferIncomeLine(...args),
   },
+}));
+
+const mockGetAccounts = vi.fn();
+vi.mock('@/lib/accounts', () => ({
+  accountsApi: {
+    getAll: (...args: any[]) => mockGetAccounts(...args),
+  },
+}));
+
+vi.mock('@/components/budgets/TransferIncomeLineForm', () => ({
+  TransferIncomeLineForm: ({ accounts, onSave }: any) => (
+    <div data-testid="transfer-income-form">
+      {accounts.map((a: any) => (
+        <button key={a.id} onClick={() => onSave({ transferAccountId: a.id, amount: 2000 })}>
+          {`Pick ${a.name}`}
+        </button>
+      ))}
+    </div>
+  ),
 }));
 
 // Mock components
@@ -230,6 +251,7 @@ describe('BudgetEditPage', () => {
     mockGetById.mockResolvedValue(mockBudget);
     mockGetSummary.mockResolvedValue(mockSummary);
     mockRemoveCategory.mockResolvedValue(undefined);
+    mockGetAccounts.mockResolvedValue([]);
   });
 
   it('shows loading spinner initially', async () => {
@@ -443,6 +465,105 @@ describe('BudgetEditPage', () => {
         expect(mockToastError).toHaveBeenCalledWith('Failed to remove category');
       });
       expect(mockToastSuccess).not.toHaveBeenCalled();
+    });
+  });
+  describe('transfer income (issue #2141)', () => {
+    const account = (id: string, name: string, extra: Record<string, unknown> = {}) => ({
+      id,
+      name,
+      userId: 'user-1',
+      isClosed: false,
+      ...extra,
+    });
+
+    it('offers only the user\'s open accounts no transfer line names, and adds the line', async () => {
+      mockGetById.mockResolvedValue({
+        ...mockBudget,
+        categories: [
+          ...mockBudget.categories,
+          {
+            ...mockBudget.categories[0],
+            id: 'bc-save',
+            categoryId: null,
+            category: null,
+            isTransfer: true,
+            transferAccountId: 'acc-tfsa',
+            transferAccount: { id: 'acc-tfsa', name: 'TFSA', accountType: 'SAVINGS' },
+          },
+        ],
+      });
+      mockGetAccounts.mockResolvedValue([
+        account('acc-hisa', 'HISA'),
+        account('acc-tfsa', 'TFSA'),
+        account('acc-old', 'Old', { isClosed: true }),
+        account('acc-joint', 'Partner', { userId: 'user-2' }),
+      ]);
+      mockAddTransferIncomeLine.mockResolvedValue({ id: 'bc-new' });
+      render(<BudgetEditPage />);
+
+      fireEvent.click(await screen.findByText('Add Transfer Income'));
+      expect(screen.getByText('Pick HISA')).toBeInTheDocument();
+      expect(screen.queryByText('Pick TFSA')).not.toBeInTheDocument();
+      expect(screen.queryByText('Pick Old')).not.toBeInTheDocument();
+      expect(screen.queryByText('Pick Partner')).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByText('Pick HISA'));
+
+      await waitFor(() => {
+        expect(mockAddTransferIncomeLine).toHaveBeenCalledWith('budget-1', {
+          transferAccountId: 'acc-hisa',
+          amount: 2000,
+        });
+      });
+      expect(mockToastSuccess).toHaveBeenCalledWith('Transfer income added');
+    });
+
+    it('reports a refused add', async () => {
+      mockGetAccounts.mockResolvedValue([account('acc-hisa', 'HISA')]);
+      mockAddTransferIncomeLine.mockRejectedValue(new Error('refused'));
+      render(<BudgetEditPage />);
+
+      fireEvent.click(await screen.findByText('Add Transfer Income'));
+      fireEvent.click(screen.getByText('Pick HISA'));
+
+      await waitFor(() => {
+        expect(mockToastError).toHaveBeenCalledWith('Failed to add transfer income');
+      });
+    });
+
+    it('offers no add when the accounts did not load', async () => {
+      mockGetAccounts.mockRejectedValue(new Error('down'));
+      render(<BudgetEditPage />);
+
+      await screen.findByText('Groceries');
+      expect(screen.queryByText('Add Transfer Income')).not.toBeInTheDocument();
+    });
+
+    it('names a transfer income line after its source and shows the toggle\'s figure', async () => {
+      mockGetById.mockResolvedValue({
+        ...mockBudget,
+        config: { excludedAccountIds: ['acc-rrsp'], transfersInAsIncome: true },
+        categories: [
+          ...mockBudget.categories,
+          {
+            ...mockBudget.categories[0],
+            id: 'bc-hisa',
+            categoryId: null,
+            category: null,
+            isIncome: true,
+            isTransfer: true,
+            transferAccountId: 'acc-hisa',
+            transferAccount: { id: 'acc-hisa', name: 'HISA', accountType: 'SAVINGS' },
+            amount: 2000,
+          },
+        ],
+      });
+      mockGetSummary.mockResolvedValue({ ...mockSummary, outsideTransferIncome: 300 });
+      render(<BudgetEditPage />);
+
+      expect(await screen.findByText('Transfers from HISA')).toBeInTheDocument();
+      expect(screen.getByText('Transfers from accounts outside this budget')).toBeInTheDocument();
+      expect(screen.getByText('$300.00')).toBeInTheDocument();
     });
   });
 });

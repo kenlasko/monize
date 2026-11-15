@@ -27,6 +27,7 @@ describe("BudgetsController", () => {
       update: jest.fn(),
       remove: jest.fn(),
       addCategory: jest.fn(),
+      addTransferIncomeLine: jest.fn(),
       updateCategory: jest.fn(),
       removeCategory: jest.fn(),
       bulkUpdateCategories: jest.fn(),
@@ -144,6 +145,22 @@ describe("BudgetsController", () => {
       expect(mockBudgetsService.remove).toHaveBeenCalledWith(
         "user-1",
         "budget-1",
+      );
+    });
+  });
+
+  describe("addTransferIncomeLine()", () => {
+    it("delegates to budgetsService.addTransferIncomeLine with the JWT's user", () => {
+      const dto = { transferAccountId: "acct-hisa", amount: 2000 };
+      mockBudgetsService.addTransferIncomeLine!.mockReturnValue("added");
+
+      const result = controller.addTransferIncomeLine(mockReq, "budget-1", dto);
+
+      expect(result).toBe("added");
+      expect(mockBudgetsService.addTransferIncomeLine).toHaveBeenCalledWith(
+        mockReq.user.id,
+        "budget-1",
+        dto,
       );
     });
   });

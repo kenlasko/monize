@@ -259,6 +259,23 @@
       "analyzeFailed": "支出の分析に失敗しました"
     }
   },
+  "lineNames": {
+    "transfersFrom": "{name}からの振替",
+    "unknown": "不明"
+  },
+  "transferIncomeForm": {
+    "hint": "この口座から入ってくるお金は、この口座へ戻した分を差し引いて予算の収入として数えます。",
+    "account": "振替元口座",
+    "accountPlaceholder": "口座を選択",
+    "accountRequired": "振替元の口座を選択してください",
+    "amount": "予定額",
+    "submit": "追加"
+  },
+  "transfersInAsIncome": {
+    "label": "除外した口座からの入金振替を収入として数える",
+    "hint": "除外した口座からこの予算の口座へ振り替えたお金は、その口座へ戻した分を差し引いて収入として数えます。独自の振替行がある口座は、その行で数えます。",
+    "noExcludedAccounts": "この予算はまだどの口座も除外していないため、何も数えられません。"
+  },
   "wizardCategories": {
     "title": "カテゴリを確認",
     "noAnalysis": "分析データがありません。戻って先に分析を実行してください。",
@@ -266,6 +283,7 @@
       "income": "収入",
       "expenses": "支出",
       "transfers": "振替 / 貯蓄",
+      "transfersIn": "入金振替（収入）",
       "trendMedian": "トレンド / 中央値",
       "amount": "金額"
     },
@@ -275,6 +293,7 @@
       "transfers": "振替",
       "remaining": "残額"
     },
+    "transfersInHint": "チェックした口座から入ってくるお金は、その口座へ戻した分を差し引いて収入として数えます。貯蓄の積立など、収入を引き出す口座だけをチェックしてください。",
     "allocation503020": "50/30/20 配分",
     "allocationTarget": "（目標 {percent}%）",
     "nextButton": "次へ：設定",
@@ -353,8 +372,10 @@
       "rollover": "繰越",
       "alerts": "アラート",
       "incomeLinked": "収入リンク",
-      "excludedAccounts": "除外口座"
+      "excludedAccounts": "除外口座",
+      "transfersInAsIncome": "入金振替"
     },
+    "transfersInAsIncomeOn": "除外した口座からの分を収入として数える",
     "rolloverOff": "オフ",
     "alertsValue": "警告 {warn}% / 緊急 {critical}%",
     "accountCount": "{count} {count, plural, one {口座} other {口座}}",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "収入",
       "expense": "支出",
-      "transfer": "振替"
+      "transfer": "振替",
+      "transferIn": "入金振替"
     },
     "createButton": "予算を作成",
     "categoryCount": "{count} カテゴリ",
@@ -521,6 +543,10 @@
       "budgetSettings": "予算設定",
       "categoryAllocations": "カテゴリ配分",
       "income": "収入",
+      "addTransferIncome": "振替収入を追加",
+      "addTransferIncomeTitle": "振替収入を追加",
+      "outsideTransferIncome": "この予算外の口座からの振替",
+      "outsideTransferIncomeHint": "この予算は除外した口座からの入金振替を収入として数えるため、この期間に計上されています。",
       "expensesWithCount": "支出（{count}）",
       "resetsEachPeriod": "毎期間リセット",
       "percentUsed": "{percent}% 使用済み",
@@ -538,7 +564,9 @@
         "categoryFailed": "カテゴリの更新に失敗しました",
         "loadFailed": "予算の読み込みに失敗しました",
         "categoryRemoved": "カテゴリを予算から削除しました",
-        "categoryRemoveFailed": "カテゴリを削除できませんでした"
+        "categoryRemoveFailed": "カテゴリを削除できませんでした",
+        "transferIncomeAdded": "振替収入を追加しました",
+        "transferIncomeFailed": "振替収入を追加できませんでした"
       }
     }
   },

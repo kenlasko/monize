@@ -259,6 +259,23 @@
       "analyzeFailed": "Falha ao analisar despesas"
     }
   },
+  "lineNames": {
+    "transfersFrom": "Transferências de {name}",
+    "unknown": "Desconhecido"
+  },
+  "transferIncomeForm": {
+    "hint": "O dinheiro recebido desta conta conta como receita do orçamento, menos o que for devolvido a ela.",
+    "account": "Conta de origem",
+    "accountPlaceholder": "Escolha uma conta",
+    "accountRequired": "Escolha a conta de onde vêm as transferências",
+    "amount": "Valor previsto",
+    "submit": "Adicionar"
+  },
+  "transfersInAsIncome": {
+    "label": "Contar como receita as transferências recebidas de contas excluídas",
+    "hint": "O dinheiro transferido de uma conta excluída para as contas deste orçamento conta como receita, menos o que for devolvido a ela. Uma conta com sua própria linha de transferência é contada nessa linha.",
+    "noExcludedAccounts": "Este orçamento ainda não exclui nenhuma conta, então nada é contado."
+  },
   "wizardCategories": {
     "title": "Revisar Categorias",
     "noAnalysis": "Sem dados de análise. Volte e execute a análise primeiro.",
@@ -266,6 +283,7 @@
       "income": "Receita",
       "expenses": "Despesas",
       "transfers": "Transferências / Poupanças",
+      "transfersIn": "Transferências recebidas (receita)",
       "trendMedian": "Tendência / Mediana",
       "amount": "Valor"
     },
@@ -275,6 +293,7 @@
       "transfers": "Transferências",
       "remaining": "Restante"
     },
+    "transfersInHint": "O dinheiro recebido de uma conta marcada conta como receita, menos o que for devolvido a ela. Marque apenas as contas de onde você tira receita, como uma reserva de poupança.",
     "allocation503020": "Alocação 50/30/20",
     "allocationTarget": "(meta {percent}%)",
     "nextButton": "Próximo: Configurar",
@@ -353,8 +372,10 @@
       "rollover": "Transição",
       "alerts": "Alertas",
       "incomeLinked": "Receita Vinculada",
-      "excludedAccounts": "Contas Excluídas"
+      "excludedAccounts": "Contas Excluídas",
+      "transfersInAsIncome": "Transferências recebidas"
     },
+    "transfersInAsIncomeOn": "As de contas excluídas contam como receita",
     "rolloverOff": "Desativada",
     "alertsValue": "Aviso {warn}% / Crítico {critical}%",
     "accountCount": "{count} {count, plural, one {conta} other {contas}}",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "Receita",
       "expense": "Despesa",
-      "transfer": "Transferência"
+      "transfer": "Transferência",
+      "transferIn": "Transferência recebida"
     },
     "createButton": "Criar Orçamento",
     "categoryCount": "{count} categorias",
@@ -521,6 +543,10 @@
       "budgetSettings": "Configurações do Orçamento",
       "categoryAllocations": "Alocações por Categoria",
       "income": "Receita",
+      "addTransferIncome": "Adicionar receita de transferência",
+      "addTransferIncomeTitle": "Adicionar receita de transferência",
+      "outsideTransferIncome": "Transferências de contas fora deste orçamento",
+      "outsideTransferIncomeHint": "Contado neste período porque o orçamento conta como receita as transferências recebidas de suas contas excluídas.",
       "expensesWithCount": "Despesas ({count})",
       "resetsEachPeriod": "Redefine em cada período",
       "percentUsed": "{percent}% utilizado",
@@ -538,7 +564,9 @@
         "categoryFailed": "Falha ao atualizar categoria",
         "loadFailed": "Falha ao carregar orçamento",
         "categoryRemoved": "Categoria removida do orçamento",
-        "categoryRemoveFailed": "Falha ao remover a categoria"
+        "categoryRemoveFailed": "Falha ao remover a categoria",
+        "transferIncomeAdded": "Receita de transferência adicionada",
+        "transferIncomeFailed": "Não foi possível adicionar a receita de transferência"
       }
     }
   },

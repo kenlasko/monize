@@ -330,7 +330,9 @@
     "budgetCategoryNotFound": "ID {{ id }} の予算カテゴリが見つかりません",
     "periodNotFound": "ID {{ id }} の予算期間が見つかりません",
     "noOpenPeriod": "閉鎖するオープン期間がありません",
-    "categoryIdsNotOwned": "カテゴリIDが見つからないか、ユーザーが所有していません：{{ ids }}"
+    "categoryIdsNotOwned": "カテゴリIDが見つからないか、ユーザーが所有していません：{{ ids }}",
+    "transferAccountNotFound": "ID {{ id }} の口座が見つかりません",
+    "transferAccountAlreadyInBudget": "この口座には予算内にすでに振替行があります"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "給与控除ルールは法定通貨で支払う請求を対象にします。この請求の口座は暗号資産 {{ code }} を保有しています。法定通貨の口座から支払う請求を選択してください。",

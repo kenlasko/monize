@@ -44,6 +44,7 @@ This step lists every category found in your history, in three tables:
 
 - **Income** -- your income categories
 - **Expenses** -- your spending categories, largest first. Categories with a regular, unchanging amount carry a **Fixed** badge
+- **Transfers In (Income)** -- the accounts money was transferred in from, with the monthly net (what came in less anything moved back). None is ticked: tick an account, such as a savings reserve you draw from each month, to count what arrives from it as income (see [Transfers as Income](#transfers-as-income))
 - **Transfers / Savings** -- regular transfers to savings accounts and loan or card payments
 
 Each row has:
@@ -54,6 +55,8 @@ Each row has:
 | **Category** | The category (or transfer account) name |
 | **Trend / Median** | A small sparkline of recent months, with your median monthly amount |
 | **Amount** | The suggested budget amount -- edit it to your preference |
+
+An account can be ticked under **Transfers In (Income)** or under **Transfers / Savings**, not both: ticking one unticks the other.
 
 Use the profile buttons (**Comfortable**, **On Track**, **Aggressive**) at the top to switch the suggested amounts for all categories at once. The totals at the bottom show **Total Income**, **Total Expenses**, **Transfers**, and **Remaining**.
 
@@ -74,7 +77,7 @@ Configure your budget settings, grouped into sections:
 | **Rollover Rules** | **Default Rollover Type** for every category: None, Monthly, Quarterly, or Annual. It defaults to Monthly for the Rollover strategy and None otherwise. You can change individual categories after the budget is created |
 | **Alert Thresholds** | **Warning at (%)** (default 80) and **Critical at (%)** (default 95) |
 | **Flex Groups** | Click **Configure** to give expense categories a flex group name (for example "Fun Money") -- see [Flex Groups](#flex-groups) |
-| **Excluded Accounts** | Accounts whose transactions should not count toward the budget (for example an investment or business account) |
+| **Excluded Accounts** | Accounts whose transactions should not count toward the budget (for example an investment or business account), and **Count transfers in from excluded accounts as income** (see [Transfers as Income](#transfers-as-income)) |
 
 Click **Next: Review** to continue.
 
@@ -85,8 +88,8 @@ Click **Next: Review** to continue.
 The review step shows a complete summary of your budget before it is created:
 
 - **Summary cards** -- **Est. Income**, **Total Expenses**, **Transfers**, and **Remaining**
-- **Budget details** -- **Name**, **Type**, **Strategy**, **Start Date**, **Rollover**, **Alerts**, **Income Linked**, and **Excluded Accounts**
-- **Category table** -- every included category with its amount and type (Income, Expense, or Transfer)
+- **Budget details** -- **Name**, **Type**, **Strategy**, **Start Date**, **Rollover**, **Alerts**, **Income Linked**, **Excluded Accounts**, and **Transfers In** when transfers from excluded accounts count as income
+- **Category table** -- every included category with its amount and type (Income, Transfer in, Expense, or Transfer)
 
 On mobile, the Type column is hidden to give category names and amounts more room.
 
@@ -252,6 +255,19 @@ Exclude an account you do not want this budget judged by: an investment or broke
 
 ---
 
+## Transfers as Income
+
+If you keep a reserve in one account and move a set amount out of it each month (a "bucket strategy"), a budget can count that money as income rather than ignoring it. There are two ways, and every budget type and strategy offers both:
+
+- **A transfer income line** for one account: tick it under **Transfers In (Income)** in step 2 of the wizard, or click **Add Transfer Income** in the **Income** list of the budget's edit page and choose the account and a planned amount. The line appears as **Transfers from** *account* and counts what arrived from that account this period.
+- **Count transfers in from excluded accounts as income**, a single option in step 3 of the wizard (beside **Excluded Accounts**) and on the budget's edit page. Money moved from any account the budget excludes into the budget's accounts counts as income. The edit page shows this period's figure as **Transfers from accounts outside this budget**.
+
+Either way the figure is the net change: money moved in, less anything moved back to the same account in the period, and never below zero. A transfer between two accounts that are both in the budget, such as a credit card payment, is never income under the option. An account with its own transfer line is counted on that line, never twice, and an account can have only one transfer line in a budget: a savings line or an income line, not both. Voided transfers never count.
+
+Transfer income counts everywhere the budget's income does: the savings figures, an income-linked budget's percentages, the **Income Shortfall** alert, the income a closed period records, and the savings-rate report.
+
+---
+
 ## Income-Linked Budgets
 
 For freelancers, gig workers, or anyone with variable income, you can tick **Link budget to income** in step 3 of the wizard. Category amounts then become percentages of your base income rather than fixed dollar amounts:
@@ -369,12 +385,12 @@ To edit an existing budget:
 
 1. Open the budget dashboard
 2. Click **Edit** in the top right
-3. Change the **Budget Settings**: **Budget Name**, **Description (optional)**, **Budget Type**, **Strategy**, **Base Income (optional)**, and **Active**
+3. Change the **Budget Settings**: **Budget Name**, **Description (optional)**, **Budget Type**, **Strategy**, **Base Income (optional)**, **Count transfers in from excluded accounts as income**, and **Active**
 4. Click **Save Changes**
 
 ![The budget edit page, with the budget settings and the category allocations](images/budget-edit-page.png)
 
-Below the settings, **Category Allocations** lists the budget's **Income** and **Expenses** categories with their amounts and rollover settings. Click a category to open its settings:
+Below the settings, **Category Allocations** lists the budget's **Income** and **Expenses** categories with their amounts and rollover settings. **Add Transfer Income** beside the **Income** heading adds a transfer income line for one of your accounts (see [Transfers as Income](#transfers-as-income)). Click a category to open its settings:
 
 | Field | Description |
 |-------|-------------|

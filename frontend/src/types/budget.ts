@@ -8,6 +8,8 @@ export type BudgetProfile = 'COMFORTABLE' | 'ON_TRACK' | 'AGGRESSIVE';
 export interface BudgetConfig {
   includeTransfers?: boolean;
   excludedAccountIds?: string[];
+  /** Transfers in from the excluded accounts count as income (issue #2141). */
+  transfersInAsIncome?: boolean;
   fiscalYearStart?: number;
   payFrequency?: 'WEEKLY' | 'BIWEEKLY' | 'SEMIMONTHLY' | 'MONTHLY';
   payDayOfMonth?: number;
@@ -147,6 +149,8 @@ export interface GenerateBudgetRequest {
 export interface GenerateBudgetResponse {
   categories: CategoryAnalysis[];
   transfers: TransferAnalysis[];
+  /** Per source account, the monthly net of the transfers in from it. */
+  incomeTransfers: TransferAnalysis[];
   estimatedMonthlyIncome: number;
   totalBudgeted: number;
   totalTransfers: number;
@@ -219,6 +223,14 @@ export interface CreateBudgetCategoryData {
 
 export interface UpdateBudgetCategoryData extends Partial<CreateBudgetCategoryData> {}
 
+/** A line counting transfers in from `transferAccountId` as income. */
+export interface CreateTransferIncomeLineData {
+  transferAccountId: string;
+  amount: number;
+  rolloverType?: RolloverType;
+  notes?: string;
+}
+
 export interface CategoryBreakdown {
   budgetCategoryId: string;
   categoryId: string | null;
@@ -228,6 +240,8 @@ export interface CategoryBreakdown {
   remaining: number;
   percentUsed: number;
   isIncome: boolean;
+  /** A transfer line: savings out, or transfer income when `isIncome`. */
+  isTransfer: boolean;
   percentage: number | null;
 }
 
@@ -240,6 +254,11 @@ export interface BudgetSummary {
   percentUsed: number;
   incomeLinked: boolean;
   actualIncome: number | null;
+  /**
+   * Income from transfers in from the excluded accounts (`transfersInAsIncome`),
+   * included in `totalIncome`; `0` with the option off.
+   */
+  outsideTransferIncome: number;
   categoryBreakdown: CategoryBreakdown[];
 }
 
