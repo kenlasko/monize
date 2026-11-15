@@ -347,4 +347,35 @@ describe('PushEnableBanner', () => {
 
     await waitFor(() => expect(mockGetConfig).toHaveBeenCalledTimes(2));
   });
+
+  // docs/frontend/shell-contract.md: inside a shell that cannot receive push the
+  // banner does not nag; the settings panel carries the explanation.
+  describe('inside a native shell', () => {
+    afterEach(() => {
+      delete window.__MONIZE_SHELL__;
+    });
+
+    it.each(['electron', 'capacitor'] as const)(
+      'offers nothing and asks nothing in %s',
+      async (kind) => {
+        window.__MONIZE_SHELL__ = { kind, version: '1.0.0' };
+
+        await renderBanner();
+
+        expect(screen.queryByRole('button', { name: /turn on/i })).toBeNull();
+        expect(screen.queryByRole('button', { name: /not now/i })).toBeNull();
+        expect(mockGetConfig).not.toHaveBeenCalled();
+      },
+    );
+
+    it('treats a malformed flag as a browser', async () => {
+      window.__MONIZE_SHELL__ = { kind: 'toaster', version: 3 };
+
+      await renderBanner();
+
+      expect(
+        await screen.findByRole('button', { name: /turn on/i }),
+      ).toBeInTheDocument();
+    });
+  });
 });

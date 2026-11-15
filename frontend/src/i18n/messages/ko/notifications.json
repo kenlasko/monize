@@ -215,5 +215,63 @@
   "shared": {
     "title": "공동 지출",
     "message": "공유 그룹에 변경 사항이 있습니다. Monize를 열어 확인하세요."
+  },
+  "native": {
+    "payments": {
+      "title": "결제 알림",
+      "body": "청구서 또는 예약된 결제에 확인이 필요합니다. 자세한 내용은 Monize를 열어 확인하세요."
+    },
+    "budgets": {
+      "title": "예산 경고",
+      "body": "예산 중 하나에 확인이 필요합니다. 자세한 내용은 Monize를 열어 확인하세요."
+    },
+    "system": {
+      "title": "시스템 알림",
+      "body": "Monize에서 시스템 알림이 있습니다. 자세한 내용은 앱을 열어 확인하세요."
+    },
+    "balances": {
+      "title": "잔액 경고",
+      "body": "계좌 잔액이 설정한 기준값을 넘었습니다. 자세한 내용은 Monize를 열어 확인하세요."
+    },
+    "investments": {
+      "title": "투자 변동",
+      "body": "오늘 투자 자산에 변동이 있었습니다. 자세한 내용은 Monize를 열어 확인하세요."
+    },
+    "strategies": {
+      "title": "전략 신호",
+      "body": "전략 중 하나의 추천이 변경되었습니다. 자세한 내용은 Monize를 열어 확인하세요."
+    },
+    "bank_sync": {
+      "title": "은행 연결",
+      "body": "은행 연결에 확인이 필요합니다. 자세한 내용은 Monize를 열어 확인하세요."
+    },
+    "bank_sync_activity": {
+      "title": "은행 동기화",
+      "body": "은행 동기화에 새로운 소식이 있습니다. 자세한 내용은 Monize를 열어 확인하세요."
+    },
+    "email_receipts": {
+      "title": "이메일 영수증에 주의가 필요합니다",
+      "body": "수신함의 일부 이메일에는 프로필이 필요하거나 수정이 필요합니다. 자세한 내용은 Monize를 열어주세요."
+    },
+    "bonds": {
+      "title": "채권 알림",
+      "body": "보유 중인 채권에 새로운 소식이 있습니다. 자세한 내용은 Monize를 열어 확인하세요."
+    },
+    "ai_review": {
+      "title": "AI 검토 제안",
+      "body": "일부 AI 검토 제안이 회원님의 결정을 기다리고 있습니다. 자세한 내용은 Monize를 열어 확인하세요."
+    },
+    "warranties": {
+      "title": "보증 알림",
+      "body": "보증 중 하나가 곧 만료됩니다. 자세한 내용은 Monize를 열어 확인하세요."
+    },
+    "shared_expenses": {
+      "title": "공동 지출",
+      "body": "공유 그룹에 변경 사항이 있습니다. Monize를 열어 확인하세요."
+    },
+    "fallback": {
+      "title": "Monize",
+      "body": "Monize에 새 알림이 있습니다."
+    }
   }
 }

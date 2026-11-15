@@ -109,6 +109,9 @@ written** -- not your current one.
 
 ### 2. `ENCRYPTION_KEY` (whoever runs the server)
 
+> [!NOTE]
+> **Monize for Windows:** the key is created on first start and kept encrypted for your Windows account, and backups are always encrypted. The tray menu's **Export recovery key...** gives you a copy; see [The Recovery Key](windows.md#the-recovery-key).
+
 `ENCRYPTION_KEY` is a server setting, not something you type. It encrypts what
 the *database* holds: your AI provider API keys, your Google Places API key for
 [payee lookup](settings-and-security.md#payee-lookup), emergency-access links and
@@ -282,6 +285,9 @@ If the configured storage cannot be written to, the page says *"This deployment 
 > [!NOTE]
 > The folder must be writable by the backend process. In Docker deployments, you must map a host directory to the container path using a volume mount.
 
+> [!NOTE]
+> **Monize for Windows:** backups can only go into the `backups` folder inside the data folder (`%LOCALAPPDATA%\Monize\backups` unless you moved it), on the same disk as the database, and there is no server S3 storage. Keep a copy elsewhere: an off-site S3 copy below, your own backup tool, or the [full backup script](windows.md#full-backup-script).
+
 ### Frequency and Timing
 
 | Frequency | Description |
@@ -366,7 +372,7 @@ The list is absent on a server that runs no automatic backups. It stays while a 
 A backup that lives only on the server is lost with the server. Under **Off-site destinations** inside the Automatic Backups list, you can have an encrypted copy of each complete automatic backup sent elsewhere -- three copies, two kinds of storage, one of them off the machine:
 
 - **S3 storage** -- set **Copy Destination** to **Off**, **This server's bucket** (when the administrator has configured one) or **My own bucket**. For your own bucket, enter the **Bucket**, **Region**, an optional **Key prefix**, an **Endpoint** for an S3-compatible service such as MinIO, R2 or B2 (with **Use path-style addressing** where it needs it), and an **Access key ID** and **Secret access key**. The keys are stored encrypted and never shown again; **Remove Stored Credentials** forgets them.
-- **Email** -- turn on **Email me a copy of each completed automatic backup** and enter the address in **Send copies to**. A backup larger than the server's email size limit is not attached; you receive a notice naming the file instead.
+- **Email** (not on [Monize for Windows](windows.md#what-the-windows-app-cannot-do), which cannot send email) -- turn on **Email me a copy of each completed automatic backup** and enter the address in **Send copies to**. A backup larger than the server's email size limit is not attached; you receive a notice naming the file instead.
 
 Click **Save Destinations** to keep the settings.
 
@@ -467,6 +473,9 @@ A backup restores onto the same or a newer version of Monize. A backup taken und
 ---
 
 ## Docker Volume Configuration
+
+> [!NOTE]
+> **Monize for Windows:** there is nothing to configure here; see [Backups and Disaster Recovery](windows.md#backups-and-disaster-recovery) for what to back up and how.
 
 When running Monize in Docker, the backend container runs with a read-only filesystem for security, so automatic backups need a host directory mapped into the container. The supplied `docker-compose` files already do this: `BACKUP_HOST_DIR` (default `./monize/backups`) is mapped to `BACKUP_CONTAINER_DIR` (default `/data/backups`) inside the backend container:
 
