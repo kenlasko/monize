@@ -11,6 +11,8 @@ import { Budget } from "./entities/budget.entity";
 import { RolloverType } from "./entities/budget-category.entity";
 import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
 import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
+import { BudgetBucket } from "./entities/budget-bucket.entity";
+import { BudgetPeriodBucket } from "./entities/budget-period-bucket.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { BudgetsService } from "./budgets.service";
@@ -21,9 +23,30 @@ import {
 } from "./budget-date.utils";
 import {
   queryCategorySpending,
+  resolveBudgetIncome,
+  resolveBudgetLineBudgeted,
   resolveCategorySpent,
+  resolveOutsideTransferIncome,
 } from "./budget-spending.util";
 import { roundMoney, sumMoney } from "../common/round.util";
+import {
+  loadCurrencyPlaces,
+  moneyDecimalsForCode,
+} from "../common/currency-places.util";
+import {
+  buildBudgetBucketFiguresInput,
+  computeBudgetBucketFigures,
+} from "./budget-bucket-figures.util";
+
+/** The close's actuals: per line, and the income an income-linked line reads. */
+interface PeriodActuals {
+  /** Signed net per budget line id, as `resolveCategorySpent` returns it. */
+  lines: Map<string, number>;
+  /** The income `config.transfersInAsIncome` adds (issue #2141); 0 when off. */
+  outsideTransferIncome: number;
+  /** `resolveBudgetIncome` over the same read (the summary's linked income). */
+  linkedIncome: number;
+}
 
 /**
  * "There is no OPEN period to close."
@@ -74,8 +97,12 @@ export class BudgetPeriodService {
         relations: [
           "periodCategories",
           "periodCategories.budgetCategory",
+          // A transfer line is named by its account (issue #2141).
+          "periodCategories.budgetCategory.transferAccount",
           "periodCategories.category",
+          "periodBuckets",
         ],
+        order: { periodBuckets: { bucketName: "ASC" } },
       }),
     );
 
@@ -150,11 +177,12 @@ export class BudgetPeriodService {
         openPeriod.periodEnd,
       );
 
-      let totalIncome = 0;
-      let totalExpenses = 0;
+      // `config.transfersInAsIncome` is income no line carries (issue #2141).
+      const incomeParts: number[] = [actuals.outsideTransferIncome];
+      const expenseParts: number[] = [];
 
       for (const pc of openPeriod.periodCategories) {
-        const actual = actuals.get(pc.budgetCategoryId) || 0;
+        const actual = actuals.lines.get(pc.budgetCategoryId) || 0;
         pc.actualAmount = actual;
 
         const rollover = this.computeRollover(pc, actual);
@@ -164,21 +192,28 @@ export class BudgetPeriodService {
           (c) => c.id === pc.budgetCategoryId,
         );
         if (bcEntry?.isIncome) {
-          totalIncome += actual;
+          incomeParts.push(actual);
         } else {
-          totalExpenses += actual;
+          expenseParts.push(actual);
         }
 
         await manager.save(BudgetPeriodCategory, pc);
       }
 
-      openPeriod.actualIncome = totalIncome;
-      openPeriod.actualExpenses = totalExpenses;
+      openPeriod.actualIncome = sumMoney(incomeParts);
+      openPeriod.actualExpenses = sumMoney(expenseParts);
       openPeriod.status = PeriodStatus.CLOSED;
 
       const closedPeriod = await manager.save(BudgetPeriod, openPeriod);
 
-      await this.createNextPeriod(budget, openPeriod, manager);
+      const bucketCarry = await this.freezePeriodBuckets(
+        manager,
+        budget,
+        openPeriod.id,
+        actuals,
+      );
+
+      await this.createNextPeriod(budget, openPeriod, manager, bucketCarry);
 
       return closedPeriod;
     });
@@ -216,12 +251,17 @@ export class BudgetPeriodService {
    *   with the close that produced it; otherwise a scoped one is opened here.
    * @param dates the period to create; the current calendar month unless the
    *   caller derives it from the period it closed.
+   * @param bucketCarry each bucket's positive carry from the period the caller
+   *   closed, by bucket id: the new period's `budget_period_buckets.carry_in`
+   *   (INV-BUDGET-003). Only buckets with a positive carry get a row here; the
+   *   close writes the rest.
    */
   async createPeriodForBudget(
     budget: Budget,
     rolloverMap?: Map<string, number>,
     manager?: EntityManager,
     dates: PeriodDateRange = getCurrentMonthPeriodDates(),
+    bucketCarry?: ReadonlyMap<string, number>,
   ): Promise<BudgetPeriod> {
     const { periodStart, periodEnd } = dates;
 
@@ -291,6 +331,29 @@ export class BudgetPeriodService {
         await periodCatsRepo.save(periodCategories);
       }
 
+      // Like the category rows, written only by the call that won the claim
+      // above: the loser returned before this point, so a carry is received
+      // once. The name and target are the bucket's as they are now; the close
+      // of this period overwrites them with the figures it freezes.
+      const bucketRows = (budget.buckets ?? []).flatMap((bucket) => {
+        const carryIn = bucketCarry?.get(bucket.id) ?? 0;
+        return carryIn > 0
+          ? [
+              {
+                budgetPeriodId: savedPeriod.id,
+                bucketId: bucket.id,
+                bucketName: bucket.name,
+                targetType: bucket.targetType,
+                targetValue: bucket.targetValue,
+                carryIn,
+              },
+            ]
+          : [];
+      });
+      if (bucketRows.length > 0) {
+        await m.getRepository(BudgetPeriodBucket).insert(bucketRows);
+      }
+
       return savedPeriod;
     };
 
@@ -325,10 +388,132 @@ export class BudgetPeriodService {
     return roundMoney(rollover);
   }
 
+  /**
+   * Freezes one `budget_period_buckets` row per bucket the budget has now
+   * (design 6.3) from the close's own line actuals, and returns each bucket's
+   * positive `carryOut` for the next period's creation (INV-BUDGET-003).
+   *
+   * Runs inside the close's transaction, under its `FOR UPDATE` lock on the
+   * period row. The rows are read, then each is updated by id or inserted:
+   * not `ON CONFLICT (budget_period_id, bucket_id)`, because a deleted
+   * bucket's rows carry a NULL `bucket_id` and NULLs are distinct in that key.
+   * The read-then-write is safe because every writer of an OPEN period's
+   * bucket rows is either this close, serialised by that lock (a second close
+   * waits on it and then finds no OPEN period), or the creation of the period,
+   * which committed before the period could be locked here. A row whose
+   * bucket was deleted (`bucket_id` NULL) is left as it is. A budget without
+   * buckets reads and writes nothing.
+   */
+  private async freezePeriodBuckets(
+    manager: EntityManager,
+    budget: Budget,
+    periodId: string,
+    actuals: PeriodActuals,
+  ): Promise<Map<string, number>> {
+    const carry = new Map<string, number>();
+    if ((budget.buckets ?? []).length === 0) return carry;
+
+    // The buckets as they are now, read inside the close's transaction with
+    // FOR SHARE: `budget` was read before it, so a bucket deleted in between
+    // would otherwise be inserted here against a vanished key and fail the whole
+    // close; the lock keeps a delete from landing before the writes below.
+    const buckets = await manager.getRepository(BudgetBucket).find({
+      where: { budgetId: budget.id },
+      order: { sortOrder: "ASC", name: "ASC" },
+      lock: { mode: "pessimistic_read" },
+    });
+    if (buckets.length === 0) return carry;
+
+    // A writer's read of the places (FOR KEY SHARE): the amounts below are
+    // stored at them.
+    const places = await loadCurrencyPlaces(manager, [budget.currencyCode]);
+    const decimals = moneyDecimalsForCode(places, budget.currencyCode);
+
+    const repo = manager.getRepository(BudgetPeriodBucket);
+    const existing = await repo.find({ where: { budgetPeriodId: periodId } });
+    const rowByBucket = new Map<string, BudgetPeriodBucket>();
+    const carriedIn = new Map<string, number>();
+    for (const row of existing) {
+      if (row.bucketId === null) continue;
+      rowByBucket.set(row.bucketId, row);
+      carriedIn.set(row.bucketId, Number(row.carryIn));
+    }
+
+    // The rows the live summary would report for this period, built from the
+    // figures this close is freezing: `spent` is each line's frozen actual,
+    // `budgeted` the summary's (a percentage of the period's income for an
+    // expense line of an income-linked budget), and the actual income the
+    // summary's: its income lines plus what `transfersInAsIncome` adds.
+    const rows = (budget.categories ?? []).map((bc) => ({
+      budgetCategoryId: bc.id,
+      isIncome: bc.isIncome,
+      budgeted: resolveBudgetLineBudgeted(
+        bc,
+        budget.incomeLinked,
+        actuals.linkedIncome,
+      ),
+      spent: actuals.lines.get(bc.id) ?? 0,
+    }));
+    const actualIncome = budget.incomeLinked
+      ? sumMoney(
+          [
+            ...rows.filter((r) => r.isIncome).map((r) => r.spent),
+            actuals.outsideTransferIncome,
+          ],
+          decimals,
+        )
+      : null;
+
+    const figures = computeBudgetBucketFigures(
+      buildBudgetBucketFiguresInput({
+        budget: { ...budget, buckets },
+        rows,
+        actualIncome,
+        carriedIn,
+        decimals,
+      }),
+    );
+    const figureByBucket = new Map(figures.buckets.map((f) => [f.bucketId, f]));
+
+    for (const bucket of buckets) {
+      const figure = figureByBucket.get(bucket.id);
+      if (!figure) continue;
+      const frozen = {
+        bucketName: bucket.name,
+        targetType: bucket.targetType,
+        targetValue: bucket.targetValue,
+        incomeBasis: figures.income,
+        allocatedAmount: figure.allocated,
+        actualAmount: figure.spent,
+        carryOut: figure.carryOut,
+      };
+      const row = rowByBucket.get(bucket.id);
+      if (row) {
+        // The columns this path owns; carry_in stays what the creation wrote
+        // (CONC-008: an update of named columns, not a save of the snapshot).
+        // `bucketId` in the criteria leaves the row alone if its bucket was
+        // deleted since the read.
+        await repo.update({ id: row.id, bucketId: bucket.id }, frozen);
+      } else {
+        // A bucket created mid-period: it received no carry.
+        await repo.insert({
+          budgetPeriodId: periodId,
+          bucketId: bucket.id,
+          carryIn: 0,
+          ...frozen,
+        });
+      }
+      if (figure.carryOut > 0) carry.set(bucket.id, figure.carryOut);
+    }
+
+    return carry;
+  }
+
   private async createNextPeriod(
     budget: Budget,
     closedPeriod: BudgetPeriod,
     manager?: EntityManager,
+    bucketCarry?: ReadonlyMap<string, number>,
   ): Promise<BudgetPeriod> {
     const rolloverMap = new Map<string, number>();
 
@@ -348,6 +533,7 @@ export class BudgetPeriodService {
       rolloverMap,
       manager,
       getFollowingMonthPeriodDates(closedPeriod.periodEnd),
+      bucketCarry,
     );
   }
 
@@ -359,6 +545,9 @@ export class BudgetPeriodService {
    *
    * A line with a row that had no rate freezes its converted part; the
    * `actual_amount` column has no "unknown" (residual of A26-H12).
+   *
+   * `linkedIncome` is `resolveBudgetIncome` over the same read, the income an
+   * income-linked budget's percentage lines are budgeted against.
    */
   private async computePeriodActuals(
     manager: EntityManager,
@@ -366,26 +555,36 @@ export class BudgetPeriodService {
     budget: Budget,
     periodStart: string,
     periodEnd: string,
-  ): Promise<Map<string, number>> {
+  ): Promise<PeriodActuals> {
     const budgetCategories = budget.categories || [];
-    const { spendingMap, transferSpendingMap } = await queryCategorySpending(
+    const spending = await queryCategorySpending(
       manager.getRepository(Transaction),
       manager.getRepository(TransactionSplit),
       userId,
       budgetCategories,
       periodStart,
       periodEnd,
+      budget.id,
     );
 
-    const result = new Map<string, number>();
+    const lines = new Map<string, number>();
     for (const bc of budgetCategories) {
       if ((bc.isTransfer && bc.transferAccountId) || bc.categoryId) {
-        result.set(
+        lines.set(
           bc.id,
-          resolveCategorySpent(bc, spendingMap, transferSpendingMap),
+          resolveCategorySpent(
+            bc,
+            spending.spendingMap,
+            spending.transferSpendingMap,
+            spending.transferIncomeMap,
+          ),
         );
       }
     }
-    return result;
+    return {
+      lines,
+      outsideTransferIncome: resolveOutsideTransferIncome(spending),
+      linkedIncome: resolveBudgetIncome(budgetCategories, spending),
+    };
   }
 }

@@ -110,6 +110,7 @@ npm run docs:build         # Regenerate the user docs (website/docs/) from their
 | Tables, registers, density, pagination, phones | `docs/frontend/tables-and-registers.md` |
 | Money figures: scheduled occurrences, loans, portfolio ranges, chart reductions, unknown values | `docs/frontend/financial-figures.md`, then `docs/financial-semantics.md`, `docs/time-series-contract.md`, `docs/system-invariants.md` |
 | Push, service worker, Web Share Target | `docs/frontend/pwa-push-share.md` |
+| Native shells (Electron, Capacitor): shell detection, deep links, external links, push availability | `docs/frontend/shell-contract.md` |
 | Tests, mocks, harness | `docs/frontend/testing.md` and `docs/testing-contract.md` |
 | Theme, palettes, chart colours | `docs/frontend/theming.md` |
 

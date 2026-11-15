@@ -73,6 +73,10 @@ function spending(
     currency: "USD",
     incompleteCategoryIds: new Set(incomplete),
     incompleteTransferAccountIds: new Set(),
+    transferIncomeMap: new Map(),
+    incompleteTransferIncomeAccountIds: new Set(),
+    outsideTransferIncome: 0,
+    outsideTransferIncomeComplete: true,
     missingRatePairs: incomplete.length > 0 ? ["JPY->USD"] : [],
   };
 }
@@ -97,6 +101,7 @@ function makeCategory(overrides: Partial<BudgetCategory> = {}): BudgetCategory {
     rolloverType: RolloverType.NONE,
     rolloverCap: null,
     flexGroup: null,
+    bucketId: null,
     alertWarnPercent: 80,
     alertCriticalPercent: 95,
     notes: null,
@@ -838,6 +843,36 @@ describe("BudgetAlertService", () => {
   });
 
   describe("checkIncomeShortfall", () => {
+    it("counts transfers in no line carries toward income (issue #2141)", () => {
+      const salary = {
+        budgetCategoryId: "bc-inc-1",
+        categoryId: "cat-inc-1",
+        categoryName: "Salary",
+        currencyCode: "USD",
+        budgeted: 5000,
+        spent: 1500,
+        percentUsed: 30,
+        isIncome: true,
+        alertWarnPercent: 80,
+        alertCriticalPercent: 95,
+        flexGroup: null,
+      };
+      // Expected at 60%: 3,000; 1,500 + 1,500 transferred in is on track.
+      expect(
+        service.checkIncomeShortfall([salary], 5000, 0.6, undefined, {
+          outsideTransferIncome: 1500,
+          currencyCode: "USD",
+        }),
+      ).toBeNull();
+      // With no income line the budget's own currency names the figure.
+      const alert = service.checkIncomeShortfall([], 5000, 0.6, undefined, {
+        outsideTransferIncome: 1000,
+        currencyCode: "EUR",
+      });
+      expect(alert!.data).toMatchObject({ actualIncome: 1000 });
+      expect(alert!.message).toContain("€");
+    });
+
     it("returns INCOME_SHORTFALL when income is < 80% of expected at 50%+ progress", () => {
       const alert = service.checkIncomeShortfall(
         [

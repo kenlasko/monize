@@ -9,13 +9,14 @@ import { FormActions } from '@/components/ui/FormActions';
 import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { getCurrencySymbol } from '@/lib/format';
+import { TransfersInAsIncomeToggle } from './TransfersInAsIncomeToggle';
 import type {
   Budget,
   UpdateBudgetData,
 } from '@/types/budget';
 
 const BUDGET_TYPES = ['MONTHLY', 'ANNUAL', 'PAY_PERIOD'] as const;
-const STRATEGIES = ['FIXED', 'ROLLOVER', 'ZERO_BASED', 'FIFTY_THIRTY_TWENTY'] as const;
+const STRATEGIES = ['FIXED', 'ROLLOVER', 'ZERO_BASED', 'FIFTY_THIRTY_TWENTY', 'BUCKET'] as const;
 
 const buildBudgetFormSchema = (t: (key: string) => string) => z.object({
   name: z.string().min(1, t('validation.nameRequired')).max(255, t('validation.nameMax')),
@@ -24,6 +25,7 @@ const buildBudgetFormSchema = (t: (key: string) => string) => z.object({
   strategy: z.enum(STRATEGIES),
   baseIncome: z.number().min(0).optional(),
   isActive: z.boolean(),
+  transfersInAsIncome: z.boolean(),
 });
 
 type BudgetFormData = z.infer<ReturnType<typeof buildBudgetFormSchema>>;
@@ -36,7 +38,7 @@ interface BudgetFormProps {
 }
 
 const TYPE_VALUES = ['MONTHLY', 'ANNUAL', 'PAY_PERIOD'] as const;
-const STRATEGY_VALUES = ['FIXED', 'ROLLOVER', 'ZERO_BASED', 'FIFTY_THIRTY_TWENTY'] as const;
+const STRATEGY_VALUES = ['FIXED', 'ROLLOVER', 'ZERO_BASED', 'FIFTY_THIRTY_TWENTY', 'BUCKET'] as const;
 
 export function BudgetForm({
   budget,
@@ -59,6 +61,7 @@ export function BudgetForm({
       strategy: budget.strategy,
       baseIncome: budget.baseIncome !== null ? budget.baseIncome : undefined,
       isActive: budget.isActive,
+      transfersInAsIncome: budget.config?.transfersInAsIncome === true,
     },
   });
 
@@ -70,6 +73,14 @@ export function BudgetForm({
       strategy: formData.strategy,
       baseIncome: formData.baseIncome ?? undefined,
     };
+    // The server replaces `config` whole, so a change keeps the other keys
+    // (the excluded accounts) and an unchanged toggle sends nothing.
+    if (formData.transfersInAsIncome !== (budget.config?.transfersInAsIncome === true)) {
+      data.config = {
+        ...budget.config,
+        transfersInAsIncome: formData.transfersInAsIncome,
+      };
+    }
 
     await onSave(data);
   };
@@ -141,6 +152,18 @@ export function BudgetForm({
             allowNegative={false}
             prefix={getCurrencySymbol(budget.currencyCode)}
             placeholder={t('form.baseIncomePlaceholder')}
+          />
+        )}
+      />
+
+      <Controller
+        name="transfersInAsIncome"
+        control={control}
+        render={({ field }) => (
+          <TransfersInAsIncomeToggle
+            checked={field.value}
+            onChange={field.onChange}
+            excludedCount={budget.config?.excludedAccountIds?.length ?? 0}
           />
         )}
       />

@@ -321,10 +321,15 @@ const REFS: Record<string, RefRule[]> = withSharedSupportRefs({
     { column: "account_id", refTable: "accounts", onMissing: "dropRow" },
     { column: "category_id", refTable: "categories", onMissing: "dropRow" },
   ],
+  budget_buckets: [
+    { column: "budget_id", refTable: "budgets", onMissing: "dropRow" },
+  ],
   budget_categories: [
     { column: "budget_id", refTable: "budgets", onMissing: "dropRow" },
     { column: "category_id", refTable: "categories", onMissing: "null" },
     { column: "transfer_account_id", refTable: "accounts", onMissing: "null" },
+    // Nullable, ON DELETE SET NULL: a line without its bucket is unassigned.
+    { column: "bucket_id", refTable: "budget_buckets", onMissing: "null" },
   ],
   budget_periods: [
     { column: "budget_id", refTable: "budgets", onMissing: "dropRow" },
@@ -341,6 +346,15 @@ const REFS: Record<string, RefRule[]> = withSharedSupportRefs({
       onMissing: "dropRow",
     },
     { column: "category_id", refTable: "categories", onMissing: "null" },
+  ],
+  budget_period_buckets: [
+    {
+      column: "budget_period_id",
+      refTable: "budget_periods",
+      onMissing: "dropRow",
+    },
+    // Nullable, ON DELETE SET NULL: the row keeps bucket_name without it.
+    { column: "bucket_id", refTable: "budget_buckets", onMissing: "null" },
   ],
   notifications: [
     { column: "budget_id", refTable: "budgets", onMissing: "null" },
@@ -601,6 +615,16 @@ const UNIQUE_MASKED_TEXT: Record<string, UniqueTextKey[]> = {
     { column: "name", groupBy: ["account_id"], caseInsensitive: true },
   ],
   import_column_mappings: [{ column: "name", maxLen: 100 }],
+  // UNIQUE (budget_id, name); case-insensitive because the service refuses a
+  // name that differs from another of the budget's only by case.
+  budget_buckets: [
+    {
+      column: "name",
+      groupBy: ["budget_id"],
+      caseInsensitive: true,
+      maxLen: 50,
+    },
+  ],
 };
 
 /**

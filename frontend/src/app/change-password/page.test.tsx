@@ -149,45 +149,61 @@ describe('ChangePasswordPage', () => {
     };
   });
 
-  it('renders the page heading', () => {
-    render(<ChangePasswordPage />);
+  it('renders the page heading', async () => {
+    await act(async () => {
+      render(<ChangePasswordPage />);
+    });
     expect(screen.getByText('Change Your Password')).toBeInTheDocument();
   });
 
-  it('renders the description text', () => {
-    render(<ChangePasswordPage />);
+  it('renders the description text', async () => {
+    await act(async () => {
+      render(<ChangePasswordPage />);
+    });
     expect(screen.getByText('Your password must be changed before you can continue.')).toBeInTheDocument();
   });
 
-  it('renders current password field', () => {
-    render(<ChangePasswordPage />);
+  it('renders current password field', async () => {
+    await act(async () => {
+      render(<ChangePasswordPage />);
+    });
     expect(screen.getByText('Current Password')).toBeInTheDocument();
   });
 
-  it('renders new password field', () => {
-    render(<ChangePasswordPage />);
+  it('renders new password field', async () => {
+    await act(async () => {
+      render(<ChangePasswordPage />);
+    });
     expect(screen.getByText('New Password')).toBeInTheDocument();
   });
 
-  it('renders confirm password field', () => {
-    render(<ChangePasswordPage />);
+  it('renders confirm password field', async () => {
+    await act(async () => {
+      render(<ChangePasswordPage />);
+    });
     expect(screen.getByText('Confirm New Password')).toBeInTheDocument();
   });
 
-  it('renders password requirements text', () => {
-    render(<ChangePasswordPage />);
+  it('renders password requirements text', async () => {
+    await act(async () => {
+      render(<ChangePasswordPage />);
+    });
     expect(
       screen.getByText(/Password must be at least 12 characters/),
     ).toBeInTheDocument();
   });
 
-  it('renders the submit button', () => {
-    render(<ChangePasswordPage />);
+  it('renders the submit button', async () => {
+    await act(async () => {
+      render(<ChangePasswordPage />);
+    });
     expect(screen.getByText('Change Password')).toBeInTheDocument();
   });
 
-  it('renders the Monize logo', () => {
-    render(<ChangePasswordPage />);
+  it('renders the Monize logo', async () => {
+    await act(async () => {
+      render(<ChangePasswordPage />);
+    });
     expect(screen.getByAltText('Monize')).toBeInTheDocument();
   });
 
@@ -202,8 +218,10 @@ describe('ChangePasswordPage', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('does not redirect when user must change password', () => {
-    render(<ChangePasswordPage />);
+  it('does not redirect when user must change password', async () => {
+    await act(async () => {
+      render(<ChangePasswordPage />);
+    });
     expect(mockPush).not.toHaveBeenCalled();
   });
 

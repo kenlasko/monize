@@ -813,6 +813,20 @@ const cases: Array<{ name: string; schema: OutputSchema; raw: unknown }> = [
         paceStatus: "under",
       },
       healthScore: { score: 90, label: "Good" },
+      buckets: [
+        {
+          name: "Needs",
+          targetType: "PERCENT",
+          targetValue: 50,
+          allocated: null,
+          carriedIn: 0,
+          spent: 10,
+          available: null,
+          percentUsed: null,
+        },
+      ],
+      bucketIncome: null,
+      unallocated: null,
     },
   },
   {

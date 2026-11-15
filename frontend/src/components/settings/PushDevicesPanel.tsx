@@ -26,6 +26,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { createLogger } from '@/lib/logger';
 import { useDateFormat } from '@/hooks/useDateFormat';
+import { pushUnavailableShell, receivesNotificationsNatively } from '@/lib/shell';
 import { usePushEnable } from '@/hooks/usePushEnable';
 import { useRereadOnVisible } from '@/hooks/useRereadOnVisible';
 import {
@@ -335,6 +336,12 @@ export function PushDevicesPanel() {
 
   if (isLoading) return null;
 
+  // A shell that shows this page's notifications itself (the desktop app's
+  // notification bridge) says so where the push explanation would be: the
+  // reader has notifications, and nothing here to enable. Push itself stays
+  // unavailable there, so the Enable control stays hidden.
+  const nativeHere = receivesNotificationsNatively();
+
   if (configFailed) {
     return (
       <PushBlock heading={t('heading')}>
@@ -363,7 +370,9 @@ export function PushDevicesPanel() {
         : 'disabledByAdmin';
     return (
       <PushBlock heading={t('heading')}>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t(reason)}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {nativeHere ? t('native') : t(reason)}
+        </p>
       </PushBlock>
     );
   }
@@ -371,8 +380,14 @@ export function PushDevicesPanel() {
   // A browser that cannot receive push still has to be able to SEE and REMOVE
   // the devices this account registered elsewhere -- suppressing the list left a
   // user with no way to revoke a device from the machine they were sitting at.
-  const unsupportedReason =
-    support && !support.supported
+  // A native shell that cannot receive push is told so in its own words: the
+  // webview's `getPushSupport` can say "supported" for a window with no push
+  // service behind it, so the shell is asked first. Keyed by kind only to pick
+  // the sentence (it names the shell's own remedy); the decision is a capability.
+  const unavailableShell = pushUnavailableShell();
+  const unsupportedReason = unavailableShell
+    ? `shell.${unavailableShell.kind}`
+    : support && !support.supported
       ? (support.reason ?? 'unsupported')
       : undefined;
 
@@ -393,9 +408,11 @@ export function PushDevicesPanel() {
   return (
     <PushBlock heading={t('heading')} collapsedSummary={collapsedSummary}>
       <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
-        {unsupportedReason
-          ? t(`unsupported.${unsupportedReason}`)
-          : t('description')}
+        {nativeHere
+          ? t('native')
+          : unsupportedReason
+            ? t(`unsupported.${unsupportedReason}`)
+            : t('description')}
       </p>
 
       {isAndroid && (

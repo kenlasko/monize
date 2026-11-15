@@ -285,9 +285,9 @@ describe('useGridReorder', () => {
     drag.moveTo(500, 210);
     const chip = document.createElement('div');
     act(() => result.current.chipRef(chip));
-    expect(chip.style.transform).toBe('translate3d(512px, 222px, 0)');
+    expect(chip.style.transform).toBe('translate3d(512px, 222px, 0px)');
     drag.moveTo(520, 230);
-    expect(chip.style.transform).toBe('translate3d(532px, 242px, 0)');
+    expect(chip.style.transform).toBe('translate3d(532px, 242px, 0px)');
   });
 
   describe('cancelling', () => {

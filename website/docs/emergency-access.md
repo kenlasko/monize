@@ -26,6 +26,9 @@ If you come back before anyone claims a link, the next daily check voids the lin
 
 ## Prerequisites
 
+> [!NOTE]
+> **Monize for Windows:** Emergency Access is not available. The app cannot send email, and a contact could not reach Monize on your PC anyway. [Backups and Disaster Recovery](windows.md#backups-and-disaster-recovery) suggests what to leave for someone you trust instead.
+
 Emergency Access depends on two things your administrator configures on the server:
 
 - **Outbound email** (the `SMTP_HOST`, `SMTP_USER`, and `SMTP_PASSWORD` environment variables). Reminders and claim links are sent by email.

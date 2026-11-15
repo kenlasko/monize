@@ -3,6 +3,7 @@ export const STRATEGY_LABELS: Record<string, string> = {
   ROLLOVER: 'Rollover',
   ZERO_BASED: 'Zero-Based',
   FIFTY_THIRTY_TWENTY: '50/30/20',
+  BUCKET: 'Bucket',
 };
 
 export const BUDGET_TYPE_LABELS: Record<string, string> = {
@@ -16,4 +17,5 @@ export const STRATEGY_DESCRIPTIONS: Record<string, string> = {
   ROLLOVER: 'Unspent budget carries forward per category rules.',
   ZERO_BASED: 'Every dollar assigned. Income minus expenses should be zero.',
   FIFTY_THIRTY_TWENTY: '50% needs, 30% wants, 20% savings.',
+  BUCKET: 'Income split into a few named buckets. Watch each bucket, not every category.',
 };

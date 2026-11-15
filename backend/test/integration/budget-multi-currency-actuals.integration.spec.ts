@@ -208,6 +208,7 @@ describe("budget actuals across currencies (integration)", () => {
         groceriesLine,
         spending.spendingMap,
         spending.transferSpendingMap,
+        spending.transferIncomeMap,
       ),
     ).toBe(290);
     expect(resolveCategorySpentOrNull(groceriesLine, spending)).toBe(290);
@@ -361,6 +362,7 @@ describe("budget actuals across currencies (integration)", () => {
         groceriesLine,
         spending.spendingMap,
         spending.transferSpendingMap,
+        spending.transferIncomeMap,
       ),
     ).toBe(200);
     // A category with only CAD rows is complete.
