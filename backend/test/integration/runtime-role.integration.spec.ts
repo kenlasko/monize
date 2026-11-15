@@ -861,6 +861,36 @@ describe("Runtime role verification (real PostgreSQL)", () => {
       }
     });
 
+    it("refuses an inherited pg_maintain membership, and proves it reaches a table the role was never granted", async () => {
+      // pg_maintain (PostgreSQL 17+) grants MAINTAIN on every relation in the
+      // cluster. Prove the reach on a table the app role holds no privilege on,
+      // then that the check rejects the membership. INHERIT TRUE, SET FALSE.
+      const table = `pgm_target_${Date.now()}`;
+      await dataSource.query(`CREATE TABLE ${table} (id integer PRIMARY KEY)`);
+      const app = await appRolePool();
+      try {
+        await expect(app.query(`REINDEX TABLE ${table}`)).rejects.toThrow(
+          /must be owner|permission denied/,
+        );
+
+        await dataSource.query(
+          `GRANT pg_maintain TO ${TEST_APP_ROLE} WITH INHERIT TRUE, SET FALSE`,
+        );
+        // The harm, demonstrated: the same statement now succeeds.
+        await app.query(`REINDEX TABLE ${table}`);
+
+        const facts = await readRuntimeRoleFacts(app);
+        expect(facts.inheritedForbiddenRoles).toContain("pg_maintain");
+        const message = runtimeRoleViolations(facts, TEST_APP_ROLE).join(" ");
+        expect(message).toContain("pg_maintain");
+        expect(message).toContain("Revoke the membership");
+      } finally {
+        await app.destroy();
+        await dataSource.query(`REVOKE pg_maintain FROM ${TEST_APP_ROLE}`);
+        await dataSource.query(`DROP TABLE IF EXISTS ${table}`);
+      }
+    });
+
     it("refuses a SET-only pg_signal_backend membership (RR7-001)", async () => {
       // INHERIT FALSE, SET TRUE: not held now, but one SET ROLE away from the
       // capability, so it is a reachable-context refusal like every other.
