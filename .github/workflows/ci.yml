@@ -1917,11 +1917,21 @@ jobs:
   # release, whichever is newer.
   #
   # A light publish like build-preview: no version commit, no signing.
+  #
+  # The `if:` names both needs' results under `!cancelled()` instead of
+  # leaning on the implicit `success()`. That default also looks past the
+  # direct needs to desktop-windows's own: prepare-release is skipped on every
+  # push, so the plain condition skipped this job even when the installer
+  # built, and no beta was ever published.
   windows-beta:
     name: Publish Windows Beta
     runs-on: ubuntu-latest
     needs: [prepare-preview, desktop-windows]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      !cancelled() &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.prepare-preview.result == 'success' &&
+      needs.desktop-windows.result == 'success'
     permissions:
       contents: write # to create the beta prerelease and delete the one it replaces
     steps:
