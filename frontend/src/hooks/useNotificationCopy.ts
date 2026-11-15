@@ -793,6 +793,21 @@ export function useNotificationCopy() {
   };
 
   /**
+   * The security notices. The client name is attacker-chosen: it is only ever
+   * interpolated as text, never as markup. A row without a name falls back to
+   * the stored English.
+   */
+  const securityCopy = (notification: Notification, part: 'title' | 'message'): string | null => {
+    if (notification.type === 'RELAY_CREDENTIAL_FIRST_USE') {
+      return t(part === 'title' ? 'security.relayTitle' : 'security.relayMessage');
+    }
+    if (notification.type !== 'OAUTH_CLIENT_AUTHORIZED') return null;
+    const clientName = notification.data?.clientName;
+    if (typeof clientName !== 'string' || clientName === '') return null;
+    return t(part === 'title' ? 'security.oauthTitle' : 'security.oauthMessage', { clientName });
+  };
+
+  /**
    * The payroll deduction reset reminder, from the producer's facts: the
    * category, the bill, the reset date and the maximum that applies again.
    */
@@ -830,6 +845,7 @@ export function useNotificationCopy() {
         ? t("shared.title")
         : null) ??
       warrantyCopy(notification, 'title') ??
+      securityCopy(notification, 'title') ??
       payrollDeductionCopy(notification, 'title') ??
       bondCopy(notification, 'title') ??
       notification.title,
@@ -847,6 +863,7 @@ export function useNotificationCopy() {
         ? t("shared.message")
         : null) ??
       warrantyCopy(notification, 'message') ??
+      securityCopy(notification, 'message') ??
       payrollDeductionCopy(notification, 'message') ??
       bondCopy(notification, 'message') ??
       notification.message,

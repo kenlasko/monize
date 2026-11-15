@@ -99,6 +99,12 @@ export enum NotificationType {
   // per reset date via the dedupe key (`pdr:reset:...`). See
   // `docs/specs/payroll-deductions.md` section 5.4.
   PAYROLL_DEDUCTION_RESET_DUE = "PAYROLL_DEDUCTION_RESET_DUE",
+  // Who can reach the account changed (SECURITY category): an OAuth client was
+  // granted access (one per grant), or an MCP credential answered the AI chat
+  // relay for the first time (one per credential). See
+  // `docs/specs/security-notifications.md`.
+  OAUTH_CLIENT_AUTHORIZED = "OAUTH_CLIENT_AUTHORIZED",
+  RELAY_CREDENTIAL_FIRST_USE = "RELAY_CREDENTIAL_FIRST_USE",
 }
 
 /**
@@ -165,6 +171,9 @@ export enum NotificationCategory {
   BONDS = "BONDS",
   AI_REVIEW = "AI_REVIEW",
   WARRANTIES = "WARRANTIES",
+  // A change in who can access the account (a new OAuth grant, a first-use
+  // relay credential). Important and infrequent, so it interrupts by default.
+  SECURITY = "SECURITY",
 }
 
 /**
@@ -210,6 +219,10 @@ export const AI_REVIEW_NOTIFICATION_TYPES: readonly NotificationType[] = [
 export const WARRANTY_NOTIFICATION_TYPES: readonly NotificationType[] = [
   NotificationType.WARRANTY_EXPIRING,
   NotificationType.WARRANTY_EXPIRES_TODAY,
+];
+export const SECURITY_NOTIFICATION_TYPES: readonly NotificationType[] = [
+  NotificationType.OAUTH_CLIENT_AUTHORIZED,
+  NotificationType.RELAY_CREDENTIAL_FIRST_USE,
 ];
 
 /**
@@ -269,6 +282,9 @@ export function notificationCategoryOf(
   }
   if (WARRANTY_NOTIFICATION_TYPES.includes(type)) {
     return NotificationCategory.WARRANTIES;
+  }
+  if (SECURITY_NOTIFICATION_TYPES.includes(type)) {
+    return NotificationCategory.SECURITY;
   }
   return NotificationCategory.BUDGETS;
 }

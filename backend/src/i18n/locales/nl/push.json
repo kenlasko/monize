@@ -52,6 +52,10 @@
       "title": "Garantieherinnering",
       "body": "Een van je garanties verloopt binnenkort. Open Monize voor de details."
     },
+    "security": {
+      "title": "Beveiligingsmelding",
+      "body": "Er is iets veranderd in wie toegang heeft tot je Monize-account. Open Monize voor de details."
+    },
     "shared_expenses": {
       "title": "Gedeelde uitgaven",
       "body": "Een gedeelde groep is bijgewerkt. Open Monize om de wijziging te bekijken."

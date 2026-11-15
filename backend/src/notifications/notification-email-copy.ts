@@ -423,6 +423,16 @@ export function composeLocalizedNotificationCopy(
         { name: data.name, date: dateLabel(expires) },
       );
     }
+    case NotificationType.OAUTH_CLIENT_AUTHORIZED: {
+      // The client name is attacker-chosen: it is only ever interpolated here and
+      // escaped once by the HTML template.
+      if (!strings(data, "clientName")) return null;
+      return pair("security.oauthTitle", "security.oauthMessage", {
+        clientName: data.clientName,
+      });
+    }
+    case NotificationType.RELAY_CREDENTIAL_FIRST_USE:
+      return pair("security.relayTitle", "security.relayMessage", {});
     case NotificationType.PAYROLL_DEDUCTION_RESET_DUE: {
       // The names, the reset date and the maximum that applies again: facts
       // only, so a copy composed later says the same thing.

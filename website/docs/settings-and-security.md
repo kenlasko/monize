@@ -202,6 +202,10 @@ Critical budget alerts (over budget, income shortfall) are sent immediately rega
 > [!NOTE]
 > **Monize for Windows:** email is never available: the Windows app has no SMTP settings. Notifications reach you in the app and as Windows notifications instead.
 
+### Security Notices
+
+Monize tells you when somebody new can reach your account. You get a notice when a new application is granted access through the OAuth consent page, and when a connection answers your AI chat for the first time. Each notice reaches the bell, and by default also reaches you by immediate email and browser push. You can change this in the **Security** row of the delivery matrix. If a notice is not from you, change your password: that revokes the access of every connected application and every API token.
+
 ### Browser Push
 
 Monize can deliver notifications to a phone or desktop even when the app is closed, using Web Push. No Firebase, Google Play or Apple Developer account is involved -- the instance generates and holds its own key pair.

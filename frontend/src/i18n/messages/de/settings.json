@@ -406,6 +406,7 @@
         "BONDS": "Anleihen",
         "AI_REVIEW": "KI-Prüfvorschläge",
         "WARRANTIES": "Garantie-Erinnerungen",
+        "SECURITY": "Sicherheit",
         "SHARED_EXPENSES": "Gemeinsame Ausgaben"
       },
       "channelNotApplicable": "Für diese Benachrichtigungsart nicht zutreffend",

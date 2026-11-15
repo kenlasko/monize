@@ -17,6 +17,7 @@ import {
 import { DismissNotificationsQueryDto } from "./dto/dismiss-notifications-query.dto";
 
 import {
+  RELAY_CREDENTIAL_DEDUPE_PREFIX,
   STATE_KEYED_DEDUPE_PREFIXES,
   STATE_KEYED_FORGET_DAYS,
   boundedTitle,
@@ -325,7 +326,8 @@ export class NotificationService {
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - RETENTION_DAYS);
       // A state-keyed bond row is the only memory that its event was raised, so
-      // it outlives the window and goes only once dismissed and this old.
+      // it outlives the window and goes only once dismissed and this old. A
+      // relay credential row is never forgotten (the memory it was announced).
       const forgetCutoff = new Date();
       forgetCutoff.setDate(forgetCutoff.getDate() - STATE_KEYED_FORGET_DAYS);
       // Matched with starts_with, not LIKE: a prefix is literal text, and a
@@ -340,8 +342,9 @@ export class NotificationService {
               WHERE (dismissed_at < $1
                      AND NOT EXISTS (SELECT 1 FROM unnest($2::text[]) AS p(prefix)
                                      WHERE starts_with(COALESCE(dedupe_key, ''), p.prefix)))
-                 OR dismissed_at < $3`,
-            [cutoff, stateKeyed, forgetCutoff],
+                 OR (dismissed_at < $3
+                     AND NOT starts_with(COALESCE(dedupe_key, ''), $4))`,
+            [cutoff, stateKeyed, forgetCutoff, RELAY_CREDENTIAL_DEDUPE_PREFIX],
           ),
         );
         // A read-but-not-dismissed row that an ACTIVE reminder nags about is

@@ -564,13 +564,19 @@ describe("NotificationService", () => {
       expect(String(dismissed)).not.toContain("LIKE");
       // `gem:` too: the GEM signal-change row is the only memory that a
       // period's change was announced, and the period outlives the window
-      // (A26-L24).
+      // (A26-L24). `relay:cred:` is the memory that a credential was announced.
       expect(dismissedArgs[1]).toEqual([
         "bond:unbooked:",
         "bond:missing:",
         "gem:",
+        "relay:cred:",
       ]);
-      expect(readArgs[1]).toEqual(["bond:unbooked:", "bond:missing:", "gem:"]);
+      expect(readArgs[1]).toEqual([
+        "bond:unbooked:",
+        "bond:missing:",
+        "gem:",
+        "relay:cred:",
+      ]);
     });
 
     it("forgets a dismissed state-keyed row only after the long window", async () => {
@@ -582,7 +588,12 @@ describe("NotificationService", () => {
       const [[dismissed, args]] = manager.query.mock.calls.filter(([sql]) =>
         String(sql).includes("DELETE FROM notifications"),
       );
-      expect(String(dismissed)).toContain("OR dismissed_at < $3");
+      expect(String(dismissed)).toContain("OR (dismissed_at < $3");
+      // A relay credential row is the memory it was announced: never forgotten.
+      expect(String(dismissed)).toContain(
+        "NOT starts_with(COALESCE(dedupe_key, ''), $4)",
+      );
+      expect(args[3]).toBe("relay:cred:");
       const expected = before - STATE_KEYED_FORGET_DAYS * 24 * 60 * 60 * 1000;
       expect(Math.abs((args[2] as Date).getTime() - expected)).toBeLessThan(
         60_000,

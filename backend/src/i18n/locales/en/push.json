@@ -52,6 +52,10 @@
       "title": "Warranty reminder",
       "body": "One of your warranties expires soon. Open Monize for the details."
     },
+    "security": {
+      "title": "Security notice",
+      "body": "Something changed in who can access your Monize account. Open Monize for the details."
+    },
     "shared_expenses": {
       "title": "Shared expenses",
       "body": "A shared group has an update. Open Monize to review it."

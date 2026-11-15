@@ -24,6 +24,7 @@ import { BondsModule } from "../bonds/bonds.module";
 import { WarrantiesModule } from "../warranties/warranties.module";
 import { HelpModule } from "../help/help.module";
 import { TagsModule } from "../tags/tags.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 
 import { McpServerService } from "./mcp-server.service";
 import { McpHttpController } from "./mcp-http.controller";
@@ -101,6 +102,8 @@ import { McpSpendingAnalysisPrompt } from "./prompts/spending-analysis.prompt";
     HelpModule,
     // list_tags and manage_tags: TagsService.getLlmTags and TagToolPrepService.
     TagsModule,
+    // relay first-use notice (SecurityNoticeService).
+    NotificationsModule,
   ],
   providers: [
     McpServerService,
