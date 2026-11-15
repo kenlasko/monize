@@ -868,7 +868,9 @@
         "sharedPersonLinks": "Kontak tertaut",
         "sharedIntegrations": "Koneksi ke keuangan pribadi",
         "sharedPostings": "Pencatatan pribadi pengeluaran bersama",
-        "sharedLedgerLinks": "Transaksi pribadi tertaut"
+        "sharedLedgerLinks": "Transaksi pribadi tertaut",
+        "budgetBuckets": "Kantong anggaran",
+        "budgetPeriodBuckets": "Kantong periode anggaran"
       }
     },
     "storedBackups": {

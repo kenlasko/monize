@@ -7,7 +7,7 @@ bucket by bucket instead of line by line. A bucket can optionally carry what
 it did not spend into the next period. The task list is
 [`bucket-budget-tasks.md`](./bucket-budget-tasks.md).
 
-Status: **proposal**, written 2026-11-14 with the maintainer in session. The
+Status: **built** on branch `feat/bucket-budget` (2026-11-15), from the proposal written 2026-11-14 with the maintainer in session. The
 four product choices in section 3 marked "(decided)" are the maintainer's
 answers; the open questions in section 13 carry a recorded default each, and
 the default is what gets built unless it is changed before the task that

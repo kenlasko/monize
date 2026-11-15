@@ -868,7 +868,9 @@
         "sharedPersonLinks": "已連結的聯絡人",
         "sharedIntegrations": "個人財務連結",
         "sharedPostings": "共同支出的個人記帳",
-        "sharedLedgerLinks": "已連結的個人交易"
+        "sharedLedgerLinks": "已連結的個人交易",
+        "budgetBuckets": "預算資金桶",
+        "budgetPeriodBuckets": "預算期間資金桶"
       }
     },
     "storedBackups": {

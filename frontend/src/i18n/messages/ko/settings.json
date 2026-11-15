@@ -868,7 +868,9 @@
         "sharedPersonLinks": "연결된 연락처",
         "sharedIntegrations": "개인 재정 연결",
         "sharedPostings": "공동 지출의 개인 기록",
-        "sharedLedgerLinks": "연결된 개인 거래"
+        "sharedLedgerLinks": "연결된 개인 거래",
+        "budgetBuckets": "예산 버킷",
+        "budgetPeriodBuckets": "예산 기간 버킷"
       }
     },
     "storedBackups": {

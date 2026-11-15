@@ -30,19 +30,19 @@
 
 | ID | Task | Depends on | Deploy impact | Recommended agent | Status |
 |----|------|-----------|---------------|-------------------|--------|
-| B1 | Migration + `schema.sql`, entities, `BUCKET` enum value, RLS, backup and deletion classification | -- | inert | opus, high | [ ] |
-| B2 | Bucket CRUD and line assignment (INV-BUDGET-002) | B1 | inert | sonnet, high | [ ] |
-| B3 | `computeBudgetBucketFigures` and `GET .../reports/bucket-status` (INV-BUDGET-001) | B2 | inert | sonnet, high | [ ] |
-| B4 | Period snapshots and carry-over at close (INV-BUDGET-003) | B3 | neutral | opus, high | [ ] |
-| B5 | Wizard apply accepts buckets, in one transaction | B2 | neutral | sonnet, medium | [ ] |
-| B6 | Bucket figures in the assistant and MCP `get_budget_status` | B3 | neutral | sonnet, medium | [ ] |
-| F1 | Types, API client, the fifth strategy in every list, English copy | B2 | inert | sonnet, medium | [ ] |
-| F2 | `BudgetBucketEditor`, presets, edit-page section, line form select | F1 | inert | opus, medium | [ ] |
-| F3 | Dashboard `BudgetBucketSummary` and period-detail bucket rows | F1, B3, B4 | inert | sonnet, medium | [ ] |
-| F4 | Wizard: bucket setup, per-line picker, review | F2, B5 | neutral | opus, high | [ ] |
-| D1 | Website docs, docs link, E2E factory type | F3, F4 | none | sonnet, low | [ ] |
-| Q1 | Integration suite on real PostgreSQL | B4, B5 | none | opus, medium | [ ] |
-| Q2 | Full-locale i18n pass (final commit) | all above | none | sonnet, medium | [ ] |
+| B1 | Migration + `schema.sql`, entities, `BUCKET` enum value, RLS, backup and deletion classification | -- | inert | opus, high | [x] |
+| B2 | Bucket CRUD and line assignment (INV-BUDGET-002) | B1 | inert | sonnet, high | [x] |
+| B3 | `computeBudgetBucketFigures` and `GET .../reports/bucket-status` (INV-BUDGET-001) | B2 | inert | sonnet, high | [x] |
+| B4 | Period snapshots and carry-over at close (INV-BUDGET-003) | B3 | neutral | opus, high | [x] |
+| B5 | Wizard apply accepts buckets, in one transaction | B2 | neutral | sonnet, medium | [x] |
+| B6 | Bucket figures in the assistant and MCP `get_budget_status` | B3 | neutral | sonnet, medium | [x] |
+| F1 | Types, API client, the fifth strategy in every list, English copy | B2 | inert | sonnet, medium | [x] |
+| F2 | `BudgetBucketEditor`, presets, edit-page section, line form select | F1 | inert | opus, medium | [x] |
+| F3 | Dashboard `BudgetBucketSummary` and period-detail bucket rows | F1, B3, B4 | inert | sonnet, medium | [x] |
+| F4 | Wizard: bucket setup, per-line picker, review | F2, B5 | neutral | opus, high | [x] |
+| D1 | Website docs, docs link, E2E factory type | F3, F4 | none | sonnet, low | [x] |
+| Q1 | Integration suite on real PostgreSQL | B4, B5 | none | opus, medium | [x] |
+| Q2 | Full-locale i18n pass (final commit) | all above | none | sonnet, medium | [x] |
 
 Backend order: B1, B2, B3, B4, B5, B6. Frontend order: F1, F2, F3, F4. B5 and B6 touch different files from each other and from F1; all other pairs share files and are sequential.
 

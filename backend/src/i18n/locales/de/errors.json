@@ -332,7 +332,17 @@
     "noOpenPeriod": "Kein offener Zeitraum zum Schließen",
     "categoryIdsNotOwned": "Kategorie-IDs nicht gefunden oder nicht im Besitz des Benutzers: {{ ids }}",
     "transferAccountNotFound": "Konto mit ID {{ id }} nicht gefunden",
-    "transferAccountAlreadyInBudget": "Dieses Konto hat bereits eine Überweisungszeile im Budget"
+    "transferAccountAlreadyInBudget": "Dieses Konto hat bereits eine Überweisungszeile im Budget",
+    "bucketNotFound": "Topf mit ID {{ id }} nicht gefunden",
+    "bucketLimit": "Ein Budget kann höchstens {{ max }} Töpfe haben",
+    "bucketNameInvalid": "Ein Topfname muss 1 bis {{ max }} Zeichen lang sein",
+    "bucketNameDuplicate": "Dieses Budget hat bereits einen Topf mit diesem Namen",
+    "bucketTargetInvalid": "Ein Topfziel muss größer als null sein",
+    "bucketPercentInvalid": "Ein Prozentziel muss größer als 0 und höchstens 100 sein, mit höchstens zwei Dezimalstellen",
+    "bucketCarryCapNeedsCarryOver": "Eine Übertragungsgrenze setzt aktivierten Übertrag voraus",
+    "bucketOnIncomeLine": "Eine Einkommenszeile kann keinem Topf angehören",
+    "bucketKeyDuplicate": "Der Topfschlüssel \"{{ key }}\" wird mehrfach verwendet",
+    "bucketKeyUnknown": "Kein Topf in dieser Anfrage hat den Schlüssel \"{{ key }}\""
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Eine Lohnabzugsregel erfasst eine Rechnung, die in einer Fiat-Währung bezahlt wird; das Konto dieser Rechnung enthält die Kryptowährung {{ code }}. Wählen Sie eine Rechnung, die von einem Fiat-Konto bezahlt wird.",
