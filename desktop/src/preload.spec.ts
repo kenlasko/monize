@@ -6,12 +6,16 @@ import {
   NOTIFICATIONS_KEY as MAIN_KEY,
 } from "./shell/notification-snapshot";
 import {
+  SHELL_MENU_CHANNEL as MAIN_MENU_CHANNEL,
+  SHELL_MENU_KEY as MAIN_MENU_KEY,
+} from "./shell/shell-menu";
+import {
   VERSION_ARG_PREFIX as MAIN_PREFIX,
   versionArgument,
 } from "./shell/shell-flag";
 
 const exposed: [string, unknown][] = [];
-const sent: [string, unknown][] = [];
+const sent: unknown[][] = [];
 
 jest.mock("electron", () => ({
   contextBridge: {
@@ -20,8 +24,8 @@ jest.mock("electron", () => ({
     },
   },
   ipcRenderer: {
-    send: (channel: string, payload: unknown) => {
-      sent.push([channel, payload]);
+    send: (channel: string, ...args: unknown[]) => {
+      sent.push([channel, ...args]);
     },
   },
 }));
@@ -39,16 +43,35 @@ function runtimeImports(file: string): string[] {
 }
 
 describe("preload", () => {
-  it("exposes exactly the shell flag and the notification bridge, once each", () => {
+  beforeEach(() => {
+    sent.length = 0;
+  });
+
+  it("exposes exactly the shell flag, the notification bridge and the shell menu, once each", () => {
     expect(exposed.map(([key]) => key)).toEqual([
       "__MONIZE_SHELL__",
       "__MONIZE_SHELL_NOTIFICATIONS__",
+      "__MONIZE_SHELL_MENU__",
     ]);
     const [, flag] = exposed[0];
     expect(Object.keys(flag as object).sort()).toEqual(["kind", "version"]);
     expect((flag as { kind: string }).kind).toBe("electron");
     const [, bridge] = exposed[1];
     expect(Object.keys(bridge as object)).toEqual(["publish"]);
+  });
+
+  it("asks for the shell menu on its channel, carrying nothing", () => {
+    const [, menu] = exposed[2];
+    expect(Object.keys(menu as object)).toEqual(["open"]);
+    (menu as { open(...args: unknown[]): void }).open({ x: 1 });
+    expect(sent).toEqual([["monize:shell-menu"]]);
+  });
+
+  it("never throws into the page when the menu request cannot be sent", () => {
+    const menu = preload.shellMenuBridgeFor(() => {
+      throw new Error("The render frame was disposed.");
+    });
+    expect(() => menu.open()).not.toThrow();
   });
 
   it("sends a published snapshot on the bridge's channel and nothing more", () => {
@@ -68,6 +91,8 @@ describe("preload", () => {
   it("keeps its copies of the bridge's key and channel equal to the main process's", () => {
     expect(preload.NOTIFICATIONS_KEY).toBe(MAIN_KEY);
     expect(preload.NOTIFICATIONS_CHANNEL).toBe(MAIN_CHANNEL);
+    expect(preload.SHELL_MENU_KEY).toBe(MAIN_MENU_KEY);
+    expect(preload.SHELL_MENU_CHANNEL).toBe(MAIN_MENU_CHANNEL);
   });
 
   it("reads back the version the main process passes", () => {

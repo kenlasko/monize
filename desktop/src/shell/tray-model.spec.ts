@@ -1,5 +1,10 @@
 import { TEXT } from "./strings";
-import { LoginItemState, TRAY_ITEM_IDS, trayMenuModel } from "./tray-model";
+import {
+  LoginItemState,
+  TRAY_ITEM_IDS,
+  trayMenuModel,
+  windowMenuModel,
+} from "./tray-model";
 import { UpdateState } from "./update-policy";
 
 describe("trayMenuModel", () => {
@@ -130,5 +135,39 @@ describe("trayMenuModel", () => {
         (item) => item.id === "move-data-folder",
       ),
     ).toMatchObject({ label: TEXT.move.trayItem, enabled: true });
+  });
+});
+
+describe("windowMenuModel", () => {
+  const state = {
+    update: { kind: "downloaded", version: "1.22.0" },
+    loginItem: { enabled: true },
+  } as const;
+
+  it("is the tray's menu without Open Monize, entry for entry", () => {
+    const tray = trayMenuModel(state);
+    expect(windowMenuModel(state)).toEqual(
+      tray.filter((entry) => entry.type !== "item" || entry.id !== "open"),
+    );
+    expect(windowMenuModel(state)).toHaveLength(tray.length - 1);
+  });
+
+  it("follows the update state and the login checkbox as the tray does", () => {
+    const items = windowMenuModel(state).flatMap((entry) =>
+      entry.type === "item" ? [entry] : [],
+    );
+    expect(items.find((item) => item.id === "check-for-updates")).toMatchObject(
+      { label: TEXT.trayRestartToUpdate("1.22.0"), enabled: true },
+    );
+    expect(items.find((item) => item.id === "start-at-login")).toMatchObject({
+      checked: true,
+    });
+  });
+
+  it("starts with a real item, never a separator", () => {
+    expect(windowMenuModel(state)[0]).toMatchObject({
+      type: "item",
+      id: "open-in-browser",
+    });
   });
 });

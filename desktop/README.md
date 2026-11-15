@@ -133,6 +133,12 @@ MONIZE_DATA_DIR=/tmp/monize-shell npx electron . --quit   # asks the running she
 - Closing the window hides it to the tray; Quit in the tray stops the
   frontend, the backend and PostgreSQL, then exits. Without a tray (some Linux
   sessions) closing the window quits.
+- The tray's items (all but "Open Monize") are also in the window: the menu
+  bar's "Monize" menu (shown with Alt) and the popup the page's Help menu asks
+  for through the preload (`src/window-menus.ts`, built from
+  `windowMenuModel` in `src/shell/tray-model.ts` with the tray's own
+  handlers). Both are removed when a data-folder move or a quit starts, as
+  the tray is.
 - Chromium's profile, the page's cookies included, lives under
   `<data dir>/shell`.
 - `monize://` is registered with the operating system only by a packaged
@@ -395,6 +401,11 @@ Install and first run:
 - [ ] Closing the window leaves the tray icon; "Open in browser" works;
       Quit in the tray leaves no `Monize.exe` or `postgres.exe` in Task
       Manager.
+- [ ] Alt shows the menu bar with Monize, Edit, View and Window; the Monize
+      menu lists the tray's items without "Open Monize", and its "Start
+      Monize when I sign in" tick matches the tray's after toggling either.
+- [ ] Help (?) > "Desktop app menu" pops the same menu up at the pointer;
+      "View logs" from it opens the log viewer.
 
 Restart and recovery:
 

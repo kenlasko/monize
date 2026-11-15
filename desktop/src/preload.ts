@@ -2,21 +2,24 @@ import { contextBridge, ipcRenderer } from "electron";
 
 /**
  * The main window's preload (`docs/frontend/shell-contract.md`). It exposes
- * exactly two things: the shell flag, `window.__MONIZE_SHELL__ = { kind:
- * 'electron', version }`, and the notification bridge,
+ * exactly three things: the shell flag, `window.__MONIZE_SHELL__ = { kind:
+ * 'electron', version }`; the notification bridge,
  * `window.__MONIZE_SHELL_NOTIFICATIONS__ = { publish(snapshot) }`, which
  * carries what the page found in its own notification centre to the main
- * process. `contextBridge` freezes a copy of each into the page's world before
- * any page script runs, so the page cannot replace them.
+ * process; and the shell menu, `window.__MONIZE_SHELL_MENU__ = { open() }`,
+ * which asks the main process to pop up the tray's menu in the window.
+ * `contextBridge` freezes a copy of each into the page's world before any page
+ * script runs, so the page cannot replace them.
  *
- * The bridge sends, and receives nothing: no cookie, token or response ever
- * crosses it, and the main process validates every snapshot itself
- * (`shell/notification-snapshot.ts`).
+ * Both bridges send, and receive nothing: no cookie, token or response ever
+ * crosses them, the menu request carries no data at all, and the main process
+ * validates every snapshot itself (`shell/notification-snapshot.ts`).
  *
  * This file runs sandboxed, where `require` reaches only `electron` and a few
  * Node built-ins, so it imports nothing of its own: the constants and the
- * parser below are copies of `shell/shell-flag.ts` and
- * `shell/notification-snapshot.ts`, held equal by `preload.spec.ts`.
+ * parser below are copies of `shell/shell-flag.ts`,
+ * `shell/notification-snapshot.ts` and `shell/shell-menu.ts`, held equal by
+ * `preload.spec.ts`.
  */
 
 export const SHELL_FLAG_KEY = "__MONIZE_SHELL__";
@@ -24,6 +27,8 @@ export const VERSION_ARG_PREFIX = "--monize-shell-version=";
 const VERSION_PATTERN = /^[0-9A-Za-z.+-]{1,64}$/;
 export const NOTIFICATIONS_KEY = "__MONIZE_SHELL_NOTIFICATIONS__";
 export const NOTIFICATIONS_CHANNEL = "monize:notifications";
+export const SHELL_MENU_KEY = "__MONIZE_SHELL_MENU__";
+export const SHELL_MENU_CHANNEL = "monize:shell-menu";
 
 export interface ShellFlag {
   readonly kind: "electron";
@@ -42,6 +47,25 @@ export function shellFlagFrom(argv: readonly string[]): ShellFlag {
   return {
     kind: "electron",
     version: VERSION_PATTERN.test(version) ? version : "",
+  };
+}
+
+export interface ShellMenuBridge {
+  /** Asks the shell to pop up its menu; carries nothing, never throws. */
+  readonly open: () => void;
+}
+
+export function shellMenuBridgeFor(
+  send: (channel: string) => void,
+): ShellMenuBridge {
+  return {
+    open: () => {
+      try {
+        send(SHELL_MENU_CHANNEL);
+      } catch {
+        // Nothing for the page to show; the menu simply does not open.
+      }
+    },
   };
 }
 
@@ -65,4 +89,8 @@ contextBridge.exposeInMainWorld(
   notificationBridgeFor((channel, payload) =>
     ipcRenderer.send(channel, payload),
   ),
+);
+contextBridge.exposeInMainWorld(
+  SHELL_MENU_KEY,
+  shellMenuBridgeFor((channel) => ipcRenderer.send(channel)),
 );

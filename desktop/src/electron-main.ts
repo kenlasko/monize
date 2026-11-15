@@ -59,8 +59,9 @@ import { isPresentableError } from "./shell/splash-view";
 import { TEXT } from "./shell/strings";
 import { createSplash } from "./splash";
 import { UpdatePolicy } from "./shell/update-policy";
-import { createTray, TrayHandle } from "./tray";
-import { LoginItemState } from "./shell/tray-model";
+import { createTray, TrayHandle, TrayHandlers } from "./tray";
+import { createWindowMenus, WindowMenusHandle } from "./window-menus";
+import { LoginItemState, TrayState } from "./shell/tray-model";
 import { createUpdater } from "./updater";
 import { systemClock } from "./supervisor/clock";
 import {
@@ -200,6 +201,7 @@ function run(located: LaunchPaths): void {
   const iconPath = iconPathFor(paths.resourcesDir, process.platform);
   let mainWindow: BrowserWindow | null = null;
   let tray: TrayHandle | null = null;
+  let windowMenus: WindowMenusHandle | null = null;
   let updates: UpdatePolicy | null = null;
   // Settled at launch: a login launch stays in the tray (shell/login-item.ts).
   const atLogin = startedAtLogin({
@@ -277,6 +279,7 @@ function run(located: LaunchPaths): void {
     onBegin: () => {
       controller.runtime?.logger.info("Shell: quitting; stopping the stack.");
       notifications?.stop();
+      windowMenus?.stop();
       mainWindow?.hide();
     },
   });
@@ -298,6 +301,7 @@ function run(located: LaunchPaths): void {
       mainWindow?.hide();
       tray?.tray.destroy();
       tray = null;
+      windowMenus?.stop();
     },
     log: (line) => {
       const logger =
@@ -369,43 +373,52 @@ function run(located: LaunchPaths): void {
       },
       show: () => showWindow(window),
     });
-    tray = createTray({
-      iconPath,
-      state: { update: updater.state, loginItem: loginItemState() },
-      logger,
-      handlers: {
-        open: () => showWindow(window),
-        "open-in-browser": () => void shell.openExternal(origin),
-        "view-logs": () => logViewer.show(),
-        "show-logs": () => void openFolder(runtime.paths.data.logs, logger),
-        "show-recovery-key": () =>
-          void showRecoveryKey(
-            runtime.bootstrap.secrets.encryptionKey,
-            window,
-          ).then(keySaved),
-        "export-recovery-key": () =>
-          void exportRecoveryKey({
-            key: runtime.bootstrap.secrets.encryptionKey,
-            version: app.getVersion(),
-            documentsDir: app.getPath("documents"),
-            parent: window,
-            logger,
-          }).then(keySaved),
-        "start-at-login": () => {
-          toggleLoginItem();
-          tray?.setState({
-            update: updater.state,
-            loginItem: loginItemState(),
-          });
-        },
-        "move-data-folder": () => move.start(),
-        "check-for-updates": () => updater.menuAction(),
-        quit: () => app.quit(),
-      },
+    const menuState = (update = updater.state): TrayState => ({
+      update,
+      loginItem: loginItemState(),
     });
-    updater.onChange((update) =>
-      tray?.setState({ update, loginItem: loginItemState() }),
-    );
+    const refreshMenus = (state: TrayState): void => {
+      tray?.setState(state);
+      windowMenus?.setState(state);
+    };
+    // One set of handlers for the tray, the window's menu bar and the popup
+    // the page's Help menu asks for (window-menus.ts).
+    const handlers: TrayHandlers = {
+      open: () => showWindow(window),
+      "open-in-browser": () => void shell.openExternal(origin),
+      "view-logs": () => logViewer.show(),
+      "show-logs": () => void openFolder(runtime.paths.data.logs, logger),
+      "show-recovery-key": () =>
+        void showRecoveryKey(
+          runtime.bootstrap.secrets.encryptionKey,
+          window,
+        ).then(keySaved),
+      "export-recovery-key": () =>
+        void exportRecoveryKey({
+          key: runtime.bootstrap.secrets.encryptionKey,
+          version: app.getVersion(),
+          documentsDir: app.getPath("documents"),
+          parent: window,
+          logger,
+        }).then(keySaved),
+      "start-at-login": () => {
+        toggleLoginItem();
+        refreshMenus(menuState());
+      },
+      "move-data-folder": () => move.start(),
+      "check-for-updates": () => updater.menuAction(),
+      quit: () => app.quit(),
+    };
+    tray = createTray({ iconPath, state: menuState(), logger, handlers });
+    windowMenus?.stop();
+    windowMenus = createWindowMenus({
+      origin,
+      logger,
+      window,
+      state: menuState(),
+      handlers,
+    });
+    updater.onChange((update) => refreshMenus(menuState(update)));
     // The first time the window appears in this launch (later, for a launch
     // at sign-in that starts in the tray), until the key has been saved.
     window.once("show", () => {
