@@ -36,7 +36,9 @@
       "SAVING": "Oszczędność"
     },
     "saving": "Zapisywanie...",
-    "remove": "Usuń z budżetu"
+    "remove": "Usuń z budżetu",
+    "bucket": "Koperta",
+    "bucketUnassigned": "Nieprzypisane"
   },
   "categoryList": {
     "title": "Budżety kategorii",
@@ -94,7 +96,8 @@
       "FIXED": "Stała",
       "ROLLOVER": "Przenoszona",
       "ZERO_BASED": "Zerowa",
-      "FIFTY_THIRTY_TWENTY": "50/30/20"
+      "FIFTY_THIRTY_TWENTY": "50/30/20",
+      "BUCKET": "Koperta"
     }
   },
   "healthGauge": {
@@ -239,6 +242,10 @@
       "FIFTY_THIRTY_TWENTY": {
         "label": "50/30/20",
         "description": "50% potrzeby, 30% zachcianki, 20% oszczędności. Kategorie oznaczane są grupą."
+      },
+      "BUCKET": {
+        "label": "Koperta",
+        "description": "Przychód jest dzielony na kilka nazwanych kopert. Śledź każdą kopertę, a nie każdą kategorię."
       }
     },
     "profiles": {
@@ -324,7 +331,8 @@
       "FIXED": "Ustaw kwoty na kategorię. Niewykorzystany budżet zeruje się co okres.",
       "ROLLOVER": "Niewykorzystany budżet przechodzi dalej według reguł przenoszenia dla kategorii.",
       "ZERO_BASED": "Każda złotówka przychodu jest przypisana. Przychody minus wydatki powinny dać zero.",
-      "FIFTY_THIRTY_TWENTY": "Kategorie pogrupowane jako Potrzeby (50%), Zachcianki (30%), Oszczędności (20%)."
+      "FIFTY_THIRTY_TWENTY": "Kategorie pogrupowane jako Potrzeby (50%), Zachcianki (30%), Oszczędności (20%).",
+      "BUCKET": "Przychód podzielony na nazwane koperty. Każda kategoria należy do jednej koperty."
     },
     "linkBudgetToIncome": "Powiąż budżet z przychodem",
     "linkBudgetToIncomeHint": "Kwoty kategorii stają się procentami przychodu bazowego",
@@ -403,6 +411,19 @@
     "toasts": {
       "created": "Budżet utworzony pomyślnie",
       "failed": "Nie udało się utworzyć budżetu"
+    }
+  },
+  "wizardBuckets": {
+    "title": "Koperty",
+    "description": "Podziel przychód na koperty, a potem wybierz kopertę dla każdego wydatku i przelewu poniżej.",
+    "selectLabel": "Koperta dla: {name}",
+    "unassigned": "Nieprzypisane",
+    "tallyTitle": "Pozycje na kopertę",
+    "tallyValue": "{count, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}} · {amount}",
+    "review": {
+      "lineCount": "{count, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}}",
+      "unassigned": "{count, plural, one {# pozycja wydatku lub przelewu nie należy} few {# pozycje wydatków lub przelewów nie należą} many {# pozycji wydatków lub przelewów nie należy} other {# pozycji wydatków lub przelewów nie należy}} do żadnej koperty. Możesz mimo to utworzyć budżet i przypisać je później na stronie edycji.",
+      "noBuckets": "Ten budżet nie ma jeszcze kopert. Możesz mimo to go utworzyć i dodać koperty później na stronie edycji."
     }
   },
   "zeroBasedBar": {
@@ -486,6 +507,23 @@
           "Wymaga przypisania każdego wydatku do grupy"
         ],
         "bestFor": "Osoby chcące zrównoważonego, orientacyjnego podejścia bez śledzenia każdej kategorii z osobna."
+      },
+      "BUCKET": {
+        "title": "Budżet kopertowy",
+        "description": "Przychód jest dzielony na kilka nazwanych kopert, z których każda ma cel w postaci udziału w przychodzie lub stałej kwoty. Każda kategoria należy do jednej koperty, więc śledzisz kopertę zamiast każdej kategorii. Koperta może przenieść to, co zostało, na następny okres.",
+        "pros": [
+          "Mniej liczb do śledzenia",
+          "Elastyczny w obrębie każdej koperty",
+          "Koperty oszczędnościowe mogą rosnąć z czasem",
+          "Sprawdza się przy nieregularnych wydatkach w kopercie"
+        ],
+        "cons": [
+          "Mniej szczegółów dla każdej kategorii",
+          "Wymaga przypisania kategorii do kopert",
+          "Cele procentowe wymagają znanego przychodu",
+          "Przeniesione salda wymagają okazjonalnego sprawdzenia"
+        ],
+        "bestFor": "Osoby, dla których budżety na kategorie są zbyt żmudne, ale które chcą większej struktury niż w modelu 50/30/20."
       }
     }
   },
@@ -567,7 +605,9 @@
         "categoryRemoveFailed": "Nie udało się usunąć kategorii",
         "transferIncomeAdded": "Dodano dochód z przelewów",
         "transferIncomeFailed": "Nie udało się dodać dochodu z przelewów"
-      }
+      },
+      "buckets": "Koperty",
+      "unassignedBucket": "Nieprzypisane"
     }
   },
   "validation": {
@@ -578,5 +618,140 @@
   "categoryValidation": {
     "amountMin": "Kwota musi być równa 0 lub większa",
     "mustBeNumber": "Musi być liczbą"
+  },
+  "bucketEditor": {
+    "presetLabel": "Zacznij od szablonu",
+    "presets": {
+      "THREE": "Trzy koperty",
+      "FOUR": "Cztery koperty (60/10/10/20)",
+      "SCRATCH": "Zacznij od zera"
+    },
+    "presetBucketNames": {
+      "fixedCosts": "Stałe koszty",
+      "everydaySpending": "Codzienne wydatki",
+      "savings": "Oszczędności",
+      "dailyExpenses": "Wydatki na co dzień",
+      "splurge": "Przyjemności",
+      "longTermGoals": "Cele długoterminowe",
+      "safetyAndDebt": "Bezpieczeństwo i długi"
+    },
+    "listLabel": "Koperty",
+    "empty": {
+      "title": "Brak kopert",
+      "description": "Zacznij od szablonu lub dodaj kopertę, a potem przypisz do niej kategorie."
+    },
+    "add": "Dodaj kopertę",
+    "limitReached": "Budżet może mieć najwyżej {max} kopert.",
+    "newTitle": "Nowa koperta",
+    "editTitle": "Edytuj {name}",
+    "summary": "Cele procentowe sumują się do {percent}. Cele kwotowe sumują się do {amount}.",
+    "row": {
+      "percentTarget": "{percent} przychodu",
+      "amountTarget": "{amount} na okres",
+      "noCarry": "Co okres zaczyna od zera",
+      "carries": "Przenosi się dalej",
+      "carriesUpTo": "Przenosi się dalej, do {cap}",
+      "caption": "{target} · {carry}",
+      "edit": "Edytuj",
+      "delete": "Usuń",
+      "editLabel": "Edytuj {name}",
+      "deleteLabel": "Usuń {name}"
+    },
+    "targetTypes": {
+      "PERCENT": "Procent przychodu",
+      "AMOUNT": "Stała kwota"
+    },
+    "form": {
+      "name": "Nazwa",
+      "namePlaceholder": "np. Oszczędności",
+      "targetType": "Cel",
+      "targetTypeTooltip": "Cel procentowy to udział w przychodzie budżetu: przychód otrzymany w tym okresie dla budżetu powiązanego z przychodem, w przeciwnym razie przychód bazowy, a jeśli go brak, kwoty kategorii przychodów. Stała kwota jest taka sama w każdym okresie.",
+      "targetPercent": "Procent przychodu",
+      "targetAmount": "Kwota na okres",
+      "carryOver": "Przenieś to, co zostało",
+      "carryOverTooltip": "To, co zostanie w kopercie po zamknięciu okresu, jest dodawane do następnego okresu. Przekroczona koperta nie przenosi niczego.",
+      "carryCap": "Limit przenoszenia (opcjonalnie)",
+      "carryCapPlaceholder": "Bez limitu",
+      "save": "Zapisz",
+      "saveChanges": "Zapisz zmiany"
+    },
+    "validation": {
+      "nameRequired": "Wpisz nazwę",
+      "nameMax": "Nazwa może mieć najwyżej {max} znaków",
+      "nameDuplicate": "Inna koperta ma już tę nazwę",
+      "targetRequired": "Wpisz cel",
+      "percentRange": "Cel procentowy musi być większy niż 0 i najwyżej 100",
+      "percentDecimals": "Cel procentowy może mieć najwyżej dwa miejsca po przecinku",
+      "amountPositive": "Cel kwotowy musi być większy niż 0",
+      "capNeedsCarryOver": "Limit przenoszenia wymaga włączonego przenoszenia",
+      "capPositive": "Limit przenoszenia musi być większy niż 0"
+    },
+    "delete": {
+      "title": "Usuń kopertę",
+      "message": "Usunąć kopertę \"{name}\"? Jej kategorie staną się nieprzypisane.",
+      "confirm": "Usuń"
+    },
+    "replace": {
+      "title": "Zastąp koperty",
+      "message": "Zastąpić obecne koperty szablonem \"{preset}\"? Obecne koperty zostaną usunięte, a ich kategorie staną się nieprzypisane.",
+      "clearMessage": "Usunąć wszystkie koperty i zacząć od zera? Ich kategorie staną się nieprzypisane.",
+      "confirm": "Zastąp"
+    },
+    "toasts": {
+      "created": "Dodano kopertę",
+      "updated": "Zaktualizowano kopertę",
+      "deleted": "Usunięto kopertę",
+      "saveFailed": "Nie udało się zapisać koperty",
+      "deleteFailed": "Nie udało się usunąć koperty",
+      "presetApplied": "Zastosowano szablon",
+      "presetFailed": "Nie udało się zastosować szablonu"
+    }
+  },
+  "bucketSummary": {
+    "title": "Podział na koperty",
+    "loading": "Ładowanie podziału na koperty",
+    "loadFailed": "Nie udało się załadować podziału na koperty. Spróbuj ponownie za chwilę.",
+    "emptyTitle": "Brak kopert",
+    "emptyDescription": "Dodaj koperty, aby podzielić przychód na nazwane części.",
+    "emptyAction": "Dodaj koperty",
+    "income": "Przychód kopert",
+    "incomeUnknown": "Nieznany",
+    "incomeSource": {
+      "ACTUAL": "Na podstawie rzeczywistego przychodu w tym okresie",
+      "BASE_INCOME": "Na podstawie przychodu bazowego budżetu",
+      "INCOME_LINES": "Na podstawie planowanych kategorii przychodów",
+      "NONE": "Nie znaleziono przychodu"
+    },
+    "totalAllocated": "Łącznie przydzielono",
+    "allocatedSoFar": "Przydzielono dotąd",
+    "allocatedSoFarHint": "Dla niektórych kopert kwota nie jest jeszcze znana, więc to wartość częściowa.",
+    "unallocated": "Nieprzydzielone",
+    "unallocatedUnknown": "Nieznane",
+    "overAllocatedHint": "Nadmierny przydział: koperty sumują się do więcej niż Twój przychód.",
+    "targetPercent": "{percent} przychodu",
+    "targetAmount": "{amount} na okres",
+    "carriedIn": "Przeniesiono {amount}",
+    "spent": "Wydano",
+    "available": "Dostępne",
+    "overspent": "Przekroczono",
+    "categories": "{count, plural, one {# kategoria} few {# kategorie} many {# kategorii} other {# kategorii}}",
+    "allocationUnknown": "Ustaw w budżecie przychód bazowy lub dodaj kategorię przychodów.",
+    "allocationUnknownAction": "Edytuj budżet",
+    "unassignedTitle": "Nieprzypisane",
+    "unassignedDescription": "{count, plural, one {# pozycja kategorii nie należy} few {# pozycje kategorii nie należą} many {# pozycji kategorii nie należy} other {# pozycji kategorii nie należy}} do żadnej koperty.",
+    "unassignedPlanned": "Planowane",
+    "unassignedAction": "Przypisz je"
+  },
+  "periodBuckets": {
+    "title": "Koperty",
+    "name": "Koperta",
+    "target": "Cel",
+    "allocated": "Przydzielono",
+    "allocatedUnknown": "Nieznane",
+    "carriedIn": "Przeniesiono z poprzedniego",
+    "spent": "Wydano",
+    "carriedOut": "Przeniesiono dalej",
+    "targetPercent": "{percent} przychodu",
+    "targetAmount": "{amount} na okres"
   }
 }

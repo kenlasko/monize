@@ -3,7 +3,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { BudgetCategory } from "./entities/budget-category.entity";
 import { FxAggregate } from "../common/fx-aggregate";
-import { sumMoney } from "../common/round.util";
+import { roundMoney, sumMoney } from "../common/round.util";
 import { buildRateIndex } from "../common/time-series/rate-index.util";
 import {
   convertRateBasis,
@@ -723,6 +723,24 @@ export function resolveOutsideTransferIncome(
   spending: Pick<CategorySpending, "outsideTransferIncome">,
 ): number {
   return Math.max(spending.outsideTransferIncome, 0);
+}
+
+/**
+ * A line's budgeted amount for a period: its own `amount`, except an expense
+ * line of an income-linked budget, whose `amount` is a percentage of the
+ * period's income (`resolveBudgetIncome`). The live summary
+ * (`BudgetsService.getSummary`) and the period close's bucket snapshot both
+ * read it here, so a bucket's `planned` is the same figure on both.
+ */
+export function resolveBudgetLineBudgeted(
+  bc: Pick<BudgetCategory, "amount" | "isIncome">,
+  incomeLinked: boolean,
+  linkedIncome: number,
+): number {
+  const rawAmount = Number(bc.amount);
+  return incomeLinked && !bc.isIncome
+    ? roundMoney((linkedIncome * rawAmount) / 100)
+    : rawAmount;
 }
 
 /** Resolves the display name for a budget category. */

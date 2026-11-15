@@ -15,6 +15,7 @@ import { CreateTransferIncomeLineDto } from "./dto/create-transfer-income-line.d
 import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
 import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
 import { assertTransferAccountsOwned } from "./budget-transfer-lines.util";
+import { assertBucketAssignable } from "./budget-bucket-membership.util";
 import {
   Notification,
   NotificationType,
@@ -38,6 +39,7 @@ import {
   budgetTransfersInAsIncome,
   queryCategorySpending,
   resolveBudgetIncome,
+  resolveBudgetLineBudgeted,
   resolveCategoryName,
   resolveCategorySpent,
   resolveOutsideTransferIncome,
@@ -184,7 +186,9 @@ export class BudgetsService {
           "categories.category",
           "categories.category.parent",
           "categories.transferAccount",
+          "buckets",
         ],
+        order: { buckets: { sortOrder: "ASC", name: "ASC" } },
       }),
     );
 
@@ -301,9 +305,22 @@ export class BudgetsService {
       );
     }
 
-    return withScopedDb(this.dataSource, (m) => {
+    return withScopedDb(this.dataSource, async (m) => {
+      // INV-BUDGET-002: the membership check shares the write's transaction.
+      await assertBucketAssignable(
+        m,
+        budget.id,
+        dto.bucketId ?? null,
+        dto.isIncome ?? false,
+      );
       const repo = m.getRepository(BudgetCategory);
-      return repo.save(repo.create({ ...dto, budgetId: budget.id }));
+      return repo.save(
+        repo.create({
+          ...dto,
+          bucketId: dto.bucketId ?? null,
+          budgetId: budget.id,
+        }),
+      );
     });
   }
 
@@ -431,6 +448,12 @@ export class BudgetsService {
       }
 
       this.applyCategoryUpdate(budgetCategory, dto);
+      await assertBucketAssignable(
+        m,
+        budgetId,
+        budgetCategory.bucketId ?? null,
+        budgetCategory.isIncome,
+      );
       return repo.save(budgetCategory);
     });
   }
@@ -454,6 +477,12 @@ export class BudgetsService {
       budgetCategory.alertCriticalPercent = dto.alertCriticalPercent;
     if (dto.notes !== undefined) budgetCategory.notes = dto.notes;
     if (dto.sortOrder !== undefined) budgetCategory.sortOrder = dto.sortOrder;
+
+    // Truth table D: absent = unchanged, null = cleared, a bucket id = set. The
+    // check runs on the row as it would become (`updateCategory`), so flipping
+    // a bucketed line to income is refused (unless the same request clears the
+    // bucket).
+    if (dto.bucketId !== undefined) budgetCategory.bucketId = dto.bucketId;
   }
 
   async removeCategory(
@@ -516,10 +545,25 @@ export class BudgetsService {
     // Apply all amount changes atomically so a partial failure cannot leave
     // some categories updated and others not.
     return withScopedDb(this.dataSource, async (m) => {
+      // Membership (truth table D) is checked for every item before the first
+      // write, in this same transaction; a refusal leaves nothing written.
+      for (const item of categories) {
+        const line = byId.get(item.id)!;
+        const bucketId =
+          item.bucketId !== undefined ? item.bucketId : line.bucketId;
+        await assertBucketAssignable(
+          m,
+          budgetId,
+          bucketId ?? null,
+          line.isIncome,
+        );
+      }
       const results: BudgetCategory[] = [];
       for (const item of categories) {
         const budgetCategory = byId.get(item.id)!;
         budgetCategory.amount = item.amount;
+        if (item.bucketId !== undefined)
+          budgetCategory.bucketId = item.bucketId;
         results.push(await m.save(budgetCategory));
       }
       return results;
@@ -531,6 +575,9 @@ export class BudgetsService {
     budgetId: string,
   ): Promise<{
     budget: Budget;
+    /** The period the figures were read for (`getCurrentPeriodDates`). */
+    periodStart: string;
+    periodEnd: string;
     totalBudgeted: number;
     totalSpent: number;
     totalIncome: number;
@@ -576,6 +623,8 @@ export class BudgetsService {
 
     return {
       budget,
+      periodStart,
+      periodEnd,
       totalBudgeted,
       totalSpent,
       totalIncome,
@@ -1204,16 +1253,13 @@ export class BudgetsService {
       : 0;
 
     const lines = budgetCategories.map((bc) => {
-      const rawAmount = Number(bc.amount);
-      let budgeted: number;
-      let percentage: number | null = null;
-
-      if (budget.incomeLinked && !bc.isIncome) {
-        percentage = rawAmount;
-        budgeted = roundMoney((actualIncome * rawAmount) / 100);
-      } else {
-        budgeted = rawAmount;
-      }
+      const percentage =
+        budget.incomeLinked && !bc.isIncome ? Number(bc.amount) : null;
+      const budgeted = resolveBudgetLineBudgeted(
+        bc,
+        budget.incomeLinked,
+        actualIncome,
+      );
 
       const spent = resolveCategorySpent(
         bc,

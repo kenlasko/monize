@@ -868,7 +868,9 @@
         "sharedPersonLinks": "Bağlı kişiler",
         "sharedIntegrations": "Kişisel finans bağlantıları",
         "sharedPostings": "Ortak giderlerin kişisel kayıtları",
-        "sharedLedgerLinks": "Bağlı kişisel işlemler"
+        "sharedLedgerLinks": "Bağlı kişisel işlemler",
+        "budgetBuckets": "Bütçe zarfları",
+        "budgetPeriodBuckets": "Bütçe dönemi zarfları"
       }
     },
     "storedBackups": {

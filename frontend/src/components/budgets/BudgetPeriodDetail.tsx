@@ -6,6 +6,8 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { BudgetProgressBar } from './BudgetProgressBar';
 import { budgetLineName } from './utils/budget-line-name';
+import { Card } from '@/components/ui/Card';
+import { TABLE_CLASS, TABLE_BODY_CLASS, Th, Td } from '@/components/ui/Table';
 import type { BudgetPeriod, BudgetPeriodCategory } from '@/types/budget';
 
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -38,6 +40,7 @@ export function BudgetPeriodDetail({
 }: BudgetPeriodDetailProps) {
   const t = useTranslations('budgets');
   const { formatPercentTrimmed } = useNumberFormat();
+  const periodBuckets = period.periodBuckets ?? [];
   const { formatDate } = useDateFormat();
   const formatChartDate = useChartDateFormat();
   const categories = period.periodCategories ?? [];
@@ -165,6 +168,61 @@ export function BudgetPeriodDetail({
         </div>
         <BudgetProgressBar percentUsed={percentUsed} />
       </div>
+
+      {/* Buckets: the figures frozen when the period closed */}
+      {period.status === 'CLOSED' && periodBuckets.length > 0 && (
+        <Card className="overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
+              {t('periodBuckets.title')}
+            </h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className={TABLE_CLASS}>
+              <thead>
+                <tr>
+                  <Th>{t('periodBuckets.name')}</Th>
+                  <Th>{t('periodBuckets.target')}</Th>
+                  <Th align="right">{t('periodBuckets.allocated')}</Th>
+                  <Th align="right">{t('periodBuckets.carriedIn')}</Th>
+                  <Th align="right">{t('periodBuckets.spent')}</Th>
+                  <Th align="right">{t('periodBuckets.carriedOut')}</Th>
+                </tr>
+              </thead>
+              <tbody className={TABLE_BODY_CLASS}>
+                {periodBuckets.map((pb) => (
+                  <tr key={pb.id}>
+                    <Td>{pb.bucketName}</Td>
+                    <Td>
+                      {pb.targetType === 'PERCENT'
+                        ? t('periodBuckets.targetPercent', {
+                            percent: formatPercentTrimmed(Number(pb.targetValue)),
+                          })
+                        : t('periodBuckets.targetAmount', {
+                            amount: formatCurrency(Number(pb.targetValue)),
+                          })}
+                    </Td>
+                    <Td align="right" className="whitespace-nowrap">
+                      {pb.allocatedAmount === null
+                        ? t('periodBuckets.allocatedUnknown')
+                        : formatCurrency(Number(pb.allocatedAmount))}
+                    </Td>
+                    <Td align="right" className="whitespace-nowrap">
+                      {formatCurrency(Number(pb.carryIn))}
+                    </Td>
+                    <Td align="right" className="whitespace-nowrap">
+                      {formatCurrency(Number(pb.actualAmount))}
+                    </Td>
+                    <Td align="right" className="whitespace-nowrap">
+                      {formatCurrency(Number(pb.carryOut))}
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {/* Expense Categories */}
       {expenseCategories.length > 0 && (

@@ -333,6 +333,16 @@
     "categoryIdsNotOwned": "Categorie-ID's niet gevonden of niet eigendom van gebruiker: {{ ids }}",
     "transferAccountNotFound": "Rekening met ID {{ id }} niet gevonden",
     "transferAccountAlreadyInBudget": "Deze rekening heeft al een overboekingsregel in het budget",
+    "bucketNotFound": "Potje met ID {{ id }} niet gevonden",
+    "bucketLimit": "Een budget kan maximaal {{ max }} potjes hebben",
+    "bucketNameInvalid": "De naam van een potje moet 1 tot {{ max }} tekens lang zijn",
+    "bucketNameDuplicate": "Dit budget heeft al een potje met die naam",
+    "bucketTargetInvalid": "Het doel van een potje moet groter zijn dan nul",
+    "bucketPercentInvalid": "Een procentdoel moet groter zijn dan 0 en maximaal 100, met maximaal twee decimalen",
+    "bucketCarryCapNeedsCarryOver": "Een overdrachtsmaximum vereist dat overdracht aan staat",
+    "bucketOnIncomeLine": "Een inkomstenregel kan niet bij een potje horen",
+    "bucketKeyDuplicate": "De potjessleutel \"{{ key }}\" wordt meer dan eens gebruikt",
+    "bucketKeyUnknown": "Geen enkel potje in dit verzoek heeft de sleutel \"{{ key }}\"",
     "transferLineDirectionFixed": "De richting van een overboekingsregel kan niet worden gewijzigd. Verwijder de regel en voeg een nieuwe toe."
   },
   "payrollDeductions": {

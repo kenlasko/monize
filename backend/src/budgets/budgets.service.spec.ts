@@ -35,6 +35,8 @@ import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
 import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { ScheduledTransactionOverride } from "../scheduled-transactions/entities/scheduled-transaction-override.entity";
+import { BudgetBucket } from "./entities/budget-bucket.entity";
+import * as dateUtils from "./budget-date.utils";
 import { ActionHistoryService } from "../action-history/action-history.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { addDaysYMD, getMonthEndYMD, todayYMD } from "../common/date-utils";
@@ -81,6 +83,7 @@ describe("BudgetsService", () => {
   let service: BudgetsService;
   let budgetsRepository: Record<string, jest.Mock>;
   let budgetCategoriesRepository: Record<string, jest.Mock>;
+  let bucketsRepository: Record<string, jest.Mock>;
   let budgetAlertsRepository: Record<string, jest.Mock>;
   let dispatchService: Partial<jest.Mocked<NotificationDispatchService>>;
   let transactionsRepository: Record<string, jest.Mock>;
@@ -147,6 +150,7 @@ describe("BudgetsService", () => {
     rolloverType: RolloverType.NONE,
     rolloverCap: null,
     flexGroup: null,
+    bucketId: null,
     alertWarnPercent: 80,
     alertCriticalPercent: 95,
     notes: null,
@@ -203,6 +207,8 @@ describe("BudgetsService", () => {
       find: jest.fn().mockResolvedValue([]),
       remove: jest.fn(),
     };
+
+    bucketsRepository = { findOne: jest.fn() };
 
     // BudgetsService fans BILL_DUE out through the dispatch seam now; `notify`
     // takes the same input `create` did, so the ensureBillDue assertions read it
@@ -264,6 +270,7 @@ describe("BudgetsService", () => {
       createScopedDbMocks([
         [Budget, budgetsRepository as never],
         [BudgetCategory, budgetCategoriesRepository as never],
+        [BudgetBucket, bucketsRepository as never],
         [Notification, budgetAlertsRepository as never],
         [Transaction, transactionsRepository as never],
         [TransactionSplit, splitsRepository as never],
@@ -486,7 +493,9 @@ describe("BudgetsService", () => {
           "categories.category",
           "categories.category.parent",
           "categories.transferAccount",
+          "buckets",
         ],
+        order: { buckets: { sortOrder: "ASC", name: "ASC" } },
       });
     });
 
@@ -996,6 +1005,238 @@ describe("BudgetsService", () => {
     });
   });
 
+  describe("bucket membership (INV-BUDGET-002, truth table D)", () => {
+    const expenseLine = (over: Record<string, unknown> = {}) => ({
+      ...mockBudgetCategory,
+      id: "bc-1",
+      isIncome: false,
+      bucketId: null,
+      ...over,
+    });
+    const ownBucket = { id: "bucket-1", budgetId: "budget-1" };
+
+    beforeEach(() => {
+      budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
+      budgetCategoriesRepository.save.mockImplementation((d) => d);
+    });
+
+    describe("addCategory", () => {
+      beforeEach(() => {
+        categoriesRepository.findOne.mockResolvedValue(mockCategory);
+        budgetCategoriesRepository.findOne.mockResolvedValue(null);
+      });
+
+      it("sets a bucket of the same budget, checking it in the write's transaction", async () => {
+        bucketsRepository.findOne.mockResolvedValue(ownBucket);
+        scopedDataSource.transaction.mockClear();
+
+        const result = await service.addCategory("user-1", "budget-1", {
+          categoryId: "cat-1",
+          amount: 100,
+          bucketId: "bucket-1",
+        });
+
+        expect(result.bucketId).toBe("bucket-1");
+        expect(bucketsRepository.findOne).toHaveBeenCalledWith({
+          where: { id: "bucket-1", budgetId: "budget-1" },
+        });
+        // The membership check and the save share the final callback's single
+        // transaction (the earlier reads are separate, pre-existing ones).
+        const bucketCall =
+          bucketsRepository.findOne.mock.invocationCallOrder[0];
+        const saveCall =
+          budgetCategoriesRepository.save.mock.invocationCallOrder[0];
+        expect(bucketCall).toBeLessThan(saveCall);
+      });
+
+      it("stores null when bucketId is absent or null, without looking a bucket up", async () => {
+        const absent = await service.addCategory("user-1", "budget-1", {
+          categoryId: "cat-1",
+          amount: 100,
+        });
+        const cleared = await service.addCategory("user-1", "budget-1", {
+          categoryId: "cat-1",
+          amount: 100,
+          bucketId: null,
+        });
+        expect(absent.bucketId).toBeNull();
+        expect(cleared.bucketId).toBeNull();
+        expect(bucketsRepository.findOne).not.toHaveBeenCalled();
+      });
+
+      it("refuses a bucket of another budget or person with nothing written", async () => {
+        bucketsRepository.findOne.mockResolvedValue(null);
+        await expect(
+          service.addCategory("user-1", "budget-1", {
+            categoryId: "cat-1",
+            amount: 100,
+            bucketId: "foreign",
+          }),
+        ).rejects.toThrow(NotFoundException);
+        expect(budgetCategoriesRepository.save).not.toHaveBeenCalled();
+      });
+
+      it("refuses any bucket on an income line with nothing written", async () => {
+        await expect(
+          service.addCategory("user-1", "budget-1", {
+            categoryId: "cat-1",
+            amount: 100,
+            isIncome: true,
+            bucketId: "bucket-1",
+          }),
+        ).rejects.toThrow(BadRequestException);
+        expect(budgetCategoriesRepository.save).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("updateCategory", () => {
+      it("sets a bucket of the same budget", async () => {
+        budgetCategoriesRepository.findOne.mockResolvedValue(expenseLine());
+        bucketsRepository.findOne.mockResolvedValue(ownBucket);
+        const result = await service.updateCategory(
+          "user-1",
+          "budget-1",
+          "bc-1",
+          { bucketId: "bucket-1" },
+        );
+        expect(result.bucketId).toBe("bucket-1");
+      });
+
+      it("clears the bucket with null", async () => {
+        budgetCategoriesRepository.findOne.mockResolvedValue(
+          expenseLine({ bucketId: "bucket-1" }),
+        );
+        const result = await service.updateCategory(
+          "user-1",
+          "budget-1",
+          "bc-1",
+          { bucketId: null },
+        );
+        expect(result.bucketId).toBeNull();
+        expect(bucketsRepository.findOne).not.toHaveBeenCalled();
+      });
+
+      it("leaves the bucket unchanged when the field is absent", async () => {
+        budgetCategoriesRepository.findOne.mockResolvedValue(
+          expenseLine({ bucketId: "bucket-1" }),
+        );
+        bucketsRepository.findOne.mockResolvedValue(ownBucket);
+        const result = await service.updateCategory(
+          "user-1",
+          "budget-1",
+          "bc-1",
+          { amount: 9 },
+        );
+        expect(result.bucketId).toBe("bucket-1");
+      });
+
+      it("refuses a bucket of another budget or person with nothing written", async () => {
+        budgetCategoriesRepository.findOne.mockResolvedValue(expenseLine());
+        bucketsRepository.findOne.mockResolvedValue(null);
+        await expect(
+          service.updateCategory("user-1", "budget-1", "bc-1", {
+            bucketId: "foreign",
+          }),
+        ).rejects.toThrow(NotFoundException);
+        expect(budgetCategoriesRepository.save).not.toHaveBeenCalled();
+      });
+
+      it("refuses a bucket on an income line", async () => {
+        budgetCategoriesRepository.findOne.mockResolvedValue(
+          expenseLine({ isIncome: true }),
+        );
+        await expect(
+          service.updateCategory("user-1", "budget-1", "bc-1", {
+            bucketId: "bucket-1",
+          }),
+        ).rejects.toThrow(BadRequestException);
+        expect(budgetCategoriesRepository.save).not.toHaveBeenCalled();
+      });
+
+      it("refuses flipping a bucketed line to income, nothing written", async () => {
+        budgetCategoriesRepository.findOne.mockResolvedValue(
+          expenseLine({ bucketId: "bucket-1" }),
+        );
+        await expect(
+          service.updateCategory("user-1", "budget-1", "bc-1", {
+            isIncome: true,
+          }),
+        ).rejects.toThrow(/income line cannot belong to a bucket/);
+        expect(budgetCategoriesRepository.save).not.toHaveBeenCalled();
+      });
+
+      it("allows flipping a bucketed line to income when the same request clears the bucket", async () => {
+        budgetCategoriesRepository.findOne.mockResolvedValue(
+          expenseLine({ bucketId: "bucket-1" }),
+        );
+        const result = await service.updateCategory(
+          "user-1",
+          "budget-1",
+          "bc-1",
+          { isIncome: true, bucketId: null },
+        );
+        expect(result).toMatchObject({ isIncome: true, bucketId: null });
+      });
+    });
+
+    describe("bulkUpdateCategories", () => {
+      it("sets, clears and leaves lines per item", async () => {
+        budgetCategoriesRepository.find.mockResolvedValue([
+          expenseLine({ id: "bc-1" }),
+          expenseLine({ id: "bc-2", bucketId: "bucket-1" }),
+          expenseLine({ id: "bc-3", bucketId: "bucket-1" }),
+        ]);
+        bucketsRepository.findOne.mockResolvedValue(ownBucket);
+        const result = await service.bulkUpdateCategories(
+          "user-1",
+          "budget-1",
+          [
+            { id: "bc-1", amount: 1, bucketId: "bucket-1" },
+            { id: "bc-2", amount: 2, bucketId: null },
+            { id: "bc-3", amount: 3 },
+          ],
+        );
+        expect(result.map((r) => r.bucketId)).toEqual([
+          "bucket-1",
+          null,
+          "bucket-1",
+        ]);
+      });
+
+      it("refuses the whole request, writing nothing, when one item names a foreign bucket", async () => {
+        budgetCategoriesRepository.find.mockResolvedValue([
+          expenseLine({ id: "bc-1" }),
+          expenseLine({ id: "bc-2" }),
+        ]);
+        bucketsRepository.findOne
+          .mockResolvedValueOnce(ownBucket)
+          .mockResolvedValueOnce(null);
+        await expect(
+          service.bulkUpdateCategories("user-1", "budget-1", [
+            { id: "bc-1", amount: 1, bucketId: "bucket-1" },
+            { id: "bc-2", amount: 2, bucketId: "foreign" },
+          ]),
+        ).rejects.toThrow(NotFoundException);
+        expect(scopedManager.save).not.toHaveBeenCalled();
+      });
+
+      it("refuses a bucket on an income line, writing nothing", async () => {
+        budgetCategoriesRepository.find.mockResolvedValue([
+          expenseLine({ id: "bc-1" }),
+          expenseLine({ id: "bc-2", isIncome: true }),
+        ]);
+        bucketsRepository.findOne.mockResolvedValue(ownBucket);
+        await expect(
+          service.bulkUpdateCategories("user-1", "budget-1", [
+            { id: "bc-1", amount: 1 },
+            { id: "bc-2", amount: 2, bucketId: "bucket-1" },
+          ]),
+        ).rejects.toThrow(BadRequestException);
+        expect(scopedManager.save).not.toHaveBeenCalled();
+      });
+    });
+  });
+
   describe("getSummary", () => {
     it("returns budget summary with category breakdown", async () => {
       const budgetWithCategories = {
@@ -1058,6 +1299,28 @@ describe("BudgetsService", () => {
       expect(groceries!.budgeted).toBe(500);
       expect(groceries!.spent).toBe(350);
       expect(groceries!.remaining).toBe(150);
+    });
+
+    it("returns the period dates its figures were read for", async () => {
+      const spy = jest
+        .spyOn(dateUtils, "getCurrentMonthPeriodDates")
+        .mockReturnValue({
+          periodStart: "2026-11-01",
+          periodEnd: "2026-11-30",
+        });
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [],
+      });
+
+      try {
+        const result = await service.getSummary("user-1", "budget-1");
+
+        expect(result.periodStart).toBe("2026-11-01");
+        expect(result.periodEnd).toBe("2026-11-30");
+      } finally {
+        spy.mockRestore();
+      }
     });
 
     it("returns zero totals when budget has no categories", async () => {

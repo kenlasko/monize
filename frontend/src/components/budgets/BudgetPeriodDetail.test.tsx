@@ -17,6 +17,7 @@ const mockBudgetCategory: BudgetCategory = {
   categoryId: 'cat-1',
   category: { id: 'cat-1', name: 'Groceries', isIncome: false },
   categoryGroup: null,
+  bucketId: null,
   transferAccountId: null,
   transferAccount: null,
   isTransfer: false,
@@ -417,5 +418,77 @@ describe('BudgetPeriodDetail', () => {
     const categoryNames = screen.getAllByText(/Dining|Entertainment/);
     expect(categoryNames[0]).toHaveTextContent('Dining');
     expect(categoryNames[1]).toHaveTextContent('Entertainment');
+  });
+
+  describe('buckets table', () => {
+    const periodBucket = {
+      id: 'pb-1',
+      budgetPeriodId: 'period-1',
+      bucketId: 'b-1',
+      bucketName: 'Needs',
+      targetType: 'PERCENT' as const,
+      targetValue: 50,
+      incomeBasis: 5000,
+      allocatedAmount: 2500 as number | null,
+      carryIn: 100,
+      actualAmount: 2300,
+      carryOut: 300,
+      createdAt: '2026-01-01',
+      updatedAt: '2026-02-01',
+    };
+
+    it('shows the frozen figures of a closed period', () => {
+      render(
+        <BudgetPeriodDetail
+          period={{ ...mockPeriod, periodBuckets: [periodBucket] }}
+          formatCurrency={mockFormat}
+        />,
+      );
+
+      expect(screen.getByRole('heading', { name: 'Buckets' })).toBeInTheDocument();
+      expect(screen.getByText('Needs')).toBeInTheDocument();
+      expect(screen.getByText('50% of income')).toBeInTheDocument();
+      expect(screen.getByText('$2500.00')).toBeInTheDocument();
+      expect(screen.getByText('$100.00')).toBeInTheDocument();
+      expect(screen.getByText('$2300.00')).toBeInTheDocument();
+      expect(screen.getByText('$300.00')).toBeInTheDocument();
+    });
+
+    it('renders an unknown allocation as a label, not zero', () => {
+      render(
+        <BudgetPeriodDetail
+          period={{
+            ...mockPeriod,
+            periodBuckets: [{ ...periodBucket, allocatedAmount: null }],
+          }}
+          formatCurrency={mockFormat}
+        />,
+      );
+
+      expect(screen.getByText('Unknown')).toBeInTheDocument();
+      expect(screen.queryByText('$0.00')).toBeNull();
+    });
+
+    it('is not shown for an open period', () => {
+      render(
+        <BudgetPeriodDetail
+          period={{ ...mockPeriod, status: 'OPEN', periodBuckets: [periodBucket] }}
+          formatCurrency={mockFormat}
+        />,
+      );
+
+      expect(screen.queryByRole('heading', { name: 'Buckets' })).toBeNull();
+    });
+
+    it('is not shown when there are no rows', () => {
+      render(
+        <BudgetPeriodDetail
+          period={{ ...mockPeriod, periodBuckets: [] }}
+          formatCurrency={mockFormat}
+        />,
+      );
+
+      expect(screen.queryByRole('heading', { name: 'Buckets' })).toBeNull();
+    });
   });
 });

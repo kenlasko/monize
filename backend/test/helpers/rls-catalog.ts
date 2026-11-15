@@ -254,6 +254,9 @@ const PRODUCTION_SHAPED_VALUES: Record<string, Record<string, unknown>> = {
     amount: 1,
     rate: null,
   },
+  // chk_budget_buckets_target_type / chk_budget_period_buckets_target_type.
+  budget_buckets: { target_type: "PERCENT" },
+  budget_period_buckets: { target_type: "PERCENT" },
 };
 
 /**

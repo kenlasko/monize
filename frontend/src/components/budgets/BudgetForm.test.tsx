@@ -315,6 +315,7 @@ describe('BudgetForm', () => {
     expect(screen.getByText('Rollover')).toBeInTheDocument();
     expect(screen.getByText('Zero-Based')).toBeInTheDocument();
     expect(screen.getByText('50/30/20')).toBeInTheDocument();
+    expect(screen.getByText('Bucket')).toBeInTheDocument();
   });
 
   it('renders all budget type options', () => {

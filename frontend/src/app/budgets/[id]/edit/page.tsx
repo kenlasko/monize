@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
@@ -18,6 +18,9 @@ import { budgetLineName } from '@/components/budgets/utils/budget-line-name';
 import { Button } from '@/components/ui/Button';
 import { accountsApi } from '@/lib/accounts';
 import type { Account } from '@/types/account';
+import { BudgetBucketEditor } from '@/components/budgets/BudgetBucketEditor';
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { budgetsApi } from '@/lib/budgets';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -25,6 +28,8 @@ import { getErrorMessage } from '@/lib/errors';
 import type {
   Budget,
   BudgetCategory,
+  CreateBudgetBucketData,
+  UpdateBudgetBucketData,
   BudgetSummary,
   UpdateBudgetData,
   UpdateBudgetCategoryData,
@@ -76,8 +81,13 @@ function BudgetEditContent() {
     setIsLoading(true);
   }
 
+  // Each read of the budget takes a number; only the newest one may land, so a
+  // slow refresh never overwrites the answer to a later one.
+  const readSeq = useRef(0);
+
   // The mount / budget-switch load: the state already says loading.
   const fetchData = useCallback(() => {
+    const seq = ++readSeq.current;
     // Writes live in `run` so they land after the request, not during the effect.
     const run = async () => {
       try {
@@ -85,9 +95,11 @@ function BudgetEditContent() {
           budgetsApi.getById(budgetId),
           budgetsApi.getSummary(budgetId),
         ]);
+        if (seq !== readSeq.current) return;
         setBudget(budgetData);
         setSummary(summaryData);
       } catch (err) {
+        if (seq !== readSeq.current) return;
         toast.error(getErrorMessage(err, t('pages.edit.toasts.loadFailed')));
         router.push('/budgets');
       } finally {
@@ -109,6 +121,36 @@ function BudgetEditContent() {
   useEffect(() => {
     accountsApi.getAll().then(setAccounts).catch(() => setAccounts(null));
   }, []);
+  // After a bucket write: re-read in place, keeping the page (and the editor) mounted,
+  // so the category list and the line form see the new buckets.
+  const refreshBudget = useCallback(async () => {
+    const seq = ++readSeq.current;
+    try {
+      const [budgetData, summaryData] = await Promise.all([
+        budgetsApi.getById(budgetId),
+        budgetsApi.getSummary(budgetId),
+      ]);
+      if (seq !== readSeq.current) return;
+      setBudget(budgetData);
+      setSummary(summaryData);
+    } catch (err) {
+      if (seq !== readSeq.current) return;
+      toast.error(getErrorMessage(err, t('pages.edit.toasts.loadFailed')));
+    }
+  }, [budgetId, t]);
+
+  const handleCreateBucket = useCallback(
+    (data: CreateBudgetBucketData) => budgetsApi.createBucket(budgetId, data),
+    [budgetId],
+  );
+  const handleUpdateBucket = useCallback(
+    (bucketId: string, data: UpdateBudgetBucketData) => budgetsApi.updateBucket(budgetId, bucketId, data),
+    [budgetId],
+  );
+  const handleDeleteBucket = useCallback(
+    (bucketId: string) => budgetsApi.deleteBucket(budgetId, bucketId),
+    [budgetId],
+  );
 
   const handleSaveBudget = async (data: UpdateBudgetData) => {
     setIsSaving(true);
@@ -190,6 +232,10 @@ function BudgetEditContent() {
     (a) => !a.isClosed && a.userId === budget.userId && !namedTransferAccounts.has(a.id),
   );
   const transfersInAsIncome = budget.config?.transfersInAsIncome === true;
+  // The saved strategy decides, so the section appears once a strategy change is saved.
+  const isBucketBudget = budget.strategy === 'BUCKET';
+  const buckets = budget.buckets ?? [];
+  const bucketNames = new Map(buckets.map((bucket) => [bucket.id, bucket.name]));
 
   return (
     <PageLayout>
@@ -205,17 +251,39 @@ function BudgetEditContent() {
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Budget Settings */}
-          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              {t('pages.edit.budgetSettings')}
-            </h2>
-            <BudgetForm
-              budget={budget}
-              onSave={handleSaveBudget}
-              onCancel={() => router.push(`/budgets/${budgetId}`)}
-              isSaving={isSaving}
-            />
+          <div className="space-y-6">
+            {/* Budget Settings */}
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                {t('pages.edit.budgetSettings')}
+              </h2>
+              <BudgetForm
+                budget={budget}
+                onSave={handleSaveBudget}
+                onCancel={() => router.push(`/budgets/${budgetId}`)}
+                isSaving={isSaving}
+              />
+            </div>
+
+            {isBucketBudget && (
+              <Card as="section" padding="md" aria-labelledby="budget-buckets-heading">
+                <h2
+                  id="budget-buckets-heading"
+                  className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"
+                >
+                  {t('pages.edit.buckets')}
+                </h2>
+                <BudgetBucketEditor
+                  mode="persisted"
+                  currencyCode={budget.currencyCode}
+                  buckets={buckets}
+                  onCreate={handleCreateBucket}
+                  onUpdate={handleUpdateBucket}
+                  onDelete={handleDeleteBucket}
+                  onWritten={refreshBudget}
+                />
+              </Card>
+            )}
           </div>
 
           {/* Category List */}
@@ -306,6 +374,11 @@ function BudgetEditContent() {
                             {cat.flexGroup}
                           </span>
                         )}
+                        {isBucketBudget && (
+                          <Badge variant={cat.bucketId ? 'blue' : 'gray'}>
+                            {(cat.bucketId && bucketNames.get(cat.bucketId)) || t('pages.edit.unassignedBucket')}
+                          </Badge>
+                        )}
                       </div>
                       <span className="text-sm text-gray-900 dark:text-gray-100">
                         {formatCurrency(cat.amount, budget.currencyCode)}
@@ -347,6 +420,8 @@ function BudgetEditContent() {
                 setEditingCategory(null);
               }}
               isSaving={isSaving}
+              strategy={budget.strategy}
+              buckets={buckets}
             />
           </Modal>
         )}

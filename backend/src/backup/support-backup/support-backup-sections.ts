@@ -35,9 +35,11 @@ export const SECTION_TABLES: Record<SupportBackupSection, string[]> = {
   ],
   budgets: [
     "budgets",
+    "budget_buckets",
     "budget_categories",
     "budget_periods",
     "budget_period_categories",
+    "budget_period_buckets",
     "notifications",
     "notification_preferences",
     "notification_reminders",

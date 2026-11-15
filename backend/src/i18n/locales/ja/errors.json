@@ -333,6 +333,16 @@
     "categoryIdsNotOwned": "カテゴリIDが見つからないか、ユーザーが所有していません：{{ ids }}",
     "transferAccountNotFound": "ID {{ id }} の口座が見つかりません",
     "transferAccountAlreadyInBudget": "この口座には予算内にすでに振替行があります",
+    "bucketNotFound": "ID {{ id }} のバケットが見つかりません",
+    "bucketLimit": "1つの予算に設定できるバケットは最大 {{ max }} 個です",
+    "bucketNameInvalid": "バケット名は1〜{{ max }}文字で入力してください",
+    "bucketNameDuplicate": "この予算には同じ名前のバケットが既にあります",
+    "bucketTargetInvalid": "バケットの目標は0より大きくしてください",
+    "bucketPercentInvalid": "割合の目標は0より大きく100以下で、小数第2位までです",
+    "bucketCarryCapNeedsCarryOver": "繰越上限を使うには繰り越しをオンにしてください",
+    "bucketOnIncomeLine": "収入項目はバケットに属せません",
+    "bucketKeyDuplicate": "バケットのキー「{{ key }}」が複数回使われています",
+    "bucketKeyUnknown": "このリクエストにキー「{{ key }}」のバケットはありません",
     "transferLineDirectionFixed": "振替行の方向は変更できません。行を削除して、新しい行を追加してください。"
   },
   "payrollDeductions": {

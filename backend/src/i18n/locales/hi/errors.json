@@ -333,6 +333,16 @@
     "categoryIdsNotOwned": "श्रेणी ID नहीं मिली या उपयोगकर्ता की नहीं हैं: {{ ids }}",
     "transferAccountNotFound": "ID {{ id }} वाला खाता नहीं मिला",
     "transferAccountAlreadyInBudget": "इस खाते की बजट में पहले से एक ट्रांसफ़र पंक्ति है",
+    "bucketNotFound": "ID {{ id }} वाली बकेट नहीं मिली",
+    "bucketLimit": "एक बजट में अधिकतम {{ max }} बकेट हो सकती हैं",
+    "bucketNameInvalid": "बकेट का नाम 1 से {{ max }} अक्षरों का होना चाहिए",
+    "bucketNameDuplicate": "इस बजट में इस नाम की बकेट पहले से है",
+    "bucketTargetInvalid": "बकेट लक्ष्य शून्य से अधिक होना चाहिए",
+    "bucketPercentInvalid": "प्रतिशत लक्ष्य 0 से अधिक और अधिकतम 100 होना चाहिए, अधिकतम दो दशमलव के साथ",
+    "bucketCarryCapNeedsCarryOver": "आगे ले जाने की सीमा के लिए रोलओवर चालू होना चाहिए",
+    "bucketOnIncomeLine": "आय पंक्ति किसी बकेट की नहीं हो सकती",
+    "bucketKeyDuplicate": "बकेट कुंजी \"{{ key }}\" एक से अधिक बार उपयोग हुई है",
+    "bucketKeyUnknown": "इस अनुरोध में कुंजी \"{{ key }}\" वाली कोई बकेट नहीं है",
     "transferLineDirectionFixed": "ट्रांसफ़र पंक्ति की दिशा बदली नहीं जा सकती। इसे हटाएँ और इसके बजाय एक नई पंक्ति जोड़ें।"
   },
   "payrollDeductions": {

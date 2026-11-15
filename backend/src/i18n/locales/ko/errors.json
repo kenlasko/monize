@@ -333,6 +333,16 @@
     "categoryIdsNotOwned": "사용자가 찾을 수 없거나 소유하지 않은 카테고리 ID입니다: {{ ids }}",
     "transferAccountNotFound": "ID가 {{ id }}인 계정을 찾을 수 없습니다",
     "transferAccountAlreadyInBudget": "이 계좌는 이미 예산에 이체 항목이 있습니다",
+    "bucketNotFound": "ID {{ id }} 버킷을 찾을 수 없습니다",
+    "bucketLimit": "예산 하나에 버킷은 최대 {{ max }}개까지 만들 수 있습니다",
+    "bucketNameInvalid": "버킷 이름은 1자에서 {{ max }}자여야 합니다",
+    "bucketNameDuplicate": "이 예산에 같은 이름의 버킷이 이미 있습니다",
+    "bucketTargetInvalid": "버킷 목표는 0보다 커야 합니다",
+    "bucketPercentInvalid": "비율 목표는 0보다 크고 100 이하여야 하며 소수점 둘째 자리까지 가능합니다",
+    "bucketCarryCapNeedsCarryOver": "이월 한도를 쓰려면 이월을 켜야 합니다",
+    "bucketOnIncomeLine": "소득 항목은 버킷에 속할 수 없습니다",
+    "bucketKeyDuplicate": "버킷 키 \"{{ key }}\"가 여러 번 사용되었습니다",
+    "bucketKeyUnknown": "이 요청에 키가 \"{{ key }}\"인 버킷이 없습니다",
     "transferLineDirectionFixed": "이체 항목의 방향은 변경할 수 없습니다. 항목을 삭제하고 새 항목을 추가하세요."
   },
   "payrollDeductions": {

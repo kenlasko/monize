@@ -16,6 +16,12 @@ import {
   ApplyBudgetCategoryData,
 } from '@/types/budget';
 import type { Account } from '@/types/account';
+import { newClientId } from '@/lib/client-id';
+import {
+  findBudgetBucketPreset,
+  materializeBudgetBucketPreset,
+  type BudgetBucketEditorRow,
+} from './utils/budget-bucket-presets';
 
 export interface WizardState {
   // Step 1: Analysis
@@ -29,6 +35,17 @@ export interface WizardState {
   selectedTransfers: Map<string, ApplyBudgetCategoryData>;
   /** Transfer income lines, keyed by source account (issue #2141). */
   selectedIncomeTransfers: Map<string, ApplyBudgetCategoryData>;
+  /**
+   * The Bucket strategy's buckets, edited in memory; each row's `key` is the
+   * apply request's bucket key and a line's `bucketKey`. Kept when the strategy
+   * changes, and only sent while the strategy is Bucket.
+   */
+  buckets: BudgetBucketEditorRow[];
+  /**
+   * Set once the Bucket strategy has pre-applied its preset. A list the person
+   * then empties ("Start from scratch") stays empty on a later analysis.
+   */
+  bucketsPresetApplied: boolean;
 
   // Step 3: Strategy / Options
   budgetName: string;
@@ -78,6 +95,8 @@ export function BudgetWizard({
     selectedCategories: new Map(),
     selectedTransfers: new Map(),
     selectedIncomeTransfers: new Map(),
+    buckets: [],
+    bucketsPresetApplied: false,
     budgetName: `${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()} Budget`,
     budgetType: 'MONTHLY',
     periodStart: defaultPeriodStart,
@@ -137,6 +156,7 @@ export function BudgetWizard({
   const initCategoriesFromAnalysis = useCallback(
     (result: GenerateBudgetResponse) => {
       const is503020 = state.strategy === 'FIFTY_THIRTY_TWENTY';
+      const isBucket = state.strategy === 'BUCKET';
       const isRollover = state.strategy === 'ROLLOVER';
       const defaultRollover: RolloverType = isRollover ? 'MONTHLY' : 'NONE';
       const categories = new Map<string, ApplyBudgetCategoryData>();
@@ -164,6 +184,32 @@ export function BudgetWizard({
         });
       }
 
+      // Bucket: pre-apply "Three buckets" once (names translated once, no line
+      // assigned). A list the person already has is never replaced, and one
+      // they emptied afterwards stays empty.
+      const applyPreset =
+        isBucket && !state.bucketsPresetApplied && state.buckets.length === 0;
+      const buckets = applyPreset
+        ? materializeBudgetBucketPreset(findBudgetBucketPreset('THREE'), t, newClientId)
+        : state.buckets;
+      if (isBucket) {
+        // A re-run keeps each surviving line's bucket while that bucket exists.
+        const keys = new Set(buckets.map((b) => b.key));
+        const carry = (
+          next: Map<string, ApplyBudgetCategoryData>,
+          prev: Map<string, ApplyBudgetCategoryData>,
+        ) => {
+          for (const [id, entry] of next) {
+            const key = prev.get(id)?.bucketKey;
+            if (key !== undefined && keys.has(key) && !entry.isIncome) {
+              next.set(id, { ...entry, bucketKey: key });
+            }
+          }
+        };
+        carry(categories, state.selectedCategories);
+        carry(transfers, state.selectedTransfers);
+      }
+
       // Set base income from analysis if available
       const estimatedIncome = result.estimatedMonthlyIncome > 0
         ? Math.round(result.estimatedMonthlyIncome * 100) / 100
@@ -177,9 +223,10 @@ export function BudgetWizard({
         selectedIncomeTransfers: new Map(),
         baseIncome: estimatedIncome,
         defaultRolloverType: defaultRollover,
+        ...(isBucket ? { buckets, bucketsPresetApplied: true } : {}),
       });
     },
-    [updateState, state.strategy],
+    [updateState, state.strategy, state.buckets, state.bucketsPresetApplied, state.selectedCategories, state.selectedTransfers, t],
   );
 
   return (

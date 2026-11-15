@@ -173,16 +173,22 @@ export const RESTORE_REFERENCE_COLUMNS: Readonly<
   loan_rate_changes: { account_id: "accounts" },
   loan_fees: { account_id: "accounts", category_id: "categories" },
   loan_scenarios: { account_id: "accounts" },
+  budget_buckets: { budget_id: "budgets" },
   budget_categories: {
     budget_id: "budgets",
     category_id: "categories",
     transfer_account_id: "accounts",
+    bucket_id: "budget_buckets",
   },
   budget_periods: { budget_id: "budgets" },
   budget_period_categories: {
     budget_period_id: "budget_periods",
     budget_category_id: "budget_categories",
     category_id: "categories",
+  },
+  budget_period_buckets: {
+    budget_period_id: "budget_periods",
+    bucket_id: "budget_buckets",
   },
   notifications: {
     budget_id: "budgets",

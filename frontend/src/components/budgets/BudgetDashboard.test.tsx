@@ -42,6 +42,12 @@ vi.mock('./BudgetHeatmap', () => ({
   BudgetHeatmap: () => <div data-testid="heatmap" />,
 }));
 
+vi.mock('./BudgetBucketSummary', () => ({
+  BudgetBucketSummary: ({ status }: { status: { state: string } }) => (
+    <div data-testid="bucket-summary" data-state={status.state} />
+  ),
+}));
+
 vi.mock('./BudgetTrendChart', () => ({
   BudgetTrendChart: () => <div data-testid="trend-chart" />,
 }));
@@ -216,5 +222,35 @@ describe('BudgetDashboard', () => {
     );
 
     expect(capturedCategoryListProps.onCategoryClick).toBeUndefined();
+  });
+
+  it('renders the bucket card only for a Bucket budget', () => {
+    const props = {
+      velocity: mockVelocity,
+      scheduledTransactions: [],
+      dailySpending: [],
+      trendData: [],
+      healthScore: 85,
+      displayCurrency: 'USD',
+      formatCurrency: mockFormat,
+    };
+    const { rerender } = render(
+      <BudgetDashboard
+        {...props}
+        summary={{ ...mockSummary, budget: { ...mockBudget, strategy: 'BUCKET' } }}
+        bucketStatus={{ state: 'error' }}
+      />,
+    );
+    expect(screen.getByTestId('bucket-summary')).toHaveAttribute('data-state', 'error');
+
+    for (const strategy of ['FIXED', 'ZERO_BASED', 'FIFTY_THIRTY_TWENTY'] as const) {
+      rerender(
+        <BudgetDashboard
+          {...props}
+          summary={{ ...mockSummary, budget: { ...mockBudget, strategy } }}
+        />,
+      );
+      expect(screen.queryByTestId('bucket-summary')).toBeNull();
+    }
   });
 });

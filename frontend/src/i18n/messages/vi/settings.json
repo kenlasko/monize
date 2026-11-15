@@ -868,7 +868,9 @@
         "sharedPersonLinks": "Liên hệ được liên kết",
         "sharedIntegrations": "Kết nối với tài chính cá nhân",
         "sharedPostings": "Bút toán cá nhân cho chi tiêu chung",
-        "sharedLedgerLinks": "Giao dịch cá nhân được liên kết"
+        "sharedLedgerLinks": "Giao dịch cá nhân được liên kết",
+        "budgetBuckets": "Hũ ngân sách",
+        "budgetPeriodBuckets": "Hũ kỳ ngân sách"
       }
     },
     "storedBackups": {

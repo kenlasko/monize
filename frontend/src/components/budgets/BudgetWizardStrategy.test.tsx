@@ -110,6 +110,8 @@ describe('BudgetWizardStrategy', () => {
     selectedCategories: makeSelectedCategories(),
     selectedTransfers: new Map(),
     selectedIncomeTransfers: new Map(),
+    buckets: [],
+    bucketsPresetApplied: false,
     budgetName: 'February 2026 Budget',
     budgetType: 'MONTHLY',
     periodStart: '2026-02-01',

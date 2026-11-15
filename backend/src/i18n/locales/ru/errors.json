@@ -333,6 +333,16 @@
     "categoryIdsNotOwned": "Идентификаторы категорий не найдены или не принадлежат пользователю: {{ ids }}",
     "transferAccountNotFound": "Счёт с ID {{ id }} не найден",
     "transferAccountAlreadyInBudget": "У этого счёта уже есть строка перевода в бюджете",
+    "bucketNotFound": "Конверт с ID {{ id }} не найден",
+    "bucketLimit": "В бюджете может быть не более {{ max }} конвертов",
+    "bucketNameInvalid": "Название конверта должно содержать от 1 до {{ max }} символов",
+    "bucketNameDuplicate": "В этом бюджете уже есть конверт с таким названием",
+    "bucketTargetInvalid": "Цель конверта должна быть больше нуля",
+    "bucketPercentInvalid": "Цель в процентах должна быть больше 0 и не более 100, не более двух десятичных знаков",
+    "bucketCarryCapNeedsCarryOver": "Для лимита переноса нужно включить перенос",
+    "bucketOnIncomeLine": "Строка дохода не может относиться к конверту",
+    "bucketKeyDuplicate": "Ключ конверта «{{ key }}» используется более одного раза",
+    "bucketKeyUnknown": "В этом запросе нет конверта с ключом «{{ key }}»",
     "transferLineDirectionFixed": "Направление строки перевода изменить нельзя. Удалите её и добавьте новую строку."
   },
   "payrollDeductions": {

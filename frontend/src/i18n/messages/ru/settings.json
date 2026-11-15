@@ -868,7 +868,9 @@
         "sharedPersonLinks": "Связанные контакты",
         "sharedIntegrations": "Связи с личными финансами",
         "sharedPostings": "Личные проводки совместных расходов",
-        "sharedLedgerLinks": "Связанные личные операции"
+        "sharedLedgerLinks": "Связанные личные операции",
+        "budgetBuckets": "Конверты бюджета",
+        "budgetPeriodBuckets": "Конверты периода бюджета"
       }
     },
     "storedBackups": {

@@ -11,6 +11,10 @@ import { BudgetTrendReportsService } from "./budget-trend-reports.service";
 import { BudgetHealthReportsService } from "./budget-health-reports.service";
 import { BudgetActivityReportsService } from "./budget-activity-reports.service";
 import { BudgetsService } from "./budgets.service";
+import {
+  BudgetBucketReportsService,
+  BudgetBucketStatusResult,
+} from "./budget-bucket-reports.service";
 import { monthBuckets } from "../test-helpers/budget-spending-buckets";
 import { Budget, BudgetType, BudgetStrategy } from "./entities/budget.entity";
 import {
@@ -127,6 +131,7 @@ describe("BudgetReportsService", () => {
     rolloverType: RolloverType.NONE,
     rolloverCap: null,
     flexGroup: "Essentials",
+    bucketId: null,
     alertWarnPercent: 80,
     alertCriticalPercent: 95,
     notes: null,
@@ -150,6 +155,7 @@ describe("BudgetReportsService", () => {
     rolloverType: RolloverType.NONE,
     rolloverCap: null,
     flexGroup: "Fun Money",
+    bucketId: null,
     alertWarnPercent: 80,
     alertCriticalPercent: 95,
     notes: null,
@@ -178,6 +184,7 @@ describe("BudgetReportsService", () => {
     rolloverType: RolloverType.NONE,
     rolloverCap: null,
     flexGroup: null,
+    bucketId: null,
     alertWarnPercent: 80,
     alertCriticalPercent: 95,
     notes: null,
@@ -301,6 +308,7 @@ describe("BudgetReportsService", () => {
         BudgetTrendReportsService,
         BudgetHealthReportsService,
         BudgetActivityReportsService,
+        BudgetBucketReportsService,
         BudgetReportsService,
         {
           provide: getRepositoryToken(BudgetPeriod),
@@ -2371,6 +2379,97 @@ describe("BudgetReportsService", () => {
       expect(result.velocity).toBeUndefined();
       expect(result.healthScore).toBeUndefined();
       expect(result.totalBudgeted).toBe(3000);
+    });
+
+    describe("bucket section", () => {
+      const bucketBudget = {
+        ...activeBudget,
+        strategy: BudgetStrategy.BUCKET,
+      } as unknown as Budget;
+      const bucketStatus = (
+        buckets: BudgetBucketStatusResult["buckets"],
+      ): BudgetBucketStatusResult =>
+        ({
+          periodStart: "2026-11-01",
+          periodEnd: "2026-11-30",
+          currencyCode: "CAD",
+          income: null,
+          unallocated: null,
+          buckets,
+        }) as unknown as BudgetBucketStatusResult;
+      const bucket = {
+        bucketId: "k1",
+        name: "Needs",
+        targetType: "PERCENT",
+        targetValue: 50,
+        carryOver: false,
+        carryCap: null,
+        allocated: null,
+        carriedIn: 0,
+        planned: 10,
+        spent: 10,
+        available: null,
+        percentUsed: null,
+        lineCount: 1,
+      } as unknown as BudgetBucketStatusResult["buckets"][number];
+      let spy: jest.SpyInstance;
+
+      beforeEach(() => {
+        budgetsService.findAll = jest.fn().mockResolvedValue([bucketBudget]);
+        spy = jest.spyOn(
+          (
+            service as unknown as {
+              bucketReports: BudgetBucketReportsService;
+            }
+          ).bucketReports,
+          "getBucketStatus",
+        );
+      });
+
+      it("passes the bucket status through, keeping null as null", async () => {
+        spy.mockResolvedValue(bucketStatus([bucket]));
+        const result = await service.getLlmBudgetStatus("user-1");
+        if ("error" in result) throw new Error("unexpected error payload");
+        expect(result.buckets).toEqual([
+          {
+            name: "Needs",
+            targetType: "PERCENT",
+            targetValue: 50,
+            allocated: null,
+            carriedIn: 0,
+            spent: 10,
+            available: null,
+            percentUsed: null,
+          },
+        ]);
+        expect(result.bucketIncome).toBeNull();
+        expect(result.unallocated).toBeNull();
+      });
+
+      it("omits the section for another strategy", async () => {
+        budgetsService.findAll = jest.fn().mockResolvedValue([activeBudget]);
+        const result = await service.getLlmBudgetStatus("user-1");
+        if ("error" in result) throw new Error("unexpected error payload");
+        expect(spy).not.toHaveBeenCalled();
+        expect(result.buckets).toBeUndefined();
+        expect(result).not.toHaveProperty("bucketIncome");
+      });
+
+      it("omits the section for a BUCKET budget with no buckets", async () => {
+        spy.mockResolvedValue(bucketStatus([]));
+        const result = await service.getLlmBudgetStatus("user-1");
+        if ("error" in result) throw new Error("unexpected error payload");
+        expect(result.buckets).toBeUndefined();
+        expect(result).not.toHaveProperty("unallocated");
+      });
+
+      it("omits the section when the bucket status fails", async () => {
+        spy.mockRejectedValue(new Error("boom"));
+        const result = await service.getLlmBudgetStatus("user-1");
+        if ("error" in result) throw new Error("unexpected error payload");
+        expect(result.buckets).toBeUndefined();
+        expect(result.totalBudgeted).toBe(3000);
+      });
     });
   });
 });

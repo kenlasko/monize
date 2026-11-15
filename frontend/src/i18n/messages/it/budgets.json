@@ -36,7 +36,9 @@
       "SAVING": "Risparmio"
     },
     "saving": "Salvataggio...",
-    "remove": "Rimuovi dal budget"
+    "remove": "Rimuovi dal budget",
+    "bucket": "Busta",
+    "bucketUnassigned": "Non assegnato"
   },
   "categoryList": {
     "title": "Budget per categoria",
@@ -94,7 +96,8 @@
       "FIXED": "Fisso",
       "ROLLOVER": "Con riporto",
       "ZERO_BASED": "A base zero",
-      "FIFTY_THIRTY_TWENTY": "50/30/20"
+      "FIFTY_THIRTY_TWENTY": "50/30/20",
+      "BUCKET": "Busta"
     }
   },
   "healthGauge": {
@@ -239,6 +242,10 @@
       "FIFTY_THIRTY_TWENTY": {
         "label": "50/30/20",
         "description": "50% necessità, 30% desideri, 20% risparmio. Le categorie sono etichettate per gruppo."
+      },
+      "BUCKET": {
+        "label": "Busta",
+        "description": "Le entrate sono divise in poche buste con un nome. Tieni d'occhio ogni busta, non ogni categoria."
       }
     },
     "profiles": {
@@ -324,7 +331,8 @@
       "FIXED": "Imposta importi per categoria. Il budget non speso si azzera a ogni periodo.",
       "ROLLOVER": "Il budget non speso viene riportato in base alle regole di riporto per categoria.",
       "ZERO_BASED": "Ogni euro di entrate è assegnato. Entrate meno uscite deve essere uguale a zero.",
-      "FIFTY_THIRTY_TWENTY": "Categorie raggruppate come Necessità (50%), Desideri (30%), Risparmio (20%)."
+      "FIFTY_THIRTY_TWENTY": "Categorie raggruppate come Necessità (50%), Desideri (30%), Risparmio (20%).",
+      "BUCKET": "Entrate divise in buste con un nome. Ogni categoria appartiene a una busta."
     },
     "linkBudgetToIncome": "Collega il budget alle entrate",
     "linkBudgetToIncomeHint": "Gli importi per categoria diventano percentuali delle tue entrate di base",
@@ -403,6 +411,19 @@
     "toasts": {
       "created": "Budget creato con successo",
       "failed": "Impossibile creare il budget"
+    }
+  },
+  "wizardBuckets": {
+    "title": "Buste",
+    "description": "Dividi le tue entrate in buste, poi scegli una busta per ogni spesa e trasferimento qui sotto.",
+    "selectLabel": "Busta per {name}",
+    "unassigned": "Non assegnato",
+    "tallyTitle": "Righe per busta",
+    "tallyValue": "{count, plural, one {# riga} other {# righe}} · {amount}",
+    "review": {
+      "lineCount": "{count, plural, one {# riga} other {# righe}}",
+      "unassigned": "{count, plural, one {# riga di spesa o trasferimento non è} other {# righe di spesa o trasferimento non sono}} in nessuna busta. Puoi comunque creare il budget e assegnarle più tardi dalla sua pagina di modifica.",
+      "noBuckets": "Questo budget non ha ancora buste. Puoi comunque crearlo e aggiungere buste più tardi dalla sua pagina di modifica."
     }
   },
   "zeroBasedBar": {
@@ -486,6 +507,23 @@
           "Richiede di classificare ogni spesa per gruppo"
         ],
         "bestFor": "Chi vuole un approccio equilibrato e basato su regole semplici senza monitorare ogni categoria individualmente."
+      },
+      "BUCKET": {
+        "title": "Budget a buste",
+        "description": "Le entrate sono divise in poche buste con un nome, ciascuna con un obiettivo che è una quota delle entrate o un importo fisso. Ogni categoria appartiene a una busta, quindi tieni d'occhio la busta invece di ogni categoria. Una busta può riportare ciò che resta al periodo successivo.",
+        "pros": [
+          "Meno numeri da controllare",
+          "Flessibile all'interno di ogni busta",
+          "Le buste di risparmio possono crescere nel tempo",
+          "Funziona con spese irregolari all'interno di una busta"
+        ],
+        "cons": [
+          "Meno dettaglio per ogni categoria",
+          "Richiede di assegnare le categorie alle buste",
+          "Gli obiettivi in percentuale richiedono entrate note",
+          "I saldi riportati richiedono un controllo ogni tanto"
+        ],
+        "bestFor": "Chi trova i budget per categoria troppo minuziosi ma vuole più struttura del 50/30/20."
       }
     }
   },
@@ -567,7 +605,9 @@
         "categoryRemoveFailed": "Impossibile rimuovere la categoria",
         "transferIncomeAdded": "Reddito da trasferimento aggiunto",
         "transferIncomeFailed": "Impossibile aggiungere il reddito da trasferimento"
-      }
+      },
+      "buckets": "Buste",
+      "unassignedBucket": "Non assegnato"
     }
   },
   "validation": {
@@ -578,5 +618,140 @@
   "categoryValidation": {
     "amountMin": "L'importo deve essere 0 o maggiore",
     "mustBeNumber": "Deve essere un numero"
+  },
+  "bucketEditor": {
+    "presetLabel": "Parti da un modello",
+    "presets": {
+      "THREE": "Tre buste",
+      "FOUR": "Quattro buste (60/10/10/20)",
+      "SCRATCH": "Parti da zero"
+    },
+    "presetBucketNames": {
+      "fixedCosts": "Spese fisse",
+      "everydaySpending": "Spese quotidiane",
+      "savings": "Risparmio",
+      "dailyExpenses": "Spese di ogni giorno",
+      "splurge": "Sfizi",
+      "longTermGoals": "Obiettivi a lungo termine",
+      "safetyAndDebt": "Sicurezza e debiti"
+    },
+    "listLabel": "Buste",
+    "empty": {
+      "title": "Ancora nessuna busta",
+      "description": "Parti da un modello o aggiungi una busta, poi assegna a ognuna le sue categorie."
+    },
+    "add": "Aggiungi busta",
+    "limitReached": "Un budget può avere al massimo {max} buste.",
+    "newTitle": "Nuova busta",
+    "editTitle": "Modifica {name}",
+    "summary": "Gli obiettivi in percentuale sommano a {percent}. Gli obiettivi in importo sommano a {amount}.",
+    "row": {
+      "percentTarget": "{percent} delle entrate",
+      "amountTarget": "{amount} per periodo",
+      "noCarry": "Riparte da zero a ogni periodo",
+      "carries": "Viene riportata",
+      "carriesUpTo": "Viene riportata, fino a {cap}",
+      "caption": "{target} · {carry}",
+      "edit": "Modifica",
+      "delete": "Elimina",
+      "editLabel": "Modifica {name}",
+      "deleteLabel": "Elimina {name}"
+    },
+    "targetTypes": {
+      "PERCENT": "Percentuale delle entrate",
+      "AMOUNT": "Importo fisso"
+    },
+    "form": {
+      "name": "Nome",
+      "namePlaceholder": "es. Risparmio",
+      "targetType": "Obiettivo",
+      "targetTypeTooltip": "Un obiettivo in percentuale è una quota delle entrate del budget: le entrate ricevute in questo periodo per un budget collegato alle entrate, altrimenti le entrate di base, altrimenti gli importi delle categorie di entrata. Un importo fisso è uguale a ogni periodo.",
+      "targetPercent": "Percentuale delle entrate",
+      "targetAmount": "Importo per periodo",
+      "carryOver": "Riporta ciò che resta",
+      "carryOverTooltip": "Ciò che resta nella busta alla chiusura di un periodo viene aggiunto al periodo successivo. Una busta in eccesso di spesa non riporta nulla.",
+      "carryCap": "Limite di riporto (facoltativo)",
+      "carryCapPlaceholder": "Nessun limite",
+      "save": "Salva",
+      "saveChanges": "Salva modifiche"
+    },
+    "validation": {
+      "nameRequired": "Inserisci un nome",
+      "nameMax": "Un nome può avere al massimo {max} caratteri",
+      "nameDuplicate": "Un'altra busta ha già questo nome",
+      "targetRequired": "Inserisci un obiettivo",
+      "percentRange": "Un obiettivo in percentuale deve essere maggiore di 0 e al massimo 100",
+      "percentDecimals": "Un obiettivo in percentuale può avere al massimo due decimali",
+      "amountPositive": "Un obiettivo in importo deve essere maggiore di 0",
+      "capNeedsCarryOver": "Un limite di riporto richiede che il riporto sia attivo",
+      "capPositive": "Un limite di riporto deve essere maggiore di 0"
+    },
+    "delete": {
+      "title": "Elimina busta",
+      "message": "Eliminare la busta \"{name}\"? Le sue categorie risulteranno non assegnate.",
+      "confirm": "Elimina"
+    },
+    "replace": {
+      "title": "Sostituisci buste",
+      "message": "Sostituire le buste attuali con \"{preset}\"? Le buste attuali vengono eliminate e le loro categorie risulteranno non assegnate.",
+      "clearMessage": "Eliminare tutte le buste e ripartire da zero? Le loro categorie risulteranno non assegnate.",
+      "confirm": "Sostituisci"
+    },
+    "toasts": {
+      "created": "Busta aggiunta",
+      "updated": "Busta aggiornata",
+      "deleted": "Busta eliminata",
+      "saveFailed": "Impossibile salvare la busta",
+      "deleteFailed": "Impossibile eliminare la busta",
+      "presetApplied": "Modello applicato",
+      "presetFailed": "Impossibile applicare il modello"
+    }
+  },
+  "bucketSummary": {
+    "title": "Ripartizione per buste",
+    "loading": "Caricamento della ripartizione per buste",
+    "loadFailed": "Impossibile caricare la ripartizione per buste. Riprova tra un momento.",
+    "emptyTitle": "Ancora nessuna busta",
+    "emptyDescription": "Aggiungi buste per dividere le tue entrate in quote con un nome.",
+    "emptyAction": "Aggiungi buste",
+    "income": "Entrate delle buste",
+    "incomeUnknown": "Sconosciuto",
+    "incomeSource": {
+      "ACTUAL": "In base alle entrate effettive di questo periodo",
+      "BASE_INCOME": "In base alle entrate di base del budget",
+      "INCOME_LINES": "In base alle categorie di entrata pianificate",
+      "NONE": "Nessuna entrata trovata"
+    },
+    "totalAllocated": "Totale assegnato",
+    "allocatedSoFar": "Assegnato finora",
+    "allocatedSoFarHint": "Alcune buste non hanno ancora un importo noto, quindi questa cifra è parziale.",
+    "unallocated": "Non allocato",
+    "unallocatedUnknown": "Sconosciuto",
+    "overAllocatedHint": "Sovrassegnato: le buste sommano più delle tue entrate.",
+    "targetPercent": "{percent} delle entrate",
+    "targetAmount": "{amount} per periodo",
+    "carriedIn": "{amount} riportati",
+    "spent": "Speso",
+    "available": "Disponibile",
+    "overspent": "In eccesso di spesa",
+    "categories": "{count, plural, one {# categoria} other {# categorie}}",
+    "allocationUnknown": "Imposta le entrate di base del budget o aggiungi una categoria di entrata.",
+    "allocationUnknownAction": "Modifica budget",
+    "unassignedTitle": "Non assegnato",
+    "unassignedDescription": "{count, plural, one {# riga di categoria non è} other {# righe di categoria non sono}} in nessuna busta.",
+    "unassignedPlanned": "Pianificato",
+    "unassignedAction": "Assegnale"
+  },
+  "periodBuckets": {
+    "title": "Buste",
+    "name": "Busta",
+    "target": "Obiettivo",
+    "allocated": "Assegnato",
+    "allocatedUnknown": "Sconosciuto",
+    "carriedIn": "Riportato in entrata",
+    "spent": "Speso",
+    "carriedOut": "Riportato in uscita",
+    "targetPercent": "{percent} delle entrate",
+    "targetAmount": "{amount} per periodo"
   }
 }

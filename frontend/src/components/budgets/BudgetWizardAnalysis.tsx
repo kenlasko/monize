@@ -18,7 +18,7 @@ interface BudgetWizardAnalysisProps {
   onCancel: () => void;
 }
 
-const STRATEGY_VALUES: BudgetStrategy[] = ['FIXED', 'ROLLOVER', 'ZERO_BASED', 'FIFTY_THIRTY_TWENTY'];
+const STRATEGY_VALUES: BudgetStrategy[] = ['FIXED', 'ROLLOVER', 'ZERO_BASED', 'FIFTY_THIRTY_TWENTY', 'BUCKET'];
 
 const PROFILE_VALUES: BudgetProfile[] = ['COMFORTABLE', 'ON_TRACK', 'AGGRESSIVE'];
 
@@ -109,13 +109,17 @@ export function BudgetWizardAnalysis({
             </div>
             {/* Desktop: 2-column grid */}
             <div className="hidden lg:grid grid-cols-2 gap-3">
-              {STRATEGY_VALUES.map((value) => (
+              {STRATEGY_VALUES.map((value, index) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => updateState({ strategy: value })}
                   data-testid={`strategy-${value}`}
-                  className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
+                  className={`${
+                    index === STRATEGY_VALUES.length - 1 && STRATEGY_VALUES.length % 2 === 1
+                      ? 'col-span-2'
+                      : ''
+                  } w-full p-4 rounded-lg border-2 text-left transition-colors ${
                     state.strategy === value
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400'
                       : 'border-gray-200 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500'

@@ -4,10 +4,12 @@ import {
   IsBoolean,
   IsNumber,
   IsEnum,
+  IsUUID,
   MaxLength,
   Min,
   Max,
   IsInt,
+  ValidateIf,
 } from "class-validator";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
@@ -98,4 +100,14 @@ export class UpdateBudgetCategoryDto {
   @Min(0)
   @Max(1000)
   sortOrder?: number;
+
+  @ApiPropertyOptional({
+    description:
+      "Bucket of this budget the line belongs to (null clears; a non-income line only)",
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null)
+  @IsUUID()
+  bucketId?: string | null;
 }

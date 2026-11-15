@@ -868,7 +868,9 @@
         "sharedPersonLinks": "Contatti collegati",
         "sharedIntegrations": "Collegamenti alle finanze personali",
         "sharedPostings": "Registrazioni personali delle spese condivise",
-        "sharedLedgerLinks": "Transazioni personali collegate"
+        "sharedLedgerLinks": "Transazioni personali collegate",
+        "budgetBuckets": "Buste del budget",
+        "budgetPeriodBuckets": "Buste dei periodi del budget"
       }
     },
     "storedBackups": {

@@ -36,7 +36,9 @@
       "SAVING": "Ersparnis"
     },
     "saving": "Wird gespeichert...",
-    "remove": "Aus Budget entfernen"
+    "remove": "Aus Budget entfernen",
+    "bucket": "Topf",
+    "bucketUnassigned": "Nicht zugeordnet"
   },
   "categoryList": {
     "title": "Kategorie-Budgets",
@@ -94,7 +96,8 @@
       "FIXED": "Fest",
       "ROLLOVER": "Übertrag",
       "ZERO_BASED": "Nullbasiert",
-      "FIFTY_THIRTY_TWENTY": "50/30/20"
+      "FIFTY_THIRTY_TWENTY": "50/30/20",
+      "BUCKET": "Topf"
     }
   },
   "healthGauge": {
@@ -239,6 +242,10 @@
       "FIFTY_THIRTY_TWENTY": {
         "label": "50/30/20",
         "description": "50% Bedürfnisse, 30% Wünsche, 20% Ersparnisse. Kategorien werden nach Gruppe gekennzeichnet."
+      },
+      "BUCKET": {
+        "label": "Topf",
+        "description": "Das Einkommen wird auf wenige benannte Töpfe verteilt. Sie behalten jeden Topf im Blick, nicht jede Kategorie."
       }
     },
     "profiles": {
@@ -324,7 +331,8 @@
       "FIXED": "Beträge pro Kategorie festlegen. Ungenutztes Budget wird jede Periode zurückgesetzt.",
       "ROLLOVER": "Ungenutztes Budget wird basierend auf kategoriespezifischen Übertragungsregeln übertragen.",
       "ZERO_BASED": "Jeder Euro des Einkommens wird zugewiesen. Einnahmen minus Ausgaben sollte null ergeben.",
-      "FIFTY_THIRTY_TWENTY": "Kategorien gruppiert als Bedürfnisse (50%), Wünsche (30%), Ersparnisse (20%)."
+      "FIFTY_THIRTY_TWENTY": "Kategorien gruppiert als Bedürfnisse (50%), Wünsche (30%), Ersparnisse (20%).",
+      "BUCKET": "Einkommen auf benannte Töpfe verteilt. Jede Kategorie gehört zu einem Topf."
     },
     "linkBudgetToIncome": "Budget mit Einkommen verknüpfen",
     "linkBudgetToIncomeHint": "Kategoriebeträge werden zu Prozentsätzen Ihres Basiseinkommens",
@@ -403,6 +411,19 @@
     "toasts": {
       "created": "Budget erfolgreich erstellt",
       "failed": "Budget konnte nicht erstellt werden"
+    }
+  },
+  "wizardBuckets": {
+    "title": "Töpfe",
+    "description": "Verteilen Sie Ihr Einkommen auf Töpfe und wählen Sie unten für jede Ausgabe und Überweisung einen Topf.",
+    "selectLabel": "Topf für {name}",
+    "unassigned": "Nicht zugeordnet",
+    "tallyTitle": "Positionen pro Topf",
+    "tallyValue": "{count, plural, one {# Position} other {# Positionen}} · {amount}",
+    "review": {
+      "lineCount": "{count, plural, one {# Position} other {# Positionen}}",
+      "unassigned": "{count, plural, one {# Ausgaben- oder Überweisungsposition gehört} other {# Ausgaben- oder Überweisungspositionen gehören}} zu keinem Topf. Sie können das Budget trotzdem erstellen und die Zuordnung später auf der Bearbeitungsseite vornehmen.",
+      "noBuckets": "Dieses Budget hat noch keine Töpfe. Sie können es trotzdem erstellen und später auf der Bearbeitungsseite Töpfe hinzufügen."
     }
   },
   "zeroBasedBar": {
@@ -486,6 +507,23 @@
           "Erfordert die Kategorisierung jeder Ausgabe nach Gruppe"
         ],
         "bestFor": "Personen, die einen ausgewogenen Daumenregel-Ansatz bevorzugen, ohne jede Kategorie einzeln zu verfolgen."
+      },
+      "BUCKET": {
+        "title": "Topf-Budget",
+        "description": "Das Einkommen wird auf wenige benannte Töpfe verteilt, jeweils mit einem Ziel als Anteil am Einkommen oder als fester Betrag. Jede Kategorie gehört zu einem Topf, sodass Sie den Topf statt jeder einzelnen Kategorie im Blick behalten. Ein Topf kann den Rest in die nächste Periode übertragen.",
+        "pros": [
+          "Weniger Zahlen im Blick",
+          "Flexibel innerhalb jedes Topfs",
+          "Spartöpfe können mit der Zeit anwachsen",
+          "Passt zu unregelmäßigen Ausgaben innerhalb eines Topfs"
+        ],
+        "cons": [
+          "Weniger Details pro Kategorie",
+          "Kategorien müssen Töpfen zugeordnet werden",
+          "Prozentziele erfordern ein bekanntes Einkommen",
+          "Übertragene Salden brauchen gelegentlich eine Kontrolle"
+        ],
+        "bestFor": "Personen, denen Budgets pro Kategorie zu kleinteilig sind, die aber mehr Struktur als bei 50/30/20 möchten."
       }
     }
   },
@@ -567,7 +605,9 @@
         "categoryRemoveFailed": "Kategorie konnte nicht entfernt werden",
         "transferIncomeAdded": "Überweisungseinkommen hinzugefügt",
         "transferIncomeFailed": "Überweisungseinkommen konnte nicht hinzugefügt werden"
-      }
+      },
+      "buckets": "Töpfe",
+      "unassignedBucket": "Nicht zugeordnet"
     }
   },
   "validation": {
@@ -578,5 +618,140 @@
   "categoryValidation": {
     "amountMin": "Betrag muss 0 oder größer sein",
     "mustBeNumber": "Muss eine Zahl sein"
+  },
+  "bucketEditor": {
+    "presetLabel": "Mit Vorlage starten",
+    "presets": {
+      "THREE": "Drei Töpfe",
+      "FOUR": "Vier Töpfe (60/10/10/20)",
+      "SCRATCH": "Von Grund auf neu"
+    },
+    "presetBucketNames": {
+      "fixedCosts": "Fixkosten",
+      "everydaySpending": "Alltagsausgaben",
+      "savings": "Sparen",
+      "dailyExpenses": "Tägliche Ausgaben",
+      "splurge": "Gönnen",
+      "longTermGoals": "Langfristige Ziele",
+      "safetyAndDebt": "Sicherheit und Schulden"
+    },
+    "listLabel": "Töpfe",
+    "empty": {
+      "title": "Noch keine Töpfe",
+      "description": "Starten Sie mit einer Vorlage oder fügen Sie einen Topf hinzu und ordnen Sie ihm dann Kategorien zu."
+    },
+    "add": "Topf hinzufügen",
+    "limitReached": "Ein Budget kann höchstens {max} Töpfe haben.",
+    "newTitle": "Neuer Topf",
+    "editTitle": "{name} bearbeiten",
+    "summary": "Prozentziele ergeben zusammen {percent}. Betragsziele ergeben zusammen {amount}.",
+    "row": {
+      "percentTarget": "{percent} des Einkommens",
+      "amountTarget": "{amount} pro Periode",
+      "noCarry": "Beginnt jede Periode neu",
+      "carries": "Wird übertragen",
+      "carriesUpTo": "Wird übertragen, max. {cap}",
+      "caption": "{target} · {carry}",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "editLabel": "{name} bearbeiten",
+      "deleteLabel": "{name} löschen"
+    },
+    "targetTypes": {
+      "PERCENT": "Prozent des Einkommens",
+      "AMOUNT": "Fester Betrag"
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "z. B. Ersparnisse",
+      "targetType": "Ziel",
+      "targetTypeTooltip": "Ein Prozentziel ist ein Anteil am Einkommen des Budgets: bei einem einkommensverknüpften Budget das in dieser Periode erhaltene Einkommen, sonst das Basiseinkommen, sonst die Beträge der Einkommenskategorien. Ein fester Betrag gilt in jeder Periode gleich.",
+      "targetPercent": "Prozent des Einkommens",
+      "targetAmount": "Betrag pro Periode",
+      "carryOver": "Rest übertragen",
+      "carryOverTooltip": "Was beim Abschluss einer Periode im Topf übrig bleibt, wird zur nächsten Periode addiert. Ein überzogener Topf überträgt nichts.",
+      "carryCap": "Übertragungsgrenze (optional)",
+      "carryCapPlaceholder": "Keine Grenze",
+      "save": "Speichern",
+      "saveChanges": "Änderungen speichern"
+    },
+    "validation": {
+      "nameRequired": "Name eingeben",
+      "nameMax": "Ein Name darf höchstens {max} Zeichen haben",
+      "nameDuplicate": "Ein anderer Topf hat bereits diesen Namen",
+      "targetRequired": "Ziel eingeben",
+      "percentRange": "Ein Prozentziel muss größer als 0 und höchstens 100 sein",
+      "percentDecimals": "Ein Prozentziel darf höchstens zwei Dezimalstellen haben",
+      "amountPositive": "Ein Betragsziel muss größer als 0 sein",
+      "capNeedsCarryOver": "Eine Übertragungsgrenze setzt aktivierten Übertrag voraus",
+      "capPositive": "Eine Übertragungsgrenze muss größer als 0 sein"
+    },
+    "delete": {
+      "title": "Topf löschen",
+      "message": "Den Topf \"{name}\" löschen? Seine Kategorien werden nicht mehr zugeordnet.",
+      "confirm": "Löschen"
+    },
+    "replace": {
+      "title": "Töpfe ersetzen",
+      "message": "Die aktuellen Töpfe durch \"{preset}\" ersetzen? Die aktuellen Töpfe werden gelöscht und ihre Kategorien nicht mehr zugeordnet.",
+      "clearMessage": "Alle Töpfe löschen und von vorn beginnen? Ihre Kategorien werden nicht mehr zugeordnet.",
+      "confirm": "Ersetzen"
+    },
+    "toasts": {
+      "created": "Topf hinzugefügt",
+      "updated": "Topf aktualisiert",
+      "deleted": "Topf gelöscht",
+      "saveFailed": "Topf konnte nicht gespeichert werden",
+      "deleteFailed": "Topf konnte nicht gelöscht werden",
+      "presetApplied": "Vorlage angewendet",
+      "presetFailed": "Vorlage konnte nicht angewendet werden"
+    }
+  },
+  "bucketSummary": {
+    "title": "Topfverteilung",
+    "loading": "Topfverteilung wird geladen",
+    "loadFailed": "Die Topfverteilung konnte nicht geladen werden. Versuchen Sie es gleich noch einmal.",
+    "emptyTitle": "Noch keine Töpfe",
+    "emptyDescription": "Fügen Sie Töpfe hinzu, um Ihr Einkommen auf benannte Töpfe zu verteilen.",
+    "emptyAction": "Töpfe hinzufügen",
+    "income": "Einkommen für Töpfe",
+    "incomeUnknown": "Unbekannt",
+    "incomeSource": {
+      "ACTUAL": "Basiert auf dem tatsächlichen Einkommen dieser Periode",
+      "BASE_INCOME": "Basiert auf dem Basiseinkommen des Budgets",
+      "INCOME_LINES": "Basiert auf geplanten Einkommenskategorien",
+      "NONE": "Kein Einkommen gefunden"
+    },
+    "totalAllocated": "Insgesamt verteilt",
+    "allocatedSoFar": "Bisher verteilt",
+    "allocatedSoFarHint": "Für einige Töpfe ist noch kein Betrag bekannt, daher ist dies nur ein Teilwert.",
+    "unallocated": "Nicht verteilt",
+    "unallocatedUnknown": "Unbekannt",
+    "overAllocatedHint": "Überverteilt: Die Töpfe ergeben zusammen mehr als Ihr Einkommen.",
+    "targetPercent": "{percent} des Einkommens",
+    "targetAmount": "{amount} pro Periode",
+    "carriedIn": "{amount} übernommen",
+    "spent": "Ausgegeben",
+    "available": "Verfügbar",
+    "overspent": "Überzogen",
+    "categories": "{count, plural, one {# Kategorie} other {# Kategorien}}",
+    "allocationUnknown": "Legen Sie ein Basiseinkommen für das Budget fest oder fügen Sie eine Einkommenskategorie hinzu.",
+    "allocationUnknownAction": "Budget bearbeiten",
+    "unassignedTitle": "Nicht zugeordnet",
+    "unassignedDescription": "{count, plural, one {# Kategoriezeile gehört} other {# Kategoriezeilen gehören}} zu keinem Topf.",
+    "unassignedPlanned": "Geplant",
+    "unassignedAction": "Zuordnen"
+  },
+  "periodBuckets": {
+    "title": "Töpfe",
+    "name": "Topf",
+    "target": "Ziel",
+    "allocated": "Verteilt",
+    "allocatedUnknown": "Unbekannt",
+    "carriedIn": "Übernommen",
+    "spent": "Ausgegeben",
+    "carriedOut": "Übertragen",
+    "targetPercent": "{percent} des Einkommens",
+    "targetAmount": "{amount} pro Periode"
   }
 }
