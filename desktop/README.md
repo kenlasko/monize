@@ -148,7 +148,10 @@ MONIZE_DATA_DIR=/tmp/monize-shell npx electron . --quit   # asks the running she
   integrated terminal does) runs Electron as plain Node and fails at once;
   unset it first.
 - Logs: `<data dir>/logs/main.log` has the boot statuses and every window
-  load (`Window finished loading <url>`).
+  load (`Window finished loading <url>`). Every file is JSON lines of
+  `{time, level, source, msg}`; a child's line is recorded without terminal
+  colour codes, and a NestJS line in `backend.log` takes its level from Nest
+  and keeps only `[<Context>] <message>` (`src/child-line.ts`).
 
 The shell's own text is English only and lives in `src/shell/strings.ts`;
 there is no translation framework in this package yet.

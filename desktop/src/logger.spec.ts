@@ -154,6 +154,23 @@ describe("logger", () => {
       });
     });
 
+    it("records a coloured Nest line at its own level, without its prefix", () => {
+      make();
+      logger
+        .lineSink("backend", "info")
+        .write(
+          "\x1b[33m[Nest] 17136  - \x1b[39m2026-11-15, 11:33:34 p.m. " +
+            "\x1b[33m   WARN\x1b[39m \x1b[38;5;3m[DbInit] \x1b[39m" +
+            '\x1b[33mPostgres: policy "job_claims_isolation" does not exist, skipping\x1b[39m\n',
+        );
+      const msg =
+        '[DbInit] Postgres: policy "job_claims_isolation" does not exist, skipping';
+      expect(fileRecords("backend.log")).toEqual([
+        { time: FIXED.toISOString(), level: "warn", source: "backend", msg },
+      ]);
+      expect(out).toEqual([`${FIXED.toISOString()} [backend] WARN: ${msg}\n`]);
+    });
+
     it("cuts an endless line so memory stays bounded", () => {
       make({ stdout: null });
       const sink = logger.lineSink("backend", "info");
