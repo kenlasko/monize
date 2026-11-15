@@ -1,3 +1,4 @@
+import { RELAY_POLL_REFUSED } from "../../ai/relay/ai-relay.service";
 import { McpRelayTools } from "./relay.tool";
 import { AiRelayService } from "../../ai/relay/ai-relay.service";
 import { SecurityNoticeService } from "../../notifications/security-notice.service";
@@ -43,10 +44,11 @@ describe("McpRelayTools", () => {
         prompt: "hi",
         history: [],
       };
-      const handlers = register({
-        waitForPrompt: jest.fn().mockResolvedValue(claimed),
-      });
+      const waitForPrompt = jest.fn().mockResolvedValue(claimed);
+      const handlers = register({ waitForPrompt });
       const result = await handlers.get_next_prompt({}, ctx());
+      // The credential binds the claim (#2176), beside the session.
+      expect(waitForPrompt).toHaveBeenCalledWith("user-1", "s", "pat:t1");
       const body = parse(result);
       expect(body.hasPrompt).toBe(true);
       expect(body.promptId).toBe("p1");
@@ -122,6 +124,31 @@ describe("McpRelayTools", () => {
       expect(parse(result)).toEqual({ hasPrompt: false, stop: true });
     });
 
+    it("tells a refused poll to stop because another connection serves the chat, without touching the idle clock", async () => {
+      const shouldStopForIdle = jest.fn().mockResolvedValue(true);
+      const handlers = register({
+        waitForPrompt: jest.fn().mockResolvedValue(RELAY_POLL_REFUSED),
+        shouldStopForIdle,
+      });
+      const result = await handlers.get_next_prompt({}, ctx());
+      expect(parse(result)).toEqual({
+        hasPrompt: false,
+        heldElsewhere: true,
+        stop: true,
+      });
+      expect(shouldStopForIdle).not.toHaveBeenCalled();
+    });
+
+    it("consults the idle clock for the holder's empty poll", async () => {
+      const shouldStopForIdle = jest.fn().mockResolvedValue(false);
+      const handlers = register({
+        waitForPrompt: jest.fn().mockResolvedValue(null),
+        shouldStopForIdle,
+      });
+      await handlers.get_next_prompt({}, ctx());
+      expect(shouldStopForIdle).toHaveBeenCalledWith("user-1");
+    });
+
     it("errors without user context", async () => {
       const handlers = register({});
       const result = await handlers.get_next_prompt({}, ctx(undefined));
@@ -147,7 +174,12 @@ describe("McpRelayTools", () => {
         ctx(),
       );
       expect(parse(result)).toEqual({ delivered: true });
-      expect(postResponse).toHaveBeenCalledWith("user-1", "p1", "answer");
+      expect(postResponse).toHaveBeenCalledWith(
+        "user-1",
+        "p1",
+        "answer",
+        "pat:t1",
+      );
     });
 
     it("reports delivered:false for an unknown prompt", async () => {
@@ -178,6 +210,7 @@ describe("McpRelayTools", () => {
         // The calling session, so an agent that reconnected mid-prompt re-binds
         // its relay turn instead of losing it to the old session id.
         "s",
+        "pat:t1",
       );
     });
 

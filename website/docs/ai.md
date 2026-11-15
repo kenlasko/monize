@@ -417,7 +417,7 @@ Three relay control tools drive this loop:
 
 | Tool | Direction | Purpose |
 |------|-----------|---------|
-| `get_next_prompt` | Monize -> agent | Long-poll for the next chat prompt. Returns `{ hasPrompt: false }` if none arrives in the poll window -- call it again immediately to keep listening. |
+| `get_next_prompt` | Monize -> agent | Long-poll for the next chat prompt. Returns `{ hasPrompt: false }` if none arrives in the poll window -- call it again immediately to keep listening. Returns `{ hasPrompt: false, heldElsewhere: true }` if another connection of your account is serving the chat -- stop polling and exit; the other connection keeps the chat. |
 | `report_progress` | agent -> Monize | Stream a one-line status update shown live in the chat while you work. Optional but recommended. |
 | `post_response` | agent -> Monize | Deliver the final answer for a claimed prompt back to the browser. |
 
@@ -431,7 +431,7 @@ Three relay control tools drive this loop:
 
 The exact commands (with your instance URL pre-filled, and **Copy** buttons) appear in that form and in the chat's **How to connect** panel.
 
-**Step 2 -- Create an access token.** In **Settings > API Access**, create a Personal Access Token (starts with `pat_`, shown once). The relay authenticates with the same PAT as any MCP client. Give the agent a token of its own: a token shared with another MCP client sends that client's confirmations to the chat too.
+**Step 2 -- Create an access token.** In **Settings > API Access**, create a Personal Access Token (starts with `pat_`, shown once). The relay authenticates with the same PAT as any MCP client. Give the agent a token of its own: a token shared with another MCP client sends that client's confirmations to the chat too. One token serves your chat at a time, and only the token that picked up a prompt can answer it: while the connected agent is listening or working on a prompt, an agent using any other token of yours receives no prompts. It takes over about 45 seconds after the first agent stops polling, or, if the first agent stopped in the middle of a prompt, once that prompt times out (about 3 minutes).
 
 **Step 3 -- Connect the agent.**
 

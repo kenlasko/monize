@@ -94,6 +94,14 @@ export class AiRelayPrompt {
   @Column({ type: "text", name: "claimed_by", nullable: true })
   claimedBy: string | null;
 
+  /**
+   * The credential that claimed this turn. Only it may answer the turn or
+   * adopt it from a reconnected session: a session is a property of one
+   * connection, the credential is what the user actually granted.
+   */
+  @Column({ type: "text", name: "claimed_credential", nullable: true })
+  claimedCredential: string | null;
+
   @Column({
     type: "timestamptz",
     name: "created_at",

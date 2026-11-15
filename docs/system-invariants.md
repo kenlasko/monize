@@ -215,7 +215,7 @@ implied.
 | INV-HA-002 | An authentication attempt budget is one number per deployment, not per process | enforced |
 | INV-HA-003 | A single-use artifact is consumed at most once across every replica | enforced |
 | INV-HA-004 | One deployment publishes one OIDC signing key set, stable across restarts | enforced |
-| INV-HA-005 | A relay prompt is claimed by exactly one agent poll and answered at most once | enforced |
+| INV-HA-005 | A relay prompt is claimed by exactly one agent poll of the credential serving the chat, and answered at most once, by that credential | enforced |
 | INV-RULE-001 | A transaction rule never changes the matched row's amount, account, date or status; the only balance it moves is a structural action's counterpart | partial |
 | INV-RULE-002 | A transaction rule applies inside the transaction that inserts the row, on every creation path | partial |
 | INV-RULE-003 | The preview, the draft test and the commit of a transaction rule are one planner, and a run commits only the plan the person previewed | partial |
@@ -8841,9 +8841,12 @@ Status              enforced
 ```text
 Statement           A queued AI-relay prompt is claimed by exactly one agent
                     poll, answered at most once, and handed to the browser at
-                    most once.
-Source of truth     ai_relay_prompts.status, with claimed_by and the deadlines
-                    beside it.
+                    most once. Only the one credential serving the user's chat
+                    claims, and only the credential that claimed a turn may
+                    answer it or adopt it from a reconnected session (#2176).
+Source of truth     ai_relay_prompts.status, with claimed_by, claimed_credential
+                    and the deadlines beside it; ai_relay_agents.agent_credential
+                    and agent_seen_at for the credential serving the chat.
 Enforcement         backend/src/ai/relay/ai-relay.service.ts. The claim is a CTE selecting
                     the oldest pending, unexpired row FOR UPDATE SKIP LOCKED
                     and an UPDATE that re-checks status = 'pending', so a second
@@ -8856,7 +8859,16 @@ Enforcement         backend/src/ai/relay/ai-relay.service.ts. The claim is a CTE
                     reconnecting browser cannot be shown one answer twice. The
                     claim and the agent's inactivity clock commit together, so a
                     failed clock write rolls the claim back and the next poll
-                    takes it. Buffered confirmation cards use ON CONFLICT
+                    takes it. Before the claim, the same transaction upserts
+                    ai_relay_agents (holdChat): the caller keeps or takes the
+                    chat only when no credential holds it, it is the holder, or
+                    the holder has been quiet past CONNECTED_WINDOW_MS with no
+                    turn in flight or just answered; the upsert's row lock
+                    serialises a takeover against the holder's claim. The answer
+                    and the report_progress adoption add claimed_credential =
+                    the caller's credential, so another credential of the same
+                    user holding the promptId writes nothing. Buffered
+                    confirmation cards use ON CONFLICT
                     (user_id, id) DO NOTHING RETURNING to tell a duplicate from
                     an insert. The one part that stays in memory is
                     backend/src/ai/relay/relay-stream.registry.ts, the open SSE sockets this
@@ -8876,7 +8888,11 @@ Required tests      Two connections and two instances:
                     skipped rather than queued, a second post_response refused,
                     an answer for an unclaimed turn refused, a late answer handed
                     over exactly once, an expired prompt never claimed, one
-                    user's prompt never handed to another's agent, the buffered
+                    user's prompt never handed to another's agent, another
+                    credential's poll and answer refused while the holder holds
+                    the chat, one holder out of two concurrent credentials, a
+                    takeover only from a quiet holder with no turn in flight,
+                    the buffered
                     cards drained oldest-first and only once, and an idempotent
                     sweep). backend/test/integration/postgres-event-bus.integration.spec.ts
                     proves the wake-up crosses two instances, including after

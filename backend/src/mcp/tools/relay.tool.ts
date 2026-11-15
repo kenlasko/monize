@@ -1,7 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/server";
-import { AiRelayService } from "../../ai/relay/ai-relay.service";
+import {
+  AiRelayService,
+  RELAY_POLL_REFUSED,
+} from "../../ai/relay/ai-relay.service";
 import { SecurityNoticeService } from "../../notifications/security-notice.service";
 import {
   callerKey,
@@ -47,31 +50,43 @@ export class McpRelayTools {
         annotations: READ_ONLY,
         description:
           "Long-poll for the next prompt typed in the Monize web chat. " +
-          "{ hasPrompt: false }: call again immediately to keep listening. " +
-          "{ hasPrompt: false, stop: true }: the user went inactive; stop " +
-          "polling and exit, they will reconnect you. " +
-          "{ hasPrompt: true }: the result carries the prompt, `history` " +
-          "(oldest first), any `attachments` (read each `uri` to view an image " +
-          "or PDF; text files are already inlined into the prompt) and " +
-          "`guidance` -- follow it, and always finish the claimed prompt with " +
-          "post_response.",
+          "{ hasPrompt: false }: call again. With stop: true the user went " +
+          "inactive: exit, they will reconnect you. With heldElsewhere: true " +
+          "another connection of this account serves the chat: stop and " +
+          "exit. { hasPrompt: true }: carries the prompt, `history` (oldest " +
+          "first), any `attachments` (read each `uri`; text files are inlined) " +
+          "and `guidance` -- follow it, and always finish the prompt with post_response.",
         inputSchema: z.object({}),
         outputSchema: getNextPromptOutput,
       },
       async (_args, ctx) => {
         const user = resolveUserContext(ctx);
-        if (!user) return toolError("No user context");
+        // The credential is what a relay turn is bound to (#2176); a request
+        // that cannot name one is refused rather than served user-wide.
+        if (!user?.credentialId) return toolError("No user context");
         const check = requireScope(user.scopes, "read");
         if (check.error) return check.result;
 
         try {
           // The claim is bound to THIS caller: it is what makes a later write
           // from this agent part of the relay turn, and a write from any other
-          // caller of the same user a direct client's.
+          // caller of the same user a direct client's. Only the credential
+          // serving the user's chat claims anything; another one comes back
+          // empty, never with someone else's prompt.
           const claimed = await this.relayService.waitForPrompt(
             user.userId,
             callerKey(ctx),
+            user.credentialId,
           );
+          if (claimed === RELAY_POLL_REFUSED) {
+            // Stop, but not through the idle clock: it is per user, and a
+            // refused poller must not consume the stop meant for the holder.
+            return toolResult({
+              hasPrompt: false,
+              heldElsewhere: true,
+              stop: true,
+            });
+          }
           if (!claimed) {
             // No prompt this window. If the user has gone quiet long enough,
             // tell the agent to stop looping instead of polling forever.
@@ -124,15 +139,19 @@ export class McpRelayTools {
       },
       async (args, ctx) => {
         const user = resolveUserContext(ctx);
-        if (!user) return toolError("No user context");
+        // The credential is what a relay turn is bound to (#2176); a request
+        // that cannot name one is refused rather than served user-wide.
+        if (!user?.credentialId) return toolError("No user context");
         const check = requireScope(user.scopes, "read");
         if (check.error) return check.result;
 
         try {
+          // Only the credential that claimed the turn may answer it.
           const delivered = await this.relayService.postResponse(
             user.userId,
             args.promptId,
             args.text,
+            user.credentialId,
           );
           return toolResult({ delivered });
         } catch (err: unknown) {
@@ -161,7 +180,9 @@ export class McpRelayTools {
       },
       async (args, ctx) => {
         const user = resolveUserContext(ctx);
-        if (!user) return toolError("No user context");
+        // The credential is what a relay turn is bound to (#2176); a request
+        // that cannot name one is refused rather than served user-wide.
+        if (!user?.credentialId) return toolError("No user context");
         const check = requireScope(user.scopes, "read");
         if (check.error) return check.result;
 
@@ -171,8 +192,9 @@ export class McpRelayTools {
             args.promptId,
             args.text,
             // Re-binds the turn when an agent reconnects mid-prompt with a
-            // fresh caller key; knowing the promptId is what proves ownership.
+            // fresh caller key -- only for the credential that claimed it.
             callerKey(ctx),
+            user.credentialId,
           );
           return toolResult({ delivered });
         } catch (err: unknown) {

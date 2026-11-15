@@ -40,6 +40,8 @@ export interface RelayPromptRow {
   prompt: RelayPromptPayload;
   answer: RelayAnswerPayload | null;
   claimedBy: string | null;
+  /** The credential that claimed the turn; null until claimed. `=` never matches null. */
+  claimedCredential: string | null;
   /** Epoch ms, all four, read through the harness's one clock. */
   createdAt: number;
   claimedAt: number | null;
@@ -53,6 +55,9 @@ export interface RelayAgentRow {
   lastPollAt: number | null;
   idleSince: number | null;
   idleDisconnectedAt: number | null;
+  /** The credential holding the user's chat, and when it last asked for work. */
+  agentCredential: string | null;
+  agentSeenAt: number | null;
 }
 
 /** One `ai_relay_actions` row: a card whose browser stream had already gone. */
@@ -145,6 +150,8 @@ export function createRelayRowsHarness(): RelayRowsHarness {
       lastPollAt: null,
       idleSince: null,
       idleDisconnectedAt: null,
+      agentCredential: null,
+      agentSeenAt: null,
     };
     agents.push(created);
     return created;
@@ -223,6 +230,39 @@ export function createRelayRowsHarness(): RelayRowsHarness {
         return [[], taken.length];
       }
 
+      // holdChat: must precede the generic agents branch below.
+      if (
+        sql.includes(
+          "INSERT INTO ai_relay_agents (user_id, agent_credential, agent_seen_at)",
+        )
+      ) {
+        const [userId, credentialId, windowMs] = params as [
+          string,
+          string,
+          number,
+        ];
+        const existed = agents.some((a) => a.userId === userId);
+        const agent = agentOf(userId);
+        const holder = agent.agentCredential;
+        const holderBusy = rows.some(
+          (r) =>
+            r.userId === userId &&
+            r.claimedCredential === holder &&
+            holder !== null &&
+            ((r.status === "claimed" && r.expiresAt > now()) ||
+              (r.answeredAt !== null && r.answeredAt + windowMs > now())),
+        );
+        const mayHold =
+          !existed ||
+          holder === null ||
+          holder === credentialId ||
+          ((agent.agentSeenAt ?? 0) + windowMs <= now() && !holderBusy);
+        if (!mayHold) return [];
+        agent.agentCredential = credentialId;
+        agent.agentSeenAt = now();
+        return [{ user_id: userId }];
+      }
+
       if (sql.includes("INSERT INTO ai_relay_agents")) {
         const [userId, inactivityMs] = params as [string, number | undefined];
         const agent = agentOf(userId);
@@ -291,6 +331,7 @@ export function createRelayRowsHarness(): RelayRowsHarness {
           prompt: JSON.parse(payload) as RelayPromptPayload,
           answer: null,
           claimedBy: null,
+          claimedCredential: null,
           createdAt: now(),
           claimedAt: null,
           answeredAt: null,
@@ -301,10 +342,11 @@ export function createRelayRowsHarness(): RelayRowsHarness {
       }
 
       if (sql.includes("WITH next AS")) {
-        const [userId, sessionId, idleMs] = params as [
+        const [userId, sessionId, idleMs, credentialId] = params as [
           string,
           string | null,
           number,
+          string,
         ];
         const next = rows.find(
           (r) =>
@@ -316,21 +358,24 @@ export function createRelayRowsHarness(): RelayRowsHarness {
         next.status = "claimed";
         next.claimedAt = now();
         next.claimedBy = sessionId;
+        next.claimedCredential = credentialId;
         next.expiresAt = now() + idleMs;
         return [{ id: next.id, prompt: next.prompt }];
       }
 
       if (sql.includes("SET status = 'answered'")) {
-        const [promptId, userId, answer, bufferMs] = params as [
+        const [promptId, userId, answer, bufferMs, credentialId] = params as [
           string,
           string,
           string,
           number,
+          string,
         ];
         const row = byId(promptId, userId);
         if (
           !row ||
           row.status !== "claimed" ||
+          row.claimedCredential !== credentialId ||
           row.expiresAt + bufferMs <= now()
         ) {
           return [];
@@ -350,15 +395,15 @@ export function createRelayRowsHarness(): RelayRowsHarness {
       }
 
       if (sql.includes("SET claimed_by = COALESCE")) {
-        const [promptId, userId, sessionId, idleMs, hardMs] = params as [
-          string,
-          string,
-          string | null,
-          number,
-          number,
-        ];
+        const [promptId, userId, sessionId, idleMs, hardMs, credentialId] =
+          params as [string, string, string | null, number, number, string];
         const row = byId(promptId, userId);
-        if (!row || row.status !== "claimed" || row.expiresAt <= now()) {
+        if (
+          !row ||
+          row.status !== "claimed" ||
+          row.claimedCredential !== credentialId ||
+          row.expiresAt <= now()
+        ) {
           return [];
         }
         row.claimedBy = sessionId ?? row.claimedBy;

@@ -92,6 +92,9 @@ export const RELAY_POLL_PARK_MS = Symbol("RELAY_POLL_PARK_MS");
  */
 const WAKE_POLL_INTERVAL_MS = 5 * 1000;
 
+/** `waitForPrompt` result: the credential never held the user's chat. */
+export const RELAY_POLL_REFUSED = "refused" as const;
+
 /**
  * An agent counts as "connected" if it polled within this window. Slightly
  * longer than POLL_PARK_MS so the brief gap between two polls does not flicker
@@ -188,8 +191,9 @@ interface PromptStateRow {
  *
  * The queue is rows, not process memory. The browser inserts a `pending`
  * `ai_relay_prompts` row and parks; the agent's long-poll claims one with a
- * conditional `UPDATE` under `FOR UPDATE SKIP LOCKED`, so two agents polling one
- * user get different prompts and the loser of a double `post_response` is
+ * conditional `UPDATE` under `FOR UPDATE SKIP LOCKED`, so two sessions of the
+ * credential serving the chat get different prompts (another credential
+ * claims nothing, `holdChat`) and the loser of a double `post_response` is
  * refused by the database rather than by a read it had already passed
  * (INV-HA-005). A wake-up on the `EVENT_BUS` only shortens the wait: it carries
  * ids, never the prompt or the answer, and every waiter re-reads its row on a
@@ -265,20 +269,37 @@ export class AiRelayService {
    * Called by the `get_next_prompt` MCP tool. Claims the next queued prompt for
    * the user, or parks until one arrives or the poll window elapses (then
    * returns null so the agent polls again).
+   *
+   * `credentialId` is the credential presented on this request. Only the one
+   * credential serving the user's chat claims anything (`claimNextPrompt`); a
+   * poll from any other credential of the same user parks and comes back
+   * `RELAY_POLL_REFUSED` (never recorded as a poll, so it cannot make the chat
+   * read "listening"), while the holder's empty poll is `null`.
    */
   async waitForPrompt(
     userId: string,
-    sessionId?: string,
-  ): Promise<RelayClaimedPrompt | null> {
-    // The agent is polling, so it is connected, and any stale idle-disconnect
-    // notice goes with it (it just reconnected after a quiet spell).
-    await this.recordPoll(userId);
+    sessionId: string | undefined,
+    credentialId: string,
+  ): Promise<RelayClaimedPrompt | null | typeof RELAY_POLL_REFUSED> {
     // A poll proves THIS agent is alive: keep the prompt it is mid-task on from
     // tripping the idle window. Scoped to its own session -- another session's
     // traffic says nothing about whether this agent is still working.
     await this.bumpLiveness(userId, sessionId);
 
-    const first = await this.claimNextPrompt(userId, sessionId);
+    // The agent is polling, so it is connected, and any stale idle-disconnect
+    // notice goes with it. Only a poll that held the chat says so: a refused
+    // credential polling must not make the status read "listening".
+    let held = false;
+    const attempt = async (): Promise<RelayClaimedPrompt | null> => {
+      const r = await this.claimNextPrompt(userId, sessionId, credentialId);
+      if (r.held && !held) {
+        held = true;
+        await this.recordPoll(userId);
+      }
+      return r.prompt;
+    };
+
+    const first = await attempt();
     if (first) return first;
 
     const signal = new WakeSignal();
@@ -289,11 +310,11 @@ export class AiRelayService {
       const parkUntil = Date.now() + this.pollParkMs;
       for (;;) {
         const remaining = parkUntil - Date.now();
-        if (remaining <= 0) return null;
+        if (remaining <= 0) return held ? null : RELAY_POLL_REFUSED;
         await signal.wait(Math.min(remaining, WAKE_POLL_INTERVAL_MS));
         // A wake-up is a hint: the prompt it announced may have been claimed by
         // another agent in between, so the claim decides, never the message.
-        const claimed = await this.claimNextPrompt(userId, sessionId);
+        const claimed = await attempt();
         if (claimed) return claimed;
       }
     } finally {
@@ -359,19 +380,27 @@ export class AiRelayService {
    * The answer is never dropped when the browser has already given up: the row
    * keeps it until the pickup endpoint takes it, or the sweeper's TTL does.
    * Returns false when the `UPDATE` matched nothing -- an unknown or foreign
-   * promptId, a turn nobody claimed, one already answered, or one whose grace
-   * after the deadline has run out.
+   * promptId, a turn nobody claimed, one another credential claimed, one
+   * already answered, or one whose grace after the deadline has run out.
    */
   async postResponse(
     userId: string,
     promptId: string,
     text: string,
+    credentialId: string,
   ): Promise<boolean> {
-    await this.recordPoll(userId);
-    const answered = await this.writeAnswer(userId, promptId, { text });
+    const answered = await this.writeAnswer(
+      userId,
+      promptId,
+      { text },
+      credentialId,
+    );
     if (!answered) {
       return false;
     }
+    // Only the credential that owns the turn is plainly alive and back; a
+    // refused post must not make the status read "listening".
+    await this.recordPoll(userId);
     await this.publishWake(userId, promptId);
     return true;
   }
@@ -400,16 +429,24 @@ export class AiRelayService {
     userId: string,
     promptId: string,
     text: string,
-    sessionId?: string,
+    sessionId: string | undefined,
+    credentialId: string,
   ): Promise<boolean> {
-    await this.recordPoll(userId);
-    // Knowing the (unguessable) promptId is what proves this caller owns the
-    // turn, so a reconnected agent's new session is adopted here rather than
-    // locked out -- and the same statement counts the call as liveness.
-    const owned = await this.adoptAndBump(userId, promptId, sessionId);
+    // A reconnected agent's new session is adopted here rather than locked out
+    // -- but only by the credential that claimed the turn: knowing the
+    // promptId proves nothing about who is asking. The same statement counts
+    // the call as liveness.
+    const owned = await this.adoptAndBump(
+      userId,
+      promptId,
+      sessionId,
+      credentialId,
+    );
     if (!owned) {
       return false;
     }
+    // Recorded only for the owning credential, as in postResponse.
+    await this.recordPoll(userId);
     // The browser accumulates assistant_text into one live-narration block
     // (rendered whitespace-pre-wrap), so terminate each discrete update with a
     // newline to keep sequential progress lines from running together.
@@ -708,14 +745,18 @@ export class AiRelayService {
    */
   private async claimNextPrompt(
     userId: string,
-    sessionId?: string,
-  ): Promise<RelayClaimedPrompt | null> {
+    sessionId: string | undefined,
+    credentialId: string,
+  ): Promise<{ held: boolean; prompt: RelayClaimedPrompt | null }> {
     // The claim and the inactivity reset commit together. A second transaction
     // for the clock could fail after the claim was durable, and the agent would
     // never learn the promptId of a prompt now marked `claimed` -- the browser
     // would wait out the idle window to be told its assistant went quiet. Here
     // a failed clock write rolls the claim back and the next poll takes it.
-    const [row] = await this.relayTransaction(async (manager) => {
+    const { held, rows } = await this.relayTransaction(async (manager) => {
+      if (!(await this.holdChat(manager, userId, credentialId))) {
+        return { held: false, rows: [] };
+      }
       const claimed = returnedRows<{ id: string; prompt: RelayPromptPayload }>(
         await manager.query(
           `WITH next AS (
@@ -732,24 +773,24 @@ export class AiRelayService {
               SET status = 'claimed',
                   claimed_at = CURRENT_TIMESTAMP,
                   claimed_by = $2,
+                  claimed_credential = $4,
                   expires_at = CURRENT_TIMESTAMP + ${msInterval("$3")}
              FROM next
             WHERE ai_relay_prompts.id = next.next_id
               AND ai_relay_prompts.status = 'pending'
            RETURNING id, prompt`,
-          [userId, sessionId ?? null, IDLE_TIMEOUT_MS],
+          [userId, sessionId ?? null, IDLE_TIMEOUT_MS, credentialId],
         ),
       );
       if (claimed.length > 0) {
         // Claiming a prompt is activity: restart the inactivity clock.
         await this.markActivity(userId, manager);
       }
-      return claimed;
+      return { held: true, rows: claimed };
     });
-    if (!row) {
-      return null;
-    }
-    return {
+    const [row] = rows;
+    if (!row) return { held, prompt: null };
+    const prompt: RelayClaimedPrompt = {
       promptId: row.id,
       prompt: row.prompt.prompt,
       history: row.prompt.history,
@@ -757,16 +798,82 @@ export class AiRelayService {
         ? { attachments: row.prompt.attachments }
         : {}),
     };
+    return { held, prompt };
+  }
+
+  /**
+   * Take or keep the user's chat for this credential; false when another
+   * credential holds it.
+   *
+   * Any credential of the user can call `get_next_prompt`, and a prompt is
+   * addressed to the user, not to an agent -- so without this, whichever
+   * credential polled first read the prompt and its history and answered it
+   * in the web chat as the user's own assistant (#2176). One credential holds
+   * the chat at a time. Another takes it over only once the holder has not
+   * asked for work within CONNECTED_WINDOW_MS AND has no turn in flight or
+   * just answered; a holder parked on `get_next_prompt` re-asks every
+   * WAKE_POLL_INTERVAL_MS, so it never lapses while connected. "In flight"
+   * is the turn's live deadline, not the late-answer grace: an agent that died
+   * mid-turn gives the chat up once the browser has given up on it, and its
+   * late answer is still accepted from its own credential.
+   *
+   * The upsert locks the user's `ai_relay_agents` row until the caller's
+   * transaction commits, including when its `WHERE` refuses the update, so a
+   * takeover and the holder's claim serialise on that row lock. The takeover
+   * test reads `agent_seen_at` from the row version it locked; the turn
+   * subquery reads the statement's snapshot, which can miss a claim that
+   * committed while this waited -- but that claim also refreshed
+   * `agent_seen_at` under the same lock, which already refuses the takeover.
+   */
+  private async holdChat(
+    manager: EntityManager,
+    userId: string,
+    credentialId: string,
+  ): Promise<boolean> {
+    const held = returnedRows<{ user_id: string }>(
+      await manager.query(
+        `INSERT INTO ai_relay_agents (user_id, agent_credential, agent_seen_at)
+         VALUES ($1, $2, CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id) DO UPDATE
+            SET agent_credential = EXCLUDED.agent_credential,
+                agent_seen_at = CURRENT_TIMESTAMP
+          WHERE ai_relay_agents.agent_credential IS NULL
+             OR ai_relay_agents.agent_credential = EXCLUDED.agent_credential
+             OR (
+                  ai_relay_agents.agent_seen_at
+                    + ${msInterval("$3")} <= CURRENT_TIMESTAMP
+                  AND NOT EXISTS (
+                    SELECT 1
+                      FROM ai_relay_prompts p
+                     WHERE p.user_id = ai_relay_agents.user_id
+                       AND p.claimed_credential
+                           = ai_relay_agents.agent_credential
+                       AND (
+                             (p.status = 'claimed'
+                              AND p.expires_at > CURRENT_TIMESTAMP)
+                          OR p.answered_at + ${msInterval("$3")}
+                                  > CURRENT_TIMESTAMP
+                           )
+                  )
+                )
+         RETURNING user_id`,
+        [userId, credentialId, CONNECTED_WINDOW_MS],
+      ),
+    );
+    return held.length > 0;
   }
 
   /**
    * Record the answer. Conditional on `claimed`, so a second post -- or one for
-   * a turn the sweeper already expired -- matches nothing and is refused.
+   * a turn the sweeper already expired -- matches nothing and is refused. And
+   * conditional on the credential that claimed the turn, so another credential
+   * of the same user holding the promptId cannot overwrite a live turn (#2176).
    */
   private async writeAnswer(
     userId: string,
     promptId: string,
     answer: RelayAnswerPayload,
+    credentialId: string,
   ): Promise<boolean> {
     const rows = returnedRows<{ id: string }>(
       await this.relayQuery(
@@ -777,9 +884,10 @@ export class AiRelayService {
           WHERE id = $1
             AND user_id = $2
             AND status = 'claimed'
+            AND claimed_credential = $5
             AND expires_at + ${msInterval("$4")} > CURRENT_TIMESTAMP
          RETURNING id`,
-        [promptId, userId, JSON.stringify(answer), BUFFER_TTL_MS],
+        [promptId, userId, JSON.stringify(answer), BUFFER_TTL_MS, credentialId],
       ),
     );
     return rows.length > 0;
@@ -852,12 +960,16 @@ export class AiRelayService {
    *
    * An agent that reconnected mid-turn arrives with a fresh MCP session id;
    * without the adoption its own later writes would look like a different
-   * session's and confirm in the wrong place.
+   * session's and confirm in the wrong place. Only a session of the credential
+   * that claimed the turn may adopt it: the transport ties every session to the
+   * credential that opened it, so this is the same agent reconnecting, never
+   * another client of the same user.
    */
   private async adoptAndBump(
     userId: string,
     promptId: string,
-    sessionId?: string,
+    sessionId: string | undefined,
+    credentialId: string,
   ): Promise<boolean> {
     const rows = returnedRows<{ id: string }>(
       await this.relayQuery(
@@ -870,9 +982,17 @@ export class AiRelayService {
           WHERE id = $1
             AND user_id = $2
             AND status = 'claimed'
+            AND claimed_credential = $6
             AND expires_at > CURRENT_TIMESTAMP
          RETURNING id`,
-        [promptId, userId, sessionId ?? null, IDLE_TIMEOUT_MS, HARD_WAIT_MS],
+        [
+          promptId,
+          userId,
+          sessionId ?? null,
+          IDLE_TIMEOUT_MS,
+          HARD_WAIT_MS,
+          credentialId,
+        ],
       ),
     );
     return rows.length > 0;
