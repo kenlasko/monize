@@ -259,6 +259,23 @@
       "analyzeFailed": "지출 분석에 실패했습니다"
     }
   },
+  "lineNames": {
+    "transfersFrom": "{name}에서 이체",
+    "unknown": "알 수 없음"
+  },
+  "transferIncomeForm": {
+    "hint": "이 계좌에서 들어오는 돈은 다시 돌려보낸 금액을 뺀 만큼 예산의 수입으로 계산됩니다.",
+    "account": "출금 계좌",
+    "accountPlaceholder": "계좌 선택",
+    "accountRequired": "이체가 들어오는 계좌를 선택하세요",
+    "amount": "계획 금액",
+    "submit": "추가"
+  },
+  "transfersInAsIncome": {
+    "label": "제외된 계좌에서 들어오는 이체를 수입으로 계산",
+    "hint": "제외된 계좌에서 이 예산의 계좌로 이체된 돈은 다시 돌려보낸 금액을 뺀 만큼 수입으로 계산됩니다. 자체 이체 항목이 있는 계좌는 그 항목에서 계산됩니다.",
+    "noExcludedAccounts": "이 예산은 아직 제외된 계좌가 없어 아무것도 계산되지 않습니다."
+  },
   "wizardCategories": {
     "title": "카테고리 검토",
     "noAnalysis": "분석 데이터가 없습니다. 뒤로 돌아가 분석을 먼저 실행하세요.",
@@ -266,6 +283,7 @@
       "income": "소득",
       "expenses": "지출",
       "transfers": "이체 / 저축",
+      "transfersIn": "입금 이체(수입)",
       "trendMedian": "추세 / 중앙값",
       "amount": "금액"
     },
@@ -275,6 +293,7 @@
       "transfers": "이체",
       "remaining": "잔여"
     },
+    "transfersInHint": "선택한 계좌에서 들어오는 돈은 다시 돌려보낸 금액을 뺀 만큼 수입으로 계산됩니다. 저축 예비금처럼 수입을 꺼내 쓰는 계좌만 선택하세요.",
     "allocation503020": "50/30/20 배분",
     "allocationTarget": "(목표 {percent}%)",
     "nextButton": "다음: 구성",
@@ -353,8 +372,10 @@
       "rollover": "이월",
       "alerts": "알림",
       "incomeLinked": "소득 연결",
-      "excludedAccounts": "제외 계정"
+      "excludedAccounts": "제외 계정",
+      "transfersInAsIncome": "입금 이체"
     },
+    "transfersInAsIncomeOn": "제외된 계좌에서의 이체를 수입으로 계산",
     "rolloverOff": "끔",
     "alertsValue": "경고 {warn}% / 긴급 {critical}%",
     "accountCount": "{count}개 계정",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "소득",
       "expense": "지출",
-      "transfer": "이체"
+      "transfer": "이체",
+      "transferIn": "입금 이체"
     },
     "createButton": "예산 만들기",
     "categoryCount": "{count}개 카테고리",
@@ -521,6 +543,10 @@
       "budgetSettings": "예산 설정",
       "categoryAllocations": "카테고리 배분",
       "income": "소득",
+      "addTransferIncome": "이체 수입 추가",
+      "addTransferIncomeTitle": "이체 수입 추가",
+      "outsideTransferIncome": "이 예산 밖의 계좌에서 온 이체",
+      "outsideTransferIncomeHint": "이 예산이 제외된 계좌에서 들어오는 이체를 수입으로 계산하므로 이번 기간에 포함되었습니다.",
       "expensesWithCount": "지출 ({count})",
       "resetsEachPeriod": "매 기간 초기화",
       "percentUsed": "{percent}% 사용됨",
@@ -538,7 +564,9 @@
         "categoryFailed": "카테고리 업데이트에 실패했습니다",
         "loadFailed": "예산 로드에 실패했습니다",
         "categoryRemoved": "카테고리를 예산에서 제거했습니다",
-        "categoryRemoveFailed": "카테고리를 제거하지 못했습니다"
+        "categoryRemoveFailed": "카테고리를 제거하지 못했습니다",
+        "transferIncomeAdded": "이체 수입을 추가했습니다",
+        "transferIncomeFailed": "이체 수입을 추가하지 못했습니다"
       }
     }
   },

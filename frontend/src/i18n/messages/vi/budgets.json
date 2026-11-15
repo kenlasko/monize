@@ -259,6 +259,23 @@
       "analyzeFailed": "Phân tích chi tiêu thất bại"
     }
   },
+  "lineNames": {
+    "transfersFrom": "Chuyển khoản từ {name}",
+    "unknown": "Không xác định"
+  },
+  "transferIncomeForm": {
+    "hint": "Tiền chuyển vào từ tài khoản này được tính là thu nhập của ngân sách, trừ đi số tiền chuyển ngược lại.",
+    "account": "Từ tài khoản",
+    "accountPlaceholder": "Chọn tài khoản",
+    "accountRequired": "Chọn tài khoản nơi các khoản chuyển đến",
+    "amount": "Số tiền dự kiến",
+    "submit": "Thêm"
+  },
+  "transfersInAsIncome": {
+    "label": "Tính các khoản chuyển vào từ tài khoản bị loại trừ là thu nhập",
+    "hint": "Tiền chuyển từ một tài khoản bị loại trừ vào các tài khoản của ngân sách này được tính là thu nhập, trừ đi số tiền chuyển ngược lại. Tài khoản có dòng chuyển khoản riêng được tính ở dòng đó.",
+    "noExcludedAccounts": "Ngân sách này chưa loại trừ tài khoản nào, nên không có gì được tính."
+  },
   "wizardCategories": {
     "title": "Xem xét danh mục",
     "noAnalysis": "Không có dữ liệu phân tích. Quay lại và chạy phân tích trước.",
@@ -266,6 +283,7 @@
       "income": "Thu nhập",
       "expenses": "Chi tiêu",
       "transfers": "Chuyển khoản / Tiết kiệm",
+      "transfersIn": "Chuyển khoản vào (thu nhập)",
       "trendMedian": "Xu hướng / Trung vị",
       "amount": "Số tiền"
     },
@@ -275,6 +293,7 @@
       "transfers": "Chuyển khoản",
       "remaining": "Còn lại"
     },
+    "transfersInHint": "Tiền chuyển vào từ tài khoản được đánh dấu được tính là thu nhập, trừ đi số tiền chuyển ngược lại. Chỉ đánh dấu các tài khoản bạn rút thu nhập, chẳng hạn quỹ tiết kiệm dự phòng.",
     "allocation503020": "Phân bổ 50/30/20",
     "allocationTarget": "(mục tiêu {percent}%)",
     "nextButton": "Tiếp: Cấu hình",
@@ -353,8 +372,10 @@
       "rollover": "Chuyển tiếp",
       "alerts": "Cảnh báo",
       "incomeLinked": "Liên kết thu nhập",
-      "excludedAccounts": "Tài khoản loại trừ"
+      "excludedAccounts": "Tài khoản loại trừ",
+      "transfersInAsIncome": "Chuyển khoản vào"
     },
+    "transfersInAsIncomeOn": "Từ tài khoản bị loại trừ được tính là thu nhập",
     "rolloverOff": "Tắt",
     "alertsValue": "Cảnh báo {warn}% / Nghiêm trọng {critical}%",
     "accountCount": "{count} {count, plural, one {tài khoản} other {tài khoản}}",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "Thu nhập",
       "expense": "Chi tiêu",
-      "transfer": "Chuyển khoản"
+      "transfer": "Chuyển khoản",
+      "transferIn": "Chuyển khoản vào"
     },
     "createButton": "Tạo ngân sách",
     "categoryCount": "{count} danh mục",
@@ -521,6 +543,10 @@
       "budgetSettings": "Cài đặt ngân sách",
       "categoryAllocations": "Phân bổ danh mục",
       "income": "Thu nhập",
+      "addTransferIncome": "Thêm thu nhập từ chuyển khoản",
+      "addTransferIncomeTitle": "Thêm thu nhập từ chuyển khoản",
+      "outsideTransferIncome": "Chuyển khoản từ tài khoản ngoài ngân sách này",
+      "outsideTransferIncomeHint": "Được tính trong kỳ này vì ngân sách tính các khoản chuyển vào từ tài khoản bị loại trừ là thu nhập.",
       "expensesWithCount": "Chi tiêu ({count})",
       "resetsEachPeriod": "Đặt lại mỗi kỳ",
       "percentUsed": "{percent}% đã dùng",
@@ -538,7 +564,9 @@
         "categoryFailed": "Cập nhật danh mục thất bại",
         "loadFailed": "Tải ngân sách thất bại",
         "categoryRemoved": "Đã xóa danh mục khỏi ngân sách",
-        "categoryRemoveFailed": "Không thể xóa danh mục"
+        "categoryRemoveFailed": "Không thể xóa danh mục",
+        "transferIncomeAdded": "Đã thêm thu nhập từ chuyển khoản",
+        "transferIncomeFailed": "Không thể thêm thu nhập từ chuyển khoản"
       }
     }
   },

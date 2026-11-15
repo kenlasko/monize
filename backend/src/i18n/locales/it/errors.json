@@ -330,7 +330,9 @@
     "budgetCategoryNotFound": "Categoria budget con ID {{ id }} non trovata",
     "periodNotFound": "Periodo budget con ID {{ id }} non trovato",
     "noOpenPeriod": "Nessun periodo aperto da chiudere",
-    "categoryIdsNotOwned": "ID categoria non trovati o non di proprietà dell'utente: {{ ids }}"
+    "categoryIdsNotOwned": "ID categoria non trovati o non di proprietà dell'utente: {{ ids }}",
+    "transferAccountNotFound": "Conto con ID {{ id }} non trovato",
+    "transferAccountAlreadyInBudget": "Questo conto ha già una riga di trasferimento nel budget"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Una regola di trattenuta sullo stipendio tiene traccia di una fattura pagata in una valuta fiat; il conto di questa fattura contiene la criptovaluta {{ code }}. Scegli una fattura pagata da un conto in valuta fiat.",

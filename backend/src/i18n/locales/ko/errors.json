@@ -330,7 +330,9 @@
     "budgetCategoryNotFound": "ID가 {{ id }}인 예산 카테고리를 찾을 수 없습니다",
     "periodNotFound": "ID가 {{ id }}인 예산 기간을 찾을 수 없습니다",
     "noOpenPeriod": "마감할 열린 기간이 없습니다",
-    "categoryIdsNotOwned": "사용자가 찾을 수 없거나 소유하지 않은 카테고리 ID입니다: {{ ids }}"
+    "categoryIdsNotOwned": "사용자가 찾을 수 없거나 소유하지 않은 카테고리 ID입니다: {{ ids }}",
+    "transferAccountNotFound": "ID가 {{ id }}인 계정을 찾을 수 없습니다",
+    "transferAccountAlreadyInBudget": "이 계좌는 이미 예산에 이체 항목이 있습니다"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "급여 공제 규칙은 법정 통화로 지불하는 청구서를 추적합니다. 이 청구서의 계정은 암호화폐 {{ code }}을(를) 보유하고 있습니다. 법정 통화 계정에서 지불하는 청구서를 선택하세요.",

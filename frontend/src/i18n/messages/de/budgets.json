@@ -259,6 +259,23 @@
       "analyzeFailed": "Ausgabenanalyse fehlgeschlagen"
     }
   },
+  "lineNames": {
+    "transfersFrom": "Überweisungen von {name}",
+    "unknown": "Unbekannt"
+  },
+  "transferIncomeForm": {
+    "hint": "Von diesem Konto eingehendes Geld zählt als Einkommen des Budgets, abzüglich dessen, was zurücküberwiesen wird.",
+    "account": "Von Konto",
+    "accountPlaceholder": "Konto auswählen",
+    "accountRequired": "Wählen Sie das Konto, von dem die Überweisungen kommen",
+    "amount": "Geplanter Betrag",
+    "submit": "Hinzufügen"
+  },
+  "transfersInAsIncome": {
+    "label": "Eingehende Überweisungen von ausgeschlossenen Konten als Einkommen zählen",
+    "hint": "Geld, das von einem ausgeschlossenen Konto auf die Konten dieses Budgets überwiesen wird, zählt als Einkommen, abzüglich dessen, was zurücküberwiesen wird. Ein Konto mit eigener Überweisungszeile wird stattdessen in dieser Zeile gezählt.",
+    "noExcludedAccounts": "Dieses Budget schließt noch kein Konto aus, daher wird nichts gezählt."
+  },
   "wizardCategories": {
     "title": "Kategorien überprüfen",
     "noAnalysis": "Keine Analysedaten. Gehen Sie zurück und führen Sie zuerst die Analyse durch.",
@@ -266,6 +283,7 @@
       "income": "Einnahmen",
       "expenses": "Ausgaben",
       "transfers": "Überweisungen / Ersparnisse",
+      "transfersIn": "Eingehende Überweisungen (Einkommen)",
       "trendMedian": "Trend / Median",
       "amount": "Betrag"
     },
@@ -275,6 +293,7 @@
       "transfers": "Überweisungen",
       "remaining": "Verbleibend"
     },
+    "transfersInHint": "Von einem markierten Konto eingehendes Geld zählt als Einkommen, abzüglich dessen, was zurücküberwiesen wird. Markieren Sie nur Konten, aus denen Sie Einkommen beziehen, etwa eine Sparreserve.",
     "allocation503020": "50/30/20-Aufteilung",
     "allocationTarget": "(Ziel {percent}%)",
     "nextButton": "Weiter: Konfigurieren",
@@ -353,8 +372,10 @@
       "rollover": "Übertrag",
       "alerts": "Warnungen",
       "incomeLinked": "Einkommen verknüpft",
-      "excludedAccounts": "Ausgeschlossene Konten"
+      "excludedAccounts": "Ausgeschlossene Konten",
+      "transfersInAsIncome": "Eingehende Überweisungen"
     },
+    "transfersInAsIncomeOn": "Von ausgeschlossenen Konten zählen als Einkommen",
     "rolloverOff": "Aus",
     "alertsValue": "Warnung {warn}% / Kritisch {critical}%",
     "accountCount": "{count} {count, plural, one {Konto} other {Konten}}",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "Einnahmen",
       "expense": "Ausgaben",
-      "transfer": "Überweisung"
+      "transfer": "Überweisung",
+      "transferIn": "Eingehende Überweisung"
     },
     "createButton": "Budget erstellen",
     "categoryCount": "{count} Kategorien",
@@ -521,6 +543,10 @@
       "budgetSettings": "Budget-Einstellungen",
       "categoryAllocations": "Kategoriezuweisungen",
       "income": "Einnahmen",
+      "addTransferIncome": "Überweisungseinkommen hinzufügen",
+      "addTransferIncomeTitle": "Überweisungseinkommen hinzufügen",
+      "outsideTransferIncome": "Überweisungen von Konten außerhalb dieses Budgets",
+      "outsideTransferIncomeHint": "In diesem Zeitraum gezählt, weil das Budget eingehende Überweisungen von seinen ausgeschlossenen Konten als Einkommen zählt.",
       "expensesWithCount": "Ausgaben ({count})",
       "resetsEachPeriod": "Wird jede Periode zurückgesetzt",
       "percentUsed": "{percent}% verwendet",
@@ -538,7 +564,9 @@
         "categoryFailed": "Kategorie konnte nicht aktualisiert werden",
         "loadFailed": "Budget konnte nicht geladen werden",
         "categoryRemoved": "Kategorie aus dem Budget entfernt",
-        "categoryRemoveFailed": "Kategorie konnte nicht entfernt werden"
+        "categoryRemoveFailed": "Kategorie konnte nicht entfernt werden",
+        "transferIncomeAdded": "Überweisungseinkommen hinzugefügt",
+        "transferIncomeFailed": "Überweisungseinkommen konnte nicht hinzugefügt werden"
       }
     }
   },

@@ -259,6 +259,23 @@
       "analyzeFailed": "消費分析失敗"
     }
   },
+  "lineNames": {
+    "transfersFrom": "來自{name}的轉帳",
+    "unknown": "未知"
+  },
+  "transferIncomeForm": {
+    "hint": "從此帳戶轉入的資金計為預算收入，扣除轉回該帳戶的部分。",
+    "account": "轉出帳戶",
+    "accountPlaceholder": "選擇帳戶",
+    "accountRequired": "請選擇轉帳來源帳戶",
+    "amount": "計畫金額",
+    "submit": "新增"
+  },
+  "transfersInAsIncome": {
+    "label": "將從排除帳戶轉入的資金計為收入",
+    "hint": "從排除帳戶轉入本預算帳戶的資金計為收入，扣除轉回該帳戶的部分。有自己轉帳項目的帳戶在該項目中計算。",
+    "noExcludedAccounts": "本預算尚未排除任何帳戶，因此不計入任何金額。"
+  },
   "wizardCategories": {
     "title": "審查類別",
     "noAnalysis": "無分析資料。請返回並先執行分析。",
@@ -266,6 +283,7 @@
       "income": "收入",
       "expenses": "支出",
       "transfers": "轉帳 / 儲蓄",
+      "transfersIn": "轉入（收入）",
       "trendMedian": "趨勢 / 中位數",
       "amount": "金額"
     },
@@ -275,6 +293,7 @@
       "transfers": "轉帳",
       "remaining": "剩餘"
     },
+    "transfersInHint": "從勾選帳戶轉入的資金計為收入，扣除轉回該帳戶的部分。只勾選您從中提取收入的帳戶，例如儲蓄備用金。",
     "allocation503020": "50/30/20 分配",
     "allocationTarget": "（目標 {percent}%）",
     "nextButton": "下一步：設定",
@@ -353,8 +372,10 @@
       "rollover": "結轉",
       "alerts": "提醒",
       "incomeLinked": "已連結收入",
-      "excludedAccounts": "排除科目"
+      "excludedAccounts": "排除科目",
+      "transfersInAsIncome": "轉入"
     },
+    "transfersInAsIncomeOn": "來自排除帳戶的轉入計為收入",
     "rolloverOff": "關閉",
     "alertsValue": "警告 {warn}% / 緊急 {critical}%",
     "accountCount": "{count} 個{count, plural, one {科目} other {科目}}",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "收入",
       "expense": "支出",
-      "transfer": "轉帳"
+      "transfer": "轉帳",
+      "transferIn": "轉入"
     },
     "createButton": "建立預算",
     "categoryCount": "{count} 個類別",
@@ -521,6 +543,10 @@
       "budgetSettings": "預算設定",
       "categoryAllocations": "類別分配",
       "income": "收入",
+      "addTransferIncome": "新增轉帳收入",
+      "addTransferIncomeTitle": "新增轉帳收入",
+      "outsideTransferIncome": "來自本預算以外帳戶的轉帳",
+      "outsideTransferIncomeHint": "因本預算將從排除帳戶轉入的資金計為收入，本期已計入。",
       "expensesWithCount": "支出 ({count})",
       "resetsEachPeriod": "每期重置",
       "percentUsed": "已使用 {percent}%",
@@ -538,7 +564,9 @@
         "categoryFailed": "更新類別失敗",
         "loadFailed": "載入預算失敗",
         "categoryRemoved": "已從預算中移除類別",
-        "categoryRemoveFailed": "移除類別失敗"
+        "categoryRemoveFailed": "移除類別失敗",
+        "transferIncomeAdded": "已新增轉帳收入",
+        "transferIncomeFailed": "新增轉帳收入失敗"
       }
     }
   },

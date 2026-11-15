@@ -330,7 +330,9 @@
     "budgetCategoryNotFound": "ID {{ id }} वाली बजट श्रेणी नहीं मिली",
     "periodNotFound": "ID {{ id }} वाली बजट अवधि नहीं मिली",
     "noOpenPeriod": "बंद करने के लिए कोई खुली अवधि नहीं है",
-    "categoryIdsNotOwned": "श्रेणी ID नहीं मिली या उपयोगकर्ता की नहीं हैं: {{ ids }}"
+    "categoryIdsNotOwned": "श्रेणी ID नहीं मिली या उपयोगकर्ता की नहीं हैं: {{ ids }}",
+    "transferAccountNotFound": "ID {{ id }} वाला खाता नहीं मिला",
+    "transferAccountAlreadyInBudget": "इस खाते की बजट में पहले से एक ट्रांसफ़र पंक्ति है"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "वेतन कटौती नियम फ़िएट मुद्रा में चुकाए गए बिल को ट्रैक करता है; इस बिल के खाते में क्रिप्टोकरेंसी {{ code }} है। फ़िएट खाते से चुकाया जाने वाला बिल चुनें।",

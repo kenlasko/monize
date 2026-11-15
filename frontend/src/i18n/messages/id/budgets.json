@@ -259,6 +259,23 @@
       "analyzeFailed": "Gagal menganalisis pengeluaran"
     }
   },
+  "lineNames": {
+    "transfersFrom": "Transfer dari {name}",
+    "unknown": "Tidak diketahui"
+  },
+  "transferIncomeForm": {
+    "hint": "Uang yang masuk dari akun ini dihitung sebagai pendapatan anggaran, dikurangi apa pun yang dikembalikan ke akun itu.",
+    "account": "Dari akun",
+    "accountPlaceholder": "Pilih akun",
+    "accountRequired": "Pilih akun asal transfer",
+    "amount": "Jumlah yang direncanakan",
+    "submit": "Tambah"
+  },
+  "transfersInAsIncome": {
+    "label": "Hitung transfer masuk dari akun yang dikecualikan sebagai pendapatan",
+    "hint": "Uang yang ditransfer dari akun yang dikecualikan ke akun-akun anggaran ini dihitung sebagai pendapatan, dikurangi apa pun yang dikembalikan ke akun itu. Akun yang punya baris transfer sendiri dihitung di baris itu.",
+    "noExcludedAccounts": "Anggaran ini belum mengecualikan akun apa pun, jadi tidak ada yang dihitung."
+  },
   "wizardCategories": {
     "title": "Tinjau Kategori",
     "noAnalysis": "Tidak ada data analisis. Kembali dan jalankan analisis terlebih dahulu.",
@@ -266,6 +283,7 @@
       "income": "Pendapatan",
       "expenses": "Pengeluaran",
       "transfers": "Transfer / Tabungan",
+      "transfersIn": "Transfer masuk (pendapatan)",
       "trendMedian": "Tren / Median",
       "amount": "Jumlah"
     },
@@ -275,6 +293,7 @@
       "transfers": "Transfer",
       "remaining": "Sisa"
     },
+    "transfersInHint": "Uang yang masuk dari akun yang dicentang dihitung sebagai pendapatan, dikurangi apa pun yang dikembalikan ke akun itu. Centang hanya akun tempat Anda mengambil pendapatan, seperti cadangan tabungan.",
     "allocation503020": "Alokasi 50/30/20",
     "allocationTarget": "(target {percent}%)",
     "nextButton": "Berikutnya: Konfigurasi",
@@ -353,8 +372,10 @@
       "rollover": "Rollover",
       "alerts": "Peringatan",
       "incomeLinked": "Pendapatan Dikaitkan",
-      "excludedAccounts": "Akun Dikecualikan"
+      "excludedAccounts": "Akun Dikecualikan",
+      "transfersInAsIncome": "Transfer masuk"
     },
+    "transfersInAsIncomeOn": "Dari akun yang dikecualikan dihitung sebagai pendapatan",
     "rolloverOff": "Mati",
     "alertsValue": "Peringatan {warn}% / Kritis {critical}%",
     "accountCount": "{count} {count, plural, one {akun} other {akun}}",
@@ -373,7 +394,8 @@
     "categoryTypes": {
       "income": "Pendapatan",
       "expense": "Pengeluaran",
-      "transfer": "Transfer"
+      "transfer": "Transfer",
+      "transferIn": "Transfer masuk"
     },
     "createButton": "Buat Anggaran",
     "categoryCount": "{count} kategori",
@@ -521,6 +543,10 @@
       "budgetSettings": "Pengaturan Anggaran",
       "categoryAllocations": "Alokasi Kategori",
       "income": "Pendapatan",
+      "addTransferIncome": "Tambah pendapatan transfer",
+      "addTransferIncomeTitle": "Tambah pendapatan transfer",
+      "outsideTransferIncome": "Transfer dari akun di luar anggaran ini",
+      "outsideTransferIncomeHint": "Dihitung pada periode ini karena anggaran menghitung transfer masuk dari akun yang dikecualikan sebagai pendapatan.",
       "expensesWithCount": "Pengeluaran ({count})",
       "resetsEachPeriod": "Direset setiap periode",
       "percentUsed": "{percent}% terpakai",
@@ -538,7 +564,9 @@
         "categoryFailed": "Gagal memperbarui kategori",
         "loadFailed": "Gagal memuat anggaran",
         "categoryRemoved": "Kategori dihapus dari anggaran",
-        "categoryRemoveFailed": "Gagal menghapus kategori"
+        "categoryRemoveFailed": "Gagal menghapus kategori",
+        "transferIncomeAdded": "Pendapatan transfer ditambahkan",
+        "transferIncomeFailed": "Gagal menambahkan pendapatan transfer"
       }
     }
   },

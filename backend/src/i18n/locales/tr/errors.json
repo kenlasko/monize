@@ -330,7 +330,9 @@
     "budgetCategoryNotFound": "{{ id }} kimliğine sahip bütçe kategorisi bulunamadı",
     "periodNotFound": "{{ id }} kimliğine sahip bütçe dönemi bulunamadı",
     "noOpenPeriod": "Kapatılacak açık dönem yok",
-    "categoryIdsNotOwned": "Kategori kimlikleri bulunamadı veya kullanıcıya ait değil: {{ ids }}"
+    "categoryIdsNotOwned": "Kategori kimlikleri bulunamadı veya kullanıcıya ait değil: {{ ids }}",
+    "transferAccountNotFound": "{{ id }} kimliğine sahip hesap bulunamadı",
+    "transferAccountAlreadyInBudget": "Bu hesabın bütçede zaten bir transfer satırı var"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Bordro kesinti kuralı, fiat para biriminde ödenen bir faturayı izler; bu faturanın hesabı {{ code }} kripto parasını tutuyor. Fiat bir hesaptan ödenen bir fatura seçin.",

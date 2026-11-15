@@ -330,7 +330,9 @@
     "budgetCategoryNotFound": "Không tìm thấy danh mục ngân sách với ID {{ id }}",
     "periodNotFound": "Không tìm thấy kỳ ngân sách với ID {{ id }}",
     "noOpenPeriod": "Không có kỳ mở để đóng",
-    "categoryIdsNotOwned": "Không tìm thấy ID danh mục hoặc không thuộc sở hữu của người dùng: {{ ids }}"
+    "categoryIdsNotOwned": "Không tìm thấy ID danh mục hoặc không thuộc sở hữu của người dùng: {{ ids }}",
+    "transferAccountNotFound": "Không tìm thấy tài khoản với ID {{ id }}",
+    "transferAccountAlreadyInBudget": "Tài khoản này đã có một dòng chuyển khoản trong ngân sách"
   },
   "payrollDeductions": {
     "billAccountMustBeFiat": "Quy tắc khấu trừ lương theo dõi một hóa đơn được thanh toán bằng tiền pháp định; tài khoản của hóa đơn này giữ tiền mã hóa {{ code }}. Hãy chọn một hóa đơn được thanh toán từ tài khoản tiền pháp định.",
