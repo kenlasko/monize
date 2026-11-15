@@ -1,7 +1,7 @@
 import type { CorsOptions } from "@nestjs/common/interfaces/external/cors-options.interface";
 
 type CorsRequest = { path?: string; url?: string };
-type CorsCallback = (err: Error | null, options?: CorsOptions) => void;
+type CorsCallback = (err: Error | null, options: CorsOptions) => void;
 
 const MCP_HEADERS = [
   "Authorization",
@@ -21,8 +21,10 @@ function isMcpPath(path: string): boolean {
 }
 
 // Discovery and the OAuth provider stay world-readable: a client fetches
-// them before it holds any credential, and they authenticate by Bearer
-// token or client credentials, never by cookie.
+// them before it holds any credential. Some of these paths do read a cookie
+// (oauth-consent, /oauth/auth); the wildcard is still safe because
+// `credentials: false` never sends Access-Control-Allow-Credentials, so a
+// browser does not let a foreign page read a response made with cookies.
 function isPublicOAuthPath(path: string): boolean {
   return (
     path === "/oauth" ||

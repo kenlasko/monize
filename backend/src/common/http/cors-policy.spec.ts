@@ -1,16 +1,17 @@
 import express from "express";
-import cors from "cors";
+import { ExpressAdapter } from "@nestjs/platform-express";
 import request from "supertest";
 import { createCorsDelegate } from "./cors-policy";
 
-// Drives the real `cors` middleware Nest's enableCors installs, so the
+// Drives the middleware the Express adapter's enableCors installs, so the
 // assertions are the headers a browser reads, not the options object.
 const APP_ORIGIN = "https://app.monize.test";
 const FOREIGN_ORIGIN = "https://evil.example";
 
 function buildApp() {
-  const app = express();
-  app.use(cors(createCorsDelegate([APP_ORIGIN])));
+  const adapter = new ExpressAdapter(express());
+  adapter.enableCors(createCorsDelegate([APP_ORIGIN]));
+  const app = adapter.getInstance();
   app.all(/.*/, (_req, res) => {
     res.status(200).json({ ok: true });
   });
