@@ -87,14 +87,14 @@ export class EmergencyAccessService {
     };
   }
 
-  private decryptMessage(ciphertext: string | null): string | null {
-    return decryptMessage(this.encryption, this.logger, ciphertext);
-  }
-
   private buildMessageMetadata(
     settings: EmergencyAccessSettings | null,
   ): MessageMetadata {
-    const decrypted = this.decryptMessage(settings?.messageCiphertext ?? null);
+    const decrypted = decryptMessage(
+      this.encryption,
+      this.logger,
+      settings?.messageCiphertext ?? null,
+    );
     return {
       hasMessage: !!decrypted,
       charCount: decrypted?.length ?? 0,
@@ -144,7 +144,11 @@ export class EmergencyAccessService {
       }),
     );
     return {
-      message: this.decryptMessage(settings?.messageCiphertext ?? null),
+      message: decryptMessage(
+        this.encryption,
+        this.logger,
+        settings?.messageCiphertext ?? null,
+      ),
     };
   }
 

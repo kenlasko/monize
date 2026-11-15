@@ -356,6 +356,9 @@ describe("EmergencyAccessClaimController", () => {
       expect(queryRunner.manager.createQueryBuilder).not.toHaveBeenCalled();
       expect(tokenService.generateTokenPair).not.toHaveBeenCalled();
       expect(res.cookie).not.toHaveBeenCalled();
+      expect(res.json).not.toHaveBeenCalled();
+      expect(settingsRepo.findOne).not.toHaveBeenCalled();
+      expect(encryption.decrypt).not.toHaveBeenCalled();
     });
 
     it("rejects breached passwords", async () => {
@@ -602,12 +605,15 @@ describe("EmergencyAccessClaimController", () => {
       });
       encryption.isConfigured.mockReturnValue(false);
       const warn = jest.spyOn(Logger.prototype, "warn").mockImplementation();
-      expect(await completedMessage()).toBeNull();
-      expect(encryption.decrypt).not.toHaveBeenCalled();
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining("Encryption key not configured"),
-      );
-      warn.mockRestore();
+      try {
+        expect(await completedMessage()).toBeNull();
+        expect(encryption.decrypt).not.toHaveBeenCalled();
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining("Encryption key not configured"),
+        );
+      } finally {
+        warn.mockRestore();
+      }
     });
 
     it("is null when decrypt throws a non-Error value", async () => {

@@ -99,6 +99,7 @@ describe('EmergencyClaimPage', () => {
       expect(screen.getByText('Bank info is in the safe.')).toBeInTheDocument(),
     );
     expect(screen.getByText(/Message from Owner/)).toBeInTheDocument();
+    expect(screen.getByText(/Message from Owner/)).toHaveFocus();
     expect(pushMock).not.toHaveBeenCalled();
 
     await act(async () => {

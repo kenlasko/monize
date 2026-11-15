@@ -48,7 +48,7 @@ function EmergencyClaimForm() {
   const [claimed, setClaimed] = useState<EmergencyAccessClaimResult | null>(
     null,
   );
-  const continueRef = useRef<HTMLButtonElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   const {
     register,
@@ -84,9 +84,9 @@ function EmergencyClaimForm() {
   }, [token, t]);
 
   // The form that held focus is gone once the claim succeeds; move focus to
-  // the message panel's only action so keyboard and screen-reader users land on it.
+  // the message heading so a screen reader reads it and the message first.
   useEffect(() => {
-    if (claimed) continueRef.current?.focus();
+    if (claimed) headingRef.current?.focus();
   }, [claimed]);
 
   if (!token) {
@@ -132,7 +132,10 @@ function EmergencyClaimForm() {
     return (
       <div className="mt-8 space-y-6">
         <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          <h3
+            ref={headingRef}
+            tabIndex={-1}
+            className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {t('messageHeading', { name: claimed.ownerFirstName || t('ownerFirstNameFallback') })}
           </h3>
           <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
@@ -140,7 +143,6 @@ function EmergencyClaimForm() {
           </p>
         </div>
         <Button
-          ref={continueRef}
           type="button"
           variant="primary"
           size="lg"

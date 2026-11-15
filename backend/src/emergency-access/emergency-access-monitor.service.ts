@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { decryptMessage } from "./decrypt-message.util";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import {
   DataSource,
@@ -378,7 +379,7 @@ export class EmergencyAccessMonitorService {
     generation: number,
   ): Promise<number> {
     const decryptedMessage = settings.messageCiphertext
-      ? this.tryDecrypt(settings.messageCiphertext)
+      ? decryptMessage(this.encryption, this.logger, settings.messageCiphertext)
       : null;
     const ownerFullName =
       [owner.firstName, owner.lastName].filter(Boolean).join(" ") ||
@@ -1101,19 +1102,6 @@ export class EmergencyAccessMonitorService {
         `Failed to send emergency-access revocation notice to owner ${settings.ownerUserId}`,
         error instanceof Error ? error.stack : error,
       );
-    }
-  }
-
-  private tryDecrypt(ciphertext: string): string | null {
-    if (!this.encryption.isConfigured()) return null;
-    try {
-      return this.encryption.decrypt(ciphertext);
-    } catch (error) {
-      this.logger.error(
-        "Failed to decrypt emergency access message for grant email",
-        error instanceof Error ? error.stack : error,
-      );
-      return null;
     }
   }
 }
