@@ -1,18 +1,30 @@
-import { PostgresAdapter, makeAdapterFactory } from "./postgres.adapter";
+import {
+  OAUTH_CLIENT_IDLE_TTL_SECONDS,
+  PostgresAdapter,
+  OAUTH_SWEEP_BATCH,
+  OAUTH_SWEEP_MAX_BATCHES,
+  makeAdapterFactory,
+  sweepOAuthPayloads,
+} from "./postgres.adapter";
 
 describe("PostgresAdapter", () => {
   function makeAdapter(model = "AccessToken") {
+    const execute = jest.fn().mockResolvedValue({ affected: 1 });
+    const where = jest.fn().mockReturnValue({ execute });
+    const set = jest.fn().mockReturnValue({ where });
+    const qbUpdate = jest.fn().mockReturnValue({ set });
     const repo = {
       upsert: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue({ update: qbUpdate }),
     };
     const dataSource = {
       getRepository: jest.fn().mockReturnValue(repo),
     } as any;
     const adapter = new PostgresAdapter(model, dataSource);
-    return { adapter, repo };
+    return { adapter, repo, qbUpdate, set, where };
   }
 
   it("upserts a payload with the right grant_id for grantable models", async () => {
@@ -44,7 +56,232 @@ describe("PostgresAdapter", () => {
 
     const [entity] = repo.upsert.mock.calls[0];
     expect(entity.grantId).toBeNull();
+  });
+
+  it("stores no expiry for an artifact other than a client that the provider gives none", async () => {
+    // The idle TTL is the Client's alone; nothing else gains an expiry here.
+    const { adapter, repo } = makeAdapter("Session");
+
+    await adapter.upsert("sess-1", {} as any, 0);
+
+    const [entity] = repo.upsert.mock.calls[0];
     expect(entity.expiresAt).toBeNull();
+  });
+
+  describe("dynamically registered clients expire (#2177)", () => {
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    it("stores a client with the idle TTL although the provider passes none", async () => {
+      // oidc-provider registers a client with no expiresIn at all; before
+      // #2177 that stored expires_at NULL and the row lived forever.
+      const { adapter, repo } = makeAdapter("Client");
+      const before = Date.now();
+
+      await adapter.upsert("client-1", {} as any, undefined as any);
+
+      const [entity] = repo.upsert.mock.calls[0];
+      expect(entity.expiresAt).toBeInstanceOf(Date);
+      expect(entity.expiresAt.getTime()).toBeGreaterThanOrEqual(
+        before + OAUTH_CLIENT_IDLE_TTL_SECONDS * 1000,
+      );
+      expect(OAUTH_CLIENT_IDLE_TTL_SECONDS * 1000).toBe(30 * DAY_MS);
+    });
+
+    it.each(["RefreshToken", "Grant"])(
+      "a %s minted for a client slides that live client's expiry forward",
+      async (model) => {
+        const { adapter, set, where } = makeAdapter(model);
+        const before = Date.now();
+
+        await adapter.upsert(
+          "artifact-1",
+          { clientId: "client-1" } as any,
+          3600,
+        );
+
+        const { expiresAt } = set.mock.calls[0][0];
+        expect(expiresAt.getTime()).toBeGreaterThanOrEqual(
+          before + OAUTH_CLIENT_IDLE_TTL_SECONDS * 1000,
+        );
+        const [clause, params] = where.mock.calls[0];
+        // Only the named client, only while it is still live (an expired one
+        // is already gone as far as find() is concerned), and never shortened.
+        expect(clause).toContain("id = :clientId");
+        expect(clause).toContain("model = 'Client'");
+        expect(clause).toContain("expires_at > :now");
+        expect(clause).toContain("expires_at < :staleBefore");
+        // At most one rewrite a day: only a client a day or more short of a
+        // full TTL is slid, not one on every token.
+        expect(expiresAt.getTime() - params.staleBefore.getTime()).toBe(DAY_MS);
+        expect(params).toEqual({
+          clientId: "client-1",
+          now: expect.any(Date),
+          staleBefore: expect.any(Date),
+        });
+      },
+    );
+
+    it("a failed slide does not fail the save it follows", async () => {
+      // The token is already stored; refusing the grant over bookkeeping
+      // would fail a refresh the provider has already committed to.
+      const { adapter, repo, where } = makeAdapter("RefreshToken");
+      where.mockReturnValue({
+        execute: jest.fn().mockRejectedValue(new Error("lock timeout")),
+      });
+
+      await expect(
+        adapter.upsert("rt-1", { clientId: "client-1" } as any, 3600),
+      ).resolves.toBeUndefined();
+      expect(repo.upsert).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+      "Interaction",
+      "Session",
+      "Client",
+      "PushedAuthorizationRequest",
+      // Always minted beside a Grant or a RefreshToken, which slide the client
+      // already; sliding on these too would cost a write on every token.
+      "AccessToken",
+      "AuthorizationCode",
+    ])("a %s does not slide the client's expiry", async (model) => {
+      const { adapter, qbUpdate } = makeAdapter(model);
+
+      await adapter.upsert("row-1", { clientId: "client-1" } as any, 600);
+
+      expect(qbUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("sweepOAuthPayloads", () => {
+    /**
+     * A data source whose adopt batches return the given ids and whose delete
+     * batches return the given counts.
+     */
+    function makeSweepSource(updates: string[][], deletes: number[]) {
+      const updateWhere = jest.fn();
+      const deleteWhere = jest.fn();
+      for (const ids of updates) {
+        updateWhere.mockReturnValueOnce({
+          returning: () => ({
+            execute: jest
+              .fn()
+              .mockResolvedValue({ raw: ids.map((id) => ({ id })) }),
+          }),
+        });
+      }
+      for (const n of deletes) {
+        deleteWhere.mockReturnValueOnce({
+          execute: jest.fn().mockResolvedValue({ affected: n }),
+        });
+      }
+      const set = jest.fn().mockReturnValue({ where: updateWhere });
+      const dataSource = {
+        getRepository: jest.fn().mockReturnValue({
+          createQueryBuilder: jest.fn().mockReturnValue({
+            update: () => ({ set }),
+            delete: () => ({ where: deleteWhere }),
+          }),
+        }),
+      } as any;
+      return { dataSource, set, updateWhere, deleteWhere };
+    }
+
+    const ids = (prefix: string, n: number) =>
+      Array.from(
+        { length: n },
+        (_, i) => `${prefix}${String(i).padStart(5, "0")}`,
+      );
+
+    it("gives clients without an expiry the idle TTL, then deletes expired rows", async () => {
+      const { dataSource, set, updateWhere, deleteWhere } = makeSweepSource(
+        [["a", "b", "c"]],
+        [7],
+      );
+      const before = Date.now();
+
+      await expect(sweepOAuthPayloads(dataSource)).resolves.toEqual({
+        adopted: 3,
+        deleted: 7,
+      });
+
+      const { expiresAt } = set.mock.calls[0][0];
+      expect(expiresAt.getTime()).toBeGreaterThanOrEqual(
+        before + OAUTH_CLIENT_IDLE_TTL_SECONDS * 1000,
+      );
+      const [adoptClause, adoptParams] = updateWhere.mock.calls[0];
+      expect(adoptClause).toContain("model = 'Client' AND expires_at IS NULL");
+      expect(adoptClause).toContain("id > :after");
+      expect(adoptClause).toContain(
+        "ORDER BY id LIMIT :batch FOR UPDATE SKIP LOCKED",
+      );
+      expect(adoptParams).toEqual({ after: "", batch: OAUTH_SWEEP_BATCH });
+      const [deleteClause, deleteParams] = deleteWhere.mock.calls[0];
+      expect(deleteClause).toContain("expires_at < :now");
+      expect(deleteClause).toContain("LIMIT :batch FOR UPDATE SKIP LOCKED");
+      expect(deleteParams.now.getTime()).toBeGreaterThanOrEqual(before);
+      expect(deleteParams.batch).toBe(OAUTH_SWEEP_BATCH);
+    });
+
+    it("adopts in key order, each batch starting after the last id it saw", async () => {
+      // No index covers a NULL expiry: restarting every batch from the top
+      // would rescan the rows already adopted.
+      const first = ids("k", OAUTH_SWEEP_BATCH);
+      const { dataSource, updateWhere } = makeSweepSource(
+        [first, ["z1", "z2"]],
+        [0],
+      );
+
+      await expect(sweepOAuthPayloads(dataSource)).resolves.toEqual({
+        adopted: OAUTH_SWEEP_BATCH + 2,
+        deleted: 0,
+      });
+      expect(updateWhere).toHaveBeenCalledTimes(2);
+      expect(updateWhere.mock.calls[1][1]).toEqual({
+        after: first[first.length - 1],
+        batch: OAUTH_SWEEP_BATCH,
+      });
+    });
+
+    it("keeps deleting while batches come back full, and stops on a short one", async () => {
+      const { dataSource, deleteWhere } = makeSweepSource(
+        [[]],
+        [OAUTH_SWEEP_BATCH, OAUTH_SWEEP_BATCH, 12],
+      );
+
+      await expect(sweepOAuthPayloads(dataSource)).resolves.toEqual({
+        adopted: 0,
+        deleted: 2 * OAUTH_SWEEP_BATCH + 12,
+      });
+      expect(deleteWhere).toHaveBeenCalledTimes(3);
+    });
+
+    it("stops at the per-run cap and leaves the rest to the next run", async () => {
+      const { dataSource, deleteWhere } = makeSweepSource(
+        [[]],
+        Array.from(
+          { length: OAUTH_SWEEP_MAX_BATCHES + 5 },
+          () => OAUTH_SWEEP_BATCH,
+        ),
+      );
+
+      const { deleted } = await sweepOAuthPayloads(dataSource);
+
+      expect(deleteWhere).toHaveBeenCalledTimes(OAUTH_SWEEP_MAX_BATCHES);
+      expect(deleted).toBe(OAUTH_SWEEP_MAX_BATCHES * OAUTH_SWEEP_BATCH);
+    });
+
+    it("counts a delete with no reported count as empty", async () => {
+      const { dataSource, deleteWhere } = makeSweepSource([[]], []);
+      deleteWhere.mockReturnValueOnce({
+        execute: jest.fn().mockResolvedValue({}),
+      });
+
+      await expect(sweepOAuthPayloads(dataSource)).resolves.toEqual({
+        adopted: 0,
+        deleted: 0,
+      });
+    });
   });
 
   it("returns undefined for expired payloads", async () => {

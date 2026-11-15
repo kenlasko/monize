@@ -136,15 +136,19 @@ The safety argument is:
 2. it has no owner column, so there is no tenant partition to cross;
 3. rows are addressed by opaque, high-entropy provider identifiers;
 4. the runtime role's grants on it are confined to the adapter's DML;
-5. contents are short-lived and expire.
+5. contents are short-lived and expire: every row the provider writes carries
+   an `expires_at`, a dynamically registered client included (30 days from its
+   last use, `OAUTH_CLIENT_IDLE_TTL_SECONDS`, #2177), and a daily sweep deletes
+   what has passed it.
 
-### The two permitted access paths
+### The three permitted access paths
 
-Exactly two, both in `backend/src/oauth/`:
+Exactly three, all in `backend/src/oauth/`:
 
 1. **`PostgresAdapter`** -- `upsert`, `find`, `findByUserCode`, `findByUid`,
    `consume`, `destroy`, `revokeByGrantId`. Every one is keyed by an opaque
-   provider identifier.
+   provider identifier. `upsert` of a Grant or a RefreshToken also extends its
+   own client's expiry, keyed by the `clientId` in the provider's payload.
 
 2. **`OAuthProviderService.revokeAllForUser`** -- a single parameterized
    `DELETE` keyed on `payload ->> 'accountId'`, used wherever an account's
@@ -171,7 +175,16 @@ Exactly two, both in `backend/src/oauth/`:
    the `WITH_CONTEXT_ALLOWLIST` fence for no gain. The real protection is the
    server-derived id, and saying so is more useful than dressing it up.
 
-Anything else is a defect. Both guards in section 5 fail on a third path.
+3. **`sweepOAuthPayloads`** (`postgres.adapter.ts`), run daily by
+   `OAuthProviderService.sweepExpiredPayloads` (#2177) -- batched `UPDATE`s
+   giving clients with no `expires_at` the idle TTL, then batched `DELETE`s
+   whose only predicate is `expires_at` before this process's clock. Neither
+   names an identifier, and the delete reaches only rows the provider already
+   treats as absent. Not wrapped in `withSystemContext`, for the reason path 2
+   is not.
+
+Anything else is a defect. Both guards in section 5 fail on a path from any
+other file.
 
 ### Rejected alternatives
 
