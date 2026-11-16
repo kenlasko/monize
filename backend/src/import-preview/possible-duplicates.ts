@@ -222,6 +222,8 @@ export async function loadDuplicateCandidates(
           AND t.amount = ANY($5::numeric[])
           AND (t.status IS NULL OR t.status <> 'VOID')
           AND t.parent_transaction_id IS NULL
+          -- includes VOID: records read -- a trade's cash leg is the trade's
+          -- whatever its status, and the import cannot merge or delete it.
           AND NOT EXISTS (
                 SELECT 1 FROM investment_transactions it
                  WHERE it.transaction_id = t.id)

@@ -80,7 +80,6 @@ export class ImportController {
   }
 
   @Post("qif/duplicates")
-  @PatScope("read")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
@@ -173,7 +172,6 @@ export class ImportController {
   }
 
   @Post("ofx/duplicates")
-  @PatScope("read")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
@@ -252,7 +250,6 @@ export class ImportController {
   }
 
   @Post("csv/duplicates")
-  @PatScope("read")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
