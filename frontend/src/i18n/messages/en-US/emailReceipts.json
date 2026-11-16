@@ -1,0 +1,20 @@
+{
+  "mailbox": {
+    "import": {
+      "result": {
+        "cancelled": "The import was canceled after {done} of {total} parts. The emails already imported are kept."
+      }
+    }
+  },
+  "editor": {
+    "trade": {
+      "guards": {
+        "skipIfLineHint": "An email with one of these lines is set aside, such as a canceled order."
+      }
+    }
+  },
+  "process": {
+    "cancelling": "Canceling...",
+    "cancelledSummary": "Canceled after {count, plural, one {# email.} other {# emails.}}"
+  }
+}

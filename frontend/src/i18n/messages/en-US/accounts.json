@@ -14,5 +14,10 @@
     "accountTypeOptions": {
       "chequing": "Checking"
     }
+  },
+  "loanDetail": {
+    "paymentMatching": {
+      "description": "Recognizes the bank's own debit of each installment and settles it against the loan's schedule as principal and interest, instead of posting the bill separately."
+    }
   }
 }

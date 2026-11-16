@@ -23,6 +23,16 @@ function flatten(obj: Tree, prefix = ""): Record<string, unknown> {
 }
 
 describe("loadMessages (regional variants)", () => {
+  it("uses American spellings for categorization, checking, recognition, favorites, and cancellation", async () => {
+    const messages = flatten(await loadMessages("en-US"));
+    for (const [key, value] of Object.entries(messages)) {
+      if (typeof value !== "string") continue;
+      expect(value, key).not.toMatch(
+        /\b(categorised|uncategorised|chequing|recognises|favourites?|cancelled|cancelling)\b/i,
+      );
+    }
+  });
+
   it("en-CA inherits en wholesale (it ships no overrides)", async () => {
     const [en, ca] = await Promise.all([
       loadMessages("en"),

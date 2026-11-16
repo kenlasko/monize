@@ -1,0 +1,31 @@
+{
+  "landing": {
+    "tools": {
+      "payrollDeductions": {
+        "description": "Set yearly maximums on deductions such as pension and employment insurance, and let the paycheck stop collecting them once the maximum is reached."
+      }
+    }
+  },
+  "payroll": {
+    "emptyState": {
+      "body": "Pick the scheduled bill that is your paycheck, choose its deduction categories and set a yearly maximum for each. The bill stops collecting a deduction once its maximum is reached and starts again on the reset date."
+    },
+    "list": {
+      "perPaycheque": "Per paycheck"
+    },
+    "form": {
+      "billPlaceholder": "Select the bill that is your paycheck",
+      "expectedLabel": "Expected per paycheck",
+      "expectedHelp": "The bill's line for this category is zero, so the forecast needs the amount each paycheck usually deducts.",
+      "expectedFromLine": "The bill's line deducts {amount} per paycheck.",
+      "nextExpectedLabel": "Next period's expected per paycheck",
+      "nextExpectedHelp": "The amount each paycheck deducts from the next reset on. Leave it empty to keep this period's amount.",
+      "validation": {
+        "expectedRequired": "Enter the expected amount per paycheck"
+      }
+    },
+    "delete": {
+      "message": "Delete the {category} rule on {bill}? Posted transactions are not changed; the next paycheck posts its full line."
+    }
+  }
+}

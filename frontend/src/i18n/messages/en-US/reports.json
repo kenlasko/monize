@@ -1,7 +1,10 @@
 {
   "page": {
     "removeFavourite": "Remove from favorites",
-    "addFavourite": "Add to favorites"
+    "addFavourite": "Add to favorites",
+    "descriptions": {
+      "payroll-deductions": "Payroll deductions by category: the year against each maximum, paycheck by paycheck, and every year on record."
+    }
   },
   "accountBalances": {
     "groupByFavourite": "Favorite",
@@ -25,5 +28,12 @@
   },
   "sankey": {
     "help": "Money that came in flows through the middle into what it was spent on, what was saved or invested, and what paid down debt. By default the report covers your open checking, savings, cash, credit card and line of credit accounts, and a transfer between two of them is not shown. Leave a savings account out of the account filter to see what you moved into it. A credit card payment is never a debt payment: the purchases it settles are already counted as expenses."
+  },
+  "payrollDeductions": {
+    "emptyDescription": "Set a yearly maximum on your paycheck's deduction lines under Tools, Taxes, Payroll Deductions, and those categories are reported here.",
+    "colPaycheques": "Paychecks",
+    "colAverage": "Average per paycheck",
+    "paychequesTitle": "Paycheck by paycheck, {year}",
+    "csvPaycheques": "Paychecks"
   }
 }

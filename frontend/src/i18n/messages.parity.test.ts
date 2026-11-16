@@ -126,6 +126,28 @@ function extraIcuArgs(enValue: Json, value: Json): string[] {
   return [...icuArgs(value)].filter((a) => !enArgs.has(a));
 }
 
+describe('American paycheck spelling', () => {
+  for (const file of namespaceFiles) {
+    const entries = Object.entries(load('en', file)).filter(
+      ([, value]) => typeof value === 'string' && /paycheque/i.test(value),
+    );
+    if (entries.length === 0) continue;
+
+    it(`overrides every paycheque message in ${file}`, () => {
+      const overrides = localeFilesOf('en-US').includes(file)
+        ? load('en-US', file)
+        : {};
+      for (const [key, value] of entries) {
+        expect(overrides[key], `${file}:${key}`).toBe(
+          String(value).replace(/paycheque/gi, (word) =>
+            word[0] === 'P' ? 'Paycheck' : 'paycheck',
+          ),
+        );
+      }
+    });
+  }
+});
+
 describe.each(TRANSLATED_LOCALES)('locale "%s"', (locale) => {
   const base = localeBase(locale);
 
