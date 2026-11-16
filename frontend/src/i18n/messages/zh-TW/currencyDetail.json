@@ -38,6 +38,7 @@
     "yahooFinance": "Yahoo Finance",
     "yahooCrypto": "加密貨幣對 (Yahoo)",
     "frankfurter": "Frankfurter（歐洲央行）",
+    "frankfurterV2": "Frankfurter（各國央行）",
     "mnyImport": "Money 匯入",
     "transaction": "交易",
     "unknown": "未知"

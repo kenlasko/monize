@@ -19,6 +19,7 @@
       "separator": ", puis ",
       "names": {
         "frankfurter": "Frankfurter (taux de référence de la BCE)",
+        "frankfurter_v2": "Frankfurter (taux des banques centrales)",
         "yahoo": "Yahoo Finance",
         "crypto": "Paires crypto (Yahoo)"
       }

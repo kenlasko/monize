@@ -19,6 +19,7 @@
       "separator": ", następnie ",
       "names": {
         "frankfurter": "Frankfurter (kursy referencyjne EBC)",
+        "frankfurter_v2": "Frankfurter (kursy banków centralnych)",
         "yahoo": "Yahoo Finance",
         "crypto": "Pary kryptowalutowe (Yahoo)"
       }

@@ -19,6 +19,7 @@
       "separator": "，其次 ",
       "names": {
         "frankfurter": "Frankfurter（歐洲央行參考匯率）",
+        "frankfurter_v2": "Frankfurter（各國央行匯率）",
         "yahoo": "Yahoo Finance",
         "crypto": "加密貨幣對 (Yahoo)"
       }

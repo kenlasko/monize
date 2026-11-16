@@ -38,6 +38,7 @@
     "yahooFinance": "Yahoo Finance",
     "yahooCrypto": "Krypto-Paare (Yahoo)",
     "frankfurter": "Frankfurter (EZB)",
+    "frankfurterV2": "Frankfurter (Zentralbanken)",
     "mnyImport": "Money-Import",
     "transaction": "Buchung",
     "unknown": "Unbekannt"

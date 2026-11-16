@@ -38,6 +38,7 @@
     "yahooFinance": "Yahoo Finance",
     "yahooCrypto": "Криптопары (Yahoo)",
     "frankfurter": "Frankfurter (ЕЦБ)",
+    "frankfurterV2": "Frankfurter (центральные банки)",
     "mnyImport": "Импорт из Money",
     "transaction": "Операция",
     "unknown": "Неизвестно"

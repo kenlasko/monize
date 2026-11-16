@@ -19,6 +19,7 @@
       "separator": ", ardından ",
       "names": {
         "frankfurter": "Frankfurter (ECB referans kurları)",
+        "frankfurter_v2": "Frankfurter (merkez bankası kurları)",
         "yahoo": "Yahoo Finance",
         "crypto": "Kripto çiftleri (Yahoo)"
       }

@@ -38,6 +38,7 @@
     "yahooFinance": "Yahoo Finance",
     "yahooCrypto": "암호화폐 쌍 (Yahoo)",
     "frankfurter": "Frankfurter(ECB)",
+    "frankfurterV2": "Frankfurter(중앙은행)",
     "mnyImport": "Money 가져오기",
     "transaction": "거래",
     "unknown": "알 수 없음"

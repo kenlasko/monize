@@ -19,6 +19,7 @@
       "separator": ", lalu ",
       "names": {
         "frankfurter": "Frankfurter (kurs referensi ECB)",
+        "frankfurter_v2": "Frankfurter (kurs bank sentral)",
         "yahoo": "Yahoo Finance",
         "crypto": "Pasangan kripto (Yahoo)"
       }

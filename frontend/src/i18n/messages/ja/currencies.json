@@ -19,6 +19,7 @@
       "separator": "、次に ",
       "names": {
         "frankfurter": "Frankfurter（ECB 参照レート）",
+        "frankfurter_v2": "Frankfurter（中央銀行レート）",
         "yahoo": "Yahoo Finance",
         "crypto": "暗号資産ペア (Yahoo)"
       }

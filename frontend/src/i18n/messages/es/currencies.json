@@ -19,6 +19,7 @@
       "separator": ", luego ",
       "names": {
         "frankfurter": "Frankfurter (tipos de referencia del BCE)",
+        "frankfurter_v2": "Frankfurter (tipos de bancos centrales)",
         "yahoo": "Yahoo Finance",
         "crypto": "Pares cripto (Yahoo)"
       }

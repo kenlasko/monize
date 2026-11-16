@@ -38,6 +38,7 @@
     "yahooFinance": "Yahoo Finance",
     "yahooCrypto": "Pares de cripto (Yahoo)",
     "frankfurter": "Frankfurter (BCE)",
+    "frankfurterV2": "Frankfurter (bancos centrais)",
     "mnyImport": "Importação do Money",
     "transaction": "Transação",
     "unknown": "Desconhecida"

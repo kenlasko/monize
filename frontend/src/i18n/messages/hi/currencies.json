@@ -19,6 +19,7 @@
       "separator": ", फिर ",
       "names": {
         "frankfurter": "Frankfurter (ECB संदर्भ दरें)",
+        "frankfurter_v2": "Frankfurter (केंद्रीय बैंक दरें)",
         "yahoo": "Yahoo Finance",
         "crypto": "क्रिप्टो जोड़े (Yahoo)"
       }
