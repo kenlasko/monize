@@ -1,11 +1,15 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useDateRange } from '@/hooks/useDateRange';
-import { rateRowsInWindow, type RateHistoryRow } from '@/lib/currency-detail';
+import {
+  rateRowsInWindow,
+  type RateHistoryRow,
+  type RateSourceFilter,
+} from '@/lib/currency-detail';
 import { CurrencyPeriodSummary } from './CurrencyPeriodSummary';
 import { CurrencyRateChart, CurrencyRateChartSkeleton } from './CurrencyRateChart';
 import { CurrencyRateTable } from './CurrencyRateTable';
@@ -38,6 +42,9 @@ export function CurrencyRateHistorySection({
     storageKey: `currencyDetail:range:${code}`,
   });
   const { start, end } = resolvedRange;
+  // Kept here, not in the table: the table unmounts while a fill's re-read
+  // is in flight, and the reader's chosen source must survive that.
+  const [sourceFilter, setSourceFilter] = useState<RateSourceFilter>('all');
 
   const periodRows = useMemo(
     () => (rows ? rateRowsInWindow(rows, start, end) : null),
@@ -75,6 +82,8 @@ export function CurrencyRateHistorySection({
             rows={periodRows}
             hasAnyRates={rows.length > 0}
             notes={notes}
+            filter={sourceFilter}
+            onFilterChange={setSourceFilter}
           />
         ) : (
           <Card padding="md">

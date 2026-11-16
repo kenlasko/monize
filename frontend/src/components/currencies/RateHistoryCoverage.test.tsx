@@ -75,6 +75,9 @@ describe('RateHistoryCoverage', () => {
     it('shows the stored span and observation count', async () => {
       await renderSection();
 
+      // A sub-heading of the currency form's own by default.
+      expect(screen.getByRole('heading', { level: 3, name: 'Rate history' })).toBeInTheDocument();
+
       expect(getRateCoverage).toHaveBeenCalledWith('EUR');
       expect(await screen.findByText(/Stored history:/)).toHaveTextContent(
         '180 observations',
@@ -117,9 +120,9 @@ describe('RateHistoryCoverage', () => {
     });
 
     it('takes the heading it is given', async () => {
-      await renderSection('EUR', { title: 'Stored Rates' });
+      await renderSection('EUR', { title: 'Stored Rates', headingLevel: 'h2' });
 
-      expect(screen.getByRole('heading', { name: 'Stored Rates' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 2, name: 'Stored Rates' })).toBeInTheDocument();
       expect(screen.queryByText('Rate history')).not.toBeInTheDocument();
     });
 

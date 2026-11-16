@@ -24,6 +24,11 @@ interface RateHistoryCoverageProps {
   /** The heading; the currency form's "Rate history" by default. */
   title?: string;
   /**
+   * The heading's level: `h3` under the currency form's own heading, `h2` on
+   * the detail page, where it sits beside the page's other sections.
+   */
+  headingLevel?: 'h2' | 'h3';
+  /**
    * The wrapper's frame. By default the rule that sets the section apart
    * inside the currency form; the detail page puts it in a card instead.
    */
@@ -68,6 +73,7 @@ export function RateHistoryCoverage({
   code,
   reportingCurrency,
   title,
+  headingLevel: Heading = 'h3',
   className = 'border-t border-gray-200 dark:border-gray-700 pt-4',
   onFilled,
 }: RateHistoryCoverageProps) {
@@ -194,9 +200,9 @@ export function RateHistoryCoverage({
 
   return (
     <div className={`${className} space-y-2`}>
-      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+      <Heading className="text-sm font-medium text-gray-900 dark:text-gray-100">
         {title ?? t('rateHistory.title')}
-      </h3>
+      </Heading>
       <p className="text-sm text-gray-600 dark:text-gray-400">
         {isLoading
           ? t('rateHistory.loading')

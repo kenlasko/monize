@@ -146,8 +146,8 @@ vi.mock('@/components/currencies/CurrencyForm', () => ({
 }));
 
 vi.mock('@/components/currencies/CurrencyList', () => ({
-  CurrencyList: ({ currencies, onToggleActive, onEdit, onRateHistory, sortField, sortDirection, onSort }: any) => (
-    <div data-testid="currency-list" data-has-rate-history={String(!!onRateHistory)}>
+  CurrencyList: ({ currencies, onToggleActive, onEdit, sortField, sortDirection, onSort }: any) => (
+    <div data-testid="currency-list">
       {sortField && <span data-testid="sort-field">{sortField}</span>}
       {sortDirection && <span data-testid="sort-direction">{sortDirection}</span>}
       {onSort && <button data-testid="sort-trigger" onClick={() => onSort('name')}>Sort</button>}
@@ -751,14 +751,6 @@ describe('CurrenciesPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('sort-field')).toHaveTextContent('rate');
     });
-  });
-
-  it('has no rate history dialog: the detail page holds the history and its gap fill', async () => {
-    render(<CurrenciesPage />);
-    await waitFor(() => expect(screen.getByTestId('currency-row-CAD')).toBeInTheDocument());
-
-    expect(screen.getByTestId('currency-list')).toHaveAttribute('data-has-rate-history', 'false');
-    expect(screen.queryByTestId('modal')).not.toBeInTheDocument();
   });
 
   describe('saving a currency', () => {

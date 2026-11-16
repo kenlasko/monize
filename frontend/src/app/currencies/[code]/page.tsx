@@ -254,6 +254,7 @@ function CurrencyDetailContent() {
                   code={code}
                   reportingCurrency={reportingCurrency}
                   title={t('storedHistory.title')}
+                  headingLevel="h2"
                   className=""
                   onFilled={reloadRates}
                 />

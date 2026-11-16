@@ -45,6 +45,13 @@ interface CurrencyRateTableProps {
   hasAnyRates?: boolean;
   /** Lines under the table saying what a bounded read left out. */
   notes?: readonly string[];
+  /**
+   * The source filter, when a parent keeps it: the detail page replaces the
+   * table with a spinner while it re-reads the history after a fill, and a
+   * filter held here would be reset to All by that.
+   */
+  filter?: RateSourceFilter;
+  onFilterChange?: (filter: RateSourceFilter) => void;
 }
 
 /** The filter segments, in order; Other only when it holds a row. */
@@ -70,13 +77,16 @@ export function CurrencyRateTable({
   rows,
   hasAnyRates = rows.length > 0,
   notes = [],
+  filter: controlledFilter,
+  onFilterChange,
 }: CurrencyRateTableProps) {
   const t = useTranslations('currencyDetail');
   const { formatDate } = useDateFormat();
   const { formatNumber } = useNumberFormat();
   const sourceLabel = useRateSourceLabel();
 
-  const [filter, setFilter] = useState<RateSourceFilter>('all');
+  const [localFilter, setLocalFilter] = useState<RateSourceFilter>('all');
+  const filter = controlledFilter ?? localFilter;
   const [sortField, setSortField] = useLocalStorage<RateSortField>(
     'monize-currency-rates-sort-field',
     'date',
@@ -137,7 +147,8 @@ export function CurrencyRateTable({
   };
 
   const handleFilter = (next: RateSourceFilter) => {
-    setFilter(next);
+    setLocalFilter(next);
+    onFilterChange?.(next);
     setCurrentPage(1);
   };
 

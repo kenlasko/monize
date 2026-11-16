@@ -199,7 +199,8 @@ describe('CurrencyDetailPage', () => {
   it('shows how many rates are stored and over which dates, with a way to fill the gaps', async () => {
     await renderPage();
 
-    expect(screen.getByRole('heading', { name: 'Stored Rates' })).toBeInTheDocument();
+    // A section of the page, beside Rate History, not a sub-heading of it.
+    expect(screen.getByRole('heading', { level: 2, name: 'Stored Rates' })).toBeInTheDocument();
     expect(mockGetRateCoverage).toHaveBeenCalledWith('EUR');
     expect(screen.getByText(/Stored history:/)).toHaveTextContent('2 observations');
     expect(screen.getByRole('button', { name: 'Fill gaps in rate history' })).toBeInTheDocument();
@@ -222,6 +223,25 @@ describe('CurrencyDetailPage', () => {
     expect(mockFillRateGaps).toHaveBeenCalledWith('EUR');
     await waitFor(() => expect(mockGetStoredRates).toHaveBeenCalledTimes(2));
     expect(await screen.findByRole('button', { name: 'All (4)' })).toBeInTheDocument();
+  });
+
+  it('keeps the chosen source filter across the re-read after a fill', async () => {
+    await renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Transactions (1)' }));
+    expect(screen.getByRole('button', { name: 'Transactions (1)' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Fill gaps in rate history' }));
+    });
+
+    await waitFor(() => expect(mockGetStoredRates).toHaveBeenCalledTimes(2));
+    expect(await screen.findByRole('button', { name: 'Transactions (1)' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it('keeps a fill that finishes after a currency switch from blanking the new currency', async () => {
