@@ -907,7 +907,15 @@ describe("ImportService", () => {
 
       it("does not compare a transfer row", async () => {
         mockedParseQif.mockReturnValue({
-          ...mockedParseQif(),
+          accountType: "CHEQUING",
+          accountName: "",
+          categories: ["Food"],
+          transferAccounts: [],
+          securities: [],
+          detectedDateFormat: "MM/DD/YYYY",
+          sampleDates: ["01/15/2025"],
+          openingBalance: null,
+          openingBalanceDate: null,
           transactions: [
             makeQifTransaction({
               isTransfer: true,
@@ -950,8 +958,16 @@ describe("ImportService", () => {
 
       it("lists none for an investment file", async () => {
         mockedParseQif.mockReturnValue({
-          ...mockedParseQif(),
           accountType: "INVESTMENT",
+          accountName: "",
+          categories: ["Food"],
+          transferAccounts: [],
+          securities: [],
+          detectedDateFormat: "MM/DD/YYYY",
+          sampleDates: ["01/15/2025"],
+          openingBalance: null,
+          openingBalanceDate: null,
+          transactions: [makeQifTransaction()],
         });
         accountHolding();
         const answer = await service.findQifDuplicates(userId, makeBaseDto());
