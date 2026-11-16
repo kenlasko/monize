@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { ImportPreviewDuplicatePanel } from '@/components/import-preview/ImportPreviewDuplicatePanel';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { LinkifiedText } from '@/components/ui/LinkifiedText';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useDuplicateChoices } from '@/hooks/useDuplicateChoices';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -90,7 +91,7 @@ export function DuplicatesStep({ review, isLoading, onBack, onImport }: Duplicat
                           <span className="font-medium text-gray-900 dark:text-gray-100">{label}</span>
                           {row.memo && (
                             <span className="block truncate text-xs text-gray-500 dark:text-gray-400" title={row.memo}>
-                              {row.memo}
+                              <LinkifiedText text={row.memo} />
                             </span>
                           )}
                         </span>

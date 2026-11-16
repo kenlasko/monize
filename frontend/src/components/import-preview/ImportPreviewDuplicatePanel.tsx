@@ -1,7 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
 import { IMPORT_PREVIEW_HEADING_CLASS } from '@/components/import-preview/ImportPreviewPayeeMapping';
+import { LinkifiedText } from '@/components/ui/LinkifiedText';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { previewAmount } from '@/lib/bank-sync-preview';
@@ -45,7 +47,7 @@ export function ImportPreviewDuplicatePanel({
   const { formatCurrency } = useNumberFormat();
   const amount = previewAmount(existing.amount);
 
-  const facts: { label: string; value: string }[] = [
+  const facts: { label: string; value: string; shown?: ReactNode }[] = [
     { label: t('date'), value: formatDate(existing.transactionDate) },
     {
       label: t('amount'),
@@ -65,17 +67,23 @@ export function ImportPreviewDuplicatePanel({
     { label: t('status'), value: t(`statuses.${existing.status}`) },
   ];
   if (existing.referenceNumber) facts.push({ label: t('reference'), value: existing.referenceNumber });
-  if (existing.description) facts.push({ label: t('description'), value: existing.description });
+  if (existing.description) {
+    facts.push({
+      label: t('description'),
+      value: existing.description,
+      shown: <LinkifiedText text={existing.description} />,
+    });
+  }
 
   return (
     <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-gray-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-gray-100">
       <h4 className={IMPORT_PREVIEW_HEADING_CLASS}>{t('looksLike')}</h4>
       <dl className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
-        {facts.map(({ label, value }) => (
+        {facts.map(({ label, value, shown }) => (
           <div key={label} className="flex min-w-0 gap-2">
             <dt className="shrink-0 text-gray-500 dark:text-gray-400">{label}</dt>
             <dd className="min-w-0 truncate" title={value}>
-              {value}
+              {shown ?? value}
             </dd>
           </div>
         ))}
