@@ -4,6 +4,7 @@ import { CurrencyList } from './CurrencyList';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 import { useDensityStore } from '@/store/densityStore';
 import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
 
 vi.mock('@/lib/exchange-rates', () => ({
   exchangeRatesApi: {
@@ -158,6 +159,19 @@ describe('CurrencyList', () => {
       fireEvent.click(screen.getByText('EUR').closest('tr')!);
 
       expect(useRouter().push).toHaveBeenCalledWith('/currencies/EUR');
+    });
+
+    it('does not open the detail page for a delegate, whose page reads would be refused', () => {
+      act(() => useAuthStore.setState({ actingAsUserId: 'owner-1' }));
+      try {
+        render(<CurrencyList currencies={[makeCurrency({ code: 'EUR', name: 'Euro' })]} {...defaultProps} />);
+
+        fireEvent.click(screen.getByText('EUR').closest('tr')!);
+
+        expect(useRouter().push).not.toHaveBeenCalled();
+      } finally {
+        act(() => useAuthStore.setState({ actingAsUserId: null }));
+      }
     });
 
     it('does not navigate when a row action is pressed', () => {
