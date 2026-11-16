@@ -134,7 +134,7 @@ You choose it when you first sign in, and can change it at any time in **Setting
 
 Monize fetches the latest exchange rates for the currencies you use every weekday at 5:05 PM New York time, after the markets close, and stores them so that every past date keeps its own rate. Click **Refresh Rates** on the Currencies page to fetch them immediately; the line under its label shows how long ago the rates were last updated.
 
-Rates come from **Frankfurter** (the European Central Bank's reference rates) first, then **Yahoo Finance** for any currency Frankfurter does not cover. An administrator can change the providers and their order for the whole instance, including switching on **Frankfurter (central bank rates)**, which blends the published rates of about a hundred central banks and reaches further back than 1999 (US dollar to Canadian dollar from 1953). A cryptocurrency's rates always come from Yahoo Finance through its price symbol, every day of the week (see [Exchange Rates for a Cryptocurrency](#exchange-rates-for-a-cryptocurrency)).
+Rates come from **Frankfurter**, which blends the published rates of about a hundred central banks and reaches back decades (US dollar to Canadian dollar from 1953), then **Yahoo Finance** for anything Frankfurter does not answer. Rates stored before Monize switched to the central-bank blend keep their **Frankfurter (ECB)** label. A cryptocurrency's rates always come from Yahoo Finance through its price symbol, every day of the week (see [Exchange Rates for a Cryptocurrency](#exchange-rates-for-a-cryptocurrency)).
 
 ### Rate History
 

@@ -4,13 +4,11 @@ import {
   FxProviderName,
   FxRateProvider,
 } from "./fx-provider.interface";
-import { resolveFxProviders } from "./fx-provider.config";
 
 /**
  * A provider double. `carried` is the set of codes it quotes ("all" for one
  * that cannot enumerate, like Yahoo). The label stands in for the name: the
- * `FxProviderName` union is what the parser admits from `FX_PROVIDERS`, and
- * the chain only ever reads the field back in `describe()`.
+ * chain only ever reads the field back in `describe()`.
  */
 type ProviderDouble = jest.Mocked<Omit<FxRateProvider, "fetchLive">> & {
   fetchLive?: jest.Mock<Promise<FxObservation | null>, [string, string]>;
@@ -800,7 +798,7 @@ describe("FxProviderChain and a provider that claims coins", () => {
     expect(fiat.fetchLatest).toHaveBeenCalledWith("CAD", ["BTC"]);
   });
 
-  it("describe lists the coin provider beside the configured ones, though it is no FX_PROVIDERS token", () => {
+  it("describe lists the coin provider beside the fiat ones", () => {
     const chain = new FxProviderChain([
       provider("yahoo", "all"),
       coinProvider(),
@@ -810,8 +808,5 @@ describe("FxProviderChain and a provider that claims coins", () => {
       { name: "yahoo", source: "yahoo_source" },
       { name: "crypto", source: "crypto_source" },
     ]);
-    expect(() => resolveFxProviders("yahoo,crypto")).toThrow(
-      /unknown exchange rate provider "crypto"/,
-    );
   });
 });

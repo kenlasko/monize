@@ -320,7 +320,7 @@ export class CurrenciesController {
   @ApiResponse({
     status: 200,
     description:
-      "Last update time and the configured FX providers, in the order they are tried; `source` is the slug stored on each rate row, `name` identifies the provider itself.",
+      "Last update time and the FX providers, in the order they are tried; `source` is the slug stored on each rate row, `name` identifies the provider itself.",
   })
   async getRateStatus(): Promise<ExchangeRateStatus> {
     const lastUpdated = await this.exchangeRateService.getLastUpdateTime();

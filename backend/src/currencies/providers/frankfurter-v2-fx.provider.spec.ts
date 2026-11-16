@@ -56,7 +56,7 @@ const FIRST_DAYS_1953 = JSON.parse(
   '[{"date":"1953-05-11","base":"USD","quote":"CAD","rate":0.99408},{"date":"1953-05-12","base":"USD","quote":"CAD","rate":0.99455},' +
     '{"date":"1953-05-13","base":"USD","quote":"CAD","rate":0.99526}]',
 );
-/** `rates?from=2024-01-02&to=2024-01-03&base=TWD&quotes=USD`: a code v1 does not carry. */
+/** `rates?from=2024-01-02&to=2024-01-03&base=TWD&quotes=USD`: a code the ECB never published. */
 const TWD_USD = JSON.parse(
   '[{"date":"2024-01-02","base":"TWD","quote":"USD","rate":0.032518},{"date":"2024-01-03","base":"TWD","quote":"USD","rate":0.032352}]',
 );
@@ -141,11 +141,11 @@ describe("FrankfurterV2FxProvider", () => {
     global.fetch = originalFetch;
   });
 
-  it("names itself apart from the v1 adapter, as the chain, the row and the breaker know it", () => {
+  it("names itself as the chain, the row and the breaker know it, apart from the v1 rows' frankfurter slug", () => {
     expect(provider.name).toBe("frankfurter_v2");
     expect(provider.source).toBe("frankfurter_v2");
     expect(FRANKFURTER_V2_PROVIDER).toBe("frankfurter_v2");
-    expect(TRACKED_PROVIDERS[FRANKFURTER_V2_PROVIDER]).toBe("Frankfurter v2");
+    expect(TRACKED_PROVIDERS[FRANKFURTER_V2_PROVIDER]).toBe("Frankfurter");
     expect(DEFAULT_FRANKFURTER_V2_BASE_URL).toBe(
       "https://api.frankfurter.dev/v2",
     );
@@ -340,7 +340,7 @@ describe("FrankfurterV2FxProvider", () => {
       ]);
     });
 
-    it("answers a code v1 does not carry, in the orientation asked", async () => {
+    it("answers a code the ECB never published, in the orientation asked", async () => {
       answer(200, TWD_USD);
 
       const points = await series("2024-01-02", "2024-01-03", "TWD", "USD");

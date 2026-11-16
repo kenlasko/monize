@@ -146,9 +146,11 @@ function readCurrencyList(body: unknown): ReadonlySet<string> | null {
 /**
  * Exchange rates from Frankfurter's v2 API: rates blended from about a hundred
  * central banks, no key, daily history for USD/CAD from 1953, about 160 fiat
- * currencies. `docs/specs/frankfurter-v2-provider.md` records the responses
- * this adapter is built on and why it is a provider of its own beside the v1
- * `frankfurter` adapter rather than a version switch inside it.
+ * currencies. The chain's first provider. `docs/specs/frankfurter-v2-provider.md`
+ * records the responses this adapter is built on, and why its slug stays
+ * `frankfurter_v2` after the ECB-only v1 adapter was removed: the rows that
+ * adapter wrote keep `frankfurter`, and the coverage they recorded (history
+ * from 1999) is not read as this provider's.
  *
  * Three endpoints. `rates?base=B&quotes=Q1,Q2` (latest, or `date=` one day)
  * and `rates?from=S&to=E&base=B&quotes=Q` answer an array of
@@ -163,7 +165,8 @@ function readCurrencyList(body: unknown): ReadonlySet<string> | null {
  * A `latest` dated on a weekend is asked again for the Friday before it, so a
  * weekend refresh still stores Friday's rate dated Friday (decision 4).
  *
- * Every call goes through the breaker in the v1 adapter's shape: a non-2xx is
+ * Every call goes through the breaker in the shape every outbound client here
+ * uses: a non-2xx is
  * a complete answer recorded the moment it arrives, a 2xx is recorded only
  * once its body has arrived, and a probe holder hands back a slot the breaker
  * did not count. A 404 is "answered, nothing"; a 422 (a code the instance's

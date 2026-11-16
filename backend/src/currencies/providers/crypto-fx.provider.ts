@@ -62,14 +62,11 @@ function utcDay(epochSeconds: number): string {
  * decision 5), priced from Yahoo's `<COIN>-<FIAT>` symbols: the symbols a
  * crypto security is priced from.
  *
- * **Always in the chain, never configured.** The module factory appends it
- * after whatever `FX_PROVIDERS` names, because no other provider carries a
- * coin and a chain without it could never price a CRYPTO currency. Its name is
- * a `PairProviderName`, not an `FxProviderName`: `resolveFxProviders` keeps
- * refusing `crypto` as a token, the frontend's label list of configurable
- * names (held to `FX_PROVIDER_NAMES` by a contract test) is not widened by a
- * name nobody can configure, and the status endpoint's `describe()` still
- * lists it so the Currencies page can say where a coin's rows come from.
+ * **Always in the chain, last.** The module factory appends it after the fiat
+ * providers, because no other provider carries a coin and a chain without it
+ * could never price a CRYPTO currency. Its name is a `PairProviderName`, not an
+ * `FxProviderName`, and the status endpoint's `describe()` lists it so the
+ * Currencies page can say where a coin's rows come from.
  *
  * **What it carries and claims.** `carries(code)` is true for a CRYPTO
  * currency with a `quote_symbol` and for every FIAT currency (a pair needs

@@ -1,12 +1,14 @@
 # Frankfurter v2 exchange rate provider
 
-Status: built, opt-in, not the default. A second Frankfurter adapter,
-`frankfurter_v2`, reads Frankfurter's v2 API. That API blends the published
-rates of about a hundred central banks, where v1 serves the ECB's reference
-rates alone. The chain, the contract and the status table it plugs into are
+Status: shipped, and the only Frankfurter adapter. `frankfurter_v2` reads
+Frankfurter's v2 API, which blends the published rates of about a hundred
+central banks, where the v1 adapter it replaced served the ECB's reference
+rates alone. It was built opt-in beside v1, tested against real data, and then
+cut over (section 8, 2026-11-16): the v1 adapter and `FX_PROVIDERS` were
+removed, and the chain is fixed at Frankfurter v2, then Yahoo, then the crypto
+pair provider. The chain, the contract and the status table it plugs into are
 `docs/specs/exchange-rate-providers.md`; this document records only what
-differs. Whether v2 stays an option beside v1 or replaces it is decided after
-it has been run against real data (open question 1).
+differs.
 
 ## 1. Why
 
@@ -97,10 +99,9 @@ it has been run against real data (open question 1).
 8. **The series timeout is 120 s.** The full USD/CAD history in one request
    (1.48 MB, 23,453 rows) took 30.6 s uncached on 2026-11-16, half of v1's
    60 s timeout. `latest` and the currency list keep 15 s.
-9. **Not the default.** `DEFAULT_FX_PROVIDERS` stays `frankfurter,yahoo`. To
-   try it, set `FX_PROVIDERS=frankfurter_v2,yahoo`, or
-   `frankfurter_v2,frankfurter,yahoo` to keep v1 as a fallback. Stored rows
-   are not rewritten. A refresh writes today's row under the first provider
+9. **Not the default, at first.** Superseded by section 8: v2 shipped opt-in
+   (`FX_PROVIDERS=frankfurter_v2,yahoo`) and is now the fixed first provider.
+   Stored rows are not rewritten. A refresh writes today's row under the first provider
    that answers, and a gap fill writes only the days that are missing, so v1
    rows stay where they are and v2 fills what v1 never had.
 10. **The UI names it and files it with Frankfurter.** The source label is
@@ -225,29 +226,27 @@ pair, which can be later, because a pair needs both its codes (USD/CAD is
 | --- | --- |
 | The adapter | `backend/src/currencies/providers/frankfurter-v2-fx.provider.ts` |
 | Its spec, on the section 3 fixtures | `backend/src/currencies/providers/frankfurter-v2-fx.provider.spec.ts` |
-| The token | `FX_PROVIDER_NAMES` in `fx-provider.interface.ts`, and its frontend mirror in `frontend/src/lib/exchange-rates.ts` |
+| The chain order | `FX_PROVIDER_NAMES` in `fx-provider.interface.ts` (`frankfurter_v2`, `yahoo`), and its frontend mirror in `frontend/src/lib/exchange-rates.ts` |
 | The wiring | `CurrenciesModule` factory, built from `FX_FRANKFURTER_V2_BASE_URL` |
-| The breaker id | `TRACKED_PROVIDERS.frankfurter_v2` |
-| The guards | `provider-call.guard.spec.ts` (the client list, two `recordSuccess` sites) and `fx-provider-source.guard.spec.ts` (the slug) |
-| The labels | `currencies.page.providers.names.frankfurter_v2` and `currencyDetail.sources.frankfurterV2`, in every locale; `rateSourceGroup` files `frankfurter_v2` under the Frankfurter filter (`frontend/src/lib/currency-detail.ts`) |
-| Operator docs | `.env.example` (`FX_PROVIDERS` names, `FX_FRANKFURTER_V2_BASE_URL`) |
+| The breaker id | `TRACKED_PROVIDERS.frankfurter_v2`, labelled "Frankfurter" |
+| The guards | `provider-call.guard.spec.ts` (the client list, two `recordSuccess` sites) and `fx-provider-source.guard.spec.ts` (the slug, with the retired `frankfurter` kept on its list) |
+| The labels | `currencies.page.providers.names.frankfurter_v2` and `currencyDetail.sources.frankfurterV2`, in every locale; `currencyDetail.sources.frankfurter` stays for the v1 rows; `rateSourceGroup` files both under the Frankfurter filter (`frontend/src/lib/currency-detail.ts`) |
+| Operator docs | `.env.example` (`FX_FRANKFURTER_V2_BASE_URL`) |
 
 Nothing changes in the chain, the history service, the gap planner or the
 schema.
 
-## 5. How to test it
+## 5. How to check it
 
-1. Set `FX_PROVIDERS=frankfurter_v2,yahoo` and restart the backend. The
-   Currencies page should read "Rates from Frankfurter (central bank rates),
+1. The Currencies page reads "Rates from Frankfurter (central bank rates),
    then Yahoo Finance".
 2. On a currency whose transactions predate 1999 (CAD, against a USD
-   reporting currency), press Fill gaps. The stored history should now start
-   at the first transaction date, or 1953-05-11 if that is earlier. The new
-   rows show "Frankfurter (central banks)" as their source.
-3. Compare the overlap. Where a date has a v1 row, it is kept as it is. To
-   compare the two feeds directly, query both endpoints for one window (the
-   ECB rate and the blend usually differ by a few hundredths of a percent).
-4. Weekends: no Saturday or Sunday row should appear in the new history.
+   reporting currency), press Fill gaps, or import, restore or bank-sync rows
+   that reach back that far. The stored history should start at the first
+   transaction date, or 1953-05-11 if that is earlier. The new rows show
+   "Frankfurter (central banks)" as their source.
+3. Where a date already has a v1 row it is kept, labelled "Frankfurter (ECB)".
+4. Weekends: no Saturday or Sunday row appears in the new history.
 
 ## 6. Risks
 
@@ -261,18 +260,44 @@ schema.
 
 ## 7. Open questions
 
-1. **Option or cutover.** Keep both adapters and let operators choose, or
-   make `frankfurter_v2` the default, retire `frankfurter`, and rename the
-   token. A rename would change the source slug, so this needs a decision on
-   whether stored `frankfurter_v2` rows are relabelled.
+1. **Option or cutover.** Answered 2026-11-16: cutover, with no choice
+   offered (section 8). The slug stays `frankfurter_v2`; nothing is
+   relabelled.
 2. **Weekend rows.** Decision 3 drops them. For a currency whose market week
    is Sunday to Thursday (SAR, KWD, BHD, OMR, AED, EGP), a Sunday blend may
    include a real local observation. If testing shows Sunday rows matter for
    those currencies, the rule can become "drop a weekend row only when the
    pair's two codes both keep a Monday-to-Friday week", at the cost of a
    per-currency table.
-3. **The 1999 seam when both run.** With `frankfurter_v2,frankfurter,yahoo`,
-   v2 answers everything, so v1 is reached only during a v2 outage. With
-   `frankfurter,frankfurter_v2,yahoo`, v1 answers from 1999 and v2 only for
-   the 16 currencies v1 lacks and for the years before 1999. The second order
-   keeps the ECB series where it exists. Which order should a cutover ship?
+3. **The 1999 seam when both run.** Moot since the cutover: v1 is gone. A
+   pair's history may still hold v1 rows from 1999 where they were stored
+   before it, beside v2 rows for the years before and the days since.
+
+## 8. The cutover (2026-11-16)
+
+After testing, the maintainer chose to replace v1 rather than offer a choice.
+
+1. **The v1 adapter and `FX_PROVIDERS` are removed.** `frankfurter-fx.provider.ts`,
+   `fx-provider.config.ts` (`resolveFxProviders`, `DEFAULT_FX_PROVIDERS`,
+   `FxProviderConfigError`) and `FX_FRANKFURTER_BASE_URL` are gone. The module
+   factory builds the chain from `FX_PROVIDER_NAMES` in order. A deployment
+   that still sets `FX_PROVIDERS` starts normally, and the variable is ignored.
+2. **The slug stays `frankfurter_v2`.** Renaming it to `frankfurter` would
+   attribute the blend to the rows v1 wrote. It would also make the coverage
+   fingerprint equal v1's again (`frankfurter,yahoo_finance,yahoo_crypto`), so
+   the 1999 floors v1 recorded would be trusted, and no fill would reach back
+   before them. With the slug kept, the first fill under the new chain
+   replaces those floors (`exchange_rate_coverage.providers`).
+3. **The breaker id stays `frankfurter_v2`, labelled "Frankfurter".** A
+   `provider_health` row left under the old id `frankfurter` is never written
+   again. An alert for it reads the raw id.
+4. **A bank sync now pulls rate history too.** An import (CSV, QIF, OFX, a
+   Money file) and a backup restore already started
+   `RateHistoryCatchUpService` after their commit (issues #2186, #2226). A
+   bank sync did not, so a foreign-currency account whose sync start predated
+   the stored rates converted those days at no rate until someone pressed
+   Fill gaps. `BankSyncService` now starts the same catch-up after a write
+   that imported, merged or replaced a row, for the synced account and every
+   account a rule moved money into. It re-dispatches their net worth once
+   rates land. `bank-sync.service.spec.ts` holds that order, the account
+   list, and that nothing starts for a sync that wrote nothing or failed.

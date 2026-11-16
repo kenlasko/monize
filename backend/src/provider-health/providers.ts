@@ -6,11 +6,10 @@
  * refresh, but the reason for a breaker is the same: a dead upstream must not
  * be called once per payee across a whole deployment. Enable Banking is the
  * bank-sync aggregator: the daily sync calls it once per linked bank account
- * for every user, the same fan-out shape. Frankfurter is the first exchange
- * rate provider on the chain: the daily refresh asks it once per base
- * currency for every pair in use, and a gap fill once per window; Frankfurter
- * v2 is the opt-in adapter for its blended v2 API, on the same host but its own
- * breaker, so an alert names the adapter that failed. NBP and GUS
+ * for every user, the same fan-out shape. Frankfurter (its v2 API, id
+ * `frankfurter_v2`) is the first exchange rate provider on the chain: the daily
+ * refresh asks it once per base currency for every pair in use, and a gap fill
+ * once per window. NBP and GUS
  * publish the benchmark series (reference rate, CPI) that bond valuations read;
  * obligacjeskarbowe.pl publishes the Polish retail bond series terms that a
  * series fetch reads; TreasuryDirect publishes the auction terms and results of
@@ -31,8 +30,7 @@ export const TRACKED_PROVIDERS = {
   google_places: "Google Places",
   enable_banking: "Enable Banking",
   simplefin: "SimpleFIN Bridge",
-  frankfurter: "Frankfurter",
-  frankfurter_v2: "Frankfurter v2",
+  frankfurter_v2: "Frankfurter",
   nbp: "Narodowy Bank Polski",
   gus: "Główny Urząd Statystyczny",
   obligacjeskarbowe: "Obligacje skarbowe (obligacjeskarbowe.pl)",

@@ -19,12 +19,12 @@ export interface ExchangeRate {
 }
 
 /**
- * The exchange rate providers a deployment can name in `FX_PROVIDERS`, mirrored
- * from the backend's `FX_PROVIDER_NAMES`
+ * The fiat exchange rate providers the server's chain asks, mirrored from the
+ * backend's `FX_PROVIDER_NAMES`
  * (`backend/src/currencies/providers/fx-provider.interface.ts`) and held to it
  * by a contract test. The labels are this client's translations, keyed by name.
  */
-export const FX_PROVIDER_NAMES = ['frankfurter', 'frankfurter_v2', 'yahoo'] as const;
+export const FX_PROVIDER_NAMES = ['frankfurter_v2', 'yahoo'] as const;
 
 export type FxProviderName = (typeof FX_PROVIDER_NAMES)[number];
 
@@ -33,17 +33,15 @@ export function isFxProviderName(name: string): name is FxProviderName {
 }
 
 /**
- * The providers the server's chain always carries after the configured ones and
- * which are never an `FX_PROVIDERS` token, mirrored from the backend's
- * `PAIR_PROVIDER_NAMES` (same file as above) and held to it by the same
- * contract test. Kept apart so `FX_PROVIDER_NAMES` stays the list an operator
- * can configure.
+ * The providers the server's chain carries after the fiat ones, mirrored from
+ * the backend's `PAIR_PROVIDER_NAMES` (same file as above) and held to it by
+ * the same contract test.
  */
 export const PAIR_PROVIDER_NAMES = ['crypto'] as const;
 
 export type PairProviderName = (typeof PAIR_PROVIDER_NAMES)[number];
 
-/** Any provider the status endpoint may report, configured or always present. */
+/** Any provider the status endpoint may report, fiat or pair. */
 export type RateProviderName = FxProviderName | PairProviderName;
 
 /** Whether this client has a label for `name` (`page.providers.names.<name>`). */

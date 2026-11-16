@@ -54,8 +54,8 @@ export interface FxProviderDescription {
 }
 
 /**
- * The configured exchange rate providers, in `FX_PROVIDERS` order, behind one
- * door.
+ * The exchange rate providers, in the order `CurrenciesModule` builds them
+ * (`FX_PROVIDER_NAMES`, then the pair providers), behind one door.
  *
  * Every provider question passes through here (INV-FX-005): a provider is asked
  * only for the pairs it carries, providers are asked in order, and "the

@@ -48,7 +48,9 @@ account carry a currency and a balance the rest of Monize already understands.
 - The refresh (`ExchangeRateService.refreshAllRatesGlobally`) asks
   `FxProviderChain.latest(base, quotes)` for every canonical pair of the
   currencies in use. A quote goes to the first provider that `carries` both
-  codes. The chain is built once from `FX_PROVIDERS`.
+  codes. The chain is built once by the module factory (since
+  2026-11-16 in a fixed order, Frankfurter v2 then Yahoo; `FX_PROVIDERS` was
+  removed, `docs/specs/frankfurter-v2-provider.md`).
 - A crypto security (`security_type = 'CRYPTO'`) is priced from Yahoo's
   `<COIN>-<FIAT>` symbol; `cryptoPairFiat` reads the fiat leg
   (`backend/src/securities/providers/crypto-pair.util.ts`). A weekend cron tick
@@ -94,8 +96,9 @@ account carry a currency and a balance the rest of Monize already understands.
    `decimalPlaces` runs to 8 and a crypto currency defaults to 8.
 5. **A crypto exchange rate provider, always present, always last.** A
    `CryptoFxProvider` (source slug `yahoo_crypto`) is appended to the chain the
-   module factory builds, after whatever `FX_PROVIDERS` names. It is not a
-   token of `FX_PROVIDERS`: there is nothing to configure, because no other
+   module factory builds, after the fiat providers (`FX_PROVIDERS` named them
+   until 2026-11-16, and this was never a token of it): there is nothing to
+   configure, because no other
    provider carries a coin, and a chain without it could never price a
    `CRYPTO` currency. `carries(code)` is true for a `CRYPTO` currency that has a
    `quote_symbol` and for every `FIAT` code (it needs both sides). For a pair

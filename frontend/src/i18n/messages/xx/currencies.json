@@ -18,7 +18,6 @@
       "line": "[XX-Rates from {providers}-XX]",
       "separator": "[XX-, then -XX]",
       "names": {
-        "frankfurter": "[XX-Frankfurter (ECB reference rates)-XX]",
         "frankfurter_v2": "[XX-Frankfurter (central bank rates)-XX]",
         "yahoo": "[XX-Yahoo Finance-XX]",
         "crypto": "[XX-Crypto pairs (Yahoo)-XX]"

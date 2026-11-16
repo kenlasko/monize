@@ -18,7 +18,6 @@
       "line": "Tỷ giá từ {providers}",
       "separator": ", sau đó ",
       "names": {
-        "frankfurter": "Frankfurter (tỷ giá tham chiếu ECB)",
         "frankfurter_v2": "Frankfurter (tỷ giá ngân hàng trung ương)",
         "yahoo": "Yahoo Finance",
         "crypto": "Cặp tiền mã hóa (Yahoo)"

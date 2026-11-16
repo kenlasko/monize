@@ -104,7 +104,7 @@ vi.mock('@/lib/exchange-rates', () => ({
     deleteCurrency: vi.fn(),
     lookupCurrency: vi.fn(),
   },
-  isRateProviderName: (name: string) => ['frankfurter', 'yahoo', 'crypto'].includes(name),
+  isRateProviderName: (name: string) => ['frankfurter_v2', 'yahoo', 'crypto'].includes(name),
 }));
 
 // Mock useExchangeRates
@@ -476,31 +476,31 @@ describe('CurrenciesPage', () => {
   });
 
   describe('the provider line', () => {
-    it('names the configured providers in the order they are asked', async () => {
+    it('names the providers in the order they are asked', async () => {
       mockGetRateStatus.mockResolvedValue({
         lastUpdated: null,
         providers: [
-          { name: 'frankfurter', source: 'frankfurter' },
+          { name: 'frankfurter_v2', source: 'frankfurter_v2' },
           { name: 'yahoo', source: 'yahoo_finance' },
         ],
       });
       render(<CurrenciesPage />);
       expect(await screen.findByTestId('fx-provider-line')).toHaveTextContent(
-        'Rates from Frankfurter (ECB reference rates), then Yahoo Finance',
+        'Rates from Frankfurter (central bank rates), then Yahoo Finance',
       );
     });
 
-    it('names the always-present crypto pair provider after the configured ones', async () => {
+    it('names the crypto pair provider after the fiat ones', async () => {
       mockGetRateStatus.mockResolvedValue({
         lastUpdated: null,
         providers: [
-          { name: 'frankfurter', source: 'frankfurter' },
+          { name: 'frankfurter_v2', source: 'frankfurter_v2' },
           { name: 'crypto', source: 'yahoo_crypto' },
         ],
       });
       render(<CurrenciesPage />);
       expect(await screen.findByTestId('fx-provider-line')).toHaveTextContent(
-        'Rates from Frankfurter (ECB reference rates), then Crypto pairs (Yahoo)',
+        'Rates from Frankfurter (central bank rates), then Crypto pairs (Yahoo)',
       );
     });
 

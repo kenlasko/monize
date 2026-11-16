@@ -1953,7 +1953,8 @@ Status              enforced -- the conflict action is the mechanism, and the
 ```text
 Statement           Every exchange_rates row a provider writes carries that
                     provider's source slug. Every provider question passes
-                    through FxProviderChain in the order FX_PROVIDERS names.
+                    through FxProviderChain in its fixed order (Frankfurter,
+                    Yahoo, then the crypto pair provider).
                     "The provider answered with nothing" and "no provider
                     answered" are kept apart per provider, so an outage at one
                     provider is never remembered as an empty window: a window
@@ -1969,11 +1970,11 @@ Statement           Every exchange_rates row a provider writes carries that
                     because a symbol mapped later changes the answer without
                     changing the chain; a coin's ticker first set or changed
                     deletes the code's coverage rows.
-Source of truth     FX_PROVIDERS (the configured order, parsed against
-                    FX_PROVIDER_NAMES) and FxRateProvider.source (the slug each
+Source of truth     FX_PROVIDER_NAMES (the fiat order the module factory builds
+                    the chain from) and FxRateProvider.source (the slug each
                     adapter writes).
 Enforcement         backend/src/currencies/providers/fx-provider-chain.ts asks
-                    the providers in FX_PROVIDERS order and gates every call on
+                    the providers in that order and gates every call on
                     carries. ExchangeRateService asks the chain for every rate
                     question (the refresh per base, the backfill and
                     fillRateWindow per window, getRateForDate's provider step,
@@ -1988,13 +1989,11 @@ Enforcement         backend/src/currencies/providers/fx-provider-chain.ts asks
                     (carriesAny, verifyCurrency, searchCurrency; task B5), and
                     provider-call.guard.spec.ts scans the whole currencies
                     directory for a fetch outside the breaker. The Frankfurter
-                    adapter (currencies/providers/frankfurter-fx.provider.ts)
-                    exists and answers null only for a non-answer, but nothing
-                    asks it until an operator names it in FX_PROVIDERS (the
-                    default changes at task R1). The opt-in Frankfurter v2
                     adapter (currencies/providers/frankfurter-v2-fx.provider.ts,
                     source frankfurter_v2, docs/specs/frankfurter-v2-provider.md)
-                    is held by the same two guards.
+                    answers null only for a non-answer; the ECB-only v1 adapter
+                    it replaced is gone, and its slug frankfurter stays on the
+                    source guard's list because its rows are still stored.
                     exchange_rate_coverage.providers records the ordered source
                     slugs of the chain that wrote each row;
                     ExchangeRateHistoryService reads a row under any other
@@ -2036,9 +2035,9 @@ Status              enforced -- the chain, the service on it, the source
                     guard and the currency lookup on the chain are on main
                     (tasks B1, B2 and B5 of
                     docs/specs/exchange-rate-providers.md), the
-                    default order is frankfurter,yahoo (task R1), and the
-                    section 5 truth table cases are named in
-                    fx-provider-chain.spec.ts.
+                    order is fixed at frankfurter_v2,yahoo (FX_PROVIDERS was
+                    removed with the v1 adapter), and the section 5 truth
+                    table cases are named in fx-provider-chain.spec.ts.
 ```
 
 ### INV-CRYPTO-001 -- an account's type and its currency's kind agree
@@ -2164,9 +2163,8 @@ Enforcement         FxProviderChain (backend/src/currencies/providers/
                     CRYPTO_MISS_RELOAD_MS, so a coin created on another replica
                     or by a restore is not routed to Yahoo's =X grammar), and
                     the restore forgets the snapshot after it commits;
-                    the factory in currencies.module.ts appends it after
-                    whatever FX_PROVIDERS names, and resolveFxProviders refuses
-                    it as a token (PAIR_PROVIDER_NAMES). Its calls reach Yahoo
+                    the factory in currencies.module.ts appends it after the
+                    fiat providers (PAIR_PROVIDER_NAMES). Its calls reach Yahoo
                     through YahooFxProvider's pair-symbol methods and so through
                     YahooFinanceService's throttle and breaker. INV-FX-005's
                     source guard holds the slug inside the providers directory.
