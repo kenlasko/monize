@@ -21,6 +21,8 @@ import {
   DuplicateTransactionsResponse,
   DuplicateGroup,
   DuplicateTransactionItem,
+  DuplicateConfidence,
+  DuplicateReasonCode,
 } from "./dto";
 import {
   investmentExclusionSql,
@@ -293,12 +295,23 @@ export class DataQualityReportsService {
         t.id,
         t.transaction_date,
         t.amount,
+        t.currency_code,
+        t.account_id,
         COALESCE(p.name, t.payee_name) as payee_name,
         t.description,
-        a.name as account_name
+        a.name as account_name,
+        t.category_id,
+        CASE
+          WHEN pc.name IS NOT NULL THEN pc.name || ': ' || c.name
+          ELSE c.name
+        END as category_name,
+        COALESCE(t.is_split, false) as is_split,
+        t.status
       FROM transactions t
       LEFT JOIN payees p ON p.id = t.payee_id
       LEFT JOIN accounts a ON a.id = t.account_id
+      LEFT JOIN categories c ON c.id = t.category_id
+      LEFT JOIN categories pc ON pc.id = c.parent_id
       WHERE t.user_id = $1
         ${dateFilter}
         AND t.is_transfer = false
@@ -327,6 +340,12 @@ export class DataQualityReportsService {
       payee_name: string | null;
       description: string | null;
       account_name: string | null;
+      currency_code: string;
+      account_id: string;
+      category_id: string | null;
+      category_name: string | null;
+      is_split: boolean;
+      status: string | null;
     }
 
     const rows: RawTx[] = await withScopedDb(this.dataSource, (m) =>
@@ -340,9 +359,15 @@ export class DataQualityReportsService {
         .split("T")[0],
       // The row's own account currency, shown as stored: all of its places.
       amount: toMoneyNumber(row.amount, MONEY_SCALE),
+      currencyCode: row.currency_code,
+      accountId: row.account_id,
       payeeName: row.payee_name,
       description: row.description,
       accountName: row.account_name,
+      categoryId: row.category_id ?? null,
+      categoryName: row.category_name ?? null,
+      isSplit: row.is_split === true,
+      status: row.status ?? null,
     }));
 
     const groups: DuplicateGroup[] = [];
@@ -438,19 +463,43 @@ export class DataQualityReportsService {
               (matches[0].payeeName || "").toLowerCase().trim(),
           );
 
-          let confidence: "high" | "medium" | "low" = "low";
+          // "Very high" is the tier a user bulk-deletes from, so it is the
+          // strict one: the very same stored amount, in the same account (so
+          // the same currency: the matching above tolerates 0.01 and spans
+          // accounts, and one charge really can hit two cards on one day),
+          // and the same category. A split parent has no category of its own
+          // (its lines carry them, and may differ), so splits never qualify;
+          // two uncategorized rows do, since neither was ever filed.
+          const allIdentical = matches.every(
+            (m) =>
+              !m.isSplit &&
+              m.categoryId === matches[0].categoryId &&
+              m.amount === matches[0].amount &&
+              m.accountId === matches[0].accountId,
+          );
+
+          let confidence: DuplicateConfidence = "low";
+          let reasonCode: DuplicateReasonCode;
           let reason: string;
 
-          if (allSameDate && allSamePayee) {
+          if (allSameDate && allSamePayee && allIdentical) {
+            confidence = "very_high";
+            reasonCode = "same_date_amount_payee_category";
+            reason = "Same account, date, amount, payee, and category";
+          } else if (allSameDate && allSamePayee) {
             confidence = "high";
+            reasonCode = "same_date_amount_payee";
             reason = "Same date, amount, and payee";
           } else if (allSameDate) {
             confidence = "medium";
+            reasonCode = "same_date_amount";
             reason = "Same date and amount";
           } else if (allSamePayee) {
             confidence = "medium";
+            reasonCode = "same_payee_amount_within_days";
             reason = `Same payee and amount within ${maxDaysDiff} day(s)`;
           } else {
+            reasonCode = "same_amount_within_days";
             reason = `Same amount within ${maxDaysDiff} day(s)`;
           }
 
@@ -458,16 +507,19 @@ export class DataQualityReportsService {
             key: `${matches[0].id}-${matches.length}`,
             transactions: matches,
             reason,
+            reasonCode,
+            windowDays: maxDaysDiff,
             confidence,
           });
         }
       }
     }
 
-    const confidenceOrder: Record<string, number> = {
-      high: 0,
-      medium: 1,
-      low: 2,
+    const confidenceOrder: Record<DuplicateConfidence, number> = {
+      very_high: 0,
+      high: 1,
+      medium: 2,
+      low: 3,
     };
     groups.sort((a, b) => {
       const confDiff =
@@ -478,9 +530,8 @@ export class DataQualityReportsService {
       );
     });
 
-    const high = groups.filter((g) => g.confidence === "high");
-    const medium = groups.filter((g) => g.confidence === "medium");
-    const low = groups.filter((g) => g.confidence === "low");
+    const countOf = (level: DuplicateConfidence) =>
+      groups.filter((g) => g.confidence === level).length;
 
     const potentialSavings = sumMoney(
       groups.map((group) => {
@@ -493,9 +544,10 @@ export class DataQualityReportsService {
       groups,
       summary: {
         totalGroups: groups.length,
-        highCount: high.length,
-        mediumCount: medium.length,
-        lowCount: low.length,
+        veryHighCount: countOf("very_high"),
+        highCount: countOf("high"),
+        mediumCount: countOf("medium"),
+        lowCount: countOf("low"),
         potentialSavings: roundMoney(potentialSavings),
       },
     };

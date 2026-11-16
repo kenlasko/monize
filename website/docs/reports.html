@@ -88,6 +88,22 @@
 <figure><img src="/docs/images/report-foreign-currency-fees.png" alt="The Foreign Currency Transaction Fees report" width="1600" height="1000" loading="lazy" decoding="async" class="shot-dark"/><img src="/docs/images/report-foreign-currency-fees.light.png" alt="The Foreign Currency Transaction Fees report" width="1600" height="1000" loading="lazy" decoding="async" class="shot-light"/><figcaption>The Foreign Currency Transaction Fees report</figcaption></figure>
 <h3 id="maintenance-reports">Maintenance Reports<a class="hlink" href="#maintenance-reports" aria-label="Link to this section">#</a></h3>
 <div class="table-wrap"><table><thead><tr><th>Report</th><th>Description</th></tr></thead><tbody><tr><td><strong>Uncategorized Transactions</strong></td><td>Find and categorize transactions that are missing categories</td></tr><tr><td><strong>Duplicate Transaction Finder</strong></td><td>Identify potential duplicate entries that may need review or deletion</td></tr></tbody></table></div>
+<h4 id="duplicate-transaction-finder">Duplicate Transaction Finder<a class="hlink" href="#duplicate-transaction-finder" aria-label="Link to this section">#</a></h4>
+<p>The <strong>Duplicate Transaction Finder</strong> groups transactions that look like copies of each other within the date range you pick (<strong>1M</strong> up to <strong>10Y</strong>, or <strong>All Time</strong>). <strong>Sensitivity</strong> sets how many days apart two copies may be. Each group carries a confidence level:</p>
+<ul>
+<li><strong>Very high</strong> -- same account, date, exact amount, payee and category (two uncategorized transactions count as the same category; split transactions never reach this level, since their lines may differ)</li>
+<li><strong>High</strong> -- same date, amount and payee</li>
+<li><strong>Medium</strong> -- same date and amount, or same payee and amount within a few days</li>
+<li><strong>Low</strong> -- same amount within a few days</li>
+</ul>
+<p>Each transaction shows its date, payee, description, category, account and amount, and whether it is <strong>Cleared</strong> or <strong>Reconciled</strong>. Click a transaction to open it on the Transactions page.</p>
+<p>To remove duplicates without leaving the report:</p>
+<ol>
+<li>Under <strong>Select duplicates</strong>, click a confidence level. Every extra copy in each group at that level is ticked, and one copy per group is left unticked: a reconciled copy first, then a cleared one, otherwise the earliest. A reconciled transaction is never ticked for you.</li>
+<li>Untick anything that is not a duplicate, or tick individual transactions yourself. <strong>Clear selection</strong> starts over.</li>
+<li>Click <strong>Delete selected</strong>, check the count in the confirmation, and click <strong>Delete</strong>. The confirmation warns you when every copy in a group is ticked, so no original would remain.</li>
+</ol>
+<p>The report then reloads without the deleted transactions. If <strong>Lock reconciled transactions</strong> is on in <a href="/docs/settings-and-security#preferences">Settings -&gt; Preferences</a>, a selection that includes a reconciled transaction you ticked yourself is refused as a whole and nothing is deleted.</p>
 <h3 id="bills-reports">Bills Reports<a class="hlink" href="#bills-reports" aria-label="Link to this section">#</a></h3>
 <div class="table-wrap"><table><thead><tr><th>Report</th><th>Description</th></tr></thead><tbody><tr><td><strong>Upcoming Bills Calendar</strong></td><td>Visual calendar of scheduled transactions and upcoming bill due dates</td></tr><tr><td><strong>Bill Payment History</strong></td><td>Track payment patterns and history for recurring bills and scheduled transactions</td></tr></tbody></table></div>
 <h3 id="budget-reports">Budget Reports<a class="hlink" href="#budget-reports" aria-label="Link to this section">#</a></h3>
