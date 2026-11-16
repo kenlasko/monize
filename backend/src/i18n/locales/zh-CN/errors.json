@@ -551,7 +551,7 @@
     "noRateForSplitTransfer": "{{ date }} 没有 {{ pair }} 的汇率：一条拆分行转账到另一种货币的账户。请为该货币对和日期添加汇率，然后重新导入。",
     "duplicatesChanged": "可能重复项在检查后已发生变化。未导入任何内容；请重新检查。",
     "duplicateDecisionRepeated": "文件中的一行对其可能重复项只能有一个决定。",
-    "duplicateActionNotAllowed": "已对账的交易不能合并或替换，转账不能替换。未导入任何内容。"
+    "duplicateActionNotAllowed": "已对账的交易不能合并或替换，转账或拆分交易不能替换。未导入任何内容。"
   },
   "monteCarlo": {
     "scenarioNotFound": "未找到情景 {{ id }}",
@@ -1027,7 +1027,7 @@
     "selectionConflict": "一笔交易只能有一个决定：导入、添加到例外、合并、保留您的或替换您的。",
     "duplicateNeedsPreview": "关于可能重复项的决定需要显示它的那次预览。未导入任何内容；请重新预览。",
     "selectionNotDuplicate": "选择合并、保留或替换的交易已不再是可能重复项。未导入任何内容；请重新预览。",
-    "duplicateActionNotAllowed": "已对账的交易不能合并或替换，转账不能替换。未导入任何内容；请保留它，或将银行的记录导入到它旁边。"
+    "duplicateActionNotAllowed": "已对账的交易不能合并或替换，转账或拆分交易不能替换。未导入任何内容；请保留它，或将银行的记录导入到它旁边。"
   },
   "warranties": {
     "notFound": "未找到 ID 为 {{ id }} 的保修",

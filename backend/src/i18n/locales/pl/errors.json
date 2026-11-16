@@ -551,7 +551,7 @@
     "noRateForSplitTransfer": "Brak kursu wymiany dla {{ pair }} na dzień {{ date }}: pozycja podziału przelewa na konto w innej walucie. Dodaj kurs wymiany dla tej pary i daty, a następnie zaimportuj ponownie.",
     "duplicatesChanged": "Możliwe duplikaty zmieniły się od czasu ich sprawdzenia. Nic nie zaimportowano; sprawdź ponownie.",
     "duplicateDecisionRepeated": "Wiersz pliku może mieć tylko jedną decyzję dotyczącą jego możliwego duplikatu.",
-    "duplicateActionNotAllowed": "Uzgodnionej transakcji nie można scalić ani zastąpić, a przelewu nie można zastąpić. Nic nie zaimportowano."
+    "duplicateActionNotAllowed": "Uzgodnionej transakcji nie można scalić ani zastąpić, a przelewu ani transakcji podzielonej nie można zastąpić. Nic nie zaimportowano."
   },
   "monteCarlo": {
     "scenarioNotFound": "Nie znaleziono scenariusza {{ id }}",
@@ -1027,7 +1027,7 @@
     "selectionConflict": "Transakcja może mieć tylko jedną decyzję: zaimportuj ją, dodaj do wyjątków, scal ją, zachowaj swoją lub zastąp swoją.",
     "duplicateNeedsPreview": "Decyzja dotycząca możliwego duplikatu wymaga podglądu, w którym został pokazany. Nic nie zaimportowano; wyświetl podgląd ponownie.",
     "selectionNotDuplicate": "Transakcja wybrana do scalenia, zachowania lub zastąpienia nie jest już możliwym duplikatem. Nic nie zaimportowano; wyświetl podgląd ponownie.",
-    "duplicateActionNotAllowed": "Uzgodnionej transakcji nie można scalić ani zastąpić, a przelewu nie można zastąpić. Nic nie zaimportowano; zachowaj swoją transakcję lub zaimportuj obok niej wiersz z banku."
+    "duplicateActionNotAllowed": "Uzgodnionej transakcji nie można scalić ani zastąpić, a przelewu ani transakcji podzielonej nie można zastąpić. Nic nie zaimportowano; zachowaj swoją transakcję lub zaimportuj obok niej wiersz z banku."
   },
   "warranties": {
     "notFound": "Nie znaleziono gwarancji o ID {{ id }}",

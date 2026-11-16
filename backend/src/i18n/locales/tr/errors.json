@@ -551,7 +551,7 @@
     "noRateForSplitTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: bir bölünmüş satır başka para birimindeki bir hesaba transfer ediyor. Bu çift ve tarih için bir döviz kuru ekleyin, ardından yeniden içe aktarın.",
     "duplicatesChanged": "Olası mükerrerler denetlendikten sonra değişti. Hiçbir şey içe aktarılmadı; yeniden denetleyin.",
     "duplicateDecisionRepeated": "Dosyanın bir satırı için olası mükerreriyle ilgili yalnızca bir karar verilebilir.",
-    "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer de değiştirilemez. Hiçbir şey içe aktarılmadı."
+    "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer veya bölünmüş bir işlem de değiştirilemez. Hiçbir şey içe aktarılmadı."
   },
   "monteCarlo": {
     "scenarioNotFound": "{{ id }} senaryosu bulunamadı",
@@ -1027,7 +1027,7 @@
     "selectionConflict": "Bir işlem için yalnızca bir karar verilebilir: içe aktarmak, istisnalara eklemek, birleştirmek, sizinkini tutmak veya sizinkini değiştirmek.",
     "duplicateNeedsPreview": "Olası bir mükerrerle ilgili karar, onu gösteren önizlemeyi gerektirir. Hiçbir şey içe aktarılmadı; yeniden önizleyin.",
     "selectionNotDuplicate": "Birleştirmek, tutmak veya değiştirmek için seçilen bir işlem artık olası bir mükerrer değil. Hiçbir şey içe aktarılmadı; yeniden önizleyin.",
-    "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer de değiştirilemez. Hiçbir şey içe aktarılmadı; işlemi tutun ya da bankanın satırını yanına içe aktarın."
+    "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer veya bölünmüş bir işlem de değiştirilemez. Hiçbir şey içe aktarılmadı; işlemi tutun ya da bankanın satırını yanına içe aktarın."
   },
   "warranties": {
     "notFound": "{{ id }} kimliğine sahip garanti bulunamadı",

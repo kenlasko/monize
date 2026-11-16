@@ -857,6 +857,67 @@ describe("ImportService", () => {
         ]);
       });
 
+      it("locks the account before the decided transactions", async () => {
+        accountHolding();
+        processed();
+        await service.importQifFile(userId, decide("keep"));
+        const locks = mockQueryRunner.query.mock.calls
+          .map((call) => String(call[0]))
+          .filter((sql) => sql.includes("FOR UPDATE"));
+        const accountLock = locks.findIndex((sql) =>
+          sql.includes("FROM accounts"),
+        );
+        const rowLock = locks.findIndex((sql) =>
+          sql.includes("FROM transactions"),
+        );
+        expect(accountLock).toBeGreaterThanOrEqual(0);
+        expect(rowLock).toBeGreaterThan(accountLock);
+      });
+
+      it("gives a replaced row's bank id back to the map when the row's savepoint rolls back", async () => {
+        accountHolding([{ ...EXISTING, external_id: "ofx:A" }]);
+        mockedParseQif.mockReturnValue({
+          accountType: "CHEQUING",
+          accountName: "",
+          categories: ["Food"],
+          transferAccounts: [],
+          securities: [],
+          detectedDateFormat: "MM/DD/YYYY",
+          sampleDates: ["01/15/2025"],
+          openingBalance: null,
+          openingBalanceDate: null,
+          transactions: [
+            makeQifTransaction(),
+            makeQifTransaction({ date: "2025-01-20", amount: -7, fitId: "A" }),
+          ],
+        });
+        mockQueryRunner.manager.find.mockImplementation(
+          async (entity: unknown) =>
+            entity === Transaction
+              ? [
+                  {
+                    externalId: "ofx:A",
+                    transactionDate: "2025-01-14",
+                    amount: -50,
+                  },
+                ]
+              : [],
+        );
+        const heldAtSecondRow: boolean[] = [];
+        jest
+          .spyOn(ImportRegularProcessorService.prototype, "processTransaction")
+          .mockImplementationOnce(async () => {
+            throw new Error("row failed");
+          })
+          .mockImplementationOnce(async (ctx) => {
+            heldAtSecondRow.push(ctx.heldExternalIds.has("ofx:A"));
+          });
+        const result = await service.importQifFile(userId, decide("replace"));
+        expect(result.errors).toBe(1);
+        // The delete was rolled back with the row, so the id is held again.
+        expect(heldAtSecondRow).toEqual([true]);
+      });
+
       it("replaces: deletes the existing transaction through the delete path, then imports the row", async () => {
         accountHolding();
         const spy = processed();

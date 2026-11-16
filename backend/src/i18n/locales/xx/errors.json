@@ -523,7 +523,7 @@
   "import": {
     "duplicatesChanged": "[XX-The possible duplicates changed since they were checked. Nothing was imported; check again.-XX]",
     "duplicateDecisionRepeated": "[XX-A row of the file can have only one decision about its possible duplicate.-XX]",
-    "duplicateActionNotAllowed": "[XX-A reconciled transaction cannot be merged or replaced, and a transfer cannot be replaced. Nothing was imported.-XX]",
+    "duplicateActionNotAllowed": "[XX-A reconciled transaction cannot be merged or replaced, and a transfer or a split cannot be replaced. Nothing was imported.-XX]",
     "accountClosed": "[XX-The account is closed. Reopen it or choose another account.-XX]",
     "noAccountBlocks": "[XX-No account blocks found in QIF file. This file may not be a multi-account export.-XX]",
     "accountTypeRequired": "[XX-Choose an account type for these accounts before importing: {{ accounts }}-XX]",
@@ -1009,7 +1009,7 @@
     "selectionConflict": "[XX-A transaction can have only one decision: import it, add it to the exceptions, merge it, keep yours or replace yours.-XX]",
     "duplicateNeedsPreview": "[XX-A decision about a possible duplicate needs the preview that showed it. Nothing was imported; preview again.-XX]",
     "selectionNotDuplicate": "[XX-A transaction chosen to merge, keep or replace is not a possible duplicate any more. Nothing was imported; preview again.-XX]",
-    "duplicateActionNotAllowed": "[XX-A reconciled transaction cannot be merged or replaced, and a transfer cannot be replaced. Nothing was imported; keep it or import the bank's row beside it.-XX]",
+    "duplicateActionNotAllowed": "[XX-A reconciled transaction cannot be merged or replaced, and a transfer or a split cannot be replaced. Nothing was imported; keep it or import the bank's row beside it.-XX]",
     "nothingToUpdate": "[XX-Send autoSync, notifySuccess or tagOperationType to change a bank connection.-XX]",
     "simplefinCredentialsMissing": "[XX-Connect SimpleFIN before syncing accounts.-XX]",
     "simplefinAccessInvalid": "[XX-SimpleFIN returned an invalid access URL. Generate a new setup token in SimpleFIN Bridge.-XX]",

@@ -1644,9 +1644,19 @@ export class ImportService {
             const savepointName = `tx_import_${txIndex}`;
             await manager.query(`SAVEPOINT ${savepointName}`);
             const counters = snapshotRowCounters(importResult);
+            // `txIndex` is 1-based; the decisions name 0-based positions.
+            const duplicate = duplicatePlans.get(txIndex - 1);
+            // A replace frees the deleted row's bank id in the map; a rolled
+            // back row puts the delete back, so it puts the id back too.
+            const replacedKey =
+              duplicate?.action === "replace"
+                ? duplicate.existing.externalId
+                : null;
+            const replacedHolder =
+              replacedKey === null
+                ? undefined
+                : ctx.heldExternalIds.get(replacedKey);
             try {
-              // `txIndex` is 1-based; the decisions name 0-based positions.
-              const duplicate = duplicatePlans.get(txIndex - 1);
               if (isInvestment) {
                 await this.investmentProcessor.processTransaction(ctx, qifTx);
               } else if (
@@ -1670,6 +1680,9 @@ export class ImportService {
               // The payee the row created and the rule change it counted were
               // rolled back with it, so their counters go back too.
               restoreRowCounters(importResult, counters);
+              if (replacedKey !== null && replacedHolder !== undefined) {
+                ctx.heldExternalIds.set(replacedKey, replacedHolder);
+              }
               if (isExternalIdConflict(error)) {
                 // Another writer committed a row holding this row's bank id
                 // after the processor's lookup missed it; the unique index

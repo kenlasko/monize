@@ -551,7 +551,7 @@
     "noRateForSplitTransfer": "Tidak ada kurs untuk {{ pair }} pada {{ date }}: sebuah baris pecahan mentransfer ke akun dengan mata uang lain. Tambahkan kurs untuk pasangan dan tanggal tersebut, lalu impor lagi.",
     "duplicatesChanged": "Kemungkinan duplikat telah berubah sejak diperiksa. Tidak ada yang diimpor; periksa lagi.",
     "duplicateDecisionRepeated": "Satu baris file hanya dapat memiliki satu keputusan tentang kemungkinan duplikatnya.",
-    "duplicateActionNotAllowed": "Transaksi yang sudah direkonsiliasi tidak dapat digabungkan atau diganti, dan transfer tidak dapat diganti. Tidak ada yang diimpor."
+    "duplicateActionNotAllowed": "Transaksi yang sudah direkonsiliasi tidak dapat digabungkan atau diganti, dan transfer atau transaksi terbagi tidak dapat diganti. Tidak ada yang diimpor."
   },
   "monteCarlo": {
     "scenarioNotFound": "Skenario {{ id }} tidak ditemukan",
@@ -1027,7 +1027,7 @@
     "selectionConflict": "Satu transaksi hanya dapat memiliki satu keputusan: impor, tambahkan ke pengecualian, gabungkan, simpan milik Anda, atau ganti milik Anda.",
     "duplicateNeedsPreview": "Keputusan tentang kemungkinan duplikat memerlukan pratinjau yang menampilkannya. Tidak ada yang diimpor; buat pratinjau lagi.",
     "selectionNotDuplicate": "Transaksi yang dipilih untuk digabungkan, disimpan, atau diganti tidak lagi merupakan kemungkinan duplikat. Tidak ada yang diimpor; buat pratinjau lagi.",
-    "duplicateActionNotAllowed": "Transaksi yang sudah direkonsiliasi tidak dapat digabungkan atau diganti, dan transfer tidak dapat diganti. Tidak ada yang diimpor; simpan transaksi itu atau impor baris dari bank di sampingnya."
+    "duplicateActionNotAllowed": "Transaksi yang sudah direkonsiliasi tidak dapat digabungkan atau diganti, dan transfer atau transaksi terbagi tidak dapat diganti. Tidak ada yang diimpor; simpan transaksi itu atau impor baris dari bank di sampingnya."
   },
   "warranties": {
     "notFound": "Garansi dengan ID {{ id }} tidak ditemukan",

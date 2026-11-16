@@ -1,11 +1,15 @@
 import { BadRequestException, ConflictException } from "@nestjs/common";
 import type { EntityManager } from "typeorm";
-import { lockTransactionRows } from "../common/db/locks";
+import {
+  lockAccountsForBalanceWrite,
+  lockTransactionRows,
+} from "../common/db/locks";
 import {
   allowedDuplicateActions,
   loadDuplicateCandidates,
   matchPossibleDuplicates,
   mergeIntoExisting,
+  mergeMovesDate,
   toDuplicateExistingView,
   type DuplicateAction,
   type DuplicateCandidate,
@@ -184,6 +188,9 @@ export async function planFileDuplicates(
   }
 
   if (byRow.size > 0) {
+    // Accounts before transactions (docs/concurrency-and-idempotency.md
+    // section 5), the order the bank sync writer takes too.
+    await lockAccountsForBalanceWrite(m, [accountId], userId);
     await lockTransactionRows(
       m,
       [...byRow.values()].map((decision) => decision.transactionId),
@@ -217,7 +224,7 @@ export async function planFileDuplicates(
       throw new ImportDuplicateDecisionRefusedException(
         tr(
           "errors.import.duplicateActionNotAllowed",
-          "A reconciled transaction cannot be merged or replaced, and a transfer cannot be replaced. Nothing was imported.",
+          "A reconciled transaction cannot be merged or replaced, and a transfer or a split cannot be replaced. Nothing was imported.",
         ),
       );
     }
@@ -231,8 +238,11 @@ export async function planFileDuplicates(
  * (not for a transfer leg or a split parent), its check or reference number
  * when it has one, status Cleared, and its bank id when the existing row has
  * none and no row of the account holds it, so the next import of the same
- * statement recognizes the row. Its payee, category, splits, tags and memo
- * stay.
+ * statement recognizes the row. The id is stored only when the merge moves
+ * the date: recognition needs the row's date and amount to be the file's
+ * (`isSameBankRow`), so on a transfer leg or a split parent, which keep their
+ * date, it would recognize nothing. Its payee, category, splits, tags and
+ * memo stay.
  */
 export async function mergeFileRow(
   m: EntityManager,
@@ -243,7 +253,10 @@ export async function mergeFileRow(
 ): Promise<void> {
   const key = ofxExternalId(row.fitId);
   const externalId =
-    key !== null && existing.externalId === null && !heldExternalIds.has(key)
+    key !== null &&
+    existing.externalId === null &&
+    !heldExternalIds.has(key) &&
+    mergeMovesDate(existing)
       ? key
       : null;
   await mergeIntoExisting(m, userId, existing, {

@@ -551,7 +551,7 @@
     "noRateForSplitTransfer": "No hay tipo de cambio para {{ pair }} el {{ date }}: una línea dividida transfiere a una cuenta en otra moneda. Añade un tipo de cambio para ese par y esa fecha y vuelve a importar.",
     "duplicatesChanged": "Los posibles duplicados cambiaron desde que se comprobaron. No se importó nada; vuelve a comprobarlos.",
     "duplicateDecisionRepeated": "Una fila del archivo solo puede tener una decisión sobre su posible duplicado.",
-    "duplicateActionNotAllowed": "Una transacción conciliada no se puede fusionar ni reemplazar, y una transferencia no se puede reemplazar. No se importó nada."
+    "duplicateActionNotAllowed": "Una transacción conciliada no se puede fusionar ni reemplazar, y una transferencia o una transacción con desglose no se puede reemplazar. No se importó nada."
   },
   "monteCarlo": {
     "scenarioNotFound": "Escenario {{ id }} no encontrado",
@@ -1027,7 +1027,7 @@
     "selectionConflict": "Una transacción solo puede tener una decisión: importarla, añadirla a las excepciones, fusionarla, conservar la tuya o reemplazar la tuya.",
     "duplicateNeedsPreview": "Una decisión sobre un posible duplicado necesita la vista previa que lo mostró. No se importó nada; vuelve a generar la vista previa.",
     "selectionNotDuplicate": "Una transacción elegida para fusionar, conservar o reemplazar ya no es un posible duplicado. No se importó nada; vuelve a generar la vista previa.",
-    "duplicateActionNotAllowed": "Una transacción conciliada no se puede fusionar ni reemplazar, y una transferencia no se puede reemplazar. No se importó nada; consérvala o importa la fila del banco junto a ella."
+    "duplicateActionNotAllowed": "Una transacción conciliada no se puede fusionar ni reemplazar, y una transferencia o una transacción con desglose no se puede reemplazar. No se importó nada; consérvala o importa la fila del banco junto a ella."
   },
   "warranties": {
     "notFound": "Garantía con ID {{ id }} no encontrada",

@@ -551,7 +551,7 @@
     "noRateForSplitTransfer": "Não há taxa de câmbio para {{ pair }} em {{ date }}: uma linha dividida transfere para uma conta em outra moeda. Adicione uma taxa de câmbio para esse par e essa data e importe novamente.",
     "duplicatesChanged": "As possíveis duplicatas mudaram desde que foram verificadas. Nada foi importado; verifique novamente.",
     "duplicateDecisionRepeated": "Uma linha do arquivo só pode ter uma decisão sobre sua possível duplicata.",
-    "duplicateActionNotAllowed": "Uma transação reconciliada não pode ser mesclada nem substituída, e uma transferência não pode ser substituída. Nada foi importado."
+    "duplicateActionNotAllowed": "Uma transação reconciliada não pode ser mesclada nem substituída, e uma transferência ou uma transação com divisões não pode ser substituída. Nada foi importado."
   },
   "monteCarlo": {
     "scenarioNotFound": "Cenário {{ id }} não encontrado",
@@ -1027,7 +1027,7 @@
     "selectionConflict": "Uma transação só pode ter uma decisão: importá-la, adicioná-la às exceções, mesclá-la, manter a sua ou substituir a sua.",
     "duplicateNeedsPreview": "Uma decisão sobre uma possível duplicata precisa da pré-visualização que a mostrou. Nada foi importado; pré-visualize novamente.",
     "selectionNotDuplicate": "Uma transação escolhida para mesclar, manter ou substituir não é mais uma possível duplicata. Nada foi importado; pré-visualize novamente.",
-    "duplicateActionNotAllowed": "Uma transação reconciliada não pode ser mesclada nem substituída, e uma transferência não pode ser substituída. Nada foi importado; mantenha a sua ou importe a linha do banco ao lado dela."
+    "duplicateActionNotAllowed": "Uma transação reconciliada não pode ser mesclada nem substituída, e uma transferência ou uma transação com divisões não pode ser substituída. Nada foi importado; mantenha a sua ou importe a linha do banco ao lado dela."
   },
   "warranties": {
     "notFound": "Garantia com ID {{ id }} não encontrada",

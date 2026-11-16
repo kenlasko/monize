@@ -241,4 +241,22 @@ describe("mergeFileRow", () => {
     expect(query.mock.calls[0][1][2]).toBe(false);
     expect(query.mock.calls[0][1][4]).toBeNull();
   });
+
+  it("stores no bank id on a transfer leg or a split parent, whose date it does not move", async () => {
+    // The next import recognizes a row by its bank id on a row of the file's
+    // date and amount, so an id on an unmoved date would recognize nothing.
+    const { m, query } = managerRecording();
+    const held = new Map<string, HeldBankRow>();
+    for (const over of [{ isTransfer: true }, { isSplit: true }]) {
+      await mergeFileRow(
+        m,
+        "user-1",
+        existing(over),
+        fileRow({ fitId: "A" }),
+        held,
+      );
+    }
+    expect(query.mock.calls.map((call) => call[1][6])).toEqual([null, null]);
+    expect(held.size).toBe(0);
+  });
 });

@@ -709,7 +709,7 @@ export class BankSyncWriterService {
         throw new BankSyncSelectionRefusedException(
           tr(
             "errors.bankSync.duplicateActionNotAllowed",
-            "A reconciled transaction cannot be merged or replaced, and a transfer cannot be replaced. Nothing was imported; keep it or import the bank's row beside it.",
+            "A reconciled transaction cannot be merged or replaced, and a transfer or a split cannot be replaced. Nothing was imported; keep it or import the bank's row beside it.",
           ),
         );
       }
