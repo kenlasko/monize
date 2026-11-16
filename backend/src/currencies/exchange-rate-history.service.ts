@@ -74,13 +74,16 @@ export interface RateCoverage {
 /**
  * The most dates one listing returns, newest first.
  *
- * Roughly eight years of daily observations. The listing is a scrollable panel
- * in a dialog, not an export, so it is bounded; what the bound leaves out is
- * reported (`truncated`) rather than quietly dropped, and `getCoverage` still
- * answers over every stored row, so the span a reader is told about is never
- * the capped one.
+ * Roughly fifty-five years of daily observations, weekends included: more
+ * than the providers' histories reach back (Frankfurter's starts in 1999), so
+ * the currency detail page's chart and table cover every period it offers. It
+ * used to be 2000, about eight years of weekday rates, which cut every period
+ * off in 2019 (issue #2245). It is still a bound, because a request is: what
+ * the bound leaves out is reported (`truncated`) rather than quietly dropped,
+ * and `getCoverage` still answers over every stored row, so the span a reader
+ * is told about is never the capped one.
  */
-export const STORED_RATE_ROW_CAP = 2000;
+export const STORED_RATE_ROW_CAP = 20_000;
 
 /** One stored observation, stated in the direction the reader asked about. */
 export interface StoredRate {

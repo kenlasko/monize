@@ -18,6 +18,7 @@ import {
   ownTransferLegs,
   transferRateSql,
 } from "../built-in-reports/transfer-rate-sql";
+import { resolveIndexedRate } from "../common/time-series/rate-index.util";
 import { ExchangeRateService } from "./exchange-rate.service";
 import { STORED_RATE_ROW_CAP } from "./exchange-rate-history.service";
 
@@ -78,6 +79,13 @@ export interface TransactionRate {
   kind: "foreignEntry" | "transfer";
   accountName: string;
   payeeName: string | null;
+  /**
+   * The stored market rate for `rateDate` in the same direction
+   * (`resolveIndexedRate`: the newest observation on or before it within
+   * `FX_MAX_RATE_AGE_DAYS`), which the page measures the spread against.
+   * `null` when no stored rate applies to the date, never the settled rate.
+   */
+  marketRate: number | null;
 }
 
 export interface TransactionRateList {
@@ -298,8 +306,14 @@ export class CurrencyDetailService {
         ),
     );
 
+    const listed = rows.slice(0, STORED_RATE_ROW_CAP);
+    const marketRate = await this.buildMarketRateLookup(
+      listed,
+      code,
+      reportingCurrency,
+    );
     const rates: TransactionRate[] = [];
-    for (const row of rows.slice(0, STORED_RATE_ROW_CAP)) {
+    for (const row of listed) {
       const rate = transactionRateOf(row);
       if (rate === null) continue;
       rates.push({
@@ -309,6 +323,7 @@ export class CurrencyDetailService {
         kind: rate.kind,
         accountName: row.account_name,
         payeeName: row.payee_name ?? null,
+        marketRate: marketRate(row.rate_date),
       });
     }
 
@@ -316,6 +331,41 @@ export class CurrencyDetailService {
       ...empty,
       rates,
       truncated: rows.length > STORED_RATE_ROW_CAP,
+    };
+  }
+
+  /**
+   * The stored market rate of `code` in the reporting currency for a date, from
+   * one index over the listed dates, through the resolver every report uses
+   * (INV-FX-001). Stored rows only: the page does not fetch from a provider
+   * on a read, which is what its Fill gaps button is for.
+   */
+  private async buildMarketRateLookup(
+    rows: readonly RawTransactionRate[],
+    code: string,
+    reportingCurrency: string,
+  ): Promise<(date: string) => number | null> {
+    if (rows.length === 0) return () => null;
+    let start = rows[0].rate_date;
+    let end = rows[0].rate_date;
+    for (const row of rows) {
+      if (row.rate_date < start) start = row.rate_date;
+      if (row.rate_date > end) end = row.rate_date;
+    }
+    const rateIndex = await this.exchangeRateService.getRateIndex(
+      new Set([code]),
+      reportingCurrency,
+      start,
+      end,
+    );
+    return (date) => {
+      const { rate } = resolveIndexedRate(
+        rateIndex,
+        code,
+        reportingCurrency,
+        date,
+      );
+      return rate === null ? null : roundFxRate(rate);
     };
   }
 

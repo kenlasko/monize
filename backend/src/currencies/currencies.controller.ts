@@ -265,7 +265,7 @@ export class CurrenciesController {
   @ApiOperation({
     summary: "Stored exchange rates for a pair",
     description:
-      "Every stored rate for the given currency against the caller's reporting currency, newest date first, one entry per date. A rate is stated as reporting-currency units per 1 unit of the code; a row stored in the other orientation is returned as its reciprocal with `inverted: true`. Bounded to the newest 2000 dates, and `truncated` says the pair holds more.",
+      "Every stored rate for the given currency against the caller's reporting currency, newest date first, one entry per date. A rate is stated as reporting-currency units per 1 unit of the code; a row stored in the other orientation is returned as its reciprocal with `inverted: true`. Bounded to the newest 20000 dates, and `truncated` says the pair holds more.",
   })
   @ApiQuery({ name: "code", required: true, type: String, example: "EUR" })
   @ApiResponse({ status: 200, description: "Stored rates for the pair" })
@@ -387,7 +387,7 @@ export class CurrenciesController {
   @ApiOperation({
     summary: "Exchange rates the caller's own transactions settled at",
     description:
-      "The rate each foreign-currency entry and each cross-currency transfer between the currency and the caller's reporting currency settled at, stated as reporting-currency units per 1 unit of the code, newest first. Empty for the reporting currency itself. Bounded to the newest 2000 transactions, and `truncated` says there are more.",
+      "The rate each foreign-currency entry and each cross-currency transfer between the currency and the caller's reporting currency settled at, stated as reporting-currency units per 1 unit of the code, newest first, with the stored market rate for its date beside it (`marketRate`, null when no stored rate applies). Empty for the reporting currency itself. Bounded to the newest 20000 transactions, and `truncated` says there are more.",
   })
   @ApiResponse({ status: 200, description: "Transaction rates for the pair" })
   getTransactionRates(

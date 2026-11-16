@@ -334,7 +334,7 @@ route keeps the 6-per-minute throttle its predecessor had.
 | `MAX_GAP_WINDOWS` | 8 | one press is a bounded number of provider calls |
 | | | applied **after** dropping windows already known empty, never by the planner |
 | `GAP_FILL_BUDGET_MS` | 20000 | a person is waiting on the request |
-| `STORED_RATE_ROW_CAP` | 2000 | the listing is a scrollable dialog, not an export |
+| `STORED_RATE_ROW_CAP` | 20000 | the currency detail page charts and lists the whole history of a pair; 2000 cut it off in 2019 (issue #2245) |
 
 What a bound leaves out is reported (`windowsRemaining`, `truncated`), never
 silently dropped. Pressing the button again continues from where the last press
