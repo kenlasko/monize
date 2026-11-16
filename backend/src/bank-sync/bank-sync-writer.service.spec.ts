@@ -1778,7 +1778,7 @@ describe("BankSyncWriterService", () => {
       is_transfer: false,
       is_split: false,
       transfer_account_name: null,
-      has_external_id: false,
+      external_id: null,
     };
     const PAIRS = new Map([["ref:1", { id: "tx-manual" }]]);
     const NO_LISTS = {
@@ -1886,6 +1886,7 @@ describe("BankSyncWriterService", () => {
         "2026-09-10",
         "REF-1",
         TransactionStatus.CLEARED,
+        null,
       ]);
       // No transaction is created for the merged row.
       expect(manager.create).toHaveBeenCalledTimes(2);
@@ -1953,6 +1954,26 @@ describe("BankSyncWriterService", () => {
       expect(order).toEqual(["remove", "create"]);
       expect(outcome).toMatchObject({ imported: 1, replaced: 1 });
       expect(ledgerClaims()[0][4]).toBeUndefined();
+    });
+
+    it("deletes nothing for a replace whose key a concurrent sync claimed first", async () => {
+      manager.query.mockImplementation(async (sql: string) => {
+        const text = String(sql);
+        if (text.includes("FROM transactions t")) return [EXISTING];
+        // The unique key: another sync's claim on ref:1 committed first.
+        if (text.includes("INSERT INTO bank_sync_imported_transactions")) {
+          return [];
+        }
+        return [];
+      });
+      const outcome = await service.write(
+        input(rows(), {
+          expectedFingerprint: planFingerprint(rows(), undefined, PAIRS),
+          selection: { ...NO_LISTS, replaceKeys: ["ref:1"] },
+        }),
+      );
+      expect(transactionsService.remove).not.toHaveBeenCalled();
+      expect(outcome).toMatchObject({ imported: 0, replaced: 0, skipped: 1 });
     });
 
     it("imports a pair beside the existing transaction when it is in importKeys", async () => {

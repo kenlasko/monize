@@ -96,6 +96,7 @@ import {
   fileDuplicateRows,
   ImportDuplicateDecisionRefusedException,
   ImportDuplicatesChangedException,
+  loanCategoryNames,
   mergeFileRow,
   pairFileRows,
   planFileDuplicates,
@@ -214,6 +215,7 @@ export class ImportService {
       userId,
       this.parseQifForImport(dto),
       dto.accountId,
+      dto.categoryMappings,
     );
   }
 
@@ -1013,6 +1015,7 @@ export class ImportService {
       userId,
       this.parseOfxForImport(dto),
       dto.accountId,
+      dto.categoryMappings,
     );
   }
 
@@ -1079,6 +1082,7 @@ export class ImportService {
       userId,
       this.parseCsvForImport(dto),
       dto.accountId,
+      dto.categoryMappings,
     );
   }
 
@@ -1140,6 +1144,7 @@ export class ImportService {
     userId: string,
     result: QifParseResult,
     accountId: string,
+    categoryMappings: CategoryMappingDto[],
   ): Promise<ImportDuplicatesResponseDto> {
     return withScopedDb(this.dataSource, async (manager) => {
       const account = await manager.getRepository(Account).findOne({
@@ -1173,6 +1178,7 @@ export class ImportService {
         accountId,
         result.transactions,
         held,
+        loanCategoryNames(categoryMappings),
       );
       return {
         ...answer,
@@ -1571,6 +1577,7 @@ export class ImportService {
               result.transactions,
               ctx.heldExternalIds,
               duplicateDecisions,
+              loanCategoryNames(categoryMappings),
             );
 
         // Create new entities
@@ -1771,6 +1778,11 @@ export class ImportService {
           recordHistory: false,
           deferDerivedRecompute: deferredRecompute,
         });
+        // The deleted row no longer holds its bank id, so the row replacing
+        // it may take that id (the processor looks it up here).
+        if (plan.existing.externalId !== null) {
+          ctx.heldExternalIds.delete(plan.existing.externalId);
+        }
         return true;
       case "merge":
         await mergeFileRow(

@@ -779,7 +779,7 @@ describe("ImportService", () => {
         is_transfer: false,
         is_split: false,
         transfer_account_name: null,
-        has_external_id: false,
+        external_id: null,
       };
 
       /** The account holds `existing`; everything else as the default mock answers. */

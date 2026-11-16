@@ -50,8 +50,12 @@ export interface DuplicateCandidate {
   isSplit: boolean;
   /** The other leg's account, for a transfer; null when it cannot be read. */
   transferAccountName: string | null;
-  /** Whether the row carries an `external_id` (a merge stores a FITID only on a row without one). */
-  hasExternalId: boolean;
+  /**
+   * The row's `external_id` (an API key or an OFX `ofx:` FITID); null when it
+   * has none. Never shown: a merge stores a FITID only on a row without one,
+   * and a file import leaves out a row whose id names a file row it skips.
+   */
+  externalId: string | null;
 }
 
 const DAY_MS = 86_400_000;
@@ -82,7 +86,9 @@ export function matchPossibleDuplicates<K>(
   const byAmount = new Map<number, DuplicateCandidate[]>();
   for (const candidate of existing) {
     const key = amountKey(candidate.amount);
-    byAmount.set(key, [...(byAmount.get(key) ?? []), candidate]);
+    const bucket = byAmount.get(key);
+    if (bucket === undefined) byAmount.set(key, [candidate]);
+    else bucket.push(candidate);
   }
 
   const ranked: {
@@ -129,16 +135,19 @@ export function matchPossibleDuplicates<K>(
 
 /**
  * The actions spec section 3 offers for a pair: a Reconciled row can only be
- * kept or imported beside, and a transfer leg cannot be deleted from here
- * (its other leg would go with it).
+ * kept or imported beside, and neither a transfer leg nor a split parent can
+ * be deleted from here (the other leg, or a split's transfer legs in other
+ * accounts, would go with it).
  */
 export function allowedDuplicateActions(
-  existing: Pick<DuplicateCandidate, "status" | "isTransfer">,
+  existing: Pick<DuplicateCandidate, "status" | "isTransfer" | "isSplit">,
 ): DuplicateAction[] {
   if (existing.status === TransactionStatus.RECONCILED) {
     return ["import", "keep"];
   }
-  if (existing.isTransfer) return ["import", "merge", "keep"];
+  if (existing.isTransfer || existing.isSplit) {
+    return ["import", "merge", "keep"];
+  }
   return ["import", "merge", "keep", "replace"];
 }
 
@@ -150,6 +159,49 @@ export function mergeMovesDate(
   existing: Pick<DuplicateCandidate, "isTransfer" | "isSplit">,
 ): boolean {
   return !existing.isTransfer && !existing.isSplit;
+}
+
+/** What a merge takes from the incoming row (spec section 3). */
+export interface MergeFromIncoming {
+  /** `YYYY-MM-DD`; not applied to a transfer leg or a split parent. */
+  date: string;
+  /** Kept as it was when the incoming row has none. */
+  referenceNumber: string | null;
+  /** Stored only when the existing row has none; null to store none. */
+  externalId: string | null;
+}
+
+/**
+ * Merge an incoming row into the existing transaction it pairs with, in the
+ * caller's transaction: the incoming date (`mergeMovesDate`), its reference
+ * when it has one, status Cleared, and its external id when the existing row
+ * has none. Its payee, category, splits, tags and memo stay. The one merge
+ * both imports write.
+ */
+export async function mergeIntoExisting(
+  m: EntityManager,
+  userId: string,
+  existing: DuplicateCandidate,
+  incoming: MergeFromIncoming,
+): Promise<void> {
+  await m.query(
+    `UPDATE transactions
+        SET transaction_date = CASE WHEN $3::boolean THEN $4::date ELSE transaction_date END,
+            reference_number = COALESCE($5, reference_number),
+            status = $6,
+            external_id = COALESCE(external_id, $7),
+            updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1 AND user_id = $2`,
+    [
+      existing.id,
+      userId,
+      mergeMovesDate(existing),
+      incoming.date,
+      incoming.referenceNumber,
+      TransactionStatus.CLEARED,
+      incoming.externalId,
+    ],
+  );
 }
 
 export interface LoadDuplicateCandidatesOptions {
@@ -196,7 +248,7 @@ export async function loadDuplicateCandidates(
     is_transfer: boolean | null;
     is_split: boolean | null;
     transfer_account_name: string | null;
-    has_external_id: boolean;
+    external_id: string | null;
   }>(
     await m.query(
       `SELECT t.id,
@@ -210,7 +262,7 @@ export async function loadDuplicateCandidates(
               t.is_transfer,
               t.is_split,
               la.name AS transfer_account_name,
-              (t.external_id IS NOT NULL) AS has_external_id
+              t.external_id
          FROM transactions t
          LEFT JOIN payees p ON p.id = t.payee_id
          LEFT JOIN categories c ON c.id = t.category_id
@@ -246,7 +298,7 @@ export async function loadDuplicateCandidates(
     isTransfer: row.is_transfer === true,
     isSplit: row.is_split === true,
     transferAccountName: row.transfer_account_name,
-    hasExternalId: row.has_external_id === true,
+    externalId: row.external_id ?? null,
   }));
 }
 

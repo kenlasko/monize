@@ -4,7 +4,9 @@ import { TransactionStatus } from "../transactions/entities/transaction.entity";
 import {
   fileDuplicateIncoming,
   fileDuplicateRows,
+  loanCategoryNames,
   mergeFileRow,
+  pairFileRows,
 } from "./import-duplicates";
 import type { HeldBankRow } from "./ofx-external-id";
 import type { QifTransaction } from "./qif-parser";
@@ -44,7 +46,7 @@ function existing(over: Partial<DuplicateCandidate> = {}): DuplicateCandidate {
     isTransfer: false,
     isSplit: false,
     transferAccountName: null,
-    hasExternalId: false,
+    externalId: null,
     ...over,
   };
 }
@@ -52,7 +54,8 @@ function existing(over: Partial<DuplicateCandidate> = {}): DuplicateCandidate {
 describe("fileDuplicateIncoming", () => {
   it("names each compared row by its 0-based position in the file", () => {
     expect(
-      fileDuplicateIncoming([fileRow(), fileRow({ amount: 7 })], new Map()),
+      fileDuplicateIncoming([fileRow(), fileRow({ amount: 7 })], new Map())
+        .incoming,
     ).toEqual([
       { ref: 0, date: "2026-11-10", amount: -42.5 },
       { ref: 1, date: "2026-11-10", amount: 7 },
@@ -64,7 +67,7 @@ describe("fileDuplicateIncoming", () => {
       fileDuplicateIncoming(
         [fileRow({ isTransfer: true }), fileRow({ void: true }), fileRow()],
         new Map(),
-      ).map((row) => row.ref),
+      ).incoming.map((row) => row.ref),
     ).toEqual([2]);
   });
 
@@ -77,8 +80,78 @@ describe("fileDuplicateIncoming", () => {
       fileDuplicateIncoming(
         [fileRow({ fitId: "A" }), fileRow({ fitId: "B" })],
         held,
-      ).map((row) => row.ref),
+      ).incoming.map((row) => row.ref),
     ).toEqual([1]);
+    expect(
+      fileDuplicateIncoming(
+        [fileRow({ fitId: "A" }), fileRow({ fitId: "B" })],
+        held,
+      ).heldKeys,
+    ).toEqual(new Set(["ofx:A"]));
+  });
+
+  it("leaves out a loan payment, which the transfer check owns, but not a split in that category", () => {
+    expect(
+      fileDuplicateIncoming(
+        [
+          fileRow({ category: "Mortgage" }),
+          fileRow({
+            category: "Mortgage",
+            splits: [
+              {
+                category: "Mortgage",
+                memo: "",
+                amount: -42.5,
+                isTransfer: false,
+                transferAccount: "",
+              },
+            ],
+          }),
+          fileRow({ category: "Utilities" }),
+        ],
+        new Map(),
+        new Set(["Mortgage"]),
+      ).incoming.map((row) => row.ref),
+    ).toEqual([1, 2]);
+  });
+});
+
+describe("loanCategoryNames", () => {
+  it("names the categories mapped to a loan", () => {
+    expect(
+      loanCategoryNames([
+        { originalName: "Mortgage", isLoanCategory: true },
+        { originalName: "Food" },
+      ]),
+    ).toEqual(new Set(["Mortgage"]));
+  });
+});
+
+describe("pairFileRows", () => {
+  it("does not pair another row with the transaction holding a skipped row's bank id", async () => {
+    const candidate = {
+      id: "tx-holder",
+      transaction_date: "2026-11-10",
+      amount: "-42.50000000",
+      payee_name: null,
+      category_name: null,
+      description: null,
+      reference_number: null,
+      status: "CLEARED",
+      is_transfer: false,
+      is_split: false,
+      transfer_account_name: null,
+      external_id: "ofx:A",
+    };
+    const query = jest.fn().mockResolvedValue([candidate]);
+    const pairs = await pairFileRows(
+      { query } as unknown as EntityManager,
+      "user-1",
+      "acc-1",
+      [fileRow({ fitId: "A" }), fileRow({ date: "2026-11-11" })],
+      new Map([["ofx:A", { transactionDate: "2026-11-10", amount: -42.5 }]]),
+    );
+    expect(pairs.size).toBe(0);
   });
 });
 
@@ -141,7 +214,7 @@ describe("mergeFileRow", () => {
     await mergeFileRow(
       m,
       "user-1",
-      existing({ hasExternalId: true }),
+      existing({ externalId: "ofx:OTHER" }),
       fileRow({ fitId: "A" }),
       new Map(),
     );

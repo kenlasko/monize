@@ -3,6 +3,7 @@ import { TransactionStatus } from "../transactions/entities/transaction.entity";
 import {
   allowedDuplicateActions,
   findPossibleDuplicates,
+  mergeIntoExisting,
   loadDuplicateCandidates,
   matchPossibleDuplicates,
   mergeMovesDate,
@@ -23,7 +24,7 @@ function existing(over: Partial<DuplicateCandidate> = {}): DuplicateCandidate {
     isTransfer: false,
     isSplit: false,
     transferAccountName: null,
-    hasExternalId: false,
+    externalId: null,
     ...over,
   };
 }
@@ -151,8 +152,13 @@ describe("allowedDuplicateActions", () => {
     ).toEqual(["import", "keep"]);
   });
 
-  it("offers no delete for a transfer leg", () => {
+  it("offers no delete for a transfer leg or a split parent", () => {
     expect(allowedDuplicateActions(existing({ isTransfer: true }))).toEqual([
+      "import",
+      "merge",
+      "keep",
+    ]);
+    expect(allowedDuplicateActions(existing({ isSplit: true }))).toEqual([
       "import",
       "merge",
       "keep",
@@ -170,9 +176,9 @@ describe("mergeMovesDate", () => {
 
 describe("toDuplicateExistingView", () => {
   it("writes the amount at the given places and leaves out the internals", () => {
-    const view = toDuplicateExistingView(existing({ hasExternalId: true }), 4);
+    const view = toDuplicateExistingView(existing({ externalId: "ofx:1" }), 4);
     expect(view.amount).toBe("-42.5000");
-    expect(view).not.toHaveProperty("hasExternalId");
+    expect(view).not.toHaveProperty("externalId");
   });
 });
 
@@ -234,7 +240,7 @@ describe("loadDuplicateCandidates", () => {
         is_transfer: true,
         is_split: null,
         transfer_account_name: "Visa",
-        has_external_id: false,
+        external_id: null,
       },
     ]);
     const [row] = await loadDuplicateCandidates(
@@ -271,7 +277,7 @@ describe("findPossibleDuplicates", () => {
         is_transfer: false,
         is_split: false,
         transfer_account_name: null,
-        has_external_id: false,
+        external_id: null,
       },
     ]);
     const pairs = await findPossibleDuplicates(
@@ -295,5 +301,29 @@ describe("findPossibleDuplicates", () => {
     );
     expect(pairs.size).toBe(0);
     expect(query).not.toHaveBeenCalled();
+  });
+});
+
+describe("mergeIntoExisting", () => {
+  it("takes the incoming date, reference, Cleared and an external id, in one UPDATE", async () => {
+    const query = jest.fn().mockResolvedValue([]);
+    await mergeIntoExisting(
+      { query } as unknown as EntityManager,
+      "user-1",
+      existing({ isTransfer: true }),
+      { date: "2026-11-12", referenceNumber: "77", externalId: "ofx:A" },
+    );
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toContain("COALESCE($5, reference_number)");
+    expect(sql).toContain("COALESCE(external_id, $7)");
+    expect(params).toEqual([
+      "tx-1",
+      "user-1",
+      false,
+      "2026-11-12",
+      "77",
+      TransactionStatus.CLEARED,
+      "ofx:A",
+    ]);
   });
 });

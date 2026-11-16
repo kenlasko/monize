@@ -28,7 +28,7 @@ import { TagsService } from "../tags/tags.service";
 import { TransactionRulesApplierService } from "../transaction-rules/transaction-rules-applier.service";
 import {
   allowedDuplicateActions,
-  mergeMovesDate,
+  mergeIntoExisting,
   type DuplicateAction,
   type DuplicateCandidate,
 } from "../import-preview/possible-duplicates";
@@ -502,16 +502,6 @@ export class BankSyncWriterService {
           }
           continue;
         }
-        if (pair !== undefined && decision === "replace") {
-          // Through the one delete path, which reverses what the row
-          // contributed and cleans up what hangs off it, in this transaction.
-          // A sync records no history entry, so neither does its delete.
-          await this.transactionsService.remove(userId, pair.id, {
-            recordHistory: false,
-            deferDerivedRecompute: deferred,
-          });
-          replaced += 1;
-        }
         const claimed = returnedRows<{ id: string }>(
           await m.query(
             `INSERT INTO bank_sync_imported_transactions
@@ -525,6 +515,18 @@ export class BankSyncWriterService {
         if (claimed.length === 0) {
           skipped += 1;
           continue;
+        }
+        if (pair !== undefined && decision === "replace") {
+          // Only once the key is this write's: a key a concurrent sync
+          // claimed writes nothing, so it must delete nothing either. Through
+          // the one delete path, which reverses what the row contributed and
+          // cleans up what hangs off it, in this transaction. A sync records
+          // no history entry, so neither does its delete.
+          await this.transactionsService.remove(userId, pair.id, {
+            recordHistory: false,
+            deferDerivedRecompute: deferred,
+          });
+          replaced += 1;
         }
 
         const payee = await this.resolvePayee(
@@ -742,22 +744,12 @@ export class BankSyncWriterService {
     );
     if (claimed.length === 0) return false;
     if (decision === "merge") {
-      await m.query(
-        `UPDATE transactions
-            SET transaction_date = CASE WHEN $3::boolean THEN $4::date ELSE transaction_date END,
-                reference_number = COALESCE($5, reference_number),
-                status = $6,
-                updated_at = CURRENT_TIMESTAMP
-          WHERE id = $1 AND user_id = $2`,
-        [
-          existing.id,
-          userId,
-          mergeMovesDate(existing),
-          row.transactionDate,
-          row.referenceNumber,
-          TransactionStatus.CLEARED,
-        ],
-      );
+      // A bank row has no FITID of its own: the ledger row is its key.
+      await mergeIntoExisting(m, userId, existing, {
+        date: row.transactionDate,
+        referenceNumber: row.referenceNumber,
+        externalId: null,
+      });
     }
     return true;
   }

@@ -3,16 +3,17 @@ import type { EntityManager } from "typeorm";
 import { lockTransactionRows } from "../common/db/locks";
 import {
   allowedDuplicateActions,
-  findPossibleDuplicates,
-  mergeMovesDate,
+  loadDuplicateCandidates,
+  matchPossibleDuplicates,
+  mergeIntoExisting,
   toDuplicateExistingView,
   type DuplicateAction,
   type DuplicateCandidate,
   type DuplicateIncomingRow,
 } from "../import-preview/possible-duplicates";
 import { tr } from "../i18n/translate";
-import { TransactionStatus } from "../transactions/entities/transaction.entity";
 import type {
+  CategoryMappingDto,
   ImportDuplicateDecisionDto,
   ImportDuplicateRowDto,
 } from "./dto/import.dto";
@@ -51,40 +52,79 @@ export interface FileDuplicatePlan {
 }
 
 /**
- * The rows that are compared: every row except a transfer (the transfer
- * check owns those), a void row (it moves no balance), and a row whose bank id
- * the account already holds on a row of the same date and amount (skipped as
- * already imported).
+ * The categories a file row is a loan payment by: the processor writes a
+ * non-split row in one of them as a transfer to the loan account
+ * (`resolveTransactionTarget`), so the transfer check owns it too.
+ */
+export function loanCategoryNames(
+  mappings: readonly Pick<
+    CategoryMappingDto,
+    "originalName" | "isLoanCategory"
+  >[],
+): Set<string> {
+  return new Set(
+    mappings.filter((m) => m.isLoanCategory).map((m) => m.originalName),
+  );
+}
+
+/**
+ * The rows that are compared: every row except a transfer or a loan payment
+ * (the transfer check owns those), a void row (it moves no balance), and a row
+ * whose bank id the account already holds on a row of the same date and
+ * amount (skipped as already imported). Also answers those held bank ids: the
+ * transaction holding one stands for the skipped row, so it pairs with no
+ * other row of the file.
  */
 export function fileDuplicateIncoming(
   rows: readonly QifTransaction[],
   heldExternalIds: ReadonlyMap<string, HeldBankRow>,
-): DuplicateIncomingRow<number>[] {
+  loanCategories: ReadonlySet<string> = new Set(),
+): { incoming: DuplicateIncomingRow<number>[]; heldKeys: Set<string> } {
   const incoming: DuplicateIncomingRow<number>[] = [];
+  const heldKeys = new Set<string>();
   for (const [index, row] of rows.entries()) {
-    if (row.isTransfer || row.void) continue;
+    const isSplit = (row.splits?.length ?? 0) > 0;
+    const isLoanPayment = !isSplit && loanCategories.has(row.category);
+    if (row.isTransfer || isLoanPayment || row.void) continue;
     const key = ofxExternalId(row.fitId);
     const holder = key === null ? undefined : heldExternalIds.get(key);
-    if (holder !== undefined && isSameBankRow(holder, row)) continue;
+    if (key !== null && holder !== undefined && isSameBankRow(holder, row)) {
+      heldKeys.add(key);
+      continue;
+    }
     incoming.push({ ref: index, date: row.date, amount: row.amount });
   }
-  return incoming;
+  return { incoming, heldKeys };
 }
 
 /** Pair the file's rows with the account's transactions (spec section 2). */
-export function pairFileRows(
+export async function pairFileRows(
   m: EntityManager,
   userId: string,
   accountId: string,
   rows: readonly QifTransaction[],
   heldExternalIds: ReadonlyMap<string, HeldBankRow>,
+  loanCategories: ReadonlySet<string> = new Set(),
 ): Promise<Map<number, DuplicateCandidate>> {
-  return findPossibleDuplicates(
+  const { incoming, heldKeys } = fileDuplicateIncoming(
+    rows,
+    heldExternalIds,
+    loanCategories,
+  );
+  if (incoming.length === 0) return new Map();
+  const candidates = await loadDuplicateCandidates(
     m,
     userId,
     accountId,
-    fileDuplicateIncoming(rows, heldExternalIds),
+    incoming,
     { excludeBankSynced: false },
+  );
+  return matchPossibleDuplicates(
+    incoming,
+    candidates.filter(
+      (candidate) =>
+        candidate.externalId === null || !heldKeys.has(candidate.externalId),
+    ),
   );
 }
 
@@ -114,8 +154,8 @@ export function fileDuplicateRows(
 
 /**
  * Hold the decisions to the pairs made now, before anything is written. The
- * existing transactions a decision names are row-locked and the rows paired
- * again under that lock, so a pair no concurrent edit can move is what each
+ * existing transactions the decisions name are row-locked first and the rows
+ * paired under that lock, so a pair no concurrent edit can move is what each
  * decision is checked against. A decision about a row that is not paired with
  * the transaction it names refuses the whole import (409); one the pair does
  * not allow, or a second one about the same row, is a 400. A pair without a
@@ -128,6 +168,7 @@ export async function planFileDuplicates(
   rows: readonly QifTransaction[],
   heldExternalIds: ReadonlyMap<string, HeldBankRow>,
   decisions: readonly ImportDuplicateDecisionDto[],
+  loanCategories: ReadonlySet<string> = new Set(),
 ): Promise<Map<number, FileDuplicatePlan>> {
   const byRow = new Map<number, ImportDuplicateDecisionDto>();
   for (const decision of decisions) {
@@ -142,15 +183,21 @@ export async function planFileDuplicates(
     byRow.set(decision.row, decision);
   }
 
-  let pairs = await pairFileRows(m, userId, accountId, rows, heldExternalIds);
   if (byRow.size > 0) {
     await lockTransactionRows(
       m,
       [...byRow.values()].map((decision) => decision.transactionId),
       userId,
     );
-    pairs = await pairFileRows(m, userId, accountId, rows, heldExternalIds);
   }
+  const pairs = await pairFileRows(
+    m,
+    userId,
+    accountId,
+    rows,
+    heldExternalIds,
+    loanCategories,
+  );
 
   const plans = new Map<number, FileDuplicatePlan>();
   for (const [index, existing] of pairs) {
@@ -196,26 +243,13 @@ export async function mergeFileRow(
 ): Promise<void> {
   const key = ofxExternalId(row.fitId);
   const externalId =
-    key !== null && !existing.hasExternalId && !heldExternalIds.has(key)
+    key !== null && existing.externalId === null && !heldExternalIds.has(key)
       ? key
       : null;
-  await m.query(
-    `UPDATE transactions
-        SET transaction_date = CASE WHEN $3::boolean THEN $4::date ELSE transaction_date END,
-            reference_number = COALESCE($5, reference_number),
-            status = $6,
-            external_id = COALESCE(external_id, $7),
-            updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1 AND user_id = $2`,
-    [
-      existing.id,
-      userId,
-      mergeMovesDate(existing),
-      row.date,
-      row.number || null,
-      TransactionStatus.CLEARED,
-      externalId,
-    ],
-  );
+  await mergeIntoExisting(m, userId, existing, {
+    date: row.date,
+    referenceNumber: row.number || null,
+    externalId,
+  });
   if (externalId !== null) holdKey(heldExternalIds, externalId, row);
 }
