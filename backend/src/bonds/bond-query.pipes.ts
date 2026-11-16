@@ -170,9 +170,10 @@ export const MAX_REDEMPTION_QUANTITY = 1_000_000_000;
  * to `MAX_REDEMPTION_QUANTITY`, written as plain digits, answered as the text
  * the handler converts. The handler parameter is declared `string`, so the
  * global `ValidationPipe` (`createGlobalValidationPipe`) hands this pipe the
- * query text as `String(value)`; declared `number`, it would hand over `+value`,
- * which reads `0x10` as 16 and `2.9999999999999999` as 3 and leaves no text to
- * check (issue 2221). A repeated key arrives joined (`4,5`) and fails the
+ * query text as `String(value)`; a `number` parameter ends in Nest's
+ * `ParseIntPipe` instead (`global-validation-param-pipes.guard.spec.ts`), and
+ * Nest's own conversion would have read `0x10` as 16 and `2.9999999999999999`
+ * as 3 (issue 2221). A repeated key arrives joined (`4,5`) and fails the
  * digits; a direct caller's value of any type other than text is refused.
  */
 @Injectable()

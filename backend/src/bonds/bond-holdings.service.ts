@@ -10,7 +10,10 @@ import {
   bondLotsAsOf,
   bondLotsFromTransactions,
 } from "./bond-lots";
-import { quantityInvalidException } from "./bond-query.pipes";
+import {
+  MAX_REDEMPTION_QUANTITY,
+  quantityInvalidException,
+} from "./bond-query.pipes";
 import { BondValuationService } from "./bond-valuation.service";
 import { ExactDecimal } from "./domain/exact-decimal";
 import { RedemptionSplitRefusal } from "./engine/redemption-split";
@@ -208,9 +211,11 @@ export class BondHoldingsService {
    * to the day (without `excludeTransactionId`, the row being edited), is folded
    * by `bondLotsFromTransactions`, whose `takenByLastRow` are the portions it
    * removes with the exact cost each carried.
-   * A quantity that is not a positive whole number of bonds is refused before
-   * anything is read (400, `QUANTITY_INVALID`): the lot fold skips a removal of
-   * zero, so it would answer an all-zero split. A quantity above the series held
+   * A quantity that is not a whole number of bonds from 1 to
+   * `MAX_REDEMPTION_QUANTITY` is refused before anything is read (400,
+   * `QUANTITY_INVALID`), the route's bound and so the preview's and the write's
+   * alike: the lot fold skips a removal of zero, so it would answer an all-zero
+   * split. A quantity above the series held
    * in the account is refused with the removal refusal (400, `errorCode`), a
    * ledger already underivable with 422. Reads stored terms and observations
    * only (INV-BOND-008); nothing is written.
@@ -224,7 +229,11 @@ export class BondHoldingsService {
     quantity: number,
     excludeTransactionId?: string,
   ): Promise<BondRedemptionSplit> {
-    if (!Number.isSafeInteger(quantity) || quantity < 1) {
+    if (
+      !Number.isSafeInteger(quantity) ||
+      quantity < 1 ||
+      quantity > MAX_REDEMPTION_QUANTITY
+    ) {
       throw quantityInvalidException(String(quantity));
     }
     return withScopedDb(this.dataSource, async (m) => {

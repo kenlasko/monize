@@ -513,8 +513,8 @@ export class BondsController {
     @Request() req,
     @Param("securityId", ParseUUIDPipe) securityId: string,
     @Query("date", new ParseCalendarDatePipe()) date: string,
-    // `string`, not `number`: the global ValidationPipe would hand the pipe
-    // `+value` and no text to check (ParseBondQuantityPipe).
+    // `string`, not `number`: a pipe of ours checks text, and a `number`
+    // parameter ends in Nest's ParseIntPipe (ParseBondQuantityPipe).
     @Query("quantity", new ParseBondQuantityPipe()) quantity: string,
     @Query("bondInstrumentId", new ParseUUIDPipe()) bondInstrumentId: string,
     @Query("accountId", new ParseUUIDPipe()) accountId: string,

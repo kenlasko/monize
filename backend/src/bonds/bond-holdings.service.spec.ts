@@ -499,7 +499,15 @@ describe("BondHoldingsService.redemptionSplit", () => {
     });
   });
 
-  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 53])(
+  it.each([
+    0,
+    -1,
+    1.5,
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    2 ** 53,
+    1_000_000_001,
+  ])(
     "refuses a quantity of %p with QUANTITY_INVALID before reading the ledger, never an all-zero split",
     async (quantity) => {
       const { service, manager } = setup({ ledger });

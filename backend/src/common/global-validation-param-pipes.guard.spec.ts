@@ -30,9 +30,15 @@ import { ParseBondQuantityPipe } from "../bonds/bond-query.pipes";
  * not text, so a parameter a pipe of ours checks is declared `string`, as
  * `ParseBondQuantityPipe`'s is.
  *
+ * The converter is last so that the handler receives what it converted; a
+ * bound or a check of ours belongs in the handler or on a `string` parameter.
+ *
  * The guard reads what TypeScript actually emitted (`design:paramtypes`), not
- * the annotation as written: `x?: number` and `type Q = number` emit `Number`,
- * while `x: number | undefined` emits `Object` and is passed through untouched.
+ * the annotation as written: `x?: number` and a local `type Q = number` emit
+ * `Number`, while `x: number | undefined` emits `Object` and is passed through
+ * untouched. An imported numeric alias emits `Object` under the isolated-module
+ * transpile Jest runs but `Number` under `nest build`, so the guard cannot see
+ * it: declare `number` or `boolean` itself.
  */
 
 const SRC_ROOT = join(__dirname, "..");

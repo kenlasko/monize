@@ -2,8 +2,8 @@ import { readdirSync, readFileSync, statSync } from "fs";
 import { join, relative } from "path";
 
 /**
- * Every app this backend builds, the server and each test app alike, registers
- * the one global pipe `createGlobalValidationPipe` builds. A test app with a
+ * Every global pipe registration, the server's and each test app's alike, is
+ * the one pipe `createGlobalValidationPipe` builds. A test app with a
  * `ValidationPipe` of its own converts what the server does not (the
  * `enableImplicitConversion` `test/helpers/test-database.ts` carried) or leaves
  * a `number` query to `+value`, so its suite passes requests the server answers
