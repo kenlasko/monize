@@ -1097,6 +1097,14 @@ jobs:
   #
   # No npm cache: the installer it uploads is a distributable, and
   # zizmor's cache-poisoning audit is about exactly that.
+  #
+  # Code signing (task C3, desktop/README.md "Code signing") goes through
+  # SignPath, which signs what it downloads from this run's artifacts: a file
+  # is uploaded, signed and brought back. SignPath cannot open an NSIS
+  # installer, so that happens twice. Monize.exe is signed first and the
+  # installer is rebuilt around it; then the installer itself is signed and
+  # the updater's files are rewritten to match it. The SignPath settings are
+  # repository variables and a secret; a fork has none and builds unsigned.
   desktop-windows:
     name: Desktop Windows Installer
     runs-on: windows-latest
@@ -1107,7 +1115,12 @@ jobs:
         needs.prepare-preview.result == 'success' ||
         (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')
       )
-    timeout-minutes: 75
+    # About 35 minutes of build and smoke test, plus up to 20 for each of the
+    # two signing requests.
+    timeout-minutes: 115
+    permissions:
+      contents: read
+      actions: read # the SignPath action reads this job's details and its artifacts
     outputs:
       version: ${{ steps.installer-version.outputs.version }}
     defaults:
@@ -1140,6 +1153,25 @@ jobs:
         run: |
           $head = (git rev-parse HEAD).Trim()
           if ($head -ne $env:GATED_SHA) { throw "checked out $head, but the gated revision is $env:GATED_SHA" }
+
+      # Before the build, so a missing setting fails in seconds rather than
+      # after it. The policy decides the certificate: test-signing until
+      # SignPath Foundation grants the release certificate, then
+      # release-signing.
+      - name: Check the SignPath settings
+        if: github.repository_owner == 'kenlasko'
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+        run: |
+          $missing = @('SIGNPATH_API_TOKEN', 'SIGNPATH_ORGANIZATION_ID', 'SIGNPATH_PROJECT_SLUG', 'SIGNPATH_SIGNING_POLICY_SLUG' |
+            Where-Object { -not [Environment]::GetEnvironmentVariable($_) })
+          if ($missing.Count -gt 0) {
+            throw "SignPath is not configured: set $($missing -join ', ') (the token is a secret, the others are variables; desktop/README.md, `"Code signing`")"
+          }
+          Write-Host "Signing through SignPath project $env:SIGNPATH_PROJECT_SLUG, policy $env:SIGNPATH_SIGNING_POLICY_SLUG"
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
@@ -1246,10 +1278,105 @@ jobs:
         working-directory: desktop
         run: npm run smoke:postgres
       # typecheck, build, stage --require-webp, electron-builder --win
-      # --publish never.
+      # --publish never. Unsigned. When signing, what this pass is for is
+      # release/win-unpacked, the application the installer packs; its
+      # installer is rebuilt below. A `--dir` build would be quicker but
+      # does not write resources/app-update.yml, and without it the
+      # installed app never looks for updates.
       - name: Build the installer
         working-directory: desktop
         run: npm run dist
+
+      - name: Upload Monize.exe for signing
+        id: unsigned-exe
+        if: github.repository_owner == 'kenlasko'
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: monize-exe-unsigned
+          path: desktop/release/win-unpacked/Monize.exe
+          if-no-files-found: error
+          retention-days: 1
+      # desktop/signpath/monize-exe.xml is the artifact configuration.
+      - name: Sign Monize.exe
+        if: github.repository_owner == 'kenlasko'
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: monize-exe
+          github-artifact-id: ${{ steps.unsigned-exe.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 1200
+          output-artifact-directory: ${{ runner.temp }}/signed-exe
+
+      # The same application with the signed Monize.exe in it, packed again by
+      # electron-builder with no build or staging step. The first pass's
+      # installer and feed file are removed first, so nothing unsigned is
+      # left for a later step to pick up.
+      - name: Rebuild the installer around the signed Monize.exe
+        if: github.repository_owner == 'kenlasko'
+        working-directory: desktop
+        run: |
+          $signed = Join-Path $env:RUNNER_TEMP 'signed-exe/Monize.exe'
+          $sig = Get-AuthenticodeSignature -LiteralPath $signed
+          if ($null -eq $sig.SignerCertificate) { throw "SignPath returned a Monize.exe with no signature" }
+          Write-Host "Monize.exe: $($sig.Status), $($sig.SignerCertificate.Subject), $($sig.SignerCertificate.Thumbprint)"
+          Copy-Item -LiteralPath $signed -Destination release/win-unpacked/Monize.exe -Force
+          Get-ChildItem -LiteralPath release -File |
+            Where-Object { $_.Name -match '^(Monize-Setup-.*|latest\.yml|beta\.yml)$' } |
+            Remove-Item
+          npm run dist:prepackaged
+          if ($LASTEXITCODE -ne 0) { throw "electron-builder --prepackaged exited with $LASTEXITCODE" }
+
+      - name: Upload the installer for signing
+        id: unsigned-installer
+        if: github.repository_owner == 'kenlasko'
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: monize-installer-unsigned
+          path: desktop/release/Monize-Setup-*.exe
+          if-no-files-found: error
+          retention-days: 1
+      # desktop/signpath/monize-installer.xml is the artifact configuration.
+      - name: Sign the installer
+        if: github.repository_owner == 'kenlasko'
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: monize-installer
+          github-artifact-id: ${{ steps.unsigned-installer.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 1200
+          output-artifact-directory: ${{ runner.temp }}/signed-installer
+
+      # Signing appended the signature to the installer, so the sha512 and
+      # size in latest.yml (or beta.yml) and the blockmap no longer match it;
+      # electron-updater would refuse the download. scripts/signed-update-info.mjs
+      # refuses an installer without a signature and rewrites both.
+      - name: Put the signed installer in place
+        if: github.repository_owner == 'kenlasko'
+        working-directory: desktop
+        run: |
+          $signed = @(Get-ChildItem -LiteralPath (Join-Path $env:RUNNER_TEMP 'signed-installer') -Filter 'Monize-Setup-*.exe' -File)
+          if ($signed.Count -ne 1) { throw "expected one signed Monize-Setup-*.exe from SignPath, found $($signed.Count)" }
+          if (-not (Test-Path -LiteralPath (Join-Path release $signed[0].Name))) { throw "SignPath returned $($signed[0].Name), which this build did not make" }
+          Copy-Item -LiteralPath $signed[0].FullName -Destination release -Force
+          $installer = Get-AuthenticodeSignature -LiteralPath (Join-Path release $signed[0].Name)
+          $app = Get-AuthenticodeSignature -LiteralPath release/win-unpacked/Monize.exe
+          foreach ($sig in $installer, $app) {
+            if ($null -eq $sig.SignerCertificate) { throw "$($sig.Path) has no signature" }
+            Write-Host "$(Split-Path -Leaf $sig.Path): $($sig.Status), $($sig.SignerCertificate.Subject), $($sig.SignerCertificate.Thumbprint)"
+          }
+          if ($installer.SignerCertificate.Thumbprint -ne $app.SignerCertificate.Thumbprint) {
+            throw "the installer and Monize.exe were signed with different certificates"
+          }
+          npm run signed-update-info
+          if ($LASTEXITCODE -ne 0) { throw "signed-update-info exited with $LASTEXITCODE" }
 
       # A data directory with a space in its name, as under a profile named
       # "First Last"; the script removes it after a pass and keeps it, with
@@ -1978,7 +2105,7 @@ jobs:
             echo
             echo "Betas are not tested as much as releases. Back up first (Settings > Backup) and keep your recovery key. An installed beta updates itself to the next beta or the next release, whichever is newer."
             echo
-            echo "Download Monize-Setup-${VERSION}.exe below. The installer is unsigned, so Windows SmartScreen warns: choose More info, then Run anyway."
+            echo "Download Monize-Setup-${VERSION}.exe below. Windows SmartScreen may warn about it until the installer's certificate has built up a reputation: choose More info, then Run anyway."
           } > "$RUNNER_TEMP/beta-notes.md"
           gh release create "$TAG" \
             --repo "$REPO" \

@@ -1,15 +1,19 @@
+import { Buffer } from "node:buffer";
 import fs from "node:fs";
 
 /**
- * Just enough of the Windows executable format to answer two questions about
- * a .exe or .dll: which processor it is built for, and which DLLs it imports
- * by name. Used by the VC++ runtime step to prove that the staged PostgreSQL
- * needs nothing the installer does not carry.
+ * Just enough of the Windows executable format to answer three questions
+ * about a .exe or .dll: which processor it is built for, which DLLs it
+ * imports by name, and whether it carries an Authenticode signature. The
+ * VC++ runtime step uses the first two to prove that the staged PostgreSQL
+ * needs nothing the installer does not carry; the signed-installer step uses
+ * the third.
  */
 
 export const MACHINE_X64 = 0x8664;
 const PE32_PLUS = 0x20b;
 const IMPORT_DIRECTORY = 1;
+const SECURITY_DIRECTORY = 4;
 
 function header(buffer) {
   if (buffer.length < 0x40 || buffer.readUInt16LE(0) !== 0x5a4d) {
@@ -75,6 +79,42 @@ export function peImports(buffer) {
     names.push(buffer.toString("latin1", from, to).toLowerCase());
   }
   return names;
+}
+
+/**
+ * Whether the image has an attribute certificate table (the Authenticode
+ * signature): a non-empty security directory that lies inside the file.
+ * Unlike every other data directory, its address is a file offset, not an
+ * RVA. It says nothing about who signed or whether the signature verifies;
+ * that is Windows' check (Get-AuthenticodeSignature). `fileSize` is the
+ * whole file's size when `buffer` holds only its start (the headers).
+ */
+export function peHasSignature(buffer, fileSize = buffer.length) {
+  const h = header(buffer);
+  if (h === null) {
+    throw new Error("not a PE image");
+  }
+  const plus = buffer.readUInt16LE(h.optional) === PE32_PLUS;
+  const directories = h.optional + (plus ? 112 : 96);
+  if (buffer.readUInt32LE(directories - 4) <= SECURITY_DIRECTORY) {
+    return false;
+  }
+  const at = directories + SECURITY_DIRECTORY * 8;
+  const offset = buffer.readUInt32LE(at);
+  const size = buffer.readUInt32LE(at + 4);
+  return offset !== 0 && size !== 0 && offset + size <= fileSize;
+}
+
+/** peHasSignature for a file, reading only its headers. */
+export function fileHasSignature(file) {
+  const fd = fs.openSync(file, "r");
+  try {
+    const head = Buffer.alloc(4096);
+    const read = fs.readSync(fd, head, 0, head.length, 0);
+    return peHasSignature(head.subarray(0, read), fs.fstatSync(fd).size);
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 
 export function readImports(file) {

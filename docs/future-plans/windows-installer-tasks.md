@@ -66,7 +66,7 @@
 | C1 | CI job on `windows-latest`: build, package, smoke-test, upload artifact | D7 | none | [x] written and statically checked; never run |
 | D8 | Updater against GitHub Releases | D7 | neutral | [x] unit-verified; a real update is Windows-only |
 | C2 | Release job attaches the installer, `latest.yml` and the blockmap | C1, D8 | release | [x] written and statically checked; no release or beta has run it (see C2) |
-| C3 | Code signing | C2 | release | [ ] |
+| C3 | Code signing | C2 | release | [x] SignPath, test certificate, written and statically checked; no signed run yet, acceptance needs the release certificate (see C3) |
 | F2 | The page honours the shell contract: shell flag, push banner, external links | F1, D4 | neutral | [x] |
 | Q1 | README, website and docs: the Windows install path | C2 | none | [x] guide page, notes, site links, README, backup script |
 | D9 | Polish: launch at login, notification bridge, recovery-key dialog, log viewer | D8, F2 | neutral | [ ] |
@@ -576,6 +576,17 @@ Steps:
 **Acceptance:** a fresh Windows VM shows the publisher name instead of the
 SmartScreen "unknown publisher" sheet; `electron-updater` applies a signed
 update over a signed install.
+
+**Built (2026-11-16).** SignPath, with a test certificate until the
+Foundation grants the release one. The build differs from the steps above:
+electron-builder signs nothing, because SignPath signs only files it fetches
+from the run's own artifacts. CI signs Monize.exe, rebuilds the installer
+around it with `--prepackaged`, signs the installer, then rewrites the
+blockmap and `latest.yml` to match it (`desktop/README.md`, "Code signing").
+The uninstaller is not signed. There is no `signtool verify /pa` step: it
+fails on the test certificate by design; the job checks with
+`Get-AuthenticodeSignature` that both files are signed by one certificate.
+Acceptance is open: it needs the release certificate.
 
 ## F2: The page honours the shell contract
 
