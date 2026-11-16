@@ -1456,6 +1456,12 @@ export class ImportService {
     affectedAccountIds.add(accountId);
     const settledScheduleIds = new Set<string>();
     const importStartTime = new Date();
+    // What a "delete mine and import" deletion moved, dispatched after the
+    // commit rather than inside the import's transaction.
+    const deferredRecompute = {
+      accountIds: new Set<string>(),
+      securityIds: new Set<string>(),
+    };
 
     const importResult: ImportResultDto = {
       imported: 0,
@@ -1638,7 +1644,12 @@ export class ImportService {
                 await this.investmentProcessor.processTransaction(ctx, qifTx);
               } else if (
                 duplicate === undefined ||
-                (await this.applyDuplicatePlan(ctx, duplicate, qifTx))
+                (await this.applyDuplicatePlan(
+                  ctx,
+                  duplicate,
+                  qifTx,
+                  deferredRecompute,
+                ))
               ) {
                 await this.regularProcessor.processTransaction(ctx, qifTx);
                 if (duplicate?.action === "replace") {
@@ -1709,6 +1720,18 @@ export class ImportService {
       );
     }
 
+    // A replaced transaction's deletion moved these; their balances and net
+    // worth are recomputed with the rest, and its securities' bond prices here.
+    for (const affected of deferredRecompute.accountIds) {
+      affectedAccountIds.add(affected);
+    }
+    if (deferredRecompute.securityIds.size > 0) {
+      await this.transactionsService.dispatchDeferredRecompute(userId, {
+        accountIds: new Set(),
+        securityIds: deferredRecompute.securityIds,
+      });
+    }
+
     // Post-import processing
     await this.postImportProcessing(
       userId,
@@ -1736,12 +1759,18 @@ export class ImportService {
     ctx: ImportContext,
     plan: FileDuplicatePlan,
     qifTx: QifParseResult["transactions"][number],
+    deferredRecompute: { accountIds: Set<string>; securityIds: Set<string> },
   ): Promise<boolean> {
     switch (plan.action) {
       case "import":
         return true;
       case "replace":
-        await this.transactionsService.remove(ctx.userId, plan.existing.id);
+        // An import records no history entry per row, so neither does the
+        // delete; what it moved is dispatched after the commit.
+        await this.transactionsService.remove(ctx.userId, plan.existing.id, {
+          recordHistory: false,
+          deferDerivedRecompute: deferredRecompute,
+        });
         return true;
       case "merge":
         await mergeFileRow(

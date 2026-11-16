@@ -211,6 +211,13 @@ describe("file import possible duplicates (integration)", () => {
     expect(rows[0].id).not.toBe(manualId);
     expect(rows[0].payee_name).toBe("HYDRO ONE");
     expect(await balance()).toBe(920);
+    // The delete ran inside the import's transaction, which records no
+    // history entry per row, so none was written into it before the commit.
+    expect(
+      await db.query(`SELECT id FROM action_history WHERE user_id = $1`, [
+        aliceId,
+      ]),
+    ).toEqual([]);
   });
 
   it("refuses a decision about a pair that changed, with nothing written", async () => {

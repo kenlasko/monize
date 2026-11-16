@@ -115,8 +115,9 @@ describe("BankSyncWriterService", () => {
   const tagsService: jest.Mocked<Pick<TagsService, "addTransactionTags">> = {
     addTransactionTags: jest.fn(),
   };
-  const transactionsService: jest.Mocked<Pick<TransactionsService, "remove">> =
-    { remove: jest.fn() };
+  const transactionsService: jest.Mocked<
+    Pick<TransactionsService, "remove" | "dispatchDeferredRecompute">
+  > = { remove: jest.fn(), dispatchDeferredRecompute: jest.fn() };
   /** Answers the catalogue key with `<language>:<English>`, so a translated label is seen. */
   const i18n = {
     translate: jest.fn(
@@ -256,6 +257,7 @@ describe("BankSyncWriterService", () => {
         kept: 0,
         replaced: 0,
         heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -329,6 +331,7 @@ describe("BankSyncWriterService", () => {
         kept: 0,
         replaced: 0,
         heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -392,6 +395,7 @@ describe("BankSyncWriterService", () => {
         kept: 0,
         replaced: 0,
         heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -1456,6 +1460,7 @@ describe("BankSyncWriterService", () => {
         kept: 0,
         replaced: 0,
         heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -1490,6 +1495,7 @@ describe("BankSyncWriterService", () => {
         kept: 0,
         replaced: 0,
         heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -1577,6 +1583,7 @@ describe("BankSyncWriterService", () => {
         kept: 0,
         replaced: 0,
         heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -1930,9 +1937,18 @@ describe("BankSyncWriterService", () => {
           selection: { ...NO_LISTS, replaceKeys: ["ref:1"] },
         }),
       );
+      // Inside the sync's transaction: no history entry of its own, and what
+      // it moved is dispatched after the commit.
       expect(transactionsService.remove).toHaveBeenCalledWith(
         USER_ID,
         "tx-manual",
+        {
+          recordHistory: false,
+          deferDerivedRecompute: {
+            accountIds: expect.any(Set),
+            securityIds: expect.any(Set),
+          },
+        },
       );
       expect(order).toEqual(["remove", "create"]);
       expect(outcome).toMatchObject({ imported: 1, replaced: 1 });

@@ -532,6 +532,7 @@ export class BankSyncService {
           this.dataSource,
           written.settledScheduleIds,
         );
+        await this.writer.dispatchAfterCommit(userId, written);
         this.logger.log(
           `Bank account ${bankAccountId} synced: ${written.imported} imported, ${written.skipped} already imported, ${written.excluded} added to the exceptions, ${written.merged} merged, ${written.kept} kept, ${written.replaced} replaced, ${written.heldDuplicates} possible duplicates held`,
         );

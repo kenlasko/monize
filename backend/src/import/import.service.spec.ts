@@ -120,7 +120,10 @@ describe("ImportService", () => {
   let mockSecurityPriceService: Record<string, jest.Mock>;
   let mockExchangeRateService: Record<string, jest.Mock>;
   let mockHoldingsService: Record<string, jest.Mock>;
-  let mockTransactionsService: { remove: jest.Mock };
+  let mockTransactionsService: {
+    remove: jest.Mock;
+    dispatchDeferredRecompute: jest.Mock;
+  };
   let mockRulesApplier: Record<string, jest.Mock>;
   /** How many categories the import created via the guarded insert. */
   let importedCategoryCount: number;
@@ -341,6 +344,7 @@ describe("ImportService", () => {
     // into an average cost in file order.
     mockTransactionsService = {
       remove: jest.fn().mockResolvedValue(undefined),
+      dispatchDeferredRecompute: jest.fn().mockResolvedValue(undefined),
     };
     mockHoldingsService = {
       rebuildAccountsFromTransactions: jest.fn().mockResolvedValue(undefined),
@@ -860,6 +864,13 @@ describe("ImportService", () => {
         expect(mockTransactionsService.remove).toHaveBeenCalledWith(
           userId,
           EXISTING.id,
+          {
+            recordHistory: false,
+            deferDerivedRecompute: {
+              accountIds: expect.any(Set),
+              securityIds: expect.any(Set),
+            },
+          },
         );
         expect(spy).toHaveBeenCalledTimes(1);
         expect(result.duplicatesReplaced).toBe(1);

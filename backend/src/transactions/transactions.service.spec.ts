@@ -3059,6 +3059,68 @@ describe("TransactionsService", () => {
       });
     });
 
+    it("records no history and dispatches nothing itself when nested in a caller's transaction", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        isSplit: false,
+        splits: [],
+      });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
+      const record = (service as any).actionHistoryService.record as jest.Mock;
+      record.mockClear();
+      netWorthService.triggerDebouncedRecalc.mockClear();
+      const deferred = {
+        accountIds: new Set<string>(),
+        securityIds: new Set<string>(),
+      };
+
+      await service.remove("user-1", "tx-1", {
+        recordHistory: false,
+        deferDerivedRecompute: deferred,
+      });
+
+      expect(record).not.toHaveBeenCalled();
+      expect(netWorthService.triggerDebouncedRecalc).not.toHaveBeenCalled();
+      expect([...deferred.accountIds]).toEqual(["account-1"]);
+
+      await service.dispatchDeferredRecompute("user-1", deferred);
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
+        "account-1",
+        "user-1",
+      );
+    });
+
+    it("records the delete and dispatches its recompute by default", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        isSplit: false,
+        splits: [],
+      });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
+      const record = (service as any).actionHistoryService.record as jest.Mock;
+      record.mockClear();
+      netWorthService.triggerDebouncedRecalc.mockClear();
+
+      await service.remove("user-1", "tx-1");
+
+      expect(record).toHaveBeenCalledWith(
+        "user-1",
+        expect.objectContaining({ action: "delete", entityId: "tx-1" }),
+      );
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
+        "account-1",
+        "user-1",
+      );
+    });
+
     it("does not revert balance for VOID transactions", async () => {
       transactionsRepository.findOne.mockResolvedValue({
         id: "tx-1",

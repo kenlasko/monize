@@ -202,8 +202,11 @@ describe("BankSyncService", () => {
   const credentials: jest.Mocked<
     Pick<BankSyncCredentialsService, "resolveCredentials">
   > = { resolveCredentials: jest.fn() };
-  const writer: jest.Mocked<Pick<BankSyncWriterService, "write">> = {
+  const writer: jest.Mocked<
+    Pick<BankSyncWriterService, "write" | "dispatchAfterCommit">
+  > = {
     write: jest.fn(),
+    dispatchAfterCommit: jest.fn(),
   };
   const previewer: jest.Mocked<Pick<BankSyncPreviewService, "build">> = {
     build: jest.fn(),
@@ -259,6 +262,7 @@ describe("BankSyncService", () => {
       kept: 0,
       replaced: 0,
       heldDuplicates: 0,
+      touchedSecurityIds: [],
       affectedAccountIds: [],
       settledScheduleIds: [],
     });
@@ -533,6 +537,7 @@ describe("BankSyncService", () => {
           kept: 0,
           replaced: 0,
           heldDuplicates: 0,
+          touchedSecurityIds: [],
           affectedAccountIds: [],
           settledScheduleIds: ["st-loan"],
         };
@@ -567,6 +572,7 @@ describe("BankSyncService", () => {
           kept: 0,
           replaced: 0,
           heldDuplicates: 0,
+          touchedSecurityIds: [],
           affectedAccountIds: ["loan-1", ACCOUNT_ID, "loan-1"],
           settledScheduleIds: [],
         };
@@ -605,6 +611,7 @@ describe("BankSyncService", () => {
         kept: 0,
         replaced: 0,
         heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -701,6 +708,7 @@ describe("BankSyncService", () => {
           kept: 0,
           replaced: 0,
           heldDuplicates: 0,
+          touchedSecurityIds: [],
           affectedAccountIds: [],
           settledScheduleIds: [],
         };
@@ -760,6 +768,7 @@ describe("BankSyncService", () => {
         kept: 0,
         replaced: 0,
         heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -778,6 +787,7 @@ describe("BankSyncService", () => {
         kept: 0,
         replaced: 0,
         heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -1308,6 +1318,7 @@ describe("BankSyncService", () => {
         kept: 0,
         replaced: 0,
         heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -1330,6 +1341,7 @@ describe("BankSyncService", () => {
         kept: 0,
         replaced: 0,
         heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });

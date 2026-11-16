@@ -154,6 +154,12 @@ export interface BankSyncWriteOutcome {
   /** Possible duplicates nobody decided about: not written, and recorded on the link. */
   heldDuplicates: number;
   /**
+   * Securities a replaced transaction's deletion touched (an embedded
+   * investment row of a split); their bond prices are recomputed after the
+   * commit (`dispatchAfterCommit`, INV-CACHE-001).
+   */
+  touchedSecurityIds: string[];
+  /**
    * Accounts a structural rule moved money into (the loan of a settlement,
    * the target of a conversion); the sync dispatches their net-worth
    * recompute after the commit, as it does the synced account's
@@ -452,6 +458,12 @@ export class BankSyncWriterService {
       let merged = 0;
       let kept = 0;
       let replaced = 0;
+      // What a replaced transaction's deletion moved, dispatched after the
+      // commit rather than inside this transaction.
+      const deferred = {
+        accountIds: new Set<string>(),
+        securityIds: new Set<string>(),
+      };
       let heldDuplicates = 0;
       let leftForLater = 0;
       for (const row of plan.planned) {
@@ -493,7 +505,11 @@ export class BankSyncWriterService {
         if (pair !== undefined && decision === "replace") {
           // Through the one delete path, which reverses what the row
           // contributed and cleans up what hangs off it, in this transaction.
-          await this.transactionsService.remove(userId, pair.id);
+          // A sync records no history entry, so neither does its delete.
+          await this.transactionsService.remove(userId, pair.id, {
+            recordHistory: false,
+            deferDerivedRecompute: deferred,
+          });
           replaced += 1;
         }
         const claimed = returnedRows<{ id: string }>(
@@ -565,7 +581,7 @@ export class BankSyncWriterService {
       // 6. The import rules over what was created, oldest first and within a
       //    date in the bank's order (INV-RULE-005), with the bank's raw payee
       //    text.
-      const affectedAccountIds = new Set<string>();
+      const affectedAccountIds = new Set<string>(deferred.accountIds);
       const settledScheduleIds = new Set<string>();
       const forRules = orderByDateStable(
         created,
@@ -622,9 +638,26 @@ export class BankSyncWriterService {
         kept,
         replaced,
         heldDuplicates,
+        touchedSecurityIds: [...deferred.securityIds],
         affectedAccountIds: [...affectedAccountIds],
         settledScheduleIds: [...settledScheduleIds],
       };
+    });
+  }
+
+  /**
+   * After the write committed: the bond prices of the securities a replaced
+   * transaction's deletion touched (INV-CACHE-001). The net-worth recompute of
+   * the accounts it moved is the caller's, through `affectedAccountIds`.
+   */
+  async dispatchAfterCommit(
+    userId: string,
+    outcome: Pick<BankSyncWriteOutcome, "touchedSecurityIds">,
+  ): Promise<void> {
+    if (outcome.touchedSecurityIds.length === 0) return;
+    await this.transactionsService.dispatchDeferredRecompute(userId, {
+      accountIds: new Set(),
+      securityIds: new Set(outcome.touchedSecurityIds),
     });
   }
 
