@@ -548,7 +548,10 @@
     "mnyExistingAccountCurrency": "De bestaande rekening \"{{ name }}\" gebruikt {{ existing }}, maar de rekening in het Money-bestand gebruikt {{ file }}. Hernoem een van beide en importeer opnieuw.",
     "mnyJobNotFound": "Importtaak niet gevonden",
     "mnyFileTooLarge": "Dit Money-bestand is groter dan de importlimiet van {{ limit }} MB.",
-    "noRateForSplitTransfer": "Geen wisselkoers voor {{ pair }} op {{ date }}: een gesplitste regel boekt over naar een rekening in een andere valuta. Voeg een wisselkoers toe voor dat paar en die datum en importeer opnieuw."
+    "noRateForSplitTransfer": "Geen wisselkoers voor {{ pair }} op {{ date }}: een gesplitste regel boekt over naar een rekening in een andere valuta. Voeg een wisselkoers toe voor dat paar en die datum en importeer opnieuw.",
+    "duplicatesChanged": "De mogelijke duplicaten zijn gewijzigd sinds ze werden gecontroleerd. Er is niets geïmporteerd; controleer opnieuw.",
+    "duplicateDecisionRepeated": "Een regel uit het bestand kan maar één beslissing over zijn mogelijke duplicaat hebben.",
+    "duplicateActionNotAllowed": "Een afgestemde transactie kan niet worden samengevoegd of vervangen, en een overboeking of een gesplitste transactie kan niet worden vervangen. Er is niets geïmporteerd."
   },
   "monteCarlo": {
     "scenarioNotFound": "Scenario {{ id }} niet gevonden",
@@ -1020,7 +1023,11 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge vereist een actief abonnement. Controleer de facturering in SimpleFIN Bridge.",
     "simplefinReadFailed": "SimpleFIN kon geen volledige rekeninggegevens leveren. Controleer de verbinding in SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "Het SimpleFIN-verzoekquotum is opgebruikt. Wacht tot het is aangevuld en probeer de huidige batch opnieuw.",
-    "simplefinClaimNotSent": "SimpleFIN is tijdelijk niet beschikbaar. Het installatietoken is niet verzonden; probeer later hetzelfde token opnieuw."
+    "simplefinClaimNotSent": "SimpleFIN is tijdelijk niet beschikbaar. Het installatietoken is niet verzonden; probeer later hetzelfde token opnieuw.",
+    "selectionConflict": "Een transactie kan maar één beslissing hebben: importeren, toevoegen aan uitzonderingen, samenvoegen, die van jou houden of die van jou vervangen.",
+    "duplicateNeedsPreview": "Een beslissing over een mogelijk duplicaat heeft het voorbeeld nodig waarin het werd getoond. Er is niets geïmporteerd; bekijk het voorbeeld opnieuw.",
+    "selectionNotDuplicate": "Een transactie die is gekozen om samen te voegen, te houden of te vervangen, is geen mogelijk duplicaat meer. Er is niets geïmporteerd; bekijk het voorbeeld opnieuw.",
+    "duplicateActionNotAllowed": "Een afgestemde transactie kan niet worden samengevoegd of vervangen, en een overboeking of een gesplitste transactie kan niet worden vervangen. Er is niets geïmporteerd; houd je transactie of importeer de regel van de bank ernaast."
   },
   "warranties": {
     "notFound": "Garantie met ID {{ id }} niet gevonden",

@@ -17,6 +17,7 @@ import { CurrenciesModule } from "../currencies/currencies.module";
 import { UsersModule } from "../users/users.module";
 import { TransactionRulesModule } from "../transaction-rules/transaction-rules.module";
 import { TagsModule } from "../tags/tags.module";
+import { TransactionsModule } from "../transactions/transactions.module";
 
 @Module({
   imports: [
@@ -26,6 +27,9 @@ import { TagsModule } from "../tags/tags.module";
     forwardRef(() => UsersModule),
     TransactionRulesModule,
     TagsModule,
+    // For TransactionsService.remove: "delete mine and import" of a possible
+    // duplicate goes through the one delete path, in the import's transaction.
+    TransactionsModule,
   ],
   controllers: [ImportController, MnyImportController],
   providers: [

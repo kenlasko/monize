@@ -393,7 +393,7 @@ answers one row per provider row:
 
 | Field | Meaning |
 |---|---|
-| `outcome` | `new`, `duplicate` (the ledger already has its key), `refused` (with the reason), `pending`, `before_cutoff` |
+| `outcome` | `new`, `possible_duplicate` (a new row that pairs with a transaction already in the account, [`import-duplicate-review.md`](./import-duplicate-review.md) section 4), `duplicate` (the ledger already has its key), `refused` (with the reason), `pending`, `before_cutoff` |
 | `transactionDate`, `amount`, `currencyCode`, `payeeText`, `description`, `referenceNumber` | as the planner produced them |
 | `payeeName`, `categoryName`, `tagNames` | what the payee lookup and the `import` rules would give (`previewForRow`), with the default category of a payee the rules chose, as the write gives it |
 
@@ -411,7 +411,10 @@ the preview; preview again"), so what is written is exactly what was shown.
 
 **When the preview is shown.** A bank account needs its preview while it is
 linked and `last_success_at` is NULL: after it is linked, or after its Monize
-account or cut-off date changed (the link clears `last_success_at`). The view
+account or cut-off date changed (the link clears `last_success_at`); and while
+`held_duplicate_count` is above zero: the last write held possible duplicates
+back for a decision ([`import-duplicate-review.md`](./import-duplicate-review.md)
+section 4). The view
 carries this as `needsPreview`. Then "Sync now" opens the preview, and the
 import runs only when the user confirms it. **Nothing imports a bank account
 that needs its preview without that confirmation:** the daily sync and
@@ -573,7 +576,7 @@ fields.
 | `PATCH /bank-sync/accounts/:id` | `{ accountId: uuid \| null, syncFromDate? }` | the bank account |
 | `GET /bank-sync/accounts/:id/link-defaults?accountId=` | | `{ newestTransactionDate, defaultSyncFromDate }` (section 7) |
 | `POST /bank-sync/accounts/:id/preview` | | the preview (section 7a) |
-| `POST /bank-sync/accounts/:id/sync` | `{ planFingerprint?, importKeys?, excludeKeys? }` | the result (section 7); 409 when the fingerprint no longer matches; 400 for a key that is not a new row of the plan |
+| `POST /bank-sync/accounts/:id/sync` | `{ planFingerprint?, importKeys?, excludeKeys?, mergeKeys?, keepKeys?, replaceKeys? }` | the result (section 7); 409 when the fingerprint no longer matches; 400 for a key that is not a new row of the plan, or a merge, keep or replace that is not a possible duplicate, is not allowed for it, or comes without the fingerprint ([`import-duplicate-review.md`](./import-duplicate-review.md) section 4) |
 | `POST /bank-sync/accounts/:id/exceptions/remove` | `{ keys }` | the bank account; deletes only excepted ledger rows |
 | `POST /bank-sync/connections/:id/sync` | | one entry per linked account: a result, or `{ bankAccountId, error: { code, message } }` for an account that failed |
 

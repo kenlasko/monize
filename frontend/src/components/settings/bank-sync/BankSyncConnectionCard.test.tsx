@@ -1179,6 +1179,18 @@ describe('BankSyncConnectionCard', () => {
       expect(onChanged).toHaveBeenCalled();
     });
 
+    it('says how many possible duplicates were held back for the preview', async () => {
+      mockSyncAccount.mockResolvedValue(result({ imported: 1, skipped: 0, heldDuplicates: 2 }));
+      renderCard(linked());
+
+      await click('Sync now');
+
+      expect(toast.success).toHaveBeenCalledWith(
+        '1 transaction imported, none skipped, none refused. 2 possible duplicates are waiting for your decision in the preview',
+        { duration: 8000 },
+      );
+    });
+
     it('reports a sync that found nothing as such, not as a failure', async () => {
       mockSyncAccount.mockResolvedValue(result({ imported: 0, skipped: 12 }));
       renderCard(linked());
@@ -1825,6 +1837,14 @@ describe('BankSyncConnectionCard', () => {
       expect(await screen.findByText('Preview import into Checking')).toBeInTheDocument();
     });
 
+    it('says when the preview is needed because possible duplicates wait for a decision', () => {
+      renderCard(linked({ needsPreview: true, heldDuplicateCount: 1 }));
+      expect(
+        screen.getByText('1 possible duplicate is waiting for your decision in the preview.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/first import is confirmed from a preview/)).not.toBeInTheDocument();
+    });
+
     it('offers no second Preview button while Sync now is the preview, and explains why', () => {
       renderCard(linked({ needsPreview: true }));
       expect(screen.queryByRole('button', { name: 'Preview' })).not.toBeInTheDocument();
@@ -1879,8 +1899,7 @@ describe('BankSyncConnectionCard', () => {
       await waitFor(() =>
         expect(mockSyncAccount).toHaveBeenCalledWith('ba-1', 'f'.repeat(64), {
           importKeys: ['ref:a', 'ref:b'],
-          excludeKeys: [],
-        }),
+          excludeKeys: [], mergeKeys: [], keepKeys: [], replaceKeys: [] }),
       );
       await waitFor(() => expect(onChanged).toHaveBeenCalled());
       expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('2 transactions imported'));

@@ -280,6 +280,7 @@ describe("BankSyncPreviewService", () => {
       const { summary } = await service.build(input());
       expect(summary).toEqual({
         new: 1,
+        possibleDuplicate: 0,
         duplicate: 1,
         excluded: 0,
         refused: 1,
@@ -386,6 +387,121 @@ describe("BankSyncPreviewService", () => {
       expect(withoutDuplicate.planFingerprint).not.toBe(
         everything.planFingerprint,
       );
+    });
+  });
+
+  describe("possible duplicates (docs/specs/import-duplicate-review.md)", () => {
+    const EXISTING = {
+      id: "tx-manual",
+      transaction_date: "2026-09-09",
+      amount: "-50.00000000",
+      payee_name: "Biedronka",
+      category_name: "Groceries",
+      description: "Entered by hand",
+      reference_number: null,
+      status: "UNRECONCILED",
+      is_transfer: false,
+      is_split: false,
+      transfer_account_name: null,
+      external_id: null,
+    };
+
+    /** The ledger holds nothing; the candidate read answers `existing`. */
+    function accountHolding(existing: object[]) {
+      manager.query.mockImplementation(async (sql: string) => {
+        const text = String(sql);
+        if (text.includes("FROM transactions t")) return existing;
+        return [];
+      });
+    }
+
+    it("reports a new row that pairs with an existing transaction, with the transaction and the actions", async () => {
+      accountHolding([EXISTING]);
+      const view = await service.build(input());
+      const row = view.rows.find((r) => r.externalKey === KEY_R1);
+      expect(row).toMatchObject({
+        outcome: "possible_duplicate",
+        amount: "-50.0000",
+        existingTransaction: {
+          id: "tx-manual",
+          transactionDate: "2026-09-09",
+          amount: "-50.0000",
+          payeeName: "Biedronka",
+          categoryName: "Groceries",
+          description: "Entered by hand",
+          status: "UNRECONCILED",
+          isTransfer: false,
+        },
+        duplicateActions: ["import", "merge", "keep", "replace"],
+      });
+      // Resolved as "import anyway" would write it.
+      expect(row?.ruleInput).not.toBeNull();
+      expect(row?.payeeName).toBe("Biedronka");
+      const other = view.rows.find((r) => r.externalKey === KEY_R2);
+      expect(other).toMatchObject({
+        outcome: "new",
+        existingTransaction: null,
+        duplicateActions: [],
+      });
+    });
+
+    it("compares only with what bank sync did not bring in itself", async () => {
+      accountHolding([]);
+      await service.build(input());
+      const read = manager.query.mock.calls.find((call) =>
+        String(call[0]).includes("FROM transactions t"),
+      );
+      expect(read?.[1]?.[5]).toBe(true);
+    });
+
+    it("counts it apart from new, and leaves it out of the balance after", async () => {
+      accountHolding([EXISTING]);
+      const view = await service.build(input());
+      expect(view.summary.new).toBe(1);
+      expect(view.summary.possibleDuplicate).toBe(1);
+      // 1000 + 1200.1234: r1 is a possible duplicate.
+      expect(view.balanceAfter).toBe("2200.1234");
+    });
+
+    it("offers only import and keep for a Reconciled transaction, no delete for a transfer", async () => {
+      accountHolding([{ ...EXISTING, status: "RECONCILED" }]);
+      let view = await service.build(input());
+      expect(
+        view.rows.find((r) => r.externalKey === KEY_R1)?.duplicateActions,
+      ).toEqual(["import", "keep"]);
+
+      accountHolding([{ ...EXISTING, is_transfer: true }]);
+      view = await service.build(input());
+      expect(
+        view.rows.find((r) => r.externalKey === KEY_R1)?.duplicateActions,
+      ).toEqual(["import", "merge", "keep"]);
+    });
+
+    it("fingerprints the pair, so a pair with another transaction is a changed plan", async () => {
+      accountHolding([EXISTING]);
+      const first = (await service.build(input())).planFingerprint;
+      accountHolding([{ ...EXISTING, id: "tx-other" }]);
+      const second = (await service.build(input())).planFingerprint;
+      accountHolding([]);
+      const none = (await service.build(input())).planFingerprint;
+      expect(first).not.toBe(second);
+      expect(first).not.toBe(none);
+    });
+
+    it("does not pair a row the ledger already holds", async () => {
+      manager.query.mockImplementation(async (sql: string) => {
+        const text = String(sql);
+        if (text.includes("SELECT external_key")) {
+          return [{ external_key: KEY_R1, excluded: false }];
+        }
+        if (text.includes("FROM transactions t")) return [EXISTING];
+        return [];
+      });
+      const view = await service.build(input());
+      expect(view.rows.find((r) => r.externalKey === KEY_R1)?.outcome).toBe(
+        "duplicate",
+      );
+      expect(view.summary.possibleDuplicate).toBe(0);
     });
   });
 

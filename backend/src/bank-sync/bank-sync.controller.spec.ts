@@ -378,6 +378,9 @@ describe("BankSyncController", () => {
       expect(bankSync.syncAccount.mock.calls[0][4]).toEqual({
         importKeys: ["a", "b"],
         excludeKeys: ["c"],
+        mergeKeys: [],
+        keepKeys: [],
+        replaceKeys: [],
       });
 
       // One list alone is a selection; the other is empty, not "everything".
@@ -390,6 +393,9 @@ describe("BankSyncController", () => {
       expect(bankSync.syncAccount.mock.calls[1][4]).toEqual({
         importKeys: [],
         excludeKeys: [],
+        mergeKeys: [],
+        keepKeys: [],
+        replaceKeys: [],
       });
       await controller.syncAccount(
         req(),
@@ -400,6 +406,9 @@ describe("BankSyncController", () => {
       expect(bankSync.syncAccount.mock.calls[2][4]).toEqual({
         importKeys: [],
         excludeKeys: ["c"],
+        mergeKeys: [],
+        keepKeys: [],
+        replaceKeys: [],
       });
 
       await controller.syncAccount(

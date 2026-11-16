@@ -1737,7 +1737,8 @@
       "createdLinked": "Account created and linked",
       "createdLinkFailed": "The account was created but could not be linked",
       "preview": "Preview",
-      "firstSyncPreview": "The first import is confirmed from a preview of the transactions."
+      "firstSyncPreview": "The first import is confirmed from a preview of the transactions.",
+      "heldDuplicates": "{count, plural, one {# possible duplicate is waiting for your decision in the preview.} other {# possible duplicates are waiting for your decision in the preview.}}"
     },
     "link": {
       "title": "Link to {account}",
@@ -1775,7 +1776,9 @@
         "missing_identity": "{count, plural, one {# without a bank transaction ID} other {# without a bank transaction ID}}"
       },
       "needsPreview": "Open the preview for {accounts} and confirm the first import",
-      "withNeedsPreview": "{message}. {needsPreview}"
+      "withNeedsPreview": "{message}. {needsPreview}",
+      "heldDuplicates": "{count, plural, one {# possible duplicate is waiting for your decision in the preview} other {# possible duplicates are waiting for your decision in the preview}}",
+      "withHeldDuplicates": "{message}. {held}"
     },
     "callback": {
       "title": "Connecting your bank",
@@ -1824,6 +1827,7 @@
       "filter": {
         "all": "All",
         "new": "New",
+        "possible_duplicate": "Possible duplicates",
         "duplicate": "Already imported",
         "refused": "Refused",
         "pending": "Pending",
@@ -1833,6 +1837,7 @@
       },
       "outcome": {
         "new": "New",
+        "possible_duplicate": "Possible duplicate",
         "duplicate": "Already imported",
         "refused": "Refused",
         "pending": "Pending",
@@ -1885,7 +1890,12 @@
         }
       },
       "historyBatch": "History batch: {from} to {to}.",
-      "historyBatchRemaining": "History batch: {from} to {to}. More history remains; preview the next batch after importing this one."
+      "historyBatchRemaining": "History batch: {from} to {to}. More history remains; preview the next batch after importing this one.",
+      "applyDecisions": "Apply decisions",
+      "duplicates": {
+        "intro": "These transactions look like ones already in the account. Nothing is written for them until you decide what to do with each one.",
+        "summary": "Possible duplicates: {later} left for later, {merge} merged, {keep} kept, {replace} replaced, {import} imported, {except} added to exceptions"
+      }
     },
     "simplefin": {
       "title": "SimpleFIN",

@@ -339,6 +339,20 @@ export function composeLocalizedNotificationCopy(
             imported: number(data.imported, 0),
           });
     }
+    case NotificationType.BANK_SYNC_DUPLICATES_HELD: {
+      if (
+        !strings(data, "institutionName") ||
+        !numbers(data, "held") ||
+        !Number.isInteger(data.held) ||
+        data.held < 1
+      )
+        return null;
+      return pair(
+        "bankSync.duplicatesHeldTitle",
+        "bankSync.duplicatesHeldMessage",
+        { institution: data.institutionName, held: number(data.held, 0) },
+      );
+    }
     case NotificationType.EMAIL_RECEIPTS_ATTENTION: {
       if (
         !numbers(data, "noParser", "parseFailed") ||

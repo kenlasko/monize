@@ -325,7 +325,9 @@
       "importedTitle": "{{ institution }}：已导入新交易",
       "importedMessage": "每日同步从 {{ institution }} 导入的交易：{{ imported }} 笔。",
       "importedNoneTitle": "{{ institution }}：没有新交易",
-      "importedNoneMessage": "{{ institution }} 的每日同步没有发现新交易。"
+      "importedNoneMessage": "{{ institution }} 的每日同步没有发现新交易。",
+      "duplicatesHeldTitle": "{{ institution }}：需要审核的可能重复项",
+      "duplicatesHeldMessage": "{{ institution }} 的每日同步暂扣了看起来与您账户中已有交易相似的交易：{{ held }}。请打开银行同步设置，决定如何处理它们。"
     },
     "bond": {
       "maturitySoonTitle": "{{ series }} 将于 {{ date }} 到期",

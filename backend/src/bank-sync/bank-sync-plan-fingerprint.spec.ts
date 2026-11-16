@@ -22,6 +22,57 @@ const row = (over: Partial<PlannedBankRow> = {}): PlannedBankRow => ({
 });
 
 describe("planFingerprint", () => {
+  describe("possible duplicates", () => {
+    it("is what it was when there is no pair", () => {
+      expect(planFingerprint([row()], undefined, new Map())).toBe(
+        planFingerprint([row()]),
+      );
+      const review = { cursor: null };
+      expect(planFingerprint([row()], review, new Map())).toBe(
+        planFingerprint([row()], review),
+      );
+    });
+
+    it("changes with a pair, and with the transaction the pair names", () => {
+      const plain = planFingerprint([row()]);
+      const paired = planFingerprint(
+        [row()],
+        undefined,
+        new Map([["ref:1", { id: "tx-1" }]]),
+      );
+      const other = planFingerprint(
+        [row()],
+        undefined,
+        new Map([["ref:1", { id: "tx-2" }]]),
+      );
+      expect(paired).not.toBe(plain);
+      expect(paired).not.toBe(other);
+    });
+
+    it("does not depend on the order of the pairs", () => {
+      const rows = [row({ externalKey: "a" }), row({ externalKey: "b" })];
+      expect(
+        planFingerprint(
+          rows,
+          undefined,
+          new Map([
+            ["a", { id: "tx-1" }],
+            ["b", { id: "tx-2" }],
+          ]),
+        ),
+      ).toBe(
+        planFingerprint(
+          rows,
+          undefined,
+          new Map([
+            ["b", { id: "tx-2" }],
+            ["a", { id: "tx-1" }],
+          ]),
+        ),
+      );
+    });
+  });
+
   it("is a SHA-256 hex digest", () => {
     expect(planFingerprint([row()])).toMatch(/^[0-9a-f]{64}$/);
   });

@@ -150,6 +150,7 @@ describe("notification type partition", () => {
         NotificationType.BANK_SYNC_CONSENT_EXPIRING,
         NotificationType.BANK_SYNC_CONSENT_EXPIRED,
         NotificationType.BANK_SYNC_FAILED,
+        NotificationType.BANK_SYNC_DUPLICATES_HELD,
       ].sort(),
     );
     expect(byCategory[NotificationCategory.BANK_SYNC].sort()).toEqual(

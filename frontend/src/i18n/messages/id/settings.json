@@ -1737,7 +1737,8 @@
       "createdLinked": "Akun dibuat dan ditautkan",
       "createdLinkFailed": "Akun dibuat, tetapi tidak dapat ditautkan",
       "preview": "Pratinjau",
-      "firstSyncPreview": "Impor pertama dikonfirmasi dari pratinjau transaksi."
+      "firstSyncPreview": "Impor pertama dikonfirmasi dari pratinjau transaksi.",
+      "heldDuplicates": "{count, plural, other {# kemungkinan duplikat menunggu keputusan Anda di pratinjau.}}"
     },
     "link": {
       "title": "Tautkan ke {account}",
@@ -1775,7 +1776,9 @@
         "missing_identity": "ID transaksi bank tidak ada: {count, number}"
       },
       "needsPreview": "Buka pratinjau untuk {accounts} dan konfirmasikan impor pertama",
-      "withNeedsPreview": "{message}. {needsPreview}"
+      "withNeedsPreview": "{message}. {needsPreview}",
+      "heldDuplicates": "{count, plural, other {# kemungkinan duplikat menunggu keputusan Anda di pratinjau}}",
+      "withHeldDuplicates": "{message}. {held}"
     },
     "callback": {
       "title": "Menghubungkan bank Anda",
@@ -1829,7 +1832,8 @@
         "pending": "Tertunda",
         "before_cutoff": "Sebelum tanggal mulai",
         "withCount": "{label} ({count})",
-        "excluded": "Pengecualian"
+        "excluded": "Pengecualian",
+        "possible_duplicate": "Kemungkinan duplikat"
       },
       "outcome": {
         "new": "Baru",
@@ -1837,7 +1841,8 @@
         "refused": "Ditolak",
         "pending": "Tertunda",
         "before_cutoff": "Sebelum tanggal mulai",
-        "excluded": "Pengecualian"
+        "excluded": "Pengecualian",
+        "possible_duplicate": "Kemungkinan duplikat"
       },
       "refusal": {
         "missing_date": "Tanpa tanggal",
@@ -1885,7 +1890,12 @@
         }
       },
       "historyBatch": "Kelompok riwayat: {from} hingga {to}.",
-      "historyBatchRemaining": "Kelompok riwayat: {from} hingga {to}. Masih ada riwayat lainnya. Setelah impor ini, buka pratinjau kelompok berikutnya."
+      "historyBatchRemaining": "Kelompok riwayat: {from} hingga {to}. Masih ada riwayat lainnya. Setelah impor ini, buka pratinjau kelompok berikutnya.",
+      "applyDecisions": "Terapkan keputusan",
+      "duplicates": {
+        "intro": "Transaksi ini mirip dengan transaksi yang sudah ada di akun. Tidak ada yang disimpan untuk transaksi ini sampai Anda memutuskan apa yang dilakukan dengan masing-masing.",
+        "summary": "Kemungkinan duplikat: {later} ditunda, {merge} digabungkan, {keep} dipertahankan, {replace} diganti, {import} diimpor, {except} ditambahkan ke pengecualian"
+      }
     },
     "simplefin": {
       "provider": "Penyedia data",

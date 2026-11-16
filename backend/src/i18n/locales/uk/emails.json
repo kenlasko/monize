@@ -325,7 +325,9 @@
       "importedTitle": "{{ institution }}: імпортовано нові транзакції",
       "importedMessage": "Транзакції, імпортовані з {{ institution }} щоденною синхронізацією: {{ imported }}.",
       "importedNoneTitle": "{{ institution }}: нових транзакцій немає",
-      "importedNoneMessage": "Щоденна синхронізація {{ institution }} не знайшла нових транзакцій."
+      "importedNoneMessage": "Щоденна синхронізація {{ institution }} не знайшла нових транзакцій.",
+      "duplicatesHeldTitle": "{{ institution }}: можливі дублікати для перевірки",
+      "duplicatesHeldMessage": "Щоденна синхронізація {{ institution }} затримала транзакції, схожі на ті, що вже є на ваших рахунках: {{ held }}. Відкрийте налаштування банківської синхронізації, щоб вирішити, що з ними робити."
     },
     "bond": {
       "maturitySoonTitle": "{{ series }}: погашення {{ date }}",

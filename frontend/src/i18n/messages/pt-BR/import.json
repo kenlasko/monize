@@ -30,7 +30,8 @@
     "importFailed": "Falha na importação",
     "importedFromFiles": "Importadas com sucesso {imported} transações de {files} arquivos",
     "imported": "Importadas com sucesso {imported} transações",
-    "mnySingleFileOnly": "Importe um arquivo do Microsoft Money por vez -- um arquivo .mny contém um perfil completo."
+    "mnySingleFileOnly": "Importe um arquivo do Microsoft Money por vez -- um arquivo .mny contém um perfil completo.",
+    "duplicateCheckFailed": "Não foi possível verificar se o arquivo tem possíveis duplicatas. Nada foi importado; tente novamente."
   },
   "page": {
     "title": "Importar Transações",
@@ -342,7 +343,10 @@
     "viewInvestments": "Ver Investimentos",
     "viewTransactions": "Ver Transações",
     "importMoreFiles": "Importar Mais Arquivos",
-    "bondRowsWithoutSeries": "{count, plural, one {# compra de títulos foi importada sem série. Escolha a série nos lotes de títulos do ativo.} other {# compras de títulos foram importadas sem série. Escolha as séries nos lotes de títulos do ativo.}}"
+    "bondRowsWithoutSeries": "{count, plural, one {# compra de títulos foi importada sem série. Escolha a série nos lotes de títulos do ativo.} other {# compras de títulos foram importadas sem série. Escolha as séries nos lotes de títulos do ativo.}}",
+    "skipReasonKeptExisting": "sua transação existente foi mantida",
+    "skipReasonPossibleDuplicate": "parece uma transação que já está na conta",
+    "duplicatesDecided": "Possíveis duplicatas: {merged, plural, one {# mesclada com sua transação existente} many {# mescladas com suas transações existentes} other {# mescladas com suas transações existentes}}, {replaced, plural, one {# importada no lugar da que você tinha} many {# importadas no lugar das que você tinha} other {# importadas no lugar das que você tinha}}."
   },
   "multiAccountReview": {
     "heading": "Importação QIF para Várias Contas",
@@ -668,6 +672,52 @@
       "none": "O banco não informou a contraparte, então a transação não tem beneficiário.",
       "openAliases": "Abrir os aliases do beneficiário",
       "openAliasesNewTab": "Abrir os aliases do beneficiário em uma nova aba"
+    },
+    "duplicate": {
+      "looksLike": "Parece com esta transação que já está na conta",
+      "date": "Data",
+      "amount": "Valor",
+      "payee": "Beneficiário",
+      "category": "Categoria",
+      "status": "Status",
+      "reference": "Referência",
+      "description": "Nota",
+      "amountUnknown": "Desconhecido",
+      "transfer": "Transferência",
+      "transferWith": "Transferência com {account}",
+      "split": "Dividida",
+      "statuses": {
+        "UNRECONCILED": "Não reconciliada",
+        "CLEARED": "Confirmada",
+        "RECONCILED": "Reconciliada",
+        "VOID": "Anulada"
+      },
+      "legend": "O que fazer com {payee}",
+      "choice": {
+        "later": "Decidir depois",
+        "keep": "Manter a minha",
+        "merge": "Mesclar",
+        "replace": "Excluir a minha e importar",
+        "import": "Importar mesmo assim",
+        "except": "Adicionar às exceções"
+      },
+      "choiceHelp": {
+        "later": "Nada é gravado; ela aparece de novo na próxima vez.",
+        "keep": "Sua transação fica como está, e esta não é importada.",
+        "merge": "Sua transação mantém o beneficiário, a categoria e a nota, e recebe desta a data, a referência e o status Confirmada.",
+        "replace": "Sua transação é excluída e esta é importada no lugar dela.",
+        "import": "As duas são mantidas.",
+        "except": "Nunca é importada, até você retirá-la das exceções."
+      }
     }
+  },
+  "duplicates": {
+    "heading": "{count, plural, one {# possível duplicata} many {# possíveis duplicatas} other {# possíveis duplicatas}}",
+    "intro": "Estas linhas do arquivo parecem transações que já estão na conta. Cada uma fica como está, a menos que você escolha outra opção; nada é importado até você clicar em Importar.",
+    "fileHeading": "{file} para {account}",
+    "fromFile": "No arquivo em {date}:",
+    "noPayee": "Sem beneficiário",
+    "back": "Voltar",
+    "import": "Importar"
   }
 }

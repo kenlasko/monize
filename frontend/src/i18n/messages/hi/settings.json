@@ -1737,7 +1737,8 @@
       "createdLinked": "खाता बन गया और जुड़ गया",
       "createdLinkFailed": "खाता बन गया, लेकिन उसे जोड़ा नहीं जा सका",
       "preview": "पूर्वावलोकन",
-      "firstSyncPreview": "पहला आयात लेन-देन के पूर्वावलोकन से पुष्ट किया जाता है।"
+      "firstSyncPreview": "पहला आयात लेन-देन के पूर्वावलोकन से पुष्ट किया जाता है।",
+      "heldDuplicates": "{count, plural, one {# संभावित डुप्लिकेट पूर्वावलोकन में आपके निर्णय की प्रतीक्षा कर रहा है।} other {# संभावित डुप्लिकेट पूर्वावलोकन में आपके निर्णय की प्रतीक्षा कर रहे हैं।}}"
     },
     "link": {
       "title": "{account} से जोड़ें",
@@ -1775,7 +1776,9 @@
         "missing_identity": "बैंक लेन-देन आईडी मौजूद नहीं है: {count, number}"
       },
       "needsPreview": "{accounts} का पूर्वावलोकन खोलें और पहले आयात की पुष्टि करें",
-      "withNeedsPreview": "{message}। {needsPreview}"
+      "withNeedsPreview": "{message}। {needsPreview}",
+      "heldDuplicates": "{count, plural, one {# संभावित डुप्लिकेट पूर्वावलोकन में आपके निर्णय की प्रतीक्षा कर रहा है} other {# संभावित डुप्लिकेट पूर्वावलोकन में आपके निर्णय की प्रतीक्षा कर रहे हैं}}",
+      "withHeldDuplicates": "{message}। {held}"
     },
     "callback": {
       "title": "आपका बैंक कनेक्ट हो रहा है",
@@ -1829,7 +1832,8 @@
         "pending": "लंबित",
         "before_cutoff": "आरंभ तिथि से पहले",
         "withCount": "{label} ({count})",
-        "excluded": "अपवाद"
+        "excluded": "अपवाद",
+        "possible_duplicate": "संभावित डुप्लिकेट"
       },
       "outcome": {
         "new": "नया",
@@ -1837,7 +1841,8 @@
         "refused": "अस्वीकृत",
         "pending": "लंबित",
         "before_cutoff": "आरंभ तिथि से पहले",
-        "excluded": "अपवाद"
+        "excluded": "अपवाद",
+        "possible_duplicate": "संभावित डुप्लिकेट"
       },
       "refusal": {
         "missing_date": "तिथि नहीं",
@@ -1885,7 +1890,12 @@
         }
       },
       "historyBatch": "इतिहास बैच: {from} से {to} तक।",
-      "historyBatchRemaining": "इतिहास बैच: {from} से {to} तक। और इतिहास बाकी है। यह बैच आयात करने के बाद अगले बैच का पूर्वावलोकन खोलें।"
+      "historyBatchRemaining": "इतिहास बैच: {from} से {to} तक। और इतिहास बाकी है। यह बैच आयात करने के बाद अगले बैच का पूर्वावलोकन खोलें।",
+      "applyDecisions": "निर्णय लागू करें",
+      "duplicates": {
+        "intro": "ये लेन-देन खाते में पहले से मौजूद लेन-देन जैसे लगते हैं। जब तक आप हर एक के बारे में निर्णय नहीं लेते, इनके लिए कुछ भी सहेजा नहीं जाता।",
+        "summary": "संभावित डुप्लिकेट: {later} बाद के लिए छोड़े गए, {merge} मर्ज किए गए, {keep} रखे गए, {replace} बदले गए, {import} आयात किए गए, {except} अपवादों में जोड़े गए"
+      }
     },
     "simplefin": {
       "provider": "डेटा प्रदाता",

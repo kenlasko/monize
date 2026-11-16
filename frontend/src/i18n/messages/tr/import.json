@@ -30,7 +30,8 @@
     "importFailed": "İçe aktarma başarısız",
     "importedFromFiles": "{files} dosyadan {imported} işlem başarıyla içe aktarıldı",
     "imported": "{imported} işlem başarıyla içe aktarıldı",
-    "mnySingleFileOnly": "Microsoft Money dosyalarını tek tek içe aktarın -- bir .mny dosyası bütün bir profili içerir."
+    "mnySingleFileOnly": "Microsoft Money dosyalarını tek tek içe aktarın -- bir .mny dosyası bütün bir profili içerir.",
+    "duplicateCheckFailed": "Dosya olası mükerrerler için denetlenemedi. Hiçbir şey içe aktarılmadı; yeniden deneyin."
   },
   "page": {
     "title": "İşlem İçe Aktar",
@@ -342,7 +343,10 @@
     "viewInvestments": "Yatırımları Görüntüle",
     "viewTransactions": "İşlemleri Görüntüle",
     "importMoreFiles": "Daha Fazla Dosya İçe Aktar",
-    "bondRowsWithoutSeries": "{count, plural, one {# tahvil alımı seri olmadan içe aktarıldı. Serisini menkul kıymetin tahvil lotlarında seçin.} other {# tahvil alımı seri olmadan içe aktarıldı. Serilerini menkul kıymetin tahvil lotlarında seçin.}}"
+    "bondRowsWithoutSeries": "{count, plural, one {# tahvil alımı seri olmadan içe aktarıldı. Serisini menkul kıymetin tahvil lotlarında seçin.} other {# tahvil alımı seri olmadan içe aktarıldı. Serilerini menkul kıymetin tahvil lotlarında seçin.}}",
+    "skipReasonKeptExisting": "Bunun yerine mevcut işleminiz korundu",
+    "skipReasonPossibleDuplicate": "Hesapta zaten bulunan bir işleme benziyor",
+    "duplicatesDecided": "Olası mükerrerler: {merged, plural, one {# tanesi mevcut işleminizle birleştirildi} other {# tanesi mevcut işlemlerinizle birleştirildi}}, {replaced, plural, one {# tanesi sizdekinin yerine içe aktarıldı} other {# tanesi sizdekilerin yerine içe aktarıldı}}."
   },
   "multiAccountReview": {
     "heading": "Çok Hesaplı QIF İçe Aktarma",
@@ -668,6 +672,52 @@
       "none": "Banka karşı taraf belirtmedi, bu yüzden işlemin alacaklısı yok.",
       "openAliases": "Alacaklının takma adlarını aç",
       "openAliasesNewTab": "Alacaklının takma adlarını yeni sekmede aç"
+    },
+    "duplicate": {
+      "looksLike": "Bu işlem hesapta zaten var gibi görünüyor",
+      "date": "Tarih",
+      "amount": "Tutar",
+      "payee": "Alacaklı",
+      "category": "Kategori",
+      "status": "Durum",
+      "reference": "Referans",
+      "description": "Not",
+      "amountUnknown": "Bilinmiyor",
+      "transfer": "Transfer",
+      "transferWith": "{account} ile transfer",
+      "split": "Bölünmüş",
+      "statuses": {
+        "UNRECONCILED": "Mutabakatsız",
+        "CLEARED": "Temizlendi",
+        "RECONCILED": "Mutabakat Sağlandı",
+        "VOID": "Geçersiz"
+      },
+      "legend": "{payee} için ne yapılsın",
+      "choice": {
+        "later": "Sonra karar ver",
+        "keep": "Benimkini tut",
+        "merge": "Birleştir",
+        "replace": "Benimkini sil ve içe aktar",
+        "import": "Yine de içe aktar",
+        "except": "İstisnalara ekle"
+      },
+      "choiceHelp": {
+        "later": "Hiçbir şey yazılmaz; bir dahaki sefere yeniden gösterilir.",
+        "keep": "İşleminiz olduğu gibi kalır ve bu işlem içe aktarılmaz.",
+        "merge": "İşleminiz alacaklısını, kategorisini ve notunu korur; tarihi, referansı ve Temizlendi durumunu bu işlemden alır.",
+        "replace": "İşleminiz silinir ve yerine bu işlem içe aktarılır.",
+        "import": "İkisi de korunur.",
+        "except": "İstisnalardan çıkarana kadar hiçbir zaman içe aktarılmaz."
+      }
     }
+  },
+  "duplicates": {
+    "heading": "{count, plural, one {# olası mükerrer} other {# olası mükerrer}}",
+    "intro": "Dosyanın bu satırları hesapta zaten bulunan işlemlere benziyor. Aksini seçmediğiniz sürece her biri olduğu gibi korunur; İçe aktar'a basana kadar hiçbir şey içe aktarılmaz.",
+    "fileHeading": "{file} dosyasından {account} hesabına",
+    "fromFile": "Dosyada {date} tarihinde:",
+    "noPayee": "Alacaklı yok",
+    "back": "Geri",
+    "import": "İçe aktar"
   }
 }

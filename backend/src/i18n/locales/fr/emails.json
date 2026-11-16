@@ -325,7 +325,9 @@
       "importedTitle": "{{ institution }} : nouvelles transactions importées",
       "importedMessage": "Transactions importées depuis {{ institution }} par la synchronisation quotidienne : {{ imported }}.",
       "importedNoneTitle": "{{ institution }} : aucune nouvelle transaction",
-      "importedNoneMessage": "La synchronisation quotidienne de {{ institution }} n'a trouvé aucune nouvelle transaction."
+      "importedNoneMessage": "La synchronisation quotidienne de {{ institution }} n'a trouvé aucune nouvelle transaction.",
+      "duplicatesHeldTitle": "{{ institution }} : doublons possibles à examiner",
+      "duplicatesHeldMessage": "La synchronisation quotidienne de {{ institution }} a retenu des transactions qui ressemblent à d'autres déjà présentes dans vos comptes : {{ held }}. Ouvrez les paramètres de synchronisation bancaire pour décider que faire de chacune."
     },
     "bond": {
       "maturitySoonTitle": "{{ series }} arrive à échéance le {{ date }}",

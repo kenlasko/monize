@@ -126,6 +126,12 @@ Written by the daily cron after each user's run, once per connection:
   expired key of section 4, so the user gets one expiry notice, whichever
   path saw it first, and the cron stops reading that connection's other
   accounts, which would only fail the same way.
+- `BANK_SYNC_DUPLICATES_HELD` (category `BANK_SYNC`, severity warning) when
+  one or more accounts of the connection held possible duplicates back for a
+  decision, whatever the success mode, with `data` = `{ connectionId,
+  institutionName, held, accounts }`, target `/settings/bank-sync`. Dedupe key
+  `bsc:dup:<connection id>:<UTC date>`
+  ([`import-duplicate-review.md`](./import-duplicate-review.md) section 4).
 - An account that needs its preview (`docs/specs/bank-sync.md` section 7a) is
   skipped and logged, with no notification: its card already says so.
 - An account whose sync lost the per-account lease to another sync (a manual

@@ -30,7 +30,8 @@
     "importFailed": "匯入失敗",
     "importedFromFiles": "成功從 {files} 個檔案匯入 {imported} 筆交易",
     "imported": "成功匯入 {imported} 筆交易",
-    "mnySingleFileOnly": "請一次匯入一個 Microsoft Money 檔案 -- 一個 .mny 檔案包含完整的帳務資料。"
+    "mnySingleFileOnly": "請一次匯入一個 Microsoft Money 檔案 -- 一個 .mny 檔案包含完整的帳務資料。",
+    "duplicateCheckFailed": "無法檢查檔案中的可能重複項目。未匯入任何內容；請再試一次。"
   },
   "page": {
     "title": "匯入交易",
@@ -342,7 +343,10 @@
     "viewInvestments": "查看投資",
     "viewTransactions": "查看交易",
     "importMoreFiles": "匯入更多檔案",
-    "bondRowsWithoutSeries": "{count, plural, other {有 # 筆債券買入在沒有系列的情況下匯入。請在該證券的債券批次中選擇系列。}}"
+    "bondRowsWithoutSeries": "{count, plural, other {有 # 筆債券買入在沒有系列的情況下匯入。請在該證券的債券批次中選擇系列。}}",
+    "skipReasonKeptExisting": "已改為保留您現有的交易",
+    "skipReasonPossibleDuplicate": "看起來與帳戶中已有的交易相似",
+    "duplicatesDecided": "可能重複：{merged, plural, other {# 筆已合併到您現有的交易}}，{replaced, plural, other {# 筆已匯入並取代您原有的交易}}。"
   },
   "multiAccountReview": {
     "heading": "多科目 QIF 匯入",
@@ -668,6 +672,52 @@
       "none": "銀行沒有提供交易對象，因此這筆交易沒有收款人。",
       "openAliases": "開啟收款人的別名",
       "openAliasesNewTab": "在新分頁中開啟收款人的別名"
+    },
+    "duplicate": {
+      "looksLike": "此交易似乎已存在於帳戶中",
+      "date": "日期",
+      "amount": "金額",
+      "payee": "收款人",
+      "category": "類別",
+      "status": "狀態",
+      "reference": "參考號碼",
+      "description": "備註",
+      "amountUnknown": "未知",
+      "transfer": "轉帳",
+      "transferWith": "與 {account} 轉帳",
+      "split": "分割",
+      "statuses": {
+        "UNRECONCILED": "未對帳",
+        "CLEARED": "已結清",
+        "RECONCILED": "已對帳",
+        "VOID": "作廢"
+      },
+      "legend": "如何處理 {payee}",
+      "choice": {
+        "later": "稍後決定",
+        "keep": "保留我的",
+        "merge": "合併",
+        "replace": "刪除我的並匯入",
+        "import": "仍要匯入",
+        "except": "加入例外"
+      },
+      "choiceHelp": {
+        "later": "不寫入任何內容；下次會再次顯示。",
+        "keep": "您的交易維持不變，此交易不會匯入。",
+        "merge": "您的交易保留其收款人、類別與備註，並採用此交易的日期、參考號碼與「已結清」狀態。",
+        "replace": "您的交易將被刪除，並匯入此交易取代它。",
+        "import": "兩者都保留。",
+        "except": "永不匯入，直到您將其從例外中移除。"
+      }
     }
+  },
+  "duplicates": {
+    "heading": "{count, plural, other {# 筆可能重複}}",
+    "intro": "檔案中的這些列看起來與帳戶中已有的交易相似。除非您另行選擇，否則每一筆都維持原樣；在您按下「匯入」之前不會匯入任何內容。",
+    "fileHeading": "{file} 匯入到 {account}",
+    "fromFile": "檔案中 {date} 的記錄：",
+    "noPayee": "無收款人",
+    "back": "返回",
+    "import": "匯入"
   }
 }

@@ -13,6 +13,7 @@ import { MapCategoriesStep } from '@/components/import/MapCategoriesStep';
 import { MapSecuritiesStep } from '@/components/import/MapSecuritiesStep';
 import { MapAccountsStep } from '@/components/import/MapAccountsStep';
 import { ReviewStep } from '@/components/import/ReviewStep';
+import { DuplicatesStep } from '@/components/import/DuplicatesStep';
 import { CompleteStep } from '@/components/import/CompleteStep';
 import { MultiAccountReviewStep } from '@/components/import/MultiAccountReviewStep';
 import { MnyReviewStep } from '@/components/import/MnyReviewStep';
@@ -244,6 +245,16 @@ function ImportContent() {
           />
         );
 
+      case 'duplicates':
+        return (
+          <DuplicatesStep
+            review={wizard.duplicateReview}
+            isLoading={wizard.isLoading}
+            onBack={() => wizard.setStep('review')}
+            onImport={(decisions) => void wizard.handleImportWithDuplicates(decisions)}
+          />
+        );
+
       case 'multiAccountReview':
         return wizard.multiAccountData ? (
           <MultiAccountReviewStep
@@ -347,7 +358,7 @@ function ImportContent() {
         <div className="mb-8">
           <div className="flex items-center justify-center space-x-4">
             {(() => {
-              const stepOrder = ['upload', 'csvColumnMapping', 'selectAccount', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'multiAccountReview', 'complete'];
+              const stepOrder = ['upload', 'csvColumnMapping', 'selectAccount', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'duplicates', 'multiAccountReview', 'complete'];
               const currentIndex = stepOrder.indexOf(wizard.step);
 
               // Filter to only visible steps
@@ -357,6 +368,7 @@ function ImportContent() {
                 if (s === 'mapSecurities' && wizard.securityMappings.length === 0) return false;
                 if (s === 'mapAccounts' && !wizard.shouldShowMapAccounts) return false;
                 if (s === 'multiAccountReview' && !wizard.multiAccountData) return false;
+                if (s === 'duplicates' && wizard.duplicateReview.length === 0) return false;
                 if (wizard.multiAccountData && ['selectAccount', 'mapCategories', 'mapAccounts', 'review'].includes(s)) return false;
                 if (wizard.multiAccountData && s === 'mapSecurities' && wizard.securityMappings.length === 0) return false;
                 return true;

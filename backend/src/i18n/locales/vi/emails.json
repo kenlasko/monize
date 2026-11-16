@@ -325,7 +325,9 @@
       "importedTitle": "{{ institution }}: đã nhập giao dịch mới",
       "importedMessage": "Các giao dịch được nhập từ {{ institution }} bởi đồng bộ hằng ngày: {{ imported }}.",
       "importedNoneTitle": "{{ institution }}: không có giao dịch mới",
-      "importedNoneMessage": "Đồng bộ hằng ngày của {{ institution }} không tìm thấy giao dịch mới."
+      "importedNoneMessage": "Đồng bộ hằng ngày của {{ institution }} không tìm thấy giao dịch mới.",
+      "duplicatesHeldTitle": "{{ institution }}: các giao dịch có thể trùng lặp cần xem lại",
+      "duplicatesHeldMessage": "Lần đồng bộ hằng ngày của {{ institution }} đã giữ lại các giao dịch trông giống những giao dịch đã có trong tài khoản của bạn: {{ held }}. Mở cài đặt đồng bộ ngân hàng để quyết định làm gì với chúng."
     },
     "bond": {
       "maturitySoonTitle": "{{ series }} đáo hạn vào {{ date }}",

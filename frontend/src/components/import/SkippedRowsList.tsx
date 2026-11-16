@@ -11,6 +11,8 @@ const DEFAULT_LIMIT = 50;
 const REASON_KEYS = {
   alreadyImported: 'complete.skipReasonAlreadyImported',
   duplicateTransfer: 'complete.skipReasonDuplicateTransfer',
+  keptExisting: 'complete.skipReasonKeptExisting',
+  possibleDuplicate: 'complete.skipReasonPossibleDuplicate',
   unreadableDate: 'complete.skipReasonUnreadableDate',
   unreadableAmount: 'complete.skipReasonUnreadableAmount',
   missingSecurity: 'complete.skipReasonMissingSecurity',

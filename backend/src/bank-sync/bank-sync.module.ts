@@ -17,6 +17,7 @@ import { PayeesModule } from "../payees/payees.module";
 import { ProviderHealthModule } from "../provider-health/provider-health.module";
 import { TagsModule } from "../tags/tags.module";
 import { TransactionRulesModule } from "../transaction-rules/transaction-rules.module";
+import { TransactionsModule } from "../transactions/transactions.module";
 import { BankSyncConnectionsService } from "./bank-sync-connections.service";
 import { BankSyncController } from "./bank-sync.controller";
 import { BankSyncCredentialsService } from "./bank-sync-credentials.service";
@@ -57,6 +58,10 @@ import { EnableBankingProvider } from "./providers/enable-banking/enable-banking
     // the writer's own manager, inside its transaction.
     TagsModule,
     NetWorthModule,
+    // For TransactionsService.remove: "delete mine and import" deletes the
+    // existing transaction a possible duplicate pairs with through the one
+    // delete path, inside the writer's transaction.
+    TransactionsModule,
     // For NotificationDispatchService: the consent reminders and the daily
     // sync's outcomes are written through it so the bank sync categories'
     // matrix channels (immediate email, push) apply. NotificationsModule

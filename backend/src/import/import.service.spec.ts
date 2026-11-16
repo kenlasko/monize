@@ -76,6 +76,11 @@ import {
 import { ImportColumnMapping } from "./entities/import-column-mapping.entity";
 import { Tag } from "../tags/entities/tag.entity";
 import { ConflictException } from "@nestjs/common";
+import { TransactionsService } from "../transactions/transactions.service";
+import {
+  ImportDuplicateDecisionRefusedException,
+  ImportDuplicatesChangedException,
+} from "./import-duplicates";
 
 const mockedParseQif = parseQif as jest.MockedFunction<typeof parseQif>;
 const mockedParseQifFull = parseQifFull as jest.MockedFunction<
@@ -115,6 +120,10 @@ describe("ImportService", () => {
   let mockSecurityPriceService: Record<string, jest.Mock>;
   let mockExchangeRateService: Record<string, jest.Mock>;
   let mockHoldingsService: Record<string, jest.Mock>;
+  let mockTransactionsService: {
+    remove: jest.Mock;
+    dispatchDeferredRecompute: jest.Mock;
+  };
   let mockRulesApplier: Record<string, jest.Mock>;
   /** How many categories the import created via the guarded insert. */
   let importedCategoryCount: number;
@@ -333,6 +342,10 @@ describe("ImportService", () => {
     // The import writes the ledger and then re-derives the imported accounts'
     // holdings from it in the same transaction, instead of blending each row
     // into an average cost in file order.
+    mockTransactionsService = {
+      remove: jest.fn().mockResolvedValue(undefined),
+      dispatchDeferredRecompute: jest.fn().mockResolvedValue(undefined),
+    };
     mockHoldingsService = {
       rebuildAccountsFromTransactions: jest.fn().mockResolvedValue(undefined),
     };
@@ -360,6 +373,7 @@ describe("ImportService", () => {
         { provide: ExchangeRateService, useValue: mockExchangeRateService },
         { provide: RateHistoryCatchUpService, useValue: { start: jest.fn() } },
         { provide: HoldingsService, useValue: mockHoldingsService },
+        { provide: TransactionsService, useValue: mockTransactionsService },
         ImportPostProcessingService,
         ImportEntityCreatorService,
         ImportInvestmentProcessorService,
@@ -749,6 +763,287 @@ describe("ImportService", () => {
         await expect(service.importQifFile(userId, dto)).rejects.toThrow(
           "invalid security",
         );
+      });
+    });
+
+    describe("possible duplicates (docs/specs/import-duplicate-review.md section 5)", () => {
+      const EXISTING = {
+        id: "a0a0a0a0-0000-4000-8000-000000000001",
+        transaction_date: "2025-01-14",
+        amount: "-50.00000000",
+        payee_name: "Grocery Store",
+        category_name: "Food",
+        description: null,
+        reference_number: null,
+        status: "UNRECONCILED",
+        is_transfer: false,
+        is_split: false,
+        transfer_account_name: null,
+        external_id: null,
+      };
+
+      /** The account holds `existing`; everything else as the default mock answers. */
+      function accountHolding(existing: object[] = [EXISTING]) {
+        mockQueryRunner.query.mockImplementation(async (sql: string) => {
+          const text = String(sql);
+          if (text.includes("FROM transactions t")) return existing;
+          if (text.includes("INSERT INTO categories")) {
+            return [{ id: `cat-${++importedCategoryCount}` }];
+          }
+          return [];
+        });
+      }
+
+      const processed = () =>
+        jest
+          .spyOn(ImportRegularProcessorService.prototype, "processTransaction")
+          .mockResolvedValue(undefined);
+      const merges = () =>
+        mockQueryRunner.query.mock.calls.filter((call) =>
+          String(call[0]).includes("UPDATE transactions"),
+        );
+      const decide = (action: string, transactionId = EXISTING.id) =>
+        makeBaseDto({
+          duplicateDecisions: [{ row: 0, transactionId, action }],
+        });
+
+      afterEach(() => jest.restoreAllMocks());
+
+      it("keeps a pair nobody decided about: the row is skipped as a possible duplicate", async () => {
+        accountHolding();
+        const spy = processed();
+        const result = await service.importQifFile(userId, makeBaseDto());
+        expect(spy).not.toHaveBeenCalled();
+        expect(result.skipped).toBe(1);
+        expect(result.skippedRows[0]).toMatchObject({
+          date: "2025-01-15",
+          amount: -50,
+          reason: "possibleDuplicate",
+        });
+      });
+
+      it("keeps the existing transaction when the person said so", async () => {
+        accountHolding();
+        const spy = processed();
+        const result = await service.importQifFile(userId, decide("keep"));
+        expect(spy).not.toHaveBeenCalled();
+        expect(result.skippedRows[0].reason).toBe("keptExisting");
+        expect(merges()).toHaveLength(0);
+      });
+
+      it("imports the row beside the existing transaction for import", async () => {
+        accountHolding();
+        const spy = processed();
+        await service.importQifFile(userId, decide("import"));
+        expect(spy).toHaveBeenCalledTimes(1);
+        expect(mockTransactionsService.remove).not.toHaveBeenCalled();
+      });
+
+      it("merges: the existing transaction takes the row's date, number and Cleared", async () => {
+        accountHolding();
+        const spy = processed();
+        const result = await service.importQifFile(userId, decide("merge"));
+        expect(spy).not.toHaveBeenCalled();
+        expect(result.duplicatesMerged).toBe(1);
+        expect(merges()).toHaveLength(1);
+        expect(merges()[0][1]).toEqual([
+          EXISTING.id,
+          userId,
+          true,
+          "2025-01-15",
+          "1001",
+          "CLEARED",
+          null,
+        ]);
+      });
+
+      it("locks the account before the decided transactions", async () => {
+        accountHolding();
+        processed();
+        await service.importQifFile(userId, decide("keep"));
+        const locks = mockQueryRunner.query.mock.calls
+          .map((call) => String(call[0]))
+          .filter((sql) => sql.includes("FOR UPDATE"));
+        const accountLock = locks.findIndex((sql) =>
+          sql.includes("FROM accounts"),
+        );
+        const rowLock = locks.findIndex((sql) =>
+          sql.includes("FROM transactions"),
+        );
+        expect(accountLock).toBeGreaterThanOrEqual(0);
+        expect(rowLock).toBeGreaterThan(accountLock);
+      });
+
+      it("gives a replaced row's bank id back to the map when the row's savepoint rolls back", async () => {
+        accountHolding([{ ...EXISTING, external_id: "ofx:A" }]);
+        mockedParseQif.mockReturnValue({
+          accountType: "CHEQUING",
+          accountName: "",
+          categories: ["Food"],
+          transferAccounts: [],
+          securities: [],
+          detectedDateFormat: "MM/DD/YYYY",
+          sampleDates: ["01/15/2025"],
+          openingBalance: null,
+          openingBalanceDate: null,
+          transactions: [
+            makeQifTransaction(),
+            makeQifTransaction({ date: "2025-01-20", amount: -7, fitId: "A" }),
+          ],
+        });
+        mockQueryRunner.manager.find.mockImplementation(
+          async (entity: unknown) =>
+            entity === Transaction
+              ? [
+                  {
+                    externalId: "ofx:A",
+                    transactionDate: "2025-01-14",
+                    amount: -50,
+                  },
+                ]
+              : [],
+        );
+        const heldAtSecondRow: boolean[] = [];
+        jest
+          .spyOn(ImportRegularProcessorService.prototype, "processTransaction")
+          .mockImplementationOnce(async () => {
+            throw new Error("row failed");
+          })
+          .mockImplementationOnce(async (ctx) => {
+            heldAtSecondRow.push(ctx.heldExternalIds.has("ofx:A"));
+          });
+        const result = await service.importQifFile(userId, decide("replace"));
+        expect(result.errors).toBe(1);
+        // The delete was rolled back with the row, so the id is held again.
+        expect(heldAtSecondRow).toEqual([true]);
+      });
+
+      it("replaces: deletes the existing transaction through the delete path, then imports the row", async () => {
+        accountHolding();
+        const spy = processed();
+        const result = await service.importQifFile(userId, decide("replace"));
+        expect(mockTransactionsService.remove).toHaveBeenCalledWith(
+          userId,
+          EXISTING.id,
+          {
+            recordHistory: false,
+            deferDerivedRecompute: {
+              accountIds: expect.any(Set),
+              securityIds: expect.any(Set),
+            },
+          },
+        );
+        expect(spy).toHaveBeenCalledTimes(1);
+        expect(result.duplicatesReplaced).toBe(1);
+      });
+
+      it("refuses with 409, before writing, a decision about a pair that is not the one checked", async () => {
+        accountHolding([
+          { ...EXISTING, id: "a0a0a0a0-0000-4000-8000-000000000002" },
+        ]);
+        const spy = processed();
+        await expect(
+          service.importQifFile(userId, decide("merge")),
+        ).rejects.toBeInstanceOf(ImportDuplicatesChangedException);
+        expect(spy).not.toHaveBeenCalled();
+        expect(merges()).toHaveLength(0);
+      });
+
+      it("refuses with 409 a decision about a row that pairs with nothing", async () => {
+        accountHolding([]);
+        await expect(
+          service.importQifFile(userId, decide("keep")),
+        ).rejects.toBeInstanceOf(ImportDuplicatesChangedException);
+      });
+
+      it("refuses a merge of a Reconciled transaction and a repeated decision with 400", async () => {
+        accountHolding([{ ...EXISTING, status: "RECONCILED" }]);
+        await expect(
+          service.importQifFile(userId, decide("merge")),
+        ).rejects.toBeInstanceOf(ImportDuplicateDecisionRefusedException);
+
+        accountHolding();
+        await expect(
+          service.importQifFile(
+            userId,
+            makeBaseDto({
+              duplicateDecisions: [
+                { row: 0, transactionId: EXISTING.id, action: "keep" },
+                { row: 0, transactionId: EXISTING.id, action: "import" },
+              ],
+            }),
+          ),
+        ).rejects.toBeInstanceOf(ImportDuplicateDecisionRefusedException);
+        expect(mockTransactionsService.remove).not.toHaveBeenCalled();
+      });
+
+      it("does not compare a transfer row", async () => {
+        mockedParseQif.mockReturnValue({
+          accountType: "CHEQUING",
+          accountName: "",
+          categories: ["Food"],
+          transferAccounts: [],
+          securities: [],
+          detectedDateFormat: "MM/DD/YYYY",
+          sampleDates: ["01/15/2025"],
+          openingBalance: null,
+          openingBalanceDate: null,
+          transactions: [
+            makeQifTransaction({
+              isTransfer: true,
+              transferAccount: "Savings",
+            }),
+          ],
+        });
+        accountHolding();
+        await service.importQifFile(userId, makeBaseDto());
+        expect(
+          mockQueryRunner.query.mock.calls.some((call) =>
+            String(call[0]).includes("FROM transactions t"),
+          ),
+        ).toBe(false);
+      });
+
+      it("lists the pairs without writing anything", async () => {
+        accountHolding();
+        const answer = await service.findQifDuplicates(userId, makeBaseDto());
+        expect(answer.accountId).toBe("acct-1");
+        expect(answer.rows).toEqual([
+          expect.objectContaining({
+            row: 0,
+            transactionDate: "2025-01-15",
+            amount: -50,
+            payee: "Grocery Store",
+            memo: "Weekly groceries",
+            referenceNumber: "1001",
+            existingTransaction: expect.objectContaining({
+              id: EXISTING.id,
+              transactionDate: "2025-01-14",
+              payeeName: "Grocery Store",
+            }),
+            duplicateActions: ["import", "merge", "keep", "replace"],
+          }),
+        ]);
+        expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+        expect(merges()).toHaveLength(0);
+      });
+
+      it("lists none for an investment file", async () => {
+        mockedParseQif.mockReturnValue({
+          accountType: "INVESTMENT",
+          accountName: "",
+          categories: ["Food"],
+          transferAccounts: [],
+          securities: [],
+          detectedDateFormat: "MM/DD/YYYY",
+          sampleDates: ["01/15/2025"],
+          openingBalance: null,
+          openingBalanceDate: null,
+          transactions: [makeQifTransaction()],
+        });
+        accountHolding();
+        const answer = await service.findQifDuplicates(userId, makeBaseDto());
+        expect(answer.rows).toEqual([]);
       });
     });
 
@@ -3789,6 +4084,7 @@ describe("ImportService", () => {
         dto.categoryMappings,
         dto.accountMappings,
         dto.securityMappings,
+        undefined,
         undefined,
       );
       importSpy.mockRestore();

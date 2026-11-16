@@ -30,7 +30,8 @@
     "importFailed": "インポートに失敗しました",
     "importedFromFiles": "{files} 件のファイルから {imported} 件の取引を正常にインポートしました",
     "imported": "{imported} 件の取引を正常にインポートしました",
-    "mnySingleFileOnly": "Microsoft Money ファイルは 1 つずつインポートしてください。.mny ファイルにはプロファイル全体が含まれます。"
+    "mnySingleFileOnly": "Microsoft Money ファイルは 1 つずつインポートしてください。.mny ファイルにはプロファイル全体が含まれます。",
+    "duplicateCheckFailed": "ファイルの重複の可能性を確認できませんでした。何もインポートされていません。もう一度お試しください。"
   },
   "page": {
     "title": "取引のインポート",
@@ -342,7 +343,10 @@
     "viewInvestments": "投資を表示",
     "viewTransactions": "取引を表示",
     "importMoreFiles": "さらにファイルをインポート",
-    "bondRowsWithoutSeries": "{count, plural, other {#件の債券購入がシリーズなしでインポートされました。銘柄の債券ロットでシリーズを選択してください。}}"
+    "bondRowsWithoutSeries": "{count, plural, other {#件の債券購入がシリーズなしでインポートされました。銘柄の債券ロットでシリーズを選択してください。}}",
+    "skipReasonKeptExisting": "代わりに既存の取引を残しました",
+    "skipReasonPossibleDuplicate": "この勘定科目に既にある取引と同じようです",
+    "duplicatesDecided": "重複の可能性: {merged, plural, other {# 件を既存の取引にマージ}}、{replaced, plural, other {# 件を既存の取引の代わりにインポート}}。"
   },
   "multiAccountReview": {
     "heading": "複数勘定科目 QIF インポート",
@@ -668,6 +672,52 @@
       "none": "銀行から取引相手が示されなかったため、この取引には支払先がありません。",
       "openAliases": "支払先のエイリアスを開く",
       "openAliasesNewTab": "支払先のエイリアスを新しいタブで開く"
+    },
+    "duplicate": {
+      "looksLike": "この勘定科目に既にある取引と同じようです",
+      "date": "日付",
+      "amount": "金額",
+      "payee": "支払先",
+      "category": "カテゴリ",
+      "status": "ステータス",
+      "reference": "参照番号",
+      "description": "メモ",
+      "amountUnknown": "不明",
+      "transfer": "振替",
+      "transferWith": "{account} との振替",
+      "split": "分割",
+      "statuses": {
+        "UNRECONCILED": "未照合",
+        "CLEARED": "決済済み",
+        "RECONCILED": "照合済み",
+        "VOID": "無効"
+      },
+      "legend": "{payee} の扱い",
+      "choice": {
+        "later": "後で決める",
+        "keep": "自分の取引を残す",
+        "merge": "マージ",
+        "replace": "自分の取引を削除してインポート",
+        "import": "それでもインポート",
+        "except": "例外に追加"
+      },
+      "choiceHelp": {
+        "later": "何も書き込まれず、次回も表示されます。",
+        "keep": "あなたの取引はそのまま残り、この取引はインポートされません。",
+        "merge": "あなたの取引の支払先、カテゴリ、メモはそのまま残り、この取引の日付、参照番号、決済済みステータスが反映されます。",
+        "replace": "あなたの取引は削除され、代わりにこの取引がインポートされます。",
+        "import": "両方とも残ります。",
+        "except": "例外から外すまで、インポートされません。"
+      }
     }
+  },
+  "duplicates": {
+    "heading": "{count, plural, other {重複の可能性がある取引 # 件}}",
+    "intro": "ファイルのこれらの行は、この勘定科目に既にある取引と同じようです。別の操作を選ばない限り、それぞれそのまま残ります。「インポート」を押すまで何もインポートされません。",
+    "fileHeading": "{file} から {account} へ",
+    "fromFile": "ファイル内の {date} の取引:",
+    "noPayee": "支払先なし",
+    "back": "戻る",
+    "import": "インポート"
   }
 }

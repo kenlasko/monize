@@ -6,6 +6,11 @@ import { useImportWizard } from './useImportWizard';
 // --- Mocks ---
 const mockParseQif = vi.fn();
 const mockImportQif = vi.fn();
+const noDuplicates = async (..._args: unknown[]) => ({ accountId: 'acc-1', currencyCode: 'CAD', rows: [] as unknown[] });
+// No file has a possible duplicate unless a test says so.
+const mockFindQifDuplicates = vi.fn(noDuplicates);
+const mockFindOfxDuplicates = vi.fn(noDuplicates);
+const mockFindCsvDuplicates = vi.fn(noDuplicates);
 const mockParseOfx = vi.fn();
 const mockImportOfx = vi.fn();
 const mockParseQifMulti = vi.fn();
@@ -31,6 +36,9 @@ vi.mock('@/lib/import', () => ({
     parseCsvHeaders: (...args: any[]) => mockParseCsvHeaders(...args),
     parseCsv: (...args: any[]) => mockParseCsv(...args),
     importCsv: (...args: any[]) => mockImportCsv(...args),
+    findQifDuplicates: (...args: any[]) => mockFindQifDuplicates(...args),
+    findOfxDuplicates: (...args: any[]) => mockFindOfxDuplicates(...args),
+    findCsvDuplicates: (...args: any[]) => mockFindCsvDuplicates(...args),
     getColumnMappings: (...args: any[]) => mockGetColumnMappings(...args),
     createColumnMapping: (...args: any[]) => mockCreateColumnMapping(...args),
     deleteColumnMapping: (...args: any[]) => mockDeleteColumnMapping(...args),
@@ -1248,6 +1256,109 @@ describe('useImportWizard - security lookup', () => {
       await result.current.handleSecurityLookup(0, 'XYZ');
     });
     expect(result.current.lookupLoadingIndex).toBeNull();
+  });
+});
+
+describe('useImportWizard - possible duplicates (docs/specs/import-duplicate-review.md)', () => {
+  const PAIR = {
+    row: 0,
+    transactionDate: '2026-01-15',
+    amount: -80,
+    payee: 'HYDRO ONE',
+    memo: null,
+    referenceNumber: null,
+    existingTransaction: {
+      id: 'tx-manual',
+      transactionDate: '2026-01-13',
+      amount: '-80.0000',
+      payeeName: 'Hydro bill',
+      categoryName: null,
+      description: null,
+      referenceNumber: null,
+      status: 'UNRECONCILED',
+      isTransfer: false,
+      isSplit: false,
+      transferAccountName: null,
+    },
+    duplicateActions: ['import', 'merge', 'keep', 'replace'],
+  };
+
+  const ready = async () => {
+    mockGetAllAccounts.mockResolvedValue([baseAccount()]);
+    mockParseQif.mockResolvedValue(baseParsedQif({ categories: [] }));
+    mockImportQif.mockResolvedValue(importResult({ imported: 1 }));
+    const view = renderHook(() => useImportWizard());
+    await waitFor(() => expect(view.result.current.accounts).toHaveLength(1));
+    await act(async () => {
+      await view.result.current.handleFileSelect(fileEvent([makeFile('a.qif', 'x')]));
+    });
+    act(() => view.result.current.setSelectedAccountId('acc-1'));
+    return view;
+  };
+
+  it('checks the file with the body of its import, and imports at once when nothing pairs', async () => {
+    const { result } = await ready();
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    expect(mockFindQifDuplicates).toHaveBeenCalledWith(
+      expect.objectContaining({ content: 'x', accountId: 'acc-1' }),
+    );
+    expect(mockImportQif.mock.calls[0][0]).not.toHaveProperty('duplicateDecisions');
+    expect(result.current.step).toBe('complete');
+  });
+
+  it('lists the pairs before importing anything', async () => {
+    mockFindQifDuplicates.mockResolvedValueOnce({ accountId: 'acc-1', currencyCode: 'CAD', rows: [PAIR] });
+    const { result } = await ready();
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    expect(result.current.step).toBe('duplicates');
+    expect(mockImportQif).not.toHaveBeenCalled();
+    expect(result.current.duplicateReview).toEqual([
+      expect.objectContaining({ fileIndex: 0, fileName: 'a.qif', currencyCode: 'CAD', rows: [PAIR] }),
+    ]);
+  });
+
+  it('imports with the decisions made in the list', async () => {
+    mockFindQifDuplicates.mockResolvedValueOnce({ accountId: 'acc-1', currencyCode: 'CAD', rows: [PAIR] });
+    const { result } = await ready();
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    const decisions = new Map([[0, [{ row: 0, transactionId: 'tx-manual', action: 'merge' as const }]]]);
+    await act(async () => {
+      await result.current.handleImportWithDuplicates(decisions);
+    });
+    expect(mockImportQif.mock.calls[0][0].duplicateDecisions).toEqual(decisions.get(0));
+    expect(result.current.step).toBe('complete');
+  });
+
+  it('imports nothing when the check fails: an empty list would import every row', async () => {
+    mockFindQifDuplicates.mockRejectedValueOnce(new Error('down'));
+    const { result } = await ready();
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    expect(mockImportQif).not.toHaveBeenCalled();
+    expect(result.current.step).not.toBe('complete');
+  });
+
+  it('does not check an investment file, whose rows are not compared', async () => {
+    mockGetAllAccounts.mockResolvedValue([baseAccount()]);
+    mockParseQif.mockResolvedValue(baseParsedQif({ categories: [], accountType: 'INVESTMENT' }));
+    mockImportQif.mockResolvedValue(importResult({ imported: 1 }));
+    const { result } = renderHook(() => useImportWizard());
+    await waitFor(() => expect(result.current.accounts).toHaveLength(1));
+    await act(async () => {
+      await result.current.handleFileSelect(fileEvent([makeFile('a.qif', 'x')]));
+    });
+    act(() => result.current.setSelectedAccountId('acc-1'));
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    expect(mockFindQifDuplicates).not.toHaveBeenCalled();
   });
 });
 

@@ -190,7 +190,9 @@
     "importedTitle": "{institution}: zaimportowano nowe transakcje",
     "importedMessage": "Transakcje zaimportowane z {institution} przez codzienną synchronizację: {imported}.",
     "importedNoneTitle": "{institution}: brak nowych transakcji",
-    "importedNoneMessage": "Codzienna synchronizacja {institution} nie znalazła nowych transakcji."
+    "importedNoneMessage": "Codzienna synchronizacja {institution} nie znalazła nowych transakcji.",
+    "duplicatesHeldTitle": "{institution}: możliwe duplikaty do przejrzenia",
+    "duplicatesHeldMessage": "Codzienna synchronizacja {institution} wstrzymała transakcje, które wyglądają jak transakcje już obecne na Twoich kontach: {held}. Otwórz ustawienia synchronizacji z bankiem, aby zdecydować, co z nimi zrobić."
   },
   "emailReceiptsAttention": {
     "title": "Potwierdzenia e-maili wymagają uwagi",

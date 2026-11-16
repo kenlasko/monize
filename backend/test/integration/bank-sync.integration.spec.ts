@@ -2182,7 +2182,13 @@ describe("Bank sync (integration)", () => {
       asAlice(() => bankSync.previewAccount(aliceId, bankAccountId, null));
     const syncWith = (
       planFingerprint: string | undefined,
-      selection?: { importKeys: string[]; excludeKeys: string[] },
+      selection?: {
+        importKeys: string[];
+        excludeKeys: string[];
+        mergeKeys: string[];
+        keepKeys: string[];
+        replaceKeys: string[];
+      },
     ) =>
       asAlice(() =>
         bankSync.syncAccount(
@@ -2225,6 +2231,9 @@ describe("Bank sync (integration)", () => {
         const result = await syncWith(view.planFingerprint, {
           importKeys: [KEY.r2, KEY.r4],
           excludeKeys: [],
+          mergeKeys: [],
+          keepKeys: [],
+          replaceKeys: [],
         });
 
         expect(result).toMatchObject({ imported: 2, excluded: 0 });
@@ -2251,6 +2260,9 @@ describe("Bank sync (integration)", () => {
         const result = await syncWith(view.planFingerprint, {
           importKeys: [KEY.r1],
           excludeKeys: [KEY.r2, KEY.r3],
+          mergeKeys: [],
+          keepKeys: [],
+          replaceKeys: [],
         });
 
         expect(result).toMatchObject({ imported: 1, skipped: 0, excluded: 2 });
@@ -2272,6 +2284,9 @@ describe("Bank sync (integration)", () => {
         await syncWith(view.planFingerprint, {
           importKeys: [KEY.r1, KEY.r2, KEY.r3],
           excludeKeys: [KEY.r4],
+          mergeKeys: [],
+          keepKeys: [],
+          replaceKeys: [],
         });
         expect(await count("transactions")).toBe(3);
 
@@ -2289,6 +2304,9 @@ describe("Bank sync (integration)", () => {
         await syncWith(first.planFingerprint, {
           importKeys: [KEY.r1],
           excludeKeys: [KEY.r2],
+          mergeKeys: [],
+          keepKeys: [],
+          replaceKeys: [],
         });
 
         const view = await preview();
@@ -2314,6 +2332,9 @@ describe("Bank sync (integration)", () => {
         await syncWith(first.planFingerprint, {
           importKeys: [],
           excludeKeys: [KEY.r1, KEY.r2],
+          mergeKeys: [],
+          keepKeys: [],
+          replaceKeys: [],
         });
         expect(await count("transactions")).toBe(0);
         expect((await ledgerRows()).every((l) => l.excluded)).toBe(true);
@@ -2333,6 +2354,9 @@ describe("Bank sync (integration)", () => {
           syncWith(view.planFingerprint, {
             importKeys: [KEY.r1],
             excludeKeys: [],
+            mergeKeys: [],
+            keepKeys: [],
+            replaceKeys: [],
           }),
         ).resolves.toMatchObject({ imported: 1 });
         expect(await storedPayees()).toEqual(["Biedronka"]);
@@ -2367,8 +2391,20 @@ describe("Bank sync (integration)", () => {
         };
 
         for (const selection of [
-          { importKeys: [KEY.r1, "ref:nope"], excludeKeys: [] },
-          { importKeys: [], excludeKeys: ["ref:nope"] },
+          {
+            importKeys: [KEY.r1, "ref:nope"],
+            excludeKeys: [],
+            mergeKeys: [],
+            keepKeys: [],
+            replaceKeys: [],
+          },
+          {
+            importKeys: [],
+            excludeKeys: ["ref:nope"],
+            mergeKeys: [],
+            keepKeys: [],
+            replaceKeys: [],
+          },
         ]) {
           await expect(
             syncWith(view.planFingerprint, selection),
@@ -2404,12 +2440,18 @@ describe("Bank sync (integration)", () => {
           syncWith(view.planFingerprint, {
             importKeys: [KEY.r1],
             excludeKeys: [],
+            mergeKeys: [],
+            keepKeys: [],
+            replaceKeys: [],
           }),
         ).rejects.toMatchObject({ status: 400 });
         await expect(
           syncWith(view.planFingerprint, {
             importKeys: [keyOf(r5)],
             excludeKeys: [keyOf(r5)],
+            mergeKeys: [],
+            keepKeys: [],
+            replaceKeys: [],
           }),
         ).rejects.toMatchObject({ status: 400 });
         expect(await count("transactions")).toBe(4);
@@ -2430,6 +2472,9 @@ describe("Bank sync (integration)", () => {
           syncWith(view.planFingerprint, {
             importKeys: [KEY.r1],
             excludeKeys: [KEY.r2],
+            mergeKeys: [],
+            keepKeys: [],
+            replaceKeys: [],
           }),
         ).rejects.toMatchObject({ status: 409 });
 
@@ -2444,6 +2489,9 @@ describe("Bank sync (integration)", () => {
           syncWith(view.planFingerprint, {
             importKeys: [KEY.r1],
             excludeKeys: [],
+            mergeKeys: [],
+            keepKeys: [],
+            replaceKeys: [],
           }),
         ).rejects.toMatchObject({ status: 409 });
         expect(await count("transactions")).toBe(4);
@@ -2460,7 +2508,13 @@ describe("Bank sync (integration)", () => {
       it("an empty selection imports nothing and writes nothing", async () => {
         const view = await preview();
         await expect(
-          syncWith(view.planFingerprint, { importKeys: [], excludeKeys: [] }),
+          syncWith(view.planFingerprint, {
+            importKeys: [],
+            excludeKeys: [],
+            mergeKeys: [],
+            keepKeys: [],
+            replaceKeys: [],
+          }),
         ).resolves.toMatchObject({ imported: 0, excluded: 0 });
         expect(await count("transactions")).toBe(0);
         expect(await count("bank_sync_imported_transactions")).toBe(0);
@@ -2474,6 +2528,9 @@ describe("Bank sync (integration)", () => {
         await syncWith(view.planFingerprint, {
           importKeys: [KEY.r1],
           excludeKeys: [],
+          mergeKeys: [],
+          keepKeys: [],
+          replaceKeys: [],
         });
 
         // Still unconfirmed: three rows are neither imported nor excepted.
@@ -2485,6 +2542,9 @@ describe("Bank sync (integration)", () => {
         await syncWith(next.planFingerprint, {
           importKeys: [],
           excludeKeys: [KEY.r2, KEY.r3, KEY.r4],
+          mergeKeys: [],
+          keepKeys: [],
+          replaceKeys: [],
         });
         expect(await needsPreview()).toBe(false);
       });
@@ -2494,6 +2554,9 @@ describe("Bank sync (integration)", () => {
         await syncWith(view.planFingerprint, {
           importKeys: [],
           excludeKeys: [KEY.r1],
+          mergeKeys: [],
+          keepKeys: [],
+          replaceKeys: [],
         });
 
         await expect(removeExceptions([KEY.r1], bobId)).rejects.toMatchObject({
@@ -2512,7 +2575,13 @@ describe("Bank sync (integration)", () => {
 
       it("two exceptions of the same key written at once converge on one ledger row", async () => {
         const view = await preview();
-        const selection = { importKeys: [], excludeKeys: [KEY.r1] };
+        const selection = {
+          importKeys: [],
+          excludeKeys: [KEY.r1],
+          mergeKeys: [],
+          keepKeys: [],
+          replaceKeys: [],
+        };
         const results = await Promise.allSettled([
           syncWith(view.planFingerprint, selection),
           syncWith(view.planFingerprint, selection),
@@ -3053,6 +3122,195 @@ describe("Bank sync (integration)", () => {
           /creditorName|debtorName|merchantCategoryCode|"raw"/,
         );
       });
+    });
+  });
+
+  describe("possible duplicates (INV-IMPORT-004, docs/specs/import-duplicate-review.md)", () => {
+    let manualId: string;
+
+    /** A bill entered by hand a day before the bank booked it: r1's amount. */
+    beforeEach(async () => {
+      [{ id: manualId }] = await query<{ id: string }>(
+        `INSERT INTO transactions
+           (user_id, account_id, transaction_date, amount, currency_code,
+            payee_name, category_id, status)
+         VALUES ($1, $2, $3, -50, 'PLN', 'Hydro bill', NULL, 'UNRECONCILED')
+         RETURNING id`,
+        [aliceId, accountId, daysAgo(4)],
+      );
+      await query(
+        `UPDATE accounts SET current_balance = current_balance - 50 WHERE id = $1`,
+        [accountId],
+      );
+    });
+
+    const preview = () =>
+      asAlice(() => bankSync.previewAccount(aliceId, bankAccountId, null));
+    const syncWith = (
+      planFingerprint: string,
+      lists: Partial<
+        Record<
+          | "importKeys"
+          | "excludeKeys"
+          | "mergeKeys"
+          | "keepKeys"
+          | "replaceKeys",
+          string[]
+        >
+      >,
+    ) =>
+      asAlice(() =>
+        bankSync.syncAccount(aliceId, bankAccountId, null, planFingerprint, {
+          importKeys: [],
+          excludeKeys: [],
+          mergeKeys: [],
+          keepKeys: [],
+          replaceKeys: [],
+          ...lists,
+        }),
+      );
+    const heldCount = async () =>
+      Number(
+        (
+          await query<{ held_duplicate_count: number }>(
+            `SELECT held_duplicate_count FROM bank_sync_accounts WHERE id = $1`,
+            [bankAccountId],
+          )
+        )[0].held_duplicate_count,
+      );
+    const needsPreview = async () =>
+      (await asAlice(() => connections.list(aliceId)))[0].accounts[0]
+        .needsPreview;
+    const manual = async () =>
+      (
+        await query<{ transaction_date: string; status: string }>(
+          `SELECT TO_CHAR(transaction_date, 'YYYY-MM-DD') AS transaction_date, status
+             FROM transactions WHERE id = $1`,
+          [manualId],
+        )
+      )[0];
+    const ledgerOf = async (key: string) =>
+      (
+        await query<{ transaction_id: string | null }>(
+          `SELECT transaction_id FROM bank_sync_imported_transactions
+            WHERE account_id = $1 AND external_key = $2`,
+          [accountId, key],
+        )
+      )[0];
+
+    it("an unattended sync holds the pair back, imports the rest, and the account then needs its preview", async () => {
+      const result = await sync();
+
+      expect(result).toMatchObject({ imported: 3, heldDuplicates: 1 });
+      expect(await ledgerOf(KEY.r1)).toBeUndefined();
+      expect(await count("transactions")).toBe(4);
+      expect(await heldCount()).toBe(1);
+      expect(await needsPreview()).toBe(true);
+      expect(await storedBalance()).toBe(await ledgerBalance());
+    });
+
+    it("the preview shows the pair with the transaction it looks like", async () => {
+      const view = await preview();
+      const r1 = view.rows.find((r) => r.externalKey === KEY.r1);
+      expect(r1).toMatchObject({
+        outcome: "possible_duplicate",
+        existingTransaction: {
+          id: manualId,
+          transactionDate: daysAgo(4),
+          payeeName: "Hydro bill",
+        },
+        duplicateActions: ["import", "merge", "keep", "replace"],
+      });
+      expect(view.summary).toMatchObject({ new: 3, possibleDuplicate: 1 });
+    });
+
+    it("merge links the bank row to the transaction and takes the bank's date and Cleared, writing no second row", async () => {
+      const view = await preview();
+      const result = await syncWith(view.planFingerprint, {
+        importKeys: [KEY.r2, KEY.r3, KEY.r4],
+        mergeKeys: [KEY.r1],
+      });
+
+      expect(result).toMatchObject({
+        imported: 3,
+        merged: 1,
+        heldDuplicates: 0,
+      });
+      expect(await ledgerOf(KEY.r1)).toEqual({ transaction_id: manualId });
+      expect(await manual()).toEqual({
+        transaction_date: daysAgo(3),
+        status: "CLEARED",
+      });
+      expect(await count("transactions")).toBe(4);
+      expect(await storedBalance()).toBe(OPENING + BANK_SUM);
+      expect(await storedBalance()).toBe(await ledgerBalance());
+      expect(await heldCount()).toBe(0);
+      expect(await needsPreview()).toBe(false);
+
+      // The bank row never comes back: the ledger holds its key.
+      const next = await preview();
+      expect(next.rows.find((r) => r.externalKey === KEY.r1)?.outcome).toBe(
+        "duplicate",
+      );
+    });
+
+    it("keep links the bank row and leaves the transaction as it was", async () => {
+      const view = await preview();
+      const result = await syncWith(view.planFingerprint, {
+        keepKeys: [KEY.r1],
+      });
+      expect(result).toMatchObject({ imported: 0, kept: 1 });
+      expect(await ledgerOf(KEY.r1)).toEqual({ transaction_id: manualId });
+      expect(await manual()).toEqual({
+        transaction_date: daysAgo(4),
+        status: "UNRECONCILED",
+      });
+    });
+
+    it("delete-and-import deletes the transaction and imports the bank's row, the balance still the ledger's", async () => {
+      const view = await preview();
+      const result = await syncWith(view.planFingerprint, {
+        importKeys: [KEY.r2, KEY.r3, KEY.r4],
+        replaceKeys: [KEY.r1],
+      });
+      expect(result).toMatchObject({ imported: 4, replaced: 1 });
+      expect(await manual()).toBeUndefined();
+      expect(await count("transactions")).toBe(4);
+      expect(await storedBalance()).toBe(OPENING + BANK_SUM);
+      expect(await storedBalance()).toBe(await ledgerBalance());
+    });
+
+    it("refuses a merge once the pair is not the one the preview showed, and writes nothing", async () => {
+      const view = await preview();
+      // A closer match entered in another tab: r1 now pairs with it.
+      await query(
+        `INSERT INTO transactions
+           (user_id, account_id, transaction_date, amount, currency_code, payee_name, status)
+         VALUES ($1, $2, $3, -50, 'PLN', 'Entered twice', 'UNRECONCILED')`,
+        [aliceId, accountId, daysAgo(3)],
+      );
+      await expect(
+        syncWith(view.planFingerprint, { mergeKeys: [KEY.r1] }),
+      ).rejects.toMatchObject({ status: 409 });
+      expect(await count("bank_sync_imported_transactions")).toBe(0);
+      expect(await manual()).toEqual({
+        transaction_date: daysAgo(4),
+        status: "UNRECONCILED",
+      });
+    });
+
+    it("does not pair with a transaction bank sync brought in itself", async () => {
+      await query(`DELETE FROM transactions WHERE id = $1`, [manualId]);
+      await query(
+        `UPDATE accounts SET current_balance = current_balance + 50 WHERE id = $1`,
+        [accountId],
+      );
+      await sync();
+      // The same bank row again under another reference: a new row whose
+      // twin is r1, which the ledger names, so it is not a possible duplicate.
+      bankReturns([...BANK_ROWS, row({ entryReference: "r1-again" })]);
+      const view = await preview();
+      expect(view.summary).toMatchObject({ new: 1, possibleDuplicate: 0 });
     });
   });
 

@@ -1737,7 +1737,8 @@
       "createdLinked": "Cuenta creada y vinculada",
       "createdLinkFailed": "La cuenta se creó, pero no se pudo vincular",
       "preview": "Vista previa",
-      "firstSyncPreview": "La primera importación se confirma a partir de una vista previa de las transacciones."
+      "firstSyncPreview": "La primera importación se confirma a partir de una vista previa de las transacciones.",
+      "heldDuplicates": "{count, plural, one {# posible duplicado espera tu decisión en la vista previa.} many {# de posibles duplicados esperan tu decisión en la vista previa.} other {# posibles duplicados esperan tu decisión en la vista previa.}}"
     },
     "link": {
       "title": "Vincular a {account}",
@@ -1775,7 +1776,9 @@
         "missing_identity": "Falta el identificador de la transacción bancaria: {count, number}"
       },
       "needsPreview": "Abre la vista previa de {accounts} y confirma la primera importación",
-      "withNeedsPreview": "{message}. {needsPreview}"
+      "withNeedsPreview": "{message}. {needsPreview}",
+      "heldDuplicates": "{count, plural, one {# posible duplicado espera tu decisión en la vista previa} many {# de posibles duplicados esperan tu decisión en la vista previa} other {# posibles duplicados esperan tu decisión en la vista previa}}",
+      "withHeldDuplicates": "{message}. {held}"
     },
     "callback": {
       "title": "Conectando tu banco",
@@ -1829,7 +1832,8 @@
         "pending": "Pendientes",
         "before_cutoff": "Anteriores a la fecha de inicio",
         "withCount": "{label} ({count})",
-        "excluded": "Excepciones"
+        "excluded": "Excepciones",
+        "possible_duplicate": "Posibles duplicados"
       },
       "outcome": {
         "new": "Nueva",
@@ -1837,7 +1841,8 @@
         "refused": "Rechazada",
         "pending": "Pendiente",
         "before_cutoff": "Anterior a la fecha de inicio",
-        "excluded": "Excepción"
+        "excluded": "Excepción",
+        "possible_duplicate": "Posible duplicado"
       },
       "refusal": {
         "missing_date": "Sin fecha",
@@ -1885,7 +1890,12 @@
         }
       },
       "historyBatch": "Lote del historial: del {from} al {to}.",
-      "historyBatchRemaining": "Lote del historial: del {from} al {to}. Queda más historial. Después de importar este lote, abre la vista previa del siguiente."
+      "historyBatchRemaining": "Lote del historial: del {from} al {to}. Queda más historial. Después de importar este lote, abre la vista previa del siguiente.",
+      "applyDecisions": "Aplicar decisiones",
+      "duplicates": {
+        "intro": "Estas transacciones se parecen a otras que ya están en la cuenta. No se guarda nada de ellas hasta que decidas qué hacer con cada una.",
+        "summary": "Posibles duplicados: {later} para más tarde, {merge} fusionados, {keep} conservados, {replace} reemplazados, {import} importados, {except} añadidos a las excepciones"
+      }
     },
     "simplefin": {
       "provider": "Proveedor de datos",

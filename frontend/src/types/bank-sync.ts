@@ -6,6 +6,8 @@
  */
 
 import type {
+  ImportDuplicateAction,
+  ImportDuplicateExisting,
   ImportPreviewLabels,
   ImportPreviewPayee,
   ImportPreviewPayeeVia,
@@ -117,6 +119,12 @@ export interface BankSyncAccount {
   lastImportedCount: number | null;
   lastSkippedCount: number | null;
   lastRefusedCount: number | null;
+  /**
+   * Possible duplicates the last sync held back for the person to decide; above
+   * zero, the account needs its preview. Absent from a server older than this
+   * client.
+   */
+  heldDuplicateCount?: number;
   /** What the bank reported (decimal string), or null when it reported none. */
   bankBalance: string | null;
   bankBalanceCurrency: string | null;
@@ -125,7 +133,8 @@ export interface BankSyncAccount {
   /**
    * True while the account is linked and no sync has succeeded since the link
    * (or since its account or start date changed): the first import is confirmed
-   * from the preview (spec section 7a).
+   * from the preview (spec section 7a). Also true while possible duplicates
+   * wait for a decision (`heldDuplicateCount`).
    */
   needsPreview: boolean;
 }
@@ -217,6 +226,8 @@ export interface BankSyncLinkDefaults {
 /** What the preview says about one bank row (spec sections 7a and 7b). */
 export type BankSyncPreviewOutcome =
   | "new"
+  /** A new row that looks like a transaction already in the account: written only by a decision. */
+  | "possible_duplicate"
   | "duplicate"
   /** An exception: added from the preview, so no sync imports it. */
   | "excluded"
@@ -264,10 +275,16 @@ export interface BankSyncPreviewRow {
    * the rule test; null for a row the sync would not write.
    */
   ruleInput: ImportPreviewRuleInput | null;
+  /** The transaction a `possible_duplicate` row looks like; null otherwise. */
+  existingTransaction?: ImportDuplicateExisting | null;
+  /** What the person may decide about a `possible_duplicate` row; empty otherwise. */
+  duplicateActions?: ImportDuplicateAction[];
 }
 
 export interface BankSyncPreviewSummary {
   new: number;
+  /** New rows that look like a transaction already in the account; not in `new`. */
+  possibleDuplicate?: number;
   duplicate: number;
   /** Exceptions among the rows. */
   excluded: number;
@@ -310,6 +327,12 @@ export interface BankSyncResult {
   skipped: number;
   /** Rows this sync added to the exceptions; absent from a server older than this client. */
   excluded?: number;
+  /** Possible duplicates merged into, kept as, or replacing the existing transaction. */
+  merged?: number;
+  kept?: number;
+  replaced?: number;
+  /** Possible duplicates held back because nobody decided about them. */
+  heldDuplicates?: number;
   /** Refused rows by reason (`currency_mismatch`, `invalid_amount`, ...). */
   refused: Record<string, number>;
   /** Rows the bank has not booked yet; counted, not an error. */
@@ -330,6 +353,10 @@ export interface BankSyncResult {
 export interface BankSyncSelection {
   importKeys: string[];
   excludeKeys: string[];
+  /** Possible duplicates merged into, kept as, or replacing the transaction each pairs with. */
+  mergeKeys?: string[];
+  keepKeys?: string[];
+  replaceKeys?: string[];
 }
 
 /** `POST /bank-sync/accounts/:id/exceptions/remove`. */

@@ -194,7 +194,9 @@
     "importedTitle": "[XX-{institution}: new transactions imported-XX]",
     "importedMessage": "[XX-Transactions imported from {institution} by the daily sync: {imported}.-XX]",
     "importedNoneTitle": "[XX-{institution}: no new transactions-XX]",
-    "importedNoneMessage": "[XX-The daily sync of {institution} found no new transactions.-XX]"
+    "importedNoneMessage": "[XX-The daily sync of {institution} found no new transactions.-XX]",
+    "duplicatesHeldTitle": "[XX-{institution}: possible duplicates to review-XX]",
+    "duplicatesHeldMessage": "[XX-The daily sync of {institution} held back transactions that look like ones already in your accounts: {held}. Open bank sync settings to decide what to do with them.-XX]"
   },
   "aiReview": {
     "readyTitle": "[XX-AI proposals wait for your approval-XX]",

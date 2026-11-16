@@ -190,7 +190,9 @@
     "importedTitle": "{institution}: नए लेन-देन आयात हुए",
     "importedMessage": "दैनिक सिंक द्वारा {institution} से आयात किए गए लेन-देन: {imported}।",
     "importedNoneTitle": "{institution}: कोई नया लेन-देन नहीं",
-    "importedNoneMessage": "{institution} के दैनिक सिंक में कोई नया लेन-देन नहीं मिला।"
+    "importedNoneMessage": "{institution} के दैनिक सिंक में कोई नया लेन-देन नहीं मिला।",
+    "duplicatesHeldTitle": "{institution}: समीक्षा के लिए संभावित डुप्लिकेट",
+    "duplicatesHeldMessage": "{institution} के दैनिक सिंक ने ऐसे लेन-देन रोक लिए जो आपके खातों में पहले से मौजूद लेन-देन जैसे लगते हैं: {held}। उनके साथ क्या करना है, यह तय करने के लिए बैंक सिंक सेटिंग्स खोलें।"
   },
   "emailReceiptsAttention": {
     "title": "ईमेल रसीदों को ध्यान की आवश्यकता है",

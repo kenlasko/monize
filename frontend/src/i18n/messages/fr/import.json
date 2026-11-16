@@ -30,7 +30,8 @@
     "importFailed": "Échec de l'importation",
     "importedFromFiles": "{imported} transactions importées avec succès depuis {files} fichiers",
     "imported": "{imported} transactions importées avec succès",
-    "mnySingleFileOnly": "Importez les fichiers Microsoft Money un par un -- un fichier .mny contient un profil complet."
+    "mnySingleFileOnly": "Importez les fichiers Microsoft Money un par un -- un fichier .mny contient un profil complet.",
+    "duplicateCheckFailed": "Impossible de rechercher les doublons possibles dans le fichier. Rien n'a été importé ; réessayez."
   },
   "page": {
     "title": "Importer des transactions",
@@ -342,7 +343,10 @@
     "viewInvestments": "Voir les investissements",
     "viewTransactions": "Voir les transactions",
     "importMoreFiles": "Importer d'autres fichiers",
-    "bondRowsWithoutSeries": "{count, plural, one {# achat d'obligation a été importé sans série. Choisissez sa série dans les lots d'obligations du titre.} other {# achats d'obligations ont été importés sans série. Choisissez leur série dans les lots d'obligations du titre.}}"
+    "bondRowsWithoutSeries": "{count, plural, one {# achat d'obligation a été importé sans série. Choisissez sa série dans les lots d'obligations du titre.} other {# achats d'obligations ont été importés sans série. Choisissez leur série dans les lots d'obligations du titre.}}",
+    "skipReasonKeptExisting": "Votre transaction existante a été gardée à la place",
+    "skipReasonPossibleDuplicate": "Ressemble à une transaction déjà présente dans le compte",
+    "duplicatesDecided": "Doublons possibles : {merged, plural, one {# fusionné avec votre transaction existante} many {# fusionnés avec vos transactions existantes} other {# fusionnés avec vos transactions existantes}}, {replaced, plural, one {# importé à la place de celle que vous aviez} many {# importés à la place de celles que vous aviez} other {# importés à la place de celles que vous aviez}}."
   },
   "multiAccountReview": {
     "heading": "Importation QIF multi-comptes",
@@ -668,6 +672,52 @@
       "none": "La banque n'a indiqué aucune contrepartie : la transaction n'a pas de bénéficiaire.",
       "openAliases": "Ouvrir les alias du bénéficiaire",
       "openAliasesNewTab": "Ouvrir les alias du bénéficiaire dans un nouvel onglet"
+    },
+    "duplicate": {
+      "looksLike": "Ressemble à cette transaction déjà présente dans le compte",
+      "date": "Date",
+      "amount": "Montant",
+      "payee": "Bénéficiaire",
+      "category": "Catégorie",
+      "status": "Statut",
+      "reference": "Référence",
+      "description": "Note",
+      "amountUnknown": "Inconnu",
+      "transfer": "Virement",
+      "transferWith": "Virement avec {account}",
+      "split": "Répartition",
+      "statuses": {
+        "UNRECONCILED": "Non rapproché",
+        "CLEARED": "Encaissé",
+        "RECONCILED": "Rapproché",
+        "VOID": "Annulé"
+      },
+      "legend": "Que faire de {payee}",
+      "choice": {
+        "later": "Décider plus tard",
+        "keep": "Garder la mienne",
+        "merge": "Fusionner",
+        "replace": "Supprimer la mienne et importer",
+        "import": "Importer quand même",
+        "except": "Ajouter aux exceptions"
+      },
+      "choiceHelp": {
+        "later": "Rien n'est enregistré ; elle sera de nouveau affichée la prochaine fois.",
+        "keep": "Votre transaction reste telle quelle, et celle-ci n'est pas importée.",
+        "merge": "Votre transaction garde son bénéficiaire, sa catégorie et sa note, et reprend de celle-ci la date, la référence et le statut Encaissé.",
+        "replace": "Votre transaction est supprimée et celle-ci est importée à sa place.",
+        "import": "Les deux sont conservées.",
+        "except": "Jamais importée, jusqu'à ce que vous la retiriez des exceptions."
+      }
     }
+  },
+  "duplicates": {
+    "heading": "{count, plural, one {# doublon possible} many {# de doublons possibles} other {# doublons possibles}}",
+    "intro": "Ces lignes du fichier ressemblent à des transactions déjà présentes dans le compte. Chacune reste telle quelle sauf si vous choisissez autrement ; rien n'est importé tant que vous n'avez pas cliqué sur Importer.",
+    "fileHeading": "{file} dans {account}",
+    "fromFile": "Dans le fichier le {date} :",
+    "noPayee": "Aucun bénéficiaire",
+    "back": "Retour",
+    "import": "Importer"
   }
 }

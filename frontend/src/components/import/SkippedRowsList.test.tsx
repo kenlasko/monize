@@ -153,4 +153,14 @@ describe('SkippedRowsList', () => {
 
     expect(screen.queryByText(/more skipped rows/)).not.toBeInTheDocument();
   });
+
+  it('names a possible duplicate the person kept, or did not decide about', () => {
+    render(
+      <SkippedRowsList
+        rows={[row({ reason: 'keptExisting' }), row({ amount: -80, payee: 'Hydro', reason: 'possibleDuplicate' })]}
+      />,
+    );
+    expect(screen.getByText(/Grocery Store \(kept your existing transaction instead\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Hydro \(looks like a transaction already in the account\)/i)).toBeInTheDocument();
+  });
 });

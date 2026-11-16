@@ -548,7 +548,10 @@
     "mnyExistingAccountCurrency": "Mevcut \"{{ name }}\" hesabı {{ existing }} kullanıyor, ancak Money dosyasındaki hesap {{ file }} kullanıyor. Birinin adını değiştirin, ardından yeniden içe aktarın.",
     "mnyJobNotFound": "İçe aktarma görevi bulunamadı",
     "mnyFileTooLarge": "Bu Money dosyası {{ limit }} MB içe aktarma sınırından büyük.",
-    "noRateForSplitTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: bir bölünmüş satır başka para birimindeki bir hesaba transfer ediyor. Bu çift ve tarih için bir döviz kuru ekleyin, ardından yeniden içe aktarın."
+    "noRateForSplitTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: bir bölünmüş satır başka para birimindeki bir hesaba transfer ediyor. Bu çift ve tarih için bir döviz kuru ekleyin, ardından yeniden içe aktarın.",
+    "duplicatesChanged": "Olası mükerrerler denetlendikten sonra değişti. Hiçbir şey içe aktarılmadı; yeniden denetleyin.",
+    "duplicateDecisionRepeated": "Dosyanın bir satırı için olası mükerreriyle ilgili yalnızca bir karar verilebilir.",
+    "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer veya bölünmüş bir işlem de değiştirilemez. Hiçbir şey içe aktarılmadı."
   },
   "monteCarlo": {
     "scenarioNotFound": "{{ id }} senaryosu bulunamadı",
@@ -1020,7 +1023,11 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge için etkin bir abonelik gerekir. SimpleFIN Bridge üzerinden faturalandırmayı kontrol edin.",
     "simplefinReadFailed": "SimpleFIN eksiksiz hesap verileri sağlayamadı. SimpleFIN Bridge bağlantısını kontrol edin.",
     "simplefinQuotaExhausted": "SimpleFIN istek kotası tükendi. Kota yenilendiğinde geçerli grubu yeniden deneyin.",
-    "simplefinClaimNotSent": "SimpleFIN geçici olarak kullanılamıyor. Kurulum belirteci gönderilmedi; aynı belirteçle daha sonra yeniden deneyin."
+    "simplefinClaimNotSent": "SimpleFIN geçici olarak kullanılamıyor. Kurulum belirteci gönderilmedi; aynı belirteçle daha sonra yeniden deneyin.",
+    "selectionConflict": "Bir işlem için yalnızca bir karar verilebilir: içe aktarmak, istisnalara eklemek, birleştirmek, sizinkini tutmak veya sizinkini değiştirmek.",
+    "duplicateNeedsPreview": "Olası bir mükerrerle ilgili karar, onu gösteren önizlemeyi gerektirir. Hiçbir şey içe aktarılmadı; yeniden önizleyin.",
+    "selectionNotDuplicate": "Birleştirmek, tutmak veya değiştirmek için seçilen bir işlem artık olası bir mükerrer değil. Hiçbir şey içe aktarılmadı; yeniden önizleyin.",
+    "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer veya bölünmüş bir işlem de değiştirilemez. Hiçbir şey içe aktarılmadı; işlemi tutun ya da bankanın satırını yanına içe aktarın."
   },
   "warranties": {
     "notFound": "{{ id }} kimliğine sahip garanti bulunamadı",

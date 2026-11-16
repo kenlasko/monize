@@ -521,6 +521,9 @@
     "internal": "Internal server error"
   },
   "import": {
+    "duplicatesChanged": "The possible duplicates changed since they were checked. Nothing was imported; check again.",
+    "duplicateDecisionRepeated": "A row of the file can have only one decision about its possible duplicate.",
+    "duplicateActionNotAllowed": "A reconciled transaction cannot be merged or replaced, and a transfer or a split cannot be replaced. Nothing was imported.",
     "accountClosed": "The account is closed. Reopen it or choose another account.",
     "noAccountBlocks": "No account blocks found in QIF file. This file may not be a multi-account export.",
     "accountTypeRequired": "Choose an account type for these accounts before importing: {{ accounts }}",
@@ -1003,6 +1006,10 @@
     "needsPreview": "Open the preview for this bank account and confirm the first import before it is synced automatically.",
     "selectionNotNew": "A selected transaction is not a new row of the bank's data. Nothing was imported; preview again.",
     "selectionOverlap": "A transaction cannot be both imported and added to the exceptions.",
+    "selectionConflict": "A transaction can have only one decision: import it, add it to the exceptions, merge it, keep yours or replace yours.",
+    "duplicateNeedsPreview": "A decision about a possible duplicate needs the preview that showed it. Nothing was imported; preview again.",
+    "selectionNotDuplicate": "A transaction chosen to merge, keep or replace is not a possible duplicate any more. Nothing was imported; preview again.",
+    "duplicateActionNotAllowed": "A reconciled transaction cannot be merged or replaced, and a transfer or a split cannot be replaced. Nothing was imported; keep it or import the bank's row beside it.",
     "nothingToUpdate": "Send autoSync, notifySuccess or tagOperationType to change a bank connection.",
     "simplefinCredentialsMissing": "Connect SimpleFIN before syncing accounts.",
     "simplefinAccessInvalid": "SimpleFIN returned an invalid access URL. Generate a new setup token in SimpleFIN Bridge.",

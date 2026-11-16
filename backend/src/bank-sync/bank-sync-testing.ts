@@ -171,6 +171,7 @@ export function bankAccountRow(
     lastImportedCount: 0,
     lastSkippedCount: 0,
     lastRefusedCount: 0,
+    heldDuplicateCount: 0,
     bankBalance: null,
     bankBalanceCurrency: null,
     bankBalanceDate: null,

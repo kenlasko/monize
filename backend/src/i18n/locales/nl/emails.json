@@ -325,7 +325,9 @@
       "importedTitle": "{{ institution }}: nieuwe transacties geïmporteerd",
       "importedMessage": "Door de dagelijkse synchronisatie uit {{ institution }} geïmporteerde transacties: {{ imported }}.",
       "importedNoneTitle": "{{ institution }}: geen nieuwe transacties",
-      "importedNoneMessage": "De dagelijkse synchronisatie van {{ institution }} vond geen nieuwe transacties."
+      "importedNoneMessage": "De dagelijkse synchronisatie van {{ institution }} vond geen nieuwe transacties.",
+      "duplicatesHeldTitle": "{{ institution }}: mogelijke duplicaten om te controleren",
+      "duplicatesHeldMessage": "De dagelijkse synchronisatie van {{ institution }} heeft transacties tegengehouden die lijken op transacties die al in je rekeningen staan: {{ held }}. Open de instellingen voor banksynchronisatie om te beslissen wat ermee gebeurt."
     },
     "bond": {
       "maturitySoonTitle": "{{ series }} loopt af op {{ date }}",

@@ -213,6 +213,23 @@ The review step shows a summary of the import:
 
 Click **Import Transactions** to execute the import. Each file is imported inside a database transaction -- if the import fails, none of its changes are kept. A single row that cannot be imported is counted as an error and the rest of the file still imports.
 
+### Possible Duplicates
+
+Before anything is written, Monize compares the file with the transactions already in the destination account. A row with exactly the same amount as an existing transaction, dated up to 3 days before or after it, is a **possible duplicate** -- typically a bill you entered by hand, or posted from its schedule, before the statement arrived. Each existing transaction is matched with at most one row, the closest date first. Payees are not compared, because the bank's text rarely matches the payee you typed. Transfers and loan payments in the file, and rows already imported from an earlier download of the same OFX file, are not compared: they have their own checks.
+
+When there are possible duplicates, a **Possible duplicates** step lists them immediately before the import. Each row of the file is shown beside the transaction it looks like (date, amount, payee, category, status and memo), and you choose what to do with it:
+
+| Choice | What happens |
+|--------|--------------|
+| **Keep mine** (the default) | Your transaction stays as it is, and the row is not imported |
+| **Merge** | Your transaction keeps its payee, category, splits, tags and memo, and takes the row's date, check number and **Cleared** status (and the bank's ID of an OFX row, so the next download recognizes it). A transfer or a split keeps its date, and so is not recognized by the next download |
+| **Delete mine and import** | Your transaction is deleted and the row is imported in its place |
+| **Import anyway** | Both are kept |
+
+A **Reconciled** transaction can only be kept or imported beside, and a transfer or a split cannot be deleted from here. Click **Import** to import the file with your choices, or **Back** to return to the review. If the account changed in the meantime (someone entered a closer match, say), nothing is imported and you are asked to check again.
+
+When no row looks like an existing transaction, the import runs straight away. Investment files and the multi-account QIF and Microsoft Money imports are not compared.
+
 ### Step 7: Import Complete
 
 After a successful import, you see:
@@ -220,7 +237,7 @@ After a successful import, you see:
 | Metric | Description |
 |--------|-------------|
 | **Imported** | Transactions successfully imported |
-| **Skipped** | Rows not imported: an OFX row imported before ("already imported"), the other side of a transfer that is already recorded ("transfer already recorded"), a CSV row whose date could not be read ("date could not be read", or "no date"), or an investment CSV row missing what its action needs ("missing security", "missing quantity", "missing amount", "sell without price or proceeds", "split without ratio"). The skipped rows are listed with their date (for a CSV row, its row number too; for an unreadable date, the date text instead), amount and payee |
+| **Skipped** | Rows not imported: an OFX row imported before ("already imported"), the other side of a transfer that is already recorded ("transfer already recorded"), a possible duplicate you kept your transaction for ("kept your existing transaction instead", see [Possible Duplicates](#possible-duplicates)), a CSV row whose date could not be read ("date could not be read", or "no date"), or an investment CSV row missing what its action needs ("missing security", "missing quantity", "missing amount", "sell without price or proceeds", "split without ratio"). The skipped rows are listed with their date (for a CSV row, its row number too; for an unreadable date, the date text instead), amount and payee |
 | **Errors** | Transactions that failed (with error details) |
 | **Categories created** | New categories added |
 | **Accounts created** | New accounts added |
@@ -504,7 +521,7 @@ After a transaction is imported, your rules set to run on import (**Tools > Rule
 
 **Cause:** Importing the same file twice, or overlapping date ranges between imports.
 
-**Solution:** OFX/QFX imports skip rows they already imported. CSV and QIF imports do not detect duplicates (apart from the second side of a transfer that is already recorded), so import each period once. Use the **Duplicate Transaction Finder** report to identify and remove duplicates.
+**Solution:** OFX/QFX imports skip rows they already imported, and every CSV, QIF and OFX import lists the rows that look like transactions already in the account before it writes anything (see [Possible Duplicates](#possible-duplicates)). A duplicate that differs by more than 3 days or by any amount is not caught: use the **Duplicate Transaction Finder** report to identify and remove those.
 
 ### Transfer Not Created
 

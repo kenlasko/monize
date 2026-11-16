@@ -30,7 +30,8 @@
     "importFailed": "Import nie powiódł się",
     "importedFromFiles": "Pomyślnie zaimportowano {imported, plural, one {# transakcję} few {# transakcje} many {# transakcji} other {# transakcji}} z {files, plural, one {# pliku} few {# plików} many {# plików} other {# plików}}",
     "imported": "Pomyślnie zaimportowano {imported, plural, one {# transakcję} few {# transakcje} many {# transakcji} other {# transakcji}}",
-    "mnySingleFileOnly": "Importuj pliki Microsoft Money pojedynczo -- plik .mny zawiera cały profil."
+    "mnySingleFileOnly": "Importuj pliki Microsoft Money pojedynczo -- plik .mny zawiera cały profil.",
+    "duplicateCheckFailed": "Nie udało się sprawdzić pliku pod kątem możliwych duplikatów. Nic nie zaimportowano; spróbuj ponownie."
   },
   "page": {
     "title": "Import transakcji",
@@ -342,7 +343,10 @@
     "viewInvestments": "Zobacz inwestycje",
     "viewTransactions": "Pokaż transakcje",
     "importMoreFiles": "Importuj kolejne pliki",
-    "bondRowsWithoutSeries": "{count, plural, one {# zakup obligacji zaimportowano bez serii. Wybierz serię w partiach obligacji tego papieru.} few {# zakupy obligacji zaimportowano bez serii. Wybierz serie w partiach obligacji tego papieru.} many {# zakupów obligacji zaimportowano bez serii. Wybierz serie w partiach obligacji tego papieru.} other {# zakupu obligacji zaimportowano bez serii. Wybierz serie w partiach obligacji tego papieru.}}"
+    "bondRowsWithoutSeries": "{count, plural, one {# zakup obligacji zaimportowano bez serii. Wybierz serię w partiach obligacji tego papieru.} few {# zakupy obligacji zaimportowano bez serii. Wybierz serie w partiach obligacji tego papieru.} many {# zakupów obligacji zaimportowano bez serii. Wybierz serie w partiach obligacji tego papieru.} other {# zakupu obligacji zaimportowano bez serii. Wybierz serie w partiach obligacji tego papieru.}}",
+    "skipReasonKeptExisting": "zamiast tego zachowano istniejącą transakcję",
+    "skipReasonPossibleDuplicate": "wygląda jak transakcja, która jest już na koncie",
+    "duplicatesDecided": "Możliwe duplikaty: {merged, plural, one {# scalony z istniejącą transakcją} few {# scalone z istniejącymi transakcjami} many {# scalonych z istniejącymi transakcjami} other {# scalonego z istniejącymi transakcjami}}, {replaced, plural, one {# zaimportowany w miejsce posiadanej transakcji} few {# zaimportowane w miejsce posiadanych transakcji} many {# zaimportowanych w miejsce posiadanych transakcji} other {# zaimportowanego w miejsce posiadanych transakcji}}."
   },
   "multiAccountReview": {
     "heading": "Import QIF z wieloma kontami",
@@ -668,6 +672,52 @@
       "none": "Bank nie podał kontrahenta, więc transakcja nie ma odbiorcy.",
       "openAliases": "Otwórz aliasy odbiorcy",
       "openAliasesNewTab": "Otwórz aliasy odbiorcy w nowej karcie"
+    },
+    "duplicate": {
+      "looksLike": "Wygląda jak ta transakcja, która jest już na koncie",
+      "date": "Data",
+      "amount": "Kwota",
+      "payee": "Odbiorca",
+      "category": "Kategoria",
+      "status": "Status",
+      "reference": "Numer referencyjny",
+      "description": "Notatka",
+      "amountUnknown": "Nieznana",
+      "transfer": "Przelew",
+      "transferWith": "Przelew z kontem {account}",
+      "split": "Podział",
+      "statuses": {
+        "UNRECONCILED": "Nieuzgodniona",
+        "CLEARED": "Rozliczona",
+        "RECONCILED": "Uzgodniona",
+        "VOID": "Anulowana"
+      },
+      "legend": "Co zrobić z transakcją {payee}",
+      "choice": {
+        "later": "Zdecyduj później",
+        "keep": "Zachowaj moją",
+        "merge": "Scal",
+        "replace": "Usuń moją i zaimportuj",
+        "import": "Zaimportuj mimo to",
+        "except": "Dodaj do wyjątków"
+      },
+      "choiceHelp": {
+        "later": "Nic nie zostanie zapisane; pojawi się ponownie następnym razem.",
+        "keep": "Twoja transakcja pozostaje bez zmian, a ta nie zostanie zaimportowana.",
+        "merge": "Twoja transakcja zachowuje odbiorcę, kategorię i notatkę, a przejmuje z tej datę, numer referencyjny i status Rozliczona.",
+        "replace": "Twoja transakcja zostanie usunięta, a ta zostanie zaimportowana w jej miejsce.",
+        "import": "Obie zostaną zachowane.",
+        "except": "Nigdy nie zostanie zaimportowana, dopóki nie usuniesz jej z wyjątków."
+      }
     }
+  },
+  "duplicates": {
+    "heading": "{count, plural, one {# możliwy duplikat} few {# możliwe duplikaty} many {# możliwych duplikatów} other {# możliwego duplikatu}}",
+    "intro": "Te wiersze pliku wyglądają jak transakcje, które są już na koncie. Każda pozostaje bez zmian, chyba że wybierzesz inaczej; nic nie zostanie zaimportowane, dopóki nie naciśniesz Importuj.",
+    "fileHeading": "{file} do konta {account}",
+    "fromFile": "W pliku z dnia {date}:",
+    "noPayee": "Brak odbiorcy",
+    "back": "Wstecz",
+    "import": "Importuj"
   }
 }

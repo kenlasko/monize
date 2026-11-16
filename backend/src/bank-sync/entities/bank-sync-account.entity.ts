@@ -187,6 +187,14 @@ export class BankSyncAccount {
   @Column({ type: "integer", name: "last_refused_count", default: 0 })
   lastRefusedCount: number;
 
+  /**
+   * Possible duplicates the last write held back for the person to decide
+   * (docs/specs/import-duplicate-review.md section 4). Above zero, the account
+   * needs its preview (`bankAccountNeedsPreview`).
+   */
+  @Column({ type: "integer", name: "held_duplicate_count", default: 0 })
+  heldDuplicateCount: number;
+
   /** Null means the bank did not report one; never 0. */
   @Column({
     type: "decimal",

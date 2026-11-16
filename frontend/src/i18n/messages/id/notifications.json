@@ -190,7 +190,9 @@
     "importedTitle": "{institution}: transaksi baru diimpor",
     "importedMessage": "Transaksi yang diimpor dari {institution} oleh sinkronisasi harian: {imported}.",
     "importedNoneTitle": "{institution}: tidak ada transaksi baru",
-    "importedNoneMessage": "Sinkronisasi harian {institution} tidak menemukan transaksi baru."
+    "importedNoneMessage": "Sinkronisasi harian {institution} tidak menemukan transaksi baru.",
+    "duplicatesHeldTitle": "{institution}: kemungkinan duplikat untuk ditinjau",
+    "duplicatesHeldMessage": "Sinkronisasi harian {institution} menahan transaksi yang mirip dengan transaksi yang sudah ada di akun Anda: {held}. Buka pengaturan sinkronisasi bank untuk memutuskan apa yang dilakukan dengan transaksi tersebut."
   },
   "emailReceiptsAttention": {
     "title": "Tanda terima email memerlukan perhatian",

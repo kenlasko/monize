@@ -1737,7 +1737,8 @@
       "createdLinked": "Konto utworzone i powiązane",
       "createdLinkFailed": "Konto zostało utworzone, ale nie udało się go powiązać",
       "preview": "Podgląd",
-      "firstSyncPreview": "Pierwszy import jest potwierdzany na podstawie podglądu transakcji."
+      "firstSyncPreview": "Pierwszy import jest potwierdzany na podstawie podglądu transakcji.",
+      "heldDuplicates": "{count, plural, one {# możliwy duplikat czeka na Twoją decyzję w podglądzie.} few {# możliwe duplikaty czekają na Twoją decyzję w podglądzie.} many {# możliwych duplikatów czeka na Twoją decyzję w podglądzie.} other {# możliwego duplikatu czeka na Twoją decyzję w podglądzie.}}"
     },
     "link": {
       "title": "Powiąż z kontem {account}",
@@ -1775,7 +1776,9 @@
         "missing_identity": "Brak identyfikatora transakcji bankowej: {count, number}"
       },
       "needsPreview": "Otwórz podgląd dla {accounts} i potwierdź pierwszy import",
-      "withNeedsPreview": "{message}. {needsPreview}"
+      "withNeedsPreview": "{message}. {needsPreview}",
+      "heldDuplicates": "{count, plural, one {# możliwy duplikat czeka na Twoją decyzję w podglądzie} few {# możliwe duplikaty czekają na Twoją decyzję w podglądzie} many {# możliwych duplikatów czeka na Twoją decyzję w podglądzie} other {# możliwego duplikatu czeka na Twoją decyzję w podglądzie}}",
+      "withHeldDuplicates": "{message}. {held}"
     },
     "callback": {
       "title": "Łączenie z bankiem",
@@ -1829,7 +1832,8 @@
         "pending": "Oczekujące",
         "before_cutoff": "Przed datą początkową",
         "withCount": "{label} ({count})",
-        "excluded": "Wyjątki"
+        "excluded": "Wyjątki",
+        "possible_duplicate": "Możliwe duplikaty"
       },
       "outcome": {
         "new": "Nowa",
@@ -1837,7 +1841,8 @@
         "refused": "Odrzucona",
         "pending": "Oczekująca",
         "before_cutoff": "Przed datą początkową",
-        "excluded": "Wyjątek"
+        "excluded": "Wyjątek",
+        "possible_duplicate": "Możliwy duplikat"
       },
       "refusal": {
         "missing_date": "Brak daty",
@@ -1885,7 +1890,12 @@
         }
       },
       "historyBatch": "Partia historii: od {from} do {to}.",
-      "historyBatchRemaining": "Partia historii: od {from} do {to}. Pozostała dalsza historia. Po imporcie tej partii otwórz podgląd następnej."
+      "historyBatchRemaining": "Partia historii: od {from} do {to}. Pozostała dalsza historia. Po imporcie tej partii otwórz podgląd następnej.",
+      "applyDecisions": "Zastosuj decyzje",
+      "duplicates": {
+        "intro": "Te transakcje wyglądają jak transakcje, które są już na koncie. Nic nie zostanie dla nich zapisane, dopóki nie zdecydujesz, co zrobić z każdą z nich.",
+        "summary": "Możliwe duplikaty: na później: {later}, scalone: {merge}, zachowane: {keep}, zastąpione: {replace}, zaimportowane: {import}, dodane do wyjątków: {except}"
+      }
     },
     "simplefin": {
       "provider": "Dostawca danych",

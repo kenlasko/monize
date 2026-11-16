@@ -2999,6 +2999,10 @@ CREATE TABLE bank_sync_accounts (
     last_imported_count INTEGER NOT NULL DEFAULT 0,
     last_skipped_count INTEGER NOT NULL DEFAULT 0,
     last_refused_count INTEGER NOT NULL DEFAULT 0,
+    -- Possible duplicates the last write held back for the person to decide
+    -- (docs/specs/import-duplicate-review.md section 4); above zero, the
+    -- account needs its preview.
+    held_duplicate_count INTEGER NOT NULL DEFAULT 0,
     bank_balance NUMERIC(24,8),
     bank_balance_currency VARCHAR(3),
     bank_balance_date DATE,
@@ -3011,6 +3015,8 @@ CREATE TABLE bank_sync_accounts (
       CHECK (account_id IS NULL OR sync_from_date IS NOT NULL),
     CONSTRAINT ck_bank_sync_accounts_counts
       CHECK (last_imported_count >= 0 AND last_skipped_count >= 0 AND last_refused_count >= 0),
+    CONSTRAINT ck_bank_sync_accounts_held_duplicate_count
+      CHECK (held_duplicate_count >= 0),
     CONSTRAINT uq_bank_sync_accounts_connection_external
       UNIQUE (connection_id, external_account_id)
 );

@@ -1737,7 +1737,8 @@
       "createdLinked": "Hesap oluşturuldu ve bağlandı",
       "createdLinkFailed": "Hesap oluşturuldu ancak bağlanamadı",
       "preview": "Önizleme",
-      "firstSyncPreview": "İlk içe aktarma, işlemlerin önizlemesiyle onaylanır."
+      "firstSyncPreview": "İlk içe aktarma, işlemlerin önizlemesiyle onaylanır.",
+      "heldDuplicates": "{count, plural, one {# olası mükerrer önizlemede kararınızı bekliyor.} other {# olası mükerrer önizlemede kararınızı bekliyor.}}"
     },
     "link": {
       "title": "{account} hesabına bağla",
@@ -1775,7 +1776,9 @@
         "missing_identity": "Banka işlem kimliği eksik: {count, number}"
       },
       "needsPreview": "{accounts} için önizlemeyi açın ve ilk içe aktarmayı onaylayın",
-      "withNeedsPreview": "{message}. {needsPreview}"
+      "withNeedsPreview": "{message}. {needsPreview}",
+      "heldDuplicates": "{count, plural, one {# olası mükerrer önizlemede kararınızı bekliyor} other {# olası mükerrer önizlemede kararınızı bekliyor}}",
+      "withHeldDuplicates": "{message}. {held}"
     },
     "callback": {
       "title": "Bankanız bağlanıyor",
@@ -1829,7 +1832,8 @@
         "pending": "Bekleyen",
         "before_cutoff": "Başlangıç tarihinden önce",
         "withCount": "{label} ({count})",
-        "excluded": "İstisnalar"
+        "excluded": "İstisnalar",
+        "possible_duplicate": "Olası mükerrerler"
       },
       "outcome": {
         "new": "Yeni",
@@ -1837,7 +1841,8 @@
         "refused": "Reddedildi",
         "pending": "Bekliyor",
         "before_cutoff": "Başlangıç tarihinden önce",
-        "excluded": "İstisna"
+        "excluded": "İstisna",
+        "possible_duplicate": "Olası mükerrer"
       },
       "refusal": {
         "missing_date": "Tarih yok",
@@ -1885,7 +1890,12 @@
         }
       },
       "historyBatch": "Geçmiş grubu: {from} – {to}.",
-      "historyBatchRemaining": "Geçmiş grubu: {from} – {to}. Daha fazla geçmiş var. Bu grubu içe aktardıktan sonra sonraki grubun önizlemesini açın."
+      "historyBatchRemaining": "Geçmiş grubu: {from} – {to}. Daha fazla geçmiş var. Bu grubu içe aktardıktan sonra sonraki grubun önizlemesini açın.",
+      "applyDecisions": "Kararları uygula",
+      "duplicates": {
+        "intro": "Bu işlemler hesapta zaten bulunanlara benziyor. Her biri için ne yapılacağına karar verene kadar onlar için hiçbir şey yazılmaz.",
+        "summary": "Olası mükerrerler: {later} sonraya bırakıldı, {merge} birleştirildi, {keep} korundu, {replace} değiştirildi, {import} içe aktarıldı, {except} istisnalara eklendi"
+      }
     },
     "simplefin": {
       "provider": "Veri sağlayıcısı",

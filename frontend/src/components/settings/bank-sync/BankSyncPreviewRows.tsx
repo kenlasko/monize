@@ -4,6 +4,7 @@ import { Fragment, useId, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ImportPreviewCheckbox } from '@/components/import-preview/ImportPreviewCheckbox';
 import { ImportPreviewChoice } from '@/components/import-preview/ImportPreviewChoice';
+import { ImportPreviewDuplicatePanel } from '@/components/import-preview/ImportPreviewDuplicatePanel';
 import { ImportPreviewExpandButton } from '@/components/import-preview/ImportPreviewExpandButton';
 import { ImportPreviewPayeeCell } from '@/components/import-preview/ImportPreviewPayeeCell';
 import { Badge } from '@/components/ui/Badge';
@@ -13,6 +14,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { KNOWN_REFUSAL_REASONS } from '@/lib/bank-sync-summary';
 import { OUTCOME_VARIANTS, previewAmount } from '@/lib/bank-sync-preview';
+import type { DuplicateChoice } from '@/lib/import-duplicates';
 import type { UncheckedChoice } from '@/lib/import-preview';
 import { gainLossColor } from '@/lib/format';
 import type { BankSyncPreviewRow } from '@/types/bank-sync';
@@ -50,7 +52,7 @@ function useRowDisplay(row: BankSyncPreviewRow, accountCurrency: string) {
     // An unreadable amount is unknown, so it takes no sign colour.
     amountClass: amount === null ? '' : gainLossColor(amount),
     status: row.outcome === 'refused' ? t(`refusal.${refusal}`) : t(`outcome.${row.outcome}`),
-    dimmed: row.outcome !== 'new',
+    dimmed: row.outcome !== 'new' && row.outcome !== 'possible_duplicate',
   };
 }
 
@@ -68,6 +70,12 @@ export interface PreviewRowControls {
   onChoiceChange: (choice: UncheckedChoice) => void;
   /** An import or a removal is running: nothing can be changed under it. */
   disabled: boolean;
+  /** For a `possible_duplicate` row: the decision about it, and the choices it offers. */
+  duplicate?: {
+    options: readonly DuplicateChoice[];
+    choice: DuplicateChoice;
+    onChange: (choice: DuplicateChoice) => void;
+  };
 }
 
 interface PreviewRowProps {
@@ -89,7 +97,37 @@ function RowBox({ row, controls, payeeText }: { row: BankSyncPreviewRow; control
   );
 }
 
-const hasDetails = (row: BankSyncPreviewRow): boolean => row.outcome === 'new' && row.externalKey !== null;
+const hasDetails = (row: BankSyncPreviewRow): boolean =>
+  (row.outcome === 'new' || row.outcome === 'possible_duplicate') && row.externalKey !== null;
+
+/** The transaction a possible duplicate looks like, and the decision about it. */
+function DuplicatePanel({
+  row,
+  rowId,
+  payeeText,
+  accountCurrency,
+  controls,
+}: {
+  row: BankSyncPreviewRow;
+  rowId: string;
+  payeeText: string;
+  accountCurrency: string;
+  controls: PreviewRowControls;
+}) {
+  if (!controls.duplicate || !row.existingTransaction) return null;
+  return (
+    <ImportPreviewDuplicatePanel
+      rowId={rowId}
+      rowLabel={payeeText}
+      existing={row.existingTransaction}
+      currencyCode={accountCurrency}
+      options={controls.duplicate.options}
+      choice={controls.duplicate.choice}
+      onChange={controls.duplicate.onChange}
+      disabled={controls.disabled}
+    />
+  );
+}
 
 export function PreviewRow({ row, accountCurrency, controls }: PreviewRowProps) {
   const { dateText, payeeText, amountText, amountClass, status, dimmed } = useRowDisplay(row, accountCurrency);
@@ -156,6 +194,19 @@ export function PreviewRow({ row, accountCurrency, controls }: PreviewRowProps) 
           )}
         </Td>
       </tr>
+      {controls.duplicate && row.existingTransaction && (
+        <tr>
+          <Td colSpan={6} className="px-3 pb-3">
+            <DuplicatePanel
+              row={row}
+              rowId={idPrefix}
+              payeeText={payeeText}
+              accountCurrency={accountCurrency}
+              controls={controls}
+            />
+          </Td>
+        </tr>
+      )}
       {expanded && hasDetails(row) && (
         <tr>
           <Td colSpan={6} className="px-3 pb-3">
@@ -227,6 +278,13 @@ export function PreviewCard({ row, accountCurrency, controls }: PreviewRowProps)
           disabled={controls.disabled}
         />
       )}
+      <DuplicatePanel
+        row={row}
+        rowId={idPrefix}
+        payeeText={payeeText}
+        accountCurrency={accountCurrency}
+        controls={controls}
+      />
       {expanded && hasDetails(row) && <PreviewRowDetails id={detailsId} row={row} />}
     </li>
   );

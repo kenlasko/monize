@@ -30,7 +30,8 @@
     "importFailed": "Import failed",
     "importedFromFiles": "Successfully imported {imported} transactions from {files} files",
     "imported": "Successfully imported {imported} transactions",
-    "mnySingleFileOnly": "Import one Microsoft Money file at a time -- a .mny file holds a whole profile."
+    "mnySingleFileOnly": "Import one Microsoft Money file at a time -- a .mny file holds a whole profile.",
+    "duplicateCheckFailed": "Could not check the file for possible duplicates. Nothing was imported; try again."
   },
   "page": {
     "title": "Import Transactions",
@@ -342,7 +343,10 @@
     "viewInvestments": "View Investments",
     "viewTransactions": "View Transactions",
     "importMoreFiles": "Import More Files",
-    "bondRowsWithoutSeries": "{count, plural, one {# bond purchase was imported without a series. Choose its series in the security's bond lots.} other {# bond purchases were imported without a series. Choose their series in the security's bond lots.}}"
+    "bondRowsWithoutSeries": "{count, plural, one {# bond purchase was imported without a series. Choose its series in the security's bond lots.} other {# bond purchases were imported without a series. Choose their series in the security's bond lots.}}",
+    "skipReasonKeptExisting": "Kept your existing transaction instead",
+    "skipReasonPossibleDuplicate": "Looks like a transaction already in the account",
+    "duplicatesDecided": "Possible duplicates: {merged, plural, one {# merged into your existing transaction} other {# merged into your existing transactions}}, {replaced, plural, one {# imported in place of the one you had} other {# imported in place of the ones you had}}."
   },
   "multiAccountReview": {
     "heading": "Multi-Account QIF Import",
@@ -668,6 +672,52 @@
       "none": "The bank gave no counterparty, so the transaction has no payee.",
       "openAliases": "Open the payee's aliases",
       "openAliasesNewTab": "Open the payee's aliases in a new tab"
+    },
+    "duplicate": {
+      "looksLike": "Looks like this transaction already in the account",
+      "date": "Date",
+      "amount": "Amount",
+      "payee": "Payee",
+      "category": "Category",
+      "status": "Status",
+      "reference": "Reference",
+      "description": "Memo",
+      "amountUnknown": "Unknown",
+      "transfer": "Transfer",
+      "transferWith": "Transfer with {account}",
+      "split": "Split",
+      "statuses": {
+        "UNRECONCILED": "Unreconciled",
+        "CLEARED": "Cleared",
+        "RECONCILED": "Reconciled",
+        "VOID": "Void"
+      },
+      "legend": "What to do with {payee}",
+      "choice": {
+        "later": "Decide later",
+        "keep": "Keep mine",
+        "merge": "Merge",
+        "replace": "Delete mine and import",
+        "import": "Import anyway",
+        "except": "Add to exceptions"
+      },
+      "choiceHelp": {
+        "later": "Nothing is written; it is shown again next time.",
+        "keep": "Your transaction stays as it is, and this one is not imported.",
+        "merge": "Your transaction keeps its payee, category and memo, and takes this one's date, reference and Cleared status.",
+        "replace": "Your transaction is deleted and this one is imported in its place.",
+        "import": "Both are kept.",
+        "except": "Never imported, until you take it out of the exceptions."
+      }
     }
+  },
+  "duplicates": {
+    "heading": "{count, plural, one {# possible duplicate} other {# possible duplicates}}",
+    "intro": "These rows of the file look like transactions already in the account. Each one is kept as it is unless you choose otherwise; nothing is imported until you press Import.",
+    "fileHeading": "{file} into {account}",
+    "fromFile": "In the file on {date}:",
+    "noPayee": "No payee",
+    "back": "Back",
+    "import": "Import"
   }
 }
