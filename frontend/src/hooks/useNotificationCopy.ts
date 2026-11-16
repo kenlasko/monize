@@ -466,6 +466,14 @@ export function useNotificationCopy() {
           ),
         });
       }
+      case 'BANK_SYNC_DUPLICATES_HELD': {
+        const held = data.held;
+        if (typeof held !== 'number' || !Number.isInteger(held) || held < 1) return null;
+        return t(
+          part === 'title' ? 'bankSync.duplicatesHeldTitle' : 'bankSync.duplicatesHeldMessage',
+          { institution, held: formatNumber(held, 0) },
+        );
+      }
       case 'BANK_SYNC_IMPORTED': {
         const imported = data.imported;
         if (typeof imported !== 'number' || !Number.isInteger(imported) || imported < 0) {

@@ -1127,6 +1127,18 @@ describe('NotificationList', () => {
       expect(screen.getByText(/imported from Alpha Bank by the daily sync: 1,234\./)).toBeInTheDocument();
     });
 
+    it('says how many possible duplicates the daily sync held back', () => {
+      renderRow(
+        bankSyncRow(
+          'BANK_SYNC_DUPLICATES_HELD',
+          { institutionName: 'Alpha Bank', held: 1234, accounts: 1 },
+          { severity: 'warning' },
+        ),
+      );
+      expect(screen.getByText('Alpha Bank: possible duplicates to review')).toBeInTheDocument();
+      expect(screen.getByText(/look like ones already in your accounts: 1,234\./)).toBeInTheDocument();
+    });
+
     it('reports a sync that found nothing as such', () => {
       renderRow(
         bankSyncRow(
@@ -1147,6 +1159,7 @@ describe('NotificationList', () => {
       ['a malformed failure', 'BANK_SYNC_FAILED', { institutionName: 'A', failures: [{ label: 'x' }] }],
       ['a fractional count', 'BANK_SYNC_IMPORTED', { institutionName: 'A', imported: 1.5 }],
       ['a negative count', 'BANK_SYNC_IMPORTED', { institutionName: 'A', imported: -1 }],
+      ['no held count', 'BANK_SYNC_DUPLICATES_HELD', { institutionName: 'A', held: 0 }],
     ] as const)('falls back to the stored English for %s', (_label, type, data) => {
       renderRow(bankSyncRow(type, { ...data }));
       expect(screen.getByText('STORED ENGLISH TITLE')).toBeInTheDocument();

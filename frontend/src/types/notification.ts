@@ -44,6 +44,8 @@ export type NotificationType =
   | 'BANK_SYNC_CONSENT_EXPIRED'
   | 'BANK_SYNC_FAILED'
   | 'BANK_SYNC_IMPORTED'
+  // The daily sync held possible duplicates back for the person to decide.
+  | 'BANK_SYNC_DUPLICATES_HELD'
   // Receipts inbox emails with no profile or that their profile did not recognize
   // (EMAIL_RECEIPTS). Financial, not system.
   | 'EMAIL_RECEIPTS_ATTENTION'

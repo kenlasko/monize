@@ -429,7 +429,9 @@ export function BankSyncAccountRow({
         bankAccount.needsPreview &&
         connectionActive && (
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("firstSyncPreview")}
+            {(bankAccount.heldDuplicateCount ?? 0) > 0
+              ? t("heldDuplicates", { count: bankAccount.heldDuplicateCount ?? 0 })
+              : t("firstSyncPreview")}
           </p>
         )}
 

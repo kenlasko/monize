@@ -668,6 +668,43 @@
       "none": "The bank gave no counterparty, so the transaction has no payee.",
       "openAliases": "Open the payee's aliases",
       "openAliasesNewTab": "Open the payee's aliases in a new tab"
+    },
+    "duplicate": {
+      "looksLike": "Looks like this transaction already in the account",
+      "date": "Date",
+      "amount": "Amount",
+      "payee": "Payee",
+      "category": "Category",
+      "status": "Status",
+      "reference": "Reference",
+      "description": "Memo",
+      "amountUnknown": "Unknown",
+      "transfer": "Transfer",
+      "transferWith": "Transfer with {account}",
+      "split": "Split",
+      "statuses": {
+        "UNRECONCILED": "Unreconciled",
+        "CLEARED": "Cleared",
+        "RECONCILED": "Reconciled",
+        "VOID": "Void"
+      },
+      "legend": "What to do with {payee}",
+      "choice": {
+        "later": "Decide later",
+        "keep": "Keep mine",
+        "merge": "Merge",
+        "replace": "Delete mine and import",
+        "import": "Import anyway",
+        "except": "Add to exceptions"
+      },
+      "choiceHelp": {
+        "later": "Nothing is written; it is shown again next time.",
+        "keep": "Your transaction stays as it is, and this one is not imported.",
+        "merge": "Your transaction keeps its payee, category and memo, and takes this one's date, reference and Cleared status.",
+        "replace": "Your transaction is deleted and this one is imported in its place.",
+        "import": "Both are kept.",
+        "except": "Never imported, until you take it out of the exceptions."
+      }
     }
   }
 }

@@ -668,6 +668,43 @@
       "none": "[XX-The bank gave no counterparty, so the transaction has no payee.-XX]",
       "openAliases": "[XX-Open the payee's aliases-XX]",
       "openAliasesNewTab": "[XX-Open the payee's aliases in a new tab-XX]"
+    },
+    "duplicate": {
+      "looksLike": "[XX-Looks like this transaction already in the account-XX]",
+      "date": "[XX-Date-XX]",
+      "amount": "[XX-Amount-XX]",
+      "payee": "[XX-Payee-XX]",
+      "category": "[XX-Category-XX]",
+      "status": "[XX-Status-XX]",
+      "reference": "[XX-Reference-XX]",
+      "description": "[XX-Memo-XX]",
+      "amountUnknown": "[XX-Unknown-XX]",
+      "transfer": "[XX-Transfer-XX]",
+      "transferWith": "[XX-Transfer with {account}-XX]",
+      "split": "[XX-Split-XX]",
+      "statuses": {
+        "UNRECONCILED": "[XX-Unreconciled-XX]",
+        "CLEARED": "[XX-Cleared-XX]",
+        "RECONCILED": "[XX-Reconciled-XX]",
+        "VOID": "[XX-Void-XX]"
+      },
+      "legend": "[XX-What to do with {payee}-XX]",
+      "choice": {
+        "later": "[XX-Decide later-XX]",
+        "keep": "[XX-Keep mine-XX]",
+        "merge": "[XX-Merge-XX]",
+        "replace": "[XX-Delete mine and import-XX]",
+        "import": "[XX-Import anyway-XX]",
+        "except": "[XX-Add to exceptions-XX]"
+      },
+      "choiceHelp": {
+        "later": "[XX-Nothing is written; it is shown again next time.-XX]",
+        "keep": "[XX-Your transaction stays as it is, and this one is not imported.-XX]",
+        "merge": "[XX-Your transaction keeps its payee, category and memo, and takes this one's date, reference and Cleared status.-XX]",
+        "replace": "[XX-Your transaction is deleted and this one is imported in its place.-XX]",
+        "import": "[XX-Both are kept.-XX]",
+        "except": "[XX-Never imported, until you take it out of the exceptions.-XX]"
+      }
     }
   }
 }

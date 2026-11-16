@@ -11,9 +11,11 @@ import { TABLE_BODY_CLASS, Th } from '@/components/ui/Table';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import type { DuplicateChoicesApi } from '@/hooks/useDuplicateChoices';
 import type { ImportPreviewSelectionApi } from '@/hooks/useImportPreviewSelection';
 import {
   PREVIEW_FILTERS,
+  duplicateRowsOf,
   exceptionKeys,
   filterPreviewRows,
   previewAmount,
@@ -21,6 +23,7 @@ import {
   selectableKeys,
   type PreviewFilter,
 } from '@/lib/bank-sync-preview';
+import { duplicateChoiceOf } from '@/lib/import-duplicates';
 import { checkState } from '@/lib/import-preview';
 import type { BankSyncPreview, BankSyncPreviewRow } from '@/types/bank-sync';
 import { PreviewCard, PreviewRow, type PreviewRowControls } from './BankSyncPreviewRows';
@@ -45,6 +48,8 @@ interface PreviewListProps {
   onFilterChange: (filter: PreviewFilter) => void;
   /** The person's choices about the new rows: which are unchecked, and what each of them does. */
   selection: ImportPreviewSelectionApi;
+  /** The person's decisions about the possible duplicates; each is left for later until decided. */
+  duplicates: DuplicateChoicesApi;
   /** The exceptions picked for removal. */
   removeKeys: ReadonlySet<string>;
   onRemoveKeysChange: (keys: ReadonlySet<string>) => void;
@@ -89,6 +94,7 @@ export function BankSyncPreviewList({
   filter,
   onFilterChange,
   selection,
+  duplicates,
   removeKeys,
   onRemoveKeysChange,
   onRemove,
@@ -145,8 +151,27 @@ export function BankSyncPreviewList({
           }
         : null;
 
+  const duplicateOptions = new Map(
+    duplicateRowsOf(preview.rows).map(({ key, options }) => [key, options]),
+  );
   const controlsFor = (row: BankSyncPreviewRow): PreviewRowControls => {
     const key = row.externalKey;
+    const options = key === null ? undefined : duplicateOptions.get(key);
+    if (key !== null && options !== undefined) {
+      return {
+        boxed: false,
+        checked: false,
+        choice: 'skip',
+        onCheckedChange: () => undefined,
+        onChoiceChange: () => undefined,
+        disabled: busy,
+        duplicate: {
+          options,
+          choice: duplicateChoiceOf(duplicates.choices, key, 'later', options),
+          onChange: (choice) => duplicates.setChoice(key, choice),
+        },
+      };
+    }
     if (key !== null && row.outcome === 'new') {
       return {
         boxed: true,
@@ -241,6 +266,9 @@ export function BankSyncPreviewList({
         aria-label={segments.find(({ key }) => key === filter)?.label}
         className="flex min-h-0 flex-1 flex-col"
       >
+        {filter === 'possible_duplicate' && shown.length > 0 && (
+          <p className="mb-3 shrink-0 text-sm text-gray-600 dark:text-gray-300">{t('duplicates.intro')}</p>
+        )}
         {filter === 'excluded' && shown.length > 0 && (
           <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-gray-600 dark:text-gray-300">{t('exceptions.intro')}</p>

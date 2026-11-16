@@ -31,7 +31,13 @@ const SYNC_TIMEOUT_MS = 120_000;
 
 /** True when any account of the answer wrote a transaction row. */
 function wroteRows(entries: readonly BankSyncConnectionEntry[]): boolean {
-  return entries.some((entry) => 'imported' in entry && entry.imported > 0);
+  return entries.some(
+    (entry) =>
+      'imported' in entry &&
+      // A merge moves a row's date and a replace deletes one: both change what
+      // the balance caches hold, as an import does.
+      (entry.imported > 0 || (entry.merged ?? 0) > 0 || (entry.replaced ?? 0) > 0),
+  );
 }
 
 /**
@@ -243,7 +249,15 @@ export const bankSyncApi = {
     const body = {
       ...(planFingerprint ? { planFingerprint } : {}),
       ...(selection
-        ? { importKeys: selection.importKeys, excludeKeys: selection.excludeKeys }
+        ? {
+            importKeys: selection.importKeys,
+            excludeKeys: selection.excludeKeys,
+            // Sent only when the preview offered a decision about a possible
+            // duplicate, so an older server is never sent a list it refuses.
+            ...(selection.mergeKeys?.length ? { mergeKeys: selection.mergeKeys } : {}),
+            ...(selection.keepKeys?.length ? { keepKeys: selection.keepKeys } : {}),
+            ...(selection.replaceKeys?.length ? { replaceKeys: selection.replaceKeys } : {}),
+          }
         : {}),
     };
     try {

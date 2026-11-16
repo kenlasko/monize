@@ -71,9 +71,18 @@ export function useBankSyncToast() {
                 awaitingPreview.map((entry) => nameOf(entry.bankAccountId)),
               ),
             });
+      // Possible duplicates the sync held back wait in the preview
+      // (docs/specs/import-duplicate-review.md section 4).
+      const held = results.reduce((sum, result) => sum + (result.heldDuplicates ?? 0), 0);
+      const heldPrompt = held === 0 ? null : t('heldDuplicates', { count: held });
       // Appended to whatever the sync of the other accounts reported.
-      const withPreview = (message: string): string =>
-        needsPreview === null ? message : t('withNeedsPreview', { message, needsPreview });
+      const withPreview = (message: string): string => {
+        const withHeld =
+          heldPrompt === null ? message : t('withHeldDuplicates', { message, held: heldPrompt });
+        return needsPreview === null
+          ? withHeld
+          : t('withNeedsPreview', { message: withHeld, needsPreview });
+      };
       const totals = totalSyncResults(results);
       const refusedCount = totalRefused(totals.refused);
       const summary = t('summary', {
@@ -100,7 +109,7 @@ export function useBankSyncToast() {
           toast(needsPreview, { duration: 8000 });
         } else if (refusedCount === 0) {
           // A prompt to act appended to a success stays up long enough to read.
-          if (needsPreview === null) toast.success(summary);
+          if (needsPreview === null && heldPrompt === null) toast.success(summary);
           else toast.success(withPreview(summary), { duration: 8000 });
         } else {
           toast.error(withPreview(summaryText), { duration: 8000 });

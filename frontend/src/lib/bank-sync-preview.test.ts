@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  duplicateRowsOf,
   exceptionKeys,
   filterPreviewRows,
   initialPreviewFilter,
@@ -45,6 +46,7 @@ describe('previewFilterCounts', () => {
     expect(previewFilterCounts(ROWS)).toEqual({
       all: 8,
       new: 2,
+      possible_duplicate: 0,
       duplicate: 1,
       excluded: 1,
       refused: 1,
@@ -57,6 +59,7 @@ describe('previewFilterCounts', () => {
     expect(previewFilterCounts([])).toEqual({
       all: 0,
       new: 0,
+      possible_duplicate: 0,
       duplicate: 0,
       excluded: 0,
       refused: 0,
@@ -127,5 +130,37 @@ describe('the keys a selection can name', () => {
 
   it('lists the exceptions, which are the rows that can be taken back', () => {
     expect(exceptionKeys(ROWS_FOR_SELECTION)).toEqual(['ref:e']);
+  });
+});
+
+describe('possible duplicates', () => {
+  it('opens on the possible duplicates when there are any, since they wait for a decision', () => {
+    expect(
+      initialPreviewFilter({
+        summary: {
+          new: 3,
+          possibleDuplicate: 1,
+          duplicate: 0,
+          excluded: 0,
+          refused: 0,
+          refusedByReason: {},
+          pending: 0,
+          beforeCutoff: 0,
+        },
+      }),
+    ).toBe('possible_duplicate');
+  });
+
+  it('lists each possible duplicate with the choices it offers, later and exceptions included', () => {
+    expect(
+      duplicateRowsOf([
+        row('possible_duplicate', { externalKey: 'ref:p', duplicateActions: ['import', 'keep'] }),
+        row('new', { externalKey: 'ref:n' }),
+      ]),
+    ).toEqual([{ key: 'ref:p', options: ['later', 'keep', 'import', 'except'] }]);
+  });
+
+  it('is not a key a plain selection can name', () => {
+    expect(selectableKeys([row('possible_duplicate', { externalKey: 'ref:p' })])).toEqual([]);
   });
 });
