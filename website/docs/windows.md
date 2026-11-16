@@ -17,12 +17,14 @@ There is only ever one beta: each new one replaces the one before it. An install
 
 **System requirements:** Windows 10 or 11, 64-bit (x64). No administrator rights are needed.
 
+The app and its installer are signed, under the [code signing policy](#code-signing-policy) below.
+
 ---
 
 ## Installing
 
 1. Run `Monize-Setup-<version>.exe`.
-2. The installer is not code-signed yet, so Windows SmartScreen says *"Windows protected your PC"*. Click **More info**, then **Run anyway**.
+2. The installer is signed with a test certificate until SignPath Foundation issues its own, and Windows does not trust the test certificate, so Windows SmartScreen says *"Windows protected your PC"*. Click **More info**, then **Run anyway**.
 3. Choose the installation folder or keep the default, `%LOCALAPPDATA%\Programs\Monize`. Monize installs for your Windows account only and does not ask for administrator rights.
 4. The installer copies tens of thousands of files, so the list can sit still for several minutes, longer while antivirus software scans them. Let it finish.
 5. Monize starts when the installer closes.
@@ -190,11 +192,23 @@ Use **Settings > Apps > Installed apps > Monize > Uninstall** in Windows. The un
 
 ---
 
+## Code Signing Policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+- **What is signed:** `Monize.exe` and the installer, `Monize-Setup-<version>.exe`. They are built from the [Monize repository](https://github.com/kenlasko/monize) by its GitHub Actions workflow and signed there through SignPath; nothing built anywhere else is signed. Third-party files in the installer, such as Electron's and PostgreSQL's, keep their own publishers' signatures or none.
+- **Until SignPath Foundation issues the certificate**, the app and the installer are signed with a test certificate that Windows does not trust.
+- **Committers and reviewers:** [kenlasko](https://github.com/kenlasko). Changes from anyone else reach the code only through a pull request that a committer has reviewed.
+- **Approvers:** [kenlasko](https://github.com/kenlasko). Every request to sign with the SignPath Foundation certificate waits for an approver.
+- **Privacy:** [the privacy statement](https://github.com/kenlasko/monize/blob/main/PRIVACY.md) lists every service Monize contacts, when, and what it sends.
+
+---
+
 ## Troubleshooting
 
 | Problem | What to do |
 |---------|------------|
-| SmartScreen blocks the installer | Click **More info**, then **Run anyway**. The installer is not code-signed yet. |
+| SmartScreen blocks the installer | Click **More info**, then **Run anyway**. The installer is signed with a test certificate that Windows does not trust yet; see the [code signing policy](#code-signing-policy). |
 | The installer seems stuck | It copies tens of thousands of files and the list does not move while it does. Wait several minutes; antivirus software slows it further. |
 | *"This step failed: ... not done within ..."* on the first start | Click **Retry**. The first start after installing can be slow while antivirus software scans the new files. |
 | *"Monize has a new address"* | Another program took the port Monize used. Monize moved to a free one and keeps it from now on; update any bookmarks and AI client settings. |
