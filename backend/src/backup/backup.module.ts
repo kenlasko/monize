@@ -28,6 +28,7 @@ import { SystemAlertsModule } from "../system-alerts/system-alerts.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { BondsModule } from "../bonds/bonds.module";
 import { CurrenciesModule } from "../currencies/currencies.module";
+import { NetWorthModule } from "../net-worth/net-worth.module";
 
 @Module({
   imports: [
@@ -46,8 +47,12 @@ import { CurrenciesModule } from "../currencies/currencies.module";
     // and its series recovery fetches a referenced series (BondSeriesService).
     BondsModule,
     // The restore tells the crypto exchange rate adapter to re-read
-    // `currencies` after it commits (CryptoFxProvider).
+    // `currencies` after it commits (CryptoFxProvider), and pulls the rate
+    // history the restored accounts need (RateHistoryCatchUpService).
     CurrenciesModule,
+    // The restore recomputes the restored accounts' snapshots once that
+    // history has landed (NetWorthService).
+    NetWorthModule,
   ],
   controllers: [
     BackupController,

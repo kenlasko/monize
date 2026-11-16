@@ -2,6 +2,8 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { gemConfigFingerprint } from "../strategies/gem-signal.service";
 import { BondPriceService } from "../bonds/bond-price.service";
 import { CryptoFxProvider } from "../currencies/providers/crypto-fx.provider";
+import { NetWorthService } from "../net-worth/net-worth.service";
+import { RateHistoryCatchUpService } from "../currencies/rate-history-catch-up.service";
 import { DataSource } from "typeorm";
 import {
   UnauthorizedException,
@@ -757,6 +759,18 @@ describe("BackupService", () => {
         {
           provide: CryptoFxProvider,
           useValue: { forgetCurrencies: jest.fn() },
+        },
+        // Started after the commit for the restored accounts; the fill itself
+        // is its own spec's subject (import-post-processing.service.spec.ts).
+        {
+          provide: RateHistoryCatchUpService,
+          useValue: { start: jest.fn() },
+        },
+        {
+          provide: NetWorthService,
+          useValue: {
+            recalculateAccount: jest.fn().mockResolvedValue(undefined),
+          },
         },
         // Two ciphers, deliberately: `EncryptionService` still owns the
         // provider API keys the export carries, while the stored backup password
@@ -1994,6 +2008,78 @@ describe("BackupService", () => {
           service.restoreData(userId, makeInput({ password: "test" })),
         ).rejects.toThrow();
         expect(cryptoFx.forgetCurrencies).not.toHaveBeenCalled();
+      });
+
+      /**
+       * `exchange_rates` is not part of a backup, and the daily refresh only
+       * ever stores today, so a restored ledger reaching back years had no
+       * rate for any of them until the user found "Fill gaps in rate history"
+       * (issue #2226). The restore starts the fill an import runs, after the
+       * commit and never on a failure.
+       */
+      it("pulls the restored accounts' rate history after the commit, and recomputes their snapshots once rates landed", async () => {
+        mockUserRepo.findOne.mockResolvedValue(mockUser);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+        const { rateHistoryCatchUp, netWorth } = (
+          service as unknown as {
+            restoreService: {
+              rateHistoryCatchUp: { start: jest.Mock };
+              netWorth: { recalculateAccount: jest.Mock };
+            };
+          }
+        ).restoreService;
+        rateHistoryCatchUp.start.mockClear();
+        netWorth.recalculateAccount.mockClear();
+        const startedInsideTransaction: boolean[] = [];
+        mockDataSource.transaction.mockImplementation(
+          async (fn: (m: unknown) => unknown) => {
+            const result = await fn(mockDataSource.manager);
+            startedInsideTransaction.push(
+              rateHistoryCatchUp.start.mock.calls.length > 0,
+            );
+            return result;
+          },
+        );
+        const data = {
+          ...validBackupData,
+          accounts: [
+            { id: "acc00000-0000-4000-8000-000000000001", user_id: userId },
+            { id: "acc00000-0000-4000-8000-000000000002", user_id: userId },
+          ],
+        };
+
+        await service.restoreData(
+          userId,
+          makeInput({ password: "test", data }),
+        );
+
+        expect(rateHistoryCatchUp.start).toHaveBeenCalledTimes(1);
+        expect(startedInsideTransaction.every((seen) => !seen)).toBe(true);
+        const [calledUser, ids, label, onStored] =
+          rateHistoryCatchUp.start.mock.calls[0];
+        expect(calledUser).toBe(userId);
+        expect(label).toBe("Post-restore");
+        // The ids the restore wrote (remapped), not the file's.
+        expect(ids).toHaveLength(2);
+        expect(ids).not.toContain("acc00000-0000-4000-8000-000000000001");
+        expect(netWorth.recalculateAccount).not.toHaveBeenCalled();
+
+        onStored();
+        expect(netWorth.recalculateAccount.mock.calls).toEqual(
+          ids.map((id: string) => [userId, id]),
+        );
+
+        rateHistoryCatchUp.start.mockClear();
+        mockQueryRunner.query.mockImplementation(
+          (sql: string, params?: unknown[]) =>
+            typeof sql === "string" && sql.includes("DELETE FROM")
+              ? Promise.reject(new Error("restore failed"))
+              : mockQueryHandler(sql, params),
+        );
+        await expect(
+          service.restoreData(userId, makeInput({ password: "test", data })),
+        ).rejects.toThrow();
+        expect(rateHistoryCatchUp.start).not.toHaveBeenCalled();
       });
 
       /**

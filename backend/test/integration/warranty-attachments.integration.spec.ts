@@ -22,6 +22,7 @@ import { BackupRestoreDatabaseService } from "@/backup/backup-restore-database.s
 import { BackupRestoreService } from "@/backup/backup-restore.service";
 import { BackupService } from "@/backup/backup.service";
 import { BondPriceService } from "@/bonds/bond-price.service";
+import { RateHistoryCatchUpService } from "@/currencies/rate-history-catch-up.service";
 import { withScopedDb } from "@/common/db/scoped-db";
 import { withSystemContext, withUserContext } from "@/common/db/with-context";
 import { EncryptionService } from "@/common/encryption/encryption.service";
@@ -606,6 +607,12 @@ describe("A warranty survives a backup round trip", () => {
             recomputeSecurity: async () => ({}),
             recomputeLinkedSecurities: async () => undefined,
           },
+        },
+        // Not the subject: the post-restore rate history fill reaches the FX
+        // provider (rate-history-catch-up.service.ts).
+        {
+          provide: RateHistoryCatchUpService,
+          useValue: { start: () => undefined },
         },
         // The restore's bond series recovery finds nothing to recover here.
         {

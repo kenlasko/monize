@@ -24,6 +24,11 @@ import { extractPdfText } from "@/common/pdf-text";
 import { AuthAttemptCounterService } from "@/auth/auth-attempt-counter.service";
 import { CurrenciesService } from "@/currencies/currencies.service";
 import { FxProviderChain } from "@/currencies/providers/fx-provider-chain";
+import { ExchangeRateHistoryService } from "@/currencies/exchange-rate-history.service";
+import {
+  RateHistoryCatchUpService,
+  settlePendingRateHistoryFills,
+} from "@/currencies/rate-history-catch-up.service";
 import { ProviderHealthService } from "@/provider-health/provider-health.service";
 import { BackupBondSeriesRecoveryService } from "@/backup/backup-bond-series-recovery.service";
 import { BondValuationService } from "@/bonds/bond-valuation.service";
@@ -77,6 +82,15 @@ describe("Backup export/restore round-trip (integration)", () => {
   // The one network door the restore's series recovery reaches: a fake over the
   // saved issuer pages and letters, swapped per test. Never the network.
   let door: jest.MockedFunction<BondFetch>;
+
+  // The provider door of the post-restore rate history fill; the discovery of
+  // the restored currencies in front of it is the real one.
+  const fillRateGaps = jest.fn(async () => ({
+    stored: 0,
+    windowsFetched: 0,
+    windowsUnanswered: 0,
+    windowsRemaining: 0,
+  }));
 
   // The shared login password createTestUserDirect bakes into every user; the
   // restore flow re-verifies it before touching any data.
@@ -146,6 +160,10 @@ describe("Backup export/restore round-trip (integration)", () => {
         CurrenciesService,
         // The bond catalog only ensures a currency row; it never asks the FX chain.
         { provide: FxProviderChain, useValue: {} },
+        // Real: which currencies a restore pulls the history of is read from
+        // the restored rows (issue #2226). Only the provider fill is faked.
+        RateHistoryCatchUpService,
+        { provide: ExchangeRateHistoryService, useValue: { fillRateGaps } },
         ProviderHealthService,
         {
           provide: SeriesHttp,
@@ -986,6 +1004,51 @@ describe("Backup export/restore round-trip (integration)", () => {
       symbol: "*",
       decimal_places: 0,
     });
+  });
+
+  it("pulls the rate history of every foreign currency the restored accounts use, after the commit (#2226)", async () => {
+    const userA = await createTestUserDirect(dataSource, {
+      email: "fx-a@example.com",
+    });
+    const userB = await createTestUserDirect(dataSource, {
+      email: "fx-b@example.com",
+    });
+    await dataSource.query(
+      `INSERT INTO currencies (code, name, symbol, decimal_places, is_active)
+       VALUES ('CAD', 'Canadian Dollar', '$', 2, true),
+              ('EUR', 'Euro', 'E', 2, true)
+       ON CONFLICT (code) DO NOTHING`,
+    );
+    await dataSource.query(
+      `INSERT INTO user_preferences (user_id, default_currency, language)
+       VALUES ($1, 'CAD', 'en')`,
+      [userA.id],
+    );
+    await dataSource.query(
+      `INSERT INTO accounts (user_id, account_type, name, currency_code,
+                             current_balance, opening_balance)
+       VALUES ($1, 'CHEQUING', 'Euro chequing', 'EUR', 0, 0),
+              ($1, 'CHEQUING', 'Chequing', 'CAD', 0, 0)`,
+      [userA.id],
+    );
+
+    const { buffer: backup } = await withUserContext(userA.id, () =>
+      service.exportToBuffer(userA.id),
+    );
+    fillRateGaps.mockClear();
+
+    await withUserContext(userB.id, () =>
+      service.restoreData(userB.id, {
+        compressedData: backup,
+        password: PASSWORD,
+      }),
+    );
+    await settlePendingRateHistoryFills();
+
+    // `exchange_rates` is not in the backup, so nothing but this fill gives
+    // the restored rows the years they reach back to. The reporting currency
+    // has no rate history and is not asked about.
+    expect(fillRateGaps.mock.calls).toEqual([[userB.id, "EUR"]]);
   });
 
   it("carries a calendar day note through an export and restore", async () => {

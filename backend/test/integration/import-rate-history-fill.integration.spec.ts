@@ -4,6 +4,7 @@ import { ExchangeRateHistoryService } from "@/currencies/exchange-rate-history.s
 import { ExchangeRateService } from "@/currencies/exchange-rate.service";
 import { FxProviderChain } from "@/currencies/providers/fx-provider-chain";
 import { ImportPostProcessingService } from "@/import/import-post-processing.service";
+import { RateHistoryCatchUpService } from "@/currencies/rate-history-catch-up.service";
 import { NetWorthService } from "@/net-worth/net-worth.service";
 import { SecuritiesService } from "@/securities/securities.service";
 import { SecurityPriceService } from "@/securities/security-price.service";
@@ -138,7 +139,7 @@ describe("post-import rate history fill (integration)", () => {
       {} as SecurityPriceService,
       exchangeRateService,
       {} as SecuritiesService,
-      history,
+      new RateHistoryCatchUpService(dataSource, history),
     );
     const settled = async () => {
       // A round starts only after the previous one answered.

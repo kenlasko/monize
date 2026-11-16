@@ -73,8 +73,19 @@ import { BondPriceService } from "../bonds/bond-price.service";
 import { clearForeignSeriesOfUser } from "../bonds/bond-series-resolver";
 import { invalidatePortfolioSummary } from "../securities/portfolio-summary-memo";
 import { CryptoFxProvider } from "../currencies/providers/crypto-fx.provider";
+import { RateHistoryCatchUpService } from "../currencies/rate-history-catch-up.service";
+import { NetWorthService } from "../net-worth/net-worth.service";
 
 const gunzipAsync = promisify(gunzip);
+
+/** The (remapped) primary keys of a restored table's rows. */
+function restoredIds(
+  rows: ReadonlyArray<Record<string, unknown>> | undefined,
+): string[] {
+  return (rows ?? [])
+    .map((row) => row.id)
+    .filter((id): id is string => typeof id === "string");
+}
 
 /**
  * Restore orchestration: the processing gate, decryption, decompression, format
@@ -101,6 +112,8 @@ export class BackupRestoreService {
     private readonly maintenance: UserMaintenanceService,
     private readonly bondPrices: BondPriceService,
     private readonly bondSeries: BackupBondSeriesRecoveryService,
+    private readonly rateHistoryCatchUp: RateHistoryCatchUpService,
+    private readonly netWorth: NetWorthService,
     /**
      * Told after the commit that `currencies` may hold rows it has not read
      * (`ensureCurrenciesExist` inserts the backup's coins), so a restored coin
@@ -512,6 +525,32 @@ export class BackupRestoreService {
               (backupTables(data).securities ?? []).map((row) =>
                 typeof row.id === "string" ? row.id : null,
               ),
+            );
+            // `exchange_rates` is shared reference data, not part of a
+            // backup, so the restored rows reach back years before anything
+            // this deployment has stored for their currencies: the history an
+            // import pulls (issue #2186) is pulled here too (issue #2226). In
+            // the background, after the commit, because each round may spend
+            // `GAP_FILL_BUDGET_MS` on the provider.
+            const restoredAccountIds = restoredIds(backupTables(data).accounts);
+            this.rateHistoryCatchUp.start(
+              userId,
+              restoredAccountIds,
+              "Post-restore",
+              () => {
+                // Snapshots and the memoized valuation read before the rates
+                // landed converted without them.
+                invalidatePortfolioSummary(userId);
+                for (const accountId of restoredAccountIds) {
+                  this.netWorth
+                    .recalculateAccount(userId, accountId)
+                    .catch((err) =>
+                      this.logger.warn(
+                        `Post-restore net worth recalc failed for account ${accountId}: ${err.message}`,
+                      ),
+                    );
+                }
+              },
             );
             return result;
           })

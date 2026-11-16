@@ -28,12 +28,13 @@ targets the holes:
 - `POST /currencies/exchange-rates/fill-gaps` fetches the windows that are
   missing between the first date the currency is used and today.
 
-An import runs the same fill itself, in the background, for each foreign
-currency the imported accounts use, so a reader who imports years of history
-does not have to press anything (issue #2186). It repeats the bounded fill
-while windows remain and the last round got an answer, up to
-`IMPORT_RATE_FILL_MAX_ROUNDS` rounds per currency
-(`backend/src/import/import-post-processing.service.ts`).
+An import and a backup restore run the same fill themselves, in the
+background, for each foreign currency the imported or restored accounts use, so
+a reader who imports or restores years of history does not have to press
+anything (issues #2186 and #2226). It repeats the bounded fill while windows
+remain and the last round got an answer, up to
+`RATE_HISTORY_CATCH_UP_MAX_ROUNDS` rounds per currency
+(`backend/src/currencies/rate-history-catch-up.service.ts`).
 
 ## 2. Definitions
 

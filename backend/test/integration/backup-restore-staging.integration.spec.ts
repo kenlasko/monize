@@ -13,6 +13,8 @@ import { BackupAttachmentTransferService } from "@/backup/backup-attachment-tran
 import { BackupRestoreDatabaseService } from "@/backup/backup-restore-database.service";
 import { BackupBondSeriesRecoveryService } from "@/backup/backup-bond-series-recovery.service";
 import { BondPriceService } from "@/bonds/bond-price.service";
+import { NetWorthService } from "@/net-worth/net-worth.service";
+import { RateHistoryCatchUpService } from "@/currencies/rate-history-catch-up.service";
 import { OidcReauthService } from "@/auth/oidc/oidc-reauth.service";
 import { EncryptionService } from "../../src/common/encryption/encryption.service";
 import { JobClaimService } from "@/common/jobs/job-claim.service";
@@ -91,6 +93,16 @@ describe("Backup restore staging of external attachment objects (integration)", 
         {
           provide: BondPriceService,
           useValue: { recomputeLinkedSecurities: async () => undefined },
+        },
+        // Not the subject: the post-restore rate history fill reaches the FX
+        // provider (rate-history-catch-up.service.ts).
+        {
+          provide: RateHistoryCatchUpService,
+          useValue: { start: () => undefined },
+        },
+        {
+          provide: NetWorthService,
+          useValue: { recalculateAccount: async () => undefined },
         },
         { provide: OidcReauthService, useValue: { consume: async () => {} } },
         // Real: the restore takes a maintenance lease on the real `job_claims`.
