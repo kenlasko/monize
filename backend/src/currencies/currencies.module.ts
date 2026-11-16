@@ -4,6 +4,7 @@ import { ExchangeRateService } from "./exchange-rate.service";
 import { ExchangeRateHistoryService } from "./exchange-rate-history.service";
 import { RateHistoryCatchUpService } from "./rate-history-catch-up.service";
 import { CurrenciesService } from "./currencies.service";
+import { CurrencyDetailService } from "./currency-detail.service";
 import { CurrenciesController } from "./currencies.controller";
 import { SecuritiesModule } from "../securities/securities.module";
 import { ProviderHealthModule } from "../provider-health/provider-health.module";
@@ -53,6 +54,7 @@ import {
     ExchangeRateHistoryService,
     RateHistoryCatchUpService,
     CurrenciesService,
+    CurrencyDetailService,
     YahooFxProvider,
     CryptoFxProvider,
     {

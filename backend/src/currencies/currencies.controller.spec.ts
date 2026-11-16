@@ -7,6 +7,7 @@ import { ExchangeRateService } from "./exchange-rate.service";
 import { ExchangeRateHistoryService } from "./exchange-rate-history.service";
 import { CurrenciesService } from "./currencies.service";
 import { FxProviderChain } from "./providers/fx-provider-chain";
+import { CurrencyDetailService } from "./currency-detail.service";
 
 describe("CurrenciesController", () => {
   let controller: CurrenciesController;
@@ -20,6 +21,9 @@ describe("CurrenciesController", () => {
     Record<keyof CurrenciesService, jest.Mock>
   >;
   let mockFxProviders: Partial<Record<keyof FxProviderChain, jest.Mock>>;
+  let mockCurrencyDetailService: Partial<
+    Record<keyof CurrencyDetailService, jest.Mock>
+  >;
   const mockReq = { user: { id: "user-1" } };
 
   beforeEach(async () => {
@@ -56,6 +60,11 @@ describe("CurrenciesController", () => {
       describe: jest.fn(),
     };
 
+    mockCurrencyDetailService = {
+      getUsageSummary: jest.fn(),
+      getTransactionRates: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CurrenciesController],
       providers: [
@@ -75,6 +84,10 @@ describe("CurrenciesController", () => {
           provide: FxProviderChain,
           useValue: mockFxProviders,
         },
+        {
+          provide: CurrencyDetailService,
+          useValue: mockCurrencyDetailService,
+        },
       ],
     }).compile();
 
@@ -82,6 +95,33 @@ describe("CurrenciesController", () => {
   });
 
   // ── Currency CRUD ──────────────────────────────────────────────
+
+  describe("getCurrencyUsage()", () => {
+    it("delegates to currencyDetailService.getUsageSummary with the JWT's userId", () => {
+      mockCurrencyDetailService.getUsageSummary!.mockReturnValue("usage");
+
+      const result = controller.getCurrencyUsage(mockReq, "EUR");
+
+      expect(result).toBe("usage");
+      expect(mockCurrencyDetailService.getUsageSummary).toHaveBeenCalledWith(
+        "user-1",
+        "EUR",
+      );
+    });
+  });
+
+  describe("getTransactionRates()", () => {
+    it("delegates to currencyDetailService.getTransactionRates with the JWT's userId", () => {
+      mockCurrencyDetailService.getTransactionRates!.mockReturnValue("rates");
+
+      const result = controller.getTransactionRates(mockReq, "EUR");
+
+      expect(result).toBe("rates");
+      expect(
+        mockCurrencyDetailService.getTransactionRates,
+      ).toHaveBeenCalledWith("user-1", "EUR");
+    });
+  });
 
   describe("getCurrencies()", () => {
     it("delegates to currenciesService.findAll with userId and includeInactive", () => {

@@ -46,6 +46,11 @@ import {
   CurrencyUsageMap,
   UserCurrencyView,
 } from "./currencies.service";
+import {
+  CurrencyDetailService,
+  CurrencyUsageSummary,
+  TransactionRateList,
+} from "./currency-detail.service";
 import { ExchangeRate } from "./entities/exchange-rate.entity";
 import { CreateCurrencyDto } from "./dto/create-currency.dto";
 import { UpdateCurrencyDto } from "./dto/update-currency.dto";
@@ -73,6 +78,7 @@ export class CurrenciesController {
     private readonly exchangeRateHistoryService: ExchangeRateHistoryService,
     private readonly currenciesService: CurrenciesService,
     private readonly fxProviders: FxProviderChain,
+    private readonly currencyDetailService: CurrencyDetailService,
   ) {}
 
   // ── Currency list ───────────────────────────────────────────────
@@ -358,6 +364,38 @@ export class CurrenciesController {
   }
 
   // ── Param routes (:code) ────────────────────────────────────────
+
+  // Not @AllowDelegate: both read the reader's own transactions, which the
+  // transaction summary routes do not open to a delegate either.
+  @Get(":code/usage")
+  @Throttle({ default: { ttl: 60000, limit: 20 } }) // L2: one grouped read of the ledger per call
+  @ApiOperation({
+    summary: "How much of the caller's ledger is in a currency",
+    description:
+      "The number of non-void transactions posted in the currency or paid in it, and their gross total (the sum of absolute amounts) in the currency and in the caller's reporting currency. The reporting-currency total is null while any transaction has no rate; `knownReportingSubtotal` and `missingPairs` say what did convert and what is missing.",
+  })
+  @ApiResponse({ status: 200, description: "Usage summary for the currency" })
+  getCurrencyUsage(
+    @Request() req,
+    @Param("code", ParseCurrencyCodePipe) code: string,
+  ): Promise<CurrencyUsageSummary> {
+    return this.currencyDetailService.getUsageSummary(req.user.id, code);
+  }
+
+  @Get(":code/transaction-rates")
+  @Throttle({ default: { ttl: 60000, limit: 20 } }) // L2: one indexed read of the ledger per call
+  @ApiOperation({
+    summary: "Exchange rates the caller's own transactions settled at",
+    description:
+      "The rate each foreign-currency entry and each cross-currency transfer between the currency and the caller's reporting currency settled at, stated as reporting-currency units per 1 unit of the code, newest first. Empty for the reporting currency itself. Bounded to the newest 2000 transactions, and `truncated` says there are more.",
+  })
+  @ApiResponse({ status: 200, description: "Transaction rates for the pair" })
+  getTransactionRates(
+    @Request() req,
+    @Param("code", ParseCurrencyCodePipe) code: string,
+  ): Promise<TransactionRateList> {
+    return this.currencyDetailService.getTransactionRates(req.user.id, code);
+  }
 
   @Get(":code")
   @AllowDelegate()
