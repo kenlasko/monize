@@ -53,6 +53,8 @@ interface DuplicatesStepProps {
  */
 export function DuplicatesStep({ review, isLoading, onBack, onImport }: DuplicatesStepProps) {
   const t = useTranslations('import.duplicates');
+  // The same labels the existing transaction's side uses.
+  const tFact = useTranslations('import.preview.duplicate');
   const { formatDate } = useDateFormat();
   const { formatCurrency } = useNumberFormat();
   const { choices, setChoice } = useDuplicateChoices();
@@ -92,6 +94,12 @@ export function DuplicatesStep({ review, isLoading, onBack, onImport }: Duplicat
                           {row.memo && (
                             <span className="block truncate text-xs text-gray-500 dark:text-gray-400" title={row.memo}>
                               <LinkifiedText text={row.memo} />
+                            </span>
+                          )}
+                          {row.referenceNumber && (
+                            <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
+                              {tFact('reference')}{' '}
+                              <span className="text-gray-700 dark:text-gray-300">{row.referenceNumber}</span>
                             </span>
                           )}
                         </span>

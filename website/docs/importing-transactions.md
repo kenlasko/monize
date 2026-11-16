@@ -222,7 +222,7 @@ When there are possible duplicates, a **Possible duplicates** step lists them im
 | Choice | What happens |
 |--------|--------------|
 | **Keep mine** (the default) | Your transaction stays as it is, and the row is not imported |
-| **Merge** | Your transaction keeps its payee, category, splits, tags and memo, and takes the row's date, check number and **Cleared** status (and the bank's ID of an OFX row, so the next download recognizes it). A transfer or a split keeps its date |
+| **Merge** | Your transaction keeps its payee, category, splits, tags and memo, and takes the row's date, check number and **Cleared** status (and the bank's ID of an OFX row, so the next download recognizes it). A transfer or a split keeps its date, and so is not recognized by the next download |
 | **Delete mine and import** | Your transaction is deleted and the row is imported in its place |
 | **Import anyway** | Both are kept |
 

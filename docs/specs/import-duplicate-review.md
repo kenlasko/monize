@@ -89,7 +89,7 @@ person picks one:
 |---|---|---|---|
 | **Leave for later** (bank sync default) | nothing | unchanged | not written; offered again |
 | **Import anyway** | key claimed for the new row | unchanged | written as new |
-| **Merge** | key claimed for the existing row | takes the incoming date, the incoming reference (when it has one) and status Cleared; a file import also stores the row's FITID when the existing row has none and no other row holds it | not written |
+| **Merge** | key claimed for the existing row | takes the incoming date, the incoming reference (when it has one) and status Cleared; a file import also stores the row's FITID when the existing row has none, no other row holds it and the merge moves the date (recognition needs the file's date) | not written |
 | **Keep mine** (file import default) | key claimed for the existing row | unchanged | not written |
 | **Delete mine and import** | key claimed for the new row | deleted through `TransactionsService.remove`, with no history entry (`recordHistory: false`; neither import records one per row) and its recomputes deferred to after the commit | written as new |
 | **Add to the exceptions** (bank sync) | exception, as today | unchanged | never imported |

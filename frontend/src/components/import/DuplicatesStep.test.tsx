@@ -11,7 +11,7 @@ function pair(over: Partial<ImportDuplicateRow> = {}): ImportDuplicateRow {
     amount: -80,
     payee: 'HYDRO ONE',
     memo: 'Statement line',
-    referenceNumber: null,
+    referenceNumber: 'CHQ 1042',
     existingTransaction: {
       id: 'tx-manual',
       transactionDate: '2026-01-13',
@@ -44,6 +44,8 @@ describe('DuplicatesStep', () => {
     expect(screen.getByRole('heading', { name: '1 possible duplicate' })).toBeInTheDocument();
     expect(screen.getByText('HYDRO ONE')).toBeInTheDocument();
     expect(screen.getByText('Statement line')).toBeInTheDocument();
+    // The file row's check number, which often tells two equal amounts apart.
+    expect(screen.getByText('CHQ 1042')).toBeInTheDocument();
     expect(screen.getByText('Hydro bill')).toBeInTheDocument();
     expect(screen.getByText('Utilities')).toBeInTheDocument();
   });
