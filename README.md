@@ -711,8 +711,10 @@ installed for the current Windows account without administrator rights.
   [latest release](https://github.com/kenlasko/monize/releases/latest). A
   beta built from `main` is the one
   [prerelease](https://github.com/kenlasko/monize/releases) named
-  "Windows beta". The installer is not code-signed yet, so SmartScreen asks
-  for confirmation.
+  "Windows beta". Until SignPath Foundation issues its certificate, the
+  installer is signed with a test certificate Windows does not trust, so
+  SmartScreen asks for confirmation. See the
+  [code signing policy](#code-signing-policy).
 - **Reachable from that PC only.** Everything binds `127.0.0.1`: no phone,
   no other computer, no email (there are no SMTP settings), no OIDC. The
   [Windows guide](https://www.monize.net/docs/windows#what-the-windows-app-cannot-do)
@@ -796,6 +798,27 @@ Main tables:
 - Admin role required for user management operations
 - Always use HTTPS in production
 - Generate strong JWT secrets (`openssl rand -base64 32`)
+
+## Code Signing Policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io),
+certificate by [SignPath Foundation](https://signpath.org).
+
+- **What is signed:** `Monize.exe` and the installer,
+  `Monize-Setup-<version>.exe`, of Monize for Windows. They are built from
+  this repository by its GitHub Actions workflow and signed there through
+  SignPath; nothing built anywhere else is signed. Third-party files in
+  the installer, such as Electron's and PostgreSQL's, keep their own
+  publishers' signatures or none.
+- **Until SignPath Foundation issues the certificate**, builds are signed
+  with a test certificate that Windows does not trust.
+- **Committers and reviewers:** [kenlasko](https://github.com/kenlasko).
+  Changes from anyone else reach `main` only through a pull request that a
+  committer has reviewed.
+- **Approvers:** [kenlasko](https://github.com/kenlasko). Every request to sign
+  with the SignPath Foundation certificate waits for an approver.
+- **Privacy:** [PRIVACY.md](PRIVACY.md) lists every service Monize contacts,
+  when, and what it sends.
 
 ## License
 
