@@ -215,7 +215,7 @@ Click **Import Transactions** to execute the import. Each file is imported insid
 
 ### Possible Duplicates
 
-Before anything is written, Monize compares the file with the transactions already in the destination account. A row with exactly the same amount as an existing transaction, dated up to 3 days before or after it, is a **possible duplicate** -- typically a bill you entered by hand, or posted from its schedule, before the statement arrived. Each existing transaction is matched with at most one row, the closest date first. Payees are not compared, because the bank's text rarely matches the payee you typed. Transfers in the file and rows already imported from an earlier download of the same OFX file are not compared: they have their own checks.
+Before anything is written, Monize compares the file with the transactions already in the destination account. A row with exactly the same amount as an existing transaction, dated up to 3 days before or after it, is a **possible duplicate** -- typically a bill you entered by hand, or posted from its schedule, before the statement arrived. Each existing transaction is matched with at most one row, the closest date first. Payees are not compared, because the bank's text rarely matches the payee you typed. Transfers and loan payments in the file, and rows already imported from an earlier download of the same OFX file, are not compared: they have their own checks.
 
 When there are possible duplicates, a **Possible duplicates** step lists them immediately before the import. Each row of the file is shown beside the transaction it looks like (date, amount, payee, category, status and memo), and you choose what to do with it:
 
@@ -226,7 +226,7 @@ When there are possible duplicates, a **Possible duplicates** step lists them im
 | **Delete mine and import** | Your transaction is deleted and the row is imported in its place |
 | **Import anyway** | Both are kept |
 
-A **Reconciled** transaction can only be kept or imported beside, and a transfer cannot be deleted from here. Click **Import** to import the file with your choices, or **Back** to return to the review. If the account changed in the meantime (someone entered a closer match, say), nothing is imported and you are asked to check again.
+A **Reconciled** transaction can only be kept or imported beside, and a transfer or a split cannot be deleted from here. Click **Import** to import the file with your choices, or **Back** to return to the review. If the account changed in the meantime (someone entered a closer match, say), nothing is imported and you are asked to check again.
 
 When no row looks like an existing transaction, the import runs straight away. Investment files and the multi-account QIF and Microsoft Money imports are not compared.
 

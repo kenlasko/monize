@@ -459,7 +459,7 @@ A bank row with exactly the same amount as a transaction already in the account,
 - **Import anyway** -- both are kept
 - **Add to exceptions** -- the bank row is never imported
 
-A **Reconciled** transaction can only be kept or imported beside, and a transfer cannot be deleted from here.
+A **Reconciled** transaction can only be kept or imported beside, and a transfer or a split cannot be deleted from here.
 
 **Sync now** without the preview, and the daily sync, never import a possible duplicate: they import the other rows, hold the possible duplicates back, and the account then needs its preview again (its card says how many are waiting). The daily sync also sends a **Possible duplicates to review** notification (in the **Bank connections** category).
 

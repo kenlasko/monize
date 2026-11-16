@@ -183,7 +183,10 @@ step. When there are none it imports at once; otherwise it shows the list
 (every pair "Keep mine" until changed) and imports from there. A bulk CSV
 import checks every file first and shows one list grouped by file; a pair
 that only appears because an earlier file of the same run was imported has
-no decision and is kept.
+no decision and is kept. A later file whose pair changed because an earlier
+file of the same run was imported (both chose to replace one transaction,
+say) is refused with nothing written for it and reported among the per-file
+results; importing that file again lists its pairs afresh.
 
 ## 6. Invariants
 
