@@ -1287,6 +1287,7 @@ describe("DataQualityReportsService", () => {
         transaction_date: "2025-06-15",
         amount: "-42.00",
         currency_code: "CAD",
+        account_id: "acct-chequing",
         payee_name: "Grocer",
         description: null,
         account_name: "Checking",
@@ -1315,7 +1316,7 @@ describe("DataQualityReportsService", () => {
           "same_date_amount_payee_category",
         );
         expect(result.groups[0].reason).toBe(
-          "Same date, amount, payee, and category",
+          "Same account, date, amount, payee, and category",
         );
         expect(result.summary.veryHighCount).toBe(1);
         expect(result.summary.highCount).toBe(0);
@@ -1324,6 +1325,7 @@ describe("DataQualityReportsService", () => {
           transactionDate: "2025-06-15",
           amount: -42,
           currencyCode: "CAD",
+          accountId: "acct-chequing",
           payeeName: "Grocer",
           description: null,
           accountName: "Checking",
@@ -1422,8 +1424,23 @@ describe("DataQualityReportsService", () => {
 
       it("ranks the same figure in two currencies high, never very high", async () => {
         scopedManager.query.mockResolvedValue([
-          row({ id: "tx-1", currency_code: "USD" }),
-          row({ id: "tx-2", currency_code: "CAD" }),
+          row({ id: "tx-1", account_id: "acct-usd", currency_code: "USD" }),
+          row({ id: "tx-2", account_id: "acct-cad", currency_code: "CAD" }),
+        ]);
+
+        const result = await service.getDuplicateTransactions(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+        );
+
+        expect(result.groups[0].confidence).toBe("high");
+      });
+
+      it("ranks one charge on two accounts high, never very high", async () => {
+        scopedManager.query.mockResolvedValue([
+          row({ id: "tx-1", account_id: "acct-chequing" }),
+          row({ id: "tx-2", account_id: "acct-visa", account_name: "Visa" }),
         ]);
 
         const result = await service.getDuplicateTransactions(

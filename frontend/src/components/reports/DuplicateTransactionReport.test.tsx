@@ -83,6 +83,7 @@ function tx(overrides: Partial<DuplicateTransactionItem> & { id: string }): Dupl
     transactionDate: '2025-02-01',
     amount: -50,
     currencyCode: 'CAD',
+    accountId: 'acct-chequing',
     payeeName: 'Store A',
     description: null,
     accountName: 'Chequing',
@@ -123,7 +124,7 @@ function response(groups: DuplicateGroup[], summary: Partial<DuplicateTransactio
 const veryHigh = group({
   key: 'g-vh',
   confidence: 'very_high',
-  reason: 'Same date, amount, payee, and category',
+  reason: 'Same account, date, amount, payee, and category',
   reasonCode: 'same_date_amount_payee_category',
   transactions: [tx({ id: 'vh-1' }), tx({ id: 'vh-2', status: 'RECONCILED' }), tx({ id: 'vh-3' })],
 });
@@ -198,7 +199,7 @@ describe('DuplicateTransactionReport', () => {
     );
     await renderReport();
     expect(screen.getByText('Very high confidence')).toBeInTheDocument();
-    expect(screen.getByText('Same date, amount, payee, and category')).toBeInTheDocument();
+    expect(screen.getByText('Same account, date, amount, payee, and category')).toBeInTheDocument();
     expect(screen.getByText('Medium confidence')).toBeInTheDocument();
     expect(screen.getByText('Same payee and amount within 3 days')).toBeInTheDocument();
     expect(screen.getByText('Low confidence')).toBeInTheDocument();
@@ -363,7 +364,7 @@ describe('DuplicateTransactionReport', () => {
     mockGetDuplicateTransactions.mockResolvedValue(response([]));
     await renderReport();
     expect(screen.getByText('How duplicates are detected:')).toBeInTheDocument();
-    expect(screen.getByText('Very high: Same date, amount, payee, and category')).toBeInTheDocument();
+    expect(screen.getByText('Very high: Same account, date, amount, payee, and category')).toBeInTheDocument();
   });
 
   it('renders sensitivity selector', async () => {

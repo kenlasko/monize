@@ -614,6 +614,7 @@ export interface DuplicateTransactionItem {
   amount: number;
   /** The account's currency, which `amount` is in. */
   currencyCode: string;
+  accountId: string;
   payeeName: string | null;
   description: string | null;
   accountName: string | null;

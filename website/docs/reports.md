@@ -218,7 +218,7 @@ The **GEM Strategy** report follows the Global Equities Momentum strategy: at ea
 
 The **Duplicate Transaction Finder** groups transactions that look like copies of each other within the date range you pick (**1M** up to **10Y**, or **All Time**). **Sensitivity** sets how many days apart two copies may be. Each group carries a confidence level:
 
-- **Very high** -- same date, exact amount and currency, payee and category (two uncategorized transactions count as the same category; split transactions never reach this level, since their lines may differ)
+- **Very high** -- same account, date, exact amount, payee and category (two uncategorized transactions count as the same category; split transactions never reach this level, since their lines may differ)
 - **High** -- same date, amount and payee
 - **Medium** -- same date and amount, or same payee and amount within a few days
 - **Low** -- same amount within a few days

@@ -38,6 +38,9 @@ export class DuplicateTransactionItem {
   })
   currencyCode: string;
 
+  @ApiProperty()
+  accountId: string;
+
   @ApiProperty({ nullable: true })
   payeeName: string | null;
 

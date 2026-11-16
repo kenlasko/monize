@@ -296,6 +296,7 @@ export class DataQualityReportsService {
         t.transaction_date,
         t.amount,
         t.currency_code,
+        t.account_id,
         COALESCE(p.name, t.payee_name) as payee_name,
         t.description,
         a.name as account_name,
@@ -340,6 +341,7 @@ export class DataQualityReportsService {
       description: string | null;
       account_name: string | null;
       currency_code: string;
+      account_id: string;
       category_id: string | null;
       category_name: string | null;
       is_split: boolean;
@@ -358,6 +360,7 @@ export class DataQualityReportsService {
       // The row's own account currency, shown as stored: all of its places.
       amount: toMoneyNumber(row.amount, MONEY_SCALE),
       currencyCode: row.currency_code,
+      accountId: row.account_id,
       payeeName: row.payee_name,
       description: row.description,
       accountName: row.account_name,
@@ -461,17 +464,18 @@ export class DataQualityReportsService {
           );
 
           // "Very high" is the tier a user bulk-deletes from, so it is the
-          // strict one: the very same stored amount in the same currency (the
-          // matching above tolerates 0.01 and ignores currency), and the same
-          // category. A split parent has no category of its own (its lines
-          // carry them, and may differ), so splits never qualify; two
-          // uncategorized rows do, since neither was ever filed.
+          // strict one: the very same stored amount, in the same account (so
+          // the same currency: the matching above tolerates 0.01 and spans
+          // accounts, and one charge really can hit two cards on one day),
+          // and the same category. A split parent has no category of its own
+          // (its lines carry them, and may differ), so splits never qualify;
+          // two uncategorized rows do, since neither was ever filed.
           const allIdentical = matches.every(
             (m) =>
               !m.isSplit &&
               m.categoryId === matches[0].categoryId &&
               m.amount === matches[0].amount &&
-              m.currencyCode === matches[0].currencyCode,
+              m.accountId === matches[0].accountId,
           );
 
           let confidence: DuplicateConfidence = "low";
@@ -481,7 +485,7 @@ export class DataQualityReportsService {
           if (allSameDate && allSamePayee && allIdentical) {
             confidence = "very_high";
             reasonCode = "same_date_amount_payee_category";
-            reason = "Same date, amount, payee, and category";
+            reason = "Same account, date, amount, payee, and category";
           } else if (allSameDate && allSamePayee) {
             confidence = "high";
             reasonCode = "same_date_amount_payee";

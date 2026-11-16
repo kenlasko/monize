@@ -14,6 +14,7 @@ function tx(id: string, status: string | null = 'UNRECONCILED'): DuplicateTransa
     transactionDate: '2025-02-01',
     amount: -10,
     currencyCode: 'CAD',
+    accountId: 'acct-chequing',
     payeeName: 'Shop',
     description: null,
     accountName: 'Chequing',
