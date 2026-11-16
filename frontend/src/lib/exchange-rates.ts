@@ -153,6 +153,59 @@ export interface StoredRateList {
 }
 
 /**
+ * How much of the reader's own ledger is in one currency
+ * (`GET /currencies/:code/usage`).
+ *
+ * A transaction uses the currency when it is posted in an account denominated
+ * in it or was paid in it from another account; VOID rows and split lines are
+ * not counted. The totals are gross: each transaction's absolute amount, so an
+ * expense and its refund add up to the money that moved.
+ *
+ * `totalInReportingCurrency` converts each row at its own rate where it has one
+ * and at the market rate on its date otherwise, and is `null` while any row has
+ * no rate: `knownReportingSubtotal` then carries what did convert, and
+ * `missingPairs` names what is missing. `totalInCurrency` is `null` only when a
+ * foreign entry carries no amount in the currency.
+ */
+export interface CurrencyUsageSummary {
+  code: string;
+  reportingCurrency: string;
+  transactionCount: number;
+  firstTransactionDate: string | null;
+  lastTransactionDate: string | null;
+  totalInCurrency: number | null;
+  totalInReportingCurrency: number | null;
+  knownReportingSubtotal: number;
+  unconvertedCount: number;
+  missingPairs: string[];
+}
+
+/**
+ * A rate one of the reader's own transactions settled at, stated as
+ * reporting-currency units per 1 unit of the currency, the direction the
+ * stored rates are listed in. `foreignEntry` is a payment entered in one of
+ * the two currencies and posted in the other; `transfer` is a transfer whose
+ * two legs posted in the two currencies.
+ */
+export interface TransactionRate {
+  transactionId: string;
+  rateDate: string;
+  rate: number;
+  kind: 'foreignEntry' | 'transfer';
+  accountName: string;
+  payeeName: string | null;
+}
+
+/** Newest first, bounded by the server's `limit`. */
+export interface TransactionRateList {
+  code: string;
+  reportingCurrency: string;
+  rates: TransactionRate[];
+  truncated: boolean;
+  limit: number;
+}
+
+/**
  * The outcome of one "fill the gaps in rate history" request.
  *
  * `usedFrom` is the first date the reader's own data uses the currency, and
@@ -248,6 +301,23 @@ export const exchangeRatesApi = {
     const response = await apiClient.get<StoredRateList>('/currencies/exchange-rates/stored', {
       params: { code },
     });
+    return response.data;
+  },
+
+  // The currency detail page's ledger figures. Not deduped: they describe the
+  // reader's own transactions, which the page re-reads after an undo or an AI
+  // action changed them.
+  getCurrencyUsageSummary: async (code: string): Promise<CurrencyUsageSummary> => {
+    const response = await apiClient.get<CurrencyUsageSummary>(
+      `/currencies/${encodeURIComponent(code)}/usage`,
+    );
+    return response.data;
+  },
+
+  getTransactionRates: async (code: string): Promise<TransactionRateList> => {
+    const response = await apiClient.get<TransactionRateList>(
+      `/currencies/${encodeURIComponent(code)}/transaction-rates`,
+    );
     return response.data;
   },
 
