@@ -553,7 +553,9 @@
         "budgets": "Tutti i budget e gli avvisi di budget",
         "monthlySummaries": "Riepiloghi mensili del saldo del conto",
         "customReports": "Report personalizzati, tag e mappature di importazione",
-        "actionHistory": "Cronologia azioni (annulla/ripristina)"
+        "actionHistory": "Cronologia azioni (annulla/ripristina)",
+        "rules": "Tutte le regole delle transazioni",
+        "institutions": "Istituti finanziari"
       },
       "optionalHeading": "Facoltativamente elimina anche:",
       "accountsOption": "Conti",

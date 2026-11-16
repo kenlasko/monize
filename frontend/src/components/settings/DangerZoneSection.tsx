@@ -195,6 +195,8 @@ export function DangerZoneSection({ user }: DangerZoneSectionProps) {
               <li>{t('deleteData.alwaysDeletedItems.monthlySummaries')}</li>
               <li>{t('deleteData.alwaysDeletedItems.customReports')}</li>
               <li>{t('deleteData.alwaysDeletedItems.actionHistory')}</li>
+              <li>{t('deleteData.alwaysDeletedItems.rules')}</li>
+              <li>{t('deleteData.alwaysDeletedItems.institutions')}</li>
             </ul>
 
             <p className="text-sm font-medium text-red-700 dark:text-red-300 pt-2">

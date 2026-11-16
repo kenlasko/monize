@@ -997,6 +997,8 @@ The following data is always removed when you delete data:
 - Import column mapping presets
 - Action history (undo/redo)
 - AI insights and usage logs
+- Transaction rules
+- Financial institutions
 
 #### Optional Deletions
 

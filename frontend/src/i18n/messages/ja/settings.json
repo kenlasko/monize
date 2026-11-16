@@ -553,7 +553,9 @@
         "budgets": "すべての予算と予算アラート",
         "monthlySummaries": "口座残高の月次サマリー",
         "customReports": "カスタムレポート、タグ、インポートマッピング",
-        "actionHistory": "操作履歴（元に戻す/やり直す）"
+        "actionHistory": "操作履歴（元に戻す/やり直す）",
+        "rules": "すべての取引ルール",
+        "institutions": "金融機関"
       },
       "optionalHeading": "オプションで追加削除:",
       "accountsOption": "口座",

@@ -553,7 +553,9 @@
         "budgets": "Tüm bütçeler ve bütçe uyarıları",
         "monthlySummaries": "Aylık hesap bakiyesi özetleri",
         "customReports": "Özel raporlar, etiketler ve içe aktarma eşlemeleri",
-        "actionHistory": "İşlem geçmişi (geri al/yeniden yap)"
+        "actionHistory": "İşlem geçmişi (geri al/yeniden yap)",
+        "rules": "Tüm işlem kuralları",
+        "institutions": "Finansal kurumlar"
       },
       "optionalHeading": "İsteğe bağlı olarak ayrıca şunları silin:",
       "accountsOption": "Hesaplar",

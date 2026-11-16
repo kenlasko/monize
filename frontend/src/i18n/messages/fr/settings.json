@@ -553,7 +553,9 @@
         "budgets": "Tous les budgets et alertes de budget",
         "monthlySummaries": "Résumés mensuels du solde des comptes",
         "customReports": "Rapports personnalisés, étiquettes et correspondances d'importation",
-        "actionHistory": "Historique des actions (annuler/rétablir)"
+        "actionHistory": "Historique des actions (annuler/rétablir)",
+        "rules": "Toutes les règles de transaction",
+        "institutions": "Institutions financières"
       },
       "optionalHeading": "Supprimer également en option :",
       "accountsOption": "Comptes",

@@ -553,7 +553,9 @@
         "budgets": "所有預算與預算提醒",
         "monthlySummaries": "每月科目結餘摘要",
         "customReports": "自訂報表、標籤與匯入對應",
-        "actionHistory": "操作紀錄（復原/重做）"
+        "actionHistory": "操作紀錄（復原/重做）",
+        "rules": "所有交易規則",
+        "institutions": "金融機構"
       },
       "optionalHeading": "選擇性也刪除：",
       "accountsOption": "科目",

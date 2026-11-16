@@ -553,7 +553,9 @@
         "budgets": "Todos os orçamentos e alertas de orçamento",
         "monthlySummaries": "Resumos mensais do saldo da conta",
         "customReports": "Relatórios personalizados, tags e mapeamentos de importação",
-        "actionHistory": "Histórico de ações (desfazer/refazer)"
+        "actionHistory": "Histórico de ações (desfazer/refazer)",
+        "rules": "Todas as regras de transações",
+        "institutions": "Instituições financeiras"
       },
       "optionalHeading": "Opcionalmente, também excluir:",
       "accountsOption": "Contas",

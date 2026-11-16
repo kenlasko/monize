@@ -553,7 +553,9 @@
         "budgets": "Alle Budgets und Budgetwarnungen",
         "monthlySummaries": "Monatliche Kontosaldo-Zusammenfassungen",
         "customReports": "Benutzerdefinierte Berichte, Tags und Importzuordnungen",
-        "actionHistory": "Aktionsverlauf (Rückgängig/Wiederholen)"
+        "actionHistory": "Aktionsverlauf (Rückgängig/Wiederholen)",
+        "rules": "Alle Transaktionsregeln",
+        "institutions": "Finanzinstitute"
       },
       "optionalHeading": "Optional auch löschen:",
       "accountsOption": "Konten",

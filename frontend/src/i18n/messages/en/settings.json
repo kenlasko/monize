@@ -553,7 +553,9 @@
         "budgets": "All budgets and budget alerts",
         "monthlySummaries": "Monthly account balance summaries",
         "customReports": "Custom reports, tags, and import mappings",
-        "actionHistory": "Action history (undo/redo)"
+        "actionHistory": "Action history (undo/redo)",
+        "rules": "All transaction rules",
+        "institutions": "Financial institutions"
       },
       "optionalHeading": "Optionally also delete:",
       "accountsOption": "Accounts",

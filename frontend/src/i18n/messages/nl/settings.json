@@ -553,7 +553,9 @@
         "budgets": "Alle budgetten en budgetwaarschuwingen",
         "monthlySummaries": "Maandelijkse rekeningsaldo-overzichten",
         "customReports": "Aangepaste rapporten, tags en importtoewijzingen",
-        "actionHistory": "Actiegeschiedenis (ongedaan maken/opnieuw)"
+        "actionHistory": "Actiegeschiedenis (ongedaan maken/opnieuw)",
+        "rules": "Alle transactieregels",
+        "institutions": "Financiële instellingen"
       },
       "optionalHeading": "Optioneel ook verwijderen:",
       "accountsOption": "Rekeningen",

@@ -553,7 +553,9 @@
         "budgets": "Wszystkie budżety i alerty budżetowe",
         "monthlySummaries": "Miesięczne podsumowania salda konta",
         "customReports": "Niestandardowe raporty, tagi i mapowania importu",
-        "actionHistory": "Historia działań (cofnij/ponów)"
+        "actionHistory": "Historia działań (cofnij/ponów)",
+        "rules": "Wszystkie reguły transakcji",
+        "institutions": "Instytucje finansowe"
       },
       "optionalHeading": "Opcjonalnie usuń także:",
       "accountsOption": "Konta",
