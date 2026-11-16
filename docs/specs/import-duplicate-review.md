@@ -70,10 +70,13 @@ The window is fixed (not a setting) in this release.
 
 - Bank sync: a planned row whose key the ledger does not hold (a `new` row).
   A row the ledger holds is a `duplicate` or an exception, as before.
-- File import: every row of a non-investment file, except a transfer row (the
-  existing `isRecordedTransfer` check owns those) and a row whose OFX FITID
-  the account already holds on a row of the same date and amount (it is
-  skipped as `alreadyImported`, as before).
+- File import: every row of a non-investment file, except a transfer row or a
+  loan payment (a non-split row whose category is mapped to a loan; the
+  existing `isRecordedTransfer` check owns those), a void row, and a row whose
+  OFX FITID the account already holds on a row of the same date and amount (it
+  is skipped as `alreadyImported`, as before). The transaction holding such a
+  FITID stands for the skipped row, so it pairs with no other row of the
+  file.
 
 ## 3. The actions
 
@@ -97,7 +100,10 @@ attachments: it is the "match and merge" of discussion #2169.
 **What each action is offered for.** Merge and delete-and-import are not
 offered, and are refused (400) when named, for a Reconciled existing row (its
 statement is closed; "Keep mine" is the answer). Delete-and-import is not
-offered for a transfer leg: deleting it removes the other account's leg too.
+offered for a transfer leg or a split parent: deleting it removes the other
+account's leg, or a split's transfer legs in other accounts, too. A bank sync
+deletes only once it has claimed the bank row's key, so a key a concurrent
+sync claimed first deletes nothing.
 Merge does not move the date of a transfer leg or of a split parent (the
 other legs keep theirs); it still takes the reference and the status.
 
