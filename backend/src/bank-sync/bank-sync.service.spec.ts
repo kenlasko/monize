@@ -14,6 +14,7 @@ import {
 import { JobClaimService } from "../common/jobs/job-claim.service";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
 import { NetWorthService } from "../net-worth/net-worth.service";
+import { RateHistoryCatchUpService } from "../currencies/rate-history-catch-up.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import {
   createJobClaimMock,
@@ -214,6 +215,9 @@ describe("BankSyncService", () => {
   const jobClaims = createJobClaimMock();
   const netWorth: jest.Mocked<Pick<NetWorthService, "triggerDebouncedRecalc">> =
     { triggerDebouncedRecalc: jest.fn() };
+  const rateHistoryCatchUp: jest.Mocked<
+    Pick<RateHistoryCatchUpService, "start">
+  > = { start: jest.fn() };
   const linkRepo = { findOne: jest.fn(), find: jest.fn(), save: jest.fn() };
   const connectionRepo = { findOne: jest.fn() };
   const accountRepo = { findOne: jest.fn() };
@@ -277,6 +281,7 @@ describe("BankSyncService", () => {
         { provide: BankSyncPreviewService, useValue: previewer },
         { provide: JobClaimService, useValue: jobClaims },
         { provide: NetWorthService, useValue: netWorth },
+        { provide: RateHistoryCatchUpService, useValue: rateHistoryCatchUp },
       ],
     }).compile();
     service = module.get(BankSyncService);
@@ -795,10 +800,74 @@ describe("BankSyncService", () => {
       expect(netWorth.triggerDebouncedRecalc).not.toHaveBeenCalled();
     });
 
+    it("pulls the rate history the synced rows reach back to, after the write, as an import does", async () => {
+      const order: string[] = [];
+      writer.write.mockImplementation(async () => {
+        order.push("write");
+        return {
+          imported: 2,
+          skipped: 0,
+          excluded: 0,
+          merged: 0,
+          kept: 0,
+          replaced: 0,
+          heldDuplicates: 0,
+          touchedSecurityIds: [],
+          affectedAccountIds: ["loan-1", ACCOUNT_ID, "loan-1"],
+          settledScheduleIds: [],
+        };
+      });
+      rateHistoryCatchUp.start.mockImplementation(() => {
+        order.push("catch-up");
+      });
+
+      await sync();
+
+      expect(order).toEqual(["write", "catch-up"]);
+      expect(rateHistoryCatchUp.start).toHaveBeenCalledTimes(1);
+      const [userId, accountIds, label, onStored] =
+        rateHistoryCatchUp.start.mock.calls[0];
+      expect(userId).toBe(USER_ID);
+      expect(accountIds).toEqual([ACCOUNT_ID, "loan-1"]);
+      expect(label).toBe("Post-sync");
+
+      // Rates that landed re-dispatch the snapshots converted without them.
+      netWorth.triggerDebouncedRecalc.mockClear();
+      onStored();
+      expect(netWorth.triggerDebouncedRecalc).toHaveBeenCalledWith(
+        ACCOUNT_ID,
+        USER_ID,
+      );
+      expect(netWorth.triggerDebouncedRecalc).toHaveBeenCalledWith(
+        "loan-1",
+        USER_ID,
+      );
+    });
+
+    it("pulls no rate history when the sync wrote nothing new", async () => {
+      writer.write.mockResolvedValue({
+        imported: 0,
+        skipped: 3,
+        excluded: 0,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+        heldDuplicates: 0,
+        touchedSecurityIds: [],
+        affectedAccountIds: [],
+        settledScheduleIds: [],
+      });
+
+      await sync();
+
+      expect(rateHistoryCatchUp.start).not.toHaveBeenCalled();
+    });
+
     it("does not recompute after a failed write", async () => {
       writer.write.mockRejectedValue(new Error("boom"));
       await expect(sync()).rejects.toThrow("boom");
       expect(netWorth.triggerDebouncedRecalc).not.toHaveBeenCalled();
+      expect(rateHistoryCatchUp.start).not.toHaveBeenCalled();
     });
 
     it("leaves the stored balance alone when the balance read fails, and says the sync succeeded", async () => {
