@@ -70,7 +70,7 @@ const mockGetCurrencies = vi.fn().mockResolvedValue([]);
 const mockParseQif = vi.fn();
 const mockImportQif = vi.fn();
 // No file has a possible duplicate unless a test says so.
-const mockFindDuplicates = vi.fn(async () => ({ accountId: 'a', currencyCode: 'CAD', rows: [] as unknown[] }));
+const mockFindDuplicates = vi.fn(async (..._args: unknown[]) => ({ accountId: 'a', currencyCode: 'CAD', rows: [] as unknown[] }));
 
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {

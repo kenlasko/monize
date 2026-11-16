@@ -6,7 +6,7 @@ import { useImportWizard } from './useImportWizard';
 // --- Mocks ---
 const mockParseQif = vi.fn();
 const mockImportQif = vi.fn();
-const noDuplicates = async () => ({ accountId: 'acc-1', currencyCode: 'CAD', rows: [] as unknown[] });
+const noDuplicates = async (..._args: unknown[]) => ({ accountId: 'acc-1', currencyCode: 'CAD', rows: [] as unknown[] });
 // No file has a possible duplicate unless a test says so.
 const mockFindQifDuplicates = vi.fn(noDuplicates);
 const mockFindOfxDuplicates = vi.fn(noDuplicates);
