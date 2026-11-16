@@ -645,7 +645,7 @@
     "howDetectedHigh": "Alta: misma fecha, monto y beneficiario",
     "howDetectedMedium": "Media: misma fecha y monto, o mismo beneficiario y monto en pocos días",
     "howDetectedLow": "Baja: mismo monto dentro del rango de fechas",
-    "howDetectedNote": "Marque las copias que quiere quitar, o use Seleccionar duplicados para marcar todas las copias adicionales de un nivel de confianza, y luego haga clic en Eliminar selección. Cada grupo conserva una copia sin marcar: una conciliada, luego una compensada y, si no, la más antigua. Una transacción conciliada nunca se marca automáticamente. Haga clic en una transacción para verla en la página de transacciones."
+    "howDetectedNote": "Marque las copias que quiere quitar, o use Seleccionar duplicados para marcar todas las copias adicionales de un nivel de confianza, y luego haga clic en Eliminar selección. Cada grupo conserva una copia sin marcar: una conciliada, luego una compensada y, si no, la más antigua. Mientras Bloquear transacciones conciliadas esté activado en Configuración, una transacción conciliada no se marca automáticamente, ya que no se puede eliminar. Haga clic en una transacción para verla en la página de transacciones."
   },
   "filterBuilder": {
     "noFilters": "Sin filtros — se incluyen todas las transacciones",

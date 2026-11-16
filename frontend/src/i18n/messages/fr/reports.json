@@ -645,7 +645,7 @@
     "howDetectedHigh": "Élevée : même date, montant et bénéficiaire",
     "howDetectedMedium": "Moyenne : même date et montant, ou même bénéficiaire et montant à quelques jours d'intervalle",
     "howDetectedLow": "Faible : même montant dans la plage de dates",
-    "howDetectedNote": "Cochez les copies à retirer, ou utilisez Sélectionner les doublons pour cocher chaque copie en trop d’un niveau de confiance, puis cliquez sur Supprimer la sélection. Chaque groupe garde une copie non cochée : une rapprochée, sinon une encaissée, sinon la plus ancienne. Une transaction rapprochée n’est jamais cochée à votre place. Cliquez sur une transaction pour l’afficher sur la page Transactions."
+    "howDetectedNote": "Cochez les copies à retirer, ou utilisez Sélectionner les doublons pour cocher chaque copie en trop d’un niveau de confiance, puis cliquez sur Supprimer la sélection. Chaque groupe garde une copie non cochée : une rapprochée, sinon une encaissée, sinon la plus ancienne. Tant que Verrouiller les transactions rapprochées est activé dans les paramètres, une transaction rapprochée n’est pas cochée à votre place, car elle ne peut pas être supprimée. Cliquez sur une transaction pour l’afficher sur la page Transactions."
   },
   "filterBuilder": {
     "noFilters": "Aucun filtre — toutes les transactions incluses",

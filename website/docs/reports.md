@@ -227,7 +227,7 @@ Each transaction shows its date, payee, description, category, account and amoun
 
 To remove duplicates without leaving the report:
 
-1. Under **Select duplicates**, click a confidence level. Every extra copy in each group at that level is ticked, and one copy per group is left unticked: a reconciled copy first, then a cleared one, otherwise the earliest. A reconciled transaction is never ticked for you.
+1. Under **Select duplicates**, click a confidence level. Every extra copy in each group at that level is ticked, and one copy per group is left unticked: a reconciled copy first, then a cleared one, otherwise the earliest. Reconciled copies are ticked like any other (history imported from Microsoft Money arrives reconciled), except while **Lock reconciled transactions** is on, when a reconciled transaction is never ticked for you because it cannot be deleted.
 2. Untick anything that is not a duplicate, or tick individual transactions yourself. **Clear selection** starts over.
 3. Click **Delete selected**, check the count in the confirmation, and click **Delete**. The confirmation warns you when every copy in a group is ticked, so no original would remain.
 

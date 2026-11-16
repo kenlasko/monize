@@ -645,7 +645,7 @@
     "howDetectedHigh": "Alta: stessa data, importo e beneficiario",
     "howDetectedMedium": "Media: stessa data e importo, oppure stesso beneficiario e importo entro pochi giorni",
     "howDetectedLow": "Bassa: stesso importo nell'intervallo di date",
-    "howDetectedNote": "Spunta le copie da rimuovere, oppure usa Seleziona duplicati per spuntare ogni copia in più di un livello di affidabilità, poi fai clic su Elimina selezionate. Ogni gruppo lascia una copia non spuntata: una riconciliata, poi una compensata, altrimenti la più vecchia. Una transazione riconciliata non viene mai spuntata automaticamente. Fai clic su una transazione per vederla nella pagina Transazioni."
+    "howDetectedNote": "Spunta le copie da rimuovere, oppure usa Seleziona duplicati per spuntare ogni copia in più di un livello di affidabilità, poi fai clic su Elimina selezionate. Ogni gruppo lascia una copia non spuntata: una riconciliata, poi una compensata, altrimenti la più vecchia. Finché Blocca le transazioni riconciliate è attivo nelle Impostazioni, una transazione riconciliata non viene spuntata automaticamente, perché non può essere eliminata. Fai clic su una transazione per vederla nella pagina Transazioni."
   },
   "filterBuilder": {
     "noFilters": "Nessun filtro — tutte le transazioni incluse",

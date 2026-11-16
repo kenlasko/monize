@@ -645,7 +645,7 @@
     "howDetectedHigh": "Alta: Mesma data, valor e beneficiário",
     "howDetectedMedium": "Média: Mesma data e valor, ou mesmo beneficiário e valor em poucos dias",
     "howDetectedLow": "Baixa: Mesmo valor dentro do intervalo de datas",
-    "howDetectedNote": "Marque as cópias a remover, ou use Selecionar duplicadas para marcar todas as cópias extras de um nível de confiança, e depois clique em Excluir seleção. Cada grupo mantém uma cópia desmarcada: uma reconciliada, depois uma confirmada, senão a mais antiga. Uma transação reconciliada nunca é marcada automaticamente. Clique em uma transação para vê-la na página de transações."
+    "howDetectedNote": "Marque as cópias a remover, ou use Selecionar duplicadas para marcar todas as cópias extras de um nível de confiança, e depois clique em Excluir seleção. Cada grupo mantém uma cópia desmarcada: uma reconciliada, depois uma confirmada, senão a mais antiga. Enquanto Bloquear transações reconciliadas estiver ativado nas Configurações, uma transação reconciliada não é marcada automaticamente, pois não pode ser excluída. Clique em uma transação para vê-la na página de transações."
   },
   "filterBuilder": {
     "noFilters": "Sem filtros — todas as transações incluídas",

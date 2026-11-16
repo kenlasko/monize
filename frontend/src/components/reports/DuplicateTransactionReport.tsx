@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DuplicateGroupCard } from '@/components/reports/DuplicateGroupCard';
 import { useDuplicateLabels } from '@/components/reports/useDuplicateLabels';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import {
   DUPLICATE_CONFIDENCE_LEVELS,
   groupsFullySelected,
@@ -112,8 +113,14 @@ export function DuplicateTransactionReport() {
     });
   };
 
+  // Under the strict lock a reconciled copy cannot be deleted, so selecting a
+  // level leaves those for the user rather than letting one refuse the batch.
+  const reconciledLocked = usePreferencesStore(
+    (s) => s.preferences?.lockReconciledTransactions ?? false,
+  );
+
   const selectLevel = (level: DuplicateConfidence) => {
-    setSelected((current) => withDuplicatesAt(duplicateGroups, level, current));
+    setSelected((current) => withDuplicatesAt(duplicateGroups, level, current, reconciledLocked));
   };
 
   const handleDelete = async () => {

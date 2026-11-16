@@ -645,7 +645,7 @@
     "howDetectedHigh": "Hoog: zelfde datum, bedrag en begunstigde",
     "howDetectedMedium": "Gemiddeld: zelfde datum en bedrag, of zelfde begunstigde en bedrag binnen enkele dagen",
     "howDetectedLow": "Laag: zelfde bedrag binnen het datumbereik",
-    "howDetectedNote": "Vink de kopieën aan die weg moeten, of gebruik Duplicaten selecteren om elke extra kopie van een zekerheidsniveau aan te vinken, en klik dan op Selectie verwijderen. Elke groep houdt één kopie niet aangevinkt: een afgestemde, dan een bevestigde, anders de vroegste. Een afgestemde transactie wordt nooit voor u aangevinkt. Klik op een transactie om die op de pagina Transacties te bekijken."
+    "howDetectedNote": "Vink de kopieën aan die weg moeten, of gebruik Duplicaten selecteren om elke extra kopie van een zekerheidsniveau aan te vinken, en klik dan op Selectie verwijderen. Elke groep houdt één kopie niet aangevinkt: een afgestemde, dan een bevestigde, anders de vroegste. Zolang Afgestemde transacties vergrendelen in Instellingen aanstaat, wordt een afgestemde transactie niet voor u aangevinkt, omdat die niet kan worden verwijderd. Klik op een transactie om die op de pagina Transacties te bekijken."
   },
   "filterBuilder": {
     "noFilters": "Geen filters — alle transacties opgenomen",

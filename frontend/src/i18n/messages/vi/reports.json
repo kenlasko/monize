@@ -645,7 +645,7 @@
     "howDetectedHigh": "Cao: Cùng ngày, số tiền và người nhận",
     "howDetectedMedium": "Trung bình: Cùng ngày và số tiền, hoặc cùng người nhận và số tiền trong vài ngày",
     "howDetectedLow": "Thấp: Cùng số tiền trong phạm vi ngày",
-    "howDetectedNote": "Đánh dấu các bản sao cần xóa, hoặc dùng Chọn bản trùng để đánh dấu mọi bản sao thừa ở một mức tin cậy, rồi nhấp Xóa mục đã chọn. Mỗi nhóm giữ lại một bản sao không đánh dấu: bản đã điều hoà, rồi bản đã xong, nếu không thì bản sớm nhất. Giao tác đã điều hoà không bao giờ được tự động đánh dấu. Nhấp vào một giao tác để xem trên trang Giao tác."
+    "howDetectedNote": "Đánh dấu các bản sao cần xóa, hoặc dùng Chọn bản trùng để đánh dấu mọi bản sao thừa ở một mức tin cậy, rồi nhấp Xóa mục đã chọn. Mỗi nhóm giữ lại một bản sao không đánh dấu: bản đã điều hoà, rồi bản đã xong, nếu không thì bản sớm nhất. Khi Khóa giao dịch đã đối soát đang bật trong Cài đặt, giao tác đã điều hoà không được tự động đánh dấu vì không thể xoá. Nhấp vào một giao tác để xem trên trang Giao tác."
   },
   "filterBuilder": {
     "noFilters": "Không có bộ lọc — bao gồm tất cả giao tác",
