@@ -35,6 +35,7 @@ const NAMESPACES = [
   "categories",
   "categoryDetail",
   "currencies",
+  "currencyDetail",
   "dashboard",
   "emailReceipts",
   "emergencyAccess",

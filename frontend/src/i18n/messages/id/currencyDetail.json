@@ -1,0 +1,97 @@
+{
+  "loading": "Memuat mata uang...",
+  "loadFailed": "Gagal memuat mata uang",
+  "notFound": "Mata uang {code} tidak ditemukan",
+  "tryAgain": "Coba Lagi",
+  "backToCurrencies": "Kembali ke Mata Uang",
+  "ratesLoadFailed": "Gagal memuat riwayat kurs",
+  "defaultCurrencyNote": "{code} adalah mata uang bawaan Anda. Semua mata uang lain dikonversi ke mata uang ini, jadi tidak memiliki kurs sendiri.",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "Simbol {symbol}, {decimals, plural, =0 {tanpa desimal} other {# angka desimal}}",
+    "switchCurrency": "Ganti mata uang",
+    "switchPlaceholder": "Cari mata uang...",
+    "switchNoMatches": "Tidak ada mata uang yang cocok",
+    "defaultBadge": "Bawaan",
+    "cryptoBadge": "Kripto",
+    "inactiveBadge": "Nonaktif"
+  },
+  "summary": {
+    "transactions": "Transaksi",
+    "sinceYear": "Sejak {year}",
+    "totalIn": "Total dalam {currency}",
+    "grossNote": "Setiap jumlah, baik dibelanjakan maupun diterima",
+    "totalInCurrencyUnknown": "Transaksi yang dibayar dalam {currency} tidak memiliki jumlah yang tercatat dalam mata uang tersebut",
+    "convertedPartIn": "Bagian yang dikonversi dalam {currency}",
+    "convertedNote": "Setiap transaksi dengan kursnya sendiri, atau kurs pada tanggalnya",
+    "missingRates": "{count, plural, other {# transaksi tidak dihitung}}: tidak ada kurs {pairs} untuk tanggalnya. Gunakan Riwayat kurs di halaman Mata Uang untuk mengisi kekosongan.",
+    "latestRate": "Kurs Terbaru",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "Belum ada kurs tersimpan"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "Pasangan kripto (Yahoo)",
+    "frankfurter": "Frankfurter (ECB)",
+    "mnyImport": "Impor Money",
+    "transaction": "Transaksi",
+    "unknown": "Tidak diketahui"
+  },
+  "chart": {
+    "title": "Kurs",
+    "direction": "{currency} per 1 {code}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "Tidak ada kurs pada periode ini",
+    "transactionPoint": "Transaksi Anda pada {rate}: {description}",
+    "legend": {
+      "provider": "Penyedia kurs",
+      "transaction": "Transaksi Anda ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "Semua"
+    }
+  },
+  "table": {
+    "title": "Riwayat Kurs",
+    "loading": "Memuat kurs...",
+    "itemName": "kurs",
+    "filterAriaLabel": "Filter berdasarkan sumber",
+    "filters": {
+      "all": "Semua ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "Transaksi ({count})",
+      "other": "Lainnya ({count})"
+    },
+    "export": "Ekspor CSV",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "Tanggal",
+      "rate": "{currency} per {code}",
+      "inverseRate": "{code} per {currency}",
+      "source": "Sumber",
+      "details": "Detail"
+    },
+    "unknownRate": "Tidak diketahui",
+    "kinds": {
+      "foreignEntry": "Pembayaran mata uang asing",
+      "transfer": "Transfer"
+    },
+    "detail": "{kind} di {account}",
+    "detailWithPayee": "{kind} ke {payee} di {account}",
+    "empty": {
+      "title": "Belum ada kurs",
+      "filteredTitle": "Tidak ada kurs dari sumber ini",
+      "description": "Kurs {code} terhadap {currency} muncul di sini setelah penyedia kurs menyimpannya, atau setelah Anda mencatat transaksi di antara keduanya."
+    },
+    "totalLabel": "{count, plural, other {# kurs}}",
+    "storedTruncated": "Menampilkan {count} kurs tersimpan terbaru; yang lebih lama tidak dicantumkan.",
+    "transactionsTruncated": "Menampilkan kurs dari {count} transaksi terbaru Anda; yang lebih lama tidak dicantumkan."
+  }
+}

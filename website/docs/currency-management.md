@@ -29,6 +29,27 @@ The page shows the number of **Total Currencies**, **Active**, and **Inactive**,
 
 A currency that is in use, and your home currency, cannot be deactivated or deleted. Deactivating a currency hides it from the currency lists without deleting it.
 
+### Currency Details
+
+Click a currency's row to open its details page. **Back to Currencies** above the title returns to the list, and the arrow beside the title jumps straight to another currency.
+
+![The details page of a currency, with its totals, its exchange rate chart and its rate history](images/currency-detail.png)
+
+The cards at the top show:
+
+| Card | Description |
+|------|-------------|
+| **Transactions** | How many of your transactions use the currency: those posted in an account in the currency, and those paid in it from an account in another currency. Void transactions and the lines of a split are not counted |
+| **Total in** the currency | Every one of those amounts added up, ignoring whether it was spent or received, so a purchase and its refund count as the money that moved |
+| **Total in** your home currency | The same total in your home currency, each transaction at its own exchange rate where it has one and at the rate for its date otherwise. If a rate is missing for some transactions, the card reads **Converted Part in** your home currency instead, says how many transactions it leaves out and which rate is missing; use **Rate history** on the Currencies page to fill the gaps |
+| **Latest Rate** | What one unit of the currency is worth in your home currency, with the date and the source of the latest stored rate |
+
+Below the cards, the **Exchange Rate** chart draws the stored rate over time as a line, in your home currency per 1 unit of the currency, with the period buttons above it. The rates your own transactions settled at (a purchase entered in a foreign currency, or a transfer between accounts in the two currencies) are highlighted as dots at their own value, so a payment made at a rate far from the market's stands out. Hover over the chart to see the rate on a day and the transactions near it.
+
+The **Rate History** table lists every rate, a page at a time, with its **Date**, the rate both ways round, and its **Source**: Yahoo Finance, Frankfurter (ECB), Money import, or **Transaction** for a rate one of your transactions settled at, with what the transaction was. Click a column heading to sort by it, use **All** / **Yahoo** / **Frankfurter** / **Transactions** above the table to show one source, and click **Export CSV** to download every row the filter shows.
+
+Your home currency has no exchange rate of its own, so its page shows the transaction count and total only.
+
 ### Adding a Currency
 
 1. Click **+ New Currency**

@@ -1,0 +1,97 @@
+{
+  "loading": "통화를 불러오는 중...",
+  "loadFailed": "통화를 불러오지 못했습니다",
+  "notFound": "통화 {code}을(를) 찾을 수 없습니다",
+  "tryAgain": "다시 시도",
+  "backToCurrencies": "통화로 돌아가기",
+  "ratesLoadFailed": "환율 이력을 불러오지 못했습니다",
+  "defaultCurrencyNote": "{code}은(는) 기본 통화입니다. 다른 모든 통화가 이 통화로 환산되므로 자체 환율이 없습니다.",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "기호 {symbol}, {decimals, plural, =0 {소수점 없음} other {소수점 # 자리}}",
+    "switchCurrency": "통화 전환",
+    "switchPlaceholder": "통화 찾기...",
+    "switchNoMatches": "일치하는 통화가 없습니다",
+    "defaultBadge": "기본",
+    "cryptoBadge": "암호화폐",
+    "inactiveBadge": "비활성"
+  },
+  "summary": {
+    "transactions": "거래",
+    "sinceYear": "{year}년부터",
+    "totalIn": "{currency} 합계",
+    "grossNote": "지출이든 수입이든 모든 금액",
+    "totalInCurrencyUnknown": "{currency}(으)로 결제한 거래에 해당 통화 금액이 기록되어 있지 않습니다",
+    "convertedPartIn": "{currency}(으)로 환산된 부분",
+    "convertedNote": "각 거래는 자체 환율 또는 해당 날짜의 환율로 환산",
+    "missingRates": "{count, plural, other {거래 #건}}이 제외되었습니다: 해당 날짜의 {pairs} 환율이 없습니다. 통화 페이지의 환율 이력에서 빈 곳을 채우세요.",
+    "latestRate": "최신 환율",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "저장된 환율이 아직 없습니다"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "암호화폐 쌍 (Yahoo)",
+    "frankfurter": "Frankfurter(ECB)",
+    "mnyImport": "Money 가져오기",
+    "transaction": "거래",
+    "unknown": "알 수 없음"
+  },
+  "chart": {
+    "title": "환율",
+    "direction": "1 {code}당 {currency}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "이 기간에 환율이 없습니다",
+    "transactionPoint": "{rate}에 이루어진 거래: {description}",
+    "legend": {
+      "provider": "환율 제공자",
+      "transaction": "내 거래 ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "전체"
+    }
+  },
+  "table": {
+    "title": "환율 이력",
+    "loading": "환율을 불러오는 중...",
+    "itemName": "개 환율",
+    "filterAriaLabel": "출처별 필터",
+    "filters": {
+      "all": "전체 ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "거래 ({count})",
+      "other": "기타 ({count})"
+    },
+    "export": "CSV 내보내기",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "날짜",
+      "rate": "{code}당 {currency}",
+      "inverseRate": "{currency}당 {code}",
+      "source": "출처",
+      "details": "세부 정보"
+    },
+    "unknownRate": "알 수 없음",
+    "kinds": {
+      "foreignEntry": "외화 결제",
+      "transfer": "이체"
+    },
+    "detail": "{account}의 {kind}",
+    "detailWithPayee": "{account}에서 {payee}(으)로 {kind}",
+    "empty": {
+      "title": "아직 환율이 없습니다",
+      "filteredTitle": "이 출처의 환율이 없습니다",
+      "description": "{currency} 대비 {code} 환율은 환율 제공자가 저장하거나 두 통화 간 거래를 기록하면 여기에 표시됩니다."
+    },
+    "totalLabel": "{count, plural, other {환율 #개}}",
+    "storedTruncated": "저장된 최신 환율 {count}개를 표시합니다. 이전 환율은 표시되지 않습니다.",
+    "transactionsTruncated": "최근 거래 {count}건의 환율을 표시합니다. 이전 거래는 표시되지 않습니다."
+  }
+}

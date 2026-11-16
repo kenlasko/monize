@@ -167,7 +167,7 @@ interface ChartPoint {
  * happens to begin, so the gaps between labels vary with how densely each period
  * was recorded. Boundaries are regular by construction.
  */
-function calendarTicks(from: number, to: number, unit: 'year' | 'month'): number[] {
+export function calendarTicks(from: number, to: number, unit: 'year' | 'month'): number[] {
   const start = new Date(from);
   const ticks: number[] = [];
   const cursor =

@@ -1,0 +1,97 @@
+{
+  "loading": "Đang tải tiền tệ...",
+  "loadFailed": "Không tải được tiền tệ",
+  "notFound": "Không tìm thấy tiền tệ {code}",
+  "tryAgain": "Thử lại",
+  "backToCurrencies": "Quay lại Tiền tệ",
+  "ratesLoadFailed": "Không tải được lịch sử tỷ giá",
+  "defaultCurrencyNote": "{code} là tiền tệ mặc định của bạn. Mọi tiền tệ khác đều được quy đổi sang nó, nên nó không có tỷ giá riêng.",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "Ký hiệu {symbol}, {decimals, plural, =0 {không có chữ số thập phân} other {# chữ số thập phân}}",
+    "switchCurrency": "Chuyển tiền tệ",
+    "switchPlaceholder": "Tìm tiền tệ...",
+    "switchNoMatches": "Không có tiền tệ phù hợp",
+    "defaultBadge": "Mặc định",
+    "cryptoBadge": "Tiền mã hóa",
+    "inactiveBadge": "Không hoạt động"
+  },
+  "summary": {
+    "transactions": "Giao dịch",
+    "sinceYear": "Từ {year}",
+    "totalIn": "Tổng bằng {currency}",
+    "grossNote": "Mọi số tiền, bất kể là chi ra hay nhận vào",
+    "totalInCurrencyUnknown": "Một giao dịch thanh toán bằng {currency} không có số tiền ghi bằng tiền tệ đó",
+    "convertedPartIn": "Phần đã quy đổi sang {currency}",
+    "convertedNote": "Mỗi giao dịch theo tỷ giá riêng, hoặc tỷ giá của ngày giao dịch",
+    "missingRates": "{count, plural, other {# giao dịch bị bỏ ra}}: không có tỷ giá {pairs} cho ngày đó. Dùng Lịch sử tỷ giá trên trang Tiền tệ để bổ sung chỗ thiếu.",
+    "latestRate": "Tỷ giá mới nhất",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "Chưa có tỷ giá nào được lưu"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "Cặp tiền mã hóa (Yahoo)",
+    "frankfurter": "Frankfurter (ECB)",
+    "mnyImport": "Nhập từ Money",
+    "transaction": "Giao dịch",
+    "unknown": "Không rõ"
+  },
+  "chart": {
+    "title": "Tỷ giá",
+    "direction": "{currency} cho 1 {code}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "Không có tỷ giá trong khoảng thời gian này",
+    "transactionPoint": "Giao dịch của bạn ở {rate}: {description}",
+    "legend": {
+      "provider": "Nhà cung cấp tỷ giá",
+      "transaction": "Giao dịch của bạn ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "Tất cả"
+    }
+  },
+  "table": {
+    "title": "Lịch sử tỷ giá",
+    "loading": "Đang tải tỷ giá...",
+    "itemName": "tỷ giá",
+    "filterAriaLabel": "Lọc theo nguồn",
+    "filters": {
+      "all": "Tất cả ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "Giao dịch ({count})",
+      "other": "Khác ({count})"
+    },
+    "export": "Xuất CSV",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "Ngày",
+      "rate": "{currency} cho mỗi {code}",
+      "inverseRate": "{code} cho mỗi {currency}",
+      "source": "Nguồn",
+      "details": "Chi tiết"
+    },
+    "unknownRate": "Không rõ",
+    "kinds": {
+      "foreignEntry": "Thanh toán bằng ngoại tệ",
+      "transfer": "Chuyển khoản"
+    },
+    "detail": "{kind} trong {account}",
+    "detailWithPayee": "{kind} cho {payee} trong {account}",
+    "empty": {
+      "title": "Chưa có tỷ giá",
+      "filteredTitle": "Không có tỷ giá từ nguồn này",
+      "description": "Tỷ giá của {code} so với {currency} sẽ xuất hiện ở đây khi nhà cung cấp đã lưu, hoặc khi bạn ghi một giao dịch giữa hai tiền tệ."
+    },
+    "totalLabel": "{count, plural, other {# tỷ giá}}",
+    "storedTruncated": "Đang hiển thị {count} tỷ giá đã lưu gần nhất; các tỷ giá cũ hơn không được liệt kê.",
+    "transactionsTruncated": "Đang hiển thị tỷ giá của {count} giao dịch gần nhất; các giao dịch cũ hơn không được liệt kê."
+  }
+}

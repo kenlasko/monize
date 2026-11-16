@@ -1,0 +1,97 @@
+{
+  "loading": "Caricamento valuta...",
+  "loadFailed": "Impossibile caricare la valuta",
+  "notFound": "Valuta {code} non trovata",
+  "tryAgain": "Riprova",
+  "backToCurrencies": "Torna alle valute",
+  "ratesLoadFailed": "Impossibile caricare lo storico dei tassi di cambio",
+  "defaultCurrencyNote": "{code} è la tua valuta predefinita. Tutte le altre valute vengono convertite in essa, quindi non ha un tasso di cambio proprio.",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "Simbolo {symbol}, {decimals, plural, =0 {nessun decimale} one {# decimale} other {# decimali}}",
+    "switchCurrency": "Cambia valuta",
+    "switchPlaceholder": "Trova una valuta...",
+    "switchNoMatches": "Nessuna valuta corrispondente",
+    "defaultBadge": "Predefinita",
+    "cryptoBadge": "Cripto",
+    "inactiveBadge": "Inattiva"
+  },
+  "summary": {
+    "transactions": "Transazioni",
+    "sinceYear": "Dal {year}",
+    "totalIn": "Totale in {currency}",
+    "grossNote": "Ogni importo, che sia stato speso o ricevuto",
+    "totalInCurrencyUnknown": "Una transazione pagata in {currency} non ha un importo registrato in questa valuta",
+    "convertedPartIn": "Parte convertita in {currency}",
+    "convertedNote": "Ogni transazione al proprio tasso, o al tasso della sua data",
+    "missingRates": "{count, plural, one {# transazione è esclusa} other {# transazioni sono escluse}}: nessun tasso {pairs} per la data. Usa lo storico dei tassi nella pagina Valute per colmare le lacune.",
+    "latestRate": "Ultimo tasso",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "Nessun tasso salvato"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "Coppie cripto (Yahoo)",
+    "frankfurter": "Frankfurter (BCE)",
+    "mnyImport": "Importazione Money",
+    "transaction": "Transazione",
+    "unknown": "Sconosciuta"
+  },
+  "chart": {
+    "title": "Tasso di cambio",
+    "direction": "{currency} per 1 {code}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "Nessun tasso di cambio in questo periodo",
+    "transactionPoint": "La tua transazione a {rate}: {description}",
+    "legend": {
+      "provider": "Fornitore dei tassi",
+      "transaction": "Le tue transazioni ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "Tutto"
+    }
+  },
+  "table": {
+    "title": "Storico dei tassi",
+    "loading": "Caricamento tassi di cambio...",
+    "itemName": "tassi",
+    "filterAriaLabel": "Filtra per origine",
+    "filters": {
+      "all": "Tutti ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "Transazioni ({count})",
+      "other": "Altri ({count})"
+    },
+    "export": "Esporta CSV",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "Data",
+      "rate": "{currency} per {code}",
+      "inverseRate": "{code} per {currency}",
+      "source": "Origine",
+      "details": "Dettagli"
+    },
+    "unknownRate": "Sconosciuto",
+    "kinds": {
+      "foreignEntry": "Pagamento in valuta estera",
+      "transfer": "Trasferimento"
+    },
+    "detail": "{kind} in {account}",
+    "detailWithPayee": "{kind} a {payee} in {account}",
+    "empty": {
+      "title": "Ancora nessun tasso di cambio",
+      "filteredTitle": "Nessun tasso da questa origine",
+      "description": "I tassi di {code} rispetto a {currency} compaiono qui quando il fornitore ne ha salvati, o quando registri una transazione tra le due."
+    },
+    "totalLabel": "{count, plural, one {# tasso} other {# tassi}}",
+    "storedTruncated": "Sono mostrati i {count} tassi salvati più recenti; quelli precedenti non sono elencati.",
+    "transactionsTruncated": "Sono mostrati i tassi delle tue {count} transazioni più recenti; quelle precedenti non sono elencate."
+  }
+}

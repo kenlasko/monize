@@ -1,0 +1,97 @@
+{
+  "loading": "Loading currency...",
+  "loadFailed": "Failed to load currency",
+  "notFound": "Currency {code} was not found",
+  "tryAgain": "Try Again",
+  "backToCurrencies": "Back to Currencies",
+  "ratesLoadFailed": "Failed to load exchange rate history",
+  "defaultCurrencyNote": "{code} is your default currency. Every other currency is converted into it, so it has no exchange rate of its own.",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "Symbol {symbol}, {decimals, plural, =0 {no decimal places} one {# decimal place} other {# decimal places}}",
+    "switchCurrency": "Switch currency",
+    "switchPlaceholder": "Find a currency...",
+    "switchNoMatches": "No matching currencies",
+    "defaultBadge": "Default",
+    "cryptoBadge": "Crypto",
+    "inactiveBadge": "Inactive"
+  },
+  "summary": {
+    "transactions": "Transactions",
+    "sinceYear": "Since {year}",
+    "totalIn": "Total in {currency}",
+    "grossNote": "Every amount, ignoring whether it was spent or received",
+    "totalInCurrencyUnknown": "A transaction paid in {currency} has no amount recorded in it",
+    "convertedPartIn": "Converted Part in {currency}",
+    "convertedNote": "Each transaction at its own rate, or the rate on its date",
+    "missingRates": "{count, plural, one {# transaction is} other {# transactions are}} left out: no {pairs} rate for its date. Use Rate History on the Currencies page to fill the gaps.",
+    "latestRate": "Latest Rate",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "No stored rates yet"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "Crypto pairs (Yahoo)",
+    "frankfurter": "Frankfurter (ECB)",
+    "mnyImport": "Money import",
+    "transaction": "Transaction",
+    "unknown": "Unknown"
+  },
+  "chart": {
+    "title": "Exchange Rate",
+    "direction": "{currency} per 1 {code}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "No exchange rates in this period",
+    "transactionPoint": "Your transaction at {rate}: {description}",
+    "legend": {
+      "provider": "Rate provider",
+      "transaction": "Your transactions ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "All"
+    }
+  },
+  "table": {
+    "title": "Rate History",
+    "loading": "Loading exchange rates...",
+    "itemName": "rates",
+    "filterAriaLabel": "Filter by source",
+    "filters": {
+      "all": "All ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "Transactions ({count})",
+      "other": "Other ({count})"
+    },
+    "export": "Export CSV",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "Date",
+      "rate": "{currency} per {code}",
+      "inverseRate": "{code} per {currency}",
+      "source": "Source",
+      "details": "Details"
+    },
+    "unknownRate": "Unknown",
+    "kinds": {
+      "foreignEntry": "Foreign currency payment",
+      "transfer": "Transfer"
+    },
+    "detail": "{kind} in {account}",
+    "detailWithPayee": "{kind} to {payee} in {account}",
+    "empty": {
+      "title": "No exchange rates yet",
+      "filteredTitle": "No rates from this source",
+      "description": "Rates for {code} against {currency} appear here once the rate provider has stored some, or once you record a transaction between the two."
+    },
+    "totalLabel": "{count, plural, one {# rate} other {# rates}}",
+    "storedTruncated": "Showing the {count} most recent stored rates; older ones are not listed.",
+    "transactionsTruncated": "Showing the rates of your {count} most recent transactions; older ones are not listed."
+  }
+}

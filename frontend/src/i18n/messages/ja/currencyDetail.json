@@ -1,0 +1,97 @@
+{
+  "loading": "通貨を読み込んでいます...",
+  "loadFailed": "通貨を読み込めませんでした",
+  "notFound": "通貨 {code} が見つかりません",
+  "tryAgain": "再試行",
+  "backToCurrencies": "通貨に戻る",
+  "ratesLoadFailed": "為替レート履歴を読み込めませんでした",
+  "defaultCurrencyNote": "{code} はデフォルト通貨です。他のすべての通貨はこの通貨に換算されるため、独自の為替レートはありません。",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "記号 {symbol}、{decimals, plural, =0 {小数点以下なし} other {小数点以下 # 桁}}",
+    "switchCurrency": "通貨を切り替え",
+    "switchPlaceholder": "通貨を検索...",
+    "switchNoMatches": "一致する通貨がありません",
+    "defaultBadge": "デフォルト",
+    "cryptoBadge": "暗号資産",
+    "inactiveBadge": "無効"
+  },
+  "summary": {
+    "transactions": "取引",
+    "sinceYear": "{year} 年から",
+    "totalIn": "{currency} での合計",
+    "grossNote": "支出か受取かを問わず、すべての金額",
+    "totalInCurrencyUnknown": "{currency} で支払った取引に、その通貨での金額が記録されていません",
+    "convertedPartIn": "{currency} に換算できた分",
+    "convertedNote": "各取引を独自のレート、またはその日付のレートで換算",
+    "missingRates": "{count, plural, other {# 件の取引}}を除外しました: その日付の {pairs} レートがありません。通貨ページのレート履歴で不足分を補ってください。",
+    "latestRate": "最新レート",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}、{source}",
+    "noStoredRates": "保存されたレートはまだありません"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "暗号資産ペア (Yahoo)",
+    "frankfurter": "Frankfurter（ECB）",
+    "mnyImport": "Money インポート",
+    "transaction": "取引",
+    "unknown": "不明"
+  },
+  "chart": {
+    "title": "為替レート",
+    "direction": "1 {code} あたりの {currency}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "この期間の為替レートはありません",
+    "transactionPoint": "{rate} での取引: {description}",
+    "legend": {
+      "provider": "レート提供元",
+      "transaction": "あなたの取引 ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "すべて"
+    }
+  },
+  "table": {
+    "title": "レート履歴",
+    "loading": "為替レートを読み込んでいます...",
+    "itemName": "件のレート",
+    "filterAriaLabel": "提供元で絞り込み",
+    "filters": {
+      "all": "すべて ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "取引 ({count})",
+      "other": "その他 ({count})"
+    },
+    "export": "CSV をエクスポート",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "日付",
+      "rate": "{code} あたりの {currency}",
+      "inverseRate": "{currency} あたりの {code}",
+      "source": "提供元",
+      "details": "詳細"
+    },
+    "unknownRate": "不明",
+    "kinds": {
+      "foreignEntry": "外貨での支払い",
+      "transfer": "振替"
+    },
+    "detail": "{account} の{kind}",
+    "detailWithPayee": "{account} の {payee} への{kind}",
+    "empty": {
+      "title": "為替レートはまだありません",
+      "filteredTitle": "この提供元のレートはありません",
+      "description": "{currency} に対する {code} のレートは、レート提供元が保存するか、両通貨間の取引を記録するとここに表示されます。"
+    },
+    "totalLabel": "{count, plural, other {# 件のレート}}",
+    "storedTruncated": "保存された最新 {count} 件のレートを表示しています。それより古いものは表示されません。",
+    "transactionsTruncated": "最新 {count} 件の取引のレートを表示しています。それより古いものは表示されません。"
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "loading": "A carregar moeda...",
+  "loadFailed": "Falha ao carregar a moeda",
+  "notFound": "A moeda {code} não foi encontrada",
+  "tryAgain": "Tentar novamente",
+  "backToCurrencies": "Voltar a Moedas",
+  "ratesLoadFailed": "Falha ao carregar o histórico de taxas de câmbio",
+  "defaultCurrencyNote": "{code} é a sua moeda predefinida. Todas as outras moedas são convertidas nela, por isso não tem taxa de câmbio própria.",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "Símbolo {symbol}, {decimals, plural, =0 {sem casas decimais} one {# casa decimal} other {# casas decimais}}",
+    "switchCurrency": "Mudar de moeda",
+    "switchPlaceholder": "Procurar uma moeda...",
+    "switchNoMatches": "Nenhuma moeda correspondente",
+    "defaultBadge": "Predefinida",
+    "cryptoBadge": "Cripto",
+    "inactiveBadge": "Inativa"
+  },
+  "summary": {
+    "transactions": "Transações",
+    "sinceYear": "Desde {year}",
+    "totalIn": "Total em {currency}",
+    "grossNote": "Cada valor, independentemente de ter sido gasto ou recebido",
+    "totalInCurrencyUnknown": "Uma transação paga em {currency} não tem valor registado nessa moeda",
+    "convertedPartIn": "Parte convertida em {currency}",
+    "convertedNote": "Cada transação à sua própria taxa, ou à taxa da sua data",
+    "missingRates": "{count, plural, one {# transação fica excluída} other {# transações ficam excluídas}}: não há taxa {pairs} para a data. Use o histórico de taxas na página Moedas para preencher as lacunas.",
+    "latestRate": "Taxa mais recente",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "Ainda não há taxas guardadas"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "Pares de cripto (Yahoo)",
+    "frankfurter": "Frankfurter (BCE)",
+    "mnyImport": "Importação do Money",
+    "transaction": "Transação",
+    "unknown": "Desconhecida"
+  },
+  "chart": {
+    "title": "Taxa de câmbio",
+    "direction": "{currency} por 1 {code}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "Não há taxas de câmbio neste período",
+    "transactionPoint": "A sua transação a {rate}: {description}",
+    "legend": {
+      "provider": "Fornecedor de taxas",
+      "transaction": "As suas transações ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "Tudo"
+    }
+  },
+  "table": {
+    "title": "Histórico de taxas",
+    "loading": "A carregar taxas de câmbio...",
+    "itemName": "taxas",
+    "filterAriaLabel": "Filtrar por origem",
+    "filters": {
+      "all": "Todas ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "Transações ({count})",
+      "other": "Outras ({count})"
+    },
+    "export": "Exportar CSV",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "Data",
+      "rate": "{currency} por {code}",
+      "inverseRate": "{code} por {currency}",
+      "source": "Origem",
+      "details": "Detalhes"
+    },
+    "unknownRate": "Desconhecida",
+    "kinds": {
+      "foreignEntry": "Pagamento em moeda estrangeira",
+      "transfer": "Transferência"
+    },
+    "detail": "{kind} em {account}",
+    "detailWithPayee": "{kind} para {payee} em {account}",
+    "empty": {
+      "title": "Ainda não há taxas de câmbio",
+      "filteredTitle": "Não há taxas desta origem",
+      "description": "As taxas de {code} face a {currency} aparecem aqui assim que o fornecedor guardar alguma, ou assim que registar uma transação entre as duas."
+    },
+    "totalLabel": "{count, plural, one {# taxa} other {# taxas}}",
+    "storedTruncated": "São mostradas as {count} taxas guardadas mais recentes; as mais antigas não são listadas.",
+    "transactionsTruncated": "São mostradas as taxas das suas {count} transações mais recentes; as mais antigas não são listadas."
+  }
+}

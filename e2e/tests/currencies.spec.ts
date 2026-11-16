@@ -3,9 +3,8 @@ import { createCurrency } from '../helpers/factories';
 import { uniqueId, randomCurrencyCode } from '../helpers/api';
 
 // Currencies are created on demand rather than pre-seeded: a fresh instance
-// only has the default-preference currency (USD, ensured on startup as an
-// inactive row and given to each user whose default it is), and any other
-// currency is added when a user creates or picks it. Tests create their
+// only has the default-preference currency (USD, ensured on startup), and any
+// other currency is added when a user creates or picks it. Tests create their
 // own currencies with distinct fake 3-char codes. These cover
 // navigate/list/create/edit/deactivate/validation.
 test.describe('Currencies', () => {
@@ -25,8 +24,7 @@ test.describe('Currencies', () => {
 
     await page.goto('/currencies');
 
-    // USD is the user's default-preference currency, so it is listed for them
-    // even after they added another currency first.
+    // USD is ensured on startup as the default-preference currency.
     await expect(page.locator('tr', { hasText: 'US Dollar' })).toBeVisible();
     // A user-created currency shows up in the list.
     await expect(page.locator('tr', { hasText: created.name })).toBeVisible();
@@ -87,6 +85,30 @@ test.describe('Currencies', () => {
     await row.getByRole('button', { name: /deactivate/i }).click();
 
     await expect(page.locator('tr', { hasText: created.code })).toHaveCount(0);
+  });
+
+  test('opens a currency detail page from the list', async ({
+    authedPage: page,
+    api,
+  }) => {
+    const created = await createCurrency(api, {
+      code: randomCurrencyCode(),
+      name: `Detail ${uniqueId()}`,
+    });
+
+    await page.goto('/currencies');
+    await page.locator('tr', { hasText: created.code }).getByText(created.name).click();
+
+    await expect(page).toHaveURL(new RegExp(`/currencies/${created.code}$`));
+    await expect(
+      page.getByRole('heading', { level: 1, name: `${created.code} · ${created.name}` }),
+    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Rate History' })).toBeVisible();
+    // Nothing uses the new currency and no provider has a rate for its code.
+    await expect(page.getByText('No exchange rates yet')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Back to Currencies' }).click();
+    await expect(page).toHaveURL(/\/currencies$/);
   });
 
   test('rejects a too-short currency code', async ({ authedPage: page }) => {

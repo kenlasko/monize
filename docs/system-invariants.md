@@ -1737,6 +1737,12 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     the assistant's cash-flow forecast history and income
                     patterns (ai/forecast/forecast-aggregator.service.ts, split
                     by day and own rate through splitByRateBasis, issue #2146).
+                    The currency detail page's reporting-currency total
+                    (currencies/currency-detail.service.ts getUsageSummary,
+                    issue #2243) groups its rows by rateBasisColumnsSql with
+                    the reader's own transfer legs and converts each part
+                    through convertRateBasis, withholding the total while any
+                    part has no rate.
 Test                investment-transaction-summary.service.spec.ts: a sale of
                     820.91 USD settled at 3.7287 reads 3,060.9271 PLN and asks
                     for no market rate; a row without a rate is converted at the
@@ -1787,7 +1793,11 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     monthly totals, the spending insights and the forecast, on
                     PostgreSQL; forecast-aggregator.service.spec.ts "a row
                     carrying its own rate" the same in the forecast's history
-                    and income.
+                    and income. currency-detail.integration.spec.ts totals
+                    EUR 100 at the market's 1.60, EUR 100 paid from a CAD
+                    account at its own 1.50, a EUR 200 transfer that arrived as
+                    CAD 290 and EUR 40 paid as CAD 64 to one CAD 664 (the
+                    market rate on every row reads 704), on PostgreSQL.
 Scope               Not the portfolio period result's flows, which convert each
                     row at the market rate on its own day by design
                     (docs/specs/portfolio-period-result.md sections 2 and 10.2,

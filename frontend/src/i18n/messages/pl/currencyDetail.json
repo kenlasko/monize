@@ -1,0 +1,97 @@
+{
+  "loading": "Wczytywanie waluty...",
+  "loadFailed": "Nie udało się wczytać waluty",
+  "notFound": "Nie znaleziono waluty {code}",
+  "tryAgain": "Spróbuj ponownie",
+  "backToCurrencies": "Powrót do walut",
+  "ratesLoadFailed": "Nie udało się wczytać historii kursów walut",
+  "defaultCurrencyNote": "{code} to Twoja waluta domyślna. Wszystkie inne waluty są na nią przeliczane, dlatego nie ma ona własnego kursu wymiany.",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "Symbol {symbol}, {decimals, plural, =0 {bez miejsc dziesiętnych} one {# miejsce dziesiętne} few {# miejsca dziesiętne} many {# miejsc dziesiętnych} other {# miejsca dziesiętnego}}",
+    "switchCurrency": "Zmień walutę",
+    "switchPlaceholder": "Znajdź walutę...",
+    "switchNoMatches": "Brak pasujących walut",
+    "defaultBadge": "Domyślna",
+    "cryptoBadge": "Krypto",
+    "inactiveBadge": "Nieaktywna"
+  },
+  "summary": {
+    "transactions": "Transakcje",
+    "sinceYear": "Od {year}",
+    "totalIn": "Suma w {currency}",
+    "grossNote": "Każda kwota, niezależnie od tego, czy wydana, czy otrzymana",
+    "totalInCurrencyUnknown": "Transakcja opłacona w {currency} nie ma zapisanej kwoty w tej walucie",
+    "convertedPartIn": "Przeliczona część w {currency}",
+    "convertedNote": "Każda transakcja po własnym kursie lub po kursie z jej daty",
+    "missingRates": "{count, plural, one {# transakcja jest pominięta} few {# transakcje są pominięte} many {# transakcji jest pominiętych} other {# transakcji jest pominiętej}}: brak kursu {pairs} dla jej daty. Uzupełnij luki w Historii kursu na stronie Waluty.",
+    "latestRate": "Ostatni kurs",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "Brak zapisanych kursów"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "Pary kryptowalutowe (Yahoo)",
+    "frankfurter": "Frankfurter (EBC)",
+    "mnyImport": "Import z Money",
+    "transaction": "Transakcja",
+    "unknown": "Nieznane"
+  },
+  "chart": {
+    "title": "Kurs wymiany",
+    "direction": "{currency} za 1 {code}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "Brak kursów w tym okresie",
+    "transactionPoint": "Twoja transakcja po kursie {rate}: {description}",
+    "legend": {
+      "provider": "Dostawca kursów",
+      "transaction": "Twoje transakcje ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "Wszystko"
+    }
+  },
+  "table": {
+    "title": "Historia kursu",
+    "loading": "Wczytywanie kursów walut...",
+    "itemName": "kursów",
+    "filterAriaLabel": "Filtruj według źródła",
+    "filters": {
+      "all": "Wszystkie ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "Transakcje ({count})",
+      "other": "Inne ({count})"
+    },
+    "export": "Eksportuj CSV",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "Data",
+      "rate": "{currency} za {code}",
+      "inverseRate": "{code} za {currency}",
+      "source": "Źródło",
+      "details": "Szczegóły"
+    },
+    "unknownRate": "Nieznany",
+    "kinds": {
+      "foreignEntry": "Płatność w obcej walucie",
+      "transfer": "Przelew"
+    },
+    "detail": "{kind} na koncie {account}",
+    "detailWithPayee": "{kind} do {payee} na koncie {account}",
+    "empty": {
+      "title": "Brak kursów walut",
+      "filteredTitle": "Brak kursów z tego źródła",
+      "description": "Kursy {code} względem {currency} pojawią się tutaj, gdy dostawca kursów jakieś zapisze lub gdy zarejestrujesz transakcję między tymi walutami."
+    },
+    "totalLabel": "{count, plural, one {# kurs} few {# kursy} many {# kursów} other {# kursu}}",
+    "storedTruncated": "Wyświetlono {count} najnowszych zapisanych kursów; starsze nie są wymienione.",
+    "transactionsTruncated": "Wyświetlono kursy z {count} najnowszych transakcji; starsze nie są wymienione."
+  }
+}

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useCallback, memo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
 import { useTranslations } from 'next-intl';
 import { CurrencyInfo, CurrencyUsage } from '@/lib/exchange-rates';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -306,6 +308,8 @@ interface CurrencyRowProps {
   onDelete: (currency: CurrencyInfo) => void;
   onRateHistory: (currency: CurrencyInfo) => void;
   getRowHandlers: (currency: CurrencyInfo) => LongPressRowHandlers;
+  /** A click opens the detail page; false for a delegate, who cannot open it. */
+  opensDetail: boolean;
   index: number;
   /**
    * Render the row as a wrapped card instead of the tier table's cells. The
@@ -345,6 +349,7 @@ const CurrencyRow = memo(function CurrencyRow({
   onDelete,
   onRateHistory,
   getRowHandlers,
+  opensDetail,
   index,
   wrapped = false,
 }: CurrencyRowProps) {
@@ -371,7 +376,7 @@ const CurrencyRow = memo(function CurrencyRow({
   if (wrapped) {
     return (
       <tr
-        className="hover:bg-gray-100 dark:hover:bg-gray-800 select-none bg-white dark:bg-gray-900"
+        className={`hover:bg-gray-100 dark:hover:bg-gray-800 ${opensDetail ? 'cursor-pointer ' : ''}select-none bg-white dark:bg-gray-900`}
         {...getRowHandlers(currency)}
       >
         <td className="p-0">
@@ -462,7 +467,7 @@ const CurrencyRow = memo(function CurrencyRow({
 
   return (
     <tr
-      className={`hover:bg-gray-100 dark:hover:bg-gray-800 select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'}`}
+      className={`hover:bg-gray-100 dark:hover:bg-gray-800 ${opensDetail ? 'cursor-pointer ' : ''}select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'}`}
       {...getRowHandlers(currency)}
     >
       {/* Code */}
@@ -558,8 +563,21 @@ export function CurrencyList({
   // Long-press opens a per-row action sheet on mobile (and via right-click).
   const [contextCurrency, setContextCurrency] = useState<CurrencyInfo | null>(null);
 
+  // A row click opens the currency's detail page; editing stays one step away
+  // in the row actions -- the primary-click decision the payees, accounts and
+  // securities lists made. Not for a delegate: the page's figures come from
+  // the owner's ledger through routes the server does not open to a delegate,
+  // so the click would land on an error.
+  const router = useRouter();
+  const isDelegateView = useAuthStore((s) => !!s.actingAsUserId);
+  const handleViewDetails = useCallback(
+    (currency: CurrencyInfo) => router.push(`/currencies/${currency.code}`),
+    [router],
+  );
+
   const { getRowHandlers } = useLongPress<CurrencyInfo>({
     onLongPress: setContextCurrency,
+    onClick: isDelegateView ? undefined : handleViewDetails,
   });
 
   const { cellPadding, headerPadding } = useTableDensity(density);
@@ -716,6 +734,7 @@ export function CurrencyList({
                 onDelete={setDeleteCurrency}
                 onRateHistory={onRateHistory}
                 getRowHandlers={getRowHandlers}
+                opensDetail={!isDelegateView}
                 index={index}
                 wrapped={wrapped}
               />

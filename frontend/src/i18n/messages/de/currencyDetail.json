@@ -1,0 +1,97 @@
+{
+  "loading": "Währung wird geladen...",
+  "loadFailed": "Währung konnte nicht geladen werden",
+  "notFound": "Währung {code} wurde nicht gefunden",
+  "tryAgain": "Erneut versuchen",
+  "backToCurrencies": "Zurück zu Währungen",
+  "ratesLoadFailed": "Wechselkursverlauf konnte nicht geladen werden",
+  "defaultCurrencyNote": "{code} ist Ihre Standardwährung. Alle anderen Währungen werden in sie umgerechnet, daher hat sie keinen eigenen Wechselkurs.",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "Symbol {symbol}, {decimals, plural, =0 {keine Nachkommastellen} one {# Nachkommastelle} other {# Nachkommastellen}}",
+    "switchCurrency": "Währung wechseln",
+    "switchPlaceholder": "Währung suchen...",
+    "switchNoMatches": "Keine passenden Währungen",
+    "defaultBadge": "Standard",
+    "cryptoBadge": "Krypto",
+    "inactiveBadge": "Inaktiv"
+  },
+  "summary": {
+    "transactions": "Buchungen",
+    "sinceYear": "Seit {year}",
+    "totalIn": "Summe in {currency}",
+    "grossNote": "Jeder Betrag, unabhängig davon, ob ausgegeben oder erhalten",
+    "totalInCurrencyUnknown": "Für eine in {currency} bezahlte Buchung ist kein Betrag in dieser Währung erfasst",
+    "convertedPartIn": "Umgerechneter Teil in {currency}",
+    "convertedNote": "Jede Buchung zu ihrem eigenen Kurs oder zum Kurs ihres Datums",
+    "missingRates": "{count, plural, one {# Buchung bleibt} other {# Buchungen bleiben}} unberücksichtigt: kein {pairs}-Kurs für das Datum. Füllen Sie die Lücken über den Kursverlauf auf der Seite Währungen.",
+    "latestRate": "Aktueller Kurs",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "Noch keine gespeicherten Kurse"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "Krypto-Paare (Yahoo)",
+    "frankfurter": "Frankfurter (EZB)",
+    "mnyImport": "Money-Import",
+    "transaction": "Buchung",
+    "unknown": "Unbekannt"
+  },
+  "chart": {
+    "title": "Wechselkurs",
+    "direction": "{currency} pro 1 {code}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "Keine Wechselkurse in diesem Zeitraum",
+    "transactionPoint": "Ihre Buchung zu {rate}: {description}",
+    "legend": {
+      "provider": "Kursanbieter",
+      "transaction": "Ihre Buchungen ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "Alle"
+    }
+  },
+  "table": {
+    "title": "Kursverlauf",
+    "loading": "Wechselkurse werden geladen...",
+    "itemName": "Kurse",
+    "filterAriaLabel": "Nach Quelle filtern",
+    "filters": {
+      "all": "Alle ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "Buchungen ({count})",
+      "other": "Sonstige ({count})"
+    },
+    "export": "CSV exportieren",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "Datum",
+      "rate": "{currency} pro {code}",
+      "inverseRate": "{code} pro {currency}",
+      "source": "Quelle",
+      "details": "Details"
+    },
+    "unknownRate": "Unbekannt",
+    "kinds": {
+      "foreignEntry": "Fremdwährungszahlung",
+      "transfer": "Umbuchung"
+    },
+    "detail": "{kind} in {account}",
+    "detailWithPayee": "{kind} an {payee} in {account}",
+    "empty": {
+      "title": "Noch keine Wechselkurse",
+      "filteredTitle": "Keine Kurse aus dieser Quelle",
+      "description": "Kurse für {code} gegenüber {currency} erscheinen hier, sobald der Kursanbieter welche gespeichert hat oder Sie eine Buchung zwischen den beiden erfassen."
+    },
+    "totalLabel": "{count, plural, one {# Kurs} other {# Kurse}}",
+    "storedTruncated": "Es werden die {count} neuesten gespeicherten Kurse angezeigt; ältere sind nicht aufgeführt.",
+    "transactionsTruncated": "Es werden die Kurse Ihrer {count} neuesten Buchungen angezeigt; ältere sind nicht aufgeführt."
+  }
+}

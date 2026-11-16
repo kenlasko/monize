@@ -1,0 +1,97 @@
+{
+  "loading": "[XX-Loading currency...-XX]",
+  "loadFailed": "[XX-Failed to load currency-XX]",
+  "notFound": "[XX-Currency {code} was not found-XX]",
+  "tryAgain": "[XX-Try Again-XX]",
+  "backToCurrencies": "[XX-Back to Currencies-XX]",
+  "ratesLoadFailed": "[XX-Failed to load exchange rate history-XX]",
+  "defaultCurrencyNote": "[XX-{code} is your default currency. Every other currency is converted into it, so it has no exchange rate of its own.-XX]",
+  "header": {
+    "title": "[XX-{code} · {name}-XX]",
+    "subtitle": "[XX-Symbol {symbol}, {decimals, plural, =0 {no decimal places} one {# decimal place} other {# decimal places}}-XX]",
+    "switchCurrency": "[XX-Switch currency-XX]",
+    "switchPlaceholder": "[XX-Find a currency...-XX]",
+    "switchNoMatches": "[XX-No matching currencies-XX]",
+    "defaultBadge": "[XX-Default-XX]",
+    "cryptoBadge": "[XX-Crypto-XX]",
+    "inactiveBadge": "[XX-Inactive-XX]"
+  },
+  "summary": {
+    "transactions": "[XX-Transactions-XX]",
+    "sinceYear": "[XX-Since {year}-XX]",
+    "totalIn": "[XX-Total in {currency}-XX]",
+    "grossNote": "[XX-Every amount, ignoring whether it was spent or received-XX]",
+    "totalInCurrencyUnknown": "[XX-A transaction paid in {currency} has no amount recorded in it-XX]",
+    "convertedPartIn": "[XX-Converted Part in {currency}-XX]",
+    "convertedNote": "[XX-Each transaction at its own rate, or the rate on its date-XX]",
+    "missingRates": "[XX-{count, plural, one {# transaction is} other {# transactions are}} left out: no {pairs} rate for its date. Use Rate History on the Currencies page to fill the gaps.-XX]",
+    "latestRate": "[XX-Latest Rate-XX]",
+    "rateValue": "[XX-1 {code} = {rate} {currency}-XX]",
+    "rateAsOf": "[XX-{date}, {source}-XX]",
+    "noStoredRates": "[XX-No stored rates yet-XX]"
+  },
+  "sources": {
+    "yahooFinance": "[XX-Yahoo Finance-XX]",
+    "yahooCrypto": "[XX-Crypto pairs (Yahoo)-XX]",
+    "frankfurter": "[XX-Frankfurter (ECB)-XX]",
+    "mnyImport": "[XX-Money import-XX]",
+    "transaction": "[XX-Transaction-XX]",
+    "unknown": "[XX-Unknown-XX]"
+  },
+  "chart": {
+    "title": "[XX-Exchange Rate-XX]",
+    "direction": "[XX-{currency} per 1 {code}-XX]",
+    "filename": "[XX-{code}-{currency}-exchange-rate-XX]",
+    "noData": "[XX-No exchange rates in this period-XX]",
+    "transactionPoint": "[XX-Your transaction at {rate}: {description}-XX]",
+    "legend": {
+      "provider": "[XX-Rate provider-XX]",
+      "transaction": "[XX-Your transactions ({count})-XX]"
+    },
+    "ranges": {
+      "1m": "[XX-1M-XX]",
+      "3m": "[XX-3M-XX]",
+      "ytd": "[XX-YTD-XX]",
+      "1y": "[XX-1Y-XX]",
+      "5y": "[XX-5Y-XX]",
+      "all": "[XX-All-XX]"
+    }
+  },
+  "table": {
+    "title": "[XX-Rate History-XX]",
+    "loading": "[XX-Loading exchange rates...-XX]",
+    "itemName": "[XX-rates-XX]",
+    "filterAriaLabel": "[XX-Filter by source-XX]",
+    "filters": {
+      "all": "[XX-All ({count})-XX]",
+      "yahoo": "[XX-Yahoo ({count})-XX]",
+      "frankfurter": "[XX-Frankfurter ({count})-XX]",
+      "transaction": "[XX-Transactions ({count})-XX]",
+      "other": "[XX-Other ({count})-XX]"
+    },
+    "export": "[XX-Export CSV-XX]",
+    "exportFilename": "[XX-{code}-{currency}-exchange-rates-XX]",
+    "columns": {
+      "date": "[XX-Date-XX]",
+      "rate": "[XX-{currency} per {code}-XX]",
+      "inverseRate": "[XX-{code} per {currency}-XX]",
+      "source": "[XX-Source-XX]",
+      "details": "[XX-Details-XX]"
+    },
+    "unknownRate": "[XX-Unknown-XX]",
+    "kinds": {
+      "foreignEntry": "[XX-Foreign currency payment-XX]",
+      "transfer": "[XX-Transfer-XX]"
+    },
+    "detail": "[XX-{kind} in {account}-XX]",
+    "detailWithPayee": "[XX-{kind} to {payee} in {account}-XX]",
+    "empty": {
+      "title": "[XX-No exchange rates yet-XX]",
+      "filteredTitle": "[XX-No rates from this source-XX]",
+      "description": "[XX-Rates for {code} against {currency} appear here once the rate provider has stored some, or once you record a transaction between the two.-XX]"
+    },
+    "totalLabel": "[XX-{count, plural, one {# rate} other {# rates}}-XX]",
+    "storedTruncated": "[XX-Showing the {count} most recent stored rates; older ones are not listed.-XX]",
+    "transactionsTruncated": "[XX-Showing the rates of your {count} most recent transactions; older ones are not listed.-XX]"
+  }
+}

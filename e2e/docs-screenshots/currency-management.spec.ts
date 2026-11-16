@@ -121,3 +121,25 @@ test("currency-rate-history", async () => {
   await dialog.getByRole("button", { name: "Close" }).last().click();
   await expect(dialog).toHaveCount(0);
 });
+
+test("currency-detail", async () => {
+  // The demo data's one foreign currency with a stored history and a wallet
+  // holding it is bitcoin.
+  await page.goto("/currencies");
+  await expect(
+    page.getByRole("heading", { name: "Currencies", level: 1 }),
+  ).toBeVisible({ timeout: 90_000 });
+  await page
+    .getByRole("row", { name: /BTC-CAD/ })
+    .first()
+    .getByText("Bitcoin")
+    .click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "BTC · Bitcoin" }),
+  ).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole("button", { name: /^All \(/ })).toBeVisible({
+    timeout: 60_000,
+  });
+  await waitForReady(page);
+  await docShot(page, "currency-detail");
+});
