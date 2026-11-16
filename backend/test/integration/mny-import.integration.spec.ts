@@ -30,7 +30,7 @@ import { TransactionSplitTag } from "@/tags/entities/transaction-split-tag.entit
 import { TagsService } from "@/tags/tags.service";
 import { ActionHistoryService } from "@/action-history/action-history.service";
 import { ImportPostProcessingService } from "@/import/import-post-processing.service";
-import { ExchangeRateHistoryService } from "@/currencies/exchange-rate-history.service";
+import { RateHistoryCatchUpService } from "@/currencies/rate-history-catch-up.service";
 import { ImportJob } from "@/import/mny/entities/import-job.entity";
 import { ImportStagedFile } from "@/import/mny/entities/import-staged-file.entity";
 import { MnyImportJobService } from "@/import/mny/mny-import-job.service";
@@ -220,15 +220,8 @@ describe("mny writers (integration)", () => {
         },
         {
           // Stubbed: the post-import gap fill reaches the FX provider.
-          provide: ExchangeRateHistoryService,
-          useValue: {
-            fillRateGaps: async () => ({
-              stored: 0,
-              windowsFetched: 0,
-              windowsUnanswered: 0,
-              windowsRemaining: 0,
-            }),
-          },
+          provide: RateHistoryCatchUpService,
+          useValue: { start: () => undefined },
         },
         { provide: UsersService, useValue: { deleteData: jest.fn() } },
         // No rules: the rules pass is covered against the real applier in

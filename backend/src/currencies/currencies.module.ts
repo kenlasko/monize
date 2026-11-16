@@ -2,6 +2,7 @@ import { Module, forwardRef } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { ExchangeRateService } from "./exchange-rate.service";
 import { ExchangeRateHistoryService } from "./exchange-rate-history.service";
+import { RateHistoryCatchUpService } from "./rate-history-catch-up.service";
 import { CurrenciesService } from "./currencies.service";
 import { CurrenciesController } from "./currencies.controller";
 import { SecuritiesModule } from "../securities/securities.module";
@@ -50,6 +51,7 @@ import {
   providers: [
     ExchangeRateService,
     ExchangeRateHistoryService,
+    RateHistoryCatchUpService,
     CurrenciesService,
     YahooFxProvider,
     CryptoFxProvider,
@@ -99,6 +101,8 @@ import {
   exports: [
     ExchangeRateService,
     ExchangeRateHistoryService,
+    // An import and a backup restore pull the rate history their rows need.
+    RateHistoryCatchUpService,
     CurrenciesService,
     FxProviderChain,
     // The backup restore writes `currencies` and tells the crypto adapter to

@@ -4,6 +4,8 @@ import { ConfigModule } from "@nestjs/config";
 import { DataSource } from "typeorm";
 import { randomUUID } from "crypto";
 import { BondPriceService } from "@/bonds/bond-price.service";
+import { NetWorthService } from "@/net-worth/net-worth.service";
+import { RateHistoryCatchUpService } from "@/currencies/rate-history-catch-up.service";
 import { BackupService } from "@/backup/backup.service";
 import { BackupExportService } from "@/backup/backup-export.service";
 import { BackupRestoreService } from "@/backup/backup-restore.service";
@@ -68,6 +70,16 @@ describe("Support backup (integration)", () => {
             recomputeSecurity: async () => ({}),
             recomputeLinkedSecurities: async () => undefined,
           },
+        },
+        // Not the subject: the post-restore rate history fill reaches the FX
+        // provider (rate-history-catch-up.service.ts).
+        {
+          provide: RateHistoryCatchUpService,
+          useValue: { start: () => undefined },
+        },
+        {
+          provide: NetWorthService,
+          useValue: { recalculateAccount: async () => undefined },
         },
         // The restore's bond series recovery finds nothing to recover here.
         {

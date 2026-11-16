@@ -1,16 +1,17 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { Logger } from "@nestjs/common";
-import {
-  IMPORT_RATE_FILL_MAX_ROUNDS,
-  ImportPostProcessingService,
-  settlePendingRateHistoryFills,
-} from "./import-post-processing.service";
+import { ImportPostProcessingService } from "./import-post-processing.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { SecurityPriceService } from "../securities/security-price.service";
 import { SecuritiesService } from "../securities/securities.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { ExchangeRateHistoryService } from "../currencies/exchange-rate-history.service";
+import {
+  RATE_HISTORY_CATCH_UP_MAX_ROUNDS,
+  RateHistoryCatchUpService,
+  settlePendingRateHistoryFills,
+} from "../currencies/rate-history-catch-up.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import { lockAccountsForBalanceWrite } from "../common/db/locks";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
@@ -91,6 +92,8 @@ describe("ImportPostProcessingService", () => {
         { provide: SecurityPriceService, useValue: prices },
         { provide: ExchangeRateService, useValue: rates },
         { provide: SecuritiesService, useValue: securities },
+        // The real catch-up, so the rounds below are the import's own.
+        RateHistoryCatchUpService,
         { provide: ExchangeRateHistoryService, useValue: rateHistory },
       ],
     }).compile();
@@ -440,7 +443,7 @@ describe("ImportPostProcessingService", () => {
       await settle();
 
       expect(rateHistory.fillRateGaps).toHaveBeenCalledTimes(
-        IMPORT_RATE_FILL_MAX_ROUNDS,
+        RATE_HISTORY_CATCH_UP_MAX_ROUNDS,
       );
     });
 
@@ -459,7 +462,9 @@ describe("ImportPostProcessingService", () => {
       ]);
       expect(
         warnSpy.mock.calls.some((call) =>
-          String(call[0]).includes("rate history fill for PTS->CAD stopped"),
+          String(call[0]).includes(
+            "Post-import rate history fill for PTS->CAD stopped",
+          ),
         ),
       ).toBe(true);
       expect(errorSpy).not.toHaveBeenCalled();

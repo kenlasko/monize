@@ -410,7 +410,7 @@ A backup includes all of your own data:
 
 API keys are stored encrypted with the server's `ENCRYPTION_KEY`, which cannot travel with the file, so a backup carries them decrypted and the restoring server encrypts them again under its own key. That is one more reason to keep backups encrypted.
 
-**Not included:** your login itself (password, two-factor secrets, trusted devices, sessions and personal access tokens), the people you [share with](shared-access.md) and your [emergency access](emergency-access.md) settings, connected mailboxes and the emails received from them, bank sync connections, the shared market exchange rates, the undo history, and caches Monize can rebuild. After restoring on a new server, sign in with your existing credentials and set those up again.
+**Not included:** your login itself (password, two-factor secrets, trusted devices, sessions and personal access tokens), the people you [share with](shared-access.md) and your [emergency access](emergency-access.md) settings, connected mailboxes and the emails received from them, bank sync connections, the shared market exchange rates (after a restore, Monize fetches the rate history your restored accounts need in the background; see [Currency Management](currency-management.md)), the undo history, and caches Monize can rebuild. After restoring on a new server, sign in with your existing credentials and set those up again.
 
 ---
 
