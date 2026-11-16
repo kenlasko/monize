@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act, fireEvent } from '@/test/render';
+import { render, screen, act, fireEvent, waitFor } from '@/test/render';
 import CurrencyDetailPage from './page';
+import { usePreferencesStore } from '@/store/preferencesStore';
+import type { UserPreferences } from '@/types/auth';
 import type {
   CurrencyInfo,
   CurrencyUsageSummary,
@@ -53,6 +55,8 @@ const mockGetCurrencies = vi.fn();
 const mockGetUsage = vi.fn();
 const mockGetStoredRates = vi.fn();
 const mockGetTransactionRates = vi.fn();
+const mockGetRateCoverage = vi.fn();
+const mockFillRateGaps = vi.fn();
 
 vi.mock('@/lib/exchange-rates', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/exchange-rates')>()),
@@ -61,7 +65,14 @@ vi.mock('@/lib/exchange-rates', async (importOriginal) => ({
     getCurrencyUsageSummary: (...args: unknown[]) => mockGetUsage(...args),
     getStoredRates: (...args: unknown[]) => mockGetStoredRates(...args),
     getTransactionRates: (...args: unknown[]) => mockGetTransactionRates(...args),
+    getRateCoverage: (...args: unknown[]) => mockGetRateCoverage(...args),
+    fillRateGaps: (...args: unknown[]) => mockFillRateGaps(...args),
+    getLatestRates: () => Promise.resolve([]),
   },
+}));
+
+vi.mock('react-hot-toast', () => ({
+  default: { success: vi.fn(), error: vi.fn() },
 }));
 
 const currency = (code: string, name: string): CurrencyInfo => ({
@@ -111,6 +122,8 @@ const transactionRates: TransactionRateList = {
       kind: 'foreignEntry',
       accountName: 'CAD Chequing',
       payeeName: 'Hotel',
+      // 1.5 against 1.55 is a spread of 3.23%.
+      marketRate: 1.55,
     },
   ],
   truncated: true,
@@ -127,11 +140,40 @@ describe('CurrencyDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    // The fixtures' dates are fixed, so the period is too: the default year
+    // window ends today and would leave them behind.
+    localStorage.setItem('currencyDetail:range:EUR', JSON.stringify({ dateRange: 'all' }));
+    usePreferencesStore.setState({
+      preferences: { defaultCurrency: 'CAD' } as UserPreferences,
+    });
     routeParams.current = { code: 'eur' };
     mockGetCurrencies.mockResolvedValue([currency('CAD', 'Canadian Dollar'), currency('EUR', 'Euro')]);
     mockGetUsage.mockImplementation((code: string) => Promise.resolve(usage(code)));
     mockGetStoredRates.mockResolvedValue(stored);
     mockGetTransactionRates.mockResolvedValue(transactionRates);
+    mockGetRateCoverage.mockResolvedValue({
+      from: 'EUR',
+      to: 'CAD',
+      earliestDate: '2026-03-19',
+      latestDate: '2026-03-20',
+      observations: 2,
+    });
+    mockFillRateGaps.mockResolvedValue({
+      from: 'EUR',
+      to: 'CAD',
+      usedFrom: '2024-05-01',
+      spanEnd: '2026-03-20',
+      unresolvableDays: 0,
+      sparseDays: 0,
+      windowsPlanned: 1,
+      windowsFetched: 1,
+      windowsSkipped: 0,
+      windowsUnanswered: 0,
+      windowsRemaining: 0,
+      stored: 240,
+      earliestDate: '2024-05-01',
+      providerHasNothingBefore: null,
+    });
   });
 
   it('shows the currency, its figures, the chart and the rate history', async () => {
@@ -152,6 +194,66 @@ describe('CurrencyDetailPage', () => {
         'Showing the rates of your 2,000 most recent transactions; older ones are not listed.',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('shows how many rates are stored and over which dates, with a way to fill the gaps', async () => {
+    await renderPage();
+
+    expect(screen.getByRole('heading', { name: 'Stored Rates' })).toBeInTheDocument();
+    expect(mockGetRateCoverage).toHaveBeenCalledWith('EUR');
+    expect(screen.getByText(/Stored history:/)).toHaveTextContent('2 observations');
+    expect(screen.getByRole('button', { name: 'Fill gaps in rate history' })).toBeInTheDocument();
+  });
+
+  it('re-reads the chart and the table after a fill stored rates', async () => {
+    await renderPage();
+    mockGetStoredRates.mockResolvedValue({
+      ...stored,
+      rates: [
+        ...stored.rates,
+        { rateDate: '2026-03-18', rate: 1.52, source: 'frankfurter', inverted: false },
+      ],
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Fill gaps in rate history' }));
+    });
+
+    expect(mockFillRateGaps).toHaveBeenCalledWith('EUR');
+    await waitFor(() => expect(mockGetStoredRates).toHaveBeenCalledTimes(2));
+    expect(await screen.findByRole('button', { name: 'All (4)' })).toBeInTheDocument();
+  });
+
+  it('counts the rates of the selected period and averages the spread of its transactions', async () => {
+    await renderPage();
+
+    const rates = screen.getByRole('article', { name: 'Rates in Period' });
+    expect(rates).toHaveTextContent('Rates in Period303/19/2026 to 03/20/2026');
+    expect(screen.getByRole('article', { name: 'Average Spread' })).toHaveTextContent('3.23%');
+  });
+
+  it('narrows the chart, the table and the period figures to the selected period', async () => {
+    localStorage.setItem('currencyDetail:range:EUR', JSON.stringify({ dateRange: '1m' }));
+    mockGetStoredRates.mockResolvedValue({
+      ...stored,
+      rates: [
+        ...stored.rates,
+        // Years before any one-month window.
+        { rateDate: '2015-06-01', rate: 1.45, source: 'frankfurter', inverted: false },
+      ],
+    });
+    mockGetTransactionRates.mockResolvedValue({ ...transactionRates, truncated: false });
+    await renderPage();
+
+    // Every fixture date is outside a month ending today.
+    expect(screen.getByRole('heading', { name: 'Rate History' })).toBeInTheDocument();
+    expect(screen.getByText('No exchange rates in this period', { selector: 'h3' })).toBeInTheDocument();
+    expect(screen.getByText('No rates in this period')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^All$/ }));
+    });
+    expect(screen.getByRole('button', { name: 'All (4)' })).toBeInTheDocument();
   });
 
   it('goes back to the list', async () => {

@@ -35,7 +35,14 @@ import { useRateSourceLabel } from './useRateSourceLabel';
 interface CurrencyRateTableProps {
   code: string;
   defaultCurrency: string;
+  /** The rows of the selected period. */
   rows: readonly RateHistoryRow[];
+  /**
+   * Whether the pair has any rate at all, in or out of the period: an empty
+   * period then says so, rather than reading as a pair with no history.
+   * Defaults to whether `rows` holds one.
+   */
+  hasAnyRates?: boolean;
   /** Lines under the table saying what a bounded read left out. */
   notes?: readonly string[];
 }
@@ -52,11 +59,18 @@ const GROUP_BADGE: Record<RateSourceGroup, BadgeVariant> = {
 };
 
 /**
- * Every rate the page knows for the pair, a page at a time: the provider's
- * stored history and the rates the reader's own transactions settled at, in
- * one list the reader can sort by any column, narrow to one source and export.
+ * Every rate the page knows for the pair in the selected period, a page at a
+ * time: the provider's stored history and the rates the reader's own
+ * transactions settled at, in one list the reader can sort by any column,
+ * narrow to one source and export.
  */
-export function CurrencyRateTable({ code, defaultCurrency, rows, notes = [] }: CurrencyRateTableProps) {
+export function CurrencyRateTable({
+  code,
+  defaultCurrency,
+  rows,
+  hasAnyRates = rows.length > 0,
+  notes = [],
+}: CurrencyRateTableProps) {
   const t = useTranslations('currencyDetail');
   const { formatDate } = useDateFormat();
   const { formatNumber } = useNumberFormat();
@@ -72,6 +86,13 @@ export function CurrencyRateTable({ code, defaultCurrency, rows, notes = [] }: C
     'desc',
   );
   const [currentPage, setCurrentPage] = useState(1);
+
+  // A new period starts from its first page ("info from previous render").
+  const [pagedRows, setPagedRows] = useState(rows);
+  if (pagedRows !== rows) {
+    setPagedRows(rows);
+    setCurrentPage(1);
+  }
 
   // A remembered field this table no longer has falls back to the date.
   const activeSortField: RateSortField = RATE_SORT_FIELDS.includes(sortField) ? sortField : 'date';
@@ -190,9 +211,15 @@ export function CurrencyRateTable({ code, defaultCurrency, rows, notes = [] }: C
         )}
         {sorted.length === 0 ? (
           <EmptyState
-            title={rows.length === 0 ? t('table.empty.title') : t('table.empty.filteredTitle')}
+            title={
+              !hasAnyRates
+                ? t('table.empty.title')
+                : rows.length === 0
+                  ? t('table.empty.periodTitle')
+                  : t('table.empty.filteredTitle')
+            }
             description={
-              rows.length === 0
+              !hasAnyRates
                 ? t('table.empty.description', { code, currency: defaultCurrency })
                 : undefined
             }

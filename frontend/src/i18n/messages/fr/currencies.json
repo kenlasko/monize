@@ -158,29 +158,6 @@
     "filling": "Récupération des taux manquants...",
     "fillGapsTitle": "Récupère les taux quotidiens qui manquent à vos rapports, depuis la première date où vos données utilisent {code} jusqu'à aujourd'hui.",
     "hint": "Les rapports datés d'avant le premier taux enregistré ne peuvent pas convertir {pair}.",
-    "list": {
-      "heading": "Taux enregistrés",
-      "invertedHelp": "Un taux marqué (inversé) est l'inverse de ce que Monize a réellement enregistré pour cette paire, et non une observation différente.",
-      "direction": "Affiché en {to} pour 1 {from}.",
-      "loading": "Chargement des taux enregistrés...",
-      "loadFailed": "Impossible de lire les taux enregistrés",
-      "empty": "Aucun taux enregistré à afficher",
-      "truncated": "Affichage des {count} taux enregistrés les plus récents ; les plus anciens ne sont pas listés.",
-      "inverted": "inversé",
-      "unknownRate": "Inconnu",
-      "columns": {
-        "date": "Date",
-        "rate": "Taux",
-        "source": "Source"
-      },
-      "sources": {
-        "yahooFinance": "Yahoo Finance",
-        "frankfurter": "Frankfurter (BCE)",
-        "mnyImport": "Import Money",
-        "yahooCrypto": "Paires crypto (Yahoo)",
-        "unknown": "Inconnu"
-      }
-    },
     "toasts": {
       "filled": "{count} taux ajoutés ; l'historique commence désormais le {start}",
       "partial": "{count} taux enregistrés ; l'historique commence maintenant le {start}. Il reste {windows} lacunes à récupérer, appuyez à nouveau pour continuer.",

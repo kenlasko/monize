@@ -158,29 +158,6 @@
     "filling": "Eksik kurlar getiriliyor...",
     "fillGapsTitle": "Raporlarınızda eksik olan günlük kurları, verilerinizin {code} kullandığı ilk tarihten bugüne kadar getirir.",
     "hint": "İlk saklanan kurdan önceki tarihli raporlar {pair} çevirisi yapamaz.",
-    "list": {
-      "heading": "Kayıtlı kurlar",
-      "invertedHelp": "(ters çevrilmiş) olarak işaretlenen bir kur, Monize'ın bu çift için gerçekte kaydettiği değerin tersidir, farklı bir gözlem değildir.",
-      "direction": "1 {from} için {to} olarak gösterilir.",
-      "loading": "Kayıtlı kurlar yükleniyor...",
-      "loadFailed": "Kayıtlı kurlar okunamadı",
-      "empty": "Listelenecek kayıtlı kur yok",
-      "truncated": "En yeni {count} kayıtlı kur gösteriliyor; daha eskileri listelenmiyor.",
-      "inverted": "ters çevrilmiş",
-      "unknownRate": "Bilinmiyor",
-      "columns": {
-        "date": "Tarih",
-        "rate": "Kur",
-        "source": "Kaynak"
-      },
-      "sources": {
-        "yahooFinance": "Yahoo Finance",
-        "frankfurter": "Frankfurter (ECB)",
-        "mnyImport": "Money içe aktarımı",
-        "yahooCrypto": "Kripto çiftleri (Yahoo)",
-        "unknown": "Bilinmiyor"
-      }
-    },
     "toasts": {
       "filled": "{count} kur eklendi; geçmiş artık {start} tarihinden başlıyor",
       "partial": "{count} kur kaydedildi; geçmiş artık {start} tarihinde başlıyor. Getirilecek {windows} boşluk kaldı, devam etmek için tekrar basın.",

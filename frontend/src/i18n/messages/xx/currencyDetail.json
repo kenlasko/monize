@@ -24,11 +24,14 @@
     "totalInCurrencyUnknown": "[XX-A transaction paid in {currency} has no amount recorded in it-XX]",
     "convertedPartIn": "[XX-Converted Part in {currency}-XX]",
     "convertedNote": "[XX-Each transaction at its own rate, or the rate on its date-XX]",
-    "missingRates": "[XX-{count, plural, one {# transaction is} other {# transactions are}} left out: no {pairs} rate for its date. Use Rate History on the Currencies page to fill the gaps.-XX]",
+    "missingRates": "[XX-{count, plural, one {# transaction is} other {# transactions are}} left out: no {pairs} rate for its date. Use Fill gaps in rate history below to fetch it.-XX]",
     "latestRate": "[XX-Latest Rate-XX]",
     "rateValue": "[XX-1 {code} = {rate} {currency}-XX]",
     "rateAsOf": "[XX-{date}, {source}-XX]",
     "noStoredRates": "[XX-No stored rates yet-XX]"
+  },
+  "storedHistory": {
+    "title": "[XX-Stored Rates-XX]"
   },
   "sources": {
     "yahooFinance": "[XX-Yahoo Finance-XX]",
@@ -56,6 +59,16 @@
       "5y": "[XX-5Y-XX]",
       "all": "[XX-All-XX]"
     }
+  },
+  "period": {
+    "rates": "[XX-Rates in Period-XX]",
+    "ratesSpan": "[XX-{start} to {end}-XX]",
+    "noRates": "[XX-No rates in this period-XX]",
+    "averageSpread": "[XX-Average Spread-XX]",
+    "spreadNote": "[XX-How far your {count, plural, one {# transaction was} other {# transactions were}} from the stored rate for the same date, higher or lower-XX]",
+    "spreadNoteUnmeasured": "[XX-How far your {measured, plural, one {# transaction was} other {# transactions were}} from the stored rate for the same date. {unmeasured, plural, one {# more has} other {# more have}} no stored rate for the date; use Fill gaps in rate history above to fetch it.-XX]",
+    "spreadNoneMeasured": "[XX-{count, plural, one {# transaction has} other {# transactions have}} no stored rate for the date to compare with. Use Fill gaps in rate history above to fetch it.-XX]",
+    "noTransactions": "[XX-No transactions with an exchange rate in this period-XX]"
   },
   "table": {
     "title": "[XX-Rate History-XX]",
@@ -88,7 +101,8 @@
     "empty": {
       "title": "[XX-No exchange rates yet-XX]",
       "filteredTitle": "[XX-No rates from this source-XX]",
-      "description": "[XX-Rates for {code} against {currency} appear here once the rate provider has stored some, or once you record a transaction between the two.-XX]"
+      "description": "[XX-Rates for {code} against {currency} appear here once the rate provider has stored some, or once you record a transaction between the two.-XX]",
+      "periodTitle": "[XX-No exchange rates in this period-XX]"
     },
     "totalLabel": "[XX-{count, plural, one {# rate} other {# rates}}-XX]",
     "storedTruncated": "[XX-Showing the {count} most recent stored rates; older ones are not listed.-XX]",

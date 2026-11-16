@@ -158,29 +158,6 @@
     "filling": "Buscando as taxas que faltam...",
     "fillGapsTitle": "Busca as taxas diárias que faltam nos seus relatórios, da primeira data em que seus dados usam {code} até hoje.",
     "hint": "Relatórios com data anterior à primeira taxa armazenada não conseguem converter {pair}.",
-    "list": {
-      "heading": "Taxas armazenadas",
-      "invertedHelp": "Uma taxa marcada como (invertida) é o inverso do que o Monize realmente armazenou para esse par, não uma observação diferente.",
-      "direction": "Exibido como {to} por 1 {from}.",
-      "loading": "Carregando as taxas armazenadas...",
-      "loadFailed": "Não foi possível ler as taxas armazenadas",
-      "empty": "Nenhuma taxa armazenada para listar",
-      "truncated": "Mostrando as {count} taxas armazenadas mais recentes; as mais antigas não são listadas.",
-      "inverted": "invertida",
-      "unknownRate": "Desconhecida",
-      "columns": {
-        "date": "Data",
-        "rate": "Taxa",
-        "source": "Origem"
-      },
-      "sources": {
-        "yahooFinance": "Yahoo Finance",
-        "frankfurter": "Frankfurter (BCE)",
-        "mnyImport": "Importação do Money",
-        "yahooCrypto": "Pares de cripto (Yahoo)",
-        "unknown": "Desconhecida"
-      }
-    },
     "toasts": {
       "filled": "Foram adicionadas {count} taxas; o histórico agora começa em {start}",
       "partial": "{count} taxas armazenadas; o histórico agora começa em {start}. Faltam {windows} lacunas para buscar, pressione novamente para continuar.",

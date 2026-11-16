@@ -158,29 +158,6 @@
     "filling": "Đang tải các tỷ giá còn thiếu...",
     "fillGapsTitle": "Tải các tỷ giá hằng ngày mà báo cáo của bạn còn thiếu, từ ngày đầu tiên dữ liệu của bạn dùng {code} đến hôm nay.",
     "hint": "Báo cáo có ngày trước tỷ giá đã lưu đầu tiên không thể quy đổi {pair}.",
-    "list": {
-      "heading": "Tỷ giá đã lưu",
-      "invertedHelp": "Tỷ giá được đánh dấu (nghịch đảo) là giá trị nghịch đảo của những gì Monize thực sự đã lưu cho cặp này, không phải một quan sát khác.",
-      "direction": "Hiển thị theo {to} cho 1 {from}.",
-      "loading": "Đang tải các tỷ giá đã lưu...",
-      "loadFailed": "Không đọc được các tỷ giá đã lưu",
-      "empty": "Không có tỷ giá đã lưu để liệt kê",
-      "truncated": "Đang hiển thị {count} tỷ giá đã lưu mới nhất; các tỷ giá cũ hơn không được liệt kê.",
-      "inverted": "nghịch đảo",
-      "unknownRate": "Không rõ",
-      "columns": {
-        "date": "Ngày",
-        "rate": "Tỷ giá",
-        "source": "Nguồn"
-      },
-      "sources": {
-        "yahooFinance": "Yahoo Finance",
-        "frankfurter": "Frankfurter (ECB)",
-        "mnyImport": "Nhập từ Money",
-        "yahooCrypto": "Cặp tiền mã hóa (Yahoo)",
-        "unknown": "Không rõ"
-      }
-    },
     "toasts": {
       "filled": "Đã thêm {count} tỷ giá; lịch sử giờ bắt đầu từ {start}",
       "partial": "Đã lưu {count} tỷ giá; lịch sử nay bắt đầu từ {start}. Còn {windows} chỗ trống cần tải, nhấn lại để tiếp tục.",

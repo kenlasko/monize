@@ -24,11 +24,14 @@
     "totalInCurrencyUnknown": "A transaction paid in {currency} has no amount recorded in it",
     "convertedPartIn": "Converted Part in {currency}",
     "convertedNote": "Each transaction at its own rate, or the rate on its date",
-    "missingRates": "{count, plural, one {# transaction is} other {# transactions are}} left out: no {pairs} rate for its date. Use Rate History on the Currencies page to fill the gaps.",
+    "missingRates": "{count, plural, one {# transaction is} other {# transactions are}} left out: no {pairs} rate for its date. Use Fill gaps in rate history below to fetch it.",
     "latestRate": "Latest Rate",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",
     "noStoredRates": "No stored rates yet"
+  },
+  "storedHistory": {
+    "title": "Stored Rates"
   },
   "sources": {
     "yahooFinance": "Yahoo Finance",
@@ -56,6 +59,16 @@
       "5y": "5Y",
       "all": "All"
     }
+  },
+  "period": {
+    "rates": "Rates in Period",
+    "ratesSpan": "{start} to {end}",
+    "noRates": "No rates in this period",
+    "averageSpread": "Average Spread",
+    "spreadNote": "How far your {count, plural, one {# transaction was} other {# transactions were}} from the stored rate for the same date, higher or lower",
+    "spreadNoteUnmeasured": "How far your {measured, plural, one {# transaction was} other {# transactions were}} from the stored rate for the same date. {unmeasured, plural, one {# more has} other {# more have}} no stored rate for the date; use Fill gaps in rate history above to fetch it.",
+    "spreadNoneMeasured": "{count, plural, one {# transaction has} other {# transactions have}} no stored rate for the date to compare with. Use Fill gaps in rate history above to fetch it.",
+    "noTransactions": "No transactions with an exchange rate in this period"
   },
   "table": {
     "title": "Rate History",
@@ -88,7 +101,8 @@
     "empty": {
       "title": "No exchange rates yet",
       "filteredTitle": "No rates from this source",
-      "description": "Rates for {code} against {currency} appear here once the rate provider has stored some, or once you record a transaction between the two."
+      "description": "Rates for {code} against {currency} appear here once the rate provider has stored some, or once you record a transaction between the two.",
+      "periodTitle": "No exchange rates in this period"
     },
     "totalLabel": "{count, plural, one {# rate} other {# rates}}",
     "storedTruncated": "Showing the {count} most recent stored rates; older ones are not listed.",

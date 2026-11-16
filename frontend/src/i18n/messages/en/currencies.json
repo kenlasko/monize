@@ -66,7 +66,8 @@
     "actions": {
       "edit": "Edit",
       "deactivate": "Deactivate",
-      "activate": "Activate"
+      "activate": "Activate",
+      "details": "Details"
     },
     "contextMenu": {
       "editCurrency": "Edit Currency",
@@ -158,29 +159,6 @@
     "filling": "Fetching missing rates...",
     "fillGapsTitle": "Fetches the daily rates your reports are missing, from the first date your data uses {code} up to today.",
     "hint": "Reports dated before the first stored rate cannot convert {pair}.",
-    "list": {
-      "heading": "Stored rates",
-      "invertedHelp": "A rate marked (inverted) is the reciprocal of what Monize actually stored for this pair, not a different observation.",
-      "direction": "Shown as {to} per 1 {from}.",
-      "loading": "Loading stored rates...",
-      "loadFailed": "Could not read the stored rates",
-      "empty": "No stored rates to list",
-      "truncated": "Showing the {count} most recent stored rates; older ones are not listed.",
-      "inverted": "inverted",
-      "unknownRate": "Unknown",
-      "columns": {
-        "date": "Date",
-        "rate": "Rate",
-        "source": "Source"
-      },
-      "sources": {
-        "yahooFinance": "Yahoo Finance",
-        "frankfurter": "Frankfurter (ECB)",
-        "mnyImport": "Money import",
-        "yahooCrypto": "Crypto pairs (Yahoo)",
-        "unknown": "Unknown"
-      }
-    },
     "toasts": {
       "filled": "Stored {count} rates; history now starts {start}",
       "partial": "Stored {count} rates; history now starts {start}. {windows} more gaps to fetch, press again to continue.",

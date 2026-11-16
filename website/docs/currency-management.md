@@ -25,13 +25,13 @@ The page shows the number of **Total Currencies**, **Active**, and **Inactive**,
 | **Usage** | How many of your accounts and securities use the currency, abbreviated: "15 accts, 5 secs" |
 | **Rate** | What one unit of the currency is worth in your home currency, from the latest stored rate (N/A when none is stored yet) |
 | **Status** | Active or Inactive |
-| **Actions** | **Rate history**, **Edit** (for currencies you created), **Deactivate** / **Activate**, and **Delete** |
+| **Actions** | **Details**, **Edit** (for currencies you created), **Deactivate** / **Activate**, and **Delete** |
 
 A currency that is in use, and your home currency, cannot be deactivated or deleted. Deactivating a currency hides it from the currency lists without deleting it.
 
 ### Currency Details
 
-Click a currency's row to open its details page. **Back to Currencies** above the title returns to the list, and the arrow beside the title jumps straight to another currency.
+Click a currency's row, or **Details** in its actions, to open its details page. **Back to Currencies** above the title returns to the list, and the arrow beside the title jumps straight to another currency.
 
 ![The details page of a currency, with its totals, its exchange rate chart and its rate history](images/currency-detail.png)
 
@@ -41,12 +41,21 @@ The cards at the top show:
 |------|-------------|
 | **Transactions** | How many of your transactions use the currency: those posted in an account in the currency, and those paid in it from an account in another currency. Void transactions and the lines of a split are not counted |
 | **Total in** the currency | Every one of those amounts added up, ignoring whether it was spent or received, so a purchase and its refund count as the money that moved |
-| **Total in** your home currency | The same total in your home currency, each transaction at its own exchange rate where it has one and at the rate for its date otherwise. If a rate is missing for some transactions, the card reads **Converted Part in** your home currency instead, says how many transactions it leaves out and which rate is missing; use **Rate history** on the Currencies page to fill the gaps |
+| **Total in** your home currency | The same total in your home currency, each transaction at its own exchange rate where it has one and at the rate for its date otherwise. If a rate is missing for some transactions, the card reads **Converted Part in** your home currency instead, says how many transactions it leaves out and which rate is missing; use **Fill gaps in rate history** below the cards to fetch it |
 | **Latest Rate** | What one unit of the currency is worth in your home currency, with the date and the source of the latest stored rate |
 
-Below the cards, the **Exchange Rate** chart draws the stored rate over time as a line, in your home currency per 1 unit of the currency, with the period buttons above it. The rates your own transactions settled at (a purchase entered in a foreign currency, or a transfer between accounts in the two currencies) are highlighted as dots at their own value, so a payment made at a rate far from the market's stands out. Hover over the chart to see the rate on a day and the transactions near it.
+Below the cards, **Stored Rates** says how many daily rates Monize holds for the currency against your home currency and the dates they cover, and offers **Fill gaps in rate history** (see [Rate History](#rate-history)). The chart and the table reload with what it fetched.
 
-The **Rate History** table lists every rate, a page at a time, with its **Date**, the rate both ways round, and its **Source**: Yahoo Finance, Frankfurter (ECB), Money import, or **Transaction** for a rate one of your transactions settled at, with what the transaction was. Click a column heading to sort by it, use **All** / **Yahoo** / **Frankfurter** / **Transactions** above the table to show one source, and click **Export CSV** to download every row the filter shows.
+The **Exchange Rate** chart draws the stored rate over time as a line, in your home currency per 1 unit of the currency, with the period buttons above it. The rates your own transactions settled at (a purchase entered in a foreign currency, or a transfer between accounts in the two currencies) are highlighted as dots at their own value, so a payment made at a rate far from the market's stands out. Hover over the chart to see the rate on a day and the transactions near it.
+
+The period you pick on the chart applies to the cards and the table below it as well:
+
+| Card | Description |
+|------|-------------|
+| **Rates in Period** | How many rates the period holds, stored and from your transactions, and the first and last date among them |
+| **Average Spread** | How far the rates your transactions settled at were from the stored rate for the same date, on average, whether yours was higher or lower. A transaction with no stored rate within 45 days before its date cannot be compared; the card says how many there are, and **Fill gaps in rate history** can fetch the rates they need |
+
+The **Rate History** table lists every rate in the period, a page at a time, with its **Date**, the rate both ways round, and its **Source**: Yahoo Finance, Frankfurter (ECB), Money import, or **Transaction** for a rate one of your transactions settled at, with what the transaction was. Click a column heading to sort by it, use **All** / **Yahoo** / **Frankfurter** / **Transactions** above the table to show one source, and click **Export CSV** to download every row the filter shows.
 
 Your home currency has no exchange rate of its own, so its page shows the transaction count and total only.
 
@@ -129,13 +138,14 @@ Rates come from **Frankfurter** (the European Central Bank's reference rates) fi
 
 ### Rate History
 
-Click **Rate history** on a currency's row to see the rates Monize holds for it against your home currency:
+A currency's [details page](#currency-details) shows the rates Monize holds for it against your home currency. Its **Stored Rates** section has:
 
 - **Stored history** -- the first and last dates stored, and the number of observations
 - **Fill gaps in rate history** -- fetches the daily rates your reports are missing, from the first date your data uses the currency up to today
-- **Stored rates** -- every stored rate, newest first, with its **Date**, **Rate**, and **Source** (Yahoo Finance, Frankfurter (ECB), or Money import)
 
-![The rate history of a currency](images/currency-rate-history.png)
+The chart and the **Rate History** table below it list the stored rates themselves. The same summary and button appear in the edit form of a currency you created.
+
+![The stored rates of a currency, with the button that fills the gaps](images/currency-rate-history.png)
 
 Reports dated before the first stored rate cannot convert that currency. After an import or a backup restore, Monize fills the rate history of every foreign currency the imported or restored accounts and their securities use, from the first date they use it up to today, in the background; you do not need to start it. Use **Fill gaps in rate history** for anything it could not fetch, for example while a rate provider was not answering.
 
@@ -143,10 +153,10 @@ Reports dated before the first stored rate cannot convert that currency. After a
 
 A rate is always a number of one currency per **one unit** of another, and which way round it reads depends on where you are looking:
 
-- The Currencies page's **Rate** column and the **Rate history** dialog both show your home currency per 1 unit of the row's currency.
+- The Currencies page's **Rate** column and a currency's details page both show your home currency per 1 unit of the row's currency; the details page's table also shows the reciprocal beside it.
 - A transaction's own rate (a foreign-currency purchase, a cross-currency transfer, a foreign-currency investment trade) shows the *account's* currency per 1 unit of whatever you entered it in -- which is only the same number as the Currencies page when the account happens to be in your home currency.
 
-Monize stores each currency pair's history in a single fixed orientation -- a cryptocurrency paired with a fiat currency is always stored coin-to-fiat, and any other pair in plain alphabetical code order -- and shows you the reciprocal whenever that is not the direction you asked for. A rate marked **(inverted)** in the Rate History dialog is the reciprocal of what is actually stored for that pair, not a different observation.
+Monize stores each currency pair's history in a single fixed orientation -- a cryptocurrency paired with a fiat currency is always stored coin-to-fiat, and any other pair in plain alphabetical code order -- and shows you the reciprocal whenever that is not the direction you asked for, so the rate on the details page is the same observation whichever way round it is stored.
 
 ### Historical Rates
 

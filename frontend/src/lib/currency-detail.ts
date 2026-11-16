@@ -112,6 +112,7 @@ export function buildRateHistoryRows(
       kind: row.kind,
       accountName: row.accountName,
       payeeName: row.payeeName,
+      marketRate: row.marketRate,
     },
   }));
   return sortRateRows([...providerRows, ...transactionRows], 'date', 'desc', () => '');
@@ -175,6 +176,73 @@ export function sortRateRows(
   });
 }
 
+/** The rows dated inside `[start, end]`, either bound empty for none, in their order. */
+export function rateRowsInWindow(
+  rows: readonly RateHistoryRow[],
+  start: string,
+  end: string,
+): RateHistoryRow[] {
+  return rows.filter((row) => (!start || row.date >= start) && (!end || row.date <= end));
+}
+
+/** How many rates a period holds and the dates they span; `null` dates when none. */
+export interface RatePeriodSummary {
+  count: number;
+  firstDate: string | null;
+  lastDate: string | null;
+}
+
+export function summarizeRatePeriod(rows: readonly RateHistoryRow[]): RatePeriodSummary {
+  let firstDate: string | null = null;
+  let lastDate: string | null = null;
+  for (const row of rows) {
+    if (firstDate === null || row.date < firstDate) firstDate = row.date;
+    if (lastDate === null || row.date > lastDate) lastDate = row.date;
+  }
+  return { count: rows.length, firstDate, lastDate };
+}
+
+/**
+ * How far the rates the reader's own transactions settled at sit from the
+ * stored market rate for their dates.
+ *
+ * Each transaction's spread is `|settled - market| / market`, so a payment
+ * made at a rate above the market's and a refund made below it both count as
+ * the distance they are rather than cancelling out. A transaction with no
+ * stored market rate for its date cannot be measured: it is counted apart
+ * (`unmeasured`) and left out of the average, never measured against 1 or 0.
+ * `averagePercent` is `null` when nothing could be measured.
+ */
+export interface RateSpreadSummary {
+  /** Transactions measured against a market rate. */
+  measured: number;
+  /** Transactions with no stored market rate for their date. */
+  unmeasured: number;
+  /** The mean spread as a percentage (1.5 is 1.5%), or `null`. */
+  averagePercent: number | null;
+}
+
+export function summarizeRateSpread(rows: readonly RateHistoryRow[]): RateSpreadSummary {
+  let measured = 0;
+  let unmeasured = 0;
+  let total = 0;
+  for (const row of rows) {
+    if (!row.transaction || row.rate === null) continue;
+    const market = row.transaction.marketRate;
+    if (market === null || !(market > 0)) {
+      unmeasured += 1;
+      continue;
+    }
+    measured += 1;
+    total += Math.abs(row.rate - market) / market;
+  }
+  return {
+    measured,
+    unmeasured,
+    averagePercent: measured === 0 ? null : (total / measured) * 100,
+  };
+}
+
 /** A point on the rate chart: `t` is the date's local-midnight time. */
 export interface RateChartPoint {
   t: number;
@@ -211,8 +279,7 @@ export function buildRateChartSeries(
   start: string,
   end: string,
 ): RateChartSeries {
-  const inWindow = rows
-    .filter((row) => (!start || row.date >= start) && (!end || row.date <= end))
+  const inWindow = rateRowsInWindow(rows, start, end)
     .filter((row) => row.rate !== null)
     .sort((a, b) => a.date.localeCompare(b.date) || a.key.localeCompare(b.key));
   const provider: RateChartPoint[] = [];

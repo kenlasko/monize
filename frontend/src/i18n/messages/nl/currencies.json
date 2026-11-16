@@ -158,29 +158,6 @@
     "filling": "Ontbrekende koersen ophalen...",
     "fillGapsTitle": "Haalt de dagkoersen op die uw rapporten missen, vanaf de eerste datum waarop uw gegevens {code} gebruiken tot vandaag.",
     "hint": "Rapporten van vóór de eerste opgeslagen koers kunnen {pair} niet omrekenen.",
-    "list": {
-      "heading": "Opgeslagen koersen",
-      "invertedHelp": "Een koers gemarkeerd als (omgekeerd) is het omgekeerde van wat Monize daadwerkelijk voor dit paar heeft opgeslagen, geen andere waarneming.",
-      "direction": "Weergegeven als {to} per 1 {from}.",
-      "loading": "Opgeslagen koersen laden...",
-      "loadFailed": "Kon de opgeslagen koersen niet lezen",
-      "empty": "Geen opgeslagen koersen om te tonen",
-      "truncated": "De {count} meest recente opgeslagen koersen worden getoond; oudere staan er niet bij.",
-      "inverted": "omgekeerd",
-      "unknownRate": "Onbekend",
-      "columns": {
-        "date": "Datum",
-        "rate": "Koers",
-        "source": "Bron"
-      },
-      "sources": {
-        "yahooFinance": "Yahoo Finance",
-        "frankfurter": "Frankfurter (ECB)",
-        "mnyImport": "Money-import",
-        "yahooCrypto": "Cryptoparen (Yahoo)",
-        "unknown": "Onbekend"
-      }
-    },
     "toasts": {
       "filled": "{count} koersen toegevoegd; de geschiedenis begint nu op {start}",
       "partial": "{count} koersen opgeslagen; de historie begint nu op {start}. Nog {windows} gaten te halen, druk nogmaals om door te gaan.",

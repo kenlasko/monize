@@ -66,7 +66,8 @@
     "actions": {
       "edit": "[XX-Edit-XX]",
       "deactivate": "[XX-Deactivate-XX]",
-      "activate": "[XX-Activate-XX]"
+      "activate": "[XX-Activate-XX]",
+      "details": "[XX-Details-XX]"
     },
     "contextMenu": {
       "editCurrency": "[XX-Edit Currency-XX]",
@@ -158,29 +159,6 @@
     "filling": "[XX-Fetching missing rates...-XX]",
     "fillGapsTitle": "[XX-Fetches the daily rates your reports are missing, from the first date your data uses {code} up to today.-XX]",
     "hint": "[XX-Reports dated before the first stored rate cannot convert {pair}.-XX]",
-    "list": {
-      "heading": "[XX-Stored rates-XX]",
-      "invertedHelp": "[XX-A rate marked (inverted) is the reciprocal of what Monize actually stored for this pair, not a different observation.-XX]",
-      "direction": "[XX-Shown as {to} per 1 {from}.-XX]",
-      "loading": "[XX-Loading stored rates...-XX]",
-      "loadFailed": "[XX-Could not read the stored rates-XX]",
-      "empty": "[XX-No stored rates to list-XX]",
-      "truncated": "[XX-Showing the {count} most recent stored rates; older ones are not listed.-XX]",
-      "inverted": "[XX-inverted-XX]",
-      "unknownRate": "[XX-Unknown-XX]",
-      "columns": {
-        "date": "[XX-Date-XX]",
-        "rate": "[XX-Rate-XX]",
-        "source": "[XX-Source-XX]"
-      },
-      "sources": {
-        "yahooFinance": "[XX-Yahoo Finance-XX]",
-        "frankfurter": "[XX-Frankfurter (ECB)-XX]",
-        "mnyImport": "[XX-Money import-XX]",
-        "yahooCrypto": "[XX-Crypto pairs (Yahoo)-XX]",
-        "unknown": "[XX-Unknown-XX]"
-      }
-    },
     "toasts": {
       "filled": "[XX-Stored {count} rates; history now starts {start}-XX]",
       "partial": "[XX-Stored {count} rates; history now starts {start}. {windows} more gaps to fetch, press again to continue.-XX]",

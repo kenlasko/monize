@@ -8,8 +8,11 @@ import {
   rateAxisDecimals,
   rateDisplayDecimals,
   rateSourceGroup,
+  rateRowsInWindow,
   rateSourceLabelKey,
   sortRateRows,
+  summarizeRatePeriod,
+  summarizeRateSpread,
   type RateHistoryRow,
 } from './currency-detail';
 import type { StoredRate, TransactionRate } from './exchange-rates';
@@ -29,6 +32,7 @@ const transactionRates: TransactionRate[] = [
     kind: 'transfer',
     accountName: 'Euro Chequing',
     payeeName: null,
+    marketRate: null,
   },
   {
     transactionId: 'tx-1',
@@ -37,6 +41,7 @@ const transactionRates: TransactionRate[] = [
     kind: 'foreignEntry',
     accountName: 'CAD Chequing',
     payeeName: 'Hotel',
+    marketRate: 1.6,
   },
 ];
 
@@ -183,5 +188,73 @@ describe('rate precision', () => {
     expect(rateAxisDecimals(95.5)).toBe(2);
     expect(rateAxisDecimals(1.6)).toBe(4);
     expect(rateAxisDecimals(0.0092)).toBe(8);
+  });
+});
+
+describe('the selected period', () => {
+  const rows = buildRateHistoryRows(stored, transactionRates);
+
+  it('keeps the rows dated inside it, either bound open', () => {
+    expect(rateRowsInWindow(rows, '2026-03-01', '2026-03-02').map((row) => row.key)).toEqual([
+      'provider:2026-03-02',
+      'provider:2026-03-01',
+      'transaction:tx-1',
+    ]);
+    expect(rateRowsInWindow(rows, '', '')).toHaveLength(rows.length);
+    expect(rateRowsInWindow(rows, '2026-03-03', '')).toHaveLength(2);
+  });
+
+  it('counts its rates and the dates they span, and none as no dates', () => {
+    expect(summarizeRatePeriod(rows)).toEqual({
+      count: 6,
+      firstDate: '2026-02-01',
+      lastDate: '2026-03-03',
+    });
+    expect(summarizeRatePeriod([])).toEqual({ count: 0, firstDate: null, lastDate: null });
+  });
+});
+
+describe('summarizeRateSpread', () => {
+  const transaction = (id: string, rate: number, marketRate: number | null): TransactionRate => ({
+    transactionId: id,
+    rateDate: '2026-03-01',
+    rate,
+    kind: 'foreignEntry',
+    accountName: 'CAD Chequing',
+    payeeName: null,
+    marketRate,
+  });
+
+  it('averages each transaction’s distance from the market rate, above or below it', () => {
+    const rows = buildRateHistoryRows(stored, [
+      transaction('above', 1.02, 1),
+      transaction('below', 0.97, 1),
+    ]);
+
+    const spread = summarizeRateSpread(rows);
+
+    // 2% above and 3% below are 2.5% apart on average, not -0.5%.
+    expect(spread.measured).toBe(2);
+    expect(spread.unmeasured).toBe(0);
+    expect(spread.averagePercent).toBeCloseTo(2.5, 10);
+  });
+
+  it('leaves out a transaction with no market rate for its date, and counts it apart', () => {
+    const spread = summarizeRateSpread(buildRateHistoryRows(stored, transactionRates));
+
+    // tx-1 settled at 2 against 1.6; tx-2 has no stored rate for its date.
+    expect(spread).toMatchObject({ measured: 1, unmeasured: 1 });
+    expect(spread.averagePercent).toBeCloseTo(25, 10);
+  });
+
+  it('has no average when nothing could be measured, rather than a zero spread', () => {
+    expect(
+      summarizeRateSpread(buildRateHistoryRows(stored, [transaction('a', 1.5, null)])),
+    ).toEqual({ measured: 0, unmeasured: 1, averagePercent: null });
+    expect(summarizeRateSpread(buildRateHistoryRows(stored, []))).toEqual({
+      measured: 0,
+      unmeasured: 0,
+      averagePercent: null,
+    });
   });
 });

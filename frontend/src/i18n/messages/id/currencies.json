@@ -158,29 +158,6 @@
     "filling": "Mengambil kurs yang hilang...",
     "fillGapsTitle": "Mengambil kurs harian yang hilang dari laporan Anda, dari tanggal pertama data Anda memakai {code} hingga hari ini.",
     "hint": "Laporan dengan tanggal sebelum kurs tersimpan pertama tidak dapat mengonversi {pair}.",
-    "list": {
-      "heading": "Kurs tersimpan",
-      "invertedHelp": "Kurs yang ditandai (dibalik) adalah kebalikan dari apa yang sebenarnya disimpan Monize untuk pasangan ini, bukan pengamatan yang berbeda.",
-      "direction": "Ditampilkan sebagai {to} per 1 {from}.",
-      "loading": "Memuat kurs tersimpan...",
-      "loadFailed": "Tidak dapat membaca kurs tersimpan",
-      "empty": "Tidak ada kurs tersimpan untuk ditampilkan",
-      "truncated": "Menampilkan {count} kurs tersimpan terbaru; yang lebih lama tidak ditampilkan.",
-      "inverted": "dibalik",
-      "unknownRate": "Tidak diketahui",
-      "columns": {
-        "date": "Tanggal",
-        "rate": "Kurs",
-        "source": "Sumber"
-      },
-      "sources": {
-        "yahooFinance": "Yahoo Finance",
-        "frankfurter": "Frankfurter (ECB)",
-        "mnyImport": "Impor Money",
-        "yahooCrypto": "Pasangan kripto (Yahoo)",
-        "unknown": "Tidak diketahui"
-      }
-    },
     "toasts": {
       "filled": "Menambahkan {count} kurs; riwayat kini dimulai {start}",
       "partial": "{count} kurs tersimpan; riwayat kini dimulai {start}. Masih ada {windows} celah untuk diambil, tekan lagi untuk melanjutkan.",
