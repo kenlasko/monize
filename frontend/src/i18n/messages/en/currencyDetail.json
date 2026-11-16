@@ -25,6 +25,7 @@
     "convertedPartIn": "Converted Part in {currency}",
     "convertedNote": "Each transaction at its own rate, or the rate on its date",
     "missingRates": "{count, plural, one {# transaction is} other {# transactions are}} left out: no {pairs} rate for its date. Use Fill gaps in rate history below to fetch it.",
+    "missingRatesElsewhere": "{count, plural, one {# transaction is} other {# transactions are}} left out: no {pairs} rate for its date. Use Fill gaps in rate history on the details page of each currency it names.",
     "latestRate": "Latest Rate",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",

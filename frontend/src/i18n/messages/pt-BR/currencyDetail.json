@@ -25,6 +25,7 @@
     "convertedPartIn": "Parte convertida em {currency}",
     "convertedNote": "Cada transação à sua própria taxa, ou à taxa da sua data",
     "missingRates": "{count, plural, one {# transação fica de fora} other {# transações ficam de fora}}: não há taxa {pairs} para a data. Use Preencher lacunas do histórico abaixo para obtê-la.",
+    "missingRatesElsewhere": "{count, plural, one {# transação fica de fora} other {# transações ficam de fora}}: não há taxa {pairs} para a data. Use Preencher lacunas do histórico na página de detalhes de cada moeda indicada.",
     "latestRate": "Taxa mais recente",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",

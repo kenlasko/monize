@@ -16,6 +16,11 @@ const logger = createLogger('RateHistoryCoverage');
 interface RateHistoryCoverageProps {
   /** The currency being looked at. Its pair is this against the reporting currency. */
   code: string;
+  /**
+   * The reader's reporting currency, where the surface already has the
+   * server's answer (the detail page's); the client preference otherwise.
+   */
+  reportingCurrency?: string;
   /** The heading; the currency form's "Rate history" by default. */
   title?: string;
   /**
@@ -61,12 +66,14 @@ interface PanelState {
  */
 export function RateHistoryCoverage({
   code,
+  reportingCurrency,
   title,
   className = 'border-t border-gray-200 dark:border-gray-700 pt-4',
   onFilled,
 }: RateHistoryCoverageProps) {
   const t = useTranslations('currencies');
-  const { defaultCurrency } = useExchangeRates();
+  const { defaultCurrency: preferredCurrency } = useExchangeRates();
+  const defaultCurrency = reportingCurrency ?? preferredCurrency;
   const { formatDate } = useDateFormat();
   const { formatNumber } = useNumberFormat();
 

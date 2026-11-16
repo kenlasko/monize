@@ -25,6 +25,7 @@
     "convertedPartIn": "Umgerechneter Teil in {currency}",
     "convertedNote": "Jede Buchung zu ihrem eigenen Kurs oder zum Kurs ihres Datums",
     "missingRates": "{count, plural, one {# Buchung bleibt} other {# Buchungen bleiben}} unberücksichtigt: kein {pairs}-Kurs für das Datum. Rufen Sie ihn unten mit „Lücken im Kursverlauf füllen“ ab.",
+    "missingRatesElsewhere": "{count, plural, one {# Buchung bleibt} other {# Buchungen bleiben}} unberücksichtigt: kein {pairs}-Kurs für das Datum. Rufen Sie ihn mit „Lücken im Kursverlauf füllen“ auf der Detailseite jeder genannten Währung ab.",
     "latestRate": "Aktueller Kurs",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",

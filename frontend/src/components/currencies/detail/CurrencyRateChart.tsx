@@ -35,14 +35,11 @@ import {
 interface CurrencyRateChartProps {
   code: string;
   defaultCurrency: string;
-  /** Every rate row, provider and transaction alike, in any order. */
+  /** The rate rows of the selected period, provider and transaction alike, in any order. */
   rows: readonly RateHistoryRow[];
   /** The selected period preset, which the table and the period cards share. */
   dateRange: string;
   onDateRangeChange: (range: string) => void;
-  /** The period's bounds, `YYYY-MM-DD`, either one empty for none. */
-  start: string;
-  end: string;
 }
 
 /** One plotted day: the provider's rate, and the reader's own rates near it. */
@@ -134,8 +131,6 @@ export function CurrencyRateChart({
   rows,
   dateRange,
   onDateRangeChange,
-  start,
-  end,
 }: CurrencyRateChartProps) {
   const t = useTranslations('currencyDetail');
   const { formatNumber } = useNumberFormat();
@@ -143,7 +138,8 @@ export function CurrencyRateChart({
   const chartRef = useRef<HTMLDivElement>(null);
 
   const { days, transactions, axisTicks, axisPattern, axisDecimals } = useMemo(() => {
-    const series = buildRateChartSeries(rows, start, end);
+    // The section has already narrowed the rows to the period.
+    const series = buildRateChartSeries(rows, '', '');
     const built = chartDays(series.provider, series.transactions);
     if (built.length === 0) {
       return {
@@ -170,7 +166,7 @@ export function CurrencyRateChart({
       axisPattern: (useYearTicks ? 'yyyy' : 'MMM') as ChartDatePattern,
       axisDecimals: rateAxisDecimals(maxRate),
     };
-  }, [rows, start, end]);
+  }, [rows]);
 
   const rangeLabels = Object.fromEntries(
     CHART_RANGES.map((range) => [range, t(`chart.ranges.${range}`)]),

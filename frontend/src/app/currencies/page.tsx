@@ -48,8 +48,6 @@ function CurrenciesContent() {
   const [usage, setUsage] = useState<CurrencyUsage>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshingRates, setIsRefreshingRates] = useState(false);
-  // The currency whose stored rate history is open, or null. Its own dialog,
-  // because the built-in currencies have no edit dialog to host it in.
   const { showForm, editingItem: editingCurrency, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<CurrencyInfo>();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active');

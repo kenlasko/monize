@@ -59,7 +59,31 @@ describe('CurrencySummaryCards', () => {
 
     expect(screen.queryByText('Total in CAD')).not.toBeInTheDocument();
     expect(screen.getByText('Converted Part in CAD')).toBeInTheDocument();
-    expect(screen.getByText(/3 transactions are left out: no EUR->CAD rate/)).toBeInTheDocument();
+    expect(screen.getByText(/3 transactions are left out: no EUR->CAD rate/)).toHaveTextContent(
+      'Use Fill gaps in rate history below to fetch it.',
+    );
+  });
+
+  it('sends the reader to the page that can fill a pair this page cannot', () => {
+    // A row paid in EUR but posted in a USD account converts USD->CAD, which
+    // only the USD page's fill fetches.
+    render(
+      <CurrencySummaryCards
+        code="EUR"
+        defaultCurrency="CAD"
+        usage={usage({
+          totalInReportingCurrency: null,
+          knownReportingSubtotal: 150,
+          unconvertedCount: 1,
+          missingPairs: ['USD->CAD'],
+        })}
+        latestRate={latest}
+      />,
+    );
+
+    const note = screen.getByText(/1 transaction is left out: no USD->CAD rate/);
+    expect(note).toHaveTextContent('on the details page of each currency it names');
+    expect(note).not.toHaveTextContent('below');
   });
 
   it('withholds the total in the currency when an amount in it is unknown', () => {

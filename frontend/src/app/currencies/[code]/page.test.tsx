@@ -224,6 +224,59 @@ describe('CurrencyDetailPage', () => {
     expect(await screen.findByRole('button', { name: 'All (4)' })).toBeInTheDocument();
   });
 
+  it('keeps a fill that finishes after a currency switch from blanking the new currency', async () => {
+    let releaseFill: (value: unknown) => void = () => {};
+    mockGetCurrencies.mockResolvedValue([
+      currency('CAD', 'Canadian Dollar'),
+      currency('EUR', 'Euro'),
+      currency('USD', 'US Dollar'),
+    ]);
+    mockFillRateGaps.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releaseFill = resolve;
+        }),
+    );
+    let rerender: (ui: React.ReactElement) => void = () => {};
+    await act(async () => {
+      ({ rerender } = render(<CurrencyDetailPage />));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Fill gaps in rate history' }));
+    });
+
+    routeParams.current = { code: 'usd' };
+    await act(async () => {
+      rerender(<CurrencyDetailPage />);
+    });
+    expect(screen.getByRole('heading', { level: 1, name: 'USD · US Dollar' })).toBeInTheDocument();
+    const storedReads = mockGetStoredRates.mock.calls.length;
+
+    // The EUR fill lands on the USD page.
+    await act(async () => {
+      releaseFill({
+        from: 'EUR',
+        to: 'CAD',
+        usedFrom: '2024-05-01',
+        spanEnd: '2026-03-20',
+        unresolvableDays: 0,
+        sparseDays: 0,
+        windowsPlanned: 1,
+        windowsFetched: 1,
+        windowsSkipped: 0,
+        windowsUnanswered: 0,
+        windowsRemaining: 0,
+        stored: 240,
+        earliestDate: '2024-05-01',
+        providerHasNothingBefore: null,
+      });
+    });
+
+    expect(mockGetStoredRates.mock.calls.length).toBe(storedReads);
+    expect(screen.queryByText('Loading exchange rates...')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Rate History' })).toBeInTheDocument();
+  });
+
   it('counts the rates of the selected period and averages the spread of its transactions', async () => {
     await renderPage();
 

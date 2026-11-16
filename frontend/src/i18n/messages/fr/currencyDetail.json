@@ -25,6 +25,7 @@
     "convertedPartIn": "Partie convertie en {currency}",
     "convertedNote": "Chaque opération à son propre taux, ou au taux de sa date",
     "missingRates": "{count, plural, one {# opération est exclue} other {# opérations sont exclues}} : aucun taux {pairs} pour sa date. Utilisez Combler les lacunes de l'historique ci-dessous pour l'obtenir.",
+    "missingRatesElsewhere": "{count, plural, one {# opération est exclue} other {# opérations sont exclues}} : aucun taux {pairs} pour sa date. Utilisez Combler les lacunes de l'historique sur la page de détails de chaque devise indiquée.",
     "latestRate": "Dernier taux",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",

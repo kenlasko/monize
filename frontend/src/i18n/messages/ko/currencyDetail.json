@@ -25,6 +25,7 @@
     "convertedPartIn": "{currency}(으)로 환산된 부분",
     "convertedNote": "각 거래는 자체 환율 또는 해당 날짜의 환율로 환산",
     "missingRates": "{count, plural, other {거래 #건}}이 제외되었습니다: 해당 날짜의 {pairs} 환율이 없습니다. 아래의 환율 이력의 빈 구간 채우기로 가져오세요.",
+    "missingRatesElsewhere": "{count, plural, other {거래 #건}}이 제외되었습니다: 해당 날짜의 {pairs} 환율이 없습니다. 표시된 각 통화의 상세 페이지에서 환율 이력의 빈 구간 채우기를 사용하세요.",
     "latestRate": "최신 환율",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",

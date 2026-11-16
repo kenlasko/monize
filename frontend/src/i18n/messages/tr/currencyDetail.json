@@ -25,6 +25,7 @@
     "convertedPartIn": "{currency} cinsinden çevrilen kısım",
     "convertedNote": "Her işlem kendi kuruyla veya tarihindeki kurla",
     "missingRates": "{count, plural, one {# işlem dışarıda kaldı} other {# işlem dışarıda kaldı}}: tarihi için {pairs} kuru yok. Almak için aşağıdaki Kur geçmişindeki boşlukları doldur düğmesini kullanın.",
+    "missingRatesElsewhere": "{count, plural, one {# işlem dışarıda kaldı} other {# işlem dışarıda kaldı}}: tarihi için {pairs} kuru yok. Belirtilen her para biriminin ayrıntılar sayfasındaki Kur geçmişindeki boşlukları doldur düğmesini kullanın.",
     "latestRate": "Son Kur",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",

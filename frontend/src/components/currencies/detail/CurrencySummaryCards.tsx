@@ -65,6 +65,11 @@ export function CurrencySummaryCards({
 
   if (!isDefault) {
     const complete = usage.totalInReportingCurrency !== null;
+    // A pair is "FROM->TO" with FROM the currency the rows were posted in, and
+    // this page's fill fetches only its own code's pair: a missing rate of a
+    // row posted in another currency (paid in this one) is filled from that
+    // currency's page.
+    const onlyOwnPairs = usage.missingPairs.every((pair) => pair.startsWith(`${code}->`));
     cards.push({
       label: complete
         ? t('summary.totalIn', { currency: usage.reportingCurrency })
@@ -79,7 +84,7 @@ export function CurrencySummaryCards({
       valueClass: complete ? undefined : 'text-amber-600 dark:text-amber-400',
       note: complete
         ? t('summary.convertedNote')
-        : t('summary.missingRates', {
+        : t(onlyOwnPairs ? 'summary.missingRates' : 'summary.missingRatesElsewhere', {
             count: usage.unconvertedCount,
             pairs: usage.missingPairs.join(', '),
           }),

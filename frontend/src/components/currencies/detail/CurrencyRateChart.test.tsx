@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
-import { buildRateHistoryRows } from '@/lib/currency-detail';
+import { buildRateHistoryRows, rateRowsInWindow } from '@/lib/currency-detail';
 import { CurrencyRateChart } from './CurrencyRateChart';
 
 const rows = buildRateHistoryRows(
@@ -29,8 +29,6 @@ const renderChart = (props: Partial<Parameters<typeof CurrencyRateChart>[0]> = {
       rows={rows}
       dateRange="all"
       onDateRangeChange={vi.fn()}
-      start=""
-      end=""
       {...props}
     />,
   );
@@ -45,7 +43,10 @@ describe('CurrencyRateChart', () => {
   });
 
   it('says when the window holds no rate, and counts the highlighted transactions it shows', () => {
-    const { rerender } = renderChart({ dateRange: '1y', start: '2025-01-01', end: '2025-12-31' });
+    const { rerender } = renderChart({
+      dateRange: '1y',
+      rows: rateRowsInWindow(rows, '2025-01-01', '2025-12-31'),
+    });
 
     expect(screen.getByText('No exchange rates in this period')).toBeInTheDocument();
     expect(screen.getByText('Your transactions (0)')).toBeInTheDocument();
@@ -57,8 +58,6 @@ describe('CurrencyRateChart', () => {
         rows={rows}
         dateRange="all"
         onDateRangeChange={vi.fn()}
-        start=""
-        end=""
       />,
     );
     expect(screen.queryByText('No exchange rates in this period')).not.toBeInTheDocument();

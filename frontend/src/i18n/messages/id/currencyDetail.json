@@ -25,6 +25,7 @@
     "convertedPartIn": "Bagian yang dikonversi dalam {currency}",
     "convertedNote": "Setiap transaksi dengan kursnya sendiri, atau kurs pada tanggalnya",
     "missingRates": "{count, plural, other {# transaksi tidak dihitung}}: tidak ada kurs {pairs} untuk tanggalnya. Gunakan Isi celah riwayat kurs di bawah untuk mengambilnya.",
+    "missingRatesElsewhere": "{count, plural, other {# transaksi tidak dihitung}}: tidak ada kurs {pairs} untuk tanggalnya. Gunakan Isi celah riwayat kurs di halaman detail setiap mata uang yang disebut.",
     "latestRate": "Kurs Terbaru",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",

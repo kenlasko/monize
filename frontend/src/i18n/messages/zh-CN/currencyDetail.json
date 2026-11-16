@@ -25,6 +25,7 @@
     "convertedPartIn": "已换算为 {currency} 的部分",
     "convertedNote": "每笔交易按其自身汇率或其日期的汇率换算",
     "missingRates": "{count, plural, other {# 笔交易}}未计入：该日期没有 {pairs} 汇率。请使用下方的“补全汇率历史的缺口”获取。",
+    "missingRatesElsewhere": "{count, plural, other {# 笔交易}}未计入：该日期没有 {pairs} 汇率。请在所列每种货币的详情页面使用“补全汇率历史的缺口”。",
     "latestRate": "最新汇率",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}，{source}",

@@ -25,6 +25,7 @@
     "convertedPartIn": "{currency} में बदला गया भाग",
     "convertedNote": "हर लेन-देन उसकी अपनी दर पर, या उसकी तारीख की दर पर",
     "missingRates": "{count, plural, one {# लेन-देन छोड़ा गया} other {# लेन-देन छोड़े गए}}: उसकी तारीख के लिए कोई {pairs} दर नहीं। उसे लाने के लिए नीचे \"दर इतिहास की कमियाँ भरें\" का उपयोग करें।",
+    "missingRatesElsewhere": "{count, plural, one {# लेन-देन छोड़ा गया} other {# लेन-देन छोड़े गए}}: उसकी तारीख के लिए कोई {pairs} दर नहीं। बताई गई हर मुद्रा के विवरण पृष्ठ पर \"दर इतिहास की कमियाँ भरें\" का उपयोग करें।",
     "latestRate": "नवीनतम दर",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",

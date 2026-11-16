@@ -25,6 +25,7 @@
     "convertedPartIn": "{currency} に換算できた分",
     "convertedNote": "各取引を独自のレート、またはその日付のレートで換算",
     "missingRates": "{count, plural, other {# 件の取引}}を除外しました: その日付の {pairs} レートがありません。下の「レート履歴の欠落を補う」で取得してください。",
+    "missingRatesElsewhere": "{count, plural, other {# 件の取引}}を除外しました: その日付の {pairs} レートがありません。表示された各通貨の詳細ページで「レート履歴の欠落を補う」を使ってください。",
     "latestRate": "最新レート",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}、{source}",

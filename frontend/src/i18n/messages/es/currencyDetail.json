@@ -25,6 +25,7 @@
     "convertedPartIn": "Parte convertida en {currency}",
     "convertedNote": "Cada transacción a su propio tipo, o al tipo de su fecha",
     "missingRates": "{count, plural, one {# transacción queda excluida} other {# transacciones quedan excluidas}}: no hay tipo {pairs} para su fecha. Use Rellenar huecos del historial más abajo para obtenerlo.",
+    "missingRatesElsewhere": "{count, plural, one {# transacción queda excluida} other {# transacciones quedan excluidas}}: no hay tipo {pairs} para su fecha. Use Rellenar huecos del historial en la página de detalles de cada moneda indicada.",
     "latestRate": "Último tipo",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",

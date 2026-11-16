@@ -25,6 +25,7 @@
     "convertedPartIn": "Parte convertita in {currency}",
     "convertedNote": "Ogni transazione al proprio tasso, o al tasso della sua data",
     "missingRates": "{count, plural, one {# transazione è esclusa} other {# transazioni sono escluse}}: nessun tasso {pairs} per la data. Usa Colma le lacune dello storico qui sotto per recuperarlo.",
+    "missingRatesElsewhere": "{count, plural, one {# transazione è esclusa} other {# transazioni sono escluse}}: nessun tasso {pairs} per la data. Usa Colma le lacune dello storico nella pagina dei dettagli di ogni valuta indicata.",
     "latestRate": "Ultimo tasso",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",

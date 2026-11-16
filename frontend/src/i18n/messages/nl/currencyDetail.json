@@ -25,6 +25,7 @@
     "convertedPartIn": "Omgerekend deel in {currency}",
     "convertedNote": "Elke transactie tegen haar eigen koers, of de koers van haar datum",
     "missingRates": "{count, plural, one {# transactie valt} other {# transacties vallen}} buiten de som: geen {pairs}-koers voor de datum. Haal hem op met Gaten in koershistorie vullen hieronder.",
+    "missingRatesElsewhere": "{count, plural, one {# transactie valt} other {# transacties vallen}} buiten de som: geen {pairs}-koers voor de datum. Gebruik Gaten in koershistorie vullen op de detailpagina van elke genoemde valuta.",
     "latestRate": "Laatste koers",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",

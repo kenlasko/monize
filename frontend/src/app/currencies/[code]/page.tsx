@@ -135,10 +135,13 @@ function CurrencyDetailContent() {
 
   // Also what a gap fill calls: the figures are re-read with the history,
   // since a rate the fill stored can complete the converted total.
+  // A fill can finish after the reader switched currencies: its reload is for
+  // a page no longer on screen and must not blank the one that is.
   const reloadRates = useCallback(() => {
+    if (shownCodeRef.current !== code) return Promise.resolve();
     setRates(null);
     return fetchData();
-  }, [fetchData]);
+  }, [code, fetchData]);
 
   useEffect(() => {
     fetchData();
@@ -249,6 +252,7 @@ function CurrencyDetailContent() {
                 <RateHistoryCoverage
                   key={code}
                   code={code}
+                  reportingCurrency={reportingCurrency}
                   title={t('storedHistory.title')}
                   className=""
                   onFilled={reloadRates}
