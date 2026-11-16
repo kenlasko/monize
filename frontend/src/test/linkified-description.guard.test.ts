@@ -43,7 +43,7 @@ function withoutComments(source: string): string {
 const LINKIFIED = [
   '/src/components/transactions/TransactionRow.tsx',
   '/src/components/reports/UncategorizedTransactionsReport.tsx',
-  '/src/components/reports/DuplicateTransactionReport.tsx',
+  '/src/components/reports/DuplicateGroupCard.tsx',
   '/src/components/reports/ReportChart.tsx',
 ];
 
