@@ -645,7 +645,7 @@
     "howDetectedHigh": "High: Same date, amount, and payee",
     "howDetectedMedium": "Medium: Same date and amount, or same payee and amount within a few days",
     "howDetectedLow": "Low: Same amount within the date range",
-    "howDetectedNote": "Tick the copies to remove, or use Select duplicates to tick every extra copy at a confidence level, then click Delete selected. Each group keeps one copy unticked: a reconciled one, then a cleared one, otherwise the earliest. A reconciled transaction is never ticked for you. Click a transaction to view it on the Transactions page."
+    "howDetectedNote": "Tick the copies to remove, or use Select duplicates to tick every extra copy at a confidence level, then click Delete selected. Each group keeps one copy unticked: a reconciled one, then a cleared one, otherwise the earliest. While Lock reconciled transactions is on in Settings, a reconciled transaction is not ticked for you, since it cannot be deleted. Click a transaction to view it on the Transactions page."
   },
   "filterBuilder": {
     "noFilters": "No filters — all transactions included",

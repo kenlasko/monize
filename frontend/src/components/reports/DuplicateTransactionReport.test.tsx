@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, fireEvent, render, screen, waitFor, within } from '@/test/render';
 import { DuplicateTransactionReport } from './DuplicateTransactionReport';
+import { usePreferencesStore } from '@/store/preferencesStore';
+import type { UserPreferences } from '@/types/auth';
 import type {
   DuplicateGroup,
   DuplicateTransactionItem,
@@ -148,6 +150,9 @@ describe('DuplicateTransactionReport', () => {
     mockRange.start = '2025-01-01';
     mockRange.end = '2025-03-31';
     mockGetCategories.mockResolvedValue([]);
+    usePreferencesStore.setState({
+      preferences: { lockReconciledTransactions: false } as UserPreferences,
+    });
   });
 
   it('shows loading state initially', () => {
@@ -286,6 +291,40 @@ describe('DuplicateTransactionReport', () => {
     expect(ticked).toEqual([true, false, true, false, false]);
     expect(screen.getByText('2 selected')).toBeInTheDocument();
     expect(screen.getByText('Reconciled')).toBeInTheDocument();
+  });
+
+  it('ticks one copy of a pair that is reconciled on both sides', async () => {
+    const reconciledPair = group({
+      key: 'g-m',
+      confidence: 'medium',
+      reason: 'Same date and amount',
+      reasonCode: 'same_date_amount',
+      transactions: [tx({ id: 'm-1', status: 'RECONCILED' }), tx({ id: 'm-2', payeeName: 'Store B', status: 'RECONCILED' })],
+    });
+    mockGetDuplicateTransactions.mockResolvedValue(response([reconciledPair]));
+    await renderReport();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Medium confidence (1)' }));
+
+    const ticked = (screen.getAllByRole('checkbox') as HTMLInputElement[]).map((box) => box.checked);
+    expect(ticked).toEqual([false, true]);
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+  });
+
+  it('leaves reconciled copies unticked while the reconciled lock is on', async () => {
+    usePreferencesStore.setState({
+      preferences: { lockReconciledTransactions: true } as UserPreferences,
+    });
+    const lockedPair = group({
+      key: 'g-l',
+      transactions: [tx({ id: 'l-1', status: 'RECONCILED' }), tx({ id: 'l-2', status: 'RECONCILED' })],
+    });
+    mockGetDuplicateTransactions.mockResolvedValue(response([lockedPair]));
+    await renderReport();
+
+    fireEvent.click(screen.getByRole('button', { name: 'High confidence (1)' }));
+
+    expect(screen.getByText('None selected')).toBeInTheDocument();
   });
 
   it('lets a mistaken row be unticked and deletes only what is left', async () => {

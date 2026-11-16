@@ -645,7 +645,7 @@
     "howDetectedHigh": "Hoch: Gleiches Datum, Betrag und Zahlungsempfänger",
     "howDetectedMedium": "Mittel: Gleiches Datum und Betrag oder gleicher Zahlungsempfänger und Betrag innerhalb weniger Tage",
     "howDetectedLow": "Niedrig: Gleicher Betrag im Datumsbereich",
-    "howDetectedNote": "Markieren Sie die zu entfernenden Kopien oder markieren Sie mit „Duplikate auswählen“ jede zusätzliche Kopie einer Wahrscheinlichkeitsstufe, und klicken Sie dann auf „Auswahl löschen“. In jeder Gruppe bleibt eine Kopie unmarkiert: eine abgeglichene, dann eine bestätigte, sonst die früheste. Eine abgeglichene Buchung wird nie automatisch markiert. Klicken Sie auf eine Buchung, um sie auf der Buchungsseite anzuzeigen."
+    "howDetectedNote": "Markieren Sie die zu entfernenden Kopien oder markieren Sie mit „Duplikate auswählen“ jede zusätzliche Kopie einer Wahrscheinlichkeitsstufe, und klicken Sie dann auf „Auswahl löschen“. In jeder Gruppe bleibt eine Kopie unmarkiert: eine abgeglichene, dann eine bestätigte, sonst die früheste. Solange in den Einstellungen „Abgeglichene Buchungen sperren“ aktiv ist, wird eine abgeglichene Buchung nicht automatisch markiert, da sie nicht gelöscht werden kann. Klicken Sie auf eine Buchung, um sie auf der Buchungsseite anzuzeigen."
   },
   "filterBuilder": {
     "noFilters": "Keine Filter – alle Buchungen einbezogen",

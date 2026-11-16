@@ -645,7 +645,7 @@
     "howDetectedHigh": "Yüksek: Aynı tarih, tutar ve alacaklı",
     "howDetectedMedium": "Orta: Aynı tarih ve tutar ya da birkaç gün içinde aynı alacaklı ve tutar",
     "howDetectedLow": "Düşük: Tarih aralığında aynı tutar",
-    "howDetectedNote": "Kaldırılacak kopyaları işaretleyin ya da bir güven düzeyindeki tüm fazla kopyaları işaretlemek için Yinelenenleri seç seçeneğini kullanın, ardından Seçilenleri sil düğmesine tıklayın. Her grupta bir kopya işaretsiz kalır: önce mutabakatı sağlanmış olan, sonra temizlenmiş olan, yoksa en eskisi. Mutabakatı sağlanmış bir işlem hiçbir zaman sizin yerinize işaretlenmez. Bir işlemi İşlemler sayfasında görmek için üzerine tıklayın."
+    "howDetectedNote": "Kaldırılacak kopyaları işaretleyin ya da bir güven düzeyindeki tüm fazla kopyaları işaretlemek için Yinelenenleri seç seçeneğini kullanın, ardından Seçilenleri sil düğmesine tıklayın. Her grupta bir kopya işaretsiz kalır: önce mutabakatı sağlanmış olan, sonra temizlenmiş olan, yoksa en eskisi. Ayarlar'da Mutabık kılınan işlemleri kilitle açıkken, mutabakatı sağlanmış bir işlem silinemeyeceği için sizin yerinize işaretlenmez. Bir işlemi İşlemler sayfasında görmek için üzerine tıklayın."
   },
   "filterBuilder": {
     "noFilters": "Filtre yok — tüm işlemler dahil",

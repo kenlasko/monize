@@ -64,7 +64,7 @@ export function DuplicateGroupCard({
           return (
             <div
               key={tx.id}
-              className="px-4 py-3 flex items-center gap-3 hover:bg-white/50 dark:hover:bg-gray-800/50 cursor-pointer"
+              className={`px-4 py-3 flex items-center gap-3 hover:bg-white/50 dark:hover:bg-gray-800/50 cursor-pointer ${selected.has(tx.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
               onClick={() => onOpen(tx)}
             >
               <input

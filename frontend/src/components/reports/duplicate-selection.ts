@@ -31,15 +31,18 @@ export function keeperId(group: DuplicateGroup): string {
 
 /**
  * What "select duplicates" ticks in a group: every member except the one it
- * keeps, and never a reconciled row. A second reconciled copy is the user's to
- * tick by hand: with the reconciled lock on, one reconciled row refuses the
+ * keeps, so each group is left with exactly one copy. A reconciled copy is
+ * ticked like any other, since history imported from Money arrives reconciled
+ * and its duplicates are reconciled on both sides. Only while the strict
+ * reconciled lock is on is a reconciled copy left for the user to tick by
+ * hand: the server refuses to delete it then, and one refused row refuses the
  * whole bulk delete, so ticking it for them would stop every other group's
  * copies from being removed too.
  */
-export function extraCopyIds(group: DuplicateGroup): string[] {
+export function extraCopyIds(group: DuplicateGroup, reconciledLocked: boolean): string[] {
   const keep = keeperId(group);
   return group.transactions
-    .filter((tx) => tx.id !== keep && tx.status !== 'RECONCILED')
+    .filter((tx) => tx.id !== keep && !(reconciledLocked && tx.status === 'RECONCILED'))
     .map((tx) => tx.id);
 }
 
@@ -51,11 +54,12 @@ export function withDuplicatesAt(
   groups: readonly DuplicateGroup[],
   level: DuplicateConfidence,
   selected: ReadonlySet<string>,
+  reconciledLocked: boolean,
 ): Set<string> {
   const next = new Set(selected);
   for (const group of groups) {
     if (group.confidence !== level) continue;
-    for (const id of extraCopyIds(group)) next.add(id);
+    for (const id of extraCopyIds(group, reconciledLocked)) next.add(id);
   }
   return next;
 }

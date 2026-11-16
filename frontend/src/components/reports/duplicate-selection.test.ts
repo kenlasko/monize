@@ -42,12 +42,19 @@ describe('keeperId', () => {
 
 describe('extraCopyIds', () => {
   it('is every member but the keeper, in group order', () => {
-    expect(extraCopyIds(group('g', 'high', [tx('a'), tx('b', 'RECONCILED'), tx('c')]))).toEqual(['a', 'c']);
+    expect(extraCopyIds(group('g', 'high', [tx('a'), tx('b', 'RECONCILED'), tx('c')]), false)).toEqual(['a', 'c']);
   });
 
-  it('never ticks a second reconciled copy, which would refuse the whole delete', () => {
+  it('ticks the second copy of a fully reconciled pair, so every group keeps exactly one', () => {
+    expect(extraCopyIds(group('g', 'very_high', [tx('a', 'RECONCILED'), tx('b', 'RECONCILED')]), false)).toEqual(['b']);
     expect(
-      extraCopyIds(group('g', 'high', [tx('a', 'RECONCILED'), tx('b', 'RECONCILED'), tx('c')])),
+      extraCopyIds(group('g', 'medium', [tx('a', 'RECONCILED'), tx('b', 'RECONCILED'), tx('c', 'RECONCILED')]), false),
+    ).toEqual(['b', 'c']);
+  });
+
+  it('never ticks a reconciled copy under the lock, which would refuse the whole delete', () => {
+    expect(
+      extraCopyIds(group('g', 'high', [tx('a', 'RECONCILED'), tx('b', 'RECONCILED'), tx('c')]), true),
     ).toEqual(['c']);
   });
 });
@@ -60,15 +67,31 @@ describe('withDuplicatesAt', () => {
 
   it("adds only that level's extra copies, keeping what was already ticked", () => {
     const before = new Set(['c']);
-    const after = withDuplicatesAt(groups, 'very_high', before);
+    const after = withDuplicatesAt(groups, 'very_high', before, false);
     expect([...after].sort()).toEqual(['b', 'c']);
     // The caller's set is never mutated.
     expect([...before]).toEqual(['c']);
   });
 
   it('adds nothing for a level with no groups', () => {
-    expect(withDuplicatesAt(groups, 'low', new Set()).size).toBe(0);
+    expect(withDuplicatesAt(groups, 'low', new Set(), false).size).toBe(0);
   });
+
+  it.each(['very_high', 'high', 'medium', 'low'] as const)(
+    'leaves one copy of every %s group unticked and ticks the rest, whatever their status',
+    (level) => {
+      const atLevel = [
+        group('open', level, [tx('o1'), tx('o2')]),
+        group('reconciled', level, [tx('r1', 'RECONCILED'), tx('r2', 'RECONCILED')]),
+        group('mixed', level, [tx('m1', 'CLEARED'), tx('m2', 'RECONCILED'), tx('m3', null)]),
+      ];
+      const after = withDuplicatesAt(atLevel, level, new Set(), false);
+      for (const g of atLevel) {
+        const ticked = g.transactions.filter((t) => after.has(t.id));
+        expect(ticked).toHaveLength(g.transactions.length - 1);
+      }
+    },
+  );
 });
 
 describe('selectionInGroups', () => {

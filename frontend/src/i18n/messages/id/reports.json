@@ -645,7 +645,7 @@
     "howDetectedHigh": "Tinggi: Tanggal, jumlah, dan penerima yang sama",
     "howDetectedMedium": "Sedang: Tanggal dan jumlah yang sama, atau penerima dan jumlah yang sama dalam beberapa hari",
     "howDetectedLow": "Rendah: Jumlah yang sama dalam rentang tanggal",
-    "howDetectedNote": "Centang salinan yang ingin dihapus, atau gunakan Pilih duplikat untuk mencentang setiap salinan tambahan pada suatu tingkat kepercayaan, lalu klik Hapus yang dipilih. Setiap grup menyisakan satu salinan tanpa centang: yang direkonsiliasi, lalu yang kliring, jika tidak ada maka yang paling awal. Transaksi yang direkonsiliasi tidak pernah dicentang secara otomatis. Klik transaksi untuk melihatnya di halaman Transaksi."
+    "howDetectedNote": "Centang salinan yang ingin dihapus, atau gunakan Pilih duplikat untuk mencentang setiap salinan tambahan pada suatu tingkat kepercayaan, lalu klik Hapus yang dipilih. Setiap grup menyisakan satu salinan tanpa centang: yang direkonsiliasi, lalu yang kliring, jika tidak ada maka yang paling awal. Selama Kunci transaksi yang direkonsiliasi aktif di Pengaturan, transaksi yang direkonsiliasi tidak dicentang secara otomatis karena tidak dapat dihapus. Klik transaksi untuk melihatnya di halaman Transaksi."
   },
   "filterBuilder": {
     "noFilters": "Tidak ada filter — semua transaksi disertakan",

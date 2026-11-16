@@ -645,7 +645,7 @@
     "howDetectedHigh": "Wysoka: ta sama data, kwota i odbiorca",
     "howDetectedMedium": "Średnia: ta sama data i kwota lub ten sam odbiorca i kwota w odstępie kilku dni",
     "howDetectedLow": "Niska: ta sama kwota w zakresie dat",
-    "howDetectedNote": "Zaznacz kopie do usunięcia albo użyj opcji Zaznacz duplikaty, aby zaznaczyć każdą nadmiarową kopię na danym poziomie pewności, a następnie kliknij Usuń zaznaczone. W każdej grupie jedna kopia pozostaje niezaznaczona: uzgodniona, potem rozliczona, a w przeciwnym razie najwcześniejsza. Uzgodniona transakcja nigdy nie jest zaznaczana automatycznie. Kliknij transakcję, aby wyświetlić ją na stronie Transakcje."
+    "howDetectedNote": "Zaznacz kopie do usunięcia albo użyj opcji Zaznacz duplikaty, aby zaznaczyć każdą nadmiarową kopię na danym poziomie pewności, a następnie kliknij Usuń zaznaczone. W każdej grupie jedna kopia pozostaje niezaznaczona: uzgodniona, potem rozliczona, a w przeciwnym razie najwcześniejsza. Gdy w Ustawieniach włączona jest opcja Zablokuj uzgodnione transakcje, uzgodniona transakcja nie jest zaznaczana automatycznie, ponieważ nie można jej usunąć. Kliknij transakcję, aby wyświetlić ją na stronie Transakcje."
   },
   "filterBuilder": {
     "noFilters": "Brak filtrów — uwzględniono wszystkie transakcje",
