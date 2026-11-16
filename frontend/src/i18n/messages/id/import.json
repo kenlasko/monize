@@ -30,7 +30,8 @@
     "importFailed": "Impor gagal",
     "importedFromFiles": "Berhasil mengimpor {imported} transaksi dari {files} file",
     "imported": "Berhasil mengimpor {imported} transaksi",
-    "mnySingleFileOnly": "Impor berkas Microsoft Money satu per satu -- berkas .mny memuat satu profil utuh."
+    "mnySingleFileOnly": "Impor berkas Microsoft Money satu per satu -- berkas .mny memuat satu profil utuh.",
+    "duplicateCheckFailed": "Tidak dapat memeriksa kemungkinan duplikat dalam file. Tidak ada yang diimpor; coba lagi."
   },
   "page": {
     "title": "Impor Transaksi",
@@ -342,7 +343,10 @@
     "viewInvestments": "Lihat Investasi",
     "viewTransactions": "Lihat Transaksi",
     "importMoreFiles": "Impor File Lainnya",
-    "bondRowsWithoutSeries": "{count, plural, other {# pembelian obligasi diimpor tanpa seri. Pilih serinya di lot obligasi sekuritas.}}"
+    "bondRowsWithoutSeries": "{count, plural, other {# pembelian obligasi diimpor tanpa seri. Pilih serinya di lot obligasi sekuritas.}}",
+    "skipReasonKeptExisting": "Transaksi Anda yang sudah ada dipertahankan sebagai gantinya",
+    "skipReasonPossibleDuplicate": "Mirip dengan transaksi yang sudah ada di akun",
+    "duplicatesDecided": "Kemungkinan duplikat: {merged, plural, other {# digabungkan ke transaksi Anda yang sudah ada}}, {replaced, plural, other {# diimpor menggantikan transaksi yang Anda miliki}}."
   },
   "multiAccountReview": {
     "heading": "Impor QIF Multi-Akun",
@@ -668,6 +672,52 @@
       "none": "Bank tidak menyebutkan pihak lawan, sehingga transaksi tidak memiliki penerima.",
       "openAliases": "Buka alias penerima",
       "openAliasesNewTab": "Buka alias penerima di tab baru"
+    },
+    "duplicate": {
+      "looksLike": "Mirip dengan transaksi ini yang sudah ada di akun",
+      "date": "Tanggal",
+      "amount": "Jumlah",
+      "payee": "Penerima",
+      "category": "Kategori",
+      "status": "Status",
+      "reference": "Referensi",
+      "description": "Memo",
+      "amountUnknown": "Tidak diketahui",
+      "transfer": "Transfer",
+      "transferWith": "Transfer dengan {account}",
+      "split": "Terbagi",
+      "statuses": {
+        "UNRECONCILED": "Belum Direkonsiliasi",
+        "CLEARED": "Kliring",
+        "RECONCILED": "Rekonsiliasi",
+        "VOID": "Batal"
+      },
+      "legend": "Apa yang dilakukan dengan {payee}",
+      "choice": {
+        "later": "Putuskan nanti",
+        "keep": "Simpan milik saya",
+        "merge": "Gabungkan",
+        "replace": "Hapus milik saya dan impor",
+        "import": "Tetap impor",
+        "except": "Tambahkan ke pengecualian"
+      },
+      "choiceHelp": {
+        "later": "Tidak ada yang disimpan; ini akan ditampilkan lagi lain kali.",
+        "keep": "Transaksi Anda tetap seperti apa adanya, dan yang ini tidak diimpor.",
+        "merge": "Transaksi Anda mempertahankan penerima, kategori, dan memonya, serta mengambil tanggal, referensi, dan status Kliring dari yang ini.",
+        "replace": "Transaksi Anda dihapus dan yang ini diimpor sebagai penggantinya.",
+        "import": "Keduanya dipertahankan.",
+        "except": "Tidak pernah diimpor, sampai Anda menghapusnya dari pengecualian."
+      }
     }
+  },
+  "duplicates": {
+    "heading": "{count, plural, other {# kemungkinan duplikat}}",
+    "intro": "Baris-baris file ini mirip dengan transaksi yang sudah ada di akun. Masing-masing tetap seperti apa adanya kecuali Anda memilih lain; tidak ada yang diimpor sampai Anda menekan Impor.",
+    "fileHeading": "{file} ke {account}",
+    "fromFile": "Di file pada {date}:",
+    "noPayee": "Tanpa penerima",
+    "back": "Kembali",
+    "import": "Impor"
   }
 }

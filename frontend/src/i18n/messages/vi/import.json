@@ -30,7 +30,8 @@
     "importFailed": "Nhập khẩu thất bại",
     "importedFromFiles": "Đã nhập khẩu thành công {imported} giao dịch từ {files} tệp",
     "imported": "Đã nhập khẩu thành công {imported} giao dịch",
-    "mnySingleFileOnly": "Hãy nhập từng tệp Microsoft Money một -- một tệp .mny chứa toàn bộ một hồ sơ."
+    "mnySingleFileOnly": "Hãy nhập từng tệp Microsoft Money một -- một tệp .mny chứa toàn bộ một hồ sơ.",
+    "duplicateCheckFailed": "Không thể kiểm tra tệp để tìm giao dịch có thể trùng lặp. Chưa có gì được nhập; hãy thử lại."
   },
   "page": {
     "title": "Nhập Khẩu Giao Dịch",
@@ -342,7 +343,10 @@
     "viewInvestments": "Xem Đầu Tư",
     "viewTransactions": "Xem Giao Dịch",
     "importMoreFiles": "Nhập Khẩu Thêm Tệp",
-    "bondRowsWithoutSeries": "{count, plural, other {# giao dịch mua trái phiếu đã được nhập mà không có sê-ri. Hãy chọn sê-ri trong các lô trái phiếu của chứng khoán.}}"
+    "bondRowsWithoutSeries": "{count, plural, other {# giao dịch mua trái phiếu đã được nhập mà không có sê-ri. Hãy chọn sê-ri trong các lô trái phiếu của chứng khoán.}}",
+    "skipReasonKeptExisting": "Đã giữ giao dịch hiện có của bạn thay vào đó",
+    "skipReasonPossibleDuplicate": "Trông giống một giao dịch đã có trong tài khoản",
+    "duplicatesDecided": "Có thể trùng lặp: {merged, plural, other {# đã gộp vào giao dịch hiện có của bạn}}, {replaced, plural, other {# đã nhập thay cho giao dịch bạn đã có}}."
   },
   "multiAccountReview": {
     "heading": "Nhập Khẩu QIF Nhiều Tài Khoản",
@@ -668,6 +672,52 @@
       "none": "Ngân hàng không nêu đối tác, nên giao dịch không có người nhận.",
       "openAliases": "Mở các bí danh của người nhận",
       "openAliasesNewTab": "Mở các bí danh của người nhận trong tab mới"
+    },
+    "duplicate": {
+      "looksLike": "Có vẻ giao dịch này đã có trong tài khoản",
+      "date": "Ngày",
+      "amount": "Số tiền",
+      "payee": "Người nhận",
+      "category": "Danh mục",
+      "status": "Trạng thái",
+      "reference": "Tham chiếu",
+      "description": "Ghi chú",
+      "amountUnknown": "Không rõ",
+      "transfer": "Chuyển khoản",
+      "transferWith": "Chuyển khoản với {account}",
+      "split": "Phần chia",
+      "statuses": {
+        "UNRECONCILED": "Chưa điều hoà",
+        "CLEARED": "Đã xong",
+        "RECONCILED": "Đã điều hoà",
+        "VOID": "Hủy bỏ"
+      },
+      "legend": "Làm gì với {payee}",
+      "choice": {
+        "later": "Quyết định sau",
+        "keep": "Giữ của tôi",
+        "merge": "Gộp",
+        "replace": "Xóa của tôi và nhập",
+        "import": "Vẫn nhập",
+        "except": "Thêm vào ngoại lệ"
+      },
+      "choiceHelp": {
+        "later": "Không ghi gì cả; lần sau sẽ hiển thị lại.",
+        "keep": "Giao dịch của bạn giữ nguyên và giao dịch này không được nhập.",
+        "merge": "Giao dịch của bạn giữ người nhận, danh mục và ghi chú, và lấy ngày, tham chiếu cùng trạng thái Đã xong từ giao dịch này.",
+        "replace": "Giao dịch của bạn bị xóa và giao dịch này được nhập thay thế.",
+        "import": "Giữ cả hai.",
+        "except": "Không bao giờ được nhập, cho đến khi bạn đưa nó ra khỏi danh sách ngoại lệ."
+      }
     }
+  },
+  "duplicates": {
+    "heading": "{count, plural, other {# giao dịch có thể trùng lặp}}",
+    "intro": "Các dòng này trong tệp trông giống các giao dịch đã có trong tài khoản. Mỗi dòng được giữ nguyên trừ khi bạn chọn khác; không có gì được nhập cho đến khi bạn nhấn Nhập.",
+    "fileHeading": "{file} vào {account}",
+    "fromFile": "Trong tệp vào ngày {date}:",
+    "noPayee": "Không có người nhận",
+    "back": "Quay lại",
+    "import": "Nhập"
   }
 }

@@ -325,7 +325,9 @@
       "importedTitle": "{{ institution }}: 새 거래를 가져왔습니다",
       "importedMessage": "일일 동기화로 {{ institution }}에서 가져온 거래: {{ imported }}건.",
       "importedNoneTitle": "{{ institution }}: 새 거래 없음",
-      "importedNoneMessage": "{{ institution }}의 일일 동기화에서 새 거래를 찾지 못했습니다."
+      "importedNoneMessage": "{{ institution }}의 일일 동기화에서 새 거래를 찾지 못했습니다.",
+      "duplicatesHeldTitle": "{{ institution }}: 검토할 중복 가능 거래",
+      "duplicatesHeldMessage": "{{ institution }}의 일일 동기화에서 계정에 이미 있는 거래와 같아 보이는 거래를 보류했습니다: {{ held }}. 은행 동기화 설정을 열어 처리 방법을 결정하세요."
     },
     "bond": {
       "maturitySoonTitle": "{{ series }}: {{ date }} 만기",

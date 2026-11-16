@@ -30,7 +30,8 @@
     "importFailed": "导入失败",
     "importedFromFiles": "成功从 {files} 个文件导入 {imported} 笔交易",
     "imported": "成功导入 {imported} 笔交易",
-    "mnySingleFileOnly": "请一次导入一个 Microsoft Money 文件 -- 一个 .mny 文件包含完整的账套。"
+    "mnySingleFileOnly": "请一次导入一个 Microsoft Money 文件 -- 一个 .mny 文件包含完整的账套。",
+    "duplicateCheckFailed": "无法检查文件中的可能重复项。未导入任何内容；请重试。"
   },
   "page": {
     "title": "导入交易",
@@ -342,7 +343,10 @@
     "viewInvestments": "查看投资",
     "viewTransactions": "查看交易",
     "importMoreFiles": "导入更多文件",
-    "bondRowsWithoutSeries": "{count, plural, other {有 # 笔债券买入在没有系列的情况下导入。请在该证券的债券批次中选择系列。}}"
+    "bondRowsWithoutSeries": "{count, plural, other {有 # 笔债券买入在没有系列的情况下导入。请在该证券的债券批次中选择系列。}}",
+    "skipReasonKeptExisting": "已改为保留您现有的交易",
+    "skipReasonPossibleDuplicate": "看起来与账户中已有的交易相似",
+    "duplicatesDecided": "可能重复：{merged, plural, other {# 条已合并到您现有的交易}}，{replaced, plural, other {# 条已导入并替换您原有的交易}}。"
   },
   "multiAccountReview": {
     "heading": "多账户 QIF 导入",
@@ -668,6 +672,52 @@
       "none": "银行没有提供交易对手，因此这笔交易没有收款人。",
       "openAliases": "打开收款人的别名",
       "openAliasesNewTab": "在新标签页中打开收款人的别名"
+    },
+    "duplicate": {
+      "looksLike": "此交易似乎已存在于账户中",
+      "date": "日期",
+      "amount": "金额",
+      "payee": "收款人",
+      "category": "类别",
+      "status": "状态",
+      "reference": "参考号",
+      "description": "备注",
+      "amountUnknown": "未知",
+      "transfer": "转账",
+      "transferWith": "与 {account} 转账",
+      "split": "拆分",
+      "statuses": {
+        "UNRECONCILED": "未对账",
+        "CLEARED": "已结算",
+        "RECONCILED": "已对账",
+        "VOID": "作废"
+      },
+      "legend": "如何处理 {payee}",
+      "choice": {
+        "later": "稍后决定",
+        "keep": "保留我的",
+        "merge": "合并",
+        "replace": "删除我的并导入",
+        "import": "仍然导入",
+        "except": "添加到例外"
+      },
+      "choiceHelp": {
+        "later": "不写入任何内容；下次会再次显示。",
+        "keep": "您的交易保持不变，此交易不会导入。",
+        "merge": "您的交易保留其收款人、类别和备注，并采用此交易的日期、参考号和“已结算”状态。",
+        "replace": "您的交易将被删除，并导入此交易代替它。",
+        "import": "两者都保留。",
+        "except": "永不导入，直到您将其从例外中移除。"
+      }
     }
+  },
+  "duplicates": {
+    "heading": "{count, plural, other {# 条可能重复}}",
+    "intro": "文件中的这些行看起来与账户中已有的交易相似。除非您另行选择，否则每一条都保持原样；在您按下“导入”之前不会导入任何内容。",
+    "fileHeading": "{file} 导入到 {account}",
+    "fromFile": "文件中 {date} 的记录：",
+    "noPayee": "无收款人",
+    "back": "返回",
+    "import": "导入"
   }
 }

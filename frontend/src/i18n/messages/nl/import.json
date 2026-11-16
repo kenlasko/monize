@@ -30,7 +30,8 @@
     "importFailed": "Import mislukt",
     "importedFromFiles": "Succesvol {imported} transacties geïmporteerd uit {files} bestanden",
     "imported": "Succesvol {imported} transacties geïmporteerd",
-    "mnySingleFileOnly": "Importeer Microsoft Money-bestanden één voor één -- een .mny-bestand bevat een volledig profiel."
+    "mnySingleFileOnly": "Importeer Microsoft Money-bestanden één voor één -- een .mny-bestand bevat een volledig profiel.",
+    "duplicateCheckFailed": "Het bestand kon niet op mogelijke duplicaten worden gecontroleerd. Er is niets geïmporteerd; probeer het opnieuw."
   },
   "page": {
     "title": "Transacties importeren",
@@ -342,7 +343,10 @@
     "viewInvestments": "Beleggingen bekijken",
     "viewTransactions": "Transacties bekijken",
     "importMoreFiles": "Meer bestanden importeren",
-    "bondRowsWithoutSeries": "{count, plural, one {# obligatieaankoop is zonder serie geïmporteerd. Kies de serie in de obligatieposten van het effect.} other {# obligatieaankopen zijn zonder serie geïmporteerd. Kies de series in de obligatieposten van het effect.}}"
+    "bondRowsWithoutSeries": "{count, plural, one {# obligatieaankoop is zonder serie geïmporteerd. Kies de serie in de obligatieposten van het effect.} other {# obligatieaankopen zijn zonder serie geïmporteerd. Kies de series in de obligatieposten van het effect.}}",
+    "skipReasonKeptExisting": "je bestaande transactie is in plaats daarvan behouden",
+    "skipReasonPossibleDuplicate": "lijkt op een transactie die al in de rekening staat",
+    "duplicatesDecided": "Mogelijke duplicaten: {merged, plural, one {# samengevoegd met je bestaande transactie} other {# samengevoegd met je bestaande transacties}}, {replaced, plural, one {# geïmporteerd in plaats van de transactie die je had} other {# geïmporteerd in plaats van de transacties die je had}}."
   },
   "multiAccountReview": {
     "heading": "QIF-import voor meerdere rekeningen",
@@ -668,6 +672,52 @@
       "none": "De bank gaf geen tegenpartij op, dus de transactie heeft geen begunstigde.",
       "openAliases": "Aliassen van de begunstigde openen",
       "openAliasesNewTab": "Aliassen van de begunstigde in een nieuw tabblad openen"
+    },
+    "duplicate": {
+      "looksLike": "Lijkt op deze transactie die al in de rekening staat",
+      "date": "Datum",
+      "amount": "Bedrag",
+      "payee": "Begunstigde",
+      "category": "Categorie",
+      "status": "Status",
+      "reference": "Referentie",
+      "description": "Memo",
+      "amountUnknown": "Onbekend",
+      "transfer": "Overboeking",
+      "transferWith": "Overboeking met {account}",
+      "split": "Gesplitst",
+      "statuses": {
+        "UNRECONCILED": "Niet afgestemd",
+        "CLEARED": "Bevestigd",
+        "RECONCILED": "Afgestemd",
+        "VOID": "Ongeldig"
+      },
+      "legend": "Wat te doen met {payee}",
+      "choice": {
+        "later": "Later beslissen",
+        "keep": "Mijn transactie houden",
+        "merge": "Samenvoegen",
+        "replace": "Mijn transactie verwijderen en importeren",
+        "import": "Toch importeren",
+        "except": "Toevoegen aan uitzonderingen"
+      },
+      "choiceHelp": {
+        "later": "Er wordt niets vastgelegd; de volgende keer wordt hij opnieuw getoond.",
+        "keep": "Je transactie blijft zoals hij is, en deze wordt niet geïmporteerd.",
+        "merge": "Je transactie behoudt haar begunstigde, categorie en memo, en neemt de datum, referentie en de status Bevestigd van deze over.",
+        "replace": "Je transactie wordt verwijderd en deze wordt in plaats daarvan geïmporteerd.",
+        "import": "Beide blijven behouden.",
+        "except": "Nooit geïmporteerd, totdat je hem uit de uitzonderingen haalt."
+      }
     }
+  },
+  "duplicates": {
+    "heading": "{count, plural, one {# mogelijk duplicaat} other {# mogelijke duplicaten}}",
+    "intro": "Deze regels uit het bestand lijken op transacties die al in de rekening staan. Elke transactie blijft zoals hij is, tenzij je iets anders kiest; er wordt niets geïmporteerd totdat je op Importeren drukt.",
+    "fileHeading": "{file} naar {account}",
+    "fromFile": "In het bestand op {date}:",
+    "noPayee": "Geen begunstigde",
+    "back": "Terug",
+    "import": "Importeren"
   }
 }

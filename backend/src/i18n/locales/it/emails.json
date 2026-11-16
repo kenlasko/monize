@@ -325,7 +325,9 @@
       "importedTitle": "{{ institution }}: nuove transazioni importate",
       "importedMessage": "Transazioni importate da {{ institution }} dalla sincronizzazione giornaliera: {{ imported }}.",
       "importedNoneTitle": "{{ institution }}: nessuna nuova transazione",
-      "importedNoneMessage": "La sincronizzazione giornaliera di {{ institution }} non ha trovato nuove transazioni."
+      "importedNoneMessage": "La sincronizzazione giornaliera di {{ institution }} non ha trovato nuove transazioni.",
+      "duplicatesHeldTitle": "{{ institution }}: possibili duplicati da controllare",
+      "duplicatesHeldMessage": "La sincronizzazione giornaliera di {{ institution }} ha trattenuto transazioni che sembrano altre già presenti nei tuoi conti: {{ held }}. Apri le impostazioni della sincronizzazione bancaria per decidere cosa farne."
     },
     "bond": {
       "maturitySoonTitle": "{{ series }} scade il {{ date }}",

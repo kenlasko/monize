@@ -325,7 +325,9 @@
       "importedTitle": "{{ institution }}: 新しい取引をインポートしました",
       "importedMessage": "毎日の同期で {{ institution }} からインポートした取引: {{ imported }} 件。",
       "importedNoneTitle": "{{ institution }}: 新しい取引はありません",
-      "importedNoneMessage": "{{ institution }} の毎日の同期では新しい取引が見つかりませんでした。"
+      "importedNoneMessage": "{{ institution }} の毎日の同期では新しい取引が見つかりませんでした。",
+      "duplicatesHeldTitle": "{{ institution }}: 確認が必要な重複の可能性",
+      "duplicatesHeldMessage": "{{ institution }} の毎日の同期で、勘定科目に既にある取引と同じように見える取引が保留されました: {{ held }}。銀行同期の設定を開いて、扱いを決めてください。"
     },
     "bond": {
       "maturitySoonTitle": "{{ series }}：{{ date }}に満期",
