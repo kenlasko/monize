@@ -1286,6 +1286,7 @@ describe("DataQualityReportsService", () => {
         id: "tx",
         transaction_date: "2025-06-15",
         amount: "-42.00",
+        currency_code: "CAD",
         payee_name: "Grocer",
         description: null,
         account_name: "Checking",
@@ -1322,6 +1323,7 @@ describe("DataQualityReportsService", () => {
           id: "tx-2",
           transactionDate: "2025-06-15",
           amount: -42,
+          currencyCode: "CAD",
           payeeName: "Grocer",
           description: null,
           accountName: "Checking",
@@ -1400,6 +1402,37 @@ describe("DataQualityReportsService", () => {
           "very_high",
           "high",
         ]);
+      });
+
+      it("ranks a one-cent difference high, never very high", async () => {
+        scopedManager.query.mockResolvedValue([
+          row({ id: "tx-1", amount: "54.20" }),
+          row({ id: "tx-2", amount: "54.21" }),
+        ]);
+
+        const result = await service.getDuplicateTransactions(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+        );
+
+        expect(result.groups).toHaveLength(1);
+        expect(result.groups[0].confidence).toBe("high");
+      });
+
+      it("ranks the same figure in two currencies high, never very high", async () => {
+        scopedManager.query.mockResolvedValue([
+          row({ id: "tx-1", currency_code: "USD" }),
+          row({ id: "tx-2", currency_code: "CAD" }),
+        ]);
+
+        const result = await service.getDuplicateTransactions(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+        );
+
+        expect(result.groups[0].confidence).toBe("high");
       });
 
       it("reports the sensitivity's day window and a code for a near-date match", async () => {

@@ -29,10 +29,18 @@ export function keeperId(group: DuplicateGroup): string {
   return keeper.id;
 }
 
-/** Every member of the group except the one it keeps. */
+/**
+ * What "select duplicates" ticks in a group: every member except the one it
+ * keeps, and never a reconciled row. A second reconciled copy is the user's to
+ * tick by hand: with the reconciled lock on, one reconciled row refuses the
+ * whole bulk delete, so ticking it for them would stop every other group's
+ * copies from being removed too.
+ */
 export function extraCopyIds(group: DuplicateGroup): string[] {
   const keep = keeperId(group);
-  return group.transactions.filter((tx) => tx.id !== keep).map((tx) => tx.id);
+  return group.transactions
+    .filter((tx) => tx.id !== keep && tx.status !== 'RECONCILED')
+    .map((tx) => tx.id);
 }
 
 /**

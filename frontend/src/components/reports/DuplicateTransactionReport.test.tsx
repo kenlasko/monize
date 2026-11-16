@@ -82,6 +82,7 @@ function tx(overrides: Partial<DuplicateTransactionItem> & { id: string }): Dupl
   return {
     transactionDate: '2025-02-01',
     amount: -50,
+    currencyCode: 'CAD',
     payeeName: 'Store A',
     description: null,
     accountName: 'Chequing',

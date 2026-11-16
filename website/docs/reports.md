@@ -218,7 +218,7 @@ The **GEM Strategy** report follows the Global Equities Momentum strategy: at ea
 
 The **Duplicate Transaction Finder** groups transactions that look like copies of each other within the date range you pick (**1M** up to **10Y**, or **All Time**). **Sensitivity** sets how many days apart two copies may be. Each group carries a confidence level:
 
-- **Very high** -- same date, amount, payee and category (two uncategorized transactions count as the same category; split transactions never reach this level, since their lines may differ)
+- **Very high** -- same date, exact amount and currency, payee and category (two uncategorized transactions count as the same category; split transactions never reach this level, since their lines may differ)
 - **High** -- same date, amount and payee
 - **Medium** -- same date and amount, or same payee and amount within a few days
 - **Low** -- same amount within a few days
@@ -227,11 +227,11 @@ Each transaction shows its date, payee, description, category, account and amoun
 
 To remove duplicates without leaving the report:
 
-1. Under **Select duplicates**, click a confidence level. Every extra copy in each group at that level is ticked, and one copy per group is left unticked: a reconciled copy first, then a cleared one, otherwise the earliest.
+1. Under **Select duplicates**, click a confidence level. Every extra copy in each group at that level is ticked, and one copy per group is left unticked: a reconciled copy first, then a cleared one, otherwise the earliest. A reconciled transaction is never ticked for you.
 2. Untick anything that is not a duplicate, or tick individual transactions yourself. **Clear selection** starts over.
 3. Click **Delete selected**, check the count in the confirmation, and click **Delete**. The confirmation warns you when every copy in a group is ticked, so no original would remain.
 
-The report then reloads without the deleted transactions. If **Lock reconciled transactions** is on in [Settings -> Preferences](settings-and-security.md#preferences), a selection that includes a reconciled transaction is refused as a whole and nothing is deleted.
+The report then reloads without the deleted transactions. If **Lock reconciled transactions** is on in [Settings -> Preferences](settings-and-security.md#preferences), a selection that includes a reconciled transaction you ticked yourself is refused as a whole and nothing is deleted.
 
 ### Bills Reports
 

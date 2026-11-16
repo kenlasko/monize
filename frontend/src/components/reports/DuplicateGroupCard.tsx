@@ -111,7 +111,7 @@ export function DuplicateGroupCard({
                 </div>
               </div>
               <div className={`text-sm font-medium ${gainLossColor(tx.amount)}`}>
-                {formatCurrency(tx.amount)}
+                {formatCurrency(tx.amount, tx.currencyCode)}
               </div>
             </div>
           );

@@ -13,6 +13,7 @@ function tx(id: string, status: string | null = 'UNRECONCILED'): DuplicateTransa
     id,
     transactionDate: '2025-02-01',
     amount: -10,
+    currencyCode: 'CAD',
     payeeName: 'Shop',
     description: null,
     accountName: 'Chequing',
@@ -41,6 +42,12 @@ describe('keeperId', () => {
 describe('extraCopyIds', () => {
   it('is every member but the keeper, in group order', () => {
     expect(extraCopyIds(group('g', 'high', [tx('a'), tx('b', 'RECONCILED'), tx('c')]))).toEqual(['a', 'c']);
+  });
+
+  it('never ticks a second reconciled copy, which would refuse the whole delete', () => {
+    expect(
+      extraCopyIds(group('g', 'high', [tx('a', 'RECONCILED'), tx('b', 'RECONCILED'), tx('c')])),
+    ).toEqual(['c']);
   });
 });
 

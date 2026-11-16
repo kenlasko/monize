@@ -33,6 +33,11 @@ export class DuplicateTransactionItem {
   @ApiProperty()
   amount: number;
 
+  @ApiProperty({
+    description: "The account's currency, which the amount is in",
+  })
+  currencyCode: string;
+
   @ApiProperty({ nullable: true })
   payeeName: string | null;
 
