@@ -25,8 +25,8 @@ everywhere, and a fix lands once.
 
 | Source | Preview before write | Duplicate detection | Rule effects shown | Row selection |
 |---|---|---|---|---|
-| Bank sync (`docs/specs/bank-sync.md` 7a, 7b) | full, with plan fingerprint | ledger `(account_id, external_key)` | per row, with traces | per row, skip or exception |
-| CSV, QIF, OFX (`backend/src/import/`) | parse step and column mapping (`*/parse` routes) | none for ordinary rows; only duplicate transfers (`isDuplicateTransfer`) | none (transaction rules X4, deferred) | none |
+| Bank sync (`docs/specs/bank-sync.md` 7a, 7b) | full, with plan fingerprint | ledger `(account_id, external_key)`, and possible duplicates of existing rows (`docs/specs/import-duplicate-review.md`) | per row, with traces | per row, skip or exception; a decision per possible duplicate |
+| CSV, QIF, OFX (`backend/src/import/`) | parse step and column mapping (`*/parse` routes); the possible duplicates only (`*/duplicates` routes) | OFX FITID; duplicate transfers (`isDuplicateTransfer`); possible duplicates of existing rows, decided per row (`docs/specs/import-duplicate-review.md`) | none (transaction rules X4, deferred) | a decision per possible duplicate |
 | MNY (`backend/src/import/mny/`) | review step (`MnyReviewStep`) with warnings | none: a second run duplicates (`import-job.entity.ts` comment) | none | whole accounts, one session |
 
 `docs/future-plans/csv-source-profiles.md` already asks CSV for the duplicate
