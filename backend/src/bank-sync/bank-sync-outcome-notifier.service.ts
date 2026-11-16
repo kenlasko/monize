@@ -5,6 +5,7 @@ import type { BankSyncNotifySuccessMode } from "./bank-sync.constants";
 import { describeSyncFailure } from "./bank-sync-errors";
 import {
   buildConsentExpiredNotification,
+  buildDuplicatesHeldNotification,
   buildSyncFailedNotification,
   buildSyncImportedNotification,
   importedAccountIds,
@@ -19,7 +20,13 @@ export interface BankSyncConnectionOutcome {
   notifySuccess: BankSyncNotifySuccessMode;
   validUntil: Date | null;
   /** The bank accounts that synced, with the Monize account each is linked to. */
-  synced: { accountId: string; imported: number; skipped: number }[];
+  synced: {
+    accountId: string;
+    imported: number;
+    skipped: number;
+    /** Possible duplicates the sync held back for the person to decide. */
+    heldDuplicates: number;
+  }[];
   /** The bank accounts that did not, with the machine code of each failure. */
   failures: BankSyncFailureFact[];
 }
@@ -30,8 +37,10 @@ export const CONSENT_GONE_CODE = "session_expired";
 /**
  * Writes the notifications the daily bank sync owes for one connection
  * (docs/specs/bank-sync-notifications.md section 5): the expiry notice when the
- * bank ended the consent, a failure notice for every other failed account, and
- * the success notice per the connection's mode.
+ * bank ended the consent, a failure notice for every other failed account,
+ * the notice that possible duplicates wait for a decision
+ * (docs/specs/import-duplicate-review.md section 4), and the success notice per
+ * the connection's mode.
  *
  * Only the daily sync calls it. A sync the user starts reports through its own
  * toast and writes no notification; `bank-sync-notification-sources.guard.spec.ts`
@@ -79,6 +88,27 @@ export class BankSyncOutcomeNotifier {
     );
     if (failed.length > 0) {
       toNotify.push(buildSyncFailedNotification(facts, failed, day));
+    }
+
+    // Possible duplicates held back ask for a decision: said whatever the
+    // success mode.
+    const holding = outcome.synced.filter(
+      (result) => result.heldDuplicates > 0,
+    );
+    if (holding.length > 0) {
+      toNotify.push(
+        buildDuplicatesHeldNotification(
+          {
+            ...facts,
+            held: holding.reduce(
+              (sum, result) => sum + result.heldDuplicates,
+              0,
+            ),
+            accounts: holding.length,
+          },
+          day,
+        ),
+      );
     }
 
     // A run in which no account synced did not "finish": nothing to report as a

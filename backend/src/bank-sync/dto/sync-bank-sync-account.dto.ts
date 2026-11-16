@@ -32,6 +32,12 @@ export const MAX_SYNC_KEY_LENGTH = 255;
  * write makes is refused (400). With neither, every new row is imported. An
  * explicit `null` is not "absent": it is refused rather than read as "import
  * everything".
+ *
+ * `mergeKeys`, `keepKeys` and `replaceKeys` decide about possible duplicates
+ * (docs/specs/import-duplicate-review.md section 4): each must name a
+ * possible duplicate of the plan, and they need `planFingerprint`, which pins
+ * the existing transaction each one pairs with. Without a decision a possible
+ * duplicate is held back.
  */
 export class SyncBankSyncAccountDto {
   @ApiPropertyOptional({
@@ -74,4 +80,46 @@ export class SyncBankSyncAccountDto {
   @MinLength(1, { each: true })
   @MaxLength(MAX_SYNC_KEY_LENGTH, { each: true })
   excludeKeys?: string[];
+
+  @ApiPropertyOptional({
+    description:
+      "The keys of possible duplicates to merge into the existing transaction each pairs with.",
+    type: [String],
+    maxItems: MAX_SYNC_KEYS,
+  })
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsArray()
+  @ArrayMaxSize(MAX_SYNC_KEYS)
+  @IsString({ each: true })
+  @MinLength(1, { each: true })
+  @MaxLength(MAX_SYNC_KEY_LENGTH, { each: true })
+  mergeKeys?: string[];
+
+  @ApiPropertyOptional({
+    description:
+      "The keys of possible duplicates to link to the existing transaction each pairs with, leaving it as it is.",
+    type: [String],
+    maxItems: MAX_SYNC_KEYS,
+  })
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsArray()
+  @ArrayMaxSize(MAX_SYNC_KEYS)
+  @IsString({ each: true })
+  @MinLength(1, { each: true })
+  @MaxLength(MAX_SYNC_KEY_LENGTH, { each: true })
+  keepKeys?: string[];
+
+  @ApiPropertyOptional({
+    description:
+      "The keys of possible duplicates to import after deleting the existing transaction each pairs with.",
+    type: [String],
+    maxItems: MAX_SYNC_KEYS,
+  })
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsArray()
+  @ArrayMaxSize(MAX_SYNC_KEYS)
+  @IsString({ each: true })
+  @MinLength(1, { each: true })
+  @MaxLength(MAX_SYNC_KEY_LENGTH, { each: true })
+  replaceKeys?: string[];
 }

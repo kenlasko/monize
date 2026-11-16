@@ -12,7 +12,10 @@ import {
   AccountType,
 } from "../accounts/entities/account.entity";
 import { AccountsService } from "../accounts/accounts.service";
-import { lockAccountsForBalanceWrite } from "../common/db/locks";
+import {
+  lockAccountsForBalanceWrite,
+  lockTransactionRows,
+} from "../common/db/locks";
 import { returnedRows } from "../common/db/query-result";
 import { orderByDateStable } from "../common/date-order.util";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -23,6 +26,13 @@ import { tr } from "../i18n/translate";
 import { PayeesService } from "../payees/payees.service";
 import { TagsService } from "../tags/tags.service";
 import { TransactionRulesApplierService } from "../transaction-rules/transaction-rules-applier.service";
+import {
+  allowedDuplicateActions,
+  mergeMovesDate,
+  type DuplicateAction,
+  type DuplicateCandidate,
+} from "../import-preview/possible-duplicates";
+import { TransactionsService } from "../transactions/transactions.service";
 import {
   Transaction,
   TransactionStatus,
@@ -52,9 +62,14 @@ import {
 } from "./bank-sync-plan-fingerprint";
 import {
   assertDisjointSelection,
+  namesExistingTransactions,
   type BankSyncSelection,
 } from "./bank-sync-selection";
-import type { BankImportPlan } from "./bank-transaction-planner";
+import { findBankRowDuplicates } from "./bank-sync-duplicates";
+import type {
+  BankImportPlan,
+  PlannedBankRow,
+} from "./bank-transaction-planner";
 import { BankSyncAccount } from "./entities/bank-sync-account.entity";
 
 /** A bank balance that passed validation, at the column's money precision. */
@@ -129,6 +144,16 @@ export interface BankSyncWriteOutcome {
   /** Rows added to the exceptions by this write. */
   excluded: number;
   /**
+   * Possible duplicates (docs/specs/import-duplicate-review.md section 4):
+   * merged into the existing transaction, linked to it as it was, or imported
+   * after it was deleted (`replaced` rows are also in `imported`).
+   */
+  merged: number;
+  kept: number;
+  replaced: number;
+  /** Possible duplicates nobody decided about: not written, and recorded on the link. */
+  heldDuplicates: number;
+  /**
    * Accounts a structural rule moved money into (the loan of a settlement,
    * the target of a conversion); the sync dispatches their net-worth
    * recompute after the commit, as it does the synced account's
@@ -178,6 +203,16 @@ export interface BankSyncWriteOutcome {
  * window of the next sync starts a week before it, and a row skipped now must
  * still be inside that window to be shown again.
  *
+ * **Possible duplicates (INV-IMPORT-004).** A new row that pairs with a
+ * transaction already in the account (`findBankRowDuplicates`, read under the
+ * locks this write holds) is written only by a decision: imported beside it,
+ * merged into it, linked to it as it is, imported after it is deleted, or
+ * added to the exceptions. Without one it is held, counted in
+ * `held_duplicate_count`, and `last_success_at` does not move
+ * (docs/specs/import-duplicate-review.md section 4). A merge, keep or replace
+ * needs the preview's fingerprint, which covers the pairs, so a decision is
+ * never applied to a pair other than the one shown.
+ *
  * **A rejected sync has not already written.** The link and the account are
  * locked and re-checked before the first insert: a re-link, a new cut-off
  * date, a close or a currency change during the fetch refuses the whole write
@@ -200,6 +235,7 @@ export class BankSyncWriterService {
     private readonly payeesService: PayeesService,
     private readonly tagsService: TagsService,
     private readonly i18n: I18nService,
+    private readonly transactionsService: TransactionsService,
   ) {}
 
   async write(input: BankSyncWriteInput): Promise<BankSyncWriteOutcome> {
@@ -309,28 +345,63 @@ export class BankSyncWriterService {
         );
       const { selection } = input;
       if (selection !== undefined) assertDisjointSelection(selection);
+      if (
+        selection !== undefined &&
+        namesExistingTransactions(selection) &&
+        input.expectedFingerprint === undefined
+      ) {
+        // A merge, a keep or a replace names the transaction a possible
+        // duplicate pairs with only through the fingerprint of the preview
+        // that showed the pair.
+        throw new BankSyncSelectionRefusedException(
+          tr(
+            "errors.bankSync.duplicateNeedsPreview",
+            "A decision about a possible duplicate needs the preview that showed it. Nothing was imported; preview again.",
+          ),
+        );
+      }
       const held = await findHeldRows(m, userId, accountId, plan.planned);
-      let newKeys: ReadonlySet<string> | null = null;
-      if (input.expectedFingerprint !== undefined || selection !== undefined) {
-        const newRows = newPlannedRows(plan.planned, held);
-        newKeys = new Set(newRows.map((row) => row.externalKey));
-        if (
-          input.expectedFingerprint !== undefined &&
-          planFingerprint(newRows, plan.review) !== input.expectedFingerprint
-        ) {
-          throw new BankSyncPlanChangedException(
-            tr(
-              "errors.bankSync.planChanged",
-              "The bank's data changed since the preview. Nothing was imported; preview again.",
-            ),
-          );
-        }
+      const newRows = newPlannedRows(plan.planned, held);
+      const newKeys: ReadonlySet<string> = new Set(
+        newRows.map((row) => row.externalKey),
+      );
+      // 3c. The possible duplicates among the new rows
+      //     (docs/specs/import-duplicate-review.md section 4). The existing
+      //     transactions a decision names are row-locked (accounts before
+      //     transactions) and the pairs read again under that lock, so the
+      //     fingerprint below is compared with pairs no concurrent edit can
+      //     move before this commits.
+      let duplicates = await findBankRowDuplicates(
+        m,
+        userId,
+        accountId,
+        newRows,
+      );
+      const decisionByKey = this.decisionsOf(selection);
+      const decidedExisting = [...duplicates]
+        .filter(([key]) => decisionByKey.has(key))
+        .map(([, existing]) => existing.id);
+      if (decidedExisting.length > 0) {
+        await lockTransactionRows(m, decidedExisting, userId);
+        duplicates = await findBankRowDuplicates(m, userId, accountId, newRows);
+      }
+      if (
+        input.expectedFingerprint !== undefined &&
+        planFingerprint(newRows, plan.review, duplicates) !==
+          input.expectedFingerprint
+      ) {
+        throw new BankSyncPlanChangedException(
+          tr(
+            "errors.bankSync.planChanged",
+            "The bank's data changed since the preview. Nothing was imported; preview again.",
+          ),
+        );
       }
       const importKeys =
         selection === undefined ? null : new Set(selection.importKeys);
       const excludeKeys =
         selection === undefined ? null : new Set(selection.excludeKeys);
-      if (selection !== undefined && newKeys !== null) {
+      if (selection !== undefined) {
         const stray = [...selection.importKeys, ...selection.excludeKeys].some(
           (key) => !newKeys.has(key),
         );
@@ -342,6 +413,7 @@ export class BankSyncWriterService {
             ),
           );
         }
+        this.assertDuplicateDecisions(decisionByKey, duplicates);
       }
 
       // 4. The user's import rules, loaded once for the batch.
@@ -377,11 +449,52 @@ export class BankSyncWriterService {
       const baseTime = Date.now();
       let skipped = 0;
 
+      let merged = 0;
+      let kept = 0;
+      let replaced = 0;
+      let heldDuplicates = 0;
+      let leftForLater = 0;
       for (const row of plan.planned) {
-        if (importKeys !== null && !importKeys.has(row.externalKey)) continue;
         if (held.has(row.externalKey)) {
-          skipped += 1;
+          if (importKeys === null || importKeys.has(row.externalKey)) {
+            skipped += 1;
+          }
           continue;
+        }
+        const pair = duplicates.get(row.externalKey);
+        const decision: DuplicateAction | "except" | null =
+          selection === undefined
+            ? pair === undefined
+              ? "import"
+              : null
+            : (decisionByKey.get(row.externalKey) ?? null);
+        if (decision === null) {
+          // Nobody decided: a plain new row left for the next sync, or a
+          // possible duplicate held back for the person.
+          leftForLater += 1;
+          if (pair !== undefined) heldDuplicates += 1;
+          continue;
+        }
+        if (decision === "except") continue;
+        if (
+          pair !== undefined &&
+          (decision === "merge" || decision === "keep")
+        ) {
+          if (
+            await this.linkToExisting(m, userId, accountId, row, pair, decision)
+          ) {
+            if (decision === "merge") merged += 1;
+            else kept += 1;
+          } else {
+            skipped += 1;
+          }
+          continue;
+        }
+        if (pair !== undefined && decision === "replace") {
+          // Through the one delete path, which reverses what the row
+          // contributed and cleans up what hangs off it, in this transaction.
+          await this.transactionsService.remove(userId, pair.id);
+          replaced += 1;
         }
         const claimed = returnedRows<{ id: string }>(
           await m.query(
@@ -484,32 +597,136 @@ export class BankSyncWriterService {
       await this.applyRulePayeeCategories(m, userId, payeeByRow);
 
       // 7. The balance, from the ledger, in this transaction.
-      if (created.length > 0) {
+      if (created.length > 0 || merged > 0 || replaced > 0) {
         await this.accountsService.recalculateCurrentBalance(userId, accountId);
       }
 
       // 8. The outcome, on the row this transaction holds locked. A new row the
-      //    person neither imported nor excepted moves nothing forward.
-      const leftForLater =
-        newKeys !== null && importKeys !== null && excludeKeys !== null
-          ? newKeys.size - importKeys.size - excludeKeys.size
-          : 0;
+      //    person neither imported nor excepted moves nothing forward, and a
+      //    possible duplicate held back is recorded so the account needs its
+      //    preview.
       await this.recordOutcome(
         m,
         input,
         created.length,
         skipped,
         leftForLater === 0,
+        heldDuplicates,
       );
 
       return {
         imported: created.length,
         skipped,
         excluded,
+        merged,
+        kept,
+        replaced,
+        heldDuplicates,
         affectedAccountIds: [...affectedAccountIds],
         settledScheduleIds: [...settledScheduleIds],
       };
     });
+  }
+
+  /**
+   * The decision the selection makes about each key it names: one of the
+   * duplicate actions, or `except` for an exception. Empty without a selection.
+   */
+  private decisionsOf(
+    selection: BankSyncSelection | undefined,
+  ): Map<string, DuplicateAction | "except"> {
+    const decisions = new Map<string, DuplicateAction | "except">();
+    if (selection === undefined) return decisions;
+    const lists: [readonly string[], DuplicateAction | "except"][] = [
+      [selection.importKeys, "import"],
+      [selection.excludeKeys, "except"],
+      [selection.mergeKeys, "merge"],
+      [selection.keepKeys, "keep"],
+      [selection.replaceKeys, "replace"],
+    ];
+    for (const [keys, decision] of lists) {
+      for (const key of keys) decisions.set(key, decision);
+    }
+    return decisions;
+  }
+
+  /**
+   * Refuses (400), before anything is written, a merge, keep or replace that
+   * does not name a possible duplicate of the plan made under the lock, or
+   * that spec section 3 does not allow for the transaction it pairs with.
+   */
+  private assertDuplicateDecisions(
+    decisions: ReadonlyMap<string, DuplicateAction | "except">,
+    duplicates: ReadonlyMap<string, DuplicateCandidate>,
+  ): void {
+    for (const [key, decision] of decisions) {
+      if (decision === "import" || decision === "except") continue;
+      const pair = duplicates.get(key);
+      if (pair === undefined) {
+        throw new BankSyncSelectionRefusedException(
+          tr(
+            "errors.bankSync.selectionNotDuplicate",
+            "A transaction chosen to merge, keep or replace is not a possible duplicate any more. Nothing was imported; preview again.",
+          ),
+        );
+      }
+      if (!allowedDuplicateActions(pair).includes(decision)) {
+        throw new BankSyncSelectionRefusedException(
+          tr(
+            "errors.bankSync.duplicateActionNotAllowed",
+            "A reconciled transaction cannot be merged or replaced, and a transfer cannot be replaced. Nothing was imported; keep it or import the bank's row beside it.",
+          ),
+        );
+      }
+    }
+  }
+
+  /**
+   * Merge or keep: the bank row's key is claimed for the existing transaction
+   * (`ON CONFLICT DO NOTHING`, as for an import), so no later sync brings the
+   * row back. A merge then gives the existing transaction the bank's date
+   * (not for a transfer leg or a split parent), its reference when it has one,
+   * and status Cleared; its payee, category, splits, tags and memo stay. False
+   * when a concurrent sync claimed the key first: nothing else is written.
+   */
+  private async linkToExisting(
+    m: EntityManager,
+    userId: string,
+    accountId: string,
+    row: PlannedBankRow,
+    existing: DuplicateCandidate,
+    decision: "merge" | "keep",
+  ): Promise<boolean> {
+    const claimed = returnedRows<{ id: string }>(
+      await m.query(
+        `INSERT INTO bank_sync_imported_transactions
+           (user_id, account_id, external_key, booking_date, transaction_id)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (account_id, external_key) DO NOTHING
+         RETURNING id`,
+        [userId, accountId, row.externalKey, row.transactionDate, existing.id],
+      ),
+    );
+    if (claimed.length === 0) return false;
+    if (decision === "merge") {
+      await m.query(
+        `UPDATE transactions
+            SET transaction_date = CASE WHEN $3::boolean THEN $4::date ELSE transaction_date END,
+                reference_number = COALESCE($5, reference_number),
+                status = $6,
+                updated_at = CURRENT_TIMESTAMP
+          WHERE id = $1 AND user_id = $2`,
+        [
+          existing.id,
+          userId,
+          mergeMovesDate(existing),
+          row.transactionDate,
+          row.referenceNumber,
+          TransactionStatus.CLEARED,
+        ],
+      );
+    }
+    return true;
   }
 
   /**
@@ -640,6 +857,7 @@ export class BankSyncWriterService {
     imported: number,
     skipped: number,
     advanceWindow: boolean,
+    heldDuplicates: number,
   ): Promise<void> {
     const refused = Object.values(input.plan.refused).reduce(
       (sum, count) => sum + count,
@@ -656,7 +874,8 @@ export class BankSyncWriterService {
               last_sync_error = NULL,
               last_imported_count = $3,
               last_skipped_count = $4,
-              last_refused_count = $5
+              last_refused_count = $5,
+              held_duplicate_count = $9
         WHERE id = $1 AND user_id = $2`,
       [
         input.bankAccountId,
@@ -667,6 +886,7 @@ export class BankSyncWriterService {
         advanceWindow,
         input.plan.review?.remaining ? input.plan.review.dateTo : null,
         input.plan.review?.remaining ?? false,
+        heldDuplicates,
       ],
     );
     // A balance the bank did not report leaves the stored one as it was: null is

@@ -295,7 +295,7 @@ export class BankSyncController {
       id,
       psuContextOf(req, userAgent),
       dto?.planFingerprint || undefined,
-      selectionOf(dto?.importKeys, dto?.excludeKeys),
+      selectionOf(dto),
     );
   }
 

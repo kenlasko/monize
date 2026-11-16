@@ -255,6 +255,10 @@ describe("BankSyncService", () => {
       imported: 0,
       skipped: 0,
       excluded: 0,
+      merged: 0,
+      kept: 0,
+      replaced: 0,
+      heldDuplicates: 0,
       affectedAccountIds: [],
       settledScheduleIds: [],
     });
@@ -525,6 +529,10 @@ describe("BankSyncService", () => {
           imported: 1,
           skipped: 0,
           excluded: 0,
+          merged: 0,
+          kept: 0,
+          replaced: 0,
+          heldDuplicates: 0,
           affectedAccountIds: [],
           settledScheduleIds: ["st-loan"],
         };
@@ -555,6 +563,10 @@ describe("BankSyncService", () => {
           imported: 1,
           skipped: 0,
           excluded: 0,
+          merged: 0,
+          kept: 0,
+          replaced: 0,
+          heldDuplicates: 0,
           affectedAccountIds: ["loan-1", ACCOUNT_ID, "loan-1"],
           settledScheduleIds: [],
         };
@@ -589,6 +601,10 @@ describe("BankSyncService", () => {
         imported: 1,
         skipped: 0,
         excluded: 0,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+        heldDuplicates: 0,
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -600,6 +616,10 @@ describe("BankSyncService", () => {
         imported: 1,
         skipped: 0,
         excluded: 0,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+        heldDuplicates: 0,
         refused: {
           missing_identity: 0,
           missing_date: 0,
@@ -677,6 +697,10 @@ describe("BankSyncService", () => {
           imported: 0,
           skipped: 0,
           excluded: 0,
+          merged: 0,
+          kept: 0,
+          replaced: 0,
+          heldDuplicates: 0,
           affectedAccountIds: [],
           settledScheduleIds: [],
         };
@@ -732,6 +756,10 @@ describe("BankSyncService", () => {
         imported: 2,
         skipped: 0,
         excluded: 0,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+        heldDuplicates: 0,
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -746,6 +774,10 @@ describe("BankSyncService", () => {
         imported: 0,
         skipped: 3,
         excluded: 0,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+        heldDuplicates: 0,
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -1209,7 +1241,13 @@ describe("BankSyncService", () => {
 
   describe("a sync that carries the person's selection (spec section 7b)", () => {
     const FINGERPRINT = "a".repeat(64);
-    const SELECTION = { importKeys: ["ref:a"], excludeKeys: ["ref:b"] };
+    const SELECTION = {
+      importKeys: ["ref:a"],
+      excludeKeys: ["ref:b"],
+      mergeKeys: [],
+      keepKeys: [],
+      replaceKeys: [],
+    };
 
     it("hands the selection to the write beside the fingerprint", async () => {
       await service.syncAccount(
@@ -1234,6 +1272,9 @@ describe("BankSyncService", () => {
         service.syncAccount(USER_ID, BANK_ACCOUNT_ID, null, FINGERPRINT, {
           importKeys: ["ref:a"],
           excludeKeys: ["ref:a"],
+          mergeKeys: [],
+          keepKeys: [],
+          replaceKeys: [],
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
       expect(provider.fetchTransactions).not.toHaveBeenCalled();
@@ -1263,6 +1304,10 @@ describe("BankSyncService", () => {
         imported: 1,
         skipped: 0,
         excluded: 3,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+        heldDuplicates: 0,
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -1281,6 +1326,10 @@ describe("BankSyncService", () => {
         imported: 0,
         skipped: 0,
         excluded: 2,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+        heldDuplicates: 0,
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -1503,6 +1552,10 @@ describe("BankSyncService", () => {
         imported: 1,
         skipped: 0,
         excluded: 0,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+        heldDuplicates: 0,
         refused: {
           missing_identity: 0,
           missing_date: 0,

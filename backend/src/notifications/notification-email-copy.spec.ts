@@ -155,6 +155,12 @@ const examples = {
     skipped: 1,
     accounts: 2,
   },
+  BANK_SYNC_DUPLICATES_HELD: {
+    connectionId: "c1",
+    institutionName: "Test Bank",
+    held: 2,
+    accounts: 1,
+  },
   EMAIL_RECEIPTS_ATTENTION: { noParser: 3, parseFailed: 2 },
   AI_REVIEW_PROPOSALS_READY: { count: 5, added: 2 },
   AI_REVIEW_PROPOSALS_EXPIRING: {
@@ -946,6 +952,14 @@ describe("notification email copy", () => {
     [
       NotificationType.BANK_SYNC_IMPORTED,
       { institutionName: "Test Bank", imported: undefined },
+    ],
+    [
+      NotificationType.BANK_SYNC_DUPLICATES_HELD,
+      { ...examples.BANK_SYNC_DUPLICATES_HELD, held: 0 },
+    ],
+    [
+      NotificationType.BANK_SYNC_DUPLICATES_HELD,
+      { institutionName: "Test Bank" },
     ],
   ])(
     "retains the entire stored copy for incomplete or malformed %s data",

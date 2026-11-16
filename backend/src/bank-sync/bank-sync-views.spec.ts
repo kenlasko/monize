@@ -63,6 +63,17 @@ describe("toBankSyncAccountView", () => {
       ).toBe(false);
     });
 
+    it("is true while possible duplicates wait for a decision, and carries their count", () => {
+      const view = toBankSyncAccountView(
+        bankAccountRow({
+          lastSuccessAt: new Date("2026-09-20T00:00:00.000Z"),
+          heldDuplicateCount: 2,
+        }),
+      );
+      expect(view.needsPreview).toBe(true);
+      expect(view.heldDuplicateCount).toBe(2);
+    });
+
     it("is false for an unlinked bank account: there is nothing to preview", () => {
       expect(
         toBankSyncAccountView(

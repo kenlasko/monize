@@ -49,6 +49,10 @@ export const NOTIFICATION_EMAIL_MESSAGES = {
   "bankSync.importedNoneTitle": "{{ institution }}: no new transactions",
   "bankSync.importedNoneMessage":
     "The daily sync of {{ institution }} found no new transactions.",
+  "bankSync.duplicatesHeldTitle":
+    "{{ institution }}: possible duplicates to review",
+  "bankSync.duplicatesHeldMessage":
+    "The daily sync of {{ institution }} held back transactions that look like ones already in your accounts: {{ held }}. Open bank sync settings to decide what to do with them.",
   "emailReceiptsAttention.title": "Email receipts need attention",
   "emailReceiptsAttention.message":
     "Your receipts inbox holds {{ noParser }} without a profile and {{ parseFailed }} that their profile did not recognize. Open to review.",

@@ -41,6 +41,12 @@ import {
   newPlannedRows,
   planFingerprint,
 } from "./bank-sync-plan-fingerprint";
+import { findBankRowDuplicates } from "./bank-sync-duplicates";
+import {
+  allowedDuplicateActions,
+  toDuplicateExistingView,
+  type DuplicateCandidate,
+} from "../import-preview/possible-duplicates";
 import {
   loadPayeeDefaultCategories,
   payeeGivingDefaultCategory,
@@ -174,6 +180,15 @@ export class BankSyncPreviewService {
 
       const ledger = await findHeldRows(m, userId, accountId, plan.planned);
       const newRows = newPlannedRows(plan.planned, ledger);
+      // The new rows that look like a transaction already in the account
+      // (docs/specs/import-duplicate-review.md): resolved like a new row, but
+      // written only by a decision, so left out of `new` and of the balance.
+      const duplicates = await findBankRowDuplicates(
+        m,
+        userId,
+        accountId,
+        newRows,
+      );
 
       // Rules are read once for the whole preview.
       const labels = emptyImportPreviewLabels();
@@ -210,7 +225,15 @@ export class BankSyncPreviewService {
         }
         const held = ledger.get(entry.externalKey as string);
         if (held === undefined) {
-          rows.push(await this.newRow(context, entry));
+          const pair = duplicates.get(entry.externalKey as string);
+          rows.push(
+            pair === undefined
+              ? await this.newRow(context, entry)
+              : this.asPossibleDuplicate(
+                  await this.newRow(context, entry),
+                  pair,
+                ),
+          );
           continue;
         }
         if (held.excluded) {
@@ -234,7 +257,9 @@ export class BankSyncPreviewService {
         0,
       );
       const newTotal = sumMoney(
-        newRows.map((row) => row.amount),
+        newRows
+          .filter((row) => !duplicates.has(row.externalKey))
+          .map((row) => row.amount),
         BANK_SYNC_MONEY_DECIMALS,
       );
       const monizeBalance = roundMoney(
@@ -255,7 +280,8 @@ export class BankSyncPreviewService {
         rows,
         labels,
         summary: {
-          new: newRows.length,
+          new: newRows.length - duplicates.size,
+          possibleDuplicate: duplicates.size,
           duplicate: plan.planned.length - newRows.length - excluded,
           excluded,
           refused,
@@ -279,7 +305,7 @@ export class BankSyncPreviewService {
               BANK_SYNC_MONEY_DECIMALS,
             ).toFixed(BANK_SYNC_MONEY_DECIMALS)
           : null,
-        planFingerprint: planFingerprint(newRows, plan.review),
+        planFingerprint: planFingerprint(newRows, plan.review, duplicates),
         history: plan.review
           ? {
               dateFrom: plan.review.dateFrom,
@@ -316,6 +342,28 @@ export class BankSyncPreviewService {
       rules: [],
       operationTag: null,
       ruleInput: null,
+      existingTransaction: null,
+      duplicateActions: [],
+    };
+  }
+
+  /**
+   * A new row that pairs with a transaction already in the account: resolved
+   * as the import would write it ("import anyway" writes it so), with the
+   * transaction it looks like and what the person may decide.
+   */
+  private asPossibleDuplicate(
+    row: BankSyncPreviewRowView,
+    existing: DuplicateCandidate,
+  ): BankSyncPreviewRowView {
+    return {
+      ...row,
+      outcome: "possible_duplicate",
+      existingTransaction: toDuplicateExistingView(
+        existing,
+        BANK_SYNC_MONEY_DECIMALS,
+      ),
+      duplicateActions: allowedDuplicateActions(existing),
     };
   }
 
