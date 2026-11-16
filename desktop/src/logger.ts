@@ -11,6 +11,8 @@ import {
 import { join } from "path";
 import { StringDecoder } from "string_decoder";
 
+import { normalizeChildLine } from "./child-line";
+
 /**
  * The desktop package's one logger, and the only module that writes to stdout.
  *
@@ -18,7 +20,9 @@ import { StringDecoder } from "string_decoder";
  * `backend.log`, `frontend.log`), rotated by size, plus an in-memory ring per
  * source so the supervisor can show the last lines when a boot step fails.
  * stdout gets the human shape of `frontend/server-log-format.cjs`
- * (`<ISO> [<source>] <LEVEL>: <message>`).
+ * (`<ISO> [<source>] <LEVEL>: <message>`). A child's line is cleaned first
+ * (`child-line.ts`): no terminal escapes, and a NestJS line's own prefix gives
+ * way to the record's time and its level.
  *
  * Writes are synchronous: a line is on disk before the call returns, so the
  * last thing a crashing child said is in its file. Any value passed to
@@ -169,8 +173,10 @@ export function createLogger(options: LoggerOptions): Logger {
   function lineSink(source: LogSource, level: LogLevel): LineSink {
     const decoder = new StringDecoder("utf8");
     let pending = "";
-    const emit = (line: string): void =>
-      log(source, level, line.replace(/\r$/, ""));
+    const emit = (line: string): void => {
+      const record = normalizeChildLine(line.replace(/\r$/, ""), level);
+      log(source, record.level, record.msg);
+    };
     return {
       write(chunk) {
         pending += typeof chunk === "string" ? chunk : decoder.write(chunk);
