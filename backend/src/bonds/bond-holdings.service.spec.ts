@@ -499,6 +499,30 @@ describe("BondHoldingsService.redemptionSplit", () => {
     });
   });
 
+  it.each([
+    0,
+    -1,
+    1.5,
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    2 ** 53,
+    1_000_000_001,
+  ])(
+    "refuses a quantity of %p with QUANTITY_INVALID before reading the ledger, never an all-zero split",
+    async (quantity) => {
+      const { service, manager } = setup({ ledger });
+      const error = await service
+        .redemptionSplit(USER, SEC, ACC, EDO, "2026-02-09", quantity)
+        .catch((e) => e);
+      expect(error).toBeInstanceOf(BadRequestException);
+      expect(error.getResponse()).toMatchObject({
+        errorCode: "QUANTITY_INVALID",
+        message: `The quantity must be a positive whole number of bonds: ${String(quantity)}`,
+      });
+      expect(manager.query).not.toHaveBeenCalled();
+    },
+  );
+
   it("takes only the lots acquired on or before the date", async () => {
     const { service } = setup({ ledger });
     await expect(

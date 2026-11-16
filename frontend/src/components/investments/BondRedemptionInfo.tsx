@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import type { BondRedemptionSplitResult } from './useBondRedemptionSplit';
+import { MAX_REDEMPTION_QUANTITY, type BondRedemptionSplitResult } from './useBondRedemptionSplit';
 
 interface BondRedemptionInfoProps {
   result: BondRedemptionSplitResult;
@@ -17,7 +17,7 @@ interface BondRedemptionInfoProps {
 export function BondRedemptionInfo({ result, currencyCode }: BondRedemptionInfoProps) {
   const t = useTranslations('investments');
   const tDetail = useTranslations('securityDetail');
-  const { formatCurrency } = useNumberFormat();
+  const { formatCurrency, formatNumber } = useNumberFormat();
   const { split, refusalCode, failed } = result;
 
   let text: string | null = null;
@@ -35,6 +35,11 @@ export function BondRedemptionInfo({ result, currencyCode }: BondRedemptionInfoP
       interest: formatCurrency(Number(split.interest), currencyCode),
       deduction: formatCurrency(Number(split.deduction), currencyCode),
       payout: formatCurrency(Number(split.payout), currencyCode),
+    });
+  } else if (refusalCode === 'QUANTITY_INVALID') {
+    tone = 'warn';
+    text = t('transactionForm.bondRedemption.quantityInvalid', {
+      max: formatNumber(MAX_REDEMPTION_QUANTITY, 0),
     });
   } else if (refusalCode !== null) {
     tone = 'warn';

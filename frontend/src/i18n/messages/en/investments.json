@@ -393,7 +393,8 @@
       "summary": "Interest {interest}, early-redemption deduction {deduction}, payout {payout}",
       "outsideSaleWindow": "A lot of this series was bought outside its sale window, so the redemption cannot be split.",
       "afterMaturity": "A lot of this series was bought on or after its maturity, so the redemption cannot be split.",
-      "failed": "The redemption split could not be calculated."
+      "failed": "The redemption split could not be calculated.",
+      "quantityInvalid": "A redemption is split for a whole number of bonds from 1 to {max}. Enter the number of bonds redeemed."
     }
   },
   "newTransactionButton": {

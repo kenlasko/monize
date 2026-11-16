@@ -360,7 +360,8 @@
       "summary": "Interessi {interest}, trattenuta per rimborso anticipato {deduction}, importo erogato {payout}",
       "outsideSaleWindow": "Un lotto di questa serie è stato acquistato fuori dal suo periodo di vendita, quindi il rimborso non può essere suddiviso.",
       "afterMaturity": "Un lotto di questa serie è stato acquistato alla scadenza o dopo, quindi il rimborso non può essere suddiviso.",
-      "failed": "Non è stato possibile calcolare la suddivisione del rimborso."
+      "failed": "Non è stato possibile calcolare la suddivisione del rimborso.",
+      "quantityInvalid": "La ripartizione di un rimborso si calcola per un numero intero di obbligazioni da 1 a {max}. Inserisci il numero di obbligazioni rimborsate."
     }
   },
   "newTransactionButton": {

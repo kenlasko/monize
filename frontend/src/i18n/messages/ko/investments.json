@@ -360,7 +360,8 @@
       "summary": "이자 {interest}, 조기 상환 공제 {deduction}, 지급액 {payout}",
       "outsideSaleWindow": "이 시리즈의 로트가 판매 기간 밖에 매수되어 상환을 분할할 수 없습니다.",
       "afterMaturity": "이 시리즈의 로트가 만기일 당일 또는 그 이후에 매수되어 상환을 나눌 수 없습니다.",
-      "failed": "상환 내역을 계산할 수 없습니다."
+      "failed": "상환 내역을 계산할 수 없습니다.",
+      "quantityInvalid": "상환 내역은 1부터 {max}까지의 정수 채권 수에 대해 계산됩니다. 상환한 채권 수를 입력하세요."
     }
   },
   "newTransactionButton": {

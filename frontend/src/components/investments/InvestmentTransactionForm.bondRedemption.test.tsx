@@ -296,6 +296,23 @@ describe('InvestmentTransactionForm: redemption of a bond splits into principal 
     expect(await screen.findByText('The redemption split could not be calculated.')).toBeInTheDocument();
   });
 
+  it('says a quantity the server will not split for as one, not as a failed read', async () => {
+    api.getBondRedemptionSplit.mockRejectedValue({
+      response: {
+        status: 400,
+        data: { message: 'x', errorCode: 'QUANTITY_INVALID' },
+      },
+    });
+    await redeem('2000000000');
+    expect(
+      await screen.findByText(
+        'A redemption is split for a whole number of bonds from 1 to 1,000,000,000. Enter the number of bonds redeemed.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('The redemption split could not be calculated.')).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Accrued Interest/)).toHaveValue('');
+  });
+
   it('leaves a redemption of a security that is not a program-linked bond alone', async () => {
     await openForm({ defaultDate: '2026-12-01' });
     await pickSecurity('sec-stock', 'REDEEM');

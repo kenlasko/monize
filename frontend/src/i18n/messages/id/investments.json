@@ -360,7 +360,8 @@
       "summary": "Bunga {interest}, potongan pelunasan dipercepat {deduction}, pembayaran {payout}",
       "outsideSaleWindow": "Satu lot seri ini dibeli di luar periode penjualannya, sehingga pelunasan tidak dapat dirinci.",
       "afterMaturity": "Satu lot seri ini dibeli pada atau setelah tanggal jatuh temponya, sehingga pelunasan tidak dapat dibagi.",
-      "failed": "Rincian pelunasan tidak dapat dihitung."
+      "failed": "Rincian pelunasan tidak dapat dihitung.",
+      "quantityInvalid": "Rincian penebusan dihitung untuk jumlah obligasi bulat dari 1 hingga {max}. Masukkan jumlah obligasi yang ditebus."
     }
   },
   "newTransactionButton": {

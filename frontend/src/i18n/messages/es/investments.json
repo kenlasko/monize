@@ -360,7 +360,8 @@
       "summary": "Intereses {interest}, deducción por amortización anticipada {deduction}, pago {payout}",
       "outsideSaleWindow": "Un lote de esta serie se compró fuera de su periodo de venta, por lo que no se puede desglosar el reembolso.",
       "afterMaturity": "Un lote de esta serie se compró en la fecha de vencimiento o después, por lo que el reembolso no se puede dividir.",
-      "failed": "No se pudo calcular el desglose del reembolso."
+      "failed": "No se pudo calcular el desglose del reembolso.",
+      "quantityInvalid": "El desglose de un reembolso se calcula para un número entero de bonos de 1 a {max}. Introduce el número de bonos reembolsados."
     }
   },
   "newTransactionButton": {

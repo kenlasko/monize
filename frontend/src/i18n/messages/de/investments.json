@@ -360,7 +360,8 @@
       "summary": "Zinsen {interest}, Abzug für vorzeitige Rückzahlung {deduction}, Auszahlung {payout}",
       "outsideSaleWindow": "Ein Los dieser Serie wurde außerhalb ihres Verkaufszeitraums gekauft, daher lässt sich die Rückzahlung nicht aufteilen.",
       "afterMaturity": "Eine Position dieser Serie wurde am oder nach ihrem Fälligkeitstag gekauft, daher kann die Rückzahlung nicht aufgeteilt werden.",
-      "failed": "Die Aufteilung der Rückzahlung konnte nicht berechnet werden."
+      "failed": "Die Aufteilung der Rückzahlung konnte nicht berechnet werden.",
+      "quantityInvalid": "Eine Rückzahlung wird für eine ganze Zahl von Anleihen von 1 bis {max} aufgeteilt. Geben Sie die Anzahl der zurückgezahlten Anleihen ein."
     }
   },
   "newTransactionButton": {
