@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "@hookform/resolvers": "^7.0.3",
+    "@hookform/resolvers": "^7.0.5",
     "@tailwindcss/postcss": "^4.3.5",
     "@techstark/opencv-js": "^5.0.0-release.1",
     "axios": "^1.21.0",
@@ -67,7 +67,7 @@
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.2.1",
+    "@vitejs/plugin-react": "^6.3.0",
     "@vitest/coverage-v8": "^5.1.0",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.4.5",
