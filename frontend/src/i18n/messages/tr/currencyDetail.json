@@ -24,11 +24,14 @@
     "totalInCurrencyUnknown": "{currency} ile ödenen bir işlemin bu para biriminde kayıtlı tutarı yok",
     "convertedPartIn": "{currency} cinsinden çevrilen kısım",
     "convertedNote": "Her işlem kendi kuruyla veya tarihindeki kurla",
-    "missingRates": "{count, plural, one {# işlem dışarıda kaldı} other {# işlem dışarıda kaldı}}: tarihi için {pairs} kuru yok. Boşlukları doldurmak için Para Birimleri sayfasındaki Kur geçmişini kullanın.",
+    "missingRates": "{count, plural, one {# işlem dışarıda kaldı} other {# işlem dışarıda kaldı}}: tarihi için {pairs} kuru yok. Almak için aşağıdaki Kur geçmişindeki boşlukları doldur düğmesini kullanın.",
     "latestRate": "Son Kur",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",
     "noStoredRates": "Henüz kayıtlı kur yok"
+  },
+  "storedHistory": {
+    "title": "Kayıtlı Kurlar"
   },
   "sources": {
     "yahooFinance": "Yahoo Finance",
@@ -56,6 +59,16 @@
       "5y": "5Y",
       "all": "Tümü"
     }
+  },
+  "period": {
+    "rates": "Dönemdeki Kurlar",
+    "ratesSpan": "{start} - {end}",
+    "noRates": "Bu dönemde kur yok",
+    "averageSpread": "Ortalama Fark",
+    "spreadNote": "{count, plural, one {# işleminizin} other {# işleminizin}} aynı tarihteki kayıtlı kurdan yukarı ya da aşağı ne kadar uzak olduğu",
+    "spreadNoteUnmeasured": "{measured, plural, one {# işleminizin} other {# işleminizin}} aynı tarihteki kayıtlı kurdan ne kadar uzak olduğu. {unmeasured, plural, one {# işlemin daha} other {# işlemin daha}} tarihi için kayıtlı kuru yok; almak için yukarıdaki Kur geçmişindeki boşlukları doldur düğmesini kullanın.",
+    "spreadNoneMeasured": "{count, plural, one {# işlemin} other {# işlemin}} karşılaştırılacak, tarihine ait kayıtlı kuru yok. Almak için yukarıdaki Kur geçmişindeki boşlukları doldur düğmesini kullanın.",
+    "noTransactions": "Bu dönemde döviz kuru olan işlem yok"
   },
   "table": {
     "title": "Kur Geçmişi",
@@ -88,7 +101,8 @@
     "empty": {
       "title": "Henüz döviz kuru yok",
       "filteredTitle": "Bu kaynaktan kur yok",
-      "description": "{code} için {currency} karşısındaki kurlar, kur sağlayıcısı kaydettiğinde veya ikisi arasında bir işlem girdiğinizde burada görünür."
+      "description": "{code} için {currency} karşısındaki kurlar, kur sağlayıcısı kaydettiğinde veya ikisi arasında bir işlem girdiğinizde burada görünür.",
+      "periodTitle": "Bu dönemde döviz kuru yok"
     },
     "totalLabel": "{count, plural, one {# kur} other {# kur}}",
     "storedTruncated": "En son kaydedilen {count} kur gösteriliyor; daha eskiler listelenmiyor.",

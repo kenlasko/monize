@@ -66,7 +66,8 @@
     "actions": {
       "edit": "편집",
       "deactivate": "비활성화",
-      "activate": "활성화"
+      "activate": "활성화",
+      "details": "상세 정보"
     },
     "contextMenu": {
       "editCurrency": "통화 편집",

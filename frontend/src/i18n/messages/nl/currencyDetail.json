@@ -24,11 +24,14 @@
     "totalInCurrencyUnknown": "Voor een transactie betaald in {currency} is geen bedrag in die valuta vastgelegd",
     "convertedPartIn": "Omgerekend deel in {currency}",
     "convertedNote": "Elke transactie tegen haar eigen koers, of de koers van haar datum",
-    "missingRates": "{count, plural, one {# transactie valt} other {# transacties vallen}} buiten de som: geen {pairs}-koers voor de datum. Vul de gaten aan via Koersgeschiedenis op de pagina Valuta.",
+    "missingRates": "{count, plural, one {# transactie valt} other {# transacties vallen}} buiten de som: geen {pairs}-koers voor de datum. Haal hem op met Gaten in koershistorie vullen hieronder.",
     "latestRate": "Laatste koers",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",
     "noStoredRates": "Nog geen opgeslagen koersen"
+  },
+  "storedHistory": {
+    "title": "Opgeslagen koersen"
   },
   "sources": {
     "yahooFinance": "Yahoo Finance",
@@ -56,6 +59,16 @@
       "5y": "5Y",
       "all": "Alles"
     }
+  },
+  "period": {
+    "rates": "Koersen in periode",
+    "ratesSpan": "{start} tot {end}",
+    "noRates": "Geen koersen in deze periode",
+    "averageSpread": "Gemiddelde afwijking",
+    "spreadNote": "Hoe ver {count, plural, one {uw # transactie} other {uw # transacties}} afweken van de opgeslagen koers op dezelfde datum, hoger of lager",
+    "spreadNoteUnmeasured": "Hoe ver {measured, plural, one {uw # transactie} other {uw # transacties}} afweken van de opgeslagen koers op dezelfde datum. {unmeasured, plural, one {Voor # andere is} other {Voor # andere is}} geen opgeslagen koers voor de datum; haal hem op met Gaten in koershistorie vullen hierboven.",
+    "spreadNoneMeasured": "{count, plural, one {Voor # transactie is} other {Voor # transacties is}} geen opgeslagen koers voor de datum om mee te vergelijken. Haal hem op met Gaten in koershistorie vullen hierboven.",
+    "noTransactions": "Geen transacties met een wisselkoers in deze periode"
   },
   "table": {
     "title": "Koersgeschiedenis",
@@ -88,7 +101,8 @@
     "empty": {
       "title": "Nog geen wisselkoersen",
       "filteredTitle": "Geen koersen uit deze bron",
-      "description": "Koersen van {code} tegenover {currency} verschijnen hier zodra de koersaanbieder er heeft opgeslagen, of zodra je een transactie tussen de twee vastlegt."
+      "description": "Koersen van {code} tegenover {currency} verschijnen hier zodra de koersaanbieder er heeft opgeslagen, of zodra je een transactie tussen de twee vastlegt.",
+      "periodTitle": "Geen wisselkoersen in deze periode"
     },
     "totalLabel": "{count, plural, one {# koers} other {# koersen}}",
     "storedTruncated": "De {count} meest recente opgeslagen koersen worden getoond; oudere staan niet in de lijst.",

@@ -66,7 +66,8 @@
     "actions": {
       "edit": "Изменить",
       "deactivate": "Деактивировать",
-      "activate": "Активировать"
+      "activate": "Активировать",
+      "details": "Подробнее"
     },
     "contextMenu": {
       "editCurrency": "Редактировать валюту",

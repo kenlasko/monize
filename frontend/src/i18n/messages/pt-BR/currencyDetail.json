@@ -24,11 +24,14 @@
     "totalInCurrencyUnknown": "Uma transação paga em {currency} não tem valor registrado nessa moeda",
     "convertedPartIn": "Parte convertida em {currency}",
     "convertedNote": "Cada transação à sua própria taxa, ou à taxa da sua data",
-    "missingRates": "{count, plural, one {# transação fica de fora} other {# transações ficam de fora}}: não há taxa {pairs} para a data. Use o histórico de taxas na página Moedas para preencher as lacunas.",
+    "missingRates": "{count, plural, one {# transação fica de fora} other {# transações ficam de fora}}: não há taxa {pairs} para a data. Use Preencher lacunas do histórico abaixo para obtê-la.",
     "latestRate": "Taxa mais recente",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",
     "noStoredRates": "Ainda não há taxas salvas"
+  },
+  "storedHistory": {
+    "title": "Taxas armazenadas"
   },
   "sources": {
     "yahooFinance": "Yahoo Finance",
@@ -56,6 +59,16 @@
       "5y": "5Y",
       "all": "Tudo"
     }
+  },
+  "period": {
+    "rates": "Taxas no período",
+    "ratesSpan": "{start} a {end}",
+    "noRates": "Não há taxas neste período",
+    "averageSpread": "Diferença média",
+    "spreadNote": "Quanto {count, plural, one {sua # transação se afastou} other {suas # transações se afastaram}} da taxa armazenada para a mesma data, para cima ou para baixo",
+    "spreadNoteUnmeasured": "Quanto {measured, plural, one {sua # transação se afastou} other {suas # transações se afastaram}} da taxa armazenada para a mesma data. {unmeasured, plural, one {Mais # não tem} other {Mais # não têm}} taxa armazenada para a data; use Preencher lacunas do histórico acima para obtê-la.",
+    "spreadNoneMeasured": "{count, plural, one {# transação não tem} other {# transações não têm}} taxa armazenada para a data com que comparar. Use Preencher lacunas do histórico acima para obtê-la.",
+    "noTransactions": "Não há transações com taxa de câmbio neste período"
   },
   "table": {
     "title": "Histórico de taxas",
@@ -88,7 +101,8 @@
     "empty": {
       "title": "Ainda não há taxas de câmbio",
       "filteredTitle": "Não há taxas desta origem",
-      "description": "As taxas de {code} em relação a {currency} aparecem aqui assim que o provedor salvar alguma, ou assim que você registrar uma transação entre as duas."
+      "description": "As taxas de {code} em relação a {currency} aparecem aqui assim que o provedor salvar alguma, ou assim que você registrar uma transação entre as duas.",
+      "periodTitle": "Não há taxas de câmbio neste período"
     },
     "totalLabel": "{count, plural, one {# taxa} other {# taxas}}",
     "storedTruncated": "São mostradas as {count} taxas salvas mais recentes; as mais antigas não são listadas.",

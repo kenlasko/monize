@@ -24,11 +24,14 @@
     "totalInCurrencyUnknown": "Một giao dịch thanh toán bằng {currency} không có số tiền ghi bằng tiền tệ đó",
     "convertedPartIn": "Phần đã quy đổi sang {currency}",
     "convertedNote": "Mỗi giao dịch theo tỷ giá riêng, hoặc tỷ giá của ngày giao dịch",
-    "missingRates": "{count, plural, other {# giao dịch bị bỏ ra}}: không có tỷ giá {pairs} cho ngày đó. Dùng Lịch sử tỷ giá trên trang Tiền tệ để bổ sung chỗ thiếu.",
+    "missingRates": "{count, plural, other {# giao dịch bị bỏ ra}}: không có tỷ giá {pairs} cho ngày đó. Dùng Lấp chỗ trống trong lịch sử tỷ giá bên dưới để lấy tỷ giá.",
     "latestRate": "Tỷ giá mới nhất",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",
     "noStoredRates": "Chưa có tỷ giá nào được lưu"
+  },
+  "storedHistory": {
+    "title": "Tỷ giá đã lưu"
   },
   "sources": {
     "yahooFinance": "Yahoo Finance",
@@ -56,6 +59,16 @@
       "5y": "5Y",
       "all": "Tất cả"
     }
+  },
+  "period": {
+    "rates": "Tỷ giá trong kỳ",
+    "ratesSpan": "{start} đến {end}",
+    "noRates": "Không có tỷ giá trong khoảng thời gian này",
+    "averageSpread": "Chênh lệch trung bình",
+    "spreadNote": "Mức chênh lệch của {count, plural, other {# giao dịch của bạn}} so với tỷ giá đã lưu cùng ngày, cao hơn hay thấp hơn",
+    "spreadNoteUnmeasured": "Mức chênh lệch của {measured, plural, other {# giao dịch của bạn}} so với tỷ giá đã lưu cùng ngày. {unmeasured, plural, other {# giao dịch khác}} không có tỷ giá đã lưu cho ngày đó; dùng Lấp chỗ trống trong lịch sử tỷ giá bên trên để lấy tỷ giá.",
+    "spreadNoneMeasured": "{count, plural, other {# giao dịch}} không có tỷ giá đã lưu cho ngày đó để so sánh. Dùng Lấp chỗ trống trong lịch sử tỷ giá bên trên để lấy tỷ giá.",
+    "noTransactions": "Không có giao dịch nào có tỷ giá trong khoảng thời gian này"
   },
   "table": {
     "title": "Lịch sử tỷ giá",
@@ -88,7 +101,8 @@
     "empty": {
       "title": "Chưa có tỷ giá",
       "filteredTitle": "Không có tỷ giá từ nguồn này",
-      "description": "Tỷ giá của {code} so với {currency} sẽ xuất hiện ở đây khi nhà cung cấp đã lưu, hoặc khi bạn ghi một giao dịch giữa hai tiền tệ."
+      "description": "Tỷ giá của {code} so với {currency} sẽ xuất hiện ở đây khi nhà cung cấp đã lưu, hoặc khi bạn ghi một giao dịch giữa hai tiền tệ.",
+      "periodTitle": "Không có tỷ giá trong khoảng thời gian này"
     },
     "totalLabel": "{count, plural, other {# tỷ giá}}",
     "storedTruncated": "Đang hiển thị {count} tỷ giá đã lưu gần nhất; các tỷ giá cũ hơn không được liệt kê.",

@@ -66,7 +66,8 @@
     "actions": {
       "edit": "編集",
       "deactivate": "無効化",
-      "activate": "有効化"
+      "activate": "有効化",
+      "details": "詳細"
     },
     "contextMenu": {
       "editCurrency": "通貨を編集",

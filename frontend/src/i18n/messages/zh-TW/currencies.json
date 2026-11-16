@@ -66,7 +66,8 @@
     "actions": {
       "edit": "編輯",
       "deactivate": "停用",
-      "activate": "啟用"
+      "activate": "啟用",
+      "details": "詳情"
     },
     "contextMenu": {
       "editCurrency": "編輯貨幣",

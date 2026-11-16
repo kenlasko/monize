@@ -24,11 +24,14 @@
     "totalInCurrencyUnknown": "{currency} で支払った取引に、その通貨での金額が記録されていません",
     "convertedPartIn": "{currency} に換算できた分",
     "convertedNote": "各取引を独自のレート、またはその日付のレートで換算",
-    "missingRates": "{count, plural, other {# 件の取引}}を除外しました: その日付の {pairs} レートがありません。通貨ページのレート履歴で不足分を補ってください。",
+    "missingRates": "{count, plural, other {# 件の取引}}を除外しました: その日付の {pairs} レートがありません。下の「レート履歴の欠落を補う」で取得してください。",
     "latestRate": "最新レート",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}、{source}",
     "noStoredRates": "保存されたレートはまだありません"
+  },
+  "storedHistory": {
+    "title": "保存済みレート"
   },
   "sources": {
     "yahooFinance": "Yahoo Finance",
@@ -56,6 +59,16 @@
       "5y": "5Y",
       "all": "すべて"
     }
+  },
+  "period": {
+    "rates": "期間内のレート",
+    "ratesSpan": "{start} から {end}",
+    "noRates": "この期間のレートはありません",
+    "averageSpread": "平均スプレッド",
+    "spreadNote": "{count, plural, other {# 件の取引}}のレートが同じ日付の保存済みレートから上下にどれだけ離れていたか",
+    "spreadNoteUnmeasured": "{measured, plural, other {# 件の取引}}のレートが同じ日付の保存済みレートからどれだけ離れていたか。ほかの{unmeasured, plural, other {# 件}}はその日付の保存済みレートがありません。上の「レート履歴の欠落を補う」で取得してください。",
+    "spreadNoneMeasured": "{count, plural, other {# 件の取引}}には比較できるその日付の保存済みレートがありません。上の「レート履歴の欠落を補う」で取得してください。",
+    "noTransactions": "この期間に為替レートのある取引はありません"
   },
   "table": {
     "title": "レート履歴",
@@ -88,7 +101,8 @@
     "empty": {
       "title": "為替レートはまだありません",
       "filteredTitle": "この提供元のレートはありません",
-      "description": "{currency} に対する {code} のレートは、レート提供元が保存するか、両通貨間の取引を記録するとここに表示されます。"
+      "description": "{currency} に対する {code} のレートは、レート提供元が保存するか、両通貨間の取引を記録するとここに表示されます。",
+      "periodTitle": "この期間の為替レートはありません"
     },
     "totalLabel": "{count, plural, other {# 件のレート}}",
     "storedTruncated": "保存された最新 {count} 件のレートを表示しています。それより古いものは表示されません。",
