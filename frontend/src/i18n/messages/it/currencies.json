@@ -66,7 +66,8 @@
     "actions": {
       "edit": "Modifica",
       "deactivate": "Disattiva",
-      "activate": "Attiva"
+      "activate": "Attiva",
+      "details": "Dettagli"
     },
     "contextMenu": {
       "editCurrency": "Modifica valuta",
@@ -158,29 +159,6 @@
     "filling": "Recupero dei tassi mancanti...",
     "fillGapsTitle": "Recupera i tassi giornalieri che mancano ai tuoi report, dalla prima data in cui i tuoi dati usano {code} fino a oggi.",
     "hint": "I report con data anteriore al primo tasso memorizzato non possono convertire {pair}.",
-    "list": {
-      "heading": "Tassi memorizzati",
-      "invertedHelp": "Un tasso contrassegnato come (invertito) è il reciproco di ciò che Monize ha effettivamente memorizzato per questa coppia, non un'osservazione diversa.",
-      "direction": "Mostrato come {to} per 1 {from}.",
-      "loading": "Caricamento dei tassi memorizzati...",
-      "loadFailed": "Impossibile leggere i tassi memorizzati",
-      "empty": "Nessun tasso memorizzato da elencare",
-      "truncated": "Sono mostrati i {count} tassi memorizzati più recenti; i più vecchi non sono elencati.",
-      "inverted": "invertito",
-      "unknownRate": "Sconosciuto",
-      "columns": {
-        "date": "Data",
-        "rate": "Tasso",
-        "source": "Origine"
-      },
-      "sources": {
-        "yahooFinance": "Yahoo Finance",
-        "frankfurter": "Frankfurter (BCE)",
-        "mnyImport": "Importazione Money",
-        "yahooCrypto": "Coppie cripto (Yahoo)",
-        "unknown": "Sconosciuto"
-      }
-    },
     "toasts": {
       "filled": "Aggiunti {count} tassi; lo storico ora inizia il {start}",
       "partial": "{count} tassi memorizzati; lo storico ora inizia il {start}. Restano {windows} lacune da recuperare, premi di nuovo per continuare.",

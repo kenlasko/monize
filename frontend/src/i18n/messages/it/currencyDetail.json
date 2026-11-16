@@ -24,11 +24,15 @@
     "totalInCurrencyUnknown": "Una transazione pagata in {currency} non ha un importo registrato in questa valuta",
     "convertedPartIn": "Parte convertita in {currency}",
     "convertedNote": "Ogni transazione al proprio tasso, o al tasso della sua data",
-    "missingRates": "{count, plural, one {# transazione è esclusa} other {# transazioni sono escluse}}: nessun tasso {pairs} per la data. Usa lo storico dei tassi nella pagina Valute per colmare le lacune.",
+    "missingRates": "{count, plural, one {# transazione è esclusa} other {# transazioni sono escluse}}: nessun tasso {pairs} per la data. Usa Colma le lacune dello storico qui sotto per recuperarlo.",
+    "missingRatesElsewhere": "{count, plural, one {# transazione è esclusa} other {# transazioni sono escluse}}: nessun tasso {pairs} per la data. Usa Colma le lacune dello storico nella pagina dei dettagli di ogni valuta indicata.",
     "latestRate": "Ultimo tasso",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",
     "noStoredRates": "Nessun tasso salvato"
+  },
+  "storedHistory": {
+    "title": "Tassi salvati"
   },
   "sources": {
     "yahooFinance": "Yahoo Finance",
@@ -56,6 +60,16 @@
       "5y": "5Y",
       "all": "Tutto"
     }
+  },
+  "period": {
+    "rates": "Tassi nel periodo",
+    "ratesSpan": "Dal {start} al {end}",
+    "noRates": "Nessun tasso in questo periodo",
+    "averageSpread": "Scarto medio",
+    "spreadNote": "Quanto {count, plural, one {la tua # transazione si è discostata} other {le tue # transazioni si sono discostate}} dal tasso salvato per la stessa data, in più o in meno",
+    "spreadNoteUnmeasured": "Quanto {measured, plural, one {la tua # transazione si è discostata} other {le tue # transazioni si sono discostate}} dal tasso salvato per la stessa data. {unmeasured, plural, one {# altra non ha} other {# altre non hanno}} un tasso {pair} salvato nei 45 giorni prima della data, la prima il {date}; Colma le lacune dello storico qui sopra recupera ciò che ha il fornitore.",
+    "spreadNoneMeasured": "{count, plural, one {# transazione non ha} other {# transazioni non hanno}} un tasso {pair} salvato nei 45 giorni prima della data con cui confrontarla, la prima il {date}. Colma le lacune dello storico qui sopra recupera ciò che ha il fornitore.",
+    "noTransactions": "Nessuna transazione con un tasso di cambio in questo periodo"
   },
   "table": {
     "title": "Storico dei tassi",
@@ -88,7 +102,8 @@
     "empty": {
       "title": "Ancora nessun tasso di cambio",
       "filteredTitle": "Nessun tasso da questa origine",
-      "description": "I tassi di {code} rispetto a {currency} compaiono qui quando il fornitore ne ha salvati, o quando registri una transazione tra le due."
+      "description": "I tassi di {code} rispetto a {currency} compaiono qui quando il fornitore ne ha salvati, o quando registri una transazione tra le due.",
+      "periodTitle": "Nessun tasso di cambio in questo periodo"
     },
     "totalLabel": "{count, plural, one {# tasso} other {# tassi}}",
     "storedTruncated": "Sono mostrati i {count} tassi salvati più recenti; quelli precedenti non sono elencati.",

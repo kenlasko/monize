@@ -12,11 +12,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CurrencyDetailHeader } from '@/components/currencies/detail/CurrencyDetailHeader';
 import { CurrencySummaryCards } from '@/components/currencies/detail/CurrencySummaryCards';
-import {
-  CurrencyRateChart,
-  CurrencyRateChartSkeleton,
-} from '@/components/currencies/detail/CurrencyRateChart';
-import { CurrencyRateTable } from '@/components/currencies/detail/CurrencyRateTable';
+import { CurrencyRateHistorySection } from '@/components/currencies/detail/CurrencyRateHistorySection';
+import { RateHistoryCoverage } from '@/components/currencies/RateHistoryCoverage';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -136,10 +133,15 @@ function CurrencyDetailContent() {
     return fetchData();
   }, [fetchData]);
 
+  // Also what a gap fill calls: the figures are re-read with the history,
+  // since a rate the fill stored can complete the converted total.
+  // A fill can finish after the reader switched currencies: its reload is for
+  // a page no longer on screen and must not blank the one that is.
   const reloadRates = useCallback(() => {
+    if (shownCodeRef.current !== code) return Promise.resolve();
     setRates(null);
     return fetchData();
-  }, [fetchData]);
+  }, [code, fetchData]);
 
   useEffect(() => {
     fetchData();
@@ -244,42 +246,37 @@ function CurrencyDetailContent() {
                 {t('defaultCurrencyNote', { code })}
               </p>
             </Card>
-          ) : ratesFailed ? (
-            <div role="alert">
-              <EmptyState
-                icon={<ExclamationTriangleIcon />}
-                title={t('ratesLoadFailed')}
-                action={<Button onClick={reloadRates}>{t('tryAgain')}</Button>}
-              />
-            </div>
           ) : (
             <>
-              {rows ? (
-                <CurrencyRateChart code={code} defaultCurrency={reportingCurrency} rows={rows} />
-              ) : (
-                <CurrencyRateChartSkeleton />
-              )}
+              <Card padding="md">
+                <RateHistoryCoverage
+                  key={code}
+                  code={code}
+                  reportingCurrency={reportingCurrency}
+                  title={t('storedHistory.title')}
+                  headingLevel="h2"
+                  className=""
+                  onFilled={reloadRates}
+                />
+              </Card>
 
-              <section aria-labelledby="currency-rate-history-heading">
-                <h2
-                  id="currency-rate-history-heading"
-                  className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100"
-                >
-                  {t('table.title')}
-                </h2>
-                {rows ? (
-                  <CurrencyRateTable
-                    code={code}
-                    defaultCurrency={reportingCurrency}
-                    rows={rows}
-                    notes={notes}
+              {ratesFailed ? (
+                <div role="alert">
+                  <EmptyState
+                    icon={<ExclamationTriangleIcon />}
+                    title={t('ratesLoadFailed')}
+                    action={<Button onClick={reloadRates}>{t('tryAgain')}</Button>}
                   />
-                ) : (
-                  <Card padding="md">
-                    <LoadingSpinner text={t('table.loading')} />
-                  </Card>
-                )}
-              </section>
+                </div>
+              ) : (
+                <CurrencyRateHistorySection
+                  key={code}
+                  code={code}
+                  defaultCurrency={reportingCurrency}
+                  rows={rows}
+                  notes={notes}
+                />
+              )}
             </>
           )}
         </div>

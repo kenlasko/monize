@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
-import { buildRateHistoryRows } from '@/lib/currency-detail';
+import { buildRateHistoryRows, rateRowsInWindow } from '@/lib/currency-detail';
 import { CurrencyRateChart } from './CurrencyRateChart';
 
 const rows = buildRateHistoryRows(
@@ -16,15 +16,26 @@ const rows = buildRateHistoryRows(
       kind: 'foreignEntry',
       accountName: 'CAD Chequing',
       payeeName: 'Hotel',
+      marketRate: 1.5,
     },
   ],
 );
 
-describe('CurrencyRateChart', () => {
-  beforeEach(() => localStorage.clear());
+const renderChart = (props: Partial<Parameters<typeof CurrencyRateChart>[0]> = {}) =>
+  render(
+    <CurrencyRateChart
+      code="EUR"
+      defaultCurrency="CAD"
+      rows={rows}
+      dateRange="all"
+      onDateRangeChange={vi.fn()}
+      {...props}
+    />,
+  );
 
+describe('CurrencyRateChart', () => {
   it('names the direction and offers the window presets', () => {
-    render(<CurrencyRateChart code="EUR" defaultCurrency="CAD" rows={rows} />);
+    renderChart();
 
     expect(screen.getByRole('heading', { name: 'Exchange Rate' })).toBeInTheDocument();
     expect(screen.getByText('CAD per 1 EUR')).toBeInTheDocument();
@@ -32,14 +43,33 @@ describe('CurrencyRateChart', () => {
   });
 
   it('says when the window holds no rate, and counts the highlighted transactions it shows', () => {
-    render(<CurrencyRateChart code="EUR" defaultCurrency="CAD" rows={rows} />);
+    const { rerender } = renderChart({
+      dateRange: '1y',
+      rows: rateRowsInWindow(rows, '2025-01-01', '2025-12-31'),
+    });
 
-    // The default year window ends today, long after the fixture's dates.
     expect(screen.getByText('No exchange rates in this period')).toBeInTheDocument();
     expect(screen.getByText('Your transactions (0)')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /^All$/ }));
+    rerender(
+      <CurrencyRateChart
+        code="EUR"
+        defaultCurrency="CAD"
+        rows={rows}
+        dateRange="all"
+        onDateRangeChange={vi.fn()}
+      />,
+    );
     expect(screen.queryByText('No exchange rates in this period')).not.toBeInTheDocument();
     expect(screen.getByText('Your transactions (1)')).toBeInTheDocument();
+  });
+
+  it('hands a chosen preset to the section that owns the period', () => {
+    const onDateRangeChange = vi.fn();
+    renderChart({ dateRange: '1y', onDateRangeChange });
+
+    fireEvent.click(screen.getByRole('button', { name: /^All$/ }));
+
+    expect(onDateRangeChange).toHaveBeenCalledWith('all');
   });
 });

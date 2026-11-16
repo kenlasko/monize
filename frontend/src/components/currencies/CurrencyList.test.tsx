@@ -23,7 +23,6 @@ vi.mock('@/lib/errors', () => ({
 describe('CurrencyList', () => {
   const onEdit = vi.fn();
   const onToggleActive = vi.fn();
-  const onRateHistory = vi.fn();
   const onRefresh = vi.fn();
   const getRate = vi.fn().mockReturnValue(null);
 
@@ -33,7 +32,6 @@ describe('CurrencyList', () => {
     getRate,
     onEdit,
     onToggleActive,
-    onRateHistory,
     onRefresh,
   };
 
@@ -177,31 +175,51 @@ describe('CurrencyList', () => {
     it('does not navigate when a row action is pressed', () => {
       render(<CurrencyList currencies={[makeCurrency({ code: 'USD', isSystem: true })]} {...defaultProps} />);
 
-      fireEvent.click(screen.getByText('Rate history'));
+      fireEvent.click(screen.getByText('Deactivate'));
 
-      expect(onRateHistory).toHaveBeenCalled();
+      expect(onToggleActive).toHaveBeenCalled();
       expect(useRouter().push).not.toHaveBeenCalled();
     });
   });
 
-  describe('rate history action', () => {
-    // The regression: the "add another year of rate history" section lived
-    // only in the edit dialog, and the built-in currencies -- the ones whose
-    // history usually needs extending -- have no edit action, so it could not
-    // be reached for EUR, USD or any other system currency.
-    it('offers Rate history for a system currency that is not the default', () => {
+  describe('details action', () => {
+    // The rate history and its gap fill moved from a dialog to the detail
+    // page, so the action that opened the dialog now opens the page. The
+    // built-in currencies have no edit action, so it must be offered for them.
+    it('opens the detail page of a system currency, once', () => {
       const currencies = [makeCurrency({ code: 'USD', isSystem: true })];
 
       render(<CurrencyList currencies={currencies} {...defaultProps} />);
       expect(screen.queryByText('Edit')).not.toBeInTheDocument();
-      fireEvent.click(screen.getByText('Rate history'));
-      expect(onRateHistory).toHaveBeenCalledWith(expect.objectContaining({ code: 'USD' }));
+      fireEvent.click(screen.getByText('Details'));
+
+      expect(useRouter().push).toHaveBeenCalledTimes(1);
+      expect(useRouter().push).toHaveBeenCalledWith('/currencies/USD');
     });
 
-    it('hides Rate history for the reporting currency itself', () => {
+    it('is offered for the reporting currency, whose page still counts its transactions', () => {
       const currencies = [makeCurrency({ code: 'CAD', isSystem: true })];
 
       render(<CurrencyList currencies={currencies} {...defaultProps} />);
+      fireEvent.click(screen.getByText('Details'));
+
+      expect(useRouter().push).toHaveBeenCalledWith('/currencies/CAD');
+    });
+
+    it('is not offered to a delegate, whose page reads would be refused', () => {
+      act(() => useAuthStore.setState({ actingAsUserId: 'owner-1' }));
+      try {
+        render(<CurrencyList currencies={[makeCurrency({ code: 'EUR' })]} {...defaultProps} />);
+
+        expect(screen.queryByText('Details')).not.toBeInTheDocument();
+      } finally {
+        act(() => useAuthStore.setState({ actingAsUserId: null }));
+      }
+    });
+
+    it('no longer offers the rate history dialog', () => {
+      render(<CurrencyList currencies={[makeCurrency({ code: 'USD', isSystem: true })]} {...defaultProps} />);
+
       expect(screen.queryByText('Rate history')).not.toBeInTheDocument();
     });
   });

@@ -66,7 +66,8 @@
     "actions": {
       "edit": "編集",
       "deactivate": "無効化",
-      "activate": "有効化"
+      "activate": "有効化",
+      "details": "詳細"
     },
     "contextMenu": {
       "editCurrency": "通貨を編集",
@@ -158,29 +159,6 @@
     "filling": "不足しているレートを取得しています...",
     "fillGapsTitle": "レポートに不足している日次レートを、データが {code} を使い始めた日から今日まで取得します。",
     "hint": "最初に保存されたレートより前の日付のレポートでは、{pair} を換算できません。",
-    "list": {
-      "heading": "保存済みレート",
-      "invertedHelp": "（逆算）と表示されたレートは、Monizeがこのペアについて実際に保存した値の逆数であり、別の観測値ではありません。",
-      "direction": "1 {from} あたりの {to} で表示しています。",
-      "loading": "保存済みレートを読み込んでいます...",
-      "loadFailed": "保存済みレートを読み込めませんでした",
-      "empty": "表示できる保存済みレートはありません",
-      "truncated": "最新の {count} 件の保存済みレートを表示しています。それより古いものは一覧に含まれません。",
-      "inverted": "逆算",
-      "unknownRate": "不明",
-      "columns": {
-        "date": "日付",
-        "rate": "レート",
-        "source": "提供元"
-      },
-      "sources": {
-        "yahooFinance": "Yahoo Finance",
-        "frankfurter": "Frankfurter（ECB）",
-        "mnyImport": "Money インポート",
-        "yahooCrypto": "暗号資産ペア (Yahoo)",
-        "unknown": "不明"
-      }
-    },
     "toasts": {
       "filled": "{count} 件のレートを追加しました。履歴は {start} から始まります",
       "partial": "{count} 件のレートを保存しました。履歴は {start} から始まります。残り {windows} 件の欠落があります。続けるにはもう一度押してください。",

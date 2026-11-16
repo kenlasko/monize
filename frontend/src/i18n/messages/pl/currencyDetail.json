@@ -24,11 +24,15 @@
     "totalInCurrencyUnknown": "Transakcja opłacona w {currency} nie ma zapisanej kwoty w tej walucie",
     "convertedPartIn": "Przeliczona część w {currency}",
     "convertedNote": "Każda transakcja po własnym kursie lub po kursie z jej daty",
-    "missingRates": "{count, plural, one {# transakcja jest pominięta} few {# transakcje są pominięte} many {# transakcji jest pominiętych} other {# transakcji jest pominiętej}}: brak kursu {pairs} dla jej daty. Uzupełnij luki w Historii kursu na stronie Waluty.",
+    "missingRates": "{count, plural, one {# transakcja jest pominięta} few {# transakcje są pominięte} many {# transakcji jest pominiętych} other {# transakcji jest pominiętej}}: brak kursu {pairs} dla jej daty. Pobierz go przyciskiem Uzupełnij luki w historii kursu poniżej.",
+    "missingRatesElsewhere": "{count, plural, one {# transakcja jest pominięta} few {# transakcje są pominięte} many {# transakcji jest pominiętych} other {# transakcji jest pominiętej}}: brak kursu {pairs} dla jej daty. Użyj przycisku Uzupełnij luki w historii kursu na stronie szczegółów każdej wymienionej waluty.",
     "latestRate": "Ostatni kurs",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",
     "noStoredRates": "Brak zapisanych kursów"
+  },
+  "storedHistory": {
+    "title": "Zapisane kursy"
   },
   "sources": {
     "yahooFinance": "Yahoo Finance",
@@ -56,6 +60,16 @@
       "5y": "5Y",
       "all": "Wszystko"
     }
+  },
+  "period": {
+    "rates": "Kursy w okresie",
+    "ratesSpan": "Od {start} do {end}",
+    "noRates": "Brak kursów w tym okresie",
+    "averageSpread": "Średnie odchylenie",
+    "spreadNote": "Jak daleko {count, plural, one {Twoja # transakcja odbiegała} few {Twoje # transakcje odbiegały} many {Twoich # transakcji odbiegało} other {Twoich # transakcji odbiegało}} od zapisanego kursu z tego samego dnia, w górę lub w dół",
+    "spreadNoteUnmeasured": "Jak daleko {measured, plural, one {Twoja # transakcja odbiegała} few {Twoje # transakcje odbiegały} many {Twoich # transakcji odbiegało} other {Twoich # transakcji odbiegało}} od zapisanego kursu z tego samego dnia. {unmeasured, plural, one {# kolejna nie ma} few {# kolejne nie mają} many {# kolejnych nie ma} other {# kolejnej nie ma}} zapisanego kursu {pair} w ciągu 45 dni przed swoją datą, najwcześniejsza {date}; Uzupełnij luki w historii kursu powyżej pobiera to, co ma dostawca.",
+    "spreadNoneMeasured": "{count, plural, one {# transakcja nie ma} few {# transakcje nie mają} many {# transakcji nie ma} other {# transakcji nie ma}} zapisanego kursu {pair} w ciągu 45 dni przed swoją datą do porównania, najwcześniejsza {date}. Uzupełnij luki w historii kursu powyżej pobiera to, co ma dostawca.",
+    "noTransactions": "Brak transakcji z kursem wymiany w tym okresie"
   },
   "table": {
     "title": "Historia kursu",
@@ -88,7 +102,8 @@
     "empty": {
       "title": "Brak kursów walut",
       "filteredTitle": "Brak kursów z tego źródła",
-      "description": "Kursy {code} względem {currency} pojawią się tutaj, gdy dostawca kursów jakieś zapisze lub gdy zarejestrujesz transakcję między tymi walutami."
+      "description": "Kursy {code} względem {currency} pojawią się tutaj, gdy dostawca kursów jakieś zapisze lub gdy zarejestrujesz transakcję między tymi walutami.",
+      "periodTitle": "Brak kursów w tym okresie"
     },
     "totalLabel": "{count, plural, one {# kurs} few {# kursy} many {# kursów} other {# kursu}}",
     "storedTruncated": "Wyświetlono {count} najnowszych zapisanych kursów; starsze nie są wymienione.",

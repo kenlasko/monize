@@ -24,11 +24,15 @@
     "totalInCurrencyUnknown": "Une opération payée en {currency} n'a aucun montant enregistré dans cette devise",
     "convertedPartIn": "Partie convertie en {currency}",
     "convertedNote": "Chaque opération à son propre taux, ou au taux de sa date",
-    "missingRates": "{count, plural, one {# opération est exclue} other {# opérations sont exclues}} : aucun taux {pairs} pour sa date. Utilisez l'historique des taux sur la page Devises pour combler les lacunes.",
+    "missingRates": "{count, plural, one {# opération est exclue} other {# opérations sont exclues}} : aucun taux {pairs} pour sa date. Utilisez Combler les lacunes de l'historique ci-dessous pour l'obtenir.",
+    "missingRatesElsewhere": "{count, plural, one {# opération est exclue} other {# opérations sont exclues}} : aucun taux {pairs} pour sa date. Utilisez Combler les lacunes de l'historique sur la page de détails de chaque devise indiquée.",
     "latestRate": "Dernier taux",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",
     "noStoredRates": "Aucun taux enregistré pour le moment"
+  },
+  "storedHistory": {
+    "title": "Taux enregistrés"
   },
   "sources": {
     "yahooFinance": "Yahoo Finance",
@@ -56,6 +60,16 @@
       "5y": "5Y",
       "all": "Tout"
     }
+  },
+  "period": {
+    "rates": "Taux sur la période",
+    "ratesSpan": "Du {start} au {end}",
+    "noRates": "Aucun taux sur cette période",
+    "averageSpread": "Écart moyen",
+    "spreadNote": "L'écart entre {count, plural, one {votre # opération} other {vos # opérations}} et le taux enregistré à la même date, à la hausse ou à la baisse",
+    "spreadNoteUnmeasured": "L'écart entre {measured, plural, one {votre # opération} other {vos # opérations}} et le taux enregistré à la même date. {unmeasured, plural, one {# autre n'a} other {# autres n'ont}} aucun taux {pair} enregistré dans les 45 jours précédant sa date, la plus ancienne le {date} ; Combler les lacunes de l'historique, ci-dessus, récupère ce que le fournisseur possède.",
+    "spreadNoneMeasured": "{count, plural, one {# opération n'a} other {# opérations n'ont}} aucun taux {pair} enregistré dans les 45 jours précédant sa date auquel la comparer, la plus ancienne le {date}. Combler les lacunes de l'historique, ci-dessus, récupère ce que le fournisseur possède.",
+    "noTransactions": "Aucune opération avec un taux de change sur cette période"
   },
   "table": {
     "title": "Historique des taux",
@@ -88,7 +102,8 @@
     "empty": {
       "title": "Aucun taux de change pour le moment",
       "filteredTitle": "Aucun taux de cette source",
-      "description": "Les taux de {code} par rapport à {currency} apparaissent ici dès que le fournisseur en a enregistré, ou dès que vous saisissez une opération entre les deux."
+      "description": "Les taux de {code} par rapport à {currency} apparaissent ici dès que le fournisseur en a enregistré, ou dès que vous saisissez une opération entre les deux.",
+      "periodTitle": "Aucun taux de change sur cette période"
     },
     "totalLabel": "{count, plural, one {# taux} other {# taux}}",
     "storedTruncated": "Affichage des {count} taux enregistrés les plus récents ; les plus anciens ne sont pas listés.",

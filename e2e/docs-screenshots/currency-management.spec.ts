@@ -106,20 +106,20 @@ test("currency-form-crypto", async () => {
 });
 
 test("currency-rate-history", async () => {
-  await openCurrencies();
-  await page
-    .getByRole("row", { name: /^USD US Dollar/ })
-    .getByRole("button", { name: "Rate history" })
-    .click();
-  const dialog = page.getByRole("dialog");
-  await expect(dialog.getByRole("heading", { name: "USD" })).toBeVisible();
-  await expect(dialog.getByText(/Stored history/)).toBeVisible({
+  // The stored history and its gap fill live on the detail page; the demo
+  // data's one foreign currency with a stored history is bitcoin.
+  await page.goto("/currencies/BTC");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "BTC · Bitcoin" }),
+  ).toBeVisible({ timeout: 90_000 });
+  const card = page
+    .getByRole("heading", { name: "Stored Rates" })
+    .locator("xpath=ancestor::*[contains(@class, 'rounded-lg')][1]");
+  await expect(card.getByText(/Stored history/)).toBeVisible({
     timeout: 30_000,
   });
   await waitForReady(page);
-  await docShot(page, "currency-rate-history", dialog);
-  await dialog.getByRole("button", { name: "Close" }).last().click();
-  await expect(dialog).toHaveCount(0);
+  await docShot(page, "currency-rate-history", card);
 });
 
 test("currency-detail", async () => {

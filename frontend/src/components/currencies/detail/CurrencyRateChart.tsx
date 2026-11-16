@@ -19,7 +19,6 @@ import { ChartDownloadButton } from '@/components/ui/ChartDownloadButton';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { calendarTicks } from '@/components/transactions/BalanceHistoryChart';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
-import { useDateRange } from '@/hooks/useDateRange';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { chartColors } from '@/lib/chart-colors';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
@@ -36,8 +35,11 @@ import {
 interface CurrencyRateChartProps {
   code: string;
   defaultCurrency: string;
-  /** Every rate row, provider and transaction alike, in any order. */
+  /** The rate rows of the selected period, provider and transaction alike, in any order. */
   rows: readonly RateHistoryRow[];
+  /** The selected period preset, which the table and the period cards share. */
+  dateRange: string;
+  onDateRangeChange: (range: string) => void;
 }
 
 /** One plotted day: the provider's rate, and the reader's own rates near it. */
@@ -120,22 +122,24 @@ function RateTooltip({
  * The exchange rate over time: the provider's stored history as a line, and
  * each rate one of the reader's own transactions settled at as a highlighted
  * dot at its own value, so a payment made at a rate far from the market's
- * stands out. The window is the security chart's presets, remembered per
- * currency.
+ * stands out. The period selector in its header is the security chart's
+ * presets; its state is the section's, since the table follows it too.
  */
-export function CurrencyRateChart({ code, defaultCurrency, rows }: CurrencyRateChartProps) {
+export function CurrencyRateChart({
+  code,
+  defaultCurrency,
+  rows,
+  dateRange,
+  onDateRangeChange,
+}: CurrencyRateChartProps) {
   const t = useTranslations('currencyDetail');
   const { formatNumber } = useNumberFormat();
   const formatChartDate = useChartDateFormat();
   const chartRef = useRef<HTMLDivElement>(null);
 
-  const { dateRange, setDateRange, resolvedRange } = useDateRange({
-    defaultRange: '1y',
-    storageKey: `currencyDetail:range:${code}`,
-  });
-
   const { days, transactions, axisTicks, axisPattern, axisDecimals } = useMemo(() => {
-    const series = buildRateChartSeries(rows, resolvedRange.start, resolvedRange.end);
+    // The section has already narrowed the rows to the period.
+    const series = buildRateChartSeries(rows, '', '');
     const built = chartDays(series.provider, series.transactions);
     if (built.length === 0) {
       return {
@@ -162,7 +166,7 @@ export function CurrencyRateChart({ code, defaultCurrency, rows }: CurrencyRateC
       axisPattern: (useYearTicks ? 'yyyy' : 'MMM') as ChartDatePattern,
       axisDecimals: rateAxisDecimals(maxRate),
     };
-  }, [rows, resolvedRange.start, resolvedRange.end]);
+  }, [rows]);
 
   const rangeLabels = Object.fromEntries(
     CHART_RANGES.map((range) => [range, t(`chart.ranges.${range}`)]),
@@ -194,7 +198,7 @@ export function CurrencyRateChart({ code, defaultCurrency, rows }: CurrencyRateC
             ranges={CHART_RANGES}
             labels={rangeLabels}
             value={dateRange}
-            onChange={setDateRange}
+            onChange={onDateRangeChange}
             size="sm"
           />
           <ChartDownloadButton

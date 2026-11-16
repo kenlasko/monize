@@ -224,7 +224,7 @@ describe("currency detail (integration)", () => {
     expect(summary.totalInReportingCurrency).toBe(150 + 290 + 64);
   });
 
-  it("lists the rates the reader's own transactions settled at, newest first", async () => {
+  it("lists the rates the reader's own transactions settled at, newest first, beside the stored market rate", async () => {
     const list = await asUser(() => service.getTransactionRates(userId, "EUR"));
 
     expect(list.rates).toEqual([
@@ -234,12 +234,14 @@ describe("currency detail (integration)", () => {
         kind: "foreignEntry",
         accountName: "Euro Chequing",
         payeeName: "Toronto Shop",
+        marketRate: 1.6,
       }),
       expect.objectContaining({
         rateDate: day(15),
         rate: 1.45,
         kind: "transfer",
         accountName: "Euro Chequing",
+        marketRate: 1.6,
       }),
       expect.objectContaining({
         rateDate: day(12),
@@ -247,6 +249,7 @@ describe("currency detail (integration)", () => {
         kind: "foreignEntry",
         accountName: "CAD Chequing",
         payeeName: "Hotel",
+        marketRate: 1.6,
       }),
     ]);
     expect(list.truncated).toBe(false);

@@ -23,6 +23,7 @@ const transactionRates: TransactionRate[] = [
     kind: 'foreignEntry',
     accountName: 'CAD Chequing',
     payeeName: 'Hotel',
+    marketRate: null,
   },
   {
     transactionId: 'tx-2',
@@ -32,6 +33,7 @@ const transactionRates: TransactionRate[] = [
     accountName: 'Euro Chequing',
     // A transfer leg's payee names the transfer, which the kind already says.
     payeeName: 'Transfer to CAD Chequing',
+    marketRate: null,
   },
 ];
 
@@ -159,5 +161,22 @@ describe('CurrencyRateTable', () => {
     expect(
       screen.getByText('Showing the 2,000 most recent stored rates; older ones are not listed.'),
     ).toBeInTheDocument();
+  });
+
+  it('says an empty period is one, not a pair with no history', () => {
+    render(<CurrencyRateTable code="EUR" defaultCurrency="CAD" rows={[]} hasAnyRates />);
+
+    expect(screen.getByText('No exchange rates in this period')).toBeInTheDocument();
+    expect(screen.queryByText('No exchange rates yet')).not.toBeInTheDocument();
+  });
+
+  it('starts a new period from its first page', () => {
+    const { rerender } = render(<CurrencyRateTable code="EUR" defaultCurrency="CAD" rows={rows} />);
+    fireEvent.click(screen.getAllByTitle('Next page')[0]);
+    expect(bodyRows()).toHaveLength(13);
+
+    rerender(<CurrencyRateTable code="EUR" defaultCurrency="CAD" rows={rows.slice(0, 55)} />);
+
+    expect(bodyRows()).toHaveLength(50);
   });
 });

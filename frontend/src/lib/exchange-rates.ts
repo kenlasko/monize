@@ -194,6 +194,12 @@ export interface TransactionRate {
   kind: 'foreignEntry' | 'transfer';
   accountName: string;
   payeeName: string | null;
+  /**
+   * The stored market rate for `rateDate`, in the same direction: the newest
+   * stored observation on or before it within the server's age bound. `null`
+   * when no stored rate applies to the date, never the settled rate itself.
+   */
+  marketRate: number | null;
 }
 
 /** Newest first, bounded by the server's `limit`. */
@@ -293,7 +299,7 @@ export const exchangeRatesApi = {
 
   // Every stored rate for `code` against the caller's reporting currency,
   // newest date first. Not deduped, for the same reason `getRateCoverage` is
-  // not: the dialog re-reads it straight after a fill wrote rows, and a cached
+  // not: the detail page re-reads it straight after a fill wrote rows, and a cached
   // answer would describe the history it just replaced. If it is ever cached,
   // its key must start with `exchange-rates:` so the invalidation below keeps
   // covering it.

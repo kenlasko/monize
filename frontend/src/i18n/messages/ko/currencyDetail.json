@@ -24,11 +24,15 @@
     "totalInCurrencyUnknown": "{currency}(으)로 결제한 거래에 해당 통화 금액이 기록되어 있지 않습니다",
     "convertedPartIn": "{currency}(으)로 환산된 부분",
     "convertedNote": "각 거래는 자체 환율 또는 해당 날짜의 환율로 환산",
-    "missingRates": "{count, plural, other {거래 #건}}이 제외되었습니다: 해당 날짜의 {pairs} 환율이 없습니다. 통화 페이지의 환율 이력에서 빈 곳을 채우세요.",
+    "missingRates": "{count, plural, other {거래 #건}}이 제외되었습니다: 해당 날짜의 {pairs} 환율이 없습니다. 아래의 환율 이력의 빈 구간 채우기로 가져오세요.",
+    "missingRatesElsewhere": "{count, plural, other {거래 #건}}이 제외되었습니다: 해당 날짜의 {pairs} 환율이 없습니다. 표시된 각 통화의 상세 페이지에서 환율 이력의 빈 구간 채우기를 사용하세요.",
     "latestRate": "최신 환율",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",
     "noStoredRates": "저장된 환율이 아직 없습니다"
+  },
+  "storedHistory": {
+    "title": "저장된 환율"
   },
   "sources": {
     "yahooFinance": "Yahoo Finance",
@@ -56,6 +60,16 @@
       "5y": "5Y",
       "all": "전체"
     }
+  },
+  "period": {
+    "rates": "기간 내 환율",
+    "ratesSpan": "{start} ~ {end}",
+    "noRates": "이 기간에 환율이 없습니다",
+    "averageSpread": "평균 스프레드",
+    "spreadNote": "{count, plural, other {거래 #건}}의 환율이 같은 날짜의 저장된 환율과 위아래로 얼마나 차이 났는지",
+    "spreadNoteUnmeasured": "{measured, plural, other {거래 #건}}의 환율이 같은 날짜의 저장된 환율과 얼마나 차이 났는지. 나머지 {unmeasured, plural, other {#건}}은 날짜 이전 45일 안에 저장된 {pair} 환율이 없습니다(가장 이른 날짜 {date}). 위의 환율 이력의 빈 구간 채우기로 제공자가 가진 환율을 가져올 수 있습니다.",
+    "spreadNoneMeasured": "{count, plural, other {거래 #건}}에 날짜 이전 45일 안에 비교할 저장된 {pair} 환율이 없습니다(가장 이른 날짜 {date}). 위의 환율 이력의 빈 구간 채우기로 제공자가 가진 환율을 가져올 수 있습니다.",
+    "noTransactions": "이 기간에 환율이 있는 거래가 없습니다"
   },
   "table": {
     "title": "환율 이력",
@@ -88,7 +102,8 @@
     "empty": {
       "title": "아직 환율이 없습니다",
       "filteredTitle": "이 출처의 환율이 없습니다",
-      "description": "{currency} 대비 {code} 환율은 환율 제공자가 저장하거나 두 통화 간 거래를 기록하면 여기에 표시됩니다."
+      "description": "{currency} 대비 {code} 환율은 환율 제공자가 저장하거나 두 통화 간 거래를 기록하면 여기에 표시됩니다.",
+      "periodTitle": "이 기간에 환율이 없습니다"
     },
     "totalLabel": "{count, plural, other {환율 #개}}",
     "storedTruncated": "저장된 최신 환율 {count}개를 표시합니다. 이전 환율은 표시되지 않습니다.",

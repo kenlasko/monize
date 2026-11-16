@@ -66,7 +66,8 @@
     "actions": {
       "edit": "編輯",
       "deactivate": "停用",
-      "activate": "啟用"
+      "activate": "啟用",
+      "details": "詳情"
     },
     "contextMenu": {
       "editCurrency": "編輯貨幣",
@@ -158,29 +159,6 @@
     "filling": "正在取得缺少的匯率...",
     "fillGapsTitle": "取得報表中缺少的每日匯率，從您的資料首次使用 {code} 的日期起至今天。",
     "hint": "日期早於最早儲存匯率的報告，無法換算 {pair}。",
-    "list": {
-      "heading": "已儲存匯率",
-      "invertedHelp": "標記為（反向換算）的匯率是 Monize 為此貨幣對實際儲存值的倒數，而不是另一個觀測值。",
-      "direction": "以每 1 {from} 兌 {to} 顯示。",
-      "loading": "正在載入已儲存匯率...",
-      "loadFailed": "無法讀取已儲存匯率",
-      "empty": "沒有可列出的已儲存匯率",
-      "truncated": "僅顯示最近 {count} 筆已儲存匯率；更早的未列出。",
-      "inverted": "反向換算",
-      "unknownRate": "未知",
-      "columns": {
-        "date": "日期",
-        "rate": "匯率",
-        "source": "來源"
-      },
-      "sources": {
-        "yahooFinance": "Yahoo Finance",
-        "frankfurter": "Frankfurter（歐洲央行）",
-        "mnyImport": "Money 匯入",
-        "yahooCrypto": "加密貨幣對 (Yahoo)",
-        "unknown": "未知"
-      }
-    },
     "toasts": {
       "filled": "已新增 {count} 筆匯率；歷史現在從 {start} 開始",
       "partial": "已儲存 {count} 筆匯率；歷史現在從 {start} 開始。還有 {windows} 個缺口待取得，再按一次以繼續。",

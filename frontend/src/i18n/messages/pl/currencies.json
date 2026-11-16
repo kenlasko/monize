@@ -66,7 +66,8 @@
     "actions": {
       "edit": "Edytuj",
       "deactivate": "Dezaktywuj",
-      "activate": "Aktywuj"
+      "activate": "Aktywuj",
+      "details": "Szczegóły"
     },
     "contextMenu": {
       "editCurrency": "Edytuj walutę",
@@ -158,29 +159,6 @@
     "filling": "Pobieranie brakujących kursów...",
     "fillGapsTitle": "Pobiera dzienne kursy, których brakuje Twoim raportom, od pierwszej daty, w której Twoje dane używają {code}, po dziś.",
     "hint": "Raporty datowane przed pierwszym zapisanym kursem nie mogą przeliczyć {pair}.",
-    "list": {
-      "heading": "Zapisane kursy",
-      "invertedHelp": "Kurs oznaczony jako (odwrócony) jest odwrotnością tego, co Monize faktycznie zapisało dla tej pary, a nie inną obserwacją.",
-      "direction": "Pokazane jako {to} za 1 {from}.",
-      "loading": "Wczytywanie zapisanych kursów...",
-      "loadFailed": "Nie udało się odczytać zapisanych kursów",
-      "empty": "Brak zapisanych kursów do wyświetlenia",
-      "truncated": "Pokazano {count} najnowszych zapisanych kursów; starsze nie są wymienione.",
-      "inverted": "odwrócony",
-      "unknownRate": "Nieznany",
-      "columns": {
-        "date": "Data",
-        "rate": "Kurs",
-        "source": "Źródło"
-      },
-      "sources": {
-        "yahooFinance": "Yahoo Finance",
-        "frankfurter": "Frankfurter (EBC)",
-        "mnyImport": "Import z Money",
-        "yahooCrypto": "Pary kryptowalutowe (Yahoo)",
-        "unknown": "Nieznane"
-      }
-    },
     "toasts": {
       "filled": "Dodano {count} kursów; historia zaczyna się teraz od {start}",
       "partial": "Zapisano {count} kursów; historia zaczyna się teraz {start}. Pozostało {windows} luk do pobrania, naciśnij ponownie, aby kontynuować.",

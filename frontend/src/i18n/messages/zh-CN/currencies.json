@@ -66,7 +66,8 @@
     "actions": {
       "edit": "编辑",
       "deactivate": "停用",
-      "activate": "启用"
+      "activate": "启用",
+      "details": "详情"
     },
     "contextMenu": {
       "editCurrency": "编辑货币",
@@ -158,29 +159,6 @@
     "filling": "正在获取缺失的汇率...",
     "fillGapsTitle": "获取报表中缺失的每日汇率，从您的数据首次使用 {code} 的日期起至今天。",
     "hint": "日期早于最早存储汇率的报告无法换算 {pair}。",
-    "list": {
-      "heading": "已存汇率",
-      "invertedHelp": "标记为（反向换算）的汇率是 Monize 为该货币对实际存储值的倒数，而不是另一个观测值。",
-      "direction": "按每 1 {from} 折合 {to} 显示。",
-      "loading": "正在加载已存汇率...",
-      "loadFailed": "无法读取已存汇率",
-      "empty": "没有可列出的已存汇率",
-      "truncated": "仅显示最近 {count} 条已存汇率；更早的不在列表中。",
-      "inverted": "反向换算",
-      "unknownRate": "未知",
-      "columns": {
-        "date": "日期",
-        "rate": "汇率",
-        "source": "来源"
-      },
-      "sources": {
-        "yahooFinance": "Yahoo Finance",
-        "frankfurter": "Frankfurter（欧洲央行）",
-        "mnyImport": "Money 导入",
-        "yahooCrypto": "加密货币对 (Yahoo)",
-        "unknown": "未知"
-      }
-    },
     "toasts": {
       "filled": "已添加 {count} 条汇率；历史现在从 {start} 开始",
       "partial": "已存储 {count} 条汇率；历史现从 {start} 开始。还有 {windows} 个缺口待获取，再次点击以继续。",

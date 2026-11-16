@@ -4,23 +4,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import toast from 'react-hot-toast';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
-import { InfoTooltip } from '@/components/ui/InfoTooltip';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import {
-  TABLE_CLASS,
-  TABLE_BODY_CLASS,
-  Th,
-  Td,
-} from '@/components/ui/Table';
-import {
-  exchangeRatesApi,
-  RateCoverage,
-  StoredRateList,
-} from '@/lib/exchange-rates';
+import { exchangeRatesApi, RateCoverage } from '@/lib/exchange-rates';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { FX_RATE_DISPLAY_DECIMALS } from '@/lib/format';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -30,14 +17,27 @@ interface RateHistoryCoverageProps {
   /** The currency being looked at. Its pair is this against the reporting currency. */
   code: string;
   /**
-   * List the stored rates, not only the summary above them.
-   *
-   * True from the dedicated rate history dialog. Left off inside the currency
-   * form, where a scrolling table of dates would bury the save button, and
-   * where the request is not worth making for a panel nobody opened the dialog
-   * to read: the flag gates the fetch, not just the markup.
+   * The reader's reporting currency, where the surface already has the
+   * server's answer (the detail page's); the client preference otherwise.
    */
-  showStoredRates?: boolean;
+  reportingCurrency?: string;
+  /** The heading; the currency form's "Rate history" by default. */
+  title?: string;
+  /**
+   * The heading's level: `h3` under the currency form's own heading, `h2` on
+   * the detail page, where it sits beside the page's other sections.
+   */
+  headingLevel?: 'h2' | 'h3';
+  /**
+   * The wrapper's frame. By default the rule that sets the section apart
+   * inside the currency form; the detail page puts it in a card instead.
+   */
+  className?: string;
+  /**
+   * Called after a fill stored rates, for a surface that shows the history
+   * itself (the detail page's chart and table) and must re-read it too.
+   */
+  onFilled?: () => void;
 }
 
 /**
@@ -46,31 +46,12 @@ interface RateHistoryCoverageProps {
  * Stamped with the code it answers for, because the panel is remounted with a
  * different currency while a read is in flight and a payload without its
  * request key is just a payload: a late EUR response must not render under a
- * USD heading. The two reads travel together and fail apart, so a list that
- * could not be read never empties the summary beside it.
+ * USD heading.
  */
 interface PanelState {
   code: string;
   coverage: RateCoverage | null;
   coverageFailed: boolean;
-  stored: StoredRateList | null;
-  storedFailed: boolean;
-}
-
-/** The provider slugs `exchange_rates.source` actually holds. */
-function sourceKey(
-  source: string | null,
-):
-  | 'yahooFinance'
-  | 'yahooCrypto'
-  | 'frankfurter'
-  | 'mnyImport'
-  | null {
-  if (source === 'yahoo_finance') return 'yahooFinance';
-  if (source === 'yahoo_crypto') return 'yahooCrypto';
-  if (source === 'frankfurter') return 'frankfurter';
-  if (source === 'mny_import') return 'mnyImport';
-  return null;
 }
 
 /**
@@ -90,10 +71,15 @@ function sourceKey(
  */
 export function RateHistoryCoverage({
   code,
-  showStoredRates = false,
+  reportingCurrency,
+  title,
+  headingLevel: Heading = 'h3',
+  className = 'border-t border-gray-200 dark:border-gray-700 pt-4',
+  onFilled,
 }: RateHistoryCoverageProps) {
   const t = useTranslations('currencies');
-  const { defaultCurrency } = useExchangeRates();
+  const { defaultCurrency: preferredCurrency } = useExchangeRates();
+  const defaultCurrency = reportingCurrency ?? preferredCurrency;
   const { formatDate } = useDateFormat();
   const { formatNumber } = useNumberFormat();
 
@@ -108,7 +94,7 @@ export function RateHistoryCoverage({
 
   // A new request input means a new read: show it as loading from this render
   // on ("info from previous render"), rather than from inside the effect.
-  const requestKey = `${code}|${showStoredRates}|${sameCurrency}`;
+  const requestKey = `${code}|${sameCurrency}`;
   const [loadingKey, setLoadingKey] = useState(requestKey);
   if (loadingKey !== requestKey) {
     setLoadingKey(requestKey);
@@ -126,31 +112,19 @@ export function RateHistoryCoverage({
   const load = useCallback(() => {
     const run = async () => {
       const requestCode = code;
-      const [coverage, stored] = await Promise.allSettled([
-        exchangeRatesApi.getRateCoverage(requestCode),
-        showStoredRates
-          ? exchangeRatesApi.getStoredRates(requestCode)
-          : Promise.resolve(null),
-      ]);
+      let coverage: RateCoverage | null = null;
+      try {
+        coverage = await exchangeRatesApi.getRateCoverage(requestCode);
+      } catch (error) {
+        logger.error('Rate coverage load failed:', error);
+      }
       if (currentCode.current !== requestCode) return;
 
-      if (coverage.status === 'rejected') {
-        logger.error('Rate coverage load failed:', coverage.reason);
-      }
-      if (stored.status === 'rejected') {
-        logger.error('Stored rate load failed:', stored.reason);
-      }
-      setPanel({
-        code: requestCode,
-        coverage: coverage.status === 'fulfilled' ? coverage.value : null,
-        coverageFailed: coverage.status === 'rejected',
-        stored: stored.status === 'fulfilled' ? stored.value : null,
-        storedFailed: stored.status === 'rejected',
-      });
+      setPanel({ code: requestCode, coverage, coverageFailed: coverage === null });
       setIsLoading(false);
     };
     return run();
-  }, [code, showStoredRates]);
+  }, [code]);
 
   useEffect(() => {
     if (sameCurrency) return;
@@ -207,6 +181,7 @@ export function RateHistoryCoverage({
       // Re-read rather than patch: the server decides what is stored, and it
       // has just written rows this component has never seen.
       setIsLoading(true);
+      if (result.stored > 0) onFilled?.();
       await load();
     } catch (error) {
       logger.error('Rate gap fill failed:', error);
@@ -215,20 +190,19 @@ export function RateHistoryCoverage({
     } finally {
       setIsFilling(false);
     }
-  }, [code, pair, t, formatNumber, formatDate, load]);
+  }, [code, pair, t, formatNumber, formatDate, load, onFilled]);
 
   if (sameCurrency) return null;
 
   const current = panel?.code === code ? panel : null;
   const coverage = current?.coverage ?? null;
   const hasStoredHistory = !!coverage?.earliestDate && !!coverage?.latestDate;
-  const stored = current?.stored ?? null;
 
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
-      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-        {t('rateHistory.title')}
-      </h3>
+    <div className={`${className} space-y-2`}>
+      <Heading className="text-sm font-medium text-gray-900 dark:text-gray-100">
+        {title ?? t('rateHistory.title')}
+      </Heading>
       <p className="text-sm text-gray-600 dark:text-gray-400">
         {isLoading
           ? t('rateHistory.loading')
@@ -255,93 +229,6 @@ export function RateHistoryCoverage({
       >
         {isFilling ? t('rateHistory.filling') : t('rateHistory.fillGaps')}
       </Button>
-
-      {showStoredRates && (
-        <div className="space-y-2 pt-2">
-          <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center">
-            {t('rateHistory.list.heading')}
-            <InfoTooltip text={t('rateHistory.list.invertedHelp')} learnMore="currencyRateDirection" />
-          </h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {t('rateHistory.list.direction', {
-              from: stored?.from ?? code,
-              to: stored?.to ?? defaultCurrency,
-            })}
-          </p>
-          {isLoading ? (
-            <LoadingSpinner
-              size="sm"
-              fullContainer={false}
-              text={t('rateHistory.list.loading')}
-            />
-          ) : current?.storedFailed ? (
-            // A read that failed is not an empty history, and must never be
-            // shown as one.
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {t('rateHistory.list.loadFailed')}
-            </p>
-          ) : !stored || stored.rates.length === 0 ? (
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {t('rateHistory.list.empty')}
-            </p>
-          ) : (
-            <>
-              <div className="max-h-96 overflow-y-auto">
-                <table className={TABLE_CLASS}>
-                  <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0">
-                    <tr>
-                      <Th>{t('rateHistory.list.columns.date')}</Th>
-                      <Th align="right">
-                        {t('rateHistory.list.columns.rate')}
-                      </Th>
-                      <Th>{t('rateHistory.list.columns.source')}</Th>
-                    </tr>
-                  </thead>
-                  <tbody className={TABLE_BODY_CLASS}>
-                    {stored.rates.map((rate) => {
-                      const key = sourceKey(rate.source);
-                      return (
-                        <tr key={rate.rateDate}>
-                          <Td className="whitespace-nowrap">
-                            {formatDate(rate.rateDate)}
-                          </Td>
-                          <Td align="right" className="whitespace-nowrap">
-                            {rate.rate === null ? (
-                              <span className="text-gray-400 dark:text-gray-500">
-                                {t('rateHistory.list.unknownRate')}
-                              </span>
-                            ) : (
-                              formatNumber(rate.rate, FX_RATE_DISPLAY_DECIMALS)
-                            )}
-                            {rate.inverted && (
-                              <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">
-                                {t('rateHistory.list.inverted')}
-                              </span>
-                            )}
-                          </Td>
-                          <Td className="whitespace-nowrap">
-                            {key
-                              ? t(`rateHistory.list.sources.${key}`)
-                              : (rate.source ??
-                                t('rateHistory.list.sources.unknown'))}
-                          </Td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {stored.truncated && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {t('rateHistory.list.truncated', {
-                    count: formatNumber(stored.limit, 0),
-                  })}
-                </p>
-              )}
-            </>
-          )}
-        </div>
-      )}
     </div>
   );
 }

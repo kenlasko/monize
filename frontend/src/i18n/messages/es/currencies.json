@@ -66,7 +66,8 @@
     "actions": {
       "edit": "Editar",
       "deactivate": "Desactivar",
-      "activate": "Activar"
+      "activate": "Activar",
+      "details": "Detalles"
     },
     "contextMenu": {
       "editCurrency": "Editar divisa",
@@ -158,29 +159,6 @@
     "filling": "Obteniendo los tipos que faltan...",
     "fillGapsTitle": "Obtiene los tipos diarios que faltan en sus informes, desde la primera fecha en que sus datos usan {code} hasta hoy.",
     "hint": "Los informes anteriores a la primera tasa guardada no pueden convertir {pair}.",
-    "list": {
-      "heading": "Tipos guardados",
-      "invertedHelp": "Un tipo marcado como (invertido) es el recíproco de lo que Monize realmente almacenó para este par, no una observación diferente.",
-      "direction": "Mostrado como {to} por 1 {from}.",
-      "loading": "Cargando los tipos guardados...",
-      "loadFailed": "No se pudieron leer los tipos guardados",
-      "empty": "No hay tipos guardados que mostrar",
-      "truncated": "Se muestran los {count} tipos guardados más recientes; los más antiguos no aparecen.",
-      "inverted": "invertido",
-      "unknownRate": "Desconocido",
-      "columns": {
-        "date": "Fecha",
-        "rate": "Tipo",
-        "source": "Origen"
-      },
-      "sources": {
-        "yahooFinance": "Yahoo Finance",
-        "frankfurter": "Frankfurter (BCE)",
-        "mnyImport": "Importación de Money",
-        "yahooCrypto": "Pares cripto (Yahoo)",
-        "unknown": "Desconocido"
-      }
-    },
     "toasts": {
       "filled": "Se añadieron {count} tasas; el historial ahora comienza el {start}",
       "partial": "{count} tipos guardados; el historial empieza ahora el {start}. Quedan {windows} huecos por obtener, pulse de nuevo para continuar.",

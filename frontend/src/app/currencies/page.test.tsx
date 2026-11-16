@@ -146,7 +146,7 @@ vi.mock('@/components/currencies/CurrencyForm', () => ({
 }));
 
 vi.mock('@/components/currencies/CurrencyList', () => ({
-  CurrencyList: ({ currencies, onToggleActive, onEdit, onRateHistory, sortField, sortDirection, onSort }: any) => (
+  CurrencyList: ({ currencies, onToggleActive, onEdit, sortField, sortDirection, onSort }: any) => (
     <div data-testid="currency-list">
       {sortField && <span data-testid="sort-field">{sortField}</span>}
       {sortDirection && <span data-testid="sort-direction">{sortDirection}</span>}
@@ -160,20 +160,11 @@ vi.mock('@/components/currencies/CurrencyList', () => ({
           {c.name}
           <button data-testid={`toggle-${c.code}`} onClick={() => onToggleActive(c)}>Toggle</button>
           <button data-testid={`edit-${c.code}`} onClick={() => onEdit(c)}>Edit</button>
-          <button data-testid={`rate-history-${c.code}`} onClick={() => onRateHistory(c)}>Rate history</button>
         </div>
       ))}
     </div>
   ),
   DensityLevel: {},
-}));
-
-vi.mock('@/components/currencies/RateHistoryCoverage', () => ({
-  RateHistoryCoverage: ({ code, showStoredRates }: { code: string; showStoredRates?: boolean }) => (
-    <div data-testid="rate-history-coverage" data-shows-rates={String(!!showStoredRates)}>
-      {code}
-    </div>
-  ),
 }));
 
 vi.mock('@/components/ui/Modal', () => ({
@@ -760,22 +751,6 @@ describe('CurrenciesPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('sort-field')).toHaveTextContent('rate');
     });
-  });
-
-  it('opens the rate history dialog for the chosen currency', async () => {
-    render(<CurrenciesPage />);
-    await waitFor(() => expect(screen.getByTestId('currency-row-CAD')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('rate-history-CAD'));
-    await waitFor(() => {
-      expect(screen.getByTestId('modal')).toBeInTheDocument();
-      expect(screen.getByTestId('rate-history-coverage')).toHaveTextContent('CAD');
-    });
-    // The dialog a reader opened to see the rates lists them; the currency
-    // form embeds the same panel without the list.
-    expect(screen.getByTestId('rate-history-coverage')).toHaveAttribute(
-      'data-shows-rates',
-      'true',
-    );
   });
 
   describe('saving a currency', () => {

@@ -272,6 +272,8 @@ describe("CurrencyDetailService", () => {
           kind: "foreignEntry",
           accountName: "Chequing",
           payeeName: "Hotel",
+          // The index's 2026-02-27 observation, carried forward to the date.
+          marketRate: 1.5,
         },
         expect.objectContaining({
           transactionId: "b",
@@ -294,11 +296,71 @@ describe("CurrencyDetailService", () => {
       });
     });
 
+    it("sets the stored market rate for each date beside the settled one, and null where none applies", async () => {
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        new Map([
+          [
+            "CAD->EUR",
+            [
+              { date: "2026-01-10", rate: 0.625 },
+              { date: "2026-03-02", rate: 0.5 },
+            ],
+          ],
+        ]),
+      );
+      manager.query.mockResolvedValue([
+        rateRow({ id: "after", rate_date: "2026-03-05", direct_rate: "2.1" }),
+        // Carried forward from 2026-01-10, the stored row being CAD->EUR.
+        rateRow({ id: "between", rate_date: "2026-02-01", direct_rate: "1.7" }),
+        // Before the first stored observation: no market rate, not the settled one.
+        rateRow({ id: "before", rate_date: "2025-12-31", direct_rate: "1.4" }),
+      ]);
+
+      const list = await service.getTransactionRates("user-1", "EUR");
+
+      expect(list.rates.map((r) => [r.transactionId, r.marketRate])).toEqual([
+        ["after", 2],
+        ["between", 1.6],
+        ["before", null],
+      ]);
+      // One index over the listed dates, of the page's pair only.
+      expect(exchangeRateService.getRateIndex).toHaveBeenCalledTimes(1);
+      expect(exchangeRateService.getRateIndex).toHaveBeenCalledWith(
+        new Set(["EUR"]),
+        "CAD",
+        "2025-12-31",
+        "2026-03-05",
+      );
+    });
+
+    it("loads no rate index when no transaction carries a rate", async () => {
+      manager.query.mockResolvedValue([]);
+
+      const list = await service.getTransactionRates("user-1", "EUR");
+
+      expect(list.rates).toEqual([]);
+      expect(exchangeRateService.getRateIndex).not.toHaveBeenCalled();
+    });
+
     it("asks nothing for the reporting currency, whose rate is 1 by definition", async () => {
       const list = await service.getTransactionRates("user-1", "CAD");
 
       expect(list.rates).toEqual([]);
       expect(manager.query).not.toHaveBeenCalled();
+    });
+
+    it("lists more transaction rates than the old cap of 2000", async () => {
+      // Issue #2245: the transaction dots stopped with the stored line.
+      manager.query.mockResolvedValue(
+        Array.from({ length: 2001 }, (_, i) =>
+          rateRow({ id: `tx-${i}`, direct_rate: "1.5" }),
+        ),
+      );
+
+      const list = await service.getTransactionRates("user-1", "EUR");
+
+      expect(list.rates).toHaveLength(2001);
+      expect(list.truncated).toBe(false);
     });
 
     it("reports a listing cut at the cap as truncated", async () => {

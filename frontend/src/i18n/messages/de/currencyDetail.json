@@ -24,11 +24,15 @@
     "totalInCurrencyUnknown": "Für eine in {currency} bezahlte Buchung ist kein Betrag in dieser Währung erfasst",
     "convertedPartIn": "Umgerechneter Teil in {currency}",
     "convertedNote": "Jede Buchung zu ihrem eigenen Kurs oder zum Kurs ihres Datums",
-    "missingRates": "{count, plural, one {# Buchung bleibt} other {# Buchungen bleiben}} unberücksichtigt: kein {pairs}-Kurs für das Datum. Füllen Sie die Lücken über den Kursverlauf auf der Seite Währungen.",
+    "missingRates": "{count, plural, one {# Buchung bleibt} other {# Buchungen bleiben}} unberücksichtigt: kein {pairs}-Kurs für das Datum. Rufen Sie ihn unten mit „Lücken im Kursverlauf füllen“ ab.",
+    "missingRatesElsewhere": "{count, plural, one {# Buchung bleibt} other {# Buchungen bleiben}} unberücksichtigt: kein {pairs}-Kurs für das Datum. Rufen Sie ihn mit „Lücken im Kursverlauf füllen“ auf der Detailseite jeder genannten Währung ab.",
     "latestRate": "Aktueller Kurs",
     "rateValue": "1 {code} = {rate} {currency}",
     "rateAsOf": "{date}, {source}",
     "noStoredRates": "Noch keine gespeicherten Kurse"
+  },
+  "storedHistory": {
+    "title": "Gespeicherte Kurse"
   },
   "sources": {
     "yahooFinance": "Yahoo Finance",
@@ -56,6 +60,16 @@
       "5y": "5Y",
       "all": "Alle"
     }
+  },
+  "period": {
+    "rates": "Kurse im Zeitraum",
+    "ratesSpan": "{start} bis {end}",
+    "noRates": "Keine Kurse in diesem Zeitraum",
+    "averageSpread": "Durchschnittliche Abweichung",
+    "spreadNote": "Wie weit {count, plural, one {Ihre # Buchung} other {Ihre # Buchungen}} vom gespeicherten Kurs desselben Tages abwichen, nach oben oder unten",
+    "spreadNoteUnmeasured": "Wie weit {measured, plural, one {Ihre # Buchung} other {Ihre # Buchungen}} vom gespeicherten Kurs desselben Tages abwichen. Für {unmeasured, plural, one {# weitere} other {# weitere}} gibt es in den 45 Tagen vor dem Datum keinen gespeicherten {pair}-Kurs, die früheste am {date}; „Lücken im Kursverlauf füllen“ oben ruft ab, was der Anbieter hat.",
+    "spreadNoneMeasured": "Für {count, plural, one {# Buchung} other {# Buchungen}} gibt es in den 45 Tagen vor dem Datum keinen gespeicherten {pair}-Kurs zum Vergleich, die früheste am {date}. „Lücken im Kursverlauf füllen“ oben ruft ab, was der Anbieter hat.",
+    "noTransactions": "Keine Buchungen mit Wechselkurs in diesem Zeitraum"
   },
   "table": {
     "title": "Kursverlauf",
@@ -88,7 +102,8 @@
     "empty": {
       "title": "Noch keine Wechselkurse",
       "filteredTitle": "Keine Kurse aus dieser Quelle",
-      "description": "Kurse für {code} gegenüber {currency} erscheinen hier, sobald der Kursanbieter welche gespeichert hat oder Sie eine Buchung zwischen den beiden erfassen."
+      "description": "Kurse für {code} gegenüber {currency} erscheinen hier, sobald der Kursanbieter welche gespeichert hat oder Sie eine Buchung zwischen den beiden erfassen.",
+      "periodTitle": "Keine Wechselkurse in diesem Zeitraum"
     },
     "totalLabel": "{count, plural, one {# Kurs} other {# Kurse}}",
     "storedTruncated": "Es werden die {count} neuesten gespeicherten Kurse angezeigt; ältere sind nicht aufgeführt.",

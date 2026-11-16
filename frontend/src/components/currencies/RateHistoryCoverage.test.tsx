@@ -7,13 +7,11 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import type { UserPreferences } from '@/types/auth';
 
 const getRateCoverage = vi.fn();
-const getStoredRates = vi.fn();
 const fillRateGaps = vi.fn();
 
 vi.mock('@/lib/exchange-rates', () => ({
   exchangeRatesApi: {
     getRateCoverage: (...args: any[]) => getRateCoverage(...args),
-    getStoredRates: (...args: any[]) => getStoredRates(...args),
     fillRateGaps: (...args: any[]) => fillRateGaps(...args),
     getLatestRates: () => Promise.resolve([]),
   },
@@ -35,39 +33,6 @@ const coverage = {
   observations: 180,
 };
 
-const storedRates = {
-  from: 'EUR',
-  to: 'PLN',
-  rates: [
-    {
-      rateDate: '2026-09-16',
-      rate: 4.25,
-      source: 'yahoo_finance',
-      inverted: false,
-    },
-    {
-      rateDate: '2026-09-15',
-      rate: 4.3,
-      source: 'mny_import',
-      inverted: false,
-    },
-    {
-      rateDate: '2026-09-14',
-      rate: 4.28,
-      source: 'frankfurter',
-      inverted: false,
-    },
-    {
-      rateDate: '2026-09-13',
-      rate: 4.27,
-      source: 'yahoo_crypto',
-      inverted: false,
-    },
-  ],
-  truncated: false,
-  limit: 2000,
-};
-
 const filled = {
   from: 'EUR',
   to: 'PLN',
@@ -87,11 +52,12 @@ const filled = {
 
 const FILL_BUTTON = 'Fill gaps in rate history';
 
-async function renderSection(code = 'EUR', showStoredRates = true) {
+async function renderSection(
+  code = 'EUR',
+  props: Partial<Parameters<typeof RateHistoryCoverage>[0]> = {},
+) {
   await act(async () => {
-    render(
-      <RateHistoryCoverage code={code} showStoredRates={showStoredRates} />,
-    );
+    render(<RateHistoryCoverage code={code} {...props} />);
   });
 }
 
@@ -102,13 +68,15 @@ describe('RateHistoryCoverage', () => {
       preferences: { defaultCurrency: 'PLN' } as UserPreferences,
     });
     getRateCoverage.mockResolvedValue(coverage);
-    getStoredRates.mockResolvedValue(storedRates);
     fillRateGaps.mockResolvedValue(filled);
   });
 
   describe('the stored span', () => {
     it('shows the stored span and observation count', async () => {
       await renderSection();
+
+      // A sub-heading of the currency form's own by default.
+      expect(screen.getByRole('heading', { level: 3, name: 'Rate history' })).toBeInTheDocument();
 
       expect(getRateCoverage).toHaveBeenCalledWith('EUR');
       expect(await screen.findByText(/Stored history:/)).toHaveTextContent(
@@ -149,126 +117,36 @@ describe('RateHistoryCoverage', () => {
 
       expect(screen.queryByText('Rate history')).not.toBeInTheDocument();
       expect(getRateCoverage).not.toHaveBeenCalled();
-      expect(getStoredRates).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('the list of stored rates', () => {
-    it('lists the stored rates newest first, with their source', async () => {
-      await renderSection();
-
-      expect(getStoredRates).toHaveBeenCalledWith('EUR');
-      const rows = await screen.findAllByRole('row');
-      // The header row, then the rates in the order the server sent them.
-      expect(rows[1]).toHaveTextContent('4.250000');
-      expect(rows[1]).toHaveTextContent('Yahoo Finance');
-      expect(rows[2]).toHaveTextContent('4.300000');
-      expect(rows[2]).toHaveTextContent('Money import');
-      expect(rows[3]).toHaveTextContent('4.280000');
-      expect(rows[3]).toHaveTextContent('Frankfurter (ECB)');
-      expect(rows[4]).toHaveTextContent('4.270000');
-      expect(rows[4]).toHaveTextContent('Crypto pairs (Yahoo)');
     });
 
-    it('says which direction the column is in', async () => {
-      await renderSection();
+    it('takes the heading it is given', async () => {
+      await renderSection('EUR', { title: 'Stored Rates', headingLevel: 'h2' });
 
-      expect(
-        await screen.findByText('Shown as PLN per 1 EUR.'),
-      ).toBeInTheDocument();
-    });
-
-    it('marks a rate derived from a row stored the other way round', async () => {
-      getStoredRates.mockResolvedValue({
-        ...storedRates,
-        rates: [{ ...storedRates.rates[0], inverted: true }],
-      });
-
-      await renderSection();
-
-      expect(await screen.findByText('inverted')).toBeInTheDocument();
-    });
-
-    it('renders a rate it cannot state as unknown, never as zero', async () => {
-      getStoredRates.mockResolvedValue({
-        ...storedRates,
-        rates: [{ ...storedRates.rates[0], rate: null, source: null }],
-      });
-
-      await renderSection();
-
-      const rows = await screen.findAllByRole('row');
-      expect(rows[1]).toHaveTextContent('Unknown');
-      expect(rows[1]).not.toHaveTextContent('0.000000');
-    });
-
-    it('says the list could not be read rather than showing an empty one', async () => {
-      getStoredRates.mockRejectedValue(new Error('boom'));
-
-      await renderSection();
-
-      expect(
-        await screen.findByText('Could not read the stored rates'),
-      ).toBeInTheDocument();
-      expect(screen.queryByRole('table')).not.toBeInTheDocument();
-      // The summary beside it still read fine, and still says so.
-      expect(screen.getByText(/Stored history:/)).toBeInTheDocument();
-    });
-
-    it('says when the server capped the list', async () => {
-      getStoredRates.mockResolvedValue({ ...storedRates, truncated: true });
-
-      await renderSection();
-
-      expect(
-        await screen.findByText(
-          'Showing the 2,000 most recent stored rates; older ones are not listed.',
-        ),
-      ).toBeInTheDocument();
-    });
-
-    it('neither fetches nor renders the list without the prop', async () => {
-      await renderSection('EUR', false);
-
-      expect(getRateCoverage).toHaveBeenCalledWith('EUR');
-      expect(getStoredRates).not.toHaveBeenCalled();
-      expect(screen.queryByText('Stored rates')).not.toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 2, name: 'Stored Rates' })).toBeInTheDocument();
+      expect(screen.queryByText('Rate history')).not.toBeInTheDocument();
     });
 
     it('never renders a response for the currency it no longer shows', async () => {
       let releaseEur: (value: unknown) => void = () => {};
-      getStoredRates.mockImplementation((code: string) =>
+      getRateCoverage.mockImplementation((code: string) =>
         code === 'EUR'
           ? new Promise((resolve) => {
               releaseEur = resolve;
             })
-          : Promise.resolve({
-              ...storedRates,
-              from: 'USD',
-              rates: [
-                {
-                  rateDate: '2026-09-16',
-                  rate: 3.9,
-                  source: 'yahoo_finance',
-                  inverted: false,
-                },
-              ],
-            }),
+          : Promise.resolve({ ...coverage, from: 'USD', observations: 42 }),
       );
 
-      const { rerender } = render(
-        <RateHistoryCoverage code="EUR" showStoredRates />,
-      );
+      const { rerender } = render(<RateHistoryCoverage code="EUR" />);
       await act(async () => {
-        rerender(<RateHistoryCoverage code="USD" showStoredRates />);
+        rerender(<RateHistoryCoverage code="USD" />);
       });
       // The EUR read lands after the panel moved on to USD.
       await act(async () => {
-        releaseEur(storedRates);
+        releaseEur(coverage);
       });
 
-      expect(await screen.findByText('3.900000')).toBeInTheDocument();
-      expect(screen.queryByText('4.250000')).not.toBeInTheDocument();
+      expect(await screen.findByText(/42 observations/)).toBeInTheDocument();
+      expect(screen.queryByText(/180 observations/)).not.toBeInTheDocument();
     });
   });
 
@@ -290,8 +168,27 @@ describe('RateHistoryCoverage', () => {
       // The server decides what is stored, so the section re-reads rather than
       // patching its own state.
       await waitFor(() => expect(getRateCoverage).toHaveBeenCalledTimes(2));
-      expect(getStoredRates).toHaveBeenCalledTimes(2);
       expect(await screen.findByText(/420 observations/)).toBeInTheDocument();
+    });
+
+    it('tells the surface showing the history to re-read it once rates were stored', async () => {
+      const onFilled = vi.fn();
+      await renderSection('EUR', { onFilled });
+
+      await userEvent.click(screen.getByRole('button', { name: FILL_BUTTON }));
+
+      await waitFor(() => expect(onFilled).toHaveBeenCalledTimes(1));
+    });
+
+    it('leaves the history alone when the fill stored nothing', async () => {
+      const onFilled = vi.fn();
+      fillRateGaps.mockResolvedValue({ ...filled, stored: 0, windowsPlanned: 0 });
+      await renderSection('EUR', { onFilled });
+
+      await userEvent.click(screen.getByRole('button', { name: FILL_BUTTON }));
+
+      await waitFor(() => expect(toast.success).toHaveBeenCalled());
+      expect(onFilled).not.toHaveBeenCalled();
     });
 
     it('says how much is left when a bound stopped the fill early', async () => {

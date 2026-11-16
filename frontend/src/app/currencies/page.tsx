@@ -17,7 +17,6 @@ import { exchangeRatesApi, CurrencyInfo, CreateCurrencyData, CurrencyUsage, FxPr
 import { useMobileAddAction } from '@/store/mobileAddActionStore';
 const CurrencyForm = dynamic(() => import('@/components/currencies/CurrencyForm').then(m => m.CurrencyForm), { ssr: false });
 import { CurrencyList, type CurrencySortField, type SortDirection } from '@/components/currencies/CurrencyList';
-import { RateHistoryCoverage } from '@/components/currencies/RateHistoryCoverage';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { createLogger } from '@/lib/logger';
@@ -45,14 +44,10 @@ export default function CurrenciesPage() {
 
 function CurrenciesContent() {
   const t = useTranslations('currencies');
-  const tc = useTranslations('common');
   const [allCurrencies, setAllCurrencies] = useState<CurrencyInfo[]>([]);
   const [usage, setUsage] = useState<CurrencyUsage>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshingRates, setIsRefreshingRates] = useState(false);
-  // The currency whose stored rate history is open, or null. Its own dialog,
-  // because the built-in currencies have no edit dialog to host it in.
-  const [rateHistoryCurrency, setRateHistoryCurrency] = useState<CurrencyInfo | null>(null);
   const { showForm, editingItem: editingCurrency, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<CurrencyInfo>();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active');
@@ -399,26 +394,6 @@ function CurrenciesContent() {
         </Modal>
         <UnsavedChangesDialog {...unsavedChangesDialog} />
 
-        {/* Rate history dialog */}
-        <Modal
-          isOpen={!!rateHistoryCurrency}
-          onClose={() => setRateHistoryCurrency(null)}
-          maxWidth="lg"
-          className="p-6"
-          title={rateHistoryCurrency?.code}
-          footer={
-            <Button variant="outline" onClick={() => setRateHistoryCurrency(null)}>
-              {tc('close')}
-            </Button>
-          }
-        >
-          {/* The dialog a reader opened to see the rates is where they are
-              listed; the currency form keeps the summary alone. */}
-          {rateHistoryCurrency && (
-            <RateHistoryCoverage code={rateHistoryCurrency.code} showStoredRates />
-          )}
-        </Modal>
-
         {/* Currencies List */}
         <div className={`${CARD_CLASS} overflow-hidden`}>
           {isLoading ? (
@@ -431,7 +406,6 @@ function CurrenciesContent() {
               getRate={getRate}
               onEdit={handleEdit}
               onToggleActive={handleToggleActive}
-              onRateHistory={setRateHistoryCurrency}
               onRefresh={loadData}
               sortField={sortField}
               sortDirection={sortDirection}
