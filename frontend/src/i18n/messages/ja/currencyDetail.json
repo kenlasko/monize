@@ -67,8 +67,8 @@
     "noRates": "この期間のレートはありません",
     "averageSpread": "平均スプレッド",
     "spreadNote": "{count, plural, other {# 件の取引}}のレートが同じ日付の保存済みレートから上下にどれだけ離れていたか",
-    "spreadNoteUnmeasured": "{measured, plural, other {# 件の取引}}のレートが同じ日付の保存済みレートからどれだけ離れていたか。ほかの{unmeasured, plural, other {# 件}}はその日付の保存済みレートがありません。上の「レート履歴の欠落を補う」で取得してください。",
-    "spreadNoneMeasured": "{count, plural, other {# 件の取引}}には比較できるその日付の保存済みレートがありません。上の「レート履歴の欠落を補う」で取得してください。",
+    "spreadNoteUnmeasured": "{measured, plural, other {# 件の取引}}のレートが同じ日付の保存済みレートからどれだけ離れていたか。ほかの{unmeasured, plural, other {# 件}}は日付前45日以内に保存済みの {pair} レートがありません (最も古いものは {date})。上の「レート履歴の欠落を補う」でプロバイダーにある分を取得できます。",
+    "spreadNoneMeasured": "{count, plural, other {# 件の取引}}には日付前45日以内に比較できる保存済みの {pair} レートがありません (最も古いものは {date})。上の「レート履歴の欠落を補う」でプロバイダーにある分を取得できます。",
     "noTransactions": "この期間に為替レートのある取引はありません"
   },
   "table": {

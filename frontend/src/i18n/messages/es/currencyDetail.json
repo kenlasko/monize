@@ -67,8 +67,8 @@
     "noRates": "No hay tipos en este período",
     "averageSpread": "Diferencia media",
     "spreadNote": "Cuánto se alejaron {count, plural, one {su # transacción} other {sus # transacciones}} del tipo guardado para la misma fecha, por encima o por debajo",
-    "spreadNoteUnmeasured": "Cuánto se alejaron {measured, plural, one {su # transacción} other {sus # transacciones}} del tipo guardado para la misma fecha. {unmeasured, plural, one {# más no tiene} other {# más no tienen}} tipo guardado para su fecha; use Rellenar huecos del historial más arriba para obtenerlo.",
-    "spreadNoneMeasured": "{count, plural, one {# transacción no tiene} other {# transacciones no tienen}} tipo guardado para su fecha con el que comparar. Use Rellenar huecos del historial más arriba para obtenerlo.",
+    "spreadNoteUnmeasured": "Cuánto se alejaron {measured, plural, one {su # transacción} other {sus # transacciones}} del tipo guardado para la misma fecha. {unmeasured, plural, one {# más no tiene} other {# más no tienen}} tipo {pair} guardado en los 45 días anteriores a su fecha, la más antigua el {date}; Rellenar huecos del historial, más arriba, obtiene lo que tenga el proveedor.",
+    "spreadNoneMeasured": "{count, plural, one {# transacción no tiene} other {# transacciones no tienen}} tipo {pair} guardado en los 45 días anteriores a su fecha con el que comparar, la más antigua el {date}. Rellenar huecos del historial, más arriba, obtiene lo que tenga el proveedor.",
     "noTransactions": "No hay transacciones con tipo de cambio en este período"
   },
   "table": {

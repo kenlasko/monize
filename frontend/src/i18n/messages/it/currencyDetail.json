@@ -67,8 +67,8 @@
     "noRates": "Nessun tasso in questo periodo",
     "averageSpread": "Scarto medio",
     "spreadNote": "Quanto {count, plural, one {la tua # transazione si è discostata} other {le tue # transazioni si sono discostate}} dal tasso salvato per la stessa data, in più o in meno",
-    "spreadNoteUnmeasured": "Quanto {measured, plural, one {la tua # transazione si è discostata} other {le tue # transazioni si sono discostate}} dal tasso salvato per la stessa data. {unmeasured, plural, one {# altra non ha} other {# altre non hanno}} un tasso salvato per la data; usa Colma le lacune dello storico qui sopra per recuperarlo.",
-    "spreadNoneMeasured": "{count, plural, one {# transazione non ha} other {# transazioni non hanno}} un tasso salvato per la data con cui confrontarla. Usa Colma le lacune dello storico qui sopra per recuperarlo.",
+    "spreadNoteUnmeasured": "Quanto {measured, plural, one {la tua # transazione si è discostata} other {le tue # transazioni si sono discostate}} dal tasso salvato per la stessa data. {unmeasured, plural, one {# altra non ha} other {# altre non hanno}} un tasso {pair} salvato nei 45 giorni prima della data, la prima il {date}; Colma le lacune dello storico qui sopra recupera ciò che ha il fornitore.",
+    "spreadNoneMeasured": "{count, plural, one {# transazione non ha} other {# transazioni non hanno}} un tasso {pair} salvato nei 45 giorni prima della data con cui confrontarla, la prima il {date}. Colma le lacune dello storico qui sopra recupera ciò che ha il fornitore.",
     "noTransactions": "Nessuna transazione con un tasso di cambio in questo periodo"
   },
   "table": {

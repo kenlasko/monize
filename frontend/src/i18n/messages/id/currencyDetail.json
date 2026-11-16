@@ -67,8 +67,8 @@
     "noRates": "Tidak ada kurs pada periode ini",
     "averageSpread": "Selisih Rata-rata",
     "spreadNote": "Seberapa jauh {count, plural, other {# transaksi Anda}} dari kurs tersimpan pada tanggal yang sama, lebih tinggi atau lebih rendah",
-    "spreadNoteUnmeasured": "Seberapa jauh {measured, plural, other {# transaksi Anda}} dari kurs tersimpan pada tanggal yang sama. {unmeasured, plural, other {# transaksi lain}} tidak memiliki kurs tersimpan untuk tanggalnya; gunakan Isi celah riwayat kurs di atas untuk mengambilnya.",
-    "spreadNoneMeasured": "{count, plural, other {# transaksi}} tidak memiliki kurs tersimpan untuk tanggalnya sebagai pembanding. Gunakan Isi celah riwayat kurs di atas untuk mengambilnya.",
+    "spreadNoteUnmeasured": "Seberapa jauh {measured, plural, other {# transaksi Anda}} dari kurs tersimpan pada tanggal yang sama. {unmeasured, plural, other {# transaksi lain}} tidak memiliki kurs {pair} tersimpan dalam 45 hari sebelum tanggalnya, yang paling awal pada {date}; Isi celah riwayat kurs di atas mengambil apa yang dimiliki penyedia.",
+    "spreadNoneMeasured": "{count, plural, other {# transaksi}} tidak memiliki kurs {pair} tersimpan dalam 45 hari sebelum tanggalnya sebagai pembanding, yang paling awal pada {date}. Isi celah riwayat kurs di atas mengambil apa yang dimiliki penyedia.",
     "noTransactions": "Tidak ada transaksi dengan kurs pada periode ini"
   },
   "table": {

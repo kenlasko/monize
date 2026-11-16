@@ -55,7 +55,7 @@ export function CurrencyRateHistorySection({
             dateRange={dateRange}
             onDateRangeChange={setDateRange}
           />
-          <CurrencyPeriodSummary rows={periodRows} />
+          <CurrencyPeriodSummary code={code} defaultCurrency={defaultCurrency} rows={periodRows} />
         </>
       ) : (
         <CurrencyRateChartSkeleton />

@@ -67,8 +67,8 @@
     "noRates": "Não há taxas neste período",
     "averageSpread": "Diferença média",
     "spreadNote": "Quanto {count, plural, one {a sua # transação se afastou} other {as suas # transações se afastaram}} da taxa guardada para a mesma data, para cima ou para baixo",
-    "spreadNoteUnmeasured": "Quanto {measured, plural, one {a sua # transação se afastou} other {as suas # transações se afastaram}} da taxa guardada para a mesma data. {unmeasured, plural, one {Mais # não tem} other {Mais # não têm}} taxa guardada para a data; use Preencher lacunas do histórico acima para a obter.",
-    "spreadNoneMeasured": "{count, plural, one {# transação não tem} other {# transações não têm}} taxa guardada para a data com que comparar. Use Preencher lacunas do histórico acima para a obter.",
+    "spreadNoteUnmeasured": "Quanto {measured, plural, one {a sua # transação se afastou} other {as suas # transações se afastaram}} da taxa guardada para a mesma data. {unmeasured, plural, one {Mais # não tem} other {Mais # não têm}} taxa {pair} guardada nos 45 dias anteriores à data, a mais antiga em {date}; Preencher lacunas do histórico, acima, obtém o que o fornecedor tiver.",
+    "spreadNoneMeasured": "{count, plural, one {# transação não tem} other {# transações não têm}} taxa {pair} guardada nos 45 dias anteriores à data com que comparar, a mais antiga em {date}. Preencher lacunas do histórico, acima, obtém o que o fornecedor tiver.",
     "noTransactions": "Não há transações com taxa de câmbio neste período"
   },
   "table": {

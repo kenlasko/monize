@@ -67,8 +67,8 @@
     "noRates": "此期间没有汇率",
     "averageSpread": "平均价差",
     "spreadNote": "您的 {count, plural, other {# 笔交易}}与同一日期已存汇率相差多少，无论偏高还是偏低",
-    "spreadNoteUnmeasured": "您的 {measured, plural, other {# 笔交易}}与同一日期已存汇率相差多少。另有 {unmeasured, plural, other {# 笔}}在其日期没有已存汇率；请使用上方的“补全汇率历史的缺口”获取。",
-    "spreadNoneMeasured": "{count, plural, other {# 笔交易}}在其日期没有可比较的已存汇率。请使用上方的“补全汇率历史的缺口”获取。",
+    "spreadNoteUnmeasured": "您的 {measured, plural, other {# 笔交易}}与同一日期已存汇率相差多少。另有 {unmeasured, plural, other {# 笔}}在其日期前 45 天内没有已存的 {pair} 汇率，最早一笔在 {date}；上方的“补全汇率历史的缺口”会获取提供方已有的汇率。",
+    "spreadNoneMeasured": "{count, plural, other {# 笔交易}}在其日期前 45 天内没有可比较的已存 {pair} 汇率，最早一笔在 {date}。上方的“补全汇率历史的缺口”会获取提供方已有的汇率。",
     "noTransactions": "此期间没有带汇率的交易"
   },
   "table": {

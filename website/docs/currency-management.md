@@ -53,7 +53,7 @@ The period you pick on the chart applies to the cards and the table below it as 
 | Card | Description |
 |------|-------------|
 | **Rates in Period** | How many rates the period holds, stored and from your transactions, and the first and last date among them |
-| **Average Spread** | How far the rates your transactions settled at were from the stored rate for the same date, on average, whether yours was higher or lower. A transaction with no stored rate within 45 days before its date cannot be compared; the card says how many there are, and **Fill gaps in rate history** can fetch the rates they need |
+| **Average Spread** | How far the rates your transactions settled at were from the stored rate for the same date, on average, whether yours was higher or lower. A transaction with no stored rate within 45 days before its date cannot be compared; the card says how many there are, names the missing pair and the oldest date it is missing on, and **Fill gaps in rate history** fetches what the rate provider holds for them |
 
 The **Rate History** table lists every rate in the period, a page at a time, with its **Date**, the rate both ways round, and its **Source**: Yahoo Finance, Frankfurter (ECB), Money import, or **Transaction** for a rate one of your transactions settled at, with what the transaction was. Click a column heading to sort by it, use **All** / **Yahoo** / **Frankfurter** / **Transactions** above the table to show one source, and click **Export CSV** to download every row the filter shows.
 

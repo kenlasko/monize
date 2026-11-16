@@ -14,6 +14,8 @@ import {
 } from '@/lib/currency-detail';
 
 interface CurrencyPeriodSummaryProps {
+  code: string;
+  defaultCurrency: string;
   /** The rate rows dated inside the selected period. */
   rows: readonly RateHistoryRow[];
 }
@@ -25,7 +27,7 @@ interface CurrencyPeriodSummaryProps {
  * with no stored rate for its date is named as unmeasured rather than
  * averaged in, and the note says how to fetch the rate it is missing.
  */
-export function CurrencyPeriodSummary({ rows }: CurrencyPeriodSummaryProps) {
+export function CurrencyPeriodSummary({ code, defaultCurrency, rows }: CurrencyPeriodSummaryProps) {
   const t = useTranslations('currencyDetail');
   const { formatNumber, formatPercent } = useNumberFormat();
   const { formatDate } = useDateFormat();
@@ -35,13 +37,19 @@ export function CurrencyPeriodSummary({ rows }: CurrencyPeriodSummaryProps) {
 
   const spreadNote = (): string => {
     if (spread.measured === 0 && spread.unmeasured === 0) return t('period.noTransactions');
-    if (spread.measured === 0) {
-      return t('period.spreadNoneMeasured', { count: spread.unmeasured });
-    }
     if (spread.unmeasured === 0) return t('period.spreadNote', { count: spread.measured });
+    // What is missing, exactly: the pair and the oldest date it is missing on.
+    const missing = {
+      pair: `${code}->${defaultCurrency}`,
+      date: spread.earliestUnmeasured ? formatDate(spread.earliestUnmeasured) : '',
+    };
+    if (spread.measured === 0) {
+      return t('period.spreadNoneMeasured', { count: spread.unmeasured, ...missing });
+    }
     return t('period.spreadNoteUnmeasured', {
       measured: spread.measured,
       unmeasured: spread.unmeasured,
+      ...missing,
     });
   };
 

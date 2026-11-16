@@ -218,6 +218,8 @@ export interface RateSpreadSummary {
   measured: number;
   /** Transactions with no stored market rate for their date. */
   unmeasured: number;
+  /** The oldest date among them, `YYYY-MM-DD`, or `null` when there are none. */
+  earliestUnmeasured: string | null;
   /** The mean spread as a percentage (1.5 is 1.5%), or `null`. */
   averagePercent: number | null;
 }
@@ -225,12 +227,14 @@ export interface RateSpreadSummary {
 export function summarizeRateSpread(rows: readonly RateHistoryRow[]): RateSpreadSummary {
   let measured = 0;
   let unmeasured = 0;
+  let earliestUnmeasured: string | null = null;
   let total = 0;
   for (const row of rows) {
     if (!row.transaction || row.rate === null) continue;
     const market = row.transaction.marketRate;
     if (market === null || !(market > 0)) {
       unmeasured += 1;
+      if (earliestUnmeasured === null || row.date < earliestUnmeasured) earliestUnmeasured = row.date;
       continue;
     }
     measured += 1;
@@ -239,6 +243,7 @@ export function summarizeRateSpread(rows: readonly RateHistoryRow[]): RateSpread
   return {
     measured,
     unmeasured,
+    earliestUnmeasured,
     averagePercent: measured === 0 ? null : (total / measured) * 100,
   };
 }

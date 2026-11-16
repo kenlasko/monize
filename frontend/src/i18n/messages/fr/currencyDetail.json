@@ -67,8 +67,8 @@
     "noRates": "Aucun taux sur cette période",
     "averageSpread": "Écart moyen",
     "spreadNote": "L'écart entre {count, plural, one {votre # opération} other {vos # opérations}} et le taux enregistré à la même date, à la hausse ou à la baisse",
-    "spreadNoteUnmeasured": "L'écart entre {measured, plural, one {votre # opération} other {vos # opérations}} et le taux enregistré à la même date. {unmeasured, plural, one {# autre n'a} other {# autres n'ont}} aucun taux enregistré pour sa date ; utilisez Combler les lacunes de l'historique ci-dessus pour l'obtenir.",
-    "spreadNoneMeasured": "{count, plural, one {# opération n'a} other {# opérations n'ont}} aucun taux enregistré pour sa date auquel la comparer. Utilisez Combler les lacunes de l'historique ci-dessus pour l'obtenir.",
+    "spreadNoteUnmeasured": "L'écart entre {measured, plural, one {votre # opération} other {vos # opérations}} et le taux enregistré à la même date. {unmeasured, plural, one {# autre n'a} other {# autres n'ont}} aucun taux {pair} enregistré dans les 45 jours précédant sa date, la plus ancienne le {date} ; Combler les lacunes de l'historique, ci-dessus, récupère ce que le fournisseur possède.",
+    "spreadNoneMeasured": "{count, plural, one {# opération n'a} other {# opérations n'ont}} aucun taux {pair} enregistré dans les 45 jours précédant sa date auquel la comparer, la plus ancienne le {date}. Combler les lacunes de l'historique, ci-dessus, récupère ce que le fournisseur possède.",
     "noTransactions": "Aucune opération avec un taux de change sur cette période"
   },
   "table": {

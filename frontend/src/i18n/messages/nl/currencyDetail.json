@@ -67,8 +67,8 @@
     "noRates": "Geen koersen in deze periode",
     "averageSpread": "Gemiddelde afwijking",
     "spreadNote": "Hoe ver {count, plural, one {uw # transactie} other {uw # transacties}} afweken van de opgeslagen koers op dezelfde datum, hoger of lager",
-    "spreadNoteUnmeasured": "Hoe ver {measured, plural, one {uw # transactie} other {uw # transacties}} afweken van de opgeslagen koers op dezelfde datum. {unmeasured, plural, one {Voor # andere is} other {Voor # andere is}} geen opgeslagen koers voor de datum; haal hem op met Gaten in koershistorie vullen hierboven.",
-    "spreadNoneMeasured": "{count, plural, one {Voor # transactie is} other {Voor # transacties is}} geen opgeslagen koers voor de datum om mee te vergelijken. Haal hem op met Gaten in koershistorie vullen hierboven.",
+    "spreadNoteUnmeasured": "Hoe ver {measured, plural, one {uw # transactie} other {uw # transacties}} afweken van de opgeslagen koers op dezelfde datum. {unmeasured, plural, one {Voor # andere is} other {Voor # andere is}} geen opgeslagen {pair}-koers binnen 45 dagen vóór de datum, de vroegste op {date}; Gaten in koershistorie vullen hierboven haalt op wat de aanbieder heeft.",
+    "spreadNoneMeasured": "{count, plural, one {Voor # transactie is} other {Voor # transacties is}} geen opgeslagen {pair}-koers binnen 45 dagen vóór de datum om mee te vergelijken, de vroegste op {date}. Gaten in koershistorie vullen hierboven haalt op wat de aanbieder heeft.",
     "noTransactions": "Geen transacties met een wisselkoers in deze periode"
   },
   "table": {

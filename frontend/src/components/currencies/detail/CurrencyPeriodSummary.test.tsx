@@ -22,6 +22,8 @@ describe('CurrencyPeriodSummary', () => {
   it('averages the spread over the measured transactions', () => {
     render(
       <CurrencyPeriodSummary
+        code="EUR"
+        defaultCurrency="CAD"
         rows={buildRateHistoryRows(stored, [transaction('a', 1.53, 1.5), transaction('b', 1.44, 1.5)])}
       />,
     );
@@ -35,27 +37,32 @@ describe('CurrencyPeriodSummary', () => {
   it('names the transactions it could not measure and how to fetch their rate', () => {
     render(
       <CurrencyPeriodSummary
+        code="EUR"
+        defaultCurrency="CAD"
         rows={buildRateHistoryRows(stored, [transaction('a', 1.53, 1.5), transaction('b', 1.44, null)])}
       />,
     );
 
     expect(spreadCard()).toHaveTextContent('2.00%');
-    expect(spreadCard()).toHaveTextContent('1 more has no stored rate for the date');
-    expect(spreadCard()).toHaveTextContent('Fill gaps in rate history');
+    // The exact pair and the oldest date it is missing on, then where to get it.
+    expect(spreadCard()).toHaveTextContent(
+      '1 more has no stored EUR->CAD rate within 45 days before the date, the earliest on 03/02/2026',
+    );
+    expect(spreadCard()).toHaveTextContent('Fill gaps in rate history above fetches what the provider holds.');
   });
 
   it('withholds the average when no transaction could be measured, and says why', () => {
-    render(<CurrencyPeriodSummary rows={buildRateHistoryRows(stored, [transaction('a', 1.53, null)])} />);
+    render(<CurrencyPeriodSummary code="EUR" defaultCurrency="CAD" rows={buildRateHistoryRows(stored, [transaction('a', 1.53, null)])} />);
 
     expect(spreadCard()).toHaveTextContent('—');
     expect(spreadCard()).toHaveTextContent(
-      '1 transaction has no stored rate for the date to compare with.',
+      '1 transaction has no stored EUR->CAD rate within 45 days before the date to compare with, the earliest on 03/02/2026.',
     );
     expect(spreadCard()).not.toHaveTextContent('0.00%');
   });
 
   it('says a period holds no rates rather than spanning no dates', () => {
-    render(<CurrencyPeriodSummary rows={[]} />);
+    render(<CurrencyPeriodSummary code="EUR" defaultCurrency="CAD" rows={[]} />);
 
     const rates = screen.getByRole('article', { name: 'Rates in Period' });
     expect(rates).toHaveTextContent('0');

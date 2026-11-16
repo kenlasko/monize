@@ -67,8 +67,8 @@
     "noRates": "No rates in this period",
     "averageSpread": "Average Spread",
     "spreadNote": "How far your {count, plural, one {# transaction was} other {# transactions were}} from the stored rate for the same date, higher or lower",
-    "spreadNoteUnmeasured": "How far your {measured, plural, one {# transaction was} other {# transactions were}} from the stored rate for the same date. {unmeasured, plural, one {# more has} other {# more have}} no stored rate for the date; use Fill gaps in rate history above to fetch it.",
-    "spreadNoneMeasured": "{count, plural, one {# transaction has} other {# transactions have}} no stored rate for the date to compare with. Use Fill gaps in rate history above to fetch it.",
+    "spreadNoteUnmeasured": "How far your {measured, plural, one {# transaction was} other {# transactions were}} from the stored rate for the same date. {unmeasured, plural, one {# more has} other {# more have}} no stored {pair} rate within 45 days before the date, the earliest on {date}; Fill gaps in rate history above fetches what the provider holds.",
+    "spreadNoneMeasured": "{count, plural, one {# transaction has} other {# transactions have}} no stored {pair} rate within 45 days before the date to compare with, the earliest on {date}. Fill gaps in rate history above fetches what the provider holds.",
     "noTransactions": "No transactions with an exchange rate in this period"
   },
   "table": {

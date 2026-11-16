@@ -67,8 +67,8 @@
     "noRates": "Brak kursów w tym okresie",
     "averageSpread": "Średnie odchylenie",
     "spreadNote": "Jak daleko {count, plural, one {Twoja # transakcja odbiegała} few {Twoje # transakcje odbiegały} many {Twoich # transakcji odbiegało} other {Twoich # transakcji odbiegało}} od zapisanego kursu z tego samego dnia, w górę lub w dół",
-    "spreadNoteUnmeasured": "Jak daleko {measured, plural, one {Twoja # transakcja odbiegała} few {Twoje # transakcje odbiegały} many {Twoich # transakcji odbiegało} other {Twoich # transakcji odbiegało}} od zapisanego kursu z tego samego dnia. {unmeasured, plural, one {# kolejna nie ma} few {# kolejne nie mają} many {# kolejnych nie ma} other {# kolejnej nie ma}} zapisanego kursu dla swojej daty; pobierz go przyciskiem Uzupełnij luki w historii kursu powyżej.",
-    "spreadNoneMeasured": "{count, plural, one {# transakcja nie ma} few {# transakcje nie mają} many {# transakcji nie ma} other {# transakcji nie ma}} zapisanego kursu dla swojej daty do porównania. Pobierz go przyciskiem Uzupełnij luki w historii kursu powyżej.",
+    "spreadNoteUnmeasured": "Jak daleko {measured, plural, one {Twoja # transakcja odbiegała} few {Twoje # transakcje odbiegały} many {Twoich # transakcji odbiegało} other {Twoich # transakcji odbiegało}} od zapisanego kursu z tego samego dnia. {unmeasured, plural, one {# kolejna nie ma} few {# kolejne nie mają} many {# kolejnych nie ma} other {# kolejnej nie ma}} zapisanego kursu {pair} w ciągu 45 dni przed swoją datą, najwcześniejsza {date}; Uzupełnij luki w historii kursu powyżej pobiera to, co ma dostawca.",
+    "spreadNoneMeasured": "{count, plural, one {# transakcja nie ma} few {# transakcje nie mają} many {# transakcji nie ma} other {# transakcji nie ma}} zapisanego kursu {pair} w ciągu 45 dni przed swoją datą do porównania, najwcześniejsza {date}. Uzupełnij luki w historii kursu powyżej pobiera to, co ma dostawca.",
     "noTransactions": "Brak transakcji z kursem wymiany w tym okresie"
   },
   "table": {

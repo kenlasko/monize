@@ -236,6 +236,7 @@ describe('summarizeRateSpread', () => {
     // 2% above and 3% below are 2.5% apart on average, not -0.5%.
     expect(spread.measured).toBe(2);
     expect(spread.unmeasured).toBe(0);
+    expect(spread.earliestUnmeasured).toBeNull();
     expect(spread.averagePercent).toBeCloseTo(2.5, 10);
   });
 
@@ -243,17 +244,18 @@ describe('summarizeRateSpread', () => {
     const spread = summarizeRateSpread(buildRateHistoryRows(stored, transactionRates));
 
     // tx-1 settled at 2 against 1.6; tx-2 has no stored rate for its date.
-    expect(spread).toMatchObject({ measured: 1, unmeasured: 1 });
+    expect(spread).toMatchObject({ measured: 1, unmeasured: 1, earliestUnmeasured: '2026-03-03' });
     expect(spread.averagePercent).toBeCloseTo(25, 10);
   });
 
   it('has no average when nothing could be measured, rather than a zero spread', () => {
     expect(
       summarizeRateSpread(buildRateHistoryRows(stored, [transaction('a', 1.5, null)])),
-    ).toEqual({ measured: 0, unmeasured: 1, averagePercent: null });
+    ).toEqual({ measured: 0, unmeasured: 1, earliestUnmeasured: '2026-03-01', averagePercent: null });
     expect(summarizeRateSpread(buildRateHistoryRows(stored, []))).toEqual({
       measured: 0,
       unmeasured: 0,
+      earliestUnmeasured: null,
       averagePercent: null,
     });
   });

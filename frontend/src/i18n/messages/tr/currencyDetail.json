@@ -67,8 +67,8 @@
     "noRates": "Bu dönemde kur yok",
     "averageSpread": "Ortalama Fark",
     "spreadNote": "{count, plural, one {# işleminizin} other {# işleminizin}} aynı tarihteki kayıtlı kurdan yukarı ya da aşağı ne kadar uzak olduğu",
-    "spreadNoteUnmeasured": "{measured, plural, one {# işleminizin} other {# işleminizin}} aynı tarihteki kayıtlı kurdan ne kadar uzak olduğu. {unmeasured, plural, one {# işlemin daha} other {# işlemin daha}} tarihi için kayıtlı kuru yok; almak için yukarıdaki Kur geçmişindeki boşlukları doldur düğmesini kullanın.",
-    "spreadNoneMeasured": "{count, plural, one {# işlemin} other {# işlemin}} karşılaştırılacak, tarihine ait kayıtlı kuru yok. Almak için yukarıdaki Kur geçmişindeki boşlukları doldur düğmesini kullanın.",
+    "spreadNoteUnmeasured": "{measured, plural, one {# işleminizin} other {# işleminizin}} aynı tarihteki kayıtlı kurdan ne kadar uzak olduğu. {unmeasured, plural, one {# işlemin daha} other {# işlemin daha}} tarihinden önceki 45 gün içinde kayıtlı {pair} kuru yok, en eskisi {date}; yukarıdaki Kur geçmişindeki boşlukları doldur sağlayıcıda olanı getirir.",
+    "spreadNoneMeasured": "{count, plural, one {# işlemin} other {# işlemin}} tarihinden önceki 45 gün içinde karşılaştırılacak kayıtlı {pair} kuru yok, en eskisi {date}. Yukarıdaki Kur geçmişindeki boşlukları doldur sağlayıcıda olanı getirir.",
     "noTransactions": "Bu dönemde döviz kuru olan işlem yok"
   },
   "table": {

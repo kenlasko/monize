@@ -67,8 +67,8 @@
     "noRates": "Keine Kurse in diesem Zeitraum",
     "averageSpread": "Durchschnittliche Abweichung",
     "spreadNote": "Wie weit {count, plural, one {Ihre # Buchung} other {Ihre # Buchungen}} vom gespeicherten Kurs desselben Tages abwichen, nach oben oder unten",
-    "spreadNoteUnmeasured": "Wie weit {measured, plural, one {Ihre # Buchung} other {Ihre # Buchungen}} vom gespeicherten Kurs desselben Tages abwichen. Für {unmeasured, plural, one {# weitere} other {# weitere}} gibt es keinen gespeicherten Kurs; rufen Sie ihn oben mit „Lücken im Kursverlauf füllen“ ab.",
-    "spreadNoneMeasured": "Für {count, plural, one {# Buchung} other {# Buchungen}} gibt es keinen gespeicherten Kurs zum Vergleich. Rufen Sie ihn oben mit „Lücken im Kursverlauf füllen“ ab.",
+    "spreadNoteUnmeasured": "Wie weit {measured, plural, one {Ihre # Buchung} other {Ihre # Buchungen}} vom gespeicherten Kurs desselben Tages abwichen. Für {unmeasured, plural, one {# weitere} other {# weitere}} gibt es in den 45 Tagen vor dem Datum keinen gespeicherten {pair}-Kurs, die früheste am {date}; „Lücken im Kursverlauf füllen“ oben ruft ab, was der Anbieter hat.",
+    "spreadNoneMeasured": "Für {count, plural, one {# Buchung} other {# Buchungen}} gibt es in den 45 Tagen vor dem Datum keinen gespeicherten {pair}-Kurs zum Vergleich, die früheste am {date}. „Lücken im Kursverlauf füllen“ oben ruft ab, was der Anbieter hat.",
     "noTransactions": "Keine Buchungen mit Wechselkurs in diesem Zeitraum"
   },
   "table": {

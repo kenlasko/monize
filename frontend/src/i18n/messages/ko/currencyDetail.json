@@ -67,8 +67,8 @@
     "noRates": "이 기간에 환율이 없습니다",
     "averageSpread": "평균 스프레드",
     "spreadNote": "{count, plural, other {거래 #건}}의 환율이 같은 날짜의 저장된 환율과 위아래로 얼마나 차이 났는지",
-    "spreadNoteUnmeasured": "{measured, plural, other {거래 #건}}의 환율이 같은 날짜의 저장된 환율과 얼마나 차이 났는지. 나머지 {unmeasured, plural, other {#건}}은 해당 날짜의 저장된 환율이 없습니다. 위의 환율 이력의 빈 구간 채우기로 가져오세요.",
-    "spreadNoneMeasured": "{count, plural, other {거래 #건}}에 비교할 해당 날짜의 저장된 환율이 없습니다. 위의 환율 이력의 빈 구간 채우기로 가져오세요.",
+    "spreadNoteUnmeasured": "{measured, plural, other {거래 #건}}의 환율이 같은 날짜의 저장된 환율과 얼마나 차이 났는지. 나머지 {unmeasured, plural, other {#건}}은 날짜 이전 45일 안에 저장된 {pair} 환율이 없습니다(가장 이른 날짜 {date}). 위의 환율 이력의 빈 구간 채우기로 제공자가 가진 환율을 가져올 수 있습니다.",
+    "spreadNoneMeasured": "{count, plural, other {거래 #건}}에 날짜 이전 45일 안에 비교할 저장된 {pair} 환율이 없습니다(가장 이른 날짜 {date}). 위의 환율 이력의 빈 구간 채우기로 제공자가 가진 환율을 가져올 수 있습니다.",
     "noTransactions": "이 기간에 환율이 있는 거래가 없습니다"
   },
   "table": {
