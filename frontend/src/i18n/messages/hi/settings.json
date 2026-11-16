@@ -553,7 +553,9 @@
         "budgets": "सभी बजट और बजट अलर्ट",
         "monthlySummaries": "मासिक खाता शेष सारांश",
         "customReports": "कस्टम रिपोर्ट, टैग और आयात मैपिंग",
-        "actionHistory": "क्रिया इतिहास (पूर्ववत/फिर से करें)"
+        "actionHistory": "क्रिया इतिहास (पूर्ववत/फिर से करें)",
+        "rules": "सभी लेनदेन नियम",
+        "institutions": "वित्तीय संस्थान"
       },
       "optionalHeading": "वैकल्पिक रूप से भी हटाएं:",
       "accountsOption": "खाते",

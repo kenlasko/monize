@@ -553,7 +553,9 @@
         "budgets": "모든 예산 및 예산 알림",
         "monthlySummaries": "월별 계정 잔액 요약",
         "customReports": "사용자 지정 보고서, 태그 및 가져오기 매핑",
-        "actionHistory": "작업 기록(실행 취소/다시 실행)"
+        "actionHistory": "작업 기록(실행 취소/다시 실행)",
+        "rules": "모든 거래 규칙",
+        "institutions": "금융 기관"
       },
       "optionalHeading": "선택적으로 삭제 가능:",
       "accountsOption": "계정",

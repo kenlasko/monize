@@ -2105,6 +2105,17 @@ describe("UsersService", () => {
       expect(
         queries.some((q: string) => q.includes("DELETE FROM action_history")),
       ).toBe(true);
+      // Left behind, these were untouched by "delete my data" (issue #2231):
+      // a rule still fires on new transactions, and an institution's name and
+      // logo still appear, after the user asked for their data to be gone.
+      expect(
+        queries.some((q: string) =>
+          q.includes("DELETE FROM transaction_rules"),
+        ),
+      ).toBe(true);
+      expect(
+        queries.some((q: string) => q.includes("DELETE FROM institutions")),
+      ).toBe(true);
     });
 
     it("does not delete optional data when flags are false", async () => {

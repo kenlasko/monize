@@ -553,7 +553,9 @@
         "budgets": "Tất cả ngân sách và cảnh báo ngân sách",
         "monthlySummaries": "Tóm tắt số dư tài khoản hàng tháng",
         "customReports": "Báo cáo tùy chỉnh, thẻ và ánh xạ nhập",
-        "actionHistory": "Lịch sử thao tác (hoàn tác/làm lại)"
+        "actionHistory": "Lịch sử thao tác (hoàn tác/làm lại)",
+        "rules": "Tất cả quy tắc giao dịch",
+        "institutions": "Các tổ chức tài chính"
       },
       "optionalHeading": "Tùy chọn cũng xóa:",
       "accountsOption": "Tài khoản",

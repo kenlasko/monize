@@ -553,7 +553,9 @@
         "budgets": "所有预算和预算提醒",
         "monthlySummaries": "每月账户余额摘要",
         "customReports": "自定义报表、标签和导入映射",
-        "actionHistory": "操作历史记录（撤销/重做）"
+        "actionHistory": "操作历史记录（撤销/重做）",
+        "rules": "所有交易规则",
+        "institutions": "金融机构"
       },
       "optionalHeading": "可选择同时删除：",
       "accountsOption": "账户",

@@ -553,7 +553,9 @@
         "budgets": "Semua anggaran dan peringatan anggaran",
         "monthlySummaries": "Ringkasan saldo akun bulanan",
         "customReports": "Laporan khusus, tag, dan pemetaan impor",
-        "actionHistory": "Riwayat tindakan (batalkan/ulangi)"
+        "actionHistory": "Riwayat tindakan (batalkan/ulangi)",
+        "rules": "Semua aturan transaksi",
+        "institutions": "Institusi keuangan"
       },
       "optionalHeading": "Opsional juga hapus:",
       "accountsOption": "Akun",
