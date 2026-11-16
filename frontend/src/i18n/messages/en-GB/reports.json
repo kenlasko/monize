@@ -71,5 +71,8 @@
       "uncategorizedIncome": "Uncategorised income",
       "uncategorizedExpense": "Uncategorised expenses"
     }
+  },
+  "duplicateTransactions": {
+    "uncategorized": "Uncategorised"
   }
 }
