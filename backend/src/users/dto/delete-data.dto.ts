@@ -13,7 +13,8 @@ export class DeleteDataDto {
 
   // Always deleted: transactions, splits, tags, scheduled transactions,
   // investment transactions, holdings, security prices, securities,
-  // monthly account balances, budgets
+  // monthly account balances, budgets, transaction rules, financial
+  // institutions
 
   @IsBoolean()
   @IsOptional()

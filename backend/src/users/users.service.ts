@@ -986,6 +986,22 @@ export class UsersService {
       userId,
     ]);
 
+    // Transaction rules (the application trace cascades from the rule)
+    result = await manager.query(
+      "DELETE FROM transaction_rules WHERE user_id = $1",
+      [userId],
+    );
+    deleted.transactionRules = result[1] ?? 0;
+
+    // Financial institutions. accounts.institution_id is ON DELETE SET NULL,
+    // so this is safe whether or not opts.deleteAccounts also removes the
+    // accounts that referenced them.
+    result = await manager.query(
+      "DELETE FROM institutions WHERE user_id = $1",
+      [userId],
+    );
+    deleted.institutions = result[1] ?? 0;
+
     // Optional: delete payees (before accounts, since payee default_category_id
     // references categories, and accounts may reference payee-related data)
     if (opts.deletePayees) {
