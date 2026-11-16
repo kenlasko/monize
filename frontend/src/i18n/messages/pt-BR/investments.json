@@ -360,7 +360,8 @@
       "summary": "Juros {interest}, dedução por resgate antecipado {deduction}, pagamento {payout}",
       "outsideSaleWindow": "Um lote desta série foi comprado fora do período de venda, então o resgate não pode ser dividido.",
       "afterMaturity": "Um lote desta série foi comprado na data de vencimento ou depois, por isso o resgate não pode ser dividido.",
-      "failed": "Não foi possível calcular a divisão do resgate."
+      "failed": "Não foi possível calcular a divisão do resgate.",
+      "quantityInvalid": "A divisão de um resgate é calculada para um número inteiro de títulos de 1 a {max}. Informe o número de títulos resgatados."
     }
   },
   "newTransactionButton": {

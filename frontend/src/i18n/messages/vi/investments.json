@@ -360,7 +360,8 @@
       "summary": "Lãi {interest}, khoản khấu trừ khi hoàn trả sớm {deduction}, số tiền chi trả {payout}",
       "outsideSaleWindow": "Một lô của đợt phát hành này được mua ngoài thời gian bán, nên không thể tách khoản hoàn trả.",
       "afterMaturity": "Một lô của chuỗi này được mua vào hoặc sau ngày đáo hạn nên không thể chia nhỏ khoản thanh toán.",
-      "failed": "Không thể tính phần tách của khoản hoàn trả."
+      "failed": "Không thể tính phần tách của khoản hoàn trả.",
+      "quantityInvalid": "Phân tách khoản mua lại được tính cho số trái phiếu nguyên từ 1 đến {max}. Hãy nhập số trái phiếu được mua lại."
     }
   },
   "newTransactionButton": {

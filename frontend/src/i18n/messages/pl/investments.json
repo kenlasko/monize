@@ -360,7 +360,8 @@
       "summary": "Odsetki {interest}, potrącenie za wykup przedterminowy {deduction}, wypłata {payout}",
       "outsideSaleWindow": "Partia tej serii została kupiona poza okresem sprzedaży, więc wykupu nie można rozbić.",
       "afterMaturity": "Partię tej serii kupiono w dniu wykupu lub po nim, więc nie można podzielić wykupu.",
-      "failed": "Nie udało się obliczyć podziału wykupu."
+      "failed": "Nie udało się obliczyć podziału wykupu.",
+      "quantityInvalid": "Podział wykupu jest wyliczany dla całkowitej liczby obligacji od 1 do {max}. Wpisz liczbę wykupionych obligacji."
     }
   },
   "newTransactionButton": {

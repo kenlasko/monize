@@ -360,7 +360,8 @@
       "summary": "利息 {interest}，提前兑付扣减 {deduction}，兑付金额 {payout}",
       "outsideSaleWindow": "该系列的一个批次在其销售期之外购入，因此无法拆分兑付。",
       "afterMaturity": "此系列的一个批次在到期日当天或之后买入，因此无法拆分兑付。",
-      "failed": "无法计算兑付拆分。"
+      "failed": "无法计算兑付拆分。",
+      "quantityInvalid": "赎回拆分仅适用于 1 到 {max} 之间的整数张债券。请输入赎回的债券张数。"
     }
   },
   "newTransactionButton": {

@@ -360,7 +360,8 @@
       "summary": "Faiz {interest}, erken itfa kesintisi {deduction}, ödeme {payout}",
       "outsideSaleWindow": "Bu serinin bir lotu satış döneminin dışında alındığından itfa bölünemiyor.",
       "afterMaturity": "Bu serinin bir lotu vade tarihinde veya sonrasında alınmış, bu yüzden itfa bölünemez.",
-      "failed": "İtfa dökümü hesaplanamadı."
+      "failed": "İtfa dökümü hesaplanamadı.",
+      "quantityInvalid": "Bir itfanın dağılımı 1 ile {max} arasında tam sayıda tahvil için hesaplanır. İtfa edilen tahvil sayısını girin."
     }
   },
   "newTransactionButton": {

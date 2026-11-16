@@ -360,7 +360,8 @@
       "summary": "利息 {interest}，提前贖回扣減 {deduction}，支付金額 {payout}",
       "outsideSaleWindow": "此系列的一個批次在其銷售期間之外買入，因此無法拆分贖回。",
       "afterMaturity": "此系列的一個批次在到期日當天或之後買入，因此無法拆分兌付。",
-      "failed": "無法計算贖回拆分。"
+      "failed": "無法計算贖回拆分。",
+      "quantityInvalid": "贖回拆分僅適用於 1 到 {max} 之間的整數張債券。請輸入贖回的債券張數。"
     }
   },
   "newTransactionButton": {
