@@ -1,0 +1,97 @@
+{
+  "loading": "Завантаження валюти...",
+  "loadFailed": "Не вдалося завантажити валюту",
+  "notFound": "Валюту {code} не знайдено",
+  "tryAgain": "Спробувати ще раз",
+  "backToCurrencies": "Назад до валют",
+  "ratesLoadFailed": "Не вдалося завантажити історію курсів",
+  "defaultCurrencyNote": "{code} — ваша валюта за замовчуванням. Усі інші валюти перераховуються в неї, тому власного курсу вона не має.",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "Символ {symbol}, {decimals, plural, =0 {без десяткових знаків} one {# десятковий знак} few {# десяткові знаки} many {# десяткових знаків} other {# десяткового знака}}",
+    "switchCurrency": "Змінити валюту",
+    "switchPlaceholder": "Знайти валюту...",
+    "switchNoMatches": "Відповідних валют немає",
+    "defaultBadge": "За замовчуванням",
+    "cryptoBadge": "Крипто",
+    "inactiveBadge": "Неактивна"
+  },
+  "summary": {
+    "transactions": "Операції",
+    "sinceYear": "З {year}",
+    "totalIn": "Разом у {currency}",
+    "grossNote": "Кожна сума, незалежно від того, витрачена вона чи отримана",
+    "totalInCurrencyUnknown": "Для операції, оплаченої в {currency}, не записано суму в цій валюті",
+    "convertedPartIn": "Перерахована частина в {currency}",
+    "convertedNote": "Кожна операція за власним курсом або за курсом на її дату",
+    "missingRates": "{count, plural, one {# операцію не враховано} few {# операції не враховано} many {# операцій не враховано} other {# операції не враховано}}: немає курсу {pairs} на дату. Заповніть прогалини через історію курсу на сторінці «Валюти».",
+    "latestRate": "Останній курс",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "Збережених курсів ще немає"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "Криптопари (Yahoo)",
+    "frankfurter": "Frankfurter (ЄЦБ)",
+    "mnyImport": "Імпорт з Money",
+    "transaction": "Операція",
+    "unknown": "Невідомо"
+  },
+  "chart": {
+    "title": "Курс валюти",
+    "direction": "{currency} за 1 {code}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "Немає курсів за цей період",
+    "transactionPoint": "Ваша операція за курсом {rate}: {description}",
+    "legend": {
+      "provider": "Постачальник курсів",
+      "transaction": "Ваші операції ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "Усе"
+    }
+  },
+  "table": {
+    "title": "Історія курсу",
+    "loading": "Завантаження курсів...",
+    "itemName": "курсів",
+    "filterAriaLabel": "Фільтр за джерелом",
+    "filters": {
+      "all": "Усі ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "Операції ({count})",
+      "other": "Інші ({count})"
+    },
+    "export": "Експорт у CSV",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "Дата",
+      "rate": "{currency} за {code}",
+      "inverseRate": "{code} за {currency}",
+      "source": "Джерело",
+      "details": "Подробиці"
+    },
+    "unknownRate": "Невідомо",
+    "kinds": {
+      "foreignEntry": "Платіж в іноземній валюті",
+      "transfer": "Переказ"
+    },
+    "detail": "{kind}, рахунок {account}",
+    "detailWithPayee": "{kind}: {payee}, рахунок {account}",
+    "empty": {
+      "title": "Курсів ще немає",
+      "filteredTitle": "Немає курсів із цього джерела",
+      "description": "Курси {code} до {currency} з’являться тут, щойно постачальник курсів їх збереже або ви запишете операцію між цими валютами."
+    },
+    "totalLabel": "{count, plural, one {# курс} few {# курси} many {# курсів} other {# курсу}}",
+    "storedTruncated": "Показано {count} останніх збережених курсів; давніші не наведено.",
+    "transactionsTruncated": "Показано курси ваших {count} останніх операцій; давніші не наведено."
+  }
+}

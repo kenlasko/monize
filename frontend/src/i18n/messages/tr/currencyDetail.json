@@ -1,0 +1,97 @@
+{
+  "loading": "Para birimi yükleniyor...",
+  "loadFailed": "Para birimi yüklenemedi",
+  "notFound": "{code} para birimi bulunamadı",
+  "tryAgain": "Tekrar Dene",
+  "backToCurrencies": "Para Birimlerine Dön",
+  "ratesLoadFailed": "Döviz kuru geçmişi yüklenemedi",
+  "defaultCurrencyNote": "{code} varsayılan para biriminizdir. Diğer tüm para birimleri buna çevrilir, bu nedenle kendine ait bir döviz kuru yoktur.",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "Sembol {symbol}, {decimals, plural, =0 {ondalık basamak yok} one {# ondalık basamak} other {# ondalık basamak}}",
+    "switchCurrency": "Para birimini değiştir",
+    "switchPlaceholder": "Para birimi bul...",
+    "switchNoMatches": "Eşleşen para birimi yok",
+    "defaultBadge": "Varsayılan",
+    "cryptoBadge": "Kripto",
+    "inactiveBadge": "Pasif"
+  },
+  "summary": {
+    "transactions": "İşlemler",
+    "sinceYear": "{year} yılından beri",
+    "totalIn": "{currency} cinsinden toplam",
+    "grossNote": "Harcanmış ya da alınmış olmasına bakılmaksızın her tutar",
+    "totalInCurrencyUnknown": "{currency} ile ödenen bir işlemin bu para biriminde kayıtlı tutarı yok",
+    "convertedPartIn": "{currency} cinsinden çevrilen kısım",
+    "convertedNote": "Her işlem kendi kuruyla veya tarihindeki kurla",
+    "missingRates": "{count, plural, one {# işlem dışarıda kaldı} other {# işlem dışarıda kaldı}}: tarihi için {pairs} kuru yok. Boşlukları doldurmak için Para Birimleri sayfasındaki Kur geçmişini kullanın.",
+    "latestRate": "Son Kur",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "Henüz kayıtlı kur yok"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "Kripto çiftleri (Yahoo)",
+    "frankfurter": "Frankfurter (ECB)",
+    "mnyImport": "Money içe aktarımı",
+    "transaction": "İşlem",
+    "unknown": "Bilinmiyor"
+  },
+  "chart": {
+    "title": "Döviz Kuru",
+    "direction": "1 {code} başına {currency}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "Bu dönemde döviz kuru yok",
+    "transactionPoint": "{rate} kurundan işleminiz: {description}",
+    "legend": {
+      "provider": "Kur sağlayıcısı",
+      "transaction": "İşlemleriniz ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "Tümü"
+    }
+  },
+  "table": {
+    "title": "Kur Geçmişi",
+    "loading": "Döviz kurları yükleniyor...",
+    "itemName": "kur",
+    "filterAriaLabel": "Kaynağa göre filtrele",
+    "filters": {
+      "all": "Tümü ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "İşlemler ({count})",
+      "other": "Diğer ({count})"
+    },
+    "export": "CSV Dışa Aktar",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "Tarih",
+      "rate": "{code} başına {currency}",
+      "inverseRate": "{currency} başına {code}",
+      "source": "Kaynak",
+      "details": "Ayrıntılar"
+    },
+    "unknownRate": "Bilinmiyor",
+    "kinds": {
+      "foreignEntry": "Döviz ile ödeme",
+      "transfer": "Transfer"
+    },
+    "detail": "{account} hesabında {kind}",
+    "detailWithPayee": "{account} hesabında {payee} için {kind}",
+    "empty": {
+      "title": "Henüz döviz kuru yok",
+      "filteredTitle": "Bu kaynaktan kur yok",
+      "description": "{code} için {currency} karşısındaki kurlar, kur sağlayıcısı kaydettiğinde veya ikisi arasında bir işlem girdiğinizde burada görünür."
+    },
+    "totalLabel": "{count, plural, one {# kur} other {# kur}}",
+    "storedTruncated": "En son kaydedilen {count} kur gösteriliyor; daha eskiler listelenmiyor.",
+    "transactionsTruncated": "En son {count} işleminizin kurları gösteriliyor; daha eskiler listelenmiyor."
+  }
+}

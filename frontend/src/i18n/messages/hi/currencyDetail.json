@@ -1,0 +1,97 @@
+{
+  "loading": "मुद्रा लोड हो रही है...",
+  "loadFailed": "मुद्रा लोड करने में विफल",
+  "notFound": "मुद्रा {code} नहीं मिली",
+  "tryAgain": "फिर से प्रयास करें",
+  "backToCurrencies": "मुद्राओं पर वापस जाएँ",
+  "ratesLoadFailed": "विनिमय दर इतिहास लोड करने में विफल",
+  "defaultCurrencyNote": "{code} आपकी डिफ़ॉल्ट मुद्रा है। बाकी सभी मुद्राएँ इसी में बदली जाती हैं, इसलिए इसकी अपनी कोई विनिमय दर नहीं है।",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "प्रतीक {symbol}, {decimals, plural, =0 {कोई दशमलव स्थान नहीं} one {# दशमलव स्थान} other {# दशमलव स्थान}}",
+    "switchCurrency": "मुद्रा बदलें",
+    "switchPlaceholder": "मुद्रा खोजें...",
+    "switchNoMatches": "कोई मेल खाती मुद्रा नहीं",
+    "defaultBadge": "डिफ़ॉल्ट",
+    "cryptoBadge": "क्रिप्टो",
+    "inactiveBadge": "निष्क्रिय"
+  },
+  "summary": {
+    "transactions": "लेन-देन",
+    "sinceYear": "{year} से",
+    "totalIn": "{currency} में कुल",
+    "grossNote": "हर राशि, चाहे वह खर्च की गई हो या प्राप्त हुई हो",
+    "totalInCurrencyUnknown": "{currency} में भुगतान किए गए एक लेन-देन की उस मुद्रा में कोई राशि दर्ज नहीं है",
+    "convertedPartIn": "{currency} में बदला गया भाग",
+    "convertedNote": "हर लेन-देन उसकी अपनी दर पर, या उसकी तारीख की दर पर",
+    "missingRates": "{count, plural, one {# लेन-देन छोड़ा गया} other {# लेन-देन छोड़े गए}}: उसकी तारीख के लिए कोई {pairs} दर नहीं। कमियाँ भरने के लिए मुद्राएँ पृष्ठ पर दर इतिहास का उपयोग करें।",
+    "latestRate": "नवीनतम दर",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "अभी तक कोई संग्रहीत दर नहीं"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "क्रिप्टो जोड़े (Yahoo)",
+    "frankfurter": "Frankfurter (ECB)",
+    "mnyImport": "Money आयात",
+    "transaction": "लेन-देन",
+    "unknown": "अज्ञात"
+  },
+  "chart": {
+    "title": "विनिमय दर",
+    "direction": "1 {code} पर {currency}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "इस अवधि में कोई विनिमय दर नहीं",
+    "transactionPoint": "{rate} पर आपका लेन-देन: {description}",
+    "legend": {
+      "provider": "दर प्रदाता",
+      "transaction": "आपके लेन-देन ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "सभी"
+    }
+  },
+  "table": {
+    "title": "दर इतिहास",
+    "loading": "विनिमय दरें लोड हो रही हैं...",
+    "itemName": "दरें",
+    "filterAriaLabel": "स्रोत के अनुसार फ़िल्टर करें",
+    "filters": {
+      "all": "सभी ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "लेन-देन ({count})",
+      "other": "अन्य ({count})"
+    },
+    "export": "CSV निर्यात करें",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "तारीख",
+      "rate": "प्रति {code} {currency}",
+      "inverseRate": "प्रति {currency} {code}",
+      "source": "स्रोत",
+      "details": "विवरण"
+    },
+    "unknownRate": "अज्ञात",
+    "kinds": {
+      "foreignEntry": "विदेशी मुद्रा भुगतान",
+      "transfer": "स्थानांतरण"
+    },
+    "detail": "{account} में {kind}",
+    "detailWithPayee": "{account} में {payee} को {kind}",
+    "empty": {
+      "title": "अभी तक कोई विनिमय दर नहीं",
+      "filteredTitle": "इस स्रोत से कोई दर नहीं",
+      "description": "{currency} के मुकाबले {code} की दरें यहाँ तब दिखेंगी जब दर प्रदाता कुछ संग्रहीत कर ले, या जब आप दोनों के बीच कोई लेन-देन दर्ज करें।"
+    },
+    "totalLabel": "{count, plural, one {# दर} other {# दरें}}",
+    "storedTruncated": "सबसे हाल की {count} संग्रहीत दरें दिखाई जा रही हैं; पुरानी सूचीबद्ध नहीं हैं।",
+    "transactionsTruncated": "आपके सबसे हाल के {count} लेन-देन की दरें दिखाई जा रही हैं; पुराने सूचीबद्ध नहीं हैं।"
+  }
+}

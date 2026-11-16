@@ -1,0 +1,97 @@
+{
+  "loading": "Загрузка валюты...",
+  "loadFailed": "Не удалось загрузить валюту",
+  "notFound": "Валюта {code} не найдена",
+  "tryAgain": "Повторить",
+  "backToCurrencies": "Назад к валютам",
+  "ratesLoadFailed": "Не удалось загрузить историю курсов",
+  "defaultCurrencyNote": "{code} — ваша валюта по умолчанию. Все остальные валюты пересчитываются в неё, поэтому собственного курса у неё нет.",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "Символ {symbol}, {decimals, plural, =0 {без десятичных знаков} one {# десятичный знак} few {# десятичных знака} many {# десятичных знаков} other {# десятичного знака}}",
+    "switchCurrency": "Сменить валюту",
+    "switchPlaceholder": "Найти валюту...",
+    "switchNoMatches": "Подходящих валют нет",
+    "defaultBadge": "По умолчанию",
+    "cryptoBadge": "Крипто",
+    "inactiveBadge": "Неактивна"
+  },
+  "summary": {
+    "transactions": "Операции",
+    "sinceYear": "С {year}",
+    "totalIn": "Итого в {currency}",
+    "grossNote": "Каждая сумма, независимо от того, потрачена она или получена",
+    "totalInCurrencyUnknown": "У операции, оплаченной в {currency}, не записана сумма в этой валюте",
+    "convertedPartIn": "Пересчитанная часть в {currency}",
+    "convertedNote": "Каждая операция по собственному курсу или по курсу на её дату",
+    "missingRates": "{count, plural, one {# операция не учтена} few {# операции не учтены} many {# операций не учтено} other {# операции не учтено}}: нет курса {pairs} на дату. Заполните пробелы через историю курса на странице «Валюты».",
+    "latestRate": "Последний курс",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "Сохранённых курсов пока нет"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "Криптопары (Yahoo)",
+    "frankfurter": "Frankfurter (ЕЦБ)",
+    "mnyImport": "Импорт из Money",
+    "transaction": "Операция",
+    "unknown": "Неизвестно"
+  },
+  "chart": {
+    "title": "Курс валюты",
+    "direction": "{currency} за 1 {code}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "Нет курсов за этот период",
+    "transactionPoint": "Ваша операция по курсу {rate}: {description}",
+    "legend": {
+      "provider": "Поставщик курсов",
+      "transaction": "Ваши операции ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "Всё"
+    }
+  },
+  "table": {
+    "title": "История курса",
+    "loading": "Загрузка курсов...",
+    "itemName": "курсов",
+    "filterAriaLabel": "Фильтр по источнику",
+    "filters": {
+      "all": "Все ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "Операции ({count})",
+      "other": "Другие ({count})"
+    },
+    "export": "Экспорт в CSV",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "Дата",
+      "rate": "{currency} за {code}",
+      "inverseRate": "{code} за {currency}",
+      "source": "Источник",
+      "details": "Подробности"
+    },
+    "unknownRate": "Неизвестно",
+    "kinds": {
+      "foreignEntry": "Платёж в иностранной валюте",
+      "transfer": "Перевод"
+    },
+    "detail": "{kind}, счёт {account}",
+    "detailWithPayee": "{kind}: {payee}, счёт {account}",
+    "empty": {
+      "title": "Курсов пока нет",
+      "filteredTitle": "Нет курсов из этого источника",
+      "description": "Курсы {code} к {currency} появятся здесь, когда поставщик курсов сохранит их или когда вы запишете операцию между этими валютами."
+    },
+    "totalLabel": "{count, plural, one {# курс} few {# курса} many {# курсов} other {# курса}}",
+    "storedTruncated": "Показаны {count} последних сохранённых курсов; более ранние не перечислены.",
+    "transactionsTruncated": "Показаны курсы ваших {count} последних операций; более ранние не перечислены."
+  }
+}

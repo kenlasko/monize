@@ -1,0 +1,97 @@
+{
+  "loading": "Valuta laden...",
+  "loadFailed": "Valuta laden mislukt",
+  "notFound": "Valuta {code} niet gevonden",
+  "tryAgain": "Opnieuw proberen",
+  "backToCurrencies": "Terug naar Valuta",
+  "ratesLoadFailed": "Wisselkoersgeschiedenis laden mislukt",
+  "defaultCurrencyNote": "{code} is je standaardvaluta. Alle andere valuta worden ernaar omgerekend, dus heeft deze geen eigen wisselkoers.",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "Symbool {symbol}, {decimals, plural, =0 {geen decimalen} one {# decimaal} other {# decimalen}}",
+    "switchCurrency": "Andere valuta",
+    "switchPlaceholder": "Zoek een valuta...",
+    "switchNoMatches": "Geen overeenkomende valuta",
+    "defaultBadge": "Standaard",
+    "cryptoBadge": "Crypto",
+    "inactiveBadge": "Inactief"
+  },
+  "summary": {
+    "transactions": "Transacties",
+    "sinceYear": "Sinds {year}",
+    "totalIn": "Totaal in {currency}",
+    "grossNote": "Elk bedrag, ongeacht of het is uitgegeven of ontvangen",
+    "totalInCurrencyUnknown": "Voor een transactie betaald in {currency} is geen bedrag in die valuta vastgelegd",
+    "convertedPartIn": "Omgerekend deel in {currency}",
+    "convertedNote": "Elke transactie tegen haar eigen koers, of de koers van haar datum",
+    "missingRates": "{count, plural, one {# transactie valt} other {# transacties vallen}} buiten de som: geen {pairs}-koers voor de datum. Vul de gaten aan via Koersgeschiedenis op de pagina Valuta.",
+    "latestRate": "Laatste koers",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "Nog geen opgeslagen koersen"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "Cryptoparen (Yahoo)",
+    "frankfurter": "Frankfurter (ECB)",
+    "mnyImport": "Money-import",
+    "transaction": "Transactie",
+    "unknown": "Onbekend"
+  },
+  "chart": {
+    "title": "Wisselkoers",
+    "direction": "{currency} per 1 {code}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "Geen wisselkoersen in deze periode",
+    "transactionPoint": "Je transactie tegen {rate}: {description}",
+    "legend": {
+      "provider": "Koersaanbieder",
+      "transaction": "Je transacties ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "Alles"
+    }
+  },
+  "table": {
+    "title": "Koersgeschiedenis",
+    "loading": "Wisselkoersen laden...",
+    "itemName": "koersen",
+    "filterAriaLabel": "Filteren op bron",
+    "filters": {
+      "all": "Alle ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "Transacties ({count})",
+      "other": "Overig ({count})"
+    },
+    "export": "CSV exporteren",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "Datum",
+      "rate": "{currency} per {code}",
+      "inverseRate": "{code} per {currency}",
+      "source": "Bron",
+      "details": "Details"
+    },
+    "unknownRate": "Onbekend",
+    "kinds": {
+      "foreignEntry": "Betaling in vreemde valuta",
+      "transfer": "Overboeking"
+    },
+    "detail": "{kind} in {account}",
+    "detailWithPayee": "{kind} aan {payee} in {account}",
+    "empty": {
+      "title": "Nog geen wisselkoersen",
+      "filteredTitle": "Geen koersen uit deze bron",
+      "description": "Koersen van {code} tegenover {currency} verschijnen hier zodra de koersaanbieder er heeft opgeslagen, of zodra je een transactie tussen de twee vastlegt."
+    },
+    "totalLabel": "{count, plural, one {# koers} other {# koersen}}",
+    "storedTruncated": "De {count} meest recente opgeslagen koersen worden getoond; oudere staan niet in de lijst.",
+    "transactionsTruncated": "De koersen van je {count} meest recente transacties worden getoond; oudere staan niet in de lijst."
+  }
+}

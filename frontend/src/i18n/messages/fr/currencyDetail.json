@@ -1,0 +1,97 @@
+{
+  "loading": "Chargement de la devise...",
+  "loadFailed": "Échec du chargement de la devise",
+  "notFound": "La devise {code} est introuvable",
+  "tryAgain": "Réessayer",
+  "backToCurrencies": "Retour aux devises",
+  "ratesLoadFailed": "Échec du chargement de l'historique des taux de change",
+  "defaultCurrencyNote": "{code} est votre devise par défaut. Toutes les autres devises sont converties dans celle-ci, elle n'a donc pas de taux de change propre.",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "Symbole {symbol}, {decimals, plural, =0 {aucune décimale} one {# décimale} other {# décimales}}",
+    "switchCurrency": "Changer de devise",
+    "switchPlaceholder": "Rechercher une devise...",
+    "switchNoMatches": "Aucune devise correspondante",
+    "defaultBadge": "Par défaut",
+    "cryptoBadge": "Crypto",
+    "inactiveBadge": "Inactive"
+  },
+  "summary": {
+    "transactions": "Opérations",
+    "sinceYear": "Depuis {year}",
+    "totalIn": "Total en {currency}",
+    "grossNote": "Chaque montant, qu’il ait été dépensé ou reçu",
+    "totalInCurrencyUnknown": "Une opération payée en {currency} n'a aucun montant enregistré dans cette devise",
+    "convertedPartIn": "Partie convertie en {currency}",
+    "convertedNote": "Chaque opération à son propre taux, ou au taux de sa date",
+    "missingRates": "{count, plural, one {# opération est exclue} other {# opérations sont exclues}} : aucun taux {pairs} pour sa date. Utilisez l'historique des taux sur la page Devises pour combler les lacunes.",
+    "latestRate": "Dernier taux",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "Aucun taux enregistré pour le moment"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "Paires crypto (Yahoo)",
+    "frankfurter": "Frankfurter (BCE)",
+    "mnyImport": "Import Money",
+    "transaction": "Opération",
+    "unknown": "Inconnue"
+  },
+  "chart": {
+    "title": "Taux de change",
+    "direction": "{currency} pour 1 {code}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "Aucun taux de change sur cette période",
+    "transactionPoint": "Votre opération à {rate} : {description}",
+    "legend": {
+      "provider": "Fournisseur de taux",
+      "transaction": "Vos opérations ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "Tout"
+    }
+  },
+  "table": {
+    "title": "Historique des taux",
+    "loading": "Chargement des taux de change...",
+    "itemName": "taux",
+    "filterAriaLabel": "Filtrer par source",
+    "filters": {
+      "all": "Tous ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "Opérations ({count})",
+      "other": "Autres ({count})"
+    },
+    "export": "Exporter en CSV",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "Date",
+      "rate": "{currency} pour {code}",
+      "inverseRate": "{code} pour {currency}",
+      "source": "Source",
+      "details": "Détails"
+    },
+    "unknownRate": "Inconnu",
+    "kinds": {
+      "foreignEntry": "Paiement en devise étrangère",
+      "transfer": "Virement"
+    },
+    "detail": "{kind} dans {account}",
+    "detailWithPayee": "{kind} à {payee} dans {account}",
+    "empty": {
+      "title": "Aucun taux de change pour le moment",
+      "filteredTitle": "Aucun taux de cette source",
+      "description": "Les taux de {code} par rapport à {currency} apparaissent ici dès que le fournisseur en a enregistré, ou dès que vous saisissez une opération entre les deux."
+    },
+    "totalLabel": "{count, plural, one {# taux} other {# taux}}",
+    "storedTruncated": "Affichage des {count} taux enregistrés les plus récents ; les plus anciens ne sont pas listés.",
+    "transactionsTruncated": "Affichage des taux de vos {count} opérations les plus récentes ; les plus anciennes ne sont pas listées."
+  }
+}

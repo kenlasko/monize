@@ -1,0 +1,97 @@
+{
+  "loading": "正在加载货币...",
+  "loadFailed": "加载货币失败",
+  "notFound": "未找到货币 {code}",
+  "tryAgain": "重试",
+  "backToCurrencies": "返回货币",
+  "ratesLoadFailed": "加载汇率历史失败",
+  "defaultCurrencyNote": "{code} 是您的默认货币。其他所有货币都会换算为它，因此它没有自己的汇率。",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "符号 {symbol}，{decimals, plural, =0 {无小数位} other {# 位小数}}",
+    "switchCurrency": "切换货币",
+    "switchPlaceholder": "查找货币...",
+    "switchNoMatches": "没有匹配的货币",
+    "defaultBadge": "默认",
+    "cryptoBadge": "加密货币",
+    "inactiveBadge": "已停用"
+  },
+  "summary": {
+    "transactions": "交易",
+    "sinceYear": "自 {year} 年起",
+    "totalIn": "{currency} 合计",
+    "grossNote": "每笔金额，无论支出还是收入",
+    "totalInCurrencyUnknown": "一笔以 {currency} 支付的交易未记录该货币的金额",
+    "convertedPartIn": "已换算为 {currency} 的部分",
+    "convertedNote": "每笔交易按其自身汇率或其日期的汇率换算",
+    "missingRates": "{count, plural, other {# 笔交易}}未计入：该日期没有 {pairs} 汇率。请在货币页面使用汇率历史补齐缺口。",
+    "latestRate": "最新汇率",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}，{source}",
+    "noStoredRates": "尚无已存储的汇率"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "加密货币对 (Yahoo)",
+    "frankfurter": "Frankfurter（欧洲央行）",
+    "mnyImport": "Money 导入",
+    "transaction": "交易",
+    "unknown": "未知"
+  },
+  "chart": {
+    "title": "汇率",
+    "direction": "每 1 {code} 兑 {currency}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "此期间没有汇率",
+    "transactionPoint": "您在 {rate} 的交易：{description}",
+    "legend": {
+      "provider": "汇率提供方",
+      "transaction": "您的交易（{count}）"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "全部"
+    }
+  },
+  "table": {
+    "title": "汇率历史",
+    "loading": "正在加载汇率...",
+    "itemName": "条汇率",
+    "filterAriaLabel": "按来源筛选",
+    "filters": {
+      "all": "全部（{count}）",
+      "yahoo": "Yahoo（{count}）",
+      "frankfurter": "Frankfurter（{count}）",
+      "transaction": "交易（{count}）",
+      "other": "其他（{count}）"
+    },
+    "export": "导出 CSV",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "日期",
+      "rate": "每 {code} 兑 {currency}",
+      "inverseRate": "每 {currency} 兑 {code}",
+      "source": "来源",
+      "details": "详情"
+    },
+    "unknownRate": "未知",
+    "kinds": {
+      "foreignEntry": "外币付款",
+      "transfer": "转账"
+    },
+    "detail": "{account} 中的{kind}",
+    "detailWithPayee": "{account} 中付给 {payee} 的{kind}",
+    "empty": {
+      "title": "尚无汇率",
+      "filteredTitle": "此来源没有汇率",
+      "description": "当汇率提供方存储了汇率，或您记录了两种货币之间的交易后，{code} 兑 {currency} 的汇率会显示在这里。"
+    },
+    "totalLabel": "{count, plural, other {# 条汇率}}",
+    "storedTruncated": "显示最近存储的 {count} 条汇率；更早的未列出。",
+    "transactionsTruncated": "显示您最近 {count} 笔交易的汇率；更早的未列出。"
+  }
+}

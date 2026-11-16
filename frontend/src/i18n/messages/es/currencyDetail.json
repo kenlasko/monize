@@ -1,0 +1,97 @@
+{
+  "loading": "Cargando moneda...",
+  "loadFailed": "No se pudo cargar la moneda",
+  "notFound": "No se encontró la moneda {code}",
+  "tryAgain": "Intentar de nuevo",
+  "backToCurrencies": "Volver a Monedas",
+  "ratesLoadFailed": "No se pudo cargar el historial de tipos de cambio",
+  "defaultCurrencyNote": "{code} es su moneda predeterminada. Todas las demás monedas se convierten a ella, por lo que no tiene tipo de cambio propio.",
+  "header": {
+    "title": "{code} · {name}",
+    "subtitle": "Símbolo {symbol}, {decimals, plural, =0 {sin decimales} one {# decimal} other {# decimales}}",
+    "switchCurrency": "Cambiar de moneda",
+    "switchPlaceholder": "Buscar una moneda...",
+    "switchNoMatches": "No hay monedas coincidentes",
+    "defaultBadge": "Predeterminada",
+    "cryptoBadge": "Cripto",
+    "inactiveBadge": "Inactiva"
+  },
+  "summary": {
+    "transactions": "Transacciones",
+    "sinceYear": "Desde {year}",
+    "totalIn": "Total en {currency}",
+    "grossNote": "Cada importe, sin importar si se gastó o se recibió",
+    "totalInCurrencyUnknown": "Una transacción pagada en {currency} no tiene un importe registrado en esa moneda",
+    "convertedPartIn": "Parte convertida en {currency}",
+    "convertedNote": "Cada transacción a su propio tipo, o al tipo de su fecha",
+    "missingRates": "{count, plural, one {# transacción queda excluida} other {# transacciones quedan excluidas}}: no hay tipo {pairs} para su fecha. Use el historial de tasas en la página Monedas para completar los huecos.",
+    "latestRate": "Último tipo",
+    "rateValue": "1 {code} = {rate} {currency}",
+    "rateAsOf": "{date}, {source}",
+    "noStoredRates": "Aún no hay tipos guardados"
+  },
+  "sources": {
+    "yahooFinance": "Yahoo Finance",
+    "yahooCrypto": "Pares cripto (Yahoo)",
+    "frankfurter": "Frankfurter (BCE)",
+    "mnyImport": "Importación de Money",
+    "transaction": "Transacción",
+    "unknown": "Desconocido"
+  },
+  "chart": {
+    "title": "Tipo de cambio",
+    "direction": "{currency} por 1 {code}",
+    "filename": "{code}-{currency}-exchange-rate",
+    "noData": "No hay tipos de cambio en este período",
+    "transactionPoint": "Su transacción a {rate}: {description}",
+    "legend": {
+      "provider": "Proveedor de tipos",
+      "transaction": "Sus transacciones ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "Todo"
+    }
+  },
+  "table": {
+    "title": "Historial de tasas",
+    "loading": "Cargando tipos de cambio...",
+    "itemName": "tipos",
+    "filterAriaLabel": "Filtrar por origen",
+    "filters": {
+      "all": "Todos ({count})",
+      "yahoo": "Yahoo ({count})",
+      "frankfurter": "Frankfurter ({count})",
+      "transaction": "Transacciones ({count})",
+      "other": "Otros ({count})"
+    },
+    "export": "Exportar CSV",
+    "exportFilename": "{code}-{currency}-exchange-rates",
+    "columns": {
+      "date": "Fecha",
+      "rate": "{currency} por {code}",
+      "inverseRate": "{code} por {currency}",
+      "source": "Origen",
+      "details": "Detalles"
+    },
+    "unknownRate": "Desconocido",
+    "kinds": {
+      "foreignEntry": "Pago en moneda extranjera",
+      "transfer": "Transferencia"
+    },
+    "detail": "{kind} en {account}",
+    "detailWithPayee": "{kind} a {payee} en {account}",
+    "empty": {
+      "title": "Aún no hay tipos de cambio",
+      "filteredTitle": "No hay tipos de este origen",
+      "description": "Los tipos de {code} frente a {currency} aparecen aquí cuando el proveedor haya guardado alguno o cuando registre una transacción entre ambas."
+    },
+    "totalLabel": "{count, plural, one {# tipo} other {# tipos}}",
+    "storedTruncated": "Se muestran los {count} tipos guardados más recientes; los anteriores no se listan.",
+    "transactionsTruncated": "Se muestran los tipos de sus {count} transacciones más recientes; las anteriores no se listan."
+  }
+}
