@@ -38,6 +38,7 @@
     "yahooFinance": "[XX-Yahoo Finance-XX]",
     "yahooCrypto": "[XX-Crypto pairs (Yahoo)-XX]",
     "frankfurter": "[XX-Frankfurter (ECB)-XX]",
+    "frankfurterV2": "[XX-Frankfurter (central banks)-XX]",
     "mnyImport": "[XX-Money import-XX]",
     "transaction": "[XX-Transaction-XX]",
     "unknown": "[XX-Unknown-XX]"

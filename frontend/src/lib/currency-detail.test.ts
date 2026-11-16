@@ -52,6 +52,8 @@ describe('rate sources', () => {
     expect(rateSourceGroup('yahoo_finance')).toBe('yahoo');
     expect(rateSourceGroup('yahoo_crypto')).toBe('yahoo');
     expect(rateSourceGroup('frankfurter')).toBe('frankfurter');
+    // The v2 blend shares the Frankfurter filter; its label tells them apart.
+    expect(rateSourceGroup('frankfurter_v2')).toBe('frankfurter');
     expect(rateSourceGroup('transaction')).toBe('transaction');
     expect(rateSourceGroup('mny_import')).toBe('other');
     expect(rateSourceGroup(null)).toBe('other');
@@ -60,6 +62,8 @@ describe('rate sources', () => {
   it('names each slug, and an unknown one as unknown', () => {
     expect(rateSourceLabelKey('yahoo_crypto')).toBe('yahooCrypto');
     expect(rateSourceLabelKey('mny_import')).toBe('mnyImport');
+    expect(rateSourceLabelKey('frankfurter')).toBe('frankfurter');
+    expect(rateSourceLabelKey('frankfurter_v2')).toBe('frankfurterV2');
     expect(rateSourceLabelKey('transaction')).toBe('transaction');
     expect(rateSourceLabelKey('test')).toBe('unknown');
   });

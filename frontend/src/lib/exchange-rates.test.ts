@@ -521,6 +521,7 @@ describe('FX_PROVIDER_NAMES', () => {
 
   it('isFxProviderName admits the mirrored names only', () => {
     expect(isFxProviderName('frankfurter')).toBe(true);
+    expect(isFxProviderName('frankfurter_v2')).toBe(true);
     expect(isFxProviderName('yahoo')).toBe(true);
     expect(isFxProviderName('yahoo_finance')).toBe(false);
   });

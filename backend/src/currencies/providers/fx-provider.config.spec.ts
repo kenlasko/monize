@@ -48,6 +48,16 @@ describe("resolveFxProviders", () => {
     expect(resolveFxProviders("frankfurter")).toEqual(["frankfurter"]);
   });
 
+  it("accepts frankfurter_v2 as an opt-in beside v1, in the order written, and keeps it out of the default", () => {
+    // docs/specs/frankfurter-v2-provider.md, decisions 1 and 9.
+    expect(resolveFxProviders("Frankfurter_V2,frankfurter,yahoo")).toEqual([
+      "frankfurter_v2",
+      "frankfurter",
+      "yahoo",
+    ]);
+    expect(DEFAULT_FX_PROVIDERS).not.toContain("frankfurter_v2");
+  });
+
   it("trims and lower-cases each token", () => {
     expect(resolveFxProviders(" Yahoo ")).toEqual(["yahoo"]);
     expect(resolveFxProviders("YAHOO")).toEqual(["yahoo"]);

@@ -1991,7 +1991,10 @@ Enforcement         backend/src/currencies/providers/fx-provider-chain.ts asks
                     adapter (currencies/providers/frankfurter-fx.provider.ts)
                     exists and answers null only for a non-answer, but nothing
                     asks it until an operator names it in FX_PROVIDERS (the
-                    default changes at task R1).
+                    default changes at task R1). The opt-in Frankfurter v2
+                    adapter (currencies/providers/frankfurter-v2-fx.provider.ts,
+                    source frankfurter_v2, docs/specs/frankfurter-v2-provider.md)
+                    is held by the same two guards.
                     exchange_rate_coverage.providers records the ordered source
                     slugs of the chain that wrote each row;
                     ExchangeRateHistoryService reads a row under any other

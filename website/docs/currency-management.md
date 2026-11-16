@@ -55,7 +55,7 @@ The period you pick on the chart applies to the cards and the table below it as 
 | **Rates in Period** | How many rates the period holds, stored and from your transactions, and the first and last date among them |
 | **Average Spread** | How far the rates your transactions settled at were from the stored rate for the same date, on average, whether yours was higher or lower. A transaction with no stored rate within 45 days before its date cannot be compared; the card says how many there are, names the missing pair and the oldest date it is missing on, and **Fill gaps in rate history** fetches what the rate provider holds for them |
 
-The **Rate History** table lists every rate in the period, a page at a time, with its **Date**, the rate both ways round, and its **Source**: Yahoo Finance, Frankfurter (ECB), Money import, or **Transaction** for a rate one of your transactions settled at, with what the transaction was. Click a column heading to sort by it, use **All** / **Yahoo** / **Frankfurter** / **Transactions** above the table to show one source, and click **Export CSV** to download every row the filter shows.
+The **Rate History** table lists every rate in the period, a page at a time, with its **Date**, the rate both ways round, and its **Source**: Yahoo Finance, Frankfurter (ECB), Frankfurter (central banks), Money import, or **Transaction** for a rate one of your transactions settled at, with what the transaction was. Click a column heading to sort by it, use **All** / **Yahoo** / **Frankfurter** / **Transactions** above the table to show one source, and click **Export CSV** to download every row the filter shows.
 
 Your home currency has no exchange rate of its own, so its page shows the transaction count and total only.
 
@@ -134,7 +134,7 @@ You choose it when you first sign in, and can change it at any time in **Setting
 
 Monize fetches the latest exchange rates for the currencies you use every weekday at 5:05 PM New York time, after the markets close, and stores them so that every past date keeps its own rate. Click **Refresh Rates** on the Currencies page to fetch them immediately; the line under its label shows how long ago the rates were last updated.
 
-Rates come from **Frankfurter** (the European Central Bank's reference rates) first, then **Yahoo Finance** for any currency Frankfurter does not cover. An administrator can change the providers and their order for the whole instance. A cryptocurrency's rates always come from Yahoo Finance through its price symbol, every day of the week (see [Exchange Rates for a Cryptocurrency](#exchange-rates-for-a-cryptocurrency)).
+Rates come from **Frankfurter** (the European Central Bank's reference rates) first, then **Yahoo Finance** for any currency Frankfurter does not cover. An administrator can change the providers and their order for the whole instance, including switching on **Frankfurter (central bank rates)**, which blends the published rates of about a hundred central banks and reaches further back than 1999 (US dollar to Canadian dollar from 1953). A cryptocurrency's rates always come from Yahoo Finance through its price symbol, every day of the week (see [Exchange Rates for a Cryptocurrency](#exchange-rates-for-a-cryptocurrency)).
 
 ### Rate History
 

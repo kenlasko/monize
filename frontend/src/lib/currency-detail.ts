@@ -17,13 +17,13 @@ export const TRANSACTION_RATE_SOURCE = 'transaction';
 
 /**
  * The label key of a source slug, under `currencyDetail.sources`. The provider
- * slugs are the ones `exchange_rates.source` actually holds (the stored rate
- * history dialog names the same four).
+ * slugs are the ones `exchange_rates.source` actually holds.
  */
 export type RateSourceLabelKey =
   | 'yahooFinance'
   | 'yahooCrypto'
   | 'frankfurter'
+  | 'frankfurterV2'
   | 'mnyImport'
   | 'transaction'
   | 'unknown';
@@ -36,6 +36,8 @@ export function rateSourceLabelKey(source: string | null): RateSourceLabelKey {
       return 'yahooCrypto';
     case 'frankfurter':
       return 'frankfurter';
+    case 'frankfurter_v2':
+      return 'frankfurterV2';
     case 'mny_import':
       return 'mnyImport';
     case TRANSACTION_RATE_SOURCE:
@@ -50,7 +52,10 @@ export function rateSourceGroup(source: string | null): RateSourceGroup {
     case 'yahoo_finance':
     case 'yahoo_crypto':
       return 'yahoo';
+    // The v2 blend counts under the Frankfurter filter; its Source label tells
+    // the two apart (docs/specs/frankfurter-v2-provider.md, decision 10).
     case 'frankfurter':
+    case 'frankfurter_v2':
       return 'frankfurter';
     case TRANSACTION_RATE_SOURCE:
       return 'transaction';

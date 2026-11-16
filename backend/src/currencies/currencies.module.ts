@@ -21,6 +21,10 @@ import {
   FrankfurterFxProvider,
   resolveFrankfurterBaseUrl,
 } from "./providers/frankfurter-fx.provider";
+import {
+  FrankfurterV2FxProvider,
+  resolveFrankfurterV2BaseUrl,
+} from "./providers/frankfurter-v2-fx.provider";
 
 /**
  * Currencies and exchange rates. Rates come from an ordered chain of providers
@@ -35,7 +39,9 @@ import {
  *
  * The Frankfurter adapter is built here too, from `FX_FRANKFURTER_BASE_URL`
  * and the breaker (`ProviderHealthModule`); nothing calls it until an operator
- * lists `frankfurter` in `FX_PROVIDERS`.
+ * lists `frankfurter` in `FX_PROVIDERS`. The Frankfurter v2 adapter likewise,
+ * from `FX_FRANKFURTER_V2_BASE_URL`, asked only when `frankfurter_v2` is listed
+ * (`docs/specs/frankfurter-v2-provider.md`).
  *
  * The crypto adapter (`CryptoFxProvider`) is appended last, always, whatever
  * `FX_PROVIDERS` says: it is the only provider that prices a coin, it is
@@ -72,15 +78,31 @@ import {
       inject: [ConfigService, ProviderHealthService],
     },
     {
+      provide: FrankfurterV2FxProvider,
+      useFactory: (
+        configService: ConfigService,
+        health: ProviderHealthService,
+      ) =>
+        new FrankfurterV2FxProvider(
+          health,
+          resolveFrankfurterV2BaseUrl(
+            configService.get<string>("FX_FRANKFURTER_V2_BASE_URL"),
+          ),
+        ),
+      inject: [ConfigService, ProviderHealthService],
+    },
+    {
       provide: FxProviderChain,
       useFactory: (
         configService: ConfigService,
         yahoo: YahooFxProvider,
         frankfurter: FrankfurterFxProvider,
+        frankfurterV2: FrankfurterV2FxProvider,
         crypto: CryptoFxProvider,
       ) => {
         const byName: Record<FxProviderName, FxRateProvider> = {
           frankfurter,
+          frankfurter_v2: frankfurterV2,
           yahoo,
         };
         const names = resolveFxProviders(
@@ -95,6 +117,7 @@ import {
         ConfigService,
         YahooFxProvider,
         FrankfurterFxProvider,
+        FrankfurterV2FxProvider,
         CryptoFxProvider,
       ],
     },

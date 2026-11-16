@@ -24,7 +24,7 @@ export interface ExchangeRate {
  * (`backend/src/currencies/providers/fx-provider.interface.ts`) and held to it
  * by a contract test. The labels are this client's translations, keyed by name.
  */
-export const FX_PROVIDER_NAMES = ['frankfurter', 'yahoo'] as const;
+export const FX_PROVIDER_NAMES = ['frankfurter', 'frankfurter_v2', 'yahoo'] as const;
 
 export type FxProviderName = (typeof FX_PROVIDER_NAMES)[number];
 

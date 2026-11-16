@@ -35,6 +35,7 @@ const YAHOO_ADAPTER = "providers/yahoo-fx.provider.ts";
 const PROVIDER_SOURCE_SLUGS = [
   "yahoo_finance",
   "frankfurter",
+  "frankfurter_v2",
   "yahoo_crypto",
 ] as const;
 
