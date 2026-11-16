@@ -1,0 +1,10 @@
+{
+  "header": {
+    "favourites": "Favorites"
+  },
+  "toasts": {
+    "favouriteAdded": "Added to your favorites",
+    "favouriteRemoved": "Removed from your favorites",
+    "favouriteFailed": "Could not update your favorites"
+  }
+}

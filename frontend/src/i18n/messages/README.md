@@ -52,6 +52,10 @@ base and inherits everything else per key at load time.
    preserving capitalization and translation keys. The parity test checks this
    across all namespaces.
 
+   US overrides also use `categorized`/`uncategorized`, `checking`, `recognizes`,
+   `favorite`/`favorites`, and `canceled`/`canceling`. The regional loader test
+   checks the resolved message values, not the translation keys.
+
 3. The parity test checks variants as a *subset* of `en`: every key you add must
    exist in `en`, must actually change the value (no verbatim copies), and must
    keep the same ICU placeholders.

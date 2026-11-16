@@ -1,5 +1,7 @@
 {
   "confirmAction": {
+    "cancelled": "Canceled",
+    "favourite": "Favorite",
     "tagColor": "Color"
   }
 }
