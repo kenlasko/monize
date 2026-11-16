@@ -545,6 +545,23 @@ describe('CompleteStep', () => {
     ).toBeInTheDocument();
   });
 
+  it('says how many possible duplicates were merged or replaced, and nothing when none were', () => {
+    const { unmount } = render(<CompleteStep {...defaultProps} />);
+    expect(screen.queryByText(/Possible duplicates:/)).not.toBeInTheDocument();
+    unmount();
+    render(
+      <CompleteStep
+        {...defaultProps}
+        importResult={{ ...defaultProps.importResult!, duplicatesMerged: 2, duplicatesReplaced: 1 }}
+      />,
+    );
+    expect(
+      screen.getByText(
+        'Possible duplicates: 2 merged into your existing transactions, 1 imported in place of the one you had.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('shows no bond series line when the count is absent or zero', () => {
     const { unmount } = render(<CompleteStep {...defaultProps} />);
     expect(screen.queryByText(/imported without a series/)).not.toBeInTheDocument();

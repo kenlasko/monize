@@ -251,6 +251,14 @@ export function CompleteStep({
               </li>
             </ul>
             <SkippedRowsList rows={importResult.skippedRows} total={importResult.skipped} />
+            {((importResult.duplicatesMerged ?? 0) > 0 || (importResult.duplicatesReplaced ?? 0) > 0) && (
+              <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                {t('complete.duplicatesDecided', {
+                  merged: importResult.duplicatesMerged ?? 0,
+                  replaced: importResult.duplicatesReplaced ?? 0,
+                })}
+              </p>
+            )}
             {(importResult.bondRowsWithoutSeries ?? 0) > 0 && (
               <p className="mt-4 text-sm text-amber-800 dark:text-amber-300">
                 {t('complete.bondRowsWithoutSeries', { count: importResult.bondRowsWithoutSeries ?? 0 })}

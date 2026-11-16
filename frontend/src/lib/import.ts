@@ -1,5 +1,6 @@
 import apiClient from './api';
 import { clearAllCache } from './apiCache';
+import type { ImportDuplicateAction, ImportDuplicateExisting } from '@/types/import-preview';
 
 export type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD' | 'YYYY-DD-MM';
 
@@ -208,7 +209,40 @@ export interface SecurityMapping {
   currencyCode?: string;
 }
 
+/**
+ * What the person decided about one possible duplicate of a file import
+ * (docs/specs/import-duplicate-review.md section 5): the row's position in the
+ * parsed file, the transaction it pairs with, and the action. A pair without a
+ * decision is kept.
+ */
+export interface ImportDuplicateDecision {
+  row: number;
+  transactionId: string;
+  action: ImportDuplicateAction;
+}
+
+/** One row of a file that looks like a transaction already in the account. */
+export interface ImportDuplicateRow {
+  /** The row's position in the parsed file, 0-based. */
+  row: number;
+  transactionDate: string;
+  amount: number;
+  payee: string | null;
+  memo: string | null;
+  referenceNumber: string | null;
+  existingTransaction: ImportDuplicateExisting;
+  duplicateActions: ImportDuplicateAction[];
+}
+
+/** `POST /import/{qif,ofx,csv}/duplicates`: nothing in it was written. */
+export interface ImportDuplicatesResponse {
+  accountId: string;
+  currencyCode: string;
+  rows: ImportDuplicateRow[];
+}
+
 export interface ImportQifRequest {
+  duplicateDecisions?: ImportDuplicateDecision[];
   content: string;
   accountId: string;
   categoryMappings: CategoryMapping[];
@@ -371,6 +405,7 @@ export interface SavedColumnMapping {
 }
 
 export interface ImportOfxRequest {
+  duplicateDecisions?: ImportDuplicateDecision[];
   content: string;
   accountId: string;
   categoryMappings: CategoryMapping[];
@@ -379,6 +414,7 @@ export interface ImportOfxRequest {
 }
 
 export interface ImportCsvRequest {
+  duplicateDecisions?: ImportDuplicateDecision[];
   content: string;
   accountId: string;
   columnMapping: CsvColumnMappingConfig;
@@ -393,6 +429,9 @@ export interface ImportCsvRequest {
 export type ImportSkipReason =
   | 'alreadyImported'
   | 'duplicateTransfer'
+  // A possible duplicate: the person kept the existing transaction, or did not decide.
+  | 'keptExisting'
+  | 'possibleDuplicate'
   | 'unreadableDate'
   | 'unreadableAmount'
   // An investment-mode CSV row whose action needs data it does not carry.
@@ -436,6 +475,10 @@ export interface ImportResult {
    * lots report such a row until its series is chosen. Absent when zero.
    */
   bondRowsWithoutSeries?: number;
+  /** Possible duplicates merged into the transaction each pairs with. Absent when zero. */
+  duplicatesMerged?: number;
+  /** Possible duplicates imported after the transaction each pairs with was deleted. Absent when zero. */
+  duplicatesReplaced?: number;
   createdMappings?: {
     categories: Record<string, string>;
     accounts: Record<string, string>;
@@ -487,6 +530,26 @@ export const importApi = {
   parseQif: async (content: string): Promise<ParsedQifResponse> => {
     // Longer timeout for parsing large files (1 minute)
     const response = await apiClient.post('/import/qif/parse', { content }, { timeout: 60000 });
+    return response.data;
+  },
+
+  /**
+   * The rows an import of this file would hold for a decision
+   * (docs/specs/import-duplicate-review.md section 5). The body is the
+   * import's own; nothing is written.
+   */
+  findQifDuplicates: async (data: ImportQifRequest): Promise<ImportDuplicatesResponse> => {
+    const response = await apiClient.post('/import/qif/duplicates', data, { timeout: 120000 });
+    return response.data;
+  },
+
+  findOfxDuplicates: async (data: ImportOfxRequest): Promise<ImportDuplicatesResponse> => {
+    const response = await apiClient.post('/import/ofx/duplicates', data, { timeout: 120000 });
+    return response.data;
+  },
+
+  findCsvDuplicates: async (data: ImportCsvRequest): Promise<ImportDuplicatesResponse> => {
+    const response = await apiClient.post('/import/csv/duplicates', data, { timeout: 120000 });
     return response.data;
   },
 

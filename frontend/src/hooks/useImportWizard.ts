@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
+import { isAxiosError } from 'axios';
 import {
   importApi,
   CategoryMapping,
@@ -15,6 +16,10 @@ import {
   CsvTransferRule,
   SavedColumnMapping,
   ParsedQifMultiAccountResponse,
+  ImportDuplicateDecision,
+  ImportCsvRequest,
+  ImportOfxRequest,
+  ImportQifRequest,
   autoMatchCsvColumns,
   autoMatchInvestmentColumns,
   looksLikeInvestmentCsv,
@@ -37,6 +42,7 @@ import {
   MatchConfidence,
   ImportFileData,
   BulkImportResult,
+  ImportDuplicateReviewFile,
   formatAccountType,
   isInvestmentBrokerageAccount,
   ACCOUNT_TYPE_OPTIONS,
@@ -126,6 +132,9 @@ export function useImportWizard() {
   const [isLoading, setIsLoading] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [bulkImportResult, setBulkImportResult] = useState<BulkImportResult | null>(null);
+  // The possible duplicates the duplicates step lists before the import
+  // (docs/specs/import-duplicate-review.md section 5).
+  const [duplicateReview, setDuplicateReview] = useState<ImportDuplicateReviewFile[]>([]);
   const [lookupLoadingIndex, setLookupLoadingIndex] = useState<number | null>(null);
   const [initialLookupDone, setInitialLookupDone] = useState(false);
   const [bulkLookupInProgress, setBulkLookupInProgress] = useState(false);
@@ -952,6 +961,82 @@ export function useImportWizard() {
     }
   };
 
+  /** The body of one file's import, which its duplicate check takes too. */
+  const importRequestFor = (
+    fileData: ImportFileData,
+    catMappings: CategoryMapping[],
+    accMappings: AccountMapping[],
+    secMappings: SecurityMapping[],
+    duplicateDecisions?: ImportDuplicateDecision[],
+  ): ImportCsvRequest | ImportOfxRequest | ImportQifRequest => {
+    const decisions = duplicateDecisions && duplicateDecisions.length > 0 ? { duplicateDecisions } : {};
+    if (fileType === 'csv') {
+      return {
+        content: fileData.fileContent,
+        accountId: fileData.selectedAccountId,
+        columnMapping: csvColumnMapping,
+        transferRules: csvTransferRules,
+        categoryMappings: catMappings,
+        accountMappings: accMappings,
+        securityMappings: secMappings.length > 0 ? secMappings : undefined,
+        dateFormat,
+        ...decisions,
+      };
+    }
+    if (fileType === 'ofx') {
+      return {
+        content: fileData.fileContent,
+        accountId: fileData.selectedAccountId,
+        categoryMappings: catMappings,
+        accountMappings: accMappings,
+        dateFormat,
+        ...decisions,
+      };
+    }
+    return {
+      content: fileData.fileContent,
+      accountId: fileData.selectedAccountId,
+      categoryMappings: catMappings,
+      accountMappings: accMappings,
+      securityMappings: secMappings,
+      dateFormat,
+      ...decisions,
+    };
+  };
+
+  /**
+   * Ask the server which rows of each file look like transactions already in
+   * its account. An investment file is not compared. A failed check throws:
+   * the import must not run as if there were none.
+   */
+  const findDuplicateReview = async (): Promise<ImportDuplicateReviewFile[]> => {
+    const review: ImportDuplicateReviewFile[] = [];
+    for (const [fileIndex, fileData] of importFiles.entries()) {
+      if (fileData.parsedData?.accountType === 'INVESTMENT') continue;
+      const body = importRequestFor(fileData, categoryMappings, accountMappings, securityMappings);
+      const answer =
+        fileType === 'csv'
+          ? await importApi.findCsvDuplicates(body as ImportCsvRequest)
+          : fileType === 'ofx'
+            ? await importApi.findOfxDuplicates(body as ImportOfxRequest)
+            : await importApi.findQifDuplicates(body as ImportQifRequest);
+      if (answer.rows.length === 0) continue;
+      review.push({
+        fileIndex,
+        fileName: fileData.fileName,
+        accountName: accounts.find((a) => a.id === fileData.selectedAccountId)?.name ?? '',
+        currencyCode: answer.currencyCode,
+        rows: answer.rows,
+      });
+    }
+    return review;
+  };
+
+  /**
+   * The review step's Import: list the possible duplicates first, and import
+   * at once only when there are none (docs/specs/import-duplicate-review.md
+   * section 5).
+   */
   const handleImport = async () => {
     if (importFiles.length === 0) return;
 
@@ -962,37 +1047,46 @@ export function useImportWizard() {
     }
 
     setIsLoading(true);
+    let review: ImportDuplicateReviewFile[];
     try {
-      const importFn = (fileData: ImportFileData, catMappings: CategoryMapping[], accMappings: AccountMapping[], secMappings: SecurityMapping[]) => {
-        if (fileType === 'csv') {
-          return importApi.importCsv({
-            content: fileData.fileContent,
-            accountId: fileData.selectedAccountId,
-            columnMapping: csvColumnMapping,
-            transferRules: csvTransferRules,
-            categoryMappings: catMappings,
-            accountMappings: accMappings,
-            securityMappings: secMappings.length > 0 ? secMappings : undefined,
-            dateFormat,
-          });
-        } else if (fileType === 'ofx') {
-          return importApi.importOfx({
-            content: fileData.fileContent,
-            accountId: fileData.selectedAccountId,
-            categoryMappings: catMappings,
-            accountMappings: accMappings,
-            dateFormat,
-          });
-        } else {
-          return importApi.importQif({
-            content: fileData.fileContent,
-            accountId: fileData.selectedAccountId,
-            categoryMappings: catMappings,
-            accountMappings: accMappings,
-            securityMappings: secMappings,
-            dateFormat,
-          });
-        }
+      review = await findDuplicateReview();
+    } catch (error) {
+      toast.error(getErrorMessage(error, t('toasts.duplicateCheckFailed')));
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(false);
+    if (review.length > 0) {
+      setDuplicateReview(review);
+      setStep('duplicates');
+      return;
+    }
+    await runImport(new Map());
+  };
+
+  /** The duplicates step's Import: the decisions go with each file. */
+  const handleImportWithDuplicates = (decisions: Map<number, ImportDuplicateDecision[]>) =>
+    runImport(decisions);
+
+  const runImport = async (decisionsByFile: ReadonlyMap<number, ImportDuplicateDecision[]>) => {
+    setIsLoading(true);
+    try {
+      const importFn = (
+        fileData: ImportFileData,
+        catMappings: CategoryMapping[],
+        accMappings: AccountMapping[],
+        secMappings: SecurityMapping[],
+      ) => {
+        const body = importRequestFor(
+          fileData,
+          catMappings,
+          accMappings,
+          secMappings,
+          decisionsByFile.get(importFiles.indexOf(fileData)),
+        );
+        if (fileType === 'csv') return importApi.importCsv(body as ImportCsvRequest);
+        if (fileType === 'ofx') return importApi.importOfx(body as ImportOfxRequest);
+        return importApi.importQif(body as ImportQifRequest);
       };
 
       if (isBulkImport) {
@@ -1119,6 +1213,9 @@ export function useImportWizard() {
       }
     } catch (error) {
       toast.error(getErrorMessage(error, t('toasts.importFailed')));
+      // The possible duplicates changed since they were listed and nothing was
+      // written: back to the review, whose Import lists them again.
+      if (isAxiosError(error) && error.response?.status === 409) setStep('review');
     } finally {
       setIsLoading(false);
     }
@@ -1188,6 +1285,7 @@ export function useImportWizard() {
     setImportFiles([]);
     setImportResult(null);
     setBulkImportResult(null);
+    setDuplicateReview([]);
     setCategoryMappings([]);
     setAccountMappings([]);
     setSecurityMappings([]);
@@ -1267,6 +1365,7 @@ export function useImportWizard() {
     categoryMappings, setCategoryMappings, accountMappings, securityMappings,
     handleAccountMappingChange, handleSecurityMappingChange, handleSecurityLookup,
     isLoading, dataLoaded, importResult, bulkImportResult, handleImport, handleFileSelect, handleFiles, handleImportMore,
+    duplicateReview, handleImportWithDuplicates,
     lookupLoadingIndex, bulkLookupInProgress,
     lookupPickerQuery, lookupPickerCandidates, handleLookupPickerPick, handleLookupPickerCancel,
     showCreateAccount, setShowCreateAccount, creatingForFileIndex, setCreatingForFileIndex,
