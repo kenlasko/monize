@@ -38,7 +38,7 @@ describe('CurrencyRateChart', () => {
     expect(screen.getByText('No exchange rates in this period')).toBeInTheDocument();
     expect(screen.getByText('Your transactions (0)')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /all/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^All$/ }));
     expect(screen.queryByText('No exchange rates in this period')).not.toBeInTheDocument();
     expect(screen.getByText('Your transactions (1)')).toBeInTheDocument();
   });

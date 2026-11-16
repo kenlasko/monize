@@ -18,10 +18,10 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { PAGE_SIZE } from '@/lib/constants';
 import { exportToCsv } from '@/lib/csv-export';
-import { FX_RATE_DISPLAY_DECIMALS } from '@/lib/format';
 import {
   RATE_SORT_FIELDS,
   countRateSourceGroups,
+  rateDisplayDecimals,
   filterRateRows,
   sortRateRows,
   type RateHistoryRow,
@@ -85,7 +85,9 @@ export function CurrencyRateTable({ code, defaultCurrency, rows, notes = [] }: C
   const describeRow = (row: RateHistoryRow): string => {
     if (!row.transaction) return '';
     const { kind, payeeName, accountName } = row.transaction;
-    return payeeName
+    // A transfer leg's payee is the transfer itself ("Transfer to ..."),
+    // which would only repeat the kind.
+    return payeeName && kind !== 'transfer'
       ? t('table.detailWithPayee', { kind: t(`table.kinds.${kind}`), payee: payeeName, account: accountName })
       : t('table.detail', { kind: t(`table.kinds.${kind}`), account: accountName });
   };
@@ -145,7 +147,7 @@ export function CurrencyRateTable({ code, defaultCurrency, rows, notes = [] }: C
     rate === null ? (
       <span className="text-gray-400 dark:text-gray-500">{t('table.unknownRate')}</span>
     ) : (
-      formatNumber(rate, FX_RATE_DISPLAY_DECIMALS)
+      formatNumber(rate, rateDisplayDecimals(rate))
     );
 
   const sortProps = { sortField: activeSortField, sortDirection, onSort: handleSort };

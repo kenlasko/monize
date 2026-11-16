@@ -47,6 +47,14 @@
     "legend": {
       "provider": "[XX-Rate provider-XX]",
       "transaction": "[XX-Your transactions ({count})-XX]"
+    },
+    "ranges": {
+      "1m": "[XX-1M-XX]",
+      "3m": "[XX-3M-XX]",
+      "ytd": "[XX-YTD-XX]",
+      "1y": "[XX-1Y-XX]",
+      "5y": "[XX-5Y-XX]",
+      "all": "[XX-All-XX]"
     }
   },
   "table": {

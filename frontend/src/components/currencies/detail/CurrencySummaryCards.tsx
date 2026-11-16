@@ -8,9 +8,8 @@ import {
 } from '@/components/accounts/shared/SummaryCardGrid';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { FX_RATE_DISPLAY_DECIMALS } from '@/lib/format';
 import type { CurrencyUsageSummary } from '@/lib/exchange-rates';
-import type { RateHistoryRow } from '@/lib/currency-detail';
+import { rateDisplayDecimals, type RateHistoryRow } from '@/lib/currency-detail';
 import { useRateSourceLabel } from './useRateSourceLabel';
 
 interface CurrencySummaryCardsProps {
@@ -93,7 +92,7 @@ export function CurrencySummaryCards({
           latestRate && latestRate.rate !== null
             ? t('summary.rateValue', {
                 code,
-                rate: formatNumber(latestRate.rate, FX_RATE_DISPLAY_DECIMALS),
+                rate: formatNumber(latestRate.rate, rateDisplayDecimals(latestRate.rate)),
                 currency: defaultCurrency,
               })
             : '—',

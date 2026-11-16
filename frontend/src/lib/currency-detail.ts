@@ -1,4 +1,4 @@
-import { roundFxRate } from '@/lib/format';
+import { FX_RATE_DECIMALS, FX_RATE_DISPLAY_DECIMALS, roundFxRate } from '@/lib/format';
 import type { StoredRate, TransactionRate } from '@/lib/exchange-rates';
 
 /**
@@ -241,4 +241,27 @@ export function earliestRateDate(rows: readonly RateHistoryRow[]): string {
     if (!earliest || row.date < earliest) earliest = row.date;
   }
   return earliest;
+}
+
+/**
+ * The places a rate is shown at: the app's six for any rate of 1 or more, and
+ * for a smaller one as many as keep six significant digits, up to the ten
+ * the rate column stores. A coin's inverse rate (0.0000069 BTC per CAD) read
+ * as 0.000007 at six places, which says almost nothing about it.
+ */
+export function rateDisplayDecimals(rate: number): number {
+  if (!(rate > 0) || rate >= 1) return FX_RATE_DISPLAY_DECIMALS;
+  const leadingZeros = Math.ceil(-Math.log10(rate)) - 1;
+  return Math.min(FX_RATE_DECIMALS, FX_RATE_DISPLAY_DECIMALS + leadingZeros);
+}
+
+/**
+ * The places a rate axis needs to tell its ticks apart: none for a six-digit
+ * coin price, two for tens, four around 1, and more below.
+ */
+export function rateAxisDecimals(maxRate: number): number {
+  if (maxRate >= 1000) return 0;
+  if (maxRate >= 10) return 2;
+  if (maxRate >= 1) return 4;
+  return rateDisplayDecimals(maxRate);
 }

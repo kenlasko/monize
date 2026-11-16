@@ -47,6 +47,14 @@
     "legend": {
       "provider": "Rate provider",
       "transaction": "Your transactions ({count})"
+    },
+    "ranges": {
+      "1m": "1M",
+      "3m": "3M",
+      "ytd": "YTD",
+      "1y": "1Y",
+      "5y": "5Y",
+      "all": "All"
     }
   },
   "table": {

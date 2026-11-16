@@ -5,6 +5,8 @@ import {
   countRateSourceGroups,
   earliestRateDate,
   filterRateRows,
+  rateAxisDecimals,
+  rateDisplayDecimals,
   rateSourceGroup,
   rateSourceLabelKey,
   sortRateRows,
@@ -162,5 +164,24 @@ describe('buildRateChartSeries', () => {
     const series = buildRateChartSeries(rows, '', '');
     expect(series.provider.map((point) => point.date)).not.toContain('2026-03-02');
     expect(series.provider).toHaveLength(3);
+  });
+});
+
+describe('rate precision', () => {
+  it('keeps six places from 1 up, and six significant digits below it', () => {
+    expect(rateDisplayDecimals(144319.063489)).toBe(6);
+    expect(rateDisplayDecimals(1.6)).toBe(6);
+    expect(rateDisplayDecimals(0.625)).toBe(6);
+    expect(rateDisplayDecimals(0.0092)).toBe(8);
+    // A coin's inverse: 0.0000069 has five zeros after the point.
+    expect(rateDisplayDecimals(0.0000069)).toBe(10);
+    expect(rateDisplayDecimals(0)).toBe(6);
+  });
+
+  it('gives the axis as many places as its scale needs', () => {
+    expect(rateAxisDecimals(148500)).toBe(0);
+    expect(rateAxisDecimals(95.5)).toBe(2);
+    expect(rateAxisDecimals(1.6)).toBe(4);
+    expect(rateAxisDecimals(0.0092)).toBe(8);
   });
 });

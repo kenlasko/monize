@@ -23,11 +23,12 @@ import { useDateRange } from '@/hooks/useDateRange';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { chartColors } from '@/lib/chart-colors';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
-import { FX_RATE_DISPLAY_DECIMALS } from '@/lib/format';
 import { CHART_RANGES } from '@/lib/security-detail';
 import { parseLocalDate, type ChartDatePattern } from '@/lib/utils';
 import {
   buildRateChartSeries,
+  rateAxisDecimals,
+  rateDisplayDecimals,
   type RateHistoryRow,
   type TransactionRateChartPoint,
 } from '@/lib/currency-detail';
@@ -133,7 +134,7 @@ export function CurrencyRateChart({ code, defaultCurrency, rows }: CurrencyRateC
     storageKey: `currencyDetail:range:${code}`,
   });
 
-  const { days, transactions, axisTicks, axisPattern } = useMemo(() => {
+  const { days, transactions, axisTicks, axisPattern, axisDecimals } = useMemo(() => {
     const series = buildRateChartSeries(rows, resolvedRange.start, resolvedRange.end);
     const built = chartDays(series.provider, series.transactions);
     if (built.length === 0) {
@@ -142,8 +143,13 @@ export function CurrencyRateChart({ code, defaultCurrency, rows }: CurrencyRateC
         transactions: series.transactions,
         axisTicks: [] as number[],
         axisPattern: 'MMM' as ChartDatePattern,
+        axisDecimals: 4,
       };
     }
+    const maxRate = Math.max(
+      ...built.map((d) => d.rate ?? 0),
+      ...series.transactions.map((p) => p.rate),
+    );
     const times = [...built.map((d) => d.t), ...series.transactions.map((p) => p.t)];
     const first = Math.min(...times);
     const last = Math.max(...times);
@@ -154,15 +160,22 @@ export function CurrencyRateChart({ code, defaultCurrency, rows }: CurrencyRateC
       transactions: series.transactions,
       axisTicks: calendarTicks(first, last, useYearTicks ? 'year' : 'month'),
       axisPattern: (useYearTicks ? 'yyyy' : 'MMM') as ChartDatePattern,
+      axisDecimals: rateAxisDecimals(maxRate),
     };
   }, [rows, resolvedRange.start, resolvedRange.end]);
 
-  const formatRate = (rate: number) => formatNumber(rate, FX_RATE_DISPLAY_DECIMALS);
+  const rangeLabels = Object.fromEntries(
+    CHART_RANGES.map((range) => [range, t(`chart.ranges.${range}`)]),
+  );
+
+  const formatRate = (rate: number) => formatNumber(rate, rateDisplayDecimals(rate));
   const formatLabel = (date: string) => formatChartDate(parseLocalDate(date), 'MMM d, yyyy');
   const describe = (point: TransactionRateChartPoint) =>
     t('chart.transactionPoint', {
       rate: formatRate(point.rate),
-      description: point.payeeName ?? point.accountName,
+      // A transfer leg's payee only names the transfer; its account says more.
+      description:
+        point.kind === 'transfer' ? point.accountName : (point.payeeName ?? point.accountName),
     });
 
   return (
@@ -179,6 +192,7 @@ export function CurrencyRateChart({ code, defaultCurrency, rows }: CurrencyRateC
         <div className="flex flex-wrap items-center gap-2">
           <DateRangeSelector
             ranges={CHART_RANGES}
+            labels={rangeLabels}
             value={dateRange}
             onChange={setDateRange}
             size="sm"
@@ -214,7 +228,7 @@ export function CurrencyRateChart({ code, defaultCurrency, rows }: CurrencyRateC
                 tick={{ fill: chartColors.axis, fontSize: 11 }}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value: number) => formatNumber(value, 4)}
+                tickFormatter={(value: number) => formatNumber(value, axisDecimals)}
                 width="auto"
                 domain={['auto', 'auto']}
               />

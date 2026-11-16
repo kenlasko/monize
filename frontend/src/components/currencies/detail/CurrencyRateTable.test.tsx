@@ -30,7 +30,8 @@ const transactionRates: TransactionRate[] = [
     rate: 1.75,
     kind: 'transfer',
     accountName: 'Euro Chequing',
-    payeeName: null,
+    // A transfer leg's payee names the transfer, which the kind already says.
+    payeeName: 'Transfer to CAD Chequing',
   },
 ];
 
@@ -119,6 +120,17 @@ describe('CurrencyRateTable', () => {
       'Transaction',
       'Foreign currency payment to Hotel in CAD Chequing',
     ]);
+  });
+
+  it('shows a small inverse rate to six significant digits', () => {
+    const coin = buildRateHistoryRows(
+      [{ rateDate: '2026-01-01', rate: 144319.063489, source: 'yahoo_crypto', inverted: false }],
+      [],
+    );
+    render(<CurrencyRateTable code="BTC" defaultCurrency="CAD" rows={coin} />);
+
+    expect(screen.getByText('144,319.063489')).toBeInTheDocument();
+    expect(screen.getByText('0.0000069291')).toBeInTheDocument();
   });
 
   it('shows an unknown rate as unknown, never as zero', () => {
