@@ -1737,7 +1737,8 @@
       "createdLinked": "科目已建立並關聯",
       "createdLinkFailed": "科目已建立，但無法關聯",
       "preview": "預覽",
-      "firstSyncPreview": "首次匯入需透過交易預覽來確認。"
+      "firstSyncPreview": "首次匯入需透過交易預覽來確認。",
+      "heldDuplicates": "{count, plural, other {# 筆可能重複項目正在預覽中等待您決定。}}"
     },
     "link": {
       "title": "關聯到 {account}",
@@ -1775,7 +1776,9 @@
         "missing_identity": "缺少銀行交易識別碼: {count, number}"
       },
       "needsPreview": "請開啟 {accounts} 的預覽並確認首次匯入",
-      "withNeedsPreview": "{message}。{needsPreview}"
+      "withNeedsPreview": "{message}。{needsPreview}",
+      "heldDuplicates": "{count, plural, other {# 筆可能重複項目正在預覽中等待您決定}}",
+      "withHeldDuplicates": "{message}。{held}"
     },
     "callback": {
       "title": "正在連接您的銀行",
@@ -1829,7 +1832,8 @@
         "pending": "待處理",
         "before_cutoff": "早於開始日期",
         "withCount": "{label} ({count})",
-        "excluded": "例外"
+        "excluded": "例外",
+        "possible_duplicate": "可能重複"
       },
       "outcome": {
         "new": "新增",
@@ -1837,7 +1841,8 @@
         "refused": "已拒絕",
         "pending": "待處理",
         "before_cutoff": "早於開始日期",
-        "excluded": "例外"
+        "excluded": "例外",
+        "possible_duplicate": "可能重複"
       },
       "refusal": {
         "missing_date": "無日期",
@@ -1885,7 +1890,12 @@
         }
       },
       "historyBatch": "歷史批次：{from} 至 {to}。",
-      "historyBatchRemaining": "歷史批次：{from} 至 {to}。 仍有更多歷史記錄。匯入此批次後，請預覽下一批次。"
+      "historyBatchRemaining": "歷史批次：{from} 至 {to}。 仍有更多歷史記錄。匯入此批次後，請預覽下一批次。",
+      "applyDecisions": "套用決定",
+      "duplicates": {
+        "intro": "這些交易看起來與帳戶中已有的交易相似。在您決定如何處理每一筆之前，不會為它們寫入任何內容。",
+        "summary": "可能重複：{later} 筆留待稍後，{merge} 筆已合併，{keep} 筆已保留，{replace} 筆已取代，{import} 筆已匯入，{except} 筆已加入例外"
+      }
     },
     "simplefin": {
       "provider": "資料提供者",

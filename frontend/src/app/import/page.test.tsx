@@ -69,6 +69,8 @@ const mockGetSecurities = vi.fn().mockResolvedValue([]);
 const mockGetCurrencies = vi.fn().mockResolvedValue([]);
 const mockParseQif = vi.fn();
 const mockImportQif = vi.fn();
+// No file has a possible duplicate unless a test says so.
+const mockFindDuplicates = vi.fn(async (..._args: unknown[]) => ({ accountId: 'a', currencyCode: 'CAD', rows: [] as unknown[] }));
 
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
@@ -106,6 +108,9 @@ vi.mock('@/lib/import', () => ({
     parseCsvHeaders: vi.fn().mockResolvedValue({ headers: [], sampleRows: [], rowCount: 0, columnDateFormats: [] }),
     parseCsv: (...args: any[]) => mockParseQif(...args),
     importCsv: (...args: any[]) => mockImportQif(...args),
+    findQifDuplicates: (...args: any[]) => mockFindDuplicates(...args),
+    findOfxDuplicates: (...args: any[]) => mockFindDuplicates(...args),
+    findCsvDuplicates: (...args: any[]) => mockFindDuplicates(...args),
     getColumnMappings: vi.fn().mockResolvedValue([]),
     createColumnMapping: vi.fn().mockResolvedValue({}),
     updateColumnMapping: vi.fn().mockResolvedValue({}),

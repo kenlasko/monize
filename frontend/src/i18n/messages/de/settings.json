@@ -1737,7 +1737,8 @@
       "createdLinked": "Konto erstellt und verknüpft",
       "createdLinkFailed": "Das Konto wurde erstellt, konnte aber nicht verknüpft werden",
       "preview": "Vorschau",
-      "firstSyncPreview": "Der erste Import wird anhand einer Vorschau der Buchungen bestätigt."
+      "firstSyncPreview": "Der erste Import wird anhand einer Vorschau der Buchungen bestätigt.",
+      "heldDuplicates": "{count, plural, one {# mögliches Duplikat wartet in der Vorschau auf Ihre Entscheidung.} other {# mögliche Duplikate warten in der Vorschau auf Ihre Entscheidung.}}"
     },
     "link": {
       "title": "Mit {account} verknüpfen",
@@ -1775,7 +1776,9 @@
         "missing_identity": "Banktransaktions-ID fehlt: {count, number}"
       },
       "needsPreview": "Öffne die Vorschau für {accounts} und bestätige den ersten Import",
-      "withNeedsPreview": "{message}. {needsPreview}"
+      "withNeedsPreview": "{message}. {needsPreview}",
+      "heldDuplicates": "{count, plural, one {# mögliches Duplikat wartet in der Vorschau auf Ihre Entscheidung} other {# mögliche Duplikate warten in der Vorschau auf Ihre Entscheidung}}",
+      "withHeldDuplicates": "{message}. {held}"
     },
     "callback": {
       "title": "Deine Bank wird verbunden",
@@ -1829,7 +1832,8 @@
         "pending": "Ausstehend",
         "before_cutoff": "Vor dem Startdatum",
         "withCount": "{label} ({count})",
-        "excluded": "Ausnahmen"
+        "excluded": "Ausnahmen",
+        "possible_duplicate": "Mögliche Duplikate"
       },
       "outcome": {
         "new": "Neu",
@@ -1837,7 +1841,8 @@
         "refused": "Abgelehnt",
         "pending": "Ausstehend",
         "before_cutoff": "Vor dem Startdatum",
-        "excluded": "Ausnahme"
+        "excluded": "Ausnahme",
+        "possible_duplicate": "Mögliches Duplikat"
       },
       "refusal": {
         "missing_date": "Kein Datum",
@@ -1885,7 +1890,12 @@
         }
       },
       "historyBatch": "Verlaufsabschnitt: {from} bis {to}.",
-      "historyBatchRemaining": "Verlaufsabschnitt: {from} bis {to}. Weiterer Verlauf ist vorhanden. Öffnen Sie nach diesem Import die Vorschau des nächsten Abschnitts."
+      "historyBatchRemaining": "Verlaufsabschnitt: {from} bis {to}. Weiterer Verlauf ist vorhanden. Öffnen Sie nach diesem Import die Vorschau des nächsten Abschnitts.",
+      "applyDecisions": "Entscheidungen anwenden",
+      "duplicates": {
+        "intro": "Diese Buchungen ähneln solchen, die bereits im Konto sind. Für sie wird nichts gespeichert, bis Sie für jede entschieden haben, was geschehen soll.",
+        "summary": "Mögliche Duplikate: {later} auf später verschoben, {merge} zusammengeführt, {keep} beibehalten, {replace} ersetzt, {import} importiert, {except} zu den Ausnahmen hinzugefügt"
+      }
     },
     "simplefin": {
       "provider": "Datenanbieter",

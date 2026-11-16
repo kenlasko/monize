@@ -6,6 +6,31 @@
 import type { RuleRunChanges } from '@/types/transaction-rule-run';
 
 /**
+ * What a person can decide about a possible duplicate
+ * (docs/specs/import-duplicate-review.md section 3): import it beside the
+ * existing transaction, merge it into it, keep the existing one, or delete the
+ * existing one and import it.
+ */
+export type ImportDuplicateAction = 'import' | 'merge' | 'keep' | 'replace';
+
+/** The transaction already in the account that an incoming row looks like. */
+export interface ImportDuplicateExisting {
+  id: string;
+  transactionDate: string;
+  /** Signed amount as a decimal string. */
+  amount: string;
+  payeeName: string | null;
+  categoryName: string | null;
+  description: string | null;
+  referenceNumber: string | null;
+  status: 'UNRECONCILED' | 'CLEARED' | 'RECONCILED' | 'VOID';
+  isTransfer: boolean;
+  isSplit: boolean;
+  /** The other leg's account, for a transfer; null when it cannot be read. */
+  transferAccountName: string | null;
+}
+
+/**
  * How a row's payee resolves: an existing payee of that exact name, an alias
  * pattern, a payee the import would create, an import rule, or none.
  */

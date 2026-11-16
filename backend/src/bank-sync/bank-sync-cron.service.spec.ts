@@ -31,6 +31,10 @@ const result = (bankAccountId: string, imported = 0): BankSyncResult => ({
   imported,
   skipped: 0,
   excluded: 0,
+  merged: 0,
+  kept: 0,
+  replaced: 0,
+  heldDuplicates: 0,
   refused: {
     missing_identity: 0,
     missing_date: 0,
@@ -58,6 +62,7 @@ interface AccountRow {
   connection_id: string;
   account_id: string;
   last_success_at: Date | null;
+  held_duplicate_count: number;
   display_name: string | null;
   identifier_masked: string | null;
   institution_name: string;
@@ -73,6 +78,7 @@ const accountRow = (
   connection_id: CONNECTION_1,
   account_id: `m-${id}`,
   last_success_at: CONFIRMED,
+  held_duplicate_count: 0,
   display_name: "Main account",
   identifier_masked: "**** 1234",
   institution_name: "Test Bank",
@@ -317,6 +323,17 @@ describe("BankSyncCronService", () => {
       expect(reported()[0].synced).toHaveLength(1);
     });
 
+    it("skips an account whose possible duplicates wait for a decision", async () => {
+      accountsByUser[USER_ID] = [
+        accountRow(ID_A),
+        accountRow(ID_B, { held_duplicate_count: 2 }),
+      ];
+      await service.handleDailySync();
+      expect(
+        bankSync.syncAccountEntry.mock.calls.map((call) => call[1]),
+      ).toEqual([ID_A, ID_C]);
+    });
+
     it("syncs nothing for a user whose every account is unconfirmed, and says nothing about it", async () => {
       accountsByUser[USER_ID] = [
         accountRow(ID_A, { last_success_at: null }),
@@ -331,6 +348,18 @@ describe("BankSyncCronService", () => {
   });
 
   describe("outcomes (docs/specs/bank-sync-notifications.md section 5)", () => {
+    it("passes on the possible duplicates each account held back", async () => {
+      accountsByUser[USER_ID] = [accountRow(ID_A)];
+      bankSync.syncAccountEntry.mockImplementation(async (_u, id) => ({
+        ...result(id, 1),
+        heldDuplicates: 2,
+      }));
+      await service.handleDailySync();
+      expect(reported()[0].synced).toEqual([
+        { accountId: `m-${ID_A}`, imported: 1, skipped: 0, heldDuplicates: 2 },
+      ]);
+    });
+
     it("reports one outcome per connection, after all its accounts were tried", async () => {
       accountsByUser[USER_ID] = [
         accountRow(ID_A, { notify_success: "always" }),
@@ -353,8 +382,18 @@ describe("BankSyncCronService", () => {
         // Each with the Monize account it is linked to, which the import
         // notice opens the register on.
         synced: [
-          { accountId: `m-${ID_A}`, imported: 2, skipped: 0 },
-          { accountId: `m-${ID_B}`, imported: 3, skipped: 0 },
+          {
+            accountId: `m-${ID_A}`,
+            imported: 2,
+            skipped: 0,
+            heldDuplicates: 0,
+          },
+          {
+            accountId: `m-${ID_B}`,
+            imported: 3,
+            skipped: 0,
+            heldDuplicates: 0,
+          },
         ],
         failures: [],
       });

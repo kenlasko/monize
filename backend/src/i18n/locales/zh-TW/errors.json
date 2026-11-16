@@ -548,7 +548,10 @@
     "mnyExistingAccountCurrency": "現有帳戶「{{ name }}」使用 {{ existing }}，但 Money 檔案中的帳戶使用 {{ file }}。請重新命名其中一個，然後再次匯入。",
     "mnyJobNotFound": "找不到匯入工作",
     "mnyFileTooLarge": "這個 Money 檔案超過 {{ limit }} MB 的匯入上限。",
-    "noRateForSplitTransfer": "{{ date }} 沒有 {{ pair }} 的匯率：一筆分割行轉帳到另一種貨幣的帳戶。請為該貨幣對與日期新增匯率，然後重新匯入。"
+    "noRateForSplitTransfer": "{{ date }} 沒有 {{ pair }} 的匯率：一筆分割行轉帳到另一種貨幣的帳戶。請為該貨幣對與日期新增匯率，然後重新匯入。",
+    "duplicatesChanged": "可能重複項目在檢查後已有變更。未匯入任何內容；請重新檢查。",
+    "duplicateDecisionRepeated": "檔案中的一列對其可能重複項目只能有一個決定。",
+    "duplicateActionNotAllowed": "已對帳的交易無法合併或取代，轉帳或分割交易無法取代。未匯入任何內容。"
   },
   "monteCarlo": {
     "scenarioNotFound": "找不到情境 {{ id }}",
@@ -1020,7 +1023,11 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge 需要有效訂閱。請在 SimpleFIN Bridge 中檢查帳單。",
     "simplefinReadFailed": "SimpleFIN 未能提供完整的帳戶資料。請在 SimpleFIN Bridge 中檢查連線。",
     "simplefinQuotaExhausted": "SimpleFIN 請求配額已用盡。請等待配額恢復後重試目前批次。",
-    "simplefinClaimNotSent": "SimpleFIN 暫時無法使用。設定權杖尚未傳送；請稍後使用同一權杖重試。"
+    "simplefinClaimNotSent": "SimpleFIN 暫時無法使用。設定權杖尚未傳送；請稍後使用同一權杖重試。",
+    "selectionConflict": "一筆交易只能有一個決定：匯入、加入例外、合併、保留您的或取代您的。",
+    "duplicateNeedsPreview": "關於可能重複項目的決定需要顯示它的那次預覽。未匯入任何內容；請重新預覽。",
+    "selectionNotDuplicate": "選擇合併、保留或取代的交易已不再是可能重複項目。未匯入任何內容；請重新預覽。",
+    "duplicateActionNotAllowed": "已對帳的交易無法合併或取代，轉帳或分割交易無法取代。未匯入任何內容；請保留它，或將銀行的記錄匯入到它旁邊。"
   },
   "warranties": {
     "notFound": "找不到 ID 為 {{ id }} 的保固",

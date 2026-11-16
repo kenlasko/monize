@@ -1737,7 +1737,8 @@
       "createdLinked": "Đã tạo và liên kết tài khoản",
       "createdLinkFailed": "Đã tạo tài khoản nhưng không thể liên kết",
       "preview": "Xem trước",
-      "firstSyncPreview": "Lần nhập đầu tiên được xác nhận từ bản xem trước các giao dịch."
+      "firstSyncPreview": "Lần nhập đầu tiên được xác nhận từ bản xem trước các giao dịch.",
+      "heldDuplicates": "{count, plural, other {# giao dịch có thể trùng lặp đang chờ bạn quyết định trong phần xem trước.}}"
     },
     "link": {
       "title": "Liên kết với {account}",
@@ -1775,7 +1776,9 @@
         "missing_identity": "Thiếu mã giao dịch ngân hàng: {count, number}"
       },
       "needsPreview": "Mở bản xem trước của {accounts} và xác nhận lần nhập đầu tiên",
-      "withNeedsPreview": "{message}. {needsPreview}"
+      "withNeedsPreview": "{message}. {needsPreview}",
+      "heldDuplicates": "{count, plural, other {# giao dịch có thể trùng lặp đang chờ bạn quyết định trong phần xem trước}}",
+      "withHeldDuplicates": "{message}. {held}"
     },
     "callback": {
       "title": "Đang kết nối ngân hàng của bạn",
@@ -1829,7 +1832,8 @@
         "pending": "Đang chờ",
         "before_cutoff": "Trước ngày bắt đầu",
         "withCount": "{label} ({count})",
-        "excluded": "Ngoại lệ"
+        "excluded": "Ngoại lệ",
+        "possible_duplicate": "Có thể trùng lặp"
       },
       "outcome": {
         "new": "Mới",
@@ -1837,7 +1841,8 @@
         "refused": "Bị từ chối",
         "pending": "Đang chờ",
         "before_cutoff": "Trước ngày bắt đầu",
-        "excluded": "Ngoại lệ"
+        "excluded": "Ngoại lệ",
+        "possible_duplicate": "Có thể trùng lặp"
       },
       "refusal": {
         "missing_date": "Không có ngày",
@@ -1885,7 +1890,12 @@
         }
       },
       "historyBatch": "Lô lịch sử: từ {from} đến {to}.",
-      "historyBatchRemaining": "Lô lịch sử: từ {from} đến {to}. Vẫn còn lịch sử. Sau khi nhập lô này, hãy mở bản xem trước của lô tiếp theo."
+      "historyBatchRemaining": "Lô lịch sử: từ {from} đến {to}. Vẫn còn lịch sử. Sau khi nhập lô này, hãy mở bản xem trước của lô tiếp theo.",
+      "applyDecisions": "Áp dụng quyết định",
+      "duplicates": {
+        "intro": "Các giao dịch này trông giống những giao dịch đã có trong tài khoản. Không có gì được ghi cho chúng cho đến khi bạn quyết định làm gì với từng giao dịch.",
+        "summary": "Có thể trùng lặp: {later} để sau, {merge} đã gộp, {keep} đã giữ, {replace} đã thay thế, {import} đã nhập, {except} đã thêm vào ngoại lệ"
+      }
     },
     "simplefin": {
       "provider": "Nhà cung cấp dữ liệu",

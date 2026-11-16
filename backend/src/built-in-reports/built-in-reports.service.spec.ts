@@ -2065,6 +2065,7 @@ describe("BuiltInReportsService", () => {
           payee_name: "Starbucks",
           description: "Coffee",
           account_name: "Checking",
+          account_id: "acct-checking",
         },
         {
           id: "tx-2",
@@ -2073,6 +2074,7 @@ describe("BuiltInReportsService", () => {
           payee_name: "Starbucks",
           description: "Coffee",
           account_name: "Credit Card",
+          account_id: "acct-credit",
         },
       ]);
 
@@ -2239,6 +2241,7 @@ describe("BuiltInReportsService", () => {
           payee_name: "Store A",
           description: null,
           account_name: "Checking",
+          account_id: "acct-checking",
         },
         {
           id: "tx-a2",
@@ -2247,6 +2250,7 @@ describe("BuiltInReportsService", () => {
           payee_name: "Store A",
           description: null,
           account_name: "Credit",
+          account_id: "acct-credit",
         },
         // Medium confidence pair (same date, amount, one payee missing)
         {
@@ -2256,6 +2260,7 @@ describe("BuiltInReportsService", () => {
           payee_name: "Store X",
           description: null,
           account_name: "Checking",
+          account_id: "acct-checking",
         },
         {
           id: "tx-b2",
@@ -2264,6 +2269,7 @@ describe("BuiltInReportsService", () => {
           payee_name: null,
           description: null,
           account_name: "Credit",
+          account_id: "acct-credit",
         },
       ]);
 

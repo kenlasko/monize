@@ -30,7 +30,8 @@
     "importFailed": "가져오기에 실패했습니다",
     "importedFromFiles": "{files}개 파일에서 {imported}건의 거래를 성공적으로 가져왔습니다",
     "imported": "{imported}건의 거래를 성공적으로 가져왔습니다",
-    "mnySingleFileOnly": "Microsoft Money 파일은 한 번에 하나씩 가져오세요. .mny 파일에는 프로필 전체가 들어 있습니다."
+    "mnySingleFileOnly": "Microsoft Money 파일은 한 번에 하나씩 가져오세요. .mny 파일에는 프로필 전체가 들어 있습니다.",
+    "duplicateCheckFailed": "파일에서 중복 가능 거래를 확인하지 못했습니다. 아무것도 가져오지 않았습니다. 다시 시도하세요."
   },
   "page": {
     "title": "거래 가져오기",
@@ -342,7 +343,10 @@
     "viewInvestments": "투자 보기",
     "viewTransactions": "거래 보기",
     "importMoreFiles": "파일 더 가져오기",
-    "bondRowsWithoutSeries": "{count, plural, other {채권 매수 #건이 시리즈 없이 가져와졌습니다. 증권의 채권 로트에서 시리즈를 선택하세요.}}"
+    "bondRowsWithoutSeries": "{count, plural, other {채권 매수 #건이 시리즈 없이 가져와졌습니다. 증권의 채권 로트에서 시리즈를 선택하세요.}}",
+    "skipReasonKeptExisting": "대신 기존 거래를 유지함",
+    "skipReasonPossibleDuplicate": "계정에 이미 있는 거래와 같아 보임",
+    "duplicatesDecided": "중복 가능 거래: {merged, plural, other {#건을 기존 거래에 병합}}, {replaced, plural, other {#건을 기존 거래 대신 가져옴}}."
   },
   "multiAccountReview": {
     "heading": "다중 계정 QIF 가져오기",
@@ -668,6 +672,52 @@
       "none": "은행이 거래 상대방을 알려 주지 않아 이 거래에는 수취인이 없습니다.",
       "openAliases": "수취인 별칭 열기",
       "openAliasesNewTab": "수취인 별칭을 새 탭에서 열기"
+    },
+    "duplicate": {
+      "looksLike": "이 계정에 이미 있는 거래와 같아 보입니다",
+      "date": "날짜",
+      "amount": "금액",
+      "payee": "수취인",
+      "category": "카테고리",
+      "status": "상태",
+      "reference": "참조 번호",
+      "description": "메모",
+      "amountUnknown": "알 수 없음",
+      "transfer": "이체",
+      "transferWith": "{account}와(과) 이체",
+      "split": "분할",
+      "statuses": {
+        "UNRECONCILED": "미조정",
+        "CLEARED": "정리됨",
+        "RECONCILED": "조정됨",
+        "VOID": "무효"
+      },
+      "legend": "{payee} 처리 방법",
+      "choice": {
+        "later": "나중에 결정",
+        "keep": "내 거래 유지",
+        "merge": "병합",
+        "replace": "내 거래 삭제 후 가져오기",
+        "import": "그래도 가져오기",
+        "except": "예외에 추가"
+      },
+      "choiceHelp": {
+        "later": "아무것도 기록되지 않으며 다음에 다시 표시됩니다.",
+        "keep": "내 거래는 그대로 유지되고 이 거래는 가져오지 않습니다.",
+        "merge": "내 거래의 수취인, 카테고리, 메모는 유지되고 이 거래의 날짜, 참조 번호, 정리됨 상태를 가져옵니다.",
+        "replace": "내 거래는 삭제되고 그 자리에 이 거래를 가져옵니다.",
+        "import": "둘 다 유지됩니다.",
+        "except": "예외에서 제거할 때까지 가져오지 않습니다."
+      }
     }
+  },
+  "duplicates": {
+    "heading": "{count, plural, other {중복 가능 거래 #건}}",
+    "intro": "파일의 이 행들은 계정에 이미 있는 거래와 같아 보입니다. 다른 방법을 선택하지 않으면 각각 그대로 유지되며, 가져오기를 누르기 전에는 아무것도 가져오지 않습니다.",
+    "fileHeading": "{file}에서 {account}(으)로",
+    "fromFile": "파일의 {date} 거래:",
+    "noPayee": "수취인 없음",
+    "back": "뒤로",
+    "import": "가져오기"
   }
 }

@@ -68,6 +68,9 @@ export enum NotificationType {
   BANK_SYNC_CONSENT_EXPIRED = "BANK_SYNC_CONSENT_EXPIRED",
   BANK_SYNC_FAILED = "BANK_SYNC_FAILED",
   BANK_SYNC_IMPORTED = "BANK_SYNC_IMPORTED",
+  // The daily sync held possible duplicates back for the person to decide
+  // (docs/specs/import-duplicate-review.md section 4).
+  BANK_SYNC_DUPLICATES_HELD = "BANK_SYNC_DUPLICATES_HELD",
   // The email-receipts inbox holds messages that need the owner (EMAIL_RECEIPTS
   // category): some have no profile (`no_parser`), some have a profile that did
   // not recognise them (`parse_failed`). One row per (count of the first, count of
@@ -198,6 +201,7 @@ export const BANK_SYNC_NOTIFICATION_TYPES: readonly NotificationType[] = [
   NotificationType.BANK_SYNC_CONSENT_EXPIRING,
   NotificationType.BANK_SYNC_CONSENT_EXPIRED,
   NotificationType.BANK_SYNC_FAILED,
+  NotificationType.BANK_SYNC_DUPLICATES_HELD,
 ];
 export const BANK_SYNC_ACTIVITY_NOTIFICATION_TYPES: readonly NotificationType[] =
   [NotificationType.BANK_SYNC_IMPORTED];

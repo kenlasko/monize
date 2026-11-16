@@ -1737,7 +1737,8 @@
       "createdLinked": "口座を作成してリンクしました",
       "createdLinkFailed": "口座は作成されましたが、リンクできませんでした",
       "preview": "プレビュー",
-      "firstSyncPreview": "最初のインポートは、取引のプレビューで確認します。"
+      "firstSyncPreview": "最初のインポートは、取引のプレビューで確認します。",
+      "heldDuplicates": "{count, plural, other {重複の可能性がある取引 # 件が、プレビューでの判断を待っています。}}"
     },
     "link": {
       "title": "{account} にリンク",
@@ -1775,7 +1776,9 @@
         "missing_identity": "銀行取引IDがありません: {count, number}"
       },
       "needsPreview": "{accounts} のプレビューを開いて、最初のインポートを確認してください",
-      "withNeedsPreview": "{message}。{needsPreview}"
+      "withNeedsPreview": "{message}。{needsPreview}",
+      "heldDuplicates": "{count, plural, other {重複の可能性がある取引 # 件が、プレビューでの判断を待っています}}",
+      "withHeldDuplicates": "{message}。{held}"
     },
     "callback": {
       "title": "銀行に接続しています",
@@ -1829,7 +1832,8 @@
         "pending": "保留中",
         "before_cutoff": "開始日より前",
         "withCount": "{label} ({count})",
-        "excluded": "例外"
+        "excluded": "例外",
+        "possible_duplicate": "重複の可能性"
       },
       "outcome": {
         "new": "新規",
@@ -1837,7 +1841,8 @@
         "refused": "拒否",
         "pending": "保留中",
         "before_cutoff": "開始日より前",
-        "excluded": "例外"
+        "excluded": "例外",
+        "possible_duplicate": "重複の可能性"
       },
       "refusal": {
         "missing_date": "日付なし",
@@ -1885,7 +1890,12 @@
         }
       },
       "historyBatch": "履歴バッチ：{from}～{to}。",
-      "historyBatchRemaining": "履歴バッチ：{from}～{to}。 まだ履歴が残っています。このバッチのインポート後、次のバッチをプレビューしてください。"
+      "historyBatchRemaining": "履歴バッチ：{from}～{to}。 まだ履歴が残っています。このバッチのインポート後、次のバッチをプレビューしてください。",
+      "applyDecisions": "判断を適用",
+      "duplicates": {
+        "intro": "これらの取引は、この勘定科目に既にある取引と同じようです。それぞれの扱いを決めるまで、何も書き込まれません。",
+        "summary": "重複の可能性: 後で決める {later}、マージ {merge}、保持 {keep}、置き換え {replace}、インポート {import}、例外に追加 {except}"
+      }
     },
     "simplefin": {
       "provider": "データプロバイダー",

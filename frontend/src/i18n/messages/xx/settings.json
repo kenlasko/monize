@@ -1737,7 +1737,8 @@
       "createdLinked": "[XX-Account created and linked-XX]",
       "createdLinkFailed": "[XX-The account was created but could not be linked-XX]",
       "preview": "[XX-Preview-XX]",
-      "firstSyncPreview": "[XX-The first import is confirmed from a preview of the transactions.-XX]"
+      "firstSyncPreview": "[XX-The first import is confirmed from a preview of the transactions.-XX]",
+      "heldDuplicates": "[XX-{count, plural, one {# possible duplicate is waiting for your decision in the preview.} other {# possible duplicates are waiting for your decision in the preview.}}-XX]"
     },
     "link": {
       "title": "[XX-Link to {account}-XX]",
@@ -1775,7 +1776,9 @@
         "missing_identity": "[XX-{count, plural, one {# without a bank transaction ID} other {# without a bank transaction ID}}-XX]"
       },
       "needsPreview": "[XX-Open the preview for {accounts} and confirm the first import-XX]",
-      "withNeedsPreview": "[XX-{message}. {needsPreview}-XX]"
+      "withNeedsPreview": "[XX-{message}. {needsPreview}-XX]",
+      "heldDuplicates": "[XX-{count, plural, one {# possible duplicate is waiting for your decision in the preview} other {# possible duplicates are waiting for your decision in the preview}}-XX]",
+      "withHeldDuplicates": "[XX-{message}. {held}-XX]"
     },
     "callback": {
       "title": "[XX-Connecting your bank-XX]",
@@ -1824,6 +1827,7 @@
       "filter": {
         "all": "[XX-All-XX]",
         "new": "[XX-New-XX]",
+        "possible_duplicate": "[XX-Possible duplicates-XX]",
         "duplicate": "[XX-Already imported-XX]",
         "refused": "[XX-Refused-XX]",
         "pending": "[XX-Pending-XX]",
@@ -1833,6 +1837,7 @@
       },
       "outcome": {
         "new": "[XX-New-XX]",
+        "possible_duplicate": "[XX-Possible duplicate-XX]",
         "duplicate": "[XX-Already imported-XX]",
         "refused": "[XX-Refused-XX]",
         "pending": "[XX-Pending-XX]",
@@ -1885,7 +1890,12 @@
         }
       },
       "historyBatch": "[XX-History batch: {from} to {to}.-XX]",
-      "historyBatchRemaining": "[XX-History batch: {from} to {to}. More history remains; preview the next batch after importing this one.-XX]"
+      "historyBatchRemaining": "[XX-History batch: {from} to {to}. More history remains; preview the next batch after importing this one.-XX]",
+      "applyDecisions": "[XX-Apply decisions-XX]",
+      "duplicates": {
+        "intro": "[XX-These transactions look like ones already in the account. Nothing is written for them until you decide what to do with each one.-XX]",
+        "summary": "[XX-Possible duplicates: {later} left for later, {merge} merged, {keep} kept, {replace} replaced, {import} imported, {except} added to exceptions-XX]"
+      }
     },
     "simplefin": {
       "title": "[XX-SimpleFIN-XX]",

@@ -277,6 +277,7 @@ export class BankSyncService {
         row.lastImportedCount = 0;
         row.lastSkippedCount = 0;
         row.lastRefusedCount = 0;
+        row.heldDuplicateCount = 0;
       }
       row.accountId = account.id;
       row.syncFromDate = cutoff;
@@ -511,7 +512,12 @@ export class BankSyncService {
 
         // Step 6: after the commit, drop what depends on the balance, and
         // reprice the schedules a settlement rule claimed on (INV-CACHE-001).
-        if (written.imported > 0) {
+        // A merge can move a row's date, and a replace deleted one.
+        if (
+          written.imported > 0 ||
+          written.merged > 0 ||
+          written.replaced > 0
+        ) {
           this.netWorth.triggerDebouncedRecalc(account.id, userId);
         }
         // An account a rule moved money into (the loan of a settlement) has
@@ -526,14 +532,19 @@ export class BankSyncService {
           this.dataSource,
           written.settledScheduleIds,
         );
+        await this.writer.dispatchAfterCommit(userId, written);
         this.logger.log(
-          `Bank account ${bankAccountId} synced: ${written.imported} imported, ${written.skipped} already imported, ${written.excluded} added to the exceptions`,
+          `Bank account ${bankAccountId} synced: ${written.imported} imported, ${written.skipped} already imported, ${written.excluded} added to the exceptions, ${written.merged} merged, ${written.kept} kept, ${written.replaced} replaced, ${written.heldDuplicates} possible duplicates held`,
         );
         return {
           bankAccountId,
           imported: written.imported,
           skipped: written.skipped,
           excluded: written.excluded,
+          merged: written.merged,
+          kept: written.kept,
+          replaced: written.replaced,
+          heldDuplicates: written.heldDuplicates,
           refused: plan.refused,
           pending: plan.pending,
           beforeCutoff: plan.beforeCutoff,

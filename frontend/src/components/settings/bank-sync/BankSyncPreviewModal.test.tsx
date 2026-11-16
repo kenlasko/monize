@@ -709,8 +709,7 @@ describe('BankSyncPreviewModal', () => {
       });
       expect(mockSyncAccount).toHaveBeenCalledWith('ba-1', FINGERPRINT, {
         importKeys: ['ref:r1', 'ref:r2'],
-        excludeKeys: [],
-      });
+        excludeKeys: [], mergeKeys: [], keepKeys: [], replaceKeys: [] });
       await waitFor(() => expect(onImported).toHaveBeenCalledWith(result()));
       expect(toast.error).not.toHaveBeenCalled();
     });
@@ -761,8 +760,7 @@ describe('BankSyncPreviewModal', () => {
       });
       expect(mockSyncAccount).toHaveBeenLastCalledWith('ba-1', 'cd'.repeat(32), {
         importKeys: ['ref:fresh'],
-        excludeKeys: [],
-      });
+        excludeKeys: [], mergeKeys: [], keepKeys: [], replaceKeys: [] });
     });
 
     it('shows the server\'s message for any other refusal and keeps the preview', async () => {
@@ -886,8 +884,7 @@ describe('BankSyncPreviewModal', () => {
 
       expect(mockSyncAccount).toHaveBeenCalledWith('ba-1', FINGERPRINT, {
         importKeys: ['ref:b'],
-        excludeKeys: ['ref:c'],
-      });
+        excludeKeys: ['ref:c'], mergeKeys: [], keepKeys: [], replaceKeys: [] });
     });
 
     it('the header box selects none, then all, of the new rows in the list', async () => {
@@ -930,7 +927,7 @@ describe('BankSyncPreviewModal', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Confirm without importing' }));
       });
 
-      expect(mockSyncAccount).toHaveBeenCalledWith('ba-1', FINGERPRINT, { importKeys: [], excludeKeys: [] });
+      expect(mockSyncAccount).toHaveBeenCalledWith('ba-1', FINGERPRINT, { importKeys: [], excludeKeys: [], mergeKeys: [], keepKeys: [], replaceKeys: [] });
     });
 
     it('has no header box on a tab with nothing to choose', async () => {
@@ -1629,6 +1626,129 @@ describe('BankSyncPreviewModal', () => {
         expect(mockExplainRow).toHaveBeenCalledTimes(2);
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
       });
+    });
+  });
+
+  describe('possible duplicates (docs/specs/import-duplicate-review.md)', () => {
+    const EXISTING = {
+      id: 'tx-manual',
+      transactionDate: '2026-09-09',
+      amount: '-50.0000',
+      payeeName: 'Hydro bill',
+      categoryName: 'Utilities',
+      description: 'Entered by hand',
+      referenceNumber: null,
+      status: 'UNRECONCILED' as const,
+      isTransfer: false,
+      isSplit: false,
+      transferAccountName: null,
+    };
+    const WITH_DUPLICATE = () =>
+      preview({
+        rows: [
+          row({ externalKey: 'ref:a', payeeText: 'Alpha', payeeName: 'Alpha' }),
+          row({
+            outcome: 'possible_duplicate',
+            externalKey: 'ref:p',
+            payeeText: 'HYDRO',
+            payeeName: 'HYDRO',
+            existingTransaction: EXISTING,
+            duplicateActions: ['import', 'merge', 'keep', 'replace'],
+          }),
+        ],
+        summary: {
+          new: 1,
+          possibleDuplicate: 1,
+          duplicate: 0,
+          excluded: 0,
+          refused: 0,
+          refusedByReason: {},
+          pending: 0,
+          beforeCutoff: 0,
+        },
+      });
+
+    beforeEach(() => {
+      mockPreviewAccount.mockResolvedValue(WITH_DUPLICATE());
+      mockSyncAccount.mockResolvedValue(result());
+    });
+
+    it('opens on the possible duplicates, showing the transaction each looks like and leaving it for later', async () => {
+      await loaded();
+      expect(await screen.findByText('Looks like this transaction already in the account')).toBeInTheDocument();
+      expect(tab('Possible duplicates (1)')).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText('Hydro bill')).toBeInTheDocument();
+      expect(screen.getByText('Utilities')).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: /Decide later/ })).toBeChecked();
+      expect(
+        screen.getByText(
+          'Possible duplicates: 1 left for later, 0 merged, 0 kept, 0 replaced, 0 imported, 0 added to exceptions',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it('sends a merge in its own list beside the plain selection, with the fingerprint', async () => {
+      await loaded();
+      fireEvent.click(await screen.findByRole('radio', { name: /^Merge/ }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Import 1 transaction' }));
+      });
+      expect(mockSyncAccount).toHaveBeenCalledWith('ba-1', FINGERPRINT, {
+        importKeys: ['ref:a'],
+        excludeKeys: [],
+        mergeKeys: ['ref:p'],
+        keepKeys: [],
+        replaceKeys: [],
+      });
+    });
+
+    it('counts an import anyway and a replace as imports, and leaves an undecided one out of every list', async () => {
+      await loaded();
+      fireEvent.click(await screen.findByRole('radio', { name: /Delete mine and import/ }));
+      expect(screen.getByRole('button', { name: 'Import 2 transactions' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('radio', { name: /Decide later/ }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Import 1 transaction' }));
+      });
+      expect(mockSyncAccount.mock.calls[0][2]).toEqual({
+        importKeys: ['ref:a'],
+        excludeKeys: [],
+        mergeKeys: [],
+        keepKeys: [],
+        replaceKeys: [],
+      });
+    });
+
+    it('offers only what the pair allows', async () => {
+      mockPreviewAccount.mockResolvedValue(
+        preview({
+          rows: [
+            row({
+              outcome: 'possible_duplicate',
+              externalKey: 'ref:p',
+              existingTransaction: { ...EXISTING, status: 'RECONCILED' },
+              duplicateActions: ['import', 'keep'],
+            }),
+          ],
+          summary: {
+            new: 0,
+            possibleDuplicate: 1,
+            duplicate: 0,
+            excluded: 0,
+            refused: 0,
+            refusedByReason: {},
+            pending: 0,
+            beforeCutoff: 0,
+          },
+        }),
+      );
+      await loaded();
+      await screen.findByText('Looks like this transaction already in the account');
+      expect(
+        screen.getAllByRole('radio').map((radio) => radio.closest('label')?.textContent?.split(' ')[0]),
+      ).toEqual(['Decide', 'Keep', 'Import', 'Add']);
+      fireEvent.click(screen.getByRole('radio', { name: /Keep mine/ }));
+      expect(screen.getByRole('button', { name: 'Apply decisions' })).toBeInTheDocument();
     });
   });
 });

@@ -270,7 +270,7 @@ The preference matrix chooses which channel carries each kind of notification, a
 | **Account balances** | Balance thresholds and watched accounts |
 | **Investment value** | Portfolio movement (see below) |
 | **Strategy signals** | Signals from investment strategies |
-| **Bank connections** | A [bank sync](#bank-sync) consent that is about to expire or has expired |
+| **Bank connections** | A [bank sync](#bank-sync) consent that is about to expire or has expired, a daily sync that failed, or possible duplicates a daily sync held back for you |
 | **Bank sync results** | The outcome of each daily bank sync |
 | **Email receipts** | Activity from your [email receipts](email-receipts.md) mailbox |
 | **Bonds** | Government bond events: maturity in 14 days, interest paid, a new rate period, a matured series with no redemption, a rate change |
@@ -447,6 +447,21 @@ After that, **Sync now** on an account, or **Sync all** for the connection, fetc
 - **Tag transactions with the bank's operation type**, such as *Card payment* or *Incoming transfer*, so rules and reports can use it
 
 A row arrives once: a transaction you delete in Monize is not imported again by a later sync.
+
+#### Possible Duplicates
+
+A bank row with exactly the same amount as a transaction already in the account, dated up to 3 days before or after it, is a **possible duplicate**: typically a bill you entered by hand, or posted from its schedule, before the bank booked it. Transactions bank sync brought in itself are not compared. The preview lists these rows under **Possible duplicates**, each beside the transaction it looks like, and opens on that tab. For each one choose:
+
+- **Decide later** (the default) -- nothing is written; the row is shown again next time
+- **Keep mine** -- your transaction stays as it is, and the bank row is linked to it so it never comes back
+- **Merge** -- your transaction keeps its payee, category, splits, tags and memo, and takes the bank's date, reference and **Cleared** status (a transfer or a split keeps its date); the bank row is linked to it
+- **Delete mine and import** -- your transaction is deleted and the bank's row imported in its place
+- **Import anyway** -- both are kept
+- **Add to exceptions** -- the bank row is never imported
+
+A **Reconciled** transaction can only be kept or imported beside, and a transfer or a split cannot be deleted from here.
+
+**Sync now** without the preview, and the daily sync, never import a possible duplicate: they import the other rows, hold the possible duplicates back, and the account then needs its preview again (its card says how many are waiting). The daily sync also sends a **Possible duplicates to review** notification (in the **Bank connections** category).
 
 ### Consent and Disconnecting
 

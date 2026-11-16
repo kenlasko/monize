@@ -599,26 +599,48 @@ export interface UncategorizedTransactionsResponse {
 }
 
 // Duplicate transactions types
+export type DuplicateConfidence = 'very_high' | 'high' | 'medium' | 'low';
+
+export type DuplicateReasonCode =
+  | 'same_date_amount_payee_category'
+  | 'same_date_amount_payee'
+  | 'same_date_amount'
+  | 'same_payee_amount_within_days'
+  | 'same_amount_within_days';
+
 export interface DuplicateTransactionItem {
   id: string;
   transactionDate: string;
   amount: number;
+  /** The account's currency, which `amount` is in. */
+  currencyCode: string;
+  accountId: string;
   payeeName: string | null;
   description: string | null;
   accountName: string | null;
+  categoryId: string | null;
+  /** Full category path ("Parent: Child"); null when uncategorized or split. */
+  categoryName: string | null;
+  isSplit: boolean;
+  status: string | null;
 }
 
 export interface DuplicateGroup {
   key: string;
   transactions: DuplicateTransactionItem[];
+  /** English rendering of `reasonCode`, kept for API consumers. */
   reason: string;
-  confidence: 'high' | 'medium' | 'low';
+  reasonCode: DuplicateReasonCode;
+  /** The widest date gap the sensitivity allowed, in days. */
+  windowDays: number;
+  confidence: DuplicateConfidence;
 }
 
 export interface DuplicateTransactionsResponse {
   groups: DuplicateGroup[];
   summary: {
     totalGroups: number;
+    veryHighCount: number;
     highCount: number;
     mediumCount: number;
     lowCount: number;

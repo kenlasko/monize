@@ -548,7 +548,10 @@
     "mnyExistingAccountCurrency": "La cuenta existente \"{{ name }}\" usa {{ existing }}, pero la cuenta del archivo de Money usa {{ file }}. Cambie el nombre de una de ellas y vuelva a importar.",
     "mnyJobNotFound": "Tarea de importación no encontrada",
     "mnyFileTooLarge": "Ese archivo de Money supera el límite de importación de {{ limit }} MB.",
-    "noRateForSplitTransfer": "No hay tipo de cambio para {{ pair }} el {{ date }}: una línea dividida transfiere a una cuenta en otra moneda. Añade un tipo de cambio para ese par y esa fecha y vuelve a importar."
+    "noRateForSplitTransfer": "No hay tipo de cambio para {{ pair }} el {{ date }}: una línea dividida transfiere a una cuenta en otra moneda. Añade un tipo de cambio para ese par y esa fecha y vuelve a importar.",
+    "duplicatesChanged": "Los posibles duplicados cambiaron desde que se comprobaron. No se importó nada; vuelve a comprobarlos.",
+    "duplicateDecisionRepeated": "Una fila del archivo solo puede tener una decisión sobre su posible duplicado.",
+    "duplicateActionNotAllowed": "Una transacción conciliada no se puede fusionar ni reemplazar, y una transferencia o una transacción con desglose no se puede reemplazar. No se importó nada."
   },
   "monteCarlo": {
     "scenarioNotFound": "Escenario {{ id }} no encontrado",
@@ -1020,7 +1023,11 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge requiere una suscripción activa. Revise la facturación en SimpleFIN Bridge.",
     "simplefinReadFailed": "SimpleFIN no pudo proporcionar datos completos de las cuentas. Revisa la conexión en SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "Se agotó la cuota de solicitudes de SimpleFIN. Espera a que se reponga y vuelve a intentar el lote actual.",
-    "simplefinClaimNotSent": "SimpleFIN no está disponible temporalmente. No se envió el token de configuración; vuelve a intentarlo más tarde con el mismo token."
+    "simplefinClaimNotSent": "SimpleFIN no está disponible temporalmente. No se envió el token de configuración; vuelve a intentarlo más tarde con el mismo token.",
+    "selectionConflict": "Una transacción solo puede tener una decisión: importarla, añadirla a las excepciones, fusionarla, conservar la tuya o reemplazar la tuya.",
+    "duplicateNeedsPreview": "Una decisión sobre un posible duplicado necesita la vista previa que lo mostró. No se importó nada; vuelve a generar la vista previa.",
+    "selectionNotDuplicate": "Una transacción elegida para fusionar, conservar o reemplazar ya no es un posible duplicado. No se importó nada; vuelve a generar la vista previa.",
+    "duplicateActionNotAllowed": "Una transacción conciliada no se puede fusionar ni reemplazar, y una transferencia o una transacción con desglose no se puede reemplazar. No se importó nada; consérvala o importa la fila del banco junto a ella."
   },
   "warranties": {
     "notFound": "Garantía con ID {{ id }} no encontrada",

@@ -1,4 +1,4 @@
-import { ImportSkippedRow, ParsedQifResponse } from '@/lib/import';
+import { ImportDuplicateRow, ImportSkippedRow, ParsedQifResponse } from '@/lib/import';
 export { formatAccountType, isInvestmentBrokerageAccount } from '@/lib/account-utils';
 
 /**
@@ -8,7 +8,7 @@ export { formatAccountType, isInvestmentBrokerageAccount } from '@/lib/account-u
  * transfer links.
  */
 export type ImportFileType = 'qif' | 'ofx' | 'csv' | 'mny';
-export type ImportStep = 'upload' | 'csvColumnMapping' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'multiAccountReview' | 'mnyReview' | 'mnyImporting' | 'complete';
+export type ImportStep = 'upload' | 'csvColumnMapping' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'duplicates' | 'multiAccountReview' | 'mnyReview' | 'mnyImporting' | 'complete';
 export type MatchConfidence = 'exact' | 'partial' | 'type' | 'none';
 
 export interface ImportFileData {
@@ -18,6 +18,20 @@ export interface ImportFileData {
   parsedData: ParsedQifResponse;
   selectedAccountId: string;
   matchConfidence: MatchConfidence;
+}
+
+/**
+ * The possible duplicates of the files about to be imported, per file
+ * (docs/specs/import-duplicate-review.md section 5): what the duplicates step
+ * lists before the import runs. Only files with at least one pair are here.
+ */
+export interface ImportDuplicateReviewFile {
+  /** The file's index in `importFiles`. */
+  fileIndex: number;
+  fileName: string;
+  accountName: string;
+  currencyCode: string;
+  rows: ImportDuplicateRow[];
 }
 
 export interface BulkImportResult {

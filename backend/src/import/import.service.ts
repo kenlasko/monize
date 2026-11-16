@@ -54,6 +54,8 @@ import {
   UpdateColumnMappingDto,
   CsvHeadersResponseDto,
   ColumnMappingResponseDto,
+  ImportDuplicateDecisionDto,
+  ImportDuplicatesResponseDto,
   SKIPPED_ROWS_LIMIT,
 } from "./dto/import.dto";
 import {
@@ -89,6 +91,17 @@ import { TransactionRulesApplierService } from "../transaction-rules/transaction
 import { insertCategoryIfAbsent } from "./insert-category-if-absent";
 import { splitCategoryPath } from "./category-path.util";
 import { assertAccountCurrencyKindIn } from "../accounts/account-currency-kind.util";
+import { TransactionsService } from "../transactions/transactions.service";
+import {
+  fileDuplicateRows,
+  ImportDuplicateDecisionRefusedException,
+  ImportDuplicatesChangedException,
+  loanCategoryNames,
+  mergeFileRow,
+  pairFileRows,
+  planFileDuplicates,
+  type FileDuplicatePlan,
+} from "./import-duplicates";
 
 @Injectable()
 export class ImportService {
@@ -103,6 +116,8 @@ export class ImportService {
     private rulesApplier: TransactionRulesApplierService,
     @Inject(forwardRef(() => HoldingsService))
     private holdingsService: HoldingsService,
+    @Inject(forwardRef(() => TransactionsService))
+    private transactionsService: TransactionsService,
   ) {}
 
   /**
@@ -179,22 +194,37 @@ export class ImportService {
     userId: string,
     dto: ImportQifDto,
   ): Promise<ImportResultDto> {
-    const validation = validateQifContent(dto.content);
-    if (!validation.valid) {
-      throw new BadRequestException(validation.error);
-    }
-
-    const result = parseQif(dto.content, dto.dateFormat as DateFormat);
-
     return this.importParsedTransactions(
       userId,
-      result,
+      this.parseQifForImport(dto),
       dto.accountId,
       dto.categoryMappings,
       dto.accountMappings,
       dto.securityMappings,
       dto.dateFormat as DateFormat,
+      dto.duplicateDecisions,
     );
+  }
+
+  /** The possible duplicates an import of this QIF file would find; writes nothing. */
+  async findQifDuplicates(
+    userId: string,
+    dto: ImportQifDto,
+  ): Promise<ImportDuplicatesResponseDto> {
+    return this.findFileDuplicates(
+      userId,
+      this.parseQifForImport(dto),
+      dto.accountId,
+      dto.categoryMappings,
+    );
+  }
+
+  private parseQifForImport(dto: ImportQifDto): QifParseResult {
+    const validation = validateQifContent(dto.content);
+    if (!validation.valid) {
+      throw new BadRequestException(validation.error);
+    }
+    return parseQif(dto.content, dto.dateFormat as DateFormat);
   }
 
   // --- Multi-account QIF ---
@@ -962,22 +992,39 @@ export class ImportService {
     userId: string,
     dto: ImportOfxDto,
   ): Promise<ImportResultDto> {
-    const validation = validateOfxContent(dto.content);
-    if (!validation.valid) {
-      throw new BadRequestException(validation.error);
-    }
-
     // The figures are read at the storage scale; the processor refuses any
     // that carry more places than the destination account's currency does.
     return this.importParsedTransactions(
       userId,
-      parseOfx(dto.content),
+      this.parseOfxForImport(dto),
       dto.accountId,
       dto.categoryMappings,
       dto.accountMappings,
       [],
       dto.dateFormat as DateFormat,
+      dto.duplicateDecisions,
     );
+  }
+
+  /** The possible duplicates an import of this OFX file would find; writes nothing. */
+  async findOfxDuplicates(
+    userId: string,
+    dto: ImportOfxDto,
+  ): Promise<ImportDuplicatesResponseDto> {
+    return this.findFileDuplicates(
+      userId,
+      this.parseOfxForImport(dto),
+      dto.accountId,
+      dto.categoryMappings,
+    );
+  }
+
+  private parseOfxForImport(dto: ImportOfxDto): QifParseResult {
+    const validation = validateOfxContent(dto.content);
+    if (!validation.valid) {
+      throw new BadRequestException(validation.error);
+    }
+    return parseOfx(dto.content);
   }
 
   // --- CSV ---
@@ -1014,6 +1061,32 @@ export class ImportService {
     userId: string,
     dto: ImportCsvDto,
   ): Promise<ImportResultDto> {
+    return this.importParsedTransactions(
+      userId,
+      this.parseCsvForImport(dto),
+      dto.accountId,
+      dto.categoryMappings,
+      dto.accountMappings,
+      dto.securityMappings || [],
+      dto.dateFormat as DateFormat,
+      dto.duplicateDecisions,
+    );
+  }
+
+  /** The possible duplicates an import of this CSV file would find; writes nothing. */
+  async findCsvDuplicates(
+    userId: string,
+    dto: ImportCsvDto,
+  ): Promise<ImportDuplicatesResponseDto> {
+    return this.findFileDuplicates(
+      userId,
+      this.parseCsvForImport(dto),
+      dto.accountId,
+      dto.categoryMappings,
+    );
+  }
+
+  private parseCsvForImport(dto: ImportCsvDto): QifParseResult {
     const validation = validateCsvContent(dto.content);
     if (!validation.valid) {
       throw new BadRequestException(validation.error);
@@ -1058,17 +1131,60 @@ export class ImportService {
       }),
     );
 
-    const result = parseCsv(dto.content, csvConfig, transferRules);
+    return parseCsv(dto.content, csvConfig, transferRules);
+  }
 
-    return this.importParsedTransactions(
-      userId,
-      result,
-      dto.accountId,
-      dto.categoryMappings,
-      dto.accountMappings,
-      dto.securityMappings || [],
-      dto.dateFormat as DateFormat,
-    );
+  /**
+   * The possible duplicates of a parsed file in its destination account
+   * (docs/specs/import-duplicate-review.md section 5), paired by the functions
+   * the import uses inside its transaction. Read-only. An investment file, or a
+   * brokerage account, has none: its rows are not compared.
+   */
+  private async findFileDuplicates(
+    userId: string,
+    result: QifParseResult,
+    accountId: string,
+    categoryMappings: CategoryMappingDto[],
+  ): Promise<ImportDuplicatesResponseDto> {
+    return withScopedDb(this.dataSource, async (manager) => {
+      const account = await manager.getRepository(Account).findOne({
+        where: { id: accountId, userId },
+      });
+      if (!account) {
+        throw new NotFoundException(
+          tr("errors.import.accountNotFound", "Account not found"),
+        );
+      }
+      const answer: ImportDuplicatesResponseDto = {
+        accountId,
+        currencyCode: account.currencyCode,
+        rows: [],
+      };
+      if (
+        result.accountType === "INVESTMENT" ||
+        account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE
+      ) {
+        return answer;
+      }
+      const decimals = await loadMoneyDecimals(manager, account.currencyCode);
+      const held = await loadHeldExternalIds(
+        manager,
+        accountId,
+        result.transactions,
+      );
+      const pairs = await pairFileRows(
+        manager,
+        userId,
+        accountId,
+        result.transactions,
+        held,
+        loanCategoryNames(categoryMappings),
+      );
+      return {
+        ...answer,
+        rows: fileDuplicateRows(result.transactions, pairs, decimals),
+      };
+    });
   }
 
   // --- Column Mapping CRUD ---
@@ -1271,6 +1387,7 @@ export class ImportService {
     accountMappings: AccountMappingDto[],
     securityMappings?: SecurityMappingDto[],
     _dateFormat?: DateFormat,
+    duplicateDecisions: readonly ImportDuplicateDecisionDto[] = [],
   ): Promise<ImportResultDto> {
     // The account currency's money precision is read with the account; the
     // processors refuse a file amount that carries more places than it.
@@ -1345,6 +1462,12 @@ export class ImportService {
     affectedAccountIds.add(accountId);
     const settledScheduleIds = new Set<string>();
     const importStartTime = new Date();
+    // What a "delete mine and import" deletion moved, dispatched after the
+    // commit rather than inside the import's transaction.
+    const deferredRecompute = {
+      accountIds: new Set<string>(),
+      securityIds: new Set<string>(),
+    };
 
     const importResult: ImportResultDto = {
       imported: 0,
@@ -1441,6 +1564,22 @@ export class ImportService {
             : await this.rulesApplier.loadRulesFor(manager, userId, "import"),
         };
 
+        // The possible duplicates and what the person decided about them
+        // (docs/specs/import-duplicate-review.md section 5), before the first
+        // write: a decision about a pair that is not the one checked refuses
+        // the whole import here. An investment file's rows are not compared.
+        const duplicatePlans = isInvestment
+          ? new Map<number, FileDuplicatePlan>()
+          : await planFileDuplicates(
+              manager,
+              userId,
+              accountId,
+              result.transactions,
+              ctx.heldExternalIds,
+              duplicateDecisions,
+              loanCategoryNames(categoryMappings),
+            );
+
         // Create new entities
         await this.entityCreator.createCategories(
           manager,
@@ -1505,11 +1644,35 @@ export class ImportService {
             const savepointName = `tx_import_${txIndex}`;
             await manager.query(`SAVEPOINT ${savepointName}`);
             const counters = snapshotRowCounters(importResult);
+            // `txIndex` is 1-based; the decisions name 0-based positions.
+            const duplicate = duplicatePlans.get(txIndex - 1);
+            // A replace frees the deleted row's bank id in the map; a rolled
+            // back row puts the delete back, so it puts the id back too.
+            const replacedKey =
+              duplicate?.action === "replace"
+                ? duplicate.existing.externalId
+                : null;
+            const replacedHolder =
+              replacedKey === null
+                ? undefined
+                : ctx.heldExternalIds.get(replacedKey);
             try {
               if (isInvestment) {
                 await this.investmentProcessor.processTransaction(ctx, qifTx);
-              } else {
+              } else if (
+                duplicate === undefined ||
+                (await this.applyDuplicatePlan(
+                  ctx,
+                  duplicate,
+                  qifTx,
+                  deferredRecompute,
+                ))
+              ) {
                 await this.regularProcessor.processTransaction(ctx, qifTx);
+                if (duplicate?.action === "replace") {
+                  importResult.duplicatesReplaced =
+                    (importResult.duplicatesReplaced ?? 0) + 1;
+                }
               }
               await manager.query(`RELEASE SAVEPOINT ${savepointName}`);
             } catch (error) {
@@ -1517,6 +1680,9 @@ export class ImportService {
               // The payee the row created and the rule change it counted were
               // rolled back with it, so their counters go back too.
               restoreRowCounters(importResult, counters);
+              if (replacedKey !== null && replacedHolder !== undefined) {
+                ctx.heldExternalIds.set(replacedKey, replacedHolder);
+              }
               if (isExternalIdConflict(error)) {
                 // Another writer committed a row holding this row's bank id
                 // after the processor's lookup missed it; the unique index
@@ -1554,6 +1720,13 @@ export class ImportService {
         await this.rebuildImportedHoldings(manager, userId, affectedAccountIds);
       });
     } catch (error) {
+      // A refused set of duplicate decisions wrote nothing: it is the answer.
+      if (
+        error instanceof ImportDuplicatesChangedException ||
+        error instanceof ImportDuplicateDecisionRefusedException
+      ) {
+        throw error;
+      }
       this.logger.error(
         `Import failed after ${importResult.imported} transactions`,
         error.stack,
@@ -1565,6 +1738,18 @@ export class ImportService {
           { imported: importResult.imported, message: error.message },
         ),
       );
+    }
+
+    // A replaced transaction's deletion moved these; their balances and net
+    // worth are recomputed with the rest, and its securities' bond prices here.
+    for (const affected of deferredRecompute.accountIds) {
+      affectedAccountIds.add(affected);
+    }
+    if (deferredRecompute.securityIds.size > 0) {
+      await this.transactionsService.dispatchDeferredRecompute(userId, {
+        accountIds: new Set(),
+        securityIds: deferredRecompute.securityIds,
+      });
     }
 
     // Post-import processing
@@ -1580,6 +1765,59 @@ export class ImportService {
       await this.findLoanAccountsNeedingSetup(userId, affectedAccountIds);
 
     return importResult;
+  }
+
+  /**
+   * What a paired row does (docs/specs/import-duplicate-review.md section 3),
+   * inside the row's savepoint. True when the row is then written as new:
+   * "import" and "replace" (after the existing transaction is deleted through
+   * the one delete path); false when the row is done: merged into the
+   * existing transaction, or kept (decided, or nobody decided) and listed
+   * among the skipped rows.
+   */
+  private async applyDuplicatePlan(
+    ctx: ImportContext,
+    plan: FileDuplicatePlan,
+    qifTx: QifParseResult["transactions"][number],
+    deferredRecompute: { accountIds: Set<string>; securityIds: Set<string> },
+  ): Promise<boolean> {
+    switch (plan.action) {
+      case "import":
+        return true;
+      case "replace":
+        // An import records no history entry per row, so neither does the
+        // delete; what it moved is dispatched after the commit.
+        await this.transactionsService.remove(ctx.userId, plan.existing.id, {
+          recordHistory: false,
+          deferDerivedRecompute: deferredRecompute,
+        });
+        // The deleted row no longer holds its bank id, so the row replacing
+        // it may take that id (the processor looks it up here).
+        if (plan.existing.externalId !== null) {
+          ctx.heldExternalIds.delete(plan.existing.externalId);
+        }
+        return true;
+      case "merge":
+        await mergeFileRow(
+          ctx.manager,
+          ctx.userId,
+          plan.existing,
+          qifTx,
+          ctx.heldExternalIds,
+        );
+        ctx.importResult.duplicatesMerged =
+          (ctx.importResult.duplicatesMerged ?? 0) + 1;
+        return false;
+      case "keep":
+      case null:
+        recordSkippedRow(
+          ctx.importResult,
+          qifTx,
+          plan.action === "keep" ? "keptExisting" : "possibleDuplicate",
+          ctx.account.currencyCode,
+        );
+        return false;
+    }
   }
 
   private buildCategoryMappings(mappings: CategoryMappingDto[]): {

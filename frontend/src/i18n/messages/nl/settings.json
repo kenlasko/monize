@@ -1737,7 +1737,8 @@
       "createdLinked": "Rekening gemaakt en gekoppeld",
       "createdLinkFailed": "De rekening is gemaakt, maar kon niet worden gekoppeld",
       "preview": "Voorbeeld",
-      "firstSyncPreview": "De eerste import wordt bevestigd aan de hand van een voorbeeld van de transacties."
+      "firstSyncPreview": "De eerste import wordt bevestigd aan de hand van een voorbeeld van de transacties.",
+      "heldDuplicates": "{count, plural, one {# mogelijk duplicaat wacht in het voorbeeld op je beslissing.} other {# mogelijke duplicaten wachten in het voorbeeld op je beslissing.}}"
     },
     "link": {
       "title": "Koppelen aan {account}",
@@ -1775,7 +1776,9 @@
         "missing_identity": "Banktransactie-ID ontbreekt: {count, number}"
       },
       "needsPreview": "Open het voorbeeld voor {accounts} en bevestig de eerste import",
-      "withNeedsPreview": "{message}. {needsPreview}"
+      "withNeedsPreview": "{message}. {needsPreview}",
+      "heldDuplicates": "{count, plural, one {# mogelijk duplicaat wacht in het voorbeeld op je beslissing} other {# mogelijke duplicaten wachten in het voorbeeld op je beslissing}}",
+      "withHeldDuplicates": "{message}. {held}"
     },
     "callback": {
       "title": "Je bank koppelen",
@@ -1829,7 +1832,8 @@
         "pending": "In behandeling",
         "before_cutoff": "Vóór de begindatum",
         "withCount": "{label} ({count})",
-        "excluded": "Uitzonderingen"
+        "excluded": "Uitzonderingen",
+        "possible_duplicate": "Mogelijke duplicaten"
       },
       "outcome": {
         "new": "Nieuw",
@@ -1837,7 +1841,8 @@
         "refused": "Geweigerd",
         "pending": "In behandeling",
         "before_cutoff": "Vóór de begindatum",
-        "excluded": "Uitzondering"
+        "excluded": "Uitzondering",
+        "possible_duplicate": "Mogelijk duplicaat"
       },
       "refusal": {
         "missing_date": "Geen datum",
@@ -1885,7 +1890,12 @@
         }
       },
       "historyBatch": "Geschiedenisbatch: {from} tot {to}.",
-      "historyBatchRemaining": "Geschiedenisbatch: {from} tot {to}. Er is meer geschiedenis. Open na deze import het voorbeeld van de volgende batch."
+      "historyBatchRemaining": "Geschiedenisbatch: {from} tot {to}. Er is meer geschiedenis. Open na deze import het voorbeeld van de volgende batch.",
+      "applyDecisions": "Beslissingen toepassen",
+      "duplicates": {
+        "intro": "Deze transacties lijken op transacties die al in de rekening staan. Er wordt niets voor vastgelegd totdat je voor elke transactie beslist wat ermee gebeurt.",
+        "summary": "Mogelijke duplicaten: {later} voor later, {merge} samengevoegd, {keep} behouden, {replace} vervangen, {import} geïmporteerd, {except} toegevoegd aan uitzonderingen"
+      }
     },
     "simplefin": {
       "provider": "Gegevensprovider",

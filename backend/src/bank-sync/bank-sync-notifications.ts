@@ -294,6 +294,42 @@ export function buildSyncImportedNotification(
   };
 }
 
+/** What the daily sync of one connection held back for the person to decide. */
+export interface BankSyncDuplicatesHeldFacts extends BankConnectionFacts {
+  /** Possible duplicates held, over every account of the connection. */
+  held: number;
+  /** How many bank accounts held at least one. */
+  accounts: number;
+}
+
+/**
+ * The notice that the daily sync held possible duplicates back
+ * (docs/specs/import-duplicate-review.md section 4). It asks for a decision, so
+ * it is in the `BANK_SYNC` category and written whatever the success mode; it
+ * opens bank sync settings, where the account's preview is.
+ */
+export function buildDuplicatesHeldNotification(
+  facts: BankSyncDuplicatesHeldFacts,
+  day: string,
+): CreateNotificationInput {
+  const { institutionName, held } = facts;
+  return {
+    type: NotificationType.BANK_SYNC_DUPLICATES_HELD,
+    severity: NotificationSeverity.WARNING,
+    title: `${institutionName}: possible duplicates to review`,
+    message: `The daily sync of ${institutionName} held back transactions that look like ones already in your accounts: ${held}. Open bank sync settings to decide what to do with them.`,
+    data: {
+      connectionId: facts.connectionId,
+      institutionName,
+      held,
+      accounts: facts.accounts,
+    },
+    target: "/settings/bank-sync",
+    periodStart: day,
+    dedupeKey: `bsc:dup:${facts.connectionId}:${day}`,
+  };
+}
+
 /**
  * One bank account the daily sync could not read. `label` is the bank's name
  * for the account, else its masked identifier, never a full number; null when

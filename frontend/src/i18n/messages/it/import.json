@@ -30,7 +30,8 @@
     "importFailed": "Importazione non riuscita",
     "importedFromFiles": "Importate correttamente {imported} transazioni da {files} file",
     "imported": "Importate correttamente {imported} transazioni",
-    "mnySingleFileOnly": "Importa un file di Microsoft Money alla volta: un file .mny contiene un profilo intero."
+    "mnySingleFileOnly": "Importa un file di Microsoft Money alla volta: un file .mny contiene un profilo intero.",
+    "duplicateCheckFailed": "Impossibile controllare i possibili duplicati nel file. Non è stato importato nulla; riprova."
   },
   "page": {
     "title": "Importa transazioni",
@@ -342,7 +343,10 @@
     "viewInvestments": "Visualizza investimenti",
     "viewTransactions": "Visualizza transazioni",
     "importMoreFiles": "Importa altri file",
-    "bondRowsWithoutSeries": "{count, plural, one {# acquisto di obbligazioni è stato importato senza serie. Scegli la serie nei lotti obbligazionari del titolo.} other {# acquisti di obbligazioni sono stati importati senza serie. Scegli le serie nei lotti obbligazionari del titolo.}}"
+    "bondRowsWithoutSeries": "{count, plural, one {# acquisto di obbligazioni è stato importato senza serie. Scegli la serie nei lotti obbligazionari del titolo.} other {# acquisti di obbligazioni sono stati importati senza serie. Scegli le serie nei lotti obbligazionari del titolo.}}",
+    "skipReasonKeptExisting": "È stata mantenuta invece la tua transazione esistente",
+    "skipReasonPossibleDuplicate": "Sembra una transazione già presente nel conto",
+    "duplicatesDecided": "Possibili duplicati: {merged, plural, one {# unito alla tua transazione esistente} many {# uniti alle tue transazioni esistenti} other {# uniti alle tue transazioni esistenti}}, {replaced, plural, one {# importato al posto di quella che avevi} many {# importati al posto di quelle che avevi} other {# importati al posto di quelle che avevi}}."
   },
   "multiAccountReview": {
     "heading": "Importazione QIF multi-conto",
@@ -668,6 +672,52 @@
       "none": "La banca non ha indicato una controparte, quindi la transazione non ha un beneficiario.",
       "openAliases": "Apri gli alias del beneficiario",
       "openAliasesNewTab": "Apri gli alias del beneficiario in una nuova scheda"
+    },
+    "duplicate": {
+      "looksLike": "Sembra questa transazione già presente nel conto",
+      "date": "Data",
+      "amount": "Importo",
+      "payee": "Beneficiario",
+      "category": "Categoria",
+      "status": "Stato",
+      "reference": "Riferimento",
+      "description": "Memo",
+      "amountUnknown": "Sconosciuto",
+      "transfer": "Trasferimento",
+      "transferWith": "Trasferimento con {account}",
+      "split": "Suddivisione",
+      "statuses": {
+        "UNRECONCILED": "Non riconciliata",
+        "CLEARED": "Compensata",
+        "RECONCILED": "Riconciliata",
+        "VOID": "Annullata"
+      },
+      "legend": "Cosa fare con {payee}",
+      "choice": {
+        "later": "Decidi dopo",
+        "keep": "Mantieni la mia",
+        "merge": "Unisci",
+        "replace": "Elimina la mia e importa",
+        "import": "Importa comunque",
+        "except": "Aggiungi alle eccezioni"
+      },
+      "choiceHelp": {
+        "later": "Non viene salvato nulla; verrà mostrata di nuovo la prossima volta.",
+        "keep": "La tua transazione resta com'è, e questa non viene importata.",
+        "merge": "La tua transazione mantiene beneficiario, categoria e memo, e prende da questa la data, il riferimento e lo stato Compensata.",
+        "replace": "La tua transazione viene eliminata e questa viene importata al suo posto.",
+        "import": "Vengono mantenute entrambe.",
+        "except": "Mai importata, finché non la rimuovi dalle eccezioni."
+      }
     }
+  },
+  "duplicates": {
+    "heading": "{count, plural, one {# possibile duplicato} many {# di possibili duplicati} other {# possibili duplicati}}",
+    "intro": "Queste righe del file sembrano transazioni già presenti nel conto. Ognuna resta com'è a meno che tu non scelga diversamente; non viene importato nulla finché non premi Importa.",
+    "fileHeading": "{file} in {account}",
+    "fromFile": "Nel file il {date}:",
+    "noPayee": "Nessun beneficiario",
+    "back": "Indietro",
+    "import": "Importa"
   }
 }

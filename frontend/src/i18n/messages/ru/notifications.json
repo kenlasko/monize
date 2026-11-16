@@ -190,7 +190,9 @@
     "importedTitle": "{institution}: импортированы новые проводки",
     "importedMessage": "Проводки, импортированные из {institution} ежедневной синхронизацией: {imported}.",
     "importedNoneTitle": "{institution}: новых проводок нет",
-    "importedNoneMessage": "Ежедневная синхронизация {institution} не нашла новых проводок."
+    "importedNoneMessage": "Ежедневная синхронизация {institution} не нашла новых проводок.",
+    "duplicatesHeldTitle": "{institution}: возможные дубликаты для проверки",
+    "duplicatesHeldMessage": "Ежедневная синхронизация {institution} задержала проводки, похожие на уже имеющиеся на ваших счетах: {held}. Откройте настройки банковской синхронизации, чтобы решить, что с ними делать."
   },
   "emailReceiptsAttention": {
     "title": "Письма-квитанции требуют внимания",

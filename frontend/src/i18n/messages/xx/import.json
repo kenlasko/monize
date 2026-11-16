@@ -30,7 +30,8 @@
     "importFailed": "[XX-Import failed-XX]",
     "importedFromFiles": "[XX-Successfully imported {imported} transactions from {files} files-XX]",
     "imported": "[XX-Successfully imported {imported} transactions-XX]",
-    "mnySingleFileOnly": "[XX-Import one Microsoft Money file at a time -- a .mny file holds a whole profile.-XX]"
+    "mnySingleFileOnly": "[XX-Import one Microsoft Money file at a time -- a .mny file holds a whole profile.-XX]",
+    "duplicateCheckFailed": "[XX-Could not check the file for possible duplicates. Nothing was imported; try again.-XX]"
   },
   "page": {
     "title": "[XX-Import Transactions-XX]",
@@ -342,7 +343,10 @@
     "viewInvestments": "[XX-View Investments-XX]",
     "viewTransactions": "[XX-View Transactions-XX]",
     "importMoreFiles": "[XX-Import More Files-XX]",
-    "bondRowsWithoutSeries": "[XX-{count, plural, one {# bond purchase was imported without a series. Choose its series in the security's bond lots.} other {# bond purchases were imported without a series. Choose their series in the security's bond lots.}}-XX]"
+    "bondRowsWithoutSeries": "[XX-{count, plural, one {# bond purchase was imported without a series. Choose its series in the security's bond lots.} other {# bond purchases were imported without a series. Choose their series in the security's bond lots.}}-XX]",
+    "skipReasonKeptExisting": "[XX-Kept your existing transaction instead-XX]",
+    "skipReasonPossibleDuplicate": "[XX-Looks like a transaction already in the account-XX]",
+    "duplicatesDecided": "[XX-Possible duplicates: {merged, plural, one {# merged into your existing transaction} other {# merged into your existing transactions}}, {replaced, plural, one {# imported in place of the one you had} other {# imported in place of the ones you had}}.-XX]"
   },
   "multiAccountReview": {
     "heading": "[XX-Multi-Account QIF Import-XX]",
@@ -668,6 +672,52 @@
       "none": "[XX-The bank gave no counterparty, so the transaction has no payee.-XX]",
       "openAliases": "[XX-Open the payee's aliases-XX]",
       "openAliasesNewTab": "[XX-Open the payee's aliases in a new tab-XX]"
+    },
+    "duplicate": {
+      "looksLike": "[XX-Looks like this transaction already in the account-XX]",
+      "date": "[XX-Date-XX]",
+      "amount": "[XX-Amount-XX]",
+      "payee": "[XX-Payee-XX]",
+      "category": "[XX-Category-XX]",
+      "status": "[XX-Status-XX]",
+      "reference": "[XX-Reference-XX]",
+      "description": "[XX-Memo-XX]",
+      "amountUnknown": "[XX-Unknown-XX]",
+      "transfer": "[XX-Transfer-XX]",
+      "transferWith": "[XX-Transfer with {account}-XX]",
+      "split": "[XX-Split-XX]",
+      "statuses": {
+        "UNRECONCILED": "[XX-Unreconciled-XX]",
+        "CLEARED": "[XX-Cleared-XX]",
+        "RECONCILED": "[XX-Reconciled-XX]",
+        "VOID": "[XX-Void-XX]"
+      },
+      "legend": "[XX-What to do with {payee}-XX]",
+      "choice": {
+        "later": "[XX-Decide later-XX]",
+        "keep": "[XX-Keep mine-XX]",
+        "merge": "[XX-Merge-XX]",
+        "replace": "[XX-Delete mine and import-XX]",
+        "import": "[XX-Import anyway-XX]",
+        "except": "[XX-Add to exceptions-XX]"
+      },
+      "choiceHelp": {
+        "later": "[XX-Nothing is written; it is shown again next time.-XX]",
+        "keep": "[XX-Your transaction stays as it is, and this one is not imported.-XX]",
+        "merge": "[XX-Your transaction keeps its payee, category and memo, and takes this one's date, reference and Cleared status.-XX]",
+        "replace": "[XX-Your transaction is deleted and this one is imported in its place.-XX]",
+        "import": "[XX-Both are kept.-XX]",
+        "except": "[XX-Never imported, until you take it out of the exceptions.-XX]"
+      }
     }
+  },
+  "duplicates": {
+    "heading": "[XX-{count, plural, one {# possible duplicate} other {# possible duplicates}}-XX]",
+    "intro": "[XX-These rows of the file look like transactions already in the account. Each one is kept as it is unless you choose otherwise; nothing is imported until you press Import.-XX]",
+    "fileHeading": "[XX-{file} into {account}-XX]",
+    "fromFile": "[XX-In the file on {date}:-XX]",
+    "noPayee": "[XX-No payee-XX]",
+    "back": "[XX-Back-XX]",
+    "import": "[XX-Import-XX]"
   }
 }

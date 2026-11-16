@@ -95,6 +95,9 @@ export function newPlannedRows(
   return planned.filter((row) => !held.has(row.externalKey));
 }
 
+const byFirst = ([a]: [string, string], [b]: [string, string]) =>
+  a < b ? -1 : a > b ? 1 : 0;
+
 /**
  * The fingerprint of what an import would write (spec section 7a): the SHA-256
  * of the new rows' keys and amounts, in key order. The amount is read at the
@@ -102,18 +105,38 @@ export function newPlannedRows(
  * returns it and a sync that carries it recomputes it under the row lock, so a
  * provider answer that changed between the two is refused before anything is
  * written.
+ *
+ * `duplicates` are the possible duplicates among the new rows, by key, with
+ * the existing transaction each pairs with
+ * (docs/specs/import-duplicate-review.md section 4): they are fingerprinted as
+ * `[key, transaction id]` in key order, so a decision about a pair is refused
+ * once the pair is not the one shown. With none, the fingerprint is what it
+ * was before possible duplicates existed.
  */
 export function planFingerprint(
   newRows: readonly Pick<PlannedBankRow, "externalKey" | "amount">[],
   review?: unknown,
+  duplicates?: ReadonlyMap<string, { id: string }>,
 ): string {
   const pairs = newRows
     .map((row): [string, string] => [
       row.externalKey,
       row.amount.toFixed(BANK_SYNC_MONEY_DECIMALS),
     ])
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-  return createHash("sha256")
-    .update(JSON.stringify(review === undefined ? pairs : { pairs, review }))
-    .digest("hex");
+    .sort(byFirst);
+  const matched =
+    duplicates === undefined || duplicates.size === 0
+      ? null
+      : [...duplicates]
+          .map(([key, existing]): [string, string] => [key, existing.id])
+          .sort(byFirst);
+  const body =
+    matched === null
+      ? review === undefined
+        ? pairs
+        : { pairs, review }
+      : review === undefined
+        ? { pairs, duplicates: matched }
+        : { pairs, review, duplicates: matched };
+  return createHash("sha256").update(JSON.stringify(body)).digest("hex");
 }

@@ -12,6 +12,10 @@ import type {
   ImportPreviewRuleChanges,
   ImportPreviewRuleView,
 } from "../import-preview/import-preview.types";
+import type {
+  DuplicateAction,
+  DuplicateExistingView,
+} from "../import-preview/possible-duplicates";
 import type { RuleRowInput } from "../transaction-rules/transaction-rules-applier.service";
 import type { ProfileNoteView } from "./bank-sync-profiles";
 import type { RefusalReason } from "./bank-transaction-planner";
@@ -96,6 +100,12 @@ export interface BankSyncAccountView {
   lastImportedCount: number;
   lastSkippedCount: number;
   lastRefusedCount: number;
+  /**
+   * Possible duplicates the last write held back for the person to decide
+   * (docs/specs/import-duplicate-review.md section 4); above zero, the account
+   * needs its preview.
+   */
+  heldDuplicateCount: number;
   /** What the bank reported (decimal string); null means "not reported", never 0. */
   bankBalance: string | null;
   bankBalanceCurrency: string | null;
@@ -104,7 +114,8 @@ export interface BankSyncAccountView {
   /**
    * True while the bank account is linked and its link has no successful sync
    * yet: the first sync after a link, or after its account or cut-off date
-   * changed, is confirmed from the preview (spec section 7a).
+   * changed, is confirmed from the preview (spec section 7a). Also true while
+   * possible duplicates wait for the person's decision (`heldDuplicateCount`).
    */
   needsPreview: boolean;
 }
@@ -143,6 +154,16 @@ export interface BankSyncResult {
   skipped: number;
   /** Rows this sync added to the exceptions (spec section 7b); zero without a selection. */
   excluded: number;
+  /**
+   * Possible duplicates (docs/specs/import-duplicate-review.md section 4):
+   * merged into the existing transaction, kept as it was (the bank row linked
+   * to it), or imported after the existing one was deleted.
+   */
+  merged: number;
+  kept: number;
+  replaced: number;
+  /** Possible duplicates held back because nobody decided about them. */
+  heldDuplicates: number;
   refused: Record<RefusalReason, number>;
   /** Rows the bank has not booked yet; counted, not an error. */
   pending: number;
@@ -208,6 +229,11 @@ export interface BankSyncLinkDefaultsView {
 
 export type BankSyncPreviewOutcome =
   | "new"
+  /**
+   * A new row that looks like a transaction already in the account
+   * (docs/specs/import-duplicate-review.md): written only by a decision.
+   */
+  | "possible_duplicate"
   | "duplicate"
   /** An exception: the person added it to the exceptions; no sync imports it. */
   | "excluded"
@@ -230,7 +256,8 @@ export type BankSyncPreviewLabels = ImportPreviewLabels;
 export interface BankSyncPreviewRowView {
   outcome: BankSyncPreviewOutcome;
   /**
-   * The duplicate key of a planned row (a `new`, `duplicate` or `excluded` one),
+   * The duplicate key of a planned row (a `new`, `possible_duplicate`,
+   * `duplicate` or `excluded` one),
    * which is what a selection names; null for a row that was not planned.
    */
   externalKey: string | null;
@@ -243,7 +270,10 @@ export interface BankSyncPreviewRowView {
   payeeText: string | null;
   description: string | null;
   referenceNumber: string | null;
-  /** What the payee lookup and the import rules would give; only for a `new` row. */
+  /**
+   * What the payee lookup and the import rules would give; only for a `new` or
+   * `possible_duplicate` row.
+   */
   payeeName: string | null;
   categoryName: string | null;
   tagNames: string[];
@@ -265,6 +295,10 @@ export interface BankSyncPreviewRowView {
    * did or did not apply.
    */
   ruleInput: RuleRowInput | null;
+  /** The transaction a `possible_duplicate` row looks like; null otherwise. */
+  existingTransaction: DuplicateExistingView | null;
+  /** What the person may decide about a `possible_duplicate` row; empty otherwise. */
+  duplicateActions: DuplicateAction[];
 }
 
 /** `POST /bank-sync/accounts/:id/preview`: nothing in it was written. */
@@ -278,6 +312,8 @@ export interface BankSyncPreviewView {
   labels: BankSyncPreviewLabels;
   summary: {
     new: number;
+    /** New rows that look like a transaction already in the account; not in `new`. */
+    possibleDuplicate: number;
     duplicate: number;
     /** Exceptions among the rows (spec section 7b). */
     excluded: number;
@@ -288,7 +324,10 @@ export interface BankSyncPreviewView {
   };
   /** The Monize account's current balance, a decimal string. */
   monizeBalance: string;
-  /** The balance after the new rows: the current balance plus their sum. */
+  /**
+   * The balance after the new rows: the current balance plus their sum. A
+   * possible duplicate is left out: nothing is written for it by default.
+   */
   balanceAfter: string;
   /** What the bank reported; null when it reported none. */
   bankBalance: {

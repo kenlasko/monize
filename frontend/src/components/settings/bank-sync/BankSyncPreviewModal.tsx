@@ -9,10 +9,17 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Modal } from '@/components/ui/Modal';
+import { useDuplicateChoices } from '@/hooks/useDuplicateChoices';
 import { useImportPreviewSelection } from '@/hooks/useImportPreviewSelection';
 import { bankSyncApi } from '@/lib/bank-sync';
 import { isUnknownSyncOutcome } from '@/lib/bank-sync-outcome';
-import { initialPreviewFilter, selectableKeys, type PreviewFilter } from '@/lib/bank-sync-preview';
+import {
+  duplicateRowsOf,
+  initialPreviewFilter,
+  selectableKeys,
+  type PreviewFilter,
+} from '@/lib/bank-sync-preview';
+import { bankDuplicateLists } from '@/lib/import-duplicates';
 import { getErrorMessage } from '@/lib/errors';
 import type { BankSyncPreview, BankSyncResult } from '@/types/bank-sync';
 import { BankSyncPreviewList } from './BankSyncPreviewList';
@@ -51,6 +58,11 @@ type Loaded =
  * fingerprint of the whole plan together with both lists of keys, and the
  * server refuses a key that is not a new row of that plan.
  *
+ * **A possible duplicate waits for a decision**
+ * (docs/specs/import-duplicate-review.md): it is left for later until the
+ * person picks what to do with it beside the transaction it looks like, and the
+ * fingerprint the import sends pins that transaction.
+ *
  * **A figure the bank did not give is unknown, not zero**: a missing bank
  * balance says so, and the difference is shown only when both balances are
  * known in one currency. An amount the bank sent unreadable reads "Unknown".
@@ -72,6 +84,8 @@ export function BankSyncPreviewModal({
   // The person's choices about the new rows, and the exceptions picked for removal.
   const selection = useImportPreviewSelection();
   const { prune } = selection;
+  const duplicates = useDuplicateChoices();
+  const { prune: pruneDuplicates } = duplicates;
   const [removeKeys, setRemoveKeys] = useState<ReadonlySet<string>>(new Set());
   // The read the modal is waiting for; an answer to an older one is dropped.
   const latestRequest = useRef(0);
@@ -89,13 +103,14 @@ export function BankSyncPreviewModal({
       // A choice about a row the bank still lists as new stands; one about a row
       // that is gone (or already imported) has nothing to apply to.
       prune(selectableKeys(preview.rows));
+      pruneDuplicates(duplicateRowsOf(preview.rows).map(({ key }) => key));
       setRemoveKeys(new Set());
       setLoaded({ state: 'ready', preview });
     } catch (error) {
       if (request !== latestRequest.current) return;
       setLoaded({ state: 'failed', error });
     }
-  }, [bankAccountId, prune]);
+  }, [bankAccountId, prune, pruneDuplicates]);
 
   const reload = useCallback(() => {
     setLoaded({ state: 'loading' });
@@ -111,16 +126,26 @@ export function BankSyncPreviewModal({
 
   const ready = loaded.state === 'ready' ? loaded.preview : null;
   const chosen = ready ? selection.selectionFor(selectableKeys(ready.rows)) : null;
+  const decided = ready ? bankDuplicateLists(duplicateRowsOf(ready.rows), duplicates.choices) : null;
   const newCount = ready?.summary.new ?? 0;
-  const importCount = chosen?.importKeys.length ?? 0;
+  const duplicateCount = ready?.summary.possibleDuplicate ?? 0;
+  // A replaced transaction's row is imported too.
+  const importCount =
+    (chosen?.importKeys.length ?? 0) +
+    (decided?.importKeys.length ?? 0) +
+    (decided?.replaceKeys.length ?? 0);
+  const linkCount = (decided?.mergeKeys.length ?? 0) + (decided?.keepKeys.length ?? 0);
 
   const handleImport = async () => {
-    if (!ready || !chosen) return;
+    if (!ready || !chosen || !decided) return;
     setImporting(true);
     try {
       const result = await bankSyncApi.syncAccount(bankAccountId, ready.planFingerprint, {
-        importKeys: chosen.importKeys,
-        excludeKeys: chosen.excludeKeys,
+        importKeys: [...chosen.importKeys, ...decided.importKeys],
+        excludeKeys: [...chosen.excludeKeys, ...decided.excludeKeys],
+        mergeKeys: decided.mergeKeys,
+        keepKeys: decided.keepKeys,
+        replaceKeys: decided.replaceKeys,
       });
       onImported(result);
     } catch (error) {
@@ -156,9 +181,11 @@ export function BankSyncPreviewModal({
   const busy = importing || removing;
   const importLabel = importing
     ? t('importing')
-    : newCount > 0 && importCount === 0
-      ? t('importNothing')
-      : t('import', { count: importCount });
+    : importCount === 0 && linkCount > 0
+      ? t('applyDecisions')
+      : (newCount > 0 || duplicateCount > 0) && importCount === 0
+        ? t('importNothing')
+        : t('import', { count: importCount });
 
   return (
     <Modal
@@ -173,17 +200,33 @@ export function BankSyncPreviewModal({
       pushHistory
       footer={
         <>
-          {chosen && newCount > 0 && (
-            <p
-              className="w-full text-sm text-gray-600 sm:mr-auto sm:w-auto dark:text-gray-300"
+          {chosen && decided && (newCount > 0 || duplicateCount > 0) && (
+            <div
+              className="w-full space-y-0.5 text-sm text-gray-600 sm:mr-auto sm:w-auto dark:text-gray-300"
               aria-live="polite"
             >
-              {t('summary', {
-                import: chosen.importKeys.length,
-                skip: chosen.skipCount,
-                except: chosen.excludeKeys.length,
-              })}
-            </p>
+              {newCount > 0 && (
+                <p>
+                  {t('summary', {
+                    import: chosen.importKeys.length,
+                    skip: chosen.skipCount,
+                    except: chosen.excludeKeys.length,
+                  })}
+                </p>
+              )}
+              {duplicateCount > 0 && (
+                <p>
+                  {t('duplicates.summary', {
+                    later: decided.laterCount,
+                    merge: decided.mergeKeys.length,
+                    keep: decided.keepKeys.length,
+                    replace: decided.replaceKeys.length,
+                    import: decided.importKeys.length,
+                    except: decided.excludeKeys.length,
+                  })}
+                </p>
+              )}
+            </div>
           )}
           <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
             {t('close')}
@@ -225,6 +268,7 @@ export function BankSyncPreviewModal({
             filter={filter}
             onFilterChange={setFilter}
             selection={selection}
+            duplicates={duplicates}
             removeKeys={removeKeys}
             onRemoveKeysChange={setRemoveKeys}
             onRemove={() => void handleRemove()}

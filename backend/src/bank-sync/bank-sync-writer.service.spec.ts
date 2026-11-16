@@ -15,6 +15,7 @@ import {
 import { Payee } from "../payees/entities/payee.entity";
 import { PayeesService } from "../payees/payees.service";
 import { TagsService } from "../tags/tags.service";
+import { TransactionsService } from "../transactions/transactions.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import type { RuleNetChanges } from "../transaction-rules/rule-effects";
 import {
@@ -114,6 +115,9 @@ describe("BankSyncWriterService", () => {
   const tagsService: jest.Mocked<Pick<TagsService, "addTransactionTags">> = {
     addTransactionTags: jest.fn(),
   };
+  const transactionsService: jest.Mocked<
+    Pick<TransactionsService, "remove" | "dispatchDeferredRecompute">
+  > = { remove: jest.fn(), dispatchDeferredRecompute: jest.fn() };
   /** Answers the catalogue key with `<language>:<English>`, so a translated label is seen. */
   const i18n = {
     translate: jest.fn(
@@ -212,6 +216,7 @@ describe("BankSyncWriterService", () => {
         { provide: PayeesService, useValue: payees },
         { provide: TagsService, useValue: tagsService },
         { provide: I18nService, useValue: i18n },
+        { provide: TransactionsService, useValue: transactionsService },
       ],
     }).compile();
     service = module.get(BankSyncWriterService);
@@ -248,6 +253,11 @@ describe("BankSyncWriterService", () => {
         imported: 1,
         skipped: 0,
         excluded: 0,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+        heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -317,6 +327,11 @@ describe("BankSyncWriterService", () => {
         imported: 1,
         skipped: 1,
         excluded: 0,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+        heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -376,6 +391,11 @@ describe("BankSyncWriterService", () => {
         imported: 0,
         skipped: 1,
         excluded: 0,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+        heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -578,6 +598,7 @@ describe("BankSyncWriterService", () => {
         true,
         null,
         false,
+        0,
       ]);
     });
 
@@ -1422,13 +1443,24 @@ describe("BankSyncWriterService", () => {
       const outcome = await service.write(
         input(rows(), {
           expectedFingerprint: planFingerprint(rows()),
-          selection: { importKeys: ["ref:3", "ref:1"], excludeKeys: [] },
+          selection: {
+            importKeys: ["ref:3", "ref:1"],
+            excludeKeys: [],
+            mergeKeys: [],
+            keepKeys: [],
+            replaceKeys: [],
+          },
         }),
       );
       expect(outcome).toEqual({
         imported: 2,
         skipped: 0,
         excluded: 0,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+        heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -1446,13 +1478,24 @@ describe("BankSyncWriterService", () => {
       const outcome = await service.write(
         input(rows(), {
           expectedFingerprint: planFingerprint(rows()),
-          selection: { importKeys: ["ref:1"], excludeKeys: ["ref:2", "ref:3"] },
+          selection: {
+            importKeys: ["ref:1"],
+            excludeKeys: ["ref:2", "ref:3"],
+            mergeKeys: [],
+            keepKeys: [],
+            replaceKeys: [],
+          },
         }),
       );
       expect(outcome).toEqual({
         imported: 1,
         skipped: 0,
         excluded: 2,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+        heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -1484,7 +1527,13 @@ describe("BankSyncWriterService", () => {
       await service.write(
         input(rows(), {
           expectedFingerprint: planFingerprint(rows()),
-          selection: { importKeys: ["ref:1"], excludeKeys: ["ref:2", "ref:3"] },
+          selection: {
+            importKeys: ["ref:1"],
+            excludeKeys: ["ref:2", "ref:3"],
+            mergeKeys: [],
+            keepKeys: [],
+            replaceKeys: [],
+          },
         }),
       );
       expect(outcomeParams()[5]).toBe(true);
@@ -1498,7 +1547,13 @@ describe("BankSyncWriterService", () => {
       const outcome = await service.write(
         input(rows(), {
           expectedFingerprint: planFingerprint(rows()),
-          selection: { importKeys: ["ref:1"], excludeKeys: [] },
+          selection: {
+            importKeys: ["ref:1"],
+            excludeKeys: [],
+            mergeKeys: [],
+            keepKeys: [],
+            replaceKeys: [],
+          },
         }),
       );
       expect(outcome.imported).toBe(1);
@@ -1511,13 +1566,24 @@ describe("BankSyncWriterService", () => {
       const outcome = await service.write(
         input(rows(), {
           expectedFingerprint: planFingerprint(rows()),
-          selection: { importKeys: [], excludeKeys: [] },
+          selection: {
+            importKeys: [],
+            excludeKeys: [],
+            mergeKeys: [],
+            keepKeys: [],
+            replaceKeys: [],
+          },
         }),
       );
       expect(outcome).toEqual({
         imported: 0,
         skipped: 0,
         excluded: 0,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+        heldDuplicates: 0,
+        touchedSecurityIds: [],
         affectedAccountIds: [],
         settledScheduleIds: [],
       });
@@ -1532,7 +1598,13 @@ describe("BankSyncWriterService", () => {
       await service.write(
         input(rows(), {
           expectedFingerprint: planFingerprint([]),
-          selection: { importKeys: [], excludeKeys: [] },
+          selection: {
+            importKeys: [],
+            excludeKeys: [],
+            mergeKeys: [],
+            keepKeys: [],
+            replaceKeys: [],
+          },
         }),
       );
       expect(outcomeParams()[5]).toBe(true);
@@ -1543,7 +1615,13 @@ describe("BankSyncWriterService", () => {
       await expect(
         service.write(
           input(rows(), {
-            selection: { importKeys: ["ref:1"], excludeKeys: [] },
+            selection: {
+              importKeys: ["ref:1"],
+              excludeKeys: [],
+              mergeKeys: [],
+              keepKeys: [],
+              replaceKeys: [],
+            },
           }),
         ),
       ).resolves.toMatchObject({ imported: 1 });
@@ -1568,7 +1646,13 @@ describe("BankSyncWriterService", () => {
           .write(
             input(rows(), {
               expectedFingerprint: planFingerprint(rows()),
-              selection: { importKeys: ["ref:1", "ref:404"], excludeKeys: [] },
+              selection: {
+                importKeys: ["ref:1", "ref:404"],
+                excludeKeys: [],
+                mergeKeys: [],
+                keepKeys: [],
+                replaceKeys: [],
+              },
             }),
           )
           .catch((e: unknown) => e);
@@ -1583,7 +1667,13 @@ describe("BankSyncWriterService", () => {
           service.write(
             input(rows(), {
               expectedFingerprint: planFingerprint(rows()),
-              selection: { importKeys: [], excludeKeys: ["ref:404"] },
+              selection: {
+                importKeys: [],
+                excludeKeys: ["ref:404"],
+                mergeKeys: [],
+                keepKeys: [],
+                replaceKeys: [],
+              },
             }),
           ),
         ).rejects.toBeInstanceOf(BankSyncSelectionRefusedException);
@@ -1596,7 +1686,13 @@ describe("BankSyncWriterService", () => {
           service.write(
             input(rows(), {
               expectedFingerprint: planFingerprint([rows()[0], rows()[2]]),
-              selection: { importKeys: ["ref:2"], excludeKeys: [] },
+              selection: {
+                importKeys: ["ref:2"],
+                excludeKeys: [],
+                mergeKeys: [],
+                keepKeys: [],
+                replaceKeys: [],
+              },
             }),
           ),
         ).rejects.toBeInstanceOf(BankSyncSelectionRefusedException);
@@ -1609,7 +1705,13 @@ describe("BankSyncWriterService", () => {
           .write(
             input(rows(), {
               expectedFingerprint: planFingerprint(rows()),
-              selection: { importKeys: ["ref:1"], excludeKeys: ["ref:1"] },
+              selection: {
+                importKeys: ["ref:1"],
+                excludeKeys: ["ref:1"],
+                mergeKeys: [],
+                keepKeys: [],
+                replaceKeys: [],
+              },
             }),
           )
           .catch((e: unknown) => e);
@@ -1626,7 +1728,13 @@ describe("BankSyncWriterService", () => {
             input(changed, {
               expectedFingerprint: shown,
               // ref:3 is gone from the plan too: the 409 comes first.
-              selection: { importKeys: ["ref:3"], excludeKeys: [] },
+              selection: {
+                importKeys: ["ref:3"],
+                excludeKeys: [],
+                mergeKeys: [],
+                keepKeys: [],
+                replaceKeys: [],
+              },
             }),
           ),
         ).rejects.toBeInstanceOf(BankSyncPlanChangedException);
@@ -1638,10 +1746,340 @@ describe("BankSyncWriterService", () => {
         await expect(
           service.write(
             input(rows(), {
-              selection: { importKeys: ["ref:404"], excludeKeys: [] },
+              selection: {
+                importKeys: ["ref:404"],
+                excludeKeys: [],
+                mergeKeys: [],
+                keepKeys: [],
+                replaceKeys: [],
+              },
             }),
           ),
         ).rejects.not.toBeInstanceOf(BankSyncSelectionRefusedException);
+      });
+    });
+  });
+
+  describe("possible duplicates (docs/specs/import-duplicate-review.md section 4)", () => {
+    const rows = () => [
+      row({ externalKey: "ref:1", amount: -12.34, referenceNumber: "REF-1" }),
+      row({ externalKey: "ref:2", amount: 50 }),
+      row({ externalKey: "ref:3", amount: -0.5 }),
+    ];
+    const EXISTING = {
+      id: "tx-manual",
+      transaction_date: "2026-09-08",
+      amount: "-12.34000000",
+      payee_name: "Biedronka",
+      category_name: null,
+      description: null,
+      reference_number: null,
+      status: "UNRECONCILED",
+      is_transfer: false,
+      is_split: false,
+      transfer_account_name: null,
+      external_id: null,
+    };
+    const PAIRS = new Map([["ref:1", { id: "tx-manual" }]]);
+    const NO_LISTS = {
+      importKeys: [],
+      excludeKeys: [],
+      mergeKeys: [],
+      keepKeys: [],
+      replaceKeys: [],
+    };
+
+    /** The ledger holds nothing, the account holds `existing`; inserts win. */
+    function accountHolding(existing: object[] = [EXISTING]) {
+      manager.query.mockImplementation(
+        async (sql: string, params?: unknown[]) => {
+          const text = String(sql);
+          if (text.includes("FROM transactions t")) return existing;
+          if (text.includes("INSERT INTO bank_sync_imported_transactions")) {
+            return [{ id: `ledger-${String(params![2])}` }];
+          }
+          if (text.includes("INSERT INTO payees")) {
+            return [
+              { id: "p", name: String(params![1]), default_category_id: null },
+            ];
+          }
+          return [];
+        },
+      );
+    }
+
+    const ledgerClaims = () =>
+      statements("INSERT INTO bank_sync_imported_transactions").map(
+        (call) => call[1] as unknown[],
+      );
+    const merges = () => statements("UPDATE transactions");
+    const outcomeParams = () =>
+      statements("last_sync_status = 'succeeded'")[0][1] as unknown[];
+
+    it("holds a pair back when nobody decided, imports the rest, and records it", async () => {
+      accountHolding();
+      const outcome = await service.write(input(rows()));
+      expect(outcome).toMatchObject({
+        imported: 2,
+        heldDuplicates: 1,
+        merged: 0,
+        kept: 0,
+        replaced: 0,
+      });
+      expect(ledgerClaims().map((params) => params[2])).toEqual([
+        "ref:2",
+        "ref:3",
+      ]);
+      // The window does not move, and the held count makes the account need its preview.
+      expect(outcomeParams()[5]).toBe(false);
+      expect(outcomeParams()[8]).toBe(1);
+    });
+
+    it("holds an undecided pair under a selection too", async () => {
+      accountHolding();
+      const outcome = await service.write(
+        input(rows(), {
+          expectedFingerprint: planFingerprint(rows(), undefined, PAIRS),
+          selection: { ...NO_LISTS, importKeys: ["ref:2", "ref:3"] },
+        }),
+      );
+      expect(outcome).toMatchObject({ imported: 2, heldDuplicates: 1 });
+      expect(outcomeParams()[8]).toBe(1);
+    });
+
+    it("records no held duplicate and moves the window when every pair is decided", async () => {
+      accountHolding();
+      await service.write(
+        input(rows(), {
+          expectedFingerprint: planFingerprint(rows(), undefined, PAIRS),
+          selection: {
+            ...NO_LISTS,
+            importKeys: ["ref:2", "ref:3"],
+            keepKeys: ["ref:1"],
+          },
+        }),
+      );
+      expect(outcomeParams()[5]).toBe(true);
+      expect(outcomeParams()[8]).toBe(0);
+    });
+
+    it("merges: claims the key for the existing transaction and gives it the bank's date, reference and Cleared", async () => {
+      accountHolding();
+      const outcome = await service.write(
+        input(rows(), {
+          expectedFingerprint: planFingerprint(rows(), undefined, PAIRS),
+          selection: {
+            ...NO_LISTS,
+            importKeys: ["ref:2", "ref:3"],
+            mergeKeys: ["ref:1"],
+          },
+        }),
+      );
+      expect(outcome).toMatchObject({ imported: 2, merged: 1 });
+      const claim = ledgerClaims().find((params) => params[2] === "ref:1");
+      expect(claim?.[4]).toBe("tx-manual");
+      expect(merges()).toHaveLength(1);
+      expect(merges()[0][1]).toEqual([
+        "tx-manual",
+        USER_ID,
+        true,
+        "2026-09-10",
+        "REF-1",
+        TransactionStatus.CLEARED,
+        null,
+      ]);
+      // No transaction is created for the merged row.
+      expect(manager.create).toHaveBeenCalledTimes(2);
+      expect(accountsService.recalculateCurrentBalance).toHaveBeenCalled();
+      // The existing transaction was row-locked before the pairs were re-read.
+      expect(statements("FOR UPDATE").length).toBeGreaterThan(0);
+    });
+
+    it("does not move a transfer leg's date when it merges", async () => {
+      accountHolding([{ ...EXISTING, is_transfer: true }]);
+      await service.write(
+        input(rows(), {
+          expectedFingerprint: planFingerprint(rows(), undefined, PAIRS),
+          selection: { ...NO_LISTS, mergeKeys: ["ref:1"] },
+        }),
+      );
+      expect(merges()[0][1][2]).toBe(false);
+    });
+
+    it("keeps: claims the key for the existing transaction and changes nothing on it", async () => {
+      accountHolding();
+      const outcome = await service.write(
+        input(rows(), {
+          expectedFingerprint: planFingerprint(rows(), undefined, PAIRS),
+          selection: { ...NO_LISTS, keepKeys: ["ref:1"] },
+        }),
+      );
+      expect(outcome).toMatchObject({ imported: 0, kept: 1 });
+      expect(ledgerClaims()).toEqual([
+        [USER_ID, ACCOUNT_ID, "ref:1", "2026-09-10", "tx-manual"],
+      ]);
+      expect(merges()).toHaveLength(0);
+      expect(manager.create).not.toHaveBeenCalled();
+    });
+
+    it("replaces: deletes the existing transaction through the delete path, then imports the bank's row", async () => {
+      accountHolding();
+      const order: string[] = [];
+      transactionsService.remove.mockImplementation(async () => {
+        order.push("remove");
+      });
+      manager.save.mockImplementation(async (entity: object) => {
+        order.push("create");
+        return { ...entity, id: `tx-${++nextTransaction}` };
+      });
+      const outcome = await service.write(
+        input(rows(), {
+          expectedFingerprint: planFingerprint(rows(), undefined, PAIRS),
+          selection: { ...NO_LISTS, replaceKeys: ["ref:1"] },
+        }),
+      );
+      // Inside the sync's transaction: no history entry of its own, and what
+      // it moved is dispatched after the commit.
+      expect(transactionsService.remove).toHaveBeenCalledWith(
+        USER_ID,
+        "tx-manual",
+        {
+          recordHistory: false,
+          deferDerivedRecompute: {
+            accountIds: expect.any(Set),
+            securityIds: expect.any(Set),
+          },
+        },
+      );
+      expect(order).toEqual(["remove", "create"]);
+      expect(outcome).toMatchObject({ imported: 1, replaced: 1 });
+      expect(ledgerClaims()[0][4]).toBeUndefined();
+    });
+
+    it("deletes nothing for a replace whose key a concurrent sync claimed first", async () => {
+      manager.query.mockImplementation(async (sql: string) => {
+        const text = String(sql);
+        if (text.includes("FROM transactions t")) return [EXISTING];
+        // The unique key: another sync's claim on ref:1 committed first.
+        if (text.includes("INSERT INTO bank_sync_imported_transactions")) {
+          return [];
+        }
+        return [];
+      });
+      const outcome = await service.write(
+        input(rows(), {
+          expectedFingerprint: planFingerprint(rows(), undefined, PAIRS),
+          selection: { ...NO_LISTS, replaceKeys: ["ref:1"] },
+        }),
+      );
+      expect(transactionsService.remove).not.toHaveBeenCalled();
+      expect(outcome).toMatchObject({ imported: 0, replaced: 0, skipped: 1 });
+    });
+
+    it("imports a pair beside the existing transaction when it is in importKeys", async () => {
+      accountHolding();
+      const outcome = await service.write(
+        input(rows(), {
+          expectedFingerprint: planFingerprint(rows(), undefined, PAIRS),
+          selection: { ...NO_LISTS, importKeys: ["ref:1"] },
+        }),
+      );
+      expect(outcome).toMatchObject({ imported: 1, heldDuplicates: 0 });
+      expect(transactionsService.remove).not.toHaveBeenCalled();
+    });
+
+    it("adds a pair to the exceptions when it is in excludeKeys", async () => {
+      accountHolding();
+      const outcome = await service.write(
+        input(rows(), {
+          expectedFingerprint: planFingerprint(rows(), undefined, PAIRS),
+          selection: { ...NO_LISTS, excludeKeys: ["ref:1"] },
+        }),
+      );
+      expect(outcome).toMatchObject({ excluded: 1, heldDuplicates: 0 });
+    });
+
+    describe("refusals, before any write", () => {
+      const wroteNothing = () => {
+        expect(ledgerClaims()).toHaveLength(0);
+        expect(merges()).toHaveLength(0);
+        expect(manager.create).not.toHaveBeenCalled();
+        expect(transactionsService.remove).not.toHaveBeenCalled();
+        expect(statements("last_sync_status = 'succeeded'")).toHaveLength(0);
+      };
+
+      it("refuses a merge, keep or replace without the preview's fingerprint", async () => {
+        accountHolding();
+        for (const list of ["mergeKeys", "keepKeys", "replaceKeys"]) {
+          await expect(
+            service.write(
+              input(rows(), {
+                selection: { ...NO_LISTS, [list]: ["ref:1"] },
+              }),
+            ),
+          ).rejects.toBeInstanceOf(BankSyncSelectionRefusedException);
+        }
+        wroteNothing();
+      });
+
+      it("refuses a decision about a row that is not a possible duplicate", async () => {
+        accountHolding();
+        await expect(
+          service.write(
+            input(rows(), {
+              expectedFingerprint: planFingerprint(rows(), undefined, PAIRS),
+              selection: { ...NO_LISTS, mergeKeys: ["ref:2"] },
+            }),
+          ),
+        ).rejects.toBeInstanceOf(BankSyncSelectionRefusedException);
+        wroteNothing();
+      });
+
+      it("refuses a merge or a replace of a Reconciled transaction, and a replace of a transfer leg", async () => {
+        accountHolding([{ ...EXISTING, status: "RECONCILED" }]);
+        for (const list of ["mergeKeys", "replaceKeys"]) {
+          await expect(
+            service.write(
+              input(rows(), {
+                expectedFingerprint: planFingerprint(rows(), undefined, PAIRS),
+                selection: { ...NO_LISTS, [list]: ["ref:1"] },
+              }),
+            ),
+          ).rejects.toBeInstanceOf(BankSyncSelectionRefusedException);
+        }
+        accountHolding([{ ...EXISTING, is_transfer: true }]);
+        await expect(
+          service.write(
+            input(rows(), {
+              expectedFingerprint: planFingerprint(rows(), undefined, PAIRS),
+              selection: { ...NO_LISTS, replaceKeys: ["ref:1"] },
+            }),
+          ),
+        ).rejects.toBeInstanceOf(BankSyncSelectionRefusedException);
+        wroteNothing();
+      });
+
+      it("refuses with 409 when the pair is not the one the preview showed", async () => {
+        accountHolding([{ ...EXISTING, id: "tx-other" }]);
+        await expect(
+          service.write(
+            input(rows(), {
+              expectedFingerprint: planFingerprint(rows(), undefined, PAIRS),
+              selection: { ...NO_LISTS, mergeKeys: ["ref:1"] },
+            }),
+          ),
+        ).rejects.toBeInstanceOf(BankSyncPlanChangedException);
+        wroteNothing();
+      });
+
+      it("refuses with 409 a preview fingerprinted before the pair existed", async () => {
+        accountHolding();
+        await expect(
+          service.write(
+            input(rows(), { expectedFingerprint: planFingerprint(rows()) }),
+          ),
+        ).rejects.toBeInstanceOf(BankSyncPlanChangedException);
+        wroteNothing();
       });
     });
   });

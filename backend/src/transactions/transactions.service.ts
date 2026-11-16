@@ -4160,6 +4160,24 @@ export class TransactionsService {
        * A26-M04).
        */
       beforeWrite?: (m: EntityManager) => Promise<void>;
+      /**
+       * `false` when the caller's own transaction wraps this delete and it
+       * records no history entry of its own: an import's "delete mine and
+       * import" of a possible duplicate (docs/specs/import-duplicate-review.md).
+       * The entry would otherwise be written into the caller's transaction
+       * before it commits, which `ActionHistoryService.record` forbids.
+       */
+      recordHistory?: boolean;
+      /**
+       * Set when the caller's own transaction wraps this delete: the accounts
+       * and securities it moved are added to these sets instead of being
+       * dispatched here, and the caller dispatches them after ITS commit
+       * (`dispatchDeferredRecompute`, INV-CACHE-001).
+       */
+      deferDerivedRecompute?: {
+        accountIds: Set<string>;
+        securityIds: Set<string>;
+      };
     },
   ): Promise<void> {
     const transaction = await this.findOne(userId, id);
@@ -4263,18 +4281,47 @@ export class TransactionsService {
       }
     });
 
-    for (const affected of affectedAccountIds) {
-      this.netWorthService.triggerDebouncedRecalc(affected, userId);
+    const deferred = options?.deferDerivedRecompute;
+    if (deferred) {
+      for (const affected of affectedAccountIds) {
+        deferred.accountIds.add(affected);
+      }
+      for (const securityId of touchedSecurityIds) {
+        deferred.securityIds.add(securityId);
+      }
+    } else {
+      await this.dispatchDeferredRecompute(userId, {
+        accountIds: affectedAccountIds,
+        securityIds: touchedSecurityIds,
+      });
     }
-    await this.splitService.recomputeBondPricesAfterWrite(
-      userId,
-      touchedSecurityIds,
-    );
+    if (options?.recordHistory === false) return;
     this.recordTransactionAction(
       userId,
       { ...transaction, ...beforeSnapshot } as Transaction,
       "delete",
       beforeSnapshot,
+    );
+  }
+
+  /**
+   * What a write deferred with `deferDerivedRecompute`, after the caller's
+   * commit: the net-worth recompute of every account it moved and the bond
+   * prices of every security it touched (INV-CACHE-001).
+   */
+  async dispatchDeferredRecompute(
+    userId: string,
+    deferred: {
+      accountIds: ReadonlySet<string>;
+      securityIds: ReadonlySet<string>;
+    },
+  ): Promise<void> {
+    for (const affected of deferred.accountIds) {
+      this.netWorthService.triggerDebouncedRecalc(affected, userId);
+    }
+    await this.splitService.recomputeBondPricesAfterWrite(
+      userId,
+      deferred.securityIds,
     );
   }
 

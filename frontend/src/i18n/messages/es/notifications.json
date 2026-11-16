@@ -190,7 +190,9 @@
     "importedTitle": "{institution}: nuevas transacciones importadas",
     "importedMessage": "Transacciones importadas de {institution} por la sincronización diaria: {imported}.",
     "importedNoneTitle": "{institution}: sin transacciones nuevas",
-    "importedNoneMessage": "La sincronización diaria de {institution} no encontró transacciones nuevas."
+    "importedNoneMessage": "La sincronización diaria de {institution} no encontró transacciones nuevas.",
+    "duplicatesHeldTitle": "{institution}: posibles duplicados por revisar",
+    "duplicatesHeldMessage": "La sincronización diaria de {institution} retuvo transacciones que se parecen a otras que ya están en tus cuentas: {held}. Abre los ajustes de sincronización bancaria para decidir qué hacer con ellas."
   },
   "emailReceiptsAttention": {
     "title": "Los recibos de correo necesitan atención",

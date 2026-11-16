@@ -1737,7 +1737,8 @@
       "createdLinked": "계정을 만들고 연결했습니다",
       "createdLinkFailed": "계정은 만들었지만 연결하지 못했습니다",
       "preview": "미리보기",
-      "firstSyncPreview": "첫 번째 가져오기는 거래 미리보기로 확인합니다."
+      "firstSyncPreview": "첫 번째 가져오기는 거래 미리보기로 확인합니다.",
+      "heldDuplicates": "{count, plural, other {중복 가능 거래 #건이 미리보기에서 결정을 기다리고 있습니다.}}"
     },
     "link": {
       "title": "{account}에 연결",
@@ -1775,7 +1776,9 @@
         "missing_identity": "은행 거래 ID 누락: {count, number}"
       },
       "needsPreview": "{accounts}의 미리보기를 열어 첫 번째 가져오기를 확인하세요",
-      "withNeedsPreview": "{message}. {needsPreview}"
+      "withNeedsPreview": "{message}. {needsPreview}",
+      "heldDuplicates": "{count, plural, other {중복 가능 거래 #건이 미리보기에서 결정을 기다리고 있습니다}}",
+      "withHeldDuplicates": "{message}. {held}"
     },
     "callback": {
       "title": "은행에 연결하는 중",
@@ -1829,7 +1832,8 @@
         "pending": "대기 중",
         "before_cutoff": "시작일 이전",
         "withCount": "{label} ({count})",
-        "excluded": "예외"
+        "excluded": "예외",
+        "possible_duplicate": "중복 가능 거래"
       },
       "outcome": {
         "new": "신규",
@@ -1837,7 +1841,8 @@
         "refused": "거부됨",
         "pending": "대기 중",
         "before_cutoff": "시작일 이전",
-        "excluded": "예외"
+        "excluded": "예외",
+        "possible_duplicate": "중복 가능 거래"
       },
       "refusal": {
         "missing_date": "날짜 없음",
@@ -1885,7 +1890,12 @@
         }
       },
       "historyBatch": "거래 내역 묶음: {from}~{to}.",
-      "historyBatchRemaining": "거래 내역 묶음: {from}~{to}. 남은 내역이 있습니다. 이 묶음을 가져온 후 다음 묶음의 미리보기를 여세요."
+      "historyBatchRemaining": "거래 내역 묶음: {from}~{to}. 남은 내역이 있습니다. 이 묶음을 가져온 후 다음 묶음의 미리보기를 여세요.",
+      "applyDecisions": "결정 적용",
+      "duplicates": {
+        "intro": "이 거래들은 계정에 이미 있는 거래와 같아 보입니다. 각 거래의 처리 방법을 결정하기 전에는 아무것도 기록되지 않습니다.",
+        "summary": "중복 가능 거래: 나중에 결정 {later}, 병합 {merge}, 유지 {keep}, 대체 {replace}, 가져옴 {import}, 예외에 추가 {except}"
+      }
     },
     "simplefin": {
       "provider": "데이터 제공자",

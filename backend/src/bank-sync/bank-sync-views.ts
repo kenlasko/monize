@@ -34,13 +34,21 @@ const iso = (value: Date | null): string | null =>
  * (`BankSyncService.linkAccount`), so "no success yet" is "not confirmed". The
  * one definition: the view, the daily sync and "sync every account" all ask it,
  * so nothing imports an account the user has not confirmed.
+ *
+ * It also needs it while the last write held possible duplicates back for the
+ * person to decide (docs/specs/import-duplicate-review.md section 4).
  */
 export function bankAccountNeedsPreview(
-  row: Pick<BankSyncAccount, "accountId" | "lastSuccessAt" | "backfillThrough">,
+  row: Pick<
+    BankSyncAccount,
+    "accountId" | "lastSuccessAt" | "backfillThrough" | "heldDuplicateCount"
+  >,
 ): boolean {
   return (
     row.accountId !== null &&
-    (row.lastSuccessAt === null || !!row.backfillThrough)
+    (row.lastSuccessAt === null ||
+      !!row.backfillThrough ||
+      row.heldDuplicateCount > 0)
   );
 }
 
@@ -63,6 +71,7 @@ export function toBankSyncAccountView(
     lastImportedCount: row.lastImportedCount,
     lastSkippedCount: row.lastSkippedCount,
     lastRefusedCount: row.lastRefusedCount,
+    heldDuplicateCount: row.heldDuplicateCount,
     bankBalance: moneyText(row.bankBalance),
     bankBalanceCurrency: row.bankBalanceCurrency,
     bankBalanceDate: row.bankBalanceDate,

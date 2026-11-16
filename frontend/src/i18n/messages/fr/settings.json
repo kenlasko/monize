@@ -1737,7 +1737,8 @@
       "createdLinked": "Compte créé et lié",
       "createdLinkFailed": "Le compte a été créé, mais n'a pas pu être lié",
       "preview": "Aperçu",
-      "firstSyncPreview": "Le premier import est confirmé à partir d'un aperçu des transactions."
+      "firstSyncPreview": "Le premier import est confirmé à partir d'un aperçu des transactions.",
+      "heldDuplicates": "{count, plural, one {# doublon possible attend votre décision dans l'aperçu.} many {# de doublons possibles attendent votre décision dans l'aperçu.} other {# doublons possibles attendent votre décision dans l'aperçu.}}"
     },
     "link": {
       "title": "Lier à {account}",
@@ -1775,7 +1776,9 @@
         "missing_identity": "Identifiant de transaction bancaire manquant: {count, number}"
       },
       "needsPreview": "Ouvrez l'aperçu de {accounts} et confirmez le premier import",
-      "withNeedsPreview": "{message}. {needsPreview}"
+      "withNeedsPreview": "{message}. {needsPreview}",
+      "heldDuplicates": "{count, plural, one {# doublon possible attend votre décision dans l'aperçu} many {# de doublons possibles attendent votre décision dans l'aperçu} other {# doublons possibles attendent votre décision dans l'aperçu}}",
+      "withHeldDuplicates": "{message}. {held}"
     },
     "callback": {
       "title": "Connexion à votre banque",
@@ -1829,7 +1832,8 @@
         "pending": "En attente",
         "before_cutoff": "Avant la date de début",
         "withCount": "{label} ({count})",
-        "excluded": "Exceptions"
+        "excluded": "Exceptions",
+        "possible_duplicate": "Doublons possibles"
       },
       "outcome": {
         "new": "Nouvelle",
@@ -1837,7 +1841,8 @@
         "refused": "Refusée",
         "pending": "En attente",
         "before_cutoff": "Avant la date de début",
-        "excluded": "Exception"
+        "excluded": "Exception",
+        "possible_duplicate": "Doublon possible"
       },
       "refusal": {
         "missing_date": "Sans date",
@@ -1885,7 +1890,12 @@
         }
       },
       "historyBatch": "Lot d’historique : du {from} au {to}.",
-      "historyBatchRemaining": "Lot d’historique : du {from} au {to}. Il reste de l’historique. Après cet import, ouvrez l’aperçu du lot suivant."
+      "historyBatchRemaining": "Lot d’historique : du {from} au {to}. Il reste de l’historique. Après cet import, ouvrez l’aperçu du lot suivant.",
+      "applyDecisions": "Appliquer les décisions",
+      "duplicates": {
+        "intro": "Ces transactions ressemblent à d'autres déjà présentes dans le compte. Rien n'est enregistré pour elles tant que vous n'avez pas décidé que faire de chacune.",
+        "summary": "Doublons possibles : {later} laissés pour plus tard, {merge} fusionnés, {keep} gardés, {replace} remplacés, {import} importés, {except} ajoutés aux exceptions"
+      }
     },
     "simplefin": {
       "provider": "Fournisseur de données",

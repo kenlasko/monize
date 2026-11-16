@@ -219,6 +219,7 @@ export class BankSyncCronService {
               accountId: account.accountId,
               imported: entry.imported,
               skipped: entry.skipped,
+              heldDuplicates: entry.heldDuplicates,
             });
           }
         }
@@ -240,6 +241,7 @@ export class BankSyncCronService {
         account_id: string;
         last_success_at: Date | null;
         backfill_through: string | null;
+        held_duplicate_count: number;
         display_name: string | null;
         identifier_masked: string | null;
         institution_name: string;
@@ -247,7 +249,7 @@ export class BankSyncCronService {
         valid_until: Date | null;
       }>(
         await m.query(
-          `SELECT a.id, a.connection_id, a.account_id, a.last_success_at, a.backfill_through,
+          `SELECT a.id, a.connection_id, a.account_id, a.last_success_at, a.backfill_through, a.held_duplicate_count,
                   a.display_name, a.identifier_masked,
                   c.institution_name, c.notify_success, c.valid_until
              FROM bank_sync_accounts a
@@ -266,6 +268,7 @@ export class BankSyncCronService {
         accountId: row.account_id,
         lastSuccessAt: row.last_success_at,
         backfillThrough: row.backfill_through,
+        heldDuplicateCount: Number(row.held_duplicate_count),
         displayName: row.display_name,
         identifierMasked: row.identifier_masked,
         institutionName: row.institution_name,
@@ -283,6 +286,7 @@ interface LinkedBankAccount {
   accountId: string;
   lastSuccessAt: Date | null;
   backfillThrough?: string | null;
+  heldDuplicateCount: number;
   displayName: string | null;
   identifierMasked: string | null;
   institutionName: string;

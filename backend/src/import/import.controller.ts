@@ -1,5 +1,7 @@
 import {
   Controller,
+  HttpCode,
+  HttpStatus,
   Post,
   Get,
   Put,
@@ -34,6 +36,7 @@ import {
   ImportResultDto,
   CsvHeadersResponseDto,
   ColumnMappingResponseDto,
+  ImportDuplicatesResponseDto,
 } from "./dto/import.dto";
 import { AllowPat, PatScope } from "../auth/pat-access/pat-access.decorator";
 
@@ -74,6 +77,25 @@ export class ImportController {
     @Body() dto: ImportQifDto,
   ): Promise<ImportResultDto> {
     return this.importService.importQifFile(req.user.id, dto);
+  }
+
+  @Post("qif/duplicates")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      "List the rows of a QIF import that look like transactions already in the account, without importing anything",
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      "The possible duplicates, each with the transaction it looks like",
+    type: ImportDuplicatesResponseDto,
+  })
+  async findQifDuplicates(
+    @Request() req,
+    @Body() dto: ImportQifDto,
+  ): Promise<ImportDuplicatesResponseDto> {
+    return this.importService.findQifDuplicates(req.user.id, dto);
   }
 
   // --- Multi-account QIF ---
@@ -149,6 +171,25 @@ export class ImportController {
     return this.importService.importOfxFile(req.user.id, dto);
   }
 
+  @Post("ofx/duplicates")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      "List the rows of a OFX import that look like transactions already in the account, without importing anything",
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      "The possible duplicates, each with the transaction it looks like",
+    type: ImportDuplicatesResponseDto,
+  })
+  async findOfxDuplicates(
+    @Request() req,
+    @Body() dto: ImportOfxDto,
+  ): Promise<ImportDuplicatesResponseDto> {
+    return this.importService.findOfxDuplicates(req.user.id, dto);
+  }
+
   // --- CSV ---
 
   @Post("csv/headers")
@@ -206,6 +247,25 @@ export class ImportController {
     @Body() dto: ImportCsvDto,
   ): Promise<ImportResultDto> {
     return this.importService.importCsvFile(req.user.id, dto);
+  }
+
+  @Post("csv/duplicates")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      "List the rows of a CSV import that look like transactions already in the account, without importing anything",
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      "The possible duplicates, each with the transaction it looks like",
+    type: ImportDuplicatesResponseDto,
+  })
+  async findCsvDuplicates(
+    @Request() req,
+    @Body() dto: ImportCsvDto,
+  ): Promise<ImportDuplicatesResponseDto> {
+    return this.importService.findCsvDuplicates(req.user.id, dto);
   }
 
   // --- Column Mappings CRUD ---

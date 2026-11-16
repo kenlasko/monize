@@ -548,7 +548,10 @@
     "mnyExistingAccountCurrency": "기존 계좌 \"{{ name }}\"은(는) {{ existing }}을(를) 사용하지만 Money 파일의 계좌는 {{ file }}을(를) 사용합니다. 둘 중 하나의 이름을 바꾼 후 다시 가져오세요.",
     "mnyJobNotFound": "가져오기 작업을 찾을 수 없습니다",
     "mnyFileTooLarge": "이 Money 파일은 가져오기 한도인 {{ limit }} MB를 초과합니다.",
-    "noRateForSplitTransfer": "{{ date }}의 {{ pair }} 환율이 없습니다. 분할 항목이 다른 통화의 계좌로 이체합니다. 해당 통화 쌍과 날짜의 환율을 추가한 다음 다시 가져오세요."
+    "noRateForSplitTransfer": "{{ date }}의 {{ pair }} 환율이 없습니다. 분할 항목이 다른 통화의 계좌로 이체합니다. 해당 통화 쌍과 날짜의 환율을 추가한 다음 다시 가져오세요.",
+    "duplicatesChanged": "확인한 이후 중복 가능 거래가 변경되었습니다. 아무것도 가져오지 않았습니다. 다시 확인하세요.",
+    "duplicateDecisionRepeated": "파일의 한 행에는 중복 가능 거래에 대한 결정을 하나만 내릴 수 있습니다.",
+    "duplicateActionNotAllowed": "조정된 거래는 병합하거나 대체할 수 없으며, 이체나 분할 거래는 대체할 수 없습니다. 아무것도 가져오지 않았습니다."
   },
   "monteCarlo": {
     "scenarioNotFound": "시나리오 {{ id }}을(를) 찾을 수 없습니다",
@@ -1020,7 +1023,11 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge에는 활성 구독이 필요합니다. SimpleFIN Bridge에서 결제 정보를 확인하세요.",
     "simplefinReadFailed": "SimpleFIN에서 전체 계좌 데이터를 제공하지 못했습니다. SimpleFIN Bridge에서 연결을 확인하세요.",
     "simplefinQuotaExhausted": "SimpleFIN 요청 한도에 도달했습니다. 한도가 복구되면 현재 묶음을 다시 시도하세요.",
-    "simplefinClaimNotSent": "SimpleFIN을 일시적으로 사용할 수 없습니다. 설정 토큰은 전송되지 않았습니다. 나중에 같은 토큰으로 다시 시도하세요."
+    "simplefinClaimNotSent": "SimpleFIN을 일시적으로 사용할 수 없습니다. 설정 토큰은 전송되지 않았습니다. 나중에 같은 토큰으로 다시 시도하세요.",
+    "selectionConflict": "거래 하나에는 결정을 하나만 내릴 수 있습니다: 가져오기, 예외에 추가, 병합, 내 거래 유지 또는 내 거래 대체.",
+    "duplicateNeedsPreview": "중복 가능 거래에 대한 결정에는 해당 거래를 표시한 미리보기가 필요합니다. 아무것도 가져오지 않았습니다. 다시 미리보기하세요.",
+    "selectionNotDuplicate": "병합, 유지 또는 대체하도록 선택한 거래가 더 이상 중복 가능 거래가 아닙니다. 아무것도 가져오지 않았습니다. 다시 미리보기하세요.",
+    "duplicateActionNotAllowed": "조정된 거래는 병합하거나 대체할 수 없으며, 이체나 분할 거래는 대체할 수 없습니다. 아무것도 가져오지 않았습니다. 기존 거래를 유지하거나 은행 거래를 별도로 가져오세요."
   },
   "warranties": {
     "notFound": "ID가 {{ id }}인 보증을 찾을 수 없습니다",

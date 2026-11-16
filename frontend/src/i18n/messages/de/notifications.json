@@ -190,7 +190,9 @@
     "importedTitle": "{institution}: neue Buchungen importiert",
     "importedMessage": "Durch die tägliche Synchronisierung aus {institution} importierte Buchungen: {imported}.",
     "importedNoneTitle": "{institution}: keine neuen Buchungen",
-    "importedNoneMessage": "Die tägliche Synchronisierung von {institution} hat keine neuen Buchungen gefunden."
+    "importedNoneMessage": "Die tägliche Synchronisierung von {institution} hat keine neuen Buchungen gefunden.",
+    "duplicatesHeldTitle": "{institution}: mögliche Duplikate zu prüfen",
+    "duplicatesHeldMessage": "Die tägliche Synchronisierung von {institution} hat Buchungen zurückgehalten, die solchen in Ihren Konten ähneln: {held}. Öffnen Sie die Einstellungen der Bank-Synchronisierung, um zu entscheiden, was mit ihnen geschehen soll."
   },
   "emailReceiptsAttention": {
     "title": "E-Mail-Belege benötigen Aufmerksamkeit",

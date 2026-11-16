@@ -515,6 +515,7 @@ describe("DataQualityReportsService", () => {
       expect(result.groups).toEqual([]);
       expect(result.summary).toEqual({
         totalGroups: 0,
+        veryHighCount: 0,
         highCount: 0,
         mediumCount: 0,
         lowCount: 0,
@@ -522,10 +523,11 @@ describe("DataQualityReportsService", () => {
       });
     });
 
-    it("detects exact duplicate transactions (same date, amount, payee)", async () => {
+    it("assigns high confidence when date, amount and payee match but the category differs", async () => {
       scopedManager.query.mockResolvedValue([
         {
           id: "tx-1",
+          category_id: "cat-dining",
           transaction_date: "2025-06-15",
           amount: "-50.00",
           payee_name: "Coffee Shop",
@@ -534,6 +536,7 @@ describe("DataQualityReportsService", () => {
         },
         {
           id: "tx-2",
+          category_id: "cat-groceries",
           transaction_date: "2025-06-15",
           amount: "-50.00",
           payee_name: "Coffee Shop",
@@ -764,6 +767,7 @@ describe("DataQualityReportsService", () => {
       scopedManager.query.mockResolvedValue([
         {
           id: "tx-1",
+          category_id: "cat-dining",
           transaction_date: "2025-06-15",
           amount: "-100.00",
           payee_name: null,
@@ -772,6 +776,7 @@ describe("DataQualityReportsService", () => {
         },
         {
           id: "tx-2",
+          category_id: "cat-groceries",
           transaction_date: "2025-06-15",
           amount: "-100.00",
           payee_name: null,
@@ -868,6 +873,7 @@ describe("DataQualityReportsService", () => {
         // High confidence pair (same date, amount, payee)
         {
           id: "tx-h1",
+          category_id: "cat-dining",
           transaction_date: "2025-06-10",
           amount: "-10.00",
           payee_name: "Small Store",
@@ -876,6 +882,7 @@ describe("DataQualityReportsService", () => {
         },
         {
           id: "tx-h2",
+          category_id: "cat-groceries",
           transaction_date: "2025-06-10",
           amount: "-10.00",
           payee_name: "Small Store",
@@ -885,6 +892,7 @@ describe("DataQualityReportsService", () => {
         // Another high confidence pair (same date, amount; null payees match)
         {
           id: "tx-h3",
+          category_id: "cat-dining",
           transaction_date: "2025-06-20",
           amount: "-500.00",
           payee_name: null,
@@ -893,6 +901,7 @@ describe("DataQualityReportsService", () => {
         },
         {
           id: "tx-h4",
+          category_id: "cat-groceries",
           transaction_date: "2025-06-20",
           amount: "-500.00",
           payee_name: null,
@@ -961,6 +970,7 @@ describe("DataQualityReportsService", () => {
         // High confidence group (same date, amount, payee)
         {
           id: "tx-1",
+          category_id: "cat-dining",
           transaction_date: "2025-06-10",
           amount: "-50.00",
           payee_name: "Store A",
@@ -969,6 +979,7 @@ describe("DataQualityReportsService", () => {
         },
         {
           id: "tx-2",
+          category_id: "cat-groceries",
           transaction_date: "2025-06-10",
           amount: "-50.00",
           payee_name: "Store A",
@@ -1243,6 +1254,7 @@ describe("DataQualityReportsService", () => {
       scopedManager.query.mockResolvedValue([
         {
           id: "tx-1",
+          category_id: "cat-dining",
           transaction_date: "2025-06-15",
           amount: "-100.00",
           payee_name: "Coffee Shop",
@@ -1251,6 +1263,7 @@ describe("DataQualityReportsService", () => {
         },
         {
           id: "tx-2",
+          category_id: "cat-groceries",
           transaction_date: "2025-06-15",
           amount: "-100.00",
           payee_name: "COFFEE SHOP",
@@ -1267,6 +1280,211 @@ describe("DataQualityReportsService", () => {
 
       expect(result.groups).toHaveLength(1);
       expect(result.groups[0].confidence).toBe("high");
+    });
+    describe("very high confidence (issue #2234)", () => {
+      const row = (overrides: Record<string, unknown>) => ({
+        id: "tx",
+        transaction_date: "2025-06-15",
+        amount: "-42.00",
+        currency_code: "CAD",
+        account_id: "acct-chequing",
+        payee_name: "Grocer",
+        description: null,
+        account_name: "Checking",
+        category_id: "cat-groceries",
+        category_name: "Food: Groceries",
+        is_split: false,
+        status: "UNRECONCILED",
+        ...overrides,
+      });
+
+      it("assigns very high confidence when date, amount, payee and category all match", async () => {
+        scopedManager.query.mockResolvedValue([
+          row({ id: "tx-1" }),
+          row({ id: "tx-2", status: "CLEARED" }),
+        ]);
+
+        const result = await service.getDuplicateTransactions(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+        );
+
+        expect(result.groups).toHaveLength(1);
+        expect(result.groups[0].confidence).toBe("very_high");
+        expect(result.groups[0].reasonCode).toBe(
+          "same_date_amount_payee_category",
+        );
+        expect(result.groups[0].reason).toBe(
+          "Same account, date, amount, payee, and category",
+        );
+        expect(result.summary.veryHighCount).toBe(1);
+        expect(result.summary.highCount).toBe(0);
+        expect(result.groups[0].transactions[1]).toEqual({
+          id: "tx-2",
+          transactionDate: "2025-06-15",
+          amount: -42,
+          currencyCode: "CAD",
+          accountId: "acct-chequing",
+          payeeName: "Grocer",
+          description: null,
+          accountName: "Checking",
+          categoryId: "cat-groceries",
+          categoryName: "Food: Groceries",
+          isSplit: false,
+          status: "CLEARED",
+        });
+      });
+
+      it("treats two uncategorized rows as a category match", async () => {
+        scopedManager.query.mockResolvedValue([
+          row({ id: "tx-1", category_id: null, category_name: null }),
+          row({ id: "tx-2", category_id: null, category_name: null }),
+        ]);
+
+        const result = await service.getDuplicateTransactions(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+        );
+
+        expect(result.groups[0].confidence).toBe("very_high");
+      });
+
+      it("never ranks split parents very high, since their lines may differ", async () => {
+        scopedManager.query.mockResolvedValue([
+          row({ id: "tx-1", category_id: null, is_split: true }),
+          row({ id: "tx-2", category_id: null, is_split: true }),
+        ]);
+
+        const result = await service.getDuplicateTransactions(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+        );
+
+        expect(result.groups[0].confidence).toBe("high");
+        expect(result.groups[0].transactions[0].isSplit).toBe(true);
+      });
+
+      it("drops the whole group to high when one member's category differs", async () => {
+        scopedManager.query.mockResolvedValue([
+          row({ id: "tx-1" }),
+          row({ id: "tx-2" }),
+          row({ id: "tx-3", category_id: "cat-dining" }),
+        ]);
+
+        const result = await service.getDuplicateTransactions(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+        );
+
+        expect(result.groups).toHaveLength(1);
+        expect(result.groups[0].transactions).toHaveLength(3);
+        expect(result.groups[0].confidence).toBe("high");
+        expect(result.groups[0].reasonCode).toBe("same_date_amount_payee");
+      });
+
+      it("sorts very high groups ahead of a larger high group", async () => {
+        scopedManager.query.mockResolvedValue([
+          row({ id: "tx-1", amount: "-10.00" }),
+          row({ id: "tx-2", amount: "-10.00" }),
+          row({ id: "tx-3", amount: "-900.00", category_id: "cat-a" }),
+          row({ id: "tx-4", amount: "-900.00", category_id: "cat-b" }),
+        ]);
+
+        const result = await service.getDuplicateTransactions(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+        );
+
+        expect(result.groups.map((g) => g.confidence)).toEqual([
+          "very_high",
+          "high",
+        ]);
+      });
+
+      it("ranks a one-cent difference high, never very high", async () => {
+        scopedManager.query.mockResolvedValue([
+          row({ id: "tx-1", amount: "54.20" }),
+          row({ id: "tx-2", amount: "54.21" }),
+        ]);
+
+        const result = await service.getDuplicateTransactions(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+        );
+
+        expect(result.groups).toHaveLength(1);
+        expect(result.groups[0].confidence).toBe("high");
+      });
+
+      it("ranks the same figure in two currencies high, never very high", async () => {
+        scopedManager.query.mockResolvedValue([
+          row({ id: "tx-1", account_id: "acct-usd", currency_code: "USD" }),
+          row({ id: "tx-2", account_id: "acct-cad", currency_code: "CAD" }),
+        ]);
+
+        const result = await service.getDuplicateTransactions(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+        );
+
+        expect(result.groups[0].confidence).toBe("high");
+      });
+
+      it("ranks one charge on two accounts high, never very high", async () => {
+        scopedManager.query.mockResolvedValue([
+          row({ id: "tx-1", account_id: "acct-chequing" }),
+          row({ id: "tx-2", account_id: "acct-visa", account_name: "Visa" }),
+        ]);
+
+        const result = await service.getDuplicateTransactions(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+        );
+
+        expect(result.groups[0].confidence).toBe("high");
+      });
+
+      it("reports the sensitivity's day window and a code for a near-date match", async () => {
+        scopedManager.query.mockResolvedValue([
+          row({ id: "tx-1", transaction_date: "2025-06-15" }),
+          row({ id: "tx-2", transaction_date: "2025-06-17" }),
+        ]);
+
+        const result = await service.getDuplicateTransactions(
+          mockUserId,
+          "2025-01-01",
+          "2025-12-31",
+          "high",
+        );
+
+        expect(result.groups[0].confidence).toBe("medium");
+        expect(result.groups[0].reasonCode).toBe(
+          "same_payee_amount_within_days",
+        );
+        expect(result.groups[0].windowDays).toBe(3);
+      });
+
+      it("joins the category and its parent for the displayed path", async () => {
+        scopedManager.query.mockResolvedValue([]);
+
+        await service.getDuplicateTransactions(
+          mockUserId,
+          undefined,
+          "2025-12-31",
+        );
+
+        const sql = scopedManager.query.mock.calls[0][0] as string;
+        expect(sql).toContain("LEFT JOIN categories c ON c.id = t.category_id");
+        expect(sql).toContain("LEFT JOIN categories pc ON pc.id = c.parent_id");
+      });
     });
   });
 });

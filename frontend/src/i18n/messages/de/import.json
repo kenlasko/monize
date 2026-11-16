@@ -30,7 +30,8 @@
     "importFailed": "Import fehlgeschlagen",
     "importedFromFiles": "{imported} Buchungen aus {files} Dateien erfolgreich importiert",
     "imported": "{imported} Buchungen erfolgreich importiert",
-    "mnySingleFileOnly": "Importieren Sie Microsoft-Money-Dateien einzeln -- eine .mny-Datei enthält ein komplettes Profil."
+    "mnySingleFileOnly": "Importieren Sie Microsoft-Money-Dateien einzeln -- eine .mny-Datei enthält ein komplettes Profil.",
+    "duplicateCheckFailed": "Die Datei konnte nicht auf mögliche Duplikate geprüft werden. Es wurde nichts importiert; versuchen Sie es erneut."
   },
   "page": {
     "title": "Buchungen importieren",
@@ -342,7 +343,10 @@
     "viewInvestments": "Investitionen anzeigen",
     "viewTransactions": "Buchungen anzeigen",
     "importMoreFiles": "Weitere Dateien importieren",
-    "bondRowsWithoutSeries": "{count, plural, one {# Anleihekauf wurde ohne Serie importiert. Wählen Sie die Serie in den Anleihe-Tranchen des Wertpapiers.} other {# Anleihekäufe wurden ohne Serie importiert. Wählen Sie die Serien in den Anleihe-Tranchen des Wertpapiers.}}"
+    "bondRowsWithoutSeries": "{count, plural, one {# Anleihekauf wurde ohne Serie importiert. Wählen Sie die Serie in den Anleihe-Tranchen des Wertpapiers.} other {# Anleihekäufe wurden ohne Serie importiert. Wählen Sie die Serien in den Anleihe-Tranchen des Wertpapiers.}}",
+    "skipReasonKeptExisting": "Stattdessen wurde Ihre vorhandene Buchung beibehalten",
+    "skipReasonPossibleDuplicate": "Ähnelt einer Buchung, die bereits im Konto ist",
+    "duplicatesDecided": "Mögliche Duplikate: {merged, plural, one {# mit Ihrer vorhandenen Buchung zusammengeführt} other {# mit Ihren vorhandenen Buchungen zusammengeführt}}, {replaced, plural, one {# anstelle Ihrer bisherigen Buchung importiert} other {# anstelle Ihrer bisherigen Buchungen importiert}}."
   },
   "multiAccountReview": {
     "heading": "Multi-Konto-QIF-Import",
@@ -668,6 +672,52 @@
       "none": "Die Bank hat keine Gegenpartei angegeben, daher hat die Buchung keinen Zahlungsempfänger.",
       "openAliases": "Aliase des Zahlungsempfängers öffnen",
       "openAliasesNewTab": "Aliase des Zahlungsempfängers in einem neuen Tab öffnen"
+    },
+    "duplicate": {
+      "looksLike": "Ähnelt dieser Buchung, die bereits im Konto ist",
+      "date": "Datum",
+      "amount": "Betrag",
+      "payee": "Zahlungsempfänger",
+      "category": "Kategorie",
+      "status": "Status",
+      "reference": "Referenz",
+      "description": "Memo",
+      "amountUnknown": "Unbekannt",
+      "transfer": "Überweisung",
+      "transferWith": "Überweisung mit {account}",
+      "split": "Aufteilung",
+      "statuses": {
+        "UNRECONCILED": "Nicht abgeglichen",
+        "CLEARED": "Bestätigt",
+        "RECONCILED": "Abgeglichen",
+        "VOID": "Ungültig"
+      },
+      "legend": "Was mit {payee} geschehen soll",
+      "choice": {
+        "later": "Später entscheiden",
+        "keep": "Meine behalten",
+        "merge": "Zusammenführen",
+        "replace": "Meine löschen und importieren",
+        "import": "Trotzdem importieren",
+        "except": "Zu den Ausnahmen hinzufügen"
+      },
+      "choiceHelp": {
+        "later": "Es wird nichts gespeichert; die Buchung wird beim nächsten Mal wieder angezeigt.",
+        "keep": "Ihre Buchung bleibt unverändert, und diese wird nicht importiert.",
+        "merge": "Ihre Buchung behält Zahlungsempfänger, Kategorie und Memo und übernimmt Datum, Referenz und den Status Bestätigt von dieser.",
+        "replace": "Ihre Buchung wird gelöscht und diese an ihrer Stelle importiert.",
+        "import": "Beide bleiben erhalten.",
+        "except": "Wird nie importiert, bis Sie sie aus den Ausnahmen entfernen."
+      }
     }
+  },
+  "duplicates": {
+    "heading": "{count, plural, one {# mögliches Duplikat} other {# mögliche Duplikate}}",
+    "intro": "Diese Zeilen der Datei ähneln Buchungen, die bereits im Konto sind. Jede bleibt unverändert, sofern Sie nichts anderes wählen; importiert wird erst, wenn Sie auf Importieren klicken.",
+    "fileHeading": "{file} in {account}",
+    "fromFile": "In der Datei am {date}:",
+    "noPayee": "Kein Zahlungsempfänger",
+    "back": "Zurück",
+    "import": "Importieren"
   }
 }

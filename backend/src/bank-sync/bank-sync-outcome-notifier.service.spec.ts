@@ -20,7 +20,7 @@ const outcome = (
   institutionName: "Test Bank",
   notifySuccess: "when_imported",
   validUntil: new Date("2027-01-01T00:00:00.000Z"),
-  synced: [{ accountId: "acc-1", imported: 2, skipped: 1 }],
+  synced: [{ accountId: "acc-1", imported: 2, skipped: 1, heldDuplicates: 0 }],
   failures: [],
   ...over,
 });
@@ -46,6 +46,40 @@ describe("BankSyncOutcomeNotifier", () => {
     dispatch.notify.mock.calls.map((call) => call[1] as { type: string });
   const types = () => written().map((input) => input.type);
 
+  describe("possible duplicates held (docs/specs/import-duplicate-review.md section 4)", () => {
+    it("writes one warning per connection, whatever the success mode, adding up the accounts that held", async () => {
+      await notifier.report(
+        USER_ID,
+        outcome({
+          notifySuccess: "never",
+          synced: [
+            { accountId: "acc-1", imported: 0, skipped: 0, heldDuplicates: 2 },
+            { accountId: "acc-2", imported: 1, skipped: 0, heldDuplicates: 1 },
+            { accountId: "acc-3", imported: 0, skipped: 0, heldDuplicates: 0 },
+          ],
+        }),
+        DAY,
+      );
+      expect(types()).toEqual([NotificationType.BANK_SYNC_DUPLICATES_HELD]);
+      expect(dispatch.notify.mock.calls[0][1]).toMatchObject({
+        severity: NotificationSeverity.WARNING,
+        data: {
+          connectionId: CONNECTION_ID,
+          institutionName: "Test Bank",
+          held: 3,
+          accounts: 2,
+        },
+        target: "/settings/bank-sync",
+        dedupeKey: `bsc:dup:${CONNECTION_ID}:${DAY}`,
+      });
+    });
+
+    it("writes none when nothing was held", async () => {
+      await notifier.report(USER_ID, outcome({ notifySuccess: "never" }), DAY);
+      expect(types()).toEqual([]);
+    });
+  });
+
   describe("the success mode (spec section 3)", () => {
     // mode x (rows imported | nothing imported); a run in which an account synced.
     it.each([
@@ -62,7 +96,9 @@ describe("BankSyncOutcomeNotifier", () => {
           USER_ID,
           outcome({
             notifySuccess: mode,
-            synced: [{ accountId: "acc-1", imported, skipped: 0 }],
+            synced: [
+              { accountId: "acc-1", imported, skipped: 0, heldDuplicates: 0 },
+            ],
           }),
           DAY,
         );
@@ -75,9 +111,9 @@ describe("BankSyncOutcomeNotifier", () => {
         USER_ID,
         outcome({
           synced: [
-            { accountId: "acc-1", imported: 2, skipped: 1 },
-            { accountId: "acc-2", imported: 5, skipped: 0 },
-            { accountId: "acc-3", imported: 0, skipped: 0 },
+            { accountId: "acc-1", imported: 2, skipped: 1, heldDuplicates: 0 },
+            { accountId: "acc-2", imported: 5, skipped: 0, heldDuplicates: 0 },
+            { accountId: "acc-3", imported: 0, skipped: 0, heldDuplicates: 0 },
           ],
         }),
         DAY,

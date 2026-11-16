@@ -325,7 +325,9 @@
       "importedTitle": "{{ institution }}: yeni işlemler içe aktarıldı",
       "importedMessage": "Günlük senkronizasyonla {{ institution }} kaynağından içe aktarılan işlemler: {{ imported }}.",
       "importedNoneTitle": "{{ institution }}: yeni işlem yok",
-      "importedNoneMessage": "{{ institution }} günlük senkronizasyonu yeni işlem bulamadı."
+      "importedNoneMessage": "{{ institution }} günlük senkronizasyonu yeni işlem bulamadı.",
+      "duplicatesHeldTitle": "{{ institution }}: incelenecek olası mükerrerler",
+      "duplicatesHeldMessage": "{{ institution }} günlük senkronizasyonu, hesaplarınızda zaten bulunanlara benzeyen işlemleri bekletti: {{ held }}. Bunlarla ne yapılacağına karar vermek için banka senkronizasyonu ayarlarını açın."
     },
     "bond": {
       "maturitySoonTitle": "{{ series }} için vade {{ date }} tarihinde doluyor",
