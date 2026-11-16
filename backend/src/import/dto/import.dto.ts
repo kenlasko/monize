@@ -21,6 +21,12 @@ import { Type } from "class-transformer";
 import { AccountType } from "../../accounts/entities/account.entity";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import type { CsvInvestmentSummary } from "../csv-parser";
+import {
+  DUPLICATE_ACTIONS,
+  type DuplicateAction,
+  type DuplicateExistingView,
+} from "../../import-preview/possible-duplicates";
+import { TransactionStatus } from "../../transactions/entities/transaction.entity";
 
 export class ParseQifDto {
   @ApiProperty({ description: "QIF file content as string" })
@@ -216,7 +222,49 @@ export class SecurityMappingDto {
   currencyCode?: string;
 }
 
-export class ImportQifDto {
+/** The most decisions about possible duplicates one import carries. */
+export const MAX_DUPLICATE_DECISIONS = 20_000;
+
+/**
+ * What the person decided about one possible duplicate
+ * (docs/specs/import-duplicate-review.md section 5): the row's position in the
+ * parsed file, the existing transaction it pairs with, and the action.
+ */
+export class ImportDuplicateDecisionDto {
+  @ApiProperty({
+    description: "The row's position in the parsed file, 0-based",
+  })
+  @IsInt()
+  @Min(0)
+  @Max(1_000_000)
+  row: number;
+
+  @ApiProperty({ description: "The existing transaction the row pairs with" })
+  @IsUUID()
+  transactionId: string;
+
+  @ApiProperty({ enum: DUPLICATE_ACTIONS })
+  @IsIn(DUPLICATE_ACTIONS)
+  action: DuplicateAction;
+}
+
+/** The decisions field every single-account file import shares. */
+class DuplicateDecisionsField {
+  @ApiPropertyOptional({
+    description:
+      "Decisions about the possible duplicates the check listed. A pair without one is kept: the row is skipped as possibleDuplicate.",
+    type: [ImportDuplicateDecisionDto],
+    maxItems: MAX_DUPLICATE_DECISIONS,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_DUPLICATE_DECISIONS)
+  @ValidateNested({ each: true })
+  @Type(() => ImportDuplicateDecisionDto)
+  duplicateDecisions?: ImportDuplicateDecisionDto[];
+}
+
+export class ImportQifDto extends DuplicateDecisionsField {
   @ApiProperty({ description: "QIF file content as string" })
   @IsString()
   @IsNotEmpty()
@@ -397,6 +445,10 @@ export class ParsedQifResponseDto {
 export const IMPORT_SKIP_REASONS = [
   "alreadyImported",
   "duplicateTransfer",
+  // A possible duplicate (docs/specs/import-duplicate-review.md section 5):
+  // the person chose to keep the existing transaction, or did not decide.
+  "keptExisting",
+  "possibleDuplicate",
   "unreadableDate",
   "unreadableAmount",
   "missingSecurity",
@@ -521,6 +573,18 @@ export class ImportResultDto {
 
   @ApiPropertyOptional({
     description:
+      "Possible duplicates merged into the existing transaction they pair with. Absent when zero.",
+  })
+  duplicatesMerged?: number;
+
+  @ApiPropertyOptional({
+    description:
+      "Possible duplicates imported after the existing transaction they pair with was deleted (also counted in `imported`). Absent when zero.",
+  })
+  duplicatesReplaced?: number;
+
+  @ApiPropertyOptional({
+    description:
       "Number of imported transactions that one of the user's transaction rules (trigger: import) changed. Absent when no rule changed a row.",
   })
   transactionsChangedByRules?: number;
@@ -531,6 +595,83 @@ export class ImportResultDto {
       "Warnings about suspect transactions that may need manual review (e.g. potential Quicken merged transfers that could not be reliably auto-removed)",
   })
   warnings?: string[];
+}
+
+/** The existing transaction a file row pairs with, as the check shows it. */
+export class ImportDuplicateExistingDto implements DuplicateExistingView {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty({ description: "YYYY-MM-DD" })
+  transactionDate: string;
+
+  @ApiProperty({ description: "Signed amount as a decimal string" })
+  amount: string;
+
+  @ApiProperty({ nullable: true, type: String })
+  payeeName: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  categoryName: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  description: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  referenceNumber: string | null;
+
+  @ApiProperty({ enum: TransactionStatus })
+  status: TransactionStatus;
+
+  @ApiProperty()
+  isTransfer: boolean;
+
+  @ApiProperty()
+  isSplit: boolean;
+
+  @ApiProperty({ nullable: true, type: String })
+  transferAccountName: string | null;
+}
+
+/** One possible duplicate of a file import. */
+export class ImportDuplicateRowDto {
+  @ApiProperty({
+    description: "The row's position in the parsed file, 0-based",
+  })
+  row: number;
+
+  @ApiProperty({ description: "YYYY-MM-DD" })
+  transactionDate: string;
+
+  @ApiProperty()
+  amount: number;
+
+  @ApiProperty({ nullable: true, type: String })
+  payee: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  memo: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  referenceNumber: string | null;
+
+  @ApiProperty({ type: ImportDuplicateExistingDto })
+  existingTransaction: ImportDuplicateExistingDto;
+
+  @ApiProperty({ enum: DUPLICATE_ACTIONS, isArray: true })
+  duplicateActions: DuplicateAction[];
+}
+
+/** `POST /import/{qif,ofx,csv}/duplicates`: nothing in it was written. */
+export class ImportDuplicatesResponseDto {
+  @ApiProperty()
+  accountId: string;
+
+  @ApiProperty()
+  currencyCode: string;
+
+  @ApiProperty({ type: [ImportDuplicateRowDto] })
+  rows: ImportDuplicateRowDto[];
 }
 
 // --- Multi-account QIF DTOs ---
@@ -659,7 +800,7 @@ export class ParseOfxDto {
   content: string;
 }
 
-export class ImportOfxDto {
+export class ImportOfxDto extends DuplicateDecisionsField {
   @ApiProperty({ description: "OFX file content as string" })
   @IsString()
   @IsNotEmpty()
@@ -1122,7 +1263,7 @@ export class ParseCsvDto {
   transferRules?: CsvTransferRuleDto[];
 }
 
-export class ImportCsvDto {
+export class ImportCsvDto extends DuplicateDecisionsField {
   @ApiProperty({ description: "CSV file content as string" })
   @IsString()
   @IsNotEmpty()

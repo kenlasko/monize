@@ -521,6 +521,9 @@
     "internal": "Internal server error"
   },
   "import": {
+    "duplicatesChanged": "The possible duplicates changed since they were checked. Nothing was imported; check again.",
+    "duplicateDecisionRepeated": "A row of the file can have only one decision about its possible duplicate.",
+    "duplicateActionNotAllowed": "A reconciled transaction cannot be merged or replaced, and a transfer cannot be replaced. Nothing was imported.",
     "accountClosed": "The account is closed. Reopen it or choose another account.",
     "noAccountBlocks": "No account blocks found in QIF file. This file may not be a multi-account export.",
     "accountTypeRequired": "Choose an account type for these accounts before importing: {{ accounts }}",

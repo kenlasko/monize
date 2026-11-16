@@ -18,6 +18,9 @@ describe("ImportController", () => {
       parseCsvHeaders: jest.fn(),
       parseCsvFile: jest.fn(),
       importCsvFile: jest.fn(),
+      findQifDuplicates: jest.fn(),
+      findOfxDuplicates: jest.fn(),
+      findCsvDuplicates: jest.fn(),
       getColumnMappings: jest.fn(),
       createColumnMapping: jest.fn(),
       updateColumnMapping: jest.fn(),
@@ -101,6 +104,22 @@ describe("ImportController", () => {
         dto,
       );
     });
+  });
+
+  describe("the duplicate checks", () => {
+    it.each([
+      ["findQifDuplicates", "findQifDuplicates"],
+      ["findOfxDuplicates", "findOfxDuplicates"],
+      ["findCsvDuplicates", "findCsvDuplicates"],
+    ] as const)(
+      "%s delegates with the user from the JWT and the import's body",
+      async (route, method) => {
+        const dto = { content: "x", accountId: "account-1" } as any;
+        mockImportService[method]!.mockResolvedValue("pairs");
+        await expect(controller[route](mockReq, dto)).resolves.toBe("pairs");
+        expect(mockImportService[method]).toHaveBeenCalledWith("user-1", dto);
+      },
+    );
   });
 
   describe("parseCsvHeaders()", () => {
