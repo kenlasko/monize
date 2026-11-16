@@ -1,0 +1,27 @@
+{
+  "release": {
+    "v1_20_0": {
+      "payrollDeductions": {
+        "steps": {
+          "welcome": {
+            "body": "Some paycheck deductions, such as pension or employment insurance, stop once the year's maximum is collected and start again the next year. A payroll deduction rule tells Monize that maximum, so the paycheck stops collecting the deduction when it is reached. **Before you start, you need a payroll scheduled bill:** your paycheck set up as a scheduled deposit, with its deductions as separate lines."
+          },
+          "payrollBill": {
+            "title": "First, set up your paycheck",
+            "body": "If you have not already, choose **+ New Schedule** and create your paycheck as a deposit. Split it into a line for your gross pay and one negative line for each deduction, each with its own category. If a deduction is not being taken right now because this year's maximum is already reached, still add a split line for it, as a zero-value expense, so a rule can cap it and it starts again after the reset. Only an active deposit that pays in more than it takes out can carry rules, and only its deduction lines can be capped."
+          },
+          "newRule": {
+            "title": "Create the rules for a paycheck"
+          },
+          "rulesList": {
+            "body": "Each rule shows its bill, its category, the yearly maximum, the reset date and what each paycheck deducts. Edit a rule to change its maximum, or delete it to let the paycheck collect the full line again. Deleting a rule never changes a posted transaction."
+          },
+          "forecast": {
+            "title": "Applied when the paycheck posts",
+            "body": "When the paycheck posts, each capped line is reduced to the room left under its maximum, down to zero, and starts again after the reset date. The Cash Flow Forecast here and on the dashboard shows the same thing ahead of time, so you can see your take-home pay rise once a maximum is reached."
+          }
+        }
+      }
+    }
+  }
+}
