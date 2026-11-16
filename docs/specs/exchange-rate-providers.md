@@ -4,7 +4,12 @@ Shipped (S1, B1 to B6, F1, R1 and the acceptance task Q are merged;
 `backend/src/currencies/providers/`, `FX_PROVIDERS` in `.env.example`). Kept
 as the specification: an ordered chain of FX providers behind one interface,
 configured per deployment, with Frankfurter (the ECB reference rates, no key,
-no request cap, history from 1999) first and Yahoo Finance second. This
+no request cap, history from 1999) first and Yahoo Finance second.
+**Superseded in part on 2026-11-16** by `docs/specs/frankfurter-v2-provider.md`:
+the v1 Frankfurter adapter and section 6 that describes it are gone, replaced
+by the blended v2 API (`frankfurter_v2`, USD/CAD from 1953). `FX_PROVIDERS`
+(decisions 1, 2 and 11, section 8) is removed and the order is fixed. The
+contract, the chain and its truth table (sections 4 and 5) are unchanged. This
 document carries its own contracts, truth tables and recorded fixtures
 (sections 4 to 7) because there is no other spec for it; the operator view is
 `docs/backend/securities-and-providers.md`.

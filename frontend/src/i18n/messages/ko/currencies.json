@@ -18,7 +18,7 @@
       "line": "환율 제공: {providers}",
       "separator": ", 그다음 ",
       "names": {
-        "frankfurter": "Frankfurter(ECB 기준 환율)",
+        "frankfurter_v2": "Frankfurter(중앙은행 환율)",
         "yahoo": "Yahoo Finance",
         "crypto": "암호화폐 쌍 (Yahoo)"
       }

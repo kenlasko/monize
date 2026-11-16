@@ -85,7 +85,7 @@ describe("outbound provider calls are answerable to the breaker", () => {
     expect(callers.map((file) => file.path).sort()).toEqual([
       "bank-sync/providers/enable-banking/enable-banking.client.ts",
       "bonds/series-http.ts",
-      "currencies/providers/frankfurter-fx.provider.ts",
+      "currencies/providers/frankfurter-v2-fx.provider.ts",
       "payees/lookup/google-places/google-places.client.ts",
       "securities/deutsche-boerse-finance.service.ts",
       "securities/html-table-finance.service.ts",
@@ -181,7 +181,7 @@ describe("a response is recorded in one place per client", () => {
     ["bank-sync/providers/enable-banking/enable-banking.client.ts", 2],
     // Frankfurter: two, the same split again. Every call funnels through one
     // `request` method, so the rule lives there once.
-    ["currencies/providers/frankfurter-fx.provider.ts", 2],
+    ["currencies/providers/frankfurter-v2-fx.provider.ts", 2],
     // Bond fetches (series, and the NBP and GUS benchmarks): one, in
     // `SeriesHttp.gated`, the door every bond request goes through.
     ["bonds/series-http.ts", 1],

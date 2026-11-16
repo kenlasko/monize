@@ -18,7 +18,7 @@
       "line": "Rates from {providers}",
       "separator": ", then ",
       "names": {
-        "frankfurter": "Frankfurter (ECB reference rates)",
+        "frankfurter_v2": "Frankfurter (central bank rates)",
         "yahoo": "Yahoo Finance",
         "crypto": "Crypto pairs (Yahoo)"
       }

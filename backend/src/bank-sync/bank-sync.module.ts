@@ -12,6 +12,7 @@ import { AccountsModule } from "../accounts/accounts.module";
 import { EncryptionModule } from "../common/encryption/encryption.module";
 import { JobClaimModule } from "../common/jobs/job-claim.module";
 import { NetWorthModule } from "../net-worth/net-worth.module";
+import { CurrenciesModule } from "../currencies/currencies.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { PayeesModule } from "../payees/payees.module";
 import { ProviderHealthModule } from "../provider-health/provider-health.module";
@@ -58,6 +59,9 @@ import { EnableBankingProvider } from "./providers/enable-banking/enable-banking
     // the writer's own manager, inside its transaction.
     TagsModule,
     NetWorthModule,
+    // For RateHistoryCatchUpService: a sync pulls the exchange rate history
+    // its rows reach back to, after the commit, as an import does.
+    CurrenciesModule,
     // For TransactionsService.remove: "delete mine and import" deletes the
     // existing transaction a possible duplicate pairs with through the one
     // delete path, inside the writer's transaction.

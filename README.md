@@ -168,7 +168,7 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 
 ### Multi-Currency Support
 - 44 currencies with built-in symbol and formatting metadata (USD, CAD, EUR, GBP, JPY, CHF, AUD, CNY and more), created on demand rather than pre-seeded
-- Daily exchange rate updates from an ordered chain of providers (Frankfurter, then Yahoo Finance, by default), a rate history for each currency, and a Fill gaps button for missing dates
+- Daily exchange rate updates from Frankfurter's central-bank rates (with Yahoo Finance as the fallback), a rate history for each currency, and a Fill gaps button for missing dates
 - Cryptocurrencies alongside fiat currencies, priced from a Yahoo pair such as `BTC-EUR` and refreshed on weekends too
 - Automatic currency conversion for reporting: reports, budgets and cost basis convert each amount at the rate for its own date, and name the currency when a rate is missing
 - Per-account currency settings

@@ -226,7 +226,7 @@ describe('exchangeRatesApi', () => {
       const status = {
         lastUpdated: '2026-10-12T00:00:00.000Z',
         providers: [
-          { name: 'frankfurter', source: 'frankfurter' },
+          { name: 'frankfurter_v2', source: 'frankfurter_v2' },
           { name: 'yahoo', source: 'yahoo_finance' },
         ],
       };
@@ -476,7 +476,7 @@ describe('exchangeRatesApi', () => {
 /**
  * The provider names are a hand-written copy of the backend's
  * `FX_PROVIDER_NAMES`, and nothing compiles the two against each other. A name
- * the server can configure but the client does not know would show as a bare
+ * the server may report but the client does not know would show as a bare
  * token on the Currencies page, so this reads the backend file and compares.
  */
 describe('FX_PROVIDER_NAMES', () => {
@@ -520,7 +520,9 @@ describe('FX_PROVIDER_NAMES', () => {
   });
 
   it('isFxProviderName admits the mirrored names only', () => {
-    expect(isFxProviderName('frankfurter')).toBe(true);
+    expect(isFxProviderName('frankfurter_v2')).toBe(true);
+    // The removed ECB-only adapter's name; its stored rows keep their label.
+    expect(isFxProviderName('frankfurter')).toBe(false);
     expect(isFxProviderName('yahoo')).toBe(true);
     expect(isFxProviderName('yahoo_finance')).toBe(false);
   });

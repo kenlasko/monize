@@ -18,7 +18,7 @@
       "line": "Курсы от {providers}",
       "separator": ", затем ",
       "names": {
-        "frankfurter": "Frankfurter (справочные курсы ЕЦБ)",
+        "frankfurter_v2": "Frankfurter (курсы центральных банков)",
         "yahoo": "Yahoo Finance",
         "crypto": "Криптопары (Yahoo)"
       }

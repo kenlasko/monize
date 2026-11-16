@@ -30,11 +30,15 @@ const YAHOO_ADAPTER = "providers/yahoo-fx.provider.ts";
 /**
  * The `exchange_rates.source` slugs the adapters write. A new adapter's slug
  * joins this list; `every adapter's slug is on the list` below holds the two
- * in step, so the scan cannot miss a slug an adapter introduced.
+ * in step, so the scan cannot miss a slug an adapter introduced. A retired
+ * adapter's slug stays: its rows are still stored, and a row written under it
+ * by hand would be attributed to a provider that no longer answers
+ * (`frankfurter`, the ECB-only v1 adapter removed for `frankfurter_v2`).
  */
 const PROVIDER_SOURCE_SLUGS = [
   "yahoo_finance",
   "frankfurter",
+  "frankfurter_v2",
   "yahoo_crypto",
 ] as const;
 
@@ -199,7 +203,7 @@ describe("a stored exchange rate names its provider, and only the adapter knows 
       .sort();
 
     // A provider question that bypassed the chain. Ask `FxProviderChain`,
-    // which asks the providers in `FX_PROVIDERS` order and keeps "answered
+    // which asks the providers in the chain's order and keeps "answered
     // with nothing" apart from "did not answer" per provider.
     expect(offenders).toEqual([]);
   });

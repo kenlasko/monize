@@ -38,6 +38,7 @@
     "yahooFinance": "Yahoo Finance",
     "yahooCrypto": "Cryptoparen (Yahoo)",
     "frankfurter": "Frankfurter (ECB)",
+    "frankfurterV2": "Frankfurter (centrale banken)",
     "mnyImport": "Money-import",
     "transaction": "Transactie",
     "unknown": "Onbekend"

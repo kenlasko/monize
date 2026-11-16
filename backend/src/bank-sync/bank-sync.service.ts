@@ -27,6 +27,7 @@ import { isCalendarDate } from "../common/validators/is-calendar-date.validator"
 import { tr } from "../i18n/translate";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
 import { NetWorthService } from "../net-worth/net-worth.service";
+import { RateHistoryCatchUpService } from "../currencies/rate-history-catch-up.service";
 import {
   BANK_SYNC_MONEY_DECIMALS,
   SYNC_LEASE_TTL_MS,
@@ -163,6 +164,7 @@ export class BankSyncService {
     private readonly previewer: BankSyncPreviewService,
     private readonly jobClaims: JobClaimService,
     private readonly netWorth: NetWorthService,
+    private readonly rateHistoryCatchUp: RateHistoryCatchUpService,
     @Optional() private readonly simplefin?: SimplefinProvider,
   ) {}
 
@@ -513,20 +515,37 @@ export class BankSyncService {
         // Step 6: after the commit, drop what depends on the balance, and
         // reprice the schedules a settlement rule claimed on (INV-CACHE-001).
         // A merge can move a row's date, and a replace deleted one.
-        if (
-          written.imported > 0 ||
-          written.merged > 0 ||
-          written.replaced > 0
-        ) {
+        const ledgerChanged =
+          written.imported > 0 || written.merged > 0 || written.replaced > 0;
+        if (ledgerChanged) {
           this.netWorth.triggerDebouncedRecalc(account.id, userId);
         }
         // An account a rule moved money into (the loan of a settlement) has
         // its own derived state to refresh; the synced account was dispatched
         // above.
-        for (const accountId of new Set(written.affectedAccountIds)) {
-          if (accountId !== account.id) {
-            this.netWorth.triggerDebouncedRecalc(accountId, userId);
-          }
+        const otherAccountIds = [...new Set(written.affectedAccountIds)].filter(
+          (accountId) => accountId !== account.id,
+        );
+        for (const accountId of otherAccountIds) {
+          this.netWorth.triggerDebouncedRecalc(accountId, userId);
+        }
+        // The rows a sync writes reach back to the account's sync start, which
+        // can predate every stored rate of a foreign account currency: pull
+        // that history as an import and a restore do (issues #2186, #2226), in
+        // the background and after the commit. A fill that stored rates
+        // invalidates the snapshots converted without them.
+        if (ledgerChanged) {
+          const syncedAccountIds = [account.id, ...otherAccountIds];
+          this.rateHistoryCatchUp.start(
+            userId,
+            syncedAccountIds,
+            "Post-sync",
+            () => {
+              for (const accountId of syncedAccountIds) {
+                this.netWorth.triggerDebouncedRecalc(accountId, userId);
+              }
+            },
+          );
         }
         await repriceSettledLoanTemplates(
           this.dataSource,

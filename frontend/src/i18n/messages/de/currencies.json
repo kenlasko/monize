@@ -18,7 +18,7 @@
       "line": "Kurse von {providers}",
       "separator": ", dann ",
       "names": {
-        "frankfurter": "Frankfurter (EZB-Referenzkurse)",
+        "frankfurter_v2": "Frankfurter (Zentralbankkurse)",
         "yahoo": "Yahoo Finance",
         "crypto": "Krypto-Paare (Yahoo)"
       }

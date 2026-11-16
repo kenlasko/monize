@@ -28,7 +28,8 @@ import {
  *
  * **Scoped to a provider set.** What one chain of providers carries is not
  * what another does, so the row names the chain that wrote it (`providers`)
- * and is ignored, then replaced, under any other `FX_PROVIDERS` configuration.
+ * and is ignored, then replaced, under any other chain (a row written before
+ * the switch to Frankfurter's v2 API names `frankfurter`, and is retired so).
  *
  * Global reference data with no owner column, like `exchange_rates` itself:
  * what a provider carries is the same fact for every account on the deployment.
@@ -95,8 +96,9 @@ export class ExchangeRateCoverage {
    * established says nothing about what Frankfurter carries, so a row whose
    * value differs from the running chain's reads as never probed, and the next
    * write replaces its dates instead of merging them -- otherwise the stale
-   * `GREATEST` ratchet would survive the first write after a change to
-   * `FX_PROVIDERS`.
+   * `GREATEST` ratchet would survive the first write after the chain changes
+   * (as it did when the ECB-only v1 Frankfurter adapter, history from 1999,
+   * was replaced by the v2 one).
    */
   @Column({ type: "varchar", length: 200, name: "providers", nullable: true })
   providers: string | null;

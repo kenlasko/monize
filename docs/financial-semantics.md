@@ -265,7 +265,7 @@ referencing it stay `VARCHAR(3)`.
 
 - **The crypto provider is always present and always last.** The factory in
   `currencies.module.ts` appends `CryptoFxProvider` (source `yahoo_crypto`)
-  after whatever `FX_PROVIDERS` names; it is not a token of it.
+  after the fiat providers (Frankfurter, then Yahoo).
 - **A coin pair is claimed.** `FxRateProvider.claims` decides who may be asked
   before `carries` does: a pair with a coin on either side goes only to a
   provider that claims the coin, and a claiming provider is asked about no fiat

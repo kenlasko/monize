@@ -81,6 +81,21 @@ describe('CurrencyRateTable', () => {
     expect(screen.queryByRole('button', { name: /Other/ })).not.toBeInTheDocument();
   });
 
+  it('labels a Frankfurter v2 row apart from v1 and counts both under the Frankfurter filter', () => {
+    const mixed = buildRateHistoryRows(
+      [
+        { rateDate: '1998-06-01', rate: 1.47, source: 'frankfurter_v2', inverted: false },
+        { rateDate: '1999-01-04', rate: 1.52, source: 'frankfurter', inverted: false },
+      ],
+      [],
+    );
+    render(<CurrencyRateTable code="USD" defaultCurrency="CAD" rows={mixed} />);
+
+    expect(screen.getByRole('button', { name: 'Frankfurter (2)' })).toBeInTheDocument();
+    expect(within(bodyRows()[0]).getByText('Frankfurter (ECB)')).toBeInTheDocument();
+    expect(within(bodyRows()[1]).getByText('Frankfurter (central banks)')).toBeInTheDocument();
+  });
+
   it('sorts by any column, and remembers the choice', () => {
     const { unmount } = render(<CurrencyRateTable code="EUR" defaultCurrency="CAD" rows={rows} />);
 

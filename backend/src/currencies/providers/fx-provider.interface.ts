@@ -1,29 +1,30 @@
 /**
- * The exchange rate providers a deployment can draw rates from, as one list.
+ * The fiat exchange rate providers, in the order the chain asks them:
+ * Frankfurter's blended central-bank rates first, Yahoo Finance for whatever
+ * Frankfurter does not answer (`docs/specs/frankfurter-v2-provider.md`). There
+ * is no configuration: `CurrenciesModule` builds the chain from this list.
  *
  * This array is the single source of truth: the `FxProviderName` union is
- * derived from it, `resolveFxProviders` admits exactly these tokens from
- * `FX_PROVIDERS`, and the frontend's label list is held to it by a contract
- * test. Adding a provider means one adapter file, one entry here and one line
- * in `.env.example` (`docs/specs/exchange-rate-providers.md`, section 4).
+ * derived from it, the module's `Record` over that union fails to compile
+ * without an adapter for every name, and the frontend's label list is held to
+ * it by a contract test.
  */
-export const FX_PROVIDER_NAMES = ["frankfurter", "yahoo"] as const;
+export const FX_PROVIDER_NAMES = ["frankfurter_v2", "yahoo"] as const;
 
 export type FxProviderName = (typeof FX_PROVIDER_NAMES)[number];
 
 /**
- * The providers the chain always carries, after whatever `FX_PROVIDERS`
- * names, and which are never a token of it (`docs/specs/crypto-accounts.md`,
- * decision 5). Kept apart from `FX_PROVIDER_NAMES` so the configuration parser
- * keeps refusing them and the frontend's list of configurable names stays the
- * list an operator can write; the status endpoint's `describe()` reports them
- * beside the configured ones.
+ * The providers the chain carries after the fiat ones, which price a pair no
+ * fiat provider is asked about (`docs/specs/crypto-accounts.md`, decision 5).
+ * Kept apart from `FX_PROVIDER_NAMES` because a pair provider claims its codes
+ * (`FxRateProvider.claims`); the status endpoint's `describe()` reports them
+ * beside the fiat ones.
  */
 export const PAIR_PROVIDER_NAMES = ["crypto"] as const;
 
 export type PairProviderName = (typeof PAIR_PROVIDER_NAMES)[number];
 
-/** The name of any provider the chain may hold, configured or always present. */
+/** The name of any provider the chain holds, fiat or pair. */
 export type RateProviderName = FxProviderName | PairProviderName;
 
 /** One dated observation: multiply an amount in `from` by `rate` to get `to`. */
