@@ -13,6 +13,8 @@
     "test": "jest && node --test \"scripts/**/*.test.mjs\"",
     "stage": "node scripts/stage.mjs",
     "dist": "npm run typecheck && npm run build && npm run stage -- --require-webp && electron-builder --win --publish never",
+    "dist:prepackaged": "electron-builder --win --prepackaged release/win-unpacked --publish never",
+    "signed-update-info": "node scripts/signed-update-info.mjs release",
     "smoke:postgres": "npm run build && node scripts/smoke-postgres.mjs",
     "dev:boot": "npm run build && node scripts/dev-boot.mjs"
   },

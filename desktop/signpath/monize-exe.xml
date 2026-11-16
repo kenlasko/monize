@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration "monize-exe": the application executable,
+  signed before the installer is built around it. The GitHub artifact the
+  desktop-windows job uploads is a zip holding Monize.exe and nothing else.
+  Paste this into the SignPath project as an artifact configuration with the
+  slug monize-exe (desktop/README.md, "Code signing").
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file path="Monize.exe" product-name="Monize">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

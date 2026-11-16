@@ -219,9 +219,12 @@ when a cached download is reused; that catches a corrupted or swapped file,
 but `latest.yml` comes from the same release, so it is no proof of who made
 it. The Authenticode check (`Get-AuthenticodeSignature`, matched against
 `publisherName`) runs only when `app-update.yml` carries a `publisherName`,
-which electron-builder writes only for a signed build. An unsigned build
-(until the signing task, C3) therefore verifies the checksum alone; the
-download itself is HTTPS from GitHub.
+which electron-builder writes only when it signs the build itself. CI signs
+through SignPath after electron-builder has run ("Code signing" below), so
+`app-update.yml` has none and the updater verifies the checksum alone; the
+download itself is HTTPS from GitHub. Once the release certificate is in
+use, `win.signtoolOptions.publisherName` would add the check. Not with the
+test certificate: Windows does not trust it, so every update would fail it.
 
 **Trying it without a release.** On Windows only (`NsisUpdater` installs NSIS
 installers; the Linux updaters do not apply):
@@ -276,8 +279,9 @@ npm run lint && npm test
 npm run dist      # typecheck, build, stage --require-webp, electron-builder --win --publish never
 ```
 
-The build is unsigned until code signing lands (task C3): Windows SmartScreen
-warns when the installer is run.
+A local `npm run dist` is unsigned; CI signs ("Code signing" below). Windows
+SmartScreen warns about an unsigned installer, and about one signed with
+the test certificate.
 
 What the configuration decides, beyond the task's list:
 
@@ -542,8 +546,9 @@ builds:
   (the image defaults to CRLF, which breaks the help-image script under `sh`
   and every line of `lint`), installs `cwebp` from the libwebp release zip
   pinned by SHA-256, builds `backend/` and `frontend/`, then runs `lint`,
-  `test`, `smoke:postgres` and `dist` here, and finally
-  `scripts/smoke-install.ps1` against the new installer. A passing run
+  `test`, `smoke:postgres` and `dist` here, signs Monize.exe and the
+  installer ("Code signing" below), and finally
+  `scripts/smoke-install.ps1` against the signed installer. A passing run
   uploads `Monize-Setup-<v>.exe`, its `.blockmap` and `latest.yml` (a beta:
   `beta.yml`, which electron-builder names after the prerelease channel) as
   the `monize-windows-installer` artifact (kept 7 days); a failing one
@@ -588,6 +593,60 @@ failure). `-DataDir` names the data folder (default: a new one under the temp
 directory, removed after a pass and kept after a failure), and
 `-FrontendPort`, `-BackendPort` and `-PostgresPort` the ports it expects in
 `config.json` (default 3380, 3381 and 5433).
+
+## Code signing
+
+CI signs through [SignPath](https://signpath.io) (SignPath Foundation's
+open-source programme, plan decision D9), in the `desktop-windows` job.
+SignPath signs only what it downloads from the run's own artifacts, and
+checks through its GitHub trusted build system that the run built them. A
+local `npm run dist` stays unsigned, and so does a fork's CI build (the
+steps run only under `kenlasko`).
+
+SignPath cannot open an NSIS installer, so the job signs in two rounds:
+
+1. `npm run dist`, unsigned. Only `release/win-unpacked` is kept from it. A
+   `--dir` build would skip the installer, but it does not write
+   `resources/app-update.yml`, and the installed app would never update.
+2. `release/win-unpacked/Monize.exe` is uploaded as an artifact, signed
+   (artifact configuration `monize-exe`) and copied back.
+3. `npm run dist:prepackaged` packs that same folder into a new installer,
+   with no build or staging step.
+4. The installer is uploaded, signed (`monize-installer`) and copied back.
+   The job checks that both files carry a signature from the same
+   certificate.
+5. `npm run signed-update-info` (`scripts/signed-update-info.mjs`) rebuilds
+   the `.blockmap` with electron-builder's own function and writes the new
+   sha512 and size into `latest.yml` / `beta.yml`. Signing appends to the
+   file, so the values electron-builder wrote no longer match it, and the
+   updater would refuse the download. The script refuses an installer with
+   no signature, and one whose sha512 did not change.
+
+The smoke test then runs against the signed installer.
+
+Not signed: the uninstaller. electron-builder builds it inside the NSIS
+step, and signs it only through a signer it runs itself. Also not signed:
+Electron's DLLs and the PostgreSQL binaries, which are third-party; the
+PostgreSQL ones already carry their publisher's signature.
+
+**SignPath setup.** The artifact configurations are in `signpath/`. In the
+SignPath project, add each as an artifact configuration under the slug its
+file name gives (`monize-exe`, `monize-installer`). The job reads four
+repository settings and fails at its start if any is missing:
+
+| Setting | Kind | Value |
+| --- | --- | --- |
+| `SIGNPATH_API_TOKEN` | secret | API token of a SignPath CI user that is a submitter on the signing policy |
+| `SIGNPATH_ORGANIZATION_ID` | variable | the organization ID (the signing policy's page shows it) |
+| `SIGNPATH_PROJECT_SLUG` | variable | the project's slug |
+| `SIGNPATH_SIGNING_POLICY_SLUG` | variable | `test-signing` now; `release-signing` once the Foundation grants the certificate |
+
+Moving to the release certificate is a change to the variable. Also check
+then: whether the release policy needs a manual approval for each request
+(each wait is capped at 20 minutes), whether betas should stay on
+`test-signing`, `publisherName` for the updater (see "Updates" above), and
+the "not code-signed yet" lines in the root README and
+`website/docs/windows.md`.
 
 ## Where data lives
 

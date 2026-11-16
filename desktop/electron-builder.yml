@@ -48,9 +48,10 @@ extraResources:
 # there is nothing to rebuild against Electron's headers.
 npmRebuild: false
 
-# Code signing is task C3. With no certificate configured electron-builder
-# skips signing; this line makes an unsigned build a stated choice rather
-# than an accident, and C3 flips it together with the signing options.
+# electron-builder signs nothing itself. CI signs Monize.exe and the
+# installer through SignPath after electron-builder has run, and rebuilds the
+# installer in between (README.md, "Code signing"). A local build stays
+# unsigned, so this stays false.
 forceCodeSigning: false
 
 # The default. For this target it changes little: because the installer

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration "monize-installer": the NSIS installer.
+  SignPath cannot open an NSIS payload, so the Monize.exe inside it is signed
+  first, through monize-exe. The GitHub artifact is a zip holding the one
+  Monize-Setup-<version>.exe. Paste this into the SignPath project as an
+  artifact configuration with the slug monize-installer.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file path="Monize-Setup-*.exe" product-name="Monize">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>
