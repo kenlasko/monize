@@ -337,6 +337,33 @@ describe("ExchangeRateHistoryService", () => {
       expect(list.limit).toBe(STORED_RATE_ROW_CAP);
     });
 
+    it("lists a pair's whole history: every calendar day from Frankfurter's first rate to 2040", async () => {
+      // Issue #2245: a cap of 2000 dates (about eight years of weekday rates)
+      // cut the detail page's every period off in 2019. A crypto pair is
+      // quoted every day of the week, so the bound is counted in calendar
+      // days, from the oldest history a provider carries (1999-01-04) to well
+      // past today.
+      const days =
+        (Date.UTC(2040, 11, 31) - Date.UTC(1999, 0, 4)) / 86_400_000 + 1;
+      expect(STORED_RATE_ROW_CAP).toBeGreaterThanOrEqual(days);
+
+      rowsFor({
+        listing: Array.from({ length: days }, (_, i) =>
+          listingRow({
+            rate_date: new Date(Date.UTC(2040, 11, 31) - i * 86_400_000)
+              .toISOString()
+              .slice(0, 10),
+          }),
+        ),
+      });
+
+      const list = await service.getStoredRates("user-1", "EUR");
+
+      expect(list.truncated).toBe(false);
+      expect(list.rates).toHaveLength(days);
+      expect(list.rates[list.rates.length - 1].rateDate).toBe("1999-01-04");
+    });
+
     it("does not report truncation at exactly the cap", async () => {
       rowsFor({
         listing: Array.from({ length: STORED_RATE_ROW_CAP }, (_, i) =>

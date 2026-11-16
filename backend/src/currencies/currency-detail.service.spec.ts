@@ -349,6 +349,20 @@ describe("CurrencyDetailService", () => {
       expect(manager.query).not.toHaveBeenCalled();
     });
 
+    it("lists more transaction rates than the old cap of 2000", async () => {
+      // Issue #2245: the transaction dots stopped with the stored line.
+      manager.query.mockResolvedValue(
+        Array.from({ length: 2001 }, (_, i) =>
+          rateRow({ id: `tx-${i}`, direct_rate: "1.5" }),
+        ),
+      );
+
+      const list = await service.getTransactionRates("user-1", "EUR");
+
+      expect(list.rates).toHaveLength(2001);
+      expect(list.truncated).toBe(false);
+    });
+
     it("reports a listing cut at the cap as truncated", async () => {
       manager.query.mockResolvedValue(
         Array.from({ length: STORED_RATE_ROW_CAP + 1 }, (_, i) =>
