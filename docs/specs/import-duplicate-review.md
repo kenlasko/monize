@@ -88,7 +88,7 @@ person picks one:
 | **Import anyway** | key claimed for the new row | unchanged | written as new |
 | **Merge** | key claimed for the existing row | takes the incoming date, the incoming reference (when it has one) and status Cleared; a file import also stores the row's FITID when the existing row has none and no other row holds it | not written |
 | **Keep mine** (file import default) | key claimed for the existing row | unchanged | not written |
-| **Delete mine and import** | key claimed for the new row | deleted through `TransactionsService.remove` | written as new |
+| **Delete mine and import** | key claimed for the new row | deleted through `TransactionsService.remove`, with no history entry (`recordHistory: false`; neither import records one per row) and its recomputes deferred to after the commit | written as new |
 | **Add to the exceptions** (bank sync) | exception, as today | unchanged | never imported |
 
 Merge keeps the existing row's payee, category, splits, tags, memo and
