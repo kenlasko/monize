@@ -36,20 +36,20 @@ function v6(address: string, cidr: string): NetworkInterfaceInfo {
   };
 }
 
-/** A home PC: Wi-Fi on a dual-stack network, plus a WSL adapter. */
+/** A home PC: a WSL adapter listed first, then Wi-Fi on a dual-stack network. */
 const TABLE: InterfaceTable = {
+  "vEthernet (WSL)": [v4("172.29.80.1", "172.29.80.1/20")],
   "Wi-Fi": [
     v4("192.168.1.23", "192.168.1.23/24"),
     v6("2001:db8:5:6::23", "2001:db8:5:6::23/64"),
     v6("fd12:3456::23", "fd12:3456::23/64"),
     v6("fe80::1234", "fe80::1234/64"),
   ],
-  "vEthernet (WSL)": [v4("172.29.80.1", "172.29.80.1/20")],
   "Loopback Pseudo-Interface 1": [v4("127.0.0.1", "127.0.0.1/8", true)],
 };
 
 describe("servedAddresses", () => {
-  it("offers private and unique-local addresses only", () => {
+  it("offers private and unique-local addresses only, the home network's first", () => {
     expect(servedAddresses(TABLE).map((entry) => entry.address)).toEqual([
       "192.168.1.23",
       "fd12:3456::23",

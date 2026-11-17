@@ -1,0 +1,132 @@
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --fg: #1f2937;
+  --muted: #6b7280;
+  --panel: #f3f4f6;
+  --accent: #2563eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111827;
+    --fg: #f9fafb;
+    --muted: #9ca3af;
+    --panel: #1f2937;
+    --accent: #60a5fa;
+  }
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font:
+    14px/1.45 "Segoe UI",
+    system-ui,
+    sans-serif;
+}
+
+main {
+  box-sizing: border-box;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px 20px 24px;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+h3 {
+  margin: 12px 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+p {
+  margin: 0 0 8px;
+}
+
+.step {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--panel);
+  border-radius: 6px;
+}
+
+.pair {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.qr {
+  flex: none;
+  width: 168px;
+  height: 168px;
+  border-radius: 4px;
+  /* The code is black on white whatever the theme, so phones read it. */
+  background: #ffffff;
+  image-rendering: pixelated;
+}
+
+code {
+  font:
+    13px/1.35 Consolas,
+    ui-monospace,
+    monospace;
+  overflow-wrap: anywhere;
+}
+
+.primary {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.fingerprint {
+  font-size: 11px;
+}
+
+.muted,
+.note {
+  color: var(--muted);
+}
+
+ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+dl {
+  margin: 0;
+}
+
+dt {
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+dd {
+  margin: 0;
+}
+
+button {
+  padding: 4px 12px;
+  font: inherit;
+}
+
+.replace {
+  background: transparent;
+  border: 1px solid var(--panel);
+}

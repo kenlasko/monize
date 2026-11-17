@@ -1,3 +1,4 @@
+import { LanService, LanServiceOptions } from "./lan/lan-service";
 import { promises as fs } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
@@ -16,6 +17,7 @@ function harness(probe: PortProber = async () => true) {
   const events: string[] = [];
   const postgresOptions: PostgresRunnerOptions[] = [];
   const supervisorInputs: SupervisorInput[] = [];
+  const lanOptions: LanServiceOptions[] = [];
   let now = 0;
   const clock: Clock = {
     now: () => now,
@@ -39,13 +41,17 @@ function harness(probe: PortProber = async () => true) {
       supervisorInputs.push(input);
       return {} as Supervisor;
     },
+    createLan: (options) => {
+      lanOptions.push(options);
+      return {} as LanService;
+    },
     probe: async (port) => {
       events.push(`probe:${port}`);
       return probe(port);
     },
     clock,
   };
-  return { deps, events, postgresOptions, supervisorInputs, clock };
+  return { deps, events, postgresOptions, supervisorInputs, lanOptions, clock };
 }
 
 describe("createRuntime", () => {
@@ -98,6 +104,19 @@ describe("createRuntime", () => {
     expect(supervisor.secrets).toBe(runtime.bootstrap.secrets);
     expect(supervisor.config.ports).toEqual(DEFAULT_PORTS);
     expect(supervisor.execPath).toBe("/opt/monize/Monize");
+  });
+
+  it("gives local-network access the config, the tls folder and the loopback ports", async () => {
+    const h = harness();
+    const runtime = await createRuntime(input(h.deps));
+    runtime.logger.close();
+    expect(h.lanOptions).toHaveLength(1);
+    const [lan] = h.lanOptions as [LanServiceOptions];
+    expect(lan.configFile).toBe(paths.data.configFile);
+    expect(lan.tlsDir).toBe(paths.data.tls);
+    expect(lan.ports).toEqual(runtime.bootstrap.config.ports);
+    expect(lan.settings).toBeNull();
+    expect(lan.policy.allowInsecure).toBe(false);
   });
 
   it("reads the same secrets and ports back on the next run", async () => {

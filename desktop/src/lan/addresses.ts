@@ -60,7 +60,27 @@ function external(table: InterfaceTable): LocalAddress[] {
 export function servedAddresses(
   table: InterfaceTable,
 ): readonly LocalAddress[] {
-  return external(table).filter((entry) => isPrivateAddress(entry.address));
+  return external(table)
+    .filter((entry) => isPrivateAddress(entry.address))
+    .map((entry, index) => ({ entry, index, rank: rankOf(entry) }))
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .map(({ entry }) => entry);
+}
+
+/** Adapters a phone is never on: WSL, Hyper-V, Docker and virtual machines. */
+const VIRTUAL_ADAPTER = /vethernet|wsl|hyper-v|docker|virtualbox|vmware|vbox/i;
+
+/**
+ * Best first: the home network's usual ranges before the ones virtual
+ * adapters take, IPv4 before IPv6, so the first address the setup window
+ * shows is one a phone can reach.
+ */
+function rankOf(entry: LocalAddress): number {
+  const virtual = VIRTUAL_ADAPTER.test(entry.adapter) ? 10 : 0;
+  if (entry.address.startsWith("192.168.")) return virtual + 0;
+  if (entry.address.startsWith("10.")) return virtual + 1;
+  if (entry.family === 4) return virtual + 2;
+  return virtual + 3;
 }
 
 /** Every subnet this PC has an adapter on, private or not. */

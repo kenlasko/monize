@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Copies the shell's static files (the splash and log viewer pages and their stylesheets) next to
+// Copies the shell's static files (the splash, log viewer and device setup pages and their stylesheets) next to
 // the compiled main process, which loads them from dist/ by its own __dirname. The splash's logo
 // is the frontend's own file, copied rather than kept twice.
 // tsc copies nothing that is not TypeScript; a bundler replaces this later.
@@ -18,6 +18,8 @@ export const STATIC_FILES = [
   "splash/splash.css",
   "log-viewer/log-viewer.html",
   "log-viewer/log-viewer.css",
+  "lan-setup/lan-setup.html",
+  "lan-setup/lan-setup.css",
 ];
 
 /** Files from elsewhere in the repository: dist/ path -> path from the repository root. */

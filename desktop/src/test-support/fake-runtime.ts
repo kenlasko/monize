@@ -1,4 +1,5 @@
 import { dataPathsFor } from "../app-paths";
+import { LanService } from "../lan/lan-service";
 import { PortName } from "../ports";
 import { Runtime } from "../runtime";
 import {
@@ -73,6 +74,21 @@ export function fakeRuntime(movedPorts: readonly PortName[] = []): FakeRuntime {
     },
   };
 
+  const lan: LanService = {
+    status: { kind: "off" },
+    enabled: false,
+    onChange: () => undefined,
+    enable: async () => undefined,
+    disable: async () => undefined,
+    startIfEnabled: async () => undefined,
+    setSetupOpen: () => undefined,
+    rootDer: () => null,
+    replaceRoot: async () => undefined,
+    stop: async () => {
+      calls.push("lan-stop");
+    },
+  };
+
   return {
     paths: { resourcesDir: "/res", data: dataPathsFor("/data", "linux") },
     logger,
@@ -92,6 +108,7 @@ export function fakeRuntime(movedPorts: readonly PortName[] = []): FakeRuntime {
       movedPorts,
     },
     supervisor,
+    lan,
     origin: FAKE_ORIGIN,
     calls,
     async settleStart(result) {

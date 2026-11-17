@@ -12,6 +12,8 @@ import { UpdateState } from "./update-policy";
 export const TRAY_ITEM_IDS = [
   "open",
   "open-in-browser",
+  "lan-access",
+  "lan-setup",
   "view-logs",
   "show-logs",
   "show-recovery-key",
@@ -40,9 +42,21 @@ export type TrayEntry =
  */
 export type LoginItemState = { readonly enabled: boolean } | null;
 
+/**
+ * Local-network access: whether it is turned on (the checkbox), whether the
+ * listener is serving now (which "Set up another device" needs), and whether
+ * a change is under way (both items wait for it).
+ */
+export interface LanTrayState {
+  readonly enabled: boolean;
+  readonly running: boolean;
+  readonly busy: boolean;
+}
+
 export interface TrayState {
   readonly update: UpdateState;
   readonly loginItem: LoginItemState;
+  readonly lan: LanTrayState;
 }
 
 function item(id: TrayItemId, label: string, enabled: boolean): TrayEntry {
@@ -91,10 +105,26 @@ function loginEntries(loginItem: LoginItemState): readonly TrayEntry[] {
       ];
 }
 
+/** The checkbox and the setup item (docs/future-plans/desktop-lan-access.md, L1, L6). */
+function lanEntries(lan: LanTrayState): readonly TrayEntry[] {
+  return [
+    {
+      type: "item",
+      id: "lan-access",
+      label: TEXT.lan.trayAccess,
+      enabled: !lan.busy,
+      checked: lan.enabled,
+    },
+    item("lan-setup", TEXT.lan.traySetup, lan.running && !lan.busy),
+  ];
+}
+
 export function trayMenuModel(state: TrayState): readonly TrayEntry[] {
   return [
     item("open", TEXT.trayOpen, true),
     item("open-in-browser", TEXT.trayOpenInBrowser, true),
+    SEPARATOR,
+    ...lanEntries(state.lan),
     SEPARATOR,
     item("view-logs", TEXT.trayViewLogs, true),
     item("show-logs", TEXT.trayShowLogs, true),

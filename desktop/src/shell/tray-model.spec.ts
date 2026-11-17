@@ -1,5 +1,6 @@
 import { TEXT } from "./strings";
 import {
+  LanTrayState,
   LoginItemState,
   TRAY_ITEM_IDS,
   trayMenuModel,
@@ -7,12 +8,17 @@ import {
 } from "./tray-model";
 import { UpdateState } from "./update-policy";
 
+const LAN_OFF: LanTrayState = { enabled: false, running: false, busy: false };
+/** Serving, so every LAN item is available: the "all enabled" baseline. */
+const LAN_ON: LanTrayState = { enabled: true, running: true, busy: false };
+
 describe("trayMenuModel", () => {
   const items = (
     update: UpdateState,
     loginItem: LoginItemState = { enabled: false },
+    lan: LanTrayState = LAN_ON,
   ) =>
-    trayMenuModel({ update, loginItem }).flatMap((entry) =>
+    trayMenuModel({ update, loginItem, lan }).flatMap((entry) =>
       entry.type === "item" ? [entry] : [],
     );
   const updateEntry = (update: UpdateState) =>
@@ -29,10 +35,14 @@ describe("trayMenuModel", () => {
     const layout = trayMenuModel({
       update: { kind: "idle" },
       loginItem: { enabled: false },
+      lan: LAN_OFF,
     }).map((entry) => (entry.type === "separator" ? "-" : entry.id));
     expect(layout).toEqual([
       "open",
       "open-in-browser",
+      "-",
+      "lan-access",
+      "lan-setup",
       "-",
       "view-logs",
       "show-logs",
@@ -97,7 +107,11 @@ describe("trayMenuModel", () => {
   });
 
   it("leaves the item out where it is not offered, with no stray separator", () => {
-    const model = trayMenuModel({ update: { kind: "idle" }, loginItem: null });
+    const model = trayMenuModel({
+      update: { kind: "idle" },
+      loginItem: null,
+      lan: LAN_OFF,
+    });
     const ids = model.flatMap((entry) =>
       entry.type === "item" ? [entry.id] : [],
     );
@@ -117,6 +131,37 @@ describe("trayMenuModel", () => {
       "check-for-updates",
       "quit",
     ]);
+  });
+
+  it("offers local-network access as a checkbox, and setup only while it serves", () => {
+    const lan = (state: LanTrayState) =>
+      items({ kind: "idle" }, { enabled: false }, state).filter((item) =>
+        item.id.startsWith("lan-"),
+      );
+    expect(lan(LAN_OFF)).toEqual([
+      expect.objectContaining({
+        id: "lan-access",
+        checked: false,
+        enabled: true,
+      }),
+      expect.objectContaining({ id: "lan-setup", enabled: false }),
+    ]);
+    expect(lan({ enabled: true, running: true, busy: false })).toEqual([
+      expect.objectContaining({
+        id: "lan-access",
+        checked: true,
+        enabled: true,
+      }),
+      expect.objectContaining({ id: "lan-setup", enabled: true }),
+    ]);
+    // Turned on but not serving (it failed to start): setup has nothing to show.
+    expect(
+      lan({ enabled: true, running: false, busy: false })[1],
+    ).toMatchObject({ enabled: false });
+    // While a change is under way, both wait.
+    for (const entry of lan({ enabled: true, running: true, busy: true })) {
+      expect(entry.enabled).toBe(false);
+    }
   });
 
   it("labels every item", () => {
@@ -142,6 +187,7 @@ describe("windowMenuModel", () => {
   const state = {
     update: { kind: "downloaded", version: "1.22.0" },
     loginItem: { enabled: true },
+    lan: { enabled: true, running: true, busy: false },
   } as const;
 
   it("is the tray's menu without Open Monize, entry for entry", () => {
