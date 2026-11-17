@@ -7,6 +7,7 @@ import { stageHelpImages } from "./help-images.mjs";
 import { assertEntryPointsIntact } from "./prune-check.mjs";
 import { countFiles, pruneTree } from "./prune.mjs";
 import { loadManifest } from "./manifest.mjs";
+import { BACKEND_DEPS_ARCHIVE, packArchive } from "./pack-deps.mjs";
 import { stagePostgres } from "./postgres.mjs";
 import { stageVcRuntime } from "./vc-runtime.mjs";
 
@@ -96,9 +97,11 @@ export function stage({
   }
   assertSafeOut(outDir, repoRoot);
 
-  // --skip-backend-deps keeps the previously staged node_modules across the clear.
-  const stagedDeps = path.join(outDir, "backend", "node_modules");
-  const keep = `${path.resolve(outDir)}.node_modules-keep`;
+  // --skip-backend-deps keeps the previously staged archive (and the native
+  // addons unpacked beside it) across the clear.
+  const stagedDeps = path.join(outDir, BACKEND_DEPS_ARCHIVE);
+  const keep = `${path.resolve(outDir)}.backend-deps-keep`;
+  const kept = [stagedDeps, `${stagedDeps}.unpacked`];
   fs.rmSync(keep, { recursive: true, force: true });
   if (skipBackendDeps) {
     if (!fs.existsSync(stagedDeps)) {
@@ -106,13 +109,20 @@ export function stage({
         `--skip-backend-deps needs an existing ${stagedDeps}; run once without it`,
       );
     }
-    fs.renameSync(stagedDeps, keep);
+    fs.mkdirSync(keep, { recursive: true });
+    for (const from of kept.filter((p) => fs.existsSync(p))) {
+      fs.renameSync(from, path.join(keep, path.basename(from)));
+    }
   }
   fs.rmSync(outDir, { recursive: true, force: true });
   fs.mkdirSync(outDir, { recursive: true });
   if (skipBackendDeps) {
     fs.mkdirSync(path.dirname(stagedDeps), { recursive: true });
-    fs.renameSync(keep, stagedDeps);
+    for (const to of kept) {
+      const from = path.join(keep, path.basename(to));
+      if (fs.existsSync(from)) fs.renameSync(from, to);
+    }
+    fs.rmSync(keep, { recursive: true, force: true });
   }
 
   const sizes = [];
@@ -133,11 +143,21 @@ export function stage({
         dereference: entry.dereference,
       });
     } else if (kind === "backend-deps") {
-      (hooks.installBackendDeps ?? installBackendDeps)({
-        backendDir: path.join(repoRoot, "backend"),
-        dest,
-      });
-      prune = pruneBackendDeps(dest, log);
+      // Installed, pruned and checked as a plain node_modules outside the
+      // staging directory, then packed into one archive (pack-deps.mjs).
+      const work = `${path.resolve(outDir)}.backend-deps`;
+      const deps = path.join(work, "node_modules");
+      fs.rmSync(work, { recursive: true, force: true });
+      try {
+        (hooks.installBackendDeps ?? installBackendDeps)({
+          backendDir: path.join(repoRoot, "backend"),
+          dest: deps,
+        });
+        prune = pruneBackendDeps(deps, log);
+        (hooks.packArchive ?? packArchive)({ root: work, archive: dest });
+      } finally {
+        fs.rmSync(work, { recursive: true, force: true });
+      }
     } else if (kind === "help-images") {
       (hooks.stageHelpImages ?? stageHelpImages)({
         src: path.join(repoRoot, entry.from),

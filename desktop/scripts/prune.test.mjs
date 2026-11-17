@@ -259,6 +259,7 @@ test("stage reports the prune and fails closed on a broken entry point", () => {
   write(repo, "frontend/public/favicon.ico");
   write(repo, "frontend/server-log-format.cjs");
   write(repo, "desktop/resources/parent-watch.cjs");
+  write(repo, "desktop/resources/backend-deps.cjs");
   write(repo, "desktop/build/icon.ico");
   const run = (installBackendDeps) =>
     stage({

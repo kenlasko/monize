@@ -1,10 +1,13 @@
 #!/usr/bin/env node
-// Boots the staged stack without Electron: PostgreSQL, db-init, db-migrate,
-// the backend and the frontend, through the same runtime module the Electron
-// main process uses (src/runtime.ts). Under plain Node the children run on
-// `process.execPath` as well, so this proves the supervisor, the PostgreSQL
-// runner, the child environments and the staged layout on Linux or Windows
-// with no window involved.
+// Boots the staged stack without the Electron shell: PostgreSQL, db-init,
+// db-migrate, the backend and the frontend, through the same runtime module
+// the Electron main process uses (src/runtime.ts). It runs on Electron's
+// binary in Node mode (ELECTRON_RUN_AS_NODE), re-launching itself there when
+// started with plain Node, because the staged backend loads its packages from
+// an .asar archive that only Electron's Node reads. The children run on
+// `process.execPath` as well, as in the installed app, so this proves the
+// supervisor, the PostgreSQL runner, the child environments and the staged
+// layout on Linux or Windows with no window involved.
 //
 //   npm run build && npm run stage            (once; see the README)
 //   node scripts/dev-boot.mjs --data-dir <dir> [--exit-when-ready]
@@ -13,6 +16,7 @@
 // so a data directory must be named explicitly: this script never touches the
 // installed application's data folder.
 
+import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
@@ -85,7 +89,27 @@ function describeFailure(failure, describeCause) {
   return lines.join("\n");
 }
 
+/**
+ * Runs this script again on Electron's binary in Node mode and resolves with
+ * its exit code. Ctrl-C reaches both processes; this one waits for the other
+ * to stop the stack rather than leaving it behind.
+ */
+function underElectron() {
+  const electron = require("electron");
+  const child = spawn(
+    electron,
+    [fileURLToPath(import.meta.url), ...process.argv.slice(2)],
+    { stdio: "inherit", env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" } },
+  );
+  for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => {});
+  return new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.once("exit", (code, signal) => resolve(code ?? (signal ? 1 : 0)));
+  });
+}
+
 async function main() {
+  if (!process.versions.electron) return underElectron();
   const options = parseArgs(process.argv.slice(2));
   const { resolveAppPaths } = load("app-paths.js");
   const { createRuntime } = load("runtime.js");

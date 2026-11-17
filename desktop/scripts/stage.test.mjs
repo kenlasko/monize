@@ -6,6 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import process from "node:process";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { copySource, globToRegExp, sizeOf } from "./lib/copy.mjs";
 import { stageHelpImages } from "./lib/help-images.mjs";
@@ -17,6 +18,9 @@ import {
   missingDestinations,
   stage,
 } from "./lib/stage.mjs";
+import { BACKEND_DEPS_ARCHIVE } from "./lib/pack-deps.mjs";
+
+const { listPackage } = createRequire(import.meta.url)("@electron/asar");
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const realManifest = path.join(here, "..", "staging-manifest.json");
@@ -55,11 +59,15 @@ function fixtureRepo() {
   write(root, "frontend/public/favicon.ico");
   write(root, "frontend/server-log-format.cjs");
   write(root, "desktop/resources/parent-watch.cjs");
+  write(root, "desktop/resources/backend-deps.cjs");
   write(root, "desktop/build/icon.ico");
   return root;
 }
 
-const fakeDeps = ({ dest }) => write(dest, "pkg/index.js");
+const fakeDeps = ({ dest }) => {
+  write(dest, "pkg/index.js");
+  write(dest, "addon/addon.node");
+};
 const fakeImages = ({ out }) => write(out, "x.webp");
 const fakeHooks = { installBackendDeps: fakeDeps, stageHelpImages: fakeImages };
 
@@ -141,6 +149,10 @@ test("assertSafeOut refuses the repository and its parents", () => {
 
 test("stage assembles the manifest layout from a fixture", () => {
   const repo = fixtureRepo();
+  // Build output nothing loads at run time, which the manifest leaves out.
+  for (const f of ["main.d.ts", "main.spec.js", "tsconfig.tsbuildinfo"]) {
+    write(repo, `backend/dist/${f}`);
+  }
   const out = path.join(tmp(), "staging");
   const logs = [];
   const result = stage({
@@ -154,7 +166,8 @@ test("stage assembles the manifest layout from a fixture", () => {
   for (const rel of [
     "backend/dist/main.js",
     "backend/dist/i18n/locales/en/a.json",
-    "backend/node_modules/pkg/index.js",
+    "backend/node_modules.asar",
+    "backend/node_modules.asar.unpacked/node_modules/addon/addon.node",
     "backend/package.json",
     "backend/package-lock.json",
     "backend/schema.sql",
@@ -170,6 +183,7 @@ test("stage assembles the manifest layout from a fixture", () => {
     "frontend/public/favicon.ico",
     "frontend/server-log-format.cjs",
     "shell/parent-watch.cjs",
+    "shell/backend-deps.cjs",
     "shell/icon.ico",
   ]) {
     const file = rel.startsWith(".next")
@@ -177,13 +191,32 @@ test("stage assembles the manifest layout from a fixture", () => {
       : path.join(out, rel);
     assert.ok(fs.existsSync(file), `${rel} staged`);
   }
-  assert.ok(!fs.existsSync(path.join(out, "backend/dist/main.js.map")));
+  for (const rel of [
+    "main.js.map",
+    "main.d.ts",
+    "main.spec.js",
+    "tsconfig.tsbuildinfo",
+  ]) {
+    assert.ok(
+      !fs.existsSync(path.join(out, "backend/dist", rel)),
+      `${rel} left out`,
+    );
+  }
+  // The dependencies are one archive whose root is node_modules; the native
+  // addon is listed in it but stored beside it, and nothing is left loose.
+  const archived = listPackage(path.join(out, BACKEND_DEPS_ARCHIVE), {
+    isPack: false,
+  }).map((p) => p.split(path.sep).join("/"));
+  assert.ok(archived.includes("/node_modules/pkg/index.js"));
+  assert.ok(archived.includes("/node_modules/addon/addon.node"));
+  assert.ok(!fs.existsSync(path.join(out, "backend/node_modules")));
+  assert.ok(!fs.existsSync(`${out}.backend-deps`));
   assert.ok(!fs.existsSync(path.join(out, "postgres")));
   assert.ok(result.total > 0);
   assert.ok(logs.includes("skip   postgres"));
 });
 
-test("stage clears old content and --skip-backend-deps keeps node_modules", () => {
+test("stage clears old content and --skip-backend-deps keeps the archive", () => {
   const repo = fixtureRepo();
   const out = path.join(tmp(), "staging");
   const base = {
@@ -196,7 +229,9 @@ test("stage clears old content and --skip-backend-deps keeps node_modules", () =
   assert.throws(() => stage({ ...base, skipBackendDeps: true }), /existing/);
   stage(base);
   write(out, "stale.txt");
-  write(out, "backend/node_modules/pkg/marker.txt");
+  const archive = path.join(out, BACKEND_DEPS_ARCHIVE);
+  const packed = fs.readFileSync(archive);
+  write(out, "backend/node_modules.asar.unpacked/marker.txt");
   stage({
     ...base,
     skipBackendDeps: true,
@@ -206,8 +241,11 @@ test("stage clears old content and --skip-backend-deps keeps node_modules", () =
     },
   });
   assert.ok(!fs.existsSync(path.join(out, "stale.txt")));
+  assert.deepEqual(fs.readFileSync(archive), packed);
   assert.ok(
-    fs.existsSync(path.join(out, "backend/node_modules/pkg/marker.txt")),
+    fs.existsSync(
+      path.join(out, "backend/node_modules.asar.unpacked/marker.txt"),
+    ),
   );
 });
 
@@ -237,7 +275,7 @@ test("missingDestinations reports what is absent, ignoring skipped entries", () 
     skipBackendDeps: true,
   });
   assert.ok(!some.includes("postgres"));
-  assert.ok(!some.includes("backend/node_modules"));
+  assert.ok(!some.includes(BACKEND_DEPS_ARCHIVE));
 });
 
 test("the Visual C++ runtime is staged on Windows only, after PostgreSQL", () => {
@@ -421,7 +459,7 @@ test("a desktop entry comes from desktop/ and stays out of the layers", () => {
   const desktop = manifest.entries.filter((e) => e.kind === "desktop");
   assert.deepEqual(
     desktop.map((e) => e.to),
-    ["shell/parent-watch.cjs", "shell/icon.ico"],
+    ["shell/parent-watch.cjs", "shell/backend-deps.cjs", "shell/icon.ico"],
   );
   const entry = { kind: "desktop", from: "desktop/x.cjs", mirrors: "none: x" };
   for (const bad of [

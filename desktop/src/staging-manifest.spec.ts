@@ -97,7 +97,11 @@ function copyDestinations(instructions: string[]): string[] {
   return out;
 }
 
-/** Does a manifest destination (relative to the layer) account for a COPY destination? */
+/**
+ * Does a manifest destination (relative to the layer) account for a COPY
+ * destination? An archive of the path, `<dest>.asar`, does: the backend's
+ * node_modules is staged packed (desktop/scripts/lib/pack-deps.mjs).
+ */
 function accounts(to: string, copyDest: string): boolean {
   if (copyDest === "") {
     return to === "";
@@ -113,7 +117,11 @@ function accounts(to: string, copyDest: string): boolean {
     );
     return re.test(to);
   }
-  return to === copyDest || to.startsWith(copyDest + "/");
+  return (
+    to === copyDest ||
+    to === `${copyDest}.asar` ||
+    to.startsWith(copyDest + "/")
+  );
 }
 
 function layerDestinations(layer: string): string[] {
@@ -200,6 +208,7 @@ describe("staging manifest", () => {
     const desktopOnly = manifest.entries.filter((e) => e.kind === "desktop");
     expect(desktopOnly.map((e) => e.to)).toEqual([
       "shell/parent-watch.cjs",
+      "shell/backend-deps.cjs",
       "shell/icon.ico",
     ]);
     for (const entry of desktopOnly) {

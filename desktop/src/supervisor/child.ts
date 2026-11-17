@@ -5,6 +5,7 @@ import { ChildEnv } from "../env";
 import { Logger, LogSource } from "../logger";
 import { Clock, systemClock } from "./clock";
 import { asError, messageOf } from "./errors";
+import { PreloadMissingError } from "./backend-deps";
 import { ParentWatchMissingError, parentWatchArgs } from "./parent-watch";
 import { withDefaults } from "./types";
 
@@ -82,6 +83,12 @@ export interface ChildSpec {
    * container. The parent-watch prefix is added in front of them here.
    */
   readonly args: readonly string[];
+  /**
+   * Further desktop-owned preloads, by absolute path, loaded with `--require`
+   * after parent-watch and before `args`. The backend's is `backend-deps.ts`;
+   * the frontend has none. A missing one fails the start.
+   */
+  readonly preloads?: readonly string[];
   /** The layer's resource directory. */
   readonly cwd: string;
   /** The whole environment of the child; nothing is inherited beyond it. */
@@ -230,12 +237,24 @@ export function startChild(spec: ChildSpec, deps: ChildDeps): ChildHandle {
     neverStarted(new ParentWatchMissingError(deps.parentWatch));
     return notStarted;
   }
+  const preloads = spec.preloads ?? [];
+  const absent = preloads.find(
+    (preload) => !(deps.fileExists ?? existsSync)(preload),
+  );
+  if (absent !== undefined) {
+    neverStarted(new PreloadMissingError(absent));
+    return notStarted;
+  }
 
   let child: SpawnedProcess;
   try {
     child = (deps.spawn ?? nodeSpawn)(
       deps.execPath,
-      [...parentWatchArgs(deps.parentWatch), ...spec.args],
+      [
+        ...parentWatchArgs(deps.parentWatch),
+        ...preloads.flatMap((preload) => ["--require", preload]),
+        ...spec.args,
+      ],
       {
         cwd: spec.cwd,
         env: spec.env,

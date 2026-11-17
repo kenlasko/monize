@@ -20,6 +20,7 @@ import {
 } from "./backend";
 import { createSupervisor } from "./create-supervisor";
 import { FRONTEND_HEALTH_PATH, FRONTEND_SERVER_ARGS } from "./frontend";
+import { backendDepsPath } from "./backend-deps";
 import { parentWatchArgs, parentWatchPath } from "./parent-watch";
 
 /**
@@ -31,11 +32,13 @@ import { parentWatchArgs, parentWatchPath } from "./parent-watch";
  * boot step, a start argument, an image-level variable or a health route
  * changed for the containers is never silently missing on the desktop.
  *
- * The one difference allowed is named: `DESKTOP_ONLY_PREFIX`, the
- * parent-watch preload (`parent-watch.ts`) every child is started behind. The
- * last section boots the real supervisor over a fake spawner and holds every
- * command it spawns to exactly that prefix followed by the container's own
- * command for the same step, read from the two files.
+ * The differences allowed are named: `DESKTOP_ONLY_PREFIX`, the
+ * parent-watch preload (`parent-watch.ts`) every child is started behind, and
+ * `BACKEND_ONLY_PREFIX`, the preload (`backend-deps.ts`) that lets the
+ * backend's processes load their packages from the archive staging packs them
+ * into. The last section boots the real supervisor over a fake spawner and
+ * holds every command it spawns to exactly those prefixes followed by the
+ * container's own command for the same step, read from the two files.
  *
  * When it fails, the fix is in the supervisor (or `desktop/src/env.ts`), to
  * make the desktop do what the containers now do. It is never to teach this
@@ -355,29 +358,38 @@ describe("the health routes the supervisor polls exist", () => {
   });
 });
 
-describe("what the supervisor spawns is the containers' commands behind one named desktop-only prefix", () => {
+describe("what the supervisor spawns is the containers' commands behind the named desktop-only prefixes", () => {
   const RESOURCES = "/opt/monize/resources";
-  /** The only arguments the desktop adds: the orphan guard, never a layer argument. */
+  /** Arguments the desktop adds to every child: the orphan guard, never a layer argument. */
   const DESKTOP_ONLY_PREFIX = parentWatchArgs(
     parentWatchPath(RESOURCES, "linux"),
   );
+  /** Added to the backend's processes only, after DESKTOP_ONLY_PREFIX. */
+  const BACKEND_ONLY_PREFIX = [
+    "--require",
+    backendDepsPath(RESOURCES, "linux"),
+  ];
 
-  /** Each container command after `node`, in boot order, read from the files. */
-  function containerCommands(entrypoint: string): string[][] {
+  /**
+   * Each container command after `node`, in boot order, read from the files,
+   * behind the prefixes the desktop runs it with.
+   */
+  function expectedSpawns(entrypoint: string): string[][] {
     const backend = parseEntrypoint(entrypoint).steps.map((step) => [
+      ...DESKTOP_ONLY_PREFIX,
+      ...BACKEND_ONLY_PREFIX,
       step.script,
     ]);
     const [cmd] = execForms(productionStage("frontend/Dockerfile"), "CMD");
     if (cmd?.[0] !== "node") throw new Error("frontend CMD is not `node ...`");
-    return [...backend, cmd.slice(1)];
+    return [...backend, [...DESKTOP_ONLY_PREFIX, ...cmd.slice(1)]];
   }
 
-  /** Every way the spawned argv and the prefixed container commands disagree. */
+  /** Every way the spawned argv and the expected (prefixed) commands disagree. */
   function spawnProblems(
     spawned: readonly (readonly string[])[],
-    commands: readonly (readonly string[])[],
+    expected: readonly (readonly string[])[],
   ): string[] {
-    const expected = commands.map((args) => [...DESKTOP_ONLY_PREFIX, ...args]);
     const problems: string[] = [];
     for (let i = 0; i < Math.max(spawned.length, expected.length); i += 1) {
       const got = JSON.stringify(spawned[i] ?? null);
@@ -385,7 +397,7 @@ describe("what the supervisor spawns is the containers' commands behind one name
       if (got !== want) {
         problems.push(
           `spawn ${i + 1}: the supervisor ran ${got}; the container runs ` +
-            `${want} (its command behind DESKTOP_ONLY_PREFIX).`,
+            `${want} (its command behind the desktop-only prefixes).`,
         );
       }
     }
@@ -428,12 +440,19 @@ describe("what the supervisor spawns is the containers' commands behind one name
     return spawner.processes.map((spawned) => [...spawned.args]);
   }
 
-  it("spawns, in order, exactly the prefix plus each container command, and nothing else", async () => {
+  it("spawns, in order, exactly the prefixes plus each container command, and nothing else", async () => {
     const spawned = await spawnedByTheSupervisor();
 
-    expect(spawnProblems(spawned, containerCommands(read(ENTRYPOINT)))).toEqual(
+    expect(spawnProblems(spawned, expectedSpawns(read(ENTRYPOINT)))).toEqual(
       [],
     );
+  });
+
+  it("the backend's own prefix is two arguments, a --require of its staged preload's absolute path", () => {
+    expect(BACKEND_ONLY_PREFIX).toEqual([
+      "--require",
+      "/opt/monize/resources/shell/backend-deps.cjs",
+    ]);
   });
 
   it("the prefix is two arguments, a --require of the staged preload's absolute path", () => {
@@ -448,17 +467,30 @@ describe("what the supervisor spawns is the containers' commands behind one name
     const prefixed = commands.map((args) => [...DESKTOP_ONLY_PREFIX, ...args]);
 
     it("accepts the prefixed commands", () => {
-      expect(spawnProblems(prefixed, commands)).toEqual([]);
+      expect(spawnProblems(prefixed, prefixed)).toEqual([]);
     });
 
     it("fails on a missing prefix, an extra argument, or a missing step", () => {
-      expect(spawnProblems([commands[0], prefixed[1]], commands)).toEqual([
+      expect(spawnProblems([commands[0], prefixed[1]], prefixed)).toEqual([
         expect.stringContaining("spawn 1"),
       ]);
       expect(
-        spawnProblems([prefixed[0], [...prefixed[1], "--inspect"]], commands),
+        spawnProblems([prefixed[0], [...prefixed[1], "--inspect"]], prefixed),
       ).toEqual([expect.stringContaining("spawn 2")]);
-      expect(spawnProblems([prefixed[0]], commands)).toHaveLength(1);
+      expect(spawnProblems([prefixed[0]], prefixed)).toHaveLength(1);
+    });
+
+    it("expects the backend's prefix on the backend's steps and not on the frontend's", () => {
+      const expected = expectedSpawns(read(ENTRYPOINT));
+      const frontend = expected[expected.length - 1];
+      for (const backend of expected.slice(0, -1)) {
+        expect(backend.slice(0, 4)).toEqual([
+          ...DESKTOP_ONLY_PREFIX,
+          ...BACKEND_ONLY_PREFIX,
+        ]);
+      }
+      expect(frontend.slice(0, 2)).toEqual(DESKTOP_ONLY_PREFIX);
+      expect(frontend).not.toContain(BACKEND_ONLY_PREFIX[1]);
     });
   });
 });

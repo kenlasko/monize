@@ -5,6 +5,7 @@ import {
   SpawnedProcess,
   SpawnFn,
 } from "../supervisor/child";
+import { BACKEND_DEPS_FILE } from "../supervisor/backend-deps";
 import { PARENT_WATCH_FILE } from "../supervisor/parent-watch";
 
 /** Where the specs say the preload is; `fileExists` is faked to match. */
@@ -16,15 +17,23 @@ export const FAKE_PARENT_WATCH_DEPS = {
   fileExists: (path: string) => path === FAKE_PARENT_WATCH,
 } as const;
 
+const DESKTOP_PRELOADS = [PARENT_WATCH_FILE, BACKEND_DEPS_FILE];
+
 /**
- * A spawn's arguments without the leading parent-watch prefix, so a journal
- * entry reads as the layer's own command. Specs that are about the prefix
- * read `FakeProcess.args`, which keeps it.
+ * A spawn's arguments without the leading desktop preloads (parent-watch, and
+ * the backend's backend-deps), so a journal entry reads as the layer's own
+ * command. Specs that are about the prefixes read `FakeProcess.args`, which
+ * keeps them.
  */
 export function layerArgs(args: readonly string[]): readonly string[] {
-  return args[0] === "--require" && args[1]?.endsWith(PARENT_WATCH_FILE)
-    ? args.slice(2)
-    : args;
+  let rest = args;
+  while (
+    rest[0] === "--require" &&
+    DESKTOP_PRELOADS.some((file) => rest[1]?.endsWith(file))
+  ) {
+    rest = rest.slice(2);
+  }
+  return rest;
 }
 
 /**

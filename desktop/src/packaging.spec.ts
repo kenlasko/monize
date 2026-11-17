@@ -104,6 +104,38 @@ describe("electron-builder.yml", () => {
     expect(pkg.devDependencies["electron-builder"]).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
+  it("names the setup program Monize Setup, and only the setup program", () => {
+    // The installer's FileDescription (what Task Manager shows) is the
+    // package description; Monize.exe's is productName.
+    expect(block("extraMetadata").trim()).toBe("description: Monize Setup");
+    expect(config).toMatch(/^productName: Monize$/m);
+    // The template's shortcut and "Installed apps" comments use the same
+    // value, so installer.nsh puts the application's name back there.
+    expect(nsh).toMatch(
+      /!ifdef APP_DESCRIPTION\n\s+!undef APP_DESCRIPTION\n!endif\n!define APP_DESCRIPTION "Monize"\n/,
+    );
+  });
+
+  it("stages the backend's dependencies as the one archive the backend-deps preload reads", () => {
+    // pack-deps.mjs names the archive, the manifest stages it, and the
+    // preload in <resources>/shell/ looks for it one directory up.
+    const packDeps = read("scripts/lib/pack-deps.mjs");
+    const preload = read("resources/backend-deps.cjs");
+    const deps = (manifest.entries as { kind?: string; to: string }[]).filter(
+      (entry) => entry.kind === "backend-deps",
+    );
+    expect(packDeps).toContain(
+      'export const BACKEND_DEPS_ARCHIVE = "backend/node_modules.asar";',
+    );
+    expect(deps.map((entry) => entry.to)).toEqual([
+      "backend/node_modules.asar",
+    ]);
+    expect(preload).toContain(
+      'path.join(__dirname, "..", "backend", "node_modules.asar")',
+    );
+    expect(block("extraResources")).toContain("      - backend/**\n");
+  });
+
   it("names build resources that exist", () => {
     for (const file of ["build/icon.ico", "build/installer.nsh"]) {
       expect(config).toContain(file);

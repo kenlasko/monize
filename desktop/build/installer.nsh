@@ -53,6 +53,15 @@
 ; database folder, the marker the application writes once initdb has finished.
 !define MONIZE_INIT_MARKER "monize.initialized"
 
+; electron-builder passes the package description ("Monize Setup", set in
+; electron-builder.yml so that Task Manager names the running setup that) as
+; APP_DESCRIPTION, and the template also uses it as the shortcuts' comment and
+; the "Installed apps" comment. Those describe the application, not the setup.
+!ifdef APP_DESCRIPTION
+  !undef APP_DESCRIPTION
+!endif
+!define APP_DESCRIPTION "Monize"
+
 !define UNINSTALL_SECTION_NAME "Remove Monize"
 !define MONIZE_TXT_REMOVE_DATA "Remove my data (%LOCALAPPDATA%\${MONIZE_DATA_DIR_NAME}, or the folder it was moved to)"
 
