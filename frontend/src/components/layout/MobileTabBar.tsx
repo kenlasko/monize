@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 import { Bars3Icon, PlusIcon } from '@heroicons/react/24/outline';
@@ -9,7 +10,9 @@ import { isPublicPath } from '@/lib/public-paths';
 import { useAuthStore } from '@/store/authStore';
 import { startNewTransaction, useCommandPaletteStore } from '@/store/commandPaletteStore';
 import { useMobileChromeStore } from '@/store/mobileChromeStore';
-import { useMobileAddActionStore } from '@/store/mobileAddActionStore';
+import { useMobileAddActionStore, type MobileAddChoice } from '@/store/mobileAddActionStore';
+import { tourAnchor } from '@/lib/tours/anchors';
+import { MobileAddChooser } from './MobileAddChooser';
 
 const TAB_CLASS =
   'flex min-w-0 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500';
@@ -47,6 +50,9 @@ export function MobileTabBar() {
   // The page on screen may name its own "new" action (a new account on
   // Accounts); without one the button opens a new transaction.
   const pageAction = useMobileAddActionStore((s) => s.action);
+  // A page whose header "new" button is a menu hands over its choices, and
+  // the add button asks which one rather than picking for the reader.
+  const [choices, setChoices] = useState<readonly MobileAddChoice[] | null>(null);
 
   if (!isAuthenticated || isPublicPath(pathname)) return null;
 
@@ -94,12 +100,16 @@ export function MobileTabBar() {
               onClick={() => {
                 if (pageAction) {
                   clearNewTransactionRequest();
-                  pageAction.run();
+                  const offered = pageAction.choices?.() ?? null;
+                  if (offered && offered.length > 1) setChoices(offered);
+                  else pageAction.run();
                 } else {
                   startNewTransaction(pathname, router.push);
                 }
               }}
               aria-label={pageAction?.label ?? tPalette('newTransaction')}
+              aria-haspopup={pageAction?.choices?.() ? 'dialog' : undefined}
+              {...(pageAction?.tourAnchor ? tourAnchor(pageAction.tourAnchor) : {})}
               className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 motion-reduce:transition-none dark:focus-visible:ring-offset-gray-900"
             >
               <PlusIcon aria-hidden className="h-7 w-7" />
@@ -119,6 +129,11 @@ export function MobileTabBar() {
           <span className="max-w-full truncate">{t('more')}</span>
         </button>
       </div>
+      <MobileAddChooser
+        title={pageAction?.label ?? ''}
+        choices={choices}
+        onClose={() => setChoices(null)}
+      />
     </nav>
   );
 }

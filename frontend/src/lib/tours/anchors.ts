@@ -160,8 +160,20 @@ export function tourAnchorSelector(id: TourAnchorId): string {
   return `[data-tour-id="${id}"]`;
 }
 
-/** Find the live element for an anchor id, or null when it is not mounted. */
+/**
+ * Find the live element for an anchor id, or null when it is not mounted.
+ *
+ * A page's header "new" button is not drawn while the mobile tab bar is, and
+ * the tab bar's add button carries the same anchor in its place, so where the
+ * browser can say which copy is drawn (`checkVisibility`) the drawn one wins and
+ * a copy that is mounted but hidden does not count as found.
+ */
 export function findTourAnchor(id: TourAnchorId): HTMLElement | null {
   if (typeof document === 'undefined') return null;
-  return document.querySelector<HTMLElement>(tourAnchorSelector(id));
+  const matches = Array.from(document.querySelectorAll<HTMLElement>(tourAnchorSelector(id)));
+  return (
+    matches.find(
+      (element) => typeof element.checkVisibility !== 'function' || element.checkVisibility(),
+    ) ?? null
+  );
 }

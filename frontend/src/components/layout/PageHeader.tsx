@@ -20,6 +20,12 @@ interface PageHeaderProps {
   /** Action buttons to render on the right side */
   actions?: ReactNode;
   /**
+   * The page's "New ..." button, drawn after `actions`. Not drawn below `xl`,
+   * where the mobile tab bar's add button runs the same action
+   * (`useMobileAddAction`), so a phone does not spend a full-width row on it.
+   */
+  primaryAction?: ReactNode;
+  /**
    * The guide's page for this feature, a key of `DOCS_LINKS`
    * (`@/lib/docs-links`). A click opens it in the help panel; a modified click
    * (new tab, copy link) goes to the same page on monize.net.
@@ -46,7 +52,7 @@ interface PageHeaderProps {
  * Inline page header with title, subtitle, and action buttons.
  * Renders directly in the content area without a separate background bar.
  */
-export function PageHeader({ title, subtitle, actions, help, compactMobileActions, icon, titleAdornment }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, actions, primaryAction, help, compactMobileActions, icon, titleAdornment }: PageHeaderProps) {
   const t = useTranslations('layout');
   // Below `xl` the title is drawn large and handed to the app header once it
   // scrolls away, unless something on the page collapses in its place.
@@ -72,7 +78,8 @@ export function PageHeader({ title, subtitle, actions, help, compactMobileAction
     };
   }, [contextSlug]);
 
-  const layoutClasses = actions
+  const hasActions = !!actions || !!primaryAction;
+  const layoutClasses = hasActions
     ? compactMobileActions
       ? 'flex flex-row justify-between items-start sm:items-center gap-4'
       : 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'
@@ -132,15 +139,20 @@ export function PageHeader({ title, subtitle, actions, help, compactMobileAction
       ) : (
         titleBlock
       )}
-      {actions && (
+      {hasActions && (
         <div
-          className={`flex flex-wrap items-center gap-3 ${
+          className={`${
+            // With nothing but the primary action, the whole row goes where it
+            // goes, so a phone keeps no empty gap under the title.
+            actions ? 'flex' : 'hidden xl:flex'
+          } flex-wrap items-center gap-3 ${
             compactMobileActions
               ? 'w-auto'
               : 'w-full sm:w-auto [&>*]:w-full [&>*]:sm:w-auto'
           }`}
         >
           {actions}
+          {primaryAction && <div className="hidden xl:contents">{primaryAction}</div>}
         </div>
       )}
     </div>

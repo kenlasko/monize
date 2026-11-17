@@ -43,6 +43,29 @@ describe('PageHeader', () => {
     expect(screen.queryByText('A helpful description')).not.toBeInTheDocument();
   });
 
+  it('draws the primary action only where the mobile tab bar is not drawn', () => {
+    render(<PageHeader title="Accounts" primaryAction={<button>New Account</button>} />);
+    const wrapper = screen.getByRole('button', { name: 'New Account' }).parentElement!;
+    expect(wrapper.className).toContain('hidden');
+    expect(wrapper.className).toContain('xl:contents');
+    // With nothing else to show, the action row goes too, so a phone keeps
+    // no empty gap under the title.
+    expect(wrapper.parentElement!.className).toMatch(/(^|\s)hidden xl:flex(\s|$)/);
+  });
+
+  it('keeps the other actions on a phone beside a primary action', () => {
+    render(
+      <PageHeader
+        title="Investments"
+        actions={<button>Refresh</button>}
+        primaryAction={<button>New Transaction</button>}
+      />,
+    );
+    const row = screen.getByRole('button', { name: 'Refresh' }).parentElement!;
+    expect(row.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+    expect(row).toContainElement(screen.getByRole('button', { name: 'New Transaction' }));
+  });
+
   it('renders action buttons when provided', () => {
     render(
       <PageHeader

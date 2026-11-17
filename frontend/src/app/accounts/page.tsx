@@ -245,7 +245,9 @@ function AccountsContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, portfolioFailed, convertToDefault]);
 
-  useMobileAddAction(t('page.newAccount'), openCreate);
+  useMobileAddAction(t('page.newAccount'), openCreate, {
+    tourAnchor: TOUR_ANCHORS.accountsAddButton,
+  });
 
   return (
     <PageLayout>
@@ -254,7 +256,7 @@ function AccountsContent() {
           title={t('page.title')}
           subtitle={t('page.subtitle')}
           help='accounts'
-          actions={
+          primaryAction={
             <Button
               {...tourAnchor(TOUR_ANCHORS.accountsAddButton)}
               onClick={openCreate}

@@ -30,7 +30,7 @@ import {
 import { useDensityPreference } from '@/store/densityStore';
 import { DensityToggle } from '@/components/ui/DensityToggle';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
-import { useMobileAddAction } from '@/store/mobileAddActionStore';
+import { useMobileAddChoices } from '@/store/mobileAddActionStore';
 
 const logger = createLogger('Reports');
 
@@ -327,7 +327,19 @@ function ReportsContent() {
     return {};
   };
 
-  useMobileAddAction(t('page.newReport'), () => router.push('/reports/custom/new'));
+  // The header's New Report is a menu; the tab bar's add button offers both.
+  useMobileAddChoices(t('page.newReport'), [
+    {
+      key: 'standard',
+      label: t('newReportButton.standardReport'),
+      run: () => router.push('/reports/custom/new'),
+    },
+    {
+      key: 'investment',
+      label: t('newReportButton.investmentReport'),
+      run: () => router.push('/reports/investment/new'),
+    },
+  ]);
 
   return (
     <PageLayout>
@@ -337,7 +349,7 @@ function ReportsContent() {
           title={t('page.title')}
           subtitle={t('page.subtitle')}
           help='reports'
-          actions={
+          primaryAction={
             <NewReportButton
               onNewStandard={() => router.push('/reports/custom/new')}
               onNewInvestment={() => router.push('/reports/investment/new')}

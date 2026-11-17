@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent } from '@/test/render';
 import { useDensityStore } from '@/store/densityStore';
 import type { DensityLevel } from '@/hooks/useTableDensity';
 import ReportsPage from './page';
+import { useMobileAddActionStore } from '@/store/mobileAddActionStore';
 
 // Mock next/image
 vi.mock('next/image', () => ({
@@ -141,11 +142,12 @@ vi.mock('@/components/layout/PageLayout', () => ({
 }));
 
 vi.mock('@/components/layout/PageHeader', () => ({
-  PageHeader: ({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: React.ReactNode }) => (
+  PageHeader: ({ title, subtitle, actions, primaryAction }: { title: string; subtitle?: string; actions?: React.ReactNode; primaryAction?: React.ReactNode }) => (
     <div data-testid="page-header">
       <h1>{title}</h1>
       {subtitle && <p>{subtitle}</p>}
       {actions}
+      {primaryAction}
     </div>
   ),
 }));
@@ -345,6 +347,17 @@ describe('ReportsPage', () => {
     });
     fireEvent.click(screen.getByText('New Report'));
     fireEvent.click(screen.getByText('Investment Report'));
+    expect(mockPush).toHaveBeenCalledWith('/reports/investment/new');
+  });
+
+  it('offers the mobile add button both kinds of report, as the header menu does', async () => {
+    render(<ReportsPage />);
+    await waitFor(() => {
+      expect(useMobileAddActionStore.getState().action?.label).toBe('New Report');
+    });
+    const choices = useMobileAddActionStore.getState().action?.choices?.() ?? [];
+    expect(choices.map((c) => c.label)).toEqual(['Standard Report', 'Investment Report']);
+    choices[1].run();
     expect(mockPush).toHaveBeenCalledWith('/reports/investment/new');
   });
 

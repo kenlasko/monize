@@ -113,7 +113,7 @@ function BudgetsContent() {
           title={t('pages.list.title')}
           subtitle={t('pages.list.subtitle')}
           help='budgets'
-          actions={
+          primaryAction={
             <Button onClick={() => setShowWizard(true)}>
               {t('pages.list.newBudget')}
             </Button>

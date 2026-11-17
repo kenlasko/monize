@@ -69,6 +69,7 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { useAuthStore } from '@/store/authStore';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useCommandPaletteStore, type NewTransactionPayee } from '@/store/commandPaletteStore';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
 import { useSwipeToPaginate } from '@/hooks/useSwipeToPaginate';
 import { SWIPE_PAGINATE_ATTR } from '@/hooks/swipe-gesture';
 import { AccountFormModal } from '@/components/accounts/AccountFormModal';
@@ -674,6 +675,10 @@ function TransactionsContent() {
     setCreateForPayee(null);
     openCreate();
   };
+
+  useMobileAddAction(t('page.newButton'), handleCreateNew, {
+    tourAnchor: TOUR_ANCHORS.transactionsNewButton,
+  });
 
   // The command palette's "New transaction", on arrival or while already here.
   const newTransactionRequest = useCommandPaletteStore((s) => s.newTransactionRequest);
@@ -1328,7 +1333,7 @@ function TransactionsContent() {
           title={t('page.title')}
           subtitle={t('page.subtitle')}
           help='transactions'
-          actions={
+          primaryAction={
             <Button
               {...tourAnchor(TOUR_ANCHORS.transactionsNewButton)}
               onClick={handleCreateNew}

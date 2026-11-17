@@ -718,7 +718,9 @@ function BillsContent() {
     [calendarMonth, scheduledTransactions],
   );
 
-  useMobileAddAction(t('page.newButton'), handleCreateNew);
+  useMobileAddAction(t('page.newButton'), handleCreateNew, {
+    tourAnchor: TOUR_ANCHORS.billsNewButton,
+  });
 
   return (
     <PageLayout>
@@ -728,7 +730,7 @@ function BillsContent() {
           title={t('page.title')}
           subtitle={t('page.subtitle')}
           help='bills'
-          actions={
+          primaryAction={
             <Button onClick={handleCreateNew} {...tourAnchor(TOUR_ANCHORS.billsNewButton)}>
               {t('page.newButton')}
             </Button>
