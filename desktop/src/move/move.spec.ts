@@ -76,6 +76,10 @@ describe("runMove", () => {
     expect(snapshot(fixture.target)).toEqual(movedSnapshot(fixture.source));
     expect(snapshot(fixture.target)).toHaveProperty("pgdata/pg_notify/");
     expect(snapshot(fixture.target)).not.toHaveProperty("shell/Network/");
+    // The local-network root goes too, so devices keep trusting this install.
+    expect(Object.keys(snapshot(fixture.target))).toContain(
+      "tls/root-key.json",
+    );
     // A backup keeps the date it was written, which the application shows.
     expect(statSync(join(fixture.target, BACKUP)).mtimeMs).toBe(
       statSync(join(fixture.source, BACKUP)).mtimeMs,

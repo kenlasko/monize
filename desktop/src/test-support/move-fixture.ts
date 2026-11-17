@@ -50,6 +50,8 @@ const FILES: Readonly<Record<string, string>> = {
   "logs/main.log": "a line\n",
   "shell/Local State": '{"os_crypt":{"encrypted_key":"abc"}}',
   "shell/Network/Cookies": "cookies",
+  "tls/root.crt": "-----BEGIN CERTIFICATE-----\n",
+  "tls/root-key.json": '{"enc":"safeStorage","value":"AAAA"}',
 };
 const EMPTY_DIRS = ["pgdata/pg_notify", "pgdata/pg_tblspc", "attachments"];
 

@@ -106,8 +106,9 @@ describe("the move coordinator", () => {
 
     expect(events).toEqual([
       "pick",
-      // 9 files: the data, and of the Chromium profile only its key file.
-      `confirm:9:${fixture.target}`,
+      // 11 files: the data, the local-network certificates, and of the
+      // Chromium profile only its key file.
+      `confirm:11:${fixture.target}`,
       "begin",
       "progress:stopping",
       "stop-stack",

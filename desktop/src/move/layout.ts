@@ -46,6 +46,10 @@ export const OWNED_TOP_LEVEL = [
   // RECOVERY_REMINDER_FILE in shell/recovery-reminder.ts; packaging.spec.ts
   // holds this list to the uninstaller's.
   "recovery-reminder.json",
+  // Local-network access: the root and server certificates and their
+  // wrapped keys (DataPaths.tls). A move carries them, so devices that trust
+  // this install keep trusting it in the new folder.
+  "tls",
 ] as const;
 
 /**
