@@ -452,7 +452,7 @@ describe("DashboardTriviaService", () => {
       expect(triviaRepo.upsert.mock.calls[0][0].items).toHaveLength(2);
     });
 
-    it("ranks only open, counted assets, and none across currencies", async () => {
+    it("ranks only open or still-valued, counted assets, and none across currencies", async () => {
       ai.getStatus.mockResolvedValue({ configured: false, relayActive: false });
       const asset = (over: object) => ({
         name: "Home",
@@ -465,7 +465,12 @@ describe("DashboardTriviaService", () => {
       });
       accounts.findAll.mockResolvedValue([
         asset({}),
-        asset({ name: "Sold", isClosed: true, currencyCode: "USD" }),
+        asset({
+          name: "Sold",
+          isClosed: true,
+          currentBalance: "0",
+          currencyCode: "USD",
+        }),
         asset({
           name: "Hidden",
           excludeFromNetWorth: true,
@@ -492,6 +497,34 @@ describe("DashboardTriviaService", () => {
       expect(
         triviaRepo.upsert.mock.calls[0][0].figures.assetName,
       ).toBeUndefined();
+    });
+
+    it("loads closed accounts and ranks a closed asset that still carries a value", async () => {
+      ai.getStatus.mockResolvedValue({ configured: false, relayActive: false });
+      accounts.findAll.mockResolvedValue([
+        {
+          name: "Home",
+          accountType: AccountType.ASSET,
+          isClosed: false,
+          excludeFromNetWorth: false,
+          currencyCode: "CAD",
+          currentBalance: "150",
+        },
+        {
+          name: "Cottage",
+          accountType: AccountType.ASSET,
+          isClosed: true,
+          excludeFromNetWorth: false,
+          currencyCode: "CAD",
+          currentBalance: "900",
+        },
+      ]);
+      await service.generateForUser(userId);
+      expect(accounts.findAll).toHaveBeenCalledWith(userId, true);
+      expect(triviaRepo.upsert.mock.calls[0][0].figures.assetName).toEqual({
+        kind: "text",
+        value: "Cottage",
+      });
     });
   });
 

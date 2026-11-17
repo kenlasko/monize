@@ -243,10 +243,15 @@
 <h3 id="closing-accounts">Closing Accounts<a class="hlink" href="#closing-accounts" aria-label="Link to this section">#</a></h3>
 <p>When an account is no longer active (e.g., you closed a bank account), you can close it in Monize:</p>
 <ol>
-<li>Make sure its balance is zero</li>
 <li>Click <strong>Close</strong> on the account in the list</li>
 <li>Confirm in the <strong>Close Account</strong> dialog</li>
 </ol>
+<p>An account does not have to be at zero to close. If it still has a balance (a few cents of interest you never moved, or an amount still owed on a card you cancelled), the dialog shows the balance. That balance stays in the closed account and keeps counting toward your net worth, the summary cards on the Accounts page and credit utilization. A closed card&#x27;s credit limit no longer counts, so a balance still owed on it shows as fully used credit and raises your overall utilization. A closed account cannot be edited, so if you do not want its balance counted, edit the account and turn on <strong>Exclude from net worth</strong> before you close it. To change the balance later, reopen the account, record the transaction, and close it again.</p>
+<p>Two things still stop a close, because they would change the balance after the account is closed:</p>
+<ul>
+<li><strong>Securities.</strong> An investment account must hold no securities. Sell them or transfer them to another account first. Any cash left in the account can stay.</li>
+<li><strong>Future-dated transactions.</strong> A transaction dated after today would change the balance on that date. Delete or void it first.</li>
+</ul>
 <p>Closed accounts are hidden from transaction dropdowns and from the account list&#x27;s default <strong>Active</strong> view, and appear under the <strong>Closed</strong> filter, but their historical data is preserved for reporting. Click <strong>Reopen</strong> to make an account active again. Closing or reopening an investment account acts on both of its ledgers.</p>
 <h3 id="deleting-accounts">Deleting Accounts<a class="hlink" href="#deleting-accounts" aria-label="Link to this section">#</a></h3>
 <p>Accounts can only be deleted if they have no transactions and no scheduled transaction on <strong>Bills &amp; Deposits</strong> uses them. That covers a bill or deposit paid from the account, a transfer into it, an investment funded from it, and a split line (or a changed upcoming occurrence&#x27;s split line) that transfers into it. If an account has transactions, you must either delete the transactions first or close the account instead. If a bill or deposit uses it, delete that schedule or change it to another account first, or close the account instead. A loan or mortgage&#x27;s own scheduled payment is the exception: it is deleted together with the account. Deleting an investment account deletes both of its ledgers.</p>

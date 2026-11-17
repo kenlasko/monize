@@ -21,6 +21,7 @@ import {
   RateIndex,
 } from "../common/time-series/rate-index.util";
 import { returnedRows } from "../common/db/query-result";
+import { accountCarriesBalanceSql } from "../accounts/account-carries-balance";
 import { withSystemContext, withUserContext } from "../common/db/with-context";
 import {
   FetchSyncJob,
@@ -276,7 +277,7 @@ export class ExchangeRateService implements OnModuleInit {
              SELECT a.user_id
              FROM accounts a
              INNER JOIN user_preferences up ON up.user_id = a.user_id
-             WHERE a.is_closed = false
+             WHERE ${accountCarriesBalanceSql("a")}
                AND a.currency_code != up.default_currency
              UNION
              SELECT a.user_id
@@ -580,7 +581,7 @@ export class ExchangeRateService implements OnModuleInit {
     }> = await withScopedDb(this.dataSource, (manager) =>
       manager.query(
         `SELECT DISTINCT code, c.kind, c.quote_symbol AS "quoteSymbol" FROM (
-         SELECT currency_code AS code FROM accounts WHERE is_closed = false
+         SELECT currency_code AS code FROM accounts WHERE ${accountCarriesBalanceSql()}
          UNION
          SELECT s.currency_code AS code
          FROM securities s
@@ -765,7 +766,7 @@ export class ExchangeRateService implements OnModuleInit {
               )::TEXT AS earliest
        FROM accounts a
        WHERE a.currency_code != $1
-         AND a.is_closed = false
+         AND ${accountCarriesBalanceSql("a")}
          ${accountFilter}`,
           params,
         );

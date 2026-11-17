@@ -1,3 +1,4 @@
+import { accountCarriesBalanceSql } from "./account-carries-balance";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 
@@ -492,7 +493,8 @@ describe("DailyBalanceTotalsService", () => {
       );
 
       const scopeQuery = queries.find((q) => q.sql.includes("FROM accounts"))!;
-      expect(scopeQuery.sql).toContain("is_closed = false");
+      // Open accounts, and a closed one still holding a balance.
+      expect(scopeQuery.sql).toContain(accountCarriesBalanceSql());
       expect(scopeQuery.sql).toContain("user_id = $1 OR id = ANY($3::UUID[])");
       expect(scopeQuery.params).toEqual(["user-1", ["chequing"], ["joint-1"]]);
     });

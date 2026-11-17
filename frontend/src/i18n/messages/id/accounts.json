@@ -94,9 +94,9 @@
       "reopenAccount": "Buka Kembali Akun",
       "deleteAccount": "Hapus Akun",
       "deleteTitle": "Hapus akun secara permanen (tanpa transaksi)",
-      "closeTitleDisabled": "Saldo akun harus nol untuk menutupnya",
+      "closeTitleDisabled": "Jual atau pindahkan sekuritas akun ini sebelum menutupnya",
       "closeTitleEnabled": "Tutup akun",
-      "closeTitleUnknownValue": "Total akun ini tidak dapat dihitung, sehingga tidak dapat dipastikan kosong",
+      "closeTitleUnknownValue": "Nilai sekuritas akun ini tidak dapat dihitung, sehingga tidak dapat dipastikan bahwa akun ini tidak memegang sekuritas apa pun",
       "details": "Detail"
     },
     "jointBadge": "Bersama",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "Tutup Akun",
-    "closeMessage": "Apakah Anda yakin ingin menutup \"{name}\"? Akun harus memiliki saldo nol untuk dapat ditutup.",
+    "closeMessage": "Apakah Anda yakin ingin menutup \"{name}\"? Akun yang ditutup tidak dapat diubah sampai Anda membukanya kembali.",
+    "closeMessageWithBalance": "Apakah Anda yakin ingin menutup \"{name}\"? Saldonya sebesar {balance} tetap berada di akun dan tetap dihitung dalam kekayaan bersih Anda. Akun yang ditutup tidak dapat diubah sampai Anda membukanya kembali, jadi untuk mengecualikannya dari kekayaan bersih, edit akun dan kecualikan sebelum menutupnya.",
+    "closeMessageWithBalanceExcluded": "Apakah Anda yakin ingin menutup \"{name}\"? Saldonya sebesar {balance} tetap berada di akun. Akun ini dikecualikan dari kekayaan bersih, sehingga saldonya tidak dihitung di sana. Akun yang ditutup tidak dapat diubah sampai Anda membukanya kembali.",
     "closeConfirm": "Tutup Akun",
     "closeConfirmLoading": "Menutup...",
     "deleteTitle": "Hapus Akun",

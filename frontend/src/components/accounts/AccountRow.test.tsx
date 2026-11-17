@@ -562,7 +562,7 @@ describe('AccountRow', () => {
       expect(screen.getByText('Close')).toBeInTheDocument();
     });
 
-    it('disables Close button when balance is non-zero', () => {
+    it('enables Close button when the account still holds a balance', () => {
       const props = createDefaultProps({
         density: 'normal',
         account: createAccount({ isClosed: false, currentBalance: 500 }),
@@ -570,7 +570,7 @@ describe('AccountRow', () => {
       renderAccountRow(props);
 
       const closeButton = screen.getByText('Close');
-      expect(closeButton).toBeDisabled();
+      expect(closeButton).not.toBeDisabled();
     });
 
     it('enables Close button when balance is zero', () => {
@@ -775,15 +775,15 @@ describe('AccountRow', () => {
       expect(screen.queryByTitle('Reconcile')).not.toBeInTheDocument();
     });
 
-    it('disables close icon button when balance is non-zero in dense mode', () => {
+    it('offers the close icon button on an account that still holds a balance in dense mode', () => {
       const props = createDefaultProps({
         density: 'dense',
         account: createAccount({ isClosed: false, currentBalance: 100 }),
       });
       renderAccountRow(props);
 
-      const closeButton = screen.getByTitle('Balance must be zero');
-      expect(closeButton).toBeDisabled();
+      expect(screen.getByTitle('Close account')).not.toBeDisabled();
+      expect(screen.queryByTitle('Balance must be zero')).not.toBeInTheDocument();
     });
 
     it('does not render Delete icon when isDeletable is false in dense mode', () => {
@@ -1190,7 +1190,7 @@ describe('AccountRow', () => {
       expect(byKey.get('netWorthExclusion')?.hidden).toBe(true);
     });
   });
-  describe('the Close action on a small balance', () => {
+  describe('the Close action and what the account holds', () => {
     const labels = {
       viewTransactions: 'View Transactions',
       details: 'Details',
@@ -1210,8 +1210,9 @@ describe('AccountRow', () => {
       onReopen: vi.fn(),
       onDeleteClick: vi.fn(),
     };
-    const closeActionFor = (currencyCode: string, value: number) => {
-      const account = createAccount({ currencyCode, currentBalance: value });
+    /** A plain (non-investment) account holding `balance`. */
+    const closeActionForBalance = (currencyCode: string, balance: number) => {
+      const account = createAccount({ currencyCode, currentBalance: balance });
       const logical: LogicalAccount = {
         id: account.id,
         primary: account,
@@ -1219,8 +1220,30 @@ describe('AccountRow', () => {
         memberIds: [account.id],
         displayName: account.name,
         isInvestment: false,
-        cashRegisterId: null,
+        cashRegisterId: account.id,
         holdingsAccountId: null,
+        combinedValue: balance,
+      };
+      const actions = buildAccountActions(account, true, labels, handlers, logical);
+      return actions.find((a) => a.key === 'close');
+    };
+    /** A standalone investment account with no cash whose securities are worth `value`. */
+    const closeActionFor = (currencyCode: string, value: number) => {
+      const account = createAccount({
+        currencyCode,
+        currentBalance: 0,
+        accountType: 'INVESTMENT',
+        accountSubType: null,
+      });
+      const logical: LogicalAccount = {
+        id: account.id,
+        primary: account,
+        cash: null,
+        memberIds: [account.id],
+        displayName: account.name,
+        isInvestment: true,
+        cashRegisterId: account.id,
+        holdingsAccountId: account.id,
         combinedValue: value,
       };
       const actions = buildAccountActions(account, true, labels, handlers, logical);
@@ -1231,29 +1254,44 @@ describe('AccountRow', () => {
       act(() => clearCurrencyDecimals());
     });
 
-    it('does not offer Close on a coin wallet holding 0.000025 BTC', () => {
+    it('offers Close on an account that still holds a balance', () => {
+      const close = closeActionForBalance('CAD', 250);
+      expect(close?.disabled).toBe(false);
+      expect(close?.title).toBe('Close account');
+    });
+
+    it('offers Close on an account that owes a balance', () => {
+      expect(closeActionForBalance('CAD', -42.1)?.disabled).toBe(false);
+    });
+
+    it('offers Close on a coin wallet still holding 0.000025 BTC', () => {
+      act(() => registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]));
+      expect(closeActionForBalance('BTC', 0.000025)?.disabled).toBe(false);
+    });
+
+    it('does not offer Close on an account holding 0.000025 BTC of securities', () => {
       act(() => registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]));
       const close = closeActionFor('BTC', 0.000025);
       expect(close?.disabled).toBe(true);
       expect(close?.title).toBe('Balance must be zero');
     });
 
-    it('does not offer Close on a coin the registry has not loaded yet', () => {
+    it('does not offer Close on coin securities the registry has not loaded yet', () => {
       expect(closeActionFor('BTC', 0.000025)?.disabled).toBe(true);
     });
 
-    it('still offers Close on an empty coin wallet', () => {
+    it('offers Close on an investment account holding no securities', () => {
       act(() => registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]));
       const close = closeActionFor('BTC', 0);
       expect(close?.disabled).toBe(false);
       expect(close?.title).toBe('Close account');
     });
 
-    it('treats a CAD balance of 0.004 as before (non-zero at four places)', () => {
+    it('treats CAD securities worth 0.004 as held (non-zero at four places)', () => {
       expect(closeActionFor('CAD', 0.004)?.disabled).toBe(true);
     });
 
-    it('treats a CAD balance below half a basis point as empty, as before', () => {
+    it('treats CAD securities worth below half a basis point as none', () => {
       expect(closeActionFor('CAD', 0.00004)?.disabled).toBe(false);
     });
   });
@@ -1420,7 +1458,7 @@ describe('AccountRow', () => {
       expect(screen.queryByText('Reconcile')).not.toBeInTheDocument();
     });
 
-    it('enables Close only when the whole entity is empty', () => {
+    it('enables Close on an empty pair', () => {
       renderAccountRow(
         createDefaultProps({
           account: pairLogical().primary,
@@ -1431,7 +1469,7 @@ describe('AccountRow', () => {
       expect(screen.getByText('Close')).not.toBeDisabled();
     });
 
-    it('disables Close when the pair still holds value anywhere', () => {
+    it('disables Close when the pair still holds securities', () => {
       renderAccountRow(
         createDefaultProps({
           account: pairLogical().primary,
@@ -1442,8 +1480,32 @@ describe('AccountRow', () => {
       expect(screen.getByText('Close')).toBeDisabled();
     });
 
-    // An unknown total is not a zero one, so the account cannot be confirmed
-    // empty and Close stays unavailable rather than guessing.
+    it('disables Close on a pair holding a position priced at zero', () => {
+      renderAccountRow(
+        createDefaultProps({
+          account: pairLogical().primary,
+          logical: pairLogical({ combinedValue: 0, positionCount: 1 }),
+        }),
+      );
+
+      expect(screen.getByText('Close')).toBeDisabled();
+    });
+
+    it('offers Close on a pair whose only value is cash in its cash half', () => {
+      const logical = pairLogical({ combinedValue: 3500 });
+      const withCash: LogicalAccount = {
+        ...logical,
+        cash: { ...logical.cash!, currentBalance: 3500 },
+      };
+      renderAccountRow(
+        createDefaultProps({ account: withCash.primary, logical: withCash }),
+      );
+
+      expect(screen.getByText('Close')).not.toBeDisabled();
+    });
+
+    // An unknown value is not a zero one, so the account cannot be confirmed
+    // to hold no securities and Close stays unavailable rather than guessing.
     it('disables Close when the total cannot be worked out', () => {
       renderAccountRow(
         createDefaultProps({

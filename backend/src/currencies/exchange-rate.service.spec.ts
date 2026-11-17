@@ -27,6 +27,7 @@ import {
   FxProviderChain,
 } from "./providers/fx-provider-chain";
 import { FxObservation } from "./providers/fx-provider.interface";
+import { accountCarriesBalanceSql } from "../accounts/account-carries-balance";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -842,6 +843,18 @@ describe("ExchangeRateService", () => {
 
   describe("backfillHistoricalRates", () => {
     const TODAY = "2026-08-18";
+
+    it("discovers the currency of a closed account that still holds a balance", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue(null);
+      dataSource.query
+        .mockResolvedValueOnce([]) // accountCurrencyRows
+        .mockResolvedValueOnce([]); // securityCurrencyRows
+
+      await service.backfillHistoricalRates("user-1");
+
+      const [accountSql] = dataSource.query.mock.calls[0] as [string];
+      expect(accountSql).toContain(accountCarriesBalanceSql("a"));
+    });
 
     it("uses user default currency from preferences", async () => {
       userPreferenceRepository.findOne.mockResolvedValue({
@@ -2374,6 +2387,20 @@ describe("ExchangeRateService", () => {
       )!;
       expect(sql).toContain("LEFT JOIN currencies c USING (code)");
       expect(sql).toContain('c.quote_symbol AS "quoteSymbol"');
+    });
+
+    it("refreshes the currency of a closed account that still holds a balance", async () => {
+      routeKindedQueries(IN_USE);
+      chain.latest.mockImplementation(async (base) => latestAnswer(base, []));
+
+      await service.refreshCryptoRates();
+
+      const [sql] = dataSource.query.mock.calls.find(([q]) =>
+        String(q).includes("SELECT DISTINCT code"),
+      )!;
+      expect(sql).toContain(
+        `SELECT currency_code AS code FROM accounts WHERE ${accountCarriesBalanceSql()}`,
+      );
     });
 
     it("asks the chain only for the canonical pairs with a coin side", async () => {

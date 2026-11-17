@@ -1212,7 +1212,8 @@ export class AccountsController {
   })
   @ApiResponse({
     status: 400,
-    description: "Bad request - account has non-zero balance",
+    description:
+      "Bad request - already closed, holds securities, or has future-dated transactions",
   })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({

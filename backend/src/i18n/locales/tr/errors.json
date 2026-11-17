@@ -49,7 +49,6 @@
     "changeCurrencyWithTransactions": "İşlem içeren bir hesabın para birimi değiştirilemez.",
     "changeCurrencyWithBalanceOrSchedules": "Açılış bakiyesi veya planlanmış işlemleri olan bir hesabın para birimi değiştirilemez.",
     "alreadyClosed": "Hesap zaten kapalı",
-    "closeNonZeroBalance": "Sıfır olmayan bakiyeli hesap kapatılamaz. Mevcut bakiye: {{ currentBalance }}",
     "closeWithFutureTransactions": "Gelecek tarihli işlemleri olan bir hesap kapatılamaz. Hesapta bugünden sonraki bir tarihe ait {{ count }} işlem var; önce bunları silin veya geçersiz kılın.",
     "closeWithHoldings": "Hâlâ menkul kıymet bulunan bir yatırım hesabı kapatılamaz. Miktarı sıfır olmayan {{ holdingCount }} varlık var; önce bunları satın veya devredin.",
     "notClosed": "Hesap kapalı değil",

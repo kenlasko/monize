@@ -4,6 +4,8 @@ import {
   toLogicalAccountPortfolio,
   holdingsValuationIncomplete,
   formatAccountOptionLabel,
+  cashBalanceOf,
+  securitiesValueOf,
   LogicalAccountPortfolio,
 } from './logical-accounts';
 import { countLogicalAccounts } from './account-utils';
@@ -417,6 +419,58 @@ describe('toLogicalAccountPortfolio completeness', () => {
       { accountId: 'a', totalMarketValue: 10, unpricedHoldingsCount: 2 },
     ]);
     expect(result?.incompleteAccountIds?.has('a')).toBe(true);
+  });
+});
+
+describe('cashBalanceOf and securitiesValueOf', () => {
+  it('splits a pair into the cash half and the securities', () => {
+    const [entity] = buildLogicalAccounts(
+      pair('tfsa', { cash: { currentBalance: 250 } }),
+      strip,
+      portfolio({ 'tfsa-brok': 9000 }),
+    );
+    expect(entity.combinedValue).toBe(9250);
+    expect(cashBalanceOf(entity)).toBe(250);
+    expect(securitiesValueOf(entity)).toBe(9000);
+  });
+
+  it('reads no securities in a pair that holds only cash', () => {
+    const [entity] = buildLogicalAccounts(
+      pair('tfsa', { cash: { currentBalance: 250 } }),
+      strip,
+      portfolio({ 'tfsa-brok': 0 }),
+    );
+    expect(securitiesValueOf(entity)).toBe(0);
+    expect(cashBalanceOf(entity)).toBe(250);
+  });
+
+  it('reads unknown securities as null, not as the cash alone', () => {
+    const [entity] = buildLogicalAccounts(
+      pair('tfsa', { cash: { currentBalance: 250 } }),
+      strip,
+      portfolio({ 'tfsa-brok': 9000 }, { 'tfsa-brok': 1 }),
+    );
+    expect(securitiesValueOf(entity)).toBeNull();
+  });
+
+  it('counts positions by quantity when the caller supplies them', () => {
+    const [entity] = buildLogicalAccounts(pair('tfsa'), strip, {
+      ...portfolio({ 'tfsa-brok': 0 }),
+      positionCounts: new Map([['tfsa-brok', 2]]),
+    });
+    expect(securitiesValueOf(entity)).toBe(0);
+    expect(entity.positionCount).toBe(2);
+  });
+
+  it('leaves positionCount out when no counts were supplied', () => {
+    const [entity] = buildLogicalAccounts(pair('tfsa'), strip, portfolio({ 'tfsa-brok': 0 }));
+    expect(entity.positionCount).toBeUndefined();
+  });
+
+  it('gives a non-investment account its own balance and no securities', () => {
+    const [entity] = buildLogicalAccounts([account('chq', { currentBalance: -42.1 })], strip);
+    expect(cashBalanceOf(entity)).toBe(-42.1);
+    expect(securitiesValueOf(entity)).toBe(0);
   });
 });
 

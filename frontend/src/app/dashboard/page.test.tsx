@@ -173,8 +173,12 @@ vi.mock('@/components/dashboard/DashboardHero', () => ({
 }));
 
 vi.mock('@/components/dashboard/FavouriteAccounts', () => ({
-  FavouriteAccounts: ({ isLoading, institutions }: any) => (
-    <div data-testid="favourite-accounts" data-institutions={institutions?.length}>
+  FavouriteAccounts: ({ isLoading, institutions, accounts }: any) => (
+    <div
+      data-testid="favourite-accounts"
+      data-institutions={institutions?.length}
+      data-account-ids={(accounts ?? []).map((a: any) => a.id).join(',')}
+    >
       {isLoading ? 'loading' : 'loaded'}
     </div>
   ),
@@ -360,6 +364,20 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('top-movers')).toBeInTheDocument();
     });
+  });
+
+  // Closed accounts are loaded for credit utilization, which counts a closed
+  // card still owing; every other widget keeps reading the open accounts.
+  it('loads closed accounts too but hands the other widgets only the open ones', async () => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'open-1', name: 'Checking', accountType: 'CHECKING', isClosed: false },
+      { id: 'closed-1', name: 'Old Card', accountType: 'CREDIT_CARD', isClosed: true, currentBalance: -250 },
+    ]);
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('favourite-accounts')).toHaveAttribute('data-account-ids', 'open-1');
+    });
+    expect(mockGetAccounts).toHaveBeenCalledWith(true);
   });
 
   it('detects investment accounts and sets hasInvestments', async () => {

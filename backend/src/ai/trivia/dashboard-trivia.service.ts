@@ -14,6 +14,7 @@ import {
 import { mapWithConcurrency } from "../../common/concurrency.util";
 import { preferredCurrency } from "../../common/default-currency.util";
 import { AccountsService } from "../../accounts/accounts.service";
+import { accountCarriesBalance } from "../../accounts/account-carries-balance";
 import { Account, AccountType } from "../../accounts/entities/account.entity";
 import { NetWorthService } from "../../net-worth/net-worth.service";
 import {
@@ -266,7 +267,10 @@ export class DashboardTriviaService {
       { fetchMissing: false },
     );
     const portfolio = await this.loadPortfolio(userId);
-    const accounts = await this.accountsService.findAll(userId);
+    // Closed accounts too: a closed asset still carrying a value ranks, as it
+    // counts in net worth. The portfolio flag reads the open accounts.
+    const allAccounts = await this.accountsService.findAll(userId, true);
+    const accounts = allAccounts.filter((a) => !a.isClosed);
 
     const ledger = await this.ledger.load(userId, currency);
 
@@ -275,7 +279,7 @@ export class DashboardTriviaService {
         currency,
         months,
         portfolio,
-        otherAssets: this.otherAssets(accounts, currency),
+        otherAssets: this.otherAssets(allAccounts, currency),
         portfolioInNetWorth: !accounts.some(
           (a) =>
             a.accountType === AccountType.INVESTMENT && a.excludeFromNetWorth,
@@ -309,7 +313,8 @@ export class DashboardTriviaService {
     const assets = accounts.filter(
       (a) =>
         a.accountType === AccountType.ASSET &&
-        !a.isClosed &&
+        // A closed asset still carrying a value counts, as in net worth.
+        accountCarriesBalance(a) &&
         !a.excludeFromNetWorth,
     );
     if (assets.some((a) => a.currencyCode !== currency)) return null;

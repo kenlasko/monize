@@ -126,6 +126,10 @@ function DashboardContent() {
   const [openedAt] = useState(() => new Date());
 
   const [accounts, setAccounts] = useState<Account[]>([]);
+  // Open and closed accounts alike, for the widgets that must see a closed
+  // account still holding a balance (credit utilization). Every other widget
+  // reads `accounts`, the open ones.
+  const [accountsWithClosed, setAccountsWithClosed] = useState<Account[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
   const [topMovers, setTopMovers] = useState<TopMover[]>([]);
@@ -231,6 +235,7 @@ function DashboardContent() {
         if (isDelegateView) {
           const delegateAccounts = await accountsApi.getAll();
           setAccounts(delegateAccounts);
+          setAccountsWithClosed(delegateAccounts);
           setInstitutions([]);
           // 3C: when the owner granted the Bills & Deposits section, the
           // scheduled endpoint is delegate-reachable (server-filtered to the
@@ -253,7 +258,7 @@ function DashboardContent() {
         const twelveMonthsAgo = format(subMonths(new Date(), 12), 'yyyy-MM-dd');
 
         const [accountsData, scheduledData, netWorth, favouriteSecs, securitiesList, institutionsData] = await Promise.all([
-          accountsApi.getAll(),
+          accountsApi.getAll(true),
           scheduledTransactionsApi.getAll(),
           netWorthApi.getMonthly({ startDate: twelveMonthsAgo, endDate: today }).catch((error) => {
             logger.error('Failed to load net worth history:', error);
@@ -267,7 +272,8 @@ function DashboardContent() {
           }),
         ]);
 
-        setAccounts(accountsData);
+        setAccountsWithClosed(accountsData);
+        setAccounts(accountsData.filter((a: Account) => !a.isClosed));
         setInstitutions(institutionsData);
         setScheduledTransactions(scheduledData);
         setNetWorthData(netWorth ?? []);
@@ -337,6 +343,7 @@ function DashboardContent() {
 
   const widgetContext: DashboardWidgetContext = {
     accounts,
+    accountsWithClosed,
     scheduledTransactions,
     topMovers,
     favouriteSecurities,

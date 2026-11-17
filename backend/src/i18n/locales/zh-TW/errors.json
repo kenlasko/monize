@@ -49,7 +49,6 @@
     "changeCurrencyWithTransactions": "無法更改有交易記錄的科目貨幣。",
     "changeCurrencyWithBalanceOrSchedules": "無法變更有期初餘額或排程交易的帳戶的貨幣。",
     "alreadyClosed": "科目已關閉",
-    "closeNonZeroBalance": "無法關閉結餘不為零的科目。目前結餘：{{ currentBalance }}",
     "closeWithFutureTransactions": "無法關閉含有未來日期交易的帳戶。此帳戶有 {{ count }} 筆日期晚於今天的交易；請先刪除或作廢這些交易。",
     "closeWithHoldings": "無法關閉仍持有證券的投資帳戶。該帳戶有 {{ holdingCount }} 項數量不為零的持股；請先賣出或轉出。",
     "notClosed": "科目尚未關閉",

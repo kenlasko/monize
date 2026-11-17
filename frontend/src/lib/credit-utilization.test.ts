@@ -39,8 +39,22 @@ describe('isCreditAccount', () => {
     expect(isCreditAccount(account({ creditLimit: null }))).toBe(false);
   });
 
-  it('rejects closed accounts', () => {
-    expect(isCreditAccount(account({ isClosed: true }))).toBe(false);
+  it('rejects a closed account at zero', () => {
+    expect(isCreditAccount(account({ isClosed: true, currentBalance: 0 }))).toBe(false);
+  });
+
+  it('keeps a closed card that still owes a balance', () => {
+    expect(isCreditAccount(account({ isClosed: true, currentBalance: -500 }))).toBe(true);
+  });
+
+  it('keeps a closed card owing a balance whatever limit it recorded', () => {
+    expect(
+      isCreditAccount(account({ isClosed: true, currentBalance: -500, creditLimit: null })),
+    ).toBe(true);
+  });
+
+  it('rejects a closed card holding a credit, which is owed to the user, not drawn', () => {
+    expect(isCreditAccount(account({ isClosed: true, currentBalance: 50 }))).toBe(false);
   });
 });
 
@@ -73,6 +87,20 @@ describe('computeCreditRows', () => {
     );
     expect(rows[0].utilizationPercent).toBe(0);
   });
+
+  it('counts a closed card owing a balance at a zero limit, fully used', () => {
+    const rows = computeCreditRows(
+      [account({ isClosed: true, creditLimit: 2000, currentBalance: -250 })],
+      noConvert,
+      'USD',
+    );
+    expect(rows[0]).toMatchObject({
+      limit: 0,
+      used: 250,
+      available: -250,
+      utilizationPercent: 100,
+    });
+  });
 });
 
 describe('computeCreditTotals', () => {
@@ -93,6 +121,37 @@ describe('computeCreditTotals', () => {
       utilizationPercent: 30,
       missingCurrencies: [],
       excludedCount: 0,
+    });
+  });
+
+  it('adds a closed card\'s balance to used credit but nothing to the limit', () => {
+    const rows = computeCreditRows(
+      [
+        account({ id: 'open', creditLimit: 1000, currentBalance: -250 }),
+        account({ id: 'closed', isClosed: true, creditLimit: 5000, currentBalance: -250 }),
+      ],
+      noConvert,
+      'USD',
+    );
+    const totals = computeCreditTotals(rows);
+    expect(totals).toMatchObject({
+      limit: 1000,
+      used: 500,
+      available: 500,
+      utilizationPercent: 50,
+    });
+  });
+
+  it('reads only closed cards owing a balance as fully used, not 0%', () => {
+    const rows = computeCreditRows(
+      [account({ id: 'closed', isClosed: true, creditLimit: 5000, currentBalance: -250 })],
+      noConvert,
+      'USD',
+    );
+    expect(computeCreditTotals(rows)).toMatchObject({
+      limit: 0,
+      used: 250,
+      utilizationPercent: 100,
     });
   });
 

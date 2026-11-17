@@ -1,5 +1,6 @@
 import { Account } from '@/types/account';
 import { isInvestmentCashHalf } from '@/lib/account-utils';
+import { moneyDecimalsForCurrency, roundMoney } from '@/lib/format';
 
 /**
  * One account as the user thinks of it.
@@ -55,6 +56,13 @@ export interface LogicalAccount {
    * portfolio worth nothing.
    */
   combinedValue: number | null;
+  /**
+   * How many holdings with a non-zero quantity the entity's securities ledger
+   * has, when the caller supplied `positionCounts`; absent otherwise. A count,
+   * not a value: a position priced at zero is still a position, and the server
+   * refuses to close an account holding one.
+   */
+  positionCount?: number;
 }
 
 /**
@@ -75,6 +83,11 @@ export interface LogicalAccountPortfolio {
    * second. Optional: omitted, only the count decides.
    */
   incompleteAccountIds?: ReadonlySet<string>;
+  /**
+   * Holdings account id -> how many of its holdings have a non-zero quantity.
+   * Optional: omitted, `positionCount` is left out of every entity.
+   */
+  positionCounts?: ReadonlyMap<string, number>;
 }
 
 /**
@@ -155,11 +168,10 @@ function combinedValueFor(
   }
 
   // Nothing reported a value for these holdings. A closed account is one the
-  // app required to be emptied first, and the live portfolio deliberately does
-  // not report it: that is "no holdings to value", a settled answer -- not
-  // "could not value them" -- so it must not render as unknown. (Until task B1
-  // lands, closing is only gated on the cash balance, so a brokerage closed
-  // with positions still reads as its cash alone.)
+  // app required to hold no securities first (a cash balance may stay), and
+  // the live portfolio deliberately does not report it: that is "no holdings
+  // to value", a settled answer -- not "could not value them" -- so it must
+  // not render as unknown. Its value is the cash it was closed with.
   //
   // A source that *does* report closed accounts -- the point-in-time report,
   // which can be asked about a date before the account was emptied -- lands in
@@ -244,8 +256,40 @@ export function buildLogicalAccounts(
           portfolio,
           ledgerBalances,
         ),
+        ...(portfolio?.positionCounts
+          ? {
+              positionCount:
+                holdingsAccountId === null
+                  ? 0
+                  : (portfolio.positionCounts.get(holdingsAccountId) ?? 0),
+            }
+          : {}),
       };
     });
+}
+
+/**
+ * The balance of the entity's cash ledger: the cash half of a pair, otherwise
+ * the account itself (a brokerage's own balance is always zero). This is what
+ * a close leaves behind in the account.
+ */
+export function cashBalanceOf(logical: LogicalAccount): number {
+  return ownBalance(logical.cash ?? logical.primary);
+}
+
+/**
+ * The value of the entity's securities: 0 for an entity that holds none, null
+ * when it is unknown (an unpriced holding, a failed portfolio lookup). Derived
+ * from the live `combinedValue`, so it is for an entity built without
+ * `ledgerBalances`.
+ */
+export function securitiesValueOf(logical: LogicalAccount): number | null {
+  if (logical.holdingsAccountId === null) return 0;
+  if (logical.combinedValue === null) return null;
+  return roundMoney(
+    logical.combinedValue - cashBalanceOf(logical),
+    moneyDecimalsForCurrency(logical.primary.currencyCode),
+  );
 }
 
 /**

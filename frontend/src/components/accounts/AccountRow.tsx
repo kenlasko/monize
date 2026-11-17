@@ -15,7 +15,7 @@ import { InstitutionLogo, InstitutionLogoData } from '@/components/institutions/
 import { RowActions } from '@/components/ui/row-actions/RowActions';
 import type { LongPressRowHandlers } from '@/hooks/useLongPress';
 import type { RowAction } from '@/components/ui/row-actions/rowAction';
-import type { LogicalAccount } from '@/lib/logical-accounts';
+import { securitiesValueOf, type LogicalAccount } from '@/lib/logical-accounts';
 import { LinkIcon } from '@heroicons/react/24/outline';
 import { Badge } from '@/components/ui/Badge';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -28,9 +28,10 @@ export interface AccountActionLabels {
   edit: string;
   reconcile: string;
   close: string;
+  /** Why Close is unavailable: the account still holds securities. */
   closeTitleDisabled: string;
   closeTitleEnabled: string;
-  /** Why Close is unavailable when the account's total cannot be worked out. */
+  /** Why Close is unavailable when the value of its securities cannot be worked out. */
   closeTitleUnknownValue?: string;
   reopen: string;
   delete: string;
@@ -257,20 +258,21 @@ export function buildAccountActions(
   handlers: AccountActionHandlers,
   logical?: LogicalAccount,
 ): RowAction[] {
-  // Closing empties the whole account, so the test is the entity's combined
-  // value -- a brokerage's own `currentBalance` is always zero and says
-  // nothing about the securities it holds.
-  const balanceNonZero = logical
-    ? logical.combinedValue === null ||
-      // At the account currency's own precision: a coin wallet holding
-      // 0.000025 BTC is not empty (INV-MONEY-001).
-      roundMoney(
-        logical.combinedValue,
-        moneyDecimalsForCurrency(account.currencyCode),
-      ) !== 0
-    : Number(account.currentBalance) !== 0;
-  // An unknown total is not a zero one: Close stays unavailable, and says why.
-  const valueUnknown = !!logical && logical.combinedValue === null;
+  // A cash balance does not stop a close: it stays in the closed account,
+  // frozen, and keeps counting (the confirm dialog says so). Securities do:
+  // the server refuses an investment account that still holds a position, so
+  // the test is the value of its securities -- a brokerage's own
+  // `currentBalance` is always zero and says nothing about them.
+  const securities = logical ? securitiesValueOf(logical) : 0;
+  // An unknown value is not a zero one: Close stays unavailable, and says why.
+  const valueUnknown = securities === null;
+  const holdsSecurities =
+    securities === null ||
+    // At the account currency's own precision (INV-MONEY-001).
+    roundMoney(securities, moneyDecimalsForCurrency(account.currencyCode)) !== 0 ||
+    // A position priced at zero is worth nothing and still stops the close:
+    // the server counts holdings by quantity, not value.
+    (logical?.positionCount ?? 0) > 0;
   const reconcileTargetId = reconcileLedgerOf(account, logical)?.id ?? null;
   // A joint row is another user's account shown natively: the account object
   // itself (edit/close/reopen/delete) and reconciliation stay owner-only. The
@@ -329,10 +331,10 @@ export function buildAccountActions(
       tone: 'warning',
       onClick: () => handlers.onCloseClick(account),
       hidden: account.isClosed || isJoint || managed,
-      disabled: balanceNonZero,
+      disabled: holdsSecurities,
       title: valueUnknown
         ? (labels.closeTitleUnknownValue ?? labels.closeTitleDisabled)
-        : balanceNonZero
+        : holdsSecurities
           ? labels.closeTitleDisabled
           : labels.closeTitleEnabled,
     },

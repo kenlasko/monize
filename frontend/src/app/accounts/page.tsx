@@ -29,6 +29,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { sumConverted, combineTotals } from '@/lib/currency-total';
 import { sumMoney } from '@/lib/format';
+import { accountCarriesBalance } from '@/lib/account-carries-balance';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CARD_CLASS } from '@/components/ui/Card';
 import { useFormModal } from '@/hooks/useFormModal';
@@ -208,6 +209,22 @@ function AccountsContent() {
     return map;
   }, [portfolioSummary]);
 
+  // How many positions each account holds, by quantity rather than value: a
+  // holding priced at zero still stops a close, so Close reads this count.
+  const heldPositionCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!portfolioSummary) return map;
+    for (const accountHoldings of portfolioSummary.holdingsByAccount) {
+      // No list means no count: the row then falls back to the value test.
+      if (!Array.isArray(accountHoldings.holdings)) continue;
+      map.set(
+        accountHoldings.accountId,
+        accountHoldings.holdings.filter((h) => Number(h.quantity) !== 0).length,
+      );
+    }
+    return map;
+  }, [portfolioSummary]);
+
   // Which accounts' valuation is a subtotal for ANY cause. `unpricedHoldingsCount`
   // sees a missing price only; `valuationComplete === false` also covers a missing
   // exchange rate with every price present, so the gate reads both.
@@ -245,17 +262,21 @@ function AccountsContent() {
 
   const summary = useMemo(() => {
     const activeAccounts = accounts.filter((a) => !a.isClosed);
-    // An account the user excluded from net worth contributes to none of the
-    // three money cards. Assets - Liabilities is the Net Worth card beside
-    // them, so dropping the account from one and not the others would leave
-    // the row unable to add up -- and the server's net worth series applies
-    // the same predicate to both sides (net-worth.service.ts's
-    // `exclude_from_net_worth = false`), which is what "it excludes it
-    // elsewhere" refers to. The account count is a count of accounts, not of
-    // money, so it stays over every active account.
+    // The money cards sum every account whose balance still counts: the open
+    // ones and a closed account left holding a balance (`accountCarriesBalance`),
+    // which the server's net worth counts too. An account the user excluded
+    // from net worth contributes to none of the three money cards.
+    // Assets - Liabilities is the Net Worth card beside them, so dropping the
+    // account from one and not the others would leave the row unable to add
+    // up -- and the server's net worth series applies the same predicate to
+    // both sides (net-worth.service.ts's `exclude_from_net_worth = false`),
+    // which is what "it excludes it elsewhere" refers to. The account count is
+    // a count of accounts, not of money, so it stays over every active account.
     // A joint account carries the grantee's own overlay in this same field,
     // so no separate branch is needed for it.
-    const countedAccounts = activeAccounts.filter((a) => !a.excludeFromNetWorth);
+    const countedAccounts = accounts.filter(
+      (a) => accountCarriesBalance(a) && !a.excludeFromNetWorth,
+    );
     const assets = countedAccounts.filter((a) => !LIABILITY_TYPES.includes(a.accountType));
     const liabilities = countedAccounts.filter((a) => LIABILITY_TYPES.includes(a.accountType));
 
@@ -393,7 +414,7 @@ function AccountsContent() {
           {isLoading ? (
             <LoadingSpinner text={t('page.loadingAccounts')} />
           ) : (
-            <AccountList accounts={accounts} institutions={institutions} brokerageMarketValues={brokerageMarketValues} unpricedHoldingCounts={unpricedHoldingCounts} incompleteHoldingAccountIds={incompleteHoldingAccountIds} portfolioFailed={portfolioFailed} defaultCurrency={defaultCurrency} convertToDefault={convertToDefault} onEdit={openEdit} onRefresh={loadAccounts} />
+            <AccountList accounts={accounts} institutions={institutions} brokerageMarketValues={brokerageMarketValues} unpricedHoldingCounts={unpricedHoldingCounts} incompleteHoldingAccountIds={incompleteHoldingAccountIds} heldPositionCounts={heldPositionCounts} portfolioFailed={portfolioFailed} defaultCurrency={defaultCurrency} convertToDefault={convertToDefault} onEdit={openEdit} onRefresh={loadAccounts} />
           )}
         </div>
       </main>

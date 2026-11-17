@@ -94,9 +94,9 @@
       "reopenAccount": "Mở lại tài khoản",
       "deleteAccount": "Xóa tài khoản",
       "deleteTitle": "Xóa vĩnh viễn tài khoản (không có giao dịch)",
-      "closeTitleDisabled": "Tài khoản phải có số dư bằng không để đóng",
+      "closeTitleDisabled": "Hãy bán hoặc chuyển chứng khoán của tài khoản này trước khi đóng",
       "closeTitleEnabled": "Đóng tài khoản",
-      "closeTitleUnknownValue": "Không thể tính tổng của tài khoản này, nên không thể xác nhận tài khoản đã trống",
+      "closeTitleUnknownValue": "Không thể tính giá trị chứng khoán của tài khoản này, nên không thể xác nhận rằng tài khoản không còn chứng khoán nào",
       "details": "Chi tiết"
     },
     "jointBadge": "Chung",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "Đóng tài khoản",
-    "closeMessage": "Bạn có chắc chắn muốn đóng \"{name}\" không? Tài khoản phải có số dư bằng không mới có thể đóng.",
+    "closeMessage": "Bạn có chắc chắn muốn đóng \"{name}\" không? Tài khoản đã đóng không thể thay đổi cho đến khi bạn mở lại.",
+    "closeMessageWithBalance": "Bạn có chắc chắn muốn đóng \"{name}\" không? Số dư {balance} vẫn nằm trong tài khoản và vẫn được tính vào giá trị tài sản ròng của bạn. Tài khoản đã đóng không thể thay đổi cho đến khi bạn mở lại, vì vậy để loại nó khỏi tài sản ròng, hãy sửa tài khoản và loại trừ nó trước khi đóng.",
+    "closeMessageWithBalanceExcluded": "Bạn có chắc chắn muốn đóng \"{name}\" không? Số dư {balance} vẫn nằm trong tài khoản. Tài khoản này đã bị loại khỏi tài sản ròng, nên số dư không được tính ở đó. Tài khoản đã đóng không thể thay đổi cho đến khi bạn mở lại.",
     "closeConfirm": "Đóng tài khoản",
     "closeConfirmLoading": "Đang đóng...",
     "deleteTitle": "Xóa tài khoản",

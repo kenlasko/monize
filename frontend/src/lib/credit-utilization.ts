@@ -1,16 +1,34 @@
 import { Account } from '@/types/account';
 import { chartColors } from '@/lib/chart-colors';
+import { accountCarriesBalance } from '@/lib/account-carries-balance';
 
 /**
  * Only credit cards and lines of credit with a positive credit limit have a
  * meaningful utilization figure (used / available credit). Shared by the Credit
  * Utilization report and its dashboard widgets.
+ *
+ * A closed card still owing a balance stays in whatever limit it recorded: the
+ * debt is still the user's and still counts in net worth, so leaving it out
+ * would understate what is drawn (`accountCarriesBalance`). Its limit is gone,
+ * so `effectiveCreditLimit` counts it as zero. A closed card at zero is out,
+ * and so is one closed holding a credit (a positive balance is owed to the
+ * user, not drawn, so it would otherwise read as fully used).
  */
 export const isCreditAccount = (account: Account): boolean =>
   (account.accountType === 'CREDIT_CARD' || account.accountType === 'LINE_OF_CREDIT') &&
-  account.creditLimit != null &&
-  account.creditLimit > 0 &&
-  !account.isClosed;
+  (account.isClosed
+    ? accountCarriesBalance(account) && Number(account.currentBalance) < 0
+    : account.creditLimit != null && account.creditLimit > 0);
+
+/**
+ * The credit an account still offers: its recorded limit while it is open,
+ * zero once it is closed. A closed card's balance is still owed, but nothing
+ * can be drawn against it, so counting its old limit would inflate available
+ * credit and flatter the utilization figure.
+ */
+export function effectiveCreditLimit(account: Account): number {
+  return account.isClosed ? 0 : Number(account.creditLimit) || 0;
+}
 
 /**
  * Utilization thresholds drive the colour: low (green), moderate (amber), high
@@ -65,10 +83,19 @@ export function computeCreditRows(
   displayCurrency: string,
 ): CreditUtilizationRow[] {
   return accounts.map((account) => {
-    const limitNative = Number(account.creditLimit) || 0;
+    const limitNative = effectiveCreditLimit(account);
     const usedNative = Math.abs(Number(account.currentBalance) || 0);
+    // Over the limit reads negative, as on an open card drawn past it: a closed
+    // card owing 250 has -250 available.
     const availableNative = limitNative - usedNative;
-    const utilizationPercent = limitNative > 0 ? (usedNative / limitNative) * 100 : 0;
+    // A closed card owing a balance has no limit left to divide by; every unit
+    // of credit it had is spent, so it reads as fully used rather than 0%.
+    const utilizationPercent =
+      limitNative > 0
+        ? (usedNative / limitNative) * 100
+        : account.isClosed && usedNative > 0
+          ? 100
+          : 0;
     return {
       id: account.id,
       name: account.name,
@@ -107,7 +134,9 @@ export function computeCreditTotals(
     limit,
     used,
     available,
-    utilizationPercent: limit > 0 ? (used / limit) * 100 : 0,
+    // Only closed cards leave the limit at zero; what they owe is fully used,
+    // as on their own rows, not 0%.
+    utilizationPercent: limit > 0 ? (used / limit) * 100 : used > 0 ? 100 : 0,
     missingCurrencies: [...missing],
     excludedCount,
   };

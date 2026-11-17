@@ -94,9 +94,9 @@
       "reopenAccount": "Hesabı Yeniden Aç",
       "deleteAccount": "Hesabı Sil",
       "deleteTitle": "Hesabı kalıcı olarak sil (işlem yok)",
-      "closeTitleDisabled": "Hesabı kapatmak için bakiyenin sıfır olması gerekir",
+      "closeTitleDisabled": "Kapatmadan önce bu hesaptaki menkul kıymetleri satın veya aktarın",
       "closeTitleEnabled": "Hesabı kapat",
-      "closeTitleUnknownValue": "Bu hesabın toplamı hesaplanamadığı için boş olduğu doğrulanamıyor",
+      "closeTitleUnknownValue": "Bu hesaptaki menkul kıymetlerin değeri hesaplanamıyor, bu nedenle hesapta hiç menkul kıymet kalmadığı doğrulanamıyor",
       "details": "Ayrıntılar"
     },
     "jointBadge": "Ortak",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "Hesabı Kapat",
-    "closeMessage": "\"{name}\" hesabını kapatmak istediğinizden emin misiniz? Hesabın kapatılabilmesi için bakiyenin sıfır olması gerekir.",
+    "closeMessage": "\"{name}\" hesabını kapatmak istediğinizden emin misiniz? Kapatılan bir hesap, yeniden açılana kadar değiştirilemez.",
+    "closeMessageWithBalance": "\"{name}\" hesabını kapatmak istediğinizden emin misiniz? {balance} tutarındaki bakiyesi hesapta kalır ve net varlığınıza sayılmaya devam eder. Kapatılan bir hesap yeniden açılana kadar değiştirilemez; bu nedenle net varlık dışında bırakmak için kapatmadan önce hesabı düzenleyip hariç tutun.",
+    "closeMessageWithBalanceExcluded": "\"{name}\" hesabını kapatmak istediğinizden emin misiniz? {balance} tutarındaki bakiyesi hesapta kalır. Hesap net varlık dışında tutulduğu için bakiye orada sayılmaz. Kapatılan bir hesap, yeniden açılana kadar değiştirilemez.",
     "closeConfirm": "Hesabı Kapat",
     "closeConfirmLoading": "Kapatılıyor...",
     "deleteTitle": "Hesabı Sil",

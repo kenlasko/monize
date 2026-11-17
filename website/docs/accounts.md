@@ -423,9 +423,15 @@ Click **Edit** on any account in the list, or **Edit Account** on its detail pag
 
 When an account is no longer active (e.g., you closed a bank account), you can close it in Monize:
 
-1. Make sure its balance is zero
-2. Click **Close** on the account in the list
-3. Confirm in the **Close Account** dialog
+1. Click **Close** on the account in the list
+2. Confirm in the **Close Account** dialog
+
+An account does not have to be at zero to close. If it still has a balance (a few cents of interest you never moved, or an amount still owed on a card you cancelled), the dialog shows the balance. That balance stays in the closed account and keeps counting toward your net worth, the summary cards on the Accounts page and credit utilization. A closed card's credit limit no longer counts, so a balance still owed on it shows as fully used credit and raises your overall utilization. A closed account cannot be edited, so if you do not want its balance counted, edit the account and turn on **Exclude from net worth** before you close it. To change the balance later, reopen the account, record the transaction, and close it again.
+
+Two things still stop a close, because they would change the balance after the account is closed:
+
+- **Securities.** An investment account must hold no securities. Sell them or transfer them to another account first. Any cash left in the account can stay.
+- **Future-dated transactions.** A transaction dated after today would change the balance on that date. Delete or void it first.
 
 Closed accounts are hidden from transaction dropdowns and from the account list's default **Active** view, and appear under the **Closed** filter, but their historical data is preserved for reporting. Click **Reopen** to make an account active again. Closing or reopening an investment account acts on both of its ledgers.
 

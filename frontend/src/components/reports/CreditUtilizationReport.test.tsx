@@ -141,6 +141,14 @@ describe('CreditUtilizationReport', () => {
     expect(screen.getByText('Home LOC')).toBeInTheDocument();
   });
 
+  it('asks for closed accounts too, so a closed card still owing counts', async () => {
+    mockGetAll.mockResolvedValue(cadAccounts);
+    render(<CreditUtilizationReport />);
+    await waitFor(() => {
+      expect(mockGetAll).toHaveBeenCalledWith(true);
+    });
+  });
+
   it('computes overall utilization across accounts (6500 / 15000 = 43.3%)', async () => {
     mockGetAll.mockResolvedValue(cadAccounts);
     render(<CreditUtilizationReport />);

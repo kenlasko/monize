@@ -94,9 +94,9 @@
       "reopenAccount": "勘定科目を再開",
       "deleteAccount": "勘定科目を削除",
       "deleteTitle": "勘定科目を完全に削除する（取引なし）",
-      "closeTitleDisabled": "閉鎖するには残高がゼロである必要があります",
+      "closeTitleDisabled": "閉鎖する前に、この口座の証券を売却または移管してください",
       "closeTitleEnabled": "勘定科目を閉鎖",
-      "closeTitleUnknownValue": "この口座の合計を算出できないため、残高がゼロであることを確認できません",
+      "closeTitleUnknownValue": "この口座の証券の評価額を算出できないため、証券を保有していないことを確認できません",
       "details": "詳細"
     },
     "jointBadge": "共同",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "勘定科目を閉鎖",
-    "closeMessage": "「{name}」を閉鎖してもよろしいですか？残高がゼロでなければ閉鎖できません。",
+    "closeMessage": "「{name}」を閉鎖してもよろしいですか？閉鎖した口座は、再開するまで変更できません。",
+    "closeMessageWithBalance": "「{name}」を閉鎖してもよろしいですか？残高 {balance} は口座に残り、引き続き純資産に含まれます。閉鎖した口座は再開するまで変更できないため、純資産から除外するには、閉鎖する前に口座を編集して除外してください。",
+    "closeMessageWithBalanceExcluded": "「{name}」を閉鎖してもよろしいですか？残高 {balance} は口座に残ります。この口座は純資産から除外されているため、残高は純資産に含まれません。閉鎖した口座は、再開するまで変更できません。",
     "closeConfirm": "勘定科目を閉鎖",
     "closeConfirmLoading": "閉鎖中...",
     "deleteTitle": "勘定科目を削除",

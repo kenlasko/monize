@@ -2084,16 +2084,58 @@ describe("AccountsService", () => {
       expect(mockDataSource.transaction).toHaveBeenCalled();
     });
 
-    it("throws when balance is non-zero", async () => {
+    it("closes an account that still has a balance, leaving the balance as it was", async () => {
       mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         currentBalance: 500,
       });
 
-      await expect(service.close("user-1", "account-1")).rejects.toThrow(
-        "Cannot close account with non-zero balance",
+      const result = await service.close("user-1", "account-1");
+
+      expect(result.isClosed).toBe(true);
+      expect(result.closedDate).toBeDefined();
+      expect(Number(result.currentBalance)).toBe(500);
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(1);
+    });
+
+    it("closes an investment pair whose cash half still holds a balance", async () => {
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce({
+          ...mockAccount,
+          currentBalance: 250,
+          accountType: AccountType.INVESTMENT,
+          accountSubType: AccountSubType.INVESTMENT_CASH,
+          linkedAccountId: "brokerage-1",
+        })
+        .mockResolvedValueOnce({
+          id: "brokerage-1",
+          isClosed: false,
+          currentBalance: 0,
+          userId: "user-1",
+        });
+
+      const result = await service.close("user-1", "account-1");
+
+      expect(result.isClosed).toBe(true);
+      expect(Number(result.currentBalance)).toBe(250);
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(2);
+    });
+
+    it("still refuses a non-zero balance account over a future-dated row (A26-M12)", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        ...mockAccount,
+        currentBalance: 500,
+      });
+      mockQueryRunner.manager.query.mockImplementation(async (sql: string) =>
+        typeof sql === "string" && sql.includes("count(*)::int AS n")
+          ? [{ n: 2 }]
+          : [],
       );
-      expect(mockDataSource.transaction).toHaveBeenCalled();
+
+      await expect(service.close("user-1", "account-1")).rejects.toThrow(
+        "Cannot close an account with future-dated transactions",
+      );
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
     });
 
     it("throws NotFoundException when account not found", async () => {
@@ -2475,6 +2517,29 @@ describe("AccountsService", () => {
       const result = await service.getSummary("user-1");
 
       expect(result).toBeDefined();
+    });
+
+    it("sums a closed account that still holds a balance, but counts only open accounts", async () => {
+      jest.spyOn(service, "findAll").mockResolvedValue([
+        { ...mockAccount, id: "open", currentBalance: 1000, isClosed: false },
+        {
+          ...mockAccount,
+          id: "closed-with-balance",
+          currentBalance: 250,
+          isClosed: true,
+        },
+        {
+          ...mockAccount,
+          id: "closed-empty",
+          currentBalance: 0,
+          isClosed: true,
+        },
+      ] as never);
+
+      const result = await service.getSummary("user-1");
+
+      expect(result.totalBalance).toBe(1250);
+      expect(result.totalAccounts).toBe(1);
     });
   });
 
@@ -3927,15 +3992,25 @@ describe("AccountsService", () => {
     // Closing the brokerage now closes the cash half too, so the balance that
     // blocks the close has to be looked for on both -- otherwise the pair
     // closes over money the user still has.
-    it("refuses to close the brokerage when the cash half holds a balance", async () => {
+    it("closes the pair from the brokerage while the cash half still holds a balance", async () => {
       mockQueryRunner.manager.findOne
         .mockResolvedValueOnce(brokerageHalf())
         .mockResolvedValueOnce(cashHalf({ currentBalance: 250 }));
+      mockQueryRunner.manager.count.mockResolvedValueOnce(0);
 
-      await expect(service.close("user-1", "brokerage-1")).rejects.toThrow(
-        BadRequestException,
+      await service.close("user-1", "brokerage-1");
+
+      const saved = mockQueryRunner.manager.save.mock.calls.map(
+        ([row]: [Account]) => row,
       );
-      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+      expect(saved).toHaveLength(2);
+      expect(saved.every((row: Account) => row.isClosed)).toBe(true);
+      expect(
+        Number(
+          saved.find((row: Account) => row.id !== "brokerage-1")
+            ?.currentBalance,
+        ),
+      ).toBe(250);
     });
 
     // A brokerage's current_balance is deliberately kept at 0, so the balance

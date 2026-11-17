@@ -94,9 +94,9 @@
       "reopenAccount": "重新开启账户",
       "deleteAccount": "删除账户",
       "deleteTitle": "永久删除账户（无交易记录）",
-      "closeTitleDisabled": "账户余额必须为零才能关闭",
+      "closeTitleDisabled": "关闭前请先卖出或转出该账户中的证券",
       "closeTitleEnabled": "关闭账户",
-      "closeTitleUnknownValue": "无法计算该账户的总额，因此无法确认账户已清空",
+      "closeTitleUnknownValue": "无法计算该账户中证券的价值，因此无法确认账户已不持有证券",
       "details": "详情"
     },
     "jointBadge": "联名",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "关闭账户",
-    "closeMessage": "您确定要关闭\"{name}\"吗？账户余额必须为零才能关闭。",
+    "closeMessage": "您确定要关闭\"{name}\"吗？已关闭的账户在重新打开之前无法更改。",
+    "closeMessageWithBalance": "您确定要关闭\"{name}\"吗？其余额 {balance} 会保留在账户中，并继续计入您的净资产。已关闭的账户在重新打开之前无法更改，因此如要将其排除在净资产之外，请在关闭前编辑账户并将其排除。",
+    "closeMessageWithBalanceExcluded": "您确定要关闭\"{name}\"吗？其余额 {balance} 会保留在账户中。该账户已从净资产中排除，因此余额不会计入净资产。已关闭的账户在重新打开之前无法更改。",
     "closeConfirm": "关闭账户",
     "closeConfirmLoading": "正在关闭...",
     "deleteTitle": "删除账户",

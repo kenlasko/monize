@@ -94,9 +94,9 @@
       "reopenAccount": "Riapri conto",
       "deleteAccount": "Elimina conto",
       "deleteTitle": "Elimina definitivamente il conto (senza transazioni)",
-      "closeTitleDisabled": "Il saldo del conto deve essere zero per chiuderlo",
+      "closeTitleDisabled": "Vendi o trasferisci i titoli di questo conto prima di chiuderlo",
       "closeTitleEnabled": "Chiudi conto",
-      "closeTitleUnknownValue": "Il totale di questo conto non può essere calcolato, quindi non se ne può confermare la chiusura a zero",
+      "closeTitleUnknownValue": "Il valore dei titoli di questo conto non può essere calcolato, quindi non è possibile confermare che non ne detenga",
       "details": "Dettagli"
     },
     "jointBadge": "Cointestato",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "Chiudi conto",
-    "closeMessage": "Sei sicuro di voler chiudere \"{name}\"? Il saldo del conto deve essere zero per poterlo chiudere.",
+    "closeMessage": "Sei sicuro di voler chiudere \"{name}\"? Un conto chiuso non può essere modificato finché non lo riapri.",
+    "closeMessageWithBalance": "Sei sicuro di voler chiudere \"{name}\"? Il suo saldo di {balance} resta nel conto e continua a contare nel tuo patrimonio netto. Un conto chiuso non può essere modificato finché non lo riapri, quindi per escluderlo dal patrimonio netto modifica il conto ed escludilo prima di chiuderlo.",
+    "closeMessageWithBalanceExcluded": "Sei sicuro di voler chiudere \"{name}\"? Il suo saldo di {balance} resta nel conto. Il conto è escluso dal patrimonio netto, quindi il saldo lì non viene conteggiato. Un conto chiuso non può essere modificato finché non lo riapri.",
     "closeConfirm": "Chiudi conto",
     "closeConfirmLoading": "Chiusura in corso...",
     "deleteTitle": "Elimina conto",

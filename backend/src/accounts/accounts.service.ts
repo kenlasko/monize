@@ -25,6 +25,7 @@ import { Holding } from "../securities/entities/holding.entity";
 import { Institution } from "../institutions/entities/institution.entity";
 import { CreateAccountDto } from "./dto/create-account.dto";
 import { UpdateAccountDto } from "./dto/update-account.dto";
+import { accountCarriesBalance } from "./account-carries-balance";
 import { ScheduledTransactionsService } from "../scheduled-transactions/scheduled-transactions.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import {
@@ -1724,30 +1725,22 @@ export class AccountsService {
         userId,
         account,
       );
-      // The pair closes as one, so both ledgers have to be empty -- checking
-      // only the addressed half would let a brokerage close over a cash
-      // balance the user still has.
+      // The pair closes as one, so the checks below run over both halves.
       const halves = linkedHalf ? [account, linkedHalf] : [account];
 
-      // Check if balance is not zero (under lock, so no race)
-      for (const half of halves) {
-        if (Number(half.currentBalance) !== 0) {
-          throw new BadRequestException(
-            tr(
-              "errors.accounts.closeNonZeroBalance",
-              `Cannot close account with non-zero balance. Current balance: ${half.currentBalance}`,
-              { currentBalance: half.currentBalance },
-            ),
-          );
-        }
-      }
-
-      // A row dated after today is not in `current_balance` yet, so "zero now"
-      // is not "zero including what is already booked": an empty account with
-      // a -25.00 row dated next week closed, and on that date the due-balance
-      // pass moved the closed account to -25.00, a balance the user cannot
-      // touch without reopening it (A26-M12). Checked under the row lock
-      // above, over both halves of a pair; a VOID row moves nothing.
+      // A non-zero balance does not stop a close. A closed account is frozen:
+      // its balance stays as it was and keeps counting towards net worth and
+      // the other balance totals (unless the account is excluded from net
+      // worth), and changing it means reopening the account. What a close
+      // must not allow is a balance that moves *after* it, which is what the
+      // two checks below refuse.
+      //
+      // A row dated after today is not in `current_balance` yet, so closing
+      // over it would let the due-balance pass move the closed account on that
+      // date (an empty account with a -25.00 row dated next week closed, and
+      // then sat at -25.00, a balance the user cannot touch without reopening
+      // it: A26-M12). Checked under the row lock above, over both halves of a
+      // pair; a VOID row moves nothing.
       const [pending]: { n: number }[] = await m.query(
         `SELECT count(*)::int AS n
            FROM transactions
@@ -2136,10 +2129,14 @@ export class AccountsService {
   async getSummary(
     userId: string,
   ): Promise<{ totalAccounts: number; totalBalance: number } & NetWorthTotals> {
-    // Closed accounts are not counted or summed below, but their snapshots
-    // still count towards net worth, so their positions qualify it too.
+    // totalAccounts counts open accounts. totalBalance also sums a closed
+    // account that still holds a balance (`accountCarriesBalance`), which net
+    // worth counts too; a closed account at zero adds nothing to either. Every
+    // account's snapshot feeds the net-worth totals, so a closed account's
+    // positions qualify them as well.
     const allAccounts = await this.findAll(userId, true);
     const accounts = allAccounts.filter((account) => !account.isClosed);
+    const balanceAccounts = allAccounts.filter(accountCarriesBalance);
 
     // totalBalance is the raw book-balance sum across accounts. Assets,
     // liabilities and net worth are derived from the same canonical source as
@@ -2153,7 +2150,7 @@ export class AccountsService {
     // balance is already at its own currency's precision, so a fiat-only sum
     // is the four-place figure it always was and a coin's places survive.
     const totalBalance = sumMoney(
-      accounts.map((account) => Number(account.currentBalance)),
+      balanceAccounts.map((account) => Number(account.currentBalance)),
       MONEY_SCALE,
     );
 

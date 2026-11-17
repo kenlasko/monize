@@ -49,7 +49,6 @@
     "changeCurrencyWithTransactions": "거래가 있는 계정의 통화는 변경할 수 없습니다.",
     "changeCurrencyWithBalanceOrSchedules": "기초 잔액이나 예약 거래가 있는 계좌의 통화는 변경할 수 없습니다.",
     "alreadyClosed": "계정이 이미 폐쇄되었습니다",
-    "closeNonZeroBalance": "잔액이 0이 아닌 계정은 폐쇄할 수 없습니다. 현재 잔액: {{ currentBalance }}",
     "closeWithFutureTransactions": "미래 날짜의 거래가 있는 계좌는 해지할 수 없습니다. 오늘 이후 날짜의 거래가 {{ count }}건 있습니다. 먼저 삭제하거나 무효 처리하세요.",
     "closeWithHoldings": "증권을 보유한 투자 계좌는 닫을 수 없습니다. 수량이 0이 아닌 보유 종목이 {{ holdingCount }}개 있습니다. 먼저 매도하거나 이전하세요.",
     "notClosed": "계정이 폐쇄되지 않았습니다",

@@ -94,9 +94,9 @@
       "reopenAccount": "[XX-Reopen Account-XX]",
       "deleteAccount": "[XX-Delete Account-XX]",
       "deleteTitle": "[XX-Permanently delete account (no transactions)-XX]",
-      "closeTitleDisabled": "[XX-Account must have zero balance to close-XX]",
+      "closeTitleDisabled": "[XX-Sell or transfer this account's securities before closing it-XX]",
       "closeTitleEnabled": "[XX-Close account-XX]",
-      "closeTitleUnknownValue": "[XX-This account's total cannot be worked out, so it cannot be confirmed empty-XX]",
+      "closeTitleUnknownValue": "[XX-The value of this account's securities cannot be worked out, so it cannot be confirmed to hold none-XX]",
       "details": "[XX-Details-XX]"
     },
     "jointBadge": "[XX-Joint-XX]",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "[XX-Close Account-XX]",
-    "closeMessage": "[XX-Are you sure you want to close \"{name}\"? The account must have a zero balance to be closed.-XX]",
+    "closeMessage": "[XX-Are you sure you want to close \"{name}\"? A closed account cannot be changed until you reopen it.-XX]",
+    "closeMessageWithBalance": "[XX-Are you sure you want to close \"{name}\"? Its balance of {balance} stays in the account and still counts toward your net worth. A closed account cannot be changed until you reopen it, so to leave it out of net worth, edit the account and exclude it before closing.-XX]",
+    "closeMessageWithBalanceExcluded": "[XX-Are you sure you want to close \"{name}\"? Its balance of {balance} stays in the account. The account is excluded from net worth, so the balance is not counted there. A closed account cannot be changed until you reopen it.-XX]",
     "closeConfirm": "[XX-Close Account-XX]",
     "closeConfirmLoading": "[XX-Closing...-XX]",
     "deleteTitle": "[XX-Delete Account-XX]",
