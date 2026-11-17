@@ -8,6 +8,15 @@ appId: com.monize.desktop
 productName: Monize
 copyright: Copyright (C) Monize contributors. Licensed under AGPL-3.0-only.
 
+# electron-builder writes the description into the installer's (and the
+# uninstaller's) FileDescription, which is the name Task Manager shows for the
+# running setup. Monize.exe's own FileDescription is productName, so this
+# changes only the setup programs. The template also puts the description on
+# the shortcuts and in "Installed apps"; build/installer.nsh redefines it there.
+# src/packaging.spec.ts holds this value.
+extraMetadata:
+  description: Monize Setup
+
 directories:
   output: release
   buildResources: build

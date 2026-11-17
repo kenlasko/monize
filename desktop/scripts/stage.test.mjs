@@ -141,6 +141,10 @@ test("assertSafeOut refuses the repository and its parents", () => {
 
 test("stage assembles the manifest layout from a fixture", () => {
   const repo = fixtureRepo();
+  // Build output nothing loads at run time, which the manifest leaves out.
+  for (const f of ["main.d.ts", "main.spec.js", "tsconfig.tsbuildinfo"]) {
+    write(repo, `backend/dist/${f}`);
+  }
   const out = path.join(tmp(), "staging");
   const logs = [];
   const result = stage({
@@ -177,7 +181,17 @@ test("stage assembles the manifest layout from a fixture", () => {
       : path.join(out, rel);
     assert.ok(fs.existsSync(file), `${rel} staged`);
   }
-  assert.ok(!fs.existsSync(path.join(out, "backend/dist/main.js.map")));
+  for (const rel of [
+    "main.js.map",
+    "main.d.ts",
+    "main.spec.js",
+    "tsconfig.tsbuildinfo",
+  ]) {
+    assert.ok(
+      !fs.existsSync(path.join(out, "backend/dist", rel)),
+      `${rel} left out`,
+    );
+  }
   assert.ok(!fs.existsSync(path.join(out, "postgres")));
   assert.ok(result.total > 0);
   assert.ok(logs.includes("skip   postgres"));

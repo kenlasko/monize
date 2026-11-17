@@ -24,6 +24,8 @@ ShowInstDetails nevershow
 !define APP_FILENAME "Monize"
 !define APP_EXECUTABLE_FILENAME "Monize.exe"
 !define APP_PACKAGE_NAME "monize-desktop"
+; electron-builder passes it with -D; build/installer.nsh redefines it.
+!define APP_DESCRIPTION "Monize Setup"
 !define APP_INSTALLER_STORE_FILE "monize-desktop-updater\installer.exe"
 
 Var installMode

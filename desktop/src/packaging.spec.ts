@@ -104,6 +104,18 @@ describe("electron-builder.yml", () => {
     expect(pkg.devDependencies["electron-builder"]).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
+  it("names the setup program Monize Setup, and only the setup program", () => {
+    // The installer's FileDescription (what Task Manager shows) is the
+    // package description; Monize.exe's is productName.
+    expect(block("extraMetadata").trim()).toBe("description: Monize Setup");
+    expect(config).toMatch(/^productName: Monize$/m);
+    // The template's shortcut and "Installed apps" comments use the same
+    // value, so installer.nsh puts the application's name back there.
+    expect(nsh).toMatch(
+      /!ifdef APP_DESCRIPTION\n\s+!undef APP_DESCRIPTION\n!endif\n!define APP_DESCRIPTION "Monize"\n/,
+    );
+  });
+
   it("names build resources that exist", () => {
     for (const file of ["build/icon.ico", "build/installer.nsh"]) {
       expect(config).toContain(file);

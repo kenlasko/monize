@@ -4,8 +4,8 @@
     {
       "from": "backend/dist",
       "to": "backend/dist",
-      "exclude": ["*.js.map"],
-      "mirrors": "backend/Dockerfile: COPY --from=builder /app/dist ./dist (the next RUN deletes *.js.map)"
+      "exclude": ["*.js.map", "*.d.ts", "*.spec.js", "tsconfig.tsbuildinfo"],
+      "mirrors": "backend/Dockerfile: COPY --from=builder /app/dist ./dist (the next RUN deletes *.js.map). The desktop also leaves out the compiled unit tests, the type declarations and the incremental build info, which nothing loads at run time: about 4,300 files the installer would otherwise write"
     },
     {
       "kind": "backend-deps",
