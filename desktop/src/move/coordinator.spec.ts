@@ -41,6 +41,7 @@ describe("the move coordinator", () => {
           attachments: join(fixture.source, "attachments"),
           logs: join(fixture.source, "logs"),
           configFile: join(fixture.source, "config.json"),
+          tls: join(fixture.source, "tls"),
         },
       },
       origin: "default",
