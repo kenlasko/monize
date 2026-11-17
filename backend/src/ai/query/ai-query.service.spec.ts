@@ -749,7 +749,7 @@ describe("AiQueryService", () => {
         alwaysCallsTools();
 
         // One tool call per turn, so a budget of 2 is reached on the third
-        // pass -- before the 5 iterations the default would have allowed.
+        // pass -- before the 10 iterations the default would have allowed.
         const svc = await serviceWithEnv({ AI_QUERY_MAX_TOOL_CALLS: "2" });
         const events = await collectEventsFrom(svc, userId, "Deep question");
 
@@ -1622,7 +1622,7 @@ describe("AiQueryService", () => {
     });
 
     it("stops when tool call budget is exhausted (LLM04-F1)", async () => {
-      // Each call returns 4 tool calls to exhaust budget of 15 quickly, and
+      // Each call returns 4 tool calls to exhaust budget of 20 quickly, and
       // answers in text once the synthesis pass withdraws the tools.
       (mockProvider.completeWithTools as jest.Mock).mockImplementation(
         (_request: unknown, tools: unknown[]) =>

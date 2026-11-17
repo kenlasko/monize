@@ -26,8 +26,8 @@ describe("resolveQueryBudgets", () => {
     const budgets = resolveQueryBudgets();
 
     expect(budgets).toEqual({
-      maxIterations: 5,
-      maxToolCalls: 15,
+      maxIterations: 10,
+      maxToolCalls: 20,
       queryTimeoutMs: 20 * 60 * 1000,
       maxInputTokens: 200_000,
       maxToolResultChars: 50_000,

@@ -29,14 +29,14 @@ export const AI_QUERY_BUDGET_FIELDS: readonly AiQueryBudgetField[] = ([
   {
     name: 'queryMaxIterations',
     labelKey: 'maxIterations',
-    default: 5,
+    default: 10,
     min: 1,
     max: 50,
   },
   {
     name: 'queryMaxToolCalls',
     labelKey: 'maxToolCalls',
-    default: 15,
+    default: 20,
     min: 1,
     max: 200,
   },
