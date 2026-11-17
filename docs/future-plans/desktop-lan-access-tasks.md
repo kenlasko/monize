@@ -31,13 +31,13 @@
 | ID | Task | Depends on | Status |
 | --- | --- | --- | --- |
 | N0 | Windows spike: UDP 5353 shared with the DNS Client service, the firewall prompt for a TLS listener and a UDP socket, Name Constraints on iOS, Android Chrome, desktop Chrome, Edge and Firefox | -- | [ ] |
-| N1 | Config version 2 (`lan.enabled`, `lan.port`, `lan.hostname`, the wrapped CA key), the v1 read path, the LAN port in `ports.ts` probed on the wildcard address | N0 | [ ] |
-| N2 | Certificate authority: root and server certificates, storage under `tls/`, renewal and reissue on change, "Replace root certificate..." | N1 | [ ] |
-| N3 | LAN listener: TLS proxy to the frontend, Host and Origin checks, Origin canonicalisation, private peers only, `Secure` cookies, `X-Forwarded-For`, streaming; `CORS_ORIGIN` with LAN access on; the section 7 checks against a running stack | N2 | [ ] |
-| N4 | mDNS responder: per-adapter sockets, probing, conflict suffixes, the persisted name | N1 | [ ] |
-| N5 | Tray and windows: the toggle and its enable dialog, "Set up another device..." (addresses, QR codes, root download and save, fingerprint, per-platform steps), the timed plain-HTTP setup path | N3, N4 | [ ] |
-| N6 | Data-folder move carries `tls/`; uninstall's "Remove my data" covers it; the recovery export stays without the CA key (a spec says so) | N2 | [ ] |
-| N7 | User guide: `website/docs/windows.md` (the new section, its screenshots, the "cannot do" rows), the privacy statement check, `desktop/README.md`, the pointer line in the installer plan's section 12 | N5 | [ ] |
+| N1 | Config version 2 (`lan.enabled`, `lan.port`, `lan.hostname`, the wrapped CA key), the v1 read path, the LAN port in `ports.ts` probed on the wildcard address | N0 | [x] |
+| N2 | Certificate authority: root and server certificates, storage under `tls/`, renewal and reissue on change, "Replace root certificate..." | N1 | [x] |
+| N3 | LAN listener: TLS proxy to the frontend, Host and Origin checks, Origin canonicalisation, private peers only, `Secure` cookies, `X-Forwarded-For`, streaming; `CORS_ORIGIN` with LAN access on; the section 7 checks against a running stack | N2 | [x] |
+| N4 | mDNS responder: per-adapter sockets, probing, conflict suffixes, the persisted name | N1 | [x] on Linux; Windows acceptance open |
+| N5 | Tray and windows: the toggle and its enable dialog, "Set up another device..." (addresses, QR codes, root download and save, fingerprint, per-platform steps), the timed plain-HTTP setup path | N3, N4 | [x] on Linux; Windows acceptance open |
+| N6 | Data-folder move carries `tls/`; uninstall's "Remove my data" covers it; the recovery export stays without the CA key (a spec says so) | N2 | [x] |
+| N7 | User guide: `website/docs/windows.md` (the new section, its screenshots, the "cannot do" rows), the privacy statement check, `desktop/README.md`, the pointer line in the installer plan's section 12 | N5 | [x] |
 | N8 | Windows acceptance: the checklist below, on a packaged build | N5, N6, N7 | [ ] |
 
 N0 can change the plan. Its result is written into the plan as an amendment
@@ -85,3 +85,23 @@ layer's checks.
 6. Turn it off: the listener and the responder are gone, and the phone cannot
    connect.
 7. Move the data folder: the phone keeps working without setting it up again.
+
+## Build record
+
+One branch, `feat/desktop-lan-access`, with one commit per task. N0 and N8
+need a Windows PC and a phone, so both are still open. N1 to N7 were built
+ahead of N0, on the plan's working assumption that Windows lets the app share
+UDP 5353. If N0 finds it cannot, only `src/lan/udp-transport.ts` changes, or
+the app falls back to `<computername>.local`, which the listener and the
+certificate already serve. Plan section 13
+records where the build departed from the plan.
+
+| Task | Commit | Verified |
+| --- | --- | --- |
+| N1 | 18b255e9e | Config, bootstrap and port specs. A version 1 file stays version 1 until the feature is used |
+| N2 | e0809b84f | Certificate specs over real TLS handshakes: a device holding the root trusts the chain; the Name Constraints refuse `bank.example` and a public IP, which an unconstrained control root accepts |
+| N3 | cdb43be34 | Real-socket proxy specs (Host, Origin, peers, Secure cookies, redirects, streaming, plain-HTTP download). `dev-boot --lan` against the real backend and frontend: login page 200, LAN-origin login 401, foreign origin 403, unknown Host 421, cookies Secure |
+| N4 | 0896bba6a | mDNS specs on a simulated multi-subnet network (claim, conflict to `monize-2`, per-subnet answers, goodbye), and one over a real UDP socket |
+| N5 | 9be4293bf | Service, tray, preload and view specs; the setup page rendered in light and dark through the Playwright image with no console error |
+| N6 | 259b41f0d | Move and packaging specs, the uninstaller's list included |
+| N7 | this commit | `docs:build`, `docs:check`, the help bundle spec, the docs manifest check |

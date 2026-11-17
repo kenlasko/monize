@@ -417,3 +417,8 @@ Each is a decision the build made against the text above, with its reason.
     applied twice, loads without error and leaves the same catalog as
     `schema.sql` alone. CI's backend integration suites and
     `scripts/verify-schema.sh` moved to 18 in the same branch.
+21. **Local-network access (D4, open question 2, 2026-11-17).** Loopback only
+    remains the default. An opt-in setting now lets devices on the home
+    network reach the app through one TLS listener in the shell, and every
+    child still binds `127.0.0.1`. `docs/future-plans/desktop-lan-access.md`
+    has the design.

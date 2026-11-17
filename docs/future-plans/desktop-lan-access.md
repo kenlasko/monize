@@ -217,3 +217,64 @@ This supersedes decision D4 of `docs/future-plans/windows-installer.md` for
 installs that turn the feature on, and answers its open question 2. That plan
 is not edited, other than a line in its section 12 that points here, written
 when task N1 lands.
+
+## 13. Amendments made while building (2026-11-17)
+
+Each is a decision the build made against the text above, with its reason.
+
+1. **The backend sees the window's origin, not a LAN origin (L9, section
+   7).** The proxy checks a request's `Origin` against its own `Host` exactly,
+   as the backend would, then hands it on with `http://127.0.0.1:<frontend
+   port>`, the origin the backend already allows. `CORS_ORIGIN` and the
+   children's environment are unchanged, so turning the feature on or off
+   restarts nothing. The backend reads `Origin` nowhere but its CORS
+   middleware. `dev-boot --lan` confirmed it against the real stack: a login
+   from the LAN origin reaches the backend and is refused for its credentials
+   (401), not by CORS.
+2. **No certificate library (section 5).** `src/lan/der.ts` and
+   `src/lan/x509.ts` write the few DER structures a certificate needs, and
+   Node's `crypto` signs. The specs verify the result with OpenSSL itself,
+   through real TLS handshakes. A certificate for `bank.example`, or for a
+   public IP, issued with the root's own key, is refused. The same
+   certificate from an otherwise identical root without the constraints is
+   accepted, which pins the refusal on the Name Constraints.
+3. **No mDNS library (section 6).** `src/lan/dns-packet.ts` and
+   `src/lan/mdns.ts` read any packet and write questions and A records only.
+   The responder answers A queries; an AAAA query gets no answer, and
+   devices fall back to IPv4. The only dependency added is
+   `qrcode-generator` 2.0.4 (MIT, no dependencies), drawn into an SVG of our
+   own.
+4. **The root also permits 100.64.0.0/10 (L4, open question 2).** The root
+   can never be changed without every device trusting it again, so it
+   permits the shared address space Tailscale uses from the start. The
+   listener still refuses peers from it, so open question 2 stays as it was.
+5. **Allowed peers include this PC's own subnets (L10).** A phone on a
+   dual-stack home network may connect from the network's global IPv6
+   prefix. That prefix is not a private range, but it is a subnet one of the
+   PC's adapters is on.
+6. **The root key is in `tls/`, not in `config.json` (section 4).**
+   `root-key.json` holds it wrapped with `safeStorage`, beside the
+   certificates. Version 2 of `config.json` adds only the `lan` block, and a
+   config whose `lan` was never set is still written as version 1, so an
+   install that never uses the feature can go back to an older build.
+7. **WebSocket upgrades are refused, not forwarded (section 3).** The
+   production frontend uses none.
+8. **Redirects are rewritten.** A `Location` on the window's origin, or on
+   the request's own host over `http://`, comes back on the request's
+   `https://` origin.
+9. **The first byte is replayed through a stream, not `socket.unshift`.** A
+   TLS socket built on a `net.Socket` reads its native handle directly and
+   never sees a byte put back.
+10. **The recovery export cannot carry the root key.** It is built from the
+    encryption key, the date and the version only, so task N6 needed no new
+    spec for it.
+11. **Home-network addresses come first.** Windows often lists WSL and
+    Hyper-V adapters before Wi-Fi. The setup window's first address, and the
+    one in its download code, must be one a phone can reach.
+12. **`tls` joins `OWNED_TOP_LEVEL` (task N6).** The move already copied it,
+    but deleting the old copy, like the uninstaller's removal of a moved
+    folder, removes only what Monize owns.
+13. **One UDP socket, not one per adapter (section 6).** The responder
+    picks the adapter whose subnet holds the asking device, and before each
+    send it sets the multicast interface to that adapter. Sends go out one
+    at a time, so each leaves from the adapter it was meant for.
