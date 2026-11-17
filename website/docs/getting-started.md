@@ -98,6 +98,28 @@ POSTGRES_PASSWORD=your-database-password
 Likewise, changing `JWT_SECRET` later signs everyone out, stops authenticator
 (two-factor) codes from working and forgets trusted devices.
 
+If you open Monize over plain HTTP, as in the `http://localhost:3001` address
+used below, also set:
+
+```bash
+# Required when Monize is reached over http:// rather than https://
+DISABLE_HTTPS_HEADERS=true
+```
+
+> [!IMPORTANT]
+> `DISABLE_HTTPS_HEADERS` defaults to `false` in `docker-compose.prod.yml`, so
+> Monize sends security headers and `Secure` cookies that only work over HTTPS.
+> Over plain HTTP that shows an **HTTPS Required** banner, and when you reach
+> Monize by anything other than `localhost` the browser will not keep the
+> sign-in cookies, so you cannot sign in. Setting it to `true` drops the
+> HTTPS-only headers (HSTS and COOP) and the `Secure` cookie flag
+> ([Plain HTTP Deployments](settings-and-security.md#plain-http-deployments)).
+> Remove it again once Monize is served over HTTPS.
+>
+> Putting Monize behind a reverse proxy that serves HTTPS, such as
+> [Traefik](https://traefik.io/traefik/), is the recommended way to run it, but
+> setting one up is outside the scope of this documentation.
+
 3. Start the application with the prebuilt images:
 
 ```bash
@@ -109,7 +131,8 @@ images from source instead (for development), use `docker-compose.dev.yml`.
 
 4. Open Monize at `http://localhost:3001` (the `FRONTEND_PORT` and
    `PUBLIC_APP_URL` settings in `.env`). If you reach it through a reverse proxy
-   or another host name, set `PUBLIC_APP_URL` to that address.
+   or another host name, set `PUBLIC_APP_URL` to that address. Over `http://`,
+   `DISABLE_HTTPS_HEADERS=true` must be set (step 2).
 
 ### Using Kubernetes (Helm)
 

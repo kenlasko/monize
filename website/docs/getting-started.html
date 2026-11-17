@@ -66,6 +66,25 @@ if you want to move to the new name.</p>
 </aside>
 <p>Likewise, changing <code>JWT_SECRET</code> later signs everyone out, stops authenticator
 (two-factor) codes from working and forgets trusted devices.</p>
+<p>If you open Monize over plain HTTP, as in the <code>http://localhost:3001</code> address
+used below, also set:</p>
+<pre><code class="language-bash"># Required when Monize is reached over http:// rather than https://
+DISABLE_HTTPS_HEADERS=true
+</code></pre>
+<aside class="callout callout-important">
+<p class="callout-title">Important</p>
+<p><code>DISABLE_HTTPS_HEADERS</code> defaults to <code>false</code> in <code>docker-compose.prod.yml</code>, so
+Monize sends security headers and <code>Secure</code> cookies that only work over HTTPS.
+Over plain HTTP that shows an <strong>HTTPS Required</strong> banner, and when you reach
+Monize by anything other than <code>localhost</code> the browser will not keep the
+sign-in cookies, so you cannot sign in. Setting it to <code>true</code> drops the
+HTTPS-only headers (HSTS and COOP) and the <code>Secure</code> cookie flag
+(<a href="/docs/settings-and-security#plain-http-deployments">Plain HTTP Deployments</a>).
+Remove it again once Monize is served over HTTPS.</p>
+<p>Putting Monize behind a reverse proxy that serves HTTPS, such as
+<a href="https://traefik.io/traefik/" rel="noopener" class="ext">Traefik</a>, is the recommended way to run it, but
+setting one up is outside the scope of this documentation.</p>
+</aside>
 <ol start="3">
 <li>Start the application with the prebuilt images:</li>
 </ol>
@@ -76,7 +95,8 @@ images from source instead (for development), use <code>docker-compose.dev.yml</
 <ol start="4">
 <li>Open Monize at <code>http://localhost:3001</code> (the <code>FRONTEND_PORT</code> and
 <code>PUBLIC_APP_URL</code> settings in <code>.env</code>). If you reach it through a reverse proxy
-or another host name, set <code>PUBLIC_APP_URL</code> to that address.</li>
+or another host name, set <code>PUBLIC_APP_URL</code> to that address. Over <code>http://</code>,
+<code>DISABLE_HTTPS_HEADERS=true</code> must be set (step 2).</li>
 </ol>
 <h3 id="using-kubernetes-helm">Using Kubernetes (Helm)<a class="hlink" href="#using-kubernetes-helm" aria-label="Link to this section">#</a></h3>
 <p>Helm charts are provided in the <code>helm/</code> directory for Kubernetes deployments. Refer to the Helm README for detailed configuration options.</p>

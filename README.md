@@ -532,6 +532,9 @@ cp .env.example .env
    - `JWT_SECRET` - generate with `openssl rand -base64 32`
    - `ENCRYPTION_KEY` - generate with `openssl rand -hex 32`
    - `PUBLIC_APP_URL` - your public frontend URL
+   - `DISABLE_HTTPS_HEADERS=true` - required whenever Monize is reached over
+     plain `http://`, as in the `http://localhost:3001` address below (see
+     [Plain HTTP](#plain-http))
    - OIDC settings (optional) for SSO authentication
 
 4. Start the application:
@@ -545,6 +548,27 @@ docker compose -f docker-compose.dev.yml up -d
 5. Access the application:
    - Frontend: http://localhost:3001
    - Backend API: http://localhost:3000
+
+### Plain HTTP
+
+`DISABLE_HTTPS_HEADERS` is required whenever Monize is reached over plain
+`http://`, including the default `http://localhost:3001`. It defaults to `true`
+in `docker-compose.dev.yml` but to `false` in `docker-compose.prod.yml` and
+`docker-compose.ha.yml`, so for those stacks add it to `.env`:
+
+```bash
+DISABLE_HTTPS_HEADERS=true
+```
+
+Without it, Monize sends HSTS and COOP headers and `Secure` cookies that only
+work over HTTPS: the app shows an "HTTPS Required" banner, and when it is reached
+by anything other than `localhost` the browser will not keep the sign-in
+cookies, so signing in fails. Remove the setting once Monize is served over
+HTTPS.
+
+Running Monize behind a reverse proxy that serves HTTPS, such as
+[Traefik](https://traefik.io/traefik/), is recommended, but setting one up is
+outside the scope of this documentation.
 
 ### Try It with Demo Data
 
@@ -652,7 +676,7 @@ npm run dev
 | `AI_QUERY_MAX_TOOL_RESULT_CHARS` | Characters kept from one tool result, centrally managed provider only | `50000` |
 | `JWT_EXPIRATION` | JWT token expiration time | `15m` |
 | `REMEMBER_ME_DAYS` | Duration for "Remember Me" sessions (days) | `30` |
-| `DISABLE_HTTPS_HEADERS` | Disable HSTS and COOP headers for plain HTTP | `false` |
+| `DISABLE_HTTPS_HEADERS` | Disable HSTS and COOP headers and the `Secure` cookie flag. Required (`true`) when Monize is reached over plain HTTP (see [Plain HTTP](#plain-http)) | `false` |
 | `DEMO_MODE` | Enable demo mode with sample data | `false` |
 | `BACKUP_CONTAINER_DIR` | Container folder automatic backups are written to (each user gets a `<ab>/<cd>/<user-id>/` folder underneath it) | `/data/backups` |
 | `BACKUP_HOST_DIR` | Host folder mapped to `BACKUP_CONTAINER_DIR` by docker-compose | `./monize/backups` |
@@ -674,6 +698,7 @@ reach them.
 ```bash
 cp .env.example .env
 # Edit .env: set NODE_ENV=production, strong passwords, your domain, etc.
+# Serving over plain http://? Also set DISABLE_HTTPS_HEADERS=true (see Plain HTTP)
 ```
 
 2. Build and start:
