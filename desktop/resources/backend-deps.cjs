@@ -37,6 +37,20 @@ const { pathToFileURL } = require("url");
 
 /** Where staging puts the archive, relative to this file in `<resources>/shell/`. */
 const ARCHIVE = path.join(__dirname, "..", "backend", "node_modules.asar");
+/**
+ * A file at the archive's root: an import resolved from it starts its lookup
+ * in `<archive>/node_modules`. It does not have to exist. Built from literals
+ * like ARCHIVE, never from a runtime value.
+ */
+const ANCHOR_URL = pathToFileURL(
+  path.join(
+    __dirname,
+    "..",
+    "backend",
+    "node_modules.asar",
+    "resolve-anchor.js",
+  ),
+).href;
 
 function isBare(specifier) {
   return !(
@@ -47,10 +61,7 @@ function isBare(specifier) {
   );
 }
 
-function installResolver(archive) {
-  // A file at the archive's root: the lookup from it starts in
-  // `<archive>/node_modules`. It does not have to exist.
-  const parentURL = pathToFileURL(path.join(archive, "resolve-anchor.js")).href;
+function installResolver() {
   Module.registerHooks({
     resolve(specifier, context, nextResolve) {
       try {
@@ -60,7 +71,7 @@ function installResolver(archive) {
         if (error.code === "MODULE_NOT_FOUND") {
           let file;
           try {
-            file = require.resolve(specifier, { paths: [archive] });
+            file = require.resolve(specifier, { paths: [ARCHIVE] });
           } catch {
             throw error;
           }
@@ -68,7 +79,7 @@ function installResolver(archive) {
         }
         if (error.code !== "ERR_MODULE_NOT_FOUND") throw error;
         try {
-          return nextResolve(specifier, { ...context, parentURL });
+          return nextResolve(specifier, { ...context, parentURL: ANCHOR_URL });
         } catch {
           throw error;
         }
@@ -77,4 +88,4 @@ function installResolver(archive) {
   });
 }
 
-if (fs.existsSync(ARCHIVE)) installResolver(ARCHIVE);
+if (fs.existsSync(ARCHIVE)) installResolver();
