@@ -38,7 +38,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { showErrorToast } from '@/lib/errors';
 import { useMobileAddAction } from '@/store/mobileAddActionStore';
-import { readPageSnapshot, writePageSnapshot } from '@/lib/page-snapshot';
+import { forgetPageSnapshot, readPageSnapshot, writePageSnapshot } from '@/lib/page-snapshot';
 import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
 
 const logger = createLogger('Accounts');
@@ -126,6 +126,8 @@ function AccountsContent() {
             portfolioSummary: portfolio.summary,
             portfolioFailed: !portfolio.ok,
           });
+        } else {
+          forgetPageSnapshot(ACCOUNTS_SNAPSHOT_KEY);
         }
       } catch (error) {
         if (seq !== loadSeq.current) return;

@@ -56,6 +56,8 @@ import {
 import { useHiddenColumns } from '@/hooks/useHiddenColumns';
 import { useTransactionsRegisterSnapshot } from '@/hooks/useTransactionsRegisterSnapshot';
 import {
+  forgetTransactionsRegisterSnapshot,
+  forgetTransactionsStaticSnapshot,
   readTransactionsStaticSnapshot,
   registerRequestKey,
   writeTransactionsRegisterSnapshot,
@@ -431,7 +433,9 @@ function TransactionsContent() {
         setTags(tagsData);
         setInstitutions(institutionsData);
         setScheduledTransactions(scheduledData);
-        if (!partial) {
+        if (partial) {
+          forgetTransactionsStaticSnapshot();
+        } else {
           writeTransactionsStaticSnapshot({
             accounts: accountsData,
             categories: categoriesData,
@@ -596,7 +600,9 @@ function TransactionsContent() {
 
         // Kept for a return, under the request that produced it. A read for one
         // row resolves its own page, so it is not a request a return repeats.
-        if (!targetTransactionId && !chartFailed) {
+        if (chartFailed) {
+          forgetTransactionsRegisterSnapshot();
+        } else if (!targetTransactionId) {
           writeTransactionsRegisterSnapshot({
             key: registerRequestKey(
               calendarFilters,

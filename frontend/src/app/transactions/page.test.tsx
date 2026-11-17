@@ -792,6 +792,11 @@ describe('TransactionsPage', () => {
         data: mockTransactions,
         pagination: { page: 1, totalPages: 1, total: 3 },
       });
+      // An earlier visit kept an answer; this one draws new rows but its chart
+      // fails, so the older answer must not be drawn on the next return.
+      const earlier = render(<TransactionsPage />);
+      await waitFor(() => expect(screen.getByTestId('tx-count')).toHaveTextContent('3 transactions'));
+      earlier.unmount();
       mockGetDailyBalances.mockRejectedValue(new Error('down'));
       const first = render(<TransactionsPage />);
       await waitFor(() => expect(screen.getByTestId('tx-count')).toHaveTextContent('3 transactions'));

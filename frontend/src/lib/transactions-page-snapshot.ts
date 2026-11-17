@@ -11,7 +11,7 @@ import type {
   Transaction,
 } from '@/types/transaction';
 import type { TransactionSort } from '@/lib/transaction-sort';
-import { readPageSnapshot, writePageSnapshot } from '@/lib/page-snapshot';
+import { forgetPageSnapshot, readPageSnapshot, writePageSnapshot } from '@/lib/page-snapshot';
 
 /**
  * What the Transactions page last drew (`page-snapshot.ts`). The reference
@@ -67,6 +67,10 @@ export function writeTransactionsStaticSnapshot(snapshot: TransactionsStaticSnap
   writePageSnapshot(STATIC_KEY, snapshot);
 }
 
+export function forgetTransactionsStaticSnapshot(): void {
+  forgetPageSnapshot(STATIC_KEY);
+}
+
 /**
  * The register's last answer, unless the address asks for one row
  * (`targetTransactionId`): that read resolves its own page, so no earlier
@@ -80,4 +84,8 @@ export function readTransactionsRegisterSnapshot(): TransactionsRegisterSnapshot
 
 export function writeTransactionsRegisterSnapshot(snapshot: TransactionsRegisterSnapshot): void {
   writePageSnapshot(REGISTER_KEY, snapshot);
+}
+
+export function forgetTransactionsRegisterSnapshot(): void {
+  forgetPageSnapshot(REGISTER_KEY);
 }

@@ -327,6 +327,23 @@ describe('AccountsPage', () => {
       expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
     });
 
+    it('drops the older snapshot when a later load could not keep its own', async () => {
+      mockGetAll.mockResolvedValue(mockAccounts);
+      const first = await act(async () => render(<AccountsPage />));
+      await waitFor(() => expect(screen.getByTestId('account-acc-2')).toBeInTheDocument());
+
+      // A write's reload draws new rows, but the institutions fail beside it.
+      mockGetAll.mockResolvedValue([mockAccounts[0]]);
+      mockGetInstitutions.mockRejectedValue(new Error('down'));
+      await act(async () => notifyUndoRedo());
+      await waitFor(() => expect(screen.queryByTestId('account-acc-2')).not.toBeInTheDocument());
+      first.unmount();
+
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<AccountsPage />));
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    });
+
     it('keeps the list on screen through a reload after a write', async () => {
       mockGetAll.mockResolvedValue(mockAccounts);
       await act(async () => render(<AccountsPage />));

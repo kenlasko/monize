@@ -21,6 +21,15 @@ export function writePageSnapshot<T>(key: string, value: T): void {
   snapshots.set(key, value);
 }
 
+/**
+ * Drop one page's snapshot. For a load that drew a new answer but could not
+ * keep it (a side request failed): the older snapshot would otherwise be drawn
+ * on the next return, older than what the reader last saw.
+ */
+export function forgetPageSnapshot(key: string): void {
+  snapshots.delete(key);
+}
+
 /** Drop every page's snapshot: the identity on this tab changed. */
 export function clearPageSnapshots(): void {
   snapshots.clear();
