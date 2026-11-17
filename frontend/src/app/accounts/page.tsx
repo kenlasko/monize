@@ -209,6 +209,22 @@ function AccountsContent() {
     return map;
   }, [portfolioSummary]);
 
+  // How many positions each account holds, by quantity rather than value: a
+  // holding priced at zero still stops a close, so Close reads this count.
+  const heldPositionCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!portfolioSummary) return map;
+    for (const accountHoldings of portfolioSummary.holdingsByAccount) {
+      // No list means no count: the row then falls back to the value test.
+      if (!Array.isArray(accountHoldings.holdings)) continue;
+      map.set(
+        accountHoldings.accountId,
+        accountHoldings.holdings.filter((h) => Number(h.quantity) !== 0).length,
+      );
+    }
+    return map;
+  }, [portfolioSummary]);
+
   // Which accounts' valuation is a subtotal for ANY cause. `unpricedHoldingsCount`
   // sees a missing price only; `valuationComplete === false` also covers a missing
   // exchange rate with every price present, so the gate reads both.
@@ -398,7 +414,7 @@ function AccountsContent() {
           {isLoading ? (
             <LoadingSpinner text={t('page.loadingAccounts')} />
           ) : (
-            <AccountList accounts={accounts} institutions={institutions} brokerageMarketValues={brokerageMarketValues} unpricedHoldingCounts={unpricedHoldingCounts} incompleteHoldingAccountIds={incompleteHoldingAccountIds} portfolioFailed={portfolioFailed} defaultCurrency={defaultCurrency} convertToDefault={convertToDefault} onEdit={openEdit} onRefresh={loadAccounts} />
+            <AccountList accounts={accounts} institutions={institutions} brokerageMarketValues={brokerageMarketValues} unpricedHoldingCounts={unpricedHoldingCounts} incompleteHoldingAccountIds={incompleteHoldingAccountIds} heldPositionCounts={heldPositionCounts} portfolioFailed={portfolioFailed} defaultCurrency={defaultCurrency} convertToDefault={convertToDefault} onEdit={openEdit} onRefresh={loadAccounts} />
           )}
         </div>
       </main>

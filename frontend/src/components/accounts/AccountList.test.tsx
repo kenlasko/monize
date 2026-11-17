@@ -1054,6 +1054,44 @@ describe('AccountList', () => {
     expect(accountsApi.close).toHaveBeenCalledWith('broker-1');
   });
 
+  it('reads the net-worth exclusion of the cash half that holds a pair\'s balance', () => {
+    const accounts = [
+      createAccount({
+        id: 'broker-1',
+        name: 'TFSA - Brokerage',
+        accountType: 'INVESTMENT',
+        accountSubType: 'INVESTMENT_BROKERAGE',
+        linkedAccountId: 'cash-1',
+        currentBalance: 0,
+        excludeFromNetWorth: false,
+      }),
+      createAccount({
+        id: 'cash-1',
+        name: 'TFSA - Cash',
+        accountType: 'INVESTMENT',
+        accountSubType: 'INVESTMENT_CASH',
+        linkedAccountId: 'broker-1',
+        currentBalance: 300,
+        excludeFromNetWorth: true,
+      }),
+    ];
+
+    render(
+      <AccountList
+        accounts={accounts}
+        brokerageMarketValues={new Map([['broker-1', 0]])}
+        unpricedHoldingCounts={new Map([['broker-1', 0]])}
+        onEdit={mockOnEdit}
+        defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Close'));
+
+    expect(screen.getByText(/The account is excluded from net worth, so the balance is not counted there/)).toBeInTheDocument();
+    expect(screen.queryByText(/still counts toward your net worth/)).not.toBeInTheDocument();
+  });
+
   it('cancels delete dialog without deleting', () => {
     const account = createAccount({ canDelete: true });
 

@@ -17,6 +17,7 @@ import { UserPreference } from "../users/entities/user-preference.entity";
 import { AccountsService } from "./accounts.service";
 import { BalanceForecastService } from "./balance-forecast.service";
 import { BalanceForecastGap } from "./balance-forecast.util";
+import { accountCarriesBalanceSql } from "./account-carries-balance";
 import { enumerateDaysYMD } from "../net-worth/series-dates.util";
 
 /** One day of the range, as the calendar's Balances layer reads it. */
@@ -348,8 +349,10 @@ export class DailyBalanceTotalsService {
    * Resolved explicitly rather than left to `getDailyBalances`'s "no ids means
    * everything", because both halves need the same list: the projection asks
    * per account, and the currency set decides what the totals are reported in.
-   * Closed accounts are out of scope -- their balance is settled and a closed
-   * account on every day of the grid is noise.
+   * A closed account at zero is out of scope -- it adds nothing and on every
+   * day of the grid it is noise. One closed with a balance left in it stays in
+   * (`accountCarriesBalanceSql`): that balance still counts, as it does in net
+   * worth and the Accounts page totals.
    */
   private async resolveScope(
     userId: string,
@@ -367,7 +370,7 @@ export class DailyBalanceTotalsService {
            FROM accounts
           WHERE (user_id = $1 OR id = ANY($3::UUID[]))
             AND ($2::UUID[] IS NULL OR id = ANY($2::UUID[]))
-            AND is_closed = false
+            AND ${accountCarriesBalanceSql()}
           ORDER BY id`,
         [userId, idsParam, jointAccountIds],
       ),

@@ -269,7 +269,10 @@ export function buildAccountActions(
   const holdsSecurities =
     securities === null ||
     // At the account currency's own precision (INV-MONEY-001).
-    roundMoney(securities, moneyDecimalsForCurrency(account.currencyCode)) !== 0;
+    roundMoney(securities, moneyDecimalsForCurrency(account.currencyCode)) !== 0 ||
+    // A position priced at zero is worth nothing and still stops the close:
+    // the server counts holdings by quantity, not value.
+    (logical?.positionCount ?? 0) > 0;
   const reconcileTargetId = reconcileLedgerOf(account, logical)?.id ?? null;
   // A joint row is another user's account shown natively: the account object
   // itself (edit/close/reopen/delete) and reconciliation stay owner-only. The

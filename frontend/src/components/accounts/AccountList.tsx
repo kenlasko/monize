@@ -32,7 +32,7 @@ import { MultiSelectOption } from '@/components/ui/MultiSelect';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { AccountFilterPanel, type AccountJointFilter, type AccountNetWorthFilter, type AccountStatusFilter } from './AccountFilterPanel';
 import { formatAccountType } from '@/lib/account-utils';
-import { buildLogicalAccounts, cashBalanceOf, holdingsValuationIncomplete, type LogicalAccount } from '@/lib/logical-accounts';
+import { buildLogicalAccounts, holdingsValuationIncomplete, ownBalance, type LogicalAccount } from '@/lib/logical-accounts';
 import { useMainAccountName } from '@/hooks/useMainAccountName';
 import { DensityToggleBar } from '@/components/ui/DensityToggle';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -136,6 +136,8 @@ interface AccountListProps {
    * account's row shows no total, like an unpriced one.
    */
   incompleteHoldingAccountIds?: ReadonlySet<string>;
+  /** Holdings account id -> how many of its holdings have a non-zero quantity. */
+  heldPositionCounts?: ReadonlyMap<string, number>;
   /**
    * True when the portfolio-summary request failed, so every brokerage market
    * value is unknown rather than a real zero. Group totals exclude and mark
@@ -234,7 +236,7 @@ const EMPTY_CONVERTED_TOTAL: ConvertedTotal = {
   excludedCount: 0,
 };
 
-export function AccountList({ accounts, institutions, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, portfolioFailed, defaultCurrency, convertToDefault, onEdit, onRefresh }: AccountListProps) {
+export function AccountList({ accounts, institutions, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, heldPositionCounts, portfolioFailed, defaultCurrency, convertToDefault, onEdit, onRefresh }: AccountListProps) {
   const t = useTranslations('accounts');
   const ts = useTranslations("sharedExpenses");
   const tc = useTranslations('common');
@@ -438,8 +440,9 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
       marketValues: brokerageMarketValues ?? new Map(),
       unpricedCounts: unpricedHoldingCounts ?? new Map(),
       incompleteAccountIds: incompleteHoldingAccountIds,
+      positionCounts: heldPositionCounts,
     });
-  }, [accounts, favOverrides, stripAccountName, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds]);
+  }, [accounts, favOverrides, stripAccountName, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, heldPositionCounts]);
 
   // The segments' counts are over every account, as on Currencies, so a
   // segment says how many it holds before any other filter narrows it.
@@ -1157,12 +1160,13 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
           // keeps counting unless the account is excluded from net worth --
           // which cannot be changed once it is closed, so the dialog says so
           // while it still can be.
+          // The balance and its exclusion flag are the cash ledger's: the two
+          // halves of a pair carry their own flags.
           const cashLedger = logical?.cash ?? accountToClose;
-          const left = logical ? cashBalanceOf(logical) : Number(accountToClose.currentBalance) || 0;
-          const rounded = roundMoney(left, moneyDecimalsForCurrency(cashLedger.currencyCode));
+          const rounded = roundMoney(ownBalance(cashLedger), moneyDecimalsForCurrency(cashLedger.currencyCode));
           if (rounded === 0) return t('confirmDialog.closeMessage', { name });
           const balance = formatCurrencyBase(rounded, cashLedger.currencyCode);
-          return accountToClose.excludeFromNetWorth
+          return cashLedger.excludeFromNetWorth
             ? t('confirmDialog.closeMessageWithBalanceExcluded', { name, balance })
             : t('confirmDialog.closeMessageWithBalance', { name, balance });
         })()}

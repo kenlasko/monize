@@ -1480,6 +1480,17 @@ describe('AccountRow', () => {
       expect(screen.getByText('Close')).toBeDisabled();
     });
 
+    it('disables Close on a pair holding a position priced at zero', () => {
+      renderAccountRow(
+        createDefaultProps({
+          account: pairLogical().primary,
+          logical: pairLogical({ combinedValue: 0, positionCount: 1 }),
+        }),
+      );
+
+      expect(screen.getByText('Close')).toBeDisabled();
+    });
+
     it('offers Close on a pair whose only value is cash in its cash half', () => {
       const logical = pairLogical({ combinedValue: 3500 });
       const withCash: LogicalAccount = {

@@ -52,6 +52,10 @@ describe('isCreditAccount', () => {
       isCreditAccount(account({ isClosed: true, currentBalance: -500, creditLimit: null })),
     ).toBe(true);
   });
+
+  it('rejects a closed card holding a credit, which is owed to the user, not drawn', () => {
+    expect(isCreditAccount(account({ isClosed: true, currentBalance: 50 }))).toBe(false);
+  });
 });
 
 describe('utilizationColour', () => {
@@ -135,6 +139,19 @@ describe('computeCreditTotals', () => {
       used: 500,
       available: 500,
       utilizationPercent: 50,
+    });
+  });
+
+  it('reads only closed cards owing a balance as fully used, not 0%', () => {
+    const rows = computeCreditRows(
+      [account({ id: 'closed', isClosed: true, creditLimit: 5000, currentBalance: -250 })],
+      noConvert,
+      'USD',
+    );
+    expect(computeCreditTotals(rows)).toMatchObject({
+      limit: 0,
+      used: 250,
+      utilizationPercent: 100,
     });
   });
 

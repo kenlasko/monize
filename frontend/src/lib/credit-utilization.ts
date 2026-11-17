@@ -10,12 +10,14 @@ import { accountCarriesBalance } from '@/lib/account-carries-balance';
  * A closed card still owing a balance stays in whatever limit it recorded: the
  * debt is still the user's and still counts in net worth, so leaving it out
  * would understate what is drawn (`accountCarriesBalance`). Its limit is gone,
- * so `effectiveCreditLimit` counts it as zero. A closed card at zero is out.
+ * so `effectiveCreditLimit` counts it as zero. A closed card at zero is out,
+ * and so is one closed holding a credit (a positive balance is owed to the
+ * user, not drawn, so it would otherwise read as fully used).
  */
 export const isCreditAccount = (account: Account): boolean =>
   (account.accountType === 'CREDIT_CARD' || account.accountType === 'LINE_OF_CREDIT') &&
   (account.isClosed
-    ? accountCarriesBalance(account)
+    ? accountCarriesBalance(account) && Number(account.currentBalance) < 0
     : account.creditLimit != null && account.creditLimit > 0);
 
 /**
@@ -132,7 +134,9 @@ export function computeCreditTotals(
     limit,
     used,
     available,
-    utilizationPercent: limit > 0 ? (used / limit) * 100 : 0,
+    // Only closed cards leave the limit at zero; what they owe is fully used,
+    // as on their own rows, not 0%.
+    utilizationPercent: limit > 0 ? (used / limit) * 100 : used > 0 ? 100 : 0,
     missingCurrencies: [...missing],
     excludedCount,
   };

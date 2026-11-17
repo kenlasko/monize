@@ -1,5 +1,6 @@
 import { Account } from '@/types/account';
 import { isInvestmentCashHalf } from '@/lib/account-utils';
+import { moneyDecimalsForCurrency, roundMoney } from '@/lib/format';
 
 /**
  * One account as the user thinks of it.
@@ -55,6 +56,13 @@ export interface LogicalAccount {
    * portfolio worth nothing.
    */
   combinedValue: number | null;
+  /**
+   * How many holdings with a non-zero quantity the entity's securities ledger
+   * has, when the caller supplied `positionCounts`; absent otherwise. A count,
+   * not a value: a position priced at zero is still a position, and the server
+   * refuses to close an account holding one.
+   */
+  positionCount?: number;
 }
 
 /**
@@ -75,6 +83,11 @@ export interface LogicalAccountPortfolio {
    * second. Optional: omitted, only the count decides.
    */
   incompleteAccountIds?: ReadonlySet<string>;
+  /**
+   * Holdings account id -> how many of its holdings have a non-zero quantity.
+   * Optional: omitted, `positionCount` is left out of every entity.
+   */
+  positionCounts?: ReadonlyMap<string, number>;
 }
 
 /**
@@ -243,6 +256,14 @@ export function buildLogicalAccounts(
           portfolio,
           ledgerBalances,
         ),
+        ...(portfolio?.positionCounts
+          ? {
+              positionCount:
+                holdingsAccountId === null
+                  ? 0
+                  : (portfolio.positionCounts.get(holdingsAccountId) ?? 0),
+            }
+          : {}),
       };
     });
 }
@@ -265,7 +286,10 @@ export function cashBalanceOf(logical: LogicalAccount): number {
 export function securitiesValueOf(logical: LogicalAccount): number | null {
   if (logical.holdingsAccountId === null) return 0;
   if (logical.combinedValue === null) return null;
-  return logical.combinedValue - cashBalanceOf(logical);
+  return roundMoney(
+    logical.combinedValue - cashBalanceOf(logical),
+    moneyDecimalsForCurrency(logical.primary.currencyCode),
+  );
 }
 
 /**
