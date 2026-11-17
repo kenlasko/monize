@@ -143,16 +143,20 @@ export async function resolvePorts(
 
 /**
  * The local-network listener's port (docs/future-plans/desktop-lan-access.md,
- * section 3). Chosen and persisted like the other three, but probed where it
- * will bind: every address, IPv6 and IPv4 together, falling back to IPv4 alone
- * on a system without IPv6.
+ * section 3). Chosen and persisted like the other three, but probed on every
+ * address, IPv4 and IPv6 each (`probeLanPort`), because the listener binds
+ * them all.
  */
 export const DEFAULT_LAN_PORT = 3382;
 
 /** The addresses the LAN listener binds, in the order tried. */
 export const WILDCARD_HOSTS = ["::", "0.0.0.0"] as const;
 
-function probeOn(port: number, host: string): Promise<boolean | "no-family"> {
+function probeOn(
+  port: number,
+  host: string,
+  ipv6Only: boolean,
+): Promise<boolean | "no-family"> {
   return new Promise((resolve, reject) => {
     const server = createServer();
     server.unref();
@@ -168,19 +172,22 @@ function probeOn(port: number, host: string): Promise<boolean | "no-family"> {
         reject(error);
       }
     });
-    server.listen({ port, host, exclusive: true }, () => {
+    server.listen({ port, host, exclusive: true, ipv6Only }, () => {
       server.close(() => resolve(true));
     });
   });
 }
 
-/** Resolves true when the port can be bound on every address. */
+/**
+ * Resolves true when the port is free on every IPv4 address and, where the
+ * system has IPv6, on every IPv6 address. Each family is probed on its own:
+ * Windows lets a dual-stack `::` socket bind a port another program holds on
+ * `0.0.0.0`, so one dual-stack probe there would call a busy port free.
+ */
 export const probeLanPort: PortProber = async (port) => {
-  for (const host of WILDCARD_HOSTS) {
-    const free = await probeOn(port, host);
-    if (free !== "no-family") return free;
-  }
-  return false;
+  if ((await probeOn(port, "0.0.0.0", false)) !== true) return false;
+  const v6 = await probeOn(port, "::", true);
+  return v6 === "no-family" ? true : v6;
 };
 
 export interface LanPortResolution {

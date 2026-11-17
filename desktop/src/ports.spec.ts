@@ -155,17 +155,43 @@ describe("resolveLanPort", () => {
 });
 
 describe("probeLanPort", () => {
-  it("sees a port held on every address as busy and a free one as free", async () => {
+  async function holdOn(
+    host: string,
+    ipv6Only = false,
+  ): Promise<{ port: number; release: () => Promise<unknown> }> {
     const holder: Server = createServer();
     await new Promise<void>((resolve) =>
-      holder.listen({ port: 0, host: "0.0.0.0" }, resolve),
+      holder.listen({ port: 0, host, ipv6Only }, resolve),
     );
-    const port = (holder.address() as { port: number }).port;
+    return {
+      port: (holder.address() as { port: number }).port,
+      release: () => new Promise((resolve) => holder.close(resolve)),
+    };
+  }
+
+  // Windows lets a dual-stack probe bind a port held on 0.0.0.0, which is
+  // why each family is probed on its own.
+  it("sees a port held on IPv4 alone as busy, and free once released", async () => {
+    const held = await holdOn("0.0.0.0");
     try {
-      expect(await probeLanPort(port)).toBe(false);
+      expect(await probeLanPort(held.port)).toBe(false);
     } finally {
-      await new Promise((resolve) => holder.close(resolve));
+      await held.release();
     }
-    expect(await probeLanPort(port)).toBe(true);
+    expect(await probeLanPort(held.port)).toBe(true);
+  });
+
+  it("sees a port held on IPv6 alone as busy", async () => {
+    let held: { port: number; release: () => Promise<unknown> };
+    try {
+      held = await holdOn("::", true);
+    } catch {
+      return; // No IPv6 on this machine: nothing to hold.
+    }
+    try {
+      expect(await probeLanPort(held.port)).toBe(false);
+    } finally {
+      await held.release();
+    }
   });
 });
