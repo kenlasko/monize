@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { Badge } from '@/components/ui/Badge';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { FilterPanelHeader } from '@/components/ui/FilterPanelHeader';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
@@ -61,11 +62,13 @@ export function countActiveAccountFilters(filters: {
 }
 
 /**
- * The Accounts list's filters, in the fold the Transactions register and Bills
- * use: `FilterPanelHeader` says how many apply and offers Clear, and while it is
- * folded each active filter stays on screen as a removable chip, so folding
- * the panel never hides what is narrowing the list. Expanded, every control
- * takes the full width of a phone's line.
+ * The Accounts list's filters. On a phone they sit in the fold the Transactions
+ * register and Bills use: `FilterPanelHeader` says how many apply and offers
+ * Clear, and while it is folded each active filter stays on screen as a
+ * removable chip, so folding the panel never hides what is narrowing the list.
+ * Expanded, every control takes the full width of the phone's line. Wider
+ * than a phone the controls fit one row and are always shown: there is no
+ * fold, and a fold remembered on a phone-sized window does not apply.
  */
 export function AccountFilterPanel(props: AccountFilterPanelProps) {
   const t = useTranslations('accounts');
@@ -91,6 +94,8 @@ export function AccountFilterPanel(props: AccountFilterPanelProps) {
   } = props;
 
   const activeCount = countActiveAccountFilters({ search, status, types, netWorth, joint });
+  const foldable = useIsMobile();
+  const showControls = !foldable || expanded;
 
   const chips: { key: string; label: string; onRemove: () => void }[] = [];
   if (search.trim()) {
@@ -123,14 +128,16 @@ export function AccountFilterPanel(props: AccountFilterPanelProps) {
 
   return (
     <div className="px-3 sm:px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-      <FilterPanelHeader
-        expanded={expanded}
-        count={activeCount}
-        onToggle={() => setExpanded(!expanded)}
-        onClear={onClear}
-      />
+      {foldable && (
+        <FilterPanelHeader
+          expanded={expanded}
+          count={activeCount}
+          onToggle={() => setExpanded(!expanded)}
+          onClear={onClear}
+        />
+      )}
 
-      {!expanded && chips.length > 0 && (
+      {!showControls && chips.length > 0 && (
         <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible">
           {chips.map((chip) => (
             <Badge key={chip.key}>
@@ -148,32 +155,12 @@ export function AccountFilterPanel(props: AccountFilterPanelProps) {
         </div>
       )}
 
-      {expanded && (
-        // Search first, then the status segments with their counts, then the
-        // narrower filters: the list page's toolbar order. On a phone each
-        // takes its own full-width line.
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          <div className="relative w-full sm:w-52">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('list.filter.searchPlaceholder')}
-              aria-label={t('list.filter.searchAriaLabel')}
-              className="w-full text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md pl-3 pr-8 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 dark:placeholder-gray-400"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch('')}
-                aria-label={t('list.filter.searchClear')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              >
-                <XMarkIcon className="w-4 h-4" aria-hidden="true" />
-              </button>
-            )}
-          </div>
-
+      {showControls && (
+        // The status segments with their counts first, then the account type,
+        // then the name search: the order the maintainer asked for on this
+        // page (issue #2253), a deliberate exception to the list page's
+        // search-first toolbar. On a phone each takes its own full-width line.
+        <div className={`${foldable ? 'mt-3 ' : ''}flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center`}>
           <div role="group" aria-label={t('list.filter.statusLabel')} className={SEGMENTED_TOOLBAR_GROUP_CLASS}>
             {(
               [
@@ -201,7 +188,30 @@ export function AccountFilterPanel(props: AccountFilterPanelProps) {
               value={types}
               onChange={setTypes}
               placeholder={t('list.filter.typePlaceholder')}
+              // A dozen account types at most: a search box only gets in the way.
+              showSearch={false}
             />
+          </div>
+
+          <div className="relative w-full sm:w-52">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('list.filter.searchPlaceholder')}
+              aria-label={t('list.filter.searchAriaLabel')}
+              className="w-full text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md pl-3 pr-8 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 dark:placeholder-gray-400"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label={t('list.filter.searchClear')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                <XMarkIcon className="w-4 h-4" aria-hidden="true" />
+              </button>
+            )}
           </div>
 
           {showNetWorth && (

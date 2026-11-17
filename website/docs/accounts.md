@@ -235,11 +235,11 @@ Click **Hide summary** above the cards to fold them away, leaving more of the sc
 
 ### Filtering
 
-The filter panel above the list lets you narrow down which accounts are shown. Click **Hide** in its header to fold it to one line, and **Show filters** to open it again; the choice is remembered in this browser. While it is folded, the header counts the filters that apply, offers **Clear**, and shows each one as a chip you can remove with its **X**. On a phone, each filter takes the full width of the screen.
+The filters above the list narrow down which accounts are shown. On a phone, each filter takes the full width of the screen, and the panel can be folded away: tap **Hide** in its header to fold it to one line, and **Show filters** to open it again; the choice is remembered in this browser. While it is folded, the header counts the filters that apply, offers **Clear**, and shows each one as a chip you can remove with its **X**. On a wider screen the filters are always shown.
 
-- **Search** -- A text box that filters accounts by name as you type. Click the **X** inside the box to clear the search.
 - **Status** -- Switch between **All**, **Active**, and **Closed** accounts.
 - **Account Type** -- Show only selected account types (e.g. only chequing and savings). It lists just the types you actually have; leaving it empty shows all types.
+- **Search** -- A text box that filters accounts by name as you type. Click the **X** inside the box to clear the search.
 - **Net Worth** -- Show the accounts included in or excluded from net worth (shown when you have excluded an account).
 - **Shared with me** -- Show only the [joint accounts](shared-access.md#joint-accounts) other people share with you (shown when you have any).
 

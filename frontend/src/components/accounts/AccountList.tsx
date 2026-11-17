@@ -73,6 +73,9 @@ const STORAGE_KEYS = {
   collapsedGroups: 'accounts.filter.collapsedGroups',
 };
 
+/** Superseded by `STORAGE_KEYS.filtersExpanded`; removed on mount. */
+const LEGACY_SHOW_FILTERS_KEY = 'accounts.filter.showFilters';
+
 type AccountGroupType = AccountType | "SHARED_SETTLEMENT";
 const accountGroup = (account: Account): AccountGroupType =>
   account.managedPurpose === "SHARED_SETTLEMENT"
@@ -263,6 +266,11 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
     STORAGE_KEYS.filtersExpanded,
     true,
   );
+
+  // The fold was once kept under another key that nothing reads now.
+  useEffect(() => {
+    localStorage.removeItem(LEGACY_SHOW_FILTERS_KEY);
+  }, []);
 
   // Filter state - initialize from localStorage
   const [filterStatus, setFilterStatus] = useState<AccountStatusFilter>(() =>

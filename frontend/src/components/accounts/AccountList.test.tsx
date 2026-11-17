@@ -1321,7 +1321,7 @@ describe('AccountList', () => {
     expect(mockOnRefresh).not.toHaveBeenCalled();
   });
 
-  it('puts the search first and counts every status segment', () => {
+  it('puts the status segments first, then the account type, then the search', () => {
     const accounts = [
       createAccount({ id: 'a1', name: 'Open One' }),
       createAccount({ id: 'a2', name: 'Open Two' }),
@@ -1338,11 +1338,54 @@ describe('AccountList', () => {
       'Active (2)',
       'Closed (1)',
     ]);
+    const type = screen.getByRole('button', { name: 'Filter by account type' });
     const search = screen.getByRole('textbox', { name: 'Search accounts by name' });
-    expect(search.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(group.compareDocumentPosition(type) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(type.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('offers no search box in the short account type list', () => {
+    render(
+      <AccountList accounts={[createAccount()]} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Filter by account type' }));
+    expect(screen.queryByPlaceholderText('Search...')).not.toBeInTheDocument();
   });
 
   describe('filter panel fold', () => {
+    const originalMatchMedia = window.matchMedia;
+    const setPhone = (isPhone: boolean) => {
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: isPhone && query === '(max-width: 639px)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })) as unknown as typeof window.matchMedia;
+    };
+    beforeEach(() => setPhone(true));
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it('drops the fold setting kept under the old key', () => {
+      localStorage.setItem('accounts.filter.showFilters', 'false');
+      renderList();
+      expect(localStorage.getItem('accounts.filter.showFilters')).toBeNull();
+    });
+
+    it('offers no fold wider than a phone, even when one was remembered there', () => {
+      setPhone(false);
+      localStorage.setItem('accounts.filter.expanded', JSON.stringify(false));
+      renderList();
+      expect(screen.queryByRole('button', { name: /Show filters|Hide/ })).not.toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: 'Search accounts by name' })).toBeInTheDocument();
+      expect(screen.getByRole('group', { name: 'Status' })).toBeInTheDocument();
+    });
+
     const renderList = (accounts = [
       createAccount({ id: 'a1', name: 'Open One' }),
       createAccount({ id: 'a2', name: 'Shut', isClosed: true }),
