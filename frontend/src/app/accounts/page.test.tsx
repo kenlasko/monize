@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act } from '@/test/render';
+import { render, screen, waitFor, act, fireEvent } from '@/test/render';
 import AccountsPage from './page';
 
 // Module-level state for controlling form modal in tests
@@ -273,6 +273,27 @@ describe('AccountsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('+ New Account')).toBeInTheDocument();
     });
+  });
+
+  it('folds the summary cards and remembers the fold in this browser', async () => {
+    localStorage.removeItem('accounts.summary.collapsed');
+    const { unmount } = await act(async () => render(<AccountsPage />));
+    expect(screen.getByTestId('summary-Total Active Accounts')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Hide summary/ }));
+    expect(screen.queryByTestId('summary-Total Active Accounts')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('summary-Total Assets')).not.toBeInTheDocument();
+    expect(localStorage.getItem('accounts.summary.collapsed')).toBe('true');
+
+    unmount();
+    await act(async () => render(<AccountsPage />));
+    const toggle = screen.getByRole('button', { name: /Show summary/ });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByTestId('summary-Total Active Accounts')).not.toBeInTheDocument();
+
+    fireEvent.click(toggle);
+    expect(screen.getByTestId('summary-Total Active Accounts')).toBeInTheDocument();
+    localStorage.removeItem('accounts.summary.collapsed');
   });
 
   it('renders account list after data loads', async () => {

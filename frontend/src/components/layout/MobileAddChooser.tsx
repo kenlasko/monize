@@ -1,6 +1,7 @@
 'use client';
 
 import { Modal } from '@/components/ui/Modal';
+import { HOVER_ROW_ON_CARD } from '@/components/ui/Card';
 import type { MobileAddChoice } from '@/store/mobileAddActionStore';
 
 interface MobileAddChooserProps {
@@ -28,7 +29,7 @@ export function MobileAddChooser({ title, choices, onClose }: MobileAddChooserPr
               onClose();
               choice.run();
             }}
-            className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus-visible:outline-none focus-visible:bg-gray-100 dark:focus-visible:bg-gray-700"
+            className={`${HOVER_ROW_ON_CARD} w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500`}
           >
             {choice.label}
           </button>

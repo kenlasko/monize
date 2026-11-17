@@ -23,7 +23,10 @@
       "totalActiveAccounts": "Total Active Accounts",
       "netWorth": "Net Worth",
       "totalAssets": "Total Assets",
-      "totalLiabilities": "Total Liabilities"
+      "totalLiabilities": "Total Liabilities",
+      "title": "Summary",
+      "show": "Show summary",
+      "hide": "Hide summary"
     }
   },
   "list": {
@@ -42,7 +45,11 @@
       "typeAriaLabel": "Filter by account type",
       "searchPlaceholder": "Search accounts...",
       "searchAriaLabel": "Search accounts by name",
-      "searchClear": "Clear search"
+      "searchClear": "Clear search",
+      "chipSearch": "\"{term}\"",
+      "chipActive": "Active",
+      "chipClosed": "Closed",
+      "removeChip": "Remove filter: {label}"
     },
     "accountCount": "{filtered} of {total} accounts",
     "groupCount": "{count, plural, one {# account} other {# accounts}}",

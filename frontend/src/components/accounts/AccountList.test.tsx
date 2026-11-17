@@ -1342,6 +1342,65 @@ describe('AccountList', () => {
     expect(search.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  describe('filter panel fold', () => {
+    const renderList = (accounts = [
+      createAccount({ id: 'a1', name: 'Open One' }),
+      createAccount({ id: 'a2', name: 'Shut', isClosed: true }),
+    ]) =>
+      render(
+        <AccountList accounts={accounts} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+      );
+
+    it('starts open in a browser that never chose, and remembers a fold', () => {
+      const { unmount } = renderList();
+      expect(screen.getByRole('textbox', { name: 'Search accounts by name' })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: /Hide/ }));
+      expect(screen.queryByRole('textbox', { name: 'Search accounts by name' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: 'Status' })).not.toBeInTheDocument();
+      expect(localStorage.getItem('accounts.filter.expanded')).toBe('false');
+
+      unmount();
+      renderList();
+      expect(screen.getByRole('button', { name: /Show filters/ })).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('textbox', { name: 'Search accounts by name' })).not.toBeInTheDocument();
+    });
+
+    it('keeps each active filter on screen as a removable chip while folded', () => {
+      localStorage.setItem('accounts.filter.status', JSON.stringify('closed'));
+      localStorage.setItem('accounts.filter.search', JSON.stringify('Sh'));
+      localStorage.setItem('accounts.filter.expanded', JSON.stringify(false));
+      renderList();
+
+      // The folded header counts both filters.
+      expect(screen.getByRole('button', { name: /Show filters/ })).toHaveTextContent('2');
+      expect(screen.getByText('"Sh"')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Remove filter: Closed' }));
+      expect(screen.queryByRole('button', { name: 'Remove filter: Closed' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Show filters/ })).toHaveTextContent('1');
+      expect(screen.getByText('Shut')).toBeInTheDocument();
+    });
+
+    it('clears every filter from the folded header', () => {
+      localStorage.setItem('accounts.filter.status', JSON.stringify('active'));
+      localStorage.setItem('accounts.filter.expanded', JSON.stringify(false));
+      renderList();
+
+      expect(screen.queryByText('Shut')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      expect(screen.getByText('Shut')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Remove filter/ })).not.toBeInTheDocument();
+    });
+
+    it('gives every expanded control the full width of a phone line', () => {
+      renderList();
+      expect(screen.getByRole('group', { name: 'Status' }).className).toContain('w-full sm:w-auto');
+      expect(
+        screen.getByRole('textbox', { name: 'Search accounts by name' }).parentElement!.className,
+      ).toContain('w-full');
+    });
+  });
+
   it('shows the "All" segmented button as selected by default', () => {
     const accounts = [createAccount()];
 
