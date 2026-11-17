@@ -2882,7 +2882,7 @@ describe('InvestmentTransactionForm - extra coverage', () => {
     });
   });
 
-  describe('Interest on a bond (issue #2112)', () => {
+  describe('Interest on any security (issue #2257)', () => {
     const securitiesWithBond = [
       { id: 'sec-1', symbol: 'AAPL', name: 'Apple Inc.', securityType: 'STOCK', currencyCode: 'USD' },
       { id: 'sec-bond', symbol: 'BND1', name: 'Example Bond 2030', securityType: 'BOND', currencyCode: 'CAD' },
@@ -2905,14 +2905,14 @@ describe('InvestmentTransactionForm - extra coverage', () => {
       });
     }
 
-    it('offers only bonds for Interest', async () => {
+    it('offers every security for Interest, not only bonds', async () => {
       await openInterest();
       const input = await screen.findByLabelText('Security');
       await act(async () => {
         fireEvent.click(input);
       });
       expect(await screen.findByText(/^BND1 - /)).toBeInTheDocument();
-      expect(screen.queryByText(/^AAPL - /)).not.toBeInTheDocument();
+      expect(screen.getByText(/^AAPL - /)).toBeInTheDocument();
     });
 
     it('sends the bond with the interest', async () => {
@@ -2929,6 +2929,23 @@ describe('InvestmentTransactionForm - extra coverage', () => {
       expect(payload.securityId).toBe('sec-bond');
     });
 
+    it('sends a stock with the interest', async () => {
+      // AAPL is USD against the CAD brokerage account, so a market rate
+      // resolves the exchange rate the cash posting needs.
+      getMarketRateMock.mockReturnValue(1.35);
+      await openInterest();
+      await chooseComboboxOption('Security', 'AAPL - ');
+      await act(async () => {
+        fireEvent.click(screen.getByText('Create Transaction'));
+      });
+      await waitFor(() => {
+        expect(investmentsApi.createTransaction).toHaveBeenCalled();
+      });
+      const payload = vi.mocked(investmentsApi.createTransaction).mock.calls[0][0] as any;
+      expect(payload.action).toBe('INTEREST');
+      expect(payload.securityId).toBe('sec-1');
+    });
+
     it('keeps interest without a security at account level', async () => {
       await openInterest();
       await act(async () => {
@@ -2942,7 +2959,10 @@ describe('InvestmentTransactionForm - extra coverage', () => {
       expect(payload.securityId).toBeUndefined();
     });
 
-    it('drops a stock picked under another action when switched to Interest', async () => {
+    it('keeps a stock picked under another action when switched to Interest', async () => {
+      // AAPL is USD against the CAD brokerage account, so a market rate
+      // resolves the exchange rate the cash posting needs.
+      getMarketRateMock.mockReturnValue(1.35);
       vi.mocked(investmentsApi.getSecurities).mockResolvedValue(securitiesWithBond);
       render(<InvestmentTransactionForm accounts={accounts} />);
       await waitFor(() => {
@@ -2969,7 +2989,7 @@ describe('InvestmentTransactionForm - extra coverage', () => {
       });
       const payload = vi.mocked(investmentsApi.createTransaction).mock.calls[0][0] as any;
       expect(payload.action).toBe('INTEREST');
-      expect(payload.securityId).toBeUndefined();
+      expect(payload.securityId).toBe('sec-1');
     });
 
     it('keeps the bond when an existing interest row is edited', async () => {
@@ -3026,7 +3046,10 @@ describe('InvestmentTransactionForm - extra coverage', () => {
       expect(payload.securityId).toBeNull();
     });
 
-    it('sends null when an edited dividend on a stock becomes interest', async () => {
+    it('keeps the stock when an edited dividend on a stock becomes interest', async () => {
+      // AAPL is USD against the CAD brokerage account, so a market rate
+      // resolves the exchange rate the cash posting needs.
+      getMarketRateMock.mockReturnValue(1.35);
       vi.mocked(investmentsApi.getSecurities).mockResolvedValue(securitiesWithBond);
       const transaction = {
         id: 't10', accountId: 'a1', action: 'DIVIDEND' as const, transactionDate: '2024-06-15',
@@ -3051,7 +3074,7 @@ describe('InvestmentTransactionForm - extra coverage', () => {
       });
       const payload = vi.mocked(investmentsApi.updateTransaction).mock.calls[0][1] as any;
       expect(payload.action).toBe('INTEREST');
-      expect(payload.securityId).toBeNull();
+      expect(payload.securityId).toBe('sec-1');
     });
   });
 });
