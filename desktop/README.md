@@ -34,7 +34,7 @@ manifest does not account for.
 npm run stage                          # everything; needs sh + cwebp, (PNG fallback without cwebp)
 npm run stage -- --require-webp        # CI: fail when cwebp is missing instead of copying PNGs
 npm run stage -- --skip-postgres       # without the @embedded-postgres platform package
-npm run stage -- --skip-backend-deps   # reuse the staged backend/node_modules
+npm run stage -- --skip-backend-deps   # reuse the staged backend/node_modules.asar
 npm run stage -- --vc-redist <dir>     # Windows: where the x64 Visual C++ runtime DLLs are
 ```
 
@@ -43,7 +43,7 @@ dependencies come from a fresh `npm ci --omit=dev` in a temp directory. Without
 `cwebp` the help screenshots are copied as PNG (the backend serves them, at
 about 2.4 times the size) with a warning.
 
-The staged backend `node_modules` is then pruned of files Node never
+The backend's `node_modules` is installed outside `staging/`, then pruned of files Node never
 executes (`scripts/lib/prune.mjs`, one predicate, `isPrunable`): declaration
 files (`*.d.ts`, `*.d.mts`, `*.d.cts`), source maps (`*.map`), TypeScript
 sources shipped beside the compiled JavaScript (`*.ts`, `*.mts`, `*.cts`) and
@@ -74,13 +74,27 @@ that shipped only declarations, maps and Markdown (`@types/luxon`,
 count. The staged frontend (`.next/standalone`) has only about 93 such files
 and is left alone.
 
-One staged file is the desktop's own and mirrors no Dockerfile line (manifest
-`kind: "desktop"`): `shell/parent-watch.cjs`, from `resources/parent-watch.cjs`.
+After the check the backend's dependencies are packed into one archive,
+`backend/node_modules.asar`, whose root holds a `node_modules` directory
+(`scripts/lib/pack-deps.mjs`, with `@electron/asar`). The installer then
+writes and Defender scans one file of about 270 MB instead of about 18,000
+small ones. Native addons (`*.node`; today only `@napi-rs/canvas`) are left
+beside it in `backend/node_modules.asar.unpacked/`, because Windows loads a
+DLL only from a real file; Electron redirects the load there. The backend
+runs on Monize.exe with `ELECTRON_RUN_AS_NODE`, whose `fs` reads inside an
+archive, and the preload `shell/backend-deps.cjs` (from
+`resources/backend-deps.cjs`, loaded into the backend's three processes only)
+makes a bare `require` or `import` that the ordinary lookup cannot find
+resolve from the archive's root. Plain Node cannot read the archive, which
+is why `dev:boot` re-launches itself on Electron's binary.
+
+Three staged files are the desktop's own and mirror no Dockerfile line (manifest
+`kind: "desktop"`). `shell/parent-watch.cjs`, from `resources/parent-watch.cjs`:
 The supervisor loads it into every backend and frontend process with
 `--require` so that they exit when the shell dies, even when it is killed;
 a boot without it fails at its first child rather than running unguarded.
-The other is `shell/icon.ico`, from `build/icon.ico`: the window, splash and
-tray icon on Windows (`src/shell/icon.ts`).
+`shell/backend-deps.cjs`, above. And `shell/icon.ico`, from `build/icon.ico`:
+the window, splash and tray icon on Windows (`src/shell/icon.ts`).
 
 On Windows the run also puts the Visual C++ runtime beside the PostgreSQL
 executables (manifest `kind: "vc-runtime"`): `vcruntime140.dll`,
@@ -97,11 +111,14 @@ is skipped.
 
 ## Running the stack without Electron
 
-`scripts/dev-boot.mjs` boots the staged stack under plain Node through the
+`scripts/dev-boot.mjs` boots the staged stack without the shell, through the
 same runtime module the Electron main process uses (`src/runtime.ts`):
 PostgreSQL, db-init, db-migrate, the backend, the frontend. It runs on Linux
 as well as Windows, so the supervisor, the PostgreSQL runner and the staged
-layout can be exercised with no window and no installer.
+layout can be exercised with no window and no installer. It re-launches itself
+on Electron's binary in Node mode, since the staged backend's packages are in
+an `.asar` archive that plain Node cannot read, so it needs the Electron
+binary that `npm ci` downloads.
 
 ```bash
 npm run stage                                   # after building backend/ and frontend/

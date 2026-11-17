@@ -36,10 +36,14 @@ export const BACKEND_BOOT_SCRIPTS: readonly string[] = [
  */
 export const BACKEND_HEALTH_PATH = "/api/v1/health/ready";
 
-/** Where a layer runs: its resource directory and its composed environment. */
+/**
+ * Where a layer runs: its resource directory, its composed environment and
+ * the desktop-owned preloads its processes load (`ChildSpec.preloads`).
+ */
 export interface LayerRuntime {
   readonly cwd: string;
   readonly env: ChildEnv;
+  readonly preloads?: readonly string[];
 }
 
 export type OneShotResult =
@@ -88,6 +92,7 @@ export async function runBackendOneShot(
   const child = deps.launch({
     source: "backend",
     args: [oneShot.script],
+    preloads: deps.runtime.preloads,
     cwd: deps.runtime.cwd,
     env: deps.runtime.env,
   });
@@ -129,6 +134,7 @@ export function startBackendServer(
   return launch({
     source: "backend",
     args: [BACKEND_SERVER_SCRIPT],
+    preloads: runtime.preloads,
     cwd: runtime.cwd,
     env: runtime.env,
   });

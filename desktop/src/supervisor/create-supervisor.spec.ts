@@ -28,6 +28,8 @@ const WINDOWS_PATHS: AppPaths = {
 };
 const WINDOWS_PRELOAD =
   "C:\\Program Files\\Monize\\resources\\shell\\parent-watch.cjs";
+const WINDOWS_BACKEND_DEPS =
+  "C:\\Program Files\\Monize\\resources\\shell\\backend-deps.cjs";
 const BASE_ENV = {
   SystemRoot: "C:\\Windows",
   DEMO_MODE: "true",
@@ -51,8 +53,9 @@ function setup(overrides: Partial<SupervisorInput> = {}) {
     execPath: "C:\\Program Files\\Monize\\Monize.exe",
     platform: "win32",
     spawn: spawner.spawn,
-    // Only the preload is looked for on disk; it is "there" unless a case says not.
-    fileExists: (path) => path.endsWith("parent-watch.cjs"),
+    // Only the preloads are looked for on disk; they are "there" unless a case says not.
+    fileExists: (path) =>
+      path.endsWith("parent-watch.cjs") || path.endsWith("backend-deps.cjs"),
     fetch: net.fetch,
     clock,
     ...overrides,
@@ -127,6 +130,48 @@ describe("createSupervisor", () => {
       expect(spawned.args.slice(0, 2)).toEqual(["--require", WINDOWS_PRELOAD]);
       expect(spawned.options.stdio).toEqual(["pipe", "pipe", "pipe"]);
     }
+  });
+
+  it("starts the backend's processes, and only those, behind the backend-deps preload too", async () => {
+    const { boot, spawner } = setup();
+    await boot();
+
+    expect(
+      spawner.processes.map((spawned) => [
+        spawned.script,
+        spawned.args.includes(WINDOWS_BACKEND_DEPS),
+      ]),
+    ).toEqual([
+      ["dist/db-init.js", true],
+      ["dist/db-migrate.js", true],
+      ["dist/main.js", true],
+      ["server.js", false],
+    ]);
+    for (const spawned of spawner.processes.slice(0, 3)) {
+      expect(spawned.args.slice(2, 4)).toEqual([
+        "--require",
+        WINDOWS_BACKEND_DEPS,
+      ]);
+    }
+  });
+
+  it("fails the boot at its first child, naming the file, when the backend-deps preload is missing", async () => {
+    const { input, spawner } = setup({
+      fileExists: (path) => path.endsWith("parent-watch.cjs"),
+    });
+
+    const result = await createSupervisor(input).start();
+
+    expect(spawner.processes).toEqual([]);
+    expect(result).toMatchObject({
+      outcome: "failed",
+      failure: {
+        step: "db-init",
+        cause: { kind: "spawn-error", code: "PRELOAD_MISSING" },
+      },
+    });
+    if (result.outcome !== "failed") throw new Error("expected a failure");
+    expect(describeCause(result.failure.cause)).toContain(WINDOWS_BACKEND_DEPS);
   });
 
   it("fails the boot at its first child, naming the file, when the preload is missing", async () => {

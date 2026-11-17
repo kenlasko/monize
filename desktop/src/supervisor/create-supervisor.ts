@@ -11,6 +11,7 @@ import {
 import { FetchLike } from "../health";
 import { Logger } from "../logger";
 import { BACKEND_HEALTH_PATH } from "./backend";
+import { backendDepsPath } from "./backend-deps";
 import { createBootSupervisor, LayerTarget } from "./boot";
 import { ChildOptions, createChildLauncher, SpawnFn } from "./child";
 import { Clock } from "./clock";
@@ -71,6 +72,7 @@ export function layerTargets(
   return {
     backend: {
       cwd: path.join(input.paths.resourcesDir, "backend"),
+      preloads: [backendDepsPath(input.paths.resourcesDir, input.platform)],
       env: composeBackendEnv(
         { ports, secrets: input.secrets },
         input.paths.data,

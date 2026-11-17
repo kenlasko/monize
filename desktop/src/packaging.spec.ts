@@ -116,6 +116,26 @@ describe("electron-builder.yml", () => {
     );
   });
 
+  it("stages the backend's dependencies as the one archive the backend-deps preload reads", () => {
+    // pack-deps.mjs names the archive, the manifest stages it, and the
+    // preload in <resources>/shell/ looks for it one directory up.
+    const packDeps = read("scripts/lib/pack-deps.mjs");
+    const preload = read("resources/backend-deps.cjs");
+    const deps = (manifest.entries as { kind?: string; to: string }[]).filter(
+      (entry) => entry.kind === "backend-deps",
+    );
+    expect(packDeps).toContain(
+      'export const BACKEND_DEPS_ARCHIVE = "backend/node_modules.asar";',
+    );
+    expect(deps.map((entry) => entry.to)).toEqual([
+      "backend/node_modules.asar",
+    ]);
+    expect(preload).toContain(
+      'path.join(__dirname, "..", "backend", "node_modules.asar")',
+    );
+    expect(block("extraResources")).toContain("      - backend/**\n");
+  });
+
   it("names build resources that exist", () => {
     for (const file of ["build/icon.ico", "build/installer.nsh"]) {
       expect(config).toContain(file);
