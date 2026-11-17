@@ -152,7 +152,7 @@ export function CreditUtilizationReport() {
     error,
     reload,
   } = useReportData(
-    () => accountsApi.getAll().then((all) => all.filter(isCreditAccount)),
+    () => accountsApi.getAll(true).then((all) => all.filter(isCreditAccount)),
     [],
   );
 

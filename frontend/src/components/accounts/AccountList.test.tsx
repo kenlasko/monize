@@ -314,7 +314,7 @@ describe('AccountList', () => {
     expect(screen.getByText(/Are you sure you want to permanently delete/)).toBeInTheDocument();
   });
 
-  it('shows Close button disabled when balance is non-zero', () => {
+  it('offers the Close button when the account still holds a balance', () => {
     const account = createAccount({ currentBalance: 500 });
 
     render(
@@ -327,7 +327,7 @@ describe('AccountList', () => {
 
     // The "Close" button in the actions column (not the filter "Closed" button)
     const closeButton = screen.getByRole('button', { name: 'Close' });
-    expect(closeButton).toBeDisabled();
+    expect(closeButton).not.toBeDisabled();
   });
 
   // --- New tests for improved coverage ---
@@ -868,6 +868,49 @@ describe('AccountList', () => {
     await waitFor(() => {
       expect(mockOnRefresh).toHaveBeenCalled();
     });
+  });
+
+  it('says the balance stays and still counts when closing an account that holds one', async () => {
+    const account = createAccount({ currentBalance: 250, excludeFromNetWorth: false });
+
+    render(
+      <AccountList accounts={[account]} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    expect(screen.getByText(/Its balance of .*250.* stays in the account and still counts toward your net worth/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close Account' }));
+    await waitFor(() => {
+      expect(accountsApi.close).toHaveBeenCalledWith(account.id);
+    });
+  });
+
+  it('says an excluded account\'s balance is not counted when closing it', () => {
+    const account = createAccount({ currentBalance: -42.1, excludeFromNetWorth: true });
+
+    render(
+      <AccountList accounts={[account]} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    expect(screen.getByText(/The account is excluded from net worth, so the balance is not counted there/)).toBeInTheDocument();
+    expect(screen.queryByText(/still counts toward your net worth/)).not.toBeInTheDocument();
+  });
+
+  it('keeps the plain close message for an empty account', () => {
+    const account = createAccount({ currentBalance: 0 });
+
+    render(
+      <AccountList accounts={[account]} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    expect(screen.getByText(/A closed account cannot be changed until you reopen it/)).toBeInTheDocument();
+    expect(screen.queryByText(/Its balance of/)).not.toBeInTheDocument();
   });
 
   it('cancels close dialog without closing account', () => {
@@ -2359,7 +2402,7 @@ describe('AccountList', () => {
       expect(screen.getByText(/Are you sure you want to close/)).toBeInTheDocument();
     });
 
-    it('shows disabled close button in dense mode when balance is non-zero', () => {
+    it('offers the close button in dense mode when the account still holds a balance', () => {
       const account = createAccount({ currentBalance: 500 });
 
       render(
@@ -2370,8 +2413,7 @@ describe('AccountList', () => {
       fireEvent.click(densityButton);
       fireEvent.click(densityButton);
 
-      const closeIconButton = screen.getByTitle('Account must have zero balance to close');
-      expect(closeIconButton).toBeDisabled();
+      expect(screen.getByTitle('Close account')).not.toBeDisabled();
     });
 
     it('shows reconcile icon button in dense mode for non-brokerage accounts', () => {
@@ -2684,12 +2726,12 @@ describe('AccountList', () => {
       expect(closeBtn).not.toBeDisabled();
     });
 
-    it('context menu shows Close button disabled when balance is non-zero', () => {
+    it('context menu offers the Close button when the account still holds a balance', () => {
       const account = createAccount({ name: 'Non Zero', currentBalance: 500 });
       openContextMenu(account);
 
       const closeBtn = within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' });
-      expect(closeBtn).toBeDisabled();
+      expect(closeBtn).not.toBeDisabled();
     });
 
     it('context menu Close opens close dialog', () => {

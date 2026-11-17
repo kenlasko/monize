@@ -138,10 +138,14 @@ test insisted:
 2. **A closed account's combined value is its cash, not unknown.** `getPortfolioSummary` filters
    `isClosed: false`, so a closed account is absent from the payload by design. Reading that
    absence as "could not price" would put an em-dash on every closed investment account; closing
-   requires the account to be emptied first, so "no holdings to value" is the settled answer.
-3. **The close guard checks both ledgers' balances, not only the holdings.** Once either half
-   can close the pair, closing from the brokerage side would otherwise close over a cash balance
-   the user still has.
+   requires the account to hold no securities first, so "no holdings to value" is the settled
+   answer. (Amended November 2026: a close no longer requires a zero cash balance, so a closed
+   pair's combined value is the cash it was closed with.)
+3. **The close guard checks both ledgers, not only the addressed half.** Once either half can
+   close the pair, closing from the brokerage side would otherwise skip the other ledger. (Amended
+   November 2026: the check over both halves is now the future-dated rows and the holdings; a cash
+   balance no longer stops a close and stays in the closed cash half. See
+   `docs/backend/transactions-and-money.md`, "A closed account keeps its balance".)
 4. **`ReportAccountMultiSelect` keeps `filter` alongside the new `mode`.** `mode` expresses the
    pair split; `filter` stays for genuine domain restrictions (accounts with an FX fee,
    non-investment accounts) that several callers legitimately pass.

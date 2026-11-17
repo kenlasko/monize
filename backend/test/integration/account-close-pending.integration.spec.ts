@@ -87,6 +87,24 @@ describe("Closing an account over a pending future-dated row (integration)", () 
     expect((await account()).isClosed).toBe(false);
   });
 
+  it("closes over a non-zero balance and keeps it, refusing any later write to it", async () => {
+    await db.query(
+      `UPDATE accounts SET current_balance = 250, opening_balance = 250 WHERE id = $1`,
+      [accountId],
+    );
+
+    await close();
+
+    const closed = await account();
+    expect(closed.isClosed).toBe(true);
+    expect(Number(closed.currentBalance)).toBe(250);
+    // Frozen: the balance write's own `is_closed = false` predicate refuses.
+    await expect(
+      withUserContext(userId, () => accounts.updateBalance(accountId, -25)),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(Number((await account()).currentBalance)).toBe(250);
+  });
+
   it("still closes over a VOID future row, which moves nothing", async () => {
     await addRow("CURRENT_DATE + 10", "VOID");
 

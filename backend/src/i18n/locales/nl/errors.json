@@ -49,7 +49,6 @@
     "changeCurrencyWithTransactions": "Kan de valuta van een rekening met transacties niet wijzigen.",
     "changeCurrencyWithBalanceOrSchedules": "De valuta van een rekening met een beginsaldo of geplande transacties kan niet worden gewijzigd.",
     "alreadyClosed": "Rekening is al gesloten",
-    "closeNonZeroBalance": "Kan rekening niet sluiten met een saldo dat niet nul is. Huidig saldo: {{ currentBalance }}",
     "closeWithFutureTransactions": "Een rekening met transacties in de toekomst kan niet worden gesloten. Er zijn {{ count }} transactie(s) gedateerd na vandaag; verwijder of annuleer ze eerst.",
     "closeWithHoldings": "Een beleggingsrekening met effecten kan niet worden gesloten. Er zijn {{ holdingCount }} positie(s) met een aantal ongelijk aan nul; verkoop of verplaats deze eerst.",
     "notClosed": "Rekening is niet gesloten",

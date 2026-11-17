@@ -94,9 +94,9 @@
       "reopenAccount": "Otwórz ponownie konto",
       "deleteAccount": "Usuń konto",
       "deleteTitle": "Trwale usuń konto (bez transakcji)",
-      "closeTitleDisabled": "Konto musi mieć zerowe saldo, aby je zamknąć",
+      "closeTitleDisabled": "Przed zamknięciem konta sprzedaj lub przenieś jego papiery wartościowe",
       "closeTitleEnabled": "Zamknij konto",
-      "closeTitleUnknownValue": "Nie można obliczyć sumy tego konta, więc nie da się potwierdzić, że jest puste",
+      "closeTitleUnknownValue": "Nie można obliczyć wartości papierów wartościowych na tym koncie, więc nie da się potwierdzić, że nie ma ich już na nim",
       "details": "Szczegóły"
     },
     "jointBadge": "Wspólne",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "Zamknij konto",
-    "closeMessage": "Czy na pewno chcesz zamknąć \"{name}\"? Konto musi mieć zerowe saldo, aby je zamknąć.",
+    "closeMessage": "Czy na pewno chcesz zamknąć \"{name}\"? Zamkniętego konta nie można zmienić, dopóki go nie otworzysz ponownie.",
+    "closeMessageWithBalance": "Czy na pewno chcesz zamknąć \"{name}\"? Jego saldo {balance} pozostaje na koncie i nadal wlicza się do Twojej wartości netto. Zamkniętego konta nie można zmienić, dopóki go nie otworzysz ponownie, więc aby pominąć je w wartości netto, przed zamknięciem edytuj konto i je wyklucz.",
+    "closeMessageWithBalanceExcluded": "Czy na pewno chcesz zamknąć \"{name}\"? Jego saldo {balance} pozostaje na koncie. Konto jest wykluczone z wartości netto, więc saldo nie jest tam liczone. Zamkniętego konta nie można zmienić, dopóki go nie otworzysz ponownie.",
     "closeConfirm": "Zamknij konto",
     "closeConfirmLoading": "Zamykanie...",
     "deleteTitle": "Usuń konto",

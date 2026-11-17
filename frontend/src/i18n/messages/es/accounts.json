@@ -94,9 +94,9 @@
       "reopenAccount": "Reabrir Cuenta",
       "deleteAccount": "Eliminar Cuenta",
       "deleteTitle": "Eliminar permanentemente la cuenta (sin transacciones)",
-      "closeTitleDisabled": "La cuenta debe tener saldo cero para cerrarla",
+      "closeTitleDisabled": "Vende o transfiere los valores de esta cuenta antes de cerrarla",
       "closeTitleEnabled": "Cerrar cuenta",
-      "closeTitleUnknownValue": "No se puede calcular el total de esta cuenta, por lo que no se puede confirmar que esté vacía",
+      "closeTitleUnknownValue": "No se puede calcular el valor de los valores de esta cuenta, por lo que no se puede confirmar que no tenga ninguno",
       "details": "Detalles"
     },
     "jointBadge": "Conjunta",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "Cerrar Cuenta",
-    "closeMessage": "¿Estás seguro de que deseas cerrar \"{name}\"? La cuenta debe tener saldo cero para poder cerrarse.",
+    "closeMessage": "¿Estás seguro de que deseas cerrar \"{name}\"? Una cuenta cerrada no se puede modificar hasta que la vuelvas a abrir.",
+    "closeMessageWithBalance": "¿Estás seguro de que deseas cerrar \"{name}\"? Su saldo de {balance} permanece en la cuenta y sigue contando en tu patrimonio neto. Una cuenta cerrada no se puede modificar hasta que la vuelvas a abrir, así que para dejarla fuera del patrimonio neto, edita la cuenta y exclúyela antes de cerrarla.",
+    "closeMessageWithBalanceExcluded": "¿Estás seguro de que deseas cerrar \"{name}\"? Su saldo de {balance} permanece en la cuenta. La cuenta está excluida del patrimonio neto, así que el saldo no se cuenta allí. Una cuenta cerrada no se puede modificar hasta que la vuelvas a abrir.",
     "closeConfirm": "Cerrar Cuenta",
     "closeConfirmLoading": "Cerrando...",
     "deleteTitle": "Eliminar Cuenta",

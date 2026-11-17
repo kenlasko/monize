@@ -32,6 +32,7 @@ import { MONEY_SCALE, moneyDecimalsFor } from "../common/round.util";
 import { FxProviderChain } from "./providers/fx-provider-chain";
 import { CryptoFxProvider } from "./providers/crypto-fx.provider";
 import { ExchangeRateHistoryService } from "./exchange-rate-history.service";
+import { accountCarriesBalanceSql } from "../accounts/account-carries-balance";
 import {
   QuoteSymbolRefusal,
   quoteSymbolCoinTicker,
@@ -937,7 +938,7 @@ export class CurrenciesService implements OnApplicationBootstrap {
         ON ucp.currency_code = c.code AND ucp.user_id = $1
       LEFT JOIN (
         SELECT currency_code, COUNT(*) AS cnt
-        FROM accounts WHERE is_closed = false AND user_id = $1
+        FROM accounts WHERE ${accountCarriesBalanceSql()} AND user_id = $1
         GROUP BY currency_code
       ) a ON a.currency_code = c.code
       LEFT JOIN (

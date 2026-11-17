@@ -1439,7 +1439,7 @@ function TransactionsContent() {
               : accountBalances.length > 1
                 ? 'accountBalances'
                 // Multiple accounts in scope but every one has a zero balance
-                // (e.g. only closed accounts, which are zeroed at closure): the
+                // (e.g. only closed accounts that were emptied before closing): the
                 // bar chart hides zero balances and a summed line reads as a
                 // meaningless flat line, so show a banner instead.
                 : accountCount > 1 && accountBalances.length === 0

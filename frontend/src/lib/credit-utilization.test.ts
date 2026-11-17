@@ -39,8 +39,12 @@ describe('isCreditAccount', () => {
     expect(isCreditAccount(account({ creditLimit: null }))).toBe(false);
   });
 
-  it('rejects closed accounts', () => {
-    expect(isCreditAccount(account({ isClosed: true }))).toBe(false);
+  it('rejects a closed account at zero', () => {
+    expect(isCreditAccount(account({ isClosed: true, currentBalance: 0 }))).toBe(false);
+  });
+
+  it('keeps a closed card that still owes a balance', () => {
+    expect(isCreditAccount(account({ isClosed: true, currentBalance: -500 }))).toBe(true);
   });
 });
 

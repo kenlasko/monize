@@ -90,7 +90,13 @@ export type WidgetIconType = 'bar' | 'line' | 'pie' | 'table' | 'list';
 
 /** Everything the dashboard page loads, handed to each widget's render. */
 export interface DashboardWidgetContext {
+  /** The open accounts. */
   accounts: Account[];
+  /**
+   * Open and closed accounts, for a widget that must count a closed account
+   * still holding a balance (`accountCarriesBalance`): credit utilization.
+   */
+  accountsWithClosed: Account[];
   scheduledTransactions: ScheduledTransaction[];
   topMovers: TopMover[];
   favouriteSecurities: FavouriteSecurityQuote[];
@@ -344,7 +350,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     defaultEnabled: false,
     minWidth: 'half',
     defaultHeight: 'standard',
-    render: (ctx) => <CreditUtilizationAccountsWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
+    render: (ctx) => <CreditUtilizationAccountsWidget accounts={ctx.accountsWithClosed} isLoading={ctx.isLoading} />,
   },
   {
     id: 'credit-utilization-total',
@@ -353,7 +359,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     defaultEnabled: false,
     minWidth: 'third',
     defaultHeight: 'standard',
-    render: (ctx) => <CreditUtilizationTotalWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
+    render: (ctx) => <CreditUtilizationTotalWidget accounts={ctx.accountsWithClosed} isLoading={ctx.isLoading} />,
   },
   {
     id: 'sector-weightings',

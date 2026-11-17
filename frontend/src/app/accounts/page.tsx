@@ -29,6 +29,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { sumConverted, combineTotals } from '@/lib/currency-total';
 import { sumMoney } from '@/lib/format';
+import { accountCarriesBalance } from '@/lib/account-carries-balance';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CARD_CLASS } from '@/components/ui/Card';
 import { useFormModal } from '@/hooks/useFormModal';
@@ -245,17 +246,21 @@ function AccountsContent() {
 
   const summary = useMemo(() => {
     const activeAccounts = accounts.filter((a) => !a.isClosed);
-    // An account the user excluded from net worth contributes to none of the
-    // three money cards. Assets - Liabilities is the Net Worth card beside
-    // them, so dropping the account from one and not the others would leave
-    // the row unable to add up -- and the server's net worth series applies
-    // the same predicate to both sides (net-worth.service.ts's
-    // `exclude_from_net_worth = false`), which is what "it excludes it
-    // elsewhere" refers to. The account count is a count of accounts, not of
-    // money, so it stays over every active account.
+    // The money cards sum every account whose balance still counts: the open
+    // ones and a closed account left holding a balance (`accountCarriesBalance`),
+    // which the server's net worth counts too. An account the user excluded
+    // from net worth contributes to none of the three money cards.
+    // Assets - Liabilities is the Net Worth card beside them, so dropping the
+    // account from one and not the others would leave the row unable to add
+    // up -- and the server's net worth series applies the same predicate to
+    // both sides (net-worth.service.ts's `exclude_from_net_worth = false`),
+    // which is what "it excludes it elsewhere" refers to. The account count is
+    // a count of accounts, not of money, so it stays over every active account.
     // A joint account carries the grantee's own overlay in this same field,
     // so no separate branch is needed for it.
-    const countedAccounts = activeAccounts.filter((a) => !a.excludeFromNetWorth);
+    const countedAccounts = accounts.filter(
+      (a) => accountCarriesBalance(a) && !a.excludeFromNetWorth,
+    );
     const assets = countedAccounts.filter((a) => !LIABILITY_TYPES.includes(a.accountType));
     const liabilities = countedAccounts.filter((a) => LIABILITY_TYPES.includes(a.accountType));
 

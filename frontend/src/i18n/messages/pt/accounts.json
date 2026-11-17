@@ -94,9 +94,9 @@
       "reopenAccount": "Reabrir Conta",
       "deleteAccount": "Eliminar Conta",
       "deleteTitle": "Eliminar conta permanentemente (sem transações)",
-      "closeTitleDisabled": "O saldo da conta deve ser zero para fechar",
+      "closeTitleDisabled": "Venda ou transfira os títulos desta conta antes de a encerrar",
       "closeTitleEnabled": "Fechar conta",
-      "closeTitleUnknownValue": "O total desta conta não pode ser apurado, pelo que não é possível confirmar que está vazia",
+      "closeTitleUnknownValue": "Não é possível calcular o valor dos títulos desta conta, pelo que não é possível confirmar que não detém nenhum",
       "details": "Detalhes"
     },
     "jointBadge": "Conjunta",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "Fechar Conta",
-    "closeMessage": "Tem a certeza de que quer fechar \"{name}\"? A conta deve ter saldo zero para ser fechada.",
+    "closeMessage": "Tem a certeza de que quer fechar \"{name}\"? Uma conta encerrada não pode ser alterada até a reabrir.",
+    "closeMessageWithBalance": "Tem a certeza de que quer fechar \"{name}\"? O saldo de {balance} fica na conta e continua a contar para o seu património líquido. Uma conta encerrada não pode ser alterada até a reabrir, por isso, para a deixar fora do património líquido, edite a conta e exclua-a antes de a encerrar.",
+    "closeMessageWithBalanceExcluded": "Tem a certeza de que quer fechar \"{name}\"? O saldo de {balance} fica na conta. A conta está excluída do património líquido, pelo que o saldo não é contado aí. Uma conta encerrada não pode ser alterada até a reabrir.",
     "closeConfirm": "Fechar Conta",
     "closeConfirmLoading": "A fechar...",
     "deleteTitle": "Eliminar Conta",

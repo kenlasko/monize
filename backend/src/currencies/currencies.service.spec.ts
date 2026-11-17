@@ -12,6 +12,7 @@ import { Currency } from "./entities/currency.entity";
 import { UserCurrencyPreference } from "./entities/user-currency-preference.entity";
 import { FxProviderChain } from "./providers/fx-provider-chain";
 import { ExchangeRateHistoryService } from "./exchange-rate-history.service";
+import { accountCarriesBalanceSql } from "../accounts/account-carries-balance";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -1244,6 +1245,19 @@ describe("CurrenciesService", () => {
       });
       expect(mockDataSource.query).toHaveBeenCalledWith(
         expect.stringContaining("user_id = $1"),
+        [userId],
+      );
+    });
+
+    it("counts a closed account that still holds a balance as a use", async () => {
+      mockDataSource.query.mockResolvedValue([]);
+
+      await service.getUsage(userId);
+
+      expect(mockDataSource.query).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `FROM accounts WHERE ${accountCarriesBalanceSql()} AND user_id = $1`,
+        ),
         [userId],
       );
     });

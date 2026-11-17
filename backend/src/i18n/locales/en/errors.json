@@ -49,7 +49,6 @@
     "changeCurrencyWithTransactions": "Cannot change the currency of an account that has transactions.",
     "changeCurrencyWithBalanceOrSchedules": "Cannot change the currency of an account that has an opening balance or scheduled transactions.",
     "alreadyClosed": "Account is already closed",
-    "closeNonZeroBalance": "Cannot close account with non-zero balance. Current balance: {{ currentBalance }}",
     "closeWithFutureTransactions": "Cannot close an account with future-dated transactions. It has {{ count }} transaction(s) dated after today; delete or void them first.",
     "closeWithHoldings": "Cannot close an investment account that still holds securities. It has {{ holdingCount }} holding(s) with a non-zero quantity; sell or transfer them first.",
     "notClosed": "Account is not closed",

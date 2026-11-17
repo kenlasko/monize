@@ -94,9 +94,9 @@
       "reopenAccount": "Konto wiedereröffnen",
       "deleteAccount": "Konto löschen",
       "deleteTitle": "Konto dauerhaft löschen (keine Buchungen)",
-      "closeTitleDisabled": "Kontostand muss null sein, um das Konto zu schließen",
+      "closeTitleDisabled": "Verkaufen oder übertragen Sie die Wertpapiere dieses Kontos, bevor Sie es schließen",
       "closeTitleEnabled": "Konto schließen",
-      "closeTitleUnknownValue": "Der Gesamtwert dieses Kontos lässt sich nicht ermitteln, daher kann es nicht als leer bestätigt werden",
+      "closeTitleUnknownValue": "Der Wert der Wertpapiere dieses Kontos lässt sich nicht ermitteln, daher kann nicht bestätigt werden, dass es keine mehr enthält",
       "details": "Details"
     },
     "jointBadge": "Gemeinsam",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "Konto schließen",
-    "closeMessage": "Möchten Sie „{name}” wirklich schließen? Das Konto muss einen Saldo von null haben, um geschlossen werden zu können.",
+    "closeMessage": "Möchten Sie „{name}” wirklich schließen? Ein geschlossenes Konto kann erst geändert werden, wenn Sie es wieder öffnen.",
+    "closeMessageWithBalance": "Möchten Sie „{name}” wirklich schließen? Sein Saldo von {balance} verbleibt auf dem Konto und zählt weiterhin zu Ihrem Nettovermögen. Ein geschlossenes Konto kann erst geändert werden, wenn Sie es wieder öffnen. Um es nicht mehr im Nettovermögen zu zählen, bearbeiten Sie das Konto vor dem Schließen und nehmen Sie es aus dem Nettovermögen heraus.",
+    "closeMessageWithBalanceExcluded": "Möchten Sie „{name}” wirklich schließen? Sein Saldo von {balance} verbleibt auf dem Konto. Das Konto ist vom Nettovermögen ausgeschlossen, daher wird der Saldo dort nicht gezählt. Ein geschlossenes Konto kann erst geändert werden, wenn Sie es wieder öffnen.",
     "closeConfirm": "Konto schließen",
     "closeConfirmLoading": "Wird geschlossen...",
     "deleteTitle": "Konto löschen",

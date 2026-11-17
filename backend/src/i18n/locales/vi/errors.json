@@ -49,7 +49,6 @@
     "changeCurrencyWithTransactions": "Không thể thay đổi tiền tệ của tài khoản đã có giao tác.",
     "changeCurrencyWithBalanceOrSchedules": "Không thể đổi tiền tệ của tài khoản có số dư đầu kỳ hoặc giao dịch định kỳ.",
     "alreadyClosed": "Tài khoản đã được đóng",
-    "closeNonZeroBalance": "Không thể đóng tài khoản có số dư khác không. Số dư hiện tại: {{ currentBalance }}",
     "closeWithFutureTransactions": "Không thể đóng tài khoản có giao dịch mang ngày trong tương lai. Tài khoản có {{ count }} giao dịch mang ngày sau hôm nay; hãy xóa hoặc hủy bỏ chúng trước.",
     "closeWithHoldings": "Không thể đóng tài khoản đầu tư vẫn còn nắm giữ chứng khoán. Tài khoản có {{ holdingCount }} khoản nắm giữ với số lượng khác 0; hãy bán hoặc chuyển đi trước.",
     "notClosed": "Tài khoản chưa được đóng",

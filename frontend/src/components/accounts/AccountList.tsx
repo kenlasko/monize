@@ -10,6 +10,7 @@ import { Institution } from '@/types/institution';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { accountsApi } from '@/lib/accounts';
 import { invalidateBalanceCaches } from '@/lib/apiCache';
+import { moneyDecimalsForCurrency, roundMoney } from '@/lib/format';
 import { useAuthStore } from '@/store/authStore';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import toast from 'react-hot-toast';
@@ -31,7 +32,7 @@ import { MultiSelectOption } from '@/components/ui/MultiSelect';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { AccountFilterPanel, type AccountJointFilter, type AccountNetWorthFilter, type AccountStatusFilter } from './AccountFilterPanel';
 import { formatAccountType } from '@/lib/account-utils';
-import { buildLogicalAccounts, holdingsValuationIncomplete, type LogicalAccount } from '@/lib/logical-accounts';
+import { buildLogicalAccounts, cashBalanceOf, holdingsValuationIncomplete, type LogicalAccount } from '@/lib/logical-accounts';
 import { useMainAccountName } from '@/hooks/useMainAccountName';
 import { DensityToggleBar } from '@/components/ui/DensityToggle';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -1148,14 +1149,23 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
       <ConfirmDialog
         isOpen={closeDialogOpen}
         title={t('confirmDialog.closeTitle')}
-        message={accountToClose
-          ? t('confirmDialog.closeMessage', {
-              name:
-                logicalById.get(accountToClose.id)?.displayName ??
-                accountToClose.name,
-            })
-          : ''
-        }
+        message={(() => {
+          if (!accountToClose) return '';
+          const logical = logicalById.get(accountToClose.id);
+          const name = logical?.displayName ?? accountToClose.name;
+          // The cash a close leaves behind stays in the account, frozen, and
+          // keeps counting unless the account is excluded from net worth --
+          // which cannot be changed once it is closed, so the dialog says so
+          // while it still can be.
+          const cashLedger = logical?.cash ?? accountToClose;
+          const left = logical ? cashBalanceOf(logical) : Number(accountToClose.currentBalance) || 0;
+          const rounded = roundMoney(left, moneyDecimalsForCurrency(cashLedger.currencyCode));
+          if (rounded === 0) return t('confirmDialog.closeMessage', { name });
+          const balance = formatCurrencyBase(rounded, cashLedger.currencyCode);
+          return accountToClose.excludeFromNetWorth
+            ? t('confirmDialog.closeMessageWithBalanceExcluded', { name, balance })
+            : t('confirmDialog.closeMessageWithBalance', { name, balance });
+        })()}
         confirmLabel={isClosing ? t('confirmDialog.closeConfirmLoading') : t('confirmDialog.closeConfirm')}
         cancelLabel={tc('cancel')}
         variant="warning"

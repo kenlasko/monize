@@ -49,7 +49,6 @@
     "changeCurrencyWithTransactions": "Tidak dapat mengubah mata uang akun yang memiliki transaksi.",
     "changeCurrencyWithBalanceOrSchedules": "Tidak dapat mengubah mata uang akun yang memiliki saldo awal atau transaksi terjadwal.",
     "alreadyClosed": "Akun sudah ditutup",
-    "closeNonZeroBalance": "Tidak dapat menutup akun dengan saldo bukan nol. Saldo saat ini: {{ currentBalance }}",
     "closeWithFutureTransactions": "Akun dengan transaksi bertanggal masa depan tidak dapat ditutup. Akun ini memiliki {{ count }} transaksi bertanggal setelah hari ini; hapus atau batalkan transaksi tersebut terlebih dahulu.",
     "closeWithHoldings": "Tidak dapat menutup akun investasi yang masih memiliki efek. Akun ini memiliki {{ holdingCount }} kepemilikan dengan jumlah bukan nol; jual atau pindahkan terlebih dahulu.",
     "notClosed": "Akun belum ditutup",

@@ -94,9 +94,9 @@
       "reopenAccount": "Rekening heropenen",
       "deleteAccount": "Rekening verwijderen",
       "deleteTitle": "Rekening definitief verwijderen (geen transacties)",
-      "closeTitleDisabled": "Rekening moet een saldo van nul hebben om te sluiten",
+      "closeTitleDisabled": "Verkoop of draag de effecten van deze rekening over voordat u deze sluit",
       "closeTitleEnabled": "Rekening sluiten",
-      "closeTitleUnknownValue": "Het totaal van deze rekening kan niet worden bepaald, dus er kan niet worden bevestigd dat de rekening leeg is",
+      "closeTitleUnknownValue": "De waarde van de effecten op deze rekening kan niet worden berekend, dus kan niet worden bevestigd dat er geen meer op staan",
       "details": "Details"
     },
     "jointBadge": "Gezamenlijk",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "Rekening sluiten",
-    "closeMessage": "Weet je zeker dat je \"{name}\" wilt sluiten? De rekening moet een saldo van nul hebben om te sluiten.",
+    "closeMessage": "Weet je zeker dat je \"{name}\" wilt sluiten? Een gesloten rekening kan pas worden gewijzigd als u deze heropent.",
+    "closeMessageWithBalance": "Weet je zeker dat je \"{name}\" wilt sluiten? Het saldo van {balance} blijft op de rekening staan en telt nog mee in uw nettovermogen. Een gesloten rekening kan pas worden gewijzigd als u deze heropent, dus om deze buiten het nettovermogen te houden, bewerkt u de rekening vóór het sluiten en sluit u deze uit van het nettovermogen.",
+    "closeMessageWithBalanceExcluded": "Weet je zeker dat je \"{name}\" wilt sluiten? Het saldo van {balance} blijft op de rekening staan. De rekening is uitgesloten van het nettovermogen, dus het saldo telt daar niet mee. Een gesloten rekening kan pas worden gewijzigd als u deze heropent.",
     "closeConfirm": "Rekening sluiten",
     "closeConfirmLoading": "Sluiten...",
     "deleteTitle": "Rekening verwijderen",

@@ -1,16 +1,22 @@
 import { Account } from '@/types/account';
 import { chartColors } from '@/lib/chart-colors';
+import { accountCarriesBalance } from '@/lib/account-carries-balance';
 
 /**
  * Only credit cards and lines of credit with a positive credit limit have a
  * meaningful utilization figure (used / available credit). Shared by the Credit
  * Utilization report and its dashboard widgets.
+ *
+ * A closed card still owing a balance stays in, at its recorded limit: the
+ * debt is still the user's and still counts in net worth, so leaving it out
+ * would understate what is drawn (`accountCarriesBalance`). A closed card at
+ * zero is out.
  */
 export const isCreditAccount = (account: Account): boolean =>
   (account.accountType === 'CREDIT_CARD' || account.accountType === 'LINE_OF_CREDIT') &&
   account.creditLimit != null &&
   account.creditLimit > 0 &&
-  !account.isClosed;
+  accountCarriesBalance(account);
 
 /**
  * Utilization thresholds drive the colour: low (green), moderate (amber), high

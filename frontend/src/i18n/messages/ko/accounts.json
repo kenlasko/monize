@@ -94,9 +94,9 @@
       "reopenAccount": "계정 재개",
       "deleteAccount": "계정 삭제",
       "deleteTitle": "계정 영구 삭제 (거래 없음)",
-      "closeTitleDisabled": "잔액이 0이어야 종료할 수 있습니다",
+      "closeTitleDisabled": "계정을 종료하기 전에 이 계정의 증권을 매도하거나 이전하세요",
       "closeTitleEnabled": "계정 종료",
-      "closeTitleUnknownValue": "이 계좌의 합계를 계산할 수 없어 잔액이 0인지 확인할 수 없습니다",
+      "closeTitleUnknownValue": "이 계정 증권의 가치를 계산할 수 없어 보유 증권이 없는지 확인할 수 없습니다",
       "details": "상세 정보"
     },
     "jointBadge": "공동",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "계정 종료",
-    "closeMessage": "\"{name}\"을(를) 종료하시겠습니까? 잔액이 0이어야 계정을 종료할 수 있습니다.",
+    "closeMessage": "\"{name}\"을(를) 종료하시겠습니까? 종료된 계정은 다시 열기 전까지 변경할 수 없습니다.",
+    "closeMessageWithBalance": "\"{name}\"을(를) 종료하시겠습니까? 잔액 {balance}은(는) 계정에 남아 계속 순자산에 포함됩니다. 종료된 계정은 다시 열기 전까지 변경할 수 없으므로, 순자산에서 제외하려면 종료하기 전에 계정을 편집해 제외하세요.",
+    "closeMessageWithBalanceExcluded": "\"{name}\"을(를) 종료하시겠습니까? 잔액 {balance}은(는) 계정에 남습니다. 이 계정은 순자산에서 제외되어 있으므로 잔액이 순자산에 포함되지 않습니다. 종료된 계정은 다시 열기 전까지 변경할 수 없습니다.",
     "closeConfirm": "계정 종료",
     "closeConfirmLoading": "종료 중...",
     "deleteTitle": "계정 삭제",

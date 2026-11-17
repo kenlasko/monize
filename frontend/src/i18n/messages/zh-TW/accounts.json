@@ -94,9 +94,9 @@
       "reopenAccount": "重新開啟科目",
       "deleteAccount": "刪除科目",
       "deleteTitle": "永久刪除科目（無交易記錄）",
-      "closeTitleDisabled": "科目結餘必須為零才能關閉",
+      "closeTitleDisabled": "關閉前請先賣出或轉出此帳戶中的證券",
       "closeTitleEnabled": "關閉科目",
-      "closeTitleUnknownValue": "無法計算此帳戶的總額，因此無法確認帳戶已清空",
+      "closeTitleUnknownValue": "無法計算此帳戶中證券的價值，因此無法確認帳戶已不持有證券",
       "details": "詳情"
     },
     "jointBadge": "聯名",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "關閉科目",
-    "closeMessage": "確定要關閉「{name}」嗎？科目結餘必須為零才能關閉。",
+    "closeMessage": "確定要關閉「{name}」嗎？已關閉的帳戶在重新開啟之前無法變更。",
+    "closeMessageWithBalance": "確定要關閉「{name}」嗎？其餘額 {balance} 會保留在帳戶中，並繼續計入您的淨資產。已關閉的帳戶在重新開啟之前無法變更，因此如要將其排除在淨資產之外，請在關閉前編輯帳戶並將其排除。",
+    "closeMessageWithBalanceExcluded": "確定要關閉「{name}」嗎？其餘額 {balance} 會保留在帳戶中。此帳戶已從淨資產中排除，因此餘額不會計入淨資產。已關閉的帳戶在重新開啟之前無法變更。",
     "closeConfirm": "關閉科目",
     "closeConfirmLoading": "關閉中...",
     "deleteTitle": "刪除科目",

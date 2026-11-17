@@ -94,9 +94,9 @@
       "reopenAccount": "Rouvrir le compte",
       "deleteAccount": "Supprimer le compte",
       "deleteTitle": "Supprimer définitivement le compte (sans transactions)",
-      "closeTitleDisabled": "Le solde du compte doit être nul pour le clôturer",
+      "closeTitleDisabled": "Vendez ou transférez les titres de ce compte avant de le clôturer",
       "closeTitleEnabled": "Clôturer le compte",
-      "closeTitleUnknownValue": "Le total de ce compte ne peut pas être calculé, il est donc impossible de confirmer qu'il est vide",
+      "closeTitleUnknownValue": "La valeur des titres de ce compte ne peut pas être calculée, il est donc impossible de confirmer qu'il n'en détient plus",
       "details": "Détails"
     },
     "jointBadge": "Joint",
@@ -116,7 +116,9 @@
   },
   "confirmDialog": {
     "closeTitle": "Clôturer le compte",
-    "closeMessage": "Êtes-vous sûr de vouloir clôturer « {name} » ? Le solde du compte doit être nul pour être clôturé.",
+    "closeMessage": "Êtes-vous sûr de vouloir clôturer « {name} » ? Un compte clôturé ne peut plus être modifié tant que vous ne l'avez pas rouvert.",
+    "closeMessageWithBalance": "Êtes-vous sûr de vouloir clôturer « {name} » ? Son solde de {balance} reste sur le compte et compte toujours dans votre valeur nette. Un compte clôturé ne peut plus être modifié tant que vous ne l'avez pas rouvert : pour l'exclure de la valeur nette, modifiez le compte et excluez-le avant de le clôturer.",
+    "closeMessageWithBalanceExcluded": "Êtes-vous sûr de vouloir clôturer « {name} » ? Son solde de {balance} reste sur le compte. Le compte est exclu de la valeur nette, le solde n'y est donc pas compté. Un compte clôturé ne peut plus être modifié tant que vous ne l'avez pas rouvert.",
     "closeConfirm": "Clôturer le compte",
     "closeConfirmLoading": "Clôture…",
     "deleteTitle": "Supprimer le compte",

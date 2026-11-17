@@ -498,6 +498,37 @@ describe('AccountsPage', () => {
     });
   });
 
+  /**
+   * A closed account left holding a balance still counts in the money cards,
+   * as it does in the server's net worth; it is not an active account, so the
+   * count leaves it out. A closed account at zero (acc-4) adds nothing.
+   */
+  it('counts a closed account that still holds a balance in the money cards, not the count', async () => {
+    mockGetAll.mockResolvedValue([
+      ...mockAccounts,
+      { id: 'acc-6', name: 'Old Savings', accountType: 'SAVINGS', accountSubType: null, currencyCode: 'USD', currentBalance: 250, isClosed: true, canDelete: true },
+      { id: 'acc-7', name: 'Old Card', accountType: 'CREDIT_CARD', accountSubType: null, currencyCode: 'USD', currentBalance: -100, isClosed: true, canDelete: true },
+    ]);
+    render(<AccountsPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('summary-Total Assets')).toHaveTextContent('$15250.00');
+    });
+    expect(screen.getByTestId('summary-Total Liabilities')).toHaveTextContent('$2100.00');
+    expect(screen.getByTestId('summary-Net Worth')).toHaveTextContent('$13150.00');
+    expect(screen.getByTestId('summary-Total Active Accounts')).toHaveTextContent('4');
+  });
+
+  it('leaves a closed account with a balance out when it is excluded from net worth', async () => {
+    mockGetAll.mockResolvedValue([
+      ...mockAccounts,
+      { id: 'acc-6', name: 'Old Savings', accountType: 'SAVINGS', accountSubType: null, currencyCode: 'USD', currentBalance: 250, isClosed: true, canDelete: true, excludeFromNetWorth: true },
+    ]);
+    render(<AccountsPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('summary-Net Worth')).toHaveTextContent('$13000.00');
+    });
+  });
+
   it('calculates total liabilities correctly', async () => {
     mockGetAll.mockResolvedValue(mockAccounts);
     render(<AccountsPage />);

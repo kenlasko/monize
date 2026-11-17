@@ -155,11 +155,10 @@ function combinedValueFor(
   }
 
   // Nothing reported a value for these holdings. A closed account is one the
-  // app required to be emptied first, and the live portfolio deliberately does
-  // not report it: that is "no holdings to value", a settled answer -- not
-  // "could not value them" -- so it must not render as unknown. (Until task B1
-  // lands, closing is only gated on the cash balance, so a brokerage closed
-  // with positions still reads as its cash alone.)
+  // app required to hold no securities first (a cash balance may stay), and
+  // the live portfolio deliberately does not report it: that is "no holdings
+  // to value", a settled answer -- not "could not value them" -- so it must
+  // not render as unknown. Its value is the cash it was closed with.
   //
   // A source that *does* report closed accounts -- the point-in-time report,
   // which can be asked about a date before the account was emptied -- lands in
@@ -246,6 +245,27 @@ export function buildLogicalAccounts(
         ),
       };
     });
+}
+
+/**
+ * The balance of the entity's cash ledger: the cash half of a pair, otherwise
+ * the account itself (a brokerage's own balance is always zero). This is what
+ * a close leaves behind in the account.
+ */
+export function cashBalanceOf(logical: LogicalAccount): number {
+  return ownBalance(logical.cash ?? logical.primary);
+}
+
+/**
+ * The value of the entity's securities: 0 for an entity that holds none, null
+ * when it is unknown (an unpriced holding, a failed portfolio lookup). Derived
+ * from the live `combinedValue`, so it is for an entity built without
+ * `ledgerBalances`.
+ */
+export function securitiesValueOf(logical: LogicalAccount): number | null {
+  if (logical.holdingsAccountId === null) return 0;
+  if (logical.combinedValue === null) return null;
+  return logical.combinedValue - cashBalanceOf(logical);
 }
 
 /**
