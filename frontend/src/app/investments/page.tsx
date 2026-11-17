@@ -52,6 +52,7 @@ import {
 } from '@/components/investments/InvestmentViewToggle';
 import { PAGE_SIZE } from '@/lib/constants';
 import { useMobileAddChoices } from '@/store/mobileAddActionStore';
+import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
 
 const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
 
@@ -229,6 +230,8 @@ function InvestmentsContent() {
     displayCurrency: singleAccountCurrency ?? undefined,
     reloadKey: data.writeRefreshKey,
   });
+
+  useRetainScrollPosition(!data.isLoading);
 
   // The header's New Transaction is a menu, so the tab bar's add button offers
   // the same two kinds rather than assuming a brokerage one.

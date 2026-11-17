@@ -844,6 +844,34 @@ describe('BillsPage', () => {
     });
   });
 
+  describe('returning to the page', () => {
+    it('draws the last schedules at once while it refetches them', async () => {
+      mockGetAll.mockResolvedValue([
+        { id: 'st-a', currencyCode: 'USD', name: 'Gym', amount: -100, frequency: 'MONTHLY',
+          nextDueDate: '2026-12-01', isActive: true, isTransfer: false, startDate: '2026-01-01', endDate: null },
+      ]);
+      const first = render(<BillsPage />);
+      await waitFor(() => expect(screen.getByText('Gym')).toBeInTheDocument());
+      first.unmount();
+
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<BillsPage />));
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.getByText('Gym')).toBeInTheDocument();
+    });
+
+    it('keeps nothing from a failed load', async () => {
+      mockGetAll.mockRejectedValue(new Error('down'));
+      const first = render(<BillsPage />);
+      await waitFor(() => expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument());
+      first.unmount();
+
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<BillsPage />));
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    });
+  });
+
   // A delete, post or skip in the list, a saved form or override, an undo and
   // an AI write all refresh the page. The refresh used to set isLoading, which
   // swapped the list and the forecast for the spinner and redrew the page.

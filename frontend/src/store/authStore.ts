@@ -5,6 +5,7 @@ import { User } from '@/types/auth';
 import { clearAllCache } from '@/lib/apiCache';
 import { endSignOut } from '@/lib/logout-state';
 import { clearIdentityScopedSessionStorage } from '@/lib/identity-session-storage';
+import { clearPageSnapshots } from '@/lib/page-snapshot';
 import { markWhatsNewPendingForLogin } from './whatsNewStore';
 import type {
   DelegateContext,
@@ -102,6 +103,9 @@ export const useAuthStore = create<AuthState>()(
         // remembered entry date/currency; the next identity on this tab must
         // not be drawn them (INV-SHARE-003).
         clearIdentityScopedSessionStorage();
+        // SECURITY: The pages' last-drawn data (balances, account names) is
+        // held in memory for a quick return; the next identity must not see it.
+        clearPageSnapshots();
         // SECURITY: A share is one account's document. Drop the stash so the
         // next account to sign in on this device does not find it waiting.
         import('@/lib/share-inbox').then(({ clearShareInbox }) => {

@@ -70,6 +70,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useCommandPaletteStore, type NewTransactionPayee } from '@/store/commandPaletteStore';
 import { useMobileAddAction } from '@/store/mobileAddActionStore';
+import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
 import { useSwipeToPaginate } from '@/hooks/useSwipeToPaginate';
 import { SWIPE_PAGINATE_ATTR } from '@/hooks/swipe-gesture';
 import { AccountFormModal } from '@/components/accounts/AccountFormModal';
@@ -675,6 +676,8 @@ function TransactionsContent() {
     setCreateForPayee(null);
     openCreate();
   };
+
+  useRetainScrollPosition(!isLoading);
 
   useMobileAddAction(t('page.newButton'), handleCreateNew, {
     tourAnchor: TOUR_ANCHORS.transactionsNewButton,

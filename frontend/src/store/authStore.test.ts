@@ -8,6 +8,7 @@ import {
   type IntradayCachePayload,
 } from '@/components/investments/portfolio-chart-utils';
 import { LAST_TRANSACTION_CURRENCY_KEY } from '@/lib/lastTransactionCurrency';
+import { readPageSnapshot, writePageSnapshot } from '@/lib/page-snapshot';
 import {
   LAST_TRANSACTION_DATE_KEY,
   LAST_INVESTMENT_TRANSACTION_DATE_KEY,
@@ -121,6 +122,12 @@ describe('authStore', () => {
       expect(state.isAuthenticated).toBe(false);
       expect(state.error).toBeNull();
       expect(state.isLoading).toBe(false);
+    });
+
+    it("drops the pages' last-drawn data so the next identity is not shown it", () => {
+      writePageSnapshot('accounts', { accounts: [{ id: 'a1', name: 'Private' }] });
+      useAuthStore.getState().logout();
+      expect(readPageSnapshot('accounts')).toBeUndefined();
     });
 
     it('clears persisted AI chat history so it does not leak across accounts', () => {

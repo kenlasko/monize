@@ -156,6 +156,20 @@ describe('BudgetsPage', () => {
     expect(screen.getByText('Create Your First Budget')).toBeInTheDocument();
   });
 
+  it('draws the last list at once on a return, while it refetches it', async () => {
+    mockGetAll.mockResolvedValue([
+      { id: 'budget-1', name: 'February 2026', description: null, strategy: 'FIXED', budgetType: 'MONTHLY',
+        isActive: true, periodStart: '2026-02-01', categories: [] },
+    ]);
+    const first = render(<BudgetsPage />);
+    await screen.findByRole('row', { name: /February 2026/ });
+    first.unmount();
+
+    mockGetAll.mockReturnValue(new Promise(() => {}));
+    await act(async () => render(<BudgetsPage />));
+    expect(screen.getByRole('row', { name: /February 2026/ })).toBeInTheDocument();
+  });
+
   it('lists budgets as table rows, not a card grid', async () => {
     mockGetAll.mockResolvedValue([
       {

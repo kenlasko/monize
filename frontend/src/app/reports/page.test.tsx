@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { useDensityStore } from '@/store/densityStore';
 import type { DensityLevel } from '@/hooks/useTableDensity';
 import ReportsPage from './page';
@@ -431,6 +431,22 @@ describe('ReportsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('My Custom Report')).toBeInTheDocument();
     });
+  });
+
+  it('draws the saved reports at once on a return, while it refetches them', async () => {
+    mockGetAllReports.mockResolvedValue([
+      { id: 'cr-1', name: 'Snapshot Report', description: null, icon: null, backgroundColor: null,
+        viewType: 'TABLE', timeframeType: 'LAST_30_DAYS', groupBy: 'CATEGORY', filters: {}, config: {},
+        isFavourite: false, sortOrder: 0, createdAt: '2026-01-01', updatedAt: '2026-01-01' },
+    ]);
+    const first = render(<ReportsPage />);
+    await waitFor(() => expect(screen.getByText('Snapshot Report')).toBeInTheDocument());
+    first.unmount();
+
+    mockGetAllReports.mockReturnValue(new Promise(() => {}));
+    await act(async () => render(<ReportsPage />));
+    expect(screen.getByText('Snapshot Report')).toBeInTheDocument();
+    expect(screen.queryByText(/loading custom reports/i)).not.toBeInTheDocument();
   });
 
   it('shows loading custom reports text', async () => {

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, act, fireEvent } from '@/test/render';
 import AccountsPage from './page';
+import { notifyUndoRedo } from '@/lib/undoRedoSignal';
 
 // Module-level state for controlling form modal in tests
 const formModalState = {
@@ -265,6 +266,62 @@ describe('AccountsPage', () => {
     render(<AccountsPage />);
     await waitFor(() => {
       expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    });
+  });
+
+  describe('returning to the page', () => {
+    function deferred<T>() {
+      let resolve!: (value: T) => void;
+      const promise = new Promise<T>((r) => {
+        resolve = r;
+      });
+      return { promise, resolve };
+    }
+
+    it('draws the last list at once and refreshes it underneath', async () => {
+      mockGetAll.mockResolvedValue(mockAccounts);
+      const first = await act(async () => render(<AccountsPage />));
+      await waitFor(() => expect(screen.getByTestId('account-acc-1')).toBeInTheDocument());
+      first.unmount();
+
+      const fresh = deferred<typeof mockAccounts>();
+      mockGetAll.mockReturnValue(fresh.promise);
+      await act(async () => render(<AccountsPage />));
+      // No spinner: the previous answer is on screen, marked busy.
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.getByTestId('account-acc-1')).toBeInTheDocument();
+      expect(screen.getByTestId('account-list').parentElement).toHaveAttribute('aria-busy', 'true');
+
+      await act(async () => fresh.resolve([{ ...mockAccounts[0], name: 'Renamed' }]));
+      await waitFor(() => expect(screen.getByTestId('account-acc-1')).toHaveTextContent('Renamed'));
+      expect(screen.queryByTestId('account-acc-2')).not.toBeInTheDocument();
+      expect(screen.getByTestId('account-list').parentElement).toHaveAttribute('aria-busy', 'false');
+    });
+
+    it('keeps nothing from a failed load, so the next visit waits for a real answer', async () => {
+      mockGetAll.mockRejectedValue(new Error('down'));
+      const first = await act(async () => render(<AccountsPage />));
+      await waitFor(() => expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument());
+      first.unmount();
+
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<AccountsPage />));
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    });
+
+    it('keeps the list on screen through a reload after a write', async () => {
+      mockGetAll.mockResolvedValue(mockAccounts);
+      await act(async () => render(<AccountsPage />));
+      await waitFor(() => expect(screen.getByTestId('account-acc-2')).toBeInTheDocument());
+      const fresh = deferred<typeof mockAccounts>();
+      mockGetAll.mockReturnValue(fresh.promise);
+
+      await act(async () => notifyUndoRedo());
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.getByTestId('account-acc-2')).toBeInTheDocument();
+
+      await act(async () => fresh.resolve([mockAccounts[0]]));
+      await waitFor(() => expect(screen.queryByTestId('account-acc-2')).not.toBeInTheDocument());
     });
   });
 
