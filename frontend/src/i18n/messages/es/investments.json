@@ -241,7 +241,7 @@
     "noSecuritiesHeld": "No hay valores en esta cuenta",
     "selectFromAccountFirst": "Selecciona primero la cuenta de origen",
     "selectOrCreateSecurity": "Seleccionar o crear valor...",
-    "selectBondOptional": "Selecciona el bono (opcional)...",
+    "selectSecurityOptional": "Selecciona el valor (opcional)...",
     "quantityShares": "Cantidad (Acciones)",
     "pricePerShare": "Precio por Acción",
     "commissionFees": "Comisión / Tarifas",

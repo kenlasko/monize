@@ -199,7 +199,7 @@ const securityRequiredActions: InvestmentAction[] = ['BUY', 'SELL', 'DIVIDEND', 
 
 // Interest may name the security it was paid on, as Microsoft Money does for a
 // bond's coupon. It is optional: interest without one stays a plain account-level
-// row. Only bonds are offered for it; every other security's income is a Dividend.
+// row.
 const interestSecurityActions: InvestmentAction[] = ['INTEREST'];
 
 // Actions that require quantity and price
@@ -1339,20 +1339,6 @@ function InvestmentTransactionFormFields({
 
   const needsSecurity = actionIn(watchedAction, securityRequiredActions);
   const offersInterestSecurity = actionIn(watchedAction, interestSecurityActions);
-
-  // Interest offers bonds only. A security picked under another action (a
-  // Dividend on a stock) must not ride along when the type is switched to
-  // Interest, whether picked now or saved on the row as that other action. An
-  // Interest row's own saved security is the exception, so editing it keeps it.
-  const storedInterestSecurityId =
-    transaction?.action === 'INTEREST' ? originalSecurityId : undefined;
-  useEffect(() => {
-    if (!offersInterestSecurity || !watchedSecurityId || !securitiesLoaded) return;
-    const picked = securities.find((s) => s.id === watchedSecurityId);
-    if (!picked || picked.securityType === 'BOND') return;
-    if (watchedSecurityId === storedInterestSecurityId) return;
-    setValue('securityId', '', { shouldDirty: true });
-  }, [offersInterestSecurity, watchedSecurityId, securities, securitiesLoaded, storedInterestSecurityId, setValue]);
   const needsQuantityPrice = actionIn(watchedAction, quantityPriceActions);
   const isQuantityOnly = actionIn(watchedAction, quantityOnlyActions);
   const isAmountOnly = actionIn(watchedAction, amountOnlyActions);
@@ -1515,23 +1501,16 @@ function InvestmentTransactionFormFields({
               : transferMode
                 ? t('transactionForm.selectSecurity')
                 : offersInterestSecurity
-                  ? t('transactionForm.selectBondOptional')
+                  ? t('transactionForm.selectSecurityOptional')
                   : t('transactionForm.selectOrCreateSecurity')
           }
           options={
             isTransfer
               ? transferSecurityOptions
-              : securities
-                  .filter(
-                    (s) =>
-                      !offersInterestSecurity ||
-                      s.securityType === 'BOND' ||
-                      s.id === watchedSecurityId,
-                  )
-                  .map((s) => ({
-                    value: s.id,
-                    label: securityOptionLabel(s),
-                  }))
+              : securities.map((s) => ({
+                  value: s.id,
+                  label: securityOptionLabel(s),
+                }))
           }
           value={watchedSecurityId || ''}
           initialDisplayValue={transaction?.security ? securityOptionLabel(transaction.security) : ''}
