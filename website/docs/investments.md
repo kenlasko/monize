@@ -14,7 +14,7 @@ At the top of the page:
 
 - **All Investment Accounts** -- a multi-select list of your investment accounts. Tick one or more accounts to show only those; every card on the page then names the selection in its title
 - **Refresh** -- fetches the latest prices for your securities (see [Price Updates](#price-updates)). Hover over it to see when prices were last updated
-- **+ New Transaction** -- choose **Investment Transaction** (a buy, sell, dividend and so on) or **Cash Transaction** (a deposit, withdrawal or fee in the account's cash)
+- **+ New Transaction** -- choose **Investment Transaction** (a buy, sell, dividend and so on) or **Cash Transaction** (a deposit, withdrawal or fee in the account's cash); on a phone or tablet, tap the **+** button in the bar at the bottom of the screen for the same choice
 
 > **Tip:** You can open the Investments page already filtered to one account by clicking a brokerage account on the [Accounts](accounts.md) page or a brokerage favourite on the [Dashboard](dashboard.md).
 
