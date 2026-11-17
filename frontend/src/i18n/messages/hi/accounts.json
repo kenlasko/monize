@@ -44,7 +44,7 @@
       "searchAriaLabel": "नाम से खाते खोजें",
       "searchClear": "खोज साफ़ करें",
       "chipSearch": "\"{term}\"",
-      "chipActive": "सक्रिय",
+      "chipAll": "सभी",
       "chipClosed": "बंद",
       "removeChip": "फ़िल्टर हटाएं: {label}",
       "activeCount": "सक्रिय ({count})",

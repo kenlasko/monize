@@ -44,7 +44,7 @@
       "searchAriaLabel": "Пошук рахунків за назвою",
       "searchClear": "Очистити пошук",
       "chipSearch": "«{term}»",
-      "chipActive": "Активні",
+      "chipAll": "Усі",
       "chipClosed": "Закриті",
       "removeChip": "Видалити фільтр: {label}",
       "activeCount": "Активні ({count})",

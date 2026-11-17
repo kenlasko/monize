@@ -47,7 +47,7 @@
       "searchAriaLabel": "Search accounts by name",
       "searchClear": "Clear search",
       "chipSearch": "\"{term}\"",
-      "chipActive": "Active",
+      "chipAll": "All",
       "chipClosed": "Closed",
       "removeChip": "Remove filter: {label}"
     },

@@ -44,7 +44,7 @@
       "searchAriaLabel": "依名稱搜尋帳戶",
       "searchClear": "清除搜尋",
       "chipSearch": "「{term}」",
-      "chipActive": "有效",
+      "chipAll": "全部",
       "chipClosed": "已關閉",
       "removeChip": "移除篩選：{label}",
       "activeCount": "有效 ({count})",

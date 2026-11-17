@@ -44,7 +44,7 @@
       "searchAriaLabel": "Поиск счетов по имени",
       "searchClear": "Очистить поиск",
       "chipSearch": "«{term}»",
-      "chipActive": "Активные",
+      "chipAll": "Все",
       "chipClosed": "Закрытые",
       "removeChip": "Убрать фильтр: {label}",
       "activeCount": "Активные ({count})",

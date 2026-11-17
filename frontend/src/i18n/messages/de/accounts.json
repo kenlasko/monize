@@ -44,7 +44,7 @@
       "searchAriaLabel": "Konten nach Namen suchen",
       "searchClear": "Suche löschen",
       "chipSearch": "„{term}“",
-      "chipActive": "Aktiv",
+      "chipAll": "Alle",
       "chipClosed": "Geschlossen",
       "removeChip": "Filter entfernen: {label}",
       "activeCount": "Aktiv ({count})",

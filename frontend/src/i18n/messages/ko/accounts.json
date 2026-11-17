@@ -44,7 +44,7 @@
       "searchAriaLabel": "이름으로 계좌 검색",
       "searchClear": "검색 지우기",
       "chipSearch": "\"{term}\"",
-      "chipActive": "활성",
+      "chipAll": "전체",
       "chipClosed": "종료",
       "removeChip": "필터 제거: {label}",
       "activeCount": "활성 ({count})",

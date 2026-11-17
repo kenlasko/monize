@@ -44,7 +44,7 @@
       "searchAriaLabel": "Tìm kiếm tài khoản theo tên",
       "searchClear": "Xóa tìm kiếm",
       "chipSearch": "\"{term}\"",
-      "chipActive": "Đang hoạt động",
+      "chipAll": "Tất cả",
       "chipClosed": "Đã đóng",
       "removeChip": "Xóa bộ lọc: {label}",
       "activeCount": "Đang hoạt động ({count})",

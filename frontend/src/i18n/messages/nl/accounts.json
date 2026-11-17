@@ -44,7 +44,7 @@
       "searchAriaLabel": "Rekeningen op naam zoeken",
       "searchClear": "Zoekopdracht wissen",
       "chipSearch": "\"{term}\"",
-      "chipActive": "Actief",
+      "chipAll": "Alle",
       "chipClosed": "Gesloten",
       "removeChip": "Filter verwijderen: {label}",
       "activeCount": "Actief ({count})",

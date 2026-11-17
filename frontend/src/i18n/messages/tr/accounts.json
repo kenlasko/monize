@@ -44,7 +44,7 @@
       "searchAriaLabel": "Hesapları ada göre ara",
       "searchClear": "Aramayı temizle",
       "chipSearch": "\"{term}\"",
-      "chipActive": "Aktif",
+      "chipAll": "Tümü",
       "chipClosed": "Kapalı",
       "removeChip": "Filtreyi kaldır: {label}",
       "activeCount": "Aktif ({count})",

@@ -44,7 +44,7 @@
       "searchAriaLabel": "名前で勘定科目を検索",
       "searchClear": "検索をクリア",
       "chipSearch": "「{term}」",
-      "chipActive": "有効",
+      "chipAll": "すべて",
       "chipClosed": "閉鎖済み",
       "removeChip": "フィルターを削除: {label}",
       "activeCount": "有効 ({count})",

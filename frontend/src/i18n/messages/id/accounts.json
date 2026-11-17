@@ -44,7 +44,7 @@
       "searchAriaLabel": "Cari akun berdasarkan nama",
       "searchClear": "Hapus pencarian",
       "chipSearch": "\"{term}\"",
-      "chipActive": "Aktif",
+      "chipAll": "Semua",
       "chipClosed": "Ditutup",
       "removeChip": "Hapus filter: {label}",
       "activeCount": "Aktif ({count})",

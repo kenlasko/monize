@@ -63,7 +63,9 @@ const SORT_FIELD_LABEL_KEYS = [
 // LocalStorage keys for filter persistence
 const STORAGE_KEYS = {
   filtersExpanded: 'accounts.filter.expanded',
-  status: 'accounts.filter.status',
+  // Written only when the reader picks a status, so a browser that never
+  // chose gets the default (Active).
+  status: 'accounts.filter.statusChoice',
   netWorth: 'accounts.filter.netWorth',
   joint: 'accounts.filter.joint',
   types: 'accounts.filter.types',
@@ -73,8 +75,15 @@ const STORAGE_KEYS = {
   collapsedGroups: 'accounts.filter.collapsedGroups',
 };
 
-/** Superseded by `STORAGE_KEYS.filtersExpanded`; removed on mount. */
-const LEGACY_SHOW_FILTERS_KEY = 'accounts.filter.showFilters';
+/**
+ * Superseded keys, removed on mount. `accounts.filter.status` was written on
+ * every mount, so it cannot tell "chose All" from "never chose", and keeping it
+ * would hold every existing browser on All instead of the Active default.
+ */
+const LEGACY_KEYS = ['accounts.filter.showFilters', 'accounts.filter.status'];
+
+/** The status the list opens on: closed accounts stay out of the way. */
+export const DEFAULT_ACCOUNT_STATUS_FILTER = 'active' as const;
 
 type AccountGroupType = AccountType | "SHARED_SETTLEMENT";
 const accountGroup = (account: Account): AccountGroupType =>
@@ -267,15 +276,19 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
     true,
   );
 
-  // The fold was once kept under another key that nothing reads now.
+  // Settings once kept under keys that nothing reads now.
   useEffect(() => {
-    localStorage.removeItem(LEGACY_SHOW_FILTERS_KEY);
+    for (const key of LEGACY_KEYS) localStorage.removeItem(key);
   }, []);
 
   // Filter state - initialize from localStorage
   const [filterStatus, setFilterStatus] = useState<AccountStatusFilter>(() =>
-    getStoredValue<AccountStatusFilter>(STORAGE_KEYS.status, '')
+    getStoredValue<AccountStatusFilter>(STORAGE_KEYS.status, DEFAULT_ACCOUNT_STATUS_FILTER)
   );
+  const chooseStatus = useCallback((status: AccountStatusFilter) => {
+    setFilterStatus(status);
+    localStorage.setItem(STORAGE_KEYS.status, JSON.stringify(status));
+  }, []);
   const [filterNetWorth, setFilterNetWorth] = useState<AccountNetWorthFilter>(() =>
     getStoredValue<AccountNetWorthFilter>(STORAGE_KEYS.netWorth, '')
   );
@@ -314,10 +327,6 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
   }, []);
 
   // Persist filter/sort changes to localStorage
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.status, JSON.stringify(filterStatus));
-  }, [filterStatus]);
-
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.netWorth, JSON.stringify(filterNetWorth));
   }, [filterNetWorth]);
@@ -682,7 +691,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
   };
 
   const clearFilters = () => {
-    setFilterStatus('');
+    setFilterStatus(DEFAULT_ACCOUNT_STATUS_FILTER);
     setFilterNetWorth('');
     setFilterJoint('');
     setFilterTypes([]);
@@ -841,7 +850,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
         search={filterSearch}
         setSearch={setFilterSearch}
         status={filterStatus}
-        setStatus={setFilterStatus}
+        setStatus={chooseStatus}
         statusCounts={statusCounts}
         types={filterTypes}
         setTypes={(vals) => setFilterTypes(vals as AccountGroupType[])}

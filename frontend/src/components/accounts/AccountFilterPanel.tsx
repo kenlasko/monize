@@ -44,7 +44,11 @@ interface AccountFilterPanelProps {
   onClear: () => void;
 }
 
-/** How many of the panel's filters narrow the list, for the folded header's badge. */
+/**
+ * How many of the panel's filters differ from the list's default view, for the
+ * folded header's badge. The default status (Active) is not counted: it is the
+ * view Clear returns to.
+ */
 export function countActiveAccountFilters(filters: {
   search: string;
   status: AccountStatusFilter;
@@ -54,7 +58,7 @@ export function countActiveAccountFilters(filters: {
 }): number {
   return (
     (filters.search.trim() ? 1 : 0) +
-    (filters.status ? 1 : 0) +
+    (filters.status !== 'active' ? 1 : 0) +
     filters.types.length +
     (filters.netWorth ? 1 : 0) +
     (filters.joint ? 1 : 0)
@@ -101,11 +105,13 @@ export function AccountFilterPanel(props: AccountFilterPanelProps) {
   if (search.trim()) {
     chips.push({ key: 'search', label: t('list.filter.chipSearch', { term: search.trim() }), onRemove: () => setSearch('') });
   }
-  if (status) {
+  // Active is the default view, so it needs no chip; All or Closed does, and
+  // removing it goes back to Active.
+  if (status !== 'active') {
     chips.push({
       key: 'status',
-      label: status === 'active' ? t('list.filter.chipActive') : t('list.filter.chipClosed'),
-      onRemove: () => setStatus(''),
+      label: status === 'closed' ? t('list.filter.chipClosed') : t('list.filter.chipAll'),
+      onRemove: () => setStatus('active'),
     });
   }
   for (const type of types) {
