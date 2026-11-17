@@ -23,7 +23,10 @@
       "totalActiveAccounts": "活跃账户总数",
       "netWorth": "资产净值",
       "totalAssets": "资产总额",
-      "totalLiabilities": "负债总额"
+      "totalLiabilities": "负债总额",
+      "title": "摘要",
+      "show": "显示摘要",
+      "hide": "隐藏摘要"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "搜索账户...",
       "searchAriaLabel": "按名称搜索账户",
       "searchClear": "清除搜索",
+      "chipSearch": "“{term}”",
+      "chipActive": "活跃",
+      "chipClosed": "已关闭",
+      "removeChip": "移除筛选：{label}",
       "activeCount": "活跃 ({count})",
       "closedCount": "已关闭 ({count})",
       "statusLabel": "状态"

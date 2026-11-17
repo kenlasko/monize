@@ -23,7 +23,10 @@
       "totalActiveAccounts": "Всего активных счетов",
       "netWorth": "Чистая стоимость",
       "totalAssets": "Всего активов",
-      "totalLiabilities": "Всего обязательств"
+      "totalLiabilities": "Всего обязательств",
+      "title": "Сводка",
+      "show": "Показать сводку",
+      "hide": "Скрыть сводку"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "Поиск счетов...",
       "searchAriaLabel": "Поиск счетов по имени",
       "searchClear": "Очистить поиск",
+      "chipSearch": "«{term}»",
+      "chipActive": "Активные",
+      "chipClosed": "Закрытые",
+      "removeChip": "Убрать фильтр: {label}",
       "activeCount": "Активные ({count})",
       "closedCount": "Закрытые ({count})",
       "statusLabel": "Статус"

@@ -23,7 +23,10 @@
       "totalActiveAccounts": "有效科目總數",
       "netWorth": "資產淨值",
       "totalAssets": "資產總額",
-      "totalLiabilities": "負債總額"
+      "totalLiabilities": "負債總額",
+      "title": "摘要",
+      "show": "顯示摘要",
+      "hide": "隱藏摘要"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "搜尋帳戶...",
       "searchAriaLabel": "依名稱搜尋帳戶",
       "searchClear": "清除搜尋",
+      "chipSearch": "「{term}」",
+      "chipActive": "有效",
+      "chipClosed": "已關閉",
+      "removeChip": "移除篩選：{label}",
       "activeCount": "有效 ({count})",
       "closedCount": "已關閉 ({count})",
       "statusLabel": "狀態"
