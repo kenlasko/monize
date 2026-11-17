@@ -54,6 +54,15 @@ import {
   type TransactionSortField,
 } from '@/lib/transaction-sort';
 import { useHiddenColumns } from '@/hooks/useHiddenColumns';
+import { useTransactionsRegisterSnapshot } from '@/hooks/useTransactionsRegisterSnapshot';
+import {
+  forgetTransactionsRegisterSnapshot,
+  forgetTransactionsStaticSnapshot,
+  readTransactionsStaticSnapshot,
+  registerRequestKey,
+  writeTransactionsRegisterSnapshot,
+  writeTransactionsStaticSnapshot,
+} from '@/lib/transactions-page-snapshot';
 import { useRegisterPhoneCard } from '@/hooks/useRegisterPhoneCard';
 import { BulkSelectionBanner } from '@/components/transactions/BulkSelectionBanner';
 import { Account, DailyAccountBalance, isLiabilityAccountType } from '@/types/account';
@@ -69,6 +78,8 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { useAuthStore } from '@/store/authStore';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useCommandPaletteStore, type NewTransactionPayee } from '@/store/commandPaletteStore';
+import { useMobileAddAction } from '@/store/mobileAddActionStore';
+import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
 import { useSwipeToPaginate } from '@/hooks/useSwipeToPaginate';
 import { SWIPE_PAGINATE_ATTR } from '@/hooks/swipe-gesture';
 import { AccountFormModal } from '@/components/accounts/AccountFormModal';
@@ -140,8 +151,12 @@ function TransactionsContent() {
   // An acting delegate never adds a warranty: every warranty write is the
   // owner's.
   const actingAsDelegate = useAuthStore((s) => s.actingAsUserId) !== null;
+  // The reference data the page last loaded, read once: a return draws the
+  // filters, pickers and register against it at once, and the mount load
+  // below refreshes it.
+  const [staticSnapshot] = useState(readTransactionsStaticSnapshot);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>(staticSnapshot?.accounts ?? []);
   // Joint accounts: effective write permissions per shared account, used to
   // hide edit/delete affordances the grant does not cover.
   const jointPermissionsByAccount = useMemo(() => {
@@ -154,11 +169,13 @@ function TransactionsContent() {
     }
     return map;
   }, [accounts]);
-  const [institutions, setInstitutions] = useState<Institution[]>([]);
-  const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [payees, setPayees] = useState<Payee[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
+  const [institutions, setInstitutions] = useState<Institution[]>(staticSnapshot?.institutions ?? []);
+  const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>(
+    staticSnapshot?.scheduledTransactions ?? [],
+  );
+  const [categories, setCategories] = useState<Category[]>(staticSnapshot?.categories ?? []);
+  const [payees, setPayees] = useState<Payee[]>(staticSnapshot?.payees ?? []);
+  const [tags, setTags] = useState<Tag[]>(staticSnapshot?.tags ?? []);
   const [dailyBalances, setDailyBalances] = useState<DailyAccountBalance[]>([]);
   const [monthlyTotals, setMonthlyTotals] = useState<MonthlyTotal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -331,6 +348,25 @@ function TransactionsContent() {
   // Which register read is the newest; only that one may write state.
   const requestSeqRef = useRef(0);
 
+  // The request now in force, once the filters have initialised: a return
+  // draws the register's last answer only when it answered exactly this, and
+  // the reader's place is kept against it.
+  const registerKey = filters.filtersInitialized
+    ? registerRequestKey(calendarFilters, filters.filterStartDate, filters.filterEndDate, registerSort, filters.currentPage)
+    : null;
+  useTransactionsRegisterSnapshot(isLoading, registerKey, (snapshot) => {
+    setTransactions(snapshot.transactions);
+    setPagination(snapshot.pagination);
+    setStartingBalance(snapshot.startingBalance);
+    setStartingBalanceWithheld(snapshot.startingBalanceWithheld);
+    setSearchEcho(snapshot.searchEcho);
+    setRowsSort(snapshot.rowsSort);
+    setDailyBalances(snapshot.dailyBalances);
+    setMonthlyTotals(snapshot.monthlyTotals);
+    setIsLoading(false);
+  });
+  useRetainScrollPosition(!isLoading, registerKey ?? undefined);
+
   const handleSortChange = useCallback(
     (field: TransactionSortField) => {
       isFilterChangeRef.current = true;
@@ -373,14 +409,23 @@ function TransactionsContent() {
     // Writes live in `run` so they land after the request, not during the effect.
     const run = async () => {
       if (staticDataLoaded.current) return;
+      // A side list that failed is drawn empty this visit, but is not kept as
+      // the answer for the next one.
+      let partial = false;
       try {
         const [accountsData, categoriesData, payeesData, tagsData, institutionsData, scheduledData] = await Promise.all([
           accountsApi.getAll(true),
           categoriesApi.getAll(),
           payeesApi.getAll(),
           tagsApi.getAll(),
-          institutionsApi.getAll().catch(() => [] as Institution[]),
-          scheduledTransactionsApi.getAll().catch(() => [] as ScheduledTransaction[]),
+          institutionsApi.getAll().catch(() => {
+            partial = true;
+            return [] as Institution[];
+          }),
+          scheduledTransactionsApi.getAll().catch(() => {
+            partial = true;
+            return [] as ScheduledTransaction[];
+          }),
         ]);
         setAccounts(accountsData);
         setCategories(categoriesData);
@@ -388,6 +433,18 @@ function TransactionsContent() {
         setTags(tagsData);
         setInstitutions(institutionsData);
         setScheduledTransactions(scheduledData);
+        if (partial) {
+          forgetTransactionsStaticSnapshot();
+        } else {
+          writeTransactionsStaticSnapshot({
+            accounts: accountsData,
+            categories: categoriesData,
+            payees: payeesData,
+            tags: tagsData,
+            institutions: institutionsData,
+            scheduledTransactions: scheduledData,
+          });
+        }
         staticDataLoaded.current = true;
       } catch (error) {
         showErrorToast(error, t('toasts.loadFormDataFailed'));
@@ -451,6 +508,9 @@ function TransactionsContent() {
         const parsedAmountFrom = filters.filterAmountFrom ? parseFloat(filters.filterAmountFrom) : undefined;
         const parsedAmountTo = filters.filterAmountTo ? parseFloat(filters.filterAmountTo) : undefined;
 
+        // A chart that failed is drawn empty this visit; the register is then
+        // not kept for the next one, which would draw that emptiness again.
+        let chartFailed = false;
         const chartPromise = hasCategoryOrPayeeFilter
           ? transactionsApi.getMonthlyTotals({
               accountIds: accountIdsForQuery,
@@ -462,10 +522,16 @@ function TransactionsContent() {
               search: filters.filterSearch || undefined,
               amountFrom: parsedAmountFrom,
               amountTo: parsedAmountTo,
-            }).catch(() => [] as MonthlyTotal[])
+            }).catch(() => {
+              chartFailed = true;
+              return [] as MonthlyTotal[];
+            })
           : accountsApi.getDailyBalances(
               Object.keys(chartParams).length > 0 ? chartParams : undefined,
-            ).catch(() => [] as DailyAccountBalance[]);
+            ).catch(() => {
+              chartFailed = true;
+              return [] as DailyAccountBalance[];
+            });
 
         const requestedSearch = filters.filterSearch;
         const [transactionsResponse, chartResult] = await Promise.all([
@@ -532,6 +598,30 @@ function TransactionsContent() {
           setMonthlyTotals([]);
         }
 
+        // Kept for a return, under the request that produced it. A read for one
+        // row resolves its own page, so it is not a request a return repeats.
+        if (chartFailed) {
+          forgetTransactionsRegisterSnapshot();
+        } else if (!targetTransactionId) {
+          writeTransactionsRegisterSnapshot({
+            key: registerRequestKey(
+              calendarFilters,
+              filters.filterStartDate,
+              filters.filterEndDate,
+              effectiveSort,
+              safePage,
+            ),
+            transactions: transactionsResponse.data,
+            pagination: transactionsResponse.pagination,
+            startingBalance: transactionsResponse.startingBalance,
+            startingBalanceWithheld: transactionsResponse.startingBalanceWithheld,
+            searchEcho: { search: requestedSearch, interpretation: transactionsResponse.searchInterpretation },
+            rowsSort: effectiveSort,
+            dailyBalances: hasCategoryOrPayeeFilter ? [] : (chartResult as DailyAccountBalance[]),
+            monthlyTotals: hasCategoryOrPayeeFilter ? (chartResult as MonthlyTotal[]) : [],
+          });
+        }
+
         if (targetTransactionId && transactionsResponse.pagination.page !== safePage) {
           filters.setCurrentPage(transactionsResponse.pagination.page);
         }
@@ -569,7 +659,7 @@ function TransactionsContent() {
       }
     };
     return run();
-  }, [accountIdsForQuery, filters.filterAccountStatus, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses, filters.filterOriginalCurrencyCodes, filters.filterTagKey, filters.filterTagKeyOp, filters.filterTagKeyValue, filters.filterHasAttachments, t]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [accountIdsForQuery, calendarFilters, filters.filterAccountStatus, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses, filters.filterOriginalCurrencyCodes, filters.filterTagKey, filters.filterTagKeyOp, filters.filterTagKeyValue, filters.filterHasAttachments, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadData = useCallback(async (page: number = filters.currentPage) => {
     await loadTransactions(page);
@@ -674,6 +764,10 @@ function TransactionsContent() {
     setCreateForPayee(null);
     openCreate();
   };
+
+  useMobileAddAction(t('page.newButton'), handleCreateNew, {
+    tourAnchor: TOUR_ANCHORS.transactionsNewButton,
+  });
 
   // The command palette's "New transaction", on arrival or while already here.
   const newTransactionRequest = useCommandPaletteStore((s) => s.newTransactionRequest);
@@ -1328,7 +1422,7 @@ function TransactionsContent() {
           title={t('page.title')}
           subtitle={t('page.subtitle')}
           help='transactions'
-          actions={
+          primaryAction={
             <Button
               {...tourAnchor(TOUR_ANCHORS.transactionsNewButton)}
               onClick={handleCreateNew}

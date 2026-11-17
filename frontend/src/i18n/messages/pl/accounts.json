@@ -23,7 +23,10 @@
       "totalActiveAccounts": "Aktywne konta razem",
       "netWorth": "Wartość netto",
       "totalAssets": "Aktywa razem",
-      "totalLiabilities": "Zobowiązania razem"
+      "totalLiabilities": "Zobowiązania razem",
+      "title": "Podsumowanie",
+      "show": "Pokaż podsumowanie",
+      "hide": "Ukryj podsumowanie"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "Szukaj kont...",
       "searchAriaLabel": "Szukaj kont według nazwy",
       "searchClear": "Wyczyść wyszukiwanie",
+      "chipSearch": "„{term}”",
+      "chipAll": "Wszystkie",
+      "chipClosed": "Zamknięte",
+      "removeChip": "Usuń filtr: {label}",
       "activeCount": "Aktywny ({count})",
       "closedCount": "Zamknięte ({count})",
       "statusLabel": "Status"

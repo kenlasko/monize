@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act } from '@/test/render';
+import { render, screen, waitFor, act, fireEvent } from '@/test/render';
 import AccountsPage from './page';
+import { notifyUndoRedo } from '@/lib/undoRedoSignal';
 
 // Module-level state for controlling form modal in tests
 const formModalState = {
@@ -117,6 +118,11 @@ vi.mock('@/lib/accounts', () => ({
   },
 }));
 
+const mockGetInstitutions = vi.fn().mockResolvedValue([]);
+vi.mock('@/lib/institutions', () => ({
+  institutionsApi: { getAll: (...args: any[]) => mockGetInstitutions(...args) },
+}));
+
 // Mock investments API
 const mockGetPortfolioSummary = vi.fn().mockResolvedValue(null);
 
@@ -162,11 +168,12 @@ vi.mock('@/components/layout/PageLayout', () => ({
 }));
 
 vi.mock('@/components/layout/PageHeader', () => ({
-  PageHeader: ({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: React.ReactNode }) => (
+  PageHeader: ({ title, subtitle, actions, primaryAction }: { title: string; subtitle?: string; actions?: React.ReactNode; primaryAction?: React.ReactNode }) => (
     <div data-testid="page-header">
       <h1>{title}</h1>
       {subtitle && <p>{subtitle}</p>}
       {actions}
+      {primaryAction}
     </div>
   ),
 }));
@@ -223,6 +230,7 @@ describe('AccountsPage', () => {
     vi.clearAllMocks();
     mockGetAll.mockResolvedValue([]);
     mockGetPortfolioSummary.mockResolvedValue(null);
+    mockGetInstitutions.mockResolvedValue([]);
     mockRates = { USD: 1 };
     // Reset form modal state
     formModalState.showForm = false;
@@ -267,11 +275,117 @@ describe('AccountsPage', () => {
     });
   });
 
+  describe('returning to the page', () => {
+    function deferred<T>() {
+      let resolve!: (value: T) => void;
+      const promise = new Promise<T>((r) => {
+        resolve = r;
+      });
+      return { promise, resolve };
+    }
+
+    it('draws the last list at once and refreshes it underneath', async () => {
+      mockGetAll.mockResolvedValue(mockAccounts);
+      const first = await act(async () => render(<AccountsPage />));
+      await waitFor(() => expect(screen.getByTestId('account-acc-1')).toBeInTheDocument());
+      first.unmount();
+
+      const fresh = deferred<typeof mockAccounts>();
+      mockGetAll.mockReturnValue(fresh.promise);
+      await act(async () => render(<AccountsPage />));
+      // No spinner: the previous answer is on screen, marked busy.
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.getByTestId('account-acc-1')).toBeInTheDocument();
+      expect(screen.getByTestId('account-list').parentElement).toHaveAttribute('aria-busy', 'true');
+
+      await act(async () => fresh.resolve([{ ...mockAccounts[0], name: 'Renamed' }]));
+      await waitFor(() => expect(screen.getByTestId('account-acc-1')).toHaveTextContent('Renamed'));
+      expect(screen.queryByTestId('account-acc-2')).not.toBeInTheDocument();
+      expect(screen.getByTestId('account-list').parentElement).toHaveAttribute('aria-busy', 'false');
+    });
+
+    it('keeps nothing from a failed load, so the next visit waits for a real answer', async () => {
+      mockGetAll.mockRejectedValue(new Error('down'));
+      const first = await act(async () => render(<AccountsPage />));
+      await waitFor(() => expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument());
+      first.unmount();
+
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<AccountsPage />));
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    });
+
+    it('keeps nothing when the institutions failed, so their logos are not lost for good', async () => {
+      mockGetAll.mockResolvedValue(mockAccounts);
+      mockGetInstitutions.mockRejectedValue(new Error('down'));
+      const first = await act(async () => render(<AccountsPage />));
+      await waitFor(() => expect(screen.getByTestId('account-acc-1')).toBeInTheDocument());
+      first.unmount();
+
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<AccountsPage />));
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    });
+
+    it('drops the older snapshot when a later load could not keep its own', async () => {
+      mockGetAll.mockResolvedValue(mockAccounts);
+      const first = await act(async () => render(<AccountsPage />));
+      await waitFor(() => expect(screen.getByTestId('account-acc-2')).toBeInTheDocument());
+
+      // A write's reload draws new rows, but the institutions fail beside it.
+      mockGetAll.mockResolvedValue([mockAccounts[0]]);
+      mockGetInstitutions.mockRejectedValue(new Error('down'));
+      await act(async () => notifyUndoRedo());
+      await waitFor(() => expect(screen.queryByTestId('account-acc-2')).not.toBeInTheDocument());
+      first.unmount();
+
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<AccountsPage />));
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    });
+
+    it('keeps the list on screen through a reload after a write', async () => {
+      mockGetAll.mockResolvedValue(mockAccounts);
+      await act(async () => render(<AccountsPage />));
+      await waitFor(() => expect(screen.getByTestId('account-acc-2')).toBeInTheDocument());
+      const fresh = deferred<typeof mockAccounts>();
+      mockGetAll.mockReturnValue(fresh.promise);
+
+      await act(async () => notifyUndoRedo());
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.getByTestId('account-acc-2')).toBeInTheDocument();
+
+      await act(async () => fresh.resolve([mockAccounts[0]]));
+      await waitFor(() => expect(screen.queryByTestId('account-acc-2')).not.toBeInTheDocument());
+    });
+  });
+
   it('renders + New Account button', async () => {
     render(<AccountsPage />);
     await waitFor(() => {
       expect(screen.getByText('+ New Account')).toBeInTheDocument();
     });
+  });
+
+  it('folds the summary cards and remembers the fold in this browser', async () => {
+    localStorage.removeItem('accounts.summary.collapsed');
+    const { unmount } = await act(async () => render(<AccountsPage />));
+    expect(screen.getByTestId('summary-Total Active Accounts')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Hide summary/ }));
+    expect(screen.queryByTestId('summary-Total Active Accounts')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('summary-Total Assets')).not.toBeInTheDocument();
+    expect(localStorage.getItem('accounts.summary.collapsed')).toBe('true');
+
+    unmount();
+    await act(async () => render(<AccountsPage />));
+    const toggle = screen.getByRole('button', { name: /Show summary/ });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByTestId('summary-Total Active Accounts')).not.toBeInTheDocument();
+
+    fireEvent.click(toggle);
+    expect(screen.getByTestId('summary-Total Active Accounts')).toBeInTheDocument();
+    localStorage.removeItem('accounts.summary.collapsed');
   });
 
   it('renders account list after data loads', async () => {

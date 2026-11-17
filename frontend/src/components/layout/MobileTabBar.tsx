@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 import { Bars3Icon, PlusIcon } from '@heroicons/react/24/outline';
@@ -9,7 +10,9 @@ import { isPublicPath } from '@/lib/public-paths';
 import { useAuthStore } from '@/store/authStore';
 import { startNewTransaction, useCommandPaletteStore } from '@/store/commandPaletteStore';
 import { useMobileChromeStore } from '@/store/mobileChromeStore';
-import { useMobileAddActionStore } from '@/store/mobileAddActionStore';
+import { useMobileAddActionStore, type MobileAddChoice } from '@/store/mobileAddActionStore';
+import { tourAnchor } from '@/lib/tours/anchors';
+import { MobileAddChooser } from './MobileAddChooser';
 
 const TAB_CLASS =
   'flex min-w-0 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500';
@@ -47,6 +50,18 @@ export function MobileTabBar() {
   // The page on screen may name its own "new" action (a new account on
   // Accounts); without one the button opens a new transaction.
   const pageAction = useMobileAddActionStore((s) => s.action);
+  // A page whose header "new" button is a menu hands over its choices, and
+  // the add button asks which one rather than picking for the reader. Held
+  // with the page that offered them, so a sheet left open across a navigation
+  // closes rather than offering the previous page's handlers.
+  const [chooser, setChooser] = useState<{
+    owner: symbol;
+    choices: readonly MobileAddChoice[];
+  } | null>(null);
+  const openChoices =
+    chooser && pageAction && chooser.owner === pageAction.owner ? chooser.choices : null;
+  const offeredChoices = pageAction?.choices?.() ?? null;
+  const asksWhich = offeredChoices !== null && offeredChoices.length > 1;
 
   if (!isAuthenticated || isPublicPath(pathname)) return null;
 
@@ -94,12 +109,18 @@ export function MobileTabBar() {
               onClick={() => {
                 if (pageAction) {
                   clearNewTransactionRequest();
-                  pageAction.run();
+                  if (asksWhich && offeredChoices) {
+                    setChooser({ owner: pageAction.owner, choices: offeredChoices });
+                  } else {
+                    pageAction.run();
+                  }
                 } else {
                   startNewTransaction(pathname, router.push);
                 }
               }}
               aria-label={pageAction?.label ?? tPalette('newTransaction')}
+              aria-haspopup={asksWhich ? 'dialog' : undefined}
+              {...(pageAction?.tourAnchor ? tourAnchor(pageAction.tourAnchor) : {})}
               className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 motion-reduce:transition-none dark:focus-visible:ring-offset-gray-900"
             >
               <PlusIcon aria-hidden className="h-7 w-7" />
@@ -119,6 +140,11 @@ export function MobileTabBar() {
           <span className="max-w-full truncate">{t('more')}</span>
         </button>
       </div>
+      <MobileAddChooser
+        title={pageAction?.label ?? ''}
+        choices={openChoices}
+        onClose={() => setChooser(null)}
+      />
     </nav>
   );
 }

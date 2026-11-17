@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
@@ -21,6 +21,11 @@ import { getErrorMessage } from '@/lib/errors';
 import type { Budget } from '@/types/budget';
 import type { Account } from '@/types/account';
 import { useMobileAddAction } from '@/store/mobileAddActionStore';
+import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
+import { readPageSnapshot, writePageSnapshot } from '@/lib/page-snapshot';
+
+/** What the list last drew, so a return draws it at once (`page-snapshot.ts`). */
+const BUDGETS_SNAPSHOT_KEY = 'budgets';
 
 export default function BudgetsPage() {
   return (
@@ -32,22 +37,36 @@ export default function BudgetsPage() {
 
 function BudgetsContent() {
   const t = useTranslations('budgets');
-  const [budgets, setBudgets] = useState<Budget[]>([]);
+  // The list's last successful answer, read once: drawn at once on a return
+  // while the mount load below replaces it with the current one.
+  const [snapshot] = useState(() => readPageSnapshot<Budget[]>(BUDGETS_SNAPSHOT_KEY));
+  const [budgets, setBudgets] = useState<Budget[]>(snapshot ?? []);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(snapshot === undefined);
   const [showWizard, setShowWizard] = useState(false);
   const { defaultCurrency } = useExchangeRates();
   const router = useRouter();
+  // The wizard is not the list, so it keeps no place of its own.
+  useRetainScrollPosition(!isLoading && !showWizard);
   useMobileAddAction(t('pages.list.newBudget'), () => setShowWizard(true));
 
-  // The mount load: the state already says loading.
+  // "Latest load started wins": a reload after a write supersedes one still in
+  // flight, whose late answer must not overwrite the newer one.
+  const loadSeq = useRef(0);
+
+  // The mount load (the state already says loading), and the reload after a
+  // write, which keeps the list on screen and swaps the new answer in.
   const fetchBudgets = useCallback(() => {
     // Writes live in `run` so they land after the request, not during the effect.
     const run = async () => {
+      const seq = ++loadSeq.current;
       try {
         const data = await budgetsApi.getAll();
+        if (seq !== loadSeq.current) return;
         setBudgets(data);
+        writePageSnapshot<Budget[]>(BUDGETS_SNAPSHOT_KEY, data);
       } catch (error) {
+        if (seq !== loadSeq.current) return;
         // A 403 here means a delegate hit /budgets without the section
         // grant; DelegateSectionGuard already shows the single, consistent
         // "no access" message and redirects, so don't double-toast.
@@ -59,29 +78,24 @@ function BudgetsContent() {
           toast.error(getErrorMessage(error, t('pages.detail.toasts.loadFailed')));
         }
       } finally {
-        setIsLoading(false);
+        if (seq === loadSeq.current) setIsLoading(false);
       }
     };
     return run();
   }, [t]);
-
-  const loadBudgets = useCallback(() => {
-    setIsLoading(true);
-    return fetchBudgets();
-  }, [fetchBudgets]);
 
   useEffect(() => {
     fetchBudgets();
     accountsApi.getAll().then(setAccounts).catch(() => {});
   }, [fetchBudgets]);
 
-  useOnUndoRedo(loadBudgets);
+  useOnUndoRedo(fetchBudgets);
   // Refresh on AI chat-bubble writes (budget spending can change).
-  useOnAiAction(loadBudgets);
+  useOnAiAction(fetchBudgets);
 
   const handleWizardComplete = () => {
     setShowWizard(false);
-    loadBudgets();
+    fetchBudgets();
   };
 
   if (showWizard) {
@@ -113,7 +127,7 @@ function BudgetsContent() {
           title={t('pages.list.title')}
           subtitle={t('pages.list.subtitle')}
           help='budgets'
-          actions={
+          primaryAction={
             <Button onClick={() => setShowWizard(true)}>
               {t('pages.list.newBudget')}
             </Button>

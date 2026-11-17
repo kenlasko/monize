@@ -23,7 +23,10 @@
       "totalActiveAccounts": "Totaal actieve rekeningen",
       "netWorth": "Nettowaarde",
       "totalAssets": "Totale activa",
-      "totalLiabilities": "Totale passiva"
+      "totalLiabilities": "Totale passiva",
+      "title": "Overzicht",
+      "show": "Overzicht tonen",
+      "hide": "Overzicht verbergen"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "Rekeningen zoeken...",
       "searchAriaLabel": "Rekeningen op naam zoeken",
       "searchClear": "Zoekopdracht wissen",
+      "chipSearch": "\"{term}\"",
+      "chipAll": "Alle",
+      "chipClosed": "Gesloten",
+      "removeChip": "Filter verwijderen: {label}",
       "activeCount": "Actief ({count})",
       "closedCount": "Gesloten ({count})",
       "statusLabel": "Status"

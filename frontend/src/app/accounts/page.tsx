@@ -24,6 +24,8 @@ import { PortfolioSummary } from '@/types/investment';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
+import { CollapsibleSummary } from '@/components/ui/CollapsibleSummary';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { sumConverted, combineTotals } from '@/lib/currency-total';
 import { sumMoney } from '@/lib/format';
@@ -36,8 +38,22 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { showErrorToast } from '@/lib/errors';
 import { useMobileAddAction } from '@/store/mobileAddActionStore';
+import { forgetPageSnapshot, readPageSnapshot, writePageSnapshot } from '@/lib/page-snapshot';
+import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
 
 const logger = createLogger('Accounts');
+
+/** Where this browser remembers whether the summary cards are folded. */
+const SUMMARY_COLLAPSED_KEY = 'accounts.summary.collapsed';
+
+/** What the page last drew, so a return draws it at once (`page-snapshot.ts`). */
+const ACCOUNTS_SNAPSHOT_KEY = 'accounts';
+interface AccountsSnapshot {
+  accounts: Account[];
+  institutions: Institution[];
+  portfolioSummary: PortfolioSummary | null;
+  portfolioFailed: boolean;
+}
 
 export default function AccountsPage() {
   return (
@@ -49,23 +65,40 @@ export default function AccountsPage() {
 
 function AccountsContent() {
   const t = useTranslations('accounts');
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [institutions, setInstitutions] = useState<Institution[]>([]);
-  const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
+  // The page's last successful answer, read once: drawn at once on a return,
+  // while the mount load below replaces it with the current one.
+  const [snapshot] = useState(() => readPageSnapshot<AccountsSnapshot>(ACCOUNTS_SNAPSHOT_KEY));
+  const [accounts, setAccounts] = useState<Account[]>(snapshot?.accounts ?? []);
+  const [institutions, setInstitutions] = useState<Institution[]>(snapshot?.institutions ?? []);
+  const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(
+    snapshot?.portfolioSummary ?? null,
+  );
   // A failed portfolio request is not an empty portfolio. Kept apart so a
   // brokerage account's market value reads as unknown rather than zero -- the
   // page used to drop 100,000 of holdings out of Assets and Net Worth silently.
-  const [portfolioFailed, setPortfolioFailed] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [portfolioFailed, setPortfolioFailed] = useState(snapshot?.portfolioFailed ?? false);
+  // The spinner is for a page with nothing to draw yet; a load behind data
+  // already on screen only marks the list busy.
+  const [isLoading, setIsLoading] = useState(snapshot === undefined);
+  const [isRefreshing, setIsRefreshing] = useState(snapshot !== undefined);
+  const [summaryCollapsed, setSummaryCollapsed] = useLocalStorage<boolean>(
+    SUMMARY_COLLAPSED_KEY,
+    false,
+  );
   const formModal = useFormModal<Account>();
   const { openCreate, openEdit } = formModal;
   const { convertToDefault, defaultCurrency } = useExchangeRates();
   const { formatCurrency } = useNumberFormat();
 
-  // The mount load: the state already says loading.
+  // "Latest load started wins": a reload after a write supersedes a load still
+  // in flight, whose late answer must not overwrite the newer one.
+  const loadSeq = useRef(0);
+
+  // The mount load: the state already says loading (or refreshing).
   const fetchAccounts = useCallback(() => {
     // Writes live in `run` so they land after the request, not during the effect.
     const run = async () => {
+      const seq = ++loadSeq.current;
       try {
         const [data, portfolio, insts] = await Promise.all([
           accountsApi.getAll(true),
@@ -73,24 +106,48 @@ function AccountsContent() {
             .getPortfolioSummary()
             .then((summary) => ({ ok: true as const, summary }))
             .catch(() => ({ ok: false as const, summary: null })),
-          institutionsApi.getAll().catch(() => [] as Institution[]),
+          institutionsApi
+            .getAll()
+            .then((list) => ({ ok: true as const, list }))
+            .catch(() => ({ ok: false as const, list: [] as Institution[] })),
         ]);
+        if (seq !== loadSeq.current) return;
         setAccounts(data);
         setPortfolioSummary(portfolio.summary);
         setPortfolioFailed(!portfolio.ok);
-        setInstitutions(insts);
+        setInstitutions(insts.list);
+        // Institutions that failed are drawn without their logos this visit,
+        // but not kept as "no institutions" for the next one. A failed
+        // portfolio is kept: `portfolioFailed` draws it as unknown, not zero.
+        if (insts.ok) {
+          writePageSnapshot<AccountsSnapshot>(ACCOUNTS_SNAPSHOT_KEY, {
+            accounts: data,
+            institutions: insts.list,
+            portfolioSummary: portfolio.summary,
+            portfolioFailed: !portfolio.ok,
+          });
+        } else {
+          forgetPageSnapshot(ACCOUNTS_SNAPSHOT_KEY);
+        }
       } catch (error) {
+        if (seq !== loadSeq.current) return;
         showErrorToast(error, t('toast.loadFailed'));
         logger.error(error);
       } finally {
-        setIsLoading(false);
+        if (seq === loadSeq.current) {
+          setIsLoading(false);
+          setIsRefreshing(false);
+        }
       }
     };
     return run();
   }, [t]);
 
+  // A reload after a write (a save, a close, an undo, an AI action) keeps the
+  // list on screen and swaps the new figures in when they land, so the reader
+  // keeps their place in it.
   const loadAccounts = useCallback(() => {
-    setIsLoading(true);
+    setIsRefreshing(true);
     return fetchAccounts();
   }, [fetchAccounts]);
 
@@ -115,7 +172,11 @@ function AccountsContent() {
     refreshInFlight.current = true;
     accountsApi
       .getAllFresh(true)
-      .then(setAccounts)
+      .then((fresh) => {
+        setAccounts(fresh);
+        const last = readPageSnapshot<AccountsSnapshot>(ACCOUNTS_SNAPSHOT_KEY);
+        if (last) writePageSnapshot<AccountsSnapshot>(ACCOUNTS_SNAPSHOT_KEY, { ...last, accounts: fresh });
+      })
       .catch((error) => logger.error(error))
       .finally(() => {
         refreshInFlight.current = false;
@@ -245,7 +306,12 @@ function AccountsContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, portfolioFailed, convertToDefault]);
 
-  useMobileAddAction(t('page.newAccount'), openCreate);
+  // Back to the list puts the reader where they left it.
+  useRetainScrollPosition(!isLoading);
+
+  useMobileAddAction(t('page.newAccount'), openCreate, {
+    tourAnchor: TOUR_ANCHORS.accountsAddButton,
+  });
 
   return (
     <PageLayout>
@@ -254,7 +320,7 @@ function AccountsContent() {
           title={t('page.title')}
           subtitle={t('page.subtitle')}
           help='accounts'
-          actions={
+          primaryAction={
             <Button
               {...tourAnchor(TOUR_ANCHORS.accountsAddButton)}
               onClick={openCreate}
@@ -263,59 +329,67 @@ function AccountsContent() {
             </Button>
           }
         />
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6">
-          <SummaryCard
-            label={t('page.summary.totalActiveAccounts')}
-            value={summary.accountCount}
-            icon={SummaryIcons.accounts}
-          />
-          <SummaryCard
-            label={t('page.summary.netWorth')}
-            value={
-              <PartialTotal total={summary.totalBalance} displayCurrency={defaultCurrency}>
-                {formatCurrency(summary.totalBalance.value, defaultCurrency)}
-              </PartialTotal>
-            }
-            icon={SummaryIcons.money}
-            valueColor={
-              // A partial net worth has an uncertain sign -- an excluded account
-              // could flip it -- so it is left neutral rather than asserting a
-              // red/blue the subtotal cannot vouch for.
-              summary.totalBalance.excludedCount > 0
-                ? 'default'
-                : summary.totalBalance.value >= 0
-                  ? 'blue'
-                  : 'red'
-            }
-          />
-          <SummaryCard
-            label={t('page.summary.totalAssets')}
-            value={
-              <PartialTotal total={summary.totalAssets} displayCurrency={defaultCurrency}>
-                {formatCurrency(summary.totalAssets.value, defaultCurrency)}
-              </PartialTotal>
-            }
-            icon={SummaryIcons.checkmark}
-            valueColor="green"
-          />
-          <SummaryCard
-            label={t('page.summary.totalLiabilities')}
-            value={
-              <PartialTotal total={summary.totalLiabilities} displayCurrency={defaultCurrency}>
-                {formatCurrency(summary.totalLiabilities.value, defaultCurrency)}
-              </PartialTotal>
-            }
-            icon={SummaryIcons.cross}
-            valueColor="red"
-          />
-        </div>
+        {/* Summary Cards, behind a fold this browser remembers */}
+        <CollapsibleSummary
+          title={t('page.summary.title')}
+          showLabel={t('page.summary.show')}
+          hideLabel={t('page.summary.hide')}
+          collapsed={summaryCollapsed}
+          onToggle={() => setSummaryCollapsed(!summaryCollapsed)}
+        >
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+            <SummaryCard
+              label={t('page.summary.totalActiveAccounts')}
+              value={summary.accountCount}
+              icon={SummaryIcons.accounts}
+            />
+            <SummaryCard
+              label={t('page.summary.netWorth')}
+              value={
+                <PartialTotal total={summary.totalBalance} displayCurrency={defaultCurrency}>
+                  {formatCurrency(summary.totalBalance.value, defaultCurrency)}
+                </PartialTotal>
+              }
+              icon={SummaryIcons.money}
+              valueColor={
+                // A partial net worth has an uncertain sign -- an excluded account
+                // could flip it -- so it is left neutral rather than asserting a
+                // red/blue the subtotal cannot vouch for.
+                summary.totalBalance.excludedCount > 0
+                  ? 'default'
+                  : summary.totalBalance.value >= 0
+                    ? 'blue'
+                    : 'red'
+              }
+            />
+            <SummaryCard
+              label={t('page.summary.totalAssets')}
+              value={
+                <PartialTotal total={summary.totalAssets} displayCurrency={defaultCurrency}>
+                  {formatCurrency(summary.totalAssets.value, defaultCurrency)}
+                </PartialTotal>
+              }
+              icon={SummaryIcons.checkmark}
+              valueColor="green"
+            />
+            <SummaryCard
+              label={t('page.summary.totalLiabilities')}
+              value={
+                <PartialTotal total={summary.totalLiabilities} displayCurrency={defaultCurrency}>
+                  {formatCurrency(summary.totalLiabilities.value, defaultCurrency)}
+                </PartialTotal>
+              }
+              icon={SummaryIcons.cross}
+              valueColor="red"
+            />
+          </div>
+        </CollapsibleSummary>
 
         {/* Form Modal */}
         <AccountFormModal formModal={formModal} onSaved={loadAccounts} />
 
         {/* Accounts List */}
-        <div className={`${CARD_CLASS} overflow-hidden`}>
+        <div className={`${CARD_CLASS} overflow-hidden`} aria-busy={isLoading || isRefreshing}>
           {isLoading ? (
             <LoadingSpinner text={t('page.loadingAccounts')} />
           ) : (

@@ -146,6 +146,8 @@ describe('the accounts list on a phone', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    // The closed-row cases were written when the list opened on All.
+    localStorage.setItem('accounts.filter.statusChoice', JSON.stringify(''));
     useDensityStore.setState({ densities: {} });
   });
 

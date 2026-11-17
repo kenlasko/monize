@@ -1051,3 +1051,99 @@ describe('useInvestmentData – section loading flags', () => {
     expect(result.current.portfolioSummary).toEqual(mockSummary);
   });
 });
+
+describe('useInvestmentData – returning to the page', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSearchParamsGet = () => null;
+    mockStoredSelection = undefined;
+    defaultSetup();
+  });
+
+  const settle = () =>
+    act(async () => {
+      await new Promise((res) => setTimeout(res, 0));
+    });
+
+  it('draws the last summary and register at once while it refetches them', async () => {
+    const first = renderHook(() => useInvestmentData());
+    await settle();
+    expect(first.result.current.portfolioSummary).toEqual(mockSummary);
+    first.unmount();
+
+    mockGetPortfolioSummary.mockReturnValue(new Promise(() => {}));
+    mockGetTransactions.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useInvestmentData());
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isSummaryLoading).toBe(false);
+    expect(result.current.portfolioSummary).toEqual(mockSummary);
+    expect(result.current.transactions.map((tx) => tx.id)).toEqual(['t1', 't2']);
+    // The mount loads still ran, to replace what is on screen.
+    expect(mockGetPortfolioSummary).toHaveBeenCalledTimes(2);
+  });
+
+  it('waits for its own answer under another selection', async () => {
+    const first = renderHook(() => useInvestmentData());
+    await settle();
+    first.unmount();
+
+    mockStoredSelection = ['acc-2'];
+    mockGetPortfolioSummary.mockReturnValue(new Promise(() => {}));
+    mockGetTransactions.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useInvestmentData());
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.isSummaryLoading).toBe(true);
+    expect(result.current.portfolioSummary).toBeNull();
+  });
+
+  it('returns to the skeletons when the reader picks other accounts before the summary answers', async () => {
+    const first = renderHook(() => useInvestmentData());
+    await settle();
+    first.unmount();
+
+    mockGetPortfolioSummary.mockReturnValue(new Promise(() => {}));
+    mockGetTransactions.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useInvestmentData());
+    await settle();
+    expect(result.current.isSummaryLoading).toBe(false);
+    await act(async () => result.current.handleAccountChange(['acc-2']));
+    await settle();
+    expect(result.current.isSummaryLoading).toBe(true);
+  });
+
+  it('draws nothing from a snapshot when a link names the account to show', async () => {
+    const first = renderHook(() => useInvestmentData());
+    await settle();
+    first.unmount();
+
+    mockSearchParamsGet = (key) => (key === 'accountId' ? 'acc-9' : null);
+    mockGetPortfolioSummary.mockReturnValue(new Promise(() => {}));
+    mockGetTransactions.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useInvestmentData());
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.portfolioSummary).toBeNull();
+  });
+
+  it('keeps nothing from a failed summary', async () => {
+    mockGetPortfolioSummary.mockRejectedValue(new Error('down'));
+    const first = renderHook(() => useInvestmentData());
+    await settle();
+    first.unmount();
+
+    mockGetPortfolioSummary.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useInvestmentData());
+    expect(result.current.isSummaryLoading).toBe(true);
+  });
+
+  it('starts the automatic price refresh only once the fresh summary answers', async () => {
+    const first = renderHook(() => useInvestmentData());
+    await settle();
+    first.unmount();
+    mockTriggerAutoRefresh.mockClear();
+
+    mockGetPortfolioSummary.mockReturnValue(new Promise(() => {}));
+    renderHook(() => useInvestmentData());
+    await settle();
+    expect(mockTriggerAutoRefresh).not.toHaveBeenCalled();
+  });
+});

@@ -41,7 +41,7 @@ Monize supports 11 account types:
 ## Creating an Account
 
 1. Navigate to **Accounts** from the top navigation bar
-2. Click **+ New Account**
+2. Click **+ New Account** (on a phone or tablet, tap the **+** button in the bar at the bottom of the screen)
 3. Fill in the **New Account** form:
 
 ![The New Account form](images/create-account-form.png)
@@ -231,13 +231,15 @@ At the top of the accounts page, the summary shows:
 
 The three money figures leave out accounts you excluded from net worth.
 
+Click **Hide summary** above the cards to fold them away, leaving more of the screen for the list; **Show summary** brings them back. The choice is remembered in this browser.
+
 ### Filtering
 
-The filter bar above the list lets you narrow down which accounts are shown:
+The filters above the list narrow down which accounts are shown. On a phone, each filter takes the full width of the screen, and the panel can be folded away: tap **Hide** in its header to fold it to one line, and **Show filters** to open it again; the choice is remembered in this browser. While it is folded, the header counts the filters that apply, offers **Clear**, and shows each one as a chip you can remove with its **X**. On a wider screen the filters are always shown.
 
-- **Search** -- A text box that filters accounts by name as you type. Click the **X** inside the box to clear the search.
-- **Status** -- Switch between **All**, **Active**, and **Closed** accounts.
+- **Status** -- Switch between **All**, **Active**, and **Closed** accounts. The list opens on **Active**, so closed accounts stay out of the way until you ask for them; a status you pick is remembered, and **Clear** returns to **Active**.
 - **Account Type** -- Show only selected account types (e.g. only chequing and savings). It lists just the types you actually have; leaving it empty shows all types.
+- **Search** -- A text box that filters accounts by name as you type. Click the **X** inside the box to clear the search.
 - **Net Worth** -- Show the accounts included in or excluded from net worth (shown when you have excluded an account).
 - **Shared with me** -- Show only the [joint accounts](shared-access.md#joint-accounts) other people share with you (shown when you have any).
 
@@ -245,6 +247,8 @@ A counter beside the filters shows how many accounts match, in the form **"X of 
 
 > [!NOTE]
 > Your filter and row density choices are remembered between visits.
+
+When you leave the Accounts page and come back, by **Back** or by its tab, the list is drawn at once from what it last showed and refreshed underneath, and the page returns to where you had scrolled. The same is true of Transactions, Bills & Deposits, Investments, Reports and Budgets.
 
 ---
 
@@ -423,7 +427,7 @@ When an account is no longer active (e.g., you closed a bank account), you can c
 2. Click **Close** on the account in the list
 3. Confirm in the **Close Account** dialog
 
-Closed accounts are hidden from transaction dropdowns and appear under the **Closed** filter, but their historical data is preserved for reporting. Click **Reopen** to make an account active again. Closing or reopening an investment account acts on both of its ledgers.
+Closed accounts are hidden from transaction dropdowns and from the account list's default **Active** view, and appear under the **Closed** filter, but their historical data is preserved for reporting. Click **Reopen** to make an account active again. Closing or reopening an investment account acts on both of its ledgers.
 
 ### Deleting Accounts
 

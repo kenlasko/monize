@@ -23,7 +23,10 @@
       "totalActiveAccounts": "Tổng tài khoản đang hoạt động",
       "netWorth": "Tài sản ròng",
       "totalAssets": "Tổng tài sản",
-      "totalLiabilities": "Tổng nợ phải trả"
+      "totalLiabilities": "Tổng nợ phải trả",
+      "title": "Tóm tắt",
+      "show": "Hiển thị tóm tắt",
+      "hide": "Ẩn tóm tắt"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "Tìm kiếm tài khoản...",
       "searchAriaLabel": "Tìm kiếm tài khoản theo tên",
       "searchClear": "Xóa tìm kiếm",
+      "chipSearch": "\"{term}\"",
+      "chipAll": "Tất cả",
+      "chipClosed": "Đã đóng",
+      "removeChip": "Xóa bộ lọc: {label}",
       "activeCount": "Đang hoạt động ({count})",
       "closedCount": "Đã đóng ({count})",
       "statusLabel": "Trạng thái"

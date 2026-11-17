@@ -23,7 +23,10 @@
       "totalActiveAccounts": "총 활성 계정",
       "netWorth": "순자산가액",
       "totalAssets": "총 자산",
-      "totalLiabilities": "총 부채"
+      "totalLiabilities": "총 부채",
+      "title": "요약",
+      "show": "요약 표시",
+      "hide": "요약 숨기기"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "계좌 검색...",
       "searchAriaLabel": "이름으로 계좌 검색",
       "searchClear": "검색 지우기",
+      "chipSearch": "\"{term}\"",
+      "chipAll": "전체",
+      "chipClosed": "종료",
+      "removeChip": "필터 제거: {label}",
       "activeCount": "활성 ({count})",
       "closedCount": "종료 ({count})",
       "statusLabel": "상태"

@@ -23,7 +23,10 @@
       "totalActiveAccounts": "Total de Contas Ativas",
       "netWorth": "Patrimônio Líquido",
       "totalAssets": "Total de Ativos",
-      "totalLiabilities": "Total de Passivos"
+      "totalLiabilities": "Total de Passivos",
+      "title": "Resumo",
+      "show": "Mostrar resumo",
+      "hide": "Ocultar resumo"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "Buscar contas...",
       "searchAriaLabel": "Buscar contas por nome",
       "searchClear": "Limpar busca",
+      "chipSearch": "\"{term}\"",
+      "chipAll": "Todas",
+      "chipClosed": "Fechadas",
+      "removeChip": "Remover filtro: {label}",
       "activeCount": "Ativas ({count})",
       "closedCount": "Fechadas ({count})",
       "statusLabel": "Status"

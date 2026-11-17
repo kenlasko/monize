@@ -1,5 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { create } from 'zustand';
+import type { TourAnchorId } from '@/lib/tours/anchors';
+
+/** One of the things a page's "new" button can create, when it offers several. */
+export interface MobileAddChoice {
+  /** Stable identity for React keys. */
+  key: string;
+  /** Already-translated label, e.g. "Cash transaction". */
+  label: string;
+  run: () => void;
+}
 
 /** What the mobile tab bar's add button does on the page now on screen. */
 export interface MobileAddAction {
@@ -8,6 +18,19 @@ export interface MobileAddAction {
   /** The button's accessible name: the page's own "New ..." label. */
   label: string;
   run: () => void;
+  /**
+   * The choices the page's header menu offers, when its "new" button is a
+   * menu. The add button then opens a sheet listing them, so a page whose
+   * header button is not drawn on a phone loses none of it. `null` for a
+   * single action; `run` runs the first choice.
+   */
+  choices?: () => readonly MobileAddChoice[] | null;
+  /**
+   * The tour anchor the page's header button carries. The header button is
+   * not drawn while the tab bar is, so the add button carries it instead and a
+   * tour step pointing at "New ..." still has something to point at.
+   */
+  tourAnchor?: TourAnchorId;
 }
 
 interface MobileAddActionState {
@@ -36,10 +59,35 @@ export const useMobileAddActionStore = create<MobileAddActionState>((set) => ({
  * memoise it. A header label's visual "+ " is dropped: the button already
  * draws one, and a screen reader would read it as "plus".
  */
-export function useMobileAddAction(label: string | null, run: () => void): void {
-  const runRef = useRef(run);
+export function useMobileAddAction(
+  label: string | null,
+  run: () => void,
+  options: { tourAnchor?: TourAnchorId } = {},
+): void {
+  useRegisterMobileAdd(label, run, options.tourAnchor);
+}
+
+/**
+ * `useMobileAddAction` for a page whose header "new" button is a menu (a
+ * brokerage or a cash transaction on Investments): the add button asks which
+ * of `choices` to create rather than picking one for the reader.
+ */
+export function useMobileAddChoices(
+  label: string | null,
+  choices: readonly MobileAddChoice[],
+  options: { tourAnchor?: TourAnchorId } = {},
+): void {
+  useRegisterMobileAdd(label, choices, options.tourAnchor);
+}
+
+function useRegisterMobileAdd(
+  label: string | null,
+  handler: (() => void) | readonly MobileAddChoice[],
+  tourAnchor: TourAnchorId | undefined,
+): void {
+  const handlerRef = useRef(handler);
   useEffect(() => {
-    runRef.current = run;
+    handlerRef.current = handler;
   });
   useEffect(() => {
     if (label === null) return;
@@ -47,8 +95,17 @@ export function useMobileAddAction(label: string | null, run: () => void): void 
     useMobileAddActionStore.getState().setAction({
       owner,
       label: label.replace(/^\+\s*/, ''),
-      run: () => runRef.current(),
+      run: () => {
+        const current = handlerRef.current;
+        if (typeof current === 'function') current();
+        else current[0]?.run();
+      },
+      choices: () => {
+        const current = handlerRef.current;
+        return typeof current === 'function' ? null : current;
+      },
+      tourAnchor,
     });
     return () => useMobileAddActionStore.getState().clearAction(owner);
-  }, [label]);
+  }, [label, tourAnchor]);
 }

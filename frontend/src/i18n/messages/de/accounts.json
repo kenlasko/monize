@@ -23,7 +23,10 @@
       "totalActiveAccounts": "Aktive Konten gesamt",
       "netWorth": "Reinvermögen",
       "totalAssets": "Aktiva gesamt",
-      "totalLiabilities": "Verbindlichkeiten gesamt"
+      "totalLiabilities": "Verbindlichkeiten gesamt",
+      "title": "Übersicht",
+      "show": "Übersicht anzeigen",
+      "hide": "Übersicht ausblenden"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "Konten suchen...",
       "searchAriaLabel": "Konten nach Namen suchen",
       "searchClear": "Suche löschen",
+      "chipSearch": "„{term}“",
+      "chipAll": "Alle",
+      "chipClosed": "Geschlossen",
+      "removeChip": "Filter entfernen: {label}",
       "activeCount": "Aktiv ({count})",
       "closedCount": "Geschlossen ({count})",
       "statusLabel": "Status"

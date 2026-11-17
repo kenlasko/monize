@@ -217,11 +217,12 @@ vi.mock('@/components/layout/PageLayout', () => ({
 }));
 
 vi.mock('@/components/layout/PageHeader', () => ({
-  PageHeader: ({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: React.ReactNode }) => (
+  PageHeader: ({ title, subtitle, actions, primaryAction }: { title: string; subtitle?: string; actions?: React.ReactNode; primaryAction?: React.ReactNode }) => (
     <div data-testid="page-header">
       <h1>{title}</h1>
       {subtitle && <p>{subtitle}</p>}
       {actions}
+      {primaryAction}
     </div>
   ),
 }));
@@ -840,6 +841,34 @@ describe('BillsPage', () => {
       await waitFor(() => {
         expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
       });
+    });
+  });
+
+  describe('returning to the page', () => {
+    it('draws the last schedules at once while it refetches them', async () => {
+      mockGetAll.mockResolvedValue([
+        { id: 'st-a', currencyCode: 'USD', name: 'Gym', amount: -100, frequency: 'MONTHLY',
+          nextDueDate: '2026-12-01', isActive: true, isTransfer: false, startDate: '2026-01-01', endDate: null },
+      ]);
+      const first = render(<BillsPage />);
+      await waitFor(() => expect(screen.getByText('Gym')).toBeInTheDocument());
+      first.unmount();
+
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<BillsPage />));
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.getByText('Gym')).toBeInTheDocument();
+    });
+
+    it('keeps nothing from a failed load', async () => {
+      mockGetAll.mockRejectedValue(new Error('down'));
+      const first = render(<BillsPage />);
+      await waitFor(() => expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument());
+      first.unmount();
+
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<BillsPage />));
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
     });
   });
 

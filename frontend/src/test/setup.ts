@@ -35,6 +35,13 @@ afterEach(async () => {
   // Hidden columns are the same shape of store, for the same reason.
   const { useHiddenColumnsStore } = await import('@/store/hiddenColumnsStore');
   useHiddenColumnsStore.setState({ columns: {} });
+  // A page's last-drawn data and the reader's place on it live in module
+  // memory for the tab's life, so one test's page must not hand them to the
+  // next test's mount (it would skip the spinner and restore a scroll).
+  const { clearPageSnapshots } = await import('@/lib/page-snapshot');
+  clearPageSnapshots();
+  const { clearRetainedScroll } = await import('@/lib/scroll-retention');
+  clearRetainedScroll();
   // Last, so an update React commits during `cleanup()` is counted against the
   // test that mounted the tree rather than the next one.
   failOnIntlErrors();

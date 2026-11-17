@@ -23,7 +23,10 @@
       "totalActiveAccounts": "Усього активних рахунків",
       "netWorth": "Чистий капітал",
       "totalAssets": "Усього активів",
-      "totalLiabilities": "Усього зобов'язань"
+      "totalLiabilities": "Усього зобов'язань",
+      "title": "Підсумок",
+      "show": "Показати підсумок",
+      "hide": "Приховати підсумок"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "Пошук рахунків...",
       "searchAriaLabel": "Пошук рахунків за назвою",
       "searchClear": "Очистити пошук",
+      "chipSearch": "«{term}»",
+      "chipAll": "Усі",
+      "chipClosed": "Закриті",
+      "removeChip": "Видалити фільтр: {label}",
       "activeCount": "Активні ({count})",
       "closedCount": "Закриті ({count})",
       "statusLabel": "Статус"

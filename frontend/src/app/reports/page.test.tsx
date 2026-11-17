@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { useDensityStore } from '@/store/densityStore';
 import type { DensityLevel } from '@/hooks/useTableDensity';
 import ReportsPage from './page';
+import { useMobileAddActionStore } from '@/store/mobileAddActionStore';
 
 // Mock next/image
 vi.mock('next/image', () => ({
@@ -141,11 +142,12 @@ vi.mock('@/components/layout/PageLayout', () => ({
 }));
 
 vi.mock('@/components/layout/PageHeader', () => ({
-  PageHeader: ({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: React.ReactNode }) => (
+  PageHeader: ({ title, subtitle, actions, primaryAction }: { title: string; subtitle?: string; actions?: React.ReactNode; primaryAction?: React.ReactNode }) => (
     <div data-testid="page-header">
       <h1>{title}</h1>
       {subtitle && <p>{subtitle}</p>}
       {actions}
+      {primaryAction}
     </div>
   ),
 }));
@@ -348,6 +350,17 @@ describe('ReportsPage', () => {
     expect(mockPush).toHaveBeenCalledWith('/reports/investment/new');
   });
 
+  it('offers the mobile add button both kinds of report, as the header menu does', async () => {
+    render(<ReportsPage />);
+    await waitFor(() => {
+      expect(useMobileAddActionStore.getState().action?.label).toBe('New Report');
+    });
+    const choices = useMobileAddActionStore.getState().action?.choices?.() ?? [];
+    expect(choices.map((c) => c.label)).toEqual(['Standard Report', 'Investment Report']);
+    choices[1].run();
+    expect(mockPush).toHaveBeenCalledWith('/reports/investment/new');
+  });
+
   it('renders density toggle button', async () => {
     render(<ReportsPage />);
     await waitFor(() => {
@@ -418,6 +431,22 @@ describe('ReportsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('My Custom Report')).toBeInTheDocument();
     });
+  });
+
+  it('draws the saved reports at once on a return, while it refetches them', async () => {
+    mockGetAllReports.mockResolvedValue([
+      { id: 'cr-1', name: 'Snapshot Report', description: null, icon: null, backgroundColor: null,
+        viewType: 'TABLE', timeframeType: 'LAST_30_DAYS', groupBy: 'CATEGORY', filters: {}, config: {},
+        isFavourite: false, sortOrder: 0, createdAt: '2026-01-01', updatedAt: '2026-01-01' },
+    ]);
+    const first = render(<ReportsPage />);
+    await waitFor(() => expect(screen.getByText('Snapshot Report')).toBeInTheDocument());
+    first.unmount();
+
+    mockGetAllReports.mockReturnValue(new Promise(() => {}));
+    await act(async () => render(<ReportsPage />));
+    expect(screen.getByText('Snapshot Report')).toBeInTheDocument();
+    expect(screen.queryByText(/loading custom reports/i)).not.toBeInTheDocument();
   });
 
   it('shows loading custom reports text', async () => {

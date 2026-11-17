@@ -3,7 +3,12 @@ import { act, fireEvent, render, renderHook, screen, within } from '@/test/rende
 import { MobileTabBar } from './MobileTabBar';
 import { useCommandPaletteStore } from '@/store/commandPaletteStore';
 import { useMobileChromeStore } from '@/store/mobileChromeStore';
-import { useMobileAddAction, useMobileAddActionStore } from '@/store/mobileAddActionStore';
+import {
+  useMobileAddAction,
+  useMobileAddActionStore,
+  useMobileAddChoices,
+} from '@/store/mobileAddActionStore';
+import { TOUR_ANCHORS } from '@/lib/tours/anchors';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import type { UserPreferences } from '@/types/auth';
 
@@ -148,6 +153,82 @@ describe('MobileTabBar', () => {
     renderHook(() => useMobileAddAction('+ New Account', vi.fn()));
     render(<MobileTabBar />);
     expect(bar().getByRole('button', { name: 'New Account' })).toBeInTheDocument();
+  });
+
+  it("asks which kind to create when the page's header button is a menu", () => {
+    const investment = vi.fn();
+    const cash = vi.fn();
+    renderHook(() =>
+      useMobileAddChoices('New Transaction', [
+        { key: 'investment', label: 'Investment Transaction', run: investment },
+        { key: 'cash', label: 'Cash Transaction', run: cash },
+      ]),
+    );
+    render(<MobileTabBar />);
+    fireEvent.click(bar().getByRole('button', { name: 'New Transaction' }));
+    // Nothing is created until the reader picks.
+    expect(investment).not.toHaveBeenCalled();
+    expect(cash).not.toHaveBeenCalled();
+    const sheet = screen.getByRole('dialog', { name: 'New Transaction' });
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Cash Transaction' }));
+    expect(cash).toHaveBeenCalledTimes(1);
+    expect(investment).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: 'New Transaction' })).not.toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('announces a popup only where the add button asks which kind', () => {
+    const page = renderHook(() =>
+      useMobileAddChoices('New Report', [{ key: 'only', label: 'Standard Report', run: vi.fn() }]),
+    );
+    render(<MobileTabBar />);
+    expect(bar().getByRole('button', { name: 'New Report' })).not.toHaveAttribute('aria-haspopup');
+    page.unmount();
+    renderHook(() =>
+      useMobileAddChoices('New Report', [
+        { key: 'standard', label: 'Standard Report', run: vi.fn() },
+        { key: 'investment', label: 'Investment Report', run: vi.fn() },
+      ]),
+    );
+    expect(bar().getByRole('button', { name: 'New Report' })).toHaveAttribute('aria-haspopup', 'dialog');
+  });
+
+  it('closes the sheet when the page that offered it leaves', () => {
+    const page = renderHook(() =>
+      useMobileAddChoices('New Transaction', [
+        { key: 'investment', label: 'Investment Transaction', run: vi.fn() },
+        { key: 'cash', label: 'Cash Transaction', run: vi.fn() },
+      ]),
+    );
+    render(<MobileTabBar />);
+    fireEvent.click(bar().getByRole('button', { name: 'New Transaction' }));
+    expect(screen.getByRole('dialog', { name: 'New Transaction' })).toBeInTheDocument();
+    act(() => page.unmount());
+    renderHook(() => useMobileAddAction('New Account', vi.fn()));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('runs the first choice when the store is asked to run a menu action', () => {
+    const investment = vi.fn();
+    renderHook(() =>
+      useMobileAddChoices('New Transaction', [
+        { key: 'investment', label: 'Investment Transaction', run: investment },
+        { key: 'cash', label: 'Cash Transaction', run: vi.fn() },
+      ]),
+    );
+    act(() => useMobileAddActionStore.getState().action?.run());
+    expect(investment).toHaveBeenCalledTimes(1);
+  });
+
+  it("carries the tour anchor of the header button it stands in for", () => {
+    renderHook(() =>
+      useMobileAddAction('New Account', vi.fn(), { tourAnchor: TOUR_ANCHORS.accountsAddButton }),
+    );
+    render(<MobileTabBar />);
+    expect(bar().getByRole('button', { name: 'New Account' })).toHaveAttribute(
+      'data-tour-id',
+      TOUR_ANCHORS.accountsAddButton,
+    );
   });
 
   it('registers nothing for a null label', () => {

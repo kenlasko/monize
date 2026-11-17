@@ -241,6 +241,30 @@ describe("SimpleFIN operation-scoped batch reader", () => {
     expect(result.transactions).toHaveLength(1);
   });
   it("shares a union window for accounts with different cutoffs and filters each account's rows", async () => {
+    // The union window runs to today, and is shared only while it spans at
+    // most two SimpleFIN windows, so "today" is pinned to the fixtures' last
+    // day. On the real clock the test failed once the calendar moved a month
+    // past the fixtures. Only Date is faked; the reader's timers stay real.
+    jest.useFakeTimers({
+      doNotFake: [
+        "nextTick",
+        "setImmediate",
+        "clearImmediate",
+        "setTimeout",
+        "clearTimeout",
+        "setInterval",
+        "clearInterval",
+        "queueMicrotask",
+      ],
+    });
+    jest.setSystemTime(new Date("2026-10-19T12:00:00Z"));
+    try {
+      await sharesUnionWindow();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+  async function sharesUnionWindow() {
     manager.query.mockResolvedValue([
       {
         sync_from_date: "2026-10-01",
@@ -261,7 +285,7 @@ describe("SimpleFIN operation-scoped batch reader", () => {
       expect(b.transactions).toHaveLength(0);
     });
     expect(client.accounts).toHaveBeenCalledTimes(1);
-  });
+  }
   it("counts dated refusals only inside each account window, retaining undatable refusals", async () => {
     const data = payload();
     const rows = [

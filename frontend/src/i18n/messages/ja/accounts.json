@@ -23,7 +23,10 @@
       "totalActiveAccounts": "有効な勘定科目の合計",
       "netWorth": "純資産",
       "totalAssets": "総資産",
-      "totalLiabilities": "総負債"
+      "totalLiabilities": "総負債",
+      "title": "概要",
+      "show": "概要を表示",
+      "hide": "概要を非表示"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "勘定科目を検索...",
       "searchAriaLabel": "名前で勘定科目を検索",
       "searchClear": "検索をクリア",
+      "chipSearch": "「{term}」",
+      "chipAll": "すべて",
+      "chipClosed": "閉鎖済み",
+      "removeChip": "フィルターを削除: {label}",
       "activeCount": "有効 ({count})",
       "closedCount": "閉鎖済み ({count})",
       "statusLabel": "ステータス"

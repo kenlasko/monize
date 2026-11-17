@@ -30,9 +30,15 @@ import {
 import { useDensityPreference } from '@/store/densityStore';
 import { DensityToggle } from '@/components/ui/DensityToggle';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
-import { useMobileAddAction } from '@/store/mobileAddActionStore';
+import { useMobileAddChoices } from '@/store/mobileAddActionStore';
+import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
+import { readPageSnapshot, writePageSnapshot } from '@/lib/page-snapshot';
 
 const logger = createLogger('Reports');
+
+/** The saved reports the page last drew, so a return draws them at once (`page-snapshot.ts`). */
+const CUSTOM_REPORTS_SNAPSHOT_KEY = 'reports:custom';
+const INVESTMENT_REPORTS_SNAPSHOT_KEY = 'reports:investment';
 
 export default function ReportsPage() {
   return (
@@ -79,9 +85,30 @@ function ReportsContent() {
     setCategoryFilter(category);
   };
   const [searchQuery, setSearchQuery] = useState('');
-  const [customReports, setCustomReports] = useState<CustomReport[]>([]);
-  const [isLoadingCustom, setIsLoadingCustom] = useState(true);
-  const [investmentReports, setInvestmentReports] = useState<InvestmentReport[]>([]);
+  // The saved reports' last successful answers, read once: drawn at once on a
+  // return while the mount loads below replace them with the current ones.
+  const [customSnapshot] = useState(() =>
+    readPageSnapshot<CustomReport[]>(CUSTOM_REPORTS_SNAPSHOT_KEY),
+  );
+  const [investmentSnapshot] = useState(() =>
+    readPageSnapshot<InvestmentReport[]>(INVESTMENT_REPORTS_SNAPSHOT_KEY),
+  );
+  const [customReports, setCustomReports] = useState<CustomReport[]>(customSnapshot ?? []);
+  const [isLoadingCustom, setIsLoadingCustom] = useState(customSnapshot === undefined);
+  const [investmentReports, setInvestmentReports] = useState<InvestmentReport[]>(
+    investmentSnapshot ?? [],
+  );
+  // Whether each list holds a real answer (a snapshot or a load that
+  // succeeded), so a favourite toggled afterwards is kept with it and a failed
+  // load is never kept as an empty list.
+  const [customKnown, setCustomKnown] = useState(customSnapshot !== undefined);
+  const [investmentKnown, setInvestmentKnown] = useState(investmentSnapshot !== undefined);
+  useEffect(() => {
+    if (customKnown) writePageSnapshot(CUSTOM_REPORTS_SNAPSHOT_KEY, customReports);
+  }, [customKnown, customReports]);
+  useEffect(() => {
+    if (investmentKnown) writePageSnapshot(INVESTMENT_REPORTS_SNAPSHOT_KEY, investmentReports);
+  }, [investmentKnown, investmentReports]);
   const preferences = usePreferencesStore((s) => s.preferences);
   const updateStorePreferences = usePreferencesStore((s) => s.updatePreferences);
   const loadPreferences = usePreferencesStore((s) => s.loadPreferences);
@@ -128,6 +155,7 @@ function ReportsContent() {
       try {
         const data = await customReportsApi.getAll();
         setCustomReports(data);
+        setCustomKnown(true);
       } catch (error) {
         logger.error('Failed to load custom reports:', error);
       } finally {
@@ -142,6 +170,7 @@ function ReportsContent() {
       try {
         const data = await investmentReportsApi.getAll();
         setInvestmentReports(data);
+        setInvestmentKnown(true);
       } catch (error) {
         logger.error('Failed to load investment reports:', error);
       }
@@ -327,7 +356,21 @@ function ReportsContent() {
     return {};
   };
 
-  useMobileAddAction(t('page.newReport'), () => router.push('/reports/custom/new'));
+  useRetainScrollPosition(!isLoadingCustom);
+
+  // The header's New Report is a menu; the tab bar's add button offers both.
+  useMobileAddChoices(t('page.newReport'), [
+    {
+      key: 'standard',
+      label: t('newReportButton.standardReport'),
+      run: () => router.push('/reports/custom/new'),
+    },
+    {
+      key: 'investment',
+      label: t('newReportButton.investmentReport'),
+      run: () => router.push('/reports/investment/new'),
+    },
+  ]);
 
   return (
     <PageLayout>
@@ -337,7 +380,7 @@ function ReportsContent() {
           title={t('page.title')}
           subtitle={t('page.subtitle')}
           help='reports'
-          actions={
+          primaryAction={
             <NewReportButton
               onNewStandard={() => router.push('/reports/custom/new')}
               onNewInvestment={() => router.push('/reports/investment/new')}

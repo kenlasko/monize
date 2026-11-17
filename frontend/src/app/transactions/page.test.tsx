@@ -523,11 +523,12 @@ vi.mock('@/components/layout/PageLayout', () => ({
 }));
 
 vi.mock('@/components/layout/PageHeader', () => ({
-  PageHeader: ({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: React.ReactNode }) => (
+  PageHeader: ({ title, subtitle, actions, primaryAction }: { title: string; subtitle?: string; actions?: React.ReactNode; primaryAction?: React.ReactNode }) => (
     <div data-testid="page-header">
       <h1>{title}</h1>
       {subtitle && <p>{subtitle}</p>}
       {actions}
+      {primaryAction}
     </div>
   ),
 }));
@@ -767,6 +768,60 @@ describe('TransactionsPage', () => {
       await waitFor(() => {
         expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
       });
+    });
+
+    it('draws the last register at once on a return to the same request', async () => {
+      mockGetAll.mockResolvedValue({
+        data: mockTransactions,
+        pagination: { page: 1, totalPages: 1, total: 3 },
+      });
+      const first = render(<TransactionsPage />);
+      await waitFor(() => expect(screen.getByTestId('tx-count')).toHaveTextContent('3 transactions'));
+      first.unmount();
+
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<TransactionsPage />));
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.getByTestId('tx-count')).toHaveTextContent('3 transactions');
+      // The register is still asked again, to replace what is on screen.
+      expect(mockGetAll).toHaveBeenCalledTimes(2);
+    });
+
+    it('keeps nothing when the chart beside the register failed', async () => {
+      mockGetAll.mockResolvedValue({
+        data: mockTransactions,
+        pagination: { page: 1, totalPages: 1, total: 3 },
+      });
+      // An earlier visit kept an answer; this one draws new rows but its chart
+      // fails, so the older answer must not be drawn on the next return.
+      const earlier = render(<TransactionsPage />);
+      await waitFor(() => expect(screen.getByTestId('tx-count')).toHaveTextContent('3 transactions'));
+      earlier.unmount();
+      mockGetDailyBalances.mockRejectedValue(new Error('down'));
+      const first = render(<TransactionsPage />);
+      await waitFor(() => expect(screen.getByTestId('tx-count')).toHaveTextContent('3 transactions'));
+      first.unmount();
+
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<TransactionsPage />));
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    });
+
+    it('waits for its own answer when a return asks for other rows', async () => {
+      mockGetAll.mockResolvedValue({
+        data: mockTransactions,
+        pagination: { page: 1, totalPages: 1, total: 3 },
+      });
+      const first = render(<TransactionsPage />);
+      await waitFor(() => expect(screen.getByTestId('tx-count')).toHaveTextContent('3 transactions'));
+      first.unmount();
+
+      mockSearchParams.value = 'search=rent';
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<TransactionsPage />));
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+      expect(screen.queryByTestId('transaction-list')).not.toBeInTheDocument();
+      mockSearchParams.value = '';
     });
 
     it('shows transaction list after loading completes', async () => {

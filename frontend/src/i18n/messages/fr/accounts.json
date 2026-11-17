@@ -23,7 +23,10 @@
       "totalActiveAccounts": "Total des comptes actifs",
       "netWorth": "Valeur nette",
       "totalAssets": "Total des actifs",
-      "totalLiabilities": "Total des passifs"
+      "totalLiabilities": "Total des passifs",
+      "title": "Synthèse",
+      "show": "Afficher la synthèse",
+      "hide": "Masquer la synthèse"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "Rechercher des comptes...",
       "searchAriaLabel": "Rechercher des comptes par nom",
       "searchClear": "Effacer la recherche",
+      "chipSearch": "« {term} »",
+      "chipAll": "Tous",
+      "chipClosed": "Clôturés",
+      "removeChip": "Supprimer le filtre : {label}",
       "activeCount": "Actifs ({count})",
       "closedCount": "Clôturés ({count})",
       "statusLabel": "Statut"

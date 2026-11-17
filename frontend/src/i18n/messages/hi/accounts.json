@@ -23,7 +23,10 @@
       "totalActiveAccounts": "कुल सक्रिय खाते",
       "netWorth": "शुद्ध संपत्ति",
       "totalAssets": "कुल संपत्ति",
-      "totalLiabilities": "कुल देनदारियां"
+      "totalLiabilities": "कुल देनदारियां",
+      "title": "सारांश",
+      "show": "सारांश दिखाएं",
+      "hide": "सारांश छुपाएं"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "खाते खोजें...",
       "searchAriaLabel": "नाम से खाते खोजें",
       "searchClear": "खोज साफ़ करें",
+      "chipSearch": "\"{term}\"",
+      "chipAll": "सभी",
+      "chipClosed": "बंद",
+      "removeChip": "फ़िल्टर हटाएं: {label}",
       "activeCount": "सक्रिय ({count})",
       "closedCount": "बंद ({count})",
       "statusLabel": "स्थिति"

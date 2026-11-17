@@ -51,7 +51,8 @@ import {
   type InvestmentTransactionView,
 } from '@/components/investments/InvestmentViewToggle';
 import { PAGE_SIZE } from '@/lib/constants';
-import { useMobileAddAction } from '@/store/mobileAddActionStore';
+import { useMobileAddChoices } from '@/store/mobileAddActionStore';
+import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
 
 const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
 
@@ -230,7 +231,26 @@ function InvestmentsContent() {
     reloadKey: data.writeRefreshKey,
   });
 
-  useMobileAddAction(t('page.newInvestmentTransaction'), handleNewInvestmentTransaction);
+  useRetainScrollPosition(!data.isLoading);
+
+  // The header's New Transaction is a menu, so the tab bar's add button offers
+  // the same two kinds rather than assuming a brokerage one.
+  const mobileAddChoices = useMemo(
+    () => [
+      {
+        key: 'investment',
+        label: t('newTransactionButton.investmentTransaction'),
+        run: handleNewInvestmentTransaction,
+      },
+      {
+        key: 'cash',
+        label: t('newTransactionButton.cashTransaction'),
+        run: handleNewCashTransaction,
+      },
+    ],
+    [t, handleNewInvestmentTransaction, handleNewCashTransaction],
+  );
+  useMobileAddChoices(t('page.newTransaction'), mobileAddChoices);
 
   return (
     <PageLayout>
@@ -261,11 +281,13 @@ function InvestmentsContent() {
                     lastPriceUpdate={data.lastPriceUpdate}
                   />
                 </div>
-                <NewTransactionButton
-                  onNewInvestment={handleNewInvestmentTransaction}
-                  onNewCash={handleNewCashTransaction}
-                />
               </>
+            }
+            primaryAction={
+              <NewTransactionButton
+                onNewInvestment={handleNewInvestmentTransaction}
+                onNewCash={handleNewCashTransaction}
+              />
             }
           />
 

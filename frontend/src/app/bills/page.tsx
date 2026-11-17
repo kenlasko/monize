@@ -66,8 +66,19 @@ import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { useHighlightParam } from '@/hooks/useHighlightTarget';
 import { useMobileAddAction } from '@/store/mobileAddActionStore';
+import { readPageSnapshot, writePageSnapshot } from '@/lib/page-snapshot';
+import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
 
 const logger = createLogger('Bills');
+
+/** What the page last drew, so a return draws it at once (`page-snapshot.ts`). */
+const BILLS_SNAPSHOT_KEY = 'bills';
+interface BillsSnapshot {
+  scheduledTransactions: ScheduledTransaction[];
+  categories: Category[];
+  accounts: Account[];
+  futureTransactions: FutureTransaction[];
+}
 
 interface OverrideEditorState {
   isOpen: boolean;
@@ -131,11 +142,18 @@ function BillsContent() {
   // spans one currency or none (issue #1247).
   const { convertToDefault, defaultCurrency, ratesUnavailable } =
     useExchangeRates();
-  const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [futureTransactions, setFutureTransactions] = useState<FutureTransaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // The page's last successful answer, read once: drawn at once on a return
+  // while the mount load below replaces it with the current one.
+  const [snapshot] = useState(() => readPageSnapshot<BillsSnapshot>(BILLS_SNAPSHOT_KEY));
+  const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>(
+    snapshot?.scheduledTransactions ?? [],
+  );
+  const [categories, setCategories] = useState<Category[]>(snapshot?.categories ?? []);
+  const [accounts, setAccounts] = useState<Account[]>(snapshot?.accounts ?? []);
+  const [futureTransactions, setFutureTransactions] = useState<FutureTransaction[]>(
+    snapshot?.futureTransactions ?? [],
+  );
+  const [isLoading, setIsLoading] = useState(snapshot === undefined);
   const { showForm, editingItem: editingTransaction, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<ScheduledTransaction>();
   // The list ("table") or the month calendar: remembered per screen in the
   // shared view-mode store, as Transactions and Investments remember theirs.
@@ -191,7 +209,7 @@ function BillsContent() {
   const loadGenerationRef = useRef(0);
 
   // Loads the page's data. The mount load shows the spinner (isLoading starts
-  // true); a refresh after a write (create, edit, delete, post, skip, an
+  // true unless a return drew the last answer); a refresh after a write (create, edit, delete, post, skip, an
   // override, an undo or an AI action) leaves isLoading alone, so the rows and
   // the forecast stay on screen and the new data swaps in when it arrives.
   // Setting isLoading on a refresh unmounted the list and the chart and drew
@@ -214,6 +232,12 @@ function BillsContent() {
         setCategories(categoriesData);
         setAccounts(accountsData);
         setFutureTransactions(futureData);
+        writePageSnapshot<BillsSnapshot>(BILLS_SNAPSHOT_KEY, {
+          scheduledTransactions: transactionsData,
+          categories: categoriesData,
+          accounts: accountsData,
+          futureTransactions: futureData,
+        });
       } catch (error) {
         // A superseded request must not surface an obsolete failure over a newer
         // load that has already succeeded.
@@ -718,7 +742,11 @@ function BillsContent() {
     [calendarMonth, scheduledTransactions],
   );
 
-  useMobileAddAction(t('page.newButton'), handleCreateNew);
+  useRetainScrollPosition(!isLoading);
+
+  useMobileAddAction(t('page.newButton'), handleCreateNew, {
+    tourAnchor: TOUR_ANCHORS.billsNewButton,
+  });
 
   return (
     <PageLayout>
@@ -728,7 +756,7 @@ function BillsContent() {
           title={t('page.title')}
           subtitle={t('page.subtitle')}
           help='bills'
-          actions={
+          primaryAction={
             <Button onClick={handleCreateNew} {...tourAnchor(TOUR_ANCHORS.billsNewButton)}>
               {t('page.newButton')}
             </Button>

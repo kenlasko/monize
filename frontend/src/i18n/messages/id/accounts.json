@@ -23,7 +23,10 @@
       "totalActiveAccounts": "Total Akun Aktif",
       "netWorth": "Nilai Bersih",
       "totalAssets": "Total Aset",
-      "totalLiabilities": "Total Liabilitas"
+      "totalLiabilities": "Total Liabilitas",
+      "title": "Ringkasan",
+      "show": "Tampilkan ringkasan",
+      "hide": "Sembunyikan ringkasan"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "Cari akun...",
       "searchAriaLabel": "Cari akun berdasarkan nama",
       "searchClear": "Hapus pencarian",
+      "chipSearch": "\"{term}\"",
+      "chipAll": "Semua",
+      "chipClosed": "Ditutup",
+      "removeChip": "Hapus filter: {label}",
       "activeCount": "Aktif ({count})",
       "closedCount": "Ditutup ({count})",
       "statusLabel": "Status"

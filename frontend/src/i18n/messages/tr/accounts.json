@@ -23,7 +23,10 @@
       "totalActiveAccounts": "Toplam Aktif Hesaplar",
       "netWorth": "Net Değer",
       "totalAssets": "Toplam Varlıklar",
-      "totalLiabilities": "Toplam Borçlar"
+      "totalLiabilities": "Toplam Borçlar",
+      "title": "Özet",
+      "show": "Özeti göster",
+      "hide": "Özeti gizle"
     }
   },
   "list": {
@@ -40,6 +43,10 @@
       "searchPlaceholder": "Hesap ara...",
       "searchAriaLabel": "Hesapları ada göre ara",
       "searchClear": "Aramayı temizle",
+      "chipSearch": "\"{term}\"",
+      "chipAll": "Tümü",
+      "chipClosed": "Kapalı",
+      "removeChip": "Filtreyi kaldır: {label}",
       "activeCount": "Aktif ({count})",
       "closedCount": "Kapalı ({count})",
       "statusLabel": "Durum"

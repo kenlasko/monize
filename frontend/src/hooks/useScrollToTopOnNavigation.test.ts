@@ -8,6 +8,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 import { useScrollToTopOnNavigation } from './useScrollToTopOnNavigation';
+import { clearRetainedScroll, rememberScroll } from '@/lib/scroll-retention';
 
 const scrollToMock = () => window.scrollTo as unknown as ReturnType<typeof vi.fn>;
 
@@ -28,6 +29,17 @@ describe('useScrollToTopOnNavigation', () => {
   it('does not scroll on initial mount', () => {
     renderHook(() => useScrollToTopOnNavigation());
     expect(scrollToMock()).not.toHaveBeenCalled();
+  });
+
+  it('leaves a page that keeps the reader\'s place to restore it', () => {
+    rememberScroll('/accounts', 640, '');
+    const { rerender } = renderHook(() => useScrollToTopOnNavigation());
+    act(() => {
+      mockPathname = '/accounts';
+      rerender();
+    });
+    expect(scrollToMock()).not.toHaveBeenCalled();
+    clearRetainedScroll();
   });
 
   it('scrolls to the top on a forward navigation (pathname change)', () => {

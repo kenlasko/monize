@@ -77,9 +77,9 @@ The currency of an amount is chosen with `CurrencyPickerButton` beside the amoun
 
 The page is `<main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">` at full width (a settings page is `max-w-4xl mx-auto` instead). Top to bottom:
 
-1. **`PageHeader`**: title, help icon (every list page passes `help`, a `DOCS_LINKS` key), one-line subtitle. The actions on the right: secondary actions (Refresh, Refresh Rates) as bordered buttons, then the one primary "New ..." button last.
-2. **Summary row**: `SummaryCard`s with an icon each (`SummaryIcons`), laid out by `SummaryCardGrid` / `summaryGridClass`, the grid the detail pages use, so the gap is the same everywhere. Do not use a free-form card with a `<dl>` inside, and do not write a grid gap of your own.
-3. **Toolbar row**: the search field first, then the filter segments, wrapping on a phone (`flex flex-wrap`, `w-full sm:w-auto`, `sm:ml-auto`; see `ui-conventions.md`). A `flex-col sm:flex-row` row without `flex-wrap` does not wrap between the two.
+1. **`PageHeader`**: title, help icon (every list page passes `help`, a `DOCS_LINKS` key), one-line subtitle. The actions on the right: secondary actions (Refresh, Refresh Rates) as bordered buttons, then the one primary "New ..." button last. On Accounts, Transactions, Bills, Investments, Reports and Budgets that button is `PageHeader`'s `primaryAction`, which is not drawn below `xl`: the mobile tab bar's **+** runs the same handler there, registered with `useMobileAddAction(label, run, { tourAnchor })` (or `useMobileAddChoices` when the header button is a menu, so the **+** asks which kind, as Investments and Reports do). The `tourAnchor` is the header button's own, so a tour step pointing at "New ..." lands on the **+** on a phone; `findTourAnchor` prefers whichever copy is drawn.
+2. **Summary row**: `SummaryCard`s with an icon each (`SummaryIcons`), laid out by `SummaryCardGrid` / `summaryGridClass`, the grid the detail pages use, so the gap is the same everywhere. Do not use a free-form card with a `<dl>` inside, and do not write a grid gap of your own. Where a phone needs the space for the list (Accounts), the row folds behind `CollapsibleSummary`, its state remembered in this browser with `useLocalStorage`.
+3. **Toolbar row**: the search field first, then the filter segments (the one deliberate exception is the Accounts list, which the maintainer asked to order status, then account type, then search; issue #2253), wrapping on a phone (`flex flex-wrap`, `w-full sm:w-auto`, `sm:ml-auto`; see `ui-conventions.md`). A `flex-col sm:flex-row` row without `flex-wrap` does not wrap between the two.
 4. **The list**, in `${CARD_CLASS} overflow-hidden`. While it loads, `<LoadingSpinner text>` renders inside that card; an empty list renders `EmptyState` from inside the list component, not from the page.
 5. **Below the list**: `ListBottomPager` with its `totalLabel` ("9 currencies"), which also carries `Pagination` when the list pages. Not a free-standing centred "N items" line.
 
@@ -97,7 +97,8 @@ The page is `<main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">` at full width (
 
 ### Behaviour
 
-- **Reload after undo/redo and AI actions**: `useOnUndoRedo(load)` and `useOnAiAction(load)`.
+- **Reload after undo/redo and AI actions**: `useOnUndoRedo(load)` and `useOnAiAction(load)`. A reload after a write keeps the list on screen and swaps the new answer in ("latest load started wins"); only a page with nothing to draw shows the spinner.
+- **A return keeps the reader's place**: `useRetainScrollPosition(ready)` on each main page, `ready` once the list (not its spinner) is drawn, and the page's last successful answer drawn at once from `page-snapshot.ts` while the mount load refreshes it (`api-and-cache.md`, "A return draws the page's last answer").
 - **Create and edit a record** with `useFormModal` + `Modal` + `UnsavedChangesDialog` (see the dialog rules above). A deep link to one row uses `useHighlightParam`.
 - **A back or cancel link** is a `Link` styled with `buttonClassName(...)`, never `<Link><Button>` (`ui-conventions.md`, "Nothing interactive goes inside a `<button>` or an `<a>`").
 
@@ -111,7 +112,7 @@ The page is `<main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">` at full width (
 
 - **A filter of one list is the segmented control** (`SEGMENTED_TOOLBAR_GROUP_CLASS` + `toolbarSegmentClass` in a list toolbar), next to the search, **with counts**: "All (9)", "Active (3)", "Inactive (6)".
 - **A control alone on its line on a phone fills the line.** The search, a filter's segmented control, a `Select` and a disclosure button below a list all take `w-full sm:w-auto`; see `ui-conventions.md`, "A control alone on a phone line fills it".
-- **Filters are always visible.** Do not fold People / From date / To date behind a `<details>` "Filter by ..." disclosure. A filter the user cannot see is a filter the user forgets is applied. The one exception is a register's many-field filter panel (below).
+- **Filters are always visible.** Do not fold People / From date / To date behind a `<details>` "Filter by ..." disclosure. A filter the user cannot see is a filter the user forgets is applied. The exceptions are a register's many-field filter panel (below) and the Accounts list's panel (`AccountFilterPanel`), which folds on a phone only (`useIsMobile`), on the same terms: `FilterPanelHeader` counts the filters and offers Clear, and while folded each active filter stays on screen as a removable `Badge` chip. Wider than a phone it has no fold, and a fold remembered on a phone-sized window does not apply.
 
 ### Refresh and export
 

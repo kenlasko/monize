@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import toast from 'react-hot-toast';
 import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import InvestmentsPage from './page';
+import { useMobileAddActionStore } from '@/store/mobileAddActionStore';
 
 // --- next/navigation (must be before other mocks that may import it) ---
 const mockRouterPush = vi.fn();
@@ -765,6 +766,16 @@ describe('InvestmentsPage', () => {
       fireEvent.click(screen.getByText('+ New Transaction'));
       fireEvent.click(screen.getByText('Investment Transaction'));
 
+      expect(mockOpenCreate).toHaveBeenCalled();
+    });
+
+    it("offers the mobile add button both kinds of transaction, as the header menu does", async () => {
+      await renderPage();
+      const action = useMobileAddActionStore.getState().action;
+      expect(action?.label).toBe('New Transaction');
+      const choices = action?.choices?.() ?? [];
+      expect(choices.map((c) => c.label)).toEqual(['Investment Transaction', 'Cash Transaction']);
+      act(() => choices[1].run());
       expect(mockOpenCreate).toHaveBeenCalled();
     });
 

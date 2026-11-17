@@ -8,6 +8,9 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { accountsApi } from '@/lib/accounts';
 import { useDensityStore } from '@/store/densityStore';
 
+/** Where the list keeps a status the reader picked. */
+const STATUS_KEY = 'accounts.filter.statusChoice';
+
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
     close: vi.fn().mockResolvedValue(undefined),
@@ -104,6 +107,9 @@ describe('AccountList', () => {
     exchangeMocks.convertToDefault.mockImplementation((n: number) => n);
     // Clear localStorage to reset persisted filter/sort/density state
     localStorage.clear();
+    // Most cases here are about closed rows, written when the list opened on
+    // All; they choose All. The Active default has its own cases.
+    localStorage.setItem(STATUS_KEY, JSON.stringify(''));
   });
 
   it('renders empty state when no accounts', () => {
@@ -1321,7 +1327,7 @@ describe('AccountList', () => {
     expect(mockOnRefresh).not.toHaveBeenCalled();
   });
 
-  it('puts the search first and counts every status segment', () => {
+  it('puts the status segments first, then the account type, then the search', () => {
     const accounts = [
       createAccount({ id: 'a1', name: 'Open One' }),
       createAccount({ id: 'a2', name: 'Open Two' }),
@@ -1338,23 +1344,174 @@ describe('AccountList', () => {
       'Active (2)',
       'Closed (1)',
     ]);
+    const type = screen.getByRole('button', { name: 'Filter by account type' });
     const search = screen.getByRole('textbox', { name: 'Search accounts by name' });
-    expect(search.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(group.compareDocumentPosition(type) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(type.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('shows the "All" segmented button as selected by default', () => {
-    const accounts = [createAccount()];
-
+  it('offers no search box in the short account type list', () => {
     render(
-      <AccountList accounts={accounts} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+      <AccountList accounts={[createAccount()]} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
     );
+    fireEvent.click(screen.getByRole('button', { name: 'Filter by account type' }));
+    expect(screen.queryByPlaceholderText('Search...')).not.toBeInTheDocument();
+  });
 
-    // The "All" button in the segmented control should have active styling
-    const allButton = screen.getAllByRole('button').find(
-      (btn) => !!btn.textContent?.startsWith('All (') && !!btn.closest('[role="group"]')
-    );
-    expect(allButton).toBeTruthy();
-    expect(allButton).toHaveAttribute('aria-pressed', 'true');
+  describe('filter panel fold', () => {
+    const originalMatchMedia = window.matchMedia;
+    const setPhone = (isPhone: boolean) => {
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: isPhone && query === '(max-width: 639px)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })) as unknown as typeof window.matchMedia;
+    };
+    beforeEach(() => setPhone(true));
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it('drops the fold setting kept under the old key', () => {
+      localStorage.setItem('accounts.filter.showFilters', 'false');
+      renderList();
+      expect(localStorage.getItem('accounts.filter.showFilters')).toBeNull();
+    });
+
+    it('offers no fold wider than a phone, even when one was remembered there', () => {
+      setPhone(false);
+      localStorage.setItem('accounts.filter.expanded', JSON.stringify(false));
+      renderList();
+      expect(screen.queryByRole('button', { name: /Show filters|Hide/ })).not.toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: 'Search accounts by name' })).toBeInTheDocument();
+      expect(screen.getByRole('group', { name: 'Status' })).toBeInTheDocument();
+    });
+
+    const renderList = (accounts = [
+      createAccount({ id: 'a1', name: 'Open One' }),
+      createAccount({ id: 'a2', name: 'Shut', isClosed: true }),
+    ]) =>
+      render(
+        <AccountList accounts={accounts} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+      );
+
+    it('starts open in a browser that never chose, and remembers a fold', () => {
+      const { unmount } = renderList();
+      expect(screen.getByRole('textbox', { name: 'Search accounts by name' })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: /Hide/ }));
+      expect(screen.queryByRole('textbox', { name: 'Search accounts by name' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: 'Status' })).not.toBeInTheDocument();
+      expect(localStorage.getItem('accounts.filter.expanded')).toBe('false');
+
+      unmount();
+      renderList();
+      expect(screen.getByRole('button', { name: /Show filters/ })).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('textbox', { name: 'Search accounts by name' })).not.toBeInTheDocument();
+    });
+
+    it('keeps each active filter on screen as a removable chip while folded', () => {
+      localStorage.setItem(STATUS_KEY, JSON.stringify('closed'));
+      localStorage.setItem('accounts.filter.search', JSON.stringify('Sh'));
+      localStorage.setItem('accounts.filter.expanded', JSON.stringify(false));
+      renderList();
+
+      // The folded header counts both filters.
+      expect(screen.getByRole('button', { name: /Show filters/ })).toHaveTextContent('2');
+      expect(screen.getByText('"Sh"')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Remove filter: Closed' }));
+      expect(screen.queryByRole('button', { name: 'Remove filter: Closed' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Show filters/ })).toHaveTextContent('1');
+      // Removing the status goes back to the default, Active.
+      expect(screen.queryByText('Shut')).not.toBeInTheDocument();
+      expect(screen.queryByText('Open One')).not.toBeInTheDocument();
+    });
+
+    it('clears every filter from the folded header, back to the Active default', () => {
+      localStorage.setItem(STATUS_KEY, JSON.stringify('closed'));
+      localStorage.setItem('accounts.filter.expanded', JSON.stringify(false));
+      renderList();
+
+      expect(screen.queryByText('Open One')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      expect(screen.getByText('Open One')).toBeInTheDocument();
+      expect(screen.queryByText('Shut')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Remove filter/ })).not.toBeInTheDocument();
+    });
+
+    it('needs no chip or count for the default Active view, but marks All', () => {
+      localStorage.removeItem(STATUS_KEY);
+      localStorage.setItem('accounts.filter.expanded', JSON.stringify(false));
+      const { unmount } = renderList();
+      expect(screen.queryByRole('button', { name: /Remove filter/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
+      unmount();
+
+      localStorage.setItem(STATUS_KEY, JSON.stringify(''));
+      renderList();
+      expect(screen.getByRole('button', { name: 'Remove filter: All' })).toBeInTheDocument();
+    });
+
+    it('gives every expanded control the full width of a phone line', () => {
+      renderList();
+      expect(screen.getByRole('group', { name: 'Status' }).className).toContain('w-full sm:w-auto');
+      expect(
+        screen.getByRole('textbox', { name: 'Search accounts by name' }).parentElement!.className,
+      ).toContain('w-full');
+    });
+  });
+
+  describe('the status the list opens on', () => {
+    const accounts = [
+      createAccount({ id: 'a1', name: 'Open One' }),
+      createAccount({ id: 'a2', name: 'Shut One', isClosed: true, closedDate: '2024-01-01T00:00:00Z' }),
+    ];
+    const renderList = () =>
+      render(
+        <AccountList accounts={accounts} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+      );
+
+    it('shows only the active accounts in a browser that never chose', () => {
+      localStorage.removeItem(STATUS_KEY);
+      renderList();
+      const group = screen.getByRole('group', { name: 'Status' });
+      expect(within(group).getByRole('button', { name: 'Active (1)' })).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText('Open One')).toBeInTheDocument();
+      expect(screen.queryByText('Shut One')).not.toBeInTheDocument();
+    });
+
+    it('ignores the old status key, which every browser held whether or not the reader chose', () => {
+      localStorage.removeItem(STATUS_KEY);
+      localStorage.setItem('accounts.filter.status', JSON.stringify(''));
+      renderList();
+      expect(screen.queryByText('Shut One')).not.toBeInTheDocument();
+      expect(localStorage.getItem('accounts.filter.status')).toBeNull();
+    });
+
+    it('remembers a status the reader picks', () => {
+      localStorage.removeItem(STATUS_KEY);
+      const { unmount } = renderList();
+      expect(localStorage.getItem(STATUS_KEY)).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'All (2)' }));
+      expect(localStorage.getItem(STATUS_KEY)).toBe(JSON.stringify(''));
+      unmount();
+      renderList();
+      expect(screen.getByText('Shut One')).toBeInTheDocument();
+    });
+
+    it('goes back to Active on Clear Filters', () => {
+      localStorage.setItem(STATUS_KEY, JSON.stringify('closed'));
+      localStorage.setItem('accounts.filter.search', JSON.stringify('nothing matches'));
+      renderList();
+      fireEvent.click(screen.getByRole('button', { name: 'Clear Filters' }));
+      expect(screen.getByText('Open One')).toBeInTheDocument();
+      expect(screen.queryByText('Shut One')).not.toBeInTheDocument();
+    });
   });
 
   it('shows an interactive favourite star for favourite accounts', () => {
@@ -2986,7 +3143,7 @@ describe('AccountList', () => {
 
     it('initializes from localStorage when stored values exist', () => {
       // Pre-populate localStorage with filter state
-      localStorage.setItem('accounts.filter.status', JSON.stringify('active'));
+      localStorage.setItem(STATUS_KEY, JSON.stringify('active'));
       localStorage.setItem('accounts.filter.sortField', JSON.stringify('balance'));
       localStorage.setItem('accounts.filter.sortDirection', JSON.stringify('desc'));
       // Density is no longer one of this list's own filter keys -- it is the

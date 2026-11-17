@@ -13,6 +13,7 @@ import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { payeesApi } from '@/lib/payees';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { readPageSnapshot, writePageSnapshot } from '@/lib/page-snapshot';
 import { Account } from '@/types/account';
 import {
   PortfolioSummary,
@@ -35,18 +36,71 @@ import {
 
 const logger = createLogger('Investments');
 
+/**
+ * What the page last drew, so a return draws it at once (`page-snapshot.ts`).
+ * The accounts are the same whatever is selected; the summary and the first
+ * page of the unfiltered register are keyed by the selection that produced
+ * them, so a return under another selection waits for its own answer.
+ */
+const ACCOUNTS_SNAPSHOT_KEY = 'investments:accounts';
+interface InvestmentAccountsSnapshot {
+  accounts?: Account[];
+  allAccounts?: Account[];
+}
+function selectionKey(accountIds: readonly string[]): string {
+  return [...accountIds].sort().join(',');
+}
+const summarySnapshotKey = (accountIds: readonly string[]) =>
+  `investments:summary:${selectionKey(accountIds)}`;
+const transactionsSnapshotKey = (accountIds: readonly string[]) =>
+  `investments:transactions:${selectionKey(accountIds)}`;
+interface InvestmentTransactionsSnapshot {
+  data: InvestmentTransaction[];
+  pagination: InvestmentTransactionPaginationInfo | null;
+}
+function rememberAccounts(update: InvestmentAccountsSnapshot): void {
+  writePageSnapshot<InvestmentAccountsSnapshot>(ACCOUNTS_SNAPSHOT_KEY, {
+    ...readPageSnapshot<InvestmentAccountsSnapshot>(ACCOUNTS_SNAPSHOT_KEY),
+    ...update,
+  });
+}
+/** Only the view a return lands on: page 1 with no filter. */
+function isLandingView(page: number, filters: TransactionFilters): boolean {
+  return page === 1 && !filters.symbol && !filters.action && !filters.startDate && !filters.endDate;
+}
+
 export function useInvestmentData() {
   const t = useTranslations('investments');
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [allAccounts, setAllAccounts] = useState<Account[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useLocalStorage<string[]>('monize-investments-accounts', []);
-  const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
-  const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
-  const [pagination, setPagination] = useState<InvestmentTransactionPaginationInfo | null>(null);
+  // The page's last answers, read once. A link that names an account
+  // (`?accountId=`) is about to change the selection, so it draws nothing
+  // from a snapshot of the remembered one.
+  const [snapshot] = useState(() => {
+    const accountsSnapshot = readPageSnapshot<InvestmentAccountsSnapshot>(ACCOUNTS_SNAPSHOT_KEY);
+    if (searchParams.get('accountId')) return { accounts: accountsSnapshot };
+    return {
+      accounts: accountsSnapshot,
+      summary: readPageSnapshot<PortfolioSummary>(summarySnapshotKey(selectedAccountIds)),
+      transactions: readPageSnapshot<InvestmentTransactionsSnapshot>(
+        transactionsSnapshotKey(selectedAccountIds),
+      ),
+    };
+  });
+  const [accounts, setAccounts] = useState<Account[]>(snapshot.accounts?.accounts ?? []);
+  const [allAccounts, setAllAccounts] = useState<Account[]>(snapshot.accounts?.allAccounts ?? []);
+  const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(
+    snapshot.summary ?? null,
+  );
+  const [transactions, setTransactions] = useState<InvestmentTransaction[]>(
+    snapshot.transactions?.data ?? [],
+  );
+  const [pagination, setPagination] = useState<InvestmentTransactionPaginationInfo | null>(
+    snapshot.transactions?.pagination ?? null,
+  );
   const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(snapshot.transactions === undefined);
   const {
     showForm: showTransactionForm, editingItem: editingTransaction,
     openCreate, openEdit, close, isEditing: _isEditing,
@@ -84,6 +138,15 @@ export function useInvestmentData() {
   // It is also what the summary sections wait on before leaving their
   // skeletons (`isSummaryLoading`).
   const [initialSummarySettled, setInitialSummarySettled] = useState(false);
+  // A summary drawn from the snapshot leaves the skeletons at once, but is not
+  // the first summary answering: the automatic price refresh still waits for
+  // that, so it never revalues the history beside the mount's own valuation.
+  // Only while the selection is still the one the snapshot was for: a reader
+  // who picks other accounts before the first summary answers sees the
+  // skeletons, not the previous selection's figures under the new one.
+  const [snapshotSelection] = useState(() => selectionKey(selectedAccountIds));
+  const summaryFromSnapshot =
+    snapshot.summary !== undefined && selectionKey(selectedAccountIds) === snapshotSelection;
 
   // Cash transaction form modal
   const {
@@ -102,6 +165,7 @@ export function useInvestmentData() {
       try {
         const accountsData = await investmentsApi.getInvestmentAccounts();
         setAccounts(accountsData);
+        rememberAccounts({ accounts: accountsData });
       } catch (error) {
         logger.error('Failed to load investment accounts:', error);
       }
@@ -114,6 +178,7 @@ export function useInvestmentData() {
       try {
         const accountsData = await accountsApi.getAll();
         setAllAccounts(accountsData);
+        rememberAccounts({ allAccounts: accountsData });
       } catch (error) {
         logger.error('Failed to load all accounts:', error);
       }
@@ -184,10 +249,17 @@ export function useInvestmentData() {
       if (summarySeqRef.current === summarySeq) {
         setPortfolioSummary(summaryData);
         setInitialSummarySettled(true);
+        writePageSnapshot(summarySnapshotKey(accountIds), summaryData);
       }
       if (transactionsSeqRef.current === txSeq) {
         setTransactions(txResponse.data || []);
         setPagination(txResponse.pagination);
+        if (isLandingView(page, filters)) {
+          writePageSnapshot<InvestmentTransactionsSnapshot>(transactionsSnapshotKey(accountIds), {
+            data: txResponse.data || [],
+            pagination: txResponse.pagination,
+          });
+        }
       }
     } catch (error) {
       logger.error('Failed to load portfolio data:', error);
@@ -235,6 +307,7 @@ export function useInvestmentData() {
         const summaryData = await investmentsApi.getPortfolioSummary(ids);
         if (summarySeqRef.current !== seq) return;
         setPortfolioSummary(summaryData);
+        writePageSnapshot(summarySnapshotKey(accountIds), summaryData);
       } catch (error) {
         logger.error('Failed to load portfolio summary:', error);
         if (summarySeqRef.current !== seq) return;
@@ -266,6 +339,12 @@ export function useInvestmentData() {
         if (transactionsSeqRef.current !== seq) return;
         setTransactions(txResponse.data || []);
         setPagination(txResponse.pagination);
+        if (isLandingView(page, filters)) {
+          writePageSnapshot<InvestmentTransactionsSnapshot>(transactionsSnapshotKey(accountIds), {
+            data: txResponse.data || [],
+            pagination: txResponse.pagination,
+          });
+        }
       } catch (error) {
         logger.error('Failed to load transactions:', error);
         if (transactionsSeqRef.current !== seq) return;
@@ -612,7 +691,7 @@ export function useInvestmentData() {
     // valuation takes, and gating the summary sections on it showed them as
     // "no data" until the summary arrived.
     portfolioSummary, isLoading,
-    isSummaryLoading: !initialSummarySettled,
+    isSummaryLoading: !initialSummarySettled && !summaryFromSnapshot,
     loadAllPortfolioData, refreshAfterWrite, writeRefreshKey,
 
     // Brokerage transactions
