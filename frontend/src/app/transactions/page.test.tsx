@@ -770,6 +770,40 @@ describe('TransactionsPage', () => {
       });
     });
 
+    it('draws the last register at once on a return to the same request', async () => {
+      mockGetAll.mockResolvedValue({
+        data: mockTransactions,
+        pagination: { page: 1, totalPages: 1, total: 3 },
+      });
+      const first = render(<TransactionsPage />);
+      await waitFor(() => expect(screen.getByTestId('tx-count')).toHaveTextContent('3 transactions'));
+      first.unmount();
+
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<TransactionsPage />));
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.getByTestId('tx-count')).toHaveTextContent('3 transactions');
+      // The register is still asked again, to replace what is on screen.
+      expect(mockGetAll).toHaveBeenCalledTimes(2);
+    });
+
+    it('waits for its own answer when a return asks for other rows', async () => {
+      mockGetAll.mockResolvedValue({
+        data: mockTransactions,
+        pagination: { page: 1, totalPages: 1, total: 3 },
+      });
+      const first = render(<TransactionsPage />);
+      await waitFor(() => expect(screen.getByTestId('tx-count')).toHaveTextContent('3 transactions'));
+      first.unmount();
+
+      mockSearchParams.value = 'search=rent';
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<TransactionsPage />));
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+      expect(screen.queryByTestId('transaction-list')).not.toBeInTheDocument();
+      mockSearchParams.value = '';
+    });
+
     it('shows transaction list after loading completes', async () => {
       mockGetAll.mockResolvedValue({
         data: mockTransactions,
