@@ -8,7 +8,12 @@ import { request as httpsRequest } from "https";
 import { AddressInfo } from "net";
 
 import { issueRoot, issueServer } from "./certificate-authority";
-import { LanProxy, ROOT_DOWNLOAD_PATH, startLanProxy } from "./lan-proxy";
+import {
+  LanProxy,
+  ROOT_DOWNLOAD_PATH,
+  startLanProxy,
+  upstreamPath,
+} from "./lan-proxy";
 
 const NOW = new Date();
 const root = issueRoot({ computerName: "SPEC", now: NOW });
@@ -246,6 +251,14 @@ describe("the LAN listener over TLS", () => {
     expect(firstChunkAt - started).toBeLessThan(250);
   });
 
+  it("forwards only a path on the frontend, never another target", async () => {
+    for (const target of ["//evil.example/x", "*"]) {
+      const reply = await secure(target);
+      expect(reply.status).toBe(400);
+    }
+    expect(hits).toBe(0);
+  });
+
   it("drops hop-by-hop headers, including those Connection names", async () => {
     const reply = await secure("/", {
       headers: {
@@ -334,5 +347,27 @@ describe("the LAN listener's other answers", () => {
       }),
     ).rejects.toThrow();
     proxy = await startProxy();
+  });
+});
+
+describe("upstreamPath", () => {
+  it.each([
+    ["/", "/"],
+    ["/accounts?id=1", "/accounts?id=1"],
+    ["/a/../b", "/b"],
+    ["/api/v1/mcp?x=%2F", "/api/v1/mcp?x=%2F"],
+  ])("keeps the path %s as %s", (target, path) => {
+    expect(upstreamPath(target)).toBe(path);
+  });
+
+  it.each([
+    undefined,
+    "",
+    "*",
+    "//evil.example/x",
+    "http://evil.example/x",
+    "evil.example:443",
+  ])("refuses %p", (target) => {
+    expect(upstreamPath(target)).toBeNull();
   });
 });

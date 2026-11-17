@@ -3,7 +3,7 @@ import {
   IncomingHttpHeaders,
   IncomingMessage,
   OutgoingHttpHeaders,
-  request,
+  request as requestFrontend,
   ServerResponse,
 } from "http";
 import { createServer as createNetServer, Socket } from "net";
@@ -142,6 +142,26 @@ function text(res: ServerResponse, status: number, body: string): void {
   res.end(`${body}\n`);
 }
 
+/**
+ * The request's target as a path on the frontend (`/accounts?id=1`), or null
+ * for anything else: an absolute URL (`http://other/`), a scheme-relative
+ * `//other/`, `*` or a CONNECT authority. A proxy that forwards to one fixed
+ * place still accepts only the path, rebuilt from its parsed parts, so what
+ * reaches the frontend is always a path on the frontend.
+ */
+export function upstreamPath(target: string | undefined): string | null {
+  if (
+    target === undefined ||
+    !target.startsWith("/") ||
+    target.startsWith("//")
+  ) {
+    return null;
+  }
+  const parsed = new URL(target, "http://upstream.invalid");
+  if (parsed.origin !== "http://upstream.invalid") return null;
+  return `${parsed.pathname}${parsed.search}`;
+}
+
 function hostOf(req: IncomingMessage): string | null {
   const host = req.headers.host;
   return typeof host === "string" && host !== "" ? host.toLowerCase() : null;
@@ -214,11 +234,18 @@ export async function startLanProxy(
       text(res, 403, "Cross-origin requests are not accepted.");
       return;
     }
-    const upstream = request({
+    const path = upstreamPath(req.url);
+    if (path === null) {
+      text(res, 400, "Only a path on this site can be requested.");
+      return;
+    }
+    // Node's http.request, to the fixed loopback host and port: the client
+    // chooses only the path, and `upstreamPath` holds it to one.
+    const upstream = requestFrontend({
       host: "127.0.0.1",
       port: options.upstreamPort,
       method: req.method,
-      path: req.url,
+      path,
       headers: upstreamHeaders(req, peerOf(req), options.upstreamOrigin),
     });
     upstream.on("response", (answer) => {
