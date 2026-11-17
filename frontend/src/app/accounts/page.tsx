@@ -106,19 +106,27 @@ function AccountsContent() {
             .getPortfolioSummary()
             .then((summary) => ({ ok: true as const, summary }))
             .catch(() => ({ ok: false as const, summary: null })),
-          institutionsApi.getAll().catch(() => [] as Institution[]),
+          institutionsApi
+            .getAll()
+            .then((list) => ({ ok: true as const, list }))
+            .catch(() => ({ ok: false as const, list: [] as Institution[] })),
         ]);
         if (seq !== loadSeq.current) return;
         setAccounts(data);
         setPortfolioSummary(portfolio.summary);
         setPortfolioFailed(!portfolio.ok);
-        setInstitutions(insts);
-        writePageSnapshot<AccountsSnapshot>(ACCOUNTS_SNAPSHOT_KEY, {
-          accounts: data,
-          institutions: insts,
-          portfolioSummary: portfolio.summary,
-          portfolioFailed: !portfolio.ok,
-        });
+        setInstitutions(insts.list);
+        // Institutions that failed are drawn without their logos this visit,
+        // but not kept as "no institutions" for the next one. A failed
+        // portfolio is kept: `portfolioFailed` draws it as unknown, not zero.
+        if (insts.ok) {
+          writePageSnapshot<AccountsSnapshot>(ACCOUNTS_SNAPSHOT_KEY, {
+            accounts: data,
+            institutions: insts.list,
+            portfolioSummary: portfolio.summary,
+            portfolioFailed: !portfolio.ok,
+          });
+        }
       } catch (error) {
         if (seq !== loadSeq.current) return;
         showErrorToast(error, t('toast.loadFailed'));

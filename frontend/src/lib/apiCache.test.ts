@@ -7,6 +7,7 @@ import {
   dedupe,
   invalidateBalanceCaches,
 } from './apiCache';
+import { readPageSnapshot, writePageSnapshot } from './page-snapshot';
 
 describe('apiCache', () => {
   beforeEach(() => {
@@ -200,6 +201,18 @@ describe('apiCache – dedupe', () => {
 
   // clearAllCache must give the same guarantee as a prefix invalidation: a
   // fetch already in flight cannot resurrect the cache after the clear.
+  it("clearAllCache retires every page's last-drawn data too", () => {
+    writePageSnapshot('bills', [{ id: 'st-1' }]);
+    clearAllCache();
+    expect(readPageSnapshot('bills')).toBeUndefined();
+  });
+
+  it("invalidateBalanceCaches leaves the pages' last-drawn data for their refresh to replace", () => {
+    writePageSnapshot('accounts', { accounts: [] });
+    invalidateBalanceCaches();
+    expect(readPageSnapshot('accounts')).toEqual({ accounts: [] });
+  });
+
   it('clearAllCache prevents an in-flight fetch from resurrecting the cache', async () => {
     let resolveOld!: (val: string) => void;
     const pOld = dedupe('k:all', () => new Promise<string>(res => { resolveOld = res; }));

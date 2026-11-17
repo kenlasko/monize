@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { currentScrollKey, rememberScroll, retainedScroll } from '@/lib/scroll-retention';
+import { rememberScroll, retainedScroll } from '@/lib/scroll-retention';
 
 /** How long a restore keeps trying while the page grows to the height it needs. */
 const RESTORE_WINDOW_MS = 1500;
+
+const USER_INPUT_EVENTS = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const;
 
 /**
  * Brings the reader back to where they were on this page when they return to
@@ -13,16 +15,22 @@ const RESTORE_WINDOW_MS = 1500;
  * spinner); nothing is recorded or restored before that, so a loading screen
  * never overwrites the place with zero.
  *
- * `useScrollToTopOnNavigation` leaves a page alone when it has a place kept
- * here, so the two never fight. A restore that lands before the page is tall
- * enough (a chart still loading below the list) keeps trying as the page
- * grows, for a moment, and gives way the instant the reader scrolls, taps or
- * presses a key.
+ * `contentKey` names that content, so a place is restored only over the same
+ * thing: by default the query string, and Transactions passes its register's
+ * request key, since it rewrites its query after it draws. A return to other
+ * content starts at the top.
+ *
+ * `useScrollToTopOnNavigation` leaves a page that kept a place alone, so the
+ * two never fight. A restore that lands before the page is tall enough (a
+ * chart still loading below the list) keeps trying as the page grows, for a
+ * moment, and gives way the instant the reader scrolls, taps or presses a key.
  */
-export function useRetainScrollPosition(ready: boolean): void {
+export function useRetainScrollPosition(ready: boolean, contentKey?: string): void {
   const readyRef = useRef(ready);
+  const contentKeyRef = useRef(contentKey);
   useEffect(() => {
     readyRef.current = ready;
+    contentKeyRef.current = contentKey;
   });
 
   // Record the place as the reader scrolls, while this page is the one in the
@@ -36,7 +44,7 @@ export function useRetainScrollPosition(ready: boolean): void {
       frame = requestAnimationFrame(() => {
         frame = 0;
         if (!readyRef.current || window.location.pathname !== pathname) return;
-        rememberScroll(currentScrollKey(), window.scrollY);
+        rememberScroll(pathname, window.scrollY, contentKeyRef.current ?? window.location.search);
       });
     };
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -51,8 +59,12 @@ export function useRetainScrollPosition(ready: boolean): void {
   useEffect(() => {
     if (!ready || restored.current) return;
     restored.current = true;
-    const target = retainedScroll(currentScrollKey());
-    if (target === undefined) return;
+    const kept = retainedScroll(window.location.pathname);
+    if (kept === undefined) return;
+    // Kept for other content: this visit starts at the top, which
+    // `useScrollToTopOnNavigation` left to this hook.
+    const target =
+      kept.contentKey === (contentKeyRef.current ?? window.location.search) ? kept.top : 0;
 
     window.scrollTo(0, target);
     if (window.scrollY >= target - 1) return;
@@ -78,8 +90,11 @@ export function useRetainScrollPosition(ready: boolean): void {
     for (const type of USER_INPUT_EVENTS) {
       window.addEventListener(type, stop, { passive: true, once: true });
     }
-    return stop;
+    return () => {
+      // Torn down before it reached the place (React's development re-run of
+      // effects, or the list reloading): the next run resumes it.
+      if (!done) restored.current = false;
+      stop();
+    };
   }, [ready]);
 }
-
-const USER_INPUT_EVENTS = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const;

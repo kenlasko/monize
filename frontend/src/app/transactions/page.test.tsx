@@ -787,6 +787,21 @@ describe('TransactionsPage', () => {
       expect(mockGetAll).toHaveBeenCalledTimes(2);
     });
 
+    it('keeps nothing when the chart beside the register failed', async () => {
+      mockGetAll.mockResolvedValue({
+        data: mockTransactions,
+        pagination: { page: 1, totalPages: 1, total: 3 },
+      });
+      mockGetDailyBalances.mockRejectedValue(new Error('down'));
+      const first = render(<TransactionsPage />);
+      await waitFor(() => expect(screen.getByTestId('tx-count')).toHaveTextContent('3 transactions'));
+      first.unmount();
+
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<TransactionsPage />));
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    });
+
     it('waits for its own answer when a return asks for other rows', async () => {
       mockGetAll.mockResolvedValue({
         data: mockTransactions,

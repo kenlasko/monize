@@ -1,3 +1,5 @@
+import { clearPageSnapshots } from '@/lib/page-snapshot';
+
 type CacheEntry<T> = {
   data: T;
   timestamp: number;
@@ -90,6 +92,10 @@ export function invalidateCache(keyPrefix: string): void {
 
 export function clearAllCache(): void {
   cache.clear();
+  // A write that can touch anything (a restore, an import, an undo, an AI
+  // action) also retires what each page last drew, so a return to one waits
+  // for its fresh answer rather than drawing rows that may no longer exist.
+  clearPageSnapshots();
   // Same reasoning as invalidateCache, for every key at once: a fetch already
   // in flight when the cache is cleared must not resurrect its result
   // afterward, so advance each in-flight key's generation before dropping it.

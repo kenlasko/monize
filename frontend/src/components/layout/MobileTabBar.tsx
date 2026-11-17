@@ -51,8 +51,17 @@ export function MobileTabBar() {
   // Accounts); without one the button opens a new transaction.
   const pageAction = useMobileAddActionStore((s) => s.action);
   // A page whose header "new" button is a menu hands over its choices, and
-  // the add button asks which one rather than picking for the reader.
-  const [choices, setChoices] = useState<readonly MobileAddChoice[] | null>(null);
+  // the add button asks which one rather than picking for the reader. Held
+  // with the page that offered them, so a sheet left open across a navigation
+  // closes rather than offering the previous page's handlers.
+  const [chooser, setChooser] = useState<{
+    owner: symbol;
+    choices: readonly MobileAddChoice[];
+  } | null>(null);
+  const openChoices =
+    chooser && pageAction && chooser.owner === pageAction.owner ? chooser.choices : null;
+  const offeredChoices = pageAction?.choices?.() ?? null;
+  const asksWhich = offeredChoices !== null && offeredChoices.length > 1;
 
   if (!isAuthenticated || isPublicPath(pathname)) return null;
 
@@ -100,15 +109,17 @@ export function MobileTabBar() {
               onClick={() => {
                 if (pageAction) {
                   clearNewTransactionRequest();
-                  const offered = pageAction.choices?.() ?? null;
-                  if (offered && offered.length > 1) setChoices(offered);
-                  else pageAction.run();
+                  if (asksWhich && offeredChoices) {
+                    setChooser({ owner: pageAction.owner, choices: offeredChoices });
+                  } else {
+                    pageAction.run();
+                  }
                 } else {
                   startNewTransaction(pathname, router.push);
                 }
               }}
               aria-label={pageAction?.label ?? tPalette('newTransaction')}
-              aria-haspopup={pageAction?.choices?.() ? 'dialog' : undefined}
+              aria-haspopup={asksWhich ? 'dialog' : undefined}
               {...(pageAction?.tourAnchor ? tourAnchor(pageAction.tourAnchor) : {})}
               className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 motion-reduce:transition-none dark:focus-visible:ring-offset-gray-900"
             >
@@ -131,8 +142,8 @@ export function MobileTabBar() {
       </div>
       <MobileAddChooser
         title={pageAction?.label ?? ''}
-        choices={choices}
-        onClose={() => setChoices(null)}
+        choices={openChoices}
+        onClose={() => setChooser(null)}
       />
     </nav>
   );

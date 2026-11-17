@@ -37,7 +37,7 @@ describe('useRetainScrollPosition', () => {
   it('records the place under the page it belongs to', async () => {
     renderHook(() => useRetainScrollPosition(true));
     await scrollWindow(420);
-    expect(retainedScroll('/accounts')).toBe(420);
+    expect(retainedScroll('/accounts')).toEqual({ top: 420, contentKey: '' });
   });
 
   it('records nothing while the page is still loading', async () => {
@@ -51,20 +51,39 @@ describe('useRetainScrollPosition', () => {
     await scrollWindow(300);
     window.history.pushState({}, '', '/transactions');
     await scrollWindow(0);
-    expect(retainedScroll('/accounts')).toBe(300);
+    expect(retainedScroll('/accounts')?.top).toBe(300);
     expect(retainedScroll('/transactions')).toBeUndefined();
   });
 
-  it('keeps a place per query, so a filtered list has its own', async () => {
+  it('restores a place only over the content it was measured against', async () => {
     window.history.pushState({}, '', '/transactions?accountId=a');
-    renderHook(() => useRetainScrollPosition(true));
+    const first = renderHook(() => useRetainScrollPosition(true));
     await scrollWindow(900);
-    expect(retainedScroll('/transactions?accountId=a')).toBe(900);
-    expect(retainedScroll('/transactions')).toBeUndefined();
+    expect(retainedScroll('/transactions')).toEqual({ top: 900, contentKey: '?accountId=a' });
+    first.unmount();
+
+    // Another account's list starts at the top.
+    window.history.pushState({}, '', '/transactions?accountId=b');
+    scrollY = 900;
+    renderHook(() => useRetainScrollPosition(true));
+    expect(window.scrollTo).toHaveBeenLastCalledWith(0, 0);
+  });
+
+  it('finds its place under the content key a page passes, whatever the query says', async () => {
+    window.history.pushState({}, '', '/transactions?accountIds=x');
+    const first = renderHook(() => useRetainScrollPosition(true, 'register-x'));
+    await scrollWindow(2000);
+    first.unmount();
+
+    // The tab pushes the bare path; the page puts its filters back later.
+    window.history.pushState({}, '', '/transactions');
+    scrollY = 0;
+    renderHook(() => useRetainScrollPosition(true, 'register-x'));
+    expect(scrollY).toBe(2000);
   });
 
   it('restores the place once the content is ready, not before', () => {
-    rememberScroll('/accounts', 640);
+    rememberScroll('/accounts', 640, '');
     const { rerender } = renderHook(({ ready }) => useRetainScrollPosition(ready), {
       initialProps: { ready: false },
     });
@@ -80,7 +99,7 @@ describe('useRetainScrollPosition', () => {
   });
 
   it('restores once per visit, not on every reload of the list', () => {
-    rememberScroll('/accounts', 640);
+    rememberScroll('/accounts', 640, '');
     const { rerender } = renderHook(({ ready }) => useRetainScrollPosition(ready), {
       initialProps: { ready: true },
     });
@@ -90,7 +109,7 @@ describe('useRetainScrollPosition', () => {
   });
 
   it('gives way to the reader when the page is not yet tall enough', () => {
-    rememberScroll('/accounts', 2000);
+    rememberScroll('/accounts', 2000, '');
     maxScroll = 500;
     renderHook(() => useRetainScrollPosition(true));
     expect(scrollY).toBe(500);
@@ -98,5 +117,33 @@ describe('useRetainScrollPosition', () => {
     window.dispatchEvent(new Event('wheel'));
     maxScroll = 5000;
     expect(scrollY).toBe(500);
+  });
+});
+
+describe('useRetainScrollPosition in a development re-run of effects', () => {
+  beforeEach(() => {
+    clearRetainedScroll();
+    scrollY = 0;
+    maxScroll = 500;
+    window.history.pushState({}, '', '/accounts');
+    Object.defineProperty(window, 'scrollY', { configurable: true, get: () => scrollY });
+    vi.spyOn(window, 'scrollTo').mockImplementation(scrollTo as typeof window.scrollTo);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.history.pushState({}, '', '/');
+  });
+
+  it('resumes a restore that was torn down before it reached the place', () => {
+    rememberScroll('/accounts', 2000, '');
+    const { rerender } = renderHook(({ ready }) => useRetainScrollPosition(ready), {
+      initialProps: { ready: true },
+    });
+    // The page was too short; the list reloads and comes back taller.
+    rerender({ ready: false });
+    maxScroll = 5000;
+    rerender({ ready: true });
+    expect(scrollY).toBe(2000);
   });
 });

@@ -177,6 +177,37 @@ describe('MobileTabBar', () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
+  it('announces a popup only where the add button asks which kind', () => {
+    const page = renderHook(() =>
+      useMobileAddChoices('New Report', [{ key: 'only', label: 'Standard Report', run: vi.fn() }]),
+    );
+    render(<MobileTabBar />);
+    expect(bar().getByRole('button', { name: 'New Report' })).not.toHaveAttribute('aria-haspopup');
+    page.unmount();
+    renderHook(() =>
+      useMobileAddChoices('New Report', [
+        { key: 'standard', label: 'Standard Report', run: vi.fn() },
+        { key: 'investment', label: 'Investment Report', run: vi.fn() },
+      ]),
+    );
+    expect(bar().getByRole('button', { name: 'New Report' })).toHaveAttribute('aria-haspopup', 'dialog');
+  });
+
+  it('closes the sheet when the page that offered it leaves', () => {
+    const page = renderHook(() =>
+      useMobileAddChoices('New Transaction', [
+        { key: 'investment', label: 'Investment Transaction', run: vi.fn() },
+        { key: 'cash', label: 'Cash Transaction', run: vi.fn() },
+      ]),
+    );
+    render(<MobileTabBar />);
+    fireEvent.click(bar().getByRole('button', { name: 'New Transaction' }));
+    expect(screen.getByRole('dialog', { name: 'New Transaction' })).toBeInTheDocument();
+    act(() => page.unmount());
+    renderHook(() => useMobileAddAction('New Account', vi.fn()));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('runs the first choice when the store is asked to run a menu action', () => {
     const investment = vi.fn();
     renderHook(() =>

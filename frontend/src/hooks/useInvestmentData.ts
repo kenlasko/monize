@@ -141,7 +141,12 @@ export function useInvestmentData() {
   // A summary drawn from the snapshot leaves the skeletons at once, but is not
   // the first summary answering: the automatic price refresh still waits for
   // that, so it never revalues the history beside the mount's own valuation.
-  const summaryFromSnapshot = snapshot.summary !== undefined;
+  // Only while the selection is still the one the snapshot was for: a reader
+  // who picks other accounts before the first summary answers sees the
+  // skeletons, not the previous selection's figures under the new one.
+  const [snapshotSelection] = useState(() => selectionKey(selectedAccountIds));
+  const summaryFromSnapshot =
+    snapshot.summary !== undefined && selectionKey(selectedAccountIds) === snapshotSelection;
 
   // Cash transaction form modal
   const {

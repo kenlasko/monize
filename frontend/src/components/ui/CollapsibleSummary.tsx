@@ -48,11 +48,11 @@ export function CollapsibleSummary({
           />
         </span>
       </button>
-      {!collapsed && (
-        <div id={contentId} className="mt-2">
-          {children}
-        </div>
-      )}
+      {/* Always in the tree, so the toggle's `aria-controls` names an element
+          that exists while folded too. */}
+      <div id={contentId} hidden={collapsed} className="mt-2">
+        {!collapsed && children}
+      </div>
     </section>
   );
 }

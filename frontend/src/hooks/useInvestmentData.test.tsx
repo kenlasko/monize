@@ -1096,6 +1096,21 @@ describe('useInvestmentData – returning to the page', () => {
     expect(result.current.portfolioSummary).toBeNull();
   });
 
+  it('returns to the skeletons when the reader picks other accounts before the summary answers', async () => {
+    const first = renderHook(() => useInvestmentData());
+    await settle();
+    first.unmount();
+
+    mockGetPortfolioSummary.mockReturnValue(new Promise(() => {}));
+    mockGetTransactions.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useInvestmentData());
+    await settle();
+    expect(result.current.isSummaryLoading).toBe(false);
+    await act(async () => result.current.handleAccountChange(['acc-2']));
+    await settle();
+    expect(result.current.isSummaryLoading).toBe(true);
+  });
+
   it('draws nothing from a snapshot when a link names the account to show', async () => {
     const first = renderHook(() => useInvestmentData());
     await settle();

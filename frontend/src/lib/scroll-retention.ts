@@ -4,31 +4,27 @@
  * a scroll offset says nothing about anyone's money, and a reload starts the
  * page fresh, as a reload should.
  *
- * Keyed by path and query, so `/transactions?accountId=a` and `/transactions`
- * keep their own places. Bounded: the oldest entry goes once there are more
- * than `MAX_ENTRIES`, since every filter a register writes to its URL is a key.
+ * Keyed by path, with the content the offset was measured against beside it
+ * (by default the query string; Transactions passes its register's request
+ * key), so a place is restored only over the same content. The path alone is
+ * the key because a page may rewrite its query after it draws (Transactions
+ * puts its stored filters back into the address), and a lookup by the
+ * address of the moment would miss the place it saved.
  */
-const MAX_ENTRIES = 50;
-const positions = new Map<string, number>();
-
-/** The key for the page now in the address bar. */
-export function currentScrollKey(): string {
-  return `${window.location.pathname}${window.location.search}`;
+export interface RetainedScroll {
+  top: number;
+  contentKey: string;
 }
 
-/** The offset last recorded for `key`, or `undefined` when it never kept one. */
-export function retainedScroll(key: string): number | undefined {
-  return positions.get(key);
+const positions = new Map<string, RetainedScroll>();
+
+/** The place kept for `pathname`, or `undefined` when it never kept one. */
+export function retainedScroll(pathname: string): RetainedScroll | undefined {
+  return positions.get(pathname);
 }
 
-export function rememberScroll(key: string, top: number): void {
-  positions.delete(key);
-  positions.set(key, Math.max(0, Math.round(top)));
-  while (positions.size > MAX_ENTRIES) {
-    const oldest = positions.keys().next().value;
-    if (oldest === undefined) break;
-    positions.delete(oldest);
-  }
+export function rememberScroll(pathname: string, top: number, contentKey: string): void {
+  positions.set(pathname, { top: Math.max(0, Math.round(top)), contentKey });
 }
 
 /** Forget every page's place. For tests. */

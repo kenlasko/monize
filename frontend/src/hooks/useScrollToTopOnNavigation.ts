@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { currentScrollKey, retainedScroll } from '@/lib/scroll-retention';
+import { retainedScroll } from '@/lib/scroll-retention';
 
 // Browser Back/Forward fire `popstate` immediately before the route
 // updates. If a popstate landed within this window of the path change we
@@ -18,8 +18,9 @@ const BACK_FORWARD_WINDOW_MS = 200;
  * top-nav tab click or a swipe between pages -- so the page title and its
  * action buttons are always in view. Browser Back/Forward navigations are
  * left untouched so their previous scroll position is restored, and so is a
- * page that keeps the reader's place (`useRetainScrollPosition`) and has one
- * to go back to.
+ * page that keeps the reader's place (`useRetainScrollPosition`) and has one:
+ * that hook puts the reader back there, or at the top when the content
+ * changed.
  */
 export function useScrollToTopOnNavigation(): void {
   const pathname = usePathname();
@@ -41,7 +42,7 @@ export function useScrollToTopOnNavigation(): void {
     const isBackForward =
       Date.now() - lastPopStateAt.current < BACK_FORWARD_WINDOW_MS;
     if (isBackForward) return;
-    if (retainedScroll(currentScrollKey()) !== undefined) return;
+    if (retainedScroll(pathname) !== undefined) return;
 
     window.scrollTo(0, 0);
   }, [pathname]);

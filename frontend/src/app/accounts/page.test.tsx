@@ -118,6 +118,11 @@ vi.mock('@/lib/accounts', () => ({
   },
 }));
 
+const mockGetInstitutions = vi.fn().mockResolvedValue([]);
+vi.mock('@/lib/institutions', () => ({
+  institutionsApi: { getAll: (...args: any[]) => mockGetInstitutions(...args) },
+}));
+
 // Mock investments API
 const mockGetPortfolioSummary = vi.fn().mockResolvedValue(null);
 
@@ -225,6 +230,7 @@ describe('AccountsPage', () => {
     vi.clearAllMocks();
     mockGetAll.mockResolvedValue([]);
     mockGetPortfolioSummary.mockResolvedValue(null);
+    mockGetInstitutions.mockResolvedValue([]);
     mockRates = { USD: 1 };
     // Reset form modal state
     formModalState.showForm = false;
@@ -302,6 +308,18 @@ describe('AccountsPage', () => {
       mockGetAll.mockRejectedValue(new Error('down'));
       const first = await act(async () => render(<AccountsPage />));
       await waitFor(() => expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument());
+      first.unmount();
+
+      mockGetAll.mockReturnValue(new Promise(() => {}));
+      await act(async () => render(<AccountsPage />));
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    });
+
+    it('keeps nothing when the institutions failed, so their logos are not lost for good', async () => {
+      mockGetAll.mockResolvedValue(mockAccounts);
+      mockGetInstitutions.mockRejectedValue(new Error('down'));
+      const first = await act(async () => render(<AccountsPage />));
+      await waitFor(() => expect(screen.getByTestId('account-acc-1')).toBeInTheDocument());
       first.unmount();
 
       mockGetAll.mockReturnValue(new Promise(() => {}));

@@ -54,7 +54,8 @@ function BudgetsContent() {
   // flight, whose late answer must not overwrite the newer one.
   const loadSeq = useRef(0);
 
-  // The mount load: the state already says loading.
+  // The mount load (the state already says loading), and the reload after a
+  // write, which keeps the list on screen and swaps the new answer in.
   const fetchBudgets = useCallback(() => {
     // Writes live in `run` so they land after the request, not during the effect.
     const run = async () => {
@@ -83,22 +84,18 @@ function BudgetsContent() {
     return run();
   }, [t]);
 
-  // A reload after a write keeps the list on screen and swaps the new answer
-  // in when it lands.
-  const loadBudgets = fetchBudgets;
-
   useEffect(() => {
     fetchBudgets();
     accountsApi.getAll().then(setAccounts).catch(() => {});
   }, [fetchBudgets]);
 
-  useOnUndoRedo(loadBudgets);
+  useOnUndoRedo(fetchBudgets);
   // Refresh on AI chat-bubble writes (budget spending can change).
-  useOnAiAction(loadBudgets);
+  useOnAiAction(fetchBudgets);
 
   const handleWizardComplete = () => {
     setShowWizard(false);
-    loadBudgets();
+    fetchBudgets();
   };
 
   if (showWizard) {

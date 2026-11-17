@@ -32,8 +32,7 @@ describe('useScrollToTopOnNavigation', () => {
   });
 
   it('leaves a page that keeps the reader\'s place to restore it', () => {
-    window.history.pushState({}, '', '/accounts');
-    rememberScroll('/accounts', 640);
+    rememberScroll('/accounts', 640, '');
     const { rerender } = renderHook(() => useScrollToTopOnNavigation());
     act(() => {
       mockPathname = '/accounts';
@@ -41,7 +40,6 @@ describe('useScrollToTopOnNavigation', () => {
     });
     expect(scrollToMock()).not.toHaveBeenCalled();
     clearRetainedScroll();
-    window.history.pushState({}, '', '/');
   });
 
   it('scrolls to the top on a forward navigation (pathname change)', () => {
