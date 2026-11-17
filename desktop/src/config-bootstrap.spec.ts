@@ -94,6 +94,46 @@ describe("loadOrCreateConfig", () => {
     expect((await readConfig(paths.configFile))?.ports.frontend).toBe(3382);
   });
 
+  it("never moves a child onto the persisted LAN port", async () => {
+    const first = await loadOrCreateConfig({
+      paths,
+      policy: SECURE,
+      probe: allFree,
+    });
+    writeFileSync(
+      paths.configFile,
+      serializeConfig({
+        ...first.config,
+        lan: { enabled: true, port: 3382, hostname: "monize" },
+      }),
+    );
+    const result = await loadOrCreateConfig({
+      paths,
+      policy: SECURE,
+      probe: busy(3380),
+    });
+    // 3381 is the backend's and 3382 the LAN listener's.
+    expect(result.config.ports.frontend).toBe(3383);
+    expect(result.config.lan).toEqual({
+      enabled: true,
+      port: 3382,
+      hostname: "monize",
+    });
+  });
+
+  it("creates a version 1 config with no local-network settings", async () => {
+    const result = await loadOrCreateConfig({
+      paths,
+      policy: SECURE,
+      probe: allFree,
+    });
+    expect(result.config.lan).toBeNull();
+    const raw = JSON.parse(readFileSync(paths.configFile, "utf8")) as {
+      version: number;
+    };
+    expect(raw.version).toBe(1);
+  });
+
   it("refuses to regenerate when config.json is gone but pgdata holds data", async () => {
     mkdirSync(paths.pgdata, { recursive: true });
     writeFileSync(join(paths.pgdata, "PG_VERSION"), "18\n");

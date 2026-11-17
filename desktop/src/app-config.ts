@@ -1,12 +1,13 @@
 import { promises as fs } from "fs";
 
 import { writeFileAtomic } from "./atomic-write";
+import { isMdnsLabel } from "./lan/names";
 import { isValidPort, PORT_NAMES, Ports } from "./ports";
 import { StoredSecret } from "./secrets";
 
 /**
- * `config.json`, the file under the data directory that holds the ports and
- * the wrapped secrets.
+ * `config.json`, the file under the data directory that holds the ports, the
+ * local-network settings and the wrapped secrets.
  *
  * Read strictly: an unknown version, a missing key, an extra key or a value of
  * the wrong type is a `ConfigError`, never a default. A default here would be
@@ -15,7 +16,14 @@ import { StoredSecret } from "./secrets";
  * inside the directory it points to cannot help anyone find that directory.
  */
 
-export const CONFIG_VERSION = 1;
+/**
+ * Version 1 has no `lan` block; version 2 adds it. The version written follows
+ * from the content: a config whose `lan` is null (local-network access never
+ * turned on) is still written as version 1, so a person who never uses the
+ * feature can go back to an older build, which reads version 1 only.
+ */
+export const CONFIG_VERSIONS = [1, 2] as const;
+export type ConfigVersion = (typeof CONFIG_VERSIONS)[number];
 
 export const SECRET_NAMES = [
   "jwtSecret",
@@ -31,9 +39,22 @@ export type SecretName = (typeof SECRET_NAMES)[number];
 export type StoredSecrets = Readonly<Record<SecretName, StoredSecret>>;
 export type PlainSecrets = Readonly<Record<SecretName, string>>;
 
+/**
+ * Local-network access (docs/future-plans/desktop-lan-access.md, L1 and L7).
+ * `port` is the LAN listener's, distinct from the three loopback ports;
+ * `hostname` is the mDNS label last claimed (`monize`, `monize-2`, ...), or
+ * null before the first claim.
+ */
+export interface LanSettings {
+  readonly enabled: boolean;
+  readonly port: number;
+  readonly hostname: string | null;
+}
+
 export interface AppConfig {
-  readonly version: typeof CONFIG_VERSION;
   readonly ports: Ports;
+  /** Null until local-network access is first turned on. */
+  readonly lan: LanSettings | null;
   readonly secrets: StoredSecrets;
 }
 
@@ -122,6 +143,31 @@ function parseSecrets(value: unknown): StoredSecrets {
   };
 }
 
+function parseLan(value: unknown, ports: Ports): LanSettings {
+  const raw = exactKeys(value, "lan", ["enabled", "port", "hostname"]);
+  if (typeof raw.enabled !== "boolean") {
+    invalid("lan.enabled", "is not true or false");
+  }
+  if (!isValidPort(raw.port)) {
+    invalid("lan.port", "is not an integer port from 1024 to 65535");
+  }
+  if (PORT_NAMES.some((name) => ports[name] === raw.port)) {
+    invalid("lan.port", "is one of the loopback ports");
+  }
+  if (raw.hostname !== null && !isMdnsLabel(raw.hostname)) {
+    invalid("lan.hostname", "is neither null nor a DNS label");
+  }
+  return {
+    enabled: raw.enabled,
+    port: raw.port as number,
+    hostname: raw.hostname as string | null,
+  };
+}
+
+function isConfigVersion(value: unknown): value is ConfigVersion {
+  return CONFIG_VERSIONS.some((version) => version === value);
+}
+
 /** Parse and validate the file's text. Never fills in a default. */
 export function parseConfig(text: string): AppConfig {
   let data: unknown;
@@ -131,29 +177,46 @@ export function parseConfig(text: string): AppConfig {
     throw new ConfigError("not-json", "config.json is not valid JSON.");
   }
   if (!isObject(data)) invalid("the top level", "is not an object");
-  if (data.version !== CONFIG_VERSION) {
+  const version = data.version;
+  if (!isConfigVersion(version)) {
     throw new ConfigError(
       "unsupported-version",
-      `config.json has version ${JSON.stringify(data.version)}; this build ` +
-        `reads version ${CONFIG_VERSION} only.`,
+      `config.json has version ${JSON.stringify(version)}; this build ` +
+        `reads versions ${CONFIG_VERSIONS.join(" and ")} only.`,
     );
   }
-  const raw = exactKeys(data, "the top level", ["version", "ports", "secrets"]);
+  const keys =
+    version === 1
+      ? ["version", "ports", "secrets"]
+      : ["version", "ports", "lan", "secrets"];
+  const raw = exactKeys(data, "the top level", keys);
+  const ports = parsePorts(raw.ports);
   return {
-    version: CONFIG_VERSION,
-    ports: parsePorts(raw.ports),
+    ports,
+    lan: version === 1 ? null : parseLan(raw.lan, ports),
     secrets: parseSecrets(raw.secrets),
   };
 }
 
+/** The version `serializeConfig` writes for this content. */
+export function configVersionOf(config: AppConfig): ConfigVersion {
+  return config.lan === null ? 1 : 2;
+}
+
 export function serializeConfig(config: AppConfig): string {
-  const ordered: AppConfig = {
-    version: config.version,
+  const { lan } = config;
+  const ordered = {
+    version: configVersionOf(config),
     ports: {
       frontend: config.ports.frontend,
       backend: config.ports.backend,
       postgres: config.ports.postgres,
     },
+    ...(lan === null
+      ? {}
+      : {
+          lan: { enabled: lan.enabled, port: lan.port, hostname: lan.hostname },
+        }),
     secrets: {
       jwtSecret: config.secrets.jwtSecret,
       encryptionKey: config.secrets.encryptionKey,
@@ -184,4 +247,25 @@ export async function writeConfig(
   config: AppConfig,
 ): Promise<void> {
   await writeFileAtomic(path, Buffer.from(serializeConfig(config), "utf8"));
+}
+
+/**
+ * Replace the `lan` block on disk and nothing else: the toggle and the mDNS
+ * claim write here while the stack runs. Re-reads the file first, so a port
+ * move written by this launch's bootstrap is kept. Returns the config written.
+ */
+export async function writeLanSettings(
+  path: string,
+  lan: LanSettings,
+): Promise<AppConfig> {
+  const current = await readConfig(path);
+  if (current === null) {
+    throw new ConfigError(
+      "unreadable",
+      "config.json is missing, so the local-network setting cannot be saved.",
+    );
+  }
+  const next: AppConfig = { ...current, lan };
+  await writeConfig(path, next);
+  return next;
 }

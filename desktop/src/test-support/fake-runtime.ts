@@ -78,7 +78,7 @@ export function fakeRuntime(movedPorts: readonly PortName[] = []): FakeRuntime {
     logger,
     bootstrap: {
       config: {
-        version: 1,
+        lan: null,
         ports: { frontend: 3380, backend: 3381, postgres: 5433 },
         secrets: {
           jwtSecret: { enc: "plain", value: "" },

@@ -112,6 +112,7 @@ async function firstFreeFrom(
 export async function resolvePorts(
   persisted: Ports | null,
   probe: PortProber = probePort,
+  reserved: readonly number[] = [],
 ): Promise<PortResolution> {
   const start = persisted ?? DEFAULT_PORTS;
   const chosen: Partial<Record<PortName, number>> = {};
@@ -119,12 +120,14 @@ export async function resolvePorts(
 
   for (const name of PORT_NAMES) {
     // Reserve what the others already hold or will ask for first, so a moved
-    // port never lands on a sibling's persisted value.
-    const taken = new Set<number>(
-      PORT_NAMES.filter((other) => other !== name).map(
+    // port never lands on a sibling's persisted value; `reserved` (the LAN
+    // listener's port) is never handed to a child either.
+    const taken = new Set<number>([
+      ...reserved,
+      ...PORT_NAMES.filter((other) => other !== name).map(
         (other) => chosen[other] ?? start[other],
       ),
-    );
+    ]);
     const port = await firstFreeFrom(start[name], name, taken, probe);
     chosen[name] = port;
     if (persisted !== null && port !== persisted[name]) moved.push(name);
@@ -136,4 +139,76 @@ export async function resolvePorts(
     postgres: chosen.postgres as number,
   };
   return { ports, moved, changed: persisted === null || moved.length > 0 };
+}
+
+/**
+ * The local-network listener's port (docs/future-plans/desktop-lan-access.md,
+ * section 3). Chosen and persisted like the other three, but probed where it
+ * will bind: every address, IPv6 and IPv4 together, falling back to IPv4 alone
+ * on a system without IPv6.
+ */
+export const DEFAULT_LAN_PORT = 3382;
+
+/** The addresses the LAN listener binds, in the order tried. */
+export const WILDCARD_HOSTS = ["::", "0.0.0.0"] as const;
+
+function probeOn(port: number, host: string): Promise<boolean | "no-family"> {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.unref();
+    server.once("error", (error: NodeJS.ErrnoException) => {
+      if (error.code === "EADDRINUSE" || error.code === "EACCES") {
+        resolve(false);
+      } else if (
+        error.code === "EAFNOSUPPORT" ||
+        error.code === "EADDRNOTAVAIL"
+      ) {
+        resolve("no-family");
+      } else {
+        reject(error);
+      }
+    });
+    server.listen({ port, host, exclusive: true }, () => {
+      server.close(() => resolve(true));
+    });
+  });
+}
+
+/** Resolves true when the port can be bound on every address. */
+export const probeLanPort: PortProber = async (port) => {
+  for (const host of WILDCARD_HOSTS) {
+    const free = await probeOn(port, host);
+    if (free !== "no-family") return free;
+  }
+  return false;
+};
+
+export interface LanPortResolution {
+  readonly port: number;
+  /** True when `port` differs from the persisted one: the LAN origin moved. */
+  readonly moved: boolean;
+}
+
+/**
+ * The persisted LAN port if it is free, else the first free one above it.
+ * `taken` holds the loopback ports, which it never lands on.
+ */
+export async function resolveLanPort(
+  persisted: number | null,
+  taken: Ports,
+  probe: PortProber = probeLanPort,
+): Promise<LanPortResolution> {
+  const start = persisted ?? DEFAULT_LAN_PORT;
+  const reserved = new Set<number>(PORT_NAMES.map((name) => taken[name]));
+  for (let offset = 0; offset < MAX_PROBE_ATTEMPTS; offset++) {
+    const port = start + offset;
+    if (port > MAX_PORT) break;
+    if (reserved.has(port)) continue;
+    if (await probe(port)) {
+      return { port, moved: persisted !== null && port !== persisted };
+    }
+  }
+  throw new PortError(
+    `No free port for the local-network listener found in ${MAX_PROBE_ATTEMPTS} tries from ${start}.`,
+  );
 }
