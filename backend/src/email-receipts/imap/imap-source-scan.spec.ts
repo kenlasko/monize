@@ -119,12 +119,16 @@ describe("the third-party mail libraries are confined to one file each", () => {
     ]);
   });
 
-  it("imports htmlparser2 only in the two HTML readers", () => {
+  it("imports htmlparser2 only in the two HTML readers and the KMyMoney XML reader", () => {
     // html-lines.util.ts reads mail bodies; securities/html-table-reader.ts
     // reads the tables of a quote page with the Tokenizer alone, because the
     // parser and the DOM builder are quadratic in nesting depth.
+    // import/kmy/reader/kmy-xml-tokenize.ts reads a KMYMONEY-FILE XML
+    // document in xmlMode, streaming, with its own nesting-depth cap and
+    // well-formedness check.
     expect(importing("htmlparser2")).toEqual([
       "email-receipts/imap/html-lines.util.ts",
+      "import/kmy/reader/kmy-xml-tokenize.ts",
       "securities/html-table-reader.ts",
     ]);
   });
