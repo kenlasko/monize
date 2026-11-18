@@ -223,6 +223,7 @@ Use the arrow beside **Create Transaction** to choose **Create Transaction & New
 
 - Edit **Quantity**, **Price per Share** or **Commission / Fees** and the **Total Amount** recalculates from them.
 - Edit **Total Amount** directly and Monize works out the **Price per Share** that produces it, keeping every cent of what you typed. A brokerage statement that says a sale of 141 shares came to $820.91 is stored as exactly $820.91, rather than rounded to a price of $5.82 and multiplied back out to $820.62.
+- Type **Quantity** and **Price per Share** yourself, then a **Total Amount** that is more than the shares cost (or, for a sale, less than they fetched), and the difference goes into **Commission / Fees** instead, the way Microsoft Money reads a broker's confirmation: 10 shares at $100.00 for a total of $1,005.00 is a $5.00 fee, not a price of $100.50. A total that leaves no such difference works out the price as above.
 
 Whichever of the two you edited last is what gets saved; reopening the transaction later and editing only the description does not re-trigger either recalculation.
 
