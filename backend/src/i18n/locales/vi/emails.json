@@ -399,6 +399,8 @@
     "security": {
       "oauthTitle": "Ứng dụng mới đã kết nối: {{ clientName }}",
       "oauthMessage": "Ứng dụng {{ clientName }} vừa được cấp quyền truy cập vào tài khoản Monize của bạn. Nếu không phải bạn, hãy đổi mật khẩu ngay: thao tác này thu hồi quyền truy cập của mọi ứng dụng đã kết nối.",
+      "oauthConnectedTitle": "Ứng dụng mới đã kết nối với tài khoản Monize của bạn",
+      "oauthConnectedMessage": "Một ứng dụng tự gọi mình là {{ clientName }} đã được cấp quyền truy cập, và các ủy quyền của nó được gửi đến {{ destination }}. Nếu không phải bạn, hãy thu hồi trong Cài đặt, mục “Ứng dụng đã kết nối”.",
       "relayTitle": "Một kết nối mới đã trả lời cuộc trò chuyện AI của bạn",
       "relayMessage": "Một kết nối chưa từng trả lời cuộc trò chuyện AI Monize của bạn vừa nhận một câu lệnh. Nếu bạn không kết nối trợ lý này, hãy đổi mật khẩu."
     },

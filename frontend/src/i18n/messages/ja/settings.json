@@ -673,6 +673,39 @@
       "never": "なし"
     }
   },
+  "connectedApps": {
+    "heading": "接続済みアプリ",
+    "description": "同意画面から Monize アカウントへのアクセスを許可したアプリです。MCP 経由で接続された AI アシスタントなどが含まれます。アプリの名前は本人が自称しているだけなので、各行の先頭にはそのアプリの認可の送信先を表示しています。心当たりのないアプリは取り消してください。",
+    "emptyTitle": "接続済みのアプリはありません",
+    "emptyDescription": "Monize の同意画面でアプリを許可すると、ここに表示されます。",
+    "loadError": "接続済みアプリを読み込めなかったため、この一覧は不完全な可能性があります。",
+    "retryButton": "再試行",
+    "callsItself": "「{name}」と名乗っています",
+    "destinationUnknown": "送信先不明",
+    "registrationExpired": "登録の有効期限が切れました。アプリは再接続時に再び登録されます",
+    "scopes": {
+      "read": "読み取り",
+      "write": "書き込み"
+    },
+    "connectedOn": "{date} に接続",
+    "lastUsed": "最終使用 {time}",
+    "notUsedYet": "未使用",
+    "expiresOn": "{date} にアクセスが終了します",
+    "separator": " · ",
+    "revokeButton": "取り消し",
+    "revokeAriaLabel": "{name} を取り消す",
+    "revokeModal": {
+      "title": "このアプリを取り消しますか？",
+      "message": "「{name}」は Monize アカウントへのアクセスをすぐに失います。再び使うには、アプリから接続し直してください。",
+      "confirmLabel": "取り消し",
+      "revoking": "取り消し中..."
+    },
+    "toasts": {
+      "loadFailed": "接続済みアプリを読み込めませんでした",
+      "revoked": "アプリを取り消しました",
+      "revokeFailed": "アプリを取り消せませんでした"
+    }
+  },
   "autoBackup": {
     "heading": "自動バックアップ",
     "description": "デプロイ全体で 1 つのスケジュールです。サーバーはすべてのアカウントのデータを下記のストレージにバックアップします。Monize は Docker で動作するため、ローカルフォルダーをボリュームとしてコンテナーにマウントする必要があります (例: -v /host/backups:/data/backups)。",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "共有アクセス",
     "emergencyAccess": "緊急アクセス",
     "apiAccess": "APIアクセス",
+    "connectedApps": "接続済みアプリ",
     "aiSettings": "AI設定",
     "emailReceipts": "メールレシート",
     "backupRestore": "バックアップと復元",

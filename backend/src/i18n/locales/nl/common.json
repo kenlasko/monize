@@ -10,7 +10,13 @@
     "destinationUnknown": "Monize kon niet bepalen waar deze autorisatie naartoe zou worden gestuurd. Verleen geen toegang.",
     "unverifiedNotice": "Deze applicatie heeft zichzelf bij deze Monize-server geregistreerd en Monize heeft niet gecontroleerd wie haar beheert; haar naam is wat ze zichzelf heeft gegeven. Verleen alleen toegang als je deze verbinding zelf vanuit die applicatie hebt gestart en het bovenstaande adres bij die applicatie hoort.",
     "claimedWebsite": "Door de applicatie opgegeven website: {{ website }}",
-    "websiteMismatch": "De applicatie zegt dat haar website {{ website }} is, maar de autorisatie wordt naar een ander adres gestuurd."
+    "websiteMismatch": "De applicatie zegt dat haar website {{ website }} is, maar de autorisatie wordt naar een ander adres gestuurd.",
+    "pageTitle": "Toegang tot je Monize-account toestaan?",
+    "headingWeb": "{{ host }} wil toegang tot je Monize-account",
+    "headingDevice": "Een applicatie op dit apparaat wil toegang tot je Monize-account",
+    "headingApp": "Een app die {{ scheme }}-links opent, wil toegang tot je Monize-account",
+    "headingUnknown": "Een niet-geïdentificeerde applicatie wil toegang tot je Monize-account",
+    "selfNamed": "Ze noemt zichzelf “{{ name }}”. Monize heeft die naam niet gecontroleerd."
   },
   "import": {
     "voidedTransactionNote": "Ongeldig gemaakt in de bron; het oorspronkelijke bedrag ontbrak in de export en is als nul geïmporteerd."

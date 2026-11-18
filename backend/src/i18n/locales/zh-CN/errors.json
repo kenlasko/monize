@@ -1083,5 +1083,9 @@
   "help": {
     "pageNotFound": "未找到帮助页面",
     "imageNotFound": "未找到帮助图片"
+  },
+  "oauth": {
+    "connectionNotFound": "未找到该已连接的应用，可能已被撤销。",
+    "invalidConnectionId": "已连接的应用 ID 无效"
   }
 }

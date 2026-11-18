@@ -213,6 +213,8 @@
   "security": {
     "oauthTitle": "Yeni uygulama bağlandı: {clientName}",
     "oauthMessage": "{clientName} uygulamasına Monize hesabınıza erişim izni verildi. Bu siz değilseniz şifrenizi hemen değiştirin: bu işlem bağlı tüm uygulamaların erişimini iptal eder.",
+    "oauthConnectedTitle": "Monize hesabınıza yeni bir uygulama bağlandı",
+    "oauthConnectedMessage": "Kendine {clientName} diyen bir uygulamaya erişim verildi ve yetkilendirmeleri {destination} adresine gidiyor. Bu siz değilseniz Ayarlar altındaki “Bağlı Uygulamalar” bölümünden iptal edin.",
     "relayTitle": "Yeni bir bağlantı yapay zekâ sohbetinize yanıt verdi",
     "relayMessage": "Monize yapay zekâ sohbetinize daha önce yanıt vermemiş bir bağlantı az önce bir istem aldı. Bu asistanı siz bağlamadıysanız şifrenizi değiştirin."
   },

@@ -673,6 +673,39 @@
       "never": "Nigdy"
     }
   },
+  "connectedApps": {
+    "heading": "Połączone aplikacje",
+    "description": "Aplikacje, którym zezwoliłeś na dostęp do konta Monize na ekranie zgody, na przykład asystenci AI połączeni przez MCP. Każdy wiersz zaczyna się od miejsca, do którego trafiają autoryzacje aplikacji, bo nazwa aplikacji to dowolna nazwa, jaką sama wybrała. Odwołaj każdą aplikację, której nie rozpoznajesz.",
+    "emptyTitle": "Brak połączonych aplikacji",
+    "emptyDescription": "Gdy zezwolisz aplikacji na ekranie zgody Monize, pojawi się tutaj.",
+    "loadError": "Nie udało się wczytać połączonych aplikacji, więc ta lista może być niepełna.",
+    "retryButton": "Spróbuj ponownie",
+    "callsItself": "Nazywa siebie „{name}”",
+    "destinationUnknown": "Miejsce docelowe nieznane",
+    "registrationExpired": "Rejestracja wygasła; aplikacja rejestruje się ponownie po ponownym połączeniu",
+    "scopes": {
+      "read": "Odczyt",
+      "write": "Zapis"
+    },
+    "connectedOn": "Połączono {date}",
+    "lastUsed": "Ostatnio użyto {time}",
+    "notUsedYet": "Jeszcze nie używano",
+    "expiresOn": "Dostęp kończy się {date}",
+    "separator": " · ",
+    "revokeButton": "Odwołaj",
+    "revokeAriaLabel": "Odwołaj {name}",
+    "revokeModal": {
+      "title": "Odwołać tę aplikację?",
+      "message": "„{name}” natychmiast traci dostęp do Twojego konta Monize. Aby znów z niej korzystać, połącz ją ponownie z poziomu aplikacji.",
+      "confirmLabel": "Odwołaj",
+      "revoking": "Odwoływanie..."
+    },
+    "toasts": {
+      "loadFailed": "Nie udało się wczytać połączonych aplikacji",
+      "revoked": "Aplikacja odwołana",
+      "revokeFailed": "Nie udało się odwołać aplikacji"
+    }
+  },
   "autoBackup": {
     "heading": "Automatyczna kopia zapasowa",
     "description": "Jeden harmonogram dla całego wdrożenia: serwer tworzy kopie danych każdego konta w magazynie wskazanym poniżej. Ponieważ Monize działa w Dockerze, lokalny folder trzeba podpiąć do kontenera jako wolumin (np. -v /host/backups:/data/backups).",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "Dostęp współdzielony",
     "emergencyAccess": "Dostęp awaryjny",
     "apiAccess": "Dostęp do API",
+    "connectedApps": "Połączone aplikacje",
     "aiSettings": "Ustawienia AI",
     "emailReceipts": "Paragony z e-maili",
     "backupRestore": "Kopia zapasowa i przywracanie",

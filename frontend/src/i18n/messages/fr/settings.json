@@ -673,6 +673,39 @@
       "never": "Jamais"
     }
   },
+  "connectedApps": {
+    "heading": "Applications connectées",
+    "description": "Applications auxquelles vous avez autorisé l'accès à votre compte Monize depuis son écran de consentement, comme les assistants IA connectés via MCP. Chaque ligne commence par la destination des autorisations de l'application, car le nom d'une application est celui qu'elle s'est choisi. Révoquez toute application que vous ne reconnaissez pas.",
+    "emptyTitle": "Aucune application connectée",
+    "emptyDescription": "Lorsque vous autorisez une application sur l'écran de consentement de Monize, elle apparaît ici.",
+    "loadError": "Impossible de charger les applications connectées, cette liste peut donc être incomplète.",
+    "retryButton": "Réessayer",
+    "callsItself": "Se nomme « {name} »",
+    "destinationUnknown": "Destination inconnue",
+    "registrationExpired": "Enregistrement expiré ; l'application s'enregistre à nouveau lorsqu'elle se reconnecte",
+    "scopes": {
+      "read": "Lecture",
+      "write": "Écriture"
+    },
+    "connectedOn": "Connectée le {date}",
+    "lastUsed": "Dernière utilisation {time}",
+    "notUsedYet": "Pas encore utilisée",
+    "expiresOn": "L'accès prend fin le {date}",
+    "separator": " · ",
+    "revokeButton": "Révoquer",
+    "revokeAriaLabel": "Révoquer {name}",
+    "revokeModal": {
+      "title": "Révoquer cette application ?",
+      "message": "« {name} » perd immédiatement l'accès à votre compte Monize. Pour l'utiliser à nouveau, reconnectez-la depuis l'application.",
+      "confirmLabel": "Révoquer",
+      "revoking": "Révocation..."
+    },
+    "toasts": {
+      "loadFailed": "Impossible de charger les applications connectées",
+      "revoked": "Application révoquée",
+      "revokeFailed": "Impossible de révoquer l'application"
+    }
+  },
   "autoBackup": {
     "heading": "Sauvegarde automatique",
     "description": "Une seule planification pour tout le déploiement : le serveur sauvegarde les données de chaque compte vers le stockage indiqué ci-dessous. Comme Monize s'exécute dans Docker, un dossier local doit être monté dans le conteneur en tant que volume (par ex. -v /host/backups:/data/backups).",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "Accès partagé",
     "emergencyAccess": "Accès d'urgence",
     "apiAccess": "Accès API",
+    "connectedApps": "Applications connectées",
     "aiSettings": "Paramètres IA",
     "emailReceipts": "Reçus par e-mail",
     "backupRestore": "Sauvegarde et restauration",

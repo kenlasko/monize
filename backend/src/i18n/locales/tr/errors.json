@@ -1083,5 +1083,9 @@
   "help": {
     "pageNotFound": "Yardım sayfası bulunamadı",
     "imageNotFound": "Yardım görseli bulunamadı"
+  },
+  "oauth": {
+    "connectionNotFound": "Bu bağlı uygulama bulunamadı. Zaten iptal edilmiş olabilir.",
+    "invalidConnectionId": "Geçersiz bağlı uygulama kimliği"
   }
 }

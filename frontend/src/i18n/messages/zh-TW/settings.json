@@ -673,6 +673,39 @@
       "never": "從未"
     }
   },
+  "connectedApps": {
+    "heading": "已連線的應用程式",
+    "description": "您透過授權頁面允許存取 Monize 帳戶的應用程式，例如透過 MCP 連線的 AI 助理。應用程式的名稱由其自行決定，因此每一行都以該應用程式的授權傳送目標開頭。請撤銷任何您不認識的應用程式。",
+    "emptyTitle": "沒有已連線的應用程式",
+    "emptyDescription": "當您在 Monize 的授權頁面允許某個應用程式後，它會顯示在這裡。",
+    "loadError": "無法載入已連線的應用程式，因此此清單可能不完整。",
+    "retryButton": "重試",
+    "callsItself": "自稱「{name}」",
+    "destinationUnknown": "目標未知",
+    "registrationExpired": "註冊已過期；應用程式重新連線時會再次註冊",
+    "scopes": {
+      "read": "讀取",
+      "write": "寫入"
+    },
+    "connectedOn": "連線於 {date}",
+    "lastUsed": "上次使用 {time}",
+    "notUsedYet": "尚未使用",
+    "expiresOn": "存取權限於 {date} 結束",
+    "separator": " · ",
+    "revokeButton": "撤銷",
+    "revokeAriaLabel": "撤銷 {name}",
+    "revokeModal": {
+      "title": "撤銷此應用程式？",
+      "message": "「{name}」將立即失去對您 Monize 帳戶的存取權限。若要再次使用，請從該應用程式重新連線。",
+      "confirmLabel": "撤銷",
+      "revoking": "正在撤銷..."
+    },
+    "toasts": {
+      "loadFailed": "無法載入已連線的應用程式",
+      "revoked": "應用程式已撤銷",
+      "revokeFailed": "無法撤銷該應用程式"
+    }
+  },
   "autoBackup": {
     "heading": "自動備份",
     "description": "整個部署共用一份排程：伺服器會把每個帳戶的資料備份到下方的儲存區。由於 Monize 執行於 Docker，必須把本機資料夾以磁碟區方式掛載進容器（例如 -v /host/backups:/data/backups）。",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "共用存取",
     "emergencyAccess": "緊急存取",
     "apiAccess": "API 存取",
+    "connectedApps": "已連線的應用程式",
     "aiSettings": "AI 設定",
     "emailReceipts": "郵件收據",
     "backupRestore": "備份與還原",

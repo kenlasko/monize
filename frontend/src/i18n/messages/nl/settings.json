@@ -673,6 +673,39 @@
       "never": "Nooit"
     }
   },
+  "connectedApps": {
+    "heading": "Gekoppelde apps",
+    "description": "Apps die je via het toestemmingsscherm toegang hebt gegeven tot je Monize-account, zoals AI-assistenten die via MCP zijn gekoppeld. Elke regel begint met de bestemming van de autorisaties van de app, want de naam van een app is wat ze zelf heeft gekozen. Trek de toegang in van elke app die je niet herkent.",
+    "emptyTitle": "Geen gekoppelde apps",
+    "emptyDescription": "Als je op het toestemmingsscherm van Monize een app toestaat, verschijnt die hier.",
+    "loadError": "Gekoppelde apps konden niet worden geladen, dus deze lijst is mogelijk niet volledig.",
+    "retryButton": "Opnieuw proberen",
+    "callsItself": "Noemt zichzelf “{name}”",
+    "destinationUnknown": "Bestemming onbekend",
+    "registrationExpired": "Registratie verlopen; de app registreert zich opnieuw wanneer ze weer verbinding maakt",
+    "scopes": {
+      "read": "Lezen",
+      "write": "Schrijven"
+    },
+    "connectedOn": "Gekoppeld op {date}",
+    "lastUsed": "Laatst gebruikt {time}",
+    "notUsedYet": "Nog niet gebruikt",
+    "expiresOn": "Toegang eindigt op {date}",
+    "separator": " · ",
+    "revokeButton": "Intrekken",
+    "revokeAriaLabel": "{name} intrekken",
+    "revokeModal": {
+      "title": "Deze app intrekken?",
+      "message": "“{name}” verliest direct de toegang tot je Monize-account. Om de app opnieuw te gebruiken, koppel je hem opnieuw vanuit de app.",
+      "confirmLabel": "Intrekken",
+      "revoking": "Intrekken..."
+    },
+    "toasts": {
+      "loadFailed": "Gekoppelde apps konden niet worden geladen",
+      "revoked": "App ingetrokken",
+      "revokeFailed": "De app kon niet worden ingetrokken"
+    }
+  },
   "autoBackup": {
     "heading": "Automatische back-up",
     "description": "Eén schema voor de hele installatie: de server maakt een back-up van de gegevens van elk account naar de opslag hieronder. Omdat Monize in Docker draait, moet een lokale map als volume in de container worden gekoppeld (bijv. -v /host/backups:/data/backups).",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "Gedeelde toegang",
     "emergencyAccess": "Noodtoegang",
     "apiAccess": "API-toegang",
+    "connectedApps": "Gekoppelde apps",
     "aiSettings": "AI-instellingen",
     "emailReceipts": "E-mailbonnen",
     "backupRestore": "Back-up en herstel",

@@ -673,6 +673,39 @@
       "never": "Hiçbir zaman"
     }
   },
+  "connectedApps": {
+    "heading": "Bağlı Uygulamalar",
+    "description": "Onay ekranından Monize hesabınıza girmesine izin verdiğiniz uygulamalar; örneğin MCP üzerinden bağlanan yapay zekâ asistanları. Bir uygulamanın adı kendi seçtiği addır, bu yüzden her satır uygulamanın yetkilendirmelerinin nereye gittiğiyle başlar. Tanımadığınız her uygulamayı iptal edin.",
+    "emptyTitle": "Bağlı uygulama yok",
+    "emptyDescription": "Monize'ın onay ekranında bir uygulamaya izin verdiğinizde burada görünür.",
+    "loadError": "Bağlı uygulamalar yüklenemedi, bu nedenle bu liste eksik olabilir.",
+    "retryButton": "Tekrar dene",
+    "callsItself": "Kendine “{name}” diyor",
+    "destinationUnknown": "Hedef bilinmiyor",
+    "registrationExpired": "Kayıt süresi doldu; uygulama yeniden bağlandığında tekrar kaydolur",
+    "scopes": {
+      "read": "Okuma",
+      "write": "Yazma"
+    },
+    "connectedOn": "{date} tarihinde bağlandı",
+    "lastUsed": "Son kullanım {time}",
+    "notUsedYet": "Henüz kullanılmadı",
+    "expiresOn": "Erişim {date} tarihinde sona erer",
+    "separator": " · ",
+    "revokeButton": "İptal Et",
+    "revokeAriaLabel": "{name} uygulamasını iptal et",
+    "revokeModal": {
+      "title": "Bu uygulama iptal edilsin mi?",
+      "message": "“{name}” Monize hesabınıza erişimi hemen kaybeder. Tekrar kullanmak için uygulamadan yeniden bağlayın.",
+      "confirmLabel": "İptal Et",
+      "revoking": "İptal ediliyor..."
+    },
+    "toasts": {
+      "loadFailed": "Bağlı uygulamalar yüklenemedi",
+      "revoked": "Uygulama iptal edildi",
+      "revokeFailed": "Uygulama iptal edilemedi"
+    }
+  },
   "autoBackup": {
     "heading": "Otomatik Yedekleme",
     "description": "Tüm kurulum için tek bir zamanlama: sunucu her hesabın verisini aşağıdaki depolamaya yedekler. Monize Docker'da çalıştığı için yerel bir klasörün kapsayıcıya birim olarak bağlanması gerekir (ör. -v /host/backups:/data/backups).",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "Paylaşılan Erişim",
     "emergencyAccess": "Acil Durum Erişimi",
     "apiAccess": "API Erişimi",
+    "connectedApps": "Bağlı Uygulamalar",
     "aiSettings": "AI Ayarları",
     "emailReceipts": "E-posta Makbuzları",
     "backupRestore": "Yedekleme ve Geri Yükleme",

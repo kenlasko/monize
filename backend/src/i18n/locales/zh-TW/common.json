@@ -10,7 +10,13 @@
     "destinationUnknown": "Monize 無法判斷此授權會被傳送到何處。請勿允許存取。",
     "unverifiedNotice": "此應用程式是自行在此 Monize 伺服器上註冊的，Monize 尚未驗證其營運者身分；其名稱是它自己選定的。只有在您親自從該應用程式發起此連線，且上方位址確實屬於該應用程式時，才允許存取。",
     "claimedWebsite": "應用程式聲明的網站：{{ website }}",
-    "websiteMismatch": "該應用程式聲稱其網站為 {{ website }}，但授權將被傳送到另一個位址。"
+    "websiteMismatch": "該應用程式聲稱其網站為 {{ website }}，但授權將被傳送到另一個位址。",
+    "pageTitle": "允許存取您的 Monize 帳戶？",
+    "headingWeb": "{{ host }} 想要存取您的 Monize 帳戶",
+    "headingDevice": "此裝置上的某個應用程式想要存取您的 Monize 帳戶",
+    "headingApp": "某個開啟 {{ scheme }} 連結的應用程式想要存取您的 Monize 帳戶",
+    "headingUnknown": "某個身分不明的應用程式想要存取您的 Monize 帳戶",
+    "selfNamed": "它自稱「{{ name }}」。Monize 未核實該名稱。"
   },
   "import": {
     "voidedTransactionNote": "已在來源中作廢；原始金額未包含在匯出中，因此以零匯入。"

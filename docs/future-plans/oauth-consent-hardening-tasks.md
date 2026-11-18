@@ -18,4 +18,4 @@
 | T3 | New-app notice leads with the destination and targets Connected Apps | `backend/src/notifications/security-notice.service.ts`, `notification-email-copy.ts`, `frontend/src/hooks/useNotificationCopy.ts` | [x] |
 | T4 | Connected Apps API: list and revoke one grant | `backend/src/oauth/postgres.adapter.ts`, `oauth-connections.*`, `parse-oauth-grant-id.pipe.ts`, `test/integration/oauth-connected-apps.integration.spec.ts`, `docs/row-level-security-contract.md` | [x] |
 | T5 | Settings > Connected Apps section, docs page and screenshot | `frontend/src/components/settings/ConnectedAppsSection.tsx`, `frontend/src/lib/oauth-connections.ts`, `website/docs/*.md`, `e2e/docs-screenshots/settings-and-security.spec.ts` | [x] |
-| T6 | Translate every locale | `backend/src/i18n/locales/*`, `frontend/src/i18n/messages/*` | [ ] |
+| T6 | Translate every locale | `backend/src/i18n/locales/*`, `frontend/src/i18n/messages/*` | [x] |

@@ -1083,5 +1083,9 @@
   "help": {
     "pageNotFound": "Hilfeseite nicht gefunden",
     "imageNotFound": "Hilfebild nicht gefunden"
+  },
+  "oauth": {
+    "connectionNotFound": "Diese verbundene App wurde nicht gefunden. Möglicherweise wurde sie bereits widerrufen.",
+    "invalidConnectionId": "Ungültige ID der verbundenen App"
   }
 }

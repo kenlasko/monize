@@ -213,6 +213,8 @@
   "security": {
     "oauthTitle": "Nuova app connessa: {clientName}",
     "oauthMessage": "All'applicazione {clientName} è stato appena concesso l'accesso al tuo account Monize. Se non sei stato tu, cambia subito la password: in questo modo viene revocato l'accesso di tutte le applicazioni connesse.",
+    "oauthConnectedTitle": "Nuova app connessa al tuo account Monize",
+    "oauthConnectedMessage": "A un'applicazione che si definisce {clientName} è stato concesso l'accesso e le sue autorizzazioni vengono inviate a {destination}. Se non sei stato tu, revocala in Impostazioni, sotto «App connesse».",
     "relayTitle": "Una nuova connessione ha risposto alla tua chat IA",
     "relayMessage": "Una connessione che non aveva mai risposto alla tua chat IA di Monize ha appena prelevato un prompt. Se non hai connesso tu questo assistente, cambia la password."
   },

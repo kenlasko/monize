@@ -399,6 +399,8 @@
     "security": {
       "oauthTitle": "新应用已连接：{{ clientName }}",
       "oauthMessage": "应用 {{ clientName }} 刚刚获得了访问您 Monize 账户的权限。如果不是您本人操作，请立即修改密码：这会撤销所有已连接应用的访问权限。",
+      "oauthConnectedTitle": "有新应用连接到您的 Monize 账户",
+      "oauthConnectedMessage": "一个自称 {{ clientName }} 的应用程序已获得访问权限，其授权将发送到 {{ destination }}。如果不是您本人操作，请在设置的“已连接的应用”中撤销。",
       "relayTitle": "新连接已回应您的 AI 聊天",
       "relayMessage": "一个此前从未回应过您 Monize AI 聊天的连接刚刚获取了一条提示。如果您没有连接此助手，请修改密码。"
     },

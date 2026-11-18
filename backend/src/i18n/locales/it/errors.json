@@ -1083,5 +1083,9 @@
   "help": {
     "pageNotFound": "Pagina della guida non trovata",
     "imageNotFound": "Immagine della guida non trovata"
+  },
+  "oauth": {
+    "connectionNotFound": "App connessa non trovata. Potrebbe essere già stata revocata.",
+    "invalidConnectionId": "ID dell'app connessa non valido"
   }
 }

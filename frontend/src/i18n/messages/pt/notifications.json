@@ -213,6 +213,8 @@
   "security": {
     "oauthTitle": "Nova aplicação ligada: {clientName}",
     "oauthMessage": "A aplicação {clientName} acabou de receber acesso à sua conta Monize. Se não foi você, altere já a sua palavra-passe: isso revoga o acesso de todas as aplicações ligadas.",
+    "oauthConnectedTitle": "Nova aplicação ligada à sua conta Monize",
+    "oauthConnectedMessage": "Foi concedido acesso a uma aplicação que se chama a si própria {clientName}, e as suas autorizações são enviadas para {destination}. Se não foi você, revogue-a em Definições, em «Aplicações ligadas».",
     "relayTitle": "Uma nova ligação respondeu ao seu chat de IA",
     "relayMessage": "Uma ligação que nunca tinha respondido ao seu chat de IA do Monize acabou de recolher um pedido. Se não ligou este assistente, altere a sua palavra-passe."
   },
