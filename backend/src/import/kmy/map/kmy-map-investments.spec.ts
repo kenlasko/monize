@@ -575,6 +575,40 @@ describe("mapKmyInvestments: where the cash moves (spec 5.7.3)", () => {
       "crossCurrencyTradeUnconverted",
     ]);
   });
+
+  it("never converts at a rate older than FX_MAX_RATE_AGE_DAYS (B1, INV-FX-001)", () => {
+    const trade: Tx = {
+      commodity: "EUR",
+      postDate: "2024-06-03",
+      splits: [
+        { account: "BRK", value: "-100" },
+        { account: "STK", value: "100", shares: "2", action: "Buy" },
+      ],
+    };
+    const stale = run([trade], {
+      prices: [rawPrice("EUR", "USD", "2015-03-01", "105/100")],
+    });
+    expect(stale.investments.transactions[0]).toMatchObject({
+      totalAmount: 100,
+      securityCurrencyCode: "EUR",
+    });
+    expect(stale.investments.warnings).toEqual([
+      expect.objectContaining({
+        code: "crossCurrencyTradeUnconverted",
+        // The detail names the pair and the date of the rate that was too old.
+        detail: "EUR->USD (2015-03-01)",
+      }),
+    ]);
+    // Forty-five days old is still a rate for the date.
+    const fresh = run([trade], {
+      prices: [rawPrice("EUR", "USD", "2024-04-19", "11/10")],
+    });
+    expect(fresh.investments.transactions[0]).toMatchObject({
+      totalAmount: 110,
+      securityCurrencyCode: "USD",
+    });
+    expect(fresh.investments.warnings).toEqual([]);
+  });
 });
 
 describe("mapKmyInvestments: shapes that import as cash (spec 5.7.6)", () => {

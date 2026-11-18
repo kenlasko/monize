@@ -187,15 +187,18 @@ class InvestmentMapper {
         holding.securityCurrency,
         date,
       );
-      if (found === null) {
+      if (found.rate === null) {
         securityCurrency = commodity;
+        // A rate the file has but that is too old for the date is named, so
+        // the user can tell "no rate" from "a rate from years before".
+        const pair = `${commodity}->${holding.securityCurrency}`;
         this.warn(
           "crossCurrencyTradeUnconverted",
           transaction,
-          `${commodity}->${holding.securityCurrency}`,
+          found.observedOn === null ? pair : `${pair} (${found.observedOn})`,
         );
       } else {
-        rate = found;
+        rate = found.rate;
       }
     }
     const money = (value: Rational): number =>

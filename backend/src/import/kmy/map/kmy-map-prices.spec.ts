@@ -7,6 +7,7 @@ import {
   rawSecurity,
 } from "../__fixtures__/kmy-raw-builders";
 import { harness } from "./kmy-map.harness";
+import { FX_MAX_RATE_AGE_DAYS } from "../../../common/time-series/fx-rate-resolver";
 import { buildRateLookup, mapKmyPrices } from "./kmy-map-prices";
 
 function build(
@@ -152,17 +153,17 @@ describe("buildRateLookup (spec 5.7.3)", () => {
   );
 
   it("answers the newest price on or before the date, in either direction", () => {
-    expect(lookup("EUR", "USD", "2024-02-15")).toEqual(n("11/10"));
-    expect(lookup("EUR", "USD", "2024-03-01")).toEqual(n("6/5"));
-    expect(lookup("USD", "EUR", "2024-02-15")).toEqual(n("10/11"));
-    expect(lookup("GBP", "USD", "2024-02-02")).toEqual(n("5/4"));
+    expect(lookup("EUR", "USD", "2024-02-15").rate).toEqual(n("11/10"));
+    expect(lookup("EUR", "USD", "2024-03-01").rate).toEqual(n("6/5"));
+    expect(lookup("USD", "EUR", "2024-02-15").rate).toEqual(n("10/11"));
+    expect(lookup("GBP", "USD", "2024-02-02").rate).toEqual(n("5/4"));
   });
 
   it("answers 1 for the same currency and null when the file has nothing usable", () => {
-    expect(lookup("USD", "USD", "2024-01-01")).toEqual(n("1"));
-    expect(lookup("EUR", "USD", "2023-12-31")).toBeNull();
-    expect(lookup("EUR", "JPY", "2024-06-01")).toBeNull();
-    expect(lookup("E1", "USD", "2024-06-01")).toBeNull();
+    expect(lookup("USD", "USD", "2024-01-01").rate).toEqual(n("1"));
+    expect(lookup("EUR", "USD", "2023-12-31").rate).toBeNull();
+    expect(lookup("EUR", "JPY", "2024-06-01").rate).toBeNull();
+    expect(lookup("E1", "USD", "2024-06-01").rate).toBeNull();
   });
 
   it("prefers the direct series when it is as recent as the inverse", () => {
@@ -174,7 +175,66 @@ describe("buildRateLookup (spec 5.7.3)", () => {
         ],
       }),
     );
-    expect(tie("EUR", "USD", "2024-01-02")).toEqual(n("11/10"));
-    expect(tie("USD", "EUR", "2024-01-02")).toEqual(n("1/2"));
+    expect(tie("EUR", "USD", "2024-01-02").rate).toEqual(n("11/10"));
+    expect(tie("USD", "EUR", "2024-01-02").rate).toEqual(n("1/2"));
+  });
+
+  it("follows resolveFxRate: a rate older than FX_MAX_RATE_AGE_DAYS is no rate (INV-FX-001)", () => {
+    expect(FX_MAX_RATE_AGE_DAYS).toBe(45);
+    // The newest EUR/USD observation is 2024-03-01; 45 days later is 2024-04-15.
+    expect(lookup("EUR", "USD", "2024-04-15")).toEqual({
+      rate: n("6/5"),
+      observedOn: "2024-03-01",
+      reason: null,
+    });
+    // Beyond the bound the answer is unknown; observedOn names the rate that
+    // was too old, so the warning can say so.
+    expect(lookup("EUR", "USD", "2024-04-16")).toEqual({
+      rate: null,
+      observedOn: "2024-03-01",
+      reason: "stale_observation",
+    });
+    // The review's case: a nine-year-old price never converts a trade.
+    const old = buildRateLookup(
+      rawFile({ prices: [rawPrice("EUR", "USD", "2015-03-01", "105/100")] }),
+    );
+    expect(old("EUR", "USD", "2024-06-03").rate).toBeNull();
+    expect(old("USD", "EUR", "2024-06-03").reason).toBe("stale_observation");
+  });
+
+  it("never answers with a rate struck after the date, and lets a fresh inverse beat an old direct", () => {
+    const after = buildRateLookup(
+      rawFile({ prices: [rawPrice("EUR", "USD", "2024-05-01", "11/10")] }),
+    );
+    expect(after("EUR", "USD", "2024-04-30")).toEqual({
+      rate: null,
+      observedOn: null,
+      reason: "only_after_date",
+    });
+    const mixed = buildRateLookup(
+      rawFile({
+        prices: [
+          rawPrice("EUR", "USD", "2023-01-01", "11/10"),
+          rawPrice("USD", "EUR", "2024-04-01", "4/5"),
+        ],
+      }),
+    );
+    expect(mixed("EUR", "USD", "2024-04-10")).toEqual({
+      rate: n("5/4"),
+      observedOn: "2024-04-01",
+      reason: null,
+    });
+  });
+
+  it("keeps the later of two prices on one date, as KMyMoney does", () => {
+    const twice = buildRateLookup(
+      rawFile({
+        prices: [
+          rawPrice("EUR", "USD", "2024-01-01", "11/10"),
+          rawPrice("EUR", "USD", "2024-01-01", "6/5"),
+        ],
+      }),
+    );
+    expect(twice("EUR", "USD", "2024-01-02").rate).toEqual(n("6/5"));
   });
 });

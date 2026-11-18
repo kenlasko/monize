@@ -1,3 +1,9 @@
+import {
+  DatedRate,
+  FxObservationLookup,
+  FxRateGapReason,
+  resolveFxRate,
+} from "../../../common/time-series/fx-rate-resolver";
 import { MnyExchangeRate, MnySecurityPrice } from "../../mny/model/mny-rows";
 import { MnyImportOptions } from "../../mny/model/mny-import-options";
 import { MnyWarning } from "../../mny/model/mny-warnings";
@@ -16,12 +22,20 @@ import { KmySecurityMapping } from "./kmy-map-securities";
 
 const CURRENCY_CODE = /^[A-Z]{3}$/;
 
+/**
+ * The file's own rate for a pair on a date. `rate` is one unit of `from` in
+ * `to`, exact, or null when the file has no admissible rate; `observedOn` is
+ * the date of the observation used, or of the newest one that was too old;
+ * `reason` is `resolveFxRate`'s cause for an unknown answer.
+ */
+export interface KmyRateAnswer {
+  readonly rate: Rational | null;
+  readonly observedOn: string | null;
+  readonly reason: FxRateGapReason | null;
+}
+
 export interface KmyRateLookup {
-  /**
-   * One unit of `from` in `to` on or before `date`, from the file's own
-   * currency-to-currency prices (either direction), or null when it has none.
-   */
-  (from: string, to: string, date: string): Rational | null;
+  (from: string, to: string, date: string): KmyRateAnswer;
 }
 
 export interface KmyPriceMapping {
@@ -31,12 +45,16 @@ export interface KmyPriceMapping {
   readonly warnings: readonly MnyWarning[];
 }
 
-interface Dated {
-  readonly date: string;
-  readonly price: Rational;
-}
-
-/** The file's currency-to-currency prices as a lookup (spec 5.7.3, 5.9). */
+/**
+ * The file's currency-to-currency prices as a lookup (spec 5.7.3, 5.9), under
+ * Monize's own rule for "the rate for a date" (INV-FX-001): `resolveFxRate`
+ * picks the observation -- the newest on or before the date, within
+ * `FX_MAX_RATE_AGE_DAYS`, either direction, a tie to the direct pair -- and the
+ * exact rational stored for that direction and date is the answer. The
+ * resolver sees one observation per direction and date (the later duplicate,
+ * as in KMyMoney) with a placeholder rate: its policy reads only dates and
+ * direction, and the number it would compute is a float this mapper never uses.
+ */
 export function buildRateLookup(raw: KmyRawFile): KmyRateLookup {
   const securityIds = new Set(raw.securities.map((security) => security.id));
   const series = new Map<string, Map<string, Rational>>();
@@ -53,27 +71,43 @@ export function buildRateLookup(raw: KmyRawFile): KmyRateLookup {
     dates.set(price.date, price.price);
     series.set(key, dates);
   }
-
-  const newest = (key: string, date: string): Dated | null => {
-    let best: Dated | null = null;
-    for (const [when, price] of series.get(key) ?? []) {
-      if (when <= date && (best === null || when > best.date)) {
-        best = { date: when, price };
-      }
-    }
-    return best;
-  };
+  const observations = new Map<string, DatedRate[]>(
+    [...series].map(([key, dates]) => [
+      key,
+      [...dates.keys()].map((date) => ({ date, rate: 1 })),
+    ]),
+  );
+  const observed: FxObservationLookup = (from, to) =>
+    observations.get(`${from}|${to}`);
+  // The date being priced is the transaction's own, never clamped to a clock.
+  const resolve = (
+    from: string,
+    to: string,
+    date: string,
+    maxAgeDays?: number,
+  ) => resolveFxRate(from, to, date, observed, { today: date, maxAgeDays });
 
   return (from, to, date) => {
-    if (from === to) {
-      return ONE;
+    const answer = resolve(from, to, date);
+    if (answer.status === "same_currency") {
+      return { rate: ONE, observedOn: null, reason: null };
     }
-    const direct = newest(`${from}|${to}`, date);
-    const inverse = newest(`${to}|${from}`, date);
-    if (direct && (!inverse || direct.date >= inverse.date)) {
-      return direct.price;
+    if (answer.status === "unknown" || answer.observedOn === null) {
+      const stale =
+        answer.reason === "stale_observation"
+          ? resolve(from, to, date, Number.POSITIVE_INFINITY).observedOn
+          : null;
+      return { rate: null, observedOn: stale, reason: answer.reason };
     }
-    return inverse ? div(ONE, inverse.price) : null;
+    const direct = answer.direction === "direct";
+    const stored = series
+      .get(direct ? `${from}|${to}` : `${to}|${from}`)
+      ?.get(answer.observedOn) as Rational;
+    return {
+      rate: direct ? stored : div(ONE, stored),
+      observedOn: answer.observedOn,
+      reason: null,
+    };
   };
 }
 

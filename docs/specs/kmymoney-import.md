@@ -772,7 +772,7 @@ A transfer row and a transfer counterpart each keep their own split's `shares`, 
 currency. The positive (receiving) row carries `exchangeRate = roundFxRate(|positive.amount| /
 |negative.amount|)`, the receiving currency per unit of the sending currency, as Monize's own
 `createTransfer` stores the implied rate on the destination leg; the sending row carries 1. Same
-currency: 1 on both. Zero on both sides: 1. Zero on one side only: the file's own price for the pair (`KmyRateLookup`), else the receiving row carries no rate (null), never 1, and the transfer is named in `crossCurrencyTransferRateMissing` (the date, the two accounts as KMyMoney names them and the currency pair in the detail; the same for the counterpart of a split row).
+currency: 1 on both. Zero on both sides: 1. Zero on one side only: the file's own price for the pair (`KmyRateLookup`, under the same `resolveFxRate` rule and 45-day bound as 5.7.3), else the receiving row carries no rate (null), never 1, and the transfer is named in `crossCurrencyTransferRateMissing` (the date, the two accounts as KMyMoney names them and the currency pair in the detail; the same for the counterpart of a split row).
 
 Worked example (the reference's section 18, T5): commodity USD; Checking `shares = value = -1100`, EUR
 Savings `value = 1100` (USD), `shares = 1000` (EUR). Rows: Checking -1100.0000 USD, rate 1; EUR Savings
@@ -883,10 +883,17 @@ Row: BUY, quantity 10, totalAmount 505.0000 (USD), commission 5.0000, price 50.0
 exactly -459.09 EUR.
 
 When the transaction commodity is not the security's trading currency (a trading currency changed after
-the fact), the amounts are converted to the trading currency at the file's own price for that pair on or
-before the date (5.9's lookup over the raw prices, either direction); with no such price they stay in the
-commodity with `securityCurrencyCode` set to it and `crossCurrencyTradeUnconverted`, as the Money mapper
-does.
+the fact), the amounts are converted to the trading currency at the file's own price for that pair on the
+date, chosen by Monize's rule for a rate for a date (INV-FX-001): `resolveFxRate`
+(`backend/src/common/time-series/fx-rate-resolver.ts`) over the file's currency prices, the newest
+observation on or before the date within `FX_MAX_RATE_AGE_DAYS` (45 days), either direction, a tie to the
+direct pair, never one struck after the date (`buildRateLookup` in `kmy-map-prices.ts`; the resolver picks
+the observation, the exact rational stored for it is the rate). KMyMoney's own `MyMoneyFile::price` takes
+the newest price on or before the date at any age; the importer deliberately does not, because a
+nine-year-old rate would set a cost basis wrong by nine years of currency moves with nothing saying so.
+With no admissible price the amounts stay in the commodity with `securityCurrencyCode` set to it and
+`crossCurrencyTradeUnconverted`, as the Money mapper does; the detail names the pair, and the date of the
+file's newest rate when one exists but is too old (`EUR->USD (2015-03-01)`).
 
 #### 5.7.4 Securities moved between brokerage accounts
 
@@ -1423,8 +1430,8 @@ Reused unchanged (format-neutral): `mnyJobNotFound`, `mnyImportAlreadyRunning`, 
 | price absent on a trade | derived from the total | INV-TRADE-001 |
 | ADD_SHARES cost | none (price null, total 0) | KMyMoney recorded none; Monize reports gains drawn on them as unknown, never as free shares |
 | exchange rate a transfer implies | stored on the receiving leg | a rate the file holds is not looked up |
-| a cross-currency transfer whose amounts imply no rate and whose pair the file does not price | null on the receiving leg, `crossCurrencyTransferRateMissing` | never 1 (FIN-002); the receiving leg is where Monize stores a transfer's rate (5.6.4), so the user enters it there |
-| rate needed for a trade in a commodity other than the trading currency | the file's own price for the pair, else unconverted with a warning | never 1, never a silent relabel (FIN-002) |
+| a cross-currency transfer whose amounts imply no rate and whose pair the file does not price within `FX_MAX_RATE_AGE_DAYS` before its date | null on the receiving leg, `crossCurrencyTransferRateMissing` | never 1 (FIN-002); the receiving leg is where Monize stores a transfer's rate (5.6.4), so the user enters it there |
+| rate needed for a trade in a commodity other than the trading currency | the file's own price for the pair through `resolveFxRate` (on or before the date, at most `FX_MAX_RATE_AGE_DAYS` old), else unconverted with a warning | never 1, never a silent relabel (FIN-002) |
 | security price history before the first trade | imported | it is the user's file |
 | exchange rate for an unused currency | not imported | it would create currencies nobody uses |
 | a schedule's next due date in the past | kept | it is what KMyMoney shows |

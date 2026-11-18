@@ -270,7 +270,7 @@ function receivingRate(
     return implied;
   }
   const filed = context.rateLookup(sendingCurrency, receivingCurrency, date);
-  return filed === null ? null : rateNumber(filed);
+  return filed.rate === null ? null : rateNumber(filed.rate);
 }
 
 /** A split's shares in the minor units of its (imported) account's currency. */

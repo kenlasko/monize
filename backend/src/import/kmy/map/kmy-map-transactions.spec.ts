@@ -429,7 +429,7 @@ describe("mapKmyTransactions: cross-currency (spec 5.6.4, 4.7)", () => {
 
     it("says nothing when the file prices the pair, when the amounts imply a rate, or for the same currency", () => {
       expect(
-        run(noRate, { prices: [rawPrice("USD", "EUR", "2024-01-15", "9/10")] })
+        run(noRate, { prices: [rawPrice("USD", "EUR", "2024-02-15", "9/10")] })
           .transactions.warnings,
       ).toEqual([]);
       expect(
@@ -486,6 +486,29 @@ describe("mapKmyTransactions: cross-currency (spec 5.6.4, 4.7)", () => {
     });
   });
 
+  it("does not take a one-sided zero's rate from a file price older than FX_MAX_RATE_AGE_DAYS (B1)", () => {
+    const { transactions } = run(
+      [
+        {
+          postDate: "2024-03-01",
+          splits: [
+            { account: "CHK", value: "-5" },
+            { account: "EUR", value: "0", shares: "0" },
+          ],
+        },
+      ],
+      // 46 days before the transfer: no longer a rate for its date.
+      { prices: [rawPrice("USD", "EUR", "2024-01-15", "9/10")] },
+    );
+    expect(transactions.transactions.map((r) => r.exchangeRate)).toEqual([
+      1,
+      null,
+    ]);
+    expect(transactions.warnings.map((w) => w.code)).toEqual([
+      "crossCurrencyTransferRateMissing",
+    ]);
+  });
+
   it("takes a one-sided zero's rate from the file's own price for the pair", () => {
     const { transactions } = run(
       [
@@ -497,7 +520,7 @@ describe("mapKmyTransactions: cross-currency (spec 5.6.4, 4.7)", () => {
           ],
         },
       ],
-      { prices: [rawPrice("USD", "EUR", "2024-01-15", "9/10")] },
+      { prices: [rawPrice("USD", "EUR", "2024-02-15", "9/10")] },
     );
     expect(transactions.transactions.map((r) => r.exchangeRate)).toEqual([
       1, 0.9,
