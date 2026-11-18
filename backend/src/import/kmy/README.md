@@ -49,4 +49,10 @@ The user guide is `website/docs/importing-from-kmymoney.md`.
 
 ## Memory
 
-To be filled in with the measurement from the 50,000-transaction builder file.
+Measured on a 50,000-transaction file built with the XML builders (two accounts, two splits per
+transaction; 22.8 MB of XML, 0.6 MB gzipped), parsed by `parseKmyBytes` under `ts-node` on Node 24:
+about 4 seconds, and peak resident set 560 MB against 345 MB for the same process before the parse, so
+roughly 215 MB for the reader and mapper. The inflated XML is held once as a string (the 4.2 bound is the
+upload limit) and the raw model and mapped rows are the rest; the writers add the commit's own
+working set on top of that. A real file with payees, tags, prices and longer memos will sit above the
+figure; it is a floor for sizing, not a ceiling.

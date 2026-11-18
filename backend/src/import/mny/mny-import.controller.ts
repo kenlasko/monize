@@ -66,7 +66,7 @@ export const MNY_IMPORT_LIMIT_BYTES = MNY_IMPORT_LIMIT_MB * 1024 * 1024;
 /** Extensions the wizard accepts. `.mbf` backup archives are a documented non-goal. */
 const MNY_EXTENSION = /\.mny$/i;
 
-function toJobDto(job: ImportJob): MnyImportJobDto {
+export function toJobDto(job: ImportJob): MnyImportJobDto {
   return {
     id: job.id,
     status: job.status,
