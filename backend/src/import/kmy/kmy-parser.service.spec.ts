@@ -47,14 +47,16 @@ describe("KmyParserService", () => {
     );
   });
 
-  it("does not read the preference when the caller supplies a currency", async () => {
-    await service.parse({
+  it("still reads the preference for the phone region when the caller supplies a currency", async () => {
+    userPreferences.findOne.mockResolvedValue({ defaultCurrency: "CAD" });
+    const parsed = await service.parse({
       userId: "user-1",
       buffer: readKmyFixture("syntheticKmy"),
       filename: "a.kmy",
       userDefaultCurrency: "EUR",
     });
-    expect(userPreferences.findOne).not.toHaveBeenCalled();
+    expect(userPreferences.findOne).toHaveBeenCalledTimes(1);
+    expect(parsed.baseCurrency).toBe("USD");
   });
 
   it("parses the same bytes to equal handles twice", async () => {

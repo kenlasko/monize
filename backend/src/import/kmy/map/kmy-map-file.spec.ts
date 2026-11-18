@@ -4,15 +4,18 @@ import { TransactionStatus } from "../../../transactions/entities/transaction.en
 import {
   rawAccount,
   rawFile,
+  rawPayee,
   rawSchedule,
   rawSecurity,
   rawTransaction,
+  standardRoots,
   syntheticKmyFile,
 } from "../__fixtures__/kmy-raw-builders";
 import { mapKmyFile } from "./kmy-map-file";
 
 const INPUT = {
   userDefaultCurrency: "CAD",
+  phoneRegion: null,
   coinDecimals: new Map<string, number>(),
   asOf: "2026-06-01",
 };
@@ -225,13 +228,51 @@ describe("mapKmyFile: the reference's section 18 file", () => {
     expect(parsed.investmentCounts.get("acct-8")).toBe(4);
   });
 
+  it("gives City Power its alias and default category and Corner Market none (spec 5.5.5)", () => {
+    const electricity = parsed.categories.categories.find(
+      (c) => c.name === "Electricity",
+    );
+    expect(parsed.payees.payees).toEqual([
+      { handle: 1, name: "Corner Market" },
+      {
+        handle: 2,
+        name: "City Power",
+        aliases: ["*CITY POWER*"],
+        defaultCategoryHandle: electricity?.handle,
+      },
+    ]);
+    expect(electricity).toBeDefined();
+  });
+
+  it("writes a written payee's default category, with its parent, under referenced-only categories", () => {
+    const raw = rawFile({
+      baseCurrency: "USD",
+      payees: [rawPayee("P1", "Landlord", { defaultAccountId: "A3" })],
+      accounts: [
+        ...standardRoots(),
+        rawAccount({ id: "A1", name: "Housing", type: 13 }),
+        rawAccount({ id: "A2", name: "Unused", type: 13 }),
+        rawAccount({ id: "A3", name: "Rent", type: 13, parentId: "A1" }),
+      ],
+    });
+    const result = mapKmyFile(raw, {
+      ...INPUT,
+      options: { referencedOnlyPayees: false, referencedOnlyCategories: true },
+    });
+    expect(result.categories.categories.map((c) => c.name)).toEqual([
+      "Housing",
+      "Rent",
+    ]);
+    const rent = result.categories.categories.find((c) => c.name === "Rent");
+    expect(result.payees.payees[0].defaultCategoryHandle).toBe(rent?.handle);
+  });
+
   it("raises exactly the warnings the plan names", () => {
     expect(parsed.warnings.map((w) => [w.code, w.subject])).toEqual([
       ["accountNumbersNotImported", "Checking"],
       ["scheduleWeekendRuleDropped", "Electricity"],
       ["scheduleOverdue", "Electricity"],
       ["payeeMatchingDisabled", "Corner Market"],
-      ["payeeDetailsNotImported", "City Power"],
       ["budgetsNotImported", undefined],
     ]);
   });

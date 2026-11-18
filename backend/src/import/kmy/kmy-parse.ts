@@ -1,3 +1,4 @@
+import type { CountryCode } from "libphonenumber-js/max";
 import type { MnyParsedFile } from "../mny/mny-parser.service";
 import type { MnyImportOptions } from "../mny/model/mny-import-options";
 import { mapKmyFile } from "./map/kmy-map-file";
@@ -11,6 +12,8 @@ export interface ParseKmyBytesInput {
   readonly maxXmlBytes: number;
   readonly options?: Partial<MnyImportOptions>;
   readonly userDefaultCurrency: string;
+  /** Region a bare national phone number is read in; null names none. */
+  readonly phoneRegion: CountryCode | null;
   /** CRYPTO currency code -> its decimal places. */
   readonly coinDecimals: ReadonlyMap<string, number>;
   /** YYYY-MM-DD balance cut-off. */
@@ -31,6 +34,7 @@ export function parseKmyBytes(input: ParseKmyBytesInput): MnyParsedFile {
   return mapKmyFile(raw, {
     options: input.options,
     userDefaultCurrency: input.userDefaultCurrency,
+    phoneRegion: input.phoneRegion,
     coinDecimals: input.coinDecimals,
     asOf: input.asOf,
   });

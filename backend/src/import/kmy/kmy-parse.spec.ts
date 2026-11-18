@@ -7,6 +7,7 @@ const BASE = {
   filename: "sample.kmy",
   maxXmlBytes: 50 * 1024 * 1024,
   userDefaultCurrency: "USD",
+  phoneRegion: null,
   coinDecimals: new Map<string, number>(),
   asOf: "2026-01-01",
 };

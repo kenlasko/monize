@@ -62,6 +62,7 @@ describe("KmyImportController", () => {
         filename: input.filename,
         maxXmlBytes: MNY_IMPORT_LIMIT_BYTES,
         userDefaultCurrency: "USD",
+        phoneRegion: null,
         coinDecimals: new Map(),
         asOf: "2026-01-01",
       });

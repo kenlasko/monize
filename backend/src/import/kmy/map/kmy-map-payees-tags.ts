@@ -1,20 +1,24 @@
 import {
   MappedPayee,
+  MappedPayeeContact,
   MappedPayees,
   MappedTag,
   MappedTags,
 } from "../../mny/model/mny-import-model";
+import type { CountryCode } from "libphonenumber-js/max";
 import { MnyWarning } from "../../mny/model/mny-warnings";
 import { AliasLedger } from "../../mny/map/payee-alias-collision";
 import { matchesAliasPattern } from "../../../payees/alias-match.util";
 import { KmyPayee, KmyRawFile } from "../model/kmy-raw";
+import { PayeeDefaults, mapPayeeContact } from "./kmy-payee-details";
 import { AliasCandidate, translatePayeeMatch } from "./kmy-payee-match";
 
 /**
  * Spec 5.5: payees and tags, referenced-only by default. Payee handles and tag
  * handles are the 1-based ordinals the reader assigned. A payee carries its
- * KMyMoney matching rules as alias globs (5.5.1); `payeeDetailsNotImported`
- * names only the details Monize has no field for.
+ * KMyMoney matching rules as alias globs (5.5.1), its default category (5.5.2)
+ * and its contact details (5.5.3); `payeeDetailsNotImported` names the details
+ * Monize has no field for and the contact fields it could not store.
  */
 
 export const MAX_TAG_NAME_LENGTH = 100;
@@ -28,21 +32,8 @@ export function tagHandleById(raw: KmyRawFile): ReadonlyMap<string, number> {
 }
 
 /** Details KMyMoney keeps on a payee that Monize has no field for (spec 5.5). */
-function unsupportedDetails(payee: KmyPayee): string[] {
+export function unsupportedDetails(payee: KmyPayee): string[] {
   const fields: string[] = [];
-  // Interim: contact details and the default category land in the next commit.
-  if (payee.email !== "") {
-    fields.push("email");
-  }
-  if (payee.notes !== "") {
-    fields.push("notes");
-  }
-  if (Object.values(payee.address).some((value) => value !== "")) {
-    fields.push("address");
-  }
-  if (payee.defaultAccountId !== null) {
-    fields.push("defaultaccountid");
-  }
   if (payee.reference !== "") {
     fields.push("reference");
   }
@@ -62,7 +53,25 @@ interface PayeeGroup {
   readonly members: {
     payee: KmyPayee;
     candidates: readonly AliasCandidate[];
+    contact: MappedPayeeContact | null;
   }[];
+}
+
+/** Payees of one name ignoring case are one Monize payee: each field is the first one present. */
+function mergeContacts(
+  contacts: readonly (MappedPayeeContact | null)[],
+): MappedPayeeContact | null {
+  const first = (field: keyof MappedPayeeContact): string | null =>
+    contacts
+      .map((contact) => contact?.[field] ?? null)
+      .find((v) => v !== null) ?? null;
+  const merged = {
+    notes: first("notes"),
+    email: first("email"),
+    phone: first("phone"),
+    address: first("address"),
+  };
+  return Object.values(merged).some((value) => value !== null) ? merged : null;
 }
 
 /**
@@ -124,12 +133,32 @@ function collideAliases(groups: readonly PayeeGroup[]): {
   return { aliases, warnings };
 }
 
+/** The payees the import writes: referenced (unless every payee is wanted) and named. */
+export function writtenPayees(
+  raw: KmyRawFile,
+  referenced: ReadonlySet<number> | null,
+): KmyPayee[] {
+  return raw.payees.filter(
+    (payee) =>
+      payee.name.trim() !== "" &&
+      (!referenced || referenced.has(payee.ordinal)),
+  );
+}
+
+export interface MapPayeesInput {
+  /** `resolvePayeeDefaults` of `writtenPayees`: the default categories (5.5.2). */
+  readonly defaults: PayeeDefaults;
+  /** Region a bare national phone number is read in; null names none (5.5.3). */
+  readonly phoneRegion: CountryCode | null;
+}
+
 /**
  * @param referenced Payee handles an imported row uses, or null for every payee.
  */
 export function mapKmyPayees(
   raw: KmyRawFile,
   referenced: ReadonlySet<number> | null,
+  input: MapPayeesInput,
 ): MappedPayees {
   const warnings: MnyWarning[] = [];
   const nameByHandle = new Map<number, string>();
@@ -152,9 +181,14 @@ export function mapKmyPayees(
     };
     groups.set(key, group);
     const translation = translatePayeeMatch(payee, name);
-    group.members.push({ payee, candidates: translation.candidates });
+    const { contact, notImported } = mapPayeeContact(payee, input.phoneRegion);
+    group.members.push({
+      payee,
+      candidates: translation.candidates,
+      contact,
+    });
     warnings.push(...translation.warnings);
-    const unsupported = unsupportedDetails(payee);
+    const unsupported = [...unsupportedDetails(payee), ...notImported];
     if (unsupported.length > 0) {
       warnings.push({
         code: "payeeDetailsNotImported",
@@ -163,15 +197,22 @@ export function mapKmyPayees(
       });
     }
   }
+  warnings.push(...input.defaults.warnings);
 
   const collided = collideAliases([...groups.values()]);
   warnings.push(...collided.warnings);
   const payees: MappedPayee[] = [...groups.values()].map((group) => {
     const aliases = collided.aliases.get(group.key) ?? [];
+    const defaultCategoryHandle = input.defaults.handleByName.get(group.key);
+    const contact = mergeContacts(
+      group.members.map((member) => member.contact),
+    );
     return {
       handle: group.handle,
       name: group.name,
       ...(aliases.length > 0 ? { aliases } : {}),
+      ...(defaultCategoryHandle !== undefined ? { defaultCategoryHandle } : {}),
+      ...(contact !== null ? { contact } : {}),
     };
   });
 

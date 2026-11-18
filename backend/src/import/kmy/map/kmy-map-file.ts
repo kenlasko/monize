@@ -1,3 +1,4 @@
+import type { CountryCode } from "libphonenumber-js/max";
 import { roundToDecimals } from "../../../common/round.util";
 import { billReferences, selectedBills } from "../../mny/map/map-bills";
 import { mapLoans } from "../../mny/map/map-loans";
@@ -37,7 +38,9 @@ import {
   mapKmyTags,
   payeeHandleById,
   tagHandleById,
+  writtenPayees,
 } from "./kmy-map-payees-tags";
+import { resolvePayeeDefaults } from "./kmy-payee-details";
 import { buildRateLookup, mapKmyPrices } from "./kmy-map-prices";
 import { mapKmySchedules } from "./kmy-map-schedules";
 import { mapKmySecurities } from "./kmy-map-securities";
@@ -58,6 +61,8 @@ export interface KmyMapInput {
   readonly userDefaultCurrency: string;
   /** CRYPTO currency code -> its decimal places (`currencies.kind = 'CRYPTO'`). */
   readonly coinDecimals: ReadonlyMap<string, number>;
+  /** Region a bare national payee phone number is read in; null names none (5.5.3). */
+  readonly phoneRegion: CountryCode | null;
   /** YYYY-MM-DD. */
   readonly asOf: string;
 }
@@ -135,6 +140,19 @@ export function mapKmyFile(raw: KmyRawFile, input: KmyMapInput): MnyParsedFile {
   const billRefs = billReferences(chosen);
   const loans = mapLoans({ accounts, transactions, bills: chosen });
 
+  const referencedPayees = options.referencedOnlyPayees
+    ? union(
+        transactions.referencedPayees,
+        investments.referencedPayees,
+        billRefs.payees,
+      )
+    : null;
+  // A written payee's default category is a reference: its category (and the
+  // ancestors) are written even under referencedOnlyCategories (5.5.2).
+  const payeeDefaults = resolvePayeeDefaults(
+    writtenPayees(raw, referencedPayees),
+    raw.accounts,
+  );
   const categories = mapKmyCategories({
     raw,
     tree,
@@ -143,20 +161,19 @@ export function mapKmyFile(raw: KmyRawFile, input: KmyMapInput): MnyParsedFile {
           transactions.referencedCategories,
           investments.referencedCategories,
           billRefs.categories,
+          payeeDefaults.categoryHandles,
         )
       : null,
-    equityUsed: union(banking.equityUsed, trading.equityUsed),
+    equityUsed: union(
+      banking.equityUsed,
+      trading.equityUsed,
+      payeeDefaults.equityHandles,
+    ),
   });
-  const payees = mapKmyPayees(
-    raw,
-    options.referencedOnlyPayees
-      ? union(
-          transactions.referencedPayees,
-          investments.referencedPayees,
-          billRefs.payees,
-        )
-      : null,
-  );
+  const payees = mapKmyPayees(raw, referencedPayees, {
+    defaults: payeeDefaults,
+    phoneRegion: input.phoneRegion,
+  });
   const tags = mapKmyTags(
     raw,
     union(transactions.referencedTags, billRefs.tags),
