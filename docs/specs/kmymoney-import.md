@@ -350,7 +350,7 @@ and each change gets its own new spec case.
 |---|---|
 | `backend/src/import/mny/model/mny-import-model.ts` | optional fields: `MappedAccount.institutionName?: string \| null`; `MappedTransaction.exchangeRate: number | null` (required: the Money mapper writes 1 as it always did, a KMyMoney row carries its own rate or null, never a defaulted 1), `MappedTransaction.reconciledDate?: string \| null`; `MappedSecurity.securityType?: SecurityType \| null`; `MappedBill.customRecurrence?: CustomRecurrence \| null` |
 | `backend/src/import/mny/model/mny-warnings.ts` | KMyMoney codes appended to `MNY_WARNING_CODES` (order = display order; Money's order unchanged) |
-| `backend/src/import/mny/model/mny-import-job.ts` | `MnyAccountVerification.mappedBalance?: number`; `MnyImportResult.fileAsOf?: string` (6.4) |
+| `backend/src/import/mny/model/mny-import-job.ts` | `MnyAccountVerification.mappedBalance?: number`, `mappedDiffers?: boolean`, `currencyCode?: string`; `MnyImportResult.fileAsOf?: string` (6.4) |
 | `backend/src/import/mny/mny-parser.service.ts` | `MnyParsedFile` gains optional `sourceFormat?: ImportSourceFormat`, `fileBalances?: ReadonlyMap<string, number>`, `kmyFile?: KmyFileSummary`, `balancePrecision?` and `moneyPlaces?` (6.1, M3) (types only; Money's `parse` body untouched); `computeExpectedBalances` takes an optional trailing `placesByKey` (absent: four places, Money's sum) |
 | `backend/src/import/mny/mny-preview.ts` | `MnyPreview` gains optional `sourceFormat?: "kmy"` and `kmyFile?: KmyFileSummary`, set only when the parsed file carries them; `finalBalance` reads `fileBalances` when present, else `expectedBalances` |
 | `backend/src/import/mny/mny-errors.ts` | `class MnyImportError<C extends string = MnyErrorCode>`; every existing subclass unchanged |
@@ -1293,6 +1293,8 @@ commission taken off each trade -- are each caught: `kmy-file-summary.spec.ts`).
 | `MnyParsedFile.fileBalances` | absent | 6.1 account balances |
 | `MnyAccountVerification.expectedBalance` | `expectedBalances` | `fileBalances` |
 | `MnyAccountVerification.mappedBalance` | absent | `expectedBalances` |
+| `MnyAccountVerification.mappedDiffers` | absent | `mappedBalance` against `expectedBalance`, rounded at the account's own places (`balancePrecision`, 4 when absent): true when they differ |
+| `MnyAccountVerification.currencyCode` | absent | the account's currency |
 | `MnyHoldingCheck.lotQuantity` | open `LOT` quantity | 6.1 holding |
 | `MnyHoldingCheck.replayQuantity` | replay of mapped rows | replay of mapped rows (`applyActionToQuantity`) |
 | `MnyHoldingVerification.importedQuantity` | `holdings.quantity` | `holdings.quantity` |
@@ -1344,20 +1346,20 @@ dated after it as a discrepancy.
 | Step / panel (Money) | KMyMoney | Detail |
 |---|---|---|
 | Upload accept list `.qif,.qmtf,.ofx,.qfx,.csv,.mny` | change | adds `.kmy,.xml`; the four format strings in every locale name "KMyMoney (.kmy, .xml)" (forced by `frontend/src/i18n/messages.import-formats.test.ts`) |
-| File routing (`detectFileType`) | change | extension `kmy` or `xml` routes to the KMyMoney path before anything reads the file; the backend decides by content (4.3) |
+| File routing (`detectFileType`) | change | extension `kmy` routes to the KMyMoney path before anything reads the file. A `.xml` upload is routed by its content, read from the first 4096 bytes (`frontend/src/lib/xml-import-sniff.ts`): gzip bytes (`1F 8B`), a `KMYMONEY-FILE` doctype or root element go to KMyMoney; an OFX header (`OFXHEADER:`), `<?OFX` declaration or `<OFX>` root goes to the OFX import; anything else is refused with `toasts.unrecognizedXml` and nothing is uploaded. The backend stays the authority on a file routed to KMyMoney (4.3) |
 | One file at a time toast | keep, new key | `toasts.kmySingleFileOnly` |
 | Upload error panel | change | heading `upload.kmyFailedHeading`, docs link `importKmyTroubleshooting` |
 | Password dialog | remove | never opens: no KMyMoney code asks for a password |
-| Review heading and file summary | change | "Review your KMyMoney file"; summary names the file, "KMyMoney file, format version N", the base currency, and says the balances are computed from the file. No era |
+| Review heading and file summary | change | "Review your KMyMoney file"; summary names the file, "KMyMoney file, format version N", the base currency, and says the balances are computed from the file, followed by `kmyReview.asOf` naming `kmyFile.asOf` (the day later-dated transactions stop counting). No era |
 | "What this version could not supply" (missing tables) | remove | always empty for KMyMoney |
-| Counts tiles | keep, one more | the tags tile reads "Tags"; the bills tile reads "Scheduled transactions, active of N schedules"; a "Payee aliases" tile (value `payeeAliasesToCreate`, detail "N payees get a default category"), shown when either count is above zero, in the same `SummaryTile` form as the others. The rules that were not translated appear in Notes, like every other warning; no new section |
+| Counts tiles | keep, one more | the tags tile reads "Tags"; the bills tile reads "Scheduled transactions, active of N scheduled transactions"; a "Payee aliases" tile (value `payeeAliasesToCreate`, detail "N payees get a default category"), shown when either count is above zero, in the same `SummaryTile` form as the others. The rules that were not translated appear in Notes, like every other warning; no new section |
 | Accounts table | keep | "named X in KMyMoney" when renamed; the pair shows as two rows, as for Money |
 | Bills panel | keep, copy | heading "Scheduled transactions to create", KMyMoney explainer; the unsupported note never shows |
 | Options card (six toggles) | keep | KMyMoney hints for unused payees and categories (KMyMoney seeds its category tree from a template), price history and start fresh |
 | Wipe confirmation dialog | keep | neutral copy |
 | Notes (warnings panel) | keep | `kmyWarnings.*`, "Review in KMyMoney" footer; out-of-scope items (budgets, reports, ...) appear here as warnings |
 | Progress | keep | heading "Importing your KMyMoney file"; same phases ("Scheduled bills" phase label reused) |
-| Verification report | keep, copy | "From KMyMoney file", "Shares in KMyMoney", holdings explainer saying the figures are KMyMoney's own balance computation; a secondary "import rows sum to X" line under the expected figure when `mappedBalance` differs; download name strips `.kmy` / `.xml`; "Payee aliases" and "Default categories" count tiles when `payeeAliasesCreated` / `payeeDefaultCategoriesSet` are above zero, like the conditional tag and securities tiles |
+| Verification report | keep, copy | "From KMyMoney file", "Shares in KMyMoney", holdings explainer saying the figures are KMyMoney's own balance computation; a secondary "import rows sum to X" line under the expected figure when the backend's `mappedDiffers` is true (the frontend applies no tolerance of its own); each line formatted in its own `currencyCode`, the file's base currency when absent; `kmyComplete.asOf` above the table naming `fileAsOf`; download name strips `.kmy` / `.xml`; "Payee aliases" and "Default categories" count tiles when `payeeAliasesCreated` / `payeeDefaultCategoriesSet` are above zero, like the conditional tag and securities tiles |
 
 **Parameterisation.** A format descriptor (a frontend lib module) per format, `mny` and `kmy`, holding:
 the API client, the copy keys for every slot above, the warning and error key resolvers (KMyMoney:
@@ -1462,6 +1464,10 @@ export interface MnyAccountVerification {
   //     transactionCount, matches (unchanged) ...
   /** KMyMoney only: what the import's own rows sum to; expectedBalance is then the file's figure. */
   readonly mappedBalance?: number;
+  /** KMyMoney only: true when mappedBalance differs from expectedBalance at the account's places. */
+  readonly mappedDiffers?: boolean;
+  /** KMyMoney only: the account's currency; the report formats the line in it. */
+  readonly currencyCode?: string;
 }
 ```
 
