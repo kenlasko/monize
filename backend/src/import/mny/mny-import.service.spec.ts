@@ -1642,10 +1642,31 @@ describe("MnyImportService", () => {
       expect(result.verification[0]).toMatchObject({
         expectedBalance: 121,
         mappedBalance: 120.5,
+        mappedDiffers: true,
+        currencyCode: "CAD",
         importedBalance: 120.5,
         delta: -0.5,
         matches: false,
       });
+    });
+
+    it("says the mapped balance agrees with the file's when they match at the account's places", async () => {
+      const same = await kmyRun(
+        parsedFile({
+          sourceFormat: "kmy",
+          fileBalances: new Map([["acct-1", 120.5]]),
+        }),
+      );
+      expect(same.verification[0]).toMatchObject({ mappedDiffers: false });
+      // Eight places keep a difference a fiat account would round away.
+      const coin = await kmyRun(
+        parsedFile({
+          sourceFormat: "kmy",
+          fileBalances: new Map([["acct-1", 120.50000001]]),
+          balancePrecision: new Map([["acct-1", { places: 8, tolerance: 0 }]]),
+        }),
+      );
+      expect(coin.verification[0]).toMatchObject({ mappedDiffers: true });
     });
 
     it("compares at the account's own places with the source's rounding allowance (M3)", async () => {
@@ -1737,6 +1758,8 @@ describe("MnyImportService", () => {
       const result = await kmyRun();
 
       expect(result.verification[0]).not.toHaveProperty("mappedBalance");
+      expect(result.verification[0]).not.toHaveProperty("mappedDiffers");
+      expect(result.verification[0]).not.toHaveProperty("currencyCode");
       expect(result.verification[0].expectedBalance).toBe(120.5);
     });
 

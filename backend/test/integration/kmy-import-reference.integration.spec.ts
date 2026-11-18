@@ -47,6 +47,7 @@ describe("kmy import: the reference's section 18 file (integration)", () => {
       expect(line.delta).toBe(0);
       expect(line.matches).toBe(true);
       expect(line.mappedBalance).toBe(line.expectedBalance);
+      expect(line.mappedDiffers).toBe(false);
     }
     expect(result.holdings).toHaveLength(1);
     expect(result.holdings[0]).toMatchObject({

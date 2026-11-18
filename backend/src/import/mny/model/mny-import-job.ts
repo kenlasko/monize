@@ -66,6 +66,14 @@ export interface MnyAccountVerification {
    * the file's figure. Absent means the Money behaviour.
    */
   readonly mappedBalance?: number;
+  /**
+   * KMyMoney only: true when `mappedBalance` differs from `expectedBalance`
+   * at the account's own decimal places, so the report need not guess a
+   * tolerance of its own.
+   */
+  readonly mappedDiffers?: boolean;
+  /** KMyMoney only: the account's currency, which the report formats it in. */
+  readonly currencyCode?: string;
 }
 
 /**

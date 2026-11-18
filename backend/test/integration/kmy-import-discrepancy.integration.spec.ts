@@ -115,6 +115,7 @@ describe("kmy import: discrepancy and missing-rate paths (integration)", () => {
       accountName: "Checking",
       expectedBalance: 960,
       mappedBalance: 952.75,
+      mappedDiffers: true,
       importedBalance: 952.75,
       delta: -7.25,
       matches: false,

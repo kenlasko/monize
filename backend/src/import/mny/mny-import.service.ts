@@ -895,7 +895,16 @@ export class MnyImportService {
         expectedBalance,
         ...(parsed.fileBalances === undefined
           ? {}
-          : { mappedBalance: parsed.expectedBalances.get(account.key) ?? 0 }),
+          : {
+              mappedBalance: parsed.expectedBalances.get(account.key) ?? 0,
+              mappedDiffers:
+                roundToDecimals(
+                  (parsed.expectedBalances.get(account.key) ?? 0) -
+                    expectedBalance,
+                  precision?.places ?? 4,
+                ) !== 0,
+              currencyCode: account.currencyCode,
+            }),
         importedBalance,
         delta,
         transactionCount: parsed.transactionCounts.get(account.key) ?? 0,
