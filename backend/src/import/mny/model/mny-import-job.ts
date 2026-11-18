@@ -61,6 +61,11 @@ export interface MnyAccountVerification {
   readonly transactionCount: number;
   /** True when `delta` is within the reconciliation tolerance. */
   readonly matches: boolean;
+  /**
+   * KMyMoney only: what the import's own rows sum to; `expectedBalance` is then
+   * the file's figure. Absent means the Money behaviour.
+   */
+  readonly mappedBalance?: number;
 }
 
 /**
@@ -74,7 +79,7 @@ export interface MnyAccountVerification {
 export interface MnyHoldingVerification {
   readonly accountName: string;
   readonly symbol: string;
-  /** Shares Money's open lots claim. */
+  /** The file's own share count: Money's open lots, or KMyMoney's replay. */
   readonly lotQuantity: number;
   /** Shares the mapper's own action replay produces. */
   readonly replayQuantity: number;

@@ -595,7 +595,7 @@ function mapOne(
  * ordinary case, not an anomaly -- `money2002.mny` alone has 60 of them, which
  * is 60 lines of noise burying the warnings that do mean something.
  */
-function pairShareTransfers(
+export function pairShareTransfers(
   transactions: readonly MappedInvestmentTransaction[],
 ): { transactions: MappedInvestmentTransaction[]; paired: number } {
   const key = (transaction: MappedInvestmentTransaction): string =>

@@ -105,6 +105,90 @@ export const MNY_WARNING_CODES = [
    * Monize's rate history and provider instead.
    */
   "crossCurrencyTradeMarketRate",
+  /** A KMyMoney account or security uses a currency code Monize cannot hold; its rows are skipped. */
+  "unsupportedCurrencyCode",
+  /** A transaction with a single split cannot balance and is imported as far as it can be. */
+  "singleSplitTransaction",
+  /** A transaction's splits do not add up to zero; the residual is reported, not hidden. */
+  "unbalancedTransaction",
+  /** Two transactions share a (post date, id) pair; the later one replaces the earlier. */
+  "duplicateTransactionId",
+  /** A split names a payee id no PAYEE element defines; it imports without a payee. */
+  "unknownPayeeReference",
+  /** A split on an equity account imports as a category. */
+  "equitySplitAsCategory",
+  /** KMyMoney's account tree ran deeper than Monize's account structure; the hierarchy is flattened. */
+  "accountHierarchyFlattened",
+  /** An asset-loan account imports as an asset. */
+  "assetLoanAsAsset",
+  /** A currency trading account imports as an ordinary account. */
+  "currencyTradingAccount",
+  /** An investment account has no brokerage cash account; a cash side is synthesized. */
+  "brokerageAccountNotFound",
+  /** The brokerage account's currency differs from the investment account's. */
+  "brokerageCurrencyMismatch",
+  /** A stock account has no investment parent; its rows import as cash. */
+  "stockAccountWithoutInvestment",
+  /** A security was not imported, so rows that reference it are not either. */
+  "securityNotImported",
+  /** An investment transaction shape Monize cannot express imports as a cash row. */
+  "investmentImportedAsCash",
+  /** An investment transaction carries an extra asset split that is ignored. */
+  "investmentExtraAssetSplit",
+  /** An income action carries a share count, which is ignored. */
+  "investmentSharesOnIncomeAction",
+  /** A transaction holds several stock-split splits; only the first is applied. */
+  "multipleStockSplits",
+  /** A stock-split action inside a multi-split transaction is imported as cash. */
+  "splitActionInMultiSplit",
+  /** A trade is funded from an equity account. */
+  "tradeFundedFromEquity",
+  /** Shares were added with no cost recorded. */
+  "sharesAddedWithoutCost",
+  /** A stock-split ratio was rounded to the quantity precision. */
+  "stockSplitRatioRounded",
+  /** Rounding the split with the security's method gives a different share count than Monize's. */
+  "stockSplitRoundingDiffers",
+  /** A stock-split ratio is implausible and was imported as written. */
+  "stockSplitRatioSuspicious",
+  /** A price row's currency differs from its security's trading currency; it is skipped. */
+  "priceCurrencyMismatch",
+  /** Exchange rates for currencies the import never uses were skipped. */
+  "unusedCurrencyRatesSkipped",
+  /** A loan's interest rate history is not imported. */
+  "loanInterestRateNotImported",
+  /** A loan's payment schedule was simplified to Monize's loan model. */
+  "loanScheduleSimplified",
+  /** A scheduled investment transaction is not imported. */
+  "investmentScheduleNotImported",
+  /** A schedule's auto-enter setting is not imported. */
+  "scheduleAutoEnterNotImported",
+  /** A schedule's weekend-adjustment rule is not imported. */
+  "scheduleWeekendRuleDropped",
+  /** A schedule is overdue as of the import date. */
+  "scheduleOverdue",
+  /** The file's cost centers are not imported. */
+  "costCentersNotImported",
+  /** The file's budgets are not imported. */
+  "budgetsNotImported",
+  /** The file's reports are not imported. */
+  "reportsNotImported",
+  /** The file's online jobs are not imported. */
+  "onlineJobsNotImported",
+  /** The file's online banking settings are not imported. */
+  "onlineBankingNotImported",
+  /** Account numbers are not imported. */
+  "accountNumbersNotImported",
+  /** Payee contact and matching details are not imported. */
+  "payeeDetailsNotImported",
+  /** A number could not be parsed and was read as zero. */
+  "unparsableNumber",
+  /** An auto-calculate sentinel appeared in a posted split and was read as zero. */
+  "autoCalcInPostedSplit",
+  /** An account's imported rows sum to something other than the file's own balance. */
+  "mappedBalanceDiffers",
+  /** A holding's imported share count differs from KMyMoney's own replay. */
+  "holdingsReplayDiffers",
 ] as const;
 
 export type MnyWarningCode = (typeof MNY_WARNING_CODES)[number];

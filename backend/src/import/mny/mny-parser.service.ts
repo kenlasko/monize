@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import type { ImportSourceFormat, KmyFileSummary } from "./model/import-source";
 import {
   MnyDatabase,
   openDecryptedMnyFile,
@@ -162,6 +163,15 @@ export interface MnyParsedFile {
   readonly missingTables: readonly string[];
   readonly missingFields: readonly string[];
   readonly warnings: readonly MnyWarning[];
+  /** Absent means a Money file ("mny"). */
+  readonly sourceFormat?: ImportSourceFormat;
+  /**
+   * Account key -> the file's own final balance (KMyMoney). Absent means
+   * `expectedBalances` is the file's figure.
+   */
+  readonly fileBalances?: ReadonlyMap<string, number>;
+  /** KMyMoney container facts; absent for a Money file. */
+  readonly kmyFile?: KmyFileSummary;
 }
 
 export interface MnyFileCounts {

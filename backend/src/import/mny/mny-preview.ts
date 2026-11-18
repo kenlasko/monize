@@ -4,6 +4,7 @@ import {
 } from "../../accounts/entities/account.entity";
 import { FrequencyType } from "../../scheduled-transactions/dto/create-scheduled-transaction.dto";
 import { MnyImportOptions } from "./model/mny-import-options";
+import type { KmyFileSummary } from "./model/import-source";
 import {
   MnyWarningSummary,
   summarizeWarnings,
@@ -122,6 +123,10 @@ export interface MnyPreview {
   readonly warnings: readonly MnyWarningSummary[];
   /** The option set the import will use, with server-computed defaults filled. */
   readonly options: MnyImportOptions;
+  /** Set only for a KMyMoney file; absent means a Money file. */
+  readonly sourceFormat?: "kmy";
+  /** Set only for a KMyMoney file. */
+  readonly kmyFile?: KmyFileSummary;
 }
 
 export interface BuildPreviewInput {

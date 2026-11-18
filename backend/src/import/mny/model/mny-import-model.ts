@@ -8,6 +8,8 @@ import { SplitKind } from "../../../transactions/entities/split-kind.enum";
 import { InvestmentAction } from "../../../securities/entities/investment-transaction.entity";
 import { FrequencyType } from "../../../scheduled-transactions/dto/create-scheduled-transaction.dto";
 import { MnyWarning } from "./mny-warnings";
+import type { CustomRecurrence } from "../../../common/custom-recurrence";
+import type { SecurityType } from "../../../securities/security-enums";
 
 /**
  * The intermediate representation the mappers produce and the writer consumes
@@ -47,6 +49,11 @@ export interface MappedAccount {
   readonly accountType: AccountType;
   readonly accountSubType: AccountSubType | null;
   readonly currencyCode: string;
+  /**
+   * Institution name written to the account. Absent means the writer's previous
+   * behaviour (`null`).
+   */
+  readonly institutionName?: string | null;
   readonly openingBalance: number;
   readonly creditLimit: number | null;
   /**
@@ -194,6 +201,15 @@ export interface MappedTransaction {
   readonly transactionDate: string;
   readonly amount: number;
   readonly currencyCode: string;
+  /**
+   * Rate stored on the row. Absent means the writer's previous behaviour (1).
+   */
+  readonly exchangeRate?: number;
+  /**
+   * Date the row was reconciled. Absent means the writer's previous behaviour
+   * (`null`).
+   */
+  readonly reconciledDate?: string | null;
   readonly status: TransactionStatus;
   readonly payeeHandle: number | null;
   readonly categoryHandle: number | null;
@@ -346,6 +362,11 @@ export interface MappedSecurity {
   readonly moneySymbol: string;
   readonly name: string;
   readonly currencyCode: string;
+  /**
+   * Security type written to the row. Absent means the writer's previous
+   * behaviour (`null`).
+   */
+  readonly securityType?: SecurityType | null;
   /**
    * True for a generated placeholder symbol, which no quote provider can
    * resolve. Matches the QIF importer's convention for auto-created securities.
@@ -549,6 +570,11 @@ export interface MappedBill {
   readonly amount: number;
   readonly currencyCode: string;
   readonly frequency: FrequencyType;
+  /**
+   * Custom recurrence written to the schedule. Absent means the writer's
+   * previous behaviour (`null`).
+   */
+  readonly customRecurrence?: CustomRecurrence | null;
   /** True when Monize cannot express the exact Money recurrence interval. */
   readonly approximate: boolean;
   readonly nextDueDate: string;
@@ -620,6 +646,7 @@ export interface MnyHoldingCheck {
   readonly securityHandle: number;
   readonly symbol: string;
   /**
+   * The file's own share count: Money's open lots, or KMyMoney's replay.
    * Shares open lots say the account holds (`LOT` rows with no `htrnSell`), or
    * the replay quantity for a security the file keeps no lot for at all -- CDs,
    * savings bonds and money-market funds, which Money records in `TRN_INV` but

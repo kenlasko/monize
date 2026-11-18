@@ -189,6 +189,15 @@ export interface MnyImportOptions {
   bills: number[];
 }
 
+/** Container facts of a KMyMoney file; mirrors the backend `KmyFileSummary`. */
+export interface KmyFileSummary {
+  container: 'gzip' | 'xml';
+  /** Decoded FIXVERSION; 12 is current. */
+  fixVersion: number;
+  appVersion: string | null;
+  lastModified: string | null;
+}
+
 export interface MnyPreview {
   stagedFileId: string;
   filename: string;
@@ -205,6 +214,9 @@ export interface MnyPreview {
   missingFields: string[];
   warnings: MnyWarningSummary[];
   options: MnyImportOptions;
+  /** Set only for a KMyMoney file; absent means a Money file. */
+  sourceFormat?: 'kmy';
+  kmyFile?: KmyFileSummary;
 }
 
 export interface MnyAccountVerification {
@@ -217,6 +229,8 @@ export interface MnyAccountVerification {
   delta: number;
   transactionCount: number;
   matches: boolean;
+  /** KMyMoney only: what the import's own rows sum to; `expectedBalance` is then the file's figure. */
+  mappedBalance?: number;
 }
 
 export interface MnyHoldingVerification {
