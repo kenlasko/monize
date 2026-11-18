@@ -55,7 +55,7 @@ This step is worth the minute it takes.
 ![Review your KMyMoney file: the file summary and the counts](images/import-kmy-review.png)
 
 - The file summary names the file, the KMyMoney file format version, and the base currency, and says that the balances shown are computed from the file.
-- **Counts** for transactions (with the number of transfers linked), payees, categories, tags, accounts, securities, investment transactions, price history, exchange rates and scheduled transactions are each shown against the total in the file, so "40 of 500 payees" is visible before rather than after.
+- **Counts** for transactions (with the number of transfers linked), payees, payee aliases (with the number of payees that get a default category), categories, tags, accounts, securities, investment transactions, price history, exchange rates and scheduled transactions are each shown against the total in the file, so "40 of 500 payees" is visible before rather than after.
 - **Every account** is listed with its type, currency, transaction count, opening balance and the **final balance computed from the KMyMoney file itself**. Compare a few against KMyMoney -- that same number is what the verification report reconciles against afterwards. A KMyMoney investment account appears as its two Monize halves, " - Cash" and " - Brokerage". An account Monize had to rename (two accounts sharing a name) shows "named X in KMyMoney" underneath, and closed, favourite and excluded-from-net-worth accounts are marked.
 - **Untick any account you do not want**, or use **Select all** / **Select none**. Closed accounts are included by default and stay closed; they still hold history worth keeping.
 - **Override an account's currency** with its dropdown if KMyMoney had it wrong.
@@ -106,9 +106,9 @@ With **Start fresh** ticked, **Start import** first opens **Remove Existing Data
 - **Accounts.** Checking, savings, cash, credit card, loan, investment, money market, certificate of deposit, asset, liability and currency accounts, with opening balances, currencies, and closed and favourite flags. A KMyMoney account's institution becomes the account's institution name. See the table below for how each KMyMoney type maps.
 - **Categories**, at their full depth. Income and expense categories keep their parent and child structure however many levels it has.
 - **Transactions**, including splits, reference numbers (check numbers), memos, tags, and the cleared or reconciled state and reconciled date of each side. KMyMoney's "frozen" state arrives as reconciled.
-- **Transfers**, linked exactly from the two sides KMyMoney records. A transaction that mixes transfers and categories, such as a paycheque that also puts money into savings, arrives as one split transaction with a transfer leg and category legs. A cross-currency transfer keeps each side's own amount in its own account's currency and the exchange rate it implies.
+- **Transfers**, linked exactly from the two sides KMyMoney records. A transaction that mixes transfers and categories, such as a paycheque that also puts money into savings, arrives as one split transaction with a transfer leg and category legs. A cross-currency transfer keeps each side's own amount in its own account's currency and the exchange rate it implies. If the amounts imply no rate and the file does not price the pair, the transfer is imported without a rate and the notes list it: open its receiving side and enter the rate.
 - **Opening balances.** KMyMoney stores an opening balance as a transaction against an equity account. Monize folds the earliest one into the account's opening balance so it does not appear as a transaction.
-- **Payees.** Payees are imported with their matching rules and their default category. The other payee details are not carried over (see [What Is Not Imported](#what-is-not-imported)).
+- **Payees**, with their **matching rules as payee aliases**, their **default category** and their **contact details** (notes, email, phone and address). A matching rule is imported whenever Monize can reproduce it exactly; each rule it cannot is skipped on its own and named in the notes. See [Payee Matching Rules](#payee-matching-rules). The reference number, bank identifiers and link pattern KMyMoney keeps on a payee are not carried over (see [What Is Not Imported](#what-is-not-imported)).
 - **Tags**, on the transactions and splits that carry them.
 - **Investments.** Buys, sells, dividends, interest, reinvested dividends, added and removed shares, and stock splits. Commissions and fees are kept, the executed total is treated as the fact, and the per-share price is derived from it. A security moved between brokerage accounts (removed from one, added to another on the same date in the same quantity) becomes a linked transfer out and in that carries its cost basis. A KMyMoney investment account becomes Monize's linked cash and brokerage pair; Monize finds the cash side from the brokerage account KMyMoney links to the investment account, or failing that by KMyMoney's own naming (`<account name> (Brokerage)`, in English or any language KMyMoney ships).
 - **Stock splits are applied.** A KMyMoney stock split is the share movement itself, so each becomes a split in Monize with the same ratio (a 3:2 split is 1.5).
@@ -116,6 +116,37 @@ With **Start fresh** ticked, **Start import** first opens **Remove Existing Data
 - **Exchange rates**, for the currencies your accounts and securities actually use. Rates already stored in Monize are never replaced, and every imported rate and price is labelled as coming from the KMyMoney import.
 - **Scheduled transactions** you ticked, with their frequency and next due date, created active and set **not** to post automatically, so nothing lands in your accounts without you.
 - **Loans.** The payment structure is kept: the principal leg is a transfer to the loan account and the interest leg is a category. Where payments and a selected schedule make it unambiguous, the loan's funding account, payment amount, frequency and start date are filled in too.
+
+### Payee Matching Rules
+
+KMyMoney uses a payee's matching rule to pick the payee when you import a bank statement. Monize's equivalent is a [payee alias](categories-and-payees.md#payee-aliases): an imported name that matches the alias goes to that payee. The two are not the same language, so the import translates each rule only when the result matches **exactly the same names**, and tells you about every rule it did not.
+
+| KMyMoney rule | What you get in Monize |
+|---|---|
+| Matching turned off | No alias. Monize cannot turn matching off: a later import or bank sync whose payee is exactly the payee's name still links to it. Noted once per payee |
+| "Match Payees name (partial)" | An alias of the name with a `*` on both sides, so `Netflix` becomes `*Netflix*` |
+| "Match Payees name (exact)" | An alias of the name, when the rule ignores case and the name has letters. Monize already links a payee by its exact name, which is case-sensitive, so a case-sensitive rule, or a name with no letters (`7/11`), needs no alias |
+| "Match on a name listed below" | One alias per listed name (or per pattern) that translates. The statement-created kind, `^THE\ AMERICAN\ CHE\ CONS\ PAY$`, becomes `THE AMERICAN CHE CONS PAY`; a plain name such as `CITY POWER` becomes `*CITY POWER*`; `^AMZN.*MKTP$` becomes `AMZN*MKTP` |
+
+KMyMoney's rules are regular expressions that match anywhere in the name; Monize aliases match the whole name and know only the `*` wildcard. What translates is a key made of plain text, an optional `^` at the start (the name must begin there), an optional `$` at the end (it must end there), `.*` for "anything", and a backslash before a punctuation mark or space. Anything else is **not imported**, and the notes name the payee and the rule so you can find it:
+
+- patterns that are more than text: `AMAZON.COM` (where the dot means "any character"), `(SHELL|ESSO)`, `\d{4} PAYROLL`, `[0-9]+`, `colou?r`;
+- a rule that holds a literal `*`, a `<` or `>`, or begins or ends with a space, which Monize cannot store in an alias;
+- a rule that would match every name (`.*`), or longer than 255 characters.
+
+To keep one of these, add the alias by hand: open the payee in Monize, add a pattern in **Aliases** (for example `AMAZON*`) and press **Add**.
+
+Three more things are said rather than done silently:
+
+- **Case.** A KMyMoney rule can be case-sensitive; Monize aliases never are. The alias is imported and the notes say it now also matches the same name in other capitals.
+- **Conflicts.** Monize does not allow an alias that matches another payee's alias, or equals another payee's name. Where two payees in the file would clash, the first payee in the file keeps its alias and the later one is skipped and named. The same refusal applies to aliases and payees you already have in Monize.
+- **Overlap.** Two aliases that can match the same name but do not clash outright (`*Amazon*` and `*Prime*` both match "Amazon Prime") are both imported and named. KMyMoney gives such a name to the payee with the longer match; Monize may pick either, so check them.
+
+Aliases act on later imports and bank syncs, not on the transactions in this file, which already carry the payee KMyMoney assigned.
+
+A payee's **default category** is imported when it is an income or expense category; the category and its parents are created even if you left **Only import categories that are used** on. KMyMoney lets a payee's default be an ordinary account, which Monize cannot use, so that default is skipped and named in the notes. When a payee already exists in Monize, the import **fills in only what is empty**: your own default category, notes, email, phone and address are kept, and the notes name the payees where the KMyMoney value was not used.
+
+Contact details are imported only when they fit Monize's own limits: an email address that is valid, a phone number Monize can read (a number without a country code is read in the region of your number-format and language settings, and left out if neither names a region), and notes and address within 500 characters. A detail that does not fit is named in the notes.
 
 ### How KMyMoney account types map
 
@@ -144,7 +175,9 @@ With **Start fresh** ticked, **Start import** first opens **Remove Existing Data
 | **Saved reports** | Recreate them with [Reports](reports.md) |
 | **Online banking settings and online transfer orders** | Not read. You can set up bank sync in Monize |
 | **Account numbers and IBANs** | Not imported |
-| **Payee addresses, email, notes, reference numbers and bank identifiers** | Not imported. Payee matching rules and default categories are imported |
+| **Payee reference numbers, bank identifiers and link patterns** | Not imported; Monize has no field for them. Notes, email, phone, address, default category and matching rules are imported (see [Payee Matching Rules](#payee-matching-rules)) |
+| **Payee matching rules Monize cannot reproduce exactly** | Each such rule is skipped on its own and named in the notes with its payee. Add an alias in Monize if you want one |
+| **Payee contact details that do not fit** | An invalid email address, a phone number with no country code when your settings name no region, or text over 500 characters is named in the notes and left out |
 | **Cost centers** | Monize has no cost centers |
 | **Tax and VAT settings on categories** | Not imported |
 | **Tag colours, notes and closed state** | Tags import by name only |
@@ -199,7 +232,8 @@ Then:
 2. **Enter loan interest rates** on your loan accounts (see Known Limitations).
 3. **Recreate budgets** -- see [Budgets](budgets.md).
 4. **Check your scheduled transactions** in [Bills and Deposits](bills-and-deposits.md). Imported schedules are active but set not to post automatically; switch on auto-posting for the ones you want it on, and post or skip anything that arrived overdue.
-5. **Check net worth** on the Dashboard against your KMyMoney net worth report.
+5. **Check your payee aliases** in **Payees** for the ones the notes named as overlapping, and add by hand any matching rule that was skipped.
+6. **Check net worth** on the Dashboard against your KMyMoney net worth report.
 
 If the result is not what you wanted, re-run the import with **Start fresh** ticked.
 

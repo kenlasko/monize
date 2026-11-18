@@ -1122,7 +1122,7 @@ WP4 writes; they avoid `--` (frontend rule).
 | payeeMatchCaseWidened | 5.5.1, check 8 | | {count} payee matching rules are case-sensitive in KMyMoney. Monize aliases ignore case, so these also match the same name in other capitals. |
 | payeeMatchKeyConflict | 5.5.1 collisions; also post-import (5.5.4) | | {count} payee matching rules clash with an alias or the name of another payee, which Monize does not allow, and were not imported. |
 | payeeMatchKeyOverlap | 5.5.1 collisions; also post-import (5.5.4) | | {count} payee aliases can match the same payee name as an alias of another payee. KMyMoney picks the payee with the longer match; Monize may pick either. Check these aliases in Monize. |
-| payeeDefaultCategoryNotImported | 5.5.2 | | {count} payees have a default category Monize cannot use (an account rather than a category, or one missing from the file), so they were imported without it. |
+| payeeDefaultCategoryNotImported | 5.5.2 | | {count} payees have a default category Monize cannot use (an account rather than a category, one missing from the file, or a different one from another payee of the same name), so they were imported without it. |
 | payeeDetailsKept (post-import) | 5.5.4 | | {count} payees already existed in Monize with their own default category or contact details, which were kept; the KMyMoney values were not used. |
 | unparsableNumber | reader | | {count} numbers in the file could not be read and were taken as zero. |
 | autoCalcInPostedSplit | reader | yes | {count} posted transactions carried a placeholder amount meant only for schedules; it was taken as zero. |

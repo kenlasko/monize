@@ -45,6 +45,21 @@ The user guide is `website/docs/importing-from-kmymoney.md`.
   becomes a SPLIT row with the multiplier as its quantity. Money's `SEC_SPLIT` rows are quote-feed metadata.
 - **Verification is computed from the raw model**, never from mapped rows; that independence is what
   makes a mapping defect visible.
+- **Payee matching: regex keys are searched, aliases are whole-text globs.** A KMyMoney key is a PCRE2
+  pattern found anywhere in an imported payee text; a Monize alias is a glob over the whole text,
+  case-insensitive, with `*` the only metacharacter (`matchesAliasPattern`). `kmy-payee-match.ts` translates
+  a key only when the two agree on every text: the subset grammar (`^`, `$`, plain and backslash-escaped
+  characters, `.*`, `.*?`), then checks 1 to 9 of spec 5.5.1. The key is tokenized by hand and never
+  compiled: no `RegExp` is built from file text. Anything else is named in `payeeMatchKeyNotImported`
+  with the payee and the key, never approximated. Collisions between payees use
+  `payee-alias-collision.ts`, which the mapper and the writer share, over `aliasesConflict` and
+  `aliasesCanOverlap` (`backend/src/payees/alias-overlap.util.ts`, the same refusal `PayeesService.createAlias`
+  applies).
+- **The payee writer runs after the rule pass.** `writePayeeExtras` is called right after `applyImportRules`
+  in `writeAll`'s one transaction, so a rule's `set_payee_from_text` cannot see this import's aliases and
+  the rows keep the payee KMyMoney assigned (`kmy-import-payee-rules.integration.spec.ts`, with its
+  control). It only fills empty fields of an existing payee (`payeeDetailsKept`), and issues no query for a
+  payee list without a new field, which is every Money file.
 - **No prettier on this directory.** It is not prettier-formatted; use eslint only.
 
 ## Memory
@@ -56,3 +71,9 @@ roughly 215 MB for the reader and mapper. The inflated XML is held once as a str
 upload limit) and the raw model and mapped rows are the rest; the writers add the commit's own
 working set on top of that. A real file with payees, tags, prices and longer memos will sit above the
 figure; it is a floor for sizing, not a ceiling.
+
+Payee aliases: the writer inserts each alias through a savepoint (`insertPayeeAliasIgnoringDuplicate`), so
+its cost is a few round trips per alias. Measured against PostgreSQL 18 in a local container, 2,000 payees
+with one alias each took about 6.5 seconds for the aliases when all were plain names and about 8.3 seconds
+when all were wildcards (the collision checks are then O(w x n), and about 2,000 overlap notes are
+produced), on top of about 2.6 seconds for creating the payees themselves.
