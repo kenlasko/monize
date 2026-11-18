@@ -42,6 +42,14 @@ export interface BinaryImportCopy {
   readonly reviewInSource: string;
   readonly reviewInSourceTruncated: string;
   readonly singleFileOnly: string;
+  /**
+   * The payee-alias tiles of the review step and the report. Optional: only a
+   * format whose importer writes payee aliases names them (KMyMoney).
+   */
+  readonly countsPayeeAliases?: string;
+  readonly countsPayeeAliasesDetail?: string;
+  readonly completePayeeAliases?: string;
+  readonly completePayeeDefaultCategories?: string;
 }
 
 export interface BinaryImportFormat {
@@ -123,6 +131,14 @@ export const KMY_WARNING_CODES: readonly string[] = [
   'autoCalcInPostedSplit',
   'mappedBalanceDiffers',
   'holdingsReplayDiffers',
+  'payeeMatchingDisabled',
+  'payeeMatchKeyNotImported',
+  'payeeMatchCaseWidened',
+  'payeeMatchKeyConflict',
+  'payeeMatchKeyOverlap',
+  'payeeDefaultCategoryNotImported',
+  'payeeDetailsKept',
+  'crossCurrencyTransferRateMissing',
 ];
 
 /**
@@ -213,6 +229,10 @@ export const KMY_FORMAT: BinaryImportFormat = {
     reviewInSource: 'kmyWarnings.reviewInKmy',
     reviewInSourceTruncated: 'kmyWarnings.reviewInKmyTruncated',
     singleFileOnly: 'toasts.kmySingleFileOnly',
+    countsPayeeAliases: 'kmyReview.counts.payeeAliases',
+    countsPayeeAliasesDetail: 'kmyReview.counts.payeeAliasesDetail',
+    completePayeeAliases: 'kmyComplete.counts.payeeAliases',
+    completePayeeDefaultCategories: 'kmyComplete.counts.payeeDefaultCategories',
   },
   uploadFallbackErrorCode: 'kmyCorruptFile',
   warningKey: (code) => `kmyWarnings.${code}`,

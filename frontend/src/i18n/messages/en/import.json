@@ -612,7 +612,9 @@
     "counts": {
       "tags": "Tags",
       "bills": "Scheduled transactions",
-      "billsOfRows": "active of {rows} schedules"
+      "billsOfRows": "active of {rows} schedules",
+      "payeeAliases": "Payee aliases",
+      "payeeAliasesDetail": "{count, plural, one {# payee gets} other {# payees get}} a default category"
     }
   },
   "kmyBills": {
@@ -624,6 +626,10 @@
     "heading": "Importing your KMyMoney file"
   },
   "kmyComplete": {
+    "counts": {
+      "payeeAliases": "Payee aliases",
+      "payeeDefaultCategories": "Default categories"
+    },
     "allMatch": "All {count} accounts reconcile: every balance matches the one computed from your KMyMoney file.",
     "someDiffer": "{count} accounts do not match the balance computed from your KMyMoney file. The rows marked below show the difference.",
     "someHoldingsDiffer": "Every balance reconciles, but {count, plural, one {# holding does} other {# holdings do}} not match the shares computed from your KMyMoney file. The rows marked below show the difference.",
@@ -676,6 +682,7 @@
     "priceCurrencyMismatch": "{count, plural, one {# price was} other {# prices were}} recorded in a currency other than the security's and {count, plural, one {was} other {were}} not imported.",
     "unusedCurrencyRatesSkipped": "{count, plural, one {# exchange rate is} other {# exchange rates are}} for currencies none of your accounts or securities use and {count, plural, one {was} other {were}} not imported.",
     "crossCurrencyTradeUnconverted": "{count, plural, one {# trade was} other {# trades were}} recorded in a currency other than the security's and the file has no rate to convert them; their amounts were imported unconverted. Check the price of each.",
+    "crossCurrencyTransferRateMissing": "{count, plural, one {# transfer between accounts in different currencies has} other {# transfers between accounts in different currencies have}} no exchange rate, neither in {count, plural, one {its} other {their}} amounts nor in the file's prices, and {count, plural, one {was} other {were}} imported without one. Open the receiving side of each and enter the rate.",
     "duplicateSecuritySymbol": "{count, plural, one {# security shares} other {# securities share}} a symbol with another; the later ones were renamed so they stay separate.",
     "generatedSecuritySymbol": "{count, plural, one {# security has} other {# securities have}} no symbol in KMyMoney, so a placeholder was generated and price updates left off.",
     "loanInterestRateNotImported": "{count, plural, one {# loan has} other {# loans have}} an interest rate in KMyMoney that was not imported. Enter it on the loan account in Monize.",
@@ -694,6 +701,13 @@
     "onlineBankingNotImported": "{count, plural, one {# account has} other {# accounts have}} online banking settings in KMyMoney; they were not read, and you can set up bank sync in Monize.",
     "accountNumbersNotImported": "{count, plural, one {# account has} other {# accounts have}} an account number or IBAN, which was not imported.",
     "payeeDetailsNotImported": "{count, plural, one {# payee has} other {# payees have}} details Monize has no place for (a reference number, bank account identifiers, a link pattern), or contact details Monize could not read; those details were not imported.",
+    "payeeMatchingDisabled": "{count, plural, one {# payee has} other {# payees have}} matching turned off in KMyMoney. Monize has no such setting: a later import or bank sync whose payee is exactly {count, plural, one {its name} other {one of these names}} still links to the payee.",
+    "payeeMatchKeyNotImported": "{count, plural, one {# payee matching rule uses} other {# payee matching rules use}} a pattern Monize cannot reproduce exactly and {count, plural, one {was} other {were}} not imported. Add an alias to the payee in Monize if you still want one.",
+    "payeeMatchCaseWidened": "{count, plural, one {# payee matching rule is} other {# payee matching rules are}} case-sensitive in KMyMoney. Monize aliases ignore case, so {count, plural, one {it also matches} other {these also match}} the same name in other capitals.",
+    "payeeMatchKeyConflict": "{count, plural, one {# payee matching rule clashes} other {# payee matching rules clash}} with an alias or the name of another payee, which Monize does not allow, and {count, plural, one {was} other {were}} not imported.",
+    "payeeMatchKeyOverlap": "{count, plural, one {# payee alias can} other {# payee aliases can}} match the same payee name as an alias of another payee. KMyMoney picks the payee with the longer match; Monize may pick either. Check {count, plural, one {this alias} other {these aliases}} in Monize.",
+    "payeeDefaultCategoryNotImported": "{count, plural, one {# payee has} other {# payees have}} a default category Monize cannot use (an account rather than a category, one missing from the file, or a different one from another payee of the same name), so {count, plural, one {it was} other {they were}} imported without it.",
+    "payeeDetailsKept": "{count, plural, one {# payee already existed} other {# payees already existed}} in Monize with {count, plural, one {its} other {their}} own default category or contact details, which were kept; the KMyMoney values were not used.",
     "unparsableNumber": "{count, plural, one {# number} other {# numbers}} in the file could not be read and {count, plural, one {was} other {were}} taken as zero.",
     "autoCalcInPostedSplit": "{count, plural, one {# posted transaction carried} other {# posted transactions carried}} a placeholder amount meant only for schedules; it was taken as zero.",
     "mappedBalanceDiffers": "{count, plural, one {# account would end} other {# accounts would end}} with a balance that differs from the one computed from the file. Do not import until this is explained.",

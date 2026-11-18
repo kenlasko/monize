@@ -532,6 +532,46 @@ describe('MnyReviewStep with a KMyMoney import', () => {
     expect(screen.getByText('active of 9 schedules')).toBeInTheDocument();
   });
 
+  it('shows a payee aliases tile with the default category count when either is above zero', () => {
+    const { rerender } = render(<MnyReviewStep {...props} />);
+    expect(screen.queryByText('Payee aliases')).not.toBeInTheDocument();
+
+    rerender(
+      <MnyReviewStep
+        {...props}
+        preview={kmyPreview({
+          counts: { ...preview().counts, payeeAliasesToCreate: 12, payeeDefaultCategoriesToSet: 3 },
+        })}
+      />,
+    );
+    expect(screen.getByText('Payee aliases')).toBeInTheDocument();
+    expect(screen.getByText('12')).toBeInTheDocument();
+    expect(screen.getByText('3 payees get a default category')).toBeInTheDocument();
+
+    rerender(
+      <MnyReviewStep
+        {...props}
+        preview={kmyPreview({
+          counts: { ...preview().counts, payeeAliasesToCreate: 0, payeeDefaultCategoriesToSet: 1 },
+        })}
+      />,
+    );
+    expect(screen.getByText('1 payee gets a default category')).toBeInTheDocument();
+  });
+
+  it('shows no payee aliases tile for a Money preview even if the counts were present', () => {
+    render(
+      <MnyReviewStep
+        {...props}
+        format={undefined}
+        preview={preview({
+          counts: { ...preview().counts, payeeAliasesToCreate: 12, payeeDefaultCategoriesToSet: 3 },
+        })}
+      />,
+    );
+    expect(screen.queryByText('Payee aliases')).not.toBeInTheDocument();
+  });
+
   it('uses the KMyMoney hints on the options', () => {
     render(<MnyReviewStep {...props} />);
 

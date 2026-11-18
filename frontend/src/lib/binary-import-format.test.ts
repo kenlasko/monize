@@ -75,6 +75,29 @@ describe('binary import format descriptors', () => {
     });
   });
 
+  it('names the payee alias tiles for KMyMoney only', () => {
+    expect(KMY_FORMAT.copy.countsPayeeAliases).toBe('kmyReview.counts.payeeAliases');
+    expect(KMY_FORMAT.copy.completePayeeDefaultCategories).toBe('kmyComplete.counts.payeeDefaultCategories');
+    expect(MNY_FORMAT.copy.countsPayeeAliases).toBeUndefined();
+    expect(MNY_FORMAT.copy.countsPayeeAliasesDetail).toBeUndefined();
+    expect(MNY_FORMAT.copy.completePayeeAliases).toBeUndefined();
+    expect(MNY_FORMAT.copy.completePayeeDefaultCategories).toBeUndefined();
+  });
+
+  it('lists the payee and transfer-rate codes after holdingsReplayDiffers', () => {
+    const tail = KMY_WARNING_CODES.slice(KMY_WARNING_CODES.indexOf('holdingsReplayDiffers') + 1);
+    expect(tail).toEqual([
+      'payeeMatchingDisabled',
+      'payeeMatchKeyNotImported',
+      'payeeMatchCaseWidened',
+      'payeeMatchKeyConflict',
+      'payeeMatchKeyOverlap',
+      'payeeDefaultCategoryNotImported',
+      'payeeDetailsKept',
+      'crossCurrencyTransferRateMissing',
+    ]);
+  });
+
   it('has an English sentence for every KMyMoney warning code', () => {
     const missing = KMY_WARNING_CODES.filter(
       (code) => typeof lookup(KMY_FORMAT.warningKey(code)) !== 'string',

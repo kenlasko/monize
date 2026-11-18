@@ -102,6 +102,10 @@ export interface MnyPreviewCounts {
   billsDetected: number;
   /** Bill series the mapper could not use -- not unticked ones. */
   billsSkipped: number;
+  /** Payee aliases a KMyMoney file's matching rules become; absent for Money. */
+  payeeAliasesToCreate?: number;
+  /** Payees that get a default category from a KMyMoney file; absent for Money. */
+  payeeDefaultCategoriesToSet?: number;
 }
 
 export interface MnyFileCounts {
@@ -239,6 +243,12 @@ export interface MnyImportResult {
    * lots report such a row until its series is chosen. Absent when zero.
    */
   bondRowsWithoutSeries?: number;
+  /** Payee aliases written; absent for a Money import. */
+  payeeAliasesCreated?: number;
+  /** Payees given a default category; absent for a Money import. */
+  payeeDefaultCategoriesSet?: number;
+  /** Payees given contact details; absent for a Money import. */
+  payeeContactDetailsSet?: number;
   pricesImported: number;
   exchangeRatesImported: number;
   billsCreated: number;

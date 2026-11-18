@@ -149,6 +149,20 @@ export function MnyVerificationReport({
             value={result.investmentTransactionsCreated}
           />
         )}
+        {format.copy.completePayeeAliases &&
+          (result.payeeAliasesCreated ?? 0) > 0 && (
+            <Tile
+              label={t(format.copy.completePayeeAliases)}
+              value={result.payeeAliasesCreated ?? 0}
+            />
+          )}
+        {format.copy.completePayeeDefaultCategories &&
+          (result.payeeDefaultCategoriesSet ?? 0) > 0 && (
+            <Tile
+              label={t(format.copy.completePayeeDefaultCategories)}
+              value={result.payeeDefaultCategoriesSet ?? 0}
+            />
+          )}
         {result.billsCreated > 0 && (
           <Tile
             label={t('mnyComplete.counts.bills')}

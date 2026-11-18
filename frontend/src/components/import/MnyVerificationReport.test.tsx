@@ -402,6 +402,44 @@ describe('MnyVerificationReport with a KMyMoney import', () => {
     expect(screen.getByText(/not match the shares computed from your KMyMoney file/)).toBeInTheDocument();
   });
 
+  it('shows the payee alias and default category tiles when the counts are above zero', () => {
+    const { rerender } = render(<MnyVerificationReport {...props} />);
+    expect(screen.queryByText('Payee aliases')).not.toBeInTheDocument();
+    expect(screen.queryByText('Default categories')).not.toBeInTheDocument();
+
+    rerender(
+      <MnyVerificationReport
+        {...props}
+        result={result({ payeeAliasesCreated: 7, payeeDefaultCategoriesSet: 0 })}
+      />,
+    );
+    expect(screen.getByText('Payee aliases')).toBeInTheDocument();
+    expect(screen.getByText('7')).toBeInTheDocument();
+    expect(screen.queryByText('Default categories')).not.toBeInTheDocument();
+
+    rerender(
+      <MnyVerificationReport
+        {...props}
+        result={result({ payeeAliasesCreated: 0, payeeDefaultCategoriesSet: 3 })}
+      />,
+    );
+    expect(screen.queryByText('Payee aliases')).not.toBeInTheDocument();
+    expect(screen.getByText('Default categories')).toBeInTheDocument();
+  });
+
+  it('never shows the payee tiles for a Money report, whatever the counts', () => {
+    render(
+      <MnyVerificationReport
+        result={result({ payeeAliasesCreated: 7, payeeDefaultCategoriesSet: 3 })}
+        currencyCode="USD"
+        filename="finances.mny"
+        onDone={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText('Payee aliases')).not.toBeInTheDocument();
+    expect(screen.queryByText('Default categories')).not.toBeInTheDocument();
+  });
+
   it('shows what the import rows sum to only when it differs from the file figure', () => {
     const { rerender } = render(<MnyVerificationReport {...props} />);
     expect(screen.queryByText(/Import rows sum to/)).not.toBeInTheDocument();

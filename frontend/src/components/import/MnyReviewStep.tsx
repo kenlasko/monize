@@ -181,6 +181,22 @@ export function MnyReviewStep({
         </div>
       )}
 
+      {/* Payee aliases and default categories a KMyMoney file's payees bring */}
+      {format.copy.countsPayeeAliases &&
+        format.copy.countsPayeeAliasesDetail &&
+        ((counts.payeeAliasesToCreate ?? 0) > 0 ||
+          (counts.payeeDefaultCategoriesToSet ?? 0) > 0) && (
+          <div className="mb-6">
+            <SummaryTile
+              label={t(format.copy.countsPayeeAliases)}
+              value={String(counts.payeeAliasesToCreate ?? 0)}
+              detail={t(format.copy.countsPayeeAliasesDetail, {
+                count: counts.payeeDefaultCategoriesToSet ?? 0,
+              })}
+            />
+          </div>
+        )}
+
       {/* Bills: how many rows the file holds versus how many are live series */}
       {fileCounts.bills > 0 && (
         <div className="mb-6">
