@@ -540,11 +540,16 @@ export function useInvestmentData() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, router, openEdit]);
 
-  const handleAccountChange = (values: string[]) => {
-    setSelectedAccountIds(values);
-    setCurrentPage(1);
-    setCashCurrentPage(1);
-  };
+  // Stable, as `selectableAccounts` below is: the page hands both to the app
+  // header's collapsed-title switcher, which re-publishes on every new identity.
+  const handleAccountChange = useCallback(
+    (values: string[]) => {
+      setSelectedAccountIds(values);
+      setCurrentPage(1);
+      setCashCurrentPage(1);
+    },
+    [setSelectedAccountIds, setCurrentPage, setCashCurrentPage],
+  );
 
   const handleDeleteTransaction = async (id: string) => {
     // Deleting one leg of a security transfer cascades to its paired leg on
@@ -676,9 +681,13 @@ export function useInvestmentData() {
   // whatever order the API returned the accounts in, which can shift between
   // loads and makes the selection dropdown appear to reorder at random.
   // filter() returns a fresh array, so sorting it in place does not mutate state.
-  const selectableAccounts = accounts
-    .filter((a) => a.accountSubType === 'INVESTMENT_BROKERAGE' || !a.accountSubType)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const selectableAccounts = useMemo(
+    () =>
+      accounts
+        .filter((a) => a.accountSubType === 'INVESTMENT_BROKERAGE' || !a.accountSubType)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [accounts],
+  );
 
   return {
     // Accounts

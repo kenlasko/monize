@@ -548,6 +548,8 @@ function DashboardContent() {
       title={pageTitle}
       subtitle={pageSubtitle}
       help='dashboard'
+      // While editing, the edit bar is the bar pinned under the header.
+      floatingBar={!editing}
       titleAdornment={
         !isDelegateView ? (
           <button

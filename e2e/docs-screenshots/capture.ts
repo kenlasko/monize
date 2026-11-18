@@ -58,15 +58,26 @@ export async function openDocsSession(
  * Save the picture for the current theme: the viewport, or just `element`.
  * The e2e stack serves the development build, whose Next.js indicator would
  * otherwise sit in the corner of every picture.
+ *
+ * A desktop page pins a bar to the top once its title scrolls away
+ * (`FloatingPageBar`, marked `data-floating-page-bar`), and a picture
+ * scrolled to a card under the header would have it across the card's top
+ * edge. It is hidden unless `floatingBars` says the picture is of it.
  */
 export async function docShot(
   page: Page,
   name: string,
   element?: Locator,
+  { floatingBars = false }: { floatingBars?: boolean } = {},
 ): Promise<void> {
   await page.addStyleTag({
     content: "nextjs-portal { display: none !important; }",
   });
+  if (!floatingBars) {
+    await page.addStyleTag({
+      content: "[data-floating-page-bar] { display: none !important; }",
+    });
+  }
   const file = theme() === "light" ? `${name}.light` : name;
   await shoot(page, file, { dir: DOCS_IMAGE_DIR, element });
 }

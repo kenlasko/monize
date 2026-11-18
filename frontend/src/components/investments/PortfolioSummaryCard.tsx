@@ -19,6 +19,7 @@ import {
 import { gainLossColor } from '@/lib/format';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { partialTotalFor } from '@/lib/net-worth-completeness';
+import { portfolioHeadline } from '@/lib/portfolio-headline';
 
 interface PortfolioSummaryCardProps {
   summary: PortfolioSummary | null;
@@ -334,7 +335,7 @@ export function PortfolioSummaryCard({
               : t('portfolioSummary.totalPortfolioValue')}
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {fmtVal(converted?.portfolio ?? summary.totalPortfolioValue)}
+            {fmtVal(portfolioHeadline(summary, foreignCurrency).value)}
           </div>
           {foreignCurrency && defaultTotal !== null && !valuationIncomplete && (
             <div className="text-xs text-gray-400 dark:text-gray-500">

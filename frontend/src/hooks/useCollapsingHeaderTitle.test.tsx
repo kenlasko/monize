@@ -64,6 +64,31 @@ describe('useCollapsingHeaderTitle', () => {
     expect(current()).toMatchObject({ figure: '$2.00' });
   });
 
+  it('carries the context and the switcher it was given', () => {
+    const switcher = {
+      currentId: 'a-1',
+      items: [],
+      onSelect: vi.fn(),
+      triggerLabel: 'Switch',
+      filterPlaceholder: 'Find',
+      noMatchesLabel: 'None',
+    };
+    function Narrowed({ context }: { context: string }) {
+      const ref = useCollapsingHeaderTitle<HTMLHeadingElement>({
+        title: 'Transactions',
+        context,
+        switcher,
+      });
+      return <h1 ref={ref}>Transactions</h1>;
+    }
+    const { rerender } = render(<Narrowed context="WS Chequing" />);
+    scrolled(false, -40);
+    expect(current()).toMatchObject({ title: 'Transactions', context: 'WS Chequing', switcher });
+    // Switching accounts while scrolled updates the header in place.
+    rerender(<Narrowed context="Savings" />);
+    expect(current()).toMatchObject({ context: 'Savings' });
+  });
+
   it('does not watch a title that has nothing to hand over', () => {
     const observe = vi.fn();
     vi.stubGlobal(

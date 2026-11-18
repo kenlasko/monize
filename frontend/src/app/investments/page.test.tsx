@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import toast from 'react-hot-toast';
-import { render, screen, waitFor, fireEvent, act } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act, within } from '@/test/render';
+import { stubCollapsingTitle } from '@/test/collapsing-title';
 import InvestmentsPage from './page';
 import { useMobileAddActionStore } from '@/store/mobileAddActionStore';
 
@@ -411,9 +412,32 @@ async function renderPage() {
   return result!;
 }
 
+/** A viewport where `query === '(max-width: 1279px)'` (the tab bar) is `tabBar`. */
+function setViewport({ tabBar }: { tabBar: boolean }) {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches: tabBar && query === '(max-width: 1279px)',
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })) as unknown as typeof window.matchMedia;
+}
+const originalMatchMedia = window.matchMedia;
+
 describe('InvestmentsPage', () => {
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
+    // Below `xl` unless a test says otherwise: there the header's picker is
+    // the only one on the page, as these tests expect. The desktop's floating
+    // copy of it has its own tests below.
+    setViewport({ tabBar: true });
     mockSearchParams = new URLSearchParams();
     mockShowForm = false;
     // Reset useLocalStorage mock state
@@ -1625,6 +1649,160 @@ describe('InvestmentsPage', () => {
         expect(mockOpenEdit).not.toHaveBeenCalled();
         expect(mockRouterReplace).toHaveBeenCalledWith('/investments', { scroll: false });
       });
+    });
+  });
+
+  describe('Mobile header title', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("hands the header the summary's account label and an account switcher", async () => {
+      const title = stubCollapsingTitle();
+      await renderPage();
+      await waitFor(() => {
+        expect(screen.getByTestId('option-brok-1')).toBeInTheDocument();
+      });
+      title.collapse();
+
+      expect(title.current()).toMatchObject({ title: 'Investments', context: 'All Accounts' });
+      const switcher = title.current()?.switcher;
+      // "All" is the selection, so it is current; the accounts read as the
+      // picker names them, without the brokerage suffix.
+      expect(switcher?.currentId).toBe('__all-investment-accounts__');
+      expect(switcher?.items.map((item) => item.primary)).toEqual([
+        'All Investment Accounts',
+        'RRSP',
+        'TFSA',
+      ]);
+
+      await act(async () => {
+        switcher?.onSelect('brok-2');
+      });
+      await waitFor(() => {
+        expect(title.current()).toMatchObject({ context: 'TFSA' });
+      });
+      expect(title.current()?.switcher?.currentId).toBe('brok-2');
+
+      // And back to every account from the same menu.
+      await act(async () => {
+        title.current()?.switcher?.onSelect('__all-investment-accounts__');
+      });
+      await waitFor(() => {
+        expect(title.current()).toMatchObject({ context: 'All Accounts' });
+      });
+    });
+  });
+
+  describe('Floating accounts bar (desktop)', () => {
+    let headerScrolled: ((past: boolean) => void) | undefined;
+    beforeEach(() => {
+      setViewport({ tabBar: false });
+      headerScrolled = undefined;
+      vi.stubGlobal(
+        'IntersectionObserver',
+        class {
+          private readonly callback: (entries: Partial<IntersectionObserverEntry>[]) => void;
+          constructor(callback: (entries: Partial<IntersectionObserverEntry>[]) => void) {
+            this.callback = callback;
+          }
+          observe(target: Element) {
+            // The header's account picker, not the title's own observer.
+            if (target.querySelector('[data-testid="multi-select"]')) {
+              headerScrolled = (past) =>
+                act(() =>
+                  this.callback([
+                    {
+                      isIntersecting: !past,
+                      boundingClientRect: { top: past ? -300 : 80 } as DOMRectReadOnly,
+                    },
+                  ]),
+                );
+            }
+          }
+          unobserve() {}
+          disconnect() {}
+        },
+      );
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('pins the accounts label, an account caret and refresh to the top once the picker scrolls away', async () => {
+      await renderPage();
+      const floating = screen.getByTestId('investments-floating-bar');
+      expect(floating).toHaveAttribute('aria-hidden', 'true');
+
+      headerScrolled?.(true);
+      expect(floating).toHaveAttribute('aria-hidden', 'false');
+      expect(floating).toHaveTextContent('Investments – All Accounts');
+      // A caret rather than a second multi-select, beside Refresh.
+      expect(within(floating).queryByTestId('multi-select')).not.toBeInTheDocument();
+      expect(within(floating).getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(within(floating).getByRole('button', { name: 'Switch to another account' }));
+      });
+      // "All" is the selection, so the menu offers the accounts.
+      expect(screen.queryByRole('menuitem', { name: /All Investment Accounts/ })).not.toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('menuitem', { name: /TFSA/ }));
+      });
+      await waitFor(() => {
+        expect(floating).toHaveTextContent('Investments – TFSA');
+      });
+
+      // And back to every account from the same caret.
+      await act(async () => {
+        fireEvent.click(within(floating).getByRole('button', { name: 'Switch to another account' }));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('menuitem', { name: /All Investment Accounts/ }));
+      });
+      await waitFor(() => {
+        expect(floating).toHaveTextContent('Investments – All Accounts');
+      });
+
+      headerScrolled?.(false);
+      expect(floating).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('shows the Total Portfolio Value and a + that asks investment or cash', async () => {
+      await renderPage();
+      headerScrolled?.(true);
+      const floating = screen.getByTestId('investments-floating-bar');
+      await waitFor(() => {
+        expect(within(floating).getByTestId('investments-floating-value')).toHaveTextContent('$50,000.00');
+      });
+      // A complete valuation carries no partial marker.
+      expect(within(floating).queryByTestId('partial-total-marker')).not.toBeInTheDocument();
+
+      fireEvent.click(within(floating).getByRole('button', { name: 'New Transaction' }));
+      expect(within(floating).getByRole('button', { name: 'Investment Transaction' })).toBeInTheDocument();
+      expect(within(floating).getByRole('button', { name: 'Cash Transaction' })).toBeInTheDocument();
+    });
+
+    it('marks the value a subtotal when the valuation is incomplete', async () => {
+      mockGetPortfolioSummary.mockResolvedValue({
+        ...mockPortfolioSummary,
+        valuationComplete: false,
+        pricesComplete: false,
+        unpricedSecurityIds: ['sec-9'],
+      });
+      await renderPage();
+      headerScrolled?.(true);
+      const value = await within(screen.getByTestId('investments-floating-bar')).findByTestId(
+        'investments-floating-value',
+      );
+      expect(within(value).getByTestId('partial-total-marker')).toBeInTheDocument();
+      expect(value).toHaveAttribute('title', 'Portfolio Value (partial)');
+    });
+
+    it('is not drawn where the tab bar is', async () => {
+      setViewport({ tabBar: true });
+      await renderPage();
+      expect(screen.queryByTestId('investments-floating-bar')).not.toBeInTheDocument();
     });
   });
 });

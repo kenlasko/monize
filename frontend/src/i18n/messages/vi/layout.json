@@ -141,7 +141,8 @@
   },
   "pageHeader": {
     "helpAriaLabel": "Trợ giúp về trang này",
-    "helpTooltip": "Trợ giúp về trang này"
+    "helpTooltip": "Trợ giúp về trang này",
+    "collapsedTitleWithContext": "{title} – {context}"
   },
   "bootSplash": {
     "loading": "Đang tải Monize",

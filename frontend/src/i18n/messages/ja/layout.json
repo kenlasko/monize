@@ -141,7 +141,8 @@
   },
   "pageHeader": {
     "helpAriaLabel": "このページのヘルプ",
-    "helpTooltip": "このページのヘルプ"
+    "helpTooltip": "このページのヘルプ",
+    "collapsedTitleWithContext": "{title} – {context}"
   },
   "bootSplash": {
     "loading": "Monize を読み込んでいます",

@@ -141,7 +141,8 @@
   },
   "pageHeader": {
     "helpAriaLabel": "Help for this page",
-    "helpTooltip": "Help for this page"
+    "helpTooltip": "Help for this page",
+    "collapsedTitleWithContext": "{title} – {context}"
   },
   "bootSplash": {
     "loading": "Loading Monize",

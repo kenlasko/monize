@@ -141,7 +141,8 @@
   },
   "pageHeader": {
     "helpAriaLabel": "此頁面的說明",
-    "helpTooltip": "此頁面的說明"
+    "helpTooltip": "此頁面的說明",
+    "collapsedTitleWithContext": "{title} – {context}"
   },
   "bootSplash": {
     "loading": "正在載入 Monize",

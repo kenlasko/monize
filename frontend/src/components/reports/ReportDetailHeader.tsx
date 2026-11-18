@@ -1,8 +1,14 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import { BackToReportsLink } from '@/components/reports/BackToReportsLink';
-import { ReportSwitcher } from '@/components/reports/ReportSwitcher';
+import { useReportSwitcher } from '@/components/reports/ReportSwitcher';
+import { EntitySwitcher } from '@/components/ui/EntitySwitcher';
+import {
+  CollapsingTitleContext,
+  useCollapsingHeaderTitle,
+} from '@/hooks/useCollapsingHeaderTitle';
 
 interface ReportDetailHeaderProps {
   /**
@@ -28,6 +34,15 @@ export function ReportDetailHeader({
   subtitle,
   actions,
 }: ReportDetailHeaderProps) {
+  const t = useTranslations('reports');
+  const switcher = useReportSwitcher(reportId);
+  // Below `xl`, once the title scrolls behind the app header, the header reads
+  // "Reports - <this report>" and carries the same caret.
+  const collapses = useContext(CollapsingTitleContext);
+  const titleRef = useCollapsingHeaderTitle<HTMLHeadingElement>(
+    collapses ? { title: t('page.title'), context: title, switcher } : null,
+  );
+
   return (
     <div className="mb-6">
       <BackToReportsLink />
@@ -39,10 +54,10 @@ export function ReportDetailHeader({
                 rather than being cut with an ellipsis; the desktop keeps the
                 single-line truncation (`sm:truncate`). The caret stays beside
                 it -- the mobile-table identity treatment. */}
-            <h1 className="break-words text-2xl font-bold text-gray-900 sm:truncate dark:text-gray-100">
+            <h1 ref={titleRef} className="break-words text-2xl font-bold text-gray-900 sm:truncate dark:text-gray-100">
               {title}
             </h1>
-            <ReportSwitcher currentId={reportId} />
+            <EntitySwitcher {...switcher} />
           </div>
           {subtitle && (
             <p className="text-gray-500 dark:text-gray-400">{subtitle}</p>

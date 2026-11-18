@@ -141,7 +141,8 @@
   },
   "pageHeader": {
     "helpAriaLabel": "इस पेज के लिए सहायता",
-    "helpTooltip": "इस पेज के लिए सहायता"
+    "helpTooltip": "इस पेज के लिए सहायता",
+    "collapsedTitleWithContext": "{title} – {context}"
   },
   "bootSplash": {
     "loading": "Monize लोड हो रहा है",

@@ -141,7 +141,8 @@
   },
   "pageHeader": {
     "helpAriaLabel": "Bu sayfa için yardım",
-    "helpTooltip": "Bu sayfa için yardım"
+    "helpTooltip": "Bu sayfa için yardım",
+    "collapsedTitleWithContext": "{title} – {context}"
   },
   "bootSplash": {
     "loading": "Monize yükleniyor",

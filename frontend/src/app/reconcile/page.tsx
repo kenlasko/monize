@@ -774,6 +774,8 @@ function ReconcileContent() {
             ? t('subtitleActive', { name: selectedAccount.name })
             : t('subtitle')}
           help="transactionReconcile"
+          // The summary bar below is this page's bar pinned under the header.
+          floatingBar={false}
         />
         {step === 'setup' && renderSetupStep()}
         {step === 'reconcile' && renderReconcileStep()}
