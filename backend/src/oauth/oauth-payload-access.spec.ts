@@ -52,7 +52,10 @@ const ALLOWED: Record<string, string> = {
   "backend/src/oauth/postgres.adapter.ts":
     "The oidc-provider Adapter implementation -- the reason the exception exists. " +
     "Every method is keyed by an opaque provider id (id/model/grantId/userCode/uid), " +
-    "except sweepOAuthPayloads, the daily expiry sweep, keyed by expires_at alone.",
+    "except sweepOAuthPayloads, the daily expiry sweep, keyed by expires_at alone, " +
+    "and findGrantsForAccount / revokeGrantForAccount (Settings > Connected apps), " +
+    "keyed by the session's own subject, never request-supplied. Bounded exception, " +
+    "see the contract.",
   "backend/src/oauth/oauth-provider.service.ts":
     "Constructs the adapter factory, and revokeAllForUser -- the second access " +
     "path, keyed by an application user id. Admin-initiated, id server-derived, " +

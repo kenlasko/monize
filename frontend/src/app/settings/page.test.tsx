@@ -133,6 +133,10 @@ vi.mock('@/lib/user-settings', () => ({
 }));
 
 // Mock exchange-rates API (settings page loads currencies dynamically)
+vi.mock('@/lib/oauth-connections', () => ({
+  oauthConnectionsApi: { list: vi.fn().mockResolvedValue([]), revoke: vi.fn() },
+}));
+
 vi.mock('@/lib/exchange-rates', () => ({
   exchangeRatesApi: {
     getCurrencies: vi.fn().mockResolvedValue([
@@ -327,7 +331,7 @@ describe('SettingsPage', () => {
       expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument();
     });
 
-    const expectedIds = ['profile', 'preferences', 'notifications', 'security', 'api-access', 'backup-restore', 'about', 'danger-zone'];
+    const expectedIds = ['profile', 'preferences', 'notifications', 'security', 'connected-apps', 'api-access', 'backup-restore', 'about', 'danger-zone'];
     for (const id of expectedIds) {
       expect(container.querySelector(`#${id}`)).toBeInTheDocument();
     }
