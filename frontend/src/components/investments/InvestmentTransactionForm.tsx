@@ -784,9 +784,26 @@ function InvestmentTransactionFormFields({
   );
 
   /**
-   * The user typed the total, so the total is the fact and the price follows
-   * it -- the inverse of the `totalAmount` memo above, at the price column's
-   * own ten decimals (INV-TRADE-001).
+   * Set while the commission on screen is one `handleTotalAmountChange` wrote
+   * as the remainder of a typed total, so a later total that no longer leaves
+   * a remainder takes it back out instead of treating it as the person's fee.
+   */
+  const commissionFromTotal = useRef(false);
+
+  /**
+   * The user typed the total, so the total is the fact (INV-TRADE-001).
+   *
+   * When the person typed the price as well, quantity x price is what the
+   * shares cost and the remainder is the commission, the way a broker's
+   * confirmation reads (#2267): 10 x 100 for a total of 1,005 is a 5 fee, not
+   * a price of 100.50. A buy's total above the shares, or a sale's below
+   * them, is that remainder; the typed price is kept as typed, so a keystroke
+   * that passed through a smaller total does not lose it.
+   *
+   * Otherwise (no typed price, a total that leaves no remainder, or a
+   * redemption whose total carries the engine's accrued interest) the price
+   * follows the total -- the inverse of the `totalAmount` memo above, at the
+   * price column's own ten decimals.
    *
    * Nothing to derive without shares to divide by, and a total smaller than
    * the commission would imply a negative price, which is not a price; both
@@ -795,17 +812,37 @@ function InvestmentTransactionFormFields({
   const handleTotalAmountChange = (value: number | undefined) => {
     if (value === undefined || value === null) return;
     if (!watchedQuantity) return;
+    const base = baseInvestmentAction(watchedAction);
+    const buySide = base === 'BUY' || base === 'REINVEST';
+    const basis = typedPriceBasis.current;
+    const typedPrice =
+      basis?.kind === 'price' && basis.value > 0 && !supportsAccruedInterest(watchedAction)
+        ? basis.value
+        : null;
+    if (typedPrice !== null) {
+      const subtotal = roundToDecimals(watchedQuantity * typedPrice, 4);
+      const remainder = roundToDecimals(buySide ? value - subtotal : subtotal - value, 4);
+      if (remainder >= 0) {
+        commissionFromTotal.current = true;
+        if (watchedPrice !== typedPrice) {
+          setValue('price', typedPrice, { shouldDirty: true, shouldValidate: true });
+        }
+        setValue('commission', remainder, { shouldDirty: true, shouldValidate: true });
+        return;
+      }
+    }
+    const commission = commissionFromTotal.current ? 0 : watchedCommission;
     const proceeds = supportsAccruedInterest(watchedAction)
       ? value - watchedAccruedInterest
       : value;
-    const base = baseInvestmentAction(watchedAction);
-    const gross =
-      base === 'BUY' || base === 'REINVEST'
-        ? proceeds - watchedCommission
-        : proceeds + watchedCommission;
+    const gross = buySide ? proceeds - commission : proceeds + commission;
     if (!(gross > 0)) return;
+    if (commissionFromTotal.current) {
+      commissionFromTotal.current = false;
+      setValue('commission', 0, { shouldDirty: true, shouldValidate: true });
+    }
     priceEditedByPerson.current = true;
-    typedPriceBasis.current = { kind: 'total', value };
+    if (typedPrice === null) typedPriceBasis.current = { kind: 'total', value };
     setValue('price', roundToDecimals(gross / watchedQuantity, 10), {
       shouldDirty: true,
       shouldValidate: true,
@@ -1636,7 +1673,10 @@ function InvestmentTransactionFormFields({
             label={t('transactionForm.commissionFees')}
             prefix={currencySymbol}
             value={watchedCommission || undefined}
-            onChange={(value) => setValue('commission', value, { shouldValidate: true })}
+            onChange={(value) => {
+              commissionFromTotal.current = false;
+              setValue('commission', value, { shouldValidate: true });
+            }}
             error={errors.commission?.message}
             allowNegative={false}
           />
