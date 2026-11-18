@@ -86,13 +86,14 @@ that file's existing Money spec unchanged and adds one case for the new behaviou
 
 ## Design in one page
 
-1. **Reader** (WP1): sniff the container (spec 4.3), inflate gzip with `maxOutputLength`, apply
-   KMyMoney's byte filter (spec 4.4), tokenize by element path, build the raw model with exact BigInt
-   rationals and ordinal handles (spec 4.5, 4.6). Pure, synchronous, no database.
+1. **Reader** (WP1): sniff the container (spec 4.3), inflate gzip as a stream under its own bound,
+   apply KMyMoney's byte filter (spec 4.4), tokenize by element path, build the raw model with exact
+   BigInt rationals and ordinal handles (spec 4.5, 4.6), checking the bounds of spec 4.2 as the bytes
+   arrive. Pure, no database; it yields to the event loop as it reads (the review fixes, B2).
 2. **Mappers** (WP2): raw model to `MnyParsedFile`: accounts and investment pairs, opening balances,
    categories, payees, tags, transactions and transfers, investments, securities, prices and rates,
    schedules, loan terms through `mapLoans`, warnings, and the file-computed expectations of spec
-   section 6. Pure, synchronous, no database.
+   section 6. Pure, no database; written as steps that yield to the event loop (B2).
 3. **Shared generalisation** (WP3a): the spec 4.9 changes, so the job, writers and report can carry a
    KMyMoney import.
 4. **Wiring** (WP3b): `KmyParserService` (reads the user's default currency and the CRYPTO codes, then

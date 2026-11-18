@@ -256,10 +256,11 @@ export function readKmyFile(input: KmyReadInput): KmyRawFile; // throws KmyImpor
 
 **Steps.**
 
-1. Container: spec 4.3 in that order. Inflate with `zlib.gunzipSync(bytes, { maxOutputLength:
-   maxXmlBytes })`; map `ERR_BUFFER_TOO_LARGE` to `KmyXmlTooLargeError` (limit in MB) and any other zlib
-   error to `KmyCorruptFileError`. A plain document larger than `maxXmlBytes` is `KmyXmlTooLargeError`
-   too.
+1. Container: spec 4.3 in that order. As built first, `zlib.gunzipSync(bytes, { maxOutputLength:
+   maxXmlBytes })`; since the review fixes (B2) the gzip is inflated as a stream (`createGunzip`) and
+   counted chunk by chunk against `KMY_MAX_XML_BYTES`, the first chunk past it `KmyXmlTooLargeError`
+   (limit in MB) and any other zlib error `KmyCorruptFileError`. A plain document larger than the bound
+   is `KmyXmlTooLargeError` too.
 2. Filter: port spec 4.4 exactly; a test per truth-table row.
 3. Tokenize: decode in 64 KB slices with `TextDecoder("utf-8", { fatal: false })` and `stream: true`;
    `new Parser(handler, { xmlMode: true, decodeEntities: true, recognizeSelfClosing: true })`; nesting
