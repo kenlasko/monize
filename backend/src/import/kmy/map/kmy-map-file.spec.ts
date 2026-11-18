@@ -230,6 +230,7 @@ describe("mapKmyFile: the reference's section 18 file", () => {
       ["accountNumbersNotImported", "Checking"],
       ["scheduleWeekendRuleDropped", "Electricity"],
       ["scheduleOverdue", "Electricity"],
+      ["payeeMatchingDisabled", "Corner Market"],
       ["payeeDetailsNotImported", "City Power"],
       ["budgetsNotImported", undefined],
     ]);

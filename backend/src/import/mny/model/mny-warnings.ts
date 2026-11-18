@@ -179,7 +179,7 @@ export const MNY_WARNING_CODES = [
   "onlineBankingNotImported",
   /** Account numbers are not imported. */
   "accountNumbersNotImported",
-  /** Payee contact and matching details are not imported. */
+  /** Payee details with no Monize field, or contact details Monize could not read, are not imported. */
   "payeeDetailsNotImported",
   /** A number could not be parsed and was read as zero. */
   "unparsableNumber",
@@ -189,6 +189,20 @@ export const MNY_WARNING_CODES = [
   "mappedBalanceDiffers",
   /** A holding's imported share count differs from KMyMoney's own replay. */
   "holdingsReplayDiffers",
+  /** A KMyMoney payee has matching turned off; Monize's exact-name tier still links its name. */
+  "payeeMatchingDisabled",
+  /** A KMyMoney payee matching key Monize cannot reproduce exactly; it was not imported. */
+  "payeeMatchKeyNotImported",
+  /** A case-sensitive KMyMoney matching key was imported as an alias, which ignores case. */
+  "payeeMatchCaseWidened",
+  /** A matching key clashes with another payee's alias or name; it was not imported. */
+  "payeeMatchKeyConflict",
+  /** An imported alias can match the same text as another payee's alias. */
+  "payeeMatchKeyOverlap",
+  /** A payee's default category is not a category Monize can use; it was not imported. */
+  "payeeDefaultCategoryNotImported",
+  /** An existing payee already had its own default category or contact details; they were kept. */
+  "payeeDetailsKept",
 ] as const;
 
 export type MnyWarningCode = (typeof MNY_WARNING_CODES)[number];

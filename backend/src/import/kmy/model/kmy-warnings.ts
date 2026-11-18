@@ -61,4 +61,11 @@ export const KMY_WARNING_CODES: readonly MnyWarningCode[] = [
   "autoCalcInPostedSplit",
   "mappedBalanceDiffers",
   "holdingsReplayDiffers",
+  "payeeMatchingDisabled",
+  "payeeMatchKeyNotImported",
+  "payeeMatchCaseWidened",
+  "payeeMatchKeyConflict",
+  "payeeMatchKeyOverlap",
+  "payeeDefaultCategoryNotImported",
+  "payeeDetailsKept",
 ];

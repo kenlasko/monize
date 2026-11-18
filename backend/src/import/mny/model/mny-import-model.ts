@@ -117,9 +117,31 @@ export interface MappedCategories {
   readonly warnings: readonly MnyWarning[];
 }
 
+/** A payee's contact details, already validated against the payee DTO bounds (KMyMoney import). */
+export interface MappedPayeeContact {
+  /** Sanitized, at most 500 characters. */
+  readonly notes: string | null;
+  /** Passes `isEmail`, at most 255 characters. */
+  readonly email: string | null;
+  /** `normalizePhoneNumber`'s stored form. */
+  readonly phone: string | null;
+  /** Street, city, state and postcode joined with ", ", sanitized, at most 500. */
+  readonly address: string | null;
+}
+
 export interface MappedPayee {
   readonly handle: number;
   readonly name: string;
+  /**
+   * Monize alias globs, translated and collision-checked within the file.
+   * Only the KMyMoney importer sets the three optional fields below; a Money
+   * payee never carries them. Absent: none.
+   */
+  readonly aliases?: readonly string[];
+  /** Handle in `MappedCategories.byHandle` of the default category. Absent or null: none. */
+  readonly defaultCategoryHandle?: number | null;
+  /** Absent: none. */
+  readonly contact?: MappedPayeeContact;
 }
 
 // ---------------------------------------------------------------------------
