@@ -365,7 +365,7 @@ and each change gets its own new spec case.
 | `backend/src/import/mny/dto/mny-import.dto.ts` | `MnyImportOptionsDto.accounts` and `.bills` gain `@ArrayMaxSize(MNY_MAX_OPTION_ITEMS)` (10,000), above any file either format accepts |
 | `backend/src/import/mny/mny-staging.service.ts` (`remove`) | takes the route's format as a required argument; the Money route passes `"mny"` |
 | `backend/src/import/mny/writers/write-prices.ts` | `KMY_PRICE_SOURCE = "kmy_import"`; `writeSecurityPrices` and `writeExchangeRates` take an optional trailing `source` (default `MNY_PRICE_SOURCE`) |
-| `backend/src/import/mny/map/map-investments.ts` | `pairShareTransfers` is exported (no body change) |
+| `backend/src/import/mny/map/map-investments.ts` | `pairShareTransfers` is exported (no body change); rows take their ids from `moneyJournalIds` and `orderForReplay` moved to `replay-order.ts` (5.7.8: the one Money change in behaviour, and only in the order of same-day rows, which was random before) |
 | `backend/src/import/import.module.ts` | the KMyMoney controller and providers, and `{ provide: KMY_SOURCE_PARSER, useExisting: KmyParserService }` |
 
 New shared file (no Money behaviour): a model file under `backend/src/import/mny/model/` holding
@@ -793,10 +793,10 @@ parent).
 #### 5.6.4 Cross-currency transfers
 
 A transfer row and a transfer counterpart each keep their own split's `shares`, in their own account's
-currency. The positive (receiving) row carries `exchangeRate = roundFxRate(|positive.amount| /
+currency. In a transfer pair (5.6.1, two `A` splits) the positive (receiving) row carries `exchangeRate = roundFxRate(|positive.amount| /
 |negative.amount|)`, the receiving currency per unit of the sending currency, as Monize's own
 `createTransfer` stores the implied rate on the destination leg; the sending row carries 1. Same
-currency: 1 on both. Zero on both sides: 1. Zero on one side only: the file's own price for the pair (`KmyRateLookup`, under the same `resolveFxRate` rule and 45-day bound as 5.7.3), else the receiving row carries no rate (null), never 1, and the transfer is named in `crossCurrencyTransferRateMissing` (the date, the two accounts as KMyMoney names them and the currency pair in the detail; the same for the counterpart of a split row).
+currency: 1 on both. Zero on both sides: 1. Zero on one side only: the file's own price for the pair (`KmyRateLookup`, under the same `resolveFxRate` rule and 45-day bound as 5.7.3), else the receiving row carries no rate (null), never 1, and the transfer is named in `crossCurrencyTransferRateMissing` (the date, the two accounts as KMyMoney names them and the currency pair in the detail). A split row's transfer leg: 5.6.4.1.
 
 Worked example (the reference's section 18, T5): commodity USD; Checking `shares = value = -1100`, EUR
 Savings `value = 1100` (USD), `shares = 1000` (EUR). Rows: Checking -1100.0000 USD, rate 1; EUR Savings
@@ -805,6 +805,31 @@ Savings +1000 EUR, exactly the two `shares`.
 
 A category split in a foreign currency (R6.3, T013) needs nothing extra: the leg is converted through the
 parent's ratio (4.7).
+
+##### 5.6.4.1 A split row's transfer leg in another currency
+
+Decision (review item m2): the **counterpart row** carries the rate, in both directions; the parent split
+row and its legs keep 1 and the parent's currency. The rate is the counterpart's currency per unit of the
+parent's, `roundFxRate(|o.shares| / |legRational(o)|)`: the split's own `shares` over its value in the
+parent's currency (4.7), exact before the one rounding, so neither the leg's 4-place rounding nor a 5.6.3
+residual moved onto it changes it. This is the row shape Monize itself writes: `TransactionSplitService`
+creates every transfer counterpart of a split, whichever way the line moves money, with `exchangeRate` =
+received over sent from the line's stated target amount (or the market rate parent to target), and the
+parent row in its own currency at 1. The two-split transfer pair keeps 5.6.4's receiving-leg rule, which is
+`createTransfer`'s shape (`transferLegColumns`: the source leg 1, the destination leg the rate); in a split
+row the parent's own `exchange_rate` would describe a foreign-entry amount, not the leg, so it is never
+where a leg's rate goes. Same currency, or nothing on both sides: 1. One side empty (shares or the leg
+0): the file's own price for the pair, parent's currency to the counterpart's, under the 5.7.3 bound,
+else null and `crossCurrencyTransferRateMissing` naming the sending side first (the parent when the leg
+takes money out of it, else the counterpart). Never 1 (FIN-002).
+
+Worked example (the review's m2 input): commodity EUR; EUR Savings `value = shares = 100` (the parent),
+Checking `value = -30` (EUR) `shares = -33` (USD), Salary `-70`. Rows: EUR Savings +100.0000 EUR, rate 1,
+legs Checking +30 (transfer) and Salary +70; Checking -33.0000 USD, `isTransfer`, linked to the parent, rate
+`roundFxRate(33 / 30)` = 1.1 (USD per EUR). The mirror (EUR Savings -100, Checking +33 USD worth 30 EUR,
+Groceries 70) gives the counterpart +33 at 1.1 too. Leg rounding: commodity USD, Checking -10, EUR Savings
+`value = 10/3`, `shares = 3`, Groceries `20/3`: the EUR leg is stored -3.3333 and the counterpart +3 EUR at
+0.9, the file's exact ratio, not 3 / 3.3333 = 0.9000090001.
 
 #### 5.6.5 Status, dates, numbers, memos
 
@@ -1032,10 +1057,18 @@ breaks a same-day tie on the row id, and a same-day stock split and buy fold to 
 the two orders (100 shares, a 2:1 split and a buy of 10: 210 or 220). The investment mapper therefore
 reads the transactions in KMyMoney's journal order (post date, then transaction id as a string,
 `MyMoneyTransaction::uniqueSortKey`; `journalOrder`) and gives each investment row a UUIDv7 from
-`sortableRowIds` (`kmy-row-ids.ts`), which sorts in the order handed out. The canonical replay is then
-KMyMoney's own order, with no second ordering scheme beside it, whatever the order of the file
-(`kmy-import-order.integration.spec.ts`). The file-side replay (6.1) and the mapped replay before the
-import use the same order.
+`sortableRowIds` (`backend/src/import/mny/map/sortable-row-ids.ts`), which sorts in the order handed out.
+The canonical replay is then KMyMoney's own order, with no second ordering scheme beside it, whatever the
+order of the file (`kmy-import-order.integration.spec.ts`). The file-side replay (6.1) and the mapped
+replay before the import use the same order: `orderForReplay` (`backend/src/import/mny/map/replay-order.ts`)
+sorts the mapped rows by date, then id, the database's order for rows sharing `created_at`.
+
+The Money importer had the same latent defect and shares the mechanism: `moneyJournalIds` hands the ids
+out in Money's journal order, date then `htrn` (the row's own identifier; the reader's physical row order
+is storage layout and does not follow it in `sample-money99-investments.mny`). Money writes no stock split
+as a share movement (`SEC_SPLIT` is not applied), so its order-sensitive same-day pair is a sell and a buy:
+100 shares at 10, then a sell of 100 and a buy of 100 at 20 on one day, leave an average cost of 20 in that
+order and 15 the other way, which a random id decided before (`mny-import-order.integration.spec.ts`).
 
 #### 5.7.9 Worked example (the reference's section 18)
 
@@ -1576,8 +1609,8 @@ Reused unchanged (format-neutral): `mnyJobNotFound`, `mnyImportAlreadyRunning`, 
 | trade with no cash split | no cash row | nothing moved |
 | price absent on a trade | derived from the total | INV-TRADE-001 |
 | ADD_SHARES cost | none (price null, total 0) | KMyMoney recorded none; Monize reports gains drawn on them as unknown, never as free shares |
-| exchange rate a transfer implies | stored on the receiving leg | a rate the file holds is not looked up |
-| a cross-currency transfer whose amounts imply no rate and whose pair the file does not price within `FX_MAX_RATE_AGE_DAYS` before its date | null on the receiving leg, `crossCurrencyTransferRateMissing` | never 1 (FIN-002); the receiving leg is where Monize stores a transfer's rate (5.6.4), so the user enters it there |
+| exchange rate a transfer implies | stored on the receiving leg; for a split row's transfer leg, on the counterpart in either direction (5.6.4.1) | a rate the file holds is not looked up |
+| a cross-currency transfer whose amounts imply no rate and whose pair the file does not price within `FX_MAX_RATE_AGE_DAYS` before its date | null on the receiving leg (a split row's transfer leg: on its counterpart, 5.6.4.1), `crossCurrencyTransferRateMissing` | never 1 (FIN-002); that leg is where Monize stores a transfer's rate (5.6.4), so the user enters it there |
 | rate needed for a trade in a commodity other than the trading currency | the file's own price for the pair through `resolveFxRate` (on or before the date, at most `FX_MAX_RATE_AGE_DAYS` old), else unconverted with a warning | never 1, never a silent relabel (FIN-002) |
 | security price history before the first trade | imported | it is the user's file |
 | exchange rate for an unused currency | not imported | it would create currencies nobody uses |
@@ -1608,7 +1641,7 @@ INV-HOLDING-001 (holdings only from the canonical rebuild), FIN-003 (SPLIT multi
 | accounts | map-accounts spec | raw builders | every type of 5.2.1; CRYPTO; unsupported code; closed; institution; credit limit; favourite; pair detection by KVP, by each of three suffixes (English, German, Japanese-empty falls through), by none, currency mismatch, one cash account claimed twice; selection by the investment handle |
 | opening balances | map-opening-balances spec | raw builders | every row of the 5.3 example table |
 | categories | map-categories spec | raw builders | three levels; income and expense; equity as category; referenced-only keeps ancestors; a name with `:` |
-| transactions | map-transactions spec | raw builders | every row of 5.6.1 and 5.6.7; parent tie-break; cross-currency example 5.6.4 (exact rate); leg conversion and residual; unbalanced; excluded accounts; status and reconcile date per row; payee fallback; tags per shape |
+| transactions | map-transactions spec | raw builders | every row of 5.6.1 and 5.6.7; parent tie-break; cross-currency example 5.6.4 (exact rate); the 5.6.4.1 counterpart rate in both directions, from exact shares over value, with a one-sided zero; leg conversion and residual; unbalanced; excluded accounts; status and reconcile date per row; payee fallback; tags per shape |
 | investments | map-investments spec | raw builders | every row of 5.7.2 and 5.7.3; the cross-currency trade example; INTEREST companions; cash-only shapes; transfer pairing and unpaired; split ratio; splits inside multi-split; the 5.7.9 walk; the 5.7.7 shapes that fit no activity (map-investment-shapes spec) |
 | stock-split checks | map-stock-splits spec | raw builders | the three rows of 5.7.5 |
 | securities and prices | map-securities / map-prices specs | raw builders | symbols, types, crypto skip, price filter, rate filter, orientation of both directions |
@@ -1623,7 +1656,7 @@ INV-HOLDING-001 (holdings only from the canonical rebuild), FIN-003 (SPLIT multi
 | shared generalisation (amendment) | mny-import.service and mny-preview specs | | the writer is called after `applyImportRules` and before `writeSecurities`, on the same manager; its warnings reach the result; the new counts only for KMyMoney; a Money preview and result unchanged |
 | controller | kmy controller spec | mocked parser/staging | multer limit, error-code mapping, staging with `kmy`, format refusals on jobs and staged ids, PAT decorators |
 | parser service | kmy parser service spec | mocked manager | reads preference and coins, passes them through, identical output on a second parse of the same bytes (handles equal) |
-| integration | `backend/test/integration/` KMyMoney spec | committed fixtures and builder XML, real PostgreSQL | section 18 file end to end through `start`: verification all match with delta 0, holding 15 and cost 378.75, prices source `kmy_import`, rate `(EUR, USD, 1.1)`, receiving leg rate, reconciled dates, closed account closed after its rows, staged and job `source_format = 'kmy'`, staged bytes removed, re-upload refused, wipe lets the same bytes in, a Money staged id refused by the KMyMoney start; a builder file with a 3-level category tree, a loan payment and a cross-currency trade; payee amendment: the section 18 file gives City Power the alias `*CITY POWER*` and the default category Electricity and gives Corner Market no alias; an import into a profile holding a conflicting alias (skipped, post-import warning) and a payee with its own default category (kept, `payeeDetailsKept`); **not retroactive**: with an import rule on Corner Market's rows whose `set_payee_from_text` renders "CITY POWER X" (`createIfMissing` false), the rows keep Corner Market, which they would not if the aliases were written before the rule pass; after a start-fresh wipe the same aliases are written again |
+| integration | `backend/test/integration/` KMyMoney spec | committed fixtures and builder XML, real PostgreSQL | section 18 file end to end through `start`: verification all match with delta 0, holding 15 and cost 378.75, prices source `kmy_import`, rate `(EUR, USD, 1.1)`, receiving leg rate, reconciled dates, closed account closed after its rows, staged and job `source_format = 'kmy'`, staged bytes removed, re-upload refused, wipe lets the same bytes in, a Money staged id refused by the KMyMoney start; a builder file with a 3-level category tree, a loan payment and a cross-currency trade; a split row with a foreign transfer leg each way (5.6.4.1: the counterpart at 1.1, the parent at 1, the rate equal to received over sent from the stored rows); same-day order (5.7.8) for both formats; payee amendment: the section 18 file gives City Power the alias `*CITY POWER*` and the default category Electricity and gives Corner Market no alias; an import into a profile holding a conflicting alias (skipped, post-import warning) and a payee with its own default category (kept, `payeeDetailsKept`); **not retroactive**: with an import rule on Corner Market's rows whose `set_payee_from_text` renders "CITY POWER X" (`createIfMissing` false), the rows keep Corner Market, which they would not if the aliases were written before the rule pass; after a start-fresh wipe the same aliases are written again |
 | frontend | component, hook, lib specs | mocked API | each component with the kmy descriptor (copy keys, no era, no missing tables, mapped-balance line, download name), Money cases unchanged; the hook with the kmy client; wizard routing of `.kmy` and `.xml`; proxy route tables; currency source label; the "Payee aliases" review tile and the two report tiles shown only when their counts are above zero, and absent for Money |
 | e2e | an e2e spec beside `e2e/tests/import-mny.spec.ts` | committed synthetic `.kmy`; in-test buffers | upload copy names KMyMoney; end to end through verification; refusals: plain text, PGP armour, SQLite header, `.anon.xml` |
 

@@ -224,6 +224,134 @@ describe("mapKmyTransactions: cross-currency (spec 5.6.4, 4.7)", () => {
     });
   });
 
+  describe("the rate of a split row's transfer counterpart (spec 5.6.4.1, m2)", () => {
+    it("rates a sending counterpart as Monize does, the parent keeping 1, when the parent receives", () => {
+      // The review's input: EUR account +100 (parent), Checking -33 USD
+      // (value -30 EUR), Salary -70.
+      const { transactions } = run([
+        {
+          commodity: "EUR",
+          splits: [
+            { account: "EUR", value: "100" },
+            { account: "CHK", value: "-30", shares: "-33" },
+            { account: "SAL", value: "-70" },
+          ],
+        },
+      ]);
+      const [parent, counterpart] = transactions.transactions;
+      expect(parent).toMatchObject({
+        currencyCode: "EUR",
+        amount: 100,
+        exchangeRate: 1,
+      });
+      expect(
+        parent.splits.map((s) => [s.transferAccountKey, s.amount]),
+      ).toEqual([
+        [expect.any(String), 30],
+        [null, 70],
+      ]);
+      // USD per EUR, the counterpart's currency per unit of the parent's: what
+      // TransactionSplitService stores on the counterpart in either direction.
+      expect(counterpart).toMatchObject({
+        currencyCode: "USD",
+        amount: -33,
+        isTransfer: true,
+        linkedTransactionId: parent.id,
+        exchangeRate: 1.1,
+      });
+      expect(transactions.warnings).toEqual([]);
+    });
+
+    it("orients the rate the same way when the counterpart receives", () => {
+      const { transactions } = run([
+        {
+          commodity: "EUR",
+          splits: [
+            { account: "EUR", value: "-100" },
+            { account: "CHK", value: "30", shares: "33" },
+            { account: "EGRO", value: "70" },
+          ],
+        },
+      ]);
+      const [parent, counterpart] = transactions.transactions;
+      expect(parent.exchangeRate).toBe(1);
+      expect(counterpart).toMatchObject({ amount: 33, exchangeRate: 1.1 });
+    });
+
+    it("takes the split's exact shares over value, not the rounded leg", () => {
+      // The EUR leg is -10/3 USD, stored as -3.3333: 3 / 3.3333 would be
+      // 0.9000090001, the file's own ratio is 0.9 exactly.
+      for (const sign of ["", "-"]) {
+        const back = sign === "" ? "-" : "";
+        const { transactions } = run([
+          {
+            commodity: "USD",
+            splits: [
+              { account: "CHK", value: `${back}10` },
+              { account: "EUR", value: `${sign}10/3`, shares: `${sign}3` },
+              { account: "GRO", value: `${sign}20/3` },
+            ],
+          },
+        ]);
+        const counterpart = transactions.transactions.find((r) => r.isTransfer);
+        expect(counterpart).toMatchObject({
+          amount: Number(`${sign}3`),
+          exchangeRate: 0.9,
+        });
+        expect(transactions.warnings).toEqual([]);
+      }
+    });
+
+    it("gives a sending counterpart with no implied rate the file's price, else null with the warning sending first", () => {
+      const oneSided = [
+        {
+          postDate: "2024-03-01",
+          commodity: "USD",
+          splits: [
+            { account: "CHK", value: "100" },
+            { account: "EUR", value: "0", shares: "-1000" },
+            { account: "SAL", value: "-100" },
+          ],
+        },
+      ];
+      const missing = run(oneSided).transactions;
+      expect(missing.transactions.find((r) => r.isTransfer)).toMatchObject({
+        amount: -1000,
+        exchangeRate: null,
+      });
+      expect(missing.transactions[0].exchangeRate).toBe(1);
+      expect(missing.warnings).toHaveLength(1);
+      expect(missing.warnings[0]).toMatchObject({
+        code: "crossCurrencyTransferRateMissing",
+        detail: "2024-03-01: EUR Savings (EUR) to Checking (USD)",
+      });
+
+      const priced = run(oneSided, {
+        prices: [rawPrice("USD", "EUR", "2024-02-15", "9/10")],
+      }).transactions;
+      expect(priced.transactions.find((r) => r.isTransfer)?.exchangeRate).toBe(
+        0.9,
+      );
+      expect(priced.warnings).toEqual([]);
+    });
+
+    it("keeps 1 for a counterpart that moves nothing on either side", () => {
+      const { transactions } = run([
+        {
+          splits: [
+            { account: "CHK", value: "-100" },
+            { account: "GRO", value: "100" },
+            { account: "EUR", value: "0", shares: "0" },
+          ],
+        },
+      ]);
+      expect(
+        transactions.transactions.find((r) => r.isTransfer)?.exchangeRate,
+      ).toBe(1);
+      expect(transactions.warnings).toEqual([]);
+    });
+  });
+
   it("converts the legs of a foreign-currency parent at its own ratio", () => {
     const { transactions } = run([
       {

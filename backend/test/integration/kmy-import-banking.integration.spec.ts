@@ -2,6 +2,7 @@ import { DataSource } from "typeorm";
 import { useKmyImportHarness } from "../helpers/kmy-import-harness";
 import {
   kmyAccount,
+  kmyCurrency,
   kmyFile,
   kmySplit,
   kmyTransaction,
@@ -294,5 +295,146 @@ describe("kmy import: banking builder files (integration)", () => {
     // 1000 - 200 + 50 and 1000 + 200 - 50.
     expect(await balanceOf("Checking")).toBe(850);
     expect(await balanceOf("Savings")).toBe(1150);
+  });
+
+  it("writes a split row's foreign transfer leg in the shape Monize's own split writes, both directions (spec 5.6.4.1)", async () => {
+    // Commodity EUR. 2024-02-01: EUR Savings receives 100 = 33 USD from
+    // Checking (worth 30 EUR) + 70 Salary. 2024-03-01: EUR Savings pays 100 =
+    // 33 USD into Checking (30 EUR) + 70 Groceries.
+    const split = (
+      id: string,
+      account: string,
+      value: string,
+      shares = value,
+    ) => kmySplit({ id, account, value: `${value}/1`, shares: `${shares}/1` });
+    const xml = kmyFile({
+      accounts: [
+        kmyAccount({ id: "A000001", name: "Checking", type: 1 }),
+        kmyAccount({
+          id: "A000002",
+          name: "EUR Savings",
+          type: 2,
+          currency: "EUR",
+        }),
+        kmyAccount({
+          id: "A000003",
+          name: "Salary",
+          type: 12,
+          parentaccount: "AStd::Income",
+          currency: "EUR",
+        }),
+        kmyAccount({
+          id: "A000004",
+          name: "Groceries",
+          type: 13,
+          parentaccount: "AStd::Expense",
+          currency: "EUR",
+        }),
+      ],
+      currencies: [
+        kmyCurrency({ id: "EUR", name: "Euro" }),
+        kmyCurrency({ id: "USD", name: "US Dollar" }),
+      ],
+      transactions: [
+        kmyTransaction(
+          [
+            split("S0001", "A000002", "100"),
+            split("S0002", "A000001", "-30", "-33"),
+            split("S0003", "A000003", "-70"),
+          ],
+          { id: kmyTxId(1), postdate: "2024-02-01", commodity: "EUR" },
+        ),
+        kmyTransaction(
+          [
+            split("S0001", "A000002", "-100"),
+            split("S0002", "A000001", "30", "33"),
+            split("S0003", "A000004", "70"),
+          ],
+          { id: kmyTxId(2), postdate: "2024-03-01", commodity: "EUR" },
+        ),
+      ],
+    });
+
+    const job = await runKmy(toKmyBytes(xml, "gzip"));
+    expect(job.status).toBe("completed");
+    expect(job.result!.warnings.map((w) => w.code)).not.toContain(
+      "crossCurrencyTransferRateMissing",
+    );
+    for (const line of job.result!.verification) {
+      expect(line.delta).toBe(0);
+    }
+
+    const rows: {
+      id: string;
+      account: string;
+      date: string;
+      amount: string;
+      currency: string;
+      rate: string | null;
+      is_split: boolean;
+      is_transfer: boolean;
+      linked: string | null;
+    }[] = await dataSource.query(
+      `SELECT t.id, a.name AS account, TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS date,
+              t.amount, t.currency_code AS currency, t.exchange_rate AS rate,
+              t.is_split, t.is_transfer, t.linked_transaction_id AS linked
+         FROM transactions t JOIN accounts a ON a.id = t.account_id
+        WHERE t.user_id = $1 ORDER BY t.transaction_date, t.amount`,
+      [userId],
+    );
+    expect(
+      rows.map((r) => [
+        r.date,
+        r.account,
+        Number(r.amount),
+        r.currency,
+        Number(r.rate),
+        r.is_split,
+        r.is_transfer,
+      ]),
+    ).toEqual([
+      // The parent keeps 1 (an amount in its own currency); the counterpart
+      // carries USD per EUR whichever way the money moves.
+      ["2024-02-01", "Checking", -33, "USD", 1.1, false, true],
+      ["2024-02-01", "EUR Savings", 100, "EUR", 1, true, false],
+      ["2024-03-01", "EUR Savings", -100, "EUR", 1, true, false],
+      ["2024-03-01", "Checking", 33, "USD", 1.1, false, true],
+    ]);
+
+    for (const [counterpart, parent] of [
+      [rows[0], rows[1]],
+      [rows[3], rows[2]],
+    ]) {
+      expect(counterpart.linked).toBe(parent.id);
+      const legs: {
+        kind: string;
+        amount: string;
+        transfer_account: string | null;
+        linked: string | null;
+      }[] = await dataSource.query(
+        `SELECT s.kind, s.amount, ta.name AS transfer_account,
+                s.linked_transaction_id AS linked
+           FROM transaction_splits s
+           LEFT JOIN accounts ta ON ta.id = s.transfer_account_id
+          WHERE s.transaction_id = $1 AND s.kind = 'transfer'`,
+        [parent.id],
+      );
+      expect(legs).toHaveLength(1);
+      expect(legs[0]).toMatchObject({
+        transfer_account: "Checking",
+        linked: counterpart.id,
+      });
+      expect(Number(legs[0].amount)).toBe(
+        Math.sign(Number(parent.amount)) * 30,
+      );
+      // What `TransactionSplitService` stores for a line with a stated
+      // received amount: received over sent, from the two stored amounts.
+      expect(Number(counterpart.rate)).toBeCloseTo(
+        Math.abs(Number(counterpart.amount)) / Math.abs(Number(legs[0].amount)),
+        10,
+      );
+    }
+    expect(await balanceOf("Checking")).toBe(0);
+    expect(await balanceOf("EUR Savings")).toBe(0);
   });
 });

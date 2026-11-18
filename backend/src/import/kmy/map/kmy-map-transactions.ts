@@ -6,9 +6,22 @@ import {
   MappedTransactions,
 } from "../../mny/model/mny-import-model";
 import { KmySplit, KmyTransaction } from "../model/kmy-raw";
-import { abs, compare, isZero, neg, sum } from "../model/kmy-rational";
+import {
+  Rational,
+  abs,
+  compare,
+  isZero,
+  neg,
+  sum,
+} from "../model/kmy-rational";
 import { KMY_TYPE, isAssetOrLiability } from "./kmy-account-tree";
-import { impliedRate, isIsoDate, legRational, rateNumber } from "./kmy-amounts";
+import {
+  exactRate,
+  impliedRate,
+  isIsoDate,
+  legRational,
+  rateNumber,
+} from "./kmy-amounts";
 import { rawCurrencyOf } from "./kmy-map-accounts";
 import { STEP_EVERY, Steps, runSteps } from "./kmy-steps";
 import {
@@ -293,6 +306,42 @@ function receivingRate(
   return filed.rate === null ? null : rateNumber(filed.rate);
 }
 
+/**
+ * Spec 5.6.4.1: the rate a split row's transfer counterpart carries, in either
+ * direction: the counterpart's currency per unit of the parent's, as
+ * `TransactionSplitService` stores it on every counterpart it creates (the
+ * parent row keeps 1). It is the split's own `shares` over its value in the
+ * parent's currency (`legRational`), exact before the one rounding, so neither
+ * the leg's rounding nor a residual moved onto it changes the rate. Same
+ * currency, or nothing on both sides: 1. One side empty: the file's own price
+ * for the pair (spec 9), else null, never 1.
+ */
+function counterpartRate(
+  parentCurrency: string,
+  counterpartCurrency: string,
+  counterpartShares: Rational,
+  legInParent: Rational | null,
+  date: string,
+  context: KmyMapContext,
+): number | null {
+  if (counterpartCurrency === parentCurrency) {
+    return 1;
+  }
+  if (
+    (legInParent === null || isZero(legInParent)) &&
+    isZero(counterpartShares)
+  ) {
+    return 1;
+  }
+  const implied =
+    legInParent === null ? null : exactRate(counterpartShares, legInParent);
+  if (implied !== null) {
+    return implied;
+  }
+  const filed = context.rateLookup(parentCurrency, counterpartCurrency, date);
+  return filed.rate === null ? null : rateNumber(filed.rate);
+}
+
 /** A split's shares in the minor units of its (imported) account's currency. */
 function splitUnits(
   split: KmySplit,
@@ -453,25 +502,26 @@ function splitRow(
         isTransfer: true,
         linkedTransactionId: parentRowId,
       });
-      const receiving =
-        counterpart.amount > 0 && counterpart.currencyCode !== parentCurrency;
-      const rate = receiving
-        ? receivingRate(
-            parentCurrency,
-            counterpart.currencyCode,
-            splitUnits(other, transaction, counterpart.currencyCode, context),
-            legUnits[index],
-            transaction.postDate as string,
-            context,
-          )
-        : 1;
+      const rate = counterpartRate(
+        parentCurrency,
+        counterpart.currencyCode,
+        sharesOf(other, transaction, context),
+        legRational(other.value, parent.value, parentShares, parentInCommodity),
+        transaction.postDate as string,
+        context,
+      );
       if (rate === null) {
+        // Money moves from the parent into the counterpart when the leg takes
+        // it out of the parent (spec 5.6.3: the legs sum to the parent).
+        const parentSends =
+          counterpart.amount > 0 ||
+          (counterpart.amount === 0 && legUnits[index] < 0n);
         warnTransferRateMissing(
           transaction,
-          parent,
-          other,
-          parentCurrency,
-          counterpart.currencyCode,
+          parentSends ? parent : other,
+          parentSends ? other : parent,
+          parentSends ? parentCurrency : counterpart.currencyCode,
+          parentSends ? counterpart.currencyCode : parentCurrency,
           context,
           collector,
         );

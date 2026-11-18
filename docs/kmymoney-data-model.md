@@ -725,6 +725,12 @@ storing (MF `adjustSplitSign`).
   `PRICEPAIR EUR→USD`).
 * **Category in a foreign currency** (same file, T…013): commodity USD; the EUR expense category split
   gets `value` in USD and `shares` in EUR.
+* **Foreign account split inside a multi-split** (the importer's review input m2): commodity EUR; EUR
+  account `value=shares=100`, USD account `value=-30` (EUR) `shares=-33` (USD), income `-70`. The same rule
+  holds per split: the USD split's own `value/shares` is its rate (30/33 EUR per USD), and nothing else in
+  the transaction records it; the other splits are all in the commodity. Which Monize row carries it, and
+  in which orientation, is the importer's decision (spec `docs/specs/kmymoney-import.md` 5.6.4.1: the
+  transfer counterpart, `|shares| / |value in the parent's currency|`, 33/30 USD per EUR).
 * Which currency is the commodity: the editor uses the currency of the account the transaction was entered
   in. For investment transactions it is the security's trading currency (ITE `setSecurity`:
   `transaction.setCommodity(sec.tradingCurrency())`).

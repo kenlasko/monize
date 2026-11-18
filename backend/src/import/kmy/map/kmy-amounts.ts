@@ -1,6 +1,7 @@
 import { moneyDecimalsFor } from "../../../common/round.util";
 import {
   Rational,
+  abs,
   div,
   isZero,
   mul,
@@ -94,6 +95,20 @@ export function legRational(
 }
 
 /**
+ * `|numerator / denominator|` as a rate rounded once at 10 places, from two
+ * exact rationals; `null` when either is zero.
+ */
+export function exactRate(
+  numerator: Rational,
+  denominator: Rational,
+): number | null {
+  if (isZero(numerator) || isZero(denominator)) {
+    return null;
+  }
+  return rateNumber(abs(div(numerator, denominator)));
+}
+
+/**
  * `positive / negative` as a rate rounded once at 10 places, from the two
  * already-rounded amounts' magnitudes; `null` when either is zero.
  */
@@ -101,12 +116,7 @@ export function impliedRate(
   receivingUnits: bigint,
   sendingUnits: bigint,
 ): number | null {
-  const top = receivingUnits < 0n ? -receivingUnits : receivingUnits;
-  const bottom = sendingUnits < 0n ? -sendingUnits : sendingUnits;
-  if (top === 0n || bottom === 0n) {
-    return null;
-  }
-  return rateNumber(rational(top, bottom));
+  return exactRate(rational(receivingUnits), rational(sendingUnits));
 }
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
