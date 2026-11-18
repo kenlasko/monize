@@ -1,6 +1,7 @@
 import { Transform, Type } from "class-transformer";
 import { IsCurrencyCode } from "../../../common/validators/is-currency-code.validator";
 import {
+  ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsInt,
@@ -39,6 +40,15 @@ export class ParseMnyDto {
   @MaxLength(256)
   password?: string;
 }
+
+/**
+ * The most accounts or bills one start request may name (MIN-4). One entry
+ * per account or schedule in the file: a large Money file has a few hundred
+ * accounts, and a KMyMoney file at its record bound (`KMY_MAX_RECORDS`) is
+ * nowhere near this many, so no file either format accepts is refused, while
+ * a request can no longer carry an array of any size into the job.
+ */
+export const MNY_MAX_OPTION_ITEMS = 10_000;
 
 export class MnyAccountOptionDto {
   @ApiProperty({ description: "Money ACCT.hacct of the account" })
@@ -95,9 +105,13 @@ export class MnyImportOptionsDto {
   @IsBoolean()
   importExchangeRates?: boolean;
 
-  @ApiPropertyOptional({ type: [MnyAccountOptionDto] })
+  @ApiPropertyOptional({
+    type: [MnyAccountOptionDto],
+    maxItems: MNY_MAX_OPTION_ITEMS,
+  })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(MNY_MAX_OPTION_ITEMS)
   @ValidateNested({ each: true })
   @Type(() => MnyAccountOptionDto)
   accounts?: MnyAccountOptionDto[];
@@ -105,9 +119,11 @@ export class MnyImportOptionsDto {
   @ApiPropertyOptional({
     type: [Number],
     description: "BILL.hbill handles the user selected",
+    maxItems: MNY_MAX_OPTION_ITEMS,
   })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(MNY_MAX_OPTION_ITEMS)
   @IsInt({ each: true })
   @Min(0, { each: true })
   bills?: number[];
