@@ -1654,5 +1654,139 @@ describe("MnyImportService", () => {
       expect(result.verification[0]).not.toHaveProperty("mappedBalance");
       expect(result.verification[0].expectedBalance).toBe(120.5);
     });
+
+    describe("payee aliases, default categories and contact details", () => {
+      const query = jest.fn();
+      const payeesWithExtras = {
+        payees: [
+          {
+            handle: 5,
+            name: "Loblaws",
+            aliases: ["*LOBLAWS*"],
+            defaultCategoryHandle: 10,
+            contact: { notes: "n", email: null, phone: null, address: null },
+          },
+        ],
+        nameByHandle: new Map([[5, "Loblaws"]]),
+        skipped: 0,
+        warnings: [],
+      };
+
+      beforeEach(() => {
+        query.mockReset().mockImplementation(async (sql: string) => {
+          if (sql.startsWith("UPDATE payees")) {
+            return [
+              [
+                {
+                  old_default_category_id: null,
+                  old_notes: "mine",
+                  old_email: null,
+                  old_phone: null,
+                  old_address: null,
+                },
+              ],
+              1,
+            ];
+          }
+          if (sql.includes("SELECT id, name FROM payees")) {
+            return [{ id: "payee-1", name: "Loblaws" }];
+          }
+          return [];
+        });
+        const manager = {
+          getRepository: jest.fn((entity: { name?: string }) =>
+            entity?.name === "UserPreference" ? preferenceRepo : accountRepo,
+          ),
+          query,
+          create: jest.fn((_cls: unknown, value: unknown) => value),
+          save: jest.fn(async (value: unknown) => value),
+        } as unknown as EntityManager;
+        mockedScopedDb.mockImplementation((_dataSource, fn) => fn(manager));
+        mockedWriteCategories.mockResolvedValue({
+          idByFullName: new Map([["Groceries", "category-1"]]),
+          created: 1,
+        });
+      });
+
+      it("writes them on the import's manager after the rule pass and before the securities", async () => {
+        const base = parsedFile({ sourceFormat: "kmy" });
+        rulesApplier.loadRulesFor.mockResolvedValue([{ id: "rule-1" }]);
+        mockedWriteTransactions.mockResolvedValue({
+          transactionsCreated: 1,
+          splitsCreated: 0,
+          linksApplied: 0,
+          tagLinksApplied: 0,
+          affectedAccountIds: new Set(["account-1"]),
+          writtenTransactionIds: new Set(["tx-1"]),
+          writtenSplitIds: new Set<string>(),
+        });
+        await kmyRun({
+          ...base,
+          payees: payeesWithExtras,
+          transactions: {
+            ...base.transactions,
+            transactions: [
+              {
+                id: "tx-1",
+                handle: 1,
+                accountKey: "acct-1",
+                transactionDate: "2025-01-15",
+                amount: -10,
+                currencyCode: "CAD",
+                status: "UNRECONCILED",
+                payeeHandle: 5,
+                categoryHandle: null,
+                description: null,
+                referenceNumber: null,
+                isTransfer: false,
+                linkedTransactionId: null,
+                splits: [],
+                collapsedTradeHandle: null,
+              },
+            ] as never,
+          },
+        });
+
+        expect(rulesApplier.applyToNew).toHaveBeenCalledTimes(1);
+        expect(query).toHaveBeenCalled();
+        const firstQuery = Math.min(...query.mock.invocationCallOrder);
+        expect(firstQuery).toBeGreaterThan(
+          rulesApplier.applyToNew.mock.invocationCallOrder[0],
+        );
+        expect(firstQuery).toBeLessThan(
+          mockedWriteSecurities.mock.invocationCallOrder[0],
+        );
+        expect(query.mock.calls[0][1][0]).toBe("payee-1");
+      });
+
+      it("adds its warnings and counts to the KMyMoney result", async () => {
+        const result = await kmyRun(
+          parsedFile({ sourceFormat: "kmy", payees: payeesWithExtras }),
+        );
+        expect(result).toMatchObject({
+          payeeAliasesCreated: 1,
+          payeeDefaultCategoriesSet: 1,
+          payeeContactDetailsSet: 0,
+        });
+        // the payee already had notes of its own: kept, and said so
+        expect(result.warnings).toContainEqual(
+          expect.objectContaining({ code: "payeeDetailsKept", count: 1 }),
+        );
+      });
+
+      it("leaves the counts off a Money result and issues no payee query", async () => {
+        query.mockClear();
+        const result = await service.runImport(
+          "user-1",
+          "staged-1",
+          DEFAULT_MNY_IMPORT_OPTIONS,
+          context,
+        );
+        expect(result).not.toHaveProperty("payeeAliasesCreated");
+        expect(result).not.toHaveProperty("payeeDefaultCategoriesSet");
+        expect(result).not.toHaveProperty("payeeContactDetailsSet");
+        expect(query).not.toHaveBeenCalled();
+      });
+    });
   });
 });

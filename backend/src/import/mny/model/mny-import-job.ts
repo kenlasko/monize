@@ -113,6 +113,12 @@ export interface MnyImportResult {
    * row until its series is chosen. Absent when zero.
    */
   readonly bondRowsWithoutSeries?: number;
+  /** Payee aliases written (KMyMoney file only; absent for Money). */
+  readonly payeeAliasesCreated?: number;
+  /** Payees that received a default category (KMyMoney file only). */
+  readonly payeeDefaultCategoriesSet?: number;
+  /** Payees that received at least one contact field (KMyMoney file only). */
+  readonly payeeContactDetailsSet?: number;
   /** Rows the mapper could not use, by reason. Mirrors the warning codes. */
   readonly skipped: {
     readonly accounts: number;

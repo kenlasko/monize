@@ -64,6 +64,10 @@ import {
 } from "./writers/write-transactions";
 import { writeInvestments, writeSecurities } from "./writers/write-investments";
 import { applyImportRules } from "./writers/apply-import-rules";
+import {
+  writePayeeExtras,
+  WrittenPayeeExtras,
+} from "./writers/write-payee-extras";
 import { writeBills } from "./writers/write-bills";
 import { throttleProgress } from "./writers/progress-throttle";
 import { writeLoans } from "./writers/write-loans";
@@ -407,6 +411,8 @@ export class MnyImportService {
           subject: `${holding.accountName}: ${holding.symbol}`,
           detail: `imported ${holding.importedQuantity} vs lots ${holding.lotQuantity}`,
         })),
+      // Commit-time payee refusals the preview could not see.
+      ...written.payeeExtras.warnings,
     ];
 
     return {
@@ -422,6 +428,13 @@ export class MnyImportService {
       investmentTransactionsCreated: written.investmentTransactionsCreated,
       ...(written.bondRowsWithoutSeries > 0
         ? { bondRowsWithoutSeries: written.bondRowsWithoutSeries }
+        : {}),
+      ...(parsed.sourceFormat === "kmy"
+        ? {
+            payeeAliasesCreated: written.payeeExtras.aliasesCreated,
+            payeeDefaultCategoriesSet: written.payeeExtras.defaultCategoriesSet,
+            payeeContactDetailsSet: written.payeeExtras.contactDetailsSet,
+          }
         : {}),
       pricesImported: written.pricesImported,
       exchangeRatesImported: written.exchangeRatesImported,
@@ -507,6 +520,7 @@ export class MnyImportService {
     affectedAccountIds: ReadonlySet<string>;
     /** Schedules a settlement rule claimed on, repriced after the commit. */
     settledScheduleIds: ReadonlySet<string>;
+    payeeExtras: WrittenPayeeExtras;
   }> {
     return withScopedDb(this.dataSource, async (manager) => {
       await context.reportProgress({
@@ -580,6 +594,16 @@ export class MnyImportService {
           ),
         },
       );
+
+      // KMyMoney payee aliases, default categories and contact details: after
+      // the rule pass, so this import's own rows keep the payee KMyMoney
+      // assigned (the pass resolves names through aliases). A no-op, without a
+      // query, for a payee list that carries none (every Money file).
+      const payeeExtras = await writePayeeExtras(manager, userId, {
+        payees: parsed.payees.payees,
+        payeeIdByName: payees.idByName,
+        categoryIdByHandle,
+      });
 
       await context.reportProgress({
         phase: "investments",
@@ -747,6 +771,7 @@ export class MnyImportService {
           ...ruleResult.affectedAccountIds,
         ]),
         settledScheduleIds: ruleResult.settledScheduleIds,
+        payeeExtras,
       };
 
       // Last statement before commit, and both halves of the fence in one

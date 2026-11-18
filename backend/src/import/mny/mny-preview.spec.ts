@@ -38,6 +38,32 @@ describe("buildPreview source-format fields", () => {
     expect(preview.kmyFile).toEqual(kmyFile);
   });
 
+  it("counts the payee aliases and default categories only for a KMyMoney file", () => {
+    const payees = {
+      ...parsed.payees,
+      payees: [
+        {
+          handle: 1,
+          name: "A",
+          aliases: ["*A*", "A1"],
+          defaultCategoryHandle: 3,
+        },
+        { handle: 2, name: "B", aliases: ["*B*"] },
+        { handle: 3, name: "C", defaultCategoryHandle: null },
+      ],
+    };
+    const money = buildPreview({ ...input, parsed: { ...parsed, payees } });
+    expect(money.counts).not.toHaveProperty("payeeAliasesToCreate");
+    expect(money.counts).not.toHaveProperty("payeeDefaultCategoriesToSet");
+
+    const kmy = buildPreview({
+      ...input,
+      parsed: { ...parsed, payees, sourceFormat: "kmy", kmyFile },
+    });
+    expect(kmy.counts.payeeAliasesToCreate).toBe(3);
+    expect(kmy.counts.payeeDefaultCategoriesToSet).toBe(1);
+  });
+
   it("takes finalBalance from fileBalances when present, else expectedBalances", () => {
     const key = parsed.accounts.accounts[0].key;
     const fromMapped = buildPreview({ ...input, parsed });

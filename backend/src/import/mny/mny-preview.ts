@@ -96,6 +96,10 @@ export interface MnyPreviewCounts {
   readonly billsDetected: number;
   /** Bill series the mapper could not use (no template, no usable date). */
   readonly billsSkipped: number;
+  /** Payee aliases the KMyMoney rules become; set only for a KMyMoney file. */
+  readonly payeeAliasesToCreate?: number;
+  /** Payees that get a default category; set only for a KMyMoney file. */
+  readonly payeeDefaultCategoriesToSet?: number;
 }
 
 export interface MnyPreview {
@@ -211,6 +215,17 @@ export function buildPreview(input: BuildPreviewInput): MnyPreview {
         : 0,
       billsDetected: parsed.bills.bills.length,
       billsSkipped: parsed.bills.skipped,
+      ...(parsed.sourceFormat === "kmy"
+        ? {
+            payeeAliasesToCreate: parsed.payees.payees.reduce(
+              (total, payee) => total + (payee.aliases?.length ?? 0),
+              0,
+            ),
+            payeeDefaultCategoriesToSet: parsed.payees.payees.filter(
+              (payee) => (payee.defaultCategoryHandle ?? null) !== null,
+            ).length,
+          }
+        : {}),
     },
     fileCounts: parsed.fileCounts,
     missingTables: parsed.missingTables,
