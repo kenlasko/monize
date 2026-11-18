@@ -11,11 +11,14 @@ import { join, resolve } from "path";
 
 import { AppPaths } from "./app-paths";
 import {
+  confirmLanEnable,
   openFolder,
   showAddressChanged,
   showFatalDialog,
+  showLanFailed,
   showRecoveryKey,
 } from "./dialogs";
+import { createLanSetupWindow } from "./lan-setup";
 import { createLogger } from "./logger";
 import { createLogViewer } from "./log-viewer";
 import { exportRecoveryKey } from "./recovery-export";
@@ -61,7 +64,7 @@ import { createSplash } from "./splash";
 import { UpdatePolicy } from "./shell/update-policy";
 import { createTray, TrayHandle, TrayHandlers } from "./tray";
 import { createWindowMenus, WindowMenusHandle } from "./window-menus";
-import { LoginItemState, TrayState } from "./shell/tray-model";
+import { LanTrayState, LoginItemState, TrayState } from "./shell/tray-model";
 import { createUpdater } from "./updater";
 import { systemClock } from "./supervisor/clock";
 import {
@@ -240,9 +243,11 @@ function run(located: LaunchPaths): void {
         mainWindow = openApp(runtime, url);
         splash.close();
       },
-      stackReady: () => {
+      stackReady: (runtime) => {
         updates?.stackReady();
         move.stackReady();
+        // Local-network access fronts the frontend, so it starts only now.
+        void runtime.lan.startIfEnabled();
       },
       bootFailed: () => move.bootFailed(),
       navigate: (url) => {
@@ -373,19 +378,64 @@ function run(located: LaunchPaths): void {
       },
       show: () => showWindow(window),
     });
+    const { lan } = runtime;
+    const lanSetup = createLanSetupWindow({
+      htmlPath: join(__dirname, "lan-setup", "lan-setup.html"),
+      preloadPath: join(__dirname, "lan-setup-preload.js"),
+      iconPath,
+      lan,
+      documentsDir: app.getPath("documents"),
+      logger,
+    });
+    let lanBusy = false;
+    const lanState = (): LanTrayState => ({
+      enabled: lan.enabled,
+      running: lan.status.kind === "on",
+      busy: lanBusy || lan.status.kind === "starting",
+    });
     const menuState = (update = updater.state): TrayState => ({
       update,
       loginItem: loginItemState(),
+      lan: lanState(),
     });
     const refreshMenus = (state: TrayState): void => {
       tray?.setState(state);
       windowMenus?.setState(state);
+    };
+    lan.onChange(() => refreshMenus(menuState()));
+    // The checkbox: off at once; on only after the dialog that says what it
+    // means, then straight into setting up the first device.
+    const toggleLan = async (): Promise<void> => {
+      if (lanBusy) return;
+      if (!lan.enabled && !(await confirmLanEnable(window))) {
+        refreshMenus(menuState());
+        return;
+      }
+      lanBusy = true;
+      refreshMenus(menuState());
+      try {
+        if (lan.enabled) {
+          await lan.disable();
+        } else {
+          await lan.enable();
+          lanSetup.show();
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.warn(`LAN: the change failed (${message}).`);
+        await showLanFailed(message, window);
+      } finally {
+        lanBusy = false;
+        refreshMenus(menuState());
+      }
     };
     // One set of handlers for the tray, the window's menu bar and the popup
     // the page's Help menu asks for (window-menus.ts).
     const handlers: TrayHandlers = {
       open: () => showWindow(window),
       "open-in-browser": () => void shell.openExternal(origin),
+      "lan-access": () => void toggleLan(),
+      "lan-setup": () => lanSetup.show(),
       "view-logs": () => logViewer.show(),
       "show-logs": () => void openFolder(runtime.paths.data.logs, logger),
       "show-recovery-key": () =>

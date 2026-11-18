@@ -10,7 +10,11 @@
 // layout on Linux or Windows with no window involved.
 //
 //   npm run build && npm run stage            (once; see the README)
-//   node scripts/dev-boot.mjs --data-dir <dir> [--exit-when-ready]
+//   node scripts/dev-boot.mjs --data-dir <dir> [--exit-when-ready] [--lan]
+//
+// --lan turns on local-network access once the stack is ready; with
+// --exit-when-ready it then runs scripts/lib/lan-smoke.mjs through the TLS
+// listener before stopping.
 //
 // Secrets are stored in plain text (there is no safeStorage outside Electron),
 // so a data directory must be named explicitly: this script never touches the
@@ -34,7 +38,7 @@ function out(line) {
 }
 
 function parseArgs(argv) {
-  const options = { dataDir: null, exitWhenReady: false };
+  const options = { dataDir: null, exitWhenReady: false, lan: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--data-dir") {
@@ -43,6 +47,8 @@ function parseArgs(argv) {
       options.dataDir = arg.slice("--data-dir=".length);
     } else if (arg === "--exit-when-ready") {
       options.exitWhenReady = true;
+    } else if (arg === "--lan") {
+      options.lan = true;
     } else {
       throw new Error(`Unknown argument: ${arg}`);
     }
@@ -108,6 +114,24 @@ function underElectron() {
   });
 }
 
+/** --lan: turn it on, print the addresses, and with --exit-when-ready check them. */
+async function checkLan(runtime, paths, options) {
+  await runtime.lan.enable();
+  const status = runtime.lan.status;
+  out(`lan: ${status.urls.join(" ")}`);
+  if (status.mdnsProblem) out(`lan: no mDNS name: ${status.mdnsProblem}`);
+  if (!options.exitWhenReady) return true;
+  const { readFileSync } = await import("node:fs");
+  const { lanSmoke } = await import("./lib/lan-smoke.mjs");
+  const rootCertPem = readFileSync(
+    path.join(paths.data.tls, "root.crt"),
+    "utf8",
+  );
+  const results = await lanSmoke({ status, rootCertPem });
+  for (const line of results) out(`lan: ${line}`);
+  return results.every((line) => line.startsWith("ok"));
+}
+
 async function main() {
   if (!process.versions.electron) return underElectron();
   const options = parseArgs(process.argv.slice(2));
@@ -142,13 +166,16 @@ async function main() {
 
   let stopping = null;
   const stop = () => {
-    stopping ??= supervisor.stop().then((report) => {
-      for (const { component, error } of report.errors) {
-        out(`stop: ${component}: ${error?.message ?? String(error)}`);
-      }
-      runtime.logger.close();
-      return report.errors.length === 0;
-    });
+    stopping ??= runtime.lan
+      .stop()
+      .then(() => supervisor.stop())
+      .then((report) => {
+        for (const { component, error } of report.errors) {
+          out(`stop: ${component}: ${error?.message ?? String(error)}`);
+        }
+        runtime.logger.close();
+        return report.errors.length === 0;
+      });
     return stopping;
   };
   process.once("SIGINT", () => void stop().then(() => process.exit(130)));
@@ -164,6 +191,15 @@ async function main() {
     return 1;
   }
   out(`ready: ${runtime.origin}`);
+  let lanOk = true;
+  if (options.lan) {
+    try {
+      lanOk = await checkLan(runtime, paths, options);
+    } catch (error) {
+      out(`lan: ${error?.message ?? String(error)}`);
+      lanOk = false;
+    }
+  }
   if (!options.exitWhenReady) {
     out("Press Ctrl-C to stop.");
     await new Promise(() => {});
@@ -175,7 +211,7 @@ async function main() {
   });
   out(`GET /login -> ${response.status}`);
   const clean = await stop();
-  return response.status === 200 && clean ? 0 : 1;
+  return response.status === 200 && clean && lanOk ? 0 : 1;
 }
 
 main().then(

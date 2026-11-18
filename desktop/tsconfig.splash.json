@@ -13,5 +13,9 @@
     "outDir": "./dist",
     "types": []
   },
-  "files": ["src/splash/splash-page.ts", "src/log-viewer/log-viewer-page.ts"]
+  "files": [
+    "src/splash/splash-page.ts",
+    "src/log-viewer/log-viewer-page.ts",
+    "src/lan-setup/lan-setup-page.ts"
+  ]
 }

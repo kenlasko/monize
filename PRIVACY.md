@@ -38,3 +38,12 @@ and the server makes the requests.
 
 Monize for Windows has no email, no single sign-on and no administrator
 settings, so the rows about those do not apply to it.
+
+## On Your Home Network
+
+Monize for Windows listens only on its own PC unless you choose **Allow
+other devices on my network**. While that is on, it accepts encrypted
+connections from devices on your home network, and it announces the name
+`monize.local` and the PC's address on that network (mDNS) so the devices
+can find it. Neither leaves your home network, and nothing outside it can
+connect.

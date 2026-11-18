@@ -102,6 +102,7 @@ describe("dataPathsFor", () => {
       attachments: "C:\\M\\attachments",
       logs: "C:\\M\\logs",
       configFile: "C:\\M\\config.json",
+      tls: "C:\\M\\tls",
     });
   });
 });

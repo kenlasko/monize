@@ -1,4 +1,5 @@
 import { SupervisorStatus } from "../supervisor/types";
+import { LAN_TEXT } from "./lan-strings";
 import { MOVE_TEXT } from "./move-strings";
 
 /**
@@ -139,6 +140,8 @@ export const TEXT = {
   },
   /** "Move data folder" (`move-strings.ts`). */
   move: MOVE_TEXT,
+  /** Local-network access (`lan-strings.ts`). */
+  lan: LAN_TEXT,
 
   trayTooltip: "Monize",
   trayOpen: "Open Monize",

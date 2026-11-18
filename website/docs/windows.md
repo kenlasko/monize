@@ -2,7 +2,7 @@
 
 Monize for Windows is the whole of Monize in one installer: the web application, its server and its PostgreSQL database run on your own PC, with a Start Menu entry, a tray icon, automatic updates and an uninstaller. Nothing else has to be installed first: no Docker, no WSL, no Node and no separate PostgreSQL.
 
-It is a single-PC installation. Everything listens on `127.0.0.1` only, so Monize is reachable from this PC and from nowhere else: not from your phone, not from another computer in the house, and not from the internet. If you want any of those, run the [Docker or Kubernetes installation](getting-started.md#installation) on a server instead. [What the Windows App Cannot Do](#what-the-windows-app-cannot-do) lists everything that follows from this.
+Out of the box it is a single-PC installation: everything listens on `127.0.0.1` only, so Monize is reachable from this PC and from nowhere else. You can let phones, tablets and other computers on your home network use it too, with one setting in the tray menu: see [Using Monize on Other Devices](#using-monize-on-other-devices). It is never reachable from the internet; for that, run the [Docker or Kubernetes installation](getting-started.md#installation) on a server instead. [What the Windows App Cannot Do](#what-the-windows-app-cannot-do) lists everything that follows from this.
 
 ---
 
@@ -46,6 +46,8 @@ Closing the window does not stop Monize: it keeps running in the system tray, so
 |------|--------------|
 | **Open Monize** | Opens the window. Clicking the icon does the same. |
 | **Open in browser** | Opens Monize in your default browser at `http://127.0.0.1:<port>`. Use it to install Monize as a browser app or to get browser push notifications on this PC. |
+| **Allow other devices on my network** | Lets phones, tablets and other computers on your home network open Monize (see [Using Monize on Other Devices](#using-monize-on-other-devices)). Off until you turn it on. |
+| **Set up another device...** | Shows how to connect a phone, tablet or computer, with codes to scan. Available while **Allow other devices on my network** is on. |
 | **View logs** / **Show logs folder** | Shows the logs of the database, the server and the app, for troubleshooting. |
 | **Show recovery key...** / **Export recovery key...** | Shows or saves the recovery key. |
 | **Move data folder...** | Moves your data to another folder or drive (see [Moving Your Data](#moving-your-data)). |
@@ -59,6 +61,55 @@ The same items, apart from **Open Monize**, are also inside the window, so you d
 - **Menu bar:** press **Alt** to show the window's menu bar, then open **Monize** (or press **Alt+M**). The bar also has Edit, View and Window menus for copy and paste, zoom and reload.
 
 On a PC whose taskbar has no tray area, these two are the only way to reach the items.
+
+---
+
+## Using Monize on Other Devices
+
+Monize can serve the phones, tablets and other computers on your home network, so you can use it from the sofa or install it on your phone as an app, with push notifications. It is off until you turn it on, and it never makes Monize reachable from the internet.
+
+### Turning It On
+
+1. Right-click the tray icon and choose **Allow other devices on my network**, then **Allow**.
+2. Windows may ask whether to allow Monize through its firewall. Allow it on **private networks**. On a standard Windows account this needs an administrator's password.
+3. The **Set up another device** window opens. Keep it open while you set up your first device.
+
+Choosing the item again turns it off: other devices can no longer connect, and Monize keeps working on this PC as before.
+
+### Setting Up a Device
+
+Each device has to trust Monize once, by installing Monize's certificate. The certificate is what lets the device check that it is talking to your PC and keeps the connection encrypted. It is made for your installation and can only vouch for addresses on your home network, never for a website on the internet.
+
+1. On this PC, open **Set up another device...** from the tray menu.
+2. On the device, scan the first code with the camera and download the certificate. You can also click **Save certificate...** and send the file to the device yourself, for example by email or AirDrop.
+3. Install it:
+   - **iPhone and iPad:** open **Settings**, tap **Profile Downloaded** and install it. Then turn it on under **Settings > General > About > Certificate Trust Settings**.
+   - **Android:** open **Settings** and search for *CA certificate* (usually under **Security > Encryption & credentials > Install a certificate**), then choose the downloaded `monize-root.crt`. Chrome then trusts it. Firefox needs one more setting: in Firefox, open **Settings > About Firefox** and tap the Firefox logo five times, then go back to **Settings > Secret Settings**, turn on **Use third party CA certificates**, and close and reopen Firefox.
+   - **Windows:** open the file and choose **Install Certificate**, **Current User**, then **Trusted Root Certification Authorities**. Firefox keeps its own list: import the file in its settings under **Certificates**.
+   - **Mac:** open the file to add it to Keychain Access, then open it there and set **Trust** to **Always Trust**.
+4. Scan the second code, or type the address the window shows (`https://monize.local:3382`) into the device's browser, and sign in as usual. From the browser's menu you can then install Monize as an app.
+
+**If the browser warns that the connection is not secure, do not choose *Accept the risk*, *Proceed* or *Continue to the site*.** The warning means the device does not trust Monize's certificate yet: finish installing it first. A browser you let past the warning remembers that, and keeps calling Monize not secure even after the certificate is installed.
+
+If you already let it past, clear all of that browser's data, then open the address again. On Android, that is **Settings > Apps >** the browser **> Storage > Clear storage**: the browser's own *Clear browsing data* is not always enough. Clearing storage also removes the browser's bookmarks, open tabs and saved passwords on that device, unless they are synced.
+
+The window also shows the certificate's fingerprint. If you want to be sure the device downloaded the right file, compare it with the fingerprint the device shows for the certificate.
+
+### Addresses
+
+The window lists every address Monize answers on, best first:
+
+- `https://monize.local:3382`, the name Monize gives itself on your network. If another PC on the network already runs Monize, this one becomes `monize-2.local`, and keeps that name.
+- `https://<computer name>.local:3382`, your PC's own name.
+- `https://<IP address>:3382`, which works even where `.local` names do not (some older Android phones, and some networks). If the router gives the PC a new IP address, the old one stops working; the names keep working.
+
+The port is 3382 unless another program already uses it.
+
+### Good to Know
+
+- A device can reach Monize only while this PC is on and Monize is running. **Start Monize when I sign in** helps.
+- Each person signs in with their own Monize account, as on a server. The Windows account and the data stay on this PC.
+- If this PC is ever compromised, or you no longer trust a device that has the certificate, click **Replace certificate...** in the **Set up another device** window. Every device then has to install the new certificate.
 
 ---
 
@@ -103,8 +154,7 @@ Monize for Windows runs the same application as a server installation, but on on
 
 | You cannot | Why | What to do instead |
 |------------|-----|--------------------|
-| Use Monize from a phone, a tablet or another computer | Everything listens on `127.0.0.1`, so nothing outside this PC can connect. This is on purpose: the database and the server are never exposed to your network. | Run the [Docker or Kubernetes installation](getting-started.md#installation) on a server, and [restore your data](backup-and-restore.md#restoring-from-a-backup) into it. |
-| Install Monize on a phone as an app, or get its push notifications on a phone | A phone cannot reach Monize at all. | Same as above. On this PC, browser push works through **Open in browser**, and the window shows Windows notifications itself. |
+| Use Monize away from home, or from the internet | Other devices can connect only from your home network, and only after you [turn that on](#using-monize-on-other-devices). The database and the server themselves are never exposed to the network. | Run the [Docker or Kubernetes installation](getting-started.md#installation) on a server, and [restore your data](backup-and-restore.md#restoring-from-a-backup) into it. |
 | Let other Windows accounts on this PC use the same data | The data folder belongs to one Windows account. Each Windows account that installs Monize gets its own, separate Monize. | Create a Monize account for each person, or share with [Shared Access](shared-access.md); they sign in on this PC, under the Windows account that runs Monize. |
 | Send email: password resets by email, email invites, emailed notifications, emailed backup copies | Email needs SMTP server settings, and the Windows app has none to set. | Use in-app and Windows notifications. An administrator sets other users' passwords directly. |
 | Use [Emergency Access](emergency-access.md) | Reminders and claim links are sent by email, and a contact would also need to reach Monize. | Write down where your backups and your recovery key are kept and how to restore them, and leave that with someone you trust. |
@@ -213,4 +263,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io), certific
 | *"This step failed: ... not done within ..."* on the first start | Click **Retry**. The first start after installing can be slow while antivirus software scans the new files. |
 | *"Monize has a new address"* | Another program took the port Monize used. Monize moved to a free one and keeps it from now on; update any bookmarks and AI client settings. |
 | Monize does not start after the data folder was moved | The drive holding it is not connected. Connect it and start Monize again. |
+| A phone cannot open `https://monize.local:3382` | Try the IP address the **Set up another device** window lists: some phones and networks do not resolve `.local` names. If no address opens, check that the phone is on the same network as the PC (not a guest network), that Windows has the network set to **Private** (Settings > Network & internet), and that Monize is allowed through the firewall on private networks. |
+| The phone says the connection is not private or not secure | The phone does not trust Monize's certificate yet: install it as in [Setting Up a Device](#setting-up-a-device). On an iPhone, also turn it on under **Certificate Trust Settings**; in Firefox on Android, also turn on **Use third party CA certificates**. |
+| Monize opens on the phone, but the padlock still says not secure | The browser was let past a certificate warning before the certificate was installed, and remembers it. Clear all of that browser's data (on Android: **Settings > Apps >** the browser **> Storage > Clear storage**) and open the address again. |
 | Anything else | **View logs** in the tray menu. When you report a problem, include `main.log` and `backend.log` from the logs folder. |

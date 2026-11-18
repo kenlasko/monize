@@ -2,7 +2,6 @@ import { promises as fs } from "fs";
 
 import {
   AppConfig,
-  CONFIG_VERSION,
   ConfigError,
   PlainSecrets,
   readConfig,
@@ -119,7 +118,7 @@ async function createFirstRun(
   const stored = wrapAll(secrets, policy);
   const { ports } = await resolvePorts(null, probe);
   await ensureDataDirs(paths);
-  const config: AppConfig = { version: CONFIG_VERSION, ports, secrets: stored };
+  const config: AppConfig = { ports, lan: null, secrets: stored };
   await writeConfig(paths.configFile, config);
   return { config, secrets, firstRun: true, movedPorts: [] };
 }
@@ -147,7 +146,11 @@ export async function loadOrCreateConfig(
 
   const secrets = unwrapAll(existing.secrets, policy);
   await ensureDataDirs(paths);
-  const resolution = await resolvePorts(existing.ports, probe);
+  const resolution = await resolvePorts(
+    existing.ports,
+    probe,
+    existing.lan === null ? [] : [existing.lan.port],
+  );
   const config: AppConfig = resolution.changed
     ? { ...existing, ports: resolution.ports }
     : existing;

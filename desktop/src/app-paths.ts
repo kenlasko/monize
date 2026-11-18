@@ -38,6 +38,8 @@ export interface DataPaths {
   readonly attachments: string;
   readonly logs: string;
   readonly configFile: string;
+  /** Local-network access: the root and server certificates and their keys. */
+  readonly tls: string;
 }
 
 export interface AppPaths {
@@ -158,6 +160,7 @@ export function dataPathsFor(
     attachments: path.join(dataDir, "attachments"),
     logs: path.join(dataDir, "logs"),
     configFile: path.join(dataDir, "config.json"),
+    tls: path.join(dataDir, "tls"),
   };
 }
 

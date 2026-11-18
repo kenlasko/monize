@@ -164,3 +164,34 @@ export async function confirmInstallUpdate(
   });
   return response === 0;
 }
+
+/** Local-network access (L1): what turning it on means. True to go ahead. */
+export async function confirmLanEnable(
+  parent: BrowserWindow | null,
+): Promise<boolean> {
+  const response = await ask(parent, {
+    type: "question",
+    title: APP_NAME,
+    message: TEXT.lan.enableTitle,
+    detail: `${TEXT.lan.enableMessage}\n\n${TEXT.lan.enableDetail}`,
+    buttons: [TEXT.lan.enableAllow, TEXT.lan.cancel],
+    defaultId: 0,
+    cancelId: 1,
+    noLink: true,
+  });
+  return response === 0;
+}
+
+export async function showLanFailed(
+  message: string,
+  parent: BrowserWindow | null,
+): Promise<void> {
+  await ask(parent, {
+    type: "error",
+    title: APP_NAME,
+    message: TEXT.lan.failedTitle,
+    detail: `${message}\n\n${TEXT.lan.failedDetail}`,
+    buttons: [TEXT.close],
+    noLink: true,
+  });
+}

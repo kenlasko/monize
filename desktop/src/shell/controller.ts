@@ -187,6 +187,9 @@ export function createShellController(deps: ControllerDeps): ShellController {
         if (rt === null) {
           return;
         }
+        // The LAN listener fronts the frontend: it goes first, so no device
+        // is answered by a stack that is shutting down.
+        await rt.lan.stop().catch(() => undefined);
         const report = await rt.supervisor.stop();
         rt.logger.info(
           report.errors.length === 0

@@ -661,6 +661,7 @@ FunctionEnd
       RMDir /r "$0\attachments"
       RMDir /r "$0\logs"
       RMDir /r "$0\shell"
+      RMDir /r "$0\tls"
       Delete "$0\moved-elsewhere.json"
       Delete "$0\recovery-reminder.json"
       Delete "$0\pgdata.initdb-password"

@@ -124,6 +124,7 @@ binary that `npm ci` downloads.
 npm run stage                                   # after building backend/ and frontend/
 npm run dev:boot -- --data-dir /tmp/monize-dev  # Ctrl-C stops all three
 npm run dev:boot -- --data-dir /tmp/monize-dev --exit-when-ready   # boot, GET /login, stop
+npm run dev:boot -- --data-dir /tmp/monize-dev --exit-when-ready --lan   # also the local-network checks
 npm run smoke:postgres                          # the PostgreSQL runner alone, against real binaries
 ```
 
@@ -665,10 +666,47 @@ then: whether the release policy needs a manual approval for each request
 the "not code-signed yet" lines in the root README and
 `website/docs/windows.md`.
 
+## Local network
+
+"Allow other devices on my network" in the tray lets phones and other
+computers on the home network use the app
+(`docs/future-plans/desktop-lan-access.md`). It is off by default, and off
+means nothing listens anywhere but loopback. When it is on:
+
+- **One listener, in the shell** (`src/lan/lan-proxy.ts`): TLS on every
+  address, port 3382 by default (persisted in `config.json`'s `lan` block,
+  config version 2), forwarding to the frontend's loopback port and nowhere
+  else. It closes connections from outside the home network, refuses a
+  `Host` it does not serve and a cross-origin `Origin`, hands a verified
+  request on with the window's own origin (so the children's environment
+  and the backend's allowed origins never change), marks relayed cookies
+  `Secure`, and appends the peer to `X-Forwarded-For`.
+- **A per-install root certificate** (`src/lan/certificate-authority.ts`,
+  `src/lan/tls-store.ts`), name-constrained to `.local` names and private
+  address ranges, under `tls/` in the data folder with its key wrapped by
+  `safeStorage`. The server certificate it issues is reissued when the PC's
+  addresses change; the root never is, unless the person replaces it. The
+  certificates are DER-encoded by `src/lan/der.ts` and `src/lan/x509.ts`, and
+  the specs verify them with OpenSSL through a real TLS handshake.
+- **`monize.local` over mDNS** (`src/lan/mdns.ts`, `src/lan/udp-transport.ts`),
+  probing for `monize`, then `monize-2` and so on, and answering each device
+  with the address of the adapter on its subnet. The UDP port is shared with
+  Windows' own responder; that sharing is the plan's task N0 to confirm on a
+  real machine.
+- **"Set up another device..."** (`src/lan-setup.ts`, `src/lan-setup/`)
+  shows QR codes for the root certificate's download and for the address. The
+  listener serves the root over plain HTTP at `/monize-root.crt` only while
+  that window is open.
+
+`dev:boot --lan --exit-when-ready` turns it on against the real stack and
+sends the requests a phone would through the TLS listener
+(`scripts/lib/lan-smoke.mjs`).
+
 ## Where data lives
 
 Per user, under `%LOCALAPPDATA%\Monize\`: `pgdata`, `backups`, `attachments`,
-`logs`, a `config.json` and `shell` (Chromium's profile). The uninstaller
+`logs`, a `config.json`, `shell` (Chromium's profile) and, once local-network
+access has been turned on, `tls`. The uninstaller
 keeps this directory unless the user ticks "Remove my data".
 
 A launch chooses its data folder in this order (`src/app-paths.ts`,

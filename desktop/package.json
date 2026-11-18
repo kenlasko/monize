@@ -20,7 +20,8 @@
   },
   "dependencies": {
     "electron-updater": "6.8.11",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "qrcode-generator": "2.0.4"
   },
   "optionalDependencies": {
     "@embedded-postgres/linux-x64": "18.6.0-beta.19",

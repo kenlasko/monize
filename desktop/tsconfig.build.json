@@ -9,6 +9,7 @@
     "src/**/*.spec.ts",
     "src/**/*.fake.ts",
     "src/splash/splash-page.ts",
-    "src/log-viewer/log-viewer-page.ts"
+    "src/log-viewer/log-viewer-page.ts",
+    "src/lan-setup/lan-setup-page.ts"
   ]
 }

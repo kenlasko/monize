@@ -295,7 +295,8 @@ describe("createShellController", () => {
     create(runtime);
     await stopped;
     await booted;
-    expect(runtime.calls).toEqual(["stop"]);
+    // The LAN listener stops before the stack it fronts.
+    expect(runtime.calls).toEqual(["lan-stop", "stop"]);
     expect(ui.events.some((e) => e.startsWith("open:"))).toBe(false);
   });
 

@@ -70,7 +70,11 @@ function setup(state: TrayState = idle()) {
 }
 
 function idle(): TrayState {
-  return { update: { kind: "idle" }, loginItem: { enabled: false } };
+  return {
+    update: { kind: "idle" },
+    loginItem: { enabled: false },
+    lan: { enabled: false, running: false, busy: false },
+  };
 }
 
 function monizeMenu(menu: FakeMenu): MenuItemConstructorOptions[] {
@@ -111,6 +115,9 @@ describe("createWindowMenus", () => {
     const items = monizeMenu(applied[0]);
     expect(ids(items)).toEqual([
       "open-in-browser",
+      "separator",
+      "lan-access",
+      "lan-setup",
       "separator",
       "view-logs",
       "show-logs",
@@ -156,6 +163,7 @@ describe("createWindowMenus", () => {
     menus.setState({
       update: { kind: "downloaded", version: "1.22.0" },
       loginItem: { enabled: true },
+      lan: { enabled: false, running: false, busy: false },
     });
     const update = (items: MenuItemConstructorOptions[]) =>
       items.find((item) => item.id === "check-for-updates")?.label;

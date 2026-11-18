@@ -4,6 +4,11 @@ import { readConfig } from "./app-config";
 import { AppPaths } from "./app-paths";
 import { BootstrapResult, loadOrCreateConfig } from "./config-bootstrap";
 import { DATABASE_NAME, DATABASE_USER, frontendOrigin } from "./env";
+import {
+  createLanService,
+  LanService,
+  LanServiceOptions,
+} from "./lan/lan-service";
 import { createLogger, Logger } from "./logger";
 import { PORT_NAMES, PortName, PortProber, Ports, probePort } from "./ports";
 import { SafeStorageLike, secretPolicyFrom } from "./secrets";
@@ -41,6 +46,7 @@ export interface RuntimeInput {
 export interface RuntimeDeps {
   readonly createPostgres: (options: PostgresRunnerOptions) => PostgresRunner;
   readonly createSupervisor: (input: SupervisorInput) => Supervisor;
+  readonly createLan: (options: LanServiceOptions) => LanService;
   readonly probe: PortProber;
   readonly clock: Clock;
 }
@@ -50,6 +56,8 @@ export interface Runtime {
   readonly logger: Logger;
   readonly bootstrap: BootstrapResult;
   readonly supervisor: Supervisor;
+  /** Local-network access; started by the shell once the stack is ready. */
+  readonly lan: LanService;
   /** The origin the window loads: `http://127.0.0.1:<frontend port>`. */
   readonly origin: string;
 }
@@ -160,6 +168,7 @@ export async function createRuntime(input: RuntimeInput): Promise<Runtime> {
   const deps: RuntimeDeps = {
     createPostgres: (options) => createPostgresRunner(options),
     createSupervisor,
+    createLan: createLanService,
     probe: probePort,
     clock: systemClock,
     ...input.deps,
@@ -172,9 +181,10 @@ export async function createRuntime(input: RuntimeInput): Promise<Runtime> {
 
   try {
     await releasePersistedPorts(paths, logger, deps);
+    const policy = secretPolicyFrom(input.safeStorage, input.baseEnv);
     const bootstrap = await loadOrCreateConfig({
       paths: paths.data,
-      policy: secretPolicyFrom(input.safeStorage, input.baseEnv),
+      policy,
       probe: deps.probe,
     });
     logger.redact(bootstrap.secrets.databasePassword);
@@ -202,11 +212,20 @@ export async function createRuntime(input: RuntimeInput): Promise<Runtime> {
       execPath: input.execPath,
       ...(input.platform === undefined ? {} : { platform: input.platform }),
     });
+    const lan = deps.createLan({
+      configFile: paths.data.configFile,
+      tlsDir: paths.data.tls,
+      policy,
+      ports: bootstrap.config.ports,
+      settings: bootstrap.config.lan,
+      logger,
+    });
     return {
       paths,
       logger,
       bootstrap,
       supervisor,
+      lan,
       origin: frontendOrigin(bootstrap.config.ports),
     };
   } catch (error) {
