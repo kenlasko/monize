@@ -293,6 +293,21 @@ when they widened it. The media query lives in that one helper -- `DateInput`
 held the only other copy -- and `ui-conventions.test.ts` fails a `capture` in a
 file that imports `useIsMobile`, and a second hand-rolled `pointer: coarse`.
 
+## A drag that moves an element ends on `touchcancel` too
+
+A touch gesture that writes an inline `transform` (`useSwipeNavigation`,
+`useSwipeToPaginate`) listens for `touchcancel` as well as `touchend`, and
+slides back to rest on either a cancel or a second finger. Android's edge Back
+gesture, the notification shade and an incoming call take the touch away
+mid-drag with no `touchend`; before issue #2273 that left the page sitting about
+a quarter of the way across the screen, and because `SwipeShell`'s content
+element outlives the route, the offset rode along onto every page the Back
+gesture reached until a reload. For the same reason a route change that no
+swipe animated in clears the element's inline styles, and an effect cleanup
+that drops the listeners mid-drag clears them too. The cases are in
+`useSwipeNavigation.test.ts` and `useSwipeToPaginate.test.ts` under the
+interrupted-gesture tests.
+
 ## Contextual help is `InfoTooltip`, and a touch reader can open it
 
 If a figure or a setting carries an explanation on a desktop, the same explanation opens on a phone. `InfoTooltip` (`components/ui/InfoTooltip.tsx`) is the one help popover: a mouse hovers it, a keyboard focuses it, and a click, a tap or Enter pins it open until the reader presses outside it, taps it again, moves focus to another control, or presses Escape. It takes one `text`, which is the popover body and the trigger's `aria-label` at once, so desktop, phone and screen reader read one translated string and there is no second copy to drift.

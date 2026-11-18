@@ -88,8 +88,37 @@ export function useSwipeToPaginate({
       return next;
     };
 
+    const snapBack = () => {
+      content.style.transition = `transform ${ANIMATION_MS}ms ease-out, opacity ${ANIMATION_MS}ms ease-out`;
+      content.style.transform = 'translateX(0)';
+      content.style.opacity = '1';
+
+      let done = false;
+      const onEnd = () => {
+        if (done) return;
+        done = true;
+        content.removeEventListener('transitionend', onEnd);
+        resetStyles();
+      };
+      content.addEventListener('transitionend', onEnd, { once: true });
+      setTimeout(onEnd, ANIMATION_MS + 50);
+    };
+
+    // Drop the gesture without turning the page. A drag already under way
+    // slides back, so the list is never left sitting part way across its box.
+    const abandon = () => {
+      const wasSwiping = state.phase === 'swiping';
+      state = { ...IDLE_STATE };
+      if (wasSwiping) snapBack();
+    };
+
     const handleTouchStart = (e: TouchEvent) => {
       if (navigated || !e.touches[0]) return;
+      // A second finger is a pinch, not a swipe.
+      if (e.touches.length > 1) {
+        abandon();
+        return;
+      }
       if (content.style.transition) return; // an animation is in progress
 
       state = {
@@ -182,30 +211,29 @@ export function useSwipeToPaginate({
         return;
       }
 
-      // Snap back.
-      content.style.transition = `transform ${ANIMATION_MS}ms ease-out, opacity ${ANIMATION_MS}ms ease-out`;
-      content.style.transform = 'translateX(0)';
-      content.style.opacity = '1';
+      snapBack();
+    };
 
-      let done = false;
-      const onEnd = () => {
-        if (done) return;
-        done = true;
-        content.removeEventListener('transitionend', onEnd);
-        resetStyles();
-      };
-      content.addEventListener('transitionend', onEnd, { once: true });
-      setTimeout(onEnd, ANIMATION_MS + 50);
+    // The browser or the OS took the touch away mid-gesture (Android's edge
+    // Back gesture, the notification shade). No touchend follows, so without
+    // this the drag's offset would stay on the list.
+    const handleTouchCancel = () => {
+      if (navigated) return;
+      abandon();
     };
 
     content.addEventListener('touchstart', handleTouchStart, { passive: true });
     content.addEventListener('touchmove', handleTouchMove, { passive: false });
     content.addEventListener('touchend', handleTouchEnd, { passive: true });
+    content.addEventListener('touchcancel', handleTouchCancel, { passive: true });
 
     return () => {
       content.removeEventListener('touchstart', handleTouchStart);
       content.removeEventListener('touchmove', handleTouchMove);
       content.removeEventListener('touchend', handleTouchEnd);
+      content.removeEventListener('touchcancel', handleTouchCancel);
+      // Listeners rebinding mid-drag would orphan the drag's offset.
+      if (state.phase === 'swiping') resetStyles();
     };
   }, [paginates]);
 
