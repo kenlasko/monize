@@ -45,6 +45,8 @@ import {
   kmyFileTooLargeException,
 } from "./kmy-upload-error";
 import { KmyParserService } from "./kmy-parser.service";
+import { limitMb } from "./reader/kmy-container";
+import { KMY_MAX_XML_BYTES } from "./reader/kmy-limits";
 import type { KmyErrorCode } from "./model/kmy-errors";
 
 function stagedFileMissing(): NotFoundException {
@@ -218,7 +220,7 @@ export class KmyImportController {
       if (error instanceof MnyImportError && error.code in KMY_ERROR_MESSAGES) {
         const code = error.code as KmyErrorCode;
         const body = {
-          message: KMY_ERROR_MESSAGES[code](MNY_IMPORT_LIMIT_MB),
+          message: KMY_ERROR_MESSAGES[code](limitMb(KMY_MAX_XML_BYTES)),
           errorCode: code,
         };
         // A mapper failure is the server's defect, not a bad request.

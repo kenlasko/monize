@@ -142,6 +142,14 @@ describe("KmyImportController", () => {
       },
     );
 
+    it("names the inflated-document bound, not the upload limit, in the too-large message", async () => {
+      parser.parse.mockRejectedValue(new KmyXmlTooLargeError(100));
+      const error = await controller
+        .parse(USER, uploadedFile("a.kmy", Buffer.from("x")))
+        .catch((e) => e);
+      expect(error.getResponse().message).toContain("100 MB");
+    });
+
     it("maps a mapper failure to a translated 500 with its own code, staging nothing (MIN-2)", async () => {
       parser.parse.mockRejectedValue(
         new KmyMappingFailedError(new TypeError("defect")),
