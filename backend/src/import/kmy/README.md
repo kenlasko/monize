@@ -17,7 +17,8 @@ The user guide is `website/docs/importing-from-kmymoney.md`.
   defines. `model/` holds the raw types, the rational type and the typed errors.
 - The `Mny*` names, tables, routes and i18n namespaces are shared and stay as they are; this directory
   only replaces the parser. Where shared code needed to know the format, the change is an optional field
-  or a defaulted parameter (spec 4.9), so the Money path is unchanged.
+  or a defaulted parameter (spec 4.9), with one exception: `MnyStagingService.remove` takes the route's
+  format as a required argument, and the Money route passes `"mny"`. Money's behaviour is unchanged.
 
 ## Rules carried from the Money README (spec 4.1)
 
@@ -64,7 +65,8 @@ The user guide is `website/docs/importing-from-kmymoney.md`.
   the rows keep the payee KMyMoney assigned (`kmy-import-payee-rules.integration.spec.ts`, with its
   control). It only fills empty fields of an existing payee (`payeeDetailsKept`), and issues no query for a
   payee list without a new field, which is every Money file.
-- **No prettier on this directory.** It is not prettier-formatted; use eslint only.
+- **Formatting.** The TypeScript here is prettier-formatted like the rest of `src/` (the pre-commit hook
+  runs eslint and prettier on staged files); do not run prettier over the Markdown files.
 
 ## Memory and time
 
@@ -78,15 +80,15 @@ the mapper every 20 ms (`map/kmy-steps.ts`), in the preview request and the job 
 Measured with `parseKmyBytes` under `ts-node` on Node 24, one fresh process each, peak resident set
 against the process before the parse (about 345 MB), longest event-loop stall sampled every 5 ms:
 
-| Input | Before (synchronous, whole-buffer) | After |
-|---|---|---|
-| 50,000 transactions, two splits each (23.9 MB XML, 0.6 MB gzip) | 3.8 s, stall 3.8 s, +211 MB | 1.9 s, stall 117 ms, +132 MB |
-| 199,000 transactions (37.1 MB XML, 0.6 MB gzip): just under the record bound | not measured | 4.9 s, stall 260 ms, +467 MB |
-| 300,000 transactions (0.9 MB gzip) | not measured | refused `kmyTooManyRecords` after 2.8 s, stall 31 ms, +230 MB |
-| the review's 2.45 million one-split transactions on an undeclared account (278 MiB XML, 967 KiB gzip) | 36.4 s, stall 36.4 s, +2,945 MB, then refused | refused `kmyCorruptFile` at the first split, 10 ms |
-| the same with the account declared (2 million transactions, 5.9 MB gzip) | not measured | refused `kmyTooManyRecords` after 2.8 s, stall 23 ms, +233 MB |
-| 3 million empty elements (57 KiB gzip) | not measured | refused `kmyTooManyRecords` after 1.7 s, stall 41 ms, +1 MB |
-| 300 MiB of spaces inside the root (299 KiB gzip) | not measured | refused `kmyXmlTooLarge` at 100 MiB, 1.5 s, +68 MB |
+| Input                                                                                                 | Before (synchronous, whole-buffer)            | After                                                         |
+| ----------------------------------------------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------- |
+| 50,000 transactions, two splits each (23.9 MB XML, 0.6 MB gzip)                                       | 3.8 s, stall 3.8 s, +211 MB                   | 1.9 s, stall 117 ms, +132 MB                                  |
+| 199,000 transactions (37.1 MB XML, 0.6 MB gzip): just under the record bound                          | not measured                                  | 4.9 s, stall 260 ms, +467 MB                                  |
+| 300,000 transactions (0.9 MB gzip)                                                                    | not measured                                  | refused `kmyTooManyRecords` after 2.8 s, stall 31 ms, +230 MB |
+| the review's 2.45 million one-split transactions on an undeclared account (278 MiB XML, 967 KiB gzip) | 36.4 s, stall 36.4 s, +2,945 MB, then refused | refused `kmyCorruptFile` at the first split, 10 ms            |
+| the same with the account declared (2 million transactions, 5.9 MB gzip)                              | not measured                                  | refused `kmyTooManyRecords` after 2.8 s, stall 23 ms, +233 MB |
+| 3 million empty elements (57 KiB gzip)                                                                | not measured                                  | refused `kmyTooManyRecords` after 1.7 s, stall 41 ms, +1 MB   |
+| 300 MiB of spaces inside the root (299 KiB gzip)                                                      | not measured                                  | refused `kmyXmlTooLarge` at 100 MiB, 1.5 s, +68 MB            |
 
 **The bound that remains:** a file inside every bound costs at most about 470 MB above the process's
 own memory and about 5 seconds of CPU to read and map, with the event loop never held for more than a

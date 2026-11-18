@@ -350,18 +350,20 @@ and each change gets its own new spec case.
 |---|---|
 | `backend/src/import/mny/model/mny-import-model.ts` | optional fields: `MappedAccount.institutionName?: string \| null`; `MappedTransaction.exchangeRate: number | null` (required: the Money mapper writes 1 as it always did, a KMyMoney row carries its own rate or null, never a defaulted 1), `MappedTransaction.reconciledDate?: string \| null`; `MappedSecurity.securityType?: SecurityType \| null`; `MappedBill.customRecurrence?: CustomRecurrence \| null` |
 | `backend/src/import/mny/model/mny-warnings.ts` | KMyMoney codes appended to `MNY_WARNING_CODES` (order = display order; Money's order unchanged) |
-| `backend/src/import/mny/model/mny-import-job.ts` | `MnyAccountVerification.mappedBalance?: number` |
-| `backend/src/import/mny/mny-parser.service.ts` | `MnyParsedFile` gains optional `sourceFormat?: ImportSourceFormat`, `fileBalances?: ReadonlyMap<string, number>`, `kmyFile?: KmyFileSummary` (types only; Money's `parse` body untouched) |
+| `backend/src/import/mny/model/mny-import-job.ts` | `MnyAccountVerification.mappedBalance?: number`; `MnyImportResult.fileAsOf?: string` (6.4) |
+| `backend/src/import/mny/mny-parser.service.ts` | `MnyParsedFile` gains optional `sourceFormat?: ImportSourceFormat`, `fileBalances?: ReadonlyMap<string, number>`, `kmyFile?: KmyFileSummary`, `balancePrecision?` and `moneyPlaces?` (6.1, M3) (types only; Money's `parse` body untouched); `computeExpectedBalances` takes an optional trailing `placesByKey` (absent: four places, Money's sum) |
 | `backend/src/import/mny/mny-preview.ts` | `MnyPreview` gains optional `sourceFormat?: "kmy"` and `kmyFile?: KmyFileSummary`, set only when the parsed file carries them; `finalBalance` reads `fileBalances` when present, else `expectedBalances` |
 | `backend/src/import/mny/mny-errors.ts` | `class MnyImportError<C extends string = MnyErrorCode>`; every existing subclass unchanged |
 | `backend/src/import/mny/mny-upload-error.interceptor.ts` | constructor takes an optional exception factory, default `mnyFileTooLargeException` |
 | `backend/src/import/mny/mny-import-job.service.ts` | `create(userId, stagedFileId, options, sourceFormat = "mny")` writes it to `source_format` |
 | `backend/src/import/mny/mny-staging.service.ts` | the 409 "in use" and 404 messages pick the `kmy` key when the staged row's `source_format` is `kmy` |
-| `backend/src/import/mny/mny-import.service.ts` | `start` takes `sourceFormat` (default `mny`) and refuses (404, that format's "file is gone" message) a staged file of another format; `runImport` takes a trailing `source = { format: "mny", filename: "" }` and parses `kmy` bytes through `KMY_SOURCE_PARSER`; `writeAll` passes the format's price source to both price writers; `verify` reports `fileBalances` as `expectedBalance` and adds `mappedBalance` when the parsed file has them; the timing log names the format |
-| `backend/src/import/mny/writers/write-transactions.ts` | `exchangeRate: transaction.exchangeRate` (the column is nullable; `Transaction.exchangeRate` is `number | null`), `reconciledDate: transaction.reconciledDate ?? null` |
+| `backend/src/import/mny/mny-import.service.ts` | `start` takes `sourceFormat` (default `mny`) and refuses (404, that format's "file is gone" message) a staged file of another format; `runImport` takes a trailing `source = { format: "mny", filename: "" }` and parses `kmy` bytes through `KMY_SOURCE_PARSER`; `writeAll` passes the format's price source to both price writers; `verify` reports `fileBalances` as `expectedBalance` and adds `mappedBalance` when the parsed file has them, and compares at each account's places within its allowance when `balancePrecision` is present (else `balanceMatches`); the writers get `moneyPlaces` and `writeAccountBalances` the places per account only when present; the result carries `fileAsOf` for `kmy`; the timing log names the format |
+| `backend/src/import/mny/writers/write-transactions.ts` | `exchangeRate: transaction.exchangeRate` (the column is nullable; `Transaction.exchangeRate` is `number | null`), `reconciledDate: transaction.reconciledDate ?? null`; split legs round at `moneyPlaces` of the row's currency and `writeAccountBalances` at an optional `placesById`, four places when absent |
 | `backend/src/import/mny/writers/write-reference.ts` | `writeAccounts` writes `institution: account.institutionName ?? null` and takes an optional `sourceFormat` (default `mny`) that picks the two "existing account" message keys |
-| `backend/src/import/mny/writers/write-investments.ts` | `securityType: security.securityType ?? null` |
-| `backend/src/import/mny/writers/write-bills.ts` | `customRecurrence: bill.customRecurrence ?? null` |
+| `backend/src/import/mny/writers/write-investments.ts` | `securityType: security.securityType ?? null`; the cash leg rounds at an optional `moneyPlaces`, four when absent |
+| `backend/src/import/mny/writers/write-bills.ts` | `customRecurrence: bill.customRecurrence ?? null`; amounts round at an optional `moneyPlaces`, four when absent |
+| `backend/src/import/mny/dto/mny-import.dto.ts` | `MnyImportOptionsDto.accounts` and `.bills` gain `@ArrayMaxSize(MNY_MAX_OPTION_ITEMS)` (10,000), above any file either format accepts |
+| `backend/src/import/mny/mny-staging.service.ts` (`remove`) | takes the route's format as a required argument; the Money route passes `"mny"` |
 | `backend/src/import/mny/writers/write-prices.ts` | `KMY_PRICE_SOURCE = "kmy_import"`; `writeSecurityPrices` and `writeExchangeRates` take an optional trailing `source` (default `MNY_PRICE_SOURCE`) |
 | `backend/src/import/mny/map/map-investments.ts` | `pairShareTransfers` is exported (no body change) |
 | `backend/src/import/import.module.ts` | the KMyMoney controller and providers, and `{ provide: KMY_SOURCE_PARSER, useExisting: KmyParserService }` |
@@ -1281,17 +1283,6 @@ commission taken off each trade -- are each caught: `kmy-file-summary.spec.ts`).
   what turns them into a basis; neither the review step nor the report claims the basis itself is
   verified.
 
-### 6.4 The date the file's figures are for
-
-`asOf` is `todayYMD()` (`backend/src/common/date-utils.ts`) when the parse runs, the same function
-post-processing cuts `current_balance` off with, so in the job the file's figures and the database's
-are computed for one day. The preview's figures are for the day of the upload and the report's for the
-day the import ran; both carry their date (`kmyFile.asOf` in the preview, `fileAsOf` in the result) so
-a difference between them, which only rows dated between the two days can cause, is labelled rather
-than silent. The preview's date is deliberately not reused by the job: post-processing computes the
-balances the report compares as of the commit's day, so a pinned earlier date would report every row
-dated after it as a discrepancy.
-
 ### 6.2 How they feed the existing report shape
 
 | Field | Money | KMyMoney |
@@ -1336,6 +1327,17 @@ both checks. The report counts what was written (`payeeAliasesCreated`, `payeeDe
 `payeeContactDetailsSet`) and lists the writer's commit-time refusals among its warnings
 (`payeeMatchKeyConflict`, `payeeMatchKeyOverlap`, `payeeDetailsKept`), which the review step cannot show
 because only the commit sees the user's existing aliases after the optional wipe.
+
+### 6.4 The date the file's figures are for
+
+`asOf` is `todayYMD()` (`backend/src/common/date-utils.ts`) when the parse runs, the same function
+post-processing cuts `current_balance` off with, so in the job the file's figures and the database's
+are computed for one day. The preview's figures are for the day of the upload and the report's for the
+day the import ran; both carry their date (`kmyFile.asOf` in the preview, `fileAsOf` in the result) so
+a difference between them, which only rows dated between the two days can cause, is labelled rather
+than silent. The preview's date is deliberately not reused by the job: post-processing computes the
+balances the report compares as of the commit's day, so a pinned earlier date would report every row
+dated after it as a discrepancy.
 
 ## 7. Wizard UX
 
@@ -1607,7 +1609,7 @@ INV-HOLDING-001 (holdings only from the canonical rebuild), FIN-003 (SPLIT multi
 | schedules | map-schedules spec | raw builders | every row of 5.10.2; next-due recomputation (31 Jan, 28/29 Feb, 31 Mar); loan schedule; auto-calc payment; finished; overdue |
 | file expectations | file-expectations spec | raw builders | balances of the reference's section 18 (Checking 2804.50, EUR Savings 1000.00, cash 647.50, holding 15); split rounding per method; cut-off at `asOf` |
 | whole mapping | map-kmy-file spec | the committed synthetic XML | the full section 5.7.9 and 5.10.3 outcome, the warning set, every `fileBalances` equal to `expectedBalances` |
-| shared generalisation | the existing specs of each file in 4.9, plus one new case each | | Money behaviour unchanged (existing cases green, untouched); each optional field honoured when set |
+| shared generalisation | the existing specs of each file in 4.9, plus one new case each | | Money behaviour unchanged: existing cases green, their assertions unedited except where a signature changed (`remove(..., "mny")`, `sourceFormat: "mny"` on two job mocks, the staging SQL gaining `AND source_format = $3`); each optional field honoured when set |
 | payee matching (amendment) | kmy payee-match spec | literal keys and raw builders | every row of the 5.5.1 truth table and check table, every row of 5.5.5; the `;` legacy split, a single key with its trailing line feed, all-space keys, `.*?`, `\ ` and `\é` escapes, an escaped `$` against an anchor, `^` or `$` in the middle, a key that does not compile; `matchingenabled="true"` read as 0 |
 | alias overlap (amendment) | alias-overlap util spec | pattern pairs | `aliasesConflict` agrees with `createAlias` on the pairs `payees.service.spec.ts` uses; `aliasesCanOverlap` for two literals, a literal and a glob, compatible and incompatible prefixes and suffixes, the 5.5.5 pairs; equal to a brute force over every text up to 12 characters on the alphabet {a, b} for every glob up to 6 characters over {a, b, *} |
 | payees mapping (amendment) | kmy map-payees spec | raw builders | modes, the disabled warning, collisions in handle order, overlaps, same-name payees merged, referenced-only drops a rule, default category of each kind of 5.5.2, every contact row of 5.5.3 (each bound, an invalid email, a phone with and without a region, legacy address attributes) |
