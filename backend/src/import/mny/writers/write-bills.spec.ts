@@ -154,6 +154,23 @@ describe("writeBills", () => {
     expect(splits.insert).not.toHaveBeenCalled();
   });
 
+  it("writes a bill's amounts at its currency's own places when the source names them", async () => {
+    const scheduled = repoDouble();
+    const splits = repoDouble();
+
+    await writeBills(
+      managerFor(scheduled, splits),
+      "user-1",
+      input({
+        moneyPlaces: new Map([["BTC", 8]]),
+        bills: [bill({ amount: -0.123456789, currencyCode: "BTC" })],
+      }),
+    );
+    expect(scheduled.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: -0.12345679 }),
+    );
+  });
+
   it("writes nothing for a bill the wizard left unticked", async () => {
     // The selection happens upstream: an unchecked bill never reaches the
     // writer, so it is absent from the database rather than inactive.

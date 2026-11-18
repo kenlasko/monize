@@ -574,6 +574,7 @@ export class MnyImportService {
         tagIdByHandle: tags.idByHandle,
         onProgress: (processed, total) =>
           reportTransactions({ phase: "transactions", processed, total }),
+        ...(parsed.moneyPlaces ? { moneyPlaces: parsed.moneyPlaces } : {}),
       });
 
       // Transaction rules (design 6.3): one bulk pass over the regular rows just
@@ -638,6 +639,7 @@ export class MnyImportService {
         tagIdByHandle: tags.idByHandle,
         onProgress: (processed, total) =>
           reportInvestments({ phase: "investments", processed, total }),
+        ...(parsed.moneyPlaces ? { moneyPlaces: parsed.moneyPlaces } : {}),
       });
 
       // Holdings come only from the canonical rebuild, never from an importer's
@@ -677,6 +679,7 @@ export class MnyImportService {
             .map((account) => [account.key, account.linkedKey as string]),
         ),
         tagIdByHandle: tags.idByHandle,
+        ...(parsed.moneyPlaces ? { moneyPlaces: parsed.moneyPlaces } : {}),
       });
 
       await context.reportProgress({
@@ -734,6 +737,21 @@ export class MnyImportService {
                 entry[0] !== undefined && !accounts.reusedIds.has(entry[0]),
             ),
         ),
+        ...(parsed.balancePrecision
+          ? [
+              new Map(
+                [...parsed.balancePrecision]
+                  .map(([key, rule]): [string | undefined, number] => [
+                    accounts.idByKey.get(key),
+                    rule.places,
+                  ])
+                  .filter(
+                    (entry): entry is [string, number] =>
+                      entry[0] !== undefined,
+                  ),
+              ),
+            ]
+          : []),
       );
 
       // Last, because a closed account rejects balance updates.
@@ -857,7 +875,17 @@ export class MnyImportService {
         (parsed.fileBalances ?? parsed.expectedBalances).get(account.key) ?? 0;
       const importedBalance =
         accountId === null ? 0 : (balanceById.get(accountId) ?? 0);
-      const delta = roundMoney(importedBalance - expectedBalance);
+      // KMyMoney: at the account's own places, within the exact allowance
+      // per-row rounding explains (a coin keeps eight). Money: four places,
+      // within half a cent.
+      const precision = parsed.balancePrecision?.get(account.key);
+      const delta =
+        precision === undefined
+          ? roundMoney(importedBalance - expectedBalance)
+          : roundToDecimals(
+              importedBalance - expectedBalance,
+              precision.places,
+            );
 
       return {
         accountName: account.name,
@@ -870,7 +898,11 @@ export class MnyImportService {
         importedBalance,
         delta,
         transactionCount: parsed.transactionCounts.get(account.key) ?? 0,
-        matches: balanceMatches(delta),
+        matches:
+          precision === undefined
+            ? balanceMatches(delta)
+            : Math.abs(delta) <=
+              roundToDecimals(precision.tolerance, precision.places),
       };
     });
   }

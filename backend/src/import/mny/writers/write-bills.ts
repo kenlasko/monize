@@ -3,7 +3,7 @@ import { EntityManager } from "typeorm";
 import { ScheduledTransaction } from "../../../scheduled-transactions/entities/scheduled-transaction.entity";
 import { ScheduledTransactionSplit } from "../../../scheduled-transactions/entities/scheduled-transaction-split.entity";
 import { SplitKind } from "../../../transactions/entities/split-kind.enum";
-import { roundMoney } from "../../../common/round.util";
+import { FIAT_MONEY_DECIMALS, roundMoney } from "../../../common/round.util";
 import { FUNDING_ACCOUNT_ACTIONS } from "../../../securities/investment-replay.util";
 import { MappedBill } from "../model/mny-import-model";
 import { tagIdsFor } from "./write-tags";
@@ -33,6 +33,8 @@ export interface WriteBillsInput {
   readonly linkedKeyByKey: ReadonlyMap<string, string>;
   /** Classification item (`CAT.hcat`) -> Monize tag id, from `writeTags`. */
   readonly tagIdByHandle: ReadonlyMap<number, string>;
+  /** Currency code -> the places a bill's amounts are written at; absent: four (Money). */
+  readonly moneyPlaces?: ReadonlyMap<string, number>;
 }
 
 export interface WrittenBills {
@@ -72,6 +74,8 @@ export async function writeBills(
   );
 
   for (const bill of input.bills) {
+    const places =
+      input.moneyPlaces?.get(bill.currencyCode) ?? FIAT_MONEY_DECIMALS;
     const accountId = input.accountIdByKey.get(bill.accountKey);
     if (!accountId) {
       continue;
@@ -127,7 +131,7 @@ export async function writeBills(
       payeeId,
       payeeName,
       categoryId,
-      amount: roundMoney(bill.amount),
+      amount: roundMoney(bill.amount, places),
       currencyCode: bill.currencyCode,
       description: bill.description,
       frequency: bill.frequency,
@@ -147,7 +151,7 @@ export async function writeBills(
       investmentPrice: investment?.price ?? null,
       investmentCommission: investment === null ? null : investment.commission,
       investmentTotalAmount:
-        investment === null ? null : roundMoney(Math.abs(bill.amount)),
+        investment === null ? null : roundMoney(Math.abs(bill.amount), places),
       customRecurrence: bill.customRecurrence ?? null,
       tagIds: tagIdsFor(bill.tagHandles, input.tagIdByHandle),
     });
@@ -171,7 +175,7 @@ export async function writeBills(
             ? null
             : (input.categoryIdByHandle.get(split.categoryHandle) ?? null),
         transferAccountId: splitTransferAccountId,
-        amount: roundMoney(split.amount),
+        amount: roundMoney(split.amount, places),
         memo: split.memo,
       });
     }

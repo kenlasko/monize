@@ -1648,6 +1648,65 @@ describe("MnyImportService", () => {
       });
     });
 
+    it("compares at the account's own places with the source's rounding allowance (M3)", async () => {
+      // The database holds 120.5; the file says 120.50000001 at eight places.
+      const strict = await kmyRun(
+        parsedFile({
+          sourceFormat: "kmy",
+          fileBalances: new Map([["acct-1", 120.50000001]]),
+          balancePrecision: new Map([["acct-1", { places: 8, tolerance: 0 }]]),
+        }),
+      );
+      expect(strict.verification[0]).toMatchObject({
+        delta: -0.00000001,
+        matches: false,
+      });
+      // The same difference, when it is exactly what rounding each row at the
+      // column's places accounts for.
+      const allowed = await kmyRun(
+        parsedFile({
+          sourceFormat: "kmy",
+          fileBalances: new Map([["acct-1", 120.50000001]]),
+          balancePrecision: new Map([
+            ["acct-1", { places: 8, tolerance: 0.00000001 }],
+          ]),
+        }),
+      );
+      expect(allowed.verification[0]).toMatchObject({
+        delta: -0.00000001,
+        matches: true,
+      });
+      // Without the field the Money tolerance applies: half a cent.
+      const money = await kmyRun(
+        parsedFile({
+          sourceFormat: "kmy",
+          fileBalances: new Map([["acct-1", 120.50000001]]),
+        }),
+      );
+      expect(Math.abs(money.verification[0].delta)).toBe(0);
+      expect(money.verification[0].matches).toBe(true);
+    });
+
+    it("hands the writers the source's places per currency and per account", async () => {
+      await kmyRun(
+        parsedFile({
+          sourceFormat: "kmy",
+          moneyPlaces: new Map([["BTC", 8]]),
+          balancePrecision: new Map([["acct-1", { places: 8, tolerance: 0 }]]),
+        }),
+      );
+      expect(mockedWriteTransactions.mock.calls[0][2].moneyPlaces).toEqual(
+        new Map([["BTC", 8]]),
+      );
+      expect(mockedWriteInvestments.mock.calls[0][2].moneyPlaces).toEqual(
+        new Map([["BTC", 8]]),
+      );
+      expect(mockedWriteBills.mock.calls[0][2].moneyPlaces).toEqual(
+        new Map([["BTC", 8]]),
+      );
+      expect([...mockedWriteBalances.mock.calls[0][2]!.values()]).toEqual([8]);
+    });
+
     it("leaves mappedBalance off the report when there are no fileBalances", async () => {
       const result = await kmyRun();
 

@@ -59,7 +59,7 @@ import {
   isCurrencyPseudoSecurity,
 } from "./model/mny-model";
 import { TransactionStatus } from "../../transactions/entities/transaction.entity";
-import { roundMoney } from "../../common/round.util";
+import { FIAT_MONEY_DECIMALS, roundMoney } from "../../common/round.util";
 
 /**
  * Decrypt -> read -> map, in one place.
@@ -170,8 +170,25 @@ export interface MnyParsedFile {
    * `expectedBalances` is the file's figure.
    */
   readonly fileBalances?: ReadonlyMap<string, number>;
+  /**
+   * Account key -> the places its balance is compared at and the exact
+   * allowance per-row rounding at those places accounts for (KMyMoney). Absent
+   * means the Money comparison: four places within `BALANCE_TOLERANCE`.
+   */
+  readonly balancePrecision?: ReadonlyMap<string, MnyBalancePrecision>;
+  /**
+   * Currency code -> the places its amounts are written at (KMyMoney, where a
+   * coin keeps up to eight). Absent means every writer rounds at four.
+   */
+  readonly moneyPlaces?: ReadonlyMap<string, number>;
   /** KMyMoney container facts; absent for a Money file. */
   readonly kmyFile?: KmyFileSummary;
+}
+
+export interface MnyBalancePrecision {
+  readonly places: number;
+  /** The largest |imported - file| that rounding each row at `places` explains. */
+  readonly tolerance: number;
 }
 
 export interface MnyFileCounts {
@@ -229,11 +246,20 @@ export function computeExpectedBalances(
   transactions: MappedTransactions,
   asOf: string,
   investments?: MappedInvestments,
+  /**
+   * Account key -> the decimal places its amounts are kept at. A source whose
+   * accounts can be coins (KMyMoney) passes it; absent, every account sums at
+   * the fiat four places, which is the Money behaviour.
+   */
+  placesByKey?: ReadonlyMap<string, number>,
 ): Map<string, number> {
+  const placesOf = (key: string): number =>
+    placesByKey?.get(key) ?? FIAT_MONEY_DECIMALS;
+  const scaleOf = (key: string): number => 10 ** placesOf(key);
   const totals = new Map<string, number>(
     accounts.accounts.map((account) => [
       account.key,
-      Math.round(account.openingBalance * 10000),
+      Math.round(account.openingBalance * scaleOf(account.key)),
     ]),
   );
 
@@ -246,7 +272,7 @@ export function computeExpectedBalances(
     if (current === undefined) {
       return;
     }
-    totals.set(key, current + Math.round(amount * 10000));
+    totals.set(key, current + Math.round(amount * scaleOf(key)));
   };
 
   for (const transaction of transactions.transactions) {
@@ -282,7 +308,7 @@ export function computeExpectedBalances(
   return new Map(
     [...totals].map(([key, minorUnits]) => [
       key,
-      roundMoney(minorUnits / 10000),
+      roundMoney(minorUnits / scaleOf(key), placesOf(key)),
     ]),
   );
 }

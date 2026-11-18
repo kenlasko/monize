@@ -273,6 +273,27 @@ describe("writeInvestments", () => {
     });
   });
 
+  it("writes the cash leg at its currency's own places when the source names them", async () => {
+    const coin = doubles();
+    await writeInvestments(coin.manager, "user-1", {
+      ...baseInput,
+      moneyPlaces: new Map([["BTC", 8]]),
+      transactions: [
+        investment({ cashAmount: -0.123456789, currencyCode: "BTC" }),
+      ],
+    });
+    expect(coin.transactions.insert.mock.calls[0][0][0].amount).toBe(
+      -0.12345679,
+    );
+
+    const fiat = doubles();
+    await writeInvestments(fiat.manager, "user-1", {
+      ...baseInput,
+      transactions: [investment({ cashAmount: -0.123456789 })],
+    });
+    expect(fiat.transactions.insert.mock.calls[0][0][0].amount).toBe(-0.1235);
+  });
+
   it("puts the trade's Money classification on the cash leg it writes", async () => {
     const { manager, transactions } = doubles();
 
