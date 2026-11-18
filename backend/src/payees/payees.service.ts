@@ -25,6 +25,7 @@ import { MergePayeeDto } from "./dto/merge-payee.dto";
 import { ActionHistoryService } from "../action-history/action-history.service";
 import { toCountMap } from "../common/count-map.util";
 import { matchesAliasPattern } from "./alias-match.util";
+import { aliasesConflict } from "./alias-overlap.util";
 import { insertPayeeAliasIgnoringDuplicate } from "./insert-payee-alias.util";
 import { reassignPayeeReferences } from "./payee-references";
 import {
@@ -1853,22 +1854,8 @@ export class PayeesService {
       });
 
       for (const existing of allAliases) {
-        // Check if the new alias would match any existing alias patterns
-        if (matchesAliasPattern(trimmedAlias, existing.alias)) {
-          throw new ConflictException(
-            tr(
-              "errors.payees.aliasOverlap",
-              `Alias "${trimmedAlias}" overlaps with existing alias "${existing.alias}" on payee "${existing.payee?.name || "unknown"}". Consider modifying one of them.`,
-              {
-                alias: trimmedAlias,
-                existingAlias: existing.alias,
-                payeeName: existing.payee?.name || "unknown",
-              },
-            ),
-          );
-        }
-        // Check if any existing alias pattern would match the new one
-        if (matchesAliasPattern(existing.alias, trimmedAlias)) {
+        // Equal ignoring case, or either one matches the other as a pattern
+        if (aliasesConflict(trimmedAlias, existing.alias)) {
           throw new ConflictException(
             tr(
               "errors.payees.aliasOverlap",

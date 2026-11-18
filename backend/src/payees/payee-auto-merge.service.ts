@@ -13,6 +13,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { PayeesService } from "./payees.service";
 import { matchesAliasPattern } from "./alias-match.util";
+import { aliasesConflict } from "./alias-overlap.util";
 import { insertPayeeAliasIgnoringDuplicate } from "./insert-payee-alias.util";
 import { reassignPayeeReferences } from "./payee-references";
 import { COMMON_WORD_SEED } from "./payee-common-words";
@@ -912,10 +913,7 @@ export class PayeeAutoMergeService {
     // Skip (rather than abort the merge) if the alias overlaps another payee's
     // alias, so the merge itself still succeeds.
     const conflict = allAliases.some(
-      (a) =>
-        a.payeeId !== canonicalId &&
-        (matchesAliasPattern(alias, a.alias) ||
-          matchesAliasPattern(a.alias, alias)),
+      (a) => a.payeeId !== canonicalId && aliasesConflict(alias, a.alias),
     );
     if (conflict) {
       this.logger.warn(
