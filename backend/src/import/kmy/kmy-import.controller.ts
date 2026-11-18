@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  InternalServerErrorException,
   Body,
   Controller,
   Delete,
@@ -216,10 +217,14 @@ export class KmyImportController {
     } catch (error) {
       if (error instanceof MnyImportError && error.code in KMY_ERROR_MESSAGES) {
         const code = error.code as KmyErrorCode;
-        throw new BadRequestException({
+        const body = {
           message: KMY_ERROR_MESSAGES[code](MNY_IMPORT_LIMIT_MB),
           errorCode: code,
-        });
+        };
+        // A mapper failure is the server's defect, not a bad request.
+        throw code === "kmyMappingFailed"
+          ? new InternalServerErrorException(body)
+          : new BadRequestException(body);
       }
       throw error;
     }

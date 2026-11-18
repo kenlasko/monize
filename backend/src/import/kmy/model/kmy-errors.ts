@@ -13,7 +13,8 @@ export type KmyErrorCode =
   | "kmyLegacyBinaryFile"
   | "kmyCorruptFile"
   | "kmyXmlTooLarge"
-  | "kmyTooManyRecords";
+  | "kmyTooManyRecords"
+  | "kmyMappingFailed";
 
 export class KmyImportError extends MnyImportError<KmyErrorCode> {}
 
@@ -76,6 +77,22 @@ export class KmyTooManyRecordsError extends KmyImportError {
     super(
       "kmyTooManyRecords",
       `KMyMoney file is too large to import: ${detail}`,
+    );
+  }
+}
+
+/**
+ * The file was read but the mapper failed on it: a defect in Monize, not in
+ * the file. Typed so the preview says so in the reader's language and the
+ * job fails with a key of its own, not retryable (the same bytes fail the
+ * same way), instead of an untranslated 500 or "try again".
+ */
+export class KmyMappingFailedError extends KmyImportError {
+  constructor(cause: unknown) {
+    super(
+      "kmyMappingFailed",
+      `KMyMoney file could not be mapped: ${cause instanceof Error ? cause.message : String(cause)}`,
+      cause,
     );
   }
 }

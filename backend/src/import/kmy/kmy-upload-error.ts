@@ -64,6 +64,11 @@ export const KMY_ERROR_MESSAGES: Record<
       "errors.import.kmyTooManyRecords",
       "That KMyMoney file holds more records than Monize imports from one file.",
     ),
+  kmyMappingFailed: () =>
+    tr(
+      "errors.import.kmyMappingFailed",
+      "Monize could not convert this KMyMoney file. This is a fault in Monize, not in your file, and nothing was saved. Please report it.",
+    ),
   kmyXmlTooLarge: (limitMb) =>
     tr(
       "errors.import.kmyXmlTooLarge",

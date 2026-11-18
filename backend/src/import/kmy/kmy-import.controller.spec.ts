@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  InternalServerErrorException,
   NotFoundException,
   PayloadTooLargeException,
 } from "@nestjs/common";
@@ -19,6 +20,7 @@ import { kmyFileTooLargeException } from "./kmy-upload-error";
 import {
   KmyAnonymizedFileError,
   KmyEncryptedFileError,
+  KmyMappingFailedError,
   KmyXmlTooLargeError,
 } from "./model/kmy-errors";
 import { MnyImportError } from "../mny/mny-errors";
@@ -139,6 +141,21 @@ describe("KmyImportController", () => {
         expect(staging.stage).not.toHaveBeenCalled();
       },
     );
+
+    it("maps a mapper failure to a translated 500 with its own code, staging nothing (MIN-2)", async () => {
+      parser.parse.mockRejectedValue(
+        new KmyMappingFailedError(new TypeError("defect")),
+      );
+      const error = await controller
+        .parse(USER, uploadedFile("a.kmy", Buffer.from("x")))
+        .catch((e) => e);
+      expect(error).toBeInstanceOf(InternalServerErrorException);
+      expect(error.getResponse()).toMatchObject({
+        errorCode: "kmyMappingFailed",
+        message: expect.stringContaining("fault in Monize"),
+      });
+      expect(staging.stage).not.toHaveBeenCalled();
+    });
 
     it("lets an untyped or non-kmy error propagate", async () => {
       parser.parse.mockRejectedValue(new TypeError("defect"));

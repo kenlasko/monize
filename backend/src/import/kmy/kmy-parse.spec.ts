@@ -1,6 +1,7 @@
 import { readKmyFixture } from "./__fixtures__/kmy-fixtures";
 import { parseKmyBytes } from "./kmy-parse";
-import { KmyImportError } from "./model/kmy-errors";
+import * as mapFile from "./map/kmy-map-file";
+import { KmyCorruptFileError, KmyImportError } from "./model/kmy-errors";
 import { gzip } from "./__fixtures__/kmy-xml-builders";
 
 const BASE = {
@@ -50,5 +51,29 @@ describe("parseKmyBytes", () => {
     const before = Buffer.from(bytes);
     await parseKmyBytes({ ...BASE, bytes });
     expect(bytes.equals(before)).toBe(true);
+  });
+
+  it("turns a mapper defect into KmyMappingFailedError, and leaves a typed refusal alone (MIN-2)", async () => {
+    const spy = jest
+      .spyOn(mapFile, "mapKmyFileYielding")
+      .mockImplementationOnce(() => {
+        throw new TypeError("Cannot read properties of undefined");
+      });
+    try {
+      await expect(
+        parseKmyBytes({ ...BASE, bytes: readKmyFixture("syntheticKmy") }),
+      ).rejects.toMatchObject({
+        code: "kmyMappingFailed",
+        cause: expect.any(TypeError),
+      });
+      spy.mockImplementationOnce(() => {
+        throw new KmyCorruptFileError("typed");
+      });
+      await expect(
+        parseKmyBytes({ ...BASE, bytes: readKmyFixture("syntheticKmy") }),
+      ).rejects.toBeInstanceOf(KmyCorruptFileError);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

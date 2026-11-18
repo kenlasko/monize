@@ -2,6 +2,7 @@ import type { CountryCode } from "libphonenumber-js/max";
 import type { MnyParsedFile } from "../mny/mny-parser.service";
 import type { MnyImportOptions } from "../mny/model/mny-import-options";
 import { mapKmyFileYielding } from "./map/kmy-map-file";
+import { KmyImportError, KmyMappingFailedError } from "./model/kmy-errors";
 import { readKmyFile } from "./reader/kmy-read-file";
 
 export interface ParseKmyBytesInput {
@@ -35,11 +36,21 @@ export async function parseKmyBytes(
     filename: input.filename,
     maxXmlBytes: input.maxXmlBytes,
   });
-  return mapKmyFileYielding(raw, {
-    options: input.options,
-    userDefaultCurrency: input.userDefaultCurrency,
-    phoneRegion: input.phoneRegion,
-    coinDecimals: input.coinDecimals,
-    asOf: input.asOf,
-  });
+  try {
+    return await mapKmyFileYielding(raw, {
+      options: input.options,
+      userDefaultCurrency: input.userDefaultCurrency,
+      phoneRegion: input.phoneRegion,
+      coinDecimals: input.coinDecimals,
+      asOf: input.asOf,
+    });
+  } catch (err) {
+    // The reader accepted the file, so a failure here is Monize's own
+    // defect: typed, so neither the preview nor the job reports it as a
+    // damaged file or as worth retrying.
+    if (err instanceof KmyImportError) {
+      throw err;
+    }
+    throw new KmyMappingFailedError(err);
+  }
 }

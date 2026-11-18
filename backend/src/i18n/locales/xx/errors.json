@@ -552,6 +552,7 @@
     "kmyFileTooLarge": "[XX-That KMyMoney file is larger than the {{ limit }} MB import limit.-XX]",
     "kmyXmlTooLarge": "[XX-That KMyMoney file is larger than the {{ limit }} MB import limit once uncompressed.-XX]",
     "kmyTooManyRecords": "[XX-That KMyMoney file holds more records than Monize imports from one file.-XX]",
+    "kmyMappingFailed": "[XX-Monize could not convert this KMyMoney file. This is a fault in Monize, not in your file, and nothing was saved. Please report it.-XX]",
     "kmyNotAKmyMoneyFile": "[XX-That file is not a KMyMoney file. Choose the .kmy or .xml file KMyMoney saves. If your KMyMoney data is in an SQL database, open it in KMyMoney and use File, Save As to save it as a .kmy file first.-XX]",
     "kmyEncryptedFile": "[XX-That KMyMoney file is encrypted with GPG, which Monize cannot open. In KMyMoney, turn off encryption (Settings, Configure KMyMoney, Encryption) and save the file again, or decrypt a copy with gpg --decrypt, then import that.-XX]",
     "kmySqliteDatabase": "[XX-That is a KMyMoney SQL database. Open it in KMyMoney, choose File, Save As, pick the KMyMoney (.kmy) format, and import the saved file.-XX]",

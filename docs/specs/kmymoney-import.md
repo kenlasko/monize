@@ -165,7 +165,10 @@ drive the report.
 
 **K9. Errors are typed.** Every reader failure is a `KmyImportError`, a subclass of the existing
 `MnyImportError` (made generic over its code type), so `MnyImportJobService.runClaimed` treats it as a
-non-retryable parse failure with no change, and the controller maps its code to a localized 400.
+non-retryable parse failure with no change, and the controller maps its code to a localized 400. A
+failure of the mapper on a file the reader accepted is Monize's own defect: `parseKmyBytes` wraps it in
+`KmyMappingFailedError` (`kmyMappingFailed`), which the controller answers with a localized 500 and the
+job records as its error key, not retryable (the same bytes fail the same way).
 
 **K10. The parser stays DB-free; it yields to the event loop; one async wrapper loads what it needs.**
 The pure functions are `readKmyFile` (bytes to raw model) and `mapKmyFile` (raw model to
@@ -1401,7 +1404,8 @@ export type KmyErrorCode =
   | "kmyLegacyBinaryFile"
   | "kmyCorruptFile"
   | "kmyXmlTooLarge"
-  | "kmyTooManyRecords";
+  | "kmyTooManyRecords"
+  | "kmyMappingFailed";
 
 export class KmyImportError extends MnyImportError<KmyErrorCode> {}
 // one subclass per code: KmyNotAKmyMoneyFileError, KmyEncryptedFileError, KmySqliteDatabaseError,
@@ -1509,6 +1513,7 @@ payee amendment's two preview counts and three result counts.
 | kmyFileTooLarge | That KMyMoney file is larger than the {{ limit }} MB import limit. |
 | kmyXmlTooLarge | That KMyMoney file is larger than the {{ limit }} MB import limit once uncompressed. |
 | kmyTooManyRecords | That KMyMoney file holds more records than Monize imports from one file. |
+| kmyMappingFailed | Monize could not convert this KMyMoney file. This is a fault in Monize, not in your file, and nothing was saved. Please report it. |
 | kmyNotAKmyMoneyFile | That file is not a KMyMoney file. Choose the .kmy or .xml file KMyMoney saves. If your KMyMoney data is in an SQL database, open it in KMyMoney and use File, Save As to save it as a .kmy file first. |
 | kmyEncryptedFile | That KMyMoney file is encrypted with GPG, which Monize cannot open. In KMyMoney, turn off encryption (Settings, Configure KMyMoney, Encryption) and save the file again, or decrypt a copy with gpg --decrypt, then import that. |
 | kmySqliteDatabase | That is a KMyMoney SQL database. Open it in KMyMoney, choose File, Save As, pick the KMyMoney (.kmy) format, and import the saved file. |
