@@ -991,7 +991,20 @@ raised and the transaction falls back to 5.7.2 and 5.7.6.
 Balances, holdings, trade values (6.1) and category amounts all reconcile in each row
 (`kmy-map-investment-shapes.spec.ts`).
 
-#### 5.7.8 Worked example (the reference's section 18)
+#### 5.7.8 Same-day order
+
+Every row an import writes shares `created_at` (one transaction), so the canonical replay
+(`INVESTMENT_REPLAY_ORDER` in `backend/src/securities/investment-replay.util.ts`: date, `created_at`, id)
+breaks a same-day tie on the row id, and a same-day stock split and buy fold to different positions in
+the two orders (100 shares, a 2:1 split and a buy of 10: 210 or 220). The investment mapper therefore
+reads the transactions in KMyMoney's journal order (post date, then transaction id as a string,
+`MyMoneyTransaction::uniqueSortKey`; `journalOrder`) and gives each investment row a UUIDv7 from
+`sortableRowIds` (`kmy-row-ids.ts`), which sorts in the order handed out. The canonical replay is then
+KMyMoney's own order, with no second ordering scheme beside it, whatever the order of the file
+(`kmy-import-order.integration.spec.ts`). The file-side replay (6.1) and the mapped replay before the
+import use the same order.
+
+#### 5.7.9 Worked example (the reference's section 18)
 
 | KMyMoney | Monize row | Holding after (EXC in "Brokerage Account - Brokerage") |
 |---|---|---|
@@ -1538,12 +1551,12 @@ INV-HOLDING-001 (holdings only from the canonical rebuild), FIN-003 (SPLIT multi
 | opening balances | map-opening-balances spec | raw builders | every row of the 5.3 example table |
 | categories | map-categories spec | raw builders | three levels; income and expense; equity as category; referenced-only keeps ancestors; a name with `:` |
 | transactions | map-transactions spec | raw builders | every row of 5.6.1 and 5.6.7; parent tie-break; cross-currency example 5.6.4 (exact rate); leg conversion and residual; unbalanced; excluded accounts; status and reconcile date per row; payee fallback; tags per shape |
-| investments | map-investments spec | raw builders | every row of 5.7.2 and 5.7.3; the cross-currency trade example; INTEREST companions; cash-only shapes; transfer pairing and unpaired; split ratio; splits inside multi-split; the 5.7.8 walk; the 5.7.7 shapes that fit no activity (map-investment-shapes spec) |
+| investments | map-investments spec | raw builders | every row of 5.7.2 and 5.7.3; the cross-currency trade example; INTEREST companions; cash-only shapes; transfer pairing and unpaired; split ratio; splits inside multi-split; the 5.7.9 walk; the 5.7.7 shapes that fit no activity (map-investment-shapes spec) |
 | stock-split checks | map-stock-splits spec | raw builders | the three rows of 5.7.5 |
 | securities and prices | map-securities / map-prices specs | raw builders | symbols, types, crypto skip, price filter, rate filter, orientation of both directions |
 | schedules | map-schedules spec | raw builders | every row of 5.10.2; next-due recomputation (31 Jan, 28/29 Feb, 31 Mar); loan schedule; auto-calc payment; finished; overdue |
 | file expectations | file-expectations spec | raw builders | balances of the reference's section 18 (Checking 2804.50, EUR Savings 1000.00, cash 647.50, holding 15); split rounding per method; cut-off at `asOf` |
-| whole mapping | map-kmy-file spec | the committed synthetic XML | the full section 5.7.8 and 5.10.3 outcome, the warning set, every `fileBalances` equal to `expectedBalances` |
+| whole mapping | map-kmy-file spec | the committed synthetic XML | the full section 5.7.9 and 5.10.3 outcome, the warning set, every `fileBalances` equal to `expectedBalances` |
 | shared generalisation | the existing specs of each file in 4.9, plus one new case each | | Money behaviour unchanged (existing cases green, untouched); each optional field honoured when set |
 | payee matching (amendment) | kmy payee-match spec | literal keys and raw builders | every row of the 5.5.1 truth table and check table, every row of 5.5.5; the `;` legacy split, a single key with its trailing line feed, all-space keys, `.*?`, `\ ` and `\é` escapes, an escaped `$` against an anchor, `^` or `$` in the middle, a key that does not compile; `matchingenabled="true"` read as 0 |
 | alias overlap (amendment) | alias-overlap util spec | pattern pairs | `aliasesConflict` agrees with `createAlias` on the pairs `payees.service.spec.ts` uses; `aliasesCanOverlap` for two literals, a literal and a glob, compatible and incompatible prefixes and suffixes, the 5.5.5 pairs; equal to a brute force over every text up to 12 characters on the alphabet {a, b} for every glob up to 6 characters over {a, b, *} |

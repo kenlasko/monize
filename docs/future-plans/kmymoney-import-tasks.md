@@ -371,7 +371,7 @@ order (row UUIDs excepted, as in Money). A spec maps one raw model twice and com
 
 **Tests.** The accounts-through-whole-mapping rows of the spec's test matrix, and every worked example of
 spec section 5 as its own case (5.3 table, 5.6.4, 5.6.7 table, 5.7.3 cross-currency trade, 5.7.4, 5.7.5
-table, 5.7.7, 5.10.3 example). `kmy-map-file.spec.ts` maps the committed synthetic XML through WP1's
+table, 5.7.9, 5.10.3 example). `kmy-map-file.spec.ts` maps the committed synthetic XML through WP1's
 reader **only if WP1 is merged**; otherwise it builds the same file with the raw builders, and WP3b adds
 the reader-backed case.
 

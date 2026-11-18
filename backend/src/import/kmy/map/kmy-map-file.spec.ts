@@ -160,7 +160,7 @@ describe("mapKmyFile: the reference's section 18 file", () => {
     ]);
   });
 
-  it("walks the investment example of spec 5.7.7", () => {
+  it("walks the investment example of spec 5.7.9", () => {
     expect(
       parsed.investments.transactions.map((r) => [
         r.action,

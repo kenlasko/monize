@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { InvestmentAction } from "../../../securities/entities/investment-transaction.entity";
 import {
   orderForReplay,
@@ -46,7 +45,8 @@ import {
   planCash,
   resolveHolding,
 } from "./kmy-investment-holding";
-import { checkStockSplits } from "./kmy-stock-splits";
+import { sortableRowIds } from "./kmy-row-ids";
+import { checkStockSplits, journalOrder } from "./kmy-stock-splits";
 import { tradeAmounts } from "./kmy-trade-amounts";
 import { warningRowFor, warningRowForInvestment } from "./kmy-warning-row";
 
@@ -102,6 +102,8 @@ class InvestmentMapper {
   readonly rows: MappedInvestmentTransaction[] = [];
   readonly cashCollector: RowCollector;
   readonly warnings: MnyWarning[] = [];
+  /** Ids in the order rows are made, which is KMyMoney's journal order (S1). */
+  private readonly nextId = sortableRowIds();
   skipped = 0;
 
   constructor(private readonly context: KmyInvestmentContext) {
@@ -220,7 +222,7 @@ class InvestmentMapper {
       leg === null ? 0 : money(abs(mul(split.value, conversion.rate)));
     const cashAmount = leg?.amount ?? 0;
     return {
-      id: randomUUID(),
+      id: this.nextId(),
       handle: transaction.ordinal,
       accountKey: holding.pair.brokerageKey,
       cashAccountKey: leg === null ? null : parent.accountKey,
@@ -421,7 +423,7 @@ class InvestmentMapper {
       ...transaction.splits,
     ];
     const row: MappedInvestmentTransaction = {
-      id: randomUUID(),
+      id: this.nextId(),
       handle: transaction.ordinal,
       accountKey: holding.pair.brokerageKey,
       cashAccountKey: cash.key,
@@ -457,7 +459,7 @@ class InvestmentMapper {
     const companionRows = companions.map(
       (companion): MappedInvestmentTransaction => ({
         ...row,
-        id: randomUUID(),
+        id: this.nextId(),
         cashAccountKey: null,
         fundingAccountKey: null,
         action: InvestmentAction.INTEREST,
@@ -489,7 +491,7 @@ class InvestmentMapper {
       this.warn("investmentSharesOnIncomeAction", transaction);
       this.rows.push({
         ...row,
-        id: randomUUID(),
+        id: this.nextId(),
         cashAccountKey: null,
         fundingAccountKey: null,
         action:
@@ -527,7 +529,7 @@ class InvestmentMapper {
     const { holding } = resolved;
     this.rows.push({
       ...main,
-      id: randomUUID(),
+      id: this.nextId(),
       accountKey: holding.pair.brokerageKey,
       cashAccountKey: null,
       fundingAccountKey: null,
@@ -582,7 +584,16 @@ export function mapKmyInvestments(
   folded: ReadonlySet<number>,
 ): KmyInvestmentsResult {
   const mapper = new InvestmentMapper(context);
-  for (const transaction of context.raw.transactions) {
+  // KMyMoney's journal order (post date, then transaction id), so the row ids,
+  // and with them the canonical replay's same-day tie-break, follow it (S1).
+  // Undated transactions come last; they import nothing and are warned.
+  const ordered = [
+    ...journalOrder(context.raw.transactions),
+    ...context.raw.transactions.filter(
+      (transaction) => !isIsoDate(transaction.postDate),
+    ),
+  ];
+  for (const transaction of ordered) {
     if (
       !folded.has(transaction.ordinal) &&
       hasStockSplit(transaction, context)
