@@ -333,7 +333,7 @@ and each change gets its own new spec case.
 
 | File | Change |
 |---|---|
-| `backend/src/import/mny/model/mny-import-model.ts` | optional fields: `MappedAccount.institutionName?: string \| null`; `MappedTransaction.exchangeRate?: number`, `MappedTransaction.reconciledDate?: string \| null`; `MappedSecurity.securityType?: SecurityType \| null`; `MappedBill.customRecurrence?: CustomRecurrence \| null` |
+| `backend/src/import/mny/model/mny-import-model.ts` | optional fields: `MappedAccount.institutionName?: string \| null`; `MappedTransaction.exchangeRate: number | null` (required: the Money mapper writes 1 as it always did, a KMyMoney row carries its own rate or null, never a defaulted 1), `MappedTransaction.reconciledDate?: string \| null`; `MappedSecurity.securityType?: SecurityType \| null`; `MappedBill.customRecurrence?: CustomRecurrence \| null` |
 | `backend/src/import/mny/model/mny-warnings.ts` | KMyMoney codes appended to `MNY_WARNING_CODES` (order = display order; Money's order unchanged) |
 | `backend/src/import/mny/model/mny-import-job.ts` | `MnyAccountVerification.mappedBalance?: number` |
 | `backend/src/import/mny/mny-parser.service.ts` | `MnyParsedFile` gains optional `sourceFormat?: ImportSourceFormat`, `fileBalances?: ReadonlyMap<string, number>`, `kmyFile?: KmyFileSummary` (types only; Money's `parse` body untouched) |
@@ -343,7 +343,7 @@ and each change gets its own new spec case.
 | `backend/src/import/mny/mny-import-job.service.ts` | `create(userId, stagedFileId, options, sourceFormat = "mny")` writes it to `source_format` |
 | `backend/src/import/mny/mny-staging.service.ts` | the 409 "in use" and 404 messages pick the `kmy` key when the staged row's `source_format` is `kmy` |
 | `backend/src/import/mny/mny-import.service.ts` | `start` takes `sourceFormat` (default `mny`) and refuses (404, that format's "file is gone" message) a staged file of another format; `runImport` takes a trailing `source = { format: "mny", filename: "" }` and parses `kmy` bytes through `KMY_SOURCE_PARSER`; `writeAll` passes the format's price source to both price writers; `verify` reports `fileBalances` as `expectedBalance` and adds `mappedBalance` when the parsed file has them; the timing log names the format |
-| `backend/src/import/mny/writers/write-transactions.ts` | `exchangeRate: transaction.exchangeRate ?? 1`, `reconciledDate: transaction.reconciledDate ?? null` |
+| `backend/src/import/mny/writers/write-transactions.ts` | `exchangeRate: transaction.exchangeRate` (the column is nullable; `Transaction.exchangeRate` is `number | null`), `reconciledDate: transaction.reconciledDate ?? null` |
 | `backend/src/import/mny/writers/write-reference.ts` | `writeAccounts` writes `institution: account.institutionName ?? null` and takes an optional `sourceFormat` (default `mny`) that picks the two "existing account" message keys |
 | `backend/src/import/mny/writers/write-investments.ts` | `securityType: security.securityType ?? null` |
 | `backend/src/import/mny/writers/write-bills.ts` | `customRecurrence: bill.customRecurrence ?? null` |
@@ -772,7 +772,7 @@ A transfer row and a transfer counterpart each keep their own split's `shares`, 
 currency. The positive (receiving) row carries `exchangeRate = roundFxRate(|positive.amount| /
 |negative.amount|)`, the receiving currency per unit of the sending currency, as Monize's own
 `createTransfer` stores the implied rate on the destination leg; the sending row carries 1. Same
-currency: 1 on both. Zero on both sides: 1.
+currency: 1 on both. Zero on both sides: 1. Zero on one side only: the file's own price for the pair (`KmyRateLookup`), else the receiving row carries no rate (null), never 1.
 
 Worked example (the reference's section 18, T5): commodity USD; Checking `shares = value = -1100`, EUR
 Savings `value = 1100` (USD), `shares = 1000` (EUR). Rows: Checking -1100.0000 USD, rate 1; EUR Savings

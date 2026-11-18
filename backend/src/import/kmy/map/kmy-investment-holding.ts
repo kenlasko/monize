@@ -3,7 +3,6 @@ import { Rational } from "../model/kmy-rational";
 import { KMY_TYPE } from "./kmy-account-tree";
 import { KmyDissection } from "./kmy-dissect";
 import { KmyPair } from "./kmy-map-accounts";
-import { KmyRateLookup } from "./kmy-map-prices";
 import { KmySecurityMapping } from "./kmy-map-securities";
 import { KmyMapContext, sharesOf } from "./kmy-row-builder";
 
@@ -14,7 +13,6 @@ import { KmyMapContext, sharesOf } from "./kmy-row-builder";
 
 export interface KmyInvestmentContext extends KmyMapContext {
   readonly securities: KmySecurityMapping;
-  readonly rateLookup: KmyRateLookup;
 }
 
 export interface Holding {

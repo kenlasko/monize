@@ -27,6 +27,7 @@ function transaction(
     transactionDate: "2024-03-01",
     amount: -25.5,
     currencyCode: "CAD",
+    exchangeRate: 1,
     status: TransactionStatus.CLEARED,
     payeeHandle: null,
     categoryHandle: null,
@@ -146,7 +147,7 @@ describe("writeTransactions", () => {
     });
   });
 
-  it("defaults the exchange rate to 1 and the reconciled date to null", async () => {
+  it("writes the mapper's rate of 1 as it always did, and the reconciled date as null", async () => {
     const { manager, transactions } = doubles();
 
     await writeTransactions(manager, "user-1", {
@@ -158,6 +159,17 @@ describe("writeTransactions", () => {
       exchangeRate: 1,
       reconciledDate: null,
     });
+  });
+
+  it("writes a missing rate as null, never as 1", async () => {
+    const { manager, transactions } = doubles();
+
+    await writeTransactions(manager, "user-1", {
+      ...baseInput,
+      transactions: [transaction({ exchangeRate: null })],
+    });
+
+    expect(transactions.insert.mock.calls[0][0][0].exchangeRate).toBeNull();
   });
 
   it("carries the reference number into the column the register's Ref # reads", async () => {

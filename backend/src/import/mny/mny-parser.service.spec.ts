@@ -51,6 +51,7 @@ describe("computeExpectedBalances", () => {
         transactionDate: row.date,
         amount: row.amount,
         currencyCode: "USD",
+        exchangeRate: 1,
         status: row.status ?? TransactionStatus.CLEARED,
         payeeHandle: null,
         categoryHandle: null,

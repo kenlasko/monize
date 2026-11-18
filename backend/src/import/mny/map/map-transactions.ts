@@ -550,6 +550,8 @@ function buildCashCounterparts(
       transactionDate: (far.date ?? row.date) as string,
       amount,
       currencyCode: farCurrency ?? "",
+      // Money rows have always been written with rate 1.
+      exchangeRate: 1,
       status: mapTransactionStatus(row.clearedStatus, row.flags),
       payeeHandle: row.payee,
       categoryHandle: null,
@@ -814,6 +816,8 @@ function mapOne(
     amount: row.amount,
     currencyCode:
       context.input.currencyByHandle.get(row.account as number) ?? "",
+    // Money rows have always been written with rate 1.
+    exchangeRate: 1,
     status,
     payeeHandle: row.payee,
     // A split parent carries no category of its own: the legs do.

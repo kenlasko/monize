@@ -95,6 +95,7 @@ export function mapKmyFile(raw: KmyRawFile, input: KmyMapInput): MnyParsedFile {
     coinDecimals: input.coinDecimals,
     payeeHandleById: payeeHandleById(raw),
     tagHandleById: tagHandleById(raw),
+    rateLookup: buildRateLookup(raw),
   };
 
   const securities = mapKmySecurities({
@@ -106,7 +107,7 @@ export function mapKmyFile(raw: KmyRawFile, input: KmyMapInput): MnyParsedFile {
   });
   const banking = mapKmyTransactions(context, opening.folded);
   const trading = mapKmyInvestments(
-    { ...context, securities, rateLookup: buildRateLookup(raw) },
+    { ...context, securities },
     opening.folded,
   );
   const investments = trading.investments;

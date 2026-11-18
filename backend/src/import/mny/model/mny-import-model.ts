@@ -202,9 +202,11 @@ export interface MappedTransaction {
   readonly amount: number;
   readonly currencyCode: string;
   /**
-   * Rate stored on the row. Absent means the writer's previous behaviour (1).
+   * Rate stored on the row: 1 for a row in its own account's currency, the
+   * implied rate on a receiving cross-currency leg, `null` when the source
+   * holds no rate and none can be derived (stored as no rate, never as 1).
    */
-  readonly exchangeRate?: number;
+  readonly exchangeRate: number | null;
   /**
    * Date the row was reconciled. Absent means the writer's previous behaviour
    * (`null`).

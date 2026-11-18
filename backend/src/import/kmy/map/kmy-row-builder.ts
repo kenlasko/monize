@@ -12,6 +12,7 @@ import {
   unitsToNumber,
 } from "./kmy-amounts";
 import { KmyAccountMapping, rawCurrencyOf } from "./kmy-map-accounts";
+import type { KmyRateLookup } from "./kmy-map-prices";
 import { WarningRowContext, warningRowFor } from "./kmy-warning-row";
 
 /**
@@ -28,6 +29,8 @@ export interface KmyMapContext {
   readonly coinDecimals: ReadonlyMap<string, number>;
   readonly payeeHandleById: ReadonlyMap<string, number>;
   readonly tagHandleById: ReadonlyMap<string, number>;
+  /** The file's own currency-to-currency prices (spec 5.9). */
+  readonly rateLookup: KmyRateLookup;
 }
 
 export function statusOfSplit(split: KmySplit): TransactionStatus {
@@ -201,6 +204,8 @@ export function ordinaryRow(
       context,
     ),
     currencyCode: currency,
+    // A row in its own account's currency; a transfer leg overrides it.
+    exchangeRate: 1,
     reconciledDate: split.reconcileDate || null,
     status: statusOfSplit(split),
     payeeHandle: collector.payee(transaction, split),

@@ -8,7 +8,7 @@ import {
 import { KmySplit, KmyTransaction } from "../model/kmy-raw";
 import { abs, compare, isZero, neg, sum } from "../model/kmy-rational";
 import { KMY_TYPE, isAssetOrLiability } from "./kmy-account-tree";
-import { impliedRate, isIsoDate, legRational } from "./kmy-amounts";
+import { impliedRate, isIsoDate, legRational, rateNumber } from "./kmy-amounts";
 import { rawCurrencyOf } from "./kmy-map-accounts";
 import {
   KmyMapContext,
@@ -165,6 +165,8 @@ function transferPair(
     splitUnits(first, transaction, rows[0].currencyCode, context),
     rows[1].currencyCode,
     splitUnits(second, transaction, rows[1].currencyCode, context),
+    transaction.postDate as string,
+    context,
   );
   rows[0] = { ...rows[0], exchangeRate: rate.first };
   rows[1] = { ...rows[1], exchangeRate: rate.second };
@@ -175,30 +177,63 @@ function transferPair(
 /**
  * Spec 5.6.4: the receiving row carries `|receiving| / |sending|` (receiving
  * currency per unit of the sending one), the sending row 1. Same currency, or
- * nothing on one side: 1 on both.
+ * nothing on both sides: 1 on both. With one side empty the amounts imply
+ * nothing, so the file's own price for the pair is used (spec 9), and a pair
+ * the file does not price carries no rate (null), never 1.
  */
 function transferRate(
   firstCurrency: string,
   firstUnits: bigint,
   secondCurrency: string,
   secondUnits: bigint,
-): { first: number | undefined; second: number | undefined } {
+  date: string,
+  context: KmyMapContext,
+): { first: number | null; second: number | null } {
   if (firstCurrency === secondCurrency) {
     return { first: 1, second: 1 };
   }
-  const firstReceives = firstUnits > 0n;
-  const rate = firstReceives
-    ? impliedRate(firstUnits, secondUnits)
-    : impliedRate(secondUnits, firstUnits);
-  if (rate === null) {
-    // Both zero: 1. One side zero: the rate is unknown, so none is claimed.
-    return firstUnits === 0n && secondUnits === 0n
-      ? { first: 1, second: 1 }
-      : { first: undefined, second: undefined };
+  if (firstUnits === 0n && secondUnits === 0n) {
+    return { first: 1, second: 1 };
   }
+  const firstReceives =
+    firstUnits > 0n || (firstUnits === 0n && secondUnits < 0n);
+  const [receivingUnits, sendingUnits] = firstReceives
+    ? [firstUnits, secondUnits]
+    : [secondUnits, firstUnits];
+  const [receivingCurrency, sendingCurrency] = firstReceives
+    ? [firstCurrency, secondCurrency]
+    : [secondCurrency, firstCurrency];
+  const rate = receivingRate(
+    sendingCurrency,
+    receivingCurrency,
+    receivingUnits,
+    sendingUnits,
+    date,
+    context,
+  );
   return firstReceives
     ? { first: rate, second: 1 }
     : { first: 1, second: rate };
+}
+
+/**
+ * Receiving currency per unit of the sending currency: what the two amounts
+ * imply, else the file's own price for the pair on or before `date`, else null.
+ */
+function receivingRate(
+  sendingCurrency: string,
+  receivingCurrency: string,
+  receivingUnits: bigint,
+  sendingUnits: bigint,
+  date: string,
+  context: KmyMapContext,
+): number | null {
+  const implied = impliedRate(receivingUnits, sendingUnits);
+  if (implied !== null) {
+    return implied;
+  }
+  const filed = context.rateLookup(sendingCurrency, receivingCurrency, date);
+  return filed === null ? null : rateNumber(filed);
 }
 
 /** A split's shares in the minor units of its (imported) account's currency. */
@@ -307,15 +342,16 @@ function splitRow(
       const receiving =
         counterpart.amount > 0 && counterpart.currencyCode !== parentCurrency;
       const rate = receiving
-        ? impliedRate(
+        ? receivingRate(
+            parentCurrency,
+            counterpart.currencyCode,
             splitUnits(other, transaction, counterpart.currencyCode, context),
             legUnits[index],
+            transaction.postDate as string,
+            context,
           )
-        : null;
-      counterparts.push({
-        ...counterpart,
-        exchangeRate: receiving ? (rate ?? undefined) : 1,
-      });
+        : 1;
+      counterparts.push({ ...counterpart, exchangeRate: rate });
       legs.push({
         id: randomUUID(),
         kind: SplitKind.TRANSFER,

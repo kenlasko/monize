@@ -104,8 +104,9 @@ export class Transaction {
     scale: 10,
     name: "exchange_rate",
     default: 1,
+    nullable: true,
   })
-  exchangeRate: number;
+  exchangeRate: number | null;
 
   // Foreign-currency entry: the amount the user actually paid and the currency
   // they paid in. NULL for an ordinary transaction (amount/currencyCode are the

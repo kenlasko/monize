@@ -47,6 +47,7 @@ export function harness(raw: KmyRawFile, init: HarnessInit = {}) {
     coinDecimals,
     payeeHandleById: payeeHandleById(raw),
     tagHandleById: tagHandleById(raw),
+    rateLookup: buildRateLookup(raw),
   };
   const securities = mapKmySecurities({
     raw,
@@ -58,7 +59,6 @@ export function harness(raw: KmyRawFile, init: HarnessInit = {}) {
   const investmentContext: KmyInvestmentContext = {
     ...context,
     securities,
-    rateLookup: buildRateLookup(raw),
   };
   return {
     options,

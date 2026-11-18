@@ -78,6 +78,7 @@ function transaction(
     transactionDate: "2026-07-01",
     amount: -1500,
     currencyCode: "USD",
+    exchangeRate: 1,
     status: TransactionStatus.UNRECONCILED,
     payeeHandle: null,
     categoryHandle: null,

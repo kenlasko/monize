@@ -5,6 +5,7 @@ import {
   rawAccount,
   rawFile,
   rawPayee,
+  rawPrice,
   rawTag,
   rawTransaction,
 } from "../__fixtures__/kmy-raw-builders";
@@ -382,9 +383,29 @@ describe("mapKmyTransactions: cross-currency (spec 5.6.4, 4.7)", () => {
         ],
       },
     ]);
+    // The sending row is 1; the receiving row's rate is unknown, so it is null
+    // (never 1).
     expect(one.transactions.transactions.map((r) => r.exchangeRate)).toEqual([
-      undefined,
-      undefined,
+      1,
+      null,
+    ]);
+  });
+
+  it("takes a one-sided zero's rate from the file's own price for the pair", () => {
+    const { transactions } = run(
+      [
+        {
+          postDate: "2024-03-01",
+          splits: [
+            { account: "CHK", value: "-5" },
+            { account: "EUR", value: "0", shares: "0" },
+          ],
+        },
+      ],
+      { prices: [rawPrice("USD", "EUR", "2024-01-15", "9/10")] },
+    );
+    expect(transactions.transactions.map((r) => r.exchangeRate)).toEqual([
+      1, 0.9,
     ]);
   });
 
