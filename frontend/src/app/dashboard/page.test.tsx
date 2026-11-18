@@ -727,6 +727,14 @@ describe('DashboardPage', () => {
       expect(widgetIds()).toEqual(DEFAULT_DASHBOARD_WIDGET_IDS);
     });
 
+    it('pins no section bar while editing: the edit bar is the pinned bar then', async () => {
+      await renderLoaded();
+      // A desktop (jsdom matches no tab-bar query): the greeting's bar is armed.
+      expect(screen.getByTestId('page-floating-bar')).toBeInTheDocument();
+      await enterEditMode();
+      expect(screen.queryByTestId('page-floating-bar')).not.toBeInTheDocument();
+    });
+
     it('removes a widget with its remove button', async () => {
       await renderLoaded();
       await enterEditMode();

@@ -100,7 +100,7 @@ function DelegateSecurityView() {
     return (
       <PageLayout>
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-          <PageHeader title={t('title')} help="settings" />
+          <PageHeader title={t('title')} help="settings" floatingBar={false} />
           <p className="text-sm text-gray-600 dark:text-gray-300">
             {t('delegateSecurityError')}
           </p>
@@ -119,7 +119,7 @@ function DelegateSecurityView() {
   return (
     <PageLayout>
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-        <PageHeader title={t('title')} help="settings" />
+        <PageHeader title={t('title')} help="settings" floatingBar={false} />
         <div id="security">
           <SecuritySection
             user={user}
@@ -244,7 +244,8 @@ function OwnerSettingsView() {
   return (
     <PageLayout>
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-        <PageHeader title={t('title')} help='settings' />
+        {/* The section nav is this page's sticky chrome; a pinned bar would cover it. */}
+        <PageHeader title={t('title')} help='settings' floatingBar={false} />
 
         {isDemoMode && (
           <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-6 mb-6">
