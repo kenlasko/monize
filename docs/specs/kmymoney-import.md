@@ -114,9 +114,10 @@ re-reads and re-parses them (deterministic, ADR-2 of the Money spec). The `conte
 refusal is over those bytes: re-saving an unchanged file in KMyMoney writes new gzip bytes and is not
 recognised as a duplicate, exactly as a re-saved `.mny` is not.
 
-**K3. No new environment variable, no migration.** The inflated XML is bounded by the same
-`MNY_IMPORT_LIMIT_MB` the upload is (a document over it is refused, gzip or not), so no new variable
-reaches `.env.example` or Helm. `import_jobs.source_format` and `import_staged_files.source_format` are
+**K3. No new environment variable, no migration.** The inflated XML has its own, much smaller bound,
+a constant (`KMY_MAX_XML_BYTES`, 100 MiB, in `backend/src/import/kmy/reader/kmy-limits.ts`, 4.2), not
+the shared `MNY_IMPORT_LIMIT_MB`: a repetitive document compresses about 300 to 1, so the upload limit
+says nothing about what the document costs. No new variable reaches `.env.example` or Helm. `import_jobs.source_format` and `import_staged_files.source_format` are
 `VARCHAR(20)` with no CHECK constraint (migration `117_mny_import_staging_and_jobs.sql` is the only
 migration naming the column), and `security_prices.source` / `exchange_rates.source` are free
 `VARCHAR(50)`. Nothing new is stored, so no table, column, RLS policy or backup classification changes.
@@ -166,8 +167,12 @@ drive the report.
 `MnyImportError` (made generic over its code type), so `MnyImportJobService.runClaimed` treats it as a
 non-retryable parse failure with no change, and the controller maps its code to a localized 400.
 
-**K10. The parser stays DB-free and synchronous; one async wrapper loads what it needs.** The pure
-functions are `readKmyFile` (bytes to raw model) and `mapKmyFile` (raw model to `MnyParsedFile`). The
+**K10. The parser stays DB-free; it yields to the event loop; one async wrapper loads what it needs.**
+The pure functions are `readKmyFile` (bytes to raw model) and `mapKmyFile` (raw model to
+`MnyParsedFile`). The reader streams the document (inflate, byte filter, decode, tokenize, chunk by
+chunk) and hands the event loop back every `KMY_YIELD_EVERY_BYTES`; the mapper is written as steps
+(`kmy-steps.ts`) that `mapKmyFile` runs straight through and `mapKmyFileYielding`, which the parser
+service uses in the preview request and the job alike, runs handing the event loop back every 20 ms. The
 injectable `KmyParserService` reads two things from the database before calling them, the user's
 default currency and the CRYPTO currency codes with their decimal places, so the preview and the job
 parse with identical inputs. It uses `withScopedDb` only (no new `WITH_CONTEXT_ALLOWLIST` entry).
@@ -214,7 +219,12 @@ same movement recorded twice must sum correctly, so specs assert row counts as w
 | Limit | Value | Enforced by |
 |---|---|---|
 | Upload size | `MNY_IMPORT_LIMIT_MB` MB (default 300) | multer `limits.fileSize`, re-asserted on the buffer |
-| Inflated XML | the same number of bytes | `zlib.gunzipSync(bytes, { maxOutputLength })`; a `RangeError` (`ERR_BUFFER_TOO_LARGE`) becomes `kmyXmlTooLarge` |
+| Document (inflated, or a plain XML upload) | `KMY_MAX_XML_BYTES`, 100 MiB (1.7 times the 59 MB of the largest real file measured, 120,000 transactions) | the gzip is inflated as a stream and counted chunk by chunk; the first chunk past the bound is `kmyXmlTooLarge`, nothing past it is inflated. A plain upload over it is refused before reading |
+| Records kept | `KMY_MAX_RECORDS`, 600,000 (about 1.5 times the 120,000-transaction file, and the same 200,000 transactions as the byte bound) | counted as each kept element opens; past it is `kmyTooManyRecords` |
+| Elements of any kind | `KMY_MAX_ELEMENTS`, 2,000,000 | counted as each element opens; `kmyTooManyRecords` |
+| Splits in one transaction or template | `KMY_MAX_SPLITS_PER_TRANSACTION`, 10,000 | `kmyTooManyRecords` |
+| One attribute value | `KMY_MAX_ATTRIBUTE_CHARS`, 1 Mi characters | counted as the value's characters arrive; `kmyTooManyRecords` |
+| Event loop | handed back every 256 KiB of document and every 20 ms of mapping | `readKmyFile`, `mapKmyFileYielding` |
 | Entity expansion | none possible | the tokenizer never processes a DTD |
 | Nesting depth | 64 elements | the reader's element stack; deeper is `kmyCorruptFile` (a KMyMoney file is at most 8 deep) |
 | Preview payload | summaries only | the shared `buildPreview` and `summarizeWarnings` (50 rows per code) |
@@ -233,13 +243,15 @@ Applied in this order to the uploaded bytes, then to the inflated bytes where no
 | 6 | strip a UTF-8 BOM; first byte below `0x20` (not TAB/LF/CR), or the first 8 bytes are `KMyMoney` | `kmyLegacyBinaryFile` |
 | 7 | the first 4,096 bytes contain no `<KMYMONEY-FILE` | `kmyNotAKmyMoneyFile` (a `KMYMONEY-TEMPLATE` category template, a random XML file, an SQLCipher database whose random first byte fell through test 4) |
 | 8 | the filename ends `.anon.xml` (case-insensitive), or after reading, every non-standard account's `name` equals its `id` and every payee's `name` equals its `id` (at least one account) | `kmyAnonymizedFile` |
-| 9 | the root element is not `KMYMONEY-FILE`, an element is not closed, a close tag does not match, nesting exceeds 64, a split references an account id that is not a non-standard account of the file, or a split's `shares` and `value` have opposite non-zero signs | `kmyCorruptFile` (the last two are what makes KMyMoney itself refuse the file, R2.2 and R6.2) |
+| 9 | the root element is not `KMYMONEY-FILE`, an element is not closed, a close tag does not match, nesting exceeds 64, an attribute is repeated, a character reference names a character XML 1.0 forbids (`&#1;`), a split references an account id not read before it (an empty id included; checked as the split arrives, as KMyMoney's `readSplit` does against `m_validAccountIds`), a split references a standard account, or a split's `shares` and `value` have opposite non-zero signs | `kmyCorruptFile` (the account and sign checks are what makes KMyMoney itself refuse the file, R2.2 and R6.2; QXmlStreamReader refuses the repeated attribute and the forbidden character) |
 
 ### 4.4 Byte filter and tokenizer
 
-The filter is KMyMoney's `validateUtf8AndXML` (R2.1), run once over the whole (inflated) buffer, so its
-three states never meet a chunk boundary (KMyMoney's own copy runs per read and cannot remove a lead
-byte that ended the previous chunk; Monize's result can only be cleaner). Truth table, state
+The filter is KMyMoney's `validateUtf8AndXML` (R2.1), run as a stream filter (`KmyByteFilter`) that
+gives exactly the result of one pass over the whole document: a lead byte is held back until the next
+byte decides whether it is dropped, replaced or emitted, so its three states never lose a byte at a
+chunk boundary (KMyMoney's own copy runs per read and cannot remove a lead byte that ended the previous
+chunk; Monize's result can only be cleaner). Truth table, state
 `F` = FirstChar, `L` = LeadInCharSeen, `S` = SequenceCharSeen, initial `F`:
 
 | Byte class | State in | Output | State out |
@@ -1388,7 +1400,8 @@ export type KmyErrorCode =
   | "kmyAnonymizedFile"
   | "kmyLegacyBinaryFile"
   | "kmyCorruptFile"
-  | "kmyXmlTooLarge";
+  | "kmyXmlTooLarge"
+  | "kmyTooManyRecords";
 
 export class KmyImportError extends MnyImportError<KmyErrorCode> {}
 // one subclass per code: KmyNotAKmyMoneyFileError, KmyEncryptedFileError, KmySqliteDatabaseError,
@@ -1495,6 +1508,7 @@ payee amendment's two preview counts and three result counts.
 | kmyNoFile | No KMyMoney file was uploaded. |
 | kmyFileTooLarge | That KMyMoney file is larger than the {{ limit }} MB import limit. |
 | kmyXmlTooLarge | That KMyMoney file is larger than the {{ limit }} MB import limit once uncompressed. |
+| kmyTooManyRecords | That KMyMoney file holds more records than Monize imports from one file. |
 | kmyNotAKmyMoneyFile | That file is not a KMyMoney file. Choose the .kmy or .xml file KMyMoney saves. If your KMyMoney data is in an SQL database, open it in KMyMoney and use File, Save As to save it as a .kmy file first. |
 | kmyEncryptedFile | That KMyMoney file is encrypted with GPG, which Monize cannot open. In KMyMoney, turn off encryption (Settings, Configure KMyMoney, Encryption) and save the file again, or decrypt a copy with gpg --decrypt, then import that. |
 | kmySqliteDatabase | That is a KMyMoney SQL database. Open it in KMyMoney, choose File, Save As, pick the KMyMoney (.kmy) format, and import the saved file. |

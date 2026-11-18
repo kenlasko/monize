@@ -43,11 +43,28 @@ describe("tokenizeKmyXml", () => {
     expect(child.attrs).toEqual({ v: 'a&b\nc<"' });
   });
 
-  it("keeps unknown named entities literal and the first duplicate attribute", () => {
-    const [, child] = run(
-      '<KMYMONEY-FILE><A v="&foo;" v="second"/></KMYMONEY-FILE>',
-    );
+  it("keeps unknown named entities literal", () => {
+    const [, child] = run('<KMYMONEY-FILE><A v="&foo;"/></KMYMONEY-FILE>');
     expect(child.attrs).toEqual({ v: "&foo;" });
+  });
+
+  it("refuses a repeated attribute, as QXmlStreamReader does", () => {
+    expect(() =>
+      run('<KMYMONEY-FILE><A v="1" v="second"/></KMYMONEY-FILE>'),
+    ).toThrow(KmyCorruptFileError);
+    // The same name on two elements is fine.
+    expect(() =>
+      run('<KMYMONEY-FILE><A v="1"/><B v="2"/></KMYMONEY-FILE>'),
+    ).not.toThrow();
+  });
+
+  it("refuses a character reference to a character XML 1.0 forbids", () => {
+    expect(() => run('<KMYMONEY-FILE><A v="a&#1;b"/></KMYMONEY-FILE>')).toThrow(
+      KmyCorruptFileError,
+    );
+    expect(() =>
+      run('<KMYMONEY-FILE><A v="a&#9;&#10;&#13;b"/></KMYMONEY-FILE>'),
+    ).not.toThrow();
   });
 
   it("accepts non-ASCII text, including across the 64 KB decode slice", () => {

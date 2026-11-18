@@ -46,6 +46,7 @@ import {
   resolveHolding,
 } from "./kmy-investment-holding";
 import { sortableRowIds } from "./kmy-row-ids";
+import { STEP_EVERY, Steps, runSteps } from "./kmy-steps";
 import { checkStockSplits, journalOrder } from "./kmy-stock-splits";
 import { tradeAmounts } from "./kmy-trade-amounts";
 import { warningRowFor, warningRowForInvestment } from "./kmy-warning-row";
@@ -583,23 +584,32 @@ export function mapKmyInvestments(
   context: KmyInvestmentContext,
   folded: ReadonlySet<number>,
 ): KmyInvestmentsResult {
+  return runSteps(mapKmyInvestmentsSteps(context, folded));
+}
+
+/** `mapKmyInvestments` as steps (`kmy-steps.ts`): it yields every `STEP_EVERY` transactions. */
+export function* mapKmyInvestmentsSteps(
+  context: KmyInvestmentContext,
+  folded: ReadonlySet<number>,
+): Steps<KmyInvestmentsResult> {
   const mapper = new InvestmentMapper(context);
+  const investing = context.raw.transactions.filter(
+    (transaction) =>
+      !folded.has(transaction.ordinal) && hasStockSplit(transaction, context),
+  );
+  yield;
   // KMyMoney's journal order (post date, then transaction id), so the row ids,
   // and with them the canonical replay's same-day tie-break, follow it (S1).
   // Undated transactions come last; they import nothing and are warned.
   const ordered = [
-    ...journalOrder(context.raw.transactions),
-    ...context.raw.transactions.filter(
-      (transaction) => !isIsoDate(transaction.postDate),
-    ),
+    ...journalOrder(investing),
+    ...investing.filter((transaction) => !isIsoDate(transaction.postDate)),
   ];
-  for (const transaction of ordered) {
-    if (
-      !folded.has(transaction.ordinal) &&
-      hasStockSplit(transaction, context)
-    ) {
-      mapper.map(transaction);
+  for (const [index, transaction] of ordered.entries()) {
+    if (index % STEP_EVERY === STEP_EVERY - 1) {
+      yield;
     }
+    mapper.map(transaction);
   }
 
   const paired = pairShareTransfers(mapper.rows);

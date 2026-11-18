@@ -5,13 +5,13 @@ import { preferredCurrency } from "../../common/default-currency.util";
 import { phoneRegionFromPreferences } from "../../common/phone-number.util";
 import { Currency } from "../../currencies/entities/currency.entity";
 import { UserPreference } from "../../users/entities/user-preference.entity";
-import { MNY_IMPORT_LIMIT_BYTES } from "../mny/mny-import.controller";
 import { todayIsoDate, type MnyParsedFile } from "../mny/mny-parser.service";
 import type {
   ImportSourceParseInput,
   ImportSourceParser,
 } from "../mny/model/import-source";
 import { parseKmyBytes } from "./kmy-parse";
+import { KMY_MAX_XML_BYTES } from "./reader/kmy-limits";
 
 /**
  * The KMyMoney side of the shared parser seam. Reads the two things the pure
@@ -50,7 +50,7 @@ export class KmyParserService implements ImportSourceParser {
     return parseKmyBytes({
       bytes: input.buffer,
       filename: input.filename,
-      maxXmlBytes: MNY_IMPORT_LIMIT_BYTES,
+      maxXmlBytes: KMY_MAX_XML_BYTES,
       options: input.options,
       userDefaultCurrency,
       phoneRegion,

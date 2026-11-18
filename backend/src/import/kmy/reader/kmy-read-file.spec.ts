@@ -21,6 +21,7 @@ import {
   KmyXmlTooLargeError,
 } from "../model/kmy-errors";
 import { add, rational, ZERO } from "../model/kmy-rational";
+import type { KmyRawFile } from "../model/kmy-raw";
 import { readKmyFile } from "./kmy-read-file";
 
 const LIMIT = 300 * 1024 * 1024;
@@ -37,9 +38,12 @@ describe("readKmyFile", () => {
     "the committed %s fixture",
     (name) => {
       const expected = KMY_FIXTURES[name];
-      const file = fixture(name);
+      let file: KmyRawFile;
+      beforeAll(async () => {
+        file = await fixture(name);
+      });
 
-      it("reads the container and file information", () => {
+      it("reads the container and file information", async () => {
         expect(file.fileInfo).toEqual({
           container: expected.container,
           fixVersion: 12,
@@ -50,7 +54,7 @@ describe("readKmyFile", () => {
         expect(file.baseCurrency).toBe("USD");
       });
 
-      it("reads the section counts of the reference's section 18", () => {
+      it("reads the section counts of the reference's section 18", async () => {
         expect(file.accounts).toHaveLength(17);
         expect(file.accounts.filter((a) => a.isStandard)).toHaveLength(5);
         expect(file.transactions).toHaveLength(11);
@@ -71,7 +75,7 @@ describe("readKmyFile", () => {
         expect(file.readerWarnings).toEqual([]);
       });
 
-      it("reads the Checking split values exactly", () => {
+      it("reads the Checking split values exactly", async () => {
         const shares = file.transactions.flatMap((t) =>
           t.splits.filter((s) => s.account === "A000001").map((s) => s.shares),
         );
@@ -86,7 +90,7 @@ describe("readKmyFile", () => {
         expect(shares.reduce(add, ZERO)).toEqual(rational(5609n, 2n));
       });
 
-      it("reads accounts, payees, schedule, security and prices", () => {
+      it("reads accounts, payees, schedule, security and prices", async () => {
         const checking = file.accounts.find((a) => a.id === "A000001");
         expect(checking).toMatchObject({
           name: "Checking",
@@ -137,9 +141,9 @@ describe("readKmyFile", () => {
     },
   );
 
-  it("returns equal raw models for the two committed files, container aside", () => {
-    const gz = fixture("syntheticKmy");
-    const xml = fixture("syntheticXml");
+  it("returns equal raw models for the two committed files, container aside", async () => {
+    const gz = await fixture("syntheticKmy");
+    const xml = await fixture("syntheticXml");
     expect(gz.fileInfo.container).toBe("gzip");
     expect(xml.fileInfo.container).toBe("xml");
     expect({ ...gz, fileInfo: { ...gz.fileInfo, container: "xml" } }).toEqual(
@@ -147,14 +151,16 @@ describe("readKmyFile", () => {
     );
   });
 
-  it("reads equal models from independent reads of the same bytes", () => {
-    expect(fixture("syntheticKmy")).toEqual(fixture("syntheticKmy"));
+  it("reads equal models from independent reads of the same bytes", async () => {
+    expect(await fixture("syntheticKmy")).toEqual(
+      await fixture("syntheticKmy"),
+    );
   });
 
-  it("does not mutate the uploaded bytes", () => {
+  it("does not mutate the uploaded bytes", async () => {
     const bytes = readKmyFixture("syntheticXml");
     const copy = Buffer.from(bytes);
-    read(bytes);
+    await read(bytes);
     expect(bytes.equals(copy)).toBe(true);
   });
 
@@ -188,30 +194,35 @@ describe("readKmyFile", () => {
         Buffer.from([0x1f, 0x8b, 8, 0, 1, 2, 3]),
         KmyCorruptFileError,
       ],
-    ])("%s", (_name, bytes, error) => {
-      expect(() => read(bytes)).toThrow(error);
+    ])("%s", async (_name, bytes, error) => {
+      await expect(read(bytes)).rejects.toThrow(error);
     });
 
-    it("an inflated size over the bound", () => {
-      expect(() =>
+    it("an inflated size over the bound", async () => {
+      await expect(
         read(
-          gzipSync(Buffer.alloc(2 * 1024 * 1024, 0x20)),
+          gzipSync(
+            Buffer.concat([
+              Buffer.from("<KMYMONEY-FILE>"),
+              Buffer.alloc(2 * 1024 * 1024, 0x20),
+            ]),
+          ),
           "f.kmy",
           1024 * 1024,
         ),
-      ).toThrow(KmyXmlTooLargeError);
-      expect(() => read(Buffer.from(doc), "f.xml", 100)).toThrow(
+      ).rejects.toThrow(KmyXmlTooLargeError);
+      await expect(read(Buffer.from(doc), "f.xml", 100)).rejects.toThrow(
         KmyXmlTooLargeError,
       );
     });
 
-    it("a filename ending .anon.xml, in any case", () => {
-      expect(() => read(Buffer.from(doc), "backup.ANON.xml")).toThrow(
+    it("a filename ending .anon.xml, in any case", async () => {
+      await expect(read(Buffer.from(doc), "backup.ANON.xml")).rejects.toThrow(
         KmyAnonymizedFileError,
       );
     });
 
-    it("every account and payee named by its own id", () => {
+    it("every account and payee named by its own id", async () => {
       const anonymized = kmyFile({
         accounts: [
           kmyAccount({ id: "A000001", name: "A000001" }),
@@ -219,25 +230,25 @@ describe("readKmyFile", () => {
         ],
         payees: [kmyPayee({ id: "P000001", name: "P000001" })],
       });
-      expect(() => read(Buffer.from(anonymized))).toThrow(
+      await expect(read(Buffer.from(anonymized))).rejects.toThrow(
         KmyAnonymizedFileError,
       );
     });
 
-    it("is not anonymized when one name differs, a payee differs, or there is no account", () => {
+    it("is not anonymized when one name differs, a payee differs, or there is no account", async () => {
       const partly = kmyFile({
         accounts: [
           kmyAccount({ id: "A000001", name: "A000001" }),
           kmyAccount({ id: "A000002", name: "Real" }),
         ],
       });
-      expect(() => read(Buffer.from(partly))).not.toThrow();
+      await expect(read(Buffer.from(partly))).resolves.toBeDefined();
       const payee = kmyFile({
         accounts: [kmyAccount({ id: "A000001", name: "A000001" })],
         payees: [kmyPayee({ id: "P000001", name: "Corner Market" })],
       });
-      expect(() => read(Buffer.from(payee))).not.toThrow();
-      expect(() => read(Buffer.from(kmyFile()))).not.toThrow();
+      await expect(read(Buffer.from(payee))).resolves.toBeDefined();
+      await expect(read(Buffer.from(kmyFile()))).resolves.toBeDefined();
     });
 
     it.each([
@@ -274,21 +285,21 @@ describe("readKmyFile", () => {
           transactions: [kmyTransaction([kmySplit({ value: "1/0" })])],
         }),
       ],
-    ])("%s is a corrupt file", (_name, xml) => {
-      expect(() => read(Buffer.from(xml))).toThrow(KmyCorruptFileError);
+    ])("%s is a corrupt file", async (_name, xml) => {
+      await expect(read(Buffer.from(xml))).rejects.toThrow(KmyCorruptFileError);
     });
 
-    it("elements nested beyond 64 levels are a corrupt file", () => {
+    it("elements nested beyond 64 levels are a corrupt file", async () => {
       const open = Array.from({ length: 70 }, (_, i) => `<N${i}>`).join("");
       const close = Array.from({ length: 70 }, (_, i) => `</N${69 - i}>`).join(
         "",
       );
-      expect(() =>
+      await expect(
         read(Buffer.from(`<KMYMONEY-FILE>${open}${close}</KMYMONEY-FILE>`)),
-      ).toThrow(KmyCorruptFileError);
+      ).rejects.toThrow(KmyCorruptFileError);
     });
 
-    it("throws KmyImportError subclasses only, wrapping anything unexpected", () => {
+    it("throws KmyImportError subclasses only, wrapping anything unexpected", async () => {
       const hostile = new Proxy(Buffer.from(doc), {
         get(target, prop, receiver) {
           if (prop === "subarray") {
@@ -299,7 +310,7 @@ describe("readKmyFile", () => {
       });
       let thrown: unknown;
       try {
-        read(hostile);
+        await read(hostile);
       } catch (err) {
         thrown = err;
       }
@@ -311,16 +322,18 @@ describe("readKmyFile", () => {
   describe("input forms", () => {
     const xml = kmyFile({ accounts: [kmyAccount()] });
 
-    it("reads gzip and plain, with a UTF-8 BOM", () => {
-      expect(read(toKmyBytes(xml, "gzip")).fileInfo.container).toBe("gzip");
+    it("reads gzip and plain, with a UTF-8 BOM", async () => {
+      expect((await read(toKmyBytes(xml, "gzip"))).fileInfo.container).toBe(
+        "gzip",
+      );
       const bom = Buffer.concat([
         Buffer.from([0xef, 0xbb, 0xbf]),
         Buffer.from(xml),
       ]);
-      expect(read(bom).fileInfo.container).toBe("xml");
+      expect((await read(bom)).fileInfo.container).toBe("xml");
     });
 
-    it("drops control bytes and stray continuation bytes before tokenizing", () => {
+    it("drops control bytes and stray continuation bytes before tokenizing", async () => {
       const marked = Buffer.from(
         kmyFile({ accounts: [kmyAccount({ name: "Che#ck" })] }),
       );
@@ -330,19 +343,19 @@ describe("readKmyFile", () => {
         Buffer.from([0x01, 0xa9, 0x00]),
         marked.subarray(at + 1),
       ]);
-      const account = read(dirty).accounts.find((a) => !a.isStandard);
+      const account = (await read(dirty)).accounts.find((a) => !a.isStandard);
       expect(account?.name).toBe("Check");
     });
 
-    it("decodes non-ASCII names", () => {
-      const file = read(
+    it("decodes non-ASCII names", async () => {
+      const file = await read(
         Buffer.from(kmyFile({ accounts: [kmyAccount({ name: "Café €" })] })),
       );
       expect(file.accounts.find((a) => !a.isStandard)?.name).toBe("Café €");
     });
 
-    it("counts ordinals in document order before filtering", () => {
-      const file = read(
+    it("counts ordinals in document order before filtering", async () => {
+      const file = await read(
         Buffer.from(
           kmyFile({
             accounts: [
@@ -362,8 +375,8 @@ describe("readKmyFile", () => {
       expect(file.transactions.map((t) => t.ordinal)).toEqual([1, 2]);
     });
 
-    it("does not read a REPORT's ACCOUNT, PAYEE or TAG as real ones", () => {
-      const file = read(
+    it("does not read a REPORT's ACCOUNT, PAYEE or TAG as real ones", async () => {
+      const file = await read(
         Buffer.from(
           kmyFile({
             accounts: [kmyAccount()],

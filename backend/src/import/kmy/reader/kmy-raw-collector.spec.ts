@@ -543,20 +543,27 @@ describe("KmyRawCollector", () => {
       expect(file.counts.matchedTransactions).toBe(1);
     });
 
-    it("drops a split with an empty account and renumbers the rest", () => {
-      const file = collect(
-        kmyFile({
-          accounts: [checking, category],
-          transactions: [
-            tx([
-              kmySplit({ account: "" }),
-              kmySplit({ account: "A000001", value: "1/1", shares: "1/1" }),
-              kmySplit({ account: "A000002", value: "-1/1", shares: "-1/1" }),
-            ]),
-          ],
-        }),
-      );
-      expect(file.transactions[0].splits.map((s) => s.ordinal)).toEqual([1, 2]);
+    it("refuses a split with an empty account, as KMyMoney's readSplit does (m9)", () => {
+      // KMyMoney checks the id against the accounts read so far before its
+      // "Dropped split" branch could see an empty one, so the file is refused.
+      expect(() =>
+        collect(
+          kmyFile({
+            accounts: [checking, category],
+            transactions: [
+              tx([
+                kmySplit({ account: "" }),
+                kmySplit({ account: "A000001", value: "1/1", shares: "1/1" }),
+                kmySplit({
+                  account: "A000002",
+                  value: "-1/1",
+                  shares: "-1/1",
+                }),
+              ]),
+            ],
+          }),
+        ),
+      ).toThrow(KmyCorruptFileError);
     });
 
     it("keeps a transaction with no split, an empty memo and a bad date", () => {

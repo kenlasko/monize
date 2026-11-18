@@ -1,19 +1,21 @@
+import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import {
   KmyAnonymizedFileError,
   KmyCorruptFileError,
   KmyImportError,
 } from "../model/kmy-errors";
 import type { KmyRawFile } from "../model/kmy-raw";
-import { filterKmyBytes } from "./kmy-byte-filter";
+import { KmyByteFilter } from "./kmy-byte-filter";
 import { openKmyContainer } from "./kmy-container";
+import { KMY_YIELD_EVERY_BYTES } from "./kmy-limits";
 import { KmyRawCollector } from "./kmy-raw-collector";
-import { tokenizeKmyXml } from "./kmy-xml-tokenize";
+import { KmyXmlByteTokenizer } from "./kmy-xml-tokenize";
 
 export interface KmyReadInput {
   /** Not mutated. */
   readonly bytes: Buffer;
   readonly filename: string;
-  /** WP3b passes MNY_IMPORT_LIMIT_BYTES. */
+  /** The parser service passes `KMY_MAX_XML_BYTES`. */
   readonly maxXmlBytes: number;
 }
 
@@ -33,15 +35,36 @@ function isAnonymized(file: KmyRawFile, filename: string): boolean {
   );
 }
 
-/** Uploaded bytes to the raw model, or a `KmyImportError`. */
-export function readKmyFile(input: KmyReadInput): KmyRawFile {
+/**
+ * Uploaded bytes to the raw model, or a `KmyImportError`. The document is
+ * read as a stream -- inflated, filtered, decoded and tokenized chunk by chunk
+ * -- so neither the inflated document nor a filtered copy of it is ever held
+ * whole, every bound of `kmy-limits.ts` is checked as the bytes arrive, and
+ * the reader hands the event loop back every `KMY_YIELD_EVERY_BYTES` (B2).
+ */
+export async function readKmyFile(input: KmyReadInput): Promise<KmyRawFile> {
   try {
-    const { container, xml } = openKmyContainer(input.bytes, input.maxXmlBytes);
+    const { container, chunks } = openKmyContainer(
+      input.bytes,
+      input.maxXmlBytes,
+    );
     if (input.filename.toLowerCase().endsWith(".anon.xml")) {
       throw new KmyAnonymizedFileError();
     }
     const collector = new KmyRawCollector();
-    tokenizeKmyXml(filterKmyBytes(xml), collector);
+    const tokenizer = new KmyXmlByteTokenizer(collector);
+    const filter = new KmyByteFilter();
+    let sinceYield = 0;
+    for await (const chunk of chunks) {
+      tokenizer.write(filter.push(chunk));
+      sinceYield += chunk.length;
+      if (sinceYield >= KMY_YIELD_EVERY_BYTES) {
+        sinceYield = 0;
+        await yieldToEventLoop();
+      }
+    }
+    tokenizer.write(filter.flush());
+    tokenizer.end();
     const file = collector.finish(container);
     if (isAnonymized(file, input.filename)) {
       throw new KmyAnonymizedFileError();

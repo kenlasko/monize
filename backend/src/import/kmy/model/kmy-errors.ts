@@ -12,7 +12,8 @@ export type KmyErrorCode =
   | "kmyAnonymizedFile"
   | "kmyLegacyBinaryFile"
   | "kmyCorruptFile"
-  | "kmyXmlTooLarge";
+  | "kmyXmlTooLarge"
+  | "kmyTooManyRecords";
 
 export class KmyImportError extends MnyImportError<KmyErrorCode> {}
 
@@ -60,6 +61,21 @@ export class KmyXmlTooLargeError extends KmyImportError {
     super(
       "kmyXmlTooLarge",
       `KMyMoney file is larger than ${limitMb} MB once uncompressed`,
+    );
+  }
+}
+
+/**
+ * A document within the byte bound that holds more than the reader keeps
+ * from one file (`kmy-limits.ts`): records, elements, splits in one
+ * transaction, or one attribute's length. Refused while reading, before the
+ * rest is modelled.
+ */
+export class KmyTooManyRecordsError extends KmyImportError {
+  constructor(detail: string) {
+    super(
+      "kmyTooManyRecords",
+      `KMyMoney file is too large to import: ${detail}`,
     );
   }
 }

@@ -111,7 +111,13 @@ export function impliedRate(
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-/** A real calendar date written `YYYY-MM-DD`. */
+const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+/**
+ * A real calendar date written `YYYY-MM-DD`, year 0100 or later (a two-digit
+ * year is what `Date.UTC` would read as 19xx). Arithmetic, not a `Date`: it
+ * runs several times per transaction.
+ */
 export function isIsoDate(value: string | null | undefined): value is string {
   if (!value) {
     return false;
@@ -120,15 +126,12 @@ export function isIsoDate(value: string | null | undefined): value is string {
   if (!match) {
     return false;
   }
-  const [year, month, day] = [
-    Number(match[1]),
-    Number(match[2]),
-    Number(match[3]),
-  ];
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
-  );
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (year < 100 || month < 1 || month > 12 || day < 1) {
+    return false;
+  }
+  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  return day <= (month === 2 && leap ? 29 : DAYS_IN_MONTH[month - 1]);
 }

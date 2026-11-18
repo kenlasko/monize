@@ -1,4 +1,7 @@
-import { KmyCorruptFileError } from "../model/kmy-errors";
+import {
+  KmyCorruptFileError,
+  KmyTooManyRecordsError,
+} from "../model/kmy-errors";
 import { parseKmyNumber, ZERO } from "../model/kmy-rational";
 import type { Rational } from "../model/kmy-rational";
 import type {
@@ -39,6 +42,7 @@ import {
   readUnsignedBigint,
 } from "./kmy-reader-values";
 import { readPayee, readPayeeAddress } from "./kmy-reader-payee";
+import { KMY_MAX_RECORDS, KMY_MAX_SPLITS_PER_TRANSACTION } from "./kmy-limits";
 import type { KmyAttributes, KmyXmlEvents } from "./kmy-xml-tokenize";
 
 /**
@@ -53,6 +57,34 @@ const STANDARD_PREFIX = "AStd::";
 const BASE_CURRENCY_KEY = "kmm-baseCurrency";
 const MATCHED_TX_KEY = "kmm-matched-tx";
 const DEFAULT_FIX_VERSION = 12;
+
+/** Paths whose element the collector keeps something of: each is a record (`KMY_MAX_RECORDS`). */
+const RETAINED = new Set(
+  [
+    "INSTITUTIONS/INSTITUTION",
+    "INSTITUTIONS/INSTITUTION/ACCOUNTIDS/ACCOUNTID",
+    "PAYEES/PAYEE",
+    "TAGS/TAG",
+    "COSTCENTERS/COSTCENTER",
+    "ACCOUNTS/ACCOUNT",
+    "ACCOUNTS/ACCOUNT/SUBACCOUNTS/SUBACCOUNT",
+    "ACCOUNTS/ACCOUNT/RECONCILIATIONS/RECONCILIATION",
+    "ACCOUNTS/ACCOUNT/KEYVALUEPAIRS/PAIR",
+    "TRANSACTIONS/TRANSACTION",
+    "TRANSACTIONS/TRANSACTION/KEYVALUEPAIRS/PAIR",
+    "TRANSACTIONS/TRANSACTION/SPLITS/SPLIT",
+    "TRANSACTIONS/TRANSACTION/SPLITS/SPLIT/TAG",
+    "SCHEDULES/SCHEDULED_TX",
+    "SCHEDULES/SCHEDULED_TX/PAYMENTS",
+    "SCHEDULES/SCHEDULED_TX/PAYMENTS/PAYMENT",
+    "SCHEDULES/SCHEDULED_TX/TRANSACTION/SPLITS/SPLIT",
+    "SCHEDULES/SCHEDULED_TX/TRANSACTION/SPLITS/SPLIT/TAG",
+    "SECURITIES/SECURITY",
+    "SECURITIES/SECURITY/KEYVALUEPAIRS/PAIR",
+    "CURRENCIES/CURRENCY",
+    "PRICES/PRICEPAIR/PRICE",
+  ].map((path) => `${R}/${path}`),
+);
 
 export class KmyRawCollector implements KmyXmlEvents {
   private fixVersion = DEFAULT_FIX_VERSION;
@@ -100,10 +132,22 @@ export class KmyRawCollector implements KmyXmlEvents {
   private security: SecurityBuilder | null = null;
   private split: SplitBuilder | null = null;
   private pricePair: { from: string; to: string } | null = null;
+  private records = 0;
+  /**
+   * Every account id read so far, standard ones included: KMyMoney's
+   * `m_validAccountIds`. A split may only name one of them
+   * (`mymoneyxmlreader.cpp`, `readSplit`), and accounts precede transactions
+   * and schedules in the writer's order, so the check is made as the split
+   * arrives.
+   */
+  private readonly accountIds = new Set<string>();
 
   // ---- events -------------------------------------------------------------
 
   open(path: string, attributes: KmyAttributes): void {
+    if (RETAINED.has(path) && ++this.records > KMY_MAX_RECORDS) {
+      throw new KmyTooManyRecordsError("the file has too many records");
+    }
     switch (path) {
       case `${R}/FILEINFO/CREATION_DATE`:
         this.creationDate = readKmyDate(attributes.date);
@@ -170,6 +214,7 @@ export class KmyRawCollector implements KmyXmlEvents {
         break;
 
       case `${R}/ACCOUNTS/ACCOUNT`:
+        this.accountIds.add(attr(attributes, "id"));
         this.account = {
           ordinal: ++this.accountCount,
           id: attr(attributes, "id"),
@@ -533,6 +578,19 @@ export class KmyRawCollector implements KmyXmlEvents {
     template: boolean,
   ): SplitBuilder {
     const subject = (name: string) => `SPLIT@${name}`;
+    // KMyMoney refuses the file here, an empty account id included: its
+    // "Dropped split" branch for an empty id is unreachable after this check.
+    if (!this.accountIds.has(attr(attributes, "account"))) {
+      throw new KmyCorruptFileError(
+        "a split references an account that is not in the file",
+      );
+    }
+    const splits = template
+      ? (this.schedule?.template?.splits.length ?? 0)
+      : (this.transaction?.splits.length ?? 0);
+    if (splits >= KMY_MAX_SPLITS_PER_TRANSACTION) {
+      throw new KmyTooManyRecordsError("a transaction has too many splits");
+    }
     return {
       account: attr(attributes, "account"),
       payee: nonEmpty(attributes.payee),
@@ -558,8 +616,7 @@ export class KmyRawCollector implements KmyXmlEvents {
   private takeSplit(): SplitBuilder | null {
     const split = this.split;
     this.split = null;
-    // A split with an empty account is dropped by KMyMoney's reader.
-    return split && split.account !== "" ? split : null;
+    return split;
   }
 
   private closePostedSplit(): void {

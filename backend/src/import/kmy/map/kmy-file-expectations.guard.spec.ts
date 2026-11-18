@@ -37,6 +37,7 @@ describe("kmy-file-expectations imports (M1 guard)", () => {
     "./kmy-map-accounts": ["KmyAccountMapping"],
     "./kmy-map-securities": ["KmySecurityMapping"],
     "./kmy-stock-splits": ["journalOrder", "replayStockAccount"],
+    "./kmy-steps": ["STEP_EVERY", "Steps", "runSteps"],
   };
 
   it("reads its imports", () => {

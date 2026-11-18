@@ -66,15 +66,35 @@ The user guide is `website/docs/importing-from-kmymoney.md`.
   payee list without a new field, which is every Money file.
 - **No prettier on this directory.** It is not prettier-formatted; use eslint only.
 
-## Memory
+## Memory and time
 
-Measured on a 50,000-transaction file built with the XML builders (two accounts, two splits per
-transaction; 22.8 MB of XML, 0.6 MB gzipped), parsed by `parseKmyBytes` under `ts-node` on Node 24:
-about 4 seconds, and peak resident set 560 MB against 345 MB for the same process before the parse, so
-roughly 215 MB for the reader and mapper. The inflated XML is held once as a string (the 4.2 bound is the
-upload limit) and the raw model and mapped rows are the rest; the writers add the commit's own
-working set on top of that. A real file with payees, tags, prices and longer memos will sit above the
-figure; it is a floor for sizing, not a ceiling.
+What one file may cost is bounded while it is read (`reader/kmy-limits.ts`, spec 4.2): the document at
+`KMY_MAX_XML_BYTES` (100 MiB inflated), the records kept at `KMY_MAX_RECORDS` (600,000), elements at
+`KMY_MAX_ELEMENTS` (2,000,000), splits per transaction and one attribute's length. Each is checked as
+the bytes arrive, so a hostile file is refused at the first chunk past a bound, and neither the inflated
+document nor a filtered copy is ever held whole. The reader yields to the event loop every 256 KiB and
+the mapper every 20 ms (`map/kmy-steps.ts`), in the preview request and the job alike.
+
+Measured with `parseKmyBytes` under `ts-node` on Node 24, one fresh process each, peak resident set
+against the process before the parse (about 345 MB), longest event-loop stall sampled every 5 ms:
+
+| Input | Before (synchronous, whole-buffer) | After |
+|---|---|---|
+| 50,000 transactions, two splits each (23.9 MB XML, 0.6 MB gzip) | 3.8 s, stall 3.8 s, +211 MB | 1.9 s, stall 117 ms, +132 MB |
+| 199,000 transactions (37.1 MB XML, 0.6 MB gzip): just under the record bound | not measured | 4.9 s, stall 260 ms, +467 MB |
+| 300,000 transactions (0.9 MB gzip) | not measured | refused `kmyTooManyRecords` after 2.8 s, stall 31 ms, +230 MB |
+| the review's 2.45 million one-split transactions on an undeclared account (278 MiB XML, 967 KiB gzip) | 36.4 s, stall 36.4 s, +2,945 MB, then refused | refused `kmyCorruptFile` at the first split, 10 ms |
+| the same with the account declared (2 million transactions, 5.9 MB gzip) | not measured | refused `kmyTooManyRecords` after 2.8 s, stall 23 ms, +233 MB |
+| 3 million empty elements (57 KiB gzip) | not measured | refused `kmyTooManyRecords` after 1.7 s, stall 41 ms, +1 MB |
+| 300 MiB of spaces inside the root (299 KiB gzip) | not measured | refused `kmyXmlTooLarge` at 100 MiB, 1.5 s, +68 MB |
+
+**The bound that remains:** a file inside every bound costs at most about 470 MB above the process's
+own memory and about 5 seconds of CPU to read and map, with the event loop never held for more than a
+few hundred milliseconds; the commit's writers add their own working set on top. That is within the
+helm sizing rule for Money imports at its defaults (`2 x MNY_IMPORT_LIMIT_MB + 200Mi`), but a pod sized
+below it can still be exhausted by one such file, and nothing rate-limits uploads beyond the one active
+import per user. A real file with payees, tags, prices and longer memos sits nearer the record bound for
+the same number of transactions than these two-split files do.
 
 Payee aliases: the writer inserts each alias through a savepoint (`insertPayeeAliasIgnoringDuplicate`), so
 its cost is a few round trips per alias. Measured against PostgreSQL 18 in a local container, 2,000 payees

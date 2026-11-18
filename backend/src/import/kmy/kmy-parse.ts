@@ -1,14 +1,14 @@
 import type { CountryCode } from "libphonenumber-js/max";
 import type { MnyParsedFile } from "../mny/mny-parser.service";
 import type { MnyImportOptions } from "../mny/model/mny-import-options";
-import { mapKmyFile } from "./map/kmy-map-file";
+import { mapKmyFileYielding } from "./map/kmy-map-file";
 import { readKmyFile } from "./reader/kmy-read-file";
 
 export interface ParseKmyBytesInput {
   /** Uploaded or staged bytes, as they arrived. Not mutated. */
   readonly bytes: Buffer;
   readonly filename: string;
-  /** Bound on the inflated XML (the shared upload limit). */
+  /** Bound on the inflated XML (`KMY_MAX_XML_BYTES`). */
   readonly maxXmlBytes: number;
   readonly options?: Partial<MnyImportOptions>;
   readonly userDefaultCurrency: string;
@@ -22,16 +22,20 @@ export interface ParseKmyBytesInput {
 
 /**
  * Bytes to the parsed file the shared pipeline consumes: reader, then mapper.
- * Pure and synchronous apart from its inputs, so the parser service and the
- * corpus script share one path.
+ * Pure apart from its inputs, so the parser service (the preview request and
+ * the import job alike) and the corpus script share one path. The reader
+ * streams and yields to the event loop as it goes; the mapper then runs
+ * synchronously over the raw model, whose size the reader bounds.
  */
-export function parseKmyBytes(input: ParseKmyBytesInput): MnyParsedFile {
-  const raw = readKmyFile({
+export async function parseKmyBytes(
+  input: ParseKmyBytesInput,
+): Promise<MnyParsedFile> {
+  const raw = await readKmyFile({
     bytes: input.bytes,
     filename: input.filename,
     maxXmlBytes: input.maxXmlBytes,
   });
-  return mapKmyFile(raw, {
+  return mapKmyFileYielding(raw, {
     options: input.options,
     userDefaultCurrency: input.userDefaultCurrency,
     phoneRegion: input.phoneRegion,

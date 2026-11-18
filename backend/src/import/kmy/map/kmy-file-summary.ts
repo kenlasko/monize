@@ -83,6 +83,9 @@ export function readerWarnings(
   raw: KmyRawFile,
   context: KmyMapContext,
 ): MnyWarning[] {
+  if (raw.readerWarnings.length === 0) {
+    return [];
+  }
   const byOrdinal = new Map(
     raw.transactions.map((transaction) => [transaction.ordinal, transaction]),
   );

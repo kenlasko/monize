@@ -10,6 +10,7 @@ import { abs, compare, isZero, neg, sum } from "../model/kmy-rational";
 import { KMY_TYPE, isAssetOrLiability } from "./kmy-account-tree";
 import { impliedRate, isIsoDate, legRational, rateNumber } from "./kmy-amounts";
 import { rawCurrencyOf } from "./kmy-map-accounts";
+import { STEP_EVERY, Steps, runSteps } from "./kmy-steps";
 import {
   KmyMapContext,
   RowCollector,
@@ -521,10 +522,21 @@ export function mapKmyTransactions(
   context: KmyMapContext,
   folded: ReadonlySet<number>,
 ): KmyTransactionsResult {
+  return runSteps(mapKmyTransactionsSteps(context, folded));
+}
+
+/** `mapKmyTransactions` as steps (`kmy-steps.ts`): it yields every `STEP_EVERY` transactions. */
+export function* mapKmyTransactionsSteps(
+  context: KmyMapContext,
+  folded: ReadonlySet<number>,
+): Steps<KmyTransactionsResult> {
   const collector = new RowCollector(context);
   let skipped = 0;
 
-  for (const transaction of context.raw.transactions) {
+  for (const [index, transaction] of context.raw.transactions.entries()) {
+    if (index % STEP_EVERY === STEP_EVERY - 1) {
+      yield;
+    }
     if (
       folded.has(transaction.ordinal) ||
       hasStockSplit(transaction, context)

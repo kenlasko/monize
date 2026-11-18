@@ -13,8 +13,8 @@ const BASE = {
 };
 
 describe("parseKmyBytes", () => {
-  it("reads then maps the committed synthetic file", () => {
-    const parsed = parseKmyBytes({
+  it("reads then maps the committed synthetic file", async () => {
+    const parsed = await parseKmyBytes({
       ...BASE,
       bytes: readKmyFixture("syntheticKmy"),
     });
@@ -23,12 +23,12 @@ describe("parseKmyBytes", () => {
     expect(parsed.fileBalances).toBeDefined();
   });
 
-  it("gives the same result for the gzip and plain XML forms", () => {
-    const gz = parseKmyBytes({
+  it("gives the same result for the gzip and plain XML forms", async () => {
+    const gz = await parseKmyBytes({
       ...BASE,
       bytes: readKmyFixture("syntheticKmy"),
     });
-    const xml = parseKmyBytes({
+    const xml = await parseKmyBytes({
       ...BASE,
       bytes: readKmyFixture("syntheticXml"),
     });
@@ -39,14 +39,16 @@ describe("parseKmyBytes", () => {
     ["plain text", Buffer.from("hello world, not a kmy file")],
     ["a truncated gzip stream", gzip("<KMYMONEY-FILE>").subarray(0, 12)],
     ["a SQLite header", Buffer.from("SQLite format 3\0" + "x".repeat(64))],
-  ])("refuses %s with a typed error", (_label, bytes) => {
-    expect(() => parseKmyBytes({ ...BASE, bytes })).toThrow(KmyImportError);
+  ])("refuses %s with a typed error", async (_label, bytes) => {
+    await expect(parseKmyBytes({ ...BASE, bytes })).rejects.toThrow(
+      KmyImportError,
+    );
   });
 
-  it("does not mutate the input bytes", () => {
+  it("does not mutate the input bytes", async () => {
     const bytes = readKmyFixture("syntheticKmy");
     const before = Buffer.from(bytes);
-    parseKmyBytes({ ...BASE, bytes });
+    await parseKmyBytes({ ...BASE, bytes });
     expect(bytes.equals(before)).toBe(true);
   });
 });

@@ -10,6 +10,7 @@ import {
 } from "./kmy-amounts";
 import { KmyAccountMapping } from "./kmy-map-accounts";
 import { KmySecurityMapping } from "./kmy-map-securities";
+import { STEP_EVERY, Steps, runSteps } from "./kmy-steps";
 import { journalOrder, replayStockAccount } from "./kmy-stock-splits";
 
 /**
@@ -96,7 +97,7 @@ function dated(postDate: string | null, asOf: string): boolean {
   return isIsoDate(postDate) && postDate <= asOf;
 }
 
-function balances(input: FileExpectationsInput) {
+function* balances(input: FileExpectationsInput) {
   const { raw, mapping, coinDecimals, asOf } = input;
   const placesOf = (key: string): number =>
     amountPlaces(mapping.currencyByKey.get(key) as string, coinDecimals);
@@ -106,7 +107,10 @@ function balances(input: FileExpectationsInput) {
     exact.set(account.key, ZERO);
     rows.set(account.key, 0n);
   }
-  for (const transaction of raw.transactions) {
+  for (const [index, transaction] of raw.transactions.entries()) {
+    if (index % STEP_EVERY === STEP_EVERY - 1) {
+      yield;
+    }
     if (!dated(transaction.postDate, asOf)) {
       continue;
     }
@@ -232,8 +236,17 @@ function tradeValues(input: FileExpectationsInput) {
 export function computeFileExpectations(
   input: FileExpectationsInput,
 ): FileExpectations {
-  const { fileBalances, rowBalances, precision } = balances(input);
+  return runSteps(computeFileExpectationsSteps(input));
+}
+
+/** `computeFileExpectations` as steps (`kmy-steps.ts`). */
+export function* computeFileExpectationsSteps(
+  input: FileExpectationsInput,
+): Steps<FileExpectations> {
+  const { fileBalances, rowBalances, precision } = yield* balances(input);
+  yield;
   const trades = tradeValues(input);
+  yield;
   return {
     fileBalances,
     rowBalances,

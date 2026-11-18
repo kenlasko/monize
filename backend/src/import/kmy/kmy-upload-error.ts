@@ -59,6 +59,11 @@ export const KMY_ERROR_MESSAGES: Record<
       "errors.import.kmyCorruptFile",
       "That KMyMoney file is damaged or incomplete and could not be read. If it was copied or downloaded, try the original file again.",
     ),
+  kmyTooManyRecords: () =>
+    tr(
+      "errors.import.kmyTooManyRecords",
+      "That KMyMoney file holds more records than Monize imports from one file.",
+    ),
   kmyXmlTooLarge: (limitMb) =>
     tr(
       "errors.import.kmyXmlTooLarge",

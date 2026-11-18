@@ -20,7 +20,7 @@ import {
 import { KmyRawFile } from "../model/kmy-raw";
 import { buildAccountTree } from "./kmy-account-tree";
 import { QUANTITY_PLACES, amountPlaces } from "./kmy-amounts";
-import { computeFileExpectations } from "./kmy-file-expectations";
+import { computeFileExpectationsSteps } from "./kmy-file-expectations";
 import { applyKmyFileFixes } from "./kmy-file-fixes";
 import {
   countByAccount,
@@ -34,7 +34,7 @@ import {
 } from "./kmy-file-summary";
 import { mapKmyAccounts, withOpeningBalances } from "./kmy-map-accounts";
 import { mapKmyCategories } from "./kmy-map-categories";
-import { mapKmyInvestments } from "./kmy-map-investments";
+import { mapKmyInvestmentsSteps } from "./kmy-map-investments";
 import {
   mapKmyPayees,
   mapKmyTags,
@@ -46,7 +46,8 @@ import { resolvePayeeDefaults } from "./kmy-payee-details";
 import { buildRateLookup, mapKmyPrices } from "./kmy-map-prices";
 import { mapKmySchedules } from "./kmy-map-schedules";
 import { mapKmySecurities } from "./kmy-map-securities";
-import { mapKmyTransactions } from "./kmy-map-transactions";
+import { mapKmyTransactionsSteps } from "./kmy-map-transactions";
+import { Steps, runSteps, runStepsYielding } from "./kmy-steps";
 import { foldOpeningBalances } from "./kmy-opening-balances";
 import { KmyMapContext } from "./kmy-row-builder";
 
@@ -73,6 +74,25 @@ export function mapKmyFile(
   file: KmyRawFile,
   input: KmyMapInput,
 ): MnyParsedFile {
+  return runSteps(mapKmyFileSteps(file, input));
+}
+
+/**
+ * `mapKmyFile` handing the event loop back as it goes (B2): the same steps,
+ * driven by `runStepsYielding`, so a large file does not block every other
+ * request while it maps. The parser service (preview and job) uses this one.
+ */
+export function mapKmyFileYielding(
+  file: KmyRawFile,
+  input: KmyMapInput,
+): Promise<MnyParsedFile> {
+  return runStepsYielding(mapKmyFileSteps(file, input));
+}
+
+function* mapKmyFileSteps(
+  file: KmyRawFile,
+  input: KmyMapInput,
+): Steps<MnyParsedFile> {
   const options = resolveImportOptions(input.options);
   const asOf = input.asOf ?? todayIsoDate();
   const baseCurrency = file.baseCurrency?.trim() || input.userDefaultCurrency;
@@ -117,8 +137,12 @@ export function mapKmyFile(
     baseCurrency,
     coinDecimals: input.coinDecimals,
   });
-  const banking = mapKmyTransactions(context, opening.folded);
-  const trading = mapKmyInvestments({ ...context, securities }, opening.folded);
+  yield;
+  const banking = yield* mapKmyTransactionsSteps(context, opening.folded);
+  const trading = yield* mapKmyInvestmentsSteps(
+    { ...context, securities },
+    opening.folded,
+  );
   const investments = trading.investments;
   const transactions: MappedTransactions = {
     ...banking.transactions,
@@ -137,6 +161,7 @@ export function mapKmyFile(
     ),
   };
 
+  yield;
   const bills = mapKmySchedules(context, asOf);
   const candidates = new Set(bills.bills.map((bill) => bill.handle));
   const selectedHandles =
@@ -194,7 +219,8 @@ export function mapKmyFile(
   ]);
   const prices = mapKmyPrices({ raw, securities, options, usedCurrencies });
 
-  const expectations = computeFileExpectations({
+  yield;
+  const expectations = yield* computeFileExpectationsSteps({
     raw,
     tree,
     mapping,
@@ -206,6 +232,7 @@ export function mapKmyFile(
   const placesByKey = new Map(
     [...expectations.balancePrecision].map(([key, rule]) => [key, rule.places]),
   );
+  yield;
   const expectedBalances = computeExpectedBalances(
     accounts,
     transactions,
@@ -214,6 +241,7 @@ export function mapKmyFile(
     placesByKey,
   );
 
+  yield;
   const replay = mappedReplay(investments, asOf);
   const checks: MnyHoldingCheck[] = expectations.holdings.map((holding) => {
     const replayQuantity = roundToDecimals(
