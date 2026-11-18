@@ -78,20 +78,22 @@ async function handshake(
   const { port } = listener.address() as AddressInfo;
   try {
     return await new Promise((resolve) => {
+      // Verification stays on: a chain or name OpenSSL refuses ends the
+      // handshake with an "error" event, which is the refusal being tested.
       const socket = connect({
         host: "127.0.0.1",
         port,
         ca,
         servername,
-        rejectUnauthorized: false,
+        rejectUnauthorized: true,
       });
       socket.once("secureConnect", () => {
-        const authorizationError = socket.authorizationError;
-        const identity = socket.authorized
-          ? null
-          : String(authorizationError ?? "unauthorized");
+        const authorized = socket.authorized;
         socket.destroy();
-        resolve({ authorized: socket.authorized, error: identity });
+        resolve({
+          authorized,
+          error: authorized ? null : "connected without being authorized",
+        });
       });
       socket.once("error", (error) =>
         resolve({ authorized: false, error: error.message }),
