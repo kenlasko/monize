@@ -285,12 +285,26 @@ export function rawPrice(
   return { ordinal: 0, from, to, date, price: n(price), source: "User" };
 }
 
+/** A payee with matching disabled and no details; `options` overrides any field. */
 export function rawPayee(
   id: string,
   name: string,
-  hasDetails = false,
+  options: Partial<KmyPayee> = {},
 ): KmyPayee {
-  return { ordinal: 0, id, name, hasDetails };
+  return {
+    ordinal: 0,
+    id,
+    name,
+    match: { kind: "disabled", ignoreCase: false, keys: [] },
+    defaultAccountId: null,
+    notes: "",
+    email: "",
+    reference: "",
+    address: { street: "", city: "", state: "", postcode: "", telephone: "" },
+    hasIdentifiers: false,
+    hasLinkPattern: false,
+    ...options,
+  };
 }
 
 export function rawTag(id: string, name: string): KmyTag {
@@ -389,7 +403,10 @@ export function syntheticKmyFile(): KmyRawFile {
     ],
     payees: [
       rawPayee("P000001", "Corner Market"),
-      rawPayee("P000002", "City Power", true),
+      rawPayee("P000002", "City Power", {
+        match: { kind: "key", ignoreCase: true, keys: ["CITY POWER"] },
+        defaultAccountId: "A000008",
+      }),
     ],
     tags: [rawTag("G000001", "household")],
     accounts: [

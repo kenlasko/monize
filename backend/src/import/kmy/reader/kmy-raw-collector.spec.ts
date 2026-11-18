@@ -131,40 +131,171 @@ describe("KmyRawCollector", () => {
       ]);
     });
 
-    it("flags payee details from each source", () => {
-      const address = (street: string) =>
-        kmyElement("ADDRESS", { street, city: "" });
-      const file = collect(
-        kmyFile({
-          payees: [
-            kmyPayee({ id: "P1", name: "plain" }, address("")),
-            kmyPayee({ id: "P2", email: "a@example.invalid" }),
-            kmyPayee({ id: "P3", reference: "R" }),
-            kmyPayee({ id: "P4", notes: "n" }),
-            kmyPayee({ id: "P5" }, address("1 Main St")),
-            kmyPayee({ id: "P6" }, kmyElement("payeeIdentifier", { id: "1" })),
-            kmyPayee({ id: "P7", defaultaccountid: "A000002" }),
-            kmyPayee({ id: "P8", matchingenabled: 1 }),
-            kmyPayee({ id: "P9", matchingenabled: 0 }),
-          ],
-        }),
-      );
-      expect(file.payees.map((p) => p.hasDetails)).toEqual([
-        false,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        false,
-      ]);
-      expect(file.payees[0]).toEqual({
-        ordinal: 1,
-        id: "P1",
-        name: "plain",
-        hasDetails: false,
+    describe("payees (reference 10.1)", () => {
+      const only = (
+        overrides: Record<string, string | number>,
+        children?: string,
+      ) =>
+        collect(
+          kmyFile({ payees: [kmyPayee({ id: "P1", ...overrides }, children)] }),
+        ).payees[0];
+
+      it("reads a plain payee with matching disabled and no details", () => {
+        expect(only({ name: "plain" })).toEqual({
+          ordinal: 1,
+          id: "P1",
+          name: "plain",
+          match: { kind: "disabled", ignoreCase: false, keys: [] },
+          defaultAccountId: null,
+          notes: "",
+          email: "",
+          reference: "",
+          address: {
+            street: "",
+            city: "",
+            state: "",
+            postcode: "",
+            telephone: "",
+          },
+          hasIdentifiers: false,
+          hasLinkPattern: false,
+        });
+      });
+
+      it("reads the four matching modes", () => {
+        expect(only({ matchingenabled: 1, usingmatchkey: 0 }).match.kind).toBe(
+          "name",
+        );
+        expect(
+          only({ matchingenabled: 1, usingmatchkey: 0, matchkey: "^$" }).match
+            .kind,
+        ).toBe("nameExact");
+        expect(
+          only({ matchingenabled: 1, usingmatchkey: 1, matchkey: "A\n" }).match
+            .kind,
+        ).toBe("key");
+        expect(only({ matchingenabled: 0, usingmatchkey: 1 }).match.kind).toBe(
+          "disabled",
+        );
+      });
+
+      it("reads matching flags as unsigned integers: empty and text are 0, any other number true", () => {
+        expect(only({ matchingenabled: "true" }).match.kind).toBe("disabled");
+        expect(only({ matchingenabled: "" }).match.kind).toBe("disabled");
+        expect(only({ matchingenabled: 2, usingmatchkey: 0 }).match.kind).toBe(
+          "name",
+        );
+        expect(
+          only({ matchingenabled: 1, usingmatchkey: "true" }).match.kind,
+        ).toBe("name");
+        expect(only({ matchingenabled: 1, matchignorecase: 7 }).match).toEqual({
+          kind: "name",
+          ignoreCase: true,
+          keys: [],
+        });
+        expect(only({ matchingenabled: 1 }).match.ignoreCase).toBe(false);
+      });
+
+      it("splits keys on a line feed, drops the trailing empty one and keeps spaces inside keys", () => {
+        const match = only({
+          matchingenabled: 1,
+          usingmatchkey: 1,
+          matchkey: " A B \n\n   \nC;D\n",
+        }).match;
+        expect(match.keys).toEqual([" A B ", "C;D"]);
+      });
+
+      it("splits keys on ; only when the value holds no line feed (KMyMoney 4.8)", () => {
+        expect(
+          only({ matchingenabled: 1, usingmatchkey: 1, matchkey: "A;;  ;B" })
+            .match.keys,
+        ).toEqual(["A", "B"]);
+      });
+
+      it("reads a single key with its trailing line feed from the XML escape", () => {
+        const file = collect(
+          kmyFile({
+            payees: [
+              `<PAYEE id="P1" name="x" matchingenabled="1" usingmatchkey="1" matchkey="CITY POWER&#10;"/>`,
+            ],
+          }),
+        );
+        expect(file.payees[0].match.keys).toEqual(["CITY POWER"]);
+      });
+
+      it("reads the default account, notes, email and reference", () => {
+        expect(
+          only({
+            defaultaccountid: "A000002",
+            notes: " n ",
+            email: "a@example.invalid",
+            reference: "R",
+          }),
+        ).toMatchObject({
+          defaultAccountId: "A000002",
+          notes: " n ",
+          email: "a@example.invalid",
+          reference: "R",
+        });
+      });
+
+      it("reads the address with the current names, untrimmed", () => {
+        const { address } = only(
+          {},
+          kmyElement("ADDRESS", {
+            street: "1 Main St\nSuite 2",
+            city: " Springfield ",
+            state: "IL",
+            zip: "62701",
+            telephone: "555 0100",
+          }),
+        );
+        expect(address).toEqual({
+          street: "1 Main St\nSuite 2",
+          city: " Springfield ",
+          state: "IL",
+          postcode: "62701",
+          telephone: "555 0100",
+        });
+      });
+
+      it("falls back to the legacy address names (R2.4), taking the first non-empty", () => {
+        expect(
+          only(
+            {},
+            kmyElement("ADDRESS", {
+              state: "",
+              country: "",
+              county: "Kent",
+              zip: "",
+              zipcode: "",
+              postcode: "CT1",
+            }),
+          ).address,
+        ).toMatchObject({ state: "Kent", postcode: "CT1" });
+        expect(
+          only(
+            {},
+            kmyElement("ADDRESS", {
+              state: "",
+              country: "UK",
+              county: "Kent",
+              zip: "Z1",
+              zipcode: "Z2",
+            }),
+          ).address,
+        ).toMatchObject({ state: "UK", postcode: "Z1" });
+      });
+
+      it("notes a payeeIdentifier child and a non-empty idpattern or urltemplate", () => {
+        expect(
+          only({}, kmyElement("payeeIdentifier", { id: "1" })).hasIdentifiers,
+        ).toBe(true);
+        expect(only({ idpattern: "\\d+" }).hasLinkPattern).toBe(true);
+        expect(only({ urltemplate: "http://x/%1" }).hasLinkPattern).toBe(true);
+        expect(only({ idpattern: "", urltemplate: "" }).hasLinkPattern).toBe(
+          false,
+        );
       });
     });
 

@@ -38,6 +38,7 @@ import {
   readKmyUint,
   readUnsignedBigint,
 } from "./kmy-reader-values";
+import { readPayee, readPayeeAddress } from "./kmy-reader-payee";
 import type { KmyAttributes, KmyXmlEvents } from "./kmy-xml-tokenize";
 
 /**
@@ -139,24 +140,16 @@ export class KmyRawCollector implements KmyXmlEvents {
       }
 
       case `${R}/PAYEES/PAYEE`:
-        this.payee = {
-          ordinal: ++this.payeeCount,
-          id: attr(attributes, "id"),
-          name: attr(attributes, "name"),
-          hasDetails:
-            ["email", "reference", "notes", "defaultaccountid"].some(
-              (name) => attr(attributes, name) !== "",
-            ) || readKmyUint(attributes.matchingenabled, 0) === 1,
-        };
+        this.payee = readPayee(++this.payeeCount, attributes);
         break;
       case `${R}/PAYEES/PAYEE/ADDRESS`:
-        if (this.payee && Object.values(attributes).some((v) => v !== "")) {
-          this.payee.hasDetails = true;
+        if (this.payee) {
+          this.payee.address = readPayeeAddress(attributes);
         }
         break;
       case `${R}/PAYEES/PAYEE/payeeIdentifier`:
         if (this.payee) {
-          this.payee.hasDetails = true;
+          this.payee.hasIdentifiers = true;
         }
         break;
 

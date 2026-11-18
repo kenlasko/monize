@@ -1,5 +1,6 @@
 import type {
   KmyAmount,
+  KmyPayee,
   KmyReconciliation,
   KmySplit,
   KmyTemplateSplit,
@@ -12,12 +13,9 @@ import type { KmyAttributes } from "./kmy-xml-tokenize";
 // ---------------------------------------------------------------------------
 // Builders
 
-export interface PayeeBuilder {
-  ordinal: number;
-  id: string;
-  name: string;
-  hasDetails: boolean;
-}
+export type PayeeBuilder = {
+  -readonly [K in keyof KmyPayee]: KmyPayee[K];
+};
 
 export interface InstitutionBuilder {
   ordinal: number;

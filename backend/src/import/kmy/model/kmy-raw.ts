@@ -23,15 +23,45 @@ export interface KmyInstitution {
   accountIds: readonly string[];
 }
 
+/** How KMyMoney matches an imported payee text to a payee (reference 10.1). */
+export type KmyPayeeMatchKind = "disabled" | "name" | "nameExact" | "key";
+
+export interface KmyPayeeMatch {
+  kind: KmyPayeeMatchKind;
+  /** `matchignorecase`; absent is false (case-sensitive). */
+  ignoreCase: boolean;
+  /**
+   * "key" only: the keys of `matchkey`, split on a line feed (else on `;`), with
+   * empty and all-space keys dropped. Keys are never trimmed.
+   */
+  keys: readonly string[];
+}
+
+export interface KmyPayeeAddress {
+  street: string;
+  city: string;
+  /** `state`, else `country`, else `county` (R2.4). */
+  state: string;
+  /** `zip`, else `zipcode`, else `postcode` (R2.4). */
+  postcode: string;
+  telephone: string;
+}
+
 export interface KmyPayee {
   ordinal: number;
   id: string;
   name: string;
-  /**
-   * Non-empty email, reference, notes or address field, any payeeIdentifier, a
-   * defaultaccountid, or matchingenabled="1".
-   */
-  hasDetails: boolean;
+  match: KmyPayeeMatch;
+  /** `defaultaccountid`; null when absent or empty. */
+  defaultAccountId: string | null;
+  notes: string;
+  email: string;
+  reference: string;
+  address: KmyPayeeAddress;
+  /** Any payeeIdentifier child. */
+  hasIdentifiers: boolean;
+  /** A non-empty `idpattern` or `urltemplate`. */
+  hasLinkPattern: boolean;
 }
 
 export interface KmyTag {

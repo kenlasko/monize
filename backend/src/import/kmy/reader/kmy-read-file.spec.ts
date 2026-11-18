@@ -100,7 +100,14 @@ describe("readKmyFile", () => {
         expect(
           file.accounts.find((a) => a.id === "A000013")?.kvp.get("mm-closed"),
         ).toBe("yes");
-        expect(file.payees.map((p) => p.hasDetails)).toEqual([false, true]);
+        expect(file.payees.map((p) => p.match.kind)).toEqual([
+          "disabled",
+          "key",
+        ]);
+        expect(file.payees[1]).toMatchObject({
+          defaultAccountId: "A000008",
+          match: { ignoreCase: true, keys: ["CITY POWER"] },
+        });
         expect(file.schedules[0]).toMatchObject({
           id: "SCH000001",
           occurrence: 32,

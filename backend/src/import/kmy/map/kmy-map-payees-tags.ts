@@ -5,7 +5,7 @@ import {
   MappedTags,
 } from "../../mny/model/mny-import-model";
 import { MnyWarning } from "../../mny/model/mny-warnings";
-import { KmyRawFile } from "../model/kmy-raw";
+import { KmyPayee, KmyRawFile } from "../model/kmy-raw";
 
 /**
  * Spec 5.5: payees and tags, referenced-only by default. Payee handles and tag
@@ -17,6 +17,20 @@ import { KmyRawFile } from "../model/kmy-raw";
  * The raw model carries only that boolean, so importing matching rules and the
  * default category also needs the reader and `KmyPayee` extended.
  */
+
+function hasAnyDetails(payee: KmyPayee): boolean {
+  const { address } = payee;
+  return (
+    payee.email !== "" ||
+    payee.reference !== "" ||
+    payee.notes !== "" ||
+    payee.defaultAccountId !== null ||
+    payee.match.kind !== "disabled" ||
+    payee.hasIdentifiers ||
+    payee.hasLinkPattern ||
+    Object.values(address).some((value) => value !== "")
+  );
+}
 
 export const MAX_TAG_NAME_LENGTH = 100;
 
@@ -50,7 +64,7 @@ export function mapKmyPayees(
     if (!unique.has(name.toLowerCase())) {
       unique.set(name.toLowerCase(), { handle: payee.ordinal, name });
     }
-    if (payee.hasDetails) {
+    if (hasAnyDetails(payee)) {
       warnings.push({ code: "payeeDetailsNotImported", subject: name });
     }
   }

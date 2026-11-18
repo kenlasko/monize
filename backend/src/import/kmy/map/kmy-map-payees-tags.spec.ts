@@ -10,7 +10,7 @@ describe("mapKmyPayees (spec 5.5)", () => {
   const raw = rawFile({
     payees: [
       rawPayee("P1", " Corner Market "),
-      rawPayee("P2", "City Power", true),
+      rawPayee("P2", "City Power", { email: "a@example.invalid" }),
       rawPayee("P3", "corner market"),
       rawPayee("P4", "   "),
     ],
