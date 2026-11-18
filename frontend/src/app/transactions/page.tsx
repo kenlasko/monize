@@ -1285,8 +1285,13 @@ function TransactionsContent() {
   // scrolls back. Below `xl` the app header's collapsed title carries the
   // account instead.
   const hasMobileTabBar = useHasMobileTabBar();
+  // Read from this render's filter, which is what `retainedWidget` is synced
+  // to above, never from `retainedWidget` itself: on the render that switches
+  // accounts it still holds the previous one until that sync re-renders, and
+  // the `false` read there reset the watcher, so the floating bar vanished
+  // after a switch made from it (#2277).
   const accountBandActive =
-    retainedWidget?.kind === 'account' && retainedWidget.account === singleFilteredAccount;
+    singleFilteredAccount !== undefined && !singleFilteredPayee && !singleFilteredCategory;
   const [accountNameRef, accountNameScrolledAway] = useScrolledPast<HTMLHeadingElement>(
     !hasMobileTabBar && accountBandActive,
   );
