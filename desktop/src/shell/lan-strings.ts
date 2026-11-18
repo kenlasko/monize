@@ -54,7 +54,11 @@ export const LAN_TEXT = {
       steps:
         "Open Settings and search for “CA certificate” (usually under " +
         "Security > Encryption & credentials > Install a certificate), then " +
-        "choose the downloaded monize-root.crt.",
+        "choose the downloaded monize-root.crt. Chrome then trusts it. " +
+        "Firefox needs one more setting: in Firefox, open Settings > About " +
+        "Firefox and tap the Firefox logo five times, then go back to " +
+        "Settings > Secret Settings, turn on “Use third party CA " +
+        "certificates”, and close and reopen Firefox.",
     },
     {
       name: "Windows",
@@ -76,6 +80,19 @@ export const LAN_TEXT = {
     "Sign in as usual; from the browser's menu you can then install Monize " +
     "as an app.",
   otherAddresses: "If that address does not open, try one of these:",
+  warningHeading: "If the browser warns that the connection is not secure",
+  warningBody:
+    "Do not choose “Accept the risk”, “Proceed” or “Continue to the site”. " +
+    "The warning means the device does not trust Monize's certificate yet: " +
+    "go back to step 1 and finish installing it. A browser you let past the " +
+    "warning remembers that, and keeps calling Monize not secure even after " +
+    "the certificate is installed.",
+  warningRecovery:
+    "Already let it past? Clear all of that browser's data, then open the " +
+    "address again. On Android: Settings > Apps > the browser > Storage > " +
+    "Clear storage. The browser's own “Clear browsing data” is not always " +
+    "enough. Clearing storage also removes the browser's bookmarks, open " +
+    "tabs and saved passwords on that device, unless they are synced.",
   noMdnsName: (reason: string) =>
     `The name monize.local could not be set up on this network (${reason}), so use an address below.`,
   replaceHeading: "If this PC was compromised",

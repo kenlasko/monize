@@ -80,8 +80,8 @@ export function createLanSetupWindow(options: LanSetupOptions): LanSetupWindow {
 
   function open(): BrowserWindow {
     const created = new BrowserWindow({
-      width: 760,
-      height: 820,
+      width: 1080,
+      height: 860,
       minWidth: 520,
       minHeight: 480,
       show: false,

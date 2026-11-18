@@ -90,12 +90,16 @@
     setText("platforms-heading", str(view, "platformsHeading"));
     const platforms = byId("platforms");
     platforms.replaceChildren(
-      ...view.text.platforms.flatMap((platform) => {
+      // One <div> per platform (allowed inside <dl>), so the CSS grid lays
+      // the platforms out side by side as pairs.
+      ...view.text.platforms.map((platform) => {
+        const group = document.createElement("div");
         const term = document.createElement("dt");
         term.textContent = platform.name;
         const detail = document.createElement("dd");
         detail.textContent = platform.steps;
-        return [term, detail];
+        group.append(term, detail);
+        return group;
       }),
     );
 
@@ -116,6 +120,10 @@
         return item;
       }),
     );
+
+    setText("warning-heading", str(view, "warningHeading"));
+    setText("warning-body", str(view, "warningBody"));
+    setText("warning-recovery", str(view, "warningRecovery"));
 
     setText("replace-heading", str(view, "replaceHeading"));
     setText("replace-body", str(view, "replaceBody"));

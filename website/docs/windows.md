@@ -84,10 +84,14 @@ Each device has to trust Monize once, by installing Monize's certificate. The ce
 2. On the device, scan the first code with the camera and download the certificate. You can also click **Save certificate...** and send the file to the device yourself, for example by email or AirDrop.
 3. Install it:
    - **iPhone and iPad:** open **Settings**, tap **Profile Downloaded** and install it. Then turn it on under **Settings > General > About > Certificate Trust Settings**.
-   - **Android:** open **Settings** and search for *CA certificate* (usually under **Security > Encryption & credentials > Install a certificate**), then choose the downloaded `monize-root.crt`.
+   - **Android:** open **Settings** and search for *CA certificate* (usually under **Security > Encryption & credentials > Install a certificate**), then choose the downloaded `monize-root.crt`. Chrome then trusts it. Firefox needs one more setting: in Firefox, open **Settings > About Firefox** and tap the Firefox logo five times, then go back to **Settings > Secret Settings**, turn on **Use third party CA certificates**, and close and reopen Firefox.
    - **Windows:** open the file and choose **Install Certificate**, **Current User**, then **Trusted Root Certification Authorities**. Firefox keeps its own list: import the file in its settings under **Certificates**.
    - **Mac:** open the file to add it to Keychain Access, then open it there and set **Trust** to **Always Trust**.
 4. Scan the second code, or type the address the window shows (`https://monize.local:3382`) into the device's browser, and sign in as usual. From the browser's menu you can then install Monize as an app.
+
+**If the browser warns that the connection is not secure, do not choose *Accept the risk*, *Proceed* or *Continue to the site*.** The warning means the device does not trust Monize's certificate yet: finish installing it first. A browser you let past the warning remembers that, and keeps calling Monize not secure even after the certificate is installed.
+
+If you already let it past, clear all of that browser's data, then open the address again. On Android, that is **Settings > Apps >** the browser **> Storage > Clear storage**: the browser's own *Clear browsing data* is not always enough. Clearing storage also removes the browser's bookmarks, open tabs and saved passwords on that device, unless they are synced.
 
 The window also shows the certificate's fingerprint. If you want to be sure the device downloaded the right file, compare it with the fingerprint the device shows for the certificate.
 
@@ -260,5 +264,6 @@ Free code signing provided by [SignPath.io](https://about.signpath.io), certific
 | *"Monize has a new address"* | Another program took the port Monize used. Monize moved to a free one and keeps it from now on; update any bookmarks and AI client settings. |
 | Monize does not start after the data folder was moved | The drive holding it is not connected. Connect it and start Monize again. |
 | A phone cannot open `https://monize.local:3382` | Try the IP address the **Set up another device** window lists: some phones and networks do not resolve `.local` names. If no address opens, check that the phone is on the same network as the PC (not a guest network), that Windows has the network set to **Private** (Settings > Network & internet), and that Monize is allowed through the firewall on private networks. |
-| The phone says the connection is not private or not secure | The phone does not trust Monize's certificate yet: install it as in [Setting Up a Device](#setting-up-a-device). On an iPhone, also turn it on under **Certificate Trust Settings**. |
+| The phone says the connection is not private or not secure | The phone does not trust Monize's certificate yet: install it as in [Setting Up a Device](#setting-up-a-device). On an iPhone, also turn it on under **Certificate Trust Settings**; in Firefox on Android, also turn on **Use third party CA certificates**. |
+| Monize opens on the phone, but the padlock still says not secure | The browser was let past a certificate warning before the certificate was installed, and remembers it. Clear all of that browser's data (on Android: **Settings > Apps >** the browser **> Storage > Clear storage**) and open the address again. |
 | Anything else | **View logs** in the tray menu. When you report a problem, include `main.log` and `backend.log` from the logs folder. |
