@@ -472,7 +472,7 @@ For each type-7 account `I`, its cash account is the first of:
 3. none: the pair gets a synthesized, empty cash side `acct-<I>-cash` (handle null), as Money does for
    an investment account with no companion, and `brokerageAccountNotFound` names `I`.
 
-The pair's currency is `I`'s; its opening balance is the cash account's (5.3); closed if either half is;
+The pair's currency is `I`'s; its opening balance is the cash account's (5.3); closed only when both halves are (a closed cash account beside an investment that still holds shares leaves the pair open);
 favourite if either is. The cash account no longer appears as a standalone account. A trade whose asset
 split is in any other account is funded from there (5.7.3), which is correct without the association.
 

@@ -225,8 +225,10 @@ export function mapKmyAccounts(input: MapKmyAccountsInput): KmyAccountMapping {
         ? `acct-${cash.ordinal}`
         : `acct-${account.ordinal}-cash`;
       const brokerageKey = `acct-${account.ordinal}`;
+      // m10: closed only when both halves are. A closed cash account beside
+      // an investment that still holds shares must not hide the holding.
       const pairClosed =
-        closed || (cash ? isYes(cash.kvp.get("mm-closed")) : false);
+        closed && (cash ? isYes(cash.kvp.get("mm-closed")) : true);
       const shared = {
         accountType: AccountType.INVESTMENT,
         currencyCode,

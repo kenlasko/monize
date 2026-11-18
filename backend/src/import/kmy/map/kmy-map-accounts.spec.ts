@@ -416,10 +416,25 @@ describe("mapKmyAccounts: the investment pair (spec 5.2.2)", () => {
     expect(ignored.mapped.accounts).toHaveLength(2);
   });
 
-  it("is closed or favourite when either half is, with the institution of either", () => {
+  it("is closed only when both halves are, favourite when either is, with the institution of either", () => {
+    // m10: the cash half alone closed leaves the pair open, so a brokerage
+    // that still holds shares is not hidden.
+    const cashOnly = mapped([
+      investment(),
+      rawAccount({
+        id: "X",
+        name: "Broker (Brokerage)",
+        type: 1,
+        kvp: { "mm-closed": "yes" },
+      }),
+    ]);
+    expect(cashOnly.mapped.accounts.map((a) => a.closed)).toEqual([
+      false,
+      false,
+    ]);
     const result = mapped(
       [
-        investment(),
+        investment({ kvp: { "mm-closed": "yes" } }),
         rawAccount({
           id: "X",
           name: "Broker (Brokerage)",
