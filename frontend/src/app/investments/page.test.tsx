@@ -243,11 +243,22 @@ vi.mock('@/components/ui/UnsavedChangesDialog', () => ({
 }));
 
 vi.mock('@/components/ui/MultiSelect', () => ({
-  MultiSelect: ({ options, placeholder, onChange }: any) => (
+  // An option toggles in and out of the selection, as the real one does.
+  MultiSelect: ({ options, placeholder, value = [], onChange }: any) => (
     <div data-testid="multi-select">
       <span>{placeholder}</span>
       {options?.map((opt: any) => (
-        <button key={opt.value} data-testid={`option-${opt.value}`} onClick={() => onChange([opt.value])}>
+        <button
+          key={opt.value}
+          data-testid={`option-${opt.value}`}
+          onClick={() =>
+            onChange(
+              value.includes(opt.value)
+                ? value.filter((v: string) => v !== opt.value)
+                : [...value, opt.value],
+            )
+          }
+        >
           {opt.label}
         </button>
       ))}
@@ -1729,43 +1740,54 @@ describe('InvestmentsPage', () => {
       vi.unstubAllGlobals();
     });
 
-    it('pins the accounts label, an account caret and refresh to the top once the picker scrolls away', async () => {
+    it('pins the section name, the account picker and refresh to the top once the picker scrolls away', async () => {
       await renderPage();
       const floating = screen.getByTestId('investments-floating-bar');
       expect(floating).toHaveAttribute('aria-hidden', 'true');
 
       headerScrolled?.(true);
       expect(floating).toHaveAttribute('aria-hidden', 'false');
-      expect(floating).toHaveTextContent('Investments – All Accounts');
-      // A caret rather than a second multi-select, beside Refresh.
-      expect(within(floating).queryByTestId('multi-select')).not.toBeInTheDocument();
+      expect(floating).toHaveTextContent('Investments');
+      // The header's own multi-select, not a single-pick caret, beside Refresh.
+      expect(
+        within(floating).queryByRole('button', { name: 'Switch to another account' }),
+      ).not.toBeInTheDocument();
+      expect(within(floating).getByTestId('multi-select')).toHaveTextContent(
+        'All Investment Accounts',
+      );
       expect(within(floating).getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
-
-      await act(async () => {
-        fireEvent.click(within(floating).getByRole('button', { name: 'Switch to another account' }));
-      });
-      // "All" is the selection, so the menu offers the accounts.
-      expect(screen.queryByRole('menuitem', { name: /All Investment Accounts/ })).not.toBeInTheDocument();
-      await act(async () => {
-        fireEvent.click(screen.getByRole('menuitem', { name: /TFSA/ }));
-      });
-      await waitFor(() => {
-        expect(floating).toHaveTextContent('Investments – TFSA');
-      });
-
-      // And back to every account from the same caret.
-      await act(async () => {
-        fireEvent.click(within(floating).getByRole('button', { name: 'Switch to another account' }));
-      });
-      await act(async () => {
-        fireEvent.click(screen.getByRole('menuitem', { name: /All Investment Accounts/ }));
-      });
-      await waitFor(() => {
-        expect(floating).toHaveTextContent('Investments – All Accounts');
-      });
 
       headerScrolled?.(false);
       expect(floating).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('narrows the page to more than one account from the pinned picker', async () => {
+      await renderPage();
+      headerScrolled?.(true);
+      const floating = screen.getByTestId('investments-floating-bar');
+
+      await act(async () => {
+        fireEvent.click(within(floating).getByTestId('option-brok-1'));
+      });
+      await act(async () => {
+        fireEvent.click(within(floating).getByTestId('option-brok-2'));
+      });
+      await waitFor(() => {
+        expect(mockUsePortfolioPeriodResults).toHaveBeenLastCalledWith(
+          expect.objectContaining({ accountIds: 'brok-1,brok-2' }),
+        );
+      });
+
+      // And back out of one, from the same picker.
+      await act(async () => {
+        fireEvent.click(within(floating).getByTestId('option-brok-1'));
+      });
+      await waitFor(() => {
+        expect(mockUsePortfolioPeriodResults).toHaveBeenLastCalledWith(
+          expect.objectContaining({ accountIds: 'brok-2' }),
+        );
+      });
+      expect(floating).toHaveAttribute('aria-hidden', 'false');
     });
 
     it('shows the Total Portfolio Value and a + that asks investment or cash', async () => {

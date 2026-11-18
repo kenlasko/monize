@@ -2086,6 +2086,27 @@ describe('TransactionsPage', () => {
         expect(floating()).toHaveAttribute('aria-hidden', 'true');
       });
 
+      it('stays pinned when the account is switched from it part way down the page', async () => {
+        await filterToOneAccount();
+        await waitFor(() => {
+          expect(screen.getByText('Current Balance')).toBeInTheDocument();
+        });
+        bandScrolled?.(true);
+        expect(floating()).toHaveAttribute('aria-hidden', 'false');
+        const nameBefore = observedName;
+
+        fireEvent.click(within(floating()).getByRole('button', { name: 'Switch to another account' }));
+        fireEvent.click(screen.getByRole('menuitem', { name: /Savings/ }));
+
+        await waitFor(() => {
+          expect(within(floating()).getByTestId('account-info-floating-bar')).toHaveTextContent('Savings');
+        });
+        // The same heading is still the one watched and nothing scrolled, so
+        // no observer reports again: the bar has to keep what it knew.
+        expect(observedName).toBe(nameBefore);
+        expect(floating()).toHaveAttribute('aria-hidden', 'false');
+      });
+
       it('opens the widget and scrolls back up to it from its chevron', async () => {
         mockPreferences.value = { defaultCurrency: 'USD', viewDefaults: { widgetsCollapsed: true } };
         await filterToOneAccount();
