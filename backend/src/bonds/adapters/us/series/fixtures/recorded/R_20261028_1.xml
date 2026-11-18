@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Data>
+    <TreasuryAuctionResults>
+        <OfferingDescription>
+            <Technique>Auction</Technique>
+            <PricingMethod>Single-price</PricingMethod>
+            <SecurityDescription>2-Year FRN</SecurityDescription>
+            <SecurityTermYear>2</SecurityTermYear>
+            <SecurityType>Note</SecurityType>
+            <InflationProtected>N</InflationProtected>
+            <FloatingRate>Y</FloatingRate>
+            <Reopening>N</Reopening>
+            <CUSIP>91282CRS2</CUSIP>
+            <OfferingAmount>30000000000</OfferingAmount>
+            <CurrentlyOutstanding>0</CurrentlyOutstanding>
+            <Strippable>N</Strippable>
+            <Callable>N</Callable>
+        </OfferingDescription>
+        <Dates>
+            <AnnouncementDate>2026-10-22</AnnouncementDate>
+            <NoncompetitiveAuctionCloseDate>2026-10-28</NoncompetitiveAuctionCloseDate>
+            <NoncompetitiveAuctionCloseTime>11:00 AM ET</NoncompetitiveAuctionCloseTime>
+            <CompetitiveAuctionCloseDate>2026-10-28</CompetitiveAuctionCloseDate>
+            <CompetitiveAuctionCloseTime>11:30 AM ET</CompetitiveAuctionCloseTime>
+            <DatedDate>2026-10-31</DatedDate>
+            <OriginalDatedDate>2026-10-31</OriginalDatedDate>
+            <IssueDate>2026-11-02</IssueDate>
+            <OriginalIssueDate>2026-11-02</OriginalIssueDate>
+            <MaturityDate>2028-10-31</MaturityDate>
+        </Dates>
+        <Limits>
+            <CompetitiveBidExpression>Discount Margin</CompetitiveBidExpression>
+            <CompetitiveBidDecimals>3</CompetitiveBidDecimals>
+            <CompetitiveDiscountMarginBidIncrements>0.001</CompetitiveDiscountMarginBidIncrements>
+            <MaximumNoncompetitiveAward>10000000</MaximumNoncompetitiveAward>
+            <MaximumCompetitiveAward>10500000000</MaximumCompetitiveAward>
+            <MaximumRecognizedBidAtASingleDiscountMargin>10500000000</MaximumRecognizedBidAtASingleDiscountMargin>
+            <NLPReportingThreshold>10500000000</NLPReportingThreshold>
+            <NLPExclusionAmount>0</NLPExclusionAmount>
+            <MinimumToBidAmount>100</MinimumToBidAmount>
+            <MinimumToIssueAmount>100</MinimumToIssueAmount>
+            <MultipleToBidAmount>100</MultipleToBidAmount>
+            <MultipleToIssueAmount>100</MultipleToIssueAmount>
+            <AllottedAtHighPercentageDecimals>2</AllottedAtHighPercentageDecimals>
+        </Limits>
+        <Participation>
+            <PrimaryDealerBidsAccepted>Y</PrimaryDealerBidsAccepted>
+            <PrimaryDealersInsideOfOfferingAmount>Y</PrimaryDealersInsideOfOfferingAmount>
+            <DirectParticipantBidsAccepted>Y</DirectParticipantBidsAccepted>
+            <DirectParticipantsInsideOfOfferingAmount>Y</DirectParticipantsInsideOfOfferingAmount>
+            <IndirectParticipantBidsAccepted>Y</IndirectParticipantBidsAccepted>
+            <IndirectParticipantsInsideOfOfferingAmount>Y</IndirectParticipantsInsideOfOfferingAmount>
+            <SOMABidsAccepted>Y</SOMABidsAccepted>
+            <SOMAInsideOfOfferingAmount>N</SOMAInsideOfOfferingAmount>
+            <FIMANoncompetitiveBidsAccepted>Y</FIMANoncompetitiveBidsAccepted>
+            <FIMANoncompetitiveInsideOfOfferingAmount>Y</FIMANoncompetitiveInsideOfOfferingAmount>
+            <FIMACompetitiveBidsAccepted>Y</FIMACompetitiveBidsAccepted>
+            <FIMACompetitiveInsideOfOfferingAmount>Y</FIMACompetitiveInsideOfOfferingAmount>
+            <TreasuryRetailBidsAccepted>Y</TreasuryRetailBidsAccepted>
+            <TreasuryRetailInsideOfOfferingAmount>Y</TreasuryRetailInsideOfOfferingAmount>
+        </Participation>
+        <MaturingSecurities>
+            <MaturingSecuritiesType>Coupon</MaturingSecuritiesType>
+            <MaturingDate>2026-10-31</MaturingDate>
+            <TotalMarketableAmountOutstanding>254071802900</TotalMarketableAmountOutstanding>
+            <PrivateHoldings>230403586500</PrivateHoldings>
+            <SOMAHoldings>23668216400</SOMAHoldings>
+        </MaturingSecurities>
+        <Interest>
+            <FrequencyOfInterestPayments>Quarterly</FrequencyOfInterestPayments>
+            <Spread>0.038</Spread>
+            <FirstInterestPaymentLength>Normal</FirstInterestPaymentLength>
+            <DatedDateDifferentFromIssueDate>Y</DatedDateDifferentFromIssueDate>
+            <InterestPaymentDates>
+                <InterestPaymentDate index="1">2027-01-31</InterestPaymentDate>
+                <InterestPaymentDate index="2">2027-04-30</InterestPaymentDate>
+                <InterestPaymentDate index="3">2027-07-31</InterestPaymentDate>
+                <InterestPaymentDate index="4">2027-10-31</InterestPaymentDate>
+                <InterestPaymentDate index="5">2028-01-31</InterestPaymentDate>
+                <InterestPaymentDate index="6">2028-04-30</InterestPaymentDate>
+                <InterestPaymentDate index="7">2028-07-31</InterestPaymentDate>
+                <InterestPaymentDate index="8">2028-10-31</InterestPaymentDate>
+            </InterestPaymentDates>
+        </Interest>
+        <IndexInformation>
+            <IndexDeterminationDate>2026-10-26</IndexDeterminationDate>
+            <IndexDeterminationRate>4.050</IndexDeterminationRate>
+        </IndexInformation>
+        <DiscountMargins>
+            <HighDiscountMargin>0.038</HighDiscountMargin>
+            <AllottedAtHighDiscountMarginPercentage>11.37</AllottedAtHighDiscountMarginPercentage>
+            <MedianDiscountMargin>0.024</MedianDiscountMargin>
+            <MedianDiscountMarginThreshold>50</MedianDiscountMarginThreshold>
+            <LowDiscountMargin>0.000</LowDiscountMargin>
+            <LowDiscountMarginThreshold>5</LowDiscountMarginThreshold>
+        </DiscountMargins>
+        <Price>
+            <PricePerAmount>100</PricePerAmount>
+            <HighPrice>99.999766</HighPrice>
+            <AccruedInterestPerAmount>100</AccruedInterestPerAmount>
+            <AccruedInterest>0.022943838</AccruedInterest>
+        </Price>
+        <AuctionResultsBreakdown>
+            <PrimaryDealersNoncompetitiveParRecognized>0</PrimaryDealersNoncompetitiveParRecognized>
+            <PrimaryDealersCompetitiveParRecognized>59390000000</PrimaryDealersCompetitiveParRecognized>
+            <DirectBiddersNoncompetitiveParRecognized>0</DirectBiddersNoncompetitiveParRecognized>
+            <DirectBiddersCompetitiveParRecognized>1500000000</DirectBiddersCompetitiveParRecognized>
+            <IndirectBiddersNoncompetitiveParRecognized>23607000</IndirectBiddersNoncompetitiveParRecognized>
+            <IndirectBiddersCompetitiveParRecognized>30721000000</IndirectBiddersCompetitiveParRecognized>
+            <SOMANoncompetitiveParRecognized>3333551700</SOMANoncompetitiveParRecognized>
+            <FIMANoncompetitiveParRecognized>0</FIMANoncompetitiveParRecognized>
+            <RetailNoncompetitiveParRecognized>7390700</RetailNoncompetitiveParRecognized>
+            <SubtotalNoncompetitiveParRecognizedInsideOfOfferingAmount>30997700</SubtotalNoncompetitiveParRecognizedInsideOfOfferingAmount>
+            <SubtotalCompetitiveParRecognizedInsideOfOfferingAmount>91611000000</SubtotalCompetitiveParRecognizedInsideOfOfferingAmount>
+            <SubtotalNoncompetitiveParRecognizedOutsideOfOfferingAmount>3333551700</SubtotalNoncompetitiveParRecognizedOutsideOfOfferingAmount>
+            <SubtotalCompetitiveParRecognizedOutsideOfOfferingAmount>0</SubtotalCompetitiveParRecognizedOutsideOfOfferingAmount>
+            <TotalParRecognizedInsideOfOfferingAmount>91641997700</TotalParRecognizedInsideOfOfferingAmount>
+            <TotalParRecognizedOutsideOfOfferingAmount>3333551700</TotalParRecognizedOutsideOfOfferingAmount>
+            <GrandTotalParRecognized>94975549400</GrandTotalParRecognized>
+            <PrimaryDealersNoncompetitiveParAwarded>0</PrimaryDealersNoncompetitiveParAwarded>
+            <PrimaryDealersCompetitiveParAwarded>8377055000</PrimaryDealersCompetitiveParAwarded>
+            <DirectBiddersNoncompetitiveParAwarded>0</DirectBiddersNoncompetitiveParAwarded>
+            <DirectBiddersCompetitiveParAwarded>200000000</DirectBiddersCompetitiveParAwarded>
+            <IndirectBiddersNoncompetitiveParAwarded>23607000</IndirectBiddersNoncompetitiveParAwarded>
+            <IndirectBiddersCompetitiveParAwarded>21391972100</IndirectBiddersCompetitiveParAwarded>
+            <SOMANoncompetitiveParAwarded>3333551700</SOMANoncompetitiveParAwarded>
+            <FIMANoncompetitiveParAwarded>0</FIMANoncompetitiveParAwarded>
+            <RetailNoncompetitiveParAwarded>7390700</RetailNoncompetitiveParAwarded>
+            <SubtotalNoncompetitiveParAwardedInsideOfOfferingAmount>30997700</SubtotalNoncompetitiveParAwardedInsideOfOfferingAmount>
+            <SubtotalCompetitiveParAwardedInsideOfOfferingAmount>29969027100</SubtotalCompetitiveParAwardedInsideOfOfferingAmount>
+            <SubtotalNoncompetitiveParAwardedOutsideOfOfferingAmount>3333551700</SubtotalNoncompetitiveParAwardedOutsideOfOfferingAmount>
+            <SubtotalCompetitiveParAwardedOutsideOfOfferingAmount>0</SubtotalCompetitiveParAwardedOutsideOfOfferingAmount>
+            <TotalParAwardedInsideOfOfferingAmount>30000024800</TotalParAwardedInsideOfOfferingAmount>
+            <TotalParAwardedOutsideOfOfferingAmount>3333551700</TotalParAwardedOutsideOfOfferingAmount>
+            <GrandTotalParAwarded>33333576500</GrandTotalParAwarded>
+            <BidToCoverRatio>3.05</BidToCoverRatio>
+        </AuctionResultsBreakdown>
+        <TreasuryAuctionResultsAdditionalDocuments>
+            <TreasuryAuctionResultsPressReleaseURL>https://www.treasurydirect.gov/instit/annceresult/press/preanre/2026/R_20261028_1.pdf</TreasuryAuctionResultsPressReleaseURL>
+            <TreasuryAuctionResultsPressReleaseFileName>R_20261028_1.pdf</TreasuryAuctionResultsPressReleaseFileName>
+            <TreasuryAuctionResultsXMLSchemaURL>https://www.treasurydirect.gov/xsd/DFS-TreasuryAuctionResults-v20260415-0837aET.xsd</TreasuryAuctionResultsXMLSchemaURL>
+        </TreasuryAuctionResultsAdditionalDocuments>
+    </TreasuryAuctionResults>
+</Data>

@@ -21,7 +21,7 @@ the recordings below on 2026-11-06); their values stay constructed because the
 golden cases are computed from them.
 
 `recorded/` holds answers saved verbatim from `www.treasurydirect.gov` on
-2026-11-06, read by `../fetch-series-recorded.spec.ts`:
+2026-11-06 (and 2026-11-17 where the row says so), read by `../fetch-series-recorded.spec.ts`:
 
 | File | What it is |
 | --- | --- |
@@ -33,6 +33,11 @@ golden cases are computed from them.
 | `search-912810FQ6.json` | The 2032 TIPS of 2001; its record names no results file. |
 | `issued-Bill-2026-10-06-2026-12-07.json`, `issued-Note-...`, `issued-Bond-...` | `TA_WS/securities/search?securityType=<type>&dateFieldName=issueDate&startDate=2026-10-06&endDate=2026-12-07`: what `auctionsNear` asks for a trade date of 2026-11-06, read by `../auctions-near.spec.ts`. Holds announced auctions, reopenings, a TIPS and an FRN typed Note. |
 | `search-13-week-bills.json` | `TA_WS/securities/search?securityType=Bill&securityTerm=13-Week&dateFieldName=issueDate&startDate=2026-09-01&endDate=2026-11-06`: ten weekly 13-week auctions, the query the benchmark fetch sends. |
+| `search-912797WF0.json`, `R_20261112_2.xml` | Saved on 2026-11-17: the 4-week bill of #2263 (series `912797WF0261117`), reopened twice; the record of the 2026-11-17 issue leaves `inflationProtected` and `floatingRate` blank, and its results file is in the `DFS-TreasuryAuctionResults-v20260415` layout (spec section 9d). |
+| `search-91282CRX1.json`, `R_20261110_1.xml` | Saved on 2026-11-17: a 10-year note, 5 %, and its results file in the DFS layout. |
+| `search-912810UY2.json`, `R_20261112_4.xml` | Saved on 2026-11-17: a 30-year bond, 5-3/8 %, and its results file in the DFS layout. |
+| `search-91282CRR4.json`, `R_20261022_4.xml` | Saved on 2026-11-17: a 5-year TIPS, 2-1/4 %, Ref CPI 334.39761, and its results file in the DFS layout (no `HighPrice`, an `AdjustedPrice`). |
+| `search-91282CRS2.json`, `R_20261028_1.xml` | Saved on 2026-11-17: a 2-year FRN, spread 0.038, and its results file in the DFS layout. |
 
 What the live records do not carry, and how the fetch reads it instead: no
 `firstInterestPaymentDate` (the first coupon is the regular date after the dated
