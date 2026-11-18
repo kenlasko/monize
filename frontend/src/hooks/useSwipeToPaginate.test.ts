@@ -18,13 +18,13 @@ function Harness({ page, totalPages }: { page: number; totalPages: number }) {
 }
 
 function createTouchEvent(
-  type: 'touchstart' | 'touchmove' | 'touchend',
+  type: 'touchstart' | 'touchmove' | 'touchend' | 'touchcancel',
   clientX: number,
   clientY: number,
 ): TouchEvent {
   const touchData = { clientX, clientY, identifier: 0 } as Touch;
   const init: TouchEventInit = { bubbles: true, cancelable: type === 'touchmove' };
-  if (type === 'touchend') {
+  if (type === 'touchend' || type === 'touchcancel') {
     init.changedTouches = [touchData];
     init.touches = [];
   } else {
@@ -32,6 +32,13 @@ function createTouchEvent(
     init.changedTouches = [touchData];
   }
   return new TouchEvent(type, init);
+}
+
+// A second finger landing while the first is still down.
+function createSecondFingerTouchStart(first: [number, number], second: [number, number]): TouchEvent {
+  const one = { clientX: first[0], clientY: first[1], identifier: 0 } as Touch;
+  const two = { clientX: second[0], clientY: second[1], identifier: 1 } as Touch;
+  return new TouchEvent('touchstart', { bubbles: true, touches: [one, two], changedTouches: [two] });
 }
 
 describe('useSwipeToPaginate', () => {
@@ -168,5 +175,63 @@ describe('useSwipeToPaginate', () => {
     });
     expect(onPageChange).not.toHaveBeenCalled();
     vi.useRealTimers();
+  });
+
+  // Issue #2273: a drag that never received its touchend left the list
+  // sitting part way across its box.
+  it('slides back to rest when the touch is cancelled mid-swipe', () => {
+    vi.useFakeTimers();
+    const zone = renderZone(2, 5);
+    act(() => {
+      zone.dispatchEvent(createTouchEvent('touchstart', 300, 200));
+      zone.dispatchEvent(createTouchEvent('touchmove', 200, 202));
+    });
+    expect(zone.style.transform).toBe('translateX(-100px)');
+    act(() => {
+      zone.dispatchEvent(createTouchEvent('touchcancel', 200, 202));
+    });
+    expect(zone.style.transform).toBe('translateX(0px)');
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(zone.style.transform).toBe('');
+    expect(zone.style.transition).toBe('');
+    expect(onPageChange).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('abandons the swipe when a second finger lands', () => {
+    vi.useFakeTimers();
+    const zone = renderZone(2, 5);
+    act(() => {
+      zone.dispatchEvent(createTouchEvent('touchstart', 300, 200));
+      zone.dispatchEvent(createTouchEvent('touchmove', 150, 202));
+      zone.dispatchEvent(createSecondFingerTouchStart([150, 202], [100, 300]));
+    });
+    expect(zone.style.transform).toBe('translateX(0px)');
+    act(() => {
+      zone.dispatchEvent(createTouchEvent('touchend', 150, 202));
+      vi.advanceTimersByTime(300);
+    });
+    expect(zone.style.transform).toBe('');
+    expect(onPageChange).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('clears the drag when the list stops paginating mid-swipe', () => {
+    const onPage = vi.fn();
+    function Toggle({ totalPages }: { totalPages: number }) {
+      const { swipeRef } = useSwipeToPaginate({ page: 1, totalPages, onPageChange: onPage });
+      return createElement('div', { ref: swipeRef, 'data-testid': 'zone' });
+    }
+    const { getByTestId, rerender } = render(createElement(Toggle, { totalPages: 3 }));
+    const zone = getByTestId('zone') as HTMLDivElement;
+    act(() => {
+      zone.dispatchEvent(createTouchEvent('touchstart', 300, 200));
+      zone.dispatchEvent(createTouchEvent('touchmove', 200, 202));
+    });
+    expect(zone.style.transform).toBe('translateX(-100px)');
+    rerender(createElement(Toggle, { totalPages: 1 }));
+    expect(zone.style.transform).toBe('');
   });
 });

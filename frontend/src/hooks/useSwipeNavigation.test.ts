@@ -35,7 +35,7 @@ function makeUser(role: 'admin' | 'user'): User {
 
 // Helper to create touch events
 function createTouchEvent(
-  type: 'touchstart' | 'touchmove' | 'touchend',
+  type: 'touchstart' | 'touchmove' | 'touchend' | 'touchcancel',
   clientX: number,
   clientY: number,
 ): TouchEvent {
@@ -44,7 +44,7 @@ function createTouchEvent(
     bubbles: true,
     cancelable: type === 'touchmove',
   };
-  if (type === 'touchend') {
+  if (type === 'touchend' || type === 'touchcancel') {
     init.changedTouches = [touchData];
     init.touches = [];
   } else {
@@ -52,6 +52,13 @@ function createTouchEvent(
     init.changedTouches = [touchData];
   }
   return new TouchEvent(type, init);
+}
+
+// A second finger landing while the first is still down.
+function createSecondFingerTouchStart(first: [number, number], second: [number, number]): TouchEvent {
+  const one = { clientX: first[0], clientY: first[1], identifier: 0 } as Touch;
+  const two = { clientX: second[0], clientY: second[1], identifier: 1 } as Touch;
+  return new TouchEvent('touchstart', { bubbles: true, touches: [one, two], changedTouches: [two] });
 }
 
 describe('useSwipeNavigation', () => {
@@ -522,6 +529,104 @@ describe('useSwipeNavigation', () => {
 
       expect(sessionStorage.getItem('swipe-enter')).toBe('from-left');
       vi.useRealTimers();
+    });
+  });
+
+  // Issue #2273: a drag that never received its touchend left the page sitting
+  // part way across the screen, and the offset rode along onto every page
+  // reached afterwards until a reload.
+  describe('interrupted gestures never leave the page part way across', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('slides back to rest when the touch is cancelled mid-swipe', () => {
+      mockPathname = '/transactions';
+      vi.useFakeTimers();
+      renderSwipeHook();
+
+      act(() => {
+        contentDiv.dispatchEvent(createTouchEvent('touchstart', 300, 200));
+        contentDiv.dispatchEvent(createTouchEvent('touchmove', 200, 202));
+      });
+      expect(contentDiv.style.transform).toBe('translateX(-100px)');
+
+      act(() => {
+        contentDiv.dispatchEvent(createTouchEvent('touchcancel', 200, 202));
+      });
+      expect(contentDiv.style.transform).toBe('translateX(0px)');
+
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+      expect(contentDiv.style.transform).toBe('');
+      expect(contentDiv.style.opacity).toBe('');
+      expect(contentDiv.style.transition).toBe('');
+      expect(mockPush).not.toHaveBeenCalled();
+
+      // The next swipe still works.
+      act(() => {
+        contentDiv.dispatchEvent(createTouchEvent('touchstart', 300, 200));
+        contentDiv.dispatchEvent(createTouchEvent('touchmove', 150, 202));
+        contentDiv.dispatchEvent(createTouchEvent('touchend', 150, 202));
+      });
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+      expect(mockPush).toHaveBeenCalledTimes(1);
+    });
+
+    it('lands the next page at rest when a route change interrupts a drag', () => {
+      mockPathname = '/transactions';
+      const hook = renderSwipeHook();
+
+      act(() => {
+        contentDiv.dispatchEvent(createTouchEvent('touchstart', 300, 200));
+        contentDiv.dispatchEvent(createTouchEvent('touchmove', 200, 202));
+      });
+      expect(contentDiv.style.transform).toBe('translateX(-100px)');
+
+      // Android's edge Back gesture: the route changes with no touchend.
+      mockPathname = '/dashboard';
+      hook.rerender();
+
+      expect(contentDiv.style.transform).toBe('');
+      expect(contentDiv.style.opacity).toBe('');
+      expect(contentDiv.style.willChange).toBe('');
+    });
+
+    it('abandons the swipe when a second finger lands', () => {
+      mockPathname = '/transactions';
+      vi.useFakeTimers();
+      renderSwipeHook();
+
+      act(() => {
+        contentDiv.dispatchEvent(createTouchEvent('touchstart', 300, 200));
+        contentDiv.dispatchEvent(createTouchEvent('touchmove', 150, 202));
+        contentDiv.dispatchEvent(createSecondFingerTouchStart([150, 202], [100, 300]));
+      });
+      expect(contentDiv.style.transform).toBe('translateX(0px)');
+
+      act(() => {
+        contentDiv.dispatchEvent(createTouchEvent('touchend', 150, 202));
+        vi.advanceTimersByTime(300);
+      });
+      expect(contentDiv.style.transform).toBe('');
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('clears the drag when the listeners rebind mid-swipe', () => {
+      mockPathname = '/transactions';
+      const hook = renderSwipeHook();
+
+      act(() => {
+        contentDiv.dispatchEvent(createTouchEvent('touchstart', 300, 200));
+        contentDiv.dispatchEvent(createTouchEvent('touchmove', 200, 202));
+      });
+      expect(contentDiv.style.transform).toBe('translateX(-100px)');
+
+      hook.unmount();
+      expect(contentDiv.style.transform).toBe('');
     });
   });
 
