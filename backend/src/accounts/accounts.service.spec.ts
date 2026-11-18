@@ -19,7 +19,7 @@ import {
   TransactionStatus,
 } from "../transactions/entities/transaction.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
-import { Holding } from "../securities/entities/holding.entity";
+import { HELD_QUANTITY_THRESHOLD } from "../securities/investment-replay.util";
 import { Institution } from "../institutions/entities/institution.entity";
 import { Category } from "../categories/entities/category.entity";
 import { ScheduledTransactionsService } from "../scheduled-transactions/scheduled-transactions.service";
@@ -3996,7 +3996,6 @@ describe("AccountsService", () => {
       mockQueryRunner.manager.findOne
         .mockResolvedValueOnce(brokerageHalf())
         .mockResolvedValueOnce(cashHalf({ currentBalance: 250 }));
-      mockQueryRunner.manager.count.mockResolvedValueOnce(0);
 
       await service.close("user-1", "brokerage-1");
 
@@ -4013,32 +4012,62 @@ describe("AccountsService", () => {
       ).toBe(250);
     });
 
+    const heldQuery = () =>
+      mockQueryRunner.query.mock.calls.find(
+        ([sql]: [string]) =>
+          typeof sql === "string" && sql.includes("FROM holdings h"),
+      );
+    const answerHeld = (symbols: string[]) => {
+      const fallback = mockQueryRunner.query.getMockImplementation();
+      mockQueryRunner.query.mockImplementation(
+        async (sql: string, params?: unknown[]) =>
+          typeof sql === "string" && sql.includes("FROM holdings h")
+            ? symbols.map((symbol) => ({ symbol }))
+            : fallback?.(sql, params),
+      );
+    };
+
     // A brokerage's current_balance is deliberately kept at 0, so the balance
-    // check says nothing about the securities it holds: before this guard the
+    // says nothing about the securities it holds: before this guard the
     // server closed an account full of positions and reported success.
-    it("refuses to close an investment account that still holds securities", async () => {
+    it("refuses to close an investment account that still holds securities, naming them", async () => {
       mockQueryRunner.manager.findOne
         .mockResolvedValueOnce(brokerageHalf())
         .mockResolvedValueOnce(cashHalf());
-      mockQueryRunner.manager.count.mockResolvedValueOnce(2);
+      answerHeld(["AAPL", "MSFT"]);
 
       await expect(service.close("user-1", "brokerage-1")).rejects.toThrow(
-        /still holds securities/,
+        /still holds securities \(AAPL, MSFT\)/,
       );
       expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
     });
 
-    it("counts holdings across both halves, from whichever half is addressed", async () => {
+    it("looks for holdings across both halves, from whichever half is addressed", async () => {
       mockQueryRunner.manager.findOne
         .mockResolvedValueOnce(cashHalf())
         .mockResolvedValueOnce(brokerageHalf());
-      mockQueryRunner.manager.count.mockResolvedValueOnce(0);
 
       await service.close("user-1", "cash-1");
 
-      const [entity, options] = mockQueryRunner.manager.count.mock.calls[0];
-      expect(entity).toBe(Holding);
-      expect(options.where.accountId._value).toEqual(["cash-1", "brokerage-1"]);
+      const [, params] = heldQuery();
+      expect(params[0]).toEqual(["cash-1", "brokerage-1"]);
+    });
+
+    // #2271: a residue under 0.0001 shares is not on the Investments page,
+    // which then read 0 holdings over an account the server would not close.
+    // The close asks the portfolio's own "held" question, not "non-zero".
+    it("counts as held only what the portfolio shows, a quantity of at least 0.0001", async () => {
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce(brokerageHalf())
+        .mockResolvedValueOnce(cashHalf());
+
+      await service.close("user-1", "brokerage-1");
+
+      const [sql, params] = heldQuery();
+      expect(sql).toContain("ABS(h.quantity) >= $2");
+      expect(params[1]).toBe(HELD_QUANTITY_THRESHOLD);
+      expect(HELD_QUANTITY_THRESHOLD).toBe(0.0001);
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(2);
     });
 
     it("closes a standalone investment account holding nothing", async () => {
@@ -4063,7 +4092,7 @@ describe("AccountsService", () => {
 
       await service.close("user-1", "account-1");
 
-      expect(mockQueryRunner.manager.count).not.toHaveBeenCalled();
+      expect(heldQuery()).toBeUndefined();
     });
   });
 

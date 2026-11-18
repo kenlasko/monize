@@ -50,7 +50,7 @@
     "changeCurrencyWithBalanceOrSchedules": "无法更改有期初余额或计划交易的账户的货币。",
     "alreadyClosed": "账户已关闭",
     "closeWithFutureTransactions": "无法关闭包含未来日期交易的账户。该账户有 {{ count }} 笔日期晚于今天的交易；请先删除或作废这些交易。",
-    "closeWithHoldings": "无法关闭仍持有证券的投资账户。该账户有 {{ holdingCount }} 项数量不为零的持仓；请先卖出或转出。",
+    "closeWithHoldings": "无法关闭仍持有证券的投资账户（{{ symbols }}）；请先卖出或转出。",
     "notClosed": "账户未关闭",
     "modifyBalanceClosed": "无法修改已关闭账户的余额",
     "deleteWithTransactions": "无法删除有 {{ transactionCount }} 笔交易的账户。请改为关闭该账户。",

@@ -50,7 +50,7 @@
     "changeCurrencyWithBalanceOrSchedules": "Não é possível alterar a moeda de uma conta com saldo inicial ou transações agendadas.",
     "alreadyClosed": "A conta já está encerrada",
     "closeWithFutureTransactions": "Não é possível fechar uma conta com transações com data futura. Tem {{ count }} transação(ões) com data posterior a hoje; elimine-as ou anule-as primeiro.",
-    "closeWithHoldings": "Não é possível fechar uma conta de investimento que ainda detém títulos. Tem {{ holdingCount }} posição/ões com quantidade diferente de zero; venda-as ou transfira-as primeiro.",
+    "closeWithHoldings": "Não é possível fechar uma conta de investimento que ainda detém títulos ({{ symbols }}); venda-os ou transfira-os primeiro.",
     "notClosed": "A conta não está encerrada",
     "modifyBalanceClosed": "Não é possível modificar o saldo de uma conta encerrada",
     "deleteWithTransactions": "Não é possível eliminar a conta com {{ transactionCount }} transação(ões). Encerre a conta em vez disso.",
