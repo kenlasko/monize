@@ -391,6 +391,101 @@ describe("mapKmyTransactions: cross-currency (spec 5.6.4, 4.7)", () => {
     ]);
   });
 
+  describe("a transfer leg that ends up with no exchange rate (spec 9)", () => {
+    const noRate = [
+      {
+        postDate: "2024-03-01",
+        splits: [
+          { account: "CHK", value: "-5" },
+          { account: "EUR", value: "0", shares: "0" },
+        ],
+      },
+    ];
+
+    it("warns with the date, both accounts and the currency pair, sending first", () => {
+      const { transactions } = run(noRate);
+      expect(transactions.warnings).toHaveLength(1);
+      expect(transactions.warnings[0]).toMatchObject({
+        code: "crossCurrencyTransferRateMissing",
+        detail: "2024-03-01: Checking (USD) to EUR Savings (EUR)",
+        row: { date: "2024-03-01" },
+      });
+    });
+
+    it("names the pair the other way round when the first account receives", () => {
+      const { transactions } = run([
+        {
+          postDate: "2024-03-01",
+          splits: [
+            { account: "EUR", value: "0", shares: "0" },
+            { account: "CHK", value: "-5" },
+          ],
+        },
+      ]);
+      expect(transactions.warnings[0]).toMatchObject({
+        detail: "2024-03-01: Checking (USD) to EUR Savings (EUR)",
+      });
+    });
+
+    it("says nothing when the file prices the pair, when the amounts imply a rate, or for the same currency", () => {
+      expect(
+        run(noRate, { prices: [rawPrice("USD", "EUR", "2024-01-15", "9/10")] })
+          .transactions.warnings,
+      ).toEqual([]);
+      expect(
+        run([
+          {
+            commodity: "USD",
+            splits: [
+              { account: "CHK", value: "-1100" },
+              { account: "EUR", value: "1100", shares: "1000" },
+            ],
+          },
+        ]).transactions.warnings,
+      ).toEqual([]);
+      expect(
+        run([
+          {
+            splits: [
+              { account: "CHK", value: "-5" },
+              { account: "SAV", value: "5" },
+            ],
+          },
+        ]).transactions.warnings,
+      ).toEqual([]);
+      expect(
+        run([
+          {
+            splits: [
+              { account: "CHK", value: "0" },
+              { account: "EUR", value: "0" },
+            ],
+          },
+        ]).transactions.warnings,
+      ).toEqual([]);
+    });
+
+    it("warns for the receiving counterpart of a split row too", () => {
+      const { transactions } = run([
+        {
+          postDate: "2024-03-01",
+          splits: [
+            { account: "CHK", value: "-100" },
+            { account: "GRO", value: "100" },
+            { account: "EUR", value: "0", shares: "1000" },
+          ],
+        },
+      ]);
+      const counterpart = transactions.transactions.find((r) => r.isTransfer);
+      expect(counterpart).toMatchObject({ amount: 1000, exchangeRate: null });
+      expect(transactions.warnings).toHaveLength(1);
+      expect(transactions.warnings[0]).toMatchObject({
+        code: "crossCurrencyTransferRateMissing",
+        detail: "2024-03-01: Checking (USD) to EUR Savings (EUR)",
+      });
+    });
+  });
+
   it("takes a one-sided zero's rate from the file's own price for the pair", () => {
     const { transactions } = run(
       [

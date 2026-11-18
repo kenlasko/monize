@@ -203,6 +203,8 @@ export const MNY_WARNING_CODES = [
   "payeeDefaultCategoryNotImported",
   /** An existing payee already had its own default category or contact details; they were kept. */
   "payeeDetailsKept",
+  /** A KMyMoney cross-currency transfer has no exchange rate in its amounts or the file's prices. */
+  "crossCurrencyTransferRateMissing",
 ] as const;
 
 export type MnyWarningCode = (typeof MNY_WARNING_CODES)[number];

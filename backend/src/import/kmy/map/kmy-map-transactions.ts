@@ -170,8 +170,45 @@ function transferPair(
   );
   rows[0] = { ...rows[0], exchangeRate: rate.first };
   rows[1] = { ...rows[1], exchangeRate: rate.second };
+  if (rate.first === null || rate.second === null) {
+    const receivesFirst = rate.first === null;
+    warnTransferRateMissing(
+      transaction,
+      receivesFirst ? second : first,
+      receivesFirst ? first : second,
+      receivesFirst ? rows[1].currencyCode : rows[0].currencyCode,
+      receivesFirst ? rows[0].currencyCode : rows[1].currencyCode,
+      context,
+      collector,
+    );
+  }
   collector.rows.push(...rows);
   collector.transfersLinked += 1;
+}
+
+/**
+ * Spec 5.6.4, 9: a cross-currency transfer whose receiving leg ends up with no
+ * rate (the amounts imply none, the file prices no such pair) is imported with
+ * a null rate and the user is told which transfer to complete. The detail names
+ * the date, the two accounts as KMyMoney names them, and the currency pair
+ * (sending first); the review step's row carries the date and account too.
+ */
+function warnTransferRateMissing(
+  transaction: KmyTransaction,
+  sending: KmySplit,
+  receiving: KmySplit,
+  sendingCurrency: string,
+  receivingCurrency: string,
+  context: KmyMapContext,
+  collector: RowCollector,
+): void {
+  const nameOf = (split: KmySplit): string =>
+    context.tree.byId.get(split.account)?.name.trim() || split.account;
+  collector.warn(
+    "crossCurrencyTransferRateMissing",
+    transaction,
+    `${transaction.postDate}: ${nameOf(sending)} (${sendingCurrency}) to ${nameOf(receiving)} (${receivingCurrency})`,
+  );
 }
 
 /**
@@ -351,6 +388,17 @@ function splitRow(
             context,
           )
         : 1;
+      if (rate === null) {
+        warnTransferRateMissing(
+          transaction,
+          parent,
+          other,
+          parentCurrency,
+          counterpart.currencyCode,
+          context,
+          collector,
+        );
+      }
       counterparts.push({ ...counterpart, exchangeRate: rate });
       legs.push({
         id: randomUUID(),

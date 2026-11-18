@@ -772,7 +772,7 @@ A transfer row and a transfer counterpart each keep their own split's `shares`, 
 currency. The positive (receiving) row carries `exchangeRate = roundFxRate(|positive.amount| /
 |negative.amount|)`, the receiving currency per unit of the sending currency, as Monize's own
 `createTransfer` stores the implied rate on the destination leg; the sending row carries 1. Same
-currency: 1 on both. Zero on both sides: 1. Zero on one side only: the file's own price for the pair (`KmyRateLookup`), else the receiving row carries no rate (null), never 1.
+currency: 1 on both. Zero on both sides: 1. Zero on one side only: the file's own price for the pair (`KmyRateLookup`), else the receiving row carries no rate (null), never 1, and the transfer is named in `crossCurrencyTransferRateMissing` (the date, the two accounts as KMyMoney names them and the currency pair in the detail; the same for the counterpart of a split row).
 
 Worked example (the reference's section 18, T5): commodity USD; Checking `shares = value = -1100`, EUR
 Savings `value = 1100` (USD), `shares = 1000` (EUR). Rows: Checking -1100.0000 USD, rate 1; EUR Savings
@@ -1060,7 +1060,7 @@ transfer.
 
 Every code is appended to `MNY_WARNING_CODES` unless marked "existing"; the seven `payeeMatching*`,
 `payeeMatch*`, `payeeDefaultCategoryNotImported` and `payeeDetailsKept` codes of the payee amendment are
-appended after `holdingsReplayDiffers`, in the order of this table. A warning carries no English;
+appended after `holdingsReplayDiffers`, in the order of this table, followed by `crossCurrencyTransferRateMissing`. A warning carries no English;
 the frontend renders `import.kmyWarnings.<code>` with the count (ICU plural). `row` is set when the
 warning is about one transaction (the review step lists the rows). The en sentences below are the copy
 WP4 writes; they avoid `--` (frontend rule).
@@ -1097,6 +1097,7 @@ WP4 writes; they avoid `--` (frontend rule).
 | stockSplitRatioSuspicious | price history disagrees | yes | {count} stock splits look inverted compared with the prices around them. Check the split ratio against your statement. |
 | priceCurrencyMismatch | security price in another currency | | {count} prices were recorded in a currency other than the security's and were not imported. |
 | unusedCurrencyRatesSkipped | rate for an unused currency | | {count} exchange rates are for currencies none of your accounts or securities use and were not imported. |
+| crossCurrencyTransferRateMissing | 5.6.4, a transfer's receiving leg left with no rate | yes | {count} transfers between accounts in different currencies have no exchange rate, neither in their amounts nor in the file's prices, and were imported without one. Open the receiving side of each and enter the rate. |
 | crossCurrencyTradeUnconverted (existing) | commodity not convertible | yes | {count} trades were recorded in a currency other than the security's and the file has no rate to convert them; their amounts were imported unconverted. Check the price of each. |
 | duplicateSecuritySymbol (existing) | | | {count} securities share a symbol with another; the later ones were renamed so they stay separate. |
 | generatedSecuritySymbol (existing) | | | {count} securities have no symbol in KMyMoney, so a placeholder was generated and price updates left off. |
@@ -1422,6 +1423,7 @@ Reused unchanged (format-neutral): `mnyJobNotFound`, `mnyImportAlreadyRunning`, 
 | price absent on a trade | derived from the total | INV-TRADE-001 |
 | ADD_SHARES cost | none (price null, total 0) | KMyMoney recorded none; Monize reports gains drawn on them as unknown, never as free shares |
 | exchange rate a transfer implies | stored on the receiving leg | a rate the file holds is not looked up |
+| a cross-currency transfer whose amounts imply no rate and whose pair the file does not price | null on the receiving leg, `crossCurrencyTransferRateMissing` | never 1 (FIN-002); the receiving leg is where Monize stores a transfer's rate (5.6.4), so the user enters it there |
 | rate needed for a trade in a commodity other than the trading currency | the file's own price for the pair, else unconverted with a warning | never 1, never a silent relabel (FIN-002) |
 | security price history before the first trade | imported | it is the user's file |
 | exchange rate for an unused currency | not imported | it would create currencies nobody uses |
