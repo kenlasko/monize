@@ -86,6 +86,8 @@ credentials/
 !backend/src/bonds/adapters/pl/series/fixtures/*.pdf
 *.mny
 !backend/src/import/mny/__fixtures__/sample*.mny
+*.kmy
+!backend/src/import/kmy/__fixtures__/sample-*.kmy
 
 # Claude Code
 .claude/worktrees/
