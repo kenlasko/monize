@@ -140,7 +140,7 @@ var FEATURES = [
  ['ai','🧠','Spending insights','Anomalies, trends, subscriptions, new recurring charges, budget pace and seasonal patterns, flagged by severity.'],
  ['ai','🔌','MCP server','Connect Claude Desktop or any MCP client straight to your own ledger.'],
  ['import','📥','Import anything','CSV, OFX/QFX and QIF with smart column auto-matching, saved presets and automatic payee matching.'],
- ['import','🗂️','Whole-file migration','Read a Microsoft Money .mny or a multi-account Quicken QIF in one pass — then reconcile every balance against the source file.'],
+ ['import','🗂️','Whole-file migration','Read a Microsoft Money .mny, a KMyMoney .kmy or a multi-account Quicken QIF in one pass — then reconcile every balance against the source file.'],
  ['sec','🔐','Serious auth','OIDC single sign-on, TOTP two-factor with backup codes and trusted devices, refresh-token rotation and personal access tokens.'],
  ['sec','🆘','Emergency access','Nominate trusted contacts who are automatically sent a magic link if you go inactive for a long stretch.'],
  ['sec','💾','Encrypted backups','Manual and scheduled backups, optionally wrapped in AES-256-GCM keyed by your password — safe to sync off-site.'],
@@ -177,7 +177,7 @@ var TOUR = [
   desc:'Ask questions in plain language, get streamed answers, and let Monize flag anomalies on its own.',
   shots:'ai-chat:Natural-language queries, answered from your own data|ai-settings:Bring your own provider, model and API key'},
  {id:'import', em:'📥', name:'Import', url:'/import',
-  desc:'A four-step wizard for CSV, OFX/QFX and QIF — or a full Microsoft Money file in one go.',
+  desc:'A four-step wizard for CSV, OFX/QFX and QIF — or a full Microsoft Money or KMyMoney file in one go.',
   shots:'import-upload-step:Step 1: drop in your files|import-select-account:Step 2: choose the destination account|import-create-account:Create missing accounts on the fly|import-map-accounts:Map every account in a whole-file import|import-map-categories:Map categories to your own tree|import-map-securities:Map securities and tickers|import-review-step:Step 3: review before committing|import-complete-step:Step 4: balances reconciled against the source'},
  {id:'organise', em:'🗂️', name:'Organise', url:'/tags',
   desc:'Hierarchical categories, payees with rules and aliases, tags, institutions, securities and currencies.',
@@ -274,6 +274,7 @@ var SECURITY = [
 
 var FORMATS = [
  ['🗃️','.mny','A whole Microsoft Money file: accounts, splits, transfers, investments, price history, FX rates and scheduled bills.'],
+ ['🗃️','.kmy','A whole KMyMoney file (.kmy or .xml): accounts, the full category tree, splits, transfers, investments, price history, FX rates and schedules.'],
  ['📄','QIF','Quicken and Microsoft Money exports, including a single multi-account file with categories and tags.'],
  ['🏦','OFX / QFX','Direct bank downloads, matched to existing payees automatically.'],
  ['📊','CSV','Anything else, with smart column auto-matching and saved presets per bank.']
@@ -281,7 +282,7 @@ var FORMATS = [
 
 var FAQ = [
  ['Is Monize free?','Yes. It is open source under the AGPL-3.0 licence — no subscription, no feature tiers and no paywall around your own data. You provide the server.'],
- ['Does Monize connect to my bank automatically?','No, and that is deliberate. Monize is import-driven: CSV, OFX/QFX, QIF or a full Microsoft Money file. Nothing hands your banking credentials to a third-party aggregator.'],
+ ['Does Monize connect to my bank automatically?','No, and that is deliberate. Monize is import-driven: CSV, OFX/QFX, QIF or a full Microsoft Money or KMyMoney file. Nothing hands your banking credentials to a third-party aggregator.'],
  ['Where does my financial data live?','On whatever machine you run it on, in your own PostgreSQL database. There is no Monize cloud and no telemetry.'],
  ['Do I have to use the AI features?','Not at all — they are off until you add a provider. If you do want them, you can point Monize at a local Ollama model so nothing leaves your network, and only the data needed for a specific question is ever sent.'],
  ['Can I really migrate 30 years of Microsoft Money?','That is the reason it exists. The author imported 30+ years of .mny data and reconciled every balance against the original file with no discrepancies. The documentation has a step-by-step guide.'],
@@ -317,7 +318,7 @@ var GALLERY = [
 ];
 
 var MARQUEE = ['Chequing','Savings','Credit cards','Lines of credit','Loans','Mortgages','Brokerage','Investment cash',
- 'Assets','Cash','Multi-currency','QIF import','OFX / QFX','Microsoft Money .mny','Split transactions','Tags',
+ 'Assets','Cash','Multi-currency','QIF import','OFX / QFX','Microsoft Money .mny','KMyMoney .kmy','Split transactions','Tags',
  'Recurring bills','Cash-flow forecast','Budget wizard','Net worth history','Monte Carlo','MCP server','OIDC SSO','TOTP 2FA','Encrypted backups','PWA'];
 
 /* ---------- names that are allowed to become URLs ----------
@@ -651,7 +652,7 @@ M.QA.forEach(function(qa){
 });
 
 /* ---------- migration stepper ---------- */
-var MSTEPS=[['Upload','import-upload-step','Drop in one or many files: .mny, QIF, OFX/QFX or CSV.'],
+var MSTEPS=[['Upload','import-upload-step','Drop in one or many files: .mny, .kmy, QIF, OFX/QFX or CSV.'],
  ['Choose','import-select-account','Pick the destination account, or create it on the fly.'],
  ['Map','import-map-categories','Map accounts, categories and securities onto your own structure.'],
  ['Review','import-review-step','See exactly what will be created before anything is written.'],

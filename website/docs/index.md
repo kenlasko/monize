@@ -26,6 +26,7 @@ Monize is a self-hosted, web-based personal finance management application. It p
 - **Bank Sync** -- Pull booked transactions straight from your bank through Open Banking (Enable Banking), with a preview before anything is imported
 - **Email Receipts** -- Read order confirmations from a Gmail, Microsoft 365 or any IMAP mailbox and turn them into itemized transactions matched to what your bank already shows, including brokerage trade confirmations. See [Email Receipts](email-receipts.md)
 - **Microsoft Money Full-File Import** -- Read a `.mny` file directly: accounts, transactions, transfers, splits, investments, price history, exchange rates and scheduled bills, with every balance reconciled against the file afterwards. See [Importing from Microsoft Money](importing-from-microsoft-money.md)
+- **KMyMoney Full-File Import** -- Read a `.kmy` or `.xml` file directly: accounts, the full category tree, transactions, transfers, splits, investments, price history, exchange rates and scheduled transactions, with every balance and holding reconciled against figures computed from the file. See [Importing from KMyMoney](importing-from-kmymoney.md)
 - **Quicken Migration** -- Bring your history across from Quicken through QIF. See [Importing from Quicken](importing-from-quicken.md)
 - **Share Into Monize** -- Send files from your phone's or computer's share menu straight to a new transaction, the import wizard or the AI Assistant
 
@@ -75,6 +76,7 @@ Monize is a self-hosted, web-based personal finance management application. It p
 | Import transactions from my bank | [Importing Transactions](importing-transactions.md) |
 | Migrate from Quicken | [Importing from Quicken](importing-from-quicken.md) |
 | Migrate from Microsoft Money | [Importing from Microsoft Money](importing-from-microsoft-money.md) |
+| Migrate from KMyMoney | [Importing from KMyMoney](importing-from-kmymoney.md) |
 | Understand the dashboard | [Dashboard](dashboard.md) |
 | Create and manage accounts | [Accounts](accounts.md) |
 | Record, search, split or reconcile transactions | [Transactions](transactions.md) |

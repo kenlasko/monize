@@ -61,6 +61,11 @@ export const DOCS_LINKS = {
     page: 'importing-from-microsoft-money',
     section: 'troubleshooting-the-mny-import',
   },
+  importKMyMoney: { page: 'importing-from-kmymoney' },
+  importKmyTroubleshooting: {
+    page: 'importing-from-kmymoney',
+    section: 'troubleshooting-the-kmymoney-import',
+  },
   importQuicken: { page: 'importing-from-quicken' },
   investments: { page: 'investments' },
   investmentCostBasis: { page: 'investments', section: 'how-average-cost-works' },

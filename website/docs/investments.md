@@ -441,7 +441,7 @@ You can also build your own holdings reports with the **Investment Report** buil
 
 ## Importing Investment Data
 
-Importing investment data from Microsoft Money requires special handling. See the [Importing from Microsoft Money](importing-from-microsoft-money.md) guide for complete details.
+Importing investment data from Microsoft Money requires special handling. See the [Importing from Microsoft Money](importing-from-microsoft-money.md) guide for complete details. KMyMoney users: the [Importing from KMyMoney](importing-from-kmymoney.md) guide covers the same ground for `.kmy` and `.xml` files, including how a KMyMoney investment account and its brokerage cash account become Monize's cash and brokerage pair.
 
 ### Key Points
 

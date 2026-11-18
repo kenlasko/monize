@@ -1,6 +1,6 @@
 # Importing Transactions
 
-This guide covers importing transactions from bank-exported CSV files, OFX/QFX files, and Quicken QIF files. For complete migration guides, see [Importing from Quicken](importing-from-quicken.md) and [Importing from Microsoft Money](importing-from-microsoft-money.md).
+This guide covers importing transactions from bank-exported CSV files, OFX/QFX files, and Quicken QIF files. For complete migration guides, see [Importing from Quicken](importing-from-quicken.md) [Importing from Microsoft Money](importing-from-microsoft-money.md) and [Importing from KMyMoney](importing-from-kmymoney.md).
 
 ---
 
@@ -30,14 +30,15 @@ The import process uses a step-by-step wizard that guides you through file uploa
 | **QIF** | `.qif` | Quicken Interchange Format. Supports both Microsoft Money and Quicken exports. See [Importing Quicken QIF Files](#importing-quicken-qif-files) and [Importing from Microsoft Money](importing-from-microsoft-money.md). |
 | **QMTF** | `.qmtf` | Quicken for Mac's transfer file. It is QIF under another extension and imports the same way. |
 | **Microsoft Money** | `.mny` | A whole Microsoft Money file, imported directly. It has its own wizard -- see [Importing from Microsoft Money](importing-from-microsoft-money.md). |
+| **KMyMoney** | `.kmy`, `.xml` | A whole KMyMoney file, imported directly. It has its own wizard -- see [Importing from KMyMoney](importing-from-kmymoney.md). |
 
-You can select several files of the same type at once for a bulk import. Files of different types cannot be mixed in one import, and a `.mny` file is always imported on its own.
+You can select several files of the same type at once for a bulk import. Files of different types cannot be mixed in one import, and a `.mny`, `.kmy` or KMyMoney `.xml` file is always imported on its own.
 
 ---
 
 ## Getting Started
 
-Navigate to **Tools > Import Transactions** to open the import wizard. A **Before you import** notice at the top links to the Quicken and Microsoft Money guides.
+Navigate to **Tools > Import Transactions** to open the import wizard. A **Before you import** notice at the top links to the Quicken, Microsoft Money and KMyMoney guides.
 
 ![Import wizard: upload your files](images/import-upload-step.png)
 
@@ -228,7 +229,7 @@ When there are possible duplicates, a **Possible duplicates** step lists them im
 
 A **Reconciled** transaction can only be kept or imported beside, and a transfer or a split cannot be deleted from here. Click **Import** to import the file with your choices, or **Back** to return to the review. If the account changed in the meantime (someone entered a closer match, say), nothing is imported and you are asked to check again.
 
-When no row looks like an existing transaction, the import runs straight away. Investment files and the multi-account QIF and Microsoft Money imports are not compared.
+When no row looks like an existing transaction, the import runs straight away. Investment files and the multi-account QIF, Microsoft Money and KMyMoney imports are not compared.
 
 ### Step 7: Import Complete
 
