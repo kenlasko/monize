@@ -10,6 +10,8 @@ const KMY_ERROR_DOCS_LINKS: Record<string, DocsLink> = {
   kmyNoFile: 'importKmyTroubleshooting',
   kmyFileTooLarge: 'importKmyTroubleshooting',
   kmyXmlTooLarge: 'importKmyTroubleshooting',
+  kmyTooManyRecords: 'importKmyTroubleshooting',
+  kmyMappingFailed: 'importKmyTroubleshooting',
   kmyNotAKmyMoneyFile: 'importKmyTroubleshooting',
   kmyEncryptedFile: 'importKmyTroubleshooting',
   kmySqliteDatabase: 'importKmyTroubleshooting',

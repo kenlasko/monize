@@ -1178,7 +1178,7 @@ describe('ImportPage', () => {
         bills: [],
       },
       sourceFormat: 'kmy',
-      kmyFile: { container: 'gzip', fixVersion: 12, appVersion: null, lastModified: null },
+      kmyFile: { container: 'gzip', fixVersion: 12, appVersion: null, lastModified: null, asOf: '2026-06-01' },
     };
 
     it('opens the KMyMoney review step, with no password dialog', async () => {

@@ -146,12 +146,12 @@ describe('MnyBillsPanel with a KMyMoney import', () => {
     render(<MnyBillsPanel {...props} />);
 
     expect(screen.getByText('Scheduled transactions to create (1)')).toBeInTheDocument();
-    expect(screen.getByText(/These are the schedules KMyMoney still has active/)).toBeInTheDocument();
+    expect(screen.getByText(/These are the scheduled transactions KMyMoney still has active/)).toBeInTheDocument();
   });
 
   it('counts skipped schedules, not bill series', () => {
     render(<MnyBillsPanel {...props} />);
 
-    expect(screen.getByText('2 schedules could not be imported.')).toBeInTheDocument();
+    expect(screen.getByText('2 scheduled transactions could not be imported.')).toBeInTheDocument();
   });
 });

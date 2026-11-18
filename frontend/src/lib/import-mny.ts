@@ -173,6 +173,8 @@ export interface KmyFileSummary {
   fixVersion: number;
   appVersion: string | null;
   lastModified: string | null;
+  /** YYYY-MM-DD the file's balances and holdings are cut off at: the day the file was read. */
+  asOf: string;
 }
 
 export interface MnyPreview {
@@ -208,6 +210,10 @@ export interface MnyAccountVerification {
   matches: boolean;
   /** KMyMoney only: what the import's own rows sum to; `expectedBalance` is then the file's figure. */
   mappedBalance?: number;
+  /** KMyMoney only: the backend's verdict on whether `mappedBalance` differs from `expectedBalance`. */
+  mappedDiffers?: boolean;
+  /** KMyMoney only: the account's own currency; absent means the file's base currency. */
+  currencyCode?: string;
 }
 
 export interface MnyHoldingVerification {
@@ -249,6 +255,8 @@ export interface MnyImportResult {
   payeeDefaultCategoriesSet?: number;
   /** Payees given contact details; absent for a Money import. */
   payeeContactDetailsSet?: number;
+  /** KMyMoney only: the day the figures in `verification` and `holdings` are cut off at. */
+  fileAsOf?: string;
   pricesImported: number;
   exchangeRatesImported: number;
   billsCreated: number;

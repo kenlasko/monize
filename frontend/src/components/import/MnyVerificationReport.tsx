@@ -3,9 +3,9 @@
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { formatAccountType } from '@/lib/account-utils';
-import { roundToEntryPlaces } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { MnyImportResult } from '@/lib/import-mny';
+import { useDateFormat } from '@/hooks/useDateFormat';
+import { MnyAccountVerification, MnyImportResult } from '@/lib/import-mny';
 import { AccountType } from '@/types/account';
 import { MnyWarningsPanel } from './MnyWarningsPanel';
 import { Th } from '@/components/ui/Table';
@@ -48,6 +48,11 @@ export function MnyVerificationReport({
   // Share counts go through the app's own quantity formatter, so the report
   // reads in the user's number locale like every other holdings view.
   const { formatQuantity, formatCurrency, formatNumber } = useNumberFormat();
+  const { formatDate } = useDateFormat();
+
+  // A KMyMoney account carries its own currency; Money's report is in the file's base currency.
+  const lineCurrency = (line: MnyAccountVerification) =>
+    line.currencyCode ?? currencyCode;
 
   const mismatches = result.verification.filter((line) => !line.matches);
   const holdingMismatches = result.holdings.filter((line) => !line.matches);
@@ -198,6 +203,11 @@ export function MnyVerificationReport({
         <h3 className="text-sm font-semibold text-foreground mb-2">
           {t('mnyComplete.verificationHeading')}
         </h3>
+        {format.copy.completeAsOf && result.fileAsOf && (
+          <p className="text-xs text-muted-foreground mb-2">
+            {t(format.copy.completeAsOf, { date: formatDate(result.fileAsOf) })}
+          </p>
+        )}
         <div className="bg-card border border-border rounded-lg overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
@@ -245,23 +255,22 @@ export function MnyVerificationReport({
                     {line.transactionCount}
                   </td>
                   <td className="px-3 py-2 text-right text-muted-foreground">
-                    {formatCurrency(line.expectedBalance, currencyCode)}
-                    {/* KMyMoney only: what the import's own rows sum to, shown where it differs from the file's figure. */}
-                    {line.mappedBalance !== undefined &&
-                      roundToEntryPlaces(line.mappedBalance, currencyCode) !==
-                        roundToEntryPlaces(line.expectedBalance, currencyCode) && (
+                    {formatCurrency(line.expectedBalance, lineCurrency(line))}
+                    {/* KMyMoney only: what the import's own rows sum to, shown where the backend found it differs from the file's figure. */}
+                    {line.mappedDiffers === true &&
+                      line.mappedBalance !== undefined && (
                         <span className="block text-xs text-amber-700 dark:text-amber-400">
                           {t('kmyComplete.table.mappedDiffers', {
                             amount: formatCurrency(
                               line.mappedBalance,
-                              currencyCode,
+                              lineCurrency(line),
                             ),
                           })}
                         </span>
                       )}
                   </td>
                   <td className="px-3 py-2 text-right text-foreground">
-                    {formatCurrency(line.importedBalance, currencyCode)}
+                    {formatCurrency(line.importedBalance, lineCurrency(line))}
                   </td>
                   <td
                     className={`px-3 py-2 text-right font-medium ${
@@ -270,7 +279,7 @@ export function MnyVerificationReport({
                         : 'text-amber-700 dark:text-amber-400'
                     }`}
                   >
-                    {formatCurrency(line.delta, currencyCode)}
+                    {formatCurrency(line.delta, lineCurrency(line))}
                   </td>
                 </tr>
               ))}

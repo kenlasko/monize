@@ -2243,7 +2243,7 @@ describe('useImportWizard - KMyMoney files', () => {
       bills: [],
     },
     sourceFormat: 'kmy',
-    kmyFile: { container: 'gzip', fixVersion: 12, appVersion: null, lastModified: null },
+    kmyFile: { container: 'gzip', fixVersion: 12, appVersion: null, lastModified: null, asOf: '2026-06-01' },
   };
 
   async function renderWizard() {

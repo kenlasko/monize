@@ -462,7 +462,7 @@ describe('MnyReviewStep with a KMyMoney import', () => {
     preview({
       filename: 'budget.kmy',
       sourceFormat: 'kmy',
-      kmyFile: { container: 'gzip', fixVersion: 12, appVersion: '5.1.3', lastModified: null },
+      kmyFile: { container: 'gzip', fixVersion: 12, appVersion: '5.1.3', lastModified: null, asOf: '2026-06-01' },
       accounts: [account({ name: 'Savings (2)', moneyName: 'Savings' })],
       ...overrides,
     });
@@ -498,6 +498,15 @@ describe('MnyReviewStep with a KMyMoney import', () => {
     expect(screen.queryByText(/Money Plus/)).not.toBeInTheDocument();
   });
 
+  it('says the day balances are cut off at, and not for a Money file', () => {
+    const { unmount } = render(<MnyReviewStep {...props} />);
+    expect(screen.getByText(/Balances are as of .*2026; transactions dated later/)).toBeInTheDocument();
+    unmount();
+
+    render(<MnyReviewStep {...props} preview={kmyPreview({ kmyFile: undefined })} />);
+    expect(screen.queryByText(/Balances are as of/)).not.toBeInTheDocument();
+  });
+
   it('never shows the missing-tables notice or the unsupported-bills note', () => {
     render(
       <MnyReviewStep
@@ -529,7 +538,7 @@ describe('MnyReviewStep with a KMyMoney import', () => {
 
     expect(screen.getByText('Tags')).toBeInTheDocument();
     expect(screen.getByText('Scheduled transactions')).toBeInTheDocument();
-    expect(screen.getByText('active of 9 schedules')).toBeInTheDocument();
+    expect(screen.getByText('active of 9 scheduled transactions')).toBeInTheDocument();
   });
 
   it('shows a payee aliases tile with the default category count when either is above zero', () => {

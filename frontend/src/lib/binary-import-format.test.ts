@@ -95,6 +95,12 @@ describe('binary import format descriptors', () => {
       'payeeDefaultCategoryNotImported',
       'payeeDetailsKept',
       'crossCurrencyTransferRateMissing',
+      'tradeAmountsDiffer',
+      'investmentTransactionUnclassified',
+      'sameAccountTransferUnlinked',
+      'reconciliationHistoryNotImported',
+      'securityTransferInferred',
+      'sharesRounded',
     ]);
   });
 
@@ -142,6 +148,22 @@ describe('binary import format descriptors', () => {
       (code) => typeof lookup(KMY_FORMAT.errorKey(code)) !== 'string',
     );
     expect(missing).toEqual([]);
+  });
+
+  it('lists the backend refusal codes, plus the staged-file one', () => {
+    const source = readFileSync(
+      join(__dirname, '..', '..', '..', 'backend', 'src', 'import', 'kmy', 'model', 'kmy-errors.ts'),
+      'utf8',
+    );
+    const block = /export type KmyErrorCode =([\s\S]*?);/.exec(source);
+    const backend = [...(block?.[1] ?? '').matchAll(/"(\w+)"/g)].map((m) => m[1]);
+    expect(backend.length).toBeGreaterThan(5);
+    expect([...KMY_ERROR_CODES].sort()).toEqual([...backend, 'kmyStagedFileMissing'].sort());
+  });
+
+  it('shows the two newest refusals under kmyErrors', () => {
+    expect(KMY_FORMAT.errorKey('kmyTooManyRecords')).toBe('kmyErrors.kmyTooManyRecords');
+    expect(KMY_FORMAT.errorKey('kmyMappingFailed')).toBe('kmyErrors.kmyMappingFailed');
   });
 
   it('recognises both spellings of a missing staged file', () => {

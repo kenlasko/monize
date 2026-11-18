@@ -48,6 +48,10 @@ export interface BinaryImportCopy {
    */
   readonly countsPayeeAliases?: string;
   readonly countsPayeeAliasesDetail?: string;
+  /** KMyMoney only: the review line saying the day balances are cut off at. */
+  readonly reviewAsOf?: string;
+  /** KMyMoney only: the report line saying the day the verification is cut off at. */
+  readonly completeAsOf?: string;
   readonly completePayeeAliases?: string;
   readonly completePayeeDefaultCategories?: string;
 }
@@ -139,6 +143,12 @@ export const KMY_WARNING_CODES: readonly string[] = [
   'payeeDefaultCategoryNotImported',
   'payeeDetailsKept',
   'crossCurrencyTransferRateMissing',
+  'tradeAmountsDiffer',
+  'investmentTransactionUnclassified',
+  'sameAccountTransferUnlinked',
+  'reconciliationHistoryNotImported',
+  'securityTransferInferred',
+  'sharesRounded',
 ];
 
 /**
@@ -153,6 +163,8 @@ export const KMY_ERROR_CODES: readonly string[] = [
   'kmyLegacyBinaryFile',
   'kmyCorruptFile',
   'kmyXmlTooLarge',
+  'kmyTooManyRecords',
+  'kmyMappingFailed',
   'kmyStagedFileMissing',
 ];
 
@@ -231,6 +243,8 @@ export const KMY_FORMAT: BinaryImportFormat = {
     singleFileOnly: 'toasts.kmySingleFileOnly',
     countsPayeeAliases: 'kmyReview.counts.payeeAliases',
     countsPayeeAliasesDetail: 'kmyReview.counts.payeeAliasesDetail',
+    reviewAsOf: 'kmyReview.asOf',
+    completeAsOf: 'kmyComplete.asOf',
     completePayeeAliases: 'kmyComplete.counts.payeeAliases',
     completePayeeDefaultCategories: 'kmyComplete.counts.payeeDefaultCategories',
   },

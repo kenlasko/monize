@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { HelpLink } from '@/components/help/HelpLink';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useDateFormat } from '@/hooks/useDateFormat';
 import { formatAccountType } from '@/lib/account-utils';
 import { MnyImportOptionsInput, MnyPreview } from '@/lib/import-mny';
 import {
@@ -73,6 +74,7 @@ export function MnyReviewStep({
   const t = useTranslations('import');
   const tc = useTranslations('common');
   const { formatCurrency, formatNumber } = useNumberFormat();
+  const { formatDate } = useDateFormat();
 
   const { counts, fileCounts } = preview;
   const includedCount = preview.accounts.filter(
@@ -97,6 +99,12 @@ export function MnyReviewStep({
             : { fixVersion: preview.kmyFile?.fixVersion ?? t('kmyReview.versionUnknown') }),
           currency: preview.baseCurrency,
         })}
+        {format.copy.reviewAsOf && preview.kmyFile?.asOf && (
+          <>
+            {' '}
+            {t(format.copy.reviewAsOf, { date: formatDate(preview.kmyFile.asOf) })}
+          </>
+        )}
       </p>
 
       {/* What this Money version could not supply */}

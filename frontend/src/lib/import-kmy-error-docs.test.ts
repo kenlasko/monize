@@ -3,7 +3,7 @@ import { kmyErrorDocsLink } from './import-kmy-error-docs';
 import { KMY_ERROR_CODES } from './binary-import-format';
 
 describe('kmyErrorDocsLink', () => {
-  it.each([...KMY_ERROR_CODES, 'kmyNoFile', 'kmyFileTooLarge', 'kmyStagedFileInUse'])(
+  it.each([...KMY_ERROR_CODES, 'kmyNoFile', 'kmyFileTooLarge', 'kmyStagedFileInUse', 'kmyTooManyRecords', 'kmyMappingFailed'])(
     'sends %s to the KMyMoney troubleshooting section',
     (code) => {
       expect(kmyErrorDocsLink(code)).toBe('importKmyTroubleshooting');
