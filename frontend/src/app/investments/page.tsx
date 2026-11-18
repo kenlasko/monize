@@ -50,7 +50,6 @@ import { useHasMobileTabBar } from '@/hooks/useIsMobile';
 import { useScrolledPast } from '@/hooks/useScrolledPast';
 import { FloatingPageBar } from '@/components/layout/FloatingPageBar';
 import { FloatingAddButton } from '@/components/layout/FloatingAddButton';
-import { EntitySwitcher } from '@/components/ui/EntitySwitcher';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { isPortfolioPartial, portfolioPartialTotal } from '@/lib/net-worth-completeness';
 import { portfolioHeadline } from '@/lib/portfolio-headline';
@@ -88,12 +87,11 @@ function InvestmentsContent() {
   const t = useTranslations('investments');
   const tc = useTranslations('common');
   const ta = useTranslations('accountDetail');
-  const tl = useTranslations('layout');
   const { formatCurrency } = useNumberFormat();
   // On a desktop, as soon as the account picker (the account names) has
-  // scrolled behind the header, a bar carrying the same accounts label, an
-  // account caret and Refresh pins to the top of the page. Below `xl` the app
-  // header's collapsed title carries them instead.
+  // scrolled behind the header, a bar carrying the same picker and Refresh
+  // pins to the top of the page. Below `xl` the app header's collapsed title
+  // carries the accounts instead.
   const hasMobileTabBar = useHasMobileTabBar();
   const [accountPickerRef, accountPickerScrolledAway] = useScrolledPast<HTMLDivElement>(!hasMobileTabBar);
   // The cash register below is the shared transactions list, so its pager
@@ -335,23 +333,27 @@ function InvestmentsContent() {
     />
   );
 
+  // One or more accounts, or all of them: the header's picker, and the same
+  // picker in the desktop's pinned bar, so both choose the same way.
+  const accountPicker = (
+    <MultiSelect
+      value={data.selectedAccountIds}
+      onChange={data.handleAccountChange}
+      placeholder={t('page.allInvestmentAccounts')}
+      showSearch={false}
+      options={data.selectableAccounts.map((account: Account) => ({
+        value: account.id,
+        label: getAccountDisplayName(account),
+      }))}
+    />
+  );
+
   // The header's account picker and price refresh. The picker is what the
   // desktop's pinned bar watches: once its account names have scrolled behind
   // the app header, the bar takes over.
   const accountControls = (
     <div ref={accountPickerRef} className="flex items-stretch gap-3 w-full sm:w-auto">
-      <div className="flex-1 sm:flex-none sm:w-64 min-w-0">
-        <MultiSelect
-          value={data.selectedAccountIds}
-          onChange={data.handleAccountChange}
-          placeholder={t('page.allInvestmentAccounts')}
-          showSearch={false}
-          options={data.selectableAccounts.map((account: Account) => ({
-            value: account.id,
-            label: getAccountDisplayName(account),
-          }))}
-        />
-      </div>
+      <div className="flex-1 sm:flex-none sm:w-64 min-w-0">{accountPicker}</div>
       {refreshButton}
     </div>
   );
@@ -379,19 +381,13 @@ function InvestmentsContent() {
           {!hasMobileTabBar && (
             <FloatingPageBar visible={accountPickerScrolledAway} testId="investments-floating-bar">
               <div className="flex items-center justify-between gap-3 py-2">
-                {/* The label the Portfolio Summary carries in brackets, and
-                    the same caret as the mobile header's: one account, or
-                    all of them, favourites first. */}
-                <div className="flex min-w-0 items-center gap-1">
-                  <p className="min-w-0 truncate text-base font-semibold text-gray-900 dark:text-gray-100">
-                    {tl('pageHeader.collapsedTitleWithContext', {
-                      title: t('page.title'),
-                      context: accountFilterLabel,
-                    })}
+                {/* The section name and the header's own account picker, so
+                    the bar picks one or more accounts as the page does. */}
+                <div className="flex min-w-0 items-center gap-3">
+                  <p className="flex-shrink-0 text-base font-semibold text-gray-900 dark:text-gray-100">
+                    {t('page.title')}
                   </p>
-                  <span className="inline-flex flex-shrink-0 items-center">
-                    <EntitySwitcher {...collapsedSwitcher} />
-                  </span>
+                  <div className="w-64 min-w-0">{accountPicker}</div>
                 </div>
                 <div className="flex flex-shrink-0 items-center gap-3">
                   {refreshButton}
