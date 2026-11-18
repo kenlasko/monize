@@ -876,7 +876,10 @@ describe("OAuthInteractionController", () => {
           interactionDetails: jest.fn().mockResolvedValue({
             uid: "u1",
             prompt: { name: "consent", details: consentDetails },
-            params: { client_id: "claude-desktop" },
+            params: {
+              client_id: "claude-desktop",
+              redirect_uri: "https://claude.test:8443/api/mcp/auth_callback",
+            },
             session: { accountId: USER_ID },
             grantId: extra.grantId,
           }),
@@ -906,6 +909,8 @@ describe("OAuthInteractionController", () => {
           grantId: "grant-new",
           clientId: "claude-desktop",
           clientName: "Claude Desktop",
+          // The origin the code goes to, which the notice leads with.
+          destination: "https://claude.test:8443",
         });
         expect(oauthClientAuthorized.mock.invocationCallOrder[0]).toBeLessThan(
           interactionFinished.mock.invocationCallOrder[0],

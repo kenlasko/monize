@@ -181,7 +181,11 @@ const examples = {
     threshold: 0,
     daysLeft: 0,
   },
-  OAUTH_CLIENT_AUTHORIZED: { clientId: "c1", clientName: "Claude Desktop" },
+  OAUTH_CLIENT_AUTHORIZED: {
+    clientId: "c1",
+    clientName: "Claude Desktop",
+    destination: "https://claude.test",
+  },
   RELAY_CREDENTIAL_FIRST_USE: { credentialKind: "pat" },
   BOND_MATURITY_SOON: {
     ...bondFacts,
@@ -373,8 +377,16 @@ describe("notification email copy", () => {
         NotificationType.OAUTH_CLIENT_AUTHORIZED,
         examples.OAUTH_CLIENT_AUTHORIZED,
       );
-      expect(oauth.title).toBe("New app connected: Claude Desktop");
-      expect(oauth.message).toContain("change your password now");
+      expect(oauth.title).toBe("New app connected to your Monize account");
+      expect(oauth.message).toContain("calling itself Claude Desktop");
+      expect(oauth.message).toContain("go to https://claude.test");
+      // A notice stored before it carried the destination keeps its own copy.
+      const legacy = english(NotificationType.OAUTH_CLIENT_AUTHORIZED, {
+        clientId: "c1",
+        clientName: "Claude Desktop",
+      });
+      expect(legacy.title).toBe("New app connected: Claude Desktop");
+      expect(legacy.message).toContain("change your password now");
       const relay = english(
         NotificationType.RELAY_CREDENTIAL_FIRST_USE,
         examples.RELAY_CREDENTIAL_FIRST_USE,

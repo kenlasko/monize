@@ -812,6 +812,15 @@ export function useNotificationCopy() {
     if (notification.type !== 'OAUTH_CLIENT_AUTHORIZED') return null;
     const clientName = notification.data?.clientName;
     if (typeof clientName !== 'string' || clientName === '') return null;
+    // Leads with where the authorizations go; a row stored before the notice
+    // carried a destination keeps the copy it was written with.
+    const destination = notification.data?.destination;
+    if (typeof destination === 'string' && destination !== '') {
+      return t(part === 'title' ? 'security.oauthConnectedTitle' : 'security.oauthConnectedMessage', {
+        clientName,
+        destination,
+      });
+    }
     return t(part === 'title' ? 'security.oauthTitle' : 'security.oauthMessage', { clientName });
   };
 

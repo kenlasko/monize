@@ -439,8 +439,16 @@ export function composeLocalizedNotificationCopy(
     }
     case NotificationType.OAUTH_CLIENT_AUTHORIZED: {
       // The client name is attacker-chosen: it is only ever interpolated here and
-      // escaped once by the HTML template.
+      // escaped once by the HTML template. A notice stored before it carried the
+      // destination keeps the copy it was written with.
       if (!strings(data, "clientName")) return null;
+      if (strings(data, "destination")) {
+        return pair(
+          "security.oauthConnectedTitle",
+          "security.oauthConnectedMessage",
+          { clientName: data.clientName, destination: data.destination },
+        );
+      }
       return pair("security.oauthTitle", "security.oauthMessage", {
         clientName: data.clientName,
       });
