@@ -39,7 +39,7 @@ describe("translateKey (the subset grammar of spec 5.5.1)", () => {
     ["$", "*"],
     [".*", "*"],
     ["^$", ""],
-    ["a$b".replace("$", "\\$"), "*a$b*"],
+    ["a\\$b", "*a$b*"],
   ])("%s becomes %s", (key, glob) => {
     expect(translateKey(key)?.glob).toBe(glob);
   });

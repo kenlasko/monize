@@ -1,3 +1,4 @@
+import { encode } from "he";
 import { gzipSync } from "zlib";
 
 /**
@@ -9,15 +10,17 @@ import { gzipSync } from "zlib";
 export type KmyAttrs = Readonly<Record<string, string | number | undefined>>;
 type Children = string | readonly string[] | undefined;
 
+/**
+ * Attribute text as XML: `he` encodes the markup characters and any
+ * non-ASCII as numeric references (XML has no named entities beyond the five
+ * predefined ones), and the whitespace a parser would otherwise normalize to
+ * a space is written as character references.
+ */
 function escapeAttr(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/\r/g, "&#13;")
-    .replace(/\n/g, "&#10;")
-    .replace(/\t/g, "&#9;");
+  return encode(value, { decimal: true }).replace(
+    /[\r\n\t]/g,
+    (ch) => `&#${ch.charCodeAt(0)};`,
+  );
 }
 
 function joinChildren(children: Children): string {

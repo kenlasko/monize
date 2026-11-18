@@ -20,7 +20,7 @@ import { gunzipSync } from "zlib";
 describe("kmy-xml-builders", () => {
   it("escapes attribute values and omits undefined ones", () => {
     expect(kmyElement("X", { a: 'q"<&>\n', b: undefined, c: 1 })).toBe(
-      '<X a="q&quot;&lt;&amp;&gt;&#10;" c="1"/>',
+      '<X a="q&#34;&#60;&#38;&#62;&#10;" c="1"/>',
     );
     expect(kmyElement("X", {}, ["<Y/>", "<Z/>"])).toBe("<X><Y/><Z/></X>");
   });

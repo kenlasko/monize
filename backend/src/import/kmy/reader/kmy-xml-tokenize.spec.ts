@@ -105,7 +105,7 @@ describe("tokenizeKmyXml", () => {
     const nest = (depth: number) => {
       const inner = Array.from({ length: depth - 1 }, (_, i) => `<N${i}>`);
       const outer = inner
-        .map((tag) => tag.replace("<", "</"))
+        .map((tag) => `</${tag.slice(1)}`)
         .reverse()
         .join("");
       return `<KMYMONEY-FILE>${inner.join("")}${outer}</KMYMONEY-FILE>`;
