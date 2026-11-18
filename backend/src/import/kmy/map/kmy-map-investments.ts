@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { InvestmentAction } from "../../../securities/entities/investment-transaction.entity";
-import { pairShareTransfers } from "../../mny/map/map-investments";
+import {
+  orderForReplay,
+  pairShareTransfers,
+} from "../../mny/map/map-investments";
 import {
   MappedInvestmentTransaction,
   MappedInvestments,
@@ -412,18 +415,6 @@ class InvestmentMapper {
   }
 }
 
-function byDate(
-  rows: readonly MappedInvestmentTransaction[],
-): MappedInvestmentTransaction[] {
-  return [...rows].sort((a, b) =>
-    a.transactionDate === b.transactionDate
-      ? 0
-      : a.transactionDate < b.transactionDate
-        ? -1
-        : 1,
-  );
-}
-
 export function mapKmyInvestments(
   context: KmyInvestmentContext,
   folded: ReadonlySet<number>,
@@ -464,7 +455,7 @@ export function mapKmyInvestments(
     }
   }
 
-  const transactions = byDate(paired.transactions);
+  const transactions = orderForReplay(paired.transactions);
   const equityUsed = new Set([
     ...mapper.collector.equityUsed,
     ...mapper.cashCollector.equityUsed,

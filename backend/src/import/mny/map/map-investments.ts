@@ -178,7 +178,7 @@ interface MnyInvestmentDetailValues {
  * one statement share a `created_at` -- so this is the order the positions will
  * be folded in after the write.
  */
-function orderForReplay(
+export function orderForReplay(
   transactions: readonly MappedInvestmentTransaction[],
 ): MappedInvestmentTransaction[] {
   return [...transactions].sort((a, b) =>
