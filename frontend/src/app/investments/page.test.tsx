@@ -244,8 +244,8 @@ vi.mock('@/components/ui/UnsavedChangesDialog', () => ({
 
 vi.mock('@/components/ui/MultiSelect', () => ({
   // An option toggles in and out of the selection, as the real one does.
-  MultiSelect: ({ options, placeholder, value = [], onChange }: any) => (
-    <div data-testid="multi-select">
+  MultiSelect: ({ options, placeholder, value = [], onChange, variant, ariaLabel }: any) => (
+    <div data-testid={variant === 'caret' ? 'multi-select-caret' : 'multi-select'} aria-label={ariaLabel}>
       <span>{placeholder}</span>
       {options?.map((opt: any) => (
         <button
@@ -1740,20 +1740,25 @@ describe('InvestmentsPage', () => {
       vi.unstubAllGlobals();
     });
 
-    it('pins the section name, the account picker and refresh to the top once the picker scrolls away', async () => {
+    it('pins "Investments - <accounts>", an account caret and refresh to the top once the picker scrolls away', async () => {
       await renderPage();
       const floating = screen.getByTestId('investments-floating-bar');
       expect(floating).toHaveAttribute('aria-hidden', 'true');
 
       headerScrolled?.(true);
       expect(floating).toHaveAttribute('aria-hidden', 'false');
-      expect(floating).toHaveTextContent('Investments');
-      // The header's own multi-select, not a single-pick caret, beside Refresh.
+      // The title names the selection as the Portfolio Summary does.
+      expect(within(floating).getByTestId('investments-floating-title')).toHaveTextContent(
+        'Investments – All Accounts',
+      );
+      // A multi-account caret, not the full field and not a single-pick switcher.
+      expect(within(floating).queryByTestId('multi-select')).not.toBeInTheDocument();
       expect(
         within(floating).queryByRole('button', { name: 'Switch to another account' }),
       ).not.toBeInTheDocument();
-      expect(within(floating).getByTestId('multi-select')).toHaveTextContent(
-        'All Investment Accounts',
+      expect(within(floating).getByTestId('multi-select-caret')).toHaveAttribute(
+        'aria-label',
+        'Choose accounts',
       );
       expect(within(floating).getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
 
@@ -1768,6 +1773,12 @@ describe('InvestmentsPage', () => {
 
       await act(async () => {
         fireEvent.click(within(floating).getByTestId('option-brok-1'));
+      });
+      // The title follows the selection.
+      await waitFor(() => {
+        expect(within(floating).getByTestId('investments-floating-title')).toHaveTextContent(
+          'Investments – RRSP',
+        );
       });
       await act(async () => {
         fireEvent.click(within(floating).getByTestId('option-brok-2'));

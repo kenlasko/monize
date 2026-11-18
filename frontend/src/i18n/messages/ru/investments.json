@@ -3,6 +3,7 @@
     "title": "Инвестиции",
     "subtitle": "Отслеживайте свой инвестиционный портфель",
     "allInvestmentAccounts": "Все инвестиционные счета",
+    "chooseAccounts": "Выбрать счета",
     "updating": "Обновление...",
     "refresh": "Обновить",
     "lastUpdated": "Последнее обновление: {time}",

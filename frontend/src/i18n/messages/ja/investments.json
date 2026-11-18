@@ -3,6 +3,7 @@
     "title": "投資",
     "subtitle": "投資ポートフォリオを追跡する",
     "allInvestmentAccounts": "すべての投資口座",
+    "chooseAccounts": "口座を選択",
     "updating": "更新中...",
     "refresh": "更新",
     "lastUpdated": "最終更新: {time}",

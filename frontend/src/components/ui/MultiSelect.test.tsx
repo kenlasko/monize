@@ -688,4 +688,57 @@ describe('MultiSelect', () => {
       }
     });
   });
+
+  describe('caret variant', () => {
+    it('draws only a named chevron, and opens the same checklist', () => {
+      render(
+        <MultiSelect
+          variant="caret"
+          ariaLabel="Choose accounts"
+          options={flatOptions}
+          value={['a']}
+          onChange={onChange}
+          placeholder="All"
+          showSearch={false}
+        />,
+      );
+      const caret = screen.getByRole('button', { name: 'Choose accounts' });
+      // The selection is named by the text beside it, not by the caret.
+      expect(caret).not.toHaveTextContent('Alpha');
+      expect(caret).toHaveAttribute('aria-expanded', 'false');
+
+      fireEvent.click(caret);
+      expect(caret).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.click(screen.getByLabelText('Beta'));
+      expect(onChange).toHaveBeenCalledWith(['a', 'b']);
+    });
+
+    it('gives the menu a usable width and keeps it inside the viewport', () => {
+      render(
+        <MultiSelect
+          variant="caret"
+          ariaLabel="Choose accounts"
+          options={flatOptions}
+          value={[]}
+          onChange={onChange}
+        />,
+      );
+      const caret = screen.getByRole('button', { name: 'Choose accounts' });
+      vi.spyOn(caret, 'getBoundingClientRect').mockReturnValue({
+        left: window.innerWidth - 30,
+        right: window.innerWidth - 2,
+        top: 10,
+        bottom: 38,
+        width: 28,
+        height: 28,
+        x: window.innerWidth - 30,
+        y: 10,
+        toJSON: () => ({}),
+      });
+      fireEvent.click(caret);
+      const menu = screen.getByText('Alpha').closest('.fixed') as HTMLElement;
+      expect(menu.style.width).toBe('256px');
+      expect(menu.style.left).toBe(`${window.innerWidth - 256 - 8}px`);
+    });
+  });
 });

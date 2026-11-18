@@ -3,6 +3,7 @@
     "title": "Investments",
     "subtitle": "Track your investment portfolio",
     "allInvestmentAccounts": "All Investment Accounts",
+    "chooseAccounts": "Choose accounts",
     "updating": "Updating...",
     "refresh": "Refresh",
     "lastUpdated": "Last updated: {time}",

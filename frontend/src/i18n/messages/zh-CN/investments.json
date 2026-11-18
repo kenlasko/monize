@@ -3,6 +3,7 @@
     "title": "投资",
     "subtitle": "追踪您的投资组合",
     "allInvestmentAccounts": "所有投资账户",
+    "chooseAccounts": "选择账户",
     "updating": "更新中...",
     "refresh": "刷新",
     "lastUpdated": "上次更新：{time}",

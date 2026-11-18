@@ -3,6 +3,7 @@
     "title": "Investasi",
     "subtitle": "Lacak portofolio investasi Anda",
     "allInvestmentAccounts": "Semua Akun Investasi",
+    "chooseAccounts": "Pilih akun",
     "updating": "Memperbarui...",
     "refresh": "Segarkan",
     "lastUpdated": "Terakhir diperbarui: {time}",

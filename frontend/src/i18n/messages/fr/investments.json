@@ -3,6 +3,7 @@
     "title": "Investissements",
     "subtitle": "Suivez votre portefeuille d'investissements",
     "allInvestmentAccounts": "Tous les comptes d'investissement",
+    "chooseAccounts": "Choisir les comptes",
     "updating": "Mise à jour…",
     "refresh": "Actualiser",
     "lastUpdated": "Dernière mise à jour : {time}",
