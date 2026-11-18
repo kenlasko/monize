@@ -106,10 +106,7 @@ export function mapKmyFile(raw: KmyRawFile, input: KmyMapInput): MnyParsedFile {
     coinDecimals: input.coinDecimals,
   });
   const banking = mapKmyTransactions(context, opening.folded);
-  const trading = mapKmyInvestments(
-    { ...context, securities },
-    opening.folded,
-  );
+  const trading = mapKmyInvestments({ ...context, securities }, opening.folded);
   const investments = trading.investments;
   const transactions: MappedTransactions = {
     ...banking.transactions,

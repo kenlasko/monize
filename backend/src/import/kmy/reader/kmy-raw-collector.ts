@@ -16,9 +16,7 @@ import type {
   KmyReconciliation,
   KmySchedule,
   KmySecurity,
-  KmySplit,
   KmyTag,
-  KmyTemplateSplit,
   KmyTemplateTransaction,
   KmyTransaction,
 } from "../model/kmy-raw";
@@ -29,7 +27,6 @@ import type {
   ScheduleBuilder,
   SecurityBuilder,
   SplitBuilder,
-  TemplateBuilder,
   TransactionBuilder,
 } from "./kmy-reader-builders";
 import {
