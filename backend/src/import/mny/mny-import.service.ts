@@ -431,6 +431,7 @@ export class MnyImportService {
         : {}),
       ...(parsed.sourceFormat === "kmy"
         ? {
+            ...(parsed.kmyFile ? { fileAsOf: parsed.kmyFile.asOf } : {}),
             payeeAliasesCreated: written.payeeExtras.aliasesCreated,
             payeeDefaultCategoriesSet: written.payeeExtras.defaultCategoriesSet,
             payeeContactDetailsSet: written.payeeExtras.contactDetailsSet,

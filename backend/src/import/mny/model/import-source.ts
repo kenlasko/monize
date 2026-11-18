@@ -17,6 +17,12 @@ export interface KmyFileSummary {
   readonly appVersion: string | null;
   /** FILEINFO/LAST_MODIFIED_DATE as written; null when absent. */
   readonly lastModified: string | null;
+  /**
+   * YYYY-MM-DD the file's own figures (balances, holdings, overdue schedules)
+   * are computed at: the day the parse ran. The preview's and the job's can
+   * differ when the import is started on a later day than the upload.
+   */
+  readonly asOf: string;
 }
 
 export interface ImportSourceParseInput {

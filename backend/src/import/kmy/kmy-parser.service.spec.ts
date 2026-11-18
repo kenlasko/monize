@@ -1,3 +1,4 @@
+import * as dateUtils from "../../common/date-utils";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
 import { readKmyFixture } from "./__fixtures__/kmy-fixtures";
@@ -72,6 +73,30 @@ describe("KmyParserService", () => {
       first.accounts.accounts.map((a) => a.key),
     );
     expect([...second.expectedBalances]).toEqual([...first.expectedBalances]);
+  });
+
+  it("cuts the file's figures off at todayYMD, the day post-processing uses, unless told otherwise (MIN-1)", async () => {
+    // The user's day, which can differ from the server's local one.
+    const today = jest
+      .spyOn(dateUtils, "todayYMD")
+      .mockReturnValue("2030-12-31");
+    try {
+      const parsed = await service.parse({
+        userId: "user-1",
+        buffer: readKmyFixture("syntheticKmy"),
+        filename: "a.kmy",
+      });
+      expect(parsed.kmyFile?.asOf).toBe("2030-12-31");
+    } finally {
+      today.mockRestore();
+    }
+    const pinned = await service.parse({
+      userId: "user-1",
+      buffer: readKmyFixture("syntheticKmy"),
+      filename: "a.kmy",
+      asOf: "2024-03-31",
+    });
+    expect(pinned.kmyFile?.asOf).toBe("2024-03-31");
   });
 
   it("lets a typed refusal propagate", async () => {

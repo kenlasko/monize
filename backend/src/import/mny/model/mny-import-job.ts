@@ -115,6 +115,14 @@ export interface MnyImportResult {
   readonly bondRowsWithoutSeries?: number;
   /** Payee aliases written (KMyMoney file only; absent for Money). */
   readonly payeeAliasesCreated?: number;
+  /**
+   * KMyMoney only: the date the file's figures in `verification` and
+   * `holdings` are computed at, the commit's own day (`todayYMD`, the same
+   * cut-off post-processing gives `current_balance`). The preview shows its
+   * own (`kmyFile.asOf`); the two differ only when the import started on a
+   * later day than the upload.
+   */
+  readonly fileAsOf?: string;
   /** Payees that received a default category (KMyMoney file only). */
   readonly payeeDefaultCategoriesSet?: number;
   /** Payees that received at least one contact field (KMyMoney file only). */

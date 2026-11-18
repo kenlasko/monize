@@ -350,6 +350,7 @@ function* mapKmyFileSteps(
       fixVersion: raw.fileInfo.fixVersion,
       appVersion: raw.fileInfo.appVersion,
       lastModified: raw.fileInfo.lastModified,
+      asOf,
     },
   };
 }

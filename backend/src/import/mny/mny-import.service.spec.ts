@@ -1707,6 +1707,32 @@ describe("MnyImportService", () => {
       expect([...mockedWriteBalances.mock.calls[0][2]!.values()]).toEqual([8]);
     });
 
+    it("reports the date the file's figures are computed at (MIN-1)", async () => {
+      const result = await kmyRun(
+        parsedFile({
+          sourceFormat: "kmy",
+          kmyFile: {
+            container: "gzip",
+            fixVersion: 12,
+            appVersion: null,
+            lastModified: null,
+            asOf: "2026-06-01",
+          },
+        }),
+      );
+      expect(result.fileAsOf).toBe("2026-06-01");
+      expect(
+        (
+          await service.runImport(
+            "user-1",
+            "staged-1",
+            DEFAULT_MNY_IMPORT_OPTIONS,
+            context,
+          )
+        ).fileAsOf,
+      ).toBeUndefined();
+    });
+
     it("leaves mappedBalance off the report when there are no fileBalances", async () => {
       const result = await kmyRun();
 

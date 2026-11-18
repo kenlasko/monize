@@ -53,6 +53,7 @@ describe("mapKmyFile: the reference's section 18 file", () => {
         fixVersion: 12,
         appVersion: null,
         lastModified: null,
+        asOf: "2026-06-01",
       },
     });
     expect(parsed.currencyCodes).toEqual(["USD", "EUR"]);

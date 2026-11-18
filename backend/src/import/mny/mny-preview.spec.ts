@@ -19,6 +19,7 @@ describe("buildPreview source-format fields", () => {
     fixVersion: 12,
     appVersion: null,
     lastModified: null,
+    asOf: "2026-01-01",
   };
 
   it("leaves sourceFormat and kmyFile off a Money preview", () => {

@@ -5,7 +5,8 @@ import { preferredCurrency } from "../../common/default-currency.util";
 import { phoneRegionFromPreferences } from "../../common/phone-number.util";
 import { Currency } from "../../currencies/entities/currency.entity";
 import { UserPreference } from "../../users/entities/user-preference.entity";
-import { todayIsoDate, type MnyParsedFile } from "../mny/mny-parser.service";
+import { todayYMD } from "../../common/date-utils";
+import { type MnyParsedFile } from "../mny/mny-parser.service";
 import type {
   ImportSourceParseInput,
   ImportSourceParser,
@@ -55,7 +56,10 @@ export class KmyParserService implements ImportSourceParser {
       userDefaultCurrency,
       phoneRegion,
       coinDecimals,
-      asOf: input.asOf ?? todayIsoDate(),
+      // The day post-processing computes `current_balance` at (`todayYMD`,
+      // the request's time zone where there is one), so the file's figures
+      // and the database's are cut off on one date.
+      asOf: input.asOf ?? todayYMD(),
     });
   }
 }

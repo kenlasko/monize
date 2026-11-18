@@ -1231,7 +1231,7 @@ commission taken off each trade -- are each caught: `kmy-file-summary.spec.ts`).
 - **Account balance**, per mapped account key `K`, at `K`'s currency places (`moneyDecimalsFor`: 4 for a
   fiat, the coin's own up to 8): the sum of the raw `shares` of every split, in every transaction with a
   valid post date on or before `asOf` (the same `asOf` the mapper and post-processing use, pinned by the
-  preview, 6.4), on every KMyMoney account that maps to `K`: the account itself; for a pair's cash key,
+  preview and in the job, 6.4), on every KMyMoney account that maps to `K`: the account itself; for a pair's cash key,
   the brokerage account and the type-7 account; for a brokerage key, nothing (expected 0). Template
   (schedule) transactions are not in `TRANSACTIONS`, so they are not summed. This is KMyMoney's own
   balance (`AccountBalances::operator+=`, R15.2), including its opening balance transactions. Two figures
@@ -1260,6 +1260,17 @@ commission taken off each trade -- are each caught: `kmy-file-summary.spec.ts`).
   trade rows' totals and commissions are what the file recorded, and the canonical holdings rebuild is
   what turns them into a basis; neither the review step nor the report claims the basis itself is
   verified.
+
+### 6.4 The date the file's figures are for
+
+`asOf` is `todayYMD()` (`backend/src/common/date-utils.ts`) when the parse runs, the same function
+post-processing cuts `current_balance` off with, so in the job the file's figures and the database's
+are computed for one day. The preview's figures are for the day of the upload and the report's for the
+day the import ran; both carry their date (`kmyFile.asOf` in the preview, `fileAsOf` in the result) so
+a difference between them, which only rows dated between the two days can cause, is labelled rather
+than silent. The preview's date is deliberately not reused by the job: post-processing computes the
+balances the report compares as of the commit's day, so a pinned earlier date would report every row
+dated after it as a discrepancy.
 
 ### 6.2 How they feed the existing report shape
 
