@@ -95,8 +95,9 @@ export async function writeSecurities(
       symbol: security.symbol,
       name: security.name,
       // Money's `sct` codes are not stable across releases, so the type is
-      // left for the user rather than guessed (design 6.3).
-      securityType: null,
+      // left for the user rather than guessed (design 6.3). A source whose
+      // format does name the type (KMyMoney) supplies it.
+      securityType: security.securityType ?? null,
       exchange: null,
       currencyCode: security.currencyCode,
       isActive: true,

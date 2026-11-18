@@ -148,6 +148,7 @@ export async function writeBills(
       investmentCommission: investment === null ? null : investment.commission,
       investmentTotalAmount:
         investment === null ? null : roundMoney(Math.abs(bill.amount)),
+      customRecurrence: bill.customRecurrence ?? null,
       tagIds: tagIdsFor(bill.tagHandles, input.tagIdByHandle),
     });
 

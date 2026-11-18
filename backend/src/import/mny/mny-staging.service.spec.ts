@@ -217,6 +217,26 @@ describe("MnyStagingService", () => {
       expect(statements().some((sql) => sql.startsWith("DELETE"))).toBe(false);
     });
 
+    it("refuses with the KMyMoney message while a KMyMoney import needs the bytes", async () => {
+      query
+        .mockResolvedValueOnce([{ id: "staged-1", source_format: "kmy" }])
+        .mockResolvedValueOnce([{ needed: true }]);
+
+      await expect(service.remove("user-1", "staged-1")).rejects.toThrow(
+        /KMyMoney file is being imported/,
+      );
+    });
+
+    it("keeps the Money message for a Money staged file", async () => {
+      query
+        .mockResolvedValueOnce([{ id: "staged-1", source_format: "mny" }])
+        .mockResolvedValueOnce([{ needed: true }]);
+
+      await expect(service.remove("user-1", "staged-1")).rejects.toThrow(
+        /Money file is being imported/,
+      );
+    });
+
     it("deletes the caller's file once no job needs it", async () => {
       query
         .mockResolvedValueOnce([{ id: "staged-1" }])

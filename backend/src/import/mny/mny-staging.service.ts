@@ -168,9 +168,9 @@ export class MnyStagingService {
    */
   async remove(userId: string, id: string): Promise<boolean> {
     return withScopedDb(this.dataSource, async (manager) => {
-      const locked = returnedRows<{ id: string }>(
+      const locked = returnedRows<{ id: string; source_format?: string }>(
         await manager.query(
-          `SELECT id FROM import_staged_files
+          `SELECT id, source_format FROM import_staged_files
             WHERE id = $1 AND user_id = $2
               FOR UPDATE`,
           [id, userId],
@@ -189,10 +189,15 @@ export class MnyStagingService {
       );
       if (needed[0]?.needed === true) {
         throw new ConflictException(
-          tr(
-            "errors.import.mnyStagedFileInUse",
-            "This Money file is being imported. Wait for the import to finish before discarding it.",
-          ),
+          locked[0].source_format === "kmy"
+            ? tr(
+                "errors.import.kmyStagedFileInUse",
+                "This KMyMoney file is being imported. Wait for the import to finish before discarding it.",
+              )
+            : tr(
+                "errors.import.mnyStagedFileInUse",
+                "This Money file is being imported. Wait for the import to finish before discarding it.",
+              ),
         );
       }
       await manager.query(

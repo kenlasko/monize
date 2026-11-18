@@ -208,6 +208,18 @@ describe("writeSecurities", () => {
     });
   });
 
+  it("writes the security type a source supplies", async () => {
+    const { manager, securities } = doubles();
+
+    await writeSecurities(manager, "user-1", [
+      security({ securityType: "ETF" }),
+    ]);
+
+    expect(securities.insert.mock.calls[0][0][0]).toMatchObject({
+      securityType: "ETF",
+    });
+  });
+
   it("carries the placeholder-symbol flag through so quotes are not fetched", async () => {
     const { manager, securities } = doubles();
 

@@ -40,7 +40,12 @@ export function mnyFileTooLargeException(
  */
 @Injectable()
 export class MnyUploadErrorInterceptor implements NestInterceptor {
-  constructor(private readonly limitMb: number) {}
+  constructor(
+    private readonly limitMb: number,
+    private readonly factory: (
+      limitMb: number,
+    ) => PayloadTooLargeException = mnyFileTooLargeException,
+  ) {}
 
   intercept(
     _context: ExecutionContext,
@@ -52,7 +57,7 @@ export class MnyUploadErrorInterceptor implements NestInterceptor {
         catchError((error: unknown) =>
           throwError(() =>
             error instanceof PayloadTooLargeException
-              ? mnyFileTooLargeException(this.limitMb)
+              ? this.factory(this.limitMb)
               : error,
           ),
         ),

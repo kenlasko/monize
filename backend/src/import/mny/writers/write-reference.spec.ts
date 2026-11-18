@@ -161,6 +161,52 @@ describe("writeAccounts", () => {
     expect(repo.insert).not.toHaveBeenCalled();
   });
 
+  it("writes the institution name a source supplies, and null otherwise", async () => {
+    const repo = repoDouble();
+
+    await writeAccounts(managerFor(repo), "user-1", [
+      account({ institutionName: "Royal Bank" }),
+      account({ key: "acct-2", handle: 2, name: "Visa" }),
+    ]);
+
+    expect(repo.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Chequing", institution: "Royal Bank" }),
+    );
+    expect(repo.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Visa", institution: null }),
+    );
+  });
+
+  it("names the KMyMoney file and key when the format is kmy and the existing account is closed", async () => {
+    const repo = repoDouble([
+      { id: "e1", name: "Savings", currencyCode: "CAD", isClosed: true },
+    ]);
+
+    await expect(
+      writeAccounts(
+        managerFor(repo),
+        "user-1",
+        [account({ name: "Savings" })],
+        "kmy",
+      ),
+    ).rejects.toThrow(/KMyMoney file cannot be merged/);
+  });
+
+  it("names the KMyMoney file when the format is kmy and the currencies differ", async () => {
+    const repo = repoDouble([
+      { id: "e1", name: "Savings", currencyCode: "EUR", isClosed: false },
+    ]);
+
+    await expect(
+      writeAccounts(
+        managerFor(repo),
+        "user-1",
+        [account({ name: "Savings", currencyCode: "USD" })],
+        "kmy",
+      ),
+    ).rejects.toThrow(/KMyMoney file account uses USD/);
+  });
+
   it("refuses before any insert when a name-matched account is closed", async () => {
     const repo = repoDouble([
       {

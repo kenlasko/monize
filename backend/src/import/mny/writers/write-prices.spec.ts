@@ -5,6 +5,7 @@ import {
 } from "../__fixtures__/mny-row-builders";
 import { roundFxRate } from "../../../common/fx-entry.util";
 import {
+  KMY_PRICE_SOURCE,
   MNY_PRICE_SOURCE,
   UPSERT_CHUNK_SIZE,
   dedupePrices,
@@ -140,6 +141,25 @@ describe("writeSecurityPrices", () => {
       "2026-01-05",
       10,
       MNY_PRICE_SOURCE,
+    ]);
+  });
+
+  it("marks the rows with the source it is given", async () => {
+    const { manager, query } = doubles();
+
+    await writeSecurityPrices(
+      manager,
+      [mnySecurityPrice({ security: 1, date: "2026-01-05", price: 10 })],
+      securityIds,
+      undefined,
+      KMY_PRICE_SOURCE,
+    );
+
+    expect(query.mock.calls[0][1]).toEqual([
+      securityIds.get(1),
+      "2026-01-05",
+      10,
+      "kmy_import",
     ]);
   });
 
@@ -352,6 +372,30 @@ describe("writeExchangeRates", () => {
       "2026-01-05",
       MNY_PRICE_SOURCE,
     ]);
+  });
+
+  it("marks the rows with the source it is given", async () => {
+    const { manager, query } = doubles();
+    query.mockResolvedValueOnce([{ id: 1 }]);
+
+    await writeExchangeRates(
+      manager,
+      [
+        mnyExchangeRate({
+          fromCurrency: 1,
+          toCurrency: 2,
+          rate: 0.79,
+          date: "2026-01-05",
+        }),
+      ],
+      new Map([
+        [1, "USD"],
+        [2, "GBP"],
+      ]),
+      KMY_PRICE_SOURCE,
+    );
+
+    expect(query.mock.calls[0][1][4]).toBe("kmy_import");
   });
 
   // INV-FX-004. `exchange_rates` is shared by every user on the deployment, so a

@@ -65,6 +65,8 @@ jest.mock("./writers/write-investments", () => ({
 }));
 
 jest.mock("./writers/write-prices", () => ({
+  MNY_PRICE_SOURCE: "mny_import",
+  KMY_PRICE_SOURCE: "kmy_import",
   writeSecurityPrices: jest.fn(),
   writeExchangeRates: jest.fn(),
 }));
@@ -1480,6 +1482,177 @@ describe("MnyImportService", () => {
       );
 
       expect(result.skipped.bills).toBe(3);
+    });
+  });
+
+  describe("a KMyMoney source", () => {
+    let kmyParser: { sourceFormat: "kmy"; parse: jest.Mock };
+    let kmyService: MnyImportService;
+
+    const kmyRun = (parsed: MnyParsedFile = parsedFile()) => {
+      kmyParser.parse.mockResolvedValue(parsed);
+      return kmyService.runImport(
+        "user-1",
+        "staged-1",
+        DEFAULT_MNY_IMPORT_OPTIONS,
+        context,
+        { format: "kmy", filename: "Home.kmy" },
+      );
+    };
+
+    beforeEach(() => {
+      kmyParser = { sourceFormat: "kmy", parse: jest.fn() };
+      kmyService = new MnyImportService(
+        {} as DataSource,
+        staging as unknown as MnyStagingService,
+        parser as unknown as MnyMarketRateService,
+        jobs as unknown as MnyImportJobService,
+        postProcessing as unknown as ImportPostProcessingService,
+        usersService as unknown as UsersService,
+        currencies as unknown as CurrenciesService,
+        holdingsService as unknown as HoldingsService,
+        rulesApplier as unknown as TransactionRulesApplierService,
+        tagsService as unknown as TagsService,
+        kmyParser,
+      );
+      jest
+        .spyOn(kmyService["logger"], "log")
+        .mockImplementation(() => undefined);
+    });
+
+    it("refuses a staged file of the other format as missing, with the KMyMoney message", async () => {
+      staging.findInfo.mockResolvedValue({
+        id: "staged-1",
+        sourceFormat: "mny",
+      });
+
+      await expect(
+        kmyService.start("user-1", {
+          stagedFileId: "staged-1",
+          sourceFormat: "kmy",
+        }),
+      ).rejects.toThrow(/KMyMoney file is no longer available/);
+      expect(jobs.create).not.toHaveBeenCalled();
+    });
+
+    it("refuses a KMyMoney staged file from a Money start", async () => {
+      staging.findInfo.mockResolvedValue({
+        id: "staged-1",
+        sourceFormat: "kmy",
+      });
+
+      await expect(
+        service.start("user-1", { stagedFileId: "staged-1" }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(jobs.create).not.toHaveBeenCalled();
+    });
+
+    it("creates the job with the format and runs the import with the staged filename", async () => {
+      staging.findInfo.mockResolvedValue({
+        id: "staged-1",
+        sourceFormat: "kmy",
+        filename: "Home.kmy",
+      });
+      const runImport = jest
+        .spyOn(kmyService, "runImport")
+        .mockResolvedValue({} as never);
+
+      await kmyService.start("user-1", {
+        stagedFileId: "staged-1",
+        sourceFormat: "kmy",
+      });
+      await jobs.runClaimed.mock.calls[0][2](context);
+
+      expect(jobs.create).toHaveBeenCalledWith(
+        "user-1",
+        "staged-1",
+        expect.anything(),
+        "kmy",
+      );
+      expect(runImport).toHaveBeenCalledWith(
+        "user-1",
+        "staged-1",
+        expect.anything(),
+        context,
+        { format: "kmy", filename: "Home.kmy" },
+      );
+    });
+
+    it("parses the bytes through the KMyMoney parser, not the Money one", async () => {
+      await kmyRun();
+
+      expect(kmyParser.parse).toHaveBeenCalledWith({
+        userId: "user-1",
+        buffer: Buffer.from("bytes"),
+        filename: "Home.kmy",
+        options: DEFAULT_MNY_IMPORT_OPTIONS,
+        userDefaultCurrency: "CAD",
+      });
+      expect(parser.parse).not.toHaveBeenCalled();
+    });
+
+    it("fails with a plain Error when no KMyMoney parser is registered", async () => {
+      await expect(
+        service.runImport(
+          "user-1",
+          "staged-1",
+          DEFAULT_MNY_IMPORT_OPTIONS,
+          context,
+          { format: "kmy", filename: "Home.kmy" },
+        ),
+      ).rejects.toThrow("No KMyMoney parser is registered");
+    });
+
+    it("names the format in the timing log", async () => {
+      await kmyRun();
+
+      expect(kmyService["logger"].log).toHaveBeenCalledWith(
+        expect.stringMatching(/^\.kmy import timing:/),
+      );
+    });
+
+    it("tags prices and rates with the KMyMoney source and passes the format to writeAccounts", async () => {
+      await kmyRun(parsedFile({ sourceFormat: "kmy" }));
+
+      expect(mockedWritePrices.mock.calls[0][4]).toBe("kmy_import");
+      expect(mockedWriteRates.mock.calls[0][3]).toBe("kmy_import");
+      expect(mockedWriteAccounts.mock.calls[0][3]).toBe("kmy");
+    });
+
+    it("tags a Money import's prices and rates with the Money source", async () => {
+      await service.runImport(
+        "user-1",
+        "staged-1",
+        DEFAULT_MNY_IMPORT_OPTIONS,
+        context,
+      );
+
+      expect(mockedWritePrices.mock.calls[0][4]).toBe("mny_import");
+      expect(mockedWriteRates.mock.calls[0][3]).toBe("mny_import");
+    });
+
+    it("verifies against fileBalances and reports the mapped balance when the parser supplies them", async () => {
+      const result = await kmyRun(
+        parsedFile({
+          sourceFormat: "kmy",
+          fileBalances: new Map([["acct-1", 121]]),
+        }),
+      );
+
+      expect(result.verification[0]).toMatchObject({
+        expectedBalance: 121,
+        mappedBalance: 120.5,
+        importedBalance: 120.5,
+        delta: -0.5,
+        matches: false,
+      });
+    });
+
+    it("leaves mappedBalance off the report when there are no fileBalances", async () => {
+      const result = await kmyRun();
+
+      expect(result.verification[0]).not.toHaveProperty("mappedBalance");
+      expect(result.verification[0].expectedBalance).toBe(120.5);
     });
   });
 });

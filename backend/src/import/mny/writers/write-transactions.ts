@@ -94,7 +94,8 @@ export async function writeTransactions(
         transactionDate: transaction.transactionDate,
         amount: transaction.amount,
         currencyCode: transaction.currencyCode,
-        exchangeRate: 1,
+        exchangeRate: transaction.exchangeRate ?? 1,
+        reconciledDate: transaction.reconciledDate ?? null,
         status: transaction.status,
         payeeId:
           transaction.payeeHandle === null

@@ -169,7 +169,8 @@ export function buildPreview(input: BuildPreviewInput): MnyPreview {
       transactionCount: parsed.transactionCounts.get(account.key) ?? 0,
       investmentCount: parsed.investmentCounts.get(account.key) ?? 0,
       openingBalance: account.openingBalance,
-      finalBalance: parsed.expectedBalances.get(account.key) ?? 0,
+      finalBalance:
+        (parsed.fileBalances ?? parsed.expectedBalances).get(account.key) ?? 0,
       closed: account.closed,
       favourite: account.favourite,
       excludeFromNetWorth: account.excludeFromNetWorth,
@@ -222,5 +223,7 @@ export function buildPreview(input: BuildPreviewInput): MnyPreview {
       }),
     ),
     options: parsed.options,
+    ...(parsed.sourceFormat === "kmy" ? { sourceFormat: "kmy" as const } : {}),
+    ...(parsed.kmyFile !== undefined ? { kmyFile: parsed.kmyFile } : {}),
   };
 }

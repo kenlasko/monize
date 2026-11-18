@@ -548,6 +548,10 @@
     "mnyAlreadyImported": "This file was already imported on {{ date }} (import {{ jobId }}), and its records are still in your account. Importing it again would duplicate them. To replace them, start over and choose to replace your existing data.",
     "mnyExistingAccountClosed": "The existing account \"{{ name }}\" is closed, so the Money file cannot be merged into it. Reopen it or rename it, then import again.",
     "mnyExistingAccountCurrency": "The existing account \"{{ name }}\" uses {{ existing }}, but the Money file account uses {{ file }}. Rename one of them, then import again.",
+    "kmyStagedFileMissing": "The uploaded KMyMoney file is no longer available. Please upload it again.",
+    "kmyStagedFileInUse": "This KMyMoney file is being imported. Wait for the import to finish before discarding it.",
+    "kmyExistingAccountClosed": "The existing account \"{{ name }}\" is closed, so the KMyMoney file cannot be merged into it. Reopen it or rename it, then import again.",
+    "kmyExistingAccountCurrency": "The existing account \"{{ name }}\" uses {{ existing }}, but the KMyMoney file account uses {{ file }}. Rename one of them, then import again.",
     "mnyJobNotFound": "Import job not found",
     "mnyFileTooLarge": "That Money file is larger than the {{ limit }} MB import limit.",
     "noRateForSplitTransfer": "No exchange rate for {{ pair }} on {{ date }}: a split line transfers into an account in another currency. Add an exchange rate for that pair and date, then import again."

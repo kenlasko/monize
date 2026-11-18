@@ -127,6 +127,39 @@ describe("writeTransactions", () => {
     });
   });
 
+  it("writes the exchange rate and reconciled date a source supplies", async () => {
+    const { manager, transactions } = doubles();
+
+    await writeTransactions(manager, "user-1", {
+      ...baseInput,
+      transactions: [
+        transaction({
+          exchangeRate: 0.7412345678,
+          reconciledDate: "2024-03-05",
+        }),
+      ],
+    });
+
+    expect(transactions.insert.mock.calls[0][0][0]).toMatchObject({
+      exchangeRate: 0.7412345678,
+      reconciledDate: "2024-03-05",
+    });
+  });
+
+  it("defaults the exchange rate to 1 and the reconciled date to null", async () => {
+    const { manager, transactions } = doubles();
+
+    await writeTransactions(manager, "user-1", {
+      ...baseInput,
+      transactions: [transaction()],
+    });
+
+    expect(transactions.insert.mock.calls[0][0][0]).toMatchObject({
+      exchangeRate: 1,
+      reconciledDate: null,
+    });
+  });
+
   it("carries the reference number into the column the register's Ref # reads", async () => {
     // `transactions.reference_number` is what the register's Ref # column
     // renders, so a value the mapper decoded has to survive this far to be the
