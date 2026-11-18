@@ -209,6 +209,14 @@ export const MNY_WARNING_CODES = [
   "tradeAmountsDiffer",
   /** A KMyMoney transaction with a stock split that fits no investment activity; imported as a split row with the share movement embedded (spec 5.7.7). */
   "investmentTransactionUnclassified",
+  /** Two splits of a KMyMoney transaction on one account; imported as separate rows, not a transfer to itself. */
+  "sameAccountTransferUnlinked",
+  /** A KMyMoney account's reconciliation history (statement dates and balances) is not imported. */
+  "reconciliationHistoryNotImported",
+  /** A removal and an addition of the same shares were paired into a transfer between brokerage accounts. */
+  "securityTransferInferred",
+  /** A share count finer than eight decimal places was rounded. */
+  "sharesRounded",
 ] as const;
 
 export type MnyWarningCode = (typeof MNY_WARNING_CODES)[number];

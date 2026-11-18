@@ -38,6 +38,19 @@ export function accountWarnings(
   if (account.number.trim() !== "" || (account.kvp.get("iban") ?? "") !== "") {
     warnings.push({ code: "accountNumbersNotImported", subject });
   }
+  const reconciled = [
+    ...account.reconciliations.map((entry) => entry.date),
+    ...(account.lastReconciled ? [account.lastReconciled] : []),
+  ].sort();
+  if (reconciled.length > 0) {
+    // m4: Monize keeps a row's reconciled state and date, not the account's
+    // statement history; the latest statement date is named.
+    warnings.push({
+      code: "reconciliationHistoryNotImported",
+      subject,
+      detail: reconciled[reconciled.length - 1],
+    });
+  }
   if (account.hasOnlineBanking) {
     warnings.push({ code: "onlineBankingNotImported", subject });
   }

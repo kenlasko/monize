@@ -221,7 +221,14 @@ describe("mapKmyInvestments: shares moved between brokerage accounts (spec 5.7.4
     });
     expect(out.linkedInvestmentId).toBe(into.id);
     expect(into.linkedInvestmentId).toBe(out.id);
-    expect(investments.warnings).toEqual([]);
+    // m5: the pairing is an inference, so it is named with both accounts.
+    expect(investments.warnings).toEqual([
+      expect.objectContaining({
+        code: "securityTransferInferred",
+        subject: "transaction 2",
+        detail: "Broker - Brokerage -> Other Broker - Brokerage",
+      }),
+    ]);
   });
 
   it("leaves a different date or quantity unpaired and warns about every added share", () => {

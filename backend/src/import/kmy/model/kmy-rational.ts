@@ -238,6 +238,17 @@ export function toDecimalString(a: Rational, places: number): string {
   return `${negative ? "-" : ""}${whole}${fraction}`;
 }
 
+/**
+ * `a` as a `number` at `places`, or a refusal when its integer part has more
+ * than the 16 digits the `NUMERIC(24,8)` and `NUMERIC(20,8)` columns store
+ * (m3): such an amount cannot be imported as KMyMoney holds it.
+ */
 export function toNumber(a: Rational, places: number): number {
+  const whole = (a.num < 0n ? -a.num : a.num) / a.den;
+  if (whole >= COLUMN_INTEGER_LIMIT) {
+    throw new KmyCorruptFileError("an amount is larger than Monize can store");
+  }
   return Number(toDecimalString(a, places));
 }
+
+const COLUMN_INTEGER_LIMIT = 10n ** 16n;

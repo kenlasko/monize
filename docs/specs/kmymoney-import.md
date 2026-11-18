@@ -739,7 +739,7 @@ query.
 
 #### 5.6.1 Classification
 
-Splits with an empty `account` are dropped (R6.2). Let `A` be the splits on asset/liability accounts
+A split with an empty `account` refuses the file, as KMyMoney's reader does (4.3 row 9, R6.2). Let `A` be the splits on asset/liability accounts
 (types 1-11, 14, and 7 itself), `C` the splits on income/expense accounts, `E` on equity accounts,
 `S` on stock accounts. A transaction with any `S` split goes to 5.7.
 
@@ -755,7 +755,13 @@ Splits with an empty `account` are dropped (R6.2). Let `A` be the splits on asse
 The post date is the transaction date. A transaction with an empty or invalid post date is
 `unusableTransaction`. Two transactions with the same post date and id collapse to the later one, as in
 KMyMoney (R6.1), `duplicateTransactionId`. A split on a type-0 or unimported account (unsupported
-currency) is treated like a split on an account the user excluded (5.6.6).
+currency) is treated like a split on an account the user excluded (5.6.6). A split on an account in
+no class (a type KMyMoney does not write) is left out of every shape, and so of the balance that decides
+between a plain row and a split row: its value appears as the uncategorized leg of 5.6.3 with
+`unbalancedTransaction`, never inside a category's amount. Two `A` splits that map to one Monize account
+are not a transfer from the account to itself: in the two-split shape each becomes its own unlinked row
+(as KMyMoney's ledger lists them), and in a split row the split on the parent's own account becomes its
+own row with an uncategorized leg balancing it; both raise `sameAccountTransferUnlinked`.
 
 #### 5.6.2 Parent of a split row
 
@@ -844,7 +850,8 @@ For a transaction with at least one split on a stock account:
   asset split `X` (5.7.6). A second split on a stock account is `multipleStockSplits` (5.7.6).
 - Activity from `S.action` and the sign of `S.shares`: `Buy` with shares >= 0 BuyShares, < 0
   SellShares; `Add` >= 0 AddShares, < 0 RemoveShares; `Dividend`, `Yield`, `IntIncome`, `Reinvest`,
-  `Split` as named; anything else, including empty, BuyShares (KMyMoney's default).
+  `Split` as named. A stock split with any other action, including empty, makes the transaction one
+  KMyMoney does not classify as an investment activity (5.7.7); only its editor defaults it to a buy.
 
 #### 5.7.2 Activity table
 
@@ -857,11 +864,16 @@ All amounts in the transaction commodity (the security's trading currency) unles
 | SellShares | SELL | `-S.shares` | `-S.value - sumF` | `sumF` | `(total + commission) / quantity` = `-S.value / -S.shares` | `A.shares` | null |
 | Dividend, Yield | DIVIDEND | null | `gross` (when no `I` split: `A.value + sumF`) | `sumF` | total | `A.shares` | first `I`'s category |
 | IntIncome | INTEREST | null | as DIVIDEND | `sumF` | total | `A.shares` | first `I`'s category |
-| ReinvestDividend | REINVEST | `S.shares` (positive) | `S.value + sumF` | `sumF` | `S.value / S.shares` at 10 places | `A.shares` when an `A` split exists, else none | first `I`'s category |
+| ReinvestDividend | REINVEST | `S.shares` (positive) | `S.value + sumF` | `sumF` | `S.value / S.shares` at 10 places | none when an `A` split pays cash out (that part is a DIVIDEND row of `A.value` with the cash and the same category, so the income recorded is all of it); `A.shares` for any other `A` split, else none | first `I`'s category |
 | AddShares | ADD_SHARES, or TRANSFER_IN when paired (5.7.4) | `S.shares` | 0 | 0 | null | none | null |
 | RemoveShares | REMOVE_SHARES, or TRANSFER_OUT when paired | `-S.shares` | 0 | 0 | null | none | null |
 | SplitShares, transaction of exactly one split | SPLIT | `S.shares` (the multiplier) | 0 | 0 | null | none | null |
 | `Split` action in a transaction of several splits | ADD_SHARES / REMOVE_SHARES of `S.shares` | | | | | | `splitActionInMultiSplit` (KMyMoney sums such shares as ordinary shares, R7.4) |
+
+A share count finer than the column's 8 places is rounded, `sharesRounded` (the split ratio of SPLIT has
+its own `stockSplitRatioRounded`). A BUY or SELL with no `A` split imports as recorded, with no cash, and
+raises `unbalancedTransaction`, as KMyMoney marks it. An amount whose integer part has more than the 16
+digits the columns store refuses the file (`kmyCorruptFile`).
 
 Common fields: `transactionDate` = post date; `status` from `A`'s reconcile flag, else `S`'s (5.6.5);
 `payeeHandle` = first non-empty payee of `S`, `A`, then the rest; `description` = `S.memo`, else
@@ -912,6 +924,10 @@ With no admissible price the amounts stay in the commodity with `securityCurrenc
 file's newest rate when one exists but is too old (`EUR->USD (2015-03-01)`).
 
 #### 5.7.4 Securities moved between brokerage accounts
+
+Every pair below is an inference from date, security and quantity alone and moves the giver's cost to
+the receiver, so each raises `securityTransferInferred` naming both brokerage accounts, letting the user
+tell a transfer from an unrelated sale and gift.
 
 KMyMoney has no transfer activity: a move is a RemoveShares in the source account and an AddShares in
 the destination (R7.5). After all rows are mapped, the exported `pairShareTransfers` from
@@ -1142,7 +1158,7 @@ transfer.
 
 Every code is appended to `MNY_WARNING_CODES` unless marked "existing"; the seven `payeeMatching*`,
 `payeeMatch*`, `payeeDefaultCategoryNotImported` and `payeeDetailsKept` codes of the payee amendment are
-appended after `holdingsReplayDiffers`, in the order of this table, followed by `crossCurrencyTransferRateMissing` and then the codes of the review fixes in this order: `tradeAmountsDiffer`, `investmentTransactionUnclassified`. A warning carries no English;
+appended after `holdingsReplayDiffers`, in the order of this table, followed by `crossCurrencyTransferRateMissing` and then the codes of the review fixes in this order: `tradeAmountsDiffer`, `investmentTransactionUnclassified`, `sameAccountTransferUnlinked`, `reconciliationHistoryNotImported`, `securityTransferInferred`, `sharesRounded`. A warning carries no English;
 the frontend renders `import.kmyWarnings.<code>` with the count (ICU plural). `row` is set when the
 warning is about one transaction (the review step lists the rows). The en sentences below are the copy
 WP4 writes; they avoid `--` (frontend rule).
@@ -1211,6 +1227,10 @@ WP4 writes; they avoid `--` (frontend rule).
 | mappedBalanceDiffers | 6.3, preview time | | {count} accounts would end with a balance that differs from the one computed from the file. Do not import until this is explained. |
 | holdingsReplayDiffers | 6.3, preview time | | {count} holdings would end with a share count that differs from the one computed from the file. |
 | investmentTransactionUnclassified | 5.7.7 | yes | {count, plural, one {# transaction with a share movement fits} other {# transactions with a share movement fit}} no investment activity. {count, plural, one {Its cash and categories were} other {Their cash and categories were}} imported as a split transaction and the shares as a purchase or sale at the value the file records. Check each.|
+| sameAccountTransferUnlinked | 5.6.2/5.6.4, two splits of one transaction on one Monize account | yes | {count, plural, one {# transaction moves} other {# transactions move}} money from an account to itself. Each side was imported as its own entry rather than as a transfer. |
+| reconciliationHistoryNotImported | 5.2, an account with `lastreconciled` or reconciliation history (detail: the latest statement date) | | {count, plural, one {# account has} other {# accounts have}} a reconciliation history in KMyMoney. Each entry keeps its reconciled state and date, but the statement dates and balances were not imported. |
+| securityTransferInferred | 5.7.4, every paired removal and addition (detail: the two brokerage accounts) | yes | {count, plural, one {# removal and addition of the same shares on the same day was} other {# removals and additions of the same shares on the same day were}} imported as a transfer between brokerage accounts, carrying the cost. Check that each was a transfer and not a sale and a gift. |
+| sharesRounded | 5.7.2, a share count finer than 8 places (detail: the file's figure) | yes | {count, plural, one {# share count has} other {# share counts have}} more than eight decimal places and {count, plural, one {was} other {were}} rounded to eight. |
 | tradeAmountsDiffer | 6.1, preview time, one per (holding, transaction); detail `transaction N: file X, mapped Y CUR` | | {count, plural, one {# trade was} other {# trades were}} mapped with a total and commission that do not add up to the share value the file records. Do not import until this is explained. |
 | balanceMismatch (existing, post-import) | | | {count} accounts ended with a balance that differs from the one computed from the KMyMoney file. |
 | holdingsMismatch (existing, post-import) | | | {count} holdings do not match the shares computed from your KMyMoney file. |

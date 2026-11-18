@@ -71,4 +71,8 @@ export const KMY_WARNING_CODES: readonly MnyWarningCode[] = [
   "crossCurrencyTransferRateMissing",
   "tradeAmountsDiffer",
   "investmentTransactionUnclassified",
+  "sameAccountTransferUnlinked",
+  "reconciliationHistoryNotImported",
+  "securityTransferInferred",
+  "sharesRounded",
 ];

@@ -21,9 +21,12 @@ import {
   isZero,
   mul,
   sign,
+  toDecimalString,
 } from "../model/kmy-rational";
 import {
+  QUANTITY_PLACES,
   amountNumber,
+  isExactAt,
   isIsoDate,
   quantityNumber,
   rateNumber,
@@ -206,6 +209,7 @@ class InvestmentMapper {
     leg: MappedSplit | null,
   ): MappedInvestmentTransaction {
     const { context } = this;
+    this.checkShares(transaction, split.shares);
     const conversion = this.conversion(transaction, holding, commodity);
     const money = (value: Rational): number =>
       amountNumber(value, conversion.currency, context.coinDecimals);
@@ -423,7 +427,7 @@ class InvestmentMapper {
       ...(asset ? [asset] : []),
       ...transaction.splits,
     ];
-    const row: MappedInvestmentTransaction = {
+    let row: MappedInvestmentTransaction = {
       id: this.nextId(),
       handle: transaction.ordinal,
       accountKey: holding.pair.brokerageKey,
@@ -457,6 +461,41 @@ class InvestmentMapper {
       this.collector.categories.add(category);
     }
 
+    // m6: a reinvestment that also pays cash out is two things: the shares
+    // bought with part of the income (REINVEST, no cash) and the rest paid
+    // out (DIVIDEND, with the cash), so the income recorded is all of it.
+    let payout: MappedInvestmentTransaction | null = null;
+    if (
+      activity === "Reinvest" &&
+      asset !== null &&
+      row.cashAccountKey !== null &&
+      row.cashAmount > 0
+    ) {
+      const paid = money(convert(asset.value));
+      payout = {
+        ...row,
+        id: this.nextId(),
+        action: InvestmentAction.DIVIDEND,
+        quantity: null,
+        price: derivePriceFromTotal({
+          action: InvestmentAction.DIVIDEND,
+          totalAmount: paid,
+          quantity: null,
+          commission: 0,
+        }),
+        commission: 0,
+        totalAmount: paid,
+        tagHandles: [],
+      };
+      row = {
+        ...row,
+        cashAccountKey: null,
+        fundingAccountKey: null,
+        cashAmount: 0,
+        exchangeRate: 1,
+      };
+    }
+
     const companionRows = companions.map(
       (companion): MappedInvestmentTransaction => ({
         ...row,
@@ -485,7 +524,20 @@ class InvestmentMapper {
         ? { ...row, linkedInvestmentId: companionRows[0].id }
         : row,
       ...companionRows,
+      ...(payout ? [payout] : []),
     );
+    // m7: KMyMoney marks a trade with no cash split unbalanced; the rows
+    // import as recorded, and the user is told.
+    if (
+      asset === null &&
+      (action === InvestmentAction.BUY || action === InvestmentAction.SELL)
+    ) {
+      this.warn("unbalancedTransaction", transaction, String(row.totalAmount));
+    }
+    if (activity !== "Split") {
+      // A split's shares are a ratio, which stockSplitRatioRounded covers.
+      this.checkShares(transaction, shares);
+    }
 
     // Shapes that add rows beside the trade (spec 5.7.6).
     if (INCOME_ACTIVITIES.has(activity) && !isZero(shares)) {
@@ -516,6 +568,17 @@ class InvestmentMapper {
     this.extraAssets(transaction, d, withCash ? null : asset);
   }
 
+  /** m3: a share count finer than the column's 8 places is rounded, and said so. */
+  private checkShares(transaction: KmyTransaction, shares: Rational): void {
+    if (!isExactAt(shares, QUANTITY_PLACES)) {
+      this.warn(
+        "sharesRounded",
+        transaction,
+        toDecimalString(shares, QUANTITY_PLACES + 4),
+      );
+    }
+  }
+
   /** Spec 5.7.6: a further stock split becomes added or removed shares in its own holding. */
   private extraStock(
     transaction: KmyTransaction,
@@ -528,6 +591,7 @@ class InvestmentMapper {
       return;
     }
     const { holding } = resolved;
+    this.checkShares(transaction, split.shares);
     this.rows.push({
       ...main,
       id: this.nextId(),
@@ -628,6 +692,31 @@ export function* mapKmyInvestmentsSteps(
       imported: importedSplits,
     }),
   );
+  // m5: a pair is inferred from date, security and quantity alone, and moves
+  // the giver's basis to the receiver, so each one is named.
+  const nameOf = new Map(
+    context.mapping.mapped.accounts.map((account) => [
+      account.key,
+      account.name,
+    ]),
+  );
+  const byId = new Map(paired.transactions.map((row) => [row.id, row]));
+  for (const row of paired.transactions) {
+    if (row.action !== InvestmentAction.TRANSFER_OUT) {
+      continue;
+    }
+    const partner = row.linkedInvestmentId
+      ? byId.get(row.linkedInvestmentId)
+      : undefined;
+    warnings.push({
+      code: "securityTransferInferred",
+      subject: `transaction ${row.handle}`,
+      detail: `${nameOf.get(row.accountKey) ?? row.accountKey} -> ${
+        partner ? (nameOf.get(partner.accountKey) ?? partner.accountKey) : "?"
+      }`,
+      row: warningRowForInvestment(row),
+    });
+  }
   for (const row of paired.transactions) {
     if (row.action === InvestmentAction.ADD_SHARES) {
       warnings.push({

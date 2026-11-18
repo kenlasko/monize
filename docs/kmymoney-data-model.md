@@ -688,7 +688,7 @@ same postdate **and** id collapse to one (RD `readTransactions` map key).
 | Attribute | Default if absent | Meaning |
 |---|---|---|
 | `id` | (ignored) | `S0001`… renumbered on load (§3.4) |
-| `account` | n/a | account id. A split with an empty account is **dropped** (RD `readSplits`). An unknown or standard id makes the load fail |
+| `account` | n/a | account id. An id not among the accounts read so far makes the load fail, an empty one included: `readSplit` checks `m_validAccountIds` before `readSplits` could reach its "Dropped split" branch for an empty id, which is therefore unreachable (RD `readSplit`, `readSplits`). A standard id makes the load fail |
 | `payee` | `""` | payee id. **Payees are per split**, and empty payee is normal (opening balances, many category splits) |
 | `value` | 0 | amount in the **transaction commodity** |
 | `shares` | 0 | amount in the **split account's commodity** (currency, or number of shares for Stock accounts). **This is what balances sum** (§15) |

@@ -100,7 +100,12 @@ function mapOne(
   // An asset plus one category is a plain row when the values balance; when
   // they do not, KMyMoney marks it erroneous and the difference becomes an
   // uncategorized leg of a split row (spec 5.6.3, the last row of 5.6.7).
-  const balanced = isZero(sum(transaction.splits.map((split) => split.value)));
+  // m8: over the splits this mapping uses. A split on an account in no class
+  // (KMyMoney writes types 0 to 16 only) is left out, so its value shows as
+  // an unbalanced difference rather than being absorbed by the category.
+  const balanced = isZero(
+    sum([...assets, ...categories].map((split) => split.value)),
+  );
   if (
     assets.length === 1 &&
     (categories.length === 0 || (categories.length === 1 && balanced))
@@ -156,6 +161,20 @@ function transferPair(
     return;
   }
   const [first, second] = assets;
+  if (
+    context.mapping.keyById.get(first.account) ===
+    context.mapping.keyById.get(second.account)
+  ) {
+    // m1: two splits on one Monize account. A transfer from an account to
+    // itself is not one, so each split is its own row, as KMyMoney's ledger
+    // lists them, and the user is told.
+    collector.warn("sameAccountTransferUnlinked", transaction);
+    collector.rows.push(
+      ordinaryRow(transaction, first, context, collector),
+      ordinaryRow(transaction, second, context, collector),
+    );
+    return;
+  }
   const rows = [first, second].map((split) =>
     ordinaryRow(transaction, split, context, collector, { isTransfer: true }),
   );
@@ -320,7 +339,18 @@ function splitRow(
         categories.includes(split) ||
         investments.includes(split)),
   );
-  let unbalanced = !isZero(sum(transaction.splits.map((split) => split.value)));
+  let unbalanced = !isZero(
+    sum(
+      transaction.splits
+        .filter(
+          (split) =>
+            assets.includes(split) ||
+            categories.includes(split) ||
+            investments.includes(split),
+        )
+        .map((split) => split.value),
+    ),
+  );
 
   const legUnits = others.map((other): bigint => {
     const exact = legRational(
@@ -400,6 +430,24 @@ function splitRow(
     }
     const counterpartKey = context.mapping.keyById.get(other.account);
     const isAsset = assets.includes(other);
+    if (isAsset && counterpartKey === parentKey) {
+      // m1: a split on the parent's own account is its own row, not a
+      // transfer to itself; the leg that balances it carries no category.
+      collector.warn("sameAccountTransferUnlinked", transaction);
+      counterparts.push(ordinaryRow(transaction, other, context, collector));
+      legs.push({
+        id: randomUUID(),
+        kind: SplitKind.CATEGORY,
+        categoryHandle: null,
+        transferAccountKey: null,
+        linkedTransactionId: null,
+        investmentHandle: null,
+        amount: legAmount,
+        memo,
+        tagHandles: collector.tagHandles([other]),
+      });
+      return;
+    }
     if (isAsset && counterpartKey !== undefined) {
       const counterpart = ordinaryRow(transaction, other, context, collector, {
         isTransfer: true,
