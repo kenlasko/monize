@@ -3,7 +3,7 @@ title: "Chrome on Android shows too-many-retries on the LAN address when it lack
 author: Ken
 date: 2026-11-18
 branch: feat/desktop-lan-access
-cost: { minutes: 20, tokens: 119085 }
+cost: { minutes: 29, tokens: 176262 }
 id: l-3e33e2eb
 scope: repo
 status: active
@@ -27,6 +27,7 @@ If Firefox for Android loads the LAN site with no warning page but the padlock s
 The user confirmed Chrome on Android already had the local network permission. Clearing Chrome's storage (Android Settings > Apps > Chrome > Storage > Clear storage) fixed ERR_TOO_MANY_RETRIES, just as it fixed Firefox's "not secure" padlock. So the -36 (ERR_LOCAL_NETWORK_PERMISSION_MISSING) loop in the net-export log most likely came from a per-site local-network decision Chrome had stored earlier, not from the OS-level permission. The setup window and the Windows user guide now tell users not to accept the certificate warning, and to clear the browser's storage if they already did.
 
 In the code: the strings warningHeading, warningBody and warningRecovery in desktop/src/shell/lan-strings.ts, and "Setting Up a Device" in website/docs/windows.md.
+A spec that checks whether a certificate chain is trusted should connect with `rejectUnauthorized: true` and treat the socket's "error" event as the refusal. Node runs the same chain and hostname checks either way. With validation on, a refused handshake emits "error" carrying the verify error, instead of "secureConnect" with `authorized` false. The test therefore observes the same outcome.
 
 ## Tried and ruled out
 - Faults in `desktop/src/lan/lan-proxy.ts` (first-byte sniff, HTTP/1.1 only, clientError destroy): no TCP connection ever reached the PC, so no TLS handshake happened.
@@ -37,6 +38,9 @@ In the code: the strings warningHeading, warningBody and warningRecovery in desk
 - Mixed content: the login page loads only same-origin files, and its security policy blocks http://.
 - Whether the root is built in: GeckoView's secure flag doesn't depend on it.
 - Clearing browsing data, and private tabs: the exception check uses the normal-mode store with empty origin attributes, so private tabs see the same exception. None of GeckoView's clear-data categories except ALL includes certificate exceptions, and Fenix's "Delete browsing data" doesn't use ALL.
+Connecting with `rejectUnauthorized: false` and reading `socket.authorized`: CodeQL's js/disabling-certificate-validation rule (high severity) flags it even in a `.spec.ts`, and it fails the CodeQL check on the PR.
+
+In the code: the `handshake` helper in desktop/src/lan/certificate-authority.spec.ts.
 
 ## Watch out
 - Chrome's error page shows only TOO_MANY_RETRIES. The real error (-36, ERR_LOCAL_NETWORK_PERMISSION_MISSING) appears only in a chrome://net-export log.
