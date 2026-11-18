@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import ImportPage from './page';
 
 // Mock next/image
@@ -124,6 +124,16 @@ vi.mock('@/lib/categoryUtils', () => ({
 
 vi.mock('@/lib/errors', () => ({
   getErrorMessage: (error: any, fallback: string) => fallback,
+}));
+
+const mockKmyParse = vi.fn();
+vi.mock('@/lib/import-kmy', () => ({
+  kmyImportApi: {
+    parse: (...args: any[]) => mockKmyParse(...args),
+    start: vi.fn(),
+    getJob: vi.fn(),
+    discardStagedFile: vi.fn(),
+  },
 }));
 
 // Mock child components with data-testid markers
@@ -1138,6 +1148,67 @@ describe('ImportPage', () => {
       await waitFor(() => {
         expect(screen.getByTestId('upload-step')).toBeInTheDocument();
       });
+    });
+  });
+
+  describe('KMyMoney files', () => {
+    const kmyPreview = {
+      stagedFileId: 'staged-kmy',
+      filename: 'budget.kmy',
+      sizeBytes: 10,
+      era: 'unknown',
+      passwordProtected: false,
+      baseCurrency: 'USD',
+      accounts: [],
+      bills: [],
+      counts: { tagsInFile: 0, billsDetected: 0, billsSkipped: 0 },
+      fileCounts: { bills: 0 },
+      missingTables: [],
+      missingFields: [],
+      warnings: [],
+      options: {
+        wipeExistingData: false,
+        referencedOnlyPayees: true,
+        referencedOnlyCategories: true,
+        importClosedAccounts: true,
+        importPrices: true,
+        importExchangeRates: true,
+        accounts: [],
+        bills: [],
+      },
+      sourceFormat: 'kmy',
+      kmyFile: { container: 'gzip', fixVersion: 12, appVersion: null, lastModified: null },
+    };
+
+    it('opens the KMyMoney review step, with no password dialog', async () => {
+      mockKmyParse.mockResolvedValue(kmyPreview);
+      render(<ImportPage />);
+
+      await act(async () => {
+        await uploadFile('bytes', 'budget.kmy');
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('heading', { name: 'Review your KMyMoney file' }),
+        ).toBeInTheDocument();
+      });
+      expect(screen.getByText(/KMyMoney file, format version 12/)).toBeInTheDocument();
+      expect(screen.queryByText(/password/i)).not.toBeInTheDocument();
+    });
+
+    it('shows the KMyMoney failure panel text when the file is refused', async () => {
+      mockKmyParse.mockRejectedValue(
+        Object.assign(new Error('refused'), { response: { data: { errorCode: 'kmyEncryptedFile', message: 'encrypted' } } }),
+      );
+      render(<ImportPage />);
+
+      await act(async () => {
+        await uploadFile('bytes', 'budget.kmy');
+      });
+
+      await waitFor(() => expect(mockKmyParse).toHaveBeenCalled());
+      expect(screen.getByTestId('upload-step')).toBeInTheDocument();
     });
   });
 });

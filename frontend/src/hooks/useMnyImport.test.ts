@@ -688,3 +688,55 @@ describe('useMnyImport', () => {
     });
   });
 });
+
+describe('useMnyImport with another client', () => {
+  const fake = {
+    parse: vi.fn(),
+    start: vi.fn(),
+    getJob: vi.fn(),
+    discardStagedFile: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fake.parse.mockResolvedValue(preview({ filename: 'budget.kmy' }));
+    fake.start.mockResolvedValue(job());
+    fake.getJob.mockResolvedValue(job());
+  });
+
+  afterEach(() => vi.useRealTimers());
+
+  it('uploads, starts and polls through the client it was given, never the Money one', async () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useMnyImport(fake));
+
+    await act(async () => {
+      expect(await result.current.upload(new File(['x'], 'budget.kmy'))).toBe(true);
+    });
+    await act(async () => {
+      await result.current.start();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+
+    expect(fake.parse).toHaveBeenCalledWith(expect.any(File), undefined);
+    expect(fake.start).toHaveBeenCalledWith('staged-1', expect.anything(), undefined);
+    expect(fake.getJob).toHaveBeenCalledWith('job-1');
+    expect(mockedApi.parse).not.toHaveBeenCalled();
+    expect(mockedApi.start).not.toHaveBeenCalled();
+    expect(mockedApi.getJob).not.toHaveBeenCalled();
+  });
+
+  it('reports a refused file as an upload error and never opens the password prompt', async () => {
+    fake.parse.mockRejectedValue(apiError('kmyEncryptedFile', 'encrypted'));
+    const { result } = renderHook(() => useMnyImport(fake));
+
+    await act(async () => {
+      expect(await result.current.upload(new File(['x'], 'budget.kmy'))).toBe(false);
+    });
+
+    expect(result.current.passwordPrompt).toBeNull();
+    expect(result.current.uploadError).toEqual({ code: 'kmyEncryptedFile', message: 'encrypted' });
+  });
+});

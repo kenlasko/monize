@@ -97,6 +97,7 @@ describe("limitBodyStream", () => {
 describe("LARGE_UPLOAD_ROUTES", () => {
   it("names exactly the routes the backend accepts large bodies on", () => {
     expect(limitFor("/api/v1/import/mny/parse")).toBe(mnyImportLimitBytes());
+    expect(limitFor("/api/v1/import/kmy/parse")).toBe(mnyImportLimitBytes());
     expect(limitFor("/api/v1/backup/restore")).toBe(mnyImportLimitBytes());
     expect(limitFor("/api/v1/ai/query")).toBe(30 * MIB);
     expect(limitFor("/api/v1/ai/query/stream")).toBe(30 * MIB);
@@ -108,6 +109,8 @@ describe("LARGE_UPLOAD_ROUTES", () => {
     "/api/v1/auth/login",
     "/api/v1/backup/restore/ticket",
     "/api/v1/import/mny/start",
+    "/api/v1/import/kmy/start",
+    "/api/v1/import/kmy/jobs/0c1e",
     "/api/v1/ai/relay/query",
     "/api/v1/transactions/0c1e/attachments/extra",
     "/api/v1/mcp",

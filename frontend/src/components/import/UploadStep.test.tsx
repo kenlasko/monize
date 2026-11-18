@@ -3,6 +3,7 @@ import { render } from '@/test/render';
 import { screen, fireEvent } from '@testing-library/react';
 import { UploadStep } from './UploadStep';
 import { Account } from '@/types/account';
+import { KMY_FORMAT } from '@/lib/binary-import-format';
 
 const toastError = vi.hoisted(() => vi.fn());
 vi.mock('react-hot-toast', () => ({ default: { error: toastError } }));
@@ -141,7 +142,7 @@ describe('UploadStep', () => {
     render(<UploadStep preselectedAccount={undefined} isLoading={false} onFileSelect={onFileSelect} onFilesDrop={onFilesDrop} />);
 
     const input = document.getElementById('import-file') as HTMLInputElement;
-    expect(input.accept).toBe('.qif,.qmtf,.ofx,.qfx,.csv,.mny');
+    expect(input.accept).toBe('.qif,.qmtf,.ofx,.qfx,.csv,.mny,.kmy,.xml');
     expect(input.multiple).toBe(true);
   });
 
@@ -342,5 +343,51 @@ describe('UploadStep', () => {
 
       expect(screen.queryByText('Drop to import')).not.toBeInTheDocument();
     });
+  });
+});
+
+describe('UploadStep with a KMyMoney file', () => {
+  const onFileSelect = vi.fn();
+  const onFilesDrop = vi.fn();
+
+  it('names KMyMoney in the supported formats', () => {
+    render(<UploadStep preselectedAccount={undefined} isLoading={false} onFileSelect={onFileSelect} onFilesDrop={onFilesDrop} />);
+
+    expect(screen.getAllByText(/KMyMoney \(\.kmy, \.xml\)/).length).toBeGreaterThan(0);
+  });
+
+  it('shows the KMyMoney heading, its own message and the KMyMoney guide link', () => {
+    render(
+      <UploadStep
+        preselectedAccount={undefined}
+        isLoading={false}
+        onFileSelect={onFileSelect}
+        onFilesDrop={onFilesDrop}
+        binaryErrorFormat={KMY_FORMAT}
+        mnyError={{ code: 'kmyEncryptedFile', message: 'That KMyMoney file is encrypted.' }}
+      />,
+    );
+
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('That KMyMoney file could not be opened');
+    expect(alert).toHaveTextContent('That KMyMoney file is encrypted.');
+    expect(screen.getByRole('link', { name: 'Learn more' }).getAttribute('href')).toContain(
+      'troubleshooting-the-kmymoney-import',
+    );
+  });
+
+  it('falls back to the KMyMoney damaged-file sentence when the backend sent none', () => {
+    render(
+      <UploadStep
+        preselectedAccount={undefined}
+        isLoading={false}
+        onFileSelect={onFileSelect}
+        onFilesDrop={onFilesDrop}
+        binaryErrorFormat={KMY_FORMAT}
+        mnyError={{ message: '' }}
+      />,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/damaged or incomplete/);
   });
 });

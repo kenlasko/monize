@@ -7,7 +7,7 @@ import { Account } from '@/types/account';
 import { formatAccountType } from '@/lib/account-utils';
 import { HelpLink } from '@/components/help/HelpLink';
 import type { DocsLink } from '@/lib/docs-links';
-import { mnyErrorDocsLink } from '@/lib/import-mny-error-docs';
+import { BinaryImportFormat, MNY_FORMAT } from '@/lib/binary-import-format';
 
 interface UploadStepProps {
   preselectedAccount: Account | undefined;
@@ -22,6 +22,8 @@ interface UploadStepProps {
    * away while the user is still reading them.
    */
   mnyError?: { code?: string; message: string } | null;
+  /** The format `mnyError` came from, for its heading, fallback and guide link; Money when omitted. */
+  binaryErrorFormat?: BinaryImportFormat;
 }
 
 function docsLink(link: DocsLink) {
@@ -59,6 +61,7 @@ export function UploadStep({
   onFileSelect,
   onFilesDrop,
   mnyError = null,
+  binaryErrorFormat = MNY_FORMAT,
 }: UploadStepProps) {
   const t = useTranslations('import');
   const tc = useTranslations('common');
@@ -162,14 +165,19 @@ export function UploadStep({
             className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
           >
             <p className="text-sm font-semibold text-red-800 dark:text-red-300">
-              {t('upload.mnyFailedHeading')}
+              {t(binaryErrorFormat.copy.uploadFailedHeading)}
             </p>
             <p className="mt-1 text-sm text-red-700 dark:text-red-300">
-              {mnyError.message || t('mnyErrors.mnyUnreadableDatabase')}
+              {mnyError.message ||
+                t(
+                  binaryErrorFormat.errorKey(
+                    binaryErrorFormat.uploadFallbackErrorCode,
+                  ),
+                )}
             </p>
             <p className="mt-2 text-sm">
               <HelpLink
-                link={mnyErrorDocsLink(mnyError.code)}
+                link={binaryErrorFormat.errorDocsLink(mnyError.code)}
                 className="font-medium text-red-800 underline hover:text-red-900 dark:text-red-300 dark:hover:text-red-100"
               >
                 {t('mnyImporting.learnMore')}
@@ -192,7 +200,7 @@ export function UploadStep({
           <input
             ref={inputRef}
             type="file"
-            accept=".qif,.qmtf,.ofx,.qfx,.csv,.mny"
+            accept=".qif,.qmtf,.ofx,.qfx,.csv,.mny,.kmy,.xml"
             multiple
             onChange={onFileSelect}
             className="hidden"

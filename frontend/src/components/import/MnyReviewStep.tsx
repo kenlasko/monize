@@ -7,7 +7,11 @@ import { HelpLink } from '@/components/help/HelpLink';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { formatAccountType } from '@/lib/account-utils';
 import { MnyImportOptionsInput, MnyPreview } from '@/lib/import-mny';
-import { mnyErrorDocsLink } from '@/lib/import-mny-error-docs';
+import {
+  BinaryImportFormat,
+  MNY_FORMAT,
+  isStagedFileMissing,
+} from '@/lib/binary-import-format';
 import { MnyBillsPanel } from './MnyBillsPanel';
 import { MnyWarningsPanel } from './MnyWarningsPanel';
 import { Th } from '@/components/ui/Table';
@@ -34,6 +38,8 @@ interface MnyReviewStepProps {
   ) => void;
   onBack: () => void;
   onImport: () => void;
+  /** Which file format this is; Money when omitted. */
+  format?: BinaryImportFormat;
 }
 
 /**
@@ -62,6 +68,7 @@ export function MnyReviewStep({
   onSetOption,
   onBack,
   onImport,
+  format = MNY_FORMAT,
 }: MnyReviewStepProps) {
   const t = useTranslations('import');
   const tc = useTranslations('common');
@@ -78,18 +85,22 @@ export function MnyReviewStep({
     // warnings panel, and at max-w-4xl every one of them wraps.
     <div className="max-w-6xl mx-auto">
       <h2 className="text-lg font-semibold text-foreground mb-1">
-        {t('mnyReview.heading')}
+        {t(format.copy.reviewHeading)}
       </h2>
       <p className="text-sm text-muted-foreground mb-6">
-        {t('mnyReview.fileSummary', {
+        {t(format.copy.fileSummary, {
           filename: preview.filename,
-          era: t(`mnyReview.era.${preview.era}`),
+          // Each format's sentence names only what it has: a Money era, or a
+          // KMyMoney file-format version.
+          ...(format.showEra
+            ? { era: t(`mnyReview.era.${preview.era}`) }
+            : { fixVersion: preview.kmyFile?.fixVersion ?? 0 }),
           currency: preview.baseCurrency,
         })}
       </p>
 
       {/* What this Money version could not supply */}
-      {preview.missingTables.length > 0 && (
+      {format.showMissingTables && preview.missingTables.length > 0 && (
         <div className="mb-6 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
           <p className="text-sm text-amber-800 dark:text-amber-300">
             {t('mnyReview.missingTables', {
@@ -129,7 +140,7 @@ export function MnyReviewStep({
         />
         {counts.tagsInFile > 0 && (
           <SummaryTile
-            label={t('mnyReview.counts.tags')}
+            label={t(format.copy.countsTags)}
             value={String(counts.tagsToCreate)}
             detail={t('mnyReview.counts.ofTotal', { total: counts.tagsInFile })}
           />
@@ -174,9 +185,9 @@ export function MnyReviewStep({
       {fileCounts.bills > 0 && (
         <div className="mb-6">
           <SummaryTile
-            label={t('mnyReview.counts.bills')}
+            label={t(format.copy.countsBills)}
             value={String(counts.billsDetected)}
-            detail={t('mnyReview.counts.billsOfRows', {
+            detail={t(format.copy.countsBillsOfRows, {
               rows: fileCounts.bills,
             })}
           />
@@ -281,7 +292,7 @@ export function MnyReviewStep({
                       )}
                       {account.name !== account.moneyName && (
                         <span className="block text-xs text-muted-foreground">
-                          {t('mnyReview.table.renamedFrom', {
+                          {t(format.copy.renamedFrom, {
                             name: account.moneyName,
                           })}
                         </span>
@@ -338,10 +349,13 @@ export function MnyReviewStep({
       <MnyBillsPanel
         bills={preview.bills}
         selectedHandles={selectedBillHandles}
-        unsupported={preview.missingTables.includes('BILL')}
+        unsupported={
+          format.showMissingTables && preview.missingTables.includes('BILL')
+        }
         skipped={counts.billsSkipped}
         onToggleBill={onToggleBill}
         onSetAllBills={onSetAllBills}
+        format={format}
       />
 
       {/* Options */}
@@ -352,13 +366,13 @@ export function MnyReviewStep({
         <div className="space-y-2">
           <OptionCheckbox
             label={t('mnyReview.options.referencedOnlyPayees')}
-            hint={t('mnyReview.options.referencedOnlyPayeesHint')}
+            hint={t(format.copy.referencedOnlyPayeesHint)}
             checked={options.referencedOnlyPayees ?? true}
             onChange={(value) => onSetOption('referencedOnlyPayees', value)}
           />
           <OptionCheckbox
             label={t('mnyReview.options.referencedOnlyCategories')}
-            hint={t('mnyReview.options.referencedOnlyCategoriesHint')}
+            hint={t(format.copy.referencedOnlyCategoriesHint)}
             checked={options.referencedOnlyCategories ?? true}
             onChange={(value) => onSetOption('referencedOnlyCategories', value)}
           />
@@ -370,7 +384,7 @@ export function MnyReviewStep({
           />
           <OptionCheckbox
             label={t('mnyReview.options.importPrices')}
-            hint={t('mnyReview.options.importPricesHint')}
+            hint={t(format.copy.importPricesHint)}
             checked={options.importPrices ?? true}
             onChange={(value) => onSetOption('importPrices', value)}
           />
@@ -400,7 +414,7 @@ export function MnyReviewStep({
                 {t('mnyReview.options.wipeExistingData')}
               </span>
               <span className="block text-xs text-muted-foreground">
-                {t('mnyReview.options.wipeExistingDataHint')}
+                {t(format.copy.wipeExistingDataHint)}
               </span>
             </span>
           </label>
@@ -416,6 +430,7 @@ export function MnyReviewStep({
       <MnyWarningsPanel
         warnings={preview.warnings}
         heading={t('mnyReview.warningsHeading')}
+        format={format}
       />
 
       {/*
@@ -432,17 +447,17 @@ export function MnyReviewStep({
             {t('mnyReview.startFailedHeading')}
           </h3>
           <p className="mt-1 text-sm text-red-700 dark:text-red-300">
-            {startError.message || t('mnyErrors.mnyImportFailed')}
+            {startError.message || t(format.errorKey('mnyImportFailed'))}
           </p>
           <p className="mt-2 text-sm">
             <HelpLink
-              link={mnyErrorDocsLink(startError.code)}
+              link={format.errorDocsLink(startError.code)}
               className="font-medium text-red-800 underline hover:text-red-900 dark:text-red-300 dark:hover:text-red-100"
             >
               {t('mnyImporting.learnMore')}
             </HelpLink>
           </p>
-          {startError.code === 'mnyStagedFileMissing' && (
+          {isStagedFileMissing(startError.code) && (
             <Button
               variant="outline"
               className="mt-3"

@@ -246,6 +246,8 @@ describe('service worker share-target mirror', () => {
       { name: 'a.csv', type: 'text/csv; charset=utf-8' },
       { name: 'photo.PNG', type: '' },
       { name: 'profile.mny', type: '' },
+      { name: 'budget.kmy', type: '' },
+      { name: 'budget.xml', type: 'text/xml' },
       { name: 'notes.txt', type: 'text/plain' },
       { name: 'logo.svg', type: 'image/svg+xml' },
     ];
@@ -336,6 +338,21 @@ describe('service worker share-target handling', () => {
     ).toBe(false);
     // The supported sibling still lands: one refusal is not a failed share.
     expect(index.files[1].key).toBe(`${SHARE_KEY_PREFIX}${id}/file/1`);
+  });
+
+  it('refuses a KMyMoney file like a Money one: the share target takes no import files', async () => {
+    const sw = loadServiceWorker();
+
+    const response = await sw.dispatchFetch(
+      sw.shareRequest([
+        { name: 'budget.kmy', type: 'application/octet-stream' },
+        { name: 'budget.xml', type: 'text/xml' },
+      ]),
+    );
+    const index = await sw.readIndex(idFromRedirect(response));
+
+    expect(index.files[0]).toMatchObject({ name: 'budget.kmy', reason: 'unsupported' });
+    expect(index.files[0].key).toBeUndefined();
   });
 
   it('refuses an oversize file without storing it', async () => {

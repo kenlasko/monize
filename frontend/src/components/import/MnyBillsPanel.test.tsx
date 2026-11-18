@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
 import { MnyBillsPanel } from './MnyBillsPanel';
+import { KMY_FORMAT } from '@/lib/binary-import-format';
 import type { MnyPreviewBill } from '@/lib/import-mny';
 
 function bill(overrides: Partial<MnyPreviewBill> = {}): MnyPreviewBill {
@@ -127,5 +128,30 @@ describe('MnyBillsPanel', () => {
     expect(
       screen.getByText(/2 bill series were missing a template/),
     ).toBeInTheDocument();
+  });
+});
+
+describe('MnyBillsPanel with a KMyMoney import', () => {
+  const props = {
+    bills: [bill()],
+    selectedHandles: new Set<number>([7]),
+    unsupported: false,
+    skipped: 2,
+    onToggleBill: vi.fn(),
+    onSetAllBills: vi.fn(),
+    format: KMY_FORMAT,
+  };
+
+  it('uses the scheduled-transactions heading and the KMyMoney explainer', () => {
+    render(<MnyBillsPanel {...props} />);
+
+    expect(screen.getByText('Scheduled transactions to create (1)')).toBeInTheDocument();
+    expect(screen.getByText(/These are the schedules KMyMoney still has active/)).toBeInTheDocument();
+  });
+
+  it('counts skipped schedules, not bill series', () => {
+    render(<MnyBillsPanel {...props} />);
+
+    expect(screen.getByText('2 schedules could not be imported.')).toBeInTheDocument();
   });
 });

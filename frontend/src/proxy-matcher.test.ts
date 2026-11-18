@@ -27,6 +27,7 @@ describe("proxy matcher", () => {
 
   it.each([
     "/api/v1/import/mny/parse",
+    "/api/v1/import/kmy/parse",
     "/api/v1/backup/restore",
     "/api/v1/ai/query",
     "/api/v1/ai/query/stream",
@@ -43,6 +44,8 @@ describe("proxy matcher", () => {
     "/api/v1/auth/login",
     "/api/v1/backup/restore/ticket",
     "/api/v1/import/mny/start",
+    "/api/v1/import/kmy/start",
+    "/api/v1/import/kmy/parse/extra",
     "/api/v1/transactions/0c1e/attachments/x",
     "/api/v1/ai/relay/query",
     "/api/v1/email-receipts/mailbox",

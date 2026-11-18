@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@/test/render';
 
+import toast from 'react-hot-toast';
 import { useImportWizard } from './useImportWizard';
 
 // --- Mocks ---
@@ -99,6 +100,17 @@ vi.mock('@/lib/import-mny', () => ({
   mnyImportApi: {
     parse: (...args: any[]) => mockMnyParse(...args),
     start: (...args: any[]) => mockMnyStart(...args),
+    getJob: vi.fn(),
+    discardStagedFile: vi.fn(),
+  },
+}));
+
+const mockKmyParse = vi.fn();
+const mockKmyStart = vi.fn();
+vi.mock('@/lib/import-kmy', () => ({
+  kmyImportApi: {
+    parse: (...args: any[]) => mockKmyParse(...args),
+    start: (...args: any[]) => mockKmyStart(...args),
     getJob: vi.fn(),
     discardStagedFile: vi.fn(),
   },
@@ -2198,5 +2210,139 @@ describe('useImportWizard - handleFiles (Web Share Target hand-off)', () => {
     });
 
     expect(result.current.importFiles.map((f) => f.fileName)).toEqual(viaInput);
+  });
+});
+
+describe('useImportWizard - KMyMoney files', () => {
+  const toastErrorSpy = vi.spyOn(toast, 'error').mockImplementation(() => '');
+  beforeEach(() => toastErrorSpy.mockClear());
+  const kmyPreview = {
+    stagedFileId: 'staged-kmy',
+    filename: 'budget.kmy',
+    sizeBytes: 1024,
+    era: 'unknown',
+    passwordProtected: false,
+    baseCurrency: 'USD',
+    accounts: [],
+    bills: [],
+    counts: {},
+    fileCounts: {},
+    missingTables: [],
+    missingFields: [],
+    warnings: [],
+    options: {
+      wipeExistingData: false,
+      referencedOnlyPayees: true,
+      referencedOnlyCategories: true,
+      importClosedAccounts: true,
+      importPrices: true,
+      importExchangeRates: true,
+      accounts: [],
+      bills: [],
+    },
+    sourceFormat: 'kmy',
+    kmyFile: { container: 'gzip', fixVersion: 12, appVersion: null, lastModified: null },
+  };
+
+  async function renderWizard() {
+    mockGetAllAccounts.mockResolvedValue([baseAccount()]);
+    mockKmyParse.mockResolvedValue(kmyPreview);
+    mockKmyStart.mockResolvedValue({
+      id: 'job-k', status: 'running', progress: null, result: null,
+      errorKey: null, retryable: false, startedAt: null, completedAt: null,
+    });
+    const { result } = renderHook(() => useImportWizard());
+    await waitFor(() => expect(result.current.accounts).toHaveLength(1));
+    return result;
+  }
+
+  it.each(['budget.kmy', 'BUDGET.KMY', 'budget.xml', 'budget.anon.xml'])(
+    'routes %s to the KMyMoney importer, not the Money or text paths',
+    async (name) => {
+      const result = await renderWizard();
+
+      await act(async () => {
+        await result.current.handleFileSelect(fileEvent([makeFile(name, 'binary')]));
+      });
+
+      expect(mockKmyParse).toHaveBeenCalledTimes(1);
+      expect(mockMnyParse).not.toHaveBeenCalled();
+      expect(mockParseQif).not.toHaveBeenCalled();
+      expect(result.current.binaryFormat.id).toBe('kmy');
+      expect(result.current.binary).toBe(result.current.kmy);
+      expect(result.current.step).toBe('mnyReview');
+      expect(result.current.fileType).toBe('kmy');
+    },
+  );
+
+  it('keeps a .mny on the Money importer', async () => {
+    mockMnyParse.mockResolvedValue({ ...kmyPreview, filename: 'a.mny' });
+    const result = await renderWizard();
+
+    await act(async () => {
+      await result.current.handleFileSelect(fileEvent([makeFile('a.mny', 'binary')]));
+    });
+
+    expect(mockMnyParse).toHaveBeenCalledTimes(1);
+    expect(mockKmyParse).not.toHaveBeenCalled();
+    expect(result.current.binaryFormat.id).toBe('mny');
+    expect(result.current.binary).toBe(result.current.mny);
+  });
+
+  it('refuses several KMyMoney files with the one-file toast', async () => {
+    const result = await renderWizard();
+
+    await act(async () => {
+      await result.current.handleFileSelect(
+        fileEvent([makeFile('a.kmy', 'x'), makeFile('b.kmy', 'x')]),
+      );
+    });
+
+    expect(toastErrorSpy).toHaveBeenCalledWith(
+      'Import one KMyMoney file at a time: a .kmy file holds a whole profile.',
+    );
+    expect(mockKmyParse).not.toHaveBeenCalled();
+    expect(result.current.step).toBe('upload');
+  });
+
+  it('does not mix a KMyMoney file with a Money file', async () => {
+    const result = await renderWizard();
+
+    await act(async () => {
+      await result.current.handleFileSelect(
+        fileEvent([makeFile('a.kmy', 'x'), makeFile('b.mny', 'x')]),
+      );
+    });
+
+    expect(mockKmyParse).not.toHaveBeenCalled();
+    expect(mockMnyParse).not.toHaveBeenCalled();
+  });
+
+  it('starts the import on the KMyMoney client and moves to the progress step', async () => {
+    const result = await renderWizard();
+    await act(async () => {
+      await result.current.handleFileSelect(fileEvent([makeFile('budget.kmy', 'x')]));
+    });
+
+    await act(async () => {
+      result.current.handleMnyImportClick();
+    });
+
+    expect(mockKmyStart).toHaveBeenCalledWith('staged-kmy', expect.anything(), undefined);
+    expect(mockMnyStart).not.toHaveBeenCalled();
+    expect(result.current.step).toBe('mnyImporting');
+  });
+
+  it('resets both hooks when the wizard is started over', async () => {
+    const result = await renderWizard();
+    await act(async () => {
+      await result.current.handleFileSelect(fileEvent([makeFile('budget.kmy', 'x')]));
+    });
+    expect(result.current.kmy.preview).not.toBeNull();
+
+    act(() => result.current.handleMnyDone());
+
+    expect(result.current.kmy.preview).toBeNull();
+    expect(result.current.step).toBe('upload');
   });
 });

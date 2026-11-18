@@ -8,9 +8,13 @@ import { MnyImportResult } from '@/lib/import-mny';
 import { AccountType } from '@/types/account';
 import { MnyWarningsPanel } from './MnyWarningsPanel';
 import { Th } from '@/components/ui/Table';
+import { BinaryImportFormat, MNY_FORMAT } from '@/lib/binary-import-format';
 
 /** Account types whose verification line is badged, per the comment below. */
 const LOAN_TYPES: ReadonlySet<string> = new Set(['LOAN', 'MORTGAGE']);
+
+/** The backend's `BALANCE_TOLERANCE`: a smaller gap is rounding, not a difference. */
+const MAPPED_BALANCE_TOLERANCE = 0.005;
 
 interface MnyVerificationReportProps {
   result: MnyImportResult;
@@ -18,6 +22,8 @@ interface MnyVerificationReportProps {
   currencyCode: string;
   filename: string;
   onDone: () => void;
+  /** Which file format was imported; Money when omitted. */
+  format?: BinaryImportFormat;
 }
 
 /**
@@ -37,6 +43,7 @@ export function MnyVerificationReport({
   currencyCode,
   filename,
   onDone,
+  format = MNY_FORMAT,
 }: MnyVerificationReportProps) {
   const t = useTranslations('import');
   const tc = useTranslations('common');
@@ -58,7 +65,7 @@ export function MnyVerificationReport({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${filename.replace(/\.mny$/i, '')}-import-report.json`;
+    link.download = `${filename.replace(format.reportExtension, '')}-import-report.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -89,10 +96,10 @@ export function MnyVerificationReport({
           }`}
         >
           {allMatch
-            ? t('mnyComplete.allMatch', { count: result.verification.length })
+            ? t(format.copy.allMatch, { count: result.verification.length })
             : mismatches.length > 0
-              ? t('mnyComplete.someDiffer', { count: mismatches.length })
-              : t('mnyComplete.someHoldingsDiffer', {
+              ? t(format.copy.someDiffer, { count: mismatches.length })
+              : t(format.copy.someHoldingsDiffer, {
                   count: holdingMismatches.length,
                 })}
         </p>
@@ -190,7 +197,7 @@ export function MnyVerificationReport({
                   {t('mnyComplete.table.transactions')}
                 </Th>
                 <Th align="right" className="px-3 py-2">
-                  {t('mnyComplete.table.expected')}
+                  {t(format.copy.tableExpected)}
                 </Th>
                 <Th align="right" className="px-3 py-2">
                   {t('mnyComplete.table.imported')}
@@ -227,6 +234,19 @@ export function MnyVerificationReport({
                   </td>
                   <td className="px-3 py-2 text-right text-muted-foreground">
                     {formatCurrency(line.expectedBalance, currencyCode)}
+                    {/* KMyMoney only: what the import's own rows sum to, shown where it differs from the file's figure. */}
+                    {line.mappedBalance !== undefined &&
+                      Math.abs(line.mappedBalance - line.expectedBalance) >=
+                        MAPPED_BALANCE_TOLERANCE && (
+                        <span className="block text-xs text-amber-700 dark:text-amber-400">
+                          {t('kmyComplete.table.mappedDiffers', {
+                            amount: formatCurrency(
+                              line.mappedBalance,
+                              currencyCode,
+                            ),
+                          })}
+                        </span>
+                      )}
                   </td>
                   <td className="px-3 py-2 text-right text-foreground">
                     {formatCurrency(line.importedBalance, currencyCode)}
@@ -259,7 +279,7 @@ export function MnyVerificationReport({
             {t('mnyComplete.holdingsHeading')}
           </h3>
           <p className="text-xs text-muted-foreground mb-2">
-            {t('mnyComplete.holdingsExplainer')}
+            {t(format.copy.holdingsExplainer)}
           </p>
           <div className="bg-card border border-border rounded-lg overflow-x-auto">
             <table className="min-w-full text-sm">
@@ -272,7 +292,7 @@ export function MnyVerificationReport({
                     {t('mnyComplete.table.security')}
                   </Th>
                   <Th align="right" className="px-3 py-2">
-                    {t('mnyComplete.table.lotShares')}
+                    {t(format.copy.tableLotShares)}
                   </Th>
                   <Th align="right" className="px-3 py-2">
                     {t('mnyComplete.table.importedShares')}
@@ -323,6 +343,7 @@ export function MnyVerificationReport({
       <MnyWarningsPanel
         warnings={result.warnings}
         heading={t('mnyComplete.warningsHeading')}
+        format={format}
       />
 
       <div className="flex justify-between pt-4">

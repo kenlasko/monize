@@ -51,6 +51,12 @@ import {
 } from '@/app/import/import-utils';
 import { useMnyImport } from '@/hooks/useMnyImport';
 import {
+  BinaryImportFormat,
+  BinaryImportFormatId,
+  KMY_FORMAT,
+  MNY_FORMAT,
+} from '@/lib/binary-import-format';
+import {
   matchFilenameToAccount,
   buildCategoryMappings,
   buildAccountMappings,
@@ -62,13 +68,18 @@ import { preferredCurrency } from '@/lib/default-currency';
 
 const logger = createLogger('Import');
 
-function detectFileType(fileName: string): ImportFileType {
+export function detectFileType(fileName: string): ImportFileType {
   const ext = fileName.toLowerCase().split('.').pop() || '';
   if (ext === 'ofx' || ext === 'qfx') return 'ofx';
   if (ext === 'csv') return 'csv';
   // Checked before anything reads the file: a .mny is a Jet database, and the
   // QIF fallback would hand its bytes to File.text().
   if (ext === 'mny') return 'mny';
+  // A KMyMoney file is `.kmy` (gzip XML) or a plain `.xml` (also what its
+  // anonymized `.anon.xml` ends in). Both go to the KMyMoney importer, which
+  // decides by content and refuses what is not one; the QIF fallback would hand
+  // the bytes of a gzip file to File.text().
+  if (ext === 'kmy' || ext === 'xml') return 'kmy';
   // .qif, and Quicken for Mac's .qmtf transfer file, which is QIF under
   // another extension.
   return 'qif';
@@ -102,17 +113,25 @@ export function useImportWizard() {
   const [step, setStep] = useState<ImportStep>('upload');
   // Microsoft Money imports run on their own state machine: no account
   // selection, no category mapping, but a password prompt and a polled job.
+  // A KMyMoney file runs the same state machine against its own client, so the
+  // wizard holds one hook per format and acts on the one `binaryFormatId` names.
   const mny = useMnyImport();
+  const kmy = useMnyImport(KMY_FORMAT.client);
+  const [binaryFormatId, setBinaryFormatId] =
+    useState<BinaryImportFormatId>('mny');
+  const binaryFormat: BinaryImportFormat =
+    binaryFormatId === 'kmy' ? KMY_FORMAT : MNY_FORMAT;
+  const binary = binaryFormatId === 'kmy' ? kmy : mny;
   // Destructured because the hook returns a fresh object each render while its
-  // callbacks are stable; depending on `mny` itself would defeat every
+  // callbacks are stable; depending on `binary` itself would defeat every
   // useCallback below it.
   const {
-    upload: uploadMny,
     retryWithPassword: retryMnyWithPassword,
     start: startMny,
-    reset: resetMny,
     options: mnyOptions,
-  } = mny;
+  } = binary;
+  const { upload: uploadMny, reset: resetMny } = mny;
+  const { upload: uploadKmy, reset: resetKmy } = kmy;
   const [mnyFileName, setMnyFileName] = useState('');
   const [showMnyWipeConfirm, setShowMnyWipeConfirm] = useState(false);
   const [importFiles, setImportFiles] = useState<ImportFileData[]>([]);
@@ -422,17 +441,21 @@ export function useImportWizard() {
       const detectedFileType = uniqueTypes[0];
       setFileType(detectedFileType);
 
-      if (detectedFileType === 'mny') {
-        // One file only: a Money file is a whole profile, not a statement.
+      if (detectedFileType === 'mny' || detectedFileType === 'kmy') {
+        const format = detectedFileType === 'kmy' ? KMY_FORMAT : MNY_FORMAT;
+        // One file only: a Money or KMyMoney file is a whole profile, not a
+        // statement.
         if (fileArray.length > 1) {
-          toast.error(t('toasts.mnySingleFileOnly'));
+          toast.error(t(format.copy.singleFileOnly));
           setIsLoading(false);
           return;
         }
         const file = fileArray[0];
+        setBinaryFormatId(format.id);
         setMnyFileName(file.name);
         // The File goes up as multipart. Nothing reads it as text.
-        if (await uploadMny(file)) {
+        const upload = format.id === 'kmy' ? uploadKmy : uploadMny;
+        if (await upload(file)) {
           setStep('mnyReview');
         }
         setIsLoading(false);
@@ -583,7 +606,7 @@ export function useImportWizard() {
     } finally {
       setIsLoading(false);
     }
-  }, [accounts, categories, securities, defaultCurrency, preselectedAccountId, t, uploadMny]);
+  }, [accounts, categories, securities, defaultCurrency, preselectedAccountId, t, uploadMny, uploadKmy]);
 
   /** The file input's change event, reduced to the files it carries. */
   const handleFileSelect = useCallback(
@@ -1352,11 +1375,12 @@ export function useImportWizard() {
 
   const handleMnyDone = useCallback(() => {
     resetMny();
+    resetKmy();
     setMnyFileName('');
     setShowMnyWipeConfirm(false);
     setImportFiles([]);
     setStep('upload');
-  }, [resetMny]);
+  }, [resetMny, resetKmy]);
 
   return {
     step, setStep,
@@ -1391,8 +1415,10 @@ export function useImportWizard() {
     handleSaveColumnMapping,
     handleLoadColumnMapping,
     handleDeleteColumnMapping,
-    // Microsoft Money (.mny)
-    mny, mnyFileName, handleMnyPasswordSubmit, handleMnyStart, handleMnyDone,
+    // Microsoft Money (.mny) and KMyMoney (.kmy, .xml): `binary` is the hook of
+    // the file in the wizard, `binaryFormat` its descriptor; `mny` and `kmy`
+    // are each format's own hook.
+    mny, kmy, binary, binaryFormat, mnyFileName, handleMnyPasswordSubmit, handleMnyStart, handleMnyDone,
     showMnyWipeConfirm, handleMnyImportClick, handleMnyWipeConfirm,
     cancelMnyWipeConfirm: () => setShowMnyWipeConfirm(false),
   };

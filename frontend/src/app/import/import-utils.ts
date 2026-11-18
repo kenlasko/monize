@@ -5,9 +5,10 @@ export { formatAccountType, isInvestmentBrokerageAccount } from '@/lib/account-u
  * `mny` is a binary Microsoft Money database, not text: it is uploaded as
  * multipart and never read with `File.text()`, and it skips the mapping steps
  * entirely because the file already carries exact accounts, categories and
- * transfer links.
+ * transfer links. `kmy` is a KMyMoney file (gzip XML, or plain XML): also
+ * uploaded as multipart, also skipping the mapping steps.
  */
-export type ImportFileType = 'qif' | 'ofx' | 'csv' | 'mny';
+export type ImportFileType = 'qif' | 'ofx' | 'csv' | 'mny' | 'kmy';
 export type ImportStep = 'upload' | 'csvColumnMapping' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'duplicates' | 'multiAccountReview' | 'mnyReview' | 'mnyImporting' | 'complete';
 export type MatchConfidence = 'exact' | 'partial' | 'type' | 'none';
 

@@ -78,6 +78,12 @@ export const LARGE_UPLOAD_ROUTES: readonly LargeUploadRoute[] = [
     pattern: /^\/api\/v1\/import\/mny\/parse\/?$/,
     limitBytes: () => mnyImportLimitBytes(),
   },
+  // `KmyImportController.parse`: the same multer limit (MNY_IMPORT_LIMIT_MB),
+  // so a KMyMoney file may be as large as a Money one.
+  {
+    pattern: /^\/api\/v1\/import\/kmy\/parse\/?$/,
+    limitBytes: () => mnyImportLimitBytes(),
+  },
   // The restore upload. The backend's admission gate and BACKUP_RESTORE_LIMIT
   // decide; this is the ceiling the proxy has always applied to it, and the
   // body is streamed, so it costs the frontend no memory.

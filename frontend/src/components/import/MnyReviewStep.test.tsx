@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
 import { MnyReviewStep } from './MnyReviewStep';
+import { KMY_FORMAT } from '@/lib/binary-import-format';
 import type { MnyPreview, MnyPreviewAccount } from '@/lib/import-mny';
 
 function account(
@@ -453,5 +454,110 @@ describe('MnyReviewStep', () => {
         /Something went wrong while importing/,
       );
     });
+  });
+});
+
+describe('MnyReviewStep with a KMyMoney import', () => {
+  const kmyPreview = (overrides: Partial<MnyPreview> = {}) =>
+    preview({
+      filename: 'budget.kmy',
+      sourceFormat: 'kmy',
+      kmyFile: { container: 'gzip', fixVersion: 12, appVersion: '5.1.3', lastModified: null },
+      accounts: [account({ name: 'Savings (2)', moneyName: 'Savings' })],
+      ...overrides,
+    });
+  const props = {
+    preview: kmyPreview(),
+    excludedHandles: new Set<number>(),
+    currencyOverrides: new Map<number, string>(),
+    selectedBillHandles: new Set<number>(),
+    options: preview().options,
+    currencyOptions: [{ value: 'USD', label: 'USD - US Dollar' }],
+    isLoading: false,
+    startError: null,
+    onToggleAccount: vi.fn(),
+    onSetAllAccounts: vi.fn(),
+    onSetAccountCurrency: vi.fn(),
+    onToggleBill: vi.fn(),
+    onSetAllBills: vi.fn(),
+    onSetOption: vi.fn(),
+    onBack: vi.fn(),
+    onImport: vi.fn(),
+    format: KMY_FORMAT,
+  };
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('heads the step and summarises the file by its format version, with no era', () => {
+    render(<MnyReviewStep {...props} />);
+
+    expect(screen.getByRole('heading', { name: 'Review your KMyMoney file' })).toBeInTheDocument();
+    expect(
+      screen.getByText(/budget\.kmy: KMyMoney file, format version 12, base currency USD/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Money Plus/)).not.toBeInTheDocument();
+  });
+
+  it('never shows the missing-tables notice or the unsupported-bills note', () => {
+    render(
+      <MnyReviewStep
+        {...props}
+        preview={kmyPreview({ missingTables: ['BILL', 'LOT'] })}
+      />,
+    );
+
+    expect(screen.queryByText(/has no .* table/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/predates scheduled bills/)).not.toBeInTheDocument();
+  });
+
+  it('says where a renamed account was named in KMyMoney', () => {
+    render(<MnyReviewStep {...props} />);
+
+    expect(screen.getByText('named "Savings" in KMyMoney')).toBeInTheDocument();
+  });
+
+  it('words the tags and schedules tiles for KMyMoney', () => {
+    render(
+      <MnyReviewStep
+        {...props}
+        preview={kmyPreview({
+          counts: { ...preview().counts, tagsToCreate: 2, tagsInFile: 3, billsDetected: 4 },
+          fileCounts: { ...preview().fileCounts, bills: 9 },
+        })}
+      />,
+    );
+
+    expect(screen.getByText('Tags')).toBeInTheDocument();
+    expect(screen.getByText('Scheduled transactions')).toBeInTheDocument();
+    expect(screen.getByText('active of 9 schedules')).toBeInTheDocument();
+  });
+
+  it('uses the KMyMoney hints on the options', () => {
+    render(<MnyReviewStep {...props} />);
+
+    expect(screen.getByText(/KMyMoney keeps payees after their last transaction/)).toBeInTheDocument();
+    expect(screen.getByText(/KMyMoney creates its category tree from a template/)).toBeInTheDocument();
+    expect(screen.getByText(/KMyMoney's own record of what each security was worth/)).toBeInTheDocument();
+    expect(screen.getByText(/add the KMyMoney file to what you already have/)).toBeInTheDocument();
+  });
+
+  it('offers to upload again when the KMyMoney staged file is gone', () => {
+    render(
+      <MnyReviewStep
+        {...props}
+        startError={{ code: 'kmyStagedFileMissing', message: 'The uploaded KMyMoney file is no longer available.' }}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Upload the file again' })).toBeInTheDocument();
+  });
+
+  it('falls back to the generic failure sentence with the KMyMoney guide link', () => {
+    render(<MnyReviewStep {...props} startError={{ message: '' }} />);
+
+    expect(screen.getByText(/Something went wrong while importing/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Learn more' }).getAttribute('href')).toContain(
+      'troubleshooting-the-kmymoney-import',
+    );
   });
 });

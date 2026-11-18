@@ -6,6 +6,7 @@ import {
   MnyImportJob,
   MnyImportOptionsInput,
   MnyPreview,
+  BinaryImportClient,
   mnyImportApi,
 } from '@/lib/import-mny';
 
@@ -70,7 +71,14 @@ export interface UseMnyImportResult {
   reset: () => void;
 }
 
-export function useMnyImport(): UseMnyImportResult {
+/**
+ * `client` is the format's API (`mnyImportApi` by default, `kmyImportApi` for a
+ * KMyMoney file); everything else is the same state machine. A client that
+ * never asks for a password simply never opens the prompt.
+ */
+export function useMnyImport(
+  client: BinaryImportClient = mnyImportApi,
+): UseMnyImportResult {
   const [preview, setPreview] = useState<MnyPreview | null>(null);
   const [job, setJob] = useState<MnyImportJob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -114,7 +122,7 @@ export function useMnyImport(): UseMnyImportResult {
     (jobId: string) => {
       stopPolling();
       pollTimer.current = setInterval(() => {
-        void mnyImportApi
+        void client
           .getJob(jobId)
           .then((latest) => {
             setJob(latest);
@@ -130,7 +138,7 @@ export function useMnyImport(): UseMnyImportResult {
           .catch(() => undefined);
       }, MNY_POLL_INTERVAL_MS);
     },
-    [stopPolling],
+    [client, stopPolling],
   );
 
   const upload = useCallback(
@@ -140,7 +148,7 @@ export function useMnyImport(): UseMnyImportResult {
       setUploadError(null);
 
       try {
-        const parsed = await mnyImportApi.parse(file, password);
+        const parsed = await client.parse(file, password);
         setPreview(parsed);
         setOptions(parsed.options);
         setExcludedHandles(new Set());
@@ -172,7 +180,7 @@ export function useMnyImport(): UseMnyImportResult {
         setIsUploading(false);
       }
     },
-    [],
+    [client],
   );
 
   /**
@@ -299,7 +307,7 @@ export function useMnyImport(): UseMnyImportResult {
       setUploadError(null);
       const requestOptions = buildOptions();
       try {
-        const started = await mnyImportApi.start(
+        const started = await client.start(
           stagedFileId,
           requestOptions,
           wipePassword ? { password: wipePassword } : undefined,
@@ -320,7 +328,7 @@ export function useMnyImport(): UseMnyImportResult {
         setIsStarting(false);
       }
     },
-    [beginPolling, buildOptions],
+    [beginPolling, buildOptions, client],
   );
 
   const start = useCallback(

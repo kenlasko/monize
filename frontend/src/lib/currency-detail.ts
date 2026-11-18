@@ -25,6 +25,7 @@ export type RateSourceLabelKey =
   | 'frankfurter'
   | 'frankfurterV2'
   | 'mnyImport'
+  | 'kmyImport'
   | 'transaction'
   | 'unknown';
 
@@ -40,6 +41,8 @@ export function rateSourceLabelKey(source: string | null): RateSourceLabelKey {
       return 'frankfurterV2';
     case 'mny_import':
       return 'mnyImport';
+    case 'kmy_import':
+      return 'kmyImport';
     case TRANSACTION_RATE_SOURCE:
       return 'transaction';
     default:

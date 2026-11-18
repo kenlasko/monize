@@ -7,11 +7,14 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { MnyFlaggedRow, MnyWarningSummary } from '@/lib/import-mny';
 import { Th } from '@/components/ui/Table';
+import { BinaryImportFormat, MNY_FORMAT } from '@/lib/binary-import-format';
 
 interface MnyWarningsPanelProps {
   warnings: MnyWarningSummary[];
   /** Section heading. The review step and the report word it differently. */
   heading: string;
+  /** Which file format the warnings came from; Money when omitted. */
+  format?: BinaryImportFormat;
 }
 
 /**
@@ -29,7 +32,11 @@ interface MnyWarningsPanelProps {
  * Only row-level warnings carry rows; a missing table or a renamed account has
  * nothing to expand and stays a plain line.
  */
-export function MnyWarningsPanel({ warnings, heading }: MnyWarningsPanelProps) {
+export function MnyWarningsPanel({
+  warnings,
+  heading,
+  format = MNY_FORMAT,
+}: MnyWarningsPanelProps) {
   const t = useTranslations('import');
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
 
@@ -57,7 +64,7 @@ export function MnyWarningsPanel({ warnings, heading }: MnyWarningsPanelProps) {
           const summary = (
             <>
               <span className="text-foreground">
-                {t(`mnyWarnings.${warning.code}`, { count: warning.count })}
+                {t(format.warningKey(warning.code), { count: warning.count })}
               </span>
               {warning.samples.length > 0 && (
                 <span className="block text-xs text-muted-foreground">
@@ -105,11 +112,11 @@ export function MnyWarningsPanel({ warnings, heading }: MnyWarningsPanelProps) {
                 <div className="border-t border-border px-4 py-3">
                   <p className="mb-2 text-xs text-muted-foreground">
                     {warning.rowsTruncated
-                      ? t('mnyWarnings.reviewInMoneyTruncated', {
+                      ? t(format.copy.reviewInSourceTruncated, {
                           shown: rows.length,
                           total: warning.count,
                         })
-                      : t('mnyWarnings.reviewInMoney')}
+                      : t(format.copy.reviewInSource)}
                   </p>
                   <FlaggedRowsTable rows={rows} />
                 </div>
