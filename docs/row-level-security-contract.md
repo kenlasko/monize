@@ -141,9 +141,9 @@ The safety argument is:
    last use, `OAUTH_CLIENT_IDLE_TTL_SECONDS`, #2177), and a daily sweep deletes
    what has passed it.
 
-### The three permitted access paths
+### The four permitted access paths
 
-Exactly three, all in `backend/src/oauth/`:
+Exactly four, all in `backend/src/oauth/`:
 
 1. **`PostgresAdapter`** -- `upsert`, `find`, `findByUserCode`, `findByUid`,
    `consume`, `destroy`, `revokeByGrantId`. Every one is keyed by an opaque
@@ -182,6 +182,18 @@ Exactly three, all in `backend/src/oauth/`:
    names an identifier, and the delete reaches only rows the provider already
    treats as absent. Not wrapped in `withSystemContext`, for the reason path 2
    is not.
+
+4. **`findGrantsForAccount` and `revokeGrantForAccount`** (`postgres.adapter.ts`),
+   behind Settings > Connected apps (`OAuthConnectionsService`,
+   GHSA-vmgq-326p-fprx) -- the list selects `model = 'Grant'` rows whose
+   `payload ->> 'accountId'` is the session's own subject, then the newest
+   token `iat` per grant keyed by the grant ids it just read; the revoke deletes
+   the rows carrying a `grant_id`, then the grant, each statement carrying the
+   same ownership predicate, so a grant id belonging to someone else deletes
+   nothing. The grant id comes from the request but is an opaque provider
+   identifier; the account id never does (`req.user.id`, and the global
+   `AccountDelegateGuard` closes the route to an acting delegate). The same
+   bound as path 2, and not wrapped in `withSystemContext` for the same reason.
 
 Anything else is a defect. Both guards in section 5 fail on a path from any
 other file.

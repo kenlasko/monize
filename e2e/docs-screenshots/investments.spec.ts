@@ -278,3 +278,23 @@ test("security-price-history", async () => {
   await scrollUnderHeader(page, tabs);
   await docShot(page, "security-price-history");
 });
+
+test("investments-floating-bar", async () => {
+  await openInvestments();
+  // Scroll the title and its account picker away; the bar pins to the top.
+  const floating = page.getByTestId("investments-floating-bar");
+  await expect(async () => {
+    await page.evaluate(() => window.scrollTo(0, 700));
+    await expect(floating).toHaveAttribute("aria-hidden", "false", {
+      timeout: 2_000,
+    });
+  }).toPass({ timeout: 30_000 });
+  await floating.evaluate((el) =>
+    Promise.all(el.getAnimations().map((animation) => animation.finished)),
+  );
+  await waitForReady(page);
+  await docShot(page, "investments-floating-bar", undefined, {
+    floatingBars: true,
+  });
+  await top();
+});

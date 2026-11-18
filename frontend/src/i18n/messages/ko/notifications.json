@@ -213,6 +213,8 @@
   "security": {
     "oauthTitle": "새 앱이 연결되었습니다: {clientName}",
     "oauthMessage": "애플리케이션 {clientName}에 Monize 계정 접근 권한이 방금 부여되었습니다. 본인이 아니라면 지금 비밀번호를 변경하세요. 연결된 모든 애플리케이션의 접근 권한이 취소됩니다.",
+    "oauthConnectedTitle": "Monize 계정에 새 앱이 연결되었습니다",
+    "oauthConnectedMessage": "스스로를 {clientName}(이)라고 부르는 애플리케이션에 접근 권한이 부여되었으며, 해당 권한 부여 정보는 {destination}(으)로 전송됩니다. 본인이 아니라면 설정의 “연결된 앱”에서 취소하세요.",
     "relayTitle": "새 연결이 AI 채팅에 응답했습니다",
     "relayMessage": "이전에 Monize AI 채팅에 응답한 적 없는 연결이 방금 프롬프트를 가져갔습니다. 이 어시스턴트를 연결하지 않았다면 비밀번호를 변경하세요."
   },

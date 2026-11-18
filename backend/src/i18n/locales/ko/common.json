@@ -10,7 +10,13 @@
     "destinationUnknown": "Monize가 이 권한 부여 정보를 어디로 보낼지 확인할 수 없습니다. 액세스를 허용하지 마세요.",
     "unverifiedNotice": "이 애플리케이션은 이 Monize 서버에 스스로 등록했으며, Monize는 누가 운영하는지 확인하지 않았습니다. 이름도 애플리케이션이 스스로 정한 것입니다. 해당 애플리케이션에서 직접 이 연결을 시작했고 위 주소가 그 애플리케이션의 것인 경우에만 액세스를 허용하세요.",
     "claimedWebsite": "애플리케이션이 밝힌 웹사이트: {{ website }}",
-    "websiteMismatch": "애플리케이션은 웹사이트를 {{ website }}(으)로 밝혔지만, 권한 부여 정보는 다른 주소로 전송됩니다."
+    "websiteMismatch": "애플리케이션은 웹사이트를 {{ website }}(으)로 밝혔지만, 권한 부여 정보는 다른 주소로 전송됩니다.",
+    "pageTitle": "Monize 계정에 대한 접근을 허용하시겠습니까?",
+    "headingWeb": "{{ host }}에서 Monize 계정에 대한 접근을 요청합니다",
+    "headingDevice": "이 기기의 애플리케이션이 Monize 계정에 대한 접근을 요청합니다",
+    "headingApp": "{{ scheme }} 링크를 여는 앱이 Monize 계정에 대한 접근을 요청합니다",
+    "headingUnknown": "확인되지 않은 애플리케이션이 Monize 계정에 대한 접근을 요청합니다",
+    "selfNamed": "이 애플리케이션은 스스로를 “{{ name }}”(이)라고 부릅니다. Monize는 이 이름을 확인하지 않았습니다."
   },
   "import": {
     "voidedTransactionNote": "원본에서 무효 처리되었습니다. 원래 금액이 내보내기에서 누락되어 0으로 가져왔습니다."

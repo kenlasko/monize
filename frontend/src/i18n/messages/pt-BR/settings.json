@@ -673,6 +673,39 @@
       "never": "Nunca"
     }
   },
+  "connectedApps": {
+    "heading": "Aplicativos conectados",
+    "description": "Aplicativos que você permitiu acessar sua conta do Monize pela tela de consentimento, como assistentes de IA conectados via MCP. Cada linha começa pelo destino das autorizações do aplicativo, porque o nome de um aplicativo é o que ele mesmo escolheu. Revogue qualquer aplicativo que você não reconheça.",
+    "emptyTitle": "Nenhum aplicativo conectado",
+    "emptyDescription": "Quando você permitir um aplicativo na tela de consentimento do Monize, ele aparecerá aqui.",
+    "loadError": "Não foi possível carregar os aplicativos conectados, então esta lista pode estar incompleta.",
+    "retryButton": "Tentar novamente",
+    "callsItself": "Chama-se “{name}”",
+    "destinationUnknown": "Destino desconhecido",
+    "registrationExpired": "Registro expirado; o aplicativo se registra novamente quando se reconecta",
+    "scopes": {
+      "read": "Leitura",
+      "write": "Escrita"
+    },
+    "connectedOn": "Conectado em {date}",
+    "lastUsed": "Último uso {time}",
+    "notUsedYet": "Ainda não usado",
+    "expiresOn": "O acesso termina em {date}",
+    "separator": " · ",
+    "revokeButton": "Revogar",
+    "revokeAriaLabel": "Revogar {name}",
+    "revokeModal": {
+      "title": "Revogar este aplicativo?",
+      "message": "“{name}” perde o acesso à sua conta do Monize imediatamente. Para usá-lo de novo, conecte-o novamente pelo aplicativo.",
+      "confirmLabel": "Revogar",
+      "revoking": "Revogando..."
+    },
+    "toasts": {
+      "loadFailed": "Não foi possível carregar os aplicativos conectados",
+      "revoked": "Aplicativo revogado",
+      "revokeFailed": "Não foi possível revogar o aplicativo"
+    }
+  },
   "autoBackup": {
     "heading": "Backup Automático",
     "description": "Uma única programação para toda a implantação: o servidor faz backup dos dados de cada conta no armazenamento abaixo. Como o Monize roda em Docker, uma pasta local precisa ser mapeada no contêiner como volume (ex.: -v /host/backups:/data/backups).",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "Acesso Compartilhado",
     "emergencyAccess": "Acesso de Emergência",
     "apiAccess": "Acesso à API",
+    "connectedApps": "Aplicativos conectados",
     "aiSettings": "Configurações de IA",
     "emailReceipts": "Recibos por e-mail",
     "backupRestore": "Backup e Restauração",

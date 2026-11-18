@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act, within } from '@/test/render';
 import TransactionsPage from './page';
 import { useCommandPaletteStore } from '@/store/commandPaletteStore';
 import { TRANSACTION_SORT_STORAGE_KEY } from '@/lib/transaction-sort';
@@ -523,12 +523,39 @@ vi.mock('@/components/layout/PageLayout', () => ({
 }));
 
 vi.mock('@/components/layout/PageHeader', () => ({
-  PageHeader: ({ title, subtitle, actions, primaryAction }: { title: string; subtitle?: string; actions?: React.ReactNode; primaryAction?: React.ReactNode }) => (
+  PageHeader: ({
+    title,
+    subtitle,
+    actions,
+    primaryAction,
+    collapsedContext,
+    collapsedSwitcher,
+  }: {
+    title: string;
+    subtitle?: string;
+    actions?: React.ReactNode;
+    primaryAction?: React.ReactNode;
+    collapsedContext?: string;
+    collapsedSwitcher?: import('@/store/mobileChromeStore').CollapsedHeaderSwitcher;
+  }) => (
     <div data-testid="page-header">
       <h1>{title}</h1>
       {subtitle && <p>{subtitle}</p>}
       {actions}
       {primaryAction}
+      {/* What the title hands the app header once it scrolls away. */}
+      {collapsedContext && <span data-testid="collapsed-context">{collapsedContext}</span>}
+      {collapsedSwitcher && (
+        <ul data-testid="collapsed-switcher" data-current={collapsedSwitcher.currentId}>
+          {collapsedSwitcher.items.map((item) => (
+            <li key={item.id}>
+              <button type="button" onClick={() => collapsedSwitcher.onSelect(item.id)}>
+                {`${item.group ?? ''}|${item.primary}`}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   ),
 }));
@@ -602,6 +629,10 @@ const mockTransactions = [
   { id: 'tx-2', date: '2026-02-02', amount: 3000, status: 'CLEARED', payee: { id: 'payee-2', name: 'Employer' }, category: { id: 'cat-1', name: 'Salary' }, account: { id: 'acc-1', name: 'Checking' }, isTransfer: false },
   { id: 'tx-3', date: '2026-02-03', amount: -200, status: 'RECONCILED', payee: null, category: null, account: { id: 'acc-1', name: 'Checking' }, isTransfer: true, linkedInvestmentTransactionId: 'itx-1' },
 ];
+
+// The account widget's own column: the floating bar repeats the balance.
+const inAccountWidget = () =>
+  within(screen.getByText('Current Balance').closest('[aria-hidden]') as HTMLElement);
 
 const mockAccounts = [
   { id: 'acc-1', name: 'Checking', accountType: 'CHEQUING', currencyCode: 'USD', currentBalance: 5000, isClosed: false, accountSubType: null },
@@ -1572,8 +1603,8 @@ describe('TransactionsPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Current Balance')).toBeInTheDocument();
       });
-      expect(screen.getByText('$1500.00')).toBeInTheDocument();
-      expect(screen.queryByText('$5000.00')).not.toBeInTheDocument();
+      expect(inAccountWidget().getByText('$1500.00')).toBeInTheDocument();
+      expect(inAccountWidget().queryByText('$5000.00')).not.toBeInTheDocument();
     });
 
     it('recomputes a coin balance when the currency registry loads after the series', async () => {
@@ -1595,7 +1626,7 @@ describe('TransactionsPage', () => {
 
         // Before `GET /currencies` answers, BTC rounds at Intl's two places.
         await waitFor(() => {
-          expect(screen.getByText('BTC 0.01')).toBeInTheDocument();
+          expect(inAccountWidget().getByText('BTC 0.01')).toBeInTheDocument();
         });
 
         act(() => {
@@ -1603,9 +1634,9 @@ describe('TransactionsPage', () => {
         });
 
         await waitFor(() => {
-          expect(screen.getByText('BTC 0.0125')).toBeInTheDocument();
+          expect(inAccountWidget().getByText('BTC 0.0125')).toBeInTheDocument();
         });
-        expect(screen.queryByText('BTC 0.01')).not.toBeInTheDocument();
+        expect(inAccountWidget().queryByText('BTC 0.01')).not.toBeInTheDocument();
       } finally {
         act(() => clearCurrencyDecimals());
       }
@@ -1698,6 +1729,44 @@ describe('TransactionsPage', () => {
       expect(window.localStorage.getItem('transactions.filter.accountStatus')).toBe(JSON.stringify('active'));
     });
 
+    it('hands the header the account and the same favourites-first switcher once the title scrolls away', async () => {
+      mockGetAllAccounts.mockResolvedValue([
+        mockAccounts[0],
+        { ...mockAccounts[1], isFavourite: true, favouriteSortOrder: 1 },
+        { id: 'acc-5', name: 'Another Savings', accountType: 'SAVINGS', currencyCode: 'USD', currentBalance: 1, isClosed: false, accountSubType: null, isFavourite: false, favouriteSortOrder: 0 },
+      ]);
+      mockGetDailyBalances.mockResolvedValue([]);
+
+      render(<TransactionsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('filter-panel')).toBeInTheDocument();
+      });
+      // Nothing to add while the list spans every account.
+      expect(screen.queryByTestId('collapsed-context')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('collapsed-switcher')).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('set-account-filter'));
+      await waitFor(() => {
+        expect(screen.getByTestId('collapsed-context')).toHaveTextContent('Checking');
+      });
+      const switcher = screen.getByTestId('collapsed-switcher');
+      expect(switcher).toHaveAttribute('data-current', 'acc-1');
+      // Favourites first, then the rest by name, each under its section.
+      expect(within(switcher).getAllByRole('button').map((b) => b.textContent)).toEqual([
+        'Favourites|Savings',
+        'Other accounts|Another Savings',
+        'Other accounts|Checking',
+      ]);
+
+      fireEvent.click(within(switcher).getByRole('button', { name: 'Favourites|Savings' }));
+      await waitFor(() => {
+        expect(screen.getByTestId('collapsed-context')).toHaveTextContent('Savings');
+      });
+      await waitFor(() => {
+        expect(mockGetAll.mock.calls.at(-1)?.[0]?.accountIds).toEqual(['acc-2']);
+      });
+    });
+
     it('falls back to the stored account balance when no daily-balance rows exist', async () => {
       mockGetAllAccounts.mockResolvedValue(mockAccounts);
       mockGetDailyBalances.mockResolvedValue([]);
@@ -1712,7 +1781,7 @@ describe('TransactionsPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Current Balance')).toBeInTheDocument();
       });
-      expect(screen.getByText('$5000.00')).toBeInTheDocument();
+      expect(inAccountWidget().getByText('$5000.00')).toBeInTheDocument();
     });
   });
 
@@ -1811,30 +1880,294 @@ describe('TransactionsPage', () => {
       expect(screen.queryByTestId('chart-collapsed-strip')).not.toBeInTheDocument();
     });
 
-    it('folds the info widget with the chart, and brings back both', async () => {
+    // Tailwind's `lg` and up, as `useIsLgUp` asks it.
+    const withDesktopViewport = () => {
+      const original = window.matchMedia;
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(min-width: 64rem)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })) as unknown as typeof window.matchMedia;
+      return () => {
+        window.matchMedia = original;
+      };
+    };
+
+    const filterToOneAccount = async () => {
       mockGetAllAccounts.mockResolvedValue(mockAccounts);
       mockGetDailyBalances.mockResolvedValue([]);
-
-      render(<TransactionsPage />);
+      await act(async () => {
+        render(<TransactionsPage />);
+      });
       await waitFor(() => {
         expect(screen.getByTestId('filter-panel')).toBeInTheDocument();
       });
       fireEvent.click(screen.getByTestId('set-account-filter'));
+    };
+
+    const widgetColumn = () => screen.getByText('Current Balance').closest('[aria-hidden]');
+
+    it('keeps the full account info open on a phone when the chart folds', async () => {
+      await filterToOneAccount();
       await waitFor(() => {
         expect(screen.getByText('Current Balance')).toBeInTheDocument();
       });
 
       fireEvent.click(screen.getByRole('button', { name: 'Hide chart' }));
 
-      expect(screen.queryByText('Current Balance')).not.toBeInTheDocument();
-      // The widget's own state is untouched: it comes back open with the band.
+      expect(screen.getByTestId('chart-collapsed-strip')).toBeInTheDocument();
+      expect(widgetColumn()).toHaveAttribute('aria-hidden', 'false');
+      expect(screen.queryByTestId('account-info-bar')).not.toBeInTheDocument();
+      // Folding the chart touched nothing of the widget's own state.
       expect(window.localStorage.getItem('monize-transactions-account-widget-collapsed')).toBeNull();
 
       fireEvent.click(screen.getByRole('button', { name: 'Show chart' }));
 
+      expect(screen.queryByTestId('chart-collapsed-strip')).not.toBeInTheDocument();
+      expect(widgetColumn()).toHaveAttribute('aria-hidden', 'false');
+    });
+
+    it('folds the account info into its bar on a desktop when the chart folds, without remounting it', async () => {
+      const restore = withDesktopViewport();
+      try {
+        await filterToOneAccount();
+        await waitFor(() => {
+          expect(screen.getByText('Current Balance')).toBeInTheDocument();
+        });
+        const widgetBefore = screen.getByText('Current Balance');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Hide chart' }));
+
+        expect(screen.getByTestId('chart-collapsed-strip')).toBeInTheDocument();
+        expect(screen.getByTestId('account-info-bar')).toBeInTheDocument();
+        expect(widgetColumn()).toHaveAttribute('aria-hidden', 'true');
+        // The same element: the fold hid the widget rather than remounting it.
+        expect(screen.getByText('Current Balance')).toBe(widgetBefore);
+        expect(window.localStorage.getItem('monize-transactions-account-widget-collapsed')).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Show chart' }));
+
+        expect(screen.queryByTestId('account-info-bar')).not.toBeInTheDocument();
+        expect(widgetColumn()).toHaveAttribute('aria-hidden', 'false');
+        expect(screen.getByText('Current Balance')).toBe(widgetBefore);
+      } finally {
+        restore();
+      }
+    });
+
+    it('shows the folded widget as its bar on every width while the chart is folded too', async () => {
+      mockPreferences.value = {
+        defaultCurrency: 'USD',
+        viewDefaults: { chartCollapsed: true, widgetsCollapsed: true },
+      };
+      await filterToOneAccount();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('account-info-bar')).toBeInTheDocument();
+      });
+      expect(widgetColumn()).toHaveAttribute('aria-hidden', 'true');
+      expect(screen.getByTestId('chart-collapsed-strip')).toBeInTheDocument();
+    });
+
+    it("opens only the widget from the bar's chevron on a phone", async () => {
+      mockPreferences.value = {
+        defaultCurrency: 'USD',
+        viewDefaults: { chartCollapsed: true, widgetsCollapsed: true },
+      };
+      await filterToOneAccount();
+      await waitFor(() => {
+        expect(screen.getByTestId('account-info-bar')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Show account info' }));
+
+      expect(window.localStorage.getItem('monize-transactions-account-widget-collapsed')).toBe('false');
+      // The chart stays folded: on a phone the two fold independently.
+      expect(window.localStorage.getItem('monize-transactions-chart-collapsed')).toBeNull();
+      expect(screen.getByTestId('chart-collapsed-strip')).toBeInTheDocument();
+      expect(widgetColumn()).toHaveAttribute('aria-hidden', 'false');
+      expect(screen.queryByTestId('account-info-bar')).not.toBeInTheDocument();
+    });
+
+    it("brings the chart back with the widget from the bar's chevron on a desktop", async () => {
+      const restore = withDesktopViewport();
+      try {
+        await filterToOneAccount();
+        await waitFor(() => {
+          expect(screen.getByText('Current Balance')).toBeInTheDocument();
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Hide chart' }));
+        expect(screen.getByTestId('account-info-bar')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Show account info' }));
+
+        expect(screen.queryByTestId('chart-collapsed-strip')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('account-info-bar')).not.toBeInTheDocument();
+        expect(window.localStorage.getItem('monize-transactions-chart-collapsed')).toBe('false');
+        // The widget was open all along, so no choice is recorded for it.
+        expect(window.localStorage.getItem('monize-transactions-account-widget-collapsed')).toBeNull();
+      } finally {
+        restore();
+      }
+    });
+
+    describe('floating account bar', () => {
+      // Drives only the observer watching the account's name.
+      let bandScrolled: ((past: boolean) => void) | undefined;
+      let observedName: Element | undefined;
+      beforeEach(() => {
+        bandScrolled = undefined;
+        observedName = undefined;
+        vi.stubGlobal(
+          'IntersectionObserver',
+          class {
+            private readonly callback: (entries: Partial<IntersectionObserverEntry>[]) => void;
+            constructor(callback: (entries: Partial<IntersectionObserverEntry>[]) => void) {
+              this.callback = callback;
+            }
+            observe(target: Element) {
+              if (target.tagName === 'H3') {
+                observedName = target;
+                bandScrolled = (past) =>
+                  act(() =>
+                    this.callback([
+                      {
+                        isIntersecting: !past,
+                        boundingClientRect: { top: past ? -500 : 80 } as DOMRectReadOnly,
+                      },
+                    ]),
+                  );
+              }
+            }
+            unobserve() {}
+            disconnect() {}
+          },
+        );
+      });
+      afterEach(() => {
+        vi.unstubAllGlobals();
+      });
+
+      const floating = () => screen.getByTestId('account-info-floating');
+
+      it('slides in once the account name scrolls away on a desktop, and out when it returns', async () => {
+        await filterToOneAccount();
+        await waitFor(() => {
+          expect(screen.getByText('Current Balance')).toBeInTheDocument();
+        });
+        // Mounted but hidden, so it can slide in rather than pop.
+        expect(floating()).toHaveAttribute('aria-hidden', 'true');
+        expect(floating()).toHaveClass('opacity-0', '-translate-y-full');
+        // Full width and flush with the top: no gutter or gap around it.
+        expect(floating()).toHaveClass('fixed', 'inset-x-0');
+        expect(floating().className).not.toMatch(/\b(px|pt)-/);
+
+        // The widget's own name is the one watched while the widget is open.
+        expect(observedName).toHaveTextContent('Checking');
+        expect(screen.getByText('Current Balance').closest('[aria-hidden]')).toContainElement(
+          observedName as HTMLElement,
+        );
+
+        bandScrolled?.(true);
+        expect(floating()).toHaveAttribute('aria-hidden', 'false');
+        expect(floating()).toHaveClass('opacity-100', 'translate-y-0');
+        expect(within(floating()).getByTestId('account-info-floating-bar')).toHaveTextContent('Checking');
+        // The "+" at its right end opens a new transaction.
+        mockTxOpenCreate.mockClear();
+        fireEvent.click(within(floating()).getByRole('button', { name: 'New Transaction' }));
+        expect(mockTxOpenCreate).toHaveBeenCalled();
+
+        bandScrolled?.(false);
+        expect(floating()).toHaveAttribute('aria-hidden', 'true');
+      });
+
+      it('stays pinned when the account is switched from it part way down the page', async () => {
+        await filterToOneAccount();
+        await waitFor(() => {
+          expect(screen.getByText('Current Balance')).toBeInTheDocument();
+        });
+        bandScrolled?.(true);
+        expect(floating()).toHaveAttribute('aria-hidden', 'false');
+        const nameBefore = observedName;
+
+        fireEvent.click(within(floating()).getByRole('button', { name: 'Switch to another account' }));
+        fireEvent.click(screen.getByRole('menuitem', { name: /Savings/ }));
+
+        await waitFor(() => {
+          expect(within(floating()).getByTestId('account-info-floating-bar')).toHaveTextContent('Savings');
+        });
+        // The same heading is still the one watched and nothing scrolled, so
+        // no observer reports again: the bar has to keep what it knew.
+        expect(observedName).toBe(nameBefore);
+        expect(floating()).toHaveAttribute('aria-hidden', 'false');
+      });
+
+      it('opens the widget and scrolls back up to it from its chevron', async () => {
+        mockPreferences.value = { defaultCurrency: 'USD', viewDefaults: { widgetsCollapsed: true } };
+        await filterToOneAccount();
+        await waitFor(() => {
+          expect(screen.getByTestId('account-info-bar')).toBeInTheDocument();
+        });
+        // Folded, the bar's name is the one watched.
+        expect(screen.getByTestId('account-info-bar')).toContainElement(observedName as HTMLElement);
+        bandScrolled?.(true);
+        vi.mocked(window.scrollTo).mockClear();
+
+        fireEvent.click(within(floating()).getByRole('button', { name: 'Show account info' }));
+
+        expect(window.localStorage.getItem('monize-transactions-account-widget-collapsed')).toBe('false');
+        expect(window.scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+      });
+
+      it('is not drawn where the tab bar is: the app header carries the account there', async () => {
+        const original = window.matchMedia;
+        window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+          matches: query === '(max-width: 1279px)',
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })) as unknown as typeof window.matchMedia;
+        try {
+          await filterToOneAccount();
+          await waitFor(() => {
+            expect(screen.getByText('Current Balance')).toBeInTheDocument();
+          });
+          expect(screen.queryByTestId('account-info-floating')).not.toBeInTheDocument();
+        } finally {
+          window.matchMedia = original;
+        }
+      });
+    });
+
+    it('folds the widget into a bar over the chart, and opens it again from the bar', async () => {
+      await filterToOneAccount();
       await waitFor(() => {
         expect(screen.getByText('Current Balance')).toBeInTheDocument();
       });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Hide account info' }));
+
+      const bar = screen.getByTestId('account-info-bar');
+      expect(bar).toHaveTextContent('Checking');
+      expect(bar).toHaveTextContent('$5000.00');
+      expect(screen.queryByTestId('chart-collapsed-strip')).not.toBeInTheDocument();
+      expect(window.localStorage.getItem('monize-transactions-account-widget-collapsed')).toBe('true');
+
+      fireEvent.click(within(bar).getByRole('button', { name: 'Show account info' }));
+
+      expect(screen.queryByTestId('account-info-bar')).not.toBeInTheDocument();
+      expect(window.localStorage.getItem('monize-transactions-account-widget-collapsed')).toBe('false');
+      // The chart was never folded, so nothing is written for it.
+      expect(window.localStorage.getItem('monize-transactions-chart-collapsed')).toBeNull();
     });
 
     it("starts the info widget folded on the account's widget default", async () => {

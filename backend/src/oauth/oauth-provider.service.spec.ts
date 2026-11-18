@@ -460,7 +460,7 @@ describe("OAuthProviderService", () => {
         const uris = (n: number) =>
           Array.from({ length: n }, (_, i) => `https://client.test/cb${i}`);
 
-        expect(properties).toEqual(["redirect_uris"]);
+        expect(properties).toEqual(["redirect_uris", "client_name"]);
         expect(() =>
           validator(
             REGISTRATION_CTX,
@@ -476,6 +476,56 @@ describe("OAuthProviderService", () => {
           ),
         ).toThrow(/redirect_uris/);
         expect(MAX_DCR_REDIRECT_URIS).toBeLessThan(50);
+      });
+
+      it("refuses a plain-http redirect off a loopback address (GHSA-vmgq-326p-fprx)", async () => {
+        const { config } = await init({
+          id: ACCOUNT_ID,
+          isActive: true,
+          mustChangePassword: false,
+        });
+        const { validator } = config.extraClientMetadata;
+        const register = (uris: string[]) => () =>
+          validator(REGISTRATION_CTX, "redirect_uris", uris);
+
+        expect(register(["http://attacker.test/cb"])).toThrow(/https/);
+        expect(
+          register(["https://claude.test/cb", "http://attacker.test/cb"]),
+        ).toThrow(/https/);
+        for (const ok of [
+          "https://claude.test/api/mcp/auth_callback",
+          "http://127.0.0.1:33418/callback",
+          "http://localhost:8080/cb",
+          "http://[::1]:9000/cb",
+          "vscode://publisher.extension/cb",
+        ]) {
+          expect(register([ok])).not.toThrow();
+        }
+        // A stored client is never refused after the fact.
+        expect(() =>
+          validator(undefined, "redirect_uris", ["http://attacker.test/cb"]),
+        ).not.toThrow();
+      });
+
+      it("refuses a client_name built to read as something else", async () => {
+        const { config } = await init({
+          id: ACCOUNT_ID,
+          isActive: true,
+          mustChangePassword: false,
+        });
+        const { validator } = config.extraClientMetadata;
+        const register = (name: unknown) => () =>
+          validator(REGISTRATION_CTX, "client_name", name);
+
+        expect(register("Claude")).not.toThrow();
+        expect(register(undefined)).not.toThrow();
+        expect(register("Monize Support")).toThrow(/Monize/);
+        expect(register("Claude\u202E")).toThrow(/control/);
+        expect(register("   ")).toThrow(/blank/);
+        expect(register("x".repeat(101))).toThrow(/100/);
+        expect(() =>
+          validator(undefined, "client_name", "Monize Support"),
+        ).not.toThrow();
       });
 
       it("leaves a malformed value to the provider's own checks", async () => {

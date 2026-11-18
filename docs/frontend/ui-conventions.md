@@ -293,6 +293,21 @@ when they widened it. The media query lives in that one helper -- `DateInput`
 held the only other copy -- and `ui-conventions.test.ts` fails a `capture` in a
 file that imports `useIsMobile`, and a second hand-rolled `pointer: coarse`.
 
+## A drag that moves an element ends on `touchcancel` too
+
+A touch gesture that writes an inline `transform` (`useSwipeNavigation`,
+`useSwipeToPaginate`) listens for `touchcancel` as well as `touchend`, and
+slides back to rest on either a cancel or a second finger. Android's edge Back
+gesture, the notification shade and an incoming call take the touch away
+mid-drag with no `touchend`; before issue #2273 that left the page sitting about
+a quarter of the way across the screen, and because `SwipeShell`'s content
+element outlives the route, the offset rode along onto every page the Back
+gesture reached until a reload. For the same reason a route change that no
+swipe animated in clears the element's inline styles, and an effect cleanup
+that drops the listeners mid-drag clears them too. The cases are in
+`useSwipeNavigation.test.ts` and `useSwipeToPaginate.test.ts` under the
+interrupted-gesture tests.
+
 ## Contextual help is `InfoTooltip`, and a touch reader can open it
 
 If a figure or a setting carries an explanation on a desktop, the same explanation opens on a phone. `InfoTooltip` (`components/ui/InfoTooltip.tsx`) is the one help popover: a mouse hovers it, a keyboard focuses it, and a click, a tap or Enter pins it open until the reader presses outside it, taps it again, moves focus to another control, or presses Escape. It takes one `text`, which is the popover body and the trigger's `aria-label` at once, so desktop, phone and screen reader read one translated string and there is no second copy to drift.
@@ -366,13 +381,13 @@ The login page pre-fills `DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD` from that modu
 
 ## A detail page returns to its list above the title, and switches with the caret beside it
 
-Every detail page carries the same two controls: a chevron and "Back to <List>" on the line *above* the title, and `EntitySwitcher`'s caret immediately after the title. The way back is not an action on the thing being viewed, so it does not belong among the buttons on the right. For reports the pair is `BackToReportsLink` and `ReportDetailHeader` (`components/reports/`), and a settings sub-page uses `BackToSettingsLink` (`components/settings/`); `ReportSwitcher` builds the route itself so no call site spells it out. `ui-conventions.test.ts` scans for a hand-rolled back-chevron-to-`/reports`.
+Every detail page carries the same two controls: a chevron and "Back to <List>" on the line *above* the title, and `EntitySwitcher`'s caret immediately after the title. The way back is not an action on the thing being viewed, so it does not belong among the buttons on the right. For reports the pair is `BackToReportsLink` and `ReportDetailHeader` (`components/reports/`), and a settings sub-page uses `BackToSettingsLink` (`components/settings/`); `useReportSwitcher` builds the route itself so no call site spells it out, and returns the caret's props so the app header's collapsed title carries the same menu. `ui-conventions.test.ts` scans for a hand-rolled back-chevron-to-`/reports`.
 
 **Two switchers on one line means at least one says its name.** `EntitySwitcher` takes `triggerText` (the GEM report's scenario picker reads "Scenario ⌄"); the bare caret stays the default when it is the only one.
 
 **A detail page's actions sit on the title row, not in a row above the body.** `AccountDetailShell` takes `headerActions` for type-specific actions beside the standard set; a signal they need to send the body travels down as a prop (`refreshKey`) rather than keeping the button in the body. A `size="sm"` button in a report toolbar takes `size="md"` in that header.
 
-A switcher list too long to scan takes `group` on its items (`ReportSwitcher` groups in `REPORT_CATEGORIES` order); sections follow the order their first item appears in, so ordering happens in the caller. An item with no `group` renders ungrouped, so a menu whose sections would be a lone heading over everything is better emitted with none at all -- and whether that heading has anything under it is decided by the items the switcher will actually OFFER, since it drops the entity already on screen (the Transactions account widget sections only when a starred account other than the current one exists).
+A switcher list too long to scan takes `group` on its items (`useReportSwitcher` groups in `REPORT_CATEGORIES` order); sections follow the order their first item appears in, so ordering happens in the caller. An item with no `group` renders ungrouped, so a menu whose sections would be a lone heading over everything is better emitted with none at all -- and whether that heading has anything under it is decided by the items the switcher will actually OFFER, since it drops the entity already on screen (the Transactions account widget sections only when a starred account other than the current one exists).
 
 **Which accounts a picker offers, and in what order, is `orderAccountsForPicker`** (`lib/account-utils.ts`): the starred accounts by `favouriteSortOrder` -- the order the user dragged them into -- then everything else by name. It hands back the two halves rather than one list, because each caller needs the boundary as well as the order (`buildAccountDropdownOptions` rules a separator across it; the two account switchers put a section heading above each side), and a flat list would have each of them re-deriving where favourites stop.
 

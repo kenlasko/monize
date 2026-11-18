@@ -84,6 +84,13 @@ import { useSwipeToPaginate } from '@/hooks/useSwipeToPaginate';
 import { SWIPE_PAGINATE_ATTR } from '@/hooks/swipe-gesture';
 import { AccountFormModal } from '@/components/accounts/AccountFormModal';
 import { AccountInfoWidget } from '@/components/transactions/AccountInfoWidget';
+import { AccountInfoBar } from '@/components/transactions/AccountInfoBar';
+import { FloatingPageBar } from '@/components/layout/FloatingPageBar';
+import { FloatingAddButton } from '@/components/layout/FloatingAddButton';
+import { useHasMobileTabBar, useIsLgUp } from '@/hooks/useIsMobile';
+import { useScrolledPast } from '@/hooks/useScrolledPast';
+import { useAccountSwitcherItems } from '@/hooks/useAccountSwitcherItems';
+import type { CollapsedHeaderSwitcher } from '@/store/mobileChromeStore';
 import { PayeeInfoWidget } from '@/components/transactions/PayeeInfoWidget';
 import { CategoryInfoWidget } from '@/components/transactions/CategoryInfoWidget';
 import { WidgetFilterParams } from '@/components/transactions/widget-shared';
@@ -142,6 +149,7 @@ export default function TransactionsPage() {
 function TransactionsContent() {
   const t = useTranslations('transactions');
   const tc = useTranslations('common');
+  const ta = useTranslations('accountDetail');
   const router = useRouter();
   const { formatDate } = useDateFormat();
   const weekStartsOn = (usePreferencesStore((s) => s.preferences?.weekStartsOn) ?? 1) as 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -204,6 +212,16 @@ function TransactionsContent() {
   const [chartCollapsed, setChartCollapsed] = useTransactionsPanelCollapsed('chart');
   const collapseChart = useCallback(() => setChartCollapsed(true), [setChartCollapsed]);
   const expandChart = useCallback(() => setChartCollapsed(false), [setChartCollapsed]);
+  const isLgUp = useIsLgUp();
+  // The Account Info bar's expand chevron. On a desktop the full widget only
+  // ever sits beside the chart, so a bar standing in for it while the chart is
+  // folded brings the chart back too; on a phone the two fold independently.
+  // Each write is made only when it changes something, so expanding never
+  // records a choice the user did not make.
+  const expandAccountInfo = useCallback(() => {
+    if (accountWidgetCollapsed) setAccountWidgetCollapsed(false);
+    if (isLgUp && chartCollapsed) setChartCollapsed(false);
+  }, [accountWidgetCollapsed, setAccountWidgetCollapsed, isLgUp, chartCollapsed, setChartCollapsed]);
   const [showBulkUpdate, setShowBulkUpdate] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [bulkSelectMode, setBulkSelectMode] = useState(false);
@@ -1161,6 +1179,28 @@ function TransactionsContent() {
     [handleArrayFilterChange, setFilterAccountIds],
   );
 
+  // Below `xl`, once the page title scrolls behind the app header, the header
+  // reads "Transactions - <account>" and offers the widget's own switcher, so
+  // the account can be changed without scrolling back up.
+  const headerSwitcherItems = useAccountSwitcherItems(
+    filters.filteredAccounts,
+    singleFilteredAccount?.id,
+  );
+  const collapsedSwitcher = useMemo<CollapsedHeaderSwitcher | undefined>(
+    () =>
+      singleFilteredAccount
+        ? {
+            currentId: singleFilteredAccount.id,
+            items: headerSwitcherItems,
+            onSelect: handleWidgetAccountSwitch,
+            triggerLabel: ta('header.switchAccount'),
+            filterPlaceholder: ta('header.switchPlaceholder'),
+            noMatchesLabel: ta('header.switchNoMatches'),
+          }
+        : undefined,
+    [singleFilteredAccount, headerSwitcherItems, handleWidgetAccountSwitch, ta],
+  );
+
   // The accounts list is fetched once per page load, so account.currentBalance
   // goes stale as transactions are added or edited. The daily-balance series is
   // refetched alongside the transactions, so the widget's balance is derived
@@ -1238,6 +1278,34 @@ function TransactionsContent() {
     if (!widgetAccount?.institutionId) return undefined;
     return institutions.find((i) => i.id === widgetAccount.institutionId);
   }, [widgetAccount, institutions]);
+
+  // On a desktop, as soon as the account's name (in its widget, or in the
+  // bar the widget folds into) has scrolled behind the header, a copy of the
+  // bar floats at the top of the page, and slides away again when the name
+  // scrolls back. Below `xl` the app header's collapsed title carries the
+  // account instead.
+  const hasMobileTabBar = useHasMobileTabBar();
+  // Read from this render's filter, which is what `retainedWidget` is synced
+  // to above, never from `retainedWidget` itself: on the render that switches
+  // accounts it still holds the previous one until that sync re-renders, and
+  // the `false` read there reset the watcher, so the floating bar vanished
+  // after a switch made from it (#2277).
+  const accountBandActive =
+    singleFilteredAccount !== undefined && !singleFilteredPayee && !singleFilteredCategory;
+  const [accountNameRef, accountNameScrolledAway] = useScrolledPast<HTMLHeadingElement>(
+    !hasMobileTabBar && accountBandActive,
+  );
+  // Which copy of the name is on screen: the full widget's, unless the widget
+  // is folded (or, on a desktop, folded away with the chart), then the bar's.
+  const accountWidgetShown =
+    accountBandActive && !accountWidgetCollapsed && !(chartCollapsed && isLgUp);
+  // The floating bar's chevron opens the widget and takes the reader back up
+  // to it: opening a widget that is off screen would otherwise show nothing.
+  const expandFromFloatingBar = useCallback(() => {
+    expandAccountInfo();
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+  }, [expandAccountInfo]);
 
   // The selection resets on the criteria the *user* chose, not on
   // `bulkUpdateFilters`: that object falls back to every visible account when
@@ -1422,6 +1490,10 @@ function TransactionsContent() {
           title={t('page.title')}
           subtitle={t('page.subtitle')}
           help='transactions'
+          // Narrowed to one account, the account's own bar pins instead.
+          floatingBar={!accountBandActive}
+          collapsedContext={singleFilteredAccount?.name}
+          collapsedSwitcher={collapsedSwitcher}
           primaryAction={
             <Button
               {...tourAnchor(TOUR_ANCHORS.transactionsNewButton)}
@@ -1432,7 +1504,50 @@ function TransactionsContent() {
           }
         />
         {(() => {
-          if (chartCollapsed) return <CollapsedChartStrip onExpand={expandChart} />;
+          // The account's widget and the slim bar it folds into. The bar
+          // replaces the widget wherever the widget is folded, and on a
+          // desktop also wherever the chart is, since the widget's height is
+          // the chart's.
+          const accountWidget =
+            retainedWidget?.kind === 'account' ? (
+              <AccountInfoWidget
+                account={retainedWidget.account}
+                currentBalance={retainedWidget.currentBalance}
+                institution={widgetInstitution}
+                scheduledTransactions={scheduledTransactions}
+                refreshKey={reloadKey}
+                // The caret offers exactly what the Accounts filter
+                // offers (its status-narrowed list) and changes the
+                // filter the way the filter's own control does, so the
+                // Show Accounts toggle and every other filter survive
+                // the switch.
+                switchableAccounts={filters.filteredAccounts}
+                onSwitchAccount={handleWidgetAccountSwitch}
+                nameRef={accountWidgetShown ? accountNameRef : undefined}
+                onEdit={() => accountModal.openEdit(retainedWidget.account)}
+                onCollapse={() => setAccountWidgetCollapsed(true)}
+              />
+            ) : null;
+          const accountBar =
+            retainedWidget?.kind === 'account' && retainedWidget.account === singleFilteredAccount ? (
+              <AccountInfoBar
+                account={retainedWidget.account}
+                currentBalance={retainedWidget.currentBalance}
+                institution={widgetInstitution}
+                switchableAccounts={filters.filteredAccounts}
+                onSwitchAccount={handleWidgetAccountSwitch}
+                nameRef={accountWidgetShown ? undefined : accountNameRef}
+                onEdit={() => accountModal.openEdit(retainedWidget.account)}
+                onExpand={expandAccountInfo}
+              />
+            ) : null;
+
+          const strip = <CollapsedChartStrip onExpand={expandChart} />;
+          // Payee and category widgets fold with the chart. The account's
+          // stays on screen (in full on a phone while it is open, as its bar
+          // on a desktop), so a folded chart still draws the band below with
+          // the strip in the chart's place.
+          if (chartCollapsed && retainedWidget?.kind !== 'account') return strip;
           const chartKind =
             filters.filterCategoryIds.length > 0 || filters.filterPayeeIds.length > 0 || filters.filterTagIds.length > 0 || filters.filterSearch.length > 0
               ? 'monthlyTotals'
@@ -1525,19 +1640,25 @@ function TransactionsContent() {
                 : kind === 'category'
                   ? setCategoryWidgetCollapsed
                   : setAccountWidgetCollapsed;
+            // The account's folded widget is its bar, which carries its own
+            // expand chevron; the payee and category widgets leave this link.
             const showLabel =
-              kind === 'payee'
-                ? t('payeeWidget.show')
-                : kind === 'category'
-                  ? t('categoryWidget.show')
-                  : t('accountWidget.show');
+              kind === 'payee' ? t('payeeWidget.show') : t('categoryWidget.show');
             // The widget animates between expanded and collapsed rather than
             // mounting/unmounting, so both the chevron toggle and widening the
             // filter past one entity slide it out of view: its column
             // collapses width (desktop) or height (mobile) and fades, while
             // the chart flexes to fill the reclaimed space.
-            const widgetVisible = activeMatches && !collapsed;
+            // On a desktop the full account widget only sits beside the chart,
+            // so a folded chart folds it into its bar as well. The widget
+            // stays mounted either way, in the same place in the tree, so no
+            // fold remounts it and refetches what it shows.
+            const chartHidesWidget = chartCollapsed && isLgUp;
+            const widgetVisible = activeMatches && !collapsed && !chartHidesWidget;
+            const showAccountBar =
+              kind === 'account' && activeMatches && (collapsed || chartHidesWidget);
             return (
+              <>
               <div className="flex flex-col lg:flex-row lg:items-stretch">
                 <div
                   aria-hidden={!widgetVisible}
@@ -1573,26 +1694,12 @@ function TransactionsContent() {
                       onPayeeClick={filters.handlePayeeFilterClick}
                     />
                   ) : (
-                    <AccountInfoWidget
-                      account={retainedWidget.account}
-                      currentBalance={retainedWidget.currentBalance}
-                      institution={widgetInstitution}
-                      scheduledTransactions={scheduledTransactions}
-                      refreshKey={reloadKey}
-                      // The caret offers exactly what the Accounts filter
-                      // offers (its status-narrowed list) and changes the
-                      // filter the way the filter's own control does, so the
-                      // Show Accounts toggle and every other filter survive
-                      // the switch.
-                      switchableAccounts={filters.filteredAccounts}
-                      onSwitchAccount={handleWidgetAccountSwitch}
-                      onEdit={() => accountModal.openEdit(retainedWidget.account)}
-                      onCollapse={() => setAccountWidgetCollapsed(true)}
-                    />
+                    accountWidget
                   )}
                 </div>
                 <div className="lg:flex-1 min-w-0">
-                  {collapsed && activeMatches && (
+                  {showAccountBar && accountBar}
+                  {collapsed && activeMatches && kind !== 'account' && (
                     <button
                       type="button"
                       onClick={() => setCollapsed(false)}
@@ -1602,9 +1709,25 @@ function TransactionsContent() {
                       {showLabel}
                     </button>
                   )}
-                  {chart}
+                  {chartCollapsed ? strip : chart}
                 </div>
               </div>
+              {retainedWidget.kind === 'account' && activeMatches && !hasMobileTabBar && (
+                <FloatingPageBar visible={accountNameScrolledAway} testId="account-info-floating">
+                  <AccountInfoBar
+                    floating
+                    account={retainedWidget.account}
+                    currentBalance={retainedWidget.currentBalance}
+                    institution={widgetInstitution}
+                    switchableAccounts={filters.filteredAccounts}
+                    onSwitchAccount={handleWidgetAccountSwitch}
+                    onEdit={() => accountModal.openEdit(retainedWidget.account)}
+                    onExpand={expandFromFloatingBar}
+                    trailing={<FloatingAddButton />}
+                  />
+                </FloatingPageBar>
+              )}
+              </>
             );
           }
           return chart;

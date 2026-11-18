@@ -50,7 +50,7 @@
     "changeCurrencyWithBalanceOrSchedules": "Tidak dapat mengubah mata uang akun yang memiliki saldo awal atau transaksi terjadwal.",
     "alreadyClosed": "Akun sudah ditutup",
     "closeWithFutureTransactions": "Akun dengan transaksi bertanggal masa depan tidak dapat ditutup. Akun ini memiliki {{ count }} transaksi bertanggal setelah hari ini; hapus atau batalkan transaksi tersebut terlebih dahulu.",
-    "closeWithHoldings": "Tidak dapat menutup akun investasi yang masih memiliki efek. Akun ini memiliki {{ holdingCount }} kepemilikan dengan jumlah bukan nol; jual atau pindahkan terlebih dahulu.",
+    "closeWithHoldings": "Tidak dapat menutup akun investasi yang masih memiliki efek ({{ symbols }}); jual atau pindahkan terlebih dahulu.",
     "notClosed": "Akun belum ditutup",
     "modifyBalanceClosed": "Tidak dapat mengubah saldo akun yang sudah ditutup",
     "deleteWithTransactions": "Tidak dapat menghapus akun dengan {{ transactionCount }} transaksi. Tutup akun tersebut.",
@@ -1098,5 +1098,9 @@
   "help": {
     "pageNotFound": "Halaman bantuan tidak ditemukan",
     "imageNotFound": "Gambar bantuan tidak ditemukan"
+  },
+  "oauth": {
+    "connectionNotFound": "Aplikasi terhubung itu tidak ditemukan. Mungkin sudah dicabut.",
+    "invalidConnectionId": "ID aplikasi terhubung tidak valid"
   }
 }

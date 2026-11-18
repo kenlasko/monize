@@ -261,6 +261,8 @@
     "security": {
       "oauthTitle": "[XX-New app connected: {{ clientName }}-XX]",
       "oauthMessage": "[XX-The application {{ clientName }} was just granted access to your Monize account. If this wasn't you, change your password now: that revokes every connected application's access.-XX]",
+      "oauthConnectedTitle": "[XX-New app connected to your Monize account-XX]",
+      "oauthConnectedMessage": "[XX-An application calling itself {{ clientName }} was granted access, and its authorizations go to {{ destination }}. If this wasn't you, revoke it in Settings under Connected Apps.-XX]",
       "relayTitle": "[XX-A new connection answered your AI chat-XX]",
       "relayMessage": "[XX-A connection that has not answered your Monize AI chat before just picked up a prompt. If you did not connect this assistant, change your password.-XX]"
     },

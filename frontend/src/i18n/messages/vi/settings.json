@@ -673,6 +673,39 @@
       "never": "Không bao giờ"
     }
   },
+  "connectedApps": {
+    "heading": "Ứng dụng đã kết nối",
+    "description": "Các ứng dụng bạn đã cho phép truy cập vào tài khoản Monize từ màn hình đồng ý, chẳng hạn trợ lý AI kết nối qua MCP. Mỗi dòng bắt đầu bằng nơi các ủy quyền của ứng dụng được gửi đến, vì tên của một ứng dụng là tên do chính nó chọn. Hãy thu hồi mọi ứng dụng bạn không nhận ra.",
+    "emptyTitle": "Chưa có ứng dụng nào được kết nối",
+    "emptyDescription": "Khi bạn cho phép một ứng dụng trên màn hình đồng ý của Monize, ứng dụng đó sẽ xuất hiện ở đây.",
+    "loadError": "Không thể tải các ứng dụng đã kết nối, nên danh sách này có thể chưa đầy đủ.",
+    "retryButton": "Thử lại",
+    "callsItself": "Tự gọi mình là “{name}”",
+    "destinationUnknown": "Không rõ đích đến",
+    "registrationExpired": "Đăng ký đã hết hạn; ứng dụng sẽ đăng ký lại khi kết nối lại",
+    "scopes": {
+      "read": "Đọc",
+      "write": "Ghi"
+    },
+    "connectedOn": "Đã kết nối {date}",
+    "lastUsed": "Dùng lần cuối {time}",
+    "notUsedYet": "Chưa được sử dụng",
+    "expiresOn": "Quyền truy cập kết thúc vào {date}",
+    "separator": " · ",
+    "revokeButton": "Thu hồi",
+    "revokeAriaLabel": "Thu hồi {name}",
+    "revokeModal": {
+      "title": "Thu hồi ứng dụng này?",
+      "message": "“{name}” mất quyền truy cập vào tài khoản Monize của bạn ngay lập tức. Để dùng lại, hãy kết nối lại từ ứng dụng.",
+      "confirmLabel": "Thu hồi",
+      "revoking": "Đang thu hồi..."
+    },
+    "toasts": {
+      "loadFailed": "Không thể tải các ứng dụng đã kết nối",
+      "revoked": "Đã thu hồi ứng dụng",
+      "revokeFailed": "Không thể thu hồi ứng dụng"
+    }
+  },
   "autoBackup": {
     "heading": "Sao lưu tự động",
     "description": "Một lịch duy nhất cho toàn bộ bản triển khai: máy chủ sao lưu dữ liệu của mọi tài khoản vào kho lưu trữ bên dưới. Vì Monize chạy trong Docker, cần gắn một thư mục cục bộ vào vùng chứa dưới dạng volume (ví dụ: -v /host/backups:/data/backups).",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "Truy cập chia sẻ",
     "emergencyAccess": "Truy cập khẩn cấp",
     "apiAccess": "Truy cập API",
+    "connectedApps": "Ứng dụng đã kết nối",
     "aiSettings": "Cài đặt AI",
     "emailReceipts": "Hóa đơn qua email",
     "backupRestore": "Sao lưu & Khôi phục",

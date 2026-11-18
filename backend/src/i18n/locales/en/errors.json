@@ -50,7 +50,7 @@
     "changeCurrencyWithBalanceOrSchedules": "Cannot change the currency of an account that has an opening balance or scheduled transactions.",
     "alreadyClosed": "Account is already closed",
     "closeWithFutureTransactions": "Cannot close an account with future-dated transactions. It has {{ count }} transaction(s) dated after today; delete or void them first.",
-    "closeWithHoldings": "Cannot close an investment account that still holds securities. It has {{ holdingCount }} holding(s) with a non-zero quantity; sell or transfer them first.",
+    "closeWithHoldings": "Cannot close an investment account that still holds securities ({{ symbols }}); sell or transfer them first.",
     "notClosed": "Account is not closed",
     "modifyBalanceClosed": "Cannot modify balance of a closed account",
     "deleteWithTransactions": "Cannot delete account with {{ transactionCount }} transaction(s). Close the account instead.",
@@ -1098,5 +1098,9 @@
   "help": {
     "pageNotFound": "Help page not found",
     "imageNotFound": "Help image not found"
+  },
+  "oauth": {
+    "connectionNotFound": "That connected app was not found. It may already have been revoked.",
+    "invalidConnectionId": "Invalid connected app id"
   }
 }

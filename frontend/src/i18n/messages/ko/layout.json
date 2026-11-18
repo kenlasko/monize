@@ -141,7 +141,8 @@
   },
   "pageHeader": {
     "helpAriaLabel": "이 페이지 도움말",
-    "helpTooltip": "이 페이지 도움말"
+    "helpTooltip": "이 페이지 도움말",
+    "collapsedTitleWithContext": "{title} – {context}"
   },
   "bootSplash": {
     "loading": "Monize 로드 중",

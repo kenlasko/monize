@@ -5,6 +5,7 @@ import {
 } from "../notification-center/entities/notification.entity";
 import type { CreateNotificationInput } from "../notification-center/notification.service";
 import { NotificationDispatchService } from "./notification-dispatch.service";
+import { boundCodePoints, displayClientName } from "../oauth/client-identity";
 
 /**
  * Security notices (`docs/specs/security-notifications.md`): somebody new can
@@ -17,41 +18,34 @@ import { NotificationDispatchService } from "./notification-dispatch.service";
  * `notification-target.contract.test.ts` reads it out of the source.
  */
 
-const CLIENT_NAME_MAX = 100;
-
-// Control (\p{Cc}: line breaks), format (\p{Cf}: bidi overrides U+202A-202E,
-// isolates U+2066-2069, marks U+200E/F, zero-width) and line/paragraph
-// separator characters (\p{Zl}, \p{Zp}: U+2028/U+2029) could spoof the title,
-// subject and push text.
-const UNSAFE_NAME_CHARS = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu;
-
-/** At most `max` code points: a UTF-16 slice can split a surrogate pair, and
- * PostgreSQL's jsonb rejects the lone half, which would drop the notice. */
-function boundCodePoints(text: string, max: number): string {
-  return Array.from(text).slice(0, max).join("");
-}
+/** Longest destination origin stored on a notice, in code points. */
+const DESTINATION_MAX = 300;
 
 export function oauthClientAuthorizedNotice(facts: {
   grantId: string;
   clientId: string;
   clientName: string;
+  /** Where the client's authorizations go (`describeRedirectTarget`), or null. */
+  destination: string | null;
 }): CreateNotificationInput {
   // The name is chosen by whoever registered the client: cleaned and bounded
-  // here, escaped wherever it is rendered.
-  const clientName =
-    boundCodePoints(
-      facts.clientName.replace(UNSAFE_NAME_CHARS, " ").trim(),
-      CLIENT_NAME_MAX,
-    ) || boundCodePoints(facts.clientId, CLIENT_NAME_MAX);
+  // here, escaped wherever it is rendered. The destination is the one fact the
+  // server can vouch for (GHSA-vmgq-326p-fprx), so the notice leads with it.
+  const clientName = displayClientName(facts.clientName, facts.clientId);
+  const destination = facts.destination
+    ? boundCodePoints(facts.destination, DESTINATION_MAX)
+    : "an unknown address";
   return {
     type: NotificationType.OAUTH_CLIENT_AUTHORIZED,
     severity: NotificationSeverity.WARNING,
-    title: `New app connected: ${clientName}`,
+    title: "New app connected to your Monize account",
     message:
-      `The application ${clientName} was just granted access to your Monize account. ` +
-      "If this wasn't you, change your password now: that revokes every connected application's access.",
-    data: { clientId: facts.clientId, clientName },
-    target: "/settings",
+      `An application calling itself ${clientName} was granted access, and its authorizations go to ${destination}. ` +
+      "If this wasn't you, revoke it in Settings under Connected Apps.",
+    data: facts.destination
+      ? { clientId: facts.clientId, clientName, destination }
+      : { clientId: facts.clientId, clientName },
+    target: "/settings#connected-apps",
     dedupeKey: `oauth:grant:${facts.grantId}`,
   };
 }
@@ -83,7 +77,12 @@ export class SecurityNoticeService {
   /** A new grant was saved. Never throws: a failed notice must not break consent. */
   async oauthClientAuthorized(
     userId: string,
-    facts: { grantId: string; clientId: string; clientName: string },
+    facts: {
+      grantId: string;
+      clientId: string;
+      clientName: string;
+      destination: string | null;
+    },
   ): Promise<void> {
     await this.send(userId, oauthClientAuthorizedNotice(facts));
   }

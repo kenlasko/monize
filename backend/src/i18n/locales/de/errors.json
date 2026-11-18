@@ -50,7 +50,7 @@
     "changeCurrencyWithBalanceOrSchedules": "Die Währung eines Kontos mit Anfangssaldo oder geplanten Buchungen kann nicht geändert werden.",
     "alreadyClosed": "Konto ist bereits geschlossen",
     "closeWithFutureTransactions": "Ein Konto mit Buchungen in der Zukunft kann nicht geschlossen werden. Es hat {{ count }} Buchung(en) nach dem heutigen Datum; löschen oder stornieren Sie diese zuerst.",
-    "closeWithHoldings": "Ein Anlagekonto mit Wertpapierbestand kann nicht geschlossen werden. Es hat {{ holdingCount }} Position(en) mit einer Menge ungleich null; verkaufen oder übertragen Sie diese zuerst.",
+    "closeWithHoldings": "Ein Anlagekonto mit Wertpapierbestand kann nicht geschlossen werden ({{ symbols }}); verkaufen oder übertragen Sie diese zuerst.",
     "notClosed": "Konto ist nicht geschlossen",
     "modifyBalanceClosed": "Saldo eines geschlossenen Kontos kann nicht geändert werden",
     "deleteWithTransactions": "Konto mit {{ transactionCount }} Buchung(en) kann nicht gelöscht werden. Schließen Sie das Konto stattdessen.",
@@ -1098,5 +1098,9 @@
   "help": {
     "pageNotFound": "Hilfeseite nicht gefunden",
     "imageNotFound": "Hilfebild nicht gefunden"
+  },
+  "oauth": {
+    "connectionNotFound": "Diese verbundene App wurde nicht gefunden. Möglicherweise wurde sie bereits widerrufen.",
+    "invalidConnectionId": "Ungültige ID der verbundenen App"
   }
 }

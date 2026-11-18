@@ -10,7 +10,13 @@
     "destinationUnknown": "O Monize não conseguiu determinar para onde esta autorização seria enviada. Não permita o acesso.",
     "unverifiedNotice": "Esta aplicação registou-se a si própria neste servidor Monize, e o Monize não verificou quem a opera; o nome dela é aquele que ela própria escolheu. Só permita o acesso se tiver sido você a iniciar esta ligação a partir dessa aplicação e o endereço acima lhe pertencer.",
     "claimedWebsite": "Website indicado pela aplicação: {{ website }}",
-    "websiteMismatch": "A aplicação afirma que o seu website é {{ website }}, mas a autorização será enviada para um endereço diferente."
+    "websiteMismatch": "A aplicação afirma que o seu website é {{ website }}, mas a autorização será enviada para um endereço diferente.",
+    "pageTitle": "Permitir o acesso à sua conta Monize?",
+    "headingWeb": "{{ host }} quer aceder à sua conta Monize",
+    "headingDevice": "Uma aplicação neste dispositivo quer aceder à sua conta Monize",
+    "headingApp": "Uma aplicação que abre ligações {{ scheme }} quer aceder à sua conta Monize",
+    "headingUnknown": "Uma aplicação não identificada quer aceder à sua conta Monize",
+    "selfNamed": "Chama-se a si própria «{{ name }}». O Monize não verificou esse nome."
   },
   "import": {
     "voidedTransactionNote": "Anulada na origem; o valor original foi omitido da exportação e importado como zero."

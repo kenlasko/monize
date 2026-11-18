@@ -2880,6 +2880,111 @@ describe('InvestmentTransactionForm - extra coverage', () => {
       const totalInput = screen.getByLabelText(/Total Amount/) as HTMLInputElement;
       expect(Number(totalInput.value)).toBeCloseTo(46.6557, 4);
     });
+
+    describe('a typed price and a typed total leave the commission (#2267)', () => {
+      const enter = async (label: RegExp | string, value: string) => {
+        await act(async () => {
+          fireEvent.change(screen.getByLabelText(label), { target: { value } });
+        });
+      };
+      // The total field reports every keystroke, so the total is typed the way
+      // a person types it: through smaller totals on its way to the real one.
+      const typeTotal = async (value: string) => {
+        for (let i = 1; i <= value.length; i++) {
+          await enter(/Total Amount/, value.slice(0, i));
+        }
+      };
+      const openTrade = async (action: 'BUY' | 'SELL') => {
+        render(<InvestmentTransactionForm accounts={accounts} />);
+        await waitFor(() => {
+          expect(screen.getByLabelText('Transaction Type')).toBeInTheDocument();
+        });
+        await enter('Transaction Type', action);
+        await enter('Quantity (Shares)', '10');
+      };
+      const field = (label: RegExp | string) =>
+        Number((screen.getByLabelText(label) as HTMLInputElement).value);
+      const submit = async () => {
+        await act(async () => {
+          fireEvent.click(screen.getByText('Create Transaction'));
+        });
+        await waitFor(() => {
+          expect(investmentsApi.createTransaction).toHaveBeenCalled();
+        });
+        return vi.mocked(investmentsApi.createTransaction).mock.calls[0][0] as {
+          price?: number;
+          commission?: number;
+          totalAmount?: number;
+        };
+      };
+
+      /**
+       * Invariant: the executed total is the fact (INV-TRADE-001); with the
+       * price typed as well, what is left over is the commission.
+       * Canonical adversarial input: 10 shares at 100 for a total of 1,005.
+       * Minimal mutation: derive the price from the total regardless of a
+       * typed price.
+       * Test that fails under it: this one -- the price becomes 100.50 and the
+       * commission stays 0.
+       */
+      it('puts what a buy cost beyond quantity x price into the commission', async () => {
+        await openTrade('BUY');
+        await enter(/Price per Share/, '100');
+        await typeTotal('1005');
+
+        expect(field(/Price per Share/)).toBe(100);
+        expect(field('Commission / Fees')).toBe(5);
+        const payload = await submit();
+        expect(payload.price).toBe(100);
+        expect(payload.commission).toBe(5);
+        expect(payload.totalAmount).toBeCloseTo(1005, 4);
+      });
+
+      it('puts what a sale fetched short of quantity x price into the commission', async () => {
+        await openTrade('SELL');
+        await enter(/Price per Share/, '100');
+        await typeTotal('995');
+
+        expect(field(/Price per Share/)).toBe(100);
+        expect(field('Commission / Fees')).toBe(5);
+        const payload = await submit();
+        expect(payload.commission).toBe(5);
+        expect(payload.totalAmount).toBeCloseTo(995, 4);
+      });
+
+      it('derives the price when the total leaves no commission, taking back one it wrote', async () => {
+        await openTrade('BUY');
+        await enter(/Price per Share/, '100');
+        await typeTotal('1005');
+        expect(field('Commission / Fees')).toBe(5);
+
+        await enter(/Total Amount/, '950');
+
+        expect(field(/Price per Share/)).toBe(95);
+        expect(screen.getByLabelText('Commission / Fees')).toHaveValue('');
+        const payload = await submit();
+        expect(payload.price).toBe(95);
+        expect(payload.commission ?? 0).toBe(0);
+      });
+
+      it('keeps a commission the person typed when the total sets the price', async () => {
+        await openTrade('BUY');
+        await enter(/Price per Share/, '100');
+        await enter('Commission / Fees', '7');
+        await enter(/Total Amount/, '957');
+
+        expect(field(/Price per Share/)).toBe(95);
+        expect(field('Commission / Fees')).toBe(7);
+      });
+
+      it('still derives the price from quantity and total when no price was typed', async () => {
+        await openTrade('BUY');
+        await typeTotal('1005');
+
+        expect(field(/Price per Share/)).toBe(100.5);
+        expect(screen.getByLabelText('Commission / Fees')).toHaveValue('');
+      });
+    });
   });
 
   describe('Interest on any security (issue #2257)', () => {

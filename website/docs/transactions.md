@@ -245,6 +245,18 @@ When you filter the list to a single **account**, **payee**, or **category**, an
 
 Each panel can be edited from its pencil icon, and collapsed so the chart uses the full width.
 
+A collapsed account panel becomes a slim bar above the chart, with the account's name, the caret that switches accounts, and the institution on the left, and its current balance on the right; the chevron at its end opens the panel again. On a desktop the bar also keeps the details and edit icons. The account panel stays on screen when you hide the chart: on a desktop it shows as the same bar, and on a phone it stays open until you collapse it with its own chevron.
+
+![The account panel collapsed into a bar above the balance history](images/transactions-account-bar.png)
+
+On a desktop, as soon as the account name scrolls out of view, the same bar slides down across the full width of the top of the page so the account and its balance stay in sight, and slides away again when you scroll back up. Its chevron opens the panel and takes you back up to it, and the **+** at its right end starts a new transaction.
+
+![The account bar floating at the top of the register while scrolled down](images/transactions-floating-bar.png)
+
+On a phone or tablet, once you scroll the page title away, the header bar reads **Transactions – *account name*** while the list is narrowed to one account. The chevron beside it opens the same account menu as the panel's caret, with your favourites first and then your other accounts. If the line does not fit, the header shows just the account name.
+
+![The header bar on a phone showing the account, with its account menu open](images/transactions-phone-header.png)
+
 ### Filter Persistence
 
 Your filter selections are saved in your browser's local storage, so they persist between sessions. When navigating from a report, the dashboard, or another page, the link's filters are applied via URL parameters and override your saved filters temporarily.

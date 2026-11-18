@@ -399,6 +399,8 @@
     "security": {
       "oauthTitle": "Połączono nową aplikację: {{ clientName }}",
       "oauthMessage": "Aplikacja {{ clientName }} właśnie otrzymała dostęp do Twojego konta Monize. Jeśli to nie Ty, zmień teraz hasło: unieważni to dostęp wszystkich połączonych aplikacji.",
+      "oauthConnectedTitle": "Nowa aplikacja połączona z Twoim kontem Monize",
+      "oauthConnectedMessage": "Aplikacja nazywająca siebie {{ clientName }} otrzymała dostęp, a jej autoryzacje trafiają na adres {{ destination }}. Jeśli to nie Ty, odwołaj ją w Ustawieniach w sekcji „Połączone aplikacje”.",
       "relayTitle": "Nowe połączenie odpowiedziało w Twoim czacie AI",
       "relayMessage": "Połączenie, które wcześniej nie odpowiadało w Twoim czacie AI Monize, właśnie pobrało zapytanie. Jeśli ten asystent nie został połączony przez Ciebie, zmień hasło."
     },

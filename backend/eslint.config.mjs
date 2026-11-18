@@ -329,7 +329,9 @@ const OAUTH_PAYLOAD_ALLOWLIST = [
   "src/oauth/oauth.module.ts",
   // The `oidc-provider` Adapter implementation -- the reason the exception
   // exists. Every method is keyed by an opaque provider id, except the daily
-  // expiry sweep (#2177), keyed by `expires_at` alone.
+  // expiry sweep (#2177), keyed by `expires_at` alone, and the Connected apps
+  // list and revoke (`findGrantsForAccount`, `revokeGrantForAccount`), keyed by
+  // the session's own subject and never by a request value.
   "src/oauth/postgres.adapter.ts",
   // `revokeAllForUser`, the second access path, and the one the exemption's
   // original rationale claimed did not exist ("never queried per end-user").

@@ -673,6 +673,39 @@
       "never": "Nunca"
     }
   },
+  "connectedApps": {
+    "heading": "Aplicações ligadas",
+    "description": "Aplicações a que permitiu o acesso à sua conta Monize a partir do ecrã de consentimento, como assistentes de IA ligados por MCP. Cada linha começa pelo destino das autorizações da aplicação, porque o nome de uma aplicação é o que ela própria escolheu. Revogue qualquer aplicação que não reconheça.",
+    "emptyTitle": "Sem aplicações ligadas",
+    "emptyDescription": "Quando permitir uma aplicação no ecrã de consentimento do Monize, ela aparece aqui.",
+    "loadError": "Não foi possível carregar as aplicações ligadas, por isso esta lista pode estar incompleta.",
+    "retryButton": "Tentar novamente",
+    "callsItself": "Chama-se a si própria «{name}»",
+    "destinationUnknown": "Destino desconhecido",
+    "registrationExpired": "Registo expirado; a aplicação regista-se novamente quando voltar a ligar-se",
+    "scopes": {
+      "read": "Leitura",
+      "write": "Escrita"
+    },
+    "connectedOn": "Ligada em {date}",
+    "lastUsed": "Última utilização {time}",
+    "notUsedYet": "Ainda não utilizada",
+    "expiresOn": "O acesso termina em {date}",
+    "separator": " · ",
+    "revokeButton": "Revogar",
+    "revokeAriaLabel": "Revogar {name}",
+    "revokeModal": {
+      "title": "Revogar esta aplicação?",
+      "message": "«{name}» perde imediatamente o acesso à sua conta Monize. Para a voltar a utilizar, ligue-a novamente a partir da aplicação.",
+      "confirmLabel": "Revogar",
+      "revoking": "A revogar..."
+    },
+    "toasts": {
+      "loadFailed": "Não foi possível carregar as aplicações ligadas",
+      "revoked": "Aplicação revogada",
+      "revokeFailed": "Não foi possível revogar a aplicação"
+    }
+  },
   "autoBackup": {
     "heading": "Cópia de Segurança Automática",
     "description": "Um único agendamento para toda a instalação: o servidor faz cópia dos dados de cada conta para o armazenamento abaixo. Como o Monize corre em Docker, uma pasta local tem de ser montada no contentor como volume (por ex., -v /host/backups:/data/backups).",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "Acesso Partilhado",
     "emergencyAccess": "Acesso de Emergência",
     "apiAccess": "Acesso à API",
+    "connectedApps": "Aplicações ligadas",
     "aiSettings": "Definições de IA",
     "emailReceipts": "Recibos por e-mail",
     "backupRestore": "Cópia de Segurança e Restauro",

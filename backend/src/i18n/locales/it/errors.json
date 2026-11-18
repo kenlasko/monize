@@ -50,7 +50,7 @@
     "changeCurrencyWithBalanceOrSchedules": "Impossibile cambiare la valuta di un conto con saldo iniziale o transazioni pianificate.",
     "alreadyClosed": "Il conto è già chiuso",
     "closeWithFutureTransactions": "Impossibile chiudere un conto con transazioni con data futura. Ha {{ count }} transazione/i con data successiva a oggi; eliminale o annullale prima.",
-    "closeWithHoldings": "Impossibile chiudere un conto di investimento che detiene ancora titoli. Ha {{ holdingCount }} posizione/i con quantità diversa da zero; vendile o trasferiscile prima.",
+    "closeWithHoldings": "Impossibile chiudere un conto di investimento che detiene ancora titoli ({{ symbols }}); vendili o trasferiscili prima.",
     "notClosed": "Il conto non è chiuso",
     "modifyBalanceClosed": "Impossibile modificare il saldo di un conto chiuso",
     "deleteWithTransactions": "Impossibile eliminare un conto con {{ transactionCount }} transazione/i. Chiudi il conto invece.",
@@ -1098,5 +1098,9 @@
   "help": {
     "pageNotFound": "Pagina della guida non trovata",
     "imageNotFound": "Immagine della guida non trovata"
+  },
+  "oauth": {
+    "connectionNotFound": "App connessa non trovata. Potrebbe essere già stata revocata.",
+    "invalidConnectionId": "ID dell'app connessa non valido"
   }
 }

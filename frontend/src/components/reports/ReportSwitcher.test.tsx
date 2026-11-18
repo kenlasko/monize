@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, within } from '@/test/render';
-import { ReportSwitcher } from './ReportSwitcher';
+import { useReportSwitcher } from './ReportSwitcher';
+import { EntitySwitcher } from '@/components/ui/EntitySwitcher';
 import { customReportsApi } from '@/lib/custom-reports';
 import { investmentReportsApi } from '@/lib/investment-reports';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -32,6 +33,11 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+// How every report header draws the caret.
+function ReportSwitcher({ currentId }: { currentId: string }) {
+  return <EntitySwitcher {...useReportSwitcher(currentId)} />;
+}
+
 const getCustom = vi.mocked(customReportsApi.getAll);
 const getInvestment = vi.mocked(investmentReportsApi.getAll);
 
@@ -44,7 +50,7 @@ async function openSwitcher(currentId = 'tax-summary') {
   });
 }
 
-describe('ReportSwitcher', () => {
+describe('useReportSwitcher', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getCustom.mockResolvedValue([]);

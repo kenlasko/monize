@@ -22,6 +22,7 @@ import { ActionHistoryPanel } from '@/components/layout/ActionHistoryPanel';
 import { HelpMenu } from '@/components/layout/HelpMenu';
 import { MobileNavDrawer } from '@/components/layout/MobileNavDrawer';
 import { CollapsedHeaderTitleView } from '@/components/layout/CollapsedHeaderTitleView';
+import { HEADER_SURFACE_CLASS } from '@/components/layout/FloatingPageBar';
 import { useMobileChromeStore } from '@/store/mobileChromeStore';
 import { useHelpMenuEntries } from '@/hooks/useHelpMenuEntries';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
@@ -246,7 +247,7 @@ export function AppHeader() {
       // about where the history and notification panels open.
       // Reaches up through the body's safe-area padding and pads itself instead,
       // so once pinned its controls clear the status bar of an installed app.
-      className={`sticky top-0 z-40 mt-[calc(env(safe-area-inset-top)*-1)] pt-[env(safe-area-inset-top)] bg-white dark:bg-gray-800 supports-[backdrop-filter]:bg-white/75 supports-[backdrop-filter]:dark:bg-gray-800/70 supports-[backdrop-filter]:backdrop-blur-md supports-[backdrop-filter]:backdrop-saturate-150 border-b border-gray-200/80 dark:border-white/5 ${
+      className={`sticky top-0 z-40 mt-[calc(env(safe-area-inset-top)*-1)] pt-[env(safe-area-inset-top)] ${HEADER_SURFACE_CLASS} ${
         anyMenuOpen ? 'transition-transform duration-200 ease-out' : ''
       }`}
     >

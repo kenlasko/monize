@@ -6,7 +6,7 @@ import {
   forwardRef,
   Logger,
 } from "@nestjs/common";
-import { DataSource, EntityManager, In, Not } from "typeorm";
+import { DataSource, EntityManager, In } from "typeorm";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -21,7 +21,7 @@ import {
 } from "../transactions/entities/transaction.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
-import { Holding } from "../securities/entities/holding.entity";
+import { HELD_QUANTITY_THRESHOLD } from "../securities/investment-replay.util";
 import { Institution } from "../institutions/entities/institution.entity";
 import { CreateAccountDto } from "./dto/create-account.dto";
 import { UpdateAccountDto } from "./dto/update-account.dto";
@@ -1761,22 +1761,30 @@ export class AccountsService {
       }
 
       // A brokerage's `current_balance` is deliberately kept at 0 and its worth
-      // lives in its holdings, so the balance check above says nothing about
-      // whether it still holds securities. Without this, closing an account
-      // full of positions succeeded silently.
+      // lives in its holdings, so the balance says nothing about whether it
+      // still holds securities. Without this, closing an account full of
+      // positions succeeded silently. "Holds" is the portfolio's own predicate
+      // (`HELD_QUANTITY_THRESHOLD`): a residue below it is not shown on the
+      // Investments page, and refusing over it left a user with an account
+      // reading 0 holdings that could not be closed (#2271). The refusal names
+      // the securities, so the reader knows what to sell or transfer.
       if (account.accountType === AccountType.INVESTMENT) {
-        const openPositions = await m.count(Holding, {
-          where: {
-            accountId: In(halves.map((half) => half.id)),
-            quantity: Not(0),
-          },
-        });
-        if (openPositions > 0) {
+        const held: { symbol: string }[] = await m.query(
+          `SELECT DISTINCT s.symbol AS symbol
+             FROM holdings h
+             JOIN securities s ON s.id = h.security_id
+            WHERE h.account_id = ANY($1)
+              AND ABS(h.quantity) >= $2
+            ORDER BY s.symbol`,
+          [halves.map((half) => half.id), HELD_QUANTITY_THRESHOLD],
+        );
+        if (held.length > 0) {
+          const symbols = held.map((row) => row.symbol).join(", ");
           throw new BadRequestException(
             tr(
               "errors.accounts.closeWithHoldings",
-              `Cannot close an investment account that still holds securities. It has ${openPositions} holding(s) with a non-zero quantity; sell or transfer them first.`,
-              { holdingCount: openPositions },
+              `Cannot close an investment account that still holds securities (${symbols}); sell or transfer them first.`,
+              { symbols },
             ),
           );
         }

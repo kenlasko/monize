@@ -45,6 +45,17 @@ import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { useMainAccountName } from '@/hooks/useMainAccountName';
 import { Account } from '@/types/account';
 import { buildAccountFilterLabel } from '@/lib/account-utils';
+import { useAccountSwitcherItems } from '@/hooks/useAccountSwitcherItems';
+import { useHasMobileTabBar } from '@/hooks/useIsMobile';
+import { useScrolledPast } from '@/hooks/useScrolledPast';
+import { FloatingPageBar } from '@/components/layout/FloatingPageBar';
+import { FloatingAddButton } from '@/components/layout/FloatingAddButton';
+import { PartialTotal } from '@/components/ui/PartialTotal';
+import { isPortfolioPartial, portfolioPartialTotal } from '@/lib/net-worth-completeness';
+import { portfolioHeadline } from '@/lib/portfolio-headline';
+import { preferredCurrency } from '@/lib/default-currency';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
+import type { CollapsedHeaderSwitcher } from '@/store/mobileChromeStore';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import {
   InvestmentViewToggle,
@@ -53,6 +64,9 @@ import {
 import { PAGE_SIZE } from '@/lib/constants';
 import { useMobileAddChoices } from '@/store/mobileAddActionStore';
 import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
+
+/** The header switcher's row for "every investment account"; never an account id. */
+const ALL_INVESTMENT_ACCOUNTS = '__all-investment-accounts__';
 
 const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
 
@@ -72,6 +86,14 @@ export default function InvestmentsPage() {
 function InvestmentsContent() {
   const t = useTranslations('investments');
   const tc = useTranslations('common');
+  const ta = useTranslations('accountDetail');
+  const { formatCurrency } = useNumberFormat();
+  // On a desktop, as soon as the account picker (the account names) has
+  // scrolled behind the header, a bar carrying the same picker and Refresh
+  // pins to the top of the page. Below `xl` the app header's collapsed title
+  // carries the accounts instead.
+  const hasMobileTabBar = useHasMobileTabBar();
+  const [accountPickerRef, accountPickerScrolledAway] = useScrolledPast<HTMLDivElement>(!hasMobileTabBar);
   // The cash register below is the shared transactions list, so its pager
   // counts "transactions" out of that list's own catalog rather than a second
   // copy of the noun under `investments`.
@@ -213,10 +235,61 @@ function InvestmentsContent() {
     );
   }, [data.selectedAccountIds, data.selectableAccounts, tc, getAccountDisplayName]);
 
+  // Below `xl`, once the title scrolls behind the app header, the header reads
+  // "Investments - <the summary's bracket label>" and its caret narrows the
+  // page to one account, or back to all of them. The menu marks the selection
+  // as current only when it is one account or all of them; a hand-picked
+  // handful has no single row to stand for it.
+  const allAccountsSelected =
+    data.selectedAccountIds.length === 0 ||
+    data.selectableAccounts.every((a) => data.selectedAccountIds.includes(a.id));
+  const headerCurrentId = allAccountsSelected
+    ? ALL_INVESTMENT_ACCOUNTS
+    : data.selectedAccountIds.length === 1
+      ? data.selectedAccountIds[0]
+      : '';
+  const { handleAccountChange } = data;
+  const headerAccountItems = useAccountSwitcherItems(
+    data.selectableAccounts,
+    headerCurrentId,
+    getAccountDisplayName,
+  );
+  const collapsedSwitcher = useMemo<CollapsedHeaderSwitcher>(
+    () => ({
+      currentId: headerCurrentId,
+      items: [
+        { id: ALL_INVESTMENT_ACCOUNTS, primary: t('page.allInvestmentAccounts') },
+        ...headerAccountItems,
+      ],
+      onSelect: (id: string) =>
+        handleAccountChange(id === ALL_INVESTMENT_ACCOUNTS ? [] : [id]),
+      triggerLabel: ta('header.switchAccount'),
+      filterPlaceholder: ta('header.switchPlaceholder'),
+      noMatchesLabel: ta('header.switchNoMatches'),
+    }),
+    [headerCurrentId, headerAccountItems, handleAccountChange, t, ta],
+  );
+
   // One account in view reports in its own currency, everywhere on the page.
   const singleAccountCurrency =
     data.selectedAccountIds.length === 1
       ? data.accounts.find(a => a.id === data.selectedAccountIds[0])?.currencyCode ?? null
+      : null;
+
+  // The pinned bar repeats the Portfolio Summary's Total Portfolio Value,
+  // through the card's own derivation and under its completeness marker. No
+  // summary yet is no figure, never a zero.
+  const defaultCurrency = preferredCurrency(
+    usePreferencesStore((s) => s.preferences?.defaultCurrency),
+  );
+  const floatingHeadline =
+    data.portfolioSummary && !data.isSummaryLoading
+      ? portfolioHeadline(
+          data.portfolioSummary,
+          singleAccountCurrency && singleAccountCurrency !== defaultCurrency
+            ? singleAccountCurrency
+            : null,
+        )
       : null;
 
   // Asked once for the page: "Portfolio performance" lists every window, and
@@ -252,6 +325,39 @@ function InvestmentsContent() {
   );
   useMobileAddChoices(t('page.newTransaction'), mobileAddChoices);
 
+  const refreshButton = (
+    <RefreshPricesButton
+      onClick={handleRefreshClick}
+      isRefreshing={data.isRefreshingPrices}
+      lastPriceUpdate={data.lastPriceUpdate}
+    />
+  );
+
+  // One or more accounts, or all of them: the header's picker, and the same
+  // picker in the desktop's pinned bar, so both choose the same way.
+  const accountPicker = (
+    <MultiSelect
+      value={data.selectedAccountIds}
+      onChange={data.handleAccountChange}
+      placeholder={t('page.allInvestmentAccounts')}
+      showSearch={false}
+      options={data.selectableAccounts.map((account: Account) => ({
+        value: account.id,
+        label: getAccountDisplayName(account),
+      }))}
+    />
+  );
+
+  // The header's account picker and price refresh. The picker is what the
+  // desktop's pinned bar watches: once its account names have scrolled behind
+  // the app header, the bar takes over.
+  const accountControls = (
+    <div ref={accountPickerRef} className="flex items-stretch gap-3 w-full sm:w-auto">
+      <div className="flex-1 sm:flex-none sm:w-64 min-w-0">{accountPicker}</div>
+      {refreshButton}
+    </div>
+  );
+
   return (
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
@@ -260,29 +366,11 @@ function InvestmentsContent() {
             title={t('page.title')}
             subtitle={t('page.subtitle')}
             help='investments'
-            actions={
-              <>
-                <div className="flex items-stretch gap-3 w-full sm:w-auto">
-                  <div className="flex-1 sm:flex-none sm:w-64 min-w-0">
-                    <MultiSelect
-                      value={data.selectedAccountIds}
-                      onChange={data.handleAccountChange}
-                      placeholder={t('page.allInvestmentAccounts')}
-                      showSearch={false}
-                      options={data.selectableAccounts.map((account: Account) => ({
-                        value: account.id,
-                        label: getAccountDisplayName(account),
-                      }))}
-                    />
-                  </div>
-                  <RefreshPricesButton
-                    onClick={handleRefreshClick}
-                    isRefreshing={data.isRefreshingPrices}
-                    lastPriceUpdate={data.lastPriceUpdate}
-                  />
-                </div>
-              </>
-            }
+            collapsedContext={accountFilterLabel}
+            collapsedSwitcher={collapsedSwitcher}
+            // Its own pinned bar below carries the accounts, value and "+".
+            floatingBar={false}
+            actions={accountControls}
             primaryAction={
               <NewTransactionButton
                 onNewInvestment={handleNewInvestmentTransaction}
@@ -290,6 +378,47 @@ function InvestmentsContent() {
               />
             }
           />
+          {!hasMobileTabBar && (
+            <FloatingPageBar visible={accountPickerScrolledAway} testId="investments-floating-bar">
+              <div className="flex items-center justify-between gap-3 py-2">
+                {/* The section name and the header's own account picker, so
+                    the bar picks one or more accounts as the page does. */}
+                <div className="flex min-w-0 items-center gap-3">
+                  <p className="flex-shrink-0 text-base font-semibold text-gray-900 dark:text-gray-100">
+                    {t('page.title')}
+                  </p>
+                  <div className="w-64 min-w-0">{accountPicker}</div>
+                </div>
+                <div className="flex flex-shrink-0 items-center gap-3">
+                  {refreshButton}
+                  {floatingHeadline && (
+                    <span
+                      data-testid="investments-floating-value"
+                      title={
+                        isPortfolioPartial(floatingHeadline.completeness)
+                          ? t('portfolioSummary.knownPortfolioSubtotal')
+                          : t('portfolioSummary.totalPortfolioValue')
+                      }
+                      className="whitespace-nowrap text-base font-semibold text-gray-900 sm:text-lg dark:text-gray-100"
+                    >
+                      <PartialTotal
+                        total={portfolioPartialTotal(
+                          floatingHeadline.value,
+                          floatingHeadline.completeness,
+                        )}
+                        displayCurrency={floatingHeadline.currencyCode ?? defaultCurrency}
+                      >
+                        {floatingHeadline.currencyCode
+                          ? `${formatCurrency(floatingHeadline.value, floatingHeadline.currencyCode)} ${floatingHeadline.currencyCode}`
+                          : formatCurrency(floatingHeadline.value)}
+                      </PartialTotal>
+                    </span>
+                  )}
+                  <FloatingAddButton />
+                </div>
+              </div>
+            </FloatingPageBar>
+          )}
 
           {/* Summary and allocation, in one row: what the portfolio is worth
               beside how it is spread. Below `lg` the two stack in that order. */}

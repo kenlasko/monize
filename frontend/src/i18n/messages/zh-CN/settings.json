@@ -673,6 +673,39 @@
       "never": "从未"
     }
   },
+  "connectedApps": {
+    "heading": "已连接的应用",
+    "description": "您通过授权页面允许访问 Monize 账户的应用，例如通过 MCP 连接的 AI 助手。应用的名称由其自行决定，因此每一行都以该应用的授权发送目标开头。请撤销任何您不认识的应用。",
+    "emptyTitle": "没有已连接的应用",
+    "emptyDescription": "当您在 Monize 的授权页面允许某个应用后，它会显示在这里。",
+    "loadError": "无法加载已连接的应用，因此此列表可能不完整。",
+    "retryButton": "重试",
+    "callsItself": "自称“{name}”",
+    "destinationUnknown": "目标未知",
+    "registrationExpired": "注册已过期；应用重新连接时会再次注册",
+    "scopes": {
+      "read": "读取",
+      "write": "写入"
+    },
+    "connectedOn": "连接于 {date}",
+    "lastUsed": "上次使用 {time}",
+    "notUsedYet": "尚未使用",
+    "expiresOn": "访问权限于 {date} 结束",
+    "separator": " · ",
+    "revokeButton": "撤销",
+    "revokeAriaLabel": "撤销 {name}",
+    "revokeModal": {
+      "title": "撤销此应用？",
+      "message": "“{name}”将立即失去对您 Monize 账户的访问权限。若要再次使用，请从该应用重新连接。",
+      "confirmLabel": "撤销",
+      "revoking": "正在撤销..."
+    },
+    "toasts": {
+      "loadFailed": "无法加载已连接的应用",
+      "revoked": "应用已撤销",
+      "revokeFailed": "无法撤销该应用"
+    }
+  },
   "autoBackup": {
     "heading": "自动备份",
     "description": "整个部署共用一份计划：服务器会把每个账户的数据备份到下方的存储中。由于 Monize 运行在 Docker 中，必须把本地文件夹以卷的方式挂载进容器（例如 -v /host/backups:/data/backups）。",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "共享访问",
     "emergencyAccess": "紧急访问",
     "apiAccess": "API 访问",
+    "connectedApps": "已连接的应用",
     "aiSettings": "AI 设置",
     "emailReceipts": "邮件收据",
     "backupRestore": "备份与恢复",

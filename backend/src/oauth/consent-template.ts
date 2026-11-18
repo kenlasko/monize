@@ -1,6 +1,12 @@
 import { escapeHtml } from "../common/escape-html.util";
 import { tr } from "../i18n/translate";
-import { describeRedirectTarget, hostOf } from "./redirect-target";
+import { displayClientName } from "./client-identity";
+import {
+  type ConsentRequester,
+  describeRedirectTarget,
+  describeRequester,
+  hostOf,
+} from "./redirect-target";
 
 interface ConsentParams {
   uid: string;
@@ -67,7 +73,20 @@ export function renderConsentPage(params: ConsentParams): string {
   // redirect_uri of this request. Show its origin prominently, and never let
   // the self-asserted client_uri pose as that destination: it is plain text,
   // and it is flagged when its host differs from the redirect host.
-  const clientLabel = escapeHtml(clientName);
+  // The heading therefore names the destination, and the self-chosen name is
+  // demoted to a line that says it is only what the application calls itself.
+  const shownName = displayClientName(clientName, "unknown");
+  const heading = escapeHtml(requesterHeading(describeRequester(redirectUri)));
+  const selfNamed = escapeHtml(
+    tr(
+      "common.oauthConsent.selfNamed",
+      `It calls itself "${shownName}". Monize has not checked that name.`,
+      { name: shownName },
+    ),
+  );
+  const pageTitle = escapeHtml(
+    tr("common.oauthConsent.pageTitle", "Allow access to your Monize account?"),
+  );
   const destination = describeRedirectTarget(redirectUri);
   const destinationBlock = destination
     ? `<div class="destination">
@@ -111,7 +130,7 @@ export function renderConsentPage(params: ConsentParams): string {
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="robots" content="noindex" />
-<title>Authorize ${clientLabel} — Monize</title>
+<title>${pageTitle}</title>
 <style>
   :root {
     --primary: #0284c7;
@@ -241,8 +260,8 @@ export function renderConsentPage(params: ConsentParams): string {
 <body>
   <main class="card">
     <div class="brand">Monize</div>
-    <h1>Authorize ${clientLabel}</h1>
-    <p class="subtitle">${clientLabel} is requesting access to your Monize account.</p>
+    <h1>${heading}</h1>
+    <p class="subtitle">${selfNamed}</p>
     ${destinationBlock}
     <p class="notice">${unverifiedNotice}</p>
     ${clientUriBlock}
@@ -259,4 +278,32 @@ export function renderConsentPage(params: ConsentParams): string {
   </main>
 </body>
 </html>`;
+}
+
+/** The consent page's heading: who is asking, by the address the code goes to. */
+function requesterHeading(requester: ConsentRequester | null): string {
+  switch (requester?.kind) {
+    case "web":
+      return tr(
+        "common.oauthConsent.headingWeb",
+        `${requester.host} wants access to your Monize account`,
+        { host: requester.host },
+      );
+    case "device":
+      return tr(
+        "common.oauthConsent.headingDevice",
+        "An application on this device wants access to your Monize account",
+      );
+    case "app":
+      return tr(
+        "common.oauthConsent.headingApp",
+        `An app that opens ${requester.scheme} links wants access to your Monize account`,
+        { scheme: requester.scheme },
+      );
+    default:
+      return tr(
+        "common.oauthConsent.headingUnknown",
+        "An unidentified application wants access to your Monize account",
+      );
+  }
 }

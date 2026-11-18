@@ -124,7 +124,17 @@ export function useSwipeNavigation(): UseSwipeNavigationReturn {
     if (!content) return;
 
     const enterDir = sessionStorage.getItem('swipe-enter');
-    if (!enterDir) return;
+    if (!enterDir) {
+      // A route change no swipe animated in (a tab, a link, Back) lands at
+      // rest. The content element outlives the route, so a drag the change
+      // interrupted -- Android's edge Back gesture cancels the touch and goes
+      // back mid-swipe -- would otherwise carry its offset onto this page.
+      content.style.transition = '';
+      content.style.transform = '';
+      content.style.opacity = '';
+      content.style.willChange = '';
+      return;
+    }
     sessionStorage.removeItem('swipe-enter');
 
     // Clear leftover styles from exit animation (persistent DOM element)
@@ -169,8 +179,37 @@ export function useSwipeNavigation(): UseSwipeNavigationReturn {
       content.style.willChange = '';
     };
 
+    const snapBack = () => {
+      content.style.transition = `transform ${ANIMATION_MS}ms ease-out, opacity ${ANIMATION_MS}ms ease-out`;
+      content.style.transform = 'translateX(0)';
+      content.style.opacity = '1';
+
+      let done = false;
+      const onEnd = () => {
+        if (done) return;
+        done = true;
+        content.removeEventListener('transitionend', onEnd);
+        resetStyles();
+      };
+      content.addEventListener('transitionend', onEnd, { once: true });
+      setTimeout(onEnd, ANIMATION_MS + 50);
+    };
+
+    // Drop the gesture without navigating. A drag already under way slides
+    // back, so the page is never left sitting part way across the screen.
+    const abandon = () => {
+      const wasSwiping = state.phase === 'swiping';
+      state = { ...IDLE_STATE };
+      if (wasSwiping) snapBack();
+    };
+
     const handleTouchStart = (e: TouchEvent) => {
       if (navigated || !e.touches[0]) return;
+      // A second finger is a pinch, not a swipe.
+      if (e.touches.length > 1) {
+        abandon();
+        return;
+      }
       // Don't start if an animation is in progress
       if (content.style.transition) return;
 
@@ -278,30 +317,29 @@ export function useSwipeNavigation(): UseSwipeNavigationReturn {
         }
       }
 
-      // Snap back
-      content.style.transition = `transform ${ANIMATION_MS}ms ease-out, opacity ${ANIMATION_MS}ms ease-out`;
-      content.style.transform = 'translateX(0)';
-      content.style.opacity = '1';
+      snapBack();
+    };
 
-      let done = false;
-      const onEnd = () => {
-        if (done) return;
-        done = true;
-        content.removeEventListener('transitionend', onEnd);
-        resetStyles();
-      };
-      content.addEventListener('transitionend', onEnd, { once: true });
-      setTimeout(onEnd, ANIMATION_MS + 50);
+    // The browser or the OS took the touch away mid-gesture: Android's edge
+    // Back gesture, the notification shade, an incoming call. No touchend
+    // follows, so without this the drag's offset would stay on the page.
+    const handleTouchCancel = () => {
+      if (navigated) return;
+      abandon();
     };
 
     content.addEventListener('touchstart', handleTouchStart, { passive: true });
     content.addEventListener('touchmove', handleTouchMove, { passive: false });
     content.addEventListener('touchend', handleTouchEnd, { passive: true });
+    content.addEventListener('touchcancel', handleTouchCancel, { passive: true });
 
     return () => {
       content.removeEventListener('touchstart', handleTouchStart);
       content.removeEventListener('touchmove', handleTouchMove);
       content.removeEventListener('touchend', handleTouchEnd);
+      content.removeEventListener('touchcancel', handleTouchCancel);
+      // Listeners rebinding mid-drag would orphan the drag's offset.
+      if (state.phase === 'swiping') resetStyles();
     };
   }, [isSwipePage, router, pathname]);
 

@@ -673,6 +673,39 @@
       "never": "Tidak pernah"
     }
   },
+  "connectedApps": {
+    "heading": "Aplikasi Terhubung",
+    "description": "Aplikasi yang Anda izinkan masuk ke akun Monize Anda dari layar persetujuannya, seperti asisten AI yang terhubung melalui MCP. Setiap baris diawali dengan tujuan otorisasi aplikasi, karena nama aplikasi adalah apa pun yang dipilihnya sendiri. Cabut aplikasi apa pun yang tidak Anda kenali.",
+    "emptyTitle": "Tidak ada aplikasi terhubung",
+    "emptyDescription": "Saat Anda mengizinkan aplikasi di layar persetujuan Monize, aplikasi itu muncul di sini.",
+    "loadError": "Aplikasi terhubung tidak dapat dimuat, sehingga daftar ini mungkin tidak lengkap.",
+    "retryButton": "Coba lagi",
+    "callsItself": "Menyebut dirinya “{name}”",
+    "destinationUnknown": "Tujuan tidak diketahui",
+    "registrationExpired": "Pendaftaran kedaluwarsa; aplikasi mendaftar lagi saat terhubung kembali",
+    "scopes": {
+      "read": "Baca",
+      "write": "Tulis"
+    },
+    "connectedOn": "Terhubung pada {date}",
+    "lastUsed": "Terakhir digunakan {time}",
+    "notUsedYet": "Belum pernah digunakan",
+    "expiresOn": "Akses berakhir pada {date}",
+    "separator": " · ",
+    "revokeButton": "Cabut",
+    "revokeAriaLabel": "Cabut {name}",
+    "revokeModal": {
+      "title": "Cabut aplikasi ini?",
+      "message": "“{name}” langsung kehilangan akses ke akun Monize Anda. Untuk menggunakannya lagi, hubungkan kembali dari aplikasinya.",
+      "confirmLabel": "Cabut",
+      "revoking": "Mencabut..."
+    },
+    "toasts": {
+      "loadFailed": "Tidak dapat memuat aplikasi terhubung",
+      "revoked": "Aplikasi dicabut",
+      "revokeFailed": "Tidak dapat mencabut aplikasi"
+    }
+  },
   "autoBackup": {
     "heading": "Pencadangan Otomatis",
     "description": "Satu jadwal untuk seluruh deployment: server mencadangkan data setiap akun ke penyimpanan di bawah ini. Karena Monize berjalan di Docker, folder lokal harus dipetakan ke dalam kontainer sebagai volume (mis. -v /host/backups:/data/backups).",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "Akses Bersama",
     "emergencyAccess": "Akses Darurat",
     "apiAccess": "Akses API",
+    "connectedApps": "Aplikasi Terhubung",
     "aiSettings": "Pengaturan AI",
     "emailReceipts": "Struk Surel",
     "backupRestore": "Cadangkan & Pulihkan",

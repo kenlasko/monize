@@ -48,25 +48,35 @@ writes no row and sends nothing.
   ships, so each relay credential already in use is announced once on its first
   claim after the upgrade. Seeding dismissed `relay:cred:` rows would need a data
   migration, outside this change; the release notes should say so.
-- Known limit: both notices advise a password change, which revokes every grant
-  and token. An account that signs in only through OIDC, with no usable local
-  password, has no remedy in the app until a grant list with revoke exists
-  (out of scope, section 5).
+- The OAuth notice points at Settings > Connected apps, which revokes one grant
+  without a password change (GHSA-vmgq-326p-fprx). The relay notice still
+  advises a password change.
 
-`data` holds `{ clientId, clientName }` (name with control, format and
-line/paragraph separator characters replaced, trimmed, at most 100 code points,
-the client id when empty) or `{ credentialKind }` (`pat` or `oauth`). The raw
-credential id is never in `data`, the title or the message. A client name is
-chosen by whoever registered the client; the immediate email template escapes
-the composed strings once.
+`data` holds `{ clientId, clientName, destination }` or `{ credentialKind }`
+(`pat` or `oauth`). The name goes through `displayClientName`
+(`src/oauth/client-identity.ts`: control, format and line/paragraph separator
+characters replaced, trimmed, at most 100 code points, the client id when
+empty). `destination` is the origin of the consent request's `redirect_uri`
+(`describeRedirectTarget`), at most 300 code points, and is left out when the
+request had none; the copy then says "an unknown address".
+
+The client name is chosen by whoever registered the client, so the notice
+leads with the destination, the one fact the server can vouch for: the title
+names no client ("New app connected to your Monize account") and the message
+says the application calls itself that name and where its authorizations go.
+A row stored before `destination` existed keeps its original keys
+(`security.oauthTitle`, `security.oauthMessage`); the email copy and the bell
+choose by whether `data.destination` is present. The raw credential id is
+never in `data`, the title or the message. The immediate email template
+escapes the composed strings once.
 
 ## 4. Defaults and target
 
 `NOTIFICATION_CATEGORY_DEFAULTS[SECURITY]`: bell, immediate email and push on,
 UnifiedPush off (as `BANK_SYNC`). No report-mode digest reads the category.
-The target of both is `/settings`. Push copy names the category only.
+The OAuth notice targets `/settings#connected-apps`, the relay notice
+`/settings`. Push copy names the category only.
 
 ## 5. Out of scope
 
-- A settings screen listing OAuth grants with revoke.
 - Relay credential binding (`AiRelayService`).

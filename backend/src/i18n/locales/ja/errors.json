@@ -50,7 +50,7 @@
     "changeCurrencyWithBalanceOrSchedules": "開始残高または予定取引がある口座の通貨は変更できません。",
     "alreadyClosed": "口座はすでに閉鎖されています",
     "closeWithFutureTransactions": "将来の日付の取引がある口座は閉鎖できません。今日より後の日付の取引が {{ count }} 件あります。先に削除または無効化してください。",
-    "closeWithHoldings": "証券を保有している投資口座は閉鎖できません。数量がゼロでない保有銘柄が {{ holdingCount }} 件あります。先に売却または移管してください。",
+    "closeWithHoldings": "証券を保有している投資口座は閉鎖できません（{{ symbols }}）。先に売却または移管してください。",
     "notClosed": "口座は閉鎖されていません",
     "modifyBalanceClosed": "閉鎖された口座の残高は変更できません",
     "deleteWithTransactions": "{{ transactionCount }} 件の取引がある口座は削除できません。代わりに口座を閉鎖してください。",
@@ -1098,5 +1098,9 @@
   "help": {
     "pageNotFound": "ヘルプページが見つかりません",
     "imageNotFound": "ヘルプ画像が見つかりません"
+  },
+  "oauth": {
+    "connectionNotFound": "その接続済みアプリは見つかりませんでした。すでに取り消されている可能性があります。",
+    "invalidConnectionId": "接続済みアプリの ID が無効です"
   }
 }

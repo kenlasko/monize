@@ -673,6 +673,39 @@
       "never": "Mai"
     }
   },
+  "connectedApps": {
+    "heading": "App connesse",
+    "description": "App a cui hai consentito l'accesso al tuo account Monize dalla sua schermata di consenso, come gli assistenti IA connessi tramite MCP. Ogni riga inizia con la destinazione delle autorizzazioni dell'app, perché il nome di un'app è quello che ha scelto lei stessa. Revoca qualsiasi app che non riconosci.",
+    "emptyTitle": "Nessuna app connessa",
+    "emptyDescription": "Quando consenti un'app nella schermata di consenso di Monize, compare qui.",
+    "loadError": "Impossibile caricare le app connesse, quindi questo elenco potrebbe essere incompleto.",
+    "retryButton": "Riprova",
+    "callsItself": "Si definisce «{name}»",
+    "destinationUnknown": "Destinazione sconosciuta",
+    "registrationExpired": "Registrazione scaduta; l'app si registra di nuovo quando si riconnette",
+    "scopes": {
+      "read": "Lettura",
+      "write": "Scrittura"
+    },
+    "connectedOn": "Connessa il {date}",
+    "lastUsed": "Ultimo utilizzo {time}",
+    "notUsedYet": "Non ancora utilizzata",
+    "expiresOn": "L'accesso termina il {date}",
+    "separator": " · ",
+    "revokeButton": "Revoca",
+    "revokeAriaLabel": "Revoca {name}",
+    "revokeModal": {
+      "title": "Revocare questa app?",
+      "message": "«{name}» perde subito l'accesso al tuo account Monize. Per usarla di nuovo, riconnettila dall'app.",
+      "confirmLabel": "Revoca",
+      "revoking": "Revoca in corso..."
+    },
+    "toasts": {
+      "loadFailed": "Impossibile caricare le app connesse",
+      "revoked": "App revocata",
+      "revokeFailed": "Impossibile revocare l'app"
+    }
+  },
   "autoBackup": {
     "heading": "Backup automatico",
     "description": "Una sola pianificazione per l'intero deployment: il server esegue il backup dei dati di ogni account nello spazio indicato qui sotto. Poiché Monize gira in Docker, una cartella locale va montata nel contenitore come volume (es. -v /host/backups:/data/backups).",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "Accesso condiviso",
     "emergencyAccess": "Accesso di emergenza",
     "apiAccess": "Accesso API",
+    "connectedApps": "App connesse",
     "aiSettings": "Impostazioni AI",
     "emailReceipts": "Ricevute via email",
     "backupRestore": "Backup e ripristino",

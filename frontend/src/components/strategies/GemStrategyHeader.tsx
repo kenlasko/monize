@@ -1,5 +1,6 @@
 "use client";
 
+import { useContext } from "react";
 import { useTranslations } from "next-intl";
 import {
   CalendarDaysIcon,
@@ -7,7 +8,12 @@ import {
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/Button";
 import { BackToReportsLink } from "@/components/reports/BackToReportsLink";
-import { ReportSwitcher } from "@/components/reports/ReportSwitcher";
+import { useReportSwitcher } from "@/components/reports/ReportSwitcher";
+import { EntitySwitcher } from "@/components/ui/EntitySwitcher";
+import {
+  CollapsingTitleContext,
+  useCollapsingHeaderTitle,
+} from "@/hooks/useCollapsingHeaderTitle";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { TOUR_ANCHORS, tourAnchor } from "@/lib/tours/anchors";
 import { useDateFormat } from "@/hooks/useDateFormat";
@@ -63,7 +69,17 @@ export function GemStrategyHeader({
   onEditSettings,
 }: GemStrategyHeaderProps) {
   const t = useTranslations("strategies");
+  const tr = useTranslations("reports");
   const { cadenceLabel } = useGemLabels();
+  const reportSwitcher = useReportSwitcher("gem-strategy");
+  // Below `xl`, once the title scrolls behind the app header, the header reads
+  // "Reports - <this scenario>" and carries the report caret.
+  const collapses = useContext(CollapsingTitleContext);
+  const titleRef = useCollapsingHeaderTitle<HTMLHeadingElement>(
+    collapses
+      ? { title: tr("page.title"), context: strategyName, switcher: reportSwitcher }
+      : null,
+  );
   const { formatDate } = useDateFormat();
 
   return (
@@ -77,14 +93,14 @@ export function GemStrategyHeader({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-1">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 ref={titleRef} className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {strategyName}
             </h1>
             {/* The report caret, in the slot every other report page puts it:
                 straight after the title. The scenario controls that follow name
                 themselves, because two bare chevrons a few pixels apart say
                 nothing about which switches what. */}
-            <ReportSwitcher currentId="gem-strategy" />
+            <EntitySwitcher {...reportSwitcher} />
             <InfoTooltip
               // The window is configurable, so the explainer names the one
               // this strategy actually runs rather than the canonical twelve.

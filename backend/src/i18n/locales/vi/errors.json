@@ -50,7 +50,7 @@
     "changeCurrencyWithBalanceOrSchedules": "Không thể đổi tiền tệ của tài khoản có số dư đầu kỳ hoặc giao dịch định kỳ.",
     "alreadyClosed": "Tài khoản đã được đóng",
     "closeWithFutureTransactions": "Không thể đóng tài khoản có giao dịch mang ngày trong tương lai. Tài khoản có {{ count }} giao dịch mang ngày sau hôm nay; hãy xóa hoặc hủy bỏ chúng trước.",
-    "closeWithHoldings": "Không thể đóng tài khoản đầu tư vẫn còn nắm giữ chứng khoán. Tài khoản có {{ holdingCount }} khoản nắm giữ với số lượng khác 0; hãy bán hoặc chuyển đi trước.",
+    "closeWithHoldings": "Không thể đóng tài khoản đầu tư vẫn còn nắm giữ chứng khoán ({{ symbols }}); hãy bán hoặc chuyển đi trước.",
     "notClosed": "Tài khoản chưa được đóng",
     "modifyBalanceClosed": "Không thể sửa đổi số dư của tài khoản đã đóng",
     "deleteWithTransactions": "Không thể xóa tài khoản có {{ transactionCount }} giao tác. Hãy đóng tài khoản thay thế.",
@@ -1098,5 +1098,9 @@
   "help": {
     "pageNotFound": "Không tìm thấy trang trợ giúp",
     "imageNotFound": "Không tìm thấy hình ảnh trợ giúp"
+  },
+  "oauth": {
+    "connectionNotFound": "Không tìm thấy ứng dụng đã kết nối đó. Có thể nó đã bị thu hồi.",
+    "invalidConnectionId": "ID ứng dụng đã kết nối không hợp lệ"
   }
 }

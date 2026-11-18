@@ -43,6 +43,8 @@ Every report page has a **Back to Reports** link and, beside its title, an arrow
 
 ![Switching to another report from the report's title](images/report-switcher.png)
 
+On a phone or tablet, once you scroll the report's title away, the header bar reads **Reports – *report name*** with the same arrow beside it. If the line does not fit, the header shows just the report's name.
+
 ### Date Range Selection
 
 Most reports have a row of range buttons above the chart. Each report offers the ranges that suit it, from **1D**, **1W**, **MTD**, and **1M** through **3M**, **6M**, **YTD**, **1Y**, **2Y**, **5Y**, and **10Y** to **All Time**. Many also have **Custom**, which shows **Start Date** and **End Date** fields for any range you like.

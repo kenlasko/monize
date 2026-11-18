@@ -550,6 +550,15 @@ export function acquisitionCost(tx: {
 export const HOLDING_QUANTITY_EPSILON = 0.00000001;
 
 /**
+ * From this many shares up, a stored holding is a position the user holds:
+ * the predicate the portfolio views apply (`|quantity| >= 0.0001`) before they
+ * show or value a holding. Anything smaller is a residue the Investments page
+ * never shows, so a check that refuses on a held position (closing an account)
+ * uses this rather than "non-zero", or it refuses over shares nobody can see.
+ */
+export const HELD_QUANTITY_THRESHOLD = 0.0001;
+
+/**
  * The `holdings` row a rebuild writes for a replayed position, or `null` when a
  * rebuild would store no row for it at all.
  *

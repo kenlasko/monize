@@ -10,7 +10,13 @@
     "destinationUnknown": "Monize tidak dapat menentukan ke mana otorisasi ini akan dikirim. Jangan izinkan akses.",
     "unverifiedNotice": "Aplikasi ini mendaftarkan dirinya sendiri ke server Monize ini, dan Monize belum memverifikasi siapa yang mengoperasikannya; namanya adalah nama yang dipilihnya sendiri. Izinkan akses hanya jika Anda sendiri yang memulai koneksi ini dari aplikasi tersebut dan alamat di atas memang miliknya.",
     "claimedWebsite": "Situs web yang dinyatakan oleh aplikasi: {{ website }}",
-    "websiteMismatch": "Aplikasi menyatakan bahwa situs webnya adalah {{ website }}, tetapi otorisasi akan dikirim ke alamat yang berbeda."
+    "websiteMismatch": "Aplikasi menyatakan bahwa situs webnya adalah {{ website }}, tetapi otorisasi akan dikirim ke alamat yang berbeda.",
+    "pageTitle": "Izinkan akses ke akun Monize Anda?",
+    "headingWeb": "{{ host }} meminta akses ke akun Monize Anda",
+    "headingDevice": "Sebuah aplikasi di perangkat ini meminta akses ke akun Monize Anda",
+    "headingApp": "Sebuah aplikasi yang membuka tautan {{ scheme }} meminta akses ke akun Monize Anda",
+    "headingUnknown": "Sebuah aplikasi yang tidak dikenal meminta akses ke akun Monize Anda",
+    "selfNamed": "Aplikasi ini menyebut dirinya “{{ name }}”. Monize belum memeriksa nama itu."
   },
   "import": {
     "voidedTransactionNote": "Dibatalkan di sumber; jumlah asli tidak disertakan dalam ekspor dan diimpor sebagai nol."

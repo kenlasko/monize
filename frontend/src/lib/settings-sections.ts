@@ -7,6 +7,7 @@ export const SETTINGS_SECTION_IDS = [
   { id: 'preferences', navKey: 'preferences', demoVisible: true },
   { id: 'notifications', navKey: 'notifications', demoVisible: true },
   { id: 'security', navKey: 'security', demoVisible: false },
+  { id: 'connected-apps', navKey: 'connectedApps', demoVisible: false },
   { id: 'shared-access', navKey: 'sharedAccess', href: '/settings/shared-access', demoVisible: false },
   { id: 'emergency-access', navKey: 'emergencyAccess', href: '/settings/emergency-access', demoVisible: false },
   { id: 'api-access', navKey: 'apiAccess', demoVisible: false },

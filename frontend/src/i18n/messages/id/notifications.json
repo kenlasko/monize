@@ -213,6 +213,8 @@
   "security": {
     "oauthTitle": "Aplikasi baru terhubung: {clientName}",
     "oauthMessage": "Aplikasi {clientName} baru saja diberi akses ke akun Monize Anda. Jika ini bukan Anda, segera ubah kata sandi Anda: tindakan itu mencabut akses semua aplikasi yang terhubung.",
+    "oauthConnectedTitle": "Aplikasi baru terhubung ke akun Monize Anda",
+    "oauthConnectedMessage": "Sebuah aplikasi yang menyebut dirinya {clientName} telah diberi akses, dan otorisasinya dikirim ke {destination}. Jika ini bukan Anda, cabut di Pengaturan pada “Aplikasi Terhubung”.",
     "relayTitle": "Koneksi baru menjawab obrolan AI Anda",
     "relayMessage": "Koneksi yang belum pernah menjawab obrolan AI Monize Anda baru saja mengambil sebuah prompt. Jika Anda tidak menghubungkan asisten ini, ubah kata sandi Anda."
   },

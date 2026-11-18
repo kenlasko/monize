@@ -50,7 +50,7 @@
     "changeCurrencyWithBalanceOrSchedules": "De valuta van een rekening met een beginsaldo of geplande transacties kan niet worden gewijzigd.",
     "alreadyClosed": "Rekening is al gesloten",
     "closeWithFutureTransactions": "Een rekening met transacties in de toekomst kan niet worden gesloten. Er zijn {{ count }} transactie(s) gedateerd na vandaag; verwijder of annuleer ze eerst.",
-    "closeWithHoldings": "Een beleggingsrekening met effecten kan niet worden gesloten. Er zijn {{ holdingCount }} positie(s) met een aantal ongelijk aan nul; verkoop of verplaats deze eerst.",
+    "closeWithHoldings": "Een beleggingsrekening met effecten kan niet worden gesloten ({{ symbols }}); verkoop of verplaats deze eerst.",
     "notClosed": "Rekening is niet gesloten",
     "modifyBalanceClosed": "Kan het saldo van een gesloten rekening niet wijzigen",
     "deleteWithTransactions": "Kan rekening met {{ transactionCount }} transactie(s) niet verwijderen. Sluit de rekening in plaats daarvan.",
@@ -1098,5 +1098,9 @@
   "help": {
     "pageNotFound": "Helppagina niet gevonden",
     "imageNotFound": "Helpafbeelding niet gevonden"
+  },
+  "oauth": {
+    "connectionNotFound": "Die gekoppelde app is niet gevonden. Mogelijk is de toegang al ingetrokken.",
+    "invalidConnectionId": "Ongeldige id van gekoppelde app"
   }
 }

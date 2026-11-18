@@ -191,6 +191,16 @@ describe('AccountInfoWidget', () => {
     expect(onCollapse).toHaveBeenCalledTimes(1);
   });
 
+  it('points the fold chevron up on a phone and left beside the chart on a desktop', () => {
+    render(<AccountInfoWidget account={makeAccount()} onEdit={vi.fn()} onCollapse={vi.fn()} />);
+    const icons = screen.getByLabelText('Hide account info').querySelectorAll('svg');
+    expect(icons).toHaveLength(2);
+    // Heroicons draws each chevron as one path; the two must differ.
+    expect(icons[0]).toHaveClass('lg:hidden');
+    expect(icons[1]).toHaveClass('hidden', 'lg:block');
+    expect(icons[0].innerHTML).not.toBe(icons[1].innerHTML);
+  });
+
   it('links to the account detail page from the details icon', async () => {
     await act(async () => {
       render(

@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CollapsingTitleContext } from '@/hooks/useCollapsingHeaderTitle';
-import { fireEvent, render, screen, waitFor } from '@/test/render';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@/test/render';
+import { useMobileAddActionStore } from '@/store/mobileAddActionStore';
 import { PageHeader } from './PageHeader';
 import { useHelpStore } from '@/store/helpStore';
 
@@ -264,5 +265,77 @@ describe('PageHeader', () => {
     const pill = screen.getByText('Active');
     expect(heading).not.toContainElement(pill);
     expect(heading.parentElement).toContainElement(pill);
+  });
+
+  describe('pinned bar (desktop)', () => {
+    let titleScrolled: ((past: boolean) => void) | undefined;
+    beforeEach(() => {
+      titleScrolled = undefined;
+      vi.stubGlobal(
+        'IntersectionObserver',
+        class {
+          private readonly callback: (entries: Partial<IntersectionObserverEntry>[]) => void;
+          constructor(callback: (entries: Partial<IntersectionObserverEntry>[]) => void) {
+            this.callback = callback;
+          }
+          observe() {
+            const callback = this.callback;
+            const previous = titleScrolled;
+            // Both watchers on the heading hear the same scroll.
+            titleScrolled = (past) => {
+              previous?.(past);
+              act(() =>
+                callback([
+                  {
+                    isIntersecting: !past,
+                    boundingClientRect: { top: past ? -200 : 80 } as DOMRectReadOnly,
+                  },
+                ]),
+              );
+            };
+          }
+          unobserve() {}
+          disconnect() {}
+        },
+      );
+    });
+    afterEach(() => {
+      // Unmount first: a store write with the tree mounted re-renders outside act().
+      cleanup();
+      vi.unstubAllGlobals();
+      useMobileAddActionStore.setState({ action: null });
+    });
+
+    it("pins the section name and the page's + once the title scrolls away", () => {
+      const run = vi.fn();
+      act(() =>
+        useMobileAddActionStore.getState().setAction({
+          owner: Symbol('page'),
+          label: 'New Bill',
+          run,
+          choices: () => null,
+        }),
+      );
+      render(<PageHeader title="Bills & Deposits" />);
+      const bar = screen.getByTestId('page-floating-bar');
+      expect(bar).toHaveAttribute('aria-hidden', 'true');
+      // Nothing inside until it is first shown.
+      expect(bar.textContent).toBe('');
+      expect(within(bar).queryByRole('button', { hidden: true })).not.toBeInTheDocument();
+
+      titleScrolled?.(true);
+      expect(bar).toHaveAttribute('aria-hidden', 'false');
+      expect(bar).toHaveTextContent('Bills & Deposits');
+      fireEvent.click(within(bar).getByRole('button', { name: 'New Bill' }));
+      expect(run).toHaveBeenCalledTimes(1);
+
+      titleScrolled?.(false);
+      expect(bar).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('is not drawn when the page pins its own bar', () => {
+      render(<PageHeader title="Investments" floatingBar={false} />);
+      expect(screen.queryByTestId('page-floating-bar')).not.toBeInTheDocument();
+    });
   });
 });

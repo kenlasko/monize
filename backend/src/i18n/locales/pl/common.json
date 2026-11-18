@@ -10,7 +10,13 @@
     "destinationUnknown": "Monize nie może ustalić, dokąd zostałaby wysłana ta autoryzacja. Nie zezwalaj na dostęp.",
     "unverifiedNotice": "Ta aplikacja sama zarejestrowała się na tym serwerze Monize, a Monize nie zweryfikował, kto ją obsługuje; jej nazwa jest taka, jaką sama sobie nadała. Zezwól na dostęp tylko wtedy, gdy to Ty rozpocząłeś to połączenie z tej aplikacji, a powyższy adres do niej należy.",
     "claimedWebsite": "Witryna podana przez aplikację: {{ website }}",
-    "websiteMismatch": "Aplikacja podaje, że jej witryna to {{ website }}, ale autoryzacja zostanie wysłana na inny adres."
+    "websiteMismatch": "Aplikacja podaje, że jej witryna to {{ website }}, ale autoryzacja zostanie wysłana na inny adres.",
+    "pageTitle": "Zezwolić na dostęp do Twojego konta Monize?",
+    "headingWeb": "{{ host }} chce uzyskać dostęp do Twojego konta Monize",
+    "headingDevice": "Aplikacja na tym urządzeniu chce uzyskać dostęp do Twojego konta Monize",
+    "headingApp": "Aplikacja otwierająca linki {{ scheme }} chce uzyskać dostęp do Twojego konta Monize",
+    "headingUnknown": "Niezidentyfikowana aplikacja chce uzyskać dostęp do Twojego konta Monize",
+    "selfNamed": "Nazywa siebie „{{ name }}”. Monize nie sprawdził tej nazwy."
   },
   "import": {
     "voidedTransactionNote": "Anulowano w źródle; pierwotna kwota została pominięta w eksporcie i zaimportowana jako zero."

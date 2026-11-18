@@ -375,3 +375,22 @@ test("account-reconciliation", async () => {
   await page.evaluate(() => window.scrollTo(0, 0));
   await docShot(page, "account-reconciliation");
 });
+
+test("page-floating-bar", async () => {
+  await openPage("/accounts");
+  await expect(page.getByText("Car Loan").first()).toBeVisible();
+  // Scroll the title away; the section bar with its "+" pins to the top.
+  const bar = page.getByTestId("page-floating-bar");
+  await expect(async () => {
+    await page.evaluate(() => window.scrollTo(0, 400));
+    await expect(bar).toHaveAttribute("aria-hidden", "false", {
+      timeout: 2_000,
+    });
+  }).toPass({ timeout: 30_000 });
+  await bar.evaluate((el) =>
+    Promise.all(el.getAnimations().map((animation) => animation.finished)),
+  );
+  await waitForReady(page);
+  await docShot(page, "page-floating-bar", undefined, { floatingBars: true });
+  await page.evaluate(() => window.scrollTo(0, 0));
+});

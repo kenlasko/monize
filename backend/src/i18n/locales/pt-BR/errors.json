@@ -50,7 +50,7 @@
     "changeCurrencyWithBalanceOrSchedules": "Não é possível alterar a moeda de uma conta com saldo inicial ou transações agendadas.",
     "alreadyClosed": "A conta já está encerrada",
     "closeWithFutureTransactions": "Não é possível fechar uma conta com transações com data futura. Ela tem {{ count }} transação(ões) com data posterior a hoje; exclua-as ou anule-as primeiro.",
-    "closeWithHoldings": "Não é possível encerrar uma conta de investimento que ainda tem títulos. Ela tem {{ holdingCount }} posição(ões) com quantidade diferente de zero; venda ou transfira antes.",
+    "closeWithHoldings": "Não é possível encerrar uma conta de investimento que ainda tem títulos ({{ symbols }}); venda ou transfira antes.",
     "notClosed": "A conta não está encerrada",
     "modifyBalanceClosed": "Não é possível modificar o saldo de uma conta encerrada",
     "deleteWithTransactions": "Não é possível excluir a conta com {{ transactionCount }} transação(ões). Encerre a conta em vez disso.",
@@ -1098,5 +1098,9 @@
   "help": {
     "pageNotFound": "Página de ajuda não encontrada",
     "imageNotFound": "Imagem de ajuda não encontrada"
+  },
+  "oauth": {
+    "connectionNotFound": "Esse aplicativo conectado não foi encontrado. Ele pode já ter sido revogado.",
+    "invalidConnectionId": "ID de aplicativo conectado inválido"
   }
 }

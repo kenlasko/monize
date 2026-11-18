@@ -259,6 +259,111 @@ export async function sweepOAuthPayloads(
   return { adopted, deleted };
 }
 
+/** Most connections Settings > Connected apps lists for one person. */
+export const OAUTH_CONNECTIONS_LIST_MAX = 200;
+
+/** One live grant of the account, as Settings > Connected apps lists it. */
+export interface AccountGrantRow {
+  id: string;
+  payload: Record<string, unknown>;
+  expiresAt: Date | null;
+  /** Newest `iat` of a token minted under the grant, or null when none is left. */
+  lastUsedAt: Date | null;
+}
+
+/**
+ * The live grants of one account (Settings > Connected apps), newest first.
+ *
+ * A fourth direct-`DataSource` path to the table and the second keyed by an
+ * application user id (`docs/row-level-security-contract.md` section 3). The
+ * caller passes the session's own subject, never a request value, and the
+ * predicate reads only rows whose own payload already names it. The
+ * last-used lookup is keyed by the grant ids the first query returned.
+ */
+export async function findGrantsForAccount(
+  dataSource: DataSource,
+  accountId: string,
+): Promise<AccountGrantRow[]> {
+  const repo = dataSource.getRepository(OAuthPayload);
+  const grants = await repo
+    .createQueryBuilder("p")
+    .where("p.model = 'Grant'")
+    .andWhere("p.payload ->> 'accountId' = :accountId", { accountId })
+    .andWhere("(p.expires_at IS NULL OR p.expires_at > :now)", {
+      now: new Date(),
+    })
+    .limit(OAUTH_CONNECTIONS_LIST_MAX)
+    .getMany();
+  if (grants.length === 0) return [];
+
+  const used = await repo
+    .createQueryBuilder("p")
+    .select("p.grant_id", "grantId")
+    .addSelect("MAX((p.payload ->> 'iat')::bigint)", "lastIat")
+    .where("p.grant_id IN (:...ids)", { ids: grants.map((g) => g.id) })
+    .andWhere("p.model IN ('AccessToken', 'RefreshToken')")
+    .groupBy("p.grant_id")
+    .getRawMany<{ grantId: string; lastIat: string | null }>();
+  const lastIat = new Map(used.map((row) => [row.grantId, row.lastIat]));
+
+  return grants
+    .map((grant) => {
+      const iat = Number(lastIat.get(grant.id));
+      return {
+        id: grant.id,
+        payload: grant.payload,
+        expiresAt: grant.expiresAt,
+        lastUsedAt: Number.isFinite(iat) ? new Date(iat * 1000) : null,
+      };
+    })
+    .sort((a, b) => Number(b.payload.iat ?? 0) - Number(a.payload.iat ?? 0));
+}
+
+/**
+ * Revoke one grant of one account: every token, code and refresh token minted
+ * under it, then the grant. Returns false when the account holds no such grant.
+ *
+ * Both statements carry the ownership predicate, so a grant id belonging to
+ * someone else deletes nothing. Tokens go first: a failure between the two
+ * leaves the grant listed with nothing usable behind it, and revoking it again
+ * finishes the job, rather than an unlisted grant whose tokens still work. A
+ * refresh racing the revocation cannot outlive it, because the provider
+ * refuses a refresh token whose grant is gone.
+ *
+ * The same bounded exception as `findGrantsForAccount`: the account id is the
+ * session's subject; the grant id is an opaque provider identifier.
+ */
+export async function revokeGrantForAccount(
+  dataSource: DataSource,
+  accountId: string,
+  grantId: string,
+): Promise<boolean> {
+  const repo = dataSource.getRepository(OAuthPayload);
+  await repo
+    .createQueryBuilder()
+    .delete()
+    .where("grant_id = :grantId", { grantId })
+    .andWhere(
+      `EXISTS (SELECT 1 FROM oauth_payloads g
+                WHERE g.model = 'Grant' AND g.id = :grantId
+                  AND g.payload ->> 'accountId' = :accountId)`,
+      { grantId, accountId },
+    )
+    .execute();
+  const result = await repo
+    .createQueryBuilder()
+    .delete()
+    .where("model = 'Grant'")
+    .andWhere("id = :grantId", { grantId })
+    .andWhere("payload ->> 'accountId' = :accountId", { accountId })
+    .execute();
+  const revoked = (result.affected ?? 0) > 0;
+  if (revoked) {
+    logger.log(`Revoked OAuth grant ${grantId} for user=${accountId}`);
+  }
+  return revoked;
+}
+
 export function makeAdapterFactory(dataSource: DataSource) {
   return (model: string) => new PostgresAdapter(model, dataSource);
 }
