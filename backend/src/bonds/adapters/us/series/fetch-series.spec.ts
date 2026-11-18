@@ -534,6 +534,34 @@ describe("what the source answers", () => {
     expect(error.params.field).toBe(field);
   });
 
+  it("reads a bill whose record leaves both flags blank, as TreasuryDirect has since 2026-10-19", async () => {
+    for (const flags of [
+      { inflationProtected: "", floatingRate: "" },
+      { inflationProtected: null, floatingRate: null },
+    ]) {
+      const records = withRecord(billJson(), 0, flags);
+      const { entry } = await fetchSeries(BILL, billFetch(records), NOW);
+      expect(parseBondTerms(entry.terms).instrument.programCode).toBe("BILL");
+    }
+    const absent = without(
+      without(billJson(), "inflationProtected"),
+      "floatingRate",
+    );
+    const { entry } = await fetchSeries(BILL, billFetch(absent), NOW);
+    expect(parseBondTerms(entry.terms).instrument.programCode).toBe("BILL");
+  });
+
+  it.each([
+    ["inflationProtected", "Yes", "SOURCE_INCONSISTENT"],
+    ["floatingRate", "Yes", "SOURCE_INCONSISTENT"],
+    ["inflationProtected", "Y", "SOURCE_FORMAT_CHANGED"],
+  ])("refuses a bill record whose %s is %s", async (field, value, code) => {
+    const records = withRecord(billJson(), 0, { [field]: value });
+    const error = await refusal(fetchSeries(BILL, billFetch(records), NOW));
+    expect(error.code).toBe(code);
+    expect(error.params.field).toBe(field);
+  });
+
   it.each([
     ["a number for a rate", { interestRate: 3.75 }, "interestRate"],
     ["a rate that is not a decimal", { interestRate: "3,75" }, "interestRate"],

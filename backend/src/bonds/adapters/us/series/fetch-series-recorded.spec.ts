@@ -10,7 +10,7 @@ import {
 
 /**
  * The fetch over answers recorded verbatim from TreasuryDirect on 2026-11-06
- * (`fixtures/recorded/`, listed in `fixtures/README.md`). The constructed
+ * and 2026-11-17 (`fixtures/recorded/`, listed in `fixtures/README.md`). The constructed
  * fixtures prove each code path; these prove the field names and formats the
  * live source actually sends.
  */
@@ -135,6 +135,97 @@ describe("the fetch over recorded TreasuryDirect answers", () => {
     });
     expect(terms.principalRule).toMatchObject({ baseReference: "177.5" });
     expect(calls).toHaveLength(1);
+  });
+
+  describe("in the results layout published since the auctions of 2026-10-19", () => {
+    it("reads the reopened 4-week bill of #2263, whose record leaves both flags blank", async () => {
+      const { terms, calls } = await termsOf(
+        "912797WF0261117",
+        "912797WF0",
+        "R_20261112_2.xml",
+      );
+      expect(terms.schedule).toMatchObject({
+        anchor: "ISSUE_DATE",
+        issueDate: "2026-11-17",
+        maturityDate: "2026-12-15",
+      });
+      expect(terms.rateRule).toEqual({ type: "ZERO_COUPON_DISCOUNT" });
+      expect(calls).toHaveLength(2);
+    });
+
+    it.each([
+      // [cusip, results file, maturity, annual rate]
+      ["91282CRX1", "R_20261110_1.xml", "2036-11-15", "0.05"],
+      ["912810UY2", "R_20261112_4.xml", "2056-11-15", "0.05375"],
+    ])(
+      "reads the note or bond %s, its first coupon from the listed payment dates",
+      async (cusip, xml, maturityDate, annualRate) => {
+        const { terms } = await termsOf(cusip, cusip, xml);
+        expect(terms.schedule).toMatchObject({
+          anchor: "COUPON_DATES",
+          datedDate: "2026-11-15",
+          firstCouponDate: "2027-05-15",
+          maturityDate,
+          couponMonths: 6,
+        });
+        expect(terms.rateRule).toEqual({ type: "FIXED", annualRate });
+      },
+    );
+
+    it("reads a TIPS with the reference CPI of its original dated date", async () => {
+      const { terms } = await termsOf(
+        "91282CRR4",
+        "91282CRR4",
+        "R_20261022_4.xml",
+      );
+      expect(terms.schedule).toMatchObject({
+        datedDate: "2026-10-15",
+        firstCouponDate: "2027-04-15",
+        maturityDate: "2031-10-15",
+      });
+      expect(terms.rateRule).toEqual({ type: "FIXED", annualRate: "0.0225" });
+      expect(terms.principalRule).toMatchObject({
+        type: "INDEX_RATIO",
+        baseReference: "334.39761",
+      });
+    });
+
+    it("checks a TIPS' price against the AdjustedPrice its file states", async () => {
+      const xml = fixtureText("recorded/R_20261022_4.xml").replace(
+        "<AdjustedPrice>99.607747</AdjustedPrice>",
+        "<AdjustedPrice>99.454587</AdjustedPrice>",
+      );
+      const fetch = fakeFetch(
+        treasuryAnswers(
+          "91282CRR4",
+          fixtureJson("recorded/search-91282CRR4.json"),
+          { "R_20261022_4.xml": xml },
+        ),
+      );
+      await expect(fetchSeries("91282CRR4", fetch, NOW)).rejects.toMatchObject({
+        code: "SOURCE_INCONSISTENT",
+        params: { field: "highPrice" },
+      });
+    });
+
+    it("reads a floating rate note", async () => {
+      const { terms } = await termsOf(
+        "91282CRS2",
+        "91282CRS2",
+        "R_20261028_1.xml",
+      );
+      expect(terms.schedule).toMatchObject({
+        datedDate: "2026-10-31",
+        firstCouponDate: "2027-01-31",
+        maturityDate: "2028-10-31",
+        couponMonths: 3,
+        endOfMonth: true,
+      });
+      expect(terms.rateRule).toMatchObject({
+        type: "DAILY_INDEX_PLUS_SPREAD",
+        spread: "0.00038",
+      });
+    });
   });
 
   it("reads a yield for every weekly 13-week auction of a recorded search", () => {

@@ -21,10 +21,107 @@
 // And a no-answer that outlasts the retries still FAILS the build: "we could
 // not verify" is not "verified clean". What changes is that it now says so.
 //
+// A finding is accepted only through ACCEPTED_ADVISORIES below: one advisory,
+// in one directory, at the exact vulnerable range it was accepted at, until a
+// date. Each entry stops applying on its own, so none can outlive its reason:
+//
+// - the advisory's range changes (GitHub widens or closes it when a patched
+//   release ships): the finding no longer matches and fails again;
+// - the date passes: it fails again, and the log says the exception expired;
+// - the finding disappears (the patched release is installed): the unused
+//   entry fails the directory until it is removed.
+//
 // Exercised by scripts/npm-audit-gate.test.mjs.
 
 /** Directories audited, in order. Each is a package root with its own lockfile. */
 export const AUDIT_TARGETS = ['backend', 'frontend'];
+
+const BLOCKING = new Set(['high', 'critical']);
+/** Below the audit level. An advisory of any other severity, or none, blocks. */
+const BELOW_LEVEL = new Set(['info', 'low', 'moderate']);
+
+/**
+ * Advisories the gate lets through, each a reviewed decision. Shrink-only:
+ * an entry is removed when its reason ends, never extended past it.
+ */
+export const ACCEPTED_ADVISORIES = [
+  {
+    // Dependabot alert 135. No patched release exists (4.0.7 is the newest).
+    // picomatch reaches the production tree only through next-intl's
+    // @parcel/watcher, a dev-time file watcher not traced into the
+    // standalone server, and the ReDoS needs an attacker-supplied glob; every
+    // glob Monize compiles is written in code or config. Accepted in #2264.
+    target: 'frontend',
+    ghsa: 'GHSA-fc5q-39xc-vjpf',
+    name: 'picomatch',
+    range: '<=4.0.7',
+    expires: '2027-01-31',
+  },
+];
+
+const todayUtc = () => new Date().toISOString().slice(0, 10);
+
+/** The exceptions that apply to `cwd` today; expired ones are logged as such. */
+function liveExceptions(cwd, exceptions, today, log) {
+  const live = [];
+  for (const exception of exceptions) {
+    if (exception.target !== cwd) continue;
+    if (today > exception.expires) {
+      log(
+        `::error::${cwd}: the accepted advisory ${exception.ghsa} (${exception.name}) expired on ${exception.expires}; fix it or review the exception again`,
+      );
+      continue;
+    }
+    live.push(exception);
+  }
+  return live;
+}
+
+function matching(advisory, exceptions) {
+  return exceptions.find(
+    (exception) =>
+      advisory.name === exception.name &&
+      advisory.range === exception.range &&
+      typeof advisory.url === 'string' &&
+      advisory.url.endsWith(`/${exception.ghsa}`),
+  );
+}
+
+/**
+ * The vulnerable packages of a report that no exception accounts for, and the
+ * exceptions that were used. A package is accounted for when every
+ * high-or-critical advisory it carries, directly or through the packages
+ * named in its `via`, matches an exception.
+ */
+export function unacceptedFindings(report, exceptions) {
+  const vulnerabilities = report?.vulnerabilities ?? {};
+  const used = new Set();
+
+  const blocked = (name, seen) => {
+    if (seen.has(name)) return false;
+    seen.add(name);
+    const entry = vulnerabilities[name];
+    // A package the report names but does not describe cannot be vouched for.
+    if (!entry) return true;
+    for (const via of entry.via ?? []) {
+      if (typeof via === 'string') {
+        if (blocked(via, seen)) return true;
+        continue;
+      }
+      if (BELOW_LEVEL.has(via?.severity)) continue;
+      const exception = matching(via, exceptions);
+      if (!exception) return true;
+      used.add(exception);
+    }
+    return false;
+  };
+
+  const unaccepted = Object.entries(vulnerabilities)
+    .filter(([, entry]) => BLOCKING.has(entry?.severity))
+    .filter(([name]) => blocked(name, new Set()))
+    .map(([name]) => name);
+  return { unaccepted, used };
+}
 
 /** Attempts allowed when the advisories endpoint does not answer. */
 export const MAX_ATTEMPTS = 3;
@@ -98,17 +195,47 @@ const never = () => Promise.resolve();
  */
 export async function auditDirectory(
   cwd,
-  { run, wait = never, log = console.log } = {},
+  {
+    run,
+    wait = never,
+    log = console.log,
+    exceptions = ACCEPTED_ADVISORIES,
+    today = todayUtc,
+  } = {},
 ) {
+  const live = liveExceptions(cwd, exceptions, today(), log);
+  const expired = exceptions.some(
+    (exception) => exception.target === cwd && !live.includes(exception),
+  );
+  /** Every live exception was needed; an unused one is a stale reason. */
+  const allUsed = (used) => {
+    const stale = live.filter((exception) => !used.has(exception));
+    for (const exception of stale) {
+      log(
+        `::error::${cwd}: the accepted advisory ${exception.ghsa} (${exception.name} ${exception.range}) no longer matches any finding; remove it from ACCEPTED_ADVISORIES`,
+      );
+    }
+    return stale.length === 0;
+  };
+
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const outcome = classifyAuditResult(await run(cwd));
 
     if (outcome.kind === 'clean') {
       log(`${cwd}: ${formatCounts(outcome.counts)}`);
-      return true;
+      return allUsed(new Set()) && !expired;
     }
 
     if (outcome.kind === 'advisories') {
+      const { unaccepted, used } = unacceptedFindings(outcome.report, live);
+      if (unaccepted.length === 0 && used.size > 0) {
+        for (const exception of used) {
+          log(
+            `::warning::${cwd}: accepted advisory ${exception.ghsa} (${exception.name} ${exception.range}) until ${exception.expires}`,
+          );
+        }
+        return allUsed(used) && !expired;
+      }
       // A real finding. Print the whole report -- whoever reads this needs the
       // package names, not a count -- and do not try again.
       log(JSON.stringify(outcome.report, null, 2));

@@ -17,12 +17,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  ACCEPTED_ADVISORIES,
+  AUDIT_TARGETS,
   MAX_ATTEMPTS,
   auditAll,
   auditDirectory,
   backoffMs,
   classifyAuditResult,
   formatCounts,
+  unacceptedFindings,
 } from './lib/npm-audit-gate.mjs';
 
 const CLEAN_REPORT = {
@@ -248,11 +251,194 @@ test('a failure in one directory does not skip the next', async () => {
 test('both directories clean passes', async () => {
   const run = () => said(0, CLEAN_REPORT);
   assert.equal(
-    await auditAll(['backend', 'frontend'], { run, log: recorder().log }),
+    await auditAll(['backend', 'frontend'], {
+      run,
+      log: recorder().log,
+      exceptions: [],
+    }),
     true,
   );
 });
 
 test('formatCounts lists every severity', () => {
   assert.equal(formatCounts({ high: 1, critical: 0 }), 'high: 1, critical: 0');
+});
+
+// ---------------------------------------------------------------------------
+// Accepted advisories
+// ---------------------------------------------------------------------------
+
+// What `npm audit --omit=dev --json` reported in frontend/ on PR #2264,
+// verbatim but for the metadata's dependency counts.
+const PICOMATCH_ADVISORY = {
+  source: 1247710,
+  name: 'picomatch',
+  dependency: 'picomatch',
+  title:
+    'picomatch vulnerable to ReDoS through single-branch repeated extglobs',
+  url: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
+  severity: 'high',
+  cwe: ['CWE-1333'],
+  cvss: {
+    score: 7.5,
+    vectorString: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H',
+  },
+  range: '<=4.0.7',
+};
+
+function picomatchReport(advisory = PICOMATCH_ADVISORY, extra = {}) {
+  const high = 2 + Object.keys(extra).length;
+  return {
+    auditReportVersion: 2,
+    vulnerabilities: {
+      '@parcel/watcher': {
+        name: '@parcel/watcher',
+        severity: 'high',
+        isDirect: false,
+        via: ['picomatch'],
+        effects: [],
+        range: '>=2.5.4',
+        nodes: ['node_modules/@parcel/watcher'],
+        fixAvailable: true,
+      },
+      picomatch: {
+        name: 'picomatch',
+        severity: 'high',
+        isDirect: false,
+        via: [advisory],
+        effects: ['@parcel/watcher'],
+        range: '*',
+        nodes: ['node_modules/picomatch'],
+        fixAvailable: true,
+      },
+      ...extra,
+    },
+    metadata: {
+      vulnerabilities: {
+        info: 0,
+        low: 0,
+        moderate: 0,
+        high,
+        critical: 0,
+        total: high,
+      },
+    },
+  };
+}
+
+const PICOMATCH_EXCEPTION = {
+  target: 'frontend',
+  ghsa: 'GHSA-fc5q-39xc-vjpf',
+  name: 'picomatch',
+  range: '<=4.0.7',
+  expires: '2027-01-31',
+};
+
+const gate = (report, options = {}) => {
+  const log = recorder();
+  const { run, calls } = scriptedRunner(
+    report === null ? said(0, CLEAN_REPORT) : said(1, report),
+  );
+  return auditDirectory(options.cwd ?? 'frontend', {
+    run,
+    log: log.log,
+    exceptions: [PICOMATCH_EXCEPTION],
+    today: () => options.today ?? '2026-11-18',
+  }).then((ok) => ({ ok, log, calls }));
+};
+
+test('an accepted advisory, and the package it reaches through, pass with a warning', async () => {
+  const { ok, log } = await gate(picomatchReport());
+  assert.equal(ok, true);
+  assert.match(
+    log.text(),
+    /::warning::frontend: accepted advisory GHSA-fc5q-39xc-vjpf \(picomatch <=4\.0\.7\) until 2027-01-31/,
+  );
+});
+
+test('an accepted advisory does not cover another high finding beside it', async () => {
+  const { ok, log } = await gate(
+    picomatchReport(PICOMATCH_ADVISORY, {
+      'some-package': ADVISORY_REPORT.vulnerabilities['some-package'],
+    }),
+  );
+  assert.equal(ok, false);
+  assert.match(log.text(), /some-package/);
+});
+
+// The property that ends the exception when a patched release ships: GitHub
+// moves the advisory's range off the one that was accepted.
+test('the advisory at another range is not accepted', async () => {
+  const { ok } = await gate(
+    picomatchReport({ ...PICOMATCH_ADVISORY, range: '<4.0.8' }),
+  );
+  assert.equal(ok, false);
+});
+
+test('another advisory of the same package is not accepted', async () => {
+  const { ok } = await gate(
+    picomatchReport({
+      ...PICOMATCH_ADVISORY,
+      url: 'https://github.com/advisories/GHSA-xxxx-xxxx-xxxx',
+    }),
+  );
+  assert.equal(ok, false);
+});
+
+test('the exception applies only in its own directory', async () => {
+  const { ok } = await gate(picomatchReport(), { cwd: 'backend' });
+  assert.equal(ok, false);
+});
+
+test('an expired exception fails, and says it expired', async () => {
+  const { ok, log } = await gate(picomatchReport(), { today: '2027-02-01' });
+  assert.equal(ok, false);
+  assert.match(log.text(), /expired on 2027-01-31/);
+});
+
+test('the exception holds through its last day', async () => {
+  const { ok } = await gate(picomatchReport(), { today: '2027-01-31' });
+  assert.equal(ok, true);
+});
+
+// Once the patched release is installed the finding is gone; the entry must go too.
+test('an exception no finding needs fails the directory until it is removed', async () => {
+  const { ok, log } = await gate(null);
+  assert.equal(ok, false);
+  assert.match(log.text(), /no longer matches any finding/);
+});
+
+test('a package that reaches an undescribed package is not vouched for', () => {
+  const report = picomatchReport();
+  report.vulnerabilities['@parcel/watcher'].via = ['picomatch', 'ghost'];
+  const { unaccepted } = unacceptedFindings(report, [PICOMATCH_EXCEPTION]);
+  assert.deepEqual(unaccepted, ['@parcel/watcher']);
+});
+
+test('a moderate advisory beside an accepted one does not block', () => {
+  const report = picomatchReport();
+  report.vulnerabilities.picomatch.via = [
+    PICOMATCH_ADVISORY,
+    {
+      ...PICOMATCH_ADVISORY,
+      url: 'https://example.test/x',
+      severity: 'moderate',
+    },
+  ];
+  assert.deepEqual(
+    unacceptedFindings(report, [PICOMATCH_EXCEPTION]).unaccepted,
+    [],
+  );
+});
+
+test('every accepted advisory names an audited directory, a GHSA, a range and a date', () => {
+  for (const exception of ACCEPTED_ADVISORIES) {
+    assert.ok(
+      [...AUDIT_TARGETS, 'desktop'].includes(exception.target),
+      exception.target,
+    );
+    assert.match(exception.ghsa, /^GHSA(-[23456789cfghjmpqrvwx]{4}){3}$/);
+    assert.ok(exception.name && exception.range);
+    assert.match(exception.expires, /^\d{4}-\d{2}-\d{2}$/);
+  }
 });

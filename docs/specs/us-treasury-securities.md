@@ -23,7 +23,7 @@ Read on 2026-11-04 unless marked otherwise.
 | Bill terms (4, 6, 8, 13, 17, 26, 52 weeks; sold at a discount; face value at maturity; 100 USD increments) | https://www.treasurydirect.gov/marketable-securities/treasury-bills/ |
 | Notes (2, 3, 5, 7, 10 years), bonds (20, 30 years), TIPS (5, 10, 30 years), FRNs (2 years): fixed coupon every six months, TIPS principal indexed to CPI-U, FRN interest quarterly | https://www.treasurydirect.gov/marketable-securities/ |
 | Auction terms and results per security, by CUSIP (JSON) | https://www.treasurydirect.gov/TA_WS/securities/search?cusip=912797WM5&format=json (reported in #1908; endpoint family `TA_WS/securities/{search,auctioned,announced}`) |
-| Auction results per auction (XML, schema `Auction_v7_0_0.xsd`) | e.g. https://www.treasurydirect.gov/xml/R_20260428_1.xml (2-year FRN 91282CQM6, read 2026-11-04, saved as a fixture) |
+| Auction results per auction (XML, schema `Auction_v7_0_0.xsd` until the auctions of 2026-10-15, `DFS-TreasuryAuctionResults-v20260415` since those of 2026-10-19, section 9d) | e.g. https://www.treasurydirect.gov/xml/R_20260428_1.xml (2-year FRN 91282CQM6, read 2026-11-04, saved as a fixture); https://www.treasurydirect.gov/xml/R_20261112_2.xml (4-week bill 912797WF0, read 2026-11-17); schema https://www.treasurydirect.gov/xsd/DFS-TreasuryAuctionResults-v20260415-0837aET.xsd |
 | Ref CPI and index ratios of every TIPS, day by day, per month | e.g. https://www.treasurydirect.gov/instit/annceresult/tipscpi/2026/CPI_20260610.pdf (July 2026) |
 | CPI-U, all items, not seasonally adjusted (series `CUUR0000SA0`) | Bureau of Labor Statistics, https://www.bls.gov/cpi/ ; public API https://api.bls.gov/publicAPI/v2/timeseries/data/CUUR0000SA0 |
 | Federal Reserve Bank holidays (the business days of 31 CFR 356.30) | https://www.federalreserve.gov/aboutthefed/k8.htm |
@@ -118,7 +118,8 @@ host `www.treasurydirect.gov` only:
    - when the results XML is named: `CUSIP`, `SecurityType`, `IssueDate`,
      `MaturityDate`, `DatedDate`, `FirstInterestPaymentDate`, `InterestRate`,
      `Spread`, `HighPrice`, `RefCPIDatedDate` agree with the JSON (the XML element names are verified,
-     fixture `R_20260428_1.xml`).
+     fixture `R_20260428_1.xml`; a file in the later layout is read through
+     these names, section 9d).
 5. Bounds (`SOURCE_INCONSISTENT`): a bill's term 4 to 52 weeks and price at most
    100 (a bill auctioned at a rate of 0.000 % is priced at exactly 100.000000,
    has no discount and is held at its face value); a coupon rate 0 to 20 %; a spread -1 % to 1 %; a maturity at most 31
@@ -381,6 +382,34 @@ live source does differently:
 
 The constructed fixtures keep their values and take the live names. The flags
 are `Yes`/`No` and the dates carry `T00:00:00`, as inferred.
+
+## 9d. The results layout of 2026-10-19 (checked 2026-11-17)
+
+From the auctions of 2026-10-19 TreasuryDirect publishes every results file in
+the layout of `DFS-TreasuryAuctionResults-v20260415` (#2263): a `Data` root
+holding one `TreasuryAuctionResults` of nested groups (`OfferingDescription`,
+`Dates`, `Interest`, `IndexInformation`, `Price`, ...) in place of the flat
+`AuctionAnnouncement` and `AuctionResults`. The files of earlier auctions keep
+the v7 layout, so `parseResultsXml` (`adapters/us/series/results-xml.ts`) reads
+both, chosen by the section the file carries; a file carrying both is refused.
+The cross-check keeps the v7 names, placed in the new layout as follows:
+
+| v7 element | DFS group and element |
+| --- | --- |
+| `CUSIP`, `SecurityType` (`Bill`, `Note`, `Bond`), `FloatingRate` | `OfferingDescription`, same name |
+| `InflationIndexSecurity` | `OfferingDescription/InflationProtected` |
+| `IssueDate`, `MaturityDate`, `DatedDate` | `Dates`, same name |
+| `FirstInterestPaymentDate` | `Interest/InterestPaymentDates/InterestPaymentDate index="1"` (the file lists every coupon date) |
+| `InterestRate`, `Spread` | `Interest`, same name |
+| `RefCPIDatedDate` | `IndexInformation/ReferenceCPIOnOriginalDatedDate` (the fetch reads the original issue, so the two are one date) |
+| `HighPrice` (results) | `Price/HighPrice`; a TIPS states none and its `Price/AdjustedPrice` is read, the figure its v7 file gave as `HighPrice` |
+
+A group the file leaves out (a bill has no `Interest`) holds no element; a group
+stated twice is `SOURCE_FORMAT_CHANGED`. In the same change the TA_WS JSON
+began leaving a bill's `inflationProtected` and `floatingRate` blank: a blank
+flag is read as "No" for a bill alone, a "Yes" on a bill is
+`SOURCE_INCONSISTENT`, and a coupon security still needs both. Fixtures: the
+`recorded/` answers of 2026-11-17 (`series/fixtures/README.md`).
 
 ## 11. Choosing the auction in the purchase form
 

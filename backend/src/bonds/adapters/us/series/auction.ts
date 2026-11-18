@@ -104,18 +104,25 @@ export function inconsistent(
 /**
  * The program of an auction from its security type and its two flags.
  * `securityType` is compared as upper case: the JSON says "Note", the results
- * file "NOTE".
+ * file "NOTE". A bill's record has left both flags blank since the auctions of
+ * 2026-10-19: a bill is neither product, so a blank flag is "No" for a bill
+ * alone, and a "Yes" on one contradicts its type.
  */
 export function programOfRecord(record: AuctionRecord): UsProgram {
   const type = requiredText(record, "securityType").toUpperCase();
+  if (type === "BILL" || type === "CMB") {
+    for (const field of ["inflationProtected", "floatingRate"]) {
+      if (optionalText(record, field) !== "" && requiredFlag(record, field)) {
+        throw inconsistent(field, "Yes", "No");
+      }
+    }
+    return "BILL";
+  }
   const inflation = requiredFlag(record, "inflationProtected");
   const floating = requiredFlag(record, "floatingRate");
   if (type === "TIPS" || inflation) return "TIPS";
   if (type === "FRN" || floating) return "FRN";
   switch (type) {
-    case "BILL":
-    case "CMB":
-      return "BILL";
     case "NOTE":
       return "NOTE";
     case "BOND":
