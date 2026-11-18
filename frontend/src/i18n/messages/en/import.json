@@ -47,7 +47,7 @@
     "dropToImport": "Drop to import",
     "unsupportedDrop": "These files cannot be imported: {names}. Use QIF/QMTF, OFX, QFX, CSV, Microsoft Money (.mny), or KMyMoney (.kmy, .xml) files.",
     "processing": "Processing...",
-    "acceptedFormats": "QIF/QMTF, OFX, QFX, CSV, or Microsoft Money (.mny), or KMyMoney (.kmy, .xml)",
+    "acceptedFormats": "QIF/QMTF, OFX, QFX, CSV, Microsoft Money (.mny), or KMyMoney (.kmy, .xml)",
     "mnyFailedHeading": "That Microsoft Money file could not be opened",
     "kmyFailedHeading": "That KMyMoney file could not be opened",
     "docsNotice": {

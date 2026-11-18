@@ -158,7 +158,9 @@ describe('UploadStep', () => {
       'Microsoft Money (.mny)',
     );
     expect(
-      screen.getByText(/QIF\/QMTF, OFX, QFX, CSV, or Microsoft Money \(\.mny\)/),
+      screen.getByText(
+        /QIF\/QMTF, OFX, QFX, CSV, Microsoft Money \(\.mny\), or KMyMoney \(\.kmy, \.xml\)/,
+      ),
     ).toBeInTheDocument();
   });
 
