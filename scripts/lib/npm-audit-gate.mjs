@@ -44,20 +44,9 @@ const BELOW_LEVEL = new Set(['info', 'low', 'moderate']);
  * Advisories the gate lets through, each a reviewed decision. Shrink-only:
  * an entry is removed when its reason ends, never extended past it.
  */
-export const ACCEPTED_ADVISORIES = [
-  {
-    // Dependabot alert 135. No patched release exists (4.0.7 is the newest).
-    // picomatch reaches the production tree only through next-intl's
-    // @parcel/watcher, a dev-time file watcher not traced into the
-    // standalone server, and the ReDoS needs an attacker-supplied glob; every
-    // glob Monize compiles is written in code or config. Accepted in #2264.
-    target: 'frontend',
-    ghsa: 'GHSA-fc5q-39xc-vjpf',
-    name: 'picomatch',
-    range: '<=4.0.7',
-    expires: '2027-01-31',
-  },
-];
+// None at present. GHSA-fc5q-39xc-vjpf (picomatch <=4.0.7), accepted in
+// #2264, was withdrawn by GitHub on 2026-11-18 and its entry removed.
+export const ACCEPTED_ADVISORIES = [];
 
 const todayUtc = () => new Date().toISOString().slice(0, 10);
 
