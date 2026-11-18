@@ -1,8 +1,8 @@
 import { KmyRawFile, KmyTransaction } from "../model/kmy-raw";
 import { Rational } from "../model/kmy-rational";
 import { AccountTree, KMY_TYPE } from "./kmy-account-tree";
-import { amountNumber, effectiveShares, isIsoDate } from "./kmy-amounts";
-import { KmyAccountMapping, rawCurrencyOf } from "./kmy-map-accounts";
+import { amountNumber, isIsoDate } from "./kmy-amounts";
+import { KmyAccountMapping } from "./kmy-map-accounts";
 
 /**
  * Spec 5.3: a KMyMoney opening balance is a two-split transaction against an
@@ -25,9 +25,6 @@ export function foldOpeningBalances(
   asOf: string,
   coinDecimals: ReadonlyMap<string, number>,
 ): OpeningBalanceResult {
-  const commodityOf = (transaction: KmyTransaction): string =>
-    transaction.commodity?.trim() || mapping.baseCurrency;
-
   // Earliest date anything touches each key, and the candidates per key.
   const earliest = new Map<string, string>();
   const candidates = new Map<
@@ -69,12 +66,7 @@ export function foldOpeningBalances(
     if (key === undefined || account === undefined) {
       continue;
     }
-    const shares = effectiveShares(
-      own,
-      rawCurrencyOf(account, mapping.baseCurrency),
-      commodityOf(transaction),
-      raw.fileInfo.fixVersion,
-    );
+    const shares = own.shares;
     const list = candidates.get(key) ?? [];
     list.push({ transaction, shares });
     candidates.set(key, list);

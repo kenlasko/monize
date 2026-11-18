@@ -5,13 +5,8 @@ import { MnyWarning } from "../../mny/model/mny-warnings";
 import { KmyRawFile, KmySplit, KmyTransaction } from "../model/kmy-raw";
 import { Rational } from "../model/kmy-rational";
 import { AccountTree, KMY_TYPE } from "./kmy-account-tree";
-import {
-  amountPlaces,
-  effectiveShares,
-  toUnits,
-  unitsToNumber,
-} from "./kmy-amounts";
-import { KmyAccountMapping, rawCurrencyOf } from "./kmy-map-accounts";
+import { amountPlaces, toUnits, unitsToNumber } from "./kmy-amounts";
+import { KmyAccountMapping } from "./kmy-map-accounts";
 import type { KmyRateLookup } from "./kmy-map-prices";
 import { WarningRowContext, warningRowFor } from "./kmy-warning-row";
 
@@ -66,19 +61,16 @@ export function warningContext(context: KmyMapContext): WarningRowContext {
   };
 }
 
-/** Shares of a split in its own account's currency, with the fix-version compensation. */
+/**
+ * Shares of a split in its own account's currency: what KMyMoney sums into a
+ * balance. A fix-version-0 file was already repaired (`applyKmyFileFixes`).
+ */
 export function sharesOf(
   split: KmySplit,
-  transaction: KmyTransaction,
-  context: KmyMapContext,
+  _transaction: KmyTransaction,
+  _context: KmyMapContext,
 ): Rational {
-  const account = context.tree.byId.get(split.account);
-  return effectiveShares(
-    split,
-    account ? rawCurrencyOf(account, context.mapping.baseCurrency) : "",
-    transactionCommodity(transaction, context),
-    context.raw.fileInfo.fixVersion,
-  );
+  return split.shares;
 }
 
 /** The Monize currency of the account a split is on (imported accounts only). */

@@ -1,8 +1,7 @@
-import { rawSplit, n } from "../__fixtures__/kmy-raw-builders";
+import { n } from "../__fixtures__/kmy-raw-builders";
 import {
   amountNumber,
   amountPlaces,
-  effectiveShares,
   impliedRate,
   isExactAt,
   isIsoDate,
@@ -50,13 +49,6 @@ describe("kmy-amounts", () => {
   it("knows what is exact at a number of places", () => {
     expect(isExactAt(n("1/4"), 8)).toBe(true);
     expect(isExactAt(n("1/3"), 8)).toBe(false);
-  });
-
-  it("applies the fix-version compensation only below 12", () => {
-    const split = rawSplit({ account: "A", value: "7", shares: "0" });
-    expect(effectiveShares(split, "USD", "USD", 12)).toEqual(split.shares);
-    expect(effectiveShares(split, "USD", "USD", 11)).toEqual(split.value);
-    expect(effectiveShares(split, "EUR", "USD", 11)).toEqual(split.shares);
   });
 
   it("computes a leg through the parent's ratio, exactly -value in the commodity", () => {

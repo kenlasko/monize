@@ -135,7 +135,7 @@ describe("computeFileExpectations: details of spec 6.1", () => {
     expect(result.fileBalances.get("acct-8")).toBe(0);
   });
 
-  it("uses a split's value for fix version 11 when shares are 0", () => {
+  it("sums shares as written at fix version 11: KMyMoney repairs only level 0 (kmy-file-fixes)", () => {
     const transactions = [
       {
         splits: [
@@ -151,7 +151,7 @@ describe("computeFileExpectations: details of spec 6.1", () => {
         { id: "E1" },
         11,
       ).fileBalances.get("acct-6"),
-    ).toBe(300);
+    ).toBe(0);
     expect(
       expectations(transactions, "2030-01-01").fileBalances.get("acct-6"),
     ).toBe(0);

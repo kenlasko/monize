@@ -1,5 +1,4 @@
 import { moneyDecimalsFor } from "../../../common/round.util";
-import { KmySplit } from "../model/kmy-raw";
 import {
   Rational,
   div,
@@ -71,27 +70,6 @@ export function rateNumber(a: Rational): number {
 /** True when `a` is exactly representable at `places` decimals. */
 export function isExactAt(a: Rational, places: number): boolean {
   return (a.num * 10n ** BigInt(places)) % a.den === 0n;
-}
-
-/**
- * The shares of a split, with the compensation of fix versions below 12
- * (spec 5.1): a split whose account currency equals the transaction commodity
- * uses `value` when `shares` is 0.
- */
-export function effectiveShares(
-  split: KmySplit,
-  accountCurrency: string,
-  commodity: string,
-  fixVersion: number,
-): Rational {
-  if (
-    fixVersion < 12 &&
-    isZero(split.shares) &&
-    accountCurrency === commodity
-  ) {
-    return split.value;
-  }
-  return split.shares;
 }
 
 /**

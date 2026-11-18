@@ -21,6 +21,7 @@ import { KmyRawFile } from "../model/kmy-raw";
 import { buildAccountTree } from "./kmy-account-tree";
 import { QUANTITY_PLACES } from "./kmy-amounts";
 import { computeFileExpectations } from "./kmy-file-expectations";
+import { applyKmyFileFixes } from "./kmy-file-fixes";
 import {
   countByAccount,
   explainDifferences,
@@ -67,10 +68,15 @@ export interface KmyMapInput {
   readonly asOf: string;
 }
 
-export function mapKmyFile(raw: KmyRawFile, input: KmyMapInput): MnyParsedFile {
+export function mapKmyFile(
+  file: KmyRawFile,
+  input: KmyMapInput,
+): MnyParsedFile {
   const options = resolveImportOptions(input.options);
   const asOf = input.asOf ?? todayIsoDate();
-  const baseCurrency = raw.baseCurrency?.trim() || input.userDefaultCurrency;
+  const baseCurrency = file.baseCurrency?.trim() || input.userDefaultCurrency;
+  // What KMyMoney shows once it has opened the file (spec 5.1).
+  const raw = applyKmyFileFixes(file, baseCurrency);
   const tree = buildAccountTree(raw.accounts);
 
   const drafted = mapKmyAccounts({

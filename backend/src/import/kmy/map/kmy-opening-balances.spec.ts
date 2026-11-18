@@ -204,7 +204,7 @@ describe("foldOpeningBalances (spec 5.3 examples)", () => {
     expect(result.balances.size).toBe(0);
   });
 
-  it("uses a split's value when fix version 11 left shares at 0", () => {
+  it("reads shares as written at fix version 11: KMyMoney repairs only level 0 (kmy-file-fixes)", () => {
     const result = fold(
       [
         {
@@ -219,6 +219,6 @@ describe("foldOpeningBalances (spec 5.3 examples)", () => {
       "2030-01-01",
       11,
     );
-    expect(result.balances.get("acct-6")).toBe(300);
+    expect(result.balances.get("acct-6")).toBe(0);
   });
 });
