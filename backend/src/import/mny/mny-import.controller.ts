@@ -196,7 +196,7 @@ export class MnyImportController {
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<MnyImportJobDto> {
     const job = await this.jobs.findOne(req.user.id, id);
-    if (!job) {
+    if (!job || job.sourceFormat !== "mny") {
       throw new NotFoundException(
         tr("errors.import.mnyJobNotFound", "Import job not found"),
       );
@@ -222,7 +222,7 @@ export class MnyImportController {
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<void> {
-    const removed = await this.staging.remove(req.user.id, id);
+    const removed = await this.staging.remove(req.user.id, id, "mny");
     if (!removed) {
       throw new NotFoundException(
         tr(

@@ -7,6 +7,7 @@ import { returnedRows } from "../../common/db/query-result";
 import { withScopedDb } from "../../common/db/scoped-db";
 import { withSystemContext } from "../../common/db/with-context";
 import { ImportStagedFile } from "./entities/import-staged-file.entity";
+import type { ImportSourceFormat } from "./model/import-source";
 
 /**
  * Server-side staging for a binary import file (design ADR-2).
@@ -157,7 +158,9 @@ export class MnyStagingService {
 
   /**
    * Discards a staged file on the user's request. Returns false when there was
-   * nothing to delete; throws `ConflictException` while a pending or running
+   * nothing to delete -- including a file of the other source format, which is
+   * decided by the same locking statement as the delete, so a route never
+   * discards another format's file; throws `ConflictException` while a pending or running
    * import still needs the bytes (audit A26-L14).
    *
    * Lock first, decide second. `FOR UPDATE` waits for a job INSERT that holds
@@ -166,14 +169,18 @@ export class MnyStagingService {
    * lock waits for this transaction and then fails its foreign key, which
    * `MnyImportJobService.create` reports as the file being gone.
    */
-  async remove(userId: string, id: string): Promise<boolean> {
+  async remove(
+    userId: string,
+    id: string,
+    sourceFormat: ImportSourceFormat,
+  ): Promise<boolean> {
     return withScopedDb(this.dataSource, async (manager) => {
       const locked = returnedRows<{ id: string; source_format?: string }>(
         await manager.query(
           `SELECT id, source_format FROM import_staged_files
-            WHERE id = $1 AND user_id = $2
+            WHERE id = $1 AND user_id = $2 AND source_format = $3
               FOR UPDATE`,
-          [id, userId],
+          [id, userId, sourceFormat],
         ),
       );
       if (locked.length === 0) {

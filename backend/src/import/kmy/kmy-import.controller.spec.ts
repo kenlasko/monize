@@ -220,19 +220,16 @@ describe("KmyImportController", () => {
   describe("discard", () => {
     it("removes a kmy staged file", async () => {
       await controller.discard(USER, "staged-1");
-      expect(staging.remove).toHaveBeenCalledWith("user-1", "staged-1");
+      expect(staging.remove).toHaveBeenCalledWith("user-1", "staged-1", "kmy");
     });
 
-    it.each([null, { id: "s", sourceFormat: "mny" }])(
-      "404s for a missing or Money staged file without removing it",
-      async (info) => {
-        staging.findInfo.mockResolvedValue(info);
-        await expect(controller.discard(USER, "s")).rejects.toBeInstanceOf(
-          NotFoundException,
-        );
-        expect(staging.remove).not.toHaveBeenCalled();
-      },
-    );
+    it("404s with the KMyMoney message for a Money staged file, which the staging service refuses to remove", async () => {
+      staging.remove.mockResolvedValue(false);
+      await expect(controller.discard(USER, "s")).rejects.toThrow(
+        /KMyMoney file is no longer available/,
+      );
+      expect(staging.remove).toHaveBeenCalledWith("user-1", "s", "kmy");
+    });
 
     it("404s when the row vanished before removal", async () => {
       staging.remove.mockResolvedValue(false);

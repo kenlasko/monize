@@ -199,11 +199,7 @@ export class KmyImportController {
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<void> {
-    const info = await this.staging.findInfo(req.user.id, id);
-    if (!info || info.sourceFormat !== "kmy") {
-      throw stagedFileMissing();
-    }
-    const removed = await this.staging.remove(req.user.id, id);
+    const removed = await this.staging.remove(req.user.id, id, "kmy");
     if (!removed) {
       throw stagedFileMissing();
     }

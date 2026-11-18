@@ -126,9 +126,9 @@ describe("MnyStagingService (integration)", () => {
         service.stage(userA, { filename: "a.mny", data: Buffer.from("a") }),
       );
 
-      expect(await asUser(userB, () => service.remove(userB, info.id))).toBe(
-        false,
-      );
+      expect(
+        await asUser(userB, () => service.remove(userB, info.id, "mny")),
+      ).toBe(false);
       expect(
         await asUser(userA, () => service.findInfo(userA, info.id)),
       ).not.toBeNull();
@@ -390,13 +390,41 @@ describe("MnyStagingService (integration)", () => {
       expect(await stagedFileOfJob(first.id)).toHaveLength(1);
     });
 
+    it.each([
+      ["mny", "kmy"],
+      ["kmy", "mny"],
+    ] as const)(
+      "a %s route cannot discard a %s file, and leaves it staged",
+      async (route, stored) => {
+        const info = await asUser(userA, () =>
+          service.stage(userA, {
+            filename: `a.${stored}`,
+            data: Buffer.from("a"),
+            sourceFormat: stored,
+          }),
+        );
+
+        expect(
+          await asUser(userA, () => service.remove(userA, info.id, route)),
+        ).toBe(false);
+        expect(
+          await asUser(userA, () => service.findInfo(userA, info.id)),
+        ).not.toBeNull();
+        expect(
+          await asUser(userA, () => service.remove(userA, info.id, stored)),
+        ).toBe(true);
+      },
+    );
+
     it("refuses a discard while a job is being created for the file", async () => {
       const staged = await asUser(userA, () =>
         service.stage(userA, { filename: "x.mny", data: Buffer.from("x") }),
       );
       const open = await holdJobInsert(userA, staged.id);
 
-      const discard = asUser(userA, () => service.remove(userA, staged.id));
+      const discard = asUser(userA, () =>
+        service.remove(userA, staged.id, "mny"),
+      );
       // Attach the handler now: the rejection may land before the commit.
       const outcome = discard.then(
         () => "removed",
@@ -419,7 +447,7 @@ describe("MnyStagingService (integration)", () => {
       await open.commitTransaction();
 
       await expect(
-        asUser(userA, () => service.remove(userA, staged.id)),
+        asUser(userA, () => service.remove(userA, staged.id, "mny")),
       ).rejects.toBeInstanceOf(ConflictException);
     });
 
@@ -434,9 +462,9 @@ describe("MnyStagingService (integration)", () => {
       );
       await open.commitTransaction();
 
-      expect(await asUser(userA, () => service.remove(userA, staged.id))).toBe(
-        true,
-      );
+      expect(
+        await asUser(userA, () => service.remove(userA, staged.id, "mny")),
+      ).toBe(true);
     });
   });
 });

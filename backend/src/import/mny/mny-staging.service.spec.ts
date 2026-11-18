@@ -196,21 +196,37 @@ describe("MnyStagingService", () => {
 
   describe("remove", () => {
     it("reports false when the caller has no such file", async () => {
-      expect(await service.remove("user-1", "staged-1")).toBe(false);
+      expect(await service.remove("user-1", "staged-1", "mny")).toBe(false);
 
       const [lock] = statements();
-      expect(lock).toContain("WHERE id = $1 AND user_id = $2");
+      expect(lock).toContain(
+        "WHERE id = $1 AND user_id = $2 AND source_format = $3",
+      );
       expect(lock).toContain("FOR UPDATE");
-      expect(query.mock.calls[0][1]).toEqual(["staged-1", "user-1"]);
+      expect(query.mock.calls[0][1]).toEqual(["staged-1", "user-1", "mny"]);
       expect(statements()).toHaveLength(1);
     });
+
+    it.each(["mny", "kmy"] as const)(
+      "reports false for the %s route when the row is the other format, in the locking statement and before any delete",
+      async (route) => {
+        // The row is another format, so the format-filtered lock finds nothing.
+        expect(await service.remove("user-1", "staged-1", route)).toBe(false);
+
+        expect(query.mock.calls[0][1]).toEqual(["staged-1", "user-1", route]);
+        expect(statements()).toHaveLength(1);
+        expect(statements().some((sql) => sql.startsWith("DELETE"))).toBe(
+          false,
+        );
+      },
+    );
 
     it("refuses while a pending or running job needs the bytes, and deletes nothing", async () => {
       query
         .mockResolvedValueOnce([{ id: "staged-1" }])
         .mockResolvedValueOnce([{ needed: true }]);
 
-      await expect(service.remove("user-1", "staged-1")).rejects.toThrow(
+      await expect(service.remove("user-1", "staged-1", "mny")).rejects.toThrow(
         ConflictException,
       );
       expect(statements()[1]).toContain("'pending', 'running'");
@@ -222,7 +238,7 @@ describe("MnyStagingService", () => {
         .mockResolvedValueOnce([{ id: "staged-1", source_format: "kmy" }])
         .mockResolvedValueOnce([{ needed: true }]);
 
-      await expect(service.remove("user-1", "staged-1")).rejects.toThrow(
+      await expect(service.remove("user-1", "staged-1", "mny")).rejects.toThrow(
         /KMyMoney file is being imported/,
       );
     });
@@ -232,7 +248,7 @@ describe("MnyStagingService", () => {
         .mockResolvedValueOnce([{ id: "staged-1", source_format: "mny" }])
         .mockResolvedValueOnce([{ needed: true }]);
 
-      await expect(service.remove("user-1", "staged-1")).rejects.toThrow(
+      await expect(service.remove("user-1", "staged-1", "mny")).rejects.toThrow(
         /Money file is being imported/,
       );
     });
@@ -242,7 +258,7 @@ describe("MnyStagingService", () => {
         .mockResolvedValueOnce([{ id: "staged-1" }])
         .mockResolvedValueOnce([{ needed: false }]);
 
-      expect(await service.remove("user-1", "staged-1")).toBe(true);
+      expect(await service.remove("user-1", "staged-1", "mny")).toBe(true);
       expect(statements()[2]).toContain(
         "DELETE FROM import_staged_files WHERE id = $1 AND user_id = $2",
       );
