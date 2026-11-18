@@ -22,6 +22,25 @@ import type {
   KmyTemplateTransaction,
   KmyTransaction,
 } from "../model/kmy-raw";
+import type {
+  AccountBuilder,
+  InstitutionBuilder,
+  PayeeBuilder,
+  ScheduleBuilder,
+  SecurityBuilder,
+  SplitBuilder,
+  TemplateBuilder,
+  TransactionBuilder,
+} from "./kmy-reader-builders";
+import {
+  attr,
+  nonEmpty,
+  readFixVersion,
+  readKmyBool,
+  readKmyDate,
+  readKmyUint,
+  readUnsignedBigint,
+} from "./kmy-reader-values";
 import type { KmyAttributes, KmyXmlEvents } from "./kmy-xml-tokenize";
 
 /**
@@ -33,177 +52,17 @@ import type { KmyAttributes, KmyXmlEvents } from "./kmy-xml-tokenize";
 
 const R = "KMYMONEY-FILE";
 const STANDARD_PREFIX = "AStd::";
+const BASE_CURRENCY_KEY = "kmm-baseCurrency";
 const MATCHED_TX_KEY = "kmm-matched-tx";
 const DEFAULT_FIX_VERSION = 12;
-const LEGACY_FIX_VERSION = 5;
-
-// ---------------------------------------------------------------------------
-// Attribute decoding (reference 3.2, 3.3)
-
-/** `YYYY-MM-DD` that is a real calendar date, else null. */
-export function readKmyDate(text: string | undefined): string | null {
-  if (text === undefined) {
-    return null;
-  }
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
-  if (!match) {
-    return null;
-  }
-  const [year, month, day] = [+match[1], +match[2], +match[3]];
-  const probe = new Date(Date.UTC(year, month - 1, day));
-  probe.setUTCFullYear(year);
-  const real =
-    probe.getUTCFullYear() === year &&
-    probe.getUTCMonth() === month - 1 &&
-    probe.getUTCDate() === day;
-  return real ? text : null;
-}
-
-/** Attribute booleans: 1/0, on/off, true/false, yes/no, any case; else the default. */
-export function readKmyBool(
-  text: string | undefined,
-  fallback: boolean,
-): boolean {
-  switch (text?.trim().toLowerCase()) {
-    case "1":
-    case "on":
-    case "true":
-    case "yes":
-      return true;
-    case "0":
-    case "off":
-    case "false":
-    case "no":
-      return false;
-    default:
-      return fallback;
-  }
-}
-
-/** An unsigned integer attribute; anything else is `fallback`. */
-export function readKmyUint(
-  text: string | undefined,
-  fallback: number,
-): number {
-  if (text === undefined || !/^\d{1,15}$/.test(text.trim())) {
-    return fallback;
-  }
-  return Number(text.trim());
-}
-
-function readUnsignedBigint(text: string | undefined): bigint {
-  return text !== undefined && /^\d+$/.test(text.trim())
-    ? BigInt(text.trim())
-    : 0n;
-}
-
-function nonEmpty(text: string | undefined): string | null {
-  return text === undefined || text === "" ? null : text;
-}
-
-function attr(attributes: KmyAttributes, name: string): string {
-  return attributes[name] ?? "";
-}
-
-/** The fix version rule of reference 2.3 for a present FIXVERSION element. */
-function readFixVersion(attributes: KmyAttributes): number {
-  let version = readKmyUint(attributes.date, 0);
-  if (version === 0) {
-    const id = attributes.id;
-    version =
-      id === undefined || id === "" ? LEGACY_FIX_VERSION : readKmyUint(id, 0);
-  }
-  return version === 2 ? 3 : version;
-}
-
-// ---------------------------------------------------------------------------
-// Builders
-
-interface PayeeBuilder {
-  ordinal: number;
-  id: string;
-  name: string;
-  hasDetails: boolean;
-}
-
-interface InstitutionBuilder {
-  ordinal: number;
-  id: string;
-  name: string;
-  accountIds: string[];
-}
-
-interface AccountBuilder {
-  ordinal: number;
-  id: string;
-  parentId: string | null;
-  name: string;
-  type: number;
-  currency: string | null;
-  institutionId: string | null;
-  opened: string | null;
-  lastReconciled: string | null;
-  number: string;
-  description: string;
-  subaccountIds: string[];
-  reconciliations: KmyReconciliation[];
-  kvp: Map<string, string>;
-  hasOnlineBanking: boolean;
-}
-
-interface SplitBuilder {
-  account: string;
-  payee: string | null;
-  value: KmyAmount;
-  shares: KmyAmount;
-  price: Rational;
-  action: string;
-  reconcileFlag: number;
-  reconcileDate: string | null;
-  memo: string;
-  number: string;
-  bankId: string;
-  costCenter: string | null;
-  tags: string[];
-  hasMatchedTransaction: boolean;
-}
-
-interface TransactionBuilder {
-  ordinal: number;
-  id: string;
-  postDate: string | null;
-  memo: string;
-  commodity: string | null;
-  splits: KmySplit[];
-  kvp: Map<string, string>;
-}
-
-interface TemplateBuilder {
-  postDate: string | null;
-  memo: string;
-  commodity: string | null;
-  splits: KmyTemplateSplit[];
-}
-
-interface ScheduleBuilder {
-  ordinal: number;
-  attributes: KmyAttributes;
-  payments: string[];
-  template: TemplateBuilder | null;
-}
-
-interface SecurityBuilder {
-  ordinal: number;
-  attributes: KmyAttributes;
-  kvp: Map<string, string>;
-}
 
 export class KmyRawCollector implements KmyXmlEvents {
   private fixVersion = DEFAULT_FIX_VERSION;
   private appVersion: string | null = null;
   private creationDate: string | null = null;
   private lastModified: string | null = null;
-  private readonly fileKvp = new Map<string, string>();
+  /** `kmm-baseCurrency` from the file-level key/value pairs; the last wins. */
+  private baseCurrencyKvp: string | undefined;
 
   private readonly institutions: KmyInstitution[] = [];
   private readonly payees: KmyPayee[] = [];
@@ -211,7 +70,6 @@ export class KmyRawCollector implements KmyXmlEvents {
   private readonly costCenters: KmyCostCenter[] = [];
   private readonly accounts: KmyAccount[] = [];
   private readonly transactions: KmyTransaction[] = [];
-  private readonly transactionIndex = new Map<string, number>();
   private readonly schedules: KmySchedule[] = [];
   private readonly securities: KmySecurity[] = [];
   private readonly currencies: KmyCurrency[] = [];
@@ -262,7 +120,9 @@ export class KmyRawCollector implements KmyXmlEvents {
         this.appVersion = nonEmpty(attributes.id);
         break;
       case `${R}/KEYVALUEPAIRS/PAIR`:
-        this.fileKvp.set(attr(attributes, "key"), attr(attributes, "value"));
+        if (attr(attributes, "key") === BASE_CURRENCY_KEY) {
+          this.baseCurrencyKvp = attr(attributes, "value");
+        }
         break;
 
       case `${R}/INSTITUTIONS/INSTITUTION`:
@@ -528,6 +388,7 @@ export class KmyRawCollector implements KmyXmlEvents {
   // ---- results ------------------------------------------------------------
 
   finish(container: "gzip" | "xml"): KmyRawFile {
+    const transactions = this.collapseDuplicateTransactions();
     const real = new Set<string>();
     for (const account of this.accounts) {
       if (!account.isStandard) {
@@ -537,7 +398,7 @@ export class KmyRawCollector implements KmyXmlEvents {
     const unknownAccount = (split: { account: string }): boolean =>
       !real.has(split.account);
     const dangling =
-      this.transactions.some((tx) => tx.splits.some(unknownAccount)) ||
+      transactions.some((tx) => tx.splits.some(unknownAccount)) ||
       this.schedules.some((s) => s.template?.splits.some(unknownAccount));
     if (dangling) {
       throw new KmyCorruptFileError(
@@ -554,13 +415,13 @@ export class KmyRawCollector implements KmyXmlEvents {
     };
     return {
       fileInfo,
-      baseCurrency: nonEmpty(this.fileKvp.get("kmm-baseCurrency")),
+      baseCurrency: nonEmpty(this.baseCurrencyKvp),
       institutions: this.institutions,
       payees: this.payees,
       tags: this.tags,
       costCenters: this.costCenters,
       accounts: this.accounts,
-      transactions: this.transactions,
+      transactions,
       schedules: this.schedules,
       securities: this.securities,
       currencies: this.currencies,
@@ -766,17 +627,29 @@ export class KmyRawCollector implements KmyXmlEvents {
     if (builder.id === "") {
       return;
     }
-    const transaction: KmyTransaction = { ...builder };
-    // Two transactions with one (postdate, id) collapse to the later (R6.1).
-    const key = `${builder.postDate ?? ""}|${builder.id}`;
-    const existing = this.transactionIndex.get(key);
-    if (existing === undefined) {
-      this.transactionIndex.set(key, this.transactions.length);
-      this.transactions.push(transaction);
-      return;
+    this.transactions.push({ ...builder });
+  }
+
+  /**
+   * Two transactions with one (postdate, id) collapse to the later one, at the
+   * first one's position (R6.1). The index is local to this call, so no state
+   * outlives the parse.
+   */
+  private collapseDuplicateTransactions(): KmyTransaction[] {
+    const collapsed: KmyTransaction[] = [];
+    const indexByKey = new Map<string, number>();
+    for (const transaction of this.transactions) {
+      const key = `${transaction.postDate ?? ""}|${transaction.id}`;
+      const existing = indexByKey.get(key);
+      if (existing === undefined) {
+        indexByKey.set(key, collapsed.length);
+        collapsed.push(transaction);
+        continue;
+      }
+      collapsed[existing] = transaction;
+      this.warn("duplicateTransactionId", transaction.id, transaction.ordinal);
     }
-    this.transactions[existing] = transaction;
-    this.warn("duplicateTransactionId", builder.id, builder.ordinal);
+    return collapsed;
   }
 
   private closeSchedule(builder: ScheduleBuilder): void {

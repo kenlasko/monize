@@ -18,12 +18,8 @@ import {
 import { KmyCorruptFileError } from "../model/kmy-errors";
 import { rational } from "../model/kmy-rational";
 import type { KmyRawFile } from "../model/kmy-raw";
-import {
-  KmyRawCollector,
-  readKmyBool,
-  readKmyDate,
-  readKmyUint,
-} from "./kmy-raw-collector";
+import { KmyRawCollector } from "./kmy-raw-collector";
+import { readKmyBool, readKmyDate, readKmyUint } from "./kmy-reader-values";
 import { tokenizeKmyXml } from "./kmy-xml-tokenize";
 
 function collect(xml: string): KmyRawFile {
