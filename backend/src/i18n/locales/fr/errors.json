@@ -50,7 +50,7 @@
     "changeCurrencyWithBalanceOrSchedules": "Impossible de changer la devise d'un compte qui a un solde d'ouverture ou des opérations planifiées.",
     "alreadyClosed": "Le compte est déjà fermé",
     "closeWithFutureTransactions": "Impossible de clôturer un compte comportant des transactions à date future. Il a {{ count }} transaction(s) datée(s) après aujourd'hui ; supprimez-les ou annulez-les d'abord.",
-    "closeWithHoldings": "Impossible de fermer un compte de placement qui détient encore des titres. Il comporte {{ holdingCount }} position(s) avec une quantité non nulle ; vendez-les ou transférez-les d'abord.",
+    "closeWithHoldings": "Impossible de fermer un compte de placement qui détient encore des titres ({{ symbols }}) ; vendez-les ou transférez-les d'abord.",
     "notClosed": "Le compte n'est pas fermé",
     "modifyBalanceClosed": "Impossible de modifier le solde d'un compte fermé",
     "deleteWithTransactions": "Impossible de supprimer un compte avec {{ transactionCount }} transaction(s). Fermez le compte à la place.",

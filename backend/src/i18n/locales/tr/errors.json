@@ -50,7 +50,7 @@
     "changeCurrencyWithBalanceOrSchedules": "Açılış bakiyesi veya planlanmış işlemleri olan bir hesabın para birimi değiştirilemez.",
     "alreadyClosed": "Hesap zaten kapalı",
     "closeWithFutureTransactions": "Gelecek tarihli işlemleri olan bir hesap kapatılamaz. Hesapta bugünden sonraki bir tarihe ait {{ count }} işlem var; önce bunları silin veya geçersiz kılın.",
-    "closeWithHoldings": "Hâlâ menkul kıymet bulunan bir yatırım hesabı kapatılamaz. Miktarı sıfır olmayan {{ holdingCount }} varlık var; önce bunları satın veya devredin.",
+    "closeWithHoldings": "Hâlâ menkul kıymet bulunan bir yatırım hesabı kapatılamaz ({{ symbols }}); önce bunları satın veya devredin.",
     "notClosed": "Hesap kapalı değil",
     "modifyBalanceClosed": "Kapalı bir hesabın bakiyesi değiştirilemez",
     "deleteWithTransactions": "{{ transactionCount }} işlem(ler) içeren hesap silinemez. Bunun yerine hesabı kapatın.",
