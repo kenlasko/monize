@@ -19,7 +19,7 @@ describe("renderConsentPage", () => {
   it("renders the requested scopes as a read-only list", () => {
     const html = render();
 
-    expect(html).toContain("Authorize");
+    expect(html).toContain("claude.ai wants access to your Monize account");
     expect(html).toContain("Claude Desktop");
     expect(html).toContain("user@example.com");
     // Human-readable scope labels are shown...
@@ -56,6 +56,70 @@ describe("renderConsentPage", () => {
     // Form still renders so user can deny; scopes ul is empty.
     expect(html).toContain('class="scopes">');
     expect(html).not.toContain('value="monize:read"');
+  });
+
+  describe("who is asking (GHSA-vmgq-326p-fprx)", () => {
+    const heading = (html: string) => /<h1>([^<]*)<\/h1>/.exec(html)?.[1];
+
+    it("names the destination host, never the self-chosen name, in the heading", () => {
+      const html = render({
+        clientName: "Google SignIn",
+        redirectUri: "https://attacker-example.test/cb",
+      });
+
+      expect(heading(html)).toBe(
+        "attacker-example.test wants access to your Monize account",
+      );
+      expect(heading(html)).not.toContain("Google");
+      expect(html).toContain(
+        "It calls itself &quot;Google SignIn&quot;. Monize has not checked that name.",
+      );
+      expect(html).toContain(
+        "<title>Allow access to your Monize account?</title>",
+      );
+      expect(html).not.toMatch(/<title>[^<]*Google/);
+    });
+
+    it("keeps a non-default port in the named host", () => {
+      const html = render({ redirectUri: "https://client.test:8443/cb" });
+
+      expect(heading(html)).toBe(
+        "client.test:8443 wants access to your Monize account",
+      );
+    });
+
+    it("says a loopback redirect is an application on this device", () => {
+      for (const redirectUri of [
+        "http://127.0.0.1:33418/callback",
+        "http://localhost:8080/cb",
+        "http://[::1]:9000/cb",
+      ]) {
+        expect(heading(render({ redirectUri }))).toBe(
+          "An application on this device wants access to your Monize account",
+        );
+      }
+    });
+
+    it("names a native app by its scheme", () => {
+      const html = render({ redirectUri: "vscode://publisher.ext/cb" });
+
+      expect(heading(html)).toBe(
+        "An app that opens vscode:// links wants access to your Monize account",
+      );
+    });
+
+    it("calls an unparseable destination unidentified", () => {
+      expect(heading(render({ redirectUri: null }))).toBe(
+        "An unidentified application wants access to your Monize account",
+      );
+    });
+
+    it("cleans a stored name that predates the registration rules", () => {
+      const html = render({ clientName: "Google\u202ESignIn" });
+
+      expect(html).not.toContain("\u202E");
+      expect(html).toContain("It calls itself &quot;Google SignIn&quot;");
+    });
   });
 
   describe("destination of the authorization (open client registration)", () => {

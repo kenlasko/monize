@@ -1,3 +1,5 @@
+import { isLoopbackRedirect } from "./client-identity";
+
 /**
  * What the consent page shows as the destination of an authorization: the
  * origin (scheme, host and a non-default port) of the request's redirect_uri.
@@ -31,4 +33,32 @@ function parse(value: string | null | undefined): URL | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Who the consent page says is asking, read from the redirect_uri alone: the
+ * one fact about a self-registered client Monize can vouch for (the code goes
+ * there), unlike the name, which the registrant chose.
+ *
+ * - `web`: a website, named by its host (ASCII form, with a non-default port);
+ * - `device`: a loopback address, i.e. an application on the person's own
+ *   device (desktop and CLI MCP clients);
+ * - `app`: a native app's custom scheme, named by that scheme;
+ * - null: nothing parseable, and the page warns instead.
+ */
+export type ConsentRequester =
+  | { kind: "web"; host: string }
+  | { kind: "device" }
+  | { kind: "app"; scheme: string };
+
+export function describeRequester(
+  redirectUri: string | null | undefined,
+): ConsentRequester | null {
+  const url = parse(redirectUri);
+  if (!url) return null;
+  if (isLoopbackRedirect(url)) return { kind: "device" };
+  if (url.protocol === "https:" || url.protocol === "http:") {
+    return url.host ? { kind: "web", host: url.host } : null;
+  }
+  return { kind: "app", scheme: `${url.protocol}//` };
 }
