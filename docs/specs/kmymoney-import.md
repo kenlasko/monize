@@ -935,7 +935,8 @@ were inverted). The ratio is never changed; the user checks it (reference R19.1)
 #### 5.7.6 Shapes that import as cash, and leftovers
 
 - **Cash only** (`investmentImportedAsCash`): the security cannot be imported (5.8), the stock account
-  has no investment parent, a BUY/SELL has zero shares, or a sale's total is negative. The `A` split
+  has no investment parent, a BUY/SELL has zero shares, or a dividend's or reinvestment's total is
+  negative. (A sale whose fees exceed its proceeds pays cash out, so it is 5.7.7's shape, not cash only.) The `A` split
   becomes an ordinary row in its account (amount `A.shares`, no category, description as 5.7.2) and the
   `F`/`I` splits are not imported. Account balances still reconcile; the holding does not exist.
 - **Extra asset splits** `X` (`investmentExtraAssetSplit`): each becomes an ordinary row in its account,
@@ -945,7 +946,52 @@ were inverted). The ratio is never changed; the user checks it (reference R19.1)
 - **Further stock splits** (`multipleStockSplits`): each becomes an ADD_SHARES / REMOVE_SHARES row in its
   own holding account, so share counts reconcile; cost basis does not move with them.
 
-#### 5.7.7 Worked example (the reference's section 18)
+#### 5.7.7 Transactions that fit no investment activity
+
+A transaction with a stock split is an investment activity only when KMyMoney itself classifies it as one,
+and only when its cash moves the way that activity moves cash. Otherwise it is never coerced into a trade:
+
+- **Unclassified:** no split on a stock account carries an action KMyMoney recognises (`Buy`, `Add`,
+  `Split`, `Dividend`, `Yield`, `Reinvest`, `IntIncome`; `MyMoneyFile::isInvestmentTransaction` in
+  `kmymoney/mymoney/mymoneyfile.cpp`, `MyMoneySplit::investmentTransactionType` returning
+  `UnknownTransactionType`). KMyMoney then does not treat it as an investment transaction; only its
+  editor's dissection defaults it to a buy, which the importer does not follow.
+- **Cash against the activity:** a `BuyShares` whose asset split pays cash in (value > 0), or a
+  `SellShares` whose asset split pays cash out (value < 0). Read as a trade, a paycheque that also buys
+  shares would turn the salary into investment income, the taxes into commission and the net pay into a
+  positive cash leg on a buy.
+
+Such a transaction (`investmentTransactionUnclassified`, one per transaction, detail the stock split's
+action, row the transaction) imports as:
+
+1. **An ordinary split row** in the imported asset or liability account with the largest absolute value
+   (5.6.2), its category and transfer legs exactly as 5.6.2 to 5.6.4 build them, so the account moves by
+   its `shares` and each category by its own amount.
+2. **One INVESTMENT leg per priced stock split** in that row, of the stock split's value through the
+   parent's ratio (`-value * parent.shares / parent.value`), with `investmentHandle` the transaction.
+3. **One investment row per stock split**: BUY for positive shares, SELL for negative, quantity `|shares|`,
+   total `|value|` converted to the security's currency as 5.7.3 does (bounded rate, else unconverted and
+   warned), commission 0, price derived from the total (INV-TRADE-001), no category, embedded in its leg
+   (`transactionSplitId`, `cashAccountKey` the row's account, no funding account, no cash row of its own:
+   `investmentWritesOwnCashRow` is false). A stock split with zero value becomes ADD_SHARES or
+   REMOVE_SHARES with no cost and no leg.
+
+When the transaction has no imported asset or liability split to hold the row, or a stock split cannot
+become such a row (its holding cannot import, or it has a value without shares), the warning is still
+raised and the transaction falls back to 5.7.2 and 5.7.6.
+
+| KMyMoney transaction | Before | Now |
+|---|---|---|
+| Salary -5000, Taxes +1000, Checking +3500, stock `Buy` +10 shares / 500 | BUY total 1500, commission 1000, cash +3500, INTEREST 5000 | Checking +3500 with legs Salary +5000, Taxes -1000, INVESTMENT -500; BUY 10 at 500, commission 0, embedded |
+| Brokerage +100, stock `Buy` +10 / 500, Salary -600 | BUY with cash +100, INTEREST 600 | Brokerage cash +100 with legs INVESTMENT -500, Salary +600; BUY 10 at 500 |
+| Brokerage -3, stock `Buy` -1 / -2, Fees +5 | cash only, the share lost | Brokerage cash -3 with legs INVESTMENT +2, Fees -5; SELL 1 at 2 |
+| Checking -500, stock action `Transfer` +10 / 500 | BUY 500 funded from Checking | Checking -500 with leg INVESTMENT -500; BUY 10 at 500 |
+| Brokerage -505, stock `Buy` +10 / 500, Fees +5 | BUY 505, commission 5 | unchanged |
+
+Balances, holdings, trade values (6.1) and category amounts all reconcile in each row
+(`kmy-map-investment-shapes.spec.ts`).
+
+#### 5.7.8 Worked example (the reference's section 18)
 
 | KMyMoney | Monize row | Holding after (EXC in "Brokerage Account - Brokerage") |
 |---|---|---|
@@ -1068,7 +1114,7 @@ transfer.
 
 Every code is appended to `MNY_WARNING_CODES` unless marked "existing"; the seven `payeeMatching*`,
 `payeeMatch*`, `payeeDefaultCategoryNotImported` and `payeeDetailsKept` codes of the payee amendment are
-appended after `holdingsReplayDiffers`, in the order of this table, followed by `crossCurrencyTransferRateMissing` and then the codes of the review fixes in this order: `tradeAmountsDiffer`. A warning carries no English;
+appended after `holdingsReplayDiffers`, in the order of this table, followed by `crossCurrencyTransferRateMissing` and then the codes of the review fixes in this order: `tradeAmountsDiffer`, `investmentTransactionUnclassified`. A warning carries no English;
 the frontend renders `import.kmyWarnings.<code>` with the count (ICU plural). `row` is set when the
 warning is about one transaction (the review step lists the rows). The en sentences below are the copy
 WP4 writes; they avoid `--` (frontend rule).
@@ -1136,6 +1182,7 @@ WP4 writes; they avoid `--` (frontend rule).
 | autoCalcInPostedSplit | reader | yes | {count} posted transactions carried a placeholder amount meant only for schedules; it was taken as zero. |
 | mappedBalanceDiffers | 6.3, preview time | | {count} accounts would end with a balance that differs from the one computed from the file. Do not import until this is explained. |
 | holdingsReplayDiffers | 6.3, preview time | | {count} holdings would end with a share count that differs from the one computed from the file. |
+| investmentTransactionUnclassified | 5.7.7 | yes | {count, plural, one {# transaction with a share movement fits} other {# transactions with a share movement fit}} no investment activity. {count, plural, one {Its cash and categories were} other {Their cash and categories were}} imported as a split transaction and the shares as a purchase or sale at the value the file records. Check each.|
 | tradeAmountsDiffer | 6.1, preview time, one per (holding, transaction); detail `transaction N: file X, mapped Y CUR` | | {count, plural, one {# trade was} other {# trades were}} mapped with a total and commission that do not add up to the share value the file records. Do not import until this is explained. |
 | balanceMismatch (existing, post-import) | | | {count} accounts ended with a balance that differs from the one computed from the KMyMoney file. |
 | holdingsMismatch (existing, post-import) | | | {count} holdings do not match the shares computed from your KMyMoney file. |
@@ -1491,12 +1538,12 @@ INV-HOLDING-001 (holdings only from the canonical rebuild), FIN-003 (SPLIT multi
 | opening balances | map-opening-balances spec | raw builders | every row of the 5.3 example table |
 | categories | map-categories spec | raw builders | three levels; income and expense; equity as category; referenced-only keeps ancestors; a name with `:` |
 | transactions | map-transactions spec | raw builders | every row of 5.6.1 and 5.6.7; parent tie-break; cross-currency example 5.6.4 (exact rate); leg conversion and residual; unbalanced; excluded accounts; status and reconcile date per row; payee fallback; tags per shape |
-| investments | map-investments spec | raw builders | every row of 5.7.2 and 5.7.3; the cross-currency trade example; INTEREST companions; cash-only shapes; transfer pairing and unpaired; split ratio; splits inside multi-split; the 5.7.7 walk |
+| investments | map-investments spec | raw builders | every row of 5.7.2 and 5.7.3; the cross-currency trade example; INTEREST companions; cash-only shapes; transfer pairing and unpaired; split ratio; splits inside multi-split; the 5.7.8 walk; the 5.7.7 shapes that fit no activity (map-investment-shapes spec) |
 | stock-split checks | map-stock-splits spec | raw builders | the three rows of 5.7.5 |
 | securities and prices | map-securities / map-prices specs | raw builders | symbols, types, crypto skip, price filter, rate filter, orientation of both directions |
 | schedules | map-schedules spec | raw builders | every row of 5.10.2; next-due recomputation (31 Jan, 28/29 Feb, 31 Mar); loan schedule; auto-calc payment; finished; overdue |
 | file expectations | file-expectations spec | raw builders | balances of the reference's section 18 (Checking 2804.50, EUR Savings 1000.00, cash 647.50, holding 15); split rounding per method; cut-off at `asOf` |
-| whole mapping | map-kmy-file spec | the committed synthetic XML | the full section 5.7.7 and 5.10.3 outcome, the warning set, every `fileBalances` equal to `expectedBalances` |
+| whole mapping | map-kmy-file spec | the committed synthetic XML | the full section 5.7.8 and 5.10.3 outcome, the warning set, every `fileBalances` equal to `expectedBalances` |
 | shared generalisation | the existing specs of each file in 4.9, plus one new case each | | Money behaviour unchanged (existing cases green, untouched); each optional field honoured when set |
 | payee matching (amendment) | kmy payee-match spec | literal keys and raw builders | every row of the 5.5.1 truth table and check table, every row of 5.5.5; the `;` legacy split, a single key with its trailing line feed, all-space keys, `.*?`, `\ ` and `\é` escapes, an escaped `$` against an anchor, `^` or `$` in the middle, a key that does not compile; `matchingenabled="true"` read as 0 |
 | alias overlap (amendment) | alias-overlap util spec | pattern pairs | `aliasesConflict` agrees with `createAlias` on the pairs `payees.service.spec.ts` uses; `aliasesCanOverlap` for two literals, a literal and a glob, compatible and incompatible prefixes and suffixes, the 5.5.5 pairs; equal to a brute force over every text up to 12 characters on the alphabet {a, b} for every glob up to 6 characters over {a, b, *} |

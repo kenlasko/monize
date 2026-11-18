@@ -4,9 +4,12 @@ import {
   orderForReplay,
   pairShareTransfers,
 } from "../../mny/map/map-investments";
+import { roundFxRate } from "../../../common/fx-entry.util";
+import { derivePriceFromTotal } from "../../../securities/investment-amount.util";
 import {
   MappedInvestmentTransaction,
   MappedInvestments,
+  MappedSplit,
   MappedTransaction,
 } from "../../mny/model/mny-import-model";
 import { MnyWarning } from "../../mny/model/mny-warnings";
@@ -27,7 +30,7 @@ import {
   rateNumber,
 } from "./kmy-amounts";
 import { KmyActivity, KmyDissection, dissectTransaction } from "./kmy-dissect";
-import { hasStockSplit } from "./kmy-map-transactions";
+import { embeddingSplitRow, hasStockSplit } from "./kmy-map-transactions";
 import {
   RowCollector,
   ordinaryRow,
@@ -76,6 +79,24 @@ const INCOME_ACTIVITIES: ReadonlySet<KmyActivity> = new Set([
   "IntIncome",
 ]);
 
+/**
+ * Spec 5.7.7: a transaction KMyMoney cannot classify as an investment
+ * activity (no stock split with a recognised action), or a trade whose cash
+ * moves against its activity -- a buy that pays cash in, a sale that pays it
+ * out. Read as a trade, the first becomes a buy by default and the second
+ * turns salary into investment income and taxes into commission.
+ */
+function unfitShape(d: KmyDissection): boolean {
+  if (!d.recognised) {
+    return true;
+  }
+  const cash = d.asset === null ? 0 : sign(d.asset.value);
+  return (
+    (d.activity === "BuyShares" && cash > 0) ||
+    (d.activity === "SellShares" && cash < 0)
+  );
+}
+
 class InvestmentMapper {
   readonly collector: RowCollector;
   readonly rows: MappedInvestmentTransaction[] = [];
@@ -116,7 +137,163 @@ class InvestmentMapper {
       this.cashOnly(transaction, dissection, resolved.reason);
       return;
     }
+    if (unfitShape(dissection)) {
+      // Never coerced into a trade silently (spec 5.7.7).
+      this.warn(
+        "investmentTransactionUnclassified",
+        transaction,
+        dissection.stock.action || undefined,
+      );
+      if (this.embed(transaction, dissection)) {
+        return;
+      }
+    }
     this.trade(transaction, dissection, resolved.holding);
+  }
+
+  /**
+   * Spec 5.7.7: the cash and category legs as an ordinary split row, and each
+   * stock split's share movement as its own BUY or SELL at the stock split's
+   * own value, embedded in that row's INVESTMENT leg (`transaction_split_id`),
+   * so no cash row is written and the row's account moves by exactly its
+   * shares. False, with nothing written, when there is no imported asset split
+   * to hold the row, or a stock split that cannot become such a row (no
+   * holding, or a value without shares).
+   */
+  private embed(transaction: KmyTransaction, d: KmyDissection): boolean {
+    const { context } = this;
+    const stocks = [d.stock, ...d.extraStocks];
+    const holdings = stocks.map((split) =>
+      resolveHolding(context, split.account),
+    );
+    if (
+      holdings.some((h) => "reason" in h) ||
+      stocks.some((split) => isZero(split.shares) && !isZero(split.value))
+    ) {
+      return false;
+    }
+    const priced = stocks.filter((split) => !isZero(split.value));
+    const embedded = embeddingSplitRow(
+      transaction,
+      priced,
+      context,
+      this.cashCollector,
+    );
+    if (embedded === null) {
+      return false;
+    }
+    const { parent, investmentLegs } = embedded;
+    const commodity = transactionCommodity(transaction, context);
+    stocks.forEach((split, index) => {
+      const holding = (holdings[index] as { holding: Holding }).holding;
+      const leg = investmentLegs.get(split) ?? null;
+      this.rows.push(
+        this.embeddedRow(transaction, split, holding, commodity, parent, leg),
+      );
+    });
+    return true;
+  }
+
+  private embeddedRow(
+    transaction: KmyTransaction,
+    split: KmySplit,
+    holding: Holding,
+    commodity: string,
+    parent: MappedTransaction,
+    leg: MappedSplit | null,
+  ): MappedInvestmentTransaction {
+    const { context } = this;
+    const conversion = this.conversion(transaction, holding, commodity);
+    const money = (value: Rational): number =>
+      amountNumber(value, conversion.currency, context.coinDecimals);
+    const positive = sign(split.shares) > 0;
+    const quantity = quantityNumber(abs(split.shares));
+    const action =
+      leg === null
+        ? positive
+          ? InvestmentAction.ADD_SHARES
+          : InvestmentAction.REMOVE_SHARES
+        : positive
+          ? InvestmentAction.BUY
+          : InvestmentAction.SELL;
+    const total =
+      leg === null ? 0 : money(abs(mul(split.value, conversion.rate)));
+    const cashAmount = leg?.amount ?? 0;
+    return {
+      id: randomUUID(),
+      handle: transaction.ordinal,
+      accountKey: holding.pair.brokerageKey,
+      cashAccountKey: leg === null ? null : parent.accountKey,
+      fundingAccountKey: null,
+      cashTransactionId: null,
+      transactionSplitId: leg?.id ?? null,
+      securityHandle: holding.securityHandle,
+      action,
+      transactionDate: transaction.postDate as string,
+      quantity,
+      price:
+        leg === null
+          ? null
+          : derivePriceFromTotal({
+              action,
+              totalAmount: total,
+              quantity,
+              commission: 0,
+            }),
+      commission: 0,
+      accruedInterest: 0,
+      totalAmount: total,
+      currencyCode: parent.currencyCode,
+      securityCurrencyCode: conversion.currency,
+      exchangeRate:
+        leg === null ||
+        parent.currencyCode === conversion.currency ||
+        total === 0
+          ? 1
+          : roundFxRate(Math.abs(cashAmount) / total),
+      cashAmount,
+      // An embedded row takes its parent's status (`createEmbeddedForSplit`).
+      status: parent.status,
+      payeeHandle: this.payeeOf(transaction, [split, ...transaction.splits]),
+      categoryHandle: null,
+      description:
+        [split.memo, transaction.memo].find((text) => text.trim() !== "") ??
+        null,
+      linkedInvestmentId: null,
+      tagHandles: this.collector.tagHandles([split]),
+    };
+  }
+
+  /**
+   * The file's rate from the transaction commodity to the security's trading
+   * currency (spec 5.7.3, under `resolveFxRate`'s bound), or the commodity
+   * itself, unconverted and warned, when the file has none.
+   */
+  private conversion(
+    transaction: KmyTransaction,
+    holding: Holding,
+    commodity: string,
+  ): { rate: Rational; currency: string } {
+    if (commodity === holding.securityCurrency) {
+      return { rate: ONE, currency: commodity };
+    }
+    const found = this.context.rateLookup(
+      commodity,
+      holding.securityCurrency,
+      transaction.postDate as string,
+    );
+    if (found.rate !== null) {
+      return { rate: found.rate, currency: holding.securityCurrency };
+    }
+    // A rate the file has but that is too old for the date is named, so
+    // the user can tell "no rate" from "a rate from years before".
+    const pair = `${commodity}->${holding.securityCurrency}`;
+    this.warn(
+      "crossCurrencyTradeUnconverted",
+      transaction,
+      found.observedOn === null ? pair : `${pair} (${found.observedOn})`,
+    );
+    return { rate: ONE, currency: commodity };
   }
 
   /** Spec 5.7.6: the asset split becomes an ordinary row; fees and income do not import. */
@@ -174,33 +351,15 @@ class InvestmentMapper {
     holding: Holding,
   ): void {
     const { context } = this;
-    const date = transaction.postDate as string;
     const commodity = transactionCommodity(transaction, context);
 
     // Amounts are in the transaction commodity; convert to the security's
     // trading currency at the file's own price, else leave them unconverted.
-    let rate: Rational = ONE;
-    let securityCurrency = holding.securityCurrency;
-    if (commodity !== holding.securityCurrency) {
-      const found = context.rateLookup(
-        commodity,
-        holding.securityCurrency,
-        date,
-      );
-      if (found.rate === null) {
-        securityCurrency = commodity;
-        // A rate the file has but that is too old for the date is named, so
-        // the user can tell "no rate" from "a rate from years before".
-        const pair = `${commodity}->${holding.securityCurrency}`;
-        this.warn(
-          "crossCurrencyTradeUnconverted",
-          transaction,
-          found.observedOn === null ? pair : `${pair} (${found.observedOn})`,
-        );
-      } else {
-        rate = found.rate;
-      }
-    }
+    const { rate, currency: securityCurrency } = this.conversion(
+      transaction,
+      holding,
+      commodity,
+    );
     const money = (value: Rational): number =>
       amountNumber(value, securityCurrency, context.coinDecimals);
     const convert = (value: Rational): Rational => mul(value, rate);

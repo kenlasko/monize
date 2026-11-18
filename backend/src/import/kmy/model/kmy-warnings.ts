@@ -70,4 +70,5 @@ export const KMY_WARNING_CODES: readonly MnyWarningCode[] = [
   "payeeDetailsKept",
   "crossCurrencyTransferRateMissing",
   "tradeAmountsDiffer",
+  "investmentTransactionUnclassified",
 ];

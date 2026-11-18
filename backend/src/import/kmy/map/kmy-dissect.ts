@@ -37,7 +37,26 @@ export interface KmyDissection {
   readonly activity: KmyActivity;
   /** True when a `Split` action sits in a transaction of several splits. */
   readonly splitInMultiSplit: boolean;
+  /**
+   * KMyMoney's `MyMoneyFile::isInvestmentTransaction`: some split on a stock
+   * account carries a recognised investment action. When none does, KMyMoney
+   * does not treat the transaction as an investment activity at all
+   * (`investmentTransactionType` is UnknownTransactionType; only the editor's
+   * dissection falls back to a buy).
+   */
+  readonly recognised: boolean;
 }
+
+/** The actions `MyMoneySplit::investmentTransactionType` knows (`actionNamesLUT`). */
+export const KMY_INVESTMENT_ACTIONS: ReadonlySet<string> = new Set([
+  "Buy",
+  "Add",
+  "Split",
+  "Dividend",
+  "Yield",
+  "Reinvest",
+  "IntIncome",
+]);
 
 /** Activity of the stock split (spec 5.7.1); anything unrecognised is a buy (KMyMoney's default). */
 export function activityOf(stock: KmySplit, splitCount: number): KmyActivity {
@@ -114,5 +133,8 @@ export function dissectTransaction(
     extraStocks,
     activity: activityOf(stock, splitCount),
     splitInMultiSplit: stock.action === "Split" && splitCount > 1,
+    recognised: [stock, ...extraStocks].some((split) =>
+      KMY_INVESTMENT_ACTIONS.has(split.action),
+    ),
   };
 }

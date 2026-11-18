@@ -664,7 +664,7 @@ describe("mapKmyInvestments: shapes that import as cash (spec 5.7.6)", () => {
     ]);
   });
 
-  it("imports a buy of zero shares and a sale whose fees exceed its proceeds as cash only", () => {
+  it("imports a buy of zero shares and a dividend or reinvestment below zero as cash only, and keeps the shares of a sale whose fees exceed its proceeds", () => {
     const { investments, cashRows } = run([
       {
         splits: [
@@ -696,11 +696,19 @@ describe("mapKmyInvestments: shapes that import as cash (spec 5.7.6)", () => {
         ],
       },
     ]);
-    expect(investments.transactions).toHaveLength(0);
+    // The sale that pays cash out is no longer cash only: it fits no trade,
+    // so its share movement is kept, embedded in the split row (spec 5.7.7).
+    expect(
+      investments.transactions.map((r) => [r.handle, r.action, r.quantity]),
+    ).toEqual([[2, InvestmentAction.SELL, 1]]);
     expect(cashRows.map((r) => r.amount)).toEqual([-5, -3, -3, -3]);
-    expect(investments.warnings.map((w) => w.code)).toEqual(
-      Array(4).fill("investmentImportedAsCash"),
-    );
+    expect(cashRows[1].splits.map((split) => split.amount)).toEqual([2, -5]);
+    expect(investments.warnings.map((w) => w.code)).toEqual([
+      "investmentImportedAsCash",
+      "investmentTransactionUnclassified",
+      "investmentImportedAsCash",
+      "investmentImportedAsCash",
+    ]);
   });
 
   it("imports an extra asset split as its own row", () => {

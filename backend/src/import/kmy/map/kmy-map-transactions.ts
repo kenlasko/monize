@@ -283,6 +283,12 @@ function splitUnits(
   return unitsOf(sharesOf(split, transaction, context), currency, context);
 }
 
+/**
+ * The split row of spec 5.6.2. `investments` are stock splits whose share
+ * movement becomes its own investment row (spec 5.7.7): each becomes a
+ * `SplitKind.INVESTMENT` leg of its value, which the caller embeds that row in.
+ * Returns the parent row and the leg of each such stock split.
+ */
 function splitRow(
   transaction: KmyTransaction,
   assets: KmySplit[],
@@ -290,7 +296,8 @@ function splitRow(
   categories: KmySplit[],
   context: KmyMapContext,
   collector: RowCollector,
-): void {
+  investments: readonly KmySplit[] = [],
+): { parent: MappedTransaction; investmentLegs: Map<KmySplit, MappedSplit> } {
   // Spec 5.6.2: the imported asset split with the largest absolute value.
   const parent = imported.reduce((best, split) =>
     compare(abs(split.value), abs(best.value)) > 0 ? split : best,
@@ -308,7 +315,9 @@ function splitRow(
   const others = transaction.splits.filter(
     (split) =>
       split !== parent &&
-      (assets.includes(split) || categories.includes(split)),
+      (assets.includes(split) ||
+        categories.includes(split) ||
+        investments.includes(split)),
   );
   let unbalanced = !isZero(sum(transaction.splits.map((split) => split.value)));
 
@@ -365,10 +374,29 @@ function splitRow(
   const parentRowId = randomUUID();
   const legs: MappedSplit[] = [];
   const counterparts: MappedTransaction[] = [];
+  const investmentLegs = new Map<KmySplit, MappedSplit>();
   others.forEach((other, index) => {
     const account = context.tree.byId.get(other.account);
     const memo = memoOf(other.memo);
     const legAmount = numberOf(legUnits[index], parentCurrency, context);
+    if (investments.includes(other)) {
+      // The share movement's cash: the investment row embedded in this leg
+      // carries the shares, its tags and its memo (spec 5.7.7).
+      const leg: MappedSplit = {
+        id: randomUUID(),
+        kind: SplitKind.INVESTMENT,
+        categoryHandle: null,
+        transferAccountKey: null,
+        linkedTransactionId: null,
+        investmentHandle: transaction.ordinal,
+        amount: legAmount,
+        memo,
+        tagHandles: [],
+      };
+      investmentLegs.set(other, leg);
+      legs.push(leg);
+      return;
+    }
     const counterpartKey = context.mapping.keyById.get(other.account);
     const isAsset = assets.includes(other);
     if (isAsset && counterpartKey !== undefined) {
@@ -450,10 +478,43 @@ function splitRow(
     });
   }
 
-  const row = ordinaryRow(transaction, parent, context, collector, {
-    splits: legs,
-  });
-  collector.rows.push({ ...row, id: parentRowId }, ...counterparts);
+  const row = {
+    ...ordinaryRow(transaction, parent, context, collector, { splits: legs }),
+    id: parentRowId,
+  };
+  collector.rows.push(row, ...counterparts);
+  return { parent: row, investmentLegs };
+}
+
+/**
+ * Spec 5.7.7: the cash and category legs of an investment transaction that
+ * does not fit an investment activity, as an ordinary split row whose
+ * INVESTMENT legs carry `investments` (stock splits). Null when no split of the
+ * transaction is on an imported asset or liability account, so there is no
+ * row to put them in.
+ */
+export function embeddingSplitRow(
+  transaction: KmyTransaction,
+  investments: readonly KmySplit[],
+  context: KmyMapContext,
+  collector: RowCollector,
+): ReturnType<typeof splitRow> | null {
+  const { assets, categories } = classify(transaction, context);
+  const imported = assets.filter((split) =>
+    context.mapping.keyById.has(split.account),
+  );
+  if (imported.length === 0) {
+    return null;
+  }
+  return splitRow(
+    transaction,
+    assets,
+    imported,
+    categories,
+    context,
+    collector,
+    investments,
+  );
 }
 
 export function mapKmyTransactions(

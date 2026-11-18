@@ -207,6 +207,8 @@ export const MNY_WARNING_CODES = [
   "crossCurrencyTransferRateMissing",
   /** A holding's imported trade totals do not add up to the file's stock values (spec 6.1). */
   "tradeAmountsDiffer",
+  /** A KMyMoney transaction with a stock split that fits no investment activity; imported as a split row with the share movement embedded (spec 5.7.7). */
+  "investmentTransactionUnclassified",
 ] as const;
 
 export type MnyWarningCode = (typeof MNY_WARNING_CODES)[number];
