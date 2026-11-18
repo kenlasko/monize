@@ -1,7 +1,8 @@
 import { EntityManager } from "typeorm";
+import { normalizePhoneNumber } from "../../../common/phone-number.util";
 import { PayeeAlias } from "../../../payees/entities/payee-alias.entity";
 import { insertPayeeAliasIgnoringDuplicate } from "../../../payees/insert-payee-alias.util";
-import { AliasLedger } from "../map/payee-alias-collision";
+import { createAliasLedger } from "../map/payee-alias-collision";
 import { MappedPayee } from "../model/mny-import-model";
 import { MnyWarning } from "../model/mny-warnings";
 
@@ -103,12 +104,21 @@ export async function writePayeeExtras(
         ? null
         : (input.categoryIdByHandle.get(payee.defaultCategoryHandle) ?? null);
     const contact = payee.contact;
-    if (
-      payeeId === undefined ||
-      (categoryId === null &&
-        (contact === undefined ||
-          Object.values(contact).every((value) => value === null)))
-    ) {
+    // The one door a payee's phone goes through: the mapper already stores the
+    // E.164 form, which needs no region, and a shared writer does not trust that.
+    const phone =
+      contact?.phone == null
+        ? null
+        : (() => {
+            const normalized = normalizePhoneNumber(contact.phone, null);
+            return normalized.ok ? normalized.stored : null;
+          })();
+    const hasContact =
+      contact !== undefined &&
+      [contact.notes, contact.email, phone, contact.address].some(
+        (value) => value !== null,
+      );
+    if (payeeId === undefined || (categoryId === null && !hasContact)) {
       continue;
     }
     const result: unknown = await manager.query(FILL_EMPTY_SQL, [
@@ -117,7 +127,7 @@ export async function writePayeeExtras(
       categoryId,
       contact?.notes ?? null,
       contact?.email ?? null,
-      contact?.phone ?? null,
+      phone,
       contact?.address ?? null,
     ]);
     const rows = (
@@ -142,7 +152,7 @@ export async function writePayeeExtras(
     const fields = [
       ["notes", contact?.notes, row.old_notes],
       ["email", contact?.email, row.old_email],
-      ["phone", contact?.phone, row.old_phone],
+      ["phone", phone, row.old_phone],
       ["address", contact?.address, row.old_address],
     ] as const;
     for (const [label, supplied, before] of fields) {
@@ -193,7 +203,7 @@ async function writeAliases(
       "SELECT alias, payee_id FROM payee_aliases WHERE user_id = $1",
       [userId],
     );
-  const ledger = new AliasLedger(
+  const ledger = createAliasLedger(
     existingPayees.map((row) => ({ owner: row.id, name: row.name })),
   );
   const ownAliases = new Set<string>();

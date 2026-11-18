@@ -39,83 +39,93 @@ export type AliasDecision =
       readonly overlap: string | null;
     };
 
-export class AliasLedger {
-  private readonly nameByOwner = new Map<string, string>();
-  private readonly ownerByLowerName = new Map<string, string>();
-  private readonly literals = new Map<string, HeldAlias[]>();
-  private readonly everyLiteral: HeldAlias[] = [];
-  private readonly globs: HeldAlias[] = [];
-
-  /** @param payees every payee that exists once the import has written its own. */
-  constructor(payees: Iterable<AliasPayee>) {
-    for (const payee of payees) {
-      this.nameByOwner.set(payee.owner, payee.name);
-      const lower = payee.name.trim().toLowerCase();
-      if (!this.ownerByLowerName.has(lower)) {
-        this.ownerByLowerName.set(lower, payee.owner);
-      }
-    }
-  }
-
+/** What the mapper and the writer ask of the collision table. */
+export interface AliasLedger {
   /** Record an alias that exists (or is about to) on `owner`. */
-  hold(alias: string, owner: string): void {
-    const held = { alias, owner };
-    if (alias.includes("*")) {
-      this.globs.push(held);
-      return;
+  hold(alias: string, owner: string): void;
+  /** The first rule of the collision table that applies to `glob` for `owner`. */
+  decide(glob: string, owner: string): AliasDecision;
+}
+
+/**
+ * A fresh ledger per call (a closure, not process state): the mapper builds one
+ * per parse and the writer one per import.
+ *
+ * @param payees every payee that exists once the import has written its own.
+ */
+export function createAliasLedger(payees: Iterable<AliasPayee>): AliasLedger {
+  const nameByOwner = new Map<string, string>();
+  const ownerByLowerName = new Map<string, string>();
+  const literals = new Map<string, HeldAlias[]>();
+  const everyLiteral: HeldAlias[] = [];
+  const globs: HeldAlias[] = [];
+
+  for (const payee of payees) {
+    nameByOwner.set(payee.owner, payee.name);
+    const lower = payee.name.trim().toLowerCase();
+    if (!ownerByLowerName.has(lower)) {
+      ownerByLowerName.set(lower, payee.owner);
     }
-    const lower = alias.toLowerCase();
-    this.literals.set(lower, [...(this.literals.get(lower) ?? []), held]);
-    this.everyLiteral.push(held);
   }
 
-  private describe(held: HeldAlias): string {
-    return `${this.nameByOwner.get(held.owner) ?? held.owner}: ${held.alias}`;
-  }
+  const describe = (held: HeldAlias): string =>
+    `${nameByOwner.get(held.owner) ?? held.owner}: ${held.alias}`;
 
-  private firstConflict(glob: string, owner: string): HeldAlias | null {
+  const firstConflict = (glob: string, owner: string): HeldAlias | null => {
     if (!glob.includes("*")) {
-      const hit = this.literals
+      const hit = literals
         .get(glob.toLowerCase())
         ?.find((held) => held.owner !== owner);
       if (hit) {
         return hit;
       }
       return (
-        this.globs.find(
+        globs.find(
           (held) => held.owner !== owner && aliasesConflict(glob, held.alias),
         ) ?? null
       );
     }
     return (
-      [...this.everyLiteral, ...this.globs].find(
+      [...everyLiteral, ...globs].find(
         (held) => held.owner !== owner && aliasesConflict(glob, held.alias),
       ) ?? null
     );
-  }
+  };
 
-  /** The first rule of the collision table that applies to `glob` for `owner`. */
-  decide(glob: string, owner: string): AliasDecision {
-    const conflicting = this.firstConflict(glob, owner);
-    if (conflicting) {
-      return { kind: "conflict", detail: this.describe(conflicting) };
-    }
-    if (!glob.includes("*")) {
-      const nameOwner = this.ownerByLowerName.get(glob.toLowerCase());
-      if (nameOwner !== undefined && nameOwner !== owner) {
-        return {
-          kind: "conflict",
-          detail: `${this.nameByOwner.get(nameOwner) ?? nameOwner} (name)`,
-        };
+  return {
+    hold(alias, owner) {
+      const held = { alias, owner };
+      if (alias.includes("*")) {
+        globs.push(held);
+        return;
       }
-      return { kind: "accept", overlap: null };
-    }
-    const overlapping = this.globs.find(
-      (held) => held.owner !== owner && aliasesCanOverlap(glob, held.alias),
-    );
-    return {
-      kind: "accept",
-      overlap: overlapping ? this.describe(overlapping) : null,
-    };
-  }
+      const lower = alias.toLowerCase();
+      literals.set(lower, [...(literals.get(lower) ?? []), held]);
+      everyLiteral.push(held);
+    },
+
+    decide(glob, owner) {
+      const conflicting = firstConflict(glob, owner);
+      if (conflicting) {
+        return { kind: "conflict", detail: describe(conflicting) };
+      }
+      if (!glob.includes("*")) {
+        const nameOwner = ownerByLowerName.get(glob.toLowerCase());
+        if (nameOwner !== undefined && nameOwner !== owner) {
+          return {
+            kind: "conflict",
+            detail: `${nameByOwner.get(nameOwner) ?? nameOwner} (name)`,
+          };
+        }
+        return { kind: "accept", overlap: null };
+      }
+      const overlapping = globs.find(
+        (held) => held.owner !== owner && aliasesCanOverlap(glob, held.alias),
+      );
+      return {
+        kind: "accept",
+        overlap: overlapping ? describe(overlapping) : null,
+      };
+    },
+  };
 }

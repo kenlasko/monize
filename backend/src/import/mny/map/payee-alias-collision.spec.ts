@@ -1,7 +1,7 @@
-import { AliasLedger } from "./payee-alias-collision";
+import { AliasLedger, createAliasLedger } from "./payee-alias-collision";
 
 function ledger(): AliasLedger {
-  const l = new AliasLedger([
+  const l = createAliasLedger([
     { owner: "coffee", name: "Coffee" },
     { owner: "amazon", name: "Amazon" },
     { owner: "prime", name: "Prime Video" },
@@ -78,7 +78,7 @@ describe("AliasLedger", () => {
   });
 
   it("counts an alias held under an owner with no listed name by its owner key", () => {
-    const l = new AliasLedger([]);
+    const l = createAliasLedger([]);
     l.hold("x*", "someone");
     expect(l.decide("x", "other")).toEqual({
       kind: "conflict",

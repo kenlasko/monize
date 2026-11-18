@@ -7,7 +7,7 @@ import {
 } from "../../mny/model/mny-import-model";
 import type { CountryCode } from "libphonenumber-js/max";
 import { MnyWarning } from "../../mny/model/mny-warnings";
-import { AliasLedger } from "../../mny/map/payee-alias-collision";
+import { createAliasLedger } from "../../mny/map/payee-alias-collision";
 import { matchesAliasPattern } from "../../../payees/alias-match.util";
 import { KmyPayee, KmyRawFile } from "../model/kmy-raw";
 import { PayeeDefaults, mapPayeeContact } from "./kmy-payee-details";
@@ -83,7 +83,7 @@ function collideAliases(groups: readonly PayeeGroup[]): {
   aliases: ReadonlyMap<string, readonly string[]>;
   warnings: MnyWarning[];
 } {
-  const ledger = new AliasLedger(
+  const ledger = createAliasLedger(
     groups.map((group) => ({ owner: group.key, name: group.name })),
   );
   const warnings: MnyWarning[] = [];

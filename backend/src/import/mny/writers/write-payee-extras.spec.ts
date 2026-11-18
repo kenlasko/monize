@@ -133,6 +133,36 @@ describe("writePayeeExtras (spec 5.5.4)", () => {
     ]);
   });
 
+  it("writes the phone only in its normalized form and drops one that is not a number", async () => {
+    const { manager } = build();
+    await run(manager, [
+      {
+        handle: 1,
+        name: "City Power",
+        contact: {
+          notes: null,
+          email: null,
+          phone: "+1 (202) 555-0123",
+          address: null,
+        },
+      },
+    ]);
+    expect((manager.query as jest.Mock).mock.calls[0][1][5]).toBe(
+      "+12025550123",
+    );
+
+    const bad = build();
+    const result = await run(bad.manager, [
+      {
+        handle: 1,
+        name: "City Power",
+        contact: { notes: null, email: null, phone: "call me", address: null },
+      },
+    ]);
+    expect(bad.statements).toEqual([]);
+    expect(result.contactDetailsSet).toBe(0);
+  });
+
   it("keeps an existing payee's own values and names them in payeeDetailsKept", async () => {
     const { manager } = build({
       before: {
