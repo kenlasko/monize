@@ -3,17 +3,10 @@
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import {
-  EntitySwitcher,
-  type EntitySwitcherItem,
-} from '@/components/ui/EntitySwitcher';
+import type { EntitySwitcherItem } from '@/components/ui/EntitySwitcher';
+import type { CollapsedHeaderSwitcher } from '@/store/mobileChromeStore';
 import { REPORT_CATEGORIES } from '@/components/reports/report-definitions';
 import { useReportCatalog } from '@/components/reports/useReportCatalog';
-
-interface ReportSwitcherProps {
-  /** The report on screen; the menu opens on it, highlighted. */
-  currentId: string;
-}
 
 /**
  * The caret beside a report's title that jumps straight to another report,
@@ -39,8 +32,12 @@ interface ReportSwitcherProps {
  * Picking a report navigates, and the route is built here rather than by each
  * caller: an id in this menu *is* a path under `/reports/`, and two call sites
  * spelling that out separately is one of them getting it wrong later.
+ *
+ * Returns `EntitySwitcher`'s props, memoized, so a report header draws the
+ * caret with `<EntitySwitcher {...switcher} />` and hands the very same menu
+ * to the app header's collapsed title.
  */
-export function ReportSwitcher({ currentId }: ReportSwitcherProps) {
+export function useReportSwitcher(currentId: string): CollapsedHeaderSwitcher {
   const t = useTranslations('reports');
   const router = useRouter();
   const { reports } = useReportCatalog();
@@ -90,15 +87,16 @@ export function ReportSwitcher({ currentId }: ReportSwitcherProps) {
     return [...favourites, ...rest];
   }, [reports, t, currentId]);
 
-  return (
-    <EntitySwitcher
-      currentId={currentId}
-      showCurrent
-      items={items}
-      onSelect={(id) => router.push(`/reports/${id}`)}
-      triggerLabel={t('detailHeader.switchReport')}
-      filterPlaceholder={t('detailHeader.switchPlaceholder')}
-      noMatchesLabel={t('detailHeader.switchNoMatches')}
-    />
+  return useMemo(
+    () => ({
+      currentId,
+      showCurrent: true,
+      items,
+      onSelect: (id: string) => router.push(`/reports/${id}`),
+      triggerLabel: t('detailHeader.switchReport'),
+      filterPlaceholder: t('detailHeader.switchPlaceholder'),
+      noMatchesLabel: t('detailHeader.switchNoMatches'),
+    }),
+    [currentId, items, router, t],
   );
 }

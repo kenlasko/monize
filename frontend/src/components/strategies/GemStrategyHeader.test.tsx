@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, act, within } from "@/test/render";
 import { GemStrategyHeader } from "./GemStrategyHeader";
+import { stubCollapsingTitle } from "@/test/collapsing-title";
 
 const push = vi.fn();
 
@@ -39,7 +40,7 @@ describe("GemStrategyHeader", () => {
   };
 
   /**
-   * `ReportSwitcher` beside the title loads the user's saved reports on mount,
+   * The report caret (`useReportSwitcher`) beside the title loads the user's saved reports on mount,
    * so every render here has async work behind it -- even the tests that only
    * assert on static copy. Rendering outside act leaves those state updates
    * unwrapped.
@@ -170,5 +171,20 @@ describe("GemStrategyHeader", () => {
     await renderHeader({ onEditSettings });
     fireEvent.click(screen.getByRole("button", { name: /Edit settings/ }));
     expect(onEditSettings).toHaveBeenCalledOnce();
+  });
+
+  it('hands the app header "Reports" with the scenario name and the report caret', async () => {
+    const title = stubCollapsingTitle();
+    try {
+      await renderHeader({ strategyName: "Aggressive GEM" });
+      title.collapse();
+      expect(title.current()).toMatchObject({
+        title: "Reports",
+        context: "Aggressive GEM",
+        switcher: { currentId: "gem-strategy", showCurrent: true },
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

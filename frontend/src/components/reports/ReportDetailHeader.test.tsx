@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@/test/render';
 import { ReportDetailHeader } from './ReportDetailHeader';
+import { stubCollapsingTitle } from '@/test/collapsing-title';
 import { customReportsApi } from '@/lib/custom-reports';
 import { investmentReportsApi } from '@/lib/investment-reports';
 
@@ -95,5 +96,22 @@ describe('ReportDetailHeader', () => {
     });
     fireEvent.click(screen.getByRole('menuitem', { name: /Groceries Deep Dive/ }));
     expect(push).toHaveBeenCalledWith('/reports/custom/c1');
+  });
+
+  it("hands the app header \"Reports\" with this report's name and the same report caret", async () => {
+    const title = stubCollapsingTitle();
+    try {
+      await renderHeader();
+      title.collapse();
+      expect(title.current()).toMatchObject({
+        title: 'Reports',
+        context: 'Tax Summary',
+        switcher: { currentId: 'tax-summary', showCurrent: true },
+      });
+      act(() => title.current()?.switcher?.onSelect('net-worth'));
+      expect(push).toHaveBeenCalledWith('/reports/net-worth');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

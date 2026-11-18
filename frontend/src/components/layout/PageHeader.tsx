@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useContext, useEffect } from 'react';
+import { ReactNode, useCallback, useContext, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { docsUrl, helpTarget, type DocsLink } from '@/lib/docs-links';
@@ -11,6 +11,11 @@ import {
   useCollapsingHeaderTitle,
 } from '@/hooks/useCollapsingHeaderTitle';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
+import type { CollapsedHeaderSwitcher } from '@/store/mobileChromeStore';
+import { useHasMobileTabBar } from '@/hooks/useIsMobile';
+import { useScrolledPast } from '@/hooks/useScrolledPast';
+import { FloatingPageBar } from '@/components/layout/FloatingPageBar';
+import { FloatingAddButton } from '@/components/layout/FloatingAddButton';
 
 interface PageHeaderProps {
   /** Page title */
@@ -46,19 +51,47 @@ interface PageHeaderProps {
    * on a detail page). Omitted by default.
    */
   titleAdornment?: ReactNode;
+  /**
+   * What the page is narrowed to, added after the title once it collapses
+   * into the app header below `xl` ("Transactions - WS Chequing"). Not drawn
+   * in the page's own heading.
+   */
+  collapsedContext?: string;
+  /** A caret after `collapsedContext` in the app header that switches it. Memoize it. */
+  collapsedSwitcher?: CollapsedHeaderSwitcher;
+  /**
+   * On a desktop, pin a bar with the section name and the page's "+" (the
+   * action it registered with `useMobileAddAction`) to the top once the title
+   * has scrolled away. On by default; a page that pins a richer bar of its own
+   * (Investments, Transactions narrowed to one account) turns it off.
+   */
+  floatingBar?: boolean;
 }
 
 /**
  * Inline page header with title, subtitle, and action buttons.
  * Renders directly in the content area without a separate background bar.
  */
-export function PageHeader({ title, subtitle, actions, primaryAction, help, compactMobileActions, icon, titleAdornment }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, actions, primaryAction, help, compactMobileActions, icon, titleAdornment, collapsedContext, collapsedSwitcher, floatingBar = true }: PageHeaderProps) {
   const t = useTranslations('layout');
   // Below `xl` the title is drawn large and handed to the app header once it
   // scrolls away, unless something on the page collapses in its place.
   const collapses = useContext(CollapsingTitleContext);
   const titleRef = useCollapsingHeaderTitle<HTMLHeadingElement>(
-    collapses ? { title } : null,
+    collapses ? { title, context: collapsedContext, switcher: collapsedSwitcher } : null,
+  );
+  // From `xl` up, where there is no tab bar and so no collapsed title, the
+  // pinned bar takes the title's place once it has scrolled away.
+  const hasMobileTabBar = useHasMobileTabBar();
+  const pinsBar = floatingBar && !hasMobileTabBar;
+  const [floatRef, titleScrolledAway] = useScrolledPast<HTMLHeadingElement>(pinsBar);
+  // Both watchers on the one heading; stable, since both refs are.
+  const headingRef = useCallback(
+    (node: HTMLHeadingElement | null) => {
+      titleRef(node);
+      floatRef(node);
+    },
+    [titleRef, floatRef],
   );
 
   // Know whether the guide is bundled before the first click, so the click can
@@ -89,7 +122,7 @@ export function PageHeader({ title, subtitle, actions, primaryAction, help, comp
     <div>
       <div className="flex items-center gap-2">
         <h1
-          ref={titleRef}
+          ref={headingRef}
           className={`${
             collapses ? 'text-3xl' : 'text-2xl sm:text-3xl'
           } font-bold tracking-tight text-gray-900 dark:text-gray-100`}
@@ -129,7 +162,20 @@ export function PageHeader({ title, subtitle, actions, primaryAction, help, comp
     </div>
   );
 
+  const floating = pinsBar && (
+    <FloatingPageBar visible={titleScrolledAway} testId="page-floating-bar">
+      <div className="flex items-center justify-between gap-3 py-2">
+        <p className="min-w-0 truncate text-base font-semibold text-gray-900 dark:text-gray-100">
+          {title}
+        </p>
+        <FloatingAddButton />
+      </div>
+    </FloatingPageBar>
+  );
+
   return (
+    <>
+    {floating}
     <div className={`${layoutClasses} mb-6`}>
       {icon ? (
         <div className="flex items-center gap-3">
@@ -156,5 +202,6 @@ export function PageHeader({ title, subtitle, actions, primaryAction, help, comp
         </div>
       )}
     </div>
+    </>
   );
 }

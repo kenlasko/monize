@@ -141,7 +141,8 @@
   },
   "pageHeader": {
     "helpAriaLabel": "Bantuan untuk halaman ini",
-    "helpTooltip": "Bantuan untuk halaman ini"
+    "helpTooltip": "Bantuan untuk halaman ini",
+    "collapsedTitleWithContext": "{title} – {context}"
   },
   "bootSplash": {
     "loading": "Memuat Monize",

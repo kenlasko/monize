@@ -2565,7 +2565,6 @@ describe("a status pill is Badge, not a hand-rolled rounded-full", () => {
     "/src/components/securities/detail/SecurityPositionState.tsx",
     "/src/components/settings/BackupRestoreSection.tsx",
     "/src/components/settings/SecuritySection.tsx",
-    "/src/components/transactions/AccountInfoWidget.tsx",
     "/src/components/transactions/CategoryInfoWidget.tsx",
     "/src/components/transactions/PayeeInfoWidget.tsx",
     "/src/components/transactions/TransactionFilterPanel.tsx",

@@ -141,7 +141,8 @@
   },
   "pageHeader": {
     "helpAriaLabel": "此页面的帮助",
-    "helpTooltip": "此页面的帮助"
+    "helpTooltip": "此页面的帮助",
+    "collapsedTitleWithContext": "{title} – {context}"
   },
   "bootSplash": {
     "loading": "正在加载 Monize",

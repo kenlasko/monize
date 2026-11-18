@@ -141,7 +141,8 @@
   },
   "pageHeader": {
     "helpAriaLabel": "Довідка щодо цієї сторінки",
-    "helpTooltip": "Довідка щодо цієї сторінки"
+    "helpTooltip": "Довідка щодо цієї сторінки",
+    "collapsedTitleWithContext": "{title} – {context}"
   },
   "bootSplash": {
     "loading": "Завантаження Monize",

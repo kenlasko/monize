@@ -98,6 +98,190 @@ describe('AppHeader below xl', () => {
     expect(screen.queryByTestId('mobile-avatar')).not.toBeInTheDocument();
   });
 
+  it('adds what the page is narrowed to, with a switcher caret outside the hidden text', () => {
+    const onSelect = vi.fn();
+    render(<AppHeader />);
+    act(() =>
+      useMobileChromeStore.getState().setCollapsedTitle({
+        title: 'Transactions',
+        context: 'WS Chequing',
+        switcher: {
+          currentId: 'a-1',
+          items: [
+            { id: 'a-1', primary: 'WS Chequing' },
+            { id: 'a-2', primary: 'Savings', group: 'Other accounts' },
+          ],
+          onSelect,
+          triggerLabel: 'Switch to another account',
+          filterPlaceholder: 'Find an account',
+          noMatchesLabel: 'No matches',
+        },
+      }),
+    );
+    const collapsed = screen.getByTestId('collapsed-header-title');
+    expect(collapsed).toHaveTextContent('Transactions – WS Chequing');
+    const caret = screen.getByRole('button', { name: 'Switch to another account' });
+    // A control is never inside the aria-hidden copy of the title.
+    expect(collapsed).not.toContainElement(caret);
+
+    fireEvent.click(caret);
+    fireEvent.click(screen.getByRole('menuitem', { name: /Savings/ }));
+    expect(onSelect).toHaveBeenCalledWith('a-2');
+  });
+
+  it('drops the page title when the line does not fit, and brings it back when it does', () => {
+    let resized: (() => void) | undefined;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: () => void) {
+          resized = callback;
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    // The invisible copy of the full line is 300px wide; the caret is 28px.
+    const offset = vi
+      .spyOn(HTMLElement.prototype, 'offsetWidth', 'get')
+      .mockImplementation(function (this: HTMLElement) {
+        return this.dataset.testid === 'collapsed-header-title-measure' ? 300 : 28;
+      });
+    let rowWidth = 200;
+    const client = vi
+      .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+      .mockImplementation(() => rowWidth);
+    try {
+      render(<AppHeader />);
+      act(() =>
+        useMobileChromeStore.getState().setCollapsedTitle({
+          title: 'Investments',
+          context: 'RRSP, TFSA',
+          switcher: {
+            currentId: '',
+            items: [{ id: 'a-1', primary: 'RRSP' }],
+            onSelect: vi.fn(),
+            triggerLabel: 'Switch to another account',
+            filterPlaceholder: 'Find an account',
+            noMatchesLabel: 'No matches',
+          },
+        }),
+      );
+      const shown = () =>
+        screen.getByTestId('collapsed-header-title').firstChild?.textContent;
+      expect(shown()).toBe('Investments – RRSP, TFSA');
+
+      act(() => resized?.());
+      expect(shown()).toBe('RRSP, TFSA');
+
+      rowWidth = 400;
+      act(() => resized?.());
+      expect(shown()).toBe('Investments – RRSP, TFSA');
+    } finally {
+      offset.mockRestore();
+      client.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('leaves no caret slot when the only row is the one on screen', () => {
+    const observed: Element[] = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe(target: Element) {
+          observed.push(target);
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    try {
+      render(<AppHeader />);
+      act(() =>
+        useMobileChromeStore.getState().setCollapsedTitle({
+          title: 'Transactions',
+          context: 'WS Chequing',
+          switcher: {
+            currentId: 'a-1',
+            items: [{ id: 'a-1', primary: 'WS Chequing' }],
+            onSelect: vi.fn(),
+            triggerLabel: 'Switch to another account',
+            filterPlaceholder: 'Find an account',
+            noMatchesLabel: 'No matches',
+          },
+        }),
+      );
+      const row = screen.getByTestId('collapsed-header-title').parentElement;
+      // The text alone: no empty wrapper whose gap and width the fit check
+      // would subtract as if a caret were there.
+      expect(row?.children).toHaveLength(1);
+      expect(observed).toHaveLength(2);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('re-measures when the caret itself resizes', () => {
+    const observed: Element[] = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe(target: Element) {
+          observed.push(target);
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    try {
+      render(<AppHeader />);
+      act(() =>
+        useMobileChromeStore.getState().setCollapsedTitle({
+          title: 'Transactions',
+          context: 'WS Chequing',
+          switcher: {
+            currentId: 'a-1',
+            items: [
+              { id: 'a-1', primary: 'WS Chequing' },
+              { id: 'a-2', primary: 'Savings' },
+            ],
+            onSelect: vi.fn(),
+            triggerLabel: 'Switch to another account',
+            filterPlaceholder: 'Find an account',
+            noMatchesLabel: 'No matches',
+          },
+        }),
+      );
+      const caret = screen.getByRole('button', { name: 'Switch to another account' });
+      expect(observed.some((target) => target.contains(caret))).toBe(true);
+      expect(observed).toHaveLength(3);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('draws no caret when the switcher has nowhere to go', () => {
+    render(<AppHeader />);
+    act(() =>
+      useMobileChromeStore.getState().setCollapsedTitle({
+        title: 'Transactions',
+        context: 'WS Chequing',
+        switcher: {
+          currentId: 'a-1',
+          items: [],
+          onSelect: vi.fn(),
+          triggerLabel: 'Switch to another account',
+          filterPlaceholder: 'Find an account',
+          noMatchesLabel: 'No matches',
+        },
+      }),
+    );
+    expect(screen.getByTestId('collapsed-header-title')).toHaveTextContent('Transactions – WS Chequing');
+    expect(screen.queryByRole('button', { name: 'Switch to another account' })).not.toBeInTheDocument();
+  });
+
   it('stays pinned where the tab bar is, and slides away where it is not', () => {
     const { container, unmount } = render(<AppHeader />);
     expect(mockHideOnScroll).toHaveBeenLastCalledWith(false);

@@ -49,6 +49,8 @@ export function useCollapsingHeaderTitle<T extends Element>(
   // Named one by one: the caller builds a new object on every render, and the
   // header should only hear about a change in what it draws.
   const title = content?.title;
+  const context = content?.context;
+  const switcher = content?.switcher;
   const figure = content?.figure;
   const figurePartial = content?.figurePartial;
   const changeText = content?.change?.text;
@@ -59,6 +61,8 @@ export function useCollapsingHeaderTitle<T extends Element>(
     const { setCollapsedTitle } = useMobileChromeStore.getState();
     setCollapsedTitle({
       title,
+      context,
+      switcher,
       figure,
       figurePartial,
       change:
@@ -67,7 +71,7 @@ export function useCollapsingHeaderTitle<T extends Element>(
           : undefined,
     });
     return () => setCollapsedTitle(null);
-  }, [collapsed, title, figure, figurePartial, changeText, changeUp]);
+  }, [collapsed, title, context, switcher, figure, figurePartial, changeText, changeUp]);
 
   return setNode;
 }

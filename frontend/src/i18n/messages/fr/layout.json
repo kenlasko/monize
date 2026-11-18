@@ -141,7 +141,8 @@
   },
   "pageHeader": {
     "helpAriaLabel": "Aide pour cette page",
-    "helpTooltip": "Aide pour cette page"
+    "helpTooltip": "Aide pour cette page",
+    "collapsedTitleWithContext": "{title} – {context}"
   },
   "bootSplash": {
     "loading": "Chargement de Monize",
