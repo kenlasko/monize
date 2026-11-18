@@ -654,7 +654,13 @@ export interface UpdateTransferDescriptor extends BaseDescriptor {
   toAccountId: string;
   amount: number;
   transactionDate: string;
-  exchangeRate: number;
+  /**
+   * The rate the transfer holds after the edit, as the preview resolved it.
+   * `null` when a cross-currency transfer holds no rate and the edit does not
+   * give it one: the commit sends no rate (`updateTransferCommitArgs`), so the
+   * settlement and both amounts stay as they are. Never 1 standing in for it.
+   */
+  exchangeRate: number | null;
   toAmount: number;
   description: string | null;
   payeeId: string | null;

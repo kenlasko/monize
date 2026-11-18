@@ -96,7 +96,8 @@ export function updateTransferCommitArgs(
     dto: {
       amount: d.amount,
       transactionDate: d.transactionDate,
-      exchangeRate: d.exchangeRate,
+      // No rate held, none given: absent, which the update reads as unchanged.
+      exchangeRate: d.exchangeRate ?? undefined,
       toAmount: d.toAmount,
       description: d.description ?? undefined,
       payeeId,

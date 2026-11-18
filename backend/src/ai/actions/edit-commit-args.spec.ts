@@ -227,4 +227,23 @@ describe("updateTransferCommitArgs", () => {
       ).tagChange,
     ).toEqual({ addTagNames: ["Trip"], removeTagIds: ["tag-o"] });
   });
+
+  it("sends no rate for a transfer that holds none, never a stand-in", () => {
+    // A cross-currency transfer imported without a rate previews null. The
+    // commit gives the update no rate, which it reads as unchanged; a 1 (or a
+    // null, read as 0) would re-price the transfer and move its amounts.
+    const { dto } = updateTransferCommitArgs(
+      { ...transfer, exchangeRate: null, toAmount: 0 },
+      undefined,
+    );
+    expect(dto.exchangeRate).toBeUndefined();
+    expect(dto.toAmount).toBe(0);
+  });
+
+  it("carries a rate the card holds unchanged", () => {
+    expect(
+      updateTransferCommitArgs({ ...transfer, exchangeRate: 0.9 }, undefined)
+        .dto.exchangeRate,
+    ).toBe(0.9);
+  });
 });

@@ -37,6 +37,8 @@ import { ConflictException } from "@nestjs/common";
 import { lockTransactionRow, lockTransactionRows } from "../common/db/locks";
 import type { LockedTransactionRow } from "../common/db/locks";
 import { lockedTransactionRow } from "../test-helpers/locks-testing";
+import { updateTransferCommitArgs } from "../ai/actions/edit-commit-args";
+import type { UpdateTransferDescriptor } from "../ai/actions/ai-action.types";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -3405,6 +3407,108 @@ describe("TransactionTransferService", () => {
         expect(accountsService.updateBalance).not.toHaveBeenCalled();
       });
 
+      describe("a transfer that holds no rate (KMyMoney import, S3)", () => {
+        // 100 USD sent, nothing received, no rate: the import does not invent
+        // one. An edit that leaves the rate alone must move neither leg.
+        const eurNoRate = {
+          ...eurToTx,
+          amount: 0,
+          exchangeRate: null,
+        } as unknown as Transaction;
+
+        beforeEach(() => {
+          accountsService.findOne.mockImplementation((_u: string, id: string) =>
+            Promise.resolve(id === "to-account" ? eurTo : mockFromAccount),
+          );
+          exchangeRateService.getRateForDate.mockResolvedValue(0.8);
+          mockFindOne.mockImplementation(async (_u: string, id: string) =>
+            id === "from-tx" ? usdFromTx : eurNoRate,
+          );
+        });
+
+        const writesNoMoney = () => {
+          for (const [, data] of transactionsRepository.update.mock.calls) {
+            expect(data).not.toHaveProperty("amount");
+            expect(data).not.toHaveProperty("exchangeRate");
+          }
+          expect(accountsService.updateBalance).not.toHaveBeenCalled();
+          expect(exchangeRateService.getRateForDate).not.toHaveBeenCalled();
+        };
+
+        it("keeps both amounts from preview to commit on an edit that leaves the rate alone", async () => {
+          // The AI/MCP path end to end: preview, the signed descriptor's
+          // fields, the commit args, the update. The preview used to show
+          // rate 1; a bare null would have been read as a changed rate and
+          // re-priced the transfer at the market rate.
+          const preview = await service.previewUpdateTransfer(
+            "user-1",
+            "from-tx",
+            { amount: 100, description: "note" },
+            mockFindOne,
+          );
+          expect(preview).toMatchObject({
+            amount: 100,
+            toAmount: 0,
+            exchangeRate: null,
+          });
+          const descriptor: UpdateTransferDescriptor = {
+            type: "update_transfer",
+            userId: "user-1",
+            actionId: "a1",
+            expiresAt: 0,
+            transactionId: preview.transactionId,
+            fromAccountId: preview.fromAccountId,
+            toAccountId: preview.toAccountId,
+            amount: preview.amount,
+            transactionDate: preview.transactionDate,
+            exchangeRate: preview.exchangeRate,
+            toAmount: preview.toAmount,
+            description: preview.description,
+            payeeId: preview.payeeId,
+            payeeName: preview.payeeName,
+            createPayee: preview.payeeWillBeCreated,
+            categoryId: preview.categoryId,
+          };
+          const { dto } = updateTransferCommitArgs(descriptor, undefined);
+
+          await service.updateTransfer("user-1", "from-tx", dto, mockFindOne);
+
+          expect(transactionsRepository.update).toHaveBeenCalledWith(
+            "to-tx",
+            expect.objectContaining({ description: "note" }),
+          );
+          writesNoMoney();
+        });
+
+        it("reads an explicit null rate with the stored amounts as unchanged", async () => {
+          await service.updateTransfer(
+            "user-1",
+            "from-tx",
+            {
+              amount: 100,
+              toAmount: 0,
+              exchangeRate: null,
+              description: "note",
+            } as any,
+            mockFindOne,
+          );
+          writesNoMoney();
+        });
+
+        it("re-prices at a rate the user supplies", async () => {
+          await service.updateTransfer(
+            "user-1",
+            "from-tx",
+            { exchangeRate: 0.85 },
+            mockFindOne,
+          );
+          expect(transactionsRepository.update).toHaveBeenCalledWith(
+            "to-tx",
+            expect.objectContaining({ exchangeRate: 0.85, amount: 85 }),
+          );
+        });
+      });
+
       it("re-prices when the user supplies a rate, writing rate and amount together", async () => {
         // The control: an explicit financial change does re-price, and both tuple
         // members move.
@@ -4811,6 +4915,104 @@ describe("TransactionTransferService", () => {
         toAmount: 450,
         exchangeRate: 0.9,
       });
+    });
+
+    describe("a cross-currency transfer that holds no rate (KMyMoney import)", () => {
+      // 100 USD sent, nothing received: the amounts imply no rate and the file
+      // priced no such pair, so the import left the receiving leg's rate null.
+      const eurNoRate = {
+        ...toLeg,
+        amount: 0,
+        currencyCode: "EUR",
+        exchangeRate: null,
+      };
+      const findOne = jest.fn(async (_uid: string, id: string) =>
+        id === "from-tx" ? fromLeg : eurNoRate,
+      );
+
+      beforeEach(() => {
+        accountsService.findOne.mockImplementation((_u: string, id: string) =>
+          Promise.resolve({
+            id,
+            currencyCode: id === "to-account" ? "EUR" : "USD",
+          }),
+        );
+        exchangeRateService.getRateForDate.mockResolvedValue(0.9);
+      });
+
+      it("previews the rate as null, never 1, on an edit that leaves the money alone", async () => {
+        const preview = await service.previewUpdateTransfer(
+          "user-1",
+          "from-tx",
+          { description: "note" },
+          findOne as any,
+        );
+        expect(preview).toMatchObject({
+          amount: 100,
+          toAmount: 0,
+          exchangeRate: null,
+        });
+        expect(exchangeRateService.getRateForDate).not.toHaveBeenCalled();
+      });
+
+      it("keeps the settlement when the amount is resent unchanged", async () => {
+        // A model resends fields it does not change; a resent amount is not a
+        // new one, and the commit keeps the settlement, so the preview does.
+        const preview = await service.previewUpdateTransfer(
+          "user-1",
+          "from-tx",
+          { amount: 100, description: "note" },
+          findOne as any,
+        );
+        expect(preview).toMatchObject({
+          amount: 100,
+          toAmount: 0,
+          exchangeRate: null,
+        });
+        expect(exchangeRateService.getRateForDate).not.toHaveBeenCalled();
+      });
+
+      it("resolves the market rate for a new amount, as the commit does", async () => {
+        const preview = await service.previewUpdateTransfer(
+          "user-1",
+          "from-tx",
+          { amount: 150 },
+          findOne as any,
+        );
+        expect(preview).toMatchObject({
+          amount: 150,
+          toAmount: 135,
+          exchangeRate: 0.9,
+        });
+      });
+
+      it("still previews a stored rate as stored", async () => {
+        const rated = jest.fn(async (_uid: string, id: string) =>
+          id === "from-tx"
+            ? fromLeg
+            : { ...eurNoRate, amount: 90, exchangeRate: 0.9 },
+        );
+        const preview = await service.previewUpdateTransfer(
+          "user-1",
+          "from-tx",
+          { description: "note" },
+          rated as any,
+        );
+        expect(preview).toMatchObject({ toAmount: 90, exchangeRate: 0.9 });
+      });
+    });
+
+    it("previews rate 1 for a same-currency leg with no stored rate", async () => {
+      const findOne = jest.fn(async (_uid: string, id: string) =>
+        id === "from-tx" ? fromLeg : { ...toLeg, exchangeRate: null },
+      );
+      const preview = await service.previewUpdateTransfer(
+        "user-1",
+        "from-tx",
+        { amount: 200 },
+        findOne as any,
+      );
+      expect(preview).toMatchObject({ toAmount: 200, exchangeRate: 1 });
     });
 
     it("keeps the existing from-leg payee link untouched when omitted", async () => {

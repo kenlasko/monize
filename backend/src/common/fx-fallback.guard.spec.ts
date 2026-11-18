@@ -193,16 +193,6 @@ describe("currency conversion has no silent identity fallback", () => {
     reason: string;
   }> = [
     {
-      file: "transactions/transaction-transfer.service.ts",
-      count: 3,
-      reason:
-        "reads the transfer leg's stored or submitted exchange_rate " +
-        "(`existingExchangeRate ?? 1`, a non-positive stored rate, " +
-        "`toTransaction.exchangeRate || 1`); the column is NOT NULL DEFAULT 1 " +
-        "and none of these is a lookup that failed. Owned by another " +
-        "remediation stream.",
-    },
-    {
       file: "transactions/transactions.service.ts",
       count: 1,
       reason:
