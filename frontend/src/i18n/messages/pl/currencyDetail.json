@@ -40,6 +40,7 @@
     "frankfurter": "Frankfurter (EBC)",
     "frankfurterV2": "Frankfurter (banki centralne)",
     "mnyImport": "Import z Money",
+    "kmyImport": "Import z KMyMoney",
     "transaction": "Transakcja",
     "unknown": "Nieznane"
   },

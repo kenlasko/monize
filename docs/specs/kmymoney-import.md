@@ -1554,7 +1554,7 @@ payee amendment's two preview counts and three result counts.
 | kmyTooManyRecords | That KMyMoney file holds more records than Monize imports from one file. |
 | kmyMappingFailed | Monize could not convert this KMyMoney file. This is a fault in Monize, not in your file, and nothing was saved. Please report it. |
 | kmyNotAKmyMoneyFile | That file is not a KMyMoney file. Choose the .kmy or .xml file KMyMoney saves. If your KMyMoney data is in an SQL database, open it in KMyMoney and use File, Save As to save it as a .kmy file first. |
-| kmyEncryptedFile | That KMyMoney file is encrypted with GPG, which Monize cannot open. In KMyMoney, turn off encryption (Settings, Configure KMyMoney, Encryption) and save the file again, or decrypt a copy with gpg --decrypt, then import that. |
+| kmyEncryptedFile | That KMyMoney file is encrypted with GPG, which Monize cannot open. In KMyMoney, turn off encryption (Settings, Configure KMyMoney, Encryption) and save the file again, or decrypt a copy with gpg -d, then import that. |
 | kmySqliteDatabase | That is a KMyMoney SQL database. Open it in KMyMoney, choose File, Save As, pick the KMyMoney (.kmy) format, and import the saved file. |
 | kmyAnonymizedFile | That is an anonymized KMyMoney file: KMyMoney scrambles every amount and replaces the names when it writes one, so it cannot be imported. Import your original .kmy file instead. |
 | kmyLegacyBinaryFile | That file uses the binary format of KMyMoney 0.8 or earlier. Open it in a current KMyMoney and save it again, then import the result. |

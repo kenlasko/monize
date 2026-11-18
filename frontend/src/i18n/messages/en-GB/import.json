@@ -14,5 +14,15 @@
     "unknownAccountType": "{count, plural, one {# account} other {# accounts}} had an account type Monize does not recognise and were skipped.",
     "unknownInvestmentAction": "{count, plural, one {# investment transaction} other {# investment transactions}} used an action Monize does not recognise and were skipped.",
     "unusableBill": "{count, plural, one {# scheduled bill} other {# scheduled bills}} had no account, no usable date or an unrecognised recurrence, and were skipped."
+  },
+  "kmyErrors": {
+    "kmyAnonymizedFile": "That is an anonymised KMyMoney file: KMyMoney scrambles every amount and replaces the names when it writes one, so it cannot be imported. Import your original .kmy file instead."
+  },
+  "kmyWarnings": {
+    "unknownAccountType": "{count, plural, one {# account has} other {# accounts have}} a type Monize does not recognise, or {count, plural, one {is} other {are}} not reachable from KMyMoney's account tree, and {count, plural, one {was} other {were}} skipped.",
+    "singleSplitTransaction": "{count, plural, one {# transaction has} other {# transactions have}} only one split (KMyMoney shows them uncategorised) and {count, plural, one {was} other {were}} imported without a category.",
+    "unbalancedTransaction": "{count, plural, one {# transaction does} other {# transactions do}} not balance (KMyMoney marks them as erroneous); the difference was imported as an uncategorised split so the account balance stays as KMyMoney shows it.",
+    "unusableBill": "{count, plural, one {# scheduled transaction had} other {# scheduled transactions had}} no account, no usable date or an unrecognised recurrence, and {count, plural, one {was} other {were}} skipped.",
+    "costCentersNotImported": "{count, plural, one {# split has} other {# splits have}} a cost centre; Monize has no cost centres, so they were not imported."
   }
 }

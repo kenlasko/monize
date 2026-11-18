@@ -37,7 +37,7 @@ export const KMY_ERROR_MESSAGES: Record<
   kmyEncryptedFile: () =>
     tr(
       "errors.import.kmyEncryptedFile",
-      "That KMyMoney file is encrypted with GPG, which Monize cannot open. In KMyMoney, turn off encryption (Settings, Configure KMyMoney, Encryption) and save the file again, or decrypt a copy with gpg --decrypt, then import that.",
+      "That KMyMoney file is encrypted with GPG, which Monize cannot open. In KMyMoney, turn off encryption (Settings, Configure KMyMoney, Encryption) and save the file again, or decrypt a copy with gpg -d, then import that.",
     ),
   kmySqliteDatabase: () =>
     tr(

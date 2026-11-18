@@ -40,6 +40,7 @@
     "frankfurter": "Frankfurter (EZB)",
     "frankfurterV2": "Frankfurter (Zentralbanken)",
     "mnyImport": "Money-Import",
+    "kmyImport": "KMyMoney-Import",
     "transaction": "Buchung",
     "unknown": "Unbekannt"
   },

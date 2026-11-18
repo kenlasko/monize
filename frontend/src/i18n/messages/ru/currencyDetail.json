@@ -40,6 +40,7 @@
     "frankfurter": "Frankfurter (ЕЦБ)",
     "frankfurterV2": "Frankfurter (центральные банки)",
     "mnyImport": "Импорт из Money",
+    "kmyImport": "Импорт из KMyMoney",
     "transaction": "Операция",
     "unknown": "Неизвестно"
   },

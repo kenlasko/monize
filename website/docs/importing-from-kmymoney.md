@@ -16,7 +16,7 @@ The import follows the same flow as the [Microsoft Money import](importing-from-
 
 ## Before You Start
 
-**Save the file unencrypted.** KMyMoney's only encryption is GPG over the whole file, and Monize cannot decrypt it. In KMyMoney turn off encryption (**Settings > Configure KMyMoney > Encryption**) and save the file again, or decrypt a copy with `gpg --decrypt`, then import that.
+**Save the file unencrypted.** KMyMoney's only encryption is GPG over the whole file, and Monize cannot decrypt it. In KMyMoney turn off encryption (**Settings > Configure KMyMoney > Encryption**) and save the file again, or decrypt a copy with `gpg -d`, then import that.
 
 **Use a `.kmy` or `.xml` file.** The upload step accepts `.kmy` and `.xml`. A `.kmy` goes to the KMyMoney importer, which decides what it is from its contents. An `.xml` is looked at first: Monize reads the start of the file and opens it as a KMyMoney file if it is one, as an OFX bank statement if it is that (see [Importing Transactions](importing-transactions.md)), and otherwise refuses it, so a stray XML file is never guessed at.
 
@@ -261,7 +261,7 @@ Nothing is written unless the whole import succeeds, so a failure leaves your da
 | "No KMyMoney file was uploaded." | The upload was empty. Choose the file again |
 | "This XML file is neither a KMyMoney file nor an OFX file" | The `.xml` file you chose is some other XML, such as a different bank's statement format, a report or an image. Nothing was imported. Choose the `.kmy` or `.xml` file KMyMoney saves, or an OFX or QFX statement |
 | "That file is not a KMyMoney file." | Wrong file, a category template, or some other XML. Choose the `.kmy` or `.xml` file KMyMoney saves. If your data is in an SQL database, open it in KMyMoney and use **File > Save As** to save it as a `.kmy` file first |
-| "That KMyMoney file is encrypted with GPG, which Monize cannot open." | Turn off encryption in KMyMoney (**Settings > Configure KMyMoney > Encryption**) and save the file again, or decrypt a copy with `gpg --decrypt`, then import that |
+| "That KMyMoney file is encrypted with GPG, which Monize cannot open." | Turn off encryption in KMyMoney (**Settings > Configure KMyMoney > Encryption**) and save the file again, or decrypt a copy with `gpg -d`, then import that |
 | "That is a KMyMoney SQL database." | Open it in KMyMoney, choose **File > Save As**, pick the KMyMoney (`.kmy`) format, and import the saved file |
 | "That is an anonymized KMyMoney file" | An anonymized file has scrambled amounts and replaced names. Import your original `.kmy` file instead |
 | "That file uses the binary format of KMyMoney 0.8 or earlier." | Open it in a current KMyMoney and save it again, then import the result |

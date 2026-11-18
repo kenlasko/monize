@@ -40,6 +40,7 @@
     "frankfurter": "Frankfurter (ECB)",
     "frankfurterV2": "Frankfurter (merkez bankaları)",
     "mnyImport": "Money içe aktarımı",
+    "kmyImport": "KMyMoney içe aktarma",
     "transaction": "İşlem",
     "unknown": "Bilinmiyor"
   },

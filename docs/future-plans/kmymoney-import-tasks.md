@@ -833,7 +833,7 @@ variants (en-GB, en-US) only where the text differs.
 `kmyErrors.*`, `kmyWarnings.*` (WP3c's payee keys included), `upload.kmyFailedHeading`,
 `toasts.kmySingleFileOnly`; review the
 format strings WP4 edited; `currencyDetail.json`: `sources.kmyImport`. Backend `errors.json`: every
-`import.kmy*` key of spec 8.2. "KMyMoney", "GPG", "SQL", ".kmy", ".xml" and "gpg --decrypt" are not
+`import.kmy*` key of spec 8.2. "KMyMoney", "GPG", "SQL", ".kmy", ".xml" and "gpg -d" are not
 translated; KMyMoney menu names (File, Save As; Settings, Configure KMyMoney, Encryption) use KMyMoney's
 own translation of that menu in the target language where it is known, else English.
 

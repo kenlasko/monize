@@ -5,6 +5,9 @@
   "common": {
     "oauthProviderNotInitialized": "OAuth provider not initialised"
   },
+  "import": {
+    "kmyAnonymizedFile": "That is an anonymised KMyMoney file: KMyMoney scrambles every amount and replaces the names when it writes one, so it cannot be imported. Import your original .kmy file instead."
+  },
   "accounts": {
     "mortgageMethodPaymentMismatch": "The payment amount must be this {{ type }} mortgage's first installment plus any extra principal, which the server derives from the debt, the rate and the amortisation; preview it again"
   }
