@@ -86,6 +86,24 @@ const RETAINED = new Set(
   ].map((path) => `${R}/${path}`),
 );
 
+/**
+ * The account ids of one read, behind a closure: the collector lives for one
+ * parse, and its state is the parse's, never the process's (the
+ * process-local-state guard holds class-scope Map and Set fields to that).
+ */
+function accountRegistry(): {
+  add(id: string): void;
+  has(id: string): boolean;
+} {
+  const ids = new Set<string>();
+  return {
+    add: (id) => {
+      ids.add(id);
+    },
+    has: (id) => ids.has(id),
+  };
+}
+
 export class KmyRawCollector implements KmyXmlEvents {
   private fixVersion = DEFAULT_FIX_VERSION;
   private appVersion: string | null = null;
@@ -140,7 +158,7 @@ export class KmyRawCollector implements KmyXmlEvents {
    * and schedules in the writer's order, so the check is made as the split
    * arrives.
    */
-  private readonly accountIds = new Set<string>();
+  private readonly accountIds = accountRegistry();
 
   // ---- events -------------------------------------------------------------
 
