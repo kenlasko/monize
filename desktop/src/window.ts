@@ -1,5 +1,6 @@
 import {
   BrowserWindow,
+  screen,
   Session,
   shell,
   WebContents,
@@ -11,6 +12,7 @@ import { closeDecision } from "./shell/quit-gate";
 import { decideNavigation, isPermissionAllowed } from "./shell/navigation";
 import { versionArgument } from "./shell/shell-flag";
 import { APP_NAME } from "./shell/strings";
+import { mainWindowContentSize } from "./shell/window-size";
 
 /**
  * The main window: the app's own origin, sandboxed, with the shell flag
@@ -151,9 +153,11 @@ function logLoads(contents: WebContents, logger: Logger): void {
 }
 
 export function createMainWindow(options: MainWindowOptions): BrowserWindow {
+  const size = mainWindowContentSize(screen.getPrimaryDisplay().workAreaSize);
   const window = new BrowserWindow({
-    width: 1280,
-    height: 860,
+    width: size.width,
+    height: size.height,
+    useContentSize: true,
     minWidth: 800,
     minHeight: 600,
     show: false,
