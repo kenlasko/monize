@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE KMYMONEY-FILE>
+<KMYMONEY-FILE>
+  <!-- SYNTHETIC EXAMPLE - not produced by KMyMoney -->
+  <FILEINFO>
+    <CREATION_DATE date="2024-01-01"/>
+    <LAST_MODIFIED_DATE date="2024-05-01T12:00:00+00:00"/>
+    <VERSION id="1"/>
+    <FIXVERSION id="12"/>                       <!-- current: no fixes needed -->
+    <APPVERSION id="synthetic"/>
+  </FILEINFO>
+  <USER name="" email="">
+    <ADDRESS street="" city="" state="" zip="" telephone="" country="" county="" zipcode="" postcode=""/>
+  </USER>
+  <INSTITUTIONS>
+    <INSTITUTION id="I000001" name="Example Bank" manager="" sortcode="">
+      <ADDRESS street="" city="" state="" zip="" telephone="" country="" county="" zipcode="" postcode=""/>
+      <ACCOUNTIDS>
+        <ACCOUNTID id="A000001"/>
+        <ACCOUNTID id="A000013"/>
+      </ACCOUNTIDS>
+    </INSTITUTION>
+  </INSTITUTIONS>
+  <PAYEES>
+    <PAYEE id="P000001" name="Corner Market" reference="" email="" matchingenabled="0">
+      <ADDRESS street="" city="" state="" zip="" telephone="" country="" county="" zipcode="" postcode=""/>
+    </PAYEE>
+    <!-- match on key "CITY POWER" (single key => trailing newline), default category Electricity -->
+    <PAYEE id="P000002" name="City Power" reference="" email="" matchingenabled="1" usingmatchkey="1"
+           matchignorecase="1" matchkey="CITY POWER&#10;" defaultaccountid="A000008">
+      <ADDRESS street="" city="" state="" zip="" telephone="" country="" county="" zipcode="" postcode=""/>
+    </PAYEE>
+  </PAYEES>
+  <COSTCENTERS/>
+  <TAGS>
+    <TAG id="G000001" name="household" closed="0" tagcolor="#3366cc"/>
+  </TAGS>
+  <ACCOUNTS>
+    <!-- the five standard roots, always first; names are localized UI strings -->
+    <ACCOUNT id="AStd::Asset" parentaccount="" lastreconciled="" lastmodified="" institution="" opened="" number="" type="9" name="Asset" description="" currency="USD">
+      <SUBACCOUNTS>
+        <SUBACCOUNT id="A000001"/>
+        <SUBACCOUNT id="A000003"/>
+        <SUBACCOUNT id="A000004"/>
+        <SUBACCOUNT id="A000005"/>
+        <SUBACCOUNT id="A000013"/>
+      </SUBACCOUNTS>
+    </ACCOUNT>
+    <ACCOUNT id="AStd::Liability" parentaccount="" lastreconciled="" lastmodified="" institution="" opened="" number="" type="10" name="Liability" description="" currency="USD"/>
+    <ACCOUNT id="AStd::Expense" parentaccount="" lastreconciled="" lastmodified="" institution="" opened="" number="" type="13" name="Expense" description="" currency="USD">
+      <SUBACCOUNTS>
+        <SUBACCOUNT id="A000007"/>
+        <SUBACCOUNT id="A000009"/>
+        <SUBACCOUNT id="A000010"/>
+      </SUBACCOUNTS>
+    </ACCOUNT>
+    <ACCOUNT id="AStd::Income" parentaccount="" lastreconciled="" lastmodified="" institution="" opened="" number="" type="12" name="Income" description="" currency="USD">
+      <SUBACCOUNTS>
+        <SUBACCOUNT id="A000011"/>
+      </SUBACCOUNTS>
+    </ACCOUNT>
+    <ACCOUNT id="AStd::Equity" parentaccount="" lastreconciled="" lastmodified="" institution="" opened="" number="" type="16" name="Equity" description="" currency="USD">
+      <SUBACCOUNTS>
+        <SUBACCOUNT id="A000012"/>
+      </SUBACCOUNTS>
+    </ACCOUNT>
+    <!-- then all other accounts sorted by id -->
+    <!-- Checking (type 1) with IBAN, reconciliation history (element + legacy KVP) -->
+    <ACCOUNT id="A000001" parentaccount="AStd::Asset" lastreconciled="2024-01-31" lastmodified="2024-02-05" institution="I000001" opened="2024-01-01" number="000123" type="1" name="Checking" description="Main account&#10;second line of notes" currency="USD">
+      <RECONCILIATIONS>
+        <RECONCILIATION date="2024-01-31" value="7759/2"/>                <!-- 3879.50 -->
+      </RECONCILIATIONS>
+      <KEYVALUEPAIRS>
+        <PAIR key="iban" value="XX00EXAMPLE0000000000000"/>
+        <PAIR key="reconciliationHistory" value="2024-01-31:7759/2"/>
+      </KEYVALUEPAIRS>
+    </ACCOUNT>
+    <!-- Savings held in EUR -->
+    <ACCOUNT id="A000003" parentaccount="AStd::Asset" lastreconciled="" lastmodified="" institution="" opened="2024-01-15" number="" type="2" name="EUR Savings" description="" currency="EUR"/>
+    <!-- Investment container (type 7) and its stock account (type 15, currency = security id) -->
+    <ACCOUNT id="A000004" parentaccount="AStd::Asset" lastreconciled="" lastmodified="" institution="" opened="2024-02-05" number="" type="7" name="Brokerage Account" description="" currency="USD">
+      <SUBACCOUNTS>
+        <SUBACCOUNT id="A000006"/>
+      </SUBACCOUNTS>
+    </ACCOUNT>
+    <!-- cash side: a sibling Checkings account linked only by the name "<investment> (Brokerage)" -->
+    <ACCOUNT id="A000005" parentaccount="AStd::Asset" lastreconciled="" lastmodified="" institution="" opened="2024-02-05" number="" type="1" name="Brokerage Account (Brokerage)" description="" currency="USD"/>
+    <ACCOUNT id="A000006" parentaccount="A000004" lastreconciled="" lastmodified="" institution="" opened="2024-02-10" number="" type="15" name="Example Corp" description="" currency="E000001">
+      <KEYVALUEPAIRS>
+        <PAIR key="priceMode" value="1"/>
+      </KEYVALUEPAIRS>
+    </ACCOUNT>
+    <!-- category hierarchy Utilities:Electricity -->
+    <ACCOUNT id="A000007" parentaccount="AStd::Expense" lastreconciled="" lastmodified="" institution="" opened="1900-01-01" number="" type="13" name="Utilities" description="" currency="USD">
+      <SUBACCOUNTS>
+        <SUBACCOUNT id="A000008"/>
+      </SUBACCOUNTS>
+    </ACCOUNT>
+    <ACCOUNT id="A000008" parentaccount="A000007" lastreconciled="" lastmodified="" institution="" opened="1900-01-01" number="" type="13" name="Electricity" description="" currency="USD"/>
+    <ACCOUNT id="A000009" parentaccount="AStd::Expense" lastreconciled="" lastmodified="" institution="" opened="1900-01-01" number="" type="13" name="Groceries" description="" currency="USD">
+      <KEYVALUEPAIRS>
+        <PAIR key="Tax" value="yes"/>
+      </KEYVALUEPAIRS>
+    </ACCOUNT>
+    <ACCOUNT id="A000010" parentaccount="AStd::Expense" lastreconciled="" lastmodified="" institution="" opened="1900-01-01" number="" type="13" name="Bank Fees" description="" currency="USD"/>
+    <ACCOUNT id="A000011" parentaccount="AStd::Income" lastreconciled="" lastmodified="" institution="" opened="1900-01-01" number="" type="12" name="Dividends" description="" currency="USD"/>
+    <!-- opening-balances equity account for the base currency -->
+    <ACCOUNT id="A000012" parentaccount="AStd::Equity" lastreconciled="" lastmodified="" institution="" opened="2024-01-01" number="" type="16" name="Opening Balances" description="" currency="USD">
+      <KEYVALUEPAIRS>
+        <PAIR key="OpeningBalanceAccount" value="Yes"/>
+      </KEYVALUEPAIRS>
+    </ACCOUNT>
+    <!-- closed account: mm-closed=yes plus closing date -->
+    <ACCOUNT id="A000013" parentaccount="AStd::Asset" lastreconciled="" lastmodified="2024-01-10" institution="I000001" opened="2024-01-01" number="" type="2" name="Old Savings" description="" currency="USD">
+      <KEYVALUEPAIRS>
+        <PAIR key="mm-closed" value="yes"/>
+        <PAIR key="mm-closed-date" value="2024-01-10"/>
+      </KEYVALUEPAIRS>
+    </ACCOUNT>
+  </ACCOUNTS>
+  <TRANSACTIONS>
+    <!-- opening balance Checking 5000 (reconciled on 2024-01-31) -->
+    <TRANSACTION id="T000000000000000001" postdate="2024-01-01" memo="" entrydate="2024-01-01" commodity="USD">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="2024-01-31" action="" reconcileflag="2" value="5000/1" shares="5000/1" price="1/1" memo="" account="A000001" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="" reconcileflag="0" value="-5000/1" shares="-5000/1" price="1/1" memo="" account="A000012" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <!-- opening balance Old Savings 100 -->
+    <TRANSACTION id="T000000000000000002" postdate="2024-01-01" memo="" entrydate="2024-01-01" commodity="USD">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="" reconcileflag="0" value="100/1" shares="100/1" price="1/1" memo="" account="A000013" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="" reconcileflag="0" value="-100/1" shares="-100/1" price="1/1" memo="" account="A000012" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <!-- multi-split purchase: -120.50 = groceries 100.50 + fee 20.00; tag on one split -->
+    <TRANSACTION id="T000000000000000003" postdate="2024-01-05" memo="" entrydate="2024-01-05" commodity="USD">
+      <SPLITS>
+        <SPLIT id="S0001" payee="P000001" reconciledate="2024-01-31" action="" reconcileflag="2" value="-241/2" shares="-241/2" price="1/1" memo="Weekly shop" account="A000001" number="" bankid="FITID-0001"/>
+        <SPLIT id="S0002" payee="P000001" reconciledate="" action="" reconcileflag="0" value="201/2" shares="201/2" price="1/1" memo="Food" account="A000009" number="" bankid="">
+          <TAG id="G000001"/>
+        </SPLIT>
+        <SPLIT id="S0003" payee="P000001" reconciledate="" action="" reconcileflag="0" value="20/1" shares="20/1" price="1/1" memo="Card surcharge" account="A000010" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <!-- transfer Old Savings -> Checking, empties the account that is then closed -->
+    <TRANSACTION id="T000000000000000004" postdate="2024-01-10" memo="" entrydate="2024-01-10" commodity="USD">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="" reconcileflag="0" value="-100/1" shares="-100/1" price="1/1" memo="Close account" account="A000013" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="2024-01-31" action="" reconcileflag="2" value="100/1" shares="100/1" price="1/1" memo="Close account" account="A000001" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <!-- cross-currency transfer: commodity USD; EUR split value 1100 USD, shares 1000 EUR, price = value/shares = 1.10 USD per EUR -->
+    <TRANSACTION id="T000000000000000005" postdate="2024-01-15" memo="" entrydate="2024-01-15" commodity="USD">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="2024-01-31" action="" reconcileflag="2" value="-1100/1" shares="-1100/1" price="1/1" memo="To EUR savings" account="A000001" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="" reconcileflag="0" value="1100/1" shares="1000/1" price="11/10" memo="To EUR savings" account="A000003" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <!-- electricity bill entered from schedule SCH000001 (cleared, not yet reconciled) -->
+    <TRANSACTION id="T000000000000000006" postdate="2024-02-01" memo="" entrydate="2024-02-01" commodity="USD">
+      <SPLITS>
+        <SPLIT id="S0001" payee="P000002" reconciledate="" action="" reconcileflag="1" value="-75/1" shares="-75/1" price="1/1" memo="February" account="A000001" number="" bankid=""/>
+        <SPLIT id="S0002" payee="P000002" reconciledate="" action="" reconcileflag="0" value="75/1" shares="75/1" price="1/1" memo="February" account="A000008" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <!-- fund the brokerage cash account -->
+    <TRANSACTION id="T000000000000000007" postdate="2024-02-05" memo="" entrydate="2024-02-05" commodity="USD">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="" reconcileflag="0" value="-1000/1" shares="-1000/1" price="1/1" memo="" account="A000001" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="" reconcileflag="0" value="1000/1" shares="1000/1" price="1/1" memo="" account="A000005" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <!-- BUY 10 @ 50.00 + 5.00 fee: asset split, stock split, fee split (editor order) -->
+    <TRANSACTION id="T000000000000000008" postdate="2024-02-10" memo="" entrydate="2024-02-10" commodity="USD">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="" reconcileflag="0" value="-505/1" shares="-505/1" price="0/1" memo="Buy EXC" account="A000005" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="Buy" reconcileflag="0" value="500/1" shares="10/1" price="50/1" memo="Buy EXC" account="A000006" number="" bankid=""/>
+        <SPLIT id="S0003" payee="" reconciledate="" action="" reconcileflag="0" value="5/1" shares="5/1" price="1/1" memo="" account="A000010" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <!-- DIVIDEND 7.50 cash: stock split is a zero placeholder with action Dividend -->
+    <TRANSACTION id="T000000000000000009" postdate="2024-03-15" memo="" entrydate="2024-03-15" commodity="USD">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="" reconcileflag="0" value="15/2" shares="15/2" price="0/1" memo="Dividend" account="A000005" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="Dividend" reconcileflag="0" value="0/1" shares="0/1" price="0/1" memo="Dividend" account="A000006" number="" bankid=""/>
+        <SPLIT id="S0003" payee="" reconciledate="" action="" reconcileflag="0" value="-15/2" shares="-15/2" price="1/1" memo="" account="A000011" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <!-- 2-for-1 STOCK SPLIT: single split, shares = factor 2, value/price 0 -> holding 10 -> 20 -->
+    <TRANSACTION id="T000000000000000010" postdate="2024-04-01" memo="" entrydate="2024-04-01" commodity="USD">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="Split" reconcileflag="0" value="0/1" shares="2/1" price="0/1" memo="2:1 split" account="A000006" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <!-- SELL 5 @ 30.00, 5.00 fee: action is "Buy" with negative shares/value -->
+    <TRANSACTION id="T000000000000000011" postdate="2024-05-01" memo="" entrydate="2024-05-01" commodity="USD">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="" reconcileflag="0" value="145/1" shares="145/1" price="0/1" memo="Sell EXC" account="A000005" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="Buy" reconcileflag="0" value="-150/1" shares="-5/1" price="30/1" memo="Sell EXC" account="A000006" number="" bankid=""/>
+        <SPLIT id="S0003" payee="" reconciledate="" action="" reconcileflag="0" value="5/1" shares="5/1" price="1/1" memo="" account="A000010" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+  </TRANSACTIONS>
+  <KEYVALUEPAIRS>
+    <PAIR key="LastModificationDate" value="2024-05-01T12:00:00+00:00"/>
+    <PAIR key="kmm-baseCurrency" value="USD"/>
+    <PAIR key="kmm-id" value="{00000000-0000-4000-8000-000000000000}"/>
+  </KEYVALUEPAIRS>
+  <SCHEDULES>
+    <!-- monthly Bill (type 1), direct debit (1), every 1 month (32), move after weekend (1),
+         estimate (fixed=0); last entered 2024-02-01; next due = template postdate 2024-03-01 -->
+    <SCHEDULED_TX id="SCH000001" name="Electricity" type="1" occurence="32" occurenceMultiplier="1" paymentType="1" startDate="2024-02-01" endDate="" fixed="0" lastDayInMonth="0" autoEnter="0" lastPayment="2024-02-01" weekendOption="1">
+      <PAYMENTS/>
+      <TRANSACTION id="" postdate="2024-03-01" memo="" entrydate="" commodity="USD">
+        <SPLITS>
+          <SPLIT id="S0001" payee="P000002" reconciledate="" action="" reconcileflag="0" value="-75/1" shares="-75/1" price="1/1" memo="" account="A000001" number="" bankid=""/>
+          <SPLIT id="S0002" payee="P000002" reconciledate="" action="" reconcileflag="0" value="75/1" shares="75/1" price="1/1" memo="" account="A000008" number="" bankid=""/>
+        </SPLITS>
+      </TRANSACTION>
+    </SCHEDULED_TX>
+  </SCHEDULES>
+  <SECURITIES>
+    <SECURITY id="E000001" name="Example Corp" symbol="EXC" type="0" rounding-method="7" saf="1000" pp="4" trading-currency="USD" trading-market="">
+      <KEYVALUEPAIRS>
+        <PAIR key="kmm-security-id" value="XS0000000000"/>
+      </KEYVALUEPAIRS>
+    </SECURITY>
+  </SECURITIES>
+  <CURRENCIES>
+    <CURRENCY id="EUR" name="Euro" symbol="€" type="3" rounding-method="7" saf="100" pp="4" scf="100"/>
+    <CURRENCY id="USD" name="US Dollar" symbol="$" type="3" rounding-method="7" saf="100" pp="4" scf="100"/>
+  </CURRENCIES>
+  <PRICES>
+    <!-- 1 EXC = price USD; recorded by the editor on buy AND sell (action "Buy") with source "Transaction" -->
+    <PRICEPAIR from="E000001" to="USD">
+      <PRICE date="2024-02-10" price="50/1" source="Transaction"/>
+      <PRICE date="2024-05-01" price="30/1" source="Transaction"/>
+    </PRICEPAIR>
+    <!-- 1 EUR = 1.10 USD -->
+    <PRICEPAIR from="EUR" to="USD">
+      <PRICE date="2024-01-15" price="11/10" source="User"/>
+    </PRICEPAIR>
+  </PRICES>
+  <REPORTS/>
+  <BUDGETS>
+    <BUDGET id="B000001" name="2024" start="2024-01-01" version="2">
+      <ACCOUNT id="A000009" budgetlevel="monthly" budgetsubaccounts="0">
+        <PERIOD amount="400/1" start="2024-01-01"/>        <!-- 400 per month -->
+      </ACCOUNT>
+    </BUDGET>
+  </BUDGETS>
+  <ONLINEJOBS/>
+</KMYMONEY-FILE>
