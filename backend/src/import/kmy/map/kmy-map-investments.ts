@@ -1,8 +1,7 @@
 import { InvestmentAction } from "../../../securities/entities/investment-transaction.entity";
-import {
-  orderForReplay,
-  pairShareTransfers,
-} from "../../mny/map/map-investments";
+import { pairShareTransfers } from "../../mny/map/map-investments";
+import { sortableRowIds } from "../../mny/map/sortable-row-ids";
+import { orderForReplay } from "../../mny/map/replay-order";
 import { roundFxRate } from "../../../common/fx-entry.util";
 import { derivePriceFromTotal } from "../../../securities/investment-amount.util";
 import {
@@ -48,7 +47,6 @@ import {
   planCash,
   resolveHolding,
 } from "./kmy-investment-holding";
-import { sortableRowIds } from "./kmy-row-ids";
 import { STEP_EVERY, Steps, runSteps } from "./kmy-steps";
 import { checkStockSplits, journalOrder } from "./kmy-stock-splits";
 import { tradeAmounts } from "./kmy-trade-amounts";
@@ -464,6 +462,9 @@ class InvestmentMapper {
     // m6: a reinvestment that also pays cash out is two things: the shares
     // bought with part of the income (REINVEST, no cash) and the rest paid
     // out (DIVIDEND, with the cash), so the income recorded is all of it.
+    // Ids in the order the rows are pushed below (row, companions, payout), so
+    // `orderForReplay`'s (date, id) order is the push order (S1).
+    const companionIds = companions.map(() => this.nextId());
     let payout: MappedInvestmentTransaction | null = null;
     if (
       activity === "Reinvest" &&
@@ -497,9 +498,9 @@ class InvestmentMapper {
     }
 
     const companionRows = companions.map(
-      (companion): MappedInvestmentTransaction => ({
+      (companion, index): MappedInvestmentTransaction => ({
         ...row,
-        id: this.nextId(),
+        id: companionIds[index],
         cashAccountKey: null,
         fundingAccountKey: null,
         action: InvestmentAction.INTEREST,

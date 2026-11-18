@@ -1,5 +1,5 @@
 import { isUUID } from "class-validator";
-import { sortableRowIds } from "./kmy-row-ids";
+import { sortableRowIds } from "./sortable-row-ids";
 
 describe("sortableRowIds (S1)", () => {
   it("hands out valid version-7 UUIDs that sort in the order they were handed out", () => {

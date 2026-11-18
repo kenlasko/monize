@@ -7,9 +7,12 @@ import { randomBytes } from "node:crypto";
  * canonical replay order, `INVESTMENT_REPLAY_ORDER` (date, created_at, id),
  * breaks a same-day tie on the id. A random UUID makes that tie-break random:
  * a same-day stock split and buy fold to 210 shares on one run and 220 on the
- * next. Handed out in KMyMoney's journal order (post date, then transaction
- * id), these ids make the canonical order KMyMoney's own, with no second
- * ordering scheme beside it.
+ * next, a same-day sell and buy to two different average costs. Handed out in
+ * the source's journal order -- KMyMoney's post date then transaction id
+ * (`kmy-map-investments.ts`), Money's date then `htrn` (`map-investments.ts`)
+ * -- these ids make the canonical order the source's own, with no second
+ * ordering scheme beside it; `orderForReplay` sorts the mapped rows by the same
+ * (date, id) pair before the import checks its own replay.
  *
  * Each id is a UUIDv7 (RFC 9562): the 48-bit Unix time in milliseconds of the
  * generator's creation, the version, a 42-bit counter in `rand_a` and the top
