@@ -14,6 +14,9 @@ import {
   stepOccurrence,
 } from "./kmy-schedule-cadence";
 
+/** `eMyMoney::Schedule::WeekendOption::MoveNothing`: the due date is kept as scheduled. */
+const KMY_WEEKEND_MOVE_NOTHING = 2;
+
 /** Spec 5.10: which schedules are offered, their cadence and fields. */
 
 class ScheduleMapper {
@@ -130,7 +133,9 @@ class ScheduleMapper {
     if (cadence.approximate) {
       this.warn("billFrequencyApproximated", schedule);
     }
-    if (schedule.weekendOption !== 0) {
+    // KMyMoney's WeekendOption: MoveBefore 0, MoveAfter 1, MoveNothing 2
+    // (`mymoneyenums.h`); only MoveNothing is what Monize does.
+    if (schedule.weekendOption !== KMY_WEEKEND_MOVE_NOTHING) {
       this.warn("scheduleWeekendRuleDropped", schedule);
     }
     if (schedule.autoEnter) {

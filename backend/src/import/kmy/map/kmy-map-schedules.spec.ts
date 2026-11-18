@@ -285,12 +285,16 @@ describe("mapKmySchedules: cadence and flags", () => {
     ]);
   });
 
-  it("raises one warning each for auto-enter and the weekend rule, and none for MoveNothing", () => {
-    expect(
-      run([{ autoEnter: true, weekendOption: 2, template }]).warnings.map(
-        (w) => w.code,
-      ),
-    ).toEqual(["scheduleWeekendRuleDropped", "scheduleAutoEnterNotImported"]);
+  it("raises one warning each for auto-enter and the weekend rule, and none for MoveNothing (m0)", () => {
+    // WeekendOption: MoveBefore 0 (what an absent attribute reads as), MoveAfter 1, MoveNothing 2.
+    for (const weekendOption of [0, 1]) {
+      expect(
+        run([{ autoEnter: true, weekendOption, template }]).warnings.map(
+          (w) => w.code,
+        ),
+      ).toEqual(["scheduleWeekendRuleDropped", "scheduleAutoEnterNotImported"]);
+    }
+    expect(run([{ weekendOption: 2, template }]).warnings).toEqual([]);
     expect(run([{ template }]).warnings).toEqual([]);
   });
 

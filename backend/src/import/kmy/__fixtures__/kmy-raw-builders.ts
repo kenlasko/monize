@@ -208,7 +208,8 @@ export function rawSchedule(init: ScheduleInit): KmySchedule {
     fixed: init.fixed ?? true,
     autoEnter: init.autoEnter ?? false,
     lastDayInMonth: init.lastDayInMonth ?? false,
-    weekendOption: init.weekendOption ?? 0,
+    // KMyMoney's own default for a schedule (`MyMoneySchedulePrivate`).
+    weekendOption: init.weekendOption ?? 2,
     payments: [],
     template:
       template === null || template === undefined
