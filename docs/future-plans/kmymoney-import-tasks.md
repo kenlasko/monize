@@ -42,9 +42,15 @@
 | WP5 | Website page, docs links, READMEs, invariant wording | WP0 | none | [ ] |
 | WP3b | KMyMoney parser service, controller, module, guards, messages, integration spec, corpus run | WP1, WP2, WP3a | live (backend) | [ ] |
 | WP4 | Frontend | WP0, WP5 | live | [ ] |
+| WP3c | Payee matching rules, default categories and contact details (spec 5.5, K13) | WP1, WP2, WP3a, WP3b, WP4, WP5 | live | [ ] |
 | WP6 | e2e | WP3b, WP4 | none | [ ] |
-| WP7 | Translations | WP3b, WP4 | none | [ ] |
-| WP8 | Screenshots (deferrable) | WP6 | none | [ ] |
+| WP7 | Translations | WP3b, WP4, WP3c | none | [ ] |
+| WP8 | Screenshots (deferrable) | WP6, WP3c | none | [ ] |
+
+WP3c was added after WP0 was committed and while phase 1 was running; it is phase 3 (beside WP6) because
+it edits files that WP0 to WP5 own. Nothing in WP0 to WP5 changes because of it: those packages build
+exactly what their sections say, including `KmyPayee.hasDetails` and the `payeeDetailsNotImported`
+sentence, and WP3c replaces both.
 
 ---
 
@@ -381,7 +387,8 @@ file`; `feat(import): assemble the parsed KMyMoney file`.
 **Acceptance.** For the synthetic file: every ground-truth row of the plan; `fileBalances` equal to
 `expectedBalances` for every key; `holdingChecks` all matching; the warning set exactly
 `accountNumbersNotImported` (Checking), `payeeDetailsNotImported` (City Power), `budgetsNotImported`,
-`scheduleWeekendRuleDropped` and `scheduleOverdue` (with the default `asOf`).
+`scheduleWeekendRuleDropped` and `scheduleOverdue` (with the default `asOf`). (WP3c later changes this
+set; see its acceptance.)
 
 ---
 
@@ -683,6 +690,118 @@ parity spec red (new keys await WP7); `npm run build` passes the bundle-size che
 
 ---
 
+## WP3c: payee matching rules, default categories and contact details
+
+**Goal.** Spec section 5.5 (5.5.1 to 5.5.5), K13 and the amendment rows of spec 4.9, 5.12, 7, 8.1, 9,
+11 and 12. Phase 3, after WP1, WP2, WP3a, WP3b, WP4 and WP5 are merged; beside WP6, which touches only
+`e2e/`. Every file below is owned by WP3c alone in its phase.
+
+**Create** (one spec beside each):
+
+```
+backend/src/payees/alias-overlap.util.ts             aliasesConflict, aliasesCanOverlap (spec 5.5.1)
+backend/src/import/kmy/map/kmy-payee-match.ts         KmyPayee.match -> alias globs + warnings: subset grammar, truth table, checks 1-9
+backend/src/import/kmy/map/kmy-payee-details.ts       default category (5.5.2) and contact details (5.5.3)
+backend/src/import/mny/writers/write-payee-extras.ts  writePayeeExtras (spec 5.5.4, 8.1)
+```
+
+**Modify:**
+
+- Raw model and reader: `backend/src/import/kmy/model/kmy-raw.ts` (`KmyPayee`: drop `hasDetails`, add the
+  spec 8.1 fields), `backend/src/import/kmy/reader/kmy-raw-collector.ts` and its spec (the R10.1 read
+  rules: uint attributes, `\n` or `;` split, all-space keys dropped, no trimming, `ADDRESS` legacy
+  fallbacks, `payeeIdentifier` and `idpattern`/`urltemplate` presence), the fixture builders
+  `backend/src/import/kmy/__fixtures__/kmy-xml-builders.ts` and
+  `backend/src/import/kmy/__fixtures__/kmy-raw-builders.ts` (payee options with defaults: matching
+  disabled, no details).
+- Mappers: `backend/src/import/kmy/map/kmy-map-payees-tags.ts` (attach `aliases`,
+  `defaultCategoryHandle`, `contact`; in-file collisions in handle order; same-name payees merged ignoring
+  case; `payeeMatchingDisabled`; `payeeDetailsNotImported` now only for the fields of spec 5.5 and
+  5.5.3), `backend/src/import/kmy/map/kmy-map-categories.ts` (a written payee's default category is a
+  reference: the category and its ancestors are written), `backend/src/import/kmy/map/kmy-map-file.ts`
+  (`KmyMapInput.phoneRegion`; order of the new warnings), each with its spec.
+- Parser service: `backend/src/import/kmy/kmy-parser.service.ts` and its spec (the preference read
+  also selects `numberFormat` and `language`; `phoneRegionFromPreferences` from
+  `backend/src/common/phone-number.util.ts` passed as `phoneRegion`; `backend/src/import/kmy/kmy-parse.ts`
+  passes it through).
+- Shared model and codes: `backend/src/import/mny/model/mny-import-model.ts` (`MappedPayee` optional
+  fields, `MappedPayeeContact`), `backend/src/import/mny/model/mny-warnings.ts` (append, after
+  `holdingsReplayDiffers`, each with a one-line comment: payeeMatchingDisabled, payeeMatchKeyNotImported,
+  payeeMatchCaseWidened, payeeMatchKeyConflict, payeeMatchKeyOverlap, payeeDefaultCategoryNotImported,
+  payeeDetailsKept), `backend/src/import/kmy/model/kmy-warnings.ts` and its spec (the same seven appended
+  to `KMY_WARNING_CODES`), `backend/src/import/mny/model/mny-import-job.ts` (the three optional result
+  counts).
+- Shared pipeline: `backend/src/import/mny/mny-preview.ts` and its spec (the two optional counts, only
+  when `sourceFormat` is `kmy`), `backend/src/import/mny/mny-import.service.ts` and its spec
+  (`writePayeeExtras(manager, userId, { payees: parsed.payees.payees, payeeIdByName: payees.idByName,
+  categoryIdByHandle })` immediately after `applyImportRules`; its warnings appended to the result
+  warnings before `summarizeWarnings`; its counts on the result only for `kmy`).
+- Integration: `backend/test/integration/kmy-import.integration.spec.ts` (the payee-amendment part of
+  the spec's integration row; new cases only).
+- Frontend: `frontend/src/lib/import-mny.ts` (mirror the five optional counts),
+  `frontend/src/lib/binary-import-format.ts` and its test (append the seven codes to the frontend
+  `KMY_WARNING_CODES`; optional copy keys `countsPayeeAliases`, `countsPayeeAliasesDetail`,
+  `completePayeeAliases`, `completePayeeDefaultCategories`, set on `KMY_FORMAT` only),
+  `frontend/src/components/import/MnyReviewStep.tsx` and `frontend/src/components/import/MnyVerificationReport.tsx`
+  and their tests (a tile when the count is present and above zero and the descriptor has the key),
+  `frontend/src/i18n/messages/en/import.json` and the pseudo-locale.
+- Docs: the KMyMoney website page (What Is Imported: payee aliases, default categories, contact
+  details; What Is Not Imported: the untranslatable keys and how to add the alias by hand) and
+  `npm run docs:build` output; the importer README in `backend/src/import/kmy/` (a "Payee matching"
+  trap: regex keys are searched, aliases are whole-text globs; the subset; writer after the rule pass).
+
+**English copy** (`import.json`, no `--`): `kmyReview.counts.payeeAliases` "Payee aliases";
+`kmyReview.counts.payeeAliasesDetail` "{count, plural, one {# payee gets} other {# payees get}} a default
+category"; `kmyComplete.counts.payeeAliases` "Payee aliases"; `kmyComplete.counts.payeeDefaultCategories`
+"Default categories"; `kmyWarnings.<code>` for the seven new codes and the revised
+`payeeDetailsNotImported`, from the spec 5.12 sentences as ICU plurals.
+
+**Steps.**
+
+1. `alias-overlap.util.ts`: `aliasesConflict(a, b)` = equal ignoring case, or `matchesAliasPattern` in
+   either direction; `aliasesCanOverlap(a, b)` per spec 5.5.1 (prefix and suffix compatibility). Spec
+   includes the brute-force comparison of the test matrix.
+2. Reader: the raw fields, then a reader case for each R10.1 read rule.
+3. `kmy-payee-match.ts`: a tokenizer for the subset grammar (no `RegExp` built from file text anywhere:
+   the key is never compiled), the glob construction, checks 1 to 9, per-payee dedupe after collisions.
+   Pure; returns `{ aliases, warnings }` per payee.
+4. `kmy-payee-details.ts`: the 5.5.2 and 5.5.3 tables; `isEmail` from `class-validator` (already a
+   dependency), `normalizePhoneNumber`, `sanitizeHtmlString`.
+5. Mapper wiring and referenced categories; then the parser service's `phoneRegion`.
+6. `write-payee-extras.ts`: the spec 5.5.4 statement and steps, parameterised SQL only, on the manager
+   it is given; no query when no payee has a new field.
+7. `writeAll` / `runImport` wiring; the integration cases, including the not-retroactive rule case and a
+   timing note for 2,000 aliases in the importer README's Memory section.
+8. Frontend tiles and copy; website page and README.
+
+**Tests.** The amendment rows of the spec's test matrix. Money: every Money spec of the files above
+green with no existing case changed, and the Money integration specs run once (`write-payee-extras`
+must be a no-op for them).
+
+**Commands.** lint/tsc/typecheck; `npm run test:unit -- alias-overlap alias-match insert-payee-alias
+kmy/map kmy/reader kmy-parser kmy-warnings mny-warnings mny-import-job mny-preview mny-import.service
+write-payee-extras rule-application-sites module-graph lint-bans source-comment-paths`;
+`npm run i18n:pseudo && npm run i18n:check` (frontend); `npm run build && npm run test:integration --
+kmy-import`, then `-- mny-import` (one at a time); frontend `npm run lint && npm run type-check && npm run
+test -- binary-import-format MnyReviewStep MnyVerificationReport import-mny intl-harness` and `npm run
+docs:build`; from the root `node scripts/check-docs-manifests.mjs`.
+
+**Commits.** `feat(payees): decide when two alias patterns can match one payee name`;
+`feat(import): read KMyMoney payee matching, default categories and contact details`;
+`feat(import): map KMyMoney payee matching rules to aliases`; `feat(import): map KMyMoney payee default
+categories and contact details`; `feat(import): write imported payee aliases and details after the rule
+pass`; `feat(import): show imported payee aliases in the KMyMoney review and report`;
+`docs(import): describe imported KMyMoney payee matching`.
+
+**Acceptance.** For the synthetic file: City Power carries the alias `*CITY POWER*` and the default
+category Electricity, Corner Market no alias; the warning set is exactly `accountNumbersNotImported`
+(Checking), `payeeMatchingDisabled` (Corner Market), `budgetsNotImported`, `scheduleWeekendRuleDropped`
+and `scheduleOverdue`; every spec 5.5.5 row reproduced by a unit case; the not-retroactive integration
+case green; Money specs and the Money integration specs green unchanged; no migration and no allowlist
+entry.
+
+---
+
 ## WP6: e2e
 
 **Create:** `e2e/tests/import-kmy.spec.ts`, modelled on `e2e/tests/import-mny.spec.ts` (read
@@ -710,7 +829,8 @@ pt-BR, ru, tr, uk, vi, zh-CN, zh-TW; backend: the same list) carries every new k
 variants (en-GB, en-US) only where the text differs.
 
 **Keys.** Frontend `import.json`: `kmyReview.*`, `kmyBills.*`, `kmyImporting.heading`, `kmyComplete.*`,
-`kmyErrors.*`, `kmyWarnings.*`, `upload.kmyFailedHeading`, `toasts.kmySingleFileOnly`; review the
+`kmyErrors.*`, `kmyWarnings.*` (WP3c's payee keys included), `upload.kmyFailedHeading`,
+`toasts.kmySingleFileOnly`; review the
 format strings WP4 edited; `currencyDetail.json`: `sources.kmyImport`. Backend `errors.json`: every
 `import.kmy*` key of spec 8.2. "KMyMoney", "GPG", "SQL", ".kmy", ".xml" and "gpg --decrypt" are not
 translated; KMyMoney menu names (File, Save As; Settings, Configure KMyMoney, Encryption) use KMyMoney's

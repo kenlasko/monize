@@ -49,6 +49,7 @@ Every statement below cites where it comes from. Anything not confirmed in sourc
 | **NAD** | `kmymoney/dialogs/knewaccountdlg.cpp` |
 | **REC** | `kmymoney/views/reconciliationledgerviewpage.cpp` |
 | **STR** | `kmymoney/converter/mymoneystatementreader.cpp` (OFX/QIF/CSV statement import into the engine) |
+| **PV** | `kmymoney/views/kpayeesview_p.h` (payee view: match-type labels, default-category choices, merging payees) |
 | **SQL** | `kmymoney/plugins/sql/*` (SQL backend) |
 | **ALK** | alkimia `src/alkvalue.cpp`, `src/alkvalue.h.in` |
 
@@ -1055,6 +1056,32 @@ When `kmm-online-quote-system` is in use, `kmm-security-id` may be the symbol se
     `&#10;`). A single key carries a trailing `\n`. Old 4.8 files separate keys with `;`. Empty entries are
     removed.
   * `matchignorecase` 0/1.
+  * All three are read with `readUintAttribute` (XH): empty means the default 0, otherwise
+    `QString::toUInt(base 0)`, so an unparsable value (`"true"`) is 0. `matchignorecase` absent is 0
+    (case-sensitive).
+  * Reading goes through `setMatchData(type, ignorecase, QString)`: split on `\n` when the value holds
+    one, else on `;`; keep only keys containing a character other than a space; then `matchData`
+    removes empty entries. Keys are **not** trimmed.
+* **How a match is applied** (STR, statement import; the only place the engine uses these keys). For
+  a non-empty imported payee text T, every payee with matching enabled contributes patterns: Name
+  `QRegularExpression::escape(name)`; NameExact `^` + escape(name) + `$`; Key each key as written. Each
+  is compiled as a `QRegularExpression` (PCRE2) with `CaseInsensitiveOption` when `matchignorecase` is
+  set and no other option, and **searched** in T (`match`, unanchored unless the pattern says `^`/`$`).
+  Every hit records `capturedLength`; the payee with the longest match wins (a `QMap` keyed by length,
+  so on equal lengths the payee met later in the payee list wins). No match: a payee named T is created
+  (per the account's `PayeeCreation` policy) with Key matching, case-insensitive, and the single key
+  `^` + escape(T) + `$`. `QRegularExpression::escape` backslash-escapes every character outside
+  `[A-Za-z0-9_]`, spaces included, so a statement-created key reads `^THE\ AMERICAN\ CHE\ CONS\ PAY$`
+  (`test-441023.xml`). When T and the matched payee's name differ (ignoring case) KMyMoney may keep T in
+  the memo (`keepOriginalPayeeInfo`).
+* A payee created by hand starts as NameExact, case-insensitive (KU). The payee view labels the modes
+  "No matching", "Match Payees name (partial)", "Match Payees name (exact)" and "Match on a name listed
+  below" (PV). Merging payees with "add to matching list" appends the merged payees' names to the
+  target's keys **unescaped** (`^name$` for an exact one), so such a key is a regular expression whose
+  `.`, `(` or `+` are metacharacters (PV).
+* The default category combo offers asset, liability, income, expense and equity accounts (PV), so
+  `defaultaccountid` is not always a category. STR uses it only when an imported transaction has no
+  split of its own: it adds a split to that account for the opposite amount.
 * `payeeIdentifier` children: `ibanbic` (attributes `iban`, `bic`, `ownerName`) or `national`
   (`accountnumber`, `bankcode`, `ownername`, `country`). **An unknown `type` makes KMyMoney's reader raise
   an XML error** (RD `readPayeeIdentifier`). An importer should skip it.

@@ -56,17 +56,20 @@ Import a KMyMoney file end to end, preserving:
 - a post-import verification of every account balance and every holding against figures computed
   independently from the file.
 
-Also: active schedules as scheduled transactions the user ticks in the review step; tags; payees;
-institutions as the account's institution name; loan payment structure (principal transfer plus interest
+Also: active schedules as scheduled transactions the user ticks in the review step; tags; payees, with
+their KMyMoney matching rules as payee aliases wherever the rule translates exactly, their default
+categories and their contact details (section 5.5); institutions as the account's institution name; loan payment structure (principal transfer plus interest
 category) and the loan's inferred terms through the existing `backend/src/import/mny/map/map-loans.ts`.
 
 ### Non-goals (v1, said in the review step's notes, the user guide and the verification report)
 
 - GPG-encrypted files, KMyMoney SQL/SQLite/SQLCipher databases, anonymized `.anon.xml` files and the
   KMyMoney 0.8 binary format: each is refused with its own actionable message (section 4.3).
-- Budgets, saved reports, online jobs, online-banking settings, payee matching rules and default
-  categories, payee addresses and identifiers, account numbers and IBANs, cost centers, VAT settings,
-  the asset-account hierarchy (Monize accounts are flat), schedule weekend rules and auto-enter.
+- Budgets, saved reports, online jobs, online-banking settings, payee reference numbers, payee bank
+  identifiers (IBAN/BIC, national account numbers) and link patterns, the KMyMoney matching keys that
+  fall outside the translatable subset of section 5.5.1 (each is named in a warning), account numbers
+  and IBANs, cost centers, VAT settings, the asset-account hierarchy (Monize accounts are flat),
+  schedule weekend rules and auto-enter.
 - Merging into a populated profile with transaction-level dedupe (same as Money: entity-level
   find-or-create by name, file-level duplicate refusal by content hash, optional start-fresh wipe).
 - A password dialog. KMyMoney's only encryption is GPG over the whole file, which Monize does not
@@ -91,6 +94,7 @@ All from the reference; the ones that drive a decision are restated so this docu
 | A stock split is a single-split transaction whose `shares` is the multiplier, applied to the running balance and rounded to the security's `saf` | R7.4, R15.2; KMyMoney's user manual: "in a 3:2 split, enter 1.5" | SPLIT with quantity = shares (5.7.5) |
 | A price `from -> to` means 1 `from` is worth `price` units of `to` | R9 | Rate orientation (5.9) |
 | Schedules carry an occurrence code and multiplier; the template transaction's post date is the next due date | R11 | Cadence table (5.10) |
+| A payee's matching rule is its own name (contained or exact) or a list of PCRE2 regular expressions searched anywhere in an imported payee text, case-insensitive per payee; the longest match among all payees wins | R10.1 | Translated to Monize payee aliases where exactly equivalent, otherwise named in a warning and skipped (5.5.1) |
 
 ## 4. Architecture decisions
 
@@ -116,6 +120,11 @@ reaches `.env.example` or Helm. `import_jobs.source_format` and `import_staged_f
 `VARCHAR(20)` with no CHECK constraint (migration `117_mny_import_staging_and_jobs.sql` is the only
 migration naming the column), and `security_prices.source` / `exchange_rates.source` are free
 `VARCHAR(50)`. Nothing new is stored, so no table, column, RLS policy or backup classification changes.
+The payee matching rules, default categories and contact details of section 5.5 land in a table and
+columns that already exist (`payee_aliases`, and `payees.default_category_id`, `notes`, `email`,
+`phone`, `address`), under the unique index `idx_payee_aliases_user_alias` that already exists, so they
+need no migration either; the start-fresh wipe already deletes `payee_aliases`
+(`UsersService.deleteData`).
 
 **K4. XML parsing: `htmlparser2` in XML mode, already a direct dependency.** Evidence and the
 alternatives are in section 14.1. In short: `htmlparser2` 12.0.0 is in `backend/package.json`
@@ -172,6 +181,16 @@ parameter.
 **K12. Stock-split ratios are applied.** Unlike Money (whose `SEC_SPLIT` rows are quote-feed metadata),
 a KMyMoney stock split is the share movement itself (R7.4): KMyMoney's own balance multiplies by it.
 Each becomes a SPLIT row with the multiplier as its quantity.
+
+**K13. Payee matching becomes payee aliases, written after the rule pass.** A KMyMoney matching rule and
+a Monize payee alias say the same thing ("an imported payee text like this belongs to this payee"), so
+each rule becomes aliases where the translation is exactly equivalent (section 5.5.1) and is otherwise
+named in a warning and skipped; nothing that would match differently is imported silently. The aliases,
+the default categories and the contact details are written by one shared writer inside the import's
+single `withScopedDb` transaction, **after** `applyImportRules`, so nothing in the same import reads
+them: the import's own rows keep the payee KMyMoney assigned, and the new aliases act only on later
+imports and bank syncs, exactly as a hand-made alias does. Transaction rules were the other candidate
+receiver and were rejected (section 14.6).
 
 ### 4.1 Layering
 
@@ -345,6 +364,20 @@ is part of the separate rename proposal. `computeExpectedBalances`, `investmentW
 `mapLoans`, `selectedBills`, `placeholderSymbol` and `MAX_SECURITY_SYMBOL_LENGTH` are imported and reused
 as they are.
 
+**Added by the payee amendment** (section 5.5; work package WP3c, which runs after WP3a, WP3b and WP4,
+so it owns these files alone). Each is an optional field, an appended code or a writer that does nothing
+for a payee without the new fields, so the Money path stays behaviour-identical:
+
+| File | Change |
+|---|---|
+| `backend/src/import/mny/model/mny-import-model.ts` | `MappedPayee` gains optional `aliases?`, `defaultCategoryHandle?`, `contact?`, and the `MappedPayeeContact` interface (8.1) |
+| `backend/src/import/mny/model/mny-warnings.ts` | seven codes appended after `holdingsReplayDiffers` (5.12) |
+| `backend/src/import/mny/model/mny-import-job.ts` | `MnyImportResult` gains optional `payeeAliasesCreated?`, `payeeDefaultCategoriesSet?`, `payeeContactDetailsSet?` |
+| `backend/src/import/mny/mny-preview.ts` | `MnyPreviewCounts` gains optional `payeeAliasesToCreate?`, `payeeDefaultCategoriesToSet?`, set only when `parsed.sourceFormat` is `kmy` |
+| `backend/src/import/mny/mny-import.service.ts` | `writeAll` calls the payee-extras writer right after `applyImportRules`, in the same transaction; `runImport` appends the writer's warnings to the result's warning list before `summarizeWarnings` and sets the three result counts only for a KMyMoney file |
+| new shared writer write-payee-extras.ts in `backend/src/import/mny/writers/` | section 5.5.4; returns at once, with no query, when no payee carries a new field |
+| new pure module alias-overlap.util.ts in `backend/src/payees/` | `aliasesConflict` (exactly the refusal `PayeesService.createAlias` applies) and `aliasesCanOverlap` (5.5.1), beside `matchesAliasPattern`, used by the mapper and the writer |
+
 ## 5. Data-mapping specification
 
 ### 5.1 File-level
@@ -470,11 +503,221 @@ Category KVPs `Tax`, `VatRate`, `VatAccount`, `CostCenter` are not imported.
 | KMyMoney | Monize | Rule |
 |---|---|---|
 | `PAYEE` | payee | `name` trimmed; find-or-create by name (shared writer); referenced-only by default |
-| payee `email`, `reference`, `notes`, `ADDRESS`, `payeeIdentifier`, `defaultaccountid`, matching | none | `payeeDetailsNotImported` (count of payees carrying any of them) |
+| payee matching: `matchingenabled`, `usingmatchkey`, `matchignorecase`, `matchkey` | payee aliases (`payee_aliases`) | 5.5.1 |
+| payee `defaultaccountid` | the payee's default category (`payees.default_category_id`) | 5.5.2 |
+| payee `notes`, `email`, `ADDRESS` (`street`, `city`, `state`, `zip`, `telephone`) | the payee's `notes`, `email`, `address`, `phone` | 5.5.3 |
+| payee `reference`, `payeeIdentifier` children, `idpattern` / `urltemplate` | none: Monize has no field for any of them | `payeeDetailsNotImported`, one per payee, `detail` naming the fields |
 | a split's payee | the row's or leg's payee | a row takes its own split's payee, else the first non-empty payee among the transaction's other splits in document order (R6.6) |
 | `TAG` | tag | `name` (100 characters); referenced only; `tagcolor`, `notes`, `closed` dropped |
 | split `TAG` children | tags of the row or leg the split becomes | a plain two-split row carries the union of both splits' tags; a transfer row its own split's; a split parent its own split's and each leg its split's |
 | `COSTCENTER`, split `costcenter` | none | `costCentersNotImported` (count of splits) |
+
+Everything in 5.5.1 to 5.5.3 applies to **written** payees only: under `referencedOnlyPayees` (the
+default) an unused payee is not created, and its rules, default category and details go with it.
+
+#### 5.5.1 Payee matching rules
+
+**What KMyMoney stores** (R10.1). `matchingenabled`, `usingmatchkey` and `matchignorecase` are read as
+unsigned integers (empty or unparsable is 0, any other value true; `"true"` is 0). Four modes:
+Disabled (`matchingenabled` 0; the rest is not written); **Name** (`usingmatchkey` 0): match on the
+payee's own name, contained anywhere ("Match Payees name (partial)" in KMyMoney's payee view);
+**NameExact** (`usingmatchkey` 0 and `matchkey` exactly `^$`): the whole text is the name ("Match Payees
+name (exact)"); **Key** (`usingmatchkey` 1): "Match on a name listed below", the keys in `matchkey`,
+separated by a line feed (`&#10;`; a single key carries a trailing one), or by `;` when the value holds
+no line feed (KMyMoney 4.8). Empty keys and keys made only of spaces are dropped; keys are **not**
+trimmed. `matchignorecase` absent is 0 (case-sensitive).
+
+**How KMyMoney applies a rule** (STR, during an OFX, QIF, CSV or online-banking statement import, for a
+non-empty imported payee text T). Every payee with matching enabled contributes regular expressions:
+Name `QRegularExpression::escape(name)`, NameExact `^` + that + `$`, Key each key as written. Each is a
+PCRE2 pattern (Qt's `QRegularExpression`, case-insensitive option when `matchignorecase` is set, no
+other option) **searched** in T, so an unanchored key matches when it occurs anywhere. Among all payees
+that match, the one with the longest matched length wins; equal lengths go to the payee met later in
+KMyMoney's own payee order. When nothing matches, KMyMoney creates a payee named T with the single key
+`^` + escape(T) + `$`, case-insensitive, which is why most real keys look like
+`^THE\ AMERICAN\ CHE\ CONS\ PAY$` (Qt escapes every character outside `[A-Za-z0-9_]`, spaces included;
+upstream sample `test-441023.xml`). A payee created by hand starts as NameExact, case-insensitive (KU),
+and merging payees appends the merged names to the target's keys **unescaped** (PV), so a key
+`AMAZON.COM` is a regular expression whose `.` matches any character.
+
+**What Monize has.** `payee_aliases` (`backend/src/payees/entities/payee-alias.entity.ts`), described in
+`database/schema.sql` as "for mapping imported payee names to canonical payees". The matcher is
+`matchesAliasPattern` (`backend/src/payees/alias-match.util.ts`): the **whole** text, case-insensitive
+(`toLowerCase` on both sides), `*` stands for any run of characters including none, no other
+metacharacter and no escape, and a pattern or text over 500 characters never matches. Uniqueness:
+`idx_payee_aliases_user_alias` on `(user_id, LOWER(alias))`. Bounds: `alias VARCHAR(255)`; the API
+(`backend/src/payees/dto/create-payee-alias.dto.ts`) caps it at 255 and strips `<` and `>`;
+`PayeesService.createAlias` trims it and refuses one that overlaps any existing alias in either direction
+(`matchesAliasPattern(new, old) || matchesAliasPattern(old, new)`). Aliases are read when a new row's
+payee is resolved: the file import (`resolvePayee` in
+`backend/src/import/import-regular-processor.service.ts`: exact name, case-sensitive, then the first
+matching alias), bank sync (`findExistingPayee` in `backend/src/bank-sync/bank-sync-payee-lookup.ts`, the
+same two tiers) and `PayeesService.resolveByName` (assistant, MCP, a rule's `set_payee_from_text`). No
+Monize path applies an alias to rows already written.
+
+Three structural differences follow, each handled below: KMyMoney's keys are regular expressions searched
+anywhere, Monize's aliases are globs over the whole text; a KMyMoney key can be case-sensitive, an alias
+never is; KMyMoney settles a text two payees match by the longer match, Monize takes an exact payee name
+first, then whichever alias it reads first, and refuses overlapping aliases when they are created.
+
+**The translatable subset.** A key translates only when the whole key is, in this grammar:
+
+```
+key      := [ "^" ] item* [ "$" ]
+item     := literal | escaped | anyrun
+literal  := any character other than  \ ^ $ . | ? * + ( ) [ ] { }
+escaped  := "\" c   where c is not an ASCII letter or digit (c is then literal; this is what Qt's escape writes)
+anyrun   := ".*" | ".*?"
+```
+
+Its glob is: `*` unless the key starts with `^`; then each literal or escaped character as itself and
+each anyrun as `*`; then `*` unless the key ends with an unescaped `$`; runs of `*` collapse to one.
+Equivalence: for every payee text without a line break, the glob matches T ignoring case exactly when the
+key, compiled case-insensitively, finds a match in T (a search for `x` is a text of the form `*x*`; an
+anchor removes the star on its side; `.*` and `.*?` cover any run without a line break; PCRE2 reads a
+backslash before any character that is not an ASCII letter or digit as that character). A text with a
+line break is the one accepted difference (`.` and `$` treat it specially in PCRE2, `*` does not); no
+file import, bank sync or statement payee text Monize writes contains one. Everything else is outside the
+subset even where a translation exists in theory: `.` on its own, `+`, `?`, `|`, groups, classes,
+counted repetition, every backslash-letter or backslash-digit escape (`\d`, `\b`, `\s`, `\w`, `\0`),
+`\Q...\E`, inline options, and `^` or `$` anywhere but the ends. A key KMyMoney itself could not compile
+is outside it too (it never matched there).
+
+**Truth table.** N is the payee name as written in the file (not trimmed: KMyMoney builds the pattern
+from it), "ic" is `matchignorecase`.
+
+| Mode | Key shape | Monize | Warning |
+|---|---|---|---|
+| Disabled | none | no alias | `payeeMatchingDisabled`: Monize's exact-name tier cannot be turned off, so a later import whose payee text is exactly N still links to the payee |
+| Name | escape(N), searched | glob `*N*`, then the checks below | per the checks |
+| NameExact, ic, N has a cased letter | `^escape(N)$` | glob `N`, then the checks | per the checks |
+| NameExact, not ic, or N has no cased letter | `^escape(N)$` | no alias: Monize's exact-name tier (whole text, case-sensitive) is the same rule | none |
+| Key | inside the subset | its glob, then the checks | per the checks |
+| Key | `^$` | nothing: KMyMoney never matches an empty payee text | none |
+| Key | outside the subset | not imported | `payeeMatchKeyNotImported`, detail `untranslatable` |
+
+The checks, in order, on the glob g of payee P (the first that applies decides):
+
+| # | Condition | Result | Detail |
+|---|---|---|---|
+| 1 | the key or N holds a literal `*` | not imported, `payeeMatchKeyNotImported` (a Monize glob has no escape) | `literalStar` |
+| 2 | g is only `*` | not imported, `payeeMatchKeyNotImported` (it would be every payee text's alias) | `matchesEverything` |
+| 3 | g holds `<` or `>` | not imported, `payeeMatchKeyNotImported` (the API strips them, so no such alias can exist) | `angleBracket` |
+| 4 | g starts or ends with a whitespace character | not imported, `payeeMatchKeyNotImported` (Monize trims an alias) | `edgeWhitespace` |
+| 5 | g is longer than 255 characters | not imported, `payeeMatchKeyNotImported` | `tooLong` |
+| 6 | g holds a character whose `toLowerCase()` has a different length (`İ`) | not imported, `payeeMatchKeyNotImported` (Monize's lowercasing and PCRE2's caseless match disagree on it) | `caseFolding` |
+| 7 | g has no `*`, equals P's trimmed name, and the key is case-sensitive or g has no cased letter | not written, no warning: the exact-name tier already is this rule | |
+| 8 | the key is case-sensitive and g has a cased letter (`c.toLowerCase() !== c.toUpperCase()`) | imported, `payeeMatchCaseWidened`: it now also matches other capitalizations | |
+| 9 | otherwise | imported | |
+
+A `payeeMatchKeyNotImported` or `payeeMatchCaseWidened` warning has `subject` = `<payee name>: <key as written>`
+(the samples the review shows) and `detail` = the reason in the table. One warning per key.
+
+**Collisions** (between different Monize payees; deterministic order: payee handle, then key order):
+
+| Collision | Result | Warning |
+|---|---|---|
+| g equals, ignoring case, an alias already accepted for another payee, or `matchesAliasPattern` holds in either direction (exactly `createAlias`'s refusal) | the later g is not imported | `payeeMatchKeyConflict`, subject `<payee>: <g>`, detail `<other payee>: <other alias>` |
+| g has no `*` and equals, ignoring case, the name of another written or existing payee | not imported (the other payee's name would win for that exact text anyway, and the two disagree on case) | `payeeMatchKeyConflict`, detail `<other payee> (name)` |
+| no conflict, but some text matches g and an alias of another payee (`aliasesCanOverlap`) | both imported | `payeeMatchKeyOverlap` on the later one: KMyMoney gives such a text to the longer match, Monize to either |
+| two KMyMoney payees land on one Monize payee (`writePayees` reuses a name ignoring case) | their aliases are one set: no collision | |
+
+Within one Monize payee, duplicates ignoring case collapse, and an alias another alias of the same payee
+subsumes (`matchesAliasPattern(narrow, broad)`) is not written: the payee is the same either way. This
+runs after the collision pass, so a narrow alias survives when its broad sibling was refused.
+
+The mapper applies the table among the file's own payees (so the preview shows it); the writer applies
+the same functions at commit against the user's existing aliases and payee names (5.5.4), which only the
+commit can see (the wipe option runs after the preview). `aliasesCanOverlap(a, b)` is exact: compare in
+lowercase with `*` runs collapsed; two literals overlap when equal; a literal and a glob when the glob
+matches the literal; two globs (both holding `*`) exactly when one literal prefix (before the first `*`)
+is a prefix of the other and one literal suffix (after the last `*`) is a suffix of the other. Proof of
+the last case: the text "longer prefix + a's middle segments + b's middle segments + longer suffix"
+matches both; without compatible prefixes (or suffixes) no text can start (or end) with both. Its cost
+is linear per pair; the mapper and writer test each alias holding a `*` against all others, so a file of
+n aliases with w wildcard ones costs O(w x n) pair tests.
+
+#### 5.5.2 Default category
+
+| `defaultaccountid` names | Monize | Warning |
+|---|---|---|
+| nothing (attribute absent or empty) | none | |
+| a type 12 or 13 account (income or expense category) | `defaultCategoryHandle` = that account's handle; the category and its ancestors are written even under `referencedOnlyCategories`, because a written payee references it | |
+| a type 16 account (equity) | the equity category of 5.4, created for the same reason | |
+| an asset, liability or stock account (KMyMoney's payee view offers them), or an id the file does not define | none: Monize's default category is a category only | `payeeDefaultCategoryNotImported`, subject the payee, detail the account name or the id |
+| a payee already carrying another default category from an earlier payee of the same name, ignoring case | the first by handle kept | `payeeDefaultCategoryNotImported`, detail `sameName` |
+
+Monize applies a payee's default category when a later imported or synced row resolves to that payee
+without a category, and in the transaction form, which is what KMyMoney does with it (STR uses it when
+an imported transaction has no split of its own). The import's own rows already carry their categories;
+no writer and no rule reads a payee's default category while the import runs (the file import's rule
+pass does not either, see `.trail/learnings/2026-10-30-bank-sync-rule-chosen-payee-s-node.md`).
+
+#### 5.5.3 Contact details
+
+Each field is validated against the payee DTO bounds (`backend/src/payees/dto/create-payee.dto.ts`), so a
+payee the import writes can be saved again from its edit form unchanged:
+
+| KMyMoney | Monize | Rule | Not imported when (`payeeDetailsNotImported`, detail names the field) |
+|---|---|---|---|
+| `notes` | `notes` | `sanitizeHtmlString` (`backend/src/common/decorators/sanitize-html.decorator.ts`), trimmed; empty is none | longer than 500 characters |
+| `email` | `email` | trimmed; empty is none | not an address by class-validator's `isEmail` (the DTO's own check), or longer than 255 |
+| `ADDRESS telephone` | `phone` | `normalizePhoneNumber(raw, phoneRegion)` (`backend/src/common/phone-number.util.ts`), stored form | refused by it: invalid, or a national number when the user's preferences name no region (never a guessed region) |
+| `ADDRESS street`, `city`, `state` (else `country`, else `county`), `zip` (else `zipcode`, else `postcode`) (R2.4) | `address` | the street's lines, then city, state and postcode, each trimmed, empty ones dropped, joined with `, `, then sanitized | longer than 500 characters |
+| `reference`, `payeeIdentifier`, `idpattern` / `urltemplate` | none | no field | always |
+
+`phoneRegion` is `phoneRegionFromPreferences` of the user's preference row, which the parser service
+reads in the same query as the default currency, so the preview and the job normalize alike. One
+`payeeDetailsNotImported` per payee, `subject` the payee name, `detail` the fields joined with `, `.
+
+#### 5.5.4 Where it is written
+
+The shared writer write-payee-extras runs inside `writeAll`'s one `withScopedDb` transaction, right
+after `applyImportRules` (`backend/src/import/mny/writers/apply-import-rules.ts`) and before
+`writeSecurities`; nothing after it in the import reads aliases (the rule pass's `set_payee_from_text`
+resolves names through `PayeesService.resolveByName`, which reads aliases, and has already run). Its
+input is the mapped payees, `WrittenPayees.idByName` and the category id by handle. For each payee that
+carries a new field, in handle order:
+
+1. Default category and contact details: one statement that only fills what is empty and leaves the
+   user's own values alone, `UPDATE payees SET default_category_id = COALESCE(default_category_id, $3),
+   notes = COALESCE(NULLIF(notes, ''), $4), email = COALESCE(NULLIF(email, ''), $5), phone =
+   COALESCE(NULLIF(phone, ''), $6), address = COALESCE(NULLIF(address, ''), $7) WHERE id = $1 AND
+   user_id = $2 RETURNING` those five columns. A returned value that differs from the one supplied
+   means the payee already had its own: `payeeDetailsKept` (post-import, subject the payee, detail the
+   fields). A payee the import created has none, so every field lands.
+2. Aliases: the user's aliases and payee names are loaded once; each alias goes through the collision
+   table of 5.5.1 against them (`payeeMatchKeyConflict` / `payeeMatchKeyOverlap`, post-import), then
+   `insertPayeeAliasIgnoringDuplicate` (`backend/src/payees/insert-payee-alias.util.ts`), whose savepoint
+   turns a unique-index race with a concurrent alias edit into a skip (`payeeMatchKeyConflict`) instead
+   of aborting the import.
+
+Every write shares the import transaction: a rollback drops them with the rows, and
+`markDataCommitted` stays the last statement. The writer inserts no transaction, so the rule-application
+guard is not involved. It returns `{ aliasesCreated, defaultCategoriesSet, contactDetailsSet, warnings }`;
+for a payee list without any new field (every Money file) it returns zeros and no warnings without a
+query.
+
+#### 5.5.5 Worked examples
+
+| Payee in the file | Matching attributes | Monize | Warning |
+|---|---|---|---|
+| Big Org (sample `test-441023.xml`) | Key, ic, `^THE\ AMERICAN\ CHE\ CONS\ PAY$` | alias `THE AMERICAN CHE CONS PAY` | |
+| City Power (reference section 18) | Key, ic, `CITY POWER` + line feed | alias `*CITY POWER*`; default category Electricity | |
+| Corner Market (reference section 18) | Disabled | no alias | `payeeMatchingDisabled` |
+| bank (sample `test-general-information.xml`) | NameExact, ic | alias `bank` | |
+| 7/11 | NameExact, ic | none (no cased letter: the exact-name tier is the rule) | |
+| Netflix | Name, ic | alias `*Netflix*` | |
+| Amazon | Key, ic, `^AMZN.*MKTP$` | alias `AMZN*MKTP` | |
+| Amazon | Key, ic, `AMAZON.COM` (from a KMyMoney merge) | not imported | `payeeMatchKeyNotImported`, `Amazon: AMAZON.COM`, `untranslatable` |
+| Gym | Key, not ic, `^GYM CLUB` | alias `GYM CLUB*` | `payeeMatchCaseWidened` |
+| Fuel | Key, ic, `^(SHELL\|ESSO)` | not imported | `payeeMatchKeyNotImported` |
+| Payroll | Key, ic, `\d{4} PAYROLL` | not imported | `payeeMatchKeyNotImported` |
+| Misc | Key, ic, `.*` | not imported | `payeeMatchKeyNotImported`, `matchesEverything` |
+| Sale | Key, ic, `SALE \*50%` | not imported | `payeeMatchKeyNotImported`, `literalStar` |
+| Amazon | Key, not ic, `^Amazon$` | none (check 7) | |
+| Coffee (handle 3), then Starbucks Reserve (handle 4) | Key, ic, `STARBUCKS`; Key, ic, `^STARBUCKS RESERVE` | `*STARBUCKS*` on Coffee; `STARBUCKS RESERVE*` refused (`*starbucks*` matches its text) | `payeeMatchKeyConflict`, `Starbucks Reserve: STARBUCKS RESERVE*`, `Coffee: *STARBUCKS*` |
+| Amazon (handle 5), then Prime Video (handle 6) | Name, ic; Key, ic, `PRIME` | `*Amazon*` and `*PRIME*`, both kept | `payeeMatchKeyOverlap` on `*PRIME*`: "AMAZON PRIME" goes to Amazon in KMyMoney (6 characters against 5) and to either in Monize |
 
 ### 5.6 Transactions (non-investment)
 
@@ -815,7 +1058,9 @@ transfer.
 
 ### 5.12 Warning catalogue
 
-Every code is appended to `MNY_WARNING_CODES` unless marked "existing". A warning carries no English;
+Every code is appended to `MNY_WARNING_CODES` unless marked "existing"; the seven `payeeMatching*`,
+`payeeMatch*`, `payeeDefaultCategoryNotImported` and `payeeDetailsKept` codes of the payee amendment are
+appended after `holdingsReplayDiffers`, in the order of this table. A warning carries no English;
 the frontend renders `import.kmyWarnings.<code>` with the count (ICU plural). `row` is set when the
 warning is about one transaction (the review step lists the rows). The en sentences below are the copy
 WP4 writes; they avoid `--` (frontend rule).
@@ -870,7 +1115,14 @@ WP4 writes; they avoid `--` (frontend rule).
 | onlineJobsNotImported | | | {count} online transfer orders were not imported. |
 | onlineBankingNotImported | | | {count} accounts have online banking settings in KMyMoney; they were not read, and you can set up bank sync in Monize. |
 | accountNumbersNotImported | | | {count} accounts have an account number or IBAN, which was not imported. |
-| payeeDetailsNotImported | | | {count} payees have details (addresses, matching rules, default categories) that were not imported. |
+| payeeDetailsNotImported | 5.5, 5.5.3 | | {count} payees have details Monize has no place for (a reference number, bank account identifiers, a link pattern), or contact details Monize could not read; those details were not imported. |
+| payeeMatchingDisabled | 5.5.1, Disabled | | {count} payees have matching turned off in KMyMoney. Monize has no such setting: a later import or bank sync whose payee is exactly one of these names still links to it. |
+| payeeMatchKeyNotImported | 5.5.1, outside the subset or checks 1 to 6 | | {count} payee matching rules use a pattern Monize cannot reproduce exactly and were not imported. Add an alias to the payee in Monize if you still want one. |
+| payeeMatchCaseWidened | 5.5.1, check 8 | | {count} payee matching rules are case-sensitive in KMyMoney. Monize aliases ignore case, so these also match the same name in other capitals. |
+| payeeMatchKeyConflict | 5.5.1 collisions; also post-import (5.5.4) | | {count} payee matching rules clash with an alias or the name of another payee, which Monize does not allow, and were not imported. |
+| payeeMatchKeyOverlap | 5.5.1 collisions; also post-import (5.5.4) | | {count} payee aliases can match the same payee name as an alias of another payee. KMyMoney picks the payee with the longer match; Monize may pick either. Check these aliases in Monize. |
+| payeeDefaultCategoryNotImported | 5.5.2 | | {count} payees have a default category Monize cannot use (an account rather than a category, or one missing from the file), so they were imported without it. |
+| payeeDetailsKept (post-import) | 5.5.4 | | {count} payees already existed in Monize with their own default category or contact details, which were kept; the KMyMoney values were not used. |
 | unparsableNumber | reader | | {count} numbers in the file could not be read and were taken as zero. |
 | autoCalcInPostedSplit | reader | yes | {count} posted transactions carried a placeholder amount meant only for schedules; it was taken as zero. |
 | mappedBalanceDiffers | 6.3, preview time | | {count} accounts would end with a balance that differs from the one computed from the file. Do not import until this is explained. |
@@ -936,6 +1188,12 @@ balance, is a cash leg of exactly its `shares`, or is a leg inside a row whose a
 `shares`). A non-zero balance difference is therefore always a defect, which is what makes the check
 worth having.
 
+Payee aliases, default categories and contact details move no balance and no share, so they are outside
+both checks. The report counts what was written (`payeeAliasesCreated`, `payeeDefaultCategoriesSet`,
+`payeeContactDetailsSet`) and lists the writer's commit-time refusals among its warnings
+(`payeeMatchKeyConflict`, `payeeMatchKeyOverlap`, `payeeDetailsKept`), which the review step cannot show
+because only the commit sees the user's existing aliases after the optional wipe.
+
 ## 7. Wizard UX
 
 | Step / panel (Money) | KMyMoney | Detail |
@@ -947,14 +1205,14 @@ worth having.
 | Password dialog | remove | never opens: no KMyMoney code asks for a password |
 | Review heading and file summary | change | "Review your KMyMoney file"; summary names the file, "KMyMoney file, format version N", the base currency, and says the balances are computed from the file. No era |
 | "What this version could not supply" (missing tables) | remove | always empty for KMyMoney |
-| Counts tiles | keep | the tags tile reads "Tags"; the bills tile reads "Scheduled transactions, active of N schedules" |
+| Counts tiles | keep, one more | the tags tile reads "Tags"; the bills tile reads "Scheduled transactions, active of N schedules"; a "Payee aliases" tile (value `payeeAliasesToCreate`, detail "N payees get a default category"), shown when either count is above zero, in the same `SummaryTile` form as the others. The rules that were not translated appear in Notes, like every other warning; no new section |
 | Accounts table | keep | "named X in KMyMoney" when renamed; the pair shows as two rows, as for Money |
 | Bills panel | keep, copy | heading "Scheduled transactions to create", KMyMoney explainer; the unsupported note never shows |
 | Options card (six toggles) | keep | KMyMoney hints for unused payees and categories (KMyMoney seeds its category tree from a template), price history and start fresh |
 | Wipe confirmation dialog | keep | neutral copy |
 | Notes (warnings panel) | keep | `kmyWarnings.*`, "Review in KMyMoney" footer; out-of-scope items (budgets, reports, ...) appear here as warnings |
 | Progress | keep | heading "Importing your KMyMoney file"; same phases ("Scheduled bills" phase label reused) |
-| Verification report | keep, copy | "From KMyMoney file", "Shares in KMyMoney", holdings explainer saying the figures are KMyMoney's own balance computation; a secondary "import rows sum to X" line under the expected figure when `mappedBalance` differs; download name strips `.kmy` / `.xml` |
+| Verification report | keep, copy | "From KMyMoney file", "Shares in KMyMoney", holdings explainer saying the figures are KMyMoney's own balance computation; a secondary "import rows sum to X" line under the expected figure when `mappedBalance` differs; download name strips `.kmy` / `.xml`; "Payee aliases" and "Default categories" count tiles when `payeeAliasesCreated` / `payeeDefaultCategoriesSet` are above zero, like the conditional tag and securities tiles |
 
 **Parameterisation.** A format descriptor (a frontend lib module) per format, `mny` and `kmy`, holding:
 the API client, the copy keys for every slot above, the warning and error key resolvers (KMyMoney:
@@ -1072,8 +1330,66 @@ export interface BinaryImportClient {
 export const kmyImportApi: BinaryImportClient; // URLs /import/kmy/parse|start|jobs/:id|staged/:id
 ```
 
+```ts
+// payee amendment (section 5.5; WP3c). Shared model, all optional: a Money payee never carries them.
+export interface MappedPayeeContact {
+  readonly notes: string | null;   // sanitized, at most 500 characters
+  readonly email: string | null;   // passes isEmail, at most 255
+  readonly phone: string | null;   // normalizePhoneNumber's stored form
+  readonly address: string | null; // 5.5.3 parts joined with ", ", sanitized, at most 500
+}
+export interface MappedPayee {
+  readonly handle: number;
+  readonly name: string;
+  /** Monize alias globs, translated and collision-checked within the file (5.5.1). Absent: none. */
+  readonly aliases?: readonly string[];
+  /** Handle in MappedCategories.byHandle of the default category (5.5.2). Absent or null: none. */
+  readonly defaultCategoryHandle?: number | null;
+  /** Absent: none. */
+  readonly contact?: MappedPayeeContact;
+}
+// MnyPreviewCounts: set only for a KMyMoney preview
+  readonly payeeAliasesToCreate?: number;
+  readonly payeeDefaultCategoriesToSet?: number;
+// MnyImportResult: set only when the parsed file is a KMyMoney one
+  readonly payeeAliasesCreated?: number;
+  readonly payeeDefaultCategoriesSet?: number;
+  readonly payeeContactDetailsSet?: number;
+
+// raw model: KmyPayee loses hasDetails and gains
+  readonly match: { readonly kind: "disabled" | "name" | "nameExact" | "key";
+                    readonly ignoreCase: boolean;
+                    readonly keys: readonly string[] };   // "key" only; split, empty and all-space keys dropped, not trimmed
+  readonly defaultAccountId: string | null;
+  readonly notes: string; readonly email: string; readonly reference: string;
+  readonly address: { readonly street: string; readonly city: string; readonly state: string;
+                      readonly postcode: string; readonly telephone: string };  // legacy fallbacks applied (R2.4)
+  readonly hasIdentifiers: boolean;   // any payeeIdentifier child
+  readonly hasLinkPattern: boolean;   // non-empty idpattern or urltemplate
+// KmyMapInput gains
+  readonly phoneRegion: CountryCode | null; // phoneRegionFromPreferences, read by the parser service
+
+// pure, next to matchesAliasPattern
+export function aliasesConflict(a: string, b: string): boolean;   // createAlias's refusal, either direction
+export function aliasesCanOverlap(a: string, b: string): boolean; // some text matches both (5.5.1)
+
+// shared writer
+export interface WrittenPayeeExtras {
+  readonly aliasesCreated: number;
+  readonly defaultCategoriesSet: number;
+  readonly contactDetailsSet: number;          // payees that received at least one contact field
+  readonly warnings: readonly MnyWarning[];    // post-import: conflict, overlap, kept
+}
+export function writePayeeExtras(manager: EntityManager, userId: string, input: {
+  readonly payees: readonly MappedPayee[];
+  readonly payeeIdByName: ReadonlyMap<string, string>;      // WrittenPayees.idByName
+  readonly categoryIdByHandle: ReadonlyMap<number, string>;
+}): Promise<WrittenPayeeExtras>;
+```
+
 The frontend mirrors the three optional fields in `frontend/src/lib/import-mny.ts`
-(`MnyPreview.sourceFormat?`, `MnyPreview.kmyFile?`, `MnyAccountVerification.mappedBalance?`).
+(`MnyPreview.sourceFormat?`, `MnyPreview.kmyFile?`, `MnyAccountVerification.mappedBalance?`), and the
+payee amendment's two preview counts and three result counts.
 
 ### 8.2 Error messages (backend `errors.import.*`, en)
 
@@ -1112,6 +1428,10 @@ Reused unchanged (format-neutral): `mnyJobNotFound`, `mnyImportAlreadyRunning`, 
 | a schedule's next due date in the past | kept | it is what KMyMoney shows |
 | reconcile date empty | null | never reconciled |
 | entry date | not imported | Monize has no field; KMyMoney substitutes today for an empty one, which is not data |
+| a payee's default "category" is an account, or an id the file does not define | none, `payeeDefaultCategoryNotImported` | a Monize default category is a category |
+| a payee phone number without a country code, and no region in the user's preferences | not imported, `payeeDetailsNotImported` | a guessed region stores a plausible wrong number (`backend/src/common/phone-number.util.ts`) |
+| an existing Monize payee already has a default category or a contact field | kept, `payeeDetailsKept` | it is the user's own data; the import only fills what is empty |
+| a matching key Monize cannot express exactly | not imported, named in `payeeMatchKeyNotImported` | an alias that matches differently would assign later rows to the wrong payee without anyone noticing |
 
 ## 10. Invariants touched
 
@@ -1140,10 +1460,15 @@ INV-HOLDING-001 (holdings only from the canonical rebuild), FIN-003 (SPLIT multi
 | file expectations | file-expectations spec | raw builders | balances of the reference's section 18 (Checking 2804.50, EUR Savings 1000.00, cash 647.50, holding 15); split rounding per method; cut-off at `asOf` |
 | whole mapping | map-kmy-file spec | the committed synthetic XML | the full section 5.7.7 and 5.10.3 outcome, the warning set, every `fileBalances` equal to `expectedBalances` |
 | shared generalisation | the existing specs of each file in 4.9, plus one new case each | | Money behaviour unchanged (existing cases green, untouched); each optional field honoured when set |
+| payee matching (amendment) | kmy payee-match spec | literal keys and raw builders | every row of the 5.5.1 truth table and check table, every row of 5.5.5; the `;` legacy split, a single key with its trailing line feed, all-space keys, `.*?`, `\ ` and `\é` escapes, an escaped `$` against an anchor, `^` or `$` in the middle, a key that does not compile; `matchingenabled="true"` read as 0 |
+| alias overlap (amendment) | alias-overlap util spec | pattern pairs | `aliasesConflict` agrees with `createAlias` on the pairs `payees.service.spec.ts` uses; `aliasesCanOverlap` for two literals, a literal and a glob, compatible and incompatible prefixes and suffixes, the 5.5.5 pairs; equal to a brute force over every text up to 12 characters on the alphabet {a, b} for every glob up to 6 characters over {a, b, *} |
+| payees mapping (amendment) | kmy map-payees spec | raw builders | modes, the disabled warning, collisions in handle order, overlaps, same-name payees merged, referenced-only drops a rule, default category of each kind of 5.5.2, every contact row of 5.5.3 (each bound, an invalid email, a phone with and without a region, legacy address attributes) |
+| payee extras writer (amendment) | write-payee-extras spec | mocked manager | a payee list with no new field issues no query; fill-only-empty and `payeeDetailsKept`; a conflict with an existing alias and with an existing payee name; an overlap with an existing alias; a unique violation skipped through the savepoint; the counts |
+| shared generalisation (amendment) | mny-import.service and mny-preview specs | | the writer is called after `applyImportRules` and before `writeSecurities`, on the same manager; its warnings reach the result; the new counts only for KMyMoney; a Money preview and result unchanged |
 | controller | kmy controller spec | mocked parser/staging | multer limit, error-code mapping, staging with `kmy`, format refusals on jobs and staged ids, PAT decorators |
 | parser service | kmy parser service spec | mocked manager | reads preference and coins, passes them through, identical output on a second parse of the same bytes (handles equal) |
-| integration | `backend/test/integration/` KMyMoney spec | committed fixtures and builder XML, real PostgreSQL | section 18 file end to end through `start`: verification all match with delta 0, holding 15 and cost 378.75, prices source `kmy_import`, rate `(EUR, USD, 1.1)`, receiving leg rate, reconciled dates, closed account closed after its rows, staged and job `source_format = 'kmy'`, staged bytes removed, re-upload refused, wipe lets the same bytes in, a Money staged id refused by the KMyMoney start; a builder file with a 3-level category tree, a loan payment and a cross-currency trade |
-| frontend | component, hook, lib specs | mocked API | each component with the kmy descriptor (copy keys, no era, no missing tables, mapped-balance line, download name), Money cases unchanged; the hook with the kmy client; wizard routing of `.kmy` and `.xml`; proxy route tables; currency source label |
+| integration | `backend/test/integration/` KMyMoney spec | committed fixtures and builder XML, real PostgreSQL | section 18 file end to end through `start`: verification all match with delta 0, holding 15 and cost 378.75, prices source `kmy_import`, rate `(EUR, USD, 1.1)`, receiving leg rate, reconciled dates, closed account closed after its rows, staged and job `source_format = 'kmy'`, staged bytes removed, re-upload refused, wipe lets the same bytes in, a Money staged id refused by the KMyMoney start; a builder file with a 3-level category tree, a loan payment and a cross-currency trade; payee amendment: the section 18 file gives City Power the alias `*CITY POWER*` and the default category Electricity and gives Corner Market no alias; an import into a profile holding a conflicting alias (skipped, post-import warning) and a payee with its own default category (kept, `payeeDetailsKept`); **not retroactive**: with an import rule on Corner Market's rows whose `set_payee_from_text` renders "CITY POWER X" (`createIfMissing` false), the rows keep Corner Market, which they would not if the aliases were written before the rule pass; after a start-fresh wipe the same aliases are written again |
+| frontend | component, hook, lib specs | mocked API | each component with the kmy descriptor (copy keys, no era, no missing tables, mapped-balance line, download name), Money cases unchanged; the hook with the kmy client; wizard routing of `.kmy` and `.xml`; proxy route tables; currency source label; the "Payee aliases" review tile and the two report tiles shown only when their counts are above zero, and absent for Money |
 | e2e | an e2e spec beside `e2e/tests/import-mny.spec.ts` | committed synthetic `.kmy`; in-test buffers | upload copy names KMyMoney; end to end through verification; refusals: plain text, PGP armour, SQLite header, `.anon.xml` |
 
 Acceptance for the feature: the throwaway corpus run (plan, WP3b) over the 46 upstream samples reports no
@@ -1162,6 +1487,10 @@ of section 4.3.
 | An upstream rename of the localized suffix | the suffix list is a constant with its provenance commit; KVP `kmm-brokerage-account` is tried first |
 | Loan interest rate not imported | warning naming the rate; follow-up to add the field (13) |
 | The parity tests (`frontend/src/i18n/messages.parity.test.ts`, `backend/src/i18n/locales.parity.spec.ts`) are red on the branch between the first English strings and the translation commit | expected; the translation work package is their gate, and the branch is not pushed for review before it |
+| Many real keys are plain names typed or merged into KMyMoney's key list with a `.`, `(` or `+` in them, which are regular expressions outside the subset | each is named in `payeeMatchKeyNotImported` (payee and key in the samples, the full count in the sentence); the website page shows how to add the alias by hand |
+| A file with many contains-style rules (`*X*`) raises many overlap warnings, since any two of them can match one text | counted per alias, not per pair; five samples; the sentence says what differs |
+| The collision order (payee handle) keeps a broad alias and refuses a narrower one KMyMoney would have preferred | the warning names both; open question 7 |
+| Alias inserts with a savepoint each on a large file | three statements per alias, small beside the transaction rows; the WP3b memory and time measurement is repeated in WP3c with 2,000 aliases |
 | A shared-file change alters Money behaviour | every change in 4.9 is an optional field or a defaulted parameter; the Money specs of each changed file run unchanged in the work package that changes it, plus the Money integration specs once |
 
 ## 13. Open questions
@@ -1177,8 +1506,10 @@ of section 4.3.
    same limit.
 5. **Helm memory guidance** (`helm/README.md` is an ask-first path): whether to add a KMyMoney line after
    WP3b's measurement. Owner: maintainer.
-6. **Payee default categories.** `payees.default_category_id` exists; importing KMyMoney's
-   `defaultaccountid` needs a `MappedPayee` field and a writer change. Follow-up.
+6. **Payee default categories.** Resolved by the payee amendment: section 5.5.2.
+7. **Collision order for payee aliases.** Handle order keeps the first of two clashing aliases. Keeping
+   the more specific one (the longer literal content) would follow KMyMoney's "longer match wins" more
+   often, at the cost of a rule that is harder to predict. Revisit with a real file. Owner: maintainer.
 
 ## 14. Alternatives considered
 
@@ -1214,6 +1545,26 @@ question 2).
 
 Monize has no equity account type. Equity splits outside opening balances become an income-type
 category, which keeps every asset and liability balance exact and shows the movement in reports.
+
+### 14.6 Payee matching as transaction rules
+
+A transaction rule with an `import` trigger, a `payeeText` condition (`contains`, `startsWith`, `eq` or
+the `matches` glob) and a `set_payee` action could express a KMyMoney Name or Key rule too. Rejected: an
+alias is the construct Monize already has for "this imported name is that payee" and is read by every
+path that resolves an imported payee (file import, bank sync, assistant, MCP); a rule is a heavier
+object the user manages in a separate list (priority, trigger, actions), runs after payee resolution,
+and does not bring the chosen payee's default category on the file import
+(`.trail/learnings/2026-10-30-bank-sync-rule-chosen-payee-s-node.md`). Importing hundreds of rules
+would also run inside every later import's write transaction. The rules' operators are no closer to
+PCRE2 than the alias glob (`normalize` lowercases them too), so they would not widen the translatable
+subset.
+
+### 14.7 Approximating the keys Monize cannot express
+
+Importing `AMAZON.COM` as the literal alias `*AMAZON.COM*`, or a case-sensitive key as is, matches a
+different set of texts than KMyMoney did, and the difference shows up months later as rows assigned to
+the wrong payee. Rejected for the untranslatable keys (skipped, named in a warning). Kept, with its own
+warning, for the one widening that only adds matches of the same name in other capitals (check 8).
 
 ## 15. References
 
