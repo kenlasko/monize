@@ -391,7 +391,7 @@ describe('MnyVerificationReport with a KMyMoney import', () => {
         result={result({ verification: [line({ matches: false, delta: 5 })] })}
       />,
     );
-    expect(screen.getByText(/do not match the balance computed from your KMyMoney file/)).toBeInTheDocument();
+    expect(screen.getByText(/^1 account does not match the balance computed from your KMyMoney file/)).toBeInTheDocument();
 
     rerender(
       <MnyVerificationReport
@@ -455,6 +455,56 @@ describe('MnyVerificationReport with a KMyMoney import', () => {
       />,
     );
     expect(screen.getByText('Import rows sum to $90.00')).toBeInTheDocument();
+  });
+
+  it('words one reconciled account and several differing accounts in the singular and the plural', () => {
+    const { rerender } = render(<MnyVerificationReport {...props} />);
+    expect(screen.getByText(/^Your only account reconciles: every balance matches/)).toBeInTheDocument();
+
+    rerender(
+      <MnyVerificationReport
+        {...props}
+        result={result({ verification: [line(), line({ accountName: 'Savings' })] })}
+      />,
+    );
+    expect(screen.getByText(/^All 2 accounts reconcile: every balance matches/)).toBeInTheDocument();
+
+    rerender(
+      <MnyVerificationReport
+        {...props}
+        result={result({
+          verification: [line({ matches: false, delta: 5 }), line({ accountName: 'Savings', matches: false, delta: 5 })],
+        })}
+      />,
+    );
+    expect(screen.getByText(/^2 accounts do not match the balance/)).toBeInTheDocument();
+  });
+
+  it('formats the payee tiles with the reader\'s number format', () => {
+    render(
+      <MnyVerificationReport
+        {...props}
+        result={result({ payeeAliasesCreated: 1234, payeeDefaultCategoriesSet: 5678 })}
+      />,
+    );
+    expect(screen.getByText('1,234')).toBeInTheDocument();
+    expect(screen.getByText('5,678')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['a gap of half a cent that rounds to the same cents', 100.004, false],
+    ['a gap of a whole cent', 100.01, true],
+    ['a gap of a dollar', 99, true],
+  ])('decides whether the mapped line shows by the displayed amount: %s', (_label, mapped, shown) => {
+    render(
+      <MnyVerificationReport
+        {...props}
+        result={result({
+          verification: [line({ expectedBalance: 100, importedBalance: 100, mappedBalance: mapped })],
+        })}
+      />,
+    );
+    expect(screen.queryByText(/Import rows sum to/) !== null).toBe(shown);
   });
 
   it('names the report after the file with .kmy and .xml stripped', () => {

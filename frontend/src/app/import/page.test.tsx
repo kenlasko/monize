@@ -127,10 +127,11 @@ vi.mock('@/lib/errors', () => ({
 }));
 
 const mockKmyParse = vi.fn();
+const mockKmyStart = vi.fn();
 vi.mock('@/lib/import-kmy', () => ({
   kmyImportApi: {
     parse: (...args: any[]) => mockKmyParse(...args),
-    start: vi.fn(),
+    start: (...args: any[]) => mockKmyStart(...args),
     getJob: vi.fn(),
     discardStagedFile: vi.fn(),
   },
@@ -1209,6 +1210,87 @@ describe('ImportPage', () => {
 
       await waitFor(() => expect(mockKmyParse).toHaveBeenCalled());
       expect(screen.getByTestId('upload-step')).toBeInTheDocument();
+    });
+
+    describe('the progress and report steps follow the format of the file', () => {
+      const job = (overrides: Record<string, unknown>) => ({
+        id: 'job-k',
+        status: 'running',
+        progress: null,
+        result: null,
+        errorKey: null,
+        retryable: false,
+        startedAt: null,
+        completedAt: null,
+        ...overrides,
+      });
+      const importResult = {
+        accountsCreated: 1, payeesCreated: 0, categoriesCreated: 0, tagsCreated: 0, tagLinksApplied: 0,
+        transactionsCreated: 1, splitsCreated: 0, transfersLinked: 0, securitiesCreated: 0,
+        investmentTransactionsCreated: 0, pricesImported: 0, exchangeRatesImported: 0, billsCreated: 0,
+        skipped: { accounts: 0, payees: 0, categories: 0, tags: 0, transactions: 0, bills: 0 },
+        existingDataRemoved: false, holdings: [], warnings: [{ code: 'payeeMatchKeyOverlap', count: 1, samples: [] }],
+        verification: [{
+          accountName: 'Checking', accountType: 'CHEQUING', accountId: 'a', expectedBalance: 5,
+          importedBalance: 5, delta: 0, transactionCount: 1, matches: true, mappedBalance: 5,
+        }],
+      };
+
+      async function reviewKmy() {
+        mockKmyParse.mockResolvedValue({
+          ...kmyPreview,
+          accounts: [{
+            key: 'a1', handle: 1, name: 'Checking', moneyName: 'Checking', accountType: 'CHEQUING',
+            accountSubType: null, currencyCode: 'USD', transactionCount: 1, investmentCount: 0,
+            openingBalance: 0, finalBalance: 5, closed: false, favourite: false,
+          }],
+        });
+        render(<ImportPage />);
+        await act(async () => {
+          await uploadFile('bytes', 'budget.kmy');
+        });
+        await waitFor(() => expect(screen.getByRole('heading', { name: 'Review your KMyMoney file' })).toBeInTheDocument());
+      }
+
+      it('says "Importing your KMyMoney file" while the job runs', async () => {
+        mockKmyStart.mockResolvedValue(job({ status: 'running' }));
+        await reviewKmy();
+
+        await act(async () => {
+          fireEvent.click(screen.getByRole('button', { name: 'Start import' }));
+        });
+
+        await waitFor(() => expect(screen.getByText('Importing your KMyMoney file')).toBeInTheDocument());
+        expect(screen.queryByText(/Importing your Money file/)).not.toBeInTheDocument();
+      });
+
+      it('reports against the KMyMoney file, with a sentence for a KMyMoney-only warning', async () => {
+        mockKmyStart.mockResolvedValue(job({ status: 'completed', result: importResult }));
+        await reviewKmy();
+
+        await act(async () => {
+          fireEvent.click(screen.getByRole('button', { name: 'Start import' }));
+        });
+
+        await waitFor(() => expect(screen.getByText('From KMyMoney file')).toBeInTheDocument());
+        expect(screen.queryByText('From Money file')).not.toBeInTheDocument();
+        expect(screen.getByText(/payee alias can match the same payee name/)).toBeInTheDocument();
+      });
+
+      it('numbers the steps of the KMyMoney import and marks the current one', async () => {
+        mockKmyStart.mockResolvedValue(job({ status: 'running' }));
+        await reviewKmy();
+
+        const steps = screen.getAllByRole('listitem');
+        expect(steps).toHaveLength(3);
+        expect(steps[1]).toHaveAttribute('aria-current', 'step');
+        expect(steps[0]).toHaveAttribute('aria-label', 'Step 1 of 3');
+
+        await act(async () => {
+          fireEvent.click(screen.getByRole('button', { name: 'Start import' }));
+        });
+        await waitFor(() => expect(screen.getAllByRole('listitem')[2]).toHaveAttribute('aria-current', 'step'));
+      });
     });
   });
 });

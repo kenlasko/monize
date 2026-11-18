@@ -98,6 +98,68 @@ test.describe("KMyMoney (.kmy) import", () => {
     await expect(page.getByText("Brokerage Account - Cash")).toBeVisible();
   });
 
+  test.describe("an .xml file is routed by its contents", () => {
+    const OFX_XML = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<?OFX OFXHEADER="200" VERSION="220" SECURITY="NONE" OLDFILEUID="NONE" NEWFILEUID="NONE"?>',
+      "<OFX>",
+      "<BANKMSGSRSV1><STMTTRNRS><STMTRS><CURDEF>USD</CURDEF>",
+      "<BANKACCTFROM><BANKID>1</BANKID><ACCTID>2</ACCTID><ACCTTYPE>CHECKING</ACCTTYPE></BANKACCTFROM>",
+      "<BANKTRANLIST><STMTTRN><TRNTYPE>DEBIT</TRNTYPE><DTPOSTED>20240105</DTPOSTED>",
+      "<TRNAMT>-12.50</TRNAMT><FITID>X1</FITID><NAME>Corner Cafe</NAME></STMTTRN></BANKTRANLIST>",
+      "</STMTRS></STMTTRNRS></BANKMSGSRSV1>",
+      "</OFX>",
+    ].join("\n");
+
+    test("sends an OFX 2.x document saved as .xml to the OFX flow, not the KMyMoney one", async ({
+      authedPage: page,
+    }) => {
+      await page.goto("/import");
+      await page.locator('input[type="file"]').setInputFiles({
+        name: "statement.xml",
+        mimeType: "text/xml",
+        buffer: Buffer.from(OFX_XML),
+      });
+
+      // The OFX wizard asks where the statement goes; it never opens the
+      // KMyMoney review or reports a KMyMoney refusal.
+      await expect(
+        page.getByRole("heading", { name: /select destination account/i }),
+      ).toBeVisible({ timeout: PARSE_TIMEOUT });
+      await expect(
+        page.getByRole("heading", { name: /review your kmymoney file/i }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByText("That KMyMoney file could not be opened"),
+      ).toHaveCount(0);
+    });
+
+    test("refuses an unrelated .xml, saying it is neither, and imports nothing", async ({
+      authedPage: page,
+    }) => {
+      await page.goto("/import");
+      await page.locator('input[type="file"]').setInputFiles({
+        name: "logo.xml",
+        mimeType: "text/xml",
+        buffer: Buffer.from(
+          '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>',
+        ),
+      });
+
+      await expect(
+        page.getByText(/neither a KMyMoney file nor an OFX file/i),
+      ).toBeVisible({ timeout: PARSE_TIMEOUT });
+      await expect(page.getByText(/logo\.xml/)).toBeVisible();
+      // No guess was made: still on the upload step, no KMyMoney panel.
+      await expect(
+        page.getByText(/upload transaction files/i).first(),
+      ).toBeVisible();
+      await expect(
+        page.getByText("That KMyMoney file could not be opened"),
+      ).toHaveCount(0);
+    });
+  });
+
   const refusals: ReadonlyArray<{
     title: string;
     name: string;

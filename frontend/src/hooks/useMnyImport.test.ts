@@ -199,6 +199,43 @@ describe('useMnyImport', () => {
       });
     });
 
+    it.each([
+      ['a timeout with no response', undefined],
+      ['a proxy 502', 502],
+      ['a 503', 503],
+      ['a 504', 504],
+    ])('marks %s as a request that failed, not a refused file', async (_label, status) => {
+      const error = new AxiosError('timeout of 300000ms exceeded');
+      if (status !== undefined) {
+        error.response = {
+          data: { error: 'Backend unavailable' },
+          status,
+          statusText: 'Bad Gateway',
+          headers: {},
+          config: {} as never,
+        };
+      }
+      mockedApi.parse.mockRejectedValueOnce(error);
+      const { result } = renderHook(() => useMnyImport());
+
+      await act(async () => {
+        await result.current.upload(file);
+      });
+
+      expect(result.current.uploadError?.requestFailed).toBe(true);
+    });
+
+    it('does not mark a refusal with a code, or a plain 400, as a failed request', async () => {
+      mockedApi.parse.mockRejectedValueOnce(apiError('kmyCorruptFile'));
+      const { result } = renderHook(() => useMnyImport());
+
+      await act(async () => {
+        await result.current.upload(file);
+      });
+
+      expect(result.current.uploadError?.requestFailed).toBeUndefined();
+    });
+
     it('retries with a password without asking for the file again', async () => {
       mockedApi.parse.mockRejectedValueOnce(apiError('mnyPasswordRequired'));
       const { result } = renderHook(() => useMnyImport());
@@ -670,6 +707,54 @@ describe('useMnyImport', () => {
         expect(result.current.excludedHandles.size).toBe(0);
         expect(result.current.options).toEqual({});
       });
+    });
+
+    it('discards a staged file nothing started', async () => {
+      mockedApi.discardStagedFile.mockResolvedValue(undefined);
+      const { result } = renderHook(() => useMnyImport());
+      await act(async () => {
+        await result.current.upload(file);
+      });
+
+      await act(async () => result.current.reset());
+
+      expect(mockedApi.discardStagedFile).toHaveBeenCalledWith('staged-1');
+    });
+
+    it('discards the staged file of a failed job, and keeps that of a running or finished one', async () => {
+      mockedApi.discardStagedFile.mockResolvedValue(undefined);
+      for (const [status, discarded] of [
+        ['failed', true],
+        ['running', false],
+        ['completed', false],
+      ] as const) {
+        mockedApi.discardStagedFile.mockClear();
+        mockedApi.start.mockResolvedValue(job({ status }));
+        const { result, unmount } = renderHook(() => useMnyImport());
+        await act(async () => {
+          await result.current.upload(file);
+        });
+        await act(async () => {
+          await result.current.start();
+        });
+
+        await act(async () => result.current.reset());
+
+        expect(mockedApi.discardStagedFile).toHaveBeenCalledTimes(discarded ? 1 : 0);
+        unmount();
+      }
+    });
+
+    it('does not surface a failed discard', async () => {
+      mockedApi.discardStagedFile.mockRejectedValue(new Error('gone'));
+      const { result } = renderHook(() => useMnyImport());
+      await act(async () => {
+        await result.current.upload(file);
+      });
+
+      await act(async () => result.current.reset());
+
+      expect(result.current.uploadError).toBeNull();
     });
 
     it('cancels the password prompt without keeping the file', async () => {

@@ -392,4 +392,68 @@ describe('UploadStep with a KMyMoney file', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent(/damaged or incomplete/);
   });
+
+  it('says a request that never got an answer is one, not that the file is damaged', () => {
+    render(
+      <UploadStep
+        preselectedAccount={undefined}
+        isLoading={false}
+        onFileSelect={onFileSelect}
+        onFilesDrop={onFilesDrop}
+        binaryErrorFormat={KMY_FORMAT}
+        mnyError={{ message: '', requestFailed: true }}
+      />,
+    );
+
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('The upload did not finish');
+    expect(alert).toHaveTextContent(/does not mean the file is damaged/);
+    expect(alert).not.toHaveTextContent(/damaged or incomplete/);
+  });
+
+  it('prefers the backend message over the request-failed sentence', () => {
+    render(
+      <UploadStep
+        preselectedAccount={undefined}
+        isLoading={false}
+        onFileSelect={onFileSelect}
+        onFilesDrop={onFilesDrop}
+        binaryErrorFormat={KMY_FORMAT}
+        mnyError={{ message: 'The server said so.', requestFailed: true }}
+      />,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent('The server said so.');
+  });
+
+  it('links the KMyMoney guide in the notice before importing', () => {
+    render(
+      <UploadStep
+        preselectedAccount={undefined}
+        isLoading={false}
+        onFileSelect={onFileSelect}
+        onFilesDrop={onFilesDrop}
+      />,
+    );
+
+    expect(
+      screen.getByRole('link', { name: 'Importing from KMyMoney' }).getAttribute('href'),
+    ).toContain('importing-from-kmymoney');
+  });
+
+  it('accepts a dropped .xml, whose type is decided by the wizard from its contents', () => {
+    render(
+      <UploadStep
+        preselectedAccount={undefined}
+        isLoading={false}
+        onFileSelect={onFileSelect}
+        onFilesDrop={onFilesDrop}
+      />,
+    );
+    const file = new File(['<OFX/>'], 'statement.xml');
+
+    fireEvent.drop(screen.getByTestId('import-drop-zone'), { dataTransfer: { files: [file], types: ['Files'] } });
+
+    expect(onFilesDrop).toHaveBeenCalledWith([file]);
+  });
 });

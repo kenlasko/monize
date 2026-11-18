@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { isAxiosError } from 'axios';
 import { getErrorCode, getErrorMessage } from '@/lib/errors';
 import {
   MnyImportJob,
@@ -32,6 +33,19 @@ export interface MnyUploadError {
   code?: string;
   /** Localized message from the backend. */
   message: string;
+  /**
+   * The request never got an answer about the file: it timed out, the network
+   * dropped, or the proxy answered 502/503/504. Said to be that, never shown as
+   * a damaged file.
+   */
+  requestFailed?: boolean;
+}
+
+/** A request that did not get an answer from the application, as opposed to one it refused. */
+function isRequestFailure(error: unknown): boolean {
+  if (!isAxiosError(error)) return false;
+  const status = error.response?.status;
+  return status === undefined || status === 502 || status === 503 || status === 504;
 }
 
 export interface UseMnyImportResult {
@@ -106,6 +120,15 @@ export function useMnyImport(
   // server-side before the job row exists, so it has already happened by then --
   // see `wipeExistingData` in `buildOptions`.
   const wipePerformed = useRef(false);
+  // What `reset` needs to know to clean up the server's staged copy, without
+  // making `reset` change identity on every preview and job update.
+  const staged = useRef<{ preview: MnyPreview | null; job: MnyImportJob | null }>({
+    preview: null,
+    job: null,
+  });
+  useEffect(() => {
+    staged.current = { preview, job };
+  }, [preview, job]);
 
   const stopPolling = useCallback(() => {
     if (pollTimer.current !== null) {
@@ -174,7 +197,11 @@ export function useMnyImport(
           return false;
         }
         setPasswordPrompt(null);
-        setUploadError({ code, message: getErrorMessage(error, '') });
+        setUploadError({
+          code,
+          message: getErrorMessage(error, ''),
+          ...(isRequestFailure(error) ? { requestFailed: true } : {}),
+        });
         return false;
       } finally {
         setIsUploading(false);
@@ -322,6 +349,7 @@ export function useMnyImport(
         setUploadError({
           code: getErrorCode(error),
           message: getErrorMessage(error, ''),
+          ...(isRequestFailure(error) ? { requestFailed: true } : {}),
         });
         return false;
       } finally {
@@ -353,6 +381,17 @@ export function useMnyImport(
 
   const reset = useCallback(() => {
     stopPolling();
+    // A staged file nothing ever started (Back from the review, a new file
+    // chosen) or whose job failed is dropped now rather than at the 24 h sweep.
+    // A running or finished job owns its file. Best effort: the sweep is the
+    // backstop, so a failed discard is not an error to show.
+    const { preview: stagedPreview, job: stagedJob } = staged.current;
+    if (stagedPreview && (stagedJob === null || stagedJob.status === 'failed')) {
+      void Promise.resolve()
+        .then(() => client.discardStagedFile(stagedPreview.stagedFileId))
+        .catch(() => undefined);
+    }
+    staged.current = { preview: null, job: null };
     setPreview(null);
     setJob(null);
     setPasswordPrompt(null);
@@ -363,7 +402,7 @@ export function useMnyImport(
     setOptions({});
     pendingFile.current = null;
     wipePerformed.current = false;
-  }, [stopPolling]);
+  }, [client, stopPolling]);
 
   return {
     preview,

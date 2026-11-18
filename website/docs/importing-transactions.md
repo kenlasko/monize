@@ -25,14 +25,14 @@ The import process uses a step-by-step wizard that guides you through file uploa
 | Format | Extension | Description |
 |--------|-----------|-------------|
 | **CSV** | `.csv` | Comma-separated values. Flexible format -- requires column mapping. Banking or investment (brokerage) transactions. |
-| **OFX** | `.ofx` | Open Financial Exchange. Standardized format used by most banks. |
+| **OFX** | `.ofx`, `.xml` | Open Financial Exchange. Standardized format used by most banks. Some banks save the newer XML form of OFX with an `.xml` extension; Monize reads the start of an `.xml` file and imports it as OFX when it is one. |
 | **QFX** | `.qfx` | Quicken Financial Exchange. Identical to OFX with a Quicken-specific wrapper. |
 | **QIF** | `.qif` | Quicken Interchange Format. Supports both Microsoft Money and Quicken exports. See [Importing Quicken QIF Files](#importing-quicken-qif-files) and [Importing from Microsoft Money](importing-from-microsoft-money.md). |
 | **QMTF** | `.qmtf` | Quicken for Mac's transfer file. It is QIF under another extension and imports the same way. |
 | **Microsoft Money** | `.mny` | A whole Microsoft Money file, imported directly. It has its own wizard -- see [Importing from Microsoft Money](importing-from-microsoft-money.md). |
 | **KMyMoney** | `.kmy`, `.xml` | A whole KMyMoney file, imported directly. It has its own wizard -- see [Importing from KMyMoney](importing-from-kmymoney.md). |
 
-You can select several files of the same type at once for a bulk import. Files of different types cannot be mixed in one import, and a `.mny`, `.kmy` or KMyMoney `.xml` file is always imported on its own.
+You can select several files of the same type at once for a bulk import. Files of different types cannot be mixed in one import, and a `.mny`, `.kmy` or KMyMoney `.xml` file is always imported on its own. An `.xml` file is told apart by its contents, not its name: a KMyMoney file goes to the KMyMoney import, an OFX statement is imported like an `.ofx` file (several can be selected together), and any other XML file is refused with a message saying so.
 
 ---
 

@@ -65,21 +65,40 @@ import {
   getCategoryPath,
 } from '@/app/import/import-matching';
 import { preferredCurrency } from '@/lib/default-currency';
+import { readXmlHead, sniffXmlImportKind } from '@/lib/xml-import-sniff';
 
 const logger = createLogger('Import');
 
-export function detectFileType(fileName: string): ImportFileType {
-  const ext = fileName.toLowerCase().split('.').pop() || '';
+/** What `detectFileType` makes of a file: an import type, or an `.xml` that is neither KMyMoney nor OFX. */
+export type DetectedFileType = ImportFileType | 'unrecognizedXml';
+
+/**
+ * Routes a file to its importer. Everything but `.xml` is decided by extension;
+ * an `.xml` is decided by what its first bytes say it is, because KMyMoney's
+ * plain XML and an OFX 2.x statement share the extension
+ * (`lib/xml-import-sniff.ts`). Asynchronous for that read, so every caller
+ * awaits it. An `.xml` that is neither is `unrecognizedXml`, never guessed.
+ */
+export async function detectFileType(file: File): Promise<DetectedFileType> {
+  const ext = file.name.toLowerCase().split('.').pop() || '';
   if (ext === 'ofx' || ext === 'qfx') return 'ofx';
   if (ext === 'csv') return 'csv';
   // Checked before anything reads the file: a .mny is a Jet database, and the
   // QIF fallback would hand its bytes to File.text().
   if (ext === 'mny') return 'mny';
-  // A KMyMoney file is `.kmy` (gzip XML) or a plain `.xml` (also what its
-  // anonymized `.anon.xml` ends in). Both go to the KMyMoney importer, which
-  // decides by content and refuses what is not one; the QIF fallback would hand
-  // the bytes of a gzip file to File.text().
-  if (ext === 'kmy' || ext === 'xml') return 'kmy';
+  // A .kmy is gzip XML (or plain XML); the KMyMoney backend sniffs it.
+  if (ext === 'kmy') return 'kmy';
+  if (ext === 'xml') {
+    // A gzip file saved as .xml routes to KMyMoney too, and the backend decides.
+    switch (sniffXmlImportKind(await readXmlHead(file))) {
+      case 'kmymoney':
+        return 'kmy';
+      case 'ofx':
+        return 'ofx';
+      default:
+        return 'unrecognizedXml';
+    }
+  }
   // .qif, and Quicken for Mac's .qmtf transfer file, which is QIF under
   // another extension.
   return 'qif';
@@ -430,8 +449,16 @@ export function useImportWizard() {
     try {
 
       // Detect file types and enforce same type
-      const detectedTypes = fileArray.map((f) => detectFileType(f.name));
-      const uniqueTypes = [...new Set(detectedTypes)];
+      const detectedTypes = await Promise.all(fileArray.map((f) => detectFileType(f)));
+      const unrecognized = fileArray.filter((_, i) => detectedTypes[i] === 'unrecognizedXml');
+      if (unrecognized.length > 0) {
+        toast.error(
+          t('toasts.unrecognizedXml', { count: unrecognized.length, names: unrecognized.map((f) => f.name).join(', ') }),
+        );
+        setIsLoading(false);
+        return;
+      }
+      const uniqueTypes = [...new Set(detectedTypes as ImportFileType[])];
       if (uniqueTypes.length > 1) {
         toast.error(t('toasts.mixedFileTypes'));
         setIsLoading(false);
@@ -440,6 +467,12 @@ export function useImportWizard() {
 
       const detectedFileType = uniqueTypes[0];
       setFileType(detectedFileType);
+      // A new file starts the wizard's binary state over, whatever its type: a
+      // refused .kmy must not leave its error on the upload step of a later
+      // .mny or CSV, and a previous file's staged upload is discarded rather
+      // than left to the retention sweep.
+      resetMny();
+      resetKmy();
 
       if (detectedFileType === 'mny' || detectedFileType === 'kmy') {
         const format = detectedFileType === 'kmy' ? KMY_FORMAT : MNY_FORMAT;
@@ -606,7 +639,7 @@ export function useImportWizard() {
     } finally {
       setIsLoading(false);
     }
-  }, [accounts, categories, securities, defaultCurrency, preselectedAccountId, t, uploadMny, uploadKmy]);
+  }, [accounts, categories, securities, defaultCurrency, preselectedAccountId, t, uploadMny, uploadKmy, resetMny, resetKmy]);
 
   /** The file input's change event, reduced to the files it carries. */
   const handleFileSelect = useCallback(

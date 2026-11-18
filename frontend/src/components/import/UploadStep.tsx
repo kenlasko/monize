@@ -21,7 +21,7 @@ interface UploadStepProps {
    * in Money Plus Sunset, then import the result" -- and a toast takes those
    * away while the user is still reading them.
    */
-  mnyError?: { code?: string; message: string } | null;
+  mnyError?: { code?: string; message: string; requestFailed?: boolean } | null;
   /** The format `mnyError` came from, for its heading, fallback and guide link; Money when omitted. */
   binaryErrorFormat?: BinaryImportFormat;
 }
@@ -140,6 +140,7 @@ export function UploadStep({
                 quicken: docsLink('importQuicken'),
                 ofx: docsLink('importOfx'),
                 qif: docsLink('importQif'),
+                kmymoney: docsLink('importKMyMoney'),
               })}
             </p>
           </div>
@@ -165,15 +166,19 @@ export function UploadStep({
             className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
           >
             <p className="text-sm font-semibold text-red-800 dark:text-red-300">
-              {t(binaryErrorFormat.copy.uploadFailedHeading)}
+              {mnyError.requestFailed && !mnyError.message
+                ? t('upload.requestFailedHeading')
+                : t(binaryErrorFormat.copy.uploadFailedHeading)}
             </p>
             <p className="mt-1 text-sm text-red-700 dark:text-red-300">
               {mnyError.message ||
-                t(
-                  binaryErrorFormat.errorKey(
-                    binaryErrorFormat.uploadFallbackErrorCode,
-                  ),
-                )}
+                (mnyError.requestFailed
+                  ? t('upload.requestFailed')
+                  : t(
+                      binaryErrorFormat.errorKey(
+                        binaryErrorFormat.uploadFallbackErrorCode,
+                      ),
+                    ))}
             </p>
             <p className="mt-2 text-sm">
               <HelpLink

@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { formatAccountType } from '@/lib/account-utils';
+import { roundToEntryPlaces } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { MnyImportResult } from '@/lib/import-mny';
 import { AccountType } from '@/types/account';
@@ -12,9 +13,6 @@ import { BinaryImportFormat, MNY_FORMAT } from '@/lib/binary-import-format';
 
 /** Account types whose verification line is badged, per the comment below. */
 const LOAN_TYPES: ReadonlySet<string> = new Set(['LOAN', 'MORTGAGE']);
-
-/** The backend's `BALANCE_TOLERANCE`: a smaller gap is rounding, not a difference. */
-const MAPPED_BALANCE_TOLERANCE = 0.005;
 
 interface MnyVerificationReportProps {
   result: MnyImportResult;
@@ -49,7 +47,7 @@ export function MnyVerificationReport({
   const tc = useTranslations('common');
   // Share counts go through the app's own quantity formatter, so the report
   // reads in the user's number locale like every other holdings view.
-  const { formatQuantity, formatCurrency } = useNumberFormat();
+  const { formatQuantity, formatCurrency, formatNumber } = useNumberFormat();
 
   const mismatches = result.verification.filter((line) => !line.matches);
   const holdingMismatches = result.holdings.filter((line) => !line.matches);
@@ -153,14 +151,14 @@ export function MnyVerificationReport({
           (result.payeeAliasesCreated ?? 0) > 0 && (
             <Tile
               label={t(format.copy.completePayeeAliases)}
-              value={result.payeeAliasesCreated ?? 0}
+              value={formatNumber(result.payeeAliasesCreated ?? 0, 0)}
             />
           )}
         {format.copy.completePayeeDefaultCategories &&
           (result.payeeDefaultCategoriesSet ?? 0) > 0 && (
             <Tile
               label={t(format.copy.completePayeeDefaultCategories)}
-              value={result.payeeDefaultCategoriesSet ?? 0}
+              value={formatNumber(result.payeeDefaultCategoriesSet ?? 0, 0)}
             />
           )}
         {result.billsCreated > 0 && (
@@ -250,8 +248,8 @@ export function MnyVerificationReport({
                     {formatCurrency(line.expectedBalance, currencyCode)}
                     {/* KMyMoney only: what the import's own rows sum to, shown where it differs from the file's figure. */}
                     {line.mappedBalance !== undefined &&
-                      Math.abs(line.mappedBalance - line.expectedBalance) >=
-                        MAPPED_BALANCE_TOLERANCE && (
+                      roundToEntryPlaces(line.mappedBalance, currencyCode) !==
+                        roundToEntryPlaces(line.expectedBalance, currencyCode) && (
                         <span className="block text-xs text-amber-700 dark:text-amber-400">
                           {t('kmyComplete.table.mappedDiffers', {
                             amount: formatCurrency(
@@ -370,7 +368,7 @@ export function MnyVerificationReport({
   );
 }
 
-function Tile({ label, value }: { label: string; value: number }) {
+function Tile({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="bg-card border border-border rounded-lg px-3 py-2">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">

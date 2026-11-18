@@ -109,14 +109,32 @@ describe('binary import format descriptors', () => {
     expect(new Set(KMY_WARNING_CODES).size).toBe(KMY_WARNING_CODES.length);
   });
 
-  it('matches the backend list verbatim', () => {
+  describe('the three warning-code lists (backend, frontend, English catalog)', () => {
     const source = readFileSync(
       join(__dirname, '..', '..', '..', 'backend', 'src', 'import', 'kmy', 'model', 'kmy-warnings.ts'),
       'utf8',
     );
-    const backend = [...source.matchAll(/^\s+"(\w+)",$/gm)].map((m) => m[1]);
-    // The frontend list may be ahead of the backend only by codes a later package adds.
-    expect(KMY_WARNING_CODES.slice(0, backend.length)).toEqual(backend);
+    const block = /KMY_WARNING_CODES[^=]*=\s*\[([\s\S]*?)\n\];/.exec(source);
+    const backend = [...(block?.[1] ?? '').matchAll(/"(\w+)"/g)].map((m) => m[1]);
+    // The two lines under kmyWarnings that are footers, not warning codes.
+    const FOOTER_KEYS = [KMY_FORMAT.copy.reviewInSource, KMY_FORMAT.copy.reviewInSourceTruncated].map(
+      (key) => key.split('.')[1],
+    );
+    const english = Object.keys(catalog.kmyWarnings as Record<string, string>).filter(
+      (key) => !FOOTER_KEYS.includes(key),
+    );
+
+    it('reads a non-empty backend list from its source', () => {
+      expect(backend.length).toBeGreaterThan(50);
+    });
+
+    it('has the frontend list equal to the backend list, in the same order', () => {
+      expect([...KMY_WARNING_CODES]).toEqual(backend);
+    });
+
+    it('has an English sentence for exactly the backend codes, no more and no fewer', () => {
+      expect([...english].sort()).toEqual([...backend].sort());
+    });
   });
 
   it('has an English sentence for every KMyMoney error code', () => {

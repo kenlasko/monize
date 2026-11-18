@@ -72,7 +72,7 @@ export function MnyReviewStep({
 }: MnyReviewStepProps) {
   const t = useTranslations('import');
   const tc = useTranslations('common');
-  const { formatCurrency } = useNumberFormat();
+  const { formatCurrency, formatNumber } = useNumberFormat();
 
   const { counts, fileCounts } = preview;
   const includedCount = preview.accounts.filter(
@@ -94,7 +94,7 @@ export function MnyReviewStep({
           // KMyMoney file-format version.
           ...(format.showEra
             ? { era: t(`mnyReview.era.${preview.era}`) }
-            : { fixVersion: preview.kmyFile?.fixVersion ?? 0 }),
+            : { fixVersion: preview.kmyFile?.fixVersion ?? t('kmyReview.versionUnknown') }),
           currency: preview.baseCurrency,
         })}
       </p>
@@ -189,7 +189,7 @@ export function MnyReviewStep({
           <div className="mb-6">
             <SummaryTile
               label={t(format.copy.countsPayeeAliases)}
-              value={String(counts.payeeAliasesToCreate ?? 0)}
+              value={formatNumber(counts.payeeAliasesToCreate ?? 0, 0)}
               detail={t(format.copy.countsPayeeAliasesDetail, {
                 count: counts.payeeDefaultCategoriesToSet ?? 0,
               })}

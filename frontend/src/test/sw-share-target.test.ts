@@ -353,6 +353,11 @@ describe('service worker share-target handling', () => {
 
     expect(index.files[0]).toMatchObject({ name: 'budget.kmy', reason: 'unsupported' });
     expect(index.files[0].key).toBeUndefined();
+    // An .xml is refused outright, not routed by extension: the worker cannot
+    // read it to tell a KMyMoney file from an OFX one, and the share target
+    // takes statements by extension only.
+    expect(index.files[1]).toMatchObject({ name: 'budget.xml', reason: 'unsupported' });
+    expect(index.files[1].key).toBeUndefined();
   });
 
   it('refuses an oversize file without storing it', async () => {

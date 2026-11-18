@@ -96,23 +96,25 @@ vi.mock('@/lib/errors', () => ({
 
 const mockMnyParse = vi.fn();
 const mockMnyStart = vi.fn();
+const mockMnyDiscard = vi.fn().mockResolvedValue(undefined);
 vi.mock('@/lib/import-mny', () => ({
   mnyImportApi: {
     parse: (...args: any[]) => mockMnyParse(...args),
     start: (...args: any[]) => mockMnyStart(...args),
     getJob: vi.fn(),
-    discardStagedFile: vi.fn(),
+    discardStagedFile: (...args: any[]) => mockMnyDiscard(...args),
   },
 }));
 
 const mockKmyParse = vi.fn();
 const mockKmyStart = vi.fn();
+const mockKmyDiscard = vi.fn().mockResolvedValue(undefined);
 vi.mock('@/lib/import-kmy', () => ({
   kmyImportApi: {
     parse: (...args: any[]) => mockKmyParse(...args),
     start: (...args: any[]) => mockKmyStart(...args),
     getJob: vi.fn(),
-    discardStagedFile: vi.fn(),
+    discardStagedFile: (...args: any[]) => mockKmyDiscard(...args),
   },
 }));
 
@@ -2256,13 +2258,24 @@ describe('useImportWizard - KMyMoney files', () => {
     return result;
   }
 
-  it.each(['budget.kmy', 'BUDGET.KMY', 'budget.xml', 'budget.anon.xml'])(
+  const KMY_XML = '<?xml version="1.0"?>\n<!DOCTYPE KMYMONEY-FILE>\n<KMYMONEY-FILE></KMYMONEY-FILE>';
+  const OFX_SGML = 'OFXHEADER:100\nDATA:OFXSGML\n\n<OFX><BANKMSGSRSV1></BANKMSGSRSV1></OFX>';
+  const OFX_XML = '<?xml version="1.0"?>\n<?OFX OFXHEADER="200" VERSION="220"?>\n<OFX><BANKMSGSRSV1/></OFX>';
+  const bytesFile = (name: string, bytes: number[]) => new File([new Uint8Array(bytes)], name);
+
+  it.each([
+    ['budget.kmy', 'binary'],
+    ['BUDGET.KMY', 'binary'],
+    ['budget.xml', KMY_XML],
+    ['budget.anon.xml', KMY_XML],
+    ['BUDGET.XML', KMY_XML],
+  ])(
     'routes %s to the KMyMoney importer, not the Money or text paths',
-    async (name) => {
+    async (name, content) => {
       const result = await renderWizard();
 
       await act(async () => {
-        await result.current.handleFileSelect(fileEvent([makeFile(name, 'binary')]));
+        await result.current.handleFileSelect(fileEvent([makeFile(name, content)]));
       });
 
       expect(mockKmyParse).toHaveBeenCalledTimes(1);
@@ -2274,6 +2287,185 @@ describe('useImportWizard - KMyMoney files', () => {
       expect(result.current.fileType).toBe('kmy');
     },
   );
+
+  describe('an .xml file is routed by its contents', () => {
+    it('sends a gzip file saved as .xml to the KMyMoney importer, which decides', async () => {
+      const result = await renderWizard();
+
+      await act(async () => {
+        await result.current.handleFiles([bytesFile('budget.xml', [0x1f, 0x8b, 0x08, 0x00])]);
+      });
+
+      expect(mockKmyParse).toHaveBeenCalledTimes(1);
+      expect(result.current.fileType).toBe('kmy');
+    });
+
+    it.each([
+      ['an OFX 1.x SGML document', OFX_SGML],
+      ['an OFX 2.x XML document', OFX_XML],
+    ])('sends %s saved as .xml down the OFX path, as an .ofx file would go', async (_label, content) => {
+      const result = await renderWizard();
+      mockParseOfx.mockResolvedValue(baseParsedQif());
+
+      await act(async () => {
+        await result.current.handleFiles([makeFile('statement.xml', content)]);
+      });
+
+      expect(mockParseOfx).toHaveBeenCalledWith(content);
+      expect(mockKmyParse).not.toHaveBeenCalled();
+      expect(mockMnyParse).not.toHaveBeenCalled();
+      expect(result.current.fileType).toBe('ofx');
+      expect(result.current.importFiles[0].fileType).toBe('ofx');
+      expect(result.current.step).toBe('selectAccount');
+    });
+
+    it('takes several OFX statements saved as .xml together, without the KMyMoney one-file refusal', async () => {
+      const result = await renderWizard();
+      mockParseOfx.mockResolvedValue(baseParsedQif());
+
+      await act(async () => {
+        await result.current.handleFiles([makeFile('a.xml', OFX_XML), makeFile('b.ofx', OFX_SGML)]);
+      });
+
+      expect(mockParseOfx).toHaveBeenCalledTimes(2);
+      expect(toastErrorSpy).not.toHaveBeenCalled();
+      expect(result.current.importFiles).toHaveLength(2);
+    });
+
+    it('refuses an .xml that is neither, naming it, with no fallback to QIF', async () => {
+      const result = await renderWizard();
+
+      await act(async () => {
+        await result.current.handleFiles([
+          makeFile('logo.xml', '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"/>'),
+        ]);
+      });
+
+      expect(toastErrorSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/neither a KMyMoney file nor an OFX file.*logo\.xml/),
+      );
+      expect(mockParseQif).not.toHaveBeenCalled();
+      expect(mockParseOfx).not.toHaveBeenCalled();
+      expect(mockKmyParse).not.toHaveBeenCalled();
+      expect(result.current.step).toBe('upload');
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    it('refuses an empty .xml', async () => {
+      const result = await renderWizard();
+
+      await act(async () => {
+        await result.current.handleFiles([makeFile('empty.xml', '')]);
+      });
+
+      expect(toastErrorSpy).toHaveBeenCalledWith(expect.stringContaining('empty.xml'));
+      expect(mockKmyParse).not.toHaveBeenCalled();
+    });
+
+    it('refuses the whole drop when one of several .xml files is unrecognised', async () => {
+      const result = await renderWizard();
+      mockParseOfx.mockResolvedValue(baseParsedQif());
+
+      await act(async () => {
+        await result.current.handleFiles([makeFile('a.xml', OFX_XML), makeFile('b.xml', '<x/>')]);
+      });
+
+      expect(toastErrorSpy).toHaveBeenCalledWith(expect.stringContaining('b.xml'));
+      expect(mockParseOfx).not.toHaveBeenCalled();
+    });
+
+    it('mixes by what the contents are: a KMyMoney .xml with an .ofx file is a mixed drop', async () => {
+      const result = await renderWizard();
+
+      await act(async () => {
+        await result.current.handleFiles([makeFile('a.xml', KMY_XML), makeFile('b.ofx', OFX_SGML)]);
+      });
+
+      expect(toastErrorSpy).toHaveBeenCalledWith(expect.stringContaining('same type'));
+      expect(mockKmyParse).not.toHaveBeenCalled();
+      expect(mockParseOfx).not.toHaveBeenCalled();
+    });
+
+    it('keeps the one-file refusal for two KMyMoney .xml files', async () => {
+      const result = await renderWizard();
+
+      await act(async () => {
+        await result.current.handleFiles([makeFile('a.xml', KMY_XML), makeFile('b.xml', KMY_XML)]);
+      });
+
+      expect(toastErrorSpy).toHaveBeenCalledWith(expect.stringContaining('one KMyMoney file at a time'));
+      expect(mockKmyParse).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('switching between a Money and a KMyMoney file in one session', () => {
+    const refusal = Object.assign(new Error('refused'), {
+      response: { status: 400, data: { errorCode: 'kmyEncryptedFile', message: 'That KMyMoney file is encrypted.' } },
+    });
+
+    it('does not show the refused .kmy error on the .mny that follows', async () => {
+      const result = await renderWizard();
+      mockKmyParse.mockRejectedValueOnce(refusal);
+      mockMnyParse.mockResolvedValue({ ...kmyPreview, filename: 'a.mny', sourceFormat: undefined });
+
+      await act(async () => {
+        await result.current.handleFiles([makeFile('a.kmy', 'x')]);
+      });
+      expect(result.current.kmy.uploadError).not.toBeNull();
+      expect(result.current.step).toBe('upload');
+
+      await act(async () => {
+        await result.current.handleFiles([makeFile('a.mny', 'x')]);
+      });
+
+      expect(result.current.binaryFormat.id).toBe('mny');
+      expect(result.current.binary.uploadError).toBeNull();
+      expect(result.current.kmy.uploadError).toBeNull();
+      expect(result.current.step).toBe('mnyReview');
+    });
+
+    it('does not leave the refused .kmy error behind a CSV or OFX file chosen next', async () => {
+      const result = await renderWizard();
+      mockKmyParse.mockRejectedValueOnce(refusal);
+      mockParseOfx.mockResolvedValue(baseParsedQif());
+
+      await act(async () => {
+        await result.current.handleFiles([makeFile('a.kmy', 'x')]);
+      });
+      await act(async () => {
+        await result.current.handleFiles([makeFile('a.ofx', OFX_SGML)]);
+      });
+
+      expect(result.current.kmy.uploadError).toBeNull();
+    });
+
+    it('drops the staged Money upload when a KMyMoney file replaces it', async () => {
+      const result = await renderWizard();
+      mockMnyParse.mockResolvedValue({ ...kmyPreview, stagedFileId: 'staged-mny', filename: 'a.mny' });
+
+      await act(async () => {
+        await result.current.handleFiles([makeFile('a.mny', 'x')]);
+      });
+      await act(async () => {
+        await result.current.handleFiles([makeFile('a.kmy', 'x')]);
+      });
+
+      expect(mockMnyDiscard).toHaveBeenCalledWith('staged-mny');
+      expect(result.current.binaryFormat.id).toBe('kmy');
+      expect(result.current.mny.preview).toBeNull();
+    });
+
+    it('drops the staged file when the review is abandoned with Back', async () => {
+      const result = await renderWizard();
+      await act(async () => {
+        await result.current.handleFiles([makeFile('a.kmy', 'x')]);
+      });
+
+      await act(async () => result.current.handleMnyDone());
+
+      expect(mockKmyDiscard).toHaveBeenCalledWith('staged-kmy');
+    });
+  });
 
   it('keeps a .mny on the Money importer', async () => {
     mockMnyParse.mockResolvedValue({ ...kmyPreview, filename: 'a.mny' });

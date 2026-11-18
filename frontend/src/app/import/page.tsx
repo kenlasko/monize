@@ -363,10 +363,18 @@ function ImportContent() {
         />
         {/* Progress indicator */}
         <div className="mb-8">
-          <div className="flex items-center justify-center space-x-4">
+          <ol className="flex items-center justify-center space-x-4">
             {(() => {
-              const stepOrder = ['upload', 'csvColumnMapping', 'selectAccount', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'duplicates', 'multiAccountReview', 'complete'];
-              const currentIndex = stepOrder.indexOf(wizard.step);
+              // A Money or KMyMoney import has its own three steps: the text
+              // formats' mapping steps never apply, and its review and progress
+              // steps are not in their list.
+              const isBinaryFlow = wizard.step === 'mnyReview' || wizard.step === 'mnyImporting';
+              const stepOrder = isBinaryFlow
+                ? ['upload', 'mnyReview', 'mnyImporting']
+                : ['upload', 'csvColumnMapping', 'selectAccount', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'duplicates', 'multiAccountReview', 'complete'];
+              // The report closes the last step once the job has finished.
+              const importFinished = isBinaryFlow && wizard.binary.job?.status === 'completed';
+              const currentIndex = importFinished ? stepOrder.length : stepOrder.indexOf(wizard.step);
 
               // Filter to only visible steps
               const visibleSteps = stepOrder.filter((s) => {
@@ -388,8 +396,14 @@ function ImportContent() {
                 const isLastStep = visibleIndex === visibleSteps.length - 1;
 
                 return (
-                  <div key={s} className="flex items-center">
+                  <li
+                    key={s}
+                    className="flex items-center"
+                    aria-current={isActive ? 'step' : undefined}
+                    aria-label={t('page.stepOf', { current: visibleIndex + 1, total: visibleSteps.length })}
+                  >
                     <div
+                      aria-hidden="true"
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                         isComplete
                           ? 'bg-blue-600 text-white'
@@ -417,11 +431,11 @@ function ImportContent() {
                         }`}
                       />
                     )}
-                  </div>
+                  </li>
                 );
               });
             })()}
-          </div>
+          </ol>
         </div>
 
         {renderStep()}

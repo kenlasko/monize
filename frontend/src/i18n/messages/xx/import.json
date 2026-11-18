@@ -32,15 +32,17 @@
     "imported": "[XX-Successfully imported {imported} transactions-XX]",
     "mnySingleFileOnly": "[XX-Import one Microsoft Money file at a time -- a .mny file holds a whole profile.-XX]",
     "kmySingleFileOnly": "[XX-Import one KMyMoney file at a time: a .kmy file holds a whole profile.-XX]",
+    "unrecognizedXml": "[XX-{count, plural, one {This XML file is} other {These XML files are}} neither a KMyMoney file nor an OFX file, so nothing was imported: {names}. Choose the .kmy or .xml file KMyMoney saves, or an OFX or QFX bank statement.-XX]",
     "duplicateCheckFailed": "[XX-Could not check the file for possible duplicates. Nothing was imported; try again.-XX]"
   },
   "page": {
     "title": "[XX-Import Transactions-XX]",
-    "subtitle": "[XX-Import transactions from QIF/QMTF, OFX/QFX, or CSV files, or bring across a whole Microsoft Money (.mny) or KMyMoney (.kmy, .xml) file-XX]"
+    "subtitle": "[XX-Import transactions from QIF/QMTF, OFX/QFX, or CSV files, or bring across a whole Microsoft Money (.mny) or KMyMoney (.kmy, .xml) file-XX]",
+    "stepOf": "[XX-Step {current} of {total}-XX]"
   },
   "upload": {
     "heading": "[XX-Upload Transaction Files-XX]",
-    "instructions": "[XX-Select one or more files to import. Supported formats: QIF/QMTF, OFX/QFX, CSV, Microsoft Money (.mny), and KMyMoney (.kmy, .xml).\nYou can select multiple files of the same type for bulk import. Import Microsoft Money and KMyMoney files one at a time — a .mny or .kmy file holds a whole profile.-XX]",
+    "instructions": "[XX-Select one or more files to import. Supported formats: QIF/QMTF, OFX/QFX, CSV, Microsoft Money (.mny), and KMyMoney (.kmy, .xml).\nYou can select multiple files of the same type for bulk import. Import Microsoft Money and KMyMoney files one at a time — a .mny or .kmy file holds a whole profile.\nAn .xml file is opened as a KMyMoney file or an OFX statement, whichever its contents say.-XX]",
     "importingTo": "[XX-Importing to:-XX]",
     "clickToSelect": "[XX-Click to select file(s)-XX]",
     "orDragAndDrop": "[XX-or drag and drop them here-XX]",
@@ -50,9 +52,11 @@
     "acceptedFormats": "[XX-QIF/QMTF, OFX, QFX, CSV, Microsoft Money (.mny), or KMyMoney (.kmy, .xml)-XX]",
     "mnyFailedHeading": "[XX-That Microsoft Money file could not be opened-XX]",
     "kmyFailedHeading": "[XX-That KMyMoney file could not be opened-XX]",
+    "requestFailedHeading": "[XX-The upload did not finish-XX]",
+    "requestFailed": "[XX-The server did not answer in time, or the connection dropped, so the file was not checked. This does not mean the file is damaged. Wait a moment and choose it again.-XX]",
     "docsNotice": {
       "title": "[XX-Before you import-XX]",
-      "body": "[XX-Read the <money>Importing from Microsoft Money</money> or <quicken>Importing from Quicken</quicken> section of the documentation before importing anything. OFX/QFX and QIF files each have their own quirks — see <ofx>Importing OFX/QFX Files</ofx> and <qif>Importing Quicken QIF Files</qif>.-XX]"
+      "body": "[XX-Read the <money>Importing from Microsoft Money</money> or <quicken>Importing from Quicken</quicken> section of the documentation before importing anything. OFX/QFX and QIF files each have their own quirks — see <ofx>Importing OFX/QFX Files</ofx> and <qif>Importing Quicken QIF Files</qif>. KMyMoney files have their own guide: <kmymoney>Importing from KMyMoney</kmymoney>.-XX]"
     }
   },
   "selectAccount": {
@@ -602,6 +606,7 @@
     "mnyUnreadableDatabase": "[XX-That Money file was decrypted but its contents could not be read. It may be damaged.-XX]"
   },
   "kmyReview": {
+    "versionUnknown": "[XX-unknown-XX]",
     "heading": "[XX-Review your KMyMoney file-XX]",
     "fileSummary": "[XX-{filename}: KMyMoney file, format version {fixVersion}, base currency {currency}. Balances below are computed from the file itself, so you can check them against KMyMoney before importing.-XX]",
     "renamedFrom": "[XX-named \"{name}\" in KMyMoney-XX]",
@@ -630,8 +635,8 @@
       "payeeAliases": "[XX-Payee aliases-XX]",
       "payeeDefaultCategories": "[XX-Default categories-XX]"
     },
-    "allMatch": "[XX-All {count} accounts reconcile: every balance matches the one computed from your KMyMoney file.-XX]",
-    "someDiffer": "[XX-{count} accounts do not match the balance computed from your KMyMoney file. The rows marked below show the difference.-XX]",
+    "allMatch": "[XX-{count, plural, one {Your only account reconciles} other {All # accounts reconcile}}: every balance matches the one computed from your KMyMoney file.-XX]",
+    "someDiffer": "[XX-{count, plural, one {# account does} other {# accounts do}} not match the balance computed from your KMyMoney file. The rows marked below show the difference.-XX]",
     "someHoldingsDiffer": "[XX-Every balance reconciles, but {count, plural, one {# holding does} other {# holdings do}} not match the shares computed from your KMyMoney file. The rows marked below show the difference.-XX]",
     "holdingsExplainer": "[XX-Shares Monize now holds, against the share balance KMyMoney computes from the same file, stock splits included.-XX]",
     "table": {
@@ -641,7 +646,7 @@
     }
   },
   "kmyErrors": {
-    "kmyNotAKmyMoneyFile": "[XX-That file is not a KMyMoney file. Choose the .kmy or .xml file KMyMoney saves. If your KMyMoney data is in an SQL database, open it in KMyMoney and use File, Save As to save it as a .kmy file first.-XX]",
+    "kmyNotAKmyMoneyFile": "[XX-That file is not a KMyMoney file. Choose the .kmy or .xml file KMyMoney saves. If your KMyMoney data is in an SQL database, open it in KMyMoney and use File, Save As to save it as a .kmy file first. If this is a bank statement in OFX format, save it with the .ofx extension and import it again.-XX]",
     "kmyEncryptedFile": "[XX-That KMyMoney file is encrypted with GPG, which Monize cannot open. In KMyMoney, turn off encryption (Settings, Configure KMyMoney, Encryption) and save the file again, or decrypt a copy with gpg -d, then import that.-XX]",
     "kmySqliteDatabase": "[XX-That is a KMyMoney SQL database. Open it in KMyMoney, choose File, Save As, pick the KMyMoney (.kmy) format, and import the saved file.-XX]",
     "kmyAnonymizedFile": "[XX-That is an anonymized KMyMoney file: KMyMoney scrambles every amount and replaces the names when it writes one, so it cannot be imported. Import your original .kmy file instead.-XX]",
@@ -651,9 +656,9 @@
     "kmyStagedFileMissing": "[XX-The uploaded KMyMoney file is no longer available. Please upload it again.-XX]"
   },
   "kmyWarnings": {
-    "unknownAccountType": "[XX-{count, plural, one {# account has} other {# accounts have}} a type Monize does not recognize, or are not reachable from KMyMoney's account tree, and were skipped.-XX]",
-    "duplicateAccountName": "[XX-{count, plural, one {# account} other {# accounts}} shared a name with another and were renamed.-XX]",
-    "unknownCurrency": "[XX-{count, plural, one {# item names} other {# items name}} a currency the file does not define and use the base currency.-XX]",
+    "unknownAccountType": "[XX-{count, plural, one {# account has} other {# accounts have}} a type Monize does not recognize, or {count, plural, one {is} other {are}} not reachable from KMyMoney's account tree, and {count, plural, one {was} other {were}} skipped.-XX]",
+    "duplicateAccountName": "[XX-{count, plural, one {# account shared} other {# accounts shared}} a name with another and {count, plural, one {was} other {were}} renamed.-XX]",
+    "unknownCurrency": "[XX-{count, plural, one {# item names} other {# items name}} a currency the file does not define and {count, plural, one {uses} other {use}} the base currency.-XX]",
     "unsupportedCurrencyCode": "[XX-{count, plural, one {# account uses} other {# accounts use}} a currency code that is not three letters, which Monize cannot store, and {count, plural, one {was} other {were}} not imported.-XX]",
     "unusableTransaction": "[XX-{count, plural, one {# transaction had} other {# transactions had}} no usable date or did not touch any account, and {count, plural, one {was} other {were}} skipped.-XX]",
     "singleSplitTransaction": "[XX-{count, plural, one {# transaction has} other {# transactions have}} only one split (KMyMoney shows them uncategorized) and {count, plural, one {was} other {were}} imported without a category.-XX]",
@@ -667,21 +672,21 @@
     "currencyTradingAccount": "[XX-{count, plural, one {# currency trading account was} other {# currency trading accounts were}} imported as {count, plural, one {an asset account} other {asset accounts}}.-XX]",
     "brokerageAccountNotFound": "[XX-{count, plural, one {# investment account has} other {# investment accounts have}} no brokerage account in the file, so an empty cash account was created for each. Trades paid from other accounts still move those accounts.-XX]",
     "brokerageCurrencyMismatch": "[XX-{count, plural, one {# brokerage account uses} other {# brokerage accounts use}} a different currency from their investment account and {count, plural, one {was} other {were}} kept as separate accounts.-XX]",
-    "stockAccountWithoutInvestment": "[XX-{count, plural, one {# investment transaction belongs} other {# investment transactions belong}} to a holding outside any investment account and {count, plural, one {was} other {were}} imported for their cash only.-XX]",
-    "securityNotImported": "[XX-{count, plural, one {# security is} other {# securities are}} priced in a cryptocurrency, which Monize does not support for securities; their trades were imported for their cash only.-XX]",
-    "investmentImportedAsCash": "[XX-{count, plural, one {# investment transaction} other {# investment transactions}} could not be imported as trades and {count, plural, one {was} other {were}} imported for their cash only.-XX]",
+    "stockAccountWithoutInvestment": "[XX-{count, plural, one {# investment transaction belongs} other {# investment transactions belong}} to a holding outside any investment account and {count, plural, one {was} other {were}} imported as cash only.-XX]",
+    "securityNotImported": "[XX-{count, plural, one {# security is} other {# securities are}} priced in a cryptocurrency, which Monize does not support for securities; the trades in {count, plural, one {it} other {them}} were imported as cash only.-XX]",
+    "investmentImportedAsCash": "[XX-{count, plural, one {# investment transaction} other {# investment transactions}} could not be imported as trades and {count, plural, one {was} other {were}} imported as cash only.-XX]",
     "investmentExtraAssetSplit": "[XX-{count, plural, one {# investment transaction} other {# investment transactions}} also moved money in a further account; that movement was imported as its own transaction.-XX]",
     "investmentSharesOnIncomeAction": "[XX-{count, plural, one {# dividend or interest transaction} other {# dividend or interest transactions}} also changed the number of shares; the change was imported as added or removed shares.-XX]",
     "multipleStockSplits": "[XX-{count, plural, one {# investment transaction} other {# investment transactions}} moved more than one security; the extra securities were imported as added or removed shares, without cost.-XX]",
     "splitActionInMultiSplit": "[XX-{count, plural, one {# stock split was} other {# stock splits were}} recorded inside another transaction; as in KMyMoney, they were imported as added or removed shares.-XX]",
     "tradeFundedFromEquity": "[XX-{count, plural, one {# trade was} other {# trades were}} paid from an equity account; the shares and their cost were imported, without a cash movement.-XX]",
     "sharesAddedWithoutCost": "[XX-{count, plural, one {# share addition has} other {# share additions have}} no cost in KMyMoney, so gains on selling those shares cannot be calculated. Edit them in Monize to add the cost if you know it.-XX]",
-    "stockSplitRatioRounded": "[XX-{count, plural, one {# stock split ratio has} other {# stock split ratios have}} more decimal places than Monize stores; share counts after them may differ from KMyMoney by a tiny fraction.-XX]",
+    "stockSplitRatioRounded": "[XX-{count, plural, one {# stock split ratio has} other {# stock split ratios have}} more decimal places than Monize stores; share counts after {count, plural, one {it} other {them}} may differ from KMyMoney by a tiny fraction.-XX]",
     "stockSplitRoundingDiffers": "[XX-{count, plural, one {# stock split left} other {# stock splits left}} a fraction of a share that KMyMoney rounded away and Monize keeps. Check the holding against your statement.-XX]",
     "stockSplitRatioSuspicious": "[XX-{count, plural, one {# stock split looks} other {# stock splits look}} inverted compared with the prices around them. Check the split ratio against your statement.-XX]",
     "priceCurrencyMismatch": "[XX-{count, plural, one {# price was} other {# prices were}} recorded in a currency other than the security's and {count, plural, one {was} other {were}} not imported.-XX]",
     "unusedCurrencyRatesSkipped": "[XX-{count, plural, one {# exchange rate is} other {# exchange rates are}} for currencies none of your accounts or securities use and {count, plural, one {was} other {were}} not imported.-XX]",
-    "crossCurrencyTradeUnconverted": "[XX-{count, plural, one {# trade was} other {# trades were}} recorded in a currency other than the security's and the file has no rate to convert them; their amounts were imported unconverted. Check the price of each.-XX]",
+    "crossCurrencyTradeUnconverted": "[XX-{count, plural, one {# trade was} other {# trades were}} recorded in a currency other than the security's and the file has no rate to convert {count, plural, one {it} other {them}}; {count, plural, one {its amount was} other {their amounts were}} imported unconverted. Check the price of each.-XX]",
     "crossCurrencyTransferRateMissing": "[XX-{count, plural, one {# transfer between accounts in different currencies has} other {# transfers between accounts in different currencies have}} no exchange rate, neither in {count, plural, one {its} other {their}} amounts nor in the file's prices, and {count, plural, one {was} other {were}} imported without one. Open the receiving side of each and enter the rate.-XX]",
     "duplicateSecuritySymbol": "[XX-{count, plural, one {# security shares} other {# securities share}} a symbol with another; the later ones were renamed so they stay separate.-XX]",
     "generatedSecuritySymbol": "[XX-{count, plural, one {# security has} other {# securities have}} no symbol in KMyMoney, so a placeholder was generated and price updates left off.-XX]",
@@ -691,14 +696,14 @@
     "investmentScheduleNotImported": "[XX-{count, plural, one {# scheduled investment transaction was} other {# scheduled investment transactions were}} not imported.-XX]",
     "unusableBill": "[XX-{count, plural, one {# schedule had} other {# schedules had}} no account, no usable date or an unrecognized recurrence, and {count, plural, one {was} other {were}} skipped.-XX]",
     "billFrequencyApproximated": "[XX-{count, plural, one {# schedule repeats} other {# schedules repeat}} at an interval Monize cannot express exactly, so the closest shorter one was used.-XX]",
-    "scheduleAutoEnterNotImported": "[XX-{count, plural, one {# schedule is} other {# schedules are}} entered automatically in KMyMoney; in Monize they wait for you to post them.-XX]",
-    "scheduleWeekendRuleDropped": "[XX-{count, plural, one {# schedule moves} other {# schedules move}} its due date off weekends in KMyMoney; Monize keeps the date as scheduled.-XX]",
-    "scheduleOverdue": "[XX-{count, plural, one {# schedule is} other {# schedules are}} overdue in KMyMoney and arrive overdue in Monize. Post or skip the missed occurrences.-XX]",
+    "scheduleAutoEnterNotImported": "[XX-{count, plural, one {# schedule is} other {# schedules are}} entered automatically in KMyMoney; in Monize {count, plural, one {it waits} other {they wait}} for you to post {count, plural, one {it} other {them}}.-XX]",
+    "scheduleWeekendRuleDropped": "[XX-{count, plural, one {# schedule moves its} other {# schedules move their}} due date off weekends in KMyMoney; Monize keeps the date as scheduled.-XX]",
+    "scheduleOverdue": "[XX-{count, plural, one {# schedule is} other {# schedules are}} overdue in KMyMoney and {count, plural, one {arrives} other {arrive}} overdue in Monize. Post or skip the missed occurrences.-XX]",
     "costCentersNotImported": "[XX-{count, plural, one {# split has} other {# splits have}} a cost center; Monize has no cost centers, so they were not imported.-XX]",
     "budgetsNotImported": "[XX-{count, plural, one {# budget was} other {# budgets were}} not imported. Monize creates budgets from your history instead.-XX]",
     "reportsNotImported": "[XX-{count, plural, one {# saved report was} other {# saved reports were}} not imported.-XX]",
     "onlineJobsNotImported": "[XX-{count, plural, one {# online transfer order was} other {# online transfer orders were}} not imported.-XX]",
-    "onlineBankingNotImported": "[XX-{count, plural, one {# account has} other {# accounts have}} online banking settings in KMyMoney; they were not read, and you can set up bank sync in Monize.-XX]",
+    "onlineBankingNotImported": "[XX-{count, plural, one {# account has} other {# accounts have}} online banking settings in KMyMoney; {count, plural, one {it was} other {they were}} not read, and you can set up bank sync in Monize.-XX]",
     "accountNumbersNotImported": "[XX-{count, plural, one {# account has} other {# accounts have}} an account number or IBAN, which was not imported.-XX]",
     "payeeDetailsNotImported": "[XX-{count, plural, one {# payee has} other {# payees have}} details Monize has no place for (a reference number, bank account identifiers, a link pattern), or contact details Monize could not read; those details were not imported.-XX]",
     "payeeMatchingDisabled": "[XX-{count, plural, one {# payee has} other {# payees have}} matching turned off in KMyMoney. Monize has no such setting: a later import or bank sync whose payee is exactly {count, plural, one {its name} other {one of these names}} still links to the payee.-XX]",
