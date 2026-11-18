@@ -307,3 +307,47 @@ test("transaction-attachments", async () => {
   await docShot(page, "transaction-attachments", dialog);
   await cancel(dialog);
 });
+
+test("transactions-account-bar", async () => {
+  await openRegister(`?accountId=${ids.chequing}`);
+  await expect(page.getByText("Current Balance").first()).toBeVisible({
+    timeout: 30_000,
+  });
+  await chartDrawn();
+  await page.getByRole("button", { name: "Hide account info" }).click();
+  const bar = page.getByTestId("account-info-bar");
+  await expect(bar).toBeVisible();
+  await settled();
+  // The bar above the chart it now spans the width of.
+  await docShot(page, "transactions-account-bar", bar.locator("xpath=.."));
+  // The fold is remembered in this browser; the pictures after this one
+  // expect the panel open.
+  await bar.getByRole("button", { name: "Show account info" }).click();
+  await expect(page.getByText("Current Balance").first()).toBeVisible();
+});
+
+test("transactions-floating-bar", async () => {
+  await openRegister(`?accountId=${ids.chequing}`);
+  await expect(page.getByText("Current Balance").first()).toBeVisible({
+    timeout: 30_000,
+  });
+  await chartDrawn();
+  await settled();
+  // Scroll the panel and chart away; the bar slides in over the register.
+  const floating = page.getByTestId("account-info-floating");
+  await expect(async () => {
+    await page.evaluate(() => window.scrollTo(0, 900));
+    await expect(floating).toHaveAttribute("aria-hidden", "false", {
+      timeout: 2_000,
+    });
+  }).toPass({ timeout: 30_000 });
+  // Once its slide has finished.
+  await floating.evaluate((el) =>
+    Promise.all(el.getAnimations().map((animation) => animation.finished)),
+  );
+  await waitForReady(page);
+  await docShot(page, "transactions-floating-bar", undefined, {
+    floatingBars: true,
+  });
+  await page.evaluate(() => window.scrollTo(0, 0));
+});

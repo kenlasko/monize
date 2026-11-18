@@ -44,6 +44,12 @@ When you create an investment account, both components are created automatically
 
 ## Portfolio View
 
+On a phone or tablet, once you scroll the page title away, the header bar reads **Investments** followed by the accounts in view, the same label the **Portfolio Summary** shows in brackets (for example **Investments – RRSP, TFSA** or **Investments – All Accounts**). The arrow beside it narrows the page to one account, with your favourites first, or goes back to **All Investment Accounts**. If the line does not fit, the header shows just the accounts.
+
+On a desktop, as soon as the account picker scrolls out of view, a bar pins across the top of the page with the same **Investments – *accounts*** label, and slides away when you scroll back up. The arrow beside the label switches to one account or back to all of them. On the right are the **Refresh** button, the **Total Portfolio Value** (marked when it is a partial figure, as on the Portfolio Summary), and a **+** that starts an investment or a cash transaction.
+
+![The accounts bar pinned to the top of the Investments page while scrolled down](images/investments-floating-bar.png)
+
 ### Portfolio Summary
 
 The **Portfolio Summary** card shows the **Total Portfolio Value** (holdings plus cash), then two groups of figures. Hover over any figure for an explanation of how it is worked out.
