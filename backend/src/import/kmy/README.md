@@ -43,8 +43,12 @@ The user guide is `website/docs/importing-from-kmymoney.md`.
   (`KMY_BROKERAGE_SUFFIXES`) is a constant with its provenance commit.
 - **Stock splits are applied, unlike Money.** A KMyMoney split is the share movement itself, so it
   becomes a SPLIT row with the multiplier as its quantity. Money's `SEC_SPLIT` rows are quote-feed metadata.
-- **Verification is computed from the raw model**, never from mapped rows; that independence is what
-  makes a mapping defect visible.
+- **Verification is computed from the raw model**, never from mapped rows and never through the mapper's
+  amount logic (`kmy-file-expectations.ts`, its imports held by `kmy-file-expectations.guard.spec.ts`);
+  that independence is what makes a mapping defect visible. Balances are held to the account's own
+  places (a coin's eighth), share counts to KMyMoney's replay, and each trade's total net of commission
+  to the file's stock value. **Cost basis is not verified**: the file stores none, and the amount invested
+  is not a basis once a sale removes basis at average cost (spec 6.1).
 - **Payee matching: regex keys are searched, aliases are whole-text globs.** A KMyMoney key is a PCRE2
   pattern found anywhere in an imported payee text; a Monize alias is a glob over the whole text,
   case-insensitive, with `*` the only metacharacter (`matchesAliasPattern`). `kmy-payee-match.ts` translates

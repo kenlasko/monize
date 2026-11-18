@@ -495,3 +495,53 @@ describe("mapKmyFile: options and the model's other inputs", () => {
     ]);
   });
 });
+
+describe("mapKmyFile: a coin account keeps its own places (M3)", () => {
+  const raw = rawFile({
+    accounts: [
+      rawAccount({ id: "W", name: "Wallet", type: 1, currency: "BTC" }),
+      rawAccount({
+        id: "INC",
+        name: "Mining",
+        type: 12,
+        currency: "BTC",
+      }),
+    ],
+    transactions: ["1/3", "1/3", "1/3", "0.12345678"].map((value, index) =>
+      rawTransaction({
+        id: `T${index + 1}`,
+        commodity: "BTC",
+        postDate: `2024-01-0${index + 1}`,
+        splits: [
+          { account: "W", value },
+          { account: "INC", value: `-${value}` },
+        ],
+      }),
+    ),
+  });
+  const parse = (file = raw) =>
+    mapKmyFile(file, {
+      ...INPUT,
+      coinDecimals: new Map([["BTC", 8]]),
+    });
+
+  it("maps, sums and compares at eight places, and allows exactly the per-row rounding", () => {
+    const parsed = parse();
+    const key = parsed.accounts.accounts[0].key;
+    expect(parsed.transactions.transactions.map((r) => r.amount)).toEqual([
+      0.33333333, 0.33333333, 0.33333333, 0.12345678,
+    ]);
+    // KMyMoney's own figure: the exact sum, rounded once.
+    expect(parsed.fileBalances?.get(key)).toBe(1.12345678);
+    // What the rows sum to, eight places kept (not 1.1235).
+    expect(parsed.expectedBalances.get(key)).toBe(1.12345677);
+    expect(parsed.balancePrecision?.get(key)).toEqual({
+      places: 8,
+      tolerance: 0.00000001,
+    });
+    expect(parsed.moneyPlaces?.get("BTC")).toBe(8);
+    expect(parsed.warnings.map((w) => w.code)).not.toContain(
+      "mappedBalanceDiffers",
+    );
+  });
+});

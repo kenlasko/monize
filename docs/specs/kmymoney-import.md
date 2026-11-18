@@ -1068,7 +1068,7 @@ transfer.
 
 Every code is appended to `MNY_WARNING_CODES` unless marked "existing"; the seven `payeeMatching*`,
 `payeeMatch*`, `payeeDefaultCategoryNotImported` and `payeeDetailsKept` codes of the payee amendment are
-appended after `holdingsReplayDiffers`, in the order of this table, followed by `crossCurrencyTransferRateMissing`. A warning carries no English;
+appended after `holdingsReplayDiffers`, in the order of this table, followed by `crossCurrencyTransferRateMissing` and then the codes of the review fixes in this order: `tradeAmountsDiffer`. A warning carries no English;
 the frontend renders `import.kmyWarnings.<code>` with the count (ICU plural). `row` is set when the
 warning is about one transaction (the review step lists the rows). The en sentences below are the copy
 WP4 writes; they avoid `--` (frontend rule).
@@ -1136,6 +1136,7 @@ WP4 writes; they avoid `--` (frontend rule).
 | autoCalcInPostedSplit | reader | yes | {count} posted transactions carried a placeholder amount meant only for schedules; it was taken as zero. |
 | mappedBalanceDiffers | 6.3, preview time | | {count} accounts would end with a balance that differs from the one computed from the file. Do not import until this is explained. |
 | holdingsReplayDiffers | 6.3, preview time | | {count} holdings would end with a share count that differs from the one computed from the file. |
+| tradeAmountsDiffer | 6.1, preview time, one per (holding, transaction); detail `transaction N: file X, mapped Y CUR` | | {count, plural, one {# trade was} other {# trades were}} mapped with a total and commission that do not add up to the share value the file records. Do not import until this is explained. |
 | balanceMismatch (existing, post-import) | | | {count} accounts ended with a balance that differs from the one computed from the KMyMoney file. |
 | holdingsMismatch (existing, post-import) | | | {count} holdings do not match the shares computed from your KMyMoney file. |
 
@@ -1143,15 +1144,26 @@ WP4 writes; they avoid `--` (frontend rule).
 
 ### 6.1 Expectations computed from the raw file
 
-Computed by a module in the KMyMoney map directory from the **raw model** and the account-key
-assignment only, never from mapped rows. All sums are exact rationals, rounded once (4.5).
+Computed by `kmy-file-expectations.ts` from the **raw model** (after KMyMoney's own level-0 repair,
+5.1) and the account and security identity only (which Monize account a KMyMoney account becomes, its
+currency, which holding a stock account is), never from mapped rows and never through the mapper's
+amount logic: no `sharesOf`, no sign helper, no split classification, no opening-balance fold, no row
+builder. `kmy-file-expectations.guard.spec.ts` holds its imports to that list. The point is that a
+defect in the mapper's amount logic makes the two sides differ instead of agreeing by construction (the
+review's mutations -- a split's value booked instead of its shares, every amount negated, twice the
+commission taken off each trade -- are each caught: `kmy-file-summary.spec.ts`).
 
-- **Account balance**, per mapped account key `K`: the sum of `shares` of every split, in every
-  transaction with a valid post date on or before `asOf` (the same `asOf` the mapper and post-processing
-  use, today by default), on every KMyMoney account that maps to `K`: the account itself; for a pair's
-  cash key, the brokerage account and the type-7 account; for a brokerage key, nothing (expected 0).
-  Template (schedule) transactions are not in `TRANSACTIONS`, so they are not summed. This is KMyMoney's
-  own balance (R15.2), including its opening balance transactions.
+- **Account balance**, per mapped account key `K`, at `K`'s currency places (`moneyDecimalsFor`: 4 for a
+  fiat, the coin's own up to 8): the sum of the raw `shares` of every split, in every transaction with a
+  valid post date on or before `asOf` (the same `asOf` the mapper and post-processing use, pinned by the
+  preview, 6.4), on every KMyMoney account that maps to `K`: the account itself; for a pair's cash key,
+  the brokerage account and the type-7 account; for a brokerage key, nothing (expected 0). Template
+  (schedule) transactions are not in `TRANSACTIONS`, so they are not summed. This is KMyMoney's own
+  balance (`AccountBalances::operator+=`, R15.2), including its opening balance transactions. Two figures
+  come out of it: `fileBalances`, the exact sum rounded once (what KMyMoney shows), and `rowBalances`,
+  each split rounded at the places first and then summed (what one row per split adds up to exactly, the
+  figure a correct mapping reproduces). Their difference is the exact rounding allowance
+  (`balancePrecision.tolerance`; 0 whenever every amount is already at the column's places).
 - **Holding**, per (brokerage key, security handle): KMyMoney's replay over the stock accounts under the
   pair's type-7 account whose currency is that security, ordered by (post date, transaction id as a
   string), then split order: a transaction of exactly one split with action `Split` multiplies the
@@ -1159,12 +1171,28 @@ assignment only, never from mapped rows. All sums are exact rationals, rounded o
   (RoundNever read as RoundRound, R3.1; the rounding methods are ported from AlkValue's
   `convertDenominator` exactly); any other split adds `shares`. Cut off at `asOf`, as
   `HoldingsService.rebuildAccountsFromTransactions` cuts off at today.
+- **Amount invested per trade**, per (holding, transaction): the signed sum of the stock splits' `value`
+  for every action except `Add` and `Split` (buys and reinvestments positive, sales negative), in the
+  security's currency at its places, for transactions whose commodity is the security's trading
+  currency. The mapped side is each BUY or REINVEST row's `totalAmount - commission` and each SELL row's
+  `-(totalAmount + commission)` for the same transaction; they must agree within one minor unit per stock
+  split (`totalAmount` and `commission` are each rounded once). Compared per transaction, because a net
+  over the holding lets an error on a buy cancel one on a sale. Differences raise `tradeAmountsDiffer`.
+- **What is not verified: cost basis.** A KMyMoney file stores no cost basis to compare with. The amount
+  invested above is not Monize's cost basis and is never compared with it: a sale removes basis at average
+  cost, not at its proceeds; a stock split and an added-shares row change the basis without a value; a
+  trade converted at the file's rate (5.7.3) has its value in another currency. So the check proves the
+  trade rows' totals and commissions are what the file recorded, and the canonical holdings rebuild is
+  what turns them into a basis; neither the review step nor the report claims the basis itself is
+  verified.
 
 ### 6.2 How they feed the existing report shape
 
 | Field | Money | KMyMoney |
 |---|---|---|
-| `MnyParsedFile.expectedBalances` | mapper sums | mapper sums (`computeExpectedBalances`, unchanged): still what `writeAccountBalances` writes |
+| `MnyParsedFile.expectedBalances` | mapper sums | mapper sums (`computeExpectedBalances` at each account's own places through its optional `placesByKey`): still what `writeAccountBalances` writes |
+| `MnyParsedFile.balancePrecision` | absent | per account: its places and the exact rounding allowance of 6.1 |
+| `MnyParsedFile.moneyPlaces` | absent | per currency: the places the writers round amounts at (a coin keeps 8) |
 | `MnyParsedFile.fileBalances` | absent | 6.1 account balances |
 | `MnyAccountVerification.expectedBalance` | `expectedBalances` | `fileBalances` |
 | `MnyAccountVerification.mappedBalance` | absent | `expectedBalances` |
@@ -1173,13 +1201,13 @@ assignment only, never from mapped rows. All sums are exact rationals, rounded o
 | `MnyHoldingVerification.importedQuantity` | `holdings.quantity` | `holdings.quantity` |
 | preview `finalBalance` | `expectedBalances` | `fileBalances` |
 
-The tolerances are the shared `BALANCE_TOLERANCE` (0.005) and `QUANTITY_TOLERANCE` (1e-8).
+Money compares within the shared `BALANCE_TOLERANCE` (0.005) at four places. KMyMoney compares a balance at the account's own places (a coin's eighth, a fiat's fourth), within exactly the rounding allowance of 6.1, and before the import the mapped rows are held to `rowBalances` with no tolerance at all. Holdings use `QUANTITY_TOLERANCE` (1e-8) for both.
 
 ### 6.3 Explaining a difference
 
 Three readings localise a defect: file versus mapped is a mapping problem, mapped versus imported a
 write or post-processing problem. The mapper compares file and mapped before the import starts and
-raises `mappedBalanceDiffers` / `holdingsReplayDiffers` in the preview, so the user sees it in the
+raises `mappedBalanceDiffers` / `holdingsReplayDiffers` / `tradeAmountsDiffer` in the preview, so the user sees it in the
 review step; the report shows the mapped figure under the file figure for any row where the two differ.
 Every difference the design knowingly leaves has a warning that names it:
 
@@ -1189,7 +1217,7 @@ Every difference the design knowingly leaves has a warning that names it:
 | fraction KMyMoney rounded away after a split | `stockSplitRoundingDiffers` |
 | holding missing because the security could not import | `securityNotImported`, `investmentImportedAsCash` |
 | holding off by a multi-security transaction's cost basis (count matches) | `multipleStockSplits` |
-| amounts with more than 4 places in a fiat account (sub-tolerance) | none needed (below 0.005) |
+| amounts with more places than the account's currency keeps | none needed: `rowBalances` is held exactly and the report allows exactly the rounding (6.1) |
 
 Balances need no row in this table: every mapping rule in section 5 preserves each imported account's
 sum of `shares` exactly (each split either is a row's or counterpart's amount, folds into the opening

@@ -19,7 +19,7 @@ import {
 } from "../../mny/mny-parser.service";
 import { KmyRawFile } from "../model/kmy-raw";
 import { buildAccountTree } from "./kmy-account-tree";
-import { QUANTITY_PLACES } from "./kmy-amounts";
+import { QUANTITY_PLACES, amountPlaces } from "./kmy-amounts";
 import { computeFileExpectations } from "./kmy-file-expectations";
 import { applyKmyFileFixes } from "./kmy-file-fixes";
 import {
@@ -27,6 +27,7 @@ import {
   explainDifferences,
   fileCounts,
   mappedReplay,
+  mappedTradeValues,
   readerWarnings,
   repeated,
   union,
@@ -193,12 +194,24 @@ export function mapKmyFile(
   ]);
   const prices = mapKmyPrices({ raw, securities, options, usedCurrencies });
 
-  const expectations = computeFileExpectations({ context, securities, asOf });
+  const expectations = computeFileExpectations({
+    raw,
+    tree,
+    mapping,
+    securities,
+    coinDecimals: input.coinDecimals,
+    asOf,
+  });
+  // Each account at its own currency's places: a coin keeps eight (M3).
+  const placesByKey = new Map(
+    [...expectations.balancePrecision].map(([key, rule]) => [key, rule.places]),
+  );
   const expectedBalances = computeExpectedBalances(
     accounts,
     transactions,
     asOf,
     investments,
+    placesByKey,
   );
 
   const replay = mappedReplay(investments, asOf);
@@ -222,12 +235,18 @@ export function mapKmyFile(
     };
   });
 
-  const comparisons = explainDifferences(
+  const comparisons = explainDifferences({
     accounts,
-    expectations.fileBalances,
+    expectations,
     expectedBalances,
     checks,
-  );
+    mappedTrades: mappedTradeValues(
+      investments,
+      asOf,
+      expectations.otherCurrencyTrades,
+      (code) => amountPlaces(code, input.coinDecimals),
+    ),
+  });
 
   const costCenters = raw.transactions.reduce(
     (total, transaction) =>
@@ -292,6 +311,12 @@ export function mapKmyFile(
     ],
     sourceFormat: "kmy",
     fileBalances: expectations.fileBalances,
+    balancePrecision: expectations.balancePrecision,
+    moneyPlaces: new Map(
+      [...new Set([...accounts.currencyCodes, ...usedCurrencies])].map(
+        (code) => [code, amountPlaces(code, input.coinDecimals)],
+      ),
+    ),
     kmyFile: {
       container: raw.fileInfo.container,
       fixVersion: raw.fileInfo.fixVersion,

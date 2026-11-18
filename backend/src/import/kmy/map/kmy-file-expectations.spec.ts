@@ -46,10 +46,16 @@ function expectations(
       rawTransaction({ id: `T${i + 1}`, ...tx }),
     ),
   });
-  const h = harness(raw, { asOf });
+  return fromHarness(harness(raw, { asOf }), asOf);
+}
+
+function fromHarness(h: ReturnType<typeof harness>, asOf: string) {
   return computeFileExpectations({
-    context: h.context,
+    raw: h.context.raw,
+    tree: h.tree,
+    mapping: h.mapping,
     securities: h.securities,
+    coinDecimals: h.context.coinDecimals,
     asOf,
   });
 }
@@ -57,11 +63,7 @@ function expectations(
 describe("computeFileExpectations: the reference's section 18 file", () => {
   const raw = syntheticKmyFile();
   const h = harness(raw, { asOf: "2030-01-01" });
-  const result = computeFileExpectations({
-    context: h.context,
-    securities: h.securities,
-    asOf: "2030-01-01",
-  });
+  const result = fromHarness(h, "2030-01-01");
 
   it("reproduces the ground-truth balances", () => {
     const byName = new Map(
@@ -86,18 +88,13 @@ describe("computeFileExpectations: the reference's section 18 file", () => {
   });
 
   it("cuts off at asOf", () => {
-    const early = computeFileExpectations({
-      context: harness(raw, { asOf: "2024-03-31" }).context,
-      securities: h.securities,
-      asOf: "2024-03-31",
-    });
+    const early = fromHarness(
+      harness(raw, { asOf: "2024-03-31" }),
+      "2024-03-31",
+    );
     expect(early.fileBalances.get("acct-9")).toBe(502.5);
     expect(early.holdings[0].quantity).toBe(10);
-    const afterSplit = computeFileExpectations({
-      context: h.context,
-      securities: h.securities,
-      asOf: "2024-04-01",
-    });
+    const afterSplit = fromHarness(h, "2024-04-01");
     expect(afterSplit.holdings[0].quantity).toBe(20);
   });
 });

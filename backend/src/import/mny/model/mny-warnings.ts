@@ -205,6 +205,8 @@ export const MNY_WARNING_CODES = [
   "payeeDetailsKept",
   /** A KMyMoney cross-currency transfer has no exchange rate in its amounts or the file's prices. */
   "crossCurrencyTransferRateMissing",
+  /** A holding's imported trade totals do not add up to the file's stock values (spec 6.1). */
+  "tradeAmountsDiffer",
 ] as const;
 
 export type MnyWarningCode = (typeof MNY_WARNING_CODES)[number];
