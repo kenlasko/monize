@@ -19,17 +19,49 @@ describe("SecurityNoticeService", () => {
       grantId: "g1",
       clientId: "c1",
       clientName: "  Claude Desktop  ",
+      destination: "https://claude.test",
     });
     expect(notify).toHaveBeenCalledWith(
       "u1",
       expect.objectContaining({
         type: NotificationType.OAUTH_CLIENT_AUTHORIZED,
         dedupeKey: "oauth:grant:g1",
-        data: { clientId: "c1", clientName: "Claude Desktop" },
-        target: "/settings",
+        data: {
+          clientId: "c1",
+          clientName: "Claude Desktop",
+          destination: "https://claude.test",
+        },
+        target: "/settings#connected-apps",
       }),
       { fanOut: "detached" },
     );
+  });
+
+  it("leads with where the authorizations go, not the self-chosen name (GHSA-vmgq-326p-fprx)", async () => {
+    await service.oauthClientAuthorized("u1", {
+      grantId: "g1",
+      clientId: "c1",
+      clientName: "Google SignIn",
+      destination: "https://attacker-example.test",
+    });
+    const input = notify.mock.calls[0][1];
+    expect(input.title).toBe("New app connected to your Monize account");
+    expect(input.title).not.toContain("Google");
+    expect(input.message).toContain("calling itself Google SignIn");
+    expect(input.message).toContain("go to https://attacker-example.test");
+    expect(input.message).toContain("Connected Apps");
+  });
+
+  it("says the destination is unknown rather than storing an empty one", async () => {
+    await service.oauthClientAuthorized("u1", {
+      grantId: "g1",
+      clientId: "c1",
+      clientName: "Claude",
+      destination: null,
+    });
+    const input = notify.mock.calls[0][1];
+    expect(input.data).toEqual({ clientId: "c1", clientName: "Claude" });
+    expect(input.message).toContain("an unknown address");
   });
 
   it("bounds the client name and falls back to the client id when empty", async () => {
@@ -37,15 +69,17 @@ describe("SecurityNoticeService", () => {
       grantId: "g1",
       clientId: "c1",
       clientName: "x".repeat(300),
+      destination: null,
     });
     await service.oauthClientAuthorized("u1", {
       grantId: "g2",
       clientId: "c2",
       clientName: "   ",
+      destination: null,
     });
     expect(notify.mock.calls[0][1].data.clientName).toHaveLength(100);
     expect(notify.mock.calls[1][1].data.clientName).toBe("c2");
-    expect(notify.mock.calls[1][1].title).toContain("c2");
+    expect(notify.mock.calls[1][1].message).toContain("c2");
   });
 
   it("strips control and bidi characters from the client name", async () => {
@@ -53,11 +87,13 @@ describe("SecurityNoticeService", () => {
       grantId: "g1",
       clientId: "c1",
       clientName: "Good\u202Etpircs\nApp\u2066x\u200F",
+      destination: null,
     });
     await service.oauthClientAuthorized("u1", {
       grantId: "g2",
       clientId: "c2",
       clientName: "\u202E\u2069\n",
+      destination: null,
     });
     const first = notify.mock.calls[0][1];
     expect(first.data.clientName).toBe("Good tpircs App x");
@@ -72,6 +108,7 @@ describe("SecurityNoticeService", () => {
       grantId: "g1",
       clientId: "c1",
       clientName: `${"a".repeat(99)}\u{1F600}tail`,
+      destination: null,
     });
     const name: string = notify.mock.calls[0][1].data.clientName;
     expect(name).toBe(`${"a".repeat(99)}\u{1F600}`);
@@ -83,6 +120,7 @@ describe("SecurityNoticeService", () => {
       grantId: "g1",
       clientId: "c1",
       clientName: "Claude\u2028(official)\u2029x",
+      destination: null,
     });
     expect(notify.mock.calls[0][1].data.clientName).toBe("Claude (official) x");
   });
@@ -112,6 +150,7 @@ describe("SecurityNoticeService", () => {
         grantId: "g",
         clientId: "c",
         clientName: "n",
+        destination: null,
       }),
     ).resolves.toBeUndefined();
     expect(error).toHaveBeenCalledTimes(2);

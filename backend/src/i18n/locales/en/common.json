@@ -10,7 +10,13 @@
     "destinationUnknown": "Monize could not determine where this authorization would be sent. Do not allow access.",
     "unverifiedNotice": "This application registered itself with this Monize server, and Monize has not verified who operates it; its name is whatever it chose to call itself. Only allow access if you started this connection yourself from that application and the address above belongs to it.",
     "claimedWebsite": "Website stated by the application: {{ website }}",
-    "websiteMismatch": "The application says its website is {{ website }}, but the authorization will be sent to a different address."
+    "websiteMismatch": "The application says its website is {{ website }}, but the authorization will be sent to a different address.",
+    "pageTitle": "Allow access to your Monize account?",
+    "headingWeb": "{{ host }} wants access to your Monize account",
+    "headingDevice": "An application on this device wants access to your Monize account",
+    "headingApp": "An app that opens {{ scheme }} links wants access to your Monize account",
+    "headingUnknown": "An unidentified application wants access to your Monize account",
+    "selfNamed": "It calls itself \"{{ name }}\". Monize has not checked that name."
   },
   "import": {
     "voidedTransactionNote": "Voided in the source; the original amount was omitted from the export and imported as zero."

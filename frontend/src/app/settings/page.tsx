@@ -15,6 +15,7 @@ import { SecuritySection } from '@/components/settings/SecuritySection';
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
 import { BackupRestoreSection } from '@/components/settings/BackupRestoreSection';
 import { ApiAccessSection } from '@/components/settings/ApiAccessSection';
+import { ConnectedAppsSection } from '@/components/settings/ConnectedAppsSection';
 import { PayeeLookupSection } from '@/components/settings/payee-lookup/PayeeLookupSection';
 import { HelpSection } from '@/components/settings/HelpSection';
 import { AboutSection } from '@/components/settings/AboutSection';
@@ -321,6 +322,12 @@ function OwnerSettingsView() {
                   oidcPasswordLogin={oidcPasswordLogin}
                   onPreferencesUpdated={setPreferences}
                 />
+              </div>
+            )}
+
+            {!isDemoMode && (
+              <div id="connected-apps" className="scroll-mt-32 lg:scroll-mt-22">
+                <ConnectedAppsSection />
               </div>
             )}
 

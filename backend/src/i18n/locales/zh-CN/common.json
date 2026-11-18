@@ -10,7 +10,13 @@
     "destinationUnknown": "Monize 无法确定此授权将被发送到何处。请勿允许访问。",
     "unverifiedNotice": "此应用程序是自行在此 Monize 服务器上注册的，Monize 未验证其运营者身份；其名称是它自己选定的。仅当您亲自从该应用程序发起此连接，且上方地址确属该应用程序时，才允许访问。",
     "claimedWebsite": "应用程序声明的网站：{{ website }}",
-    "websiteMismatch": "该应用程序声称其网站为 {{ website }}，但授权将被发送到另一个地址。"
+    "websiteMismatch": "该应用程序声称其网站为 {{ website }}，但授权将被发送到另一个地址。",
+    "pageTitle": "允许访问您的 Monize 账户？",
+    "headingWeb": "{{ host }} 想要访问您的 Monize 账户",
+    "headingDevice": "此设备上的某个应用程序想要访问您的 Monize 账户",
+    "headingApp": "某个打开 {{ scheme }} 链接的应用想要访问您的 Monize 账户",
+    "headingUnknown": "某个身份不明的应用程序想要访问您的 Monize 账户",
+    "selfNamed": "它自称“{{ name }}”。Monize 未核实该名称。"
   },
   "import": {
     "voidedTransactionNote": "已在源中作废；原始金额未包含在导出中，因此以零导入。"

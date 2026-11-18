@@ -1083,5 +1083,9 @@
   "help": {
     "pageNotFound": "Page d'aide introuvable",
     "imageNotFound": "Image d'aide introuvable"
+  },
+  "oauth": {
+    "connectionNotFound": "Cette application connectée est introuvable. Elle a peut-être déjà été révoquée.",
+    "invalidConnectionId": "Identifiant d'application connectée non valide"
   }
 }

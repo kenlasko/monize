@@ -7,6 +7,8 @@ import { EncryptionModule } from "../common/encryption/encryption.module";
 import { OAuthProviderService } from "./oauth-provider.service";
 import { OAuthInteractionController } from "./oauth-interaction.controller";
 import { OAuthMetadataController } from "./oauth-metadata.controller";
+import { OAuthConnectionsController } from "./oauth-connections.controller";
+import { OAuthConnectionsService } from "./oauth-connections.service";
 import { AuthModule } from "../auth/auth.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { OAUTH_GRANT_REVOKER } from "../auth/credential-revocation";
@@ -21,11 +23,16 @@ import { OAUTH_GRANT_REVOKER } from "../auth/credential-revocation";
   providers: [
     OAuthProviderService,
     OauthSigningKeysService,
+    OAuthConnectionsService,
     // What a password reset or change calls to end the account's OAuth grants
     // (`auth/credential-revocation.ts`), reachable without importing this class.
     { provide: OAUTH_GRANT_REVOKER, useExisting: OAuthProviderService },
   ],
-  controllers: [OAuthInteractionController, OAuthMetadataController],
+  controllers: [
+    OAuthInteractionController,
+    OAuthMetadataController,
+    OAuthConnectionsController,
+  ],
   exports: [OAuthProviderService],
 })
 export class OAuthModule {}

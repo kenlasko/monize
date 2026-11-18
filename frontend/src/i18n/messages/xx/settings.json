@@ -673,6 +673,39 @@
       "never": "[XX-Never-XX]"
     }
   },
+  "connectedApps": {
+    "heading": "[XX-Connected Apps-XX]",
+    "description": "[XX-Apps you have allowed into your Monize account from its consent screen, such as AI assistants connected over MCP. Each line starts with where the app's authorizations go, because an app's name is whatever it chose to call itself. Revoke any app you do not recognize.-XX]",
+    "emptyTitle": "[XX-No connected apps-XX]",
+    "emptyDescription": "[XX-When you allow an app on Monize's consent screen, it appears here.-XX]",
+    "loadError": "[XX-Connected apps could not be loaded, so this list may not be complete.-XX]",
+    "retryButton": "[XX-Try again-XX]",
+    "callsItself": "[XX-Calls itself “{name}”-XX]",
+    "destinationUnknown": "[XX-Destination unknown-XX]",
+    "registrationExpired": "[XX-Registration expired; the app registers again when it reconnects-XX]",
+    "scopes": {
+      "read": "[XX-Read-XX]",
+      "write": "[XX-Write-XX]"
+    },
+    "connectedOn": "[XX-Connected {date}-XX]",
+    "lastUsed": "[XX-Last used {time}-XX]",
+    "notUsedYet": "[XX-Not used yet-XX]",
+    "expiresOn": "[XX-Access ends {date}-XX]",
+    "separator": "[XX- · -XX]",
+    "revokeButton": "[XX-Revoke-XX]",
+    "revokeAriaLabel": "[XX-Revoke {name}-XX]",
+    "revokeModal": {
+      "title": "[XX-Revoke this app?-XX]",
+      "message": "[XX-“{name}” loses access to your Monize account right away. To use it again, connect it again from the app.-XX]",
+      "confirmLabel": "[XX-Revoke-XX]",
+      "revoking": "[XX-Revoking...-XX]"
+    },
+    "toasts": {
+      "loadFailed": "[XX-Could not load connected apps-XX]",
+      "revoked": "[XX-App revoked-XX]",
+      "revokeFailed": "[XX-Could not revoke the app-XX]"
+    }
+  },
   "autoBackup": {
     "heading": "[XX-Automatic Backup-XX]",
     "description": "[XX-One schedule for the whole deployment: the server backs up every account's data to the storage below. Since Monize runs in Docker, a local folder must be mapped into the container as a volume (e.g., -v /host/backups:/data/backups).-XX]",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "[XX-Shared Access-XX]",
     "emergencyAccess": "[XX-Emergency Access-XX]",
     "apiAccess": "[XX-API Access-XX]",
+    "connectedApps": "[XX-Connected Apps-XX]",
     "aiSettings": "[XX-AI Settings-XX]",
     "emailReceipts": "[XX-Email Receipts-XX]",
     "backupRestore": "[XX-Backup & Restore-XX]",

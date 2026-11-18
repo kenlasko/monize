@@ -10,7 +10,13 @@
     "destinationUnknown": "Monize không thể xác định ủy quyền này sẽ được gửi đến đâu. Đừng cho phép truy cập.",
     "unverifiedNotice": "Ứng dụng này tự đăng ký với máy chủ Monize này và Monize chưa xác minh ai là người vận hành nó; tên của nó là tên do nó tự đặt. Chỉ cho phép truy cập nếu chính bạn đã bắt đầu kết nối này từ ứng dụng đó và địa chỉ ở trên thuộc về ứng dụng đó.",
     "claimedWebsite": "Trang web do ứng dụng khai báo: {{ website }}",
-    "websiteMismatch": "Ứng dụng cho biết trang web của nó là {{ website }}, nhưng ủy quyền sẽ được gửi đến một địa chỉ khác."
+    "websiteMismatch": "Ứng dụng cho biết trang web của nó là {{ website }}, nhưng ủy quyền sẽ được gửi đến một địa chỉ khác.",
+    "pageTitle": "Cho phép truy cập vào tài khoản Monize của bạn?",
+    "headingWeb": "{{ host }} muốn truy cập vào tài khoản Monize của bạn",
+    "headingDevice": "Một ứng dụng trên thiết bị này muốn truy cập vào tài khoản Monize của bạn",
+    "headingApp": "Một ứng dụng mở liên kết {{ scheme }} muốn truy cập vào tài khoản Monize của bạn",
+    "headingUnknown": "Một ứng dụng không xác định được danh tính muốn truy cập vào tài khoản Monize của bạn",
+    "selfNamed": "Ứng dụng tự gọi mình là “{{ name }}”. Monize chưa kiểm tra tên này."
   },
   "import": {
     "voidedTransactionNote": "Đã bị hủy ở nguồn; số tiền gốc không có trong tệp xuất và được nhập bằng không."

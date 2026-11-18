@@ -399,6 +399,8 @@
     "security": {
       "oauthTitle": "Nieuwe app gekoppeld: {{ clientName }}",
       "oauthMessage": "De applicatie {{ clientName }} heeft zojuist toegang gekregen tot je Monize-account. Was jij dit niet, wijzig dan nu je wachtwoord: daarmee wordt de toegang van alle gekoppelde applicaties ingetrokken.",
+      "oauthConnectedTitle": "Nieuwe app gekoppeld aan je Monize-account",
+      "oauthConnectedMessage": "Een applicatie die zichzelf {{ clientName }} noemt, kreeg toegang en haar autorisaties gaan naar {{ destination }}. Was jij dit niet, trek de toegang dan in bij Instellingen onder “Gekoppelde apps”.",
       "relayTitle": "Een nieuwe verbinding heeft je AI-chat beantwoord",
       "relayMessage": "Een verbinding die je Monize AI-chat nog niet eerder had beantwoord, heeft zojuist een prompt opgehaald. Heb je deze assistent niet gekoppeld, wijzig dan je wachtwoord."
     },

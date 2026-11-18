@@ -399,6 +399,8 @@
     "security": {
       "oauthTitle": "新應用程式已連線：{{ clientName }}",
       "oauthMessage": "應用程式 {{ clientName }} 剛剛獲得存取您 Monize 帳戶的權限。如果不是您本人操作，請立即變更密碼：這會撤銷所有已連線應用程式的存取權限。",
+      "oauthConnectedTitle": "有新的應用程式連線到您的 Monize 帳戶",
+      "oauthConnectedMessage": "一個自稱 {{ clientName }} 的應用程式已獲得存取權限，其授權將傳送到 {{ destination }}。如果不是您本人操作，請在設定的「已連線的應用程式」中撤銷。",
       "relayTitle": "新連線已回應您的 AI 聊天",
       "relayMessage": "一個先前從未回應過您 Monize AI 聊天的連線剛剛取得了一則提示。如果您沒有連線此助理，請變更密碼。"
     },

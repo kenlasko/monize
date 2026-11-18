@@ -19,6 +19,7 @@ import { withUserContext } from "../common/db/with-context";
 import { OAuthPayload } from "./entities/oauth-payload.entity";
 import { OauthSigningKeysService } from "./oauth-signing-keys.service";
 import { OIDC_PROVIDER_ROUTES } from "./oidc-provider-paths";
+import { clientNameProblem, redirectUriProblem } from "./client-identity";
 
 /**
  * The scopes an OAuth client may request, derived from the single vocabulary in
@@ -36,6 +37,26 @@ export type McpScope = `${typeof MCP_SCOPE_PREFIX}${ApiScope}`;
  * let one unauthenticated request store fifty (#2177).
  */
 export const MAX_DCR_REDIRECT_URIS = 10;
+
+/**
+ * Why a registration's `redirect_uris` or `client_name` is refused, or null.
+ * A value of the wrong shape is left to the provider's own checks.
+ */
+function registrationMetadataProblem(
+  key: string,
+  value: unknown,
+): string | null {
+  if (key === "client_name") return clientNameProblem(value);
+  if (key !== "redirect_uris" || !Array.isArray(value)) return null;
+  if (value.length > MAX_DCR_REDIRECT_URIS) {
+    return `redirect_uris must not contain more than ${MAX_DCR_REDIRECT_URIS} entries`;
+  }
+  for (const uri of value) {
+    const problem = redirectUriProblem(uri);
+    if (problem) return problem;
+  }
+  return null;
+}
 
 @Injectable()
 export class OAuthProviderService implements OnModuleInit {
@@ -224,21 +245,15 @@ export class OAuthProviderService implements OnModuleInit {
       // The message is an OAuth error_description, ASCII for the client
       // developer (RFC 7591 section 3.2.2), so it is not translated.
       extraClientMetadata: {
-        properties: ["redirect_uris"],
+        properties: ["redirect_uris", "client_name"],
         validator: (ctx: unknown, key: string, value: unknown) => {
           // Only a registration has a request context. A stored client is
           // rebuilt through the same schema on every lookup, with none, and is
-          // never refused here after the fact.
-          if (
-            ctx !== undefined &&
-            key === "redirect_uris" &&
-            Array.isArray(value) &&
-            value.length > MAX_DCR_REDIRECT_URIS
-          ) {
-            throw new errors.InvalidClientMetadata(
-              `redirect_uris must not contain more than ${MAX_DCR_REDIRECT_URIS} entries`,
-            );
-          }
+          // never refused here after the fact; every surface that names one
+          // cleans it with `displayClientName` instead.
+          if (ctx === undefined) return;
+          const problem = registrationMetadataProblem(key, value);
+          if (problem) throw new errors.InvalidClientMetadata(problem);
         },
       },
       clientDefaults: {

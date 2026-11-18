@@ -213,6 +213,8 @@
   "security": {
     "oauthTitle": "Nouvelle application connectée : {clientName}",
     "oauthMessage": "L'application {clientName} vient de recevoir l'accès à votre compte Monize. Si ce n'était pas vous, changez votre mot de passe maintenant : cela révoque l'accès de toutes les applications connectées.",
+    "oauthConnectedTitle": "Nouvelle application connectée à votre compte Monize",
+    "oauthConnectedMessage": "Une application se nommant {clientName} a reçu l'accès, et ses autorisations sont envoyées à {destination}. Si ce n'était pas vous, révoquez-la dans les paramètres, sous « Applications connectées ».",
     "relayTitle": "Une nouvelle connexion a répondu à votre chat IA",
     "relayMessage": "Une connexion qui n'avait jamais répondu à votre chat IA Monize vient de récupérer une requête. Si vous n'avez pas connecté cet assistant, changez votre mot de passe."
   },

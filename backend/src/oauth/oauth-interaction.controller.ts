@@ -10,6 +10,7 @@ import {
   MCP_RESOURCE_SCOPES,
 } from "./oauth-provider.service";
 import { renderConsentPage } from "./consent-template";
+import { describeRedirectTarget } from "./redirect-target";
 import { AuthService } from "../auth/auth.service";
 import { withUserContext } from "../common/db/with-context";
 import { SecurityNoticeService } from "../notifications/security-notice.service";
@@ -236,6 +237,11 @@ export class OAuthInteractionController {
             grantId,
             clientId,
             clientName: name,
+            destination: describeRedirectTarget(
+              typeof params.redirect_uri === "string"
+                ? params.redirect_uri
+                : null,
+            ),
           }),
         );
       } catch (err) {

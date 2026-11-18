@@ -1083,5 +1083,9 @@
   "help": {
     "pageNotFound": "[XX-Help page not found-XX]",
     "imageNotFound": "[XX-Help image not found-XX]"
+  },
+  "oauth": {
+    "connectionNotFound": "[XX-That connected app was not found. It may already have been revoked.-XX]",
+    "invalidConnectionId": "[XX-Invalid connected app id-XX]"
   }
 }

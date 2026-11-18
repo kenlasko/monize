@@ -71,6 +71,9 @@ export const NOTIFICATION_EMAIL_MESSAGES = {
   "security.oauthTitle": "New app connected: {{ clientName }}",
   "security.oauthMessage":
     "The application {{ clientName }} was just granted access to your Monize account. If this wasn't you, change your password now: that revokes every connected application's access.",
+  "security.oauthConnectedTitle": "New app connected to your Monize account",
+  "security.oauthConnectedMessage":
+    "An application calling itself {{ clientName }} was granted access, and its authorizations go to {{ destination }}. If this wasn't you, revoke it in Settings under Connected Apps.",
   "security.relayTitle": "A new connection answered your AI chat",
   "security.relayMessage":
     "A connection that has not answered your Monize AI chat before just picked up a prompt. If you did not connect this assistant, change your password.",

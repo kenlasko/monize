@@ -1083,5 +1083,9 @@
   "help": {
     "pageNotFound": "Không tìm thấy trang trợ giúp",
     "imageNotFound": "Không tìm thấy hình ảnh trợ giúp"
+  },
+  "oauth": {
+    "connectionNotFound": "Không tìm thấy ứng dụng đã kết nối đó. Có thể nó đã bị thu hồi.",
+    "invalidConnectionId": "ID ứng dụng đã kết nối không hợp lệ"
   }
 }

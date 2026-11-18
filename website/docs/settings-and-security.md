@@ -18,6 +18,7 @@ Click **Settings** (the gear icon with your first name, in the top-right corner)
 | **Preferences** | Language, appearance, dates and numbers, investments, transactions, default views, application behaviour (see [Preferences](#preferences)) |
 | **Notifications** | Email, browser push, per-notification delivery and cooldown (see [Notifications](#notifications)) |
 | **Security** | Password, two-factor authentication, backup codes, trusted devices |
+| **Connected Apps** | Apps you allowed on the OAuth consent screen, each with **Revoke** (see [Connected Apps](#connected-apps)) |
 | **Shared Access** | Delegated users (see [Shared Access](shared-access.md)) |
 | **Emergency Access** | Dead-man's switch for trusted contacts (see [Emergency Access](emergency-access.md)) |
 | **API Access** | Personal access tokens and the MCP server URL (see [Personal Access Tokens](#personal-access-tokens-pats)) |
@@ -204,7 +205,7 @@ Critical budget alerts (over budget, income shortfall) are sent immediately rega
 
 ### Security Notices
 
-Monize tells you when somebody new can reach your account. You get a notice when a new application is granted access through the OAuth consent page, and when a connection answers your AI chat for the first time. Each notice reaches the bell, and by default also reaches you by immediate email and browser push. You can change this in the **Security** row of the delivery matrix. If a notice is not from you, change your password: that revokes the access of every connected application and every API token.
+Monize tells you when somebody new can reach your account. You get a notice when a new application is granted access through the OAuth consent page, and when a connection answers your AI chat for the first time. Each notice reaches the bell, and by default also reaches you by immediate email and browser push. You can change this in the **Security** row of the delivery matrix. The notice about a new application leads with where that application's authorizations go, because its name is whatever it chose to call itself. If it is not from you, revoke the application in [Connected Apps](#connected-apps). If a notice suggests someone knows your password, change it: that revokes the access of every connected application and every API token.
 
 ### Browser Push
 
@@ -779,6 +780,23 @@ Tokens cover your financial data: accounts, transactions, categories, payees, ta
 > **Security Note:** Treat a token like a password. It works without a second factor. Create one token per script or application so you can revoke one without breaking the rest, give it only the scope it needs (**Read** unless the script must change data), keep it out of source control and shared chats, and revoke it when you stop using it.
 
 For MCP integration details, see [AI > MCP Server](ai.md#mcp-server).
+
+## Connected Apps
+
+**Settings > Connected Apps** lists every application you have allowed into your account on Monize's consent screen, such as Claude Desktop or another MCP client added as a connector. Applications register themselves with Monize, so their names are not checked. Each line therefore starts with the address the application's authorizations are sent to, and then the name it calls itself.
+
+![The Connected Apps section, listing one app with its address, name, scopes and Revoke button](images/settings-connected-apps.png)
+
+Each app shows:
+
+- **Address:** where the application receives its authorizations, for example `https://claude.ai`, or `http://127.0.0.1:...` for an application on your own computer. *Registration expired* means the application has been idle long enough that Monize forgot its registration; it registers again the next time it connects.
+- **Calls itself:** the name the application gave when it registered.
+- **Scopes:** **Read**, **Write**, or both.
+- When you connected it, when it was last used, and when its access ends unless you allow it again.
+
+Click **Revoke** and confirm to end an application's access right away. Its tokens stop working immediately, and to use it again you connect it again from the application. Revoking one app leaves the others, your API tokens and your password alone.
+
+> **Not sure about an app?** If you do not recognize the address, revoke it. A link that opens Monize's consent screen when you did not start connecting an application yourself is a phishing attempt, whatever name it shows.
 
 ---
 

@@ -69,6 +69,9 @@ vi.mock('@/components/settings/BackupRestoreSection', () => ({
 vi.mock('@/components/settings/ApiAccessSection', () => ({
   ApiAccessSection: () => <div data-testid="api-access" />,
 }));
+vi.mock('@/components/settings/ConnectedAppsSection', () => ({
+  ConnectedAppsSection: () => <div data-testid="connected-apps" />,
+}));
 vi.mock('@/components/settings/SettingsNav', () => ({
   SettingsNav: () => <nav data-testid="nav" />,
 }));

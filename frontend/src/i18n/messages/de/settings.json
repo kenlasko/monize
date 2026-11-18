@@ -673,6 +673,39 @@
       "never": "Nie"
     }
   },
+  "connectedApps": {
+    "heading": "Verbundene Apps",
+    "description": "Apps, denen Sie über den Zustimmungsbildschirm Zugriff auf Ihr Monize-Konto erlaubt haben, etwa über MCP verbundene KI-Assistenten. Jede Zeile beginnt mit dem Ziel, an das die Autorisierungen der App gehen, denn der Name einer App ist nur das, was sie sich selbst gegeben hat. Widerrufen Sie jede App, die Sie nicht kennen.",
+    "emptyTitle": "Keine verbundenen Apps",
+    "emptyDescription": "Wenn Sie auf dem Zustimmungsbildschirm von Monize eine App zulassen, erscheint sie hier.",
+    "loadError": "Verbundene Apps konnten nicht geladen werden, daher ist diese Liste möglicherweise unvollständig.",
+    "retryButton": "Erneut versuchen",
+    "callsItself": "Nennt sich „{name}“",
+    "destinationUnknown": "Ziel unbekannt",
+    "registrationExpired": "Registrierung abgelaufen; die App registriert sich beim erneuten Verbinden neu",
+    "scopes": {
+      "read": "Lesen",
+      "write": "Schreiben"
+    },
+    "connectedOn": "Verbunden am {date}",
+    "lastUsed": "Zuletzt verwendet {time}",
+    "notUsedYet": "Noch nicht verwendet",
+    "expiresOn": "Zugriff endet am {date}",
+    "separator": " · ",
+    "revokeButton": "Widerrufen",
+    "revokeAriaLabel": "{name} widerrufen",
+    "revokeModal": {
+      "title": "Diese App widerrufen?",
+      "message": "„{name}“ verliert sofort den Zugriff auf Ihr Monize-Konto. Um sie erneut zu nutzen, verbinden Sie sie erneut über die App.",
+      "confirmLabel": "Widerrufen",
+      "revoking": "Wird widerrufen..."
+    },
+    "toasts": {
+      "loadFailed": "Verbundene Apps konnten nicht geladen werden",
+      "revoked": "App widerrufen",
+      "revokeFailed": "App konnte nicht widerrufen werden"
+    }
+  },
   "autoBackup": {
     "heading": "Automatisches Backup",
     "description": "Ein Zeitplan für die gesamte Installation: Der Server sichert die Daten jedes Kontos in den unten angegebenen Speicher. Da Monize in Docker läuft, muss ein lokaler Ordner als Volume in den Container eingebunden werden (z. B. -v /host/backups:/data/backups).",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "Gemeinsamer Zugriff",
     "emergencyAccess": "Notfallzugang",
     "apiAccess": "API-Zugang",
+    "connectedApps": "Verbundene Apps",
     "aiSettings": "KI-Einstellungen",
     "emailReceipts": "E-Mail-Belege",
     "backupRestore": "Backup & Wiederherstellung",

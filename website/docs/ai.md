@@ -255,18 +255,19 @@ This is the easiest method when your Monize instance is publicly reachable. Toke
 1. In Claude Desktop, open **Settings > Connectors**.
 2. Click **Add custom connector** (or **Add Connector**).
 3. Enter your Monize URL: `https://monize.example.com` (no trailing path -- the connector resolves the MCP and OAuth metadata endpoints automatically via `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server`).
-4. Claude Desktop opens your browser to Monize's consent screen.
-5. Review the requested scopes (`monize:read`, `monize:write`) and click **Allow**.
+4. Claude Desktop opens your browser to Monize's consent screen. Its heading names where the authorization will be sent (for example, *claude.ai wants access to your Monize account*), and the line below it gives the name the application chose for itself. Anyone can register an application under any name, so check the address, not the name.
+5. Review the requested scopes (`monize:read`, `monize:write`) and click **Allow access**.
 6. The browser redirects back to Claude Desktop, which stores the access + refresh tokens internally.
 
 After consent, Claude Desktop automatically refreshes tokens (default access-token lifetime is 1 hour, refresh-token lifetime is 14 days). You can revoke access from either side:
 
 - **From Claude Desktop:** remove the connector in **Settings > Connectors**.
-- **From Monize:** an admin can disable the user account or reset their password in **Admin > User Management** -- both revoke every active OAuth token, refresh token, and authorization grant for that user immediately.
+- **From Monize:** click **Revoke** beside the app in **Settings > Connected Apps** (see [Connected Apps](settings-and-security.md#connected-apps)). It stops working immediately. Changing your password, or an admin disabling the account or resetting its password in **Admin > User Management**, revokes every app at once.
 
 **Security notes:**
 
 - All grants are PKCE-protected (S256). The OAuth flow rejects the legacy implicit and password grant types entirely.
+- Applications register themselves, so Monize cannot vouch for an application's name. Registration refuses a name that claims to be Monize or hides characters that change how it reads, and an application may only receive authorizations over `https`, or over plain `http` on the same computer (`localhost`, `127.0.0.1`).
 - Tokens are audience-bound to your Monize MCP URL. A token issued for `https://monize.example.com/api/v1/mcp` cannot be replayed against a different Monize instance.
 - Disabling a user in **Admin > User Management** immediately invalidates every existing OAuth access token, refresh token, and grant for that user, in addition to refresh tokens and PATs.
 

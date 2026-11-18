@@ -131,6 +131,42 @@ test("settings-api-access", async () => {
   await docShot(page, "settings-api-access", await settingsCard("API Access"));
 });
 
+/**
+ * Connected Apps lists OAuth grants, which only a real consent flow creates;
+ * the list is drawn from a fixture so the picture shows what a row holds.
+ */
+test("settings-connected-apps", async () => {
+  await page.route(/\/api\/v1\/oauth-connections$/, async (route) => {
+    if (route.request().method() !== "GET") return route.continue();
+    const day = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    await route.fulfill({
+      json: [
+        {
+          id: "docs-grant-claude",
+          clientId: "docs-client-claude",
+          clientName: "Claude",
+          clientKnown: true,
+          destinations: ["https://claude.ai"],
+          scopes: ["read", "write"],
+          grantedAt: new Date(now - 3 * day).toISOString(),
+          expiresAt: new Date(now + 11 * day).toISOString(),
+          lastUsedAt: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
+        },
+      ],
+    });
+  });
+  try {
+    await docShot(
+      page,
+      "settings-connected-apps",
+      await settingsCard("Connected Apps"),
+    );
+  } finally {
+    await page.unrouteAll({ behavior: "wait" });
+  }
+});
+
 test("settings-api-token-dialog", async () => {
   const card = await settingsCard("API Access");
   await card.getByRole("button", { name: "Create Token" }).click();

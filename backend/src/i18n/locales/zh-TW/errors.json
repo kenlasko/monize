@@ -1083,5 +1083,9 @@
   "help": {
     "pageNotFound": "找不到說明頁面",
     "imageNotFound": "找不到說明圖片"
+  },
+  "oauth": {
+    "connectionNotFound": "找不到該已連線的應用程式，可能已被撤銷。",
+    "invalidConnectionId": "已連線的應用程式 ID 無效"
   }
 }

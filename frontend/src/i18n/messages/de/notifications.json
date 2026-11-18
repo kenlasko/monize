@@ -213,6 +213,8 @@
   "security": {
     "oauthTitle": "Neue App verbunden: {clientName}",
     "oauthMessage": "Der Anwendung {clientName} wurde soeben Zugriff auf Ihr Monize-Konto gewährt. Wenn Sie das nicht waren, ändern Sie jetzt Ihr Passwort: Dadurch wird der Zugriff aller verbundenen Anwendungen widerrufen.",
+    "oauthConnectedTitle": "Neue App mit Ihrem Monize-Konto verbunden",
+    "oauthConnectedMessage": "Einer Anwendung, die sich {clientName} nennt, wurde Zugriff gewährt; ihre Autorisierungen gehen an {destination}. Wenn Sie das nicht waren, widerrufen Sie sie in den Einstellungen unter „Verbundene Apps“.",
     "relayTitle": "Eine neue Verbindung hat Ihren KI-Chat beantwortet",
     "relayMessage": "Eine Verbindung, die Ihren Monize-KI-Chat bisher nicht beantwortet hat, hat gerade eine Eingabe abgeholt. Wenn Sie diesen Assistenten nicht verbunden haben, ändern Sie Ihr Passwort."
   },

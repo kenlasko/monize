@@ -1083,5 +1083,9 @@
   "help": {
     "pageNotFound": "ヘルプページが見つかりません",
     "imageNotFound": "ヘルプ画像が見つかりません"
+  },
+  "oauth": {
+    "connectionNotFound": "その接続済みアプリは見つかりませんでした。すでに取り消されている可能性があります。",
+    "invalidConnectionId": "接続済みアプリの ID が無効です"
   }
 }

@@ -10,7 +10,13 @@
     "destinationUnknown": "Monize konnte nicht ermitteln, wohin diese Autorisierung gesendet würde. Erlauben Sie den Zugriff nicht.",
     "unverifiedNotice": "Diese Anwendung hat sich selbst bei diesem Monize-Server registriert, und Monize hat nicht überprüft, wer sie betreibt; ihr Name ist der, den sie sich selbst gegeben hat. Erlauben Sie den Zugriff nur, wenn Sie diese Verbindung selbst aus dieser Anwendung gestartet haben und die obige Adresse zu ihr gehört.",
     "claimedWebsite": "Von der Anwendung angegebene Website: {{ website }}",
-    "websiteMismatch": "Die Anwendung gibt als ihre Website {{ website }} an, aber die Autorisierung wird an eine andere Adresse gesendet."
+    "websiteMismatch": "Die Anwendung gibt als ihre Website {{ website }} an, aber die Autorisierung wird an eine andere Adresse gesendet.",
+    "pageTitle": "Zugriff auf Ihr Monize-Konto erlauben?",
+    "headingWeb": "{{ host }} möchte auf Ihr Monize-Konto zugreifen",
+    "headingDevice": "Eine Anwendung auf diesem Gerät möchte auf Ihr Monize-Konto zugreifen",
+    "headingApp": "Eine App, die {{ scheme }}-Links öffnet, möchte auf Ihr Monize-Konto zugreifen",
+    "headingUnknown": "Eine nicht identifizierte Anwendung möchte auf Ihr Monize-Konto zugreifen",
+    "selfNamed": "Sie nennt sich „{{ name }}“. Monize hat diesen Namen nicht überprüft."
   },
   "import": {
     "voidedTransactionNote": "In der Quelle ungültig gemacht; der ursprüngliche Betrag fehlte im Export und wurde als Null importiert."

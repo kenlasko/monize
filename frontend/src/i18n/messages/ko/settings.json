@@ -673,6 +673,39 @@
       "never": "없음"
     }
   },
+  "connectedApps": {
+    "heading": "연결된 앱",
+    "description": "동의 화면에서 Monize 계정에 대한 접근을 허용한 앱입니다. MCP로 연결된 AI 어시스턴트 등이 해당합니다. 앱 이름은 앱이 스스로 정한 것이므로, 각 줄은 앱의 권한 부여 정보가 전송되는 곳으로 시작합니다. 알아볼 수 없는 앱은 취소하세요.",
+    "emptyTitle": "연결된 앱 없음",
+    "emptyDescription": "Monize 동의 화면에서 앱을 허용하면 여기에 표시됩니다.",
+    "loadError": "연결된 앱을 불러오지 못했으므로 이 목록이 완전하지 않을 수 있습니다.",
+    "retryButton": "다시 시도",
+    "callsItself": "스스로를 “{name}”(이)라고 부름",
+    "destinationUnknown": "대상 알 수 없음",
+    "registrationExpired": "등록이 만료되었습니다. 앱은 다시 연결될 때 다시 등록합니다",
+    "scopes": {
+      "read": "읽기",
+      "write": "쓰기"
+    },
+    "connectedOn": "{date}에 연결됨",
+    "lastUsed": "마지막 사용 {time}",
+    "notUsedYet": "아직 사용하지 않음",
+    "expiresOn": "접근 종료일 {date}",
+    "separator": " · ",
+    "revokeButton": "취소",
+    "revokeAriaLabel": "{name} 취소",
+    "revokeModal": {
+      "title": "이 앱을 취소하시겠습니까?",
+      "message": "“{name}”은(는) Monize 계정에 대한 접근 권한을 즉시 잃습니다. 다시 사용하려면 앱에서 다시 연결하세요.",
+      "confirmLabel": "취소",
+      "revoking": "취소하는 중..."
+    },
+    "toasts": {
+      "loadFailed": "연결된 앱을 불러오지 못했습니다",
+      "revoked": "앱을 취소했습니다",
+      "revokeFailed": "앱을 취소하지 못했습니다"
+    }
+  },
   "autoBackup": {
     "heading": "자동 백업",
     "description": "배포 전체에 하나의 일정이 적용됩니다. 서버는 모든 계정의 데이터를 아래 저장소에 백업합니다. Monize는 도커에서 실행되므로 로컬 폴더를 볼륨으로 컨테이너에 연결해야 합니다(예: -v /host/backups:/data/backups).",
@@ -1088,6 +1121,7 @@
     "sharedAccess": "공유 접근",
     "emergencyAccess": "긴급 접근",
     "apiAccess": "API 접근",
+    "connectedApps": "연결된 앱",
     "aiSettings": "AI 설정",
     "emailReceipts": "이메일 영수증",
     "backupRestore": "백업 및 복원",

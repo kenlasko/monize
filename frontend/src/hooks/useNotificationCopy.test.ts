@@ -353,6 +353,21 @@ describe('useNotificationCopy: security notifications', () => {
     expect(copy.message).toContain('The application <b>Claude</b> was just granted access');
   });
 
+  it('OAUTH_CLIENT_AUTHORIZED leads with the destination when the row carries one', () => {
+    const copy = copyOf(
+      row('OAUTH_CLIENT_AUTHORIZED', {
+        clientId: 'c1',
+        clientName: 'Google SignIn',
+        destination: 'https://attacker-example.test',
+      }),
+    );
+    expect(copy.title).toBe('New app connected to your Monize account');
+    expect(copy.title).not.toContain('Google');
+    expect(copy.message).toContain('calling itself Google SignIn');
+    expect(copy.message).toContain('go to https://attacker-example.test');
+    expect(copy.message).toContain('Connected Apps');
+  });
+
   it('RELAY_CREDENTIAL_FIRST_USE needs no facts', () => {
     const copy = copyOf(row('RELAY_CREDENTIAL_FIRST_USE', { credentialKind: 'pat' }));
     expect(copy.title).toBe('A new connection answered your AI chat');

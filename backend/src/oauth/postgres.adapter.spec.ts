@@ -5,6 +5,9 @@ import {
   OAUTH_SWEEP_MAX_BATCHES,
   makeAdapterFactory,
   sweepOAuthPayloads,
+  findGrantsForAccount,
+  revokeGrantForAccount,
+  OAUTH_CONNECTIONS_LIST_MAX,
 } from "./postgres.adapter";
 
 describe("PostgresAdapter", () => {
@@ -419,5 +422,121 @@ describe("PostgresAdapter", () => {
     expect((accessToken as any).model).toBe("AccessToken");
     expect((session as any).model).toBe("Session");
     expect((accessToken as any).dataSource).toBe(dataSource);
+  });
+
+  /**
+   * A query builder that records every call and resolves the terminal one.
+   * The SQL these build runs for real in
+   * `test/integration/oauth-connected-apps.integration.spec.ts`; this proves
+   * the predicates each statement carries.
+   */
+  function recordingBuilder(result: unknown) {
+    const calls: Array<[string, unknown[]]> = [];
+    const builder: Record<string, unknown> = {};
+    for (const name of [
+      "where",
+      "andWhere",
+      "limit",
+      "select",
+      "addSelect",
+      "groupBy",
+      "delete",
+    ]) {
+      builder[name] = (...args: unknown[]) => {
+        calls.push([name, args]);
+        return builder;
+      };
+    }
+    for (const name of ["getMany", "getRawMany", "execute"]) {
+      builder[name] = () => Promise.resolve(result);
+    }
+    return { builder, calls };
+  }
+
+  describe("findGrantsForAccount (Settings > Connected apps)", () => {
+    it("reads only the account's live grants, then their newest token", async () => {
+      const grants = recordingBuilder([
+        { id: "old", payload: { iat: 10 }, expiresAt: null },
+        { id: "new", payload: { iat: 20 }, expiresAt: null },
+      ]);
+      const used = recordingBuilder([{ grantId: "new", lastIat: "30" }]);
+      const createQueryBuilder = jest
+        .fn()
+        .mockReturnValueOnce(grants.builder)
+        .mockReturnValueOnce(used.builder);
+      const dataSource = {
+        getRepository: () => ({ createQueryBuilder }),
+      } as any;
+
+      const rows = await findGrantsForAccount(dataSource, "user-1");
+
+      expect(rows.map((r) => [r.id, r.lastUsedAt?.getTime() ?? null])).toEqual([
+        ["new", 30_000],
+        ["old", null],
+      ]);
+      const sql = JSON.stringify(grants.calls);
+      expect(sql).toContain("p.model = 'Grant'");
+      expect(sql).toContain("p.payload ->> 'accountId' = :accountId");
+      expect(sql).toContain('"accountId":"user-1"');
+      expect(sql).toContain("expires_at > :now");
+      expect(grants.calls).toContainEqual([
+        "limit",
+        [OAUTH_CONNECTIONS_LIST_MAX],
+      ]);
+      expect(used.calls).toContainEqual([
+        "where",
+        ["p.grant_id IN (:...ids)", { ids: ["old", "new"] }],
+      ]);
+    });
+
+    it("does not ask about tokens when the account has no grants", async () => {
+      const grants = recordingBuilder([]);
+      const createQueryBuilder = jest.fn().mockReturnValue(grants.builder);
+      const dataSource = {
+        getRepository: () => ({ createQueryBuilder }),
+      } as any;
+
+      await expect(findGrantsForAccount(dataSource, "u")).resolves.toEqual([]);
+      expect(createQueryBuilder).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("revokeGrantForAccount (Settings > Connected apps)", () => {
+    function makeRevokeSource(grantAffected: number) {
+      const tokens = recordingBuilder({ affected: 2 });
+      const grant = recordingBuilder({ affected: grantAffected });
+      const createQueryBuilder = jest
+        .fn()
+        .mockReturnValueOnce(tokens.builder)
+        .mockReturnValueOnce(grant.builder);
+      const dataSource = {
+        getRepository: () => ({ createQueryBuilder }),
+      } as any;
+      return { dataSource, tokens, grant };
+    }
+
+    it("deletes the tokens, then the grant, each only if the account owns it", async () => {
+      const { dataSource, tokens, grant } = makeRevokeSource(1);
+
+      await expect(
+        revokeGrantForAccount(dataSource, "user-1", "grant-1"),
+      ).resolves.toBe(true);
+
+      const tokenSql = JSON.stringify(tokens.calls);
+      expect(tokenSql).toContain("grant_id = :grantId");
+      expect(tokenSql).toContain("g.payload ->> 'accountId' = :accountId");
+      const grantSql = JSON.stringify(grant.calls);
+      expect(grantSql).toContain("model = 'Grant'");
+      expect(grantSql).toContain("payload ->> 'accountId' = :accountId");
+      expect(grantSql).toContain('"grantId":"grant-1"');
+    });
+
+    it("answers false when the account holds no such grant", async () => {
+      const { dataSource } = makeRevokeSource(0);
+
+      await expect(
+        revokeGrantForAccount(dataSource, "user-1", "theirs"),
+      ).resolves.toBe(false);
+    });
   });
 });
