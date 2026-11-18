@@ -32,7 +32,7 @@ The import follows the same flow as the [Microsoft Money import](importing-from-
 
 **Import the same file once.** Monize refuses a file whose exact bytes it already imported into your account, so a second click cannot double your data. Saving an unchanged file again in KMyMoney writes different bytes, so a re-saved copy is not recognised as the same file and would import a second time. To import a file again, use **Start fresh**.
 
-**Check the file size limit if you self-host.** The default ceiling is 300 MB, set by `MNY_IMPORT_LIMIT_MB`, and it applies to the file both as uploaded and once uncompressed. See [Troubleshooting the KMyMoney Import](#troubleshooting-the-kmymoney-import) if a large upload fails.
+**Check the file size limits if you self-host.** The uploaded file may be up to 300 MB by default, set by `MNY_IMPORT_LIMIT_MB`. A `.kmy` is compressed, so a second limit applies to what it holds: at most 100 MB of XML once uncompressed (about 200,000 transactions of ordinary size; a real file of 120,000 transactions is 59 MB), and at most 600,000 records. These two limits are fixed and cannot be changed. See [Troubleshooting the KMyMoney Import](#troubleshooting-the-kmymoney-import) if a large upload fails.
 
 ---
 
@@ -54,7 +54,7 @@ This step is worth the minute it takes.
 
 ![Review your KMyMoney file: the file summary and the counts](images/import-kmy-review.png)
 
-- The file summary names the file, the KMyMoney file format version, and the base currency, and says that the balances shown are computed from the file.
+- The file summary names the file, the KMyMoney file format version, and the base currency, and says that the balances shown are computed from the file, as of the date it names. Transactions dated after that day are not counted in them.
 - **Counts** for transactions (with the number of transfers linked), payees, payee aliases (with the number of payees that get a default category), categories, tags, accounts, securities, investment transactions, price history, exchange rates and scheduled transactions are each shown against the total in the file, so "40 of 500 payees" is visible before rather than after.
 - **Every account** is listed with its type, currency, transaction count, opening balance and the **final balance computed from the KMyMoney file itself**. Compare a few against KMyMoney -- that same number is what the verification report reconciles against afterwards. A KMyMoney investment account appears as its two Monize halves, " - Cash" and " - Brokerage". An account Monize had to rename (two accounts sharing a name) shows "named X in KMyMoney" underneath, and closed, favourite and excluded-from-net-worth accounts are marked.
 - **Untick any account you do not want**, or use **Select all** / **Select none**. Closed accounts are included by default and stay closed; they still hold history worth keeping.
@@ -204,6 +204,18 @@ Each of the items above that exists in your file is counted in the **Notes about
 
 **Investment accounts without a findable cash account.** If Monize cannot find an investment account's brokerage account, it creates an empty cash account for it and says so. Trades paid from other accounts still move those accounts correctly.
 
+**Trades whose amounts do not add up.** Each trade is checked against the share value the file records. A trade whose total and commission do not add up to it is listed with the two figures, and the note says not to import until it is explained.
+
+**Share movements that fit no investment activity.** A transaction that moves shares but matches none of the investment activities Monize knows is imported as a split transaction for its cash and categories, and the shares as a purchase or sale at the value the file records. Each is listed; check it.
+
+**Money moved from an account to itself.** Each side is imported as its own entry rather than as a transfer, and the transaction is listed.
+
+**Reconciliation history.** Each entry keeps its reconciled state and date, but KMyMoney's statement dates and balances are not imported. The accounts that had a history are listed.
+
+**Share transfers Monize had to infer.** A removal and an addition of the same shares on the same day are imported as a transfer between brokerage accounts that carries the cost. Each such pair is listed so you can check it was a transfer and not a sale and a gift.
+
+**Share counts finer than eight decimal places.** Monize stores eight, so such a count is rounded to eight and listed.
+
 **Transactions that do not balance.** KMyMoney marks a transaction whose splits do not add up as erroneous. Monize imports the difference as an uncategorized split so the account balance stays what KMyMoney shows, and lists the transaction.
 
 **Cryptocurrency.** A coin can only be the currency of a Crypto account in Monize. A security priced in a cryptocurrency is not imported, and its trades come across as plain cash movements.
@@ -222,6 +234,7 @@ When the import finishes, the **Balance verification** table lists every account
 
 - **A green run** says every account and holding reconciles.
 - **A row with a difference** is listed with the figure so you can look at it directly. A balance that differs is a defect rather than a rounding effect, so report it.
+- **The date line** above the balance table says the day the figures are cut off at. Transactions dated later are not counted in any of them; the review step shows the same date.
 - **"Import rows sum to X"** appears under the expected figure when what Monize's own mapping produced differs from the figure computed from the file. It tells you whether the difference arose in reading your file or in writing it.
 - A share count that differs after a stock split is normally explained by one of the stock-split notes (see Known Limitations).
 - **Notes about this import** repeats anything the import had to decide. **Download report** saves it as JSON; **Done** returns to the upload step.
@@ -253,7 +266,9 @@ Nothing is written unless the whole import succeeds, so a failure leaves your da
 | "That is an anonymized KMyMoney file" | An anonymized file has scrambled amounts and replaced names. Import your original `.kmy` file instead |
 | "That file uses the binary format of KMyMoney 0.8 or earlier." | Open it in a current KMyMoney and save it again, then import the result |
 | "That KMyMoney file is damaged or incomplete and could not be read." | If it was copied or downloaded, try the original file again |
-| "That KMyMoney file is larger than the N MB import limit." | See Self-Hosting Failures below. The same message says "once uncompressed" when the compressed file fit but its contents did not |
+| "That KMyMoney file is larger than the N MB import limit." | See Self-Hosting Failures below. The same message says "once uncompressed" when the compressed file fit but its contents did not; that limit is 100 MB and is not configurable |
+| "That KMyMoney file holds more records than Monize imports from one file." | The file is within the size limits but holds more than 600,000 records, or a single transaction with more than 10,000 splits. Nothing was imported. This limit is fixed |
+| "Monize could not convert this KMyMoney file." | This is a fault in Monize, not in your file, and nothing was saved. Please report it, with the file's version from the review step if you can |
 | "The existing account ... is closed, so the KMyMoney file cannot be merged into it." | An account of that name already exists in Monize and is closed. Reopen or rename it, then import again |
 | "The existing account ... uses X, but the KMyMoney file account uses Y." | Rename one of the two accounts, then import again |
 | "This file was already imported into your account" | Importing it again would duplicate its records. To replace them, start over with **Start fresh** ticked |
@@ -267,5 +282,5 @@ Nothing is written unless the whole import succeeds, so a failure leaves your da
 
 Two failures look like the app is broken and are configuration:
 
-- **The upload is refused as too large.** The frontend passes a KMyMoney file to the backend through its own upload route, which refuses anything over `MNY_IMPORT_LIMIT_MB` (default 300). The variable must be set on the **frontend** as well as the backend. The same limit applies to the file once uncompressed.
-- **The server is killed partway through every attempt.** It is running out of memory. A KMyMoney file is held in memory while it is read, in compressed and uncompressed form, so the backend needs a multiple of the file size available. See `helm/README.md` for the sizing rules.
+- **The upload is refused as too large.** The frontend passes a KMyMoney file to the backend through its own upload route, which refuses anything over `MNY_IMPORT_LIMIT_MB` (default 300). The variable must be set on the **frontend** as well as the backend. The uncompressed size is a separate, fixed limit of 100 MB, and raising `MNY_IMPORT_LIMIT_MB` does not change it.
+- **The server is killed partway through every attempt.** It is running out of memory. A KMyMoney file is held in memory while it is read, in compressed and uncompressed form; a file at the limits costs about 470 MB above the backend's own use. See `helm/README.md` for the sizing rules.
